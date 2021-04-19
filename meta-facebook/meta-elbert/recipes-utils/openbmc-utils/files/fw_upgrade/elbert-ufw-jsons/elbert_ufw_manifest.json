@@ -1,6 +1,6 @@
 {
     "bios" : {
-        "get_version" : "strings /tmp/fw_upgrade/coreboot-elbert.rom | grep -w COREBOOT_VERSION | cut -d ' ' -f 3 | cut -d- -f1 | tr -d '\"'",
+        "get_version" : "strings /tmp/fw_upgrade/coreboot-elbert.rom | grep -w elbert",
         "priority" : 1,
         "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename}"
     },
@@ -25,20 +25,20 @@
         "priority" : 5
     },
     "pim_base" : {
-        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM_BASE: [^NOT]' | cut -f 3 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim program {filename}",
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM_BASE: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim_base program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a",
         "priority" : 5
     },
     "pim16q" : {
-        "get_version" : "fpga_ver.sh | grep 'HEADER_PIM16Q: [^NOT]' | cut -f 3 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim program {filename}",
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM16Q: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim16q program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6
     },
     "pim8ddm" : {
-        "get_version" : "fpga_ver.sh | grep 'HEADER_PIM8DDM: [^NOT]' | cut -f 3 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim program {filename}",
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM8DDM: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim8ddm program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6
     }

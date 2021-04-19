@@ -17,7 +17,7 @@
 #
 [Unit]
 Description=PSU monitoring
-After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
+After=setup_board.service openbmc_gpio_setup.service setup_i2c.service setup_sensors_conf.service
 Wants=setup_board.service
 
 

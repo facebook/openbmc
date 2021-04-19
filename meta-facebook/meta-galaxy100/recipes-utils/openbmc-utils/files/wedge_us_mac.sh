@@ -30,7 +30,7 @@ fi
 count=0
 while [ $count -lt 10 ]
 do
-  mac=$(cat /sys/class/i2c-adapter/i2c-0/0-0033/mac_addr)
+  mac=$(cat "${GALAXY_EC_SYSFS_DIR}/mac_addr")
 
 	if [ -n "$mac" -a "${mac/X/}" = "${mac}" ]; then
 	    echo $mac

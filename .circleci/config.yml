@@ -12,7 +12,8 @@ jobs:
                     apt-get install -y \
                         git \
                         python3-pip \
-                        shellcheck
+                        shellcheck \
+                        cppcheck
             - run:
                 name: Install 'black'.
                 command: |
@@ -81,16 +82,18 @@ workflows:
                             elbert,
                             emeraldpools,
                             clearcreek,
+                            cloudripper,
                             fbgp2,
-                            fbnd,
                             fbtp,
                             fbttn,
                             fby2,
                             fby3,
+                            fuji,
                             galaxy100,
                             grandcanyon,
                             lightning,
                             minipack,
+                            northdome,
                             sonorapass,
                             wedge,
                             wedge100,

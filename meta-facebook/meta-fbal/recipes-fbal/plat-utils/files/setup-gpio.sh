@@ -32,6 +32,7 @@
 # definitions to this file at some point.
 
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/i2c-utils.sh
 
 
 # FM_BOARD_BMC_REV_ID0
@@ -264,8 +265,7 @@ gpio_export FM_SOL_UART_CH_SEL GPION3
 gpio_export IRQ_DIMM_SAVE_LVT3_N GPION4
 
 # LED_8S_2S_MODE_N
-gpio_export LED_8S_2S_MODE_N GPION5
-gpio_set LED_8S_2S_MODE_N 1
+gpio_export LED_4S_2S_MODE_N GPION5
 
 # Set debounce timer #1 value to 0x12E1FC ~= 100ms
 $DEVMEM 0x1e780050 32 0x12E1FC
@@ -289,6 +289,10 @@ gpio_export FM_BMC_SKT_ID_1 GPIOO1
 
 # FM_BMC_SKT_ID_2
 gpio_export FM_BMC_SKT_ID_2 GPIOO2
+mode=$(($(gpio_get FM_BMC_SKT_ID_2)))
+kv set mb_skt $((mode<<2 |
+        $(gpio_get FM_BMC_SKT_ID_1)<<1 |
+        $(gpio_get FM_BMC_SKT_ID_0)))
 
 # FM_SMB_RETIMER_1_ISO_EN
 gpio_export FM_SMB_RETIMER_1_ISO_EN GPIOO3
@@ -331,6 +335,11 @@ gpio_export FM_BLADE_ID_0 GPIOP6
 
 # FM_BLADE_ID_1
 gpio_export FM_BLADE_ID_1 GPIOP7
+if [ "$mode" -eq 1 ]; then  # 2S
+  kv set mb_pos 0
+else
+  kv set mb_pos $(($(gpio_get FM_BLADE_ID_1)<<1 | $(gpio_get FM_BLADE_ID_0)))
+fi
 
 
 # RST_TCA9545_DDR_MUX_N
@@ -387,17 +396,16 @@ gpio_export OCP_V3_NIC_2_PWR_GOOD GPIOT6
 # BOARD_ID_MUX_SEL
 gpio_export BOARD_ID_MUX_SEL GPIOU2
 gpio_set BOARD_ID_MUX_SEL 0
-mkdir -p /tmp/cache_store
-echo $(($(gpio_get FM_BOARD_BMC_REV_ID2)<<2 |
+kv set mb_rev $(($(gpio_get FM_BOARD_BMC_REV_ID2)<<2 |
         $(gpio_get FM_BOARD_BMC_REV_ID1)<<1 |
-        $(gpio_get FM_BOARD_BMC_REV_ID0))) > /tmp/cache_store/mb_rev
+        $(gpio_get FM_BOARD_BMC_REV_ID0)))
 
-echo $(($(gpio_get FM_BOARD_BMC_SKU_ID5)<<5 |
+kv set mb_sku $(($(gpio_get FM_BOARD_BMC_SKU_ID5)<<5 |
         $(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
         $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
         $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
         $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
-        $(gpio_get FM_BOARD_BMC_SKU_ID0))) > /tmp/cache_store/mb_sku
+        $(gpio_get FM_BOARD_BMC_SKU_ID0)))
 
 gpio_set BOARD_ID_MUX_SEL 1
 
@@ -483,17 +491,37 @@ gpio_export FM_BMC_BMCINIT GPIOAB0
 
 # PECI_MUX_SELECT
 gpio_export PECI_MUX_SELECT GPIOAB1
-gpio_set PECI_MUX_SELECT 1
+gpio_set PECI_MUX_SELECT 0
 
 # PWRGD_BMC_PS_PWROK
 gpio_export PWRGD_BMC_PS_PWROK GPIOAB3
 
+
+# workaround for unexpected DIMM_MUX status
+if [ ! -L "${SYSFS_I2C_DEVICES}/4-0076/driver" ] ||
+   [ ! -L "${SYSFS_I2C_DEVICES}/4-0077/driver" ]; then
+  logger -t "setup-gpio" -p user.warn "Reset DIMM_MUX"
+  echo low > /tmp/gpionames/RST_TCA9545_DDR_MUX_N/direction
+  usleep 10000
+  echo in > /tmp/gpionames/RST_TCA9545_DDR_MUX_N/direction
+  usleep 10000
+fi
+
+if [ ! -L "${SYSFS_I2C_DEVICES}/4-0076/driver" ]; then
+  i2c_bind_driver pca953x 4-0076 2 2>/dev/null
+  [ $? -eq 0 ] && echo "rebind 4-0076 to driver pca953x successfully"
+fi
 
 # I/O Expander TCA9539 0xEC
 gpio_export_ioexp 4-0076 FM_SLOT1_PRSNT_N 0
 gpio_export_ioexp 4-0076 FM_SLOT2_PRSNT_N 1
 gpio_export_ioexp 4-0076 RST_RTCRST_N 10
 gpio_export_ioexp 4-0076 RST_USB_HUB_N 11
+
+if [ ! -L "${SYSFS_I2C_DEVICES}/4-0077/driver" ]; then
+  i2c_bind_driver pca953x 4-0077 2 2>/dev/null
+  [ $? -eq 0 ] && echo "rebind 4-0077 to driver pca953x successfully"
+fi
 
 # I/O Expander TCA9539 0xEE
 gpio_export_ioexp 4-0077 IRQ_PVCCIN_CPU0_VRHOT_LVC3_N 0
@@ -506,3 +534,10 @@ gpio_export_ioexp 4-0077 FM_CPU0_SKTOCC_LVT3_PLD_N 6
 gpio_export_ioexp 4-0077 FM_CPU1_SKTOCC_LVT3_PLD_N 7
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_2_PRSNT2_N 8
 gpio_export_ioexp 4-0077 HP_LVC3_OCP_V3_1_PRSNT2_N 9
+
+# Mode Setting (2S: mode=1 4S: mode=0)
+if [ "$mode" -eq 1 ]; then
+    gpio_set LED_4S_2S_MODE_N 0
+else
+    gpio_set LED_4S_2S_MODE_N 1
+fi

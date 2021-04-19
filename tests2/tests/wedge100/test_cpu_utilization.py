@@ -49,7 +49,6 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             "rackmond",
             "top",
             "awk",
-            "spatula_wrapper",
             "rotor_client",
             "rsyslogd",
             "ksoftirqd",

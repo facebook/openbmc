@@ -16,8 +16,13 @@ enum class region { persist, temp };
 std::string get(const std::string& key, region r = region::temp);
 void set(const std::string& key, const std::string& value,
          region r = region::temp, bool require_create = false);
+void del(const std::string& key, region r = region::temp);
 
 struct key_already_exists : public std::logic_error {
+    using logic_error::logic_error;
+};
+
+struct key_does_not_exist : public std::logic_error {
     using logic_error::logic_error;
 };
 

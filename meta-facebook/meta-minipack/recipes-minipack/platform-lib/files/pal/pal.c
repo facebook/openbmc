@@ -1221,6 +1221,48 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+
+  switch (fru) {
+    case FRU_SMB:
+      *caps = FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_SCM:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_PIM1:
+    case FRU_PIM2:
+    case FRU_PIM3:
+    case FRU_PIM4:
+    case FRU_PIM5:
+    case FRU_PIM6:
+    case FRU_PIM7:
+    case FRU_PIM8:
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_PSU3:
+    case FRU_PSU4:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
+    case FRU_FAN4:
+    case FRU_FAN5:
+    case FRU_FAN6:
+    case FRU_FAN7:
+    case FRU_FAN8:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;

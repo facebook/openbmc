@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import json
+import os
 
 from boardroutes import board_routes
 
@@ -38,6 +39,9 @@ common_routes = [
     "/api/sys/slotid",
     "/api/sys/mTerm_status",
     "/api/sys/ntp",
+    "/api/sys/fscd_sensor_data",
+    "/api/sys/modbus",
+    "/api/sys/modbus/cmd",
 ]
 
 
@@ -79,3 +83,7 @@ def dumps_bytestr(obj):
     # Just call default dumps function, but pass the new default function
     # that is capable of process byte strings.
     return json.dumps(obj, default=default_bytestr)
+
+
+def running_systemd():
+    return "systemd" in os.readlink("/proc/1/exe")

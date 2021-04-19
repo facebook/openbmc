@@ -1,33 +1,37 @@
 {
-    "version": "fbal-r06",
+    "version": "fbal-r10",
     "pwm_transition_value": 70,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,
     "fan_recovery_time": 2,
+    "sensor_filter_all": true,
     "boost": {
       "fan_fail": true,
-      "sensor_fail": false
+      "sensor_fail": true
     },
     "sensor_valid_check": {
-      "mb": {
+      "(.*)cpu": {
         "attribute": {
           "type" : "power_status"
         }
       }
-    },  
+    },
     "watchdog": false,
-    "min_rpm": 500,
+    "min_rpm": 600,
     "profiles": {
       "linear_dimm": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
-          [60, 10],
           [65, 15],
-          [70, 20],
-          [74, 25]
+          [70, 19],
+          [72, 22],
+          [74, 26],
+          [76, 28]
         ]
       },
       "pid_dimm": {
@@ -35,41 +39,50 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "positive_hysteresis": 1,      
+        "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "setpoint": 78,
-        "kp": -2,
-        "ki": -0.035,
+        "kp": -3,
+        "ki": -0.0035,
         "kd": 0
-      }, 
+      },
       "linear_mezz": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
-          [65, 10],
-          [70, 15],
-          [72, 20],
-          [75, 25],
-          [78, 30],
-          [80, 35],
-          [83, 40],
-          [85, 50],
-          [90, 65],
-          [95, 75]
+          [79, 15],
+          [81, 18],
+          [95, 70]
         ]
+      },
+      "pid_mezz": {
+        "read_source" : {
+          "util" : "/usr/local/bin/sensor-util"
+        },
+        "type": "pid",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
+        "setpoint": 83,
+        "kp": -3,
+        "ki": -0.0035,
+        "kd": 0
       },
       "linear_inlet": {
         "read_source" : {
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
-          [25, 30],
-          [30, 40],
-          [35, 50],
-          [38, 60],
+          [25, 13],
+          [30, 15],
+          [35, 18],
+          [38, 35],
           [40, 80]
         ]
       },
@@ -78,6 +91,8 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
           [70, 15],
           [75, 20],
@@ -92,10 +107,13 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 2,
         "data": [
-          [-20, 10],
           [-18, 15],
-          [-15, 25]
+          [-16, 18],
+          [-14, 22],
+          [-12, 24]
         ]
       },
       "pid_cpu_margin": {
@@ -103,85 +121,84 @@
           "util" : "/usr/local/bin/sensor-util"
         },
         "type": "pid",
-        "setpoint": -10,
-        "positive_hysteresis": 1,
+        "positive_hysteresis": 0,
         "negative_hysteresis": 2,
-        "kp": -1.25,
-        "ki": -0.035,
+        "setpoint": -10,
+        "kp": -3,
+        "ki": -0.0035,
         "kd": 0
       }
     },
     "fans": {
       "0": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 0"
+          "kv" : "pdb_sensor96"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 0"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "1": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 1"
+          "kv" : "pdb_sensor100"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 0"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "2": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 2"
+          "kv" : "pdb_sensor97"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 1"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "3": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 3"
+          "kv" : "pdb_sensor101"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 1"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "4": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 4"
+          "kv" : "pdb_sensor98"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 2"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "5": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 5"
+          "kv" : "pdb_sensor102"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 2"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "6": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 6"
+          "kv" : "pdb_sensor99"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 3"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       },
       "7": {
         "read_source" : {
-          "util" : "/usr/local/bin/fan-util --get 7"
+          "kv" : "pdb_sensor103"
         },
         "write_source" : {
-          "util" : "/usr/local/bin/fan-util --set %d 3"
+          "util" : "/usr/local/bin/fan-util --set %d"
         }
       }
     },
     "zones": {
       "zone_1": {
-        "pwm_output": [0, 2, 4, 6],
+        "pwm_output": [0],
         "expr_file": "zone1_2s.fsc"
       }
     }
 }
-  

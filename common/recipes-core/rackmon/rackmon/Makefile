@@ -22,7 +22,7 @@ all: modbuscmd gpiowatch modbussim rackmond rackmonctl
 rackmonctl: rackmonctl.c modbus.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
-rackmond: rackmond.c modbus.c
+rackmond: rackmond.c modbus.c rackmon_platform.c rackmon_parser.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 modbuscmd: modbuscmd.c modbus.c

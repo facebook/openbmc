@@ -38,12 +38,17 @@ SRC_URI = "\
           file://fscd.service\
           "
 
+SRC_URI += "\
+          file://fscd_test\
+           "
+
 S = "${WORKDIR}"
 
 inherit distutils3
 inherit systemd
-DEPENDS += "update-rc.d-native libkv"
-RDEPENDS_${PN} += "python3-syslog python3-ply libkv"
+inherit ptest
+DEPENDS += "update-rc.d-native libkv libwatchdog"
+RDEPENDS_${PN} += "python3-syslog python3-ply libkv libwatchdog"
 
 FSC_BIN_FILES = ""
 
@@ -71,7 +76,7 @@ do_work_sysv() {
 
 do_work_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install fscd.service ${D}${systemd_system_unitdir}
+    install -m 644 fscd.service ${D}${systemd_system_unitdir}
 }
 
 do_install_append() {
@@ -96,6 +101,24 @@ do_install_append() {
     else
         do_work_sysv
     fi
+}
+
+do_compile_ptest() {
+  cat <<EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
+set -e
+cd /usr/lib/fscd/ptest
+if [ ! -d /var/volatile/log ]; then
+  mkdir /var/volatile/log
+fi
+PYTHONPATH=/usr/bin python3 ./fsc_tester.py
+EOF
+}
+
+do_install_ptest() {
+  install -d ${D}${libdir}/fscd
+  install -d ${D}${libdir}/fscd/ptest
+  cp -r ${WORKDIR}/fscd_test/* ${D}${libdir}/fscd/ptest/
 }
 
 

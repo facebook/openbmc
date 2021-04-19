@@ -218,29 +218,29 @@ typedef struct {
   uint32_t multicast_packet_filter_capabilities;
   uint32_t buffering_capabilities;
   uint32_t aen_control_support;
-  uint8_t  unicast_filter_cnt;
-  uint8_t  multicast_filter_cnt;
-  uint8_t  mixed_filter_cnt;
   uint8_t  vlan_filter_cnt;
-  uint8_t  channel_cnt;
-  uint8_t  vlan_mode_support;
+  uint8_t  mixed_filter_cnt;
+  uint8_t  multicast_filter_cnt;
+  uint8_t  unicast_filter_cnt;
   uint16_t reserved;
+  uint8_t  vlan_mode_support;
+  uint8_t  channel_cnt;
 } __attribute__((packed)) NCSI_Get_Capabilities_Response;
 
 
 typedef struct {
-  uint8_t  mac_addr_flags;
-  uint16_t reserved0;
   uint8_t  mac_addr_cnt;
-  uint16_t vlan_tag_flags;
-  uint8_t  reserved1;
+  uint16_t reserved0;
+  uint8_t  mac_addr_flags;
   uint8_t  vlan_tag_cnt;
+  uint8_t  reserved1;
+  uint16_t vlan_tag_flags;
   uint32_t link_settings;
   uint32_t broadcast_packet_filter_settings;
   uint32_t configuration_flags;
-  uint16_t reserved2;
-  uint8_t  flow_ctrl_enable;
   uint8_t  vlan_mode;
+  uint8_t  flow_ctrl_enable;
+  uint16_t reserved2;
   uint32_t aen_control;
   uint32_t mac_1;
   uint32_t mac_2;

@@ -32,33 +32,66 @@
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
 
-#define FRONTPANELD_NAME       "front-paneld"
-#define FRONTPANELD_PID_FILE   "/var/run/front-paneld.pid"
-
-#define BTN_MAX_SAMPLES   200
-#define BTN_POWER_OFF     40
-
-#define INTERVAL_MAX  5
-
-
-//Debug card presence check interval. Preferred range from ## milliseconds to ## milleseconds.
-#define DBG_CARD_CHECK_INTERVAL 500
-#define LED_CHECK_INTERVAL 500
-
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 #endif /* ARRAY_SIZE */
+
+#define FRONTPANELD_NAME                    "front-paneld"
+#define FRONTPANELD_PID_FILE                "/var/run/front-paneld.pid"
 
 #define FRONT_PANELD_DEBUG_CARD_THREAD      "debug_card"
 #define FRONT_PANELD_UART_SEL_BTN_THREAD    "uart_sel_btn"
 #define FRONT_PANELD_PWR_BTN_THREAD         "pwr_btn"
 #define FRONT_PANELD_RST_BTN_THREAD         "rst_btn"
+#define FRONT_PANELD_LED_MONITOR_THREAD     "led_monitor"
+#define FRONT_PANELD_LED_CONTROL_THREAD     "led_control"
+#define FRONT_PANELD_SCM_MONITOR_THREAD     "scm_monitor"
 
-void
-exithandler(int signum) {
-  int brd_rev;
-  pal_get_board_rev(&brd_rev);
-  exit(0);
+//Debug card presence check interval. Preferred range from ## milliseconds to ## milleseconds.
+#define DBG_CARD_CHECK_INTERVAL             500
+#define LED_MONITOR_INTERVAL_S              5
+#define LED_CONTROL_INTERVAL_MS             100
+#define BTN_POWER_OFF                       40
+
+#define ADM1278_NAME                        "adm1278"
+#define ADM1278_ADDR                        0x10
+#define SCM_ADM1278_BUS                     24
+
+static uint8_t leds[4] = {
+  LED_OFF, //LED_SYS
+  LED_OFF, //LED_FAN
+  LED_OFF, //LED_PSU
+  LED_OFF  //LED_SCM
+};
+
+static int
+write_adm1278_conf(uint8_t bus, uint8_t addr, uint8_t cmd, uint16_t data) {
+  int dev = -1, read_back = -1;
+
+  dev = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+  if (dev < 0) {
+    OBMC_ERROR(errno, "i2c_cdev_slave_open bus %u addr 0x%x failed",
+               bus, addr);
+    return dev;
+  }
+
+  i2c_smbus_write_word_data(dev, cmd, data);
+  read_back = i2c_smbus_read_word_data(dev, cmd);
+  if (read_back < 0) {
+    OBMC_ERROR(errno, "failed to read from %u-00%02x", bus, addr);
+    close(dev);
+    return read_back;
+  }
+
+  if (((uint16_t) read_back) != data) {
+    OBMC_WARN("unexpected data from %u-00%02x: (%04X, %04X)",
+              bus, addr, data, read_back);
+    close(dev);
+    return -1;
+  }
+
+  close(dev);
+  return 0;
 }
 
 // Thread for monitoring debug card hotswap
@@ -92,6 +125,43 @@ debug_card_handler(void *unused) {
       prev = curr;
     }
 debug_card_out:
+    msleep(DBG_CARD_CHECK_INTERVAL);
+  }
+
+  return 0;
+}
+
+/* Thread to handle Uart Selection Button */
+static void *
+uart_sel_btn_handler(void *unused) {
+  uint8_t btn;
+  uint8_t prsnt = 0;
+  int ret;
+  /* Clear Debug Card reset button at the first time */
+  ret = pal_clr_dbg_uart_btn();
+  if (ret) {
+    OBMC_INFO("%s: %s clear uart button status error",  FRONTPANELD_NAME, __FUNCTION__);
+  }
+
+  OBMC_INFO("%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+
+  while (1) {
+    /* Check the position of hand switch
+     * and if reset button is pressed */
+    ret = pal_is_debug_card_prsnt(&prsnt);
+    if (ret || !prsnt) {
+      goto uart_sel_btn_out;
+    }
+    ret = pal_get_dbg_uart_btn(&btn);
+    if (ret || !btn) {
+      goto uart_sel_btn_out;
+    }
+    if (btn) {
+      OBMC_INFO("Uart button pressed\n");
+      pal_switch_uart_mux();
+      pal_clr_dbg_uart_btn();
+    }
+uart_sel_btn_out:
     msleep(DBG_CARD_CHECK_INTERVAL);
   }
 
@@ -192,53 +262,181 @@ rst_btn_out:
   return 0;
 }
 
-/* Thread to handle Reset Button to reset userver */
 static void *
-uart_sel_btn_handler(void *unused) {
-  uint8_t btn;
-  uint8_t prsnt = 0;
-  int ret;
-  /* Clear Debug Card reset button at the first time */
-  ret = pal_clr_dbg_uart_btn();
-  if (ret) {
-    OBMC_INFO("%s: %s clear uart button status error",  FRONTPANELD_NAME, __FUNCTION__);
-  }
+led_monitor_handler(void *unused) {
+  uint8_t status_ug;
+  struct timeval timeval;
+  long curr_time;
+  long last_time = 0;
 
   OBMC_INFO("%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
-
   while (1) {
-    /* Check the position of hand switch
-     * and if reset button is pressed */
-    ret = pal_is_debug_card_prsnt(&prsnt);
-    if (ret || !prsnt) {
-      goto uart_sel_btn_out;
+    gettimeofday(&timeval, NULL);
+    curr_time = timeval.tv_sec * 1000 + timeval.tv_usec / 1000;
+    if ( last_time == 0 || curr_time < last_time ||
+         curr_time - last_time > LED_MONITOR_INTERVAL_S * 1000 ) {
+      last_time = curr_time;
+
+      //SYS LED
+      // BLUE            no out of range of SMB/BMC sensor
+      // AMBER           one or more sensor out of range
+      // ALTERNATE       firmware upgrade in process
+      // AMBER FLASHING  need technicial required,
+      pal_mon_fw_upgrade(&status_ug);
+      if(status_ug) {
+        OBMC_WARN("firmware is upgrading");
+        leds[LED_SYS] = LED_STATE_ALT_BLINK;
+      } else {
+        if (smb_check()) {
+          leds[LED_SYS] = LED_STATE_AMBER;
+        } else {
+          leds[LED_SYS] = LED_STATE_BLUE;
+        }
+      }
+
+      //FAN LED
+      // BLUE   all presence and sensor normal
+      // AMBER  one or more absence or sensor out-of-range RPM
+      if (fan_check() == 0) {
+        leds[LED_FAN] = LED_STATE_BLUE;
+      } else {
+        leds[LED_FAN] = LED_STATE_AMBER;
+      }
+
+      //PSU LED
+      // BLUE     all PSUs present and INPUT OK,PWR OK
+      // AMBER    one or more not present or INPUT OK or PWR OK de-asserted
+      if (psu_check() == 0) {
+        leds[LED_PSU] = LED_STATE_BLUE;
+      } else {
+        leds[LED_PSU] = LED_STATE_AMBER;
+      }
+
+      //SCM LED
+      // BLUE   SCM present and sensor normal
+      // AMBER  SCM not present or sensor out-of-range
+      if (scm_check() == 0) {
+        leds[LED_SCM] = LED_STATE_BLUE;
+      } else {
+        leds[LED_SCM] = LED_STATE_AMBER;
+      }
     }
-    ret = pal_get_dbg_uart_btn(&btn);
-    if (ret || !btn) {
-      goto uart_sel_btn_out;
+    sleep(1);
+  }
+
+  return 0;
+}
+
+static void *
+led_control_handler(void *unused) {
+  static uint8_t led_alt = 0;
+  struct timeval timeval;
+  long curr_time;
+  long last_time = 0;
+
+  OBMC_INFO("%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+  while (1) {
+    gettimeofday(&timeval, NULL);
+    curr_time = timeval.tv_sec * 1000 + timeval.tv_usec / 1000;
+    if ( last_time == 0 || curr_time < last_time ||
+         curr_time - last_time > 500 ) {  // blinking every 500ms
+      led_alt = 1-led_alt;
+      last_time = curr_time;
     }
-    if (btn) {
-      OBMC_INFO("Uart button pressed\n");
-      pal_switch_uart_mux();
-      pal_clr_dbg_uart_btn();
+
+    for ( int led=0 ; led < sizeof(leds)/sizeof(leds[0]) ; led++ ) {
+      int state = leds[led];
+      if (state == LED_STATE_OFF) {
+        set_sled(led, LED_COLOR_OFF);
+      } else if (state == LED_STATE_BLUE) {
+        set_sled(led, LED_COLOR_BLUE);
+      } else if (state == LED_STATE_AMBER) {
+        set_sled(led, LED_COLOR_AMBER);
+      } else if (state == LED_STATE_ALT_BLINK) {
+        if (led_alt) {
+          set_sled(led, LED_COLOR_BLUE);
+        } else {
+          set_sled(led, LED_COLOR_AMBER);
+        }
+      } else if (state == LED_STATE_AMBER_BLINK) {
+        if (led_alt) {
+          set_sled(led, LED_COLOR_AMBER);
+        } else {
+          set_sled(led, LED_COLOR_OFF);
+        }
+      }
     }
-uart_sel_btn_out:
-    msleep(DBG_CARD_CHECK_INTERVAL);
+    msleep(LED_CONTROL_INTERVAL_MS);
+  }
+
+  return 0;
+}
+
+// Thread for monitoring scm plug
+static void *
+scm_monitor_handler(void *unused) {
+  int curr = -1;
+  int prev = -1;
+  int ret;
+  uint8_t prsnt = 0;
+  uint8_t power;
+
+  OBMC_INFO("%s: %s started", FRONTPANELD_NAME, __FUNCTION__);
+  while (1) {
+    ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
+    if (ret) {
+      goto scm_mon_out;
+    }
+    curr = prsnt;
+    if (curr != prev) {
+      if (curr) {
+        // SCM was inserted
+        OBMC_WARN("SCM Insertion\n");
+
+        ret = pal_get_server_power(FRU_SCM, &power);
+        if (ret) {
+          goto scm_mon_out;
+        }
+        if (power == SERVER_POWER_OFF) {
+          sleep(3);
+          OBMC_WARN("SCM power on\n");
+          pal_set_server_power(FRU_SCM, SERVER_POWER_ON);
+          /* Config ADM1278 power monitor averaging */
+          if (write_adm1278_conf(SCM_ADM1278_BUS, ADM1278_ADDR, 0xD4, 0x3F1E)) {
+            OBMC_CRIT("SCM Bus:%d Addr:0x%x Device:%s "
+                             "can't config register",
+                             SCM_ADM1278_BUS, ADM1278_ADDR, ADM1278_NAME);
+          }
+          goto scm_mon_out;
+        }
+      } else {
+        // SCM was removed
+        OBMC_WARN("SCM Extraction\n");
+      }
+    }
+scm_mon_out:
+    prev = curr;
+    sleep(1);
   }
   return 0;
 }
 
+void
+exithandler(int signum) {
+  set_sled(LED_SYS, LED_COLOR_AMBER);
+  exit(0);
+}
+
 int
 main (int argc, char * const argv[]) {
+  int i,rc=0;
   int pid_file;
-  int i, rc = 0;
-  uint8_t brd_type_rev;
-    struct {
+  struct {
     const char *name;
     void* (*handler)(void *args);
     bool initialized;
     pthread_t tid;
-  } front_paneld_threads[4] = {
+  } front_paneld_threads[7] = {
     {
       .name = FRONT_PANELD_DEBUG_CARD_THREAD,
       .handler = debug_card_handler,
@@ -257,6 +455,21 @@ main (int argc, char * const argv[]) {
     {
       .name = FRONT_PANELD_RST_BTN_THREAD,
       .handler = rst_btn_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_LED_MONITOR_THREAD,
+      .handler = led_monitor_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_LED_CONTROL_THREAD,
+      .handler = led_control_handler,
+      .initialized = false,
+    },
+    {
+      .name = FRONT_PANELD_SCM_MONITOR_THREAD,
+      .handler = scm_monitor_handler,
       .initialized = false,
     },
   };
@@ -296,11 +509,7 @@ main (int argc, char * const argv[]) {
   obmc_log_unset_std_stream();
 
   OBMC_INFO("LED Initialize\n");
-
-  if (pal_get_board_type_rev(&brd_type_rev)) {
-    OBMC_WARN("Get board revision failed\n");
-    exit(-1);
-  }
+  init_led();
 
   for (i = 0; i < ARRAY_SIZE(front_paneld_threads); i++) {
     rc = pthread_create(&front_paneld_threads[i].tid, NULL,

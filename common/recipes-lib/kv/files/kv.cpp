@@ -58,6 +58,7 @@ int kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
     errno = EEXIST;
     return -1;
   } catch (std::exception& e) {
+    errno = EIO;
     KV_WARN("kv_set: %s", e.what());
     return -1;
   }
@@ -105,6 +106,7 @@ int kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
     // Eat no-such-file errors and just return a -1.
     // Too many callers try to look up kv-entries for entries that haven't
     // been created yet and if we don't eat the error, we fill up the syslog.
+    errno = e.code().value();
     if (e.code().value() == ENOENT) {
       return -1;
     }
@@ -112,10 +114,31 @@ int kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
     KV_WARN("kv_get: %s", e.what());
     return -1;
   } catch (std::exception& e) {
+    errno = EIO;
     KV_WARN("kv_get: %s", e.what());
     return -1;
   }
 
+  return 0;
+}
+
+int kv_del(const char *key, unsigned int flags)
+{
+  if (key == nullptr)
+    return -1;
+  try {
+    auto r = flags & KV_FPERSIST ? region::persist : region::temp;
+    kv::del(key, r);
+
+  } catch(kv::key_does_not_exist& e) {
+    errno = ENOENT;
+    // Eat no-key error if it fills up syslog
+    return -1;
+  } catch(std::exception& e) {
+    errno = EIO;
+    KV_WARN("kv_del: %s", e.what());
+    return -1;
+  }
   return 0;
 }
 
@@ -148,6 +171,11 @@ std::string get(const std::string& key, region r)
   fp.open_and_lock<FileHandle::access::read>(key, r);
 
   return fp.read();
+}
+
+void del(const std::string& key, region r)
+{
+  FileHandle::remove(key, r);
 }
 
 } // namespace kv

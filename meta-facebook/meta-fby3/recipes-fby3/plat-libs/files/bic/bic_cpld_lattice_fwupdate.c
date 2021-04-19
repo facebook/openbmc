@@ -89,27 +89,6 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   return ret;
 }
 
-#if 0
-static int
-_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
-  char key[64];
-  char value[64] = {0};
-  struct timespec ts;
-
-  sprintf(key, "fru%u_fwupd", slot_id);
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
-
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
-  }
-
-  return 0;
-}
-#endif
-
 static int
 send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8_t data_len, uint8_t *rsp, uint8_t read_cnt) {
   int ret = 0;

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 class fansNode(node):
@@ -34,6 +34,11 @@ class fansNode(node):
 
             if (skip_flag) and (kv[0].strip() != "Fan Fail"):
                 continue
+
+            if kv[0].strip() == "FSCD Driver":
+                if len(kv) == 3:
+                    # Format = FRU:SENSOR_NAME
+                    kv[1] = kv[1].strip()+":"+kv[2].strip()
 
             # 0: normal, 1: boost, 2: transitional
             if kv[0].strip() == "Fan Mode":

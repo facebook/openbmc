@@ -32,6 +32,7 @@ extern "C" {
 int fbgc_get_fruid_name(uint8_t fru, char *name);
 int fbgc_get_fruid_path(uint8_t fru, char *path);
 int fbgc_get_fruid_eeprom_path(uint8_t fru, char *path);
+int fbgc_fruid_write(uint8_t fru, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

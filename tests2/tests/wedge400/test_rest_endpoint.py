@@ -22,7 +22,12 @@ import time
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
-from tests.wedge400.helper.libpal import pal_get_board_type, pal_get_board_type_rev
+from tests.wedge400.helper.libpal import (
+    pal_get_board_type,
+    pal_get_board_type_rev,
+    pal_detect_power_supply_present,
+    BoardRevision,
+)
 from tests.wedge400.test_data.sensors.sensors import (
     PEM1_SENSORS,
     PEM2_SENSORS,
@@ -119,13 +124,13 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             self.skipTest("Skip test on {} board".format(platform_type_rev))
 
         self.endpoint_sensors_attrb += SCM_SENSORS
-        if self.check_fru_sensors_present("pem1"):
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1":
             self.endpoint_sensors_attrb += PEM1_SENSORS
-        if self.check_fru_sensors_present("pem2"):
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
             self.endpoint_sensors_attrb += PEM2_SENSORS
-        if self.check_fru_sensors_present("psu1"):
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU1) == "psu1":
             self.endpoint_sensors_attrb += PSU1_SENSORS
-        if self.check_fru_sensors_present("psu2"):
+        if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU1) == "psu2":
             self.endpoint_sensors_attrb += PSU2_SENSORS
 
     def test_endpoint_api_sys_sensors(self):

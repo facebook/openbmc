@@ -11,12 +11,12 @@
 #include <openbmc/obmc-i2c.h>
 #include "server.h"
 #include "bmc_cpld.h"
-#include <facebook/bic.h>
 #include <facebook/fby3_common.h>
 
 using namespace std;
 
 image_info BmcCpldComponent::check_image(string image, bool force) {
+const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
 #define MAX10_RPD_SIZE 0x5C000
   string flash_image = image;
   uint8_t bmc_location = 0;
@@ -25,6 +25,16 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
   string bmc_str = "bmc";
   size_t slot_found = fru_name.find(slot_str);
   size_t bmc_found = fru_name.find(bmc_str);
+  uint8_t slot_id = 0;
+  int ret = -1;
+  int i2cfd = 0;
+  uint8_t tbuf[1] = {0};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int retry= 0;
+  int board_type_index = 0;
+  bool board_rev_is_invalid = false;
 
   image_info image_sts = {"", false};
 
@@ -60,7 +70,7 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
   if ( r_b == MAX10_RPD_SIZE ) {
     signed_byte = 0x0;
   } else if ( r_b == (MAX10_RPD_SIZE + 1) ) {
-    signed_byte = memblock[MAX10_RPD_SIZE] & 0xf;
+    signed_byte = memblock[MAX10_RPD_SIZE] & 0xff;
     r_b = r_b - 1;  //only write data to tmp file
   }
 
@@ -74,21 +84,101 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
   }
   
   if ( force == false ) {
+    // Read Board Revision from CPLD
+    if ( ((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
+      i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+      if ( i2cfd < 0 ) {
+        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
+        return image_sts;
+      }
+
+      tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
+      tlen = 1;
+      rlen = 1;
+      retry = 0;
+      while (retry < RETRY_TIME) {
+        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+        if ( ret < 0 ) {
+          retry++;
+          msleep(100);
+        } else {
+          break;
+        }
+      }
+      if (retry == RETRY_TIME) {
+        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
+         return image_sts;
+      }
+    } else if (slot_found != string::npos) {
+      slot_id = fru_name.at(4) - '0';
+      i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+      if ( i2cfd < 0 ) {
+        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
+        return image_sts;
+      }
+
+      tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
+      tlen = 1;
+      rlen = 1;
+      retry = 0;
+      while (retry < RETRY_TIME) {
+        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+        if ( ret < 0 ) {
+          retry++;
+          msleep(100);
+        } else {
+          break;
+        }
+      }
+      if (retry == RETRY_TIME) {
+        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
+        return image_sts;
+      }
+    }
+
+    board_type_index = rbuf[0] - 1;
+    if (board_type_index < 0) {
+      board_type_index = 0;
+    }
+
+    // PVT & MP firmware could be used in common
+    if (board_type_index < CPLD_BOARD_PVT_REV) {
+      if (REVISION_ID(signed_byte) != board_type_index) {
+        board_rev_is_invalid = true;
+      }
+    } else {
+      if (REVISION_ID(signed_byte) < CPLD_BOARD_PVT_REV) {
+        board_rev_is_invalid = true;
+      }
+    }
+
     //CPLD is located on class 2(NIC_EXP)
     if ( bmc_location == NIC_BMC ) {
-      if ( (signed_byte == NICEXP) && (bmc_found != string::npos) ) {
+      if ( (COMPONENT_ID(signed_byte) == NICEXP) && (bmc_found != string::npos) ) {
         image_sts.result = true;
-      } else if (signed_byte == BICDL && (slot_found != string::npos)) {
+      } else if ( !board_rev_is_invalid && (COMPONENT_ID(signed_byte) == BICDL) && (slot_found != string::npos)) {
         image_sts.result = true;
       } else {
+        if (board_rev_is_invalid && (slot_found != string::npos)) {
+             cout << "To prevent this update on " << fru_name <<", please use the f/w of "
+             << board_type[board_type_index].c_str() <<" on the " << board_type[board_type_index].c_str() <<" system." << endl;
+             cout << "To force the update, please use the --force option." << endl;
+        }
+
         cout << "image is not a valid CPLD image for " << fru_name << endl;
       }
     } else if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-      if ( (signed_byte == BICBB) && (bmc_found != string::npos) ) {
+      if ( !board_rev_is_invalid && (COMPONENT_ID(signed_byte) == BICBB) && (bmc_found != string::npos) ) {
         image_sts.result = true;
-      } else if ( (signed_byte == BICDL) && (slot_found != string::npos) ) {
+      } else if ( !board_rev_is_invalid && (COMPONENT_ID(signed_byte) == BICDL) && (slot_found != string::npos) ) {
         image_sts.result = true;
       } else {
+        if (board_rev_is_invalid) {
+             cout << "To prevent this update on " << fru_name <<", please use the f/w of "
+             << board_type[board_type_index].c_str() <<" on the " << board_type[board_type_index].c_str() <<" system." << endl;
+             cout << "To force the update, please use the --force option." << endl;
+        }
+
         cout << "image is not a valid CPLD image for " << fru_name << endl;
       }
     }
@@ -205,7 +295,7 @@ int BmcCpldComponent::update_cpld(string image)
   }
 
   if (slot_found != string::npos) {
-    bmc_location_str = "SB";
+    bmc_location_str = fru_name+ " " + "SB";
   }
 
   syslog(LOG_CRIT, "Updating CPLD on %s. File: %s", bmc_location_str.c_str(), image_tmp.c_str());

@@ -33,6 +33,7 @@ struct asic_ops {
   int (*read_mem_temp)(uint8_t, float*);
   int (*read_pwcs)(uint8_t, float*);
   int (*set_power_limit)(uint8_t, unsigned int);
+  int (*get_power_limit)(uint8_t, unsigned int*);
   int (*show_ver)(uint8_t, char*);
 } ops[MFR_MAX_NUM] = {
   [GPU_AMD] = {
@@ -42,6 +43,7 @@ struct asic_ops {
     .read_mem_temp = amd_read_hbm_temp,
     .read_pwcs = amd_read_pwcs,
     .set_power_limit = NULL,
+    .get_power_limit = NULL,
     .show_ver = NULL
   },
   [GPU_NVIDIA] = {
@@ -51,6 +53,7 @@ struct asic_ops {
     .read_mem_temp = nv_read_mem_temp,
     .read_pwcs = nv_read_pwcs,
     .set_power_limit = nv_set_power_limit,
+    .get_power_limit = nv_get_power_limit,
     .show_ver = nv_show_vbios_ver
   }
 };
@@ -165,6 +168,18 @@ int asic_set_power_limit(uint8_t slot, unsigned int value)
     return ASIC_NOTSUP;
 
   return ops[vendor].set_power_limit(slot, value);
+}
+
+int asic_get_power_limit(uint8_t slot, unsigned int *value)
+{
+  uint8_t vendor = asic_get_vendor_id(slot);
+
+  if (vendor == GPU_UNKNOWN)
+    return ASIC_NOTSUP;
+  if (!ops[vendor].get_power_limit)
+    return ASIC_NOTSUP;
+
+  return ops[vendor].get_power_limit(slot, value);
 }
 
 int asic_show_version(uint8_t slot, char *ver)

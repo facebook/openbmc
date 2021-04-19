@@ -17,15 +17,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import ctypes
 import datetime
 import json
 import os.path
 import signal
-import subprocess
 import sys
+import threading
 import time
 import traceback
+from contextlib import contextmanager
 
+import fsc_board
 import fsc_expr
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_callout, board_fan_actions, board_host_actions
@@ -34,6 +37,11 @@ from fsc_sensor import FscSensorSourceUtil
 from fsc_util import Logger, clamp
 from fsc_zone import Fan, Zone, fan_mode
 
+try:
+    libwatchdog = ctypes.CDLL("libwatchdog.so")
+except OSError:
+    # Sometimes libwatchdog is only available as libwatchdog.so.0
+    libwatchdog = ctypes.CDLL("libwatchdog.so.0")
 
 RECORD_DIR = "/tmp/cache_store/"
 SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
@@ -45,31 +53,77 @@ CONFIG_DIR = "/etc/fsc"
 # CONFIG_DIR = '/tmp'
 DEFAULT_INIT_BOOST = 100
 DEFAULT_INIT_TRANSITIONAL = 70
-WDTCLI_CMD = "/usr/local/bin/wdtcli"
+
+
+class LibWatchdogError(Exception):
+    pass
+
+
+@contextmanager
+def _libwatchdog_open_watchdog():
+    """
+    Context manager that opens the watchdog file and automatically
+    releases it on context closes
+    """
+    if libwatchdog.open_watchdog(0, 0) != 0:
+        raise LibWatchdogError("Failed to open watchdog")
+
+    yield
+
+    if libwatchdog.release_watchdog() != 0:
+        raise LibWatchdogError("Failed to release watchdog")
 
 
 def kick_watchdog():
-    """kick the watchdog device.
-    """
-    f = subprocess.Popen(
-        WDTCLI_CMD + " kick", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    info, err = f.communicate()
-    if len(err) != 0:
-        Logger.error("failed to kick watchdog device")
+    """kick the watchdog device."""
+    try:
+        with _libwatchdog_open_watchdog():
+            ret = libwatchdog.kick_watchdog()
+            if ret != 0:
+                raise LibWatchdogError("kick_watchdog() returned " + str(ret))
+
+        Logger.info("Kicked watchdog successfully")
+
+    except LibWatchdogError as e:
+        Logger.error("Failed to kick watchdog: " + repr(e))
+
+
+def start_watchdog():
+    # kick watchdog once and get feedback if something is horribly wrong
+    # before starting the thread
+    kick_watchdog()
+
+    _WATCHDOG_THREAD.start()
 
 
 def stop_watchdog():
-    """kick the watchdog device.
-    """
-    f = subprocess.Popen(
-        WDTCLI_CMD + " stop", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    info, err = f.communicate()
-    if len(err) != 0:
-        Logger.error("failed to stop watchdog device")
-    else:
+    """stop the watchdog device."""
+    Logger.info("Stopping watchdog thread")
+    _WATCHDOG_STOP.set()
+    _WATCHDOG_THREAD.join()
+    Logger.info("Watchdog thread stopped")
+
+    try:
+        with _libwatchdog_open_watchdog():
+            ret = libwatchdog.stop_watchdog()
+            if ret != 0:
+                raise LibWatchdogError("stop_watchdog() returned " + str(ret))
+
         Logger.info("watchdog stopped")
+
+    except LibWatchdogError as e:
+        Logger.error("Failed to stop watchdog: " + repr(e))
+
+
+## Watchdog thread definition, see {start,stop}_watchdog() above
+def _watchdog_thread_f():
+    while not _WATCHDOG_STOP.is_set():
+        kick_watchdog()
+        time.sleep(5)
+
+
+_WATCHDOG_THREAD = threading.Thread(target=_watchdog_thread_f, daemon=True)
+_WATCHDOG_STOP = threading.Event()
 
 
 class Fscd(object):
@@ -102,6 +156,13 @@ class Fscd(object):
         self.fan_limit_upper_pwm = None
         self.fan_limit_lower_pwm = None
         self.sensor_filter_all = False
+        self.sensor_fail_ignore = False
+        self.pwm_sensor_boost_value = None
+        self.output_max_boost_pwm = False
+        if "get_fan_mode" in dir(fsc_board):
+            self.get_fan_mode = True
+        else:
+            self.get_fan_mode = False
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -122,6 +183,7 @@ class Fscd(object):
                 "non_fanfail_limited_boost_value"
             ]
         self.sensor_filter_all = self.fsc_config.get("sensor_filter_all", False)
+        self.sensor_fail_ignore = self.fsc_config.get("sensor_fail_ignore", False)
         if "boost" in self.fsc_config and "fan_fail" in self.fsc_config["boost"]:
             self.fan_fail = self.fsc_config["boost"]["fan_fail"]
         if "boost" in self.fsc_config and "progressive" in self.fsc_config["boost"]:
@@ -130,9 +192,13 @@ class Fscd(object):
         if "fan_dead_boost" in self.fsc_config:
             self.fan_dead_boost = self.fsc_config["fan_dead_boost"]
             self.all_fan_fail_counter = 0
+        if "output_max_boost_pwm" in self.fsc_config:
+            self.output_max_boost_pwm = self.fsc_config["output_max_boost_pwm"]
         if "boost" in self.fsc_config and "sensor_fail" in self.fsc_config["boost"]:
             self.sensor_fail = self.fsc_config["boost"]["sensor_fail"]
             if self.sensor_fail:
+                if "pwm_sensor_boost_value" in self.fsc_config:
+                    self.pwm_sensor_boost_value = self.fsc_config["pwm_sensor_boost_value"]
                 if "fail_sensor_type" in self.fsc_config:
                     self.fail_sensor_type = self.fsc_config["fail_sensor_type"]
                 if "ssd_progressive_algorithm" in self.fsc_config:
@@ -158,7 +224,7 @@ class Fscd(object):
             self.ramp_rate = self.fsc_config["ramp_rate"]
         if self.watchdog:
             Logger.info("watchdog pinging enabled")
-            kick_watchdog()
+            start_watchdog()
         self.interval = self.fsc_config["sample_interval_ms"] / 1000.0
         if "fan_recovery_time" in self.fsc_config:
             self.fan_recovery_time = self.fsc_config["fan_recovery_time"]
@@ -208,6 +274,7 @@ class Fscd(object):
                     self.sensor_valid_check,
                     self.fail_sensor_type,
                     self.ssd_progressive_algorithm,
+                    self.sensor_fail_ignore,
                 )
                 counter += 1
                 self.zones.append(zone)
@@ -256,6 +323,8 @@ class Fscd(object):
                             valid_read_limit = valid_table["limit"]
                             valid_read_action = valid_table["action"]
                             valid_read_th = valid_table["threshold"]
+                            # Use dict.get(key, None) avoid exception when no configuration
+                            valid_fault_tolerant = valid_table.get("fault_tolerant", None)
                             if isinstance(
                                 self.sensors[tuple.name].source, FscSensorSourceUtil
                             ):
@@ -276,6 +345,12 @@ class Fscd(object):
                                             + str(valid_read_limit)
                                             + ") reached"
                                         )
+                                        if valid_fault_tolerant:
+                                            Logger.info(
+                                                "%s without action since fault_tolerant is enabled"
+                                                % (reason)
+                                            )
+                                            continue
                                         self.fsc_host_action(
                                             action=valid_read_action, cause=reason
                                         )
@@ -469,8 +544,6 @@ class Fscd(object):
         """
         last_dead_fans = dead_fans.copy()
         speeds = self.machine.read_fans(self.fans)
-        print("\x1b[2J\x1b[H")
-        sys.stdout.flush()
 
         for fan, rpms in list(speeds.items()):
             Logger.info("%s speed: %d RPM" % (fan.label, rpms))
@@ -495,8 +568,11 @@ class Fscd(object):
                 Logger.usbdbg("%s fail" % (dead_fan.label))
                 fan_fail_record_path = FAN_FAIL_RECORD_DIR + "%s" % (dead_fan.label)
                 if not os.path.isfile(fan_fail_record_path):
-                    fan_fail_record = open(fan_fail_record_path, "w")
-                    fan_fail_record.close()
+                    try:
+                        fan_fail_record = open(fan_fail_record_path, "w")
+                        fan_fail_record.close()
+                    except FileNotFoundError:
+                        Logger.warn("Cannot create failure record for %s" % (dead_fan.label))
         for fan in recovered_fans:
             if self.fanpower:
                 Logger.warn("%s has recovered" % (fan.label,))
@@ -572,6 +648,11 @@ class Fscd(object):
                     sensors=sensors_tuples, ctx=ctx, ignore_mode=ignore_fan_mode
                 )
                 mode = zone.get_set_fan_mode(mode, action="read")
+                # if we set pwm_sensor_boost_value option, assign it to pwmval
+                if self.pwm_sensor_boost_value != None and \
+                    int(mode) == fan_mode["boost_mode"]:
+                    if pwmval == self.boost:
+                        pwmval = self.pwm_sensor_boost_value
             else:
                 pwmval = self.boost
                 mode = fan_mode["boost_mode"]
@@ -590,15 +671,13 @@ class Fscd(object):
                             if dead <= fan_count:
                                 pwmval = clamp(pwmval + (dead * rate), 0, 100)
                                 mode = fan_mode["normal_mode"]
-                                if os.path.isfile(boost_record_path):
-                                    os.remove(boost_record_path)
                                 break
                         else:
                             pwmval = self.boost
                             mode = fan_mode["boost_mode"]
-                            if not os.path.isfile(boost_record_path):
-                                fan_fail_boost_record = open(boost_record_path, "w")
-                                fan_fail_boost_record.close()
+                        if not os.path.isfile(boost_record_path):
+                            fan_fail_boost_record = open(boost_record_path, "w")
+                            fan_fail_boost_record.close()
                     else:
                         if os.path.isfile(boost_record_path):
                             os.remove(boost_record_path)
@@ -609,8 +688,30 @@ class Fscd(object):
                             "Failed fans: %s"
                             % (", ".join([str(i.label) for i in dead_fans]))
                         )
-                        pwmval = self.boost
-                        mode = fan_mode["boost_mode"]
+                        if self.get_fan_mode:
+                            # user define
+                            set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
+                                "one_fan_failure"
+                            )
+                            # choose the higher PWM
+                            pwmval = max(set_fan_pwm, pwmval)
+                            if int(pwmval) == int(set_fan_pwm):
+                                mode = set_fan_mode
+                            else:
+                                pwmval = zone.run(
+                                    sensors=sensors_tuples,
+                                    ctx=ctx, ignore_mode=False
+                                )
+                                mode = zone.get_set_fan_mode(
+                                    mode, action="read"
+                                )
+                        else:
+                            # choose the higher PWM
+                            if self.output_max_boost_pwm:
+                                pwmval = self.boost if pwmval < self.boost else pwmval
+                            else:
+                                pwmval = self.boost
+                            mode = fan_mode["boost_mode"]
                         if not os.path.isfile(boost_record_path):
                             fan_fail_boost_record = open(boost_record_path, "w")
                             fan_fail_boost_record.close()
@@ -732,9 +833,6 @@ class Fscd(object):
             time.sleep(30)
 
         while True:
-            if self.watchdog:
-                kick_watchdog()
-
             time.sleep(self.interval)
 
             if self.fanpower:

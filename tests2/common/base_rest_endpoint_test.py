@@ -19,19 +19,38 @@
 #
 import json
 import os
+import re
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
 
 
 try:
+    from urllib.error import HTTPError
+
     # For Python 3+
     from urllib.request import urlopen
-    from urllib.error import HTTPError
 except ImportError:
+    from urllib2 import HTTPError
+
     # Fall back to Python 2's urllib2
     from urllib2 import urlopen
-    from urllib2 import HTTPError
+
+# Some endpoints may respond with a code != 200 on tests environments
+ALLOWED_NON_OK_RESPONSES = {
+    re.compile("^/api/(sys|spb|iom|sled/mb)/fscd_sensor_data$"): {
+        405  # This endpoint is POST only
+    },
+    re.compile("^/api/(sys|spb|iom|sled/mb)/ntp$"): {
+        # 404 response from this endpoint is normal in lab environments
+        # (as ntp servers may not be available in all lab environments)
+        404,
+    },
+}
+
+
+class BaseRestEndpointException(Exception):
+    pass
 
 
 class BaseRestEndpointTest(object):
@@ -51,20 +70,21 @@ class BaseRestEndpointTest(object):
 
     def get_from_endpoint(self, endpointname=None):
         self.assertNotEqual(endpointname, None, "Endpoint name not set")
-        cmd = BaseRestEndpointTest.CURL_CMD6.format(endpointname)
-        Logger.info("Executing cmd={}".format(cmd))
+        endpoint = BaseRestEndpointTest.CURL_CMD6.format(endpointname)
+        Logger.info("Requesting GET {endpoint}".format(endpoint=endpoint))
         try:
             # Send request to REST service to see if it's alive
-            handle = urlopen(cmd)
+            handle = urlopen(endpoint)
             data = handle.read()
             Logger.info("REST request returned data={}".format(data.decode("utf-8")))
             return data.decode("utf-8")
         except Exception as ex:
-            raise (
-                "Failed to perform REST request for cmd={}, Exception={}".format(
-                    cmd, ex
+            raise BaseRestEndpointException(
+                "Failed to request GET {endpoint}, Exception={ex}".format(
+                    endpoint=endpoint,
+                    ex=repr(ex),
                 )
-            )
+            ) from None
 
     def test_server_httperror_code_404(self):
         """
@@ -86,13 +106,29 @@ class BaseRestEndpointTest(object):
                 cmd = BaseRestEndpointTest.CURL_CMD6.format(new_endpoint)
                 try:
                     handle = urlopen(cmd)
+
                 except HTTPError as err:
-                    if item == "ntp":
-                        self.assertIn(err.code, [200, 404])
-                        return
-                    else:
-                        raise (err)
-                self.assertIn(handle.getcode(), [200, 202])
+                    if not self._is_allowed_non_ok(
+                        http_code=err.code, endpoint=new_endpoint
+                    ):
+                        raise BaseRestEndpointException(
+                            "HTTPError on GET {new_endpoint} : {err}".format(
+                                new_endpoint=new_endpoint, err=repr(err)
+                            )
+                        ) from None
+
+                else:
+                    self.assertIn(
+                        handle.getcode(),
+                        [200, 202],
+                        msg="{} missing resource {}".format(endpointname, item),
+                    )
+
+    def _is_allowed_non_ok(self, http_code, endpoint):
+        for re_endpoint, allowed_codes in ALLOWED_NON_OK_RESPONSES.items():
+            if re_endpoint.match(endpoint) and http_code in allowed_codes:
+                return True
+        return False
 
     def verify_endpoint_attributes(self, endpointname, attributes):
         """
@@ -104,7 +140,11 @@ class BaseRestEndpointTest(object):
         info = self.get_from_endpoint(endpointname)
         for attrib in attributes:
             with self.subTest(attrib=attrib):
-                self.assertIn(attrib, info)
+                self.assertIn(
+                    attrib,
+                    info,
+                    msg="endpoint {} missing attrib {}".format(endpointname, attrib),
+                )
         if "Resources" in info:
             dict_info = json.loads(info)
             self.verify_endpoint_resource(
@@ -161,6 +201,8 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         "open-fds",
         "u-boot version",
         "vboot",
+        "MTD Parts",
+        "Secondary Boot Triggered",
     ]
 
     # /api
@@ -242,13 +284,24 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     # "/api/sys/bmc"
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
-        pass
 
     def test_endpoint_api_sys_bmc(self):
         self.set_endpoint_bmc_attributes()
         self.verify_endpoint_attributes(
             CommonRestEndpointTest.BMC_ENDPOINT, self.endpoint_bmc_attrb
         )
+
+    # /api/sys/bmc - MTD Parts
+    def set_endpoint_mtd_attributes(self):
+        self.endpoint_mtd_attrb = ["u-boot", "env", "fit", "data0", "flash0", "flash1"]
+
+    def test_endpoint_api_sys_bmc_mtd(self):
+        self.set_endpoint_mtd_attributes()
+        info = self.get_from_endpoint(CommonRestEndpointTest.BMC_ENDPOINT)
+        dict_info = json.loads(info)
+        for attrib in self.endpoint_mtd_attrb:
+            with self.subTest(attrib=attrib):
+                self.assertIn(attrib, dict_info["Information"]["MTD Parts"])
 
 
 class FbossRestEndpointTest(CommonRestEndpointTest):

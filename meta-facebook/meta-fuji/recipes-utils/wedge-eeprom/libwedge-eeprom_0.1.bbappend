@@ -15,5 +15,5 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CFLAGS_prepend = "-DFBW_EEPROM_FILE=\\"/sys/bus/i2c/devices/28-0050/eeprom\\" "
+CFLAGS_prepend = "-DFBW_EEPROM_FILE=\\"/sys/bus/i2c/devices/50-0052/eeprom\\" "
 

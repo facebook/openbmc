@@ -33,6 +33,8 @@
 
 #include "gpio_int.h"
 
+#define GPIO_SHADOW_PATH_MAX 128
+
 /*
  * Global variables.
  */
@@ -144,7 +146,7 @@ static int gpio_shadow_to_num(const char *shadow_path)
 {
 	int len, pin_num;
 	char *base_name;
-	char target_path[PATH_MAX];
+	char target_path[GPIO_SHADOW_PATH_MAX];
 
 	len = readlink(shadow_path, target_path, sizeof(target_path));
 	if (len < 0) {
@@ -222,9 +224,14 @@ static gpio_desc_t* gpio_desc_alloc(int pin_num, const char *shadow_path)
 
 	memset(gdesc, 0, sizeof(*gdesc));
 	gdesc->pin_num = pin_num;
-	if (shadow_path != NULL)
+	if (shadow_path != NULL) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
 		strncpy(gdesc->shadow_path, shadow_path,
 			sizeof(gdesc->shadow_path) - 1);
+#pragma GCC diagnostic pop
+	}
 	return gdesc;
 }
 
@@ -242,7 +249,7 @@ int gpio_export_by_name(const char *chip,
 			const char *shadow)
 {
 	int pin_num;
-	char shadow_path[PATH_MAX];
+	char shadow_path[GPIO_SHADOW_PATH_MAX];
 
 	if (chip == NULL || name == NULL || shadow == NULL) {
 		errno = EINVAL;
@@ -272,7 +279,7 @@ int gpio_export_by_offset(const char *chip,
 			  const char *shadow)
 {
 	int pin_num;
-	char shadow_path[PATH_MAX];
+	char shadow_path[GPIO_SHADOW_PATH_MAX];
 
 	if (chip == NULL || offset < 0 || shadow == NULL) {
 		errno = EINVAL;
@@ -300,7 +307,7 @@ int gpio_export_by_offset(const char *chip,
 int gpio_unexport(const char *shadow)
 {
 	int pin_num;
-	char shadow_path[PATH_MAX];
+	char shadow_path[GPIO_SHADOW_PATH_MAX];
 
 	if (shadow == NULL) {
 		errno = EINVAL;
@@ -337,7 +344,7 @@ gpio_desc_t* gpio_open_by_shadow(const char *shadow)
 {
 	int pin_num;
 	gpio_desc_t *gdesc;
-	char shadow_path[PATH_MAX];
+	char shadow_path[GPIO_SHADOW_PATH_MAX];
 
 	gpio_shadow_abspath(shadow_path, sizeof(shadow_path), shadow);
 	if (!path_islink(shadow_path)) {

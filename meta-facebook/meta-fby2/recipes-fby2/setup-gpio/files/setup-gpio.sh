@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /usr/local/bin/setup-gpio
+exec /usr/bin/setup-gpio

@@ -65,4 +65,15 @@ if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
     echo 1 > /sys/devices/platform/ast_adc.0/adc7_en
     echo 1 > /sys/devices/platform/ast_adc.0/adc8_en
     echo 1 > /sys/devices/platform/ast_adc.0/adc9_en
+else
+    #
+    # Increase max127 (6-0028) input channel 6 (+5V voltage) max range
+    # from default 5V to 10V (1000 mv).
+    #
+    max127_hwmon_dir="${SYSFS_I2C_DEVICES}/6-0028/hwmon"
+    hwmon_idx=$(ls "$max127_hwmon_dir")
+    in6_max_path="${max127_hwmon_dir}/${hwmon_idx}/in6_max"
+    if [ -e "$in6_max_path" ]; then
+        echo 10000 > "$in6_max_path"
+    fi
 fi

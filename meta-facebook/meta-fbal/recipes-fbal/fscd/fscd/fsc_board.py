@@ -17,9 +17,10 @@
 #
 from ctypes import CDLL, c_char_p
 from subprocess import PIPE, Popen, check_output
-
 from fsc_util import Logger
-
+import re
+import os
+import kv
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -77,31 +78,34 @@ def bmc_read_power():
     else:
       return 0
 
+def is_dev_prsnt(filename):
+    try:
+        val = kv.kv_get(filename, kv.FPERSIST, True)
+        if val[0] == 1:
+            return 1
+        return 0
 
+    except:
+        return 1
+                              
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
+
     try:
         if attribute["type"] == "power_status":
             # check power status first
             pwr_sts = bmc_read_power()
-            if pwr_sts != 1:
-                return 0
-
-            fru_name = c_char_p(board.encode("utf-8"))
-            snr_name = c_char_p(sname.encode("utf-8"))
-
-            is_snr_valid = lpal_hndl.pal_sensor_is_valid(fru_name, snr_name)
-
-            return int(is_snr_valid)
-
-        elif attribute["type"] == "gpio":
-            cmd = ["gpiocli", "get-value", "--shadow", attribute["shadow"]]
-            data = check_output(cmd).decode().split("=")
-            if int(data[1]) == 0:
+            if pwr_sts == 1:
+                if re.match(r"(.*)dimm(.*)", sname) is not None:
+                    snr_split=sname.split('_')
+                    cpu_num = int(snr_split[4][3])
+                    pos = int(snr_split[6][1])
+                    dimm_num = str(cpu_num*12 + pos*2)
+                    dimm_name = "sys_config/fru1_dimm" + dimm_num + "_location"
+                    return is_dev_prsnt(dimm_name)
                 return 1
-            else:
-                return 0
+            return 0
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")
             return -1

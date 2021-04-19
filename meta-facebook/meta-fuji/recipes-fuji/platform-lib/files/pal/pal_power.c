@@ -84,10 +84,10 @@ int
 pal_set_com_pwr_btn_n(char *status) {
   int ret;
 
-  ret = write_device(SCM_COM_PWR_BTN, status);
+  ret = device_write_buff(SCM_COM_PWR_BTN, status);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_COM_PWR_BTN);
+  syslog(LOG_WARNING, "device_write_buff failed for %s\n", SCM_COM_PWR_BTN);
 #endif
     return -1;
   }
@@ -111,34 +111,54 @@ is_server_on(void) {
 // Power On the server
 static int
 server_power_on(void) {
-  int ret, val;
+  int ret, val, acoff = 0;
 
-  ret = read_device(SCM_COM_PWR_ENBLE, &val);
-  if (ret || val) {
-    if (pal_set_com_pwr_btn_n("1")) {
-      return -1;
-    }
+  /* Check enable SCM power */
+  ret = device_read(SCM_COM_PWR_FORCEOFF, &val);
 
-    if (pal_set_com_pwr_btn_n("0")) {
+  if(ret) {
+    syslog(LOG_WARNING, "%s: Get SCM_COM_PWR_FORCEOFF failed", __func__);
+    return -1;
+  }
+
+  if(!val) {
+    /* Enable SCM_COM_PWR_FORCEOFF */
+    device_write_buff(SCM_COM_PWR_FORCEOFF, "1");
+    /* Wait CPLD & BIC */
+    sleep(5);
+    acoff = 1;
+  }
+
+  /* Check enable SCM power btn */
+  ret = device_read(SCM_COM_PWR_ENBLE, &val);
+
+  if(ret) {
+    syslog(LOG_WARNING, "%s: Get SCM_COM_PWR_ENBLE failed", __func__);
+    return -1;
+  }
+
+  if(!val) {
+    /* Enable SCM_COM_PWR_ENBLE */
+    device_write_buff(SCM_COM_PWR_ENBLE, "1");
+    /* Wait CPLD */
+    sleep(5);
+  }
+
+  /* Push power btn */
+  if(!acoff) {
+    if (pal_set_com_pwr_btn_n("0"))
       return -1;
-    }
+
     sleep(1);
 
-    if (pal_set_com_pwr_btn_n("1")) {
+    if (pal_set_com_pwr_btn_n("1"))
       return -1;
-    }
-    /* Wait for server power good ready */
-    sleep(1);
+  }
 
-    if (!is_server_on()) {
-      return -1;
-    }
-  } else {
-    ret = write_device(SCM_COM_PWR_ENBLE, "1");
-    if (ret) {
-      syslog(LOG_WARNING, "%s: Power on is failed", __func__);
-      return -1;
-    }
+  /* Wait for server power good ready */
+  sleep(1);
+  if (!is_server_on()) {
+    return -1;
   }
 
   return 0;
@@ -154,14 +174,14 @@ server_power_off(bool gs_flag) {
     if (ret) {
       return -1;
     }
-    sleep(DELAY_GRACEFUL_SHUTDOWN);
+    sleep(1);
 
     ret = pal_set_com_pwr_btn_n("1");
     if (ret) {
       return -1;
     }
   } else {
-    ret = write_device(SCM_COM_PWR_ENBLE, "0");
+    ret = device_write_buff(SCM_COM_PWR_FORCEOFF, "0");
     if (ret) {
       syslog(LOG_WARNING, "%s: Power off is failed",__func__);
       return -1;
@@ -171,43 +191,61 @@ server_power_off(bool gs_flag) {
   return 0;
 }
 
+// Power Cycle the server by csm cpld, soft-shutdown & power on
+// Trigger CPLD power cycling the COMe Module, This bit will auto set to 1 after Power Cycle finish by cpld.
+static int
+server_power_cycle(void) {
+  return device_write_buff(SCM_COM_PWR_CYCLE, "0");
+}
+
 int
 pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 
-  int ret;
+  int ret = 0, val = 0;
   char value[MAX_VALUE_LEN];
   bic_gpio_t gpio;
   uint8_t retry = MAX_READ_RETRY;
+  *status = SERVER_POWER_ON;
 
-  /* check if the CPU is turned on or not */
-  while (retry) {
-    ret = bic_get_gpio(IPMB_BUS, &gpio);
-    if (!ret)
-      break;
-    msleep(50);
-    retry--;
-  }
-  if (ret) {
-    // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
-    syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
-        " reading the kv_store for last power state  for fru %d", slot_id);
-    pal_get_last_pwr_state(FRU_SCM, value);
-    if (!(strncmp(value, "off", strlen("off")))) {
-      *status = SERVER_POWER_OFF;
-    } else if (!(strncmp(value, "on", strlen("on")))) {
-      *status = SERVER_POWER_ON;
-    } else {
-      return ret;
-    }
-    return 0;
-  }
+  ret = device_read(SCM_COM_PWR_FORCEOFF, &val);
 
-  if (gpio.pwrgood_cpu) {
-    *status = SERVER_POWER_ON;
-  } else {
+  if(!val){
     *status = SERVER_POWER_OFF;
   }
 
+  ret = ret + device_read(SCM_COM_PWR_ENBLE, &val);
+
+  if(!val){
+    *status = SERVER_POWER_OFF;
+  }
+
+  if(ret)
+    return CC_UNSPECIFIED_ERROR;
+
+  if(*status != SERVER_POWER_OFF){
+
+    /* check if the CPU is turned on or not */
+    while (retry) {
+      ret = bic_get_gpio(IPMB_BUS, &gpio);
+      if (!ret)
+        break;
+      msleep(50);
+      retry--;
+    }
+    if (ret) {
+      // Check for if the BIC is irresponsive due to 12V_OFF or 12V_CYCLE
+      syslog(LOG_INFO, "pal_get_server_power: bic_get_gpio returned error hence"
+          " reading the kv_store for last power state  for fru %d", slot_id);
+      pal_get_last_pwr_state(FRU_SCM, value);
+      if (!(strncmp(value, "off", strlen("off")))) {
+        *status = SERVER_POWER_OFF;
+      }
+    }
+
+    if (!gpio.pwrgood_cpu)
+      *status = SERVER_POWER_OFF;
+
+  }
   return 0;
 }
 
@@ -239,12 +277,8 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-        if (server_power_off(gs_flag))
-          return -1;
 
-        sleep(DELAY_POWER_CYCLE);
-
-        return server_power_on();
+        return server_power_cycle();
 
       } else if (status == SERVER_POWER_OFF) {
 
@@ -325,6 +359,53 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   *data++ = 0x40;   /* Misc. Chassis Status */
   *data++ = 0x00;   /* Front Panel Button Disable */
   *res_len = data - res_data;
+}
+
+int pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len)
+{
+  uint8_t comp_code = CC_SUCCESS, cmd = 0, status = 0;
+
+  if (slot > FRU_SMB) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  if (req_len != 1) {
+    return CC_INVALID_LENGTH;
+  }
+
+  if (pal_get_server_power(FRU_SCM, &status))
+    return CC_UNSPECIFIED_ERROR;
+
+  switch (req_data[0]) {
+    case 0x00:  // power off
+      cmd = SERVER_POWER_OFF;
+      break;
+    case 0x01:  // power on
+      cmd = SERVER_POWER_ON;
+      break;
+    case 0x02:  // power cycle
+      cmd = SERVER_POWER_CYCLE;
+      break;
+    case 0x03:  // power reset
+      cmd = SERVER_POWER_RESET;
+      break;
+    case 0x05:  // graceful-shutdown
+      cmd = SERVER_GRACEFUL_SHUTDOWN;
+      break;
+    default:
+      return CC_INVALID_DATA_FIELD;
+      break;
+  }
+
+  if(status != SERVER_POWER_ON && req_data[0] != 0x01)
+    return CC_NOT_SUPP_IN_CURR_STATE;
+  else if(status == SERVER_POWER_ON && req_data[0] == 0x01)
+    return CC_NOT_SUPP_IN_CURR_STATE;
+
+  if(pal_set_server_power(FRU_SCM, cmd))
+      comp_code = CC_UNSPECIFIED_ERROR;
+
+  return comp_code;
 }
 
 uint8_t

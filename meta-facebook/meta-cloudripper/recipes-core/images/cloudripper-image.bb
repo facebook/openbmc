@@ -24,7 +24,9 @@ IMAGE_INSTALL += " \
   bic-monitor \
   bic-util \
   cpldupdate \
+  cpldupdate-jtag \
   libcpldupdate-dll-ast-jtag \
+  fio \
   flashrom \
   front-paneld \
   fscd \
@@ -33,6 +35,7 @@ IMAGE_INSTALL += " \
   ipmid \
   ipmbd \
   ipmitool \
+  log-util-v2 \
   mdio-util \
   mterm \
   openbmc-utils \

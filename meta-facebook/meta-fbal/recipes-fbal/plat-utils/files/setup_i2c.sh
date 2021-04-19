@@ -21,9 +21,16 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 . /usr/local/bin/openbmc-utils.sh
 
-sku=$(cat /tmp/cache_store/mb_sku)
-rev=$(cat /tmp/cache_store/mb_rev)
+sku=$(kv get mb_sku)
+rev=$(kv get mb_rev)
 
+# retry to probe pxe1110c (pxe1211c).
+# note: still keep pxe1110c in dts, so it's the
+# 1st device to be probed on i2c-1
+if [ ! -L "${SYSFS_I2C_DEVICES}/1-004a/driver" ]; then
+  i2c_bind_driver pxe1211c 1-004a 4 2>/dev/null
+  [ $? -eq 0 ] && echo "rebind 1-004a to driver pxe1211c successfully"
+fi
 
 #DVT SKU_ID[2:1] = 00(TI), 01(INFINEON), TODO: 10(3rd Source)
 sku=$((sku & 0x2))
@@ -60,7 +67,7 @@ fi
 
 if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" == "0" ]; then
   i2c_device_add 18 0x52 24c32
-  if [ "$(cat /mnt/data/kv_store/eth1_disable_ipv6 2>/dev/null)" != "0" ]; then
+  if [ "$(kv get eth1_disable_ipv6 persistent 2>/dev/null)" != "0" ]; then
     echo 1 > /proc/sys/net/ipv6/conf/eth1/disable_ipv6
   fi
   ifconfig eth1 up

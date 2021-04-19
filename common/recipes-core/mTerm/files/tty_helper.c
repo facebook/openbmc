@@ -19,6 +19,8 @@
 #include "tty_helper.h"
 #include <syslog.h>
 
+speed_t baudrate;
+
 void writeData(int file, char* buf, int len, char* fname) {
   int wlen = 0;
   char* tbuf = buf;

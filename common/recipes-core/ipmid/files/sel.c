@@ -103,7 +103,7 @@ file_get_sel_hdr(int node) {
     return -1;
   }
 
-  if (fread(&g_sel_hdr[node], sizeof(sel_hdr_t), 1, fp) <= 0) {
+  if (fread(&g_sel_hdr[node], sizeof(sel_hdr_t), 1, fp) == 0) {
     syslog(LOG_WARNING, "file_get_sel_hdr: fread\n");
     fclose (fp);
     return -1;
@@ -134,7 +134,7 @@ file_get_sel_data(int node) {
   }
 
   unsigned char buf[SEL_ELEMS_MAX * 16];
-  if (fread(buf, 1, SEL_ELEMS_MAX * sizeof(sel_msg_t), fp) <= 0) {
+  if (fread(buf, 1, SEL_ELEMS_MAX * sizeof(sel_msg_t), fp) == 0) {
     syslog(LOG_WARNING, "file_get_sel_data: fread\n");
     fclose(fp);
     return -1;
@@ -164,7 +164,7 @@ file_store_sel_hdr(int node) {
     return -1;
   }
 
-  if (fwrite(&g_sel_hdr[node], sizeof(sel_hdr_t), 1, fp) <= 0) {
+  if (fwrite(&g_sel_hdr[node], sizeof(sel_hdr_t), 1, fp) == 0) {
     syslog(LOG_WARNING, "file_store_sel_hdr: fwrite\n");
     fclose(fp);
     return -1;
@@ -198,7 +198,7 @@ file_store_sel_data(int node, int recId, sel_msg_t *data) {
     return -1;
   }
 
-  if (fwrite(data->msg, sizeof(sel_msg_t), 1, fp) <= 0) {
+  if (fwrite(data->msg, sizeof(sel_msg_t), 1, fp) == 0) {
     syslog(LOG_WARNING, "file_store_sel_data: fwrite\n");
     fclose(fp);
     return -1;
@@ -250,7 +250,7 @@ parse_ras_sel(uint8_t fru, ras_sel_msg_t *data) {
   /* Manufacturer ID (byte 2:0) */
   sprintf(mfg_id, "%02x%02x%02x", sel[2], sel[1], sel[0]);
 
-  /* Command-specific (byte 3:34) */ 
+  /* Command-specific (byte 3:34) */
   pal_parse_ras_sel(fru, &sel[3], error_log);
 
   syslog(LOG_CRIT, "SEL Entry: FRU: %d, MFG ID: %s, "
@@ -333,7 +333,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
 
     /* Sensor num (Byte 11) */
     sensor_num = (uint8_t) sel[11];
-    ret = pal_get_event_sensor_name(fru, sel, sensor_name);
+    pal_get_event_sensor_name(fru, sel, sensor_name);
 
     /* Event Data (Byte 13:15) */
     ret = pal_parse_sel(fru, sel, error_log);
@@ -353,7 +353,7 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
   } else if (record_type < 0xE0) {
     /* timestamped OEM SEL records */
 
-    ret = pal_parse_oem_sel(fru, sel, error_log);
+    pal_parse_oem_sel(fru, sel, error_log);
 
     /* Manufacturer ID (byte 9:7) */
     sprintf(mfg_id, "%02x%02x%02x", sel[9], sel[8], sel[7]);
@@ -375,15 +375,15 @@ parse_sel(uint8_t fru, sel_msg_t *data) {
     if ( record_type == 0xFB )
     {
       time_stamp_fill(&sel[4]);
-      ret = pal_parse_oem_unified_sel(fru, sel, error_log);
+      pal_parse_oem_unified_sel(fru, sel, error_log);
       syslog(LOG_CRIT, "SEL Entry: FRU: %d, Record: %s (0x%02X), %s", fru, error_type, record_type, error_log);
       general_info = (uint8_t) sel[3];
-      ret = pal_oem_unified_sel_handler(fru, general_info, sel);
+      pal_oem_unified_sel_handler(fru, general_info, sel);
     }
     else
     {
 
-      ret = pal_parse_oem_sel(fru, sel, error_log);
+      pal_parse_oem_sel(fru, sel, error_log);
       /* OEM Data (Byte 3:15) */
       sprintf(oem_data, "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X", sel[3], sel[4], sel[5],
           sel[6], sel[7], sel[8], sel[9], sel[10], sel[11], sel[12], sel[13], sel[14], sel[15]);

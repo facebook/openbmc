@@ -31,11 +31,14 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openbmc/obmc-i2c.h>
 #include "bic_fwupdate.h"
 #include "bic_cpld_altera_fwupdate.h"
 #include "bic_cpld_lattice_fwupdate.h"
 #include "bic_vr_fwupdate.h"
 #include "bic_bios_fwupdate.h"
+#include "bic_mchp_pciesw_fwupdate.h"
+#include "bic_m2_fwupdate.h"
 //#define DEBUG
 
 /****************************/
@@ -54,6 +57,9 @@
 #define BIC_CMD_DATA_SIZE 0xFF
 
 #define BIC_FLASH_START 0x8000
+
+#define FW_UPDATE_FAN_PWM  70
+#define FAN_PWM_CNT        4
 
 enum {
   FEXP_BIC_I2C_WRITE   = 0x20,
@@ -482,7 +488,6 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
 
   //step1 -get the bus number and open the dev of i2c
   bus_num = fby3_common_get_bus_id(slot_id);
-  syslog(LOG_CRIT, "%s: update bic firmware on slot %d\n", __func__, slot_id);
 
   i2cfd = i2c_open(bus_num, BRIDGE_SLAVE_ADDR);
   if ( i2cfd < 0 ) {
@@ -600,7 +605,7 @@ exit:
       return BIC_STATUS_FAILURE;
   }
 
-  syslog(LOG_CRIT, "%s: updating bic firmware is exiting on slot %d\n", __func__, slot_id);
+  sleep(3);
 
   if ( i2cfd > 0 ) {
     close(i2cfd);
@@ -612,13 +617,28 @@ exit:
 
 static int
 update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
-  int ret;
+  int ret = 0;
   uint8_t is_fail = 0;
   const uint8_t bytes_per_read = 244;
   uint8_t bic_read   = 0xff;
   uint8_t bic_write  = 0xff;
   uint8_t bic_update = 0xff;
   uint8_t bic_i2c    = 0xff;
+  uint8_t bmc_location = 0;
+
+  if (fby3_common_get_bmc_location(&bmc_location) != 0) {
+    printf("Cannot get the location of BMC");
+    return -1;
+  }
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_check_bb_fw_update_ongoing() != 0) {
+      return -1;
+    }
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_ASSERT) != 0) {
+      printf("Failed to set firmware update ongoing\n");
+      return -1;
+    }
+  }
 
   switch (intf) {
     case FEXP_BIC_INTF:
@@ -661,7 +681,7 @@ update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
   }
 
   //wait for it ready
-  sleep(3);
+  sleep(5);
 
   //step3 - send a signal to notice it that starts the update process
   ret = send_start_bic_update(slot_id, 0, file_size, bic_write);
@@ -710,22 +730,13 @@ exit:
     syslog(LOG_WARNING, "Set the speed of the remote bic to 1M, Fail, ret = %d\n", ret);
   }
 
-  if ( ret == 0 ) ret = is_fail;
-
-  return ret;
-}
-
-static int
-is_valid_intf(uint8_t intf) {
-  int ret = BIC_STATUS_FAILURE;
-  switch(intf) {
-    case FEXP_BIC_INTF:
-    case BB_BIC_INTF:
-    case REXP_BIC_INTF:
-    case NONE_INTF:
-      ret = BIC_STATUS_SUCCESS;
-      break;
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_DEASSERT) != 0) {
+      syslog(LOG_WARNING, "Failed to notify BB firmware complete");
+    }
   }
+
+  if ( ret == 0 ) ret = is_fail;
 
   return ret;
 }
@@ -737,16 +748,22 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
 #define BICBL_OFFSET 0x3f00
 #define BICBR_OFFSET 0x8000
 
-#define REVISION_ID(x) ((x >> 4) & 0x0f)
-#define COMPONENT_ID(x) (x & 0x0f)
-
   int ret = BIC_STATUS_FAILURE;
   uint8_t rbuf[2] = {0};
+  uint8_t signed_bytes[2] = {0};
   uint8_t rlen = sizeof(rbuf);
   uint8_t sel_comp = 0xff;
   uint8_t sel_tag = 0xff;
   uint32_t sel_offset = 0xffffffff;
   uint8_t board_type = 0;
+  uint8_t board_revision_id = 0xff;
+  int i2cfd = 0;
+  uint8_t tbuf[4] = {0};
+  uint8_t tlen = 0;
+  int ret_val = 0 , retry = 0;
+  int board_type_index = 0;
+  bool board_rev_is_invalid = false;
+  bool check_board_revision = true;
 
   switch (comp) {
     case UPDATE_BIC:
@@ -761,12 +778,19 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
 
   switch (intf) {
     case FEXP_BIC_INTF:
-      sel_comp = BIC1OU;
+      check_board_revision = false;
+      bic_get_1ou_type(slot_id, &board_type);
+      if (board_type == EDSFF_1U) {
+        sel_comp = BIC1OU_E1S;
+      } else {
+        sel_comp = BIC1OU;
+      }
       break;
     case BB_BIC_INTF:
       sel_comp = BICBB;
       break;
     case REXP_BIC_INTF:
+      check_board_revision = false;
       if ( fby3_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
         syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
         goto error_exit;
@@ -788,12 +812,97 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
     goto error_exit;
   }
 
+  rlen = sizeof(rbuf);
   if ( read(fd, rbuf, rlen) != (off_t)rlen ) {
     goto error_exit;
   }
+  memcpy(signed_bytes, rbuf, sizeof(signed_bytes));
 
-  if ( rbuf[0] != sel_tag || COMPONENT_ID(rbuf[1]) != COMPONENT_ID(sel_comp) ) {
+  if ( signed_bytes[0] != sel_tag || COMPONENT_ID(signed_bytes[1]) != COMPONENT_ID(sel_comp) ) {
     goto error_exit;
+  }
+
+  if (check_board_revision) {
+    switch (intf) {
+      /* need to Get the corresponding Board Revision */
+      case BB_BIC_INTF:
+        // Read Board Revision from BB CPLD
+        tbuf[0] = CPLD_BB_BUS;
+        tbuf[1] = CPLD_FLAG_REG_ADDR;
+        tbuf[2] = 0x01;
+        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 4;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+
+        board_revision_id = rbuf[0];
+        break;
+      case NONE_INTF:
+        // Read Board Revision from SB CPLD
+        i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+        if ( i2cfd < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+          goto error_exit;
+        }
+
+        tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 1;
+        rlen = 1;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+        board_revision_id = rbuf[0];
+        break;
+      case FEXP_BIC_INTF:
+      case REXP_BIC_INTF:
+        //TBD : get the Board Revision of expansion board ?
+        break;
+    }
+
+    board_type_index = board_revision_id - 1;
+    if (board_type_index < 0) {
+      board_type_index = 0;
+    }
+    // PVT & MP firmware could be used in common
+    if (board_type_index < CPLD_BOARD_PVT_REV) {
+      if (REVISION_ID(signed_bytes[1]) != board_type_index) {
+        board_rev_is_invalid = true;
+      }
+    } else {
+      if (REVISION_ID(signed_bytes[1]) < CPLD_BOARD_PVT_REV) {
+        board_rev_is_invalid = true;
+      }
+    }
+
+    if ( board_rev_is_invalid) {
+      printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
+                    slot_id, board_stage[board_type_index], board_stage[board_type_index]);
+      printf("To force the update, please use the --force option.\n");
+      goto error_exit;
+    }
   }
 
   ret = BIC_STATUS_SUCCESS;
@@ -807,33 +916,10 @@ error_exit:
 }
 
 static int
-open_and_get_size(char *path, int *file_size) {
-  struct stat finfo;
-  int fd;
-
-  fd = open(path, O_RDONLY, 0666);
-  if ( fd < 0 ) {
-    return fd;
-  }
-
-  fstat(fd, &finfo);
-  *file_size = finfo.st_size;
-
-  return fd;
-}
-
-static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
-  int ret = -1;
+  int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size;
-
-  //check params
-  ret = is_valid_intf(intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() invalid intf(val=0x%x) was caught!\n", __func__, intf);
-    goto exit;
-  }
 
   //get fd and file size
   fd = open_and_get_size(path, &file_size);
@@ -845,9 +931,8 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
 
   //check the content of the image
-  if( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
+  if ( !force && ( is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
     printf("Invalid BIC file!\n");
-    ret = -1;
     goto exit;
   }
 
@@ -872,40 +957,8 @@ exit:
   return ret;
 }
 
-static int
-send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t offset, uint16_t len, uint8_t *buf)
-{
-  uint8_t tbuf[256] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-  int retries = 3;
-
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-  tbuf[3] = comp;
-  tbuf[4] = (offset) & 0xFF;
-  tbuf[5] = (offset >>  8) & 0xFF;
-  tbuf[6] = (offset >> 16) & 0xFF;
-  tbuf[7] = (offset >> 24) & 0xFF;
-  tbuf[8] = len & 0xFF;
-  tbuf[9] = (len >> 8) & 0xFF;
-  memcpy(&tbuf[10], buf, len);
-  tlen = len + 10;
-
-  do {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
-    if (ret != BIC_STATUS_SUCCESS) {
-      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
-        return ret;
-      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
-    }
-  } while( (ret < 0) && (retries--));
-
-  return ret;
-}
-
 #define IPMB_MAX_SEND 224
+#define IPMB_BIC_RETRY 3
 static int
 update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size) {
   const uint8_t bytes_per_read = IPMB_MAX_SEND;
@@ -915,7 +968,24 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
   uint32_t offset = 0;
   uint32_t last_offset = 0;
   uint32_t dsize = 0;
-  int ret = -1;
+  int ret = -1, retry = IPMB_BIC_RETRY;
+  uint8_t self_test_result[2] = {0};
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_check_bb_fw_update_ongoing() != 0) {
+      return -1;
+    }
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC_BOOTLOADER, SEL_ASSERT) != 0) {
+      printf("Failed to set firmware update ongoing\n");
+      return -1;
+    }
+  }
 
   dsize = file_size / 20;
 
@@ -936,7 +1006,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
     if ((offset + read_bytes) >= file_size) {
       comp |= 0x80;
     }
-    ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, buf);
+    ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, 0x0, buf);
     if (ret != BIC_STATUS_SUCCESS)
       break;
 
@@ -947,13 +1017,33 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
       last_offset += dsize;
     }
   }
+
+  // Wait for warm reset finished
+  sleep(3);
+  while (retry > 0){
+    sleep(1);
+    ret = bic_get_self_test_result(slot_id, (uint8_t *)&self_test_result, NONE_INTF);
+    if (ret == 0) {
+      break;
+    } else {
+      retry--;
+    }
+  }
+
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC_BOOTLOADER, SEL_DEASSERT) != 0) {
+      printf("Failed to notify firmware update finish\n");
+      ret = -1;
+    }
+  }
+
   return ret;
 }
 
 static int
 update_bic_bootloader_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
   int fd = 0;
-  int ret = 0;
+  int ret = BIC_STATUS_FAILURE;
   int file_size = 0;
 
   fd = open_and_get_size(path, &file_size);
@@ -965,8 +1055,7 @@ update_bic_bootloader_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path
   printf("file size = %d bytes, slot = %d, comp = 0x%x\n", file_size, slot_id, comp);
 
   //check the content of the image
-  ret = is_valid_bic_image(slot_id, comp, intf, fd, file_size);
-  if (ret < 0) {
+  if ( !force && (is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
     printf("Invalid BIC bootloader file!\n");
     goto exit;
   }
@@ -978,6 +1067,24 @@ exit:
     close(fd);
   }
 
+  return ret;
+}
+
+static int
+stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
+  int ret = 0;
+  printf("* Turning off BIC sensor monitor...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
+  sleep(2);
+  return ret;
+}
+
+static int
+start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
+  int ret = 0;
+  printf("* Turning on BIC sensor monitor...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
+  sleep(2);
   return ret;
 }
 
@@ -1020,6 +1127,42 @@ get_component_name(uint8_t comp) {
       return "CPLD Capsule, Target to Active Region";
     case FW_CPLD_RCVY_CAPSULE:
       return "CPLD Capsule, Target to Recovery Region";
+    case FW_2OU_PESW:
+      return "2OU PCIe Switch";
+    case FW_2OU_PESW_VR:
+      return "2OU PCIe VR";
+    case FW_2OU_3V3_VR1:
+      return "VR_P3V3_STBY1";
+    case FW_2OU_3V3_VR2:
+      return "VR_P3V3_STBY2";
+    case FW_2OU_3V3_VR3:
+      return "VR_P3V3_STBY3";
+    case FW_2OU_1V8_VR:
+      return "VR_P1V8";
+    case FW_2OU_M2_DEV0:
+      return "2OU M2 Dev0";
+    case FW_2OU_M2_DEV1:
+      return "2OU M2 Dev1";
+    case FW_2OU_M2_DEV2:
+      return "2OU M2 Dev2";
+    case FW_2OU_M2_DEV3:
+      return "2OU M2 Dev3";
+    case FW_2OU_M2_DEV4:
+      return "2OU M2 Dev4";
+    case FW_2OU_M2_DEV5:
+      return "2OU M2 Dev5";
+    case FW_2OU_M2_DEV6:
+      return "2OU M2 Dev6";
+    case FW_2OU_M2_DEV7:
+      return "2OU M2 Dev7";
+    case FW_2OU_M2_DEV8:
+      return "2OU M2 Dev8";
+    case FW_2OU_M2_DEV9:
+      return "2OU M2 Dev9";
+    case FW_2OU_M2_DEV10:
+      return "2OU M2 Dev10";
+    case FW_2OU_M2_DEV11:
+      return "2OU M2 Dev11";
     default:
       return "Unknown";
   }
@@ -1027,15 +1170,49 @@ get_component_name(uint8_t comp) {
   return "NULL";
 }
 
-int
-bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+static int
+bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
-  char* loc = strstr(path, ipmb_content);
+  char* loc = NULL;
+  bool stop_bic_monitoring = false;
+  bool stop_fscd_service = false;
+  uint8_t bmc_location = 0;
+  uint8_t status = 0;
+  int i = 0;
+  char fdstr[32] = {0};
+  bool fd_opened = false;
 
-  printf("slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
+  if (path == NULL) {
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Update aborted due to NULL pointer: *path", __func__);
+      return -1;
+    }
+    snprintf(fdstr, sizeof(fdstr) - 1, "<%d>", fd);
+    path = fdstr;
+  } else {
+    fd = open(path, O_RDONLY, 0);
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Unable to open %s: %d", __func__, path, errno);
+      return -1;
+    }
+    fd_opened = true;
+  }
+
+  loc = strstr(path, ipmb_content);
+
+
+  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
   syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, path);
+
+  uint8_t board_type = 0;
+  if ( fby3_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
+    syslog(LOG_WARNING, "Failed to get 2ou board type\n");
+  } else if ( board_type == GPV3_MCHP_BOARD ||
+              board_type == GPV3_BRCM_BOARD ) {
+    stop_bic_monitoring = true;
+  }
 
   //get the intf
   switch (comp) {
@@ -1043,6 +1220,7 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_ME:
     case FW_BIC:
     case FW_BIC_BOOTLOADER:
+    case FW_VR:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
@@ -1053,6 +1231,24 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
+    case FW_2OU_PESW:
+    case FW_2OU_PESW_VR:
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+    case FW_2OU_M2_DEV0:
+    case FW_2OU_M2_DEV1:
+    case FW_2OU_M2_DEV2:
+    case FW_2OU_M2_DEV3:
+    case FW_2OU_M2_DEV4:
+    case FW_2OU_M2_DEV5:
+    case FW_2OU_M2_DEV6:
+    case FW_2OU_M2_DEV7:
+    case FW_2OU_M2_DEV8:
+    case FW_2OU_M2_DEV9:
+    case FW_2OU_M2_DEV10:
+    case FW_2OU_M2_DEV11:
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
@@ -1060,6 +1256,45 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     case FW_BB_CPLD:
       intf = BB_BIC_INTF;
       break;
+  }
+
+  // stop fscd in class 2 system when update firmware through SB BIC to avoid IPMB busy
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+  }
+
+  // when fw update is ongoing, fscd fails to get/set the fan speed,
+  // As a result, we need to stop running it during the fw update process
+  // Or it may issue false alarm fan dead events
+  if (bmc_location == NIC_BMC) {
+    stop_fscd_service = true;
+  }
+
+  if (stop_fscd_service == true) {
+    printf("Set fan mode to manual and set PWM to %d%%\n", FW_UPDATE_FAN_PWM);
+    if (fby3_common_fscd_ctrl(FAN_MANUAL_MODE) < 0) {
+      printf("Failed to stop fscd service\n");
+      ret = -1;
+      goto err_exit;
+    }
+    if (bic_set_fan_auto_mode(FAN_MANUAL_MODE, &status) < 0) {
+      printf("Failed to set fan mode to auto\n");
+      ret = -1;
+      goto err_exit;
+    }
+    if (bic_notify_fan_mode(FAN_MANUAL_MODE) < 0) {
+      printf("Failed to notify another BMC to set fan manual mode\n");
+      ret = -1;
+      goto err_exit;
+    }
+    for (i = 0; i < FAN_PWM_CNT; i++) {
+      if (bic_manual_set_fan_speed(i, FW_UPDATE_FAN_PWM) < 0) {
+        printf("Failed to set fan %d PWM to %d\n", i, FW_UPDATE_FAN_PWM);
+        ret = -1;
+        goto err_exit;
+      }
+    }
   }
 
   //run cmd
@@ -1078,10 +1313,20 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       break;
     case FW_1OU_CPLD:
     case FW_2OU_CPLD:
-      if (loc != NULL) {
-        ret = update_bic_cpld_lattice(slot_id, path, intf, force);
-      } else {
-        ret = update_bic_cpld_lattice_usb(slot_id, path, intf, force);
+      if ( stop_bic_monitoring == true && (ret = stop_bic_sensor_monitor(slot_id, intf)) < 0 ) {
+        printf("* Failed to stop bic sensor monitor\n");
+        break;
+      }
+
+      ret = (loc != NULL)?update_bic_cpld_lattice(slot_id, path, intf, force): \
+                          update_bic_cpld_lattice_usb(slot_id, path, intf, force);
+
+      //check ret first and then check stop_bic_monitoring flag
+      //run start_bic_sensor_monitor() and assgin a new val to ret in the end
+      if ( (ret == BIC_STATUS_SUCCESS) && (stop_bic_monitoring == true) && \
+           (ret = start_bic_sensor_monitor(slot_id, intf)) < 0 ) {
+        printf("* Failed to start bic sensor monitor\n");
+        break;
       }
       break;
     case FW_BB_CPLD:
@@ -1096,14 +1341,93 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       if (loc != NULL) {
         ret = update_bic_bios(slot_id, comp, path, FORCE_UPDATE_SET);
       } else {
-        ret = update_bic_usb_bios(slot_id, comp, path);
+        ret = update_bic_usb_bios(slot_id, comp, fd);
       }
       break;
     case FW_VR:
-      ret = update_bic_vr(slot_id, path, force);
+      ret = update_bic_vr(slot_id, comp, path, intf, force, false/*usb update?*/);
+      break;
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+      ret = update_bic_vr(slot_id, comp, path, intf, force, true/*usb update*/);
+      break;
+    case FW_2OU_PESW_VR:
+      ret = (loc != NULL)?update_bic_vr(slot_id, comp, path, intf, force, false/*usb update*/): \
+                          update_bic_vr(slot_id, comp, path, intf, force, true/*usb update*/);
+      break;
+    case FW_2OU_PESW:
+      if (board_type == GPV3_BRCM_BOARD) {
+        ret = BIC_STATUS_FAILURE; /*not supported*/
+      } else {
+        ret = update_bic_mchp(slot_id, comp, path, intf, force, (loc != NULL)?false:true);
+      }
+      break;
+    case FW_2OU_M2_DEV0:
+    case FW_2OU_M2_DEV1:
+    case FW_2OU_M2_DEV2:
+    case FW_2OU_M2_DEV3:
+    case FW_2OU_M2_DEV4:
+    case FW_2OU_M2_DEV5:
+    case FW_2OU_M2_DEV6:
+    case FW_2OU_M2_DEV7:
+    case FW_2OU_M2_DEV8:
+    case FW_2OU_M2_DEV9:
+    case FW_2OU_M2_DEV10:
+    case FW_2OU_M2_DEV11:
+      if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
+        printf("* Failed to stop bic sensor monitor\n");
+        break;
+      }
+      uint8_t nvme_ready = 0, status = 0, type = 0;
+      ret = bic_get_dev_info(slot_id, (comp - FW_2OU_M2_DEV0) + 1, &nvme_ready ,&status, &type);
+      if (ret) {
+        printf("* Failed to read m.2 device's info\n");
+        ret = BIC_STATUS_FAILURE;
+        break;
+      } else {
+        ret = update_bic_m2_fw(slot_id, comp, path, intf, force, type);
+      }
+      //run it anyway
+      if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
+        printf("* Failed to start bic sensor monitor\n");
+        ret = BIC_STATUS_FAILURE;
+        break;
+      }
       break;
   }
+  if (stop_fscd_service == true) {
+    printf("Set fan mode to auto and start fscd\n");
+    if (bic_set_fan_auto_mode(FAN_AUTO_MODE, &status) < 0) {
+      printf("Failed to set fan mode to auto\n");
+      ret = -1;
+      goto err_exit;
+    }
+    if (bic_notify_fan_mode(FAN_AUTO_MODE) < 0) {
+      printf("Failed to notify another BMC to set fan manual mode\n");
+      ret = -1;
+      goto err_exit;
+    }
+    if (fby3_common_fscd_ctrl(FAN_AUTO_MODE) < 0) {
+       printf("Failed to start fscd service, please start fscd manually.\nCommand: sv start fscd\n");
+    }
+  }
 
-  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret < 0)?"Fail":"Success");
+err_exit:
+  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
+  if (fd_opened) {
+    close(fd);
+  }
   return ret;
+}
+
+int
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+  return bic_update_fw_path_or_fd(slot_id, comp, path, -1, force);
+}
+
+int
+bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
+  return bic_update_fw_path_or_fd(slot_id, comp, NULL, fd, force);
 }

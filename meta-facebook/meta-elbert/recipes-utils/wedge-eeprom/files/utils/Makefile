@@ -17,8 +17,8 @@
 
 utils: weutil
 
-weutil: elbert_weutil.o elbert_eeprom.o
-	$(CC) -o $@ $^ -lwedge_eeprom $(LDFLAGS)
+weutil: elbert_weutil.o
+	$(CC) -o $@ $^ -lwedge_eeprom -lelbert_eeprom $(LDFLAGS)
 
 .PHONY: clean
 

@@ -138,6 +138,23 @@ do_config_reset_duration() {
     fi
 }
 
+do_sync() {
+   # Try to flush all data to MMC and remount the drive read-only. Sync again
+   # because the remount is asynchronous.
+   partition="/dev/mmcblk0"
+   mountpoint="/mnt/data1"
+
+   sync
+   # rsyslogd logs to eMMC, so we must stop it prior to remouting.
+   kill -TERM "$(cat /var/run/rsyslogd.pid)"
+   sleep .05
+   if [ -e $mountpoint ]; then
+      retry_command 5 mount -o remount,ro $partition $mountpoint
+      sleep 1
+   fi
+   sync
+}
+
 do_reset() {
     local system opt
     system=0
@@ -162,7 +179,9 @@ do_reset() {
         if [ $timer -eq 1 ]; then
             do_config_reset_duration "$duration"
         fi
+        # Log before do_sync since do_sync kills logging.
         logger "Power reset the whole system ..."
+        do_sync
         echo -n "Power reset the whole system ..."
         sleep 1
         echo 0xde > "$PWR_SYSTEM_SYSFS"
@@ -208,8 +227,7 @@ toggle_pim_reset() {
     # Re-initialize reset pims
     for slot in 2 3 4 5 6 7 8 9; do
         if [ "$pim" -eq 0 ] || [ "$slot" -eq "$pim" ]; then
-            pim_prsnt="$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$slot"_present)"
-            if [ "$pim_prsnt" == '0x1' ]; then
+            if wedge_is_pim_present "$slot"; then
                 power_on_pim "$slot"
             fi
         fi

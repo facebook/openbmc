@@ -100,7 +100,7 @@ case "$sku_type" in
      case "$server_type" in
        "0")
          echo "Run FSC 4 TLs Config"
-         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
        ;;
        "4369")
          echo "Run FSC 4 RCs Config"
@@ -112,14 +112,14 @@ case "$sku_type" in
        ;;
        "17476")
          echo "Run FSC 4 NDs Config"
-         cp /etc/FSC_FBND_DVT_4ND_config.json ${default_fsc_config_path}
+         cp /etc/FSC_NORTHDOME_EVT_4ND_config.json ${default_fsc_config_path}
          if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
             cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
          fi
        ;;
        *)
          echo "Unexpected 4 Servers config! Run FSC 4 TLs Config as default config"
-         cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+         cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
        ;;
      esac
    ;;
@@ -135,7 +135,7 @@ case "$sku_type" in
        cp /etc/FSC_FBEP_DVT_2GP_2EP_config.json ${default_fsc_config_path}
      elif [[ $(get_server_type 2) == "4" && $(get_server_type 4) == "4" ]] ; then
        echo "Run FSC 4 NDs Config"
-       cp /etc/FSC_FBND_DVT_4ND_config.json ${default_fsc_config_path}
+       cp /etc/FSC_NORTHDOME_EVT_4ND_config.json ${default_fsc_config_path}
        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
          cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
        fi
@@ -156,7 +156,7 @@ case "$sku_type" in
        cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
      elif [[ $(get_server_type 2) == "4" && $(get_server_type 4) == "4" ]] ; then
        echo "Run FSC 4 NDs Config"
-       cp /etc/FSC_FBND_DVT_4ND_config.json ${default_fsc_config_path}
+       cp /etc/FSC_NORTHDOME_EVT_4ND_config.json ${default_fsc_config_path}
        if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
          cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
        fi
@@ -189,13 +189,13 @@ case "$sku_type" in
         cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
       elif [ "$server_type_tmp" == "4" ] ; then
         echo "Unexpected sku type! Use FSC 4 NDs Config as default config"
-        cp /etc/FSC_FBND_DVT_4ND_config.json ${default_fsc_config_path}
+        cp /etc/FSC_NORTHDOME_EVT_4ND_config.json ${default_fsc_config_path}
         if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
           cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
         fi
       else
         echo "Unexpected sku type! Use FSC 4 TLs Config as default config"
-        cp /etc/FSC_FBY2_PVT_4TL_config.json ${default_fsc_config_path}
+        cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
       fi
      fi
    ;;
@@ -236,9 +236,9 @@ if [ "$has_gpv2" == "1" ] ; then
     echo "Run FSC for BRCM Accelerator"
     logger -p user.info "Run FSC for BRCM Accelerator"
     if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
-      cp /etc/FSC_FBGPV2_BRCM_DVT_config.json ${default_fsc_config_path}
+      cp /etc/FSC_FBGPV2_BRCM_PVT_config.json ${default_fsc_config_path}
     else
-      cp /etc/FSC_FBGPV2_BRCM_10KFAN_DVT_config.json ${default_fsc_config_path}
+      cp /etc/FSC_FBGPV2_BRCM_10KFAN_PVT_config.json ${default_fsc_config_path}
     fi
   else
     echo "Run default FSC for M.2 devices"

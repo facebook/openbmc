@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import ipaddress
 import unittest
 
 from common.base_slaac_test import BaseSlaacTest
@@ -30,8 +31,10 @@ class InterfaceTest(BaseSlaacTest, unittest.TestCase):
         """
         self.set_ifname("eth0")
         Logger.log_testname(name=self._testMethodName)
+        addr = ipaddress.ip_address(self.get_ipv6_address())
+        haystack = addr.exploded.replace(":", "")
         self.assertIn(
             self.generate_modified_eui_64_mac_address(),
-            self.get_ipv6_address().replace(":", ""),
+            haystack,
             "SLAAC IP doesn't found",
         )

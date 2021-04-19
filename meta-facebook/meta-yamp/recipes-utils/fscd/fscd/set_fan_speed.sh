@@ -21,9 +21,9 @@
 # YAMP fan set utility for fscd.
 
 usage() {
-  echo "Usage: $0 <PWM_PERCENT> [FAN_TRAY] " 
-  echo "<PWM_PERCENT> : From 0 to 100 " 
-  echo "[FAN_TRAY] : 1, 2, 3, 4 or 5." 
+  echo "Usage: $0 <PWM_PERCENT> [FAN_TRAY] "
+  echo "<PWM_PERCENT> : From 0 to 100 "
+  echo "[FAN_TRAY] : 1, 2, 3, 4 or 5."
   echo "If no FAN_TRAY is specified, all FANs will be programmed"
 }
 
@@ -41,8 +41,8 @@ if [ "$1" -lt 0 ] || [ "$1" -gt 100 ]; then
     exit 1
 fi
 
-# Read FAN_TRAY value from user argument. 
-# If no FAN_TRAY is given, configure all FANs 
+# Read FAN_TRAY value from user argument.
+# If no FAN_TRAY is given, configure all FANs
 if [ "$#" -eq 1 ]; then
     FAN_UNIT="1 2 3 4 5"
 else
@@ -54,7 +54,7 @@ else
 fi
 
 # Convert the percentage to our 1/32th level (0-31).
-# The user input is given in percent (0-100), 
+# The user input is given in percent (0-100),
 # but YAMP FANCPLD takes PWM as 8bit value (0-255)
 # So scale the value by multiplying 2.5
 float_step=$(echo "$1 255 * 100 / p" | dc)
@@ -62,7 +62,7 @@ step=`printf '%.*f' 0 $float_step`
 
 for unit in ${FAN_UNIT}; do
     pwm="/sys/bus/i2c/drivers/fancpld/13-0060/fan${unit}_pwm"
-    # echo "$step" > "${pwm}"
+    echo "$step" > "${pwm}"
     echo "$step will be set to ${pwm} !!!!"
     echo "Successfully set fan ${unit} speed to $1%"
 done

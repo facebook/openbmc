@@ -50,6 +50,7 @@
 #include <linux/netlink.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
+#include <openbmc/nvme-mi.h>
 #include <sys/sysinfo.h>
 
 
@@ -86,6 +87,7 @@
 #define DELAY_12V_CYCLE 20
 #endif
 
+#define LARGEST_FILEPATH_LEN 256
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 
@@ -110,7 +112,7 @@
 #define HOTSERVICE_PID  "/tmp/hotservice_reinit.pid"
 #define HOTSERVICE_BLOCK "/tmp/slot%d_reinit_block"
 
-#define FRUID_SIZE        256
+#define FRUID_SIZE        512
 #if defined(CONFIG_FBY2_KERNEL)
   #define EEPROM_DC       "/sys/bus/i2c/devices/i2c-%d/%d-0051/eeprom"
 #else
@@ -160,6 +162,14 @@
 #define NCSI_MIN_DATA_PAYLOAD 36
 #define NCSI_RETRY_MAX        2
 #define BRCM_POWERUP_PRE_CMD  0x1A
+
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
 
 #if defined CONFIG_FBY2_ND
 /* MCA bank data format */
@@ -223,15 +233,7 @@ typedef struct {
 #define CRASHDUMP_PID_PATH "/var/run/autodump%d.pid"
 #define CRASHDUMP_TIMESTAMP_FILE "fru%d_crashdump"
 
-#define PSB_PLAT_VENDOR_ID_KEY "slot%d_platform_vendor_id"
-#define PSB_PLAT_MODEL_ID_KEY "slot%d_platform_model_id"
-#define PSB_BIOS_KEY_REVISION_ID_KEY "slot%d_bios_key_revision_id"
-#define PSB_ROOT_KEY_SELECT_KEY "slot%d_root_key_select"
-#define PSB_PLAT_SECURE_BOOT_EN_KEY "slot%d_platform_secure_boot_en"
-#define PSB_DISABLE_BIOS_KEY_ANTIROLLBACK_KEY "slot%d_disable_bios_key_antirollback"
-#define PSB_DISABLE_AMD_KEY_USAGE_KEY "slot%d_disable_amd_key_usage"
-#define PSB_DISABLE_SECURE_DEBUG_UNLOCK_KEY "slot%d_disable_secure_debug_unlock"
-#define PSB_CUSTOMER_KEY_LOCK_KEY "slot%d_customer_key_lock"
+#define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
 #endif /* CONFIG_FBY2_ND */
 
@@ -262,18 +264,12 @@ static char* gpio_slot_latch[] = { 0, "SLOT1_EJECTOR_LATCH_DETECT_N", "SLOT2_EJE
 
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, spb, nic";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
-const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
-const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
-const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"spb"};
 
 #ifdef CONFIG_FBY2_GPV2
-const char pal_dev_list[] = "all, device0, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11";
+const char pal_dev_fru_list[] = "all, device0, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11";
+const char pal_dev_pwr_list[] = "all, device0, device1, device2, device3, device4, device5, device6, device7, device8, device9, device10, device11";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 #endif
-
-size_t server_fru_cnt = NUM_SERVER_FRU;
-size_t nic_fru_cnt  = NUM_NIC_FRU;
-size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 size_t pal_pwm_cnt = 2;
 size_t pal_tach_cnt = 2;
@@ -548,6 +544,60 @@ static const struct power_coeff nd_pwr_cali_table[] = {
   { 0.0,    0.0 }
 };
 
+/* YV2ND2 Baseboard, current calibration table */
+static const struct power_coeff nd2_curr_cali_table[] = {
+  { 4.660,  0.9812312 },
+  { 7.404,  0.9928318 },
+  { 9.210,  0.9931044 },
+  { 11.996, 0.9945632 },
+  { 13.818, 0.9963226 },
+  { 16.564, 0.9988026 },
+  { 18.446, 0.9975787 },
+  { 21.230, 0.9985449 },
+  { 23.058, 0.9979824 },
+  { 25.804, 1.0008259 },
+  { 27.650, 1.0004500 },
+  { 30.410, 0.9997611 },
+  { 32.196, 1.0001500 },
+  { 34.974, 1.0008591 },
+  { 36.876, 1.0009988 },
+  { 39.664, 0.9992988 },
+  { 41.474, 0.9995568 },
+  { 44.244, 1.0011423 },
+  { 46.108, 1.0002071 },
+  { 50.700, 0.9996644 },
+  { 55.386, 0.9965989 },
+  { 58.872, 0.9989997 },
+  { 0.0,    0.0 }
+};
+
+/* YV2ND2 Baseboard, power calibration table */
+static const struct power_coeff nd2_pwr_cali_table[] = {
+  { 56.022,   0.984220 },
+  { 88.854,   0.992468 },
+  { 110.630,  0.995012 },
+  { 143.674,  0.995728 },
+  { 165.244,  0.996927 },
+  { 197.660,  0.998565 },
+  { 219.816,  0.994602 },
+  { 252.474,  1.005851 },
+  { 273.514,  0.999230 },
+  { 305.612,  1.000476 },
+  { 327.078,  1.000438 },
+  { 359.166,  0.999416 },
+  { 379.980,  1.000178 },
+  { 411.688,  1.001763 },
+  { 433.542,  1.000305 },
+  { 465.216,  1.000416 },
+  { 485.928,  1.000917 },
+  { 517.556,  1.001335 },
+  { 538.358,  1.001511 },
+  { 590.358,  1.000876 },
+  { 643.458,  1.001705 },
+  { 692.356,  1.000408 },
+  { 0.0,      0.0 }
+};
+
 static const char *sock_path_asd_bic[MAX_NODES+1] = {
   "",
   SOCK_PATH_ASD_BIC "_1",
@@ -694,6 +744,28 @@ static struct fsc_monitor fsc_monitor_gp_m2_list[] = {
 
 static int fsc_monitor_gp_m2_list_size = sizeof(fsc_monitor_gp_m2_list) / sizeof(struct fsc_monitor);
 
+/* get curr calibration table by spb type */
+static const struct power_coeff *
+get_curr_cali_table(int spb_type) {
+  if (spb_type == TYPE_SPB_YV2ND) {
+    return nd_curr_cali_table;
+  } else if (spb_type == TYPE_SPB_YV2ND2) {
+    return nd2_curr_cali_table;
+  }
+  return curr_cali_table;
+}
+
+/* get power calibration table by spb type*/
+static const struct power_coeff *
+get_power_cali_table(int spb_type) {
+  if (spb_type == TYPE_SPB_YV2ND) {
+    return nd_pwr_cali_table;
+  } else if (spb_type == TYPE_SPB_YV2ND2) {
+    return nd2_pwr_cali_table;
+  }
+  return pwr_cali_table;
+}
+
 /* curr/power calibration */
 static void
 power_value_adjust(const struct power_coeff *table, float *value) {
@@ -834,7 +906,7 @@ static void apply_inlet_correction(float *value) {
   if ((fby2_get_slot_type(FRU_SLOT1) != SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) != SLOT_TYPE_GPV2)) {
     int spb_type = 0;
     spb_type = fby2_common_get_spb_type();
-    if(spb_type == TYPE_SPB_YV2ND) {
+    if(spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND2) {
       ict = g_ict_nd;
       ict_cnt = g_ict_nd_count;
     } else {
@@ -1598,27 +1670,25 @@ pal_is_device_pair(uint8_t slot_id) {
 
 int
 pal_baseboard_clock_control(uint8_t slot_id, int ctrl) {
-  uint8_t rev;
   int spb_type;
   int ret = 0;
   gpio_desc_t *v1gdesc = NULL, *v2gdesc = NULL, *v3gdesc = NULL;
 
   spb_type = fby2_common_get_spb_type();
-  rev = fby2_common_get_spb_rev();
   switch(slot_id) {
     case FRU_SLOT1:
     case FRU_SLOT2:
-      if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
-        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_0_R_N");
-        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_1_R_N");
+      if (spb_type != TYPE_SPB_YV250) {
+        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_0_N");
+        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_1_N");
       }
       v3gdesc = gpio_open_by_shadow("CLK_BUFF1_PWR_EN_N");
       break;
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
-        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_2_R_N");
-        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_3_R_N");
+      if (spb_type != TYPE_SPB_YV250) {
+        v1gdesc = gpio_open_by_shadow("PE_BUFF_OE_2_N");
+        v2gdesc = gpio_open_by_shadow("PE_BUFF_OE_3_N");
       }
       v3gdesc = gpio_open_by_shadow("CLK_BUFF2_PWR_EN_N");
       break;
@@ -1633,7 +1703,7 @@ pal_baseboard_clock_control(uint8_t slot_id, int ctrl) {
     }
   }
 
-  if (rev < SPB_REV_PVT && spb_type != TYPE_SPB_YV250) {
+  if (spb_type != TYPE_SPB_YV250) {
     if (gpio_set_value(v1gdesc, ctrl) || gpio_set_value(v2gdesc, ctrl)) {
       ret = -1;
     }
@@ -1923,7 +1993,7 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
        if (access(vpath, F_OK) == 0) {
          unlink(vpath);
          sprintf(vpath, "%s slot%u start", HOTSERVICE_SCRPIT, pair_slot_id);
-         system(vpath);
+         log_system(vpath);
        }
 
        // Check BIC Self Test Result
@@ -2044,7 +2114,7 @@ pal_hot_service_action(uint8_t slot_id) {
     sleep(2);
 
     sprintf(cmd, "/usr/local/bin/check_slot_type.sh slot%u", slot_id);
-    system(cmd);
+    log_system(cmd);
 
     unlink(hspath);
     block_12v = (pal_is_device_pair(slot_id) && pal_is_hsvc_ongoing(pair_slot_id));
@@ -2053,7 +2123,7 @@ pal_hot_service_action(uint8_t slot_id) {
     } else {
       sprintf(cmd, "touch "HOTSERVICE_BLOCK, slot_id);
     }
-    system(cmd);
+    log_system(cmd);
 
     if (0 != pal_fruid_init(slot_id)) {
       syslog(LOG_ERR, "%s: pal_fruid_init failed", __func__);
@@ -2350,7 +2420,7 @@ server_12v_on(uint8_t slot_id) {
   if (pal_is_slot_support_update(slot_id)) {
     char vpath[128];
     snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", slot_id);  // retrieve FRU data
-    system(vpath);
+    log_system(vpath);
   }
 
   if (pal_is_device_pair(slot_id)) {
@@ -2375,7 +2445,7 @@ server_12v_on(uint8_t slot_id) {
     if (pal_is_slot_support_update(pair_slot_id)) {
       char vpath[128];
       snprintf(vpath, sizeof(vpath), "/usr/local/bin/bic-cached -f %d &", pair_slot_id);  // retrieve FRU data
-      system(vpath);
+      log_system(vpath);
     }
   }
 
@@ -3373,11 +3443,11 @@ int
 pal_sled_cycle(void) {
 #if !defined(CONFIG_FBY2_KERNEL)
   // Remove the adm1275 module as the HSC device is busy
-  system("rmmod adm1275");
+  log_system("rmmod adm1275");
 #endif
 
   // Send command to HSC power cycle
-  system("i2cset -y 10 0x40 0xd9 c");
+  log_system("i2cset -y 10 0x40 0xd9 c");
 
   return 0;
 }
@@ -3945,6 +4015,58 @@ pal_get_fru_list(char *list) {
 }
 
 int
+pal_get_dev_list(uint8_t fru, char *list)
+{
+#ifdef CONFIG_FBY2_GPV2
+  if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
+    strcpy(list, pal_dev_fru_list);
+    return 0;
+  }
+  return -1;
+#else
+  return PAL_ENOTSUP;
+#endif
+}
+
+int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
+        FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      break;
+    case FRU_SPB:
+    case FRU_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    case FRU_NIC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int
+pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  if (fru < FRU_SLOT1 || fru > FRU_SLOT4) {
+    return -1;
+  }
+  *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+    (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
+  return 0;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
 
   return fby2_common_fru_id(str, fru);
@@ -3963,13 +4085,14 @@ pal_get_fru_name(uint8_t fru, char *name) {
 }
 
 int
-pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 {
-  int ret = fby2_get_fruid_name(fru, name);
+  char tmp_name[64] = {0};
+  int ret = fby2_get_fruid_name(fru, tmp_name);
   if (ret < 0)
     return ret;
 
-  sprintf(name, "%s Device %u", name, dev-1);
+  sprintf(name, "%s Device %u", tmp_name, dev-1);
   return 0;
 }
 
@@ -4219,7 +4342,8 @@ error_exit:
 
 int
 pal_fruid_write(uint8_t fru, char *path) {
-  int ret, retry = 3;
+  int ret = -1;
+  int retry = 3;
   int fru_size = FRUID_SIZE, new_fru_size = FRUID_SIZE;
   char fruid_path[64] = {0};
   FILE *fp;
@@ -4239,6 +4363,12 @@ pal_fruid_write(uint8_t fru, char *path) {
 
   sprintf(fruid_path, "/tmp/tmp_fruid_slot%d.bin", fru);
   if (fru == FRU_NIC) {
+    uint32_t nic_fru_sz = fby2_get_nic_fru_supported_size();
+    if (new_fru_size > nic_fru_sz) {
+      syslog(LOG_ERR, "%s(): input fru size (%u) over nic supported size %u",
+          __func__, new_fru_size, nic_fru_sz);
+      return ret;
+    }
     while ((--retry) >= 0) {
       ret = _write_nic_fruid(path); // write from file path
       if (ret) {
@@ -4350,6 +4480,7 @@ get_sensor_desc(uint8_t fru, uint8_t snr_num) {
 bool
 pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
 {
+#ifndef CONFIG_FBY2_ND
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -4362,7 +4493,22 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
     default:
       break;
   }
+#endif
   return false;
+}
+
+int
+pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value)
+{
+  int raw_value = (int) *value;
+  int ret = 0;
+  // valid temperature range: -60C(0xC4) ~ +127C(0x7F)
+  // C4h-FFh is two's complement, means -60 to -1
+  ret = nvme_temp_value_check(raw_value, value);
+  if (ret == SNR_READING_NA || ret == SNR_READING_SKIP)
+    return ERR_SENSOR_NA;
+
+  return ret;
 }
 
 int
@@ -4442,18 +4588,10 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       int spb_type = 0;
       spb_type = fby2_common_get_spb_type();
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
-        if (spb_type == TYPE_SPB_YV2ND) {
-          power_value_adjust(nd_curr_cali_table, (float *)value);
-        } else {
-          power_value_adjust(curr_cali_table, (float *)value);
-        }
+        power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
-        if (spb_type == TYPE_SPB_YV2ND) {
-          power_value_adjust(nd_pwr_cali_table, (float *)value);
-        } else {
-          power_value_adjust(pwr_cali_table, (float *)value);
-        }
+        power_value_adjust(get_power_cali_table(spb_type), (float *)value);
       }
       if (sensor_num == SP_SENSOR_BMC_HSC_PIN) {
         ret = calc_bmc_hsc_value((float *)value);
@@ -4551,7 +4689,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
           } else {
             // POST is not ongoing
             if (check_flag == POST_END_CHECK) {
-              if (post_end_counter > 0) {
+              if (post_end_counter > 0) { // handle fscd ready after post end
                 // check counter change
                 current_counter = pal_get_fscd_counter();
                 if (last_counter != current_counter) {
@@ -4569,7 +4707,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
                   // fscd watchdog counter update
                   pal_check_fscd_watchdog();
                 }
-              } else if (post_end_counter < 0) {
+              } else if (post_end_counter == POST_END_COUNTER_IGNORE_LOG) { // handle initial case after post end
+                // If POST is not ongoing at the beginning, keep ignore_thresh at initial case
+                // fix sensor-util force read alter fan UNC/UCR block event
+                syslog(LOG_WARNING,"fscd handle initial case after post end");
+                if (pal_get_ignore_thresh(&ignore_thresh)) {
+                  // If sensord hasn't create ignore_thresh for fan UNC/UCR block event
+                  // block fan UNC/UCR for 4 fscd cycle
+                  pal_check_fscd_watchdog();
+                }
+                post_end_counter = POST_END_COUNTER_SHOW_LOG; // end of initial case after post end
+              } else if (post_end_counter < 0) { // handle fscd not ready after post end
                 // fscd not start yet or fscd hangs up at the first run
                 pal_check_fscd_watchdog();
               }
@@ -5293,10 +5441,11 @@ int
 pal_is_bmc_por(void) {
   FILE *fp;
   int por = 0;
-
-  fp = fopen("/tmp/ast_por", "r");
+  const char fpath[] = "/tmp/ast_por";
+  fp = fopen(fpath, "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &por);
+    if(fscanf(fp, "%d", &por) != 1)
+      syslog(LOG_WARNING, "%s: read file failed, file: %s", __func__, fpath);
     fclose(fp);
   }
 
@@ -5622,7 +5771,7 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sys_runtime=$(awk '{print $1}' /proc/uptime) ; sys_runtime=$(printf \"%%0.f\" $sys_runtime) ; echo $((sys_runtime+1200)) > /tmp/cache_store/fru%d_crashdump", fru);
-  system(cmd);
+  log_system(cmd);
 
   return fby2_common_crashdump(fru, ierr, false);
 }
@@ -6231,14 +6380,8 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
     case 0x3E:
       strcat(error_log, "P0: Error reading fuse info");
       break;
-    case 0x7B:
-      strcat(error_log, "P0: OEM BIOS Signing Key failed signature verification");
-      break;
     case 0x6F:
       strcat(error_log, "P0: OEM BIOS Signing Key Usage flag violation");
-      break;
-    case 0x7C:
-      strcat(error_log, "P0: Platform Vendor ID and/or Model ID binding violation");
       break;
     case 0x78:
       strcat(error_log, "P0: BIOS RTM Signature entry not found");
@@ -6248,6 +6391,12 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
       break;
     case 0x7A:
       strcat(error_log, "P0: BIOS RTM Signature verification failed");
+      break;
+    case 0x7B:
+      strcat(error_log, "P0: OEM BIOS Signing Key failed signature verification");
+      break;
+    case 0x7C:
+      strcat(error_log, "P0: Platform Vendor ID and/or Model ID binding violation");
       break;
     case 0x7D:
       strcat(error_log, "P0: BIOS Copy bit is unset for reset image");
@@ -6269,6 +6418,9 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
       break;
     case 0x83:
       strcat(error_log, "P1: Error with actual fusing operation");
+      break;
+    case 0x92:
+      strcat(error_log, "P0: Error in BIOS Directory Table – Firmware type not found");
       break;
     default:
       strcat(error_log, "Unknown");
@@ -6399,6 +6551,44 @@ parse_mem_error_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *
 }
 
 int
+parse_vr_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *error_log)
+{
+  uint8_t *ed = &event_data[3];
+
+  switch (ed[0] & 0x0F) {
+    case 0x00:
+      strcat(error_log, "CPU_VR_");
+      break;
+    case 0x01:
+      strcat(error_log, "SOC_DIMM_ABCD_VR_");
+      break;
+    case 0x02:
+      strcat(error_log, "SOC_DIMM_EFGH_VR_");
+      break;
+    case 0x03:
+      strcat(error_log, "SOC_VR_");
+      break;
+    case 0x04:
+      strcat(error_log, "M.2_");
+      break;
+    default:
+      strcat(error_log, "Unknown");
+      return 0;
+  }
+
+  switch (snr_num) {
+    case BIC_ND_SENSOR_VR_HOT:
+      strcat(error_log, "Hot");
+      break;
+    case BIC_ND_SENSOR_VR_ALERT:
+      strcat(error_log, "Alert");
+      break;
+  }
+
+  return 0;
+}
+
+int
 pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t snr_num = sel[11];
@@ -6463,18 +6653,18 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
       parsed = true;
       break;
     case BIC_ND_SENSOR_VR_HOT:
+    case BIC_ND_SENSOR_VR_ALERT:
+      if (parse_vr_sel_nd(fru, snr_num, event_data, error_log) == 0) {
+        parsed = true;
+      }
+      break;
+    case BIC_ND_SENSOR_IHDT_PRSNT_ALERT:
       switch (ed[0] & 0x0F) {
         case 0x00:
-          strcat(error_log, "CPU_VR_Hot");
+          strcat(error_log, "REMOTE_JTAG_EN");
           break;
         case 0x01:
-          strcat(error_log, "SOC_DIMM_ABCD_VR_Hot");
-          break;
-        case 0x02:
-          strcat(error_log, "SOC_DIMM_EFGH_VR_Hot");
-          break;
-        case 0x03:
-          strcat(error_log, "SOC_VR_Hot");
+          strcat(error_log, "HDT_PRSENT");
           break;
         default:
           strcat(error_log, "Unknown");
@@ -7704,12 +7894,12 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
 #else
 static int
 write_fan_value(const int fan, const char *device, const int value) {
-  char full_name[LARGEST_DEVICE_NAME];
+  char full_name[LARGEST_FILEPATH_LEN];
   char device_name[LARGEST_DEVICE_NAME];
   char output_value[LARGEST_DEVICE_NAME];
 
   snprintf(device_name, LARGEST_DEVICE_NAME, device, fan);
-  snprintf(full_name, LARGEST_DEVICE_NAME, "%s/%s", PWM_DIR, device_name);
+  snprintf(full_name, LARGEST_FILEPATH_LEN, "%s/%s", PWM_DIR, device_name);
   snprintf(output_value, LARGEST_DEVICE_NAME, "%d", value);
   return write_device(full_name, output_value);
 }
@@ -8101,7 +8291,14 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
     }
 
     snprintf(tstr, 3, "%02x", boot[i]);
+#if __GNUC__ >= 8
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncat(str, tstr, 3);
+#pragma GCC diagnostic pop
+#else
+    strncat(str, tstr, 3);
+#endif
   }
 
   // not allow having more than 1 network boot device in the boot order
@@ -9283,8 +9480,16 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
   snr_chk->last_val = 0;
 
   snr_desc = get_sensor_desc(fru, snr_num);
+#if __GNUC__ >= 8
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
   strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
   snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+#pragma GCC diagnostic pop
+#else
+  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+#endif
 
   return 0;
 }
@@ -9320,7 +9525,7 @@ pal_get_status(void) {
 }
 
 NCSI_NL_RSP_T *
-pal_send_nl_msg(NCSI_NL_MSG_T *nl_msg)
+send_nl_msg_nl_user(NCSI_NL_MSG_T *nl_msg)
 {
   int sock_fd, ret;
   struct sockaddr_nl src_addr, dest_addr;
@@ -9397,6 +9602,15 @@ close_and_exit:
   close(sock_fd);
 
   return ret_buf;
+}
+
+NCSI_NL_RSP_T *
+pal_send_nl_msg(NCSI_NL_MSG_T *msg) {
+  if(islibnl()) {
+    return send_nl_msg_libnl(msg);
+  } else {
+    return send_nl_msg_nl_user(msg);
+  }
 }
 
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34
@@ -9569,7 +9783,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       } else {
         sprintf(sendcmd, "ifdown eth%d", netdev);
       }
-      system(sendcmd);
+      log_system(sendcmd);
       completion_code = CC_SUCCESS;
       break;
     default:
@@ -11164,7 +11378,7 @@ static void* generate_dump(void* arg) {
     int slot_id = *(int*)arg;
     memset(cmd, 0, MAX_CRASHDUMP_CMD_SIZE);
     snprintf(cmd, MAX_CRASHDUMP_CMD_SIZE, "%s slot%d", CRASHDUMP_ND_BIN, slot_id);
-    system(cmd);
+    log_system(cmd);
 
     free(cmd);
     free(arg);
@@ -11403,41 +11617,8 @@ uint8_t save_psb_config_info_to_kvstore(uint8_t slot, uint8_t* req_data, uint8_t
   char str[MAX_VALUE_LEN] = {0};
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
 
-  snprintf(key,MAX_KEY_LEN, PSB_PLAT_VENDOR_ID_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%02X", req_data[0]);
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_PLAT_MODEL_ID_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[1] & 0x0F));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_BIOS_KEY_REVISION_ID_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[1] & 0xF0));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_ROOT_KEY_SELECT_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[2] & 0x0F));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_PLAT_SECURE_BOOT_EN_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x01));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_DISABLE_BIOS_KEY_ANTIROLLBACK_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x02));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_DISABLE_AMD_KEY_USAGE_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x04));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_DISABLE_SECURE_DEBUG_UNLOCK_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x08));
-  kv_set(key, str, 0, 0);
-
-  snprintf(key,MAX_KEY_LEN, PSB_CUSTOMER_KEY_LOCK_KEY, slot);
-  snprintf(str,MAX_VALUE_LEN, "0x%X", (req_data[3] & 0x10) >> 4);
-  kv_set(key, str, 0, 0);
+  snprintf(key,MAX_KEY_LEN, PSB_CONFIG_RAW, slot);
+  kv_set(key, req_data, req_len, 0);
 
   completion_code = CC_SUCCESS;
   return completion_code;
@@ -11486,7 +11667,7 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
   if (status == IMC_DUMP_START) {
     sprintf(path, IMC_START_FILE, slot);
     sprintf(cmd, "touch %s", path);
-    system(cmd);
+    log_system(cmd);
     syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
   }
 
@@ -11496,7 +11677,7 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
       syslog(LOG_INFO, "IMC Log Start on slot%u", slot);
     } else {
       sprintf(cmd, "rm %s", path);
-      system(cmd);
+      log_system(cmd);
     }
   }
 
@@ -11514,11 +11695,11 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
     if(st.st_size > IMC_LOG_FILE_SIZE) {   //Do IMC log backup action
       sprintf(path, IMC_LOG_FILE_BAK, slot);
       sprintf(cmd, "mv %s %s", imc_log_path[slot], path);
-      system(cmd);
+      log_system(cmd);
 
       memset(cmd, 0, sizeof(cmd));
       sprintf(cmd, "touch %s", imc_log_path[slot]);
-      system(cmd);
+      log_system(cmd);
     }
   }
 
@@ -12200,3 +12381,18 @@ int pal_bypass_dev_card(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
 
   return (ret == 0)? CC_SUCCESS: CC_UNSPECIFIED_ERROR;
 }
+
+#if defined CONFIG_FBY2_ND
+int
+pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
+  char label[] = {'A', 'B', 'D', 'C', 'H', 'G', 'E', 'F'};
+
+  if (channel <= 7) {
+    sprintf(str, "%c%d", label[channel], slot);
+  } else {
+    sprintf(str, "NA");
+  }
+
+  return PAL_EOK;
+}
+#endif

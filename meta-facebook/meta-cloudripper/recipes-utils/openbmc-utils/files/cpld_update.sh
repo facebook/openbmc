@@ -156,20 +156,22 @@ fi
 
 case $5 in
     hw)
-        echo "Not support yet"
-        usage
-        exit 1
-        cpldprog -p "${UPDATE_IMG}"
+        if [[  $CPLD_TYPE == "PWR" ]];then
+            cpldprog -p "${UPDATE_IMG}" -R
+        else
+            cpldprog -p "${UPDATE_IMG}"
+        fi
         ;;
     sw)
         ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}"
         ;;
     *)
         # default: hw mode
-        echo "Not support yet"
-        usage
-        exit 1
-        cpldprog -p "${UPDATE_IMG}"
+        if [[  $CPLD_TYPE == "PWR" ]];then
+            cpldprog -p "${UPDATE_IMG}" -R
+        else
+            cpldprog -p "${UPDATE_IMG}"
+        fi
         ;;
 esac
 

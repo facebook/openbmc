@@ -95,13 +95,13 @@ devmem_clear_bit $(scu_addr 84) 3
 gpio_export SMB_RST_SECONDARY_BMC_N_R GPIOG3
 
 # GPIOM4-FM_PWRBRK_PRIMARY_R
-# GPIOM5-FM_PWRBRK_SECONDARY_R
 devmem_clear_bit $(scu_addr 84) 28
-devmem_clear_bit $(scu_addr 84) 29
 gpio_export FM_PWRBRK_PRIMARY_R GPIOM4
-gpio_export FM_PWRBRK_SECONDARY_R GPIOM5
 gpio_set FM_PWRBRK_PRIMARY_R 0
-gpio_set FM_PWRBRK_SECONDARY_R 0
+
+# GPIOM5-OCP_NIC_PRSNT_BMC_N
+devmem_clear_bit $(scu_addr 84) 29
+gpio_export OCP_NIC_PRSNT_BMC_N GPIOM5
 
 # GPIOQ7-FM_BMC_TPM_PRSNT_N
 devmem_clear_bit $(scu_addr 2C) 29
@@ -213,9 +213,9 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   devmem_clear_bit $(scu_addr 84) 18
   devmem_clear_bit $(scu_addr 84) 19
   gpio_export AC_ON_OFF_BTN_SLOT1_N GPIOL0
-  gpio_export AC_ON_OFF_BTN_BMC_SLOT2_N_R GPIOL1
+  gpio_export AC_ON_OFF_BTN_SLOT2_N GPIOL1
   gpio_export AC_ON_OFF_BTN_SLOT3_N GPIOL2
-  gpio_export AC_ON_OFF_BTN_BMC_SLOT4_N_R GPIOL3
+  gpio_export AC_ON_OFF_BTN_SLOT4_N GPIOL3
 
   # GPIOL4-FAST_PROCHOT_BMC_N_R
   devmem_clear_bit $(scu_addr 84) 20
@@ -320,6 +320,9 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   gpio_export FM_RESBTN_SLOT4_BMC_N GPIOI6
   gpio_export FM_RESBTN_SLOT1_BMC_N GPIOAC2
   gpio_export FM_RESBTN_SLOT2_BMC_N GPIOAC3
+
+  # GPIOM5-OCP_NIC_PRSNT_BMC_N
+  gpio_export OCP_NIC_PRSNT_BMC_N GPIOM5
 else
   echo "Is board id correct(id=$BOARD_ID)?"
 fi

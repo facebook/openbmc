@@ -60,6 +60,7 @@ typedef enum {
 	CPU_MODEL_INVALID = -1,
 	CPU_MODEL_ARM_V5,
 	CPU_MODEL_ARM_V6,
+  CPU_MODEL_ARM_V7,
 	CPU_MODEL_MAX,
 } cpu_model_t;
 
@@ -67,6 +68,7 @@ typedef enum {
 	SOC_MODEL_INVALID = -1,
 	SOC_MODEL_ASPEED_G4,
 	SOC_MODEL_ASPEED_G5,
+  SOC_MODEL_ASPEED_G6,
 	SOC_MODEL_MAX,
 } soc_model_t;
 
@@ -109,6 +111,9 @@ bool path_islink(const char *path);
 cpu_model_t get_cpu_model(void);
 soc_model_t get_soc_model(void);
 k_version_t get_kernel_version(void);
+int single_instance_lock(const char *prog_name);
+int single_instance_unlock(int lock_fd);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

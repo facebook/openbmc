@@ -1,7 +1,12 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
-SYSCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-12/12-0031"
-#SCMCPLD_SYSFS_DIR="/sys/class/i2c-adapter/i2c-0/0-003e"
+SYSCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0031)
+SCMCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 0-003e)
+GALAXY_EC_SYSFS_DIR=$(i2c_device_sysfs_abspath 0-0033)
+SCM_EEPROM_SYSFS_DIR=$(i2c_device_sysfs_abspath 0-0052)
+MB_EEPROM_SYSFS_DIR=$(i2c_device_sysfs_abspath 6-0051)
+SCM_EEPROM="${SCM_EEPROM_SYSFS_DIR}/eeprom"
+MB_EEPROM="${MB_EEPROM_SYSFS_DIR}/eeprom"
 PWR_MAIN_SYSFS="${SYSCPLD_SYSFS_DIR}/pwr_main_n"
 SCM_PRESENT_SYSFS="${SYSCPLD_SYSFS_DIR}/micro_srv_present"
 PWR_BOARD_VER="${SYSCPLD_SYSFS_DIR}/board_ver"

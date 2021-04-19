@@ -28,6 +28,8 @@
 
 #define NUM_CLIENTS 10
 
+static size_t file_size = FILE_SIZE_BYTES;
+
 static int createServerSocket(const char* dev) {
   int serverFd;
   struct sockaddr_un local;
@@ -109,7 +111,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
   vecHeader.iov_base = &header;
   vecHeader.iov_len = sizeof(header);
   nbytesHeader = readv(clientFd, &vecHeader, 1);
-  /* Reading client data to which header lenght info correspond */
+  /* Reading client data to which header length info correspond */
   vecData.iov_base = &data;
   vecData.iov_len = header.length;
   nbytesData = readv(clientFd, &vecData, 1);
@@ -215,7 +217,7 @@ static void connectServer(const char *stty, const char *dev) {
   }
 
   struct bufStore* buf;
-  buf = createBuffer(dev, FILE_SIZE_BYTES);
+  buf = createBuffer(dev, file_size);
   if (!buf || (buf->buf_fd < 0)) {
     syslog(LOG_ERR, "mTerm_server: Failed to create the log file\n");
     closeTty(tty_sol);
@@ -267,11 +269,15 @@ static void connectServer(const char *stty, const char *dev) {
 
 static void
 print_usage() {
-  printf("Usage example: /usr/local/bin/mTerm_server <fru> /dev/ttyS*\n");
+  printf("Usage:\t/usr/local/bin/mTerm_server <fru> /dev/ttyS*\n"
+      "\t/usr/local/bin/mTerm_server <fru> /dev/ttyS* baudrate\n"
+      "\t/usr/local/bin/mTerm_server <fru> /dev/ttyS* baudrate max-log-size\n\n"
+      "\tDefault baudrate: 57600\n"
+      "\tDefault max log size: 300 KB\n");
 }
 
 int main(int argc, char **argv) {
-  if (argc != 3 && argc != 4) {
+  if (argc < 3 || argc > 5) {
     print_usage();
     exit(1);
   }
@@ -279,7 +285,22 @@ int main(int argc, char **argv) {
   char *stty, *dev;
   dev = argv[1];
   stty = argv[2];
-  baudrate = (argc == 4)? atoi(argv[3]): BAUDRATE;
+  baudrate = BAUDRATE;
+  file_size = FILE_SIZE_BYTES;
+
+  if (argc >= 4) {
+    baudrate = strtol(argv[3], NULL, 10);
+    if (errno)
+      baudrate = BAUDRATE;
+  }
+
+  if (argc == 5) {
+    file_size = strtol(argv[4], NULL, 10);
+    if (errno || file_size < FILE_SIZE_BYTES || file_size > FILE_SIZE_MAX_BYTES) {
+      printf("File size must be between %d and %d bytes\n", FILE_SIZE_BYTES, FILE_SIZE_MAX_BYTES);
+      exit(-1);
+    }
+  }
 
   int ret;
   char file[PATH_SIZE];

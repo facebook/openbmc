@@ -88,9 +88,7 @@ int fru_id_max = 0;
 static
 const char * dimm_type_string(uint8_t id)
 {
-  if ((id < 0) ||
-      (id >= ARRAY_SIZE(dimm_type)) ||
-      (dimm_type[id] == NULL)) {
+  if (id >= ARRAY_SIZE(dimm_type) || dimm_type[id] == NULL) {
     return "Unknown";
   } else {
     return dimm_type[id];
@@ -100,9 +98,7 @@ const char * dimm_type_string(uint8_t id)
 static
 const char * dimm_speed_string(uint8_t id)
 {
-  if ((id < 0) ||
-      (id >= ARRAY_SIZE(speed_type)) ||
-      (speed_type[id] == NULL)) {
+  if (id >= ARRAY_SIZE(speed_type) || speed_type[id] == NULL) {
     return "Unknown";
   } else {
     return speed_type[id];
@@ -632,7 +628,7 @@ static int parse_cmdline_args(int argc, char **argv,
           printf("invalid argument \"--dimm %s\"\n", optarg);
           return ERR_INVALID_SYNTAX;
         }
-      } else if ((*dimm < 0) || (*dimm > total_dimms)) {
+      } else if ((*dimm > total_dimms)) {
         printf("Error: invalid \"--dimm %d\"\n", *dimm);
         return ERR_INVALID_SYNTAX;
       }

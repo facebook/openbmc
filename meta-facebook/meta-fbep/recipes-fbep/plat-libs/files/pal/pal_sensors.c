@@ -91,10 +91,10 @@ const uint8_t mb_sensor_list[] = {
   MB_ADC_P12V_2,
   MB_ADC_P3V3,
   MB_ADC_P3V_BAT,
-  MB_SENSOR_GPU_INLET,
-  MB_SENSOR_GPU_INLET_REMOTE,
-  MB_SENSOR_GPU_OUTLET,
-  MB_SENSOR_GPU_OUTLET_REMOTE,
+  MB_SENSOR_INLET,
+  MB_SENSOR_INLET_REMOTE,
+  MB_SENSOR_OUTLET,
+  MB_SENSOR_OUTLET_REMOTE,
   MB_SENSOR_PAX01_THERM,
   MB_SENSOR_PAX0_THERM_REMOTE,
   MB_SENSOR_PAX1_THERM_REMOTE,
@@ -173,8 +173,8 @@ const uint8_t pdb_sensor_list[] = {
   PDB_ADC_2_VICOR1_TEMP,
   PDB_ADC_2_VICOR2_TEMP,
   PDB_ADC_2_VICOR3_TEMP,
-  PDB_SENSOR_OUTLET_TEMP,
-  PDB_SENSOR_OUTLET_TEMP_REMOTE
+  PDB_SENSOR_OUTLET,
+  PDB_SENSOR_OUTLET_REMOTE
 };
 
 const uint8_t asic0_sensor_list[] = {
@@ -281,13 +281,13 @@ float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
   {0,	3.465,	0,	0,	2.0,	0,	0,	0,	0},
   [MB_ADC_P5V_STBY] =
   {0,	5.25,	0,	0,	4.75,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_INLET] =
+  [MB_SENSOR_INLET] =
   {0,	55.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_INLET_REMOTE] =
+  [MB_SENSOR_INLET_REMOTE] =
   {0,	50.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_OUTLET] =
+  [MB_SENSOR_OUTLET] =
   {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [MB_SENSOR_GPU_OUTLET_REMOTE] =
+  [MB_SENSOR_OUTLET_REMOTE] =
   {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0},
   [MB_SENSOR_PAX01_THERM] =
   {0,	0,	0,	0,	0,	0,	0,	0,	0},
@@ -493,9 +493,9 @@ float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
   [PDB_ADC_2_VICOR3_TEMP] =
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [PDB_SENSOR_OUTLET_TEMP] =
+  [PDB_SENSOR_OUTLET] =
   {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
-  [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
+  [PDB_SENSOR_OUTLET_REMOTE] =
   {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0}
 };
 
@@ -550,14 +550,14 @@ struct sensor_map {
   {read_battery_value, "EP_MB_ADC_P3V_BAT", SNR_VOLT},
   [MB_ADC_P5V_STBY] =
   {sensors_read_common_adc, "EP_MB_ADC_P5V_STBY", SNR_VOLT},
-  [MB_SENSOR_GPU_INLET] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_INLET", SNR_TEMP},
-  [MB_SENSOR_GPU_INLET_REMOTE] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_INLET_REMOTE", SNR_TEMP},
-  [MB_SENSOR_GPU_OUTLET] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_OUTLET", SNR_TEMP},
-  [MB_SENSOR_GPU_OUTLET_REMOTE] =
-  {sensors_read_common_therm, "EP_MB_SENSOR_GPU_OUTLET_REMOTE", SNR_TEMP},
+  [MB_SENSOR_INLET] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_INLET", SNR_TEMP},
+  [MB_SENSOR_INLET_REMOTE] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_INLET_REMOTE", SNR_TEMP},
+  [MB_SENSOR_OUTLET] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_OUTLET", SNR_TEMP},
+  [MB_SENSOR_OUTLET_REMOTE] =
+  {sensors_read_common_therm, "EP_MB_SENSOR_OUTLET_REMOTE", SNR_TEMP},
   [MB_SENSOR_PAX01_THERM] =
   {sensors_read_pax_therm, "EP_MB_SENSOR_PAX01_THERM", SNR_TEMP},
   [MB_SENSOR_PAX23_THERM] =
@@ -772,9 +772,9 @@ struct sensor_map {
   {sensors_read_vicor, "EP_PDB_ADC_2_VICOR2_TEMP", SNR_TEMP},
   [PDB_ADC_2_VICOR3_TEMP] =
   {sensors_read_vicor, "EP_PDB_ADC_2_VICOR3_TEMP", SNR_TEMP},
-  [PDB_SENSOR_OUTLET_TEMP] =
+  [PDB_SENSOR_OUTLET] =
   {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET", SNR_TEMP},
-  [PDB_SENSOR_OUTLET_TEMP_REMOTE] =
+  [PDB_SENSOR_OUTLET_REMOTE] =
   {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET_REMOTE", SNR_TEMP},
 };
 
@@ -1055,7 +1055,8 @@ bool pal_is_fan_prsnt(uint8_t fan)
 
 static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
 {
-  int ret, i, retries = 5;
+  int ret, index;
+  static bool checked[8] = {false, false, false, false, false, false, false, false};
   *value = 0.0;
 
   // Although PWM controller driver had been loaded when BMC booted
@@ -1063,40 +1064,47 @@ static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
   if (!is_device_ready() || !is_fan_prsnt(sensor_num))
     return ERR_SENSOR_NA;
 
-  for (i = 0; i < retries; i++) {
-    switch (sensor_num) {
-      case MB_FAN0_TACH_I:
-        ret = sensors_read_fan("fan1", (float *)value);
-        break;
-      case MB_FAN0_TACH_O:
-        ret = sensors_read_fan("fan2", (float *)value);
-        break;
-      case MB_FAN1_TACH_I:
-        ret = sensors_read_fan("fan3", (float *)value);
-        break;
-      case MB_FAN1_TACH_O:
-        ret = sensors_read_fan("fan4", (float *)value);
-        break;
-      case MB_FAN2_TACH_I:
-        ret = sensors_read_fan("fan5", (float *)value);
-        break;
-      case MB_FAN2_TACH_O:
-        ret = sensors_read_fan("fan6", (float *)value);
-        break;
-      case MB_FAN3_TACH_I:
-        ret = sensors_read_fan("fan7", (float *)value);
-        break;
-      case MB_FAN3_TACH_O:
-        ret = sensors_read_fan("fan8", (float *)value);
-        break;
-      default:
-        return ERR_SENSOR_NA;
-    }
-    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
-      // In case the fans just got installed, fans are still accelerating.
-      msleep(200);
-    } else {
+  switch (sensor_num) {
+    case MB_FAN0_TACH_I:
+      ret = sensors_read_fan("fan1", (float *)value);
       break;
+    case MB_FAN0_TACH_O:
+      ret = sensors_read_fan("fan2", (float *)value);
+      break;
+    case MB_FAN1_TACH_I:
+      ret = sensors_read_fan("fan3", (float *)value);
+      break;
+    case MB_FAN1_TACH_O:
+      ret = sensors_read_fan("fan4", (float *)value);
+      break;
+    case MB_FAN2_TACH_I:
+      ret = sensors_read_fan("fan5", (float *)value);
+      break;
+    case MB_FAN2_TACH_O:
+      ret = sensors_read_fan("fan6", (float *)value);
+      break;
+    case MB_FAN3_TACH_I:
+      ret = sensors_read_fan("fan7", (float *)value);
+      break;
+    case MB_FAN3_TACH_O:
+      ret = sensors_read_fan("fan8", (float *)value);
+      break;
+    default:
+      return ERR_SENSOR_NA;
+  }
+
+  if (ret == 0) {
+    index = sensor_num - MB_FAN0_TACH_I;
+    index = index/2 + index%2;
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      if (!checked[index]) {
+        // In case the fans just got installed, fans are still accelerating.
+        // Ignore this reading
+        checked[index] = true;
+        return ERR_SENSOR_NA;
+      }
+    } else {
+      checked[index] = false;
     }
   }
 
@@ -1105,48 +1113,57 @@ static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
 
 static int sensors_read_fan_health(uint8_t sensor_num, float *value)
 {
-  int ret, i, retries = 3;
+  int ret, index;
+  static bool checked[8] = {false, false, false, false, false, false, false, false};
   *value = 0.0;
 
   if (pal_is_server_off() || !is_fan_prsnt(sensor_num))
     return ERR_SENSOR_NA;
 
-  for (i = 0; i < retries; i++) {
-    switch (sensor_num) {
-      case MB_FAN0_VOLT:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
-        break;
-      case MB_FAN0_CURR:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
-        break;
-      case MB_FAN1_VOLT:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
-        break;
-      case MB_FAN1_CURR:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
-        break;
-      case MB_FAN2_VOLT:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
-        break;
-      case MB_FAN2_CURR:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
-        break;
-      case MB_FAN3_VOLT:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
-        break;
-      case MB_FAN3_CURR:
-        ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
-        break;
-      default:
-        return ERR_SENSOR_NA;
-    }
-    if (ret == 0 && *value <= sensors_threshold[sensor_num][LCR_THRESH]) {
-      // In case the fans just got installed, ADC might not finish sampling
-      msleep(100);
-    } else {
+  switch (sensor_num) {
+    case MB_FAN0_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
       break;
+    case MB_FAN0_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
+      break;
+    case MB_FAN1_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
+      break;
+    case MB_FAN1_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
+      break;
+    case MB_FAN2_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
+      break;
+    case MB_FAN2_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
+      break;
+    case MB_FAN3_VOLT:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
+      break;
+    case MB_FAN3_CURR:
+      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
+      break;
+    default:
+      return ERR_SENSOR_NA;
+  }
+
+  if (ret == 0) {
+    index = sensor_num - MB_FAN0_VOLT;
+    index = index/2 + index%2;
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      if (!checked[index]) {
+        // In case the fans just got installed, ADC might not finish sampling
+        // Ignore this reading
+        checked[index] = true;
+        return ERR_SENSOR_NA;
+      }
+    } else {
+      checked[index] = false;
     }
   }
+
   return ret < 0? ERR_SENSOR_NA: 0;
 }
 
@@ -1201,23 +1218,23 @@ static int sensors_read_common_therm(uint8_t sensor_num, float *value)
   int ret;
 
   switch (sensor_num) {
-    case MB_SENSOR_GPU_INLET:
-      ret = sensors_read("tmp421-i2c-6-4c", "GPU_INLET", (float *)value);
+    case MB_SENSOR_INLET:
+      ret = sensors_read("tmp421-i2c-6-4c", "INLET", (float *)value);
       break;
-    case MB_SENSOR_GPU_INLET_REMOTE:
-      ret = sensors_read("tmp421-i2c-6-4c", "GPU_INLET_REMOTE", (float *)value);
+    case MB_SENSOR_INLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-6-4c", "INLET_REMOTE", (float *)value);
       break;
-    case MB_SENSOR_GPU_OUTLET:
-      ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET", (float *)value);
+    case MB_SENSOR_OUTLET:
+      ret = sensors_read("tmp421-i2c-6-4f", "OUTLET", (float *)value);
       break;
-    case MB_SENSOR_GPU_OUTLET_REMOTE:
-      ret = sensors_read("tmp421-i2c-6-4f", "GPU_OUTLET_REMOTE", (float *)value);
+    case MB_SENSOR_OUTLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-6-4f", "OUTLET_REMOTE", (float *)value);
       break;
-    case PDB_SENSOR_OUTLET_TEMP:
-      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP", (float *)value);
+    case PDB_SENSOR_OUTLET:
+      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET", (float *)value);
       break;
-    case PDB_SENSOR_OUTLET_TEMP_REMOTE:
-      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_TEMP_REMOTE", (float *)value);
+    case PDB_SENSOR_OUTLET_REMOTE:
+      ret = sensors_read("tmp421-i2c-17-4c", "OUTLET_REMOTE", (float *)value);
       break;
     default:
       return ERR_SENSOR_NA;
@@ -1811,25 +1828,31 @@ int pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *valu
 
 int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
 {
-  int asic_lock;
+  int ret, lock;
+  char asic_lock[32] = {0};
 
   if (fru == FRU_BSM || fru > FRU_ASIC7 || sensor_num >= FBEP_SENSOR_MAX)
     return ERR_SENSOR_NA;
 
   if (fru >= FRU_ASIC0 && fru <= FRU_ASIC7) {
-    asic_lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
-    if (asic_lock < 0) {
+    snprintf(asic_lock, sizeof(asic_lock), "/tmp/asic_lock%d", (int)fru-FRU_ASIC0);
+    lock = open(asic_lock, O_CREAT | O_RDWR, 0666);
+    if (lock < 0) {
       return ERR_FAILURE; // Skip
     }
-    if (flock(asic_lock, LOCK_EX | LOCK_NB) && errno == EWOULDBLOCK) {
-      close(asic_lock);
+    if (flock(lock, LOCK_EX | LOCK_NB) && errno == EWOULDBLOCK) {
+      close(lock);
       return ERR_FAILURE; // Skip
-    } else {
-      flock(asic_lock, LOCK_UN);
-      close(asic_lock);
     }
   }
 
-  return fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);
+  ret = fbep_sensors_map[sensor_num].sensor_read(sensor_num, (float *)value);
+
+  if (fru >= FRU_ASIC0 && fru <= FRU_ASIC7) {
+    flock(lock, LOCK_UN);
+    close(lock);
+  }
+
+  return ret;
 }
 

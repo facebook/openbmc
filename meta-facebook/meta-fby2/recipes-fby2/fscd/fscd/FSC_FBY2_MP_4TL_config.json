@@ -1,0 +1,200 @@
+{
+  "version": "fby2-mp-r01",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "sensor_fail_ignore": true,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "sensor_valid_check": {
+    "soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)nvme": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "host_boot": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 30, 10 ],
+        [ 31, 11 ],
+        [ 32, 12 ],
+        [ 33, 13 ],
+        [ 34, 14 ],
+        [ 35, 15 ],
+        [ 36, 16 ],
+        [ 37, 18 ],
+        [ 38, 20 ],
+        [ 39, 25 ],
+        [ 40, 30 ],
+        [ 45, 40 ]
+      ]
+    },
+    "linear_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ -34, 10 ],
+        [ -33, 11 ],
+        [ -32, 12 ],
+        [ -31, 14 ],
+        [ -30, 15 ],
+        [ -29, 16 ],
+        [ -28, 18 ],
+        [ -27, 20 ],
+        [ -26, 24 ],
+        [ -25, 26 ],
+        [ -24, 28 ]
+      ]
+    },
+    "pid_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -21,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [65, 10],
+        [66, 12],
+        [67, 14],
+        [68, 16],
+        [69, 18],
+        [70, 20],
+        [73, 35],
+        [75, 50],
+        [80, 70]
+      ]
+    },
+    "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [80, 10],
+        [82, 12],
+        [84, 14],
+        [86, 20],
+        [88, 30],
+        [90, 35],
+        [92, 45],
+        [97, 70]
+      ]
+    },
+    "linear_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 65, 20 ],
+        [ 70, 60 ]
+      ]
+    },
+    "pid_mb_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
+    },
+    "linear_mb_bootdrive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 55, 10 ],
+        [ 58, 12 ],
+        [ 60, 14 ],
+        [ 62, 16 ],
+        [ 64, 18 ],
+        [ 66, 20 ]
+      ]
+    },
+    "pid_mb_bootdrive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0, 1],
+      "expr_file": "FSC_FBY2_MP_4TL_zone1.fsc"
+    }
+  }
+}

@@ -33,6 +33,14 @@ echo -n "Starting IPMB Rx/Tx Daemon.."
 
 i2c_mslave_add 0 0x17 #MB
 i2c_mslave_add 8 0x10 #USB DBG
+i2c_mslave_add 1 0x10  #NIC0
+i2c_mslave_add 9 0x10  #NIC1
+i2c_mslave_add 2 0x10  #NIC2
+i2c_mslave_add 10 0x10 #NIC3
+i2c_mslave_add 4 0x10  #NIC4
+i2c_mslave_add 11 0x10 #NIC5
+i2c_mslave_add 7 0x10  #NIC6
+i2c_mslave_add 13 0x10 #NIC7
 
 ulimit -q 1024000
 runsv /etc/sv/ipmbd_8 > /dev/null 2>&1 &

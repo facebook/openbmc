@@ -33,6 +33,7 @@ board_rev=$(wedge_board_rev)
 #
 bulk_create_i2c_mux() {
     i2c_mux_name="pca9548"
+    mux_channels=8
 
     # The first-level i2c-muxes which are directly connected to aspeed
     # i2c adapters are described in device tree, and the bus number of
@@ -42,23 +43,18 @@ bulk_create_i2c_mux() {
     #    i2c-mux 8-0070: child bus 24-31
     #    i2c-mux 9-0070: child bus 32-39
     #    i2c-mux 11-0070: child bus 40-47
-    last_child_bus=47
 
     # Create second-level i2c-muxes which are connected to first level
     # mux "8-0070". "8-0070" has 8 channels and the first 4 channels
     # are connected with 1 extra level of i2c-mux. So total 32 child
     # buses (48-79) will be registered.
-    last_child_bus=$((last_child_bus + 8))
-    i2c_mux_add_sync 24 0x71 ${i2c_mux_name} ${last_child_bus}
+    i2c_mux_add_sync 24 0x71 "$i2c_mux_name" "$mux_channels"
 
-    last_child_bus=$((last_child_bus + 8))
-    i2c_mux_add_sync 25 0x72 ${i2c_mux_name} ${last_child_bus}
+    i2c_mux_add_sync 25 0x72 "$i2c_mux_name" "$mux_channels"
 
-    last_child_bus=$((last_child_bus + 8))
-    i2c_mux_add_sync 26 0x76 ${i2c_mux_name} ${last_child_bus}
+    i2c_mux_add_sync 26 0x76 "$i2c_mux_name" "$mux_channels"
 
-    last_child_bus=$((last_child_bus + 8))
-    i2c_mux_add_sync 27 0x76 ${i2c_mux_name} ${last_child_bus}
+    i2c_mux_add_sync 27 0x76 "$i2c_mux_name" "$mux_channels"
 
 
     # Create second-level i2c-muxes which are connected to first level
@@ -67,8 +63,7 @@ bulk_create_i2c_mux() {
     # totally 64 i2c buses (80-143) will be registered.
     parent_buses="40 41 42 43 44 45 46 47"
     for bus in ${parent_buses}; do
-        last_child_bus=$((last_child_bus + 8))
-        i2c_mux_add_sync ${bus} 0x73 ${i2c_mux_name} ${last_child_bus}
+        i2c_mux_add_sync "$bus" 0x73 "$i2c_mux_name" "$mux_channels"
     done
 }
 

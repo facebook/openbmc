@@ -18,7 +18,7 @@
 import re
 from collections import namedtuple
 
-from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceKv
 from fsc_util import Logger
 
 
@@ -44,9 +44,9 @@ class BMCMachine(object):
     def __init__(self):
         self.frus = set()
         self.nums = {}
-        self.last_fan_speed = {}
+        self.last_fan_speed = 0
 
-    def read_sensors(self, sensor_sources,inf):
+    def read_sensors(self, sensor_sources, inf):
         """
         Method to read all sensors
 
@@ -58,7 +58,7 @@ class BMCMachine(object):
         """
         sensors = {}
         for fru in self.frus:
-            sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources,inf)
+            sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources, inf)
 
         Logger.debug("Last fan speed : %d" % self.last_fan_speed)
         Logger.debug("Sensor reading")
@@ -112,6 +112,8 @@ class BMCMachine(object):
                 result[fans[key]] = parse_fan_util(fans[key].source.read())
             elif isinstance(fans[key].source, FscSensorSourceSysfs):
                 result[fans[key]] = parse_fan_sysfs(fans[key].source.read())
+            elif isinstance(fans[key].source, FscSensorSourceKv):
+                result[fans[key]] = parse_fan_kv(fans[key].source.read())
             else:
                 Logger.crit("Unknown source type")
         return result
@@ -147,7 +149,7 @@ class BMCMachine(object):
             self.set_pwm(fans[key], pct)
 
 
-def get_sensor_tuples(fru_name, sensor_num, sensor_sources,inf):
+def get_sensor_tuples(fru_name, sensor_num, sensor_sources, inf):
     """
     Method to walk through each of the sensor sources to build the tuples
     of the form 'SensorValue'
@@ -292,3 +294,19 @@ def parse_fan_util(fan_data):
         if m is not None:
             return int(m.group(1))
     return -1
+
+
+def parse_fan_kv(sensor_data):
+    """
+    Parse the data read from kv and return the RPM
+
+    Arguments:
+        sensor_data: data read from kv
+
+    Returns:
+        RPM
+    """
+    if sensor_data and sensor_data != "NA":
+        return int(float(sensor_data))
+    else:
+        return -1

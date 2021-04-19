@@ -22,7 +22,6 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
 SRC_URI += " \
     file://plat/meson.build \
     file://pal-ipmi.c \
-    file://pal-ipmi.h \
     file://pal-led.c \
     file://pal-led.h \
     file://pal-power.c \

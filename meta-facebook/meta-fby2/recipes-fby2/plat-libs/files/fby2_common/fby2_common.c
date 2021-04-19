@@ -57,6 +57,14 @@
   }                                                                               \
 } while(0)
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
+
 struct threadinfo {
   uint8_t is_running;
   uint8_t fru;
@@ -181,10 +189,10 @@ fby2_common_dev_id(char *str, uint8_t *dev) {
 
 static int
 trigger_hpr(uint8_t fru) {
+#ifndef CONFIG_FBY2_ND
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
-#ifndef CONFIG_FBY2_ND
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -284,6 +292,44 @@ fby2_common_get_spb_rev(void) {
 }
 
 int
+fby2_common_get_gpio_from_cache(char *gpio_shadow, int* gpio_val) {
+  char key[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "gpio_%s", gpio_shadow);
+
+  if (kv_get(key, value, NULL, 0)) {
+    if (fby2_common_get_gpio_val(gpio_shadow, gpio_val) != 0) {
+      syslog(LOG_WARNING,"%s: get gpio failed, shadow:%s", __func__, gpio_shadow);
+      return -1;
+    }
+    value[0] = (*gpio_val == GPIO_VALUE_HIGH) ? 1:0;
+    if (kv_set(key, (char*)&value, 1, KV_FCREATE)) {
+      syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %s", __func__, key, value);
+      return -1;
+    }
+  } else {
+    *gpio_val = value[0];
+  }
+
+  if (*gpio_val < 0 || *gpio_val > 1) {
+    syslog(LOG_WARNING,"%s: unexpected gpio_val, val: %d", __func__, *gpio_val);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+fby2_common_get_baseboard_id(void) {
+  int gpio_val;
+  if (fby2_common_get_gpio_from_cache(GPIO_BASEBOARD_ID, &gpio_val)) {
+    return -1;
+  }
+  return gpio_val;
+}
+
+int
 fby2_common_get_board_id(void) {
   int board_id;
   int retry = 3;
@@ -341,18 +387,20 @@ _set_spb_type(int spb_type) {
   return ret;
 }
 
-/* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0]
-   YV2 ND PoC           1       0         0         0
-   YV2 ND EVT           1       0         0         1
-   YV2 PoC              0       0         0         0
-   YV2 EVT              0       0         0         1
-   YV2 DVT              0       0         1         0
-   YV2 PVT              0       0         1         1
-   YV2.50               1       1         X         X
+/* Baseboard        Board_ID Rev_ID[2] Rev_ID[1] Rev_ID[0] Baesboard_ID
+   YV2 ND2 EVT          1       0         0         1           1
+   YV2 ND PoC           1       0         0         0           0
+   YV2 ND EVT           1       0         0         1           0
+   YV2 PoC              0       0         0         0           0
+   YV2 EVT              0       0         0         1           0
+   YV2 DVT              0       0         1         0           0
+   YV2 PVT              0       0         1         1           0
+   YV2.50               1       1         X         X           0
 */
 int
 fby2_common_get_spb_type() {
    int spb_type;
+   gpio_value_t baseboard_id;
    gpio_value_t board_id;
    uint8_t rev;
 
@@ -360,6 +408,14 @@ fby2_common_get_spb_type() {
    if ( _get_spb_type(&spb_type) == 0) {
      return spb_type;
    }
+
+   // Baseboard_ID
+   baseboard_id = fby2_common_get_baseboard_id();
+   if (baseboard_id < 0) {
+     syslog(LOG_WARNING, "fby2_common_get_spb_type: fail to get spb baseboard id");
+     return -1;
+   }
+   syslog(LOG_WARNING, "fby2_common_get_spb_type: spb baseboard id %d",baseboard_id);
 
    // Board_ID
    board_id = fby2_common_get_board_id();
@@ -380,7 +436,11 @@ fby2_common_get_spb_type() {
    if (GPIO_VALUE_HIGH == board_id && BIT(rev, 2)) {
      spb_type = TYPE_SPB_YV250;
    } else if ((GPIO_VALUE_HIGH == board_id) && (0 == BIT(rev, 2))) {
-     spb_type = TYPE_SPB_YV2ND;
+      if (baseboard_id == GPIO_VALUE_LOW) {
+        spb_type = TYPE_SPB_YV2ND;
+      } else {
+        spb_type = TYPE_SPB_YV2ND2;
+      }
    } else {
      spb_type = TYPE_SPB_YV2;
    }
@@ -453,7 +513,7 @@ generate_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[112];
   char fruname[16];
   bool ierr;
 
@@ -464,23 +524,23 @@ generate_dump(void *arg) {
   fby2_common_fru_name(fru, fruname);
 
   memset(fname, 0, sizeof(fname));
-  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  snprintf(fname, 112, "/var/run/autodump%d.pid", fru);
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CRASHDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_dump[fru-1].is_running = 0;
 
   if (!fby2_common_get_ierr(fru, &ierr) && ierr && trigger_hpr(fru)) {
     sprintf(cmd, "/usr/local/bin/power-util %s reset", fruname);
-    system(cmd);
+    log_system(cmd);
   }
   pthread_exit(NULL);
 }
@@ -490,7 +550,7 @@ second_dwr_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[112];
   char fruname[16];
 
   // Usually the pthread cancel state are enable by default but
@@ -500,18 +560,18 @@ second_dwr_dump(void *arg) {
   fby2_common_fru_name(fru, fruname);
 
   memset(fname, 0, sizeof(fname));
-  snprintf(fname, 128, "/var/run/autodump%d.pid", fru);
+  snprintf(fname, 112, "/var/run/autodump%d.pid", fru);
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic crashdump
   memset(cmd, 0, 128);
   syslog(LOG_WARNING, "Start Second/DWR Autodump");
   sprintf(cmd, "%s %s --second", CRASHDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_dump[fru-1].is_running = 0;
 
@@ -549,17 +609,17 @@ fby2_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
     } else {
       pthread_join(t_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
       sprintf(cmd, "ps | grep 'me-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
       sprintf(cmd, "ps | grep 'bic-util' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_crashdump: Previous crashdump thread is cancelled");
 #endif
       if (platform_reset) {
         sprintf(cmd, "tar zcf %suncompleted_slot%d.tar.gz -C /mnt/data crashdump_slot%d", CRASHDUMP_FILE,fru,fru);
-        system(cmd);
+        log_system(cmd);
       }
     }
   }
@@ -644,7 +704,7 @@ generate_cpld_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[112];
   char fruname[16];
 
   // Usually the pthread cancel state are enable by default but
@@ -658,13 +718,13 @@ generate_cpld_dump(void *arg) {
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic CPLD dump
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", CPLDDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_cpld_dump[fru-1].is_running = 0;
 
@@ -676,7 +736,7 @@ generate_sboot_cpld_dump(void *arg) {
 
   uint8_t fru = *(uint8_t *) arg;
   char cmd[128];
-  char fname[128];
+  char fname[120];
   char fruname[16];
 
   // Usually the pthread cancel state are enable by default but
@@ -690,13 +750,13 @@ generate_sboot_cpld_dump(void *arg) {
   if (access(fname, F_OK) == 0) {
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd,"rm %s",fname);
-    system(cmd);
+    log_system(cmd);
   }
 
   // Execute automatic CPLD dump for slow boot
   memset(cmd, 0, 128);
   sprintf(cmd, "%s %s", SBOOT_CPLDDUMP_BIN, fruname);
-  system(cmd);
+  log_system(cmd);
 
   t_sboot_cpld_dump[fru-1].is_running = 0;
 
@@ -725,7 +785,7 @@ fby2_common_cpld_dump(uint8_t fru) {
     } else {
       pthread_join(t_cpld_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{cpld-dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_cpld_dump: Previous CPLD dump thread is cancelled");
 #endif
@@ -770,7 +830,7 @@ fby2_common_sboot_cpld_dump(uint8_t fru) {
     } else {
       pthread_join(t_sboot_cpld_dump[fru-1].pt, NULL);
       sprintf(cmd, "ps | grep '{sboot-cpld-dump}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      system(cmd);
+      log_system(cmd);
 #ifdef DEBUG
       syslog(LOG_INFO, "fby2_common_sboot_cpld_dump: Previous CPLD dump thread is cancelled for slow boot");
 #endif
@@ -800,11 +860,16 @@ fby2_common_get_fan_config(void) {
 
   fp = fopen(FAN_CONFIG_FILE, "r");
   if (fp != NULL) {
-    fscanf(fp, "%d", &type);
+    if (fscanf(fp, "%d", &type) != 1)
+      goto error_out;
     fclose(fp);
   }
 
   return (type)?TYPE_15K_FAN:TYPE_10K_FAN;
+error_out:
+  if (fp != NULL)
+    fclose(fp);
+  return -1;
 }
 
 int

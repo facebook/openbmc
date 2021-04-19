@@ -25,7 +25,9 @@ import rest_bmc
 import rest_fcpresent
 import rest_fruid
 import rest_fruid_pim
+import rest_fscd_sensor_data
 import rest_gpios
+import rest_modbus_cmd
 import rest_mTerm
 import rest_ntpstatus
 import rest_psu_update
@@ -227,3 +229,22 @@ class commonApp_Handler:
     @common_force_async
     def rest_ntp_status(self, request):
         return self.helper_rest_ntp_status(request)
+
+    # Handler for additional fscd sensor data
+    @staticmethod
+    async def rest_fscd_sensor_data_post(request: web.Request) -> web.Response:
+        return await rest_fscd_sensor_data.post_fscd_sensor_data(request)
+
+    @staticmethod
+    def rest_modbus_get(request: web.Request) -> web.Response:
+        return web.json_response(
+            {
+                "Information": {"Description": "Modbus operations"},
+                "Actions": [],
+                "Resources": get_endpoints("/api/sys/modbus"),
+            }
+        )
+
+    @staticmethod
+    async def rest_modbus_cmd_post(request: web.Request) -> web.Response:
+        return await rest_modbus_cmd.post_modbus_cmd(request)

@@ -25,6 +25,7 @@ SRC_URI += " \
     file://rest_seutil.py \
     file://rest_sensors.py \
     file://rest_switch_reset.py \
+    file://rest_system_led_info.py \
     file://rest_vddcore.py \
     file://run_rest \
 "
@@ -37,5 +38,6 @@ binfiles1 += " \
     rest_sensors.py \
     rest_seutil.py \
     rest_switch_reset.py \
+    rest_system_led_info.py \
     rest_vddcore.py \
 "

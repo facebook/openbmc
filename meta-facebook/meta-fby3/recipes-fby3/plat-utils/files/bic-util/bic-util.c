@@ -36,7 +36,6 @@
 #include <time.h>
 
 static uint8_t bmc_location = 0xff;
-static uint8_t config_status = 0xff;
 const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
 
@@ -57,6 +56,10 @@ static const char *option_list[] = {
   "--check_usb_port [sb|1ou|2ou]",
 };
 
+static const char *class2_options[] = {
+  "--get_slot_id",
+};
+
 static void
 print_usage_help(void) {
   int i;
@@ -66,6 +69,12 @@ print_usage_help(void) {
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
+
+  if (fby3_common_get_bmc_location(&bmc_location) == 0 && bmc_location == NIC_BMC) {
+    for (i = 0; i < sizeof(class2_options)/sizeof(class2_options[0]); i++) {
+      printf("       %s\n", class2_options[i]);
+    }
+  }
 }
 
 // Check BIC status
@@ -137,6 +146,29 @@ util_bic_reset(uint8_t slot_id) {
 }
 
 static int
+util_is_numeric(char **argv) {
+  int j = 0;
+  int len = 0;
+  for (int i = 0; i < 2; i++) { //check netFn cmd
+    len = strlen(argv[i]);
+    if (len > 2 && argv[i][0] == '0' && (argv[i][1] == 'x' || argv[i][1] == 'X')) {
+      j=2;
+      for (; j < len; j++) {
+        if (!isxdigit(argv[i][j]))
+          return 0;
+      }
+    } else {
+      j=0;
+      for (; j < len; j++) {
+        if (!isdigit(argv[i][j]))
+          return 0;
+      }
+    }
+  }
+  return 1;
+}
+
+static int
 process_command(uint8_t slot_id, int argc, char **argv) {
   int i, ret, retry = 2;
   uint8_t tbuf[256] = {0x00};
@@ -198,7 +230,6 @@ process_file(uint8_t slot_id, char *path) {
       argv[argc] = str;
     }
     if (argc <= 1) {
-      printf("Invalid line: %s\n", buf);
       continue;
     }
 
@@ -400,11 +431,31 @@ util_read_sensor(uint8_t slot_id) {
   ipmi_sensor_reading_t sensor = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
+  uint8_t config_status = 0xff;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    return -1;
+  }
+  config_status = (uint8_t) ret;
 
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    intf_list[2] = REXP_BIC_INTF;
+    if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+      printf("%s() Couldn't get 2OU board type\n", __func__);
+      return -1;
+    }
+
+    switch (type_2ou) {
+    case DP_RISER_BOARD:
+      break;
+    default:
+      intf_list[2] = REXP_BIC_INTF;
+      break;
+    }
   }
 
   if ( bmc_location == NIC_BMC ) {
@@ -442,14 +493,34 @@ util_get_sdr(uint8_t slot_id) {
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
+  uint8_t config_status = 0xff;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
 
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    return -1;
+  }
+  config_status = (uint8_t) ret;
+
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    intf_list[2] = REXP_BIC_INTF;
+    if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+      printf("%s() Couldn't get 2OU board type\n", __func__);
+      return -1;
+    }
+
+    switch (type_2ou) {
+    case DP_RISER_BOARD:
+      break;
+    default:
+      intf_list[2] = REXP_BIC_INTF;
+      break;
+    }
   }
 
   if ( bmc_location == NIC_BMC ) {
@@ -767,6 +838,19 @@ util_check_usb_port(uint8_t slot_id, char *comp) {
   return ret;
 }
 
+static int
+util_get_slot_id() {
+  uint8_t index = 0;
+
+  if (bic_get_mb_index(&index) != 0) {
+    return -1;
+  }
+
+  printf("Slot ID = %d\n", index);
+
+  return 0;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t slot_id = 0;
@@ -803,14 +887,6 @@ main(int argc, char **argv) {
       printf("%s is not present!\n", argv[1]);
       return -1;
     }
-
-    ret = bic_is_m2_exp_prsnt(slot_id);
-    if ( ret < 0 ) {
-      printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
-      return -1;
-    }
-
-    config_status = (uint8_t) ret;
   }
 
   if ( strncmp(argv[2], "--", 2) == 0 ) {
@@ -870,12 +946,29 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_check_usb_port(slot_id, argv[3]);
+    } else if ( strcmp(argv[2], "--get_slot_id") == 0 ) {
+      if (bmc_location != NIC_BMC) {
+        printf("Option not supported for this sku!\n");
+        return -1;
+      }
+
+      if (argc != 3) {
+        goto err_exit;
+      }
+
+      return util_get_slot_id();
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;
     }
+  } else if (argc >= 4) {
+    if (util_is_numeric(argv + 2)) {
+      return process_command(slot_id, (argc - 2), (argv + 2));
+    } else {
+      goto err_exit;
+    }
   } else {
-    return process_command(slot_id, (argc - 2), (argv + 2));
+    goto err_exit;
   }
 
 err_exit:

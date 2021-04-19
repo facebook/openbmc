@@ -434,6 +434,85 @@ static sensor_desc_t cri_sensor_sb[] =
  
 };
 
+static sensor_desc_t cri_sensor_gpv3[] =
+{
+// MB sensors
+  {"MB Inlet Temp:"        , BIC_SENSOR_INLET_TEMP         , "C"    , FRU_ALL, 0},
+  {"MB Outlet Temp:"       , BIC_SENSOR_OUTLET_TEMP        , "C"    , FRU_ALL, 0},
+  {"FRONT IO Temp:"        , BIC_SENSOR_FIO_TEMP           , "C"    , FRU_ALL, 2},
+  {"PCH Temp:"             , BIC_SENSOR_PCH_TEMP           , "C"    , FRU_ALL, 0},
+  {"SOC CPU Temp:"         , BIC_SENSOR_CPU_TEMP           , "C"    , FRU_ALL, 0},
+  {"Therm Margin:"         , BIC_SENSOR_CPU_THERM_MARGIN   , "C"    , FRU_ALL, 0},
+  {"SOC CPU TjMax:"        , BIC_SENSOR_CPU_TJMAX          , "C"    , FRU_ALL, 0},
+  {"CPU Pkg Pwr:"          , BIC_SENSOR_SOC_PKG_PWR        , "W"    , FRU_ALL, 0},
+  {"DIMMA TEMP:"           , BIC_SENSOR_DIMMA0_TEMP        , "C"    , FRU_ALL, 0},
+  {"DIMMB TEMP:"           , BIC_SENSOR_DIMMB0_TEMP        , "C"    , FRU_ALL, 0},
+  {"DIMMC TEMP:"           , BIC_SENSOR_DIMMC0_TEMP        , "C"    , FRU_ALL, 0},
+  {"DIMMD TEMP:"           , BIC_SENSOR_DIMMD0_TEMP        , "C"    , FRU_ALL, 0},
+  {"DIMME TEMP:"           , BIC_SENSOR_DIMME0_TEMP        , "C"    , FRU_ALL, 0},
+  {"DIMMF TEMP:"           , BIC_SENSOR_DIMMF0_TEMP        , "C"    , FRU_ALL, 0},
+  {"SSD1 Temp:"            , BIC_SENSOR_M2B_TEMP           , "C"    , FRU_ALL, 0},
+  {"HSC Temp:"             , BIC_SENSOR_HSC_TEMP           , "C"    , FRU_ALL, 0},
+  {"VCCIN VR Temp:"        , BIC_SENSOR_VCCIN_VR_TEMP      , "C"    , FRU_ALL, 0},
+  {"VCCSA VR Temp:"        , BIC_SENSOR_VCCSA_VR_TEMP      , "C"    , FRU_ALL, 0},
+  {"VCCIO VR Temp:"        , BIC_SENSOR_VCCIO_VR_Temp      , "C"    , FRU_ALL, 0},
+  {"3V3STBY VRTemp:"       , BIC_SENSOR_P3V3_STBY_VR_TEMP  , "C"    , FRU_ALL, 0},
+  {"VDDQABC VRTemp:"       , BIC_SENSOR_PVDDQ_ABC_VR_TEMP  , "C"    , FRU_ALL, 0},
+  {"VDDQDEF VRTemp:"       , BIC_SENSOR_PVDDQ_DEF_VR_TEMP  , "C"    , FRU_ALL, 0},
+  {"P12V_STBY Vol:"        , BIC_SENSOR_P12V_STBY_VOL      , "V"    , FRU_ALL, 2},
+  {"P3V_BAT Vol:"          , BIC_SENSOR_P3V_BAT_VOL        , "V"    , FRU_ALL, 2},
+  {"P3V3_STBY Vol:"        , BIC_SENSOR_P3V3_STBY_VOL      , "V"    , FRU_ALL, 2},
+  {"P1V05_PCH Vol:"        , BIC_SENSOR_P1V05_PCH_STBY_VOL , "V"    , FRU_ALL, 2},
+  {"PVNN_PCH Vol:"         , BIC_SENSOR_PVNN_PCH_STBY_VOL  , "V"    , FRU_ALL, 2},
+  {"HSC Input Vol:"        , BIC_SENSOR_HSC_INPUT_VOL      , "V"    , FRU_ALL, 2},
+  {"VCCIN VR Vol:"         , BIC_SENSOR_VCCIN_VR_VOL       , "V"    , FRU_ALL, 2},
+  {"VCCSA VR Vol:"         , BIC_SENSOR_VCCSA_VR_VOL       , "V"    , FRU_ALL, 2},
+  {"VCCIO VR Vol:"         , BIC_SENSOR_VCCIO_VR_VOL       , "V"    , FRU_ALL, 2},
+  {"3V3STBY VRVol:"        , BIC_SENSOR_P3V3_STBY_VR_VOL   , "V"    , FRU_ALL, 2},
+  {"VDDQABC VRVol:"        , BIC_PVDDQ_ABC_VR_VOL          , "V"    , FRU_ALL, 2},
+  {"VDDQDEF VRVol:"        , BIC_PVDDQ_DEF_VR_VOL          , "V"    , FRU_ALL, 2},
+  {"HSC OutputCur:"        , BIC_SENSOR_HSC_OUTPUT_CUR     , "Amps" , FRU_ALL, 2},
+  {"VCCIN VR Cur:"         , BIC_SENSOR_VCCIN_VR_CUR       , "Amps" , FRU_ALL, 2},
+  {"VCCSA VR Cur:"         , BIC_SENSOR_VCCSA_VR_CUR       , "Amps" , FRU_ALL, 2},
+  {"VCCIO VR Cur:"         , BIC_SENSOR_VCCIO_VR_CUR       , "Amps" , FRU_ALL, 2},
+  {"3V3STBY VRCur:"        , BIC_SENSOR_P3V3_STBY_VR_CUR   , "Amps" , FRU_ALL, 2},
+  {"VDDQABC VRCur:"        , BIC_SENSOR_PVDDQ_ABC_VR_CUR   , "Amps" , FRU_ALL, 2},
+  {"VDDQDEF VRCur:"        , BIC_SENSOR_PVDDQ_DEF_VR_CUR   , "Amps" , FRU_ALL, 2},
+  {"HSC PwrIn:"            , BIC_SENSOR_HSC_INPUT_PWR      , "W"    , FRU_ALL, 0},
+  {"HSC AvgPwrIn:"         , BIC_SENSOR_HSC_INPUT_AVGPWR   , "W"    , FRU_ALL, 0},
+  {"VCCIN VR Pout:"        , BIC_SENSOR_VCCIN_VR_POUT      , "W"    , FRU_ALL, 0},
+  {"VCCSA VR Pout:"        , BIC_SENSOR_VCCSA_VR_POUT      , "W"    , FRU_ALL, 0},
+  {"VCCIO VR Pout:"        , BIC_SENSOR_VCCIO_VR_POUT      , "W"    , FRU_ALL, 0},
+  {"3V3STBY VRPout:"       , BIC_SENSOR_P3V3_STBY_VR_POUT  , "W"    , FRU_ALL, 0},
+  {"VDDQABC VRPout"        , BIC_SENSOR_PVDDQ_ABC_VR_POUT  , "W"    , FRU_ALL, 2},
+  {"VDDQDEF VRPout:"       , BIC_SENSOR_PVDDQ_DEF_VR_POUT  , "W"    , FRU_ALL, 2},
+
+// GPv3 sensors
+  {"GP3 INLET TEMP:"       , BIC_GPV3_INLET_TEMP           , "C"    , FRU_ALL, 0},
+  {"GP3 PESW TEMP:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_ALL, 0},
+  {"GP3 3V3S1 Temp:"       , BIC_GPV3_P3V3_STBY1_TEMP      , "C"    , FRU_ALL, 0},
+  {"GP3 3V3S2 Temp:"       , BIC_GPV3_P3V3_STBY2_TEMP      , "C"    , FRU_ALL, 0},
+  {"GP3 3V3S3 Temp:"       , BIC_GPV3_P3V3_STBY3_TEMP      , "C"    , FRU_ALL, 0},
+  {"GP3 PESW VR P:"        , BIC_GPV3_VR_P0V84_POWER       , "W"    , FRU_ALL, 0},
+  {"GP3 PESW VR T:"        , BIC_GPV3_VR_P0V84_TEMP        , "C"    , FRU_ALL, 0},
+  {"GP3 P1V8 Pwr:"         , BIC_GPV3_VR_P1V8_POWER        , "W"    , FRU_ALL, 0},
+  {"GP3 P1V8 Temp:"        , BIC_GPV3_VR_P1V8_TEMP         , "C"    , FRU_ALL, 0},
+  {"GP3 E1S0 Temp:"        , BIC_GPV3_E1S_1_TEMP           , "C"    , FRU_ALL, 0},
+  {"GP3 E1S1 Temp:"        , BIC_GPV3_E1S_2_TEMP           , "C"    , FRU_ALL, 0},
+  {"GP3 M2 0 Temp:"        , BIC_GPV3_NVME_TEMP_DEV0       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 1 Temp:"        , BIC_GPV3_NVME_TEMP_DEV1       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 2 Temp:"        , BIC_GPV3_NVME_TEMP_DEV2       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 3 Temp:"        , BIC_GPV3_NVME_TEMP_DEV3       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 4 Temp:"        , BIC_GPV3_NVME_TEMP_DEV4       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 5 Temp:"        , BIC_GPV3_NVME_TEMP_DEV5       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 6 Temp:"        , BIC_GPV3_NVME_TEMP_DEV6       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 7 Temp:"        , BIC_GPV3_NVME_TEMP_DEV7       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 8 Temp:"        , BIC_GPV3_NVME_TEMP_DEV8       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 9 Temp:"        , BIC_GPV3_NVME_TEMP_DEV9       , "C"    , FRU_ALL, 0},
+  {"GP3 M2 10 Temp:"       , BIC_GPV3_NVME_TEMP_DEV10      , "C"    , FRU_ALL, 0},
+  {"GP3 M2 11 Temp:"       , BIC_GPV3_NVME_TEMP_DEV11      , "C"    , FRU_ALL, 0},
+};
+
 static sensor_desc_t cri_sensor_bmc[] =
 {
   {"FAN0_TACH:"            , BMC_SENSOR_FAN0_TACH          , "RPM"  , FRU_BMC, 0},
@@ -507,14 +586,23 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
+  uint8_t type_2ou = UNKNOWN_BOARD;
   if (!desc || !desc_count) {
     return -1;
   }
   if(fru == FRU_ALL){ //uart select BMC position
     *desc = cri_sensor_bmc;
     *desc_count = sizeof(cri_sensor_bmc) / sizeof(cri_sensor_bmc[0]);
-  }
-  else{
+  } else {
+    if ( (bic_is_m2_exp_prsnt(fru) & PRESENT_2OU) == PRESENT_2OU ) {
+      if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0) {
+        syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",fru);
+      } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+        *desc = cri_sensor_gpv3;
+        *desc_count = sizeof(cri_sensor_gpv3) / sizeof(cri_sensor_gpv3[0]);
+        return 0;
+      }
+    }
     *desc = cri_sensor_sb;
     *desc_count = sizeof(cri_sensor_sb) / sizeof(cri_sensor_sb[0]);
   }

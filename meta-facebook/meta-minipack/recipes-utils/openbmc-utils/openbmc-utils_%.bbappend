@@ -17,10 +17,11 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+PACKAGECONFIG += "disable-watchdog"
+
 SRC_URI += "file://board-utils.sh \
             file://boot_info.sh \
             file://cpld_ver.sh \
-            file://disable_watchdog.sh \
             file://fcmcpld_update.sh \
             file://fpga_ver.sh \
             file://feutil \
@@ -56,7 +57,6 @@ OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     boot_info.sh \
     cpld_ver.sh \
-    disable_watchdog.sh \
     fcmcpld_update.sh \
     fpga_ver.sh \
     feutil \
@@ -118,9 +118,6 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
-
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
-    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 
 }
 

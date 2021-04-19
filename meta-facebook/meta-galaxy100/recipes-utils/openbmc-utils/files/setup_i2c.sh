@@ -55,13 +55,19 @@ i2c_device_add 11 0x10 adm1278
 i2c_device_add 12 0x31 syscpld
 i2c_device_add 12 0x39 qsfp_cpld
 
+#
 # setup ADC channels
-modprobe ast_adc
-# channel 3: r1:  2.0K; r2:  1.0K; v2: 0mv
-# channel 4: r1:  4.7K; r2:  1.0K; v2: 0mv
-# channel 8: r1:  1.0K; r2:  1.0K; v2: 0mv
-# channel 9: r1:  1.0K; r2:  1.0K; v2: 0mv
-ast_config_adc 3  2 1 0
-ast_config_adc 4  47 10 0
-ast_config_adc 8  1 1 0
-ast_config_adc 9  1 1 0
+# This step is only needed in legacy kernel (v4.1), because the ADC
+# controller is configured in device tree in the latest kernel.
+#
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    modprobe ast_adc
+    # channel 3: r1:  2.0K; r2:  1.0K; v2: 0mv
+    # channel 4: r1:  4.7K; r2:  1.0K; v2: 0mv
+    # channel 8: r1:  1.0K; r2:  1.0K; v2: 0mv
+    # channel 9: r1:  1.0K; r2:  1.0K; v2: 0mv
+    ast_config_adc 3  2 1 0
+    ast_config_adc 4  47 10 0
+    ast_config_adc 8  1 1 0
+    ast_config_adc 9  1 1 0
+fi

@@ -94,7 +94,10 @@ class tree:
                     r = resource.url().replace(request.path, "").split("/")[1]
                     resources.add(r)
             ENDPOINT_CHILDREN[request.path] = resources
-        result = {"Information": info, "Actions": actions, "Resources": list(resources)}
+        if "redfish" in self.path:
+            result = info
+        else:
+            result = {"Information": info, "Actions": actions, "Resources": list(resources)}
         return web.json_response(result, dumps=dumps_bytestr)
 
     async def handlePost(self, request):

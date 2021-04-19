@@ -25,7 +25,7 @@
 #include <string.h>
 #include <facebook/fbgc_common.h>
 #include "fbgc_fruid.h"
-
+#include <facebook/bic.h>
 
 int
 fbgc_get_fruid_name(uint8_t fru, char *name) {
@@ -50,6 +50,18 @@ fbgc_get_fruid_name(uint8_t fru, char *name) {
       break;
     case FRU_E1S_IOCM:
       snprintf(name, MAX_FRU_NAME_STR, "IOC Module");
+      break;
+    case FRU_FAN0:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN0");
+      break;
+    case FRU_FAN1:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN1");
+      break;
+    case FRU_FAN2:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN2");
+      break;
+    case FRU_FAN3:
+      snprintf(name, MAX_FRU_NAME_STR, "FAN3");
       break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
@@ -90,6 +102,18 @@ fbgc_get_fruid_path(uint8_t fru, char *path) {
         syslog(LOG_WARNING, "%s: FRU iocm not supported by type 5 system", __func__);
       }
       break;
+    case FRU_FAN0:
+      snprintf(fname, sizeof(fname), "fan0");
+      break;
+    case FRU_FAN1:
+      snprintf(fname, sizeof(fname), "fan1");
+      break;
+    case FRU_FAN2:
+      snprintf(fname, sizeof(fname), "fan2");
+      break;
+    case FRU_FAN3:
+      snprintf(fname, sizeof(fname), "fan3");
+      break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -101,20 +125,35 @@ fbgc_get_fruid_path(uint8_t fru, char *path) {
 
 int
 fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
+  uint8_t type = 0;
   switch(fru) {
     case FRU_SERVER:
     case FRU_DPB:
     case FRU_SCC:
-    case FRU_E1S_IOCM:
+    case FRU_FAN0:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
       return -1;
+    case FRU_E1S_IOCM:
+      if (fbgc_common_get_chassis_type(&type) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+        return -1;
+      }
+      if (type == CHASSIS_TYPE5) {
+        syslog(LOG_WARNING, "%s: FRU iocm not supported by type 5 system", __func__);
+        return -1;
+      }
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+      break;
     case FRU_BMC:
-      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, BMC_FRU_BUS, BMC_FRU_ADDR);
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_BSM_BUS, BMC_FRU_ADDR);
       break;
     case FRU_UIC:
-      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
       break;
     case FRU_NIC:
-      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
+      snprintf(path, MAX_FILE_PATH, EEPROM_PATH, I2C_NIC_BUS, NIC_FRU_ADDR);
       break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
@@ -122,4 +161,9 @@ fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
   }
 
   return 0;
+}
+
+int
+fbgc_fruid_write(uint8_t fru, char *path) {
+  return bic_write_fruid(fru, path);
 }

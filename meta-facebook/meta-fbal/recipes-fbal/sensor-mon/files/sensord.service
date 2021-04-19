@@ -21,7 +21,7 @@ Wants=setup_i2c.service
 After=setup_i2c.service
 
 [Service]
-ExecStart=/usr/local/bin/sensord mb nic0 nic1 pdb
+ExecStart=/usr/local/bin/sensord mb nic0 nic1 pdb tray1_mb
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=on-success
 

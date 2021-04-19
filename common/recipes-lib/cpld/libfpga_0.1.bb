@@ -12,23 +12,12 @@ SRC_URI = "file://cpld.c \
            file://lattice.h \
            file://altera.c \
            file://altera.h \
-           file://Makefile \
+           file://meson.build \
           "
 
 DEPENDS = "libast-jtag libpal"
 RDEPENDS_${PN} = "libast-jtag libpal"
-LDFLAGS += "-lpal -last-jtag"
 
 S = "${WORKDIR}"
 
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libfpga.so ${D}${libdir}/libfpga.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 cpld.h ${D}${includedir}/openbmc/cpld.h
-    install -m 0644 altera.h ${D}${includedir}/openbmc/altera.h
-}
-
-FILES_${PN} = "${libdir}/libfpga.so"
-FILES_${PN}-dev = "${includedir}/openbmc/cpld.h ${includedir}/openbmc/altera.h"
+inherit meson

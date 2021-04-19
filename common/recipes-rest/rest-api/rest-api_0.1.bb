@@ -24,8 +24,11 @@ SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
-DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native libgpio-ctrl"
-RDEPENDS_${PN} += "python3-core aiohttp json-log-formatter"
+DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native"
+
+REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter"
+RDEPENDS_${PN} += "${REST_API_RDEPENDS}"
+RDEPENDS_${PN}_class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
 
 
 SRC_URI = "file://setup-rest-api.sh \
@@ -38,11 +41,10 @@ SRC_URI = "file://setup-rest-api.sh \
            file://acl_providers/__init__.py\
            file://acl_providers/cached_acl_provider.py\
            file://acl_providers/common_acl_provider_base.py\
-           file://acl_providers/dummy_acl_provider.py\
            file://board_endpoint.py \
            file://rest_watchdog.py \
            file://rest_config.py \
-           file://pal.py \
+           file://rest_pal_legacy.py \
            file://node.py \
            file://node_bmc.py \
            file://vboot.py \
@@ -63,15 +65,23 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_ntpstatus.py \
            file://rest_helper.py \
            file://rest_utils.py \
+           file://rest_fscd_sensor_data.py \
            file://board_setup_routes.py \
+           file://rest_modbus_cmd.py \
+           file://test_rest_modbus_cmd.py \
            file://test_auth_enforcer.py \
            file://test_cached_acl_provider.py \
            file://test_common_middlewares.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
+           file://test_rest_fscd_sensor_data.py \
+           file://test_rest_gpios.py \
+           file://test_common_auth.py \
+           file://test_common_acl_provider_base.py \
            file://boardroutes.py \
            file://common_setup_routes.py \
            file://setup_plat_routes.py \
+           file://boot_source.py \
            file://restapi.service \
           "
 
@@ -85,11 +95,12 @@ binfiles = "acl_config.py\
             common_middlewares.py \
             common_logging.py \
             rest_config.py \
+            rest_pal_legacy.py \
             node.py \
             node_bmc.py \
             rest.py \
             vboot.py \
-            pal.py \
+            boot_source.py \
            "
 
 binfiles1 = "setup-rest-api.sh \
@@ -111,12 +122,14 @@ binfiles1 = "setup-rest-api.sh \
              rest_utils.py \
              rest_mTerm.py \
              setup_plat_routes.py \
+             rest_fscd_sensor_data.py \
+             rest_modbus_cmd.py \
              common_setup_routes.py"
 
 aclfiles = "__init__.py \
             cached_acl_provider.py \
             common_acl_provider_base.py \
-            dummy_acl_provider.py"
+"
 
 pkgdir = "rest-api"
 

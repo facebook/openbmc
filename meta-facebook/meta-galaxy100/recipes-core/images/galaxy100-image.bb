@@ -23,13 +23,11 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   openbmc-gpio \
   po-eeprom \
-  repeater  \
-  retimer  \
   kcsd \
-  spatula \
   stress  \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
   watchdogd \
+  udev-rules \
   "

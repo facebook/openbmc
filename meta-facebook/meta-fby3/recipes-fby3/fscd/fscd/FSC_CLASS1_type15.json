@@ -1,14 +1,23 @@
 {
   "version": "fby3-dvt-v2020.04.22",
-  "pwm_transition_value": 70,
-  "pwm_boost_value": 60,
+  "pwm_transition_value": 60,
+  "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
   },
+  "fan_dead_boost": {
+    "threshold": 2,
+    "action": "host_shutdown"
+  },
   "sensor_valid_check": {
+    "front_io_temp": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
     "soc_cpu": {
       "attribute": {
         "type" : "power_status"

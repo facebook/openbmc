@@ -39,10 +39,33 @@
 
 #define FRUID_SIZE        512
 
-#define FRU_ID_SERVER 0
-#define FRU_ID_BMC 1
-#define FRU_ID_NIC 2
-#define FRU_ID_2OU 6
+typedef struct {
+  uint8_t fruid;
+  uint8_t devid;
+} fruid_to_devid;
+
+fruid_to_devid mapping[] = {
+  { FRU_ID_BOARD_1OU    ,BOARD_1OU    },
+  { FRU_ID_BOARD_2OU    ,BOARD_2OU    },
+  { FRU_ID_1OU_DEV0     ,DEV_ID0_1OU  },
+  { FRU_ID_1OU_DEV1     ,DEV_ID1_1OU  },
+  { FRU_ID_1OU_DEV2     ,DEV_ID2_1OU  },
+  { FRU_ID_1OU_DEV3     ,DEV_ID3_1OU  },
+  { FRU_ID_2OU_DEV0     ,DEV_ID0_2OU  },
+  { FRU_ID_2OU_DEV1     ,DEV_ID1_2OU  },
+  { FRU_ID_2OU_DEV2     ,DEV_ID2_2OU  },
+  { FRU_ID_2OU_DEV3     ,DEV_ID3_2OU  },
+  { FRU_ID_2OU_DEV4     ,DEV_ID4_2OU  },
+  { FRU_ID_2OU_DEV5     ,DEV_ID5_2OU  },
+  { FRU_ID_2OU_DEV6     ,DEV_ID6_2OU  },
+  { FRU_ID_2OU_DEV7     ,DEV_ID7_2OU  },
+  { FRU_ID_2OU_DEV8     ,DEV_ID8_2OU  },
+  { FRU_ID_2OU_DEV9     ,DEV_ID9_2OU  },
+  { FRU_ID_2OU_DEV10    ,DEV_ID10_2OU },
+  { FRU_ID_2OU_DEV11    ,DEV_ID11_2OU },
+  { FRU_ID_2OU_DEV12    ,DEV_ID12_2OU },
+  { FRU_ID_2OU_DEV13    ,DEV_ID13_2OU },
+};
 
 /*
  * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
@@ -176,21 +199,40 @@ int plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count,
   char fpath[64] = {0};
   int fd;
   int ret;
+  int index;
 
-  if (fru_id == FRU_ID_SERVER) {
-    // Fill the file path for a given slot
-    sprintf(fpath, FRU_SLOT_BIN, payload_id);
-  } else if (fru_id == FRU_ID_BMC) {
-    // Fill the file path for bmc
-    sprintf(fpath, FRU_BMC_BIN);
-  } else if (fru_id == FRU_ID_NIC) {
-    // Fill the file path for nic
-    sprintf(fpath, FRU_NIC_BIN);
-  } else if (fru_id == FRU_ID_2OU) {
-    // Fill the file path for 2OU
-    snprintf(fpath, sizeof(fpath), FRU_2OU_BIN, payload_id);
-  } else {
-    return -1;
+  switch (fru_id) {
+    case FRU_ID_SERVER:
+      sprintf(fpath, FRU_SLOT_BIN, payload_id);
+      break;
+    case FRU_ID_BMC:
+      sprintf(fpath, FRU_BMC_BIN);
+      break;
+    case FRU_ID_NIC:
+      sprintf(fpath, FRU_NIC_BIN);
+      break;
+    case FRU_ID_BB:
+      sprintf(fpath, FRU_BB_BIN);
+      break;
+    case FRU_ID_NICEXP:
+      sprintf(fpath, FRU_NICEXP_BIN);
+      break;
+
+    default:
+      for(index=0; index < (sizeof(mapping)/sizeof(mapping[0])); index++){
+        if (mapping[index].fruid == fru_id) {
+          break;
+        }
+      }
+
+      if (index < (sizeof(mapping)/sizeof(mapping[0]))) {
+        sprintf(fpath, FRU_DEV_PATH, payload_id, mapping[index].devid);
+        syslog(LOG_INFO, "FRU path %s", fpath);
+        break;
+      } else {
+        syslog(LOG_WARNING, "cannot find fruid %d in mapping table", fru_id);
+        return -1;
+      }
   }
 
   // open file for read purpose

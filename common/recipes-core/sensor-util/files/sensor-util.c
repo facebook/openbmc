@@ -667,7 +667,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
 }
 
 static int
-print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool force, bool json, bool history_clear, bool filter, char** filter_list, int filter_len,long period, json_t *fru_sensor_obj) {
+print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool threshold, bool force, bool json, bool history_clear, bool filter, char** filter_list, int filter_len,long period, json_t *fru_sensor_obj) {
   int ret;
   uint8_t status;
   int sensor_cnt;
@@ -707,7 +707,12 @@ print_sensor(uint8_t fru, int sensor_num, bool history, bool threshold, bool for
         printf("pal_is_fru_prsnt failed for fru: %s\n", fruname);
       return ret;
     }
+    // FRU is not present
     if (status == 0) {
+      // We do not care about absent FRUs (Printing all)
+      // Let the call succeed.
+      if (allow_absent == true)
+        return 0;
       if (json == 0)
         printf("%s is not present!\n\n", fruname);
       return -1;
@@ -902,14 +907,14 @@ main(int argc, char **argv) {
 
   if (fru == 0) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-      ret |= print_sensor(fru, num, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
+      ret |= print_sensor(fru, num, true, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     }
-    ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, history, threshold, false, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
+    ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, true, history, threshold, false, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
   } else if (pal_get_pair_fru(fru, &pair_fru)) {
-    ret = print_sensor(fru, num, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-    ret = print_sensor(pair_fru, num, history, threshold, pair_fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len ,period, fru_sensor_obj);
+    ret = print_sensor(fru, num, false, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
+    ret = print_sensor(pair_fru, num, false, history, threshold, pair_fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len ,period, fru_sensor_obj);
   } else {
-    ret = print_sensor(fru, num, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
+    ret = print_sensor(fru, num, false, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
   }
 
   if (json) {

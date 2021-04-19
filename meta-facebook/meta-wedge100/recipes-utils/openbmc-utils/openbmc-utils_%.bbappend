@@ -17,8 +17,9 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://disable_watchdog.sh \
-            file://enable_watchdog_ext_signal.sh \
+PACKAGECONFIG += "disable-watchdog"
+
+SRC_URI += "file://enable_watchdog_ext_signal.sh \
             file://ec_version.sh \
             file://board-utils.sh \
             file://setup_board.sh \
@@ -29,12 +30,16 @@ SRC_URI += "file://disable_watchdog.sh \
             file://reset_qsfp_mux.sh \
             file://setup_i2c.sh \
             file://setup_sensors_conf.sh \
+            file://setup_sensors_conf.service \
             file://spi_util.sh \
             file://reset_fancpld.sh \
-           "
+            file://setup_i2c.service \
+            file://power-on.service \
+            file://setup_board.service \
+            file://mount_data0.sh \
+            "
 
 OPENBMC_UTILS_FILES += " \
-    disable_watchdog.sh \
     enable_watchdog_ext_signal.sh \
     cpld_upgrade.sh \
     cpld_rev.sh \
@@ -48,19 +53,9 @@ OPENBMC_UTILS_FILES += " \
 
 DEPENDS_append = " update-rc.d-native"
 
-do_install_board() {
-    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
-    olddir="/usr/local/fbpackages/utils"
-    install -d ${D}${olddir}
-    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
+inherit systemd
 
-    # create VLAN intf automatically
-    install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
-
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
+do_work_sysv() {
     # the script to mount /mnt/data
     install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
@@ -75,6 +70,10 @@ do_install_board() {
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
@@ -88,11 +87,47 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
-    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
-
     install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}${sysconfdir}/init.d/enable_watchdog_ext_signal.sh
     update-rc.d -r ${D} enable_watchdog_ext_signal.sh start 99 2 3 4 5 .
 }
 
+do_work_systemd() {
+    # TODO: We'd want to run all the logic here that is run in mound_data0.sh
+    install -d ${D}/usr/local/bin
+    install -d ${D}${systemd_system_unitdir}
+
+    install -m 0755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+
+    # networking is done after rcS, any start level within rcS
+    # for mac fixup should work
+    install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+
+    install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+
+    install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+
+    install -m 755 setup_sensors_conf.sh ${D}/usr/local/bin/setup_sensors_conf.sh
+    install -m 644 ${WORKDIR}/setup_sensors_conf.service ${D}${systemd_system_unitdir}
+
+    install -m 0755 ${WORKDIR}/enable_watchdog_ext_signal.sh ${D}/usr/local/bin/enable_watchdog_ext_signal.sh
+}
+
+do_install_board() {
+    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+    olddir="/usr/local/fbpackages/utils"
+    install -d ${D}${olddir}
+    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
+
+    # init
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      do_work_systemd
+    else
+      do_work_sysv
+    fi
+}
+
 FILES_${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE_${PN} += " setup_sensors_conf.service "

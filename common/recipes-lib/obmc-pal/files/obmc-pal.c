@@ -32,12 +32,13 @@
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <math.h>
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
 
-#define _STRINGIFY(bw) #bw
-#define STRINGIFY(bw) _STRINGIFY(bw)
-#define MACHINE STRINGIFY(__MACHINE__)
+//#define _STRINGIFY(bw) #bw
+//#define STRINGIFY(bw) _STRINGIFY(bw)
+#define MACHINE __MACHINE__
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
@@ -50,14 +51,6 @@ size_t pal_fan_opt_cnt __attribute__((weak)) = 0;
 char pal_pwm_list[] __attribute__((weak)) = "";
 char pal_tach_list[] __attribute__((weak)) = "";
 char pal_fan_opt_list[] __attribute__((weak)) = "";
-
-size_t server_fru_cnt __attribute__((weak)) = 0;
-size_t nic_fru_cnt __attribute__((weak)) = 0;
-size_t bmc_fru_cnt __attribute__((weak)) = 0;
-const char *pal_server_fru_list[] __attribute__((weak)) = {};
-const char *pal_nic_fru_list[] __attribute__((weak)) = {};
-const char *pal_bmc_fru_list[] __attribute__((weak)) = {};
-
 
 // PAL functions
 int __attribute__((weak))
@@ -270,6 +263,11 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
   return 0;
 }
 
+uint8_t __attribute__((weak))
+pal_set_slot_power_policy(uint8_t *pwr_policy, uint8_t *res_data) {
+  return 0;
+}
+
 int __attribute__((weak))
 pal_bmc_err_disable(const char *error_item) {
   return 0;
@@ -322,26 +320,82 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   return 0;
 }
 
+static void
+get_common_dimm_location_str(_dimm_info dimm_info, char* dimm_location_str, char* dimm_str)
+{
+  // Check Channel and Slot
+  if (dimm_info.channel == 0xFF && dimm_info.slot == 0xFF) {
+    sprintf(dimm_str, "unknown");
+    sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel unknown, Slot unknown, DIMM unknown",
+            dimm_info.sled, dimm_info.socket);
+  } else {
+    dimm_info.channel &= 0x07; // Channel Bit[3:0]
+    dimm_info.slot &= 0x03;    // Slot [0-2]
+    pal_convert_to_dimm_str(dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
+    sprintf(dimm_location_str, "DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s",
+            dimm_info.sled, dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
+  }
+}
+
 int __attribute__((weak))
 pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
 {
+  char *mem_err[] = {
+    "Memory training failure",
+    "Memory correctable error",
+    "Memory uncorrectable error",
+    "Memory correctable error (Patrol scrub)",
+    "Memory uncorrectable error (Patrol scrub)",
+    "Memory Parity Error event",
+    "Reserved"
+  };
+  char *upi_err[] = {
+    "UPI Init error",
+    "Reserved"
+  };
+  char *post_err[] = {
+    "System PXE boot fail",
+    "CMOS/NVRAM configuration cleared",
+    "TPM Self-Test Fail",
+    "Reserved"
+  };
+  char *pcie_event[] = {
+    "PCIe DPC Event",
+    "PCIe LER Event",
+    "PCIe Link Retraining and Recovery",
+    "PCIe Link CRC Error Check and Retry",
+    "PCIe Corrupt Data Containment",
+    "PCIe Express ECRC",
+    "Reserved"
+  };
+  char *mem_event[] = {
+    "Memory PPR event",
+    "Memory Correctable Error logging limit reached",
+    "Memory disable/map-out for FRB",
+    "Memory SDDC",
+    "Memory Address range/Partial mirroring",
+    "Memory ADDDC",
+    "Memory SMBus hang recovery",
+    "No DIMM in System",
+    "Reserved"
+  };
+  char *upi_event[] = {
+    "Successful LLR without Phy Reinit",
+    "Successful LLR with Phy Reinit",
+    "COR Phy Lane failure, recovery in x8 width",
+    "Reserved"
+  };
   uint8_t general_info = sel[3];
   uint8_t error_type = general_info & 0xF;
-  uint8_t plat;
-  uint8_t event_type, estr_idx;
-  char *mem_err[] = {"Memory training failure", "Memory correctable error", "Memory uncorrectable error",
-                     "Memory correctable error (Patrol scrub)", "Memory uncorrectable error (Patrol scrub)",
-                     "Memory Parity Error event", "Reserved"};
-  char *upi_err[] = {"UPI Init error", "Reserved"};
-  char *post_err[] = {"System PXE boot fail", "CMOS/NVRAM configuration cleared", "TPM Self-Test Fail", "Reserved"};
-  char *pcie_event[] = {"PCIe DPC Event", "PCIe LER Event", "PCIe Link Retraining and Recovery",
-                        "PCIe Link CRC Error Check and Retry", "PCIe Corrupt Data Containment", "PCIe Express ECRC",
-                        "Reserved"};
-  char *mem_event[] = {"Memory PPR event", "Memory Correctable Error logging limit reached", "Memory disable/map-out for FRB",
-                       "Memory SDDC", "Memory Address range/Partial mirroring", "Memory ADDDC", "Memory SMBus hang recovery", "No DIMM in System", "Reserved"};
-  char *upi_event[] = {"Successful LLR without Phy Reinit", "Successful LLR with Phy Reinit",
-                       "COR Phy Lane failure, recovery in x8 width", "Reserved"};
+  uint8_t plat, event_type, estr_idx;
+  _dimm_info dimm_info = {
+    (sel[8]>>4) & 0x03, // Sled
+    sel[8] & 0x0F,      // Socket
+    sel[9],             // Channel
+    sel[10]             // Slot
+  };
   char dimm_str[8] = {0};
+  char dimm_location_str[128] = {0};
   char temp_log[128] = {0};
   error_log[0] = '\0';
 
@@ -356,32 +410,32 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
                 general_info, ((sel[9]<<8)|sel[8]), sel[11], sel[10]>>3,
                 sel[10]&0x7, ((sel[13]<<8)|sel[12]),sel[14], sel[15]);
       }
-      sprintf(temp_log, "PCIe Error,FRU:%u", fru);
+      sprintf(temp_log, "B %02X D %02X F %02X PCIe err,FRU:%u", sel[11], sel[10]>>3, sel[10]&0x7, fru);
       pal_add_cri_sel(temp_log);
       break;
 
     case UNIFIED_MEM_ERR:
+      // get dimm location data string.
+      get_common_dimm_location_str(dimm_info, dimm_location_str, dimm_str);
       plat = (sel[12] & 0x80) >> 7;
       event_type = sel[12] & 0xF;
-      pal_convert_to_dimm_str(sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str);
-
       switch (event_type) {
         case MEMORY_TRAINING_ERR:
           if (plat == 0) { //Intel
-            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
-                    general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF,dimm_str,
+            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
+                    general_info, dimm_location_str,
                     mem_err[event_type], sel[13], sel[14]);
           } else { //AMD
-            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
-                    general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str,
+            sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%04X",
+                    general_info, dimm_location_str,
                     mem_err[event_type], sel[13], (sel[15]<<8)|sel[14]);
           }
           break;
         default:
+          pal_convert_to_dimm_str(dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_err)) ? event_type : (ARRAY_SIZE(mem_err) - 1);
-          sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s",
-                  general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, sel[10]&0xF, dimm_str,
-                  mem_err[estr_idx]);
+          sprintf(error_log, "GeneralInfo: MEMORY_ECC_ERR(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str, mem_err[estr_idx]);
 
           if ((event_type == MEMORY_CORRECTABLE_ERR) || (event_type == MEMORY_CORR_ERR_PTRL_SCR)) {
             sprintf(temp_log, "DIMM%s ECC err,FRU:%u", dimm_str, fru);
@@ -401,19 +455,20 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       switch (event_type) {
         case UPI_INIT_ERR:
           sprintf(error_log, "GeneralInfo: UPIErr(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s, Major Code: 0x%02X, Minor Code: 0x%02X",
-                  general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, upi_err[estr_idx],
-                  sel[13], sel[14]);
+                  general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_err[estr_idx], sel[13], sel[14]);
           break;
         default:
           sprintf(error_log, "GeneralInfo: UPIErr(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
-                  general_info, ((sel[8]>>4)&0x3), sel[8]&0xF, sel[9]&0xF, upi_err[estr_idx]);
+                  general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_err[estr_idx]);
           break;
       }
       break;
 
     case UNIFIED_IIO_ERR:
       sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error ID: 0x%02X",
-              general_info, sel[10], ((sel[8]>>4)&0xF), sel[8]&0xF, sel[9] );
+              general_info, dimm_info.sled, dimm_info.socket, sel[9], sel[12]);
+      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel[12]);
+      pal_add_cri_sel(temp_log);
       break;
 
     case UNIFIED_POST_ERR:
@@ -439,33 +494,33 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case UNIFIED_MEM_EVENT:
-      event_type = sel[8] & 0xF;
+      // get dimm location data string.
+      get_common_dimm_location_str(dimm_info, dimm_location_str, dimm_str);
+
+      // Event-Type Bit[3:0]
+      event_type = sel[12] & 0x0F;
       switch (event_type) {
         case MEM_PPR:
-          pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s",
-                  general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str,
-                  (sel[12]&0x1)?"PPR fail":"PPR success");
+          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str, (sel[13]&0x01)?"PPR fail":"PPR success");
           break;
         case MEM_NO_DIMM:
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",
+          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s", 
                   general_info, mem_event[event_type]);
           break;
         default:
-          pal_convert_to_dimm_str(sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_event)) ? event_type : (ARRAY_SIZE(mem_event) - 1);
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Slot Location: Sled %02d/Socket %02d, Channel %02d, Slot %02d, DIMM %s, DIMM Failure Event: %s",
-                  general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, sel[11]&0xF, dimm_str,
-                  mem_event[estr_idx]);
+          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), %s, DIMM Failure Event: %s",
+                  general_info, dimm_location_str, mem_event[estr_idx]);
           break;
       }
       break;
 
     case UNIFIED_UPI_EVENT:
-      event_type = sel[8] & 0xF;
+      event_type = sel[12] & 0xF;
       estr_idx = (event_type < ARRAY_SIZE(upi_event)) ? event_type : (ARRAY_SIZE(upi_event) - 1);
       sprintf(error_log, "GeneralInfo: UPIEvent(0x%02X), UPI Port Location: Sled %02d/Socket %02d, Port %02d, UPI Failure Event: %s",
-              general_info, ((sel[9]>>4)&0x3), sel[9]&0xF, sel[10]&0xF, upi_event[estr_idx]);
+              general_info, dimm_info.sled, dimm_info.socket, sel[9]&0xF, upi_event[estr_idx]);
       break;
 
     case UNIFIED_BOOT_GUARD:
@@ -611,6 +666,7 @@ pal_get_num_devs(uint8_t slot, uint8_t *num)
 int __attribute__((weak))
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status)
 {
+  *status = 1;
   return PAL_EOK;
 }
 
@@ -623,6 +679,7 @@ pal_get_slot_index(unsigned char payload_id)
 int __attribute__((weak))
 pal_get_server_power(uint8_t slot_id, uint8_t *status)
 {
+  *status = 0;
   return PAL_EOK;
 }
 
@@ -688,6 +745,12 @@ pal_get_fru_list(char *list)
 }
 
 int __attribute__((weak))
+pal_get_dev_list(uint8_t fru, char *list)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
 pal_get_fru_id(char *str, uint8_t *fru)
 {
   unsigned int _fru;
@@ -717,14 +780,40 @@ pal_get_fru_name(uint8_t fru, char *name)
 }
 
 int __attribute__((weak))
-pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
-  char fruname[32];
-  int ret = pal_get_fruid_name(fru, fruname);
+  *caps = FRU_CAPABILITY_ALL;
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  *caps = FRU_CAPABILITY_ALL;
+  return 0;
+}
+
+int __attribute__((weak))
+pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
+{
+  char fruname[64];
+  int ret;
+  if (fru == 0)
+    return -1;
+  ret = pal_get_fruid_name(fru, fruname);
   if (ret < 0)
     return ret;
-  sprintf(name, "%s Device %u", fruname ,dev);
+  sprintf(name, "%s Device %u", fruname, (unsigned int)dev - 1);
   return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
+{
+  if (dev == 0)
+    return -1;
+  sprintf(name, "device%u", (unsigned int)dev - 1);
+  return 0;
 }
 
 int __attribute__((weak))
@@ -924,6 +1013,12 @@ pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
         break;
       case CPU1_THERM_STATUS:
         sprintf(name, "CPU1_THERM_STATUS");
+        break;
+      case CPU2_THERM_STATUS:
+        sprintf(name, "CPU2_THERM_STATUS");
+        break;
+      case CPU3_THERM_STATUS:
+        sprintf(name, "CPU3_THERM_STATUS");
         break;
       case ME_POWER_STATE:
         sprintf(name, "ME_POWER_STATE");
@@ -1427,6 +1522,22 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
           case 0x13:
             strcat(error_log, "UMA operation error");
             return 1;
+          //0x14 and 0x15 are reserved
+          case 0x16:
+            strcat(error_log, "Intel PTT Health");
+            return 1;
+          case 0x17:
+            strcat(error_log, "Intel Boot Guard Health");
+            return 1;
+          case 0x18:
+            strcat(error_log, "Restricted mode information");
+            return 1;
+          case 0x19:
+            strcat(error_log, "MultiPCH mode misconfiguration");
+            return 1;
+          case 0x1A:
+            strcat(error_log, "Flash Descriptor Region Verification Error");
+            return 1;
           default:
             strcat(error_log, "Unknown");
             break;
@@ -1507,6 +1618,8 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
 
     case CPU0_THERM_STATUS:
     case CPU1_THERM_STATUS:
+    case CPU2_THERM_STATUS:
+    case CPU3_THERM_STATUS:
       if (ed[0] == 0x00)
         strcat(error_log, "CPU Critical Temperature");
       else if (ed[0] == 0x01)
@@ -2495,6 +2608,12 @@ pal_sensor_monitor_initial(void) {
 }
 
 int __attribute__((weak))
+pal_sensor_thresh_init(void)
+{
+  return 0;
+}
+
+int __attribute__((weak))
 pal_set_host_system_mode(uint8_t mode) {
   return PAL_ENOTSUP;
 }
@@ -2533,28 +2652,70 @@ pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
 }
 
 int __attribute__((weak))
-pal_get_fru_type_list(fru_type_t fru_type, const char ***fru_list, uint8_t* num_fru)
-{
-  int ret = 0;
+pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  return PAL_ENOTSUP;
+}
 
-  switch (fru_type) {
-    case FRU_TYPE_SERVER:
-      *num_fru = server_fru_cnt;
-      *fru_list = pal_server_fru_list;
-      break;
-    case FRU_TYPE_NIC:
-      *num_fru = nic_fru_cnt;
-      *fru_list = pal_nic_fru_list;
-      break;
-    case FRU_TYPE_BMC:
-      *num_fru = bmc_fru_cnt;
-      *fru_list = pal_bmc_fru_list;
-      break;
-    default:
-      *num_fru = 0;
-      *fru_list = NULL;
-      ret = -1;
-      break;
+bool __attribute__((weak))
+pal_is_aggregate_snr_valid(uint8_t snr_num) {
+  return true;
+}
+
+int __attribute__((weak))
+pal_set_ioc_fw_recovery(uint8_t *ioc_recovery_setting, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_setup_exp_uart_bridging(void) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_teardown_exp_uart_bridging(void) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
+  uint8_t m_lsb = 0, m_msb = 0;
+  uint16_t m = 0;
+  uint8_t b_lsb = 0, b_msb = 0;
+  uint16_t b = 0;
+  int8_t b_exp = 0, r_exp = 0;
+
+  if (sdr == NULL || out_value == NULL) {
+    syslog(LOG_ERR, "%s() Failed to convert sensor reading: input parameter is NULL", __func__);
+    return -1;
   }
-  return ret;
+
+  m_lsb = sdr->m_val;
+  m_msb = sdr->m_tolerance >> 6;
+  m = (m_msb << 8) | m_lsb;
+
+  b_lsb = sdr->b_val;
+  b_msb = sdr->b_accuracy >> 6;
+  b = (b_msb << 8) | b_lsb;
+
+  // exponents are 2's complement 4-bit number
+  b_exp = sdr->rb_exp & 0xF;
+  if (b_exp > 7) {
+    b_exp = (~b_exp + 1) & 0xF;
+    b_exp = -b_exp;
+  }
+
+  r_exp = (sdr->rb_exp >> 4) & 0xF;
+  if (r_exp > 7) {
+    r_exp = (~r_exp + 1) & 0xF;
+    r_exp = -r_exp;
+  }
+
+  *out_value = (float)(((m * in_value) + (b * pow(10, b_exp))) * (pow(10, r_exp)));
+
+  return 0;
 }

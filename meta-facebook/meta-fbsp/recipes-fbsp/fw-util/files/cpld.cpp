@@ -101,13 +101,13 @@ int CpldComponent::update(string image) {
     string dev;
     string cmd;
 
-    if (!sys.get_mtd_name(string("stg-cpld"), dev)) {
+    if (!sys().get_mtd_name(string("stg-cpld"), dev)) {
       return FW_STATUS_FAILURE;
     }
 
-    sys.output << "Flashing to device: " << dev << endl;
+    sys().output << "Flashing to device: " << dev << endl;
     cmd = "flashcp -v " + image + " " + dev;
-    ret = sys.runcmd(cmd);
+    ret = sys().runcmd(cmd);
     return pal_fw_update_finished(0, _component.c_str(), ret);
   }
 

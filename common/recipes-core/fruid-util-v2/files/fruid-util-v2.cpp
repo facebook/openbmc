@@ -40,7 +40,7 @@
 using namespace std;
 
 // helper function to print errors in excecution and exit
-static void printErrorExit(string error, int errNo) {
+static void printErrorExit(const string &error, int errNo) {
   cout << "Error: " << error << std::endl;
   exit(errNo);
 }
@@ -138,7 +138,7 @@ static vector<string> getFruNamesFromXml(const string & xmlStr) {
 /**
  * This function recursively traverse frutree at basepath and returns fruNames
  */
-static vector<string> getFruNames(string basepath) {
+static vector<string> getFruNames(const string &basepath) {
 
   //Get list of frus under basepath
   vector<string> list = getFruNamesFromXml(getIntrospectionXml(basepath));

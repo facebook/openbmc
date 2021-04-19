@@ -48,7 +48,6 @@ class CpuUtilizationTest(BaseCpuUtilizationTest):
             "fscd.py",
             "top",
             "awk",
-            "spatula_wrapper",
             "rotor_client",
             "rsyslogd",
             "ksoftirqd",

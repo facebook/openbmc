@@ -212,6 +212,11 @@ void print_usage()
     return;
 }
 
+/*
+ * ASPEED G5 Silicon Revision ID: SCU[7C]
+ * ASPEED G6 Silicon Revision ID: SCU[04]/SCU[14]
+ * AST G5 SCU[04] 
+ */
 static int check_chip()
 {
     uint32_t cpu_silicon_rev_id_0;
@@ -223,7 +228,7 @@ static int check_chip()
                &cpu_silicon_rev_id_0, READ_OP);
     run_devmem(SCU_BASE_ADDR + SILICON_REVISION_ID_1_OFFSET_AST_G6,
                &cpu_silicon_rev_id_1, READ_OP);
-    if(cpu_silicon_rev_id_0 == cpu_silicon_rev_id_1 && 
+    if(cpu_silicon_rev_id_0 == cpu_silicon_rev_id_1 &&
       (cpu_silicon_rev_id_0 & AST_G6_REV_ID) == AST_G6_REV_ID) {
         chip = AST_G6; //AST_G6
         goto exit;

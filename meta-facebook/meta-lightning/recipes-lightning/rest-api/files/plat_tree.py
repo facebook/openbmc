@@ -17,7 +17,7 @@ from node_logs import get_node_logs
 from node_pdpb import get_node_pdpb
 from node_peb import get_node_peb
 from node_sensors import get_node_sensors
-from pal import *
+from rest_pal_legacy import *
 from tree import tree
 
 from aiohttp.web import Application

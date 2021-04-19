@@ -33,11 +33,11 @@ S = "${WORKDIR}"
 binfiles = "gpiod \
            "
 
-CFLAGS += " -lbic -lfby3_gpio -lpal -lobmc-i2c -lfby3_common "
+CFLAGS += " -lbic -lfby3_gpio -lpal -lobmc-i2c -lfby3_common -lkv -lfruid"
 
-DEPENDS += " libbic libfby3-gpio libpal libobmc-i2c libfby3-common "
+DEPENDS += " libbic libfby3-gpio libpal libobmc-i2c libfby3-common libkv libfruid"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libbic libfby3-gpio libpal libobmc-i2c libfby3-common "
+RDEPENDS_${PN} += " libbic libfby3-gpio libpal libobmc-i2c libfby3-common libkv libfruid"
 
 pkgdir = "gpiod"
 

@@ -241,18 +241,18 @@ enum {
 
 enum {
   FRU_ALL  = 0,
-  FRU_SCM  = 1,
-  FRU_SMB  = 2,
-  FRU_FCM  = 3,
+  FRU_SCM,
+  FRU_SMB,
+  //To avoid CIT test failure caused by index mismatch
   FRU_PEM1 = 4,
-  FRU_PEM2 = 5,
-  FRU_PSU1 = 6,
-  FRU_PSU2 = 7,
-  FRU_FAN1 = 8,
-  FRU_FAN2 = 9,
-  FRU_FAN3 = 10,
-  FRU_FAN4 = 11,
-  MAX_NUM_FRUS = 11,
+  FRU_PEM2,
+  FRU_PSU1,
+  FRU_PSU2,
+  FRU_FAN1,
+  FRU_FAN2,
+  FRU_FAN3,
+  FRU_FAN4,
+  MAX_NUM_FRUS = FRU_FAN4,
   // virtual FRU ID for fw-util 0.2, make sure they are bigger than MAX_NUM_FRUS
   FRU_BMC,
   FRU_CPLD,
@@ -438,6 +438,8 @@ enum {
   /* Threshold Sensors on PEM1 */
   PEM1_SENSOR_IN_VOLT = 0x01,
   PEM1_SENSOR_OUT_VOLT,
+  PEM1_SENSOR_FET_BAD,
+  PEM1_SENSOR_FET_SHORT,
   PEM1_SENSOR_CURR,
   PEM1_SENSOR_POWER,
   PEM1_SENSOR_FAN1_TACH,
@@ -485,6 +487,8 @@ enum {
     /* Threshold Sensors on PEM2 */
   PEM2_SENSOR_IN_VOLT,
   PEM2_SENSOR_OUT_VOLT,
+  PEM2_SENSOR_FET_BAD,
+  PEM2_SENSOR_FET_SHORT,
   PEM2_SENSOR_CURR,
   PEM2_SENSOR_POWER,
   PEM2_SENSOR_FAN1_TACH,
@@ -591,59 +595,19 @@ enum {
 
 
 
-int pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data);
-void pal_inform_bic_mode(uint8_t fru, uint8_t mode);
-int pal_get_plat_sku_id(void);
-int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
-int pal_get_key_value(char *key, char *value);
-int pal_set_key_value(char *key, char *value);
-int pal_set_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_get_sysfw_ver(uint8_t slot, uint8_t *ver);
-int pal_get_platform_name(char *name);
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
-int pal_is_fru_ready(uint8_t fru, uint8_t *status);
-int pal_get_fru_id(char *str, uint8_t *fru);
-int pal_get_fru_name(uint8_t fru, char *name);
-int pal_get_fru_list(char *list);
-int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
-int pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt);
 int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_post_enable(uint8_t slot);
 int pal_post_get_last(uint8_t slot, uint8_t *status);
 int pal_post_get_last_and_len(uint8_t slot, uint8_t *data, uint8_t *len);
-int pal_post_handle(uint8_t slot, uint8_t status);
-int pal_set_last_pwr_state(uint8_t fru, char *state);
-int pal_get_last_pwr_state(uint8_t fru, char *state);
-int pal_get_dev_guid(uint8_t slot, char *guid);
-int pal_set_dev_guid(uint8_t slot, char *str);
 int pal_set_com_pwr_btn_n(char *status);
-int pal_set_server_power(uint8_t slot_id, uint8_t cmd);
-int pal_get_server_power(uint8_t slot_id, uint8_t *status);
 int pal_set_th3_power(int option);
-int pal_get_fan_speed(uint8_t fan, int *rpm);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_get_board_rev(int *rev);
 int pal_get_board_type(uint8_t *brd_type);
 int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
-int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
-int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
-void pal_update_ts_sled();
-int pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
-int pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units);
-int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value);
-void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
-void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh);
-int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
-int pal_detect_i2c_device(uint8_t bus_num, uint8_t addr);
-int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
-int pal_del_i2c_device(uint8_t bus, uint8_t addr);
-void pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
-uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
-int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 void *generate_dump(void *arg);
-int pal_mon_fw_upgrade(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug, uint8_t *psu_ug, uint8_t *smb_ug);
 void set_sys_led(int brd_rev);
 void set_fan_led(int brd_rev);
 void set_psu_led(int brd_rev);
@@ -651,21 +615,12 @@ void set_scm_led(int brd_rev);
 int set_sled(int brd_rev, uint8_t color, int led_name);
 void init_led(void);
 int pal_light_scm_led(uint8_t led_color);
-int pal_get_fru_health(uint8_t fru, uint8_t *value);
-int pal_set_def_key_value(void);
-int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int wedge400_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
-int pal_get_num_slots(uint8_t *num);
-int pal_get_boot_order(uint8_t slot, uint8_t *req_data, uint8_t *boot, uint8_t *res_len);
-int pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_len);
-int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id);
-int pal_ipmb_processing(int bus, void *buf, uint16_t size);
 bool pal_is_mcu_working(void);
 int pal_get_hand_sw_physically(uint8_t *pos);
 int pal_get_hand_sw(uint8_t *pos);
 int pal_get_dbg_pwr_btn(uint8_t *status);
 int pal_get_dbg_rst_btn(uint8_t *status);
-int pal_set_rst_btn(uint8_t slot, uint8_t status);
 int pal_get_dbg_uart_btn(uint8_t *status);
 int pal_clr_dbg_uart_btn();
 int pal_switch_uart_mux();

@@ -64,4 +64,9 @@ IMAGE_INSTALL += " \
   ncsid-v2 \
   throttle-util \
   name-util \
+  nvme-util \
+  usb2jtag-util \
+  lrzsz \
+  mctp-util \
+  usbutils \
   "

@@ -15,15 +15,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-import traceback
 import argparse
+import binascii
 import datetime
 import hashlib
-import binascii
 import json
 import sys
+import traceback
 
-VBOOT_CHECK_VERSION = "2"
+VBOOT_CHECK_VERSION = "5"
 # Define the exit code
 EC_SUCCESS = 0
 EC_SPLROM_BAD = 1
@@ -43,10 +43,12 @@ else:
     import StringIO
 from pyfdt import pyfdt
 
+
 def get_fdt_from_file(infile):
     dtb = pyfdt.FdtBlobParse(infile, blob_limit=0x2000)
     fdt = dtb.to_fdt()
     return fdt
+
 
 def get_fdt(content):
     # Represent the FIT as an IO resource.
@@ -65,25 +67,32 @@ def show_keys(name, fdt, error):
         print(error)
         return False
     for key in fdt_json["signature"]:
-        print("  %s: %s (%s) (signs %s)" % (
-            name,
-            key,
-            fdt_json["signature"][key]["algo"][1],
-            fdt_json["signature"][key]["required"][1]
-        ))
+        print(
+            "  %s: %s (%s) (signs %s)"
+            % (
+                name,
+                key,
+                fdt_json["signature"][key]["algo"][1],
+                fdt_json["signature"][key]["required"][1],
+            )
+        )
     return True
 
 
 def get_date(fdt):
-    timestamp = fdt.resolve_path('/timestamp')[0]
-    return  datetime.datetime.utcfromtimestamp(
-        timestamp,
-        ).strftime('%a %b %d %H:%M:%S UTC %Y') + " (0x%x)" % (timestamp)
-
+    timestamp = fdt.resolve_path("/timestamp")[0]
+    return (
+        datetime.datetime.utcfromtimestamp(
+            timestamp,
+        ).strftime("%a %b %d %H:%M:%S UTC %Y")
+        + " (0x%x)" % (timestamp)
+    )
 
 
 def get_fdt_hash(fdt, path):
-    return binascii.hexlify(fdt.resolve_path("%s/hash@1/value" % (path)).to_raw()).decode("utf-8")
+    return binascii.hexlify(
+        fdt.resolve_path("%s/hash@1/value" % (path)).to_raw()
+    ).decode("utf-8")
 
 
 def get_fdt_signer(fdt, path):
@@ -97,12 +106,13 @@ def get_fdt_algo(fdt, path):
 def get_hash(content):
     return hashlib.sha256(content).hexdigest()
 
+
 def get_hash_from_file(fh, data_pos, data_size):
-    BLKSIZE = 0x1000 # 4K
+    BLKSIZE = 0x1000  # 4K
     hashobj = hashlib.sha256()
     remain = data_size
     fh.seek(data_pos)
-    while remain > BLKSIZE :
+    while remain > BLKSIZE:
         blk = fh.read(BLKSIZE)
         remain -= BLKSIZE
         hashobj.update(blk)
@@ -112,27 +122,32 @@ def get_hash_from_file(fh, data_pos, data_size):
         hashobj.update(blk)
     return hashobj.hexdigest()
 
+
 def decode_flash(fh, data):
     # Detect KEK from ROM region
     rom_fit = None
     rom_fit_offset = 0
     for i in range(args.rom_size // 4):
-        if data[i * 4:(i * 4) + 4] == b'\xd0\x0d\xfe\xed':
-            rom_fit = data[i * 4:(i * 4) + args.rom_fit_size]
+        if data[i * 4 : (i * 4) + 4] == b"\xd0\x0d\xfe\xed":
+            rom_fit = data[i * 4 : (i * 4) + args.rom_fit_size]
             rom_fit_offset = i * 4
-            break
+            try:
+                rom_fit = get_fdt(rom_fit)
+                break
+            except:
+                pass
     if rom_fit is None:
         print("Cannot find SPL FIT region")
         return EC_SPLROM_BAD
 
     # Print SPL information
-    rom_fit = get_fdt(rom_fit)
+    try:
+        _idx = rom_fit.rootnode.index('hwlock')
+        print("Lockbit: %s" % rom_fit.rootnode[_idx].words)
+    except:
+        print("Lockbit: not set")
     print("SPL FIT offset: %s" % (rom_fit_offset))
-    if not show_keys(
-        "SPL KEK",
-        rom_fit,
-        "SPL does not contain KEK keys"
-    ):
+    if not show_keys("SPL KEK", rom_fit, "SPL does not contain KEK keys"):
         return EC_SPLROM_BAD
     print("")
 
@@ -143,7 +158,7 @@ def decode_flash(fh, data):
     uboot_fit = get_fdt(uboot_fit)
 
     # Print subordinate keys information
-    keys_path = uboot_fit.resolve_path('/keys/fdt@1/data')
+    keys_path = uboot_fit.resolve_path("/keys/fdt@1/data")
     if keys_path is None:
         print("U-Boot FIT does not contain subordinate keys")
         return EC_SPLROM_BAD
@@ -152,28 +167,29 @@ def decode_flash(fh, data):
     keys_timestamp = get_date(keys)
     print("Subordinate timestamp: %s" % (keys_timestamp))
 
-    keys_sig = uboot_fit.resolve_path('/keys/fdt@1/signature@1')
+    keys_sig = uboot_fit.resolve_path("/keys/fdt@1/signature@1")
     if keys_sig is None:
         print("Subordinate keys are not signed")
         return EC_SPLROM_BAD
 
-    keys_hash = get_fdt_hash(uboot_fit, '/keys/fdt@1')
+    keys_hash = get_fdt_hash(uboot_fit, "/keys/fdt@1")
     keys_valid = hashlib.sha256(keys_path.to_raw()).hexdigest() == keys_hash
 
-    print("Subordinate keys signing key: %s" % (
-        get_fdt_signer(uboot_fit, '/keys/fdt@1')))
-    print("Subordinate keys hash (%s): %s: %s" % (
-        get_fdt_algo(uboot_fit, '/keys/fdt@1'),
-        keys_hash,
-        "OK" if keys_valid else "BAD"))
+    print(
+        "Subordinate keys signing key: %s" % (get_fdt_signer(uboot_fit, "/keys/fdt@1"))
+    )
+    print(
+        "Subordinate keys hash (%s): %s: %s"
+        % (
+            get_fdt_algo(uboot_fit, "/keys/fdt@1"),
+            keys_hash,
+            "OK" if keys_valid else "BAD",
+        )
+    )
     if not keys_valid:
         return EC_SPLROM_BAD
 
-    if not show_keys(
-        "Subordinate",
-        keys,
-        "Subordinate FIT does not contain keys"
-    ):
+    if not show_keys("Subordinate", keys, "Subordinate FIT does not contain keys"):
         return EC_SPLROM_BAD
     print("")
 
@@ -181,22 +197,28 @@ def decode_flash(fh, data):
     uboot_timestamp = get_date(uboot_fit)
     print("U-Boot timestamp: %s" % (uboot_timestamp))
 
-    uboot_sig = uboot_fit.resolve_path('/configurations/conf@1/signature@1')
+    uboot_sig = uboot_fit.resolve_path("/configurations/conf@1/signature@1")
     if uboot_sig is None:
         print("U-Boot FIT configuration not signed")
         return EC_UBOOT_BAD
 
-    uboot_size = uboot_fit.resolve_path('/images/firmware@1/data-size')[0]
-    uboot_hash = get_fdt_hash(uboot_fit, '/images/firmware@1')
+    uboot_size = uboot_fit.resolve_path("/images/firmware@1/data-size")[0]
+    uboot_hash = get_fdt_hash(uboot_fit, "/images/firmware@1")
     uboot = uboot[0:uboot_size]
     uboot_valid = hashlib.sha256(uboot).hexdigest() == uboot_hash
 
-    print("U-Boot configuration signing key: %s" % (
-        get_fdt_signer(uboot_fit, '/configurations/conf@1')))
-    print("U-Boot hash (%s): %s: %s" % (
-        get_fdt_algo(uboot_fit, '/images/firmware@1'),
-        uboot_hash,
-        "OK" if uboot_valid else "BAD"))
+    print(
+        "U-Boot configuration signing key: %s"
+        % (get_fdt_signer(uboot_fit, "/configurations/conf@1"))
+    )
+    print(
+        "U-Boot hash (%s): %s: %s"
+        % (
+            get_fdt_algo(uboot_fit, "/images/firmware@1"),
+            uboot_hash,
+            "OK" if uboot_valid else "BAD",
+        )
+    )
     print("")
     if not uboot_valid:
         return EC_UBOOT_BAD
@@ -212,47 +234,61 @@ def decode_os(fh):
     os_timestamp = get_date(os)
     print("Kernel/ramdisk timestamp: %s" % (os_timestamp))
 
-    os_sig = os.resolve_path('/configurations/conf@1/signature@1')
+    os_sig = os.resolve_path("/configurations/conf@1/signature@1")
     if os_sig is None:
         print("Kernel/ramdisk FIT configuration not signed")
         return 1
-    print("Kernel/ramdisk configuration signing key: %s" % (
-        get_fdt_signer(os, '/configurations/conf@1')))
+    print(
+        "Kernel/ramdisk configuration signing key: %s"
+        % (get_fdt_signer(os, "/configurations/conf@1"))
+    )
 
-    kernel_hash = get_fdt_hash(os, '/images/kernel@1')
+    kernel_hash = get_fdt_hash(os, "/images/kernel@1")
     # kernel_valid = get_hash(os.resolve_path('/images/kernel@1/data').to_raw()) == kernel_hash
-    kernel_data = os.resolve_path('/images/kernel@1/data')
+    kernel_data = os.resolve_path("/images/kernel@1/data")
     if kernel_data.blob_info:
-        kernel_img_hash = get_hash_from_file(fh, kernel_data.blob_info[0],
-                                                 kernel_data.blob_info[1])
+        kernel_img_hash = get_hash_from_file(
+            fh, kernel_data.blob_info[0], kernel_data.blob_info[1]
+        )
     else:
         kernel_img_hash = get_hash(kernel_data.to_raw())
     kernel_valid = kernel_img_hash == kernel_hash
 
-    print("Kernel hash (%s): %s: %s" % (
-        get_fdt_algo(os, '/images/kernel@1'),
-        kernel_hash,
-        "OK" if kernel_valid else "BAD"))
+    print(
+        "Kernel hash (%s): %s: %s"
+        % (
+            get_fdt_algo(os, "/images/kernel@1"),
+            kernel_hash,
+            "OK" if kernel_valid else "BAD",
+        )
+    )
     if not kernel_valid:
         return EC_KERNEL_BAD
 
-    ramdisk_hash = get_fdt_hash(os, '/images/ramdisk@1')
+    ramdisk_hash = get_fdt_hash(os, "/images/ramdisk@1")
     # ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw()) == ramdisk_hash
-    ramdisk_data = os.resolve_path('/images/ramdisk@1/data')
+    ramdisk_data = os.resolve_path("/images/ramdisk@1/data")
     if ramdisk_data.blob_info:
-        ramdisk_img_hash = get_hash_from_file(fh, ramdisk_data.blob_info[0],
-                                                  ramdisk_data.blob_info[1])
+        ramdisk_img_hash = get_hash_from_file(
+            fh, ramdisk_data.blob_info[0], ramdisk_data.blob_info[1]
+        )
     else:
         ramdisk_img_hash = get_hash(ramdisk_data.to_raw())
     ramdisk_valid = ramdisk_hash == ramdisk_img_hash
 
-    print("Ramdisk hash (%s): %s: %s" % (
-        get_fdt_algo(os, '/images/ramdisk@1'),
-        ramdisk_hash, "OK" if ramdisk_valid else "BAD"))
+    print(
+        "Ramdisk hash (%s): %s: %s"
+        % (
+            get_fdt_algo(os, "/images/ramdisk@1"),
+            ramdisk_hash,
+            "OK" if ramdisk_valid else "BAD",
+        )
+    )
     if not ramdisk_valid:
         return EC_ROOTFS_BAD
 
     return EC_SUCCESS
+
 
 def md5_check(fh, image_meta):
     # define check result value
@@ -270,8 +306,11 @@ def md5_check(fh, image_meta):
             fh.seek(part_info["offset"])
             pdata = fh.read(part_info["size"])
             pmd5 = hashlib.md5(pdata).hexdigest()
-            print("{} md5sum: {}: {}".format(part_info["name"], pmd5,
-                "OK" if pmd5 == part_info["md5"] else "BAD"))
+            print(
+                "{} md5sum: {}: {}".format(
+                    part_info["name"], pmd5, "OK" if pmd5 == part_info["md5"] else "BAD"
+                )
+            )
             if pmd5 == part_info["md5"]:
                 check_map[part_info["name"]] = MD5SUM_VALID
             else:
@@ -287,22 +326,28 @@ def md5_check(fh, image_meta):
 
     return EC_SUCCESS
 
+
 def main():
     # check md5sum if image_meta is not None
-    if image_meta != None:
-        with open(args.filename, 'rb') as fh:
+    if image_meta is not None and not args.locked_bmc:
+        with open(args.filename, "rb") as fh:
             ret = md5_check(fh, image_meta)
             if ret != EC_SUCCESS:
                 return ret
 
-    with open(args.filename, 'rb') as fh:
+    with open(args.filename, "rb") as fh:
         data = fh.read(args.rom_size)
 
         data_size = len(data)
         if data_size < 4:
             print("Not sure what this file contains: %s" % (args.filename))
             return EC_EXCEPTION
-        if data[:4] != b'\x0f\x00\x00\xea':
+        # sanity check the file first instrcution is
+        # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
+        # the <reset-vector> location can be different
+        # SPL: \x0f for AST2500, \x1f for AST2600
+        # U-Boot: \xBE for AST2500, \xC0 for AST2600
+        if data[1:4] != b"\x00\x00\xea":
             print("Non-flash file inputs are not supported")
             return EC_EXCEPTION
 
@@ -310,6 +355,7 @@ def main():
         if ret != EC_SUCCESS:
             return ret
         return decode_os(fh)
+
 
 def load_image_meta():
     print("Try loading image meta from image %s" % args.filename)
@@ -329,6 +375,7 @@ def load_image_meta():
             meta_info[FBOBMC_PART_INFO_KEY] = tuple(meta_info[FBOBMC_PART_INFO_KEY])
 
             return meta_info
+
 
 def override_default_args_with_image_meta():
     rom_part_info = None
@@ -354,21 +401,52 @@ def override_default_args_with_image_meta():
 
     return rom_part_info
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Show vboot info')
-    parser.add_argument('--rom-size', default=84 * 1024, type=int,
-        help="Size of ROM region, default 84KB")
-    parser.add_argument('--rom-fit-size', default=5120, type=int,
-        help="Size of the ROM FIT region, default 5120")
-    parser.add_argument('--uboot-fit-offset', default=0x80000, type=int,
-        help="Location within filename to find firmware FIT DTB, default 0x80000")
-    parser.add_argument('--uboot-fit-size', default=384 * 1024, type=int,
-        help="U-Boot FIT partition size, default 384KB")
-    parser.add_argument('--subkeystore-size', default=16 * 1024, type=int,
-        help="Subordinate key store max size, default 16KB")
-    parser.add_argument('--version', action='version',
-                    version='%(prog)s-v{}'.format(VBOOT_CHECK_VERSION) )
-    parser.add_argument('filename', help="Input firmware")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Show vboot info")
+    parser.add_argument(
+        "--rom-size",
+        default=84 * 1024,
+        type=int,
+        help="Size of ROM region, default 84KB",
+    )
+    parser.add_argument(
+        "--rom-fit-size",
+        default=5120,
+        type=int,
+        help="Size of the ROM FIT region, default 5120",
+    )
+    parser.add_argument(
+        "--uboot-fit-offset",
+        default=0x80000,
+        type=int,
+        help="Location within filename to find firmware FIT DTB, default 0x80000",
+    )
+    parser.add_argument(
+        "--uboot-fit-size",
+        default=384 * 1024,
+        type=int,
+        help="U-Boot FIT partition size, default 384KB",
+    )
+    parser.add_argument(
+        "--subkeystore-size",
+        default=16 * 1024,
+        type=int,
+        help="Subordinate key store max size, default 16KB",
+    )
+    parser.add_argument(
+        "--locked-bmc",
+        action="store_true",
+        help="""checking the locked bmc (/dev/flash1), which will skip checking
+                SPL and Recovery-Uboot md5 checksum
+            """,
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s-v{}".format(VBOOT_CHECK_VERSION),
+    )
+    parser.add_argument("filename", help="Input firmware")
 
     args = parser.parse_args()
 

@@ -45,7 +45,18 @@ class BoardRevision:
     BOARD_WEDGE400C_DVT2 = 0x13
     BOARD_UNDEFINED = 0xFF
 
+    POWER_MODULE_PEM1 = 0x04
+    POWER_MODULE_PEM2 = 0x05
+    POWER_MODULE_PSU1 = 0x06
+    POWER_MODULE_PSU2 = 0x07
+
     board_type = {BRD_TYPE_WEDGE400: "Wedge400", BRD_TYPE_WEDGE400C: "Wedge400C"}
+    power_type = {
+        POWER_MODULE_PEM1: "pem1",
+        POWER_MODULE_PEM2: "pem2",
+        POWER_MODULE_PSU1: "psu1",
+        POWER_MODULE_PSU2: "psu2",
+    }
 
     board_type_rev = {
         BOARD_WEDGE400_EVT_EVT3: "Wedge400-EVT/EVT3",
@@ -79,3 +90,13 @@ def pal_get_board_type_rev():
         return None
     else:
         return BoardRevision.board_type_rev.get(board_type_rev.value, None)
+
+
+def pal_detect_power_supply_present(fru):
+    """get power module type """
+    power_type_rev = c_uint8()
+    lpal_hndl.pal_is_fru_prsnt(fru, byref(power_type_rev))
+    if power_type_rev.value:
+        return BoardRevision.power_type.get(fru, None)
+    else:
+        return None

@@ -28,7 +28,7 @@ exitCode=0
 echo "------SCM-FPGA------"
 
 if [ ! -d "$SCMCPLD_SYSFS_DIR" ]; then
-    echo "SCM_FPGA: FPGA DRIVER NOT DETECTED"
+    echo "SCM_FPGA: FPGA_DRIVER_NOT_DETECTED"
     exitCode=1
 else
     val_major=$(head -n 1 "$SCMCPLD_SYSFS_DIR"/"$maj_ver")
@@ -38,7 +38,7 @@ fi
 
 echo "------FAN-FPGA------"
 if [ ! -d "$FANCPLD_SYSFS_DIR" ]; then
-    echo "FAN_FPGA: FPGA DRIVER NOT DETECTED"
+    echo "FAN_FPGA: FPGA_DRIVER_NOT_DETECTED"
     exitCode=1
 else
     val_major=$(head -n 1 "$FANCPLD_SYSFS_DIR"/"$maj_ver")
@@ -48,7 +48,7 @@ fi
 
 echo "------SMB-FPGA------"
 if [ ! -d "$SMBCPLD_SYSFS_DIR" ]; then
-    echo "SMB_FPGA: FPGA DRIVER NOT DETECTED"
+    echo "SMB_FPGA: FPGA_DRIVER_NOT_DETECTED"
     echo "Unable to retrieve PIM FPGA versions either"
     exitCode=1
 else
@@ -68,10 +68,10 @@ else
       pim_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_major)
       pim_minor=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_minor)
       if [ "$((pim_present))" -eq 0 ]; then
-        echo "PIM $pim: NOT INSERTED"
+        echo "PIM $pim: NOT_INSERTED"
       elif [ "$((pim_major))" -eq 255 ]; then
         # The FPGA version read was 0xFF, which indicates not detected
-        echo "PIM $pim: VERSION NOT DETECTED"
+        echo "PIM $pim: VERSION_NOT_DETECTED"
         exitCode=1
       else
         echo "PIM $pim: $((pim_major)).$((pim_minor))"

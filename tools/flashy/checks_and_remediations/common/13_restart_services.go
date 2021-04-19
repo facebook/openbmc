@@ -56,6 +56,12 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 	}
 	log.Printf("Finished restarting restapi")
 
+	// RestartHealthd() also takes care of petting the watchdog and
+	// increasing its timeout (because opening /dev/watchdog requires
+	// healthd to be stopped).  If healthd is not in use, perform the
+	// watchdog step directly.  The timeout increase stops the BMC
+	// rebooting during the following heavyweight steps, like image
+	// validation.
 	if utils.HealthdExists() {
 		log.Printf("Healthd exists, attempting to restart healthd...")
 		err = utils.RestartHealthd(true, supervisor)
@@ -64,6 +70,8 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 		} else {
 			log.Printf("Finished restarting healthd")
 		}
+	} else {
+		utils.PetWatchdog()
 	}
 
 	return nil

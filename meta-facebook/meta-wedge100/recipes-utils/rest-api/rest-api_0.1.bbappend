@@ -25,6 +25,8 @@ SRC_URI += "file://rest_i2cflush.py \
             file://boardroutes.py \
             file://board_setup_routes.py \
             file://rest_fw_ver.py \
+            file://fake_kv.py \
+            file://test_rest_fw_ver.py \
             file://restapi.service \
             file://rest_fw_ver.py \
             file://rest_presence.py \

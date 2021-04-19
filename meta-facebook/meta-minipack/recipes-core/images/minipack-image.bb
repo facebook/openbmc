@@ -37,7 +37,6 @@ IMAGE_INSTALL += " \
   sensor-setup \
   sensor-util \
   sensor-mon \
-  spatula \
   threshold-util \
   usb-console \
   wedge-eeprom \

@@ -31,12 +31,9 @@
 #include <errno.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
+#include <facebook/fbgc_common.h>
 
 #define LOGFILE "/tmp/expander-util.log"
-
-#define EXPANDER_SLAVE_ADDR 0x71
-#define EXPANDER_IPMB_BUS_NUM 10
-
 
 static void
 print_usage_help(void) {
@@ -49,7 +46,6 @@ main(int argc, char **argv) {
   ipmb_res_t *res;
   uint8_t req_len = 0;
   uint8_t res_len = 0;
-
   uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 0;
@@ -57,7 +53,6 @@ main(int argc, char **argv) {
   uint8_t netfn;
   uint8_t cmd;
   int i;
-  int ret;
   int logfd;
   int len;
   char log[128];
@@ -88,7 +83,7 @@ main(int argc, char **argv) {
 
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + req_len;
 
-  lib_ipmb_handle(EXPANDER_IPMB_BUS_NUM, tbuf, tlen, rbuf, &rlen);
+  lib_ipmb_handle(I2C_EXP_BUS, tbuf, tlen, rbuf, &rlen);
   if (rlen == 0)
   {
     printf("IPMB Failed... Zero bytes received.\n");

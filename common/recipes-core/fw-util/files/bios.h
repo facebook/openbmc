@@ -20,6 +20,8 @@ class BiosComponent : public GPIOSwitchedSPIMTDComponent {
     int print_version();
     int update(std::string image) override;
     int fupdate(std::string image) override;
+    virtual int setDeepSleepWell(bool setting);
+    virtual int reboot(uint8_t fruid);
 };
 
 #endif

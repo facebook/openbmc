@@ -60,7 +60,11 @@ fby2_get_nic_mfgid(void) {
   }
 
   fseek(fp, 32 , SEEK_SET);
-  fread(buf, 1, 4, fp);
+  if (fread(buf, 1, 4, fp) != 4) {
+    syslog(LOG_WARNING, "%s: read file failed, file: %s\n", __func__, NIC_FW_VER_PATH);
+    fclose(fp);
+    return -1;
+  }
   fclose(fp);
 
   return ((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0]);
@@ -208,4 +212,20 @@ fby2_get_fruid_name(uint8_t fru, char *name) {
       return -1;
   }
   return 0;
+}
+
+uint32_t
+fby2_get_nic_fru_supported_size(void) {
+  uint32_t size;
+  switch (fby2_get_nic_mfgid()) {
+    case MFG_BROADCOM:
+      size = 256;
+      break;
+    case MFG_MELLANOX:
+      size = 512;
+      break;
+    default:
+      size = 512;
+  }
+  return size;
 }

@@ -36,4 +36,10 @@ IMAGE_INSTALL += " \
   gpiod \
   sensor-util \
   sensor-mon \
+  vboot-utils \
+  fscd \
+  guid-util \
+  fpc-util \
+  mctp-util \
+  name-util \
   "

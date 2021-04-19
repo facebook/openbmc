@@ -2,7 +2,7 @@
 
 from kv import kv_get
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 class pebNode(node):

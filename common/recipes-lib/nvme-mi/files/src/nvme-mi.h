@@ -27,6 +27,7 @@
 #define NVME_VENDOR_REG 0x09
 #define NVME_SERIAL_NUM_REG 0x0B
 #define SERIAL_NUM_SIZE 20
+#define PART_KEY_SIZE 40
 #define PART_NUM_SIZE 40
 
 /* NVMe-MI Temperature Definition Code */
@@ -79,6 +80,9 @@
 #define ASIC_CORE_VOL_UNIT 0.0001   // 100uV
 #define POWER_RAIL_VOL_UNIT 0.0001  // 100uV
 
+/* Return Value of Sensor Reading */
+#define SNR_READING_NA -2
+#define SNR_READING_SKIP 1
 
 typedef struct {
   uint8_t sflgs;                    //Status Flags
@@ -131,8 +135,8 @@ typedef struct {
 } ssd_data;
 
 typedef struct {
-  char key[40];
-  char value[40];
+  char key[PART_KEY_SIZE + 1];
+  char value[PART_NUM_SIZE + 1];
 } t_key_value_pair;
 
 // For Byte 1 - Status Flag.
@@ -202,4 +206,5 @@ int nvme_pdlu_read_decode(const char *i2c_bus, uint8_t *value, t_key_value_pair 
 int nvme_vendor_read_decode(const char *i2c_bus, uint16_t *value, t_key_value_pair *vendor_decoding);
 int nvme_serial_num_read_decode(const char *i2c_bus, uint8_t *value, int size, t_key_value_pair *sn_decoding);
 
+int nvme_temp_value_check(int32_t value, float *value_check);
 #endif

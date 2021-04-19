@@ -20,7 +20,7 @@ import re
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
-from ctypes import CDLL, byref, c_uint8
+from ctypes import CDLL, byref, c_uint8, create_string_buffer
 
 
 lpal_hndl = CDLL("libpal.so.0")
@@ -52,7 +52,7 @@ def board_fan_actions(fan, action="None"):
     if "led" in action:
         set_fan_led(fan.label, color=action)
     else:
-        Logger.warn("%s needs action %s" % (fan.label, str(action)))
+        Logger.info("%s needs action %s" % (fan.label, str(action)))
     pass
 
 
@@ -82,31 +82,37 @@ def board_callout(callout="None", **kwargs):
         return set_all_pwm(boost)
     elif "chassis_intrusion" in callout:
         # fan present
-        cmd = "presence_util.sh fan"
-        lines = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        fan_presence = 0
-        psu_presence = 0
+        fru_list = ["fan1", "fan2", "fan3", "fan4", "psu1", "psu2", "pem1", "pem2"]
+        fru_id = c_uint8()
+        state = c_uint8()
         tray_pull_out = 0
-        for line in lines.split("\n"):
-            m = re.match(r"fan.*\s:\s+(\d+)", line)
-            if m is not None:
-                if int(m.group(1)) == 1:
-                    fan_presence += 1
+        for fru_name in fru_list:
+            if not hasattr(board_callout, fru_name):
+                setattr(board_callout, fru_name, "none")
+            last_state = getattr(board_callout, fru_name)
 
-        # psu present
-        cmd = "presence_util.sh psu"
-        lines = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        for line in lines.split("\n"):
-            m = re.match(r"psu.*\s:\s+(\d+)", line)
-            if m is not None:
-                if int(m.group(1)) == 1:
-                    psu_presence += 1
+            fru_name_p = create_string_buffer(fru_name.encode(), 8)
+            if lpal_hndl.pal_get_fru_id(byref(fru_name_p), byref(fru_id)):
+                Logger.error("chassis_intrusion can't get fru id of %s" % fru_name)
+                continue
+            if lpal_hndl.pal_is_fru_prsnt(fru_id.value, byref(state)):
+                Logger.error("chassis_intrusion can't get fru status of %s" % fru_name)
+                continue
 
-        if fan_presence < 4:
-            Logger.warn("chassis_intrusion Found Fan absent (%d/4)" % (fan_presence))
-            tray_pull_out = 1
-        if psu_presence < 2:
-            Logger.warn("chassis_intrusion Found PSU absent (%d/2)" % (psu_presence))
+            if (
+                "fan" in fru_name and state.value == 0
+            ):  # when fan module absent, set fan speed at 70%
+                tray_pull_out = 1
+            if state.value != last_state:
+                if state.value == 0:
+                    Logger.warn(
+                        "chassis_intrusion %s has been absent" % fru_name.upper()
+                    )
+                elif state.value == 1:
+                    Logger.warn(
+                        "chassis_intrusion %s has been present" % fru_name.upper()
+                    )
+                setattr(board_callout, fru_name, state.value)
         return tray_pull_out
     else:
         Logger.warn("Need to perform callout action %s" % callout)

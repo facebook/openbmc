@@ -30,14 +30,17 @@
 #include <pthread.h>
 #include <sys/un.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <openbmc/pal.h>
+#include <openbmc/fruid.h>
 #include <facebook/fby3_gpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    1000000
+#define MAX_NUM_GPV3_DEVS 12
 
-#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 /* To hold the gpio info and status */
 typedef struct {
@@ -54,6 +57,8 @@ static gpio_pin_t gpio_slot4[MAX_GPIO_PINS] = {0};
 
 static uint8_t cpld_io_sts[MAX_NUM_SLOTS+1] = {0x10, 0};
 static long int pwr_on_sec[MAX_NUM_SLOTS] = {0};
+static long int retry_sec[MAX_NUM_SLOTS] = {0};
+static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
@@ -104,6 +109,11 @@ err_t last_panic_err[] = {
   {0x09, "LAST_PANIC_ACM_BIOS_AUTH_FAILED"},
 };
 
+char *host_key[] = {"fru1_host_ready",
+                    "fru2_host_ready",
+                    "fru3_host_ready",
+                    "fru4_host_ready"};
+
 static inline void set_pwrgd_cpu_flag(uint8_t fru, bool val){
   pthread_mutex_lock(&pwrgd_cpu_mutex[fru-1]);
   is_pwrgd_cpu_chagned[fru-1] = val;
@@ -128,6 +138,270 @@ static inline void incr_timer(uint8_t fru) {
 
 static inline void decr_timer(uint8_t fru) {
   pwr_on_sec[fru-1]--;
+}
+
+struct threadinfo {
+  uint8_t is_running;
+  uint8_t fru;
+  pthread_t pt;
+};
+static struct threadinfo t_fru_cache[MAX_NUM_FRUS] = {0, };
+static uint8_t dev_fru_complete[MAX_NODES + 1][MAX_NUM_GPV3_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
+
+static int
+fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
+  int ret;
+  int fru_size = 0;
+  char fruid_temp_path[64] = {0};
+  char fruid_path[64] = {0};
+  uint8_t offset = 0;
+  struct stat st;
+
+  fru_id += DEV_ID0_2OU - 1;
+  offset = DEV_ID0_2OU - 1;
+
+  sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
+  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, REXP_BIC_INTF);
+  ret = bic_read_fruid(slot_id, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() slot%d dev%d is not present, fru_size: %d\n", __func__, slot_id, fru_id - offset, fru_size);
+  }
+
+  if (stat(fruid_temp_path, &st) == 0 && st.st_size == 0 ) {
+    remove(fruid_temp_path);
+  } else {
+    rename(fruid_temp_path, fruid_path);
+  }
+
+  return ret;
+}
+
+static void *
+fru_cache_dump(void *arg) {
+  uint8_t fru = *(uint8_t *) arg;
+  uint8_t self_test_result[2] = {0};
+  // char key[MAX_KEY_LEN];
+  char buf[MAX_VALUE_LEN];
+  int ret;
+  int retry;
+  uint8_t status[MAX_NUM_GPV3_DEVS+1] = {DEVICE_POWER_OFF};
+  uint8_t type = DEV_TYPE_UNKNOWN;
+  uint8_t nvme_ready = 0;
+  uint8_t all_nvme_ready = 0;
+  uint8_t dev_id;
+  const int max_retry = 3;
+  int oldstate;
+  int finish_count = 0; // fru finish
+  int nvme_ready_count = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+  fruid_info_t fruid;
+
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+  // pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+  // pal_set_nvme_ready(fru,all_nvme_ready);
+  // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+
+  // Check 2OU BIC Self Test Result
+  do {
+    pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+    ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result, REXP_BIC_INTF);
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+    if (ret == 0) {
+      syslog(LOG_INFO, "bic_get_self_test_result of slot%u: %X %X", fru, self_test_result[0], self_test_result[1]);
+      break;
+    }
+    sleep(5);
+  } while (ret != 0);
+
+  sleep(2); //wait for BIC poll at least one cycle
+
+  // Get GPV3 devices' FRU
+  for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+
+    //check for power status
+    ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
+
+    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+
+    if (dev_fru_complete[fru][dev_id] != DEV_FRU_NOT_COMPLETE) {
+      finish_count++;
+      continue;
+    }
+
+    if (ret == 0) {
+      if (status[dev_id] == DEVICE_POWER_ON) {
+        retry = 0;
+        while (1) {
+          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+          ret = fruid_cache_init(fru, dev_id);
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+          retry++;
+
+          if ((ret == 0) || (retry == max_retry))
+            break;
+
+          msleep(50);
+        }
+
+        if (retry >= max_retry) {
+          syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
+        } else {
+          pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+          //check file's checksum
+          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+          ret = fruid_parse(buf, &fruid);
+          if (ret != 0) { // Fail
+            syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
+          } else { // Success
+            free_fruid_info(&fruid);
+            dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+            finish_count++;
+            syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
+          }
+          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+        }
+      } else { // DEVICE_POWER_OFF
+        finish_count++;
+      }
+
+      // sprintf(key, "slot%u_dev%u_pres", fru, dev_id-1);
+      // sprintf(buf, "%u", status[dev_id]);
+      // pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+      // if (kv_set(key, buf, 0, 0) < 0) {
+      //   syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id-1);
+      // }
+      // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+    } else { // Device Status Unknown
+      finish_count++;
+      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id-1);
+    }
+  }
+
+  // If NVMe is ready, try to get the FRU which was failed to get and
+  // update the fan speed control table according to the device type
+  do {
+    nvme_ready_count = 0;
+    for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+      if (status[dev_id] == DEVICE_POWER_OFF) {// M.2 device is present or not
+        nvme_ready_count++;
+        continue;
+      }
+
+      // check for device type
+      ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
+      syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+
+      if (ret || (!nvme_ready))
+        continue;
+
+      nvme_ready_count++;
+
+      if (dev_fru_complete[fru][dev_id] == DEV_FRU_NOT_COMPLETE) { // try to get fru or not
+        if (type == DEV_TYPE_BRCM_ACC) { // device type has FRU
+          retry = 0;
+          while (1) {
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_cache_init(fru, dev_id);
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+            retry++;
+
+            if ((ret == 0) || (retry == max_retry))
+              break;
+
+            msleep(50);
+          }
+
+          if (retry >= max_retry) {
+            syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
+          } else {
+            pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+            // check file's checksum
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_parse(buf, &fruid);
+            if (ret != 0) { // Fail
+              syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
+            } else { // Success
+              free_fruid_info(&fruid);
+              dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+              finish_count++;
+              syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
+            }
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+          }
+        } else {
+          dev_fru_complete[fru][dev_id] = DEV_FRU_IGNORE;
+          finish_count++;
+          syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU", fru, dev_id-1);
+        }
+      }
+    }
+
+    if (!all_nvme_ready && (nvme_ready_count == MAX_NUM_GPV3_DEVS)) {
+      // set nvme is ready
+      all_nvme_ready = 1;
+      // pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+      // pal_set_nvme_ready(fru,all_nvme_ready);
+      // pal_set_nvme_ready_timestamp(fru);
+      // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+      syslog(LOG_WARNING, "fru_cache_dump: Slot%u all devices' NVMe are ready", fru);
+    }
+    sleep(10);
+
+  } while ((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS));
+
+  t_fru_cache[fru-1].is_running = 0;
+  syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);
+
+  pthread_detach(pthread_self());
+  pthread_exit(0);
+}
+
+int
+fru_cahe_init(uint8_t fru) {
+  int ret, i;
+  uint8_t idx;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  if (fru != FRU_SLOT1 && fru != FRU_SLOT3) {
+    return -1;
+  }
+  if ( (bic_is_m2_exp_prsnt(fru) & PRESENT_2OU) != PRESENT_2OU ) {
+    return -1;
+  }
+  if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
+    syslog(LOG_WARNING, "%s() slot%u Failed to get 2OU board type", __func__,fru);
+    return -1;
+  }
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+    syslog(LOG_WARNING, "%s() slot%u 2OU board type = %u (not GPv3)", __func__,fru,type_2ou);
+    return -1;
+  }
+
+  idx = fru - 1;
+
+  // If yes, kill that thread and start a new one
+  if (t_fru_cache[idx].is_running) {
+    ret = pthread_cancel(t_fru_cache[idx].pt);
+    if (ret == ESRCH) {
+      syslog(LOG_INFO, "%s: No dump FRU cache pthread exists", __func__);
+    } else {
+      pthread_join(t_fru_cache[idx].pt, NULL);
+      syslog(LOG_INFO, "%s: Previous dump FRU cache thread is cancelled", __func__);
+    }
+  }
+
+  // Start a thread to generate the FRU
+  t_fru_cache[idx].fru = fru;
+  if (pthread_create(&t_fru_cache[idx].pt, NULL, fru_cache_dump, (void *)&t_fru_cache[idx].fru) < 0) {
+    syslog(LOG_WARNING, "%s: pthread_create for FRU %d failed", __func__, fru);
+    return -1;
+  }
+  t_fru_cache[idx].is_running = 1;
+  syslog(LOG_INFO, "%s: FRU %d cache is being generated.", __func__, fru);
+
+  return 0;
 }
 
 /* Returns the pointer to the struct holding all gpio info for the fru#. */
@@ -368,7 +642,6 @@ gpio_monitor_poll(void *ptr) {
 
   int i, ret = 0;
   uint8_t fru = (int)ptr;
-  bool is_bmc_ready = false;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
   uint8_t chassis_sts[8] = {0};
@@ -403,21 +676,22 @@ gpio_monitor_poll(void *ptr) {
     if ( bic_get_gpio(fru, &n_pin_val, NONE_INTF) < 0 ) {
       //rst timer
       rst_timer(fru);
+      kv_set(host_key[fru-1], "0", 0, 0);
 
       //rst old & new pin val
       memset(&o_pin_val, 0, sizeof(o_pin_val));
       memset(&n_pin_val, 0, sizeof(n_pin_val));
 
       //Normally, BIC can always be accessed except 12V-off or 12V-cycle
-      is_bmc_ready = false;
+
       usleep(DELAY_GPIOD_READ);
       continue;
     }
 
-    //Inform BIOS that BMC is ready
-    if ( is_bmc_ready == false ) {
+    // Inform BIOS that BMC is ready
+    // handle case : BIC FW update & BIC resets unexpectedly
+    if (GET_BIT(n_pin_val, BMC_READY) == 0) {
       bic_set_gpio(fru, BMC_READY, 1);
-      is_bmc_ready = true;
     }
 
     // Get CPLD io sts
@@ -426,6 +700,21 @@ gpio_monitor_poll(void *ptr) {
                        (GET_BIT(n_pin_val, RST_RSMRST_BMC_N) << 0x2) | \
                        (GET_BIT(n_pin_val, FM_CPU_MSMI_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_R_N) << 0x4);
+    if (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0) {
+      if (retry_sec[fru-1] == (MAX_READ_RETRY*12)) {
+        kv_set(host_key[fru-1], "1", 0, 0);
+        bios_post_cmplt[fru-1] = true;
+        retry_sec[fru-1] = 0;
+      }
+      retry_sec[fru-1]++;
+    } else {
+      if (bios_post_cmplt[fru-1] == true) {
+        kv_set(host_key[fru-1], "0", 0, 0);
+        bios_post_cmplt[fru-1] = false;
+        retry_sec[fru-1] = 0;
+        rst_timer(fru);
+      }
+    }
 
     //check PWRGD_CPU_LVC3_R is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) && 
@@ -462,8 +751,7 @@ gpio_monitor_poll(void *ptr) {
             printf("RST_RSMRST_BMC_N is ASSERT !\n");
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
-          } 
-          
+          }
         } else {
           if (i == RST_RSMRST_BMC_N) {
             printf("RST_RSMRST_BMC_N is DEASSERT !\n");
@@ -496,8 +784,9 @@ gpio_monitor_poll(void *ptr) {
               }
               pal_set_server_power(fru, SERVER_POWER_ON);
             }
-
+#if 0
             check_pfr_mailbox(fru);
+#endif
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
           }
@@ -561,6 +850,7 @@ host_pwr_mon() {
 #define POWER_ON_DELAY       2
 #define NON_PFR_POWER_OFF_DELAY  -2
 #define PFR_POWER_OFF_DELAY     -60
+#define HOST_READY 500
   char path[64] = {0};
   uint8_t host_off_flag = 0;
   uint8_t is_util_run_flag = 0;
@@ -603,16 +893,33 @@ host_pwr_mon() {
       //record which slot is off
       if ( tick <= power_off_delay ) {
         if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == power_off_delay) ) {
+          sprintf(path, PWR_UTL_LOCK, fru);
+          if (access(path, F_OK) != 0) {
+            pal_set_last_pwr_state(fru, "off");
+          }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
-          pal_set_last_pwr_state(fru, "off");
         }
         host_off_flag |= 0x1 << i;
       } else if ( tick >= POWER_ON_DELAY ) {
         if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == POWER_ON_DELAY) ) {
+          sprintf(path, PWR_UTL_LOCK, fru);
+          if (access(path, F_OK) != 0) {
+            pal_set_last_pwr_state(fru, "on");
+          }
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
-          pal_set_last_pwr_state(fru, "on");
+          // update fru if GPv3 dev fru flag (dev_fru_complete) does not set to complete
+          // If dc on after ac/dc cycle, only get the fru which did not get last time
+          // In the future, it will also update GPv3 device NVMe is ready or not for some implementations
+          fru_cahe_init(fru); 
         }
         host_off_flag &= ~(0x1 << i);
+        if ( tick == HOST_READY ) {
+          kv_set(host_key[fru-1], "1", 0, 0);
+        }
+      } else {
+        if ( tick < POWER_ON_DELAY ) {
+          kv_set(host_key[fru-1], "0", 0, 0);
+        }
       }
 
       if ( (tick == power_off_delay) || (tick == POWER_ON_DELAY) ) {
@@ -682,6 +989,8 @@ run_gpiod(int argc, void **argv) {
     }
 
     SLOTS_MASK |= 0x1 << (fru - 1);
+    //init GPv3 device FRU after BMC start or hot service
+    fru_cahe_init(fru);
 
     if ((fru >= FRU_SLOT1) && (fru < (FRU_SLOT1 + MAX_NUM_SLOTS))) {
       fru_flag = SETBIT(fru_flag, fru);

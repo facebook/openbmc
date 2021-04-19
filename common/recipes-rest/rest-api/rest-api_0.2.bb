@@ -35,15 +35,17 @@ SRC_URI = "file://rest.py \
            file://acl_providers/__init__.py\
            file://acl_providers/cached_acl_provider.py\
            file://acl_providers/common_acl_provider_base.py\
-           file://acl_providers/dummy_acl_provider.py\
            file://plat_tree.py \
            file://rest_crawler.py \
            file://node.py \
            file://tree.py \
-           file://pal.py \
+           file://rest_pal_legacy.py \
            file://vboot.py \
            file://rest.cfg \
            file://rest_config.py \
+           file://rest_fscd_sensor_data.py \
+           file://rest_modbus_cmd.py \
+           file://test_rest_modbus_cmd.py \
            file://node_bmc.py \
            file://node_api.py \
            file://node_dpb.py \
@@ -75,7 +77,15 @@ SRC_URI = "file://rest.py \
            file://test_auth_enforcer.py \
            file://test_common_logging.py \
            file://test_rest_config.py \
+           file://test_rest_fscd_sensor_data.py \
+           file://test_common_auth.py \
+           file://test_common_acl_provider_base.py \
            file://restapi.service \
+           file://redfish_service_root.py \
+           file://redfish_account_service.py \
+           file://redfish_chassis.py \
+           file://redfish_managers.py \
+           file://boot_source.py \
           "
 
 S = "${WORKDIR}"
@@ -92,11 +102,10 @@ do_install_class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   acld="${D}/usr/local/fbpackages/${pkgdir}/acl_providers"
   bin="${D}/usr/local/bin"
-  sysconf="${D}{sysconfdir}"
   install -d $dst
   install -d $bin
   install -d $acld
-  install -d $sysconf
+  install -d ${D}${sysconfdir}
   for f in ${S}/*.py; do
     n=$(basename $f)
     install -m 755 "$f" ${dst}/$n
@@ -114,7 +123,7 @@ do_install_class-target() {
       install_sysv
   fi
 
-  install -m 644 ${WORKDIR}/rest.cfg $sysconf/rest.cfg
+  install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
 }
 
 

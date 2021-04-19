@@ -108,6 +108,13 @@ class GPIO:
         else:
             GpioOperationFailure(1)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if self.desc is not None:
+            self.close()
+
     def close(self):
         if self.desc is None:
             raise GpioOperationFailure(1)

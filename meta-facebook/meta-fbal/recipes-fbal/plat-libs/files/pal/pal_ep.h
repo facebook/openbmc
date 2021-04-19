@@ -6,6 +6,7 @@
 #define EP_I2C_BUS_NUMBER                (6)
 #define EP_I2C_SLAVE_ADDR                (0x2C)
 
+#define EP_PDB_SNR_HSC  (0x6F)
 enum {
   EP_USB_BMC_MB0 = 0x0, 
   EP_USB_BMC_MB1,

@@ -56,6 +56,8 @@
       OBMC_WARN("'%s' command returned %d", _cmd, _ret); \
   } while (0)
 
+#define FRU_TO_FAN_ID(fru)   (((fru) - FRU_FAN1 + 1) / 2)
+
 struct threadinfo {
   uint8_t is_running;
   uint8_t fru;
@@ -123,183 +125,6 @@ char * def_val_list[] = {
 
 sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
 
-// Helper Functions
-int read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%i", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-// Helper Functions
-static int
-read_device_float(const char *device, float *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device %s", device);
-#endif
-    return err;
-  }
-
-  rc = fscanf(fp, "%f", value);
-  fclose(fp);
-  if (rc != 1) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to read device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int
-write_device(const char *device, const char *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "w");
-  if (!fp) {
-    int err = errno;
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to open device for write %s", device);
-#endif
-    return err;
-  }
-
-  rc = fputs(value, fp);
-  fclose(fp);
-
-  if (rc < 0) {
-#ifdef DEBUG
-    syslog(LOG_INFO, "failed to write device %s", device);
-#endif
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
-int
-pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force) {
-
-  int fd = -1, rc = -1;
-  char fn[32];
-  uint32_t funcs;
-
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
-  fd = open(fn, O_RDWR);
-  if (fd == -1) {
-    syslog(LOG_WARNING, "Failed to open i2c device %s", fn);
-    return I2C_BUS_ERROR;
-  }
-
-  if (ioctl(fd, I2C_FUNCS, &funcs) < 0) {
-    syslog(LOG_WARNING, "Failed to get %s functionality matrix", fn);
-    close(fd);
-    return I2C_FUNC_ERROR;
-  }
-
-  if (force) {
-    if (ioctl(fd, I2C_SLAVE_FORCE, addr)) {
-      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
-      close(fd);
-      return I2C_DEVICE_ERROR;
-    }
-   } else {
-    if (ioctl(fd, I2C_SLAVE, addr) < 0) {
-      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
-      close(fd);
-      return I2c_DRIVER_EXIST;
-    }
-  }
-
-  /* Probe this address */
-  switch (mode) {
-    case MODE_QUICK:
-      /* This is known to corrupt the Atmel AT24RF08 EEPROM */
-      rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
-      break;
-    case MODE_READ:
-      /* This is known to lock SMBus on various
-         write-only chips (mainly clock chips) */
-      rc = i2c_smbus_read_byte(fd);
-      break;
-    default:
-      if ((addr >= 0x30 && addr <= 0x37) || (addr >= 0x50 && addr <= 0x5F))
-        rc = i2c_smbus_read_byte(fd);
-      else
-        rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
-  }
-  close(fd);
-
-  if (rc < 0) {
-    return I2C_DEVICE_ERROR;
-  } else {
-    return 0;
-  }
-}
-
-int
-pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
-
-  int ret = -1;
-  char cmd[64];
-
-  snprintf(cmd, sizeof(cmd),
-            "echo %s %d > /sys/bus/i2c/devices/i2c-%d/new_device",
-              device_name, addr, bus);
-
-#if DEBUG
-  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
-}
-
-int
-pal_del_i2c_device(uint8_t bus, uint8_t addr) {
-
-  int ret = -1;
-  char cmd[64];
-
-  sprintf(cmd, "echo %d > /sys/bus/i2c/devices/i2c-%d/delete_device",
-           addr, bus);
-
-#if DEBUG
-  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
-}
-
 int
 pal_get_pim_type(uint8_t fru, int retry) {
   int ret = -1, val;
@@ -313,7 +138,7 @@ pal_get_pim_type(uint8_t fru, int retry) {
     retry = 0;
   }
 
-  while ((ret = read_device(path, &val)) != 0 && retry--) {
+  while ((ret = device_read(path, &val)) != 0 && retry--) {
     msleep(500);
   }
   if (ret) {
@@ -386,7 +211,7 @@ int pal_get_pim_pedigree(uint8_t fru, int retry){
   bus = ((fru - FRU_PIM1) * 8) + 80;
   snprintf(path, sizeof(path), I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
 
-  while ((ret = read_device(path, &val)) != 0 && retry--) {
+  while ((ret = device_read(path, &val)) != 0 && retry--) {
     msleep(500);
   }
   if (ret) {
@@ -442,6 +267,76 @@ pal_get_pim_pedigree_from_file(uint8_t fru) {
     return PIM_16O_ALPHA2;
   } else {
     return PIM_TYPE_NONE;
+  }
+}
+
+int
+pal_get_pim_phy_type(uint8_t fru, int retry) {
+  int ret = -1, val;
+  char path[LARGEST_DEVICE_NAME];
+  uint8_t bus = ((fru - FRU_PIM1) * PIM_I2C_OFFSET) + PIM_I2C_BASE;
+
+  snprintf(path, sizeof(path), I2C_SYSFS_DEVICES"/%d-0060/board_ver", bus);
+
+  if (retry < 0) {
+    retry = 0;
+  }
+
+  while ((ret = device_read(path, &val)) != 0 && retry--) {
+    msleep(500);
+  }
+  if (ret) {
+    return -1;
+  }
+
+  /* DVT or later is 7nm */
+  if (val > PIM_16Q_EVT3) {
+    ret = PIM_16Q_PHY_7NM;
+  /* EVT1 or EVT2 is 16nm */
+  } else if (val < PIM_16Q_EVT3) {
+    ret = PIM_16Q_PHY_16NM;
+  } else {
+    /* When PIM board rev is EVT3, some PIM is 16nm and some is 7nm,
+     * need to read Phy ID to identify 7nm or 16nm */
+    if (pal_pim_is_7nm(fru))
+      ret = PIM_16Q_PHY_7NM;
+    else
+      ret = PIM_16Q_PHY_16NM;
+  }
+
+  return ret;
+}
+
+int
+pal_set_pim_phy_type_to_file(uint8_t fru, char *type) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+
+  pal_get_fru_name(fru, fru_name);
+  snprintf(key, sizeof(key), "%s_phy_type", fru_name);
+
+  return kv_set(key, type, 0, 0);
+}
+
+int
+pal_get_pim_phy_type_from_file(uint8_t fru) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+  char type[12] = {0};
+
+  pal_get_fru_name(fru, fru_name);
+  snprintf(key, sizeof(key), "%s_phy_type", fru_name);
+
+  if (kv_get(key, type, NULL, 0)) {
+    return -1;
+  }
+
+  if (!strncmp(type, "7nm", sizeof("7nm"))) {
+    return PIM_16Q_PHY_7NM;
+  } else if (!strncmp(type, "16nm", sizeof("16nm"))) {
+    return PIM_16Q_PHY_16NM;
+  } else {
+    return PIM_16Q_PHY_UNKNOWN;
   }
 }
 
@@ -533,6 +428,20 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 int
 pal_get_fru_list(char *list) {
   strcpy(list, pal_fru_list);
+  return 0;
+}
+
+int
+pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  if (fru == FRU_SMB) {
+    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+      FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+  } else if (fru > FRU_ALL && fru <= FRU_FPGA) {
+    *caps = FRU_CAPABILITY_SENSOR_ALL;
+  } else {
+    return -1;
+  }
   return 0;
 }
 
@@ -684,6 +593,13 @@ pal_get_platform_name(char *name) {
 }
 
 int
+pal_get_num_slots(uint8_t *num)
+{
+  *num = FUJI_MAX_NUM_SLOTS;
+  return PAL_EOK;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int val;
   char tmp[LARGEST_DEVICE_NAME];
@@ -695,7 +611,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       *status = 1;
       return 0;
     case FRU_SCM:
-      snprintf(path, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, SCM_PRSNT_STATUS);
+      snprintf(path, sizeof(path), SMBCPLD_PATH_FMT, SCM_PRSNT_STATUS);
       break;
     case FRU_PIM1:
     case FRU_PIM2:
@@ -705,46 +621,46 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_PIM6:
     case FRU_PIM7:
     case FRU_PIM8:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - 2);
+      snprintf(tmp, sizeof(tmp), SMBCPLD_PATH_FMT, PIM_PRSNT_STATUS);
+      snprintf(path, sizeof(path), tmp, fru - 2);
       break;
     case FRU_PSU1:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, 1);
+      snprintf(tmp, sizeof(tmp), SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
+      snprintf(path, sizeof(path), tmp, 1);
       break;
     case FRU_PSU2:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, 2);
+      snprintf(tmp, sizeof(tmp), SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
+      snprintf(path, sizeof(path), tmp, 2);
       break;
     case FRU_PSU3:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, 3);
+      snprintf(tmp, sizeof(tmp), SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
+      snprintf(path, sizeof(path), tmp, 3);
       break;
     case FRU_PSU4:
-      snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, 4);
+      snprintf(tmp, sizeof(tmp), SMBCPLD_PATH_FMT, PSU_PRSNT_STATUS);
+      snprintf(path, sizeof(path), tmp, 4);
       break;
     case FRU_FAN1:
     case FRU_FAN3:
     case FRU_FAN5:
     case FRU_FAN7:
-      snprintf(tmp, LARGEST_DEVICE_NAME,
+      snprintf(tmp, sizeof(tmp),
                TOP_FCMCPLD_PATH_FMT, FAN_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, ((fru - 14) / 2) + 1);
+      snprintf(path, sizeof(path), tmp, FRU_TO_FAN_ID(fru) + 1);
       break;
     case FRU_FAN2:
     case FRU_FAN4:
     case FRU_FAN6:
     case FRU_FAN8:
-      snprintf(tmp, LARGEST_DEVICE_NAME,
+      snprintf(tmp, sizeof(tmp),
                BOTTOM_FCMCPLD_PATH_FMT, FAN_PRSNT_STATUS);
-      snprintf(path, LARGEST_DEVICE_NAME, tmp, (fru - 14) / 2);
+      snprintf(path, sizeof(path), tmp, FRU_TO_FAN_ID(fru));
       break;
     default:
       return -1;
     }
 
-    if (read_device(path, &val)) {
+    if (device_read(path, &val)) {
       return -1;
     }
 
@@ -781,25 +697,15 @@ char tstr[MAX_VALUE_LEN] = {0};
 int
 pal_get_board_rev(int *rev) {
   char path[LARGEST_DEVICE_NAME + 1];
-  int val_id_0, val_id_1, val_id_2;
+  int val;
+  int ret = -1;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
-  if (read_device(path, &val_id_0)) {
+  snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
+  ret = device_read(path, &val);
+  if (ret) {
     return -1;
   }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
-  if (read_device(path, &val_id_1)) {
-    return -1;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
-  if (read_device(path, &val_id_2)) {
-    return -1;
-  }
-
-  *rev = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
-  syslog(LOG_ERR, "Board rev: %d\n", *rev);
+  *rev = val;
 
   return 0;
 }
@@ -809,11 +715,125 @@ pal_get_cpld_board_rev(int *rev, const char *device) {
   char full_name[LARGEST_DEVICE_NAME + 1];
 
   snprintf(full_name, LARGEST_DEVICE_NAME, device, "board_ver");
-  if (read_device(full_name, rev)) {
+  if (device_read(full_name, rev)) {
     return -1;
   }
 
   return 0;
+}
+
+int cpld_name_to_path(const char *name, char *ver_path,char *min_ver_path,
+                      char *sub_ver_path, size_t size)
+{
+  int i, j;
+  static struct {
+  const char *name;
+  const char *sysfs_dir[2];
+  } cpld_sysfs_map[] = {
+    {
+      SCM_CPLD,
+      {SCM_SYSFS, NULL},
+    },
+    {
+      SMB_CPLD,
+      {SMB_SYSFS, NULL},
+    },
+    {
+      PWR_CPLD_L,
+      {PWR_L_SYSFS_DVT, PWR_L_SYSFS_EVT},
+    },
+    {
+      PWR_CPLD_R,
+      {PWR_R_SYSFS_DVT, PWR_R_SYSFS_EVT},
+    },
+    {
+      FCM_CPLD_T,
+      {FCM_T_SYSFS, NULL},
+    },
+    {
+      FCM_CPLD_B,
+      {FCM_B_SYSFS, NULL},
+    },
+    {NULL, {NULL, NULL}}, /* always the last entry. */
+  };
+
+  for (i = 0; cpld_sysfs_map[i].name != NULL; i++) {
+    if (strcmp(name, cpld_sysfs_map[i].name) != 0)
+      continue;
+
+    for (j = 0; j < ARRAY_SIZE(cpld_sysfs_map->sysfs_dir); j++) {
+      if (cpld_sysfs_map[i].sysfs_dir[j] != NULL &&
+            path_exists(cpld_sysfs_map[i].sysfs_dir[j])) {
+            snprintf(ver_path, size, "%scpld_ver", cpld_sysfs_map[i].sysfs_dir[j]);
+            snprintf(min_ver_path, size, "%scpld_minor_ver", cpld_sysfs_map[i].sysfs_dir[j]);
+            snprintf(sub_ver_path, size, "%scpld_sub_ver", cpld_sysfs_map[i].sysfs_dir[j]);
+            return 0;
+      }
+    }
+  }
+  return -1; /* no matched CPLD. */
+}
+
+int fpga_name_to_path(const char *name, char *ver_path, char *sub_ver_path, size_t size)
+{
+  int i, j;
+  static struct {
+  const char *name;
+  const char *sysfs_dir[2];
+  } fpga_sysfs_map[] = {
+    {
+      PIM1_DOM_FPGA,
+      {PIM1_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM2_DOM_FPGA,
+      {PIM2_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM3_DOM_FPGA,
+      {PIM3_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM4_DOM_FPGA,
+      {PIM4_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM5_DOM_FPGA,
+      {PIM5_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM6_DOM_FPGA,
+      {PIM6_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM7_DOM_FPGA,
+      {PIM7_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      PIM8_DOM_FPGA,
+      {PIM8_DOMFPGA_SYSFS, NULL},
+    },
+    {
+      IOB_FPGA,
+      {IOBFPGA_SYSFS, NULL},
+    },
+    {NULL, {NULL, NULL}}, /* always the last entry. */
+  };
+
+  for (i = 0; fpga_sysfs_map[i].name != NULL; i++) {
+    if (strcmp(name, fpga_sysfs_map[i].name) != 0)
+      continue;
+
+    for (j = 0; j < ARRAY_SIZE(fpga_sysfs_map->sysfs_dir); j++) {
+      if (fpga_sysfs_map[i].sysfs_dir[j] != NULL &&
+            path_exists(fpga_sysfs_map[i].sysfs_dir[j])) {
+            snprintf(ver_path, size, "%sfpga_ver", fpga_sysfs_map[i].sysfs_dir[j]);
+            snprintf(sub_ver_path, size, "%sfpga_sub_ver", fpga_sysfs_map[i].sysfs_dir[j]);
+            return 0;
+      }
+    }
+  }
+  return -1; /* no matched CPLD. */
 }
 
 int
@@ -823,108 +843,40 @@ pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver) {
   char min_ver_path[PATH_MAX];
   char sub_ver_path[PATH_MAX];
 
-  switch(fru) {
+  memset(ver_path, 0, sizeof(ver_path));
+  memset(min_ver_path, 0, sizeof(min_ver_path));
+  memset(sub_ver_path, 0, sizeof(sub_ver_path));
+
+  switch (fru) {
     case FRU_CPLD:
-      if (!(strncmp(device, SCM_CPLD, strlen(SCM_CPLD)))) {
-        snprintf(ver_path, sizeof(ver_path), SCM_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 SCM_SYSFS, "cpld_min_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 SCM_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, SMB_CPLD, strlen(SMB_CPLD)))) {
-        snprintf(ver_path, sizeof(ver_path), SMB_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 SMB_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 SMB_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, PWR_CPLD_L, strlen(PWR_CPLD_L)))) {
-        snprintf(ver_path, sizeof(ver_path), PWR_L_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 PWR_L_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PWR_L_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, PWR_CPLD_R, strlen(PWR_CPLD_R)))) {
-        snprintf(ver_path, sizeof(ver_path), PWR_R_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 PWR_R_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PWR_R_SYSFS, "cpld_sub_ver");
-      }else if (!(strncmp(device, FCM_CPLD_T, strlen(FCM_CPLD_T)))) {
-        snprintf(ver_path, sizeof(ver_path), FCM_T_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 FCM_T_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 FCM_T_SYSFS, "cpld_sub_ver");
-      } else if (!(strncmp(device, FCM_CPLD_B, strlen(FCM_CPLD_B)))) {
-        snprintf(ver_path, sizeof(ver_path), FCM_B_SYSFS, "cpld_ver");
-        snprintf(min_ver_path, sizeof(min_ver_path),
-                 FCM_B_SYSFS, "cpld_minor_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 FCM_B_SYSFS, "cpld_sub_ver");
-      } else {
+      if (cpld_name_to_path(device, ver_path, min_ver_path, sub_ver_path, PATH_MAX) < 0)
         return -1;
-      }
       break;
+
     case FRU_FPGA:
-      if (!(strncmp(device, PIM1_DOM_FPGA, strlen(PIM1_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM1_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM1_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM2_DOM_FPGA, strlen(PIM2_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM2_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM2_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM3_DOM_FPGA, strlen(PIM3_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM3_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM3_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM4_DOM_FPGA, strlen(PIM4_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM4_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM4_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM5_DOM_FPGA, strlen(PIM5_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM5_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM5_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM6_DOM_FPGA, strlen(PIM6_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM6_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM6_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM7_DOM_FPGA, strlen(PIM7_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM7_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM7_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, PIM8_DOM_FPGA, strlen(PIM8_DOM_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), PIM8_DOMFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 PIM8_DOMFPGA_SYSFS, "fpga_sub_ver");
-      } else if (!(strncmp(device, IOB_FPGA, strlen(IOB_FPGA)))) {
-        snprintf(ver_path, sizeof(ver_path), IOBFPGA_SYSFS, "fpga_ver");
-        snprintf(sub_ver_path, sizeof(sub_ver_path),
-                 IOBFPGA_SYSFS, "fpga_sub_ver");
-      } else {
+      if (fpga_name_to_path(device, ver_path, sub_ver_path, PATH_MAX) < 0)
         return -1;
-      }
       break;
+
     default:
       return -1;
   }
 
-  if (!read_device(ver_path, &val)) {
+  if (!device_read(ver_path, &val)) {
     ver[0] = (uint8_t)val;
   } else {
     return -1;
   }
 
   if (fru == FRU_CPLD) {
-    if (!read_device(min_ver_path, &val)) {
+    if (!device_read(min_ver_path, &val)) {
       ver[1] = (uint8_t)val;
     } else {
       return -1;
     }
   }
 
-  if (!read_device(sub_ver_path, &val)) {
+  if (!device_read(sub_ver_path, &val)) {
     if(fru == FRU_CPLD) {
       ver[2] = (uint8_t)val;
     } else {
@@ -953,9 +905,9 @@ _set_pim_sts_led(uint8_t fru, uint8_t color)
            I2C_SYSFS_DEVICES"/%d-0060/system_led", bus);
 
   if(color == FPGA_STS_CLR_BLUE)
-    write_device(path, "1");
+    device_write_buff(path, "1");
   else if(color == FPGA_STS_CLR_YELLOW)
-    write_device(path, "0");
+    device_write_buff(path, "0");
 
   return 0;
 }
@@ -970,7 +922,7 @@ pal_set_pim_sts_led(uint8_t fru)
   /* FRU_PIM1 = 3, FRU_PIM2 = 4, ...., FRU_PIM8 = 10 */
   /* KV_PIM1 = 1, KV_PIM2 = 2, ...., KV_PIM8 = 8 */
   snprintf(path, LARGEST_DEVICE_NAME, tmp, fru - 2);
-  if(read_device(path, &val)) {
+  if(device_read(path, &val)) {
     syslog(LOG_ERR, "%s cannot get value from %s", __func__, path);
     return;
   }
@@ -1106,154 +1058,82 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 void
 init_led(void)
 {
-  int dev, ret;
-  dev = open("/dev/i2c-50", O_RDWR);
-  if(dev < 0) {
-    syslog(LOG_ERR, "%s: open() failed\n", __func__);
-    return;
-  }
-
-  ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_SIM_LED);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: ioctl() assigned i2c addr failed\n", __func__);
-    close(dev);
-    return;
-  }
-
-  i2c_smbus_write_byte_data(dev, 0x06, 0x00);
-  i2c_smbus_write_byte_data(dev, 0x07, 0x00);
-  close(dev);
-
+  // TODO, currently there is no definition, but in the future, maybe need action. 
   return;
 }
 
 int
-set_sled(int brd_rev, uint8_t color, int led_name)
+set_sled(int brd_rev, uint8_t color, uint8_t name)
 {
-  int dev, ret;
-  uint8_t io0_reg = 0x02, io1_reg = 0x03;
-  uint8_t clr_val, val_io0, val_io1;
-  dev = open("/dev/i2c-50", O_RDWR);
-  if(dev < 0) {
-    syslog(LOG_ERR, "%s: open() failed\n", __func__);
+  char led_path[64];
+  struct {
+    const char *color;
+    const char *brightness;
+  } led_colors[SLED_COLOR_MAX] = {
+    {"0 0 0",         "0"},   // SLED_COLOR_OFF
+    {"0 0 255",       "255"}, // SLED_COLOR_BLUE
+    {"0 255 0",       "255"}, // SLED_COLOR_GREEN
+    {"255 45 0",      "255"}, // SLED_COLOR_AMBER
+    {"255 0 0",       "255"}  // SLED_COLOR_RED
+  };
+
+  const char *led_names[SLED_NAME_MAX] = {
+    "sys", // SLED_NAME_SYS
+    "fan", // SLED_NAME_FAN
+    "psu", // SLED_NAME_PSU
+    "smb"  // SLED_NAME_SMB
+  };
+
+  if ((color >= SLED_COLOR_MAX) || (name >= SLED_NAME_MAX)) {
+    syslog(LOG_WARNING, "set_sled: error color %d or error name %d", color, name);
     return -1;
   }
+  
+  sprintf(led_path,"/sys/class/leds/%s/multi_intensity", led_names[name]);
+  device_write_buff(led_path, led_colors[color].color);
+  sprintf(led_path,"/sys/class/leds/%s/brightness", led_names[name]);
+  device_write_buff(led_path, led_colors[color].brightness);
 
-  ret = ioctl(dev, I2C_SLAVE, I2C_ADDR_SIM_LED);
-  if(ret < 0) {
-    syslog(LOG_ERR, "%s: ioctl() assigned i2c addr failed\n", __func__);
-    close(dev);
-    return -1;
-  }
-  val_io0 = i2c_smbus_read_byte_data(dev, 0x02);
-  if(val_io0 < 0) {
-    close(dev);
-    syslog(LOG_ERR, "%s: i2c_smbus_read_byte_data failed\n", __func__);
-    return -1;
-  }
-
-  val_io1 = i2c_smbus_read_byte_data(dev, 0x03);
-  if(val_io1 < 0) {
-    close(dev);
-    syslog(LOG_ERR, "%s: i2c_smbus_read_byte_data failed\n", __func__);
-    return -1;
-  }
-
-  clr_val = color;
-
-  if(brd_rev == 0 || brd_rev == 4) {
-    if(led_name == SLED_SMB || led_name == SLED_PSU) {
-      clr_val = clr_val << 3;
-      val_io0 = (val_io0 & 0x7) | clr_val;
-      val_io1 = (val_io1 & 0x7) | clr_val;
-    }
-    else if(led_name == SLED_SYS || led_name == SLED_FAN) {
-      val_io0 = (val_io0 & 0x38) | clr_val;
-      val_io1 = (val_io1 & 0x38) | clr_val;
-    }
-    else
-      syslog(LOG_WARNING, "%s: unknown led name\n", __func__);
-
-    if(led_name == SLED_PSU || led_name == SLED_FAN) {
-      i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
-    } else {
-      i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
-    }
-  }
-  else {
-    if(led_name == SLED_FAN || led_name == SLED_SMB) {
-      clr_val = clr_val << 3;
-      val_io0 = (val_io0 & 0x7) | clr_val;
-      val_io1 = (val_io1 & 0x7) | clr_val;
-    }
-    else if(led_name == SLED_SYS || led_name == SLED_PSU) {
-      val_io0 = (val_io0 & 0x38) | clr_val;
-      val_io1 = (val_io1 & 0x38) | clr_val;
-    }
-    else {
-      syslog(LOG_WARNING, "%s: unknown led name\n", __func__);
-    }
-
-    if(led_name == SLED_SYS || led_name == SLED_FAN) {
-      i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
-    } else {
-      i2c_smbus_write_byte_data(dev, io1_reg, val_io1);
-    }
-  }
-
-  close(dev);
   return 0;
 }
 
+bool pal_is_fw_update_ongoing(uint8_t fru){
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  int ret;
+  uint8_t status=0;
 
-static void
-upgrade_led_blink(int brd_rev,
-                uint8_t sys_ug, uint8_t fan_ug, uint8_t psu_ug, uint8_t smb_ug)
-{
-  static uint8_t sys_alter = 0, fan_alter = 0, psu_alter = 0, smb_alter = 0;
+  if (fru == FRU_SCM) {
+    //used for fw-util.sh will not start if another process run
+    snprintf(key, MAX_KEY_LEN, "fru%d_fwupd", fru);
+    ret = kv_get(key, value, NULL, 0);
+    if (ret < 0) {
+      return false;
+    }
 
-  if(sys_ug) {
-    if(sys_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-      sys_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-      sys_alter = 0;
-    }
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (strtoul(value, NULL, 10) > ts.tv_sec)
+      return true;
+
+    return false;
   }
-  if(fan_ug) {
-    if(fan_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
-      fan_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-      fan_alter = 0;
-    }
+  //used for
+  // - front-paneld   when firmware upgrading the SYSLED will altenate blinking
+  //                  and pause the reading sensor to avoid the firmware upgrade fail
+  // - sensord        when firmware upgrading will pause the reading sensor
+  //                  to avoid the firmware upgrade fail
+  ret = pal_mon_fw_upgrade(0, &status);
+  if (ret){
+    return false;
   }
-  if(psu_ug) {
-    if(psu_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
-      psu_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      psu_alter = 0;
-    }
-  }
-  if(smb_ug) {
-    if(smb_alter == 0) {
-      set_sled(brd_rev, SLED_CLR_BLUE, SLED_SMB);
-      smb_alter = 1;
-    } else {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SMB);
-      smb_alter = 0;
-    }
-  }
+  if (status)
+    return true;
+  return false;
 }
 
 int
-pal_mon_fw_upgrade
-(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
-              uint8_t *psu_ug, uint8_t *smb_ug)
+pal_mon_fw_upgrade(int brd_rev, uint8_t *status)
 {
   char cmd[5];
   FILE *fp;
@@ -1266,9 +1146,11 @@ pal_mon_fw_upgrade
   snprintf(cmd, sizeof(cmd), "ps w");
   fp = popen(cmd, "r");
   if(NULL == fp)
-     return -1;
+    return -1;
 
   buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
+  if (buf_ptr == NULL)
+    return -1;
   memset(buf_ptr, 0, sizeof(char));
   tmp_size = str_size;
   while(fgets(str, str_size, fp) != NULL) {
@@ -1280,120 +1162,36 @@ pal_mon_fw_upgrade
     if(!buf_ptr) {
       syslog(LOG_ERR,
              "%s realloc() fail, please check memory remaining", __func__);
-      goto free_buf;
+      goto close_fp;
     }
     strncat(buf_ptr, str, str_size);
   }
 
   //check whether sys led need to blink
-  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
-  if(*sys_ug) goto fan_state;
+  *status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
+  if(*status) goto close_fp;
 
-  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
-  if(*sys_ug) goto fan_state;
+  *status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
+  if(*status) goto close_fp;
 
-  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "pimcpld_update") != NULL) ? 1 : 0;
-  if(*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
+  *status = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*sys_ug) goto fan_state;
+  if(*status) goto close_fp;
 
-  //check whether fan led need to blink
-fan_state:
-  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
-
-  //check whether fan led need to blink
-  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
+  *status = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+  if(*status) goto close_fp;
 
-  //check whether smb led need to blink
-  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "pdbcpld_update") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 IOB_FPGA_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 TH3_FLASH") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 BCM5396_EE") != NULL ? 1 : 0;
-  if(*smb_ug) goto close_fp;
+  *status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if(*status) goto close_fp;
 
 close_fp:
   ret = pclose(fp);
   if(-1 == ret)
-     syslog(LOG_ERR, "%s pclose() fail ", __func__);
-
-  upgrade_led_blink(brd_rev, *sys_ug, *fan_ug, *psu_ug, *smb_ug);
-
-free_buf:
+    syslog(LOG_ERR, "%s pclose() fail ", __func__);
   free(buf_ptr);
+
   return 0;
-}
-
-
-
-void set_sys_led(int brd_rev)
-{
-  uint8_t fru;
-  uint8_t ret = 0;
-  uint8_t prsnt = 0;
-  ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
-  if (ret) {
-    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-    return;
-  }
-  if (!prsnt) {
-    set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-    return;
-  }
-
-  for(fru = FRU_PIM1; fru <= FRU_PIM8; fru++){
-    ret = pal_is_fru_prsnt(fru, &prsnt);
-    if (ret) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-      return;
-    }
-    if (!prsnt) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_SYS);
-      return;
-    }
-  }
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_SYS);
-  return;
-}
-
-void set_fan_led(int brd_rev)
-{
-  int i, val;
-  uint8_t fan_num = 16;//rear:8 && front:8
-  char path[LARGEST_DEVICE_NAME + 1];
-  int sensor_num[] = {42, 43, 44, 45, 46, 47, 48, 49,
-                             50, 51, 52, 53, 54, 55, 56, 57};
-
-  for(i = 0; i < fan_num; i++) {
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_SMB, sensor_num[i]);
-    if(read_device(path, &val)) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-      return;
-    }
-    if(val <= 800) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_FAN);
-      return;
-    }
-  }
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_FAN);
-  return;
 }
 
 int
@@ -1458,79 +1256,6 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot,
   return pal_set_key_value("server_boot_order", str);
 }
 
-void set_psu_led(int brd_rev)
-{
-  int i, val_in, val_out12;
-  float val_out3;
-  int vin_min = 92;
-  int vin_max = 310;
-  int vout_12_min = 11;
-  int vout_12_max = 13;
-  float vout_3_min = 3.00;
-  float vout_3_max = 3.60;
-  uint8_t psu_num = 4;
-  uint8_t prsnt;
-  int sensor_num[] = {1, 14, 27, 40};
-  char path[LARGEST_DEVICE_NAME + 1];
-
-  for(i = FRU_PSU1; i <= FRU_PSU4; i++) {
-    pal_is_fru_prsnt(i, &prsnt);
-    if(!prsnt) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-  }
-
-  for(i = 0; i < psu_num; i++) {
-
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU, i+1, sensor_num[i]);
-    if(read_device(path, &val_in)) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-
-    if(val_in > vin_max || val_in < vin_min) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU,
-             i+1, sensor_num[i] + 1);
-    if(read_device(path, &val_out12)) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-
-    if(val_out12 > vout_12_max || val_out12 < vout_12_min) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-
-    snprintf(path, LARGEST_DEVICE_NAME, SENSORD_FILE_PSU,
-             i+1, sensor_num[i] + 2);
-    if(read_device_float(path, &val_out3)) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-
-    if(val_out3 > vout_3_max || val_out3 < vout_3_min) {
-      set_sled(brd_rev, SLED_CLR_YELLOW, SLED_PSU);
-      return;
-    }
-
-  }
-
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_PSU);
-
-  return;
-}
-
-void set_smb_led(int brd_rev)
-{
-  set_sled(brd_rev, SLED_CLR_BLUE, SLED_SMB);
-  return;
-}
-
 int
 pal_light_scm_led(uint8_t led_color)
 {
@@ -1541,10 +1266,10 @@ pal_light_scm_led(uint8_t led_color)
     val = "0";
   else
     val = "1";
-  ret = write_device(SCM_SYS_LED_COLOR, val);
+  ret = device_write_buff(SCM_SYS_LED_COLOR, val);
   if (ret) {
 #ifdef DEBUG
-  syslog(LOG_WARNING, "write_device failed for %s\n", SCM_SYS_LED_COLOR);
+  syslog(LOG_WARNING, "device_write_buff failed for %s\n", SCM_SYS_LED_COLOR);
 #endif
     return -1;
   }
@@ -1735,7 +1460,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len,
   board_sku_id = pal_get_plat_sku_id();
 
   snprintf(path, sizeof(path), IOBFPGA_PATH_FMT, "board_ver");
-  ret = read_device(path, &val);
+  ret = device_read(path, &val);
   if (ret) return CC_NODE_BUSY;
   board_rev = val;
 

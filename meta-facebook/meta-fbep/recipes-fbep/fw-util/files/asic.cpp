@@ -17,19 +17,22 @@ int ASICComponent::print_version()
 {
   int lock, ret;
   char ver[16] = {0};
+  char asic_lock[32] = {0};
 
   if (!is_asic_prsnt(_slot))
     return 0;
 
   cout << "ASIC" << (int)_slot << " Version: ";
 
-  lock = open("/tmp/asic_lock", O_CREAT | O_RDWR, 0666);
-  if (lock < 0 || pal_flock_retry(lock) < 0) {
-    cout << "Not available" << endl;
-    return 0;
-  }
+  snprintf(asic_lock, sizeof(asic_lock), "/tmp/asic_lock%d", (int)_slot);
+  lock = open(asic_lock, O_CREAT | O_RDWR, 0666);
+  if (lock < 0)
+    return -1;
 
+  flock(lock, LOCK_EX);
   ret = asic_show_version(_slot, ver);
+  flock(lock, LOCK_UN);
+  close(lock);
 
   if (ret == ASIC_SUCCESS)
     cout << string(ver) << endl;
@@ -38,8 +41,6 @@ int ASICComponent::print_version()
   else
     cout << "NA" << endl;
 
-  pal_unflock_retry(lock);
-  close(lock);
   return 0;
 }
 

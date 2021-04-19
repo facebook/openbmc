@@ -19,7 +19,7 @@ do_install() {
     install -m 0755 expander-util ${D}${bindir}/expander-util
 }
 
-DEPENDS += "libipmb"
-RDEPENDS_${PN} += "libipmb"
+DEPENDS += " libipmb libfbgc-common "
+RDEPENDS_${PN} += " libipmb libfbgc-common "
 
 FILES_${PN} = "${bindir}"

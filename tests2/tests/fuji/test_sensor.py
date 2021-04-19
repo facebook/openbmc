@@ -17,19 +17,28 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import os
 import unittest
 from abc import abstractmethod
 
 from common.base_sensor_test import SensorUtilTest
 from tests.fuji.test_data.sensors.sensor import (
-    PIM1_SENSORS,
-    PIM2_SENSORS,
-    PIM3_SENSORS,
-    PIM4_SENSORS,
-    PIM5_SENSORS,
-    PIM6_SENSORS,
-    PIM7_SENSORS,
-    PIM8_SENSORS,
+    PIM1_SENSORS_16Q,
+    PIM1_SENSORS_16O,
+    PIM2_SENSORS_16Q,
+    PIM2_SENSORS_16O,
+    PIM3_SENSORS_16Q,
+    PIM3_SENSORS_16O,
+    PIM4_SENSORS_16Q,
+    PIM4_SENSORS_16O,
+    PIM5_SENSORS_16Q,
+    PIM5_SENSORS_16O,
+    PIM6_SENSORS_16Q,
+    PIM6_SENSORS_16O,
+    PIM7_SENSORS_16Q,
+    PIM7_SENSORS_16O,
+    PIM8_SENSORS_16Q,
+    PIM8_SENSORS_16O,
     PSU1_SENSORS,
     PSU2_SENSORS,
     PSU3_SENSORS,
@@ -119,6 +128,38 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
                     ),
                 )
 
+    def get_pim_name(self, ver):
+        """
+        """
+        pim_name = None
+        ver = int(ver)
+        if ver & 0x80 == 0x0:
+            pim_name = "PIM_TYPE_16Q"
+        elif ver & 0x80 == 0x80:
+            pim_name = "PIM_TYPE_16O"
+        else:
+            pim_name = None
+        return pim_name
+
+    def get_pim_sensor_type(self, pim_num):
+        """
+        Get PIM sensors type by read i2c device board version
+        """
+        pim_sensor_type = None
+        bus = (pim_num * 8) + 80
+        PATH = "/sys/bus/i2c/devices/%d-0060/board_ver" % (bus)
+
+        if not os.path.exists(PATH):
+            raise Exception("Path for PIM board_ver doesn't exist")
+        with open(PATH, "r") as fp:
+            line = fp.readline()
+            if line:
+                ver = line.split("0x")[1]
+                pim_sensor_type = self.get_pim_name(ver)
+            else:
+                raise Exception("PIM board_ver is enpty")
+        return pim_sensor_type
+
 
 class Pim1SensorTest(PimSensorTest, unittest.TestCase):
     def set_sensors_cmd(self):
@@ -126,7 +167,13 @@ class Pim1SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 1
 
     def get_pim_sensors(self):
-        return PIM1_SENSORS
+        name = self.get_pim_sensor_type(0)
+        if name == "PIM_TYPE_16Q":
+            return PIM1_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM1_SENSORS_16O
+        else:
+            return PIM1_SENSORS_16Q
 
     def test_pim1_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -141,7 +188,13 @@ class Pim2SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 2
 
     def get_pim_sensors(self):
-        return PIM2_SENSORS
+        name = self.get_pim_sensor_type(1)
+        if name == "PIM_TYPE_16Q":
+            return PIM2_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM2_SENSORS_16O
+        else:
+            return PIM2_SENSORS_16Q
 
     def test_pim2_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -156,7 +209,13 @@ class Pim3SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 3
 
     def get_pim_sensors(self):
-        return PIM3_SENSORS
+        name = self.get_pim_sensor_type(2)
+        if name == "PIM_TYPE_16Q":
+            return PIM3_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM3_SENSORS_16O
+        else:
+            return PIM3_SENSORS_16Q
 
     def test_pim3_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -171,7 +230,13 @@ class Pim4SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 4
 
     def get_pim_sensors(self):
-        return PIM4_SENSORS
+        name = self.get_pim_sensor_type(3)
+        if name == "PIM_TYPE_16Q":
+            return PIM4_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM4_SENSORS_16O
+        else:
+            return PIM4_SENSORS_16Q
 
     def test_pim4_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -186,7 +251,13 @@ class Pim5SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 5
 
     def get_pim_sensors(self):
-        return PIM5_SENSORS
+        name = self.get_pim_sensor_type(4)
+        if name == "PIM_TYPE_16Q":
+            return PIM5_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM5_SENSORS_16O
+        else:
+            return PIM5_SENSORS_16Q
 
     def test_pim5_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -201,7 +272,13 @@ class Pim6SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 6
 
     def get_pim_sensors(self):
-        return PIM6_SENSORS
+        name = self.get_pim_sensor_type(5)
+        if name == "PIM_TYPE_16Q":
+            return PIM6_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM6_SENSORS_16O
+        else:
+            return PIM6_SENSORS_16Q
 
     def test_pim6_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -216,7 +293,13 @@ class Pim7SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 7
 
     def get_pim_sensors(self):
-        return PIM7_SENSORS
+        name = self.get_pim_sensor_type(6)
+        if name == "PIM_TYPE_16Q":
+            return PIM7_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM7_SENSORS_16O
+        else:
+            return PIM7_SENSORS_16Q
 
     def test_pim7_sensor_keys(self):
         super().base_test_pim_sensor_keys()
@@ -231,7 +314,13 @@ class Pim8SensorTest(PimSensorTest, unittest.TestCase):
         self._pim_id = 8
 
     def get_pim_sensors(self):
-        return PIM8_SENSORS
+        name = self.get_pim_sensor_type(7)
+        if name == "PIM_TYPE_16Q":
+            return PIM8_SENSORS_16Q
+        elif name == "PIM_TYPE_16O":
+            return PIM8_SENSORS_16O
+        else:
+            return PIM8_SENSORS_16Q
 
     def test_pim8_sensor_keys(self):
         super().base_test_pim_sensor_keys()

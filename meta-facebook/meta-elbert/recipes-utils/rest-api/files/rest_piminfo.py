@@ -27,8 +27,7 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 # Handler for getting PIM info
-pim_number_re = re.compile("\s*PIM (\S.*) : (\S.*)")
-
+pim_number_re = re.compile("^PIM ([2-9])\s*:\s*(\S+)")
 
 def prepare_pimver():
     pim_fpga_ver = {str(i): "NA" for i in range(2, 10)}

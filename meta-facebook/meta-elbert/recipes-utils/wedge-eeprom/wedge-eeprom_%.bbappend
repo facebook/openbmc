@@ -17,12 +17,8 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 LIC_FILES_CHKSUM = "file://elbert_weutil.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 SRC_URI += " \
-          file://utils/elbert_eeprom.h \
-          file://utils/elbert_eeprom.c \
           file://utils/elbert_weutil.c \
           file://utils/Makefile \
           "
-
-LDFLAGS += "-llog"
-DEPENDS += "liblog"
-RDEPENDS_${PN} += "liblog"
+RDEPENDS_${PN} += "libelbert-eeprom"
+DEPENDS += "libelbert-eeprom"

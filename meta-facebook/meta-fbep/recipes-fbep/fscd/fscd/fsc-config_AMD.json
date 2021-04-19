@@ -1,9 +1,10 @@
 {
-  "version": "fbep-AMD-20y0915",
+  "version": "fbep-AMD-20y1202",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 1000,
   "fan_recovery_time": 1,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
@@ -75,6 +76,7 @@
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
       "data": [
+        [60, 10],
         [65, 15],
         [70, 20],
         [75, 25],
@@ -84,7 +86,7 @@
     },
     "pid_gpu_spot": {
       "read_source" : {
-	"util" : "/usr/local/bin/sensor-util"
+        "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
       "setpoint": 90,
@@ -102,6 +104,7 @@
       "positive_hysteresis": 2,
       "negative_hysteresis": 2,
       "data": [
+        [55, 10],
         [60, 15],
         [65, 20],
         [70, 25],
@@ -110,7 +113,7 @@
     },
     "pid_gpu_mem": {
       "read_source" : {
-	"util" : "/usr/local/bin/sensor-util"
+        "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
       "setpoint": 80,
@@ -141,79 +144,79 @@
     "0": {
       "label" : "Fan 0 Inlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "kv" : "mb_sensor0"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "1": {
       "label" : "Fan 0 Outlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "kv" : "mb_sensor1"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "2": {
       "label" : "Fan 1 Inlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "kv" : "mb_sensor4"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "3": {
       "label" : "Fan 1 Outlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
+        "kv" : "mb_sensor5"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "4": {
       "label" : "Fan 2 Inlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 4"
+        "kv" : "mb_sensor8"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 2"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "5": {
       "label" : "Fan 2 Outlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 5"
+        "kv" : "mb_sensor9"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 2"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "6": {
       "label" : "Fan 3 Inlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 6"
+        "kv" : "mb_sensor12"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 3"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "7": {
       "label" : "Fan 3 Outlet",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 7"
+        "kv" : "mb_sensor13"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 3"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     }
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 2, 4, 6],
+      "pwm_output": [0],
       "expr_file": "zone1_AMD.fsc"
     }
   }

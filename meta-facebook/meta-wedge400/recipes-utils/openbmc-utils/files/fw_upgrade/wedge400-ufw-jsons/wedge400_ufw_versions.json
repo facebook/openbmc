@@ -1,44 +1,44 @@
 {
     "bic" : {
         "filename"    : "bic.bin",
-        "version" : "v1.08",
+        "version" : "v1.11",
         "hash"    : "sha1sum",
-        "hash_value" : "28bc51dee3785d50dc4117046a6faef6d7e27edd"
+        "hash_value" : "c68590df17ee26a68d50e362a15062fe77444076"
     },
     "bios" : {
         "filename"    : "bios.bin",
-        "version" : "XG1_3A08",
+        "version" : "XG1_3A10",
         "hash"    : "sha1sum",
-        "hash_value" : "cb96cab0dfd2bc111f1d16e58d4c3d34da4a3287"
+        "hash_value" : "551423a4e9c12726750ea6c7c91b74ab1c3b044d"
     },
     "fcm" : {
         "filename"    : "fcm_cpld.jed",
-        "version" : "3.5",
+        "version" : "4.2",
         "hash"    : "sha1sum",
-        "hash_value" : "349f15bfeda2ffff4f644f53206d5be0773d66ac"
-    },
-    "scm" : {
-        "filename"    : "scm_cpld.jed",
-        "version" : "3.5",
-        "hash"    : "sha1sum",
-        "hash_value" : "f87b5f5edad9d755afd29556e50061f189f90164"
-    },
-    "smb" : {
-        "filename"    : "smb_cpld.jed",
-        "version" : "3.6",
-        "hash"    : "sha1sum",
-        "hash_value" : "6a9d4e7ea5446d9ea2b9c1f744de7cf05be2bd22"
+        "hash_value" : "4091072a96534aef1ec58a5fff48c20a6758502c"
     },
     "pwr" : {
         "filename"    : "pwr_cpld.jed",
-        "version" : "3.0",
+        "version" : "4.1",
         "hash"    : "sha1sum",
-        "hash_value" : "b9a11c7683a12cadb038aaacd9e496601c2c431d"
+        "hash_value" : "917b4f7d0b0a047007439cfc52939bb3a36cde51"
+    },
+    "scm" : {
+        "filename"    : "scm_cpld.jed",
+        "version" : "4.1",
+        "hash"    : "sha1sum",
+        "hash_value" : "aabbb1163e5f6cc201b64e05cbaee9c1ecc53d67"
+    },
+    "smb" : {
+        "filename"    : "smb_cpld.jed",
+        "version" : "4.2",
+        "hash"    : "sha1sum",
+        "hash_value" : "8747d179fc0db9dc4a4da48f372334fdf29caf49"
     },
     "fpga" : {
         "filename"    : "w400_fpga.bit",
-        "version" : "v0.45",
+        "version" : "v0.56",
         "hash"    : "sha1sum",
-        "hash_value" : "657c302fc9f77eb1242b26343c86764377c0a40e"
+        "hash_value" : "98eba83b19716cb013da0b9de538ae521b35c066"
     }
 }

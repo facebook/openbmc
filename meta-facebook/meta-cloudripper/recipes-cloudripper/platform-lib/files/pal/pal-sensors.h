@@ -219,6 +219,7 @@ enum {
   SMB_DOM1_MAX_TEMP,
   SMB_DOM2_MAX_TEMP,
   /* 10 internal temp sensors within GB switch */
+  SMB_SENSOR_GB_HIGH_TEMP,
   SMB_SENSOR_GB_TEMP1,
   SMB_SENSOR_GB_TEMP2,
   SMB_SENSOR_GB_TEMP3,
@@ -229,6 +230,8 @@ enum {
   SMB_SENSOR_GB_TEMP8,
   SMB_SENSOR_GB_TEMP9,
   SMB_SENSOR_GB_TEMP10,
+  SMB_SENSOR_GB_HBM_TEMP1,
+  SMB_SENSOR_GB_HBM_TEMP2,
 
   /* Sensors on FCM */
   SMB_SENSOR_FCM_LM75B_U1_TEMP,
@@ -357,6 +360,7 @@ void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int wedge400_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);
+int pal_sensor_thresh_init(void);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <limits.h>
 #include <openbmc/ipc.h>
 #include "ipmb.h"
 #include <openbmc/ipmi.h>
@@ -92,7 +93,7 @@ ipmb_txb()
  */
 int
 lib_ipmb_handle(unsigned char bus_id,
-            unsigned char *request, unsigned short req_len,
+            unsigned char *request, unsigned int req_len,
             unsigned char *response, unsigned char *res_len) {
 
   size_t resp_len = MAX_IPMB_RES_LEN;
@@ -106,6 +107,10 @@ lib_ipmb_handle(unsigned char bus_id,
   }
 
   *res_len = (unsigned char)resp_len;
+  if (resp_len > UCHAR_MAX) {
+    syslog(LOG_ERR, "ipmb response buffer truncated: %lu -> %u\n",
+           (unsigned long)resp_len, *res_len);
+  }
   return 0;
 }
 

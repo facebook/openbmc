@@ -17,12 +17,12 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+PACKAGECONFIG += "disable-watchdog"
+
 SRC_URI += "file://board-utils.sh \
             file://boot_info.sh \
             file://bsm-eutil \
             file://cpld_ver.sh \
-            file://create_vlan_intf \
-            file://disable_watchdog.sh \
             file://fcmcpld_update.sh \
             file://feutil \
             file://fpga_ver.sh \
@@ -54,7 +54,6 @@ OPENBMC_UTILS_FILES += " \
     boot_info.sh \
     bsm-eutil \
     cpld_ver.sh \
-    disable_watchdog.sh \
     fcmcpld_update.sh \
     feutil \
     fpga_ver.sh \
@@ -88,11 +87,6 @@ do_install_board() {
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
-    # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-    update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
-    update-rc.d -r ${D} rc.early start 04 S .
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
@@ -121,10 +115,6 @@ do_install_board() {
 
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
-
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
-    update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
-
 }
 
 do_install_append() {

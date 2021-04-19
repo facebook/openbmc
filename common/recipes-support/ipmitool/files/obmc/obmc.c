@@ -59,6 +59,7 @@ ipmi_obmc_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	int retval = 0;
 	int bus;
 	int try = 0;
+	uint16_t bmc_addr;
 
 	if (intf == NULL || req == NULL)
 		return NULL;
@@ -66,6 +67,8 @@ ipmi_obmc_send_cmd(struct ipmi_intf * intf, struct ipmi_rq * req)
 	if (req->msg.data_len + MIN_IPMB_REQ_LEN >  MAX_IPMB_RES_LEN)
 		return NULL;
 
+	pal_get_bmc_ipmb_slave_addr(&bmc_addr, pal_channel_to_bus(intf->target_channel));
+	intf->my_addr = (uint32_t)(bmc_addr << 1);
 	if (intf->target_addr != 0 &&
 	    intf->target_addr != intf->my_addr) {
 		// IPMB

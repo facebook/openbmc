@@ -33,9 +33,7 @@ class FruIdAccessI2CEEPROM : public FruIdAccessMechanism {
     /*
      * Constructor
      */
-    FruIdAccessI2CEEPROM(const std::string &eepromPath) {
-      this->eepromPath_ = eepromPath;
-    }
+    FruIdAccessI2CEEPROM(const std::string &eepromPath) : eepromPath_(eepromPath) {}
 
     /*
      * Parses FruId information from eeprom file at eepromPath_

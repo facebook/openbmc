@@ -1,2 +1,2 @@
 Common targets are:
-    fbnd-image
+    northdome-image

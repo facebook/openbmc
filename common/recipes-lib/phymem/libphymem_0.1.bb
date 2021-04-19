@@ -25,17 +25,7 @@ LIC_FILES_CHKSUM = "file://phymem.c;beginline=4;endline=16;md5=da35978751a9d71b7
 S = "${WORKDIR}"
 SRC_URI = "file://phymem.c \
            file://phymem.h \
-           file://Makefile \
+           file://meson.build \
           "
 
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libphymem.so ${D}${libdir}/libphymem.so
-    ln -s libphymem.so ${D}${libdir}/libphymem.so.0
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 phymem.h ${D}${includedir}/openbmc/phymem.h
-}
-
-FILES_${PN} = "${libdir}/libphymem.so*"
-FILES_${PN}-dev = "${includedir}/openbmc/phymem.h"
+inherit meson

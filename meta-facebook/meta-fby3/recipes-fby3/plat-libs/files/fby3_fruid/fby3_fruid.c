@@ -54,20 +54,7 @@ fby3_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
       return -1;
-    }
-
-  sprintf(path, "/tmp/fruid_%s.bin", fname);
-
-  if ( dev_id == DEV_NONE ) {
-    sprintf(path, FBY3_FRU_PATH, fname);
-    return 0;
   }
-
-  if ( fru < FRU_SLOT1 && fru > FRU_SLOT4 )
-    return -1;
-
-  if ( dev_id < 1 || dev_id > 12)
-    return -1;
 
   sprintf(path, FBY3_FRU_DEV_PATH, fname, dev_id);
   return 0;

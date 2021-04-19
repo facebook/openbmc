@@ -123,4 +123,13 @@ void FileHandle::write(std::string value) {
   }
 }
 
+void FileHandle::remove(const std::string& key, region r)
+{
+  auto fpath = get_key_path(key, r);
+  if (!std::filesystem::exists(fpath)) {
+    throw kv::key_does_not_exist(key);
+  }
+  std::filesystem::remove(fpath);
+}
+
 } // namespace kv

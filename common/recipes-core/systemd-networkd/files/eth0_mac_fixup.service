@@ -15,6 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+#
+# Note: dependency on network-pre.target does not seem to work properly with
+# systemd 234.  Ensure this starts before systemd-networkd.service instead.
+#
 [Unit]
 Description=Wedge MAC setter
 Before=systemd-networkd.service

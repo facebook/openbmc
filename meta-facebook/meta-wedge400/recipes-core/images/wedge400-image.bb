@@ -1,6 +1,7 @@
 # Copyright 2019-present Facebook. All Rights Reserved.
 
-inherit kernel_fitimage
+require recipes-core/images/fbobmc-image-meta.inc
+require wedge400-image-layout.inc
 
 require recipes-core/images/fb-openbmc-image.bb
 
@@ -45,12 +46,12 @@ IMAGE_INSTALL += " \
   psu-util \
   sensor-util \
   sensor-mon \
-  spatula \
   threshold-util \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
   rackmon \
+  mtd-utils-ubifs \
   "
 
 def tpm_tools_recipe(d):

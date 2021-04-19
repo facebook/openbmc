@@ -130,6 +130,15 @@ static pldm_sensor_t sensors_brcm[NUM_PLDM_SENSORS] = {
   {PLDM_STATE_SENSOR_START+1,   BRCM_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE},
 };
 
+static pldm_sensor_t sensors_brcm_2b[NUM_PLDM_SENSORS] = {
+  {PLDM_NUMERIC_SENSOR_START,   BRCM_2B_THERMAL_SENSOR_ONCHIP_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_NUMERIC_SENSOR_START+1, BRCM_2B_THERMAL_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_NUMERIC_SENSOR_START+2, BRCM_2B_LINK_SPEED_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
+  {PLDM_STATE_SENSOR_START,     BRCM_2B_DEVICE_STATE_SENSORS_ID, PLDM_SENSOR_TYPE_STATE},
+  {PLDM_STATE_SENSOR_START+1,   BRCM_2B_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE},
+};
+
+static pldm_ver_t pldm_ver[PLDM_RSV] = {0};
 
 // maps each PLDM IID (hence cmd) to a sensor being read
 uint8_t sensor_lookup_table[PLDM_MAX_IID] = {0};
@@ -409,12 +418,10 @@ init_version_data(Get_Version_ID_Response *buf)
     aen_enable_mask = AEN_ENABLE_DEFAULT;
     nwrite = snprintf(logbuf+i, nleft, "Mellanox ");
     get_mlx_fw_version(buf->fw_ver, version);
-    pldm_sensors = sensors_mlx;
   } else if (vendor_IANA == BCM_IANA)  {
     aen_enable_mask = AEN_ENABLE_MASK_BCM;
     nwrite = snprintf(logbuf+i, nleft, "Broadcom ");
     get_bcm_fw_version(buf->fw_name, version);
-    pldm_sensors = sensors_brcm;
   } else {
     aen_enable_mask = AEN_ENABLE_DEFAULT;
     nwrite = snprintf(logbuf+i, nleft, "Unknown Vendor(IANA 0x%x) ", vendor_IANA);
@@ -432,6 +439,21 @@ init_version_data(Get_Version_ID_Response *buf)
   syslog(LOG_INFO, "%s", logbuf);
 }
 
+static void
+init_pldm_sensor(uint32_t vender, pldm_ver_t* pldm_monitoring_ver)
+{
+  if (vender == MLX_IANA) {
+    pldm_sensors = sensors_mlx;
+  } else if (vender == BCM_IANA) {
+    if (pldm_monitoring_ver->major >= 1 &&
+        pldm_monitoring_ver->minor >= 1 &&
+        pldm_monitoring_ver->update >= 1) {
+      // 2 Bytes mode for pldm monitoring version higher than 1.1.1
+      pldm_sensors = sensors_brcm_2b;
+    } else
+      pldm_sensors = sensors_brcm;
+  }
+}
 
 static int
 send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd, uint8_t ncsi_cmd,
@@ -676,7 +698,7 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
   pldm_cmd_req pldmReq = {0};
   int pldmStatus = 0;
   uint64_t pldmType = 0;
-  pldm_ver_t pldm_version = {0};
+  pldm_ver_t* pldm_version = pldm_ver;
   int ret = 0;
   int i = 0;
 
@@ -715,11 +737,11 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
     pldmStatus = ncsiDecodePldmCompCode(resp_buf);
     if (pldmStatus == CC_SUCCESS) {
       pldmHandleGetVersionResp((PLDM_GetPldmVersion_Response_t *)&(resp_buf->msg_payload[7]),
-                                         &pldm_version);
+                                         &pldm_version[i]);
       syslog(LOG_CRIT, "    FRU: %d PLDM type %d version = %d.%d.%d.%d",
                pal_get_nic_fru_id(), i,
-               pldm_version.major, pldm_version.minor, pldm_version.update,
-               pldm_version.alpha);
+               pldm_version[i].major, pldm_version[i].minor, pldm_version[i].update,
+               pldm_version[i].alpha);
 
       // if device supports "Platform Control & Monitoring", then discovery sensors and
       //   initialize sensor threshold
@@ -789,6 +811,7 @@ init_nic_config(nl_usr_sk_t *sfd)
   // PLDM discovery
   do_pldm_discovery(sfd, resp_buf);
   // PLDM support is optional, so ignore return value for now
+  init_pldm_sensor(vendor_IANA, &pldm_ver[PLDM_MONITORING]);
 
   if (gEnablePldmMonitoring) {
     syslog(LOG_CRIT, "    FRU: %d PLDM sensor monitoring enabled",
@@ -907,7 +930,8 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
              cmd, cmd_response_code, cmd_reason_code);
      /* if command fails for a specific signature (i.e. NCSI interface failure)
         try to re-init NCSI interface */
-    if ((cmd_response_code == RESP_COMMAND_UNAVAILABLE) &&
+    if (( (cmd_response_code == RESP_COMMAND_FAILED)    ||
+          (cmd_response_code == RESP_COMMAND_UNAVAILABLE)) &&
            ((cmd_reason_code == REASON_INTF_INIT_REQD)  ||
             (cmd_reason_code == REASON_CHANNEL_NOT_RDY) ||
             (cmd_reason_code == REASON_PKG_NOT_RDY))

@@ -24,4 +24,10 @@ from common.base_kernel_module_presence_test import BaseKernelModulePresenceTest
 
 class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
     def set_kmods(self):
-        self.expected_kmod = ["scmcpld", "smbcpld", "fancpld", "i2c_dev_sysfs"]
+        self.expected_kmod = [
+            "scmcpld",
+            "smbcpld",
+            "fancpld",
+            "i2c_dev_sysfs",
+            "psu_driver"
+        ]

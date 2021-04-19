@@ -28,6 +28,7 @@ extern "C" {
 #endif
 #include "pal_sensors.h"
 #include "pal_health.h"
+#include "pal_sbmc.h"
 #include "pal_power.h"
 #include "pal_cm.h"
 #include "pal_ep.h"
@@ -50,14 +51,22 @@ extern "C" {
 #define PFR_MAILBOX_BUS  (4)
 #define PFR_MAILBOX_ADDR (0xB0)
 
+#define CMD_GET_MAIN_CPLD_VER (0x01)
+#define CMD_GET_MOD_CPLD_VER  (0x02)
+#define CMD_GET_GLB_CPLD_VER  (0x03)
+
 enum {
   FRU_ALL  = 0,
-  FRU_MB,
+  FRU_TRAY0_MB,
   FRU_PDB,
-  FRU_NIC0,
-  FRU_NIC1,
+  FRU_TRAY0_NIC0,
+  FRU_TRAY0_NIC1,
   FRU_DBG,
-  FRU_BMC,
+  FRU_TRAY0_BMC,
+  FRU_TRAY1_MB,
+  FRU_TRAY1_NIC0,
+  FRU_TRAY1_NIC1,
+  FRU_TRAY1_BMC,
   FRU_CNT,
 };
 
@@ -69,8 +78,14 @@ enum {
   REV_MP,
 };
 
+extern uint8_t FRU_MB;
+extern uint8_t FRU_NIC0;
+extern uint8_t FRU_NIC1;
+extern uint8_t FRU_BMC;
+
+
 #define MAX_NUM_FRUS    (FRU_CNT-1)
-#define MAX_NODES       (1)
+#define MAX_NODES       FRU_PDB
 #define READING_SKIP    (1)
 #define READING_NA      (-2)
 
@@ -158,7 +173,7 @@ enum {
 #define CPLD_PWR_P1V8_PCIE_P1V1       (4)
 #define CPLD_PWR_PVCCIN               (6)
 #define CPLD_PWR_PVCCSA               (7)
-#define CPLD_PWR_CPU_DOWN             (8)
+#define CPLD_PWR_CPU_DONE             (8)
 #define CPLD_PWR_PVCCSA_OFF           (9)
 #define CPLD_PWR_PVCCIN_OFF          (10)
 #define CPLD_PWR_P1V8_PCIE_P1V1_OFF  (12)
@@ -168,7 +183,7 @@ enum {
 #define NM_IPMB_BUS_ID             (I2C_BUS_5)
 #define NM_SLAVE_ADDR              (0x2C)
 
-//FBEP Device Info 
+//FBEP Device Info
 #define ASIC_IPMB_BUS_ID           (I2C_BUS_6)
 #define ASIC_BMC_SLAVE_ADDR        (0x2C)
 
@@ -185,11 +200,17 @@ enum {
 #define IOX_BMC_SLAVE_ADDR      (0x2E)
 #define IOX_IPMB_BUS_ID         (I2C_BUS_6)
 
+#define MAIN_CPLD_SLV_ADDR      (0xB4)
+#define MOD_CPLD_SLV_ADDR       (0xAA)
+#define GLB_CPLD_SLV_ADDR       (0xAA)
+#define MAIN_CPLD_BUS_NUM       (4)
+#define MOD_CPLD_BUS_NUM        (4)
+#define GLB_CPLD_BUS_NUM        (23)
+#define CPLD_VER_REG            (0x00100028)
+
 enum {
-  MB_ID1 = 0,
-  MB_ID2,
-  MB_ID3,
-  MB_ID4,
+  MB_ID0 = 0,
+  MB_ID1
 };
 
 enum {
@@ -208,20 +229,23 @@ enum {
 
 int pal_set_id_led(uint8_t fru, uint8_t status);
 int pal_set_fault_led(uint8_t fru, uint8_t status);
-int read_device(const char *device, int *value);
 int pal_get_rst_btn(uint8_t *status);
 int pal_postcode_select(int option);
 int pal_uart_select_led_set(void);
 int pal_get_me_fw_ver(uint8_t bus, uint8_t addr, uint8_t *ver);
 int pal_get_platform_id(uint8_t *id);
-int pal_get_host_system_mode(uint8_t* mode);
 int pal_get_config_is_master(void);
-int pal_get_blade_id(uint8_t *id);
 int pal_get_mb_position(uint8_t* pos);
 int pal_get_board_rev_id(uint8_t *id);
 void fru_eeprom_mb_check(char* mb_path);
-int pal_get_syscfg_text (char *text);
+bool is_cpu_socket_occupy(uint8_t cpu_idx);
+int pal_get_syscfg_text(char *text);
 int pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
+int pal_get_target_bmc_addr(uint8_t *tar_bmc_addr);
+bool pal_skip_access_me(void);
+int pal_i2c_write_read (uint8_t bus, uint8_t addr,
+                        uint8_t *txbuf, uint8_t txlen,
+                        uint8_t *rxbuf, uint8_t rxlen);
 
 enum {
   POSTCODE_BY_BMC,

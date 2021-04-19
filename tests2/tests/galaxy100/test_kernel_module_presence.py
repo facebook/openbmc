@@ -27,8 +27,6 @@ class KernelModulePresenceTest(BaseKernelModulePresenceTest, unittest.TestCase):
         self.expected_kmod = [
             "syscpld",
             "scmcpld",
-            "pmbus",
             "pwr1014a",
             "galaxy100_ec",
-            "g_cdc",
         ]

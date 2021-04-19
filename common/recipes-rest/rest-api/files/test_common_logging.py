@@ -22,11 +22,10 @@ import copy
 import datetime
 import io
 import json
-import tempfile
-import os
 import logging
 import logging.config
 import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -57,7 +56,7 @@ def merge_configs(overrides):
 class TestLoggerConfigurator(unittest.TestCase):
     def setUp(self):
         self.temp_file = tempfile.NamedTemporaryFile()
-        default_config['logfile'] = self.temp_file.name
+        default_config["logfile"] = self.temp_file.name
 
     def tearDown(self):
         # reset logger

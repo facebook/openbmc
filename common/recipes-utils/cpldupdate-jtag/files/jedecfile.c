@@ -43,7 +43,7 @@ static int __jedec_get_fuse(jedec_data_t jed, unsigned idx)
 {
     unsigned int bval, bit;
     if(idx >= jed->fuse_count){
-        printf("%s(%d) %s - invalid fuse index\n", __FILE__, __LINE__, __FUNCTION__, idx);
+        printf("%s(%d) invalid fuse index %u\n", __FILE__, __LINE__, idx);
         return -1;
     }
 
@@ -56,7 +56,7 @@ static void __jedec_set_fuse(jedec_data_t jed, unsigned idx, int blow)
 {
     unsigned int bval, bit;
     if(idx >= jed->fuse_count){
-        printf("%s(%d) %s - invalid fuse index\n", __FILE__, __LINE__, __FUNCTION__, idx);
+        printf("%s(%d) invalid fuse index %u\n", __FILE__, __LINE__, idx);
         return;
     }
 
@@ -130,7 +130,7 @@ static void m_header(int ch, struct state_mach *m)
             {
                 char * ptr = strchr( m_H_string, ':');
                 if (ptr){
-                    strncpy(m->jed->date, ptr, MAX_SIZE);
+                    strncpy(m->jed->date, ptr, MAX_SIZE - 1);
                 }
             }
             m->state = m_startup;

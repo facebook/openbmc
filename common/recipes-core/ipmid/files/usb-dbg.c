@@ -50,6 +50,8 @@
 #define FRAME_BUFF_SIZE 4096
 #define FRAME_PAGE_BUF_SIZE 256
 
+#define MAX_UART_SEL_NAME_SIZE    16
+
 struct frame {
   char title[32];
   size_t max_size;
@@ -733,6 +735,16 @@ udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count,
   return 0;
 }
 
+int __attribute__((weak))
+plat_udbg_get_uart_sel_num(uint8_t *uart_sel_num) {
+  return -1;
+}
+
+int __attribute__((weak))
+plat_udbg_get_uart_sel_name(uint8_t uart_sel_num, char *uar_sel_name) {
+  return -1;
+}
+
 static int
 udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
   int ret;
@@ -744,6 +756,8 @@ udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, 
   unsigned char zero_ip6_addr[SIZE_IP6_ADDR] = { 0 };
   char fruid_path[256];
   uint8_t pos = plat_get_fru_sel();
+  char uart_sel_name[MAX_UART_SEL_NAME_SIZE] = {0};
+  uint8_t uart_sel_num = 0;
 
   if (page == 1) {
     // Only update frame data while getting page 1
@@ -848,6 +862,16 @@ udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, 
         } while ((pres_dev = strtok(NULL, delim)) != NULL);
       }
     }
+
+    // Uart selection
+    if (plat_udbg_get_uart_sel_num(&uart_sel_num) == 0) {
+      if (plat_udbg_get_uart_sel_name(uart_sel_num, uart_sel_name) == 0) {
+        snprintf(line_buff, sizeof(line_buff), "%u: %s", uart_sel_num, uart_sel_name);
+        frame_info.append(&frame_info, "UART_SEL:", 0);
+        frame_info.append(&frame_info, line_buff, 1);
+      }
+    }
+
   } // End of update frame
 
   if (page > frame_info.pages) {

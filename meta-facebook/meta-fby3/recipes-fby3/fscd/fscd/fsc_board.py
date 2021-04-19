@@ -18,43 +18,57 @@
 # Boston, MA 02110-1301 USA
 #
 from ctypes import CDLL, c_uint8, byref
-from re import match
+from re import search
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
 
 import re
+import os
+import time
+import kv
+import struct
+
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 
 lpal_hndl = CDLL("libpal.so.0")
 
 fru_map = {
-    "slot1": {
-        "name": "fru1",
-        "slot_num": 1,
-    },
-    "slot2": {
-        "name": "fru2",
-        "slot_num": 2,
-    },
-    "slot3": {
-        "name": "fru3",
-        "slot_num": 3,
-    },
-    "slot4": {
-        "name": "fru4",
-        "slot_num": 4,
-    },
+    "slot1": {"name": "fru1", "slot_num": 1},
+    "slot2": {"name": "fru2", "slot_num": 2},
+    "slot3": {"name": "fru3", "slot_num": 3},
+    "slot4": {"name": "fru4", "slot_num": 4},
 }
 
-
-part_name_map = {
-    "a": "_dimm0_part_name",
-    "b": "_dimm2_part_name",
-    "c": "_dimm4_part_name",
-    "d": "_dimm6_part_name",
-    "e": "_dimm8_part_name",
-    "f": "_dimm10_part_name",
+dimm_location_name_map = {
+    "a": "_dimm0_location",
+    "b": "_dimm2_location",
+    "c": "_dimm4_location",
+    "d": "_dimm6_location",
+    "e": "_dimm8_location",
+    "f": "_dimm10_location",
 }
+
+# For now, it only supports 1OU
+m2_1ou_name_map = {
+    "a": "_m2_0_info",
+    "b": "_m2_1_info",
+    "c": "_m2_2_info",
+    "d": "_m2_3_info",
+}
+
+host_ready_map = {
+    "slot1": "fru1_host_ready",
+    "slot2": "fru2_host_ready",
+    "slot3": "fru3_host_ready",
+    "slot4": "fru4_host_ready",
+}
+
+valid_dp_pcie_list = [
+    # Vendor Device
+    (0x8086, 0x10D8)  # Marvell HSM
+]
+
 
 def board_fan_actions(fan, action="None"):
     """
@@ -82,6 +96,9 @@ def board_host_actions(action="None", cause="None"):
     - handling host power off
     - alarming/syslogging criticals
     """
+    if "host_shutdown" in action:
+        if "All fans are bad" in cause:
+            lpal_hndl.pal_fan_fail_otp_check()
     pass
 
 
@@ -107,27 +124,124 @@ def set_all_pwm(boost):
     return response
 
 
-def sensor_valid_check(board, sname, check_name, attribute):
-    status = c_uint8(0)
+def is_valid_dp_pcie(pcie_info_key):
     try:
+        pcie_info_raw = kv.kv_get(pcie_info_key, flags=kv.FPERSIST, binary=True)
+        pcie_info_data = struct.unpack_from("<HH", pcie_info_raw, 2)
+        if pcie_info_data in valid_dp_pcie_list:
+            return 1
+        else:
+            return 0
+    except kv.KeyOperationFailure:
+        Logger.warn("Exception KeyOperationFailure, key=%s" % (snr_key))
+        # return not valid if pcie_info file is not ready
+        return 0
+
+
+def is_dev_prsnt(filename):
+    dev_prsnt = 0
+    if not os.path.exists(filename):
+        return False
+
+    # read byte1
+    with open(filename, "rb") as f:
+        dev_prsnt = f.read(1)
+
+    if dev_prsnt == b"\x01":
+        return True
+
+    return False
+
+
+def sensor_valid_check(board, sname, check_name, attribute):
+    if str(board) == "all":
+        sdata = sname.split("_")
+        board = sdata[0]
+        sname = sname.replace(board + "_", "")
+
+    status = c_uint8(0)
+    is_valid_check = False
+    try:
+        file = "/var/run/power-util_%d.lock" % int(fru_map[board]["slot_num"])
+        if os.path.exists(file):
+            return 0
+
         if attribute["type"] == "power_status":
-            lpal_hndl.pal_get_server_power(int(fru_map[board]["slot_num"]), byref(status))
-            if (status.value == 1):
-                if match(r"soc_cpu", sname) is not None:
-                    return 1
-                elif match(r"soc_therm", sname) is not None:
-                    return 1
-                elif match(r"soc_dimm", sname) is not None:
-                    # check DIMM present
-                    file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + part_name_map[sname[8]]
-                    with open(file, "r") as f:
-                        dimm_sts = f.readline()
-                    if re.search(r"([a-zA-Z0-9])", dimm_sts):
+            lpal_hndl.pal_get_server_power(
+                int(fru_map[board]["slot_num"]), byref(status)
+            )
+            if status.value == 6:  # 12V-off
+                return 0
+
+            if (search(r"front_io_temp", sname) is not None) and (
+                status.value == 0 or status.value == 1
+            ):
+                return 1
+
+            file = "/tmp/cache_store/" + host_ready_map[board]
+            if not os.path.exists(file):
+                return 0
+            with open(file, "r") as f:
+                flag_status = f.read()
+            if flag_status != "1":
+                return 0
+
+            if status.value == 1:  # power on
+                if search(r"soc_cpu|soc_therm", sname) is not None:
+                    is_valid_check = True
+                elif search(r"spe_ssd", sname) is not None:
+                    # get SSD present status
+                    cmd = "/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x34 0x9c 0x9c 0x0 0x0 0x3"
+                    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+                    response = response.decode()
+                    # check the completion code
+                    if response.split(" ")[6] != "00":
+                        return 0
+                    prsnt_bits = response.split(" ")[-3]
+                    int_val = int("0x" + prsnt_bits, 16)
+                    ssd_id = int(sname[7])
+                    if int_val & (1 << ssd_id):
                         return 1
                     else:
                         return 0
-            else:
-                return 0
+                elif search(r"dp_pcie_temp", sname) is not None:
+                    pcie_info_key = (
+                        "sys_config/" + fru_map[board]["name"] + "_pcie_i04_s40_info"
+                    )
+                    return is_valid_dp_pcie(pcie_info_key)
+                else:
+                    suffix = ""
+                    if search(r"1ou_m2", sname) is not None:
+                        # 1ou_m2_a_temp. key is at 7
+                        suffix = m2_1ou_name_map[sname[7]]
+                    elif search(r"soc_dimm", sname) is not None:
+                        # soc_dimmf_temp. key is at 8
+                        suffix = dimm_location_name_map[sname[8]]
+
+                    file = (
+                        "/mnt/data/kv_store/sys_config/"
+                        + fru_map[board]["name"]
+                        + suffix
+                    )
+                    if is_dev_prsnt(file) == True:
+                        is_valid_check = True
+
+            if is_valid_check == True:
+                # Check power status again
+                lpal_hndl.pal_get_server_power(
+                    int(fru_map[board]["slot_num"]), byref(status)
+                )
+                if status.value == 1:  # power on
+                    file = "/tmp/cache_store/" + host_ready_map[board]
+                    if not os.path.exists(file):
+                        return 0
+                    with open(file, "r") as f:
+                        flag_status = f.read()
+                    if flag_status == "1":
+                        return 1
+                else:
+                    return 0
+
         return 0
     except SystemExit:
         Logger.debug("SystemExit from sensor read")
@@ -135,3 +249,14 @@ def sensor_valid_check(board, sname, check_name, attribute):
     except Exception:
         Logger.warn("Exception with board=%s, sensor_name=%s" % (board, sname))
     return 0
+
+
+def get_fan_mode(scenario="None"):
+    if "one_fan_failure" in scenario:
+        pwm = 60
+        return fan_mode["trans_mode"], pwm
+    elif "sensor_hit_UCR" in scenario:
+        pwm = 100
+        return fan_mode["boost_mode"], pwm
+
+    pass

@@ -11,8 +11,9 @@ class NicExtComponent : public NicComponent {
   int _get_ncsi_vid(void);
   public:
     NicExtComponent(std::string fru, std::string comp, std::string key, uint8_t fruid, uint8_t idx, uint8_t chid = 0x00)
-      : NicComponent(fru, comp, "/tmp/cache_store/"+key), _vid_key(key), _fru_id(fruid), _if_idx(idx), _ch_id(chid) {}
+      : NicComponent(fru, comp, key), _vid_key(key), _fru_id(fruid), _if_idx(idx), _ch_id(chid) {}
     int print_version();
+    int update(std::string img);
 };
 
 #endif

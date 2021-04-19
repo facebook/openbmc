@@ -57,7 +57,7 @@ def get_vboot_status():
         m = re.match("Status type \((\d+)\) code \((\d+)\)", data[-2].strip())
         if m:
             info["status"] = "{}.{}".format(m.group(1), m.group(2))
-        m = re.match("TPM status  \((\d+)\)", data[-3].strip())
+        m = re.match("TPM.? status  \((\d+)\)", data[-3].strip())
         if m:
             info["tpm_status"] = m.group(1)
         for l in data:

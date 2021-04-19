@@ -83,7 +83,7 @@ main(int argc, const char *argv[]) {
   }
   if (!prsnt) {
     printf("PEM%d is not present!\n", pem_num + 1);
-    return -1;
+    return 0;
   }
 
   if (!strcmp(argv[2], "--get_pem_info")) {

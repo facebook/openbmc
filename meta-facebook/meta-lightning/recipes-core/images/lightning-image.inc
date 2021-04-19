@@ -36,7 +36,6 @@ IMAGE_INSTALL += " \
   fscd \
   packagegroup-openbmc-rest3 \
   lldp-util \
-  spatula \
   enclosure-util \
   fw-util \
   openbmc-gpio \

@@ -1,50 +1,50 @@
 {
-    "bios" : {
-        "filename" : "coreboot-elbert.rom",
-        "version" : "4.10",
-        "hash" : "sha1sum",
-        "hash_value" : "3a0f81e9883c91d4911f4027b354d72ed6ac8f55"
+    "bios": {
+        "filename": "coreboot-elbert.rom",
+        "hash": "sha1sum",
+        "hash_value": "d0f57c7a97bd244c82c76d1564fef5e0d328f9da",
+        "version": ""
     },
-    "scm" : {
-        "filename" : "elbert_scm.astp",
-        "version" : "1.14",
-        "hash" : "sha1sum",
-        "hash_value" : "68993159e93575f102c63a19a3891c2630ee082b"
+    "fan": {
+        "filename": "elbert_fan.astp",
+        "hash": "sha1sum",
+        "hash_value": "d6ed91bd7b408753826e0db96aa8c7b2ecd32800",
+        "version": "1.8"
     },
-    "smb" : {
-        "filename" : "elbert_smb.astp",
-        "version" : "1.17",
-        "hash" : "sha1sum",
-        "hash_value" : "acec3c725ebd05cccff6346f3ea4717c6bdc89f4"
+    "pim16q": {
+        "filename": "elbert_pim16q.abin",
+        "hash": "sha1sum",
+        "hash_value": "17695c20092c6c48400694343d7b142b3c6dbca0",
+        "version": "7.4"
     },
-    "smb_cpld" : {
-        "filename" : "elbert_smb_cpld.astp",
-        "version" : "4.1",
-        "hash" : "sha1sum",
-        "hash_value" : "20e872e29eec2229ec616f79b206139f5b65160b"
+    "pim8ddm": {
+        "filename": "elbert_pim8ddm.abin",
+        "hash": "sha1sum",
+        "hash_value": "bdb7fefd99f2dcfe314e31fc0a2f2c2210fbb43b",
+        "version": "8.4"
     },
-    "fan" : {
-        "filename" : "elbert_fan.astp",
-        "version" : "1.2",
-        "hash" : "sha1sum",
-        "hash_value" : "a66f3296f49c9d693516c5e0040e09a44d003608"
+    "pim_base": {
+        "filename": "elbert_pim_base.abin",
+        "hash": "sha1sum",
+        "hash_value": "36609afea5bac25646ed8aab504f127d48187526",
+        "version": "1.3"
     },
-    "pim_base" : {
-        "filename" : "elbert_pim_base.abin",
-        "version" : "0.0",
-        "hash" : "sha1sum",
-        "hash_value" : ""
+    "scm": {
+        "filename": "elbert_scm.astp",
+        "hash": "sha1sum",
+        "hash_value": "20c1e71dee131bbc04c9a4c8525a6ab49e798003",
+        "version": "2.12"
     },
-    "pim16q" : {
-        "filename" : "elbert_pim16q.abin",
-        "version" : "6.4",
-        "hash" : "sha1sum",
-        "hash_value" : "9bd8ce9df692e4e28b702596416b0ec54e273f2d"
+    "smb": {
+        "filename": "elbert_smb.astp",
+        "hash": "sha1sum",
+        "hash_value": "8e4afc4bcde9ae6acd9d58b0055d579c24f37aa5",
+        "version": "3.6"
     },
-    "pim8ddm" : {
-        "filename" : "elbert_pim8ddm.abin",
-        "version" : "7.3",
-        "hash" : "sha1sum",
-        "hash_value" : "090c6e9c28cd701254d57baa0a57030aed28253f"
+    "smb_cpld": {
+        "filename": "elbert_smb_cpld.astp",
+        "hash": "sha1sum",
+        "hash_value": "a98fff3d2bb5c4ce7440971aedcb57cd2a2c3202",
+        "version": "5.1"
     }
 }

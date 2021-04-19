@@ -49,8 +49,6 @@
 #define GPIO_FAULT_LED "FP_FAULT_LED_N"
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
-#define GPIO_SKT_ID0 "FM_BMC_SKT_ID_0"
-#define GPIO_SKT_ID2 "FM_BMC_SKT_ID_2"
 
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
@@ -64,20 +62,16 @@
 #define NUM_NIC_FRU     2
 #define NUM_BMC_FRU     1
 
-
-const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc";
+const char pal_fru_list[] = "all, mb, nic0, nic1, pdb, bmc, tray0_mb, tray1_mb, tray0_nic0, tray0_nic1, tray1_nic0, tray1_nic1, tray0_bmc, tray1_bmc";
 const char pal_server_list[] = "mb";
-const char *pal_server_fru_list[NUM_SERVER_FRU] = {"mb"};
-const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic0", "nic1"};
-const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
-
-size_t server_fru_cnt = NUM_SERVER_FRU;
-size_t nic_fru_cnt  = NUM_NIC_FRU;
-size_t bmc_fru_cnt  = NUM_BMC_FRU;
-
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
+
+uint8_t FRU_MB = FRU_TRAY0_MB;
+uint8_t FRU_NIC0 = FRU_TRAY0_NIC0;
+uint8_t FRU_NIC1 = FRU_TRAY0_NIC1;
+uint8_t FRU_BMC = FRU_TRAY0_BMC;
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -301,42 +295,38 @@ int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   gpio_desc_t *gdesc = NULL;
   gpio_value_t val;
-
+  uint8_t mode;
+  bool master;
+  if (pal_get_host_system_mode(&mode)) {
+    return -1;
+  }
+  master = pal_get_config_is_master();
   *status = 0;
-
-  switch (fru) {
-  case FRU_MB:
+  // This MB, PDB, BMC && DBG
+  if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BMC || fru == FRU_DBG) {
     *status = 1;
-    break;
-  case FRU_NIC0:
+  } else if ( master && (mode == MB_4S_MODE) && (fru == FRU_TRAY1_MB) ) {
+    // Support tray1 MB in master BMC.
+    *status = 1;
+  } else if (fru == FRU_NIC0) {
     if ((gdesc = gpio_open_by_shadow(GPIO_NIC0_PRSNT))) {
       if (!gpio_get_value(gdesc, &val)) {
         *status = !val;
       }
       gpio_close(gdesc);
     }
-    break;
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     if ((gdesc = gpio_open_by_shadow(GPIO_NIC1_PRSNT))) {
       if (!gpio_get_value(gdesc, &val)) {
         *status = !val;
       }
       gpio_close(gdesc);
     }
-    break;
-  case FRU_PDB:
-    *status = 1;
-    break;
-  case FRU_BMC:
-    *status = 1;
-    break;
-  case FRU_DBG:
-    *status = 1;
-    break;
-  default:
+  } else if (fru > FRU_ALL && fru < FRU_CNT) {
+    *status = 0;
+  } else {
     return -1;
   }
-
   return 0;
 }
 
@@ -401,44 +391,71 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "mb") || !strcmp(str, "cpld") || !strcmp(str, "vr")) {
     *fru = FRU_MB;
+  } else if (!strcmp(str, "tray0_mb")) {
+    *fru = FRU_TRAY0_MB;
+  } else if (!strcmp(str, "tray1_mb")) {
+    *fru = FRU_TRAY1_MB;
   } else if (!strcmp(str, "pdb")) {
     *fru = FRU_PDB;
   } else if (!strcmp(str, "nic0") || !strcmp(str, "nic")) {
     *fru = FRU_NIC0;
   } else if (!strcmp(str, "nic1")) {
     *fru = FRU_NIC1;
+  } else if (!strcmp(str, "tray0_nic0")) {
+    *fru = FRU_TRAY0_NIC0;
+  } else if (!strcmp(str, "tray0_nic1")) {
+    *fru = FRU_TRAY0_NIC1;
+  } else if (!strcmp(str, "tray1_nic0")) {
+    *fru = FRU_TRAY1_NIC0;
+  } else if (!strcmp(str, "tray1_nic1")) {
+    *fru = FRU_TRAY1_NIC1;
   } else if (!strcmp(str, "ocpdbg")) {
     *fru = FRU_DBG;
   } else if (!strcmp(str, "bmc")) {
     *fru = FRU_BMC;
+  } else if (!strcmp(str, "tray0_bmc")) {
+    *fru = FRU_TRAY0_BMC;
+  } else if (!strcmp(str, "tray1_bmc")) {
+    *fru = FRU_TRAY1_BMC;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
   }
-
   return 0;
 }
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
   switch (fru) {
-    case FRU_MB:
-      strcpy(name, "mb");
+    case FRU_TRAY0_MB:
+      strcpy(name, "tray0_mb");
+      break;
+    case FRU_TRAY1_MB:
+      strcpy(name, "tray1_mb");
       break;
     case FRU_PDB:
       strcpy(name, "pdb");
       break;
-    case FRU_NIC0:
-      strcpy(name, "nic0");
+    case FRU_TRAY0_NIC0:
+      strcpy(name, "tray0_nic0");
       break;
-    case FRU_NIC1:
-      strcpy(name, "nic1");
+    case FRU_TRAY0_NIC1:
+      strcpy(name, "tray0_nic1");
+      break;
+    case FRU_TRAY1_NIC0:
+      strcpy(name, "tray1_nic0");
+      break;
+    case FRU_TRAY1_NIC1:
+      strcpy(name, "tray1_nic1");
       break;
     case FRU_DBG:
       strcpy(name, "ocpdbg");
       break;
-    case FRU_BMC:
-      strcpy(name, "bmc");
+    case FRU_TRAY0_BMC:
+      strcpy(name, "tray0_bmc");
+      break;
+    case FRU_TRAY1_BMC:
+      strcpy(name, "tray1_bmc");
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -521,89 +538,93 @@ int
 pal_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
 
-  switch(fru) {
-  case FRU_MB:
+  if (fru == FRU_MB) {
     sprintf(fname, "mb");
-    break;
-  case FRU_NIC0:
+  } else if (fru == FRU_NIC0) {
     sprintf(fname, "nic0");
-    break;
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     sprintf(fname, "nic1");
-    break;
-  case FRU_PDB:
+  } else if (fru == FRU_PDB) {
     sprintf(fname, "pdb");
-    break;
-  case FRU_BMC:
+  } else if (fru == FRU_BMC) {
     sprintf(fname, "bmc");
-    break;
-  default:
+  } else if (fru == FRU_TRAY1_MB) {
+    // In 4s mode, tray1_mb still present on tray0 even though path not exist.
+    return -2;
+  } else {
     return -1;
   }
-
   sprintf(path, "/tmp/fruid_%s.bin", fname);
   return 0;
 }
 
-void fru_eeprom_mb_check(char* mb_path) {
-  uint8_t id=0;
+void fru_eeprom_mb_check(char *mb_path) {
+  uint8_t id = REV_DVT;
 
   pal_get_board_rev_id(&id);
-
-  if(id < REV_DVT) {
-   sprintf(mb_path, FRU_EEPROM_MB_T, 54);
+  if (id >= REV_DVT) {
+    sprintf(mb_path, FRU_EEPROM_MB_T, 57);
   } else {
-   sprintf(mb_path, FRU_EEPROM_MB_T, 57);
+    sprintf(mb_path, FRU_EEPROM_MB_T, 54);
   }
 }
-
 
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
   char FRU_EEPROM_MB[64];
 
-  switch(fru) {
-  case FRU_MB:
+  if (fru == FRU_MB) {
     fru_eeprom_mb_check(FRU_EEPROM_MB);
     sprintf(path, "%s", FRU_EEPROM_MB);
-    break;
-  case FRU_NIC0:
+  } else if (fru == FRU_NIC0) {
     sprintf(path, FRU_EEPROM_NIC0);
-    break;
-  case FRU_NIC1:
+  } else if (fru == FRU_NIC1) {
     sprintf(path, FRU_EEPROM_NIC1);
-    break;
-  case FRU_BMC:
+  } else if (fru == FRU_BMC) {
     sprintf(path, FRU_EEPROM_BMC);
-    break;
-  default:
+  } else {
     return -1;
   }
-
   return 0;
 }
 
 int
 pal_get_fruid_name(uint8_t fru, char *name) {
   switch(fru) {
-  case FRU_MB:
-    sprintf(name, "Mother Board");
+  case FRU_TRAY0_MB:
+    sprintf(name, "Tray0 Mother Board");
     break;
 
-  case FRU_NIC0:
-    sprintf(name, "Mezz Card 0");
+  case FRU_TRAY0_NIC0:
+    sprintf(name, "Tray0 Mezz Card 0");
     break;
 
-  case FRU_NIC1:
-    sprintf(name, "Mezz Card 1");
+  case FRU_TRAY0_NIC1:
+    sprintf(name, "Tray0 Mezz Card 1");
+    break;
+
+  case FRU_TRAY1_MB:
+    sprintf(name, "Tray1 Mother Board");
+    break;
+
+  case FRU_TRAY1_NIC0:
+    sprintf(name, "Tray1 Mezz Card 0");
+    break;
+
+  case FRU_TRAY1_NIC1:
+    sprintf(name, "Tray1 Mezz Card 1");
     break;
 
   case FRU_PDB:
     sprintf(name, "PDB");
     break;
 
-  case FRU_BMC:
-    sprintf(name, "BMC");
+  case FRU_TRAY0_BMC:
+    sprintf(name, "Tray0 BMC");
+    break;
+
+  case FRU_TRAY1_BMC:
+    sprintf(name, "Tray1 BMC");
     break;
 
   default:
@@ -702,31 +723,6 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   return 0;
 }
 
-
-
-int
-read_device(const char *device, int *value) {
-  FILE *fp;
-  int rc;
-
-  fp = fopen(device, "r");
-  if (!fp) {
-    int err = errno;
-    syslog(LOG_INFO, "failed to open device %s", device);
-    return err;
-  }
-
-  rc = fscanf(fp, "%d", value);
-
-  fclose(fp);
-  if (rc != 1) {
-    syslog(LOG_INFO, "failed to read device %s", device);
-    return ENOENT;
-  } else {
-    return 0;
-  }
-}
-
 int
 pal_set_def_key_value() {
   int i;
@@ -764,25 +760,6 @@ pal_set_def_key_value() {
 }
 
 int
-pal_get_blade_id(uint8_t *id) {
-  static bool cached = false;
-  static unsigned int cached_id = 0;
-
-  if (!cached) {
-    const char *shadows[] = {
-      "FM_BLADE_ID_0",
-      "FM_BLADE_ID_1"
-    };
-    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
-      return -1;
-    }
-    cached = true;
-  }
-  *id = (uint8_t)cached_id;
-  return 0;
-}
-
-int
 pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
   uint8_t val;
   int ret;
@@ -790,7 +767,7 @@ pal_get_bmc_ipmb_slave_addr(uint16_t* slave_addr, uint8_t bus_id) {
 
   if (bus_id == I2C_BUS_2) {
     if (addr == 0) {
-      ret = pal_get_blade_id(&val);
+      ret = pal_get_mb_position(&val);
       if (ret != 0) {
         return -1;
       }
@@ -821,7 +798,7 @@ pal_peer_tray_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen)
   uint8_t val;
   int ret;
 
-  ret = pal_get_blade_id(&val);
+  ret = pal_get_mb_position(&val);
   if (ret) {
     return ret;
   }
@@ -900,26 +877,32 @@ pal_is_mcu_ready(uint8_t bus) {
   return false;
 }
 
+static int
+pal_get_blade_id(uint8_t *id) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (kv_get("mb_pos", value, NULL, 0)) {
+    return -1;
+  }
+
+  *id = (uint8_t)atoi(value);
+  return 0;
+}
+
 int
-pal_get_mb_position(uint8_t* pos) {
+pal_get_mb_position(uint8_t *pos) {
   static bool cached = false;
   static uint8_t cached_pos = 0;
 
   if (!cached) {
-    if(pal_get_blade_id (&cached_pos))
+    if (pal_get_blade_id(&cached_pos))
       return -1;
 
     switch (cached_pos) {
       case 0:
-        cached_pos = MB_ID4;
+        cached_pos = MB_ID0;
         break;
       case 1:
-        cached_pos = MB_ID3;
-        break;
-      case 2:
-        cached_pos = MB_ID2;
-        break;
-      case 3:
         cached_pos = MB_ID1;
         break;
       default:
@@ -928,85 +911,67 @@ pal_get_mb_position(uint8_t* pos) {
     cached = true;
   }
 
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s: BMC Position ID = %u", __func__, cached_pos);
+#endif
   *pos = cached_pos;
-#ifdef DEBUG
-  syslog(LOG_DEBUG,"%s BMC Position ID =%d\n", __func__, cached_pos);
-#endif
-  return 0;
-}
-
-int
-pal_get_mb_mode(uint8_t* mode) {
-  int ret=0;
-
-  ret = cmd_cmc_get_config_mode(mode);
-#ifdef DEBUG
-  syslog(LOG_DEBUG, "%s mode=%d\n", __func__, *mode);
-#endif
-  if(ret != 0) {
-    return ret;
-  }
 
   return 0;
 }
 
 int
 pal_get_config_is_master(void) {
-  gpio_desc_t *gdesc;
-  gpio_value_t val;
+  char value[MAX_VALUE_LEN] = {0};
   static bool cached = false;
   static int status = 1;
 
   if (!cached) {
-    if ((gdesc = gpio_open_by_shadow(GPIO_SKT_ID0))) {
-      if (!gpio_get_value(gdesc, &val)) {
-        status = (val == GPIO_VALUE_LOW) ? 1 : 0;
-        cached = true;
-      }
-      gpio_close(gdesc);
+    if (kv_get("mb_skt", value, NULL, 0)) {
+      return status;
     }
+
+    status = ((atoi(value) & 0x1) == GPIO_VALUE_LOW);
+    cached = true;
   }
 
 #ifdef DEBUG
-  syslog(LOG_DEBUG, "%s status=%x", __func__, status);
+  syslog(LOG_DEBUG, "%s: status = %d", __func__, status);
 #endif
   return status;
 }
 
 int
-pal_get_platform_id(uint8_t *id) {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN]={0};
+pal_get_host_system_mode(uint8_t *mode) {
+  char value[MAX_VALUE_LEN] = {0};
+  static bool cached = false;
+  static unsigned int cached_id = 0;
 
-  sprintf(key, "mb_sku");
-  if (kv_get(key, value, NULL, 0)) {
-    return false;
+  if (!cached) {
+    if (kv_get("mb_skt", value, NULL, 0)) {
+      return -1;
+    }
+
+    cached_id = atoi(value) >> 1;
+    cached = true;
   }
 
-  *id = atoi(value);
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s: System Mode = %u", __func__, cached_id);
+#endif
+  *mode = (uint8_t)cached_id;
+
   return 0;
 }
 
 int
-pal_get_host_system_mode(uint8_t* mode) {
-  static bool cached = false;
-  static unsigned int cached_pos = 0;
+pal_get_platform_id(uint8_t *id) {
+  char value[MAX_VALUE_LEN] = {0};
 
-  if (!cached) {
-    const char *shadows[] = {
-      "FM_BMC_SKT_ID_1",
-      "FM_BMC_SKT_ID_2"
-    };
-    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_pos)) {
-      return -1;
-    }
-    cached = true;
+  if (kv_get("mb_sku", value, NULL, 0)) {
+    return -1;
   }
 
-  *mode = (uint8_t)cached_pos;
-#ifdef DEBUG
-  syslog(LOG_DEBUG, "%s: BMC System Mode = %u", __func__, cached_pos);
-#endif
+  *id = (uint8_t)atoi(value);
   return 0;
 }
 
@@ -1440,16 +1405,13 @@ pal_get_fru_list(char *list) {
 
 int
 pal_get_board_rev_id(uint8_t *id) {
-  char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
-  sprintf(key, "mb_rev");
-  if (kv_get(key, value, NULL, 0)) {
-    return false;
+  if (kv_get("mb_rev", value, NULL, 0)) {
+    return -1;
   }
 
-  *id = atoi(value);
-
+  *id = (uint8_t)atoi(value);
   return 0;
 }
 
@@ -1506,6 +1468,15 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   return comp_code;
 }
 
+bool
+pal_skip_access_me(void) {
+  if (!access("/tmp/fin_bios_upd", F_OK)) {
+    return true;
+  }
+
+  return false;
+}
+
 int
 pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 {
@@ -1513,6 +1484,17 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   uint8_t rbuf[8];
   uint8_t rlen;
   int ret;
+
+  if (pal_skip_access_me())
+    return PAL_EOK;
+
+  // If device is slave, fake the data of selftest,
+  // which is {0x55, 0x00} refer common/healthd.c line.1198
+  if (!pal_get_config_is_master()){
+    data[0] = 0x55;
+    data[1] = 0x00;
+    return PAL_EOK;
+  }
 
   info.bus = NM_IPMB_BUS_ID;
   info.nm_addr = NM_SLAVE_ADDR;
@@ -1576,6 +1558,7 @@ static int get_dev_bridge_info(uint8_t slot, uint8_t* dev_addr,
       *dev_addr = ASIC_BMC_SLAVE_ADDR;
       *bus_num = ASIC_IPMB_BUS_ID;
       break;
+
     case BRIDGE_2_IOX_BMC:
       *dev_addr = IOX_BMC_SLAVE_ADDR;
       *bus_num = IOX_IPMB_BUS_ID;
@@ -1691,7 +1674,9 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
   uint8_t status;
 
   *res_len = 0;
-  ret = pal_is_fru_prsnt(slot, &status);
+
+  ret = pal_is_fru_prsnt(FRU_MB, &status);
+
   if (ret < 0) {
     return CC_OEM_DEVICE_NOT_PRESENT;
   }
@@ -1818,8 +1803,8 @@ pal_get_dimm_amount(uint8_t* amount) {
   return 0;
 }
 
-static bool
-is_cpu_socket_occupy(unsigned int cpu_idx) {
+bool
+is_cpu_socket_occupy(uint8_t cpu_idx) {
   static bool cached = false;
   static unsigned int cached_id = 0;
 
@@ -1842,8 +1827,7 @@ is_cpu_socket_occupy(unsigned int cpu_idx) {
 }
 
 int
-pal_get_syscfg_text (char *text) {
-  int rev;
+pal_get_syscfg_text(char *text) {
   int cnt=0;
   char key[MAX_KEY_LEN], value[MAX_VALUE_LEN], entry[MAX_VALUE_LEN];
   char *key_prefix = "sys_config/";
@@ -1882,7 +1866,7 @@ pal_get_syscfg_text (char *text) {
   // CPU information
   for (cpu_index = 0; cpu_index < cpu_num; cpu_index++) {
     if(cpu_num == 2) {
-      if (!is_cpu_socket_occupy((unsigned int)cpu_index))
+      if (!is_cpu_socket_occupy(cpu_index))
         continue;
     }
     sprintf(entry, "CPU%d:", cpu_index);
@@ -1996,4 +1980,185 @@ int
 pal_get_nic_fru_id(void)
 {
   return FRU_NIC0;
+}
+
+int
+pal_get_target_bmc_addr(uint8_t *tar_bmc_addr) {
+  uint16_t m_bmc_addr;
+
+  if ( pal_get_bmc_ipmb_slave_addr(&m_bmc_addr, BMC_IPMB_BUS_ID) )
+    return -1;
+
+  if (m_bmc_addr == 0x10)
+    *tar_bmc_addr = BMC1_SLAVE_DEF_ADDR;
+  else
+    *tar_bmc_addr = BMC0_SLAVE_DEF_ADDR;
+
+  return 0;
+}
+
+int
+pal_get_sensor_util_timeout(uint8_t fru) {
+
+  if ( fru == FRU_MB ) {
+    return 10;
+  } else {
+    return 4;
+  }
+}
+
+static int get_cpld_version(char* str, uint8_t addr, uint8_t bus,
+                            uint32_t offset, uint8_t* rbuf)
+{
+  int fd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[16] = {0};
+  uint8_t ver[16] = {0};
+  long rev;
+  char value[MAX_VALUE_LEN] = {0};
+
+  if( kv_get(str, value, 0, 0) ) {
+    fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+      return ret;
+    }
+
+    tbuf[0] = (offset >> 24 ) & 0xFF;
+    tbuf[1] = (offset >> 16 ) & 0xFF;
+    tbuf[2] = (offset >> 8 )  & 0xFF;
+    tbuf[3] = (offset >> 0 )  & 0xFF;
+
+    tlen = 4;
+    rlen = 4;
+
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, ver, rlen);
+    i2c_cdev_slave_close(fd);
+
+    if (ret == -1) {
+      syslog(LOG_WARNING, "%s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr >> 1, offset);
+      return ret;
+    } else {
+      sprintf(value, "%02x%02x%02x%02x", ver[3], ver[2], ver[1], ver[0]);
+      kv_set(str, value, 0, 0);
+      rbuf[0] = ver[3];
+      rbuf[1] = ver[2];
+      rbuf[2] = ver[1];
+      rbuf[3] = ver[0];
+    }
+  } else {
+    rev = strtol(value, NULL, 16);
+    rbuf[0] = (rev >> 24) & 0xff;
+    rbuf[1] = (rev >> 16) & 0xff;
+    rbuf[2] = (rev >> 8) & 0xff;
+    rbuf[3] = (rev >> 0) & 0xff;
+  }
+  return 0;
+}
+
+int
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len) {
+  int ret = -1;
+  uint8_t rbuf[16] = {0};
+  char str[16] = {0};
+
+  if( fru != FRU_MB )
+    return -1;
+
+  switch (target) {
+    case CMD_GET_MAIN_CPLD_VER:
+      strncpy(str, "pfr_cpld", sizeof(str));
+      ret = get_cpld_version(str, MAIN_CPLD_SLV_ADDR, MAIN_CPLD_BUS_NUM, CPLD_VER_REG, rbuf);
+    break;
+    case CMD_GET_MOD_CPLD_VER:
+      strncpy(str, "mod_cpld", sizeof(str));
+      ret = get_cpld_version(str, MOD_CPLD_SLV_ADDR, MOD_CPLD_BUS_NUM, CPLD_VER_REG, rbuf);
+    break;
+    case CMD_GET_GLB_CPLD_VER:
+      strncpy(str, "glb_cpld", sizeof(str));
+      ret = get_cpld_version(str, GLB_CPLD_SLV_ADDR, GLB_CPLD_BUS_NUM, CPLD_VER_REG, rbuf);
+    break;
+    default:
+      return -1;
+  }
+
+  if( ret == 0 ) {
+    memcpy(res, rbuf, 4);
+    *res_len = 4;
+  }
+
+  return ret;
+}
+
+void __attribute__((constructor))
+update_local_fruid(void) {
+  if (!pal_get_config_is_master()) {
+    FRU_MB = FRU_TRAY1_MB;
+    FRU_NIC0 = FRU_TRAY1_NIC0;
+    FRU_NIC1 = FRU_TRAY1_NIC1;
+    FRU_BMC = FRU_TRAY1_BMC;
+  }
+}
+
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch (fru) {
+    case FRU_TRAY0_MB:
+    case FRU_TRAY1_MB:
+      *caps =  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SERVER |
+          FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
+      break;
+    case FRU_TRAY0_NIC0:
+    case FRU_TRAY0_NIC1:
+    case FRU_TRAY1_NIC0:
+    case FRU_TRAY1_NIC1:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_PDB:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_DBG:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_TRAY0_BMC:
+    case FRU_TRAY1_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
+int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
+{
+  return -1;
+}
+
+// Variable addr would be 8-bit form
+int pal_i2c_write_read (uint8_t bus, uint8_t addr,
+                        uint8_t *txbuf, uint8_t txlen,
+                        uint8_t *rxbuf, uint8_t rxlen)
+{
+  int fd = 0, retCode = -1;
+
+  fd = i2c_cdev_slave_open (bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open i2c-%d: %s", bus, strerror(errno));
+    return retCode; 
+  }
+
+  retCode = i2c_rdwr_msg_transfer (fd, addr, txbuf, txlen, rxbuf, rxlen);
+  if (retCode == -1) {
+    syslog (LOG_WARNING, "i2c transaction error %s bus=%x slavaddr=%x offset=%x\n", __func__, bus, addr >> 1, txbuf[0]);
+  } else {
+    retCode = (int)rxbuf[0];
+  }
+
+  i2c_cdev_slave_close(fd);
+  return retCode;
 }

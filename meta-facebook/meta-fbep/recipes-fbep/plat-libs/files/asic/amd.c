@@ -92,17 +92,6 @@ uint8_t amd_get_id(uint8_t slot)
   return id;
 }
 
-static bool is_amd_gpu_ready(int fd)
-{
-  uint8_t buf[4] = {0};
-
-  // Check if SMU is ready by reading id
-  if (amd_cmd_ldrd_scratch_addr(fd, 0, 1, buf) == 0 && buf[2])
-    return true;
-  else
-    return false;
-}
-
 int amd_read_die_temp(uint8_t slot, float *value)
 {
   int fd = amd_open_slot(slot);
@@ -112,8 +101,7 @@ int amd_read_die_temp(uint8_t slot, float *value)
   if (fd < 0)
     return ASIC_ERROR;
 
-  if (is_amd_gpu_ready(fd))
-    ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
+  ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
 
   close(fd);
 
@@ -121,7 +109,7 @@ int amd_read_die_temp(uint8_t slot, float *value)
     return ASIC_ERROR;
 
   *value = (buf[0] << 8) | buf[1];
-  return ASIC_SUCCESS;
+  return *value != 0 ? ASIC_SUCCESS: ASIC_ERROR;
 }
 
 int amd_read_edge_temp(uint8_t slot, float *value)
@@ -133,8 +121,7 @@ int amd_read_edge_temp(uint8_t slot, float *value)
   if (fd < 0)
     return ASIC_ERROR;
 
-  if (is_amd_gpu_ready(fd))
-    ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
+  ret = amd_cmd_ldrd_scratch_addr(fd, 9, 1, buf);
 
   close(fd);
 
@@ -142,7 +129,7 @@ int amd_read_edge_temp(uint8_t slot, float *value)
     return ASIC_ERROR;
 
   *value = (buf[2] << 8) | buf[3];
-  return ASIC_SUCCESS;
+  return *value != 0 ? ASIC_SUCCESS: ASIC_ERROR;
 }
 
 int amd_read_hbm_temp(uint8_t slot, float *value)
@@ -154,8 +141,7 @@ int amd_read_hbm_temp(uint8_t slot, float *value)
   if (fd < 0)
     return ASIC_ERROR;
 
-  if (is_amd_gpu_ready(fd))
-    ret = amd_cmd_ldrd_scratch_addr(fd, 10, 1, buf);
+  ret = amd_cmd_ldrd_scratch_addr(fd, 10, 1, buf);
 
   close(fd);
 
@@ -163,7 +149,7 @@ int amd_read_hbm_temp(uint8_t slot, float *value)
     return ASIC_ERROR;
 
   *value = (buf[2] << 8) | buf[3];
-  return ASIC_SUCCESS;
+  return *value != 0 ? ASIC_SUCCESS: ASIC_ERROR;
 }
 
 int amd_read_pwcs(uint8_t slot, float *value)
@@ -175,8 +161,7 @@ int amd_read_pwcs(uint8_t slot, float *value)
   if (fd < 0)
     return ASIC_ERROR;
 
-  if (is_amd_gpu_ready(fd))
-    ret = amd_cmd_ldrd_scratch_addr(fd, 11, 1, buf);
+  ret = amd_cmd_ldrd_scratch_addr(fd, 11, 1, buf);
 
   close(fd);
 
@@ -184,5 +169,5 @@ int amd_read_pwcs(uint8_t slot, float *value)
     return ASIC_ERROR;
 
   *value = (buf[0] << 8) | buf[1];
-  return ASIC_SUCCESS;
+  return *value != 0 ? ASIC_SUCCESS: ASIC_ERROR;
 }

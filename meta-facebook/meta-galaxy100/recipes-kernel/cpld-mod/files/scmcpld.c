@@ -300,7 +300,7 @@ static int scmcpld_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 {
   int n_attrs = sizeof(scmcpld_attr_table) / sizeof(scmcpld_attr_table[0]);
-  i2c_dev_sysfs_data_init(client, &scmcpld_data,
+  return i2c_dev_sysfs_data_init(client, &scmcpld_data,
 					scmcpld_attr_table, n_attrs);
 }
 

@@ -18,11 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
 #
 # A simple script to toggle reset CP2112 device
 #
 
-CP2112_RESET_CMD='/sys/class/i2c-adapter/i2c-12/12-0031/cp2112_rst'
+CP2112_RESET_CMD="${SYSCPLD_SYSFS_DIR}/cp2112_rst"
 
 #
 # Toggle reset CP2112, with enough time in-between for chip status settle down

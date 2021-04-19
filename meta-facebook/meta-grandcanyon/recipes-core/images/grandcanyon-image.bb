@@ -10,6 +10,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
   setup-gpio \
   ipmbd \
   ipmid \
@@ -25,4 +26,31 @@ IMAGE_INSTALL += " \
   fan-util \
   fscd \
   guid-util \
+  sensor-util \
+  sensor-mon \
+  fpc-util \
+  front-paneld \
+  i2craw \
+  healthd \
+  cfg-util \
+  threshold-util \
+  libncsi \
+  ncsid-v2 \
+  ncsi-util \
+  ipmb-util \
+  exp-cached \
+  bic-cached \
+  power-util \
+  usbutils \
+  usb-console \
+  gpiointrd \
+  crashdump \
+  me-util \
+  throttle-util \
+  bios-util \
+  ipmi-util \
+  gpiod \
+  snapshot-util \
+  enclosure-util \
+  vboot-utils \
   "

@@ -11,8 +11,8 @@ inherit meson
 SRC_URI = "file://fbgc_common \
           "
 
-DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv"
-RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv"
+DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libfbgc-gpio libipmi"
+RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv libfbgc-gpio libipmi"
 
 S = "${WORKDIR}/fbgc_common"
 

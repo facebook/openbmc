@@ -1,0 +1,169 @@
+# Copyright 2020-present Facebook. All Rights Reserved.
+
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+POWERUTIL_CMD=/usr/local/bin/power-util
+IPMBUTIL_CMD=/usr/local/bin/ipmb-util
+EXPANDERUTIL_CMD=/usr/bin/expander-util
+CFGUTIL_CMD=/usr/local/bin/cfg-util
+KV_CMD=/usr/bin/kv
+ME_CMD=/usr/bin/me-util
+NTP_CMD=/usr/sbin/ntpq
+
+MAX_RETRY=3
+
+I2C_BIC_BUS="2"
+BIC_SLAVE_ADDR="0x40"
+NETFN_OEM_1S_REQ="0xe0"
+BIC_CMD_OEM_GET_SET_GPIO="0x41"
+GPIO_GET_OUTPUT_STATUS="0"
+BIC_PWR_STATUS_GPIO_NUM="36"
+IANA_ID_2="0x9c"
+IANA_ID_1="0x9c"
+IANA_ID_0="0x00"
+POWER_STATUS_BYTE=5
+
+SERVER_PRESENT=1
+SERVER_ABSENT=0
+SERVER_STATUS_DC_ON=1
+SERVER_STATUS_DC_OFF=0
+GPIO_VALUE_LOW=0
+GPIO_VALUE_HIGH=1
+
+SERVER_PRSNT_PIN="COMP_PRSNT_N"
+SERVER_STANDBY_PG_PIN="COMP_STBY_PG_IN"
+
+NETFN_EXPANDER_REQ="0x30"
+CMD_GET_UIC_LOCATION="0x40"
+
+NETFN_STORAGE_REQ="0x28" #after shift left 2 bits
+CMD_GET_SEL_TIME="0x48"
+
+UIC_LOCATION_A="1"
+UIC_LOCATION_B="2"
+UIC_LOCATION_SIZE=2
+UIC_LOCATION_MASK=0x3
+
+#Type 5: 0000b, Type 7 Headnode: 0101b
+UIC_TYPE_5="0"
+UIC_TYPE_7_HEADNODE="5"
+UIC_TYPE_SIZE=4
+UIC_TYPE_MASK=0xf
+
+PAL_SKU_SIZE=6
+
+KEY_SYSTEM_INFO="system_info"
+
+KEY_AST_POR_FLAG="ast_por_flag"
+STR_VALUE_0="0"
+STR_VALUE_1="1"
+
+SYNC_TIME_OK=0
+SEL_TIME_RESPONSE_LEN=12
+
+gpio_set() {
+  local shadow val
+  shadow=$1
+  val=$2
+  $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+  local shadow
+  shadow=$1
+  $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+is_e1s_iocm_i2c_enabled() {
+  if [[ $(gpio_get E1S_1_P3V3_PG_R) == "1" && $(gpio_get E1S_2_P3V3_PG_R) == "1" ]]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+#             UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
+#  Type 5                   0                 0                0                0
+#  Type 7 Headnode          0                 1                0                1
+get_chassis_type() {
+  if [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "0" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "0" ]]; then
+    return "$UIC_TYPE_5"
+  elif [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "1" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "1" ]]; then
+    return "$UIC_TYPE_7_HEADNODE" 
+  else
+    return -1
+  fi
+}
+
+is_module_loaded() {
+  local module
+  module=$1
+  if lsmod | grep "$module" &> /dev/null ; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+#Check server power status
+server_power_status() {
+  output=$("$IPMBUTIL_CMD" \
+           "$I2C_BIC_BUS" \
+           "$BIC_SLAVE_ADDR" \
+           "$NETFN_OEM_1S_REQ" \
+           "$BIC_CMD_OEM_GET_SET_GPIO" \
+           "$IANA_ID_2" "$IANA_ID_1" "$IANA_ID_0" \
+           "$GPIO_GET_OUTPUT_STATUS" \
+           "$BIC_PWR_STATUS_GPIO_NUM")
+
+  status=$(echo $output | cut -d' ' -f $POWER_STATUS_BYTE)
+  #Convert string to integer
+  status=$((16#${status}))
+  
+  if [ "$((status&1))" = "$SERVER_STATUS_DC_ON" ]; then
+    echo "$SERVER_STATUS_DC_ON"
+  elif [ "$((status&1))" = "$SERVER_STATUS_DC_OFF" ]; then
+    echo "$SERVER_STATUS_DC_OFF"
+  fi
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  kv_por_flag=`$KV_CMD get $KEY_AST_POR_FLAG`
+  if [ ! -n "$kv_por_flag" ]; then
+    # Check External reset EXTRST# event log (SCU074[1]) to to determine if this boot is AC on or not
+    val=$(devmem 0x1e6e2074 2>/dev/null)
+    if [ "$((val & 0x2))" == "0" ]; then
+      # Power ON Reset
+      $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_1
+      echo $STR_VALUE_1
+    else
+      # External Reset
+      $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_0
+      echo $STR_VALUE_0
+    fi
+  else
+    echo $kv_por_flag
+  fi
+}
+
+# Check to see if server is present or not
+is_server_prsnt() {
+  prsnt=$(gpio_get "$SERVER_PRSNT_PIN")
+  if [ "$prsnt" = "$GPIO_VALUE_LOW" ]; then
+    # Server is prsent
+    echo $SERVER_PRESENT
+  else                                       
+    echo $SERVER_ABSENT
+  fi
+}
+
+# Check if server is 12V-on or not
+is_server_12v_on() {
+  status=$(gpio_get "$SERVER_STANDBY_PG_PIN")
+  if [ "$status" = "$GPIO_VALUE_HIGH" ]; then
+    # Server is in standby mode (12v-on only)
+    echo true
+  else
+    echo false
+  fi
+}

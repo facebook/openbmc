@@ -12,16 +12,19 @@
 # for more details.
 #
 
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
 ((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
 ((left=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
 ((card_val=$(i2cget -f -y 12 0x31 0x0 2> /dev/null | head -n 1)))
 card_val=$(($card_val % 16))
 if [ $val -lt 8  -a $left -eq 0 ] || [ $val -ge 8 ] || [ $card_val -ge 2 ]; then
   # left BMC and FAB
-  weutil /sys/class/i2c-adapter/i2c-0/0-0052/eeprom
+  weutil "$SCM_EEPROM"
 else
   # right BMC
-  ((slot_id=$(cat /sys/class/i2c-adapter/i2c-12/12-0031/slotid)))
+  ((slot_id=$(cat "$SLOTID_SYSFS")))
   slot_id=$(($slot_id - 1))
   cat <<EOF > /tmp/seutil.py
 import os,json,sys

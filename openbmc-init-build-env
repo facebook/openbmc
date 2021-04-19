@@ -11,7 +11,14 @@ fi
 declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
 PLAT_DISTRO_OVERRIDES=(
-# Latest platforms
+# master / rolling-release platforms
+#   -- none --
+# gatesgarth platforms (latest)
+#   -- none --
+# dunfell platforms (pending upgrade)
+#   -- none --
+  meta-fby2-nd:lf-dunfell
+# zeus platforms (pending upgrade)
   meta-qemux86:zeus
   meta-fbal:zeus
   meta-fbep:zeus
@@ -20,13 +27,14 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby3:zeus
   meta-grandcanyon:zeus
   meta-cmm:zeus
-# Pending upgrade
-  meta-cloudripper:warrior
-  meta-wedge400:warrior
-  meta-fuji:warrior
-  meta-elbert:warrior
+  meta-elbert:zeus
+  meta-cloudripper:zeus
+  meta-fuji:zeus
+  meta-minipack:zeus
+  meta-wedge400:zeus
+# warrior platforms (pending upgrade)
+#   -- none --
 # Legacy platforms pending kernel upgrade
-  meta-fby2-nd:rocko
   meta-fby2-gpv2:rocko
   meta-fby2:rocko
   meta-yosemite:rocko
@@ -37,7 +45,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-yamp:rocko
   meta-lightning:rocko
   meta-wedge100:rocko
-  meta-minipack:rocko
   meta-galaxy100:rocko
 )
 
@@ -80,7 +87,7 @@ if [ -z "$TEMPLATECONF" ]; then
     elif [ -d "$(pwd)/meta-$1" ]; then
         TEMPLATECONF="$(pwd)/meta-$1/conf"
     else
-        machines=$(find . -maxdepth 6 -wholename "*/machine/*" -type f)
+        machines=$(find . -maxdepth 6 -path "*/machine/*" '(' -type f -o -type l ')' )
         for md in ${machines}; do
             machine=$(basename "$md" | sed 's/\.conf//')
             meta=$(dirname "$(dirname "$md")")
@@ -109,6 +116,7 @@ if [ -z "$DISTRO_OVERRIDE" ]; then
         if [[ "${platform/${override_plat}/}" != "${platform}" ]]; then
             # override happens
             _distro="${override_distro}"
+            break
         fi
     done
 fi
@@ -117,10 +125,15 @@ unset override override_plat override_distro
 
 echo "Init build environment for platform '${platform}' with distro ${_distro}..."
 unset platform
+
+# Sourcing the Yocto script causes the pwd to change to the build directory.
+# Keep it around so that we can source scripts out of our tree afterward.
+REPO_ROOT="$(pwd)"
+
 # shellcheck disable=SC1090
 # distro can vary, so we can't use a shellcheck directive to point to next
 . "yocto/${_distro}/poky/oe-init-build-env" "$@"
 
-if [ -d "../facebook" ]; then
-  ../facebook/facebookify.sh "$(pwd)"
+if [ -d "${REPO_ROOT}/facebook" ]; then
+  "${REPO_ROOT}/facebook/facebookify.sh" "$(pwd)"
 fi

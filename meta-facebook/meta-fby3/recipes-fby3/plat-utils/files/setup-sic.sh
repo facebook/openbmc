@@ -38,6 +38,39 @@ function run_cmd() {
   /usr/bin/bic-util $1 >> $LOG
 }
 
+function init_vishay_gpv3_ic() {
+  local slot=$1
+  local intf=$2
+  local VR_STBY1_ADDR="0x28"
+  local VR_STBY2_ADDR="0x2E"
+  local VR_STBY3_ADDR="0x30"
+
+  # workaround for I2C on GPv3 board
+  # it will be removed before DVT
+  local cnt=1
+  local retries=5
+  while [ $cnt -le $retries ]; do
+    wait=$((2 ** $cnt))
+    sleep $wait
+    echo -n "check power status " >> $LOG
+    pwr_sts=$(/usr/local/bin/power-util $slot status | grep ON | wc -l | tee -a $LOG)
+    [ "$pwr_sts" != "0" ] && break
+    cnt=$(($cnt + 1))
+    echo "retry..." >> $LOG
+  done
+
+  for addr in $VR_STBY1_ADDR $VR_STBY2_ADDR $VR_STBY3_ADDR; do
+    #Offset Vout 70mV
+    echo "$addr" >> $LOG
+    run_cmd "$slot 0xe0 0x02 0x9c 0x9c 0x0 $intf 0x18 0x52 0x03 $addr 0x00 0x22 0x09 0x00"
+    run_cmd "$slot 0xe0 0x02 0x9c 0x9c 0x0 $intf 0x18 0x52 0x03 $addr 0x00 0x03"
+    echo >> $LOG
+  done
+
+  # enable VR fault monitor on BIC
+  run_cmd "$slot 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x69 0x9c 0x9c 0x0 0x1"
+}
+
 function init_vishay_ic(){
   local slot=$1
   local intf=$2
@@ -63,6 +96,14 @@ function init_vishay_ic(){
 function check_class1_config() {
   local slot=$1
   local val=$2
+  local i2c_num=$(get_cpld_bus ${slot:4:1})
+  local type_2ou=$(get_2ou_board_type $i2c_num)
+
+  if [[ $((val & 0x08)) = "0" && $type_2ou == "0x06" ]]; then
+    # waive 2OU present if 2OU type is dp riser card (0x06)
+    val=$((val | 0x08))
+  fi
+
   if [ $val = 0 ]; then
     echo "2OU:" >> $LOG
     init_vishay_ic $slot $REXP_INTF 
@@ -104,7 +145,12 @@ function init_class2_sic(){
   echo "$slot" >> $LOG
   if [ $val = 0 ] || [ $val = 4 ]; then
     echo "2OU:" >> $LOG
-    init_vishay_ic $slot $REXP_INTF 
+    EXP_BOARD_TYPE=$(get_2ou_board_type 4) #only slot1
+    if ([ $EXP_BOARD_TYPE == "0x00" ] || [ $EXP_BOARD_TYPE == "0x03" ]); then
+      init_vishay_gpv3_ic $slot $REXP_INTF &
+    else
+      init_vishay_ic $slot $REXP_INTF
+    fi
   else
     echo "2OU is not present" >> $LOG
   fi

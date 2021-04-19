@@ -32,11 +32,42 @@ extern "C" {
 #define BIOS_CAPSULE_OFFSET 0x7F0000
 #define CPLD_CAPSULE_OFFSET 0x17F0000
 
+/*SB BIC USB ID*/
+#define SB_TI_VENDOR_ID  0x1CBE
+#define SB_TI_PRODUCT_ID 0x0007
+
+/*2OU BIC USB ID*/
+#define EXP2_TI_VENDOR_ID 0x1CC0
+#define EXP2_TI_PRODUCT_ID 0x0007
+
+#define NUM_ATTEMPTS 5
+
+typedef struct {
+  uint8_t dummy;
+  uint32_t offset;
+  uint16_t length;
+  uint8_t data[0];
+} __attribute__((packed)) bic_usb_packet;
+#define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
+
+typedef struct {
+  uint8_t dummy;
+  uint32_t offset;
+  uint16_t length;
+  uint32_t image_size;
+  uint8_t data[0];
+} __attribute__((packed)) bic_usb_ext_packet;
+#define USB_PKT_EXT_HDR_SIZE (sizeof(bic_usb_ext_packet))
+
 int print_configuration(struct libusb_device_handle *hDevice,struct libusb_config_descriptor *config);
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
-int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver);
+int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
+int bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
+int send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt);
+int bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id);
+int bic_close_usb_dev(usb_dev* udev);
 int update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force);
-int update_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *image);
+int update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -157,21 +157,12 @@ def measure_uboot(algo, image_meta, recal=False):
     return pcr2.extend(uboot_measure)
 
 
-def measure_rom_env(algo, image_meta):
-    # PCR3 : hash(rom-env)
-    # Notice: rom-env is the first 512 bytes of u-boot-env
+def measure_uboot_env(algo, image_meta):
+    # PCR3 : hash(u-boot-env)
     pcr3 = Pcr(algo)
     env = image_meta.get_part_info("u-boot-env")
-    env_measure = hash_comp(image_meta.image, env["offset"], 0x200, algo)
-    return pcr3.extend(env_measure)
-
-
-def measure_uboot_env(algo, image_meta):
-    # PCR5 : hash(u-boot-env)
-    pcr5 = Pcr(algo)
-    env = image_meta.get_part_info("u-boot-env")
     env_measure = hash_comp(image_meta.image, env["offset"], env["size"], algo)
-    return pcr5.extend(env_measure)
+    return pcr3.extend(env_measure)
 
 
 def measure_rcv_uboot(algo, image_meta):
@@ -185,13 +176,17 @@ def measure_rcv_uboot(algo, image_meta):
     return pcr2.extend(rec_uboot_measure)
 
 
-def measure_no_uboot_env(algo, image_meta):
-    # PCR3 : hash(null), data size is 0
-    # Notice: Recovery U-Boot did not have u-boot-env
-    pcr5 = Pcr(algo)
-    env = image_meta.get_part_info("u-boot-env")
-    null_uboot_measure = hash_comp(image_meta.image, env["offset"], 0, algo)
-    return pcr5.extend(null_uboot_measure)
+def measure_blank_uboot_env(algo, image_meta):
+    # PCR3 : hash(64KB zero)
+    # Notice: in the image the uboot env partition is blank
+    # during the first time boot up u-boot will save the
+    # default u-boot environment into this blank env partition.
+    # But SPL measure the uboot env partition before this
+    # so SPL will measure a blank uboot env during the first time
+    # bootup. Add it here to help test cover this special case.
+    pcr3 = Pcr(algo)
+    blank_uboot_env_measure = hashlib.new(algo, bytearray(64 * 1024)).digest()
+    return pcr3.extend(blank_uboot_env_measure)
 
 
 def measure_os(algo, image_meta, recal=False):
@@ -299,6 +294,13 @@ def main():
             "pcr_id": 3,
             "algo": args.algo,
             "expect": measure_uboot_env(args.algo, flash1_meta).hex(),
+            "measure": "NA",
+        },
+        {  # blank-u-boot-env
+            "component": "blank-u-boot-env",
+            "pcr_id": 3,
+            "algo": args.algo,
+            "expect": measure_blank_uboot_env(args.algo, flash1_meta).hex(),
             "measure": "NA",
         },
         {  # vbs

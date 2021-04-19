@@ -14,7 +14,7 @@ TestItem = [
     # ['sol.sh', 'sol.sh', '', '0x', '', '', '', '', '', '', ''],
     [
         "slot_id",
-        "cat /sys/class/i2c-adapter/i2c-12/12-0031/slotid",
+        "cat /sys/bus/i2c/devices/12-0031/slotid",
         ">=",
         "0",
         "",

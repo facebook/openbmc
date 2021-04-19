@@ -37,13 +37,22 @@ enum {
     LED_SCM,
 };
 
-int init_led(int color);
-int set_sled(int led, int color);
-int set_sys_led(int color);
-int set_fan_led(int color);
-int set_psu_led(int color);
-int set_scm_led(int color);
+enum{
+    LED_STATE_OFF,
+    LED_STATE_BLUE,
+    LED_STATE_AMBER,
+    LED_STATE_ALT_BLINK,
+    LED_STATE_AMBER_BLINK,
+};
+
+int init_led();
 int pal_light_scm_led(int color);
+int set_sled(int led, int color);
+
+int psu_check();
+int fan_check();
+int smb_check();
+int scm_check();
 
 #endif /* __PAL_LED_H__ */
 

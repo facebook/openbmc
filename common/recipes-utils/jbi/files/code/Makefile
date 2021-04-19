@@ -18,7 +18,7 @@
 all: jbi
 
 jbi: jbicomp.o jbijtag.o jbimain.o jbistub.o
-	$(CC) $(CFLAGS) -g -o $@ $^ $(LDFLAGS) -lgpio
+	$(CC) $(CFLAGS) -g -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

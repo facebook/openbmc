@@ -19,32 +19,50 @@
 #
 
 import datetime
+import ipaddress
+import re
 import typing as t
+from contextlib import suppress
 
 from aiohttp.log import server_logger
-from aiohttp.web import HTTPForbidden, HTTPUnauthorized
+from aiohttp.web import Request, HTTPForbidden, HTTPUnauthorized
+
+Identity = t.NamedTuple(
+    "Identity",
+    [
+        # A user as identified by a TLS certificate
+        ("user", t.Optional[str]),
+        # The hostname string as identified by a TLS certificate OR the
+        # source ip address
+        ("host", t.Union[None, str, ipaddress.IPv6Address, ipaddress.IPv4Address]),
+    ],
+)
 
 
-async def auth_required(request) -> str:
-    # Only expiration date is validated here,
-    # since authenticity of client cert is validated on the TLS level
-    # If request is not secure return early with empty identity. ACL provider will catch
-    # request as unauthorized due to empty client identity.
-    if not request.secure:
-        return ""
-    if await _validate_cert_date(request):
-        identity = await _extract_identity(request)
-        request["identity"] = identity
-        request.headers["identity"] = identity
-        return identity
-    raise HTTPUnauthorized()
+NO_IDENTITY = Identity(user=None, host=None)
 
 
-async def permissions_required(request, permissions: t.List[str], context=None) -> bool:
-    if not permissions:
-        return True
-    identity = await _extract_identity(request)
-    if await request.app["acl_provider"].is_user_authorized(identity, permissions):
+# Certificate commonName regex
+# e.g. "host:root/example.com" -> type="host", user="root", host="example.com"
+# FB certs have host/user/svc magic in their CN, unlike non proprietary certs
+# This regex identifies those certs
+RE_SPECIAL_CERT_COMMON_NAME = re.compile(
+    r"^(?P<type>[^:]+):(?P<user_or_svc>[^/]*)(/(?P<host>[^/]*))?$"
+)
+
+RE_IPV6_LINK_LOCAL_SUFFIX = re.compile("%[a-z0-9]+$")
+
+
+def auth_required(request) -> Identity:
+    identity = _extract_identity(request)
+    request["identity"] = identity
+    request.headers["identity"] = identity
+    return identity
+
+
+def permissions_required(request, permissions: t.List[str], context=None) -> bool:
+    identity = _extract_identity(request)
+    if request.app["acl_provider"].is_authorized(identity, permissions):
         return True
     else:
         server_logger.info(
@@ -54,7 +72,9 @@ async def permissions_required(request, permissions: t.List[str], context=None) 
         raise HTTPForbidden()
 
 
-async def _validate_cert_date(request) -> bool:
+def _validate_cert_date(request) -> bool:
+    # Only expiration date is validated here,
+    # since authenticity of client cert is validated on the TLS level
     peercert = request.transport.get_extra_info("peercert")
     if not peercert:
         server_logger.info(
@@ -63,8 +83,7 @@ async def _validate_cert_date(request) -> bool:
         )
         return False
     cert_valid = (
-        datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z")
-        > datetime.datetime.now()
+        datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z") > now()
     )
     if not cert_valid:
         server_logger.info(
@@ -75,10 +94,46 @@ async def _validate_cert_date(request) -> bool:
     return True
 
 
-async def _extract_identity(request) -> str:
+def _extract_identity(request: Request) -> Identity:
+    # Try extracting identity from TLS peer certificate
+    with suppress(ValueError):
+        return _extract_identity_from_peercert(request)
+
+    # If there's no cert identity, try setting the host identity as the
+    # peer ip address
+    with suppress(ValueError, IndexError, KeyError, TypeError):
+        addr = request.transport.get_extra_info("peername")[0]
+        addr = RE_IPV6_LINK_LOCAL_SUFFIX.sub("", addr)
+
+        return Identity(user=None, host=ipaddress.ip_address(addr))
+
+    return NO_IDENTITY
+
+
+def _extract_identity_from_peercert(request: Request) -> Identity:
     peercert = request.transport.get_extra_info("peercert")
-    if peercert:
-        for candidate in peercert["subject"]:
-            if candidate[0][0] == "commonName":
-                return candidate[0][1].split("/")[0].split(":")[-1]
-    return ""
+    if not peercert or not peercert.get("subject"):
+        raise ValueError("No identity found in request")
+
+    if not _validate_cert_date(request):
+        raise ValueError("Peer certificate's date is invalid/expired")
+
+    for key, value in peercert["subject"][0]:
+        if key == "commonName":
+            m = RE_SPECIAL_CERT_COMMON_NAME.match(value)
+
+            if m and m.group("type") in ["user", "svc"]:
+                return Identity(
+                    user=m.group("type") + ":" + m.group("user_or_svc"), host=None
+                )
+
+            if m and m.group("type") == "host":
+                return Identity(user=None, host=m.group("host"))
+
+    raise ValueError("No identity found in request")
+
+
+def now() -> datetime.datetime:
+    # Just a simple wrapper so it's easier to mock (as datetime.datetime.now
+    # is a built-in)
+    return datetime.datetime.now()

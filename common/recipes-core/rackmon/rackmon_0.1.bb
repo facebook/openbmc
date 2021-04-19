@@ -25,9 +25,18 @@ LIC_FILES_CHKSUM = "file://modbus.c;beginline=4;endline=16;md5=da35978751a9d71b7
 
 DEPENDS_append = " update-rc.d-native"
 
-LDFLAGS += "-llog"
-DEPENDS += "libgpio liblog"
-RDEPENDS_${PN} = "libgpio liblog python3-core bash"
+LDFLAGS += "-llog -lmisc-utils"
+DEPENDS += "libgpio liblog libmisc-utils"
+RDEPENDS_${PN} = "libgpio liblog libmisc-utils python3-core bash"
+
+def get_profile_flag(d):
+  prof_enabled = d.getVar("RACKMON_PROFILING", False)
+  if prof_enabled:
+    return "-DRACKMON_PROFILING"
+  return ""
+
+CFLAGS += "${@get_profile_flag(d)}"
+
 
 SRC_URI = "file://Makefile \
            file://modbuscmd.c \
@@ -38,6 +47,10 @@ SRC_URI = "file://Makefile \
            file://rackmond.c \
            file://rackmond.h \
            file://rackmonctl.c \
+           file://rackmon_platform.c \
+           file://rackmon_platform.h \
+           file://rackmon_parser.c \
+           file://rackmon_parser.h \
            file://setup-rackmond.sh \
            file://run-rackmond.sh \
            file://rackmon-config.py \
@@ -99,6 +112,7 @@ do_install() {
         ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
     done
     ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmondata
+    ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmoninfo
     ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonstatus
     ln -snf ../fbpackages/${pkgdir}/rackmonctl ${bin}/rackmonscan
     install -m 755 rackmon-config.py ${D}${sysconfdir}/rackmon-config.py

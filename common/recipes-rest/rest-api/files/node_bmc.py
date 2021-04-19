@@ -18,17 +18,21 @@
 # Boston, MA 02110-1301 USA
 #
 
+import functools
+import json
 import os.path
 import re
-import json
+import typing as t
 from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
 import kv
-import pal
+import rest_pal_legacy
+from boot_source import is_boot_from_secondary
 from node import node
 from vboot import get_vboot_status
 
+PROC_MTD_PATH = "/proc/mtd"
 
 # Read all contents of file path specified.
 def read_file_contents(path):
@@ -68,7 +72,7 @@ def getSPIVendorLegacy(spi_id):
 
 def getMTD(name):
     mtd_name = '"' + name + '"'
-    with open("/proc/mtd") as f:
+    with open(PROC_MTD_PATH) as f:
         lines = f.readlines()
         for line in lines:
             if mtd_name in line:
@@ -98,6 +102,20 @@ def getSPIVendor(spi_id):
     return getSPIVendorNew(spi_id)
 
 
+@functools.lru_cache(maxsize=1)
+def read_proc_mtd() -> t.List[str]:
+    mtd_list = []
+    with open(PROC_MTD_PATH) as f:
+        # e.g. 'mtd5: 02000000 00010000 "flash0"' -> dev="mtd5", size="02000000", erasesize="00010000", name="flash0"   # noqa B950
+        RE_MTD_INFO = re.compile(
+            r"""^(?P<dev>[^:]+): \s+ (?P<size>[0-9a-f]+) \s+ (?P<erasesize>[0-9a-f]+) \s+ "(?P<name>[^"]+)"$""",  # noqa B950
+            re.MULTILINE | re.VERBOSE,
+        )
+        for m in RE_MTD_INFO.finditer(f.read()):
+            mtd_list.append(m.group("name"))  # e.g. "flash0"
+    return mtd_list
+
+
 class bmcNode(node):
     def __init__(self, info=None, actions=None):
         if info is None:
@@ -124,13 +142,13 @@ class bmcNode(node):
                         uboot_version = matched.group("uboot_ver")
                         break
         else:
-            mtd_dev = "/dev/" + mtd_meta
-            with open(mtd_dev, "r") as f:
-                raw_data = f.readline()
-                try:
-                    uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
-                except:
-                    uboot_version = None
+            try:
+                mtd_dev = "/dev/" + mtd_meta
+                with open(mtd_dev, "r") as f:
+                    raw_data = f.readline()
+                uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
+            except Exception:
+                uboot_version = None
         return uboot_version
 
     def getUbootVer(self):
@@ -155,14 +173,18 @@ class bmcNode(node):
                         out_str = line.strip("TCG version: ").strip("\n")
         elif os.path.isfile("/usr/bin/tpm2_getcap"):
             cmd_list = []
-            cmd_list.append("/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep -A2 TPM_PT_FAMILY_INDICATOR")
-            cmd_list.append("/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A2 TPM2_PT_FAMILY_INDICATOR")
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep -A2 TPM_PT_FAMILY_INDICATOR"  # noqa B950
+            )
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A2 TPM2_PT_FAMILY_INDICATOR"  # noqa B950
+            )
             for cmd in cmd_list:
                 try:
                     lines = check_output(cmd, shell=True).decode().split("\n")
-                    out_str = lines[2].rstrip().split("\"")[1]
+                    out_str = lines[2].rstrip().split('"')[1]
                     break
-                except Exception as e:
+                except Exception:
                     pass
         return out_str
 
@@ -176,24 +198,51 @@ class bmcNode(node):
                         out_str = line.strip("Firmware version: ").strip("\n")
         elif os.path.isfile("/usr/bin/tpm2_getcap"):
             cmd_list = []
-            cmd_list.append("/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep TPM_PT_FIRMWARE_VERSION_1")
-            cmd_list.append("/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | grep raw")
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap -c properties-fixed 2>/dev/null | grep TPM_PT_FIRMWARE_VERSION_1"  # noqa B950
+            )
+            cmd_list.append(
+                "/usr/bin/tpm2_getcap properties-fixed 2>/dev/null | grep -A1 TPM2_PT_FIRMWARE_VERSION_1 | grep raw"  # noqa B950
+            )
             for cmd in cmd_list:
                 try:
                     line = check_output(cmd, shell=True)
                     value = int(line.decode().rstrip().split(":")[1], 16)
                     out_str = "%d.%d" % (value >> 16, value & 0xFFFF)
                     break
-                except Exception as e:
+                except Exception:
                     pass
         return out_str
 
+    def getMemInfo(self):
+        desired_keys = (
+            "MemTotal",
+            "MemAvailable",
+            "MemFree",
+            "Shmem",
+            "Buffers",
+            "Cached",
+        )
+        meminfo = {}
+        with open("/proc/meminfo", "r") as mi:
+            for line in mi:
+                try:
+                    key, value = line.split(":", 1)
+                    key = key.strip()
+                    if key not in desired_keys:
+                        continue
+                    memval, _ = value.strip().split(" ", 1)
+                    meminfo[key] = int(memval)
+                except ValueError:
+                    pass
+        return meminfo
+
     def getInformation(self, param=None):
         # Get Platform Name
-        name = pal.pal_get_platform_name()
+        name = rest_pal_legacy.pal_get_platform_name()
 
         # Get MAC Address
-        eth_intf = pal.pal_get_eth_intf_name()
+        eth_intf = rest_pal_legacy.pal_get_eth_intf_name()
         mac_path = "/sys/class/net/%s/address" % (eth_intf)
         if os.path.isfile(mac_path):
             mac = open(mac_path).read()
@@ -239,6 +288,8 @@ class bmcNode(node):
         mem_usage = adata[0]
         cpu_usage = adata[1]
 
+        memory = self.getMemInfo()
+
         # Get OpenBMC version
         obc_version = ""
         data = Popen("cat /etc/issue", shell=True, stdout=PIPE).stdout.read().decode()
@@ -276,6 +327,9 @@ class bmcNode(node):
         asd_status = bool(
             Popen("ps | grep -i [a]sd", shell=True, stdout=PIPE).stdout.read()
         )
+
+        boot_from_secondary = is_boot_from_secondary()
+
         vboot_info = get_vboot_status()
 
         used_fd_count = read_file_contents("/proc/sys/fs/file-nr")[0].split()[0]
@@ -291,6 +345,7 @@ class bmcNode(node):
             # more pass-through proxy
             "uptime": uptime_seconds,
             "Memory Usage": mem_usage,
+            "memory": memory,
             "CPU Usage": cpu_usage,
             "OpenBMC Version": obc_version,
             "u-boot version": uboot_version,
@@ -300,11 +355,13 @@ class bmcNode(node):
             "SPI0 Vendor": spi0_vendor,
             "SPI1 Vendor": spi1_vendor,
             "At-Scale-Debug Running": asd_status,
+            "Secondary Boot Triggered": boot_from_secondary,
             "vboot": vboot_info,
             "load-1": load_avg[0],
             "load-5": load_avg[1],
             "load-15": load_avg[2],
             "open-fds": used_fd_count,
+            "MTD Parts": read_proc_mtd(),
         }
 
         return info

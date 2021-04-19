@@ -139,6 +139,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       //rsp_buf[6] is the completion code
       if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && rsp_buf[6] != CC_SUCCESS) ) {
         syslog(LOG_WARNING, "%s() The 2nd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
+        syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd: %02X\n", __func__, netfn << 2, cmd);
         switch(rsp_buf[6]) {
         case CC_NOT_SUPP_IN_CURR_STATE:
           ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
@@ -180,12 +181,6 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   }
 #endif
 
-  // avoid waiting 5 seconds to do the retry
-  ret = fby3_common_server_stby_pwr_sts(slot_id, &status_12v);
-  if ( ret < 0 || status_12v == 0) {
-    return -1;
-  }
-
   ret = fby3_common_get_bus_id(slot_id);
   if (ret < 0) {
     syslog(LOG_ERR, "%s: Wrong Slot ID %d\n", __func__, slot_id);
@@ -214,6 +209,13 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
 
   while(retry < RETRY_TIME) {
+
+    // avoid meaningless retry
+    ret = fby3_common_server_stby_pwr_sts(slot_id, &status_12v);
+    if ( ret < 0 || status_12v == 0) {
+      return BIC_STATUS_FAILURE;
+    }
+
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 
@@ -226,21 +228,23 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
 #endif
       retry++;
       msleep(IPMB_RETRY_DELAY_TIME);
+    } else {
+      res  = (ipmb_res_t*) rbuf;
+      if ( res->cc == CC_NODE_BUSY ) {
+        retry++;
+        msleep(IPMB_RETRY_DELAY_TIME);
+      } else break;
     }
-    else
-      break;
   }
 
   if (rlen == 0) {
-    syslog(LOG_ERR, "bic_ipmb_wrapper: Zero bytes received, retry:%d, cmd:%x\n", retry, cmd);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Zero bytes received, retry:%d ", slot_id, netfn, cmd, retry );
     return BIC_STATUS_FAILURE;
   }
 
   // Handle IPMB response
-  res  = (ipmb_res_t*) rbuf;
-
   if (res->cc) {
-    syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X ", slot_id, netfn, cmd, res->cc);
     return BIC_STATUS_FAILURE;
   }
 
@@ -257,7 +261,7 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   dataCksum = ZERO_CKSUM_CONST - dataCksum;
 
   if (dataCksum != rbuf[rlen - 1]) {
-    syslog(LOG_ERR, "%s: Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", __func__, dataCksum, rbuf[rlen - 1]);
+    syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Receive Data cksum does not match (expectative 0x%x, actual 0x%x)", slot_id, netfn, cmd, dataCksum, rbuf[rlen-1]);
     return BIC_STATUS_FAILURE;
   }
 
@@ -318,4 +322,62 @@ _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
   }
 
   return 0;
+}
+
+int
+send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t offset, uint16_t len, uint32_t image_len, uint8_t *buf)
+{
+  uint8_t tbuf[256] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = -1;
+  int retries = 3;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = comp;
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >>  8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+  if ( image_len > 0 ) {
+    tbuf[10] = (image_len) & 0xFF;
+    tbuf[11] = (image_len >> 8) & 0xFF;
+    tbuf[12] = (image_len >> 16) & 0xFF;
+    tbuf[13] = (image_len >> 24) & 0xFF;
+    memcpy(&tbuf[14], buf, len);
+    tlen = len + 14;
+  } else {
+    memcpy(&tbuf[10], buf, len);
+    tlen = len + 10;
+  }
+
+  do {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if (ret != BIC_STATUS_SUCCESS) {
+      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
+        return ret;
+      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
+    }
+  } while( (ret < 0) && (retries--));
+
+  return ret;
+}
+
+int
+open_and_get_size(char *path, int *file_size) {
+  struct stat finfo;
+  int fd;
+
+  fd = open(path, O_RDONLY, 0666);
+  if ( fd < 0 ) {
+    return fd;
+  }
+
+  fstat(fd, &finfo);
+  *file_size = finfo.st_size;
+
+  return fd;
 }

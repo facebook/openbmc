@@ -22,7 +22,7 @@ SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_0.sh \
              file://run-ipmbd_4.sh \
            "
-RDEPENDS_${PN} += " libbic jansson libipmb"
+RDEPENDS_${PN} += " libbic jansson libipmb bash"
 
 CFLAGS_prepend = " -DCONFIG_WEDGE400 -DUSE_SLAVE_MQUEUE"
 

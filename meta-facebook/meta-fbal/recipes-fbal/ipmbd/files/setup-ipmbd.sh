@@ -31,10 +31,15 @@
 . /usr/local/fbpackages/utils/ast-functions
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
-addr=$((0x1010 | $(gpio_get FM_BLADE_ID_1)<<1 | $(gpio_get FM_BLADE_ID_0)))
+mode=$(($(/usr/bin/kv get mb_skt) >> 1))  #2S:mode=2 4S:mode=1
+if [ $mode -eq 1 ]; then
+  addr=$((0x1010 | $(/usr/bin/kv get mb_pos)))
+else
+  let addr=0x1010
+fi
 
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device  #USB DBG
-echo slave-mqueue $addr > /sys/bus/i2c/devices/i2c-2/new_device   #Slave BMC
+echo slave-mqueue $addr > /sys/bus/i2c/devices/i2c-2/new_device   #BMC Slave Addr
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-5/new_device  #ME
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-6/new_device  #JG7
 echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device  #CM

@@ -22,6 +22,8 @@ from fsc_util import Logger
 
 class Sensor(object):
     def __init__(self, sensor_name, pTable):
+        self.offset = None
+        self.offset_table = None
         try:
             if "read_source" in pTable:
                 if "sysfs" in pTable["read_source"]:
@@ -32,8 +34,6 @@ class Sensor(object):
                     self.source = FscSensorSourceUtil(
                         name=sensor_name, read_source=pTable["read_source"]["util"]
                     )
-                self.offset = None
-                self.offset_table = None
                 if "offset" in pTable["read_source"]:
                     self.offset = pTable["read_source"]["offset"]
                 elif "offset_table" in pTable["read_source"]:

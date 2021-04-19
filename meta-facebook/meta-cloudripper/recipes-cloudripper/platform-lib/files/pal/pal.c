@@ -58,7 +58,7 @@ struct threadinfo {
 
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0};
 
-const char pal_fru_list[] = "all, scm, smb, fcm, "\
+const char pal_fru_list[] = "all, scm, smb, "\
                             "psu1, psu2, fan1, fan2, fan3, fan4 ";
 
 char *key_list[] = {
@@ -69,7 +69,6 @@ char *key_list[] = {
   "server_sel_error",
   "scm_sensor_health",
   "smb_sensor_health",
-  "fcm_sensor_health",
   "psu1_sensor_health",
   "psu2_sensor_health",
   "fan1_sensor_health",
@@ -89,7 +88,6 @@ char *def_val_list[] = {
   "1", /* server_sel_error */
   "1", /* scm_sensor_health */
   "1", /* smb_sensor_health */
-  "1", /* fcm_sensor_health */
   "1", /* psu1_sensor_health */
   "1", /* psu2_sensor_health */
   "1", /* fan1_sensor_health */
@@ -156,6 +154,36 @@ int pal_get_fru_list(char *list) {
   return 0;
 }
 
+int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
+{
+  int ret = 0;
+  switch(fru) {
+    case FRU_SMB:
+    case FRU_PSU1:
+    case FRU_PSU2:
+    case FRU_FAN1:
+    case FRU_FAN2:
+    case FRU_FAN3:
+    case FRU_FAN4:
+    case FRU_CPLD:
+    case FRU_FPGA:
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
+    case FRU_SCM:
+      *caps = FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_POWER_ALL;
+      break;
+    case FRU_BMC:
+      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+        FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
+      break;
+    default:
+      ret = -1;
+      break;
+  }
+  return ret;
+}
+
 int pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
@@ -197,9 +225,6 @@ int pal_get_fru_name(uint8_t fru, char *name) {
     case FRU_SCM:
       strcpy(name, "scm");
       break;
-    case FRU_FCM:
-      strcpy(name, "fcm");
-      break;
     case FRU_PSU1:
       strcpy(name, "psu1");
       break;
@@ -235,7 +260,7 @@ int pal_get_platform_name(char *name) {
 }
 
 int pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int val,ext_prsnt;
+  int val;
   char tmp[LARGEST_DEVICE_NAME];
   char path[LARGEST_DEVICE_NAME + 1];
   *status = 0;
@@ -247,9 +272,6 @@ int pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SCM:
       snprintf(path, LARGEST_DEVICE_NAME, SMB_SYSFS, SCM_PRSNT_STATUS);
       break;
-    case FRU_FCM:
-      *status = 1;
-      return 0;
     case FRU_PSU1:
     case FRU_PSU2:
       snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PSU_PRSNT_STATUS);
@@ -329,24 +351,11 @@ int pal_is_debug_card_prsnt(uint8_t *status) {
 // Return the Front panel Power Button
 int pal_get_board_rev(int *rev) {
   char path[LARGEST_DEVICE_NAME + 1];
-  int val_id_0, val_id_1, val_id_2;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_0, "value");
-  if (device_read(path, &val_id_0)) {
+  snprintf(path, sizeof(path), SMB_SYSFS, "board_ver");
+  if (device_read(path, rev)) {
     return -1;
   }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_1, "value");
-  if (device_read(path, &val_id_1)) {
-    return -1;
-  }
-
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_SMB_REV_ID_2, "value");
-  if (device_read(path, &val_id_2)) {
-    return -1;
-  }
-
-  *rev = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
 
   return 0;
 }
@@ -565,9 +574,7 @@ int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 
 }
 
-int pal_mon_fw_upgrade
-(int brd_rev, uint8_t *sys_ug, uint8_t *fan_ug,
-              uint8_t *psu_ug, uint8_t *smb_ug)
+int pal_mon_fw_upgrade(uint8_t *status)
 {
   char cmd[5];
   FILE *fp;
@@ -599,46 +606,22 @@ int pal_mon_fw_upgrade
     strncat(buf_ptr, str, str_size);
   }
 
-  //check whether sys led need to blink
-  *sys_ug = strstr(buf_ptr, "write spi2") != NULL ? 1 : 0;
-  if (*sys_ug) goto fan_state;
+  *status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
+  if (*status) goto close_fp;
 
-  *sys_ug = strstr(buf_ptr, "write spi1 BACKUP_BIOS") != NULL ? 1 : 0;
-  if (*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "scmcpld_update") != NULL) ? 1 : 0;
-  if (*sys_ug) goto fan_state;
-
-  *sys_ug = (strstr(buf_ptr, "fw-util") != NULL) ?
+  *status = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if (*sys_ug) goto fan_state;
+  if (*status) goto close_fp;
 
-  //check whether fan led need to blink
-fan_state:
-  *fan_ug = (strstr(buf_ptr, "fcmcpld_update") != NULL) ? 1 : 0;
-
-  //check whether fan led need to blink
-  *psu_ug = (strstr(buf_ptr, "psu-util") != NULL) ?
+  *status = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
+  if (*status) goto close_fp;
 
-  //check whether smb led need to blink
-  *smb_ug = (strstr(buf_ptr, "smbcpld_update") != NULL) ? 1 : 0;
-  if (*smb_ug) goto close_fp;
+  *status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
+  if (*status) goto close_fp;
 
-  *smb_ug = (strstr(buf_ptr, "pwrcpld_update") != NULL) ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 DOM_FPGA_FLASH") != NULL ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 GB_PCIE_FLASH") != NULL ? 1 : 0;
-  if (*smb_ug) goto close_fp;
-
-  *smb_ug = strstr(buf_ptr, "write spi1 BCM5389_EE") != NULL ? 1 : 0;
-  if (*smb_ug) goto close_fp;
+  *status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
+  if (*status) goto close_fp;
 
 close_fp:
   ret = pclose(fp);
@@ -680,9 +663,6 @@ int pal_get_fru_health(uint8_t fru, uint8_t *value) {
     break;
   case FRU_SMB:
     sprintf(key, "smb_sensor_health");
-    break;
-  case FRU_FCM:
-    sprintf(key, "fcm_sensor_health");
     break;
   case FRU_PSU1:
     sprintf(key, "psu1_sensor_health");

@@ -1,0 +1,53 @@
+{
+    "bic" : {
+        "get_version" : "fw-util scm --version | grep Bri | grep -v Boot | cut -d ' ' -f 3",
+        "priority" : 7,
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bic {filename}"
+    },
+    "bios" : {
+        "get_version" : "fw-util scm --version | grep BIOS | cut -d ' ' -f 3",
+        "priority" : 8,
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bios {filename}"
+    },
+    "fcm_b" : {
+        "get_version" : "fw-util cpld --version | grep 'FCMCPLD B' | cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s FCM-B -f {filename} sw",
+        "priority": 1
+    },
+    "fcm_t" : {
+        "get_version" : "fw-util cpld --version | grep 'FCMCPLD T' | cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s FCM-T -f {filename} sw",
+        "priority": 2
+    },
+    "scm" : {
+        "get_version" : "fw-util cpld --version | grep SCM | cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s SCM -f {filename} sw",
+        "priority": 3
+    },
+    "smb" : {
+        "get_version" : "fw-util cpld --version | grep SMB | cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s SMB -f {filename} sw",
+        "priority": 4
+    },
+    "pwr_l" : {
+        "get_version" : "fw-util cpld --version | grep 'PWRCPLD L' | cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s PWR-L -f {filename} sw",
+        "priority": 5
+    },
+    "pwr_r" : {
+        "get_version" : "fw-util cpld --version | grep 'PWRCPLD R' | cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s PWR-R -f {filename} sw",
+        "priority": 6
+    },
+    "iob_fpga" : {
+        "get_version" : "fw-util fpga --version | grep IOB | cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA {filename}",
+        "priority": 9
+    },
+    "pim16q_fpga" : {
+        "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "get_version" : "fw-util fpga --version | grep PIM{entry} | cut -d ' ' -f 3",
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entry} {filename}",
+        "priority": 10
+    }
+}

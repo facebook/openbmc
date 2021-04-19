@@ -53,22 +53,22 @@ class BaseMTermTest(object):
         bmc_ssh_session = OpenBMCSSHSession(self.bmc_hostname)
         bmc_ssh_session.connect()
         bmc_ssh_session.login()  # connect to BMC
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         bmc_ssh_session.session.sendline(
             self.mTerm_session_start_cmd
         )  # send mTerm start
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         self.assertIn(
-            "TERMINAL MULTIPLEXER",
+            b"TERMINAL MULTIPLEXER",
             bmc_ssh_session.session.before,
             "mTerm session did not start, failed to check for TERMINAL MULTIPLEXER",
         )
 
         test_cmd = "\r\n"
         bmc_ssh_session.session.sendline(test_cmd)  # send ENTER sequence
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         self.assertIn(
-            "login",
+            b"login",
             bmc_ssh_session.session.before,
             "mTerm session failed to send command to host. Received={}".format(
                 bmc_ssh_session.session.before
@@ -83,23 +83,23 @@ class BaseMTermTest(object):
         bmc_ssh_session = OpenBMCSSHSession(self.hostname)
         bmc_ssh_session.connect()
         bmc_ssh_session.login()  # connect to userver
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         test_cmd = 'echo "CIT TESTING" > /dev/kmsg'
         bmc_ssh_session.session.sendline(test_cmd)  # write a kmsg for sol testing
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         bmc_ssh_session.session.logout()  # exit
 
         bmc_ssh_session = OpenBMCSSHSession(self.bmc_hostname)
         bmc_ssh_session.connect()
         bmc_ssh_session.login()  # connect to BMC
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         bmc_ssh_session.session.sendline(
             "tail -30 /var/log/mTerm_wedge.log"
         )  # tail on mTerm logs
-        bmc_ssh_session.session.prompt(timeout=5)  # wait for prompt
+        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
 
         self.assertIn(
-            "CIT TESTING",
+            b"CIT TESTING",
             bmc_ssh_session.session.before,
             "mTerm failed to record console log in {}".format(
                 bmc_ssh_session.session.before

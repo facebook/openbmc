@@ -29,8 +29,11 @@ def plat_info(fru):
         json_data = json.loads(data)
 
         present = json_data["server_config"]["slot"+str(fru)]["Type"]
-        if not re.search('not present', present, re.I):
+        if not re.search('not detected', present, re.I):
             present = "Present"
+        else:
+            print ("Presense: " + present)
+            return
 
         sys_type = json_data["Type"]
         if "Class 2" in sys_type:

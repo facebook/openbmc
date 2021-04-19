@@ -580,7 +580,7 @@ static sensor_desc_t cri_sensor_spb[] =
   {"SP_INLET:"    , SP_SENSOR_INLET_TEMP       , "C"   , FRU_SPB, 0},
 };
 
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
 static sensor_desc_t cri_sensor_gpv2[] =
 {
   {"INLET_TEMP:"      , GPV2_SENSOR_INLET_TEMP       , "C"   , FRU_ALL, 0},
@@ -640,6 +640,24 @@ static sensor_desc_t cri_sensor_ep[] =
   {"DIMMB_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMB_TEMP  , "C"   , FRU_ALL, 0},
   {"DIMMC_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMC_TEMP  , "C"   , FRU_ALL, 0},
   {"DIMMD_TEMP:"  , BIC_EP_SENSOR_SOC_DIMMD_TEMP  , "C"   , FRU_ALL, 0},
+};
+
+static sensor_desc_t cri_sensor_nd[] =
+{
+  {"SOC_TEMP:"    , BIC_ND_SENSOR_SOC_TEMP        , "C"   , FRU_ALL, 0},
+  {"HSC_PWR:"     , SP_SENSOR_HSC_IN_POWER        , "W"   , FRU_SPB, 1},
+  {"HSC_VOL:"     , SP_SENSOR_HSC_IN_VOLT         , "V"   , FRU_SPB, 2},
+  {"FAN0:"        , SP_SENSOR_FAN0_TACH           , "RPM" , FRU_SPB, 0},
+  {"FAN1:"        , SP_SENSOR_FAN1_TACH           , "RPM" , FRU_SPB, 0},
+  {"SP_INLET:"    , SP_SENSOR_INLET_TEMP          , "C"   , FRU_SPB, 0},
+  {"SOC_VR_TEMP:" , BIC_ND_SENSOR_PVDDCR_CPU_VR_T , "C"   , FRU_ALL, 0},
+  {"SOC_VR_PWR:"  , BIC_ND_SENSOR_PVDDCR_CPU_VR_P , "W"   , FRU_ALL, 1},
+  {"DIMMA0_TEMP:" , BIC_ND_SENSOR_SOC_DIMMA0_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMC0_TEMP:" , BIC_ND_SENSOR_SOC_DIMMC0_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMD0_TEMP:" , BIC_ND_SENSOR_SOC_DIMMD0_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMME0_TEMP:" , BIC_ND_SENSOR_SOC_DIMME0_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMG0_TEMP:" , BIC_ND_SENSOR_SOC_DIMMG0_TEMP , "C"   , FRU_ALL, 0},
+  {"DIMMH0_TEMP:" , BIC_ND_SENSOR_SOC_DIMMH0_TEMP , "C"   , FRU_ALL, 0},
 };
 
 #endif
@@ -744,7 +762,7 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   uint8_t server_type = 0xFF;
 #endif
 
@@ -752,7 +770,7 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     return -1;
   }
 
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2)
+#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
 
   switch (bic_get_slot_type(fru)) {
     case SLOT_TYPE_SERVER:
@@ -768,6 +786,10 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
         case SERVER_TYPE_RC:
           *desc = cri_sensor_rc;
           *desc_count = sizeof(cri_sensor_rc) / sizeof(cri_sensor_rc[0]);
+          break;
+        case SERVER_TYPE_ND:
+          *desc = cri_sensor_nd;
+          *desc_count = sizeof(cri_sensor_nd) / sizeof(cri_sensor_nd[0]);
           break;
         case SERVER_TYPE_TL:
           *desc = cri_sensor;
@@ -1055,23 +1077,26 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 
 int plat_get_extra_sysinfo(uint8_t slot, char *info)
 {
+  char tmp_info[64] = {0};
   char tstr[16];
   uint8_t i, st_12v = 0;
   int ret;
 
   if (!pal_get_fru_name((slot == FRU_ALL)?HAND_SW_BMC:slot, tstr)) {
-    sprintf(info, "FRU:%s", tstr);
+    sprintf(tmp_info, "FRU:%s", tstr);
     if ((slot != FRU_ALL) && pal_is_hsvc_ongoing(slot)) {
-      for (i = strlen(info); i < 16; i++) {
-        info[i] = ' ';
+      for (i = strlen(tmp_info); i < 16; i++) {
+        tmp_info[i] = ' ';
       }
-      info[16] = '\0';
+      tmp_info[16] = '\0';
 
       ret = pal_is_server_12v_on(slot, &st_12v);
       if (!ret && !st_12v)
-        sprintf(info, "%s"ESC_ALT"HSVC: READY"ESC_RST, info);
+        sprintf(info, "%s"ESC_ALT"HSVC: READY"ESC_RST, tmp_info);
       else
-        sprintf(info, "%s"ESC_ALT"HSVC: START"ESC_RST, info);
+        sprintf(info, "%s"ESC_ALT"HSVC: START"ESC_RST, tmp_info);
+    } else {
+      sprintf(info, "%s", tmp_info);
     }
   }
 

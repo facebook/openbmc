@@ -3,7 +3,7 @@
 import os.path
 
 from node import node
-from pal import *
+from rest_pal_legacy import *
 
 
 IOM_M2 = 1  # IOM type: M.2

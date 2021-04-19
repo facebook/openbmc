@@ -43,9 +43,6 @@ extern "C" {
 
 #define MAX_READ_RETRY 5
 #define CPLD_INTENT_CTRL_ADDR 0x70
-#define NIC_CPLD_BUS 9
-#define BB_CPLD_BUS 12
-#define SLOT_BUS_BASE 3
 
 #define NIC_CARD_PERST_CTRL 0x16
 
@@ -65,6 +62,7 @@ extern "C" {
 #define CPLD_CAP_VER_LEN 4
 
 #define SET_NIC_PWR_MODE_LOCK "/var/run/set_nic_power.lock"
+#define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 #define MAX_SNR_NAME 32
 
@@ -79,9 +77,16 @@ extern const char pal_tach_list[];
 extern const char pal_fru_list[];
 extern const char pal_guid_fru_list[];
 extern const char pal_server_list[];
-extern const char pal_dev_list[];
+extern const char pal_dev_fru_list[];
+extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
 extern const char pal_fan_opt_list[];
+
+enum {
+  LED_LOCATE_MODE = 0x0,
+  LED_CRIT_PWR_OFF_MODE,
+  LED_CRIT_PWR_ON_MODE,
+};
 
 enum {
   FAN_0 = 0,
@@ -107,6 +112,11 @@ enum {
   CONFIG_C = 0x03,
   CONFIG_D = 0x04,
   CONFIG_B_E1S = 0x05,
+  CONFIG_C_GPV3 = 0x06,
+  CONFIG_D_GPV3 = 0x07,
+  CONFIG_D_DP_X16 = 0x08,
+  CONFIG_D_DP_X8 = 0x09,
+  CONFIG_D_DP_X4 = 0x0a,
   CONFIG_UNKNOWN = 0xff,
 };
 
@@ -147,6 +157,11 @@ typedef struct {
     char *err_descr;
 } PCIE_ERR_DECODE;
 
+typedef struct {
+    uint8_t fru;
+    uint8_t component;
+} GET_FW_VER_REQ;
+
 enum {
   PLATFORM_STATE_OFFSET = 0x03,
   RCVY_CNT_OFFSET       = 0x04,
@@ -177,6 +192,12 @@ enum {
   NIC_PE_RST_HIGH  = 0x01,
 };
 
+enum {
+  DEV_FRU_NOT_COMPLETE,
+  DEV_FRU_COMPLETE,
+  DEV_FRU_IGNORE,
+};
+
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -187,20 +208,18 @@ extern size_t minor_update_size;
 extern err_t minor_auth_error[];
 extern err_t minor_update_error[];
 
-int pal_is_fru_prsnt(uint8_t fru, uint8_t *status);
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
-int pal_handle_dcmi(uint8_t fru, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen);
-int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_check_pfr_mailbox(uint8_t fru);
 int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);
 int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
-int pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log);
-int pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len);
 int pal_set_nic_perst(uint8_t fru, uint8_t val);
 int pal_is_slot_pfr_active(uint8_t fru);
-int pal_sb_set_amber_led(uint8_t fru, bool led_on);
+int pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode);
 int pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts);
 int pal_is_debug_card_prsnt(uint8_t *status);
+int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
+int pal_check_slot_cpu_present(uint8_t slot_id);
+int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -47,13 +47,15 @@ SRC_URI =+ "file://Makefile \
 
 SRC_URI += "file://tests/bmc-test.cpp \
             file://tests/fw-util-test.cpp \
+            file://tests/system_mock.h \
+            file://tests/nic-test.cpp \
             "
 
 S = "${WORKDIR}"
 
 inherit ptest
 do_compile_ptest() {
-  make fw-util-test
+  make -j 16 fw-util-test
   cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
 /usr/lib/fw-util/ptest/fw-util-test
@@ -70,6 +72,7 @@ RDEPENDS_${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
 RDEPENDS_${PN}-ptest += "${RDEPENDS_fw-util}"
 
 CXXFLAGS += "\
+  -Wno-psabi \
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm2', '-DCONFIG_TPM2', '', d)} \
   "

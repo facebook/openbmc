@@ -32,8 +32,6 @@ extern "C" {
 #include <openbmc/ipmi.h>
 #include <stdbool.h>
 
-#define BIT(value, index) ((value >> index) & 1)
-
 #define MAX_NODES     2
 #define MAX_NUM_FRUS  2
 #define LAST_KEY "last_key"

@@ -76,7 +76,12 @@ mount_btrfs() {
     if ! output="$(btrfs check "$BLK_DEVICE" 2>&1)"; then
         echo "Error: btrfs volume shows errors:"
         echo "$output"
-        exit 1
+        echo "Try to repair btrfs"
+        if ! output="$(btrfs check --repair "$BLK_DEVICE" 2>&1)"; then
+            echo "Error: btrfs volume shows errors:"
+            echo "$output"
+            exit 1
+        fi
     fi
 
     #
@@ -103,10 +108,25 @@ mount_btrfs() {
 mount_ext4() {
 
     #
+    # Workaround for EMMC data lost because sometimes e2fsck detect filesystem fails
+    # if SDHCI IO fails when system boot up, add retry to avoid EMMC format by mistake.
+    #
+    maxtry=3
+    retry=0
+    while [ $retry -lt $maxtry ]; do
+        if ! e2fsck -p "$BLK_DEVICE" > /dev/null 2>&1; then
+            retry=$((retry + 1))
+            echo "No filesystem found on $BLK_DEVICE try: $retry."
+        else
+            break
+        fi
+    done
+
+    #
     # Create ext4 if ext filesystem is not detected or corrupted.
     #
-    if ! e2fsck -p "$BLK_DEVICE" > /dev/null 2>&1; then
-        echo "No filesystem found on $BLK_DEVICE. Creating ext4 filesystem.."
+    if [ $retry -eq $maxtry ]; then
+        echo "No filesystem found on $BLK_DEVICE after $maxtry times try. Creating ext4 filesystem.."
         if ! output=$(mkfs.ext4 -F "$BLK_DEVICE" 2>&1); then
             echo "Error: failed to create ext4 on $BLK_DEVICE:"
             echo "$output"

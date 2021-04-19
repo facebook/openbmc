@@ -28,7 +28,6 @@ SRC_URI = "file://ast-functions \
            file://COPYING \
            file://setup-dev.sh \
            file://sol-util \
-           file://setup-pfr.sh \
            file://setup-sic.sh \
            file://check_eth0_ipv4.sh \
           "
@@ -82,10 +81,6 @@ do_install() {
   # install setup-sic.sh
   install -m 755 setup-sic.sh ${D}${sysconfdir}/init.d/setup-sic.sh
   update-rc.d -r ${D} setup-sic.sh start 68 5 .
-
-  # install setup-pfr.sh
-  install -m 755 setup-pfr.sh ${D}${sysconfdir}/init.d/setup-pfr.sh
-  update-rc.d -r ${D} setup-pfr.sh start 99 5 .
 
 }
 

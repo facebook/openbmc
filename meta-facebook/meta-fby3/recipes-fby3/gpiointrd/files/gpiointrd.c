@@ -91,41 +91,7 @@ log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
 static void
 log_slot_present(uint8_t slot_id, gpio_value_t value)
 {
-  uint8_t bmc_location = 0;
-  int ret = 0;
-  int retry = 5;
-  uint8_t tbuf[4] = {0x05, 0x42, 0x01, 0x0d};
-  uint8_t rbuf[1] = {0x00};
-  uint8_t tlen = 4;
-  uint8_t rlen = 0;
-
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    return;
-  }
-
-  do {
-    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  } while ( ret < 0 && retry-- > 0 );
-
-  uint8_t front_exp_bit = GETBIT(rbuf[0], 2);
-  uint8_t riser_exp_bit = GETBIT(rbuf[0], 3);
-
-  if (bmc_location == NIC_BMC) {
-    front_exp_bit = STATUS_NOT_PRSNT;
-  }
-
-  if ( (front_exp_bit == riser_exp_bit) && (front_exp_bit == 0) ) {
-    //Config D
-    if ((slot_id == FRU_SLOT2) || (slot_id == FRU_SLOT4)) {
-      return;
-    }
-  } else if ( front_exp_bit > riser_exp_bit ) {
-    //Config C
-    if (slot_id != FRU_SLOT1) {
-      return;
-    }
-  }
+  // no need to consider Config C, because the HW "PRSNT_MB_BMC_SLOTX_BB_N" is not connected to Config C BMC.
 
   if ( value == GPIO_VALUE_LOW ) {
     syslog(LOG_CRIT, "slot%d present", slot_id);
@@ -136,35 +102,15 @@ log_slot_present(uint8_t slot_id, gpio_value_t value)
 }
 
 static void
-slot1_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
-  const uint8_t slot_id = FRU_SLOT1;
+slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
+  uint32_t slot_id;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gpdesc);
+  assert(cfg);
+  sscanf(cfg->shadow, "PRSNT_MB_BMC_SLOT%u_BB_N", &slot_id);
   log_gpio_change(gpdesc, value, 0);
   log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
-}
-
-static void
-slot2_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
-  const uint8_t slot_id = FRU_SLOT2;
-  log_gpio_change(gpdesc, value, 0);
-  log_slot_present(slot_id, value);
-  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
-}
-
-static void
-slot3_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
-  const uint8_t slot_id = FRU_SLOT3;
-  log_gpio_change(gpdesc, value, 0);
-  log_slot_present(slot_id, value);
-  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
-}
-
-static void
-slot4_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
-  const uint8_t slot_id = FRU_SLOT4;
-  log_gpio_change(gpdesc, value, 0);
-  log_slot_present(slot_id, value);
-  if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  pal_check_slot_cpu_present(slot_id);
 }
 
 static void 
@@ -180,39 +126,20 @@ slot_hotplug_setup(uint8_t slot_id) {
 }
 
 static void 
-slot1_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT1;
+slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  uint32_t slot_id;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+  assert(cfg);
+  sscanf(cfg->shadow, "PRSNT_MB_BMC_SLOT%u_BB_N", &slot_id);
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0);
   log_slot_present(slot_id, curr);
-  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
-}
-
-static void
-slot2_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT2;
-  slot_hotplug_setup(slot_id);
-  log_gpio_change(gp, curr, 0);
-  log_slot_present(slot_id, curr);
-  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
-}
-
-static void
-slot3_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT3;
-  slot_hotplug_setup(slot_id);
-  log_gpio_change(gp, curr, 0);
-  log_slot_present(slot_id, curr);
-  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
-}
-
-static void
-slot4_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT4;
-  slot_hotplug_setup(slot_id);
-  log_gpio_change(gp, curr, 0);
-  log_slot_present(slot_id, curr);
-  if ( curr == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+  if ( curr == GPIO_VALUE_LOW ) {
+    pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+    // Wait for IPMB ready
+    sleep(6);
+    pal_check_slot_cpu_present(slot_id);
+  }
 }
 
 static void
@@ -241,6 +168,7 @@ issue_slot_ocp_fault_sel(uint8_t slot_id) {
   lib_ipmi_handle(tbuf, tlen, rbuf, &rlen);
 }
 
+#if 0
 static void
 issue_slot_plt_state_sel(uint8_t slot_id) {
   char path[128];
@@ -287,66 +215,39 @@ issue_slot_plt_state_sel(uint8_t slot_id) {
     o_plat_state = n_plat_state;
   }
 }
+#endif
 
 static void
-slot1_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT1;
+slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  uint32_t slot_id;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+  assert(cfg);
+  // because we don't have consistent shadow name here, we use description instead
+  sscanf(cfg->description, "GPIOM%u", &slot_id);
+  slot_id += 1;
   log_gpio_change(gp, curr, 0);
   issue_slot_ocp_fault_sel(slot_id);
 }
 
+#if 0
 static void
-slot2_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT2;
-  log_gpio_change(gp, curr, 0);
-  issue_slot_ocp_fault_sel(slot_id);
-}
+slot_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  uint32_t slot_id;
+  uint8_t bmc_location;
 
-static void
-slot3_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT3;
-  log_gpio_change(gp, curr, 0);
-  issue_slot_ocp_fault_sel(slot_id);
-}
-
-static void
-slot4_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT4;
-  log_gpio_change(gp, curr, 0);
-  issue_slot_ocp_fault_sel(slot_id);
-}
-
-static void
-slot1_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT1;
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-  assert(cfg);
+  if (fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    return;
+  }
+  if (bmc_location == NIC_BMC) {
+    slot_id = 1;
+  } else {
+    const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+    assert(cfg);
+    sscanf(cfg->shadow, "SMB_BMC_SLOT%u_ALT_N", &slot_id);
+  }
   issue_slot_plt_state_sel(slot_id);
 }
-
-static void
-slot2_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT2;
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-  assert(cfg);
-  issue_slot_plt_state_sel(slot_id);
-}
-
-static void
-slot3_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT3;
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-  assert(cfg);
-  issue_slot_plt_state_sel(slot_id);
-}
-
-static void
-slot4_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  const uint8_t slot_id = FRU_SLOT4;
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-  assert(cfg);
-  issue_slot_plt_state_sel(slot_id);
-}
+#endif
 
 static void
 slot_power_control(char *opt) {
@@ -358,55 +259,52 @@ slot_power_control(char *opt) {
 }
 
 static void
-slot1_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  if ( curr == GPIO_VALUE_LOW ) slot_power_control("slot1 reset");
+slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  uint32_t slot_id;
+  char pwr_cmd[32];
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+  assert(cfg);
+  sscanf(cfg->shadow, "FM_RESBTN_SLOT%u_BMC_N", &slot_id);
+  sprintf(pwr_cmd, "slot%u reset", slot_id);
+  if ( curr == GPIO_VALUE_LOW ) slot_power_control(pwr_cmd);
   log_gpio_change(gp, curr, 0);
 }
 
 static void
-slot2_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  if ( curr == GPIO_VALUE_LOW ) slot_power_control("slot2 reset");
-  log_gpio_change(gp, curr, 0);
+ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  if (curr == GPIO_VALUE_LOW)
+    syslog(LOG_CRIT, "OCP NIC Inserted");
+  else
+    syslog(LOG_CRIT, "OCP NIC Removed");
 }
 
 static void
-slot3_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  if ( curr == GPIO_VALUE_LOW ) slot_power_control("slot3 reset");
-  log_gpio_change(gp, curr, 0);
+ocp_nic_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+  if (value == GPIO_VALUE_HIGH)
+    syslog(LOG_CRIT, "OCP NIC Removed");
 }
-
-static void
-slot4_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  if ( curr == GPIO_VALUE_LOW ) slot_power_control("slot4 reset");
-  log_gpio_change(gp, curr, 0);
-}
-
 
 // GPIO table of the class 1
 static struct gpiopoll_config g_class1_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"SMB_BMC_SLOT1_ALT_N",     "GPIOB0", GPIO_EDGE_FALLING, slot1_pfr_plt_state_hndlr, NULL},
-  {"SMB_BMC_SLOT2_ALT_N",     "GPIOB1", GPIO_EDGE_FALLING, slot2_pfr_plt_state_hndlr, NULL},
-  {"SMB_BMC_SLOT3_ALT_N",     "GPIOB2", GPIO_EDGE_FALLING, slot3_pfr_plt_state_hndlr, NULL},
-  {"SMB_BMC_SLOT4_ALT_N",     "GPIOB3", GPIO_EDGE_FALLING, slot4_pfr_plt_state_hndlr, NULL},
-  {"PRSNT_MB_BMC_SLOT1_BB_N", "GPIOB4", GPIO_EDGE_BOTH, slot1_hotplug_hndlr, slot1_present},
-  {"PRSNT_MB_BMC_SLOT2_BB_N", "GPIOB5", GPIO_EDGE_BOTH, slot2_hotplug_hndlr, slot2_present},
-  {"PRSNT_MB_BMC_SLOT3_BB_N", "GPIOB6", GPIO_EDGE_BOTH, slot3_hotplug_hndlr, slot3_present},
-  {"PRSNT_MB_BMC_SLOT4_BB_N", "GPIOB7", GPIO_EDGE_BOTH, slot4_hotplug_hndlr, slot4_present},
-  {"FM_RESBTN_SLOT1_BMC_N",   "GPIOAC2", GPIO_EDGE_BOTH, slot1_rst_hndler, NULL},
-  {"FM_RESBTN_SLOT2_BMC_N",   "GPIOAC3", GPIO_EDGE_BOTH, slot2_rst_hndler, NULL},
-  {"FM_RESBTN_SLOT3_BMC_N",   "GPIOI4", GPIO_EDGE_BOTH,  slot3_rst_hndler, NULL},
-  {"FM_RESBTN_SLOT4_BMC_N",   "GPIOI6", GPIO_EDGE_BOTH,  slot4_rst_hndler, NULL},
-  {"HSC_FAULT_SLOT1_N",           "GPIOM0", GPIO_EDGE_BOTH, slot1_ocp_fault_hndlr, NULL},
-  {"HSC_FAULT_BMC_SLOT2_N_R",     "GPIOM1", GPIO_EDGE_BOTH, slot2_ocp_fault_hndlr, NULL},
-  {"HSC_FAULT_SLOT3_N",           "GPIOM2", GPIO_EDGE_BOTH, slot3_ocp_fault_hndlr, NULL},
-  {"HSC_FAULT_BMC_SLOT4_N_R",     "GPIOM3", GPIO_EDGE_BOTH, slot4_ocp_fault_hndlr, NULL},
+  {"PRSNT_MB_BMC_SLOT1_BB_N", "GPIOB4",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"PRSNT_MB_BMC_SLOT2_BB_N", "GPIOB5",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"PRSNT_MB_BMC_SLOT3_BB_N", "GPIOB6",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"PRSNT_MB_BMC_SLOT4_BB_N", "GPIOB7",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"FM_RESBTN_SLOT1_BMC_N",   "GPIOAC2",  GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"FM_RESBTN_SLOT2_BMC_N",   "GPIOAC3",  GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"FM_RESBTN_SLOT3_BMC_N",   "GPIOI4",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"FM_RESBTN_SLOT4_BMC_N",   "GPIOI6",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"HSC_FAULT_SLOT1_N",       "GPIOM0",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_BMC_SLOT2_N_R", "GPIOM1",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_SLOT3_N",       "GPIOM2",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_BMC_SLOT4_N_R", "GPIOM3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"OCP_NIC_PRSNT_BMC_N",     "GPIOM5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
 };
 
 // GPIO table of the class 2
 static struct gpiopoll_config g_class2_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"SMB_MUX_ALT_N",     "GPIOB0", GPIO_EDGE_FALLING, slot1_pfr_plt_state_hndlr, NULL},
 };
 
 static void
@@ -445,9 +343,9 @@ static void
   const char *shadows[] = {
     "ADAPTER_BUTTON_BMC_CO_N_R",
     "AC_ON_OFF_BTN_SLOT1_N",
-    "AC_ON_OFF_BTN_BMC_SLOT2_N_R",
+    "AC_ON_OFF_BTN_SLOT2_N",
     "AC_ON_OFF_BTN_SLOT3_N",
-    "AC_ON_OFF_BTN_BMC_SLOT4_N_R"
+    "AC_ON_OFF_BTN_SLOT4_N"
   };
   uint8_t action[BTN_ARRAY_SIZE] = {0};
   bool is_asserted[BTN_ARRAY_SIZE] = {0};

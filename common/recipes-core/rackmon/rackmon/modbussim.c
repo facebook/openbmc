@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
     char modbus_buf[255];
     size_t mb_pos;
 wait_for_command:
-    mb_pos = read_wait(fd, modbus_buf, sizeof(modbus_buf), 30000);
+    mb_pos = read_wait(fd, modbus_buf, sizeof(modbus_buf), 30000, "modbussim");
     if(mb_pos >= 4) {
       printf("Received: ");
       print_hex(stdout, modbus_buf, mb_pos);

@@ -8,7 +8,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libbic libpal update-rc.d-native"
+DEPENDS_append = " libfby2-common libbic libpal update-rc.d-native"
 
 SRC_URI = "file://Makefile \
            file://setup-bic-cached.sh \
@@ -38,7 +38,7 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "
 
-RDEPENDS_${PN} += " libbic libpal "
+RDEPENDS_${PN} += " libfby2-common libbic libpal "
 
 # Inhibit complaints about .debug directories:
 

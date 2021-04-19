@@ -1,75 +1,100 @@
 swagger: "2.0"
-info: 
-  description: Swagger doc for /api/sys/bmc  
-  title: Swagger doc for /api/sys/bmc  
+info:
+  description: Swagger doc for /api/sys/bmc
+  title: Swagger doc for /api/sys/bmc
   version: 1.0.0
-paths: 
-  /api/sys/bmc: 
-    get: 
+paths:
+  /api/sys/bmc:
+    get:
       produces: [application/json]
-      responses: 
-        200: 
+      responses:
+        200:
           description: ok
-          schema: 
+          schema:
             type: object
             additionalProperties: false
-            properties: 
-              Actions: 
+            properties:
+              Actions:
                 type: array
-                items: 
+                items:
                   type: string
-              Resources: 
+              Resources:
                 type: array
-                items: 
+                items:
                   type: string
-              Information: 
+              Information:
                 type: object
                 additionalProperties: false
-                properties: 
-                  MAC Addr: 
+                properties:
+                  MAC Addr:
                     type: string
-                  At-Scale-Debug Running: 
+                  At-Scale-Debug Running:
                     type: boolean
-                  Reset Reason: 
+                  Reset Reason:
                     type: string
-                  kernel version: 
+                  kernel version:
                     type: string
-                  Uptime: 
+                  Uptime:
                     type: string
-                  OpenBMC Version: 
+                  OpenBMC Version:
                     type: string
-                  Description: 
+                  Description:
                     type: string
-                  vboot: 
+                  vboot:
                     type: object
                     additionalProperties: false
-                    properties: 
-                      status: 
+                    properties:
+                      status:
                         type: string
-                      status_text: 
+                      status_text:
                         type: string
-                  load-15: 
+                  load-15:
                     type: string
-                  Memory Usage: 
+                  Memory Usage:
                     type: string
-                  TPM TCG version: 
+                  memory:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      Shmem:
+                        type: integer
+                        format: int32
+                      Cached:
+                        type: integer
+                        format: int32
+                      MemAvailable:
+                        type: integer
+                        format: int32
+                      MemFree:
+                        type: integer
+                        format: int32
+                      MemTotal:
+                        type: integer
+                        format: int32
+                      Buffers:
+                        type: integer
+                        format: int32
+                  TPM TCG version:
                     type: string
-                  load-5: 
+                  load-5:
                     type: string
-                  SPI1 Vendor: 
+                  SPI1 Vendor:
                     type: string
-                  TPM FW version: 
+                  TPM FW version:
                     type: string
-                  SPI0 Vendor: 
+                  SPI0 Vendor:
                     type: string
-                  u-boot version: 
+                  u-boot version:
                     type: string
-                  CPU Usage: 
+                  CPU Usage:
                     type: string
-                  load-1: 
+                  load-1:
                     type: string
-                  open-fds: 
+                  open-fds:
                     type: string
-                  uptime: 
+                  uptime:
                     type: string
-            
+                  MTD Parts:
+                    type: array
+                    items:
+                      type: string

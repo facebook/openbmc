@@ -22,14 +22,19 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
+PACKAGECONFIG ??= ""
+PACKAGECONFIG[disable-watchdog] = ""
+
 SRC_URI = " \
     file://COPYING \
     file://mount_data0.sh \
+    file://mount_data0.service \
     file://openbmc-utils.sh \
     file://shell-utils.sh \
     file://i2c-utils.sh \
     file://gpio-utils.sh \
     file://rc.early \
+    file://early.service \
     file://rc.local \
     file://dhclient-exit-hooks \
     file://rm_poweroff_cmd.sh \
@@ -43,9 +48,16 @@ SRC_URI = " \
     file://setup-reboot.sh \
     file://setup-reboot.service \
     file://eth0_mac_fixup.sh \
+    file://create_vlan_intf \
+    file://flashrom-utils.sh \
+    file://cpu_monitor.py \
+    ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
+                         'file://disable_watchdog.sh ' + \
+                         'file://disable_watchdog.service', '', d)} \
     "
 
-SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'file://eth0_mac_fixup.sh', '', d)}"
+SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
+                                 'file://eth0_mac_fixup.sh', '', d)}"
 
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
@@ -60,14 +72,20 @@ OPENBMC_UTILS_FILES = " \
     blkdev_mount.sh \
     emmc_auto_mount.sh \
     emmc_enhance_part.sh \
+    flashrom-utils.sh \
     "
+
+OPENBMC_PYTHON_LIBS = " \
+    cpu_monitor.py \
+  "
 
 S = "${WORKDIR}"
 
 inherit systemd
+inherit python3-dir
 
-DEPENDS = "update-rc.d-native"
-RDEPENDS_${PN} += "bash"
+DEPENDS = "update-rc.d-native python3-setuptools"
+RDEPENDS_${PN} += "bash python3-core"
 
 OPENBMC_UTILS_CUSTOM_EMMC_MOUNT ?= "0"
 
@@ -111,11 +129,18 @@ install_sysv() {
     if ! echo ${MACHINE_FEATURES} | awk "/emmc-ext4/ {exit 1}"; then
         sed -i 's/="btrfs"/="ext4"/' ${dstdir}/blkdev_mount.sh
     fi
+
+    # Install disable-watchdog.
+    if ! echo ${PACKAGECONFIG} | awk "/disable-watchdog/ {exit 1}"; then
+        install -m 0755 ${S}/disable_watchdog.sh \
+                        ${D}${sysconfdir}/init.d/disable_watchdog.sh
+        update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
+    fi
 }
 
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 644 ${WORKDIR}/eth0_mac_fixup.sh ${D}${systemd_system_unitdir}
+    install -m 644 ${WORKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin
     install -m 755 ${WORKDIR}/setup-reboot.sh ${D}/usr/local/bin
     install -m 755 ${WORKDIR}/rc.local ${D}/usr/local/bin
     install -m 755 ${WORKDIR}/rc.early ${D}/usr/local/bin
@@ -123,7 +148,15 @@ install_systemd() {
     install -m 644 ${WORKDIR}/rm_poweroff_cmd.service ${D}${systemd_system_unitdir}
     # No rm_poweroff_cmd.sh under systemd
     install -m 644 ${WORKDIR}/setup-reboot.service ${D}${systemd_system_unitdir}
+    install -m 644 ${WORKDIR}/mount_data0.service ${D}${systemd_system_unitdir}
     # data1 will be mounted via fstab in a different recipe
+
+    # Install disable-watchdog.
+    if ! echo ${PACKAGECONFIG} | awk "/disable-watchdog/ {exit 1}"; then
+        install -m 0755 ${S}/disable_watchdog.sh ${D}/usr/local/bin
+        install -m 0644 ${S}/disable_watchdog.service \
+                        ${D}${systemd_system_unitdir}
+    fi
 }
 
 do_install() {
@@ -133,9 +166,21 @@ do_install() {
     localbindir="${D}/usr/local/bin"
     install -d "${D}${sysconfdir}"
     install -d ${localbindir}
+
+    # If mtd-ubifs feature is enabled, we want ubifs on top of the mtd
+    # data0 partition. Update the "mount_data0.sh" to reflect this.
+    if ! echo ${MACHINE_FEATURES} | awk "/mtd-ubifs/ {exit 1}"; then
+        sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${WORKDIR}/mount_data0.sh
+    fi
+
     for f in ${OPENBMC_UTILS_FILES}; do
         install -m 755 $f ${dstdir}/${f}
         ln -s ${pkgdir}/${f} ${localbindir}
+    done
+
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    for f in ${OPENBMC_PYTHON_LIBS}; do
+      install -m 644 ${S}/$f ${D}${PYTHON_SITEPACKAGES_DIR}/
     done
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
@@ -147,10 +192,13 @@ do_install() {
 }
 
 FILES_${PN} += "/usr/local"
+FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/cpu_monitor.py"
 
-SYSTEMD_SERVICE_${PN} = "setup-reboot.service \
-                      early.service \
-                      rm_poweroff_cmd.service \
-                      early.service \
-                      fetch-backports.service \
-                      "
+SYSTEMD_SERVICE_${PN} = " \
+    early.service \
+    rm_poweroff_cmd.service \
+    setup-reboot.service \
+    mount_data0.service \
+    ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
+                         'disable_watchdog.service', '', d)} \
+    "

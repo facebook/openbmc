@@ -21,15 +21,16 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://lattice_cpld.c \
            file://lattice_cpld.h \
-		   file://main.c \
-		   file://jtag_interface.c \
-		   file://jtag_interface.h \
-		   file://jtag_common.c \
-		   file://jtag_common.h \
-		   file://jedecfile.c \
-		   file://jedecfile.h \
-		   file://Makefile \
-		   file://COPYING \
+           file://main.c \
+           file://jtag_interface.c \
+           file://jtag_interface.h \
+           file://jtag_common.c \
+           file://jtag_common.h \
+           file://jedecfile.c \
+           file://jedecfile.h \
+           file://Makefile \
+           file://COPYING \
+           file://linux/jtag.h \
           "
 
 S = "${WORKDIR}"

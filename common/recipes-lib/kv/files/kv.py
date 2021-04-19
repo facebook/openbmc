@@ -18,9 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 import ctypes
+import errno
+import os
 
 
-lkv_hndl = ctypes.CDLL("libkv.so.0")
+lkv_hndl = ctypes.CDLL("libkv.so.0", use_errno=True)
 
 FPERSIST = 1
 FCREATE = 2
@@ -30,18 +32,60 @@ class KeyOperationFailure(Exception):
     pass
 
 
-def kv_get(key, flags=0):
+class InvalidParameter(KeyOperationFailure):
+    pass
+
+
+class KeyNotFoundFailure(KeyOperationFailure):
+    pass
+
+
+class KeyAlreadyExists(KeyOperationFailure):
+    pass
+
+
+class KeyValueTooBig(KeyOperationFailure):
+    pass
+
+
+def _handle_error():
+    e = ctypes.get_errno()
+    if e == errno.ENOENT:
+        raise KeyNotFoundFailure()
+    elif e == errno.EINVAL:
+        raise InvalidParameter()
+    elif e == errno.E2BIG:
+        raise KeyValueTooBig()
+    elif e == errno.EEXIST:
+        raise KeyAlreadyExists()
+    else:
+        raise KeyOperationFailure("KV operation failed with errno = " + str(e))
+
+
+def kv_get(key, flags=0, binary=False):
     key_c = ctypes.create_string_buffer(key.encode())
-    value = ctypes.create_string_buffer(64)
+    value = ctypes.create_string_buffer(256)
     ret = lkv_hndl.kv_get(key_c, value, 0, ctypes.c_uint(flags))
     if ret != 0:
-        raise KeyOperationFailure
+        _handle_error()
+    if binary:
+        return value.value
     return value.value.decode()
 
 
 def kv_set(key, value, flags=0):
     key_c = ctypes.create_string_buffer(key.encode())
-    value_c = ctypes.create_string_buffer(value.encode())
+    if isinstance(value, (bytes, bytearray)):
+        value_c = ctypes.create_string_buffer(value)
+    else:
+        value_c = ctypes.create_string_buffer(value.encode())
     ret = lkv_hndl.kv_set(key_c, value_c, 0, ctypes.c_uint(flags))
     if ret != 0:
-        raise KeyOperationFailure
+        _handle_error()
+
+
+def kv_del(key, flags=0):
+    key_c = ctypes.create_string_buffer(key.encode())
+    ret = lkv_hndl.kv_del(key_c, ctypes.c_uint(flags))
+    if ret != 0:
+        _handle_error()

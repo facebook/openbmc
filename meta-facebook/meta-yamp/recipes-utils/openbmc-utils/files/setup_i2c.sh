@@ -110,14 +110,6 @@ i2c_ir35223_init(){
 # Active low - 1 means out of reset, 0 means in reset
 gpio_set TPM_RST_N 1
 
-# Bus  2 - SMBus 3 - LC, MUXED as Bus 14-21
-# Create i2c switch 2-0075 while provides 8 child buses 14 - 21.
-# This step is only needed in kernel 4.1: the device will be created in
-# device tree in new kernel versions.
-if uname -r | grep "4.1.*"; then
-    i2c_device_add 2 0x75 pca9548
-fi
-
 # Probe the devices used by fscd first, just in case probing 
 # taking too long, when one of modules are not in good shape.
 # 1. Probe SUP Inlet1/2 sensor, used for fscd 
@@ -142,8 +134,41 @@ i2c_device_add 3 0x44 pmbus
 # Bus  4 - SMBus 5 SCD
 i2c_device_add 4 0x23 scdcpld
 i2c_device_add 4 0x50 24c512
-# Unreset LC SMBUS MUX on the Switch Card
-echo 0 > $LC_SMB_MUX_RST
+
+#
+# Bus  2 - SMBus 3 - LC, MUXED as Bus 14-21
+#
+# Note:
+#  1) 2-0075 may not be created if yamp is running an older kernel, so
+#     let's check and create the device if needed.
+#  2) if 2-0075 is already created (in device tree) but driver binding
+#     failed, then we will need to bind the driver manually. The failure
+#     usually happens when the chassis is power cycled, because 2-0075
+#     cannot be detected until it's taken out of reset (by writing scdcpld
+#     register LC_SMB_MUX_RST).
+#
+echo 0 > "$LC_SMB_MUX_RST"  # take the mux (2-0075) out of reset
+
+SMB_MUX_DEV="2-0075"
+SMB_MUX_PATH=$(i2c_device_sysfs_abspath "$SMB_MUX_DEV")
+if [ ! -d "$SMB_MUX_PATH" ]; then
+    i2c_mux_add_sync 2 0x75 pca9548 8
+elif [ ! -L "${SMB_MUX_PATH}/driver" ]; then
+    mux_driver="pca954x"
+    echo "Manually bind $mux_driver to $SMB_MUX_DEV.."
+    i2c_bind_driver "$mux_driver" "$SMB_MUX_DEV"
+
+    # Wait till all the 8 channels (0-7) are populated; otherwise devices
+    # behind the switch cannot be created.
+    MUX_RETRY=0
+    until [ -d "${SMB_MUX_PATH}/channel-7" ]; do
+        usleep 10000 # sleep for 10 milliseconds
+        MUX_RETRY=$((MUX_RETRY + 1))
+        if [ "$MUX_RETRY" -gt 3 ]; then
+            break
+        fi
+    done
+fi
 
 # Bus  5 - SMBus 6 PSU1
 i2c_dsp1900_create 5

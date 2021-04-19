@@ -52,6 +52,9 @@ int sensors_write_fan(const char *label, float value);
 // Read ADC value
 int sensors_read_adc(const char *label, float *value);
 
+// Re-initialize SensorList
+void sensors_reinit();
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

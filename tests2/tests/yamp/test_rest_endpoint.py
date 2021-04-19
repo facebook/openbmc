@@ -20,6 +20,14 @@
 import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from tests.yamp.test_data.sensors.sensors import (
+    FAN_SENSORS,
+    PIM_PMBUS_SENSORS,
+    PIM_MAX_SENSORS,
+    SUP_TEMP_SENSORS,
+    PIM_VOLT_SENSORS,
+    TH3_SENSORS,
+)
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -38,12 +46,33 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         pass
 
     # "/api/sys/mb"
-    def test_endpoint_api_sys_mb(self):
-        pass
+    def set_endpoint_mb_attributes(self):
+        self.endpoint_mb_attrb = [
+            "pim1",
+            "pim2",
+            "pim3",
+            "pim4",
+            "pim5",
+            "pim6",
+            "pim7",
+            "pim8",
+            "fruid",
+            "seutil",
+        ]
 
-    # "/api/sys/sensors"
-    def test_endpoint_api_sys_sensors(self):
-        pass
+    # /api/sys/sensors
+    def set_endpoint_sensors_attributes(self):
+        self.endpoint_sensors_attrb = []
+        for idx in range(1, 9):
+            for pmbus_sensor in PIM_PMBUS_SENSORS:
+                self.endpoint_sensors_attrb.append(pmbus_sensor.format(idx))
+            for max_sensor in PIM_MAX_SENSORS:
+                self.endpoint_sensors_attrb.append(max_sensor.format(idx))
+            for volt_sensor in PIM_VOLT_SENSORS:
+                self.endpoint_sensors_attrb.append(volt_sensor.format(idx))
+        self.endpoint_sensors_attrb.extend(FAN_SENSORS)
+        self.endpoint_sensors_attrb.extend(SUP_TEMP_SENSORS)
+        self.endpoint_sensors_attrb.extend(TH3_SENSORS)
 
     def set_endpoint_firmware_info_all_attributes(self):
         self.endpoint_firmware_info_all_attrb = [
@@ -73,7 +102,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/server"
     def set_endpoint_server_attributes(self):
-        self.endpoint_server_attrb = ["BIC_ok", "status"]
+        self.endpoint_server_attrb = ["status"]
 
     # "/api/sys/slotid"
     def set_endpoint_slotid_attributes(self):

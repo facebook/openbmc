@@ -180,7 +180,8 @@ KNOWN_USAGE_STRINGS = {
     "killall": ["killall [-l] [-q] [-SIG] PROCESS_NAME..."],
     "less": [
         "less [-EMmNh~] [FILE]...",  # noqa: B950
-        "less [-EFMmNh~] [FILE]...",  # BusyBox 1.30.1
+        "less [-EIMmNh~] [FILE]...",  # BusyBox 1.30.1
+        "less [-EFIMmNRh~] [FILE]...",  # BusyBox 1.31.0
     ],
     "ln": ["ln [OPTIONS] TARGET... LINK|DIR"],
     "logger": [

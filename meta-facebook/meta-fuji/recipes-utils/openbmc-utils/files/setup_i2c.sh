@@ -21,6 +21,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
+# Board Version EVT2 0x41, EVT3 0x42, DVT1 0x43
+BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board version
+
 # # Bus 0
 i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
 # # Bus 1
@@ -32,15 +35,14 @@ i2c_device_add 1 0x59 mp2978
 i2c_device_add 2 0x35 scmcpld  #SCM CPLD
 # # Bus 4
 i2c_device_add 4 0x1010 slave-mqueue #IPMB 1
+# # Bus 4
+i2c_device_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
 # # Bus 13
 i2c_device_add 13 0x35 iobfpga #IOB FPGA
 
-# # i2c-mux 2, channel 1
-i2c_device_add 16 0x10 adm1278 #SCM Hotswap
-
 # # i2c-mux 2, channel 2
 i2c_device_add 17 0x4c lm75   #SCM temp. sensor
-i2c_device_add 17 0x4d lm75   #SCM temp. sensor 
+i2c_device_add 17 0x4d lm75   #SCM temp. sensor
 
 # # i2c-mux 2, channel 3
 i2c_device_add 19 0x52 24c64   #EEPROM
@@ -65,6 +67,11 @@ i2c_device_add 5 0x36 ucd90160		  # Power Sequence
 i2c_device_add 8 0x51 24c64
 i2c_device_add 8 0x4a lm75
 
+# net_brcm driver only support DVT1 and later
+if [ "$BOARD_VER" -gt 66 ];then
+    i2c_device_add 29 0x47 net_brcm
+fi
+
 # # i2c-mux PCA9548 0x70, channel 1, mux PCA9548 0x71
 i2c_device_add 48 0x58 psu_driver
 i2c_device_add 49 0x5a psu_driver
@@ -73,7 +80,12 @@ i2c_device_add 50 0x52 24c64 	#SIM
 i2c_device_add 51 0x48 tmp75
 i2c_device_add 52 0x49 tmp75
 i2c_device_add 54 0x21 pca9534	#PCA9534
-i2c_device_add 53 0x60 smb_pwrcpld 	#PDB-L
+if i2cget -y -f 55 0x60 > /dev/null;then
+    i2c_device_add 55 0x60 smb_pwrcpld 	#PDB-L
+else
+    i2c_device_add 53 0x60 smb_pwrcpld 	#PDB-L
+fi
+
 # # i2c-mux PCA9548 0x70, channel 2, mux PCA9548 0x72
 i2c_device_add 56 0x58 psu_driver 	#PSU4
 i2c_device_add 57 0x5a psu_driver 	#PSU3
@@ -81,14 +93,17 @@ i2c_device_add 57 0x5a psu_driver 	#PSU3
 i2c_device_add 59 0x48 tmp75
 i2c_device_add 60 0x49 tmp75
 i2c_device_add 62 0x21 pca9534
-i2c_device_add 61 0x60 smb_pwrcpld  #PDB-R
+if i2cget -y -f 63 0x60 > /dev/null;then
+    i2c_device_add 63 0x60 smb_pwrcpld 	#PDB-R
+else
+    i2c_device_add 61 0x60 smb_pwrcpld  #PDB-R
+fi
 
 # # i2c-mux PCA9548 0x70, channel 3, mux PCA9548 0x76
 i2c_device_add 64 0x33	fcbcpld #CPLD
 i2c_device_add 65 0x53	24c64
 i2c_device_add 66 0x49 tmp75
 i2c_device_add 66 0x48 tmp75
-i2c_device_add 67 0x10 adm1278
 i2c_device_add 68 0x52 24c64    #fan 7 eeprom
 i2c_device_add 69 0x52 24c64    #fan 5 eeprom
 i2c_device_add 70 0x52 24c64    #fan 3 eeprom
@@ -99,7 +114,6 @@ i2c_device_add 72 0x33	fcbcpld #FCM CPLD
 i2c_device_add 73 0x53	24c64
 i2c_device_add 74 0x49 tmp75
 i2c_device_add 74 0x48 tmp75
-i2c_device_add 75 0x10 adm1278
 i2c_device_add 76 0x52 24c64    #fan 8 eeprom
 i2c_device_add 77 0x52 24c64    #fan 6 eeprom
 i2c_device_add 78 0x52 24c64    #fan 4 eeprom
@@ -197,4 +211,4 @@ i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD
 # of devices and # of devices without drivers) will be dumped at the end
 # of this function.
 #
-i2c_check_driver_binding
+i2c_check_driver_binding "fix-binding"

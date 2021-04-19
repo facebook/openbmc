@@ -40,6 +40,32 @@ extern "C" {
 #define FRUID_CHASSIS_TYPECODE_MIN        0
 #define FRUID_CHASSIS_TYPECODE_MAX        31
 
+#define MULTIRECORD_FORMAT_VER       0x02
+#define MULTIRECORD_FORMAT_VER_MASK  0x0F
+#define MULTIRECORD_LAST_RECORED_BIT (1 << 7)
+/*----------------------------------------
+ OEM Record ID
+ ----------------------------------------*/
+enum {
+  OEM_RECORD_ID_OCP_NIC_3_0 = 0xC0,
+  OEM_RECORD_ID_SMART_FAN = 0xFB,
+};
+
+/*
+ * SMART FAN OEM Record ID Specification
+ */
+#define SMART_FAN_RECORD_ID          OEM_RECORD_ID_SMART_FAN
+#define MANUFACTURER_ID_DATA_LENGTH  3
+#define SMART_FAN_VERSION_LENGTH     4
+#define SMART_FAN_FW_VERSION_LENGTH  4
+#define SMART_FAN_MFG_LINE_LENGTH    8
+#define SMART_FAN_CLEI_CODE_LENGTH   10
+#define SMART_FAN_VOL_DATA_LENGTH    2
+#define SMART_FAN_CUR_DATA_LENGTH    2
+#define SMART_FAN_VOL_CUR_MULTIPLIER 10
+#define SMART_FAN_RPM_DATA_LENGTH    3
+#define MFG_DATE_TIME_LENGTH         3
+
 /* To hold the common header information. */
 typedef struct fruid_header_t {
   uint8_t format_ver : 4;
@@ -146,11 +172,27 @@ typedef struct fruid_area_product_t {
 } fruid_area_product_t;
 
 /* To hold the Multirecord area information. */
-typedef struct fruid_area_multirecord_t {
-  uint8_t format_ver : 4;
+typedef struct fruid_area_multirecord_header_t {
+  uint8_t type_id;
+  uint8_t format_ver;
   uint8_t area_len;
-  /* TODO: Add more fields to support Multirecord area. */
-} fruid_area_multirecord_t;
+  uint8_t record_chksum;
+  uint8_t header_chksum;
+} fruid_area_multirecord_header_t;
+
+typedef struct fruid_area_multirecord_smart_fan_t {
+  uint32_t manufacturer_id;
+  char * smart_fan_ver;
+  char * fw_ver;
+  uint8_t * mfg_time;
+  char * mfg_time_str;
+  char * mfg_line;
+  char * clei_code;
+  uint32_t voltage;
+  uint32_t current;
+  uint32_t rpm_front;
+  uint32_t rpm_rear;
+} fruid_area_multirecord_smart_fan_t;
 
 /* To hold all the fruid information */
 typedef struct fruid_info_t {
@@ -242,6 +284,20 @@ typedef struct fruid_info_t {
     char * custom6;
     uint8_t chksum;
   } product;
+  struct {
+    uint8_t flag;
+    uint32_t manufacturer_id;
+    char * smart_fan_ver;
+    char * fw_ver;
+    uint8_t * mfg_time;
+    char * mfg_time_str;
+    char * mfg_line;
+    char * clei_code;
+    uint32_t voltage;
+    uint32_t current;
+    uint32_t rpm_front;
+    uint32_t rpm_rear;
+  } multirecord_smart_fan;
 } fruid_info_t;
 
 /* To hold the different area offsets. */

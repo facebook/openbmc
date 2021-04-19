@@ -18,10 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 
-r=$(head -n 1 /sys/class/i2c-adapter/i2c-0/0-0033/version | awk '{print substr ($1, 2, 2)}')
-e=$(head -n 1 /sys/class/i2c-adapter/i2c-0/0-0033/version | awk '{print substr ($1, 5, 2)}')
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
-released_date=$(head -n 1 /sys/class/i2c-adapter/i2c-0/0-0033/build_date_input)
+EC_VERSION=$(head -n 1 "${GALAXY_EC_SYSFS_DIR}/version")
+
+r=$(echo "$EC_VERSION" | awk '{print substr ($1, 2, 2)}')
+e=$(echo "$EC_VERSION" | awk '{print substr ($1, 5, 2)}')
+
+released_date=$(head -n 1 "${GALAXY_EC_SYSFS_DIR}/build_date_input")
 
 echo "EC Released Version: R$(printf '%02d' $r).E$(printf '%02d' $e)"
 echo "EC Released Date: $released_date"

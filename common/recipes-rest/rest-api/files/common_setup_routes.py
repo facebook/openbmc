@@ -17,9 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from common_endpoint import commonApp_Handler
-from rest_utils import *
 from aiohttp.web import Application
+from common_endpoint import commonApp_Handler
+from rest_utils import common_routes
+
 
 def setup_common_routes(app: Application, write_enabled: bool):
     chandler = commonApp_Handler()
@@ -38,3 +39,6 @@ def setup_common_routes(app: Application, write_enabled: bool):
     app.router.add_get(common_routes[10], chandler.rest_slotid_hdl)
     app.router.add_get(common_routes[11], chandler.rest_mTerm_status)
     app.router.add_get(common_routes[12], chandler.rest_ntp_status)
+    app.router.add_post(common_routes[13], chandler.rest_fscd_sensor_data_post)
+    app.router.add_get(common_routes[14], chandler.rest_modbus_get)
+    app.router.add_post(common_routes[15], chandler.rest_modbus_cmd_post)

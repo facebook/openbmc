@@ -14,12 +14,14 @@ SRC_URI = "file://bios-head.py \
            file://bios_postcode.py \
            file://bios_plat_info.py \
            file://bios_pcie_port_config.py \
-           file://lib_pal.py \
            file://bios_default_support.json \
            file://bios_tpm_physical_presence.py \
+           file://tests \
           "
 
 S = "${WORKDIR}"
+
+inherit ptest
 
 DEPENDS += "libpal"
 DEPENDS += "update-rc.d-native"
@@ -28,9 +30,24 @@ BIOS_UTIL_CONFIG = "bios_default_support.json"
 
 BIOS_UTIL_INIT_FILE = ""
 
-binfiles = "bios-head.py bios_board.py bios_boot_order.py bios_ipmi_util.py bios_postcode.py bios_plat_info.py bios_pcie_port_config.py bios_tpm_physical_presence.py lib_pal.py"
+binfiles = "bios-head.py bios_board.py bios_boot_order.py bios_ipmi_util.py bios_postcode.py bios_plat_info.py bios_pcie_port_config.py bios_tpm_physical_presence.py"
 
 pkgdir = "bios-util"
+
+do_compile_ptest() {
+  cat << EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
+set -e
+cd /usr/lib/bios-util/ptest
+PYTHONPATH=/usr/local/fbpackages/bios-util python3 ./bios_tester.py
+EOF
+}
+
+do_install_ptest() {
+  install -d ${D}${libdir}/bios-util
+  install -d ${D}${libdir}/bios-util/ptest
+  cp -r ${WORKDIR}/tests/* ${D}${libdir}/bios-util/ptest/
+}
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

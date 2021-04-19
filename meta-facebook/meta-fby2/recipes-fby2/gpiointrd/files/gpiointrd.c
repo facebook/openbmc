@@ -57,10 +57,19 @@
 #define SYS_CONFIG_FILE "/mnt/data/kv_store/sys_config/fru%d_*"
 #define SYS_CONFIG_M2_DEV_FILE "/mnt/data/kv_store/sys_config/fru%d_m2_%d_info"
 #define SENSORDUMP_BIN "/usr/local/bin/sensordump.sh"
+#define SLOT_REMOVAL_PRECHECK_SCRIPT "/usr/local/bin/slot-removal-precheck.sh"
 
 #define FAN_LATCH_POLL_TIME 600
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
+
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
 
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static uint8_t IsFanLatchAction = 0;
@@ -154,7 +163,7 @@ fan_latch_action(int action) {
       syslog(LOG_INFO, "fan_latch_action: No pthread exists");
     } else {
       sprintf(cmd, "ps | grep 'fscd_end.sh\\|setup-fan.sh' | awk '{print $1}'| xargs kill ");
-      system(cmd);
+      log_system(cmd);
       syslog(LOG_INFO, "fan_latch_action: Previous thread is cancelled");
     }
   }
@@ -208,7 +217,7 @@ delay_log(void *arg)
 
   if (arg) {
     usleep(log->usec);
-    syslog(LOG_CRIT, log->msg);
+    syslog(LOG_CRIT, "%s", log->msg);
 
     free(arg);
   }
@@ -271,7 +280,7 @@ write_device(const char *device, const char *value) {
 
 static void
 create_sensordump(void) {
-  system(SENSORDUMP_BIN);
+  log_system(SENSORDUMP_BIN);
 }
 
 static void *
@@ -698,7 +707,7 @@ static void gpio_event_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_
           pthread_mutex_unlock(&hsvc_mutex[slot_id]);
        }
   } // End of GPIO_SLOT1/2/3/4_PRSNT_B_N, GPIO_SLOT1/2/3/4_PRSNT_N
-  else if ((strncmp(cfg->shadow, "UART_SEL", sizeof(cfg->shadow)) == 0) || (strncmp(cfg->shadow, "YV250_USB_OCP_UART_SWITCH_N", sizeof(cfg->shadow)) == 0)) {
+  else if (strncmp(cfg->shadow, "UART_SEL", sizeof(cfg->shadow)) == 0) {
     if (pal_get_hand_sw(&slot_id)) {
       slot_id = HAND_SW_BMC;
     }
@@ -883,6 +892,9 @@ hsvc_event_handler(void *ptr) {
         printf("Not remove entirely\n");
       }
       else {   //Card has been removed
+        sprintf(cmd, "%s slot%u", SLOT_REMOVAL_PRECHECK_SCRIPT, hsvc_info->slot_id);
+        log_system(cmd);
+
         pal_baseboard_clock_control(hsvc_info->slot_id, GPIO_VALUE_HIGH); // Disable baseboard clock passing buffer to prevent voltage leakage
         ret = pal_is_server_12v_on(hsvc_info->slot_id, &value);    /* Check whether the system is 12V off or on */
         if (ret < 0) {
@@ -891,7 +903,7 @@ hsvc_event_handler(void *ptr) {
         }
         if (value) {
           sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);
-          syslog(LOG_CRIT, event_log);     //Card removal without 12V-off
+          syslog(LOG_CRIT, "%s", event_log);     //Card removal without 12V-off
           /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
           if (bic_set_slot_12v(hsvc_info->slot_id, 0)) {
             break;
@@ -902,7 +914,7 @@ hsvc_event_handler(void *ptr) {
         }
         else {
           sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[hsvc_info->slot_id]);
-          syslog(LOG_CRIT, event_log);     //Card removal with 12V-off
+          syslog(LOG_CRIT, "%s", event_log);     //Card removal with 12V-off
         }
 
         // Re-init kv list
@@ -916,39 +928,39 @@ hsvc_event_handler(void *ptr) {
 
         // resart sensord
         sprintf(cmd, "sv stop sensord");
-        system(cmd);
+        log_system(cmd);
         sprintf(cmd, "rm -rf /tmp/cache_store/slot%d*", hsvc_info->slot_id);
-        system(cmd);
+        log_system(cmd);
         sprintf(cmd, "sv start sensord");
-        system(cmd);
+        log_system(cmd);
 
         // Remove FRU when board has been removed
         sprintf(cmd, "rm -rf /tmp/fruid_slot%d*", hsvc_info->slot_id);
-        system(cmd);
+        log_system(cmd);
 
         // Remove post flag file when board has been removed
         sprintf(postpath, POST_FLAG_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));
         sprintf(cmd,"rm %s",postpath);
-        system(cmd);
+        log_system(cmd);
 
         // Remove DIMM and CPU related file when board has been removed
         sprintf(sys_config_path, SYS_CONFIG_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));
         sprintf(cmd,"rm %s",sys_config_path);
-        system(cmd);
+        log_system(cmd);
 
         // Create file for 12V-on re-init
         sprintf(hspath, HOTSERVICE_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));
         sprintf(cmd,"touch %s",hspath);
-        system(cmd);
+        log_system(cmd);
 
         // Assign slot type
         sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
         slot_type = fby2_get_slot_type(hsvc_info->slot_id);
         sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
-        system(cmd);
+        log_system(cmd);
 
         if (slot_type == SLOT_TYPE_SERVER) {  // Assign server type
           server_type = 0xFF;
@@ -958,12 +970,12 @@ hsvc_event_handler(void *ptr) {
           }
           sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
-          system(cmd);
+          log_system(cmd);
         } else if (slot_type == SLOT_TYPE_GPV2) { // Remove GPv2 M.2 DEV INFO
           for (int dev_id = 2; dev_id < MAX_NUM_DEVS +2; dev_id++) { // 2-base for GPv2
             sprintf(sys_config_path, SYS_CONFIG_M2_DEV_FILE, hsvc_info->slot_id +1 , dev_id);
             sprintf(cmd,"rm %s",sys_config_path);
-            system(cmd);
+            log_system(cmd);
           }
         }
 #if defined(CONFIG_FBY2_GPV2)
@@ -982,13 +994,13 @@ hsvc_event_handler(void *ptr) {
       }
       if (value) {      //Card has been inserted
         sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[MAX_NUM_FRUS + hsvc_info->slot_id]);
-        syslog(LOG_CRIT, event_log);
+        syslog(LOG_CRIT, "%s", event_log);
 
         // Create file for 12V-on re-init
         sprintf(hspath, HOTSERVICE_FILE, hsvc_info->slot_id);
         memset(cmd, 0, sizeof(cmd));
         sprintf(cmd,"touch %s",hspath);
-        system(cmd);
+        log_system(cmd);
 
 #if defined(CONFIG_FBY2_GPV2)
         // Since clear slot type while slot remove (for GPV2 detect invalid config)
@@ -996,13 +1008,13 @@ hsvc_event_handler(void *ptr) {
         sprintf(slotrcpath, SLOT_FILE, hsvc_info->slot_id);
         slot_type = fby2_get_record_slot_type(hsvc_info->slot_id);
         sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
-        system(cmd);
+        log_system(cmd);
 #else
         // Assign slot type
         sprintf(slotrcpath, SLOT_RECORD_FILE, hsvc_info->slot_id);
         slot_type = fby2_get_slot_type(hsvc_info->slot_id);
         sprintf(cmd, "echo %d > %s", slot_type, slotrcpath);
-        system(cmd);
+        log_system(cmd);
 #endif
 
         pal_set_dev_config_setup(0); // set up device fan config
@@ -1015,7 +1027,7 @@ hsvc_event_handler(void *ptr) {
           }
           sprintf(slotrcpath, SV_TYPE_RECORD_FILE, hsvc_info->slot_id);
           sprintf(cmd, "echo %d > %s", server_type, slotrcpath);
-          system(cmd);
+          log_system(cmd);
         } else if (slot_type == SLOT_TYPE_GPV2) {
           syslog(LOG_WARNING, "Slot Insert: Slot%u GPV2 SDR and FRU update", hsvc_info->slot_id);
           pal_set_dev_sdr_setup(hsvc_info->slot_id,0);
@@ -1031,7 +1043,7 @@ hsvc_event_handler(void *ptr) {
         }
         if (!status) {
           sprintf(cmd, "/usr/local/bin/power-util slot%u 12V-on &",hsvc_info->slot_id);
-          system(cmd);
+          log_system(cmd);
         }
       }
       else {
@@ -1072,7 +1084,7 @@ static struct gpiopoll_config g_gpios[] = {
 };
 
 
-// YV2.50
+// YV2.50 & YV2ND2
 static struct gpiopoll_config g_gpios_yv250[] = {
   // shadow, description, edge, handler,oneshot
   {"FAN_LATCH_DETECT",             "GPIOH5",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
@@ -1088,7 +1100,7 @@ static struct gpiopoll_config g_gpios_yv250[] = {
   {"SLOT2_PRSNT_N",                "GPIOAA1", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT3_PRSNT_N",                "GPIOAA2", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT4_PRSNT_N",                "GPIOAA3", GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
-  {"YV250_USB_OCP_UART_SWITCH_N",  "GPIOG7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
+  {"UART_SEL",                     "GPIOG7",  GPIO_EDGE_FALLING, gpio_event_handle, NULL},
   {"SLOT1_POWER_EN",               "GPIOI0",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT2_POWER_EN",               "GPIOI1",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
   {"SLOT3_POWER_EN",               "GPIOI2",  GPIO_EDGE_BOTH,    gpio_event_handle, NULL},
@@ -1169,7 +1181,7 @@ static void default_gpio_check(void) {
   for (i=0; i<sizeof(def_gpio_chk)/sizeof(def_chk_info); i++) {
     fby2_common_get_gpio_val(def_gpio_chk[i].name, &value);
     if (value != def_gpio_chk[i].def_val) {
-      syslog(LOG_CRIT, def_gpio_chk[i].log);
+      syslog(LOG_CRIT, "%s", def_gpio_chk[i].log);
     }
   }
 #if defined(CONFIG_FBY2_GPV2)
@@ -1216,7 +1228,7 @@ main(int argc, void **argv) {
   } else {
     openlog("gpiointrd", LOG_CONS, LOG_DAEMON);
     syslog(LOG_INFO, "gpiointrd: daemon started");
-    if (spb_type == TYPE_SPB_YV250) {
+    if (spb_type == TYPE_SPB_YV250 || spb_type == TYPE_SPB_YV2ND2) {
       polldesc = gpio_poll_open(g_gpios_yv250, sizeof(g_gpios_yv250)/sizeof(g_gpios_yv250[0]));      
     } else {
       polldesc = gpio_poll_open(g_gpios, sizeof(g_gpios)/sizeof(g_gpios[0]));

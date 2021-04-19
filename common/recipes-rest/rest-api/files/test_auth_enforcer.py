@@ -23,7 +23,8 @@ import json
 import typing as t
 import unittest
 
-import acl_config
+import common_auth
+import common_middlewares
 from acl_providers import common_acl_provider_base
 from aiohttp import test_utils, web
 from common_middlewares import auth_enforcer
@@ -53,43 +54,44 @@ def good_handler(request):
 
 def identity_handler(request):
     return web.Response(
-        body=json.dumps({"identity": request["identity"]}),
+        body=json.dumps({"identity": request.get("identity")}),
         content_type="application/json",
     )
 
 
-async def auth_required_mock(request):
+def add_identity_to_request(request):
     request["identity"] = "test_identity"
 
 
 class TestAclProvider(common_acl_provider_base.AclProviderBase):
-    async def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
-        return ["test"]
-
-    async def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
-        id_permissions = await self._get_permissions_for_identity(identity)
-        return bool([value for value in id_permissions if value in permissions])
+    def is_user_authorized(
+        self, identity: common_auth.Identity, permissions: t.List[str]
+    ) -> bool:
+        return "test" in permissions
 
 
 class TestAuthEnforcer(test_utils.AioHTTPTestCase):
     def setUp(self):
         super().setUp()
-        p = {
-            "common_auth._validate_cert_date": async_return(True),
-            "common_auth._extract_identity": async_return("test_identity"),
-        }
-        for original, return_value in p.items():
-            patcher = unittest.mock.patch(original, return_value=return_value)
-            patcher.start()
-            self.addCleanup(patcher.stop)
-        authrequired_patcher = unittest.mock.patch(
-            "common_auth.auth_required", auth_required_mock
-        )
-        authrequired_patcher.start()
-        aclrulepatcher = unittest.mock.patch.dict(acl_config.RULES, TEST_ACL_RULES)
-        aclrulepatcher.start()
-        self.addCleanup(aclrulepatcher.stop)
-        self.addCleanup(authrequired_patcher.stop)
+        self.patches = [
+            unittest.mock.patch(
+                "common_auth._validate_cert_date", autospec=True, return_value=True
+            ),
+            unittest.mock.patch(
+                "common_middlewares._is_request_from_localhost",
+                autospec=True,
+                return_value=False,
+            ),
+            unittest.mock.patch("acl_config.RULES", new=TEST_ACL_RULES),
+            unittest.mock.patch(
+                "common_auth.auth_required",
+                autospec=True,
+                side_effect=add_identity_to_request,
+            ),
+        ]
+        for p in self.patches:
+            p.start()
+            self.addCleanup(p.stop)
 
     async def get_application(self):
         webapp = web.Application(middlewares=[auth_enforcer])
@@ -120,6 +122,12 @@ class TestAuthEnforcer(test_utils.AioHTTPTestCase):
     async def test_authorization_fails_with_disjunct_roles(self):
         request = await self.client.request("GET", "/youshallnotpass")
         self.assertEqual(request.status, 403)
+
+    @test_utils.unittest_run_loop
+    async def test_authorization_override_if_localhost(self):
+        common_middlewares._is_request_from_localhost.return_value = True
+        request = await self.client.request("GET", "/youshallnotpass")
+        self.assertEqual(request.status, 200)
 
     @test_utils.unittest_run_loop
     async def test_authorization_denies_post_without_rules(self):

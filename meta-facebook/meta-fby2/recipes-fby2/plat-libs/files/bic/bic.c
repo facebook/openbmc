@@ -19,6 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -36,14 +37,20 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
 #include <openbmc/libgpio.h>
+#include <openssl/sha.h>
 
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
 #define FRUID_SIZE 256
 #define IPMB_READ_COUNT_MAX 224
 #define IPMB_WRITE_COUNT_MAX 224
+#define IPMB_BIOS_WRITE_COUNT_MAX 2048 // 2065 - 17
+#define NUM_ATTEMPTS 5
 #define BIOS_ERASE_PKT_SIZE (64*1024)
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
+#define BIOS_UPDATE_BLK_SIZE (64*1024)
+#define SIMPLE_DIGEST_LENGTH 4
+#define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
 #define SDR_READ_COUNT_MAX 0x1A
 #define SIZE_SYS_GUID 16
 #define SIZE_IANA_ID 3
@@ -52,6 +59,7 @@
 #define BIOS_VER_STR "F09_"
 #define Y2_BIOS_VER_STR "YMV2"
 #define GPV2_BIOS_VER_STR "F09B"
+#define YV2_MERGE_BIOS_VER_STR "F09M"
 #define ND_BIOS_VER_STR "F09C"
 
 #define BIC_SIGN_SIZE 32
@@ -91,6 +99,7 @@
 #define BRCM_UPDATE_STATUS 128
 #define BRCM_WRITE_CMD 130
 #define BRCM_READ_CMD 131
+#define BRCM_UPDATE_RTRIES 3
 
 #define VSI_UPDATE_STATUS 133
 #define VSI_FW_TYPE 135
@@ -106,6 +115,14 @@
 
 #define DEVICE_MUX_ADDR 0xE2
 #define MAX_GPV2_DRIVE_NUM 12
+
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
 
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
@@ -357,7 +374,7 @@ bic_ipmb_limit_rlen_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   ipmb_req_t *req;
   ipmb_res_t *res;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
   uint16_t tlen = 0;
   uint8_t rlen = 0;
   int i = 0;
@@ -437,6 +454,9 @@ bic_ipmb_limit_rlen_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     if (res->cc == CC_BIC_RETRY) { // Completion Code for BIC retry
       syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X for BIC retry\n", res->cc);
       return BIC_RETRY_ACTION;
+    } else if (res->cc == CC_BIC_INVALID_CMD) { // Completion Code for BIC do not support the command yet
+      syslog(LOG_ERR, "bic_ipmb_wrapper: Completion Code: 0x%X for BIC invalid command\n", res->cc);
+      return BIC_INVALID_CMD;
     }
     return -1;
   }
@@ -600,6 +620,7 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
   uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[12] = {0x00};
   uint8_t rlen = 0;
+  uint8_t server_type = SERVER_TYPE_NONE;
   int ret;
 
   // Ensure the reserved bits are set to 0.
@@ -615,6 +636,13 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
 
   // Ignore first 3 bytes of IANA ID
   memcpy((uint8_t*) gpio, &rbuf[3], rlen);
+
+  if (bic_get_server_type(slot_id, &server_type) < 0) {
+    return -1;
+  } else if (server_type == SERVER_TYPE_ND) {
+    // invert gpio pin 21 (ND_FM_BIOS_POST_COMPT_N) for northdome platform
+    gpio->gpio = gpio->gpio ^ (1 << ND_FM_BIOS_POST_COMPT_N);
+  }
 
   return ret;
 }
@@ -988,9 +1016,9 @@ _enable_bic_update(uint8_t slot_id) {
 // Update firmware for various components
 static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
-  uint8_t tbuf[256] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
-  uint8_t tlen = 0;
+  uint16_t tlen = 0;
   uint8_t rlen = 0;
   int ret;
   int retries = 3;
@@ -1423,7 +1451,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
 
   // Kill ipmb daemon for this slot
   sprintf(cmd, "sv stop ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
+  log_system(cmd);
   printf("stop ipmbd for slot %x..\n", slot_id);
 
   // The I2C high speed clock (1M) could cause to read BIC data abnormally.
@@ -1431,16 +1459,16 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF77304");
+       log_system("devmem 0x1e78a084 w 0xFFF77304");
        break;
      case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF77304");
+       log_system("devmem 0x1e78a104 w 0xFFF77304");
        break;
      case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF77304");
+       log_system("devmem 0x1e78a184 w 0xFFF77304");
        break;
      case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF77304");
+       log_system("devmem 0x1e78a304 w 0xFFF77304");
        break;
      default:
        syslog(LOG_CRIT, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -1460,7 +1488,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     // Restart ipmb daemon with "-u|--enable-bic-update" for bic update
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", get_ipmb_bus_id(slot_id), slot_id);
-    system(cmd);
+    log_system(cmd);
     printf("start ipmbd -u for this slot %x..\n",slot_id);
     syslog(LOG_WARNING, "start ipmbd -u for this slot %x..\n",slot_id);
 
@@ -1481,7 +1509,7 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
     // Kill ipmb daemon "--enable-bic-update" for this slot
     memset(cmd, 0, sizeof(cmd));
     sprintf(cmd, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", get_ipmb_bus_id(slot_id));
-    system(cmd);
+    log_system(cmd);
     printf("stop ipmbd for slot %x..\n", slot_id);
 
     if (i == BIC_UPDATE_RETRIES) { // ipmb not ready
@@ -1712,16 +1740,16 @@ error_exit:
   switch(slot_id)
   {
      case FRU_SLOT1:
-       system("devmem 0x1e78a084 w 0xFFF5E700");
+       log_system("devmem 0x1e78a084 w 0xFFF5E700");
        break;
      case FRU_SLOT2:
-       system("devmem 0x1e78a104 w 0xFFF5E700");
+       log_system("devmem 0x1e78a104 w 0xFFF5E700");
        break;
      case FRU_SLOT3:
-       system("devmem 0x1e78a184 w 0xFFF5E700");
+       log_system("devmem 0x1e78a184 w 0xFFF5E700");
        break;
      case FRU_SLOT4:
-       system("devmem 0x1e78a304 w 0xFFF5E700");
+       log_system("devmem 0x1e78a304 w 0xFFF5E700");
        break;
      default:
        syslog(LOG_ERR, "bic_update_fw: incorrect slot_id %d\n", slot_id);
@@ -1732,7 +1760,7 @@ error_exit:
   sleep(1);
   memset(cmd, 0, sizeof(cmd));
   sprintf(cmd, "sv start ipmbd_%d", get_ipmb_bus_id(slot_id));
-  system(cmd);
+  log_system(cmd);
 
 error_exit2:
   syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting on slot %d\n", slot_id);
@@ -1749,7 +1777,7 @@ error_exit2:
   if (done == 1) {    //update successfully
     memset(cmd, 0, sizeof(cmd));
     snprintf(cmd, MAX_CMD_LEN, "(/usr/local/bin/bic-cached %d; echo 1 >/tmp/cache_store/slot%d_sdr_thresh_update) &", slot_id, slot_id);   //retrieve SDR data after BIC FW update
-    system(cmd);
+    log_system(cmd);
   }
 
   return ret;
@@ -1953,7 +1981,11 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
           memcmp(
               buf + offs + sizeof(ver_sig),
               GPV2_BIOS_VER_STR,
-              strlen(GPV2_BIOS_VER_STR))) {
+              strlen(GPV2_BIOS_VER_STR))&&
+          memcmp(
+              buf + offs + sizeof(ver_sig),
+              YV2_MERGE_BIOS_VER_STR,
+              strlen(YV2_MERGE_BIOS_VER_STR))) {
         offs = end;
       }
       break;
@@ -1988,77 +2020,6 @@ _set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
   }
 
   return 0;
-}
-
-static int
-verify_bios_image(uint8_t slot_id, int fd, long size) {
-  int ret = -1;
-  int rc, i;
-  uint32_t offset;
-  uint32_t tcksum, gcksum;
-  volatile uint16_t count;
-  uint8_t target, last_pkt = 0x00;
-  uint8_t *tbuf = NULL;
-#if defined(CONFIG_FBY2_EP)
-  uint8_t server_type = 0xFF;
-
-  rc = bic_get_server_type(slot_id, &server_type);
-  if (rc) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    return -1;
-  }
-
-  switch (server_type) {
-    case SERVER_TYPE_EP:
-      last_pkt = 0x80;
-      break;
-  }
-#endif
-
-  // Checksum calculation for BIOS image
-  tbuf = malloc(BIOS_VERIFY_PKT_SIZE * sizeof(uint8_t));
-  if (!tbuf) {
-    return -1;
-  }
-
-  if ((offset = lseek(fd, 0, SEEK_SET))) {
-    syslog(LOG_ERR, "%s: fail to init file offset %d, errno=%d", __func__, offset, errno);
-    return -1;
-  }
-  while (1) {
-    count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
-    if (count <= 0) {
-      if (offset >= size) {
-        ret = 0;
-      }
-      break;
-    }
-
-    tcksum = 0;
-    for (i = 0; i < count; i++) {
-      tcksum += tbuf[i];
-    }
-
-    target = ((offset + count) >= size) ? (UPDATE_BIOS | last_pkt) : UPDATE_BIOS;
-
-    // Get the checksum of binary image
-    rc = bic_get_fw_cksum(slot_id, target, offset, count, (uint8_t*)&gcksum);
-    if (rc) {
-      printf("get checksum failed, offset:0x%x\n", offset);
-      break;
-    }
-
-    // Compare both and see if they match or not
-    if (gcksum != tcksum) {
-      printf("checksum does not match, offset:0x%x, 0x%x:0x%x\n", offset, tcksum, gcksum);
-      break;
-    }
-
-    offset += count;
-  }
-
-  free(tbuf);
-  return ret;
 }
 
 int
@@ -2142,6 +2103,7 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
   volatile uint16_t count, read_count;
   uint8_t buf[256] = {0};
   int fd;
+  int retries = 0;
   int rp_fw_type =  UNKOWN_FW;
 
   printf("updating fw on slot %d device %d:\n", slot_id,dev_id);
@@ -2217,21 +2179,28 @@ bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *pat
       syslog(LOG_DEBUG,"%s(): set download init offset=%d", __func__,wbuf[0]);
     }
 
-    sleep(2);
-    wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 reday bit == 1?
-    rlen = 1;
-    ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
-    if (ret != 0) {
-      syslog(LOG_DEBUG,"%s(): reday bit == 1? offset=%d read length=%d failed", __func__,wbuf[0],rlen);
-      goto error_exit;
+    for (retries = 0; retries < BRCM_UPDATE_RTRIES; retries++) {
+      sleep(2);
+      wbuf[0] = BRCM_UPDATE_STATUS;  // offset 128 reday bit == 1?
+      rlen = 1;
+      ret = bic_master_write_read(slot_id, bus, 0xd4, wbuf, 1, rbuf, rlen);
+      if (ret != 0) {
+        syslog(LOG_DEBUG,"%s(): reday bit == 1? offset=%d read length=%d failed", __func__,wbuf[0],rlen);
+        goto error_exit;
+      }
+
+      if (!(rbuf[0] & 0x40)) {
+        syslog(LOG_DEBUG,"%s(): reday bit == 0 reties = %d", __func__, retries);
+        ret = -1;
+      } else {
+        syslog(LOG_DEBUG,"%s(): reday bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
+        break;
+      }
     }
 
-    if (!(rbuf[0] & 0x40)) {
-      syslog(LOG_DEBUG,"%s(): reday bit == 0", __func__);
-      ret = -1;
+    if (retries == BRCM_UPDATE_RTRIES) {
+      syslog(LOG_DEBUG,"%s(): reday bit == 0 reties failed", __func__);
       goto error_exit;
-    } else {
-      syslog(LOG_DEBUG,"%s(): reday bit == 1 offset=%d rbuf[0]=%d", __func__,wbuf[0],rbuf[0]);
     }
 
     wbuf[0] = BRCM_WRITE_CMD;  // offset 130
@@ -2436,61 +2405,321 @@ error_exit:
 }
 
 int
-bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver) {
+  uint8_t tbuf[12] = {0x15, 0xa0, 0x00}; // IANA ID
+  uint8_t rbuf[256] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+  int retries = 3;
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+
+  // Fill the offset
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  // Fill the length
+  tbuf[8] = (len) & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+  tbuf[10] = (len >> 16) & 0xFF;
+  tbuf[11] = (len >> 24) & 0xFF;
+
+bic_send:
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_SHA256, tbuf, 12, rbuf, &rlen);
+  if (ret == BIC_INVALID_CMD) { // Once the command is not supported from BIC, do not retry the command
+    syslog(LOG_ERR, "bic_get_fw_cksum_sha256: slot: %d, BIC not support checking sha256 sum\n", slot_id);
+  } else if ((ret || (rlen != 32+SIZE_IANA_ID)) && (retries--)) {  // sha256 is 32 bytes
+    sleep(1);
+    syslog(LOG_ERR, "bic_get_fw_cksum_sha256: slot: %d, target %d, offset: %d, ret: %d, rlen: %d\n", slot_id, target, offset, ret, rlen);
+    goto bic_send;
+  }
+
+  if (ret != 0) {
+    // just return if invalid cmd or no response
+    goto out;
+  }
+
+  //Ignore IANA ID
+  memcpy(ver, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
+out:
+  return ret;
+}
+
+static int
+calc_checksum_simple(const uint8_t *buf, size_t len, uint8_t *out) {
+  uint32_t cs = 0;
+  while (len-- > 0) {
+    cs += *buf++;
+  }
+  *((uint32_t *) out) = cs;
+  return 0;
+}
+
+static int
+calc_checksum_sha256(const void *buf, size_t len, uint8_t *out) {
+  SHA256_CTX ctx = {0};
+  memset(out, 0, STRONG_DIGEST_LENGTH);
+  if (SHA256_Init(&ctx) != 1) return -1;
+  if (SHA256_Update(&ctx, buf, len) != 1) return -2;
+  if (SHA256_Final(out, &ctx) != 1) return -3;
+  return 0;
+}
+
+static bool
+bic_have_checksum_sha256(uint8_t slot_id) {
+  uint8_t cs[STRONG_DIGEST_LENGTH];
+  return (bic_get_fw_cksum_sha256(slot_id, UPDATE_BIOS, 0, BIOS_UPDATE_BLK_SIZE, cs) == 0);
+}
+
+static int
+get_block_checksum(uint8_t slot_id, size_t offset, int cs_len, uint8_t *out) {
+  int rc;
+  if (cs_len == STRONG_DIGEST_LENGTH) {
+    rc = bic_get_fw_cksum_sha256(slot_id, UPDATE_BIOS, offset, BIOS_UPDATE_BLK_SIZE, out);
+  } else {
+    rc = bic_get_fw_cksum(slot_id, UPDATE_BIOS, offset, BIOS_VERIFY_PKT_SIZE, out);
+    if (rc == 0) {
+      rc = bic_get_fw_cksum(slot_id, UPDATE_BIOS, offset + BIOS_VERIFY_PKT_SIZE,
+                            BIOS_VERIFY_PKT_SIZE, out + SIMPLE_DIGEST_LENGTH);
+    }
+  }
+  return rc;
+}
+
+struct bic_update_fw_req {
+  uint8_t iana_id[3];
+  uint8_t target;
+  uint32_t offset;
+  uint16_t length;
+} __attribute__((packed));
+
+#define UPD_PKT_HDR_SIZE sizeof(struct bic_update_fw_req)
+
+static int
+bic_update_bios_firmware(uint8_t slot_id, int fd)
+{
+  int ret = -1, rc = 0;
+  uint8_t *buf = NULL;
+  size_t write_offset = 0;
+
+  const char *dedup_env = getenv("FW_UTIL_DEDUP");
+  const char *verify_env = getenv("FW_UTIL_VERIFY");
+  bool dedup = (dedup_env != NULL ? (*dedup_env == '1') : true);
+  bool verify = (verify_env != NULL ? (*verify_env == '1') : true);
+
+  buf = malloc(UPD_PKT_HDR_SIZE + BIOS_UPDATE_BLK_SIZE);
+  if (buf == NULL) {
+    fprintf(stderr, "failed to allocate memory\n");
+    goto out;
+  }
+
+  int num_blocks_written = 0, num_blocks_skipped = 0;
+  uint8_t fcs[STRONG_DIGEST_LENGTH], cs[STRONG_DIGEST_LENGTH];
+  int cs_len = STRONG_DIGEST_LENGTH;
+  if (!bic_have_checksum_sha256(slot_id)) {
+    if (dedup && !(dedup_env != NULL && *dedup_env == '1')) {
+      fprintf(stderr, "Strong checksum function is not available, disabling "
+              "deduplication. Update BIC firmware to at least 1.24\n");
+      dedup = false;
+    }
+    cs_len = SIMPLE_DIGEST_LENGTH * 2;
+  }
+  fprintf(stderr, "Updating BIOS, dedup is %s, verification is %s.\n",
+          (dedup ? "on" : "off"), (verify ? "on" : "off"));
+  _set_fw_update_ongoing(slot_id, 60);
+  int attempts = NUM_ATTEMPTS;
+  size_t file_buf_num_bytes = 0;
+  while (attempts > 0) {
+    uint8_t *file_buf = buf + UPD_PKT_HDR_SIZE;
+    size_t file_buf_pos = 0;
+    fprintf(stderr, "\r%d blocks (%d written, %d skipped)...",
+        num_blocks_written + num_blocks_skipped,
+        num_blocks_written, num_blocks_skipped);
+    fflush(stderr);
+    if (write_offset % 0x100000 == 0) {
+      _set_fw_update_ongoing(slot_id, 60);
+    }
+    // Read a block of data from file.
+    while (file_buf_num_bytes < BIOS_UPDATE_BLK_SIZE) {
+      size_t num_to_read = BIOS_UPDATE_BLK_SIZE - file_buf_num_bytes;
+      ssize_t num_read = read(fd, file_buf, num_to_read);
+      if (num_read < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        fprintf(stderr, "read error: %d\n", errno);
+        goto out;
+      }
+      if (num_read == 0) {
+        break;
+      }
+      file_buf_num_bytes += num_read;
+    }
+    // Finished.
+    if (file_buf_num_bytes == 0) {
+      break;
+    }
+    // Pad to 64K with 0xff, if needed.
+    for (size_t i = file_buf_num_bytes; i < BIOS_UPDATE_BLK_SIZE; i++) {
+      file_buf[i] = '\xff';
+    }
+    // Check if we need to write this block at all.
+    if (dedup || verify) {
+      if (cs_len == STRONG_DIGEST_LENGTH) {
+        rc = calc_checksum_sha256(file_buf, BIOS_UPDATE_BLK_SIZE, fcs);
+      } else {
+        rc = calc_checksum_simple(file_buf, BIOS_VERIFY_PKT_SIZE, fcs);
+        if (rc == 0) {
+          rc = calc_checksum_simple(file_buf + BIOS_VERIFY_PKT_SIZE,
+                                    BIOS_VERIFY_PKT_SIZE, fcs + SIMPLE_DIGEST_LENGTH);
+        }
+      }
+      if (rc != 0) {
+        fprintf(stderr, "calc_checksum error: %d (cs_len %d)\n", rc, cs_len);
+        goto out;
+      }
+    }
+    if (dedup) {
+      rc = get_block_checksum(slot_id, write_offset, cs_len, cs);
+      if (rc == 0 && memcmp(cs, fcs, cs_len) == 0) {
+        write_offset += BIOS_UPDATE_BLK_SIZE;
+        file_buf_num_bytes = 0;
+        num_blocks_skipped++;
+        attempts = NUM_ATTEMPTS;
+        continue;
+      }
+    }
+    int rc = 0;
+    while (file_buf_pos < file_buf_num_bytes) {
+      size_t count = file_buf_num_bytes - file_buf_pos;
+      // Large packets and SHA256 checksums were added together
+      // so if we have SHA256 checksum, we can use large packets as well.
+      size_t limit = (cs_len == STRONG_DIGEST_LENGTH ?
+          IPMB_BIOS_WRITE_COUNT_MAX : IPMB_WRITE_COUNT_MAX);
+      if (count > limit) count = limit;
+      struct bic_update_fw_req *pkt = (struct bic_update_fw_req *) (
+          file_buf + file_buf_pos - UPD_PKT_HDR_SIZE);
+      pkt->iana_id[0] = 0x15;
+      pkt->iana_id[1] = 0xa0;
+      pkt->iana_id[2] = 0x00;
+      pkt->target = UPDATE_BIOS;
+      pkt->offset = write_offset + file_buf_pos;
+      pkt->length = count;
+      uint8_t rbuf[16];
+      uint8_t rlen = 0;
+      rc = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW,
+          (uint8_t *) pkt, UPD_PKT_HDR_SIZE + count, rbuf, &rlen);
+      if (rc < 0) {
+        fprintf(stderr, "failed to write %d bytes @ %d: %d\n", count, write_offset, rc);
+        attempts--;
+        break;
+      }
+      file_buf_pos += count;
+    }
+    if (rc < 0) {
+      continue;
+    }
+    // Verify written data.
+    if (verify) {
+      rc = get_block_checksum(slot_id, write_offset, cs_len, cs);
+      if (rc != 0) {
+        fprintf(stderr, "get_block_checksum @ %d failed (cs_len %d)\n", write_offset, cs_len);
+        attempts--;
+        continue;
+      }
+      if (memcmp(cs, fcs, cs_len) != 0) {
+        fprintf(stderr, "Data checksum mismatch @ %d (cs_len %d, 0x%016llx vs 0x%016llx)\n",
+            write_offset, cs_len, *((uint64_t *) cs), *((uint64_t *) fcs));
+        attempts--;
+        continue;
+      }
+    }
+    write_offset += BIOS_UPDATE_BLK_SIZE;
+    file_buf_num_bytes = 0;
+    num_blocks_written++;
+    attempts = NUM_ATTEMPTS;
+  }
+  if (attempts == 0) {
+    fprintf(stderr, "failed.\n");
+    goto out;
+  }
+
+  fprintf(stderr, "finished.\n");
+
+  ret = 0;
+
+out:
+  free(buf);
+  return ret;
+}
+
+static int
+bic_update_firmware_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
   int ret = -1, rc;
   uint32_t offset;
-  volatile uint16_t count, read_count;
-  uint8_t buf[256] = {0};
+  volatile uint32_t count, read_count;
+  uint8_t buf[BIOS_UPDATE_BLK_SIZE] ={0};
   uint8_t target;
   uint8_t slot_num = 0, dev_id = 0;
-  int fd;
+  char fdstr[32] = {0};
+  bool fd_opened = false;
   int i;
+  struct stat st;
 
-  if (comp == UPDATE_SPH) {
+  if (path == NULL) {
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Update aborted due to NULL pointer: *path", __func__);
+      return -1;
+    }
+    snprintf(fdstr, sizeof(fdstr) - 1, "<%d>", fd);
+    path = fdstr;
+  } else {
+    fd = open(path, O_RDONLY, 0);
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Unable to open %s: %d", __func__, path, errno);
+      return -1;
+    }
+    fd_opened = true;
+  }
+
+  fstat(fd, &st);
+
+  fprintf(stderr, "updating fw on slot %d:\n", slot_id);
+  // Handle Bridge IC firmware separately as the process differs significantly from others
+  if (comp == UPDATE_BIC) {
+    ret = _update_bic_main(slot_id, path, force);
+    goto out;
+  } else if (comp == UPDATE_SPH) {
     slot_num = (slot_id >> 4);
     dev_id = (slot_id & 0xF);
     slot_id = slot_num;
     syslog(LOG_CRIT, "Update Intel: update intel sph firmware on slot %d device %d\n", slot_id, dev_id);
-  }
-
-  printf("updating fw on slot %d:\n", slot_id);
-  // Handle Bridge IC firmware separately as the process differs significantly from others
-  if (comp == UPDATE_BIC) {
-    return _update_bic_main(slot_id, path, force);
-  } else if (comp == UPDATE_SPH) {
-    return update_dev_firmware(slot_num, dev_id, path);
+    ret = update_dev_firmware(slot_num, dev_id, path);
+    goto out;
+  } else if (comp == UPDATE_BIOS) {
+    if (path != NULL && !force && check_bios_image(slot_id, fd, st.st_size) < 0) {
+      fprintf(stderr, "invalid BIOS file!\n");
+      goto out;
+    }
+    syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
+    ret = bic_update_bios_firmware(slot_id, fd);
+    goto out;
   }
 
   uint32_t dsize, last_offset, block_offset;
-  struct stat st;
-  // Open the file exclusively for read
-  fd = open(path, O_RDONLY, 0666);
-  if (fd < 0) {
-    printf("ERROR: invalid file path!\n");
-#ifdef DEBUG
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
-#endif
-    goto error_exit;
-  }
-
-  stat(path, &st);
-  if (comp == UPDATE_BIOS) {
-    if (!force && check_bios_image(slot_id, fd, st.st_size)) {
-      printf("invalid BIOS file!\n");
-      goto error_exit;
-    }
-    syslog(LOG_CRIT, "Update BIOS: update bios firmware on slot %d\n", slot_id);
-    dsize = st.st_size/100;
-  } else if (comp == UPDATE_VR) {
+  if (comp == UPDATE_VR) {
     if (check_vr_image(slot_id, fd, st.st_size) < 0) {
       printf("invalid VR file!\n");
-      goto error_exit;
+      goto out;
     }
     syslog(LOG_CRIT, "Update VR: update vr firmware on slot %d\n", slot_id);
     dsize = st.st_size/5;
   } else if (comp == UPDATE_PCIE_SWITCH) {
     if (_reset_pcie_sw_update_status(slot_id) != 0) {
-      goto error_exit;
+      goto out;
     }
     syslog(LOG_CRIT, "Update PCIE SWITCH: update pcie_sw firmware on slot %d\n", slot_id);
     if (st.st_size/100 < 100)
@@ -2500,7 +2729,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   } else {
     if ((comp == UPDATE_CPLD) && (check_cpld_image(slot_id, fd, st.st_size) < 0)) {
       printf("invalid CPLD file!\n");
-      goto error_exit;
+      goto out;
     }
     switch(comp){
       case UPDATE_CPLD:
@@ -2519,11 +2748,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
   i = 1;
   int last_tunk_pcie_sw_flag = 0;
   while (1) {
-    // For BIOS, send packets in blocks of 64K
-    if (comp == UPDATE_BIOS && ((offset+IPMB_WRITE_COUNT_MAX) > (i * BIOS_ERASE_PKT_SIZE))) {
-      read_count = (i * BIOS_ERASE_PKT_SIZE) - offset;
-      i++;
-    } else if (comp == UPDATE_PCIE_SWITCH) {
+    if (comp == UPDATE_PCIE_SWITCH) {
       if (i%5 == 0) {
         //last trunk at a block
         read_count = ((offset + LAST_FW_PCIE_SWITCH_TRUNK_SIZE) <= st.st_size) ? LAST_FW_PCIE_SWITCH_TRUNK_SIZE : (st.st_size - offset);
@@ -2554,7 +2779,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       } else {
         target = comp;
       }
-    } else if ((comp != UPDATE_BIOS) && ((offset + count) >= st.st_size)) {
+    } else if ((offset + count) >= st.st_size) {
       // For non-BIOS update, the last packet is indicated by extra flag
       target = comp | 0x80;
     } else {
@@ -2569,17 +2794,13 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     }
 
     if (rc) {
-      goto error_exit;
+      goto out;
     }
 
     // Update counter
     offset += count;
     if ((last_offset + dsize) <= offset) {
        switch(comp) {
-         case UPDATE_BIOS:
-           _set_fw_update_ongoing(slot_id, 60);
-           printf("\rupdated bios: %d %%", offset/dsize);
-           break;
          case UPDATE_CPLD:
            printf("\ruploaded cpld: %d %%", offset/dsize*5);
            break;
@@ -2610,7 +2831,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
         rc = _get_pcie_sw_update_status(slot_id,status);
         if (rc) {
           syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
-          goto error_exit;
+          goto out;
         }
         if (status[0] == FW_PCIE_SWITCH_DLSTAT_INPROGRESS || status[0] == FW_PCIE_SWITCH_DLSTAT_READY) {
           // check background status
@@ -2622,7 +2843,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
           } else {
             _terminate_pcie_sw_update(slot_id);
             syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
-            goto error_exit;
+            goto out;
           }
         } else if (status[0] == FW_PCIE_SWITCH_DLSTAT_COMPLETES
           || status[0] == FW_PCIE_SWITCH_DLSTAT_SUCESS_FIRM_ACT
@@ -2636,12 +2857,12 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
           } else {
             _terminate_pcie_sw_update(slot_id);
             syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
-            goto error_exit;
+            goto out;
           }
         } else {
           _terminate_pcie_sw_update(slot_id);
           syslog(LOG_WARNING,"_get_pcie_sw_update_status status: %d %d",status[0],status[1]);
-          goto error_exit;
+          goto out;
         }
 
         msleep(100);
@@ -2649,7 +2870,7 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
       if (j == PCIE_SW_MAX_RETRY) {
         _terminate_pcie_sw_update(slot_id);
         syslog(LOG_WARNING,"_get_pcie_sw_update_status retry == %d status: %d %d",PCIE_SW_MAX_RETRY,status[0],status[1]);
-        goto error_exit;
+        goto out;
       }
       if (offset == st.st_size) {
         _terminate_pcie_sw_update(slot_id);
@@ -2662,11 +2883,11 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     for (i = 0; i < 60; i++) {  // wait 60s at most
       rc = _get_cpld_update_progress(slot_id, buf);
       if (rc) {
-        goto error_exit;
+        goto out;
       }
 
       if (buf[0] == 0xFD) {  // error code
-        goto error_exit;
+        goto out;
       }
 
       printf("\rupdated cpld: %d %%", buf[0]);
@@ -2679,14 +2900,9 @@ bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
     }
   }
 
-  if (comp == UPDATE_BIOS) {
-    _set_fw_update_ongoing(slot_id, 60 * 2);
-    if (verify_bios_image(slot_id, fd, st.st_size))
-      goto error_exit;
-  }
-
   ret = 0;
-error_exit:
+
+out:
   printf("\n");
   switch(comp) {
     case UPDATE_BIOS:
@@ -2708,16 +2924,25 @@ error_exit:
       syslog(LOG_CRIT, "Update Intel: updating intel sph device firmware is exiting on slot %d device %d\n", slot_id, dev_id);
       break;
   }
-  if (fd > 0 ) {
+  if (fd_opened) {
     close(fd);
   }
-
   return ret;
 }
 
 int
+bic_update_firmware(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+  return bic_update_firmware_path_or_fd(slot_id, comp, path, -1, force);
+}
+
+int
+bic_update_firmware_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
+  return bic_update_firmware_path_or_fd(slot_id, comp, NULL, fd, force);
+}
+
+int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path) {
-  return bic_update_firmware(slot_id, comp, path, 0);
+  return bic_update_firmware_path_or_fd(slot_id, comp, path, -1, 0 /* force */);
 }
 
 int
@@ -2876,7 +3101,10 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size)
     msleep(10);
 
     // Ignore the first byte as it indicates length of response
-    write(fd, &rbuf[1], rlen-1);
+    if (write(fd, &rbuf[1], rlen-1) < (rlen-1)) {
+      syslog(LOG_WARNING, "%s: write file failed, file: %s\n", __func__, path);
+      goto error_exit;
+    }
 
     // Update offset
     offset += (rlen-1);

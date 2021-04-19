@@ -17,15 +17,18 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://board-utils.sh \
+PACKAGECONFIG += "disable-watchdog"
+
+SRC_URI += "file://beutil \
+            file://board-utils.sh \
             file://boot_info.sh \
             file://cpld_update.sh \
             file://cpld_ver.sh \
-            file://disable_watchdog.sh \
             file://feutil \
             file://fpga_ver.sh \
             file://power-on.sh \
             file://presence_util.sh \
+            file://read_sled.sh \
             file://set_sled.sh \
             file://set_vdd.sh \
             file://setup_bic.sh \
@@ -39,9 +42,11 @@ SRC_URI += "file://board-utils.sh \
             file://switch_reset.sh \
             file://wedge_power.sh \
             file://wedge_us_mac.sh \
+            file://xdpe12284-hack.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
+    beutil \
     board-utils.sh \
     boot_info.sh \
     cpld_update.sh \
@@ -49,6 +54,7 @@ OPENBMC_UTILS_FILES += " \
     feutil \
     fpga_ver.sh \
     presence_util.sh \
+    read_sled.sh \
     set_sled.sh \
     set_vdd.sh \
     setup_bic.sh \
@@ -59,6 +65,7 @@ OPENBMC_UTILS_FILES += " \
     switch_reset.sh \
     wedge_power.sh \
     wedge_us_mac.sh \
+    xdpe12284-hack.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -100,8 +107,9 @@ do_install_board() {
   install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
   update-rc.d -r ${D} setup_board.sh start 80 S .
 
-  install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
-  update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
+  # create VLAN intf automatically
+  install -d ${D}/${sysconfdir}/network/if-up.d
+  install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
   install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .

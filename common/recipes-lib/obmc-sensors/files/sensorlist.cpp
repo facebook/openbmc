@@ -24,19 +24,7 @@ using namespace std;
 
 SensorList::SensorList(const char *conf_file)
 {
-  FILE *f = conf_file ? fopen(conf_file, "r") : NULL;
-  sensors_init(f);
-  if (f)
-    fclose(f);
-  try {
-    enumerate();
-  } catch (std::out_of_range &e) {
-    syslog(LOG_ERR, "Initialization: Out of range exception: %s\n", e.what());
-  } catch (std::system_error &e) {
-    syslog(LOG_ERR, "Initialization: System error: %s - %s\n", e.code().message().c_str(), e.what());
-  } catch (...) {
-    syslog(LOG_CRIT, "Initialization: Unknown error");
-  }
+  _sensor_list_build(conf_file);
 }
 
 
@@ -73,5 +61,35 @@ void SensorList::enumerate()
     }
     (*this)[name] = make_chip(chip, name);
     (*this)[name]->enumerate();
+  }
+}
+
+void SensorList::re_enumerate(const char *conf_file)
+{
+  sensors_cleanup();
+  this->clear();
+
+  _sensor_list_build(conf_file);
+}
+
+void SensorList::_sensor_list_build(const char* conf_file)
+{
+  FILE *f = NULL;
+
+  if (conf_file != NULL) {
+    f = fopen(conf_file, "r");
+  }
+  sensors_init(f);
+  if (f != NULL) {
+    fclose(f);
+  }
+  try {
+    enumerate();
+  } catch (std::out_of_range &e) {
+    syslog(LOG_ERR, "Initialization: Out of range exception: %s\n", e.what());
+  } catch (std::system_error &e) {
+    syslog(LOG_ERR, "Initialization: System error: %s - %s\n", e.code().message().c_str(), e.what());
+  } catch (...) {
+    syslog(LOG_CRIT, "Initialization: Unknown error");
   }
 }

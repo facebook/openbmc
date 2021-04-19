@@ -89,6 +89,73 @@ typedef struct _modbus_req {
   int scan;
 } modbus_req;
 
+#define timespec_to_ms(_t) (((_t)->tv_sec * 1000) + ((_t)->tv_nsec / 1000000))
+#define timespec_to_us(_t) (((_t)->tv_sec * 1000000) + ((_t)->tv_nsec / 1000))
+
+#ifdef RACKMON_PROFILING
+#include <time.h>
+#include <sys/times.h>
+
+/*
+ * CPU_USAGE_START|END() is designed to calculate the average cpu usage
+ * of a specific code section, and here is the formula:
+ *
+ *   cpu_usage(%) = (user_time + sys_time) / real_time;
+ *
+ * Note: the sys/user/real time unit is "tick", which is 10 milliseconds
+ *       by default. As a result, it's not recommended to use the macro
+ *       to measure a "tiny" code section (finished within a few ticks).
+ */
+#define CPU_USAGE_START()                                                 \
+do {                                                                      \
+    clock_t _clk_start, _clk_end;                                         \
+    struct tms _tms_start, _tms_end;                                      \
+    long _clk_diff, _utime_diff, _stime_diff;                             \
+    _clk_start = times(&_tms_start);                                      \
+    if (_clk_start == (clock_t)-1) {                                      \
+        _clk_start = 0;                                                   \
+        memset(&_tms_start, 0, sizeof(_tms_start));                       \
+    }
+
+#define CPU_USAGE_END(fmt, args...)                                       \
+    _clk_end = times(&_tms_end);                                          \
+    if (_clk_end == (clock_t)-1)                                          \
+        break;                                                            \
+    _clk_diff = (long)(_clk_end - _clk_start);                            \
+    _utime_diff = (long)(_tms_end.tms_utime - _tms_start.tms_utime);      \
+    _stime_diff = (long)(_tms_end.tms_stime - _tms_start.tms_stime);      \
+    OBMC_INFO(fmt ": CPU_PROFILE (user,sys,real,cpu_%%)= %ld,%ld,%ld,%ld%%", ##args,  \
+              _utime_diff, _stime_diff, _clk_diff,                        \
+              ((_utime_diff + _stime_diff) * 100) / _clk_diff);           \
+} while (0)
+
+/*
+ * CHECK_LATENCY_START|END() is designed to measure the latency of a
+ * specific code section.
+ *
+ * Note: latency may vary greatly depending on system workload, scheduling
+ * policy, and etc. In order to minimize the noise, it's recommended to
+ * keep system idle when using the macros.
+ */
+#define CHECK_LATENCY_START()                                              \
+do {                                                                      \
+    struct timespec _start, _end, _diff;                                  \
+    if (clock_gettime(CLOCK_REALTIME, &_start) != 0)                      \
+        memset(&_start, 0, sizeof(_start))
+
+#define CHECK_LATENCY_END(fmt, args...)                                   \
+    if (clock_gettime(CLOCK_REALTIME, &_end) != 0)                        \
+        break;                                                            \
+    if (timespec_sub(&_start, &_end, &_diff) == 0)                        \
+        OBMC_INFO(fmt ": LATENCY_PROFILE (us) %ld", ##args, timespec_to_us(&_diff)); \
+} while (0)
+#else /* !RACKMON_PROFILING */
+#define CPU_USAGE_START()
+#define CPU_USAGE_END(fmt, args...)
+#define CHECK_LATENCY_START()
+#define CHECK_LATENCY_END(fmt, args...)
+#endif /* RACKMON_PROFILING */
+
 int waitfd(int fd);
 void decode_hex_in_place(char* buf, size_t* len);
 void append_modbus_crc16(char* buf, size_t* len);
@@ -96,10 +163,13 @@ void print_hex(FILE* f, char* buf, size_t len);
 const char* baud_to_str(speed_t baudrate);
 
 // Read until maxlen bytes or no bytes in mdelay_us microseconds
-size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us);
+size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us, const char *caller);
 
-int modbuscmd(modbus_req *req, speed_t baudrate);
+int modbuscmd(modbus_req *req, speed_t baudrate, const char *caller);
 uint16_t modbus_crc16(char* buffer, size_t length);
 const char* modbus_strerror(int mb_err);
+
+int timespec_sub(struct timespec *start, struct timespec *end,
+                 struct timespec *result);
 
 #endif /* MODBUS_H_ */

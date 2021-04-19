@@ -36,7 +36,7 @@ from node_mezz import get_node_mezz
 from node_sensors import get_node_sensors
 from node_server import get_node_device, get_node_server
 from node_spb import get_node_spb
-from pal import *
+from rest_pal_legacy import *
 from tree import tree
 
 from aiohttp.web import Application

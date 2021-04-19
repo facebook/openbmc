@@ -29,7 +29,33 @@
 #include <sched.h>
 #include <pthread.h>
 
+
 int verbose = 0;
+
+/*
+ * Subtract "start" from "end" and store result in "result".
+ *
+ * Return 0 if "result" is positive (or 0), and -1 if result is negative.
+ */
+int timespec_sub(struct timespec *start,
+                 struct timespec *end,
+                 struct timespec *result)
+{
+  long diff_sec = end->tv_sec - start->tv_sec;
+  long diff_nsec = end->tv_nsec - start->tv_nsec;
+
+  if (diff_nsec < 0) {
+    diff_nsec += 1000000000; /* nsec per second. */
+    diff_sec--;
+  }
+
+  if (diff_sec < 0)
+    return -1;
+
+  result->tv_sec = diff_sec;
+  result->tv_nsec = diff_nsec;
+  return 0;
+}
 
 int waitfd(int fd) {
   int loops = 0;
@@ -90,7 +116,7 @@ const char* baud_to_str(speed_t baudrate) {
   return out;
 }
 
-size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
+size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us, const char *caller) {
   fd_set fdset;
   struct timeval timeout;
   char read_buf[16];
@@ -98,17 +124,22 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us) {
   size_t pos = 0;
   memset(dst, 0, maxlen);
   while(pos < maxlen) {
+    int rv;
     FD_ZERO(&fdset);
     FD_SET(fd, &fdset);
     timeout.tv_sec = 0;
     timeout.tv_usec = mdelay_us;
-    int rv = select(fd + 1, &fdset, NULL, NULL, &timeout);
+    CHECK_LATENCY_START();
+    rv = select(fd + 1, &fdset, NULL, NULL, &timeout);
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::read_wait::select", caller);
     if(rv == -1) {
       perror("select()");
     } else if (rv == 0) {
       break;
     }
+    CHECK_LATENCY_START();
     read_size = read(fd, read_buf, 16);
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::read_wait::read", caller);
     if(read_size < 0) {
       if(errno == EAGAIN) continue;
       fprintf(stderr, "read error: %s\n", strerror(errno));
@@ -213,14 +244,15 @@ static long crcfail = 0;
 static long timeout = 0;
 static long stat_wait = 0;
 
-int modbuscmd(modbus_req *req, speed_t baudrate) {
+int modbuscmd(modbus_req *req, speed_t baudrate, const char *caller) {
     int error = 0;
     struct termios tio;
     char modbus_cmd[req->cmd_len + 2];
     size_t cmd_len = req->cmd_len;
+    int waitloops;
 
     if (verbose)
-      fprintf(stderr, "[*] Setting TTY flags!\n");
+      OBMC_INFO("[*] Setting TTY flags!\n");
     memset(&tio, 0, sizeof(tio));
     // CREAD should be left *off* until we've confirmed THRE
     // to avoid catching false character starts
@@ -238,9 +270,9 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
 
     // print command as sent
     if (verbose)  {
-      fprintf(stderr, "Will send:  ");
+      OBMC_INFO("Will send:  ");
       print_hex(stderr, modbus_cmd, cmd_len);
-      fprintf(stderr, "at baudrate %s\n", baud_to_str(baudrate));
+      OBMC_INFO("at baudrate %s\n", baud_to_str(baudrate));
     }
 
     dbg("[*] Writing!\n");
@@ -261,12 +293,17 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     struct timespec wait_end;
     struct timespec read_end;
     clock_gettime(CLOCK_MONOTONIC_RAW, &write_begin);
+    CHECK_LATENCY_START();
     if (write(req->tty_fd, modbus_cmd, cmd_len) < 0) {
-      fprintf(stderr, "ERROR: could not write modbus cmd: %d %s\n",
-              errno, strerror(errno));
+      OBMC_ERROR(errno, "ERROR: could not write modbus cmd");
     }
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::write modbus write %d bytes", caller, cmd_len);
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_begin);
-    int waitloops = waitfd(req->tty_fd);
+
+    CHECK_LATENCY_START();
+    waitloops = waitfd(req->tty_fd);
+    CHECK_LATENCY_END("rackmond::%s::modbuscmd::waitfd modbus wait LSR", caller);
+
     clock_gettime(CLOCK_MONOTONIC_RAW, &wait_end);
     sp.sched_priority = 0;
     // Enable UART read
@@ -290,7 +327,7 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
     if(req->expected_len > req->dest_limit) {
       return -1;
     }
-    mb_pos = read_wait(req->tty_fd, req->dest_buf, req->expected_len, req->timeout);
+    mb_pos = read_wait(req->tty_fd, req->dest_buf, req->expected_len, req->timeout, caller);
     clock_gettime(CLOCK_MONOTONIC_RAW, &read_end);
     req->dest_len = mb_pos;
     if(mb_pos >= 4) {
@@ -301,10 +338,10 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
         dbg("CRC OK!\n");
       } else {
         dbg("BAD CRC :(\n");
-        fprintf(stderr, "bad crc timings:");
-        fprintf(stderr, "  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
-        fprintf(stderr, "  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
-        fprintf(stderr, "  read: %.2f ms\n", ts_diff(&wait_end, &read_end));
+        dbg("bad crc timings:");
+        dbg("  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
+        dbg("  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
+        dbg("  read: %.2f ms\n", ts_diff(&wait_end, &read_end));
         if(!req->scan) {
           crcfail++;
         }
@@ -314,11 +351,11 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
         return MODBUS_BAD_CRC;
       }
     } else {
-      fprintf(stderr, "timeout timings:");
-      fprintf(stderr, "  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
-      fprintf(stderr, "  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
-      fprintf(stderr, "  wait: %d iters", waitloops);
-      fprintf(stderr, "  read: %.2f ms\n", ts_diff(&wait_end, &read_end));
+      dbg("timeout timings:");
+      dbg("  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
+      dbg("  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
+      dbg("  wait: %d iters", waitloops);
+      dbg("  read: %.2f ms\n", ts_diff(&wait_end, &read_end));
       dbg("No response :(\n");
       if(!req->scan) {
         timeout++;
@@ -329,23 +366,22 @@ int modbuscmd(modbus_req *req, speed_t baudrate) {
 cleanup:
     if(error != 0) {
       error = -1;
-      fprintf(stderr, "%s\n", strerror(errno));
     } else {
       //fprintf(stderr, "success, timings:");
       //fprintf(stderr, "  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
       //fprintf(stderr, "  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
       //fprintf(stderr, "  read: %.2f ms -- ", ts_diff(&wait_end, &read_end));
       if(stat_wait == 0 && !req->scan) {
-        fprintf(stderr, "success: %.2f%%  crcfail %.2f%%, timeout %.2f%%\n",
+        dbg("success: %.2f%%  crcfail %.2f%%, timeout %.2f%%\n",
             ((double) 100.0 * success / (success + crcfail + timeout)),
             ((double) 100.0 * crcfail / (success + crcfail + timeout)),
             ((double) 100.0 * timeout / (success + crcfail + timeout)));
         stat_wait = 1000;
-        fprintf(stderr, "success timings:");
-        fprintf(stderr, "  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
-        fprintf(stderr, "  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
-        fprintf(stderr, "  wait: %d iters", waitloops);
-        fprintf(stderr, "  read: %.2f ms\n", ts_diff(&wait_end, &read_end));
+        dbg("success timings:");
+        dbg("  write: %.2f ms", ts_diff(&write_begin, &wait_begin));
+        dbg("  wait: %.2f ms", ts_diff(&wait_begin, &wait_end));
+        dbg("  wait: %d iters", waitloops);
+        dbg("  read: %.2f ms\n", ts_diff(&wait_end, &read_end));
       } else if (!req->scan) {
         stat_wait--;
       }

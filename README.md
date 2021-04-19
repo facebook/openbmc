@@ -85,6 +85,20 @@ This will create local Linux package under <buildir>/workspace/sources/linux-asp
 $ devtool reset linux-aspeed
 ```
 
+## FAQ
+1-  BMC will take care of the controlling the system / fan based on the sensor/device status (I assume it may even shutdown in case of multiple failures or high temperature). How can we debug such issues? Is there any event/critical logs maintained in the the BMC? Can we have list of files which we can be looked into in case of such issues?
+
+Answer: To debug those issues, you will have to refer to the logs. 
+A: For Rest api related issues, please look at the rest logs under /tmp/ (example: /tmp/rest.log)
+B: For FSCD related issues, please look at the fscd logs for /var/log/ (example: /var/log/fscd.log)
+C: For mTerm log (data from the X86 CPU side), please look at /var/log/mTerm<something>.log (it's usually /var/log/mTerm_wedge.log on most platform)
+D: Some persistent log also go to /mnt/data/ partition
+E: For everything else, look at /var/log/messages
+
+2) How do we configure the BMC sensor thresholds for fan / temp / others ? Do we have any command which can be used from the OpenBmc shell?
+
+A- For fan RPM, you can run set_fan_speed.sh to change it (use get_fan_speed.sh to read the value back) from the OpenBMC shell. Some platforms, especially storage/compute ones, use fan-util.  Those scripts are under /usr/local/bin on the BMC. Please keep in mind that fscd process will change the fan speed RPM based so your changed values won't stay for long unless you turn off the watchdog and kill fscd. if you want to change the temperature threshold, you will have to modify the codes and build a new BMC image.  
+
 ## How can I contribute
 
 If you have an application that can be used by different BMCs, you can contribute your application to the OpenBMC common layer.

@@ -27,27 +27,49 @@
 . /usr/local/bin/openbmc-utils.sh
 
 pim_index=(0 1 2 3 4 5 6 7)
+pim_bus=(16 17 18 19 20 21 22 23)
+if wedge_is_smb_p1; then
+    # P1 has different PIM bus mapping
+    pim_bus=(16 17 18 23 20 21 22 19)
+fi
 pim_found=(0 0 0 0 0 0 0 0)
-pim_bus=(16 17 18 23 20 21 22 19)
 dpm_addr=4e
+
+try_create_gpio() {
+    chip="$1"
+    pin_id="$2"
+    gpioname="$3"
+
+    # Export GPIO if it doesn't exist
+    gpio_num=$(gpio_name2value "$gpioname")
+    if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
+        gpio_export_by_offset "${chip}" "$pin_id" "$gpioname"
+    fi
+}
 
 create_pim_gpio() {
   local pim
   pim=$1
   chip=$2
 
-  # Check if GPIO name has already been exported
-  gpio_num=$(gpio_name2value PIM"${pim}"_FULL_POWER_EN)
-  if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
-    gpio_export_by_offset "${chip}" 4 PIM"${pim}"_FULL_POWER_EN
+  fru="$(peutil "$pim" 2>&1)"
+  if echo "$fru" | grep -q '88-16CD'; then
+      pim_type='PIM16Q'
+      try_create_gpio "$chip" 22 PIM"$pim"_FPGA_RESET_L  # GPIO17 PIN26
+      try_create_gpio "$chip" 4  PIM"$pim"_FULL_POWER_EN # GPIO9  PIN14
+      try_create_gpio "$chip" 20 PIM"$pim"_FPGA_DONE     # GPIO15 PIN24
+      try_create_gpio "$chip" 21 PIM"$pim"_FPGA_INIT     # GPIO16 PIN25
+  elif echo "$fru" | grep -q '88-8D'; then
+      pim_type='PIM8DDM'
+      try_create_gpio "$chip" 22 PIM"$pim"_FPGA_RESET_L  # GPIO17 PIN26
+      try_create_gpio "$chip" 8  PIM"$pim"_FULL_POWER_EN # GPI1   PIN22
+      try_create_gpio "$chip" 20 PIM"$pim"_FPGA_DONE     # GPIO15 PIN24
+      try_create_gpio "$chip" 21 PIM"$pim"_FPGA_INIT     # GPIO16 PIN25
+  else
+      logger pim_enable: Could not identify PIM"${pim}" model
+      return
   fi
-
-  gpio_num=$(gpio_name2value PIM"${pim}"_FPGA_RESET_L)
-  if ! [[ "$gpio_num" =~ ^[0-9]+$ ]]; then
-    gpio_export_by_offset "${chip}" 22 PIM"${pim}"_FPGA_RESET_L
-  fi
-
-  logger pim_enable: registered PIM"${pim}" with GPIO chip "${chip}"
+  logger pim_enable: registered "${pim_type}" PIM"${pim}" with GPIO chip "${chip}"
 }
 
 # Clear pimserial endpoint cache if pim doesn't exist but the pimserial file does
@@ -63,6 +85,21 @@ clear_pimserial_cache() {
   fi
 }
 
+# Update sensors labels based on PIM type
+update_pim_sensors() {
+  pim="${1}"
+  bus_id="${pim_bus[pim-2]}"
+  pim_sensors_path="/etc/sensors.d/pim${pim}.conf"
+  pim_type=$(pim_types.sh | grep "PIM ${pim}" | cut -d ' ' -f 3 |
+             tr '[:upper:]' '[:lower:]')
+
+  if [ "${pim_type}" == "pim16q" ] || [ "${pim_type}" == "pim8ddm" ]; then
+    template_path="/etc/sensors.d/.${pim_type}.conf"
+    pattern="s/{bus}/${bus_id}/g; s/{pim}/${pim}/g"
+    sed "${pattern}" "${template_path}" > "${pim_sensors_path}"
+  fi
+}
+
 while true; do
   # 1. For any uncovered PIM, try to discover
   for i in "${pim_index[@]}"
@@ -71,18 +108,18 @@ while true; do
       pim_number="$((i+2))"
       pim_addr=${pim_bus[$i]}-00$dpm_addr  # 16-004e for example
       # Check if Switch card senses the PIM presence
-      pim_path="$SMBCPLD_SYSFS_DIR/pim${pim_number}_present"
-      pim_present="$(head -n 1 "$pim_path")"
-      if [ "$pim_present" == "0x1" ]; then
+      if wedge_is_pim_present "$pim_number"; then
          # Check if device was probed and driver was installed
          drv_path=/sys/bus/i2c/drivers/ucd9000/$pim_addr
          if [ -e "$drv_path"/gpio ]; then
            create_pim_gpio "$((i+2))" "${pim_addr}"
+           update_pim_sensors "$((i+2))"
            pim_found[$i]=1
          fi
       fi
     fi
   done
+
   # 2. For discovered gpios, try turning it on
   for i in "${pim_index[@]}"
   do

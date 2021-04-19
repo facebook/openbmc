@@ -24,7 +24,7 @@
 
 #define BAUDRATE B57600
 
-speed_t baudrate;
+extern speed_t baudrate;
 
 typedef struct ttyRaw {
   int fd;

@@ -22,14 +22,15 @@
 
 import argparse
 import subprocess
+import string
 import time
 
 
-VERSION = "0.4"
+VERSION = "0.6"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
-def runCmd(cmd, echo=False, verbose=False, timeout=60):
+def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
     try:
         out = subprocess.Popen(
             cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -48,7 +49,7 @@ def runCmd(cmd, echo=False, verbose=False, timeout=60):
     output = ""
     if echo:
         output += "{}\n".format(cmd)
-    if out.returncode != 0:
+    if not ignoreReturncode and out.returncode != 0:
         print('"{}" returned with error code {}'.format(cmd, out.returncode))
         if not verbose:
             return output
@@ -73,6 +74,26 @@ def dumpWeutil(target="CHASSIS", verbose=False):
     )
 
 
+def dumpEmmc():
+    print("################################")
+    print("######## eMMC debug log ########")
+    print("################################\n")
+    cmdBase = '/usr/local/bin/mmcraw {} /dev/mmcblk0'
+    print(runCmd(cmdBase.format('show-summary'), echo=True, verbose=True))
+    print(runCmd(cmdBase.format('read-cid'), echo=True, verbose=True))
+
+
+def dumpBootInfo():
+    print("################################")
+    print("######## BMC BOOT INFO  ########")
+    print("################################\n")
+    print(runCmd('/usr/local/bin/boot_info.sh bmc', echo=True, verbose=True))
+    print("##### FLASH0 META_INFO #####\n{}".format(
+        runCmd('/usr/local/bin/meta_info.sh flash0', echo=True, verbose=True)))
+    print("##### FLASH1 META_INFO #####\n{}".format(
+        runCmd('/usr/local/bin/meta_info.sh flash1', echo=True, verbose=True)))
+
+
 def fan_debuginfo(verbose=False):
     print("################################")
     print("######## FAN DEBUG INFO ########")
@@ -82,19 +103,11 @@ def fan_debuginfo(verbose=False):
         fanPrefix = "/sys/bus/i2c/devices/6-0060/fan{}".format(_)
         log = "##### FAN {} DEBUG INFO #####\n".format(_)
         log += runCmd("head -n 1 {}_pwm".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_tach".format(fanPrefix), echo=True)
         log += runCmd("head -n 1 {}_present".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_id".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_present_change".format(fanPrefix), echo=True)
-        log += "### FAN {} LED INFO ### 0x0 - ON, 0x1 - OFF\n".format(_)
-        log += runCmd("head -n 1 {}_led_red".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_led_green".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_led_amber".format(fanPrefix), echo=True)
-        log += runCmd("head -n 1 {}_led_blue".format(fanPrefix), echo=True)
         print(log)
 
     print("##### FAN SPEED LOGS #####")
-    for _ in range(3):
+    for _ in range(2):
         print(runCmd("/usr/local/bin/get_fan_speed.sh", echo=True))
         print("sleeping 0.5 seconds...")
         time.sleep(0.5)
@@ -114,6 +127,16 @@ def switchcard_debuginfo(verbose=False):
     # ELBERTTODO
 
 
+def scm_debuginfo(verbose=False):
+    print("################################")
+    print("##### SUPERVISOR DEBUG INFO ####")
+    print("################################\n")
+    if verbose:
+        print("##### SCM CPLD I2CDUMP #####\n")
+        print(runCmd("i2cdump -f -y 12 0x43", echo=True))
+    # ELBERTTODO
+
+
 def pim_debuginfo():
     print("################################")
     print("######## PIM DEBUG INFO ########")
@@ -127,7 +150,6 @@ def psu_debuginfo():
     print("################################\n")
     for i in range(1, 4 + 1):
         # PSU SMBus range 24-28 for PSU1-4
-        # ELBERTTODO change from generic
         cmd = "/usr/local/bin/psu_show_tech.py {} 0x58 -c generic".format(23 + i)
         print(
             "##### PSU{} INFO #####\n{}".format(i, runCmd(cmd, echo=True, verbose=True))
@@ -138,7 +160,13 @@ def logDump():
     print("################################")
     print("########## DEBUG LOGS ##########")
     print("################################\n")
-    print("#### SENSORS LOG ####\n{}\n\n".format(runCmd("sensors", echo=True)))
+    # sensor-util will return a non-zero returncode when any of the FRUs are
+    # not present, so ignore that.
+    print(
+        "#### SENSORS LOG ####\n{}\n\n".format(
+            runCmd("/usr/local/bin/sensor-util all", echo=True, ignoreReturncode=True)
+        )
+    )
     print(
         "#### FSCD LOG ####\n{}\n{}\n".format(
             runCmd("cat /var/log/fscd.log.1", echo=True),
@@ -147,8 +175,17 @@ def logDump():
     )
     print("#### DMESG LOG ####\n{}\n\n".format(runCmd("dmesg", echo=True)))
     print(
-        "#### mTerm LOG ####\n{}\n\n".format(
-            runCmd("cat /var/log/mTerm_wedge.log", echo=True, verbose=True)
+        "#### BOOT CONSOLE LOG ####\n{}\n\n".format(
+            runCmd("cat /var/log/boot", echo=True)
+        )
+    )
+    print("################################")
+    print("########## HOST (uServer) CPU LOGS ##########")
+    print("################################\n")
+    print(
+        "#### mTerm LOG ####\n{}\n{}\n".format(
+            runCmd("cat /var/log/mTerm_wedge.log.1", echo=True),
+            runCmd("cat /var/log/mTerm_wedge.log", echo=True),
         )
     )
 
@@ -157,7 +194,8 @@ def i2cDetectDump():
     print("################################")
     print("########## I2C DETECT ##########")
     print("################################\n")
-    for bus in range(0, 17):
+    for bus in range(0, 29):
+        # Nothing on bus 14
         if bus == 14:
             continue
         print(
@@ -185,7 +223,7 @@ def showtech(verbose=False):
 
     print(
         "##### USER PWR STATUS #####\n{}".format(
-            runCmd("/usr/local/bin/wedge_power.sh status")
+            runCmd("/usr/local/bin/wedge_power.sh status", verbose=True)
         )
     )
     print(
@@ -194,7 +232,8 @@ def showtech(verbose=False):
         )
     )
     print("##### BMC SYSTEM TIME #####\n{}".format(runCmd("date")))
-    print("##### BMC version #####\n{}".format(runCmd("cat /etc/issue")))
+    print("##### BMC version #####\nbuilt: {}{}".format(
+            runCmd("cat /etc/version"), runCmd("cat /etc/issue")))
     print("##### BMC UPTIME #####\n{}".format(runCmd("uptime")))
     print(
         "##### FPGA VERSIONS #####\n{}".format(
@@ -231,7 +270,10 @@ def showtech(verbose=False):
         )
         fan_debuginfo(verbose=verbose)
         switchcard_debuginfo(verbose=verbose)
+        scm_debuginfo(verbose=verbose)
         pim_debuginfo()
+        dumpEmmc()
+        dumpBootInfo()
         i2cDetectDump()
         gpioDump()
         logDump()

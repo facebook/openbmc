@@ -17,4 +17,4 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 CFLAGS += "-DSENSOR_FAIL_DETECT"
-SENSORD_MONITORED_FRUS = "mb nic0 nic1 pdb"
+SENSORD_MONITORED_FRUS = "mb nic0 nic1 pdb tray1_mb"

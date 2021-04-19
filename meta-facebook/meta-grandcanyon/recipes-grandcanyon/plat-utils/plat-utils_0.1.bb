@@ -23,6 +23,14 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://sol-util \
            file://COPYING \
+           file://ast-functions \
+           file://power-on.sh \
+           file://run_power_on.sh \
+           file://check_pal_sku.sh \
+           file://setup-platform.sh \
+           file://check_eth0_ipv4.sh \
+           file://sync_date.sh \
+           file://check_bmc_ready.sh \
           "
 
 pkgdir = "utils"
@@ -30,15 +38,18 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util "
+binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh "
 
 DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} += "bash python3 "
+RDEPENDS_${PN} += "bash python3 gpiocli "
 
 do_install() {
   # install the package dir
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   install -d $dst
+
+  # install ast-functions
+  install -m 644 ast-functions ${dst}/ast-functions
 
   # create linkages to those binaries
   localbindir="${D}/usr/local/bin"
@@ -47,6 +58,22 @@ do_install() {
       install -m 755 $f ${dst}/${f}
       ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
   done
+
+  # init
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  install -m 755 run_power_on.sh ${D}${sysconfdir}/init.d/run_power_on.sh
+  update-rc.d -r ${D} run_power_on.sh start 99 5 .
+  install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
+  update-rc.d -r ${D} setup-platform.sh start 92 5 .
+
+  # install check_eth0_ipv4.sh
+  install -m 755 check_eth0_ipv4.sh ${D}${sysconfdir}/init.d/check_eth0_ipv4.sh
+  update-rc.d -r ${D} check_eth0_ipv4.sh start 71 5 .
+  
+  # install check_bmc_ready.sh
+  install -m 755 check_bmc_ready.sh ${D}${sysconfdir}/init.d/check_bmc_ready.sh
+  update-rc.d -r ${D} check_bmc_ready.sh start 100 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

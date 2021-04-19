@@ -1,7 +1,7 @@
 all: psb-util
 
 psb-util: psb-util.o 
-	$(CC) $(CFLAGS) -lpal -lkv -std=c99 -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -std=c99 -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean
 

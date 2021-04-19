@@ -1,0 +1,62 @@
+{
+    "bic" : {
+        "filename" : "bic.bin",
+        "version" : "v1.11",
+        "hash" : "sha1sum",
+        "hash_value" : "c68590df17ee26a68d50e362a15062fe77444076"
+    },
+    "bios" : {
+        "filename" : "bios.bin",
+        "version" : "XG1_3A10",
+        "hash" : "sha1sum",
+        "hash_value" : "551423a4e9c12726750ea6c7c91b74ab1c3b044d"
+    },
+    "fcm_b" : {
+        "filename" : "fcm_cpld.vme",
+        "version" : "0.3.1",
+        "hash" : "sha1sum",
+        "hash_value" : "8d70be3a83aff6160154e37c7f772af3248e5aeb"
+    },
+    "fcm_t" : {
+        "filename" : "fcm_cpld.vme",
+        "version" : "0.3.1",
+        "hash" : "sha1sum",
+        "hash_value" : "8d70be3a83aff6160154e37c7f772af3248e5aeb"
+    },
+    "scm" : {
+        "filename" : "scm_cpld.vme",
+        "version" : "0.6.0",
+        "hash" : "sha1sum",
+        "hash_value" : "a6f1ec109d6310a387de0ecb5e28ac3fc97e849c"
+    },
+    "smb" : {
+        "filename" : "smb_cpld.vme",
+        "version" : "1.3.0",
+        "hash" : "sha1sum",
+        "hash_value" : "69bc4d8d62a70ac05b4e5f5835135e0801915be1"
+    },
+    "pwr_l" : {
+        "filename" : "pwr_cpld.vme",
+        "version" : "0.5.1",
+        "hash" : "sha1sum",
+        "hash_value" : "49c4406507801a64df5aa8ac7598ab1883a43f1b"
+    },
+    "pwr_r" : {
+        "filename" : "pwr_cpld.vme",
+        "version" : "0.5.1",
+        "hash" : "sha1sum",
+        "hash_value" : "49c4406507801a64df5aa8ac7598ab1883a43f1b"
+    },
+    "iob_fpga" : {
+        "filename" : "iob_fpga.bit",
+        "version" : "0.41",
+        "hash" : "sha1sum",
+        "hash_value" : "ef559cd77a7dc37749d82faad49ec41aa10b1f0c"
+    },
+    "pim16q_fpga" : {
+        "filename" : "pim16q_fpga.bit",
+        "version" : "0.31",
+        "hash" : "sha1sum",
+        "hash_value" : "92a8f131b31213326b04655ea1663fc9eb4f2254"
+    }
+}

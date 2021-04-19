@@ -25,12 +25,26 @@ ALTERNATIVE_TARGET[init] = "${rootlibexecdir}/systemd/systemd"
 ALTERNATIVE_LINK_NAME[init] = "${base_sbindir}/init"
 ALTERNATIVE_PRIORITY[init] ?= "300"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/policy.conf:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:${THISDIR}/policy.conf:"
 
 SRC_URI += " \
         file://journald-maxlevel.conf \
+        file://lastlog.conf \
 "
 
 do_install_append() {
-        install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
+    install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
+
+    # The journal will store its logs in tmpfs and yocto's default will kill the BMC
+    sed -i -e 's/.*RuntimeMaxUse.*/RuntimeMaxUse=20M/' ${D}${sysconfdir}/systemd/journald.conf
+    sed -i -e 's/.*ForwardToSyslog.*/ForwardToSyslog=yes/' ${D}${sysconfdir}/systemd/journald.conf
+
+    # Create /var/log/{wtmp,lastlog} at boot
+    install -m 644 -D ${WORKDIR}/lastlog.conf ${D}${sysconfdir}/tmpfiles.d/lastlog.conf
+
+    # systemd 234 (rocko) does not support RequiredForOnline=no.
+    sed -i 's@ExecStart.*@\0 --ignore=eth0.4088@' ${D}${systemd_unitdir}/system/systemd-networkd-wait-online.service
+
+    # On OpenBMC long lived files are kept in /tmp and /var/tmp
+    sed -E -i -e 's@(.*/tmp 1777 root root).*@\1 -@' ${D}${libdir}/tmpfiles.d/tmp.conf
 }

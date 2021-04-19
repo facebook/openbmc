@@ -32,6 +32,7 @@
 #include <string.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 #include "fby3_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
@@ -84,6 +85,17 @@ fby3_common_get_slot_id(char *str, uint8_t *fru) {
 
 int 
 fby3_common_check_slot_id(uint8_t fru) {
+  uint8_t bmc_location = 0;
+
+  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  if (bmc_location == NIC_BMC && fru != FRU_SLOT1) {
+    goto error_exit;
+  }
+
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -93,6 +105,7 @@ fby3_common_check_slot_id(uint8_t fru) {
     break;
   }
 
+error_exit:
   return -1;
 }
 
@@ -296,6 +309,22 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
     *dev = DEV_ID4_2OU;
   } else if (!strcmp(str, "2U-dev5")) {
     *dev = DEV_ID5_2OU;
+  } else if (!strcmp(str, "2U-dev6")) {
+    *dev = DEV_ID6_2OU;
+  } else if (!strcmp(str, "2U-dev7")) {
+    *dev = DEV_ID7_2OU;
+  } else if (!strcmp(str, "2U-dev8")) {
+    *dev = DEV_ID8_2OU;
+  } else if (!strcmp(str, "2U-dev9")) {
+    *dev = DEV_ID9_2OU;
+  } else if (!strcmp(str, "2U-dev10")) {
+    *dev = DEV_ID10_2OU;
+  } else if (!strcmp(str, "2U-dev11")) {
+    *dev = DEV_ID11_2OU;
+  } else if (!strcmp(str, "2U-dev12")) {
+    *dev = DEV_ID12_2OU;
+  } else if (!strcmp(str, "2U-dev13")) {
+    *dev = DEV_ID13_2OU;
   } else if (!strcmp(str, "1U")) {
     *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {
@@ -335,6 +364,22 @@ fby3_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "2U-dev4");
   } else if (dev == DEV_ID5_2OU) {
     strcpy(str, "2U-dev5");
+  } else if (dev == DEV_ID6_2OU) {
+    strcpy(str, "2U-dev6");
+  } else if (dev == DEV_ID7_2OU) {
+    strcpy(str, "2U-dev7");
+  } else if (dev == DEV_ID8_2OU) {
+    strcpy(str, "2U-dev8");
+  } else if (dev == DEV_ID9_2OU) {
+    strcpy(str, "2U-dev9");
+  } else if (dev == DEV_ID10_2OU) {
+    strcpy(str, "2U-dev10");
+  } else if (dev == DEV_ID11_2OU) {
+    strcpy(str, "2U-dev11");
+  } else if (dev == DEV_ID12_2OU) {
+    strcpy(str, "2U-dev12");
+  } else if (dev == DEV_ID13_2OU) {
+    strcpy(str, "2U-dev13");
   } else if (dev == BOARD_1OU) {
     strcpy(str, "1U");
   } else if (dev == BOARD_2OU) {
@@ -348,8 +393,8 @@ fby3_common_dev_name(uint8_t dev, char *str) {
   return 0;
 }
 
-int
-fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
+static int
+_fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   uint8_t bus_num = 0;
   int fd = -1, ret = 0;
   int tlen = 0, rlen = 0;
@@ -374,6 +419,111 @@ fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
 
 error_exit:
   close(fd);
+
+  return ret;
+}
+
+int
+fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
+  char key[MAX_VALUE_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  sprintf(key, "fru%u_2ou_board_type", fru_id);
+
+  if (kv_get(key, value, NULL, 0) == 0) {
+    *board_type = ((uint8_t*)value)[0];
+    return 0;
+  }
+
+  if (_fby3_common_get_2ou_board_type(fru_id, board_type) < 0) {
+    return -1;
+  }
+
+  if (kv_set(key, (char*)board_type, 1, KV_FCREATE)) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, board_type[0]);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+fby3_common_fscd_ctrl (uint8_t mode) {
+  int ret = 0;
+  char cmd[MAX_SYS_REQ_LEN] = {0};
+  char buf[MAX_SYS_RESP_LEN] = {0};
+  bool is_fscd_run = false;
+  FILE* fp = NULL;
+  FILE* fp2 = NULL;
+
+  // check fscd status
+  snprintf(cmd, sizeof(cmd), "sv status fscd");
+  if ((fp = popen(cmd, "r")) == NULL) {
+    syslog(LOG_WARNING, "%s() failed to get fscd status", __func__);
+    return -1;
+  }
+  memset(buf, 0, sizeof(buf));
+  if (fgets(buf, sizeof(buf), fp) == NULL) {
+    syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
+    ret = -1;
+    goto exit;
+  }
+
+  if (strstr(buf, "run") != NULL) {
+    is_fscd_run = true;
+  } else {
+    is_fscd_run = false;
+  }
+
+  if (mode == FAN_MANUAL_MODE) {
+    if (is_fscd_run == false) {
+      // fscd already stopped
+      goto exit;
+    }
+    snprintf(cmd, sizeof(cmd), "sv force-stop fscd > /dev/null 2>&1");
+    if (system(cmd) != 0) {
+      // Although sv force-stop sends kill (-9) signal after timeout,
+      // it still returns an error code.
+      // we will check status here to ensure that fscd has stopped completely.
+      syslog(LOG_WARNING, "%s() fscd force-stop timeout", __func__);
+      snprintf(cmd, sizeof(cmd), "sv status fscd");
+      if ((fp2 = popen(cmd, "r")) == NULL) {
+        syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
+        ret = -1;
+        goto exit;
+      } 
+      memset(buf, 0, sizeof(buf));
+      if (fgets(buf, sizeof(buf), fp2) == NULL) {
+        syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
+        ret = -1;
+        goto exit;
+      }
+      if (strstr(buf, "down") == NULL) {
+        syslog(LOG_WARNING, "%s() failed to terminate fscd", __func__);
+        ret = -1;
+      }
+    }
+  } else if (mode == FAN_AUTO_MODE) {
+    if (is_fscd_run == true) {
+      // fscd already running
+      goto exit;
+    }
+    snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() start fscd failed", __func__);
+    }
+  } else {
+    syslog(LOG_ERR, "%s(), fan mode %d not supported", __func__, mode);
+    ret = -1;
+  }
+
+exit:
+  if (fp != NULL) {
+    pclose(fp);
+  }
+  if (fp2 != NULL) {
+    pclose(fp2);
+  }
 
   return ret;
 }

@@ -25,4 +25,33 @@ from common.base_fru_test import CommonFruTest
 class FruIOMTest(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "iom"]
-        self.fru_fields = {"product": 4, "board": 0}
+        self.fru_fields = {"product": 1, "board": 0}
+
+    def getProductFields(self, num_custom=0):
+        # need to override the parent method since FBTTN
+        # doesn't have Product FRU ID
+        product_fields = {
+            "Product Manufacturer",
+            "Product Name",
+            "Product Part Number",
+            "Product Version",
+            "Product Serial",
+            "Product Asset Tag",
+        }
+        for i in range(1, num_custom + 1):
+            product_fields.add("Product Custom Data {}".format(i))
+        return product_fields
+
+    def getBoardFields(self, num_custom=0):
+        # need to override the parent method since FBTTN
+        # doesn't have Board FRU ID
+        board_fields = {
+            "Board Mfg Date",
+            "Board Mfg",
+            "Board Product",
+            "Board Serial",
+            "Board Part Number",
+        }
+        for i in range(1, num_custom + 1):
+            board_fields.add("Board Custom Data {}".format(i))
+        return board_fields

@@ -20,7 +20,7 @@ import re
 import sys
 
 import fsc_board
-from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceKv
 from fsc_util import Logger, clamp
 
 
@@ -71,6 +71,27 @@ class Fan(object):
                     self.source = FscSensorSourceUtil(
                         name=fan_name, read_source=pTable["read_source"]["util"]
                     )
+            if "kv" in pTable["read_source"]:
+                if "write_source" in pTable:
+                    if "max_duty_register" in pTable["write_source"]:
+                        max_duty_register = pTable["write_source"]["max_duty_register"]
+                    else:
+                        max_duty_register = 100
+                    if "util" in pTable["write_source"]:
+                        write_type = "util"
+                    else:
+                        write_type = "kv"
+                    self.source = FscSensorSourceKv(
+                        name=fan_name,
+                        read_source=pTable["read_source"]["kv"],
+                        write_source=pTable["write_source"][write_type],
+                        max_duty_register=max_duty_register,
+                        write_type=write_type,
+                    )
+                else:
+                    self.source = FscSensorSourceKv(
+                        name=fan_name, read_source=pTable["read_source"]["kv"]
+                    )
         except Exception:
             Logger.error("Unknown Fan source type")
 
@@ -88,6 +109,7 @@ class Zone:
         sensor_valid_check,
         fail_sensor_type,
         ssd_progressive_algorithm,
+        sensor_fail_ignore,
     ):
         self.pwm_output = pwm_output
         self.last_pwm = transitional
@@ -106,6 +128,12 @@ class Zone:
         self.missing_sensor_assert_retry = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_pre = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_cur = [0] * len(self.expr_meta["ext_vars"])
+        if "get_fan_mode" in dir(fsc_board):
+            self.get_fan_mode = True
+        else:
+            self.get_fan_mode = False
+        self.fail_front_io_count = [0] * len(self.expr_meta["ext_vars"])
+        self.sensor_fail_ignore = sensor_fail_ignore
 
     def get_set_fan_mode(self, mode, action):
         fan_mode_path = RECORD_DIR + "fan_mode"
@@ -184,9 +212,17 @@ class Zone:
                             "Sensor %s reporting status %s"
                             % (sensor.name, sensor.status)
                         )
-                        outmin = max(outmin, self.transitional)
-                        if outmin == self.transitional:
-                            mode = fan_mode["trans_mode"]
+                        if self.get_fan_mode:
+                            set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
+                                "sensor_hit_UCR"
+                            )
+                            outmin = max(outmin, set_fan_pwm)
+                            if outmin == set_fan_pwm:
+                                mode = set_fan_mode
+                        else:
+                            outmin = max(outmin, self.transitional)
+                            if outmin == self.transitional:
+                                mode = fan_mode["trans_mode"]
                     else:
                         if self.sensor_fail == True:
                             sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
@@ -200,6 +236,15 @@ class Zone:
                                 ):
                                     fail_ssd_count = fail_ssd_count + 1
                                     Logger.warn("M.2 Device %s Fail" % v)
+                                elif (re.match(r"front_io_temp", sname) != None):
+                                    self.fail_front_io_count[sensor_index] = self.fail_front_io_count[sensor_index] + 1
+                                    if self.fail_front_io_count[sensor_index] > 1:
+                                        Logger.warn("Front IO Temp %s Fail" % v)
+                                        self.fail_front_io_count[sensor_index] = 0
+                                        outmin = max(outmin, self.boost)
+                                        cause_boost_count += 1
+                                elif (self.sensor_fail_ignore) and (fsc_board.sensor_fail_ignore_check(sname)):
+                                    Logger.info("Ignore %s Fail" % v)
                                 else:
                                     Logger.warn("%s Fail" % v)
                                     outmin = max(outmin, self.boost)
@@ -212,6 +257,8 @@ class Zone:
                                 if outmin == self.boost:
                                     mode = fan_mode["boost_mode"]
                             else:
+                                if (re.match(r"front_io_temp", sname) != None):
+                                    self.fail_front_io_count[sensor_index] = 0
                                 if os.path.isfile(sensor_fail_record_path):
                                     os.remove(sensor_fail_record_path)
                 else:

@@ -38,8 +38,8 @@
 #endif
 
 #define present_help_str                        \
-  "0x0: present\n"                              \
-  "0x1: not present"
+  "0x0: not present\n"                              \
+  "0x1: present"
 
 #define led_bit_help_str                        \
   "0x0: LED On\n"                               \
@@ -51,8 +51,8 @@
 
 #define fan_id_change_bit_help_str              \
   "Fan ID change: Clear on writing '1'\n"       \
-  "0x0: Fan ID changed\n"                       \
-  "0x1: Fan ID did not change."
+  "0x0: Fan ID did not change\n"                       \
+  "0x1: Fan ID changed."
 
 #define fan_change_latched                      \
   "0x1: Change latched (W0C)\n"                 \

@@ -51,7 +51,6 @@ gpio_export SKU_ID1_PAX1 GPIOB7
 
 gpio_export SKU_ID0_PAX1 GPIOAC2
 
-
 gpio_export SKU_ID1_PAX2 GPIOM0
 
 gpio_export SKU_ID0_PAX2 GPIOB0
@@ -103,6 +102,10 @@ gpio_export REV_ID0 GPIOG4
 gpio_export REV_ID1 GPIOG5
 gpio_export REV_ID2 GPIOG6
 
+kv set mb_rev $(($(gpio_get REV_ID2)<<2 |
+        $(gpio_get REV_ID1)<<1 |
+        $(gpio_get REV_ID0)))
+
 # OCP3.0 NIC power good
 gpio_export OCP_V3_0_NIC_POWER_GOOD GPIOH0
 gpio_export OCP_V3_1_NIC_POWER_GOOD GPIOH1
@@ -122,6 +125,9 @@ gpio_export SEL_FLASH_PAX3 GPIOAA6
 gpio_export OCP_V3_3_PRSNTB_R_N GPIOAA2
 gpio_export OCP_V3_4_PRSNTB_R_N GPIOAA3
 gpio_export OCP_V3_5_PRSNTB_R_N GPIOAB3
+
+gpio_export CARRIER_0_ALERT_R_N GPIOAB0
+gpio_export CARRIER_1_ALERT_R_N GPIOAB1
 
 gpio_export BMC_BOOT_RCVR_B0_PAX0 GPIOL0
 gpio_set BMC_BOOT_RCVR_B0_PAX0 0
@@ -157,6 +163,8 @@ gpio_export BOARD_ID2 GPION7
 gpio_export BATTERY_DETECT GPIOQ6
 gpio_set BATTERY_DETECT 0
 
+gpio_export SMB_PMBUS_ISO_HSC_R2_ALERT_0_1 GPIOS0
+gpio_export SMB_PMBUS_ISO_HSC_R2_ALERT_2_3 GPIOS1
 gpio_export OCP_V3_6_PRSNTB_R_N GPIOS2
 gpio_export OCP_V3_7_PRSNTB_R_N GPIOS3
 gpio_export PD_GPIOS4 GPIOS4
@@ -167,6 +175,7 @@ gpio_set PD_GPIOS6 0
 gpio_export PD_GPIOS7 GPIOS7
 gpio_set PD_GPIOS7 0
 
+gpio_export RST_SMB_CARRIER_N GPIOY0
 gpio_export OCP_V3_0_PRSNTB_R_N GPIOY3
 
 gpio_export OCP_V3_1_PRSNTB_R_N GPIOZ2
@@ -181,25 +190,25 @@ gpio_set PU_GPIOZ6 0
 gpio_export PU_GPIOZ7 GPIOZ7
 gpio_set PU_GPIOZ7 1
 
-gpio_export PD_GPIOT1 GPIOT1
-gpio_set PD_GPIOT1 0
-gpio_export NCSI_BMC_TX_EN GPIOT2
-gpio_set NCSI_BMC_TX_EN 1
-gpio_export NCSI_BMC_TXD0 GPIOT3
+gpio_export NCSI_BMC_TX_EN GPIOT1
+gpio_set NCSI_BMC_TX_EN 0
+gpio_export NCSI_BMC_TXD0 GPIOT2
 gpio_set NCSI_BMC_TXD0 0
-gpio_export NCSI_BMC_TXD1 GPIOT4
+gpio_export NCSI_BMC_TXD1 GPIOT3
 gpio_set NCSI_BMC_TXD1 0
+gpio_export PD_GPIOT4 GPIOT4
+gpio_set PD_GPIOT4 0
 gpio_export PD_GPIOT5 GPIOT5
 gpio_set PD_GPIOT5 0
 
-gpio_export PD_GPIOT7 GPIOT7
-gpio_set PD_GPIOT7 0
-gpio_export NCSI_BMC_2_TX_EN GPIOU0
+gpio_export NCSI_BMC_2_TX_EN GPIOT7
 gpio_set NCSI_BMC_2_TX_EN 0
-gpio_export NCSI_BMC_2_TXD0 GPIOU1
+gpio_export NCSI_BMC_2_TXD0 GPIOU0
 gpio_set NCSI_BMC_2_TXD0 0
-gpio_export NCSI_BMC_2_TXD1 GPIOU2
+gpio_export NCSI_BMC_2_TXD1 GPIOU1
 gpio_set NCSI_BMC_2_TXD1 0
+gpio_export PD_GPIOU2 GPIOU2
+gpio_set PD_GPIOU2 0
 gpio_export PD_GPIOU3 GPIOU3
 gpio_set PD_GPIOU3 0
 
@@ -220,9 +229,26 @@ devmem_clear_bit $(scu_addr 88) 23
 
 gpio_export BMC_FORCE_THROTTLE_N GPIOP6
 gpio_set BMC_FORCE_THROTTLE_N 1
+gpio_export HSC_TIMER_R_N GPIOP2
+gpio_export HSC_OC_R_N GPIOP3
+gpio_export HSC_UV_R_N GPIOP4
+gpio_export PMBUS_HSC_ALERT_R_N GPIOP5
+gpio_export FM_SYS_THROTTLE_R GPIOP7
 
-gpio_export RST_FIO_IOEXP_R_N GPIOY1
-gpio_set RST_FIO_IOEXP_R_N 1
+gpio_export EP0_CBL_PRSNT_R1 GPIOJ0
+gpio_export EP1_CBL_PRSNT_R1 GPIOJ1
+gpio_export EP2_CBL_PRSNT_R1 GPIOJ2
+gpio_export EP3_CBL_PRSNT_R1 GPIOJ3
+gpio_export MB0_CBL_PRSNT_P1_R1 GPIOJ4
+gpio_export MB0_CBL_PRSNT_P0_R1 GPIOJ5
+gpio_export MB1_CBL_PRSNT_P1_R1 GPIOJ6
+gpio_export MB1_CBL_PRSNT_P0_R1 GPIOJ7
+
+gpio_export RST_PMBUS_N GPIOY1
+gpio_set RST_PMBUS_N 1
+
+gpio_export RST_FIO_IOEXP_N GPIOY2
+gpio_set RST_FIO_IOEXP_N 1
 
 gpio_export CPLD_BMC_GPIO_R_01 GPIOAC3
 

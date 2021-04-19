@@ -44,6 +44,7 @@ extern "C" {
 
 /* define for DELTA PSU */
 #define DELTA_MODEL         "ECD55020006"
+#define DELTA_MODEL_2K      "ECD15020060"
 #define DELTA_HDR_LENGTH    32
 #define UNLOCK_UPGRADE      0xf0
 #define BOOT_FLAG           0xf1
@@ -62,6 +63,12 @@ extern "C" {
 
 /* define for MURATA PSU */
 #define MURATA_MODEL        "D1U54P-W-1500-12-HC4TC-AF"
+#define MURATA_MODEL_2K     "D1U54T-W-2000-12-HC4TC-FB"
+#define MURATA_FWID_2K      "M5819-00000"
+
+#define MURATA2K_HDR_LENGTH      32
+#define MURATA2K_FWID_LENGTH     11
+#define MURATA2K_BYTE_PER_BLK    16
 
 typedef struct _i2c_info_t {
   int fd;
@@ -132,6 +139,22 @@ typedef struct _murata_hdr_t {
   uint8_t unlock[4];
 } murata_hdr_t;
 
+typedef struct _murata2k_hdr_t {
+  uint8_t crc[2];
+  uint16_t page_start;
+  uint16_t page_end;
+  uint16_t byte_per_blk;
+  uint16_t blk_per_page;
+  uint8_t uc;
+  uint8_t app_fw_major;
+  uint8_t app_fw_minor;
+  uint8_t bl_fw_major;
+  uint8_t bl_fw_minor;
+  uint8_t fw_id_len;
+  uint8_t fw_id[MURATA2K_FWID_LENGTH + 1];
+  uint8_t compatibility;
+} murata2k_hdr_t;
+
 enum {
   STOP,
   START
@@ -144,9 +167,11 @@ enum {
 
 enum {
   DELTA_1500,
+  DELTA_2000,
   LITEON_1500,
   BELPOWER_1500_NAC,
   MURATA_1500,
+  MURATA_2000,
   UNKNOWN
 };
 

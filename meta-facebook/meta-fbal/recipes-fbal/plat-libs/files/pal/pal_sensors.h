@@ -4,11 +4,6 @@
 #include <openbmc/pmbus.h>
 #include <openbmc/obmc_pal_sensors.h>
 
-#define MAX_SENSOR_NUM         (0xFF)
-#define MAX_DEVICE_NAME_SIZE   (128)
-#define MB_TEMP_DEVICE  "/sys/class/i2c-dev/i2c-%d/device/%d-00%x/hwmon/hwmon*/temp1_input"
-#define MB_ADC_VOLTAGE_DEVICE "/sys/devices/platform/iio-hwmon/hwmon/hwmon*/in%d_input"
-
 //PECI CMD INFO
 #define PECI_RETRY_TIMES                        (10)
 #define PECI_CMD_RD_PKG_CONFIG                  (0xA1)
@@ -39,6 +34,9 @@
 #define PECI_CPU6_ADDR    (0x36)
 #define PECI_CPU7_ADDR    (0x37)
 
+//TI VR NVM INFO
+#define TI_ONLY_CONFIG2   (0xCE)
+
 enum {
   CFG_SAMPLE_DIABLE = 0,
   CFG_SAMPLE_2,
@@ -63,8 +61,8 @@ enum {
 #define PMON_CFG_AVG_PWR(x)         (x << 11)
 
 #define ADM1278_ALTER_CONFIG        (0xD5)
-#define IOUT_OC_WARN_EN1            (1 << 10) 
- 
+#define IOUT_OC_WARN_EN1            (1 << 10)
+
 //INA260 CMD INFO
 #define INA260_CURRENT   (0x01)
 #define INA260_VOLTAGE   (0x02)
@@ -142,7 +140,20 @@ enum {
   MB_SNR_HSC_PEAK_PIN = 0x50,
   MB1_SNR_HSC_PEAK_PIN = 0x51,
   MB2_SNR_HSC_PEAK_PIN = 0x52,
-  MB3_SNR_HSC_PEAK_PIN = 0x53,  
+  MB3_SNR_HSC_PEAK_PIN = 0x53,
+
+//FAN POWER
+  PDB_SNR_FAN0_POWER = 0x54,
+  PDB_SNR_FAN1_POWER = 0x55,
+  PDB_SNR_FAN2_POWER = 0x56,
+  PDB_SNR_FAN3_POWER = 0x57,
+
+//FAN DUTY
+  PDB_SNR_FAN0_DUTY = 0x58,
+  PDB_SNR_FAN1_DUTY = 0x59,
+  PDB_SNR_FAN2_DUTY = 0x5A,
+  PDB_SNR_FAN3_DUTY = 0x5B,
+
 //INA260
   MB_SNR_P12V_STBY_INA260_VOL = 0x5C,
   MB_SNR_P3V3_M2_1_INA260_VOL = 0x5D,
@@ -270,11 +281,6 @@ enum {
   MB_SNR_VR_PCH_PVNN_TEMP = 0xC9,
   MB_SNR_VR_PCH_PVNN_CURR = 0xCA,
   MB_SNR_VR_PCH_PVNN_POWER = 0xCB,
-//FAN POWER
-  PDB_SNR_FAN0_POWER = 0xCC,
-  PDB_SNR_FAN1_POWER = 0xCD,
-  PDB_SNR_FAN2_POWER = 0xCE,
-  PDB_SNR_FAN3_POWER = 0xCF,
 //ADC
   MB_SNR_P5V = 0xD0,
   MB_SNR_P5V_STBY = 0xD1,
@@ -361,6 +367,7 @@ enum {
   ADC12,
   ADC13,
   ADC14,
+  ADC_NUM_CNT,
 };
 
 //INA260 INFO
@@ -378,13 +385,14 @@ enum {
   TEMP_OUTLET_R,
   TEMP_REMOTE_INLET,
   TEMP_REMOTE_OUTLET_R,
-  TEMP_REMOTE_OUTLET_L, 
+  TEMP_REMOTE_OUTLET_L,
 };
 
 //NIC INFO
 enum {
   MEZZ0 = 0,
   MEZZ1,
+  MEZZ_CNT,
 };
 
 //HARD DISK INFO
@@ -414,11 +422,12 @@ typedef struct {
 
 enum {
   DIMM_CRPA = 0,
-  DIMM_CRPB = 1,
-  DIMM_CRPC = 2,
-  DIMM_CRPD = 3,
-  DIMM_CRPE = 4,
-  DIMM_CRPF = 5,
+  DIMM_CRPB,
+  DIMM_CRPC,
+  DIMM_CRPD,
+  DIMM_CRPE,
+  DIMM_CRPF,
+  DIMM_CNT,
 };
 
 typedef struct {
@@ -449,7 +458,7 @@ enum {
   HSC_ID0,
   HSC_ID1,
   HSC_ID2,
-  HSC_ID3, 
+  HSC_ID3,
 };
 
 typedef struct {
@@ -505,6 +514,7 @@ enum {
   CM_FAN1_POWER,
   CM_FAN2_POWER,
   CM_FAN3_POWER,
+  CM_SNR_CNT,
 };
 
 typedef struct {
@@ -554,8 +564,6 @@ int cmd_peci_get_cpu_err_num(int* num, uint8_t is_caterr);
 int pal_sensor_monitor_initial(void);
 bool pal_check_nic_prsnt(uint8_t fru);
 bool pal_check_dimm_prsnt(uint8_t snr_num);
-bool check_cpu_present_pin_gpio(uint8_t cpu_id);
-
 
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;

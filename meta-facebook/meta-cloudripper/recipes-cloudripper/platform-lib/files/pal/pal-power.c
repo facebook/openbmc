@@ -83,58 +83,64 @@ int pal_set_com_pwr_btn_n(char *status) {
   return 0;
 }
 
-// Power On the COM-E
-static int scm_power_on(uint8_t slot_id) {
-  int ret;
+// Power On the server
+static int server_power_on(void) {
+  int ret, val;
 
-  ret = run_command("/usr/local/bin/wedge_power.sh on");
-  if (ret) {
-    OBMC_ERROR(ret, "%s failed", __func__);
-    return -1;
+  ret = device_read(SCM_COM_PWR_ENBLE, &val);
+  if (ret || val) {
+    if (pal_set_com_pwr_btn_n("1")) {
+      return -1;
+    }
+
+    if (pal_set_com_pwr_btn_n("0")) {
+      return -1;
+    }
+    sleep(1);
+
+    if (pal_set_com_pwr_btn_n("1")) {
+      return -1;
+    }
+    /* Wait for server power good ready */
+    sleep(1);
+
+    if (!is_server_on()) {
+      return -1;
+    }
+  } else {
+    ret = device_write_buff(SCM_COM_PWR_ENBLE, "1");
+    if (ret) {
+      syslog(LOG_WARNING, "%s: Power on is failed", __func__);
+      return -1;
+    }
   }
-  return 0;
-}
-
-// Power Off the COM-E
-static int scm_power_off(uint8_t slot_id) {
-  int ret;
-
-  ret = run_command("/usr/local/bin/wedge_power.sh off");
-  if (ret) {
-    OBMC_ERROR(ret, "%s failed", __func__);
-    return -1;
-  }
-  return 0;
-}
-
-// Power Button trigger the server in given slot
-static int cpu_power_btn(uint8_t slot_id) {
-  int ret;
-
-  ret = pal_set_com_pwr_btn_n("0");
-  if (ret)
-    return -1;
-  sleep(DELAY_POWER_BTN);
-  ret = pal_set_com_pwr_btn_n("1");
-  if (ret)
-    return -1;
 
   return 0;
 }
 
-// set CPU power off with power button
-static int cpu_power_off(uint8_t slot_id) {
-  int ret = pal_set_com_pwr_btn_n("0");//set COM_PWR_BTN_N to low
-  if (ret) {
-    OBMC_ERROR(ret, "%s set COM-e power button low failed.\n", __func__);
-    return -1;
+// Power Off the server in given slot
+static int server_power_off(bool gs_flag) {
+  int ret;
+
+  if (gs_flag) {
+    ret = pal_set_com_pwr_btn_n("0");
+    if (ret) {
+      return -1;
+    }
+    sleep(DELAY_GRACEFUL_SHUTDOWN);
+
+    ret = pal_set_com_pwr_btn_n("1");
+    if (ret) {
+      return -1;
+    }
+  } else {
+    ret = device_write_buff(SCM_COM_PWR_ENBLE, "0");
+    if (ret) {
+      syslog(LOG_WARNING, "%s: Power off is failed",__func__);
+      return -1;
+    }
   }
-  sleep(6);
-  ret = pal_set_com_pwr_btn_n("1");//set COM_PWR_BTN_N to high
-  if (ret) {
-    OBMC_ERROR(ret, "%s set COM-e power button high failed.\n", __func__);
-    return -1;
-  }
+
   return 0;
 }
 
@@ -180,6 +186,7 @@ int pal_get_server_power(uint8_t slot_id, uint8_t *status) {
 int pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
   int ret = 0;
   uint8_t status;
+  bool gs_flag = false;
 
   if (pal_get_server_power(slot_id, &status) < 0) {
     return -1;
@@ -190,24 +197,24 @@ int pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     if (status == SERVER_POWER_ON)
       return 1;
     else
-      return scm_power_on(slot_id);
+        return server_power_on();
     break;
 
   case SERVER_POWER_OFF:
     if (status == SERVER_POWER_OFF)
       return 1;
     else
-      return scm_power_off(slot_id);
+      return server_power_off(gs_flag);
     break;
 
   case SERVER_POWER_CYCLE:
     if (status == SERVER_POWER_ON) {
-      if (scm_power_off(slot_id))
+      if (server_power_off(gs_flag))
         return -1;
       sleep(DELAY_POWER_CYCLE);
-      return scm_power_on(slot_id);
+      return server_power_on();
     } else if (status == SERVER_POWER_OFF) {
-      return (scm_power_on(slot_id));
+      return server_power_on();
     }
     break;
 
@@ -231,11 +238,12 @@ int pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     break;
 
   case SERVER_GRACEFUL_SHUTDOWN:
-    ret = cpu_power_off(slot_id);
-    break;
-
-  case SERVER_GRACEFUL_POWER_ON:
-    ret = cpu_power_btn(slot_id);
+    if (status == SERVER_POWER_OFF) {
+      return 1;
+    } else {
+      gs_flag = true;
+      return server_power_off(gs_flag);
+    }
     break;
 
   default:
@@ -264,7 +272,6 @@ bool is_server_on(void) {
 int pal_set_gb_power(int option) {
   char path[256];
   int ret;
-  uint8_t brd_type;
   char sysfs[128];
 
   sprintf(sysfs, GB_POWER);

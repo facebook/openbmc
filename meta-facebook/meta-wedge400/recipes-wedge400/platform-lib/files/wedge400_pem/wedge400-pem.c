@@ -935,15 +935,15 @@ static int parse_pem_fru_eeprom(uint8_t num, struct wedge_eeprom_st *fruid) {
   char eeprom[16];
 
   snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
-  pal_add_i2c_device(pem[num].bus, pem[num].chip_addr[EEPROM], eeprom);
+  i2c_add_device(pem[num].bus, pem[num].chip_addr[EEPROM], eeprom);
   ret = wedge_eeprom_parse(pem[num].file_path[EEPROM], fruid);
-  pal_del_i2c_device(pem[num].bus, pem[num].chip_addr[EEPROM]);
+  i2c_delete_device(pem[num].bus, pem[num].chip_addr[EEPROM]);
 
   if (ret) {
     snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
-    pal_add_i2c_device(pem[num].bus, pem[num].chip_addr[EEPROM], eeprom);
+    i2c_add_device(pem[num].bus, pem[num].chip_addr[EEPROM], eeprom);
     ret = wedge_eeprom_parse(pem[num].file_path[EEPROM], fruid);
-    pal_del_i2c_device(pem[num].bus, pem[num].chip_addr[EEPROM]);
+    i2c_delete_device(pem[num].bus, pem[num].chip_addr[EEPROM]);
     if (ret) {
       printf("Failed print EEPROM info!\n");
       return -1;
@@ -1673,8 +1673,8 @@ do_update_pem(uint8_t num, const char *file_path, const char *vendor, _Bool forc
   signal(SIGQUIT, exithandler);
 
   sensord_operation(num, STOP);
-  pal_del_i2c_device(pem[num].bus, pem[num].chip_addr[LTC4282]);
-  pal_del_i2c_device(pem[num].bus, pem[num].chip_addr[MAX6615]);
+  i2c_delete_device(pem[num].bus, pem[num].chip_addr[LTC4282]);
+  i2c_delete_device(pem[num].bus, pem[num].chip_addr[MAX6615]);
 
   pem[num].fd = i2c_cdev_slave_open(pem[num].bus, pem[num].chip_addr[LTC4282],
                                     I2C_SLAVE_FORCE_CLAIM);
@@ -1702,8 +1702,8 @@ do_update_pem(uint8_t num, const char *file_path, const char *vendor, _Bool forc
 
   if (ret == 0 || ret == FW_IDENTICAL) {
     sensord_operation(num, START);
-    pal_add_i2c_device(pem[num].bus, pem[num].chip_addr[LTC4282], PEM_LTC4282_DRIVER);
-    pal_add_i2c_device(pem[num].bus, pem[num].chip_addr[MAX6615], PEM_MAX6615_DRIVER);
+    i2c_add_device(pem[num].bus, pem[num].chip_addr[LTC4282], PEM_LTC4282_DRIVER);
+    i2c_add_device(pem[num].bus, pem[num].chip_addr[MAX6615], PEM_MAX6615_DRIVER);
   }
   close(pem[num].fd);
 

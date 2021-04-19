@@ -94,7 +94,7 @@ int DumbCpldComponent::print_version() {
 
   comp = _component;
   transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
-  sys.output << comp << " Version: " << string(strbuf) << endl;
+  sys().output << comp << " Version: " << string(strbuf) << endl;
 
   return 0;
 }
@@ -119,13 +119,13 @@ int PfrCpldComponent::update(string image) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  if (!sys.get_mtd_name(string("stg-cpld"), dev)) {
+  if (!sys().get_mtd_name(string("stg-cpld"), dev)) {
     return FW_STATUS_FAILURE;
   }
 
-  sys.output << "Flashing to device: " << dev << endl;
+  sys().output << "Flashing to device: " << dev << endl;
   cmd = "flashcp -v " + image + " " + dev;
-  ret = sys.runcmd(cmd);
+  ret = sys().runcmd(cmd);
   ret = pal_fw_update_finished(0, _component.c_str(), ret);
 
   return ret;
@@ -170,7 +170,7 @@ int PfrCpldComponent::print_version() {
 
   comp = _component;
   transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
-  sys.output << comp << " Version: " << string(strbuf) << endl;
+  sys().output << comp << " Version: " << string(strbuf) << endl;
 
   return 0;
 }

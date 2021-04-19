@@ -44,15 +44,20 @@ function init_class1_ipmb(){
       enable_server_i2c_bus ${slot_num}
     fi
   done
-  
+
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-9/new_device
   runsv /etc/sv/ipmbd_9 > /dev/null 2>&1 &
 
+  # add BMC slave address to NIC I2C bus for MCTP
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
 }
 
 function init_class2_ipmb(){
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device
   runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
+
+  # add BMC slave address to NIC I2C bus for MCTP
+  echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
 }
 
 echo -n "Starting IPMB Rx/Tx Daemon.."

@@ -44,7 +44,7 @@ string exec_name = "Unknown";
 map<string, map<string, Component *, partialLexCompare>, partialLexCompare> * Component::fru_list = NULL;
 
 Component::Component(string fru, string component)
-  : _fru(fru), _component(component), sys(), update_initiated(false)
+  : _fru(fru), _component(component), _sys(), update_initiated(false)
 {
   fru_list_setup();
   (*fru_list)[fru][component] = this;
@@ -253,13 +253,13 @@ int main(int argc, char *argv[])
       return -1;
     }
     image.assign(argv[4]);
-    if (action == "--update") {
+    if (action == "--update" && image != "-") {
       ifstream f(image);
       if (!f.good()) {
         cerr << "Cannot access: " << image << endl;
         return -1;
       }
-    } 
+    }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
       return -1;
@@ -279,10 +279,12 @@ int main(int argc, char *argv[])
       return -1;
     }
     image.assign(argv[5]);
-    ifstream f(image);
-    if (!f.good()) {
-      cerr << "Cannot access: " << image << endl;
-      return -1;
+    if (image != "-") {
+      ifstream f(image);
+      if (!f.good()) {
+        cerr << "Cannot access: " << image << endl;
+        return -1;
+      }
     }
     if (component == "all") {
       cerr << "Upgrading all components not supported" << endl;
@@ -320,8 +322,6 @@ int main(int argc, char *argv[])
   sigemptyset(&sa.sa_mask);
   sigaction(SIGHUP, &sa, NULL);
   sigaction(SIGINT, &sa, NULL);
-  sigaction(SIGQUIT, &sa, NULL);
-  sigaction(SIGSEGV, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGPIPE, &sa, NULL); // for ssh terminate
   //print the fw version or do the fw update when the fru and the comp are found
@@ -372,10 +372,18 @@ int main(int argc, char *argv[])
             string str_act("");
             c->set_update_ongoing(60 * 10);
             if (action == "--update") {
-              ret = c->update(image);
+              if (image != "-") {
+                ret = c->update(image);
+              } else {
+                ret = c->update(0, false /* force */);
+              }
               str_act.assign("Upgrade");
             } else if (action == "--force") {
-              ret = c->fupdate(image);
+              if (image != "-") {
+                ret = c->fupdate(image);
+              } else {
+                ret = c->update(0 /* fd */, true /* force */);
+              }
               str_act.assign("Force upgrade");
             } else {
               ret = c->dump(image);
@@ -384,6 +392,7 @@ int main(int argc, char *argv[])
             c->set_update_ongoing(0);
             if (ret == 0) {
               cout << str_act << " of " << c->fru() << " : " << component << " succeeded" << endl;
+              c->update_finish();
             } else {
               cerr << str_act << " of " << c->fru() << " : " << component;
               if (ret == FW_STATUS_NOT_SUPPORTED) {

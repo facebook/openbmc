@@ -29,6 +29,8 @@ SRC_URI = "file://ast-functions \
            file://sync-rtc.sh \
            file://run-sync-rtc.sh \
            file://setup-i2c.sh \
+           file://setup-por.sh \
+           file://setup-nicfru.sh \
            file://COPYING \
           "
 
@@ -56,7 +58,7 @@ do_install() {
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
   install -m 755 setup-i2c.sh ${D}${sysconfdir}/init.d/setup-i2c.sh
-  update-rc.d -r ${D} setup-i2c.sh start 60 5 .
+  update-rc.d -r ${D} setup-i2c.sh start 66 5 .
   install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh
   update-rc.d -r ${D} setup-usbhub.sh start 90 S .
   install -m 755 setup-usbnet.sh ${D}${sysconfdir}/init.d/setup-usbnet.sh
@@ -64,8 +66,11 @@ do_install() {
   install -m 755 sync-rtc.sh ${D}${sysconfdir}/init.d/sync-rtc.sh
   install -m 755 run-sync-rtc.sh ${D}${sysconfdir}/init.d/run-sync-rtc.sh
   update-rc.d -r ${D} run-sync-rtc.sh start 99 5 .
+  install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
+  update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-m2carrier.sh ${D}${sysconfdir}/init.d/setup-m2carrier.sh
-  update-rc.d -r ${D} setup-m2carrier.sh start 90 S .
+  install -m 755 setup-nicfru.sh ${D}${sysconfdir}/init.d/setup-nicfru.sh
+  update-rc.d -r ${D} setup-nicfru.sh start 60 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

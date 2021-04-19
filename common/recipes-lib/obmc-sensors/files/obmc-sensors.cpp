@@ -95,3 +95,7 @@ extern "C" int sensors_read_adc(const char *label, float *value)
   return sensors_read("ast_adc-isa-0000", label, value);
 }
 
+extern "C" void sensors_reinit()
+{
+  sensors.re_enumerate(SENSOR_CONF);
+}

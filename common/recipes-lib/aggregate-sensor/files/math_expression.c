@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include "math_expression.h"
 
 typedef enum {
@@ -42,7 +43,8 @@ typedef enum {
   OP_ADD, /* L + R */
   OP_SUBTRACT, /* L - R */
   OP_MULTIPLY, /* L * R */
-  OP_DIVIDE /* L / R */
+  OP_DIVIDE, /* L / R */
+  OP_POWER /* L / R */
 } operator_type;
 
 struct expression_type_s {
@@ -75,6 +77,9 @@ static operator_type get_operator(char *str)
     case '/':
       op = OP_DIVIDE;
       break;
+    case '^':
+      op = OP_POWER;
+      break;     
     default:
       op = OP_INVALID;
       break;
@@ -272,6 +277,9 @@ int expression_evaluate(expression_type *exp, float *value)
     case OP_DIVIDE:
       *value = l_val / r_val;
       break;
+    case OP_POWER:
+      *value = powf(l_val, r_val);
+      break;
     default:
       assert(0);
   }
@@ -319,6 +327,9 @@ void expression_print(expression_type *exp)
       break;
     case OP_DIVIDE:
       printf("/ ");
+      break;
+    case OP_POWER:
+      printf("^ ");
       break;
     default:
       /* This case is possible only if there is no right term */

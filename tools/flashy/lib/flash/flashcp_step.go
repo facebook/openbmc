@@ -44,10 +44,8 @@ func FlashCp(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Flash device: %v", flashDevice)
 	err = flashCpAndValidate(flashDevice, stepParams.ImageFilePath, 0)
 	if err != nil {
-		// return safe to reboot here to retry.
-		// error handler (step.HandleStepError) will check if
-		// either flash device is valid.
-		return step.ExitSafeToReboot{err}
+		// failed validation considered to be a deal breaker
+		return step.ExitUnsafeToReboot{err}
 	}
 
 	// make sure no other flasher is running

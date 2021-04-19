@@ -37,8 +37,7 @@ extern "C" {
 
 #define PRESENT_1OU 1
 #define PRESENT_2OU 2
-#define DEV_ID_1U 11
-#define DEV_ID_2U 12
+#define RETRY_3_TIME 3
 #define RETRY_TIME 10
 #define IPMB_RETRY_DELAY_TIME 500
 
@@ -57,6 +56,46 @@ extern "C" {
 
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
+
+#define REVISION_ID(x) ((x >> 4) & 0x0f)
+#define COMPONENT_ID(x) (x & 0x0f)
+
+#define NIC_CPLD_BUS 9
+#define BB_CPLD_BUS 12
+#define CPLD_ADDRESS 0x1E
+#define SLOT_BUS_BASE 3
+#define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
+#define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
+#define CPLD_BOARD_PVT_REV 3
+#define CPLD_FLAG_REG_ADDR 0x1F
+#define CPLD_BB_BUS 0x01
+#define CPLD_SB_BUS 0x05
+/*Revision Number:
+  BOARD_REV_EVT = 2
+  BOARD_REV_DVT = 3
+  BOARD_REV_PVT = 4
+  BOARD_REV_MP  = 5
+  FW_REV_EVT = 1
+  FW_REV_DVT = 2
+  FW_REV_PVT = 3
+  FW_REV_MP  = 4
+*/
+
+// on-chip Flash IP
+#define ON_CHIP_FLASH_IP_CSR_BASE        (0x00200020)
+#define ON_CHIP_FLASH_IP_CSR_STATUS_REG  (ON_CHIP_FLASH_IP_CSR_BASE + 0x0)
+#define ON_CHIP_FLASH_IP_CSR_CTRL_REG    (ON_CHIP_FLASH_IP_CSR_BASE + 0x4)
+#define ON_CHIP_FLASH_USER_VER           (0x00200028)
+#define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
+
+// Dual-boot IP
+#define DUAL_BOOT_IP_BASE                (0x00200000)
+#define CFM1_START_ADDR                  (0x00064000)
+#define CFM1_END_ADDR                    (0x000BFFFF)
+#define CFM2_START_ADDR                  (0x00008000)
+#define CFM2_END_ADDR                    (0x00063FFF)
+
+extern const char *board_stage[];
 
 typedef struct
 {
@@ -77,22 +116,45 @@ enum {
   FW_BIC,
   FW_ME,
   FW_BIC_BOOTLOADER,
-  FW_VR,
+  FW_VR,    // 5
   FW_BIOS,
   FW_1OU_BIC,
   FW_1OU_BIC_BOOTLOADER,
   FW_1OU_CPLD,
-  FW_2OU_BIC,
+  FW_2OU_BIC, // 10
   FW_2OU_BIC_BOOTLOADER,
   FW_2OU_CPLD,
   FW_BB_BIC,
   FW_BB_BIC_BOOTLOADER,
-  FW_BB_CPLD,
+  FW_BB_CPLD, // 15
   FW_BIOS_CAPSULE,
   FW_CPLD_CAPSULE,
   FW_BIOS_RCVY_CAPSULE,
   FW_CPLD_RCVY_CAPSULE,
-
+  FW_2OU_3V3_VR1,  // 20
+  FW_2OU_3V3_VR2,
+  FW_2OU_3V3_VR3,
+  FW_2OU_1V8_VR,
+  FW_2OU_PESW_VR,
+  FW_2OU_PESW_CFG_VER, // 25
+  FW_2OU_PESW_FW_VER,
+  FW_2OU_PESW_BL0_VER,
+  FW_2OU_PESW_BL1_VER,
+  FW_2OU_PESW_PART_MAP0_VER,
+  FW_2OU_PESW_PART_MAP1_VER,
+  FW_2OU_PESW,
+  FW_2OU_M2_DEV0,
+  FW_2OU_M2_DEV1,
+  FW_2OU_M2_DEV2,
+  FW_2OU_M2_DEV3,
+  FW_2OU_M2_DEV4,
+  FW_2OU_M2_DEV5,
+  FW_2OU_M2_DEV6,
+  FW_2OU_M2_DEV7,
+  FW_2OU_M2_DEV8,
+  FW_2OU_M2_DEV9,
+  FW_2OU_M2_DEV10,
+  FW_2OU_M2_DEV11,
   // last id
   FW_COMPONENT_LAST_ID
 };
@@ -101,6 +163,7 @@ enum {
   VR_ISL = 0x0,
   VR_TI  = 0x1,
   VR_IFX = 0x2,
+  VR_VY  = 0x3,
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,
@@ -110,6 +173,16 @@ enum {
   VCCIO_ADDR = 0xC4,
   VDDQ_ABC_ADDR = 0xC8,
   VDDQ_DEF_ADDR = 0xCC,
+  VR_PESW_ADDR = 0xC8,
+  VR_2OU_P3V3_STBY1 = 0x28,
+  VR_2OU_P3V3_STBY2 = 0x2E,
+  VR_2OU_P3V3_STBY3 = 0x30,
+  VR_2OU_P1V8       = 0x36,
+};
+
+// M2 info
+enum {
+  MEFF_DUAL_M2 = 0xF0,
 };
 
 enum {
@@ -216,9 +289,21 @@ enum {
   FM_PEHPCPU_INT,
 };
 
+enum {
+  DP_RETIMER_X4 = 0x00,
+  DP_RETIMER_X8 = 0x01,
+  DP_RETIMER_X16 = 0x04,
+  DP_PCIE_X4 = 0x0e,
+  DP_PCIE_X8 = 0x0d,
+  DP_PCIE_X16 = 0x0b,
+  DP_PCIE_UNKNOW = 0xff,
+};
+
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
 int bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf);
 int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt);
+int bic_mux_select(uint8_t slot_id, uint8_t bus, uint8_t dev_id, uint8_t intf);
+int bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t comp);
 
 #ifdef __cplusplus
 } // extern "C"

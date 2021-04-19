@@ -23,6 +23,7 @@ from time import sleep
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import running_systemd
 from utils.watchdog_util import WatchdogUtils
 
 
@@ -54,13 +55,21 @@ class WatchdogTest(object):
             run_shell_cmd(cmd)
         sleep(10)  # wait before daemon started back
 
-    @abstractmethod
     def set_kill_watchdog_daemon_cmd(self):
-        pass
+        if running_systemd():
+            supervisor = "/bin/systemctl"
+        else:
+            supervisor = "/usr/bin/sv"
 
-    @abstractmethod
+        self.kill_watchdog_daemon_cmd = ["{} stop fscd".format(supervisor)]
+
     def set_start_watchdog_daemon_cmd(self):
-        pass
+        if running_systemd():
+            supervisor = "/bin/systemctl"
+        else:
+            supervisor = "/usr/bin/sv"
+
+        self.start_watchdog_daemon_cmd = ["{} start fscd".format(supervisor)]
 
     def kill_watchdog_daemon(self):
         """

@@ -46,11 +46,38 @@ S = "${WORKDIR}"
 
 do_compile_ptest() {
   make test-libmisc-utils
-  cat <<EOF > ${WORKDIR}/run-ptest                                                                                                                                                                                                          
-#!/bin/sh                                                                                                                                                                                                                                     
+  cat <<EOF > ${WORKDIR}/run-ptest
+#!/bin/sh
 /usr/lib/libmisc-utils/ptest/test-libmisc-utils
 EOF
 }
+
+def get_soc_model(soc_family):
+  if soc_family == "aspeed-g4":
+    ret = "SOC_MODEL_ASPEED_G4"
+  elif soc_family == "aspeed-g5":
+    ret = "SOC_MODEL_ASPEED_G5"
+  elif soc_family == "aspeed-g6":
+    ret = "SOC_MODEL_ASPEED_G6"
+  else:
+    ret = "SOC_MODEL_INVALID"
+
+  return ret
+
+def get_cpu_model(soc_family):
+  if soc_family == "aspeed-g4":
+    ret = "CPU_MODEL_ARM_V5"
+  elif soc_family == "aspeed-g5":
+    ret = "CPU_MODEL_ARM_V6"
+  elif soc_family == "aspeed-g6":
+    ret = "CPU_MODEL_ARM_V7"
+  else:
+    ret = "CPU_MODEL_INVALID"
+
+  return ret
+
+CFLAGS += "-DSOC_MODEL=${@ get_soc_model('${SOC_FAMILY}') }"
+CFLAGS += "-DCPU_MODEL=${@ get_cpu_model('${SOC_FAMILY}') }"
 
 do_install_ptest() {
   install -d ${D}${libdir}/libmisc-utils
@@ -64,8 +91,14 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 misc-utils.h ${D}${includedir}/openbmc/misc-utils.h
+
+    install -d ${D}${sysconfdir}
+    echo "${@ get_soc_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/soc_model
+    echo "${@ get_cpu_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/cpu_model
 }
 
 FILES_${PN} = "${libdir}/libmisc-utils.so"
+FILES_${PN} += "${sysconfdir}/soc_model"
+FILES_${PN} += "${sysconfdir}/cpu_model"
 FILES_${PN}-dev = "${includedir}/openbmc/misc-utils.h"
 FILES_${PN}-ptest = "${libdir}/libmisc-utils/ptest/test-libmisc-utils ${libdir}/libmisc-utils/ptest/run-ptest"

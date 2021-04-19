@@ -252,7 +252,7 @@ run_console(char* fru_name, int term) {
 
 int
 main(int argc, void **argv) {
-  int dev, rc, lock_file;
+  int rc, lock_file;
   char file[64];
   int term;
   char *fru_name;

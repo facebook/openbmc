@@ -24,20 +24,20 @@
 
 # This utility displays the FPGA versions in each PIM SPI Flash parition
 
-PIM_REVISION_FILE="/tmp/tmp_pim_spi_revision"
-
-trap cleanup INT TERM QUIT EXIT
-
-cleanup() {
-   rm "$PIM_REVISION_FILE"
-}
-
 echo "------PIM-FLASH-CONFIG------"
 partition_list="header_pim_base header_pim16q header_pim8ddm"
 for partition in ${partition_list}; do
-    /usr/local/bin/fpga_util.sh "$partition" read \
-                                "$PIM_REVISION_FILE" > /dev/null 2>&1
-    ver="$(hexdump -n2 $PIM_REVISION_FILE | cut -c 9-)"
+    PIM_REVISION_FILE="/tmp/.pim_spi_header_$partition"
+    if [ ! -f "$PIM_REVISION_FILE" ]; then
+        # version is not cached, force read it
+        /usr/local/bin/fpga_util.sh "$partition" read \
+                                    "$PIM_REVISION_FILE" > /dev/null 2>&1
+        if [ ! -f "$PIM_REVISION_FILE" ]; then
+            echo "Failed to read header for $partition"
+            exit 1
+        fi
+    fi
+    ver="$(hexdump -n2 "$PIM_REVISION_FILE" | cut -c 9-)"
     val_major="0x${ver:2:2}"
     val_minor="0x${ver:0:2}"
     if [ "$((val_major))" -eq 0 ]; then

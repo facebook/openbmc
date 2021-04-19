@@ -1,4 +1,5 @@
 #include "bmc.h"
+#include "system_mock.h"
 #include <string>
 #include <fcntl.h>
 #include <cstdio>
@@ -9,44 +10,11 @@
 using namespace std;
 using namespace testing;
 
-string file_contents(string name)
-{
-  ifstream in(name);
-  string ret;
-  in >> ret;
-  in.close();
-  return ret;
-}
-
-class SystemMock : public System {
+class BmcComponentBasicMock : public BmcComponent {
   public:
-  SystemMock() : System() {}
-  SystemMock(std::ostream &out, std::ostream &err): System(out, err) {}
-
-  MOCK_METHOD1(runcmd, int(const string &cmd));
-  MOCK_METHOD0(vboot_hardware_enforce, bool());
-  MOCK_METHOD2(get_mtd_name, bool(const string name, string &dev));
-  MOCK_METHOD0(name, string());
-  MOCK_METHOD0(version, string());
-  MOCK_METHOD0(partition_conf, string&());
-  MOCK_METHOD1(get_fru_id, uint8_t(string &name));
-  MOCK_METHOD2(set_update_ongoing, void(uint8_t fruid, int timeo));
-  MOCK_METHOD1(lock_file, string(string name));
-
-  int copy_file(string cmd) {
-    size_t pos = cmd.find("flashcp -v ");
-    if (pos == string::npos) {
-      return -1;
-    }
-    string params = cmd.substr(pos + strlen("flashcp -v "));
-    pos = params.find(" ");
-    string filesrc = params.substr(0, pos);
-    string filedst = params.substr(pos + 1);
-    ofstream dst(filedst);
-    dst << file_contents(filesrc);
-    dst.close();
-    return 0;
-  }
+    BmcComponentBasicMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+      : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
+    MOCK_METHOD0(sys, System&());
 };
 
 // TEST1: Verify that if the BMC component is created without a version flash
@@ -58,7 +26,9 @@ TEST(BmcComponentTest, DefaultSystemVersion) {
   SystemMock mock(out, err);
   EXPECT_CALL(mock, version()).Times(1).WillOnce(Return(string("fbtp-v10.0")));
 
-  BmcComponent *b = new BmcComponent("bmc_test", "bmc_test", mock, "");
+  BmcComponentBasicMock *b = new BmcComponentBasicMock("bmc_test", "bmc_test", "");
+  EXPECT_CALL(*b, sys())
+    .WillRepeatedly(ReturnRef(mock));
   EXPECT_NE(nullptr, b);
   EXPECT_EQ(0, b->print_version());
   EXPECT_EQ(out.str(), "BMC_TEST Version: fbtp-v10.0\n");
@@ -79,7 +49,7 @@ class TmpFile {
     }
   }
   string read() {
-    return file_contents(name);
+    return SystemMock::file_contents(name);
   }
   ~TmpFile() {
     remove(name.c_str());
@@ -98,7 +68,10 @@ TEST(BmcComponentTest, MTDVersion) {
     .WillOnce(Return(false))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
 
-  BmcComponent *b = new BmcComponent("bmc_test", "bmc_test", mock, "", "flash123");
+  BmcComponentBasicMock *b = new BmcComponentBasicMock("bmc_test", "bmc_test", "", "flash123");
+  EXPECT_CALL(*b, sys())
+    .WillRepeatedly(ReturnRef(mock));
+
   EXPECT_EQ(0, b->print_version());
   EXPECT_EQ(out.str(), "BMC_TEST Version: NA\n");
   EXPECT_EQ(err.str(), "");
@@ -112,11 +85,12 @@ TEST(BmcComponentTest, MTDVersion) {
 
 class BmcComponentMock : public BmcComponent {
   public:
-    BmcComponentMock(std::string fru, std::string comp, System &sys, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
-      : BmcComponent(fru, comp, sys, mtd, vers, w_offset, skip_offset) {}
+    BmcComponentMock(std::string fru, std::string comp, std::string mtd, std::string vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+      : BmcComponent(fru, comp, mtd, vers, w_offset, skip_offset) {}
   MOCK_METHOD2(is_valid, bool(string &image, bool pfr_active));
   MOCK_METHOD1(update, int(string &image));
   MOCK_METHOD0(print_version, int());
+  MOCK_METHOD0(sys, System&());
 
   int real_update(string &image) {
     return BmcComponent::update(image);
@@ -146,13 +120,19 @@ TEST(BmcComponentTest, MTDFlash) {
     .WillOnce(Return(false))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
+  EXPECT_CALL(mock, get_mtd_name("", _))
+    .Times(1)
+    .WillOnce(Return(false));
 
   EXPECT_CALL(mock, runcmd(string(exp_flashcp_call)))
     .Times(2)
     .WillOnce(Return(-1))
     .WillOnce(Return(0));
 
-  BmcComponentMock b("bmc_test", "bmc_test", mock, dummy_mtd);
+  BmcComponentMock b("bmc_test", "bmc_test", dummy_mtd);
+
+  EXPECT_CALL(b, sys())
+    .WillRepeatedly(ReturnRef(mock));
 
   EXPECT_CALL(b, update(dummy_image))
     .Times(4)
@@ -176,9 +156,11 @@ TEST(BmcComponentTest, MTDFlash) {
   EXPECT_EQ(err.str(), "Failed to get device for " + dummy_mtd + "\n");
   err.str("");
 
+  // Third call, is_valid() returns true, get_mtd_name() will return true and
+  // a valid image, but runcmd(flashcp) call will fail.
   EXPECT_EQ(FW_STATUS_FAILURE, b.update(dummy_image));
 
-  // Both succeeds. Check if we are calling flashcp correctly.
+  // Both succeeds. Check if we are calling flashcp correctly and succeeds.
   EXPECT_EQ(0, b.update(dummy_image));
 }
 
@@ -196,6 +178,9 @@ TEST(BmcComponentTest, MTDOffsetFlash) {
   EXPECT_CALL(mock, get_mtd_name(dummy_mtd, _))
     .Times(1)
     .WillRepeatedly(DoAll(SetArgReferee<1>(mtd_dev.name), Return(true)));
+  EXPECT_CALL(mock, get_mtd_name("", _))
+    .Times(1)
+    .WillRepeatedly(Return(false));
 
   EXPECT_CALL(mock, runcmd(string(exp_flashcp_call)))
     .Times(1)
@@ -203,7 +188,10 @@ TEST(BmcComponentTest, MTDOffsetFlash) {
 
   // We are skipping the first 4 bytes. Copying the next 4 from mtd
   // and replacing our own.
-  BmcComponentMock b("bmc_test", "bmc_test", mock, dummy_mtd, "", 4, 8);
+  BmcComponentMock b("bmc_test", "bmc_test", dummy_mtd, "", 4, 8);
+
+  EXPECT_CALL(b, sys())
+    .WillRepeatedly(ReturnRef(mock));
 
   EXPECT_CALL(b, update(image.name))
     .Times(1)

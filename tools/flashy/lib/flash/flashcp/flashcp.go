@@ -45,6 +45,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 	"github.com/vtolstov/go-ioctl"
 )
@@ -169,18 +170,24 @@ var runFlashProcess = func(
 		return errors.Errorf("Unable to open flash device file '%v': %v",
 			deviceFilePath, err)
 	}
+
 	err = healthCheck(deviceFile, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
+
+	utils.PetWatchdog()
 	err = eraseFlashDevice(deviceFile, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
+
+	utils.PetWatchdog()
 	err = flashImage(deviceFile, m, imFile, roOffset)
 	if err != nil {
 		return err
 	}
+
 	// make sure non-block device is closed before using block device
 	err = closeFlashDeviceFile(deviceFile)
 	if err != nil {
@@ -188,6 +195,7 @@ var runFlashProcess = func(
 			deviceFilePath, err)
 	}
 
+	utils.PetWatchdog()
 	err = verifyFlash(deviceFilePath, m, imFile, roOffset)
 	if err != nil {
 		return err

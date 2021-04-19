@@ -47,7 +47,7 @@
 
 #define IPMB_WRITE_COUNT_MAX 224
 #define BIOS_ERASE_PKT_SIZE (64 * 1024)
-#define BIOS_VERIFY_PKT_SIZE (32 * 1024)
+#define BIOS_VERIFY_PKT_SIZE (16 * 1024 * 1024)
 #define BIOS_VER_REGION_SIZE (4 * 1024 * 1024)
 #define BIOS_VER_STR "XG1_"
 
@@ -63,6 +63,7 @@
 #define CMD_RUN_SIZE 7
 #define CMD_DOWNLOAD_SIZE 11
 #define CMD_STATUS_SIZE 3
+#define MIN_CMD_SIZE 3
 
 #define FRU_SCM 1
 
@@ -751,6 +752,60 @@ static int run_shell_cmd(const char* cmd) {
   return system(cmd);
 }
 
+static int send_bic_image_data(int ifd, int xcount, uint8_t* xbuf) {
+  uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
+  uint8_t rbuf[MAX_IPMI_MSG_SIZE] = {0};
+  uint8_t tcount = 0;
+  uint8_t rcount = 0;
+  int i = 0, rc = 0, retry = 5;
+
+  while( retry-- )
+  {
+    //Setup Command to Set Update Data
+    tbuf[0] = xcount + MIN_CMD_SIZE;           //Command Length
+    tbuf[1] = BIC_CMD_DATA;                    //Checksum
+    tbuf[2] = BIC_CMD_DATA;                    //Command Number
+    memcpy(&tbuf[MIN_CMD_SIZE], xbuf, xcount); //Image Data
+    //Checksum calculation
+    for (i = 0; i < xcount; i++) {
+      tbuf[1] += xbuf[i];
+    }
+    tcount = tbuf[0];
+    rcount = 0;
+    //Send Command to Set Update Data
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      OBMC_ERROR(errno, "fail to send bic update command. retry...");
+      continue;
+    }
+
+    //Waittig for bic to do command's action
+    msleep(10);
+
+    //Setup Command to Get Response
+    tcount = 0;
+    rcount = 2;
+    //Send Command to Get Response
+    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
+    if (rc) {
+      OBMC_ERROR(errno, "fail to get command response. retry...");
+      continue;
+    }
+
+    //Check Set Update Data's Response
+    if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
+      OBMC_WARN("check bic res. data error, expect 0x00,0xcc but receive : %#x:%#x\n", rbuf[0], rbuf[1]);
+      continue;
+    }
+    break;
+  }
+
+  if(retry)
+    return 0;
+  else
+    return 1;
+}
+
 static int prepare_update_bic(uint8_t slot_id, int ifd, int size) {
   int i = 0;
   uint8_t tbuf[MAX_IPMI_MSG_SIZE] = {0};
@@ -887,7 +942,7 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
   if (fd < 0) {
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", path);
+    syslog(LOG_ERR, "failed to open %s: %s\n", path, strerror(errno));
     goto error_exit;
   }
 
@@ -917,6 +972,7 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
       lseek(fd, 0, SEEK_SET);
       prepare_update_bic(slot_id, ifd, size);
     }
+
     if (rc) {
       goto error_exit;
     }
@@ -931,48 +987,23 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
       goto error_exit;
     }
 
-    // send next packet
+    // read data from update image
     xcount = read(fd, xbuf, BIC_PKT_MAX);
     if (xcount <= 0) {
       break;
     }
 
+    // calc percentage
     offset += xcount;
     if ((last_offset + dsize) <= offset) {
       OBMC_INFO("updated bic: %d %%\n", offset / dsize * 5);
       last_offset += dsize;
     }
 
-    tbuf[0] = xcount + 3;
-    tbuf[1] = BIC_CMD_DATA;
-    tbuf[2] = BIC_CMD_DATA;
-    memcpy(&tbuf[3], xbuf, xcount);
-
-    for (i = 0; i < xcount; i++) {
-      tbuf[1] += xbuf[i];
-    }
-
-    tcount = tbuf[0];
-    rcount = 0;
-
-    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
+    // send update image data to bic
+    rc = send_bic_image_data(ifd, xcount, xbuf);
     if (rc) {
-      OBMC_ERROR(errno, "error send data");
-      goto error_exit;
-    }
-
-    msleep(10);
-    tcount = 0;
-    rcount = 2;
-
-    rc = bic_i2c_xfer(ifd, tbuf, tcount, rbuf, rcount);
-    if (rc) {
-      OBMC_ERROR(errno, "error send data ack");
-      goto error_exit;
-    }
-
-    if (rbuf[0] != 0x00 || rbuf[1] != 0xcc) {
-      OBMC_WARN("data error: %#x:%#x\n", rbuf[0], rbuf[1]);
+      OBMC_ERROR(errno, "failed send update bic command, please check bic's status");
       goto error_exit;
     }
   }
@@ -1026,11 +1057,11 @@ static int _update_bic_main(uint8_t slot_id, const char* path) {
   run_shell_cmd("sv start ipmbd_0");
 
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating bic firmware is exiting\n");
-  if (fd > 0) {
+  syslog(LOG_CRIT, "updating bic firmware is exiting, ret=%d\n", ret);
+  if (fd >= 0) {
     close(fd);
   }
-  if (ifd > 0) {
+  if (ifd >= 0) {
     close(ifd);
   }
   set_fw_update_ongoing(FRU_SCM, 0);
@@ -1045,15 +1076,28 @@ static int check_bios_image(int fd, long size) {
   if (size < BIOS_VER_REGION_SIZE)
     return -1;
 
-  buf = (uint8_t*)malloc(BIOS_VER_REGION_SIZE);
-  if (!buf) {
+  if (lseek(fd, (size - BIOS_VER_REGION_SIZE), SEEK_SET) == (off_t) -1) {
+    OBMC_ERROR(errno, "failed to update file (fd=%d) offset to %ld: %s",
+               fd, size - BIOS_VER_REGION_SIZE, strerror(errno));
     return -1;
   }
-  lseek(fd, (size - BIOS_VER_REGION_SIZE), SEEK_SET);
+
+  buf = (uint8_t*)malloc(BIOS_VER_REGION_SIZE);
+  if (buf == NULL) {
+    return -1;
+  }
+
   i = 0;
   while (i < BIOS_VER_REGION_SIZE) {
     rcnt = read(fd, (buf + i), BIOS_ERASE_PKT_SIZE);
-    if ((rcnt < 0) && (errno != EINTR)) {
+    if (rcnt < 0) {
+      if (errno == EINTR)
+        continue;
+
+      free(buf);
+      return -1;
+    } else if (rcnt == 0) {
+      OBMC_WARN("bios image file reached EOF unexpectedly!");
       free(buf);
       return -1;
     }
@@ -1073,7 +1117,11 @@ static int check_bios_image(int fd, long size) {
 
   if (i >= end)
     return -1;
-  lseek(fd, 0, SEEK_SET);
+  if (lseek(fd, 0, SEEK_SET) == (off_t) -1) {
+    OBMC_ERROR(errno, "failed to restore file (fd=%d) offset to 0: %s",
+               fd, strerror(errno));
+    return -1;
+  }
   return 0;
 }
 
@@ -1244,7 +1292,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
   }
 
   // Open the file exclusively for read
-  fd = open(image_file, O_RDONLY, 0666);
+  fd = open(image_file, O_RDONLY);
   if (fd < 0) {
     OBMC_ERROR(errno, "failed to open %s for read", image_file);
     goto error_exit;
@@ -1274,13 +1322,14 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
       OBMC_WARN("unsupported firmware component %u\n", comp);
       goto error_exit;
   }
+
   if ((fw_update_info[comp].check_image != NULL) &&
       (fw_update_info[comp].check_image(fd, st.st_size) < 0)) {
     OBMC_WARN("invalid %s firmware image!", fw_update_info[comp].name);
     goto error_exit;
   }
-  syslog(LOG_CRIT, "bic_update_fw: update %s firmware on slot %d\n",
-         fw_update_info[comp].name, slot_id);
+  syslog(LOG_CRIT, "%s: update %s firmware on slot %d\n",
+         __func__, fw_update_info[comp].name, slot_id);
 
   // Write chunks of binary data in a loop
   offset = 0;
@@ -1299,6 +1348,7 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
     }
 
     // Read from file
+    assert(read_count < sizeof(buf));
     count = read(fd, buf, read_count);
     if (count < 0) {
       OBMC_ERROR(errno, "failed to read %s", image_file);
@@ -1393,9 +1443,9 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, const char* image_file) {
 update_done:
   ret = 0;
 error_exit:
-  syslog(LOG_CRIT, "bic_update_fw: updating %s firmware is exiting\n",
-         fw_update_info[comp].name);
-  if (fd > 0) {
+  syslog(LOG_CRIT, "%s: updating %s firmware is exiting, ret=%d\n",
+         __func__, fw_update_info[comp].name, ret);
+  if (fd >= 0) {
     close(fd);
   }
   if (tbuf) {

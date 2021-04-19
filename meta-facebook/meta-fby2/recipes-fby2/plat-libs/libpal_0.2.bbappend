@@ -16,6 +16,7 @@ DEPENDS += " \
     libobmc-sensors \
     libgpio-ctrl \
     libnl-wrapper \
+    libnvme-mi \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -32,4 +33,5 @@ RDEPENDS_${PN} += " \
     libobmc-sensors \
     libgpio-ctrl \
     libnl-wrapper \
+    libnvme-mi \
     "

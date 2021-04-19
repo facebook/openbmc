@@ -16,11 +16,20 @@ IMAGE_INSTALL += " \
   libcpldupdate-dll-ioctl \
   flashrom \
   fscd \
+  front-paneld \
   lldp-util \
   mterm \
+  mtd-utils-ubifs \
   openbmc-utils \
-  spatula \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
+  kcsd \
+  ipmid \
+  ipmitool \
+  guid-util \
+  psu-util \
+  sensor-util \
+  sensor-mon \
+  threshold-util \
   "

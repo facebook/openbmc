@@ -11,7 +11,7 @@ valid_config = [
         b"""
         """,
         {
-            "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+            "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
             "acl_settings": {},
             "ports": ["8080"],
             "ssl_ports": [],
@@ -30,7 +30,7 @@ valid_config = [
         port = 8081
         """,
         {
-            "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+            "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
             "acl_settings": {},
             "ports": ["8081"],
             "ssl_ports": [],
@@ -50,7 +50,7 @@ valid_config = [
         ssl_port = 8443
         """,
         {
-            "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+            "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
             "acl_settings": {},
             "ports": ["8080", "8888"],
             "ssl_ports": ["8443"],
@@ -76,7 +76,7 @@ valid_config = [
         write = true
         """,
         {
-            "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+            "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
             "acl_settings": {},
             "ports": ["8080", "8888"],
             "ssl_ports": ["8443"],
@@ -103,7 +103,7 @@ valid_config = [
         write = true
         """,
         {
-            "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+            "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
             "acl_settings": {},
             "ports": ["8080", "8888"],
             "ssl_ports": ["8443"],
@@ -130,7 +130,7 @@ valid_config = [
         write = true
         """,
         {
-            "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+            "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
             "acl_settings": {},
             "ports": ["8080", "8888"],
             "ssl_ports": ["8443"],
@@ -186,7 +186,7 @@ class TestRestConfig(unittest.TestCase):
     def test_acl_provider_loader(self):
         loaded_provider = sut.load_acl_provider(
             {
-                "acl_provider": "acl_providers.dummy_acl_provider.DummyAclProvider",
+                "acl_provider": "acl_providers.cached_acl_provider.CachedAclProvider",
                 "acl_settings": {},
             }
         )

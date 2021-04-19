@@ -36,73 +36,41 @@
 #include <openbmc/fruid.h>
 #include <facebook/fbgc_common.h>
 
-#define FRUID_SIZE   512
-
 #define FRU_ID_SERVER 0
 #define FRU_ID_BMC    1
 #define FRU_ID_UIC    2
 #define FRU_ID_NIC    3
+#define FRU_ID_IOCM   4
 
+static int
+get_bmc_fruid(uint8_t ipmi_fruid, uint8_t *fruid) {
+  uint8_t chassis_type = 0;
 
-/*
- * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
- *
- * @eeprom_file   : path for the eeprom of the device
- * @bin_file      : path for the binary file
- *
- * returns 0 on successful copy
- * returns non-zero on file operation errors
- */
-int 
-copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file) {
-  int eeprom = 0;
-  int bin = 0;
-  int ret = 0;
-  uint8_t tmp[FRUID_SIZE] = {0};
-  ssize_t bytes_rd = 0, bytes_wr = 0;
-
-  errno = 0;
-
-  eeprom = open(eeprom_file, O_RDONLY);
-  if (eeprom < 0) {
-    syslog(LOG_ERR, "%s: unable to open the %s file: %s",
-	__func__, eeprom_file, strerror(errno));
+  if (fruid == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: fruid is NULL", __func__);
     return -1;
   }
 
-  bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
-  if (bin < 0) {
-    syslog(LOG_ERR, "%s: unable to create %s file: %s",
-	__func__, bin_file, strerror(errno));
-    ret = -1;
-    goto err;
+  if (ipmi_fruid >= (FRU_CNT - 1)) {
+    syslog(LOG_WARNING, "%s() Invalid fruid: %u\n", __func__, ipmi_fruid);
+    return -1;
   }
 
-  bytes_rd = read(eeprom, tmp, FRUID_SIZE);
-  if (bytes_rd < 0) {
-    syslog(LOG_ERR, "%s: read %s file failed: %s",
-	__func__, eeprom_file, strerror(errno));
-    ret = -1;
-    goto exit;
-  } else if (bytes_rd < FRUID_SIZE) {
-    syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
-    ret = -1;
-    goto exit;
+  // ipmi command use 0-base fruid
+  // bmc use 1-base fruid
+  *fruid = ipmi_fruid + 1;
+
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+    return -1;
   }
 
-  bytes_wr = write(bin, tmp, bytes_rd);
-  if (bytes_wr != bytes_rd) {
-    syslog(LOG_ERR, "%s: write to %s file failed: %s",
-	__func__, bin_file, strerror(errno));
-    ret = -1;
+  if ((chassis_type == CHASSIS_TYPE5) && (*fruid == FRU_E1S_IOCM)) {
+    syslog(LOG_WARNING, "%s() Not support E1.S FRU on type5 system\n", __func__);
+    return -1;
   }
 
-exit:
-  close(bin);
-err:
-  close(eeprom);
-
-  return ret;
+  return 0;
 }
 
 int
@@ -112,21 +80,27 @@ plat_fruid_init() {
 
   //create the fru binary in /tmp/
   //fruid_bmc.bin
-  snprintf(path, path_len, EEPROM_PATH, BMC_FRU_BUS, BMC_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
+  snprintf(path, path_len, EEPROM_PATH, I2C_BSM_BUS, BMC_FRU_ADDR);
+  if (pal_copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
   }
 
   //fruid_uic.bin
-  snprintf(path, path_len, EEPROM_PATH, UIC_FRU_BUS, UIC_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
+  snprintf(path, path_len, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
+  if (pal_copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_UIC_BIN);
   }
 
   //fruid_nic.bin
-  snprintf(path, path_len, EEPROM_PATH, NIC_FRU_BUS, NIC_FRU_ADDR);
-  if (copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
+  snprintf(path, path_len, EEPROM_PATH, I2C_NIC_BUS, NIC_FRU_ADDR);
+  if (pal_copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
+  }
+
+  //fruid_iocm.bin
+  snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+  if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
   }
 
   return 0;
@@ -134,26 +108,33 @@ plat_fruid_init() {
 
 int
 plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, unsigned char *data) {
-  char fpath[64] = {0};
   int fd = 0;
   int ret = 0;
+  uint8_t bmc_fruid = 0;
+  char fru_path[MAX_PATH_LEN] = {0};
+  char fru_name[MAX_FRU_CMD_STR] = {0};
 
-  // Fill the file path for a given FRU
-  if (fru_id == FRU_ID_BMC) {    
-    snprintf(fpath, sizeof(fpath), FRU_BMC_BIN);
-  } else if (fru_id == FRU_ID_UIC) {
-    snprintf(fpath, sizeof(fpath), FRU_UIC_BIN);
-  } else if (fru_id == FRU_ID_NIC) {
-    snprintf(fpath, sizeof(fpath), FRU_NIC_BIN);
-  } else {
+  if (data == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: data is NULL", __func__);
     return -1;
   }
 
+  if (get_bmc_fruid((uint8_t)fru_id, &bmc_fruid) < 0) {
+    return -1;
+  }
+
+  if (pal_get_fru_name(bmc_fruid, fru_name) < 0) {
+    syslog(LOG_WARNING, "%s() Fail to get fru%u name\n", __func__, bmc_fruid);
+    return -1;
+  }
+
+  snprintf(fru_path, sizeof(fru_path), COMMON_FRU_PATH, fru_name);
+
   // open file for read purpose
-  fd = open(fpath, O_RDONLY);
+  fd = open(fru_path, O_RDONLY);
   if (fd < 0) {
     syslog(LOG_ERR, "%s: unable to open the %s file: %s",
-    __func__, fpath, strerror(errno));
+    __func__, fru_path, strerror(errno));
     return -1;
   }
 
@@ -177,23 +158,26 @@ plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, uns
 
 int
 plat_fruid_size(unsigned char payload_id) {
-  struct stat buf;
+  struct stat buf = {0};
   int ret = 0;
-  char fpath[64] = {0};
+  char fru_path[MAX_PATH_LEN] = {0};
+  char fru_name[MAX_FRU_CMD_STR] = {0};
 
-  if (payload_id == FRU_ID_BMC) {    
-    snprintf(fpath, sizeof(fpath), FRU_BMC_BIN);
-  } else if (payload_id == FRU_ID_UIC) {
-    snprintf(fpath, sizeof(fpath), FRU_UIC_BIN);
-  } else if (payload_id == FRU_ID_NIC) {
-    snprintf(fpath, sizeof(fpath), FRU_NIC_BIN);
-  } else {
-  	return -1;
+  if (payload_id != FRU_SERVER) {
+    syslog(LOG_WARNING, "%s() Payload id: %u not support, only support get fruid size from server\n", __func__, (uint8_t)payload_id);
+    return 0;
   }
 
+  if (pal_get_fru_name((uint8_t)payload_id, fru_name) < 0) {
+    syslog(LOG_WARNING, "%s() Fail to get fru%u name\n", __func__, (uint8_t)payload_id);
+    return 0;
+  }
+
+  snprintf(fru_path, sizeof(fru_path), COMMON_FRU_PATH, fru_name);
+
   // check the size of the file and return size
-  ret = stat(fpath, &buf);
-  if (ret) {
+  ret = stat(fru_path, &buf);
+  if (ret != 0) {
     return 0;
   }
 

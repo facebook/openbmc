@@ -17,7 +17,10 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+PACKAGECONFIG += "disable-watchdog"
+
 SRC_URI += "file://board-utils.sh \
+            file://boot_info.sh \
             file://bios_util.sh \
             file://fpga_util.sh \
             file://fpga_ver.sh \
@@ -42,11 +45,13 @@ SRC_URI += "file://board-utils.sh \
             file://elbert_pim.layout \
             file://peutil \
             file://spi_pim_ver.sh \
+            file://meta_info.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     bios_util.sh \
+    boot_info.sh \
     fpga_util.sh \
     fpga_ver.sh \
     dump_pim_serials.sh \
@@ -64,6 +69,7 @@ OPENBMC_UTILS_FILES += " \
     pim_types.sh \
     peutil \
     spi_pim_ver.sh \
+    meta_info.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -101,6 +107,10 @@ do_install_board() {
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
+
+    # create VLAN intf automatically
+    install -d ${D}/${sysconfdir}/network/if-up.d
+    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .

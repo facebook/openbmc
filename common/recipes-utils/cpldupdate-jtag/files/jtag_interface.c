@@ -92,15 +92,15 @@ int jtag_interface_run_test_idle(int jtag_fd,
 
 {
     int retval;
-    jtag_run_test_idle_t run_idle;
+    struct jtag_end_tap_state run_idle;
 
     run_idle.endstate = endstate;
     run_idle.reset = reset;
     run_idle.tck = tck;
 
-    retval = ioctl(jtag_fd, JTAG_IOCRUNTEST, &run_idle);
+    retval = ioctl(jtag_fd, JTAG_SIOCSTATE, &run_idle);
     if (retval < 0) {
-        printf("%s(%d) - %s: ioctl JTAG_IOCRUNTEST failure!\n", \
+        printf("%s(%d) - %s: ioctl JTAG_SIOCSTATE failure!\n", \
                        __FILE__, __LINE__, __FUNCTION__);
         return -1;
     }
@@ -151,18 +151,21 @@ int jtag_interface_xfer(int jtag_fd,
     return 0;
 }
 
-int jtag_interface_set_mode(int jtag_fd, unsigned int mode)
+int jtag_interface_set_xfer_mode(int jtag_fd, unsigned int mode)
 {
     int retval;
+    struct jtag_mode j_mode = {
+        .feature = JTAG_XFER_MODE,
+    };
 
     /* Only support two modes */
-    if(mode >= JTAG_XFER_HW_MODE){
-        mode = JTAG_XFER_HW_MODE;
-    }else{
-        mode = JTAG_XFER_SW_MODE;
+    if (mode >= JTAG_XFER_HW_MODE) {
+        j_mode.mode = JTAG_XFER_HW_MODE;
+    } else {
+        j_mode.mode = JTAG_XFER_SW_MODE;
     }
 
-    retval = ioctl(jtag_fd, JTAG_SIOCMODE, &mode);
+    retval = ioctl(jtag_fd, JTAG_SIOCMODE, &j_mode);
     if (retval < 0) {
         printf("%s(%d) - %s: ioctl JTAG_SIOCMODE failure!\n", \
                        __FILE__, __LINE__, __FUNCTION__);

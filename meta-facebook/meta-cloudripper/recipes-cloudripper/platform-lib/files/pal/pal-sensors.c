@@ -306,6 +306,7 @@ const uint8_t smb_sensor_list[] = {
   SMB_BMC_ADC11_VSEN,
 
   // /* GB switch internal sensors */
+  SMB_SENSOR_GB_HIGH_TEMP,
   SMB_SENSOR_GB_TEMP1,
   SMB_SENSOR_GB_TEMP2,
   SMB_SENSOR_GB_TEMP3,
@@ -316,6 +317,8 @@ const uint8_t smb_sensor_list[] = {
   SMB_SENSOR_GB_TEMP8,
   SMB_SENSOR_GB_TEMP9,
   SMB_SENSOR_GB_TEMP10,
+  SMB_SENSOR_GB_HBM_TEMP1,
+  SMB_SENSOR_GB_HBM_TEMP2,
 };
 
 const uint8_t psu1_sensor_list[] = {
@@ -540,24 +543,6 @@ static int get_current_dir(const char *device, char *dir_name) {
   // Remove the newline character at the end
   size = strlen(dir_name);
   dir_name[size-1] = '\0';
-
-  return 0;
-}
-
-static int read_attr_integer(const char *device, const char *attr, int *value) {
-  char full_name[LARGEST_DEVICE_NAME * 2];
-  char dir_name[LARGEST_DEVICE_NAME + 1];
-
-  // Get current working directory
-  if (get_current_dir(device, dir_name)) {
-    return -1;
-  }
-
-  snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
-
-  if (device_read(full_name, value)) {
-    return -1;
-  }
 
   return 0;
 }
@@ -970,14 +955,14 @@ static int scm_sensor_read(uint8_t sensor_num, float *value) {
       case SCM_SENSOR_INLET_TEMP:
         ret = read_attr(SCM_INLET_TEMP_DEVICE, TEMP(1), value);
         break;
-      case SCM_SENSOR_HSC_IN_VOLT:
-        ret = read_hsc_volt_1(SCM_HSC_DEVICE, 1, value);
-        break;
       case SCM_SENSOR_HSC_OUT_CURR:
         ret = read_hsc_curr(SCM_HSC_DEVICE, SCM_RSENSE, value);
         *value = *value * 1.0036 - 0.1189;
         if (*value < 0)
           *value = 0;
+        break;
+      case SCM_SENSOR_HSC_IN_VOLT:
+        ret = read_hsc_volt_1(SCM_HSC_DEVICE, 1, value);
         break;
       case SCM_SENSOR_HSC_OUT_VOLT:
         ret = read_hsc_volt_2(SCM_HSC_DEVICE, 1, value);
@@ -1014,20 +999,10 @@ static int scm_sensor_read(uint8_t sensor_num, float *value) {
   return ret;
 }
 
-static int cor_gb_volt(uint8_t board_type) {
-  /*
-   * Currently, skip to set vdd core with sysfs nodes because sysfs node exposed
-   * has no write permission. Laterly we will fix this.
-   */
-  return 0;
-}
-
 static int smb_sensor_read(uint8_t sensor_num, float *value) {
-  int ret = -1, th3_ret = -1;
-  static uint8_t bootup_check = 0;
+  int ret = -1;
   char path[32];
   int num = 0;
-  float total = 0;
   float read_val = 0;
 
   switch (sensor_num) {
@@ -1076,6 +1051,26 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_BMC_LM75B_TEMP:
       ret = read_attr(SMB_LM75B_BMC_DEVICE, TEMP(1), value);
       break;
+    case SMB_SENSOR_GB_HIGH_TEMP:
+      *value = 0;
+      for (int id = SMB_SENSOR_GB_TEMP1; id <= SMB_SENSOR_GB_TEMP10; id++) {
+        snprintf(path, sizeof(path), "temp%d_input", id - SMB_SENSOR_GB_TEMP1 + 1);
+        ret = read_attr(SMB_GB_TEMP_DEVICE, path, &read_val);
+        if (ret) {
+          continue;
+        } else {
+          num++;
+        }
+        if (read_val > *value) {
+          *value = read_val;
+        }
+      }
+      if (num) {
+        ret = 0;
+      } else {
+        ret = READING_NA;
+      }
+      break;
     case SMB_SENSOR_GB_TEMP1:
       ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(1), value);
       break;
@@ -1105,6 +1100,12 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_GB_TEMP10:
       ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(10), value);
+      break;
+    case SMB_SENSOR_GB_HBM_TEMP1:
+      ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(11), value);
+      break;
+    case SMB_SENSOR_GB_HBM_TEMP2:
+      ret = read_attr(SMB_GB_TEMP_DEVICE, TEMP(12), value);
       break;
     case SMB_DOM1_MAX_TEMP:
       ret = read_attr(SMB_DOM1_DEVICE, TEMP(1), value);
@@ -1738,7 +1739,7 @@ static int get_scm_sensor_name(uint8_t sensor_num, char *name) {
       sprintf(name, "SCM_INLET_TEMP");
       break;
     case SCM_SENSOR_HSC_IN_VOLT:
-      sprintf(name, "SCM_HSC_INPUT_12V_VOLT");
+      sprintf(name, "SCM_HSC_INTPUT_12V_VOLT");
       break;
     case SCM_SENSOR_HSC_OUT_VOLT:
       sprintf(name, "SCM_HSC_OUTPUT_12V_VOLT");
@@ -1908,6 +1909,9 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_BMC_LM75B_TEMP:
       sprintf(name, "BMC_LM75B_TEMP");
       break;
+    case SMB_SENSOR_GB_HIGH_TEMP:
+      sprintf(name, "SMB_GB_HIGH_TEMP");
+      break;
     case SMB_SENSOR_GB_TEMP1:
       sprintf(name, "SMB_GB_TEMP1");
       break;
@@ -1937,6 +1941,12 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case SMB_SENSOR_GB_TEMP10:
       sprintf(name, "SMB_GB_TEMP10");
+      break;
+    case SMB_SENSOR_GB_HBM_TEMP1:
+      sprintf(name, "SMB_GB_HBM_TEMP1");
+      break;
+    case SMB_SENSOR_GB_HBM_TEMP2:
+      sprintf(name, "SMB_GB_HBM_TEMP2");
       break;
     case SMB_DOM1_MAX_TEMP:
       sprintf(name, "SMB_DOM_FPGA1_MAX_TEMP");
@@ -2500,6 +2510,7 @@ static int get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_TMP421_U62_TEMP:
     case SMB_SENSOR_TMP421_U63_TEMP:
     case SMB_SENSOR_BMC_LM75B_TEMP:
+    case SMB_SENSOR_GB_HIGH_TEMP:
     case SMB_SENSOR_GB_TEMP1:
     case SMB_SENSOR_GB_TEMP2:
     case SMB_SENSOR_GB_TEMP3:
@@ -2510,6 +2521,8 @@ static int get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_GB_TEMP8:
     case SMB_SENSOR_GB_TEMP9:
     case SMB_SENSOR_GB_TEMP10:
+    case SMB_SENSOR_GB_HBM_TEMP1:
+    case SMB_SENSOR_GB_HBM_TEMP2:
     case SMB_SENSOR_FCM_LM75B_U1_TEMP:
     case SMB_SENSOR_FCM_LM75B_U2_TEMP:
     case SMB_DOM1_MAX_TEMP:
@@ -2735,8 +2748,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_OUT_VOLT][LCR_THRESH] = 11.4;
       scm_sensor_threshold[SCM_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 5;
       for (int sensor_index = scm_sensor_cnt; sensor_index < scm_all_sensor_cnt; sensor_index++) {
-        for (int threshold_type = 1; threshold_type <= MAX_SENSOR_THRESHOLD + 1; threshold_type++) {
-          if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[sensor_index], threshold_type, &fvalue)){
+        for (int threshold_type = 1; threshold_type <= MAX_SENSOR_THRESHOLD; threshold_type++) {
+          if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[sensor_index], threshold_type, &fvalue)) {
             scm_sensor_threshold[scm_all_sensor_list[sensor_index]][threshold_type] = fvalue;
           }
         }
@@ -2759,8 +2772,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_1220_VMON7][LCR_THRESH] = 1.62;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON8][UCR_THRESH] = 2.75;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON8][LCR_THRESH] = 2.25;
-      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][UCR_THRESH] = 1.04;
-      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][LCR_THRESH] = 0.84;
+      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][UCR_THRESH] = 1.06;
+      smb_sensor_threshold[SMB_SENSOR_1220_VMON9][LCR_THRESH] = 0.86;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON10][UCR_THRESH] = 0.91;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON10][LCR_THRESH] = 0.74;
       smb_sensor_threshold[SMB_SENSOR_1220_VMON11][UCR_THRESH] = 0.83;
@@ -2800,10 +2813,10 @@ static void sensor_thresh_array_init(uint8_t fru) {
 
       smb_sensor_threshold[SMB_SENSOR_VDDA_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_VDDA_IN_VOLT][LCR_THRESH] = 11.4;
-      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][UCR_THRESH] = 0.97;
-      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][LCR_THRESH] = 0.91;
+      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][UCR_THRESH] = 0.99;
+      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_VOLT][LCR_THRESH] = 0.93;
       smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_CURR][UCR_THRESH] = 54;
-      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_POWER][UCR_THRESH] = 52.38;
+      smb_sensor_threshold[SMB_SENSOR_VDDA_OUT_POWER][UCR_THRESH] = 53.46;
       smb_sensor_threshold[SMB_SENSOR_VDDA_TEMP1][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDA_TEMP1][LCR_THRESH] = -40;
 
@@ -2856,24 +2869,24 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_VOLT][UCR_THRESH] = 1.19;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_VOLT][LCR_THRESH] = 1.11;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_CURR][UCR_THRESH] = 8;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_POWER][UCR_THRESH] = 9.52;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_CURR][UCR_THRESH] = 8.5;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_0_OUT_POWER][UCR_THRESH] = 9.86;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_0_TEMP][LCR_THRESH] = -5;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_VOLT][UCR_THRESH] = 1.19;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_VOLT][LCR_THRESH] = 1.11;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_CURR][UCR_THRESH] = 8;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_POWER][UCR_THRESH] = 9.52;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_CURR][UCR_THRESH] = 8.5;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_1_OUT_POWER][UCR_THRESH] = 9.86;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_1_TEMP][LCR_THRESH] = -5;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_VOLT][UCR_THRESH] = 1.19;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_VOLT][LCR_THRESH] = 1.11;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_CURR][UCR_THRESH] = 8;
-      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_POWER][UCR_THRESH] = 9.52;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_CURR][UCR_THRESH] = 8.5;
+      smb_sensor_threshold[SMB_SENSOR_VDDCK_2_OUT_POWER][UCR_THRESH] = 9.86;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_VDDCK_2_TEMP][LCR_THRESH] = -5;
 
@@ -2923,6 +2936,7 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_DOM1_MAX_TEMP][UCR_THRESH] = 65;
       smb_sensor_threshold[SMB_DOM2_MAX_TEMP][UCR_THRESH] = 65;
 
+      smb_sensor_threshold[SMB_SENSOR_GB_HIGH_TEMP][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP1][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP2][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP3][UCR_THRESH] = 105;
@@ -2933,6 +2947,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP8][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP9][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP10][UCR_THRESH] = 105;
+      smb_sensor_threshold[SMB_SENSOR_GB_HBM_TEMP1][UCR_THRESH] = 105;
+      smb_sensor_threshold[SMB_SENSOR_GB_HBM_TEMP2][UCR_THRESH] = 105;
 
       /* FCM BOARD */
       smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U1_TEMP][UCR_THRESH] = 80;
@@ -2982,6 +2998,14 @@ static void sensor_thresh_array_init(uint8_t fru) {
       break;
   }
   init_done[fru] = true;
+}
+
+int pal_sensor_thresh_init(void) {
+  for (uint8_t fru = FRU_SCM; fru <= MAX_NUM_FRUS; fru++) {
+    sensor_thresh_array_init(fru);
+  }
+
+  return 0;
 }
 
 int pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num,
@@ -3200,6 +3224,7 @@ static void smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_XDPE_LEFT_2_TEMP:
     case SMB_SENSOR_XDPE_RIGHT_1_TEMP:
     case SMB_SENSOR_XDPE_RIGHT_2_TEMP:
+    case SMB_SENSOR_GB_HIGH_TEMP:
     case SMB_SENSOR_GB_TEMP1:
     case SMB_SENSOR_GB_TEMP2:
     case SMB_SENSOR_GB_TEMP3:
@@ -3210,6 +3235,8 @@ static void smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_GB_TEMP8:
     case SMB_SENSOR_GB_TEMP9:
     case SMB_SENSOR_GB_TEMP10:
+    case SMB_SENSOR_GB_HBM_TEMP1:
+    case SMB_SENSOR_GB_HBM_TEMP2:
       *value = 30;
       break;
     case SMB_SENSOR_1220_VMON1:

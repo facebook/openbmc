@@ -32,8 +32,10 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # 8 child channels which are assigned i2c bus 14-21. 2 PFE1100 power
 # supplies are connected to channel #0 (14-005a) and #1 (15-0059).
 #
-if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
-    i2c_mux_add_sync 7 0x70 pca9548 21
+PSU_MUX_DEV="7-0070"
+PSU_MUX_PATH=$(i2c_device_sysfs_abspath "$PSU_MUX_DEV")
+if [ ! -d "$PSU_MUX_PATH" ]; then
+    i2c_mux_add_sync 7 0x70 pca9548 8
 fi
 
 # Bus 2
@@ -74,3 +76,5 @@ i2c_device_add 12 0x31 syscpld
 # Bus 14-21 from pca9548 mux_bus
 i2c_device_add 14 0x5a pfe1100
 i2c_device_add 15 0x59 pfe1100
+
+i2c_check_driver_binding

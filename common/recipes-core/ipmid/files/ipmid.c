@@ -58,6 +58,8 @@
 //#define CHASSIS_SET_BOOT_OPTION_SUPPORT
 #define CONFIG_FBTP 1
 
+#define OBMC_DUMP_STAT_KEY "obmc_dump_stat"
+
 static unsigned char IsTimerStart[MAX_NODES] = {0};
 
 static unsigned char bmc_global_enable_setting[] = {0x0c,0x0c,0x0c,0x0c};
@@ -146,6 +148,14 @@ static char *drive_info_key[] =
   "quantity",
   "type",
   "wwn"
+};
+
+// obmc-dump status
+enum {
+  DUMP_DONE = 0x0,  
+  DUMP_FAIL = 0x1,
+  DUMP_NEVER = 0x2,
+  DUMP_ONGOING = 0x3,
 };
 
 // TODO: Based on performance testing results, might need fine grained locks
@@ -486,7 +496,8 @@ sensor_set_reading(unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
   uint8_t sensor_num;
   uint8_t flags;
-  uint8_t value;
+  float value;
+  bool available = true;
 
   // We do not support the command in full.
   if (length_check(3, req_len, response, res_len))
@@ -504,7 +515,12 @@ sensor_set_reading(unsigned char *request, unsigned char req_len,
     res->cc = CC_INVALID_PARAM;
     return;
   }
-  if (sensor_cache_write(req->payload_id, sensor_num, true, (float)value)) {
+  // may use NVMe-MI CTemp spec or other spec to decode cache send from IPMI command
+  if (pal_correct_sensor_reading_from_cache(req->payload_id, sensor_num, &value) != 0) {
+    available = false;
+  }
+
+  if (sensor_cache_write(req->payload_id, sensor_num, available, value)) {
     res->cc = CC_UNSPECIFIED_ERROR;
     return;
   }
@@ -662,6 +678,9 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
   unsigned char *data = &res->data[0];
+  char stat_buf[10] = {0};
+  size_t len = 0;
+  bool is_first_exc = false;
 
   res->cc = CC_SUCCESS;
 
@@ -672,13 +691,35 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
     }
   } else if ((!memcmp(req->data, "obmc-dump", strlen("obmc-dump"))) &&
       (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump")) {
-    if (system("/usr/local/bin/obmc-dump") != 0) {
+    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, KV_FPERSIST) < 0) {
+      is_first_exc = true;
+    }
+    // If obmc-dump is ongiong, skip the request
+    if ((is_first_exc == true) || strncmp(stat_buf, "Ongoing", strlen("Ongoing")) != 0) { 
+      if (system("/usr/local/bin/obmc-dump -y &") != 0) {
+        res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+      }
+    }
+  } else if ((!memcmp(req->data, "obmc-dump -s", strlen("obmc-dump -s"))) &&
+      (req_len - ((void*)req->data - (void*)req)) == strlen("obmc-dump -s")) {
+    if (kv_get(OBMC_DUMP_STAT_KEY, stat_buf, &len, KV_FPERSIST) < 0) {
+      *data++ = DUMP_NEVER;
+      goto exit;
+    }
+    if (strncmp(stat_buf, "Ongoing", strlen("Ongoing")) == 0) {
+      *data++ = DUMP_ONGOING;
+    } else if (strncmp(stat_buf, "Done", strlen("Done")) == 0) {
+      *data++ = DUMP_DONE;
+    } else if (strncmp(stat_buf, "Fail", strlen("Fail")) == 0) {
+      *data++ = DUMP_FAIL;
+    } else {
       res->cc = CC_UNSPECIFIED_ERROR;
     }
   } else {
     res->cc = CC_INVALID_PARAM;
   }
 
+exit:
   *res_len = data - &res->data[0];
 }
 
@@ -3440,6 +3481,181 @@ oem_set_fscd(unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_slot_power_policy(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  unsigned char *data = &res->data[0];
+  *data++ = 0x07;  // Power restore policy support(bitfield)
+
+  // Set specific slave addr device's power restore policy
+  res->cc = pal_set_slot_power_policy(req->data, res->data);
+  if (res->cc == CC_SUCCESS) {
+    *res_len = data - &res->data[0];
+  }
+}
+
+static void
+oem_get_usb_cdc_status (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  int ret = 0;
+
+  if (length_check(0, req_len, response, res_len)) {
+    return;
+  }
+
+  ret = system("lsmod | grep -q g_cdc");
+  if (ret != 0) {
+    res->data[0] = DISABLE_USB_CDC;
+  } else {
+    res->data[0] = ENABLE_USB_CDC;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = 1;
+}
+
+static void
+oem_control_usb_cdc (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  uint8_t status_ctrl = req->data[0]; // 0 - disable, 1 - enable
+  int ret = 0;
+
+  if (length_check(1, req_len, response, res_len)) {
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+
+  if (status_ctrl == DISABLE_USB_CDC) {
+    // Disable USB serial console by usbcons.sh, then unload USB CDC driver
+    ret = run_command("/etc/init.d/usbcons.sh stop");
+    if (ret == 0) {
+      ret = system("modprobe -qr g_cdc");
+      if (WIFEXITED(ret) == 0) {
+        syslog(LOG_ERR, "%s: failed to disable ether-over-usb (usb0), ret: %d\n", __func__, ret);
+        res->cc = CC_UNSPECIFIED_ERROR;
+      }
+    } else {
+      syslog(LOG_ERR, "%s: failed to disable USB serial console, ret: %d\n", __func__, ret);
+      res->cc = CC_UNSPECIFIED_ERROR;
+    }
+  } else if (status_ctrl == ENABLE_USB_CDC){
+    // Enable USB serial console and reload USB CDC driver by usbcons.sh, then link up usb0
+    // The 'restart' action will kill all usbmod.sh processes then start usbmon.sh
+    ret = run_command("/etc/init.d/usbcons.sh restart");
+    if (ret == 0) {
+      ret = system("sleep 1; ifconfig usb0 up");
+      if (WIFEXITED(ret) == 0) {
+        syslog(LOG_ERR, "%s: failed to link up ether-over-usb (usb0), ret: %d\n", __func__, ret);
+        res->cc = CC_UNSPECIFIED_ERROR;
+      }
+    } else {
+      syslog(LOG_ERR, "%s: failed to enable ether-over-usb (usb0), ret: %d\n", __func__, ret);
+      res->cc = CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    res->cc = CC_INVALID_PARAM;
+  }
+
+  *res_len = 0;
+}
+
+static void
+oem_set_ioc_fw_recovery (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(2, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  // cmd_len = req_len - 3 (payload_id, cmd and netfn)
+  res->cc = pal_set_ioc_fw_recovery(req->data, (req_len - IPMI_MN_REQ_HDR_SIZE), res->data, res_len);
+}
+
+static void
+oem_get_ioc_fw_recovery (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res= (ipmi_res_t *) response;
+  uint8_t component = 0;
+  *res_len = 0;
+
+  if (length_check(1, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  component = req->data[0];
+
+  res->cc = pal_get_ioc_fw_recovery(component, res->data, res_len);
+}
+
+static void
+oem_setup_exp_uart_bridging (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(0, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  res->cc = pal_setup_exp_uart_bridging();
+}
+
+static void
+oem_teardown_exp_uart_bridging (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(0, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  res->cc = pal_teardown_exp_uart_bridging();
+}
+
+static void
+oem_set_pcie_info (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[100] = {0};
+  char payload[100] = {0};
+  size_t data_len = req_len - IPMI_MN_REQ_HDR_SIZE;
+
+  sprintf(key, "sys_config/fru%d_pcie_i%02X_s%02X_info",
+      req->payload_id, req->data[0], req->data[1]);
+
+  memcpy(payload, &req->data[0], data_len);
+  if(kv_set(key, payload, data_len, KV_FPERSIST)) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+
+  return;
+}
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3447,7 +3663,6 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
   ipmi_res_t *res = (ipmi_res_t *) response;
 
   unsigned char cmd = req->cmd;
-
   pthread_mutex_lock(&m_oem);
   switch (cmd)
   {
@@ -3583,6 +3798,18 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
     case CMD_OEM_SET_FSCD:
       oem_set_fscd(request, req_len, response, res_len);
       break;
+    case CMD_OEM_SET_POWER_POLICY:
+      oem_set_slot_power_policy(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_USB_CDC_STATUS:
+      oem_get_usb_cdc_status(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_CTRL_USB_CDC:
+      oem_control_usb_cdc(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_PCIE_INFO:
+      oem_set_pcie_info(request, req_len, response, res_len);
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       break;
@@ -3604,6 +3831,18 @@ ipmi_handle_oem_storage (unsigned char *request, unsigned char req_len,
   {
     case CMD_OEM_STOR_ADD_STRING_SEL:
       oem_stor_add_string_sel (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_IOC_FW_RECOVERY:
+      oem_set_ioc_fw_recovery (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_IOC_FW_RECOVERY:
+      oem_get_ioc_fw_recovery (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SETUP_EXP_UART_BRIDGING:
+      oem_setup_exp_uart_bridging (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_TEARDOWN_EXP_UART_BRIDGING:
+      oem_teardown_exp_uart_bridging (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;
@@ -3850,6 +4089,16 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       res->cc = CC_SUCCESS;
       memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
       *res_len = 3;
+      break;
+    case CMD_OEM_1S_GET_SYS_FW_VER:
+      if (req_len == 8) { // payload_id, netfn, cmd, IANA[3], data[0] (fru), data[1] (component)
+        memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
+        res->cc = pal_get_fw_ver(req->payload_id, &req->data[3], &res->data[3], res_len);
+        *res_len += SIZE_IANA_ID;        
+      } else {
+        res->cc = CC_INVALID_LENGTH;
+        *res_len = SIZE_IANA_ID;
+      }
       break;
     default:
       res->cc = CC_INVALID_CMD;

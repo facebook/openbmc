@@ -11,8 +11,8 @@ inherit meson
 SRC_URI = "file://fbgc_fruid \
           "
 
-DEPENDS += "libfbgc-common"
-RDEPENDS_${PN} += "libfbgc-common"
+DEPENDS += "libfbgc-common libbic"
+RDEPENDS_${PN} += "libfbgc-common libbic"
 
 S = "${WORKDIR}/fbgc_fruid"
 

@@ -27,6 +27,7 @@ LDFLAGS_append = " -lwedge_eeprom -llog"
 DEPENDS_append = "libwedge-eeprom liblog update-rc.d-native"
 RDEPENDS_${PN} += "libwedge-eeprom liblog"
 
+inherit systemd
 
 SRC_URI = "file://Makefile \
            file://setup-ipmid.sh \
@@ -41,6 +42,7 @@ SRC_URI = "file://Makefile \
            file://platform/fruid.h \
            file://platform/wedge/sensor.c \
            file://platform/wedge/fruid.c \
+           file://ipmid.service \
           "
 
 S = "${WORKDIR}"
@@ -49,6 +51,18 @@ binfiles = "ipmid"
 
 pkgdir = "ipmid"
 
+install_sysv() {
+    install -d ${D}${sysconfdir}/init.d
+    install -d ${D}${sysconfdir}/rcS.d
+    install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
+    update-rc.d -r ${D} setup-ipmid.sh start 64 S .
+}
+
+install_systemd() {
+    install -d ${D}${systemd_system_unitdir}
+    install -m 644 ipmid.service ${D}${systemd_system_unitdir}
+}
+
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   bin="${D}/usr/local/bin"
@@ -56,10 +70,12 @@ do_install() {
   install -d $bin
   install -m 755 ipmid ${dst}/ipmid
   ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
-  install -d ${D}${sysconfdir}/init.d
-  install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
-  update-rc.d -r ${D} setup-ipmid.sh start 64 S .
+
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      install_systemd
+  else
+      install_sysv
+  fi
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
@@ -70,3 +86,5 @@ FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"
+
+SYSTEMD_SERVICE_${PN} = "ipmid.service"

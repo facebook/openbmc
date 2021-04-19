@@ -29,6 +29,8 @@ git remote add yocto-meta-openembedded \
     https://github.com/openembedded/meta-openembedded.git || true
 git remote add yocto-meta-security \
     https://git.yoctoproject.org/git/meta-security || true
+git remote add yocto-lf-openbmc \
+    https://github.com/openbmc/openbmc.git || true
 
 for branch in ${branches[@]}
 do
@@ -37,23 +39,36 @@ do
     mkdir ./yocto/$branch
   fi
 
-  repos=${branch}_repos[@]
+  if [[ ${branch} == lf-* ]]; then
+      real_branch="${branch/lf-/}"
+  else
+      real_branch="${branch}"
+  fi
+
+  repos=${branch/-/_}_repos[@]
   for repo in ${!repos}
   do
     repo_name=${repo%%:*}
     commit_id=${repo##*:}
 
+    if [ "lf-openbmc" = "$repo_name" ]; then
+        repo_name="lf-openbmc"
+        repo_path="./yocto/${branch}"
+    else
+        repo_path="./yocto/${branch}/${repo_name}"
+    fi
+
     # Remove the repo in the branch
-    if [ -d ./yocto/${branch}/${repo_name} ]; then
-      rm -rf ./yocto/${branch}/${repo_name}
+    if [ -d ${repo_path} ]; then
+      rm -rf ${repo_path}
     fi
 
     # Fetch the repo branch
-    git fetch yocto-${repo_name} ${branch}
+    git fetch yocto-${repo_name} ${real_branch}
 
-    # Add specific commit of repo into yocto/branch/repo/ worktree 
+    # Add specific commit of repo into yocto/branch/repo/ worktree
     if [ $FETCH_ONLY -eq 0 ]; then
-      git worktree add -f yocto/${branch}/${repo_name} ${commit_id}
+      git worktree add -f ${repo_path} ${commit_id}
     fi
   done
 done

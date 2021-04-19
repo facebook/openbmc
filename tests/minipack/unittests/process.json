@@ -11,6 +11,5 @@
   "restapi",
   "restwatchdog",
   "sensord",
-  "rsyslogd",
-  "spatula_wrapper.py"
+  "rsyslogd"
 ]

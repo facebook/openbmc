@@ -3,21 +3,22 @@
 #include <unistd.h>
 #include <cstdio>
 #include <cstring>
+#include <openbmc/kv.hpp>
 
 using namespace std;
 
 #define MAX_LINE_LENGTH 80
 #define TPM_DEV "/sys/class/tpm/tpm0"
 #define TPM_VERSION_LOCATION "/sys/class/tpm/tpm0/device/caps"
-#define TPM_VERSION_LOCATION_TMP "/tmp/cache_store/tpm_version_tmp"
 #define TPM_FW_VER_MATCH_STR "Firmware version: "
 
 int
 get_tpm_ver(char *ver) {
   FILE *fp = NULL;
-  FILE *fp_2 = NULL;
   char str[MAX_LINE_LENGTH] = {0};
   char *match = NULL;
+  std::string ver_str;
+  const std::string ver_key = "tpm_version_tmp";
 
   // Check is TPM is present/supported by the platform
   if(access(TPM_DEV, F_OK) == -1) {
@@ -25,10 +26,12 @@ get_tpm_ver(char *ver) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  //If TPM_VERSION_LOCATION_TMP has no TPM version cache file, then copy it from TPM driver node
-  //Read TPM version from driver node takes over 10 times longer than read from cached file
-  //That's why we cache the TPM Version at the frist time of the query
-  if(access(TPM_VERSION_LOCATION_TMP, F_OK) == -1) {
+  try {
+    ver_str = kv::get(ver_key);
+  } catch (std::exception& e) {
+    //If kv has no TPM version cache file, then copy it from TPM driver node
+    //Read TPM version from driver node takes over 10 times longer than read from cached file
+    //That's why we cache the TPM Version at the frist time of the query
 
     //Open the TPM version node
     fp = fopen(TPM_VERSION_LOCATION, "r");
@@ -36,49 +39,24 @@ get_tpm_ver(char *ver) {
       syslog(LOG_WARNING, "TPM File:%s, Open Fail for Read.", TPM_VERSION_LOCATION);
       return -1;
     }
-
-    //Open the TPM version cache file
-    fp_2 = fopen(TPM_VERSION_LOCATION_TMP, "w");
-    if (fp_2 == NULL){
-      syslog(LOG_WARNING, "TPM File:%s, Open Fail for Write.", TPM_VERSION_LOCATION_TMP);
-      return -1;
-    }
-
     //Copy the TPM version to cache line by line
     while (fgets(str, sizeof(str), fp) != NULL) {
-      fputs(str, fp_2);
+      match = strstr(str, TPM_FW_VER_MATCH_STR);
+      if (match != NULL) {
+        break;
+      }
+    }
+    if (match == NULL) {
+      syslog(LOG_WARNING, "Doesn't find TPM Firmware version");
+      fclose(fp);
+      return -1;
     }
     fclose(fp);
-    fclose(fp_2);
+    ver_str.assign(match + strlen(TPM_FW_VER_MATCH_STR));
+    // Set cache so next time we do not access the device.
+    kv::set(ver_key, ver_str);
   }
-
-  fp = fopen(TPM_VERSION_LOCATION_TMP, "r");
-  if (fp == NULL){
-      syslog(LOG_WARNING, "TPM File:%s, Open Fail for Read.", TPM_VERSION_LOCATION_TMP);
-      return -1;
-  }
-
-  //Search for "Firmware version" string in TMP version cache file
-  while (fgets(str, sizeof(str), fp) != NULL) {
-    match = strstr(str, TPM_FW_VER_MATCH_STR);
-    if (match != NULL) {
-      break;
-    }
-  }
-
-  //Doesn't find match for "Firmware version" string in TMP version cache file
-  //The reasone could be TPM version node is containing wrong data, or cache file is empty
-  //Remove the cache file for next query
-  if (match == NULL){
-    syslog(LOG_WARNING, "Doesn't find TPM Firmware version at: %s", TPM_VERSION_LOCATION_TMP);
-    remove(TPM_VERSION_LOCATION_TMP);
-    return -1;
-  }
-
-  //Offset "TPM_FW_VER_MATCH_STR" units, only return TPM version number
-  memcpy(ver, (match + strlen(TPM_FW_VER_MATCH_STR)), (strlen(str) - strlen(TPM_FW_VER_MATCH_STR)) );
-  fclose(fp);
-
+  strncpy(ver, ver_str.c_str(), MAX_LINE_LENGTH - 1);
   return 0;
 }
 

@@ -86,8 +86,9 @@
                         "^meta-aspeed/.*",
                         "^meta-facebook/recipes-.*/.*",
                         "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes",
-                        "^meta-facebook/conf",
+                        "^meta-facebook/classes/.*",
+                        "^meta-facebook/conf/.*",
+                        "^meta-facebook/meta-backports/.*",
                         "^yocto/.*"
                     ]
                 }
@@ -287,40 +288,6 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby2/meta-fby2-gpv2/.*",
-                        "^meta-facebook/meta-fby2/recipes-.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-buildci-fbnd-determinator",
-            "args": {
-                "name": "openbmc-buildci-fbnd-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-buildci-fbnd-determinator",
-                        "shell": "facebook/sandcastle/job.py diff --platform fbnd"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "some_file_matches_some_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
                         "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
@@ -628,6 +595,40 @@
             ]
         },
         {
+            "alias": "openbmc-buildci-northdome-determinator",
+            "args": {
+                "name": "openbmc-buildci-northdome-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-northdome-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform northdome"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
+                        "^meta-facebook/meta-fby2/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-buildci-sonorapass-determinator",
             "args": {
                 "name": "openbmc-buildci-sonorapass-determinator",
@@ -856,8 +857,9 @@
                         "^meta-aspeed/.*",
                         "^meta-facebook/recipes-.*/.*",
                         "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes",
-                        "^meta-facebook/conf",
+                        "^meta-facebook/classes/.*",
+                        "^meta-facebook/conf/.*",
+                        "^meta-facebook/meta-backports/.*",
                         "^yocto/.*"
                     ]
                 }
@@ -1057,40 +1059,6 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby2/meta-fby2-gpv2/.*",
-                        "^meta-facebook/meta-fby2/recipes-.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-fbnd-determinator",
-            "args": {
-                "name": "openbmc-cit-fbnd-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-fbnd-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform fbnd"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "some_file_matches_some_regexp",
-                    "value": [
-                        "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
                         "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
@@ -1389,6 +1357,40 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-minipack/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-northdome-determinator",
+            "args": {
+                "name": "openbmc-cit-northdome-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-northdome-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform northdome"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby2/meta-fby2-nd/.*",
+                        "^meta-facebook/meta-fby2/recipes-.*"
                     ]
                 }
             ],

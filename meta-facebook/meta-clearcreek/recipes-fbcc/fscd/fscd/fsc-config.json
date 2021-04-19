@@ -1,0 +1,207 @@
+{
+  "version": "fbcc-pvt-r02",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "fan_recovery_time": 1,
+  "sensor_filter_all": true,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": false
+  },
+  "watchdog": false,
+  "min_rpm": 600,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "negative_hysteresis":1,
+      "data": [
+        [15, 16],
+        [18, 19],
+        [21, 22],
+        [24, 25],
+        [27, 27],
+        [29, 29],
+        [31, 30],
+        [34, 33],
+        [35, 33],
+        [37, 35],
+        [39, 39],
+        [40, 41],
+        [45, 46],
+        [50, 70]
+      ]
+    },
+    "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "negative_hysteresis":2,
+      "data": [
+        [82, 14]
+      ]
+    },
+    "pid_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 87,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -0.2,
+      "ki": -0.015,
+      "kd": 0
+    },
+    "linear_bay0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "negative_hysteresis":6,
+      "data": [
+        [50, 14]
+      ]
+    },
+    "pid_bay0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 64,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_bay1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "negative_hysteresis":6,
+      "data": [
+        [50, 14]
+      ]
+    },
+    "pid_bay1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 64,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_switch": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "negative_hysteresis":7,
+      "data": [
+        [60, 14]
+      ]
+    },
+    "pid_switch": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 80,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
+    }
+  },
+    "fans": {
+      "0": {
+        "label" : "Fan 0 Inlet",
+        "read_source" : {
+          "kv" : "pdb_sensor160"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "1": {
+        "label" : "Fan 0 Outlet",
+        "read_source" : {
+          "kv" : "pdb_sensor161"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "2": {
+        "label" : "Fan 1 Inlet",
+        "read_source" : {
+          "kv" : "pdb_sensor162"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "3": {
+        "label" : "Fan 1 Outlet",
+        "read_source" : {
+          "kv" : "pdb_sensor163"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "4": {
+        "label" : "Fan 2 Inlet",
+        "read_source" : {
+          "kv" : "pdb_sensor164"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "5": {
+        "label" : "Fan 2 Outlet",
+        "read_source" : {
+          "kv" : "pdb_sensor165"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "6": {
+        "label" : "Fan 3 Inlet",
+        "read_source" : {
+          "kv" : "pdb_sensor166"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      },
+      "7": {
+        "label" : "Fan 3 Outlet",
+        "read_source" : {
+          "kv" : "pdb_sensor167"
+        },
+        "write_source" : {
+          "util" : "/usr/local/bin/fan-util --set %d"
+        }
+      }
+    },
+    "zones": {
+      "zone_1": {
+        "pwm_output": [0],
+        "expr_file": "zone1.fsc"
+      }
+    }
+  }

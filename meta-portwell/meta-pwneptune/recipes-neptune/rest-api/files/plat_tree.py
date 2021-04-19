@@ -33,7 +33,7 @@ from node_sensors import get_node_sensors
 from node_logs import get_node_logs
 from node_config import get_node_config
 from tree import tree
-from pal import *
+from rest_pal_legacy import *
 
 from aiohttp.web import Application
 

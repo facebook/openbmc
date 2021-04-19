@@ -9,6 +9,8 @@ void usage(const char* exe_name) {
          "        get <key> <type|>*\n"
          "    set:\n"
          "        set <key> <value> <type|>*\n"
+         "    del:\n"
+         "        del <key> <type|>*\n"
          "\n"
          "    valid types:\n"
          "        persistent - use the persistent kv store.\n"
@@ -62,6 +64,29 @@ int cmd_get(int argc, const char** argv) {
   return 0;
 }
 
+int cmd_del(int argc, const char** argv) {
+  if (argc <= pos_key) {
+    // Not enough args.
+    usage(argv[pos_exe]);
+    return 1;
+  }
+
+  // Parse flags
+  auto r = region(argc <= pos_get_flag ? "" : argv[pos_get_flag]);
+
+  // delete kv
+  try {
+    kv::del(argv[pos_key], r);
+  } catch (kv::key_does_not_exist&) {
+    std::cerr << argv[pos_key] << " does not exist.\n";
+    return 1;
+  } catch (std::exception& e) {
+    std::cerr << argv[pos_key] << " Error: " << e.what() << std::endl;
+    return 1;
+  }
+  return 0;
+}
+
 /** Handle 'set' subcommand. */
 int cmd_set(int argc, const char** argv) {
   if (argc < pos_set_value) {
@@ -89,6 +114,8 @@ int main(int argc, const char** argv) {
     // Parse sub-command and call handler.
     if (std::string("get") == argv[pos_cmd]) {
       return cmd_get(argc, argv);
+    } else if (std::string("del") == argv[pos_cmd]) {
+      return cmd_del(argc, argv);
     } else if (std::string("set") == argv[pos_cmd]) {
       return cmd_set(argc, argv);
     } else if (std::string("help") == argv[pos_cmd]) {

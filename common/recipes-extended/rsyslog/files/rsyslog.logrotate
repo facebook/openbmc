@@ -8,6 +8,7 @@
         size 10M
         delaycompress
         compress
+        nodateext
         postrotate
 		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
         endscript
@@ -27,6 +28,7 @@
         compress
         delaycompress
         sharedscripts
+        nodateext
         postrotate
 		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
         endscript

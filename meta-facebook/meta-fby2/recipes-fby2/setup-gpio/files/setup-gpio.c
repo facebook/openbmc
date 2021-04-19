@@ -79,9 +79,24 @@ int set_gpio_init_value_after_export(const char * name, const char *shadow, gpio
   return ret;
 }
 
+int ioexp_export(const char * chip_name, int offset, const char *shadow)
+{
+	return gpio_export_by_offset(chip_name, offset, shadow);
+}
+
+int ioexp_exportr_with_init_value(const char * chip_name, int offset, const char *shadow, gpio_value_t value)
+{
+  int ret;
+  if (gpio_is_exported(shadow) == false) {
+    gpio_export_by_offset(chip_name, offset, shadow);
+  }
+  ret = gpio_set_init_value_by_shadow(shadow, value);
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
-	int ret = 0, spb_type = 0;
+	int spb_type = 0;
 	uint8_t slot_12v_on, slot_prsnt;
 	uint32_t reg[LASTEST_REG];
 
@@ -136,10 +151,14 @@ main(int argc, char **argv) {
 	// enable I2C ctrl reg (SCUA4),  SCUA4[15:12] must be 1
 	reg[SCUA4] &= ~(0xFF0F0000);
 	reg[SCUA4] |= 0x0000F000;
-	
+
+#ifndef WDTRST1_KERNEL_DRIVER
 	// To use GPIOAB1~AB3, SCUA8[3:1] must be 0
 	reg[SCUA8] &= ~(0x0000000E);
-
+#else
+	// reserve GPIOAB2 for WDTRST1, SCUA8[2] must be 1
+	reg[SCUA8] &= ~(0x0000000A);
+#endif
 	phymem_set_dword(SCU_BASE, REG_SCU80, reg[SCU80]);
 	phymem_set_dword(SCU_BASE, REG_SCU84, reg[SCU84]);
 	phymem_set_dword(SCU_BASE, REG_SCU88, reg[SCU88]);
@@ -212,8 +231,10 @@ main(int argc, char **argv) {
 	// Enable P3V3: GPIOAB1(217)
 	set_gpio_init_value_after_export("GPIOAB1", "P3V3_EN_R", 1);
 	
+#ifndef WDTRST1_KERNEL_DRIVER
 	// BMC_SELF_HW_RST: GPIOAB2(218)
 	set_gpio_init_value_after_export("GPIOAB2", "BMC_SELF_HW_RST", 0);
+#endif
 
 	// VGA Mux
 	gpio_export_by_name(ASPPED_CHIP, "GPIOJ2", "VGA_SELECT_ID0");
@@ -345,8 +366,6 @@ main(int argc, char **argv) {
 	// RST_SLOT4_SYS_RESET_N: GPIOS3 (147)
 	set_gpio_init_value_after_export("GPIOS3", "RST_SLOT4_SYS_RESET_N", 1);
 
-	// UART_SEL: GPIOO3 (115)
-	gpio_export_by_name(ASPPED_CHIP, "GPIOO3", "UART_SEL");
 
 	// 12V_STBY Enable for Slots
 	// P12V_STBY_SLOT1_EN: GPIOO4 (116)
@@ -412,16 +431,6 @@ main(int argc, char **argv) {
 	// SLOT4_POWER_EN: GPIOI3 (67)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOI3", "SLOT4_POWER_EN");
 
-	// Set SLOT throttle pin
-	// BMC_THROTTLE_SLOT1_N: GPIOI4 (68)
-	set_gpio_init_value_after_export("GPIOI4", "BMC_THROTTLE_SLOT1_N", 1);
-	// BMC_THROTTLE_SLOT2_N: GPIOI5 (69)
-	set_gpio_init_value_after_export("GPIOI5", "BMC_THROTTLE_SLOT2_N", 1);
-	// BMC_THROTTLE_SLOT3_N: GPIOI6 (70)
-	set_gpio_init_value_after_export("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
-	// BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
-	set_gpio_init_value_after_export("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
-	
 	// Set FAN disable pin
 	// DISABLE_FAN_N: GPIOM4 (100)
 	set_gpio_init_value_after_export("GPIOM4", "DISABLE_FAN_N", 1);
@@ -429,19 +438,13 @@ main(int argc, char **argv) {
 	// Set FAST PROCHOT pin (Default Enable)
 	// FAST_PROCHOT_EN: GPIOR4 (140)
 	set_gpio_init_value_after_export("GPIOR4", "FAST_PROCHOT_EN", 1);
-
-	// PE_BUFF_OE_0_N: GPIOB4 (12)
-	gpio_export_by_name(ASPPED_CHIP, "GPIOB4", "PE_BUFF_OE_0_N");
 	
 	// PE_BUFF_OE_1_N: GPIOB5 (13)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB5", "PE_BUFF_OE_1_N");
-	
-	// PE_BUFF_OE_2_N: GPIOB6 (14)
-	gpio_export_by_name(ASPPED_CHIP, "GPIOB6", "PE_BUFF_OE_2_N");
-	
+
 	// PE_BUFF_OE_3_N: GPIOB7 (15)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOB7", "PE_BUFF_OE_3_N");
-	
+
 	// CLK_BUFF1_PWR_EN_N: GPIOJ0 (72)
 	gpio_export_by_name(ASPPED_CHIP, "GPIOJ0", "CLK_BUFF1_PWR_EN_N");
 	
@@ -466,9 +469,56 @@ main(int argc, char **argv) {
 	// BOARD_ID: GPIOY3
 	gpio_export_by_name(ASPPED_CHIP, "GPIOY3", "BOARD_ID");
 
+	// BASEBOARD_ID: GPIOT6
+	gpio_export_by_name(ASPPED_CHIP, "GPIOT6", "BASEBOARD_ID");
+
 	spb_type = fby2_common_get_spb_type();
-	if (spb_type == TYPE_SPB_YV250) {
-		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "YV250_USB_OCP_UART_SWITCH_N");
+	if (spb_type == TYPE_SPB_YV250 || spb_type == TYPE_SPB_YV2ND2) {
+		// UART_SEL for YV250 & YV2ND2
+		gpio_export_by_name(ASPPED_CHIP, "GPIOG7", "UART_SEL");
+	} else {
+		// UART_SEL: GPIOO3 (115)
+		gpio_export_by_name(ASPPED_CHIP, "GPIOO3", "UART_SEL");
+	}
+
+	// Set SLOT throttle pin
+	if (spb_type == TYPE_SPB_YV2ND2) {
+		// BMC_THROTTLE_SLOT1_N: GPIOL5
+		set_gpio_init_value_after_export("GPIOL5", "BMC_THROTTLE_SLOT1_N", 1);
+		// BMC_THROTTLE_SLOT2_N: GPIOM5
+		set_gpio_init_value_after_export("GPIOM5", "BMC_THROTTLE_SLOT2_N", 1);
+		// BMC_THROTTLE_SLOT3_N: GPIOH6
+		set_gpio_init_value_after_export("GPIOH6", "BMC_THROTTLE_SLOT3_N", 1);
+		// BMC_THROTTLE_SLOT4_N: GPIOH7
+		set_gpio_init_value_after_export("GPIOH7", "BMC_THROTTLE_SLOT4_N", 1);
+	} else {
+		// BMC_THROTTLE_SLOT1_N: GPIOI4 (68)
+		set_gpio_init_value_after_export("GPIOI4", "BMC_THROTTLE_SLOT1_N", 1);
+		// BMC_THROTTLE_SLOT2_N: GPIOI5 (69)
+		set_gpio_init_value_after_export("GPIOI5", "BMC_THROTTLE_SLOT2_N", 1);
+		// BMC_THROTTLE_SLOT3_N: GPIOI6 (70)
+		set_gpio_init_value_after_export("GPIOI6", "BMC_THROTTLE_SLOT3_N", 1);
+		// BMC_THROTTLE_SLOT4_N: GPIOI7 (71)
+		set_gpio_init_value_after_export("GPIOI7", "BMC_THROTTLE_SLOT4_N", 1);
+	}
+
+	// Config PE_BUFF_OE pins
+	if (spb_type == TYPE_SPB_YV2ND2) {
+		// PE_BUFF_OE_0_N
+		ioexp_export("8-0049", 1, "PE_BUFF_OE_0_N");
+		// PE_BUFF_OE_2_N
+		ioexp_export("8-0049", 2, "PE_BUFF_OE_2_N");
+	} else {
+		// PE_BUFF_OE_0_N: GPIOB4 (12)
+		gpio_export_by_name(ASPPED_CHIP, "GPIOB4", "PE_BUFF_OE_0_N");
+		// PE_BUFF_OE_2_N: GPIOB6 (14)
+		gpio_export_by_name(ASPPED_CHIP, "GPIOB6", "PE_BUFF_OE_2_N");
+	}
+
+	if (spb_type == TYPE_SPB_YV2ND2) {
+		// Set PCA9537
+		ioexp_exportr_with_init_value("8-0049", 0, "P3V3_EN_ON_R", 1);
+		ioexp_export("8-0049", 3, "SINGLE_FAN_TYPE");
 	}
 
 	fby2_common_get_fan_type(); // initialize fan type

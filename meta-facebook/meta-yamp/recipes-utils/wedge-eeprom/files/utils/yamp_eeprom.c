@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -61,6 +62,12 @@
 #define YAMP_EEPROM_FIELD_RESERVED5    0x0F
 #define YAMP_EEPROM_FIELD_RESERVED6    0x10
 #define YAMP_EEPROM_FIELD_RESERVED7    0x11
+#define YAMP_EEPROM_FIELD_RESERVED8    0x12
+#define YAMP_EEPROM_FIELD_RESERVED9    0x13
+#define YAMP_EEPROM_FIELD_RESERVED10   0x14
+#define YAMP_EEPROM_FIELD_RESERVED11   0x15
+#define YAMP_EEPROM_FIELD_RESERVED12   0x16
+#define YAMP_EEPROM_FIELD_MFGTIME2     0x17
 #define YAMP_EEPROM_SIZE 256
 #define YAMP_LC_AT24_BUS_BASE 14
 #define YAMP_LC_AT24_SLAVE_ADDR 0x50
@@ -277,6 +284,7 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   char buf[YAMP_EEPROM_SIZE];
   char bus_name[32];
   char sup_eeprom_filename[YAMP_FILE_NAME_SIZE];
+  bool mfgtime2 = false; // set to True if MFGTIME2 field is detected
 
   if (!eeprom) {
     return -EINVAL;
@@ -394,6 +402,12 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
     switch(field_type)
     {
       case YAMP_EEPROM_FIELD_MFGTIME:
+          if (!mfgtime2)
+            memcpy(eeprom->fbw_system_manufacturing_date, field_value, 10);
+          break;
+
+      case YAMP_EEPROM_FIELD_MFGTIME2:
+          mfgtime2 = true; // Do not allow MFGTIME to override MFGTIME2
           memcpy(eeprom->fbw_system_manufacturing_date, field_value, 10);
           break;
 
@@ -462,9 +476,9 @@ int yamp_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
           break;
 
       default:
-          /* Invalid value. Bail out */
-          rc = -EINVAL;
-          goto out;
+          /* unregonize field type. Bail out and print warning log*/
+          OBMC_WARN("unrecognize fied type of 0x%02x\n", field_type);
+          break;
     }
   }
 

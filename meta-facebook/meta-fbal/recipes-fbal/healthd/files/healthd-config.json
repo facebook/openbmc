@@ -45,7 +45,7 @@
   "nm_monitor": {
     "enabled": true,
     "monitor_interval": 1,
-    "retry_threshold": 10
+    "retry_threshold": 20
   },
   "verified_boot": {
     "enabled": true

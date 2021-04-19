@@ -45,7 +45,7 @@
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 #ifdef FRU_DEVICE_LIST
-  static const char * pal_dev_list_power = pal_dev_list;
+  static const char * pal_dev_list_power = pal_dev_pwr_list;
   static const char * dev_pwr_option_list = pal_dev_pwr_option_list;
 #else
   static const char * pal_dev_list_power = NULL;
@@ -545,7 +545,7 @@ power_util(uint8_t fru, uint8_t opt, bool force) {
       pal_update_ts_sled();
       sync();
       sleep(1);
-      pal_sled_cycle();
+      ret = pal_sled_cycle();
       break;
 
     default:

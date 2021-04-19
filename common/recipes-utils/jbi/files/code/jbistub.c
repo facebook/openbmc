@@ -79,7 +79,7 @@ typedef unsigned long DWORD;
 #ifdef OPENBMC
 //#define VERBOSE
 //#define DEBUG
-#include <openbmc/gpio.h>
+#include <openbmc/libgpio.h>
 #include <openbmc/hr_nanosleep.h>
 #include <openbmc/log.h>
 #include <errno.h>
@@ -151,15 +151,23 @@ void close_jtag_hardware(void);
 
 #ifdef OPENBMC
 static int g_swio = 0;
-static int g_tck = -1;
-static int g_tms = -1;
-static int g_tdo = -1;
-static int g_tdi = -1;
+static int g_tck_offset = -1;
+static int g_tms_offset = -1;
+static int g_tdo_offset = -1;
+static int g_tdi_offset = -1;
+static const char *g_tck_shadow;
+static const char *g_tms_shadow;
+static const char *g_tdo_shadow;
+static const char *g_tdi_shadow;
 static int g_jtag_dev = -1;
-static gpio_st g_gpio_tck = {.gs_fd = -1};
-static gpio_st g_gpio_tms = {.gs_fd = -1};
-static gpio_st g_gpio_tdo = {.gs_fd = -1};
-static gpio_st g_gpio_tdi = {.gs_fd = -1};
+static gpio_desc_t *g_gpio_tck;
+static gpio_desc_t *g_gpio_tms;
+static gpio_desc_t *g_gpio_tdo;
+static gpio_desc_t *g_gpio_tdi;
+static int g_sysfs_tck_fd = -1;
+static int g_sysfs_tms_fd = -1;
+static int g_sysfs_tdi_fd = -1;
+static int g_sysfs_tdo_fd = -1;
 
 static int (*jtag_io_func)(int, int, int);
 #endif
@@ -296,7 +304,23 @@ static int jtag_swio_read(int fd) {
   return (atoi(buf) ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
 }
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
+#endif
+
 static int initialize_jtag_swio(void) {
+  int i, fd;
+  struct {
+    const char *path;
+    int flags;
+    int *fd;
+  } jtag_fds[4] = {
+    {JTAG_SYSFS_TDI, O_WRONLY, &g_sysfs_tdi_fd},
+    {JTAG_SYSFS_TCK, O_WRONLY, &g_sysfs_tck_fd},
+    {JTAG_SYSFS_TMS, O_WRONLY, &g_sysfs_tms_fd},
+    {JTAG_SYSFS_TDO, O_RDONLY, &g_sysfs_tdo_fd},
+  };
+
   if ((g_jtag_dev = open(JTAG_CHAR_DEV, O_RDWR)) < 0) {
     OBMC_ERROR(errno, "failed to open jtag device %s", JTAG_CHAR_DEV);
   } else {
@@ -304,21 +328,32 @@ static int initialize_jtag_swio(void) {
     return 0;
   }
 
-  if (((g_gpio_tdi.gs_fd = open(JTAG_SYSFS_TDI, O_WRONLY)) < 0) ||
-      ((g_gpio_tck.gs_fd = open(JTAG_SYSFS_TCK, O_WRONLY)) < 0) ||
-      ((g_gpio_tms.gs_fd = open(JTAG_SYSFS_TMS, O_WRONLY)) < 0) ||
-      ((g_gpio_tdo.gs_fd = open(JTAG_SYSFS_TDO, O_RDONLY)) < 0)) {
-    fprintf(stderr, "%s: open failed\n", __func__);
-    return -1;
+  for (i = 0; i < ARRAY_SIZE(jtag_fds); i++) {
+    fd = open(jtag_fds[i].path, jtag_fds[i].flags);
+    if (fd < 0) {
+      fprintf(stderr, "failed to open %s: %s\n",
+              jtag_fds[i].path, strerror(errno));
+      goto error;
+    }
+
+    *(jtag_fds[i].fd) = fd;
   }
 
   /* set tck, tms, tdi to low */
-  jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_LOW);
-  jtag_swio_write(g_gpio_tms.gs_fd, GPIO_VALUE_LOW);
-  jtag_swio_write(g_gpio_tdi.gs_fd, GPIO_VALUE_LOW);
+  jtag_swio_write(g_sysfs_tck_fd, GPIO_VALUE_LOW);
+  jtag_swio_write(g_sysfs_tms_fd, GPIO_VALUE_LOW);
+  jtag_swio_write(g_sysfs_tdi_fd, GPIO_VALUE_LOW);
   jbi_delay(1);
 
   return 0;
+
+error:
+  for (i = 0; i < ARRAY_SIZE(jtag_fds); i++) {
+    fd = *(jtag_fds[i].fd);
+    if (fd >= 0)
+      close(fd);
+  }
+  return -1;
 }
 
 static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
@@ -346,23 +381,23 @@ static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
       tdo = bitbang.tdo;
     }
   } else {
-    jtag_swio_write(g_gpio_tms.gs_fd, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
-    jtag_swio_write(g_gpio_tdi.gs_fd, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+    jtag_swio_write(g_sysfs_tms_fd, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+    jtag_swio_write(g_sysfs_tdi_fd, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
 
     /*
      * if we need to read data, the data should be ready from the
      * previous clock falling edge. Read it now.
      */
-    if (read_tdo && ((tdo = jtag_swio_read(g_gpio_tdo.gs_fd)) < 0)) {
+    if (read_tdo && ((tdo = jtag_swio_read(g_sysfs_tdo_fd)) < 0)) {
       fprintf(stderr, "%s: jtag_swio_read() failed\n", __func__);
       return -1;
     }
 
     /* do rising edge to clock out the data */
-    jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_HIGH);
+    jtag_swio_write(g_sysfs_tck_fd, GPIO_VALUE_HIGH);
 
     /* do falling edge clocking */
-    jtag_swio_write(g_gpio_tck.gs_fd, GPIO_VALUE_LOW);
+    jtag_swio_write(g_sysfs_tck_fd, GPIO_VALUE_LOW);
   }
 
   OBMC_DEBUG("tms=%d tdi=%d do_read=%d tdo=%d", tms, tdi, read_tdo, tdo);
@@ -371,31 +406,60 @@ static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
 
 static int initialize_jtag_gpios()
 {
-  if (gpio_open(&g_gpio_tck, g_tck) || gpio_open(&g_gpio_tms, g_tms)
-      || gpio_open(&g_gpio_tdo, g_tdo) || gpio_open(&g_gpio_tdi, g_tdi)) {
-    return -1;
+  int i;
+  gpio_desc_t *desc;
+  struct {
+    const char *shadow;
+    int offset;
+    gpio_desc_t **desc;
+  } jtag_pins[4] = {
+    {g_tck_shadow, g_tck_offset, &g_gpio_tck},
+    {g_tms_shadow, g_tms_offset, &g_gpio_tms},
+    {g_tdi_shadow, g_tdi_offset, &g_gpio_tdi},
+    {g_tdo_shadow, g_tdo_offset, &g_gpio_tdo},
+  };
+
+  for (i = 0; i < ARRAY_SIZE(jtag_pins); i++) {
+    if (jtag_pins[i].shadow != NULL)
+      desc = gpio_open_by_shadow(jtag_pins[i].shadow);
+    else if (jtag_pins[i].offset >= 0)
+      desc = gpio_open_by_offset(GPIO_CHIP_ASPEED, jtag_pins[i].offset);
+    else
+      goto error;
+
+    if (desc == NULL)
+      goto error;
+
+    *(jtag_pins[i].desc) = desc;
   }
 
   /* change GPIO directions, only TDO is input, all others are output */
-  if (gpio_change_direction(&g_gpio_tck, GPIO_DIRECTION_OUT)
-      || gpio_change_direction(&g_gpio_tms, GPIO_DIRECTION_OUT)
-      || gpio_change_direction(&g_gpio_tdo, GPIO_DIRECTION_IN)
-      || gpio_change_direction(&g_gpio_tdi, GPIO_DIRECTION_OUT)) {
-    return -1;
+  if (gpio_set_direction(g_gpio_tck, GPIO_DIRECTION_OUT)
+      || gpio_set_direction(g_gpio_tms, GPIO_DIRECTION_OUT)
+      || gpio_set_direction(g_gpio_tdo, GPIO_DIRECTION_IN)
+      || gpio_set_direction(g_gpio_tdi, GPIO_DIRECTION_OUT)) {
+    goto error;
   }
 
   /* set tck, tms, tdi to low */
-  gpio_write(&g_gpio_tck, GPIO_VALUE_LOW);
-  gpio_write(&g_gpio_tms, GPIO_VALUE_LOW);
-  gpio_write(&g_gpio_tdi, GPIO_VALUE_LOW);
+  gpio_set_value(g_gpio_tck, GPIO_VALUE_LOW);
+  gpio_set_value(g_gpio_tms, GPIO_VALUE_LOW);
+  gpio_set_value(g_gpio_tdi, GPIO_VALUE_LOW);
 
   jbi_delay(1);
 
   OBMC_DEBUG("Opened TCK(GPIO %d), TMS(GPIO %d), "
              "TDI(GPIO %d), and TDO(GPIO %d)",
-             g_tck, g_tms, g_tdi, g_tdo);
+             g_tck_offset, g_tms_offset, g_tdi_offset, g_tdo_offset);
 
   return 0;
+
+error:
+  for (i = 0; i < ARRAY_SIZE(jtag_pins); i++) {
+    desc = *(jtag_pins[i].desc);
+    if (desc != NULL)
+      gpio_close(desc);
+  }
 }
 
 static int jbi_jtag_gpio(int tms, int tdi, int read_tdo)
@@ -410,22 +474,24 @@ static int jbi_jtag_gpio(int tms, int tdi, int read_tdo)
     jtag_hardware_initialized = TRUE;
   }
 
-  gpio_write(&g_gpio_tms, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
-  gpio_write(&g_gpio_tdi, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  gpio_set_value(g_gpio_tms, tms ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
+  gpio_set_value(g_gpio_tdi, tdi ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);
 
   /*
    * if we need to read data, the data should be ready from the
    * previous clock falling edge. Read it now.
    */
   if (read_tdo) {
-    tdo = gpio_read(&g_gpio_tdo) == GPIO_VALUE_HIGH ? 1 : 0;
+    gpio_value_t val;
+    gpio_get_value(g_gpio_tdo, &val);
+    tdo = (val == GPIO_VALUE_HIGH ? 1 : 0);
   }
 
   /* do rising edge to clock out the data */
-  gpio_write(&g_gpio_tck, GPIO_VALUE_HIGH);
+  gpio_set_value(g_gpio_tck, GPIO_VALUE_HIGH);
 
   /* do falling edge clocking */
-  gpio_write(&g_gpio_tck, GPIO_VALUE_LOW);
+  gpio_set_value(g_gpio_tck, GPIO_VALUE_LOW);
 
   OBMC_DEBUG("tms=%d tdi=%d do_read=%d tdo=%d",
              tms, tdi, read_tdo, tdo);
@@ -1104,6 +1170,7 @@ int main(int argc, char **argv)
 	char *description = NULL;
 	JBI_PROCINFO *procedure_list = NULL;
 	JBI_PROCINFO *procptr = NULL;
+	char *endptr;
 
 	verbose = FALSE;
 
@@ -1185,16 +1252,24 @@ int main(int argc, char **argv)
 			case 'G':				/* GPIO directory */
 				switch (toupper(argv[arg][2])) {
 				case 'C':
-					g_tck = atoi(&argv[arg][3]);
+					g_tck_offset = strtol(&argv[arg][3], &endptr, 0);
+					if (endptr == &argv[arg][3])
+						g_tck_shadow = &argv[arg][3];
 					break;
 				case 'S':
-					g_tms = atoi(&argv[arg][3]);
+					g_tms_offset = strtol(&argv[arg][3], &endptr, 0);
+					if (endptr == &argv[arg][3])
+						g_tms_shadow = &argv[arg][3];
 					break;
 				case 'I':
-					g_tdi = atoi(&argv[arg][3]);
+					g_tdi_offset = strtol(&argv[arg][3], &endptr, 0);
+					if (endptr == &argv[arg][3])
+						g_tdi_shadow = &argv[arg][3];
 					break;
 				case 'O':
-					g_tdo = atoi(&argv[arg][3]);
+					g_tdo_offset = strtol(&argv[arg][3], &endptr, 0);
+					if (endptr == &argv[arg][3])
+						g_tdo_shadow = &argv[arg][3];
 					break;
 				}
 				jtag_io_func = jbi_jtag_gpio;
@@ -1267,7 +1342,18 @@ int main(int argc, char **argv)
 
 #ifdef OPENBMC
   if (execute_program) {
-    if (!g_swio && (g_tck == -1 || g_tms == -1 || g_tdo == -1 || g_tdi == -1)) {
+    int pins = 0;
+
+    if (g_tck_shadow != NULL || g_tck_offset >= 0)
+      pins++;
+    if (g_tms_shadow != NULL || g_tms_offset >= 0)
+      pins++;
+    if (g_tdi_shadow != NULL || g_tdi_offset >= 0)
+      pins++;
+    if (g_tdo_shadow != NULL || g_tdo_offset >= 0)
+      pins++;
+
+    if (!g_swio && (pins < 4)) {
       fprintf(stderr, "Error:  -gc, -gs, -gi, and -go must be specified\n");
       help = TRUE;
     }
@@ -2056,14 +2142,14 @@ void close_jtag_hardware()
 #endif
 
 #ifdef OPENBMC
-		if (g_gpio_tck.gs_fd >= 0)
-			close(g_gpio_tck.gs_fd);
-		if (g_gpio_tms.gs_fd >= 0)
-			close(g_gpio_tms.gs_fd);
-		if (g_gpio_tdo.gs_fd >= 0)
-			close(g_gpio_tdo.gs_fd);
-		if (g_gpio_tdi.gs_fd >= 0)
-			close(g_gpio_tdi.gs_fd);
+		if (g_sysfs_tck_fd >= 0)
+			close(g_sysfs_tck_fd);
+		if (g_sysfs_tms_fd >= 0)
+			close(g_sysfs_tms_fd);
+		if (g_sysfs_tdo_fd >= 0)
+			close(g_sysfs_tdo_fd);
+		if (g_sysfs_tdi_fd >= 0)
+			close(g_sysfs_tdi_fd);
 		if (g_jtag_dev >= 0)
 			close(g_jtag_dev);
 #endif

@@ -23,7 +23,7 @@ LIC_FILES_CHKSUM = "file://ipmi.c;beginline=8;endline=20;md5=da35978751a9d71b736
 
 BBCLASSEXTEND = "native"
 
-SRC_URI = "file://Makefile \
+SRC_URI = "file://meson.build \
            file://ipmi.c \
            file://ipmi.h \
           "
@@ -33,13 +33,4 @@ RDEPENDS_${PN} += "libipc"
 
 S = "${WORKDIR}"
 
-do_install() {
-	  install -d ${D}${libdir}
-    install -m 0644 libipmi.so ${D}${libdir}/libipmi.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 ipmi.h ${D}${includedir}/openbmc/ipmi.h
-}
-
-FILES_${PN} = "${libdir}/libipmi.so"
-FILES_${PN}-dev = "${includedir}/openbmc/ipmi.h"
+inherit meson

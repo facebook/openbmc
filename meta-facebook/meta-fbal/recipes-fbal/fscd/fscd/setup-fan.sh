@@ -34,21 +34,18 @@ echo "Setup fan speed... "
 
 default_fsc_config_path="/etc/fsc-config.json"
 
-host=$(gpio_get FM_BMC_SKT_ID_0)  #Master:host=1, Master:host=0
-mode=$(($(gpio_get FM_BMC_SKT_ID_1)<<1 | $(gpio_get FM_BMC_SKT_ID_2))) #8S:mode=00, 2S:mode=1 4S:mode=2
+host=$(($(/usr/bin/kv get mb_skt) & 0x1))  #Master:host=0, Slave:host=1
+mode=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:mode=2, 4S:mode=1
 
 #echo host = $host
 #echo mode = $mode
 
-if [ $mode == 1 ]; then
+if [ "$mode" -eq 2 ]; then
   echo probe 2s fan table
   ln -s /etc/fsc-config2s.json ${default_fsc_config_path}
-elif [[ "$mode" -eq 2 ]] && [[ "$host" -eq 0 ]]; then
+elif [[ "$mode" -eq 1 ]] && [[ "$host" -eq 0 ]]; then
   echo probe 4s master fan table
   ln -s /etc/fsc-config4s_M.json ${default_fsc_config_path}
-elif [[ "$mode" -eq 0 ]] && [[ "$host" -eq 0 ]]; then
-  echo probe 8s master fan table
-  ln -s /etc/fsc-config8s_M.json ${default_fsc_config_path}
 else
   echo probe slave fan table
   ln -s /etc/fsc-config_Slave.json ${default_fsc_config_path}

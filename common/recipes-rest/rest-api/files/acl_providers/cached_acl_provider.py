@@ -24,8 +24,10 @@ import signal
 import typing as t
 from contextlib import suppress
 from types import FrameType
+from typing import Optional
 
 from aiohttp.log import server_logger
+from common_auth import Identity
 
 from . import common_acl_provider_base
 
@@ -38,24 +40,35 @@ def load_acl_cache(cpath: str) -> t.Dict[str, t.List[str]]:
 
 
 class CachedAclProvider(common_acl_provider_base.AclProviderBase):
-    def __init__(self, cachepath: str):
+    def __init__(self, cachepath: Optional[str] = None):
         self.cachepath = cachepath
-        self.aclrules = load_acl_cache(self.cachepath)
+        self.aclrules = {}  # type: t.Dict[str, t.List[str]]
+        self._load_aclrules()
+
         self.oldhandler = signal.getsignal(signal.SIGHUP)
         signal.signal(signal.SIGHUP, self.signal_handler)
 
     def __del__(self):
-        if self.oldhandler:
+        if getattr(self, "oldhandler", None):
             signal.signal(signal.SIGHUP, self.oldhandler)
 
     def signal_handler(self, sig: int, frame: FrameType):
+        self._load_aclrules()
+
+    def _get_permissions_for_user_identity(self, identity: Identity) -> t.List[str]:
+        return self.aclrules.get(identity.user, [])
+
+    def is_user_authorized(self, identity: Identity, permissions: t.List[str]) -> bool:
+        user_roles = self._get_permissions_for_user_identity(identity)
+        return any(role in permissions for role in user_roles)
+
+    def _load_aclrules(self) -> None:
+        if not self.cachepath:
+            server_logger.warning(
+                "{self}: Cache path ({cachepath}) is not defined, not loading ACL".format(  # noqa: B950
+                    self=self, cachepath=repr(self.cachepath)
+                )
+            )
+            return
+
         self.aclrules = load_acl_cache(self.cachepath)
-
-    async def _get_permissions_for_identity(self, identity: str) -> t.List[str]:
-        with suppress(KeyError):
-            return self.aclrules[identity]
-        return []
-
-    async def is_user_authorized(self, identity: str, permissions: t.List[str]) -> bool:
-        roles = await self._get_permissions_for_identity(identity)
-        return any(value for value in roles if value in permissions)

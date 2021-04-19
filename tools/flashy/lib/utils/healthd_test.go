@@ -267,10 +267,12 @@ func TestRestartHealthd(t *testing.T) {
 	pathExistsOrig := fileutils.PathExists
 	runCommandOrig := RunCommand
 	sleepFuncOrig := Sleep
+	petWatchdogOrig := PetWatchdog
 	defer func() {
 		fileutils.PathExists = pathExistsOrig
 		RunCommand = runCommandOrig
 		Sleep = sleepFuncOrig
+		PetWatchdog = petWatchdogOrig
 	}()
 
 	cases := []struct {
@@ -319,7 +321,7 @@ func TestRestartHealthd(t *testing.T) {
 			wantSleepTime: 0 * time.Second,
 		},
 		{
-			name:          "Restart command returned error",
+			name:          "Start command returned error",
 			wait:          true,
 			supervisor:    "systemctl",
 			pathExists:    true,
@@ -342,13 +344,16 @@ func TestRestartHealthd(t *testing.T) {
 				return tc.pathExists
 			}
 			RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
-				wantCmd := fmt.Sprintf("%v restart healthd", tc.supervisor)
+				wantCmd1 := fmt.Sprintf("%v stop healthd", tc.supervisor)
+				wantCmd2 := fmt.Sprintf("%v start healthd", tc.supervisor)
 				gotCmd := strings.Join(cmdArr, " ")
-				if wantCmd != gotCmd {
-					t.Errorf("command: want '%v' got '%v'", wantCmd, gotCmd)
+				if wantCmd1 != gotCmd && wantCmd2 != gotCmd {
+					t.Errorf("command: got unexpected command '%v'", gotCmd)
 				}
 				// exit code ignored
 				return 0, tc.runCmdErr, "", ""
+			}
+			PetWatchdog = func() {
 			}
 			got := RestartHealthd(tc.wait, tc.supervisor)
 

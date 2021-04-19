@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
+    file://0001-common_setup_routes-rest_fruid_hdl-override.patch \
     file://rest_firmware_info_pim.py \
     file://rest_firmware_info_scm.py \
     file://rest_fruid_scm.py \

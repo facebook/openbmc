@@ -33,9 +33,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/pkg/errors"
+	"github.com/vtolstov/go-ioctl"
 )
 
 // MemInfo represents memory information in bytes.
@@ -334,6 +336,20 @@ var getOtherProcCmdlinePaths = func() []string {
 	return otherCmdlines
 }
 
+// Examine arguments for well known base names and refine the match.
+var refineBaseNameMatch = func(baseName string, params []string) bool {
+	if baseName == "fw-util" {
+		// ignore fw-util unless doing an update.
+		return StringFind("--update", params) >= 0
+	} else if baseName == "flashrom" {
+		// ignore flashrom if it's just reading.
+		return StringFind("-r", params) == -1
+	} else {
+		// default: finding the name is enough
+		return true
+	}
+}
+
 // checkNoBaseNameExistsInProcCmdlinePaths returns error if a basename is found running in a proc/*/cmdline file
 var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths []string) error {
 	for _, procCmdlinePath := range procCmdlinePaths {
@@ -348,7 +364,7 @@ var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths [
 		params := strings.Split(string(cmdlineBuf), "\x00")
 		for _, param := range params {
 			baseName := path.Base(param)
-			if StringFind(baseName, baseNames) >= 0 {
+			if StringFind(baseName, baseNames) >= 0 && refineBaseNameMatch(baseName, params) {
 				return errors.Errorf("'%v' found in cmdline '%v'",
 					baseName, strings.Join(params, " "))
 			}
@@ -393,4 +409,51 @@ var IsDataPartitionMounted = func() (bool, error) {
 	}
 
 	return len(regExMap) != 0, nil
+}
+
+func tryPetWatchdog() bool {
+	var WDIOC_KEEPALIVE = ioctl.IOR('W', 5, 4)
+	var WDIOC_SETTIMEOUT = ioctl.IOWR('W', 6, 4)
+
+	f, err := os.OpenFile("/dev/watchdog", os.O_RDWR, 0)
+	if err != nil {
+		return false
+	}
+
+	// Extend the timeout.  The kernel may adjust the timeout downward
+	// if a hardware watchdog is in use.  In any case, don't arrange to
+	// restore the original timeout value because the current design for
+	// flashy is that the system will reboot afterwards.
+	timo := int32(300)
+	err2 := ioctl.IOCTL(f.Fd(), WDIOC_SETTIMEOUT, uintptr(unsafe.Pointer(&timo)))
+	if err2 != nil {
+		log.Printf("ioctl WDIOC_SETTIMEOUT failed: %v", err2)
+	}
+
+	err3 := ioctl.IOCTL(f.Fd(), WDIOC_KEEPALIVE, uintptr(0))
+	if err3 != nil {
+		log.Printf("ioctl WDIOC_KEEPALIVE failed: %v", err3)
+	}
+	f.Close()
+	return err2 == nil && err3 == nil
+}
+
+// Try to pet the watchdog and increase its timeout.  This works in two ways:
+//
+// - When /dev/watchdog is busy because it's held open by healthd, the delay
+//   here will hopefully allow healthd's watchdog thread to get some CPU
+//   time.
+//   
+// - When /dev/watchdog it NOT busy because healthd is not running and there
+//   are no concurrent instances of wdtcli, the watchdog timeout will be
+//   extended and the watchdog petted.
+var PetWatchdog = func() {
+	for i := 0; i < 10; i++ {
+		if tryPetWatchdog() {
+			log.Printf("Watchdog petted")
+			return;
+		}
+		time.Sleep(1 * time.Second)
+	}
+	log.Printf("Watchdog not petted; yielded CPU instead")
 }

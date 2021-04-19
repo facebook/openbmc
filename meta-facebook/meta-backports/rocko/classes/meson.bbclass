@@ -41,8 +41,10 @@ MESONOPTS = " --prefix ${prefix} \
               -Dcpp_link_args='${BUILD_LDFLAGS}'"
 
 
-MESON_C_ARGS = "${TARGET_CC_ARCH}${TOOLCHAIN_OPTIONS}"
-MESON_LINK_ARGS = "${MESON_C_ARGS} ${TARGET_LDFLAGS}"
+MESON_C_ARGS = "${HOST_CC_ARCH}${TOOLCHAIN_OPTIONS}"
+MESON_C_ARGS_class-target = "${TARGET_CC_ARCH}${TOOLCHAIN_OPTIONS}"
+MESON_LINK_ARGS = "${MESON_C_ARGS} ${HOST_LDFLAGS}"
+MESON_LINK_ARGS_class-target = "${MESON_C_ARGS} ${TARGET_LDFLAGS}"
 
 MESON_HOST_ENDIAN = "${@bb.utils.contains('SITEINFO_ENDIANNESS', 'be', 'big', 'little', d)}"
 MESON_TARGET_ENDIAN = "${@bb.utils.contains('TUNE_FEATURES', 'bigendian', 'big', 'little', d)}"

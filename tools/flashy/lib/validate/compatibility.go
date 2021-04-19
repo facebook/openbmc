@@ -40,6 +40,7 @@ var compatibleVersionMapping = map[string]string{
 	"fby2-gpv2":  "fbgp2",
 	"fby3pvt":    "fby3",
 	"fby3vboot2": "fby3",
+	"fbnd":       "northdome",
 }
 
 var normalizeVersion = func(ver string) string {

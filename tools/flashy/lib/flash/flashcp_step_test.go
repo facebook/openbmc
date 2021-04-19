@@ -113,7 +113,7 @@ func TestFlashCp(t *testing.T) {
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: errors.Errorf("RunCommand error"),
 			otherFlasherErr:       nil,
-			want: step.ExitSafeToReboot{
+			want: step.ExitUnsafeToReboot{
 				errors.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{

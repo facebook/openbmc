@@ -51,3 +51,4 @@ def setup_board_routes(app, write_enabed: bool):
     app.router.add_get(board_routes[24], bhandler.rest_switch_reset_cycle_reset_hdl)
     app.router.add_get(board_routes[25], bhandler.rest_switch_reset_only_reset_hdl)
     app.router.add_get(board_routes[26], bhandler.rest_get_gb_freq_hdl)
+    app.router.add_get(board_routes[27], bhandler.rest_system_led_info_hdl)

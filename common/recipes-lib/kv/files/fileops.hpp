@@ -45,6 +45,7 @@ class FileHandle
 
     std::string read();
     void write(std::string value);
+    static void remove(const std::string& key, region r);
 
     FileHandle(const FileHandle&) = delete;
     FileHandle(FileHandle&&) = delete;

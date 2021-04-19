@@ -19,6 +19,8 @@
 Description=Setup GPIOs in OpenBMC
 Wants=setup_i2c.service
 Before=setup_i2c.service
+After=sysinit.target
+DefaultDependencies=no
 
 [Service]
 Type=oneshot

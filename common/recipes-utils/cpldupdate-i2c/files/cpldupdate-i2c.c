@@ -531,6 +531,7 @@ main(int argc, const char *argv[]) {
   if (!ufm_data) {
     ERR_PRINT("UFM Data");
     close(cpld.fd);
+    free(cfg_data);
     return ENOMEM;
   }
 

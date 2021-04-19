@@ -17,9 +17,6 @@ do_install_append() {
         sed -i 's/__TMOUT__/${CONSOLE_IDLE_TIMEOUT}/g' ${D}/${sysconfdir}/profile.d/console_idle_logout.sh
     fi
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
-        cat <<EOF >> ${D}/${sysconfdir}/fstab
-/dev/data0   /mnt/data   jffs2  defaults,nofail,x-systemd.device-timeout=1,x-systemd.makefs
-EOF
         if ${@bb.utils.contains('MACHINE_FEATURES', 'emmc-ext4', 'true', 'false', d)}; then
             cat <<EOF >> ${D}/${sysconfdir}/fstab
 /dev/mmcblk0    /mnt/data1      ext4    defaults,nofail,x-systemd.device-timeout=1,x-systemd.makefs

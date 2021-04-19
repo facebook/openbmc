@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1091
 # shellcheck disable=SC2012
+# shellcheck disable=SC2034
 . /usr/local/bin/openbmc-utils.sh
 
 CPLD_JTAG_SEL_L="CPLD_JTAG_SEL_L"
@@ -14,10 +15,16 @@ SPI_PIM_SEL="${SMBCPLD_SYSFS_DIR}/spi_pim_en"
 SPI_TH4_QSPI_SEL="${SMBCPLD_SYSFS_DIR}/spi_th4_qspi_en"
 JTAG_CTRL="${SMBCPLD_SYSFS_DIR}/jtag_ctrl"
 SMB_SPIDEV="spidev1.1"
+SMB_SPI="spi1.1"
+SMB_MTD=""
 
 SCM_PROGRAM=false
 SMB_PROGRAM=false
 CACHED_SCM_PWR_ON_SYSFS="0x1"
+
+
+# Check if another fw upgrade is ongoing
+check_fwupgrade_running
 
 trap disconnect_program_paths INT TERM QUIT EXIT
 
@@ -46,13 +53,14 @@ disconnect_program_paths() {
         gpio_set_value $SCM_FPGA_LATCH_L 1
     else
         echo 0 > "$JTAG_EN"
-        echo 1 > "$PROGRAM_SEL"
+        echo 0 > "$PROGRAM_SEL"
     fi
 
     if [ "$SMB_PROGRAM" = false ]; then
         echo 0 > "$SPI_CTRL"
         echo 0 > "$JTAG_CTRL"
     fi
+    devmem_clear_bit 0x1e6e2438 8 # SPI1CS1 Function enable
 }
 
 connect_scm_jtag() {
@@ -90,25 +98,47 @@ connect_fan_jtag() {
     echo 0x1 > "$JTAG_CTRL"
 }
 
+bind_spi_nor() {
+    # Unbind spidev1.1
+    if [ -e /dev/spidev1.1 ]; then
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spidev/unbind
+    fi
+
+    # Bind
+    echo spi-nor  > /sys/bus/spi/devices/"$SMB_SPI"/driver_override
+    if [ ! -e /sys/bus/spi/drivers/spi-nor/"$SMB_SPI" ]; then
+        echo Binding "$SMB_SPI" to ...
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spi-nor/bind
+        sleep 0.5
+    fi
+    SMB_MTD="$(grep "$SMB_SPI" /proc/mtd |awk '{print$1}' | tr -d : | tr -d mtd)"
+    if test -z "$SMB_MTD"; then
+        echo "Failed to locate mtd partition for SPI Flash!"
+        exit 1
+    fi
+}
+
+unbind_spi_nor() {
+    # Method for unloading spi-nor driver dynamically back to spidev
+    echo > /sys/bus/spi/devices/"$SMB_SPI"/driver_override
+    if grep "$SMB_SPI" /proc/mtd > /dev/null 2>&1 ; then
+        echo "Unbinding spi-nor from $SMB_SPI"
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spi-nor/unbind
+    fi
+    if [ ! -e /dev/spidev1.1 ]; then
+        echo "Binding spidev back to $SMB_SPI"
+        echo "$SMB_SPI" > /sys/bus/spi/drivers/spidev/bind
+    fi
+}
+
 connect_pim_flash() {
+    # Set SPI path to PIM SPI flash
     gpio_set_value $CPLD_JTAG_SEL_L 1
     echo 0 > "$PROGRAM_SEL"
     echo 1 > "$SPI_PIM_SEL"
     devmem_set_bit 0x1e6e2438 8 # SPI1CS1 Function enable
-
-    for i in $(seq 1 5); do
-        msg="$(flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QL256" 2>/dev/null)"
-        if echo "$msg" | grep -q "Found Micron flash chip"; then
-            echo "Detected PIM Flash device."
-            return 0;
-        else
-            echo "Attempt ${i} to detect pim flash failed..."
-        fi
-    done
-
-    echo "Failed to detect PIM Flash device with flashrom"
-    echo "$msg"
-    exit 1
+    sleep 0.1
+    bind_spi_nor
 }
 
 connect_th4_qspi_flash() {
@@ -116,20 +146,9 @@ connect_th4_qspi_flash() {
     echo 0 > "$PROGRAM_SEL"
     echo 1 > "$SPI_TH4_QSPI_SEL"
     devmem_set_bit 0x1e6e2438 8 # SPI1CS1 Function enable
-
-    for i in $(seq 1 5); do
-        msg="$(flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QU256" 2>/dev/null)"
-        if echo "$msg" | grep -q "Found Micron flash chip"; then
-            echo "Detected TH4 QSPI Flash device."
-            return 0;
-        else
-            echo "Attempt ${i} to detect TH4 QSPI flash failed..."
-        fi
-    done
-
-    echo "Failed to detect TH4 QSPI Flash device with flashrom"
-    echo "$msg"
-    exit 1
+    sleep 0.1
+    unbind_spi_nor # Force Re-bind SPI nor
+    bind_spi_nor
 }
 
 do_scm() {
@@ -150,6 +169,20 @@ do_smb() {
         echo "$2 is not a valid SMB FPGA file"
         exit 1
     fi
+    # P1 fpga - Revision <= 1, otherwise P2
+    if [ "$(printf "%d" "$(grep A_REVISION "$2" | \
+         awk '{print $3}' | tr -d '";')")" -le 1 ]; then
+        # We are using P1 fpga_file
+        if ! wedge_is_smb_p1; then
+            echo "P1 FPGA FILE not compatible with P2 Hardware!"
+            exit 1
+        fi
+    else
+        if wedge_is_smb_p1; then
+            echo "P2 FPGA FILE not compatible with P1 Hardware!"
+            exit 1
+        fi
+    fi
     SMB_PROGRAM=true
     connect_smb_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
@@ -161,6 +194,21 @@ do_smb_cpld() {
     if ! grep "DESIGN.*ide" "$2" > /dev/null; then
         echo "$2 is not a valid SMB CPLD file"
         exit 1
+    fi
+    # P1 fpga - Revision <= 4, otherwise P2
+    if [ "$(printf "%d" "$(grep A_REVISION "$2" | \
+         awk '{print $3}' | tr -d '";')")" -le 4 ]; then
+        # We are using P1 fpga binary
+        if ! wedge_is_smb_p1; then
+            echo "P1 FPGA FILE not compatible with P2 Hardware!"
+            exit 1
+        fi
+    else
+        # We are using P2 fpga binary
+        if wedge_is_smb_p1; then
+            echo "P2 FPGA FILE not compatible with P1 Hardware!"
+            exit 1
+        fi
     fi
     connect_smb_cpld_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
@@ -213,6 +261,8 @@ program_spi_image() {
     esac
 
     echo "Selected partition $PARTITION to program."
+    # Clear any cached pim header version files
+    rm /tmp/.pim_spi_header* 2>/dev/null
 
     if [ "$FPGA_TYPE" -ge 0 ] ; then
         # Verify the image type
@@ -243,42 +293,53 @@ program_spi_image() {
     fi
 
     fill=$((EEPROM_SIZE - IMAGE_SIZE))
-    if [ "$fill" = 0 ] ; then
-        echo "$ORIGINAL_IMAGE already 32MB, no need to resize..."
-        flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" -N \
-            --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$ORIGINAL_IMAGE"
-    else
-        bs=1048576 # 1MB blocks
+    bs=1048576 # 1MB blocks
 
-        echo "$ORIGINAL_IMAGE size $IMAGE_SIZE < $EEPROM_SIZE (32MB)"
-        echo "Resizing $ORIGINAL_IMAGE by $fill bytes to $TEMP_IMAGE"
+    echo "$ORIGINAL_IMAGE size $IMAGE_SIZE < $EEPROM_SIZE (32MB)"
+    echo "Resizing $ORIGINAL_IMAGE by $fill bytes to $TEMP_IMAGE"
 
-        # Let's make a copy of the program image and 0xff-fill it to 32MB
-        # Prepend/append 0x1 bytes accordingly
-        {
-            dd if=/dev/zero bs=$bs count="$SKIP_MB" | tr "\000" "\377"
-            dd if="$ORIGINAL_IMAGE"
-        } 2>/dev/null > "$TEMP_IMAGE"
-        # cp "$ORIGINAL_IMAGE" "$TEMP_IMAGE"
+    # Let's make a copy of the program image and 0xff-fill it to 32MB
+    # Prepend/append 0x1 bytes accordingly
+    {
+        dd if=/dev/zero bs=$bs count="$SKIP_MB" | tr "\000" "\377"
+        dd if="$ORIGINAL_IMAGE"
+    } 2>/dev/null > "$TEMP_IMAGE"
 
-        div=$((fill/bs)) # Number of 1MB blocks to write
-        div=$((div - SKIP_MB))
-        rem=$((fill%bs)) # Remaining
-        {
-            dd if=/dev/zero bs=$bs count=$div | tr "\000" "\377"
-            dd if=/dev/zero bs=$rem count=1 | tr "\000" "\377"
-        } 2>/dev/null >> "$TEMP_IMAGE"
+    div=$((fill/bs)) # Number of 1MB blocks to write
+    div=$((div - SKIP_MB))
+    rem=$((fill%bs)) # Remaining
+    {
+        dd if=/dev/zero bs=$bs count=$div | tr "\000" "\377"
+        dd if=/dev/zero bs=$rem count=1 | tr "\000" "\377"
+    } 2>/dev/null >> "$TEMP_IMAGE"
 
-        TEMP_IMAGE_SIZE="$(ls -l "$TEMP_IMAGE" | awk '{print $5}')"
-        if [ "$TEMP_IMAGE_SIZE" -ne "$EEPROM_SIZE" ] ; then
-            echo "Failed to resize $ORIGINAL_IMAGE to 32MB... exiting."
-            exit 1
-        fi
-        # Program the 32MB pim image
-        flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" -N \
-             --layout /etc/elbert_pim.layout --image "$PARTITION" $OPERATION "$TEMP_IMAGE"
-        rm "$TEMP_IMAGE"
+    TEMP_IMAGE_SIZE="$(ls -l "$TEMP_IMAGE" | awk '{print $5}')"
+    if [ "$TEMP_IMAGE_SIZE" -ne "$EEPROM_SIZE" ] ; then
+        echo "Failed to resize $ORIGINAL_IMAGE to 32MB... exiting."
+        exit 1
     fi
+
+    # Retry the programming if it fails up to 3 times
+    n=1
+    max=3
+    while true; do
+        # Program the 32MB pim image
+        if flashrom -p linux_mtd:dev="$SMB_MTD" -N --layout /etc/elbert_pim.layout \
+           --image "$PARTITION" $OPERATION "$TEMP_IMAGE" ; then
+            break
+        else
+            if [ $n -lt $max ]; then
+                echo "Programming SPI failed, retry attempt $n/$max"
+                n=$((n+1))
+            else
+                echo "Failed to program after $n attempts"
+                rm "$TEMP_IMAGE"
+                exit 1
+            fi
+        fi
+    done
+
+    rm "$TEMP_IMAGE"
 }
 
 read_spi_partition_image() {
@@ -323,7 +384,7 @@ read_spi_partition_image() {
 
     echo "Selected partition $PARTITION to read."
 
-    flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "$CHIP_TYPE" \
+    flashrom -p linux_mtd:dev="$SMB_MTD" \
         --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP"
     dd if="$TEMP" of="$DEST" bs=1M count="$COUNT" skip="$SKIP_MB" 2> /dev/null
     rm "$TEMP"
@@ -365,7 +426,7 @@ do_pim() {
         READ)
             connect_pim_flash
             if [ -z "$3" ]; then
-                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 -r "$2"
+                flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
             else
                 read_spi_partition_image "$2" "MT25QL256" "$3"
             fi
@@ -373,10 +434,10 @@ do_pim() {
         ERASE)
             connect_pim_flash
             if [ -z "$2" ]; then
-                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 -E
+                flashrom -p linux_mtd:dev="$SMB_MTD" -E || exit 1
             else
-                flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c MT25QL256 \
-                    --layout /etc/elbert_pim.layout --image "$2" -E
+                flashrom -p linux_mtd:dev="$SMB_MTD" \
+                    --layout /etc/elbert_pim.layout --image "$2" -E || exit 1
             fi
             ;;
         *)
@@ -391,10 +452,12 @@ do_th4_qspi() {
         PROGRAM|VERIFY)
             connect_th4_qspi_flash
             program_spi_image "$2" "MT25QU256" full "$1"
+            unbind_spi_nor
             ;;
         READ)
             connect_th4_qspi_flash
-            flashrom -p linux_spi:dev=/dev/"$SMB_SPIDEV" -c "MT25QU256" -r "$2"
+            flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
+            unbind_spi_nor
             ;;
         *)
             echo "TH4 QSPI only supports program/verify/read action. Exiting..."

@@ -15,11 +15,21 @@ MACHINE_METAS="\
 FORCE="[FORCE]"
 INFO="       "
 
-# Non-PR builds do not have CIRCLE_PULL_REQUEST set.  If not set, then
-# force a full build.
-if [ "x${CIRCLE_PULL_REQUEST}" == "x" ]; then
-    echo "$FORCE non-PR"
-    export FORCE_BUILD=1
+# Branches not named 'master' or 'helium' are likely PRs but might not have
+# the CIRCLE_PULL_REQUEST set yet.  This happens in some private repositories
+# where developers commit as named branches and then issue pull requests.
+#
+# Assume any branch name not 'master' or 'helium' is going to be a PR.
+if [ "x${CIRCLE_BRANCH}" == "xmaster" -o \
+     "x${CIRCLE_BRANCH}" == "xhelium" ]; then
+    # Non-PR builds do not have CIRCLE_PULL_REQUEST set.  If not set, then
+    # force a full build.
+    if [ "x${CIRCLE_PULL_REQUEST}" == "x" ]; then
+        echo "$FORCE non-PR"
+        export FORCE_BUILD=1
+    fi
+else
+    echo "$INFO Branch is $CIRCLE_BRANCH.  Assuming PR."
 fi
 
 # Determine base commit.

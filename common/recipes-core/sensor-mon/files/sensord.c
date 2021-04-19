@@ -163,7 +163,7 @@ sensor_raw_read_helper(uint8_t fru, uint8_t snr_num, float *val)
     } else {
       sensor_cache_write(fru, snr_num, false, 0.0);
       return ERR_SENSOR_NA;
-    }    
+    }
   } else {
     ret = sensor_raw_read(fru, snr_num, val);
   }
@@ -460,7 +460,7 @@ thresh_reinit_chk(uint8_t fru) {
     }
   } else {
     // If THRESHOLD_BIN file exist and INIT_FLAG also exist, it means threshold-util --set is triggered.
-    // And snr info should be updated.    
+    // And snr info should be updated.
     if (0 == access(initpath, F_OK))
       ret = reinit_snr_threshold(fru, SENSORD_MODE_TESTING);
   }
@@ -726,7 +726,7 @@ run_sensord(int argc, char **argv) {
     fru_flag = SETBIT(fru_flag, fru);
     arg++;
   }
- 
+
   ret = pal_sensor_monitor_initial();
   for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
 

@@ -60,7 +60,7 @@ int CpldExtComponent::get_ver_str(string& s) {
   uint8_t rbuf[4] = {0};
   int ret = 0;
   ret = bic_get_fw_ver(slot_id, fw_comp, rbuf);
-  snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+  snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   s = string(ver);
   return ret;
 }

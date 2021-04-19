@@ -278,12 +278,11 @@ _sdr_get_sensor_name(sdr_full_t *sdr, char *name) {
 
     case TYPE_BCD_PLUS:
 
-      idx = 0;
-      while (idx != field_len) {
-        name[idx] = bcd_plus_array[str[idx] & 0x0F];
-        idx++;
+      for (idx = 0; idx < field_len - 1; idx++) {
+        name[idx * 2] = bcd_plus_array[(str[idx] >> 4) & 0x0F];
+        name[idx * 2 + 1] = bcd_plus_array[str[idx] & 0x0F];
       }
-      name[idx] = '\0';
+      name[idx * 2] = '\0';
       break;
 
   case TYPE_ASCII_6BIT:
@@ -371,10 +370,9 @@ sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
 /* Get the threshold values from the SDRs */
 static int
 get_sdr_thresh_val(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
-    uint8_t thresh, void *value) {
+    uint8_t thresh, float *value) {
 
   int ret;
-  uint8_t x;
   uint8_t m_lsb, m_msb;
   uint16_t m = 0;
   uint8_t b_lsb, b_msb;
@@ -414,30 +412,9 @@ get_sdr_thresh_val(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
       return -1;
   }
 
-  // y = (mx + b * 10^b_exp) * 10^r_exp
-  x = thresh_val;
-
-  m_lsb = sdr->m_val;
-  m_msb = sdr->m_tolerance >> 6;
-  m = (m_msb << 8) | m_lsb;
-
-  b_lsb = sdr->b_val;
-  b_msb = sdr->b_accuracy >> 6;
-  b = (b_msb << 8) | b_lsb;
-
-  // exponents are 2's complement 4-bit number
-  b_exp = sdr->rb_exp & 0xF;
-  if (b_exp > 7) {
-    b_exp = (~b_exp + 1) & 0xF;
-    b_exp = -b_exp;
+  if (pal_convert_sensor_reading(sdr, (int)thresh_val, value) < 0) {
+    return -1;
   }
-  r_exp = (sdr->rb_exp >> 4) & 0xF;
-  if (r_exp > 7) {
-    r_exp = (~r_exp + 1) & 0xF;
-    r_exp = -r_exp;
-  }
-
-  * (float *) value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
 
   return 0;
 }
@@ -590,7 +567,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
   char fpath[64] = {0};
   char initpath[64] = {0};
   char initflag[64] = {0};
-  char fru_name[8];
+  char fru_name[16];
 
   sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
 

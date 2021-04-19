@@ -36,15 +36,26 @@
 #define NVME_SMART_WARNING_MASK_BIT 0x1F  // check bit 0~4
 #define MAX_SERIAL_NUM 20
 
-#define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
 char path[64] = {0};
 int fd;
+static uint8_t m_slot_id = 0;
+static uint8_t type_2ou = UNKNOWN_BOARD;
 
 static void
 print_usage_help(void) {
-  printf("Usage: enclosure-util <slot1|slot2|slot3|slot4> --drive-status <all|1U-dev0|1U-dev1|1U-dev2|1U-dev3|2U-dev0|2U-dev1|2U-dev2|2U-dev3|2U-dev4|2U-dev5>\n");
+  printf("Usage: enclosure-util <slot1|slot2|slot3|slot4> --drive-status <all|1U-dev[0..3]|2U-dev[0..13]>\n");
   printf("       enclosure-util <slot1|slot2|slot3|slot4> --drive-health\n");
+}
+
+static int
+ssd_monitor_enable(uint8_t slot_id, bool enable) {
+  int ret = 0;
+  ret = bic_enable_ssd_sensor_monitor(slot_id, enable, REXP_BIC_INTF);
+  if ( enable == false ) {
+    msleep(100);
+  }
+  return ret;
 }
 
 static int
@@ -91,8 +102,11 @@ drive_status(ssd_data *ssd) {
 
 static int
 drive_health(ssd_data *ssd) {
-  if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
-    return NVME_BAD_HEALTH;
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) { // Not GPv3
+    // since accelerator doesn't implement SMART WARNING, do not check it.
+    if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
+      return NVME_BAD_HEALTH;
+  }
   
   if ((ssd->sflgs & NVME_SFLGS_MASK_BIT) != NVME_SFLGS_MASK_BIT)
     return NVME_BAD_HEALTH;
@@ -116,7 +130,10 @@ get_mapping_parameter(uint8_t device_id, uint8_t type_1ou, uint8_t *bus, uint8_t
     REXP_BIC_INTF,  // DEV_ID4_2OU
     REXP_BIC_INTF   // DEV_ID5_2OU
   };
-  const uint8_t BUS_EDSFF1U[] = { 0, 2, 3, 4, 6, 0, 0, 0, 0, 0, 0};
+
+  // M.2 1OU device ->   3  2  1  0
+  // E1S 1OU device ->   0  1  2  3
+  const uint8_t BUS_EDSFF1U[] = { 0, 6, 4, 3, 2, 0, 0, 0, 0, 0, 0};
   const uint8_t BUS_1OU_2OU[] = { 0, 2, 2, 4, 4, 2, 2, 4, 4, 6, 6};
   const uint8_t MUX_1OU_2OU[] = { 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 
@@ -133,7 +150,7 @@ get_mapping_parameter(uint8_t device_id, uint8_t type_1ou, uint8_t *bus, uint8_t
 }
 
 static int
-read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, uint8_t bmc_location) {
+read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   int ret = 0;
   int offset_base = 0;
   char str[32];
@@ -150,14 +167,25 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, uint8_t bmc_loca
   memset(&ssd, 0x00, sizeof(ssd_data));
 
   //prevent the invalid access
-  if ( bmc_location != NIC_BMC )
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != E1S_BOARD) {
     bic_get_1ou_type(slot_id, &type_1ou);
-   
+    get_mapping_parameter(device_id, type_1ou, &bus, &intf, &mux);
+  }
+
   fby3_common_dev_name(device_id, str);
-  
-  get_mapping_parameter(device_id, type_1ou, &bus, &intf, &mux);
-  
-  if (type_1ou != EDSFF_1U) { // E1S no need but 1/2OU need to stop sensor monitor then switch mux
+
+  if (type_2ou == E1S_BOARD) {
+    printf("slot%u-%s : %s\n", slot_id, str, "NA");
+    return 0;
+  } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+    // mux select
+    ret = pal_gpv3_mux_select(slot_id, device_id);
+    if (ret) {
+      return ret; // fail to select mux
+    }
+    bus = get_gpv3_bus_number(device_id);
+    intf = REXP_BIC_INTF;
+  } else if (type_1ou != EDSFF_1U) { // E1S no need but 1/2OU need to stop sensor monitor then switch mux
     tbuf[0] = (bus << 1) + 1;
     tbuf[1] = 0x02; // mux address
     tbuf[2] = 0;    // read back 8 bytes
@@ -233,6 +261,11 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, uint8_t bmc_loca
 
 static void
 enclosure_sig_handler(int sig) {
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Config C or Config D GPv3
+    if ( ssd_monitor_enable(m_slot_id, true) < 0 ) {
+      printf("err: failed to enable SSD monitoring");
+    }
+  }
   if (flock(fd, LOCK_UN)) {
     syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
   }
@@ -248,7 +281,6 @@ main(int argc, char **argv) {
   uint8_t slot_id = 0;
   uint8_t dev_id = 0;
   uint8_t device_start = 0, device_end = 0;
-  uint8_t bmc_location = 0;
   uint8_t is_slot_present = 0;
   struct sigaction sa;
 
@@ -263,6 +295,8 @@ main(int argc, char **argv) {
     print_usage_help();
     return -1;
   }
+
+  m_slot_id = slot_id;
 
   // need to check slot present
   ret = pal_is_fru_prsnt(slot_id, &is_slot_present); 
@@ -289,21 +323,31 @@ main(int argc, char **argv) {
       return -1;
     }
   }
-  
-  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
-    printf("%s() Cannot get the location of BMC\n", __func__);
-    goto exit;
-  }
 
   // check 1/2OU present status
   ret = bic_is_m2_exp_prsnt(slot_id);
   if ( ret < 0 ) {
     printf("%s() Cannot get the m2 prsnt status\n", __func__);
-    goto exit; 
-  } 
+    goto exit;
+  }
 
   present = (uint8_t)ret;
-  if ( bmc_location == NIC_BMC && ((present & PRESENT_2OU) == PRESENT_2OU) ) {
+
+  if ( (present & PRESENT_2OU) == PRESENT_2OU ) {
+    if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+      printf("Failed to get slot%d 2ou board type\n",type_2ou);
+      goto exit;
+    }
+  }
+
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Config C or Config D GPv3
+    device_start = DEV_ID0_2OU;
+    device_end = DEV_ID13_2OU;
+    if ( ssd_monitor_enable(slot_id, false) < 0 ) {
+      printf("err: failed to disable SSD monitoring\n");
+      goto exit;
+    }
+  } else if ( type_2ou == E1S_BOARD ) {
     device_start = DEV_ID0_2OU;
     device_end = DEV_ID5_2OU;
   } else if ( present == PRESENT_1OU ) {
@@ -323,7 +367,7 @@ main(int argc, char **argv) {
   if ((argc == 4) && !strcmp(argv[2], "--drive-status")) {
     if (!strcmp(argv[3], "all")) {
       for (int i = device_start; i <= device_end; i++) {
-        read_nvme_data(slot_id, i, CMD_DRIVE_STATUS, bmc_location);
+        read_nvme_data(slot_id, i, CMD_DRIVE_STATUS);
       }
     } else {
       ret = pal_get_dev_id(argv[3], &dev_id);
@@ -336,11 +380,11 @@ main(int argc, char **argv) {
         printf("Please check the board config \n");
         goto exit;
       }
-      read_nvme_data(slot_id, dev_id, CMD_DRIVE_STATUS, bmc_location);
+      read_nvme_data(slot_id, dev_id, CMD_DRIVE_STATUS);
     }
   } else if ((argc == 3) && !strcmp(argv[2], "--drive-health")) {
     for (int i = device_start; i <= device_end; i++) {
-      read_nvme_data(slot_id, i, CMD_DRIVE_HEALTH, bmc_location);
+      read_nvme_data(slot_id, i, CMD_DRIVE_HEALTH);
     }
   } else {
     print_usage_help();
@@ -348,6 +392,11 @@ main(int argc, char **argv) {
   }
   
 exit:
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Config C or Config D GPv3
+    if ( ssd_monitor_enable(slot_id, true) < 0 ) {
+      printf("err: failed to enable SSD monitoring");
+    }
+  }
   ret = flock(fd, LOCK_UN);
   if (ret != 0) {
     syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);

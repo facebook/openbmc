@@ -22,9 +22,6 @@ import json
 import re
 import subprocess
 
-from rest_utils import DEFAULT_TIMEOUT_SEC
-
-
 # Handler for getting PIM info
 
 pimserial_re = re.compile("\s*(\S.*) : (\S.*)")
@@ -41,27 +38,25 @@ def prepare_pimserial():
         "PIM7": "NA",
         "PIM8": "NA",
     }
-    current_pim = 0
     proc = subprocess.Popen(
         ["/usr/local/bin/dump_pim_serials.sh", "-u"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
     try:
-        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data, err = proc.communicate(timeout=30)
         for text_line in data.decode().splitlines():
             # Check if this line shows PIM slot number
             m = pimserial_re.match(text_line, 0)
             if m:
                 pim_serial[m.group(1)] = m.group(2)
-    except Exception as ex:
+    except Exception:
         pass
 
     return pim_serial
 
 
 def get_pimserial():
-    result = {}
     pim_serial = prepare_pimserial()
     fresult = {"Information": pim_serial, "Actions": [], "Resources": []}
     return fresult

@@ -109,7 +109,10 @@ func (m *MemoryTechnologyDevice) Validate() error {
 // from the /dev/mtd[0-9]+ file path.
 // /dev/mtd5 cannot be mmap-ed, but /dev/mtdblock5 can.
 var GetMTDBlockFilePath = func(filepath string) (string, error) {
-	regEx := `^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$`
+	const rDevmtdpath = "devmtdpath"
+	const rMtdnum = "mtdnum"
+
+	regEx := fmt.Sprintf(`^(?P<%v>/dev/mtd)(?P<%v>[0-9]+)$`, rDevmtdpath, rMtdnum)
 
 	mtdPathMap, err := utils.GetRegexSubexpMap(regEx, filepath)
 	if err != nil {
@@ -119,7 +122,7 @@ var GetMTDBlockFilePath = func(filepath string) (string, error) {
 
 	return fmt.Sprintf(
 		"%vblock%v",
-		mtdPathMap["devmtdpath"],
-		mtdPathMap["mtdnum"],
+		mtdPathMap[rDevmtdpath],
+		mtdPathMap[rMtdnum],
 	), nil
 }

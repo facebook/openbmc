@@ -22,7 +22,6 @@ package devices
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -36,13 +35,12 @@ func init() {
 }
 
 func getMTD(deviceSpecifier string) (FlashDevice, error) {
-	mtdMap, err := utils.GetMTDMapFromSpecifier(deviceSpecifier)
+	mtdInfo, err := utils.GetMTDInfoFromSpecifier(deviceSpecifier)
 	if err != nil {
 		return nil, err
 	}
 
-	filePath := filepath.Join("/dev", mtdMap["dev"])
-	fileSize, err := strconv.ParseUint(mtdMap["size"], 16, 64)
+	filePath := filepath.Join("/dev", mtdInfo.Dev)
 	if err != nil {
 		return nil, errors.Errorf("Found MTD entry for flash device 'mtd:%v' but got error '%v'",
 			deviceSpecifier, err)
@@ -51,7 +49,7 @@ func getMTD(deviceSpecifier string) (FlashDevice, error) {
 	return &MemoryTechnologyDevice{
 		deviceSpecifier,
 		filePath,
-		fileSize,
+		uint64(mtdInfo.Size),
 	}, nil
 }
 

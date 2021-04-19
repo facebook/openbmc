@@ -124,7 +124,7 @@ func decodeVbs(vbsData []byte) (Vbs, error) {
 
 var vbootPartitionExists = func() bool {
 	// check whether the "rom" partition exists
-	_, err := GetMTDMapFromSpecifier("rom")
+	_, err := GetMTDInfoFromSpecifier("rom")
 	return err == nil
 }
 

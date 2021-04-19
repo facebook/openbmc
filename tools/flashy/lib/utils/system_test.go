@@ -834,7 +834,7 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 	}
 }
 
-func TestGetMTDMapFromSpecifier(t *testing.T) {
+func TestGetMTDInfoFromSpecifier(t *testing.T) {
 	// mock and defer restore ReadFile
 	readFileOrig := fileutils.ReadFile
 	defer func() {
@@ -846,7 +846,7 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 		specifier       string
 		procMtdContents string
 		readFileErr     error
-		want            map[string]string
+		want            MtdInfo
 		wantErr         error
 	}{
 		{
@@ -854,10 +854,10 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 			specifier:       "flash0",
 			procMtdContents: tests.ExampleWedge100ProcMtdFile,
 			readFileErr:     nil,
-			want: map[string]string{
-				"dev":       "mtd5",
-				"size":      "02000000",
-				"erasesize": "00010000",
+			want: MtdInfo{
+				Dev:       "mtd5",
+				Size:      0x02000000,
+				Erasesize: 0x00010000,
 			},
 			wantErr: nil,
 		},
@@ -866,7 +866,7 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 			specifier:       "flash0",
 			procMtdContents: "",
 			readFileErr:     errors.Errorf("ReadFile error"),
-			want:            nil,
+			want:            MtdInfo{},
 			wantErr:         errors.Errorf("Unable to read from /proc/mtd: ReadFile error"),
 		},
 		{
@@ -874,7 +874,7 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 			specifier:       "flash1",
 			procMtdContents: tests.ExampleWedge100ProcMtdFile,
 			readFileErr:     nil,
-			want:            nil,
+			want:            MtdInfo{},
 			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
 		},
 		{
@@ -882,7 +882,7 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 			specifier:       "flash1",
 			procMtdContents: `mtd0: xxxxxxxx xxxxxxxx "flash1"`,
 			readFileErr:     nil,
-			want:            nil,
+			want:            MtdInfo{},
 			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
 		},
 	}
@@ -895,7 +895,7 @@ func TestGetMTDMapFromSpecifier(t *testing.T) {
 				}
 				return []byte(tc.procMtdContents), tc.readFileErr
 			}
-			got, err := GetMTDMapFromSpecifier(tc.specifier)
+			got, err := GetMTDInfoFromSpecifier(tc.specifier)
 			tests.CompareTestErrors(tc.wantErr, err, t)
 			if !reflect.DeepEqual(tc.want, got) {
 				t.Errorf("want '%v' got '%v'", tc.want, got)

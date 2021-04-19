@@ -42,13 +42,13 @@ func eraseDataPartition(stepParams step.StepParams) step.StepExitError {
 		return nil
 	}
 
-	mtdMap, err := utils.GetMTDMapFromSpecifier("data0")
+	mtdInfo, err := utils.GetMTDInfoFromSpecifier("data0")
 	if err != nil {
-		log.Printf("Skipping this step: unable to get MTD map: %v", err)
+		log.Printf("Skipping this step: unable to get MTD info: %v", err)
 		return nil
 	}
 
-	if mtdMap["erasesize"] != "00010000" {
+	if mtdInfo.Erasesize != 0x00010000 {
 		log.Printf("Skipping this step: erasesize unchanged")
 		return nil
 	}

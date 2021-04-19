@@ -78,7 +78,7 @@ func TestGetMTD(t *testing.T) {
 			want: &MemoryTechnologyDevice{
 				"flash0",
 				"/dev/mtd5",
-				uint64(33554432),
+				uint64(0x02000000),
 			},
 			wantErr: nil,
 		},
@@ -104,8 +104,7 @@ func TestGetMTD(t *testing.T) {
 			procMtdContents: `mtd0: 10000000000000000 00100000 "flash1"`, // larger than 64-bits
 			readFileErr:     nil,
 			want:            nil,
-			wantErr: errors.Errorf("Found MTD entry for flash device 'mtd:flash1' " +
-				"but got error 'strconv.ParseUint: parsing \"10000000000000000\": value out of range'"),
+			wantErr:         errors.Errorf("Failed to parse size: strconv.ParseUint: parsing \"10000000000000000\": value out of range"),
 		},
 		{
 			name:            "corrupt /proc/mtd file",

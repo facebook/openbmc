@@ -46,6 +46,12 @@ type MemInfo struct {
 	MemFree  uint64
 }
 
+type MtdInfo struct {
+	Dev       string
+	Size      uint32
+	Erasesize uint32
+}
+
 const ProcMtdFilePath = "/proc/mtd"
 const etcIssueFilePath = "/etc/issue"
 const procMountsPath = "/proc/mounts"
@@ -386,25 +392,42 @@ var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths [
 	return nil
 }
 
-// GetMTDMapFromSpecifier gets a map containing [dev, size, erasesize] values
-// for the mtd device specifier. Information is obtained from /proc/mtd.
-var GetMTDMapFromSpecifier = func(deviceSpecifier string) (map[string]string, error) {
+// GetMtdInfoFromSpecifier MtdInfo for the mtd device specifier. Information is obtained from /proc/mtd.
+var GetMTDInfoFromSpecifier = func(deviceSpecifier string) (MtdInfo, error) {
+	var mtdInfo MtdInfo
 	// read from /proc/mtd
 	procMTDBuf, err := fileutils.ReadFile(ProcMtdFilePath)
 	if err != nil {
-		return nil, errors.Errorf("Unable to read from /proc/mtd: %v", err)
+		return mtdInfo, errors.Errorf("Unable to read from /proc/mtd: %v", err)
 	}
 	procMTD := string(procMTDBuf)
 
-	regEx := fmt.Sprintf("(?m)^(?P<dev>mtd[0-9a-f]+): (?P<size>[0-9a-f]+) (?P<erasesize>[0-9a-f]+) \"%v\"$",
-		deviceSpecifier)
+	const rDev = "dev"
+	const rSize = "size"
+	const rErasesize = "erasesize"
+
+	regEx := fmt.Sprintf("(?m)^(?P<%v>mtd[0-9a-f]+): (?P<%v>[0-9a-f]+) (?P<%v>[0-9a-f]+) \"%v\"$",
+		rDev, rSize, rErasesize, deviceSpecifier)
 
 	mtdMap, err := GetRegexSubexpMap(regEx, procMTD)
 	if err != nil {
-		return nil, errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:%v'",
+		return mtdInfo, errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:%v'",
 			deviceSpecifier)
 	}
-	return mtdMap, nil
+
+	size, err := strconv.ParseUint(mtdMap[rSize], 16, 32)
+	if err != nil {
+		return mtdInfo, errors.Errorf("Failed to parse size: %v", err)
+	}
+	erasesize, err := strconv.ParseUint(mtdMap[rErasesize], 16, 32)
+	if err != nil {
+		return mtdInfo, errors.Errorf("Failed to parse erasesize: %v", err)
+	}
+	return MtdInfo{
+		Dev:       mtdMap[rDev],
+		Size:      uint32(size),
+		Erasesize: uint32(erasesize),
+	}, nil
 }
 
 // IsDataPartitionMounted checks if /mnt/data is mounted

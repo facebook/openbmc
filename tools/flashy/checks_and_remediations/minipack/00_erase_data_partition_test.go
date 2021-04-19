@@ -47,12 +47,12 @@ func TestEraseDataPartition(t *testing.T) {
 	getFlashDeviceOrig := flashutils.GetFlashDevice
 	isDataPartitionMountedOrig := utils.IsDataPartitionMounted
 	runCommandOrig := utils.RunCommand
-	getMTDMapFromSpecifierOrig := utils.GetMTDMapFromSpecifier
+	getMTDInfoFromSpecifierOrig := utils.GetMTDInfoFromSpecifier
 	defer func() {
 		flashutils.GetFlashDevice = getFlashDeviceOrig
 		utils.IsDataPartitionMounted = isDataPartitionMountedOrig
 		utils.RunCommand = runCommandOrig
-		utils.GetMTDMapFromSpecifier = getMTDMapFromSpecifierOrig
+		utils.GetMTDInfoFromSpecifier = getMTDInfoFromSpecifierOrig
 	}()
 
 	flashDevice := &mockFlashDevice{}
@@ -60,7 +60,7 @@ func TestEraseDataPartition(t *testing.T) {
 	cases := []struct {
 		name              string
 		getFlashDeviceErr error
-		eraseSize         string
+		eraseSize         uint32
 		dataPartMounted   bool
 		dataPartErr       error
 		wantCmds          []string
@@ -70,17 +70,17 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "found and erased",
 			getFlashDeviceErr: nil,
-			eraseSize: 	 "00001000",
-			dataPartMounted: false,
-			dataPartErr:     nil,
-			wantCmds:        []string{"flash_eraseall -j /dev/mock"},
-			cmdErr:          nil,
-			want:            nil,
+			eraseSize:         0x00010000,
+			dataPartMounted:   false,
+			dataPartErr:       nil,
+			wantCmds:          []string{"flash_eraseall -j /dev/mock"},
+			cmdErr:            nil,
+			want:              nil,
 		},
 		{
 			name:              "No 'data0' partition found",
 			getFlashDeviceErr: errors.Errorf("not found"),
-			eraseSize:         "00001000",
+			eraseSize:         0x00010000,
 			dataPartMounted:   false,
 			dataPartErr:       nil,
 			wantCmds:          []string{},
@@ -90,11 +90,11 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "flash_eraseall failed",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00001000",
-			dataPartMounted: false,
-			dataPartErr:     nil,
-			wantCmds:        []string{"flash_eraseall -j /dev/mock"},
-			cmdErr:          errors.Errorf("flash_eraseall failed"),
+			eraseSize:         0x00001000,
+			dataPartMounted:   false,
+			dataPartErr:       nil,
+			wantCmds:          []string{"flash_eraseall -j /dev/mock"},
+			cmdErr:            errors.Errorf("flash_eraseall failed"),
 			want: step.ExitSafeToReboot{
 				errors.Errorf("Failed to erase data0 partition: flash_eraseall failed"),
 			},
@@ -102,11 +102,11 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "error checking /mnt/data mount status",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00001000",
-			dataPartMounted: false,
-			dataPartErr:     errors.Errorf("check failed"),
-			wantCmds:        []string{},
-			cmdErr:          nil,
+			eraseSize:         0x00001000,
+			dataPartMounted:   false,
+			dataPartErr:       errors.Errorf("check failed"),
+			wantCmds:          []string{},
+			cmdErr:            nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("Failed to check if /mnt/data is mounted: check failed"),
 			},
@@ -114,11 +114,11 @@ func TestEraseDataPartition(t *testing.T) {
 		{
 			name:              "/mnt/data still mounted (RO, possibly)",
 			getFlashDeviceErr: nil,
-			eraseSize:         "00001000",
-			dataPartMounted: true,
-			dataPartErr:     nil,
-			wantCmds:        []string{},
-			cmdErr:          nil,
+			eraseSize:         0x00001000,
+			dataPartMounted:   true,
+			dataPartErr:       nil,
+			wantCmds:          []string{},
+			cmdErr:            nil,
 			want: step.ExitSafeToReboot{
 				errors.Errorf("/mnt/data is still mounted, this may mean that the " +
 					"unmount data partition step fell back to remounting RO. This current step " +
@@ -136,10 +136,10 @@ func TestEraseDataPartition(t *testing.T) {
 				}
 				return flashDevice, tc.getFlashDeviceErr
 			}
-			utils.GetMTDMapFromSpecifier = func(deviceID string) (map[string]string, error) {
-				m := make(map[string]string)
-				m["erasesize"] = tc.eraseSize
-				return m, nil
+			utils.GetMTDInfoFromSpecifier = func(deviceSpecifier string) (utils.MtdInfo, error) {
+				return utils.MtdInfo{
+					Erasesize: tc.eraseSize,
+				}, nil
 			}
 			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				gotCmds = append(gotCmds, strings.Join(cmdArr, " "))

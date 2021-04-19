@@ -95,7 +95,10 @@ var getAllPartitionsFromPartitionConfigs = func(
 		}
 
 		// only pass in region of data defined as the partition
-		pData := data[pInfo.Offset:pOffsetEnd]
+		pData, err := utils.BytesSliceRange(data, pInfo.Offset, pOffsetEnd)
+		if err != nil {
+			return nil, errors.Errorf("Unable to extract partition data: %v", err)
+		}
 		args := PartitionFactoryArgs{
 			Data:  pData,
 			PInfo: pInfo,

@@ -694,6 +694,14 @@ func TestVerifyFlash(t *testing.T) {
 			mmapErr:        nil,
 			want:           nil,
 		},
+		{
+			name:           "roOffset too large",
+			roOffset:       8,
+			deviceFileName: "/dev/mtd42",
+			deviceData:     imData,
+			mmapErr:        nil,
+			want:           errors.Errorf("Failed to verify image: roOffset (8B) larger than image file (6B)"),
+		},
 	}
 
 	for _, tc := range cases {

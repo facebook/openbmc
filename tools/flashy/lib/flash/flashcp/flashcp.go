@@ -346,12 +346,16 @@ var verifyFlash = func(
 	}
 	defer fileutils.Munmap(flashData)
 
+	if roOffset > imageSize {
+		return errors.Errorf("Failed to verify image: roOffset (%vB) larger than image file (%vB)",
+			roOffset, imageSize)
+	}
 	activeImageData := imFile.data[roOffset:]
-	activeFlashData := flashData[roOffset:]
+	activeFlashData := flashData[roOffset:] // this bound is safe due to mmap-ing imageSize
 
 	if !bytes.Equal(activeFlashData, activeImageData) {
-		errMsg := fmt.Sprintf("Verification failed: flash and image data mismatch.")
-		log.Printf(errMsg)
+		errMsg := "Verification failed: flash and image data mismatch."
+		log.Print(errMsg)
 		return errors.Errorf("%v", errMsg)
 	}
 

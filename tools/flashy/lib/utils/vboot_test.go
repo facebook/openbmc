@@ -21,6 +21,7 @@ package utils
 
 import (
 	"bytes"
+	"math"
 	"reflect"
 	"testing"
 
@@ -185,6 +186,31 @@ func TestGetVbs(t *testing.T) {
 	got, err = GetVbs()
 	tests.CompareTestErrors(errors.Errorf("Not a Vboot system: vboot partition (rom) does not exist."),
 		err, t)
+}
+
+func TestGetVbsOverflowed(t *testing.T) {
+	// mock and defer restore MmapFileRange, GetPageOffsettedOffset & vbootPartitionExists
+	mmapFileRangeOrig := fileutils.MmapFileRange
+	getPageOffsettedOffsetOrig := fileutils.GetPageOffsettedOffset
+	vbootPartitionExistsOrig := vbootPartitionExists
+	defer func() {
+		fileutils.MmapFileRange = mmapFileRangeOrig
+		fileutils.GetPageOffsettedOffset = getPageOffsettedOffsetOrig
+		vbootPartitionExists = vbootPartitionExistsOrig
+	}()
+	vbootPartitionExists = func() bool {
+		return true
+	}
+	fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+		return tests.ExampleVbsData, nil
+	}
+	fileutils.GetPageOffsettedOffset = func(addr uint32) uint32 {
+		return math.MaxUint32
+	}
+	wantErr := errors.Errorf("VBS end offset overflowed: Unsigned integer overflow for (4294967295+56)")
+
+	_, err := GetVbs()
+	tests.CompareTestErrors(wantErr, err, t)
 }
 
 func TestGetVbootEnforcement(t *testing.T) {

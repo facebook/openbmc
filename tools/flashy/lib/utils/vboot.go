@@ -147,7 +147,11 @@ var GetVbs = func() (Vbs, error) {
 	}
 
 	dataOffset := fileutils.GetPageOffsettedOffset(AST_SRAM_VBS_BASE)
-	vbsData := pageData[dataOffset : dataOffset+AST_SRAM_VBS_SIZE]
+	vbsEndOffset, err := AddU32(dataOffset, AST_SRAM_VBS_SIZE)
+	if err != nil {
+		return vbs, errors.Errorf("VBS end offset overflowed: %v", err)
+	}
+	vbsData := pageData[dataOffset:vbsEndOffset]
 
 	return decodeVbs(vbsData)
 }

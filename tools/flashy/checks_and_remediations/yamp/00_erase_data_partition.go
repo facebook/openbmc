@@ -56,12 +56,12 @@ func eraseDataPartition(stepParams step.StepParams) step.StepExitError {
 	mounted, err := utils.IsDataPartitionMounted()
 	if err != nil {
 		return step.ExitSafeToReboot{
-			errors.Errorf("Failed to check if /mnt/data is mounted: %v", err),
+			Err: errors.Errorf("Failed to check if /mnt/data is mounted: %v", err),
 		}
 	}
 	if mounted {
 		return step.ExitSafeToReboot{
-			errors.Errorf("/mnt/data is still mounted, this may mean that the " +
+			Err: errors.Errorf("/mnt/data is still mounted, this may mean that the " +
 				"unmount data partition step fell back to remounting RO. This current step " +
 				"needs /mnt/data to be completely unmounted!"),
 		}
@@ -75,7 +75,7 @@ func eraseDataPartition(stepParams step.StepParams) step.StepExitError {
 	_, err, _, _ = utils.RunCommand(eraseCmd, 15*time.Minute)
 	if err != nil {
 		return step.ExitSafeToReboot{
-			errors.Errorf("Failed to erase data0 partition: %v", err),
+			Err: errors.Errorf("Failed to erase data0 partition: %v", err),
 		}
 	}
 	log.Printf("Successfully erased data0 partition.")

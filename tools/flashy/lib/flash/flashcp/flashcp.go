@@ -303,7 +303,10 @@ var flashImage = func(
 ) error {
 	log.Printf("Flashing image '%v' on to flash device '%v'", imFile.name, deviceFile.Name())
 
-	activeImageData := imFile.data[roOffset:]
+	activeImageData, err := utils.BytesSliceRange(imFile.data, roOffset, uint32(len(imFile.data)))
+	if err != nil {
+		return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
+	}
 
 	// use Pwrite, WriteAt may call Pwrite multiple times under the hood
 	n, err := fileutils.Pwrite(int(deviceFile.Fd()), activeImageData, int64(roOffset))
@@ -346,8 +349,15 @@ var verifyFlash = func(
 	}
 	defer fileutils.Munmap(flashData)
 
-	activeImageData := imFile.data[roOffset:]
-	activeFlashData := flashData[roOffset:]
+	activeImageData, err := utils.BytesSliceRange(imFile.data, roOffset, uint32(len(imFile.data)))
+	if err != nil {
+		return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
+	}
+
+	activeFlashData, err := utils.BytesSliceRange(flashData, roOffset, uint32(len(flashData)))
+	if err != nil {
+		return errors.Errorf("Unable to get flash data after roOffset (%v): %v", roOffset, err)
+	}
 
 	if !bytes.Equal(activeFlashData, activeImageData) {
 		errMsg := "Verification failed: flash and image data mismatch."

@@ -267,7 +267,10 @@ func (p *UBootPartition) Validate() error {
 	p.tryGetAppendedChecksums()
 
 	// calculate the actual checksum without the checksum region
-	calcChecksum := p.getChecksum()
+	calcChecksum, err := p.getChecksum()
+	if err != nil {
+		return errors.Errorf("Failed to calculate checksum: %v", err)
+	}
 
 	if utils.StringFind(calcChecksum, p.checksums) == -1 {
 		errMsg := fmt.Sprintf("'%v' partition md5sum '%v' unrecognized",
@@ -315,8 +318,11 @@ func (p *UBootPartition) tryGetAppendedChecksums() {
 			"appended checksums", len(p.Data)))
 		return
 	}
-
-	checksumsDatRegionPadded := p.Data[len(p.Data)-ubootChecksumsPartitionSize:]
+	checksumsDatRegionPadded, err := utils.BytesSliceRange(p.Data, uint32(len(p.Data)-ubootChecksumsPartitionSize), uint32(len(p.Data)))
+	if err != nil {
+		logNotAppended(errors.Errorf("Unable to get checksums region: %v", err))
+		return
+	}
 
 	// trim null chars, as unused space is padded by them
 	checksumsDatRegion := bytes.Trim(checksumsDatRegionPadded,
@@ -337,15 +343,19 @@ func (p *UBootPartition) tryGetAppendedChecksums() {
 }
 
 // calculate md5sum of region excluding the appended checksums region
-func (p *UBootPartition) getChecksum() string {
+func (p *UBootPartition) getChecksum() (string, error) {
 	var checksum string
 	// if checksums are appended, then don't hash the checksum region
 	if p.areChecksumsAppended {
-		hash := md5.Sum(p.Data[:len(p.Data)-ubootChecksumsPartitionSize])
+		dataWithoutChecksumRegion, err := utils.BytesSliceRange(p.Data, 0, uint32(len(p.Data)-ubootChecksumsPartitionSize))
+		if err != nil {
+			return "", errors.Errorf("Unable to calculate checksums: %v", err)
+		}
+		hash := md5.Sum(dataWithoutChecksumRegion)
 		checksum = hex.EncodeToString(hash[:])
 	} else {
 		hash := md5.Sum(p.Data)
 		checksum = hex.EncodeToString(hash[:])
 	}
-	return checksum
+	return checksum, nil
 }

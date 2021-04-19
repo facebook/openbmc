@@ -20,6 +20,7 @@
 package validate
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"syscall"
@@ -28,8 +29,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
-
-const ubootVersionRegEx = `U-Boot \d+\.\d+ (?P<version>[^\s]+)`
 
 // Deal with images that have changed names, but are otherwise compatible.
 // The version strings are free form, so to come up with regexes that safely
@@ -97,15 +96,16 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 // fby2-gpv2-v2019.43.1 -> fbgp2
 // yosemite-v1.2 -> yosemite
 var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
+	const rBuildname = "buildname"
 	nVer := normalizeVersion(ver)
 
-	buildNameRegEx := `^(?P<buildname>\w+)`
+	buildNameRegEx := fmt.Sprintf(`^(?P<%v>\w+)`, rBuildname)
 	verMap, err := utils.GetRegexSubexpMap(buildNameRegEx, nVer)
 	if err != nil {
 		return "", errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
 			ver, nVer, err)
 	}
-	return verMap["buildname"], nil
+	return verMap[rBuildname], nil
 }
 
 // getOpenBMCVersionFromImageFile gets OpenBMC version from the image file.
@@ -124,12 +124,14 @@ var getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) 
 	// unmap
 	defer fileutils.Munmap(imageFileBuf)
 
+	const rVersion = "version"
+	ubootVersionRegEx := fmt.Sprintf(`U-Boot \d+\.\d+ (?P<%v>[^\s]+)`, rVersion)
 	imageFileVerMap, err := utils.GetBytesRegexSubexpMap(ubootVersionRegEx, imageFileBuf)
 	if err != nil {
 		return "", errors.Errorf("Unable to find OpenBMC version in image file '%v': %v",
 			imageFilePath, err)
 	}
-	version := imageFileVerMap["version"]
+	version := imageFileVerMap[rVersion]
 
 	return version, nil
 }

@@ -19,6 +19,12 @@
 
 package partition
 
+import (
+	"log"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+)
+
 // PartitionConfigType is the type for the PartitionConfigType enum.
 type PartitionConfigType = string
 
@@ -50,7 +56,7 @@ type PartitionConfigInfo struct {
 	Checksum string
 }
 
-// ImageFormats is taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).
+// defaultImageFormats is taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).
 // It maps from image format name to a array of partition configurations.
 // The idea is that the image is validated against every single format type
 // until one succeeds; if all fails, then the image is not valid.
@@ -62,7 +68,7 @@ type PartitionConfigInfo struct {
 //     specified in fw-util.
 // (4) vboot spl+recovery can be treated as UBOOT. It will be ignored if the flash1
 //     header is RO (e.g. fbtp)
-var ImageFormats = []ImageFormat{
+var defaultImageFormats = []ImageFormat{
 	{
 		// covers both vboot-meta and fit-meta
 		Name: "meta",
@@ -190,4 +196,48 @@ var ImageFormats = []ImageFormat{
 			},
 		},
 	},
+}
+
+// grandCanyonImageFormat is taken from
+// meta-facebook/meta-grandcanyon/recipes-grandcanyon/fw-util/files/grandcanyon.json
+// This is to block downgrading to non-vboot after retrofitting to vboot.
+var grandCanyonImageFormat = []ImageFormat{
+	{
+		// covers both vboot-meta and fit-meta
+		Name: "meta",
+		PartitionConfigs: []PartitionConfigInfo{
+			{
+				// pass in the whole image and let MetaImagePartition deal with
+				// finding the partitionConfigs and checksums
+				Name:   "fbmeta-image",
+				Offset: 0,
+				Size:   32 * 1024 * 1024,
+				Type:   FBMETA_IMAGE,
+			},
+		},
+	},
+}
+
+// GetImageFormats gets the right ImageFormats to run validation, based on
+// the normalised /etc/issue version. If any error arises from getting the normalised version,
+// defaultImageFormats is returned.
+var GetImageFormats = func() []ImageFormat {
+	etcIssueVer, err := utils.GetOpenBMCVersionFromIssueFile()
+	if err != nil {
+		log.Printf("Unable to get OpenBMC version from /etc/issue: %v", err)
+		log.Printf("Defaulting to default image formats for validation")
+		return defaultImageFormats
+	}
+	buildname, err := utils.GetNormalizedBuildNameFromVersion(etcIssueVer)
+	if err != nil {
+		log.Printf("Unable to get normalized build name from issue file version (%v): %v",
+			etcIssueVer, err)
+		log.Printf("Defaulting to default image formats for validation")
+		return defaultImageFormats
+	}
+
+	if buildname == "grandcanyon" {
+		return grandCanyonImageFormat
+	}
+	return defaultImageFormats
 }

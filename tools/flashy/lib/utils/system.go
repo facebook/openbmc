@@ -297,6 +297,41 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	return version, nil
 }
 
+// Deal with images that have changed names, but are otherwise compatible.
+// The version strings are free form, so to come up with regexes that safely
+// matches all possible formats would be tough. Instead, we use this to do
+// substitutions before matching in areVersionsCompatible().
+// NB: the values of this mapping CANNOT contain a dash!
+var CompatibleVersionMapping = map[string]string{
+	"fby2-gpv2":  "fbgp2",
+	"fby3pvt":    "fby3",
+	"fby3vboot2": "fby3",
+	"fbnd":       "northdome",
+}
+
+var normalizeVersion = func(ver string) string {
+	for k, v := range CompatibleVersionMapping {
+		ver = strings.Replace(ver, k, v, 1)
+	}
+	return ver
+}
+
+// GetNormalizedBuildNameFromVersion gets the normalized build name from the version using
+// compatibleVersionMapping.
+// fby2-gpv2-v2019.43.1 -> fbgp2
+// yosemite-v1.2 -> yosemite
+var GetNormalizedBuildNameFromVersion = func(ver string) (string, error) {
+	nVer := normalizeVersion(ver)
+
+	buildNameRegEx := `^(?P<buildname>\w+)`
+	verMap, err := GetRegexSubexpMap(buildNameRegEx, nVer)
+	if err != nil {
+		return "", errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
+			ver, nVer, err)
+	}
+	return verMap["buildname"], nil
+}
+
 // IsOpenBMC check whether the system is an OpenBMC
 // by checking whether the string "OpenBMC" exists in /etc/issue.
 var IsOpenBMC = func() (bool, error) {
@@ -443,7 +478,7 @@ func tryPetWatchdog() bool {
 // - When /dev/watchdog is busy because it's held open by healthd, the delay
 //   here will hopefully allow healthd's watchdog thread to get some CPU
 //   time.
-//   
+//
 // - When /dev/watchdog it NOT busy because healthd is not running and there
 //   are no concurrent instances of wdtcli, the watchdog timeout will be
 //   extended and the watchdog petted.
@@ -451,7 +486,7 @@ var PetWatchdog = func() {
 	for i := 0; i < 10; i++ {
 		if tryPetWatchdog() {
 			log.Printf("Watchdog petted")
-			return;
+			return
 		}
 		time.Sleep(1 * time.Second)
 	}

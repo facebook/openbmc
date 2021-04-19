@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -586,6 +587,69 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 	}
 }
 
+func TestCompatibleVersionMapping(t *testing.T) {
+	// the values of compatibleVersionMapping cannot have a dash
+	for key, val := range CompatibleVersionMapping {
+		if strings.ContainsAny(val, "-") {
+			t.Errorf("Invalid mapping (%v, %v), value %v cannot contain a dash",
+				key, val, val)
+		}
+	}
+}
+
+// also tests normalizeVersion
+func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
+	compatibleVersionMappingOrig := CompatibleVersionMapping
+	defer func() {
+		CompatibleVersionMapping = compatibleVersionMappingOrig
+	}()
+
+	cases := []struct {
+		name    string
+		ver     string
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "wedge100 example",
+			ver:     "wedge100-v2020.07.1",
+			want:    "wedge100",
+			wantErr: nil,
+		},
+		{
+			name:    "tiogapass1 example",
+			ver:     "fbtp-v2020.09.1",
+			want:    "fbtp",
+			wantErr: nil,
+		},
+		{
+			name:    "normalization test (fby2-gpv2)",
+			ver:     "fby2-gpv2-v2019.43.1",
+			want:    "fbgp2",
+			wantErr: nil,
+		},
+		{
+			name: "rubbish version, no match",
+			ver:  "!@#$",
+			want: "",
+			wantErr: errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
+				"!@#$", "!@#$", "No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
+		},
+	}
+
+	CompatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := GetNormalizedBuildNameFromVersion(tc.ver)
+
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
+	}
+}
+
 func TestIsOpenBMC(t *testing.T) {
 	// mock and defer restore ReadFile
 	readFileOrig := fileutils.ReadFile
@@ -788,7 +852,7 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 				"/proc/42/cmdline": ReadFileRetType{[]byte("fw-util\x00bmc\x00--update"), nil},
 			},
 			want: errors.Errorf("'fw-util' found in cmdline 'fw-util bmc --update'"),
- 		},
+		},
 		{
 			name: "base name exists (4)",
 			readFileRet: map[string]interface{}{

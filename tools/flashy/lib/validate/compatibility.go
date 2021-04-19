@@ -21,7 +21,6 @@ package validate
 
 import (
 	"log"
-	"strings"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -30,25 +29,6 @@ import (
 )
 
 const ubootVersionRegEx = `U-Boot \d+\.\d+ (?P<version>[^\s]+)`
-
-// Deal with images that have changed names, but are otherwise compatible.
-// The version strings are free form, so to come up with regexes that safely
-// matches all possible formats would be tough. Instead, we use this to do
-// substitutions before matching in areVersionsCompatible().
-// NB: the values of this mapping CANNOT contain a dash!
-var compatibleVersionMapping = map[string]string{
-	"fby2-gpv2":  "fbgp2",
-	"fby3pvt":    "fby3",
-	"fby3vboot2": "fby3",
-	"fbnd":       "northdome",
-}
-
-var normalizeVersion = func(ver string) string {
-	for k, v := range compatibleVersionMapping {
-		ver = strings.Replace(ver, k, v, 1)
-	}
-	return ver
-}
 
 // CheckImageBuildNameCompatibility checks compatibility of the image file by comparing the "normalized" build name of
 // (1) the /etc/issue file and (2) the image file
@@ -68,13 +48,13 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 		imageFilePath, imageFileVer)
 
 	// the two build names below are normalized versions
-	etcIssueBuildName, err := getNormalizedBuildNameFromVersion(etcIssueVer)
+	etcIssueBuildName, err := utils.GetNormalizedBuildNameFromVersion(etcIssueVer)
 	if err != nil {
 		return err
 	}
 	log.Printf("OpenBMC (normalized) build name from /etc/issue: '%v'", etcIssueBuildName)
 
-	imageFileBuildName, err := getNormalizedBuildNameFromVersion(imageFileVer)
+	imageFileBuildName, err := utils.GetNormalizedBuildNameFromVersion(imageFileVer)
 	if err != nil {
 		return err
 	}
@@ -90,22 +70,6 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 		return err
 	}
 	return nil
-}
-
-// getNormalizedBuildNameFromVersion gets the normalized build name from the version using
-// compatibleVersionMapping.
-// fby2-gpv2-v2019.43.1 -> fbgp2
-// yosemite-v1.2 -> yosemite
-var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
-	nVer := normalizeVersion(ver)
-
-	buildNameRegEx := `^(?P<buildname>\w+)`
-	verMap, err := utils.GetRegexSubexpMap(buildNameRegEx, nVer)
-	if err != nil {
-		return "", errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
-			ver, nVer, err)
-	}
-	return verMap["buildname"], nil
 }
 
 // getOpenBMCVersionFromImageFile gets OpenBMC version from the image file.

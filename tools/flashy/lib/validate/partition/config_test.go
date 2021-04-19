@@ -20,7 +20,15 @@
 package partition
 
 import (
+	"bytes"
+	"log"
+	"os"
+	"reflect"
 	"testing"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
+	"github.com/facebook/openbmc/tools/flashy/tests"
+	"github.com/pkg/errors"
 )
 
 // Checks to make sure ImageFormat is properly entered
@@ -30,7 +38,7 @@ import (
 // (3) Make sure FIT partitions specify FitImageNodes (fw-util assumes 1 if not specified)
 // (4) Make sure final Size + Offset <= 32768 * 1024 (32MB)
 func TestImageFormats(t *testing.T) {
-	for _, format := range ImageFormats {
+	var validateFormat = func(format ImageFormat) {
 		lastEndOffset := uint32(0)
 		for _, config := range format.PartitionConfigs {
 			if config.Offset%1024 != 0 {
@@ -59,5 +67,73 @@ func TestImageFormats(t *testing.T) {
 		if lastEndOffset > 32768*1024 {
 			t.Errorf("Image format %v' more than 32MB!", format)
 		}
+	}
+
+	for _, format := range defaultImageFormats {
+		validateFormat(format)
+	}
+	for _, format := range grandCanyonImageFormat {
+		validateFormat(format)
+	}
+}
+
+func TestGetImageFormats(t *testing.T) {
+	// save log output into buf for testing
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	getOpenBMCVersionFromIssueFileOrig := utils.GetOpenBMCVersionFromIssueFile
+	defer func() {
+		log.SetOutput(os.Stderr)
+		utils.GetOpenBMCVersionFromIssueFile = getOpenBMCVersionFromIssueFileOrig
+	}()
+
+	cases := []struct {
+		name           string
+		obmcVer        string
+		obmcVerErr     error
+		logContainsSeq []string
+		want           []ImageFormat
+	}{
+		{
+			name:    "OK",
+			obmcVer: "wedge100-v2020.07.1",
+			want:    defaultImageFormats,
+		},
+		{
+			name:    "Grandcanyon",
+			obmcVer: "grandcanyon-v2020.07.1",
+			want:    grandCanyonImageFormat,
+		},
+		{
+			name:       "Failed to get OpenBMC version",
+			obmcVerErr: errors.Errorf("Zucked"),
+			logContainsSeq: []string{"Unable to get OpenBMC version from /etc/issue",
+				"Defaulting to default image formats for validation"},
+			want: defaultImageFormats,
+		},
+		{
+			name:    "Failed to get build name",
+			obmcVer: "!!!!!",
+			logContainsSeq: []string{"Unable to get normalized build name from issue file version",
+				"Defaulting to default image formats for validation"},
+			want: defaultImageFormats,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
+				return tc.obmcVer, tc.obmcVerErr
+			}
+			buf = bytes.Buffer{}
+
+			got := GetImageFormats()
+			if !reflect.DeepEqual(tc.want, got) {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+
+			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		})
 	}
 }

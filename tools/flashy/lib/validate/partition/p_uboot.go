@@ -267,7 +267,10 @@ func (p *UBootPartition) Validate() error {
 	p.tryGetAppendedChecksums()
 
 	// calculate the actual checksum without the checksum region
-	calcChecksum := p.getChecksum()
+	calcChecksum, err := p.getChecksum()
+	if err != nil {
+		return errors.Errorf("Failed to calculate checksum: %v", err)
+	}
 
 	if utils.StringFind(calcChecksum, p.checksums) == -1 {
 		errMsg := fmt.Sprintf("'%v' partition md5sum '%v' unrecognized",
@@ -337,15 +340,19 @@ func (p *UBootPartition) tryGetAppendedChecksums() {
 }
 
 // calculate md5sum of region excluding the appended checksums region
-func (p *UBootPartition) getChecksum() string {
+func (p *UBootPartition) getChecksum() (string, error) {
 	var checksum string
 	// if checksums are appended, then don't hash the checksum region
 	if p.areChecksumsAppended {
+		if len(p.Data) < ubootChecksumsPartitionSize {
+			return "", errors.Errorf("Partition too small (%v) to contain "+
+				"appended checksums", len(p.Data))
+		}
 		hash := md5.Sum(p.Data[:len(p.Data)-ubootChecksumsPartitionSize])
 		checksum = hex.EncodeToString(hash[:])
 	} else {
 		hash := md5.Sum(p.Data)
 		checksum = hex.EncodeToString(hash[:])
 	}
-	return checksum
+	return checksum, nil
 }

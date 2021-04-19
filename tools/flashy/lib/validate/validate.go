@@ -21,9 +21,7 @@ package validate
 
 import (
 	"log"
-	"syscall"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/pkg/errors"
 )
@@ -56,18 +54,4 @@ var Validate = func(data []byte) error {
 	errMsg := "*** FAILED: Validation failed ***"
 	log.Print(errMsg)
 	return errors.Errorf(errMsg)
-}
-
-// ValidateImageFile takes in a path to an image file and runs
-// Validate over the data.
-var ValidateImageFile = func(imageFilePath string) error {
-	imageData, err := fileutils.MmapFile(imageFilePath,
-		syscall.PROT_READ, syscall.MAP_SHARED)
-	if err != nil {
-		return errors.Errorf("Unable to read image file '%v': %v",
-			imageFilePath, err)
-	}
-	defer fileutils.Munmap(imageData)
-
-	return Validate(imageData)
 }

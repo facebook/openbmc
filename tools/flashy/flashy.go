@@ -30,14 +30,15 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/image"
 )
 
 var (
 	// modes
 	installFlag = flag.Bool("install", false, "Install flashy")
 	checkImage  = flag.Bool("checkimage", false,
-		"Validate image partitions (`imagepath` must be specified). Available on non-OpenBMC systems.")
+		"Validate image partitions (`imagepath` must be specified). Available on non-OpenBMC systems. "+
+			"If `device` is specified the image file size will be validated against the size of the device.")
 	// step params
 	imageFilePath = flag.String("imagepath", "", "Path to image file")
 	deviceID      = flag.String("device", "", "Device ID (e.g. mtd:flash0)")
@@ -109,7 +110,7 @@ WARRANTIES OFF`)
 		log.Printf("Validating image...")
 		failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
 
-		err := validate.ValidateImageFile(stepParams.ImageFilePath)
+		err := image.ValidateImageFile(stepParams.ImageFilePath, stepParams.DeviceID)
 		if err != nil {
 			log.Fatalf("Image '%v' failed validation: %v",
 				stepParams.ImageFilePath, err)

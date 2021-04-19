@@ -169,8 +169,14 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	cmd := exec.CommandContext(ctx, cmdArr[0], cmdArr[1:]...)
 
 	var stdoutStr, stderrStr string
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return 1, errors.Errorf("Unable to open stdout pipe: %v", err), "", ""
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return 1, errors.Errorf("Unable to open stderr pipe: %v", err), "", ""
+	}
 	stdoutScanner := bufio.NewScanner(stdout)
 	stderrScanner := bufio.NewScanner(stderr)
 	stdoutDone := make(chan struct{})
@@ -189,7 +195,7 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	<-stdoutDone
 	<-stderrDone
 
-	err := cmd.Wait()
+	err = cmd.Wait()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			// The program exited with exit code != 0
@@ -443,7 +449,7 @@ func tryPetWatchdog() bool {
 // - When /dev/watchdog is busy because it's held open by healthd, the delay
 //   here will hopefully allow healthd's watchdog thread to get some CPU
 //   time.
-//   
+//
 // - When /dev/watchdog it NOT busy because healthd is not running and there
 //   are no concurrent instances of wdtcli, the watchdog timeout will be
 //   extended and the watchdog petted.
@@ -451,7 +457,7 @@ var PetWatchdog = func() {
 	for i := 0; i < 10; i++ {
 		if tryPetWatchdog() {
 			log.Printf("Watchdog petted")
-			return;
+			return
 		}
 		time.Sleep(1 * time.Second)
 	}

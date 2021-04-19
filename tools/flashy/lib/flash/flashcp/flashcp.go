@@ -299,6 +299,10 @@ var flashImage = func(
 ) error {
 	log.Printf("Flashing image '%v' on to flash device '%v'", imFile.name, deviceFile.Name())
 
+	if roOffset > uint32(len(imFile.data)) {
+		return errors.Errorf("Failed to flash image: roOffset (%vB) larger than image file (%vB)",
+			roOffset, len(imFile.data))
+	}
 	activeImageData := imFile.data[roOffset:]
 
 	// use Pwrite, WriteAt may call Pwrite multiple times under the hood

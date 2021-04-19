@@ -588,6 +588,12 @@ func TestFlashImage(t *testing.T) {
 			writeErr: nil,
 			want:     nil,
 		},
+		{
+			name:     "roOffset too large",
+			roOffset: 8,
+			writeErr: nil,
+			want:     errors.Errorf("Failed to flash image: roOffset (8B) larger than image file (6B)"),
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

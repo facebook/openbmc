@@ -22,6 +22,7 @@ package partition
 import (
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
@@ -83,7 +84,10 @@ var getAllPartitionsFromPartitionConfigs = func(
 		// but that would require operating on a new copy of the image in memory.
 		// Golang mmap unfortunately doesn't expose the addr argument to allow
 		// fixed mapping (we could map a 23MB image file over a 32MB /dev/zero file)
-		pOffsetEnd := pInfo.Size + pInfo.Offset
+		pOffsetEnd, err := utils.AddU32(pInfo.Size, pInfo.Offset)
+		if err != nil {
+			return nil, errors.Errorf("Unable to get offset end: %v", err)
+		}
 		if uint32(len(data)) < pOffsetEnd {
 			actualPartitionSize := uint32(len(data)) - pInfo.Offset
 			pInfo.Size = actualPartitionSize

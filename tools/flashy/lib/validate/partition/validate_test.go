@@ -21,6 +21,7 @@ package partition
 
 import (
 	"crypto/rand"
+	"math"
 	"reflect"
 	"testing"
 
@@ -246,6 +247,19 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 			want: nil,
 			wantErr: errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
 				20*1024, 4*1024),
+		},
+		{
+			name: "end offset too large",
+			partitionConfigs: []PartitionConfigInfo{
+				{
+					Name:   "foobar",
+					Offset: 1024,
+					Size:   math.MaxUint32 - 1000,
+					Type:   mockConfigTypeFoo,
+				},
+			},
+			want:    nil,
+			wantErr: errors.Errorf("Unable to get offset end: Unsigned integer overflow for (4294966295+1024)"),
 		},
 	}
 	// compare two partitions slices

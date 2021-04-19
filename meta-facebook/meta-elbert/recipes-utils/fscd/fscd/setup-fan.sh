@@ -55,7 +55,7 @@ for pim in ${pim_list}; do
      fru="$(peutil "$pim" 2>&1)"
      if echo "$fru" | grep -q '88-16CD'; then
          num_pim16q=$((num_pim16q+1))
-     elif echo "$fru" | grep  -q '88-8D'; then
+     elif echo "$fru" | grep -q '88-8D'; then
          num_pim8ddm=$((num_pim8ddm+1))
      fi
 done
@@ -63,17 +63,21 @@ done
 if [ $num_pim16q -eq 8 ]; then
     # 8xPIM16Q
     cp /etc/FSC-8-PIM16Q-config.json ${default_fsc_config}
+elif [ $num_pim16q -eq 5 ] && [ $num_pim8ddm -eq 3 ]; then
+    cp /etc/FSC-5-PIM16Q-3-PIM8DDM-config.json ${default_fsc_config}
+elif [ $num_pim16q -eq 2 ] && [ $num_pim8ddm -eq 6 ]; then
+    cp /etc/FSC-2-PIM16Q-6-PIM8DDM-config.json ${default_fsc_config}
 else
     # Assume highest power configuration otherwise
     cp /etc/FSC-8-PIM8DDM-config.json ${default_fsc_config}
 fi
 
-# Create dummy sensors
+# Create dummy sensors which host will write
 echo 0 > /tmp/.PIM_QSFP200
 echo 0 > /tmp/.PIM_QSFP400
+echo 0 > /tmp/.PIM_F104
 
 echo "Setup fan speed..."
 /usr/local/bin/set_fan_speed.sh 30
-# ELBERTTODO TUNE FSCD
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

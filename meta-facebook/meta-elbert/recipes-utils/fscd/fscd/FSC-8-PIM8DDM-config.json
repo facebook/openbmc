@@ -68,7 +68,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [5, 10],
+        [5, 46],
         [95, 70],
         [105, 100]
       ]
@@ -93,9 +93,33 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [5, 10],
+        [5, 46],
         [95, 70],
         [105, 100]
+      ]
+    },
+    "PIM_F104": {
+      "read_source" : {
+        "util" : "sensor-util --force"
+      },
+      "read_limit": {
+        "valid": {
+          "limit": 125,
+          "threshold": 20,
+          "action": "host_shutdown"
+        },
+        "invalid": {
+          "limit": -60,
+          "threshold": 10,
+          "action": "host_shutdown"
+        }
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [5, 46],
+        [110, 100]
       ]
     },
     "PIM_QSFP200": {
@@ -118,7 +142,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [5, 10],
+        [5, 46],
         [65, 100]
       ]
     },
@@ -142,7 +166,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [5, 10],
+        [5, 46],
         [70, 100]
       ]
     }

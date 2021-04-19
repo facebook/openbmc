@@ -115,7 +115,6 @@ const uint8_t smb_sensor_list[] = {
   TH4_VRD1_TEMP1,
   TH4_VRD1_TEMP2,
   TH4_VRD1_TEMP3,
-  TH4_VRD1_TEMP4,
   TH4_VRD1_PIN,
   TH4_VRD1_POUT_LOOP0,
   TH4_VRD1_IIN,
@@ -166,6 +165,7 @@ const uint8_t smb_sensor_list[] = {
   CORE_3_TEMP,
   PIM_QSFP200,
   PIM_QSFP400,
+  PIM_F104,
 };
 
 // List of PIM16Q sensors that need to be monitored
@@ -1325,9 +1325,6 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       case TH4_VRD1_TEMP3:
         ret = read_attr(fru, sensor_num, SMB_RAA228228_DEVICE, TEMP(3), value);
         break;
-      case TH4_VRD1_TEMP4:
-        ret = read_attr(fru, sensor_num, SMB_RAA228228_DEVICE, TEMP(4), value);
-        break;
       case TH4_VRD1_PIN:
         ret = read_attr(fru, sensor_num, SMB_RAA228228_DEVICE, POWER(1), value);
         *value = *value / 1000;
@@ -1499,6 +1496,9 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         break;
       case PIM_QSFP400:
         ret = read_file( "/tmp/.PIM_QSFP400", value );
+        break;
+      case PIM_F104:
+        ret = read_file( "/tmp/.PIM_F104", value );
         break;
       default:
         ret = READING_NA;
@@ -2037,9 +2037,6 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case TH4_VRD1_TEMP3:
       sprintf(name, "TH4_VRD1_TEMP3");
       break;
-    case TH4_VRD1_TEMP4:
-      sprintf(name, "TH4_VRD1_TEMP4");
-      break;
     case TH4_VRD1_PIN:
       sprintf(name, "TH4_VRD1_PIN");
       break;
@@ -2189,6 +2186,9 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PIM_QSFP400:
       sprintf(name, "PIM_QSFP400");
+      break;
+    case PIM_F104:
+      sprintf(name, "PIM_F104");
       break;
     default:
       return -1;
@@ -2522,7 +2522,6 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case TH4_VRD1_TEMP1:
     case TH4_VRD1_TEMP2:
     case TH4_VRD1_TEMP3:
-    case TH4_VRD1_TEMP4:
     case TH4_VRD2_TEMP1:
     case TH4_VRD2_TEMP2:
     case TH4_VRD2_TEMP3:
@@ -2552,6 +2551,7 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case CORE_3_TEMP:
     case PIM_QSFP200:
     case PIM_QSFP400:
+    case PIM_F104:
       sprintf(units, TEMP_UNIT);
       break;
     default:
@@ -2847,10 +2847,6 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[TH4_VRD1_TEMP3][LCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_TEMP3][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_TEMP3][LNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD1_TEMP4][UCR_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD1_TEMP4][LCR_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD1_TEMP4][UNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD1_TEMP4][LNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_PIN][UCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_PIN][LCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD1_PIN][UNC_THRESH] = 0; // unset
@@ -2949,7 +2945,7 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[TH4_VRD2_IIN_LOOP2][LCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IIN_LOOP2][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IIN_LOOP2][LNC_THRESH] = 0; // unset
-      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UCR_THRESH] = 0; //unset
+      smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][LCR_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][UNC_THRESH] = 0; // unset
       smb_sensor_threshold[TH4_VRD2_IOUT_LOOP0][LNC_THRESH] = 0; // unset
@@ -3055,6 +3051,10 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[PIM_QSFP400][UCR_THRESH] = 70;
       smb_sensor_threshold[PIM_QSFP400][LNC_THRESH] = 0; // unset
       smb_sensor_threshold[PIM_QSFP400][LCR_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_F104][UNC_THRESH] = 110;
+      smb_sensor_threshold[PIM_F104][UCR_THRESH] = 125;
+      smb_sensor_threshold[PIM_F104][LNC_THRESH] = 0; // unset
+      smb_sensor_threshold[PIM_F104][LCR_THRESH] = 0; // unset
       break;
     case FRU_PIM2:
     case FRU_PIM3:

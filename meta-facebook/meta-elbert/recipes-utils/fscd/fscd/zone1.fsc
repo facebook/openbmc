@@ -3,5 +3,6 @@ max([
   TH4_DIE_TEMP_0(smb:th4_die_temp_0:0x34),
   TH4_DIE_TEMP_1(smb:th4_die_temp_1:0x35),
   PIM_QSFP200(smb:pim_qsfp200:0x47),
-  PIM_QSFP400(smb:pim_qsfp400:0x48)
+  PIM_QSFP400(smb:pim_qsfp400:0x48),
+  PIM_F104(smb:pim_f104:0x49)
 ])

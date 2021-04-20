@@ -1,0 +1,57 @@
+#!/usr/bin/env python3
+#
+# Copyright 2018-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+try:
+    # Add all attestation related imports here
+    import obmc_attestation.measure
+
+    ATTESTATION_AVAILABLE = True
+except ModuleNotFoundError:
+    ATTESTATION_AVAILABLE = False
+    # Doing this so that we don't break upstream
+from node import node
+from tree import tree
+
+
+def get_tree_attestation() -> tree:
+    tree_attestation = tree("attestation", node())
+    if not ATTESTATION_AVAILABLE:
+        # Return witout actually adding any endpoints/attaching
+        # them to any logic
+        return tree_attestation
+    # GET /attestation/system_hashes
+    # Always try to keep these in sync with the CLI
+    tree_attestation.addChild(tree("system_hashes", NodeSystemHashes()))
+
+    return tree_attestation
+
+
+class NodeSystemHashes(node):
+    @staticmethod
+    # GET /attestation/system_hashes
+    def getInformation(param={}):
+        args = {}
+        # Default args
+        args["algo"] = "sha256"
+        args["flash0"] = "/dev/flash0"
+        args["flash1"] = "/dev/flash1"
+        args["recal"] = False
+        # We update the params if any were passed
+        args.update(param)
+        return obmc_attestation.measure.return_measure(args)

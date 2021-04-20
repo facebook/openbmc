@@ -46,6 +46,7 @@ SRC_URI = "file://rest.py \
            file://rest_fscd_sensor_data.py \
            file://rest_modbus_cmd.py \
            file://test_rest_modbus_cmd.py \
+           file://node_attestation.py \
            file://node_bmc.py \
            file://node_api.py \
            file://node_dpb.py \

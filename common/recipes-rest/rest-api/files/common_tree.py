@@ -30,6 +30,7 @@ from node_fans import get_node_fans
 from node_logs import get_node_logs
 from node_sensors import get_node_sensors
 from node_sled import get_node_sled
+from node_attestation import get_tree_attestation
 from tree import tree
 from aiohttp.web import Application
 
@@ -55,4 +56,6 @@ def setup_common_routes(app: Application, write_enabled: bool):
     r_temp = tree("fans", data=get_node_fans())
     r_api.addChild(r_temp)
 
+    # /attestation endpoints
+    r_api.addChild(get_tree_attestation())
     r_api.setup(app, write_enabled)

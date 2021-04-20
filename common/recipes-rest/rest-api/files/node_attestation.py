@@ -39,7 +39,7 @@ def get_tree_attestation() -> tree:
     # GET /attestation/system_hashes
     # Always try to keep these in sync with the CLI
     tree_attestation.addChild(tree("system_hashes", NodeSystemHashes()))
-    tpm_actions = ["ek-cert", "create-aik", "pcr-quote", "challenge-aik"]
+    tpm_actions = ["ek-cert", "create-aik", "pcr-quote", "challenge-aik", "load-aik"]
     tree_attestation.addChild(tree("tpm", get_tpm_nodes(tpm_actions)))
     return tree_attestation
 
@@ -82,6 +82,8 @@ class NodeTPM(node):
             return self.tpm.tpm_pcr_quote(**data)
         elif action == "challenge-aik":
             return self.tpm.tpm_challenge_aik(**data)
+        elif action == "load-aik":
+            return self.tpm.load_aik_into_tpm(**data)
         else:
             return {"status": "unimplented"}
 

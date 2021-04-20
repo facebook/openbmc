@@ -19,6 +19,7 @@ pal_headers = [
 # Add additional source files.
 pal_sources = [
     'obmc-pal.c',
+    'obmc-pal-ext.c',
     'obmc_pal_sensors.c',
     'pal.c',
     ]

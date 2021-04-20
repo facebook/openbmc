@@ -13,6 +13,7 @@ SRC_URI = "\
     file://plat/meson.build \
     file://meson_options.txt \
     file://obmc-pal.c \
+    file://obmc-pal-ext.c \
     file://obmc-pal.h \
     file://obmc_pal_sensors.c \
     file://obmc_pal_sensors.h \

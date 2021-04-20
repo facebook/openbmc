@@ -25,5 +25,5 @@ import (
 )
 
 func init() {
-	step.RegisterStep(flash.FlashCp)
+	step.RegisterStep(flash.FlashCpVboot)
 }

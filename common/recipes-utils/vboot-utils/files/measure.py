@@ -31,6 +31,9 @@ from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file
 
 
 MBOOT_CHECK_VERSION = "1"
+# fit sign hash algo define in fit its which is independent with
+# meausre (input algo of hash_comp) and PCR hash algorithm
+FIT_SIGN_HASH_ALGO = "sha256"
 
 
 class Pcr:
@@ -138,7 +141,7 @@ def measure_uboot(algo, image_meta, recal=False):
 
     if recal:
         uboot_measure = hash_comp(
-            image_meta.image, fit["offset"] + 0x4000, uboot_size, "sha256"
+            image_meta.image, fit["offset"] + 0x4000, uboot_size, FIT_SIGN_HASH_ALGO
         )
         assert (
             uboot_hash == uboot_measure
@@ -153,7 +156,7 @@ def measure_uboot(algo, image_meta, recal=False):
             uboot_measure.hex(),
         )
 
-    uboot_measure = hashlib.sha256(uboot_hash).digest()
+    uboot_measure = hashlib.new(algo, uboot_hash).digest()
     return pcr2.extend(uboot_measure)
 
 
@@ -204,7 +207,9 @@ def measure_os(algo, image_meta, recal=False):
 
     for comp_hash, comp_offset, comp_size in os_components:
         if recal:
-            comp_measure = hash_comp(image_meta.image, comp_offset, comp_size, algo)
+            comp_measure = hash_comp(
+                image_meta.image, comp_offset, comp_size, FIT_SIGN_HASH_ALGO
+            )
             assert (
                 comp_hash == comp_measure
             ), """Build, Signing or uboot code BUG!!!.
@@ -217,7 +222,7 @@ def measure_os(algo, image_meta, recal=False):
                 comp_hash.hex(),
                 comp_measure.hex(),
             )
-        comp_measure = hashlib.sha256(comp_hash).digest()
+        comp_measure = hashlib.new(algo, comp_hash).digest()
         pcr9.extend(comp_measure)
 
     return pcr9.value

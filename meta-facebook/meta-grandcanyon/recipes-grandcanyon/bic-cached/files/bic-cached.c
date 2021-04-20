@@ -111,6 +111,7 @@ sdr_cache_init() {
     if (ret != 0) {
       syslog(LOG_WARNING, "%s: bic_get_sdr returns %d, rsv_id: 0x%x, record_id: 0x%x, sdr_size: %d\n", __func__, ret, req.rsv_id, req.rec_id, rlen);
       retry++;
+      sleep(1);
       continue;
     }
 
@@ -127,10 +128,11 @@ sdr_cache_init() {
       break;
     }
     retry++;
+    sleep(1);
   } while (retry < BIC_MAX_RETRY);
 
   if (retry == BIC_MAX_RETRY) {   // if exceed 3 mins, exit this step
-    syslog(LOG_CRIT, "%s Fail on getting Server SDR via BIC.\n", __func__);
+    syslog(LOG_CRIT, "Fail on getting Server SDR.\n");
   } else {
     syslog(LOG_INFO, "Get Server SDR success.\n");   
   }
@@ -151,7 +153,7 @@ sdr_cache_init() {
 int
 main (int argc, char * const argv[])
 {
-  int ret = 0;
+  int ret = 0, retry = 0;
   uint8_t self_test_result[2] = {0};
 
   do {
@@ -160,8 +162,13 @@ main (int argc, char * const argv[])
       syslog(LOG_INFO, "bic_get_self_test_result: %X %X", self_test_result[0], self_test_result[1]);
       break;
     }
+    retry++;
     sleep(5);
-  } while (ret != 0);
+  } while ((ret != 0) && (retry < MAX_RETRY)); // each time wait 5 second, max wait 3 times
+  
+  if (retry == MAX_RETRY) {
+    syslog(LOG_WARNING, "bic is wrong because bic get self test result is fail.");
+  }
 
   fruid_cache_init();
   sdr_cache_init();

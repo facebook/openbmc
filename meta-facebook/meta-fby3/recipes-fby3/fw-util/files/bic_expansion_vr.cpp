@@ -20,15 +20,12 @@ int VrExtComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   uint8_t rbuf[6] = {0};
   int ret = 0;
   ret = bic_get_fw_ver(slot_id, alt_fw_comp, rbuf);
-  if ( alt_fw_comp == FW_2OU_PESW_VR ) {
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
-    s = string(ver);
-    s += ", Remaining Writes: " + to_string(rbuf[4]);
-  }
-  else {
-    snprintf(ver, sizeof(ver), "%02X%02X", rbuf[0], rbuf[1]);
-    s = string(ver);
-  }
+
+  if ( alt_fw_comp == FW_2OU_PESW_VR ) snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+  else snprintf(ver, sizeof(ver), "%02X%02X", rbuf[0], rbuf[1]);
+
+  s = string(ver) + ", Remaining Writes: " + to_string((alt_fw_comp == FW_2OU_PESW_VR)?rbuf[4]:rbuf[2]);
+
   return ret;
 }
 

@@ -978,6 +978,34 @@ vr_VY_program(uint8_t slot_id, vr *dev, uint8_t force) {
   return BIC_STATUS_FAILURE;
 }
 
+// For class 2 GPv3 system, BMC should get/set Vishay VR IC count from EEPROM
+int
+bic_set_vishay_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t cnt, uint8_t intf) {
+  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00, 0x01, comp, cnt};
+  uint8_t rbuf[6] = {0x00};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_VY_VR_CNT, tbuf, tlen, rbuf, &rlen, intf);
+}
+
+int
+bic_get_vishay_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t *cnt, uint8_t intf) {
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00, 0x00, comp};
+  uint8_t rbuf[5] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+
+  int ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_VY_VR_CNT, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    printf("Failed to get remaining_writes\n");
+  }
+
+  *cnt = rbuf[3];
+
+  return ret;
+}
+
 #include "bic_bios_fwupdate.h"
 static int
 vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8_t force) {
@@ -998,6 +1026,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   uint16_t bic_usb_pid = 0x0, bic_usb_vid = 0x0;
   uint8_t usb_idx = 0;
   uint8_t *buf = NULL;
+  uint8_t remaining_writes = 0x00;
 
   //select PID/VID
   switch(dev->intf) {
@@ -1030,6 +1059,21 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     default:
       printf("%s() comp(0x%02X) didn't support USB firmware update\n", __func__, comp);
       return BIC_STATUS_FAILURE;
+  }
+
+  // get remaining_writes
+  if ( FW_2OU_PESW_VR  == comp ) ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
+  else ret = bic_get_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), &remaining_writes, dev->intf);
+
+  // check the result of execution
+  if ( ret < 0 ) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  //check remaining_writes
+  ret = vr_remaining_writes_check(remaining_writes, force);
+  if ( ret < 0 ) {
+    return BIC_STATUS_FAILURE;
   }
 
   udev->ci = 1;
@@ -1088,6 +1132,10 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     case FW_2OU_3V3_VR2:
     case FW_2OU_3V3_VR3:
     case FW_2OU_1V8_VR:
+      ret = bic_set_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), (remaining_writes - 1), dev->intf);
+      if ( ret < 0 ) {
+        printf("Failed to update remaining_writes for Vishay VR %02X\n", comp);
+      }
       printf("please wait 15 seconds for programming to complete\n");
       break;
   }

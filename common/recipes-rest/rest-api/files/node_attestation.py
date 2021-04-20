@@ -20,6 +20,7 @@
 try:
     # Add all attestation related imports here
     import obmc_attestation.measure
+    import obmc_attestation.tpm2
 
     ATTESTATION_AVAILABLE = True
 except ModuleNotFoundError:
@@ -38,7 +39,8 @@ def get_tree_attestation() -> tree:
     # GET /attestation/system_hashes
     # Always try to keep these in sync with the CLI
     tree_attestation.addChild(tree("system_hashes", NodeSystemHashes()))
-
+    tpm_actions = ["ek-cert", "create-aik", "pcr-quote", "challenge-aik"]
+    tree_attestation.addChild(tree("tpm", get_tpm_nodes(tpm_actions)))
     return tree_attestation
 
 
@@ -55,3 +57,34 @@ class NodeSystemHashes(node):
         # We update the params if any were passed
         args.update(param)
         return obmc_attestation.measure.return_measure(args)
+
+
+class NodeTPM(node):
+    def __init__(self, actions=None):
+        self.actions = actions
+        self.tpm = obmc_attestation.tpm2.Tpm2v4()
+
+    def doAction(self, data, param={}):
+        # We will delete the action key from the data
+        # and directly pass it onto the underlying function
+        # as kwargs hoping that the function callee
+        # obeys arguments structure
+        action = data["action"]
+        del data["action"]
+        # TODO
+        # Probably convert these into
+        # getattr(tpm2, function name) later on?
+        if action == "ek-cert":
+            return self.tpm.get_ek_cert(**data)
+        elif action == "create-aik":
+            return self.tpm.tpm_create_aik(**data)
+        elif action == "pcr-quote":
+            return self.tpm.tpm_pcr_quote(**data)
+        elif action == "challenge-aik":
+            return self.tpm.tpm_challenge_aik(**data)
+        else:
+            return {"status": "unimplented"}
+
+
+def get_tpm_nodes(actions):
+    return NodeTPM(actions)

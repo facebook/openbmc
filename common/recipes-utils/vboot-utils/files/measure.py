@@ -30,9 +30,8 @@ from image_meta import FBOBMCImageMeta
 from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file
 
 
-MBOOT_CHECK_VERSION = "1"
-# fit sign hash algo define in fit its which is independent with
-# meausre (input algo of hash_comp) and PCR hash algorithm
+MBOOT_CHECK_VERSION = "2"
+
 FIT_SIGN_HASH_ALGO = "sha256"
 
 
@@ -95,18 +94,19 @@ def measure_keystore(algo, image_meta):
     return pcr1.extend(fit_measure)
 
 
-def get_uboot_hash_and_size(filename, offset, size):
+def get_uboot_hash_algo_and_size(filename, offset, size):
     with open(filename, "rb") as fh:
         fh.seek(offset)
         uboot_fit = fh.read(size)
         uboot_fdt = get_fdt(uboot_fit)
         uboot_size = uboot_fdt.resolve_path("/images/firmware@1/data-size")[0]
         uboot_hash = uboot_fdt.resolve_path("/images/firmware@1/hash@1/value").to_raw()
+        uboot_algo = uboot_fdt.resolve_path("/images/firmware@1/hash@1/algo")[0]
 
-        return (uboot_hash, uboot_size)
+        return (uboot_hash, uboot_algo, uboot_size)
 
 
-def get_os_comps_hash_offset_size(filename, offset, size):
+def get_os_comps_hash_algo_offset_size(filename, offset, size):
     comps = []
 
     with open(filename, "rb") as fh:
@@ -114,18 +114,33 @@ def get_os_comps_hash_offset_size(filename, offset, size):
         os_fit = get_fdt_from_file(fh)
         # kernel
         kernel_hash = os_fit.resolve_path("/images/kernel@1/hash@1/value").to_raw()
+        kernel_algo = os_fit.resolve_path("/images/kernel@1/hash@1/algo")[0]
         kernel_data = os_fit.resolve_path("/images/kernel@1/data")
-        comps.append((kernel_hash, kernel_data.blob_info[0], kernel_data.blob_info[1]))
+        comps.append(
+            (
+                kernel_hash,
+                kernel_algo,
+                kernel_data.blob_info[0],
+                kernel_data.blob_info[1],
+            )
+        )
         # ramdisk
         ramdisk_hash = os_fit.resolve_path("/images/ramdisk@1/hash@1/value").to_raw()
+        ramdisk_algo = os_fit.resolve_path("/images/ramdisk@1/hash@1/algo")[0]
         ramdisk_data = os_fit.resolve_path("/images/ramdisk@1/data")
         comps.append(
-            (ramdisk_hash, ramdisk_data.blob_info[0], ramdisk_data.blob_info[1])
+            (
+                ramdisk_hash,
+                ramdisk_algo,
+                ramdisk_data.blob_info[0],
+                ramdisk_data.blob_info[1],
+            )
         )
         # fdt
         fdt_hash = os_fit.resolve_path("/images/fdt@1/hash@1/value").to_raw()
+        fdt_algo = os_fit.resolve_path("/images/fdt@1/hash@1/algo")[0]
         fdt_data = os_fit.resolve_path("/images/fdt@1/data")
-        comps.append((fdt_hash, fdt_data.blob_info[0], fdt_data.blob_info[1]))
+        comps.append((fdt_hash, fdt_algo, fdt_data.blob_info[0], fdt_data.blob_info[1]))
 
     return comps
 
@@ -135,13 +150,15 @@ def measure_uboot(algo, image_meta, recal=False):
     # notice: to simplify SPL measure code, spl hash the "hash of uboot" read from fit
     pcr2 = Pcr(algo)
     fit = image_meta.get_part_info("u-boot-fit")
-    uboot_hash, uboot_size = get_uboot_hash_and_size(
+    uboot_hash, uboot_hash_algo, uboot_size = get_uboot_hash_algo_and_size(
         image_meta.image, fit["offset"], 0x4000
     )
 
     if recal:
+        # uboot_hash_algo define in FIT signature which is independent with
+        # measure (input algo of hash_comp) and PCR hash algorithm
         uboot_measure = hash_comp(
-            image_meta.image, fit["offset"] + 0x4000, uboot_size, FIT_SIGN_HASH_ALGO
+            image_meta.image, fit["offset"] + 0x4000, uboot_size, uboot_hash_algo
         )
         assert (
             uboot_hash == uboot_measure
@@ -201,14 +218,16 @@ def measure_os(algo, image_meta, recal=False):
     # in ORDER into PCR9.
     pcr9 = Pcr(algo)
     fit = image_meta.get_part_info("os-fit")
-    os_components = get_os_comps_hash_offset_size(
+    os_components = get_os_comps_hash_algo_offset_size(
         image_meta.image, fit["offset"], fit["size"]
     )
 
-    for comp_hash, comp_offset, comp_size in os_components:
+    for comp_hash, comp_hash_algo, comp_offset, comp_size in os_components:
         if recal:
+            # comp_hash_algo define in FIT signture which is independent with
+            # measure (input algo of hash_comp) and PCR hash algorithm
             comp_measure = hash_comp(
-                image_meta.image, comp_offset, comp_size, FIT_SIGN_HASH_ALGO
+                image_meta.image, comp_offset, comp_size, comp_hash_algo
             )
             assert (
                 comp_hash == comp_measure

@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 #
 from fsc_control import PID, TTable, IncrementPID, TTable4Curve
-from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceJson
 from fsc_util import Logger
 
 
@@ -33,6 +33,15 @@ class Sensor(object):
                 if "util" in pTable["read_source"]:
                     self.source = FscSensorSourceUtil(
                         name=sensor_name, read_source=pTable["read_source"]["util"]
+                    )
+                if "json" in pTable["read_source"]:
+                    filter = None
+                    if "filter" in pTable["read_source"]:
+                        filter = pTable["read_source"]["filter"]
+                    self.source = FscSensorSourceJson(
+                        name=sensor_name,
+                        read_source=pTable["read_source"]["json"],
+                        filter=filter,
                     )
                 if "offset" in pTable["read_source"]:
                     self.offset = pTable["read_source"]["offset"]

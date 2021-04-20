@@ -37,6 +37,8 @@
 #define LED_INTERVAL_DEFAULT              500 //millisecond
 #define MONITOR_FRU_HEALTH_INTERVAL       1 //second
 #define SYNC_SYSTEM_STATUS_LED_INTERVAL   1 //second
+#define DBG_CARD_SHOW_ERR_INTERVAL        1 //second
+#define DBG_CARD_UPDATE_ERR_INTERVAL      5 //second
 
 #define MAX_NUM_CHECK_FRU_HEALTH          5
 
@@ -164,13 +166,78 @@ fru_health_handler() {
   return NULL;
 }
 
+// Thread to show error code on debug card
+static void *
+dbg_card_show_error_code() {
+  uint8_t dbg_present = 0;
+  uint8_t uart_sel = 0;
+  uint8_t error[MAX_NUM_ERR_CODES] = {0}, error_code = 0;
+  uint8_t cur_error_count = 0, pre_error_count = 0;
+  int ret = 0;
+  int poll_error_timer = 0, error_index = 0;
+  
+  while(1) {
+    ret = pal_is_debug_card_present(&dbg_present);
+    if ((ret == 0) && (dbg_present == FRU_PRESENT)) {
+      
+      ret = pal_get_debug_card_uart_sel(&uart_sel);
+      if ((ret == 0) && (uart_sel == DEBUG_UART_SEL_BMC)) {
+        
+        // update error code
+        if (poll_error_timer == 0) {
+          memset(error, 0, sizeof(error));
+          ret = pal_get_error_code(error, &cur_error_count);
+        }
+        
+        if (cur_error_count == 0) {
+          error_code = 0;
+
+        } else {
+          // if the new error count is smaller, showing the error code start from scratch
+          if (cur_error_count < pre_error_count) {
+            error_index = 0;
+          }
+          pre_error_count = cur_error_count;
+          
+          error_code = error[error_index];
+          // Expander error code (1~100) need to change
+          // ex: decimal 99 change to hexadecimal 0x99
+          if (error_code < MAX_NUM_EXP_ERR_CODES) {
+            error_code = error_code/10*16+error_code%10;
+          }
+        }
+        
+        // show error code on debug card
+        pal_post_display(error_code);
+        
+        error_index++;
+        if (error_index >= cur_error_count) {
+          error_index = 0;
+        }
+        
+        poll_error_timer++;
+        if (poll_error_timer > DBG_CARD_UPDATE_ERR_INTERVAL) {
+          poll_error_timer = 0;
+        }
+
+      }
+    }
+
+    sleep(DBG_CARD_SHOW_ERR_INTERVAL);
+  } // while loop end
+
+  pthread_exit(NULL);
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_sync_led = 0;
   pthread_t tid_monitor_fru_health = 0;
   pthread_t tid_sync_system_status_led = 0;
+  pthread_t tid_dbg_card_error_code = 0;
   int ret = 0, pid_file = 0;
   int ret_sync_led = 0, ret_monitor_fru = 0, ret_sync_system_status_led = 0;
+  int ret_dbg_card_error_code = 0;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   if (pid_file < 0) {
@@ -204,6 +271,11 @@ main (int argc, char * const argv[]) {
     ret_sync_system_status_led = -1;
   }
   
+  if (pthread_create(&tid_dbg_card_error_code, NULL, dbg_card_show_error_code, NULL) < 0) {
+    syslog(LOG_WARNING, "fail to creat thread for show error code on debug card\n");
+    ret_dbg_card_error_code = -1;
+  }
+  
   if (ret_sync_led == 0) {
     pthread_join(tid_sync_led, NULL);
   }
@@ -212,6 +284,10 @@ main (int argc, char * const argv[]) {
   }
   if (ret_sync_system_status_led == 0) {
     pthread_join(tid_sync_system_status_led, NULL);
+  }
+
+  if (ret_dbg_card_error_code == 0) {
+    pthread_join(tid_dbg_card_error_code, NULL);
   }
 
 err:

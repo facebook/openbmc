@@ -359,6 +359,144 @@ static sensor_desc_t cri_sensor[] =
     {"NIC Temp:"    , NIC_SENSOR_TEMP            , "C"   , FRU_NIC, 0},
 };
 
+// Expander Error Code is in Decimal 1~99, so needs the conversion
+// Expmale: 0x99 Convert to 99 literally
+// BMC send Hexadecimal Error Code to Debug Card
+// Debug Card will send the same value to BMC to query String
+
+//expander error code are defined in document "GrandCanyon_ErrorCode_EventLogList_0312"
+//bmc error code are defined in document "GrandCanyon_BMC_Feature_List_v0.6 - Events"
+static post_desc_t pdesc_error[] = {
+  {0, "No error"},
+  /*------------------ Expander error code - Start--------------------- */
+  {0x1, "Expander I2C bus 1 crash"},
+  {0x2, "Expander I2C bus 2 crash"},
+  {0x3, "Expander I2C bus 3 crash"},
+  {0x4, "Expander I2C bus 4 crash"},
+  {0x5, "Expander I2C bus 5 crash"},
+  {0x6, "Expander I2C bus 6 crash"},
+  {0x7, "Expander I2C bus 7 crash"},
+  {0x8, "Expander I2C bus 0 crash"},
+  {0x11, "SCC voltage critical"},
+  {0x12, "SCC_HSC voltage critical"},
+  {0x13, "DPB voltage critical"},
+  {0x14, "DPB_HSC voltage critical"},
+  {0x15, "PTB_HSC_CLIP voltage critical"},
+  {0x16, "HDD X voltage critical"},
+  {0x17, "SCC current critical"},
+  {0x18, "DPB current critical"},
+  {0x19, "PTB_HSC_CLIP current critical"},
+  {0x21, "SCC_Expander_Temp critical"},
+  {0x23, "SCC_Temp1 critical"},
+  {0x24, "SCC_Temp2 critical"},
+  {0x25, "DPB_INLET_Temp1 critical"},
+  {0x26, "DPB_INLET_Temp2 critical"},
+  {0x27, "DPB_OUTLET_Temp critical"},
+  {0x28, "HDD X SMART Temp critical"},
+  {0x29, "UIC_Temp critical"},
+  {0x30, "HDD0 fault"},
+  {0x31, "HDD1 fault"},
+  {0x32, "HDD2 fault"},
+  {0x33, "HDD3 fault"},
+  {0x34, "HDD4 fault"},
+  {0x35, "HDD5 fault"},
+  {0x36, "HDD6 fault"},
+  {0x37, "HDD7 fault"},
+  {0x38, "HDD8 fault"},
+  {0x39, "HDD9 fault"},
+  {0x40, "HDD10 fault"},
+  {0x41, "HDD11 fault"},
+  {0x42, "HDD12 fault"},
+  {0x43, "HDD13 fault"},
+  {0x44, "HDD14 fault"},
+  {0x45, "HDD15 fault"},
+  {0x46, "HDD16 fault"},
+  {0x47, "HDD17 fault"},
+  {0x48, "HDD18 fault"},
+  {0x49, "HDD19 fault"},
+  {0x50, "HDD20 fault"},
+  {0x51, "HDD21 fault"},
+  {0x52, "HDD22 fault"},
+  {0x53, "HDD23 fault"},
+  {0x54, "HDD24 fault"},
+  {0x55, "HDD25 fault"},
+  {0x56, "HDD26 fault"},
+  {0x57, "HDD27 fault"},
+  {0x58, "HDD28 fault"},
+  {0x59, "HDD29 fault"},
+  {0x60, "HDD30 fault"},
+  {0x61, "HDD31 fault"},
+  {0x62, "HDD32 fault"},
+  {0x63, "HDD33 fault"},
+  {0x64, "HDD34 fault"},
+  {0x65, "HDD35 fault"},
+  {0x66, "HDD X fault sensed"},
+  {0x70, "Internal Mini-SAS Link Loss"},
+  {0x71, "Internal SAS Link Loss"},
+  {0x72, "SCC I2C device loss"},
+  {0x73, "DPB I2C device loss"},
+  {0x74, "PTB I2C device loss"},
+  {0x75, "UIC I2C device loss"},
+  {0x77, "Fan 0 front fault"},
+  {0x78, "Fan 0 rear fault"},
+  {0x79, "Fan 1 front fault"},
+  {0x80, "Fan 1 rear fault"},
+  {0x81, "Fan 2 front fault"},
+  {0x82, "Fan 2 rear fault"},
+  {0x83, "Fan 3 front fault"},
+  {0x84, "Fan 3 rear fault"},
+  {0x88, "Drawer Pull out"},
+  {0x89, "Peer SCC Plug out"},
+  {0x90, "UICA Plug out"},
+  {0x91, "UICB Plug out"},
+  {0x92, "Fan 0 Plug out"},
+  {0x93, "Fan 1 Plug out"},
+  {0x94, "Fan 2 Plug out"},
+  {0x95, "Fan 3 Plug out"},
+  {0x99, "HW Configuration_Type Not Match"},
+  /*------------------ Expander error code - End--------------------- */
+  
+  /*------------------ BMC error code - Start--------------------- */
+  {0xCE, "BMC CPU Utilization exceeded"},
+  {0xCF, "BMC Memory utilization exceeded"},
+  {0xE0, "ECC Recoverable Error"},
+  {0xE1, "ECC Un-recoverable Error"},
+  {0xE2, "Barton Springs Missing"},
+  {0xE3, "SCC Missing"},
+  {0xE4, "NIC Missing"},
+  {0xE5, "E1.S Missing"},
+  {0xE6, "IOC Module Missing"},
+  {0xE7, "BMC I2C bus 0 hang"},
+  {0xE8, "BMC I2C bus 1 hang"},
+  {0xE9, "BMC I2C bus 2 hang"},
+  {0xEA, "BMC I2C bus 3 hang"},
+  {0xEB, "BMC I2C bus 4 hang"},
+  {0xEC, "BMC I2C bus 5 hang"},
+  {0xED, "BMC I2C bus 6 hang"},
+  {0xEE, "BMC I2C bus 7 hang"},
+  {0xEF, "BMC I2C bus 8 hang"},
+  {0xF0, "BMC I2C bus 9 hang"},
+  {0xF1, "BMC I2C bus 10 hang"},
+  {0xF2, "BMC I2C bus 11 hang"},
+  {0xF3, "BMC I2C bus 12 hang"},
+  {0xF4, "BMC I2C bus 13 hang"},
+  {0xF5, "BMC I2C bus 14 hang"},
+  {0xF6, "BMC I2C bus 15 hang"},
+  {0xF7, "Server health is bad"},
+  {0xF8, "UIC health is bad"},
+  {0xF9, "DPB health is bad"},
+  {0xFA, "SCC health is bad"},
+  {0xFB, "NIC health is bad"},
+  {0xFC, "BMC remote heartbeat is abnormal"},
+  {0xFD, "SCC local heartbeat is abnormal"},
+  {0xFE, "SCC remote heartbeat is abnormal"},
+  /*------------------ BMC error code - End--------------------- */
+};
+
+static post_phase_desc_t error_phase_desc[] = {
+  {PHASE_ANY, pdesc_error, sizeof(pdesc_error)/sizeof(pdesc_error[0])}
+};
+
 bool plat_supported(void)
 {
   return true;
@@ -383,8 +521,9 @@ int plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_coun
   }
 
   if (uart_sel == DEBUG_UART_SEL_BMC) {
-    // reserve for BMC error code
-    return -1;
+    *desc = error_phase_desc;
+    *desc_count = ARRAY_SIZE(error_phase_desc);
+
   } else {
     *desc = post_phase_desc;
     *desc_count = ARRAY_SIZE(post_phase_desc);

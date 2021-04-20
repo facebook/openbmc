@@ -21,6 +21,8 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+MAX_RETRY=15
+
 ##### sync time from NTP server
 retry=0
 while [ $retry -lt "$MAX_RETRY" ]

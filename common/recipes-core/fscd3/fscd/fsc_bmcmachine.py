@@ -325,6 +325,32 @@ def parse_sensor_json(raw_data, source):
     return result
 
 
+def parse_sensor_json(raw_data, source):
+    result = {}
+    max_value = None
+    filter = source.get_filter()
+    try:
+        obj = json.loads(raw_data)
+        for sensor in obj["data"]:
+            if filter is not None:
+                m = re.match(filter, sensor)
+                if m is None:  # skip the sensor has name not match in regex
+                    continue
+            value = obj["data"][sensor]["value"]
+            if max_value is None or max_value < value:
+                max_value = value
+        result["json_max_temp"] = SensorValue(
+            None, "JSON_MAX_TEMP", max_value, "C", None, 0, 0
+        )
+    except Exception as e:
+        Logger.crit(
+            "Exception while trying to decode JSON {raw_data}: {exp}".format(
+                raw_data=repr(raw_data), exp=repr(e)
+            )
+        )
+    return result
+
+
 def symbolize_sensorname(name):
     """
     Helper method to normalize the sensor name

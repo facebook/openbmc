@@ -11,7 +11,7 @@ RDEPENDS_${PN}-ptest += "meson"
 do_compile_append() {
     cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
-meson test --no-rebuild
+meson test --no-rebuild --verbose
 EOF
 
 }

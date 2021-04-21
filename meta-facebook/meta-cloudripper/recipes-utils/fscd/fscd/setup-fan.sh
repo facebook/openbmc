@@ -32,4 +32,6 @@ echo "Setup fan speed..."
 echo "Setting fan speed to 50%..."
 /usr/local/bin/set_fan_speed.sh 50
 
+echo "Starting fscd..."
+runsv /etc/sv/fscd > /dev/null 2>&1 &
 echo "done."

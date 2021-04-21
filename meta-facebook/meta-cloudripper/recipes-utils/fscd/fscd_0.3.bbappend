@@ -22,9 +22,19 @@ RDEPENDS_${PN} += "bash"
 SRC_URI += "file://get_fan_speed.sh \
             file://set_fan_speed.sh \
             file://setup-fan.sh \
+            file://fsc_board.py \
+            file://fsc-config.json \
+            file://zone.fsc \
            "
 
 FSC_BIN_FILES += "get_fan_speed.sh \
-                  set_fan_speed.sh "
+                  set_fan_speed.sh \
+                 "
+
+FSC_CONFIG += "fsc-config.json \
+              "
+
+FSC_ZONE_CONFIG +="zone.fsc \
+                  "
 
 FSC_INIT_FILE += "setup-fan.sh"

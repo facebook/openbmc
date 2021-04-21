@@ -29,8 +29,8 @@
 #include <openbmc/pal_sensors.h>
 #include <openbmc/cmock.h>
 
-DECLARE_MOCK_FUNC(int, kv_get, const char *, char *, size_t *, unsigned int);
-DECLARE_MOCK_FUNC(int, sensor_cache_read, uint8_t, uint8_t, float *);
+DEFINE_MOCK_FUNC(int, kv_get, const char *, char *, size_t *, unsigned int);
+DEFINE_MOCK_FUNC(int, sensor_cache_read, uint8_t, uint8_t, float *);
 
 static void init_sensors(const char *json_file, size_t exp_sensors)
 {
@@ -81,7 +81,6 @@ DEFINE_TEST(test_lexp)
   // One of the sensors failed.
   ASSERT_NEQ(ret, 0, "sensor read failed as expected");
   ASSERT_CALL_COUNT(sensor_cache_read, 1, 2, "sensor_cache_read was called at least once");
-  MOCK_END(sensor_cache_read);
 
   int mocked_read2(uint8_t fru, uint8_t snr, float *value) {
     if (snr == 1) {
@@ -94,7 +93,6 @@ DEFINE_TEST(test_lexp)
   ret = aggregate_sensor_read(0, &val);
   ASSERT_NEQ(ret, 0, "Sensor read failed as expected");
   ASSERT_CALL_COUNT(sensor_cache_read, 1, 2, "sensor read called at least once");
-  MOCK_END(sensor_cache_read);
 
   int mocked_read3(uint8_t fru, uint8_t snr, float *value) {
     ASSERT((fru == 1 && snr == 1) || (fru == 2 && snr == 2), "Expected FRU/SNRID");
@@ -107,14 +105,12 @@ DEFINE_TEST(test_lexp)
   /* 2.0*1.0 + 3.0*2.0 - 3.0 = 5.0 */
   ASSERT_EQ_FLT(val, 5.0, "Sensor read returned correct value");
   ASSERT_CALL_COUNT(sensor_cache_read, 2, 2, "sensor read called exactly twice");
-  MOCK_END(sensor_cache_read);
 
   // Ensure any sensor returns success.
   MOCK_RETURN(sensor_cache_read, 0);
   ret = aggregate_sensor_read(1, &val);
   ASSERT(ret != 0, "sensor correctly failed to read invalid agg-sensor");
   ASSERT_CALL_COUNT(sensor_cache_read, 0, 0, "Sensor read correctly never called");
-  MOCK_END(sensor_cache_read);
 }
 
 DEFINE_TEST(test_cond_lexp)
@@ -139,8 +135,6 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_NEQ(ret, 0, "agg-sensor should fail if kv_get fails with no default expression");
   ASSERT_CALL_COUNT(kv_get, 1, 1, "kv_get called exactly once");
   ASSERT_CALL_COUNT(sensor_cache_read, 0, 0, "sensor_cache_read never called");
-  MOCK_END(kv_get);
-  MOCK_END(sensor_cache_read);
 
   int mocked_kv_get1(const char *key, char *value, size_t *len, unsigned int flags)
   {
@@ -158,8 +152,6 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_NEQ(ret, 0, "Agg-sensor should fail if kv_get returns an unknown value");
   ASSERT_CALL_COUNT(kv_get, 1, 1, "kv_Get called exactly once");
   ASSERT_CALL_COUNT(sensor_cache_read, 0, 0, "sensor read never called");
-  MOCK_END(kv_get);
-  MOCK_END(sensor_cache_read);
 
   int mocked_kv_get2(const char *key, char *value, size_t *len, unsigned int flags)
   {
@@ -185,8 +177,6 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_CALL_COUNT(sensor_cache_read, 1, 2, "sensor cache read called at least once");
   // v1 => exp1 = (10*10) - 4 = 100-4 = 96
   ASSERT_EQ_FLT(val, 96.0, "Correct value returned");
-  MOCK_END(kv_get);
-  MOCK_END(sensor_cache_read);
 
   MOCK_RETURN(kv_get, -1);
   MOCK(sensor_cache_read, mocked_snr_read1);
@@ -195,8 +185,6 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_CALL_COUNT(kv_get, 1, 1, "kv get called once");
   ASSERT_CALL_COUNT(sensor_cache_read, 1, 2, "sensor_cache_read called at least once");
   ASSERT_EQ_FLT(val, 103.0, "Correct value returned");
-  MOCK_END(kv_get);
-  MOCK_END(sensor_cache_read);
 
   // kv_get succeeds, but returns an unknown value.
   int mocked_kv_get3(const char *key, char *value, size_t *len, unsigned int flags)
@@ -217,8 +205,6 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_CALL_COUNT(kv_get, 1, 1, "kv get called once");
   ASSERT_CALL_COUNT(sensor_cache_read, 1, 2, "sensor_cache_read called at least once");
   ASSERT_EQ_FLT(val, 103.0, "Correct value returned");
-  MOCK_END(kv_get);
-  MOCK_END(sensor_cache_read);
 
   int mocked_kv_get4(const char *key, char *value, size_t *len, unsigned int flags)
   {
@@ -238,8 +224,6 @@ DEFINE_TEST(test_cond_lexp)
   ASSERT_CALL_COUNT(kv_get, 1, 1, "kv get called once");
   ASSERT_CALL_COUNT(sensor_cache_read, 1, 2, "sensor_cache_read called at least once");
   ASSERT_EQ_FLT(val, 96.0, "Correct value returned");
-  MOCK_END(kv_get);
-  MOCK_END(sensor_cache_read);
 }
 
 DEFINE_TEST(test_lexp_source_exp)
@@ -260,7 +244,6 @@ DEFINE_TEST(test_lexp_source_exp)
   ASSERT_CALL_COUNT(sensor_cache_read, 2, 2, "Expected sensor reads");
   ASSERT_EQ_FLT(val, 37.0, "Correct value read");
   /* 10.0 * ((3 + 5) / 2) - 3.0 = 10 *8/2 - 3 = 10*4-3 = 37 */
-  MOCK_END(sensor_cache_read);
 
   int mocked_read2(uint8_t fru, uint8_t snr, float *value) {
     ASSERT((fru == 1 && snr == 1) || (fru == 2 && snr == 2), "Expected FRU/SNRID");
@@ -283,10 +266,6 @@ int main(int argc, char *argv[])
     return -1;
   }
 
-  CALL_TEST(test_bad_source_exp);
-  CALL_TEST(test_null);
-  CALL_TEST(test_lexp);
-  CALL_TEST(test_cond_lexp);
-  CALL_TEST(test_lexp_source_exp);
+  CALL_TESTS();
   return 0;
 }

@@ -18,6 +18,7 @@
 #ifndef _CMOCK_H_
 #define _CMOCK_H_
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
@@ -70,6 +71,46 @@
 #define _NAMES(n) __NAMES(n)
 #define NAMES(...) _NAMES(COUNT_VARARGS(__VA_ARGS__))
 
+struct __test_func__ {
+  void (*call)(void);
+  struct __test_func__ *next;
+};
+
+struct __test_func__*__test_list__ __attribute__((weak)) = NULL;
+
+struct __mock_init__ {
+  bool *return_valid;
+  int  *call_count;
+  void *default_caller;
+  void **caller;
+  struct __mock_init__ *next;
+};
+
+struct __mock_init__*__mock_init_list__ __attribute__((weak)) = NULL;
+
+static inline void __mock_initer_add(bool *ret_val, int *call_cnt,
+    void *defcaller, void **caller)
+{
+  struct __mock_init__*m = calloc(1, sizeof(*m));
+  assert(m);
+  m->return_valid = ret_val;
+  m->call_count = call_cnt;
+  m->default_caller = defcaller;
+  m->caller = caller;
+  m->next = __mock_init_list__;
+  __mock_init_list__ = m;
+}
+
+static inline void __mock_init_all(void)
+{
+  struct __mock_init__*m;
+  for (m = __mock_init_list__; m != NULL; m = m->next) {
+    m->return_valid = false;
+    m->call_count = 0;
+    *m->caller = m->default_caller;
+  }
+}
+
 /* Declare a function we are going to mock in the tests to follow.
  * ret - Return type of the function.
  * name - Name of the function.
@@ -79,19 +120,36 @@
  * functions once at the top. For example
  * int foo(int x, float y) -> DECLARE_MOCK_FUNC(int, foo, int, float)
  */
-#define DECLARE_MOCK_FUNC(ret, name, ...) 	\
-	static ret __##name##_mock_return;		\
-	static int __##name##_mock_call_cnt;		\
-	static bool __##name##_mock_return_valid = false;\
-	static ret __##name##_default_mock(FULL_PARAMS(__VA_ARGS__)) {	\
-		assert(__##name##_mock_return_valid == true);	\
-		return __##name##_mock_return;			\
-	}							\
-	static ret (*__##name##_mock)(FULL_PTYPES(__VA_ARGS__)) = &__##name##_default_mock;	\
-	ret name(FULL_PARAMS(__VA_ARGS__)) {	\
-	  __##name##_mock_call_cnt++;		\
-		return __##name##_mock(NAMES(__VA_ARGS__)); \
+#define DEFINE_MOCK_FUNC(ret, name, ...) 	                \
+	ret __##name##_mock_return;		                          \
+	int __##name##_mock_call_cnt;		                        \
+	bool __##name##_mock_return_valid = false;              \
+	ret __##name##_default_mock(FULL_PARAMS(__VA_ARGS__)) {	\
+		assert(__##name##_mock_return_valid == true);	        \
+		return __##name##_mock_return;			                  \
+	}							                                          \
+	ret (*__##name##_mock)(FULL_PTYPES(__VA_ARGS__)) =      \
+  &__##name##_default_mock;	                              \
+  static void __attribute__((constructor))                \
+  name##_mock_init_caller(void) {                         \
+    __mock_initer_add(&__##name##_mock_return_valid,      \
+        &__##name##_mock_call_cnt,                        \
+        (void *)__##name##_default_mock,                  \
+        (void **)&__##name##_mock);                       \
+  }                                                       \
+	ret name(FULL_PARAMS(__VA_ARGS__)) {	                  \
+	  __##name##_mock_call_cnt++;		                        \
+		return __##name##_mock(NAMES(__VA_ARGS__));           \
 	}
+
+#define DECLARE_MOCK_FUNC(ret, name, ...)                 \
+	extern ret __##name##_mock_return;		                  \
+	extern int __##name##_mock_call_cnt;		                \
+	extern bool __##name##_mock_return_valid;               \
+	extern ret __##name##_default_mock(FULL_PARAMS(__VA_ARGS__)); \
+	extern ret (*__##name##_mock)(FULL_PTYPES(__VA_ARGS__));\
+	extern ret name(FULL_PARAMS(__VA_ARGS__));
+
 
 /* Declare a function returning void
  * name - Name of the function.
@@ -100,62 +158,93 @@
  * Same as DECLARE_MOCK_FUNC. Example:
  * void bar(int x) -> DECLARE_MOCK_VOIDFUNC(bar, int)
  */
-#define DECLARE_MOCK_VOIDFUNC(name, ...) 	\
-	static int __##name##_mock_call_cnt;		\
-	static bool __##name##_mock_return_valid = false;\
-	static void __##name##_default_mock(FULL_PARAMS(__VA_ARGS__)) {	\
-	}							\
-	static void (*__##name##_mock)(FULL_PTYPES(__VA_ARGS__)) = &__##name##_default_mock;	\
-	void name(FULL_PARAMS(__VA_ARGS__)) {	\
-	  __##name##_mock_call_cnt++;		\
-    if (__##name##_mock != NULL) \
-		  __##name##_mock(NAMES(__VA_ARGS__)); \
+#define DEFINE_MOCK_VOIDFUNC(name, ...) 	                 \
+	int __##name##_mock_call_cnt;		                         \
+	bool __##name##_mock_return_valid = false;               \
+	void __##name##_default_mock(FULL_PARAMS(__VA_ARGS__)) { \
+	}							                                           \
+	void (*__##name##_mock)(FULL_PTYPES(__VA_ARGS__)) =      \
+        &__##name##_default_mock;	                         \
+  static void __attribute__((constructor))                 \
+          name##_mock_init_caller(void) {                  \
+    __mock_initer_add(&__##name##_mock_return_valid,       \
+         &__##name##_mock_call_cnt,                        \
+         __##name##_default_mock,                          \
+         (void **)&__##name##_mock);                       \
+  }                                                        \
+	void name(FULL_PARAMS(__VA_ARGS__)) {	                   \
+	  __##name##_mock_call_cnt++;		                         \
+    if (__##name##_mock != NULL)                           \
+		  __##name##_mock(NAMES(__VA_ARGS__));                 \
 	}
+
+#define DECLARE_MOCK_VOIDFUNC(name, ...) 	                 \
+	extern int __##name##_mock_call_cnt;		                 \
+	extern bool __##name##_mock_return_valid;                \
+	extern void __##name##_default_mock(FULL_PARAMS(__VA_ARGS__)); \
+	extern void (*__##name##_mock)(FULL_PTYPES(__VA_ARGS__));	\
+	extern void name(FULL_PARAMS(__VA_ARGS__));
+
 
 /* Mock the function with a custom implementation.
  * name - Named of the mocked function.
  * func - function pointer of the custom implementation.
  */
-#define MOCK(name, func)	\
-	__##name##_mock = func
+#define MOCK(name, func)	                \
+  do {                                    \
+		__##name##_mock_return_valid = false;	\
+		__##name##_mock_call_cnt = 0;	        \
+	  __##name##_mock = func;               \
+  } while(0)
 
 /* Mock the return value of the function.
  * name - Name of the mocked function.
  * ret_val - The value we want the mocked function to return.
  */
-#define MOCK_RETURN(name, ret_val) 	\
-	do {				\
-		__##name##_mock_return_valid = true;	\
-		__##name##_mock_return = ret_val;	\
+#define MOCK_RETURN(name, ret_val) 	     \
+	do {				                           \
+		__##name##_mock_return_valid = true; \
+		__##name##_mock_return = ret_val;	   \
+		__##name##_mock_call_cnt = 0;	       \
+		__##name##_mock = __##name##_default_mock; \
 	} while(0)
 
-/* Clean up any state changed by mocking done in previous tests.
- * name - Name of the mocked function.
+/* Return the number of calls made to this
+ * mocked function
  */
-#define MOCK_END(name)	\
-		__##name##_mock_return_valid = false;	\
-		__##name##_mock_call_cnt = 0;	\
-		__##name##_mock = __##name##_default_mock
-
 #define CALL_COUNT(name) __##name##_mock_call_cnt
 
 /* Define a test case.
  * name - Name of the test case 
  */
-#define DEFINE_TEST(name) 	\
-	void name##_impl(void);	\
-	void name(void) {	\
-		name##_impl();	\
-		printf("%s: PASSED\n", #name);	\
-	}	\
-	void name##_impl(void)
+#define DEFINE_TEST(name) 	                              \
+	static void name##_impl(void);	                        \
+	static void name(void) {	                              \
+    __mock_init_all();                                    \
+		name##_impl();	                                      \
+		printf("%s: PASSED\n", #name);	                      \
+	}	                                                      \
+  static void __attribute__((constructor)) name##_caller(void) { \
+    struct __test_func__*p = calloc(1, sizeof(*p));       \
+    assert(p);                                            \
+    p->call = name;                                       \
+    p->next = __test_list__;                              \
+    __test_list__ = p;                                    \
+  }                                                       \
+	static void name##_impl(void)
 
-#define CALL_TEST(name) \
-  name()
+#define CALL_TESTS() do {                   \
+  struct __test_func__ *p = __test_list__;  \
+  while (p) {                               \
+    p->call();                              \
+    p = p->next;                            \
+  }                                         \
+} while (0)
 
 #define ASSERT(cond, txt) do { \
   if (!(cond)) { \
     printf("FAIL: %s\n", txt); \
+    fflush(stdout); \
   } \
   assert(cond); \
 } while(0)

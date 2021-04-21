@@ -7,18 +7,34 @@ provided by external libraries.
 Mocking internal functions would need some refactoring (See later)
 Mocking static functions are not possible.
 
-## Declaring a Mock
+## Defining a Mock
 
 Assume you have two external functions foo and bar:
 ```
 int foo(int x);
 void bar(float y, const char *z);
 ```
-The first thing we need to do in our test source is to declare
-that we intend on using these mocks in the upcoming test code.
+The first thing we need to do in one of our test sources is to define
+the mock functions and declare their use in the other sources.
 
 So right after your includes (which actually declare foo and bar),
-you would use `DECLARE_MOCK_FUNC` and `DECLARE_MOCK_VOIDFUNC`.
+you would use `DEFINE_MOCK_FUNC` and `DEFINE_MOCK_VOIDFUNC`.
+test-x.c:
+```
+#include "foo.h"
+#include "bar.h"
+
+DEFINE_MOCK_FUNC(int, foo, int);
+DEFINE_MOCK_VOIDFUNC(bar, float, const char*);
+```
+
+NOTE: `DEFINE_MOCK_FUNC` and `DEFINE_MOCK_VOIDFUNC`
+defines the mocked functions `foo` and `bar`. This implicitly assumes
+that you are not linking in the library which defines these methods.
+
+Note that if another test source `test-y.c` needs to use these mocks,
+those sources need to declare them
+test-y.c:
 ```
 #include "foo.h"
 #include "bar.h"
@@ -26,10 +42,6 @@ you would use `DECLARE_MOCK_FUNC` and `DECLARE_MOCK_VOIDFUNC`.
 DECLARE_MOCK_FUNC(int, foo, int);
 DECLARE_MOCK_VOIDFUNC(bar, float, const char*);
 ```
-
-NOTE: `DECLARE_MOCK_FUNC` and `DECLARE_MOCK_VOIDFUNC` actually
-defines the mocked functions `foo` and `bar`. This implicitly assumes
-that you are not linking in the library which defines these.
 
 ## Defining a Test
 
@@ -43,13 +55,14 @@ DEFINE_TEST(hello_world) {
 }
 ```
 
-Now to call that test from the test executable's `main`:
+Now to call that tests from the test executable's `main`:
 ```
 int main(void)
 {
-  CALL_TEST(hello_world);
+  CALL_TESTS();
   return 0;
 }
+
 ```
 Executing and running will have this:
 ```
@@ -99,14 +112,12 @@ DEFINE_TEST(foo2_test) {
   MOCK_RETURN(foo, 4);
   ASSERT_EQ(foo2(4), 8, "foo2 not doubling 4");
   ASSERT_CALL_COUNT(foo, 1, 1, "foo called exactly once");
-  MOCK_END(foo);
 }
 ```
 There are a few things happening here.
 1. First we call `MOCK_RETURN(foo, 4)` which creates a mock for the function `foo` which just returns `4`.
 2. With the mock in place, we check if `foo2` does the right thing. We use `ASSERT_EQ` to check the equality of the return value of `foo2(4)` with `8`. `foo2` would have called our mocked function `foo` which should have returned 4 and our test theoretically should have passed.
 3. Ensure that `foo` was indeed called using `ASSERT_CALL_COUNT`. In this case we expect the call to be exactly once, but we can specify a inclusive-range (low and high range numbers are included in the range).
-4. We end the mock and cleanup by calling `MOCK_END(foo)`. This ensures that future tests can use different mocks for `foo`.
 
 ## Mocking a more complex function
 
@@ -135,8 +146,6 @@ DEFINE_TEST(bar2) {
   bar2(3);
   bar2(4);
   ASSERT_CALL_COUNT(bar, 2, 2, "Called for odd numbers");
-
-  MOCK_END(bar);
 }
 ```
 1. Since `bar` does not return a value, we can create a full mock of it. This is defining the mock function `bar_mock` within the test code for `bar2`. Obviously, this should match the actual prototype of `bar`.
@@ -145,7 +154,6 @@ DEFINE_TEST(bar2) {
 2. Now that the mock is defined, tell the framework that it is a mock for `bar`. This is `MOCK(bar, bar_mock)`.
 3. This is when we make 4 calls.
 4. Finally we do our asserts on how many times we expect `bar` to be called.
-5. Finally we cleanup using `MOCK_END`.
 
 # Mocking internal functions
 

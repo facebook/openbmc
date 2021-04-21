@@ -362,6 +362,7 @@ int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_ASIC6:
     case FRU_ASIC7:
       *caps = FRU_CAPABILITY_SENSOR_ALL;
+      break;
     default:
       ret = -1;
       break;

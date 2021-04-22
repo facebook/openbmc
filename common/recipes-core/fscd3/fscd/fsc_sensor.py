@@ -49,6 +49,11 @@ class FscSensorBase(object):
         else:
             self.write_type = None
 
+        if "filter" in kwargs:
+            self.filter = kwargs["filter"]
+        else:
+            self.filter = None
+
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
         self.read_source_wrong_counter = 0
@@ -311,3 +316,30 @@ class FscSensorSourceKv(FscSensorBase):
         'kv' : write_kv,
         'util' : write_util,
     }
+
+
+class FscSensorSourceJson(FscSensorBase):
+    """
+    Class for FSC sensor source for JSON file
+    """
+
+    def get_filter(self):
+        return self.filter
+
+    def read(self, **kwargs):
+        """
+        Return:
+            raw data read from json file
+        """
+        try:
+            Logger.debug("Reading data with json file=%s" % self.read_source)
+            with open(self.read_source, "r") as file:
+                return file.read()
+
+        except Exception as e:
+            Logger.crit(
+                "Exception while trying to read {read_source}: {exp}".format(
+                    read_source=repr(self.read_source), exp=repr(e)
+                )
+            )
+            return None

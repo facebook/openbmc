@@ -71,11 +71,11 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=2, upgrade_cmd
         "pwr_l": [
             5,
-            "/usr/local/bin/cpld_update.sh -s PWR-L -f {filename} sw",
+            "/usr/local/bin/cpld_update.sh -s PWR-L -f {filename} i2c",
         ],  # priority=5, upgrade_cmd
         "pwr_r": [
             6,
-            "/usr/local/bin/cpld_update.sh -s PWR-R -f {filename} sw",
+            "/usr/local/bin/cpld_update.sh -s PWR-R -f {filename} i2c",
         ],  # priority=6, upgrade_cmd
     }
 

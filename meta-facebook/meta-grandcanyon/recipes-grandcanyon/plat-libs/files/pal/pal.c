@@ -128,6 +128,7 @@ struct pal_key_cfg {
   {"e1s_iocm_sensor_health", "1", NULL},
   {"bmc_health", "1", NULL},
   {"timestamp_sled", "0", NULL},
+  {"heartbeat_health", "1", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -2606,6 +2607,11 @@ pal_log_clear(char *fru) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear bmc health value", __func__);
     }
+    
+    ret = pal_set_key_value("heartbeat_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear heartbeat health value", __func__);
+    }
   }
 }
 
@@ -2640,3 +2646,24 @@ void pal_update_ts_sled() {
     syslog(LOG_ERR, "%s(): failed to set key: %s value: %s", __func__, key, timestamp_str);
   }
 }
+
+int
+pal_get_heartbeat(float *hb_val, uint8_t component) {
+  char label[MAX_PWM_LABEL_LEN] = {0};
+  int ret = 0;
+
+  if (hb_val == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to get heartbeat because parameter: *hb_val is NULL", __func__);
+  }
+  
+  memset(label, 0, sizeof(label));
+  snprintf(label, sizeof(label), "fan%d", component);
+  // get heartbeat from tacho driver
+  ret = sensors_read_fan(label, hb_val);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): fail to get heartbeat, component = %d", __func__, component);
+  }
+
+  return ret;
+}
+

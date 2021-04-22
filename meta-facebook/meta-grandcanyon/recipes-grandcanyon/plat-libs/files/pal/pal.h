@@ -298,6 +298,13 @@ enum {
   UNKNOWN_FAN_CNT = 0x00,
 };
 
+enum {
+  HEARTBEAT_BIC         = 0,
+  HEARTBEAT_REMOTE_BMC  = 2,
+  HEARTBEAT_LOCAL_SCC   = 3,
+  HEARTBEAT_REMOTE_SCC  = 4,
+};
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);
@@ -332,6 +339,7 @@ int pal_get_drive_status(const char* i2c_bus_dev);
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_get_tach_cnt();
+int pal_get_heartbeat(float *hb_val, uint8_t component);
 
 #ifdef __cplusplus
 } // extern "C"

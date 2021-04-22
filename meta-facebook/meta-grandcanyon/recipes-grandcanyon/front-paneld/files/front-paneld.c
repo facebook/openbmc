@@ -33,14 +33,22 @@
 #include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
+#include <facebook/fbgc_common.h>
 
 #define LED_INTERVAL_DEFAULT              500 //millisecond
 #define MONITOR_FRU_HEALTH_INTERVAL       1 //second
 #define SYNC_SYSTEM_STATUS_LED_INTERVAL   1 //second
 #define DBG_CARD_SHOW_ERR_INTERVAL        1 //second
 #define DBG_CARD_UPDATE_ERR_INTERVAL      5 //second
+#define MONITOR_HB_HEALTH_INTERVAL        1 //second
 
 #define MAX_NUM_CHECK_FRU_HEALTH          5
+
+#define HEARTBEAT_MISSING_VALUE           0
+#define HEARTBEAT_TIMEOUT                 180 // second = 3 mins
+#define HEARTBEAT_NORMAL                  1
+#define HEARTBEAT_ABNORMAL                0
+#define MAX_NUM_CHECK_HB_HEALTH           3
 
 // Thread to handle LED state of the SLED
 static void *
@@ -229,15 +237,112 @@ dbg_card_show_error_code() {
   pthread_exit(NULL);
 }
 
+// Thread to handle heartbeat health
+static void *
+heartbeat_health_handler() {
+  // 0: BMC remote hb  1: scc local hb  2: scc remote hb
+  uint8_t hb_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_REMOTE_BMC, HEARTBEAT_LOCAL_SCC, HEARTBEAT_REMOTE_SCC};
+  float hb_value_list[MAX_NUM_CHECK_HB_HEALTH] = {-1, -1, -1};
+  uint8_t cur_hb_status_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL};
+  uint8_t pre_hb_status_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL};
+  int hb_timer[MAX_NUM_CHECK_HB_HEALTH] = {0, 0, 0};
+  uint8_t hb_error_code_list[MAX_NUM_CHECK_HB_HEALTH] = {
+    ERR_CODE_BMC_REMOTE_HB_HEALTH, ERR_CODE_SCC_LOCAL_HB_HEALTH, ERR_CODE_SCC_REMOTE_HB_HEALTH};
+  char* log_desc_list[MAX_NUM_CHECK_HB_HEALTH] = {"BMC remote", "SCC local", "SCC remote"};
+  uint8_t chassis_type = 0;
+  char val[MAX_VALUE_LEN] = {0};
+  int ret = 0, i = 0;
+  int hb_health_kv_state = HEARTBEAT_NORMAL, hb_health_last_state = HEARTBEAT_NORMAL;
+  
+  while(1) {
+    // Get kv value
+    memset(val, 0, sizeof(val));
+    ret = pal_get_key_value("heartbeat_health", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): fail to get key: heartbeat_health value", __func__);
+    }
+    hb_health_kv_state = atoi(val);
+  
+    ret = fbgc_common_get_chassis_type(&chassis_type);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get chassis type", __func__);
+    }
+
+    for (i = 0; i < MAX_NUM_CHECK_HB_HEALTH; i++) {
+      // Type 5 detect: BMC_RMT, SCC_LOC
+      // Type 7 detect: SCC_LOC, SCC_RMT
+      // Unknown type detect: SCC_LOC
+      if (((ret == 0) && (chassis_type == CHASSIS_TYPE5) && (hb_list[i] != HEARTBEAT_REMOTE_SCC))
+         || ((ret == 0) && (chassis_type == CHASSIS_TYPE7) && (hb_list[i] != HEARTBEAT_REMOTE_BMC))
+         || (hb_list[i] == HEARTBEAT_LOCAL_SCC)) {
+         
+        // Get and check HB value
+        ret = pal_get_heartbeat(&hb_value_list[i], hb_list[i]);
+        if (ret == 0) {
+          if (hb_value_list[i] == HEARTBEAT_MISSING_VALUE) {
+            // if value is equal HEARTBEAT_MISSING_VALUE represents heartbeat is missing.
+            hb_timer[i]++;
+          } else if (hb_value_list[i] > HEARTBEAT_MISSING_VALUE) {
+            hb_timer[i] = 0;
+          }
+        }
+        
+        // Timeout detect: no response continuous 3 mins
+        if (hb_timer[i] > HEARTBEAT_TIMEOUT) {
+          hb_timer[i] = HEARTBEAT_TIMEOUT;
+          cur_hb_status_list[i] = HEARTBEAT_ABNORMAL;
+        } else {
+          cur_hb_status_list[i] = HEARTBEAT_NORMAL;
+        }
+        
+        // Status chagne: set error code enable/disable and key value 
+        if ((cur_hb_status_list[i] == HEARTBEAT_ABNORMAL) && (pre_hb_status_list[i] == HEARTBEAT_NORMAL)) {
+          syslog(LOG_CRIT, "%s heartbeat is abnormal", log_desc_list[i]);
+          
+          pal_set_error_code(hb_error_code_list[i], ERR_CODE_ENABLE);
+          
+          memset(val, 0, sizeof(val));
+          snprintf(val, sizeof(val), "%d", HEARTBEAT_ABNORMAL);
+          ret = pal_set_key_value("heartbeat_health", val);
+          if (ret < 0) {
+            syslog(LOG_ERR, "%s(): %s abnormal and fail to set key: heartbeat_health value: %s", __func__, log_desc_list[i], val);
+          }
+          
+        } else if ((cur_hb_status_list[i] == HEARTBEAT_NORMAL) && (pre_hb_status_list[i] == HEARTBEAT_ABNORMAL)) {
+          pal_set_error_code(hb_error_code_list[i], ERR_CODE_DISABLE);
+        }
+        
+        // Update heartbeat status
+        pre_hb_status_list[i] = cur_hb_status_list[i];
+      }
+    } // for loop end
+    
+    // if log-util clear all
+    // clean heartbeat timer and will regenerate assert
+    if ((hb_health_kv_state != hb_health_last_state) && (hb_health_kv_state == HEARTBEAT_NORMAL)) {
+      for (i = 0; i < MAX_NUM_CHECK_HB_HEALTH; i++) {
+        hb_timer[i] = 0;
+      }
+    }
+    hb_health_last_state = hb_health_kv_state;
+    
+    sleep(MONITOR_HB_HEALTH_INTERVAL);
+  } // while loop end
+  
+  return NULL;
+}
+
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_sync_led = 0;
   pthread_t tid_monitor_fru_health = 0;
   pthread_t tid_sync_system_status_led = 0;
   pthread_t tid_dbg_card_error_code = 0;
+  pthread_t tid_monitor_heartbeat_health = 0;
   int ret = 0, pid_file = 0;
   int ret_sync_led = 0, ret_monitor_fru = 0, ret_sync_system_status_led = 0;
   int ret_dbg_card_error_code = 0;
+  int ret_heartbeat = 0;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   if (pid_file < 0) {
@@ -262,18 +367,23 @@ main (int argc, char * const argv[]) {
   }
 
   if (pthread_create(&tid_monitor_fru_health, NULL, fru_health_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "fail to creat thread for monitor fru health\n");
+    syslog(LOG_WARNING, "fail to create thread to monitor fru health\n");
     ret_monitor_fru = -1;
   }
 
   if (pthread_create(&tid_sync_system_status_led, NULL, system_status_led_handler, NULL) < 0) {
-    syslog(LOG_WARNING, "fail to creat thread for sync system status LED\n");
+    syslog(LOG_WARNING, "fail to create thread to sync system status LED\n");
     ret_sync_system_status_led = -1;
   }
   
   if (pthread_create(&tid_dbg_card_error_code, NULL, dbg_card_show_error_code, NULL) < 0) {
     syslog(LOG_WARNING, "fail to creat thread for show error code on debug card\n");
     ret_dbg_card_error_code = -1;
+  }
+
+  if (pthread_create(&tid_monitor_heartbeat_health, NULL, heartbeat_health_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "fail to create thread to monitor heartbeat health\n");
+    ret_heartbeat = -1;
   }
   
   if (ret_sync_led == 0) {
@@ -285,9 +395,11 @@ main (int argc, char * const argv[]) {
   if (ret_sync_system_status_led == 0) {
     pthread_join(tid_sync_system_status_led, NULL);
   }
-
   if (ret_dbg_card_error_code == 0) {
     pthread_join(tid_dbg_card_error_code, NULL);
+  }
+  if (ret_heartbeat == 0) {
+    pthread_join(tid_monitor_heartbeat_health, NULL);
   }
 
 err:

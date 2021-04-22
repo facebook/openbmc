@@ -19,6 +19,8 @@
 #
 
 import argparse
+import collections
+import copy
 import os
 import sys
 import time
@@ -50,6 +52,9 @@ try:
         HashType,
         UFW_GET_VERSION,
         UFW_CMD,
+        UFW_CONDITION,
+        UFW_ENTITY_INSTANCE,
+        UFW_PRIORITY,
     )
     from entity_upgrader import FwEntityUpgrader, FwUpgrader
 except Exception:
@@ -269,8 +274,12 @@ class BaseFwUpgradeTest(object):
             print("Done")
         return True
 
-    def flush_session_contents(self):
-        self.bmc_ssh_session.session.prompt()
+    def flush_session_contents(self, logging=False):
+        try:
+            self.bmc_ssh_session.session.prompt()
+        except pexpect.exceptions.EOF:
+            if logging:
+                print("The child has exited!")
 
     def send_command_to_UUT(self, command, delay=None, prompt=True):
         if delay is None:
@@ -382,6 +391,81 @@ class BaseFwUpgradeTest(object):
             )
         if logging:
             print("Done")
+
+    def extract_subentity(self):
+        """
+        extract component subentity to an individual entity
+        """
+        tmp_json_data = {}
+        clone_origin_json = copy.deepcopy(self.json)
+        is_sub_entity_exist = False
+        for fw_entity in clone_origin_json:
+            entity_obj = clone_origin_json.get(fw_entity, None)
+            if UFW_ENTITY_INSTANCE in entity_obj:
+                is_sub_entity_exist = True
+                entityUpgradeObj = FwEntityUpgrader(
+                    fw_entity, clone_origin_json, self.upgrader_path
+                )
+                instance_list = entityUpgradeObj._get_entities_list(
+                    entity_obj[UFW_ENTITY_INSTANCE]
+                )
+                for instance in instance_list:
+                    cmd_to_execute = entity_obj.get(UFW_CONDITION, "").format(
+                        entity=instance
+                    )
+
+                    if (
+                        self.check_entity_condition(condition_cmd=cmd_to_execute)
+                        or cmd_to_execute == ""
+                    ):
+                        new_entity_key = "{}_{}".format(fw_entity, instance)
+                        new_fw_entity = {
+                            new_entity_key: {
+                                UFW_GET_VERSION: entity_obj.get(
+                                    UFW_GET_VERSION, ""
+                                ).format(entity=instance),
+                                UFW_CMD: entity_obj.get(UFW_CMD, "").format(
+                                    entity=instance, filename="{filename}"
+                                ),
+                                UFW_PRIORITY: entity_obj.get(UFW_PRIORITY, ""),
+                                UFW_VERSION: entity_obj.get(UFW_VERSION, ""),
+                                UFW_NAME: entity_obj.get(UFW_NAME, ""),
+                                UFW_HASH: entity_obj.get(UFW_HASH, ""),
+                                UFW_HASH_VALUE: entity_obj.get(UFW_HASH_VALUE, ""),
+                            }
+                        }
+                        tmp_json_data.update(new_fw_entity)
+                        self.upgrading_timeout.update(
+                            {new_entity_key: self.upgrading_timeout[fw_entity]}
+                        )
+
+            if is_sub_entity_exist:
+                self.json.pop(fw_entity)
+                is_sub_entity_exist = False
+
+        self.json.update(tmp_json_data)
+
+        orddict = collections.OrderedDict(
+            sorted(
+                self.json.items(),
+                key=lambda k_v: k_v[1][UFW_PRIORITY],
+            )
+        )
+        self.json = orddict
+
+    def check_entity_condition(self, condition_cmd=None) -> bool:
+        # return True
+        error_list = [condition_cmd, "command not found", "No such file or directory"]
+        try:
+            self.send_command_to_UUT(condition_cmd)
+            is_type_match = self.receive_command_output_from_UUT(only_last=True)
+            for error in error_list:
+                if error in is_type_match:
+                    return False
+            return True
+        except Exception as e:
+            Logger.info("Exception {} occured when running command".format(e))
+            return False
 
     def checking_components_version(self, components=None, logging=False):
         """
@@ -617,8 +701,11 @@ class BaseFwUpgradeTest(object):
             if component["upgrade_needed"]:
                 try:
                     if not self.bmc_ssh_session.session.isalive():
-                        self.fail("remote ssh session broke!")
+                        print("remote ssh session broke! retrying...")
+                        if not self.reconnect_to_remote_host(30):
+                            self.fail("cannot reconnect to UUT!")
                     filename = self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
+                    Logger.info("ander-updating: filename is {}".format(filename))
                     cmd_to_execute = self.json[entity][UFW_CMD]
                     cmd_to_execute = cmd_to_execute.format(filename=filename)
                     if logging:
@@ -640,7 +727,7 @@ class BaseFwUpgradeTest(object):
                     if logging:
                         print("Timed out")
                 except Exception as e:
-                    print(e)
+                    self.fail(e)
 
                 # End timestamp
                 end = time.perf_counter()
@@ -652,10 +739,12 @@ class BaseFwUpgradeTest(object):
                     component["result"] = self.receive_command_output_from_UUT()
                     Logger.error("{}: Upgrading failed!".format(component))
                 else:
-                    if logging:
+                    if logging and ret == -1:
                         print("Done")
             # flush the rest log.
-            self.flush_session_contents()
+            self.flush_session_contents(logging)
+            if logging:
+                print("Done")
             time.sleep(10)  # delay for the current process to be done
 
     def do_external_firmware_upgrade(self, component=None):
@@ -690,6 +779,8 @@ class BaseFwUpgradeTest(object):
                 self.bmc_reconnect_timeout, logging=G_VERBOSE
             ):
                 self.fail("Cannot establish the connection to UUT!")
+
+        self.extract_subentity()
 
         # Check version and prepare upgrade list
         if not self.checking_components_version(

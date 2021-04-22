@@ -34,6 +34,7 @@
 #include <facebook/fbgc_common.h>
 
 #define LOGFILE "/tmp/expander-util.log"
+#define MAX_LOG_LEN (MAX_IPMB_RES_LEN * 3)
 
 static void
 print_usage_help(void) {
@@ -55,7 +56,7 @@ main(int argc, char **argv) {
   int i;
   int logfd;
   int len;
-  char log[128];
+  char log[MAX_LOG_LEN];
   char temp[8];
 
   if (argc < 2) {
@@ -93,7 +94,7 @@ main(int argc, char **argv) {
   res  = (ipmb_res_t*) rbuf;
   res_len = rlen - IPMB_HDR_SIZE - IPMI_RESP_HDR_SIZE;
 
-  memset(log, 0, 128);
+  memset(log, 0, sizeof(log));
   for (i = 0; i < res_len; i++) {
     printf("%02X ", res->data[i]);
     memset(temp, 0, 8);

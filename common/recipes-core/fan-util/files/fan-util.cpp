@@ -28,11 +28,8 @@
 #include <openbmc/pal.h>
 #include <string.h>
 #include <dirent.h>
+#include "CLI/CLI.hpp"
 
-#define CMD_SET_FAN_STR "--set"
-#define CMD_GET_FAN_STR "--get"
-#define CMD_GET_FAN_DRIVER_STR "--get-driver"
-#define CMD_SET_AUTO_FAN_CTRL_STR "--auto-mode"
 #define ALL_FAN_NUM     0xFF
 #define SENSOR_FAIL_RECORD_DIR "/tmp/sensorfail_record"
 #define FAN_FAIL_RECORD_DIR "/tmp/fanfail_record"
@@ -42,64 +39,11 @@
 #define FSCD_DRIVER_FILE "/tmp/cache_store/fscd_driver"
 
 enum {
-  CMD_SET_FAN = 0,
-  CMD_GET_FAN,
-  CMD_GET_DRIVER,
-  CMD_SET_AUTO_FAN,
-};
-
-enum {
   NORMAL = 0,
   TRANSIT = 1,
   BOOST = 2,
   PROGRESSION = 3,
 };
-
-static void
-print_usage(void) {
-  const char* pwm_list = pal_get_pwn_list();
-  const char* tach_list = pal_get_tach_list();
-  const char* fan_opt_list = pal_get_fan_opt_list();
-
-  // If the number of PWMs matches the number of tachs, then `set` works on
-  // "fans" otherwise "zones".
-  bool fans_equal = pal_get_pwm_cnt() == pal_get_tach_cnt();
-  const char* ident_set = fans_equal ? "Fan" : "Zone";
-  const char* ident_get = fans_equal ? "Fan" : "Tach";
-
-  printf("Usage: fan-util --set <[0..100] %%> < %s# [%s] >\n",
-         ident_set, pwm_list);
-  printf("       fan-util --get < %s# [%s] >\n",
-         ident_get, tach_list);
-  printf("       fan-util --get-driver\n");
-  if (strlen(fan_opt_list) > 0){
-      printf("       fan-util --auto-mode < [%s] >\n", fan_opt_list);
-  }
-}
-
-static int
-parse_pwm(char *str, uint8_t *pwm) {
-  char *endptr = NULL;
-  int val;
-
-  val = strtol(str, &endptr, 10);
-  if ((*endptr != '\0' && *endptr != '%') || val > 100 || val < 0)
-    return -1;
-  *pwm = (uint8_t)val;
-  return 0;
-}
-
-static int
-parse_fan(char *str, uint8_t fan_cnt, uint8_t *fan) {
-  int val;
-  char *endptr = NULL;
-
-  val = strtol(str, &endptr, 10);
-  if (*endptr != '\0' || val >= fan_cnt || val < 0)
-    return -1;
-  *fan = (uint8_t)val;
-  return 0;
-}
 
 static void
 sensor_fail_check(bool status) {
@@ -276,7 +220,7 @@ int
 main(int argc, char **argv) {
 
   uint8_t cmd;
-  uint8_t pwm;
+  uint8_t pwm = -1;
   uint8_t fan = ALL_FAN_NUM;
   int i;
   int ret;
@@ -285,57 +229,39 @@ main(int argc, char **argv) {
   bool manu_flag = false;
   int pwm_cnt = 0;
   int tach_cnt = 0;
-
-  if (argc < 2 || argc > 4) {
-    print_usage();
-    return -1;
-  }
-
+  int pwmVal = 0;
+  bool getDrivers = false;
+  std::string fanOpt = "";
   pwm_cnt = pal_get_pwm_cnt();
   tach_cnt = pal_get_tach_cnt();
 
-  if ((!strcmp(argv[1], CMD_SET_FAN_STR)) && (argc == 3 || argc == 4)) {
+  bool fans_equal = pwm_cnt == tach_cnt;
+  const std::string ident_set = fans_equal ? "Fan" : "Zone";
+  const std::string ident_get = fans_equal ? "Fan" : "Tach";
 
-    /* fan-util --set <pwm> <fan#> */
-    cmd = CMD_SET_FAN;
-    if (parse_pwm(argv[2], &pwm)) {
-      print_usage();
-      return -1;
-    }
+  CLI::App app{"Fan Util"};
+  app.set_help_flag();
+  app.set_help_all_flag("-h,--help");
 
-    // Get Fan Number, if mentioned
-    if (argc == 4) {
-      if (parse_fan(argv[3], pwm_cnt, &fan)) {
-        print_usage();
-        return -1;
-      }
-    }
+  auto setCommand = app.add_subcommand("--set", "set the pwm of a " + ident_set);
+  setCommand->add_option("pwm", pwm, "%% pwm to set")->check(CLI::Range(0,100))->required();
+  setCommand->add_option("fan", fan, ident_set + " to set pwm for")->check(CLI::Range(0,pwm_cnt-1));
 
-  } else if (!strcmp(argv[1], CMD_GET_FAN_STR) && (argc == 2 || argc == 3)) {
+  auto getCommand = app.add_subcommand("--get", "get the pwm of a " + ident_set);
+  getCommand->add_option("fan", fan, ident_get)->check(CLI::Range(0,tach_cnt-1));
 
-    /* fan-util --get <fan#> */
-    cmd = CMD_GET_FAN;
+  auto driverCommand = app.add_subcommand("--get-drivers", "");
 
-    // Get Fan Number, if mentioned
-    if (argc == 3) {
-      if (parse_fan(argv[2], tach_cnt, &fan)) {
-        print_usage();
-        return -1;
-      }
-    }
-
-  } else if (!strcmp(argv[1], CMD_GET_FAN_DRIVER_STR) && (argc == 2)) {
-    /* fan-util --get-driver */
-    cmd = CMD_GET_DRIVER;
-  } else if (!strcmp(argv[1], CMD_SET_AUTO_FAN_CTRL_STR) && (argc == 3)) {
-    /* fan-util --auto-control*/
-    cmd = CMD_SET_AUTO_FAN;
-  } else {
-    print_usage();
-    return -1;
+  std::string fanOptList = pal_get_fan_opt_list();
+  if (fanOptList.length() > 0) {
+    auto autoCommand = app.add_subcommand("--auto-mode", "set auto mode");
+    autoCommand->add_option("fan", fanOpt, "set auto mode [" + fanOptList + "]")
+      ->required();
   }
 
-  if (cmd == CMD_SET_FAN) {
+  CLI11_PARSE(app, argc, argv);
+
+  if (setCommand->parsed()) {
     // Set the Fan Speed.
     // If the fan num is not mentioned, set all fans to given pwm.
     for (i = 0; i < pwm_cnt; i++) {
@@ -353,8 +279,7 @@ main(int argc, char **argv) {
         printf("Error while setting fan speed for Zone %d\n", i);
     }
 
-  } else if (cmd == CMD_GET_FAN) {
-
+  } else if (getCommand->parsed()) {
     for (i = 0; i < tach_cnt; i++) {
 
       // Check if the fan number is mentioned.
@@ -381,16 +306,16 @@ main(int argc, char **argv) {
     }
   }
 
-  if ((cmd == CMD_GET_FAN) && (argc == 2)) {
+  if ((getCommand->parsed()) && (argc == 2)) {
     manu_flag = fan_mode_check(true);
     fscd_driver_check(manu_flag);
     sensor_fail_check(manu_flag);
     fan_fail_check(manu_flag);
     pal_specific_plat_fan_check(manu_flag);
-  } else if ((cmd == CMD_GET_DRIVER) && (argc == 2)) {
+  } else if (driverCommand->parsed()) {
     manu_flag = fan_mode_check(false);
     fscd_driver_check(manu_flag);
-  } else if ((cmd == CMD_SET_AUTO_FAN) && (argc == 3)) {
+  } else if ((fanOptList.length() > 0) && (app.got_subcommand("--auto-mode"))) {
     ret = pal_set_fan_ctrl(argv[2]);
     if (ret < 0) {
         printf("Error while setting fan auto mode : %s\n", argv[2]);

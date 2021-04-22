@@ -31,6 +31,7 @@
 #define DP_OUTER_PCIE_INFO_KEY "sys_config/fru%u_pcie_i04_s44_info"
 
 #define DUAL_FAN_UCR  13500
+#define DUAL_FAN_UNC  10200
 
 enum {
   /* Fan Type */
@@ -2245,6 +2246,15 @@ pal_bmc_fan_threshold_init() {
       sensor_map[BMC_SENSOR_FAN5_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
       sensor_map[BMC_SENSOR_FAN6_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
       sensor_map[BMC_SENSOR_FAN7_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
+
+      sensor_map[BMC_SENSOR_FAN0_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN1_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN2_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN3_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN4_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN5_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN6_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+      sensor_map[BMC_SENSOR_FAN7_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
     }
 #ifdef DEBUG
     syslog(LOG_INFO, "%s() fan tach threshold initialized, fan_type: %u", __func__, fan_type);

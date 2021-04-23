@@ -476,6 +476,7 @@ int pal_channel_to_bus(int channel);
 int pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout);
 bool pal_is_fw_update_ongoing(uint8_t fruid);
 bool pal_is_fw_update_ongoing_system(void);
+bool pal_sled_cycle_prepare(void);
 bool pal_is_crashdump_ongoing_system(void);
 bool pal_is_cplddump_ongoing_system(void);
 bool pal_can_change_power(uint8_t fru);

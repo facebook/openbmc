@@ -14,6 +14,8 @@
 #include <openbmc/nm.h>
 #include "pal.h"
 #include "pal_cm.h"
+#include "pal_cc.h"
+#include "pal_ep.h"
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"
 #define GPIO_POWER_GOOD "PWRGD_SYS_PWROK"
@@ -267,11 +269,11 @@ int set_me_entry_into_recovery(void) {
   return ret;
 }
 
-//Reconfig only do MB AC sled cycle
-int pal_recfg_sled_cycle(void)
-{
+int asic_ac_cycle_proc(void) {
   int cc;
+  int ret;
   uint8_t mode;
+  float value;
 
   if ( pal_block_ac() ) {
     return -1;
@@ -281,70 +283,146 @@ int pal_recfg_sled_cycle(void)
     return -1;
   }
 
-  cc = pal_ep_sled_cycle();
-  if ( cc != CC_SUCCESS ) {
-    syslog(LOG_ERR, "Request JG7 power-cycle failed CC=%x\n", cc);
+  if ( !is_ep_present() ) {  //ep and cc use time same present
+    return 0;
+  }
+
+  //Test EP HSC 
+  ret = cmd_ep_get_snr_reading(&value, EP_PDB_SNR_HSC);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Access EP HSC Fail, CCode=0x%x\n", ret);
     return -1;
   }
 
+  //TEST IOX HSC
+  if ( mode == MB_4S_MODE ) { 
+    ret = cmd_cc_get_snr_reading(&value, CC_PDB_SNR_HSC);
+    if( ret != 0 ) {
+      syslog(LOG_CRIT, "Access CC HSC Fail, CCode=0x%x\n", ret);
+      return -1;
+    }
+  }
+  
+  //Prepare EP FW update
+  ret = pal_ep_prepare_fw_update(PREPARE_FW_UPDATE_SET);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Set EP FW Update Prepare Fail, CCode=0x%x\n", ret);
+    return -1;
+  }
+
+  //Prepare CC FW update
   if ( mode == MB_4S_MODE ) {
-    cc = pal_cc_sled_cycle();
-    if ( cc != CC_SUCCESS ) {
-      syslog(LOG_ERR, "Request IOX power-cycle failed CC=%x\n", cc);
+    ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_SET);
+    if( ret != 0 ) {
+      syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
       return -1;
     }
   }
 
-  if ( set_me_entry_into_recovery() )
-    syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n");
-
-// Send command to CM do reconfig power cycle
-  cc = lib_cmc_power_cycle();
-  if( cc != CC_SUCCESS ) {
-    syslog(LOG_ERR, "Request F0C do reconfig power-cycle failed CC=%x\n", cc);
+  //AC EP
+  cc = pal_ep_sled_cycle();
+  if ( cc != CC_SUCCESS ) {
+    syslog(LOG_CRIT, "Request EP power-cycle failed CC=%x\n", cc);
     return -1;
   }
 
+  //AC CC
+  if ( mode == MB_4S_MODE ) {
+    cc = pal_cc_sled_cycle();
+    if ( cc != CC_SUCCESS ) {
+      syslog(LOG_CRIT, "Request CC power-cycle failed CC=%x\n", cc);
+      return -1;
+    }
+  }
+ 
   return 0;
+}
+
+int fbal_ac_cycle_proc(void) {
+  int cc;
+
+  if ( set_me_entry_into_recovery() )
+    syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n"); 
+ 
+  // Send command to CM do reconfig power cycle
+  cc = lib_cmc_power_cycle();
+  if( cc != CC_SUCCESS ) {
+    syslog(LOG_ERR, "Request AL reconfig-cycle failed CC=%x\n", cc);
+    return cc;
+  }
+  return 0;
+}
+
+//Reconfig only do MB AC sled cycle
+int pal_recfg_sled_cycle(void)
+{
+  int ret;
+  uint8_t mode;
+
+  if( pal_get_host_system_mode(&mode) ) {
+    return -1;
+  }
+
+  do {
+    ret = asic_ac_cycle_proc(); 
+    if ( ret != 0 )
+      break;
+ 
+    ret = fbal_ac_cycle_proc();
+    if ( ret != 0 )
+      break;
+
+    return 0;
+  } while(0);
+
+  ret = pal_ep_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Set EP FW Update Prepare Fail, CCode=0x%x\n", ret);
+  }
+
+  if ( mode == MB_4S_MODE ) {
+    ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
+    if( ret != 0 ) {
+      syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
+    }
+  }
+  return -1;
 }
 
 //Systm AC Cycle
 int
 pal_sled_cycle(void) {
-  int cc;
+  int ret;
   uint8_t mode;
 
-  if ( pal_block_ac() )
-    return -1;
-
-  if( pal_get_host_system_mode(&mode) )
-    return -1;
-
-  cc = pal_ep_sled_cycle();
-  if ( cc != CC_SUCCESS ) {
-    syslog(LOG_CRIT, "Request JG7 power-cycle failed CC=%x\n", cc);
+  if( pal_get_host_system_mode(&mode) ) {
     return -1;
   }
 
+  do {
+    ret = asic_ac_cycle_proc();
+    if ( ret != 0 )
+      break;
+
+    ret = fbal_ac_cycle_proc();
+    if ( ret != 0 )
+      break;
+
+    return 0;
+  } while(0);
+
+  ret = pal_ep_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Set EP FW Update Prepare Fail, CCode=0x%x\n", ret);
+  }
+ 
   if ( mode == MB_4S_MODE ) {
-    cc = pal_cc_sled_cycle();
-    if ( cc != CC_SUCCESS ) {
-      syslog(LOG_CRIT, "Request IOX power-cycle failed CC=%x\n", cc);
-      return -1;
+    ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
+    if( ret != 0 ) {
+      syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
     }
   }
-
-  // Send Command to ME into recovery mode;
-  if ( set_me_entry_into_recovery() )
-    syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n");
-
-  // Send command to CM power cycle
-  cc = cmd_cmc_sled_cycle();
-  if( cc != CC_SUCCESS ) {
-    syslog(LOG_CRIT, "Request F0C power-cycle failed CC=%x\n", cc);
-    return -1;
-  }
-  return 0;
+  return -1;
 }
 
 // Return the front panel's Reset Button status

@@ -99,6 +99,9 @@ class Component {
     virtual bool is_update_ongoing() {
       return sys().is_update_ongoing(sys().get_fru_id(_fru));
     }
+    virtual bool is_sled_cycle_initiated() {
+      return sys().is_sled_cycle_initiated();
+    }
 };
 
 class AliasComponent : public Component {

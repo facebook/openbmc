@@ -55,7 +55,7 @@ cc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
   return ret;
 }
 
-static int
+int
 cmd_cc_get_snr_reading(float *value, uint8_t snr_num) {
   uint8_t ipmi_cmd = CMD_OEM_GET_SENSOR_REAL_READING;
   uint8_t netfn = NETFN_OEM_REQ;
@@ -84,18 +84,9 @@ cmd_cc_sled_cycle(void) {
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[8] = {0};
   uint8_t rlen;
-  float value;
-  int ret;
-
-  ret = cmd_cc_get_snr_reading(&value, CC_PDB_SNR_HSC);
-  if( ret != 0) {
-    syslog(LOG_CRIT, "Access IOX HSC Fail, CCode=0x%x\n", ret);
-    return ret;
-  }
 
   tbuf[0] = 0xAC;
-  ret = cc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
-  return ret;
+  return cc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
 }
 
 bool
@@ -159,5 +150,23 @@ pal_cc_set_usb_ch(uint8_t dev, uint8_t mb) {
   tbuf[1] = mb;
 
   return cc_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
+}
+
+int
+pal_cc_prepare_fw_update(uint8_t flag) {
+  uint8_t netfn = NETFN_OEM_Q_REQ;
+  uint8_t ipmi_cmd = CMD_OEM_Q_SLED_CYCLE_PREPARE_REQUEST;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  int ret;
+
+  tbuf[0] = flag;
+
+  ret = cc_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
+  if (ret == CC_INVALID_CMD)
+    return 0;
+
+  return ret;
 }
 

@@ -122,4 +122,9 @@ bool System::is_update_ongoing(uint8_t fru_id)
   return pal_is_fw_update_ongoing(fru_id);
 }
 
+bool System::is_sled_cycle_initiated()
+{
+  return pal_sled_cycle_prepare();
+}
+
 #endif

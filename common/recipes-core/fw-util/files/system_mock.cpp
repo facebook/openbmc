@@ -96,4 +96,9 @@ bool System::is_update_ongoing(uint8_t fru_id)
   return false;
 }
 
+bool System::is_sled_cycle_initiated()
+{
+  return false;
+}
+
 #endif

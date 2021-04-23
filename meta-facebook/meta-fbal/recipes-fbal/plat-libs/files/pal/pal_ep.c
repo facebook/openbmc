@@ -64,7 +64,7 @@ cmd_ep_set_system_mode(uint8_t mode) {
   return ep_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
 }
 
-static int
+int
 cmd_ep_get_snr_reading(float *value, uint8_t snr_num) {
   uint8_t ipmi_cmd = CMD_OEM_GET_SENSOR_REAL_READING;
   uint8_t netfn = NETFN_OEM_REQ;
@@ -93,14 +93,6 @@ cmd_ep_sled_cycle(void) {
   uint8_t tbuf[8] = {0};
   uint8_t rbuf[8] = {0};
   uint8_t rlen;
-  float value;
-  int ret;
-
-  ret = cmd_ep_get_snr_reading(&value, EP_PDB_SNR_HSC);
-  if( ret != 0 ) {
-    syslog(LOG_CRIT, "Access JG7 HSC Fail, CCode=0x%x\n", ret);
-    return ret;
-  }
 
   tbuf[0] = 0xAC;
   return ep_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
@@ -174,3 +166,20 @@ pal_ep_set_usb_ch(uint8_t dev, uint8_t mb) {
   return ep_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
 }
 
+int
+pal_ep_prepare_fw_update(uint8_t flag) {
+  uint8_t netfn = NETFN_OEM_Q_REQ;
+  uint8_t ipmi_cmd = CMD_OEM_Q_SLED_CYCLE_PREPARE_REQUEST;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  int ret;
+
+  tbuf[0] = flag;
+
+  ret = ep_ipmb_process(ipmi_cmd, netfn, tbuf, 1, rbuf, &rlen);
+  if ( ret == CC_INVALID_CMD )
+    return 0; 
+
+  return ret;
+}

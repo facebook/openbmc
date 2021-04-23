@@ -348,6 +348,10 @@ int main(int argc, char *argv[])
             return tasker.add_task(fru, component, image, time);
           }
 
+          if (c->is_sled_cycle_initiated()) {
+            cerr << "Upgrade aborted due to fw update preparing" << endl;
+            return -1;
+          }
           if (c->is_update_ongoing()) {
             cerr << "Upgrade aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
             return -1;

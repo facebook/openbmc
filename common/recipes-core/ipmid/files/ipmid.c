@@ -2093,6 +2093,64 @@ oem_add_imc_log (unsigned char *request, unsigned char req_len, unsigned char *r
 }
 
 static void
+oem_q_sled_cycle_prepare_request (unsigned char *request, unsigned char req_len, unsigned char *response,
+      unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[32] = "blk_fwupd";
+  char value[8] = {0};
+
+  if (pal_is_fw_update_ongoing_system()) {
+    res->cc = CC_NODE_BUSY;
+    return;
+  }
+  if ( req->data[0] > 1 ) {
+    res->cc = CC_PARAM_OUT_OF_RANGE;
+    return;
+  }
+  if ( req_len != 4 ) {
+    res->cc = CC_INVALID_LENGTH;
+    return;
+  }
+
+  sprintf(value, "%02x", req->data[0]);
+  if( kv_set(key, value, 0, 0) ) {
+    res->cc = CC_UNSPECIFIED_ERROR;
+    *res_len = 0;
+    return;
+  }
+
+  res->cc = CC_SUCCESS;
+  *res_len = 0;
+}
+
+static void
+oem_q_sled_cycle_prepare_status (unsigned char *request, unsigned char req_len, unsigned char *response,
+      unsigned char *res_len)
+{
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  char key[32] = "blk_fwupd";
+  char value[8] = {0};
+
+  if ( req_len != 3 ) {
+    res->cc = CC_INVALID_LENGTH;
+    return;
+  }
+
+  if ( kv_get(key, value, 0, 0) != 0 ) {
+    res->cc = CC_NOT_SUPP_IN_CURR_STATE;
+    *res_len = 0;
+    return;
+  }
+
+  res->data[0] = (uint8_t)atoi(value);
+  *res_len = 1;
+  res->cc = CC_SUCCESS;
+}
+
+
+static void
 oem_set_proc_info (unsigned char *request, unsigned char req_len, unsigned char *response,
        unsigned char *res_len)
 {
@@ -3886,6 +3944,12 @@ ipmi_handle_oem_q (unsigned char *request, unsigned char req_len,
     case CMD_OEM_Q_GET_SMU_PSP_VER:
       oem_q_get_smu_psp_ver (request, req_len, response, res_len);
       break;
+    case CMD_OEM_Q_SLED_CYCLE_PREPARE_REQUEST:
+      oem_q_sled_cycle_prepare_request (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_Q_SLED_CYCLE_PREPARE_STATUS:
+      oem_q_sled_cycle_prepare_status (request, req_len, response, res_len);
+      break;     
     default:
       res->cc = CC_INVALID_CMD;
       break;

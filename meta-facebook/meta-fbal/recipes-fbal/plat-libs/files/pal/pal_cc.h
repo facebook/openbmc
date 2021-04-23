@@ -30,5 +30,7 @@ int pal_cc_sled_cycle(void);
 bool is_cc_present(void);
 int pal_cc_get_lan_config(uint8_t sel, uint8_t *buf, uint8_t *rlen);
 int pal_cc_set_usb_ch(uint8_t dev, uint8_t mb);
+int cmd_cc_get_snr_reading(float *value, uint8_t snr_num);
+int pal_cc_prepare_fw_update(uint8_t flag);
 
 #endif

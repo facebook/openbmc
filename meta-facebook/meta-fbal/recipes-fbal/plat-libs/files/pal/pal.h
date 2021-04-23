@@ -55,6 +55,10 @@ extern "C" {
 #define CMD_GET_MOD_CPLD_VER  (0x02)
 #define CMD_GET_GLB_CPLD_VER  (0x03)
 
+#define PREPARE_FW_UPDATE_CLEAR (0x00)
+#define PREPARE_FW_UPDATE_SET   (0x01)
+
+
 enum {
   FRU_ALL  = 0,
   FRU_TRAY0_MB,

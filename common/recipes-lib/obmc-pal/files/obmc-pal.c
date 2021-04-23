@@ -2082,6 +2082,23 @@ pal_is_fw_update_ongoing_system(void) {
 }
 
 bool __attribute__((weak))
+pal_sled_cycle_prepare(void) {
+  char key[MAX_KEY_LEN] = "blk_fwupd";
+  char value[MAX_VALUE_LEN] = {0};
+  int ret;
+
+  ret = kv_get(key, value, NULL, 0);
+  if (ret < 0) {
+     return false;
+  }
+
+  if ( atoi(value) > 0 )
+    return true;
+
+  return false;
+}
+
+bool __attribute__((weak))
 pal_can_change_power(uint8_t fru)
 {
   char fruname[32];

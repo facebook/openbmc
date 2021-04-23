@@ -199,6 +199,11 @@ enum fan_mode {
   FAN_AUTO_MODE,
 };
 
+enum service_act {
+  SV_STOP = 0,
+  SV_START,
+};
+
 enum sel_dir {
   SEL_ASSERT = 0x6F,
   SEL_DEASSERT = 0xEF,
@@ -286,7 +291,7 @@ int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
 int fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
-int fby3_common_fscd_ctrl (uint8_t mode);
+int fby3_common_service_ctrl (char* service, uint8_t action);
 
 #ifdef __cplusplus
 } // extern "C"

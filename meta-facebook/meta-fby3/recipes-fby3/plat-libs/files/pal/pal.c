@@ -2421,11 +2421,11 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           return PAL_EOK;
         }
         // start/stop fscd according fan mode change
-        fby3_common_fscd_ctrl(event_data[DATA_INDEX_2]);
+        fby3_common_service_ctrl("fscd", event_data[DATA_INDEX_2]);
       } else if (event_data[3] == SYS_BB_FW_UPDATE) {
         if (event_data[2] == SEL_ASSERT) {
           if (event_data[4] == FW_BB_BIC) {
-          kv_set("bb_fw_update", "bic", 0, 0);
+            kv_set("bb_fw_update", "bic", 0, 0);
           } else if (event_data[4] == FW_BB_BIC_BOOTLOADER) {
             kv_set("bb_fw_update", "bootloader", 0, 0);
           } else if (event_data[4] == FW_BB_CPLD) {
@@ -2433,9 +2433,11 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           } else {
             kv_set("bb_fw_update", "unknown", 0, 0);
           }
+          fby3_common_service_ctrl("sensord", SV_STOP);
         } else if (event_data[2] == SEL_DEASSERT) {
           // if BB fw update complete, delete the key
           kv_del("bb_fw_update", 0);
+          fby3_common_service_ctrl("sensord", SV_START);
         }
         
         return PAL_EOK;

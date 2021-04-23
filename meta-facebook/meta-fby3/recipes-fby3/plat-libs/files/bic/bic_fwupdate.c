@@ -61,6 +61,9 @@
 #define FW_UPDATE_FAN_PWM  70
 #define FAN_PWM_CNT        4
 
+#define IPMB_BIC_RETRY 3
+#define SELF_TEST_RESP_LEN 2
+
 enum {
   FEXP_BIC_I2C_WRITE   = 0x20,
   FEXP_BIC_I2C_READ    = 0x21,
@@ -614,6 +617,27 @@ exit:
   return ret;
 }
 
+// Wait for warm reset finished
+void
+wait_bic_warm_reset(uint8_t slot_id, uint8_t intf) {
+  int retry = IPMB_BIC_RETRY;
+  int ret;
+  uint8_t self_test_result[SELF_TEST_RESP_LEN] = {0};
+
+  sleep(3);
+  while (retry > 0){
+    ret = bic_get_self_test_result(slot_id, (uint8_t *)&self_test_result, intf);
+    if (ret == 0) {
+      break;
+    } else {
+      retry--;
+    }
+    sleep(1);
+  }
+  if (retry == 0) {
+    syslog(LOG_WARNING, "%s: BIC IPMB is not ready after %d retry, intf: %x\n", __func__, IPMB_BIC_RETRY, intf);
+  }
+}
 
 static int
 update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
@@ -731,6 +755,7 @@ exit:
   }
 
   if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    wait_bic_warm_reset(slot_id, intf);
     if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_DEASSERT) != 0) {
       syslog(LOG_WARNING, "Failed to notify BB firmware complete");
     }
@@ -958,7 +983,6 @@ exit:
 }
 
 #define IPMB_MAX_SEND 224
-#define IPMB_BIC_RETRY 3
 static int
 update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size) {
   const uint8_t bytes_per_read = IPMB_MAX_SEND;
@@ -1178,6 +1202,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   char* loc = NULL;
   bool stop_bic_monitoring = false;
   bool stop_fscd_service = false;
+  bool stop_sensor_service = false;
   uint8_t bmc_location = 0;
   uint8_t status = 0;
   int i = 0;
@@ -1269,11 +1294,21 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   // Or it may issue false alarm fan dead events
   if (bmc_location == NIC_BMC) {
     stop_fscd_service = true;
+    if (intf == BB_BIC_INTF) {
+      stop_sensor_service = true;
+    }
   }
 
+  if (stop_sensor_service == true) {
+    if (fby3_common_service_ctrl("sensord", SV_STOP) < 0) {
+      printf("Failed to stop sensord service\n");
+      ret = -1;
+      goto err_exit;
+    }
+  }
   if (stop_fscd_service == true) {
     printf("Set fan mode to manual and set PWM to %d%%\n", FW_UPDATE_FAN_PWM);
-    if (fby3_common_fscd_ctrl(FAN_MANUAL_MODE) < 0) {
+    if (fby3_common_service_ctrl("fscd", SV_STOP) < 0) {
       printf("Failed to stop fscd service\n");
       ret = -1;
       goto err_exit;
@@ -1288,11 +1323,17 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       ret = -1;
       goto err_exit;
     }
-    for (i = 0; i < FAN_PWM_CNT; i++) {
-      if (bic_manual_set_fan_speed(i, FW_UPDATE_FAN_PWM) < 0) {
-        printf("Failed to set fan %d PWM to %d\n", i, FW_UPDATE_FAN_PWM);
-        ret = -1;
-        goto err_exit;
+    // waiting another BMC to stop fscd
+    sleep(3);
+
+    // Fan PWM will be set to 100% by hardware during BB BIC update
+    if ((comp != FW_BB_BIC) && (comp != FW_BB_BIC_BOOTLOADER)) {
+      for (i = 0; i < FAN_PWM_CNT; i++) {
+        if (bic_manual_set_fan_speed(i, FW_UPDATE_FAN_PWM) < 0) {
+          printf("Failed to set fan %d PWM to %d\n", i, FW_UPDATE_FAN_PWM);
+          ret = -1;
+          goto err_exit;
+        }
       }
     }
   }
@@ -1397,6 +1438,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       }
       break;
   }
+
+err_exit:
   if (stop_fscd_service == true) {
     printf("Set fan mode to auto and start fscd\n");
     if (bic_set_fan_auto_mode(FAN_AUTO_MODE, &status) < 0) {
@@ -1409,12 +1452,16 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       ret = -1;
       goto err_exit;
     }
-    if (fby3_common_fscd_ctrl(FAN_AUTO_MODE) < 0) {
+    if (fby3_common_service_ctrl("fscd", SV_START) < 0) {
        printf("Failed to start fscd service, please start fscd manually.\nCommand: sv start fscd\n");
     }
   }
 
-err_exit:
+  if (stop_sensor_service == true) {
+    if (fby3_common_service_ctrl("sensord", SV_START) < 0) {
+      printf("Failed to start sensord service, please start fscd manually.\nCommand: sv start sensord\n");
+    }
+  }
   syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
   if (fd_opened) {
     close(fd);

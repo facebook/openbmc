@@ -448,18 +448,22 @@ fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
 }
 
 int
-fby3_common_fscd_ctrl (uint8_t mode) {
+fby3_common_service_ctrl (char* service, uint8_t action) {
   int ret = 0;
   char cmd[MAX_SYS_REQ_LEN] = {0};
   char buf[MAX_SYS_RESP_LEN] = {0};
-  bool is_fscd_run = false;
+  bool is_service_run = false;
   FILE* fp = NULL;
   FILE* fp2 = NULL;
 
-  // check fscd status
-  snprintf(cmd, sizeof(cmd), "sv status fscd");
+  if (service == NULL) {
+    syslog(LOG_WARNING, "%s() service name is NULL", __func__);
+    return -1;
+  }
+  // check service status
+  snprintf(cmd, sizeof(cmd), "sv status %s", service);
   if ((fp = popen(cmd, "r")) == NULL) {
-    syslog(LOG_WARNING, "%s() failed to get fscd status", __func__);
+    syslog(LOG_WARNING, "%s() failed to get %s status", __func__, service);
     return -1;
   }
   memset(buf, 0, sizeof(buf));
@@ -470,23 +474,23 @@ fby3_common_fscd_ctrl (uint8_t mode) {
   }
 
   if (strstr(buf, "run") != NULL) {
-    is_fscd_run = true;
+    is_service_run = true;
   } else {
-    is_fscd_run = false;
+    is_service_run = false;
   }
 
-  if (mode == FAN_MANUAL_MODE) {
-    if (is_fscd_run == false) {
-      // fscd already stopped
+  if (action == SV_STOP) {
+    if (is_service_run == false) {
+      // service already stopped
       goto exit;
     }
-    snprintf(cmd, sizeof(cmd), "sv force-stop fscd > /dev/null 2>&1");
+    snprintf(cmd, sizeof(cmd), "sv force-stop %s > /dev/null 2>&1", service);
     if (system(cmd) != 0) {
       // Although sv force-stop sends kill (-9) signal after timeout,
       // it still returns an error code.
-      // we will check status here to ensure that fscd has stopped completely.
-      syslog(LOG_WARNING, "%s() fscd force-stop timeout", __func__);
-      snprintf(cmd, sizeof(cmd), "sv status fscd");
+      // we will check status here to ensure that service has stopped completely.
+      syslog(LOG_WARNING, "%s() %s force-stop timeout", __func__, service);
+      snprintf(cmd, sizeof(cmd), "sv status %s", service);
       if ((fp2 = popen(cmd, "r")) == NULL) {
         syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
         ret = -1;
@@ -499,21 +503,21 @@ fby3_common_fscd_ctrl (uint8_t mode) {
         goto exit;
       }
       if (strstr(buf, "down") == NULL) {
-        syslog(LOG_WARNING, "%s() failed to terminate fscd", __func__);
+        syslog(LOG_WARNING, "%s() failed to terminate %s", __func__, service);
         ret = -1;
       }
     }
-  } else if (mode == FAN_AUTO_MODE) {
-    if (is_fscd_run == true) {
-      // fscd already running
+  } else if (action == SV_START) {
+    if (is_service_run == true) {
+      // service already running
       goto exit;
     }
-    snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
+    snprintf(cmd, sizeof(cmd), "sv start %s > /dev/null 2>&1", service);
     if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "%s() start fscd failed", __func__);
+      syslog(LOG_WARNING, "%s() start %s failed", __func__, service);
     }
   } else {
-    syslog(LOG_ERR, "%s(), fan mode %d not supported", __func__, mode);
+    syslog(LOG_ERR, "%s(), action %d not supported", __func__, action);
     ret = -1;
   }
 

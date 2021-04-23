@@ -17,6 +17,8 @@
 #define ESC_ALT ESCAPE"[5;7m"
 #define ESC_RST ESCAPE"[m"
 
+static sensor_desc_t dynamic_cri_sensor[MAX_SENSOR_NUM] = {0};
+
 //These postcodes are defined in document "F08 BIOS Specification" Revision: 2A
 static post_desc_t pdesc_phase1[] = {
   { 0x00, "Not used" },
@@ -434,59 +436,40 @@ static sensor_desc_t cri_sensor_sb[] =
  
 };
 
+static sensor_desc_t cri_sensor_1ou_edsff[] =
+{
+  {"E1S Outlet Temp:"     , BIC_1OU_EDSFF_SENSOR_NUM_T_MB_OUTLET_TEMP_T , "C"     , FRU_ALL, 2},
+  {"E1S P12V_AUX:"        , BIC_1OU_EDSFF_SENSOR_NUM_V_12_AUX           , "V"     , FRU_ALL, 2},
+  {"E1S P12V_EDGE:"       , BIC_1OU_EDSFF_SENSOR_NUM_V_12_EDGE          , "V"     , FRU_ALL, 2},
+  {"E1S P3V3_AUX:"        , BIC_1OU_EDSFF_SENSOR_NUM_V_3_3_AUX          , "V"     , FRU_ALL, 2},
+  {"E1S HSC VIN:"         , BIC_1OU_EDSFF_SENSOR_NUM_V_HSC_IN           , "V"     , FRU_ALL, 2},
+  {"E1S HSC IOUT:"        , BIC_1OU_EDSFF_SENSOR_NUM_I_HSC_OUT          , "Amps"  , FRU_ALL, 2},
+  {"E1S HSC PIN:"         , BIC_1OU_EDSFF_SENSOR_NUM_P_HSC_IN           , "W"     , FRU_ALL, 2},
+  {"E1S HSC Temp:"        , BIC_1OU_EDSFF_SENSOR_NUM_T_HSC              , "C"     , FRU_ALL, 2},
+  {"E1S DEV0 Power:"      , BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2A     , "W"     , FRU_ALL, 2},
+  {"E1S DEV0 Voltage:"    , BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2A     , "V"     , FRU_ALL, 2},
+  {"E1S DEV0 Temp:"       , BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2A      , "C"     , FRU_ALL, 2},
+  {"E1S 3V3_ADC_DEV0:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2A    , "V"     , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV0:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2A    , "V"     , FRU_ALL, 2},
+  {"E1S DEV1 Power:"      , BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2B     , "W"     , FRU_ALL, 2},
+  {"E1S DEV1 Voltage:"    , BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2B     , "V"     , FRU_ALL, 2},
+  {"E1S DEV1 Temp:"       , BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2B      , "C"     , FRU_ALL, 2},
+  {"E1S 3V3_ADC_DEV1:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2B    , "V"     , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV1:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2B    , "V"     , FRU_ALL, 2},
+  {"E1S DEV2 Power:"      , BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2C     , "W"     , FRU_ALL, 2},
+  {"E1S DEV2 Voltage:"    , BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2C     , "V"     , FRU_ALL, 2},
+  {"E1S DEV2 Temp:"       , BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2C      , "C"     , FRU_ALL, 2},
+  {"E1S 3V3_ADC_DEV2:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2C    , "V"     , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV2:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2C    , "V"     , FRU_ALL, 2},
+  {"E1S DEV3 Power:"      , BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2D     , "W"     , FRU_ALL, 2},
+  {"E1S DEV3 Voltage:"    , BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2D     , "V"     , FRU_ALL, 2},
+  {"E1S DEV3 Temp :"      , BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2D      , "C"     , FRU_ALL, 2},
+  {"E1S 3V3_ADC_DEV3:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2D    , "V"     , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV3:"    , BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D    , "V"     , FRU_ALL, 2},
+};
+
 static sensor_desc_t cri_sensor_gpv3[] =
 {
-// MB sensors
-  {"MB Inlet Temp:"        , BIC_SENSOR_INLET_TEMP         , "C"    , FRU_ALL, 0},
-  {"MB Outlet Temp:"       , BIC_SENSOR_OUTLET_TEMP        , "C"    , FRU_ALL, 0},
-  {"FRONT IO Temp:"        , BIC_SENSOR_FIO_TEMP           , "C"    , FRU_ALL, 2},
-  {"PCH Temp:"             , BIC_SENSOR_PCH_TEMP           , "C"    , FRU_ALL, 0},
-  {"SOC CPU Temp:"         , BIC_SENSOR_CPU_TEMP           , "C"    , FRU_ALL, 0},
-  {"Therm Margin:"         , BIC_SENSOR_CPU_THERM_MARGIN   , "C"    , FRU_ALL, 0},
-  {"SOC CPU TjMax:"        , BIC_SENSOR_CPU_TJMAX          , "C"    , FRU_ALL, 0},
-  {"CPU Pkg Pwr:"          , BIC_SENSOR_SOC_PKG_PWR        , "W"    , FRU_ALL, 0},
-  {"DIMMA TEMP:"           , BIC_SENSOR_DIMMA0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMB TEMP:"           , BIC_SENSOR_DIMMB0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMC TEMP:"           , BIC_SENSOR_DIMMC0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMD TEMP:"           , BIC_SENSOR_DIMMD0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMME TEMP:"           , BIC_SENSOR_DIMME0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMF TEMP:"           , BIC_SENSOR_DIMMF0_TEMP        , "C"    , FRU_ALL, 0},
-  {"SSD1 Temp:"            , BIC_SENSOR_M2B_TEMP           , "C"    , FRU_ALL, 0},
-  {"HSC Temp:"             , BIC_SENSOR_HSC_TEMP           , "C"    , FRU_ALL, 0},
-  {"VCCIN VR Temp:"        , BIC_SENSOR_VCCIN_VR_TEMP      , "C"    , FRU_ALL, 0},
-  {"VCCSA VR Temp:"        , BIC_SENSOR_VCCSA_VR_TEMP      , "C"    , FRU_ALL, 0},
-  {"VCCIO VR Temp:"        , BIC_SENSOR_VCCIO_VR_Temp      , "C"    , FRU_ALL, 0},
-  {"3V3STBY VRTemp:"       , BIC_SENSOR_P3V3_STBY_VR_TEMP  , "C"    , FRU_ALL, 0},
-  {"VDDQABC VRTemp:"       , BIC_SENSOR_PVDDQ_ABC_VR_TEMP  , "C"    , FRU_ALL, 0},
-  {"VDDQDEF VRTemp:"       , BIC_SENSOR_PVDDQ_DEF_VR_TEMP  , "C"    , FRU_ALL, 0},
-  {"P12V_STBY Vol:"        , BIC_SENSOR_P12V_STBY_VOL      , "V"    , FRU_ALL, 2},
-  {"P3V_BAT Vol:"          , BIC_SENSOR_P3V_BAT_VOL        , "V"    , FRU_ALL, 2},
-  {"P3V3_STBY Vol:"        , BIC_SENSOR_P3V3_STBY_VOL      , "V"    , FRU_ALL, 2},
-  {"P1V05_PCH Vol:"        , BIC_SENSOR_P1V05_PCH_STBY_VOL , "V"    , FRU_ALL, 2},
-  {"PVNN_PCH Vol:"         , BIC_SENSOR_PVNN_PCH_STBY_VOL  , "V"    , FRU_ALL, 2},
-  {"HSC Input Vol:"        , BIC_SENSOR_HSC_INPUT_VOL      , "V"    , FRU_ALL, 2},
-  {"VCCIN VR Vol:"         , BIC_SENSOR_VCCIN_VR_VOL       , "V"    , FRU_ALL, 2},
-  {"VCCSA VR Vol:"         , BIC_SENSOR_VCCSA_VR_VOL       , "V"    , FRU_ALL, 2},
-  {"VCCIO VR Vol:"         , BIC_SENSOR_VCCIO_VR_VOL       , "V"    , FRU_ALL, 2},
-  {"3V3STBY VRVol:"        , BIC_SENSOR_P3V3_STBY_VR_VOL   , "V"    , FRU_ALL, 2},
-  {"VDDQABC VRVol:"        , BIC_PVDDQ_ABC_VR_VOL          , "V"    , FRU_ALL, 2},
-  {"VDDQDEF VRVol:"        , BIC_PVDDQ_DEF_VR_VOL          , "V"    , FRU_ALL, 2},
-  {"HSC OutputCur:"        , BIC_SENSOR_HSC_OUTPUT_CUR     , "Amps" , FRU_ALL, 2},
-  {"VCCIN VR Cur:"         , BIC_SENSOR_VCCIN_VR_CUR       , "Amps" , FRU_ALL, 2},
-  {"VCCSA VR Cur:"         , BIC_SENSOR_VCCSA_VR_CUR       , "Amps" , FRU_ALL, 2},
-  {"VCCIO VR Cur:"         , BIC_SENSOR_VCCIO_VR_CUR       , "Amps" , FRU_ALL, 2},
-  {"3V3STBY VRCur:"        , BIC_SENSOR_P3V3_STBY_VR_CUR   , "Amps" , FRU_ALL, 2},
-  {"VDDQABC VRCur:"        , BIC_SENSOR_PVDDQ_ABC_VR_CUR   , "Amps" , FRU_ALL, 2},
-  {"VDDQDEF VRCur:"        , BIC_SENSOR_PVDDQ_DEF_VR_CUR   , "Amps" , FRU_ALL, 2},
-  {"HSC PwrIn:"            , BIC_SENSOR_HSC_INPUT_PWR      , "W"    , FRU_ALL, 0},
-  {"HSC AvgPwrIn:"         , BIC_SENSOR_HSC_INPUT_AVGPWR   , "W"    , FRU_ALL, 0},
-  {"VCCIN VR Pout:"        , BIC_SENSOR_VCCIN_VR_POUT      , "W"    , FRU_ALL, 0},
-  {"VCCSA VR Pout:"        , BIC_SENSOR_VCCSA_VR_POUT      , "W"    , FRU_ALL, 0},
-  {"VCCIO VR Pout:"        , BIC_SENSOR_VCCIO_VR_POUT      , "W"    , FRU_ALL, 0},
-  {"3V3STBY VRPout:"       , BIC_SENSOR_P3V3_STBY_VR_POUT  , "W"    , FRU_ALL, 0},
-  {"VDDQABC VRPout"        , BIC_SENSOR_PVDDQ_ABC_VR_POUT  , "W"    , FRU_ALL, 2},
-  {"VDDQDEF VRPout:"       , BIC_SENSOR_PVDDQ_DEF_VR_POUT  , "W"    , FRU_ALL, 2},
-
 // GPv3 sensors
   {"GP3 INLET TEMP:"       , BIC_GPV3_INLET_TEMP           , "C"    , FRU_ALL, 0},
   {"GP3 PESW TEMP:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_ALL, 0},
@@ -557,6 +540,10 @@ static sensor_desc_t cri_sensor_bmc[] =
   {"NIC_PWR:"              , BMC_SENSOR_NIC_PWR            , "W"    , FRU_BMC, 2},
 };
 
+size_t cri_sensor_sb_cnt = sizeof(cri_sensor_sb)/sizeof(sensor_desc_t);
+size_t cri_sensor_1ou_edsff_cnt = sizeof(cri_sensor_1ou_edsff)/sizeof(sensor_desc_t);
+size_t cri_sensor_gpv3_cnt = sizeof(cri_sensor_gpv3)/sizeof(sensor_desc_t);
+
 bool plat_supported(void)
 {
   return true;
@@ -587,6 +574,10 @@ int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
   uint8_t type_2ou = UNKNOWN_BOARD;
+  uint8_t type = 0;
+  uint8_t current_cnt = 0;
+  int config_status = 0;
+
   if (!desc || !desc_count) {
     return -1;
   }
@@ -594,17 +585,33 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     *desc = cri_sensor_bmc;
     *desc_count = sizeof(cri_sensor_bmc) / sizeof(cri_sensor_bmc[0]);
   } else {
-    if ( (bic_is_m2_exp_prsnt(fru) & PRESENT_2OU) == PRESENT_2OU ) {
+    config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru) : bic_is_m2_exp_prsnt_cache(fru);
+    if (config_status < 0)
+      config_status = 0;
+
+    memset(dynamic_cri_sensor, 0, sizeof(dynamic_cri_sensor));
+    memcpy(dynamic_cri_sensor, cri_sensor_sb, sizeof(cri_sensor_sb));
+    current_cnt = cri_sensor_sb_cnt;
+
+    if ( (config_status & PRESENT_1OU) == PRESENT_1OU ) {
+      bic_get_1ou_type_cache(fru, &type);
+      if (type == EDSFF_1U) {
+        memcpy(&dynamic_cri_sensor[current_cnt], cri_sensor_1ou_edsff, sizeof(cri_sensor_1ou_edsff));
+        current_cnt += cri_sensor_1ou_edsff_cnt;
+      }
+    }
+
+    if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
       if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0) {
         syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",fru);
       } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-        *desc = cri_sensor_gpv3;
-        *desc_count = sizeof(cri_sensor_gpv3) / sizeof(cri_sensor_gpv3[0]);
-        return 0;
+        memcpy(&dynamic_cri_sensor[current_cnt], cri_sensor_gpv3, sizeof(cri_sensor_gpv3));
+        current_cnt += cri_sensor_gpv3_cnt;
       }
     }
-    *desc = cri_sensor_sb;
-    *desc_count = sizeof(cri_sensor_sb) / sizeof(cri_sensor_sb[0]);
+
+    *desc = dynamic_cri_sensor;
+    *desc_count = current_cnt;
   }
   return 0;
 }

@@ -27,7 +27,7 @@ typedef struct _gpio_desc {
 } gpio_desc_t;
 
 typedef struct _sensor_desc {
-  char    name[16];
+  char    name[32];
   uint8_t sensor_num;
   char    unit[5];
   uint8_t fru;

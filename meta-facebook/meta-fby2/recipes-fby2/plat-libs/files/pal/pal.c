@@ -6374,11 +6374,44 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
     case 0x00:
       strcat(error_log, "PSB Pass");
       break;
+    case 0x03:
+      strcat(error_log, "Error in BIOS Directory Table - Too many directory entries");
+      break;
+    case 0x04:
+      strcat(error_log, "Internal error - Invalid parameter");
+      break;
+    case 0x05:
+      strcat(error_log, "Internal error - Invalid data length");
+      break;
+    case 0x0B:
+      strcat(error_log, "Internal error - Out of resources");
+      break;
+    case 0x10:
+      strcat(error_log, "Error in BIOS Directory Table - Reset image destination invalid");
+      break;
+    case 0x13:
+      strcat(error_log, "Error retrieving FW header during FW validation");
+      break;
+    case 0x14:
+      strcat(error_log, "Invalid key size");
+      break;
+    case 0x18:
+      strcat(error_log, "Error validating binary");
+      break;
     case 0x22:
-      strcat(error_log, "PSP directory entry not found");
+      strcat(error_log, "P0: BIOS signing key entry not found");
       break;
     case 0x3E:
       strcat(error_log, "P0: Error reading fuse info");
+      break;
+    case 0x62:
+      strcat(error_log, "Internal error - Error mapping fuse");
+      break;
+    case 0x64:
+      strcat(error_log, "P0: Timeout error attempting to fuse");
+      break;
+    case 0x6C:
+      strcat(error_log, "P0: Error in BIOS Directory Table - Reset image not found");
       break;
     case 0x6F:
       strcat(error_log, "P0: OEM BIOS Signing Key Usage flag violation");
@@ -6420,7 +6453,7 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
       strcat(error_log, "P1: Error with actual fusing operation");
       break;
     case 0x92:
-      strcat(error_log, "P0: Error in BIOS Directory Table – Firmware type not found");
+      strcat(error_log, "P0: Error in BIOS Directory Table - Firmware type not found");
       break;
     default:
       strcat(error_log, "Unknown");

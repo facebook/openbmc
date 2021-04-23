@@ -40,6 +40,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/vbs.h>
+#include <openbmc/misc-utils.h>
 #include <signal.h>
 
 #define I2C_BUS_NUM            14
@@ -74,10 +75,13 @@
 #define VM_PANIC_ON_OOM_FILE "/proc/sys/vm/panic_on_oom"
 
 /* Identify BMC reboot cause */
-#define AST_SRAM_BMC_REBOOT_BASE      0x1E721000
-#define BMC_REBOOT_BY_KERN_PANIC(base) *((uint32_t *)(base + 0x200))
-#define BMC_REBOOT_BY_CMD(base) *((uint32_t *)(base + 0x204))
-#define BMC_REBOOT_SIG(base) *((uint32_t *)(base + 0x208))
+#define AST_SRAM_BMC_REBOOT_BASE               0x1E721000
+#define AST_SRAM_BMC_REBOOT_OFFSET             0x200
+#define AST_G6_SRAM_BMC_REBOOT_BASE            0x10015000
+#define AST_G6_SRAM_BMC_REBOOT_OFFSET          0xC00
+#define BMC_REBOOT_BY_KERN_PANIC(base, offset) *((uint32_t *)(base + (offset)))
+#define BMC_REBOOT_BY_CMD(base, offset)        *((uint32_t *)(base + (offset + 0x4)))
+#define BMC_REBOOT_SIG(base, offset)           *((uint32_t *)(base + (offset + 0x8)))
 #define BOOT_MAGIC                    0xFB420054
 #define BIT_RECORD_LOG                (1 << 8)
 // kernel panic
@@ -1494,13 +1498,23 @@ log_reboot_cause(char *sled_off_time)
   uint8_t *bmc_reboot_base;
   uint32_t reboot_detected_flag = 0;
   uint32_t kern_panic_flag = 0;
+  uint32_t sram_bmc_reboot_base = 0x0;
+  uint32_t sram_offset = 0x0;
+
+  if (get_soc_model() == SOC_MODEL_ASPEED_G6) {
+    sram_bmc_reboot_base = AST_G6_SRAM_BMC_REBOOT_BASE;
+    sram_offset = AST_G6_SRAM_BMC_REBOOT_OFFSET;
+  } else {
+    sram_bmc_reboot_base = AST_SRAM_BMC_REBOOT_BASE;
+    sram_offset = AST_SRAM_BMC_REBOOT_OFFSET;
+  }
 
   mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
   if (mem_fd < 0) {
     syslog(LOG_CRIT, "devmem open failed");
     return;
   }
-  bmc_reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
+  bmc_reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, sram_bmc_reboot_base);
   if (bmc_reboot_base == NULL) {
     syslog(LOG_CRIT, "Mapping SRAM_BMC_REBOOT_BASE failed");
     close(mem_fd);
@@ -1513,12 +1527,12 @@ log_reboot_cause(char *sled_off_time)
     pal_add_cri_sel("BMC AC lost");
 
     // Initial BMC reboot flag
-    BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0x0;
-    BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0x0;
-    BMC_REBOOT_SIG(bmc_reboot_base) = BOOT_MAGIC;
+    BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base, sram_offset) = 0x0;
+    BMC_REBOOT_BY_CMD(bmc_reboot_base, sram_offset) = 0x0;
+    BMC_REBOOT_SIG(bmc_reboot_base, sram_offset) = BOOT_MAGIC;
   } else {
-    kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base);
-    reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base);
+    kern_panic_flag = BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base, sram_offset);
+    reboot_detected_flag = BMC_REBOOT_BY_CMD(bmc_reboot_base, sram_offset);
 
     // Check the SRAM to make sure the reboot cause
     // ===== kernel panic =====
@@ -1532,7 +1546,7 @@ log_reboot_cause(char *sled_off_time)
         syslog(LOG_CRIT, "BMC Reboot detected - unknown kernel flag (0x%08x)", kern_panic_flag);
       }
 
-      BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base) = 0;
+      BMC_REBOOT_BY_KERN_PANIC(bmc_reboot_base, sram_offset) = 0;
     // ===== reboot command =====
     } else if ((reboot_detected_flag & BIT_RECORD_LOG)) {
       // Clear the flag of record log and reserve the reboot command flag
@@ -1549,7 +1563,7 @@ log_reboot_cause(char *sled_off_time)
         syslog(LOG_CRIT, "BMC Reboot detected - unknown reboot command flag (0x%08x)", reboot_detected_flag);
       }
 
-      BMC_REBOOT_BY_CMD(bmc_reboot_base) = 0;
+      BMC_REBOOT_BY_CMD(bmc_reboot_base, sram_offset) = 0;
     // ===== others =====
     } else {
       syslog(LOG_CRIT, "BMC Reboot detected");

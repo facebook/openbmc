@@ -18,9 +18,9 @@ S = "${WORKDIR}"
 
 inherit systemd
 
-LDFLAGS =+ " -lpal -ljansson -lkv -lwatchdog -lvbs -lobmc-i2c "
+LDFLAGS =+ " -lpal -ljansson -lkv -lwatchdog -lvbs -lobmc-i2c -lmisc-utils "
 
-DEPENDS =+ " libpal jansson libobmc-i2c libkv update-rc.d-native libwatchdog libvbs"
+DEPENDS =+ " libpal jansson libobmc-i2c libkv update-rc.d-native libwatchdog libvbs libmisc-utils"
 
 binfiles = "healthd"
 
@@ -62,7 +62,7 @@ do_install() {
 
 }
 
-RDEPENDS_${PN} =+ " libpal jansson libwatchdog libvbs libobmc-i2c "
+RDEPENDS_${PN} =+ " libpal jansson libwatchdog libvbs libobmc-i2c libmisc-utils "
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

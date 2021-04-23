@@ -53,4 +53,5 @@ IMAGE_INSTALL += " \
   snapshot-util \
   enclosure-util \
   vboot-utils \
+  libpldm \
   "

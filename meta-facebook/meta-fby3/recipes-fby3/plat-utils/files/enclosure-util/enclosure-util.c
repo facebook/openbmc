@@ -35,6 +35,7 @@
 #define NVME_SFLGS_MASK_BIT 0x28          // check bit 5,3
 #define NVME_SMART_WARNING_MASK_BIT 0x1F  // check bit 0~4
 #define MAX_SERIAL_NUM 20
+#define SPE_SSD_NUM 6
 
 
 char path[64] = {0};
@@ -162,6 +163,7 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   uint8_t rbuf[64] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
+  static const uint8_t spe_ssd_bus[SPE_SSD_NUM] = {2, 3, 4, 5, 6, 7};
   ssd_data ssd;
   
   memset(&ssd, 0x00, sizeof(ssd_data));
@@ -175,8 +177,8 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   fby3_common_dev_name(device_id, str);
 
   if (type_2ou == E1S_BOARD) {
-    printf("slot%u-%s : %s\n", slot_id, str, "NA");
-    return 0;
+    bus = spe_ssd_bus[device_id - DEV_ID0_2OU];
+    intf = REXP_BIC_INTF;
   } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
     // mux select
     ret = pal_gpv3_mux_select(slot_id, device_id);

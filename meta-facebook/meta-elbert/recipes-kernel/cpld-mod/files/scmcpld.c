@@ -405,6 +405,14 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x99, 0, 1,
   },
+  {
+    "dpe_image",
+    "0x1: FPGA is DPE\n"
+    "0x0: FPGA is NOT DPE\n",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0xA0, 0, 1,
+  },
 };
 
 static i2c_dev_data_st scmcpld_data;

@@ -46,6 +46,7 @@ SRC_URI += "file://board-utils.sh \
             file://peutil \
             file://spi_pim_ver.sh \
             file://meta_info.sh \
+            file://beacon_led.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -70,6 +71,7 @@ OPENBMC_UTILS_FILES += " \
     peutil \
     spi_pim_ver.sh \
     meta_info.sh \
+    beacon_led.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

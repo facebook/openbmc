@@ -19,7 +19,6 @@ IMAGE_INSTALL += " \
   front-paneld \
   lldp-util \
   mterm \
-  mtd-utils-ubifs \
   openbmc-utils \
   usb-console \
   wedge-eeprom \

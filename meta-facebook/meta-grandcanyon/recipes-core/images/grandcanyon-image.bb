@@ -54,4 +54,6 @@ IMAGE_INSTALL += " \
   enclosure-util \
   vboot-utils \
   libpldm \
+  asd \
+  asd-test \
   "

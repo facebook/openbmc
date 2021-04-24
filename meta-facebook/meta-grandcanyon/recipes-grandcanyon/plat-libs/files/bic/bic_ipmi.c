@@ -849,3 +849,58 @@ bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf,
 
   return ret;
 }
+
+int
+bic_asd_init(uint8_t cmd) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = cmd;
+  return bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, tlen, rbuf, &rlen);
+}
+
+// Get one GPIO pin status
+int
+bic_get_one_gpio_status(uint8_t gpio_num, uint8_t *value){
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s(): gpio value should not be NULL", __func__);
+    return -1;
+  }
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = 0x00;
+  tbuf[4] = gpio_num;
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
+  *value = rbuf[4] & 0x01;
+  return ret;
+}
+
+int
+bic_set_gpio(uint8_t gpio_num, uint8_t value) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[3] = 0x01;
+  tbuf[4] = gpio_num;
+  tbuf[5] = value;
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
+
+  if (ret < 0) {
+    return -1;
+  }
+
+  return 0;
+}

@@ -38,6 +38,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/phymem.h>
 #include <facebook/fbgc_gpio.h>
+#include <sys/un.h>
 #include "pal.h"
 
 #define NUM_SERVER_FRU       1
@@ -53,6 +54,8 @@
 #define MAX_NUM_GPIO_BMC_FPGA_UART_SEL  4
 
 #define MAX_NET_DEV_NAME_SIZE   10 // include the string terminal
+
+#define UNIX_PATH_MAX 108
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -2397,11 +2400,11 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   char val[MAX_VALUE_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
   int ret = 0;
-  
+
   if (value == NULL) {
     syslog(LOG_WARNING, "%s(): failed to get fru health because the parameter: *value is NULL", __func__);
   }
-  
+
   memset(key, 0, sizeof(key));
   memset(val, 0, sizeof(val));
 
@@ -2424,7 +2427,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_E1S_IOCM:
       snprintf(key, sizeof(key), "e1s_iocm_sensor_health");
       break;
-      
+
     case FRU_FAN0:
     case FRU_FAN1:
     case FRU_FAN2:
@@ -2447,10 +2450,10 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   // Check server error SEL
   memset(key, 0, sizeof(key));
   memset(val, 0, sizeof(val));
-  
+
   if (fru == FRU_SERVER) {
     snprintf(key, sizeof(key), "server_sel_error");
-    
+
   } else {
     return 0;
   }
@@ -2462,7 +2465,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   }
 
   *value = *value & atoi(val);
-  
+
   return 0;
 }
 
@@ -2471,7 +2474,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
   char val[MAX_VALUE_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
   int ret = 0;
-  
+
   memset(key, 0, sizeof(key));
   memset(val, 0, sizeof(val));
 
@@ -2504,7 +2507,7 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
   } else {
     snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
   }
-  
+
   ret = pal_set_key_value(key, val);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): failed to set sensor health because set key: %s value: %s failed", __func__, key, val);
@@ -2529,85 +2532,85 @@ pal_log_clear(char *fru) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("server_sel_error", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server sel error value", __func__);
     }
     sel_error_record = 0;
-    
+
   } else if (strcmp(fru, "uic") == 0) {
     ret = pal_set_key_value("uic_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear uic seneor health value", __func__);
     }
-    
+
   } else if (strcmp(fru, "dpb") == 0) {
     ret = pal_set_key_value("dpb_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
     }
-    
+
   } else if (strcmp(fru, "scc") == 0) {
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear the scc seneor health value", __func__);
     }
-    
+
   } else if (strcmp(fru, "nic") == 0) {
     ret = pal_set_key_value("nic_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear the nic seneor health value", __func__);
     }
-    
+
   } else if ((strcmp(fru, "iocm") == 0) || (strcmp(fru, "e1s_iocm") == 0)) {
     ret = pal_set_key_value("e1s_iocm_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear the e1s/ iocm seneor health value", __func__);
     }
-    
+
   } else if (strcmp(fru, "all") == 0) {
     ret = pal_set_key_value("server_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("server_sel_error", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server sel error value", __func__);
     }
     sel_error_record = 0;
-    
+
     ret = pal_set_key_value("uic_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear uic seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("dpb_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear dpb seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear scc seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("nic_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear nic seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("e1s_iocm_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear e1s/iocm seneor health value", __func__);
     }
-    
+
     ret = pal_set_key_value("bmc_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear bmc health value", __func__);
     }
-    
+
     ret = pal_set_key_value("heartbeat_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear heartbeat health value", __func__);
@@ -2655,7 +2658,7 @@ pal_get_heartbeat(float *hb_val, uint8_t component) {
   if (hb_val == NULL) {
     syslog(LOG_WARNING, "%s(): fail to get heartbeat because parameter: *hb_val is NULL", __func__);
   }
-  
+
   memset(label, 0, sizeof(label));
   snprintf(label, sizeof(label), "fan%d", component);
   // get heartbeat from tacho driver
@@ -2667,3 +2670,82 @@ pal_get_heartbeat(float *hb_val, uint8_t component) {
   return ret;
 }
 
+int
+pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data)
+{
+  int sock = 0;
+  int err = 0;
+  struct sockaddr_un server;
+
+  if (access(SOCK_PATH_ASD_BIC, F_OK) == -1) {
+    // SOCK_PATH_ASD_BIC doesn't exist, means ASD daemon for this
+    // fru is not running, exit
+    return 0;
+  }
+
+  sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s failed open socket (errno=%d)", __FUNCTION__, err);
+    return -1;
+  }
+
+  server.sun_family = AF_UNIX;
+  strcpy(server.sun_path, SOCK_PATH_ASD_BIC);
+
+  if (connect(sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+    err = errno;
+    close(sock);
+    syslog(LOG_ERR, "%s failed connecting stream socket (errno=%d), %s",
+           __FUNCTION__, err, server.sun_path);
+    return -1;
+  }
+  if (write(sock, data, 2) < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s error writing on stream sockets (errno=%d)",
+           __FUNCTION__, err);
+  }
+  close(sock);
+
+  return 0;
+}
+
+int
+pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len)
+{
+  int sock = 0;
+  int err = 0;
+  struct sockaddr_un server;
+
+  if (access(SOCK_PATH_JTAG_MSG, F_OK) == -1) {
+    // SOCK_PATH_JTAG_MSG doesn't exist, means ASD daemon for this
+    // fru is not running, exit
+    return 0;
+  }
+
+  sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s failed open socket (errno=%d)", __FUNCTION__, err);
+    return -1;
+  }
+
+  server.sun_family = AF_UNIX;
+  strncpy(server.sun_path, SOCK_PATH_JTAG_MSG, UNIX_PATH_MAX);
+
+  if (connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
+    err = errno;
+    close(sock);
+    syslog(LOG_ERR, "%s failed connecting stream socket (errno=%d), %s",
+           __FUNCTION__, err, server.sun_path);
+    return -1;
+  }
+
+  if (write(sock, data, data_len) < 0) {
+    err = errno;
+    syslog(LOG_ERR, "%s error writing on stream sockets (errno=%d)", __FUNCTION__, err);
+  }
+  close(sock);
+
+  return 0;
+}

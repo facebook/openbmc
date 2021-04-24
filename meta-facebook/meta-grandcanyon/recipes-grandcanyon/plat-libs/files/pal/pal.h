@@ -340,6 +340,8 @@ int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_get_tach_cnt();
 int pal_get_heartbeat(float *hb_val, uint8_t component);
+int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
+int pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len);
 
 #ifdef __cplusplus
 } // extern "C"

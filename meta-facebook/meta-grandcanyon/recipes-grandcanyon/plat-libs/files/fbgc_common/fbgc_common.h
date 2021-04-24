@@ -88,6 +88,9 @@ extern "C" {
 
 #define IPMI_NETFN_SHIFT(netfn) ((netfn) << 2)
 
+#define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket_1"
+#define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket_1"
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

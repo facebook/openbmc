@@ -130,6 +130,7 @@ static struct {
   monitoring_config *config;
 
   uint8_t num_active_addrs;
+  bool ignored_psus[MAX_RACKS][MAX_SHELVES][MAX_PSUS];
   uint8_t active_addrs[MAX_ACTIVE_ADDRS];
   psu_datastore_t* stored_data[MAX_ACTIVE_ADDRS];
   FILE *status_log;
@@ -330,6 +331,17 @@ static char psu_address(int rack, int shelf, int psu) {
   int psu_a = (psu & 3);
 
   return 0xA0 | rack_a | shelf_a | psu_a;
+}
+
+static bool psu_location(int addr, int *rack, int *shelf, int *psu)
+{
+  if ((addr & 0xA0)) {
+    *psu = addr & 3;
+    *shelf = (addr >> 2) & 1;
+    *rack = (addr >> 3) & 3;
+    return true;
+  }
+  return false;
 }
 
 static int check_psu_comms(psu_datastore_t *psu) {
@@ -678,6 +690,10 @@ static int check_active_psus(void) {
         uint16_t output = 0;
         speed_t baudrate;
         char addr = psu_address(rack, shelf, psu);
+
+        if (rackmond_config.ignored_psus[rack][shelf][psu]) {
+          continue;
+        }
 
         slot = lookup_data_slot((uint8_t) addr);
         if (slot < 0 || rackmond_config.stored_data[slot] == NULL) {
@@ -1701,6 +1717,25 @@ int main(int argc, char** argv) {
     OBMC_INFO("set desired baudrate value to RACKMOND_DESIRED_BAUDRATE (%d -> %s)",
               parsed_baudrate_int,
               baud_to_str(rackmond_config.desired_baudrate));
+  }
+  if (getenv("RACKMOND_IGNORE_PSUS") != NULL) {
+    char *ignore_list = strdup(getenv("RACKMOND_IGNORE_PSUS"));
+    if (ignore_list) {
+      char *psu_str;
+      for (psu_str = strtok(ignore_list, ",");
+          psu_str != NULL;
+          psu_str = strtok(NULL, ",")) {
+        unsigned int psu_addr = strtoul(psu_str, 0, 16);
+        int rack, shelf, psu;
+        if (psu_location(psu_addr, &rack, &shelf, &psu)) {
+          rackmond_config.ignored_psus[rack][shelf][psu] = true;
+          OBMC_INFO("Ignoring PSU: 0x%x\n", psu_addr);
+        } else {
+          OBMC_ERROR(EINVAL, "Unsupported PSU: 0x%x provided to RACKMOND_IGNORE_PSUS\n", psu_addr);
+        }
+      }
+      free(ignore_list);
+    }
   }
 
   OBMC_INFO("rackmon/modbus service starting");

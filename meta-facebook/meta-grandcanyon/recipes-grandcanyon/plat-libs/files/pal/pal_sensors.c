@@ -934,22 +934,12 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
 static int
 read_adc128(uint8_t id, float *value) {
   int ret = 0;
-  uint8_t status = 0;
 
   if (id >= ARRAY_SIZE(adc128_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
   if (is_e1s_iocm_present(id) == false) {
-    return ERR_SENSOR_NA;
-  }
-
-  if (pal_get_server_power(FRU_SERVER, &status) < 0) {
-    syslog(LOG_WARNING, "%s: fru %u get sever power error %u\n", __func__, FRU_SERVER, status);
-    return ERR_SENSOR_NA;
-  }
-
-  if (status != SERVER_POWER_ON) {
     return ERR_SENSOR_NA;
   }
 

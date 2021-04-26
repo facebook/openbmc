@@ -104,9 +104,9 @@ func TestFlashCpVboot(t *testing.T) {
 	}
 
 	exampleFlashDevice := &devices.MemoryTechnologyDevice{
-		"flash0",
-		"/dev/mtd5",
-		uint64(12345678),
+		Specifier: "flash0",
+		FilePath:  "/dev/mtd5",
+		FileSize:  uint64(12345678),
 	}
 
 	cases := []struct {
@@ -138,7 +138,7 @@ func TestFlashCpVboot(t *testing.T) {
 			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("GetFlashDevice error"),
+				Err: errors.Errorf("GetFlashDevice error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using flashcp vboot method",
@@ -153,7 +153,7 @@ func TestFlashCpVboot(t *testing.T) {
 			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("RunCommand error"),
+				Err: errors.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using flashcp vboot method",
@@ -168,7 +168,7 @@ func TestFlashCpVboot(t *testing.T) {
 			vbootSkipNeeded:       false,
 			otherFlasherErr:       errors.Errorf("Found other flasher!"),
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Found other flasher!"),
+				Err: errors.Errorf("Found other flasher!"),
 			},
 			logContainsSeq: []string{
 				"Flashing succeeded but found another flasher running",

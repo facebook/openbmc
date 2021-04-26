@@ -178,7 +178,7 @@ var IsELFFile = func(filename string) bool {
 			"assuming that it is not an ELF file", filename, err)
 		return false
 	}
-	return bytes.Compare(buf, elfMagicNumber) == 0
+	return bytes.Equal(buf, elfMagicNumber)
 }
 
 // MmapFile is a convenience function to mmap an entire file.

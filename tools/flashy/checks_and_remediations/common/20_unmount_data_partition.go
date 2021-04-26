@@ -47,7 +47,7 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 	dataMounted, err := utils.IsDataPartitionMounted()
 	if err != nil {
 		return step.ExitSafeToReboot{
-			errors.Errorf("Unable to determine whether /mnt/data is mounted: %v",
+			Err: errors.Errorf("Unable to determine whether /mnt/data is mounted: %v",
 				err),
 		}
 	}
@@ -73,7 +73,7 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 			if err != nil {
 				log.Printf("/mnt/data remount failed: %v", err)
 				return step.ExitSafeToReboot{
-					errors.Errorf("Failed to unmount or remount /mnt/data"),
+					Err: errors.Errorf("Failed to unmount or remount /mnt/data"),
 				}
 			}
 		}
@@ -82,7 +82,7 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 		err = validateSshdConfig()
 		if err != nil {
 			return step.ExitUnsafeToReboot{
-				errors.Errorf("Validate sshd config failed: %v", err),
+				Err: errors.Errorf("Validate sshd config failed: %v", err),
 			}
 		}
 	} else {

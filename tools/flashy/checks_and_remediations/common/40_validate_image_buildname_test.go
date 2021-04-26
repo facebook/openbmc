@@ -50,7 +50,7 @@ func TestValidateImageBuildname(t *testing.T) {
 			clowntown:        false,
 			compatibilityErr: errors.Errorf("compatibility failed"),
 			want: step.ExitUnknownError{
-				errors.Errorf("Image build name compatibility check failed: " +
+				Err: errors.Errorf("Image build name compatibility check failed: " +
 					"compatibility failed. Use the '--clowntown' flag if you wish " +
 					"to proceed at the risk of bricking the device"),
 			},

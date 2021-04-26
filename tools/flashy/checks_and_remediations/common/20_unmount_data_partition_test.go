@@ -83,7 +83,7 @@ func TestUnmountDataPartition(t *testing.T) {
 			remountErr:     nil,
 			sshdConfigErr:  nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Unable to determine whether /mnt/data is mounted: check failed"),
+				Err: errors.Errorf("Unable to determine whether /mnt/data is mounted: check failed"),
 			},
 		},
 		{
@@ -103,7 +103,7 @@ func TestUnmountDataPartition(t *testing.T) {
 			remountErr:     errors.Errorf("remount failed"),
 			sshdConfigErr:  nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Failed to unmount or remount /mnt/data"),
+				Err: errors.Errorf("Failed to unmount or remount /mnt/data"),
 			},
 		},
 		{
@@ -114,7 +114,7 @@ func TestUnmountDataPartition(t *testing.T) {
 			remountErr:     nil,
 			sshdConfigErr:  errors.Errorf("sshd config corrupt"),
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Validate sshd config failed: %v",
+				Err: errors.Errorf("Validate sshd config failed: %v",
 					"sshd config corrupt"),
 			},
 		},

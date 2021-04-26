@@ -160,7 +160,7 @@ func TestValidateImageFile(t *testing.T) {
 			}
 
 			Validate = func(data []byte) error {
-				if bytes.Compare(data, imageData) != 0 {
+				if !bytes.Equal(data, imageData) {
 					t.Errorf("data: want '%v' got '%v'", imageData, data)
 				}
 				return tc.validateErr

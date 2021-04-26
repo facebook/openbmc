@@ -446,10 +446,10 @@ func TestSafeAppendBytes(t *testing.T) {
 	b[0] = 'y'
 	c := SafeAppendBytes(a, b)
 
-	if bytes.Compare(a, []byte{'x'}) != 0 {
+	if !bytes.Equal(a, []byte{'x'}) {
 		t.Errorf("a: want '%v' got '%v'", []byte{'x'}, a)
 	}
-	if bytes.Compare(c, []byte{'x', 'y'}) != 0 {
+	if !bytes.Equal(c, []byte{'x', 'y'}) {
 		t.Errorf("c: want '%v' got '%v'", []byte{'x', 'y'}, c)
 	}
 }
@@ -546,7 +546,7 @@ func TestSetWord(t *testing.T) {
 	}
 	for _, tc := range cases {
 		got, err := SetWord(tc.data, tc.word, tc.offset)
-		if bytes.Compare(tc.want, got) != 0 {
+		if !bytes.Equal(tc.want, got) {
 			t.Errorf("want '%v' got '%v'", tc.want, got)
 		}
 		tests.CompareTestErrors(tc.wantErr, err, t)

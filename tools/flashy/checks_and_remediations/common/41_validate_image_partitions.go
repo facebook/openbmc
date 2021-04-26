@@ -47,7 +47,7 @@ func validateImagePartitions(stepParams step.StepParams) step.StepExitError {
 	if err != nil {
 		// the image could've been corrupted during copy,
 		// it is safe to reboot.
-		return step.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{Err: err}
 	}
 	return nil
 }

@@ -50,7 +50,7 @@ func TestDropCaches(t *testing.T) {
 			name:         "WriteFile failed",
 			writeFileErr: errors.Errorf("WriteFile failed"),
 			want: step.ExitSafeToReboot{
-				errors.Errorf(
+				Err: errors.Errorf(
 					"Failed to write to drop_caches file '/proc/sys/vm/drop_caches': WriteFile failed",
 				),
 			},

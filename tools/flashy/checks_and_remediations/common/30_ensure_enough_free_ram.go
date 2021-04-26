@@ -39,7 +39,7 @@ const minMemoryNeeded = 45 * 1024 * 1024
 func ensureEnoughFreeRAM(stepParams step.StepParams) step.StepExitError {
 	memInfo, err := utils.GetMemInfo()
 	if err != nil {
-		return step.ExitSafeToReboot{err}
+		return step.ExitSafeToReboot{Err: err}
 	}
 	log.Printf("Memory status: %v B total memory, %v B free memory", memInfo.MemTotal, memInfo.MemFree)
 	log.Printf("Minimum memory needed for update is %v B", minMemoryNeeded)
@@ -47,7 +47,7 @@ func ensureEnoughFreeRAM(stepParams step.StepParams) step.StepExitError {
 	if memInfo.MemFree < minMemoryNeeded {
 		errMsg := errors.Errorf("Free memory (%v B) < minimum memory needed (%v B), reboot needed",
 			memInfo.MemFree, minMemoryNeeded)
-		return step.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{Err: errMsg}
 	}
 
 	return nil

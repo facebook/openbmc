@@ -217,7 +217,7 @@ func TestLegacyUbootHeader(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if bytes.Compare(encoded, mockHeader) != 0 {
+	if !bytes.Equal(encoded, mockHeader) {
 		t.Errorf("encode decode failed: want '%v' got '%v'", mockHeader, encoded)
 	}
 

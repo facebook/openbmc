@@ -92,10 +92,10 @@ func cleanInstallPath() {
 	exDir := filepath.Dir(exPath)
 
 	d, err := os.Open(exDir)
-	defer d.Close()
 	if err != nil {
 		log.Fatalf("Unable to open installation directory: '%v'", err)
 	}
+	defer d.Close()
 	dirnames, err := d.Readdirnames(-1)
 	if err != nil {
 		log.Fatalf("Unable to read installation directory: '%v'", err)

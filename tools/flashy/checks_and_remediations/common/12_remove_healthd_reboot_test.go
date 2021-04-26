@@ -101,7 +101,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			wantConfig:        "",
 			logContainsSeq:    []string{},
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Unable to parse healthd-config.json: " +
+				Err: errors.Errorf("Unable to parse healthd-config.json: " +
 					"invalid character 'F' looking for beginning of object key string"),
 			},
 		},
@@ -113,7 +113,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			wantConfig:        "",
 			logContainsSeq:    []string{},
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
+				Err: errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
 					"{\"foo\":\"foo\"}"),
 			},
 		},

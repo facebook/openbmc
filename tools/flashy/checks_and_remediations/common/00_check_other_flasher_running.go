@@ -44,7 +44,7 @@ func checkOtherFlasherRunning(stepParams step.StepParams) step.StepExitError {
 	err := utils.CheckOtherFlasherRunning(flashyStepBaseNames)
 	if err != nil {
 		return step.ExitUnsafeToReboot{
-			errors.Errorf("Another flasher detected: %v. "+
+			Err: errors.Errorf("Another flasher detected: %v. "+
 				"Use the '--clowntown' flag if you wish to proceed at the risk of "+
 				"bricking the device", err),
 		}

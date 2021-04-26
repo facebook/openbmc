@@ -190,7 +190,7 @@ func TestMmapRO(t *testing.T) {
 			got, err := testMtd.MmapRO()
 
 			tests.CompareTestErrors(tc.wantErr, err, t)
-			if bytes.Compare(tc.want, got) != 0 {
+			if !bytes.Equal(tc.want, got) {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 		})

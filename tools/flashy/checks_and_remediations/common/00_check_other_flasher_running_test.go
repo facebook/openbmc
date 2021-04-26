@@ -55,7 +55,7 @@ func TestCheckOtherFlasherRunning(t *testing.T) {
 			clowntown:                   false,
 			checkOtherFlasherRunningErr: errors.Errorf("pypartition"),
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Another flasher detected: %v. "+
+				Err: errors.Errorf("Another flasher detected: %v. "+
 					"Use the '--clowntown' flag if you wish to proceed at the risk of "+
 					"bricking the device", "pypartition"),
 			},

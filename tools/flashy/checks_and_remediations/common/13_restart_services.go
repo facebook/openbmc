@@ -38,7 +38,7 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 	systemdAvail, err := utils.SystemdAvailable()
 	if err != nil {
 		errMsg := errors.Errorf("Error checking systemd availability: %v", err)
-		return step.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{Err: errMsg}
 	}
 
 	if systemdAvail {
@@ -66,7 +66,7 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 		log.Printf("Healthd exists, attempting to restart healthd...")
 		err = utils.RestartHealthd(true, supervisor)
 		if err != nil {
-			return step.ExitSafeToReboot{err}
+			return step.ExitSafeToReboot{Err: err}
 		} else {
 			log.Printf("Finished restarting healthd")
 		}

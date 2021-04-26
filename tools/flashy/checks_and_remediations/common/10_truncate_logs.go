@@ -62,7 +62,7 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 	logFilesToDelete, err := fileutils.GlobAll(deleteLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
-		return step.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{Err: errMsg}
 	}
 
 	for _, f := range logFilesToDelete {
@@ -74,7 +74,7 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 	logFilesToTruncate, err := fileutils.GlobAll(truncateLogFilePatterns)
 	if err != nil {
 		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
-		return step.ExitSafeToReboot{errMsg}
+		return step.ExitSafeToReboot{Err: errMsg}
 	}
 
 	for _, f := range logFilesToTruncate {

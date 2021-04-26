@@ -163,7 +163,7 @@ func TestGetVbs(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if bytes.Compare(data, tests.ExampleVbsData) != 0 {
+	if !bytes.Equal(data, tests.ExampleVbsData) {
 		t.Errorf("encode failed: want '%v' got '%v'", tests.ExampleVbsData, data)
 	}
 

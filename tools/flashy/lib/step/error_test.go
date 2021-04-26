@@ -52,19 +52,19 @@ func TestHandleStepError(t *testing.T) {
 		},
 		{
 			name:                  "unsafe to reboot",
-			stepExitError:         ExitUnsafeToReboot{errors.Errorf("err")},
+			stepExitError:         ExitUnsafeToReboot{Err: errors.Errorf("err")},
 			ensureSafeToRebootErr: nil,
 			wantExitCode:          FLASHY_ERROR_UNSAFE_TO_REBOOT,
 		},
 		{
 			name:                  "safe to reboot, ensured OK",
-			stepExitError:         ExitSafeToReboot{errors.Errorf("err")},
+			stepExitError:         ExitSafeToReboot{Err: errors.Errorf("err")},
 			ensureSafeToRebootErr: nil,
 			wantExitCode:          FLASHY_ERROR_SAFE_TO_REBOOT,
 		},
 		{
 			name:                  "safe to reboot, but ensure check failed",
-			stepExitError:         ExitSafeToReboot{errors.Errorf("err")},
+			stepExitError:         ExitSafeToReboot{Err: errors.Errorf("err")},
 			ensureSafeToRebootErr: errors.Errorf("actually unsafe"),
 			wantExitCode:          FLASHY_ERROR_UNSAFE_TO_REBOOT,
 		},

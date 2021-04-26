@@ -441,6 +441,16 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
         cmd_size > 5 ? cmd_buf[5] : 0,
         (unsigned long)req.cmd_len, (unsigned long)req.expected_len);
 
+    /* If this is an active PSU, then record the errors we see
+     * communicating to this PSU */
+    if (psu) {
+      if (error == MODBUS_BAD_CRC) {
+        psu->crc_errors++;
+      } else if (error == MODBUS_RESPONSE_TIMEOUT) {
+        psu->timeout_errors++;
+      }
+    }
+
     if (delay != 0) {
       usleep(delay);
     }
@@ -1051,12 +1061,6 @@ static int reload_psu_registers(psu_datastore_t *mdata)
       if (err != READ_ERROR_RESPONSE && err != PSU_TIMEOUT_RESPONSE) {
         log("Error %d reading %02x registers at %02x from %02x\n",
             err, iv->len, iv->begin, addr);
-        if(err == MODBUS_BAD_CRC) {
-          mdata->crc_errors++;
-        }
-        if(err == MODBUS_RESPONSE_TIMEOUT) {
-          mdata->timeout_errors++;
-        }
       }
 
       continue;

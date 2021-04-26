@@ -11,10 +11,10 @@ SRC_URI = "file://Makefile \
           "
 S = "${WORKDIR}"
 
-LDFLAGS =+ " -lpal -lkv"
+LDFLAGS =+ " -lpal -lkv -lmisc-utils "
 CXXFLAGS += '-Wall -Werror'
 
-DEPENDS =+ " libpal libkv "
+DEPENDS =+ " libpal libkv libmisc-utils "
 
 binfiles = "cfg-util"
 
@@ -33,4 +33,4 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/cfg-util ${prefix}/local/bin"
 
-RDEPENDS_${PN} = "libpal"
+RDEPENDS_${PN} = "libpal libmisc-utils "

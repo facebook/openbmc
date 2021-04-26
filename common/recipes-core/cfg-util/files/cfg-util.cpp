@@ -28,10 +28,14 @@
 #include <syslog.h>
 #include <sys/mman.h>
 #include <openbmc/kv.h>
+#include <openbmc/misc-utils.h>
 
-#define PAGE_SIZE                     0x1000
-#define AST_SRAM_BMC_REBOOT_BASE      0x1E721000
-#define BMC_REBOOT_BY_CMD(base) *((uint32_t *)(base + 0x204))
+#define PAGE_SIZE                              0x1000
+#define AST_SRAM_BMC_REBOOT_BASE               0x1E721000
+#define AST_SRAM_BMC_REBOOT_OFFSET             0x200
+#define AST_G6_SRAM_BMC_REBOOT_BASE            0x10015000
+#define AST_G6_SRAM_BMC_REBOOT_OFFSET          0xC00
+#define BMC_REBOOT_BY_CMD(base, offset)        *((uint32_t *)(base + (offset + 0x4)))
 
 #define BIT_RECORD_LOG                (1 << 8)
 #define FLAG_CFG_UTIL                 (1 << 1)
@@ -95,6 +99,8 @@ main(int argc, char **argv) {
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
   uint8_t *bmc_reboot_base;
+  uint32_t sram_bmc_reboot_base = 0x0;
+  uint32_t sram_offset = 0x0;
 
   // Handle boundary checks
   if (argc < 2 || argc > 3) {
@@ -119,9 +125,17 @@ main(int argc, char **argv) {
       // Set the flag to identify the reboot is caused by cfg-util
       mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
       if (mem_fd >= 0) {
-        bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, AST_SRAM_BMC_REBOOT_BASE);
+        if (get_soc_model() == SOC_MODEL_ASPEED_G6) {
+          sram_bmc_reboot_base = AST_G6_SRAM_BMC_REBOOT_BASE;
+          sram_offset = AST_G6_SRAM_BMC_REBOOT_OFFSET;
+        } else {
+          sram_bmc_reboot_base = AST_SRAM_BMC_REBOOT_BASE;
+          sram_offset = AST_SRAM_BMC_REBOOT_OFFSET;
+        }
+
+        bmc_reboot_base = (uint8_t *)mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, sram_bmc_reboot_base);
         if (bmc_reboot_base != 0) {
-          BMC_REBOOT_BY_CMD(bmc_reboot_base) |= BIT_RECORD_LOG | FLAG_CFG_UTIL;
+          BMC_REBOOT_BY_CMD(bmc_reboot_base, sram_offset) |= BIT_RECORD_LOG | FLAG_CFG_UTIL;
           munmap(bmc_reboot_base, PAGE_SIZE);
         }
         close(mem_fd);

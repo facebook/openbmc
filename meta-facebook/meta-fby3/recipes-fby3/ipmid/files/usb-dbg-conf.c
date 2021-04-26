@@ -676,6 +676,7 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
   uint8_t rlen = 4;
   uint8_t i2c_bus = 12;
   int i2cfd = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   if (fw_text == NULL)
     return -1;
@@ -724,6 +725,45 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
     } else {
       sprintf(entry,"CPLD_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
       strcat(fw_text, entry);
+    }
+
+    if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) == PRESENT_2OU ) {
+      if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+        syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",slot_id);
+      } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+
+        // 2OU Bridge-IC Version
+        if (bic_get_fw_ver(slot_id, FW_2OU_BIC, ver)) {
+          strcat(fw_text,"2OU_BIC_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2OU_BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // 2OU Bridge-IC Bootloader Version
+        if (bic_get_fw_ver(slot_id, FW_2OU_BIC_BOOTLOADER, ver)) {
+          strcat(fw_text,"2OU_BICbl_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2OU_BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // FW_2OU_CPLD
+        if (bic_get_fw_ver(slot_id, FW_2OU_CPLD, ver)) {
+          strcat(fw_text,"2OU_CPLD_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2OU_CPLD_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+
+        // GPv3 PCIe Switch version
+        if (bic_get_fw_ver(slot_id, FW_2OU_PESW_CFG_VER, ver)) {
+          strcat(fw_text,"2OU_PESW_CFG_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2OU_PESW_CFG_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+      }
     }
   }
 

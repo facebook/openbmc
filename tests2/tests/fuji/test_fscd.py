@@ -21,9 +21,9 @@ import time
 import unittest
 
 from common.base_fscd_test import BaseFscdTest
+from tests.fuji.helper.libpal import pal_get_board_rev
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from tests.fuji.helper.libpal import pal_get_board_rev
 
 
 class FscdTest(BaseFscdTest, unittest.TestCase):

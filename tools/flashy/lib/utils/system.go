@@ -164,13 +164,24 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
+	// make sure cmdArr has at least 1 item
+	if len(cmdArr) == 0 {
+		return 1, errors.Errorf("Cannot run empty command"), "", ""
+	}
+
 	fullCmdStr := strings.Join(cmdArr[:], " ")
 	log.Printf("Running command '%v' with %v timeout", fullCmdStr, timeout)
 	cmd := exec.CommandContext(ctx, cmdArr[0], cmdArr[1:]...)
 
 	var stdoutStr, stderrStr string
-	stdout, _ := cmd.StdoutPipe()
-	stderr, _ := cmd.StderrPipe()
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return 1, errors.Errorf("Unable to open stdout pipe: %v", err), "", ""
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return 1, errors.Errorf("Unable to open stderr pipe: %v", err), "", ""
+	}
 	stdoutScanner := bufio.NewScanner(stdout)
 	stderrScanner := bufio.NewScanner(stderr)
 	stdoutDone := make(chan struct{})
@@ -189,7 +200,7 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	<-stdoutDone
 	<-stderrDone
 
-	err := cmd.Wait()
+	err = cmd.Wait()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			// The program exited with exit code != 0

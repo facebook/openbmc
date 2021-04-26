@@ -275,7 +275,8 @@ var SystemdAvailable = func() (bool, error) {
 // WARNING: There is no guarantee that /etc/issue is well-formed
 // in old images.
 var GetOpenBMCVersionFromIssueFile = func() (string, error) {
-	const etcIssueVersionRegEx = `^OpenBMC Release (?P<version>[^\s]+)`
+	const rVersion = "version"
+	etcIssueVersionRegEx := fmt.Sprintf(`^OpenBMC Release (?P<%v>[^\s]+)`, rVersion)
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
@@ -293,7 +294,7 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				etcIssueFilePath, err)
 	}
 
-	version := etcIssueMap["version"]
+	version := etcIssueMap[rVersion]
 	return version, nil
 }
 
@@ -443,7 +444,7 @@ func tryPetWatchdog() bool {
 // - When /dev/watchdog is busy because it's held open by healthd, the delay
 //   here will hopefully allow healthd's watchdog thread to get some CPU
 //   time.
-//   
+//
 // - When /dev/watchdog it NOT busy because healthd is not running and there
 //   are no concurrent instances of wdtcli, the watchdog timeout will be
 //   extended and the watchdog petted.
@@ -451,7 +452,7 @@ var PetWatchdog = func() {
 	for i := 0; i < 10; i++ {
 		if tryPetWatchdog() {
 			log.Printf("Watchdog petted")
-			return;
+			return
 		}
 		time.Sleep(1 * time.Second)
 	}

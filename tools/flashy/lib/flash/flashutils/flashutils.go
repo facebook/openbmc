@@ -35,7 +35,10 @@ import (
 // TODO:- e.g. “pfr:primary” -> type=”pfr” specifier=”primary”
 // TODO:- e.g. “file:/dev/sda” -> type=”file” specifier=”/dev/sda”
 var parseDeviceID = func(deviceID string) (string, string, error) {
-	regEx := `^(?P<type>[a-z]+):(?P<specifier>.+)$`
+	const rType = "type"
+	const rSpecifier = "specifier"
+
+	regEx := fmt.Sprintf(`^(?P<%v>[a-z]+):(?P<%v>.+)$`, rType, rSpecifier)
 
 	flashDeviceMap, err := utils.GetRegexSubexpMap(regEx, deviceID)
 	if err != nil {
@@ -43,7 +46,7 @@ var parseDeviceID = func(deviceID string) (string, string, error) {
 			deviceID, err)
 	}
 
-	return flashDeviceMap["type"], flashDeviceMap["specifier"], nil
+	return flashDeviceMap[rType], flashDeviceMap[rSpecifier], nil
 }
 
 // GetFlashDevice returns the FlashDevice given the device ID.

@@ -698,6 +698,24 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 			wantErr: errors.Errorf("End offset required (67108868) by 'data-size' " +
 				"(67108864) and 'data-position' (4) too large for partition size (1024)"),
 		},
+		{
+			name: "end offset overflowed",
+			imageNode: &dt.Node{
+				Name: "imageNode1",
+				Properties: []dt.Property{
+					{
+						Name:  "data-size",
+						Value: []byte{0xFF, 0xFF, 0xFF, 0xFF},
+					},
+					{
+						Name:  "data-position",
+						Value: []byte{0x00, 0x00, 0x00, 0x04},
+					},
+				},
+			},
+			want:    nil,
+			wantErr: errors.Errorf("End offset overflowed: Unsigned integer overflow for (4+4294967295)"),
+		},
 	}
 
 	for _, tc := range cases {

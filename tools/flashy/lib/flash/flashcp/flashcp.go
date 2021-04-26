@@ -267,8 +267,14 @@ var eraseFlashDevice = func(
 
 	// make sure we erase up to a complete erasesize block
 	imageSize := uint32(len(imFile.data))
-	// length if erasesize is 0
-	imageErasesizeLength := uint32((imageSize+m.erasesize-1)/m.erasesize) * m.erasesize
+
+	// check for overflow
+	imageAndEraseSize, err := utils.AddU32(imageSize, m.erasesize)
+	if err != nil {
+		return errors.Errorf("Failed to get erase length: %v", err)
+	}
+	// length if erasesize is 0 (won't over/under-flow here due to m.erasesize > 0)
+	imageErasesizeLength := uint32((imageAndEraseSize-1)/m.erasesize) * m.erasesize
 	eraseLength := imageErasesizeLength - eraseStart
 
 	log.Printf("Erasing flash device: start: %v, length: %v (end: %v)",
@@ -278,7 +284,7 @@ var eraseFlashDevice = func(
 		length: eraseLength,
 	}
 
-	err := IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
+	err = IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
 	if err != nil {
 		errMsg := fmt.Sprintf("Flash device '%v' erase failed: %v",
 			deviceFile.Name(), err)

@@ -244,11 +244,15 @@ func SafeAppendString(a, b []string) []string {
 // GetWord gets a 4 byte uint32 from a byte slice 'data' from offset to offset+4.
 // It returns an error if the offset is out of range.
 func GetWord(data []byte, offset uint32) (uint32, error) {
-	if offset+4 > uint32(len(data)) {
+	endOffset, err := AddU32(offset, 4)
+	if err != nil {
+		return 0, errors.Errorf("Failed to get end of offset: %v", err)
+	}
+	if endOffset > uint32(len(data)) {
 		return 0, errors.Errorf("Required offset %v out of range of data size %v",
 			offset, len(data))
 	}
-	val := binary.BigEndian.Uint32(data[offset : offset+4])
+	val := binary.BigEndian.Uint32(data[offset:endOffset])
 	return val, nil
 }
 
@@ -257,7 +261,11 @@ func GetWord(data []byte, offset uint32) (uint32, error) {
 // Warning: make an explicit copy if the original array is required again after
 // SetWord.
 func SetWord(data []byte, word, offset uint32) ([]byte, error) {
-	if offset+4 > uint32(len(data)) {
+	endOffset, err := AddU32(offset, 4)
+	if err != nil {
+		return nil, errors.Errorf("Failed to get end of offset: %v", err)
+	}
+	if endOffset > uint32(len(data)) {
 		return nil, errors.Errorf("Required offset %v out of range of data size %v",
 			offset, len(data))
 	}

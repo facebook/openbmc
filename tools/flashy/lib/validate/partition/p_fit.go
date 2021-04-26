@@ -24,6 +24,7 @@ import (
 	"crypto/sha256"
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 	"github.com/u-root/u-root/pkg/dt"
 )
@@ -205,13 +206,16 @@ func (p *FitPartition) getDataFromImageNodeViaDataLink(imageNode *dt.Node) ([]by
 		return nil, err
 	}
 
-	endOffset := dataPos + dataSize
+	endOffset, err := utils.AddU32(dataPos, dataSize)
+	if err != nil {
+		return nil, errors.Errorf("End offset overflowed: %v", err)
+	}
 	if endOffset > p.GetSize() {
 		return nil, errors.Errorf("End offset required (%v) by 'data-size' (%v) and 'data-position' (%v) "+
 			"too large for partition size (%v)", endOffset, dataSize, dataPos, p.GetSize())
 	}
 
-	return p.Data[dataPos : dataPos+dataSize], nil
+	return p.Data[dataPos:endOffset], nil
 }
 
 // given the image node, get the sha256 checksum.

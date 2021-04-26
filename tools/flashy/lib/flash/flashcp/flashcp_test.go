@@ -21,6 +21,7 @@ package flashcp
 
 import (
 	"bytes"
+	"math"
 	"testing"
 	"unsafe"
 
@@ -513,6 +514,15 @@ func TestEraseFlashDevice(t *testing.T) {
 			wantEraseLen:   6,
 			ioctlErr:       nil,
 			want:           nil,
+		},
+		{
+			name:           "overflowed",
+			roOffset:       0,
+			mtdErasesize:   math.MaxUint32 - 4,
+			wantEraseStart: 0,
+			wantEraseLen:   8,
+			ioctlErr:       nil,
+			want:           errors.Errorf("Failed to get erase length: Unsigned integer overflow for (6+4294967291)"),
 		},
 	}
 

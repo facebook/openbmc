@@ -25,6 +25,7 @@ import (
 	"hash/crc32"
 	"log"
 
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
@@ -122,13 +123,17 @@ func (p *LegacyUbootPartition) checkMagic() error {
 
 // checkData verifies that data matches data crc32 in header
 func (p *LegacyUbootPartition) checkData() error {
-	// cheeck that data + header is within p.Data's size
-	if p.header.Ih_size+legacyUbootHeaderSize > uint32(len(p.Data)) {
+	// check that data + header is within p.Data's size
+	imageDataEnd, err := utils.AddU32(p.header.Ih_size, legacyUbootHeaderSize)
+	if err != nil {
+		return err
+	}
+	if imageDataEnd > uint32(len(p.Data)) {
 		return errors.Errorf("Legacy U-Boot partition incomplete, data part too small.")
 	}
 
 	calcDataChecksum := crc32.ChecksumIEEE(
-		p.Data[legacyUbootHeaderSize : legacyUbootHeaderSize+p.header.Ih_size],
+		p.Data[legacyUbootHeaderSize:imageDataEnd],
 	)
 	if calcDataChecksum != p.header.Ih_dcrc {
 		return errors.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",

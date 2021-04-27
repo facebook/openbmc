@@ -78,6 +78,10 @@ mac_peer=(${mac[@]/#/0x})
 echo "Set MAC Address Filter for $peer_name: ${mac_peer[@]:1}"
 /usr/local/bin/ncsi-util 0x0e ${mac_peer[@]:1} 0x02 0x01
 
+#Clear eth0_mac_fixup.sh to avoid race condition.
+killall eth0_mac_fixup.sh
+sleep 2
+
 #IP Bridge
 $(ip link set down eth0)
 $(ip link set down usb0)

@@ -54,6 +54,7 @@ SRC_URI = "file://Makefile \
            file://setup-rackmond.sh \
            file://run-rackmond.sh \
            file://rackmon-config.py \
+           file://rackmon-stress.py \
            file://rackmond.py \
            file://psu-update-delta.py \
            file://psu-update-bel.py \
@@ -75,6 +76,7 @@ binfiles = "modbuscmd \
             psu-update-delta.py \
             psu-update-bel.py \
             psu-update-artesyn.py \
+            rackmon-stress.py \
             hexfile.py \
             pyrmd.py \
             srec.py \

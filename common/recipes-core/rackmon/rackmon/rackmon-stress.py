@@ -41,27 +41,27 @@ class SolitonBeamLock(LockFile):
         LockFile.__init__(self, "/tmp/modbus_dynamo_solitonbeam.lock")
 
 
-def _modbus(cmd):
+def _modbus(cmd, timeout):
     resp_len_words = int(cmd[-2:], 16)
     # each words is 2 bytes, add 5 byte header.
     resp_len = 2 * resp_len_words + 5
-    act_cmd = ["/usr/local/bin/modbuscmd", "-t", "500", "-x", str(resp_len), cmd]
+    act_cmd = ["/usr/local/bin/modbuscmd", "-t", str(timeout), "-x", str(resp_len), cmd]
     out = subprocess.check_output(act_cmd).decode().split()
     if out[0] != "Response:":
         raise ValueError("Unexpected response")
     return [int(i, 16) for i in out[1:]]
 
 
-def modbus(cmd):
+def modbus(cmd, timeout):
     with SolitonBeamLock() as _:
-        return _modbus(cmd)
+        return _modbus(cmd, timeout)
 
 
-def dynamo_loop(data_size, addrs):
+def dynamo_loop(data_size, addrs, timeout):
     rem_field = "03007a00"
     for addr in addrs:
         cmd = addr + rem_field + "%02x" % (data_size)
-        modbus(cmd)
+        modbus(cmd, timeout)
 
 
 def sv(svc_list, cmd):
@@ -203,6 +203,24 @@ class CPUProfiler:
         return diff
 
 
+def run_experiment_loop(iters, size, psus, interval, timeout=500):
+    total_time = 0.0
+    overruns = 0
+    with CPUProfiler() as _:
+        for _ in range(0, iters):
+            bts = time.time()
+            dynamo_loop(size, psus, timeout)
+            runtime_sec = time.time() - bts
+            total_time += runtime_sec
+            if interval > 0:
+                if runtime_sec < interval:
+                    time.sleep(interval - runtime_sec)
+                else:
+                    overruns += 1
+    exp_run = CPUProfiler.last_run
+    return exp_run, total_time, overruns
+
+
 DEFAULT_NUM_ITERS = 1000
 DEFAULT_DATA_SIZE = 1
 DEFAULT_LOGFILE = "./modbus_results.txt"
@@ -252,11 +270,18 @@ parser.add_argument(
     help="Study base CPU utilization for this period to compare with test run",
 )
 parser.add_argument(
-    "--iter-interval",
+    "--interval",
     dest="interval",
     type=int,
     default=0,
     help="Sleep time between iterations",
+)
+parser.add_argument(
+    "--timeout",
+    dest="timeout",
+    type=int,
+    default=500,
+    help="Timeout used for each try of the modbus command",
 )
 parser.add_argument(
     "--stop",
@@ -277,13 +302,12 @@ if args.experiment == "latency_distribution":
         os.remove(log)
     subprocess.check_call(["/etc/init.d/syslog", "restart"])
     time.sleep(5)
+    total_time = 0
 
     # Run the experiment
-    with CPUProfiler() as p:
-        for _ in range(0, args.num_iters):
-            dynamo_loop(args.size, args.psus.split(","))
-            if args.interval > 0:
-                time.sleep(args.interval)
+    run_experiment_loop(
+        args.num_iters, args.size, args.psus.split(","), args.interval, args.timeout
+    )
     time.sleep(5)
     logs = sorted(glob.glob("/var/log/messages*"))
     for log in logs:
@@ -292,16 +316,13 @@ if args.experiment == "latency_distribution":
                 if "LATENCY" in line:
                     args.output.write(line)
 elif args.experiment == "latency_cpu_mean":
-    with CPUProfiler() as p:
+    with CPUProfiler() as _:
         time.sleep(args.silent)
     base_run = CPUProfiler.last_run
     # Run the experiment
-    with CPUProfiler() as p:
-        for _ in range(0, args.num_iters):
-            dynamo_loop(args.size, args.psus.split(","))
-            if args.interval > 0:
-                time.sleep(args.interval)
-    exp_run = CPUProfiler.last_run
+    exp_run, _, overruns = run_experiment_loop(
+        args.num_iters, args.size, args.psus.split(","), args.interval, args.timeout
+    )
     base_util = base_run["utilization"]
     exp_util = exp_run["utilization"]
     exp_time = exp_run["time"]
@@ -316,8 +337,12 @@ elif args.experiment == "latency_cpu_mean":
         "Baud change",
         "CRC Errors",
         "Timeouts",
+        "Overruns",
     ]
     print(",".join(headers))
-    print("%.1f,%.1f,%.2f,%d,%d,%d" % (base_util, exp_util, avg_latency, bc, crc, t))
+    print(
+        "%.1f,%.1f,%.2f,%d,%d,%d,%d"
+        % (base_util, exp_util, avg_latency, bc, crc, t, overruns)
+    )
 
 sv_start(stop_svc)

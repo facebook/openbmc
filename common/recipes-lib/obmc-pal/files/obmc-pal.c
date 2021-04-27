@@ -2081,6 +2081,16 @@ pal_is_fw_update_ongoing_system(void) {
   return false;
 }
 
+int __attribute__((weak))
+pal_preprocess_before_updating_fw(uint8_t slot_id) {
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_postprocess_after_updating_fw(uint8_t slot_id) {
+  return PAL_EOK;
+}
+
 bool __attribute__((weak))
 pal_sled_cycle_prepare(void) {
   char key[MAX_KEY_LEN] = "blk_fwupd";

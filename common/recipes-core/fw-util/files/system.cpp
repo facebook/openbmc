@@ -114,6 +114,9 @@ uint8_t System::get_fru_id(string &name)
 
 void System::set_update_ongoing(uint8_t fru_id, int timeo)
 {
+  if ( timeo > 0 ) pal_preprocess_before_updating_fw(fru_id);
+  else pal_postprocess_after_updating_fw(fru_id);
+
   pal_set_fw_update_ongoing(fru_id, timeo);
 }
 

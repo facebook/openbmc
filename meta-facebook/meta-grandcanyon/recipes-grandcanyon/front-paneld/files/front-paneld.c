@@ -96,44 +96,70 @@ led_sync_handler() {
 // Define on OpenBMC spec. "3.2.4 Status/Fault LED"
 static void *
 system_status_led_handler() {
-  int ret = 0, blink_count = 1;
+  int ret = 0, blink_count = 1, i = 0;
   uint8_t server_power_status = SERVER_12V_OFF;
   uint8_t error[MAX_NUM_ERR_CODES] = {0}, error_count = 0;
+  bool is_bmc_fault = false;
   
   memset(error, 0, sizeof(error));
 
   while(1) {
-    //1. Solid Yellow: BMC booting, BMC fault, Expander fault, sensor fault, NIC fault, or server fault
-    ret = pal_get_error_code(error, &error_count);
-    if ((error_count > 0) || (ret < 0)) {
+    ret = pal_get_server_power(FRU_SERVER, &server_power_status);
+    if (ret < 0) {
+      //if can't get server power status, keep system status LED solid yellow
+      syslog(LOG_WARNING, "%s(): failed to get server power status", __func__);
+      
       ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
       if (ret < 0) {
         syslog(LOG_WARNING, "%s(): failed to set server status LED to solid yellow", __func__);
       }
       
     } else {
-      ret = pal_get_server_power(FRU_SERVER, &server_power_status);
-      if (ret < 0) {
-        //if can't get server power status, keep system status LED solid yellow
-        syslog(LOG_WARNING, "%s(): failed to get server power status", __func__);
-        ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+      ret = pal_get_error_code(error, &error_count);
       
-      } else {
-        //2. Solid Blue: BMC and server are both power on and ok
-        if (server_power_status == SERVER_POWER_ON) {
+      // When server power on
+      if (server_power_status == SERVER_POWER_ON) {
+        if ((error_count == 0) && (ret == 0)) {
+          // Solid Blue: BMC, server, and Expander have no fault
           ret = pal_set_status_led(FRU_UIC, STATUS_LED_BLUE);
           if (ret < 0) {
             syslog(LOG_WARNING, "%s(): failed to set server status LED to solid blue", __func__);
           }
-        
-        //3. Blinking Yellow: BMC on, but server power off
         } else {
+          // Solid Yellow: BMC, server, or Expander have fault
+          ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+          if (ret < 0) {
+            syslog(LOG_WARNING, "%s(): failed to set server status LED to solid yellow", __func__);
+          }
+        }
+      
+      // When server power off: only check BMC has error or not
+      } else {
+        // Check BMC fault
+        for (i = 0; i < error_count; i++) {
+          if (error[i] >= MAX_NUM_EXP_ERR_CODES ) {
+            is_bmc_fault = true;
+            break;
+          } else {
+            is_bmc_fault = false;
+          }
+        }
+        
+        // Blinking Yellow: BMC have no fault
+        if ((is_bmc_fault == false) && (ret == 0)){
           if (blink_count > 0) {
             ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
           } else {
             ret = pal_set_status_led(FRU_UIC, STATUS_LED_OFF);
           }
           blink_count = blink_count * -1;
+        
+        // Solid Yellow: BMC have fault
+        } else {
+          ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+          if (ret < 0) {
+            syslog(LOG_WARNING, "%s(): failed to set server status LED to solid yellow", __func__);
+          }
         }
       }
     }

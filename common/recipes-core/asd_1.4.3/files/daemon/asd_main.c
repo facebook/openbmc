@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #include "mem_helper.h"
 #include "target_handler.h"
@@ -480,6 +481,7 @@ STATUS process_new_client(asd_state* state, struct pollfd* poll_fds,
 {
     ASD_log(ASD_LogLevel_Warning, ASD_LogStream_Daemon, ASD_LogOption_None,
             "Client Connecting.");
+    syslog(LOG_CRIT,"ASD service connecting");
     extnet_conn_t new_extconn;
     STATUS result = ST_OK;
 
@@ -639,9 +641,11 @@ STATUS read_data(asd_state* state, extnet_conn_t* p_extconn, void* buffer,
 
         if (cnt < 1)
         {
-            if (cnt == 0)
+            if (cnt == 0) {
                 ASD_log(ASD_LogLevel_Error, ASD_LogStream_Daemon,
                         ASD_LogOption_None, "Client disconnected");
+                syslog(LOG_CRIT,"ASD service disconnected");
+            }
             else
                 ASD_log(ASD_LogLevel_Error, ASD_LogStream_Daemon,
                         ASD_LogOption_None, "Socket buffer receive failed: %d",

@@ -37,6 +37,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://common_middlewares.py\
            file://common_logging.py\
            file://common_auth.py\
+           file://async_ratelimiter.py\
            file://acl_config.py\
            file://acl_providers/__init__.py\
            file://acl_providers/cached_acl_provider.py\
@@ -69,6 +70,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://board_setup_routes.py \
            file://rest_modbus_cmd.py \
            file://test_rest_modbus_cmd.py \
+           file://test_async_ratelimiter.py\
            file://test_auth_enforcer.py \
            file://test_cached_acl_provider.py \
            file://test_common_middlewares.py \
@@ -87,7 +89,8 @@ SRC_URI = "file://setup-rest-api.sh \
 
 S = "${WORKDIR}"
 
-binfiles = "acl_config.py\
+binfiles = "async_ratelimiter.py\
+            acl_config.py\
             board_setup_routes.py \
             boardroutes.py \
             board_endpoint.py \

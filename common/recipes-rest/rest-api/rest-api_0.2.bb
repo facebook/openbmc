@@ -31,6 +31,7 @@ SRC_URI = "file://rest.py \
            file://common_tree.py \
            file://common_middlewares.py \
            file://common_auth.py\
+           file://async_ratelimiter.py\
            file://acl_config.py\
            file://acl_providers/__init__.py\
            file://acl_providers/cached_acl_provider.py\
@@ -73,6 +74,7 @@ SRC_URI = "file://rest.py \
            file://setup-rest-api.sh \
            file://setup_plat_routes.py \
            file://run_rest \
+           file://test_async_ratelimiter.py \
            file://test_cached_acl_provider.py \
            file://test_node_sensors.py \
            file://test_auth_enforcer.py \

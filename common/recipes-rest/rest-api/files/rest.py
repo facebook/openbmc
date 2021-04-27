@@ -30,8 +30,9 @@ import sys
 
 from aiohttp import web
 from aiohttp.log import access_logger
+from async_ratelimiter import AsyncRateLimiter
 from common_logging import ACCESS_LOG_FORMAT, get_logger_config
-from common_middlewares import auth_enforcer, jsonerrorhandler
+from common_middlewares import auth_enforcer, jsonerrorhandler, ratelimiter
 from rest_config import load_acl_provider, parse_config
 from setup_plat_routes import setup_plat_routes
 
@@ -60,7 +61,10 @@ logging.config.dictConfig(get_logger_config(config))
 servers = []
 
 
-app = web.Application(middlewares=[jsonerrorhandler, auth_enforcer])
+app = web.Application(middlewares=[jsonerrorhandler, ratelimiter, auth_enforcer])
+app["ratelimiter"] = AsyncRateLimiter(
+    slidewindow_size=int(config["ratelimit_window"]), limit=int(config["max_requests"])
+)
 setup_plat_routes(app, config)
 
 

@@ -24,7 +24,12 @@ import acl_config
 import common_auth
 from aiohttp.log import server_logger
 from aiohttp.web import Request
-from aiohttp.web_exceptions import HTTPException, HTTPForbidden, HTTPInternalServerError
+from aiohttp.web_exceptions import (
+    HTTPException,
+    HTTPForbidden,
+    HTTPInternalServerError,
+    HTTPTooManyRequests,
+)
 
 LOCALHOST_ADDRS = {
     "::1",
@@ -88,3 +93,19 @@ async def auth_enforcer(app, handler):
 def _is_request_from_localhost(request: Request) -> bool:
     peer_ip = request.transport.get_extra_info("peername")[0]
     return peer_ip in LOCALHOST_ADDRS
+
+
+async def ratelimiter(app, handler):
+    # get ratelimiter from app instance
+    ratelimiter = app["ratelimiter"]
+
+    # Rate limit per useragent, request.path, request.method
+    async def middleware_handler(request):
+        user_agent = request.headers.get("User-Agent")
+        if await ratelimiter.is_limited(request.path, request.method, user_agent):
+            raise HTTPTooManyRequests()
+        else:
+            resp = await handler(request)
+            return resp
+
+    return middleware_handler

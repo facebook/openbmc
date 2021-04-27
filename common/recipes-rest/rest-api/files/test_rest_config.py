@@ -22,6 +22,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
     (
@@ -41,6 +43,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
     (
@@ -61,6 +65,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
     (
@@ -87,6 +93,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
     (
@@ -114,6 +122,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
     (
@@ -141,6 +151,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
     (
@@ -162,6 +174,8 @@ valid_config = [
             "ssl_certificate": None,
             "ssl_key": None,
             "ssl_ca_certificate": None,
+            "max_requests": 0,
+            "ratelimit_window": 60,
         },
     ),
 ]

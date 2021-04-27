@@ -82,6 +82,11 @@ def parse_config(configpath):
             fallback="acl_providers.cached_acl_provider.CachedAclProvider",
         ),
         "acl_settings": acl_settings,
+        # if max_requests is 0, ratelimiting is disabled
+        "max_requests": RestConfig.get("ratelimiter", "max_requests", fallback=0),
+        "ratelimit_window": RestConfig.get(
+            "ratelimiter", "window_seconds", fallback=60
+        ),
     }
 
 

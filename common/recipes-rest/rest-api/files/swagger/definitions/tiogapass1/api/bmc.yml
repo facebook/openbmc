@@ -112,6 +112,8 @@ paths:
                     type: array
                     items:
                       type: string
+                  Secondary Boot Triggered:
+                    type: boolean
               Resources:
                 type: array
                 items:

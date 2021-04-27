@@ -20,6 +20,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   int ret;
   uint8_t status;
   int retry_count = 0;
+  uint8_t bmc_location = 0;
 
   try {
     cerr << "Checking if the server is ready..." << endl;
@@ -76,9 +77,13 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   cerr << "Doing ME Reset..." << endl;
   me_reset(slot_id);
   cerr << "Power-cycling the server..." << endl;
-  pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+  fby3_common_get_bmc_location(&bmc_location);
+  if ( bmc_location != NIC_BMC ) {
+    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+  }
   sleep(5);
   pal_set_server_power(slot_id, SERVER_POWER_ON);
+
   return ret;
 }
 

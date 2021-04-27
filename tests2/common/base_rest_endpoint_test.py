@@ -303,6 +303,12 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
             with self.subTest(attrib=attrib):
                 self.assertIn(attrib, dict_info["Information"]["MTD Parts"])
 
+    # /api/sys/bmc - Secondary Boot Triggered
+    def test_endpoint_api_sys_bmc_secondary_boot(self):
+        info = self.get_from_endpoint(CommonRestEndpointTest.BMC_ENDPOINT)
+        dict_info = json.loads(info)
+        self.assertFalse(dict_info["Information"]["Secondary Boot Triggered"])
+
 
 class FbossRestEndpointTest(CommonRestEndpointTest):
     """

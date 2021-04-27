@@ -143,8 +143,8 @@ print_psb_config(const struct psb_config_info *psb_info) {
   printf("RootKeySelect:                0x%02X\n", psb_info->root_key_select);
   printf("PlatformSecureBootEn:         0x%02X\n", psb_info->platform_secure_boot_en);
   printf("DisableBiosKeyAntiRollback:   0x%02X\n", psb_info->disable_bios_key_antirollback);
-  printf("DissableAmdKeyUsage:          0x%02X\n", psb_info->disable_amd_key_usage);
-  printf("DissableSecureDebugUnlock:    0x%02X\n", psb_info->disable_secure_debug_unlock);
+  printf("DisableAmdKeyUsage:           0x%02X\n", psb_info->disable_amd_key_usage);
+  printf("DisableSecureDebugUnlock:     0x%02X\n", psb_info->disable_secure_debug_unlock);
   printf("CustomerKeyLock:              0x%02X\n", psb_info->customer_key_lock);
   printf("PSBStatus:                    0x%02X\n", psb_info->psb_status);
   printf("PSBFusingReadiness:           0x%02X\n", psb_info->psb_fusing_readiness);
@@ -164,8 +164,8 @@ get_psb_config_json(const uint8_t fru_id, const char* fru_name, const struct psb
   json_object_set_new(obj, "RootKeySelect", json_integer(psb_info->root_key_select));
   json_object_set_new(obj, "PlatformSecureBootEn", json_integer(psb_info->platform_secure_boot_en));
   json_object_set_new(obj, "DisableBiosKeyAntiRollback", json_integer(psb_info->disable_bios_key_antirollback));
-  json_object_set_new(obj, "DissableAmdKeyUsage", json_integer(psb_info->disable_amd_key_usage));
-  json_object_set_new(obj, "DissableSecureDebugUnlock", json_integer(psb_info->disable_secure_debug_unlock));
+  json_object_set_new(obj, "DisableAmdKeyUsage", json_integer(psb_info->disable_amd_key_usage));
+  json_object_set_new(obj, "DisableSecureDebugUnlock", json_integer(psb_info->disable_secure_debug_unlock));
   json_object_set_new(obj, "CustomerKeyLock", json_integer(psb_info->customer_key_lock));
   json_object_set_new(obj, "PSBStatus", json_integer(psb_info->psb_status));
   json_object_set_new(obj, "PSBFusingReadiness", json_integer(psb_info->psb_fusing_readiness));

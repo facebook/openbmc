@@ -476,7 +476,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
 int
 pal_sled_cycle(void) {
-  int ret;
+  int ret = PAL_EOK;
   uint8_t bmc_location = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -488,6 +488,14 @@ pal_sled_cycle(void) {
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
+    uint8_t is_pwr_lock = 0;
+    // check power lock flag
+    if ( (ret = bic_get_pwr_lock_flag(&is_pwr_lock)) < 0 || is_pwr_lock > 0 ) {
+      printf("power lock flag is asserted, please make sure no firmware update is ongoing\n");
+      printf("If you still want to proceed, please clean the flag manually! ret=%d, lock=%d\n", ret, is_pwr_lock);
+      return PAL_ENOTSUP;
+    }
+
     if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) {
       syslog(LOG_CRIT, "Set NIC PERST failed.\n");
     }

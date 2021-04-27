@@ -58,9 +58,6 @@
 
 #define BIC_FLASH_START 0x8000
 
-#define FW_UPDATE_FAN_PWM  70
-#define FAN_PWM_CNT        4
-
 #define IPMB_BIC_RETRY 3
 #define SELF_TEST_RESP_LEN 2
 
@@ -1201,11 +1198,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   char ipmb_content[] = "ipmb";
   char* loc = NULL;
   bool stop_bic_monitoring = false;
-  bool stop_fscd_service = false;
-  bool stop_sensor_service = false;
-  uint8_t bmc_location = 0;
-  uint8_t status = 0;
-  int i = 0;
   char fdstr[32] = {0};
   bool fd_opened = false;
 
@@ -1281,61 +1273,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BB_CPLD:
       intf = BB_BIC_INTF;
       break;
-  }
-
-  // stop fscd in class 2 system when update firmware through SB BIC to avoid IPMB busy
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-  }
-
-  // when fw update is ongoing, fscd fails to get/set the fan speed,
-  // As a result, we need to stop running it during the fw update process
-  // Or it may issue false alarm fan dead events
-  if (bmc_location == NIC_BMC) {
-    stop_fscd_service = true;
-    if (intf == BB_BIC_INTF) {
-      stop_sensor_service = true;
-    }
-  }
-
-  if (stop_sensor_service == true) {
-    if (fby3_common_service_ctrl("sensord", SV_STOP) < 0) {
-      printf("Failed to stop sensord service\n");
-      ret = -1;
-      goto err_exit;
-    }
-  }
-  if (stop_fscd_service == true) {
-    printf("Set fan mode to manual and set PWM to %d%%\n", FW_UPDATE_FAN_PWM);
-    if (fby3_common_service_ctrl("fscd", SV_STOP) < 0) {
-      printf("Failed to stop fscd service\n");
-      ret = -1;
-      goto err_exit;
-    }
-    if (bic_set_fan_auto_mode(FAN_MANUAL_MODE, &status) < 0) {
-      printf("Failed to set fan mode to auto\n");
-      ret = -1;
-      goto err_exit;
-    }
-    if (bic_notify_fan_mode(FAN_MANUAL_MODE) < 0) {
-      printf("Failed to notify another BMC to set fan manual mode\n");
-      ret = -1;
-      goto err_exit;
-    }
-    // waiting another BMC to stop fscd
-    sleep(3);
-
-    // Fan PWM will be set to 100% by hardware during BB BIC update
-    if ((comp != FW_BB_BIC) && (comp != FW_BB_BIC_BOOTLOADER)) {
-      for (i = 0; i < FAN_PWM_CNT; i++) {
-        if (bic_manual_set_fan_speed(i, FW_UPDATE_FAN_PWM) < 0) {
-          printf("Failed to set fan %d PWM to %d\n", i, FW_UPDATE_FAN_PWM);
-          ret = -1;
-          goto err_exit;
-        }
-      }
-    }
   }
 
   //run cmd
@@ -1439,29 +1376,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       break;
   }
 
-err_exit:
-  if (stop_fscd_service == true) {
-    printf("Set fan mode to auto and start fscd\n");
-    if (bic_set_fan_auto_mode(FAN_AUTO_MODE, &status) < 0) {
-      printf("Failed to set fan mode to auto\n");
-      ret = -1;
-      goto err_exit;
-    }
-    if (bic_notify_fan_mode(FAN_AUTO_MODE) < 0) {
-      printf("Failed to notify another BMC to set fan manual mode\n");
-      ret = -1;
-      goto err_exit;
-    }
-    if (fby3_common_service_ctrl("fscd", SV_START) < 0) {
-       printf("Failed to start fscd service, please start fscd manually.\nCommand: sv start fscd\n");
-    }
-  }
-
-  if (stop_sensor_service == true) {
-    if (fby3_common_service_ctrl("sensord", SV_START) < 0) {
-      printf("Failed to start sensord service, please start fscd manually.\nCommand: sv start sensord\n");
-    }
-  }
   syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
   if (fd_opened) {
     close(fd);

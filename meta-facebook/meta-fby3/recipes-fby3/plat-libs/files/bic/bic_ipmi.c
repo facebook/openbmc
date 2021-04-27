@@ -1588,6 +1588,122 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
   return 0;
 }
 
+// Only for class 2 system to prepare a SEL hdr
+static void
+bic_prepare_sel_hdr(IPMI_SEL_MSG *sel, uint8_t dir_type) {
+
+  // reset
+  memset(sel, 0, sizeof(IPMI_SEL_MSG));
+
+  // set
+  sel->netfn = NETFN_STORAGE_REQ;
+  sel->cmd = CMD_STORAGE_ADD_SEL;
+  sel->record_type = SEL_SYS_EVENT_RECORD;
+  sel->slave_addr = BRIDGE_SLAVE_ADDR << 1; // 8 bit
+  sel->rev = SEL_IPMI_V2_REV;
+  sel->snr_num = BIC_SENSOR_SYSTEM_STATUS; // the default sensor number
+  sel->event_dir_type = dir_type;
+
+  return;
+}
+
+// Only for class 2 system to get the power lock bit
+int
+bic_get_pwr_lock_flag(uint8_t *flag) {
+#define SB_CPLD_PWR_LOCK_REGISTER 0x10
+  int i2cfd = BIC_STATUS_FAILURE;
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t tbuf = 0x0;
+  uint8_t rbuf = 0x0;
+  uint8_t tlen = 0x0;
+  uint8_t rlen = 0x0;
+  uint8_t retry = MAX_READ_RETRY;
+
+  i2cfd = i2c_cdev_slave_open(FRU_SLOT1 + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+    return i2cfd;
+  }
+
+  tbuf = SB_CPLD_PWR_LOCK_REGISTER;
+  tlen = 1;
+  rlen = 1;
+  do {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, &tbuf, tlen, &rbuf, rlen);
+    if ( ret < 0 ) {
+      msleep(100);
+    } else break;
+  } while( retry-- > 0 );
+
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+  *flag = (rbuf == 0)?0x1:0x0; // rbuf = 0 means power lock flag is asserted
+
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  return ret;
+}
+
+// Only for class 2 system to issue the power lock sel
+static int
+_set_pwr_lock_flag(uint8_t dir_type) {
+  int ret = BIC_STATUS_SUCCESS;
+  uint8_t tbuf[5] = {CPLD_BB_BUS, CPLD_FLAG_REG_ADDR, 0x0/*read cnt*/, 0x10/*base reg*/, 0x0/*data*/};
+  uint8_t rbuf[5] = {0};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  uint8_t mb_index = 0;
+
+  ret = bic_get_mb_index(&mb_index);
+  if (ret < 0) {
+    printf("Failed to get MB index\n");
+    return ret;
+  }
+
+  // set the register for the other side of BMC
+  tbuf[3] += (mb_index == FRU_SLOT1)?FRU_SLOT3:FRU_SLOT1;
+
+  // the default is high, so 0x00 means it's asserted
+  tbuf[4] = (dir_type == SEL_ASSERT)?0x00:0x01;
+
+  ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if ( ret < 0 ) {
+    printf("Failed to set power lock flag\n");
+  }
+
+  return ret;
+}
+
+int
+bic_notify_pwr_lock_sel(uint8_t dir_type) {
+  int ret = BIC_STATUS_SUCCESS;
+  IPMI_SEL_MSG sel = {0};
+
+  // prepare the sel
+  bic_prepare_sel_hdr(&sel, dir_type/*dir type*/);
+
+  // set sel's attribute
+  sel.snr_type = SEL_SNR_TYPE_PWR_LOCK;
+  sel.event_data[0] = SYS_SLED_PWR_LOCK;
+  sel.event_data[1] = dir_type;
+
+  ret = bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
+  if (ret < 0) {
+    // log the event to know the event is lost or not
+    syslog(LOG_WARNING, "%s(): failed to send power lock sel to another bmc", __func__);
+  }
+
+  // set BB CPLD
+  ret = _set_pwr_lock_flag(dir_type);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s(): failed to set power lock flag", __func__);
+  }
+
+  return ret;
+}
+
 // Only For Class 2
 int
 bic_notify_fan_mode(int mode) {
@@ -1596,26 +1712,18 @@ bic_notify_fan_mode(int mode) {
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
-  BYPASS_MSG req;
-  IPMI_SEL_MSG sel;
-  GET_MB_INDEX_RESP resp;
-  FAN_SERVICE_EVENT fan_event;
+  BYPASS_MSG req = {0};
+  IPMI_SEL_MSG sel = {0};
+  GET_MB_INDEX_RESP resp = {0};
+  FAN_SERVICE_EVENT fan_event = {0};
 
-  memset(&req, 0, sizeof(req));
-  memset(&sel, 0, sizeof(sel));
-  memset(&fan_event, 0, sizeof(fan_event));
-  memset(tbuf, 0, sizeof(tbuf));
-  memset(rbuf, 0, sizeof(rbuf));
+  // prepare the sel
+  bic_prepare_sel_hdr(&sel, SEL_ASSERT);
 
-  sel.netfn = NETFN_STORAGE_REQ;
-  sel.cmd = CMD_STORAGE_ADD_SEL;
-  sel.record_type = SEL_SYS_EVENT_RECORD;
-  sel.slave_addr = BRIDGE_SLAVE_ADDR << 1; // 8 bit
-  sel.rev = SEL_IPMI_V2_REV;
+  // set sel's attribute
   sel.snr_type = SEL_SNR_TYPE_FAN;
-  sel.snr_num = BIC_SENSOR_SYSTEM_STATUS;
-  sel.event_dir_type = SEL_ASSERT;
   fan_event.type = SYS_FAN_EVENT;
+
   if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
     return -1;
@@ -1991,6 +2099,7 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
   memcpy(req.bypass_data, data, MIN(sizeof(req.bypass_data), len));
 
   tlen = sizeof(BYPASS_MSG_HEADER) + len;
+
   if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to bypass command to another BMC", __func__);
     return -1;
@@ -2006,19 +2115,16 @@ bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option) {
   BB_FW_UPDATE_EVENT update_event = {0};
   int ret = 0;
 
-  memset(&sel, 0, sizeof(sel));
   memset(&update_event, 0, sizeof(update_event));
 
-  sel.netfn = NETFN_STORAGE_REQ;
-  sel.cmd = CMD_STORAGE_ADD_SEL;
-  sel.record_type = SEL_SYS_EVENT_RECORD;
-  sel.slave_addr = BRIDGE_SLAVE_ADDR << 1; // 8 bit
-  sel.rev = SEL_IPMI_V2_REV;
+  // prepare the sel
+  bic_prepare_sel_hdr(&sel, option/*dir type*/);
+
+  // set sel's attribute
   sel.snr_type = SEL_SNR_TYPE_FW_STAT;
-  sel.snr_num = BIC_SENSOR_SYSTEM_STATUS;
-  sel.event_dir_type = option;
   update_event.type = SYS_BB_FW_UPDATE;
   update_event.component = component;
+
   memcpy(sel.event_data, (uint8_t*) &update_event, MIN(sizeof(sel.event_data), sizeof(update_event)));
   ret = bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
   if (ret < 0) {

@@ -1831,6 +1831,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_BB_FW_EVENT    = 0x15,
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
+    SYS_SLED_PWR_CTRL     = 0x60,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
@@ -1934,6 +1935,13 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_DP_X16_PWR_FAULT:
       strcat(error_log, "DP x16 Riser Power Fault");
+      break;
+    case SYS_SLED_PWR_CTRL:
+      strcat(error_log, "SLED Power Lock");
+      // the longest time spent is to update PESW recovery update, it spends about 2000s
+      // set 2400s for insurance
+      if (event_data[1] == SEL_ASSERT) pal_set_fw_update_ongoing(FRU_SLOT1, 60*40);
+      else pal_set_fw_update_ongoing(FRU_SLOT1, 0);
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");
@@ -3934,4 +3942,106 @@ pal_is_aggregate_snr_valid(uint8_t snr_num) {
   }
 
   return true;
+}
+
+int pal_preprocess_before_updating_fw(uint8_t slot_id) {
+#define FW_UPDATE_FAN_PWM  70
+#define FAN_PWM_CNT        4
+  uint8_t bmc_location = 0;
+  uint8_t status = 0;
+  int ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return PAL_ENOTSUP;
+  }
+
+  if ( bmc_location != NIC_BMC ) return PAL_EOK;
+
+  ret = PAL_EOK;
+  do {
+    // stop running sensord
+    if ( (ret = fby3_common_service_ctrl("sensord", SV_STOP)) < 0 ) {
+      printf("Failed to stop sensord service\n");
+      break;
+    }
+
+    // stop running fscd
+    if ( (ret = fby3_common_service_ctrl("fscd", SV_STOP)) < 0) {
+      printf("Failed to stop fscd service\n");
+      break;
+    }
+
+    // go into the manual mode
+    if ( (ret = bic_set_fan_auto_mode(FAN_MANUAL_MODE, &status)) < 0 ) {
+      printf("Failed to set fan mode to manual\n");
+      break;
+    }
+
+    // send a SEL to the other side of BMC
+    if ( (ret = bic_notify_fan_mode(FAN_MANUAL_MODE)) < 0 ) {
+      printf("Failed to assert fan SEL to the other side of BMC\n");
+      break;
+    }
+
+    // waiting another BMC to stop fscd
+    sleep(3);
+
+    // set PWM to 70% if needed
+    printf("Set fan mode to manual and set PWM to %d%%\n", FW_UPDATE_FAN_PWM);
+    for (int i = 0; i < FAN_PWM_CNT; i++) {
+      if ( (ret = bic_manual_set_fan_speed(i, FW_UPDATE_FAN_PWM)) < 0 ) {
+        printf("Failed to set fan %d PWM to %d\n", i, FW_UPDATE_FAN_PWM);
+        break;
+      }
+      msleep(100);
+    }
+
+    if ( (ret = bic_notify_pwr_lock_sel(SEL_ASSERT)) < 0 ) {
+      printf("Failed to assert power lock SEL to the other side of BMC\n");
+      break;
+    }
+  } while(0);
+
+  return ret;
+}
+
+int pal_postprocess_after_updating_fw(uint8_t slot_id) {
+  static bool is_called = false;
+  uint8_t bmc_location = 0;
+  uint8_t status = 0;
+
+  // the deconstructor in fw-util(system.cpp) will call set_update_ongoing twice
+  // add a flag to avoid running it again
+  if ( is_called == true ) return PAL_EOK;
+
+  int ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return PAL_ENOTSUP;
+  }
+
+  if ( bmc_location != NIC_BMC ) return PAL_EOK;
+
+  if ( (ret = bic_set_fan_auto_mode(FAN_AUTO_MODE, &status)) < 0 ) {
+    printf("Failed to set fan mode to auto\n");
+  }
+
+  if ( (ret = bic_notify_fan_mode(FAN_AUTO_MODE)) < 0 ) {
+    printf("Failed to de-assert fan SEL to the other side of BMC\n");
+  }
+
+  if ( (ret = fby3_common_service_ctrl("sensord", SV_START)) < 0) {
+    printf("Failed to start sensord service, please start fscd manually.\nCommand: sv start sensord\n");
+  }
+
+  if ( (ret = fby3_common_service_ctrl("fscd", SV_START)) < 0 ) {
+    printf("Failed to start fscd service, please start fscd manually.\nCommand: sv start fscd\n");
+  }
+
+  if ( (ret = bic_notify_pwr_lock_sel(SEL_DEASSERT)) < 0 ) {
+    printf("Failed to de-assert power lock SEL to the other side of BMC\n");
+  }
+
+  is_called = true;
+  return ret;
 }

@@ -103,6 +103,9 @@ int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
 int bic_check_bb_fw_update_ongoing();
 int bic_get_mb_index(uint8_t *index);
+int bic_bypass_to_another_bmc(uint8_t* data, uint8_t len);
+int bic_notify_pwr_lock_sel(uint8_t dir_type);
+int bic_get_pwr_lock_flag(uint8_t *flag);
 #ifdef __cplusplus
 } // extern "C"
 #endif

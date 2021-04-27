@@ -78,9 +78,11 @@ extern const char *slot_usage;
 #define SEL_IPMI_V2_REV      0x4
 #define SEL_SNR_TYPE_FAN     0x4
 #define SEL_SNR_TYPE_FW_STAT 0xF
+#define SEL_SNR_TYPE_PWR_LOCK 0x10
 
 #define SYS_FAN_EVENT        0x14
 #define SYS_BB_FW_UPDATE     0x15
+#define SYS_SLED_PWR_LOCK    0x60
 
 #define MAX_BYPASS_DATA_LEN  256
 #define IANA_LEN 3

@@ -444,9 +444,10 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor RST_PLTRST_BMC_N & RST_RSMRST_BMC_N
+  // Only monitor RST_PLTRST_BMC_N & RST_RSMRST_BMC_N & FM_BMC_DEBUG_ENABLE_N
   gpios[RST_RSMRST_BMC_N].flag = 1; // CPLD PFR alert pin
   gpios[RST_PLTRST_BMC_N].flag = 1; // Platform reset pin
+  gpios[FM_BMC_DEBUG_ENABLE_N].flag = 1; // Debug enable pin
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GET_BIT(gpio_ass_val, i);
@@ -751,6 +752,8 @@ gpio_monitor_poll(void *ptr) {
             printf("RST_RSMRST_BMC_N is ASSERT !\n");
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
+          } else if (i == FM_BMC_DEBUG_ENABLE_N) {
+            syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is ASSERT: %d", fru, gpios[i].status);
           }
         } else {
           if (i == RST_RSMRST_BMC_N) {
@@ -789,6 +792,8 @@ gpio_monitor_poll(void *ptr) {
 #endif
           } else if (i == RST_PLTRST_BMC_N) {
             rst_timer(fru);
+          } else if (i == FM_BMC_DEBUG_ENABLE_N) {
+            syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is DEASSERT: %d", fru, gpios[i].status);
           }
         }
       }

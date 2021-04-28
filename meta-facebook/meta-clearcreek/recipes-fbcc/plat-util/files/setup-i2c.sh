@@ -70,7 +70,7 @@ if [ $carrier0 = "cc" ]; then
     i2cset -y -f 21 0x77 0x2 0xFF
     echo "Carrier#0 Type is m.2"
     break
-elif [ $carrier0 = "44" ]; then
+elif [ $carrier0 = "22" ] || [ $carrier0 = "44" ]; then
     $KVSET_CMD set "carrier_0" "e1.s"
     i2cset -y -f 21 0x77 0x02 0x00
     echo "Carrier#0 Type is e1.s"
@@ -91,7 +91,7 @@ if [ $carrier1 = "cc" ]; then
     i2cset -y -f 22 0x77 0x2 0xFF
     echo "Carrier#1 Type is m.2"
     break
-elif [ $carrier1 = "44" ]; then
+elif [ $carrier1 = "22" ] || [ $carrier1 = "44" ]; then
     $KVSET_CMD set "carrier_1" "e1.s"
     i2cset -y -f 22 0x77 0x02 0x00
     echo "Carrier#1 Type is e1.s"

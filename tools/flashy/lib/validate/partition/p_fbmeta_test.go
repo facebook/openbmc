@@ -179,7 +179,6 @@ func TestFBMetaValidate(t *testing.T) {
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}
-
 }
 
 // parse an example

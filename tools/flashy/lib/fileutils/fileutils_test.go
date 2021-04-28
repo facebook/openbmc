@@ -143,15 +143,17 @@ func TestFileExists(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		buf = bytes.Buffer{}
-		osStat = func(filename string) (os.FileInfo, error) {
-			return &mockFileInfo{tc.isDir, nil}, tc.osStatErr
-		}
-		got := FileExists("x")
-		if tc.want != got {
-			t.Errorf("want %v got %v", tc.want, got)
-		}
-		tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		t.Run(tc.name, func(t *testing.T) {
+			buf = bytes.Buffer{}
+			osStat = func(filename string) (os.FileInfo, error) {
+				return &mockFileInfo{tc.isDir, nil}, tc.osStatErr
+			}
+			got := FileExists("x")
+			if tc.want != got {
+				t.Errorf("want %v got %v", tc.want, got)
+			}
+			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		})
 	}
 }
 
@@ -205,15 +207,17 @@ func TestDirExists(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		buf = bytes.Buffer{}
-		osStat = func(filename string) (os.FileInfo, error) {
-			return &mockFileInfo{tc.isDir, nil}, tc.osStatErr
-		}
-		got := DirExists("x")
-		if tc.want != got {
-			t.Errorf("want %v got %v", tc.want, got)
-		}
-		tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		t.Run(tc.name, func(t *testing.T) {
+			buf = bytes.Buffer{}
+			osStat = func(filename string) (os.FileInfo, error) {
+				return &mockFileInfo{tc.isDir, nil}, tc.osStatErr
+			}
+			got := DirExists("x")
+			if tc.want != got {
+				t.Errorf("want %v got %v", tc.want, got)
+			}
+			tests.LogContainsSeqTest(buf.String(), tc.logContainsSeq, t)
+		})
 	}
 }
 

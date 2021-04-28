@@ -51,10 +51,12 @@ func TestStringFind(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		got := StringFind(tc.val, tc.arr)
-		if tc.want != got {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			got := StringFind(tc.val, tc.arr)
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
 	}
 }
 
@@ -108,10 +110,12 @@ func TestUint32Find(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		got := Uint32Find(tc.val, tc.arr)
-		if tc.want != got {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			got := Uint32Find(tc.val, tc.arr)
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+		})
 	}
 }
 
@@ -501,11 +505,13 @@ func TestGetWord(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		got, err := GetWord(tc.data, tc.offset)
-		if tc.want != got {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
-		tests.CompareTestErrors(tc.wantErr, err, t)
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := GetWord(tc.data, tc.offset)
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
 	}
 }
 
@@ -545,11 +551,13 @@ func TestSetWord(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		got, err := SetWord(tc.data, tc.word, tc.offset)
-		if !bytes.Equal(tc.want, got) {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
-		tests.CompareTestErrors(tc.wantErr, err, t)
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := SetWord(tc.data, tc.word, tc.offset)
+			if !bytes.Equal(tc.want, got) {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
 	}
 }
 

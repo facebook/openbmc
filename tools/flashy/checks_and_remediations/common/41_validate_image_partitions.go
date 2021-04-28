@@ -24,7 +24,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/image"
 )
 
 func init() {
@@ -43,7 +43,7 @@ func validateImagePartitions(stepParams step.StepParams) step.StepExitError {
 		return nil
 	}
 
-	err := validate.ValidateImageFile(stepParams.ImageFilePath)
+	err := image.ValidateImageFile(stepParams.ImageFilePath, stepParams.DeviceID)
 	if err != nil {
 		// the image could've been corrupted during copy,
 		// it is safe to reboot.

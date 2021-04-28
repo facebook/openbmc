@@ -20,11 +20,9 @@
 package validate
 
 import (
-	"bytes"
 	"reflect"
 	"testing"
 
-	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
@@ -107,66 +105,6 @@ func TestValidate(t *testing.T) {
 			}
 
 			got := Validate(exampleData)
-			tests.CompareTestErrors(tc.want, got, t)
-		})
-	}
-}
-
-func TestValidateImageFile(t *testing.T) {
-	// mock and defer restore MmapFile and Validate
-	mmapFileOrig := fileutils.MmapFile
-	validateOrig := Validate
-	defer func() {
-		fileutils.MmapFile = mmapFileOrig
-		Validate = validateOrig
-	}()
-
-	const imageFileName = "/opt/upgrade/image"
-	imageData := []byte("abcd")
-
-	cases := []struct {
-		name        string
-		mmapErr     error
-		validateErr error
-		want        error
-	}{
-		{
-			name:        "succeeded",
-			mmapErr:     nil,
-			validateErr: nil,
-			want:        nil,
-		},
-		{
-			name:        "mmap error",
-			mmapErr:     errors.Errorf("mmap error"),
-			validateErr: nil,
-			want: errors.Errorf("Unable to read image file '%v': %v",
-				"/opt/upgrade/image", "mmap error"),
-		},
-		{
-			name:        "validation error",
-			mmapErr:     nil,
-			validateErr: errors.Errorf("validation failed"),
-			want:        errors.Errorf("validation failed"),
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			fileutils.MmapFile = func(filename string, prot, flags int) ([]byte, error) {
-				if filename != imageFileName {
-					t.Errorf("filename: want '%v' got '%v'", imageFileName, filename)
-				}
-				return imageData, tc.mmapErr
-			}
-
-			Validate = func(data []byte) error {
-				if !bytes.Equal(data, imageData) {
-					t.Errorf("data: want '%v' got '%v'", imageData, data)
-				}
-				return tc.validateErr
-			}
-
-			got := ValidateImageFile(imageFileName)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

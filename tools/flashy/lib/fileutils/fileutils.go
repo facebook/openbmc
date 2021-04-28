@@ -296,3 +296,12 @@ var WriteFileWithTimeout = func(
 		return errors.Errorf("Timed out after '%v'", timeout)
 	}
 }
+
+// GetFileSize returns the file size (in bytes) for `filename`.
+var GetFileSize = func(filename string) (int64, error) {
+	fi, err := osStat(filename)
+	if err != nil {
+		return 0, err
+	}
+	return fi.Size(), nil
+}

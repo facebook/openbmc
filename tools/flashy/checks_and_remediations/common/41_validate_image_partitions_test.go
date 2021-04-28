@@ -24,18 +24,19 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/image"
 	"github.com/pkg/errors"
 )
 
 func TestValidateImagePartitions(t *testing.T) {
-	// mock and defer restore ValidateImageFile and IsPfrSystem
-	validateImageFileOrig := validate.ValidateImageFile
+	validateImageFileOrig := image.ValidateImageFile
 	isPfrSystemOrig := utils.IsPfrSystem
 	defer func() {
-		validate.ValidateImageFile = validateImageFileOrig
+		image.ValidateImageFile = validateImageFileOrig
 		utils.IsPfrSystem = isPfrSystemOrig
 	}()
+
+	mockDeviceID := "mtd:flash0"
 
 	cases := []struct {
 		name          string
@@ -81,16 +82,20 @@ func TestValidateImagePartitions(t *testing.T) {
 			utils.IsPfrSystem = func() bool {
 				return tc.isPfrSystem
 			}
-			validate.ValidateImageFile = func(imageFilePath string) error {
+			image.ValidateImageFile = func(imageFilePath string, deviceID string) error {
 				if imageFilePath != imageFileName {
 					t.Errorf("Image filename: want '%v' got '%v'",
 						imageFileName, imageFilePath)
+				}
+				if deviceID != mockDeviceID {
+					t.Errorf("deviceID: want '%v' got '%v'", mockDeviceID, deviceID)
 				}
 				return tc.validateError
 			}
 			stepParams := step.StepParams{
 				Clowntown:     tc.clowntown,
 				ImageFilePath: imageFileName,
+				DeviceID:      mockDeviceID,
 			}
 
 			got := validateImagePartitions(stepParams)

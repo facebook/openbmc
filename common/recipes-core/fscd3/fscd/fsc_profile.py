@@ -22,9 +22,11 @@ from fsc_util import Logger
 
 class Sensor(object):
     def __init__(self, sensor_name, pTable):
+        self.fru = None
         self.offset = None
         self.offset_table = None
         try:
+            self.fru = pTable.get("fru", None)
             if "read_source" in pTable:
                 if "sysfs" in pTable["read_source"]:
                     self.source = FscSensorSourceSysfs(

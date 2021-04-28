@@ -50,6 +50,23 @@ type PartitionConfigInfo struct {
 	Checksum string
 }
 
+// MetaPartitionImageFormat covers both vboot- and fit-meta image formats.
+// This image format is exported to allow platform-specific image validations for
+// retrofitting purposes (therefore disallowing upgrades to now-unsupported image formats).
+var MetaPartitionImageFormat = ImageFormat{
+	Name: "meta",
+	PartitionConfigs: []PartitionConfigInfo{
+		{
+			// pass in the whole image and let MetaImagePartition deal with
+			// finding the partitionConfigs and checksums
+			Name:   "fbmeta-image",
+			Offset: 0,
+			Size:   32 * 1024 * 1024,
+			Type:   FBMETA_IMAGE,
+		},
+	},
+}
+
 // ImageFormats is taken from fw-util (common/recipes-core/fw-util/files/image_parts.json).
 // It maps from image format name to a array of partition configurations.
 // The idea is that the image is validated against every single format type
@@ -63,20 +80,7 @@ type PartitionConfigInfo struct {
 // (4) vboot spl+recovery can be treated as UBOOT. It will be ignored if the flash1
 //     header is RO (e.g. fbtp)
 var ImageFormats = []ImageFormat{
-	{
-		// covers both vboot-meta and fit-meta
-		Name: "meta",
-		PartitionConfigs: []PartitionConfigInfo{
-			{
-				// pass in the whole image and let MetaImagePartition deal with
-				// finding the partitionConfigs and checksums
-				Name:   "fbmeta-image",
-				Offset: 0,
-				Size:   32 * 1024 * 1024,
-				Type:   FBMETA_IMAGE,
-			},
-		},
-	},
+	MetaPartitionImageFormat,
 	{
 		Name: "vboot",
 		PartitionConfigs: []PartitionConfigInfo{

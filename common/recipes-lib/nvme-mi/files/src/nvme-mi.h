@@ -50,6 +50,8 @@
 #define VENDOR_ID_QUALCOMM 0x17CB
 #define VENDOR_ID_SSSTC 0x1E95
 #define VENDOR_ID_KIOXIA 0x1E0F
+#define VENDOR_ID_WESTERN_DIGITAL 0x1B96
+#define VENDOR_ID_SANDISK 0x15B7
 
 /* NVMe-MI Management End Point Form Factor */
 #define MEFF_M_2_22110 0x35

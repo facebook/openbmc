@@ -90,6 +90,7 @@ enum {
   I2C_BUS_13,
   I2C_BUS_21 = 21,
   I2C_BUS_22,
+  I2C_BUS_23,
 };
 
 #define MAX_NUM_FRUS (FRU_CNT-1)
@@ -99,6 +100,15 @@ enum {
 #define READING_NA      (-2)
 #define ERR_NOT_READY   (-2)
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
+//CPLD Device Info
+#define CPLD_PWR_STATE_ADDR1    (0x2E)
+#define CPLD_PWR_STATE_ADDR2    (0x32)
+
+#define CPLD_OCP_PRSNT          (0x0002)
+#define CPLD_CARRIER_PWR_STATE  (0x0004)
+#define CPLD_PWR_STATE_CMD      (0x000A)
+#define CPLD_OCP_PWR_STATE      (0x000C)
 
 #define KEY_MB_SNR_HEALTH  "mb_sensor_health"
 #define KEY_MB_SEL_ERROR   "mb_sel_error"
@@ -119,5 +129,7 @@ int pal_get_platform_id(uint8_t *id);
 int pal_check_carrier_type(int index);
 int pal_set_id_led(uint8_t status);
 int pal_set_amber_led(char *carrier, char* dev_num, char* value);
+int pal_get_cpld_reg_cmd(uint8_t, uint8_t, uint8_t*);
+
 
 #endif /* __PAL_H__ */

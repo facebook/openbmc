@@ -1195,3 +1195,38 @@ int pal_get_dev_guid(uint8_t fru, char *guid) {
 
   return 0;
 }
+
+int pal_get_cpld_reg_cmd(uint8_t reg, uint8_t cmd, uint8_t* state)
+{
+  int fd = 0;
+  char fn[32];
+  uint8_t tbuf[16] = {0};
+  int ret = 0;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", I2C_BUS_23);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "[%s] Cannot open the i2c-%d", __func__, I2C_BUS_23);
+    ret = -1;
+    goto exit;
+  }
+
+  tbuf[0] = (cmd >> 8);
+  tbuf[1] = (cmd & 0x00FF);
+
+  ret = i2c_rdwr_msg_transfer(fd, reg, tbuf, 2, state, 1);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Cannot acces the i2c-%d dev: %x",
+           __func__, I2C_BUS_23, reg);
+    ret = -1;
+    goto exit;
+  }
+
+  ret = PAL_EOK;
+
+exit:
+  if (fd > 0)
+    close(fd);
+
+  return ret;
+}

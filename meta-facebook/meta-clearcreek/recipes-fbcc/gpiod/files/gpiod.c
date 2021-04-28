@@ -33,6 +33,10 @@
 
 #define POLL_TIMEOUT -1 /* Forever */
 
+#ifndef GETBIT
+#define GETBIT(x, y)  ((x & (1ULL << y)) > y)
+#endif
+
 static void
 log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
@@ -201,7 +205,90 @@ gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
   gpio_close(tmp);
 }
 
-static void gpio_event_log_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+static void power_fail_check ()
+{
+  gpio_desc_t *tmp = gpio_open_by_shadow("CPLD_SMB_ALERT_N_R");
+  gpio_desc_t *tmp1;
+  gpio_value_t value;
+  uint8_t status;
+  uint8_t nic_pwr_status, carrier_pwr_status, pax_pwr_status;
+  char shadow[32];
+  int ret, MAX_NIC_NUM = 8, MAX_CARR_NUM = 2, bitmask;
+  int nic_mapping[8] = {0,2,4,6,1,3,5,7};
+  gpio_get_value(tmp, &value);
+
+  syslog(LOG_CRIT, "%s: GPIOE5 - CPLD_SMB_ALERT_N_R\n", value ? "DEASSERT": "ASSERT");
+
+  if (value == GPIO_VALUE_LOW) {
+    ret = pal_get_cpld_reg_cmd(CPLD_PWR_STATE_ADDR1, CPLD_PWR_STATE_CMD, &status);
+    if (ret) {
+      goto exit;
+    }
+
+    nic_pwr_status = (status & 0x08) >> 3;
+    carrier_pwr_status = (status & 0x04) >> 2;
+    pax_pwr_status = status & 0x01;
+
+    if (nic_pwr_status == 0 || carrier_pwr_status == 0){
+      if(nic_pwr_status == 0) {
+        ret = pal_get_cpld_reg_cmd(CPLD_PWR_STATE_ADDR2, CPLD_OCP_PWR_STATE, &status);
+        if (ret) {
+          goto exit;
+        }
+
+        for(int i=0; i < MAX_NIC_NUM; i++) {
+          sprintf(shadow, "OCP_V3_%d_PRSNTB_R_N", i);
+          tmp1 = gpio_open_by_shadow(shadow);;
+
+          if (!tmp1) {
+            gpio_close(tmp1);
+            continue;
+          }
+
+          gpio_get_value(tmp1, &value);
+
+          if (value == GPIO_VALUE_HIGH) {
+            continue;
+          }
+          bitmask =  MAX_NIC_NUM-1-i;
+          if((GETBIT(status, bitmask) != true)) {
+            syslog(LOG_CRIT, "NIC#%d power fails", nic_mapping[i]);
+          }
+          gpio_close(tmp1);
+        }
+      }
+      if(carrier_pwr_status == 0) {
+        ret = pal_get_cpld_reg_cmd(CPLD_PWR_STATE_ADDR1, CPLD_CARRIER_PWR_STATE, &status);
+
+        if (ret) {
+          goto exit;
+        }
+
+        for(int i=0; i < MAX_CARR_NUM; i++) {
+          if((GETBIT(status, i) != true)) {
+            syslog(LOG_CRIT, "Carrier#%d power fails", MAX_CARR_NUM-1-i);
+          }
+        }
+      }
+    }
+    else if (pax_pwr_status == 0) {
+      syslog(LOG_CRIT, "PAX power rail fails");
+    }
+  }
+
+  gpio_close(tmp);
+
+exit:
+  syslog(LOG_ERR, "Get CPLD reg command fail");
+  gpio_close(tmp);
+  return;
+}
+static void gpio_smb_alert_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
+{
+  power_fail_check();
+}
+
+static void gpio_event_log_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   log_gpio_change(desc, curr, 0);
 }
@@ -239,6 +326,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"CARRIER_0_ALERT_R_N", "CARRIER_0", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
   {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
   {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_sys_pwr_ready_handler, NULL},
+  {"CPLD_SMB_ALERT_N_R", "GPIOE5", GPIO_EDGE_BOTH, gpio_smb_alert_handler, power_fail_check},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
 };

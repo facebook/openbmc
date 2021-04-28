@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include "pal.h"
 
 #define GPIO_POWER "FM_BMC_PWRBTN_OUT_R_N"

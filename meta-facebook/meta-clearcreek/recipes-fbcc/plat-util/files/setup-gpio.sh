@@ -74,6 +74,9 @@ gpio_export BMC_PWR_BTN_IN_N GPIOE0
 
 gpio_set BMC_READY_N 0
 
+# CPLD SMB ALERT
+gpio_export CPLD_SMB_ALERT_N_R GPIOE5
+
 # Reserved
 gpio_export BMC_GPIOA1 GPIOA1
 gpio_export BMC_GPIOA2 GPIOA2

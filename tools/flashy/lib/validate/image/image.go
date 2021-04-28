@@ -54,10 +54,15 @@ var validateImageFileSize = func(imageFilePath string, deviceID string) error {
 
 // ValidateImageFile takes in a path to an image file and runs
 // Validate over the data.
-// Takes in maybeDeviceI denoting a deviceID, which if non-empty is used to
+// Takes in maybeDeviceID denoting a deviceID, which if non-empty is used to
 // get the flash device and ensure that the image file size is smaller than the size of the
 // flash device.
-var ValidateImageFile = func(imageFilePath string, maybeDeviceID string) error {
+// Also takes in a list of imageFormats to validate the image against.
+var ValidateImageFile = func(
+	imageFilePath string,
+	maybeDeviceID string,
+	imageFormats []partition.ImageFormat,
+) error {
 	if len(maybeDeviceID) == 0 {
 		log.Printf("deviceID empty, bypassing image file size check.")
 	} else {
@@ -74,5 +79,5 @@ var ValidateImageFile = func(imageFilePath string, maybeDeviceID string) error {
 	}
 	defer fileutils.Munmap(imageData)
 
-	return validate.Validate(imageData, partition.ImageFormats)
+	return validate.Validate(imageData, imageFormats)
 }

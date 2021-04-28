@@ -21,6 +21,7 @@ package image
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
@@ -171,10 +172,13 @@ func TestValidateImageFile(t *testing.T) {
 				if !bytes.Equal(data, imageData) {
 					t.Errorf("data: want '%v' got '%v'", imageData, data)
 				}
+				if !reflect.DeepEqual(imageFormats, partition.ImageFormats) {
+					t.Errorf("imageFormats: want '%v' got '%v'", partition.ImageFormats, imageFormats)
+				}
 				return tc.validateErr
 			}
 
-			got := ValidateImageFile(imageFileName, tc.maybeDeviceID)
+			got := ValidateImageFile(imageFileName, tc.maybeDeviceID, partition.ImageFormats)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

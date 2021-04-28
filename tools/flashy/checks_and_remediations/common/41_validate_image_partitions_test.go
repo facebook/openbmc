@@ -20,11 +20,13 @@
 package common
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/image"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/pkg/errors"
 )
 
@@ -82,13 +84,16 @@ func TestValidateImagePartitions(t *testing.T) {
 			utils.IsPfrSystem = func() bool {
 				return tc.isPfrSystem
 			}
-			image.ValidateImageFile = func(imageFilePath string, deviceID string) error {
+			image.ValidateImageFile = func(imageFilePath string, deviceID string, imageFormats []partition.ImageFormat) error {
 				if imageFilePath != imageFileName {
 					t.Errorf("Image filename: want '%v' got '%v'",
 						imageFileName, imageFilePath)
 				}
 				if deviceID != mockDeviceID {
 					t.Errorf("deviceID: want '%v' got '%v'", mockDeviceID, deviceID)
+				}
+				if !reflect.DeepEqual(imageFormats, partition.ImageFormats) {
+					t.Errorf("imageFormats: want '%v' got '%v'", partition.ImageFormats, imageFormats)
 				}
 				return tc.validateError
 			}

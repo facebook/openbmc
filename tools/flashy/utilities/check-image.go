@@ -25,6 +25,7 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/image"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 )
 
 func init() {
@@ -41,6 +42,8 @@ Usage: check-image FILE DEVICE_ID
 
 DEVICE_ID is optional and denotes the target flash device ID (e.g. mtd:flash0), which is used
 to ensure that the image file size is smaller than that of the target flash device.
+
+Note that validation here checks against all known valid image formats.
 `)
 }
 
@@ -55,5 +58,5 @@ func checkImage(args []string) error {
 	if len(args) == 3 {
 		maybeDeviceID = args[2]
 	}
-	return image.ValidateImageFile(imageFilePath, maybeDeviceID)
+	return image.ValidateImageFile(imageFilePath, maybeDeviceID, partition.ImageFormats)
 }

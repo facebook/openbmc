@@ -100,4 +100,5 @@ workflows:
                             wedge400,
                             yamp,
                             yosemite,
+                            qemux86,
                             ]

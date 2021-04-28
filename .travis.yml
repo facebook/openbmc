@@ -81,6 +81,7 @@ env:
     - BOARD=wedge400
     - BOARD=yamp
     - BOARD=yosemite
+    - BOARD=qemux86
 
 script:
   # Sync Yocto meta-repositories.

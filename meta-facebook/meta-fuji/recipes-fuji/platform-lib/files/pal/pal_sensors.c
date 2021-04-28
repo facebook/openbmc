@@ -1182,7 +1182,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       brd_type_rev == BOARD_FUJI_EVT3) {
       *sensor_list = (uint8_t *) smb_sensor_list_evt;
       *cnt = smb_sensor_cnt_evt;
-    } else if (brd_type_rev == BOARD_FUJI_DVT1) {
+    } else {    /* DVT Unit has the same sensor list with PVT Unit */
       *sensor_list = (uint8_t *) smb_sensor_list_dvt;
       *cnt = smb_sensor_cnt_dvt;
     }
@@ -5374,7 +5374,7 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
         brd_type_rev == BOARD_FUJI_EVT2 ||
         brd_type_rev == BOARD_FUJI_EVT3) {
         cnt = smb_sensor_cnt_evt;
-      } else if (brd_type_rev == BOARD_FUJI_DVT1) {
+      } else {  /* DVT Unit has the same smb_sensor_cnt_dvt with PVT Unit*/
         cnt = smb_sensor_cnt_dvt;
       }
       break;

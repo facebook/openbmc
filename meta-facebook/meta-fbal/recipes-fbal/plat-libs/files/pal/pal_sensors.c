@@ -2675,6 +2675,8 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case MB_SNR_CPU0_PVTT_DEF:
     case MB_SNR_CPU1_PVTT_DEF:
     case MB_SNR_HSC_VIN:
+    case MB1_SNR_HSC_VIN:
+    case MB_SNR_VR_CPU0_VCCIN_VOLT:
     case MB_SNR_VR_CPU0_VSA_VOLT:
     case MB_SNR_VR_CPU0_VCCIO_VOLT:
     case MB_SNR_VR_CPU0_VDDQ_GRPABC_VOLT:
@@ -2774,6 +2776,8 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     case MB_SNR_CPU0_PVTT_DEF:
     case MB_SNR_CPU1_PVTT_DEF:
     case MB_SNR_HSC_VIN:
+    case MB1_SNR_HSC_VIN:
+    case MB_SNR_VR_CPU0_VCCIN_VOLT:
     case MB_SNR_VR_CPU0_VSA_VOLT:
     case MB_SNR_VR_CPU0_VCCIO_VOLT:
     case MB_SNR_VR_CPU0_VDDQ_GRPABC_VOLT:

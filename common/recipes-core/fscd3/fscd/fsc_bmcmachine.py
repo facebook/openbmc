@@ -50,6 +50,7 @@ class BMCMachine(object):
     def __init__(self):
         self.frus = set()
         self.nums = {}
+        self.extra_sensors = {}
         self.last_fan_speed = 0
 
     def read_sensors(self, sensor_sources, inf):
@@ -65,6 +66,22 @@ class BMCMachine(object):
         sensors = {}
         for fru in self.frus:
             sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources, inf)
+
+        # read specific sensors
+        if self.extra_sensors != {}:
+            for sensor_name in self.extra_sensors.keys():
+                fru = self.extra_sensors[sensor_name].fru
+                sensor = get_sensor_tuples(
+                    fru, None, {sensor_name: self.extra_sensors[sensor_name]}, None
+                )
+                # Merge sensors of the same fru
+                if fru in self.frus:
+                    sensors[fru] = {
+                        **sensors[fru],
+                        **sensor,
+                    }
+                else:
+                    sensors[fru] = sensor
 
         Logger.debug("Last fan speed : %d" % self.last_fan_speed)
         Logger.debug("Sensor reading")
@@ -270,58 +287,6 @@ def parse_all_sensors_util(sensor_data):
             status = m.group(5)
             symname = symbolize_sensorname(name)
             result[symname] = SensorValue(sid, name, value, unit, status, 0, 0)
-    return result
-
-
-def parse_sensor_json(raw_data, source):
-    result = {}
-    max_value = None
-    filter = source.get_filter()
-    try:
-        obj = json.loads(raw_data)
-        for sensor in obj["data"]:
-            if filter is not None:
-                m = re.match(filter, sensor)
-                if m is None:  # skip the sensor has name not match in regex
-                    continue
-            value = obj["data"][sensor]["value"]
-            if max_value is None or max_value < value:
-                max_value = value
-        result["json_max_temp"] = SensorValue(
-            None, "JSON_MAX_TEMP", max_value, "C", None, 0, 0
-        )
-    except Exception as e:
-        Logger.crit(
-            "Exception while trying to decode JSON {raw_data}: {exp}".format(
-                raw_data=repr(raw_data), exp=repr(e)
-            )
-        )
-    return result
-
-
-def parse_sensor_json(raw_data, source):
-    result = {}
-    max_value = None
-    filter = source.get_filter()
-    try:
-        obj = json.loads(raw_data)
-        for sensor in obj["data"]:
-            if filter is not None:
-                m = re.match(filter, sensor)
-                if m is None:  # skip the sensor has name not match in regex
-                    continue
-            value = obj["data"][sensor]["value"]
-            if max_value is None or max_value < value:
-                max_value = value
-        result["json_max_temp"] = SensorValue(
-            None, "JSON_MAX_TEMP", max_value, "C", None, 0, 0
-        )
-    except Exception as e:
-        Logger.crit(
-            "Exception while trying to decode JSON {raw_data}: {exp}".format(
-                raw_data=repr(raw_data), exp=repr(e)
-            )
-        )
     return result
 
 

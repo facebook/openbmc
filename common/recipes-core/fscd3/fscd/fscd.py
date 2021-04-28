@@ -33,7 +33,7 @@ import fsc_expr
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_callout, board_fan_actions, board_host_actions
 from fsc_profile import Sensor, profile_constructor
-from fsc_sensor import FscSensorSourceUtil
+from fsc_sensor import FscSensorSourceUtil, FscSensorSourceJson
 from fsc_util import Logger, clamp
 from fsc_zone import Fan, Zone, fan_mode
 
@@ -234,7 +234,10 @@ class Fscd(object):
         self.profiles = {}
 
         for name, pdata in list(self.fsc_config["profiles"].items()):
-            self.sensors[name] = Sensor(name, pdata)
+            sensor = Sensor(name, pdata)
+            if isinstance(sensor.source, FscSensorSourceJson):
+                self.machine.extra_sensors[name] = sensor
+            self.sensors[name] = sensor
             self.profiles[name] = profile_constructor(pdata)
 
     def build_fans(self):

@@ -117,6 +117,7 @@
         "kd": 0.5
       },
       "JSON_MAX_TEMP": {
+        "fru" : "scm",
         "read_source" : {
           "json" : "/tmp/incoming_fscd_sensor_data.json",
           "filter" : "^qsfp_\\d+_temp$"

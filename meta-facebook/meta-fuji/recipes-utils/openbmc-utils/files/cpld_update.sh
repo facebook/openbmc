@@ -25,6 +25,8 @@ prog="$0"
 CPLD_TYPE="$2"
 UPDATE_IMG="$4"
 
+chip_ver=$(aspeed_g6_chip_ver)
+
 DLL_PATH=/usr/lib/libcpldupdate_dll_gpio.so
 DLL_AST_JTAG_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 
@@ -143,6 +145,7 @@ disable_jtag_chain(){
     gpio_set_value PDB_R_HITLESS    1
 }
 
+
 trap 'rm -rf /tmp/fcmcpld_update' INT TERM QUIT EXIT
 
 echo 1 > /tmp/fcmcpld_update
@@ -172,39 +175,74 @@ else
 fi
 
 expect=0
+
+cpld_update_sw_mode(){
+        for n in {1..5}
+        do
+                echo "Program $CPLD_TYPE $n times"
+                if [[  $CPLD_TYPE == "PWR-L" ]];then
+                # ispvm success return code is 1
+                expect=1
+                ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
+                elif [[  $CPLD_TYPE == "PWR-R" ]];then
+                # ispvm success return code is 1
+                expect=1
+                ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
+                elif [[  $CPLD_TYPE == "PFR" ]];then
+                jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
+                else
+                # ispvm success return code is 1
+                expect=1
+                ispvm -f 100 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
+                fi
+
+                result=$?
+                if [ $result -eq $expect ]; then
+                        break
+                fi
+        done
+}
+
+cpld_update_i2c_mode(){
+        for n in {1..5}
+        do
+                echo "Program $CPLD_TYPE $n times"
+                if [[  $CPLD_TYPE == "PWR-L" ]];then
+                        cpldupdate-i2c 53 0x40 "${UPDATE_IMG}"
+                elif [[  $CPLD_TYPE == "PWR-R" ]];then
+                        cpldupdate-i2c 61 0x40 "${UPDATE_IMG}"
+                else
+                echo "Only Power CPLD support I2C Mode !!!"
+                fi
+                result=$?
+                if [ $result -eq $expect ]; then
+                        break
+                fi
+        done
+}
+
+cpld_update_hw_mode(){
+        if [ "$chip_ver" == "BOARD_FUJI_EVT1" ];then
+                cpldprog -p "${UPDATE_IMG}"
+        else
+                echo "Only AST262x A3 chip can support HW Mode !!!"
+                exit 1
+        fi
+}
+
 case $5 in
     hw)
-        cpldprog -p "${UPDATE_IMG}"
+        cpld_update_hw_mode
         ;;
     sw)
-        if [[  $CPLD_TYPE == "PWR-L" ]];then
-            # ispvm success return code is 1
-            expect=1
-            ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
-        elif [[  $CPLD_TYPE == "PWR-R" ]];then
-            # ispvm success return code is 1
-            expect=1
-            ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
-        elif [[  $CPLD_TYPE == "PFR" ]];then
-            jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
-        else
-            # ispvm success return code is 1
-            expect=1
-            ispvm -f 100 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
-        fi
+        cpld_update_sw_mode
         ;;
     i2c)
-        if [[  $CPLD_TYPE == "PWR-L" ]];then
-                cpldupdate-i2c 53 0x40 "${UPDATE_IMG}"
-        elif [[  $CPLD_TYPE == "PWR-R" ]];then
-                cpldupdate-i2c 61 0x40 "${UPDATE_IMG}"
-        else
-            echo "Only Power CPLD support I2C Mode !!!"
-        fi
+        cpld_update_i2c_mode
         ;;
     *)
         # default: hw mode
-        cpldprog -p "${UPDATE_IMG}"
+        cpld_update_hw_mode
         ;;
 esac
 

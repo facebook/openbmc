@@ -179,6 +179,13 @@ MAPTOSTRING root_port_mapping[] = {
 
 MAPTOSTRING root_port_mapping_gpv3[] = {
     // bus, device, port, silk screen, location
+    // Root Ports
+    { 0x15, 0, 0x1A, "CPU X16", "2OU"}, //Port 0x1A
+    { 0x63, 0, 0x2A, "CPU X8", "2OU"}, //Port 0x2A
+    // Up Strem Ports
+    { 0x16, 0, 0x1A, "USP X16", "2OU"}, //Port 0x1A
+    { 0x64, 0, 0x2A, "USP X8", "2OU"}, //Port 0x2A
+    // Down Stream Ports
     { 0x17, 0, 0x01, "Num 0", "2OU"},
     { 0x17, 1, 0x02, "Num 1", "2OU"},
     { 0x17, 2, 0x03, "Num 2", "2OU"},
@@ -193,6 +200,21 @@ MAPTOSTRING root_port_mapping_gpv3[] = {
     { 0x65, 3, 0x0C, "Num 11", "2OU"},
     { 0x17, 8, 0x0D, "E1S 0", "2OU"},
     { 0x65, 4, 0x0E, "E1S 1", "2OU"},
+    // End devices
+    { 0x18, 0, 0x01, "Num 0", "2OU"},
+    { 0x19, 0, 0x02, "Num 1", "2OU"},
+    { 0x1a, 0, 0x03, "Num 2", "2OU"},
+    { 0x1b, 0, 0x04, "Num 3", "2OU"},
+    { 0x1c, 0, 0x05, "Num 4", "2OU"},
+    { 0x1d, 0, 0x06, "Num 5", "2OU"},
+    { 0x1e, 0, 0x07, "Num 6", "2OU"},
+    { 0x1f, 0, 0x08, "Num 7", "2OU"},
+    { 0x66, 0, 0x09, "Num 8", "2OU"},
+    { 0x67, 0, 0x0A, "Num 9", "2OU"},
+    { 0x68, 0, 0x0B, "Num 10", "2OU"},
+    { 0x69, 0, 0x0C, "Num 11", "2OU"},
+    { 0x20, 0, 0x0D, "E1S 0", "2OU"},
+    { 0x6a, 0, 0x0E, "E1S 1", "2OU"},
 };
 
 MAPTOSTRING root_port_mapping_e1s[] = {
@@ -1678,8 +1700,8 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
     // case 1/2OU E1S
     *tbl = root_port_mapping_e1s;
     *cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);
-  } else if ( (board_2u == GPV3_MCHP_BOARD || board_2u == GPV3_BRCM_BOARD) && \
-              (*bmc_location == NIC_BMC) ) {
+  } else if ( (board_2u == GPV3_MCHP_BOARD || board_2u == GPV3_BRCM_BOARD)) {
+    // case Config C and Config D GPv3
     *tbl = root_port_mapping_gpv3;
     *cnt = sizeof(root_port_mapping_gpv3)/sizeof(MAPTOSTRING);
   } else {

@@ -113,6 +113,15 @@ def write_os(filename):
         signed_content = fh.read()
         write_content(args.os, signed_content)
 
+def extract_timeback(fdt):
+    timeback = 0
+    timeback_prop = fdt.resolve_path('/timeback')
+    if timeback_prop is not None:
+        timeback = timeback_prop[0]
+        fdt.get_rootnode().remove('timeback')
+        print("Extract timeback = %d from uboot-fit to args.time_back\n" % timeback )
+
+    return timeback
 
 def inject_subordinate(unsigned_content, path):
     with open(path, 'rb') as fh:
@@ -121,6 +130,7 @@ def inject_subordinate(unsigned_content, path):
         sub_fdt = get_fdt(sub_data)
 
     fdt = get_fdt(unsigned_content)
+    args.time_back = extract_timeback(fdt)
 
     pubkey = sub_fdt.resolve_path('/images/fdt@1')
     if pubkey is None:
@@ -170,7 +180,10 @@ def sign_firmware(dts):
         tmp.write(dts)
         tmp.flush()
         with tempfile.NamedTemporaryFile() as tmp2:
-            cmd = [args.mkimage, "-f", tmp.name, "-E", "-k", args.keydir,
+            cmd = []
+            if args.time_back != 0:
+                cmd += [ "env", "SOURCE_DATE_EPOCH=%d" % args.time_back ]
+            cmd += [args.mkimage, "-f", tmp.name, "-E", "-k", args.keydir,
                 "-p", "%08x" % args.size, "-r", tmp2.name]
             if args.token:
                 cmd += ['-N', 'pkcs11']
@@ -195,7 +208,10 @@ def sign_os(dts):
         tmp.write(dts)
         tmp.flush()
         with tempfile.NamedTemporaryFile() as tmp2:
-            cmd = [args.mkimage, "-f", tmp.name, "-k", args.keydir,
+            cmd = []
+            if args.time_back != 0:
+                cmd += [ "env", "SOURCE_DATE_EPOCH=%d" % args.time_back ]
+            cmd += [args.mkimage, "-f", tmp.name, "-k", args.keydir,
                 "-r", tmp2.name]
             if args.token:
                 cmd += ['-N', 'pkcs11']
@@ -283,6 +299,17 @@ def inject_lock(rom_fit):
     fdt.get_rootnode().subdata.insert(0, new_prop)
     return fdt.to_dtb()
 
+def inject_timeback(uboot_fit, timeback):
+    fdt = get_fdt(uboot_fit)
+    try:
+        fdt.get_rootnode().remove('timeback')
+    except ValueError:
+        # timeback not present
+        pass
+    new_prop = pyfdt.FdtPropertyWords('timeback', [timeback])
+    fdt.get_rootnode().subdata.insert(0, new_prop)
+    return fdt
+
 def main():
     with open(args.filename, 'rb') as fh:
         data = fh.read()
@@ -301,6 +328,13 @@ def main():
         timestamp = fdt.resolve_path('/timestamp')
         timestamp.words = [time.time()]
         write_test_fdt(data, fdt)
+        return 0
+
+    if args.time_back:
+        fdt = inject_timeback(uboot_fit, args.time_back)
+        write_test_fdt(data, fdt)
+        print("Setting timeback signing, next you need to sign it...")
+        print("Wrote unsigned timeback firmware: %s" % (args.output))
         return 0
 
     rom_fit = None
@@ -513,6 +547,8 @@ if __name__ == '__main__':
         help="Hardware token serial identifier")
     pkey.add_argument('--lock', default=False, action='store_true',
         help='Make a (unsigned) flash set the HW enforce bit')
+    pkey.add_argument('--time-back', default=0, type=int,
+        help="sign with the timestamp specified here")
 
     args = parser.parse_args()
 
@@ -530,7 +566,7 @@ if __name__ == '__main__':
         if not os.path.exists(keyfile):
             print("Cannot find private key: %s" % (keyfile))
             sys.exit(1)
-    elif not args.lock:
+    elif not (args.lock or args.time_back):
         # Not using a keydir and not locking HW enforcment.
         pkcs11.enforce_environment()
         args.keydir = pkcs11.get_url(args.token)
@@ -538,7 +574,7 @@ if __name__ == '__main__':
             print("Please include a --token-hint when using a token")
             sys.exit(1)
 
-    if not args.lock and (args.mkimage is None or args.kek is None):
+    if not ( args.lock or args.time_back ) and (args.mkimage is None or args.kek is None):
         print("Error: argument --mkimage and --kek are required")
         sys.exit(1)
 
@@ -551,7 +587,7 @@ if __name__ == '__main__':
         print("No image meta found: %s" % repr(e))
         print("Signing legacy image")
 
-    if not ( args.lock or args.force ):
+    if not ( args.lock or args.time_back or args.force ):
         if args.keyname is None and image_meta is not None:
             print("Please use HSM key (--keyname <hsm/key/name>) to sign new image")
             print("Or (--force) to sign without using HSM key")

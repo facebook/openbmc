@@ -30,3 +30,22 @@ ast_config_adc() {
     echo "$v2" > ${ADC_PATH}/adc${channel}_v2
     echo 1 > ${ADC_PATH}/adc${channel}_en
 }
+
+aspeed_g6_chip_ver() {
+        chip_ver=$(devmem 0x1e6e2014 | awk '{print substr($0,6,1)}')
+        case $chip_ver in
+                0)
+                        echo "A0"
+                        ;;
+                1)
+                        echo "A1"
+                        ;;
+                2)
+                        echo "A2"
+                        ;;
+                3)
+                        echo "A3"
+                        ;;
+        esac
+}
+

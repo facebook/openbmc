@@ -4,11 +4,12 @@ PID=$$
 # File format autodump<fru>.pid (See pal_is_crashdump_ongoing()
 # function definition)
 PID_FILE='/var/run/autodump1.pid'
-DUMP_DIR='/tmp/crashdumps'
+DUMP_DIR='/tmp/crashdump/output'
+MAP_DIR='/var/bafi'
 PARSE_FILE="$DUMP_DIR/bafi.log"
 DUMP_FILE="$DUMP_DIR/sensordump.log"
-DUMP_UTIL='/usr/bin/acd'
-PARSE_UTIL='/usr/bin/acd-analyzer'
+DUMP_UTIL='/usr/bin/crashdump'
+PARSE_UTIL='/usr/bin/bafi'
 LOG_ARCHIVE='/mnt/data/autodump.tar.gz'
 ACD=true
 
@@ -44,8 +45,8 @@ if [ ! -z "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null) ; 
   echo "kill pid $OLDPID..."
   kill -s 9 $OLDPID
   killall -s 9 peci-util >/dev/null 2>&1
-  killall -s 9 acd >/dev/null 2>&1
-  killall -s 9 acd-analyzer >/dev/null 2>&1
+  killall -s 9 crashdump >/dev/null 2>&1
+  killall -s 9 bafi >/dev/null 2>&1
 fi
 unset OLDPID
 
@@ -78,8 +79,12 @@ LOGS=$(basename $DUMP_FILE)
 if [ "$ACD" == true ] ; then
   $DUMP_UTIL
 
-  LOG_FILE=$(ls /tmp/crashdumps/ -t1 |grep ^crashdump_ |head -n 1)
-  $PARSE_UTIL "$DUMP_DIR/$LOG_FILE" > $PARSE_FILE 2>&1
+  if [ $(($(/usr/bin/kv get mb_skt) >> 1)) -eq 1 ]; then
+    PARSE_UTIL+=" -p $MAP_DIR/4s_device_map.json -m $MAP_DIR/4s_memory_map.json"
+  fi
+
+  LOG_FILE=$(ls $DUMP_DIR -t1 |grep ^crashdump_ |head -n 1)
+  ${PARSE_UTIL} "$DUMP_DIR/$LOG_FILE" > $PARSE_FILE 2>&1
 
   LOGS="$LOGS $LOG_FILE $(basename $PARSE_FILE)"
   echo -n "Sensor Dump Start at " > $DUMP_FILE

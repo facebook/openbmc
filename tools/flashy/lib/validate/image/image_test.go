@@ -27,6 +27,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/pkg/errors"
 )
@@ -166,7 +167,7 @@ func TestValidateImageFile(t *testing.T) {
 				}
 				return imageData, tc.mmapErr
 			}
-			validate.Validate = func(data []byte) error {
+			validate.Validate = func(data []byte, imageFormats []partition.ImageFormat) error {
 				if !bytes.Equal(data, imageData) {
 					t.Errorf("data: want '%v' got '%v'", imageData, data)
 				}

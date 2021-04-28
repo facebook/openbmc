@@ -29,11 +29,9 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	// mock and defer restore ImageFormats, ValidatePartitionsFromPartitionConfigs
-	imageFormatsOrig := partition.ImageFormats
+	// mock and defer restore ValidatePartitionsFromPartitionConfigs
 	validatePartitionsFromPartitionConfigsOrig := partition.ValidatePartitionsFromPartitionConfigs
 	defer func() {
-		partition.ImageFormats = imageFormatsOrig
 		partition.ValidatePartitionsFromPartitionConfigs = validatePartitionsFromPartitionConfigsOrig
 	}()
 
@@ -90,7 +88,6 @@ func TestValidate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleData := []byte("abcd")
 			i := 0
-			partition.ImageFormats = tc.imageFormats
 			partition.ValidatePartitionsFromPartitionConfigs = func(
 				data []byte,
 				partitionConfigs []partition.PartitionConfigInfo,
@@ -104,7 +101,7 @@ func TestValidate(t *testing.T) {
 				return tc.validatePartitionsErrs[idx]
 			}
 
-			got := Validate(exampleData)
+			got := Validate(exampleData, tc.imageFormats)
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}

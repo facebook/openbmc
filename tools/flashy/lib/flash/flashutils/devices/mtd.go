@@ -27,6 +27,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/pkg/errors"
 )
 
@@ -100,7 +101,7 @@ func (m *MemoryTechnologyDevice) Validate() error {
 		return errors.Errorf("Can't mmap flash device: %v", err)
 	}
 	defer m.Munmap(data)
-	return validate.Validate(data)
+	return validate.Validate(data, partition.ImageFormats)
 }
 
 // GetMTDBlockFilePath gets the /dev/mtdblock[0-9]+ file path

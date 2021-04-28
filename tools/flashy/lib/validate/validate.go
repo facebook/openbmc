@@ -27,11 +27,11 @@ import (
 )
 
 // Validate tries to validate partitions according to all configs defined in
-// partition.ImageFormats. If one succeeds, return nil. If none succeeds,
+// imageFormats. If one succeeds, return nil. If none succeeds,
 // validation has failed, return the error.
 // Supports both data from image file and flash device
-var Validate = func(data []byte) error {
-	for _, imageFormat := range partition.ImageFormats {
+var Validate = func(data []byte, imageFormats []partition.ImageFormat) error {
+	for _, imageFormat := range imageFormats {
 		log.Printf("*** Attempting to validate using image format '%v' ***",
 			imageFormat.Name)
 

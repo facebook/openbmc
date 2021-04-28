@@ -26,6 +26,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/pkg/errors"
 )
 
@@ -73,5 +74,5 @@ var ValidateImageFile = func(imageFilePath string, maybeDeviceID string) error {
 	}
 	defer fileutils.Munmap(imageData)
 
-	return validate.Validate(imageData)
+	return validate.Validate(imageData, partition.ImageFormats)
 }

@@ -112,6 +112,9 @@ wedge_board_ver() {
         67)
             echo "BOARD_FUJI_DVT1"
             ;;
+        69)
+            echo "BOARD_FUJI_PVT"
+            ;;
         *)  # New board version need to be added here
             echo "BOARD_FUJI_UNDEFINED_${board_ver}"
             ;;

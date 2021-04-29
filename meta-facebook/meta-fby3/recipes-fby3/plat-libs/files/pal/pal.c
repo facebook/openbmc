@@ -1861,6 +1861,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   char fan_mode_str[FAN_MODE_STR_LEN] = {0};
   char component_str[MAX_COMPONENT_LEN] = {0};
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -1953,7 +1954,18 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, log_msg);
       break;
     case SYS_DP_X8_PWR_FAULT:
-      strcat(error_log, "DP x8 Riser Power Fault");
+      fby3_common_get_2ou_board_type(fru, &type_2ou);
+      if (type_2ou == M2_BOARD) {
+        strcat(error_log, "M.2 Board Power Fault");
+      } else if (type_2ou == E1S_BOARD) {
+        strcat(error_log, "Sierra Point Board Power Fault");
+      } else if ((type_2ou == GPV3_MCHP_BOARD) || (type_2ou == GPV3_BRCM_BOARD)) {
+        strcat(error_log, "GPv3 Board Power Fault");
+      } else if (type_2ou == DP_RISER_BOARD) {
+        strcat(error_log, "DP x8 Riser Power Fault");
+      } else {
+        strcat(error_log, "Unknown 2OU Board Power Fault");
+      }
       break;
     case SYS_DP_X16_PWR_FAULT:
       strcat(error_log, "DP x16 Riser Power Fault");

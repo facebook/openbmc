@@ -17,6 +17,7 @@ IMAGE_INSTALL += " \
   flashrom \
   fscd \
   front-paneld \
+  led-controld \
   lldp-util \
   mterm \
   openbmc-utils \

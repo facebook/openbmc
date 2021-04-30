@@ -16,7 +16,3 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://lib_pal_ex.py \
-           "
-binfiles += "lib_pal_ex.py"

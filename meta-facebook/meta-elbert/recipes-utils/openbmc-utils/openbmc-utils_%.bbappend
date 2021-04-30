@@ -47,6 +47,7 @@ SRC_URI += "file://board-utils.sh \
             file://spi_pim_ver.sh \
             file://meta_info.sh \
             file://beacon_led.sh \
+            file://setup_bcm53134.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -106,6 +107,11 @@ do_install_board() {
     # mac fixup should work
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
+
+    # Fixes the speed on the BCM53134. This can be done in any start level
+    # within rcS.
+    install -m 755 setup_bcm53134.sh ${D}${sysconfdir}/init.d/setup_bcm53134.sh
+    update-rc.d -r ${D} setup_bcm53134.sh start 75 S .
 
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .

@@ -19,8 +19,8 @@ PLAT_DISTRO_OVERRIDES=(
 #   -- none --
   meta-fby2-nd:lf-dunfell
   meta-qemux86:lf-dunfell
+  meta-fbal:lf-dunfell
 # zeus platforms (pending upgrade)
-  meta-fbal:zeus
   meta-fbep:zeus
   meta-clearcreek:zeus
   meta-fbsp:zeus

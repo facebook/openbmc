@@ -1634,6 +1634,7 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       break;
     case SIM_LM75_U1_TEMP:
       ret = read_attr(fru, sensor_num, SIM_LM75_U1_DEVICE, TEMP(1), value);
+      break;
     case SMB_SENSOR_TEMP1:
       ret = read_attr(fru, sensor_num, SMB_TEMP1_DEVICE, TEMP(1), value);
       break;

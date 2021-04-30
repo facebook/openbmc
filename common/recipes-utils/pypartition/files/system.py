@@ -54,7 +54,10 @@ try:
     def add_syslog_handler(logger):
         # type(logging.Logger) -> None
         try:
-            run_verbosely(["/etc/init.d/syslog", "start"], logger)
+            cmd = "[ -x /etc/init.d/syslog ] && /etc/init.d/syslog start"
+            logger.info("Starting to run `{}`.".format(cmd))
+            subprocess.check_call(cmd, shell=True)
+            logger.info("Finished running `{}`.".format(cmd))
         # Some old init scripts are missing --oknodo
         except subprocess.CalledProcessError:
             pass
@@ -111,6 +114,7 @@ except ImportError:
 
 if False:
     from typing import List, Optional, Tuple, Union
+
     from virtualcat import ImageSourcesType
 
     LogHandlerType = Union[
@@ -262,7 +266,7 @@ def exec_bunch(commands, logger):
 
 
 def systemd_available(logger):
-    with open("/proc/1/cmdline") as f:
+    with open("/proc/1/comm") as f:
         c = f.readline()
         return "systemd" in c
 

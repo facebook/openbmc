@@ -55,8 +55,10 @@ class RestModbusCmdTest(TestCase):
     @classmethod
     def setUpClass(cls):
         # Stop the real rackmond as it's not functional in most test environments
+        # Give it enough time - 30s, instead of default 10s,
+        # to stop in case of a slow system
         subprocess.run(
-            "sv stop rackmond || systemctl stop rackmond", shell=True, check=True
+            "sv -w 30 stop rackmond || systemctl stop rackmond", shell=True, check=True
         )
         os.remove(RACKMOND_SOCKET)
 
@@ -78,6 +80,11 @@ class RestModbusCmdTest(TestCase):
         subprocess.run(
             "sv start rackmond || systemctl start rackmond", shell=True, check=True
         )
+
+        # Wait for rackmond fully up and running and mock rackmond to be
+        # stopped, so the subsequent test case can stop rackmond and start
+        # the mock with success
+        time.sleep(20)
 
     def test_modbus_cmd_post(self):
         raw_payload = json.dumps(EXAMPLE_PAYLOAD).encode("utf-8")

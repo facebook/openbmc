@@ -30,5 +30,5 @@ max([
     all:slot4_soc_dimme0_temp,
     all:slot4_soc_dimmg0_temp,
     all:slot4_soc_dimmh0_temp])),
-  linear_mezz(all:nic_mezz_sensor_temp)
+  linear_mezz(all:nic_mezz_sensor_temp) + pid_mezz(all:nic_mezz_sensor_temp)
 ])

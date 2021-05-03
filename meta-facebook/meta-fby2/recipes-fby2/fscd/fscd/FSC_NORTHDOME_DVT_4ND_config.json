@@ -1,5 +1,5 @@
 {
-  "version": "northdome-evt-r03",
+  "version": "northdome-dvt-r01",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 80,
@@ -90,16 +90,20 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [70, 20],
-        [76, 23],
-        [80, 25],
-        [84, 29],
-        [86, 31],
-        [88, 37],
-        [90, 43],
-        [92, 50],
-        [95, 80]
+        [65, 20]
       ]
+    },
+    "pid_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 82,
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 5,
+      "kp": -3,
+      "ki": -0.015,
+      "kd": 0
     }
   },
   "fans": {
@@ -123,7 +127,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "FSC_NORTHDOME_EVT_4ND_zone1.fsc"
+      "expr_file": "FSC_NORTHDOME_DVT_4ND_zone1.fsc"
     }
   }
 }

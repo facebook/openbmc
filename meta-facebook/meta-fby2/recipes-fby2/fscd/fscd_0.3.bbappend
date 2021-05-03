@@ -42,8 +42,8 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBYV250_10KFAN_DVT_config.json \
             file://FSC_FBYV250_15KFAN_DVT_config.json \
             file://FSC_FBYV250_DVT_zone1.fsc \
-            file://FSC_NORTHDOME_EVT_4ND_config.json \
-            file://FSC_NORTHDOME_EVT_4ND_zone1.fsc \
+            file://FSC_NORTHDOME_DVT_4ND_config.json \
+            file://FSC_NORTHDOME_DVT_4ND_zone1.fsc \
             file://fsc_board.py \
             file://fscd_end.sh \
            "
@@ -67,7 +67,7 @@ FSC_CONFIG += "FSC_FBY2_MP_4TL_config.json \
                FSC_FBGPV2_BRCM_10KFAN_PVT_config.json \
                FSC_FBYV250_10KFAN_DVT_config.json\
                FSC_FBYV250_15KFAN_DVT_config.json\
-               FSC_NORTHDOME_EVT_4ND_config.json \
+               FSC_NORTHDOME_DVT_4ND_config.json \
               "
 
 FSC_ZONE_CONFIG +="FSC_FBY2_MP_4TL_zone1.fsc \
@@ -78,7 +78,7 @@ FSC_ZONE_CONFIG +="FSC_FBY2_MP_4TL_zone1.fsc \
                    FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
                    FSC_FBGPV2_DVT_zone1.fsc \
                    FSC_FBYV250_DVT_zone1.fsc \
-                   FSC_NORTHDOME_EVT_4ND_zone1.fsc \
+                   FSC_NORTHDOME_DVT_4ND_zone1.fsc \
                   "
 
 do_install_append() {

@@ -172,7 +172,7 @@ def sysfs_write(inp, val) -> None:
         with open(inp, "w") as f:
             f.write("%d\n" % val)
     except Exception:
-        syslog.syslog(syslog.LOG_CRIT, "Cannot write to %s" % inp)
+        syslog.syslog(syslog.LOG_ERR, "Cannot write to %s" % inp)
 
 
 def set_mux_channel(ch) -> None:
@@ -205,7 +205,7 @@ def exec_check_return(cmd) -> bool:
     returncode = subprocess.Popen(cmd.split(" ")).wait(timeout=5)
 
     if returncode:
-        syslog.syslog(syslog.LOG_CRIT, "execute {} fail".format(cmd))
+        syslog.syslog(syslog.LOG_ERR, "execute {} fail".format(cmd))
         return False
     else:
         return True
@@ -302,13 +302,13 @@ class Pcard(object):
                     if val[ch] == 0:
                         self.present_channel.append(ch)
                         syslog.syslog(
-                            syslog.LOG_CRIT, "Mux channel %d pcard/psu insertion" % ch
+                            syslog.LOG_INFO, "Mux channel %d pcard/psu insertion" % ch
                         )
                     else:
                         self.present_channel.remove(ch)
                         self.first_detect[ch] = True
                         syslog.syslog(
-                            syslog.LOG_CRIT, "Mux channel %d pcard/psu extraction" % ch
+                            syslog.LOG_INFO, "Mux channel %d pcard/psu extraction" % ch
                         )
                         # Live extraction. Will never happen in DC, but Good to
                         # to have the logic because it does apply to 2 PEM case
@@ -318,7 +318,7 @@ class Pcard(object):
                 # nothing found. No channel will be appended to the list
                 self.first_detect[ch] = True
                 syslog.syslog(
-                    syslog.LOG_CRIT, "Mux channel %d pcard/psu extraction" % ch
+                    syslog.LOG_INFO, "Mux channel %d pcard/psu extraction" % ch
                 )
                 self.present_status[ch] = 1
                 self.ltc4151_vin[ch] = None
@@ -399,7 +399,7 @@ class Pcard(object):
         if self.ltc4151_voltage_no_val_cnt[ch] >= 10:
             if self.userver_power_is_on():
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "LTC4151: Channel %d voltage failed to read due to"
                     " ltc4151 gotten in unknown trouble. Reducing Power consumption..."
                     % ch,
@@ -407,7 +407,7 @@ class Pcard(object):
                 self.power_consumption_reduction()
             else:
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "LTC4151: Channel %d of voltage failed to"
                     " read due to userver being off" % ch,
                 )
@@ -420,7 +420,7 @@ class Pcard(object):
         """
         output_data = os.popen(cmd_data)
         if output_data:
-            syslog.syslog(syslog.LOG_CRIT, "running %s succeeded" % cmd_data)
+            syslog.syslog(syslog.LOG_DEBUG, "running %s succeeded" % cmd_data)
         else:
             syslog.syslog(syslog.LOG_INFO, "running %s failed" % cmd_data)
         return output_data
@@ -485,7 +485,7 @@ class Pcard(object):
             data, err = cmd_output.communicate()
             fru_ver = data.decode("utf-8")
         except Exception:
-            syslog.syslog(syslog.LOG_CRIT, "running cmd %d failed" % int(fru_cmd))
+            syslog.syslog(syslog.LOG_ERR, "running cmd %d failed" % int(fru_cmd))
         syslog.syslog(syslog.LOG_INFO, "fru_version read is %d" % int(fru_ver))
         return int(fru_ver)
 
@@ -600,14 +600,14 @@ class Pcard(object):
         power_type = {"pem1": 0, "pem2": 0, "psu1": 0, "psu2": 0}
         fru_ver = self.detect_power_type(ch)
         if fru_ver == -1:
-            syslog.syslog(syslog.LOG_CRIT, "Mux channel %d is ac psu" % fru_ver)
+            syslog.syslog(syslog.LOG_INFO, "Mux channel %d is ac psu" % fru_ver)
             self.with_ltc4281[ch] = False
             self.with_ltc4151[ch] = False
             power_type["psu1"] = 1
             power_type["psu2"] = 1
         elif fru_ver == 1:
             syslog.syslog(
-                syslog.LOG_CRIT,
+                syslog.LOG_INFO,
                 "Mux channel %d is pcard with LTC4151(type=%d)" % (ch, fru_ver),
             )
             self.with_ltc4281[ch] = False
@@ -615,14 +615,14 @@ class Pcard(object):
             power_type["pem1"] = 1
         elif fru_ver >= 2:
             syslog.syslog(
-                syslog.LOG_CRIT,
+                syslog.LOG_INFO,
                 "Mux channel %d is pcard with LTC4281(type=%d)" % (ch, fru_ver),
             )
             self.with_ltc4151[ch] = False
             power_type["pem2"] = 1
             if not self.check_ltc4281_status(ch):
                 syslog.syslog(
-                    syslog.LOG_CRIT, "Mux channel %d fault status is detected" % ch
+                    syslog.LOG_WARNING, "Mux channel %d fault status is detected" % ch
                 )
                 self.dump_ltc4281_status(ch)
                 self.clear_ltc4281_status(ch)
@@ -668,7 +668,7 @@ class Pcard(object):
             if self.userver_power_is_on():
                 if not self.ltc4281_temp_no_val[ch]:
                     syslog.syslog(
-                        syslog.LOG_CRIT,
+                        syslog.LOG_ERR,
                         "ASSERT: raised - channel %d temp failed to read "
                         "due to LTC4281 get unknown trouble" % ch,
                     )
@@ -680,7 +680,7 @@ class Pcard(object):
                     and not self.ltc4281_temp_no_val[ch]
                 ):
                     syslog.syslog(
-                        syslog.LOG_CRIT,
+                        syslog.LOG_ERR,
                         "ASSERT: raised - channel %d temp failed to read "
                         "due to wedge power is off" % ch,
                     )
@@ -692,7 +692,7 @@ class Pcard(object):
         """
         if self.ltc4281_temp_no_val_power_off[ch]:
             syslog.syslog(
-                syslog.LOG_CRIT,
+                syslog.LOG_INFO,
                 "DEASSERT: settled - channel %d LTC4281 temp success "
                 "to read, wedge power is back on" % ch,
             )
@@ -700,7 +700,7 @@ class Pcard(object):
 
         if self.ltc4281_temp_no_val[ch]:
             syslog.syslog(
-                syslog.LOG_CRIT,
+                syslog.LOG_INFO,
                 "DEASSERT: settled - channel %d LTC4281 temp success "
                 "to read, unknown trouble is fixed" % ch,
             )
@@ -717,7 +717,7 @@ class Pcard(object):
         if temp >= TEMP_THRESHOLD_UNR:
             if not self.ltc4281_unr_assert[ch]:
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "ASSERT: %s threshold - "
                     "raised - channel: %d, MOSFET Temp curr_val: %.2f C, "
                     "thresh_val: %.2f C" % (UNR, ch, temp, TEMP_THRESHOLD_UNR),
@@ -728,7 +728,7 @@ class Pcard(object):
         elif temp < TEMP_THRESHOLD_UNR and temp >= TEMP_THRESHOLD_UCR:
             if self.ltc4281_unr_assert[ch]:
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "DEASSERT: %s threshold - "
                     "settled - channel: %d, MOSFET Temp curr_val: %.2f C, "
                     "thresh_val: %.2f C" % (UNR, ch, temp, TEMP_THRESHOLD_UNR),
@@ -738,7 +738,7 @@ class Pcard(object):
 
             if not self.ltc4281_ucr_assert[ch]:
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "ASSERT: %s threshold - "
                     "raised - channel: %d, MOSFET Temp curr_val: %.2f C, "
                     "thresh_val: %.2f C" % (UCR, ch, temp, TEMP_THRESHOLD_UCR),
@@ -748,7 +748,7 @@ class Pcard(object):
         else:
             if self.ltc4281_unr_assert[ch]:
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "DEASSERT: %s threshold - "
                     "settled - channel: %d, MOSFET Temp curr_val: %.2f C, "
                     "thresh_val: %.2f C" % (UNR, ch, temp, TEMP_THRESHOLD_UNR),
@@ -758,7 +758,7 @@ class Pcard(object):
 
             if self.ltc4281_ucr_assert[ch]:
                 syslog.syslog(
-                    syslog.LOG_CRIT,
+                    syslog.LOG_ERR,
                     "DEASSERT: %s threshold - "
                     "settled - channel: %d, MOSFET Temp curr_val: %.2f C, "
                     "thresh_val: %.2f C" % (UCR, ch, temp, TEMP_THRESHOLD_UCR),
@@ -811,7 +811,7 @@ class Pcard(object):
                 self.ltc4281_fet_bad_cnt[ch] += 1
                 if self.ltc4281_fet_bad_cnt[ch] >= 5 and not self.ltc4281_fet_bad[ch]:
                     syslog.syslog(
-                        syslog.LOG_CRIT,
+                        syslog.LOG_ERR,
                         "ASSERT: raised - channel: " "%d, MOSFET status is bad" % ch,
                     )
                     self.dump_ltc4281_status(ch)
@@ -820,7 +820,7 @@ class Pcard(object):
             else:
                 if self.ltc4281_fet_bad[ch]:
                     syslog.syslog(
-                        syslog.LOG_CRIT,
+                        syslog.LOG_INFO,
                         "DEASSERT: settled - "
                         "channel: %d, MOSFET status is good" % ch,
                     )
@@ -871,7 +871,7 @@ class Pcard(object):
                 # checking for voltage below 10.50V
                 if vin < LTC4151_VIN_CRITICAL_THRESHOLD:
                     syslog.syslog(
-                        syslog.LOG_CRIT,
+                        syslog.LOG_ERR,
                         "LTC4151: Voltage of %d is below the critical threshold of "
                         "10.50V and counter = %d" % (vin, self.ltc4151_avg_cnt),
                     )
@@ -1005,7 +1005,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT, "Mux channel %d dump LTC4281 sensors %s" % (ch, record)
+            syslog.LOG_INFO, "Mux channel %d dump LTC4281 sensors %s" % (ch, record)
         )
 
         record = []
@@ -1015,7 +1015,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT,
+            syslog.LOG_INFO,
             "Mux channel %d dump LTC4281 status1 - " "%s at reg: 0x1e" % (ch, record),
         )
 
@@ -1026,7 +1026,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT,
+            syslog.LOG_INFO,
             "Mux channel %d dump LTC4281 status2 - " "%s at reg: 0x1f" % (ch, record),
         )
 
@@ -1037,7 +1037,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT,
+            syslog.LOG_INFO,
             "Mux channel %d dump LTC4281 fault log " "- %s at reg: 0x04" % (ch, record),
         )
 
@@ -1048,7 +1048,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT,
+            syslog.LOG_INFO,
             "Mux channel %d dump LTC4281 adc alert "
             "log - %s at reg: 0x05" % (ch, record),
         )
@@ -1060,7 +1060,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT,
+            syslog.LOG_INFO,
             "Mux channel %d dump LTC4281 fault log "
             "ee - %s at reg: 0x24" % (ch, record),
         )
@@ -1072,7 +1072,7 @@ class Pcard(object):
             # Wait for a while to release cpu usage
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT,
+            syslog.LOG_INFO,
             "Mux channel %d dump LTC4281 adc alert "
             "log ee - %s at reg: 0x25" % (ch, record),
         )
@@ -1081,7 +1081,7 @@ class Pcard(object):
         """
         Clear LTC4281 status register (0x04, 0x05, 0x24, 0x25) value.
         """
-        syslog.syslog(syslog.LOG_CRIT, "Mux channel %d LTC4281 status clean start" % ch)
+        syslog.syslog(syslog.LOG_INFO, "Mux channel %d LTC4281 status clean start" % ch)
         log_status = (
             LTC4281_FAULT_LOG_EE
             + LTC4281_ADC_ALERT_LOG_EE
@@ -1093,7 +1093,7 @@ class Pcard(object):
             # Wait for a while to make sure command execute done
             time.sleep(delay)
         syslog.syslog(
-            syslog.LOG_CRIT, "Mux channel %d LTC4281 status clean finish" % ch
+            syslog.LOG_INFO, "Mux channel %d LTC4281 status clean finish" % ch
         )
 
     def init_ltc4281(self, ch, delay=0.05) -> None:
@@ -1101,7 +1101,7 @@ class Pcard(object):
         Initialize LTC4281: enable fault log
         """
         syslog.syslog(
-            syslog.LOG_CRIT, "Mux channel %d LTC4281 initialization start" % ch
+            syslog.LOG_INFO, "Mux channel %d LTC4281 initialization start" % ch
         )
         self.ltc4281_write_channel(ch, LTC4281_FAULT_LOG_EN, 1)
         # Wait for a while to make sure command execute done
@@ -1110,7 +1110,7 @@ class Pcard(object):
         # clear_ltc4281_status function (triggered by EEPROM_DONE_ALERT).
         self.ltc4281_write_channel(ch, LTC4281_ALERT_GENERATED, 0)
         syslog.syslog(
-            syslog.LOG_CRIT, "Mux channel %d LTC4281 initialization finish" % ch
+            syslog.LOG_INFO, "Mux channel %d LTC4281 initialization finish" % ch
         )
 
     def run(self) -> None:

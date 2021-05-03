@@ -85,7 +85,12 @@ inherit systemd
 inherit python3-dir
 
 DEPENDS = "update-rc.d-native python3-setuptools"
-RDEPENDS_${PN} += "bash python3-core"
+RDEPENDS_${PN} += "\
+    bash \
+    python3-core \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
+                         'mtd-utils-ubifs', '', d)} \
+    "
 
 OPENBMC_UTILS_CUSTOM_EMMC_MOUNT ?= "0"
 

@@ -3,8 +3,8 @@
 require recipes-core/images/fbobmc-image-meta.inc
 require northdome-image-layout.inc
 
-# IMAGE_FSTYPES_remove = "cpio.lzma.u-boot"
-# IMAGE_FSTYPES += "cpio.zst.u-boot"
+IMAGE_FSTYPES_remove = "cpio.lzma.u-boot"
+IMAGE_FSTYPES += "cpio.zst.u-boot"
 
 require recipes-core/images/fb-openbmc-image.bb
 

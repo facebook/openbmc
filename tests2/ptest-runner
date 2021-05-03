@@ -59,7 +59,10 @@ def bmc_build(recipes, build_path, verbose):
     if verbose:
       build_option = ""
 
-    build_steps = [
+    build_steps = []
+    if os.path.exists("/opt/rh/devtoolset-8/enable"):
+        build_steps += ["source /opt/rh/devtoolset-8/enable"]
+    build_steps += [
         f"cd {openbmc}",
         f"source ./openbmc-init-build-env qemux86 {build_path} > /dev/null",
         "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",

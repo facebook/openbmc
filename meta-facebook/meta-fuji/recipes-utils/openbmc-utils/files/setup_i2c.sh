@@ -26,6 +26,7 @@ BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board versi
 
 # # Bus 0
 i2c_device_add 0 0x1010 slave-mqueue #IPMB 0
+
 # # Bus 1
 i2c_device_add 1 0x40 xdpe132g5c #ISL68137 DC-DC core
 i2c_device_add 1 0x53 mp2978
@@ -33,10 +34,11 @@ i2c_device_add 1 0x59 mp2978
 
 # # Bus 2
 i2c_device_add 2 0x35 scmcpld  #SCM CPLD
+
 # # Bus 4
 i2c_device_add 4 0x1010 slave-mqueue #IPMB 1
-# # Bus 4
 i2c_device_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
+
 # # Bus 13
 i2c_device_add 13 0x35 iobfpga #IOB FPGA
 
@@ -121,8 +123,10 @@ i2c_device_add 79 0x52 24c64    #fan 2 eeprom
 # # i2c-mux PCA9548 0x70, channel 5
 i2c_device_add 28 0x50 24c02    #BMC54616S EEPROM
 
-# # Bus 11
-# # i2c-mux PCA9548 0x73, channel 1, mux PCA9548 0x77
+#
+# 11-0077 (channel #1) -> 40-0076: 8 channels (i2c-80 -> i2c87) connecting
+# to PIM #1.
+#
 i2c_device_add 80 0x60 domfpga  # DOM FPGA
 i2c_device_add 81 0x56 24c64
 i2c_device_add 82 0x48 tmp75
@@ -132,7 +136,10 @@ i2c_device_add 84 0x10 adm1278
 i2c_device_add 86 0x34 ucd90160
 i2c_device_add 86 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 2, mux PCA9548 0x77
+#
+# 11-0077 (channel #2) -> 41-0076: 8 channels (i2c-88 -> i2c-95) connecting
+# to PIM #2.
+#
 i2c_device_add 88 0x60 domfpga 	# DOM FPGA
 i2c_device_add 89 0x56 24c64
 i2c_device_add 90 0x48 tmp75
@@ -142,7 +149,10 @@ i2c_device_add 92 0x10 adm1278
 i2c_device_add 94 0x34 ucd90160
 i2c_device_add 94 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 3, mux PCA9548 0x77
+#
+# 11-0077 (channel #3) -> 42-0076: 8 channels (i2c-96 -> i2c-103) connecting
+# to PIM #3.
+#
 i2c_device_add 96 0x60 domfpga 	    # DOM FPGA
 i2c_device_add 97 0x56 24c64
 i2c_device_add 98 0x48 tmp75
@@ -152,7 +162,10 @@ i2c_device_add 100 0x10 adm1278
 i2c_device_add 102 0x34 ucd90160
 i2c_device_add 102 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 4, mux PCA9548 0x77
+#
+# 11-0077 (channel #4) -> 43-0076: 8 channels (i2c-104 -> i2c-111) connecting
+# to PIM #4.
+#
 i2c_device_add 104 0x60 domfpga 	# DOM FPGA
 i2c_device_add 105 0x56 24c64
 i2c_device_add 106 0x48 tmp75
@@ -162,7 +175,10 @@ i2c_device_add 108 0x10 adm1278
 i2c_device_add 110 0x34 ucd90160
 i2c_device_add 110 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 5, mux PCA9548 0x77
+#
+# 11-0077 (channel #5) -> 44-0076: 8 channels (i2c-112 -> i2c-119) connecting
+# to PIM #5.
+#
 i2c_device_add 112 0x60 domfpga 	# DOM FPGA
 i2c_device_add 113 0x56 24c64
 i2c_device_add 114 0x48 tmp75
@@ -172,7 +188,10 @@ i2c_device_add 116 0x10 adm1278
 i2c_device_add 118 0x34 ucd90160
 i2c_device_add 118 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 6, mux PCA9548 0x77
+#
+# 11-0077 (channel #6) -> 45-0076: 8 channels (i2c-120 -> i2c-127) connecting
+# to PIM #6.
+#
 i2c_device_add 120 0x60 domfpga 	# DOM FPGA
 i2c_device_add 121 0x56 24c64
 i2c_device_add 122 0x48 tmp75
@@ -182,7 +201,10 @@ i2c_device_add 124 0x10 adm1278
 i2c_device_add 126 0x34 ucd90160
 i2c_device_add 126 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 7, mux PCA9548 0x77
+#
+# 11-0077 (channel #7) -> 46-0076: 8 channels (i2c-128 -> i2c-135) connecting
+# to PIM #7.
+#
 i2c_device_add 128 0x60 domfpga 	# DOM FPGA
 i2c_device_add 129 0x56 24c64
 i2c_device_add 130 0x48 tmp75
@@ -192,7 +214,10 @@ i2c_device_add 132 0x10 adm1278
 i2c_device_add 134 0x34 ucd90160
 i2c_device_add 134 0x6b mp2975
 
-# # i2c-mux PCA9548 0x73, channel 8, mux PCA9548 0x77
+#
+# 11-0077 (channel #8) -> 47-0076: 8 channels (i2c-136 -> i2c-143) connecting
+# to PIM #8.
+#
 i2c_device_add 136 0x60 domfpga 	# DOM FPGA
 i2c_device_add 137 0x56 24c64
 i2c_device_add 138 0x48 tmp75

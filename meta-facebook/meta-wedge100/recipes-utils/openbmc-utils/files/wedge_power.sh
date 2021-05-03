@@ -81,10 +81,12 @@ do_status() {
 }
 
 do_on_com_e() {
+    logger -p user.crit "Powering on microserver..."
     echo 1 > $PWR_USRV_SYSFS
 }
 
 do_on_main_pwr() {
+    logger -p user.crit "Turning on main power..."
     echo 1 > $PWR_MAIN_SYSFS
 }
 
@@ -118,18 +120,21 @@ do_on() {
 
     # power on sequence
     if ! is_main_power_on; then
-      try_and_log "turning on main power" do_on_main_pwr || ret=1
+      do_on_main_pwr || ret=1
     fi
-    try_and_log "powering on microserver" do_on_com_e || ret=1
+
+    do_on_com_e || ret=1
 
     return $ret
 }
 
 do_off_com_e() {
+    logger -p user.crit "Powering off microserver..."
     echo 0 > $PWR_USRV_SYSFS
 }
 
 do_off_main_pwr() {
+    logger -p user.crit "Turning off main power..."
     echo 0 > $PWR_MAIN_SYSFS
 }
 
@@ -137,8 +142,8 @@ do_off() {
     local ret
     ret=0
 
-    try_and_log "powering off microserver" do_off_com_e || ret=1
-    try_and_log "turning off main power" do_off_main_pwr || ret=1
+    do_off_com_e || ret=1
+    do_off_main_pwr || ret=1
 
     return $ret
 }
@@ -159,7 +164,7 @@ do_reset() {
     done
     if [ $system -eq 1 ]; then
         pulse_us=100000             # 100ms
-        logger "Power reset the whole system ..."
+        logger -p user.crit "Power reset the whole system..."
         echo -n "Power reset the whole system ..."
         sleep 1
         echo 0 > $PWR_SYSTEM_SYSFS
@@ -171,8 +176,7 @@ do_reset() {
         echo 0 > $PWR_SYSTEM_SYSFS
         usleep $pulse_us
         echo 1 > $PWR_SYSTEM_SYSFS
-        logger -s "wedge_power.sh reset -s through CPLD failed. The system will wait for 5 more seconds."
-        logger -s "Then, it will reset Using pwr1014a instead."
+        logger -p user.crit "Chassis power failed through CPLD. Will try pwr1014a in 5 sec..."
         sleep 5
         echo 0 > $ALT_SYSRESET_SYSFS
         sleep 1
@@ -184,6 +188,8 @@ do_reset() {
         fi
         # reset TH first
         reset_brcm.sh
+
+        logger -p user.crit "Power reset microserver..."
         echo -n "Power reset microserver ..."
         echo 0 > $PWR_USRV_RST_SYSFS
         sleep 1

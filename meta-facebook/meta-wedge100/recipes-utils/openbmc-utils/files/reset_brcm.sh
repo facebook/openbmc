@@ -26,4 +26,4 @@ echo 0 > $PWR_TH_RST_SYSFS
 sleep 1
 echo 1 > $PWR_TH_RST_SYSFS
 
-logger "Reset Tomahawk"
+logger -p user.crit "Reset Tomahawk"

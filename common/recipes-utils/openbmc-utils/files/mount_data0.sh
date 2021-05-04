@@ -112,7 +112,7 @@ ubifs_mount() {
     mnt_point="$2"
 
     echo "ubifs_mount $ubi_vol to $mnt_point.."
-    mount -t ubifs "$ubi_vol" "$mnt_point"
+    mount -t ubifs "$ubi_vol" "$mnt_point" -o compr=zstd
 }
 
 do_mount_ubifs() {

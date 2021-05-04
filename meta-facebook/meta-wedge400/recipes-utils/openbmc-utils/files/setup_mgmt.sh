@@ -45,16 +45,19 @@ do
 done
 
 # Enable MAC#1 Clock, refer to ast2500-v16.pdf Page 355
+# SCU 0x04 register: Bit[11] Reset MAC1 controller
+#     0: No operation, 1: Reset MAC1 controller
 # SCU 0x0C register: Bit20 MAC#1 Clock:
 #     0 Enable clock running, 1 disable clock running
+devmem_set_bit "$(scu_addr 04)" 11
 devmem_clear_bit "$(scu_addr 0C)" 20
+devmem_clear_bit "$(scu_addr 04)" 11
 
 # Enable MAC#1 MDIO function, refer to ast2500-v16.pdf Page 376
 # SCU 0x88 register: Bit31 Enable MAC#1 MDIO1 function pin
 # SCU 0x88 register: Bit30 Enable MAC#1 MDC1 function pin
 devmem_set_bit "$(scu_addr 88)" 30
 devmem_set_bit "$(scu_addr 88)" 31
-
 
 if [ "$1" = "led" ]; then
     echo -n "Wait a few seconds to setup management port LED..."

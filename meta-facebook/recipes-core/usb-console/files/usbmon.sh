@@ -18,9 +18,16 @@
 # Boston, MA 02110-1301 USA
 #
 
-# In case gadget driver is compiled as module
-modprobe ast-udc
+#
+# Load USB gadget drivers in case they are compiled as modules.
+# Note: "ast-udc" only exists in kernel 4.1. The driver is renamed to
+# "aspeed_vhub" in kernel 5.x, and it will be auto-loaded at bootup time.
+#
+if uname -r | grep "4\.1\.*" > /dev/null 2>&1; then
+    modprobe ast-udc
+fi
 modprobe g_cdc host_addr=02:00:00:00:00:02 dev_addr=02:00:00:00:00:01
+
 # For g-ether interface, if the remote side brings down the interface, BMC side
 # still treats it as up. In this case, all packets through usb0 (i.e. NDP) will
 # be queued in the kernel for this interface. Ether interface has the default

@@ -29,14 +29,19 @@
 #include <string.h>
 #include <dirent.h>
 #include "CLI/CLI.hpp"
+#include <iostream>
 
-#define ALL_FAN_NUM     0xFF
-#define SENSOR_FAIL_RECORD_DIR "/tmp/sensorfail_record"
-#define FAN_FAIL_RECORD_DIR "/tmp/fanfail_record"
-#define SENSOR_FAIL_FILE "/tmp/cache_store/sensor_fail_boost"
-#define FAN_FAIL_FILE "/tmp/cache_store/fan_fail_boost"
-#define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
-#define FSCD_DRIVER_FILE "/tmp/cache_store/fscd_driver"
+using std::string;
+using std::cout;
+using std::endl;
+
+const uint8_t ALL_FAN_NUM = 0xFF;
+static constexpr auto SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record";
+static constexpr auto FAN_FAIL_RECORD_DIR = "/tmp/fanfail_record";
+static constexpr auto SENSOR_FAIL_FILE = "/tmp/cache_store/sensor_fail_boost";
+static constexpr auto FAN_FAIL_FILE = "/tmp/cache_store/fan_fail_boost";
+static constexpr auto FAN_MODE_FILE = "/tmp/cache_store/fan_mode";
+static constexpr auto FSCD_DRIVER_FILE = "/tmp/cache_store/fscd_driver";
 
 enum {
   NORMAL = 0,
@@ -47,117 +52,114 @@ enum {
 
 static void
 sensor_fail_check(bool status) {
-  DIR *dir;
-  struct dirent *ptr;
+  struct dirent *directoryEntry;
   int cnt = 0;
 
   if (status) {
-    printf("Sensor Fail: Not support in manual mode(No fscd running)\n");
+    cout << "Sensor Fail: Not support in manual mode(No fscd running)" << endl;
     return;
   }
 
   if (access(SENSOR_FAIL_FILE, F_OK) == 0) {
-    dir = opendir(SENSOR_FAIL_RECORD_DIR);
+    auto dir = opendir(SENSOR_FAIL_RECORD_DIR);
     if (dir != NULL) {
-      printf("Sensor Fail: ");
-      while((ptr = readdir(dir)) != NULL) {
-        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0)
+      cout << "Sensor Fail: ";
+      while((directoryEntry = readdir(dir)) != NULL) {
+        if (strcmp(directoryEntry->d_name, ".") == 0 || strcmp(directoryEntry->d_name, "..") == 0)
           continue;
         cnt++;
         if (cnt == 1) {
-          printf("\n%s\n", ptr->d_name);
+          cout << "\n" << directoryEntry->d_name << endl;
           continue;
         }
-        printf("%s\n", ptr->d_name);
+        cout << directoryEntry->d_name << endl;
       }
       closedir(dir);
       if (cnt == 0)
-        printf("None\n");
+        cout << "None" << endl;
     } else {
-      printf("Sensor Fail: None\n");
+      cout << "Sensor Fail: None" << endl;
     }
   } else {
-    printf("Sensor Fail: None\n");
+    cout << "Sensor Fail: None" << endl;
   }
   return;
 }
 
 static void
 fan_fail_check(bool status) {
-  DIR *dir;
-  struct dirent *ptr;
+  struct dirent *directoryEntry;
   int cnt = 0;
 
   if (status) {
-    printf("Fan Fail: Not support in manual mode(No fscd running)\n");
+    cout << "Fan Fail: Not support in manual mode(No fscd running)" << endl;
     return;
   }
 
   if (access(FAN_FAIL_FILE, F_OK) == 0) {
-    dir = opendir(FAN_FAIL_RECORD_DIR);
+    auto dir = opendir(FAN_FAIL_RECORD_DIR);
     if (dir != NULL) {
-      printf("Fan Fail: ");
-      while((ptr = readdir(dir)) != NULL) {
-        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0)
+      cout << "Fan Fail: ";
+      while((directoryEntry = readdir(dir)) != NULL) {
+        if (strcmp(directoryEntry->d_name, ".") == 0 || strcmp(directoryEntry->d_name, "..") == 0)
           continue;
         cnt++;
         if (cnt == 1) {
-          printf("\n%s\n", ptr->d_name);
+          cout << "\n" << directoryEntry->d_name << endl;
           continue;
         }
-        printf("%s\n", ptr->d_name);
+        cout << directoryEntry->d_name << endl;
       }
       closedir(dir);
       if (cnt == 0)
-        printf("None\n");
+        cout << "None" << endl;
     } else {
-      printf("Fan Fail: None\n");
+      cout << "Fan Fail: None" << endl;
     }
   } else {
-    printf("Fan Fail: None\n");
+    cout << "Fan Fail: None" << endl;
   }
   return;
 }
 
 static bool
 fan_mode_check(bool printMode) {
-  FILE* fp;
-  char cmd[128];
   char buf[32];
   int res;
   int fd;
   uint8_t mode;
   int cnt;
+  static constexpr auto cmd = "ps -w | grep [/]usr/bin/fscd.py | wc -l";
 
-  sprintf(cmd, "ps -w | grep [/]usr/bin/fscd.py | wc -l");
-  if((fp = popen(cmd, "r")) == NULL) {
+  auto filePointer = popen(cmd, "r");
+  if(filePointer == NULL) {
     if (printMode)
-      printf("Fan Mode: Unknown\n");
+      cout << "Fan Mode: Unknown" << endl;
     return false;
   }
 
-  if(fgets(buf, sizeof(buf), fp) != NULL) {
+  if(fgets(buf, sizeof(buf), filePointer) != NULL) {
     res = atoi(buf);
     if(res < 1) {
       if (printMode)
-        printf("Fan Mode: Manual(No fscd running)\n");
-      pclose(fp);
+        cout << "Fan Mode: Manual(No fscd running)" << endl;
+      pclose(filePointer);
       return true;
     }
   }
-  pclose(fp);
+  pclose(filePointer);
 
   if (printMode) {
     fd = open(FAN_MODE_FILE, O_RDONLY);
     if (fd < 0) {
-      printf("Fan Mode: Unknown\n");
+      cout << "Fan Mode: Unknown" << endl;
       return false;
     }
 
     cnt = read(fd, &mode, sizeof(uint8_t));
 
     if (cnt <= 0) {
-      printf("Fan Mode: Unknown\n");
+      cout << "Fan Mode: Unknown" << endl;
       close(fd);
       return false;
     }
@@ -165,19 +167,19 @@ fan_mode_check(bool printMode) {
     mode = mode - '0';
     switch(mode) {
       case NORMAL:
-        printf("Fan Mode: Normal\n");
+        cout << "Fan Mode: Normal" << endl;
         break;
       case TRANSIT:
-        printf("Fan Mode: Transitional\n");
+        cout << "Fan Mode: Transitional" << endl;
         break;
       case BOOST:
-        printf("Fan Mode: Boost\n");
+        cout << "Fan Mode: Boost" << endl;
         break;
       case PROGRESSION:
-        printf("Fan Mode: Progression\n");
+        cout << "Fan Mode: Progression" << endl;
         break;
       default:
-        printf("Fan Mode: Unknown\n");
+        cout << "Fan Mode: Unknown" << endl;
         break;
     }
 
@@ -190,29 +192,28 @@ static int
 fscd_driver_check(bool status) {
 #define MAX_BUF_SIZE 256
   int rc;
-  FILE* fp;
   char buf[MAX_BUF_SIZE] = {0};
 
   if (status) {
-    printf("FSCD Driver: Not support in manual mode(No fscd running)\n");
+    cout << "FSCD Driver: Not support in manual mode(No fscd running)" << endl;
     return -1;
   }
 
-  fp = fopen(FSCD_DRIVER_FILE, "r");
-  if (!fp) {
-    printf("FSCD Driver: N/A\n");
+  auto filePointer = fopen(FSCD_DRIVER_FILE, "r");
+  if (!filePointer) {
+    cout << "FSCD Driver: N/A" << endl;
     return -1;
   }
 
-  if (fgets(buf, MAX_BUF_SIZE, fp) == NULL) {
-    printf("FSCD Driver returned nothing\n");
+  if (fgets(buf, MAX_BUF_SIZE, filePointer) == NULL) {
+    cout << "FSCD Driver returned nothing" << endl;
     rc = -1;
   } else {
-    printf("FSCD Driver: %s\n", buf);
+    cout << "FSCD Driver: " << buf << endl;
     rc = 0;
   }
 
-  fclose(fp);
+  fclose(filePointer);
   return rc;
 }
 
@@ -231,13 +232,13 @@ main(int argc, char **argv) {
   int tach_cnt = 0;
   int pwmVal = 0;
   bool getDrivers = false;
-  std::string fanOpt = "";
+  string fanOpt = "";
   pwm_cnt = pal_get_pwm_cnt();
   tach_cnt = pal_get_tach_cnt();
 
   bool fans_equal = pwm_cnt == tach_cnt;
-  const std::string ident_set = fans_equal ? "Fan" : "Zone";
-  const std::string ident_get = fans_equal ? "Fan" : "Tach";
+  const string ident_set = fans_equal ? "Fan" : "Zone";
+  const string ident_get = fans_equal ? "Fan" : "Tach";
 
   CLI::App app{"Fan Util"};
   app.set_help_flag();
@@ -252,7 +253,7 @@ main(int argc, char **argv) {
 
   auto driverCommand = app.add_subcommand("--get-drivers", "");
 
-  std::string fanOptList = pal_get_fan_opt_list();
+  string fanOptList = pal_get_fan_opt_list();
   if (fanOptList.length() > 0) {
     auto autoCommand = app.add_subcommand("--auto-mode", "set auto mode");
     autoCommand->add_option("fan", fanOpt, "set auto mode [" + fanOptList + "]")
@@ -272,11 +273,11 @@ main(int argc, char **argv) {
 
       ret = pal_set_fan_speed(i, pwm);
       if (ret == PAL_ENOTREADY) {
-        printf("Blocked because host power is off\n");
+        cout << "Blocked because host power is off" << endl;
       } else if (!ret) {
-        printf("Setting Zone %d speed to %d%%\n", i, pwm);
+        cout << "Setting Zone " << i << " speed to " << pwm << "%" << endl;
       } else
-        printf("Error while setting fan speed for Zone %d\n", i);
+        cout << "Error while setting fan speed for Zone " << i << endl;
     }
 
   } else if (getCommand->parsed()) {
@@ -294,13 +295,13 @@ main(int argc, char **argv) {
           memset(fan_name, 0, 32);
           pal_get_fan_name(i, fan_name);
           if ((pal_get_pwm_value(i, &pwm)) == 0)
-            printf("%s Speed: %d RPM (%d%%)\n", fan_name, rpm, pwm);
+            cout << fan_name << " Speed: " << rpm << " RPM (" << pwm << "%)" << endl;
           else {
-            printf("Error while getting fan PWM for Fan %d\n", i);
-            printf("%s Speed: %d RPM\n", fan_name, rpm);
+            cout << "Error while getting fan PWM for Fan " << i << endl;
+            cout << fan_name << " Speed: " << rpm << " RPM" << endl;
           }
         } else {
-          printf("Error while getting fan speed for Fan %d\n", i);
+          cout << "Error while getting fan speed for Fan " << i << endl;
         }
       }
     }
@@ -318,7 +319,7 @@ main(int argc, char **argv) {
   } else if ((fanOptList.length() > 0) && (app.got_subcommand("--auto-mode"))) {
     ret = pal_set_fan_ctrl(argv[2]);
     if (ret < 0) {
-        printf("Error while setting fan auto mode : %s\n", argv[2]);
+        cout << "Error while setting fan auto mode : " << argv[2] << endl;
         return -1;
     }
   }

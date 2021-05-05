@@ -17,6 +17,8 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
+PACKAGECONFIG += "disable-watchdog"
+
 SRC_URI += " \
     file://board-utils.sh \
     file://cmmcpld_update.sh \

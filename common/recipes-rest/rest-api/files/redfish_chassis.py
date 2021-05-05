@@ -69,13 +69,14 @@ def get_chassis_members(fru_name):
         print(error)
     return node(body)
 
-
 def get_chassis_power(fru_name, snr_name, snr_num):
     body = {}
-    period = "60"
+    period = 60
     display = ["thresholds"]
+    history = ["history"]
     try:
-        power_limitin = sensor_util(fru_name, snr_name, snr_num, period, display)
+        power_history = sensor_util(fru_name, snr_name, snr_num, str(period), history)
+        power_limitin = sensor_util(fru_name, snr_name, snr_num, str(period), display)
         power_limitin = float(power_limitin[str(snr_name)]['thresholds']['UCR'])
         body = {
             "@odata.context": "/redfish/v1/$metadata#Power.Power",
@@ -91,6 +92,12 @@ def get_chassis_power(fru_name, snr_name, snr_num):
                 "PowerLimit": {
                     "LimitInWatts": int(power_limitin),
                     "LimitException": "LogEventOnly"
+                },
+                "PowerMetrix": {
+                    "IntervalInMin": int(period/60),
+                    "MinIntervalConsumedWatts": float(power_history[str(snr_name)]['min']),
+                    "MaxIntervalConsumedWatts": float(power_history[str(snr_name)]['max']),
+                    "AverageIntervalConsumedWatts": float(power_history[str(snr_name)]['avg'])
                 }
              }]
         }
@@ -98,20 +105,23 @@ def get_chassis_power(fru_name, snr_name, snr_num):
         print(error)
     return node(body)
 
-
 def get_chassis_thermal(fru_name):
     body = {}
     result = OrderedDict()
     snr_name = ""
     snr_num = ""
     period = "60"
-    display = ["units"]
+    display = ["units","thresholds", "status"]
     temp_sensors = []
     fan_sensors = []
     redundancy_body = []
+    thr_type = ['LCR', 'LNR', 'LNC', 'UCR', 'UNR', 'UNC']
+    thr_name = ['LowerThresholdCritical', 'LowerThresholdFatal', 'LowerThresholdFatal',
+                'UpperThresholdCritical', 'UpperThresholdFatal', 'UpperThresholdNonCritical']
     try:
-        # Temperatures
+        # Temperatures, Fans
         temp_count = 0
+        fan_count = 0
         temp = sensor_util(fru_name, snr_name, snr_num, period, display)
         for sname, key in temp.items():
             if key['units'] == 'C':
@@ -121,30 +131,33 @@ def get_chassis_thermal(fru_name):
                 ("Name", str(sname)),
                 ("ReadingCelsius", float(key['value']))
                 ])
+                if 'thresholds' in key:
+                    s_thresholds = key['thresholds']
+                    for i in range(len(thr_name)):
+                        if thr_type[i] in s_thresholds:
+                            result[thr_name[i]] = float(s_thresholds[thr_type[i]])
                 temp_count += 1
                 temp_sensors.append(result)
-
-        # Fans
-        result = OrderedDict()
-        fan_count = 0
-        cmd = "/usr/local/bin/fan-util --get"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-        sdata = data.split("\n")
-        for line in sdata:
-            # skip lines with " or startin with FRU
-            if line.find("Error") != -1:
-                continue
-            kv = line.split(":")
-            if len(kv) < 2:
-                continue
-            if (kv[0].strip().find("Speed") != -1):
+            elif key['units'] == 'RPM':
+                if (key['status']  == "ok"):
+                    state = 'Enabled'
+                    health = 'OK'
+                else:
+                    state = 'Disabled'
+                    health = 'Warning'
                 odata_id_content = "/redfish/v1/Chassis/1/Thermal#/Fans/" + str(fan_count)
                 result = OrderedDict([
                 ("@odata.id", odata_id_content),
                 ("MemberId", str(fan_count)),
                 ("Name", "BaseBoard System Fan " + str(fan_count + 1)),
-                ("Status", OrderedDict([('State', 'Enabled'), ('Health', 'OK')]))
+                ("Status", OrderedDict([('State', state), ('Health', health)]))
                 ])
+
+                if 'thresholds' in key:
+                    s_thresholds = key['thresholds']
+                    for i in range(len(thr_name)):
+                        if thr_type[i] in s_thresholds:
+                            result[thr_name[i]] = float(s_thresholds[thr_type[i]])
                 fan_count += 1
                 fan_sensors.append(result)
                 redundancy_result = OrderedDict([('@odata.id', odata_id_content)])

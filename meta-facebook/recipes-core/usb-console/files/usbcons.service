@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 #
 [Unit]
-Description=Enable usb0 interface
+Description=Configure USB CDC Composite Gadget
 Before=systemd-networkd.service
 
 [Service]

@@ -67,6 +67,9 @@ def bmc_build(recipes, build_path, verbose):
         f"source ./openbmc-init-build-env qemux86 {build_path} > /dev/null",
         "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
         f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
+        "export LC_ALL=en_US.UTF-8",
+        "export LANG=en_US.UTF-8",
+        "export LANGUAGE=en_US.UTF-8",
         f"bitbake {build_option} qemux86-image",
     ]
     build_cmd = "; ".join(build_steps)
@@ -99,7 +102,10 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
-    base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
+    if not os.path.exists("/.dockerenv"):
+        base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
+    else:
+        base_cmd = ["sudo","chroot",rootfs]
     if args.shell:
         subprocess.check_call(base_cmd)
     elif not args.skip_tests:

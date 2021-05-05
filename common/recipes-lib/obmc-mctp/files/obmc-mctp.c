@@ -219,8 +219,10 @@ int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
       return -1;
     }
 
-    if (p->Msg_Size > 0) {
-      return p->Msg_Size;
+    // Msg_Size only contains number of bytes not including source eid and length byte.
+    // However data/rbuf contains those bytes, so when returning raw, return size + 2
+    if (p->Msg_Size + 2 > 0) {
+      return p->Msg_Size + 2;
     }
   }
   syslog(LOG_ERR, "%s: MCTP timeout", __func__);

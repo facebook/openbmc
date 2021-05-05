@@ -51,5 +51,4 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   weutil-dhcp-id \
   rackmon \
-  mtd-utils-ubifs \
   "

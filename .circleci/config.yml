@@ -3,6 +3,9 @@ jobs:
     lint:
         docker:
             - image: ubuntu:focal
+              auth:
+                  username: $DOCKERHUB_USERNAME
+                  password: $DOCKERHUB_TOKEN
         resource_class: small
         steps:
             - run:
@@ -26,6 +29,9 @@ jobs:
     setup:
         docker:
             - image: crops/poky:latest
+              auth:
+                  username: $DOCKERHUB_USERNAME
+                  password: $DOCKERHUB_TOKEN
         resource_class: small
         working_directory: /tmp/job/project
         steps:
@@ -48,6 +54,9 @@ jobs:
                   MACHINE: << parameters.machine >>
                   CACHE_DIR: /tmp/job/sstate-cache
                   CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
+              auth:
+                  username: $DOCKERHUB_USERNAME
+                  password: $DOCKERHUB_TOKEN
         resource_class: xlarge
         working_directory: /tmp/job/project
         steps:
@@ -69,9 +78,12 @@ workflows:
     version: 2
     everything:
         jobs:
-            - lint
-            - setup
+            - lint:
+                context: DOCKERHUB_TOKEN
+            - setup:
+                context: DOCKERHUB_TOKEN
             - build:
+                context: DOCKERHUB_TOKEN
                 requires:
                     - setup
                 matrix:

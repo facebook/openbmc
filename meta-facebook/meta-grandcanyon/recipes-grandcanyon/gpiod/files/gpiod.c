@@ -37,6 +37,7 @@
 
 #define MONITOR_FRUS_PRESENT_STATUS_INTERVAL    60 // seconds
 #define MONITOR_SERVER_POWER_STATUS_INTERVAL    1  // seconds
+#define MONITOR_SCC_STBY_POWER_INTERVAL         1  // seconds
 
 #define E1S_IOCM_SLOT_NUM 2
 
@@ -400,7 +401,34 @@ server_power_monitor() {
     
     sleep(MONITOR_SERVER_POWER_STATUS_INTERVAL);
   } // while loop end
-  
+
+  pthread_exit(NULL);
+}
+
+static void*
+scc_stby_power_monitor() {
+  gpio_value_t scc_stby_pg_value = GPIO_VALUE_INVALID;
+  gpio_value_t scc_i2c_en_value = GPIO_VALUE_INVALID;
+  const char * STR_SCC_STBY_PGOOD = fbgc_get_gpio_name(GPIO_SCC_STBY_PGOOD);
+  const char * STR_SCC_I2C_EN_R = fbgc_get_gpio_name(GPIO_SCC_I2C_EN_R);
+
+  if (STR_SCC_STBY_PGOOD == NULL || STR_SCC_I2C_EN_R == NULL) {
+    syslog(LOG_ERR, "Failed to start SCC stby power monitor, GPIO name mapping error");
+    pthread_exit(NULL);
+  }
+
+  while (1) {
+    scc_stby_pg_value = gpio_get_value_by_shadow(STR_SCC_STBY_PGOOD);
+    scc_i2c_en_value = gpio_get_value_by_shadow(STR_SCC_I2C_EN_R);
+    // sync GPIO_SCC_I2C_EN_R with GPIO_SCC_STBY_PGOOD for leakage prevention
+    if ((scc_stby_pg_value != GPIO_VALUE_INVALID) && (scc_stby_pg_value != scc_i2c_en_value)) {
+      if (gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_I2C_EN_R), scc_stby_pg_value) < 0) {
+        syslog(LOG_WARNING, "%s(): Failed to set GPIO_SCC_I2C_EN_R.\n", __func__);
+      }
+    }
+    sleep(MONITOR_SCC_STBY_POWER_INTERVAL);
+  }
+
   pthread_exit(NULL);
 }
 
@@ -413,7 +441,8 @@ static void
 run_gpiod(int argc, char **argv) {
   pthread_t tid_fru_missing_monitor;
   pthread_t tid_server_power_monitor;
-  int ret_fru_missing = 0, ret_server_power = 0;
+  pthread_t tid_scc_stby_power_monitor;
+  int ret_fru_missing = 0, ret_server_power = 0, ret_scc_stby_power = 0;
   
   if (argv == NULL) {
     syslog(LOG_ERR, "fail to execute gpiod because NULL parameter: **argv\n");
@@ -431,13 +460,23 @@ run_gpiod(int argc, char **argv) {
     syslog(LOG_ERR, "fail to creat thread for monitor server host\n");
     ret_server_power = -1;
   }
-  
+
+  // Monitor scc standby power
+  if (pthread_create(&tid_scc_stby_power_monitor, NULL, scc_stby_power_monitor, NULL) < 0) {
+    syslog(LOG_ERR, "fail to creat thread for scc standby power monitor\n");
+    ret_scc_stby_power = -1;
+  }
+
   if (ret_fru_missing == 0) {
     pthread_join(tid_fru_missing_monitor, NULL);
   }
-  
+
   if (ret_server_power == 0) {
     pthread_join(tid_server_power_monitor, NULL);
+  }
+
+  if (ret_scc_stby_power == 0) {
+    pthread_join(tid_scc_stby_power_monitor, NULL);
   }
 }
  

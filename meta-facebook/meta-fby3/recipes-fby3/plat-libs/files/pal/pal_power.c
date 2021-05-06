@@ -458,7 +458,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           }
         }
       } else {
-        if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
         if ( bic_do_12V_cycle(fru) < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -496,9 +495,6 @@ pal_sled_cycle(void) {
       return PAL_ENOTSUP;
     }
 
-    if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) {
-      syslog(LOG_CRIT, "Set NIC PERST failed.\n");
-    }
     if ( bic_inform_sled_cycle() < 0 ) {
       syslog(LOG_WARNING, "Inform another BMC for sled cycle failed.\n");
     }

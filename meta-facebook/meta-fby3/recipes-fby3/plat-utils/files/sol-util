@@ -118,7 +118,10 @@ function is_gpv3_board() {
 function enable_usb_hub() {
   local fru=$1
   local val=$2
-  cnt=$(ls /var/lock | grep -i "LCK..platform-1e6b0000.usb-usb-0" | wc -l)
+  #cnt=$(ls /var/lock | grep -i "LCK..platform-1e6b0000.usb-usb-0" | wc -l)
+  #check the USB2UART IC exists or not
+  #make DL HUB open permanently
+  cnt=$(/usr/bin/lsusb | grep -i "10c4:ea71" | wc -l)
 
   if [ $val = 1 ]; then
     if [ $cnt = 0 ]; then
@@ -408,7 +411,8 @@ if [ -n "$COMP" ]; then
         fi
 
         RET=$?
-        enable_usb_hub $SLOT 0
+        #after enabling USB hub, make it permanently open
+        #enable_usb_hub $SLOT 0
         exit $RET;
       fi
     fi

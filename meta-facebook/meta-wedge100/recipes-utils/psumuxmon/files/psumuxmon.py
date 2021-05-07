@@ -25,6 +25,12 @@ import time
 from typing import Union
 
 
+#
+# Cache power type in below file for easy access.
+# Note: the path should be consistent with the one used in rest_presence.py
+#
+POWER_TYPE_CACHE = "/var/cache/detect_power_module_type.txt"
+
 SYS_I2C = "/sys/bus/i2c/devices/"
 LTC4151_PATH = SYS_I2C + "7-006f/hwmon/hwmon*/"
 LTC4281_PATH = SYS_I2C + "7-004a/"
@@ -37,7 +43,6 @@ I2C_DETECT_CMD = "i2cdetect -y %d"
 INSTANTIATE_EEPROM_DRIVER_CMD = (
     "echo 24c02 0x%s > /sys/bus/i2c/devices/i2c-%d/new_device"
 )
-POWER_MODULE_TYPE = "echo %s: %d >> /tmp/detect_power_module_type.txt"
 INSTANTIATE_PCA954X_CMD = "echo 7-0070 > /sys/bus/i2c/drivers/pca954x/bind 2> /dev/null"
 PCA954X_BIND_PATH = "/sys/bus/i2c/drivers/pca954x"
 PCA954X_BIND_PATH_ADDR = "/sys/bus/i2c/drivers/pca954x/7-0070"
@@ -457,13 +462,14 @@ class Pcard(object):
         The PEM is disruptive, so we need this function to run
         only once. /tmp/ directory will be clear upon reboot
         """
-        if os.path.exists("/tmp/detect_power_module_type.txt"):
-            self.exec_cmd("rm /tmp/detect_power_module_type.txt")
-            self.exec_cmd("touch /tmp/detect_power_module_type.txt")
-        self.exec_cmd(POWER_MODULE_TYPE % ("pem1", power_type["pem1"]))
-        self.exec_cmd(POWER_MODULE_TYPE % ("pem2", power_type["pem2"]))
-        self.exec_cmd(POWER_MODULE_TYPE % ("psu1", power_type["psu1"]))
-        self.exec_cmd(POWER_MODULE_TYPE % ("psu2", power_type["psu2"]))
+        if os.path.exists(POWER_TYPE_CACHE):
+            self.exec_cmd("rm %s" % POWER_TYPE_CACHE)
+            self.exec_cmd("touch %s" % POWER_TYPE_CACHE)
+
+        for dev in ["pem1", "pem2", "psu1", "psu2"]:
+            self.exec_cmd(
+                "echo %s: %d >> %s" % (dev, power_type[dev], POWER_TYPE_CACHE)
+            )
 
     def get_pem_fru_version(self, eeprom_addr, bus_addr) -> int:
         """

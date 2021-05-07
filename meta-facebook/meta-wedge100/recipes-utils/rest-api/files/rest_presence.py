@@ -22,7 +22,11 @@ import os
 from typing import Dict
 
 
-PATH = "/tmp/detect_power_module_type.txt"
+#
+# File to cache power module types.
+# The path should be consistent with the one defined in psumuxmon.py.
+#
+POWER_TYPE_CACHE = "/var/cache/detect_power_module_type.txt"
 
 
 def get_presence_info() -> Dict:
@@ -35,9 +39,9 @@ def get_presence_info() -> Dict:
 
 def get_presence_info_data(power_type) -> Dict:
     result = {}
-    if not os.path.exists(PATH):
-        raise Exception("Path for power type doesn't exist")
-    with open(PATH, "r") as fp:
+    if not os.path.exists(POWER_TYPE_CACHE):
+        raise Exception("Power type cache %s doesn't exist" % POWER_TYPE_CACHE)
+    with open(POWER_TYPE_CACHE, "r") as fp:
         lines = fp.readlines()
         if lines:
             for line in lines:

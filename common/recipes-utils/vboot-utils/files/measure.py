@@ -20,14 +20,13 @@
 import argparse
 import hashlib
 import json
-import mmap
 import os
 import subprocess
 import sys
 import traceback
 
 from image_meta import FBOBMCImageMeta
-from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file
+from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file, read_vbs
 
 
 MBOOT_CHECK_VERSION = "2"
@@ -245,28 +244,6 @@ def measure_os(algo, image_meta, recal=False):
         pcr9.extend(comp_measure)
 
     return pcr9.value
-
-
-def read_vbs():
-    SRAM_OFFSET = 0x1E720000
-    SRAM_SIZE = 36 * 1024
-    VBS_OFFSET = 0x200
-    VBS_SIZE = 56
-    memfn = None
-    try:
-        memfn = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
-        with mmap.mmap(
-            memfn,
-            SRAM_SIZE,
-            mmap.MAP_SHARED,
-            mmap.PROT_READ | mmap.PROT_WRITE,
-            offset=SRAM_OFFSET,
-        ) as sram:
-            sram.seek(VBS_OFFSET)
-            return sram.read(VBS_SIZE)
-    finally:
-        if memfn is not None:
-            os.close(memfn)
 
 
 def measure_vbs(algo):

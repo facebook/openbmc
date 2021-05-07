@@ -15,6 +15,8 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+import mmap
+import os
 import sys
 
 from pyfdt import pyfdt
@@ -34,6 +36,12 @@ EC_KERNEL_BAD = 3
 EC_ROOTFS_BAD = 4
 EC_EXCEPTION = 255
 
+VBS_LOCATION = {
+    # VBS SRAM mapping: (addr , size, vbs_offset, vbs_size)
+    "SOC_MODEL_ASPEED_G5": (0x1E720000, 4 * 1024, 0x200, 56),
+    "SOC_MODEL_ASPEED_G6": (0x10015000, 4 * 1024, 0x800, 56),
+}
+
 
 def get_fdt(content):
     # Represent the FIT as an IO resource.
@@ -50,3 +58,30 @@ def get_fdt_from_file(infile):
     dtb = pyfdt.FdtBlobParse(infile, blob_limit=0x2000)
     fdt = dtb.to_fdt()
     return fdt
+
+
+def get_soc_model():
+    soc_model = "SOC_MODEL_UNKNOWN"
+    with open("/etc/soc_model", "r") as fn:
+        soc_model = fn.readline()
+
+    return soc_model.strip()
+
+
+def read_vbs() -> bytearray:
+    memfn = None
+    try:
+        SRAM_OFFSET, SRAM_SIZE, VBS_OFFSET, VBS_SIZE = VBS_LOCATION[get_soc_model()]
+        memfn = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+        with mmap.mmap(
+            memfn,
+            SRAM_SIZE,
+            mmap.MAP_SHARED,
+            mmap.PROT_READ | mmap.PROT_WRITE,
+            offset=SRAM_OFFSET,
+        ) as sram:
+            sram.seek(VBS_OFFSET)
+            return sram.read(VBS_SIZE)
+    finally:
+        if memfn is not None:
+            os.close(memfn)

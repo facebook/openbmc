@@ -24,7 +24,7 @@ import unittest
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 
 
-PATH = "/tmp/detect_power_module_type.txt"
+POWER_TYPE_CACHE = "/var/cache/detect_power_module_type.txt"
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -71,9 +71,9 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         status of various power module option.
         """
         power_module_list = []
-        if not os.path.exists(PATH):
+        if not os.path.exists(POWER_TYPE_CACHE):
             raise Exception("Path for power type doesn't exist")
-        with open(PATH, "r") as fp:
+        with open(POWER_TYPE_CACHE, "r") as fp:
             lines = fp.readlines()
             if lines:
                 for line in lines:

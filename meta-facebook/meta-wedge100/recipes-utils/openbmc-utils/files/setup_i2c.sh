@@ -73,8 +73,18 @@ i2c_device_add 8 0x49 tmp75
 # Bus 12
 i2c_device_add 12 0x31 syscpld
 
-# Bus 14-21 from pca9548 mux_bus
-i2c_device_add 14 0x5a pfe1100
-i2c_device_add 15 0x59 pfe1100
+#
+# Bus 14-21 from pca9548 7-0070
+#
+# Note: the i2c-mux 7-0070 may not be powered at this point if the chassis
+# was power cycled. We will ignore errors for now and fixup devices later
+# after power-on.sh.
+#
+if [ -e "${SYSFS_I2C_DEVICES}/i2c-14" ]; then
+    i2c_device_add 14 0x5a pfe1100
+fi
+if [ -e "${SYSFS_I2C_DEVICES}/i2c-15" ]; then
+    i2c_device_add 15 0x59 pfe1100
+fi
 
 i2c_check_driver_binding

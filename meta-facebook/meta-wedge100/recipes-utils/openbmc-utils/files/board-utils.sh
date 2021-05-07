@@ -82,3 +82,26 @@ wedge_power_on_board() {
         sleep 1
     fi
 }
+
+#
+# Helper function to check if AC PSU (#1 or #2) is present/plugged by
+# reading syscpld "psu1|2_present" sysfs node.
+#
+# $1 - PSU ID/Index (1 or 2)
+#
+wedge_psu_is_present() {
+    psu_id="$1"
+    pathname="${SYSCPLD_SYSFS_DIR}/psu${psu_id}_present"
+
+    # Return false if the according syscpld register is not accessible
+    if ! val=$(head -n 1 "$pathname"); then
+        return 1
+    fi
+
+    # Note: 0 means the PSU is present.
+    if [ "$val" = "0x0" ]; then
+        return 0
+    fi
+
+    return 1
+}

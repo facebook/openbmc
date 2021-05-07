@@ -2,7 +2,7 @@ CONFIG_SYS_PROMPT="fbgc# "
 CONFIG_SYS_CONFIG_NAME="facebook_grandcanyon"
 CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-grandcanyon"
 
-# CONFIG_ASPEED_TPM=y
+CONFIG_ASPEED_TPM=y
 
 # logging facilities
 #    0 - emergency

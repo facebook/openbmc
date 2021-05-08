@@ -25,28 +25,38 @@ import subprocess
 import time
 
 
-VERSION = "0.1"
+VERSION = "0.2"
+SC_POWERGOOD = "/sys/bus/i2c/drivers/supcpld/12-0043/switchcard_powergood"
 
 
-def runCmd(cmd, echo=False, verbose=False):
-    out = subprocess.Popen(
-        cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    stdout, stderr = out.communicate()
+def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
+    try:
+        out = subprocess.Popen(
+            cmd.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    except Exception as e:
+        print('"{}" hit exception:\n {}'.format(cmd, e))
+        return
+
+    try:
+        stdout, stderr = out.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        out.kill()
+        print('"{}" timed out in {} seconds'.format(cmd, timeout))
+        stdout, stderr = out.communicate()
+
     output = ""
     if echo:
         output += "{}\n".format(cmd)
-    if out.returncode != 0:
+    if not ignoreReturncode and out.returncode != 0:
         print('"{}" returned with error code {}'.format(cmd, out.returncode))
         if not verbose:
             return output
-    errStr, outStr = stderr, stdout
-    try:
-        errStr, outStr = stderr.decode(), stdout.decode()
-    except UnicodeDecodeError:
-        output += '"{}" UnicodeDecodeError: cmd output decoding fail\n'.format(cmd)
-        if not verbose:
-            return output
+
+    # Ignore non utf-8 characters
+    errStr = stderr.decode("ascii", "ignore").encode("ascii").decode()
+    outStr = stdout.decode("ascii", "ignore").encode("ascii").decode()
+
     if stderr:
         output += '"{}" STDERR:\n{}\n'.format(cmd, errStr)
 
@@ -81,31 +91,30 @@ def fan_debuginfo(verbose=False):
         print(log)
 
     print("##### FAN SPEED LOGS #####")
-    for _ in range(4):
+    for _ in range(2):
         print(runCmd("/usr/local/bin/get_fan_speed.sh", echo=True))
-        print("sleeping 1 seconds...")
-        time.sleep(1)
+        print("sleeping 0.5 seconds...")
+        time.sleep(0.5)
 
     if verbose:
         print("##### FAN CPLD I2CDUMP #####\n")
         print(runCmd("i2cdump -f -y 13 0x60", echo=True))
 
 
-def switchcard_debuginfo(verbose=False):
+def switchcard_debuginfo():
     print("################################")
     print("##### SWITCHCARD DEBUG INFO ####")
     print("################################\n")
-    if verbose:
-        print("##### SMB CPLD I2CDUMP #####\n")
-        print(runCmd("i2cdump -f -y 4 0x23", echo=True))
-    # YAMPTODO
+    print("##### SMB CPLD I2CDUMP #####\n")
+    print(runCmd("i2cdump -f -y 4 0x23", echo=True))
 
 
 def pim_debuginfo():
     print("################################")
     print("######## PIM DEBUG INFO ########")
     print("################################\n")
-    # YAMPTODO
+    print("##### SCM CPLD I2CDUMP #####\n")
+    print(runCmd("i2cdump -f -y 12 0x43", echo=True))
 
 
 def psu_debuginfo():
@@ -133,6 +142,43 @@ def logDump():
         )
     )
     print("#### DMESG LOG ####\n{}\n\n".format(runCmd("dmesg", echo=True)))
+    print(
+        "#### BOOT CONSOLE LOG ####\n{}\n\n".format(
+            runCmd("cat /var/log/boot", echo=True)
+        )
+    )
+    print("################################")
+    print("########## HOST (uServer) CPU LOGS ##########")
+    print("################################\n")
+    print(
+        "#### mTerm LOG ####\n{}\n{}\n".format(
+            runCmd("cat /var/log/mTerm_wedge.log.1", echo=True),
+            runCmd("cat /var/log/mTerm_wedge.log", echo=True),
+        )
+    )
+    print("################################")
+    print("##########  DPM LOGS  ##########")
+    print("################################\n")
+    print(
+        "#### DPM LOG ####\n{}\n".format(
+            runCmd("cat /mnt/data1/log/dpm_log", echo=True),
+        )
+    )
+
+
+def i2cDetectDump():
+    print("################################")
+    print("########## I2C DETECT ##########")
+    print("################################\n")
+    for bus in range(0, 22):
+        print(
+            "##### SMBus{} INFO #####\n{}".format(
+                bus,
+                runCmd(
+                    "i2cdetect -y {}".format(bus), verbose=True, timeout=5, echo=True
+                ),
+            )
+        )
 
 
 def showtech(verbose=False):
@@ -147,7 +193,7 @@ def showtech(verbose=False):
     )
     print(
         "##### SWITCHCARD POWERGOOD STATUS #####\n{}".format(
-            runCmd("i2cget -f -y 12 0x43 0x20")
+            runCmd("head -n 1 {}".format(SC_POWERGOOD))
         )
     )
     print("##### BMC SYSTEM TIME #####\n{}".format(runCmd("date")))
@@ -156,6 +202,11 @@ def showtech(verbose=False):
     print(
         "##### FPGA VERSIONS #####\n{}".format(
             runCmd("/usr/local/bin/fpga_ver.sh", verbose=True)
+        )
+    )
+    print(
+        "##### PIM TYPES #####\n{}".format(
+            runCmd("/usr/local/bin/pim_types.sh", verbose=True)
         )
     )
 
@@ -174,8 +225,10 @@ def showtech(verbose=False):
             )
         )
         fan_debuginfo(verbose=verbose)
-        switchcard_debuginfo(verbose=verbose)
-        pim_debuginfo()
+        if verbose:
+           switchcard_debuginfo()
+           pim_debuginfo()
+           i2cDetectDump()
         logDump()
 
 

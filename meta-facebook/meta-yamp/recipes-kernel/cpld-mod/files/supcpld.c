@@ -203,6 +203,14 @@ static const i2c_dev_attr_st supcpld_attr_table[] = {
     0x17, 0, 1,
   },
   {
+    "switchcard_powergood",
+    "0x1: Power is good\n"
+    "0x0: Power is BAD",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x20, 2, 1,
+  },
+  {
     "jtag_en",
     "0x1: Enable\n"
     "0x0: Disable",

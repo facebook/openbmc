@@ -39,6 +39,7 @@ SRC_URI += "file://bios_util.sh \
             file://psu_show_tech.py \
             file://show_tech.py \
             file://sup_eeprom.sh \
+            file://dpm_dump.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -58,6 +59,7 @@ OPENBMC_UTILS_FILES += " \
     scdinfo \
     psu_show_tech.py \
     show_tech.py \
+    dpm_dump.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"
@@ -77,6 +79,9 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
+    install -m 755 dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
+    update-rc.d -r ${D} dpm_dump.sh start 50 S .
+
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
@@ -86,7 +91,7 @@ do_install_board() {
     # derivied from the correct MAC address.
     install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 2 2 3 4 5 .
-    
+
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
@@ -95,7 +100,7 @@ do_install_board() {
 
     install -m 755 sup_eeprom.sh ${D}${sysconfdir}/init.d/sup_eeprom.sh
     update-rc.d -r ${D} sup_eeprom.sh start 90 2 3 4 5 .
-    
+
     install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 

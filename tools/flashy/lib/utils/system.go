@@ -452,6 +452,7 @@ func tryPetWatchdog() bool {
 
 	f, err := os.OpenFile("/dev/watchdog", os.O_RDWR, 0)
 	if err != nil {
+		log.Printf("Not petting watchdog: unable to open /dev/watchdog: %v", err)
 		return false
 	}
 	defer f.Close()

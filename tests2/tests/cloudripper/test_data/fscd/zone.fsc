@@ -1,0 +1,6 @@
+max([
+  linear_inlet(smb:inlet_temp),
+  linear_switch(smb:swtich_temp),
+  linear_userver(scm:userver_temp),
+  JSON_MAX_TEMP(scm:json_max_temp)
+])

@@ -454,6 +454,7 @@ func tryPetWatchdog() bool {
 	if err != nil {
 		return false
 	}
+	defer f.Close()
 
 	// Extend the timeout.  The kernel may adjust the timeout downward
 	// if a hardware watchdog is in use.  In any case, don't arrange to
@@ -469,7 +470,6 @@ func tryPetWatchdog() bool {
 	if err3 != nil {
 		log.Printf("ioctl WDIOC_KEEPALIVE failed: %v", err3)
 	}
-	f.Close()
 	return err2 == nil && err3 == nil
 }
 

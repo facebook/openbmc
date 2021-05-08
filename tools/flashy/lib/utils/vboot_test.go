@@ -106,14 +106,15 @@ func TestVbootPartitionExists(t *testing.T) {
 
 // also tests encode and decode
 func TestGetVbs(t *testing.T) {
-	// mock and defer restore MmapFileRange, GetPageOffsettedOffset & vbootPartitionExists
 	mmapFileRangeOrig := fileutils.MmapFileRange
 	getPageOffsettedOffsetOrig := fileutils.GetPageOffsettedOffset
 	vbootPartitionExistsOrig := vbootPartitionExists
+	munmapOrig := fileutils.Munmap
 	defer func() {
 		fileutils.MmapFileRange = mmapFileRangeOrig
 		fileutils.GetPageOffsettedOffset = getPageOffsettedOffsetOrig
 		vbootPartitionExists = vbootPartitionExistsOrig
+		fileutils.Munmap = munmapOrig
 	}()
 	vbootPartitionExists = func() bool {
 		return true
@@ -149,6 +150,9 @@ func TestGetVbs(t *testing.T) {
 	}
 	fileutils.GetPageOffsettedOffset = func(addr uint32) uint32 {
 		return 0
+	}
+	fileutils.Munmap = func(b []byte) (err error) {
+		return nil
 	}
 
 	got, err := GetVbs()

@@ -178,6 +178,7 @@ var IsELFFile = func(filename string) bool {
 			"assuming that it is not an ELF file", filename, err)
 		return false
 	}
+	defer Munmap(buf)
 	return bytes.Equal(buf, elfMagicNumber)
 }
 

@@ -37,7 +37,7 @@ class OobMdioTest(unittest.TestCase):
         # Test the IMP port state register
         data = run_shell_cmd("{} read8 0x0 0xe".format(self.mdio_util)).split("\n")
         self.assertIn(
-            "0x0/0xe 0x87", data[0], "unexpected OOB MDIO IMP port state value"
+            "0x0/0xe 0x8b", data[0], "unexpected OOB MDIO IMP port state value"
         )
 
         # Test writing/reading to unused port-2

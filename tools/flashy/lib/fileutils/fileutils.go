@@ -157,11 +157,8 @@ var AppendFile = func(filename, data string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	_, err = f.Write([]byte(data))
-	if err != nil {
-		return err
-	}
-	err = f.Close()
 	if err != nil {
 		return err
 	}

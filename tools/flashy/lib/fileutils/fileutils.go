@@ -56,6 +56,9 @@ var ReadFile = ioutil.ReadFile
 var WriteFile = ioutil.WriteFile // prefer WriteFileWithTimeout
 var RenameFile = os.Rename
 var CreateFile = os.Create
+
+// Mmap is syscall.Mmap.
+// Remember to call Munmap to unmap.
 var Mmap = syscall.Mmap
 var Munmap = syscall.Munmap
 var Glob = filepath.Glob
@@ -183,6 +186,7 @@ var IsELFFile = func(filename string) bool {
 }
 
 // MmapFile is a convenience function to mmap an entire file.
+// Remember to call Munmap to unmap.
 var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -202,6 +206,7 @@ var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 }
 
 // MmapFileRange is a convenience function to mmap a given range of a file.
+// Remember to call Munmap to unmap.
 var MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 	if offset%int64(os.Getpagesize()) != 0 {
 		return nil, errors.Errorf(

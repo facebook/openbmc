@@ -147,6 +147,7 @@ var FlashCp = func(imageFilePath, deviceFilePath string, roOffset uint32) error 
 
 // openFlashDeviceFile is a wrapper around OpenFileWithLock intended to return
 // an os.File which implements flashDeviceFile.
+// remember to call closeFlashDeviceFile to close the flash device file.
 var openFlashDeviceFile = func(deviceFilePath string) (flashDeviceFile, error) {
 	return fileutils.OpenFileWithLock(deviceFilePath, os.O_SYNC|os.O_RDWR, syscall.LOCK_EX)
 }

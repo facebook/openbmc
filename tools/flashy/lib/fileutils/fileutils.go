@@ -258,6 +258,7 @@ var GetPageOffsettedOffset = func(addr uint32) uint32 {
 }
 
 // OpenFileWithLock opens an existing file and acquires a lock for it.
+// Remember to call CloseFileWithUnlock to release the lock.
 var OpenFileWithLock = func(filename string, flag int, how int) (*os.File, error) {
 	f, err := os.OpenFile(filename, flag, 0)
 	if err != nil {

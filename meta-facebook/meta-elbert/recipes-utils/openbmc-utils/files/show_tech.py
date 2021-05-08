@@ -188,6 +188,14 @@ def logDump():
             runCmd("cat /var/log/mTerm_wedge.log", echo=True),
         )
     )
+    print("################################")
+    print("##########  DPM LOGS  ##########")
+    print("################################\n")
+    print(
+        "#### DPM LOG ####\n{}\n".format(
+            runCmd("cat /mnt/data1/log/dpm_log", echo=True),
+        )
+    )
 
 
 def i2cDetectDump():
@@ -215,8 +223,18 @@ def gpioDump():
         )
     )
 
+def oobEepromDump():
+    print(
+        "##### OOB EEPROM DUMP #####\n{}".format(
+            runCmd("/usr/local/bin/oob-eeprom-util.sh dump", verbose=True, echo=True
+            )
+        )
+    )
 
-def showtech(verbose=False):
+
+def showtech(verboseLevel=0):
+    verbose = bool(verboseLevel)
+
     print("################################")
     print("##### SHOWTECH VERSION {} #####".format(VERSION))
     print("################################\n")
@@ -277,6 +295,8 @@ def showtech(verbose=False):
         i2cDetectDump()
         gpioDump()
         logDump()
+    if verboseLevel >= 2:
+        oobEepromDump()
 
 
 def parseArgs():
@@ -284,7 +304,8 @@ def parseArgs():
         description="Get showtech information. Version {}".format(VERSION)
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true", help="show verbose detailed debug logs."
+        "-v", "--verbose", action="count", help="show verbose detailed debug logs.",
+        dest="verboseLevel", default=0
     )
     return parser.parse_args()
 
@@ -292,7 +313,7 @@ def parseArgs():
 def main():
     args = parseArgs()
 
-    showtech(verbose=args.verbose)
+    showtech(verboseLevel=args.verboseLevel)
 
 
 if __name__ == "__main__":

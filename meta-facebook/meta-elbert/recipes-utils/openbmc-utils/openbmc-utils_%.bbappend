@@ -37,6 +37,7 @@ SRC_URI += "file://board-utils.sh \
             file://setup-gpio.sh \
             file://setup_i2c.sh \
             file://seutil \
+            file://dpm_dump.sh \
             file://dpm_ver.sh \
             file://show_tech.py \
             file://psu_show_tech.py \
@@ -64,6 +65,7 @@ OPENBMC_UTILS_FILES += " \
     wedge_us_mac.sh \
     setup_i2c.sh \
     seutil \
+    dpm_dump.sh \
     dpm_ver.sh \
     show_tech.py \
     psu_show_tech.py \
@@ -91,6 +93,9 @@ do_install_board() {
     update-rc.d -r ${D} mount_data0.sh start 03 S .
     install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
+
+    install -m 755 dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
+    update-rc.d -r ${D} dpm_dump.sh start 50 S .
 
     # Export GPIO pins and set initial directions/values.
     install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh

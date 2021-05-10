@@ -17,7 +17,7 @@
     },
     "chassis_intrusion": true,
     "enable_fsc_sensor_check": true,
-    "watchdog": false ,
+    "watchdog": true,
     "min_rpm": 1000,
     "profiles": {
       "SMB_01_SYS_INLET_TOP_U28_TEMP": {

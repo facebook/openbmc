@@ -3996,7 +3996,7 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_XP3R3V_TCXO][LNC_THRESH] = 3.165;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][LCR_THRESH] = 2.8;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UCR_THRESH] = 0.862;
-      smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UNC_THRESH] = 0.773;
+      smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][UNC_THRESH] = 0.81;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][LNC_THRESH] = 0.728;
       smb_sensor_threshold[SMB_OUTPUT_VOLTAGE_XP0R75V_1][LCR_THRESH] = 0.638;
       smb_sensor_threshold[SMB_SENSOR_FCM_T_HSC_VOLT][LCR_THRESH] = 7.5;
@@ -4012,10 +4012,10 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_SENSOR_PDB_L_TEMP2][UCR_THRESH] = 55;
       smb_sensor_threshold[SMB_SENSOR_PDB_R_TEMP1][UCR_THRESH] = 55;
       smb_sensor_threshold[SMB_SENSOR_PDB_R_TEMP2][UCR_THRESH] = 55;
-      smb_sensor_threshold[SMB_SENSOR_FCM_T_TEMP1][UCR_THRESH] = 60;
-      smb_sensor_threshold[SMB_SENSOR_FCM_T_TEMP2][UCR_THRESH] = 60;
-      smb_sensor_threshold[SMB_SENSOR_FCM_B_TEMP1][UCR_THRESH] = 60;
-      smb_sensor_threshold[SMB_SENSOR_FCM_B_TEMP2][UCR_THRESH] = 60;
+      smb_sensor_threshold[SMB_SENSOR_FCM_T_TEMP1][UCR_THRESH] = 75;
+      smb_sensor_threshold[SMB_SENSOR_FCM_T_TEMP2][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_FCM_B_TEMP1][UCR_THRESH] = 75;
+      smb_sensor_threshold[SMB_SENSOR_FCM_B_TEMP2][UCR_THRESH] = 80;
       smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][UCR_THRESH] = 12000;
       smb_sensor_threshold[SMB_SENSOR_FAN1_FRONT_TACH][LCR_THRESH] = 800;
       smb_sensor_threshold[SMB_SENSOR_FAN1_REAR_TACH][UCR_THRESH] = 12000;

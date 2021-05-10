@@ -228,6 +228,7 @@ cpld_update_hw_mode(){
                 echo "Only AST262x A3 chip can support HW Mode !!!"
                 exit 1
         fi
+        result=$?
 }
 
 case $5 in
@@ -245,8 +246,6 @@ case $5 in
         cpld_update_hw_mode
         ;;
 esac
-
-result=$?
 
 disable_jtag_chain
 

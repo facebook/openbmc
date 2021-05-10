@@ -215,11 +215,20 @@ static void power_fail_check ()
   char shadow[32];
   int ret, MAX_NIC_NUM = 8, MAX_CARR_NUM = 2, bitmask;
   int nic_mapping[8] = {0,2,4,6,1,3,5,7};
-  gpio_get_value(tmp, &value);
+  static int asserted = 0;
 
-  syslog(LOG_CRIT, "%s: GPIOE5 - CPLD_SMB_ALERT_N_R\n", value ? "DEASSERT": "ASSERT");
+  ret = gpio_get_value(tmp, &value);
+  if (ret) {
+	syslog(LOG_CRIT, "Get CPLD_SMB_ALERT_N_R value fail");
+	gpio_close(tmp);
+	return;
+  }
+  gpio_close(tmp);
 
   if (value == GPIO_VALUE_LOW) {
+	asserted = 1;
+	syslog(LOG_CRIT, "%s: GPIOE5 - CPLD_SMB_ALERT_N_R\n", value ? "DEASSERT": "ASSERT");
+
     ret = pal_get_cpld_reg_cmd(CPLD_PWR_STATE_ADDR1, CPLD_PWR_STATE_CMD, &status);
     if (ret) {
       goto exit;
@@ -238,7 +247,7 @@ static void power_fail_check ()
 
         for(int i=0; i < MAX_NIC_NUM; i++) {
           sprintf(shadow, "OCP_V3_%d_PRSNTB_R_N", i);
-          tmp1 = gpio_open_by_shadow(shadow);;
+          tmp1 = gpio_open_by_shadow(shadow);
 
           if (!tmp1) {
             gpio_close(tmp1);
@@ -248,6 +257,7 @@ static void power_fail_check ()
           gpio_get_value(tmp1, &value);
 
           if (value == GPIO_VALUE_HIGH) {
+            gpio_close(tmp1);
             continue;
           }
           bitmask =  MAX_NIC_NUM-1-i;
@@ -275,12 +285,15 @@ static void power_fail_check ()
       syslog(LOG_CRIT, "PAX power rail fails");
     }
   }
+  else if (value == GPIO_VALUE_HIGH && asserted) {
+	asserted = 0;
+    syslog(LOG_CRIT, "%s: GPIOE5 - CPLD_SMB_ALERT_N_R\n", value ? "DEASSERT": "ASSERT");
+  }
 
-  gpio_close(tmp);
+  return;
 
 exit:
   syslog(LOG_ERR, "Get CPLD reg command fail");
-  gpio_close(tmp);
   return;
 }
 static void gpio_smb_alert_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)

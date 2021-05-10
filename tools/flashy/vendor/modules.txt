@@ -1,0 +1,17 @@
+# github.com/Jeffail/gabs v1.4.0
+## explicit
+github.com/Jeffail/gabs
+# github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+## explicit
+github.com/kballard/go-shellquote
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/u-root/u-root v7.0.0+incompatible
+## explicit
+github.com/u-root/u-root/pkg/dt
+github.com/u-root/u-root/pkg/ubinary
+github.com/u-root/u-root/pkg/uio
+# github.com/vtolstov/go-ioctl v0.0.0-20151206205506-6be9cced4810
+## explicit
+github.com/vtolstov/go-ioctl

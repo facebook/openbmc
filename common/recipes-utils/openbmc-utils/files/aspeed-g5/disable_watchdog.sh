@@ -21,5 +21,21 @@
 # shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
-# Disable the dual boot watch dog
-devmem_clear_bit 0x1e78502c 0
+#
+# WDT2C Register. Check AST2500 Datasheet, Chapter 41 "Watchdog Timer"
+# for details.
+#
+WDT2_CTRL_REG=0x1e78502c
+WDT2_ENABLE_BIT=0
+
+# Disable the dual boot watchdog
+devmem_clear_bit "$WDT2_CTRL_REG" "$WDT2_ENABLE_BIT"
+
+if devmem_test_bit "$WDT2_CTRL_REG" "$WDT2_ENABLE_BIT"; then
+    val=$(devmem "$WDT2_CTRL_REG")
+    echo "ALERT: failed to disable the 2nd watchdog: WDT2C=$val!!!"
+    logger -p user.crit "failed to disable the 2nd watchdog: WDT2C=$val!!!"
+    exit 1
+fi
+
+echo "Disabled the 2nd watchdog (WDT2) successfully."

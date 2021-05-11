@@ -40,7 +40,7 @@ func validateImageBuildname(stepParams step.StepParams) step.StepExitError {
 
 	err := validate.CheckImageBuildNameCompatibility(stepParams.ImageFilePath)
 	if err != nil {
-		return step.ExitUnknownError{
+		return step.ExitSafeToReboot{
 			Err: errors.Errorf("Image build name compatibility check failed: %v. "+
 				"Use the '--clowntown' flag if you wish to proceed at the risk of "+
 				"bricking the device", err),

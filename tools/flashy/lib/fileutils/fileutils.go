@@ -220,6 +220,19 @@ var MmapFileRange = func(filename string, offset int64, length, prot, flags int)
 	}
 	defer f.Close()
 
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, errors.Errorf("Unable to get file info of '%v': %v",
+			filename, err)
+	}
+
+	// Using IsRegular() as non-regular files (e.g. /dev/mem or /dev/mtd*) have .st_size=0
+	// (and using something like ReadAt() to check boundaries can have nasty side-effects if
+	// used on /dev/mem)
+	if fi.Mode().IsRegular() && fi.Size() < offset+int64(length) {
+		return nil, errors.Errorf("mmap on '%v' failed: offset+length (%v) is greater than file size (%v)", filename, offset+int64(length), fi.Size())
+	}
+
 	return Mmap(int(f.Fd()), offset, length, prot, flags)
 }
 

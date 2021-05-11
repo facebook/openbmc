@@ -35,7 +35,7 @@ using std::string;
 using std::cout;
 using std::endl;
 
-const uint8_t ALL_FAN_NUM = 0xFF;
+const int ALL_FAN_NUM = -1;
 static constexpr auto SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record";
 static constexpr auto FAN_FAIL_RECORD_DIR = "/tmp/fanfail_record";
 static constexpr auto SENSOR_FAIL_FILE = "/tmp/cache_store/sensor_fail_boost";
@@ -220,9 +220,8 @@ fscd_driver_check(bool status) {
 int
 main(int argc, char **argv) {
 
-  uint8_t cmd;
-  uint8_t pwm = -1;
-  uint8_t fan = ALL_FAN_NUM;
+  uint8_t pwm = 0xFF;
+  int fan = ALL_FAN_NUM;
   int i;
   int ret;
   int rpm = 0;
@@ -275,7 +274,7 @@ main(int argc, char **argv) {
       if (ret == PAL_ENOTREADY) {
         cout << "Blocked because host power is off" << endl;
       } else if (!ret) {
-        cout << "Setting Zone " << i << " speed to " << pwm << "%" << endl;
+        cout << "Setting Zone " << i << " speed to " << +pwm << "%" << endl;
       } else
         cout << "Error while setting fan speed for Zone " << i << endl;
     }
@@ -294,8 +293,8 @@ main(int argc, char **argv) {
         if (!ret) {
           memset(fan_name, 0, 32);
           pal_get_fan_name(i, fan_name);
-          if ((pal_get_pwm_value(i, &pwm)) == 0)
-            cout << fan_name << " Speed: " << rpm << " RPM (" << pwm << "%)" << endl;
+          if (pal_get_pwm_value(i, &pwm) == 0)
+            cout << fan_name << " Speed: " << rpm << " RPM (" << +pwm << "%)" << endl;
           else {
             cout << "Error while getting fan PWM for Fan " << i << endl;
             cout << fan_name << " Speed: " << rpm << " RPM" << endl;

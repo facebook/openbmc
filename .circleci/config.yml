@@ -46,7 +46,7 @@ jobs:
                   CACHE_DIR: /tmp/job/sstate-cache
                   CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
               user: root
-        resource_class: xlarge
+        resource_class: 2xlarge
         working_directory: /tmp/job/project
         steps:
             - attach_workspace:

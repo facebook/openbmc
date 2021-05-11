@@ -215,7 +215,7 @@ func (p *FitPartition) getDataFromImageNodeViaDataLink(imageNode *dt.Node) ([]by
 			"too large for partition size (%v)", endOffset, dataSize, dataPos, p.GetSize())
 	}
 
-	return p.Data[dataPos:endOffset], nil
+	return utils.BytesSliceRange(p.Data, dataPos, endOffset)
 }
 
 // given the image node, get the sha256 checksum.

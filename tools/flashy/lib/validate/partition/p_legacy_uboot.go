@@ -132,9 +132,12 @@ func (p *LegacyUbootPartition) checkData() error {
 		return errors.Errorf("Legacy U-Boot partition incomplete, data part too small.")
 	}
 
-	calcDataChecksum := crc32.ChecksumIEEE(
-		p.Data[legacyUbootHeaderSize:imageDataEnd],
-	)
+	imageDataWithoutUbootHeader, err := utils.BytesSliceRange(p.Data, legacyUbootHeaderSize, imageDataEnd)
+	if err != nil {
+		return err
+	}
+
+	calcDataChecksum := crc32.ChecksumIEEE(imageDataWithoutUbootHeader)
 	if calcDataChecksum != p.header.Ih_dcrc {
 		return errors.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",
 			calcDataChecksum, p.header.Ih_dcrc)

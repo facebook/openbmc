@@ -248,11 +248,11 @@ func GetWord(data []byte, offset uint32) (uint32, error) {
 	if err != nil {
 		return 0, errors.Errorf("Failed to get end of offset: %v", err)
 	}
-	if endOffset > uint32(len(data)) {
-		return 0, errors.Errorf("Required offset %v out of range of data size %v",
-			offset, len(data))
+	wordBytes, err := BytesSliceRange(data, offset, endOffset)
+	if err != nil {
+		return 0, errors.Errorf("Failed to get bytes for word: %v", err)
 	}
-	val := binary.BigEndian.Uint32(data[offset:endOffset])
+	val := binary.BigEndian.Uint32(wordBytes)
 	return val, nil
 }
 

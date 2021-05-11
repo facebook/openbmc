@@ -485,12 +485,11 @@ func TestGetWord(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name:   "out of range",
-			data:   []byte{0x01, 0x02, 0x03, 0x04},
-			offset: 2,
-			want:   0,
-			wantErr: errors.Errorf("Required offset %v out of range of data size %v",
-				2, 4),
+			name:    "out of range",
+			data:    []byte{0x01, 0x02, 0x03, 0x04},
+			offset:  2,
+			want:    0,
+			wantErr: errors.Errorf("Failed to get bytes for word: Slice end (6) larger than original slice length (4)"),
 		},
 		{
 			name:    "overflowed",

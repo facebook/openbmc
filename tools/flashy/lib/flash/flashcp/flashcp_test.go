@@ -598,6 +598,12 @@ func TestFlashImage(t *testing.T) {
 			writeErr: nil,
 			want:     nil,
 		},
+		{
+			name:     "roOffset too large",
+			roOffset: 100,
+			writeErr: nil,
+			want:     errors.Errorf("Unable to get image data after roOffset (100): Slice start (100) > end (6)"),
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -697,6 +703,14 @@ func TestVerifyFlash(t *testing.T) {
 			deviceData:     []byte("XXXXar"),
 			mmapErr:        nil,
 			want:           nil,
+		},
+		{
+			name:           "roOffset too large",
+			roOffset:       100,
+			deviceFileName: "/dev/mtd42",
+			deviceData:     imData,
+			mmapErr:        nil,
+			want:           errors.Errorf("Unable to get image data after roOffset (100): Slice start (100) > end (6)"),
 		},
 	}
 

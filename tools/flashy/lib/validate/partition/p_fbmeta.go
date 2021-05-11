@@ -141,13 +141,16 @@ func (p *FBMetaImagePartition) GetType() PartitionConfigType {
 // from the meta partition
 func (p *FBMetaImagePartition) getMetaInfo() (FBMetaInfo, error) {
 	var metaInfo FBMetaInfo
-	offsetEnd := fbmetaImageMetaPartitionSize + fbmetaImageMetaPartitionOffset
-	if uint32(offsetEnd) > p.GetSize() {
+	offsetEnd := uint32(fbmetaImageMetaPartitionSize + fbmetaImageMetaPartitionOffset)
+	if offsetEnd > p.GetSize() {
 		return metaInfo, errors.Errorf("Image/device size too small (%v B) to contain meta partition region",
 			p.GetSize())
 	}
 
-	metaPartitionData := p.Data[fbmetaImageMetaPartitionOffset:offsetEnd]
+	metaPartitionData, err := utils.BytesSliceRange(p.Data, fbmetaImageMetaPartitionOffset, offsetEnd)
+	if err != nil {
+		return metaInfo, errors.Errorf("Unable to get meta partition data: %v", err)
+	}
 
 	return parseAndValidateFBImageMetaJSON(metaPartitionData)
 }

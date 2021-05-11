@@ -151,7 +151,10 @@ var GetVbs = func() (Vbs, error) {
 	if err != nil {
 		return vbs, errors.Errorf("VBS end offset overflowed: %v", err)
 	}
-	vbsData := pageData[dataOffset:vbsEndOffset]
+	vbsData, err := BytesSliceRange(pageData, dataOffset, vbsEndOffset)
+	if err != nil {
+		return vbs, errors.Errorf("Failed to get vbs data: %v", err)
+	}
 
 	return decodeVbs(vbsData)
 }

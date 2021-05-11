@@ -108,6 +108,8 @@ i2c_driver_map() {
     case ${device_name} in
         "24c64")
             echo "at24";;
+        "adm1278")
+            echo "adm1275";;
         "tmp75")
             echo "lm75";;
         "pca9505" | "pca9534" | "pca9535")
@@ -120,8 +122,12 @@ i2c_driver_map() {
             echo "fancpld";;
         "cmmcpld")
             echo "cmmcpld";;
+        "mp2975")
+            echo "mp2975";;
         "mp2978")
             echo "mp2978";;
+        "ucd90160")
+            echo "ucd9000";;
         "xdpe132g5c")
             echo "xdpe132g5c";;
         *)

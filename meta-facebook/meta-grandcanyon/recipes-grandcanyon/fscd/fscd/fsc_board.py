@@ -27,6 +27,8 @@ from kv import kv_get
 
 lpal_hndl = CDLL("libpal.so.0")
 
+SDR_BIN_PATH = "/tmp/sdr_server.bin"
+
 def board_fan_actions(fan, action="None"):
     if action in "dead":
         # TODO: Need to implement function to handle fan dead.
@@ -97,7 +99,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
                 bic_ready = data.split("=")
                 if int(bic_ready[1]) == is_ready:
-                    return 1
+                    if os.path.isfile(SDR_BIN_PATH):
+                        return 1
+                    else:
+                        return 0
                 else:
                     return 0
             else:

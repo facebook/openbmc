@@ -15,10 +15,10 @@ if os.path.isfile(TYPE5_FAN_TABLE):
         fsc_config["zones"]["zone_0"]["expr_file"] = DEFAULT_FSC_FILE
 
         # remove E1.S sensor monitoring and validation checking
-        if "E1S_Temp_0" in fsc_config["sensor_valid_check"]:
-            del fsc_config["sensor_valid_check"]["E1S_Temp_0"]
-        if "E1S_Temp_1" in fsc_config["sensor_valid_check"]:
-            del fsc_config["sensor_valid_check"]["E1S_Temp_1"]
+        if "E1S_(.*)0_TEMP" in fsc_config["sensor_valid_check"]:
+            del fsc_config["sensor_valid_check"]["E1S_(.*)0_TEMP"]
+        if "E1S_(.*)1_TEMP" in fsc_config["sensor_valid_check"]:
+            del fsc_config["sensor_valid_check"]["E1S_(.*)1_TEMP"]
         if "linear_e1s_sensor_temp" in fsc_config["profiles"]:
             del fsc_config["profiles"]["linear_e1s_sensor_temp"]
 

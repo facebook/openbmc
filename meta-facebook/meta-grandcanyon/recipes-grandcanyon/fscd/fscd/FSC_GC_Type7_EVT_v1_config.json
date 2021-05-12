@@ -15,7 +15,7 @@
     ]
   },
   "sensor_valid_check": {
-    "SOC": {
+    "BS": {
       "attribute": {
         "type" : "host_power_status",
         "fru" : "server",

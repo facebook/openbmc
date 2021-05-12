@@ -15,21 +15,21 @@
     ]
   },
   "sensor_valid_check": {
-    "SOC": {
+    "BS": {
       "attribute": {
         "type" : "host_power_status",
         "fru" : "server",
         "bic_ready_pin" : "BIC_READY_IN"
       }
     },
-    "E1S_Temp_0": {
+    "E1S_(.*)0_TEMP": {
       "attribute": {
         "type" : "E1S_status",
         "gpio_present_pin" : "E1S_1_PRSNT_N",
         "e1s_i2c_enable" : "E1S_1_P3V3_PG_R"
       }
     },
-    "E1S_Temp_1": {
+    "E1S_(.*)1_TEMP": {
       "attribute": {
         "type" : "E1S_status",
         "gpio_present_pin" : "E1S_2_PRSNT_N",

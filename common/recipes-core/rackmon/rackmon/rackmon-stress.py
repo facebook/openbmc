@@ -71,6 +71,8 @@ def sv(svc_list, cmd):
             continue
         try:
             subprocess.check_call(["sv", cmd, svc])
+            if svc == "fscd" and cmd == "stop":
+                subprocess.check_call(["wdtcli", "set-timeout", "3600"])
         except Exception:
             failed.append(svc)
     if len(failed) > 0 and len(svc_list) > 0:
@@ -218,7 +220,7 @@ def run_experiment_loop(iters, size, psus, interval, timeout=500):
                 else:
                     overruns += 1
     exp_run = CPUProfiler.last_run
-    return exp_run, total_time, overruns
+    return exp_run, 1000.0 * total_time / float(len(psus) * iters), overruns
 
 
 DEFAULT_NUM_ITERS = 1000
@@ -320,7 +322,7 @@ elif args.experiment == "latency_cpu_mean":
         time.sleep(args.silent)
     base_run = CPUProfiler.last_run
     # Run the experiment
-    exp_run, _, overruns = run_experiment_loop(
+    exp_run, exp_latency, overruns = run_experiment_loop(
         args.num_iters, args.size, args.psus.split(","), args.interval, args.timeout
     )
     base_util = base_run["utilization"]
@@ -328,6 +330,9 @@ elif args.experiment == "latency_cpu_mean":
     exp_time = exp_run["time"]
     num_messages = float(len(args.psus.split(",")) * args.num_iters)
     avg_latency = exp_time * 1000.0 / num_messages
+    # This will be true when interval > 0.
+    if avg_latency > exp_latency:
+        avg_latency = exp_latency
     after_status = rackmonstatus()
     bc, crc, t = rackmon_run_stats(before_status, after_status)
     headers = [

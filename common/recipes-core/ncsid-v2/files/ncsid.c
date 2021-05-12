@@ -74,6 +74,8 @@
 /* POLL nic status every N seconds */
 #define NIC_STATUS_SAMPLING_DELAY  60
 
+#define NCSI_WAIT_REINIT 5
+
 #define RX_BUF_SIZE 20
 #define fillcnt_sem_path  "/fillsem"
 
@@ -244,14 +246,32 @@ free_and_exit:
   return -1;
 }
 
+static bool
+skip_ncsi_tx(void) {
+  char value[64] = {0};
+  struct timespec ts;
+
+  if (kv_get("block_ncsi_xmit", value, NULL, 0) == 0) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (strtoul(value, NULL, 10) > ts.tv_sec) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 static int send_nl_data_libnl(int socket_fd, generic_msg_t *gmsg)
 {
   // calls the non-block version of nl-wrapper API
   int ret = 0;
   NCSI_NL_RSP_T *nl_rsp = NULL;
-  nl_rsp = send_nl_msg_libnl(gmsg->pmsg_libnl);
 
+  if (skip_ncsi_tx()) {
+    return -1;
+  }
+
+  nl_rsp = send_nl_msg_libnl(gmsg->pmsg_libnl);
   if (nl_rsp == NULL) {
     syslog(LOG_ERR, "%s null rsp", __FUNCTION__);
     return -1;
@@ -463,6 +483,10 @@ send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd, uint8_t ncsi_cmd,
   NCSI_NL_MSG_T *nl_msg = NULL;
   NCSI_NL_RSP_T *nl_rsp = NULL;
   int ret = 0;
+
+  if (skip_ncsi_tx()) {
+    return -1;
+  }
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
@@ -920,7 +944,6 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   unsigned short cmd_response_code = ntohs(resp->Response_Code);
   unsigned short cmd_reason_code   = ntohs(resp->Reason_Code);
   int ret = 0;
-  struct timespec ts;
 
   /* chekc for command completion before processing
      response payload */
@@ -936,17 +959,11 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
             (cmd_reason_code == REASON_CHANNEL_NOT_RDY) ||
             (cmd_reason_code == REASON_PKG_NOT_RDY))
        ) {
-      clock_gettime(CLOCK_MONOTONIC, &ts);  // to avoid re-initialize closely
-      if (((ts.tv_sec - last_config_ts.tv_sec) >= NIC_STATUS_SAMPLING_DELAY/2) ||
-          (last_config_ts.tv_sec == 0)) {
-        syslog(LOG_WARNING, "NCSI Cmd (0x%x) failed,"
-               " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
-               cmd, cmd_response_code, cmd_reason_code);
+      syslog(LOG_WARNING, "NCSI Cmd (0x%x) failed,"
+             " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
+             cmd, cmd_response_code, cmd_reason_code);
 
-        last_config_ts.tv_sec = ts.tv_sec;
-        handle_ncsi_config(0);
-        return NCSI_IF_REINIT;
-      }
+      return NCSI_IF_REINIT;
     }
 
     /* for other types of command failures, ignore for now */
@@ -998,6 +1015,33 @@ enable_aens(nl_usr_sk_t *sfd, uint32_t aen_enable_mask) {
   return;
 }
 
+static void
+handle_ncsi_if_reinit(int is_aen) {
+  uint8_t delay_sec;
+  char value[64];
+  struct timespec ts;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);  // to avoid re-initialize closely
+  if (((ts.tv_sec - last_config_ts.tv_sec) >= NIC_STATUS_SAMPLING_DELAY/2) ||
+      (last_config_ts.tv_sec == 0)) {
+    // to skip tx during re-init
+    snprintf(value, sizeof(value), "%ld", ts.tv_sec + NCSI_WAIT_REINIT);
+    if (kv_set("block_ncsi_xmit", value, 0, 0)) {
+      syslog(LOG_WARNING, "failed to set block_ncsi_xmit");
+    }
+
+    delay_sec = (is_aen) ? NCSI_RESET_TIMEOUT : 0;
+    handle_ncsi_config(delay_sec);
+    last_config_ts.tv_sec = ts.tv_sec + delay_sec;
+
+    send_registration_msg(&gSock);
+    if (islibnl()) {
+      sleep(NCSI_WAIT_REINIT);
+    }
+    enable_aens(&gSock, aen_enable_mask);
+  }
+}
+
 // Thread to handle the incoming responses
 static void*
 ncsi_rx_handler_nl_usr(void *args) {
@@ -1009,6 +1053,7 @@ ncsi_rx_handler_nl_usr(void *args) {
   int ret = 0;
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf;
+  int is_aen;
 
   memset(&msg, 0, sizeof(msg));
   syslog(LOG_INFO, "rx: ncsi_rx_handler thread started");
@@ -1034,15 +1079,15 @@ ncsi_rx_handler_nl_usr(void *args) {
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
-    if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
+    is_aen = is_aen_packet((AEN_Packet *)rcv_buf->msg_payload);
+    if (is_aen) {
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
     } else {
       ret = process_NCSI_resp(rcv_buf);
     }
 
     if (ret == NCSI_IF_REINIT) {
-      send_registration_msg(&gSock);
-      enable_aens(&gSock, aen_enable_mask);
+      handle_ncsi_if_reinit(is_aen);
     }
   }
 
@@ -1053,6 +1098,7 @@ ncsi_rx_handler_nl_usr(void *args) {
 static void*
 ncsi_rx_handler_libnl(void *args) {
   int ret = 0;
+  int is_aen;
   syslog(LOG_INFO, "%s thread started", __FUNCTION__);
   NCSI_NL_RSP_T *rcv_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
   if (rcv_buf == NULL) {
@@ -1080,15 +1126,15 @@ ncsi_rx_handler_libnl(void *args) {
             rcv_buf->msg_payload[6],
             rcv_buf->msg_payload[7]);
 #endif
-    if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
+    is_aen = is_aen_packet((AEN_Packet *)rcv_buf->msg_payload);
+    if (is_aen) {
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
     } else {
       ret = process_NCSI_resp(rcv_buf);
     }
 
     if (ret == NCSI_IF_REINIT) {
-      send_registration_msg(&gSock);
-      enable_aens(&gSock, aen_enable_mask);
+      handle_ncsi_if_reinit(is_aen);
     }
   }
   syslog(LOG_INFO, "%s exit", __FUNCTION__);

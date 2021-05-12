@@ -756,7 +756,6 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
   unsigned short cmd_response_code = ntohs(resp->Response_Code);
   unsigned short cmd_reason_code   = ntohs(resp->Reason_Code);
   int ret = 0;
-  struct timespec ts;
 
   /* chekc for command completion before processing
      response payload */
@@ -766,22 +765,17 @@ process_NCSI_resp(NCSI_NL_RSP_T *buf)
              cmd, cmd_response_code, cmd_reason_code);
      /* if command fails for a specific signature (i.e. NCSI interface failure)
         try to re-init NCSI interface */
-    if ((cmd_response_code == RESP_COMMAND_UNAVAILABLE) &&
+    if (( (cmd_response_code == RESP_COMMAND_FAILED)    ||
+          (cmd_response_code == RESP_COMMAND_UNAVAILABLE)) &&
            ((cmd_reason_code == REASON_INTF_INIT_REQD)  ||
             (cmd_reason_code == REASON_CHANNEL_NOT_RDY) ||
             (cmd_reason_code == REASON_PKG_NOT_RDY))
        ) {
-      clock_gettime(CLOCK_MONOTONIC, &ts);  // to avoid re-initialize closely
-      if (((ts.tv_sec - last_config_ts.tv_sec) >= NIC_STATUS_SAMPLING_DELAY/2) ||
-          (last_config_ts.tv_sec == 0)) {
-        syslog(LOG_WARNING, "NCSI Cmd (0x%x) failed,"
-               " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
-               cmd, cmd_response_code, cmd_reason_code);
+      syslog(LOG_WARNING, "NCSI Cmd (0x%x) failed,"
+             " Cmd Response 0x%x, Reason 0x%x, re-init NCSI interface",
+             cmd, cmd_response_code, cmd_reason_code);
 
-        last_config_ts.tv_sec = ts.tv_sec;
-        handle_ncsi_config(0);
-        return NCSI_IF_REINIT;
-      }
+      return NCSI_IF_REINIT;
     }
 
     /* for other types of command failures, ignore for now */
@@ -844,6 +838,9 @@ ncsi_rx_handler(void *sfd) {
   int msg_size = sizeof(NCSI_NL_RSP_T);
   struct nlmsghdr *nlh = NULL;
   int ret = 0;
+  int is_aen;
+  uint8_t delay_sec;
+  struct timespec ts;
 
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf;
@@ -873,15 +870,24 @@ ncsi_rx_handler(void *sfd) {
     /* Read message from kernel */
     recvmsg(sock_fd, &msg, 0);
     rcv_buf = (NCSI_NL_RSP_T *)NLMSG_DATA(nlh);
-    if (is_aen_packet((AEN_Packet *)rcv_buf->msg_payload)) {
+    is_aen = is_aen_packet((AEN_Packet *)rcv_buf->msg_payload);
+    if (is_aen) {
       ret = process_NCSI_AEN((AEN_Packet *)rcv_buf->msg_payload);
     } else {
       ret = process_NCSI_resp(rcv_buf);
     }
 
     if (ret == NCSI_IF_REINIT) {
-      send_registration_msg(sfd);
-      enable_aens(sfd, aen_enable_mask);
+      clock_gettime(CLOCK_MONOTONIC, &ts);  // to avoid re-initialize closely
+      if (((ts.tv_sec - last_config_ts.tv_sec) >= NIC_STATUS_SAMPLING_DELAY/2) ||
+          (last_config_ts.tv_sec == 0)) {
+        delay_sec = (is_aen) ? NCSI_RESET_TIMEOUT : 0;
+        handle_ncsi_config(delay_sec);
+        last_config_ts.tv_sec = ts.tv_sec + delay_sec;
+
+        send_registration_msg(sfd);
+        enable_aens(sfd, aen_enable_mask);
+      }
     }
   }
 

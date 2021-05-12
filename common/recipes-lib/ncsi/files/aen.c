@@ -152,7 +152,6 @@ process_NCSI_AEN(AEN_Packet *buf)
         log_level = LOG_WARNING;
         i += sprintf(logbuf + i, ", Configuration Required");
         syslog(log_level, "%s", logbuf);
-        handle_ncsi_config(NCSI_RESET_TIMEOUT);
 
         // set flag indicate all threads to exit
         return NCSI_IF_REINIT;

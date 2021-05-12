@@ -25,6 +25,9 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 PACKAGECONFIG ??= ""
 PACKAGECONFIG[disable-watchdog] = ""
 
+# boot_info.sh script is not installed by default
+PACKAGECONFIG[boot-info] = ""
+
 SRC_URI = " \
     file://COPYING \
     file://mount_data0.sh \
@@ -54,6 +57,8 @@ SRC_URI = " \
     ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
                          'file://disable_watchdog.sh ' + \
                          'file://disable_watchdog.service', '', d)} \
+    ${@bb.utils.contains('PACKAGECONFIG', 'boot-info', \
+                         'file://boot_info.sh', '', d)} \
     "
 
 SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
@@ -171,6 +176,11 @@ do_install() {
     localbindir="${D}/usr/local/bin"
     install -d "${D}${sysconfdir}"
     install -d ${localbindir}
+
+    # Install boot-info.
+    if ! echo ${PACKAGECONFIG} | awk "/boot-info/ {exit 1}"; then
+        install -m 0755 ${S}/boot_info.sh ${D}/usr/local/bin
+    fi
 
     # If mtd-ubifs feature is enabled, we want ubifs on top of the mtd
     # data0 partition. Update the "mount_data0.sh" to reflect this.

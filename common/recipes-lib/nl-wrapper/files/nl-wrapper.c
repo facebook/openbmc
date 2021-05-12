@@ -39,6 +39,8 @@
   #define DBG_PRINT(fmt, args...)
 #endif
 
+#define RECVMSG_TIMEOUT 3
+
 
 // re-used from
 // https://github.com/sammj/ncsi-netlink
@@ -290,8 +292,8 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	int rc = 0;
 	int payload_len = nl_msg->payload_length;
 	int package = (nl_msg->channel_id & 0xE0) >> 5;
-
 	uint8_t *pData, *pCtrlPktPayload;
+	struct timeval tv = {RECVMSG_TIMEOUT, 0};
 
 	// allocate a  contiguous buffer space to hold ncsi message
 	//  (header + Control Packet payload)
@@ -357,6 +359,9 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	}
 
 	while (msg.ret == 1) {
+		if (setsockopt(nl_socket_get_fd(msg.sk), SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv))) {
+			syslog(LOG_ERR, "Failed to set SO_RCVTIMEO for receiving message");
+		}
 		rc = nl_recvmsgs_default(msg.sk);
 		DBG_PRINT("%s, rc = %d\n", __FUNCTION__, rc);
 		if (rc) {

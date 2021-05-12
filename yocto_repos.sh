@@ -28,5 +28,5 @@ lf_dunfell_repos=(
     lf-openbmc:776d5d2fd
 )
 lf_gatesgarth_repos=(
-    lf-openbmc:835472cca
+    lf-openbmc:18c6a7704
 )

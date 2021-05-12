@@ -22,7 +22,7 @@ zeus_repos=(
     poky:d88d62c20d # selftest/signing: Ensure build path relocation is safe
 )
 lf_master_repos=(
-    lf-openbmc:394971b1a
+    lf-openbmc:1819d8176
 )
 lf_dunfell_repos=(
     lf-openbmc:776d5d2fd

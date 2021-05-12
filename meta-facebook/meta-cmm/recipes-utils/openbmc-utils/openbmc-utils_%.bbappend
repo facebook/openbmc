@@ -18,6 +18,7 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
+PACKAGECONFIG += " boot-info"
 
 SRC_URI += " \
     file://board-utils.sh \

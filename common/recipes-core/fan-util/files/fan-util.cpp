@@ -239,22 +239,37 @@ main(int argc, char **argv) {
   const string ident_set = fans_equal ? "Fan" : "Zone";
   const string ident_get = fans_equal ? "Fan" : "Tach";
 
+  /* This is a temporary workaround that removes the dashes from the
+   * command line input. In the future we need to change outside dependencies
+   * so that they call the correct, non-dashed subcommands.
+   */
+  if(argc > 1) {
+    if (strcmp(argv[1], "--set") == 0)
+      strcpy(argv[1], "set");
+    else if (strcmp(argv[1], "--get") == 0)
+      strcpy(argv[1], "get");
+    else if (strcmp(argv[1], "--get-drivers") == 0)
+      strcpy(argv[1], "get-drivers");
+    else if (strcmp(argv[1], "--auto-mode") == 0)
+      strcpy(argv[1], "auto-mode");
+  }
+
   CLI::App app{"Fan Util"};
   app.set_help_flag();
   app.set_help_all_flag("-h,--help");
 
-  auto setCommand = app.add_subcommand("--set", "set the pwm of a " + ident_set);
+  auto setCommand = app.add_subcommand("set", "set the pwm of a " + ident_set);
   setCommand->add_option("pwm", pwm, "%% pwm to set")->check(CLI::Range(0,100))->required();
   setCommand->add_option("fan", fan, ident_set + " to set pwm for")->check(CLI::Range(0,pwm_cnt-1));
 
-  auto getCommand = app.add_subcommand("--get", "get the pwm of a " + ident_set);
+  auto getCommand = app.add_subcommand("get", "get the pwm of a " + ident_set);
   getCommand->add_option("fan", fan, ident_get)->check(CLI::Range(0,tach_cnt-1));
 
-  auto driverCommand = app.add_subcommand("--get-drivers", "");
+  auto driverCommand = app.add_subcommand("get-drivers", "");
 
   string fanOptList = pal_get_fan_opt_list();
   if (fanOptList.length() > 0) {
-    auto autoCommand = app.add_subcommand("--auto-mode", "set auto mode");
+    auto autoCommand = app.add_subcommand("auto-mode", "set auto mode");
     autoCommand->add_option("fan", fanOpt, "set auto mode [" + fanOptList + "]")
       ->required();
   }

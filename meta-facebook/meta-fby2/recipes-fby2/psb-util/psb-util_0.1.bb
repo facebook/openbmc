@@ -35,5 +35,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/psb-util ${prefix}/local/bin"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

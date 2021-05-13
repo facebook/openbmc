@@ -488,7 +488,7 @@ int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type, int cfm_start_addr, 
 
       if(status != BUSY_IDLE){
         printf("Write to addr: 0x%X failed. status = 0x%X. \n", address, status);
-        bContinue = 0;
+        bContinue = 1;
         continue;
       }
     }

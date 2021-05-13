@@ -45,7 +45,3 @@ FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
 RDEPENDS_${PN} += " libfby3-common libpal libbic libkv libobmc-i2c "
 
 LDFLAGS = " -lobmc-i2c "
-
-# Inhibit complaints about .debug directories:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

@@ -23,7 +23,3 @@ do_install_append() {
   install -m 755 run-sensor-svcd.sh ${D}${sysconfdir}/sv/sensor-svcd/run
   update-rc.d -r ${D} setup-sensor-svcd.sh start 91 5 .
 }
-
-# Inhibit complaints about .debug directories for the sensor-svcd binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

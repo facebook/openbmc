@@ -79,6 +79,4 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} += "${FBPACKAGEDIR}/bios-util ${prefix}/local/bin ${sysconfdir} "
 
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-
 RDEPENDS_${PN} += "python3-core"

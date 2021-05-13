@@ -133,8 +133,4 @@ FILES_${PN} = "${FBPACKAGEDIR}/rackmon ${prefix}/local/bin ${sysconfdir} "
 
 FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
 
-# Inhibit complaints about .debug directories for the rackmon binaries:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-
 SYSTEMD_SERVICE_${PN} = "rackmond.service configure-rackmond.service"

@@ -56,6 +56,4 @@ FILES_${PN} = "${FBPACKAGEDIR}/kcsd ${prefix}/local/bin ${sysconfdir} "
 
 RDEPENDS_${PN} = "libipmi libgpio-ctrl liblog"
 
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-
 SYSTEMD_SERVICE_${PN} = "kcsd@.service kcsd.target"

@@ -35,5 +35,3 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 FILES_${PN} = "${FBPACKAGEDIR}/ipmi-util ${prefix}/local/bin"
 
 RDEPENDS_${PN} = "libipmi libpal"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

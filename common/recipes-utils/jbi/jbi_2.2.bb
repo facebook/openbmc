@@ -38,5 +38,3 @@ do_install() {
 FILES_${PN} = "/usr/local/bin"
 
 FILES_${PN}-dbg += "/usr/local/bin/.debug"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

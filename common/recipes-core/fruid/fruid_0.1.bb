@@ -51,5 +51,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/fruid ${prefix}/local/bin"
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

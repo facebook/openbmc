@@ -27,4 +27,3 @@ do_install_append() {
 # Inhibit complaints about .debug directories for the sensor-svcd binary:
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

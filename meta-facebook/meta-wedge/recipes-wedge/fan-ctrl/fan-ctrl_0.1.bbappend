@@ -60,7 +60,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories for the fand binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

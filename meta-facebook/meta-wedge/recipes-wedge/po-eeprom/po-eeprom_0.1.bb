@@ -35,7 +35,3 @@ do_install() {
 }
 
 FILES_${PN} = "${bindir}"
-
-# Inhibit complaints about .debug directories
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

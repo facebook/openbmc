@@ -56,7 +56,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/sms-kcsd ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories for the fand binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

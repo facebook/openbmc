@@ -53,7 +53,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

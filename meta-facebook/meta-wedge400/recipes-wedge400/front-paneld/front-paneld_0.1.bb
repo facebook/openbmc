@@ -62,8 +62,3 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
 RDEPENDS_${PN} += " libpal libbic bash"
-
-
-# Inhibit complaints about .debug directories:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

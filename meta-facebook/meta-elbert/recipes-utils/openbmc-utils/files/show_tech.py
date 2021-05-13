@@ -21,8 +21,8 @@
 # This script is for dumping debug information on elbert
 
 import argparse
-import subprocess
 import string
+import subprocess
 import time
 
 
@@ -78,20 +78,26 @@ def dumpEmmc():
     print("################################")
     print("######## eMMC debug log ########")
     print("################################\n")
-    cmdBase = '/usr/local/bin/mmcraw {} /dev/mmcblk0'
-    print(runCmd(cmdBase.format('show-summary'), echo=True, verbose=True))
-    print(runCmd(cmdBase.format('read-cid'), echo=True, verbose=True))
+    cmdBase = "/usr/local/bin/mmcraw {} /dev/mmcblk0"
+    print(runCmd(cmdBase.format("show-summary"), echo=True, verbose=True))
+    print(runCmd(cmdBase.format("read-cid"), echo=True, verbose=True))
 
 
 def dumpBootInfo():
     print("################################")
     print("######## BMC BOOT INFO  ########")
     print("################################\n")
-    print(runCmd('/usr/local/bin/boot_info.sh bmc', echo=True, verbose=True))
-    print("##### FLASH0 META_INFO #####\n{}".format(
-        runCmd('/usr/local/bin/meta_info.sh flash0', echo=True, verbose=True)))
-    print("##### FLASH1 META_INFO #####\n{}".format(
-        runCmd('/usr/local/bin/meta_info.sh flash1', echo=True, verbose=True)))
+    print(runCmd("/usr/local/bin/boot_info.sh bmc", echo=True, verbose=True))
+    print(
+        "##### FLASH0 META_INFO #####\n{}".format(
+            runCmd("/usr/local/bin/meta_info.sh flash0", echo=True, verbose=True)
+        )
+    )
+    print(
+        "##### FLASH1 META_INFO #####\n{}".format(
+            runCmd("/usr/local/bin/meta_info.sh flash1", echo=True, verbose=True)
+        )
+    )
 
 
 def fan_debuginfo(verbose=False):
@@ -223,18 +229,26 @@ def gpioDump():
         )
     )
 
-def oobEepromDump():
+
+def oobEepromDump(verboseLevel=1):
+    if verboseLevel > 1:
+        cmd = "dump"
+    else:
+        cmd = "version"
     print(
-        "##### OOB EEPROM DUMP #####\n{}".format(
-            runCmd("/usr/local/bin/oob-eeprom-util.sh dump", verbose=True, echo=True
-            )
+        "##### OOB EEPROM {} #####\n{}".format(
+            cmd.upper(),
+            runCmd(
+                "/usr/local/bin/oob-eeprom-util.sh {}".format(cmd),
+                verbose=True,
+                echo=True,
+            ),
         )
     )
 
 
 def showtech(verboseLevel=0):
     verbose = bool(verboseLevel)
-
     print("################################")
     print("##### SHOWTECH VERSION {} #####".format(VERSION))
     print("################################\n")
@@ -250,8 +264,11 @@ def showtech(verboseLevel=0):
         )
     )
     print("##### BMC SYSTEM TIME #####\n{}".format(runCmd("date")))
-    print("##### BMC version #####\nbuilt: {}{}".format(
-            runCmd("cat /etc/version"), runCmd("cat /etc/issue")))
+    print(
+        "##### BMC version #####\nbuilt: {}{}".format(
+            runCmd("cat /etc/version"), runCmd("cat /etc/issue")
+        )
+    )
     print("##### BMC UPTIME #####\n{}".format(runCmd("uptime")))
     print(
         "##### FPGA VERSIONS #####\n{}".format(
@@ -295,8 +312,7 @@ def showtech(verboseLevel=0):
         i2cDetectDump()
         gpioDump()
         logDump()
-    if verboseLevel >= 2:
-        oobEepromDump()
+        oobEepromDump(verboseLevel=verboseLevel)
 
 
 def parseArgs():
@@ -304,8 +320,12 @@ def parseArgs():
         description="Get showtech information. Version {}".format(VERSION)
     )
     parser.add_argument(
-        "-v", "--verbose", action="count", help="show verbose detailed debug logs.",
-        dest="verboseLevel", default=0
+        "-v",
+        "--verbose",
+        action="count",
+        help="show verbose detailed debug logs.",
+        dest="verboseLevel",
+        default=0,
     )
     return parser.parse_args()
 

@@ -96,6 +96,7 @@ usage() {
     echo "program <filename>"
     echo "read <index> [<num-words>]"
     echo "write <index> <word>"
+    echo "version"
 }
 
 read_index() {
@@ -400,7 +401,7 @@ eeprom_dump() {
     fi
     calc_csum=$( add_to_csum $calc_csum 0 "$header" )
 
-    local num_entries=$(( header & 0x3f ))
+    local num_entries=$(( header & 0x3ff ))
     local stream_end=$(( 1 + num_entries ))
     echo "Number of data words: $num_entries"
     local start=1
@@ -445,6 +446,17 @@ eeprom_dump() {
         echo "Error: Checksum is not expected value" >&2
         exit 1
     fi
+}
+
+eeprom_version() {
+    local idx version
+
+    eeprom_write_protect "disable"
+
+    # Last word at the end of the image contains version.
+    idx=$(( EEPROM_SIZE - 1 ))
+    version=$( read_index idx )
+    printf "Version: %x.%x\n" $(( version >> 8 )) $(( version & 0xff ))
 }
 
 eeprom_save() {
@@ -588,6 +600,9 @@ case "$command" in
         ;;
     write)
         eeprom_write "$@"
+        ;;
+    version)
+        eeprom_version "$@"
         ;;
     *)
         echo "Error: invalid command: $command" >&2

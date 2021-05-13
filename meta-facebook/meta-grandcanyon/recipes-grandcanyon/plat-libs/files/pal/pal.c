@@ -56,6 +56,8 @@
 #define MAX_NET_DEV_NAME_SIZE   10 // include the string terminal
 
 #define UNIX_PATH_MAX 108
+#define MAX_SNR_NAME  32
+#define MAX_EVENT_STR 256
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -2748,4 +2750,206 @@ pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len)
   close(sock);
 
   return 0;
+}
+
+static int
+pal_get_custom_event_sensor_name(uint8_t sensor_num, char *name) {
+  int ret = PAL_EOK;
+
+  if (name == NULL) {
+    syslog(LOG_ERR, "%s() sensor name is missing", __func__);
+    return -1;
+  }
+  switch(sensor_num) {
+    case BIC_SENSOR_VRHOT:
+      snprintf(name, MAX_SNR_NAME, "VR_HOT");
+      break;
+    case BIC_SENSOR_SYSTEM_STATUS:
+      snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
+      break;
+    default:
+      snprintf(name, MAX_SNR_NAME, "Unknown");
+      ret = PAL_ENOTSUP;
+      break;
+  }
+
+  return ret;
+}
+
+int
+pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  if (sel == NULL) {
+    syslog(LOG_ERR, "%s() SEL content is missing", __func__);
+    return -1;
+  }
+  if (name == NULL) {
+    syslog(LOG_ERR, "%s() sensor name is missing", __func__);
+    return -1;
+  }
+
+  uint8_t snr_type = sel[SEL_SNR_TYPE];
+  uint8_t snr_num = sel[SEL_SNR_NUM];
+
+  switch (snr_type) {
+    // If SNR_TYPE is OS_BOOT, sensor name is OS
+    case OS_BOOT:
+      // OS_BOOT used by OS
+      snprintf(name, MAX_SNR_NAME, "OS");
+      return PAL_EOK;
+    default:
+      if (pal_get_custom_event_sensor_name(snr_num, name) == PAL_EOK ) {
+        return PAL_EOK;
+      }
+      break;
+  }
+
+  // Otherwise, translate it based on snr_num
+  return pal_get_x86_event_sensor_name(fru, snr_num, name);
+}
+
+static int
+pal_parse_vr_event(uint8_t *event_data, char *error_log) {
+  if (event_data == NULL) {
+    syslog(LOG_ERR, "%s() event data is missing", __func__);
+    return -1;
+  }
+  if (error_log == NULL) {
+    syslog(LOG_ERR, "%s() event log is missing", __func__);
+    return -1;
+  }
+
+  enum {
+    VCCIN_VRHOT   = 0x00,
+    VCCIO_VRHOT   = 0x01,
+    DIMM_AB_VRHOT = 0x02,
+    DIMM_DE_VRHOT = 0x03,
+  };
+  uint8_t event = event_data[0];
+
+  switch (event) {
+    case VCCIN_VRHOT:
+      strcat(error_log, "CPU VCCIN VR HOT Warning");
+      break;
+    case VCCIO_VRHOT:
+      strcat(error_log, "CPU VCCIO VR HOT Warning");
+      break;
+    case DIMM_AB_VRHOT:
+      strcat(error_log, "DIMM AB Memory VR HOT Warning");
+      break;
+    case DIMM_DE_VRHOT:
+      strcat(error_log, "DIMM DE Memory VR HOT Warning");
+      break;
+    default:
+      strcat(error_log, "Undefined VR event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
+  if (event_data == NULL) {
+    syslog(LOG_ERR, "%s() event data is missing", __func__);
+    return -1;
+  }
+  if (error_log == NULL) {
+    syslog(LOG_ERR, "%s() event log is missing", __func__);
+    return -1;
+  }
+
+  uint8_t event = event_data[0];
+  char event_str[MAX_EVENT_STR] = {0};
+
+  switch (event) {
+    case SYS_THERM_TRIP:
+      strcat(error_log, "System thermal trip");
+      break;
+    case SYS_FIVR_FAULT:
+      strcat(error_log, "System FIVR fault");
+      break;
+    case SYS_SURGE_CURR:
+      strcat(error_log, "Surge Current Warning");
+      break;
+    case SYS_PCH_PROCHOT:
+      strcat(error_log, "PCH prochot");
+      break;
+    case SYS_UV_DETECT:
+      strcat(error_log, "Under Voltage Warning");
+      break;
+    case SYS_OC_DETECT:
+      strcat(error_log, "OC Warning");
+      break;
+    case SYS_OCP_FAULT_WARN:
+      strcat(error_log, "OCP Fault Warning");
+      break;
+    case SYS_FW_TRIGGER:
+      strcat(error_log, "Firmware");
+      break;
+    case SYS_HSC_FAULT:
+      strcat(error_log, "HSC fault");
+      break;
+    case SYS_VR_WDT_TIMEOUT:
+      strcat(error_log, "VR WDT");
+      break;
+    case SYS_M2_VPP:
+      snprintf(event_str, sizeof(event_str), "E1.S device %d VPP Power Control", event_data[2]);
+      strcat(error_log, event_str);
+      break;
+    case SYS_VCCIO_FAULT:
+      strcat(error_log, "VCCIO fault");
+      break;
+    case SYS_SMI_STUCK_LOW:
+      strcat(error_log, "SMI stuck low over 90s");
+      break;
+    case SYS_OV_DETECT:
+      strcat(error_log, "VCCIO Over Voltage Fault");
+      break;
+    default:
+      strcat(error_log, "Undefined system event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  if (sel == NULL) {
+    syslog(LOG_ERR, "%s() SEL is missing", __func__);
+    return -1;
+  }
+  if (error_log == NULL) {
+    syslog(LOG_ERR, "%s() event log is missing", __func__);
+    return -1;
+  }
+
+  enum {
+    EVENT_TYPE_NOTIF = 0x77, /*IPMI-Table 42-1, Event/Reading Type Code Ranges - OEM specific*/
+  };
+  uint8_t snr_num = sel[SEL_SNR_NUM];
+  uint8_t event_dir = sel[SEL_EVENT_TYPE] & 0x80;
+  uint8_t event_type = sel[SEL_EVENT_TYPE] & 0x7f;
+  uint8_t *event_data = &sel[SEL_EVENT_DATA];
+
+  error_log[0] = '\0';
+  switch (snr_num) {
+    case BIC_SENSOR_VRHOT:
+      pal_parse_vr_event(event_data, error_log);
+      break;
+    case BIC_SENSOR_SYSTEM_STATUS:
+      pal_parse_sys_sts_event(event_data, error_log);
+      break;
+    default:
+      pal_parse_sel_helper(fru, sel, error_log);
+      return PAL_EOK;
+  }
+
+  if (event_type == EVENT_TYPE_NOTIF) {
+    strcat(error_log, " Triggered");
+  } else {
+    strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+  }  
+
+  return PAL_EOK;
 }

@@ -180,6 +180,39 @@ enum {
   PCIE_CONFIG_TYPE7    = 0x8,
 };
 
+//Server board Discrete/SEL Sensors
+enum {
+  BIC_SENSOR_VRHOT = 0xB4,
+  BIC_SENSOR_SYSTEM_STATUS = 0x46,
+};
+
+enum {
+  SEL_SNR_TYPE   = 0x10,
+  SEL_SNR_NUM    = 0x11,
+  SEL_EVENT_TYPE = 0x12,
+  SEL_EVENT_DATA = 0x13,
+};
+
+//System status event
+enum {
+  SYS_THERM_TRIP     = 0x00,
+  SYS_FIVR_FAULT     = 0x01,
+  SYS_SURGE_CURR     = 0x02,
+  SYS_PCH_PROCHOT    = 0x03,
+  SYS_UV_DETECT      = 0x04,
+  SYS_OC_DETECT      = 0x05,
+  SYS_OCP_FAULT_WARN = 0x06,
+  SYS_FW_TRIGGER     = 0x07,
+  SYS_HSC_FAULT      = 0x08,
+  SYS_RSVD           = 0x09,
+  SYS_VR_WDT_TIMEOUT = 0x0A,
+  SYS_M2_VPP         = 0x0B,
+  SYS_M2_PGOOD       = 0x0C,
+  SYS_VCCIO_FAULT    = 0x0D,
+  SYS_SMI_STUCK_LOW  = 0x0E,
+  SYS_OV_DETECT      = 0x0F,
+};
+
 typedef struct {
 	uint8_t pcie_cfg;
 	uint8_t completion_code;

@@ -20,6 +20,7 @@ class SPIMTDComponent : public MTDComponent {
   protected:
     std::string spipath = "/sys/bus/spi/drivers/m25p80";
     std::string spidev;
+    int _retry = 1;
   public:
     SPIMTDComponent(std::string fru, std::string comp, std::string mtd, std::string dev) :
       MTDComponent(fru, comp, mtd), spidev(dev) {}

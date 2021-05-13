@@ -46,7 +46,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/consoled ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories for the sensord binary:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

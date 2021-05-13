@@ -55,4 +55,3 @@ FILES_${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin"
 # Inhibit complaints about .debug directories for the fand binary:
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

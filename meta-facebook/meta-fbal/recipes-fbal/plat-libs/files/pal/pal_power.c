@@ -338,7 +338,7 @@ int asic_ac_cycle_proc(void) {
   return 0;
 }
 
-int fbal_ac_cycle_proc(void) {
+int fbal_recfg_cycle_proc(void) {
   int cc;
 
   if ( set_me_entry_into_recovery() )
@@ -352,6 +352,22 @@ int fbal_ac_cycle_proc(void) {
   }
   return 0;
 }
+
+int fbal_ac_cycle_proc(void) {
+  int cc;
+
+  if ( set_me_entry_into_recovery() )
+    syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n"); 
+ 
+  // Send command to CM do AC power cycle
+  cc = cmd_cmc_sled_cycle();
+  if( cc != CC_SUCCESS ) {
+    syslog(LOG_ERR, "Request AL AC cycle failed CC=%x\n", cc);
+    return cc;
+  }
+  return 0;
+}
+
 
 //Reconfig only do MB AC sled cycle
 int pal_recfg_sled_cycle(void)
@@ -368,7 +384,7 @@ int pal_recfg_sled_cycle(void)
     if ( ret != 0 )
       break;
  
-    ret = fbal_ac_cycle_proc();
+    ret = fbal_recfg_cycle_proc();
     if ( ret != 0 )
       break;
 
@@ -390,8 +406,7 @@ int pal_recfg_sled_cycle(void)
 }
 
 //Systm AC Cycle
-int
-pal_sled_cycle(void) {
+int pal_sled_cycle(void) {
   int ret;
   uint8_t mode;
 

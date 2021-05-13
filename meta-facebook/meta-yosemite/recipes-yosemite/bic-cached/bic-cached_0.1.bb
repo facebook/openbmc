@@ -39,7 +39,3 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 RDEPENDS_${PN} += "libbic"
 
 FILES_${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "
-
-# Inhibit complaints about .debug directories:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

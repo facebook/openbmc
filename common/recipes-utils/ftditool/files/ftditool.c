@@ -385,6 +385,31 @@ static void ftdi_eeprom_print(union FTDI_EEPROM eeprom)
     printf("Checksum(0x7E)          : %04X\n", eeprom.info.checksum);
 }
 
+/*
+ * We don't what are these USB commands mean, but we captured USB data during
+ * FT_Prog(Official Windows program app) read/write eeprom, found it send out the commands
+ * before erasing/writing eeprom.
+ */
+void ftdi_eeprom_write_prepare(struct libusb_device_handle *devh)
+{
+    unsigned char data[32];
+
+    //0x40,0,0x0000,0x0,NULL,0
+    usb_control_transfer(devh, 0x40, 0, 0x0000, 0, NULL, 0, 100);
+    //0xC0,5,0x0000,0x0,data,2 << 0160
+    usb_control_transfer(devh, 0xC0, 5, 0x0000, 0, data, 2, 100);
+    //0x40,4,0x0008,0x0,NULL,0
+    usb_control_transfer(devh, 0xC0, 4, 0x0008, 0, NULL, 0, 100);
+    //0x40,2,0x0000,0x0,NULL,0
+    usb_control_transfer(devh, 0x40, 2, 0x0000, 0, NULL, 0, 100);
+    //0x40,3,0x4138,0x0,NULL,0
+    usb_control_transfer(devh, 0x40, 3, 0x0000, 0, NULL, 0, 100);
+    //0xC0,10,0x0000,0x0,data,1
+    usb_control_transfer(devh, 0xC0, 10, 0x0000, 0, data, 1, 100);
+    //0x40,9,0x0077,0x0,NULL,0
+    usb_control_transfer(devh, 0x40, 9, 0x0077, 0, NULL, 0, 100);
+}
+
 int main(int argc, char *argv[])
 {
     struct libusb_device_handle *devh = NULL;
@@ -549,6 +574,8 @@ int main(int argc, char *argv[])
                 ftdi_eeprom_dump(eeprom);
             }
 
+            ftdi_eeprom_write_prepare(devh);
+
             //Erase FTDI_EEPROM
             usb_control_transfer(devh, 0x40, 0x92, 0, 0x00, 0x00, 0, 100);
             for(int index = 0; index <= 127; index++) {
@@ -609,6 +636,8 @@ int main(int argc, char *argv[])
                 ftdi_eeprom_dump(eeprom);
             }
 
+            ftdi_eeprom_write_prepare(devh);
+
             //Erase FTDI_EEPROM
             usb_control_transfer(devh, 0x40, 0x92, 0, 0x00, 0x00, 0, 100);
             for(int index = 0; index <= 127; index++) {
@@ -655,21 +684,9 @@ int main(int argc, char *argv[])
             ftdi_eeprom_print(eeprom);
         }
 
-        //0x40,0,0x0000,0x0,NULL,0
-        usb_control_transfer(devh, 0x40, 0, 0x0000, 0, NULL, 0, 100);
-        //0xC0,5,0x0000,0x0,datas,2 << 0160
-        usb_control_transfer(devh, 0xC0, 5, 0x0000, 0, datas, 2, 100);
-        //0x40,4,0x0008,0x0,NULL,0
-        usb_control_transfer(devh, 0xC0, 4, 0x0008, 0, NULL, 0, 100);
-        //0x40,2,0x0000,0x0,NULL,0
-        usb_control_transfer(devh, 0x40, 2, 0x0000, 0, NULL, 0, 100);
-        //0x40,3,0x4138,0x0,NULL,0
-        usb_control_transfer(devh, 0x40, 3, 0x0000, 0, NULL, 0, 100);
-        //0xC0,10,0x0000,0x0,datas,1
-        usb_control_transfer(devh, 0xC0, 10, 0x0000, 0, datas, 1, 100);
-        //0x40,9,0x0077,0x0,NULL,0
-        usb_control_transfer(devh, 0x40, 9, 0x0077, 0, NULL, 0, 100);
+        ftdi_eeprom_write_prepare(devh);
 
+        //Erase FTDI_EEPROM
         usb_control_transfer(devh, 0x40, 0x92, 0, 0x00, NULL, 0, 100);
         for(int index = 0; index <= 127; index++) {
             reg_data = (eeprom.data[index * 2 + 1] << 8) | eeprom.data[index * 2];

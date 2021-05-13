@@ -34,6 +34,7 @@
 #include <sys/utsname.h>
 #include <linux/netlink.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <openbmc/ncsi.h>
 #include <openbmc/nl-wrapper.h>
 #include <openbmc/pldm.h>
@@ -275,6 +276,11 @@ static int sendPldmCmdAndCheckResp(NCSI_NL_MSG_T *nl_msg)
   return ret;
 }
 
+__attribute__((destructor))
+static void reset_ncsi_lock(void) {
+  kv_set("block_ncsi_xmit", "0", 0, 0);
+}
+
 static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 {
 #define SLEEP_TIME_MS               200  // wait time per loop in ms
@@ -289,7 +295,13 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   int waitcycle = 0;
   int waitTOsec = 0;
   int currnet_state = -1, previous_state = -1;
+  char value[64];
+  struct timespec ts;
 #define MAX_WAIT_CYCLE 1000
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  snprintf(value, sizeof(value), "%ld", ts.tv_sec + 600);
+  kv_set("block_ncsi_xmit", value, 0, 0);
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {

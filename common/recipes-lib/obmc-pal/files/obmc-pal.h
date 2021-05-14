@@ -565,6 +565,11 @@ int pal_get_ioc_fw_recovery(uint8_t ioc_recovery_component, uint8_t *res_data, u
 int pal_setup_exp_uart_bridging(void);
 int pal_teardown_exp_uart_bridging(void);
 int pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value);
+int pal_bic_self_test(void);
+int pal_is_bic_ready(uint8_t fru, uint8_t *status);
+bool pal_is_bic_heartbeat_ok(uint8_t fru);
+int pal_bic_hw_reset(void);
+int pal_get_server_12v_power(uint8_t fru_id, uint8_t *status);
 
 #ifdef __cplusplus
 }

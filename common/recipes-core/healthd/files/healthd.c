@@ -96,6 +96,9 @@
 
 #define KV_KEY_IMAGE_VERSIONS "image_versions"
 
+#define BIC_HEALTH_INTERVAL 60 //seconds
+#define BIC_RESET_ERR_CNT   3
+
 struct i2c_bus_s {
   uint32_t offset;
   char     *name;
@@ -209,6 +212,10 @@ static bool bmc_timestamp_enabled = false;
 extern bool pfr_monitor_enabled;
 extern void initialize_pfr_monitor_config(json_t *);
 extern void * pfr_monitor();
+
+/* BIC health monitor */
+static bool bic_health_enabled = false;
+static uint8_t bic_fru = 0;
 
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
@@ -540,6 +547,25 @@ static void initialize_bmc_timestamp_config(json_t *obj) {
   bmc_timestamp_enabled = json_is_true(tmp);
 }
 
+static void initialize_bic_health_config(json_t *obj) {
+  json_t *tmp = NULL;
+
+  if (obj == NULL) {
+    return;
+  }
+  tmp = json_object_get(obj, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  bic_health_enabled = json_is_true(tmp);
+
+  tmp = json_object_get(obj, "fru");
+  if (!tmp || !json_is_number(tmp)) {
+    return;
+  }
+  bic_fru = json_integer_value(tmp);
+}
+
 static int
 initialize_configuration(void) {
   json_error_t error;
@@ -565,6 +591,7 @@ initialize_configuration(void) {
   initialize_pfr_monitor_config(json_object_get(conf, "pfr_monitor"));
   initialize_vboot_config(json_object_get(conf, "verified_boot"));
   initialize_bmc_timestamp_config(json_object_get(conf, "bmc_timestamp"));
+  initialize_bic_health_config(json_object_get(conf, "bic_health"));
 
   json_decref(conf);
 
@@ -1635,6 +1662,54 @@ timestamp_handler()
   return NULL;
 }
 
+static void *
+bic_health_monitor() {
+  int err_cnt = 0;
+  uint8_t status = 0;
+  bool is_already_reset = false;
+
+  while (1) {
+    if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {
+      goto next_run;
+    }
+
+    // Read BIC ready pin to check BIC boots up completely
+    if ((pal_is_bic_ready(bic_fru, &status) < 0) || (status == false)) {
+      err_cnt++;
+      goto next_run;
+    }
+
+    // Check whether BIC heartbeat works 
+    if (pal_is_bic_heartbeat_ok(bic_fru) == false) {
+      err_cnt++;
+      goto next_run;
+    }
+
+    // Send a IPMB command to check IPMB service works normal
+    if (pal_bic_self_test() < 0) {
+      err_cnt++;
+      goto next_run;
+    }
+
+    // if all check pass, clear error counter and reset flag
+    err_cnt = 0;
+    is_already_reset = false;
+
+next_run:
+    if ((err_cnt >= BIC_RESET_ERR_CNT) && (is_already_reset == false)) {
+      // if error counter over 3, reset BIC by hardware
+      if (pal_bic_hw_reset() == 0) {
+        syslog(LOG_CRIT, "FRU %d BIC reset by BIC health monitor", bic_fru);
+        err_cnt = 0;
+        is_already_reset = true;
+      }
+    }
+    sleep(BIC_HEALTH_INTERVAL);
+  }
+
+  return NULL;
+}
+
 void sig_handler(int signo) {
   // Catch SIGALRM and SIGTERM. If recived signal record BMC log
   syslog(LOG_CRIT, "BMC health daemon stopped.");
@@ -1654,6 +1729,7 @@ main(int argc, char **argv) {
   pthread_t tid_nm_monitor;
   pthread_t tid_pfr_monitor;
   pthread_t tid_timestamp_handler;
+  pthread_t tid_bic_health_monitor;
 
   if (argc > 1) {
     exit(1);
@@ -1750,6 +1826,13 @@ main(int argc, char **argv) {
     }
   }
 
+  if (bic_health_enabled) {
+    if (pthread_create(&tid_bic_health_monitor, NULL, bic_health_monitor, NULL)) {
+      syslog(LOG_WARNING, "pthread_create for bic health monitor error\n");
+      exit(1);
+    }
+  }
+
 
   pthread_join(tid_watchdog, NULL);
 
@@ -1786,6 +1869,10 @@ main(int argc, char **argv) {
 
   if (bmc_timestamp_enabled) {
     pthread_join(tid_timestamp_handler, NULL);
+  }
+
+  if (bic_health_enabled) {
+    pthread_join(tid_bic_health_monitor, NULL);
   }
 
   return 0;

@@ -2746,3 +2746,28 @@ pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
 
   return 0;
 }
+
+int __attribute__((weak))
+pal_bic_self_test(void) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_is_bic_ready(uint8_t fru, uint8_t *status) {
+  return PAL_ENOTSUP;
+}
+
+bool __attribute__((weak))
+pal_is_bic_heartbeat_ok(uint8_t fru) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_bic_hw_reset(void) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_server_12v_power(uint8_t fru_id, uint8_t *status) {
+  return PAL_ENOTSUP;
+}

@@ -26,7 +26,6 @@ static int read_ads1015(uint8_t id, float *value);
 static int read_ioc_temp(uint8_t id, float *value);
 static bool is_e1s_iocm_i2c_enabled(uint8_t id);
 static int get_current_dir(const char *device, char *dir_name);
-static int read_device(const char *device, int *value);
 static int set_e1s_sensor_name(char *sensor_name, char side);
 
 static bool is_dpb_sensor_cached = false;
@@ -412,7 +411,7 @@ const uint8_t server_sensor_list[] = {
   BS_CPU_TEMP,
   BS_THERMAL_MARGIN,
   BS_CPU_TJMAX,
-  BS_CPU_PKG_PWR,    
+  BS_CPU_PKG_PWR,
   BS_HSC_IN_AVGPWR,
   BS_VR_VCCIN_TEMP,
   BS_VR_VCCIN_CUR,
@@ -986,7 +985,7 @@ get_current_dir(const char *device, char *dir_name) {
   return 0;
 }
 
-static int
+int
 read_device(const char *device, int *value) {
   FILE *fp = NULL;
 

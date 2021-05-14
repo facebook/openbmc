@@ -93,6 +93,11 @@ enum {
   FORCE_UPDATE_SET,
 };
 
+enum {
+  STATUS_BIC_NOT_READY = 0x0,
+  STATUS_BIC_READY,
+};
+
 // BIC GPIO
 enum {
   PWRGD_BMC_PS_PWROK_R = 0,

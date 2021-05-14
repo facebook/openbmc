@@ -82,6 +82,10 @@
   },
   "bmc_timestamp": {
     "enabled": true
+  },
+  "bic_health": {
+    "enabled": true,
+    "fru": 1
   }
 }
 

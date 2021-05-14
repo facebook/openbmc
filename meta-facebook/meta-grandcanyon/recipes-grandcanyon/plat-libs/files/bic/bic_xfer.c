@@ -34,6 +34,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/libgpio.h>
 #include "bic_xfer.h"
+#include <facebook/fbgc_gpio.h>
 
 
 #define RETRY_TIME 3
@@ -94,9 +95,14 @@ int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount)
 
 int
 is_bic_ready() {
-  // TODO: check the ready pin of server bic by reading GPIO
-  // send a command to BIC to see if it can be reached
-  return BIC_STATUS_SUCCESS;
+  int ret = GPIO_VALUE_INVALID;
+
+  ret = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_BIC_READY_IN));
+  if (ret != GPIO_VALUE_HIGH) {
+    return STATUS_BIC_NOT_READY;
+  } else {
+    return STATUS_BIC_READY;
+  }  
 }
 
 int

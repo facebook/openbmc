@@ -404,4 +404,5 @@ typedef struct {
 
 int pal_get_fan_speed(uint8_t fan, int *rpm);
 bool is_e1s_iocm_present(uint8_t id);
+int read_device(const char *device, int *value);
 #endif

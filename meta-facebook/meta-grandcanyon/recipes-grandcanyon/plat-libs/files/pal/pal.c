@@ -59,6 +59,8 @@
 #define MAX_SNR_NAME  32
 #define MAX_EVENT_STR 256
 
+#define BIC_HEARTBEAT_PATH "/sys/class/hwmon/hwmon1/fan0_input"
+
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
 // export to sensor-util
@@ -1528,7 +1530,7 @@ pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_da
     return CC_NOT_SUPP_IN_CURR_STATE;
   }
 
-  ret = pal_get_server_12v_power(&pwr_status);
+  ret = pal_get_server_12v_power(slot, &pwr_status);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): Can not bypass the command due to get server 12V power status failed", __func__);
     return CC_UNSPECIFIED_ERROR;
@@ -1708,7 +1710,7 @@ pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, size_t
     goto error_exit;
   }
 
-  ret = pal_get_server_12v_power(&power_status);
+  ret = pal_get_server_12v_power(slot_id, &power_status);
   if((ret < 0) || (power_status == SERVER_12V_OFF)) {
     ret = PAL_ENOTREADY;
     syslog(LOG_WARNING, "%s: Failed to get 80 port record because the server is not 12V On.", __func__);
@@ -2949,7 +2951,51 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     strcat(error_log, " Triggered");
   } else {
     strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
-  }  
+  }
 
   return PAL_EOK;
+}
+
+int
+pal_bic_self_test(void) {
+  uint8_t result = 0;
+  return bic_get_self_test_result(&result);
+}
+
+int
+pal_is_bic_ready(uint8_t fru, uint8_t *status) {
+  *status = is_bic_ready();
+  return PAL_EOK;
+}
+
+bool
+pal_is_bic_heartbeat_ok(uint8_t fru) {
+  int hb_val = 0;
+  int ret = 0;
+
+  if (fru != FRU_SERVER) {
+    syslog(LOG_WARNING, "%s(): FRU %x does not have BIC component", __func__, fru);
+    return PAL_ENOTSUP;
+  }
+  ret = read_device(BIC_HEARTBEAT_PATH, &hb_val);
+  if ((ret < 0) || (hb_val == 0)) {
+    return false;
+  }
+
+  return true;
+}
+
+int
+pal_bic_hw_reset(void) {
+  if (gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_COMP_BIC_RST_N), GPIO_VALUE_LOW) < 0) {
+    syslog(LOG_WARNING, "%s(): failed to reset BIC by hardware", __func__);
+    return -1;
+  }
+  sleep(1);
+  if (gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_COMP_BIC_RST_N), GPIO_VALUE_HIGH) < 0) {
+    syslog(LOG_WARNING, "%s(): failed to reset BIC by hardware", __func__);
+    return -1;
+  }
+
+  return 0;
 }

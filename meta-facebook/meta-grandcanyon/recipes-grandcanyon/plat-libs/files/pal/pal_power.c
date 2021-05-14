@@ -49,7 +49,7 @@ server_power_12v_on() {
   }
   
   while(times < WAIT_POWER_STATUS_CHANGE_TIME) {
-    ret = pal_get_server_12v_power(&status);
+    ret = pal_get_server_12v_power(FRU_SERVER, &status);
     if ((ret == 0) && (status == SERVER_12V_ON)) {
       goto exit;
     } else {
@@ -99,7 +99,7 @@ server_power_12v_off() {
   }
   
   while(times < WAIT_POWER_STATUS_CHANGE_TIME) {
-    ret = pal_get_server_12v_power(&status);
+    ret = pal_get_server_12v_power(FRU_SERVER, &status);
     if ((ret == 0) && (status == SERVER_12V_OFF)) {
       goto exit;
     } else {
@@ -323,7 +323,7 @@ power_on_post_actions() {
 }
 
 int
-pal_get_server_12v_power(uint8_t *status) {
+pal_get_server_12v_power(uint8_t fru_id, uint8_t *status) {
   int ret = 0;
   uint8_t status_12v = 0;
   int i2cfd = 0, retry = 0;
@@ -406,7 +406,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     return POWER_STATUS_FRU_ERR;
   }
 
-  ret = pal_get_server_12v_power(status);
+  ret = pal_get_server_12v_power(fru, status);
   if (ret < 0 || (*status) == SERVER_12V_OFF) {
     // return earlier if power state is SERVER_12V_OFF or error happened
     return ret;

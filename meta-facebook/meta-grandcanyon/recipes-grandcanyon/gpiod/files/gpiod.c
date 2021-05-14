@@ -358,7 +358,7 @@ server_power_monitor() {
         //*****Server power from on change to off
         if ((server_pre_pwr_status == SERVER_POWER_ON) && (server_cur_pwr_status == SERVER_POWER_OFF)) {
           // Check server 12V power status, avoid changing the lps due to 12V-off
-          ret = pal_get_server_12v_power(&server_12v_status);
+          ret = pal_get_server_12v_power(FRU_SERVER, &server_12v_status);
           if ((ret >= 0) && (server_12v_status == SERVER_12V_ON)) {
             // Both server power-on and reset, BIOS sends a 13~14ms PERST# low pulse to PCIe devices
             // To filter out the low pulse to prevent the false power status, add recheck in 50ms
@@ -381,7 +381,7 @@ server_power_monitor() {
         
         //*****Server power from off change to on
         } else if ((server_pre_pwr_status == SERVER_POWER_OFF) && (server_cur_pwr_status == SERVER_POWER_ON)) {
-          ret = pal_get_server_12v_power(&server_12v_status);
+          ret = pal_get_server_12v_power(FRU_SERVER, &server_12v_status);
           if ((ret >= 0) && (server_12v_status == SERVER_12V_ON)) {
             fp = fopen(pwr_util_lock_file, "r");
             if (fp == NULL) {

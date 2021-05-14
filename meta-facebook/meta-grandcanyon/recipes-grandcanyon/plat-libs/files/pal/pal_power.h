@@ -26,7 +26,7 @@ typedef struct {
 
 int pal_set_server_power(uint8_t fru, uint8_t cmd);
 int pal_get_server_power(uint8_t fru, uint8_t *status);
-int pal_get_server_12v_power(uint8_t *status);
+int pal_get_server_12v_power(uint8_t fru, uint8_t *status);
 int pal_sled_cycle(void);
 int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);

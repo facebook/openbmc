@@ -249,7 +249,7 @@ class Pcard(object):
         from kicking in which could cause 7-0070 not
         to be detectable.
         """
-        if self.server_power_is_on():
+        if self.userver_power_is_on():
             syslog.syslog(syslog.LOG_CRIT, "Power consumption reduction start")
             # Power off userver
             sysfs_write(USERVER_POWER, 0)

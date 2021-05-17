@@ -22,9 +22,12 @@
 
 #define DELAY_GRACEFUL_SHUTDOWN 5
 #define SCM_COM_PWR_ENBLE       I2C_SYSFS_DEV_ENTRY(2-003e, com_exp_pwr_enable)
+#define SCM_COM_PWR_CYCLE       I2C_SYSFS_DEV_ENTRY(2-003e, com_exp_pwr_cycle)
+#define SCM_COM_PWR_FORCEOFF    I2C_SYSFS_DEV_ENTRY(2-003e, com_exp_pwr_force_off)
 
 int pal_set_com_pwr_btn_n(char *status);
 bool is_server_on(void);
 int pal_set_gb_power(int option);
+int pal_chassis_control(uint8_t slot, uint8_t *req_data, uint8_t req_len);
 
 #endif /* __PAL_POWER_H__ */

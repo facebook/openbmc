@@ -22,6 +22,8 @@ source /usr/local/bin/openbmc-utils.sh
 
 DLL_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 
+chip_ver=$(aspeed_g6_chip_ver)
+
 usage() {
     prog=$(basename "$0")
     echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
@@ -136,14 +138,14 @@ trap 'rm -rf /tmp/cpld_update' INT TERM QUIT EXIT
 
 echo 1 > /tmp/cpld_update
 
-if [ -e "$UPDATE_IMG" ];then
-    if [[  $CPLD_TYPE == "FCM" ]];then
+if [ -e "$UPDATE_IMG" ]; then
+    if [[  $CPLD_TYPE == "FCM" ]]; then
         enable_fcm_jtag_chain
-    elif [[  $CPLD_TYPE == "SMB" ]];then
+    elif [[  $CPLD_TYPE == "SMB" ]]; then
         enable_smb_jtag_chain
-    elif [[  $CPLD_TYPE == "SCM" ]];then
+    elif [[  $CPLD_TYPE == "SCM" ]]; then
         enable_scm_jtag_chain
-    elif [[  $CPLD_TYPE == "PWR" ]];then
+    elif [[  $CPLD_TYPE == "PWR" ]]; then
         enable_pdb_jtag_chain
    else
         echo 'argument '"$CPLD_TYPE"' is wrong'
@@ -154,35 +156,47 @@ else
     exit 1
 fi
 
+expect=0
+cpld_update_sw_mode(){
+        expect=1
+        for n in {1..5}
+        do
+                echo "Program $CPLD_TYPE $n times"
+                ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}"
+                result=$?
+                if [ $result -eq $expect ]; then
+                        break
+                fi
+        done
+}
+
+cpld_update_hw_mode(){
+        expect=0
+        if [ "$chip_ver" == "A3" ]; then
+                if [[  $CPLD_TYPE == "PWR" ]]; then
+                        cpldprog -p "${UPDATE_IMG}" -R
+                else
+                        cpldprog -p "${UPDATE_IMG}"
+                fi
+        else
+                echo "Only AST262x A3 chip can support HW Mode !!!"
+                exit 1
+        fi
+        result=$?
+}
+
 case $5 in
     hw)
-        if [[  $CPLD_TYPE == "PWR" ]];then
-            cpldprog -p "${UPDATE_IMG}" -R
-        else
-            cpldprog -p "${UPDATE_IMG}"
-        fi
+        cpld_update_hw_mode
         ;;
     sw)
-        ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}"
+        cpld_update_sw_mode
         ;;
     *)
         # default: hw mode
-        if [[  $CPLD_TYPE == "PWR" ]];then
-            cpldprog -p "${UPDATE_IMG}" -R
-        else
-            cpldprog -p "${UPDATE_IMG}"
-        fi
+        cpld_update_hw_mode
         ;;
 esac
-
-result=$?
-
-# ispvm return 1 when the process exits successfully and return 0 when it fails.
-if [ "$5" = "sw" ]; then
-    expect=1
-else
-    expect=0
-fi
 
 disable_jtag_chain
 

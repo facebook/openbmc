@@ -132,6 +132,8 @@ LTC4281_ADC_ALERT_LOG_EE = [
 MUX_BUS = 7
 SYSCPLD_BUS = 12
 MUX_ADDR = 0x70
+MUX_CH1_BUS = 14
+MUX_CH2_BUS = 15
 LTC4281_ADDR = 0x4A
 SYSCPLD_ADDR = 0x31
 TEMP_THRESHOLD_UCR = 85
@@ -139,14 +141,24 @@ TEMP_THRESHOLD_UNR = 100
 UCR = "Upper Critical"
 UNR = "Upper Non Recoverable"
 ADDR_LINE_TARGET = 6
-PSU1_ADDR = "5a"
-PSU2_ADDR = "59"
+
+#
+# AC PSU bus/addresses
+#
+PSU1_BUS = MUX_CH2_BUS
+PSU1_ADDR = "59"
+PSU2_BUS = MUX_CH1_BUS
+PSU2_ADDR = "5a"
+PSU1_ADDR_INDEX = 10
+PSU2_ADDR_INDEX = 11
+
+#
+# PEM bus/addresses
+#
+PEM1_BUS = MUX_CH2_BUS
 PEM1_ADDR = "55"
+PEM2_BUS = MUX_CH1_BUS
 PEM2_ADDR = "56"
-BUS_ADDR1 = 14
-BUS_ADDR2 = 15
-PSU1_ADDR_INDEX = 11
-PSU2_ADDR_INDEX = 10
 PEM1_ADDR_INDEX = 6
 PEM2_ADDR_INDEX = 7
 SECOND_CHANNEL = 0x2
@@ -519,25 +531,25 @@ class Pcard(object):
         # Looping 10 times because PEM addr is not alwways detected
         for count in range(10):
             syslog.syslog(syslog.LOG_INFO, " detecting psu/pem type in try %d" % count)
-            if len(self.present_channel) == 2:
+            if len(self.present_channel) > 0:
                 for channel_index in self.present_channel:
                     if channel_index == SECOND_CHANNEL:
                         psu1_addr_present = self.detect_i2c_addr(
-                            PSU1_ADDR, BUS_ADDR1, PSU1_ADDR_INDEX
+                            PSU1_ADDR, PSU1_BUS, PSU1_ADDR_INDEX
                         )
                     else:
                         psu2_addr_present = self.detect_i2c_addr(
-                            PSU2_ADDR, BUS_ADDR2, PSU2_ADDR_INDEX
+                            PSU2_ADDR, PSU2_BUS, PSU2_ADDR_INDEX
                         )
             else:
                 # we use only 1 PEM per swicth
                 if ch == SECOND_CHANNEL:
                     pem1_addr_present = self.detect_i2c_addr(
-                        PEM1_ADDR, BUS_ADDR2, PEM1_ADDR_INDEX
+                        PEM1_ADDR, PEM1_BUS, PEM1_ADDR_INDEX
                     )
                 else:
                     pem2_addr_present = self.detect_i2c_addr(
-                        PEM2_ADDR, BUS_ADDR1, PEM2_ADDR_INDEX
+                        PEM2_ADDR, PEM2_BUS, PEM2_ADDR_INDEX
                     )
 
             # No need to continue the iteration if a power type is detected
@@ -554,36 +566,36 @@ class Pcard(object):
                 syslog.LOG_INFO,
                 "PSU1 found at bus %d and addr 0x%s"
                 " and psu2 found at bus %d and addr 0x%s"
-                % (BUS_ADDR1, PSU1_ADDR, BUS_ADDR2, PSU2_ADDR),
+                % (PSU1_BUS, PSU1_ADDR, PSU2_BUS, PSU2_ADDR),
             )
             fru_ver = -1
         elif psu1_addr_present or psu2_addr_present:
             if psu1_addr_present:
                 syslog.syslog(
                     syslog.LOG_INFO,
-                    "PSU1 found at bus %d and addr 0x%s" % (BUS_ADDR1, PSU1_ADDR),
+                    "PSU1 found at bus %d and addr 0x%s" % (PSU1_BUS, PSU1_ADDR),
                 )
                 fru_ver = -2
             else:
                 syslog.syslog(
                     syslog.LOG_INFO,
-                    "PSU2 found at bus %d and addr 0x%s" % (BUS_ADDR2, PSU2_ADDR),
+                    "PSU2 found at bus %d and addr 0x%s" % (PSU2_BUS, PSU2_ADDR),
                 )
                 fru_ver = -3
         elif pem1_addr_present:
             syslog.syslog(
                 syslog.LOG_INFO,
-                "PEM1 detected at bus %d and addr 0x%s" % (BUS_ADDR2, PEM1_ADDR),
+                "PEM1 detected at bus %d and addr 0x%s" % (PEM1_BUS, PEM1_ADDR),
             )
-            self.instantiate_eeprom_driver(PEM1_ADDR, BUS_ADDR2)
-            fru_ver = self.get_pem_fru_version(PEM1_ADDR, BUS_ADDR2)
+            self.instantiate_eeprom_driver(PEM1_ADDR, PEM1_BUS)
+            fru_ver = self.get_pem_fru_version(PEM1_ADDR, PEM1_BUS)
         elif pem2_addr_present:
             syslog.syslog(
                 syslog.LOG_INFO,
-                "PEM2 detected at bus %d and addr 0x%s" % (BUS_ADDR1, PEM2_ADDR),
+                "PEM2 detected at bus %d and addr 0x%s" % (PEM2_BUS, PEM2_ADDR),
             )
-            self.instantiate_eeprom_driver(PEM2_ADDR, BUS_ADDR1)
-            fru_ver = self.get_pem_fru_version(PEM2_ADDR, BUS_ADDR1)
+            self.instantiate_eeprom_driver(PEM2_ADDR, PEM2_BUS)
+            fru_ver = self.get_pem_fru_version(PEM2_ADDR, PEM2_BUS)
         else:
             syslog.syslog(syslog.LOG_CRIT, "No Power Device Detected")
             fru_ver = -4

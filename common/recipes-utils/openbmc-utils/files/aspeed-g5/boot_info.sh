@@ -175,9 +175,9 @@ bios_boot_from() {
         echo 0 > "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n"
 
         echo "uServer will boot from $1 bios at next reboot!!!!"
+    else
+        echo "Unknown uServer boot source, should be either master or slave!"
     fi
-
-    echo "Unknown boot source, should be either master or slave!"
 }
 
 if [ $# -lt 1 ]; then

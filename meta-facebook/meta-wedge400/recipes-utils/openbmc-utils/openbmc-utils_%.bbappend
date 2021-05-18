@@ -18,9 +18,9 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
+PACKAGECONFIG += " boot-info"
 
 SRC_URI += "file://board-utils.sh \
-            file://boot_info.sh \
             file://bsm-eutil \
             file://cpld_ver.sh \
             file://fcmcpld_update.sh \
@@ -51,7 +51,6 @@ SRC_URI += "file://board-utils.sh \
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
-    boot_info.sh \
     bsm-eutil \
     cpld_ver.sh \
     fcmcpld_update.sh \

@@ -90,7 +90,7 @@ class CommonEepromTest(BaseEepromTest):
         """
         found, name = self.is_found_product_name()
         self.assertTrue(
-            found, "Product name %s not in set %s".format(name, self.product_name)
+            found, "Product name {} not in set {}".format(name, self.product_name)
         )
 
     def test_product_part_number(self):
@@ -141,5 +141,5 @@ class CommonEepromTest(BaseEepromTest):
                 found = True
         self.assertTrue(
             found,
-            "Location on Fabric %s not in set %s".format(name, self.location_on_fabric),
+            "Location on Fabric {} not in set {}".format(name, self.location_on_fabric),
         )

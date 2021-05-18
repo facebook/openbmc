@@ -28,6 +28,7 @@ ALTERNATIVE_PRIORITY[init] ?= "300"
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:${THISDIR}/policy.conf:"
 
 SRC_URI += " \
+        file://coredump.conf \
         file://journald-maxlevel.conf \
         file://lastlog.conf \
 "
@@ -47,4 +48,7 @@ do_install_append() {
 
     # On OpenBMC long lived files are kept in /tmp and /var/tmp
     sed -E -i -e 's@(.*/tmp 1777 root root).*@\1 -@' ${D}${libdir}/tmpfiles.d/tmp.conf
+
+    # Override coredump configuration
+    install -m 644 -D ${WORKDIR}/coredump.conf ${D}${sysconfdir}/systemd/coredump.conf
 }

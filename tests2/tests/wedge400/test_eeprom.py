@@ -46,7 +46,7 @@ class SCMEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/seutil"]
 
     def set_product_name(self):
-        self.product_name = ["WEDGE400-SCM"]
+        self.product_name = ["WEDGE400-SCM", "WEDGE400C-SCM"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["SCM"]

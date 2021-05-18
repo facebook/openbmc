@@ -337,15 +337,11 @@ server_power_monitor() {
   char pwr_util_lock_file[MAX_FILE_PATH] = {0}; 
   uint8_t server_present = FRU_PRESENT;
   uint8_t server_pre_pwr_status = -1, server_cur_pwr_status = -1;
-  uint8_t server_12v_status = 0;
   int ret = 0;
   FILE *fp = NULL;
   
   memset(pwr_util_lock_file, 0, sizeof(pwr_util_lock_file));
   snprintf(pwr_util_lock_file, sizeof(pwr_util_lock_file), POWER_UTIL_LOCK, FRU_SERVER);
-  
-  // Get server power status via GPIO PERST
-  server_pre_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_PCIE_COMP_UIC_RST_N));
   
   while(1) {
     if (pal_is_fru_prsnt(FRU_SERVER, &server_present) < 0) {
@@ -353,22 +349,11 @@ server_power_monitor() {
     } else {
       // if server is present, monitor server power status
       if (server_present == FRU_PRESENT) {
-        server_cur_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_PCIE_COMP_UIC_RST_N));
-        
-        //*****Server power from on change to off
-        if ((server_pre_pwr_status == SERVER_POWER_ON) && (server_cur_pwr_status == SERVER_POWER_OFF)) {
-          // Check server 12V power status, avoid changing the lps due to 12V-off
-          ret = pal_get_server_12v_power(FRU_SERVER, &server_12v_status);
-          if ((ret >= 0) && (server_12v_status == SERVER_12V_ON)) {
-            // Both server power-on and reset, BIOS sends a 13~14ms PERST# low pulse to PCIe devices
-            // To filter out the low pulse to prevent the false power status, add recheck in 50ms
-            msleep(50);
-            server_cur_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_PCIE_COMP_UIC_RST_N));
-            if (server_cur_pwr_status == SERVER_POWER_ON) {
-              //The signal is not a real power-off signal, it's a power on PERST# pulse
-              continue;
-            }
-            
+        ret = pal_get_server_power(FRU_SERVER, &server_cur_pwr_status);
+        if (ret == 0) {
+          //*****Server power from on change to off
+          if ((server_pre_pwr_status == SERVER_POWER_ON)
+           && ((server_cur_pwr_status == SERVER_POWER_OFF) || (server_cur_pwr_status == SERVER_12V_OFF))) {
             // Change lps if power-util is NOT running.
             fp = fopen(pwr_util_lock_file, "r");
             if (fp == NULL) { // File is absent, means power-util is not running
@@ -376,26 +361,24 @@ server_power_monitor() {
             } else {
               fclose(fp);
             }
-            syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);  
-          }
+
+            syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);
         
-        //*****Server power from off change to on
-        } else if ((server_pre_pwr_status == SERVER_POWER_OFF) && (server_cur_pwr_status == SERVER_POWER_ON)) {
-          ret = pal_get_server_12v_power(FRU_SERVER, &server_12v_status);
-          if ((ret >= 0) && (server_12v_status == SERVER_12V_ON)) {
+          //*****Server power from off change to on
+          } else if (((server_pre_pwr_status == SERVER_POWER_OFF) || (server_pre_pwr_status == SERVER_12V_OFF))
+                   && (server_cur_pwr_status == SERVER_POWER_ON)) {
             fp = fopen(pwr_util_lock_file, "r");
             if (fp == NULL) {
               pal_set_last_pwr_state(FRU_SERVER, "on");
             } else {
               fclose(fp);
             }
-            syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER); 
-          } else {
-            server_cur_pwr_status = SERVER_POWER_OFF;
+
+            syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
           }
+
+          server_pre_pwr_status = server_cur_pwr_status;
         }
-        
-        server_pre_pwr_status = server_cur_pwr_status;
       } // server present end
     }
     

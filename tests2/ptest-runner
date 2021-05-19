@@ -52,9 +52,24 @@ def recipes_with_ptest():
     return list(recipes)
 
 
+def update_conf_steps(recipes):
+    recipe_arg = " ".join(recipes)
+    steps = [
+        "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
+        f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
+    ]
+    return steps
+
+
+def update_conf_only(recipes, build_path):
+    steps = [f"cd {build_path}"] + update_conf_steps(recipes)
+    conf_cmd = "; ".join(steps)
+    cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", conf_cmd]
+    subprocess.check_call(cmd)
+
+
 def bmc_build(recipes, build_path, verbose):
     openbmc = openbmc_path()
-    recipe_arg = " ".join(recipes)
     build_option = "-q"
     if verbose:
       build_option = ""
@@ -65,8 +80,9 @@ def bmc_build(recipes, build_path, verbose):
     build_steps += [
         f"cd {openbmc}",
         f"source ./openbmc-init-build-env qemux86 {build_path} > /dev/null",
-        "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
-        f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
+    ]
+    build_steps += update_conf_steps(recipes)
+    build_steps += [
         "export LC_ALL=en_US.UTF-8",
         "export LANG=en_US.UTF-8",
         "export LANGUAGE=en_US.UTF-8",
@@ -84,10 +100,19 @@ def main(args):
         for _r in all_recipes:
             print(_r)
         sys.exit(0)
-    if args.build is None or not os.path.isdir(args.build) or args.force_rebuild:
+    if (
+        args.build is None
+        or not os.path.isdir(args.build)
+        or args.force_rebuild
+        or args.update_conf
+    ):
         if args.build is None:
-          args.build = openbmc_path() + "/build-qemux86"
-        bmc_build(all_recipes, args.build, args.verbose)
+            args.build = openbmc_path() + "/build-qemux86"
+        if args.update_conf:
+            update_conf_only(all_recipes, args.build)
+            sys.exit(0)
+        else:
+            bmc_build(all_recipes, args.build, args.verbose)
 
     if not os.path.isdir(args.build):
         print(f"{args.build} does not exist")
@@ -158,16 +183,16 @@ parser.add_argument(
     "--skip-tests",
     help="Skip running tests",
     dest="skip_tests",
+    action="store_true",
     default=False,
-    action="store_true"
 )
 parser.add_argument(
     "--shell",
     "-s",
     help="Drops you into a CHROOTed shell of the image (For debugging)",
     dest="shell",
-    default=False,
     action="store_true",
+    default=False,
 )
 parser.add_argument(
     "--execute",
@@ -181,7 +206,15 @@ parser.add_argument(
     "-l",
     help="List ptest recipes",
     action="store_true",
-    default=False
+    default=False,
+)
+parser.add_argument(
+    "--update-conf",
+    "-u",
+    help="Update local.conf to add ptest recipes",
+    dest="update_conf",
+    action="store_true",
+    default=False,
 )
 parser.add_argument("recipes", nargs="*", help="Recipe(s) to test")
 args = parser.parse_args()

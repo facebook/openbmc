@@ -36,17 +36,17 @@ def get_tree_attestation() -> tree:
         # Return witout actually adding any endpoints/attaching
         # them to any logic
         return tree_attestation
-    # GET /attestation/system_hashes
+    # GET /attestation/system_information
     # Always try to keep these in sync with the CLI
-    tree_attestation.addChild(tree("system_hashes", NodeSystemHashes()))
+    tree_attestation.addChild(tree("system_information", NodeSystemInfo()))
     tpm_actions = ["ek-cert", "create-aik", "pcr-quote", "challenge-aik", "load-aik"]
     tree_attestation.addChild(tree("tpm", get_tpm_nodes(tpm_actions)))
     return tree_attestation
 
 
-class NodeSystemHashes(node):
+class NodeSystemInfo(node):
     @staticmethod
-    # GET /attestation/system_hashes
+    # GET /attestation/system_information
     def getInformation(param={}):
         args = {}
         # Default args
@@ -56,7 +56,10 @@ class NodeSystemHashes(node):
         args["recal"] = False
         # We update the params if any were passed
         args.update(param)
-        return obmc_attestation.measure.return_measure(args)
+        result = {}
+        # Let's get the system hashes first
+        result["system_hashes"] = obmc_attestation.measure.return_measure(args)
+        return result
 
 
 class NodeTPM(node):

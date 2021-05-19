@@ -21,10 +21,10 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-fby2-nd:lf-dunfell
+  meta-grandcanyon:lf-dunfell
   meta-qemux86:lf-dunfell
 # zeus platforms (pending upgrade)
   meta-fby3:zeus
-  meta-grandcanyon:zeus
   meta-cmm:zeus
   meta-elbert:zeus
   meta-cloudripper:zeus

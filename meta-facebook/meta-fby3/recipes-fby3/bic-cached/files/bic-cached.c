@@ -140,6 +140,9 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
   ssize_t bytes_wr;
+  uint8_t present = 0;
+  uint8_t bmc_location = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   sprintf(sdr_temp_path, "/tmp/tsdr_slot%d.%d.bin", slot_id, intf);
   sprintf(sdr_path, "/tmp/sdr_slot%d.%d.bin", slot_id, intf);
@@ -169,6 +172,18 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
    return rc;
   }
 
+  if ((slot_id == FRU_SLOT1) || (slot_id == FRU_SLOT3)) {
+    present = bic_is_m2_exp_prsnt(slot_id);
+    fby3_common_get_bmc_location(&bmc_location);
+    if (bmc_location != NIC_BMC) { // Baseboard BMC
+      if (PRESENT_2OU == (PRESENT_2OU & present)) {
+        if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+        }
+      }
+    }
+  }
+
   retry = 0;
   while (retry < MAX_RETRY) {
     ret = bic_get_sdr(slot_id, &req, res, &rlen, intf);
@@ -179,6 +194,10 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
     }
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
+
+    if ((type_2ou == GPV3_MCHP_BOARD) && pal_is_nvme_temp_dev(sdr->sensor_num)) {
+      sdr->uc_thresh = CONFIG_D_GPV3_NVMe_Temp_Dev_UCR;
+    }
 
     bytes_wr = write(fd, sdr, sizeof(sdr_full_t));
     if (bytes_wr != sizeof(sdr_full_t)) {

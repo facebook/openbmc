@@ -944,6 +944,23 @@ static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
 }
 
+bool
+pal_is_nvme_temp_dev(uint8_t sensor_num) {
+  uint8_t NVMe_Temp_dev[] = {BIC_GPV3_NVME_TEMP_DEV0, BIC_GPV3_NVME_TEMP_DEV1, BIC_GPV3_NVME_TEMP_DEV2, BIC_GPV3_NVME_TEMP_DEV3, 
+                             BIC_GPV3_NVME_TEMP_DEV4, BIC_GPV3_NVME_TEMP_DEV5, BIC_GPV3_NVME_TEMP_DEV6, BIC_GPV3_NVME_TEMP_DEV7, 
+                             BIC_GPV3_NVME_TEMP_DEV8, BIC_GPV3_NVME_TEMP_DEV9, BIC_GPV3_NVME_TEMP_DEV10, BIC_GPV3_NVME_TEMP_DEV11};
+  int i = 0;
+  int sensor_cnt = 0;
+
+  sensor_cnt = sizeof(NVMe_Temp_dev) / sizeof(NVMe_Temp_dev[0]);
+  for (i = 0; i < sensor_cnt; i++) {
+    if (sensor_num == NVMe_Temp_dev[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 int
 get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t type = 0;

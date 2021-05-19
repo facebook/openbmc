@@ -458,4 +458,8 @@ typedef struct {
   uint8_t fract :6;
 } PAL_S10_6_FORMAT;
 
+#define CONFIG_D_GPV3_NVMe_Temp_Dev_UCR 98
+
+bool pal_is_nvme_temp_dev(uint8_t sensor_num);
+
 #endif

@@ -23,7 +23,7 @@ try:
     import obmc_attestation.tpm2
 
     ATTESTATION_AVAILABLE = True
-except ModuleNotFoundError:
+except ImportError:
     ATTESTATION_AVAILABLE = False
     # Doing this so that we don't break upstream
 from node import node

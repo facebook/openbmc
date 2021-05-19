@@ -115,33 +115,20 @@ function is_gpv3_board() {
   echo $result
 }
 
-function enable_usb_hub() {
-  local fru=$1
-  local val=$2
-  #cnt=$(ls /var/lock | grep -i "LCK..platform-1e6b0000.usb-usb-0" | wc -l)
-  #check the USB2UART IC exists or not
-  #make DL HUB open permanently
-  cnt=$(/usr/bin/lsusb | grep -i "10c4:ea71" | wc -l)
-
-  if [ $val = 1 ]; then
-    if [ $cnt = 0 ]; then
-      /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
-      echo -n "Initializing USB devs..."
-      sleep 20 # BMC needs to spend about 20 sec to detect slot1 and slot3 all devs.
-      dev_cnt=$(ls /dev/serial/by-path/ | wc -l)
-      if [ $dev_cnt -ge 16 ]; then
-        echo "Done"
-      else
-        echo "Fail"
-        echo "16 USB devs should be detected but BMC only found $cnt"
-        exit -1;
-      fi
+function check_file_exist() {
+  local path=$1
+  local retry=$2
+  local result=0
+  for i in $(seq 0 $retry)
+  do
+    if [ -e $path ]; then
+      # if usb path exist
+      result=1
+      break
     fi
-  else
-    if [ $cnt = 0 ]; then # Close USB hub when no device is found
-      /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
-    fi
-  fi
+    sleep 2
+  done
+  echo $result
 }
 
 function show_microcom_usage() {
@@ -157,6 +144,7 @@ function get_usb_dev() {
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
   local vendor="$2"
+  local retry=5 # timeout = 5 * 2 = 10 seconds
 
   [ -n "$3" ] && baudrate="$3"
 
@@ -202,6 +190,12 @@ function get_usb_dev() {
     usb_path="platform-1e6b0000.usb-usb-0:1.3.2.4:1.1-port0"
   ;;
   esac
+
+  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
+      echo "The $usb_path is invalid"
+      exit -1;
+  fi
+
   echo "-s ${baudrate} ${prefix}${usb_path}"
 }
 
@@ -211,6 +205,7 @@ function get_usb_dev_by_slot() {
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
   local vendor="$3"
+  local retry=10 # timeout = 10 * 2 = 20 seconds
 
   [ -n "$4" ] && baudrate="$4"
 
@@ -302,6 +297,11 @@ function get_usb_dev_by_slot() {
       esac
   else
       echo "The $SLOT is invalid"
+      exit -1;
+  fi
+
+  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
+      echo "The $usb_path is invalid"
       exit -1;
   fi
 
@@ -401,18 +401,28 @@ if [ -n "$COMP" ]; then
       exit -1;
     elif [ "$COMP" == "2ou" ]; then
       if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
-        enable_usb_hub $SLOT 1
-        show_microcom_usage
+        #check enable RST_USB_HUB_N gpio or not
+        VAL=$(/usr/bin/bic-util $SLOT --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
 
-        if [ $BOARD_ID -eq 9 ]; then
-          /usr/bin/microcom $(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
-        else
-          /usr/bin/microcom $(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+        if [ $VAL -eq 0 ]; then
+          /usr/bin/bic-util $SLOT --set_gpio 16 1 > /dev/null 2>&1
+          echo -n "Initializing USB devs..."
         fi
 
+        if [ $BOARD_ID -eq 9 ]; then
+          USB_PATH=$(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+        else
+          USB_PATH=$(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+        fi
+
+        if [ $VAL -eq 0 ]; then
+          echo "Done"
+        fi
+
+        show_microcom_usage
+        /usr/bin/microcom $USB_PATH
         RET=$?
         #after enabling USB hub, make it permanently open
-        #enable_usb_hub $SLOT 0
         exit $RET;
       fi
     fi

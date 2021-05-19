@@ -16,14 +16,13 @@ PLAT_DISTRO_OVERRIDES=(
 # gatesgarth platforms (latest)
 #   -- none --
 # dunfell platforms (pending upgrade)
-#   -- none --
-  meta-fby2-nd:lf-dunfell
-  meta-qemux86:lf-dunfell
+  meta-clearcreek:lf-dunfell
   meta-fbal:lf-dunfell
   meta-fbep:lf-dunfell
-  meta-clearcreek:lf-dunfell
+  meta-fbsp:lf-dunfell
+  meta-fby2-nd:lf-dunfell
+  meta-qemux86:lf-dunfell
 # zeus platforms (pending upgrade)
-  meta-fbsp:zeus
   meta-fby3:zeus
   meta-grandcanyon:zeus
   meta-cmm:zeus
@@ -32,8 +31,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fuji:zeus
   meta-minipack:zeus
   meta-wedge400:zeus
-# warrior platforms (pending upgrade)
-#   -- none --
 # Legacy platforms pending kernel upgrade
   meta-fby2-gpv2:rocko
   meta-fby2:rocko

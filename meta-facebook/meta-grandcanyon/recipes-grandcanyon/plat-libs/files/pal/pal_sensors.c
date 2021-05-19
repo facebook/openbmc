@@ -1395,6 +1395,7 @@ static int
 pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
+  int ret = 0;
 
   if (access(SERVER_SENSOR_LOCK, F_OK) == 0) { // BIC is updating VR
     return READING_SKIP;
@@ -1415,7 +1416,16 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
     return 0;
   }
 
-  return convert_sensor_reading(sdr, sensor.value, value);
+  ret = convert_sensor_reading(sdr, sensor.value, value);
+
+  // Correct the sensor reading of cpu thermal margin
+  if ((ret == 0) && (sensor_num == BS_THERMAL_MARGIN)) {
+    if ( *value > 0 ) {
+        *value = -(*value);
+    }
+  }
+
+  return ret;
 }
 
 int

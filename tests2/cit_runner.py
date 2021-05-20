@@ -207,6 +207,13 @@ def arg_parser():
     )
 
     parser.add_argument(
+        "--cli-logging",
+        "-c",
+        action="store_true",
+        help="To log all cli being called during the cit run, the output will store at /tmp/cli.txt",
+    )
+
+    parser.add_argument(
         "--start-dir",
         "-s",
         help="Path for where test discovery should start \

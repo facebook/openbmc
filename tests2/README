@@ -20,6 +20,8 @@ optional arguments:
   --start-dir START_DIR
                         Path for where test discovery should start default:
                         /usr/local/bin/tests2/tests/
+   -c, --cli-logging    To log all cli being called during the CIT run. The output
+                        will be stored at /tmp/cli.txt
 
 Example 1:
 python cit_runner.py --platform wedge100
@@ -140,5 +142,3 @@ with the --fw option.
 
 3- To run a firmware dryrun command without upgrading any firmware, cd inside /tmp/fw_upgrade
    folder on the bmc unit and then run this: python ufw_upgrader.py --dryrun
-
-

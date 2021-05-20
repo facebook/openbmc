@@ -19,10 +19,27 @@
 #
 
 import subprocess
+import sys
 
 from utils.cit_logger import Logger
 
 
+def cli_logging(func):
+    def wrap(*args, **kwargs):
+        if "-c" in sys.argv:
+            f = open("/tmp/cli.txt", "a")
+            if "cmd" in kwargs:
+                cmd = kwargs["cmd"]
+            else:
+                cmd = args[0]
+            f.write(cmd + "\n")
+            f.close()
+        return func(*args, **kwargs)
+
+    return wrap
+
+
+@cli_logging
 def run_cmd(cmd=None):
     if not cmd:
         raise Exception("cmd not set")
@@ -30,6 +47,7 @@ def run_cmd(cmd=None):
     return info
 
 
+@cli_logging
 def run_shell_cmd(cmd=None, ignore_err=False, expected_return_code=0):
     if not cmd:
         raise Exception("cmd not set")

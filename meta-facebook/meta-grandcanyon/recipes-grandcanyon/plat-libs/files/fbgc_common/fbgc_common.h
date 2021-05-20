@@ -91,6 +91,8 @@ extern "C" {
 #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket_1"
 #define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket_1"
 
+#define BOARD_ID_PIN_NUM 3
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,
@@ -156,6 +158,15 @@ enum {
   STAT_12V_ON = 1,
 };
 
+// system stage
+enum {
+  STAGE_PRE_EVT = 0,
+  STAGE_EVT,
+  STAGE_DVT,
+  STAGE_PVT,
+  STAGE_MP
+};
+
 typedef struct {
   unsigned char netfn_lun;
   unsigned char cmd;
@@ -179,6 +190,7 @@ uint8_t hex_c2i(const char c);
 int string_2_byte(const char* c);
 bool start_with(const char *s, const char *p);
 int split(char **dst, char *src, char *delim, int max_size);
+int fbgc_common_get_system_stage(uint8_t *stage);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -50,6 +50,9 @@
 #define MASTER_WRITE_READ_HEADER_LEN          3
 #define MASTER_WRITE_READ_MAX_WRITE_BUF_SIZE  (MAX_IPMB_BUFFER - MASTER_WRITE_READ_HEADER_LEN)
 
+#define GET_BIC_GPIO_CFG_CMD_LEN 13
+#define SET_BIC_GPIO_CFG_CMD_LEN 14
+
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
   uint8_t ver;
@@ -903,4 +906,117 @@ bic_set_gpio(uint8_t gpio_num, uint8_t value) {
   }
 
   return 0;
+}
+
+// APP - Get Device ID
+// Netfn: 0x06, Cmd: 0x01
+int
+bic_get_dev_id(ipmi_dev_id_t *dev_id) {
+  uint8_t rlen = 0;
+
+  if (dev_id == NULL) {
+    syslog(LOG_ERR, "%s(): device ID is missing", __func__);
+  }
+  return bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, (uint8_t *) dev_id, &rlen);
+}
+
+int
+bic_reset() {
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  int ret;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_COLD_RESET, NULL, 0, rbuf, &rlen);
+  return ret;
+}
+
+int
+bic_clear_cmos() {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+
+  return bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_CLEAR_CMOS, tbuf, 3, rbuf, &rlen);
+}
+
+int
+bic_get_gpio_config(uint8_t gpio, uint8_t *data) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = GET_BIC_GPIO_CFG_CMD_LEN;
+  uint8_t index = 0;
+  uint8_t pin = 0;
+  int ret = 0;
+
+  if (data == NULL) {
+    syslog(LOG_ERR, "%s(): data is missing", __func__);
+  }
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  //get the buffer index
+  index = (gpio / 8) + 3; //3 is the size of IANA ID
+  pin = 1 << (gpio % 8);
+  tbuf[index] = pin;
+  
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
+  if (rlen < 4) {
+    syslog(LOG_ERR, "%s(): Wrong response length: %d", __func__, rlen);
+    return -1;
+  }
+  *data = rbuf[3];
+  return ret;
+}
+
+int
+bic_set_gpio_config(uint8_t gpio, uint8_t data) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = SET_BIC_GPIO_CFG_CMD_LEN;
+  uint8_t index = 0;
+  uint8_t pin = 0;
+  int ret = 0;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  //get the buffer index
+  index = (gpio / 8) + 3; //3 is the size of IANA ID
+  pin = 1 << (gpio % 8);
+  tbuf[index] = pin;
+  tbuf[13] = data & 0x1f;
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
+  return ret;
+}
+
+// Get all GPIO pin status
+int
+bic_get_gpio(bic_gpio_t *gpio) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (gpio == NULL) {
+    syslog(LOG_WARNING, "%s(): gpio status is missing", __func__);
+    return -1;
+  }
+  memset(gpio, 0, sizeof(*gpio));
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, 3, rbuf, &rlen);
+  if ((ret != 0) || (rlen < 3)) {
+    return -1;
+  }
+
+  rlen -= 3;
+  if (rlen > sizeof(bic_gpio_t)) {
+    rlen = sizeof(bic_gpio_t);
+  }
+  // Ignore first 3 bytes of IANA ID
+  memcpy((uint8_t*) gpio, &rbuf[3], rlen);
+
+  return ret;
 }

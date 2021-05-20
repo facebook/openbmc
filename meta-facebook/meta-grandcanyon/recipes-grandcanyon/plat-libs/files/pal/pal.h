@@ -213,6 +213,11 @@ enum {
   SYS_OV_DETECT      = 0x0F,
 };
 
+enum {
+  NIC_PE_RST_LOW   = 0x00,
+  NIC_PE_RST_HIGH  = 0x01,
+};
+
 typedef struct {
 	uint8_t pcie_cfg;
 	uint8_t completion_code;
@@ -375,6 +380,7 @@ int pal_get_tach_cnt();
 int pal_get_heartbeat(float *hb_val, uint8_t component);
 int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
 int pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len);
+int pal_set_nic_perst(uint8_t val);
 
 #ifdef __cplusplus
 } // extern "C"

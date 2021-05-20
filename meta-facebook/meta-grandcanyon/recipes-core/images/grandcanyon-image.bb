@@ -56,4 +56,5 @@ IMAGE_INSTALL += " \
   libpldm \
   asd \
   asd-test \
+  bic-util \
   "

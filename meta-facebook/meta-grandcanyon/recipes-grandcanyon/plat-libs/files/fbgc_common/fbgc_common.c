@@ -199,3 +199,26 @@ split(char **dst, char *src, char *delim, int max_size) {
 
   return (size == max_size) ? -1 : size;
 }
+
+int
+fbgc_common_get_system_stage(uint8_t *stage) {
+  if (stage == NULL) {
+    syslog(LOG_WARNING, "%s(): system stage is missing", __func__);
+  }
+  uint8_t board_id[BOARD_ID_PIN_NUM] = 
+        {GPIO_BOARD_REV_ID2, GPIO_BOARD_REV_ID1, GPIO_BOARD_REV_ID0};
+  int i = 0;
+  int val = 0;
+
+  *stage = 0;
+  for (i = 0; i < BOARD_ID_PIN_NUM; i++) {
+    val = gpio_get_value_by_shadow(fbgc_get_gpio_name(board_id[i]));
+    if (val == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s(): failed to get board ID", __func__);
+      return -1;
+    }
+    *stage = (*stage << 1) + val;
+  }
+
+  return 0;
+}

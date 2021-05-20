@@ -67,6 +67,13 @@ typedef struct {
   uint8_t path[MAX_PATH_LEN];
 } usb_dev;
 
+typedef struct _bic_gpio_config_t {
+  uint8_t dir:1;
+  uint8_t ie:1;
+  uint8_t edge:1;
+  uint8_t trig:2;
+} bic_gpio_config_t;
+
 enum {
   RECOVERY_MODE = 1,
   RESTORE_FACTORY_DEFAULT,
@@ -169,6 +176,8 @@ enum {
   IRQ_BMC_PCH_SMI_LPC_R_N,
   FM_BIOS_POST_CMPLT_BMC_N,
 };
+
+int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
 
 #ifdef __cplusplus
 } // extern "C"

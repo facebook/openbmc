@@ -20,7 +20,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
-#include <openbmc/libgpio.h>
 #include "fbgc_gpio.h"
 
 
@@ -304,6 +303,80 @@ gpio_cfg bmc_gpio_table[] = {
   {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID}
 };
 
+//BIC GPIO 
+const char *bic_gpio_pin_name[] = {
+    "PWRGD_BMC_PS_PWROK_R",
+    "FM_PCH_BMC_THERMTRIP_N",
+    "IRQ_HSC_ALERT2_N",
+    "RST_RSTBTN_OUT_N",
+    "FM_JTAG_TCK_MUX_SEL",
+    "FM_HSC_TIMER",
+    "FM_CPU_MEMHOT_OUT_N",
+    "FM_SPD_DDRCPU_LVLSHFT_EN",
+    "RST_PLTRST_FROM_PCH_N",
+    "IRQ_BMC_PRDY_NODE_OD_N",
+    "FM_CPU_SKTOCC_LVT3_N",           //10
+    "IRQ_NMI_EVENT_R_N",
+    "IRQ_SMB_IO_LVC3_STBY_ALRT_N",
+    "PWRBTN_N",
+    "A_P3V_BAT_SCALED_EN",
+    "RST_BMC_R_N",
+    "FM_MP_PS_FAIL_N",
+    "FM_CPU_THERMTRIP_LATCH_LVT3_N",
+    "FM_SLPS4_R_N",
+    "JTAG_BMC_NTRST_R_N",
+    "FM_BMC_PCH_SCI_LPC_N",           //20
+    "FM_BMC_DEBUG_ENABLE_N",
+    "DBP_PRESENT_R2_N",
+    "PVCCIO_CPU",
+    "FM_FAST_PROCHOT_EN_N",
+    "FM_CPU_FIVR_FAULT_LVT3_N",
+    "CRC_ERROR_R",
+    "FM_BOARD_REV_ID0",
+    "FM_BOARD_REV_ID1",
+    "FM_BOARD_REV_ID2",
+    "FM_PWRBTN_OUT_N",                //30
+    "FM_CPU_THERMTRIP_LVT3_N",
+    "FM_CPU_MSMI_CATERR_LVT3_N",
+    "IRQ_BMC_PCH_NMI_R",
+    "FM_BIC_RST_RTCRST",
+    "PWRGD_CPU_LVC3_R",
+    "PWRGD_SYS_PWROK",
+    "BIC_READY",
+    "HSC_MUX_SWITCH",
+    "FM_FORCE_ADR_N",
+    "FM_PEHPCPU_INT",                 //40
+    "FM_MRC_DEBUG_EN",
+    "BMC_READY",
+    "FM_THERMTRIP_DLY_TO_PCH",
+    "FM_BMC_CPU_PWR_DEBUG_N",
+    "IRQ_PVCCIO_CPU_VRHOT_LVC3_N",
+    "IRQ_PVDDQ_ABC_VRHOT_LVT3_N",
+    "IRQ_PVCCIN_CPU_VRHOT_LVC3_N",
+    "IRQ_SML1_PMBUS_ALERT_N",
+    "FM_BMC_PREQ_N_NODE_R1",
+    "FM_MEM_THERM_EVENT_LVT3_N",      //50
+    "IRQ_PVDDQ_DEF_VRHOT_LVT3_N",
+    "FM_CPU_ERR0_LVT3_N",
+    "FM_CPU_ERR1_LVT3_N",
+    "FAST_PROCHOT_N",
+    "BMC_JTAG_SEL",
+    "FM_CPU_ERR2_LVT3_N",
+    "IRQ_SML0_ALERT_MUX_R_N",
+    "RST_PLTRST_BMC_N",
+    "FM_SLPS3_R_N",
+    "DBP_SYSPWROK_R",                 //60
+    "IRQ_UV_DETECT_N",
+    "FM_UV_ADR_TRIGGER_EN",
+    "IRQ_SMI_ACTIVE_BMC_N",
+    "RST_RSMRST_BMC_N",
+    "BMC_HEARTBEAT_LED_R",
+    "IRQ_BMC_PCH_SMI_LPC_R_N",
+    "FM_BIOS_POST_CMPLT_BMC_N",
+};
+
+const uint8_t bic_gpio_pin_size = sizeof(bic_gpio_pin_name)/sizeof(bic_gpio_pin_name[0]);
+
 const char *
 fbgc_get_gpio_name(uint8_t gpio) {
   if (gpio < MAX_GPIO_EXPANDER_GPIO_PINS) {
@@ -314,4 +387,18 @@ fbgc_get_gpio_name(uint8_t gpio) {
     syslog(LOG_WARNING, "%s() Invalid gpio number: %u\n", __func__, gpio);
     return "";
   }
+}
+
+uint8_t
+fbgc_get_bic_gpio_list_size(void) {
+  return bic_gpio_pin_size;
+}
+
+const char *
+fbgc_get_bic_gpio_name(uint8_t gpio) {
+  if (gpio > bic_gpio_pin_size) {
+    syslog(LOG_WARNING, "%s(): Wrong gpio pin %u", __func__, gpio);
+    return "";
+  }
+  return bic_gpio_pin_name[gpio];
 }

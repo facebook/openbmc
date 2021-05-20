@@ -41,6 +41,12 @@ extern "C" {
 
 #define MAX_IPMB_BUFFER           256
 
+
+/* Generic GPIO configuration */
+typedef struct _bic_gpio_t {
+  uint64_t gpio[2];
+} bic_gpio_t;
+
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_me_recovery(uint8_t command);
 int bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr);
@@ -62,6 +68,13 @@ int bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *w
 int bic_asd_init(uint8_t cmd);
 int bic_get_one_gpio_status(uint8_t gpio_num, uint8_t *value);
 int bic_set_gpio(uint8_t gpio_num, uint8_t value);
+int bic_get_gpio(bic_gpio_t *gpio);
+int bic_get_dev_id(ipmi_dev_id_t *dev_id);
+int bic_reset();
+int bic_clear_cmos();
+int bic_get_gpio_config(uint8_t gpio, uint8_t *data);
+int bic_set_gpio_config(uint8_t gpio, uint8_t data);
+
 
 #ifdef __cplusplus
 } // extern "C"

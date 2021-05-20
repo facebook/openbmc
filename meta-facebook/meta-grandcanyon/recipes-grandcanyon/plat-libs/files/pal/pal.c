@@ -37,6 +37,7 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/phymem.h>
+#include <openbmc/obmc-i2c.h>
 #include <facebook/fbgc_gpio.h>
 #include <sys/un.h>
 #include "pal.h"
@@ -60,6 +61,8 @@
 #define MAX_EVENT_STR 256
 
 #define BIC_HEARTBEAT_PATH "/sys/class/hwmon/hwmon1/fan0_input"
+
+#define NIC_CARD_PERST_CTRL 0x09
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -2998,4 +3001,29 @@ pal_bic_hw_reset(void) {
   }
 
   return 0;
+}
+
+int
+pal_set_nic_perst(uint8_t val) {
+  int i2cfd = 0;
+  int ret = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {NIC_CARD_PERST_CTRL, val};
+  uint8_t tlen = 2;
+
+  i2cfd = i2c_cdev_slave_open(I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d, addr 0x%x", __func__, I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR);
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, UIC_FPGA_SLAVE_ADDR, tbuf, tlen, NULL, 0);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+  if (i2cfd >= 0) {
+    close(i2cfd);
+  }
+
+  return ret;
 }

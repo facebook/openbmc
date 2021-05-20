@@ -20,6 +20,7 @@
 #define __FBGC_GPIO_H__
 
 #include <stdint.h>
+#include <openbmc/libgpio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +135,8 @@ enum {
 extern gpio_cfg gpio_expander_gpio_table[];
 extern gpio_cfg bmc_gpio_table[]; 
 const char * fbgc_get_gpio_name(uint8_t gpio);
+uint8_t fbgc_get_bic_gpio_list_size(void);
+const char * fbgc_get_bic_gpio_name(uint8_t gpio);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -133,6 +133,12 @@ typedef struct _sdr_rec_hdr_t {
 } sdr_rec_hdr_t;
 #pragma pack(pop)
 
+typedef struct {
+  uint8_t ver[2];
+  uint8_t iaan[3];
+  uint8_t prj_name[11];
+} __attribute__ ((__packed__)) vr_header;
+
 static char* gpio_bic_ready[] = { 0, "I2C_SLOT1_ALERT_N", "I2C_SLOT2_ALERT_N", "I2C_SLOT3_ALERT_N", "I2C_SLOT4_ALERT_N" };
 static char* gpio_12v[] = { 0, "P12V_STBY_SLOT1_EN", "P12V_STBY_SLOT2_EN", "P12V_STBY_SLOT3_EN", "P12V_STBY_SLOT4_EN" };
 static char* gpio_power_en[] = { 0, "SLOT1_POWER_EN", "SLOT2_POWER_EN", "SLOT3_POWER_EN", "SLOT4_POWER_EN" };
@@ -1786,13 +1792,16 @@ error_exit2:
 static int
 check_vr_image(uint8_t slot_id, int fd, long size) {
   uint8_t buf[32];
-  uint8_t hdr_tl[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39};
-  uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
+  uint8_t *hdr;
+  uint8_t hdr_size;
   int offs;
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
   int ret;
   uint8_t server_type = 0xFF;
-  uint8_t hdr_ep[] = {0x00,0x01,0x4c,0x1c,0x00,0x46,0x30,0x39,0x41};
+  vr_header vr_hdr = {
+    .ver = {0x00,0x01},
+    .iaan = {0x4c,0x1c,0x00},
+    .prj_name = {0}
+  };
 
   ret = bic_get_server_type(slot_id, &server_type);
   if (ret) {
@@ -1804,11 +1813,21 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
     case SERVER_TYPE_RC:
       return 0;
     case SERVER_TYPE_EP:
-      hdr = hdr_ep;
-      hdr_size = sizeof(hdr_ep);
+      sprintf((char*) vr_hdr.prj_name, "F09A");
+      hdr = (uint8_t*)&vr_hdr;
+      hdr_size = 9; // ver (2) + iaan (3) + prj_name (4)
+      break;
+    case SERVER_TYPE_ND:
+      sprintf((char*) vr_hdr.prj_name, "F09C");
+      hdr = (uint8_t*)&vr_hdr;
+      hdr_size = 9; // ver (2) + iaan (3) + prj_name (4)
+      break;
+    default:
+      sprintf((char*) vr_hdr.prj_name, "F09");
+      hdr = (uint8_t*)&vr_hdr;
+      hdr_size = 8; // ver (2) + iaan (3) + prj_name (3)
       break;
   }
-#endif
 
   if (size < 16)
     return -1;

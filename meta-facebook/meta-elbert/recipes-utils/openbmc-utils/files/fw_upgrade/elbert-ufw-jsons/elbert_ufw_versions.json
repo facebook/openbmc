@@ -32,8 +32,8 @@
     "scm": {
         "filename": "elbert_scm.astp",
         "hash": "sha1sum",
-        "hash_value": "20c1e71dee131bbc04c9a4c8525a6ab49e798003",
-        "version": "2.12"
+        "hash_value": "4d5c19da719549c15d29002457805a1da88b882b",
+        "version": "2.14"
     },
     "smb": {
         "filename": "elbert_smb.astp",

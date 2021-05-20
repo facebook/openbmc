@@ -1941,6 +1941,7 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   offs = size - BIOS_VER_REGION_SIZE;
   if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
     syslog(LOG_ERR, "%s: lseek to %d failed", __func__, offs);
+    free(buf);
     return -1;
   }
 

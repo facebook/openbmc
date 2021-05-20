@@ -34,6 +34,8 @@
 #define CTRL_FLAG_DEBUG     0x01
 #define CTRL_FLAG_JSON_FMT  0x02
 
+#define PSB_ENABLE_READ_CACHE  0
+
 struct psb_util_args_t {
   int fruid;
   uint8_t ctrl_flags;
@@ -73,20 +75,34 @@ struct psb_config_info {
   uint8_t reserved_byte7_7_7 : 1;               // Byte[7] : 7
 } __attribute__((packed));
 
+struct psb_eeprom {
+  uint16_t                bios_debug_data;
+  struct psb_config_info  psb_config;
+  uint8_t                 checksum;
+} __attribute__((packed));
+
 enum {
   PSB_SUCCESS = 0,
-  PSB_ERROR_SRV_PWR_ST,
+  PSB_ERROR_GET_SRV_PRST,
+  PSB_ERROR_GET_SRV_PWR,
+  PSB_ERROR_SRV_NOT_PRST,
   PSB_ERROR_SRV_NOT_READY,
   PSB_ERROR_KV_NOT_AVAIL,
+  PSB_ERROR_READ_EEPROM_FAIL,
+  PSB_ERROR_INVAL_DATA,
   PSB_ERROR_UNKNOW,
 };
 
 const char* err_msg[] = {
-  "success",                        // PSB_SUCCESS
-  "get server power status failed", // PSB_ERROR_SRV_PWR_ST
-  "server not powered on",          // PSB_ERROR_SRV_NOT_READY
-  "kv file not found",              // PSB_ERROR_KV_NOT_AVAIL
-  "unknow error",                   // PSB_ERROR_UNKNOW
+  "success",                            // PSB_SUCCESS
+  "failed to get server present",       // PSB_ERROR_GET_SRV_PRST
+  "failed to get server power status",  // PSB_ERROR_GET_SRV_PWR
+  "server not present",                 // PSB_ERROR_SRV_NOT_PRST
+  "server not ready (12V-off)",         // PSB_ERROR_SRV_NOT_READY
+  "kv file not found",                  // PSB_ERROR_KV_NOT_AVAIL
+  "read eeprom from slot failed",       // PSB_ERROR_READ_EEPROM_FAIL
+  "invalid PSB info",                   // PSB_ERROR_INVAL_DATA
+  "unknow error",                       // PSB_ERROR_UNKNOW
 };
 
 static void
@@ -99,31 +115,31 @@ print_usage_help(void) {
 
 static const char*
 get_psb_err_msg(const int psb_err_code) {
-  switch(psb_err_code) {
-  case PSB_SUCCESS:
-  case PSB_ERROR_SRV_PWR_ST:
-  case PSB_ERROR_SRV_NOT_READY:
-  case PSB_ERROR_KV_NOT_AVAIL:
+  if (psb_err_code >= PSB_SUCCESS &&
+      psb_err_code <= PSB_ERROR_UNKNOW) {
     return err_msg[psb_err_code];
-  default:
+  } else {
     return err_msg[PSB_ERROR_UNKNOW];
   }
 }
 
+#if PSB_ENABLE_READ_CACHE
+static void
+del_psb_cache(uint8_t slot) {
+  char key[MAX_KEY_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%d_psb_config_raw", slot);
+  if (kv_del(key, 0) < 0) {
+    syslog(LOG_ERR, "%s(): failed to delete PSB cache file: %s", __func__, key);
+  }
+}
+
 static int
-read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
+read_psb_from_cache(uint8_t slot, struct psb_config_info *pc_info) {
+  int ret;
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
-  int  ret;
   size_t len;
-  size_t i;
-  uint8_t status = 0;
-
-  if (pal_get_server_power(slot, &status) != 0) {
-    return PSB_ERROR_SRV_PWR_ST;
-  } else if(status != SERVER_POWER_ON) {
-    return PSB_ERROR_SRV_NOT_READY;
-  }
 
   snprintf(key,MAX_KEY_LEN, "slot%d_psb_config_raw", slot);
   ret = kv_get(key, value, &len, 0);
@@ -133,6 +149,91 @@ read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
 
   memcpy(pc_info, value, sizeof(struct psb_config_info));
   return PSB_SUCCESS;
+}
+
+static void
+store_psb_to_cache(uint8_t slot, struct psb_config_info *pc_info) {
+  char key[MAX_KEY_LEN] = {0};
+  size_t len = sizeof(struct psb_config_info);
+
+  snprintf(key,MAX_KEY_LEN, "slot%d_psb_config_raw", slot);
+
+  if (kv_set(key, (uint8_t*)pc_info, len, 0)) {
+    syslog(LOG_ERR, "%s(): failed to store psb info to cache file: %s",
+      __func__, key);
+  }
+}
+#endif
+
+static uint8_t
+cal_checksum8(const uint8_t* data, size_t length) {
+  size_t i;
+  uint8_t cks = 0;
+  for(i=0; i<length; i++) {
+    cks -= data[i];
+  }
+  return cks;
+}
+
+static int
+read_psb_from_eeprom(uint8_t slot, struct psb_config_info *pc_info) {
+  int ret;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  const struct psb_eeprom* eeprom = (const struct psb_eeprom*) rbuf;
+  uint8_t cks;
+
+  tbuf[0] = 0x05;                       // bus
+  tbuf[1] = 0xA0;                       // dev addr
+  tbuf[2] = sizeof(struct psb_eeprom);  // read count
+  tbuf[3] = 0x00;                       // write data addr (MSB)
+  tbuf[4] = 0x00;                       // write data addr (LSB)
+  tlen = 5;
+
+  ret = bic_ipmb_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    return PSB_ERROR_READ_EEPROM_FAIL;
+  }
+
+  cks = cal_checksum8((const uint8_t*)&eeprom->psb_config, sizeof(struct psb_config_info));
+  if (cks != eeprom->checksum) {
+    syslog(LOG_ERR, "%s(): Invalid data from eeprom, checksum mismatch! calculate: 0x%02x, get: %02x",
+      __func__, cks, eeprom->checksum);
+    return PSB_ERROR_INVAL_DATA;
+  }
+
+  memcpy(pc_info, (rbuf+2), sizeof(struct psb_config_info));
+  return PSB_SUCCESS;
+}
+
+static int
+read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
+  int  ret;
+  uint8_t status = 0;
+
+  if (pal_is_fru_prsnt(slot, &status) != 0) {
+    return PSB_ERROR_GET_SRV_PRST;
+  } else if(!status) {
+    return PSB_ERROR_SRV_NOT_PRST;
+  }
+
+  if (pal_is_server_12v_on(slot, &status) != 0) {
+    return PSB_ERROR_GET_SRV_PWR;
+  } else if(!status) {
+    return PSB_ERROR_SRV_NOT_READY;
+  }
+
+#if PSB_ENABLE_READ_CACHE
+  ret = read_psb_from_cache(slot, pc_info);
+  if (ret == PSB_SUCCESS) {
+    return ret;
+  }
+#endif
+
+  ret = read_psb_from_eeprom(slot, pc_info);
+  return ret;
 }
 
 static void
@@ -281,7 +382,6 @@ do_action(uint8_t fru_id, json_t *jarray) {
 int
 main(int argc, char **argv) {
   int ret = 0;
-  uint8_t fru;
   json_t *array = json_array();
 
   if (parse_args(argc, argv) != 0) {

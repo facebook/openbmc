@@ -96,6 +96,7 @@ int bic_reset(uint8_t slot_id);
 int bic_clear_cmos(uint8_t slot_id);
 int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);
+int bic_enable_vr_fault_monitor(uint8_t slot_id, bool enable, uint8_t intf) ;
 uint8_t get_gpv3_bus_number(uint8_t dev_id);
 uint8_t get_gpv3_channel_number(uint8_t dev_id);
 int bic_notify_fan_mode(int mode);

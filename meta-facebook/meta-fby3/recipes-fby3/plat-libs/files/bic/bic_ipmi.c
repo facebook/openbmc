@@ -659,6 +659,15 @@ get_gpv3_channel_number(uint8_t dev_id) {
 }
 
 int
+bic_enable_vr_fault_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, ( enable == true )?0x1:0x0};
+  uint8_t tlen = 4;
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen = 0;
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_VR_MONITOR, tbuf, tlen, rbuf, &rlen, intf);
+}
+
+int
 bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
   uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, ( enable == true )?0x1:0x0};
   uint8_t tlen = 4;

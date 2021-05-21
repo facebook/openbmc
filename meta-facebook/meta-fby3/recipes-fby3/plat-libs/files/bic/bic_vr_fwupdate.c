@@ -962,9 +962,8 @@ vr_VY_txt_parser(char *image) {
   }
   vr_list[vr_cnt].data_cnt = data_cnt;
   vr_list[vr_cnt].addr = 0xff;   //set it manually
-  vr_list[vr_cnt].devid_len = 2;
+  vr_list[vr_cnt].devid_len = 1;
   vr_list[vr_cnt].devid[0] = 0x0;
-  vr_list[vr_cnt].devid[1] = 0x0;
   ret = BIC_STATUS_SUCCESS;
 error_exit:
   if ( fp != NULL ) fclose(fp);
@@ -1140,6 +1139,8 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
       break;
   }
 
+  printf("please perform a sled-cycle to take effect\n");
+
 error_exit:
   if ( buf != NULL ) free(buf);
   bic_close_usb_dev(udev);
@@ -1240,6 +1241,16 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
   uint8_t devid[6] = {0};
   uint8_t sel_vendor = 0;
   uint8_t vr_bus = 0x0;
+
+  //when bmc tries to read its device ID, it may report CML fault
+  //disble vr monitor before updating it or false alarm events will be issued
+  if ( intf == REXP_BIC_INTF ) {
+    printf("disabling VR fault monitor...\n");
+    if ( bic_enable_vr_fault_monitor(slot_id, false, intf) < 0 ) {
+      printf("%s() Failed to disable VR fault monitor\n", __func__);
+      goto error_exit;
+    }
+  }
 
   ret = _lookup_vr_devid(slot_id, comp, intf, devid, &sel_vendor, &vr_bus);
   if ( ret < 0 ) goto error_exit;

@@ -47,6 +47,8 @@
 #define max(a, b) ((a) > (b)) ? (a) : (b)
 #endif
 
+#define MAX_SEND_NL_MSG_RETRY 3
+
 enum {
   STATE_IDLE=0,
   STATE_LEARN_COMPONENTS,
@@ -281,6 +283,22 @@ static void reset_ncsi_lock(void) {
   kv_set("block_ncsi_xmit", "0", 0, 0);
 }
 
+static NCSI_NL_RSP_T * send_nl_msg_retry(NCSI_NL_MSG_T *nl_msg)
+{
+  int retry = 0;
+  NCSI_NL_RSP_T *nl_resp = NULL;
+
+  while (retry <= MAX_SEND_NL_MSG_RETRY) {
+    nl_resp = send_nl_msg(nl_msg);
+    if (nl_resp != NULL) {
+      break;
+    }
+    retry++;
+  }
+
+  return nl_resp;
+}
+
 static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 {
 #define SLEEP_TIME_MS               200  // wait time per loop in ms
@@ -385,7 +403,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
     if (ret) {
       goto free_exit;
     }
-    nl_resp = send_nl_msg(nl_msg);
+    nl_resp = send_nl_msg_retry(nl_msg);
     if (!nl_resp) {
       ret = -1;
       goto free_exit;
@@ -417,7 +435,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
       if (ret) {
         goto free_exit;
       }
-      nl_resp = send_nl_msg(nl_msg);
+      nl_resp = send_nl_msg_retry(nl_msg);
       if (!nl_resp) {
         ret = -1;
         goto free_exit;

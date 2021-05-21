@@ -139,6 +139,9 @@ extern "C" {
 #define MAX_PLATFORM_NAME_SIZE  16
 #define PLATFORM_NAME           "Grand Canyon"
 
+#define WWID_SIZE    (8)
+#define WWID_OFFSET  (0x400)
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -289,6 +292,11 @@ typedef struct {
   uint8_t status;
 } ioc_fw_recovery_req;
 
+typedef struct {
+  uint8_t component;
+  uint8_t wwid[WWID_SIZE];
+} ioc_wwid_req;
+
 enum {
   UIC_SIDEA          = 1,
   UIC_SIDEB          = 2,
@@ -341,6 +349,11 @@ enum {
   HEARTBEAT_REMOTE_BMC  = 2,
   HEARTBEAT_LOCAL_SCC   = 3,
   HEARTBEAT_REMOTE_SCC  = 4,
+};
+
+enum IOC_WWID_COMPONENT {
+  SCC_IOC_WWID  = 0x0,
+  IOCM_IOC_WWID = 0x1,
 };
 
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);

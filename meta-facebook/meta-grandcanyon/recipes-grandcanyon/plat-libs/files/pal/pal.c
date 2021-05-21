@@ -3027,3 +3027,196 @@ pal_set_nic_perst(uint8_t val) {
 
   return ret;
 }
+
+static int
+pal_get_iocm_wwid(uint16_t offset, char *wwid) {
+  char path[MAX_FILE_PATH] = {0};
+  int fd = 0;
+  int ret = 0;
+  ssize_t bytes_rd = 0;
+  uint8_t type = 0;
+
+  if (wwid == NULL) {
+    syslog(LOG_WARNING, "%s() Failed to get IOCM IOC WWID due to NULL parameter", __func__);
+    return -1;
+  }
+
+  if (fbgc_common_get_chassis_type(&type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+    return -1;
+  }
+  if (type == CHASSIS_TYPE5) {
+    syslog(LOG_WARNING, "%s: IOCM not supported on type 5 system", __func__);
+    return -1;
+  }
+
+  // Set path for IOCM EEPROM
+  snprintf(path, sizeof(path), EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+
+  // check for file presence
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "%s() Failed to get IOCM IOC WWID because unable to access %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s() Failed to get IOCM IOC WWID because unable to open %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_rd = read(fd, wwid, WWID_SIZE);
+  if (bytes_rd != WWID_SIZE) {
+    syslog(LOG_ERR, "%s() read IOC WWID from %s failed: %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
+
+  close(fd);
+
+  return ret;
+}
+
+static int
+pal_set_iocm_wwid(uint16_t offset, char *wwid) {
+  char path[MAX_FILE_PATH] = {0};
+  int fd = 0;
+  int ret = 0;
+  ssize_t bytes_wr = 0;
+  uint8_t type = 0;
+
+  if (wwid == NULL) {
+    syslog(LOG_WARNING, "%s() Failed to set IOCM IOC WWID due to NULL parameter", __func__);
+    return -1;
+  }
+
+  if (fbgc_common_get_chassis_type(&type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
+    return -1;
+  }
+  if (type == CHASSIS_TYPE5) {
+    syslog(LOG_WARNING, "%s: IOCM not supported on type 5 system", __func__);
+    return -1;
+  }
+
+  // Set path for IOCM EEPROM
+  snprintf(path, sizeof(path), EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+
+  // check for file presence
+  if (access(path, F_OK)) {
+    syslog(LOG_ERR, "%s() Failed to set IOCM IOC WWID because unable to access %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  fd = open(path, O_WRONLY);
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s() Failed to set IOCM IOC WWID because unable to open %s: %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  lseek(fd, offset, SEEK_SET);
+
+  bytes_wr = write(fd, wwid, WWID_SIZE);
+  if (bytes_wr != WWID_SIZE) {
+    syslog(LOG_ERR, "%s() write IOC WWID to %s failed: %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
+
+  close(fd);
+
+  return ret;
+}
+
+static int
+pal_get_scc_wwid(char *wwid) {
+  int ret = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0, tlen = 0;
+
+  if (wwid == NULL) {
+    syslog(LOG_WARNING, "%s() Failed to get SCC IOC WWID due to NULL parameter", __func__);
+    return -1;
+  }
+
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+
+  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_IOC_WWID, tbuf, tlen, rbuf, &rlen);
+
+  if ((ret != 0) || (rlen != WWID_SIZE)) {
+    syslog(LOG_WARNING, "%s() Failed to get SCC IOC WWID", __func__);
+    return -1;
+  }
+
+  memcpy(wwid, rbuf, rlen);
+
+  return ret;
+}
+
+int
+pal_set_ioc_wwid(uint8_t *ioc_wwid, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+
+  int ret = 0;
+  ioc_wwid_req wwid_req = {0};
+
+  if ((ioc_wwid == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_ERR, "%s: Failed to set IOC WWID because the parameters are NULL.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  *res_len = 0;
+  memset(&wwid_req, 0, sizeof(wwid_req));
+  memcpy(&wwid_req, ioc_wwid, sizeof(wwid_req));
+
+  if (wwid_req.component == IOCM_IOC_WWID) {
+    ret = pal_set_iocm_wwid(WWID_OFFSET, (char *)wwid_req.wwid);
+    if (ret < 0 ) {
+      syslog(LOG_ERR, "%s: Failed to set IOCM IOC WWID.", __func__);
+      return CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    syslog(LOG_ERR, "%s: Failed to set IOC WWID because wrong component.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  return CC_SUCCESS;
+}
+
+int
+pal_get_ioc_wwid(uint8_t ioc_component, uint8_t *res_data, uint8_t *res_len)
+{
+  int ret = 0;
+  uint8_t ioc_wwid_res[WWID_SIZE] = {0};
+
+  if ((res_data == NULL) || (res_len) == NULL) {
+    syslog(LOG_ERR, "%s: Failed to get IOC WWID because the parameters are NULL.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  *res_len = 0;
+  memset(&ioc_wwid_res, 0, sizeof(ioc_wwid_res));
+
+  if (ioc_component == SCC_IOC_WWID) {
+    ret = pal_get_scc_wwid((char *)ioc_wwid_res);
+    if (ret < 0 ) {
+      syslog(LOG_ERR, "%s: Failed to get SCC IOC WWID.", __func__);
+      return CC_UNSPECIFIED_ERROR;
+    }
+  } else if (ioc_component == IOCM_IOC_WWID) {
+    ret = pal_get_iocm_wwid(WWID_OFFSET, (char *)ioc_wwid_res);
+    if (ret < 0 ) {
+      syslog(LOG_ERR, "%s: Failed to get IOCM IOC WWID.", __func__);
+      return CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    syslog(LOG_ERR, "%s: Failed to get IOC WWID because wrong component.", __func__);
+    return CC_INVALID_PARAM;
+  }
+
+  *res_len = sizeof(ioc_wwid_res);
+  memcpy(res_data, ioc_wwid_res, sizeof(ioc_wwid_res));
+
+  return CC_SUCCESS;
+}

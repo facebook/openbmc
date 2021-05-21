@@ -35,6 +35,7 @@ extern "C" {
 enum NETFN_OEM_30 {
   CMD_OEM_EXP_ERROR_CODE             = 0x11,
   CMD_OEM_EXP_GET_SENSOR_READING     = 0x2D,
+  CMD_OEM_EXP_GET_IOC_WWID           = 0x51,
   CMD_OEM_EXP_GET_HDD_STATUS         = 0xC0,
 };
 

@@ -81,7 +81,7 @@ class BaseSlotUtilTest(TestCase):
         test slot-util --show-mac
         """
         cmd = "slot-util --show-mac"
-        cmd_output = run_shell_cmd(cmd, exp_return_code=1).split("\n")
+        cmd_output = run_shell_cmd(cmd, expected_return_code=1).split("\n")
         output_dict = self.convert_output_to_dict(cmd_output[1:])
         mac_pattern = (
             r"^[0-9a-z]{2}:[0-9a-z]{2}:[0-9a-z]{2}:[0-9a-z]{2}:[0-9a-z]{2}:[0-9a-z]{2}$"

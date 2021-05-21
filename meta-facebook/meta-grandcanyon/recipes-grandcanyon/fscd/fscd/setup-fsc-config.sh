@@ -21,11 +21,11 @@ done
 set_default_fan_table="/usr/local/bin/set_default_fan_table.py"
 
 default_fsc_config_path="/etc/fsc-config.json"
-fsc_type5_default_config_path="/etc/FSC_GC_EVT_default_config.json"
-fsc_type5_config_path="/etc/FSC_GC_Type5_EVT_v1_config.json"
-fsc_type7_config_path="/etc/FSC_GC_Type7_EVT_v1_config.json"
+fsc_type5_default_config_path="/etc/FSC_GC_DVT_default_config.json"
+fsc_type5_config_path="/etc/FSC_GC_Type5_DVT_v1_config.json"
+fsc_type7_config_path="/etc/FSC_GC_Type7_DVT_v1_config.json"
 
-fsc_type5_zone_config_path="/etc/fsc/FSC_GC_Type5_EVT_v1_zone0.fsc"
+fsc_type5_zone_config_path="/etc/fsc/FSC_GC_Type5_DVT_v1_zone0.fsc"
 
 get_chassis_type
 chassis_type=$?
@@ -53,3 +53,4 @@ fi
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 
 echo "Setup fan speed done... "
+

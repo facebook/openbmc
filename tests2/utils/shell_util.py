@@ -32,7 +32,9 @@ def cli_logging(func):
                 cmd = kwargs["cmd"]
             else:
                 cmd = args[0]
-            f.write(cmd + "\n")
+            if isinstance(cmd, list):
+                cmd = " ".join(cmd)
+            f.write('"{}",\n'.format(cmd))
             f.close()
         return func(*args, **kwargs)
 

@@ -2046,7 +2046,12 @@ int
 bic_dump_fw(uint8_t slot_id, uint8_t comp, char *path) {
   int ret = -1, rc, fd;
   uint32_t offset, next_doffset;
-  uint32_t img_size = 0x2000000, dsize;
+#if defined(CONFIG_FBY2_ND)
+  uint32_t img_size = 0x1000000;
+#else
+  uint32_t img_size = 0x2000000;
+#endif
+  uint32_t dsize;
   uint8_t count, read_count;
   uint8_t buf[256], rlen;
 

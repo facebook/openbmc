@@ -25,6 +25,7 @@ IMAGE_INSTALL += " \
   ipmbd \
   ipmitool \
   log-util-v2 \
+  lldp-util \
   mdio-util \
   mterm \
   openbmc-utils \

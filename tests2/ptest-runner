@@ -118,8 +118,8 @@ def main(args):
         print(f"{args.build} does not exist")
         sys.exit(-1)
     args.build = os.path.abspath(args.build)
-    deploy = args.build + "/tmp/deploy/images/qemux86-64"
-    rootfs_zip = deploy + "/qemux86-image-qemux86-64.tar.bz2"
+    deploy = args.build + "/tmp/deploy/images/qemux86"
+    rootfs_zip = deploy + "/qemux86-image-qemux86.tar.bz2"
     rootfs_zip = os.path.abspath(rootfs_zip)
     rootfs = deploy + "/rootfs"
     if os.path.isdir(rootfs):

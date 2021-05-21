@@ -106,6 +106,8 @@ int bic_get_mb_index(uint8_t *index);
 int bic_bypass_to_another_bmc(uint8_t* data, uint8_t len);
 int bic_notify_pwr_lock_sel(uint8_t dir_type);
 int bic_get_pwr_lock_flag(uint8_t *flag);
+int bic_ack_sel(uint8_t event);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

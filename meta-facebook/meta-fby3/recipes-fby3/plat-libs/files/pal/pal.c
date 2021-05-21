@@ -1853,6 +1853,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_BB_FW_EVENT    = 0x15,
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
+    SYS_ACK_SEL           = 0x18,
     SYS_SLED_PWR_CTRL     = 0x60,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
@@ -1969,6 +1970,13 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_DP_X16_PWR_FAULT:
       strcat(error_log, "DP x16 Riser Power Fault");
+      break;
+    case SYS_ACK_SEL:
+      if (event_data[1] == SYS_FAN_SERVICE) {
+        strcat(error_log, "Add SEL to notify fan mode event successfully");
+      } else if (event_data[1] == SYS_BB_FW_EVENT) {
+        strcat(error_log, "Add SEL to notify BB firmware update event successfully");
+      }
       break;
     case SYS_SLED_PWR_CTRL:
       strcat(error_log, "SLED Power Lock");
@@ -2430,6 +2438,8 @@ static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
   bool is_cri_sel = false;
+  struct timespec ts;
+  char val[MAX_VALUE_LEN] = {0};
 
   switch (snr_num) {
     case CATERR_B:
@@ -2459,12 +2469,14 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           return -1;
         }
       } else if (event_data[3] == SYS_FAN_EVENT) {
+        bic_ack_sel(event_data[3]);
         if (pal_is_fw_update_ongoing(fru) == true) {
           return PAL_EOK;
         }
         // start/stop fscd according fan mode change
         fby3_common_service_ctrl("fscd", event_data[DATA_INDEX_2]);
       } else if (event_data[3] == SYS_BB_FW_UPDATE) {
+        bic_ack_sel(event_data[3]);
         if (event_data[2] == SEL_ASSERT) {
           if (event_data[4] == FW_BB_BIC) {
             kv_set("bb_fw_update", "bic", 0, 0);
@@ -2483,6 +2495,10 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         }
         
         return PAL_EOK;
+      } else if (event_data[3] == SYS_SEL_ACK){
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        snprintf(val, sizeof(val), "%ld", ts.tv_sec);
+        kv_set("peer_bmc_ack_time", val, 0, 0);
       }
       break;
   }

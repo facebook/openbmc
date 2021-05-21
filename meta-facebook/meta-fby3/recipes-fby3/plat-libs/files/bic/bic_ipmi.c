@@ -1716,6 +1716,9 @@ bic_notify_fan_mode(int mode) {
   IPMI_SEL_MSG sel = {0};
   GET_MB_INDEX_RESP resp = {0};
   FAN_SERVICE_EVENT fan_event = {0};
+  int retry = 3;
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
 
   // prepare the sel
   bic_prepare_sel_hdr(&sel, SEL_ASSERT);
@@ -1743,9 +1746,20 @@ bic_notify_fan_mode(int mode) {
   memcpy(req.bypass_data, (uint8_t*) &sel, MIN(sizeof(req.bypass_data), sizeof(sel)));
 
   tlen = sizeof(iana_id) + 1 + sizeof(sel); // IANA ID + interface + add SEL command
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
+
+  while (retry > 0) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF);
+    sleep(2);
+    kv_get("peer_bmc_ack_time", value, NULL, 0);
+    if (strtoul(value, NULL, 10) >= ts.tv_sec) {
+      break;
+    }
+    retry--;
+  }
+  // Another BMC might not alive if no response with retry 3 times, log it and keep going
+  if (retry == 0) {
     syslog(LOG_WARNING, "%s(): fail to notify another BMC fan mode changed", __func__);
-    return -1;
   }
 
   return 0;
@@ -2114,6 +2128,9 @@ bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option) {
   IPMI_SEL_MSG sel = {0};
   BB_FW_UPDATE_EVENT update_event = {0};
   int ret = 0;
+  int retry = 3;
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
 
   memset(&update_event, 0, sizeof(update_event));
 
@@ -2126,9 +2143,21 @@ bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option) {
   update_event.component = component;
 
   memcpy(sel.event_data, (uint8_t*) &update_event, MIN(sizeof(sel.event_data), sizeof(update_event)));
-  ret = bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
-  if (ret < 0) {
+  while (retry > 0) {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
+    sleep(2);
+    kv_get("peer_bmc_ack_time", value, NULL, 0);
+    if (strtoul(value, NULL, 10) >= ts.tv_sec) {
+      break;
+    }
+    retry--;
+  }
+
+  // Another BMC might not alive if no response with retry 3 times, log it and keep going
+  if (retry == 0) {
     syslog(LOG_WARNING, "%s(): failed to set update flag to another bmc", __func__);
+    ret = 0;
   }
 
   return ret;
@@ -2170,4 +2199,26 @@ bic_check_bb_fw_update_ongoing() {
   }
 
   return 0;
+}
+
+int
+bic_ack_sel(uint8_t event) {
+  int ret = BIC_STATUS_SUCCESS;
+  IPMI_SEL_MSG sel = {0};
+
+  // prepare the sel
+  bic_prepare_sel_hdr(&sel, SEL_ASSERT/*dir type*/);
+
+  // set sel's attribute
+  sel.snr_type = SEL_SNR_TYPE_ACK_SEL;
+  sel.event_data[0] = SYS_SEL_ACK;
+  sel.event_data[1] = event;
+
+  ret = bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
+  if (ret < 0) {
+    // log the event to know the event is lost or not
+    syslog(LOG_WARNING, "%s(): failed to send ack sel to another bmc", __func__);
+  }
+
+  return ret;
 }

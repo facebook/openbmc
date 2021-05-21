@@ -19,6 +19,7 @@
 #
 try:
     # Add all attestation related imports here
+    import obmc_attestation.helpers
     import obmc_attestation.measure
     import obmc_attestation.tpm2
 
@@ -59,6 +60,11 @@ class NodeSystemInfo(node):
         result = {}
         # Let's get the system hashes first
         result["system_hashes"] = obmc_attestation.measure.return_measure(args)
+        tpm_object = obmc_attestation.tpm2.Tpm2v4()
+        # Let's get the TPM static info like TPM version
+        result["tpm_info"] = tpm_object.get_tpm_static_information()
+        # Let's get the system static info like kernel version
+        result["system_info"] = obmc_attestation.helpers.get_system_static_information()
         return result
 
 

@@ -3688,6 +3688,39 @@ oem_teardown_exp_uart_bridging (unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_set_ioc_wwid (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  *res_len = 0;
+
+  if (length_check(9, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  res->cc = pal_set_ioc_wwid(req->data, (req_len - IPMI_MN_REQ_HDR_SIZE), res->data, res_len);
+}
+
+static void
+oem_get_ioc_wwid (unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+  uint8_t component = 0;
+  *res_len = 0;
+
+  if (length_check(1, req_len, response, res_len) != 0) {
+    return;
+  }
+
+  component = req->data[0];
+
+  res->cc = pal_get_ioc_wwid(component, res->data, res_len);
+}
+
+static void
 oem_set_pcie_info (unsigned char *request, unsigned char req_len,
                    unsigned char *response, unsigned char *res_len)
 {
@@ -3901,6 +3934,12 @@ ipmi_handle_oem_storage (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_TEARDOWN_EXP_UART_BRIDGING:
       oem_teardown_exp_uart_bridging (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_SET_IOC_WWID:
+      oem_set_ioc_wwid (request, req_len, response, res_len);
+      break;
+    case CMD_OEM_GET_IOC_WWID:
+      oem_get_ioc_wwid (request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

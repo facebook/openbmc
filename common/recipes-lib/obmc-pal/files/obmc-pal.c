@@ -2709,6 +2709,16 @@ pal_teardown_exp_uart_bridging(void) {
 }
 
 int __attribute__((weak))
+pal_set_ioc_wwid(uint8_t *ioc_wwid, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
+pal_get_ioc_wwid(uint8_t ioc_component, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
+}
+
+int __attribute__((weak))
 pal_convert_sensor_reading(sdr_full_t *sdr, int in_value, float *out_value) {
   uint8_t m_lsb = 0, m_msb = 0;
   uint16_t m = 0;

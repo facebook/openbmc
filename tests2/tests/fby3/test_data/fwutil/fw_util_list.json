@@ -6,12 +6,6 @@
         "cpld": {
             "version header": "BMC CPLD Version"
         },
-        "cpld_cap": {
-            "version header": ""
-        },
-        "cpld_cap_rcvy": {
-            "version header": ""
-        },
         "fscd": {
             "version header": "Fan Speed Controller Version"
         },
@@ -24,7 +18,7 @@
     },
     "nic": {
         "nic": {
-            "version header": "Broadcom NIC firmware version"
+            "version header": ["Broadcom NIC firmware version","Mellanox NIC firmware version"]
         }
     },
     "ocpdbg": {
@@ -63,20 +57,8 @@
         "bios": {
             "version header": "BIOS Version"
         },
-        "bios_cap": {
-            "version header": ""
-        },
-        "bios_cap_rcvy": {
-            "version header": ""
-        },
         "cpld": {
             "version header": "SB CPLD Version"
-        },
-        "cpld_cap": {
-            "version header": ""
-        },
-        "cpld_cap_rcvy": {
-            "version header": ""
         },
         "me": {
             "version header": "ME Version"
@@ -113,20 +95,8 @@
         "bios": {
             "version header": "BIOS Version"
         },
-        "bios_cap": {
-            "version header": ""
-        },
-        "bios_cap_rcvy": {
-            "version header": ""
-        },
         "cpld": {
             "version header": "SB CPLD Version"
-        },
-        "cpld_cap": {
-            "version header": ""
-        },
-        "cpld_cap_rcvy": {
-            "version header": ""
         },
         "me": {
             "version header": "ME Version"
@@ -163,20 +133,8 @@
         "bios": {
             "version header": "BIOS Version"
         },
-        "bios_cap": {
-            "version header": ""
-        },
-        "bios_cap_rcvy": {
-            "version header": ""
-        },
         "cpld": {
             "version header": "SB CPLD Version"
-        },
-        "cpld_cap": {
-            "version header": ""
-        },
-        "cpld_cap_rcvy": {
-            "version header": ""
         },
         "me": {
             "version header": "ME Version"
@@ -213,20 +171,8 @@
         "bios": {
             "version header": "BIOS Version"
         },
-        "bios_cap": {
-            "version header": ""
-        },
-        "bios_cap_rcvy": {
-            "version header": ""
-        },
         "cpld": {
             "version header": "SB CPLD Version"
-        },
-        "cpld_cap": {
-            "version header": ""
-        },
-        "cpld_cap_rcvy": {
-            "version header": ""
         },
         "me": {
             "version header": "ME Version"

@@ -21,6 +21,7 @@
 
 import json
 from abc import abstractmethod
+from typing import List, Union
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
@@ -31,10 +32,14 @@ class BaseFwUtilTest(object):
     To provide common function
     """
 
-    def verify_output(self, cmd, str_wanted, msg=None):
+    def verify_output(self, cmd, str_wanted: Union[List[str], str], msg=None):
         Logger.info("executing cmd = {}".format(cmd))
         out = run_shell_cmd(cmd)
-        self.assertRegex(out, str_wanted, msg=msg)
+        if isinstance(str_wanted, str):
+            regex = str_wanted
+        else:
+            regex = "|".join(str_wanted)
+        self.assertRegex(out, regex, msg=msg)
 
     @abstractmethod
     def set_platform(self):

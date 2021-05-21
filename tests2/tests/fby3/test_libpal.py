@@ -21,6 +21,6 @@ import common.base_libpal_test
 
 
 class LibPalTest(common.base_libpal_test.LibPalTest):
-    PLATFORM_NAME = "fby3"
+    PLATFORM_NAME = "yosemitev3"
 
     pass  # just run common tests

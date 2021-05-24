@@ -23,4 +23,10 @@ do_install_append() {
   install -m 744 ../tpm_integrationtest ${D}${bindir}/tpm_integrationtest
 }
 
+do_configure_prepend() {
+    # man8 has a dependency on pod2man.  We don't use manpages, so just
+    # erase it.
+    echo > ${S}/man/Makefile.am
+}
+
 inherit autotools gettext

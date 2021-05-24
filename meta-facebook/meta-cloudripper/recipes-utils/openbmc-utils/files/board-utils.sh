@@ -87,6 +87,9 @@ wedge_board_type_rev() {
         3)
             echo "Cloudripper_DVT"
             ;;
+        4)
+            echo "Cloudripper_PVT"
+            ;;
         *)
             echo "Cloudripper (Undefine $rev)"
             ;;

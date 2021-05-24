@@ -1042,6 +1042,7 @@ int pal_set_ioexp_direction(uint8_t bus, char* dirction) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t ioexp_addr = 0xE8;
+  uint8_t cmds[2] = {0x03, 0x07};
 
   snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
   fd = open(fn, O_RDWR);
@@ -1051,22 +1052,24 @@ int pal_set_ioexp_direction(uint8_t bus, char* dirction) {
     goto error_exit;
   }
 
-  tbuf[0] = 0x03;
-  if(!strcmp(dirction, "out")) {
-    tbuf[1] = 0x00;
-  } else {
-    tbuf[1] = 0xff;
-  }
-
-  retry = MAX_READ_RETRY;
-  while(retry > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 2, rbuf, 0);
-    if (PAL_EOK == ret) {
-      break;
+  for (int i = 0; i < sizeof(cmds); i++) {
+    tbuf[0] = cmds[i];
+    if(!strcmp(dirction, "out")) {
+      tbuf[1] = 0x00;
+    } else {
+      tbuf[1] = 0xff;
     }
-
-    msleep(50);
-    retry--;
+    
+    retry = MAX_READ_RETRY;
+    while(retry > 0) {
+      ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 2, rbuf, 0);
+      if (PAL_EOK == ret) {
+        break;
+      }
+    
+      msleep(50);
+      retry--;
+    }
   }
 
   if(ret < 0) {
@@ -1099,7 +1102,7 @@ uint8_t pal_setup_amber_reg_value(uint8_t bus, char* dev_num, char* value) {
     ret = PAL_ENOTSUP;
     goto error_exit;
   }
-  tbuf[0] = 0x07;
+  tbuf[0] = 0x06;
   retry = MAX_READ_RETRY;
   while(retry > 0) {
     ret = i2c_rdwr_msg_transfer(fd, ioexp_addr, tbuf, 1, rbuf, 1);
@@ -1117,9 +1120,9 @@ uint8_t pal_setup_amber_reg_value(uint8_t bus, char* dev_num, char* value) {
   }
 
   if(!strcmp(value, "on")) {
-    rbuf[0] |= (1 << dev_index);
-  } else {
     rbuf[0] &= ~(1 << dev_index);
+  } else {
+    rbuf[0] |= (1 << dev_index);
   }
 
 
@@ -1159,7 +1162,7 @@ int pal_set_amber_led(char *carrier, char* dev_num, char* value) {
     goto error_exit;
   }
 
-  tbuf[0] = 0x07;
+  tbuf[0] = 0x06;
   tbuf[1] = pal_setup_amber_reg_value(bus, dev_num, value);
 
   retry = MAX_READ_RETRY;

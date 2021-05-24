@@ -13,7 +13,8 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
 #   -- none --
-# gatesgarth platforms (latest)
+# hardknott platforms (latest)
+# gatesgarth platforms (pending upgrade)
 #   -- none --
 # dunfell platforms (pending upgrade)
   meta-clearcreek:lf-dunfell

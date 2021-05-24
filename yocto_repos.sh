@@ -4,6 +4,7 @@ branches=(
     lf-master
     lf-dunfell
     lf-gatesgarth
+    lf-hardknott
 )
 
 rocko_repos=(
@@ -29,4 +30,7 @@ lf_dunfell_repos=(
 )
 lf_gatesgarth_repos=(
     lf-openbmc:18c6a7704
+)
+lf_hardknott_repos=(
+    lf-openbmc:d7eca3aac
 )

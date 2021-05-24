@@ -18,6 +18,7 @@ PLAT_DISTRO_OVERRIDES=(
 #   -- none --
 # dunfell platforms (pending upgrade)
   meta-clearcreek:lf-dunfell
+  meta-cloudripper:lf-dunfell
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell
   meta-fbal:lf-dunfell
@@ -28,7 +29,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-qemux86:lf-dunfell
 # zeus platforms (pending upgrade)
   meta-grandcanyon:zeus
-  meta-cloudripper:zeus
   meta-fuji:zeus
   meta-minipack:zeus
   meta-wedge400:zeus

@@ -70,62 +70,77 @@ int M2DevComponent::print_version()
   return FW_STATUS_SUCCESS;
 }
 
-int M2DevComponent::update(string image)
-{
-  int ret = 0;
+int M2DevComponent::update_internal(string image, bool force) {
+  int ret = FW_STATUS_SUCCESS;
   uint8_t nvme_ready = 0, status = 0, type = DEV_TYPE_UNKNOWN;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
   uint8_t bmc_location = 0;
 
   try {
+    // get BMC location
+    ret = fby3_common_get_bmc_location(&bmc_location);
+    if ( ret < 0 ) {
+      throw string("Failed to get BMC's location");
+    }
+
+    // check the status of the board
     server.ready();
     expansion.ready();
+
+    // need to make sure M2 exists
     ret = pal_get_dev_info(slot_id, idx, &nvme_ready ,&status, &type);
-    if (!ret) {
-      if (status != 0) {
-        syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx - 1, status, nvme_ready, type);
-        if ( nvme_ready == 0 ) {
-          if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
-            ret = FW_STATUS_NOT_SUPPORTED;
-            throw string("Failed to initialize the fw-util\n");
-          } else if ( bmc_location == NIC_BMC ) { // Config C
-            ret = FW_STATUS_NOT_SUPPORTED;
-            throw string("The m2 device's NVMe is not ready");
-          } else { // VK recovery update
-            printf("BRCM VK Recovery Update\n");
-            bic_disable_brcm_parity_init(slot_id, fw_comp);
-            ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
-            if (ret == FW_STATUS_SUCCESS) {
-              pal_set_device_power(slot_id, DEV_ID0_2OU + idx -1, SERVER_POWER_CYCLE);
-            } else {
-              syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, idx - 1);
-            }
-          }
-        } else if ( type == DEV_TYPE_BRCM_ACC ) {
-          ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
-          if (ret == FW_STATUS_SUCCESS) {
-            pal_set_device_power(slot_id, DEV_ID0_2OU + idx -1, SERVER_POWER_CYCLE);
-          } else {
-            syslog(LOG_WARNING, "update: Slot%u Dev%d brcm vk failed", slot_id, idx - 1);
-          }
-        } else if ( type == DEV_TYPE_SPH_ACC ) {
-          ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
-        } else {
-          ret = FW_STATUS_NOT_SUPPORTED;
-          throw string("The m2 device does not support update");
-        }
-      } else {
-        ret = FW_STATUS_NOT_SUPPORTED;
-        throw string("The m2 device is not present");
-      }
-    } else {
-      ret = FW_STATUS_NOT_SUPPORTED;
+    if ( ret < 0 ) {
       throw string("Error in getting the m2 device info");
     }
+
+    syslog(LOG_WARNING, "update: Slot%u Dev%d power=%u nvme_ready=%u type=%u", slot_id, idx - 1, status, nvme_ready, type);
+
+    // 0 means the device is not detected, we should return
+    if ( status == 0 ) {
+      throw string("The m2 device is not present");
+    }
+
+    // nvme type - SPH/BRCM
+    // nvme status is 0 which means the device is not ready
+    // if so, we should use `--force` instead of implementing the function as a normal update
+    if ( force == true ) {
+      if ( bmc_location != NIC_BMC ) {
+        // BRCM VK recovery update
+        cerr << "BRCM VK Recovery Update" << endl;
+        ret = bic_disable_brcm_parity_init(slot_id, fw_comp);
+        if ( ret < 0 ) throw string("Failed to disable BRCM parity init");
+      }
+    } else {
+      if ( nvme_ready == 0 ) {
+        throw string("The device is not ready");
+      }
+    }
+
+    // no matter which one is used, bic_update_fw will be called in the end
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "update: Slot%u Dev%d failed", slot_id, idx - 1);
+      throw string("Failed to access the device");
+    }
+
+    // run dev power cycle for BRCM VK
+    if ( bmc_location != NIC_BMC ) {
+      ret = pal_set_device_power(slot_id, DEV_ID0_2OU + idx - 1, SERVER_POWER_CYCLE);
+      if ( ret < 0 ) throw string("Failed to do dev power cycle");
+    }
   } catch (string& err) {
-    printf("Failed reason: %s\n", err.c_str()); 
+    ret = FW_STATUS_FAILURE;
+    printf("Failed reason: %s\n", err.c_str());
   }
 
   return ret;
+}
+
+int M2DevComponent::fupdate(string image) {
+  return update_internal(image, true);
+}
+
+int M2DevComponent::update(string image) {
+  return update_internal(image, false);
 }
 #endif

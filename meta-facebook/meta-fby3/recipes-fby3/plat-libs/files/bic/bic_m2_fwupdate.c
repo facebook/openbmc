@@ -466,18 +466,25 @@ int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, u
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d", __func__, image, fd);
     return BIC_STATUS_FAILURE;
   }
-  printf("file size = %d bytes, slot = %d, comp = 0x%x\n", file_size, slot_id, comp);
+  printf("file size = %d bytes, slot = %d, comp = 0x%x, type = 0x%x\n", file_size, slot_id, comp, type);
 
   if ( lseek(fd, 0, SEEK_SET) != 0 ) {
     syslog(LOG_WARNING, "%s() Cannot reinit the fd to the beginning. errstr=%s", __func__, strerror(errno));
     goto error_exit;
   }
 
-  if (type == DEV_TYPE_SPH_ACC) {
+  uint8_t bmc_location = 0;
+  fby3_common_get_bmc_location(&bmc_location);
+
+  // when we run `--force` update, it means the device is abnormal.
+  // and bmc may not get its type correctly, so bmc would misjudge its type and runs the incorrect statements.
+  // it should use SKU information
+  if ( type == DEV_TYPE_SPH_ACC || bmc_location == NIC_BMC ) {
     ret = bic_sph_m2_update(slot_id, bus, comp, fd, file_size, intf);
-  } else { // VK update
+  } else {
     ret = bic_vk_m2_update(slot_id, bus, comp, fd, file_size, intf);
   }
+
 error_exit:
   if ( fd > 0 ) close(fd);
   return ret;

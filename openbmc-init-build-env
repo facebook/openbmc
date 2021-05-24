@@ -29,9 +29,9 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fuji:lf-dunfell
   meta-minipack:lf-dunfell
   meta-qemux86:lf-dunfell
+  meta-wedge400:lf-dunfell
 # zeus platforms (pending upgrade)
   meta-grandcanyon:zeus
-  meta-wedge400:zeus
 # Legacy platforms pending kernel upgrade
   meta-fby2-gpv2:rocko
   meta-fby2:rocko

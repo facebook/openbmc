@@ -1272,34 +1272,118 @@ read_cpu_thermal_margin(uint8_t cpu_id, float *value) {
 }
 
 static int
-read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
-  uint8_t rbuf[32] = {0x00};
-  uint8_t domain_id = NMS_SIGNAL_COMPONENT | NMS_DOMAIN_ID_CPU_SUBSYSTEM;
-  uint8_t policy_id = cpu_id;
-  static uint8_t retry = 0;
-  int ret = 0;
-  NM_RW_INFO info;
+cmd_peci_accumulated_energy(uint8_t cpu_addr, uint32_t* value) {
+  PECI_RD_PKG_CONFIG_INFO info;
+  int ret=0;
+  int i=0;
+  uint8_t rx_len=5;
+  uint8_t rx_buf[rx_len];
 
-  get_nm_rw_info(NM_ID0, &info.bus, &info.nm_addr, &info.bmc_addr);
-  ret = cmd_NM_get_nm_statistics(info, NMS_GLOBAL_POWER, domain_id, policy_id, rbuf);
+  info.cpu_addr= cpu_addr;
+  info.dev_info = 0x00;
+  info.index = PECI_INDEX_ACCUMULATED_ENERGY_STATUS;
+  info.para_l = 0xFF;
+  info.para_h = 0x00;
 
-  if ( (ret != 0) || (rbuf[6] != CC_SUCCESS) ) {
-    retry++;
-#ifdef DEBUG
-    syslog(LOG_DEBUG, "%s cc=%x\n", __func__, rbuf[6]);
-#endif
-    return retry_err_handle(retry, 5);
+  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
+  if (ret != 0) {
+    return -1;
   }
 
-  *value = rbuf[10];
-  retry = 0;
-
-#ifdef DEBUG
-    syslog(LOG_DEBUG, "%s value_l=%f\n", __func__, *value);
-#endif
-
+  for (i=0; i<4; i++) {
+    *value |= rx_buf[i] << (8*i);
+  }
   return 0;
 }
+
+static int
+cmd_peci_total_time(uint8_t cpu_addr, uint32_t* value) {
+  PECI_RD_PKG_CONFIG_INFO info;
+  int ret=0;
+  int i=0;
+  uint8_t rx_len=5;
+  uint8_t rx_buf[rx_len];
+
+  info.cpu_addr= cpu_addr;
+  info.dev_info = 0x00;
+  info.index = PECI_INDEX_TOTAL_TIME;
+  info.para_l = 0x00;
+  info.para_h = 0x00;
+
+  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
+  if (ret != 0) {
+    return -1;
+  }
+
+  for (i=0; i<4; i++) {
+    *value |= rx_buf[i] << (8*i);
+  }
+  return 0;
+}
+
+static int
+read_cpu_pkg_pwr(uint8_t cpu_id, float *value) {
+// Energy units: Intel Doc#554767, p37, 2^(-ENERGY UNIT) J, ENERGY UNIT defalut is 14
+  // Run Time units: Intel Doc#554767, p33, msec
+  float unit = 0.06103515625f; // 2^(-14)*1000 = 0.06103515625
+  uint32_t pkg_energy=0, run_time=0, diff_energy=0, diff_time=0;
+  uint8_t cpu_addr = cpu_info_list[cpu_id].cpu_addr;
+  static uint32_t last_pkg_energy[4] = {0}, last_run_time[4] = {0};
+  static uint8_t retry[CPU_ID_NUM] = {0}; // CPU0 and CPU1
+  int ret = READING_NA;
+
+  ret = cmd_peci_accumulated_energy(cpu_addr, &pkg_energy);
+  if (ret != 0) {
+    goto error_exit;
+  }
+
+  ret =  cmd_peci_total_time(cpu_addr, &run_time);
+  if (ret != 0) {
+    goto error_exit;
+  }
+
+  // need at least 2 entries to calculate
+  if (last_pkg_energy[cpu_id] == 0 && last_run_time[cpu_id] == 0) {
+    if (ret == 0) {
+      last_pkg_energy[cpu_id] = pkg_energy;
+      last_run_time[cpu_id] = run_time;
+    }
+    ret = READING_NA;
+  }
+
+  if (!ret) {
+    if (pkg_energy >= last_pkg_energy[cpu_id]) {
+      diff_energy = pkg_energy - last_pkg_energy[cpu_id];
+    } else {
+      diff_energy = pkg_energy + (0xffffffff - last_pkg_energy[cpu_id] + 1);
+    }
+    last_pkg_energy[cpu_id] = pkg_energy;
+
+    if (run_time >= last_run_time[cpu_id]) {
+      diff_time = run_time - last_run_time[cpu_id];
+    } else {
+      diff_time = run_time + (0xffffffff - last_run_time[cpu_id] + 1);
+    }
+    last_run_time[cpu_id] = run_time;
+
+    if (diff_time == 0) {
+      ret = READING_NA;
+    } else {
+      *value = ((float)diff_energy / (float)diff_time * unit);
+    }
+  }
+
+error_exit:
+  if (ret != 0) {
+    retry[cpu_id]++;
+    if (retry[cpu_id] <= 3) {
+      return READING_SKIP;
+    }
+  } else {
+    retry[cpu_id] = 0;
+  }
+  return ret;
+}  
 
 static int
 read_cpu_temp(uint8_t cpu_id, float *value) {

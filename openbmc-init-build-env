@@ -19,6 +19,7 @@ PLAT_DISTRO_OVERRIDES=(
 # dunfell platforms (pending upgrade)
   meta-clearcreek:lf-dunfell
   meta-cmm:lf-dunfell
+  meta-elbert:lf-dunfell
   meta-fbal:lf-dunfell
   meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell
@@ -27,7 +28,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-qemux86:lf-dunfell
 # zeus platforms (pending upgrade)
   meta-grandcanyon:zeus
-  meta-elbert:zeus
   meta-cloudripper:zeus
   meta-fuji:zeus
   meta-minipack:zeus

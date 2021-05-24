@@ -332,14 +332,14 @@ const uint8_t e1s_2_sensor_list[] = {
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
-  {MEZZ0, I2C_BUS_1, 0x3E},
-  {MEZZ1, I2C_BUS_9, 0x3E},
-  {MEZZ2, I2C_BUS_2, 0x3E},
-  {MEZZ3, I2C_BUS_10, 0x3E},
-  {MEZZ4, I2C_BUS_4, 0x3E},
-  {MEZZ5, I2C_BUS_11, 0x3E},
-  {MEZZ6, I2C_BUS_7, 0x3E},
-  {MEZZ7, I2C_BUS_13, 0x3E},
+  {MEZZ0, I2C_BUS_1 , 0x3E, 0},
+  {MEZZ1, I2C_BUS_9 , 0x3E, 4},
+  {MEZZ2, I2C_BUS_2 , 0x3E, 1},
+  {MEZZ3, I2C_BUS_10, 0x3E, 5},
+  {MEZZ4, I2C_BUS_4 , 0x3E, 2},
+  {MEZZ5, I2C_BUS_11, 0x3E, 6},
+  {MEZZ6, I2C_BUS_7 , 0x3E, 3},
+  {MEZZ7, I2C_BUS_13, 0x3E, 7},
 };
 
 //ADM1278
@@ -1324,7 +1324,7 @@ is_nic_present(uint8_t nic_id) {
   gpio_value_t val;
   char gpio_name[32];
 
-  sprintf(gpio_name, GPIO_NIC_PRSNT, nic_id);
+  sprintf(gpio_name, GPIO_NIC_PRSNT, nic_info_list[nic_id].gpio_netname);
 
   if ((gdesc = gpio_open_by_shadow(gpio_name))) {
     if (!gpio_get_value(gdesc, &val)) {

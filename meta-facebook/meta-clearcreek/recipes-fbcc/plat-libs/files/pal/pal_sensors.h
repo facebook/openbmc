@@ -416,6 +416,7 @@ typedef struct {
   uint8_t id;
   uint8_t bus;
   uint8_t slv_addr;
+  uint8_t gpio_netname;
 } PAL_I2C_BUS_INFO;
 
 typedef struct {

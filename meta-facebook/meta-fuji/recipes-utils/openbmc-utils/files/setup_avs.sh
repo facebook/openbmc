@@ -31,6 +31,43 @@ if [ "$BOARD_VER" -lt 66 ];then
 fi
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+#shellcheck disable=SC1091
+source /usr/local/bin/openbmc-utils.sh
+
+#
+# We have seen intermittent AVS voltage reading errors and root cause is
+# not clear as of now. Testing shows below retry will help to mitigate
+# such error.
+#
+fixup_avs_volt() {
+    echo "Check AVS voltage..."
+
+    for((i=1;i<=5;i++)); do
+        # some delay to minimize driver binding error potentially caused by
+        # dual-core or software race conditions. root cause not clear yet.
+        sleep 1
+
+        AVS_VOLT=$(cat "${SYSFS_I2C_DEVICES}"/1-0040/hwmon/hwmon*/in3_input)
+
+        #
+        # Note: below range (500, 1200) millivolts is confirmed by hardware
+        # team; please reach out to hardware team before making changes.
+        #
+        if [ $? -eq 0 ] && [ $AVS_VOLT -gt 500 ] && [ $AVS_VOLT -lt 1200 ]; then
+            echo "AVS-Volt is normal, no fixup needed."
+            return
+        else
+            echo "Invalid AVS-Volt $AVS_VOLT, re-create xdpe132g5c $i times"
+
+            i2c_device_delete 1 0x40
+            i2c_device_add 1 0x40 xdpe132g5c
+        fi
+    done
+
+    logger -p user.err "Unable to fix AVS voltage after 5 retries"
+}
+
+fixup_avs_volt
 
 VID_VCC_MAX=(0xE6B 0xE0C 0xDB2 0xD58 0xCF6)
 XDPE_VOUT_PMBUS_COMMAND=0x21

@@ -210,16 +210,30 @@ do_reset() {
     done
 
     if [ $system -eq 1 ]; then
+        logger -p user.crit "Power reset the whole system ..."
         if [ $board_rev -eq 4 ]; then
             logger "EVTA is not supported, running a workaround instead"
             echo "EVTA is not supported, running a workaround instead"
+
+            #
+            # Sync cached writes to persistent storage before chassis
+            # power cycle.
+            #
+            sync
+
             i2cset -f -y 1 0x3a 0x12 0
         else
             if [ $timer -eq 1 ]; then
                 do_config_reset_timer $wake_t
             fi
-            logger "Power reset the whole system ..."y2y
             echo  "Power reset the whole system ..."
+
+            #
+            # Sync cached writes to persistent storage before chassis
+            # power cycle.
+            #
+            sync
+
             echo 1 > $PWR_L_CYCLE_SYSFS
             sleep 1
             echo 1 > $PWR_R_CYCLE_SYSFS

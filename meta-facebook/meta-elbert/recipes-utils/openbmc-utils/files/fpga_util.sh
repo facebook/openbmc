@@ -147,8 +147,6 @@ connect_th4_qspi_flash() {
     echo 1 > "$SPI_TH4_QSPI_SEL"
     devmem_set_bit 0x1e6e2438 8 # SPI1CS1 Function enable
     sleep 0.1
-    unbind_spi_nor # Force Re-bind SPI nor
-    bind_spi_nor
 }
 
 do_scm() {
@@ -228,8 +226,20 @@ do_fan() {
 
 program_spi_image() {
     ORIGINAL_IMAGE="$1" # Image path
-    CHIP_TYPE="$2"      # Chip type
     ACTION="${4^^}"         # Program or verify
+
+    case "${2^^}" in # Selects driver used
+        FLASHROM)
+           DRIVER=linux_spi:dev=/dev/"$SMB_SPIDEV"
+           ;;
+        SPINOR)
+           DRIVER=linux_mtd:dev="$SMB_MTD"
+           ;;
+        *)
+           echo "Unknown driver $2 specified"
+           exit 1
+           ;;
+    esac
 
     case "${3^^}" in # Selects passed partition name
         PIM_BASE)
@@ -237,6 +247,11 @@ program_spi_image() {
            SKIP_MB=0
            # TODO: Restrict PIM_BASE later
            # FPGA_TYPE=0
+           FPGA_TYPE=-1
+           ;;
+        TH4_QSPI)
+           PARTITION="th4_qspi"
+           SKIP_MB=0
            FPGA_TYPE=-1
            ;;
         PIM16Q)
@@ -324,7 +339,7 @@ program_spi_image() {
     max=3
     while true; do
         # Program the 32MB pim image
-        if flashrom -p linux_mtd:dev="$SMB_MTD" -N --layout /etc/elbert_pim.layout \
+        if flashrom -p "$DRIVER" -N --layout /etc/elbert_pim.layout \
            --image "$PARTITION" $OPERATION "$TEMP_IMAGE" ; then
             break
         else
@@ -345,9 +360,22 @@ program_spi_image() {
 read_spi_partition_image() {
     DEST="$1" # READ Image output path
     TEMP="/tmp/tmp_pim_image" # Temporary path for 32MB read
-    CHIP_TYPE="$2"   # Chip type
-    COUNT=1 # Default partition size is 1MB
+    BS="1M" # Default partition is 1MB
+    COUNT=1 # Default partition size is 1 * BS
     SKIP_MB=0
+
+    case "${2^^}" in # Selects driver used
+        FLASHROM)
+           DRIVER=linux_spi:dev=/dev/"$SMB_SPIDEV"
+           ;;
+        SPINOR)
+           DRIVER=linux_mtd:dev="$SMB_MTD"
+           ;;
+        *)
+           echo "Unknown driver $2 specified"
+           exit 1
+           ;;
+    esac
 
     case "${3^^}" in # Selects passed partition name
         PIM_BASE)
@@ -355,6 +383,11 @@ read_spi_partition_image() {
            ;;
         HEADER_PIM_BASE)
            PARTITION="header_pim_base"
+           ;;
+        TH4_QSPI)
+           BS=1K # TH4 QSPI is small, use 1K increments
+           COUNT=32 # TH4 QSPI is <32KB
+           PARTITION="th4_qspi"
            ;;
         PIM16Q)
            PARTITION="pim16q"
@@ -384,9 +417,9 @@ read_spi_partition_image() {
 
     echo "Selected partition $PARTITION to read."
 
-    flashrom -p linux_mtd:dev="$SMB_MTD" \
+    flashrom -p "$DRIVER" \
         --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP"
-    dd if="$TEMP" of="$DEST" bs=1M count="$COUNT" skip="$SKIP_MB" 2> /dev/null
+    dd if="$TEMP" of="$DEST" bs="$BS" count="$COUNT" skip="$SKIP_MB" 2> /dev/null
     rm "$TEMP"
 }
 
@@ -420,7 +453,7 @@ do_pim() {
             BIN_IMAGE="/tmp/stripped_pim_image"
             connect_pim_flash
             strip_pim_header "$2" "$BIN_IMAGE"
-            program_spi_image "$BIN_IMAGE" "MT25QL256" "$3" "$1"
+            program_spi_image "$BIN_IMAGE" "SPINOR" "$3" "$1"
             rm "$BIN_IMAGE"
             ;;
         READ)
@@ -428,7 +461,7 @@ do_pim() {
             if [ -z "$3" ]; then
                 flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
             else
-                read_spi_partition_image "$2" "MT25QL256" "$3"
+                read_spi_partition_image "$2" "SPINOR" "$3"
             fi
             ;;
         ERASE)
@@ -450,14 +483,14 @@ do_pim() {
 do_th4_qspi() {
     case "${1^^}" in
         PROGRAM|VERIFY)
-            connect_th4_qspi_flash
-            program_spi_image "$2" "MT25QU256" full "$1"
             unbind_spi_nor
+            connect_th4_qspi_flash
+            program_spi_image "$2" "FLASHROM" th4_qspi "$1"
             ;;
         READ)
-            connect_th4_qspi_flash
-            flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
             unbind_spi_nor
+            connect_th4_qspi_flash
+            read_spi_partition_image "$2" "FLASHROM" th4_qspi
             ;;
         *)
             echo "TH4 QSPI only supports program/verify/read action. Exiting..."

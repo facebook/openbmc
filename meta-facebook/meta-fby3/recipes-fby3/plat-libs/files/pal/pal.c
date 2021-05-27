@@ -56,6 +56,8 @@
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
 
+#define ERROR_ID_LOG_LEN 15
+
 #define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
 
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
@@ -1718,17 +1720,30 @@ pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char **err1_desc, char **e
 
   for ( i = 0; i < size; i++ ) {
     if ( err2_id == pcie_err_tab[i].err_id ) {
-      *err2_desc = pcie_err_tab[i].err_descr;
+      *err2_desc = malloc(strlen(pcie_err_tab[i].err_descr)+ERROR_ID_LOG_LEN+2);
+      sprintf(*err2_desc, ", ErrID2: 0x%02X(%s)",err2_id, pcie_err_tab[i].err_descr);
       continue;
     } else if ( err1_id == pcie_err_tab[i].err_id ) {
-      *err1_desc = pcie_err_tab[i].err_descr;
+      *err1_desc = malloc(strlen(pcie_err_tab[i].err_descr)+ERROR_ID_LOG_LEN+2);
+      sprintf(*err1_desc, ", ErrID1: 0x%02X(%s)",err1_id, pcie_err_tab[i].err_descr);
       continue;
     }
 
-    if ( strcmp(*err1_desc,"NA") && strcmp(*err2_desc,"NA") ) {
+    if ( *err1_desc != NULL && *err2_desc != NULL ) {
       break;
     }
   }
+
+  if (*err2_desc == NULL) {
+    *err2_desc = malloc(ERROR_ID_LOG_LEN);
+    sprintf(*err2_desc,", ErrID2: 0x%02X", err2_id);
+  }
+
+  if (*err1_desc == NULL) {
+    *err1_desc = malloc(ERROR_ID_LOG_LEN);
+    sprintf(*err1_desc,", ErrID1: 0x%02X", err1_id);
+  }
+
   return;
 }
 
@@ -2165,7 +2180,7 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   error_log[0] = '\0';
   char *sil = "NA";
   char *location = "NA";
-  char *err1_descript = "NA", *err2_descript = "NA";
+  char *err1_descript = NULL, *err2_descript = NULL;
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
@@ -2174,8 +2189,16 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
         pal_get_pcie_err_string(fru, &sel[10], &sil, &location, &err1_descript, &err2_descript);
 
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,"
-                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
-                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);
+                            "TotalErrID1Cnt: 0x%04X",
+                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]));
+        if (err2_descript != NULL) {
+          strcat(error_log,err2_descript);
+          free(err2_descript);
+        }
+        if (err1_descript != NULL) {
+          strcat(error_log,err1_descript);
+          free(err1_descript);
+        }
       } else {
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X,"
                             "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",

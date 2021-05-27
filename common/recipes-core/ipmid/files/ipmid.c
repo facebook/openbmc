@@ -73,6 +73,8 @@ static lan_config_t g_lan_config = { 0 };
 // TODO: Need to store this info after identifying proper storage
 static sys_info_param_t g_sys_info_params;
 
+// enable IPMI cmd logging
+static uint8_t gLogEnable = 0;
 
 // IPMI Watchdog Timer Structure
 struct watchdog_data {
@@ -152,7 +154,7 @@ static char *drive_info_key[] =
 
 // obmc-dump status
 enum {
-  DUMP_DONE = 0x0,  
+  DUMP_DONE = 0x0,
   DUMP_FAIL = 0x1,
   DUMP_NEVER = 0x2,
   DUMP_ONGOING = 0x3,
@@ -695,7 +697,7 @@ app_manufacturing_test_on (unsigned char *request, unsigned char req_len,
       is_first_exc = true;
     }
     // If obmc-dump is ongiong, skip the request
-    if ((is_first_exc == true) || strncmp(stat_buf, "Ongoing", strlen("Ongoing")) != 0) { 
+    if ((is_first_exc == true) || strncmp(stat_buf, "Ongoing", strlen("Ongoing")) != 0) {
       if (system("/usr/local/bin/obmc-dump -y &") != 0) {
         res->cc = CC_NOT_SUPP_IN_CURR_STATE;
       }
@@ -3529,7 +3531,7 @@ oem_set_fscd(unsigned char *request, unsigned char req_len,
       res->cc = CC_INVALID_CMD;
       break;
   }
-  
+
   if (system(cmd)) {
     syslog(LOG_WARNING, "set fscd cmd failed (%s)\n", cmd);
     res->cc = CC_UNSPECIFIED_ERROR;
@@ -3988,7 +3990,7 @@ ipmi_handle_oem_q (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_Q_SLED_CYCLE_PREPARE_STATUS:
       oem_q_sled_cycle_prepare_status (request, req_len, response, res_len);
-      break;     
+      break;
     default:
       res->cc = CC_INVALID_CMD;
       break;
@@ -4197,7 +4199,7 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
       if (req_len == 8) { // payload_id, netfn, cmd, IANA[3], data[0] (fru), data[1] (component)
         memcpy(res->data, req->data, SIZE_IANA_ID); //IANA ID
         res->cc = pal_get_fw_ver(req->payload_id, &req->data[3], &res->data[3], res_len);
-        *res_len += SIZE_IANA_ID;        
+        *res_len += SIZE_IANA_ID;
       } else {
         res->cc = CC_INVALID_LENGTH;
         *res_len = SIZE_IANA_ID;
@@ -4546,6 +4548,25 @@ ipmi_handle (unsigned char *request, unsigned char req_len,
   res->cmd = req->cmd;
   res->cc = 0xFF;   // Unspecified completion code
   printf("ipmi_handle netfn %x cmd %x len %d\n", netfn, req->cmd, req_len);
+
+  if (gLogEnable) {
+    char logbuf[256];
+    uint16_t nleft = sizeof(logbuf);
+    uint16_t nwrite = 0;
+    uint16_t i = 0;
+    syslog(LOG_INFO, "%lu ipmi_handle  netfn %x cmd %x len %d\n",
+          (unsigned long)time(NULL), netfn, req->cmd, req_len);
+    nwrite = snprintf(logbuf, nleft, " ipmi_handle recv data: ");
+    i += nwrite;
+    nleft -= nwrite;
+    for (int j = 0; j < req_len; ++j) {
+      nwrite = snprintf(logbuf + i, nleft, "%x ", (unsigned int)(request[j]));
+      i += nwrite;
+      nleft -= nwrite;
+    }
+    syslog(LOG_INFO, "%s", logbuf);
+  }
+
   *(unsigned short*)res_len = 0;
 
   switch (netfn)
@@ -4723,8 +4744,9 @@ wdt_timer (void *arg) {
   pthread_exit(NULL);
 }
 
+// optional  "-d" cmd line option to enable logging
 int
-main (void)
+main (int argc, char **argv)
 {
   int fru;
   pthread_t tid;
@@ -4732,6 +4754,16 @@ main (void)
 
   //daemon(1, 1);
   //openlog("ipmid", LOG_CONS, LOG_DAEMON);
+
+  if (argc > 2) {
+    syslog(LOG_ERR, "ipmid: argc > 2!");
+    exit(1);
+  } else {
+    if ((argc == 2) && (strncmp(argv[1], "-d", 2) == 0)) {
+      syslog(LOG_INFO, "ipmid: enable logging");
+      gLogEnable = 1;
+    }
+  }
 
   plat_fruid_init();
   plat_sensor_init();

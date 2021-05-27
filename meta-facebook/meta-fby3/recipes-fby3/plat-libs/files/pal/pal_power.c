@@ -254,45 +254,43 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
   int ret = 0;
   uint8_t svr_sts = 0;
   uint8_t pwr_sts = 0;
-  uint8_t pwr_cnt = 0;
-  uint8_t svr_cnt = 0;
 
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
     ret = fby3_common_is_fru_prsnt(i, &svr_sts);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "Failed to get the prsnt sts. fru%d", i);
+      syslog(LOG_WARNING, "%s(): Failed to get the prsnt sts. fru%d", __FUNCTION__, i);
       return PAL_ENOTSUP;
     }
 
     //it's prsnt
     if ( svr_sts != 0 ) {
-      svr_cnt++;
       //read slot/12V pwr
-      if ( expected_pwr == SERVER_12V_OFF ) {
-        ret = pal_get_server_12v_power(i, &pwr_sts);
-        if ( ret == PAL_EOK && pwr_sts == SERVER_12V_ON ) {
-          ret = bic_get_server_power_status(i, &pwr_sts);
-        }
-      } else if ( expected_pwr == SERVER_POWER_ON || \
-               expected_pwr == SERVER_POWER_OFF ) {
-        ret = pal_get_server_12v_power(i, &pwr_sts);
-        if (ret == PAL_EOK && pwr_sts == SERVER_12V_ON) {
-          ret = bic_get_server_power_status(i, &pwr_sts);
-        }
-      } else return PAL_ENOTSUP;
+      switch (expected_pwr) {
+        case SERVER_POWER_ON:
+        case SERVER_POWER_OFF:
+          ret = pal_get_server_12v_power(i, &pwr_sts);
+          if ( ret == PAL_EOK && pwr_sts == SERVER_12V_ON ) {
+            ret = bic_get_server_power_status(i, &pwr_sts);
+            if ( ret == PAL_EOK && pwr_sts == SERVER_POWER_ON ) {
+              return PAL_ENOTREADY;
+            }
+          }
 
-      if ( ret < 0 ) {
-        syslog(LOG_WARNING, "Failed to get the pwr sts. fru%d", i);
-        return PAL_ENOTSUP;
+          if ( ret < 0 ) {
+            if (expected_pwr == SERVER_POWER_ON) {
+              syslog(LOG_WARNING, "%s(SERVER_POWER_ON): Failed to get the pwr sts. fru%d", __FUNCTION__, i);
+            } else if (expected_pwr == SERVER_POWER_OFF) {
+              syslog(LOG_WARNING, "%s(SERVER_POWER_OFF): Failed to get the pwr sts. fru%d", __FUNCTION__, i);
+              return PAL_ENOTSUP;
+            }
+          }
+          break;
+
+        default:
+          return PAL_ENOTSUP;
       }
-
-      //check all slot pwrs
-      if ( (pwr_sts == SERVER_12V_OFF) || (pwr_sts == SERVER_POWER_OFF) ) pwr_cnt++;
     }
   }
-
-  //return if one of them is on/off
-  if ( pwr_cnt != svr_cnt ) return PAL_ENOTREADY;
 
   //change the power mode of NIC to expected_pwr
   int fd = -1;
@@ -391,8 +389,13 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if ( status == SERVER_POWER_ON ) return POWER_STATUS_ALREADY_OK;
       if ( bmc_location != NIC_BMC) {
         ret = pal_server_set_nic_power(SERVER_POWER_ON); //only check it on class 1
+        if (ret == PAL_ENOTSUP) {
+          syslog(LOG_WARNING,"%s(SERVER_POWER_ON): fru%d pal_server_set_nic_power fail", __FUNCTION__, fru);
+          return POWER_STATUS_ERR;
+        }
       } else ret = PAL_EOK;
-      return (ret == PAL_ENOTSUP)?POWER_STATUS_ERR:server_power_on(fru);
+
+      return server_power_on(fru);
       break;
 
     case SERVER_POWER_OFF:
@@ -429,15 +432,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
-
       if ( status == SERVER_12V_OFF ) return POWER_STATUS_ALREADY_OK;
       return server_power_12v_off(fru);
-#if 0
-      if ( server_power_12v_off(fru) == PAL_EOK ) {
-        ret = pal_server_set_nic_power(SERVER_12V_OFF);
-        return (ret == PAL_ENOTSUP)?POWER_STATUS_ERR:POWER_STATUS_OK;
-      } else return POWER_STATUS_ERR;
-#endif
       break;
 
     case SERVER_12V_CYCLE:

@@ -130,7 +130,7 @@ class FscdTestPwmFuji(FscdTest):
         self.brd_rev = pal_get_board_rev()
         if self.brd_rev is None:
             self.fail("Get board rev failed!")
-        elif self.brd_rev == "Fuji-DVT1":
+        elif self.brd_rev == "Fuji-DVT1" or self.brd_rev == "Fuji-PVT":
             config_file = "fsc-config.json"
             Logger.info(
                 "[FSCD Testing] test fscd on {} platform with config file {}".format(

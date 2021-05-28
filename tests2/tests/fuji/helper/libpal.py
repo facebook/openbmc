@@ -35,6 +35,7 @@ class BoardRevision:
     BOARD_FUJI_EVT2 = 0x41
     BOARD_FUJI_EVT3 = 0x42
     BOARD_FUJI_DVT1 = 0x43
+    BOARD_FUJI_PVT = 0x45
     BOARD_UNDEFINED = 0xFF
 
     board_rev = {
@@ -42,6 +43,7 @@ class BoardRevision:
         BOARD_FUJI_EVT2: "Fuji-EVT2",
         BOARD_FUJI_EVT3: "Fuji-EVT3",
         BOARD_FUJI_DVT1: "Fuji-DVT1",
+        BOARD_FUJI_PVT: "Fuji-PVT",
         BOARD_UNDEFINED: "Undefined",
     }
 

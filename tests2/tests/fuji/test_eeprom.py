@@ -31,7 +31,7 @@ class EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/smbutil"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-SMB"]
+        self.product_name = ["MINIPACK2_SMB"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["SMB"]
@@ -46,7 +46,7 @@ class BMCEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/beutil"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-BMC"]
+        self.product_name = ["MINIPACK2_BMC"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["BMC"]
@@ -76,7 +76,7 @@ class SCMEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/seutil"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-SCM"]
+        self.product_name = ["MINIPACK2_SCM"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["SCM"]
@@ -91,7 +91,7 @@ class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 1"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -106,7 +106,7 @@ class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 2"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -121,7 +121,7 @@ class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 3"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -136,7 +136,7 @@ class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 4"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -151,7 +151,7 @@ class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 5"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -166,7 +166,7 @@ class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 6"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -181,7 +181,7 @@ class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 7"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -196,7 +196,7 @@ class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-PIM16Q"]
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["PIM16Q"]
@@ -211,7 +211,7 @@ class FCMTEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil fcm-t"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FCM"]
+        self.product_name = ["MINIPACK2_FCM"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FCM"]
@@ -226,7 +226,7 @@ class FCMBEepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil fcm-b"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FCM"]
+        self.product_name = ["MINIPACK2_FCM"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FCM"]
@@ -241,7 +241,7 @@ class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 1"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -256,7 +256,7 @@ class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 2"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -271,7 +271,7 @@ class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 3"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -286,7 +286,7 @@ class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 4"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -301,7 +301,7 @@ class FAN5EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 5"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -316,7 +316,7 @@ class FAN6EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 6"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -331,7 +331,7 @@ class FAN7EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 7"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
@@ -346,7 +346,7 @@ class FAN8EepromTest(CommonEepromTest, unittest.TestCase):
         self.eeprom_cmd = ["/usr/local/bin/feutil 8"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK2-FAN"]
+        self.product_name = ["MINIPACK2-FAN", "WEDGE400-FAN"]
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]

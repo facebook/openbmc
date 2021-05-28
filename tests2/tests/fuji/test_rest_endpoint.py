@@ -509,7 +509,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.endpoint_firmware_info_all_attributes = [
             "BMC Version",
             "Fan Speed Controller Version",
-            "ROM Version",
             "TPM Version",
             "FCMCPLD B",
             "FCMCPLD T",

@@ -26,6 +26,7 @@ import rest_pimserial
 import rest_presence
 import rest_sensors
 import rest_seutil
+import rest_smbinfo
 import rest_system_led_info
 from aiohttp import web
 from rest_utils import dumps_bytestr
@@ -283,3 +284,7 @@ class boardApp_Handler:
     # Handler for sys/piminfo resource endpoint
     async def rest_piminfo_hdl(self, request):
         return web.json_response(rest_piminfo.get_piminfo())
+
+    # Handler for sys/smbinfo resource endpoint
+    async def rest_smbinfo_hdl(self, request):
+        return web.json_response(rest_smbinfo.get_smbinfo(), dumps=dumps_bytestr)

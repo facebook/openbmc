@@ -27,6 +27,7 @@ SRC_URI += " \
     file://rest_piminfo.py \
     file://rest_pimserial.py \
     file://rest_system_led_info.py \
+    file://rest_smbinfo.py \
 "
 
 binfiles1 += " \
@@ -39,4 +40,5 @@ binfiles1 += " \
     rest_piminfo.py \
     rest_pimserial.py \
     rest_system_led_info.py \
+    rest_smbinfo.py \
 "

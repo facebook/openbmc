@@ -68,4 +68,5 @@ board_routes = [
     "/api/sys/pimserial",
     "/api/sys/system_led_info",
     "/api/sys/piminfo",
+    "/api/sys/scdinfo",
 ]

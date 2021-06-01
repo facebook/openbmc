@@ -749,6 +749,44 @@ bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
   return ret;
 }
 
+int
+bic_spe_led_ctrl(uint8_t dev_id, uint8_t option, uint8_t* status) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00, 0x00, 0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+  
+  if (status == NULL) {
+    syslog(LOG_WARNING, "%s() status is missing", __func__);
+    return -1;
+  }
+  tbuf[3] = dev_id - DEV_ID0_2OU;
+  tbuf[4] = option;
+  while (retry < 3) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_AMBER_LED, tbuf, 5, rbuf, &rlen, REXP_BIC_INTF);
+    if (ret == 0) {
+      break;
+    }
+    retry++;
+  }
+  
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() fail at dev%u", __func__, dev_id);
+  }
+  if (option == GET_LED_STAT) {
+    if (rlen != 4) {
+      syslog(LOG_WARNING, "%s() failed to get LED status, rlen = %d", __func__, rlen);
+      return -1;
+    }
+    // byte 0~2: IANA ID
+    // byte 3: status
+    *status = rbuf[3];
+  }
+  
+  return ret;
+}
+
 // OEM - Get Post Code buffer
 // Netfn: 0x38, Cmd: 0x12
 int

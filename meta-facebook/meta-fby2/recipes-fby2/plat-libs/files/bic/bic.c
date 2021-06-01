@@ -2564,9 +2564,8 @@ bic_update_bios_firmware(uint8_t slot_id, int fd)
         num_blocks_written + num_blocks_skipped,
         num_blocks_written, num_blocks_skipped);
     fflush(stderr);
-    if (write_offset % 0x100000 == 0) {
-      _set_fw_update_ongoing(slot_id, 60);
-    }
+    _set_fw_update_ongoing(slot_id, 60);
+
     // Read a block of data from file.
     while (file_buf_num_bytes < BIOS_UPDATE_BLK_SIZE) {
       size_t num_to_read = BIOS_UPDATE_BLK_SIZE - file_buf_num_bytes;

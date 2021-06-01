@@ -1252,7 +1252,11 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     ret = sensors_read_fan(label, &value);
   } else if ( bmc_location == NIC_BMC ) {
     if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
-    else ret = bic_get_fan_speed(fan, &value);
+    else {
+      // check the rpm since it would be 0 when the fan is plugged out
+      // make it show NA
+      ret = (bic_get_fan_speed(fan, &value) < 0)?PAL_ENOTSUP:(((int)value > 0))?PAL_EOK:PAL_ENOTSUP;
+    }
   }
 
   if (ret == PAL_EOK) {

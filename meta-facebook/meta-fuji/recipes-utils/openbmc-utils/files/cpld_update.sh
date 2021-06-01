@@ -222,7 +222,7 @@ cpld_update_i2c_mode(){
 }
 
 cpld_update_hw_mode(){
-        if [ "$chip_ver" == "BOARD_FUJI_EVT1" ];then
+        if [ "$chip_ver" == "A3" ];then
                 cpldprog -p "${UPDATE_IMG}"
         else
                 echo "Only AST262x A3 chip can support HW Mode !!!"

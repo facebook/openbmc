@@ -69,41 +69,60 @@ def get_chassis_members(fru_name):
         print(error)
     return node(body)
 
-def get_chassis_power(fru_name, snr_name, snr_num):
+
+def get_chassis_power(power_list):
     body = {}
+    result = OrderedDict()
     period = 60
     display = ["thresholds"]
     history = ["history"]
+    power_control = []
     try:
-        power_history = sensor_util(fru_name, snr_name, snr_num, str(period), history)
-        power_limitin = sensor_util(fru_name, snr_name, snr_num, str(period), display)
-        power_limitin = float(power_limitin[str(snr_name)]['thresholds']['UCR'])
+        for power in power_list:
+            fru_name, snr_name, snr_num = power
+            memId = power_list.index(power)
+
+            power_history = sensor_util(
+                fru_name, snr_name, snr_num, str(period), history)
+            power_limitin = sensor_util(
+                fru_name, snr_name, snr_num, str(period), display)
+            power_limitin = float(power_limitin[snr_name]['thresholds']['UCR'])
+
+            power_metrix = OrderedDict([
+                ("IntervalInMin", int(period / 60)),
+                ("MinIntervalConsumedWatts", float(
+                    power_history[snr_name]['min'])),
+                ("MaxIntervalConsumedWatts", float(
+                    power_history[snr_name]['max'])),
+                ("AverageIntervalConsumedWatts", float(
+                    power_history[snr_name]['avg']))
+            ])
+
+            power_limit = OrderedDict([
+                ("LimitInWatts", int(power_limitin)),
+                ("LimitException", "LogEventOnly")
+            ])
+
+            result = OrderedDict([
+                ("@odata.id", f"/redfish/v1/Chassis/1/Power#/PowerControl/{memId}"),
+                ("MemberId", str(memId)),
+                ("Name", f"System Power Control {memId}"),
+                ("PowerLimit", power_limit),
+                ("PowerMetrix", power_metrix)
+            ])
+            power_control.append(result)
+
         body = {
             "@odata.context": "/redfish/v1/$metadata#Power.Power",
             "@odata.id": "/redfish/v1/Chassis/1/Power",
             "@odata.type": "#Power.v1_5_0.Power",
             "Id": "Power",
             "Name": "Power",
-            "PowerControl": [{
-                "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerControl/0",
-                "MemberId": "0",
-                "Name": "System Power Control",
-                "PhysicalContext": "Chassis",
-                "PowerLimit": {
-                    "LimitInWatts": int(power_limitin),
-                    "LimitException": "LogEventOnly"
-                },
-                "PowerMetrix": {
-                    "IntervalInMin": int(period/60),
-                    "MinIntervalConsumedWatts": float(power_history[str(snr_name)]['min']),
-                    "MaxIntervalConsumedWatts": float(power_history[str(snr_name)]['max']),
-                    "AverageIntervalConsumedWatts": float(power_history[str(snr_name)]['avg'])
-                }
-             }]
+            "PowerControl": power_control
         }
     except Exception as error:
         print(error)
-    return node(body)
+
 
 def get_chassis_thermal(fru_name):
     body = {}

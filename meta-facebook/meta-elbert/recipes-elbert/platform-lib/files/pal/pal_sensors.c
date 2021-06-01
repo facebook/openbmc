@@ -1524,27 +1524,27 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 
   switch(sensor_num) {
     case PIM_POS_3V3_U_VOUT:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TCA9548A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_UPPER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
       break;
     case PIM_POS_3V3_U_TEMP:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TCA9548A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_UPPER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, TEMP(1), value);
       break;
     case PIM_POS_3V3_U_CURR:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TCA9548A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_UPPER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
       break;
     case PIM_POS_3V3_L_VOUT:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TCA9548A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_LOWER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
       break;
     case PIM_POS_3V3_L_TEMP:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TCA9548A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_LOWER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, TEMP(1), value);
       break;
     case PIM_POS_3V3_L_CURR:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TCA9548A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_LOWER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
       break;
     case PIM_LM73_TEMP:

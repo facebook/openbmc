@@ -330,12 +330,14 @@ main(int argc, char **argv) {
   } else if (driverCommand->parsed()) {
     manu_flag = fan_mode_check(false);
     fscd_driver_check(manu_flag);
-  } else if ((fanOptList.length() > 0) && (app.got_subcommand("--auto-mode"))) {
+  } else if ((fanOptList.length() > 0) && (app.got_subcommand("auto-mode"))) {
     ret = pal_set_fan_ctrl(argv[2]);
     if (ret < 0) {
         cout << "Error while setting fan auto mode : " << argv[2] << endl;
         return -1;
     }
+  } else if ( argc == 1 ) {
+    cout << app.help() << endl;
   }
 
   return 0;

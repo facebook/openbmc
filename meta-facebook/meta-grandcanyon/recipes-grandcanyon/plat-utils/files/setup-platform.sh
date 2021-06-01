@@ -21,6 +21,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 # Get platform SKU
+sleep 1
 sh /usr/local/bin/check_pal_sku.sh > /dev/NULL
 pal_sku=$?
 

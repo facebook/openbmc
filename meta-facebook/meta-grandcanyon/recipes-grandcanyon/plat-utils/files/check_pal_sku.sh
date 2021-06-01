@@ -20,6 +20,9 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+UIC_LOCATION_A_STR="01 "
+UIC_LOCATION_B_STR="02 "
+
 get_sku()
 {
   get_uic_location
@@ -49,12 +52,26 @@ get_sku()
 
 get_uic_location()
 {
-  # * UIC_ID: 1=UIC_A; 2=UIC_B
-  uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
-  
-  return "$uic_id"
-}
+  RETRY=20
 
+  while [[ $RETRY -gt 0 ]]
+  do
+    # * UIC_ID: 1=UIC_A; 2=UIC_B
+
+    uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
+
+    if [[ "$uic_id" = "$UIC_LOCATION_A_STR" ]] || [[ "$uic_id" = "$UIC_LOCATION_B_STR" ]]; then
+      return $uic_id
+    fi
+
+    logger -s -p user.warn -t check_pal_sku "Retrying get uic location"
+    RETRY=$(($RETRY-1))
+    sleep 1
+  done
+  logger -s -p user.warn -t check_pal_sku "Get uic location - failed"
+
+  return 0
+}
 get_sku
 pal_sku=$?
 printf "Platform SKU: %s (" "$pal_sku"

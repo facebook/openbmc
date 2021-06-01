@@ -44,32 +44,26 @@ remove_pid_file()
     fi
 }
 
-check_flash_info()
-{
-    spi_no=$1
-    flashrom -p "linux_spi:dev=/dev/spidev$spi_no.0"
+SPI1_MTD_INDEX=7
+SPI1_DRIVER="1e630000.spi"
+ASPEED_SMC_PATH="/sys/bus/platform/drivers/aspeed-smc/"
+
+mtd_driver_unbind_spi1() {
+    [ -e ${ASPEED_SMC_PATH}${SPI1_DRIVER} ] && echo ${SPI1_DRIVER} > ${ASPEED_SMC_PATH}unbind
 }
 
-get_flash_first_type()
-{
-    ori_str=$(check_flash_info "$spi_no")
-    type=$(echo $ori_str | cut -d '"' -f 2)
-    if [ "$type" ];then
-        echo "$type"
-        return 0
-    else
-        echo "Get flash type error: [$ori_str]"
-        exit 1
-    fi
+mtd_driver_rebind_spi1() {
+    # Sometime kernel may complain "vmap allocation for size 268439552 failed: use vmalloc=<size> to increase size"
+    # until now the root cause is not clear, still need more investigation
+    mtd_driver_unbind_spi1
+    echo ${SPI1_DRIVER} > ${ASPEED_SMC_PATH}bind
 }
 
 read_spi1_dev(){
-    spi_no=3
     dev=$1
     file=$2
     echo "Reading ${dev} to $file..."
-    type=$(get_flash_first_type "$spi_no")
-    flashrom -p linux_spi:dev=/dev/spidev3.0 -r "$file" -c "$type"
+    flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX -r "$file"
 }
 
 read_spi2_dev(){
@@ -80,14 +74,12 @@ read_spi2_dev(){
 }
 
 write_spi1_dev(){
-    spi_no=3
     dev=$1
     file=$2
     echo "Writing $file to ${dev}..."
-    type=$(get_flash_first_type $spi_no)
 
     tmpfile="$file"_ext
-    flashsize=$(flashrom -p linux_spi:dev=/dev/spidev3.0 | grep -i kB | xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
+    flashsize=$(flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX | grep -i kB | xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
     targetsize=$((flashsize * 1024))
 
     case ${dev} in
@@ -109,9 +101,9 @@ write_spi1_dev(){
     echo $add_size
     dd if=/dev/zero bs="$add_size" count=1 | tr "\000" "\377" >> "$tmpfile"
 
-    echo flashrom -p linux_spi:dev=/dev/spidev3.0 -w "$tmpfile" -c "$type"
+    echo flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX -w "$tmpfile"
 
-    flashrom -p linux_spi:dev=/dev/spidev3.0 -w "$tmpfile" -c "$type"
+    flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX -w "$tmpfile"
 
     case ${dev} in
         "IOB_FPGA")
@@ -171,9 +163,7 @@ write_spi2_dev(){
 }
 
 erase_spi1_dev(){
-    spi_no=3
-    type=$(get_flash_first_type $spi_no)
-    flashrom -p linux_spi:dev=/dev/spidev3.0 -E -c "$type"
+    flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX -E
 }
 
 erase_spi2_dev(){
@@ -626,6 +616,10 @@ config_spi1_pin_and_path(){
             exit 1
         ;;
     esac
+    case $dev in
+        "TH4_PCIE_FLASH" | "IOB_FPGA" | "PCIE_SW" | "COME_BIOS")
+            mtd_driver_rebind_spi1
+    esac
     echo "Config SPI1 Done."
 }
 
@@ -669,6 +663,7 @@ operate_spi1_dev(){
             echo "Operation $op is not defined."
         ;;
     esac
+    mtd_driver_unbind_spi1
 }
 
 operate_spi2_dev(){

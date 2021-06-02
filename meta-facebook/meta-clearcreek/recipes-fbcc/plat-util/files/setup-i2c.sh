@@ -75,6 +75,16 @@ elif [ $carrier0 = "22" ] || [ $carrier0 = "44" ]; then
     i2cset -y -f 21 0x77 0x02 0x00
     echo "Carrier#0 Type is e1.s"
     break
+elif [ $carrier0 = "33" ]; then
+    $KVSET_CMD set "carrier_0" "e1.s_v2"
+    i2cset -y -f 21 0x77 0x02 0x00
+    echo "Carrier#0 Type is e1.s_v2"
+    break
+elif [ $carrier0 = "dd" ]; then
+    $KVSET_CMD set "carrier_0" "m.2_v2"
+    i2cset -y -f 21 0x77 0x02 0xFF
+    echo "Carrier#0 Type is m.2_v2"
+    break
 else
     retry=$(($retry+1))
 fi
@@ -95,6 +105,16 @@ elif [ $carrier1 = "22" ] || [ $carrier1 = "44" ]; then
     $KVSET_CMD set "carrier_1" "e1.s"
     i2cset -y -f 22 0x77 0x02 0x00
     echo "Carrier#1 Type is e1.s"
+    break
+elif [ $carrier0 = "33" ]; then
+    $KVSET_CMD set "carrier_0" "e1.s_v2"
+    i2cset -y -f 21 0x77 0x02 0x00
+    echo "Carrier#0 Type is e1.s_v2"
+    break
+elif [ $carrier0 = "dd" ]; then
+    $KVSET_CMD set "carrier_0" "m.2_v2"
+    i2cset -y -f 21 0x77 0x02 0xFF
+    echo "Carrier#0 Type is m.2_v2"
     break
 else
     retry=$(($retry+1))

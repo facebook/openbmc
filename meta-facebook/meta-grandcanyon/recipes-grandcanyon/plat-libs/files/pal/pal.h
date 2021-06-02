@@ -190,10 +190,10 @@ enum {
 };
 
 enum {
-  SEL_SNR_TYPE   = 0x10,
-  SEL_SNR_NUM    = 0x11,
-  SEL_EVENT_TYPE = 0x12,
-  SEL_EVENT_DATA = 0x13,
+  SEL_SNR_TYPE   = 10,
+  SEL_SNR_NUM    = 11,
+  SEL_EVENT_TYPE = 12,
+  SEL_EVENT_DATA = 13,
 };
 
 //System status event

@@ -72,25 +72,12 @@ const char pal_fru_list_sensor_history[] = "all, server, uic, nic, e1s_iocm";
 // export to power-util
 const char pal_server_list[] = "server";
 
-// export to fruid-util, only support iocm of FRU_E1S_IOCM
-const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, iocm, fan0, fan1, fan2, fan3";
-const char pal_fru_list_rw[] = "server, bmc, uic, nic, iocm";
+// export to fruid-util
+const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm, fan0, fan1, fan2, fan3";
+const char pal_fru_list_rw[] = "server, bmc, uic, nic, e1s_iocm";
 
-// fru name list for pal_get_fru_id(), the name of FRU_E1S_IOCM could be "iocm" or "e1s_iocm"
-const char *fru_str_list[][2] = {
-  { "all"   , "" },
-  { "server", "" },
-  { "bmc"   , "" },
-  { "uic"   , "" },
-  { "dpb"   , "" },
-  { "scc"   , "" },
-  { "nic"   , "" },
-  { "iocm"  , "e1s_iocm" },
-  { "fan0"  , "" },
-  { "fan1"  , "" },
-  { "fan2"  , "" },
-  { "fan3"  , "" },
-};
+// fru name list for pal_get_fru_id()
+const char *fru_str_list[] = {"all", "server", "bmc", "uic", "dpb", "scc", "nic", "e1s_iocm", "fan0", "fan1", "fan2", "fan3"};
 
 const char pal_pwm_list[] = "0";
 const char pal_tach_list[] = "0...7";
@@ -302,8 +289,7 @@ pal_get_fru_id(char *str, uint8_t *fru) {
   bool found_id = false;
 
   for (fru_id = FRU_ALL; fru_id <= MAX_NUM_FRUS; fru_id++) {
-    if ((strncmp(str, fru_str_list[fru_id][0], MAX_FRU_CMD_STR) == 0) ||
-        (strncmp(str, fru_str_list[fru_id][1], MAX_FRU_CMD_STR) == 0)) {
+    if (strncmp(str, fru_str_list[fru_id], MAX_FRU_CMD_STR) == 0) {
       *fru = fru_id;
       found_id = true;
       break;
@@ -512,7 +498,6 @@ pal_get_fan_name(uint8_t fan_id, char *name) {
 
 int
 pal_get_fru_name(uint8_t fru, char *name) {
-  uint8_t type = 0;
 
   switch(fru) {
     case FRU_SERVER:
@@ -534,12 +519,7 @@ pal_get_fru_name(uint8_t fru, char *name) {
       snprintf(name, MAX_FRU_CMD_STR, "nic");
       break;
     case FRU_E1S_IOCM:
-      fbgc_common_get_chassis_type(&type);
-      if (type == CHASSIS_TYPE7) {
-        snprintf(name, MAX_FRU_CMD_STR, "iocm");
-      } else {
-        snprintf(name, MAX_FRU_CMD_STR, "e1s");
-      }
+      snprintf(name, MAX_FRU_CMD_STR, "e1s_iocm");
       break;
    case FRU_FAN0:
       snprintf(name, MAX_FRU_CMD_STR, "fan0");
@@ -2570,7 +2550,7 @@ pal_log_clear(char *fru) {
       syslog(LOG_ERR, "%s(): failed to clear the nic seneor health value", __func__);
     }
 
-  } else if ((strcmp(fru, "iocm") == 0) || (strcmp(fru, "e1s_iocm") == 0)) {
+  } else if (strcmp(fru, "e1s_iocm") == 0) {
     ret = pal_set_key_value("e1s_iocm_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear the e1s/ iocm seneor health value", __func__);

@@ -9,8 +9,7 @@ class PAXComponent : public GPIOSwitchedSPIMTDComponent {
   uint8_t _paxid;
   public:
     PAXComponent(string fru, string comp, uint8_t paxid, std::string shadow)
-      : GPIOSwitchedSPIMTDComponent(fru, comp, "switch0", "spi1.0", shadow, true, false), _paxid(paxid)
-        { _retry = 2; }
+      : GPIOSwitchedSPIMTDComponent(fru, comp, "switch0", "spi4.0", shadow, true, false), _paxid(paxid) {}
     int print_version() override;
     int update(string image) override;
 };
@@ -49,10 +48,29 @@ int PAXComponent::print_version()
 int PAXComponent::update(string image)
 {
   int ret;
+  int i, max_retry = 3;
+  bool use_gpio = false;
+
   string comp = this->component();
 
   if (comp.find("flash") != string::npos) {
-    ret = GPIOSwitchedSPIMTDComponent::update(image);
+    for (i = 1; i <= max_retry; i++) {
+      if (i == max_retry) {
+        ret = system("modprobe -r spi_aspeed > /dev/null");
+        ret |= system("modprobe -r spi_gpio > /dev/null");
+        ret |= system("modprobe spi_gpio > /dev/null");
+	if (ret != 0) {
+          syslog(LOG_WARNING, "Failed to switch SPI drivers");
+	  goto bail;
+	}
+
+        spidev = "spi3.0";
+        use_gpio = true;
+      }
+      ret = GPIOSwitchedSPIMTDComponent::update(image);
+      if (ret == 0)
+	break;
+    }
   } else {
 
     if (comp.find("bl2") != string::npos)
@@ -74,6 +92,14 @@ int PAXComponent::update(string image)
       syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
   }
 
+bail:
+  if (use_gpio) {
+    ret = system("modprobe -r spi_gpio > /dev/null");
+    ret |= system("modprobe spi_aspeed > /dev/null");
+    ret |= system("modprobe spi_gpio > /dev/null");
+    if (ret != 0)
+      syslog(LOG_WARNING, "Failed to reload SPI drivers");
+  }
   return ret;
 }
 

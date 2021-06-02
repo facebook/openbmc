@@ -33,32 +33,20 @@ int SPIMTDComponent::update(std::string image)
 {
   string cmd;
   std::ofstream ofs;
-  int rc = FW_STATUS_FAILURE;
-  int i;
+  int rc;
 
   ofs.open(spipath + "/bind");
   if (!ofs.is_open()) {
     return -1;
   }
-
-  for (i = 0; i < _retry; i++) {
-    ofs << spidev;
-    if (!ofs.bad())
-      break;
-  }
+  ofs << spidev;
   if (ofs.bad()) {
     ofs.close();
     sys().error << spidev << " Bind failed" << std::endl;
     return -1;
   }
   ofs.close();
-
-  for (i = 0; i < _retry; i++) {
-    rc = MTDComponent::update(image);
-    if (rc == FW_STATUS_SUCCESS)
-      break;
-  }
-
+  rc = MTDComponent::update(image);
   ofs.open(spipath + "/unbind");
   if (!ofs.is_open()) {
     sys().error << "ERROR: Cannot unbind " << spidev << " rc=" << rc << std::endl;

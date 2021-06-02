@@ -526,6 +526,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_12V_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
+      if (power_off_pre_actions() < 0 ) {
+        return POWER_STATUS_ERR;
+      }
       ret = server_power_12v_off();
       if (ret == 0) {
         power_off_post_actions();
@@ -536,6 +539,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_12V_OFF) {
         return server_power_12v_on();
       } else {
+        if (power_off_pre_actions() < 0 ) {
+          return POWER_STATUS_ERR;
+        }
         if (server_power_12v_off() < 0) {
           return POWER_STATUS_ERR;
         }

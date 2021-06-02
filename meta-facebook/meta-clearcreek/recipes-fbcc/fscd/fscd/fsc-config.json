@@ -1,5 +1,5 @@
 {
-  "version": "fbcc-pvt-r02",
+  "version": "fbcc-pvt-r04",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 3000,
@@ -19,19 +19,18 @@
       "type": "linear",
       "negative_hysteresis":1,
       "data": [
-        [15, 16],
-        [18, 19],
-        [21, 22],
-        [24, 25],
-        [27, 27],
-        [29, 29],
-        [31, 30],
-        [34, 33],
-        [35, 33],
-        [37, 35],
-        [39, 39],
-        [40, 41],
-        [45, 46],
+        [15, 21],
+        [18, 24],
+        [21, 27],
+        [24, 30],
+        [27, 32],
+        [29, 34],
+        [31, 35],
+        [34, 38],
+        [37, 40],
+        [39, 44],
+        [40, 46],
+        [45, 51],
         [50, 70]
       ]
     },
@@ -42,7 +41,7 @@
       "type": "linear",
       "negative_hysteresis":2,
       "data": [
-        [82, 14]
+        [76, 30]
       ]
     },
     "pid_mezz": {
@@ -50,9 +49,9 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 82,
-      "negative_hysteresis": 2,
-      "positive_hysteresis": 1,
+      "setpoint": 80,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 0,
       "kp": -3,
       "ki": -0.015,
       "kd": 0
@@ -72,10 +71,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 64,
+      "setpoint": 60,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
-      "kp": -1.25,
+      "kp": -3.00,
       "ki": -0.035,
       "kd": 0
     },
@@ -94,10 +93,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 64,
+      "setpoint": 60,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
-      "kp": -1.25,
+      "kp": -3.00,
       "ki": -0.035,
       "kd": 0
     },
@@ -119,7 +118,7 @@
       "setpoint": 80,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
-      "kp": -1.25,
+      "kp": -3.00,
       "ki": -0.035,
       "kd": 0
     }

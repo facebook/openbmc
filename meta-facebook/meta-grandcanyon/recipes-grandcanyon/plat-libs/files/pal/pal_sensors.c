@@ -62,77 +62,77 @@ PAL_SENSOR_MAP uic_sensor_map[] = {
 
 PAL_SENSOR_MAP dpb_sensor_map[] = {
   [HDD_SMART_TEMP_00] =
-  {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_01] =
-  {"HDD_SMART_TEMP_01", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_01", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_02] =
-  {"HDD_SMART_TEMP_02", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_02", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_03] =
-  {"HDD_SMART_TEMP_03", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_03", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_04] =
-  {"HDD_SMART_TEMP_04", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_04", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_05] =
-  {"HDD_SMART_TEMP_05", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_05", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_06] =
-  {"HDD_SMART_TEMP_06", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_06", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_07] =
-  {"HDD_SMART_TEMP_07", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_07", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_08] =
-  {"HDD_SMART_TEMP_08", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_08", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_09] =
-  {"HDD_SMART_TEMP_09", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_09", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_10] =
-  {"HDD_SMART_TEMP_10", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_10", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_11] =
-  {"HDD_SMART_TEMP_11", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_11", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_12] =
-  {"HDD_SMART_TEMP_12", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_12", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_13] =
-  {"HDD_SMART_TEMP_13", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_13", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_14] =
-  {"HDD_SMART_TEMP_14", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_14", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_15] =
-  {"HDD_SMART_TEMP_15", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_15", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_16] =
-  {"HDD_SMART_TEMP_16", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_16", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_17] =
-  {"HDD_SMART_TEMP_17", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_17", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_18] =
-  {"HDD_SMART_TEMP_18", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_18", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_19] =
-  {"HDD_SMART_TEMP_19", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_19", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_20] =
-  {"HDD_SMART_TEMP_20", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_20", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_21] =
-  {"HDD_SMART_TEMP_21", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_21", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_22] =
-  {"HDD_SMART_TEMP_22", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_22", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_23] =
-  {"HDD_SMART_TEMP_23", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_23", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_24] =
-  {"HDD_SMART_TEMP_24", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_24", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_25] =
-  {"HDD_SMART_TEMP_25", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_25", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_26] =
-  {"HDD_SMART_TEMP_26", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_26", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_27] =
-  {"HDD_SMART_TEMP_27", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_27", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_28] =
-  {"HDD_SMART_TEMP_28", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_28", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_29] =
-  {"HDD_SMART_TEMP_29", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_29", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_30] =
-  {"HDD_SMART_TEMP_30", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_30", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_31] =
-  {"HDD_SMART_TEMP_31", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_31", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_32] =
-  {"HDD_SMART_TEMP_32", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_32", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_33] =
-  {"HDD_SMART_TEMP_33", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_33", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_34] =
-  {"HDD_SMART_TEMP_34", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_34", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_35] =
-  {"HDD_SMART_TEMP_35", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_35", EXPANDER, NULL, false, {65, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_P5V_SENSE_0] =
   {"HDD_P5V_SENSE_0", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
   [HDD_P12V_SENSE_0] =
@@ -333,9 +333,9 @@ PAL_SENSOR_MAP scc_sensor_map[] = {
   [SCC_IOC_TEMP] =
   {"SCC_IOC_TEMP", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [SCC_TEMP_1] =
-  {"SCC_TEMP_1", EXPANDER, NULL, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"SCC_TEMP_1", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [SCC_TEMP_2] =
-  {"SCC_TEMP_2", EXPANDER, NULL, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"SCC_TEMP_2", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [SCC_P3V3_E_SENSE] =
   {"SCC_P3V3_E_SENSE", EXPANDER, NULL, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
   [SCC_P1V8_E_SENSE] =

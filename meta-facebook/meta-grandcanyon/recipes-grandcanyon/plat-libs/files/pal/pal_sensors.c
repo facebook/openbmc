@@ -331,7 +331,7 @@ PAL_SENSOR_MAP scc_sensor_map[] = {
   [SCC_EXP_TEMP] =
   {"SCC_EXP_TEMP", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [SCC_IOC_TEMP] =
-  {"SCC_IOC_TEMP", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"SCC_IOC_TEMP", EXPANDER, read_ioc_temp, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [SCC_TEMP_1] =
   {"SCC_TEMP_1", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [SCC_TEMP_2] =
@@ -386,9 +386,9 @@ PAL_SENSOR_MAP iocm_sensor_map[] = {
   [IOCM_CUR] =
   {"IOCM_CUR", ADC128_IN0, read_adc128, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [IOCM_TEMP] =
-  {"IOCM_TEMP", T5_E1S0_T7_IOC_AVENGER, read_ioc_temp, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"IOCM_TEMP", TEMP_IOCM, read_temp, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [IOCM_IOC_TEMP] =
-  {"IOCM_IOC_TEMP", TEMP_IOCM, read_temp, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"IOCM_IOC_TEMP", TEMP_IOCM, read_ioc_temp, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
 const uint8_t server_sensor_list[] = {
@@ -646,7 +646,7 @@ const char *adc_label[] = {
 
 PAL_DEV_INFO temp_dev_list[] = {
   {"tmp75-i2c-4-4a",  "UIC_INLET_TEMP"},
-  {"tmp75-i2c-13-4a", "IOCM_IOC_TEMP"},
+  {"tmp75-i2c-13-4a", "IOCM_TEMP"},
 };
 
 PAL_DEV_INFO adc128_dev_list[] = {
@@ -1066,8 +1066,51 @@ read_ads1015(uint8_t id, float *value) {
 
 static int
 read_ioc_temp(uint8_t id, float *value) {
-  //Todo: wait IOC FW
-  return ERR_SENSOR_NA;
+  char key[MAX_KEY_LEN] = {0};
+  char cache_value[MAX_VALUE_LEN] = {0};
+  char fru_name[MAX_FRU_CMD_STR] = {0};
+  int ret = 0;
+
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s(), Failed to read ioc temperature due to NULL parameter.\n", __func__);
+    return ERR_SENSOR_NA;
+  }
+
+  memset(key, 0, sizeof(key));
+  memset(cache_value, 0, sizeof(cache_value));
+
+  if (id == EXPANDER) {
+    if (pal_get_fru_name(FRU_SCC, fru_name) < 0) {
+      syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, FRU_SCC);
+      return ERR_SENSOR_NA;
+    }
+    snprintf(key, sizeof(key), "%s_ioc_sensor%d", fru_name, SCC_IOC_TEMP);
+  } else if (id == TEMP_IOCM) {
+    if (pal_get_fru_name(FRU_E1S_IOCM, fru_name) < 0) {
+      syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, FRU_E1S_IOCM);
+      return ERR_SENSOR_NA;
+    }
+    if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
+      return ERR_SENSOR_NA;
+    }
+    snprintf(key, sizeof(key), "%s_ioc_sensor%d", fru_name, IOCM_IOC_TEMP);
+  } else {
+    return ERR_SENSOR_NA;
+  }
+
+  ret = kv_get(key, cache_value, NULL, 0);
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s(), Failed to get key: %s, ret: %d\n", __func__, key, ret);
+    return ret;
+  }
+
+  if (strcmp(cache_value, "NA") == 0) {
+    return ERR_SENSOR_NA;
+  }
+
+  *value = atof(cache_value);
+
+  return ret;
 }
 
 static int
@@ -1509,10 +1552,15 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     break;
   case FRU_DPB:
   case FRU_SCC:
-    if (0 != (ret = expander_sensor_check(fru, sensor_num))) {
-       break;
+    if (sensor_num == SCC_IOC_TEMP) {
+      id = scc_sensor_map[sensor_num].id;
+      ret = scc_sensor_map[sensor_num].read_sensor(id, (float*) value);
+    } else {
+      if (0 != (ret = expander_sensor_check(fru, sensor_num))) {
+        break;
+      }
+      ret = expander_sensor_read_cache(fru, sensor_num, key, value);
     }
-    ret = expander_sensor_read_cache(fru, sensor_num, key, value);
     break;
   case FRU_NIC:
     id = nic_sensor_map[sensor_num].id;

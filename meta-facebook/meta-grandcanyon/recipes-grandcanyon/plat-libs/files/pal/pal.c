@@ -426,6 +426,7 @@ int
 pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
   int ret = 0;
+  uint8_t chassis_type = 0;
   switch (fru) {
     case FRU_SERVER:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL | FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_SERVER;
@@ -446,7 +447,11 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
       break;
     case FRU_E1S_IOCM:
-      *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+      *caps = FRU_CAPABILITY_SENSOR_ALL;
+      fbgc_common_get_chassis_type(&chassis_type);
+      if (chassis_type == CHASSIS_TYPE7) {
+        *caps |= FRU_CAPABILITY_FRUID_ALL;
+      }
       break;
     case FRU_FAN0:
     case FRU_FAN1:
@@ -3243,3 +3248,13 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
   return true;
 }
 
+int
+pal_check_fru_is_valid(const char* fruid_path) {
+
+  if (fruid_path == NULL) {
+    syslog(LOG_ERR, "%s: Failed to check FRU header is valid or not because NULL parameter.", __func__);
+    return -1;
+  }
+
+  return fbgc_check_fru_is_valid(fruid_path);
+}

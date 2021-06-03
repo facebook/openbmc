@@ -81,6 +81,10 @@ exp_read_fruid_wrapper(uint8_t fru) {
   }
 
   rename(fruid_temp_path, fruid_path);
+
+  if(pal_check_fru_is_valid(fruid_path) < 0) {
+    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, fruid_path);
+  }
 }
 
 void

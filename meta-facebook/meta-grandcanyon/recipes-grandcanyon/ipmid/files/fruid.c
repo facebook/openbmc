@@ -77,6 +77,7 @@ int
 plat_fruid_init() {
   char path[128] = {0};
   int path_len = sizeof(path);
+  uint8_t chassis_type = 0;
 
   //create the fru binary in /tmp/
   //fruid_bmc.bin
@@ -84,11 +85,17 @@ plat_fruid_init() {
   if (pal_copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
   }
+  if (pal_check_fru_is_valid(FRU_BMC_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_BMC_BIN);
+  }
 
   //fruid_uic.bin
   snprintf(path, path_len, EEPROM_PATH, I2C_UIC_BUS, UIC_FRU_ADDR);
   if (pal_copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_UIC_BIN);
+  }
+  if (pal_check_fru_is_valid(FRU_UIC_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_UIC_BIN);
   }
 
   //fruid_nic.bin
@@ -96,11 +103,23 @@ plat_fruid_init() {
   if (pal_copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
   }
+  if (pal_check_fru_is_valid(FRU_NIC_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_NIC_BIN);
+  }
 
   //fruid_iocm.bin
-  snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
-  if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type", __func__);
+  }
+
+  if (chassis_type == CHASSIS_TYPE7) {
+    snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+    if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+    }
+    if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
+      syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
+    }
   }
 
   return 0;

@@ -64,6 +64,10 @@ fruid_cache_init(void) {
 
   rename(fruid_temp_path, fruid_path);
 
+  if ((ret = pal_check_fru_is_valid(fruid_path)) < 0) {
+    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, fruid_path);
+  }
+
   return ret;
 }
 

@@ -26,7 +26,10 @@ from ctypes import *
 from time import sleep
 
 from node_api import get_node_api
+from node_enclosure import *
 from node_bios import *
+from node_health import get_node_health
+from node_identify import get_node_identify
 from node_bmc import get_node_bmc
 from node_config import get_node_config
 from node_fans import get_node_fans
@@ -35,6 +38,10 @@ from node_logs import get_node_logs
 from node_mezz import get_node_mezz
 from node_sensors import get_node_sensors
 from node_server import get_node_device, get_node_server
+from node_uic import get_node_uic
+from node_dpb import get_node_dpb
+from node_scc import get_node_scc
+from node_e1s_iocm import get_node_e1s_iocm
 from rest_pal_legacy import *
 from tree import tree
 
@@ -81,6 +88,33 @@ def populate_server_node(r_api, num):
 
     return r_server
 
+def populate_e1s_iocm_node(r_api):
+    FRU_E1S_IOCM = 7
+    is_chassis_type7 = False
+
+    fru_name = pal_get_fru_name(FRU_E1S_IOCM)
+
+    if fru_name in ["e1s", "iocm"]:
+        if fru_name == "iocm":
+            is_chassis_type7 = True
+    else:
+        return None
+
+    r_e1s_iocm = tree("e1s_iocm", data=get_node_e1s_iocm())
+    r_api.addChild(r_e1s_iocm)
+
+    # Add /api/e1s_iocm/fruid end point
+    if is_chassis_type7 == True:
+        r_temp = tree("fruid", data=get_node_fruid("e1s_iocm"))
+        r_e1s_iocm.addChild(r_temp)
+    # /api/e1s_iocm/sensors end point
+    r_temp = tree("sensors", data=get_node_sensors("e1s_iocm"))
+    r_e1s_iocm.addChild(r_temp)
+    # /api/e1s_iocm/logs end point
+    r_temp = tree("logs", data=get_node_logs("e1s_iocm"))
+    r_e1s_iocm.addChild(r_temp)
+
+    return r_e1s_iocm
 
 # Initialize Platform specific Resource Tree
 def setup_board_routes(app: Application, write_enabled: bool):
@@ -106,6 +140,57 @@ def setup_board_routes(app: Application, write_enabled: bool):
     # /api/nic/logs end point
     r_temp = tree("logs", data=get_node_logs("nic"))
     r_nic.addChild(r_temp)
+
+    # Add /api/uic to represent User Interface Card
+    r_uic = tree("uic", data=get_node_uic())
+    r_api.addChild(r_uic)
+
+    # Add /api/uic/fruid end point
+    r_fruid = tree("fruid", data=get_node_fruid("uic"))
+    # /api/uic/sensors end point
+    r_sensors = tree("sensors", data=get_node_sensors("uic"))
+    # /api/uic/logs end point
+    r_logs = tree("logs", data=get_node_logs("uic"))
+    # /api/uic/bmc end point
+    r_bmc = tree("bmc", data=get_node_bmc())
+    # /api/uic/health end point
+    r_health = tree("health", data=get_node_health())
+    # /api/uic/identify end point
+    r_identify = tree("identify", data=get_node_identify("uic"))
+    r_uic.addChildren([r_fruid, r_sensors, r_logs, r_bmc, r_health, r_identify])
+
+    # Add /api/dpb to represent Drive Plan Board
+    r_dpb = tree("dpb", data=get_node_dpb())
+    r_api.addChild(r_dpb)
+
+    # Add /api/dpb/fruid end point
+    r_fruid = tree("fruid", data=get_node_fruid("dpb"))
+    # /api/dpb/sensors end point
+    r_sensors = tree("sensors", data=get_node_sensors("dpb"))
+    # /api/dpb/logs end point
+    r_logs = tree("logs", data=get_node_logs("dpb"))
+    # /api/dpb/fans end point
+    r_fans = tree("fans", data=get_node_fans())
+    # /api/dpb/error end point
+    r_error = tree("error", data=get_node_enclosure_error())
+    # /api/dpb/hdd-status end point
+    r_hdd_status = tree("hdd-status", data=get_node_enclosure_hdd_status())
+    r_dpb.addChildren([r_fruid, r_sensors, r_logs, r_fans, r_error, r_hdd_status])
+
+    # Add /api/scc to represent Storage Controller Card
+    r_scc = tree("scc", data=get_node_scc())
+    r_api.addChild(r_scc)
+
+    # Add /api/scc/fruid end point
+    r_fruid = tree("fruid", data=get_node_fruid("scc"))
+    # /api/scc/sensors end point
+    r_sensors = tree("sensors", data=get_node_sensors("scc"))
+    # /api/scc/logs end point
+    r_logs = tree("logs", data=get_node_logs("scc"))
+    r_scc.addChildren([r_fruid, r_sensors, r_logs])
+
+    # Add /api/e1s_iocm to represent E1.S or IOC Module
+    r_e1s_iocm = populate_e1s_iocm_node(r_api)
 
     r_api.setup(app, write_enabled)
 

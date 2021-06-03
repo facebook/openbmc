@@ -58,7 +58,27 @@ class healthNode(node):
                 result = "Good"
             else:
                 result = "Bad"
+        elif name == "Grand Canyon":
+            server_hlth   = kv_get("server_sensor_health", FPERSIST)
+            uic_hlth      = kv_get("uic_sensor_health", FPERSIST)
+            dpb_hlth      = kv_get("dpb_sensor_health", FPERSIST)
+            scc_hlth      = kv_get("scc_sensor_health", FPERSIST)
+            nic_hlth      = kv_get("nic_sensor_health", FPERSIST)
+            e1s_iocm_hlth = kv_get("e1s_iocm_sensor_health", FPERSIST)
+            bmc_hlth      = kv_get("bmc_health", FPERSIST)
 
+            if (
+                (server_hlth == "1")
+                and (uic_hlth == "1")
+                and (dpb_hlth == "1")
+                and (scc_hlth == "1")
+                and (nic_hlth == "1")
+                and (e1s_iocm_hlth == "1")
+                and (bmc_hlth == "1")
+            ):
+                result = "Good"
+            else:
+                result = "Bad"
         info = {"Status of enclosure health LED": result}
 
         return info

@@ -6,7 +6,10 @@ from kv import FPERSIST, kv_get
 from node import node
 from rest_pal_legacy import *
 
-
+identify_name = {
+    "FBTTN"        : "identify_slot1",
+    "Grand Canyon" : "system_identify_server"
+}
 
 class identifyNode(node):
     def __init__(self, name, info=None, actions=None):
@@ -22,7 +25,13 @@ class identifyNode(node):
             self.actions = actions
 
     def getInformation(self, param={}):
-        identify_status = kv_get("identify_slot1", FPERSIST)
+        # Get Platform Name
+        plat_name = pal_get_platform_name()
+
+        if plat_name in identify_name:
+            identify_status = kv_get(identify_name[plat_name], FPERSIST)
+        else:
+            identify_status = kv_get("identify_slot1", FPERSIST)
         info = {"Status of identify LED": identify_status}
 
         return info

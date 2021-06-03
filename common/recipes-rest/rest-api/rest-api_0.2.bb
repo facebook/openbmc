@@ -71,6 +71,8 @@ SRC_URI = "file://rest.py \
            file://node_fcb.py \
            file://node_identify.py \
            file://node_pdpb.py \
+           file://node_e1s_iocm.py \
+           file://node_uic.py \
            file://setup-rest-api.sh \
            file://setup_plat_routes.py \
            file://run_rest \

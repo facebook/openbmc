@@ -43,13 +43,29 @@
 
 static void
 e1s_iocm_remove_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gpio_power_good_pin) {
+  char cmd[MAX_PATH_LEN] = {0};
+  uint8_t chassis_type = 0;
 
   if ((present_status == NULL) || (gpio_power_good_pin == NULL)) {
     syslog(LOG_ERR, "%s() Failed to disable E1.S %d/IOCM I2C because the parameter is NULL\n", __func__, e1s_iocm_slot_id);
     return;
   }
 
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type.\n", __func__);
+    return;
+  }
+
   if (present_status[e1s_iocm_slot_id] == FRU_ABSENT) {
+    if ((chassis_type == CHASSIS_TYPE7) && (e1s_iocm_slot_id == T5_E1S0_T7_IOC_AVENGER)) {
+      memset(cmd, 0, sizeof(cmd));
+      snprintf(cmd, sizeof(cmd), "sv stop iocd_%d > /dev/null 2>&1", I2C_T5E1S0_T7IOC_BUS);
+      if (system(cmd) != 0) {
+        syslog(LOG_WARNING, "%s() Fail to stop IOC Daemon:%d\n", __func__, I2C_T5E1S0_T7IOC_BUS);
+        return;
+      }
+    }
+
     if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(gpio_power_good_pin[e1s_iocm_slot_id]), GPIO_VALUE_LOW) < 0) {
       syslog(LOG_ERR, "%s() Failed to disable E1.S %d/IOCM I2C\n", __func__, e1s_iocm_slot_id);
       return;
@@ -59,7 +75,8 @@ e1s_iocm_remove_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gp
 
 static void
 e1s_iocm_insert_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gpio_power_good_pin) {
-
+  char cmd[MAX_PATH_LEN] = {0};
+  uint8_t chassis_type = 0;
   uint8_t server_power_status = SERVER_POWER_ON;
 
   if ((present_status == NULL) || (gpio_power_good_pin == NULL)) {
@@ -72,10 +89,24 @@ e1s_iocm_insert_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gp
     return;
   }
 
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type.\n", __func__);
+    return;
+  }
+
   if ((present_status[e1s_iocm_slot_id] == FRU_PRESENT) && (server_power_status == SERVER_POWER_ON)) {
     if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(gpio_power_good_pin[e1s_iocm_slot_id]), GPIO_VALUE_HIGH) < 0) {
       syslog(LOG_ERR, "%s() Failed to enable E1.S %d/IOCM I2C\n", __func__, e1s_iocm_slot_id);
       return;
+    }
+
+    if ((chassis_type == CHASSIS_TYPE7) && (e1s_iocm_slot_id == T5_E1S0_T7_IOC_AVENGER)) {
+      memset(cmd, 0, sizeof(cmd));
+      snprintf(cmd, sizeof(cmd), "sv start iocd_%d > /dev/null 2>&1", I2C_T5E1S0_T7IOC_BUS);
+      if (system(cmd) != 0) {
+        syslog(LOG_WARNING, "%s() Fail to start IOC Daemon:%d\n", __func__, I2C_T5E1S0_T7IOC_BUS);
+        return;
+      }
     }
   }
 }
@@ -85,6 +116,7 @@ fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
   int ret = 0;
   uint8_t chassis_type = 0;
   uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
+  char cmd[MAX_FILE_PATH] = {0};
 
   if (fru_id == FRU_SERVER) {
     // AC off server
@@ -96,6 +128,13 @@ fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
     pal_set_error_code(ERR_CODE_SERVER_MISSING, ERR_CODE_ENABLE);
     
   } else if (fru_id == FRU_SCC) {
+    // Stop SCC IOCD
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, sizeof(cmd), "sv stop iocd_%d > /dev/null 2>&1", I2C_T5IOC_BUS);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() Fail to stop IOC Daemon:%d\n", __func__, I2C_T5IOC_BUS);
+      return;
+    }
     // AC off SCC
     ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_STBY_PWR_EN), GPIO_VALUE_LOW);
     if (ret < 0) {
@@ -268,8 +307,7 @@ fru_missing_monitor() {
             if (fru_present_status[fru_id] == FRU_PRESENT) {
               syslog(LOG_CRIT, "ASSERT: iocm missing\n");
               fru_present_status[fru_id] = FRU_ABSENT;
-              fru_remove_event(fru_id, e1s_iocm_present_status);
-              
+
               if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
                 e1s_iocm_present_status[T5_E1S0_T7_IOC_AVENGER] = FRU_ABSENT;
               }
@@ -277,6 +315,8 @@ fru_missing_monitor() {
               if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == false) {
                 e1s_iocm_present_status[T5_E1S1_T7_IOCM_VOLT] = FRU_ABSENT;
               }
+
+              fru_remove_event(fru_id, e1s_iocm_present_status);
             }
           }
         

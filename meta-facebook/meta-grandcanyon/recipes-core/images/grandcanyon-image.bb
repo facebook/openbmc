@@ -57,4 +57,5 @@ IMAGE_INSTALL += " \
   asd \
   asd-test \
   bic-util \
+  iocd \
   "

@@ -240,6 +240,31 @@ set_nic_power_mode(nic_power_control_mode nic_mode) {
 
 static int
 power_off_pre_actions() {
+
+  uint8_t chassis_type = 0;
+  char cmd[MAX_PATH_LEN] = {0};
+
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type.\n", __func__);
+    return -1;
+  }
+
+  memset(cmd, 0, sizeof(cmd));
+  snprintf(cmd, sizeof(cmd), "sv stop iocd_%d > /dev/null 2>&1", I2C_T5IOC_BUS);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "%s() Fail to stop IOC Daemon:%d\n", __func__, I2C_T5IOC_BUS);
+    return -1;
+  }
+
+  if (chassis_type == CHASSIS_TYPE7) {
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, sizeof(cmd), "sv stop iocd_%d > /dev/null 2>&1", I2C_T5E1S0_T7IOC_BUS);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() Fail to stop IOC Daemon:%d\n", __func__, I2C_T5E1S0_T7IOC_BUS);
+      return -1;
+    }
+  }
+
   if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW) < 0) {
     syslog(LOG_ERR, "%s() Failed to disable E1S0/IOCM I2C\n", __func__);
     return -1;
@@ -279,8 +304,24 @@ power_on_pre_actions() {
 static int
 power_on_post_actions() {
   char path[MAX_PATH_LEN] = {0};
+  char cmd[MAX_PATH_LEN] = {0};
   int ret = 0;
-  uint8_t chassis_type = 0;
+  uint8_t chassis_type = 0, scc_prsnt_st = 0;
+
+  if (pal_is_fru_prsnt(FRU_SCC, &scc_prsnt_st) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to start SCC IOC daemon because failed to get SCC present status.", __func__);
+    return -1;
+  }
+
+  if (scc_prsnt_st == FRU_PRESENT) {
+    // Start SCC IOCD
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, sizeof(cmd), "sv start iocd_%d > /dev/null 2>&1", I2C_T5IOC_BUS);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() Fail to start IOC Daemon:%d\n", __func__, I2C_T5IOC_BUS);
+      return -1;
+    }
+  }
 
   if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == true) {
     if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_HIGH) < 0) {
@@ -302,6 +343,14 @@ power_on_post_actions() {
   }
 
   if (chassis_type == CHASSIS_TYPE7) {
+    // Start IOCM IOCD
+    memset(cmd, 0, sizeof(cmd));
+    snprintf(cmd, sizeof(cmd), "sv start iocd_%d > /dev/null 2>&1", I2C_T5E1S0_T7IOC_BUS);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() Fail to start IOC Daemon:%d\n", __func__, I2C_T5E1S0_T7IOC_BUS);
+      return -1;
+    }
+
     if (access(IOCM_EEPROM_BIND_DIR, F_OK) == -1) { // bind device if not bound
       ret = pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_EEPROM_ADDR, IOCM_EEPROM_DRIVER_NAME);
       if (ret < 0) {

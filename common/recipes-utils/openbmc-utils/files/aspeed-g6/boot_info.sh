@@ -91,6 +91,9 @@ bmc_boot_from() {
         # And the sencond boot code stands for the other boot source.
         boot_source=0x00000001
     fi
+
+    # Extend wdt1 timeout value to prevent wdt1 timeout during uboot stag.
+    wdtcli set-timeout 120
     echo "BMC will switch to $1 after 2 seconds    ..."
     # Set WDT time out 2s, 0x00000014 = 2s
     devmem "$FMC_WDT2_RELOAD_VAL_REG" 32 0x00000014

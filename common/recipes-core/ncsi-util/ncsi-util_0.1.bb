@@ -11,6 +11,8 @@ SRC_URI = "file://Makefile \
            file://ncsi-util.h \
            file://brcm-ncsi-util.c \
            file://brcm-ncsi-util.h \
+           file://nvidia-ncsi-util.c \
+           file://nvidia-ncsi-util.h \
           "
 
 S = "${WORKDIR}"

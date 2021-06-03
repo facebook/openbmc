@@ -14,6 +14,8 @@ SRC_URI = "file://Makefile \
            file://aen.h \
            file://ncsi-brcm.c \
            file://ncsi-brcm.h \
+           file://ncsi-nvidia.c \
+           file://ncsi-nvidia.h \
           "
 
 S = "${WORKDIR}"
@@ -29,6 +31,7 @@ do_install() {
     install -m 0644 ncsi.h ${D}${includedir}/openbmc/ncsi.h
     install -m 0644 aen.h ${D}${includedir}/openbmc/aen.h
     install -m 0644 ncsi-brcm.h ${D}${includedir}/openbmc/ncsi-brcm.h
+    install -m 0644 ncsi-nvidia.h ${D}${includedir}/openbmc/ncsi-nvidia.h
 }
 
 DEPENDS += "libkv"

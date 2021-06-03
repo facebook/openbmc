@@ -42,6 +42,7 @@
 #include <openbmc/pldm_fw_update.h>
 #include "ncsi-util.h"
 #include "brcm-ncsi-util.h"
+#include "nvidia-ncsi-util.h"
 
 #ifndef max
 #define max(a, b) ((a) > (b)) ? (a) : (b)
@@ -545,6 +546,7 @@ static void default_ncsi_util_usage(void) {
   ncsi_util_common_usage();
   printf("       -m [vendor]    OEM vendor specific command. Use -h for vendor specific usage\n");
   printf("                        brcm - Broadcom OEM command\n");
+  printf("                        nvidia - Nvidia OEM command\n");
   printf("       -S             show adapter statistics\n");
   printf("       -p [file]      Update NIC firmware via PLDM\n");
   printf("           -b [n]     (optional) buffer size for PLDM FW update [default=1024]\n");
@@ -740,6 +742,10 @@ static ncsi_util_vendor_t vendors[NCSI_UTIL_VENDOR_MAX] = {
   [NCSI_UTIL_VENDOR_BRCM] = {
     .name       = "brcm",
     .handler    = brcm_ncsi_util_handler,
+  },
+  [NCSI_UTIL_VENDOR_NVIDIA] = {
+    .name       = "nvidia",
+    .handler    = nvidia_ncsi_util_handler,
   },
 };
 

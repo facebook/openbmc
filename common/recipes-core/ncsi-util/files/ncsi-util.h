@@ -40,6 +40,7 @@ typedef struct {
 enum {
   NCSI_UTIL_VENDOR_DMTF = 0,  /* DMTF defined command */
   NCSI_UTIL_VENDOR_BRCM,      /* Broadcom OEM command */
+  NCSI_UTIL_VENDOR_NVIDIA,    /* Nvidia OEM command */
   NCSI_UTIL_VENDOR_MAX,
 };
 

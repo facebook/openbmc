@@ -29,6 +29,8 @@ SRC_URI += "\
         file://bic_vr.h \
         file://scc_exp.cpp \
         file://scc_exp.h \
+        file://ioc.cpp \
+        file://ioc.h \
         file://grandcanyon.json \
         "
 
@@ -43,6 +45,6 @@ do_replace_image_parts_json() {
 }
 
 CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp "
-RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp "
-LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga -lexp "
+DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
+RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
+LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga -lexp -lipc -lfbgc_common "

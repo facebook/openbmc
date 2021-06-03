@@ -3200,3 +3200,46 @@ pal_get_ioc_wwid(uint8_t ioc_component, uint8_t *res_data, uint8_t *res_len)
 
   return CC_SUCCESS;
 }
+
+bool
+pal_is_ioc_ready(uint8_t i2c_bus) {
+  uint8_t server_status = 0, fru_present_flag = 0;
+  gpio_value_t scc_pwr_status = 0;
+
+  // Check server power status
+  if (pal_get_server_power(FRU_SERVER, &server_status) < 0){
+    syslog(LOG_WARNING, "%s(): Failed to check IOC is ready because failed to get server power status.", __func__);
+    return false;
+  }
+  if (server_status != SERVER_POWER_ON) {
+    return false;
+  }
+
+  if (i2c_bus == I2C_T5IOC_BUS) {
+    // Check SCC present
+    if (pal_is_fru_prsnt(FRU_SCC, &fru_present_flag) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to check SCC IOC is ready because failed to get SCC present status.", __func__);
+      return false;
+    }
+    if (fru_present_flag != FRU_PRESENT) {
+      return false;
+    }
+    // Check SCC power status
+    scc_pwr_status = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_STBY_PWR_EN));
+    if (scc_pwr_status == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s(): Failed to check SCC IOC is ready because failed to get SCC power status.", __func__);
+      return false;
+    } else if (scc_pwr_status == GPIO_VALUE_LOW) {
+      return false;
+    }
+  } else if (i2c_bus == I2C_T5E1S0_T7IOC_BUS) {
+    // Check IOCM IOC present
+    return is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER);
+  } else {
+    syslog(LOG_WARNING, "%s() Failed to check IOC is ready due to unknown i2c bus: %d", __func__, i2c_bus);
+    return false;
+  }
+
+  return true;
+}
+

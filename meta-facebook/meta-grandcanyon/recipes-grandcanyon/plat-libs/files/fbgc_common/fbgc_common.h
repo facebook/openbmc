@@ -93,6 +93,13 @@ extern "C" {
 
 #define BOARD_ID_PIN_NUM 3
 
+// For IOC Daemon
+#define SOCK_PATH_IOC      "ioc_socket_%d"
+#define MAX_SOCK_PATH_SIZE (64)
+
+#define IOC_FW_VER_SIZE    (8)
+#define TIMEOUT_IOC        (5) //Unit: second
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

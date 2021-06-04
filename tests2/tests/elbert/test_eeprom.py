@@ -143,81 +143,113 @@ def pimMissing(pimNum):
     return "0x0" in run_shell_cmd(cmd.format(pimNum))
 
 
-@unittest.skipIf(pimMissing(2), "Skipping because PIM2 is not inserted.")
 class PIM2EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM2
     """
 
+    def setUp(self):
+        if pimMissing(2):
+            self.skipTest("Skipping because PIM2 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM2"]
 
 
-@unittest.skipIf(pimMissing(3), "Skipping because PIM3 is not inserted.")
 class PIM3EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM3
     """
 
+    def setUp(self):
+        if pimMissing(3):
+            self.skipTest("Skipping because PIM3 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM3"]
 
 
-@unittest.skipIf(pimMissing(4), "Skipping because PIM4 is not inserted.")
 class PIM4EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM4
     """
 
+    def setUp(self):
+        if pimMissing(4):
+            self.skipTest("Skipping because PIM5 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM4"]
 
 
-@unittest.skipIf(pimMissing(5), "Skipping because PIM5 is not inserted.")
 class PIM5EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM5
     """
 
+    def setUp(self):
+        if pimMissing(5):
+            self.skipTest("Skipping because PIM5 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM5"]
 
 
-@unittest.skipIf(pimMissing(6), "Skipping because PIM6 is not inserted.")
 class PIM6EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM6
     """
 
+    def setUp(self):
+        if pimMissing(6):
+            self.skipTest("Skipping because PIM6 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM6"]
 
 
-@unittest.skipIf(pimMissing(7), "Skipping because PIM7 is not inserted.")
 class PIM7EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM7
     """
 
+    def setUp(self):
+        if pimMissing(7):
+            self.skipTest("Skipping because PIM7 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM7"]
 
 
-@unittest.skipIf(pimMissing(8), "Skipping because PIM8 is not inserted.")
 class PIM8EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM8
     """
 
+    def setUp(self):
+        if pimMissing(8):
+            self.skipTest("Skipping because PIM8 is not inserted.")
+        super().setUp()
+
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM8"]
 
 
-@unittest.skipIf(pimMissing(9), "Skipping because PIM9 is not inserted.")
 class PIM9EepromTest(ELBERTEepromTest, unittest.TestCase):
     """
     Test for weutil PIM9
     """
+
+    def setUp(self):
+        if pimMissing(9):
+            self.skipTest("Skipping because PIM9 is not inserted.")
+        super().setUp()
 
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil PIM9"]

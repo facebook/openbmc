@@ -3441,6 +3441,8 @@ pal_get_fan_latch(uint8_t *status) {
 
 int
 pal_sled_cycle(void) {
+  // sync filesystem caches
+  sync();
 #if !defined(CONFIG_FBY2_KERNEL)
   // Remove the adm1275 module as the HSC device is busy
   log_system("rmmod adm1275");

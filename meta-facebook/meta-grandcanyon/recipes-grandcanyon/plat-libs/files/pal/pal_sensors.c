@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
+#include <time.h>
 #include <sys/mman.h>
 #include <sys/file.h>
 #include <string.h>
@@ -1211,11 +1212,36 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
   int ret = 0, remain = 0, sensor_cnt = 0, index = 0;
   uint8_t *sensor_list = NULL;
   int read_cnt = 1; // default is single sensor reading
+  int timestamp = 0, current_time = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  char tstr[MAX_VALUE_LEN] = {0};
+  struct timespec ts = {0};
 
-  if (fru != FRU_SCC && fru != FRU_DPB) {
-    syslog(LOG_ERR, "%s() Invalid FRU%u \n", __func__, fru);
-    return -1;
+  switch(fru) {
+    case FRU_DPB:
+      snprintf(key, sizeof(key), "dpb_sensor_timestamp");
+      break;
+    case FRU_SCC:
+      snprintf(key, sizeof(key), "scc_sensor_timestamp");
+      break;
+    default:
+      syslog(LOG_ERR, "%s() Invalid FRU%u \n", __func__, fru);
+      return -1;
   }
+
+  // Get sensor timestamp
+  ret = pal_get_cached_value(key, cvalue);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get FRU%u sensor timestamp", __func__, fru);
+    return ret;
+  }
+  timestamp = atoi(cvalue);
+
+  // Get current timestamp
+  clock_gettime(CLOCK_REALTIME, &ts);
+  snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+  current_time = atoi(tstr);
 
   ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   if (ret < 0) {
@@ -1229,35 +1255,48 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
     return -1;
   }
 
-  if ( (fru == FRU_DPB && sensor_num == dpb_sensor_list[0]) || (fru == FRU_SCC && sensor_num == scc_sensor_list[0]) ) {
-    remain = sensor_cnt;
+  if (abs(current_time - timestamp) > EXP_SENSOR_WAIT_TIME) {
+    if ( (fru == FRU_DPB && sensor_num == dpb_sensor_list[0]) || (fru == FRU_SCC && sensor_num == scc_sensor_list[0]) ) {
+      remain = sensor_cnt;
 
-    // read all sensors
-    while (remain > 0) {
-      read_cnt = (remain > MAX_EXP_IPMB_SENSOR_COUNT) ? MAX_EXP_IPMB_SENSOR_COUNT : remain;
+      // read all sensors
+      while (remain > 0) {
+        read_cnt = (remain > MAX_EXP_IPMB_SENSOR_COUNT) ? MAX_EXP_IPMB_SENSOR_COUNT : remain;
+        ret = exp_read_sensor_wrapper(fru, sensor_list, read_cnt, index);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() wrapper ret%d \n", __func__, ret);
+          break;
+        }
+        remain -= read_cnt;
+        index += read_cnt;
+      };
+
+      // Update timestamp only after all sensors updated
+      memset(tstr, 0, sizeof(tstr));
+      clock_gettime(CLOCK_REALTIME, &ts);
+      snprintf(tstr, sizeof(tstr), "%ld", ts.tv_sec);
+
+      ret = pal_set_cached_value(key, tstr);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to set FRU%u sensor timestamp", __func__, fru);
+        return ret;
+      }
+
+      if (fru == FRU_DPB) {
+        is_dpb_sensor_cached = true;
+      } else {
+        is_scc_sensor_cached = true;
+      }
+    }
+    else {
+      if ( (fru == FRU_DPB && is_dpb_sensor_cached == true) || (fru == FRU_SCC && is_scc_sensor_cached == true) ) {
+        return 0;
+      }
+      // read single sensor
       ret = exp_read_sensor_wrapper(fru, sensor_list, read_cnt, index);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() wrapper ret%d \n", __func__, ret);
-        break;
       }
-      remain -= read_cnt;
-      index += read_cnt;
-    };
-
-    if (fru == FRU_DPB) {
-      is_dpb_sensor_cached = true;
-    } else {
-      is_scc_sensor_cached = true;
-    }
-  }
-  else {
-    if ( (fru == FRU_DPB && is_dpb_sensor_cached == true) || (fru == FRU_SCC && is_scc_sensor_cached == true) ) {
-      return 0;
-    }
-    // read single sensor
-    ret = exp_read_sensor_wrapper(fru, sensor_list, read_cnt, index);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() wrapper ret%d \n", __func__, ret);
     }
   }
 

@@ -3263,3 +3263,56 @@ int
 pal_devnum_to_fruid(int devnum) {
   return FRU_SERVER;
 }
+
+// Get non-persistent key value
+int
+pal_get_cached_value(char *key, char *value) {
+  int i = 0;
+  int ret = 0;
+
+  if ((key == NULL) || (value == NULL)) {
+    syslog(LOG_ERR, "%s, Failed to read cached key value due to NULL parameter", __func__);
+    return -1;
+  }
+
+  for (i = 0; i < MAX_RETRY; i++) {
+    ret = 0;
+    ret = kv_get(key, value, NULL, 0);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s, failed to read cached key value (%s), ret: %d, retry: %d", __func__, key, ret, i);
+    }
+    else {
+      break;
+    }
+    msleep(100);
+  }
+
+  return ret;
+}
+
+// Set non-persistent key value
+int
+pal_set_cached_value(char *key, char *value) {
+  int i = 0;
+  int ret = 0;
+
+  if ((key == NULL) || (value == NULL)) {
+    syslog(LOG_ERR, "%s, Failed to write cached key value due to NULL parameter", __func__);
+    return -1;
+  }
+
+  for (i = 0; i < MAX_RETRY; i++) {
+    ret = 0;
+    ret = kv_set(key, value, 0, 0);
+    if (ret != 0) {
+      syslog(LOG_ERR, "%s, failed to write cached key value (%s), ret: %d, retry: %d", __func__, key, ret, i);
+    }
+    else {
+      break;
+    }
+    msleep(100);
+  }
+
+  return ret;
+}
+

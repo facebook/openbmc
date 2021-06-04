@@ -130,6 +130,7 @@ static struct {
   monitoring_config *config;
 
   uint8_t num_active_addrs;
+  bool first_scan_done[MAX_RACKS][MAX_SHELVES][MAX_PSUS];
   bool ignored_psus[MAX_RACKS][MAX_SHELVES][MAX_PSUS];
   uint8_t active_addrs[MAX_ACTIVE_ADDRS];
   psu_datastore_t* stored_data[MAX_ACTIVE_ADDRS];
@@ -389,6 +390,45 @@ static void update_psu_comms(psu_datastore_t *psu, bool success) {
   }
 }
 
+/*
+ * Note: Some platform like Wedge400 has a lot of modbus timeout errors and
+ * sometimes BMC can not detect one of the Rack PSUs. This method allows
+ * us to conditionally set the number of retries based on whether the
+ * PSU is previously known and/or is it the first time we are trying to
+ * detect a PSU.
+ */
+static int psu_retry_limit(psu_datastore_t *info, int addr)
+{
+  int rack, shelf, psu;
+
+  /* If we are communicating with a previously known PSU,
+   * then go ahead and retry MAX_RETRY times on failure */
+  if (info) {
+    return MAX_RETRY;
+  }
+
+  /* Do not waste time retrying on invalid PSU addresses */
+  if (!psu_location(addr, &rack, &shelf, &psu)) {
+    return 1;
+  }
+
+  /* Do not waste time retrying commands to PSU addresses
+   * which are most probably never going to exist. This
+   * flag being set means we already have retried detecting
+   * this PSU in the past  */
+  if (rackmond_config.first_scan_done[rack][shelf][psu]) {
+    return 1;
+  }
+
+  /* This is an unknown PSU but also the first time we are
+   * trying to communicate with this address. Retry to prevent
+   * missing detection of a PSU. Set the flag so that the
+   * next scan we do not waste time retrying on this address.
+   */
+  rackmond_config.first_scan_done[rack][shelf][psu] = true;
+  return MAX_RETRY;
+}
+
 static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
                           size_t cmd_size, char* resp_buf, size_t resp_size,
                           size_t exp_resp_len, speed_t baudrate, const char *caller) {
@@ -396,6 +436,7 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
   int error = 0;
   useconds_t delay = rackmond_config.min_delay;
   psu_datastore_t* psu = NULL;
+  int max_retry;
 
   int slot = lookup_data_slot(cmd_buf[0]);
   if (slot >= 0) {
@@ -415,20 +456,14 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
   req.expected_len = (exp_resp_len != 0 ? exp_resp_len : resp_size);
   req.scan = scanning;
 
+
   if (dev_lock(dev) != 0) {
     return -1;
   }
 
-  /*
-   * Note: Some platform like Wedge400 has a lot of modbus timeout errors and
-   * sometimes BMC can not detect one of the Rack PSUs.
-   * We tried fix this issue with HW change to add external crystal, but this
-   * need to update FTDI eeprom to enable the external crystal. However, FTDI
-   * can not boot up if update FTDI chip eeprom fail, after communicate with
-   * vendor and FB, finally we choose software retry to fix the issue as a
-   * workaround solution.
-   */
-  for (int retry = 0; retry < MAX_RETRY; retry++) {
+  max_retry = psu_retry_limit(psu, (int)cmd_buf[0]);
+
+  for (int retry = 0; retry < max_retry; retry++) {
     CHECK_LATENCY_START();
     error = modbuscmd(&req, baudrate, caller);
     CHECK_LATENCY_END(

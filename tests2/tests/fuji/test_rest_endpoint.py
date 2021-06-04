@@ -91,7 +91,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "server",
             "bmc",
             "mb",
-            "slotid",
             "firmware_info",
             "presence",
             "feutil",
@@ -99,7 +98,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "psu_update",
             "gpios",
             "sensors",
-            "mTerm_status",
         ]
 
     def test_endpoint_api_sys(self):

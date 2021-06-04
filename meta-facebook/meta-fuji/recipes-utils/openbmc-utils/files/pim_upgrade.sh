@@ -29,13 +29,14 @@
 # SC2009: Consider using pgrep instead of grepping ps output.
 # because we dont have the pgrep, disable the SC2009 check
 # shellcheck disable=SC2009
-
+# shellcheck disable=SC1091
 . /usr/local/bin/flashrom-utils.sh
 
 target=$1
 fpgaimg=$2
 log_dir=/tmp/
 tmpfile=/tmp/domfpga
+DOM_FPGA_START=3
 
 fpga_update(){
     # extend the image size to fit flash size
@@ -47,18 +48,18 @@ fpga_update(){
 
     if [ "$target" == "all" ];then
 
-        flash_size=$(flash_get_size "spidev4.0")
+        flash_size=$(flash_get_size "spidev$DOM_FPGA_START.0")
         addsize=$(($((flash_size * 1024)) - filesize))
 
         if [ $((addsize)) -gt 0 ];then
             dd if=/dev/zero bs="$addsize" count=1 | tr "\000" "\377" >> "$tmpfile"
         fi
 
-        for(( spidev=4 ; spidev<=11 ; spidev++ ))
+        for(( spidev=DOM_FPGA_START ; spidev<$((DOM_FPGA_START+8)) ; spidev++ ))
         do
             printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((spidev-3))"
             flash_model=$(flash_get_model "spidev$spidev.0")
-            ( flash_write "spidev$spidev.0" "$tmpfile" "$flash_model" > ${log_dir}flash_spidev${spidev}_multi_log )  &
+            ( flash_write "spidev$spidev.0" "$tmpfile" "$flash_model" > ${log_dir}flash_spidev"${spidev}"_multi_log )  &
         done
     else
         spidev=$(($(echo "$target" | cut -b 4) + 3))

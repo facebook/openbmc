@@ -25,8 +25,8 @@ from common.base_i2c_driver_presence_test import BaseI2cDriverPresenceTest
 class FujiI2cDriverPresenceTest(BaseI2cDriverPresenceTest, unittest.TestCase):
     def set_i2c_driver_list(self):
         self.i2c_driver_list = [
-            "xdpe12284",
-            "mp2978",
+            "xdpe132g5c",
+            "mp2975",
             "scmcpld",
             "iobfpga",
             "adm1275",

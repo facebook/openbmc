@@ -3258,3 +3258,8 @@ pal_check_fru_is_valid(const char* fruid_path) {
 
   return fbgc_check_fru_is_valid(fruid_path);
 }
+
+int
+pal_devnum_to_fruid(int devnum) {
+  return FRU_SERVER;
+}

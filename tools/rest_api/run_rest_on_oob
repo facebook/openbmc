@@ -1,0 +1,96 @@
+#!/bin/bash
+# shellcheck disable=SC2029,SC2046,SC2086
+set -eo pipefail
+shopt -s extglob
+# shellcheck source=tools/rest_api/common_utils.sh
+source "${BASH_SOURCE%/*}/common_utils.sh"
+
+if [ $# -eq 0 ]
+  then
+    echo "No arguments supplied"
+    echo "supply target bmc as first argument"
+    exit 1
+fi
+target_bmc=$1
+
+function check_oob_reachable() {
+    ping -c 1 "$target_bmc" > /dev/null
+}
+
+
+function run_on_bmc() {
+    if [[ $# != 1 ]]; then echo "Usage: run_on_bmc <cmd>" >&2; return 1; fi
+    cmd=$1
+    ssh root@"$target_bmc" "$cmd"
+}
+
+function get_remote_platform() {
+    version_str=$(run_on_bmc "cat /etc/issue")
+    remote_platform=$(echo "$version_str"| cut -d' ' -f 3 | cut -d'-' -f 1)
+    echo "$remote_platform"
+}
+
+function kill_rest() {
+    run_on_bmc "systemctl stop restapi" || true >/dev/null
+    run_on_bmc "sv stop restapi" || true >/dev/null
+    run_on_bmc "pkill -9 -f rest.py"|| true >/dev/null
+}
+
+function upload_full_rest_to_bmc() {
+    scp -r $BBPATH/tmp/work/x86_64-linux/rest-api-native/*/!(acl_config|test*).py $BBPATH/tmp/work/x86_64-linux/rest-api-native/*/acl_providers root@$target_bmc:/usr/local/fbpackages/rest-api/ >/dev/null
+}
+
+function upload_single_file_to_bmc() {
+    echo "$1 was changed, syncing to BMC"
+    scp $1 root@$target_bmc:/usr/local/fbpackages/rest-api/ >/dev/null
+}
+
+function prep_stdout_logging_conf(){
+    run_on_bmc "cp /etc/rest.cfg /tmp/rest_stdout.cfg" >/dev/null
+    run_on_bmc "echo '' >> /tmp/rest_stdout.cfg" >/dev/null
+    run_on_bmc "echo '[logging]' >> /tmp/rest_stdout.cfg" >/dev/null
+    run_on_bmc "echo 'handler = stdout' >> /tmp/rest_stdout.cfg" >/dev/null
+}
+
+function run_rest_on_bmc() {
+    echo "(Re)Starting REST on BMC"
+    run_on_bmc "/usr/local/fbpackages/rest-api/rest.py -c /tmp/rest_stdout.cfg"
+}
+
+function do_the_loop(){
+    plat_specific_src_dir=$1
+    kill_rest
+    echo "Uploading full initial state to BMC"
+    upload_full_rest_to_bmc
+    echo "Preparing stdout logging conf"
+    prep_stdout_logging_conf
+    run_rest_on_bmc&
+    # inotify loop
+    while true; do
+        inotifywait -e modify -r $(find "$common_src_dir" "$plat_specific_src_dir" -type f -iname '*.py') --format %w%f | while read -r FILE; do upload_single_file_to_bmc "$FILE"; done
+        kill_rest
+        run_rest_on_bmc&
+        sleep 10
+    done
+}
+
+echo -n "Validating environment: "
+validate_environment
+echo "[OK]"
+echo -n "Checking target oob reachability: "
+check_oob_reachable
+echo "[OK]"
+plat="$(get_build_platform)"
+plat_specific_src_dir=$(get_platform_recipe_path "$plat")
+echo "Current platform is $plat"
+remote_plat=$(get_remote_platform)
+echo "Remote platform is $remote_plat"
+if [ "$plat" != "$remote_plat" ]; then
+    echo "Remote platform '$remote_plat' does not equal build platform ('$plat')."
+    echo "Refusing to continue"
+    exit 1
+fi
+echo "Platforms match."
+echo "Preparing working directory"
+prepare_working_directory "$plat_specific_src_dir"
+do_the_loop "$plat_specific_src_dir"

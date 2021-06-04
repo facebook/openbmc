@@ -1,0 +1,27 @@
+#!/bin/bash
+# shellcheck disable=SC2211,SC2046
+set -eo pipefail
+
+# shellcheck source=tools/rest_api/common_utils.sh
+source "${BASH_SOURCE%/*}/common_utils.sh"
+
+function run_test_loop(){
+    plat_specific_src_dir=$1
+    # Test loop
+    while true; do
+        inotifywait -e modify -r $(find "$common_src_dir" "$plat_specific_src_dir" -type f -iname '*.py')
+        "$BBPATH"/tmp/work/x86_64-linux/rest-api-native/*/temp/run.do_unit_test || true
+        sleep 1
+    done
+}
+
+
+echo "Validating environment"
+validate_environment
+plat="$(get_build_platform)"
+plat_specific_src_dir=$(get_platform_recipe_path "$plat")
+echo "Current platform is $plat"
+echo "Preparing working directory"
+prepare_working_directory "$plat_specific_src_dir"
+echo "RUNNING TEST LOOP"
+run_test_loop "$plat_specific_src_dir"

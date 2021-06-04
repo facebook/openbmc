@@ -14,26 +14,19 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-SUMMARY = "Crashdump utility"
-DESCRIPTION = "Util for generating crashdumps"
+SUMMARY = "AMD Crashdump"
+DESCRIPTION = "Crashdump Tool for AMD"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
+LIC_FILES_CHKSUM = "file://crashdump_amd.sh;beginline=4;endline=16;md5=9d28bbe221522c21c36c389af8c94a4c"
 
-SRC_URI = "file://dump.sh \
-            file://crashdump_coreid \
-            file://crashdump_msr \
-            file://crashdump_pcie \
-            file://crashdump_pcie_bus \
-            file://autodump.sh \
-            file://COPYING \
-           "
+SRC_URI = "file://crashdump_amd.sh \
+          "
 
 S = "${WORKDIR}"
 
-binfiles += "dump.sh \
-             autodump.sh \
+binfiles += "crashdump_amd.sh \
             "
 
 pkgdir = "crashdump"
@@ -44,10 +37,6 @@ do_install() {
   bin="${D}/usr/local/bin"
   install -d $dst
   install -d $bin
-  install -m 644 crashdump_coreid ${dst}/crashdump_coreid
-  install -m 644 crashdump_msr ${dst}/crashdump_msr
-  install -m 644 crashdump_pcie ${dst}/crashdump_pcie
-  install -m 644 crashdump_pcie_bus ${dst}/crashdump_pcie_bus
   for f in ${binfiles}; do
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f

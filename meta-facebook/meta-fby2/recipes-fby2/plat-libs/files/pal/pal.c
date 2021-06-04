@@ -224,7 +224,7 @@ typedef struct {
   };
 } __attribute__((packed)) mca_bank;
 
-#define CRASHDUMP_ND_BIN       "/usr/local/bin/crashdump_nd.sh"
+#define CRASHDUMP_ND_BIN       "/usr/local/bin/crashdump_amd.sh"
 #define MAX_CRASHDUMP_CMD_SIZE 1024
 #define MAX_CRASHDUMP_FILE_NAME_LENGTH 128
 #define MAX_VAILD_LIST_LENGTH 128

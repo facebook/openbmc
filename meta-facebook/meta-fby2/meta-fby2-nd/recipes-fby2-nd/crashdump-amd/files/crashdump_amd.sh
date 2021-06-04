@@ -1,8 +1,44 @@
+# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
 #!/bin/bash
 
 FRUID_UTIL="/usr/local/bin/fruid-util"
 FW_UTIL="/usr/bin/fw-util"
 SLOT_NAME=$1
+
+function dump_sensor_history() 
+{
+  local SLOT=$1
+  local SENSOR_HISTORY=180
+
+  /usr/local/bin/sensor-util $SLOT --history $SENSOR_HISTORY \
+   && /usr/local/bin/sensor-util spb --history $SENSOR_HISTORY \
+   && /usr/local/bin/sensor-util nic --history $SENSOR_HISTORY 
+}
+
+function dump_sensor_threshold() 
+{
+  local SLOT=$1
+
+  /usr/local/bin/sensor-util $SLOT --threshold \
+   && /usr/local/bin/sensor-util spb --threshold \
+   && /usr/local/bin/sensor-util nic --threshold
+}
 
 case $SLOT_NAME in
     slot1)
@@ -29,7 +65,6 @@ esac
 # function definition)
 PID_FILE="/var/run/autodump${SLOT_NUM}.pid"
 
-DUMP_SCRIPT="/usr/local/bin/dump.sh"
 CRASHDUMP_FILE="/tmp/crashdump_${SLOT_NAME}"
 CRASHDUMP_DECODED_FILE="/tmp/crashdump_${SLOT_NAME}_mca"
 CRASHDUMP_LOG_ARCHIVE="/mnt/data/crashdump_${SLOT_NAME}.tar.gz"
@@ -39,7 +74,7 @@ echo "Auto Dump for $SLOT_NAME Started"
 logger -t "ipmid" -p daemon.crit "${LOG_MSG_PREFIX}Crashdump for FRU: $SLOT_NUM started"
 
 #HEADER LINE for the dump
-$DUMP_SCRIPT "time" > "$CRASHDUMP_FILE"
+echo "Crash Dump generated at $(date)" > "$CRASHDUMP_FILE"
 
 {
   # Get BMC version & hostname
@@ -60,9 +95,9 @@ $DUMP_SCRIPT "time" > "$CRASHDUMP_FILE"
 
   # Sensors & sensor thresholds
   echo "Sensor history at dump:"
-  "$DUMP_SCRIPT" "$SLOT_NAME" "sensors"
+  dump_sensor_history "$SLOT_NAME"
   echo "Sensor threshold at dump:"
-  "$DUMP_SCRIPT" "$SLOT_NAME" "threshold"
+  dump_sensor_threshold "$SLOT_NAME"
 
   # MCA dumps
   echo "MCA(x) Dump:"

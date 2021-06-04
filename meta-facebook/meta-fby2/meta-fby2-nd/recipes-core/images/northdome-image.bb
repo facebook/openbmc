@@ -42,7 +42,7 @@ IMAGE_INSTALL += " \
   fw-util \
   hsvc-util \
   fpc-util \
-  crashdump \
+  crashdump-amd \
   log-util-v2 \
   openbmc-utils \
   ipmi-util \

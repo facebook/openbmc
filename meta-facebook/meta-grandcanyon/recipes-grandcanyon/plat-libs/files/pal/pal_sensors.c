@@ -1126,6 +1126,8 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
   char units[64] = {0};
   float value = 0;
   EXPANDER_SENSOR_DATA *p_sensor_data = NULL;
+  int retry = 0, retry_ret = 0;
+  EXPANDER_SENSOR_DATA *retry_data = NULL;
 
   if (pal_get_fru_name(fru, fru_name)) {
     syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, fru);
@@ -1172,6 +1174,26 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
       else if (strncmp(units, "RPM", sizeof(units)) == 0) {
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
         value *= 10;
+        
+        // If SCC reset or power cycle, it may get wrong information from expander
+        // To avoid those case, retry to get RPM
+        retry = 0;
+        tbuf[0] = 1;
+        tbuf[1] = sensor_list[i + index];
+        while ((value == 0) && (retry++ < MAX_GET_RPM_RETRY)) {
+          syslog(LOG_WARNING, "%s(): %s_sensor%d get zero %d time\n", __func__ , fru_name, p_sensor_data[i].sensor_num, retry);
+          msleep(200);
+          
+          // get RPM again
+          retry_ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_SENSOR_READING, tbuf, 2, rbuf, &rlen);
+          if (retry_ret < 0) {
+            continue;
+          } else {
+            retry_data = (EXPANDER_SENSOR_DATA *)(&rbuf[1]);
+            value = (((retry_data[i].raw_data_1 << 8) + retry_data[i].raw_data_2));
+            value *= 10;
+          }
+        }
       }
       else if (strncmp(units, "Watts", sizeof(units)) == 0) {
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));

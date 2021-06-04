@@ -13,6 +13,7 @@
 #define MAX_EXP_IPMB_SENSOR_COUNT    40
 #define EXP_SENSOR_WAIT_TIME         5      // 5 seconds
 
+#define MAX_GET_RPM_RETRY            15
 #define MAX_NIC_TEMP_RETRY           5      // 10 seconds
 #define MAX_RETRY                    3
 #define MAX_SDR_PATH                 32

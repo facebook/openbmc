@@ -61,6 +61,9 @@ pal_is_bmc_por(void)
 
 int __attribute__((weak))
 pal_bmc_reboot(int cmd) {
+  // sync filesystem caches
+  sync();
+
   if (cmd == 0) {
     return run_command("/sbin/reboot");
   }

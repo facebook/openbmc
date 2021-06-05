@@ -3316,3 +3316,27 @@ pal_set_cached_value(char *key, char *value) {
   return ret;
 }
 
+int
+pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *response, uint8_t *rlen) {
+  int ret = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t len = 0;
+
+  if ((request == NULL) || (response == NULL) || (rlen == NULL)) {
+    syslog(LOG_ERR, "%s: Failed to handle DCMI command because the parameters are NULL.", __func__);
+    return -1;
+  }
+
+  memset(&rbuf, 0, sizeof(rbuf));
+
+  ret = bic_me_xmit(request, req_len, rbuf, &len);
+  if ((ret != 0) || (len < 1)) {
+    return -1;
+  }
+
+  *rlen = len;
+  memcpy(response, &rbuf[0], *rlen);
+
+  return 0;
+}
+

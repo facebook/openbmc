@@ -29,6 +29,8 @@ static bool is_e1s_iocm_i2c_enabled(uint8_t id);
 static int get_current_dir(const char *device, char *dir_name);
 static int set_e1s_sensor_name(char *sensor_name, char side);
 
+static void apply_inlet_correction(float *value);
+
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
 
@@ -659,6 +661,20 @@ PAL_DEV_INFO adc128_dev_list[] = {
 static int ads1015_pga_setting[] = {
   4096, 2048, 2048, 1024
 };
+
+static inlet_corr_t g_ict[] = {
+  //airflow, offset value
+  { 0,  8 },    // airflow: 0-44
+  { 45, 5 },    // airflow: 45-63
+  { 64, 4 },    // airflow: 64-74
+  { 75, 3.5 },  // airflow: 75-96
+  { 97, 3 },    // airflow: 97-109
+  { 110, 2.5 }, // airflow: 110-140
+  { 141, 2 },   // airflow: 141-295
+  { 296, 1.5 }, // airflow: 296-369
+};
+
+static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
 
 
 size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
@@ -1605,6 +1621,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = ERR_SENSOR_NA;
     } else {
       ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
+      
+      // Inlet sensor correction
+      if (sensor_num == BS_INLET_TEMP) {
+        apply_inlet_correction((float *)value);
+      }
     }
     break;
   case FRU_UIC:
@@ -1908,5 +1929,42 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   }
 
   return ret;
+}
+
+static void apply_inlet_correction(float *value) {
+  static float offset_value = 0;
+  float airflow_value = 0;
+  int i = 0, ret = 0;
+  inlet_corr_t *ict = NULL;
+  uint8_t ict_cnt = 0;
+  
+  if (value == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to regulate inlet sensor because NULL parameter: *value", __func__);
+    return;
+  }
+  
+  // Get airflow value
+  ret = pal_sensor_read_raw(FRU_DPB, AIRFLOW, &airflow_value);
+  if (ret < 0) {
+     // If get airflow fail, use the previous offset
+    *(float*)value -= offset_value;
+    return;
+  }
+  
+  ict = g_ict;
+  ict_cnt = g_ict_count;
+  
+  // Scan the correction table to get correction value
+  offset_value = ict[0].offset_value;
+  for (i = 1; i < ict_cnt; i++) {
+    if (airflow_value >= ict[i].airflow_value) {
+      offset_value = ict[i].offset_value;
+    } else {
+      break;
+    }
+  }
+
+  // Apply correction for the sensor
+  *(float*)value -= offset_value;
 }
 

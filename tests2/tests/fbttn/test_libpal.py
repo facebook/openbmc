@@ -16,6 +16,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 import common.base_libpal_test
 
@@ -23,4 +24,10 @@ import common.base_libpal_test
 class LibPalTest(common.base_libpal_test.LibPalTest):
     PLATFORM_NAME = "fbttn"
 
-    pass  # just run common tests
+    @unittest.skip("disable due to T92189295")
+    def test_sensor_raw_read(self):
+        pass
+
+    @unittest.skip("disable due to T92189295")
+    def test_sensor_read(self):
+        pass

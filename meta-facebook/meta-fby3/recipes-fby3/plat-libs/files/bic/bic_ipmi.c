@@ -750,6 +750,30 @@ bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
 }
 
 int
+bic_get_amber_led_status(uint8_t slot_id, uint8_t dev_id, uint8_t *status) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, 0x00};
+  uint8_t rbuf[4] = {0};
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  tbuf[3] = dev_id; // 0'base
+  while (retry < 3) {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_AMBER_LED_STATUS, tbuf, 4, rbuf, &rlen, FEXP_BIC_INTF);
+    if (ret == 0) break;
+    retry++;
+  }
+
+  if (ret != 0) {
+    syslog(LOG_WARNING, "[%s] fail at slot%u dev%u", __func__, slot_id, dev_id);
+  } else {
+    *status = rbuf[3];
+  }
+
+  return ret;
+}
+
+int
 bic_spe_led_ctrl(uint8_t dev_id, uint8_t option, uint8_t* status) {
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00, 0x00, 0x00};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};

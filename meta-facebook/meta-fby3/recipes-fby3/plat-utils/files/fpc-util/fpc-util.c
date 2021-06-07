@@ -33,9 +33,10 @@ uint8_t type_2ou = 0;
 static void
 print_usage(void) {
   if (type_2ou == E1S_BOARD) {
-    printf("fpc-util slot1 <2U-dev0|2U-dev1|2U-dev2|2U-dev3|2U-dev4|2U-dev5> --identify <on/off/blink/stop/status>\n");
+    printf("fpc-util slot1 <2U-dev0|2U-dev1|2U-dev2|2U-dev3|2U-dev4|2U-dev5> --identify <on|off|blink-start|blink-stop|status>\n");
   } else {
-    printf("fpc-util <slot1|slot2|slot3|slot4> <1U-dev0|1U-dev1|1U-dev2|1U-dev3> --identify <on/off>\n");
+    printf("fpc-util <slot1|slot2|slot3|slot4> --identify <on|off>\n");
+    printf("fpc-util <slot1|slot2|slot3|slot4> <1U-dev0|1U-dev1|1U-dev2|1U-dev3> --identify <on|off|blink-start|blink-stop|status>\n");
   }  
 }
 
@@ -50,7 +51,7 @@ main(int argc, char **argv) {
   bool is_dev = false;
   int ret = -1;
   int i = 0;
-  char* opt_str[MAX_OPTION_NUM] = {"off", "on", "blink", "stop", "status"};
+  char* opt_str[MAX_OPTION_NUM] = {"off", "on", "blink-start", "blink-stop", "status"};
   char sys_conf[MAX_VALUE_LEN] = {0};
 
   if (kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0) {
@@ -100,13 +101,6 @@ main(int argc, char **argv) {
   if (option == CMD_UNKNOWN) {
     goto err_exit;
   }
-
-  if (type_2ou != E1S_BOARD) {
-    if ((option == SET_LED_BLINK) || (option == SET_LED_STOP) || (option == GET_LED_STAT)) {
-      printf("Option %s only supported on Sierra Point system\n", argv[on_off_idx]);
-      goto err_exit;
-    }
-  }
  
   if ( pal_is_fru_prsnt(fru, &status) < 0 || status == 0 ) {
     printf("slot%d is not present!\n", fru);
@@ -114,7 +108,7 @@ main(int argc, char **argv) {
   }
 
   if ( is_dev == true ) {
-    uint8_t type = 0;
+    uint8_t type_1ou = 0;
     uint8_t dev_id = DEV_NONE;
 
     if ((bmc_location == NIC_BMC) && (type_2ou != E1S_BOARD)) {
@@ -137,8 +131,8 @@ main(int argc, char **argv) {
         goto err_exit;
       }
 
-      if ( bic_get_1ou_type(fru, &type) < 0 || type != EDSFF_1U ) {
-        printf("Device identification only support in E1S 1OU board, get %02X (Expected: %02X)\n", type, EDSFF_1U);
+      if ( bic_get_1ou_type(fru, &type_1ou) < 0 || type_1ou != EDSFF_1U ) {
+        printf("Device identification only support in E1S 1OU board, get %02X (Expected: %02X)\n", type_1ou, EDSFF_1U);
         goto err_exit;
       }
     }
@@ -159,26 +153,53 @@ main(int argc, char **argv) {
       ret = bic_spe_led_ctrl(dev_id, option, &status);
       if (option == GET_LED_STAT) {
         if (ret == 0) {
-          printf("fpc-util: %s LED status: %s\n", argv[2], opt_str[status]);
+          if (status > SET_LED_BLINK_STOP) {
+            printf("%s LED status: NO DEFINED\n", argv[2]);
+          } else {
+            printf("%s LED status: %s\n", argv[2], opt_str[status]);
+          }
         } else {
-          printf("fpc-util: failed to get %s LED status\n", argv[2]);
+          printf("failed to get %s LED status\n", argv[2]);
         }
         return 0;        
       }
-    } else {
-      if ( option == SET_LED_ON ) {
-        ret = bic_set_amber_led(fru, dev_id, 0x01);
-      } else {
-        ret = bic_set_amber_led(fru, dev_id, 0x00);
+    } else if (type_1ou == EDSFF_1U) {
+      switch (option) {
+        case SET_LED_OFF:
+        case SET_LED_ON:
+        case SET_LED_BLINK_START:
+        case SET_LED_BLINK_STOP:
+          ret = bic_set_amber_led(fru, dev_id-1, option);
+          break;
+        case GET_LED_STAT:
+          ret = bic_get_amber_led_status(fru, dev_id-1, &status);
+          if (ret == 0) {
+            if (status > SET_LED_BLINK_STOP) {
+              printf("%s LED status: NO DEFINED\n", argv[2]);
+            } else {
+              printf("%s LED status: %s\n", argv[2], opt_str[status]);
+            }
+          } else {
+            printf("failed to get %s LED status\n", argv[2]);
+          }
+          return 0;
+        default:
+          goto err_exit;
+          break;
       }
     }
 
-    printf("fpc-util: identification for %s %s is set to %s %ssuccessfully\n", \
-                         argv[1], argv[2], argv[4], (ret < 0)?"un":"");
+    printf("identification for %s %s is set to %s %ssuccessfully\n", \
+                         argv[1], argv[2], argv[4], (ret < 0) ? "un" : "");
+
   } else {
+    if ((option == SET_LED_BLINK_START) || (option == SET_LED_BLINK_STOP) || (option == GET_LED_STAT)) {
+      printf("Option %s only supported on Sierra Point/Vernal Falls system\n", argv[on_off_idx]);
+      goto err_exit;
+    }
     ret = pal_sb_set_amber_led(fru, option, LED_LOCATE_MODE);
-    printf("fpc-util: identification for %s is set to %s %ssuccessfully\n", \
-                         argv[1], argv[3], (ret < 0)?"un":"");
+    printf("identification for %s is set to %s %ssuccessfully\n", \
+                         argv[1], argv[3], (ret < 0) ? "un" : "");
   }
 
   return 0;

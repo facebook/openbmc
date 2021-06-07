@@ -42,8 +42,9 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
       uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
       if (retry_count == 0) {
         cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
+        // Only power off/graceful-shutdown once, prevent power on after power off/graceful-shutdown.
+        pal_set_server_power(slot_id, power_cmd);
       }
-      pal_set_server_power(slot_id, power_cmd);
       retry_count++;
       sleep(2);
     }

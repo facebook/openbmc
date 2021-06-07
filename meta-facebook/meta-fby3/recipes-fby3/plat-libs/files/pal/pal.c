@@ -982,14 +982,24 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
     } else if ( dev_id == BOARD_2OU ) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
     } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
-      return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
+      // BMC shouldn't have the access to write the FRU that belongs to the vendor since we don't know the writing rules
+      // We only have the read access
+      if ( type_2ou != GPV3_MCHP_BOARD ) {
+        return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
+      }
+      printf("The device doesn't support the function\n");
     } else {
-      printf("Dev%d is not supported on 2OU!\n", dev_id);
+      printf("The illegal dev%d is detected!\n", dev_id);
     }
+
+    // if we reach here, it means something went wrong
+    // normally, we should return in the previous statements
+    ret = PAL_ENOTSUP;
   } else {
     printf("%s is not present!\n", (dev_id == BOARD_1OU)?"1OU":"2OU");
     return PAL_ENOTSUP;
   }
+
   return ret;
 }
 

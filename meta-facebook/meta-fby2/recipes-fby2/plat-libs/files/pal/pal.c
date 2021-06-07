@@ -6501,7 +6501,9 @@ parse_mem_error_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *
   uint8_t *ed = &event_data[3];
   char temp_log[512] = {0};
   uint8_t sen_type = event_data[0];
-  uint8_t chn_num, dimm_num;
+  uint8_t info_valid;
+  uint8_t cpu_num, chn_num, dimm_num;
+  char mem_mapping_string[32];
 
   if (snr_num == MEMORY_ECC_ERR) {
     // SEL from MEMORY_ECC_ERR Sensor
@@ -6529,57 +6531,49 @@ parse_mem_error_sel_nd(uint8_t fru, uint8_t snr_num, uint8_t *event_data, char *
   }
 
   // Common routine for both MEM_ECC_ERR and MEMORY_ERR_LOG_DIS
-  chn_num = (ed[2] & 0x1C) >> 2;
-  bool support_mem_mapping = false;
-  char mem_mapping_string[32];
-  pal_parse_mem_mapping_string(chn_num, &support_mem_mapping, mem_mapping_string);
-  if(support_mem_mapping) {
-    snprintf(temp_log, sizeof(temp_log), " (DIMM %s)", mem_mapping_string);
-  } else {
-    snprintf(temp_log, sizeof(temp_log), " (DIMM %02X)", ed[2]);
-  }
+  info_valid = ((ed[1] >> 2) & 0x03);
+  cpu_num = ((ed[2] >> 5) & 0x07);
+  chn_num = ((ed[2] >> 2) & 0x07);
+  dimm_num = (ed[2] & 0x3);
+
+  pal_convert_to_dimm_str(cpu_num, chn_num, dimm_num, mem_mapping_string);
+  snprintf(temp_log, sizeof(temp_log), " (DIMM %s)", mem_mapping_string);
   strcat(error_log, temp_log);
 
   snprintf(temp_log, sizeof(temp_log), " Logical Rank %d", ed[1] & 0x03);
   strcat(error_log, temp_log);
 
-  // DIMM number (ed[2]):
-  // Bit[7:5]: Socket number  (Range: 0-7)
-  // Bit[4:2]: Channel number (Range: 0-7)
-  // Bit[1:0]: DIMM number    (Range: 0-3)
-  if (((ed[1] & 0xC) >> 2) == 0x0) {
-    /* All Info Valid */
-    chn_num = (ed[2] & 0x1C) >> 2;
-    dimm_num = ed[2] & 0x3;
 
+  if (info_valid == 0x0) {
+    /* All Info Valid */
     /* If critical SEL logging is available, do it */
     if (sen_type == 0x0C) {
       if ((ed[0] & 0x0F) == 0x0) {
-        snprintf(temp_log, sizeof(temp_log), "DIMM%c%d ECC err,FRU:%u", 'A'+chn_num,
-                dimm_num, fru);
+        snprintf(temp_log, sizeof(temp_log), "DIMM%s ECC err,FRU:%u",
+            mem_mapping_string, fru);
         pal_add_cri_sel(temp_log);
       } else if ((ed[0] & 0x0F) == 0x1) {
-        snprintf(temp_log, sizeof(temp_log), "DIMM%c%d UECC err,FRU:%u", 'A'+chn_num,
-                dimm_num, fru);
+        snprintf(temp_log, sizeof(temp_log), "DIMM%s UECC err,FRU:%u",
+            mem_mapping_string, fru);
         pal_add_cri_sel(temp_log);
       }
     }
-      /* Then continue parse the error into a string. */
-      /* All Info Valid                               */
+
+    /* Then continue parse the error into a string. */
     snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d, DIMM# %d)",
-        (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
-  } else if (((ed[1] & 0xC) >> 2) == 0x1) {
+        cpu_num, chn_num, dimm_num);
+  } else if (info_valid == 0x1) {
     /* DIMM info not valid */
     snprintf(temp_log, sizeof(temp_log), " (CPU# %d, CHN# %d)",
-        (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
-  } else if (((ed[1] & 0xC) >> 2) == 0x2) {
+        cpu_num, chn_num);
+  } else if (info_valid == 0x2) {
     /* CHN info not valid */
     snprintf(temp_log, sizeof(temp_log), " (CPU# %d, DIMM# %d)",
-        (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
-  } else if (((ed[1] & 0xC) >> 2) == 0x3) {
+        cpu_num, dimm_num);
+  } else if (info_valid == 0x3) {
     /* CPU info not valid */
     snprintf(temp_log, sizeof(temp_log), " (CHN# %d, DIMM# %d)",
-        (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
+        chn_num, dimm_num);
   }
   strcat(error_log, temp_log);
   return 0;
@@ -12145,43 +12139,6 @@ pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
 int
 pal_get_sdr_update_flag(uint8_t slot) {
   return bic_get_sdr_threshold_update_flag(slot);
-}
-
-int
-pal_parse_mem_mapping_string(uint8_t channel, bool *support_mem_mapping, char *error_log) {
-  if ( !support_mem_mapping ) {
-    return  PAL_ENOTSUP;
-  }
-  if ( !error_log ) {
-    *support_mem_mapping = false;
-    return PAL_EOK;
-  }
-  error_log[0] = '\0';
-  *support_mem_mapping = false;
-
-#if defined(CONFIG_FBY2_ND)
-  //uint8_t channel = (sel[9] & 0x0f);
-  *support_mem_mapping = true;
-
-  switch (channel) {
-    case 2:
-      strcpy(error_log, "C0");
-      break;
-    case 3:
-      strcpy(error_log, "D0");
-      break;
-    case 6:
-      strcpy(error_log, "G0");
-      break;
-    case 7:
-      strcpy(error_log, "H0");
-      break;
-    default:
-      *support_mem_mapping = false;
-      break;
-  }
-#endif
-  return 0;
 }
 
 bool

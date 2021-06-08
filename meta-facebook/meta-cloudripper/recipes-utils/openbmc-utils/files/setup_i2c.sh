@@ -158,7 +158,7 @@ i2c_device_add 55 0x52 24c64                # FAN1 EEPROM
 # of devices and # of devices without drivers) will be dumped at the end
 # of this function.
 #
-i2c_check_driver_binding
+i2c_check_driver_binding "fix-binding"
 
 /usr/local/bin/xdpe12284-hack.sh
 /usr/local/bin/rebind-driver.sh

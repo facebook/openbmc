@@ -2,11 +2,13 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://init \
             file://sshd_config \
+            file://ssh_idle_logout.sh \
            "
 
 PR .= ".3"
 
 RDEPENDS_${PN} += "bash"
+SSH_IDLE_TIMEOUT ?= "900"
 
 do_configure_append() {
     sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config
@@ -20,5 +22,13 @@ do_configure_append() {
         # calling this "configuration"
         sed -i 's:.*HostKey.*\(/etc\):HostKey /mnt/data\1:' sshd_config
         sed -i '/ssh_host_key/d' sshd_config
+    fi
+}
+
+do_install_append() {
+    install -d ${D}/${sysconfdir}/profile.d
+    if [ "${SSH_IDLE_TIMEOUT}" -ne "0" ]; then
+        install -m 644 ../ssh_idle_logout.sh ${D}/${sysconfdir}/profile.d/ssh_idle_logout.sh
+        sed -i 's/__SSH_TMOUT__/${SSH_IDLE_TIMEOUT}/g' ${D}/${sysconfdir}/profile.d/ssh_idle_logout.sh
     fi
 }

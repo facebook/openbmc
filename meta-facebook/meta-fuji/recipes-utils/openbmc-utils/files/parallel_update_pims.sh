@@ -29,11 +29,12 @@
 fpgaimg=$1
 log_dir=/tmp/
 tmpfile=/tmp/domfpga
+DOM_FPGA_START=3
 
 parallel_fpga_update(){
     # extend the image size to fit flash size
     cp "$fpgaimg" "$tmpfile"
-    flashsize=$(flashrom -p linux_spi:dev=/dev/spidev4.0 | grep -i kB | xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
+    flashsize=$(flashrom -p linux_spi:dev=/dev/spidev$DOM_FPGA_START.0 | grep -i kB | xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
     filesize=$(stat -c%s $tmpfile)
     addsize=$(($((flashsize * 1024)) - filesize))
 
@@ -43,10 +44,10 @@ parallel_fpga_update(){
 
     # start dom fpga update
     printf "\nUsb-spi parallel dom fpga update:\n\n"
-    for(( spidev=4 ; spidev<=11 ; spidev++ ))
+    for(( spidev=DOM_FPGA_START ; spidev<$((DOM_FPGA_START+8)) ; spidev++ ))
     do
         printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((spidev-3))"
-        ( flashrom -p linux_spi:dev=/dev/spidev$spidev.0 -w "$tmpfile" > ${log_dir}flash_spidev${spidev}_multi_log )  &
+        ( flashrom -p linux_spi:dev=/dev/spidev"$spidev".0 -w "$tmpfile" > ${log_dir}flash_spidev${spidev}_multi_log )  &
     done
     printf "\n \e[mwaitting for the update finished...\e[m"
     while [ "$(ps w | grep -i flashrom | grep -v grep)" != "" ]

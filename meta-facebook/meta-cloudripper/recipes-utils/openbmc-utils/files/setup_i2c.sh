@@ -161,3 +161,4 @@ i2c_device_add 55 0x52 24c64                # FAN1 EEPROM
 i2c_check_driver_binding
 
 /usr/local/bin/xdpe12284-hack.sh
+/usr/local/bin/rebind-driver.sh

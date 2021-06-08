@@ -21,107 +21,127 @@
 
 import json
 import re
-import subprocess
-from abc import abstractmethod
 
 from utils.cit_logger import Logger
-from utils.shell_util import run_shell_cmd
+from utils.shell_util import run_cmd
 
 
 class BaseLogUtilTest(object):
-    """[summary] Base class for fw_util test
-    To provide common function
-    """
-
-    def verify_output(self, cmd, str_wanted, msg=None):
-        Logger.info("executing cmd = {}".format(cmd))
-        out = run_shell_cmd(cmd)
-        self.assertIn(str_wanted, out, msg=msg)
-
-    @abstractmethod
-    def set_platform(self):
-        pass
-
-    @abstractmethod
-    def set_output_regex_mapping(self):
-        pass
-
     def setUp(self):
-        self.set_platform()
-        self.set_output_regex_mapping()
-        with open(
-            "/usr/local/bin/tests2/tests/{}/test_data/logutil/info.json".format(
-                self.platform
-            )
-        ) as f:
-            self.info = json.load(f)
         Logger.start(name=self._testMethodName)
 
-    def test_show_log(self):
-        for fru in self.info.keys():
-            cmd = ["log-util", fru, "--print"]
-            with self.subTest("test show log {}".format(fru)):
-                ret = subprocess.run(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                )
-                self.assertEqual(ret.returncode, 0)
+    def validate_fru_id(self, fru_id, regex=None):
+        """
+        validate fru_id field, it should contain digit only
+        ex. 0,9
+        """
+        if not regex:
+            regex = r"\d+"
+        self.assertRegex(fru_id, regex, "incorrect fru id found: {}".format(fru_id))
 
-    def test_show_log_json(self):
-        for fru in self.info.keys():
-            cmd = ["log-util", fru, "--json", "--print"]
-            with self.subTest("test show log json {}".format(fru)):
-                out = subprocess.run(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                )
-                Logger.info("CLI cmd: {}".format(cmd))
-                Logger.info("CLI output: {}".format(out))
-                # test if return == 0
-                self.assertEqual(out.returncode, 0)
-                if out.stdout:
-                    out = json.loads(out.stdout.decode("utf-8"))
-                    # if Logs is not empty, then we proceed to verify FRU name
-                    if out["Logs"]:
-                        self.assertEqual(out["Logs"][0]["FRU_NAME"], fru)
+    def validate_timestamp(self, ts, regex=None):
+        """
+        validate timestamp format
+        ex. 2021-06-04 12:11:12
+        """
+        if not regex:
+            regex = r"\d{1,4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}"
+        self.assertRegex(ts, regex, "incorrect timstamp found: {}".format(ts))
 
-    def test_validate_log_format(self):
-        for fru in self.info.keys():
-            cmd = "log-util {} --print | head -n 1".format(fru)
-            console_out = subprocess.run(
-                cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            ).stdout.decode("utf-8")
-            Logger.info("CLI cmd: {}".format(cmd))
-            Logger.info("CLI output: {}".format(console_out))
-            # only test if FRU name exist in output.
-            # If log being cleared before, then nothing can be test
-            if fru in console_out:
-                out = [_out for _out in console_out.split("  ") if _out]
-                for key, value in self.output_regex_mapping.items():
-                    with self.subTest("validate log format {}".format(key)):
-                        regex = value["regex"]
-                        idx = value["idx"]
-                        Logger.info("regex: {}".format(regex))
-                        Logger.info("content: {}".format(out[idx]))
-                        rx = re.compile(regex)
-                        self.assertIsNone(rx.search(out[idx]))
+    def validate_app_name(self, app_name, regex=None):
+        """
+        validate app name, it should not contain any special chracter
+        """
+        if not regex:
+            regex = r"[a-zA-Z0-9]"
+        self.assertRegex(
+            app_name, regex, "incorrect app name found: {}".format(app_name)
+        )
 
-    def test_validate_log_format_json(self):
-        for fru in self.info.keys():
-            cmd = "log-util {} --print --json".format(fru)
-            console_out = json.loads(
-                subprocess.run(
-                    cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-                ).stdout.decode("utf-8")
+    def test_log_format(self):
+        """
+        test log-util [FRU] --print and verify output
+        """
+        cmd = ["log-util", self.FRU, "--print"]
+        Logger.info("running cmd: {}".format(" ".join(cmd)))
+        out = run_cmd(cmd)
+        if not out:
+            Logger.info("empty log, skip the test")
+            self.assertTrue(True)
+            return
+        if self.FRU == "all":
+            pattern = (
+                r"(?P<fru_id>\S+)\s{2,}"
+                + "all"
+                + r"\s{2,}(?P<ts>.+)\s{4,}(?P<app_name>\S+)\s{2,}(?P<msg>.+)\n"
             )
-            Logger.info("CLI cmd: {}".format(" ".join(cmd)))
-            Logger.info("CLI output: {}".format(console_out))
-            # only test if Logs existed
-            if console_out["Logs"]:
-                # check the first logs
-                _out = console_out["Logs"][0]
-                for log_header, log_format in self.output_regex_mapping.items():
-                    with self.subTest("validate log format json {}".format(log_header)):
-                        regex = log_format["regex"]
-                        Logger.info("regex: {}".format(regex))
-                        Logger.info("content: {}".format(_out[log_header]))
-                        rx = re.compile(regex)
-                        self.assertIsNone(rx.search(_out[log_header]))
+        else:
+            pattern = (
+                r"(?P<fru_id>\S+)\s{2,}"
+                + self.FRU
+                + r"\s{2,}(?P<ts>.+)\s{4,}(?P<app_name>\S+)\s{2,}(?P<msg>.+)\n"
+            )
+        m = re.search(pattern, out)
+        if m:
+            self.validate_fru_id(m.group("fru_id"))
+            self.validate_timestamp(m.group("ts"))
+            self.validate_app_name(m.group("app_name"))
+        else:
+            if re.search(r"User cleared", out):
+                Logger.info("Log being cleared by user, skip the test")
+                self.assertTrue(True)
+                return
+            else:
+                self.assertIsNotNone(
+                    m, "no matching log found. output is {}".format(out)
+                )
+
+    def test_log_format_json(self):
+        """
+        test log-util [FRU] --print --json and verify output
+        """
+        cmd = ["log-util", self.FRU, "--print", "--json"]
+        Logger.info("running cmd: {}".format(" ".join(cmd)))
+        out = run_cmd(cmd)
+        if not out:
+            Logger.info("empty output, skip the test")
+            self.assertTrue(True)
+            return
+        # convert json out to dict
+        out = json.loads(out)
+        # if log is empty, skip the test
+        if len(out["Logs"]) == 0:
+            Logger.info("empty log, skip test")
+            self.assertTrue(True)
+            return
+        # extract the first logs from the output
+        log = out["Logs"][0]
+        # validate FRU_ID
+        self.validate_fru_id(log["FRU#"])
+        # validate FRU_NAME
+        # if FRU_NAME is "all", then skip FRU check since it could be anything
+        if self.FRU != "all":
+            self.assertEqual(
+                log["FRU_NAME"],
+                self.FRU,
+                "unmatch fru, expect {} got {}".format(self.FRU, log["FRU_NAME"]),
+            )
+        # validate timestamp
+        self.validate_timestamp(log["TIME_STAMP"])
+        # validate app name
+        self.validate_app_name(log["APP_NAME"])
+
+    def test_log_clear(self):
+        """
+        test to clear SEL
+        we only test to clear sys log so:
+        1. speed up the test
+        2. won't clear whole BMC logs
+        """
+        cmd = ["log-util", self.FRU, "--clear"]
+        Logger.info("running cmd: {}".format(" ".join(cmd)))
+        out = run_cmd(cmd)
+        cmd = ["log-util", self.FRU, "--print"]
+        pattern = r"log-util: User cleared " + self.FRU + r" logs"
+        out = run_cmd(cmd)
+        self.assertRegex(out, pattern, "unexpected output: {}".format(out))

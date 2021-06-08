@@ -21,19 +21,34 @@ import unittest
 
 from common.base_log_util_test import BaseLogUtilTest
 
-PLATFORM = "fbttn"
+
+class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
+    FRU = "all"
+
+    @unittest.skip("not available")
+    def test_log_clear(self):
+        pass
 
 
-class LogUtilTest(BaseLogUtilTest, unittest.TestCase):
-    def set_output_regex_mapping(self):
-        # TODO: this is initial draft to check any charactors which are not suppose to exist
-        # We can work on more details later
-        self.output_regex_mapping = {
-            "APP_NAME": {"idx": 3, "regex": ":"},
-            "FRU#": {"idx": 0, "regex": ":"},
-            "FRU_NAME": {"idx": 1, "regex": ":"},
-            "TIME_STAMP": {"idx": 2, "regex": "[a-zA-Z]"},
-        }
+class DpbLogUtilTest(AllLogUtilTest):
+    FRU = "dpb"
 
-    def set_platform(self):
-        self.platform = PLATFORM
+
+class IomLogUtilTest(AllLogUtilTest):
+    FRU = "iom"
+
+
+class NicLogUtilTest(AllLogUtilTest):
+    FRU = "nic"
+
+
+class SccLogUtilTest(AllLogUtilTest):
+    FRU = "scc"
+
+
+class ServerLogUtilTest(AllLogUtilTest):
+    FRU = "server"
+
+
+class SysLogUtilTest(BaseLogUtilTest, unittest.TestCase):
+    FRU = "sys"

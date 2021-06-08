@@ -171,3 +171,5 @@ i2c_device_add "$(get_mux_bus_num 11-0076 7)" 0x52 24c64           # FAN tray
 # of this function.
 #
 i2c_check_driver_binding
+
+/usr/local/bin/rebind-driver.sh

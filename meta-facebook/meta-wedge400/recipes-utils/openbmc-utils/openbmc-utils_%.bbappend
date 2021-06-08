@@ -29,6 +29,7 @@ SRC_URI += "file://board-utils.sh \
             file://power-on.sh \
             file://presence_util.sh \
             file://pwrcpld_update.sh \
+            file://rebind-driver.sh \
             file://reset_brcm.sh \
             file://scmcpld_update.sh \
             file://set_sled.sh \
@@ -58,6 +59,7 @@ OPENBMC_UTILS_FILES += " \
     fpga_ver.sh \
     presence_util.sh \
     pwrcpld_update.sh \
+    rebind-driver.sh \
     reset_brcm.sh \
     scmcpld_update.sh \
     set_sled.sh \

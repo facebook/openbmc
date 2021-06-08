@@ -616,10 +616,8 @@ config_spi1_pin_and_path(){
             exit 1
         ;;
     esac
-    case $dev in
-        "TH4_PCIE_FLASH" | "IOB_FPGA" | "PCIE_SW" | "COME_BIOS")
-            mtd_driver_rebind_spi1
-    esac
+
+    mtd_driver_rebind_spi1
     echo "Config SPI1 Done."
 }
 

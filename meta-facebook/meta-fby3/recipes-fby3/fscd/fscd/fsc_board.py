@@ -204,7 +204,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         return 1
                     else:
                         return 0
-                elif search(r"dp_pcie_temp", sname) is not None:
+                elif search(r"dp_marvell_hsm_t", sname) is not None:
                     pcie_info_key = (
                         "sys_config/" + fru_map[board]["name"] + "_pcie_i04_s40_info"
                     )

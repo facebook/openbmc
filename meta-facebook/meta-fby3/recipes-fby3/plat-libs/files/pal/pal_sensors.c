@@ -626,7 +626,7 @@ const uint8_t bic_1ou_edsff_skip_sensor_list[] = {
 };
 
 const uint8_t bic_dp_sensor_list[] = {
-  BIC_SENSOR_DP_PCIE_TEMP,
+  BIC_SENSOR_DP_MARVELL_HSM_TEMP,
 };
 
 const uint8_t nic_sensor_list[] = {
@@ -2621,7 +2621,7 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if (sensor_id == BIC_SENSOR_DP_PCIE_TEMP) {
+      if (sensor_id == BIC_SENSOR_DP_MARVELL_HSM_TEMP) {
         char key[MAX_KEY_LEN] = {0};
         char value[MAX_VALUE_LEN] = {0};
         struct pcie_info* pcie_info = (struct pcie_info *) value;

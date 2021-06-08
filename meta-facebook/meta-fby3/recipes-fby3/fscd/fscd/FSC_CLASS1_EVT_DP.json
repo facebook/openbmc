@@ -29,7 +29,7 @@
         "type" : "power_status"
       }
     },
-    "(.*)dp_pcie_temp": {
+    "(.*)dp_marvell_hsm_t": {
       "attribute": {
         "type" : "power_status"
       }

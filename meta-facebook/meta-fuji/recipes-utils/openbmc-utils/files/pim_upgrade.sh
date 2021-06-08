@@ -21,10 +21,10 @@
 # The command format is
 #
 # Command to upgrade all pims in parallel:
-#  pim_upgrade.sh all <iob fpga image>
+#  pim_upgrade.sh all <dom fpga image>
 #
 # Command to upgrade a single pim:
-#  pim_upgrade.sh pim1/pim2/pim3/pim4/pim5/pim6/pim7/pim8 <iob fpga image>
+#  pim_upgrade.sh pim1/pim2/pim3/pim4/pim5/pim6/pim7/pim8 <dom fpga image>
 #
 # SC2009: Consider using pgrep instead of grepping ps output.
 # because we dont have the pgrep, disable the SC2009 check
@@ -89,7 +89,7 @@ fpga_update(){
 case $target in
     "pim1" | "pim2" | "pim3" | "pim4" | "pim5" | "pim6" | "pim7" | "pim8" | "all")
         if [ "$fpgaimg" != "" ] && [ -f "$fpgaimg" ];then
-            # switch pim mux from dom fpga to iob fpga
+            # switch pim mux from dom fpga to dom fpga
             switch_pim_mux_to_fpga.sh
             fpga_update
 	    exit 0
@@ -101,8 +101,8 @@ esac
 
 echo "Usage:"
 echo "Command to upgrade all pims in parallel:"
-echo "  $0 all <iob fpga image>"
+echo "  $0 all <dom fpga image>"
 echo ""
 echo "Command to upgrade a single pim:"
-echo "  $0 pim1/pim2/pim3/pim4/pim5/pim6/pim7/pim8 <iob fpga image>"
+echo "  $0 pim1/pim2/pim3/pim4/pim5/pim6/pim7/pim8 <dom fpga image>"
 

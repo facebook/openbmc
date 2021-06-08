@@ -106,6 +106,10 @@ struct mctp_pldm_rsp {
   struct mctp_pldm_rsp_pkt pkt;
 } __attribute__((packed));
 
+// SPDM Struct
+#define SPDM_MAX_PAYLOAD 4099
+
+
 /* OBMC Binding */
 struct obmc_mctp_binding {
   struct mctp *mctp;
@@ -115,6 +119,12 @@ struct obmc_mctp_binding {
 struct obmc_mctp_hdr {
   uint8_t flag_tag;
   uint8_t Msg_Size;
+  uint8_t Msg_Type;
+} __attribute__((packed));
+
+struct obmc_mctp_spdm_hdr {
+  uint8_t flag_tag;
+  uint16_t Msg_Size;
   uint8_t Msg_Type;
 } __attribute__((packed));
 
@@ -163,6 +173,9 @@ int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                       uint8_t tid);
 
 int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+                  uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
+
+int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
 
 int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,

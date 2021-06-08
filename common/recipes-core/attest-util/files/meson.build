@@ -8,34 +8,36 @@ project('attest-util', 'c', 'cpp',
     ],
     meson_version: '>=0.40',
 )
-
-cc = meson.get_compiler('c')
-deps = [
-  dependency('threads'),
-]
-
 srcs = files(
     'message_types/spdm.cpp',
     'utils.cpp',
 )
+
+cc = meson.get_compiler('c')
+deps = [
+  dependency('threads'),
+  cc.find_library('pal'),
+  cc.find_library('obmc-mctp'),
+]
+
+# Test deps.
+test_deps = [
+  cc.find_library('gmock'),
+  cc.find_library('gtest'),
+  cc.find_library('gtest_main'),
+]
 
 attest_util_exe = executable(
     'attest-util', 
     srcs, 'main.cpp',
     dependencies: deps,
     install: true,
+    install_dir : 'local/bin',
 )
-
-# Test deps.
-test_deps = [
-  cc.find_library('gmock'),
-  cc.find_library('gtest'),
-  cc.find_library('gtest_main')
-]
-
-cppc = meson.get_compiler('cpp')
 
 attest_util_test = executable('test-attest-util', 'tests/test_util.cpp', srcs,
   dependencies: [deps, test_deps],
-  cpp_args: ['-D__TEST__'])
+  cpp_args: ['-D__TEST__'], 
+  install_dir: 'lib/name-util/ptest',
+)
 test('attest-util-tests', attest_util_test)

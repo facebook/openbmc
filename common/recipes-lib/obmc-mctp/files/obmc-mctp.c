@@ -53,6 +53,7 @@ static void rx_handler(uint8_t eid, void *data, void *msg, size_t len,
   if (tag_owner)
     p->flag_tag |= MCTP_HDR_FLAG_TO;
   MCTP_HDR_SET_TAG(p->flag_tag, tag);
+
   p->Msg_Size = len;
   memcpy(&p->Msg_Type, msg, len);
 }
@@ -219,15 +220,56 @@ int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
       return -1;
     }
 
-    // Msg_Size only contains number of bytes not including source eid and length byte.
-    // However data/rbuf contains those bytes, so when returning raw, return size + 2
-    if (p->Msg_Size + 2 > 0) {
+    // Total size of raw message is body + tag + size byte
+    if (p->Msg_Size > 0) {
       return p->Msg_Size + 2;
     }
   }
+
   syslog(LOG_ERR, "%s: MCTP timeout", __func__);
   return -1;
 }
+
+static void spdm_rx_handler(uint8_t eid, void *data, void *msg, size_t len,
+                       bool tag_owner, uint8_t tag, void *prv)
+{
+  struct obmc_mctp_spdm_hdr *p = (struct obmc_mctp_spdm_hdr *)data;
+
+  if (tag_owner)
+    p->flag_tag |= MCTP_HDR_FLAG_TO;
+  MCTP_HDR_SET_TAG(p->flag_tag, tag);
+
+  p->Msg_Size = len;
+  memcpy(&p->Msg_Type, msg, len);
+}
+
+// reads MCTP response off smbus
+// return byte count, do not interpret data (e.g. MCTP msg type)
+int mctp_smbus_recv_spdm_data_raw(struct mctp *mctp, uint8_t dst,
+                                 struct mctp_binding_smbus *smbus,
+                                 void *data, int TOsec)
+{
+  struct obmc_mctp_spdm_hdr *p = (struct obmc_mctp_spdm_hdr *)data;
+
+  mctp_set_rx_all(mctp, spdm_rx_handler, data);
+
+  while (1) {
+    if (mctp_smbus_read(smbus) < 0) {
+      syslog(LOG_ERR, "%s: MCTP RX error", __func__);
+      return -1;
+    }
+
+
+    // Total size of raw message is body + tag + size byte
+    if (p->Msg_Size > 0) {
+      return p->Msg_Size + 1 + sizeof(p->Msg_Size);
+    }
+  }
+
+  syslog(LOG_ERR, "%s: MCTP timeout", __func__);
+  return -1;
+}
+
 
 int mctp_smbus_recv_data(struct mctp *mctp, uint8_t dst,
                          struct mctp_binding_smbus *smbus,
@@ -388,6 +430,43 @@ int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
 
   //ret = mctp_smbus_recv_data(mctp_binding->mctp, dst_eid, smbus, rbuf);
   ret = mctp_smbus_recv_data_timeout_raw(mctp_binding->mctp, dst_eid, smbus, rbuf, -1);
+  if (ret < 0) {
+    printf("%s: error getting response\n", __func__);
+    goto bail;
+  } else {
+    *rlen = ret;
+    ret = 0;
+  }
+
+bail:
+  obmc_mctp_smbus_free(mctp_binding);
+  return ret;
+}
+
+int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+                  uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen)
+{
+  int ret = -1;
+  uint8_t tag = 0;
+  struct obmc_mctp_binding *mctp_binding;
+  struct mctp_binding_smbus *smbus;
+
+
+  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, SPDM_MAX_PAYLOAD);
+  if (mctp_binding == NULL) {
+    syslog(LOG_ERR, "%s: Error: mctp binding failed", __func__);
+    return -1;
+  }
+  smbus = (struct mctp_binding_smbus *)mctp_binding->prot;
+
+  tag |= MCTP_HDR_FLAG_TO;
+  ret = mctp_smbus_send_data(mctp_binding->mctp, dst_eid, tag, smbus, tbuf, tlen);
+  if (ret < 0) {
+    printf("error: %s send failed\n", __func__);
+    goto bail;
+  }
+
+  ret = mctp_smbus_recv_spdm_data_raw(mctp_binding->mctp, dst_eid, smbus, rbuf, -1);
   if (ret < 0) {
     syslog(LOG_ERR, "%s: error getting response\n", __func__);
     goto bail;

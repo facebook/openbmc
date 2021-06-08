@@ -11,9 +11,11 @@ class SpdmMessage {
  public:
   // These are the current input parameters for sending SPDM messages.
   struct SubcommandOptions {
-    std::string device;
-    std::string inputFileName;
+    uint8_t device;
+    std::string inputFileName = "";
+    std::string inputString = "";
     std::string outputType;
+    bool debugOutput = false;;
   };
 
   /**

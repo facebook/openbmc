@@ -36,3 +36,6 @@ vector<uint8_t> decodeBase64(string& encodedString);
  * uses '=' as padding when the byte count is not divisible by 3.
  */
 string encodeBase64(std::vector<uint8_t>& bytes);
+
+/** Prints an array of bytes as 2-character hex values. */
+void printHexValues(uint8_t *values, int size);

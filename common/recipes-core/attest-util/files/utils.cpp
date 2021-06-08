@@ -1,5 +1,6 @@
 #include <utils.hpp>
 #include <iostream>
+#include <iomanip>
 #include "nlohmann/json.hpp"
 
 void handleResponseRaw(string response, string error) {
@@ -112,4 +113,21 @@ string encodeBase64(vector<uint8_t>& bytes) {
   }
 
   return encodedBytes;
+}
+
+
+void printHexValues(uint8_t *values, int size) {
+  for(int index = 0; index < size; ++index) {
+    if(index != 0 && index % 16 == 0)
+      std::cout << std::endl;
+
+    std::cout << std::setfill('0')
+              << std::setw(2)
+              << std::right
+              << std::hex
+              << +values[index]
+              << " ";
+  }
+
+  std::cout << std::endl;
 }

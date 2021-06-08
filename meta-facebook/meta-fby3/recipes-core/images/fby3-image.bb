@@ -18,6 +18,7 @@ require recipes-core/images/fb-openbmc-image.bb
 
 # Include modules in rootfs
 IMAGE_INSTALL += " \
+  attest-util \
   healthd \
   fan-util \
   fscd \

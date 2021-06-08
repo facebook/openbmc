@@ -20,6 +20,7 @@
 import json
 import os
 import re
+import time
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
@@ -56,6 +57,16 @@ class BaseRestEndpointException(Exception):
 class BaseRestEndpointTest(object):
 
     CURL_CMD6 = "http://localhost:8080{}"
+
+    WAIT_UNTIL_REACHABLE_ENDPOINT = "http://localhost:8080/api"
+    # WAIT_UNTIL_REACHABLE_TIMEOUT should be greater than the amount of time it takes
+    # for the REST daemon to start (so that we cater for the worst case scenario, e.g.
+    # a previous test restarting the REST api)
+    WAIT_UNTIL_REACHABLE_TIMEOUT = 7 * 60
+
+    @classmethod
+    def setUpClass(cls):
+        cls._try_wait_until_reachable()
 
     def setUp(self):
         Logger.start(name=self._testMethodName)
@@ -149,6 +160,37 @@ class BaseRestEndpointTest(object):
             dict_info = json.loads(info)
             self.verify_endpoint_resource(
                 endpointname=endpointname, resources=dict_info["Resources"]
+            )
+
+    @classmethod
+    def _try_wait_until_reachable(cls):
+        """
+        Wait until the BMC is reachable in a best-effort way. Meant to be used in
+        setUpClass() to reduce the amount of false positives due to the REST api
+        not being up by the time the test is scheduled to run
+        """
+        timedout_at = time.perf_counter() + cls.WAIT_UNTIL_REACHABLE_TIMEOUT
+
+        last_exc = None
+
+        # Wait WAIT_UNTIL_REACHABLE_TIMEOUT seconds until the BMC responds successfully
+        while time.perf_counter() < timedout_at:
+            try:
+                urlopen(cls.WAIT_UNTIL_REACHABLE_ENDPOINT, timeout=5)
+                break
+
+            except OSError as e:
+                last_exc = e
+                time.sleep(10)
+
+        else:
+            Logger.error(
+                "Could not GET {WAIT_UNTIL_REACHABLE_ENDPOINT} after {WAIT_UNTIL_REACHABLE_TIMEOUT} seconds while setting up {cls}, tests will likely fail: {last_exc}".format(  # noqa: B950
+                    WAIT_UNTIL_REACHABLE_ENDPOINT=cls.WAIT_UNTIL_REACHABLE_ENDPOINT,
+                    WAIT_UNTIL_REACHABLE_TIMEOUT=cls.WAIT_UNTIL_REACHABLE_TIMEOUT,
+                    cls=cls,
+                    last_exc=repr(last_exc),
+                )
             )
 
 

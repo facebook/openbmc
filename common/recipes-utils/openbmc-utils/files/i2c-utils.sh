@@ -130,6 +130,8 @@ i2c_driver_map() {
             echo "ucd9000";;
         "xdpe132g5c")
             echo "xdpe132g5c";;
+        "ir35215")
+            echo "ir35215";;
         *)
             echo "";;
     esac

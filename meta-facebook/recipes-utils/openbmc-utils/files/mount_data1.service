@@ -1,4 +1,4 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2021-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +14,21 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+# Mount persistent storage on /mnt/data1.  This should be a "Mount" unit, but
+# sadly jffs2 is fussy and the mount script needs to do remediations.
 
-SRC_URI += "file://mTerm/run \
-        file://mTerm_server.service \
-           "
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
+[Unit]
+Description=Mount /mnt/data1
+After=local-fs-pre.target
+Before=local-fs.target
+DefaultDependencies=no
 
-S = "${WORKDIR}"
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/mount_data1.sh
 
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
+[Install]
+WantedBy=local-fs.target

@@ -161,6 +161,20 @@ install_systemd() {
     install -m 644 ${WORKDIR}/mount_data0.service ${D}${systemd_system_unitdir}
     # data1 will be mounted via fstab in a different recipe
 
+    if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
+        if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" = "x0" ]; then
+             # auto-mount emmc to /mnt/data1
+            install -m 0755 ${WORKDIR}/mount_data1.sh \
+                    ${D}/usr/local/bin/mount_data1.sh
+        fi
+    fi
+
+    # If emmc-ext4 feature is enabled, we want to default to ext4 over btrfs.
+    # Update the blkdev_mount script to reflect this.
+    if ! echo ${MACHINE_FEATURES} | awk "/emmc-ext4/ {exit 1}"; then
+        sed -i 's/="btrfs"/="ext4"/' ${dstdir}/blkdev_mount.sh
+    fi
+
     # Install disable-watchdog.
     if ! echo ${PACKAGECONFIG} | awk "/disable-watchdog/ {exit 1}"; then
         install -m 0755 ${S}/disable_watchdog.sh ${D}/usr/local/bin

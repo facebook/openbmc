@@ -45,6 +45,7 @@ SRC_URI += "file://beutil \
             file://wedge_us_mac.sh \
             file://xdpe12284-hack.sh \
             file://mount_data1.service \
+            file://setup_gpio.service \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -132,6 +133,8 @@ do_work_systemd() {
 
   install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
 
+  install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}
+
 }
 
 do_install_board() {
@@ -156,7 +159,7 @@ do_install_append() {
 
 FILES_${PN} += "${sysconfdir}"
 
-SYSTEMD_SERVICE_${PN} += "mount_data1.service"
+SYSTEMD_SERVICE_${PN} += "mount_data1.service setup_gpio.service"
 
 #Not needed for cloudripper
 SYSTEMD_SERVICE_${PN}_remove = "enable_watchdog_ext_signal.service"

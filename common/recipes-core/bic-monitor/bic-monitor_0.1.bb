@@ -15,6 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+inherit systemd
+
 SUMMARY = "GPIO Sensor Monitoring Daemon"
 DESCRIPTION = "Daemon for monitoring the bic sensors"
 SECTION = "base"
@@ -26,6 +28,7 @@ SRC_URI = "file://Makefile \
            file://bic-monitor.c \
            file://setup-bic-monitor.sh \
            file://run-bic-monitor.sh \
+           file://bicmond.service \
           "
 
 S = "${WORKDIR}"
@@ -41,15 +44,7 @@ RDEPENDS_${PN} += " libbic libpal liblog libmisc-utils bash"
 
 pkgdir = "bicmond"
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${dst}/$f
-    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
+install_sysv() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv
@@ -60,6 +55,30 @@ do_install() {
   update-rc.d -r ${D} setup-bic-monitor.sh start 91 5 .
 }
 
+install_systemd() {
+  install -d ${D}${systemd_system_unitdir}
+  install -m 644 bicmond.service ${D}${systemd_system_unitdir}
+}
+
+do_install() {
+  dst="${D}/usr/local/fbpackages/${pkgdir}"
+  bin="${D}/usr/local/bin"
+  install -d $dst
+  install -d $bin
+  for f in ${binfiles}; do
+    install -m 755 $f ${dst}/$f
+    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
+  done
+
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      install_systemd
+  else
+      install_sysv
+  fi
+}
+
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES_${PN} = "${FBPACKAGEDIR}/bicmond ${prefix}/local/bin ${sysconfdir} "
+
+SYSTEMD_SERVICE_${PN} = "bicmond.service"

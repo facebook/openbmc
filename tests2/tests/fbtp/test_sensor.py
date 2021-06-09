@@ -17,10 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import re
 import unittest
 
 from common.base_sensor_test import SensorUtilTest
 from tests.fbtp.test_data.sensors.sensors import SENSORS
+from utils.cit_logger import Logger
+from utils.shell_util import run_cmd
 
 
 class MBSensorTest(SensorUtilTest, unittest.TestCase):
@@ -43,10 +46,23 @@ class NicSensorTest(MBSensorTest):
 class Riser2SensorTest(MBSensorTest):
     FRU_NAME = "riser_slot2"
 
+    def test_sensor_keys(self):
+        # for fbtp, T6/8 won't have riser sensor, so we'll skip the test
+        cmd = ["kv", "get", "mb_system_conf_desc", "persistent"]
+        m = re.search("Type 6/8 compute", run_cmd(cmd))
+        if m:
+            Logger.info("{} sensor not present, skip the test".format(self.FRU_NAME))
+            self.assertTrue(True)
+            return
+        result = self.get_parsed_result()
+        for key in SENSORS[self.FRU_NAME]:
+            with self.subTest(sensor=key):
+                self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
 
-class Riser3SensorTest(MBSensorTest):
+
+class Riser3SensorTest(Riser2SensorTest):
     FRU_NAME = "riser_slot3"
 
 
-class Riser4SensorTest(MBSensorTest):
+class Riser4SensorTest(Riser2SensorTest):
     FRU_NAME = "riser_slot4"

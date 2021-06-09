@@ -468,11 +468,18 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case UNIFIED_IIO_ERR:
-      sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error ID: 0x%02X",
-              general_info, dimm_info.sled, dimm_info.socket, sel[9], sel[12]);
-      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel[12]);
+    {
+      uint8_t stack = sel[9];
+      uint8_t error_type = sel[13];
+      uint8_t error_severity = sel[14];
+      uint8_t error_id = sel[15];
+
+      sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error Type: 0x%02X, Error Severity: 0x%02X, Error ID: 0x%02X",
+              general_info, dimm_info.sled, dimm_info.socket, stack, error_type, error_severity, error_id);
+      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, error_id);
       pal_add_cri_sel(temp_log);
       break;
+    }
 
     case UNIFIED_POST_ERR:
       event_type = sel[8] & 0xF;

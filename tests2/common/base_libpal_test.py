@@ -156,12 +156,13 @@ class LibPalTest(TestCase):
                 continue
 
             for snr_num in pal.pal_get_fru_sensor_list(fru_id):
-                val = pal.sensor_raw_read(fru_id, snr_num)
+                with self.subTest("fru_id {} snr_num {}".format(fru_id, snr_num)):
+                    val = pal.sensor_raw_read(fru_id, snr_num)
 
-                self.assertEqual(type(val), float)
+                    self.assertEqual(type(val), float)
 
-                # Ensure value is a real number (i.e. not NaN or INF)
-                self.assertTrue(math.isfinite(val))
+                    # Ensure value is a real number (i.e. not NaN or INF)
+                    self.assertTrue(math.isfinite(val))
 
     def test_sensor_read(self):
         fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
@@ -174,12 +175,13 @@ class LibPalTest(TestCase):
                 continue
 
             for snr_num in pal.pal_get_fru_sensor_list(fru_id):
-                val = pal.sensor_read(fru_id, snr_num)
+                with self.subTest("fru_id {} snr_num {}".format(fru_id, snr_num)):
+                    val = pal.sensor_read(fru_id, snr_num)
 
-                self.assertEqual(type(val), float)
+                    self.assertEqual(type(val), float)
 
-                # Ensure value is a real number (i.e. not NaN or INF)
-                self.assertTrue(math.isfinite(val))
+                    # Ensure value is a real number (i.e. not NaN or INF)
+                    self.assertTrue(math.isfinite(val))
 
     def test_sensor_read_fru_not_present(self):
         fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]

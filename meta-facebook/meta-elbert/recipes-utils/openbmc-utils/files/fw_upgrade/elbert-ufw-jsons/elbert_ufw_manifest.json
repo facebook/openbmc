@@ -1,11 +1,9 @@
 {
     "bios" : {
-        "get_version" : "strings /tmp/fw_upgrade/coreboot-elbert.rom | grep -w elbert",
         "priority" : 1,
         "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename}"
     },
     "scm" : {
-        "get_version" : "fpga_ver.sh | grep SCM_FPGA | cut -f 2 -d ' '",
         "upgrade_cmd" : "fpga_util.sh scm program {filename}",
         "priority" : 2
     },

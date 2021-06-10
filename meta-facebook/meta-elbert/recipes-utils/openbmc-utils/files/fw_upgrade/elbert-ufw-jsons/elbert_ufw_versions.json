@@ -2,8 +2,7 @@
     "bios": {
         "filename": "coreboot-elbert.rom",
         "hash": "sha1sum",
-        "hash_value": "70c1ecb4e69d8926297d7bf6598634d944676954",
-        "version": ""
+        "hash_value": "70c1ecb4e69d8926297d7bf6598634d944676954"
     },
     "fan": {
         "filename": "elbert_fan.astp",
@@ -32,8 +31,7 @@
     "scm": {
         "filename": "elbert_scm.astp",
         "hash": "sha1sum",
-        "hash_value": "4d5c19da719549c15d29002457805a1da88b882b",
-        "version": "2.14"
+        "hash_value": "4d5c19da719549c15d29002457805a1da88b882b"
     },
     "smb": {
         "filename": "elbert_smb.astp",

@@ -20,7 +20,7 @@
 # This tool is used to refresh dom fpga (parallel mode), after execution it will update all dom fpga firmware at the same time.
 # The command format is
 #
-# parallel_update_pims.sh <iob fpga image>
+# parallel_update_pims.sh <dom fpga image>
 #
 # SC2009: Consider using pgrep instead of grepping ps output.
 # because we dont have the pgrep, disable the SC2009 check
@@ -58,10 +58,10 @@ parallel_fpga_update(){
 }
 
 if [ "$1" != "" ] && [ -f "$1" ];then
-    # switch pim mux from dom fpga to iob fpga
+    # switch pim mux from iob fpga to dom fpga
     switch_pim_mux_to_fpga.sh
     parallel_fpga_update
 else
     echo "Usage:"
-    echo "$0 <iob fpga image>"
+    echo "$0 <dom fpga image>"
 fi

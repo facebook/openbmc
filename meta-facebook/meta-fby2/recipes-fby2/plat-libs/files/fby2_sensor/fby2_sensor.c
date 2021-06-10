@@ -1261,6 +1261,20 @@ read_temp_attr(const char *device, const char *attr, float *value) {
   return 0;
 }
 
+#if defined(CONFIG_FBY2_ND)
+static int
+read_temp_lmsensors(uint8_t id, float *value) {
+  int ret = -1;
+  if (id == SP_SENSOR_INLET_TEMP) {
+    ret = sensors_read("tmp421-i2c-9-4e", "INLET_TEMP", value);
+  } else if (id == SP_SENSOR_OUTLET_TEMP) {
+    ret = sensors_read("tmp421-i2c-9-4f", "OUTLET_TEMP", value);
+  }
+
+  return ret;
+}
+#endif
+
 static int
 read_temp(const char *device, float *value) {
   return read_temp_attr(device, "temp1_input", value);
@@ -3219,10 +3233,17 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
       switch(sensor_num) {
 
         // Inlet, Outlet Temp
+#if defined(CONFIG_FBY2_ND)
+        case SP_SENSOR_INLET_TEMP:
+          return read_temp_lmsensors(SP_SENSOR_INLET_TEMP, (float*) value);
+        case SP_SENSOR_OUTLET_TEMP:
+          return read_temp_lmsensors(SP_SENSOR_OUTLET_TEMP, (float*) value);
+#else
         case SP_SENSOR_INLET_TEMP:
           return read_temp(SP_INLET_TEMP_DEVICE, (float*) value);
         case SP_SENSOR_OUTLET_TEMP:
           return read_temp(SP_OUTLET_TEMP_DEVICE, (float*) value);
+#endif
 
         // Fan Tach Values
         case SP_SENSOR_FAN0_TACH:

@@ -6343,7 +6343,7 @@ void set_scm_led(int brd_rev)
   FILE *fp;
   int power;
   int ret;
-  const char *scm_ip_usb = "fe80::ff:fe00:2%%usb0";
+  const char *scm_ip_usb = "fe80::ff:fe00:2%usb0";
 
   snprintf(path, sizeof(path), GPIO_COME_PWRGD, "value");
   if (device_read(path, &power)) {

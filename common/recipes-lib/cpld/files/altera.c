@@ -47,6 +47,7 @@ enum {
 	CFM_IMAGE_NONE = 0,
 	CFM_IMAGE_1,
 	CFM_IMAGE_2,
+	CFM_IMAGE_1_M04,
 };
 
 // According to QSYS setting in FPGA project
@@ -422,6 +423,10 @@ int max10_update_rpd(uint8_t* rpd_file, uint8_t image_type, int cfm_start_addr, 
       ret = max10_erase_sector(3);
       ret = max10_erase_sector(4);
       break;
+    case CFM_IMAGE_1_M04:
+      ret = max10_unprotect_sector(4);
+      ret = max10_erase_sector(4);
+      break;
     case CFM_IMAGE_NONE:
       printf(" WRONG image type = 0x%X. \r\n", image_type);
       return -1;
@@ -742,6 +747,15 @@ struct cpld_dev_info altera_dev_list[] = {
   },
   [1] = {
     .name = "MAX10-10M25",
+    .dev_id = 0x01234567,
+    .cpld_open = cpld_dev_open,
+    .cpld_close = cpld_dev_close,
+    .cpld_ver = max10_get_fw_ver,
+    .cpld_program = max10_cpld_cfm_update,
+    .cpld_dev_id = max10_cpld_get_id,
+  },
+  [2] = {
+    .name = "MAX10-10M04",
     .dev_id = 0x01234567,
     .cpld_open = cpld_dev_open,
     .cpld_close = cpld_dev_close,

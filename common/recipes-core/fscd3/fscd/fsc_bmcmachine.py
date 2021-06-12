@@ -277,13 +277,13 @@ def parse_all_sensors_util(sensor_data):
             continue
         # normal case match
         m = re.match(
-            r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)\s+.\s+\((.+)\)$", line
+            r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)?\s+.\s+\((.+)\)$", line
         )
         if m is not None:
             sid = int(m.group(2), 16)
             name = m.group(1).strip()
             value = float(m.group(3))
-            unit = m.group(4)
+            unit = m.group(4) if m.group(4) != None else ""
             status = m.group(5)
             symname = symbolize_sensorname(name)
             result[symname] = SensorValue(sid, name, value, unit, status, 0, 0)

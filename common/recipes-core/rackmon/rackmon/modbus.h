@@ -42,6 +42,7 @@
 // Modbus constants
 #define MODBUS_READ_HOLDING_REGISTERS 3
 #define MODBUS_WRITE_HOLDING_REGISTER_SINGLE 6
+#define MODBUS_WRITE_HOLDING_REGISTER_MULTIPLE 16
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))

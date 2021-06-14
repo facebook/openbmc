@@ -637,6 +637,76 @@ static int write_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
   return 0;
 }
 
+/*
+ * Write Holding Register multiple (Function 16) Request Header Size:
+ *   Slave_Addr (1-byte) + Function (1-byte) + Starting_Reg_Addr (2-bytes) +
+ *   Reg_Count (2-bytes) + Bytes (1-bytes) +
+ *   Reg_Value_Arr (Reg_Count * 2 bytes),
+ */
+#define MODBUS_FUN16_REQ_HDR_SIZE(regs)  (7 + (2 * (regs)))
+
+/*
+ * Write Holding Register multiple (Function 16) Response packet size:
+ *   Slave_Addr (1-byte) + Function (1-byte) + Starting_Reg_Addr (2-bytes) +
+ *   Reg_Count (2-bytes) + CRC (2-bytes)
+ */
+#define MODBUS_FUN16_RESP_PKT_SIZE (8)
+
+int write_holding_regs(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
+                             uint16_t reg_start_addr, uint16_t reg_count,
+                             uint16_t *reg_value, speed_t baudrate) {
+  int dest_len, i;
+  size_t cmd_len = MODBUS_FUN16_REQ_HDR_SIZE(reg_count);
+  char command[cmd_len];
+  char resp_buf[MODBUS_FUN16_RESP_PKT_SIZE];
+  uint16_t written_reg;
+
+  command[0] = slave_addr;
+  command[1] = MODBUS_WRITE_HOLDING_REGISTER_MULTIPLE;
+  command[2] = reg_start_addr >> 8;
+  command[3] = reg_start_addr & 0xFF;
+  command[4] = reg_count >> 8;
+  command[5] = reg_count & 0xFF;
+  command[6] = reg_count * 2;
+  for (i = 0; i < reg_count; i++) {
+    command[7 + (i * 2)] = reg_value[i] >> 8;
+    command[8 + (i * 2)] = reg_value[i] & 0xFF;
+  }
+
+  CHECK_LATENCY_START();
+  dest_len = modbus_command(dev, timeout, command, cmd_len,
+                            resp_buf, MODBUS_FUN16_RESP_PKT_SIZE, 0,
+                            baudrate, "write_holding_regs");
+  CHECK_LATENCY_END("rackmond::write_holding_regs::modbus_command cmd_len=%lu, resp_len=%lu status=%d",
+      (unsigned long)cmd_len, (unsigned long)MODBUS_FUN16_RESP_PKT_SIZE, dest_len);
+  if (dest_len < 0) {
+    OBMC_WARN("modbuscmd for addr 0x%02x returned %d\n", slave_addr, dest_len);
+    return dest_len;
+  }
+  if (dest_len < 4) {
+    OBMC_WARN("Unexpected short but CRC correct response!\n");
+    return -1;
+  }
+  if (resp_buf[0] != slave_addr) {
+    OBMC_WARN("Got response from addr %02x when expected %02x\n",
+              resp_buf[0], slave_addr);
+    return -1;
+  }
+  if (resp_buf[1] != MODBUS_WRITE_HOLDING_REGISTER_MULTIPLE) {
+    // got an error response instead of a write registers response
+    OBMC_WARN("Unexpected function %d when expected %d\n",
+        (int)resp_buf[1], (int)MODBUS_WRITE_HOLDING_REGISTER_SINGLE);
+    return WRITE_ERROR_RESPONSE;
+  }
+  written_reg = (uint16_t)resp_buf[4] << 8 | resp_buf[5];
+  if (written_reg != reg_count) {
+    OBMC_WARN("Unexpected number of registers written. Expected: %d Actual: %d\n",
+        reg_count, written_reg);
+    return WRITE_ERROR_RESPONSE;
+  }
+  return 0;
+}
+
 static int sub_uint8s(const void* a, const void* b) {
   return (*(uint8_t*)a) - (*(uint8_t*)b);
 }

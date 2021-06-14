@@ -47,6 +47,222 @@
           "default_expression": "A0"
         }
       }
+    },
+    {
+      "name": "EP_MB_FAN0_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 2
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 3
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_FAN1_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 6
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 7
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_FAN2_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 10
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 11
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_FAN3_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 14
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 15
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P0V8_VDD0_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 70
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 71
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P0V8_VDD1_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 74
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 75
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P0V8_VDD2_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 78
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 79
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P0V8_VDD3_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 82
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 83
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P1V0_AVD0_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 86
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 87
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P1V0_AVD1_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 90
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 91
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P1V0_AVD2_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 94
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 95
+          }
+        },
+        "linear_expression": "V * I"
+      }
+    },
+    {
+      "name": "EP_MB_VR_P1V0_AVD3_POWER",
+      "units": "Watts",
+      "composition": {
+        "type": "linear_expression",
+        "sources": {
+          "V": {
+            "fru":       1,
+            "sensor_id": 98
+          },
+          "I": {
+            "fru":       1,
+            "sensor_id": 99
+          }
+        },
+        "linear_expression": "V * I"
+      }
     }
   ]
 }

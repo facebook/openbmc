@@ -79,6 +79,11 @@ const static speed_t BAUDRATE_VALUES[] = {
 #define PSU_SCAN_INTERVAL 120
 
 /*
+ * Write timestamp every 1 hour
+ */
+#define PSU_TIMESTAMP_UPDATE_INTERVAL (3600)
+
+/*
  * A small amount of delay (in seconds) during PSU access, mainly for
  * reducing the average CPU usage.
  */
@@ -721,6 +726,7 @@ int set_psu_timestamp(psu_datastore_t *psu, uint32_t unixtime)
   if (unixtime == 0) {
     unixtime = time(NULL);
   }
+  OBMC_INFO("Writing timestamp 0x%08x to PSU: 0x%02x", unixtime, psu->addr);
   values[0] = unixtime >> 16;
   values[1] = unixtime & 0xFFFF;
   return write_holding_regs(&rackmond_config.rs485, TIMESTAMP_CMD_TIMEOUT,
@@ -1250,12 +1256,41 @@ static int fetch_monitored_data(void) {
   return 0;
 }
 
+static int update_all_psu_timestamp(void)
+{
+  int pos;
+  psu_datastore_t *mdata;
+  int rc = 0;
+
+  if (global_lock() != 0) {
+    return -1;
+  }
+  if (rackmond_config.paused == 1 ||
+      rackmond_config.config == NULL) {
+    global_unlock();
+    return -1;
+  }
+  global_unlock();
+
+  for (pos = 0; pos < ARRAY_SIZE(rackmond_config.stored_data); pos++) {
+    if (should_exit)
+      break;
+    mdata = rackmond_config.stored_data[pos];
+    if (mdata != NULL) {
+      rc |= set_psu_timestamp(mdata, 0);
+    }
+  }
+  return rc;
+}
+
 static time_t search_at = 0;
 
 void* monitoring_loop(void* arg)
 {
   int ret;
   sigset_t sig_mask;
+  time_t timestamp_at = 0;
+  int last_num_psus = 0, num_psus = 0;
 
   /*
    * Block SIGINT and SIGTERM so these signals can be delivered to the
@@ -1278,7 +1313,6 @@ void* monitoring_loop(void* arg)
 
   while (!should_exit) {
     long delay;
-    int num_psus;
     struct timespec now;
 
     clock_gettime(CLOCK_REALTIME, &now);
@@ -1296,12 +1330,19 @@ void* monitoring_loop(void* arg)
       }
     }
 
+    if (last_num_psus != num_psus || timestamp_at <= now.tv_sec) {
+      OBMC_INFO("Updating timestamp\n");
+      update_all_psu_timestamp();
+      timestamp_at = now.tv_sec + PSU_TIMESTAMP_UPDATE_INTERVAL;
+    }
+
     /*
      * TODO: ideally we should allow the main thread to wake up this
      * monitoring loop (for example, in case "force_rescan" command is
      * received).
      */
     delay = search_at - now.tv_sec;
+    last_num_psus = num_psus;
     if (delay > PSU_ACCESS_NICE_DELAY)
       delay = PSU_ACCESS_NICE_DELAY;
     sleep(delay);

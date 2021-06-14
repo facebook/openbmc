@@ -8,7 +8,7 @@ SRC_URI += "file://init \
 PR .= ".3"
 
 RDEPENDS_${PN} += "bash"
-SSH_IDLE_TIMEOUT ?= "900"
+SSH_IDLE_TIMEOUT ?= "1800"
 
 do_configure_append() {
     sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config

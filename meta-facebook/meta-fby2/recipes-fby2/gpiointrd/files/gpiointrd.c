@@ -63,14 +63,6 @@
 
 #define DEBUG_ME_EJECTOR_LOG 0 // Enable log "GPIO_SLOTX_EJECTOR_LATCH_DETECT_N is 1 and SLOT_12v is ON" before mechanism issue is fixed
 
-#define log_system(cmd)                                                     \
-do {                                                                        \
-  int sysret = system(cmd);                                                 \
-  if (sysret)                                                               \
-    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
-            __func__, cmd, sysret);                                         \
-} while(0)
-
 static uint8_t IsHotServiceStart[MAX_NODES + 1] = {0};
 static uint8_t IsFanLatchAction = 0;
 static void *hsvc_event_handler(void *ptr);

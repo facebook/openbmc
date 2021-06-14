@@ -225,6 +225,14 @@ typedef struct {
 #define FAN_TYPE_FILE "/tmp/fan_type"
 #define SPB_BOARD_ID_FILE "/tmp/spb_board_id"
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
+
 int fby2_common_fru_name(uint8_t fru, char *str);
 int fby2_common_fru_id(char *str, uint8_t *fru);
 int fby2_common_dev_id(char *str, uint8_t *dev);

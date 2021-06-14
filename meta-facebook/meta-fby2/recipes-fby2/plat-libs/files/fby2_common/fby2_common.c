@@ -57,14 +57,6 @@
   }                                                                               \
 } while(0)
 
-#define log_system(cmd)                                                     \
-do {                                                                        \
-  int sysret = system(cmd);                                                 \
-  if (sysret)                                                               \
-    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
-            __func__, cmd, sysret);                                         \
-} while(0)
-
 struct threadinfo {
   uint8_t is_running;
   uint8_t fru;

@@ -116,14 +116,6 @@
 #define DEVICE_MUX_ADDR 0xE2
 #define MAX_GPV2_DRIVE_NUM 12
 
-#define log_system(cmd)                                                     \
-do {                                                                        \
-  int sysret = system(cmd);                                                 \
-  if (sysret)                                                               \
-    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
-            __func__, cmd, sysret);                                         \
-} while(0)
-
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;

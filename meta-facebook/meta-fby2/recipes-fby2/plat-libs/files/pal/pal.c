@@ -163,14 +163,6 @@
 #define NCSI_RETRY_MAX        2
 #define BRCM_POWERUP_PRE_CMD  0x1A
 
-#define log_system(cmd)                                                     \
-do {                                                                        \
-  int sysret = system(cmd);                                                 \
-  if (sysret)                                                               \
-    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
-            __func__, cmd, sysret);                                         \
-} while(0)
-
 #if defined CONFIG_FBY2_ND
 /* MCA bank data format */
 enum {

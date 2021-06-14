@@ -644,7 +644,7 @@ static sensor_desc_t cri_sensor_ep[] =
 
 static sensor_desc_t cri_sensor_nd[] =
 {
-  {"SOC_TEMP:"    , BIC_ND_SENSOR_SOC_TEMP        , "C"   , FRU_ALL, 0},
+  {"SOC_TEMP:"    , BIC_ND_SENSOR_SOC_TEMP        , ""    , FRU_ALL, 0},
   {"HSC_PWR:"     , SP_SENSOR_HSC_IN_POWER        , "W"   , FRU_SPB, 1},
   {"HSC_VOL:"     , SP_SENSOR_HSC_IN_VOLT         , "V"   , FRU_SPB, 2},
   {"FAN0:"        , SP_SENSOR_FAN0_TACH           , "RPM" , FRU_SPB, 0},

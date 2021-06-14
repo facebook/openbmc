@@ -8907,7 +8907,7 @@ pal_sensor_assert_handle_nd(uint8_t fru, uint8_t snr_num, float val, char* thres
 
   switch (snr_num) {
     case BIC_ND_SENSOR_SOC_TEMP:
-      sprintf(crisel, "SOC Temp %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
+      sprintf(crisel, "SOC Temp %s %.0f - ASSERT,FRU:%u", thresh_name, val, fru);
       break;
     case BIC_ND_SENSOR_P3V3_MB:
     case BIC_ND_SENSOR_P12V_STBY_MB:
@@ -9166,7 +9166,7 @@ pal_sensor_deassert_handle_nd(uint8_t fru, uint8_t snr_num, float val, char* thr
 
   switch (snr_num) {
     case BIC_ND_SENSOR_SOC_TEMP:
-      sprintf(crisel, "SOC Temp %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
+      sprintf(crisel, "SOC Temp %s %.0f - DEASSERT,FRU:%u", thresh_name, val, fru);
       break;
     case BIC_ND_SENSOR_P3V3_MB:
     case BIC_ND_SENSOR_P12V_STBY_MB:

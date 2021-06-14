@@ -582,71 +582,59 @@ cleanup:
 /*
  * Write Holding Register (Function 6) Request Header Size:
  *   Slave_Addr (1-byte) + Function (1-byte) + Starting_Reg_Addr (2-bytes) +
- *   Reg_Value_Arry (2 * Reg_Count).
+ *   Reg_Value (2-bytes).
  */
-#define MODBUS_FUN6_REQ_HDR_SIZE(nreg)  (2 * (nreg) + 4)
+#define MODBUS_FUN6_REQ_HDR_SIZE  (6)
 
 /*
  * Write Holding Register (Function 6) Response packet size:
  *   Same as request header size, plus CRC (2-bytes).
  */
-#define MODBUS_FUN6_RESP_PKT_SIZE(nreg) (2 * (nreg) + 6)
+#define MODBUS_FUN6_RESP_PKT_SIZE (8)
 
 static int write_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
-                             uint16_t reg_start_addr, uint16_t reg_count,
-                             uint16_t *reg_values, uint16_t *out, speed_t baudrate) {
-  int error = 0;
-  int dest_len, i;
-  size_t cmd_len = MODBUS_FUN6_REQ_HDR_SIZE(reg_count);
-  char command[cmd_len];
-  size_t resp_len = MODBUS_FUN6_RESP_PKT_SIZE(reg_count);
-  char *resp_buf;
-
-  resp_buf = malloc(resp_len);
-  if (resp_buf == NULL) {
-    OBMC_WARN("failed to allocate response buffer");
-    return -1;
-  }
+                             uint16_t reg_start_addr, uint16_t reg_value,
+                             uint16_t *written_reg_value, speed_t baudrate) {
+  int dest_len;
+  char command[MODBUS_FUN6_REQ_HDR_SIZE];
+  char resp_buf[MODBUS_FUN6_RESP_PKT_SIZE];
 
   command[0] = slave_addr;
-  command[1] = MODBUS_WRITE_HOLDING_REGISTERS;
+  command[1] = MODBUS_WRITE_HOLDING_REGISTER_SINGLE;
   command[2] = reg_start_addr >> 8;
   command[3] = reg_start_addr & 0xFF;
-
-  for (i = 0; i < reg_count; i++) {
-    command[i * 2 + 4] = reg_values[i] >> 8;
-    command[i * 2 + 5] = reg_values[i] & 0xFF;
-  }
+  command[4] = reg_value >> 8;
+  command[5] = reg_value & 0xFF;
 
   CHECK_LATENCY_START();
-  dest_len = modbus_command(dev, timeout, command, cmd_len, resp_buf, resp_len,
-                            0, baudrate, "write_holding_reg");
+  dest_len = modbus_command(dev, timeout, command, MODBUS_FUN6_REQ_HDR_SIZE,
+                            resp_buf, MODBUS_FUN6_RESP_PKT_SIZE, 0,
+                            baudrate, "write_holding_reg");
   CHECK_LATENCY_END("rackmond::write_holding_reg::modbus_command cmd_len=%lu, resp_len=%lu status=%d",
-      (unsigned long)MODBUS_FUN3_REQ_HDR_SIZE, (unsigned long)resp_len, dest_len);
-  ERR_EXIT(dest_len);
-
-  if (dest_len >= 4) {
-    memcpy(out, resp_buf + 2, reg_count * 2 + 2);
-  } else {
+      (unsigned long)MODBUS_FUN6_REQ_HDR_SIZE, (unsigned long)MODBUS_FUN6_RESP_PKT_SIZE, dest_len);
+  if (dest_len < 0) {
+    OBMC_WARN("modbuscmd for addr 0x%02x returned %d\n", slave_addr, dest_len);
+    return dest_len;
+  }
+  if (dest_len < 4) {
     OBMC_WARN("Unexpected short but CRC correct response!\n");
-    error = -1;
-    goto cleanup;
+    return -1;
   }
   if (resp_buf[0] != slave_addr) {
     OBMC_WARN("Got response from addr %02x when expected %02x\n",
               resp_buf[0], slave_addr);
-    error = -1;
-    goto cleanup;
+    return -1;
   }
-  if (resp_buf[1] != MODBUS_WRITE_HOLDING_REGISTERS) {
+  if (resp_buf[1] != MODBUS_WRITE_HOLDING_REGISTER_SINGLE) {
     // got an error response instead of a write registers response
-    error = WRITE_ERROR_RESPONSE;
-    goto cleanup;
+    OBMC_WARN("Unexpected function %d when expected %d\n",
+        (int)resp_buf[1], (int)MODBUS_WRITE_HOLDING_REGISTER_SINGLE);
+    return WRITE_ERROR_RESPONSE;
   }
-
-cleanup:
-  free(resp_buf);
-  return error;
+  if (written_reg_value) {
+    *written_reg_value = (uint16_t)resp_buf[4] << 8 | resp_buf[5];
+  }
+  return 0;
 }
 
 static int sub_uint8s(const void* a, const void* b) {
@@ -661,8 +649,8 @@ static int sub_uint8s(const void* a, const void* b) {
 static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
   int pos, err;
   bool supported = true;
-  uint16_t output[2];
-  uint16_t values[1];
+  uint16_t value;
+  uint16_t written_value;
   psu_datastore_t *mdata;
 
   if (psu == NULL) {
@@ -694,16 +682,16 @@ static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
   }
 
   // now attempt to raise the baudrate for this PSU
-  values[0] = baudrate_to_value(rackmond_config.desired_baudrate);
+  value = baudrate_to_value(rackmond_config.desired_baudrate);
   err = write_holding_reg(&rackmond_config.rs485, BAUDRATE_CMD_TIMEOUT,
-                          psu->addr, REGISTER_PSU_BAUDRATE, 1, values, output,
-                          psu->baudrate);
+                          psu->addr, REGISTER_PSU_BAUDRATE, value,
+                          &written_value, psu->baudrate);
 
   // if unsuccessful, assume that the unit's baudrate didn't change
   if (err != 0) {
     OBMC_WARN("Could not set PSU at addr %02x to desired baudrate", psu->addr);
   } else {
-    pos = output[1] >> 8;
+    pos = written_value;
     psu->baudrate = BAUDRATE_VALUES[pos];
   }
 
@@ -1014,8 +1002,7 @@ static void trigger_graceful_exit(int sig) {
 
 static int reset_psu_baudrate(void) {
   int pos, ret = 0, err;
-  uint16_t output[2];
-  uint16_t values[1];
+  uint16_t value;
   psu_datastore_t *mdata;
 
   global_lock();
@@ -1034,11 +1021,11 @@ static int reset_psu_baudrate(void) {
       continue;
     }
     if (mdata->baudrate != DEFAULT_BAUDRATE) {
-      values[0] = baudrate_to_value(DEFAULT_BAUDRATE);
+      value = baudrate_to_value(DEFAULT_BAUDRATE);
       err = write_holding_reg(&rackmond_config.rs485,
                               BAUDRATE_CMD_TIMEOUT, mdata->addr,
-                              REGISTER_PSU_BAUDRATE, 1, values, output,
-                              mdata->baudrate);
+                              REGISTER_PSU_BAUDRATE, value,
+                              NULL, mdata->baudrate);
 
       if (err != 0) {
         OBMC_WARN("Unable to reset PSU %02x to the original baudrate",

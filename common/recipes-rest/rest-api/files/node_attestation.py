@@ -30,6 +30,8 @@ except ImportError:
 from node import node
 from tree import tree
 
+ACCEPTABLE_ALGORITHMS = ["sha1", "sha256"]
+
 
 def get_tree_attestation() -> tree:
     tree_attestation = tree("attestation", node())
@@ -56,7 +58,14 @@ class NodeSystemInfo(node):
         args["flash1"] = "/dev/flash1"
         args["recal"] = False
         # We update the params if any were passed
+        for argument in param.keys():
+            if argument not in ["algo"]:
+                raise Exception("You are allowed to specify only algo")
         args.update(param)
+        if args["algo"] not in ACCEPTABLE_ALGORITHMS:
+            raise Exception(
+                "Only acceptable algos are: {}".format(str(ACCEPTABLE_ALGORITHMS))
+            )
         result = {}
         # Let's get the system hashes first
         result["system_hashes"] = obmc_attestation.measure.return_measure(args)

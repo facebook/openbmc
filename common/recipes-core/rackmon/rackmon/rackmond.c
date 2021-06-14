@@ -60,6 +60,7 @@ const static speed_t BAUDRATE_VALUES[] = {
 
 #define REGISTER_PSU_STATUS 0x68
 #define REGISTER_PSU_BAUDRATE 0xA3
+#define REGISTER_PSU_TIMESTAMP 0x12A
 
 // This list overlaps with Modbus constants in modbus.h; ensure there are no duplicates
 #define READ_ERROR_RESPONSE -2
@@ -68,6 +69,9 @@ const static speed_t BAUDRATE_VALUES[] = {
 
 // baudrate-changing commands need a higher timeout (half a second)
 #define BAUDRATE_CMD_TIMEOUT 500000
+
+// timeout can take up to 100ms to set
+#define TIMESTAMP_CMD_TIMEOUT  100000
 
 /*
  * Check for new PSUs every "PSU_SCAN_INTERVAL" seconds.
@@ -705,6 +709,22 @@ int write_holding_regs(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
     return WRITE_ERROR_RESPONSE;
   }
   return 0;
+}
+
+int set_psu_timestamp(psu_datastore_t *psu, uint32_t unixtime)
+{
+  uint16_t values[2];
+
+  if (psu == NULL) {
+    return -1;
+  }
+  if (unixtime == 0) {
+    unixtime = time(NULL);
+  }
+  values[0] = unixtime >> 16;
+  values[1] = unixtime & 0xFFFF;
+  return write_holding_regs(&rackmond_config.rs485, TIMESTAMP_CMD_TIMEOUT,
+      psu->addr, REGISTER_PSU_TIMESTAMP, 2, values, psu->baudrate);
 }
 
 static int sub_uint8s(const void* a, const void* b) {

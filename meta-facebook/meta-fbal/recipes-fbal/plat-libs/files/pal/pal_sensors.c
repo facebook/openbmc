@@ -60,6 +60,7 @@ static int read_cpu2_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu3_dimm_temp(uint8_t dimm_id, float *value);
 static int read_NM_pch_temp(uint8_t nm_snr_id, float *value);
 static int read_ina260_vol(uint8_t ina260_id, float *value);
+static int read_ina260_pwr(uint8_t ina260_id, float *value);
 static int read_vr_vout(uint8_t vr_id, float *value);
 static int read_vr_temp(uint8_t vr_id, float  *value);
 static int read_vr_iout(uint8_t vr_id, float  *value);
@@ -133,6 +134,10 @@ const uint8_t mb_4s_m_tray0_sensor_list[] = {
   MB_SNR_P3V3_M2_1_INA260_VOL,
   MB_SNR_P3V3_M2_2_INA260_VOL,
   MB_SNR_P3V3_M2_3_INA260_VOL,
+  MB_SNR_P12V_STBY_INA260_PWR,
+  MB_SNR_P3V3_M2_1_INA260_PWR,
+  MB_SNR_P3V3_M2_2_INA260_PWR,
+  MB_SNR_P3V3_M2_3_INA260_PWR,
   MB_SNR_VR_CPU0_VCCIN_VOLT,
   MB_SNR_VR_CPU0_VCCIN_TEMP,
   MB_SNR_VR_CPU0_VCCIN_CURR,
@@ -241,6 +246,10 @@ const uint8_t mb_slv_sensor_list[] = {
   MB_SNR_P3V3_M2_1_INA260_VOL,
   MB_SNR_P3V3_M2_2_INA260_VOL,
   MB_SNR_P3V3_M2_3_INA260_VOL,
+  MB_SNR_P12V_STBY_INA260_PWR,
+  MB_SNR_P3V3_M2_1_INA260_PWR,
+  MB_SNR_P3V3_M2_2_INA260_PWR,
+  MB_SNR_P3V3_M2_3_INA260_PWR,
   MB_SNR_VR_CPU0_VCCIN_VOLT,
   MB_SNR_VR_CPU0_VCCIN_TEMP,
   MB_SNR_VR_CPU0_VCCIN_CURR,
@@ -345,6 +354,10 @@ const uint8_t mb_2s_sensor_list[] = {
   MB_SNR_P3V3_M2_1_INA260_VOL,
   MB_SNR_P3V3_M2_2_INA260_VOL,
   MB_SNR_P3V3_M2_3_INA260_VOL,
+  MB_SNR_P12V_STBY_INA260_PWR,
+  MB_SNR_P3V3_M2_1_INA260_PWR,
+  MB_SNR_P3V3_M2_2_INA260_PWR,
+  MB_SNR_P3V3_M2_3_INA260_PWR,
   MB_SNR_VR_CPU0_VCCIN_VOLT,
   MB_SNR_VR_CPU0_VCCIN_TEMP,
   MB_SNR_VR_CPU0_VCCIN_CURR,
@@ -811,10 +824,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"AL_MB_VR_PCH_PVNN_IOUT", VR_ID11, read_vr_iout, true, {26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xCA
   {"AL_MB_VR_PCH_PVNN_POUT", VR_ID11, read_vr_pout, true, {33.6, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
 
-  {"NULL", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCC
-  {"NULL", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCD
-  {"NULL", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
-  {"NUll", 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
+  {"AL_MB_P12V_STBY_INA260_PWR", INA260_ID0, read_ina260_pwr, true,  {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCC
+  {"AL_MB_P3V3_M2_1_INA260_PWR", INA260_ID1, read_ina260_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCD
+  {"AL_MB_P3V3_M2_2_INA260_PWR", INA260_ID2, read_ina260_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCE
+  {"AL_MB_P3V3_M2_3_INA260_PWR", INA260_ID3, read_ina260_pwr, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCF
 
   {"AL_MB_P5V",       ADC0, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD0
   {"AL_MB_P5V_STBY",  ADC1, read_adc_val, true,  {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xD1
@@ -2035,6 +2048,58 @@ read_ina260_vol(uint8_t ina260_id, float *value) {
 
   err_exit:
   if (fd > 0) {
+    close(fd);
+  }
+  return ret;
+}
+
+static int
+read_ina260_pwr(uint8_t ina260_id, float *value) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  float scale;
+  uint8_t retry = 3, tlen, rlen, addr, bus, cmd;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint16_t tmp;
+
+  bus = ina260_info_list[ina260_id].bus;
+  cmd = INA260_POWER;
+  addr = ina260_info_list[ina260_id].slv_addr;
+  scale = 0.01;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  tbuf[0] = cmd;
+  tlen = 1;
+  rlen = 2;
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s bus=%x cmd=%x slavaddr=%x\n", __func__, bus, cmd, addr);
+#endif
+
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "ret=%d", ret);
+    goto err_exit;
+  }
+
+  tmp = (rbuf[0] << 8) | (rbuf[1]);
+  *value = (float)tmp * scale;
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s tmp=%x val=%f\n", __func__, tmp, *value);
+#endif
+
+  err_exit:
+  if (fd >= 0) {
     close(fd);
   }
   return ret;

@@ -2742,19 +2742,38 @@ pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len)
 }
 
 static int
-pal_get_custom_event_sensor_name(uint8_t sensor_num, char *name) {
+pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   int ret = PAL_EOK;
 
   if (name == NULL) {
     syslog(LOG_ERR, "%s() sensor name is missing", __func__);
     return -1;
   }
-  switch(sensor_num) {
-    case BIC_SENSOR_VRHOT:
-      snprintf(name, MAX_SNR_NAME, "VR_HOT");
+  switch(fru) {
+    case FRU_SERVER:
+      switch(sensor_num) {
+        case BIC_SENSOR_VRHOT:
+          snprintf(name, MAX_SNR_NAME, "VR_HOT");
+          break;
+        case BIC_SENSOR_SYSTEM_STATUS:
+          snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
+          break;
+        default:
+          snprintf(name, MAX_SNR_NAME, "Unknown");
+          ret = PAL_ENOTSUP;
+          break;
+      }
       break;
-    case BIC_SENSOR_SYSTEM_STATUS:
-      snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
+    case FRU_SCC:
+      switch(sensor_num) {
+        case SCC_DRAWER:
+          snprintf(name, MAX_SNR_NAME, "Drawer");
+          break;
+        default:
+          snprintf(name, MAX_SNR_NAME, "Unknown");
+          ret = PAL_ENOTSUP;
+          break;
+      }
       break;
     case BIC_SENSOR_PROC_FAIL:
       snprintf(name, MAX_SNR_NAME, "PROC_FAIL");
@@ -2812,7 +2831,7 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
       snprintf(name, MAX_SNR_NAME, "OS");
       return PAL_EOK;
     default:
-      if (pal_get_custom_event_sensor_name(snr_num, name) == PAL_EOK ) {
+      if (pal_get_custom_event_sensor_name(fru, snr_num, name) == PAL_EOK ) {
         return PAL_EOK;
       }
       break;
@@ -2930,6 +2949,8 @@ pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
 
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+  bool is_parsed = false;
+
   if (sel == NULL) {
     syslog(LOG_ERR, "%s() SEL is missing", __func__);
     return -1;
@@ -2942,31 +2963,80 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
     EVENT_TYPE_NOTIF = 0x77, /*IPMI-Table 42-1, Event/Reading Type Code Ranges - OEM specific*/
   };
+  uint8_t snr_type = sel[SEL_SNR_TYPE];
   uint8_t snr_num = sel[SEL_SNR_NUM];
   uint8_t event_dir = sel[SEL_EVENT_TYPE] & 0x80;
   uint8_t event_type = sel[SEL_EVENT_TYPE] & 0x7f;
   uint8_t *event_data = &sel[SEL_EVENT_DATA];
 
   error_log[0] = '\0';
-  switch (snr_num) {
-    case BIC_SENSOR_VRHOT:
-      pal_parse_vr_event(event_data, error_log);
+  switch (fru) {
+    case FRU_SERVER:
+      switch (snr_num) {
+        case BIC_SENSOR_VRHOT:
+          pal_parse_vr_event(event_data, error_log);
+          is_parsed = true;
+          break;
+        case BIC_SENSOR_SYSTEM_STATUS:
+          pal_parse_sys_sts_event(event_data, error_log);
+          is_parsed = true;
+          break;
+        default:
+          break;
+      }
+      if (is_parsed == true) {
+        if (event_type == EVENT_TYPE_NOTIF) {
+          strcat(error_log, " Triggered");
+        } else {
+          strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+        }
+      }
       break;
-    case BIC_SENSOR_SYSTEM_STATUS:
-      pal_parse_sys_sts_event(event_data, error_log);
+
+    case FRU_SCC:
+      switch (event_type) {
+        case SENSOR_SPECIFIC:
+          switch (snr_type) {
+            case PHYSICAL_SECURITY:
+              switch (event_data[0] & 0x0F) {
+                //Sensor Type Code: Physical Security 0x5h, SENSOR_SPECIFIC Offset 0x0h, General Chassis Intrusion: 0x0h
+                case GENERAL_CHASSIS_INTRUSION:
+                  is_parsed = true;
+                  if (event_dir == 0) {
+                    strcat(error_log, "Drawer be Pulled Out");
+                  } else {
+                    strcat(error_log, "Drawer be Pushed Back");
+                  }
+                  break;
+                default:
+                  break;
+              }
+              break;
+            default:
+              break;
+          }
+          break;
+        case GENERIC:
+          is_parsed = true;
+          if ((event_data[0] & 0x0F) == 0x00) {
+            strcat(error_log, "ASSERT, Limit Exceeded");
+          } else {
+            strcat(error_log, "DEASSERT, Limit Not Exceeded");
+          }
+          break;
+        default:
+          break;
+      }
       break;
     case BIC_SENSOR_PROC_FAIL:
       pal_parse_proc_fail(event_data, error_log);
       break;
     default:
-      pal_parse_sel_helper(fru, sel, error_log);
-      return PAL_EOK;
+      break;
   }
 
-  if (event_type == EVENT_TYPE_NOTIF) {
-    strcat(error_log, " Triggered");
-  } else {
-    strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+  if (is_parsed == false) {
+    pal_parse_sel_helper(fru, sel, error_log);
   }
 
   return PAL_EOK;

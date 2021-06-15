@@ -191,10 +191,30 @@ enum {
 };
 
 enum {
+  SCC_DRAWER = 0x00,
+};
+
+enum {
   SEL_SNR_TYPE   = 10,
   SEL_SNR_NUM    = 11,
   SEL_EVENT_TYPE = 12,
   SEL_EVENT_DATA = 13,
+};
+
+//Event/Reading Type Code Ranges, reference from IPMI spec v2.0 sec 42 Sensor and Event Code Tables
+enum {
+  GENERIC         = 0x05,
+  SENSOR_SPECIFIC = 0x6F,
+};
+
+//Sensor Type Codes
+enum {
+  PHYSICAL_SECURITY = 0x05,
+};
+
+//Sensor-specific Offset of Physical Security
+enum {
+  GENERAL_CHASSIS_INTRUSION = 0x00,
 };
 
 //System status event

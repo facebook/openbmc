@@ -170,8 +170,11 @@ int BmcFpgaComponent::update_fpga(string image)
 {
   int ret = 0;
   char key[32] = {0};
+  string fru_name = fru();
 
-  syslog(LOG_CRIT, "Updating UIC FPGA. File: %s", image.c_str());
+  transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
+
+  syslog(LOG_CRIT, "Updating %s FPGA. File: %s", fru_name.c_str(), image.c_str());
   if (cpld_intf_open(pld_type, INTF_I2C, &attr) != 0) {
     cout << "Cannot open i2c!" << endl;
     ret = FW_STATUS_FAILURE;
@@ -183,7 +186,7 @@ int BmcFpgaComponent::update_fpga(string image)
     }
   }
 
-  syslog(LOG_CRIT, "Updated UIC FPGA. File: %s. Result: %s", image.c_str(), (ret < 0) ? "Fail" : "Success");
+  syslog(LOG_CRIT, "Updated %s FPGA. File: %s. Result: %s", fru_name.c_str(), image.c_str(), (ret < 0) ? "Fail" : "Success");
   remove(image.c_str());
 
   return ret;

@@ -61,7 +61,7 @@ class FruBbTest(CommonFruTest, unittest.TestCase):
 class FruNicTest(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "nic"]
-        self.fru_fields = {"product": 2, "board": 2}
+        self.fru_fields = {"product": 0, "board": 0}
 
     def getProductFields(self, num_custom=0):
         product_fields = {

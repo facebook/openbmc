@@ -47,6 +47,19 @@ typedef struct _bic_gpio_t {
   uint64_t gpio[2];
 } bic_gpio_t;
 
+typedef struct _bic_config_t {
+  uint8_t sol:1;
+  uint8_t post:1;
+  uint8_t kcs:1;
+  uint8_t ipmb:1;
+  uint8_t rsvd:4;
+} bic_config_t;
+
+typedef union _bic_config_u {
+  uint8_t config;
+  bic_config_t bits;
+} bic_config_u;
+
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_me_recovery(uint8_t command);
 int bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr);
@@ -74,7 +87,9 @@ int bic_reset();
 int bic_clear_cmos();
 int bic_get_gpio_config(uint8_t gpio, uint8_t *data);
 int bic_set_gpio_config(uint8_t gpio, uint8_t data);
-
+int bic_get_sdr_info(ipmi_sel_sdr_info_t *info);
+int bic_get_sel(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen);
+int bic_get_config(bic_config_t *cfg);
 
 #ifdef __cplusplus
 } // extern "C"

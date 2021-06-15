@@ -1020,3 +1020,62 @@ bic_get_gpio(bic_gpio_t *gpio) {
 
   return ret;
 }
+
+// Get BIC Configuration
+int
+bic_get_config(bic_config_t *cfg) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (cfg == NULL) {
+    syslog(LOG_ERR, "%s(): Configuration is missing", __func__);
+    return -1;
+  }
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_CONFIG, tbuf, 3, rbuf, &rlen);
+  // Ignore IANA ID
+  if (rlen < 4) {
+    syslog(LOG_ERR, "%s(): Get BIC config failed, rlen: %d", __func__, rlen);
+    return -1;
+  }
+  *(uint8_t *) cfg = rbuf[3];
+
+  return ret;
+}
+
+// Read Sensor Data Records (SDR)
+int
+bic_get_sdr_info(ipmi_sel_sdr_info_t *info) {
+  int ret = 0;
+  uint8_t rlen = 0;
+
+  if (info == NULL) {
+    syslog(LOG_ERR, "%s(): SEL information is missing", __func__);
+    return -1;
+  }
+  ret = bic_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR_INFO, NULL, 0, (uint8_t *) info, &rlen);
+
+  return ret;
+}
+
+int
+bic_get_sel(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
+  int ret = 0;
+
+  if (req == NULL) {
+    syslog(LOG_ERR, "%s(): requset is missing", __func__);
+    return -1;
+  }
+  if (res == NULL) {
+    syslog(LOG_ERR, "%s(): response is missing", __func__);
+    return -1;
+  }
+  if (rlen == NULL) {
+    syslog(LOG_ERR, "%s(): requset length is missing", __func__);
+    return -1;
+  }
+  ret = bic_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_STORAGE_GET_SEL, (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t), (uint8_t*)res, rlen);
+
+  return ret;
+}

@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 import re
+import time
 import unittest
 from abc import abstractmethod
 
@@ -70,8 +71,13 @@ class BasePowerUtilTest(unittest.TestCase):
             re.match(pattern.format(status.upper()), cli_out),
             "unexpected output: {}".format(cli_out),
         )
-        if self.slot_status(slot, status=status):
-            return True
+        count = 3
+        while count > 0:
+            if self.slot_status(slot, status=status):
+                return True
+            else:
+                count -= 1
+                time.sleep(2)
         return False
 
     def turn_12V_slot(self, slot, status=None):
@@ -83,8 +89,13 @@ class BasePowerUtilTest(unittest.TestCase):
             re.match(pattern.format(status.upper()), cli_out),
             "unexpected output: {}".format(cli_out),
         )
-        if self.slot_status(slot, status=status):
-            return True
+        count = 3
+        while count > 0:
+            if self.slot_status(slot, status=status):
+                return True
+            else:
+                count -= 1
+                time.sleep(2)
         return False
 
     def test_show_slot_status(self):
@@ -115,11 +126,17 @@ class BasePowerUtilTest(unittest.TestCase):
                     self.turn_slot(slot, status="on")
                 self.turn_slot(slot, status="off")
                 cmd = ["power-util", slot, "status"]
-                cli_out = run_cmd(cmd)
-                self.assertIsNotNone(
-                    r.match(cli_out),
-                    "unexpected output: {}".format(cli_out),
-                )
+                count = 3
+                while count > 0:
+                    cli_out = run_cmd(cmd)
+                    m = r.search(cli_out)
+                    if m:
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
 
     def test_slot_on(self):
         """
@@ -134,11 +151,17 @@ class BasePowerUtilTest(unittest.TestCase):
                     self.turn_slot(slot, status="off")
                 self.turn_slot(slot, status="on")
                 cmd = ["power-util", slot, "status"]
-                cli_out = run_cmd(cmd)
-                self.assertIsNotNone(
-                    r.match(cli_out),
-                    "unexpected output: {}".format(cli_out),
-                )
+                count = 3
+                while count > 0:
+                    cli_out = run_cmd(cmd)
+                    m = r.search(cli_out)
+                    if m:
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
 
     def test_slot_reset(self):
         """
@@ -156,7 +179,15 @@ class BasePowerUtilTest(unittest.TestCase):
                     "unexpected output: {}".format(cli_out),
                 )
                 # check if slot back to ON status
-                self.assertTrue(self.slot_status(slot, status="on"))
+                count = 3
+                while count > 0:
+                    if self.slot_status(slot, status="on"):
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                    self.assertTrue(False, "slot {} is not ON after reset".format(slot))
 
     def test_slot_cycle(self):
         """
@@ -174,7 +205,15 @@ class BasePowerUtilTest(unittest.TestCase):
                     "unexpected output: {}".format(cli_out),
                 )
                 # check if slot back to ON status
-                self.assertTrue(self.slot_status(slot, status="on"))
+                count = 3
+                while count > 0:
+                    if self.slot_status(slot, status="on"):
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                    self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
 
     def test_12V_slot_off(self):
         """
@@ -191,11 +230,17 @@ class BasePowerUtilTest(unittest.TestCase):
                     self.turn_12V_slot(slot, status="on")
                 self.turn_12V_slot(slot, status="off")
                 cmd = ["power-util", slot, "status"]
-                cli_out = run_cmd(cmd)
-                self.assertIsNotNone(
-                    r.match(run_cmd(cmd)),
-                    "unexpected output: {}".format(cli_out),
-                )
+                count = 3
+                while count > 0:
+                    cli_out = run_cmd(cmd)
+                    m = r.search(cli_out)
+                    if m:
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
 
     def test_12V_slot_on(self):
         """
@@ -210,11 +255,17 @@ class BasePowerUtilTest(unittest.TestCase):
                     self.turn_12V_slot(slot, status="off")
                 self.turn_12V_slot(slot, status="on")
                 cmd = ["power-util", slot, "status"]
-                cli_out = run_cmd(cmd)
-                self.assertIsNotNone(
-                    r.match(run_cmd(cmd)),
-                    "unexpected output: {}".format(cli_out),
-                )
+                count = 3
+                while count > 0:
+                    cli_out = run_cmd(cmd)
+                    m = r.search(cli_out)
+                    if m:
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
 
     def test_12V_slot_cycle(self):
         """
@@ -232,4 +283,12 @@ class BasePowerUtilTest(unittest.TestCase):
                     "unexpected output: {}".format(cli_out),
                 )
                 # check if slot back to ON status
-                self.assertTrue(self.slot_status(slot, status="on"))
+                count = 3
+                while count > 0:
+                    if self.slot_status(slot, status="on"):
+                        self.assertTrue(True)
+                        return
+                    else:
+                        count -= 1
+                        time.sleep(2)
+                    self.assertTrue(False, "slot {} is not ON after cycle".format(slot))

@@ -20,10 +20,23 @@
 
 PAL_STATUS_UNSUPPORTED = 2
 
+# Does the FRU have a FRUID EEPROM
+FRU_CAPABILITY_FRUID_WRITE = (1 << 0)
+FRU_CAPABILITY_FRUID_READ  = (1 << 1)
+FRU_CAPABILITY_FRUID_ALL   = FRU_CAPABILITY_FRUID_WRITE | FRU_CAPABILITY_FRUID_READ
+
+# Sensors on this FRU 
+FRU_CAPABILITY_SENSOR_READ             = (1 << 2)
+FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE = (1 << 3)
+FRU_CAPABILITY_SENSOR_HISTORY          = (1 << 4)
+FRU_CAPABILITY_SENSOR_ALL              = FRU_CAPABILITY_SENSOR_READ | \
+                                         FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE | \
+                                         FRU_CAPABILITY_SENSOR_HISTORY
+
 import os
 import uuid
 import binascii
-from ctypes import CDLL, c_char_p, c_ubyte, create_string_buffer, pointer
+from ctypes import CDLL, c_char_p, c_ubyte, c_uint32, create_string_buffer, pointer
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
 
@@ -227,3 +240,16 @@ def pal_get_uuid():
     uuid_str = str(uuid_str,'ascii')
     uuid_str = uuid.UUID(uuid_str)
     return str(uuid_str)
+
+
+def pal_get_fru_capability(fru):
+    if lpal_hndl is None:
+        return None
+    cap = c_uint32()
+    p_cap = pointer(cap)
+    ret = lpal_hndl.pal_get_fru_capability(fru, p_cap)
+    if ret:
+        return None
+    else:
+        return cap.value
+

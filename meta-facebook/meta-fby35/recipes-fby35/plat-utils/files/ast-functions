@@ -1,0 +1,465 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+DEVMEM=/sbin/devmem
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+ASPEEDCHIP="aspeed-gpio"
+
+devmem_set_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val | (0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val & ~(0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_scu70_bit() {
+    local val
+    val=$((0x1 << $1))
+    $DEVMEM 0x1E6E2004 32 $val
+}
+
+scu_addr() {
+    echo $((0x1E6E2000 + 0x$1))
+}
+
+#LPC Controller, Base Address = 0x1E78_9000
+lpc_addr() {
+    echo $((0x1E789000 + 0x$1))
+}
+
+gpio_export() {
+  local name shadow
+  shadow=$1
+  name=$2
+  $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
+}
+
+gpio_set() {
+  local shadow val
+  shadow=$1
+  val=$2
+  $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+  local shadow
+  shadow=$1
+  $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+# Get bmc board id
+get_bmc_board_id() {
+  val=$(( $(gpio_get BOARD_ID0) + ($(gpio_get BOARD_ID1)<<1) + ($(gpio_get BOARD_ID2)<<2) + ($(gpio_get BOARD_ID3)<<3) ))
+  echo $val
+}
+
+# Store and Clear POR bit
+store_clear_por()
+{
+  local bus rst sig val pwr_flag pfr_status
+
+  if [ -f /tmp/ast_por ]; then
+    return
+  fi
+
+  if [ "$(get_bmc_board_id)" -eq 9 ]; then
+    bus=9
+  else
+    bus=12
+  fi
+
+  # PFR - Check if it is CPLD update
+  for i in {1..3}; do
+    pwr_flag=$(/usr/sbin/i2cget -y $bus 0x38 0x68 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      break
+    fi
+    pwr_flag=1
+    sleep 0.2
+  done
+
+  # PFR - Check provision
+  for i in {1..3}; do
+    pfr_status=$(/usr/sbin/i2cget -y $bus 0x38 0xa 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      break
+    fi
+    pfr_status=0
+    sleep 0.2
+  done
+
+  if [[ "$((pfr_status & 0x20))" == "32" && ! -f /mnt/data/kv_store/pfr_file ]]; then
+      echo 1 > /mnt/data/kv_store/pfr_file
+  fi
+
+  # 0x06: Panic event count; 0x07: Last Panic reason
+  for i in {1..3}; do
+    rst=$(/usr/sbin/i2cget -y $bus 0x38 0x06 w 2>/dev/null)
+    if [ $? -eq 0 ]; then
+      break
+    fi
+    rst=0
+    sleep 0.2
+  done
+
+  # Read Boot Magic
+  sig=$(devmem 0x1e721208 2>/dev/null)
+
+  # Read the Watch Dog Flag
+  val=$(devmem 0x1e6e2074 2>/dev/null)
+  if [[ "$((rst & 0xffff))" == "0" && "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
+      # Power ON Reset
+      echo 1 > /tmp/ast_por
+  else
+      echo 0 > /tmp/ast_por
+  fi
+
+  # Check CPLD power on flag
+  if [[ "$((pwr_flag & 0xff))" == "0" && "$((pfr_status & 0x20))" == "32" ]]; then
+      # PFR - power on flag
+      echo 1 > /tmp/ast_por
+      echo 1 > /mnt/data/kv_store/pfr_file
+  fi
+
+  # Check the CPLD PFR status change from PFR to Non-PFR via PFR update
+  file_value=$(cat /mnt/data/kv_store/pfr_file 2>/dev/null)
+  if [[ "$((pfr_status & 0x20))" == "0" && "$((file_value))" == "1" ]]; then
+      echo 1 > /tmp/ast_por
+      echo 0 > /mnt/data/kv_store/pfr_file
+  fi
+
+  # Clear record register
+  /usr/sbin/i2cset -y $bus 0x38 0x68 0x00 2>/dev/null
+
+  # Clear Power On Reset bit
+  devmem 0x1e6e2074 32 $((val & 0xfffffffe)) 2>/dev/null
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  store_clear_por
+  /bin/cat /tmp/ast_por
+}
+
+# Get 1OU/2OU present status
+get_m2_prsnt_sts() {
+  val=$(/usr/bin/bic-util $1 0x18 0x52 0x05 0x42 0x01 0x0D)
+  # if BIC is no response, set val to 255
+  if [[ $val =~ BIC* ]]; then
+    val=255
+  else
+    val=$((16#$val))
+    val=$((val & 0xC))
+  fi
+
+  echo $val
+}
+
+# Disable 12V for a server board
+disable_server_12V_power() {
+  local reg=8
+
+  reg=$(($reg + $1))
+  /usr/sbin/i2cset -y 12 0xf $reg 0x00
+}
+
+# Enable the I2C on the specified bus
+enable_server_i2c_bus() {
+  local pwr_sts
+
+  case $1 in
+    1)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1_R)
+      ;;
+    2)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT2)
+      ;;
+    3)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3_R)
+      ;;
+    4)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
+      ;;
+    *)
+      pwr_sts="0"
+      ;;
+  esac
+
+  if [ $pwr_sts == "1" ]; then
+    gpio_set FM_BMC_SLOT$1_ISOLATED_EN_R 1
+  fi
+}
+
+# Check to see if server is present in given slot or not
+is_server_prsnt() {
+  local prsnt
+
+  case $1 in
+    1)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT1_BB_N)
+      ;;
+    2)
+      prsnt=$(gpio_get PRSNT_MB_SLOT2_BB_N)
+      ;;
+    3)
+      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT3_BB_N)
+      ;;
+    4)
+      prsnt=$(gpio_get PRSNT_MB_SLOT4_BB_N)
+      ;;
+    *)
+      prsnt="1"
+      ;;
+  esac
+
+  if [ $prsnt == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+get_all_server_prsnt() {
+  cnt=0
+  for i in $(seq 1 4); do
+    cnt=$((cnt + `is_server_prsnt $i`))
+  done
+  echo $cnt
+}
+
+set_nic_power() {
+  cnt=`get_all_server_prsnt`
+
+  if [ $cnt -eq 0 ]; then
+    /usr/sbin/i2cset -y 12 0x0f 0x0f 0
+    logger -t "gpiod" -p daemon.crit "NIC Power is set to VAUX"
+  fi
+}
+
+read_file_retry() {
+  retries=$1
+  wait_time=$2
+  file=$3
+
+  for i in `seq 1 $retries`; do
+    value=`cat $file`
+    [ ! -z $value ] && break
+    usleep $wait_time
+  done
+
+  echo $value
+}
+
+# Get slot type. 0 = server
+get_slot_type() {
+  #Return 0 since we only have a server
+  type=0
+  echo $type
+}
+
+# Get server type. 0 = server
+get_server_type() {
+  #Return 0 since we only have a server
+  type=0
+  echo $type
+}
+
+# Check to see if Bridge-IC is ready
+is_bic_ready() {
+  local ready
+
+  case $1 in
+   1)
+    ready=$(gpio_get SMB_BMC_SLOT1_ALT_N)
+    ;;
+   2)
+    ready=$(gpio_get SMB_BMC_SLOT2_ALT_N)
+    ;;
+   3)
+    ready=$(gpio_get SMB_BMC_SLOT3_ALT_N)
+    ;;
+   4)
+    ready=$(gpio_get SMB_BMC_SLOT4_ALT_N)
+    ;;
+   *)
+    ready="1"
+    ;;
+  esac
+
+  if [ $ready == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+# Check to see if Server Board Present & Bridge-IC is ready
+is_sb_bic_ready() {
+  local ready
+  local slot_num=$1
+  local cpld_bus=$(($slot_num+3))
+
+  if [[ $(is_server_prsnt $slot_num) == "0" ]]; then
+    ready=0
+  else
+    cpld_bic_ready_out=$(i2cget -y ${cpld_bus} 0x0f 0x02)
+    val=$((((16#${cpld_bic_ready_out:2}) & 0x02) >> 1))
+    if [ $val -eq 1 ]; then
+      ready=1
+    else
+      ready=0
+    fi
+  fi
+
+  echo $ready
+}
+
+# Check to see if slot 12v is on or not
+is_slot_12v_on() {
+  local pwr_sts
+
+  case $1 in
+    1)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT1_R)
+      ;;
+    2)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT2)
+      ;;
+    3)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT3_R)
+      ;;
+    4)
+      pwr_sts=$(gpio_get PWROK_STBY_BMC_SLOT4)
+      ;;
+    *)
+      pwr_sts="0"
+      ;;
+  esac
+
+  if [ $pwr_sts == "1" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+get_slot_bus() {
+  local bus
+
+  case $1 in
+    1)
+      bus=0
+      ;;
+    2)
+      bus=1
+      ;;
+    3)
+      bus=2
+      ;;
+    4)
+      bus=3
+      ;;
+  esac
+
+  echo $bus
+}
+
+get_cpld_bus() {
+  local bus
+
+  case $1 in
+    1)
+      bus=4
+      ;;
+    2)
+      bus=5
+      ;;
+    3)
+      bus=6
+      ;;
+    4)
+      bus=7
+      ;;
+  esac
+
+  echo $bus
+}
+
+get_platform_stage() {
+  local stage=255
+  re='^0x[0-9]+$'
+  for i in $(seq 1 4); do
+    if [ $i -eq 1 ] || [ $i -eq 3 ]; then
+      prsnt_sts=$(gpio_get PRSNT_MB_BMC_SLOT${i}_BB_N)
+    else
+      prsnt_sts=$(gpio_get PRSNT_MB_SLOT${i}_BB_N)
+    fi
+    if [ "$prsnt_sts" == "0" ]; then
+      gpio_set FM_BMC_SLOT${i}_ISOLATED_EN_R 1
+      bus=$(get_cpld_bus "$i")
+      stage=$(/usr/sbin/i2cget -y $bus 0x0f 0x07)
+      if ! [[ $stage =~ $re ]] ; then
+        continue
+      else
+        stage=$((16#${stage:2:3}))
+        break
+      fi
+    fi
+  done
+
+  echo $stage
+}
+
+i2c_remove_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      I2C_DEV=`echo $DEV_SLAVE_ADDR | sed s/x/0/g`
+
+      if [ -d /sys/class/i2c-dev/i2c-$SLOT_BUS/device/$SLOT_BUS-$I2C_DEV ]; then
+         echo $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/delete_device
+      fi
+}
+
+i2c_add_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      DEV_NAME=$3
+
+      echo $DEV_NAME $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/new_device
+}
+
+# Check to see if BMC time synced
+is_date_synced() {
+  if [ -f /tmp/sync_date ]; then
+    /bin/cat /tmp/sync_date
+  else
+    echo 0
+  fi
+}
+
+# Get 2OU board type
+# M.2 board: 0x01
+# E1.S board: 0x02
+# GPV3 MCHP board: 0x03
+# GPV3 BRCM board: 0x00
+# unknown board: 0xff
+function get_2ou_board_type() {
+  local bus=$1
+  SB_CPLD_ADDR="0x0f"
+  type=$(/usr/sbin/i2cget -y $bus $SB_CPLD_ADDR 0xD)
+  if [ $? -ne 0 ]; then
+    # if get board type fail, return unknown board for retry or search other slot's 2OU board
+    echo "0xff"
+  else
+    echo $type
+  fi
+}

@@ -2478,11 +2478,10 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       snprintf(key, sizeof(key), "uic_sensor_health");
       break;
     case FRU_DPB:
-      snprintf(key, sizeof(key), "dpb_sensor_health");
-      break;
     case FRU_SCC:
-      snprintf(key, sizeof(key), "scc_sensor_health");
-      break;
+      // SCC and DPB sensor event SEL are sent by Expander
+      // health value will change when get SEL
+      return 0;
     case FRU_NIC:
       snprintf(key, sizeof(key), "nic_sensor_health");
       break;
@@ -3338,5 +3337,41 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
   memcpy(response, &rbuf[0], *rlen);
 
   return 0;
+}
+
+int
+pal_handle_string_sel(char *log, uint8_t log_len)
+{
+  char val[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  int ret = 0;
+  
+  if (log == NULL) {
+    syslog(LOG_ERR, "%s: Failed to check SCC/DPB sensor SEL", __func__);
+    return -1;
+  }
+  
+  if (strstr(log, "DPB_") != NULL) {
+    snprintf(key, sizeof(key), "dpb_sensor_health");
+  } else if (strstr(log, "SCC_") != NULL) {
+    snprintf(key, sizeof(key), "scc_sensor_health");
+  } else {
+    return ret;
+  }
+  
+  if (strstr(log, "DEASSERT") != NULL) {
+    snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
+  } else if (strstr(log, "ASSERT") != NULL) {
+    snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
+  } else {
+    return ret;
+  }
+  
+  ret = pal_set_key_value(key, val);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to set key value of %s.", __func__, key);
+  }
+  
+  return ret;
 }
 

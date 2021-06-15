@@ -21,41 +21,46 @@ using namespace std;
 
 #define MAX_BIOS_VER_STR_LEN 32
 
-int BiosComponent::update(string image) {
+int BiosComponent::_update(string image, bool force) {
   int ret = 0;
   uint8_t status = 0;
   int retry_count = 0;
 
   try {
     server.ready();
-    pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
-
-    //Checking Server Power Status to make sure Server is really Off
-    while (retry_count < MAX_GET_PWR_RETRY) {
-      ret = pal_get_server_power(FRU_SERVER, &status);
-      if ((ret == 0) && (status == SERVER_POWER_OFF)){
-        break;
-      } else {
-        retry_count++;
-        sleep(2);
+    if (force == FORCE_UPDATE_UNSET) {
+      cout << "Shutting down server gracefully..." << endl;
+      pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
+  
+      //Checking Server Power Status to make sure Server is really Off
+      while (retry_count < MAX_GET_PWR_RETRY) {
+        ret = pal_get_server_power(FRU_SERVER, &status);
+        if ((ret == 0) && (status == SERVER_POWER_OFF)){
+          break;
+        } else {
+          retry_count++;
+          sleep(2);
+        }
       }
+      if (retry_count == MAX_GET_PWR_RETRY) {
+        cerr << "Failed to Power Off Server. Stopping the update!" << endl;
+        return -1;
+      }  
+      
+      ret = bic_me_recovery(RECOVERY_MODE);
+      if (ret < 0) {
+        cerr << "Failed to set ME to recovery mode. Stopping the update!" << endl;
+        ret = FW_STATUS_FAILURE;
+        goto exit;
+      }
+      sleep(3);
+    } else {
+      cout << "Force updating BIOS firmware..." << endl;
     }
-    if (retry_count == MAX_GET_PWR_RETRY) {
-      cerr << "Failed to Power Off Server. Stopping the update!" << endl;
-      return -1;
-    }
-
     
-    ret = bic_me_recovery(RECOVERY_MODE);
-    if (ret < 0) {
-      cerr << "Failed to set ME to recovery mode. Stopping the update!" << endl;
-      ret = FW_STATUS_FAILURE;
-      goto exit;
-    }
-    sleep(3);
     bic_switch_mux_for_bios_spi(MUX_SWITCH_FPGA);
     sleep(1);
-    ret = bic_update_fw(FRU_SERVER, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+    ret = bic_update_fw(FRU_SERVER, fw_comp, (char *)image.c_str(), force);
     if (ret != 0) {
       // recover to original setting
       bic_switch_mux_for_bios_spi(MUX_SWITCH_PCH);
@@ -73,8 +78,12 @@ int BiosComponent::update(string image) {
   return ret;
 }
 
+int BiosComponent::update(string image) {
+  return _update(image, FORCE_UPDATE_UNSET);
+}
+
 int BiosComponent::fupdate(string image) {
-  return FW_STATUS_NOT_SUPPORTED;
+  return _update(image, FORCE_UPDATE_SET);
 }
 
 int BiosComponent::get_ver_str(string& s) {

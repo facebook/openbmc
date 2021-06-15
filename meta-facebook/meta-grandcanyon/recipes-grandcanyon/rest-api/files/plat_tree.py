@@ -90,21 +90,18 @@ def populate_server_node(r_api, num):
 
 def populate_e1s_iocm_node(r_api):
     FRU_E1S_IOCM = 7
-    is_chassis_type7 = False
+    is_supported_iocm = False
 
-    fru_name = pal_get_fru_name(FRU_E1S_IOCM)
+    cap = pal_get_fru_capability(FRU_E1S_IOCM)
 
-    if fru_name in ["e1s", "iocm"]:
-        if fru_name == "iocm":
-            is_chassis_type7 = True
-    else:
-        return None
+    if (cap & FRU_CAPABILITY_FRUID_ALL) > 0:
+        is_supported_iocm = True
 
     r_e1s_iocm = tree("e1s_iocm", data=get_node_e1s_iocm())
     r_api.addChild(r_e1s_iocm)
 
     # Add /api/e1s_iocm/fruid end point
-    if is_chassis_type7 == True:
+    if is_supported_iocm == True:
         r_temp = tree("fruid", data=get_node_fruid("e1s_iocm"))
         r_e1s_iocm.addChild(r_temp)
     # /api/e1s_iocm/sensors end point

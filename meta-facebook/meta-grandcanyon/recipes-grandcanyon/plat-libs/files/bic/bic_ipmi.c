@@ -36,7 +36,6 @@
 #include "bic_xfer.h"
 
 #define MAX_VER_STR_LEN 80
-#define MAX_POSTCODE_LEN 256
 
 //FRU
 #define FRUID_READ_COUNT_MAX 0x20

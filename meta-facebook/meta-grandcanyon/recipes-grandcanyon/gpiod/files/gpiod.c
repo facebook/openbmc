@@ -249,6 +249,54 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
   }
 }
 
+static void
+cache_post_code(uint8_t* post_code_buffer, size_t buf_len){
+  FILE *fp = NULL;
+  int ret = 0, count = 1;
+
+  if (post_code_buffer == NULL) {
+    syslog(LOG_WARNING, "%s: Fail to cache post code due to NULL parameter.", __func__);
+    return;
+  }
+
+  fp = fopen(POST_CODE_FILE, "w");
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "%s: fail to open %s file because %s ", __func__, POST_CODE_FILE, strerror(errno));
+    return;
+  }
+
+  ret = pal_flock_retry(fileno(fp));
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to flock %s file because %s ", __func__, POST_CODE_FILE, strerror(errno));
+    fclose(fp);
+    return;
+  }
+
+  while (buf_len > 0) {
+    if (count > 16) {
+      fprintf(fp, "\n");
+      count=1;
+    }
+    fprintf(fp, "%02X ", post_code_buffer[buf_len-1]);
+    buf_len--;
+    count++;
+  }
+  fprintf(fp, "\n");
+
+  pal_unflock_retry(fileno(fp));
+  fclose(fp);
+}
+
+static void
+check_cache_post_code(){
+  if (access(POST_CODE_FILE, F_OK) == 0) {
+      //file exist
+      if (rename(POST_CODE_FILE, LAST_POST_CODE_FILE) != 0) {
+        syslog(LOG_WARNING, "%s: fail to rename %s to %s because %s ", __func__, POST_CODE_FILE, LAST_POST_CODE_FILE, strerror(errno));
+      }
+  }
+}
+
 static void *
 fru_missing_monitor() {
   uint8_t fru_present_flag = 0, chassis_type = 0, uic_location_id = 0;
@@ -377,6 +425,9 @@ server_power_monitor() {
   char pwr_util_lock_file[MAX_FILE_PATH] = {0}; 
   uint8_t server_present = FRU_PRESENT;
   uint8_t server_pre_pwr_status = -1, server_cur_pwr_status = -1;
+  uint8_t post_code[MAX_POSTCODE_LEN] = {0};
+  size_t post_code_len = 0;
+  bool is_need_cache = true;
   int ret = 0;
   FILE *fp = NULL;
   
@@ -391,6 +442,24 @@ server_power_monitor() {
       if (server_present == FRU_PRESENT) {
         ret = pal_get_server_power(FRU_SERVER, &server_cur_pwr_status);
         if (ret == 0) {
+          //*****Store server post code
+          if (server_cur_pwr_status == SERVER_POWER_ON) {
+            if (is_need_cache == true) {
+              memset(&post_code, 0, sizeof(post_code));
+              if (pal_get_80port_record(FRU_SERVER, post_code, MAX_POSTCODE_LEN, &post_code_len) == 0) {
+                cache_post_code(post_code, post_code_len);
+                // Stop storing post code when server boot into OS
+                if (post_code[0] == 0x00) {
+                  is_need_cache = false;
+                }
+              } else {
+                syslog(LOG_WARNING, "%s(): Fail to get post code from BIC", __func__);
+              }
+            }
+          } else {
+            check_cache_post_code();
+          }
+
           //*****Server power from on change to off
           if ((server_pre_pwr_status == SERVER_POWER_ON)
            && ((server_cur_pwr_status == SERVER_POWER_OFF) || (server_cur_pwr_status == SERVER_12V_OFF))) {
@@ -413,7 +482,8 @@ server_power_monitor() {
             } else {
               fclose(fp);
             }
-
+            // Store post code when server power on
+            is_need_cache = true;
             syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
           }
 

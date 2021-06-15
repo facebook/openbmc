@@ -100,6 +100,10 @@ extern "C" {
 #define IOC_FW_VER_SIZE    (8)
 #define TIMEOUT_IOC        (5) //Unit: second
 
+#define MAX_POSTCODE_LEN    256
+#define POST_CODE_FILE      "/tmp/post_code_buffer.bin"
+#define LAST_POST_CODE_FILE "/tmp/last_post_code_buffer.bin"
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

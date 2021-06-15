@@ -2756,6 +2756,9 @@ pal_get_custom_event_sensor_name(uint8_t sensor_num, char *name) {
     case BIC_SENSOR_SYSTEM_STATUS:
       snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
       break;
+    case BIC_SENSOR_PROC_FAIL:
+      snprintf(name, MAX_SNR_NAME, "PROC_FAIL");
+      break;
     default:
       snprintf(name, MAX_SNR_NAME, "Unknown");
       ret = PAL_ENOTSUP;
@@ -2763,6 +2766,29 @@ pal_get_custom_event_sensor_name(uint8_t sensor_num, char *name) {
   }
 
   return ret;
+}
+
+static int
+pal_parse_proc_fail(uint8_t *event_data, char *error_log) {
+  enum {
+    FRB3 = 0x04,
+  };
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  switch(event_data[0]) {
+    case FRB3:
+      strcat(error_log, "FRB3, ");
+      break;
+    default:
+      strcat(error_log, "Undefined data, ");
+      break;
+  }
+
+  return PAL_EOK;
 }
 
 int
@@ -2928,6 +2954,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BIC_SENSOR_SYSTEM_STATUS:
       pal_parse_sys_sts_event(event_data, error_log);
+      break;
+    case BIC_SENSOR_PROC_FAIL:
+      pal_parse_proc_fail(event_data, error_log);
       break;
     default:
       pal_parse_sel_helper(fru, sel, error_log);

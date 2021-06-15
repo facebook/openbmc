@@ -187,6 +187,7 @@ enum {
 enum {
   BIC_SENSOR_VRHOT = 0xB4,
   BIC_SENSOR_SYSTEM_STATUS = 0x46,
+  BIC_SENSOR_PROC_FAIL = 0x65,
 };
 
 enum {

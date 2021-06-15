@@ -24,7 +24,7 @@ After=setup_i2c.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/bin/sh -c '/bin/sed -i \"s/VENDOR_SERIAL_HERE/$(/usr/local/bin/dhcp-id)/\" /etc/systemd/network/eth0.network'
+ExecStart=/bin/sh -c '/bin/sed -i \"s/VENDOR_SERIAL_HERE/$(/usr/local/bin/dhcp-id)/\" /etc/systemd/network/10-eth0.network'
 
 [Install]
 WantedBy=network-pre.target systemd-networkd.service

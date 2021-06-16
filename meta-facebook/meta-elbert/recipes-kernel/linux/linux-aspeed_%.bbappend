@@ -1,6 +1,6 @@
 LINUX_VERSION_EXTENSION = "-elbert"
 
-COMPATIBLE_MACHINE = "elbert"
+COMPATIBLE_MACHINE = "elbert|elbertvboot"
 
 KERNEL_MODULE_AUTOLOAD += " \
     ast_adc \

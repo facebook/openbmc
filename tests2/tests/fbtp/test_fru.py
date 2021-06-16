@@ -53,12 +53,6 @@ class FruMbTest(CommonFruTest, unittest.TestCase):
         return product_fields
 
 
-class FruNicTest(CommonFruTest, unittest.TestCase):
-    def setUp(self):
-        self.fru_cmd = ["/usr/local/bin/fruid-util", "nic"]
-        self.fru_fields = {"product": 1, "board": 4, "chassis": 0}
-
-
 class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "riser_slot2"]

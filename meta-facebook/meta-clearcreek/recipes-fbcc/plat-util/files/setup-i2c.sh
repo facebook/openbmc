@@ -23,24 +23,10 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 KVSET_CMD=/usr/bin/kv
 
-echo "Setup TMP422"
-i2c_device_add 6 0x4d tmp422
-i2c_device_add 6 0x4e tmp422
-
 echo "Setup TCA9539 input/output pin"
 i2cset -y -f 5 0x77 0x06 0x00
 i2cset -y -f 5 0x77 0x07 0x0f
 i2cset -y -f 5 0x77 0x02 0x0f
-
-echo "Setup VR sensor"
-i2c_device_add 5 0x30 mpq8645p
-i2c_device_add 5 0x31 mpq8645p
-i2c_device_add 5 0x32 mpq8645p
-i2c_device_add 5 0x33 mpq8645p
-i2c_device_add 5 0x34 mpq8645p
-i2c_device_add 5 0x35 mpq8645p
-i2c_device_add 5 0x36 mpq8645p
-i2c_device_add 5 0x3b mpq8645p
 
 echo "Setup TMP75"
 i2c_device_add 21 0x48 tmp75

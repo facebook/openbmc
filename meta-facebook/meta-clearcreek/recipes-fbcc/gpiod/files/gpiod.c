@@ -27,6 +27,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/file.h>
+#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
@@ -141,6 +142,7 @@ gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 {
   gpio_desc_t *tmp = gpio_open_by_shadow("RST_SMB_CARRIER_N");
   char fn[32] = "/dev/i2c-8";
+  char state[8];
   int fd, ret;
   uint8_t tlen, rlen;
   uint8_t addr = 0xEE;
@@ -169,6 +171,14 @@ gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
 
   //sync Power LED
   if(curr == GPIO_VALUE_HIGH) {
+    //load VR and TMP422 driver, if we didn't setup yet
+    if (kv_get("pon_driver_loaded", state, NULL, KV_FPERSIST) != 0) {
+      ret = system("sh /etc/init.d/setup-pon-driver.sh");
+      if(ret != 0) {
+        syslog(LOG_ERR, "setup Power on driver fail\n");
+      }
+    }
+
     tbuf[0] = comds_on[0];
     tbuf[1] = comds_on[1];
     ret =  i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);

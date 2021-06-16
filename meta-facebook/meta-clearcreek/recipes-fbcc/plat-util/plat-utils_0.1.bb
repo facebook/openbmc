@@ -26,6 +26,7 @@ SRC_URI = "file://ast-functions \
            file://setup-usbnet.sh \
            file://setup-usbhub.sh \
            file://setup-m2carrier.sh \
+           file://setup-pon-driver.sh \
            file://sync-rtc.sh \
            file://run-sync-rtc.sh \
            file://setup-i2c.sh \
@@ -71,6 +72,8 @@ do_install() {
   install -m 755 setup-m2carrier.sh ${D}${sysconfdir}/init.d/setup-m2carrier.sh
   install -m 755 setup-nicfru.sh ${D}${sysconfdir}/init.d/setup-nicfru.sh
   update-rc.d -r ${D} setup-nicfru.sh start 60 5 .
+  install -m 755 setup-pon-driver.sh ${D}${sysconfdir}/init.d/setup-pon-driver.sh
+  update-rc.d -r ${D} setup-pon-driver.sh start 63 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

@@ -17,6 +17,20 @@ def fbobmc_get_image_part_table(d):
         (  0x01C00000,  "data0",        4 * 1024    , "mtdonly",    None),
     )
 
-    part_table = list(image_part_table_simple)
+    image_part_table_vboot = (
+        #  offset,      name            max_size (K)    type            src_component ( 0: fill with zero, None: skip)
+        (  0,           "spl",          256         ,   "rom",      d.expand("${DEPLOY_DIR_IMAGE}/u-boot-spl-${MACHINE}.${UBOOT_SUFFIX}") ),
+        (  0x00040000,  "rec-u-boot",   640         ,   "raw",      d.expand("${DEPLOY_DIR_IMAGE}/u-boot-recovery-${MACHINE}.${UBOOT_SUFFIX}")),
+        (  0x000E0000,  "u-boot-env",   64          ,   "data",     0),
+        (  0x000F0000,  "image-meta",   64          ,   "meta",     0),
+        (  0x00100000,  "u-boot-fit",   640         ,   "fit",      d.expand("${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}") ),
+        (  0x001A0000,  "os-fit",       -1          ,   "fit",      d.expand("${DEPLOY_DIR_IMAGE}/${FIT_LINK}")),
+        (  0x01C00000,  "data0",        4 * 1024    ,   "mtdonly",   None),
+    )
+
+    if d.getVar("VERIFIED_BOOT"):
+        part_table = list(image_part_table_vboot)
+    else:
+        part_table = list(image_part_table_simple)
 
     return (image_max_size, erase_block_size, part_table)

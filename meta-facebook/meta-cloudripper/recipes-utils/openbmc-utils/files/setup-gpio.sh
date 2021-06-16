@@ -84,7 +84,7 @@ gpio_export_by_name "${ASPEED_GPIO}" GPIOW6 SCM_LPC_SERIRQ_N
 gpio_export_by_name "${ASPEED_GPIO}" GPIOW7 BMC_LPCRST_N
 gpio_export_by_name "${ASPEED_GPIO}" GPIOX6 BMC_FPGA_JTAG_EN
 gpio_export_by_name "${ASPEED_GPIO}" GPIOY2 CPU_CATERR_MSMI_R
-gpio_export_by_name "${ASPEED_GPIO}" GPIOY3 SYS_CPLD_INT_L_R
+gpio_export_by_name "${ASPEED_GPIO}" GPIOY3 BMC_EMMC_RST_N
 
 # Set GPIO direction
 gpio_set_direction NP_POWER_STABLE_3V3_R    "in"
@@ -139,7 +139,7 @@ gpio_set_direction SCM_LPC_FRAME_N          "in"
 gpio_set_direction SCM_LPC_SERIRQ_N         "in"
 gpio_set_direction BMC_LPCRST_N             "in"
 gpio_set_direction CPU_CATERR_MSMI_R        "in"
-gpio_set_direction SYS_CPLD_INT_L_R         "in"
+gpio_set_direction BMC_EMMC_RST_N           "out"
 gpio_set_direction BMC_FPGA_JTAG_EN         "out"
 
 # Set GPIO default value
@@ -170,3 +170,5 @@ gpio_set_value BMC_SCM_CPLD_EN_R        1
 gpio_set_value BMC_DOM_FPGA1_RST_L_R    1
 # Default set to 0. 0 to enable wedge_power.sh reset -s, 1 to disable wedge_power.sh reset -s
 gpio_set_value PWR_CPLD_HITLESS_R       0
+# set BMC_EMMC_RST_N High to prevent EMMC disable
+gpio_set_value BMC_EMMC_RST_N 1

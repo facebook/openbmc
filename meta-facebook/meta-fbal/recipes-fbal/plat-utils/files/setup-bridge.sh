@@ -49,7 +49,7 @@ echo "Initialize IP Bridge..."
 
 #Get EP/CC MAC Address
 position=$(($(/usr/bin/kv get mb_pos)))
-mode=$(($(/usr/bin/kv get mb_skt) >> 1))  #2S:mode=2 4S:mode=1
+mode=$(($(/usr/bin/kv get mb_skt) >> 1))  #2S:mode=2, 4S_EX:mode=1, 4S_EP:mode=0
 
 if [[ "$position" -eq 0 || "$mode" -eq 2 ]]; then
   peer_name="EP"

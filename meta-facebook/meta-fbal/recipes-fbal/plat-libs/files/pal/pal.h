@@ -218,17 +218,9 @@ enum {
 };
 
 enum {
-  MB1_MASTER_8S = 0,
-  MB2_MASTER_8S,
-  MB3_MASTER_8S,
-  MB4_MASTER_8S,
-  ALL_2S_MODE,
-};
-
-enum {
-  MB_8S_MODE = 0,  //SKT_ID[2:1] 00
-  MB_4S_MODE,      //SKT_ID[2:1] 01
-  MB_2S_MODE,      //SKT_ID[2:1] 10
+  MB_4S_EP_MODE = 0, //SKT_ID[2:1] 00
+  MB_4S_EX_MODE,     //SKT_ID[2:1] 01
+  MB_2S_MODE,        //SKT_ID[2:1] 10
 };
 
 int pal_set_id_led(uint8_t fru, uint8_t status);

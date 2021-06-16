@@ -901,7 +901,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   }
   master = pal_get_config_is_master();
 
-  if (mode == MB_4S_MODE && master) {
+  if ( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && master ) {
     if (fru == FRU_TRAY0_MB) {
       *sensor_list = (uint8_t *)mb_4s_m_tray0_sensor_list;
       *cnt = mb_4s_m_tray0_sensor_cnt;
@@ -1556,7 +1556,7 @@ get_hsc_rw_info(uint8_t* extend, uint8_t* mode) {
     return ret;
   }
 
-  if( *mode == MB_4S_MODE ) {
+  if( (*mode == MB_4S_EX_MODE) || (*mode == MB_4S_EP_MODE) ) {
     *extend = true;
   } else {
     *extend = false;
@@ -3232,7 +3232,7 @@ int pal_sensor_monitor_initial(void) {
     if (kv_set("mb_system_conf", "Type_2S", 0, KV_FPERSIST ) < 0) {
       syslog(LOG_WARNING, "Set 2S Air Flow Config Fail\n");
     }
-  } else if(mode == MB_4S_MODE && master) {
+  } else if( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && master ) {
     hsc_cnt = 2;
     DIMM_SLOT_CNT = 48;
     if (kv_set("mb_system_conf", "Type_4S", 0, KV_FPERSIST ) < 0) {

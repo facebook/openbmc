@@ -25,33 +25,37 @@ cc_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
     return ret;
   }
 
-  ret = pal_get_mb_position (&pos);
-  if (ret != 0) {
-    syslog(LOG_WARNING,"%s Wrong get position\n", __func__);
-    return ret;
-  }
-
-  ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CC_I2C_BUS_NUMBER);
-  if(ret != 0) {
-    return ret;
-  }
-
-  if( mode == MB_4S_MODE && pos == MB_ID0 ) {
-    ret = cmd_mb0_bridge_to_cc(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen);
-  } else {
-    ret = lib_ipmb_send_request(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen,
-                                CC_I2C_BUS_NUMBER, CC_I2C_SLAVE_ADDR, bmc_addr);
-  }
-
+  if ( mode == MB_4S_EX_MODE ) {
+    ret = pal_get_mb_position (&pos);
+    if (ret != 0) {
+      syslog(LOG_WARNING,"%s Wrong get position\n", __func__);
+      return ret;
+    }
+ 
+    ret = pal_get_bmc_ipmb_slave_addr(&bmc_addr, CC_I2C_BUS_NUMBER);
+    if(ret != 0) {
+      return ret;
+    }
+ 
+    if( pos == MB_ID0 ) {
+      ret = cmd_mb0_bridge_to_cc(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen);
+    } else {
+      ret = lib_ipmb_send_request(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen,
+                                  CC_I2C_BUS_NUMBER, CC_I2C_SLAVE_ADDR, bmc_addr);
+    }
+ 
 #ifdef DEBUG
-  for(int i=0; i<txlen; i++) {
-    syslog(LOG_WARNING, "cc txbuf[%d]=0x%x\n", i, txbuf[i]);
-  }
-
-  for(int i=0; i<*rxlen; i++) {
-    syslog(LOG_WARNING, "cc rxbuf[%d]=0x%x\n", i, rxbuf[i]);
-  }
+    for(int i=0; i<txlen; i++) {
+      syslog(LOG_WARNING, "cc txbuf[%d]=0x%x\n", i, txbuf[i]);
+    }
+ 
+    for(int i=0; i<*rxlen; i++) {
+      syslog(LOG_WARNING, "cc rxbuf[%d]=0x%x\n", i, rxbuf[i]);
+    }
 #endif
+  } else {
+    syslog(LOG_WARNING, "%s Mode Error %d\n",__func__, mode);
+  }
   return ret;
 }
 
@@ -66,7 +70,7 @@ cmd_cc_get_snr_reading(float *value, uint8_t snr_num) {
 
   tbuf[0] = 0x01;
   tbuf[1] = snr_num;
-  ret =  cc_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
+  ret = cc_ipmb_process(ipmi_cmd, netfn, tbuf, 2, rbuf, &rlen);
   if( ret != 0 )
     return ret;
 
@@ -169,4 +173,3 @@ pal_cc_prepare_fw_update(uint8_t flag) {
 
   return ret;
 }
-

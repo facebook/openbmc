@@ -287,7 +287,7 @@ int asic_ac_cycle_proc(void) {
     return 0;
   }
 
-  //Test EP HSC 
+  //Test EP HSC
   ret = cmd_ep_get_snr_reading(&value, EP_PDB_SNR_HSC);
   if( ret != 0 ) {
     syslog(LOG_CRIT, "Access EP HSC Fail, CCode=0x%x\n", ret);
@@ -295,14 +295,12 @@ int asic_ac_cycle_proc(void) {
   }
 
   //TEST IOX HSC
-  if ( mode == MB_4S_MODE ) { 
-    ret = cmd_cc_get_snr_reading(&value, CC_PDB_SNR_HSC);
-    if( ret != 0 ) {
-      syslog(LOG_CRIT, "Access CC HSC Fail, CCode=0x%x\n", ret);
-      return -1;
-    }
+  ret = cmd_cc_get_snr_reading(&value, CC_PDB_SNR_HSC);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Access CC HSC Fail, CCode=0x%x\n", ret);
+    return -1;
   }
-  
+
   //Prepare EP FW update
   ret = pal_ep_prepare_fw_update(PREPARE_FW_UPDATE_SET);
   if( ret != 0 ) {
@@ -311,12 +309,10 @@ int asic_ac_cycle_proc(void) {
   }
 
   //Prepare CC FW update
-  if ( mode == MB_4S_MODE ) {
-    ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_SET);
-    if( ret != 0 ) {
-      syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
-      return -1;
-    }
+  ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_SET);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
+    return -1;
   }
 
   //AC EP
@@ -327,23 +323,18 @@ int asic_ac_cycle_proc(void) {
   }
 
   //AC CC
-  if ( mode == MB_4S_MODE ) {
-    cc = pal_cc_sled_cycle();
-    if ( cc != CC_SUCCESS ) {
-      syslog(LOG_CRIT, "Request CC power-cycle failed CC=%x\n", cc);
-      return -1;
-    }
+  cc = pal_cc_sled_cycle();
+  if ( cc != CC_SUCCESS ) {
+    syslog(LOG_CRIT, "Request CC power-cycle failed CC=%x\n", cc);
+    return -1;
   }
- 
+
   return 0;
 }
 
 int fbal_recfg_cycle_proc(void) {
   int cc;
 
-  if ( set_me_entry_into_recovery() )
-    syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n"); 
- 
   // Send command to CM do reconfig power cycle
   cc = lib_cmc_power_cycle();
   if( cc != CC_SUCCESS ) {
@@ -356,9 +347,6 @@ int fbal_recfg_cycle_proc(void) {
 int fbal_ac_cycle_proc(void) {
   int cc;
 
-  if ( set_me_entry_into_recovery() )
-    syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n"); 
- 
   // Send command to CM do AC power cycle
   cc = cmd_cmc_sled_cycle();
   if( cc != CC_SUCCESS ) {
@@ -380,10 +368,13 @@ int pal_recfg_sled_cycle(void)
   }
 
   do {
-    ret = asic_ac_cycle_proc(); 
+    if ( set_me_entry_into_recovery() )
+      syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n");
+
+    ret = asic_ac_cycle_proc();
     if ( ret != 0 )
       break;
- 
+
     ret = fbal_recfg_cycle_proc();
     if ( ret != 0 )
       break;
@@ -396,11 +387,9 @@ int pal_recfg_sled_cycle(void)
     syslog(LOG_CRIT, "Set EP FW Update Prepare Fail, CCode=0x%x\n", ret);
   }
 
-  if ( mode == MB_4S_MODE ) {
-    ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
-    if( ret != 0 ) {
-      syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
-    }
+  ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
   }
   return -1;
 }
@@ -415,6 +404,9 @@ int pal_sled_cycle(void) {
   }
 
   do {
+    if ( set_me_entry_into_recovery() )
+      syslog(LOG_CRIT, "AC PROCEDURE: ME Entry Recovery Mode Fail\n");
+
     ret = asic_ac_cycle_proc();
     if ( ret != 0 )
       break;
@@ -430,12 +422,10 @@ int pal_sled_cycle(void) {
   if( ret != 0 ) {
     syslog(LOG_CRIT, "Set EP FW Update Prepare Fail, CCode=0x%x\n", ret);
   }
- 
-  if ( mode == MB_4S_MODE ) {
-    ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
-    if( ret != 0 ) {
-      syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
-    }
+
+  ret = pal_cc_prepare_fw_update(PREPARE_FW_UPDATE_CLEAR);
+  if( ret != 0 ) {
+    syslog(LOG_CRIT, "Set CC FW Update Prepare Fail, CCode=0x%x\n", ret);
   }
   return -1;
 }
@@ -532,7 +522,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 
   if (pal_get_config_is_master()) {
     cc = (int)pal_set_slot_power_policy(pwr_policy, res_data);
-    if (mode == MB_4S_MODE && cmd_set_smbc_restore_power_policy(policy, BMC1_SLAVE_DEF_ADDR)) 
+    if ( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && cmd_set_smbc_restore_power_policy(policy, BMC1_SLAVE_DEF_ADDR)) 
       return CC_OEM_DEVICE_SEND_SLAVE_RESTORE_POWER_POLICY_FAIL;
   } else {
     return CC_OEM_ONLY_SUPPORT_MASTER;
@@ -802,7 +792,7 @@ pal_can_change_power(uint8_t fru){
     sprintf(fruname, "fru%d", fru);
   }
 
-  if (pal_is_fw_update_ongoing(fru) || ((mode == MB_4S_MODE) && pal_block_dc(fru))) {
+  if (pal_is_fw_update_ongoing(fru) || ( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && pal_block_dc(fru))) {
     printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
     return false;
   }

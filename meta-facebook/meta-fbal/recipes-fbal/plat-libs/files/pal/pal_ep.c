@@ -35,7 +35,7 @@ ep_ipmb_process(uint8_t ipmi_cmd, uint8_t netfn,
     return ret;
   }
 
-  if( mode == MB_4S_MODE && pos == MB_ID1 )
+  if( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && pos == MB_ID1 )
     ret = cmd_mb1_bridge_to_ep(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen);
   else
     ret = lib_ipmb_send_request(ipmi_cmd, netfn, txbuf, txlen, rxbuf, rxlen,

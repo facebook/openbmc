@@ -16,8 +16,8 @@ do_install() {
     install -m 0755 cm-util ${D}${bindir}/cm-util
 }
 
-DEPENDS += "libpal cli11 libobmc-i2c"
-RDEPENDS_${PN} += "libpal libobmc-i2c"
-LDFLAGS += "-lobmc-i2c"
+DEPENDS += "libpal cli11 libobmc-i2c libkv"
+RDEPENDS_${PN} += "libpal libobmc-i2c libkv"
+LDFLAGS += "-lobmc-i2c -lkv"
 
 FILES_${PN} = "${bindir}"

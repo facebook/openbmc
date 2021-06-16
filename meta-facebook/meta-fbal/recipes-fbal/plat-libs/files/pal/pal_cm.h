@@ -87,14 +87,11 @@ enum {
 
 // CM Mode
 enum {
-  CM_MODE_8S_0 = 0x3, // 8 Socket, Tray0 is primary
-  CM_MODE_8S_1 = 0x2, // 8 Socket, Tray1 is primary
-  CM_MODE_8S_2 = 0x1, // 8 Socket, Tray2 is primary
-  CM_MODE_8S_3 = 0x0, // 8 Socket, Tray3 is primary
   CM_MODE_2S = 0x4, // 2 Socket mode.
-  CM_MODE_4S_4OU = 0x5, // 4 Socket mode in 4OU
-  CM_MODE_4S_2OU_1 = 0x6, // 4 Socket mode in 2OU with Tray 1 as primary
-  CM_MODE_4S_2OU_0 = 0x7 // 4 Socket mode in 2OU with Tray 0 as primary
+  CM_MODE_4S_EX_2OU_1 = 0x6, // 4 Socket mode in 2OU with Tray 1 as primary
+  CM_MODE_4S_EX_2OU_0 = 0x7, // 4 Socket mode in 2OU with Tray 0 as primary
+  CM_MODE_4S_EP_2OU_1 = 0x8, // 4 Socket mode in 2OU with Tray 1 as primary
+  CM_MODE_4S_EP_2OU_0 = 0x9  // 4 Socket mode in 2OU with Tray 0 as primary
 };
 
 typedef struct {

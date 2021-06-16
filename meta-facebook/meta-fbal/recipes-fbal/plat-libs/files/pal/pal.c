@@ -305,7 +305,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   // This MB, PDB, BMC && DBG
   if (fru == FRU_MB || fru == FRU_PDB || fru == FRU_BMC || fru == FRU_DBG) {
     *status = 1;
-  } else if ( master && (mode == MB_4S_MODE) && (fru == FRU_TRAY1_MB) ) {
+  } else if ( master && (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) && (fru == FRU_TRAY1_MB) ) {
     // Support tray1 MB in master BMC.
     *status = 1;
   } else if (fru == FRU_NIC0) {
@@ -1760,10 +1760,8 @@ pal_get_cpu_amount(uint8_t* amount) {
 
     if( mode == MB_2S_MODE ) {
       cache_amount = 2;
-    } else if( mode == MB_4S_MODE ) {
+    } else if( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) ) {
       cache_amount = 4;
-    } else if( mode == MB_8S_MODE ) {
-      cache_amount = 8;
     } else {
       cache_amount = 0;
     }
@@ -1789,10 +1787,8 @@ pal_get_dimm_amount(uint8_t* amount) {
 
     if( mode == MB_2S_MODE ) {
       cache_amount = 24;
-    } else if( mode == MB_4S_MODE ) {
+    } else if( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) ) {
       cache_amount = 48;
-    } else if( mode == MB_8S_MODE ) {
-      cache_amount = 96;
     } else {
       cache_amount = 0;
     }
@@ -1901,7 +1897,7 @@ pal_get_syscfg_text(char *text) {
   }
 
 
-  for (dimm_index=0; dimm_index<dimm_num; dimm_index++) { // 2S:DIMM=24, 4S:DIMM=48, 8S:DIMM=96;
+  for (dimm_index=0; dimm_index<dimm_num; dimm_index++) { // 2S:DIMM=24, 4S:DIMM=48;
     sprintf(entry, "CPU%d_MEM%s:", dimm_index/12, dimm_label[dimm_index%24]);
 
     // Check Present

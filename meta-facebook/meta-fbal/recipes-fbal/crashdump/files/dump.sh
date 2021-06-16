@@ -6,26 +6,22 @@ CMD_DIR="/etc/peci"
 
 let CPU_ID=($1 - 48)
 DUMP_FILE=crashdump_p"$CPU_ID"_coreid
-MODE=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:MODE=2, 4S:MODE=1
-if [ "$MODE" -eq 1 ]; then
-  let MAX_CPU=4;
-else
+
+#2S:MODE=2, 4S_EX:MODE=1, 4S_EP:MODE=0
+MODE=$(($(/usr/bin/kv get mb_skt) >> 1))
+if [[ "$MODE" -eq 2 ]]; then
   let MAX_CPU=2;
+else
+  let MAX_CPU=4;
 fi
 
 function print_help_msg {
-  echo "$PROGRAM 48 coreid  ==> for CPU 1 CoreID"
-  echo "$PROGRAM 49 coreid  ==> for CPU 2 CoreID"
-  if [[ "$MODE" -eq 1 ]]; then
-    echo "$PROGRAM 50 coreid  ==> for CPU 3 CoreID"
-    echo "$PROGRAM 51 coreid  ==> for CPU 4 CoreID"
-  fi
-  echo "$PROGRAM 48 msr     ==> for CPU 1 MSR"
-  echo "$PROGRAM 49 msr     ==> for CPU 2 MSR"
-  if [[ "$MODE" -eq 1 ]]; then
-    echo "$PROGRAM 50 msr     ==> for CPU 3 MSR"
-    echo "$PROGRAM 51 msr     ==> for CPU 4 MSR"
-  fi
+  for ((i=0; i<$MAX_CPU; i++))
+  do
+    addr=$(($i+48))
+    echo "$PROGRAM $addr coreid  ==> for CPU $i CoreID"
+    echo "$PROGRAM $addr msr     ==> for CPU $i MSR"
+  done
   echo "$PROGRAM pcie       ==> for PCIe"
   echo "$PROGRAM dwr        ==> for DWR check"
 }

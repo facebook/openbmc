@@ -499,7 +499,7 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     }
     master = pal_get_config_is_master();
 
-    if (mode == MB_4S_MODE) {
+    if ( (mode == MB_4S_EX_MODE || mode == MB_4S_EP_MODE) ) {
       if (master) {
         cached_desc = cri_sensor;
         cached_desc_cnt = sizeof(cri_sensor) / sizeof(cri_sensor[0]);

@@ -35,7 +35,7 @@ echo "Setup fan speed... "
 default_fsc_config_path="/etc/fsc-config.json"
 
 host=$(($(/usr/bin/kv get mb_skt) & 0x1))  #Master:host=0, Slave:host=1
-mode=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:mode=2, 4S:mode=1
+mode=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:mode=2, 4S_EX:mode=1, 4S_EP:mode=0
 
 #echo host = $host
 #echo mode = $mode
@@ -43,10 +43,10 @@ mode=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:mode=2, 4S:mode=1
 if [ "$mode" -eq 2 ]; then
   echo probe 2s fan table
   ln -s /etc/fsc-config2s.json ${default_fsc_config_path}
-elif [[ "$mode" -eq 1 ]] && [[ "$host" -eq 0 ]]; then
+elif [[ "$host" -eq 0 ]]; then  #4S Master Mode
   echo probe 4s master fan table
   ln -s /etc/fsc-config4s_M.json ${default_fsc_config_path}
-else
+else  #4S Slave
   echo probe slave fan table
   ln -s /etc/fsc-config_Slave.json ${default_fsc_config_path}
 fi

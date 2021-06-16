@@ -5,5 +5,7 @@
 # Machine Selection
 MACHINE ??= "elbert"
 
+# MACHINE ??= "elbertvboot"
+
 # OpenBMC distro settings
 DISTRO ?= "openbmc-fb"

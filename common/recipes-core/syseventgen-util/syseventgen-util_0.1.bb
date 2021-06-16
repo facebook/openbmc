@@ -14,7 +14,7 @@ SRC_URI =  "file://meson.build \
             "
 
 S = "${WORKDIR}"
-FILES_${PN} = "${prefix}/local/bin"
+FILES_${PN} = "${prefix}/local/bin/syseventgen-util"
 
 # add libraries here later
 # DEPENDS += "libpal"

@@ -17,4 +17,4 @@ install_headers(
     subdir: 'openbmc')
 
 # Make the executable
-executable('syseventgen-util', 'syseventgen-util.cpp', install:true, install_dir:'/local/bin')
+executable('syseventgen-util', 'syseventgen-util.cpp', install:true, install_dir:'local/bin')

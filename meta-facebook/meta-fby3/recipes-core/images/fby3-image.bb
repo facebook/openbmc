@@ -70,4 +70,5 @@ IMAGE_INSTALL += " \
   lrzsz \
   mctp-util \
   usbutils \
+  syseventgen-util \
   "

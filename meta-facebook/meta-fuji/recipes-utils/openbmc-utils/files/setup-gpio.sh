@@ -103,7 +103,7 @@ setup_gpio_fuji_evt() {
 
     # Export Group Y GPIO
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOY2 BMC_GPIO57
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY3 BMC_GPIO55
+    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY3 BMC_EMMC_RST_N
 }
 
 setup_gpio_fuji_evt
@@ -151,7 +151,7 @@ gpio_set_direction LPCRST# in
 gpio_set_direction BMC_FPGA_JTAG_EN out
 gpio_set_direction BMC_TPM_SPI_PIRQ_N in
 gpio_set_direction BMC_GPIO57 out
-gpio_set_direction BMC_GPIO55 out
+gpio_set_direction BMC_EMMC_RST_N out
 
 # Once we set "out", output values will be random unless we set them
 # to something
@@ -179,8 +179,8 @@ gpio_set_value BMC_UART_SEL_2 0
 gpio_set_value BMC_UART_SEL_3 0
 # BMC GPIO set reserved
 gpio_set_value BMC_GPIO53 0
-# set BMC_GPIO55 High to prevent EMMC disable
-gpio_set_value BMC_GPIO55 1
+# set BMC_EMMC_RST_N High to prevent EMMC disable
+gpio_set_value BMC_EMMC_RST_N 1
 gpio_set_value BMC_GPIO57 0
 gpio_set_value BMC_GPIO61 0
 gpio_set_value BMC_GPIO63 0

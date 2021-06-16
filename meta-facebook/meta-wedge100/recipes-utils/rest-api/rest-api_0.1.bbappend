@@ -20,7 +20,6 @@ inherit systemd
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rest_i2cflush.py \
-            file://rest_modbus.py \
             file://board_endpoint.py \
             file://boardroutes.py \
             file://board_setup_routes.py \
@@ -33,7 +32,6 @@ SRC_URI += "file://rest_i2cflush.py \
            "
 
 binfiles1 += "rest_i2cflush.py \
-             rest_modbus.py \
              rest_fw_ver.py \
              rest_presence.py \
              "

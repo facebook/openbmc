@@ -41,7 +41,7 @@ class boardApp_Handler:
     # Handler for Modbus_registers resource endpoint
     async def helper_modbus_registers_hdl(self, request):
         return web.json_response(
-            rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
+            await rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
         )
 
     async def rest_firmware_info_all_hdl(self, request):

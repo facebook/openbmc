@@ -18,13 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 
+import asyncio
 import subprocess
-from subprocess import Popen
 
 
 # Handler for sensors resource endpoint
-def get_modbus_registers():
-    p = Popen("/usr/local/bin/rackmondata", stdout=subprocess.PIPE)
-    out, err = p.communicate()
+async def get_modbus_registers():
+    p = await asyncio.create_subprocess_exec(
+        "/usr/local/bin/rackmondata", stdout=subprocess.PIPE
+    )
+    out, err = await p.communicate()
     out = out.decode()
     return out

@@ -457,7 +457,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_BB_P3V3"     , ADC3, read_adc_value, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}  , VOLT}, //0x57
   {"CC_BB_P3V3_PAX" , ADC4, read_adc_value, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}  , VOLT}, //0x58
   {"CC_BB_P3V_BAT"  , ADC5, read_bat_value, true, {3.4, 0, 0, 2.85, 0, 0, 0, 0}    , VOLT}, //0x59
-  {"CC_BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}  , VOLT}, //0x5A
+  {"CC_BB_P2V5_AUX" , ADC6, read_adc_value, true, {2.63, 0, 0, 2.37, 0, 0, 0, 0}  , VOLT}, //0x5A
   {"CC_BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
   {"CC_BB_P1V15_AUX", ADC8, read_adc_value, true, {1.21, 0, 0, 1.09, 0, 0, 0, 0}, VOLT}, //0x5C
   {"CC_PDB_HSC_VOUT", HSC_ID0, read_hsc_vout, true, {13.4, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, //0x5D

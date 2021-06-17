@@ -28,13 +28,25 @@ import traceback
 import syslog
 import sys
 import kv
+import glob
+
+try:
+    import plat_dump
+
+    plat_found = True
+except ImportError:
+    plat_found = False
 
 # Ensure at least this much free space is always present.
 PERSISTENT_STORE_HEADROOM = 1024 * 100
 DUMP_DIR = "/tmp/obmc-dump-%d" % (int(time.time()))
 
 DUMP_PATHS = ["/var/log", "/tmp/cache_store", "/mnt/data/kv_store"]
-DUMP_COMMANDS = [["fw-util", "all", "--version"], ["ifconfig"]]
+DUMP_COMMANDS = [
+    [["log-util", "all", "--print"], "sel-log"],
+    [["fw-util", "all", "--version"], "fw-ver"],
+    [["ifconfig"], "ifconfig"]
+]
 
 FPERSIST = 1
 STAT_KEY = "obmc_dump_stat"
@@ -50,16 +62,26 @@ def copy(path):
         shutil.copy(path, dest)
 
 
-def command_output(cmd):
-    print("COMMAND: ", " ".join(cmd))
-    out = subprocess.check_output(cmd).decode()
-    cmd_file = DUMP_DIR + "/" + os.path.basename(cmd[0]) + ".txt"
+def wrapper_file(cmd, file_name, data):
+    cmd_file = DUMP_DIR + "/" + file_name + ".txt"
     with open(cmd_file, "a+") as f:
         f.write("=" * 32 + "\n")
         f.write("COMMAND: " + " ".join(cmd) + "\n")
         f.write("-" * 32 + "\n")
-        f.write(out + "\n")
+        f.write(data + "\n")
         f.write("=" * 32 + "\n")
+
+
+def command_output(cmd):
+    print("DUMP: ", " ".join(cmd[0]))
+
+    # Some commad may return non-zero, but the information log still worth to store.
+    try:
+        out = subprocess.check_output(cmd[0], stderr=subprocess.STDOUT).decode()
+    except subprocess.CalledProcessError as e:
+        out = e.output.decode()
+
+    wrapper_file(cmd[0], cmd[1], out)
 
 
 def get_persistent_stores():
@@ -114,6 +136,17 @@ def obmc_dump_persist(archive):
     return store + "/" + os.path.basename(archive)
 
 
+def dump_all_gpio_info():
+    print("DUMP:  GPIO INFO")
+    retstr = ""
+    for value_file in glob.glob("/tmp/gpionames/**/value"):
+        shadow_name = value_file.split("/")[3]
+        with open(value_file, "r") as file:
+            spaceCount = 35 - len(shadow_name)
+            retstr += shadow_name + (" " * spaceCount) + file.read()
+    return retstr
+
+
 def obmc_dump():
     fail = False
     kv.kv_set(STAT_KEY, "Ongoing", FPERSIST)
@@ -129,6 +162,9 @@ def obmc_dump():
         except Exception:
             errors += traceback.format_exc()
             fail = True
+
+    #dump GPIO value
+    wrapper_file("", "dump-gpio", dump_all_gpio_info())
 
     with open(DUMP_DIR + "/obmc_dump_errors.txt", "w") as f:
         f.write(errors + "\n")
@@ -153,7 +189,11 @@ if __name__ == "__main__":
         "-y", "--yes", dest="yes", action="store_true", help="Answer Yes to all prompts"
     )
     parser.add_argument(
-        "-s", "--get_status", dest="get_status", action="store_true", help="Get previous dump status"
+        "-s",
+        "--get_status",
+        dest="get_status",
+        action="store_true",
+        help="Get previous dump status",
     )
     args = parser.parse_args()
     try:
@@ -162,11 +202,15 @@ if __name__ == "__main__":
         status = "Unknown"
 
     if args.get_status:
-        print(status) 
+        print(status)
         sys.exit()
     if status == "Ongoing":
         print("Another obmc-dump is running!")
         sys.exit()
+
+    if ( plat_found == True ):
+        DUMP_COMMANDS += plat_dump.PLAT_COMMANDS
+        DUMP_PATHS += plat_dump.PLAT_PATHS
 
     obmc_dump_cleanup(args.yes)
     obmc_dump()

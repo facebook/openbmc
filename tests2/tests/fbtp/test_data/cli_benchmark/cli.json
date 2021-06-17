@@ -1,0 +1,31 @@
+{
+    "cli_list": [
+        "/usr/bin/fw-util bmc --version bmc",
+        "/usr/bin/fw-util bmc --version fscd",
+        "/usr/bin/fw-util bmc --version rom",
+        "/usr/bin/fw-util bmc --version tpm",
+        "/usr/bin/fw-util nic --version nic",
+        "/usr/bin/sv start fscd",
+        "/usr/bin/sv stop fscd",
+        "/usr/local/bin/fan-util --get 0",
+        "/usr/local/bin/fan-util --get 1",
+        "/usr/local/bin/fan-util --get",
+        "/usr/local/bin/fan-util --set 40 0",
+        "/usr/local/bin/fan-util --set 40 1",
+        "/usr/local/bin/fan-util --set 75",
+        "/usr/local/bin/fruid-util mb",
+        "/usr/local/bin/fruid-util nic",
+        "/usr/local/bin/fruid-util riser_slot2",
+        "/usr/local/bin/sensor-util mb",
+        "/usr/local/bin/sensor-util nic",
+        "/usr/local/bin/sensor-util riser_slot2",
+        "/usr/local/bin/sensor-util riser_slot3",
+        "/usr/local/bin/sensor-util riser_slot4",
+        "power-util mb cycle",
+        "power-util mb off",
+        "power-util mb on",
+        "power-util mb reset",
+        "power-util mb status",
+        "ps -w"
+    ]
+}

@@ -116,6 +116,7 @@ struct pal_key_cfg {
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
 
+
 static int key_set_server_type(int event, void *arg)
 {
   int ret, fd;
@@ -135,14 +136,20 @@ static int key_set_server_type(int event, void *arg)
   if (ret < 0)
     goto exit;
 
-  if (!strcmp(mode, "2") || !strcmp(mode, "4") || !strcmp(mode, "8")) {
-    val = mode[0] - '0';
-    if (write(fd, &val, 1) != 1)
-      ret = -1;
+  if (!strcmp(mode, "2")) {
+    val = SKU_2S;
+  } else if (!strcmp(mode, "4")) {
+    val = SKU_4SEX;
+  } else if (!strcmp(mode, "8")) {
+    val = SKU_4S;
   } else {
     syslog(LOG_WARNING, "Server socket mode %s is not supported", mode);
     ret = -1;
+    goto exit;
   }
+
+  if (write(fd, &val, 1) != 1)
+    ret = -1;
 
 exit:
   close(fd);
@@ -1190,11 +1197,11 @@ int pal_set_host_system_mode(uint8_t mode)
   int ret;
 
   if (mode == 0x00) {
-    ret = pal_set_key_value("server_type", "8");      // 8S
+    ret = pal_set_key_value("server_type", "8");   // 4S
   } else if (mode == 0x01) {
-    ret = pal_set_key_value("server_type", "4");      // 4S
+    ret = pal_set_key_value("server_type", "4");   // 4SEX
   } else if (mode == 0x02) {
-    ret = pal_set_key_value("server_type", "2");      // 2S
+    ret = pal_set_key_value("server_type", "2");   // 2S
   } else {
     return CC_INVALID_PARAM;
   }

@@ -79,6 +79,12 @@ enum {
   PCH,
 };
 
+enum {
+  SKU_2S = 0x2,
+  SKU_4SEX = 0x4,
+  SKU_4S = 0x8
+};
+
 #define MAX_NUM_FRUS 11
 #define MAX_NODES    1
 

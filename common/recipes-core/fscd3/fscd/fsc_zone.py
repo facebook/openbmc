@@ -30,6 +30,57 @@ SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 
 
+class SensorAssertCheck(object):
+    def __init__(self, name):
+        self.name = name
+        self.fail_cnt = 0
+        self.threshold = 1
+
+    def assert_check(self):
+        if self.fail_cnt < self.threshold:
+            self.fail_cnt += 1
+            Logger.debug("%s, fail_cnt = %d" % (self.name, self.fail_cnt))
+            if self.fail_cnt == self.threshold:
+                self.log_fail()
+
+    def assert_clear(self):
+        if self.fail_cnt == self.threshold:
+            self.log_recover()
+        self.fail_cnt = 0
+
+    def is_asserted(self):
+        return self.fail_cnt == self.threshold
+
+    def log_fail(self):
+        Logger.warn("%s Fail" % self.name)
+
+    def log_recover(self):
+        Logger.warn("%s Recover" % self.name)
+
+
+class M2AssertCheck(SensorAssertCheck):
+    def __init__(self, name):
+        super().__init__(name)
+
+    def log_fail(self):
+        Logger.warn("M.2 Device %s Fail" % self.name)
+
+    def log_recover(self):
+        Logger.warn("M.2 Device %s Recover" % self.name)
+
+
+class FrontIOTempAssertCheck(SensorAssertCheck):
+    def __init__(self, name):
+        super().__init__(name)
+        self.threshold = 2
+
+    def log_fail(self):
+        Logger.warn("Front IO Temp %s Fail" % self.name)
+
+    def log_recover(self):
+        Logger.warn("Front IO Temp %s Recover" % self.name)
+
+
 class Fan(object):
     def __init__(self, fan_name, pTable):
         try:
@@ -132,8 +183,25 @@ class Zone:
             self.get_fan_mode = True
         else:
             self.get_fan_mode = False
-        self.fail_front_io_count = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_fail_ignore = sensor_fail_ignore
+        self.sensor_assert_check = []
+
+        for full_name in self.expr_meta["ext_vars"]:
+            sdata = full_name.split(":")
+            board = sdata[0]
+            sname = sdata[1]
+            if board == "all":  # filter all
+                board = sname.split("_")[0]
+                sname = "_".join(sname.split("_")[1:])
+
+            if (re.match(r"ssd", sname) != None) or (
+                re.match(r".*temp_dev", sname) != None
+            ):
+                self.sensor_assert_check.append(M2AssertCheck(full_name))
+            elif re.match(r"front_io_temp", sname) != None:
+                self.sensor_assert_check.append(FrontIOTempAssertCheck(full_name))
+            else:
+                self.sensor_assert_check.append(SensorAssertCheck(full_name))
 
     def get_set_fan_mode(self, mode, action):
         fan_mode_path = RECORD_DIR + "fan_mode"
@@ -231,24 +299,15 @@ class Zone:
                             if (sensor.status in ["na"]) and (
                                 self.sensor_valid_cur[sensor_index] != -1
                             ):
-                                if (re.match(r"SSD", sensor.name) != None) or (
-                                    re.match(r".*temp_dev", sname) != None
-                                ):
-                                    fail_ssd_count = fail_ssd_count + 1
-                                    Logger.warn("M.2 Device %s Fail" % v)
-                                elif (re.match(r"front_io_temp", sname) != None):
-                                    self.fail_front_io_count[sensor_index] = self.fail_front_io_count[sensor_index] + 1
-                                    if self.fail_front_io_count[sensor_index] > 1:
-                                        Logger.warn("Front IO Temp %s Fail" % v)
-                                        self.fail_front_io_count[sensor_index] = 0
+                                self.sensor_assert_check[sensor_index].assert_check()
+                                if (self.sensor_fail_ignore) and (fsc_board.sensor_fail_ignore_check(sname)):
+                                    Logger.info("Ignore %s Fail" % v)
+                                elif self.sensor_assert_check[sensor_index].is_asserted():
+                                    if isinstance(self.sensor_assert_check[sensor_index], M2AssertCheck):
+                                        fail_ssd_count = fail_ssd_count + 1
+                                    else:
                                         outmin = max(outmin, self.boost)
                                         cause_boost_count += 1
-                                elif (self.sensor_fail_ignore) and (fsc_board.sensor_fail_ignore_check(sname)):
-                                    Logger.info("Ignore %s Fail" % v)
-                                else:
-                                    Logger.warn("%s Fail" % v)
-                                    outmin = max(outmin, self.boost)
-                                    cause_boost_count += 1
                                 if not os.path.isfile(sensor_fail_record_path):
                                     sensor_fail_record = open(
                                         sensor_fail_record_path, "w"
@@ -257,8 +316,7 @@ class Zone:
                                 if outmin == self.boost:
                                     mode = fan_mode["boost_mode"]
                             else:
-                                if (re.match(r"front_io_temp", sname) != None):
-                                    self.fail_front_io_count[sensor_index] = 0
+                                self.sensor_assert_check[sensor_index].assert_clear()
                                 if os.path.isfile(sensor_fail_record_path):
                                     os.remove(sensor_fail_record_path)
                 else:

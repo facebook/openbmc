@@ -14,9 +14,7 @@ SRC_URI =  "file://meson.build \
             "
 
 S = "${WORKDIR}"
+DEPENDS += "nlohmann-json libpal cli11 libsdr"
+RDEPENDS_${PN} += "libpal libsdr"
+
 FILES_${PN} = "${prefix}/local/bin/syseventgen-util"
-
-# add libraries here later
-# DEPENDS += "libpal"
-# RDEPENDS_${PN} += "libpal"
-

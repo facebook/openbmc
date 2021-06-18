@@ -201,6 +201,7 @@ static int regen_interval = 1200;
 static bool nm_monitor_enabled = false;
 static int nm_monitor_interval = DEFAULT_MONITOR_INTERVAL;
 static unsigned char nm_retry_threshold = 0;
+static bool nm_transmission_via_bic = false;
 
 /* Verified-boot state check */
 static bool vboot_state_check = false;
@@ -511,6 +512,13 @@ initialize_nm_monitor_config(json_t *conf)
   {
     nm_retry_threshold = json_integer_value(tmp);
   }
+
+  tmp = json_object_get(conf, "nm_transmission_via_bic");
+  if (tmp && json_is_boolean(tmp))
+  {
+    nm_transmission_via_bic = json_is_true(tmp);
+  }
+
 #ifdef DEBUG
   syslog(LOG_WARNING, "enabled:%d, monitor_interval:%d, retry_threshold:%d", nm_monitor_enabled, nm_monitor_interval, nm_retry_threshold);
 #endif
@@ -1220,39 +1228,41 @@ void check_nm_selftest_result(uint8_t fru, int result)
   }
 }
 
+void
+nm_selftest(uint8_t fru) {
+  int ret = 0;
+  int result = 0;
+  const uint8_t normal_status[SIZE_SELF_TEST_RESULT] = {0x55, 0x00}; // If the selftest result is 55 00, the status of the controller is okay
+  uint8_t data[SIZE_SELF_TEST_RESULT] = {0x0};
+
+  if (pal_is_slot_server(fru) == 1) {
+    if (pal_is_fw_update_ongoing(fru) == true) {
+      return;
+    }
+
+    ret = pal_get_nm_selftest_result(fru, data);
+    if (PAL_EOK == ret) {
+      //if nm has the response, check the status
+      result = memcmp(data, normal_status, sizeof(normal_status));
+    } else {
+      //if nm has no response, suppose it is in the not support state
+      result = PAL_ENOTSUP;
+    }
+    check_nm_selftest_result(fru, result);
+  }
+}
+
+
 static void *
 nm_monitor()
 {
   int fru;
-  int ret;
-  int result;
-  const uint8_t normal_status[2] = {0x55, 0x00}; // If the selftest result is 55 00, the status of the controller is okay
-  uint8_t data[2]={0x0};
 
   while (1)
   {
     for ( fru = 1; fru <= MAX_NUM_FRUS; fru++)
     {
-      if ( pal_is_slot_server(fru) )
-      {
-        if ( pal_is_fw_update_ongoing(fru) )
-        {
-          continue;
-        }
-
-        ret = pal_get_nm_selftest_result(fru, data);
-        if ( PAL_EOK == ret )
-        {
-          //if nm has the response, check the status
-          result = memcmp(data, normal_status, sizeof(normal_status));
-        }
-        else
-        {
-          //if nm has no response, suppose it is in the not support state
-          result = PAL_ENOTSUP;
-        }
-        check_nm_selftest_result(fru, result);
-      }
+      nm_selftest(fru);
     }
 
     sleep(nm_monitor_interval);
@@ -1695,6 +1705,10 @@ bic_health_monitor() {
     err_cnt = 0;
     is_already_reset = false;
 
+    // The ME commands are transmit via BIC on Grand Canyon, so check ME health when BIC health is good.
+    if ((nm_monitor_enabled == true) && (nm_transmission_via_bic == true)) {
+      nm_selftest(bic_fru);
+    }
 next_run:
     if ((err_cnt >= BIC_RESET_ERR_CNT) && (is_already_reset == false)) {
       // if error counter over 3, reset BIC by hardware
@@ -1800,7 +1814,7 @@ main(int argc, char **argv) {
     }
   }
 
-  if (nm_monitor_enabled) {
+  if ((nm_monitor_enabled == true) && (nm_transmission_via_bic == false)) {
     if (pthread_create(&tid_nm_monitor, NULL, nm_monitor, NULL)) {
       syslog(LOG_WARNING, "pthread_create for nm monitor error\n");
       exit(1);
@@ -1857,7 +1871,7 @@ main(int argc, char **argv) {
     pthread_join(tid_bmc_health_monitor, NULL);
   }
 
-  if (nm_monitor_enabled) {
+  if ((nm_monitor_enabled == true) && (nm_transmission_via_bic == false)) {
     pthread_join(tid_nm_monitor, NULL);
   }
 

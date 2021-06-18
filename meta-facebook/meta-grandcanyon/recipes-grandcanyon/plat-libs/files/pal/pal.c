@@ -3444,12 +3444,12 @@ pal_handle_string_sel(char *log, uint8_t log_len)
   char val[MAX_VALUE_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
   int ret = 0;
-  
+
   if (log == NULL) {
     syslog(LOG_ERR, "%s: Failed to check SCC/DPB sensor SEL", __func__);
     return -1;
   }
-  
+
   if (strstr(log, "DPB_") != NULL) {
     snprintf(key, sizeof(key), "dpb_sensor_health");
   } else if (strstr(log, "SCC_") != NULL) {
@@ -3457,7 +3457,7 @@ pal_handle_string_sel(char *log, uint8_t log_len)
   } else {
     return ret;
   }
-  
+
   if (strstr(log, "DEASSERT") != NULL) {
     snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
   } else if (strstr(log, "ASSERT") != NULL) {
@@ -3465,12 +3465,44 @@ pal_handle_string_sel(char *log, uint8_t log_len)
   } else {
     return ret;
   }
-  
+
   ret = pal_set_key_value(key, val);
   if (ret < 0) {
     syslog(LOG_ERR, "%s(): Failed to set key value of %s.", __func__, key);
   }
-  
+
   return ret;
 }
 
+int
+pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data) {
+  int ret = 0;
+  ipmi_req_t_common_header req = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  me_xmit_res *res = (me_xmit_res *)rbuf;
+
+  req.netfn_lun = IPMI_NETFN_SHIFT(NETFN_APP_REQ);
+  req.cmd = CMD_APP_GET_SELFTEST_RESULTS;
+
+  ret = bic_me_xmit((uint8_t *)(&req), sizeof(ipmi_req_t_common_header), (uint8_t *)res, &rlen);
+
+  if (ret < 0 ) {
+    syslog(LOG_ERR, "%s: Failed to do ME self test because ME transmission failed", __func__);
+    return ret;
+  }
+
+  if ((rlen - 1) != SIZE_SELF_TEST_RESULT) {
+    syslog(LOG_ERR, "%s: Failed to do ME self test because the response size is wrong: %d, expected: %d", __func__, (rlen - 1), SIZE_SELF_TEST_RESULT);
+    return -1;
+  }
+
+  if (res->cc != CC_SUCCESS) {
+    syslog(LOG_ERR, "%s: Failed to do ME self test, Completion Code: %02X", __func__, res->cc);
+    return -1;
+  }
+
+  memcpy(data, res->data, (rlen - 1));
+
+  return 0;
+}

@@ -86,6 +86,11 @@
   "bic_health": {
     "enabled": true,
     "fru": 1
+  },
+  "nm_monitor": {
+    "enabled": true,
+    "retry_threshold": 1,
+    "nm_transmission_via_bic": true
   }
 }
 

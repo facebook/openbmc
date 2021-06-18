@@ -93,6 +93,7 @@ if ! i2cset -f -y 1 0x40 $XDPE_VOUT_PMBUS_COMMAND "$XDPE_VDD_MAX_VALUE_HEX" w; t
     echo "Cannot communicate with XDPE132G5C."
     exit 1
 fi
-
+# Change XDPE132G5C from all pages to page 0.
+i2cset -y -f 1 0x40 0x0 0x0
 echo "Setup AVS Success"
 

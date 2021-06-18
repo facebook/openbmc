@@ -73,6 +73,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/misc-utils.h>
+#include <openbmc/kv.h>
 
 /*
  * IPMB packet sizes.
@@ -301,6 +302,7 @@ ipmb_req_handler(void *args) {
   char mq_name_req[NAME_MAX];
   uint16_t addr=0;
   int ret=0;
+  char flag_name[NAME_MAX] = {0};
 
   //Buffers for IPMB transport
   uint8_t rxbuf[IPMB_PKT_MAX_SIZE] = {0};
@@ -338,6 +340,10 @@ ipmb_req_handler(void *args) {
     return NULL;
   }
   REQ_VERBOSE("bic opened successfully, fd=%d", fd);
+
+  // set flag to notice BMC ipmbd ipmb_req_handler is ready
+  snprintf(flag_name, sizeof(flag_name), "flag_ipmbd_req_%d", bus_num);
+  kv_set(flag_name, "1", 0, 0);
 
   // Loop to process incoming requests
   while (1) {
@@ -442,6 +448,7 @@ ipmb_res_handler(void *args) {
   ipmb_res_t *p_res;
   uint8_t index;
   char mq_name_res[NAME_MAX];
+  char flag_name[NAME_MAX] = {0};
 
   RES_VERBOSE("thread starts execution");
 
@@ -452,6 +459,10 @@ ipmb_res_handler(void *args) {
     OBMC_ERROR(errno, "failed to open message queue %s", mq_name_res);
     return NULL;
   }
+
+  // set flag to notice BMC ipmbd ipmb_res_handler is ready
+  snprintf(flag_name, sizeof(flag_name), "flag_ipmbd_res_%d", bus_num);
+  kv_set(flag_name, "1", 0, 0);
 
   // Loop to wait for incomng response messages
   while (1) {
@@ -525,6 +536,7 @@ ipmb_rx_handler(void *args) {
   uint16_t addr=0;
   int ret=0;
   int poll_timeout = determine_poll_timeout();
+  char flag_name[NAME_MAX] = {0};
 
   RX_VERBOSE("thread starts execution");
 
@@ -564,6 +576,10 @@ ipmb_rx_handler(void *args) {
     goto cleanup;
   }
   RX_VERBOSE("message queue %s opened", mq_name_res);
+
+  // set flag to notice BMC ipmbd ipmb_rx_handler is ready
+  snprintf(flag_name, sizeof(flag_name), "flag_ipmbd_rx_%d", bus_num);
+  kv_set(flag_name, "1", 0, 0);
 
   // Loop that retrieves messages
   while (1) {

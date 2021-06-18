@@ -743,6 +743,9 @@ initilize_all_kv() {
 
 static void *
 hb_handler() {
+  // set flag to notice BMC healthd hb_handler is ready
+  kv_set("flag_healthd_hb_led", "1", 0, 0);
+
   while(1) {
     /* Turn ON the HB Led*/
     pal_set_hb_led(1);
@@ -765,6 +768,9 @@ watchdog_handler() {
    * of this process's liveliness.
    */
   watchdog_disable_magic_close();
+
+  // set flag to notice BMC healthd watchdog_handler is ready
+  kv_set("flag_healthd_wtd", "1", 0, 0);
 
   while(1) {
 
@@ -887,6 +893,9 @@ CPU_usage_monitor() {
 
   memset(cpu_utilization, 0, sizeof(float) * cpu_window_size);
 
+  // set flag to notice BMC healthd CPU_usage_monitor is ready
+  kv_set("flag_healthd_cpu", "1", 0, 0);
+
   while (1) {
 
     if (retry > HEALTHD_MAX_RETRY) {
@@ -1007,6 +1016,9 @@ memory_usage_monitor() {
     }
   }
 
+  // set flag to notice BMC healthd memory_usage_monitor is ready
+  kv_set("flag_healthd_mem", "1", 0, 0);
+
   while (1) {
 
     if (retry > HEALTHD_MAX_RETRY) {
@@ -1063,6 +1075,9 @@ ecc_mon_handler() {
   void *mcr58_addr;
   void *mcr5c_addr;
   int retry_err = 0;
+
+  // set flag to notice BMC healthd ecc_mon_handler is ready
+  kv_set("flag_healthd_ecc", "1", 0, 0);
 
   while (1) {
     mcr_fd = open("/dev/mem", O_RDWR | O_SYNC );
@@ -1313,6 +1328,9 @@ crit_proc_monitor() {
   bool is_fw_updating = false;
   bool is_crashdump_ongoing = false;
   bool is_cplddump_ongoing = false;
+
+  // set flag to notice BMC healthd crit_proc_monitor is ready
+  kv_set("flag_healthd_crit_proc", "1", 0, 0);
 
   while(1)
   {
@@ -1629,6 +1647,9 @@ timestamp_handler()
   ctime_r(&time_sled_off, buf);
   log_reboot_cause(buf);
 
+  // set flag to notice BMC healthd timestamp_handler is ready
+  kv_set("flag_healthd_bmc_timestamp", "1", 0, 0);
+
   while (1) {
 
     // Make sure the time is initialized properly
@@ -1677,6 +1698,9 @@ bic_health_monitor() {
   int err_cnt = 0;
   uint8_t status = 0;
   bool is_already_reset = false;
+
+  // set flag to notice BMC healthd bic_health_monitor is ready
+  kv_set("flag_healthd_bic_health", "1", 0, 0);
 
   while (1) {
     if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {

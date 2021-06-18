@@ -17,7 +17,7 @@
 
 all: sensord
 
-CFLAGS += -Wall -Werror -D _XOPEN_SOURCE -pthread -lm -std=c99
+CFLAGS += -Wall -Werror -D _XOPEN_SOURCE -pthread -lkv -lm -std=c99
 
 sensord: sensord.c
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

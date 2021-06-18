@@ -1276,6 +1276,9 @@ ncsi_aen_handler(void *arg) {
       goto cleanup;
     }
 
+    // set flag to notice BMC ncsid is ready
+    kv_set("flag_ncsid", "1", 0, 0);
+
     while (1) {
       ret = nl_rcv_msg(sk);
       if (ret <0) {

@@ -35,6 +35,7 @@
 #include <openbmc/pal.h>
 #include <openbmc/pal_sensors.h>
 #include <openbmc/aggregate-sensor.h>
+#include <openbmc/kv.h>
 
 #define MIN_POLL_INTERVAL 2
 #define STOP_PERIOD 10
@@ -511,6 +512,9 @@ snr_monitor(void *arg) {
     pal_get_sensor_name(fru, snr_num, snr[snr_num].name);
   }
 
+  // set flag to notice BMC sensord snr_monitor  is ready
+  kv_set("flag_sensord_monitor", "1", 0, 0);
+
   while(1) {
     if (pal_is_fw_update_ongoing(fru)) {
       sleep(STOP_PERIOD);
@@ -600,6 +604,9 @@ snr_health_monitor() {
       fru_health_last_state[num] = 1;
       fru_health_kv_state[num] = 1;
   }
+
+  // set flag to notice BMC sensord snr_health_monitor is ready
+  kv_set("flag_sensord_health", "1", 0, 0);
 
   while (1) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {

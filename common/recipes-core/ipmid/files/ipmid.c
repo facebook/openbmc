@@ -4806,6 +4806,9 @@ main (int argc, char **argv)
     fru++;
   }
 
+  // set flag to notice BMC ipmid is ready
+  kv_set("flag_ipmid", "1", 0, 0);
+
   if (ipc_start_svc(SOCK_PATH_IPMI, conn_handler, MAX_REQUESTS, NULL, &tid) == 0) {
     pthread_join(tid, NULL);
   }

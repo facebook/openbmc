@@ -1305,6 +1305,15 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
     return -1;
   }
 
+  // Read DPB_HSC_PWR from expander directly
+  if ((fru == FRU_DPB) && (sensor_num == DPB_HSC_PWR)) {
+    ret = exp_read_sensor_wrapper(fru, sensor_list, read_cnt, index);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() wrapper ret%d \n", __func__, ret);
+    }
+    return ret;
+  }
+
   if (abs(current_time - timestamp) > EXP_SENSOR_WAIT_TIME) {
     if ( (fru == FRU_DPB && sensor_num == dpb_sensor_list[0]) || (fru == FRU_SCC && sensor_num == scc_sensor_list[0]) ) {
       remain = sensor_cnt;

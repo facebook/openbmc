@@ -35,6 +35,7 @@
 #include <sys/file.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <facebook/fbgc_gpio.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
@@ -527,9 +528,15 @@ main(int argc, char **argv) {
       if (poll_desc == NULL) {
         syslog(LOG_CRIT, "fail to start poll operation on GPIOs\n");
       } else {
+        // set flag to notice BMC gpiointrd is ready
+        kv_set("flag_gpiointrd", STR_VALUE_1, 0, 0);
+
         if (gpio_poll(poll_desc, POLL_TIMEOUT) < 0) {
           syslog(LOG_CRIT, "fail to poll gpio because gpio_poll() return error\n");
         }
+
+        // clear the flag
+        kv_set("flag_gpiointrd", STR_VALUE_0, 0, 0);
         gpio_poll_close(poll_desc);
       }
     }

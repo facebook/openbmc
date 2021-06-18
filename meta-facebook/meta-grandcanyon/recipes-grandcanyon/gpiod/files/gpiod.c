@@ -33,6 +33,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/pal.h>
 #include <openbmc/pal_sensors.h>
+#include <openbmc/kv.h>
 #include <facebook/fbgc_gpio.h>
 
 #define MONITOR_FRUS_PRESENT_STATUS_INTERVAL    60 // seconds
@@ -310,6 +311,9 @@ fru_missing_monitor() {
   memset(&e1s_iocm_present_status, FRU_PRESENT, sizeof(e1s_iocm_present_status));
   memset(&fru_name, 0, sizeof(fru_name));
   
+  // set flag to notice BMC gpiod fru_missing_monitor is ready
+  kv_set("flag_gpiod_fru_miss", STR_VALUE_1, 0, 0);
+
   while(1) {
     for (fru_id = FRU_SERVER; fru_id < FRU_CNT; fru_id++) {
       if ((fru_id == FRU_SERVER) || (fru_id == FRU_SCC)) {
@@ -434,6 +438,9 @@ server_power_monitor() {
   memset(pwr_util_lock_file, 0, sizeof(pwr_util_lock_file));
   snprintf(pwr_util_lock_file, sizeof(pwr_util_lock_file), POWER_UTIL_LOCK, FRU_SERVER);
   
+  // set flag to notice BMC gpiod server_power_monitor is ready
+  kv_set("flag_gpiod_server_pwr", STR_VALUE_1, 0, 0);
+
   while(1) {
     if (pal_is_fru_prsnt(FRU_SERVER, &server_present) < 0) {
       syslog(LOG_WARNING, "%s(): fail to get fru: %d present status\n", __func__, FRU_SERVER);
@@ -509,6 +516,9 @@ scc_stby_power_monitor() {
     syslog(LOG_ERR, "Failed to start SCC stby power monitor, GPIO name mapping error");
     pthread_exit(NULL);
   }
+
+  // set flag to notice BMC gpiod scc_stby_power_monitor is ready
+  kv_set("flag_gpiod_scc_pwr", STR_VALUE_1, 0, 0);
 
   while (1) {
     scc_stby_pg_value = gpio_get_value_by_shadow(STR_SCC_STBY_PGOOD);

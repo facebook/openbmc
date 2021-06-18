@@ -10,6 +10,7 @@ dep_libs = [
     cc.find_library('pal'),
     dependency('threads'),
     dependency('libfbgc_common'),
+    dependency('libkv'),
 ]
 
 executable('front-paneld', 'front-paneld.c', dependencies : dep_libs)

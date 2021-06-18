@@ -10,6 +10,7 @@ dep_libs = [
     dependency('libfbgc_common'),
     dependency('obmc-pal'),
     dependency('threads'),
+    dependency('libkv'),
 ]
 
 executable('gpiod', 'gpiod.c', dependencies : dep_libs, install: true)

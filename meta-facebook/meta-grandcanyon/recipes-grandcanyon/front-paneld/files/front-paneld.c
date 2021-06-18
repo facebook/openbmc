@@ -33,6 +33,7 @@
 #include <sys/time.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <facebook/fbgc_common.h>
 
 #define LED_INTERVAL_DEFAULT              500 //millisecond
@@ -56,6 +57,9 @@ led_sync_handler() {
   int ret = 0, ret2 = 0;
   char identify[MAX_VALUE_LEN] = {0};
   char interval[MAX_VALUE_LEN] = {0};
+
+  // set flag to notice BMC front-paneld led_sync_handler is ready
+  kv_set("flag_front_led_sync", STR_VALUE_1, 0, 0);
 
   while (1) {
     // Handle Slot IDENTIFY condition
@@ -102,6 +106,9 @@ system_status_led_handler() {
   bool is_bmc_fault = false;
   
   memset(error, 0, sizeof(error));
+
+  // set flag to notice BMC front-paneld system_status_led_handler is ready
+  kv_set("flag_front_sys_status_led", STR_VALUE_1, 0, 0);
 
   while(1) {
     ret = pal_get_server_power(FRU_SERVER, &server_power_status);
@@ -180,6 +187,9 @@ fru_health_handler() {
        ERR_CODE_SCC_HEALTH, ERR_CODE_NIC_HEALTH};
   int i = 0, ret = 0;
 
+  // set flag to notice BMC front-paneld fru_health_handler is ready
+  kv_set("flag_front_health", STR_VALUE_1, 0, 0);
+
   while(1) {
     // fru health
     for (i = 0; i < sizeof(fru_list); i++) {
@@ -210,6 +220,9 @@ dbg_card_show_error_code() {
   int ret = 0;
   int poll_error_timer = 0, error_index = 0;
   
+  // set flag to notice BMC front-paneld dbg_card_show_error_code is ready
+  kv_set("flag_front_err_code", STR_VALUE_1, 0, 0);
+
   while(1) {
     ret = pal_is_debug_card_present(&dbg_present);
     if ((ret == 0) && (dbg_present == FRU_PRESENT)) {
@@ -280,6 +293,9 @@ heartbeat_health_handler() {
   int ret = 0, i = 0;
   int hb_health_kv_state = HEARTBEAT_NORMAL, hb_health_last_state = HEARTBEAT_NORMAL;
   
+  // set flag to notice BMC front-paneld heartbeat_health_handler is ready
+  kv_set("flag_front_hb", STR_VALUE_1, 0, 0);
+
   while(1) {
     // Get kv value
     memset(val, 0, sizeof(val));

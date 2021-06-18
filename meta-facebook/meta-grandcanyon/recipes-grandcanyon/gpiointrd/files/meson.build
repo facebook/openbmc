@@ -12,6 +12,7 @@ dep_libs = [
     cc.find_library('fbgc_common'),
     cc.find_library('pal'),
     dependency('threads'),
+    dependency('libkv'),
 ]
 
 executable('gpiointrd', 'gpiointrd.c', dependencies : dep_libs, install: true)

@@ -1144,6 +1144,7 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
   EXPANDER_SENSOR_DATA *p_sensor_data = NULL;
   int retry = 0, retry_ret = 0;
   EXPANDER_SENSOR_DATA *retry_data = NULL;
+  int tach_cnt = 0;
 
   if (pal_get_fru_name(fru, fru_name)) {
     syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, fru);
@@ -1172,6 +1173,8 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
     }
     return ret;
   }
+  
+  tach_cnt = pal_get_tach_cnt();
 
   p_sensor_data = (EXPANDER_SENSOR_DATA *)(&rbuf[1]);
 
@@ -1191,6 +1194,15 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
         value *= 10;
         
+        if (tach_cnt == SINGLE_FAN_CNT) {
+          if ((p_sensor_data[i].sensor_num == FAN_0_REAR) || (p_sensor_data[i].sensor_num == FAN_1_REAR) 
+           || (p_sensor_data[i].sensor_num == FAN_2_REAR) || (p_sensor_data[i].sensor_num == FAN_3_REAR)) {
+             continue;
+           }
+        } else if (tach_cnt == UNKNOWN_FAN_CNT) {
+          continue;
+        }
+        
         // If SCC reset or power cycle, it may get wrong information from expander
         // To avoid those case, retry to get RPM
         retry = 0;
@@ -1198,7 +1210,7 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
         tbuf[1] = sensor_list[i + index];
         while ((value == 0) && (retry++ < MAX_GET_RPM_RETRY)) {
           syslog(LOG_WARNING, "%s(): %s_sensor%d get zero %d time\n", __func__ , fru_name, p_sensor_data[i].sensor_num, retry);
-          msleep(200);
+          msleep(150);
           
           // get RPM again
           retry_ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_SENSOR_READING, tbuf, 2, rbuf, &rlen);

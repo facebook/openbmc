@@ -11,6 +11,7 @@ cc = meson.get_compiler('c')
 fbgc_common_deps = [
     cc.find_library('gpio-ctrl'),
     cc.find_library('fbgc_gpio'),
+    dependency('libkv'),
 ]
 
 # FBGC common library.

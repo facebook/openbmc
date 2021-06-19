@@ -104,6 +104,13 @@ extern "C" {
 #define POST_CODE_FILE      "/tmp/post_code_buffer.bin"
 #define LAST_POST_CODE_FILE "/tmp/last_post_code_buffer.bin"
 
+
+#define SKU_UIC_ID_SIZE    2
+#define SKU_UIC_TYPE_SIZE  4
+#define SKU_SIZE           (SKU_UIC_ID_SIZE + SKU_UIC_TYPE_SIZE)
+#define MAX_SKU_VALUE      (1 << SKU_SIZE)
+#define SYSTEM_INFO        "system_info"
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,
@@ -192,6 +199,11 @@ typedef struct {
   uint8_t cc;
   uint8_t data[];
 } me_xmit_res;
+
+typedef struct _platformInformation {
+  char uicId[SKU_UIC_ID_SIZE];
+  char uicType[SKU_UIC_TYPE_SIZE];
+} platformInformation;
 
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);

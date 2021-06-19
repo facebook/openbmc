@@ -61,11 +61,6 @@ extern "C" {
 #define IOCM_TMP75_DEVICE_NAME            "tmp75"
 #define IOCM_TMP75_ADDR                   (0x4a)
 
-#define SKU_UIC_ID_SIZE       2
-#define SKU_UIC_TYPE_SIZE     4
-#define SKU_SIZE              (SKU_UIC_ID_SIZE + SKU_UIC_TYPE_SIZE)
-#define MAX_SKU_VALUE         (1 << SKU_SIZE)
-
 // IOCM EEPROM
 #define IOCM_EEPROM_BIND_DIR         "/sys/bus/i2c/drivers/at24/13-0050"
 #define IOCM_EEPROM_DRIVER_NAME      "at24"
@@ -246,11 +241,6 @@ typedef struct {
 	uint8_t pcie_cfg;
 	uint8_t completion_code;
 } get_pcie_config_response;
-
-typedef struct _platformInformation {
-  char uicId[SKU_UIC_ID_SIZE];
-  char uicType[SKU_UIC_TYPE_SIZE];
-} platformInformation;
 
 typedef struct {
   uint8_t target;

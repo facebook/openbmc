@@ -36,43 +36,51 @@
 #include "fbgc_common.h"
 #include <openbmc/libgpio.h>
 #include <facebook/fbgc_gpio.h>
+#include <openbmc/kv.h>
 
 int
 fbgc_common_get_chassis_type(uint8_t *type) {
-  int chassis_type_value = 0x0;
+  char system_info[MAX_VALUE_LEN] = {0};
+  int sku_value = 0;
+  int ret = 0;
 
-  gpio_value_t uic_loc_type_in = GPIO_VALUE_INVALID;
-  gpio_value_t uic_rmt_type_in = GPIO_VALUE_INVALID;
-  gpio_value_t scc_loc_type_0 = GPIO_VALUE_INVALID;
-  gpio_value_t scc_rmt_type_0 = GPIO_VALUE_INVALID;
-
-  uic_loc_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_LOC_TYPE_IN));
-  uic_rmt_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_RMT_TYPE_IN));
-  scc_loc_type_0  = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_LOC_TYPE_0));
-  scc_rmt_type_0  = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_RMT_TYPE_0));
-
-  if ((uic_loc_type_in == GPIO_VALUE_INVALID) || (uic_rmt_type_in == GPIO_VALUE_INVALID) ||
-      (scc_loc_type_0 == GPIO_VALUE_INVALID)  || (scc_rmt_type_0 == GPIO_VALUE_INVALID)) {
-    syslog(LOG_WARNING, "%s() failed to get chassis type.", __func__);
+  if (type == NULL) {
+    syslog(LOG_ERR, "%s(): Failed to get chassis type because of NULL parameter\n", __func__);
     return -1;
   }
 
-  //                 UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
-  // Type 5                        0                 0                0                0
-  // Type 7 Headnode               0                 1                0                1
+  ret = kv_get(SYSTEM_INFO, system_info, NULL, KV_FPERSIST);
 
-  chassis_type_value = CHASSIS_TYPE_BIT_3(uic_loc_type_in) | CHASSIS_TYPE_BIT_2(uic_rmt_type_in) |
-                       CHASSIS_TYPE_BIT_1(scc_loc_type_0)  | CHASSIS_TYPE_BIT_0(scc_rmt_type_0);
-
-  if (chassis_type_value == CHASSIS_TYPE_5_VALUE) {
-    *type = CHASSIS_TYPE5;
-  } else if (chassis_type_value == CHASSIS_TYPE_7_VALUE) {
-    *type = CHASSIS_TYPE7;
-  } else {
-    syslog(LOG_WARNING, "%s() Unknown chassis type.", __func__);
-    return -1;
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to get chassis type because failed to get key value of %s\n", __func__, SYSTEM_INFO);
+    goto error;
   }
 
+  sku_value = atoi(system_info);
+
+  if (sku_value >= MAX_SKU_VALUE) {
+    syslog(LOG_WARNING, "%s(): Failed to get chassis type because SKU value exceed limit, value: %d\n", __func__, sku_value);
+    goto error;
+  }
+
+  //  SKU[5:0] = {UIC_ID0, UIC_ID1, UIC_TYPE0, UIC_TYPE1, UIC_TYPE2, UIC_TYPE3}
+  switch ((sku_value & 0xF)) {
+    case CHASSIS_TYPE_5_VALUE:
+      *type = CHASSIS_TYPE5;
+      break;
+    case CHASSIS_TYPE_7_VALUE:
+      *type = CHASSIS_TYPE7;
+      break;
+    default:
+      syslog(LOG_WARNING, "%s(): Failed to get chassis type because SKU value is wrong, value: %d\n", __func__, sku_value);
+      goto error;
+  }
+
+  return 0;
+
+error:
+  syslog(LOG_ERR, "%s(): Using default chassis type: Type5\n", __func__);
+  *type = CHASSIS_TYPE5;
   return 0;
 }
 

@@ -3443,27 +3443,45 @@ pal_handle_string_sel(char *log, uint8_t log_len)
 {
   char val[MAX_VALUE_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
-  int ret = 0;
+  int ret = 0, i = 0;
+  uint8_t fru = 0;
+  static uint8_t sensor_event_record_list[2] = {0};
+  uint8_t fru_list[2] = {FRU_SCC, FRU_DPB};
 
   if (log == NULL) {
     syslog(LOG_ERR, "%s: Failed to check SCC/DPB sensor SEL", __func__);
     return -1;
   }
 
-  if (strstr(log, "DPB_") != NULL) {
+  if ((strstr(log, "DPB_") != NULL) || (strstr(log, "HDD_") != NULL)
+       || (strstr(log, "FAN_") != NULL) || (strstr(log, "AIRFLOW") != NULL)) {
+    fru = FRU_DPB;
     snprintf(key, sizeof(key), "dpb_sensor_health");
   } else if (strstr(log, "SCC_") != NULL) {
+    fru = FRU_SCC;
     snprintf(key, sizeof(key), "scc_sensor_health");
   } else {
     return ret;
   }
 
-  if (strstr(log, "DEASSERT") != NULL) {
-    snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
-  } else if (strstr(log, "ASSERT") != NULL) {
-    snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
-  } else {
-    return ret;
+  for (i = 0; i < sizeof(fru_list); i++) {
+    if (fru == fru_list[i]) {
+      // Check assert/deassert
+      if (strstr(log, "DEASSERT") != NULL) {
+        sensor_event_record_list[i]--;
+      } else if (strstr(log, "ASSERT") != NULL) {
+        sensor_event_record_list[i]++;
+      } else {
+        return ret;
+      }
+
+      // Modify health value
+      if (sensor_event_record_list[i] == 0) {
+        snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
+      } else {
+        snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
+      }
+    }
   }
 
   ret = pal_set_key_value(key, val);

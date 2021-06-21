@@ -104,13 +104,19 @@ system_status_led_handler() {
   uint8_t server_power_status = SERVER_12V_OFF;
   uint8_t error[MAX_NUM_ERR_CODES] = {0}, error_count = 0;
   bool is_bmc_fault = false;
-  
-  memset(error, 0, sizeof(error));
+  char value[MAX_VALUE_LEN] = {0};
 
   // set flag to notice BMC front-paneld system_status_led_handler is ready
   kv_set("flag_front_sys_status_led", STR_VALUE_1, 0, 0);
 
   while(1) {
+    // Get flag to check if status LED is setting by fpc-util
+    ret = kv_get("flag_fpc_status", value, NULL, 0);
+    if ((ret == 0) && (strcmp(value, STR_VALUE_1) == 0)) {
+      sleep(SYNC_SYSTEM_STATUS_LED_INTERVAL);
+      continue;
+    }
+
     ret = pal_get_server_power(FRU_SERVER, &server_power_status);
     if (ret < 0) {
       //if can't get server power status, keep system status LED solid yellow

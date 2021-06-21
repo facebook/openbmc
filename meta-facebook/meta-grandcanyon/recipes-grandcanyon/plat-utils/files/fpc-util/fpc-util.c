@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/kv.h>
 
 static void
 print_usage_help(void) {
@@ -97,11 +98,15 @@ main(int argc, char **argv) {
       goto err_exit;
     }
   } else if (strcmp(argv[1], "--status") == 0) {
+    snprintf(key, sizeof(key), "flag_fpc_status");
     if (strcmp(argv[2], "yellow") == 0) {
+      kv_set(key, STR_VALUE_1, 0, 0);
       return pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
     } else if (strcmp(argv[2], "blue") == 0) {
+      kv_set(key, STR_VALUE_1, 0, 0);
       return pal_set_status_led(FRU_UIC, STATUS_LED_BLUE);
     } else if (strcmp(argv[2], "off") == 0) {
+      kv_set(key, STR_VALUE_0, 0, 0);
       return pal_set_status_led(FRU_UIC, STATUS_LED_OFF);
     } else {
       goto err_exit;

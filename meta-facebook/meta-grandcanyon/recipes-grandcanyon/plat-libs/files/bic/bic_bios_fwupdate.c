@@ -35,11 +35,12 @@
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
+#define IPMB_READ_COUNT_MAX 224
 #define IPMB_WRITE_COUNT_MAX 224
 
 static int
 check_bios_image(int fd, long size) {
-  int offs = 0, read_count = 0, end = 0;
+  int offs = 0, read_count, end = 0;
   uint8_t *buf = NULL;
   // BIOS image signature
   uint8_t ver_signature[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
@@ -142,7 +143,7 @@ _update_fw(uint8_t target, uint32_t offset, uint16_t len, uint8_t *read_buf) {
     ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, (uint8_t *)&update_req, sizeof(update_req), rbuf, &rlen);
     if (ret < 0) {
       sleep(1);
-      printf("%s: target %d, offset: %d, len: %d retrying..\n", __func__, target, offset, len);
+      printf("%s: target %u, offset: %u, len: %u retrying..\n", __func__, target, offset, len);
       retries--;
     }
   } while ((ret < 0) && (retries > 0));
@@ -158,7 +159,7 @@ update_bic_bios(uint8_t comp, char *image, uint8_t force) {
   int fd = 0;
   int i = 0;
   int remain = 0;
-  volatile uint16_t count = 0, read_count = 0;
+  volatile int count = 0, read_count = 0;
   uint8_t read_buf[MAX_READ_BUFFER_SIZE] = {0};
   uint8_t target = 0;
   uint32_t offset = 0;
@@ -260,7 +261,7 @@ update_bic_bios(uint8_t comp, char *image, uint8_t force) {
     offset += count;
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(FW_UPDATE_TIMEOUT_1M);
-      printf("\rupdated bios: %d %%", offset/dsize);
+      printf("\rupdated bios: %u %%", offset/dsize);
       fflush(stdout);
       last_offset += dsize;
     }
@@ -281,6 +282,103 @@ error_exit:
   syslog(LOG_CRIT, "%s: updating bios firmware is exiting on server\n", __func__);
 
   if (fd >= 0) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+// Read firmware for various components
+static int
+_dump_fw(uint32_t offset, uint8_t len, uint8_t *rbuf, uint8_t *rlen) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00};  // IANA ID
+  int ret;
+  int retries = 3;
+
+  if (rbuf == NULL) {
+    printf("Response buffer is missing\n");
+    return -1;
+  }
+  if (rlen == NULL) {
+    printf("Response length is missing\n");
+    return -1;
+  }
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = DUMP_BIOS;
+  memcpy(&tbuf[4], &offset, sizeof(uint32_t));
+  tbuf[8] = len;
+
+  do {
+    ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_READ_FW_IMAGE, tbuf, 9, rbuf, rlen);
+    if (!ret && (len == (*rlen - 3))) // 3 byte IANA ID
+      return 0;
+
+    sleep(1);
+    printf("_dump_fw: offset: %u, rlen: %u retrying..\n", offset, *rlen);
+  } while ((--retries));
+
+  return -1;
+}
+
+int
+bic_dump_bios_fw(char *path) {
+  int ret = -1, fd = 0;
+  uint32_t offset = 0x0, next_doffset = 0x0;
+  uint32_t img_size = 0x4000000, dsize = 0;
+  int count = 0, read_count;
+  uint8_t buf[MAX_READ_BUFFER_SIZE] = {0}, rlen = 0;
+
+  if (path == NULL) {
+    printf("Please provide the file path\n");
+    return -1;
+  }
+  fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd < 0) {
+    printf("ERROR: invalid file path!\n");
+    return -1;
+  }
+
+  // Write chunks of binary data in a loop
+  dsize = img_size / 100;
+  offset = 0;
+  next_doffset = offset + dsize;
+  while (1) {
+    read_count = ((offset + IPMB_READ_COUNT_MAX) <= img_size) ? IPMB_READ_COUNT_MAX : (img_size - offset);
+
+    // read image from Bridge-IC
+    ret = _dump_fw(offset, read_count, buf, &rlen);
+    if (ret != 0) {
+      printf("Failed to dump offset 0x%x\n", offset);
+      goto error_exit;
+    }
+
+    // Write to file
+    count = write(fd, &buf[3], rlen);
+    if (count <= 0) {
+      ret = -1;
+      goto error_exit;
+    }
+
+    // Update the counter
+    offset += count;
+    if (offset >= next_doffset) {
+      _set_fw_update_ongoing(FW_UPDATE_TIMEOUT_1M);
+      printf("\rdumped bios: %u %%", offset/dsize);
+      fflush(stdout);
+      next_doffset += dsize;
+    }
+
+    if (offset >= img_size) {
+      break;
+    }
+  }
+  _set_fw_update_ongoing(FW_UPDATE_TIMEOUT_2M);
+  ret = 0;
+
+error_exit:
+  printf("\n");
+  if (fd >= 0 ) {
     close(fd);
   }
 

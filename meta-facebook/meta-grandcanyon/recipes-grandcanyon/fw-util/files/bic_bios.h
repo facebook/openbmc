@@ -12,7 +12,7 @@ class BiosComponent : public Component {
 
   private:
     int get_ver_str(std::string& s);
-    int _update(std::string image, bool force);
+    int _update(std::string& image, uint8_t opt);
   public:
     BiosComponent(std::string fru, std::string comp, uint8_t _fw_comp)
       : Component(fru, comp), fw_comp(_fw_comp), server(FRU_SERVER, fru) {}
@@ -20,6 +20,7 @@ class BiosComponent : public Component {
     int fupdate(std::string image);
     int print_version();
     void get_version(json& j);
+    int dump(std::string image);
 };
 
 #endif

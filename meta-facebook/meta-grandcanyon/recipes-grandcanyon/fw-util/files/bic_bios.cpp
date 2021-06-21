@@ -8,6 +8,7 @@
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 #include <facebook/bic_fwupdate.h>
+#include <facebook/bic_bios_fwupdate.h>
 
 using namespace std;
 
@@ -21,14 +22,19 @@ using namespace std;
 
 #define MAX_BIOS_VER_STR_LEN 32
 
-int BiosComponent::_update(string image, bool force) {
+enum {
+  NORMAL_UPDATE = 0,
+  FORCE_UPDATE,
+  DUMP_FW
+};
+int BiosComponent::_update(string& image, uint8_t opt) {
   int ret = 0;
   uint8_t status = 0;
   int retry_count = 0;
 
   try {
     server.ready();
-    if (force == FORCE_UPDATE_UNSET) {
+    if (opt != FORCE_UPDATE) {
       cout << "Shutting down server gracefully..." << endl;
       pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
   
@@ -60,7 +66,11 @@ int BiosComponent::_update(string image, bool force) {
     
     bic_switch_mux_for_bios_spi(MUX_SWITCH_FPGA);
     sleep(1);
-    ret = bic_update_fw(FRU_SERVER, fw_comp, (char *)image.c_str(), force);
+    if (opt == DUMP_FW) {
+      ret = bic_dump_bios_fw((char *)image.c_str());
+    } else {
+      ret = bic_update_fw(FRU_SERVER, fw_comp, (char *)image.c_str(), (opt == FORCE_UPDATE) ? true : false);
+    }
     if (ret != 0) {
       // recover to original setting
       bic_switch_mux_for_bios_spi(MUX_SWITCH_PCH);
@@ -71,7 +81,7 @@ int BiosComponent::_update(string image, bool force) {
     pal_set_server_power(FRU_SERVER, SERVER_12V_CYCLE);
     sleep(PWR_ON_DELAY);
     pal_set_server_power(FRU_SERVER, SERVER_POWER_ON);
-  } catch(string err) {
+  } catch(string &err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 
@@ -79,11 +89,15 @@ int BiosComponent::_update(string image, bool force) {
 }
 
 int BiosComponent::update(string image) {
-  return _update(image, FORCE_UPDATE_UNSET);
+  return _update(image, NORMAL_UPDATE);
 }
 
 int BiosComponent::fupdate(string image) {
-  return _update(image, FORCE_UPDATE_SET);
+  return _update(image, FORCE_UPDATE);
+}
+
+int BiosComponent::dump(string image) {
+  return _update(image, DUMP_FW);
 }
 
 int BiosComponent::get_ver_str(string& s) {

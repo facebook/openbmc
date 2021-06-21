@@ -63,6 +63,7 @@ int bic_get_fw_cksum(uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver
 int verify_bios_image(int fd, long size);
 int update_bic_bios(uint8_t comp, char *image, uint8_t force);
 int update_bic_usb_bios(uint8_t comp, char *image);
+int bic_dump_bios_fw(char *path);
 
 #ifdef __cplusplus
 } // extern "C"

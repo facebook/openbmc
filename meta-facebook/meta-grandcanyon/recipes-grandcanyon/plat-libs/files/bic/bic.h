@@ -105,6 +105,10 @@ enum {
   STATUS_BIC_READY,
 };
 
+enum {
+  DUMP_BIOS = 0,
+};
+
 // BIC GPIO
 enum {
   PWRGD_BMC_PS_PWROK_R = 0,

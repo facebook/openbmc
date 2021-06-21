@@ -291,22 +291,62 @@ ocp_nic_init(gpiopoll_pin_t *gp, gpio_value_t value) {
     syslog(LOG_CRIT, "OCP NIC Removed");
 }
 
+static void
+usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  int ret = 0, i2cfd = 0, retry=0;
+  uint8_t tbuf[1] = {0x08}, rbuf[1] = {0};
+  uint8_t tlen = 1, rlen = 1;
+
+  if (curr == GPIO_VALUE_LOW) {
+    i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "Failed to open bus 12\n");
+      return;
+    }
+
+    retry = 0;
+    while (retry < MAX_READ_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+      if ( ret < 0 ) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+    if (retry == MAX_READ_RETRY) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    }
+    if ( i2cfd > 0 ) close(i2cfd);
+
+    // Do not handle in POC1
+    if (rbuf[0] == 0) {
+      return;
+    }
+
+    gpio_set_value_by_shadow("USB_BMC_EN_R", GPIO_VALUE_LOW);
+    msleep(50);
+    gpio_set_value_by_shadow("USB_BMC_EN_R", GPIO_VALUE_HIGH);
+  }
+}
+
 // GPIO table of the class 1
 static struct gpiopoll_config g_class1_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {"PRSNT_MB_BMC_SLOT1_BB_N", "GPIOH4",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
-  {"PRSNT_MB_SLOT2_BB_N", "GPIOH5",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
-  {"PRSNT_MB_BMC_SLOT3_BB_N", "GPIOH6",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
-  {"PRSNT_MB_SLOT4_BB_N", "GPIOH7",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
-  {"FM_RESBTN_SLOT1_BMC_N",   "GPIOF0",  GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
-  {"FM_RESBTN_SLOT2_N",   "GPIOF1",  GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
-  {"FM_RESBTN_SLOT3_BMC_N",   "GPIOF2",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
-  {"FM_RESBTN_SLOT4_N",   "GPIOF3",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
-  {"HSC_FAULT_BMC_SLOT1_N_R",       "GPION0",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"HSC_FAULT_SLOT2_N", "GPION1",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"HSC_FAULT_BMC_SLOT3_N_R",       "GPION2",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"HSC_FAULT_SLOT4_N", "GPION3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"OCP_NIC_PRSNT_BMC_N",     "GPIOC5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
+  {"PRSNT_MB_BMC_SLOT1_BB_N",  "GPIOH4",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"PRSNT_MB_SLOT2_BB_N",      "GPIOH5",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"PRSNT_MB_BMC_SLOT3_BB_N",  "GPIOH6",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"PRSNT_MB_SLOT4_BB_N",      "GPIOH7",   GPIO_EDGE_BOTH,     slot_hotplug_hndlr,       slot_present},
+  {"FM_RESBTN_SLOT1_BMC_N",    "GPIOF0",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"FM_RESBTN_SLOT2_N",        "GPIOF1",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"FM_RESBTN_SLOT3_BMC_N",    "GPIOF2",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"FM_RESBTN_SLOT4_N",        "GPIOF3",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
+  {"HSC_FAULT_BMC_SLOT1_N_R",  "GPION0",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_SLOT2_N",        "GPION1",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_BMC_SLOT3_N_R",  "GPION2",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_SLOT4_N",        "GPION3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"OCP_NIC_PRSNT_BMC_N",      "GPIOC5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
+  {"P5V_USB_PG_BMC",           "GPIOS2",   GPIO_EDGE_BOTH,     usb_hotplug_hndlr,        NULL},
 };
 
 // GPIO table of the class 2

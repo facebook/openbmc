@@ -89,7 +89,8 @@
                         "^meta-facebook/classes/.*",
                         "^meta-facebook/conf/.*",
                         "^meta-facebook/meta-backports/.*",
-                        "^yocto/.*"
+                        "^yocto/.*",
+                        "^.jfconfig"
                     ]
                 }
             ],
@@ -156,6 +157,39 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-clearcreek/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-buildci-cloudripper-determinator",
+            "args": {
+                "name": "openbmc-buildci-cloudripper-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-cloudripper-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform cloudripper"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-cloudripper/.*"
                     ]
                 }
             ],
@@ -927,6 +961,39 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-clearcreek/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-cloudripper-determinator",
+            "args": {
+                "name": "openbmc-cit-cloudripper-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-cloudripper-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform cloudripper"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-cloudripper/.*"
                     ]
                 }
             ],

@@ -50,12 +50,14 @@
 PID_FILE='/var/run/spi_util.pid'
 
 #
-# Modules used to talk to backup BIOS
+# Kernel modules used to talk to backup BIOS.
 #
 SPI_ASPEED_MODULE=spi_aspeed
 
 #
-# Modules used to talk to internal switch eeprom.
+# Kernel modules for eeprom access. We decided to use the legacy script
+# to read/write eeprom, so these modules will be unloaded. For details,
+# please check S235340.
 #
 SPI_GPIO_MODULE=spi_gpio
 SPI_EEPROM_MODULE=eeprom_93xx46
@@ -243,6 +245,9 @@ spi2_setup_bitbang() {
 spi2_connect() {
     echo "enable spi2 (eeprom) connection.."
 
+    kmod_unload "$SPI_EEPROM_MODULE"
+    kmod_unload "$SPI_GPIO_MODULE"
+
     if [ ! -L "${SHADOW_GPIO}/SWITCH_EEPROM1_WRT" ]; then
         gpio_export_by_name "$ASPEED_GPIO" GPIOE2 SWITCH_EEPROM1_WRT
     fi
@@ -253,12 +258,7 @@ spi2_connect() {
         exit 1
     fi
 
-    if [ -n "$LEGACY_KERNEL" ]; then
-        spi2_setup_bitbang
-    else
-        kmod_reload "$SPI_EEPROM_MODULE"
-        kmod_reload "$SPI_GPIO_MODULE"
-    fi
+    spi2_setup_bitbang
 }
 
 spi2_disconnect() {
@@ -282,48 +282,11 @@ spi2_disconnect() {
 }
 
 spi2_legacy_io() {
+    echo "running at93cx6_util_py3.py.."
     /usr/local/bin/at93cx6_util_py3.py --cs BMC_EEPROM1_SPI_SS \
                                        --clk BMC_EEPROM1_SPI_SCK \
                                        --mosi BMC_EEPROM1_SPI_MOSI \
                                        --miso BMC_EEPROM1_SPI_MISO $@
-}
-
-dd_helper() {
-    input=$1
-    output=$2
-    size=$3
-
-    echo "dump (dd) $input to $output, total $size bytes.."
-    if ! log=$(dd if="$input" of="$output" bs="$size" count=1 2>&1); then
-        echo "Error: dd command failed!"
-        echo "$log"
-        exit 1
-    fi
-}
-
-spi2_launch_io() {
-    op="$1"
-    image_file="$2"
-    eeprom_size=128
-    eeprom_path="/sys/bus/spi/devices/spi2.0/eeprom"
-
-    if [ ! -e "$eeprom_path" ]; then
-        echo "Error: unable to find eeprom device $eeprom_path!"
-        exit 1
-    fi
-
-    case "$op" in
-        "read")
-            dd_helper "$eeprom_path" "$image_file" "$eeprom_size"
-        ;;
-        "write")
-            dd_helper "$image_file" "$eeprom_path" "$eeprom_size"
-        ;;
-        *)
-            echo "Operation $op is not supported!"
-            exit 1
-        ;;
-    esac
 }
 
 cleanup_spi() {
@@ -356,11 +319,7 @@ ui() {
             spi1_disconnect
             spi2_connect
 
-            if [ -n "$LEGACY_KERNEL" ]; then
-                spi2_legacy_io chip "$op" --file "$file"
-            else
-                spi2_launch_io "$op" "$file"
-            fi
+            spi2_legacy_io chip "$op" --file "$file"
         ;;
         *)
             echo "Error: no such SPI bus ($spi_bus)!"

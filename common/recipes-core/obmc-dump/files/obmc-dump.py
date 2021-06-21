@@ -23,19 +23,13 @@ import os
 import pathlib
 import shutil
 import subprocess
+import sys
+import syslog
 import time
 import traceback
-import syslog
-import sys
+
 import kv
-import glob
-
-try:
-    import plat_dump
-
-    plat_found = True
-except ImportError:
-    plat_found = False
+import plat_dump
 
 # Ensure at least this much free space is always present.
 PERSISTENT_STORE_HEADROOM = 1024 * 100
@@ -45,7 +39,7 @@ DUMP_PATHS = ["/var/log", "/tmp/cache_store", "/mnt/data/kv_store"]
 DUMP_COMMANDS = [
     [["log-util", "all", "--print"], "sel-log"],
     [["fw-util", "all", "--version"], "fw-ver"],
-    [["ifconfig"], "ifconfig"]
+    [["ifconfig"], "ifconfig"],
 ]
 
 FPERSIST = 1
@@ -163,7 +157,7 @@ def obmc_dump():
             errors += traceback.format_exc()
             fail = True
 
-    #dump GPIO value
+    # dump GPIO value
     wrapper_file("", "dump-gpio", dump_all_gpio_info())
 
     with open(DUMP_DIR + "/obmc_dump_errors.txt", "w") as f:
@@ -198,7 +192,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     try:
         status = kv.kv_get(STAT_KEY, FPERSIST)
-    except:
+    except Exception:
         status = "Unknown"
 
     if args.get_status:
@@ -208,9 +202,8 @@ if __name__ == "__main__":
         print("Another obmc-dump is running!")
         sys.exit()
 
-    if ( plat_found == True ):
-        DUMP_COMMANDS += plat_dump.PLAT_COMMANDS
-        DUMP_PATHS += plat_dump.PLAT_PATHS
+    DUMP_COMMANDS += plat_dump.PLAT_COMMANDS
+    DUMP_PATHS += plat_dump.PLAT_PATHS
 
     obmc_dump_cleanup(args.yes)
     obmc_dump()

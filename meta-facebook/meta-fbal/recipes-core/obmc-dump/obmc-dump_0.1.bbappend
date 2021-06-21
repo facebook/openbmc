@@ -16,19 +16,3 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://plat_dump.py \
-           "
-
-S = "${WORKDIR}"
-
-pkgdir = "obmc-dump"
-
-do_install_append() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  install -d $dst
-  localbindir="${D}/usr/local/bin"
-  install -d ${localbindir}
-
-  install -m 755 plat_dump.py ${dst}/plat_dump.py
-}

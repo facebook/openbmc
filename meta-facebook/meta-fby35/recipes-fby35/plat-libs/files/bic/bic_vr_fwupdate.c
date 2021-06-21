@@ -1131,7 +1131,7 @@ get_vr_name(uint8_t intf, uint8_t bus, uint8_t addr, uint8_t comp) {
   int i;
   for ( i = 0; i< dev_table_size; i++ ) {
           //check addr first, if it's false, check comp further
-    if ( (addr == dev_list[i].addr || comp == dev_list[i].comp) && \
+    if ( addr == dev_list[i].addr && comp == dev_list[i].comp && \
           bus == dev_list[i].bus && intf == dev_list[i].intf) {
       return dev_list[i].dev_name;
     }
@@ -1147,7 +1147,7 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
 
   while ( i < dev_table_size ) {
     if ( dev_list[i].intf == intf && dev_list[i].comp == comp ) {
-      printf("Find: %s, ", dev_list[i].dev_name );
+      printf("Find: ");
       ret = bic_get_vr_device_id(slot_id, 0/*unused*/, rbuf, &rlen, dev_list[i].bus, dev_list[i].addr, intf);
       if ( ret == BIC_STATUS_SUCCESS && rlen <= TI_DEVID_LEN/*the longest length of dev id*/) {
         *vr_bus = dev_list[i].bus;

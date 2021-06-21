@@ -93,7 +93,6 @@ static int gsysfs_export_control(const char *ctrl_file, int pin_num)
 {
 	int fd, count;
 	int status = 0;
-	char pin_path[GPIO_SYSFS_PATH_SIZE];
 	char data[GPIO_SYSFS_IO_BUF_SIZE];
 
 	GLOG_DEBUG("open <%s> for write\n", ctrl_file);
@@ -104,16 +103,13 @@ static int gsysfs_export_control(const char *ctrl_file, int pin_num)
 		return -1;
 	}
 
-	snprintf(pin_path, sizeof(pin_path), GPIO_SYSFS_PIN_PATH, pin_num);
-	if (access(pin_path, F_OK ) == -1 ) {
-		snprintf(data, sizeof(data), "%d", pin_num);
-		count = strlen(data);
-		GLOG_DEBUG("write data (%s) to <%s>\n", data, ctrl_file);
-		if (write(fd, data, count) != count) {
-			GLOG_ERR("failed to write <%s> to <%s>: %s\n",
-				 data, ctrl_file, strerror(errno));
-			status = -1;
-		}
+	snprintf(data, sizeof(data), "%d", pin_num);
+	count = strlen(data);
+	GLOG_DEBUG("write data (%s) to <%s>\n", data, ctrl_file);
+	if (write(fd, data, count) != count) {
+		GLOG_ERR("failed to write <%s> to <%s>: %s\n",
+			data, ctrl_file, strerror(errno));
+		status = -1;
 	}
 
 	close(fd);
@@ -124,17 +120,19 @@ static int sysfs_gpio_export(int pin_num, const char *shadow_path)
 {
 	char pin_dir[GPIO_SYSFS_PATH_SIZE];
 
-	if (gsysfs_export_control(GPIO_SYSFS_EXPORT, pin_num) != 0) {
-		return -1;
-	}
-
-	snprintf(pin_dir, sizeof(pin_dir), "%s/gpio%d", GPIO_SYSFS_ROOT, pin_num);
-	GLOG_DEBUG("check if <%s> is created properly\n", pin_dir);
+	snprintf(pin_dir, sizeof(pin_dir), GPIO_SYSFS_PIN_PATH, pin_num);
 	if (!path_exists(pin_dir)) {
-		GLOG_ERR("unable to find gpio sysfs direction <%s>\n",
-			 pin_dir);
-		errno = ENOENT;
-		return -1;
+		if (gsysfs_export_control(GPIO_SYSFS_EXPORT, pin_num) != 0) {
+			return -1;
+		}
+
+		GLOG_DEBUG("check if <%s> is created properly\n", pin_dir);
+		if (!path_exists(pin_dir)) {
+			GLOG_ERR("unable to find gpio sysfs direction <%s>\n",
+				 pin_dir);
+			errno = ENOENT;
+			return -1;
+		}
 	}
 
 	GLOG_DEBUG("setup mapping between <%s> and <%s>\n",

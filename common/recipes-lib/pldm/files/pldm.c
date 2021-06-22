@@ -526,7 +526,7 @@ init_pkg_hdr_info(char *path, pldm_fw_pkg_hdr_t** pFwPkgHdr, int *pOffset)
   // allocate pointer structure to access fw pkg header
   *pFwPkgHdr = (pldm_fw_pkg_hdr_t *)calloc(1, sizeof(pldm_fw_pkg_hdr_t));
   if (!(*pFwPkgHdr)) {
-    printf("ERROR: pFwPkgHdr malloc failed, size %d\n", sizeof(pldm_fw_pkg_hdr_t));
+    printf("ERROR: pFwPkgHdr malloc failed, size %zu\n", sizeof(pldm_fw_pkg_hdr_t));
     fclose(fp);
     return -1;
   }
@@ -590,7 +590,7 @@ init_device_id_records(pldm_fw_pkg_hdr_t* pFwPkgHdr, int *pOffset)
                                         sizeof(pldm_fw_dev_id_records_t *));
   if (!pFwPkgHdr->pDevIdRecs)
   {
-    printf("ERROR: pFwPkgHdr->pDevIdRecs malloc failed, size %d\n",
+    printf("ERROR: pFwPkgHdr->pDevIdRecs malloc failed, size %zu\n",
        sizeof(pldm_fw_dev_id_records_t *) * pFwPkgHdr->devIdRecordCnt);
     return -1;
   }
@@ -600,7 +600,7 @@ init_device_id_records(pldm_fw_pkg_hdr_t* pFwPkgHdr, int *pOffset)
     // pointer to current DeviceRecord we're working on
     pFwPkgHdr->pDevIdRecs[i] = calloc(1, sizeof(pldm_fw_dev_id_records_t));
     if (!(pFwPkgHdr->pDevIdRecs[i])) {
-      printf("ERROR: pFwPkgHdr->pDevIdRecs[%d] malloc failed, size %d\n", i,
+      printf("ERROR: pFwPkgHdr->pDevIdRecs[%d] malloc failed, size %zu\n", i,
          sizeof(pldm_fw_dev_id_records_t));
       return -1;
     }
@@ -625,7 +625,7 @@ init_device_id_records(pldm_fw_pkg_hdr_t* pFwPkgHdr, int *pOffset)
                                     sizeof(record_descriptors_t *));
     if (!pDevIdRec->pRecordDes)
     {
-      printf("ERROR: pDevIdRec->pRecordDes malloc failed, size %d\n",
+      printf("ERROR: pDevIdRec->pRecordDes malloc failed, size %zu\n",
          sizeof(record_descriptors_t *) * pDevIdRec->pRecords->descriptorCnt);
       return -1;
     }
@@ -673,7 +673,7 @@ init_component_img_info(pldm_fw_pkg_hdr_t* pFwPkgHdr, int *pOffset)
                                      sizeof(pldm_component_img_info_t *));
   if (!pFwPkgHdr->pCompImgInfo)
   {
-    printf("ERROR: pFwPkgHdr->pCompImgInfo malloc failed, size %d\n",
+    printf("ERROR: pFwPkgHdr->pCompImgInfo malloc failed, size %zu\n",
        sizeof(pldm_component_img_info_t **) * pFwPkgHdr->componentImageCnt);
     return -1;
   }

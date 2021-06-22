@@ -20,7 +20,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-clearcreek:lf-dunfell
   meta-cloudripper:lf-dunfell
   meta-cmm:lf-dunfell
-  meta-elbert:lf-dunfell
   meta-fbal:lf-dunfell
   meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell
@@ -32,6 +31,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-qemux86:lf-dunfell
   meta-wedge400:lf-dunfell
 # zeus platforms (pending upgrade)
+  meta-elbert:zeus
   meta-grandcanyon:zeus
 # Legacy platforms pending kernel upgrade
   meta-fby2-gpv2:rocko

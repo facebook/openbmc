@@ -103,5 +103,4 @@ func TestFBMetaMD5Validate(t *testing.T) {
 			tests.CompareTestErrors(tc.want, got, t)
 		})
 	}
-
 }

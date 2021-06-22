@@ -58,11 +58,10 @@ func TestIsPfrSystem(t *testing.T) {
 				}
 				return tc.exitCode, nil, "", ""
 			}
+			got := IsPfrSystem()
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
 		})
-
-		got := IsPfrSystem()
-		if tc.want != got {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
 	}
 }

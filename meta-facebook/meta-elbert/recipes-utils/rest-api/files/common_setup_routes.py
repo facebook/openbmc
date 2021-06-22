@@ -36,5 +36,3 @@ def setup_common_routes(app: Application, write_enabled: bool):
     app.router.add_get(common_routes[8], chandler.rest_fcpresent_hdl)
     app.router.add_get(common_routes[9], chandler.psu_update_hdl)
     app.router.add_post(common_routes[9], chandler.psu_update_hdl_post)
-    app.router.add_get(common_routes[10], chandler.rest_slotid_hdl)
-    app.router.add_get(common_routes[11], chandler.rest_mTerm_status)

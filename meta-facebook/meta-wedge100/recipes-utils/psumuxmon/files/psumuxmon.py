@@ -531,6 +531,11 @@ class Pcard(object):
         # Looping 10 times because PEM addr is not alwways detected
         for count in range(10):
             syslog.syslog(syslog.LOG_INFO, " detecting psu/pem type in try %d" % count)
+
+            #
+            # Note: some lab switches may have a single PSU, and we need
+            # to handle the situation.
+            #
             if len(self.present_channel) > 0:
                 for channel_index in self.present_channel:
                     if channel_index == SECOND_CHANNEL:
@@ -541,7 +546,11 @@ class Pcard(object):
                         psu2_addr_present = self.detect_i2c_addr(
                             PSU2_ADDR, PSU2_BUS, PSU2_ADDR_INDEX
                         )
-            else:
+
+            #
+            # If neither PSU can be detected, let's try PEM.
+            #
+            if not (psu1_addr_present or psu2_addr_present):
                 # we use only 1 PEM per swicth
                 if ch == SECOND_CHANNEL:
                     pem1_addr_present = self.detect_i2c_addr(

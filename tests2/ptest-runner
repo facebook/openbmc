@@ -86,6 +86,7 @@ def bmc_build(recipes, build_path, verbose):
         "export LC_ALL=en_US.UTF-8",
         "export LANG=en_US.UTF-8",
         "export LANGUAGE=en_US.UTF-8",
+        "export MACHINE=qemux86",
         f"bitbake {build_option} qemux86-image",
     ]
     build_cmd = "; ".join(build_steps)

@@ -1880,6 +1880,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_DP_X16_PWR_FAULT  = 0x17,
     SYS_ACK_SEL           = 0x18,
     SYS_SLED_PWR_CTRL     = 0x60,
+    E1S_1OU_M2_PRESENT    = 0x80,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
@@ -2012,6 +2013,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");
+      break;
+    case E1S_1OU_M2_PRESENT:
+      snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
+      strcat(error_log, log_msg);
       break;
     default:
       strcat(error_log, "Undefined system event");

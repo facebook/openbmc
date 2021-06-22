@@ -21,8 +21,9 @@ syntaxError:*recipes-utils/TPMUpdate/*
 // file following the error type.
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-// These are usually annoying and make the code a mess.
+// These usually just create extra noise and are not helpful.
 variableScope
+unreadVariable
 
 // We have some scanf macros that cppcheck won't expand correctly.
 wrongPrintfScanfArgNum

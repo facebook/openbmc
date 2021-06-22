@@ -1870,6 +1870,37 @@ fan_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+bool is_bios_update_ongoing(void) {
+  bool ret = false;
+  uint8_t retry = MAX_READ_RETRY;
+  char buf[PS_BUF_SIZE];
+  FILE* fp;
+
+  while (retry) {
+    fp = popen(PS_CMD, "r");
+    if (fp)
+      break;
+    msleep(50);
+    retry--;
+  }
+
+  if (fp) {
+    while (fgets(buf, PS_BUF_SIZE, fp) != NULL) {
+      if (strstr(buf, ELBERT_BIOS_UTIL)) {
+        ret = true;
+        break;
+      }
+    }
+    pclose(fp);
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "%s: failed to get ps process output", __func__);
+#endif
+  }
+
+  return ret;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN];
@@ -1884,16 +1915,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     return ret;
   }
 
-  if (pal_is_fw_update_ongoing_system()) {
+  if (!prsnt) {
 #ifdef DEBUG
-  syslog(LOG_INFO, "pal_sensor_read_raw(): firmware upgrade in progress\n");
+  syslog(LOG_INFO, "pal_sensor_read_raw(): %s is not present\n", fru_name);
 #endif
     return -1;
   }
 
-  if (!prsnt) {
+  // Don't poll sensors when bios is upgrading as this has been found to
+  // cause upgrades to fail.
+  if (is_bios_update_ongoing()) {
 #ifdef DEBUG
-  syslog(LOG_INFO, "pal_sensor_read_raw(): %s is not present\n", fru_name);
+  syslog(LOG_INFO, "pal_sensor_read_raw(): bios upgrade in progress\n");
 #endif
     return -1;
   }

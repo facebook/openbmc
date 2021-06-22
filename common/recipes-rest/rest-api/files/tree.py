@@ -83,7 +83,7 @@ class tree:
         info = self.data.getInformation(param)
         actions = self.data.getActions()
         resources = set()
-        if ENDPOINT_CHILDREN.get(request.path):
+        if request.path in ENDPOINT_CHILDREN:
             resources = ENDPOINT_CHILDREN[request.path]
         else:
             for resource in self.app.router.resources():

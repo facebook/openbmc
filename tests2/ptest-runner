@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import errno
 import os
 import re
 import sys
@@ -120,6 +121,13 @@ def main(args):
     args.build = os.path.abspath(args.build)
     deploy = args.build + "/tmp/deploy/images/qemux86"
     rootfs_zip = deploy + "/qemux86-image-qemux86.tar.bz2"
+    if not os.path.isdir(deploy):
+      deploy = args.build + "/tmp/deploy/images/qemux86-64"
+      rootfs_zip = deploy + "/qemux86-image-qemux86-64.tar.bz2"
+      if not os.path.isdir(deploy) or not os.path.isfile(rootfs_zip):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), deploy)
+    elif not os.path.isfile(rootfs_zip):
+      raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), rootfs_zip)
     rootfs_zip = os.path.abspath(rootfs_zip)
     rootfs = deploy + "/rootfs"
     if os.path.isdir(rootfs):

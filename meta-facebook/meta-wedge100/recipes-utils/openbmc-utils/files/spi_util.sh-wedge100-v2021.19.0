@@ -261,14 +261,34 @@ spi2_connect() {
     spi2_setup_bitbang
 }
 
+#
+# gpio unexport was broken by D21607312 and it was fixed by D29276458.
+# Apply the workaround so backup bios can be accessed after accessing
+# eepprom; otherwise, spi-aspeed driver would complain the pins were
+# configured as GPIO (because unexport fails).
+#
+fixup_gpio_unexport() {
+    shadow="$1"
+
+    gpio_path=$(readlink "${SHADOW_GPIO}/${shadow}")
+
+    gpio_unexport "$shadow"
+    if [ -e "$gpio_path" ]; then
+        prefix="${GPIODIR}/gpio"
+        gpio_num=${gpio_path#$prefix}
+
+        echo "$gpio_num" > "${GPIODIR}/unexport"
+    fi
+}
+
 spi2_disconnect() {
     echo "disable spi2 (eeprom) connection.."
 
     if [ -L "${SHADOW_GPIO}/BMC_EEPROM1_SPI_SS" ]; then
-        gpio_unexport BMC_EEPROM1_SPI_SS
-        gpio_unexport BMC_EEPROM1_SPI_SCK
-        gpio_unexport BMC_EEPROM1_SPI_MOSI
-        gpio_unexport BMC_EEPROM1_SPI_MISO
+        fixup_gpio_unexport BMC_EEPROM1_SPI_SS
+        fixup_gpio_unexport BMC_EEPROM1_SPI_SCK
+        fixup_gpio_unexport BMC_EEPROM1_SPI_MOSI
+        fixup_gpio_unexport BMC_EEPROM1_SPI_MISO
     fi
 
     kmod_unload "$SPI_EEPROM_MODULE"

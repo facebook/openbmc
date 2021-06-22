@@ -160,7 +160,7 @@ util_read_jtag_id(uint8_t slot_id, uint8_t dev_id) {
 }
 
 
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
 static int
 _get_gpio_cnt_name(uint8_t slot_id, uint8_t *gpio_cnt, char ***gpio_name) {
   int ret = 0;
@@ -181,14 +181,6 @@ _get_gpio_cnt_name(uint8_t slot_id, uint8_t *gpio_cnt, char ***gpio_name) {
       case SERVER_TYPE_TL:
         *gpio_cnt = gpio_pin_cnt;
         *gpio_name = (char **)gpio_pin_name;
-        break;
-      case SERVER_TYPE_RC:
-        *gpio_cnt = rc_gpio_pin_cnt;
-        *gpio_name = (char **)rc_gpio_pin_name;
-        break;
-      case SERVER_TYPE_EP:
-        *gpio_cnt = ep_gpio_pin_cnt;
-        *gpio_name = (char **)ep_gpio_pin_name;
         break;
       case SERVER_TYPE_ND:
         *gpio_cnt = nd_gpio_pin_cnt;
@@ -216,7 +208,7 @@ util_get_gpio(uint8_t slot_id) {
   int ret = 0;
   uint8_t i;
   bic_gpio_t gpio = {0};
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   uint8_t gpio_cnt;
   char **gpio_name;
 
@@ -259,7 +251,7 @@ static int
 util_set_gpio(uint8_t slot_id, uint8_t gpio, uint8_t value) {
   uint8_t gpio_cnt = gpio_pin_cnt;
   int ret = 0;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   char **gpio_name;
 
   ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name);
@@ -296,7 +288,7 @@ util_get_gpio_config(uint8_t slot_id) {
   int ret = 0;
   int i;
   bic_gpio_config_t gpio_config = {0};
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   uint8_t gpio_cnt;
   char **gpio_name;
 
@@ -368,7 +360,7 @@ static int
 util_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t config) {
   uint8_t gpio_cnt = gpio_pin_cnt;
   int ret = 0;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_GPV2) || defined(CONFIG_FBY2_ND)
   char **gpio_name;
 
   ret = _get_gpio_cnt_name(slot_id, &gpio_cnt, &gpio_name);

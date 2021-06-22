@@ -29,7 +29,7 @@ from image_meta import FBOBMCImageMeta
 from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file, read_vbs
 
 
-MBOOT_CHECK_VERSION = "2"
+MBOOT_CHECK_VERSION = "3"
 
 FIT_SIGN_HASH_ALGO = "sha256"
 
@@ -75,22 +75,22 @@ def hash_comp(filename, offset, size, algo="sha256"):
     return h.digest()
 
 
-def measure_spl(algo, image_meta):
+def measure_spl(algo, image_meta, rawhash=False):
     # PCR0 : hash(spl)
     # notice: includes the spl-dtb: keks, signing date, and lock-bit
     pcr0 = Pcr(algo)
     spl = image_meta.get_part_info("spl")
     spl_measure = hash_comp(image_meta.image, spl["offset"], spl["size"], algo)
-    return pcr0.extend(spl_measure)
+    return spl_measure if rawhash else pcr0.extend(spl_measure)
 
 
-def measure_keystore(algo, image_meta):
+def measure_keystore(algo, image_meta, rawhash=False):
     # PCR1 : hash(key-store)
     # notice: the key-store is the first 16K of the u-boot-fit
     pcr1 = Pcr(algo)
     fit = image_meta.get_part_info("u-boot-fit")
     fit_measure = hash_comp(image_meta.image, fit["offset"], 0x4000, algo)
-    return pcr1.extend(fit_measure)
+    return fit_measure if rawhash else pcr1.extend(fit_measure)
 
 
 def get_uboot_hash_algo_and_size(filename, offset, size):
@@ -144,7 +144,7 @@ def get_os_comps_hash_algo_offset_size(filename, offset, size):
     return comps
 
 
-def measure_uboot(algo, image_meta, recal=False):
+def measure_uboot(algo, image_meta, recal=False, rawhash=False):
     # PCR2: hash(sha256(uboot))
     # notice: to simplify SPL measure code, spl hash the "hash of uboot" read from fit
     pcr2 = Pcr(algo)
@@ -173,18 +173,18 @@ def measure_uboot(algo, image_meta, recal=False):
         )
 
     uboot_measure = hashlib.new(algo, uboot_hash).digest()
-    return pcr2.extend(uboot_measure)
+    return uboot_measure if rawhash else pcr2.extend(uboot_measure)
 
 
-def measure_uboot_env(algo, image_meta):
+def measure_uboot_env(algo, image_meta, rawhash=False):
     # PCR3 : hash(u-boot-env)
     pcr3 = Pcr(algo)
     env = image_meta.get_part_info("u-boot-env")
     env_measure = hash_comp(image_meta.image, env["offset"], env["size"], algo)
-    return pcr3.extend(env_measure)
+    return env_measure if rawhash else pcr3.extend(env_measure)
 
 
-def measure_rcv_uboot(algo, image_meta):
+def measure_rcv_uboot(algo, image_meta, rawhash=False):
     # PCR2 : hash(rec-u-boot)
     # Notice: will measured when booting into golden image
     pcr2 = Pcr(algo)
@@ -192,10 +192,10 @@ def measure_rcv_uboot(algo, image_meta):
     rec_uboot_measure = hash_comp(
         image_meta.image, rec_uboot["offset"], rec_uboot["size"], algo
     )
-    return pcr2.extend(rec_uboot_measure)
+    return rec_uboot_measure if rawhash else pcr2.extend(rec_uboot_measure)
 
 
-def measure_blank_uboot_env(algo, image_meta):
+def measure_blank_uboot_env(algo, image_meta, rawhash=False):
     # PCR3 : hash(64KB zero)
     # Notice: in the image the uboot env partition is blank
     # during the first time boot up u-boot will save the
@@ -205,10 +205,10 @@ def measure_blank_uboot_env(algo, image_meta):
     # bootup. Add it here to help test cover this special case.
     pcr3 = Pcr(algo)
     blank_uboot_env_measure = hashlib.new(algo, bytearray(64 * 1024)).digest()
-    return pcr3.extend(blank_uboot_env_measure)
+    return blank_uboot_env_measure if rawhash else pcr3.extend(blank_uboot_env_measure)
 
 
-def measure_os(algo, image_meta, recal=False):
+def measure_os(algo, image_meta, recal=False, rawhash=False):
     # PCR9: hash(sha256(kernel)), hash(sha256(rootfs)), hash(sha256(fdt))
     # notice: to simplify the measure code, we extend
     #         hash of the sha256(kernel),
@@ -221,6 +221,7 @@ def measure_os(algo, image_meta, recal=False):
         image_meta.image, fit["offset"], fit["size"]
     )
 
+    raw_hashes = []
     for comp_hash, comp_hash_algo, comp_offset, comp_size in os_components:
         if recal:
             # comp_hash_algo define in FIT signture which is independent with
@@ -241,16 +242,96 @@ def measure_os(algo, image_meta, recal=False):
                 comp_measure.hex(),
             )
         comp_measure = hashlib.new(algo, comp_hash).digest()
+        raw_hashes += [comp_measure]
         pcr9.extend(comp_measure)
 
-    return pcr9.value
+    return raw_hashes if rawhash else pcr9.value
 
 
-def measure_vbs(algo):
+def measure_vbs(algo, rawhash=False):
     # PCR5: vbs structure
     pcr5 = Pcr(algo)
     vbs_measure = hashlib.new(algo, read_vbs()).digest()
-    return pcr5.extend(vbs_measure)
+    return vbs_measure if rawhash else pcr5.extend(vbs_measure)
+
+
+ATTEST_COMPONENTS = ["spl", "key-store", "u-boot", "rec-u-boot", "os", "rec-os"]
+OS_SUB_COMPNAME = ["kernel", "ramdisk", "fdt"]
+RECCOVERY_OS_SUB_COMPNAME = ["rec-" + c for c in OS_SUB_COMPNAME]
+
+
+def print_attest_list(fw_ver, raw_sha1_hashes, raw_sha256_hashes, comp):
+    if "os" == comp or "rec-os" == comp:
+        attlist = dict()
+        subcomp_name = OS_SUB_COMPNAME if "os" == comp else RECCOVERY_OS_SUB_COMPNAME
+        for subcomp_idx, subcomp in enumerate(subcomp_name):
+            attlist[subcomp] = {
+                "hashes": {
+                    "sha1": raw_sha1_hashes[comp][subcomp_idx].hex(),
+                    "sha256": raw_sha256_hashes[comp][subcomp_idx].hex(),
+                },
+                "metadata": {
+                    "name": comp + "." + subcomp,
+                    "version": fw_ver,
+                },
+                "command_lines": [],
+            }
+    else:
+        attlist = {
+            comp: {
+                "hashes": {
+                    "sha1": raw_sha1_hashes[comp].hex(),
+                    "sha256": raw_sha256_hashes[comp].hex(),
+                },
+                "metadata": {
+                    "name": comp,
+                    "version": fw_ver,
+                },
+                "command_lines": [],
+            },
+        }
+
+    if args.json:
+        print(json.dumps(attlist))
+    else:
+        for c in attlist.keys():
+            k = attlist[c]["metadata"]["name"] + "(sha1)"
+            v = attlist[c]["hashes"]["sha1"]
+            print(f"{k:27}:{v}")
+            k = attlist[c]["metadata"]["name"] + "(sha256)"
+            v = attlist[c]["hashes"]["sha256"]
+            print(f"{k:27}:{v}")
+
+
+def gen_attest_allowlists(flash0_meta, flash1_meta):
+    raw_sha1_hashes = {
+        "spl": measure_spl("sha1", flash0_meta, True),
+        "key-store": measure_keystore("sha1", flash1_meta, True),
+        "u-boot": measure_uboot("sha1", flash1_meta, args.recal, True),
+        "rec-u-boot": measure_rcv_uboot("sha1", flash0_meta, True),
+        "os": measure_os("sha1", flash1_meta, args.recal, True),
+        "rec-os": measure_os("sha1", flash0_meta, args.recal, True),
+    }
+    raw_sha256_hashes = {
+        "spl": measure_spl("sha256", flash0_meta, True),
+        "key-store": measure_keystore("sha256", flash1_meta, True),
+        "u-boot": measure_uboot("sha256", flash1_meta, args.recal, True),
+        "rec-u-boot": measure_rcv_uboot("sha256", flash0_meta, True),
+        "os": measure_os("sha256", flash1_meta, args.recal, True),
+        "rec-os": measure_os("sha256", flash0_meta, args.recal, True),
+    }
+    if "ALL" in args.components:
+        args.components = ATTEST_COMPONENTS
+
+    for comp in args.components:
+        print_attest_list(
+            flash0_meta.meta["version_infos"]["fw_ver"],
+            raw_sha1_hashes,
+            raw_sha256_hashes,
+            comp,
+        )
+
+    return EC_SUCCESS
 
 
 def main():
@@ -260,6 +341,9 @@ def main():
     else:
         flash0_meta = FBOBMCImageMeta(args.flash0)
         flash1_meta = FBOBMCImageMeta(args.flash1)
+
+    if args.components:
+        return gen_attest_allowlists(flash0_meta, flash1_meta)
 
     mboot_measures = [
         {  # SPL
@@ -377,7 +461,13 @@ if __name__ == "__main__":
             """,
         action="store_true",
     )
-
+    parser.add_argument(
+        "-c",
+        "--components",
+        help="output raw hash(measure) value of specified components",
+        nargs="*",
+        choices=["ALL"] + ATTEST_COMPONENTS,
+    )
     args = parser.parse_args()
 
     try:

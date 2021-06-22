@@ -54,6 +54,7 @@ static const char *option_list[] = {
   "--clear_cmos",
   "--file [path]",
   "--check_usb_port [sb|1ou|2ou]",
+  "--get_board_revision 1ou",
 };
 
 static const char *class2_options[] = {
@@ -788,6 +789,49 @@ error_exit:
   return -1;
 }
 
+
+
+static int
+util_get_board_revision(uint8_t slot_id, char *comp) {
+  bic_gpio_t gpio = {0};
+  uint8_t type_1ou = 0;
+  uint8_t status = 0;
+  int ret = 0;
+
+  if (strcmp("1ou", comp) == 0) {
+    status = bic_is_m2_exp_prsnt_cache(slot_id);
+    if ( status < 0 ) {
+      printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
+      return -1;
+    }
+
+    if ( (status & PRESENT_1OU) != PRESENT_1OU ) {
+      printf("1OU board is not present\n");
+      return -1;
+    }
+
+    if ( bic_get_1ou_type(slot_id, &type_1ou) < 0 || type_1ou != EDSFF_1U ) {
+      printf("get_board_revision only support in E1S 1OU board, board type %02X (Expected: %02X)\n", type_1ou, EDSFF_1U);
+      return -1;
+    }
+
+    ret = bic_get_gpio(slot_id, &gpio, FEXP_BIC_INTF);
+    if ( ret < 0 ) {
+      printf("%s() bic_get_gpio returns %d\n", __func__, ret);
+      return ret;
+    }
+
+    printf("BOARD_REV_ID1: %d\n", BIT_VALUE(gpio, 43));
+    printf("BOARD_REV_ID0: %d\n", BIT_VALUE(gpio, 42));
+    if (BIT_VALUE(gpio, 42) && BIT_VALUE(gpio, 43)) {
+      printf("E1S expansion Maxim\n");
+    } else {
+      printf("E1S expansion TI\n");
+    }
+  }
+  return 0;
+}
+
 static int
 util_check_usb_port(uint8_t slot_id, char *comp) {
   int ret = -1;
@@ -957,6 +1001,14 @@ main(int argc, char **argv) {
       }
 
       return util_get_slot_id();
+    } else if ( strcmp(argv[2], "--get_board_revision") == 0 ) {
+      if ( argc != 4 ) goto err_exit;
+      if ( (strcmp("1ou", argv[3]) != 0) ) {
+        printf("Invalid component: %s\n", argv[3]);
+        goto err_exit;
+      }
+      return util_get_board_revision(slot_id, argv[3]);
+
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;

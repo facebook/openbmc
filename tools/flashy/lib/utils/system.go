@@ -452,8 +452,10 @@ func tryPetWatchdog() bool {
 
 	f, err := os.OpenFile("/dev/watchdog", os.O_RDWR, 0)
 	if err != nil {
+		log.Printf("Not petting watchdog: unable to open /dev/watchdog: %v", err)
 		return false
 	}
+	defer f.Close()
 
 	// Extend the timeout.  The kernel may adjust the timeout downward
 	// if a hardware watchdog is in use.  In any case, don't arrange to
@@ -469,7 +471,6 @@ func tryPetWatchdog() bool {
 	if err3 != nil {
 		log.Printf("ioctl WDIOC_KEEPALIVE failed: %v", err3)
 	}
-	f.Close()
 	return err2 == nil && err3 == nil
 }
 

@@ -218,10 +218,11 @@ func TestDirExists(t *testing.T) {
 }
 
 func TestIsELFFile(t *testing.T) {
-	// mock and defer restore MmapFileRange
 	mmapFileRangeOrig := MmapFileRange
+	munmapOrig := Munmap
 	defer func() {
 		MmapFileRange = mmapFileRangeOrig
+		Munmap = munmapOrig
 	}()
 
 	cases := []struct {
@@ -254,6 +255,9 @@ func TestIsELFFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 				return tc.mmapRet, tc.mmapErr
+			}
+			Munmap = func(b []byte) (err error) {
+				return nil
 			}
 			got := IsELFFile("x")
 			if tc.want != got {

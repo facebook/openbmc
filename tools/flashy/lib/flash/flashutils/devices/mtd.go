@@ -80,7 +80,7 @@ func (m *MemoryTechnologyDevice) GetFileSize() uint64 {
 }
 
 // MmapRO mmaps the whole file in readonly mode.
-// A Munmap call is required to release the buffer.
+// Remember to call Munmap to unmap.
 func (m *MemoryTechnologyDevice) MmapRO() ([]byte, error) {
 	// use mmap
 	mmapFilePath, err := GetMTDBlockFilePath(m.FilePath)

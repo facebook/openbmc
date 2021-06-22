@@ -145,6 +145,7 @@ var GetVbs = func() (Vbs, error) {
 	if err != nil {
 		return vbs, errors.Errorf("Unable to mmap /dev/mem: %v", err)
 	}
+	defer fileutils.Munmap(pageData)
 
 	dataOffset := fileutils.GetPageOffsettedOffset(AST_SRAM_VBS_BASE)
 	vbsEndOffset, err := AddU32(dataOffset, AST_SRAM_VBS_SIZE)

@@ -56,6 +56,9 @@ var ReadFile = ioutil.ReadFile
 var WriteFile = ioutil.WriteFile // prefer WriteFileWithTimeout
 var RenameFile = os.Rename
 var CreateFile = os.Create
+
+// Mmap is syscall.Mmap.
+// Remember to call Munmap to unmap.
 var Mmap = syscall.Mmap
 var Munmap = syscall.Munmap
 var Glob = filepath.Glob
@@ -154,11 +157,8 @@ var AppendFile = func(filename, data string) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	_, err = f.Write([]byte(data))
-	if err != nil {
-		return err
-	}
-	err = f.Close()
 	if err != nil {
 		return err
 	}
@@ -178,10 +178,12 @@ var IsELFFile = func(filename string) bool {
 			"assuming that it is not an ELF file", filename, err)
 		return false
 	}
+	defer Munmap(buf)
 	return bytes.Equal(buf, elfMagicNumber)
 }
 
 // MmapFile is a convenience function to mmap an entire file.
+// Remember to call Munmap to unmap.
 var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 	f, err := os.Open(filename)
 	if err != nil {
@@ -201,6 +203,7 @@ var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 }
 
 // MmapFileRange is a convenience function to mmap a given range of a file.
+// Remember to call Munmap to unmap.
 var MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 	if offset%int64(os.Getpagesize()) != 0 {
 		return nil, errors.Errorf(
@@ -265,6 +268,7 @@ var GetPageOffsettedOffset = func(addr uint32) uint32 {
 }
 
 // OpenFileWithLock opens an existing file and acquires a lock for it.
+// Remember to call CloseFileWithUnlock to release the lock.
 var OpenFileWithLock = func(filename string, flag int, how int) (*os.File, error) {
 	f, err := os.OpenFile(filename, flag, 0)
 	if err != nil {

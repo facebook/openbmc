@@ -89,8 +89,10 @@ int ncsi_brcm_check_resp_len(NCSI_NL_RSP_T *nl_resp, uint16_t min_resp_size)
   brcm_payload_len = ntohs(resp_hdr->brcm_payload_len);
   if (nl_resp->hdr.payload_length != sizeof(*resp_hdr) + brcm_payload_len) {
     ncsi_log(LOG_ERR, "Error: ncsi payload len %u not match "
-             "brcm len (hdr %u + payload %u)",
-             nl_resp->hdr.payload_length, sizeof(*resp_hdr), brcm_payload_len);
+             "brcm len (hdr %zu + payload %u)",
+             (unsigned int)nl_resp->hdr.payload_length,
+             sizeof(*resp_hdr),
+             (unsigned int)brcm_payload_len);
     return -1;
   }
 

@@ -88,8 +88,10 @@ int ncsi_nvidia_check_resp_len(NCSI_NL_RSP_T *nl_resp, uint16_t min_resp_size)
   nvidia_payload_len = ntohs(resp_hdr->nvidia_payload_len);
   if (nl_resp->hdr.payload_length != sizeof(*resp_hdr) + 4 + nvidia_payload_len) {
     ncsi_log(LOG_ERR, "Error: ncsi payload len %u not match "
-             "nvidia len (hdr %u + payload %u)",
-             nl_resp->hdr.payload_length, sizeof(*resp_hdr) + 4, nvidia_payload_len);
+             "nvidia len (hdr %zu + payload %u)",
+             (unsigned int)nl_resp->hdr.payload_length,
+             sizeof(*resp_hdr) + 4,
+             (unsigned int)nvidia_payload_len);
     return -1;
   }
 

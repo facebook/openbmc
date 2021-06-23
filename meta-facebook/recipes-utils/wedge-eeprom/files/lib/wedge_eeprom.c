@@ -398,7 +398,7 @@ int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom)
   fin = fopen(fn, "r");
   if (fin == NULL) {
     rc = errno;
-    OBMC_ERROR(rc, "Failed to open %s", FBW_EEPROM_FILE);
+    OBMC_ERROR(rc, "Failed to open %s", fn);
     goto out;
   }
 
@@ -406,14 +406,14 @@ int wedge_eeprom_parse(const char *fn, struct wedge_eeprom_st *eeprom)
   rc = fseek(fin, 0, SEEK_END);
   if (rc) {
     rc = errno;
-    OBMC_ERROR(rc, "Failed to seek to the end of %s", FBW_EEPROM_FILE);
+    OBMC_ERROR(rc, "Failed to seek to the end of %s", fn);
     goto out;
   }
 
   len = ftell(fin);
   if (len < FBW_EEPROM_SIZE) {
     rc = ENOSPC;
-    OBMC_ERROR(rc, "File '%s' is too small (%u < %u)", FBW_EEPROM_FILE,
+    OBMC_ERROR(rc, "File '%s' is too small (%u < %u)", fn,
             len, FBW_EEPROM_SIZE);
     goto out;
   }

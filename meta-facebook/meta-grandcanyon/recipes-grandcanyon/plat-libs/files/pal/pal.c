@@ -2758,6 +2758,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BIC_SENSOR_SYSTEM_STATUS:
           snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
           break;
+        case BIC_SENSOR_PROC_FAIL:
+          snprintf(name, MAX_SNR_NAME, "PROC_FAIL");
+          break;
         default:
           snprintf(name, MAX_SNR_NAME, "Unknown");
           ret = PAL_ENOTSUP;
@@ -2774,9 +2777,6 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
           ret = PAL_ENOTSUP;
           break;
       }
-      break;
-    case BIC_SENSOR_PROC_FAIL:
-      snprintf(name, MAX_SNR_NAME, "PROC_FAIL");
       break;
     default:
       snprintf(name, MAX_SNR_NAME, "Unknown");
@@ -2981,6 +2981,10 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
           pal_parse_sys_sts_event(event_data, error_log);
           is_parsed = true;
           break;
+        case BIC_SENSOR_PROC_FAIL:
+          pal_parse_proc_fail(event_data, error_log);
+          is_parsed = true;
+          break;
         default:
           break;
       }
@@ -3027,9 +3031,6 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         default:
           break;
       }
-      break;
-    case BIC_SENSOR_PROC_FAIL:
-      pal_parse_proc_fail(event_data, error_log);
       break;
     default:
       break;

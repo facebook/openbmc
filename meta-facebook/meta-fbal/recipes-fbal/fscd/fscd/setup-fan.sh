@@ -27,6 +27,7 @@
 # Short-Description: Set fan speed
 ### END INIT INFO
 
+# shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
 
 echo "Setup fan speed... "
@@ -43,7 +44,7 @@ mode=$(($(/usr/bin/kv get mb_skt) >> 1))   #2S:mode=2, 4S_EX:mode=1, 4S_EP:mode=
 if [ "$mode" -eq 2 ]; then
   echo probe 2s fan table
   ln -s /etc/fsc-config2s.json ${default_fsc_config_path}
-elif [[ "$host" -eq 0 ]]; then  #4S Master Mode
+elif [ "$host" -eq 0 ]; then  #4S Master Mode
   echo probe 4s master fan table
   ln -s /etc/fsc-config4s_M.json ${default_fsc_config_path}
 else  #4S Slave

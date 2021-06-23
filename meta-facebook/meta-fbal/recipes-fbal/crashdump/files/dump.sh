@@ -4,21 +4,21 @@ PROGRAM=$0
 PECI_UTIL="/usr/local/bin/peci-util"
 CMD_DIR="/etc/peci"
 
-let CPU_ID=($1 - 48)
-DUMP_FILE=crashdump_p"$CPU_ID"_coreid
+CPU_ID=$(($1 - 48))
+DUMP_FILE=crashdump_p"$CPU_ID"_
 
 #2S:MODE=2, 4S_EX:MODE=1, 4S_EP:MODE=0
 MODE=$(($(/usr/bin/kv get mb_skt) >> 1))
-if [[ "$MODE" -eq 2 ]]; then
-  let MAX_CPU=2;
+if [ "$MODE" -eq 2 ]; then
+  MAX_CPU=2;
 else
-  let MAX_CPU=4;
+  MAX_CPU=4;
 fi
 
 function print_help_msg {
-  for ((i=0; i<$MAX_CPU; i++))
+  for ((i=0; i<MAX_CPU; i++))
   do
-    addr=$(($i+48))
+    addr=$((i+48))
     echo "$PROGRAM $addr coreid  ==> for CPU $i CoreID"
     echo "$PROGRAM $addr msr     ==> for CPU $i MSR"
   done
@@ -64,28 +64,28 @@ function PCI_Config_Addr {
 function pcie_dump {
   # CPU and PCH
   [ -r $CMD_DIR/crashdump_pcie ] && \
-    cat $CMD_DIR/crashdump_pcie | execute_cmd
+    execute_cmd < $CMD_DIR/crashdump_pcie
 
   # Buses
   RES=$(echo "0x30 0x06 0x05 0x61 0x00 0xcc 0x20 0x04 0x00" | execute_cmd)
   echo "Get CPUBUSNO: $RES"
   # Completion Code
-  CC=$(echo $RES| awk '{print $1;}')
+  CC=$(echo "$RES"| awk '{print $1;}')
   # Root port buses
-  ROOT_BUSES=$(echo $RES | awk '{printf "0x%s 0x%s 0x%s", $3, $4, $5;}')
+  ROOT_BUSES=$(echo "$RES" | awk '{printf "0x%s 0x%s 0x%s", $3, $4, $5;}')
 
   # Success
   if [ "$CC" == "40" ]; then
     for ROOT in $ROOT_BUSES; do
       for DEV in {0..3}; do
         echo "Find Root Port Bus $ROOT Dev $DEV..."
-        RES=$(echo "0x30 0x06 0x05 0x61 0x00 $(PCI_Config_Addr $ROOT $DEV 0x00 0x18)" | execute_cmd)
+        RES=$(echo "0x30 0x06 0x05 0x61 0x00 $(PCI_Config_Addr "$ROOT" $DEV 0x00 0x18)" | execute_cmd)
         echo "$RES"
-        CC=$(echo $RES| awk '{print $1;}')
-        SECONDARY_BUS=0x$(echo $RES| awk '{print $3;}')
-        SUBORDINATE_BUS=0x$(echo $RES| awk '{print $4;}')
+        CC=$(echo "$RES"| awk '{print $1;}')
+        SECONDARY_BUS=0x$(echo "$RES"| awk '{print $3;}')
+        SUBORDINATE_BUS=0x$(echo "$RES"| awk '{print $4;}')
         if [ "$CC" == "40" ] && [ "$SECONDARY_BUS" != "0x00" ] && [ "$SUBORDINATE_BUS" != "0x00" ]; then
-          for (( BUS=$SECONDARY_BUS; BUS<=$SUBORDINATE_BUS; BUS++ )); do
+          for (( BUS=SECONDARY_BUS; BUS<=SUBORDINATE_BUS; BUS++ )); do
             BUS_MS_NIBBLE=$(printf "%x" $((BUS >> 4)) )
             BUS_LS_NIBBLE=$(printf "%x" $((BUS & 0xF)) )
             [ -r $CMD_DIR/crashdump_pcie_bus ] && \
@@ -98,7 +98,6 @@ function pcie_dump {
 }
 
 function dwr_dump {
-
   echo
   echo DWR assert check:
   echo =================
@@ -112,8 +111,8 @@ function dwr_dump {
   echo
 
   # Completion Code
-  CC=$(echo $RES| awk '{print $1;}')
-  DWR=0x$(echo $RES| awk '{print $5;}')
+  CC=$(echo "$RES"| awk '{print $1;}')
+  DWR=0x$(echo "$RES"| awk '{print $5;}')
 
   # Success
   if [ "$CC" == "40" ]; then
@@ -130,7 +129,7 @@ function dwr_dump {
   fi
 }
 
-if [ "$#" -eq 1 ] && [ $1 = "time" ]; then
+if [ "$#" -eq 1 ] && [ "$1" = "time" ]; then
   now=$(date)
   echo "Crash Dump generated at $now"
   exit 0
@@ -139,47 +138,33 @@ fi
 echo ""
 
 
-if [ "$#" -eq 1 ] && [ $1 = "pcie" ]; then
-
+if [ "$#" -eq 1 ] && [ "$1" = "pcie" ]; then
   pcie_dump
-
   exit 0
 fi
 
-if [ "$#" -eq 1 ] && [ $1 = "dwr" ]; then
-
+if [ "$#" -eq 1 ] && [ "$1" = "dwr" ]; then
   dwr_dump
-
   exit $?
 fi
 
 if [ "$#" -ne 2 ]; then
 
   print_help_msg
-
   exit 1
 
 elif [ "$CPU_ID" -ge "$MAX_CPU" ] || [ "$CPU_ID" -lt 0 ]; then
 
   print_help_msg
-
   exit 1
 
-elif [ "$2" = "coreid" ]; then
+elif [ "$2" = "coreid" ] || [ "$2" = "msr" ]; then
 
-  if [ -r "$CMD_DIR/$DUMP_FILE" ]; then
-    cat $CMD_DIR/$DUMP_FILE | execute_cmd
+  DUMP_FILE="$CMD_DIR/${DUMP_FILE}$2"
+  if [ -r "$DUMP_FILE" ]; then
+    execute_cmd < "$DUMP_FILE"
   else
-    echo "$CMD_DIR/$DUMP_FILE" not exist
-  fi
-  exit 0
-
-elif [ "$2" = "msr" ]; then
-
-  if [ -r "$CMD_DIR/$DUMP_FILE" ]; then
-    cat $CMD_DIR/$DUMP_FILE | execute_cmd
-  else
-    echo "$CMD_DIR/$DUMP_FILE" not exist
+    echo "$DUMP_FILE" not exist
   fi
   exit 0
 

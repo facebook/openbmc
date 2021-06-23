@@ -11,6 +11,7 @@
 # Short-Description: Start front panel control daemon
 ### END INIT INFO
 
+# shellcheck disable=SC2039
 echo -n "Setup Front Panel Daemon.."
 runsv /etc/sv/front-paneld > /dev/null 2>&1 &
 echo "done."

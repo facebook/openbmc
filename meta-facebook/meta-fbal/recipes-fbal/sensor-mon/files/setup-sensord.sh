@@ -27,12 +27,14 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
+# shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
 
 # Call "fw-util vr --version" once before sensor monitoring to store vr information
 echo "Get VR FW version... "
 /usr/bin/fw-util vr --version > /dev/null
 
+# shellcheck disable=2039
 echo -n "Setup sensor monitoring for FBAL... "
 runsv /etc/sv/sensord > /dev/null 2>&1 &
 

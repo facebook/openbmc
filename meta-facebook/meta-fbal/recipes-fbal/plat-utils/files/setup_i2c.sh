@@ -19,6 +19,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
 sku=$(kv get mb_sku)
@@ -28,8 +29,9 @@ rev=$(kv get mb_rev)
 # note: still keep pxe1110c in dts, so it's the
 # 1st device to be probed on i2c-1
 if [ ! -L "${SYSFS_I2C_DEVICES}/1-004a/driver" ]; then
-  i2c_bind_driver pxe1211c 1-004a 4 2>/dev/null
-  [ $? -eq 0 ] && echo "rebind 1-004a to driver pxe1211c successfully"
+  if i2c_bind_driver pxe1211c 1-004a 4 2>/dev/null; then
+    echo "rebind 1-004a to driver pxe1211c successfully"
+  fi
 fi
 
 #DVT SKU_ID[2:1] = 00(TI), 01(INFINEON), TODO: 10(3rd Source)
@@ -54,18 +56,18 @@ else
   i2c_device_add 1 0x76 xdpe12284
 fi
 
-if [ $rev -lt 2 ]; then
+if [ "$rev" -lt 2 ]; then
   i2c_device_add 4 0x54 24c64
 else
   i2c_device_add 4 0x57 24c64
 fi
 
 
-if [ "$(gpio_get HP_LVC3_OCP_V3_1_PRSNT2_N)" == "0" ]; then
+if [ "$(gpio_get HP_LVC3_OCP_V3_1_PRSNT2_N)" = "0" ]; then
   i2c_device_add 17 0x50 24c32
 fi
 
-if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" == "0" ]; then
+if [ "$(gpio_get HP_LVC3_OCP_V3_2_PRSNT2_N)" = "0" ]; then
   i2c_device_add 18 0x52 24c32
   if [ "$(kv get eth1_disable_ipv6 persistent 2>/dev/null)" != "0" ]; then
     echo 1 > /proc/sys/net/ipv6/conf/eth1/disable_ipv6

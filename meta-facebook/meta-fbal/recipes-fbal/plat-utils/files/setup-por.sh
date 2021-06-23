@@ -25,7 +25,8 @@
 # Default-Stop:
 # Short-Description: Power on Server
 ### END INIT INFO
+
+# shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
 
 store_clear_por
-

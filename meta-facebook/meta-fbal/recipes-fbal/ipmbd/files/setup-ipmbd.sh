@@ -28,12 +28,14 @@
 #
 ### END INIT INFO
 
+# shellcheck disable=SC1091,SC2039
 . /usr/local/fbpackages/utils/ast-functions
+
 echo -n "Starting IPMB Rx/Tx Daemon.."
 
 mode=$(($(/usr/bin/kv get mb_skt) >> 1))  #2S:mode=2 4S_EX:mode=1 4S_EP:mode=0
 if [ $mode -eq 2 ]; then
-  let addr=0x1010
+  addr=0x1010
 else
   addr=$((0x1010 | $(/usr/bin/kv get mb_pos)))
 fi

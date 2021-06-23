@@ -27,6 +27,7 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
+# shellcheck disable=SC2039
 echo -n "Setup gpio monitoring for angelslanding... "
 
 /usr/local/bin/gpiod &

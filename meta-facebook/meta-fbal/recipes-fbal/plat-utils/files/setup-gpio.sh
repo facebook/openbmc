@@ -31,6 +31,7 @@
 # defined in other files.  We should probably move some more of the
 # definitions to this file at some point.
 
+# shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
 . /usr/local/bin/i2c-utils.sh
 
@@ -508,8 +509,9 @@ if [ ! -L "${SYSFS_I2C_DEVICES}/4-0076/driver" ] ||
 fi
 
 if [ ! -L "${SYSFS_I2C_DEVICES}/4-0076/driver" ]; then
-  i2c_bind_driver pca953x 4-0076 2 2>/dev/null
-  [ $? -eq 0 ] && echo "rebind 4-0076 to driver pca953x successfully"
+  if i2c_bind_driver pca953x 4-0076 2 2>/dev/null; then
+    echo "rebind 4-0076 to driver pca953x successfully"
+  fi
 fi
 
 # I/O Expander TCA9539 0xEC
@@ -519,8 +521,9 @@ gpio_export_ioexp 4-0076 RST_RTCRST_N 10
 gpio_export_ioexp 4-0076 RST_USB_HUB_N 11
 
 if [ ! -L "${SYSFS_I2C_DEVICES}/4-0077/driver" ]; then
-  i2c_bind_driver pca953x 4-0077 2 2>/dev/null
-  [ $? -eq 0 ] && echo "rebind 4-0077 to driver pca953x successfully"
+  if i2c_bind_driver pca953x 4-0077 2 2>/dev/null; then
+    echo "rebind 4-0077 to driver pca953x successfully"
+  fi
 fi
 
 # I/O Expander TCA9539 0xEE

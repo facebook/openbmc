@@ -19,7 +19,10 @@
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+# shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
+
 # Sync BMC's date with the server
 sync_date()
 {
@@ -32,9 +35,9 @@ sync_date()
     host=$(($(/usr/bin/kv get mb_skt) & 0x1))  #0: Master 1:Slave
 
     if [ $position -eq 0 ]; then #position 0
-      let addr=$((16#22))
+      addr=$((16#22))
     else
-      let addr=$((16#20))
+      addr=$((16#20))
     fi
 
     # Use standard IPMI command 'get-sel-time' to read RTC time
@@ -72,12 +75,12 @@ sync_date()
     sys_date=$(date +%s)
     set_date=$((16#$(echo "$output" | awk '{print $4$3$2$1}')))
 
-    if [ $sys_date -ge $set_date ]; then
+    if [ "$sys_date" -ge $set_date ]; then
       echo "Use BMC date"
-      let set_date=$sys_date
+      set_date="$sys_date"
     fi
 
-    date -s @$set_date
+    date -s @"$set_date"
     test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
   fi
 }

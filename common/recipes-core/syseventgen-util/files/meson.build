@@ -10,17 +10,13 @@ syseventgen_deps = [
     cc.find_library('sdr')
 ]
 
-syseventgen_headers = [
+syseventgen_headers = files (
     'syseventgen-util.h'
-]
+)
 
-syseventgen_sources = [
+syseventgen_sources = files (
     'syseventgen-util.cpp'
-]
-
-install_headers(
-    syseventgen_headers,
-    subdir: 'openbmc')
+)
 
 # Make the executable
 executable('syseventgen-util',

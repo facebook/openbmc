@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-from subprocess import *
+from asyncio import TimeoutError
 
+from common_utils import async_exec
 from node import node
 
 
@@ -23,11 +24,11 @@ class enclosure_error_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         result = {}
 
         cmd = "/usr/bin/enclosure-util --error"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        _, data, _ = await async_exec(cmd, shell=True)
         data = data.strip()
         sdata = data.split("\n")
         for line in sdata:
@@ -54,11 +55,11 @@ class enclosure_flash_health_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         result = {}
 
         cmd = "/usr/bin/enclosure-util --flash-health"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        _, data, _ = await async_exec(cmd, shell=True)
         data = data.strip()
         sdata = data.split("\n")
         for line in sdata:
@@ -85,11 +86,11 @@ class enclosure_flash_status_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         info = {}
 
         cmd = "/usr/bin/enclosure-util --flash-status"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        _, data, _ = await async_exec(cmd, shell=True)
         data = data.split("flash-2")
         data_flash_1 = data[0].strip().split("\n")
         data_flash_2 = data[1].strip().split("\n")
@@ -115,11 +116,11 @@ class enclosure_hdd_status_Node(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         result = {}
 
         cmd = "/usr/bin/enclosure-util --hdd-status"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        _, data, _ = await async_exec(cmd, shell=True)
         data = data.strip()
         sdata = data.split("\n")
         for line in sdata:
@@ -128,7 +129,7 @@ class enclosure_hdd_status_Node(node):
 
         return result
 
-    def doAction(self, data, param={}):
+    async def doAction(self, data, param={}):
         result = {}
 
         if (
@@ -137,7 +138,7 @@ class enclosure_hdd_status_Node(node):
             and (int(data["action"]) < 36)
         ):
             cmd = "/usr/bin/enclosure-util --hdd-status " + data["action"]
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            _, data, _ = await async_exec(cmd, shell=True)
             sdata = data.strip().split(":")
 
             result[sdata[0].strip()] = sdata[1].strip()

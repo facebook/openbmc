@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 from node import node
-from rest_pal_legacy import *
+from rest_pal_legacy import pal_get_platform_name
 
 
 class mezzNode(node):

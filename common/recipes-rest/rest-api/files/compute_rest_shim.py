@@ -19,7 +19,6 @@
 #
 from aiohttp import web
 from common_utils import (
-    get_data_from_generator,
     dumps_bytestr,
     get_endpoints,
 )
@@ -37,7 +36,7 @@ class RestShim:
 
     async def get_handler(self, request):
         param = dict(request.query)
-        info = self.node.getInformation(param)
+        info = await self.node.getInformation(param)
         actions = self.node.getActions()
         resources = get_endpoints(self.path)
         if "redfish" in self.path:
@@ -54,8 +53,8 @@ class RestShim:
         result = {"result": "not-supported"}
         data = await request.json()
         param = dict(request.query)
-        if "action" in data and data["action"] in self.data.actions:
-            result = self.data.doAction(data, param)
+        if "action" in data and data["action"] in self.node.actions:
+            result = await self.node.doAction(data, param)
         return web.json_response(result, dumps=dumps_bytestr)
 
 

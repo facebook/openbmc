@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
+from common_utils import async_exec
 from node import node
-from rest_pal_legacy import *
 
 
 class fansNode(node):
@@ -17,11 +17,11 @@ class fansNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         result = []
         skip_flag = False
         cmd = "/usr/local/bin/fan-util --get"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+        _, data, _ = await async_exec(cmd, shell=True)
         sdata = data.split("\n")
         for line in sdata:
             # skip lines with " or startin with FRU
@@ -38,7 +38,7 @@ class fansNode(node):
             if kv[0].strip() == "FSCD Driver":
                 if len(kv) == 3:
                     # Format = FRU:SENSOR_NAME
-                    kv[1] = kv[1].strip()+":"+kv[2].strip()
+                    kv[1] = kv[1].strip() + ":" + kv[2].strip()
 
             # 0: normal, 1: boost, 2: transitional
             if kv[0].strip() == "Fan Mode":

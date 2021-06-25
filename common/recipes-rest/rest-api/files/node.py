@@ -33,11 +33,11 @@ class node:
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         return self.info
 
     def getActions(self):
         return self.actions
 
-    def doAction(self, action, param={}):
+    async def doAction(self, action, param={}):
         result = {"result": "failure", "reason": "not supported"}

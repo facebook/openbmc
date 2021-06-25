@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
+from typing import List, Union
 
 from common_webapp import WebApp
 
@@ -84,3 +85,28 @@ def dumps_bytestr(obj):
 
 def running_systemd():
     return "systemd" in os.readlink("/proc/1/exe")
+
+
+async def async_exec(
+    cmd: Union[List[str], str], shell: bool = False
+) -> (int, str, str):
+    if shell:
+        proc = await asyncio.create_subprocess_shell(
+            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+    else:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+
+    try:
+        await asyncio.wait_for(proc.wait(), timeout=30.0)
+    except asyncio.TimeoutError:
+        # command timed out!
+        raise
+
+    stdout, stderr = await proc.communicate()
+    data = stdout.decode()
+    err = stderr.decode()
+
+    return proc.returncode, data, err

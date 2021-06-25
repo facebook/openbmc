@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
+from common_utils import async_exec
 from kv import kv_get
 from node import node
-from rest_pal_legacy import *
+from rest_pal_legacy import pal_get_platform_name
 
 
 class pebNode(node):
     def __init__(self, name=None, info=None, actions=None):
-        name = pal_get_platform_name()
+        self.name = pal_get_platform_name()
         if info == None:
             self.info = {}
         else:
@@ -17,15 +18,12 @@ class pebNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         name = pal_get_platform_name()
         location = kv_get("tray_location")
-        data = (
-            Popen("cat /sys/class/gpio/gpio108/value", shell=True, stdout=PIPE)
-            .stdout.read()
-            .decode()
-            .strip("\n")
-        )
+        cmd = "cat /sys/class/gpio/gpio108/value"
+        _, stdout, _ = await async_exec(cmd, shell=True)
+        data = stdout.strip("\n")
         if data == "0":
             status = "In"
         elif data == "1":
@@ -45,17 +43,17 @@ class pebNode(node):
 
         return info
 
-    def doAction(self, data, param={}):
+    async def doAction(self, data, param={}):
         if data["action"] == "identify-on":
             cmd = "/usr/bin/fpc-util --identify on"
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            _, data, _ = await async_exec(cmd, shell=True)
             if data.startswith("Usage"):
                 res = "failure"
             else:
                 res = "success"
         elif data["action"] == "identify-off":
             cmd = "/usr/bin/fpc-util --identify off"
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+            _, data, _ = await async_exec(cmd, shell=True)
             if data.startswith("Usage"):
                 res = "failure"
             else:

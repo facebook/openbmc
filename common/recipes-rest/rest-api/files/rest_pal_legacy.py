@@ -21,24 +21,27 @@
 PAL_STATUS_UNSUPPORTED = 2
 
 # Does the FRU have a FRUID EEPROM
-FRU_CAPABILITY_FRUID_WRITE = (1 << 0)
-FRU_CAPABILITY_FRUID_READ  = (1 << 1)
-FRU_CAPABILITY_FRUID_ALL   = FRU_CAPABILITY_FRUID_WRITE | FRU_CAPABILITY_FRUID_READ
+FRU_CAPABILITY_FRUID_WRITE = 1 << 0
+FRU_CAPABILITY_FRUID_READ = 1 << 1
+FRU_CAPABILITY_FRUID_ALL = FRU_CAPABILITY_FRUID_WRITE | FRU_CAPABILITY_FRUID_READ
 
-# Sensors on this FRU 
-FRU_CAPABILITY_SENSOR_READ             = (1 << 2)
-FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE = (1 << 3)
-FRU_CAPABILITY_SENSOR_HISTORY          = (1 << 4)
-FRU_CAPABILITY_SENSOR_ALL              = FRU_CAPABILITY_SENSOR_READ | \
-                                         FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE | \
-                                         FRU_CAPABILITY_SENSOR_HISTORY
+# Sensors on this FRU
+FRU_CAPABILITY_SENSOR_READ = 1 << 2
+FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE = 1 << 3
+FRU_CAPABILITY_SENSOR_HISTORY = 1 << 4
+FRU_CAPABILITY_SENSOR_ALL = (
+    FRU_CAPABILITY_SENSOR_READ
+    | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE
+    | FRU_CAPABILITY_SENSOR_HISTORY
+)
 
+import binascii
 import os
 import uuid
-import binascii
 from ctypes import CDLL, c_char_p, c_ubyte, c_uint32, create_string_buffer, pointer
 from subprocess import PIPE, CalledProcessError, Popen, check_output
 
+from common_utils import async_exec
 
 try:
     lpal_hndl = CDLL("libpal.so.0")
@@ -213,11 +216,11 @@ def pal_sled_action(command):
         return -1
 
 
-def pal_set_key_value(key, value):
+async def pal_set_key_value(key, value):
     cmd = ["/usr/local/bin/cfg-util", key, value]
     if os.path.exists(cmd[0]):
-        output = check_output(cmd).decode()
-        if "Usage:" in output:
+        retcode, output, stderr = await async_exec(cmd, shell=False)
+        if "Usage:" in output or "Usage:" in stderr or retcode != 0:
             raise ValueError("failure")
     else:
         pkey = c_char_p(key.encode())
@@ -237,7 +240,7 @@ def pal_get_uuid():
     uuid_str = create_string_buffer(16)
     lpal_hndl.pal_get_dev_guid(0, uuid_str)
     uuid_str = binascii.hexlify(uuid_str)
-    uuid_str = str(uuid_str,'ascii')
+    uuid_str = str(uuid_str, "ascii")
     uuid_str = uuid.UUID(uuid_str)
     return str(uuid_str)
 
@@ -252,4 +255,3 @@ def pal_get_fru_capability(fru):
         return None
     else:
         return cap.value
-

@@ -59,13 +59,13 @@ class healthNode(node):
             else:
                 result = "Bad"
         elif name == "Grand Canyon":
-            server_hlth   = kv_get("server_sensor_health", FPERSIST)
-            uic_hlth      = kv_get("uic_sensor_health", FPERSIST)
-            dpb_hlth      = kv_get("dpb_sensor_health", FPERSIST)
-            scc_hlth      = kv_get("scc_sensor_health", FPERSIST)
-            nic_hlth      = kv_get("nic_sensor_health", FPERSIST)
+            server_hlth = kv_get("server_sensor_health", FPERSIST)
+            uic_hlth = kv_get("uic_sensor_health", FPERSIST)
+            dpb_hlth = kv_get("dpb_sensor_health", FPERSIST)
+            scc_hlth = kv_get("scc_sensor_health", FPERSIST)
+            nic_hlth = kv_get("nic_sensor_health", FPERSIST)
             e1s_iocm_hlth = kv_get("e1s_iocm_sensor_health", FPERSIST)
-            bmc_hlth      = kv_get("bmc_health", FPERSIST)
+            bmc_hlth = kv_get("bmc_health", FPERSIST)
 
             if (
                 (server_hlth == "1")

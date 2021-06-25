@@ -6,10 +6,8 @@ from kv import FPERSIST, kv_get
 from node import node
 from rest_pal_legacy import *
 
-identify_name = {
-    "FBTTN"        : "identify_slot1",
-    "Grand Canyon" : "system_identify_server"
-}
+identify_name = {"FBTTN": "identify_slot1", "Grand Canyon": "system_identify_server"}
+
 
 class identifyNode(node):
     def __init__(self, name, info=None, actions=None):

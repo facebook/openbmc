@@ -22,57 +22,64 @@ import json
 import os
 import re
 import subprocess
+from asyncio import TimeoutError
 
+from common_utils import async_exec
 from node import node
 
-def sensor_util_history_clear(fru='all', sensor_id='', sensor_name=''):
-    cmd = ['/usr/local/bin/sensor-util', fru, '--history-clear']
-    if sensor_id != '':
+
+async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
+    cmd = ["/usr/local/bin/sensor-util", fru, "--history-clear"]
+    if sensor_id != "":
         cmd += [sensor_id]
-    if sensor_name != '':
-        cmd_util = ['/usr/local/bin/sensor-util', fru]
+    if sensor_name != "":
+        cmd_util = ["/usr/local/bin/sensor-util", fru]
         sensors = []
         try:
-            output_handle = subprocess.Popen(cmd_util, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            stdoutput, erroroutput = output_handle.communicate(timeout=15)
-            out = stdoutput.decode().splitlines()
-            sensors = {}
-            rx = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$')
-            rx_na = re.compile(r'(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(\S+)\s+\|\s+\((\S+)\)')
+            retcode, stdout, stderr = await async_exec(cmd_util, shell=False)
+            out = stdout.decode().splitlines()
+            rx = re.compile(
+                r"(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$"
+            )
+            rx_na = re.compile(
+                r"(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(\S+)\s+\|\s+\((\S+)\)"
+            )
             for line in out:
                 m_val = rx.match(line)
                 m_na = rx_na.match(line)
                 if m_val:
                     s_name = m_val.group(1)
-                    s_id   = m_val.group(2)
-                    s_val  = m_val.group(3)
+                    s_id = m_val.group(2)
+                    s_val = m_val.group(3)
                     s_unit = m_val.group(4)
-                    s_status=m_val.group(5)
+                    s_status = m_val.group(5)
                 elif m_na:
                     s_name = m_na.group(1)
-                    s_id   = m_na.group(2)
-                    s_val  = m_na.group(3)
+                    s_id = m_na.group(2)
+                    s_val = m_na.group(3)
                     s_unit = "na"
-                    s_status=m_na.group(4)
+                    s_status = m_na.group(4)
                 else:
                     continue
 
-                if ((sensor_name != '' and sensor_name.lower() == s_name.lower())):
+                if sensor_name != "" and sensor_name.lower() == s_name.lower():
                     snr_num = "0x" + str(s_id)
                     cmd += [snr_num]
-        except subprocess.CalledProcessError:
-            print("Exception  received")
-        except subprocess.TimeoutExpired:
-            output_handle.kill()
+        except TimeoutError:
             print("TimeoutException received")
+        except Exception:
+            print("Exception  received")
     try:
-        subprocess.check_call(cmd)
-        return {"result": "success"}
+        retcode, stdout, stderr = await async_exec(cmd, shell=True)
+        if retcode == 0:
+            return {"result": "success"}
+        else:
+            return {"result": "failure"}
     except Exception:
         return {"result": "failure"}
 
 
-def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", display=[]):
+async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", display=[]):
     cmd = ["/usr/local/bin/sensor-util", fru]
     if sensor_id != "":
         cmd += [sensor_id]
@@ -88,11 +95,8 @@ def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", display=[]
     else:
         sensor_id_val = 0
     try:
-        output_handle = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        stdoutput, erroroutput = output_handle.communicate(timeout=15)
-        out = stdoutput.decode().splitlines()
+        retcode, stdout, stderr = await async_exec(cmd, shell=False)
+        out = stdout.splitlines()
         sensors = {}
         if "history" in display:
             # MB_CONN_P12V_INA230_PWR (0x9B) min = NA, average = NA, max = NA
@@ -179,11 +183,11 @@ def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", display=[]
                         sensors[s_name] = [sensors[s_name], snr]
                 else:
                     sensors[s_name] = snr
-    except subprocess.CalledProcessError:
-        print("Exception  received")
-    except subprocess.TimeoutExpired:
-        output_handle.kill()
+    except TimeoutError:
         print("TimeoutException received")
+    except Exception as e:
+        print("Exception  received")
+        print(e)
     return sensors
 
 
@@ -199,7 +203,7 @@ class sensorsNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         snr_name = ""
         snr_id = ""
         period = "60"
@@ -212,19 +216,18 @@ class sensorsNode(node):
             snr_id = param["id"]
         if "history-period" in param:
             period = param["history-period"]
-        return sensor_util(self.name, snr_name, snr_id, period, display)
+        return await sensor_util(self.name, snr_name, snr_id, period, display)
 
-    def doAction(self, info, param={}):
-        snr_name = ''
-        snr = ''
-        if 'name' in param:
-            snr_name = param['name']
-        if 'id' in param:
-            snr = param['id']
+    async def doAction(self, info, param={}):
+        snr_name = ""
+        snr = ""
+        if "name" in param:
+            snr_name = param["name"]
+        if "id" in param:
+            snr = param["id"]
         if not self.actions:
-            print("BAIL EARLY")
             return {"result": "failure"}
-        return sensor_util_history_clear(self.name, snr, snr_name)
+        return await sensor_util_history_clear(self.name, snr, snr_name)
 
 
 def get_node_sensors(name):

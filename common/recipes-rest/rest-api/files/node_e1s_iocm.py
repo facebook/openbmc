@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from node import node
-from rest_pal_legacy import *
+from rest_pal_legacy import pal_get_platform_name
 
 
 def get_node_e1s_iocm():

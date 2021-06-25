@@ -29,7 +29,7 @@ from image_meta import FBOBMCImageMeta
 from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file, read_vbs
 
 
-MBOOT_CHECK_VERSION = "3"
+MBOOT_CHECK_VERSION = "4"
 
 FIT_SIGN_HASH_ALGO = "sha256"
 
@@ -255,7 +255,15 @@ def measure_vbs(algo, rawhash=False):
     return vbs_measure if rawhash else pcr5.extend(vbs_measure)
 
 
-ATTEST_COMPONENTS = ["spl", "key-store", "u-boot", "rec-u-boot", "os", "rec-os"]
+ATTEST_COMPONENTS = [
+    "spl",
+    "key-store",
+    "u-boot",
+    "rec-u-boot",
+    "os",
+    "rec-os",
+    "blank-u-boot-env",
+]
 OS_SUB_COMPNAME = ["kernel", "ramdisk", "fdt"]
 RECCOVERY_OS_SUB_COMPNAME = ["rec-" + c for c in OS_SUB_COMPNAME]
 
@@ -311,6 +319,7 @@ def gen_attest_allowlists(flash0_meta, flash1_meta):
         "rec-u-boot": measure_rcv_uboot("sha1", flash0_meta, True),
         "os": measure_os("sha1", flash1_meta, args.recal, True),
         "rec-os": measure_os("sha1", flash0_meta, args.recal, True),
+        "blank-u-boot-env": measure_blank_uboot_env("sha1", flash1_meta, True),
     }
     raw_sha256_hashes = {
         "spl": measure_spl("sha256", flash0_meta, True),
@@ -319,6 +328,7 @@ def gen_attest_allowlists(flash0_meta, flash1_meta):
         "rec-u-boot": measure_rcv_uboot("sha256", flash0_meta, True),
         "os": measure_os("sha256", flash1_meta, args.recal, True),
         "rec-os": measure_os("sha256", flash0_meta, args.recal, True),
+        "blank-u-boot-env": measure_blank_uboot_env("sha256", flash1_meta, True),
     }
     if "ALL" in args.components:
         args.components = ATTEST_COMPONENTS

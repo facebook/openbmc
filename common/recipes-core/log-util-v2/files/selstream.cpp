@@ -19,6 +19,8 @@ void SELStream::start(
     std::istream& is,
     std::ostream& os,
     const fru_set& filter_fru,
+    const std::string& start_time,
+    const std::string& end_time,
     const ParserFlag flag) {
   uint8_t default_fru_id = filter_fru.count(SELFormat::FRU_SYS) > 0
       ? SELFormat::FRU_SYS
@@ -28,15 +30,23 @@ void SELStream::start(
     try {
       if (!(is >> *sel))
         break;
-      if (fmt_ == FORMAT_JSON && sel->is_self()) {
+      if (fmt_ == FORMAT_JSON && sel->is_bare()) {
         // RAW is used by clear and we filter out all previous
         // logs injected by this utility.
         // We do not send this as JSON format as well.
         continue;
       }
       bool blacklist = fmt_ == FORMAT_RAW;
-      if (!(sel->fru_matches(filter_fru) ^ blacklist))
-        continue;
+      bool timestamp = !(start_time.empty() || end_time.empty());
+      if (timestamp) {
+          if (!((sel->fru_matches(filter_fru) && sel->fits_time_range(start_time, end_time)) ^ blacklist)) {
+            continue;
+          }
+      } else {
+          if (!(sel->fru_matches(filter_fru) ^ blacklist)) {
+            continue;
+          }
+      }
       if (fmt_ == FORMAT_RAW)
         sel->force_bare();
       if (fmt_ == FORMAT_JSON) {
@@ -54,10 +64,15 @@ void SELStream::start(
   } while (!is.eof());
 }
 
-void SELStream::log_cleared(std::ostream& os, const fru_set& frus) {
+void SELStream::log_cleared(std::ostream& os,
+        const fru_set& affected_frus,
+        const std::string& start_time,
+        const std::string& end_time) {
   std::unique_ptr<SELFormat> sel = make_sel(SELFormat::FRU_ALL);
-  for (auto& fru : frus) {
-    sel->set_clear(fru);
+  bool timestamp = start_time.empty() || end_time.empty();
+  for (auto& fru : affected_frus) {
+    timestamp ? sel->set_clear(fru) : sel->set_clear_timestamp(fru, start_time, end_time);
     os << *sel;
   }
 }
+

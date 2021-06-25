@@ -44,7 +44,7 @@ TEST(SELStream, BasicReadWrite) {
       .Times(1)
       .WillOnce(Return(ByMove(std::move(sel))));
   stringstream outp;
-  stream.start(inp, outp, {SELFormat::FRU_ALL});
+  stream.start(inp, outp, {SELFormat::FRU_ALL}, "" , "");
   stream.flush(outp);
   EXPECT_EQ(outp.str(), exp.str());
 }
@@ -73,8 +73,8 @@ TEST(SELStream, BasicFilter) {
       .WillOnce(Return(ByMove(std::move(sel1))))
       .WillOnce(Return(ByMove(std::move(sel2))));
   stringstream outp;
-  stream.start(inp1, outp, {2});
-  stream.start(inp2, outp, {2});
+  stream.start(inp1, outp, {2}, "", "");
+  stream.start(inp2, outp, {2}, "", "");
   stream.flush(outp);
   EXPECT_EQ(outp.str(), exp.str());
 }
@@ -98,7 +98,7 @@ TEST(SELStream, BasicJSON) {
       .Times(1)
       .WillOnce(Return(ByMove(std::move(sel))));
   stringstream outp;
-  stream.start(inp, outp, {SELFormat::FRU_ALL});
+  stream.start(inp, outp, {SELFormat::FRU_ALL}, "", "");
   stream.flush(outp);
 
   nlohmann::json got = nlohmann::json::parse(outp.str());
@@ -144,8 +144,8 @@ TEST(SELStream, ClearAll) {
   inp << "2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
 
   stringstream outp;
-  stream.start(inp, outp, {SELFormat::FRU_ALL});
-  stream.log_cleared(outp, {SELFormat::FRU_ALL});
+  stream.start(inp, outp, {SELFormat::FRU_ALL}, "", "");
+  stream.log_cleared(outp, {SELFormat::FRU_ALL}, "", "");
   stream.flush(outp);
   stringstream exp;
   exp << "2020 Jun 21 17:29:55 log-util: User cleared all logs\n";
@@ -178,8 +178,8 @@ TEST(SELStream, ClearFru) {
   inp << "2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
 
   stringstream outp;
-  stream.start(inp, outp, {2});
-  stream.log_cleared(outp, {2});
+  stream.start(inp, outp, {2}, "", "");
+  stream.log_cleared(outp, {2}, "", "");
   stream.flush(outp);
   stringstream exp;
   exp << " 2020 May 18 10:18:40 bmc-oob. user.crit fbtp-9b6bf3961d-dirty: healthd: BMC Reboot detected - caused by reboot command\n";

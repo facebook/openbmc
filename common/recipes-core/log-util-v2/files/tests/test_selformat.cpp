@@ -177,3 +177,16 @@ TEST(SELFormat, BasicClearSysFormatTests) {
   EXPECT_EQ(sel.raw(), raw);
   EXPECT_EQ(sel.str(), raw);
 }
+
+TEST(SELFormat, TimestampCompare) {
+  MockSELFormat sel(SELFormat::FRU_ALL);
+
+  string raw(
+          " 2020 May 18 10:18:40 bmc-oob. user.crit fbtp-9b6bf3961d-dirty: healthd: BMC Reboot detected - caused by reboot command");
+  sel.set_raw(std::move(raw));
+
+  EXPECT_TRUE(sel.fits_time_range("2020-01-01 00:00:00", "2020-12-31 23:59:59"));
+  EXPECT_FALSE(sel.fits_time_range("2021-01-01 00:00:00", "2021-12-31 23:59:59"));
+}
+
+

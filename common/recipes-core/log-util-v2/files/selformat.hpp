@@ -60,6 +60,7 @@ class SELFormat {
 
   // Set a lot indicating of a clear with the current timestamp.
   void set_clear(uint8_t fru);
+  void set_clear_timestamp(uint8_t fru, const std::string& start_time, const std::string& end_time);
   void force_bare() {
     bare_ = true;
   }
@@ -68,6 +69,8 @@ class SELFormat {
       return true;
     return (frus.count(FRU_ALL) || frus.count(fru_num_));
   }
+
+  bool fits_time_range(const std::string& start_time, const std::string& end_time);
 
  private:
   bool bare_ = true;
@@ -106,8 +109,18 @@ class SELFormat {
 
   static constexpr std::string_view log_fmt_legacy =
       R"((\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+\S+\s+(\S+):\s+(\S+):\s+(.+)$)";
+
+  static constexpr std::string_view time_fmt =
+    R"([0-9]{4}-[0-9]{2}-[0-9]{2}\s+[0-9]{2}:[0-9]{2}:[0-9]{2})";
+
+  static constexpr std::string_view time_fmt_legacy =
+    R"([0-9]{2}-[0-9]{2}\s+[0-9]{2}:[0-9]{2}:[0-9]{2})";
+
+  static constexpr std::string_view release_fmt =
+    R"(OpenBMC Release (\S+))";
 };
 
 void to_json(nlohmann::json& j, const SELFormat& sel);
 std::istream& operator>>(std::istream& is, SELFormat& s);
 std::ostream& operator<<(std::ostream& os, const SELFormat& s);
+std::string get_output(const std::string& cmd);

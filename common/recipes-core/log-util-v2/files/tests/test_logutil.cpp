@@ -87,7 +87,7 @@ class LogPrintTest : public ::testing::Test {
 TEST_F(LogPrintTest, BasicPrintAll) {
   stringstream outp;
   make_logutil();
-  logutil->print({SELFormat::FRU_ALL}, false, outp);
+  logutil->print({SELFormat::FRU_ALL}, "", "", false, outp);
 
   stringstream exp;
   exp << "0    all      2020-05-18 10:18:40    healthd          BMC Reboot detected - caused by reboot command\n";
@@ -101,7 +101,7 @@ TEST_F(LogPrintTest, BasicPrintAll) {
 TEST_F(LogPrintTest, BasicPrintSome) {
   stringstream outp;
   make_logutil();
-  logutil->print({2}, false, outp);
+  logutil->print({2}, "", "", false, outp);
 
   stringstream exp;
   exp << "2    nic      2020-05-18 10:18:38    ncsid            FRU: 2 NIC AEN Supported: 0x7, AEN Enable Mask=0x7\n";
@@ -113,12 +113,26 @@ TEST_F(LogPrintTest, BasicPrintSome) {
 TEST_F(LogPrintTest, BasicPrintSys) {
   stringstream outp;
   make_logutil(SELFormat::FRU_SYS);
-  logutil->print({SELFormat::FRU_SYS}, false, outp);
+  logutil->print({SELFormat::FRU_SYS}, "", "", false, outp);
 
   stringstream exp;
   exp << "0    sys      2020-05-18 10:18:40    healthd          BMC Reboot detected - caused by reboot command\n";
 
   EXPECT_EQ(outp.str(), exp.str());
+}
+
+TEST_F(LogPrintTest, BasicPrintTimestamp) {
+  stringstream outp;
+  make_logutil();
+  logutil->print({SELFormat::FRU_ALL}, "2020-05-18 00:00:00", "2020-05-19 00:00:00", false, outp);
+
+  stringstream exp;
+  exp << "0    all      2020-05-18 10:18:40    healthd          BMC Reboot detected - caused by reboot command\n";
+  exp << "2    nic      2020-05-18 10:18:38    ncsid            FRU: 2 NIC AEN Supported: 0x7, AEN Enable Mask=0x7\n";
+  exp << "2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
+
+  EXPECT_EQ(outp.str(), exp.str());
+
 }
 
 class LogClearTest : public ::testing::Test {
@@ -186,7 +200,7 @@ class LogClearTest : public ::testing::Test {
 
 TEST_F(LogClearTest, BasicClearAll) {
   make_logutil(SELFormat::FRU_ALL, SELFormat::FRU_ALL);
-  logutil->clear({SELFormat::FRU_ALL});
+  logutil->clear({SELFormat::FRU_ALL}, "", "");
   ifstream ifs;
   ifs.open("./logfile.0");
   std::string str;
@@ -203,7 +217,7 @@ TEST_F(LogClearTest, BasicClearAll) {
 
 TEST_F(LogClearTest, BasicClearSys) {
   make_logutil(SELFormat::FRU_SYS, SELFormat::FRU_SYS);
-  logutil->clear({SELFormat::FRU_SYS});
+  logutil->clear({SELFormat::FRU_SYS}, "", "");
   ifstream ifs;
   ifs.open("./logfile.0");
   std::string str;
@@ -226,7 +240,7 @@ TEST_F(LogClearTest, BasicClearSys) {
 
 TEST_F(LogClearTest, BasicClearFru) {
   make_logutil(SELFormat::FRU_ALL, 2);
-  logutil->clear({2});
+  logutil->clear({2}, "", "");
   ifstream ifs;
   ifs.open("./logfile.0");
   std::string str;
@@ -243,5 +257,28 @@ TEST_F(LogClearTest, BasicClearFru) {
   ifs.close();
   exp.str(std::string());
   exp << "2020 Jun 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
+  EXPECT_EQ(str, exp.str());
+}
+
+TEST_F(LogClearTest, BasicClearTimestamp) {
+  make_logutil(SELFormat::FRU_ALL, SELFormat::FRU_ALL);
+  logutil->clear({SELFormat::FRU_ALL}, "2020-05-18 10:18:39", "2020-05-19 00:00:00");
+  ifstream ifs;
+  ifs.open("./logfile.0");
+  std::string str;
+  str.assign(
+      (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+  ifs.close();
+  stringstream exp;
+  exp << " 2020 Apr  6 15:00:40 bmc-oob. user.crit fbtp-v2020.09.1: sensord: ASSERT: Upper Non Critical threshold - raised - FRU: 1, num: 0xC0 curr_val: 8988.00 RPM, thresh_val: 8500.00 RPM, snr: MB_FAN0_TACH\n";
+  EXPECT_EQ(str, exp.str());
+  ifs.open("./logfile");
+  str.assign(
+      (std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+  ifs.close();
+  exp.str(std::string());
+  exp << " 2020 May 18 10:18:38 bmc-oob. user.crit fbtp-9b6bf3961d-dirty: ncsid: FRU: 2 NIC AEN Supported: 0x7, AEN Enable Mask=0x7\n";
+  exp << "2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
+  exp << "2020 Jun 21 17:29:55 log-util: User cleared all logs from 2020-05-18 10:18:39 to 2020-05-19 00:00:00\n";
   EXPECT_EQ(str, exp.str());
 }

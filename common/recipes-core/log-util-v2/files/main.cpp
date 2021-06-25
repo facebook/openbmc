@@ -59,6 +59,10 @@ int main(int argc, char* argv[]) {
       ->needs(print_opt);
   app.add_set("fru", fru, allowed_fru)->required();
 
+  std::string start_time = "", end_time = "";
+  CLI::Option* start_time_opt = app.add_option("-s", start_time, "Starting time for timestamp delete");
+  app.add_option("-e", end_time, "Ending time for timestamp delete")->needs(start_time_opt);
+
   CLI11_PARSE(app, argc, argv);
 
   std::set<uint8_t> action_fru_set;
@@ -82,14 +86,38 @@ int main(int argc, char* argv[]) {
   try {
     LogUtil util;
     if (print) {
-      util.print(action_fru_set, opt_json);
+      if (!start_time.empty() && end_time.empty()) {
+          // Grab the end time as current time
+          time_t rawtime;
+          struct tm* ts;
+          std::array<char, 80> curtime{};
+
+          ::time(&rawtime);
+          ts = localtime(&rawtime);
+          strftime(curtime.data(), curtime.size(), "%Y-%m-%d %H:%M:%S", ts);
+          end_time = curtime.data();
+      }
+      util.print(action_fru_set, start_time, end_time, opt_json);
+
     } else if (clear) {
       Exclusion guard;
       if (guard.error()) {
         throw std::runtime_error("Could not get lock on log");
       }
       pal_log_clear((char*)fru.c_str());
-      util.clear(action_fru_set);
+      if (!start_time.empty() && end_time.empty()) {
+          // Grab the end time as current time
+          time_t rawtime;
+          struct tm* ts;
+          std::array<char, 80> curtime{};
+
+          ::time(&rawtime);
+          ts = localtime(&rawtime);
+          strftime(curtime.data(), curtime.size(), "%Y-%m-%d %H:%M:%S", ts);
+          end_time = curtime.data();
+      }
+
+      util.clear(action_fru_set, start_time, end_time);
     }
   } catch (std::exception& e) {
     std::cerr << e.what() << '\n';

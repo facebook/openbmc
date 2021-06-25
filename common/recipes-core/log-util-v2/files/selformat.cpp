@@ -1,9 +1,12 @@
 #include "selformat.hpp"
 #include "selexception.hpp"
 #include <openbmc/pal.h>
+#include <iostream>
+#include <ctime>
 #include <time.h>
 #include <cstdio>
 #include <regex>
+#include <fstream>
 
 using namespace std::literals;
 
@@ -53,6 +56,21 @@ void SELFormat::set_clear(uint8_t fru) {
   }
   log = get_current_time() + " log-util: User cleared " + name + " logs";
   set_raw(std::move(log));
+}
+
+// needs to set the timestamp specially
+void SELFormat::set_clear_timestamp(uint8_t fru, const std::string& start_time, const std::string& end_time) {
+    std::string log;
+    std::string name;
+    if (fru == FRU_ALL) {
+        name = "all";
+    } else if (fru == FRU_SYS) {
+        name = "sys";
+    } else {
+        name = "FRU: "s + std::to_string(fru);
+    }
+    log = get_current_time() + " log-util: User cleared " + name + " logs from " + start_time + " to " + end_time;
+    set_raw(std::move(log));
 }
 
 void SELFormat::set_raw(std::string&& line) {
@@ -111,6 +129,62 @@ void SELFormat::set_raw(std::string&& line) {
   }
 }
 
+bool SELFormat::fits_time_range(const std::string& start_time, const std::string& end_time) {
+  time_t time_s, time_e, time_c;
+  std::smatch sm;
+
+  // construct the regexes
+  static const std::regex time_match(time_fmt.data());
+  static const std::regex time_match_legacy(time_fmt_legacy.data());
+
+  // not expecting both of these strings to be in the same format just in case
+  if (std::regex_search(start_time, sm, time_match)) {
+    std::tm ts;
+    strptime(sm[0].str().c_str(), "%Y-%m-%d %H:%M:%S", &ts);
+    time_s = std::mktime(&ts);
+  } else if (std::regex_search(start_time, sm, time_match_legacy)) {
+    std::tm ts;
+    strptime(sm[0].str().c_str(), "%m-%d %H:%M:%S", &ts);
+    time_s = std::mktime(&ts);
+  } else {
+    return false;
+  }
+
+  if (std::regex_search(end_time, sm, time_match)) {
+    std::tm ts;
+    strptime(sm[0].str().c_str(), "%Y-%m-%d %H:%M:%S", &ts);
+    time_e = std::mktime(&ts);
+  } else if (std::regex_search(end_time, sm, time_match_legacy)) {
+    std::tm ts;
+    strptime(sm[0].str().c_str(), "%m-%d %H:%M:%S", &ts);
+    time_e = std::mktime(&ts);
+  } else {
+    return false;
+  }
+
+  // time_ is stored in a different format than displayed from what I can tell
+  if (std::regex_search(time_, sm, time_match)) {
+    std::tm ts;
+    strptime(sm[0].str().c_str(), "%Y-%m-%d %H:%M:%S", &ts);
+    time_c = std::mktime(&ts);
+  } else if (std::regex_search(time_, sm, time_match_legacy)) {
+    std::tm ts;
+    strptime(sm[0].str().c_str(), "%m-%d %H:%M:%S", &ts);
+    time_c = std::mktime(&ts);
+  } else {
+    return false;
+  }
+
+  // check if it is too old
+  if (difftime(time_s, time_c) > 0) {
+    return false;
+  }
+  if (difftime(time_c, time_e) > 0) {
+    return false;
+  }
+  return true;
+}
+
 std::string SELFormat::str() const {
   if (bare_)
     return raw_;
@@ -145,4 +219,18 @@ std::istream& operator>>(std::istream& is, SELFormat& s) {
 std::ostream& operator<<(std::ostream& os, const SELFormat& s) {
   os << s.str() << '\n';
   return os;
+}
+
+std::string get_output(const std::string& cmd) {
+  char buffer[128];
+  std::string output;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) {
+    std::cerr << "Failed to open a pipe" << std::endl;
+    return "Error";
+  }
+  while (fgets(buffer, 128, pipe.get()) != NULL) {
+    output += buffer;
+  }
+  return output;
 }

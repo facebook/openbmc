@@ -18,6 +18,6 @@ class LogUtil {
   virtual const std::vector<std::string>& logfile_list() {
     return logfile_list_;
   }
-  void print(const fru_set& frus, bool opt_json, std::ostream& os = std::cout);
-  void clear(const fru_set& frus);
+  void print(const fru_set& frus, const std::string& start_time, const std::string& end_time, bool opt_json, std::ostream& os = std::cout);
+  void clear(const fru_set& frus, const std::string& start_time, const std::string& end_time);
 };

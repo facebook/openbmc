@@ -72,11 +72,6 @@ enum {
 };
 
 typedef struct {
-  const char *dimm_location_file;
-  uint8_t dimm_sensor_num;
-} rc_dimm_location_info;
-
-typedef struct {
   bool is_accuracy;
   uint8_t int_value;
   uint8_t dec_value;
@@ -159,102 +154,6 @@ enum {
   BIC_SENSOR_PVDDR_AB = 0xD8,
   BIC_SENSOR_PVNN_PCH = 0xD9,
   BIC_SENSOR_CAT_ERR = 0xEB, //Event-only
-};
-
-// Sensors under Bridge IC (RC)
-enum {
-  BIC_RC_SENSOR_MB_OUTLET_TEMP = 0x01,
-  BIC_RC_SENSOR_MB_INLET_TEMP = 0x02,
-  BIC_RC_SENSOR_SENSOR_TEMP = 0x03,
-  BIC_RC_SENSOR_SOC_TEMP_DIODE = 0x04,
-  BIC_RC_SENSOR_NVME1_CTEMP = 0x05,
-  BIC_RC_SENSOR_P12V_MB = 0x0A,
-  BIC_RC_SENSOR_P3V3_STBY_MB = 0x0B,
-  BIC_RC_SENSOR_P3V2_MB = 0x0C,
-  BIC_RC_SENSOR_PV_BAT = 0x0D,
-  BIC_RC_SENSOR_PVDDQ_423 = 0x0E,
-  BIC_RC_SENSOR_PVDDQ_510 = 0x0F,
-  BIC_RC_SENSOR_SOC_TEMP_IMC = 0x14,
-  BIC_RC_SENSOR_PMF2432_TEMP = 0x15,
-  BIC_RC_SENSOR_PMF2344_TEMP = 0x16,
-  BIC_RC_SENSOR_CVR_APC_TEMP = 0x17,
-  BIC_RC_SENSOR_CVR_CBF_TEMP = 0x18,
-  BIC_RC_SENSOR_SOC_DIMMB_TEMP = 0x19,
-  BIC_RC_SENSOR_SOC_DIMMA_TEMP = 0x1A,
-  BIC_RC_SENSOR_SOC_DIMMC_TEMP = 0x1B,
-  BIC_RC_SENSOR_SOC_DIMMD_TEMP = 0x1C,
-  BIC_RC_SENSOR_SOC_PWR = 0x1D,
-  BIC_RC_SENSOR_PVDDQ_423_VR_TEMP = 0x28,
-  BIC_RC_SENSOR_PVDDQ_510_VR_TEMP = 0x29,
-  BIC_RC_SENSOR_PVDDQ_423_VR_VOL = 0x2A,
-  BIC_RC_SENSOR_PVDDQ_510_VR_VOL = 0x2B,
-  BIC_RC_SENSOR_CVR_APC_VOL = 0x2C,
-  BIC_RC_SENSOR_CVR_CBF_VOL = 0x2D,
-  BIC_RC_SENSOR_PVDDQ_423_VR_CURR = 0x2E,
-  BIC_RC_SENSOR_PVDDQ_510_VR_CURR = 0x2F,
-  BIC_RC_SENSOR_CVR_APC_CURR = 0x30,
-  BIC_RC_SENSOR_CVR_CBF_CURR = 0x31,
-  BIC_RC_SENSOR_PVDDQ_423_VR_POUT = 0x32,
-  BIC_RC_SENSOR_PVDDQ_510_VR_POUT = 0x33,
-  BIC_RC_SENSOR_CVR_APC_POUT = 0x34,
-  BIC_RC_SENSOR_CVR_CBF_POUT = 0x35,
-  BIC_RC_SENSOR_INA230_VOL = 0x36,
-  BIC_RC_SENSOR_INA230_POWER = 0x37,
-  BIC_RC_SENSOR_SYSTEM_STATUS = 0x10, // Discrete
-  BIC_RC_SENSOR_VR_HOT = 0xB2,  // Discrete
-  BIC_RC_SENSOR_SYS_BOOTING_STS = 0x7E,  // Discrete
-  BIC_RC_SENSOR_PROC_FAIL = 0x65, //Discrete
-  BIC_RC_SENSOR_THROTTLE_STATUS = 0x11, //Event-only
-  BIC_RC_SENSOR_RAS_CRIT = 0xCB,    //Event-only
-  BIC_RC_SENSOR_RAS_INFO = 0xCC,    //Event-only
-  BIC_RC_SENSOR_RAS_FATAL = 0xCD,   //Event-only
-  BIC_RC_SENSOR_POWER_ERR = 0x56,   //Event-only
-};
-
-// Sensors under Bridge IC (EP)
-enum {
-  BIC_EP_SENSOR_MB_INLET_TEMP = 0x01,
-  BIC_EP_SENSOR_VDD_CORE_VR_TEMP = 0x02,
-  BIC_EP_SENSOR_VDD_MEM_VR_TEMP = 0x04,
-  BIC_EP_SENSOR_SOC_TEMP = 0x05,
-  BIC_EP_SENSOR_MB_OUTLET_TEMP = 0x07,
-  BIC_EP_SENSOR_VDD_SOC_VR_TEMP = 0x0B,
-  BIC_EP_SENSOR_MB_OUTLET_TEMP_BOTTOM = 0x0D,
-  BIC_EP_SENSOR_NVME1_CTEMP = 0x0E,
-  BIC_EP_SENSOR_NVME2_CTEMP = 0x0F,
-  BIC_EP_SENSOR_SYSTEM_STATUS = 0x10, //Discrete
-  BIC_EP_SENSOR_VDD_CORE_VR_CURR = 0x20,
-  BIC_EP_SENSOR_VDD_MEM_VR_CURR = 0x21,
-  BIC_EP_SENSOR_VDD_CORE_VR_POUT = 0x22,
-  BIC_EP_SENSOR_VDD_CORE_VR_VOL = 0x24,
-  BIC_EP_SENSOR_INA230_POWER = 0x29,
-  BIC_EP_SENSOR_INA230_VOL = 0x2A,
-  BIC_EP_SENSOR_SOC_PACKAGE_PWR = 0x2C,
-  BIC_EP_SENSOR_VDD_SRAM_VR_POUT = 0x32,
-  BIC_EP_SENSOR_VDD_SOC_VR_CURR = 0x33,
-  BIC_EP_SENSOR_VDD_MEM_VR_VOL = 0x34,
-  BIC_EP_SENSOR_VDD_SRAM_VR_CURR = 0x35,
-  BIC_EP_SENSOR_VDD_SRAM_VR_TEMP = 0x37,
-  BIC_EP_SENSOR_VDD_MEM_VR_POUT = 0x3A,
-  BIC_EP_SENSOR_VDD_SOC_VR_POUT = 0x42,
-  BIC_EP_SENSOR_VDD_SOC_VR_VOL = 0x54,
-  BIC_EP_SENSOR_VDD_SRAM_VR_VOL = 0x55,
-  BIC_EP_SENSOR_POWER_ERR = 0x56, //Event-only
-  BIC_EP_SENSOR_PROC_FAIL = 0x65, //Discrete
-  BIC_EP_SENSOR_VR_HOT = 0xB2, //Discrete
-  BIC_EP_SENSOR_CPU_DIMM_HOT = 0xB3, //Discrete
-  BIC_EP_SENSOR_SOC_DIMMA_TEMP = 0xB4,
-  BIC_EP_SENSOR_SOC_DIMMB_TEMP = 0xB5,
-  BIC_EP_SENSOR_SOC_DIMMC_TEMP = 0xB6,
-  BIC_EP_SENSOR_SOC_DIMMD_TEMP = 0xB7,
-  BIC_EP_SENSOR_P3V3_MB = 0xD0,
-  BIC_EP_SENSOR_P12V_STBY_MB = 0xD2,
-  BIC_EP_SENSOR_P1V8_VDD = 0xD3,
-  BIC_EP_SENSOR_P3V3_STBY_MB = 0xD5,
-  BIC_EP_SENSOR_PVDDQ_CD = 0xD6,
-  BIC_EP_SENSOR_PV_BAT = 0xD7,
-  BIC_EP_SENSOR_PVDDQ_AB = 0xD8,
-  BIC_EP_SENSOR_P0V8_VDD = 0xD9,
 };
 
 // logged from FBEP system firmware
@@ -493,14 +392,6 @@ enum {
 extern const uint8_t bic_sensor_list[];
 extern const uint8_t bic_discrete_list[];
 
-extern const uint8_t bic_rc_sensor_list[];
-extern const uint8_t bic_rc_discrete_list[];
-
-#ifdef CONFIG_FBY2_EP
-  extern const uint8_t bic_ep_sensor_list[];
-  extern const uint8_t bic_ep_discrete_list[];
-#endif
-
 extern const uint8_t dc_sensor_list[];
 
 extern const uint8_t dc_cf_sensor_list[];
@@ -521,20 +412,11 @@ extern const uint8_t bic_nd_sensor_list[];
 extern const uint8_t bic_nd_discrete_list[];
 #endif
 
-//extern float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
-
 extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
 
 extern size_t bic_sensor_cnt;
 
 extern size_t dc_sensor_cnt;
-
-extern size_t bic_rc_sensor_cnt;
-extern size_t bic_rc_discrete_cnt;
-
-#ifdef CONFIG_FBY2_EP
-  extern size_t bic_ep_sensor_cnt;
-#endif
 
 extern size_t bic_discrete_cnt;
 

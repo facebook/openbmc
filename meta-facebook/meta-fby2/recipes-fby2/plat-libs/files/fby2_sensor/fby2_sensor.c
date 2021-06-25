@@ -316,105 +316,6 @@ const uint8_t bic_discrete_list[] = {
   BIC_SENSOR_PROC_FAIL,
 };
 
-// List of BIC (RC) sensors to be monitored
-const uint8_t bic_rc_sensor_list[] = {
-  BIC_RC_SENSOR_MB_OUTLET_TEMP,
-  BIC_RC_SENSOR_MB_INLET_TEMP,
-  BIC_RC_SENSOR_SENSOR_TEMP,
-  BIC_RC_SENSOR_SOC_TEMP_DIODE,
-  BIC_RC_SENSOR_NVME1_CTEMP,
-  BIC_RC_SENSOR_P12V_MB,
-  BIC_RC_SENSOR_P3V3_STBY_MB,
-  BIC_RC_SENSOR_P3V2_MB,
-  BIC_RC_SENSOR_PV_BAT,
-  BIC_RC_SENSOR_PVDDQ_423,
-  BIC_RC_SENSOR_PVDDQ_510,
-  BIC_RC_SENSOR_SOC_TEMP_IMC,
-  BIC_RC_SENSOR_PMF2432_TEMP,
-  BIC_RC_SENSOR_PMF2344_TEMP,
-  BIC_RC_SENSOR_CVR_APC_TEMP,
-  BIC_RC_SENSOR_CVR_CBF_TEMP,
-  BIC_RC_SENSOR_SOC_DIMMB_TEMP,
-  BIC_RC_SENSOR_SOC_DIMMA_TEMP,
-  BIC_RC_SENSOR_SOC_DIMMC_TEMP,
-  BIC_RC_SENSOR_SOC_DIMMD_TEMP,
-  BIC_RC_SENSOR_SOC_PWR,
-  BIC_RC_SENSOR_PVDDQ_423_VR_TEMP,
-  BIC_RC_SENSOR_PVDDQ_510_VR_TEMP,
-  BIC_RC_SENSOR_PVDDQ_423_VR_VOL,
-  BIC_RC_SENSOR_PVDDQ_510_VR_VOL,
-  BIC_RC_SENSOR_CVR_APC_VOL,
-  BIC_RC_SENSOR_CVR_CBF_VOL,
-  BIC_RC_SENSOR_PVDDQ_423_VR_CURR,
-  BIC_RC_SENSOR_PVDDQ_510_VR_CURR,
-  BIC_RC_SENSOR_CVR_APC_CURR,
-  BIC_RC_SENSOR_CVR_CBF_CURR,
-  BIC_RC_SENSOR_PVDDQ_423_VR_POUT,
-  BIC_RC_SENSOR_PVDDQ_510_VR_POUT,
-  BIC_RC_SENSOR_CVR_APC_POUT,
-  BIC_RC_SENSOR_CVR_CBF_POUT,
-  BIC_RC_SENSOR_INA230_VOL,
-  BIC_RC_SENSOR_INA230_POWER,
-};
-
-const uint8_t bic_rc_discrete_list[] = {
-  /* RC discrete sensors */
-  BIC_RC_SENSOR_SYSTEM_STATUS ,
-  BIC_RC_SENSOR_VR_HOT ,
-  BIC_RC_SENSOR_PROC_FAIL,
-};
-
-#ifdef CONFIG_FBY2_EP
-// List of BIC (EP) sensors to be monitored
-const uint8_t bic_ep_sensor_list[] = {
-  BIC_EP_SENSOR_MB_OUTLET_TEMP,
-  BIC_EP_SENSOR_MB_OUTLET_TEMP_BOTTOM,
-  BIC_EP_SENSOR_MB_INLET_TEMP,
-  BIC_EP_SENSOR_NVME1_CTEMP,
-  BIC_EP_SENSOR_NVME2_CTEMP,
-  BIC_EP_SENSOR_SOC_TEMP,
-  BIC_EP_SENSOR_SOC_DIMMA_TEMP,
-  BIC_EP_SENSOR_SOC_DIMMB_TEMP,
-  BIC_EP_SENSOR_SOC_DIMMC_TEMP,
-  BIC_EP_SENSOR_SOC_DIMMD_TEMP,
-  BIC_EP_SENSOR_SOC_PACKAGE_PWR,
-  BIC_EP_SENSOR_VDD_CORE_VR_TEMP,
-  BIC_EP_SENSOR_VDD_SRAM_VR_TEMP,
-  BIC_EP_SENSOR_VDD_MEM_VR_TEMP,
-  BIC_EP_SENSOR_VDD_SOC_VR_TEMP,
-  BIC_EP_SENSOR_VDD_CORE_VR_VOL,
-  BIC_EP_SENSOR_VDD_SRAM_VR_VOL,
-  BIC_EP_SENSOR_VDD_MEM_VR_VOL,
-  BIC_EP_SENSOR_VDD_SOC_VR_VOL,
-  BIC_EP_SENSOR_VDD_CORE_VR_CURR,
-  BIC_EP_SENSOR_VDD_SRAM_VR_CURR,
-  BIC_EP_SENSOR_VDD_MEM_VR_CURR,
-  BIC_EP_SENSOR_VDD_SOC_VR_CURR,
-  BIC_EP_SENSOR_VDD_CORE_VR_POUT,
-  BIC_EP_SENSOR_VDD_SRAM_VR_POUT,
-  BIC_EP_SENSOR_VDD_MEM_VR_POUT,
-  BIC_EP_SENSOR_VDD_SOC_VR_POUT,
-  BIC_EP_SENSOR_P3V3_MB,
-  BIC_EP_SENSOR_P12V_STBY_MB,
-  BIC_EP_SENSOR_P1V8_VDD,
-  BIC_EP_SENSOR_P3V3_STBY_MB,
-  BIC_EP_SENSOR_PVDDQ_AB,
-  BIC_EP_SENSOR_PVDDQ_CD,
-  BIC_EP_SENSOR_PV_BAT,
-  BIC_EP_SENSOR_P0V8_VDD,
-  BIC_EP_SENSOR_INA230_POWER,
-  BIC_EP_SENSOR_INA230_VOL,
-};
-
-const uint8_t bic_ep_discrete_list[] = {
-  /* EP Discrete sensors */
-  BIC_EP_SENSOR_SYSTEM_STATUS,
-  BIC_EP_SENSOR_PROC_FAIL,
-};
-#endif
-
-
-
 // List of SPB sensors to be monitored
 const uint8_t spb_sensor_list[] = {
   SP_SENSOR_INLET_TEMP,
@@ -873,14 +774,6 @@ sensor_thresh_array_init() {
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 
-size_t bic_rc_sensor_cnt = sizeof(bic_rc_sensor_list)/sizeof(uint8_t);
-size_t bic_rc_discrete_cnt = sizeof(bic_rc_discrete_list)/sizeof(uint8_t);
-
-#ifdef CONFIG_FBY2_EP
-size_t bic_ep_sensor_cnt = sizeof(bic_ep_sensor_list)/sizeof(uint8_t);
-size_t bic_ep_discrete_cnt = sizeof(bic_ep_discrete_list)/sizeof(uint8_t);
-#endif
-
 size_t spb_sensor_cnt = sizeof(spb_sensor_list)/sizeof(uint8_t);
 size_t spb_dual_r_fan_sensor_cnt = sizeof(spb_sensor_dual_r_fan_list)/sizeof(uint8_t);
 
@@ -926,14 +819,6 @@ enum ina_register {
   INA230_VOLT = 0x02,
   INA230_POWER = 0x03,
   INA230_CALIBRATION = 0x05,
-};
-
-rc_dimm_location_info rc_dimm_location_list[] = {
-  // {dimm_location_file, dimm_sensor_number}
-  {SYS_CONFIG_PATH "fru%u_dimm0_location", BIC_RC_SENSOR_SOC_DIMMB_TEMP},
-  {SYS_CONFIG_PATH "fru%u_dimm1_location", BIC_RC_SENSOR_SOC_DIMMA_TEMP},
-  {SYS_CONFIG_PATH "fru%u_dimm2_location", BIC_RC_SENSOR_SOC_DIMMC_TEMP},
-  {SYS_CONFIG_PATH "fru%u_dimm3_location", BIC_RC_SENSOR_SOC_DIMMD_TEMP},
 };
 
 #define GET_DEV_VALID_FALG(flag, dev_id) ((flag>>(dev_id-1)) & 1)
@@ -1069,10 +954,6 @@ fby2_get_server_type_directly(uint8_t fru, uint8_t *type) {
     // Use product ID to identify the server type
     if (id->prod_id[0] == 0x39 && id->prod_id[1] == 0x30) {
       *type = SERVER_TYPE_TL;
-    } else if (id->prod_id[0] == 0x43 && id->prod_id[1] == 0x52) {
-      *type = SERVER_TYPE_RC;
-    } else if (id->prod_id[0] == 0x50 && id->prod_id[1] == 0x45) {
-      *type = SERVER_TYPE_EP;
     } else if (id->prod_id[0] == 0x44 && id->prod_id[1] == 0x4E) {
       *type = SERVER_TYPE_ND;
     } else {
@@ -1678,45 +1559,11 @@ read_nic_temp(const char *device, uint8_t addr, float *value) {
 }
 
 static int
-rc_dimm_present_check(uint8_t fru, int index, uint8_t sensor_num) {
-
-  int fd;
-  char path[64] = {0};
-  uint8_t dimm_present_status;
-  int dimm_present_data_size = 1;
-
-  sprintf(path, rc_dimm_location_list[index].dimm_location_file, fru);
-
-  fd = open(path, O_RDONLY);
-  if (fd < 0) {
-    return -1;     //DIMM location file doesn't exist
-  }
-
-  if (read(fd, &dimm_present_status, dimm_present_data_size) != dimm_present_data_size) {
-    close(fd);
-    return -1;
-  }
-
-  switch(dimm_present_status) {
-    case 0x01:     //DIMM present
-      break;
-    case 0xFF:     //DIMM not present
-    default:
-      close(fd);
-      return -1;
-  }
-
-  close(fd);
-  return 0;
-}
-
-static int
 bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     void *value) {
 
   int ret;
   int i;
-  int index;
   sdr_full_t *sdr;
   ipmi_sensor_reading_t sensor;
   ipmi_general_sensor_reading_t *g_sensor = &g_sread[fru-1][sensor_num];
@@ -1733,10 +1580,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       syslog(LOG_ERR, "%s, Get server type failed", __func__);
     }
 
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
     switch(server_type){
-      case SERVER_TYPE_EP:
-      case SERVER_TYPE_RC:
       case SERVER_TYPE_ND:
         break;
       case SERVER_TYPE_TL:
@@ -1748,12 +1592,7 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
       default:
         return -1;
     }
-#else
-    for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
-      if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
-        is_accuracy_sensor = true;
-    }
-#endif
+
     // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR
     if (is_accuracy_sensor) {
       ret = bic_read_accuracy_sensor(fru, sensor_num, &acsensor);
@@ -1776,15 +1615,6 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
     }
 
     msleep(1);  // a little delay to reduce CPU utilization
-
-    if(server_type == SERVER_TYPE_RC) {
-      for(index = 0; index < sizeof(rc_dimm_location_list)/sizeof(rc_dimm_location_info); index++) {
-        if(sensor_num == rc_dimm_location_list[index].dimm_sensor_num) {
-          if(rc_dimm_present_check(fru, index, sensor_num))
-            return EER_READ_NA;
-        }
-      }
-    }
   } else if (slot_type == SLOT_TYPE_GPV2) {
     uint8_t dev_id = DEV_NONE;
     bool frist_dev_sensor = false;
@@ -2814,11 +2644,6 @@ fby2_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
               sprintf(name, "IHDT_PRSNT_ALERT");
               break;
 #endif
-#ifdef CONFIG_FBY2_EP
-            case NBU_ERROR:
-              sprintf(name, "NBU_ERROR");
-              break;
-#endif
             default:
               strcpy(name, "");
               return -1;
@@ -3078,43 +2903,13 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           discrete = false;
 
           i = 0;
-#if defined(CONFIG_FBY2_RC)
-          {
-            uint8_t server_type = 0xFF;
-            ret = fby2_get_server_type(fru, &server_type);
-            if (ret) {
-              syslog(LOG_ERR, "%s, Get server type failed", __func__);
-            }
-            switch (server_type) {
-              case SERVER_TYPE_RC:
-                while (i < bic_rc_discrete_cnt) {
-                  if (sensor_num == bic_rc_discrete_list[i++]) {
-                    discrete = true;
-                    break;
-                  }
-                }
-                break;
-              case SERVER_TYPE_TL:
-                while (i < bic_discrete_cnt) {
-                  if (sensor_num == bic_discrete_list[i++]) {
-                    discrete = true;
-                    break;
-                  }
-                }
-                break;
-              default:
-                syslog(LOG_ERR, "%s, Undefined server type", __func__);
-                return -1;
-            }
-          }
-#else
           while (i < bic_discrete_cnt) {
             if (sensor_num == bic_discrete_list[i++]) {
               discrete = true;
               break;
             }
           }
-#endif
+
           return bic_read_sensor_wrapper(fru, sensor_num, discrete, value);
 #ifdef CONFIG_FBY2_GPV2
         case SLOT_TYPE_GPV2:

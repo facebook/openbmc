@@ -88,9 +88,6 @@
 #define SLOT_RECORD_FILE "/tmp/slot%d.rc"
 #define SERVER_TYPE_FILE "/tmp/server_type%d.bin"
 
-#define RC_BIOS_SIG_OFFSET 0x3F00000
-#define RC_BIOS_IMAGE_SIZE (64*1024*1024)
-
 #define MAX_FW_PCIE_SWITCH_BLOCK_SIZE 1008
 #define LAST_FW_PCIE_SWITCH_TRUNK_SIZE (1008%224)
 
@@ -872,26 +869,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
-
-#ifdef CONFIG_FBY2_RC
-  uint8_t server_type = 0xFF;
-
-  if (comp == FW_ME) {
-    ret = bic_get_server_type(slot_id, &server_type);
-    if (ret) {
-      syslog(LOG_ERR, "%s, Get server type failed for slot%u", __func__, slot_id);
-      return -1;
-    }
-
-    switch (server_type) {
-      case SERVER_TYPE_RC:
-        return get_imc_version(slot_id, ver);
-      case SERVER_TYPE_TL:
-      default:
-        break;
-    }
-  }
-#endif
 
   // Fill the component for which firmware is requested
   tbuf[3] = comp;
@@ -1802,13 +1779,6 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
   }
 
   switch (server_type) {
-    case SERVER_TYPE_RC:
-      return 0;
-    case SERVER_TYPE_EP:
-      sprintf((char*) vr_hdr.prj_name, "F09A");
-      hdr = (uint8_t*)&vr_hdr;
-      hdr_size = 9; // ver (2) + iaan (3) + prj_name (4)
-      break;
     case SERVER_TYPE_ND:
       sprintf((char*) vr_hdr.prj_name, "F09C");
       hdr = (uint8_t*)&vr_hdr;
@@ -1849,10 +1819,9 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   uint8_t hdr_tl[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
   uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
   int offs;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_ND)
   int ret;
   uint8_t server_type = 0xFF;
-  uint8_t hdr_ep[] = {0x01,0x00,0x4c,0x1c,0x00,0xe1,0x2b,0xc0,0x43,0x46,0x30,0x39,0x41};
   uint8_t hdr_nd[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39,0x43};
 
   ret = bic_get_server_type(slot_id, &server_type);
@@ -1862,12 +1831,6 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   }
 
   switch (server_type) {
-    case SERVER_TYPE_RC:
-      return 0;
-    case SERVER_TYPE_EP:
-      hdr = hdr_ep;
-      hdr_size = sizeof(hdr_ep);
-      break;
     case SERVER_TYPE_ND:
       hdr = hdr_nd;
       hdr_size = sizeof(hdr_nd);
@@ -1891,55 +1854,11 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
   return 0;
 }
 
-#if defined(CONFIG_FBY2_RC)
-static int
-check_bios_image_rc(uint8_t slot_id, int fd, long size) {
-
-  uint8_t sig_rc[] = { 0x52, 0x43, 0x5f, 0x55, 0x45, 0x46, 0x49 };
-  uint8_t buf[16] = {0};
-  uint8_t sig_size = sizeof(sig_rc);
-
-  if (size < RC_BIOS_IMAGE_SIZE)
-    return -1;
-
-  lseek(fd, RC_BIOS_SIG_OFFSET, SEEK_SET);
-
-  if(read(fd, buf, sig_size) != sig_size)
-    return -1;
-
-  if (memcmp(buf, sig_rc, sig_size))
-    return -1;
-
-  lseek(fd, 0, SEEK_SET);
-  return 0;
-}
-#endif
-
 static int
 check_bios_image(uint8_t slot_id, int fd, long size) {
   int offs, rcnt, end;
   uint8_t *buf;
   uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
-#if defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_RC)
-  int ret;
-  uint8_t server_type = 0xFF;
-
-  ret = bic_get_server_type(slot_id, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    return -1;
-  }
-
-  switch (server_type) {
-    case SERVER_TYPE_EP:
-      return 0;
-#if defined(CONFIG_FBY2_RC)
-    case SERVER_TYPE_RC:
-      ret = check_bios_image_rc(slot_id, fd, size);
-      return ret;
-#endif
-  }
-#endif
 
   if (size < BIOS_VER_REGION_SIZE)
     return -1;
@@ -3704,11 +3623,7 @@ bic_get_server_type(uint8_t fru, uint8_t *type) {
       ret = bic_get_dev_id(fru, &id);
       if (!ret) {
         // Use product ID to identify the server type
-        if (id.prod_id[0] == 0x43 && id.prod_id[1] == 0x52) {
-          *type = SERVER_TYPE_RC;
-        } else if (id.prod_id[0] == 0x50 && id.prod_id[1] == 0x45) {
-          *type = SERVER_TYPE_EP;
-        } else if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
+        if (id.prod_id[0] == 0x39 && id.prod_id[1] == 0x30) {
           *type = SERVER_TYPE_TL;
         } else if (id.prod_id[0] == 0x44 && id.prod_id[1] == 0x4E) {
           *type = SERVER_TYPE_ND;

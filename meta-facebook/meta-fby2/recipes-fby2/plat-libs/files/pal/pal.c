@@ -1862,9 +1862,6 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
   uint8_t pwr_slot = slot_id;
   int retry;
   uint8_t self_test_result[2]={0};
-#if defined(CONFIG_FBY2_EP)
-  uint8_t server_type;
-#endif
 
   pair_set_type = pal_get_pair_slot_type(slot_id);
   switch(pair_set_type) {
@@ -1999,24 +1996,6 @@ pal_slot_pair_12V_on(uint8_t slot_id) {
          retry--;
          sleep(5);
        }
-
-#if defined(CONFIG_FBY2_EP)
-       retry = 2;
-       while (retry > 0) {
-         ret = fby2_get_server_type(pwr_slot, &server_type);
-         if (!ret) {
-           if (server_type == SERVER_TYPE_EP) {
-             ret = bic_set_pcie_config(pwr_slot, (pair_set_type == TYPE_CF_A_SV) ? 0x2 : 0x1);
-             if (ret == 0)
-               break;
-           } else {
-             break;
-           }
-         }
-         retry--;
-         msleep(100);
-       }
-#endif
 
        sleep(2);  // wait BIC ready to reply Get GPIO Status command
        if (pal_get_server_power(pwr_slot, &status) < 0) {
@@ -2215,33 +2194,8 @@ pal_system_config_check(uint8_t slot_id) {
   // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   slot_type = fby2_get_slot_type(slot_id);
   switch (slot_type) {
-     case SLOT_TYPE_SERVER: {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-       uint8_t server_type = 0xFF;
-       int ret=-1;
-       ret = fby2_get_server_type(slot_id, &server_type);
-       if (ret) {
-         syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-         return ret;
-       }
-       switch (server_type) {
-         case SERVER_TYPE_RC:
-           sprintf(slot_str,"RC");
-           break;
-         case SERVER_TYPE_EP:
-           sprintf(slot_str,"EP");
-           break;
-         case SERVER_TYPE_TL:
-           sprintf(slot_str,"Twin Lakes");
-           break;
-         default:
-           sprintf(slot_str,"Undefined server type");
-           break;
-       }
-#else
+     case SLOT_TYPE_SERVER:
        sprintf(slot_str,"1S Server");
-#endif
-       }
        break;
      case SLOT_TYPE_CF:
        sprintf(slot_str,"Crane Flat");
@@ -2270,34 +2224,8 @@ pal_system_config_check(uint8_t slot_id) {
 
   // 0(Server), 1(Crane Flat), 2(Glacier Point), 3(Empty Slot)
   switch (last_slot_type) {
-     case SLOT_TYPE_SERVER: {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-      int last_server_type = -1;
-       sprintf(vpath, SV_TYPE_RECORD_FILE, slot_id);
-       if (read_device(vpath, &last_server_type)) {
-         syslog(LOG_ERR, "%s, Get last server type failed\n", __func__);
-         return -1;
-       }
-       unlink(vpath);
-
-       switch (last_server_type) {
-         case SERVER_TYPE_RC:
-           sprintf(last_slot_str,"RC");
-           break;
-         case SERVER_TYPE_EP:
-           sprintf(last_slot_str,"EP");
-           break;
-         case SERVER_TYPE_TL:
-           sprintf(last_slot_str,"Twin Lakes");
-           break;
-         default:
-           sprintf(last_slot_str,"Undefined server type");
-           break;
-       }
-#else
+     case SLOT_TYPE_SERVER:
        sprintf(last_slot_str,"1S Server");
-#endif
-       }
        break;
      case SLOT_TYPE_CF:
        sprintf(last_slot_str,"Crane Flat");
@@ -2334,9 +2262,6 @@ server_12v_on(uint8_t slot_id) {
   uint8_t pair_slot_id;
   int pair_set_type=-1;
   uint8_t is_sled_out = 1;
-#if defined(CONFIG_FBY2_EP)
-  uint8_t server_type, config;
-#endif
 
   if (slot_id < 1 || slot_id > 4) {
     return -1;
@@ -2452,25 +2377,6 @@ server_12v_on(uint8_t slot_id) {
     sleep(1);
     retry--;
   }
-
-#if defined(CONFIG_FBY2_EP)
-  retry = 2;
-  while (retry > 0) {
-    ret = fby2_get_server_type(slot_id, &server_type);
-    if (!ret) {
-      if (server_type == SERVER_TYPE_EP) {
-        config = (pair_set_type == TYPE_CF_A_SV) ? 0x2 : (pair_set_type == TYPE_GP_A_SV) ? 0x1 : 0x0;
-        ret = bic_set_pcie_config(slot_id, config);
-        if (ret == 0)
-          break;
-      } else {
-        break;
-      }
-    }
-    retry--;
-    msleep(100);
-  }
-#endif
 
   if (ret) {
     syslog(LOG_INFO, "%s: bic_get_gpio returned error during 12V off to on for fru %d",__func__ ,slot_id);
@@ -4108,7 +4014,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       switch(fby2_get_slot_type(fru))
       {
         case SLOT_TYPE_SERVER: {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_ND)
             uint8_t server_type = 0xFF;
             int ret = -1;
             ret = fby2_get_server_type(fru, &server_type);
@@ -4116,24 +4022,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
               syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
             }
             switch (server_type) {
-#if defined(CONFIG_FBY2_RC)
-              case SERVER_TYPE_RC:
-                *sensor_list = (uint8_t *) bic_rc_sensor_list;
-                *cnt = bic_rc_sensor_cnt;
-                break;
-#endif
-#if defined(CONFIG_FBY2_EP)
-              case SERVER_TYPE_EP:
-                *sensor_list = (uint8_t *) bic_ep_sensor_list;
-                *cnt = bic_ep_sensor_cnt;
-                break;
-#endif
-#if defined(CONFIG_FBY2_ND)
               case SERVER_TYPE_ND:
                 *sensor_list = (uint8_t *) bic_nd_sensor_list;
                 *cnt = bic_nd_sensor_cnt;
                 break;
-#endif
               case SERVER_TYPE_TL:
                 *sensor_list = (uint8_t *) bic_sensor_list;
                 *cnt = bic_sensor_cnt;
@@ -4819,35 +4711,12 @@ pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       if (fby2_get_slot_type(fru) == SLOT_TYPE_SERVER) {
-#ifdef CONFIG_FBY2_RC
-        int ret;
-        uint8_t server_type = 0xFF;
-        ret = fby2_get_server_type(fru, &server_type);
-        if (ret) {
-          syslog(LOG_INFO, "%s, Get server type failed, using Twinlake", __func__);
-        }
-        switch (server_type) {
-          case SERVER_TYPE_RC:
-            break;
-          case SERVER_TYPE_TL:
-            if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
-              *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
-            else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
-              *flag = GETMASK(SENSOR_VALID);
-            else if (snr_num == BIC_SENSOR_SOC_TJMAX)
-              *flag = GETMASK(SENSOR_VALID);
-            break;
-          default:
-            break;
-        }
-#else
         if (snr_num == BIC_SENSOR_SOC_THERM_MARGIN)
           *flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH);
         else if (snr_num == BIC_SENSOR_SOC_PACKAGE_PWR)
           *flag = GETMASK(SENSOR_VALID);
         else if (snr_num == BIC_SENSOR_SOC_TJMAX)
           *flag = GETMASK(SENSOR_VALID);
-#endif
       }
       break;
     case FRU_SPB:
@@ -5455,7 +5324,7 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_SLOT3:
     case FRU_SLOT4:
       if (pal_is_slot_server(fru)) {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_ND)
         int ret = -1;
         uint8_t server_type = 0xFF;
         ret = fby2_get_server_type(fru, &server_type);
@@ -5463,20 +5332,14 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
           syslog(LOG_ERR, "%s, Get server type failed", __func__);
         }
         switch (server_type) {
-          case SERVER_TYPE_RC:
-            *sensor_list = (uint8_t *) bic_rc_discrete_list;
-            *cnt = bic_rc_discrete_cnt;
-            break;
           case SERVER_TYPE_TL:
             *sensor_list = (uint8_t *) bic_discrete_list;
             *cnt = bic_discrete_cnt;
             break;
-#ifdef CONFIG_FBY2_ND
           case SERVER_TYPE_ND:
             *sensor_list = (uint8_t *) bic_nd_discrete_list;
             *cnt = bic_discrete_cnt;
             break;
-#endif
           default:
             syslog(LOG_ERR, "%s, Undefined server type, using Twin Lake discrete sensor list as default", __func__);
             *sensor_list = (uint8_t *) bic_discrete_list;
@@ -5518,67 +5381,6 @@ _print_sensor_discrete_log(uint8_t fru, uint8_t snr_num, char *snr_name,
   }
   pal_update_ts_sled();
 }
-
-#if defined(CONFIG_FBY2_RC)
-void
-pal_sensor_discrete_check_rc(uint8_t fru, uint8_t snr_num, char *snr_name,
-    uint8_t o_val, uint8_t n_val) {
-
-  char name[32], crisel[128];
-  bool valid = false;
-  uint8_t diff = o_val ^ n_val;
-
-  if (GETBIT(diff, 1)) {
-    switch(snr_num) {
-      case BIC_RC_SENSOR_VR_HOT:
-        sprintf(name, "510_VR_Hot");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 1), name);
-      valid = false;
-    }
-  }
-
-  if (GETBIT(diff, 2)) {
-    switch(snr_num) {
-      case BIC_RC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "CPU0_Thermal_Trip");
-        valid = true;
-
-        sprintf(crisel, "%s - %s,FRU:%u", name, GETBIT(n_val, 2)?"ASSERT":"DEASSERT", fru);
-        pal_add_cri_sel(crisel);
-        break;
-      case BIC_RC_SENSOR_VR_HOT:
-        sprintf(name, "423_VR_Hot");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 2), name);
-      valid = false;
-    }
-  }
-
-  if (GETBIT(diff, 4)) {
-    switch(snr_num) {
-      case BIC_RC_SENSOR_SYSTEM_STATUS:
-        sprintf(name, "CPU0_FIVR_Fault");
-        valid = true;
-        break;
-      case BIC_RC_SENSOR_PROC_FAIL:
-        sprintf(name, "FRB3");
-        valid = true;
-        break;
-    }
-    if (valid) {
-      _print_sensor_discrete_log(fru, snr_num, snr_name, GETBIT(n_val, 4), name);
-      valid = false;
-    }
-  }
-}
-#endif
 
 void
 pal_sensor_discrete_check_tl(uint8_t fru, uint8_t snr_num, char *snr_name,
@@ -5662,54 +5464,9 @@ pal_sensor_discrete_check_tl(uint8_t fru, uint8_t snr_num, char *snr_name,
 int
 pal_sensor_discrete_check(uint8_t fru, uint8_t snr_num, char *snr_name,
     uint8_t o_val, uint8_t n_val) {
-#if defined(CONFIG_FBY2_RC)
-  int ret = -1;
-  uint8_t server_type = 0xFF;
-  ret = fby2_get_server_type(fru, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-  }
-  switch (server_type) {
-    case SERVER_TYPE_RC:
-      pal_sensor_discrete_check_rc(fru, snr_num, snr_name, o_val, n_val);
-      break;
-    case SERVER_TYPE_TL:
-      pal_sensor_discrete_check_tl(fru, snr_num, snr_name, o_val, n_val);
-      break;
-    default:
-      syslog(LOG_ERR, "%s, Undefined server type", __func__);
-      return -1;
-  }
-#else
   pal_sensor_discrete_check_tl(fru, snr_num, snr_name, o_val, n_val);
-#endif
-
   return 0;
 }
-
-#if defined(CONFIG_FBY2_RC)
-int
-fby2_rc_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
-
-  switch(sensor_num) {
-    case BIC_RC_SENSOR_RAS_CRIT:
-      sprintf(name, "RAS_CRITICAL");
-      break;
-    case BIC_RC_SENSOR_RAS_INFO:
-      sprintf(name, "RAS_INFO");
-      break;
-    case BIC_RC_SENSOR_RAS_FATAL:
-      sprintf(name, "RAS_FATAL");
-      break;
-    case BIC_RC_SENSOR_THROTTLE_STATUS:
-      sprintf(name, "THROTTLE_STATUS");
-      break;
-    default:
-      return -1;
-  }
-  return 0;
-}
-#endif
 
 int
 pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
@@ -5728,26 +5485,6 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
       }
       return 0;
   }
-
-#if defined(CONFIG_FBY2_RC)
-  {
-    uint8_t server_type = 0xFF;
-    int ret = -1;
-    ret = fby2_get_server_type(fru, &server_type);
-    if (ret) {
-      syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    }
-    switch(server_type){
-      case SERVER_TYPE_RC:
-        if(fby2_rc_event_sensor_name(fru, snr_num, name) == 0) {
-          return 0;
-        }
-        break;
-      case SERVER_TYPE_TL:
-        break;
-    }
-  }
-#endif
 
   // Otherwise, translate it based on snr_num
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
@@ -5769,18 +5506,6 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 
   return fby2_common_crashdump(fru, ierr, false);
 }
-
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-static int
-pal_store_cpld_dump(uint8_t fru) {
-  return fby2_common_cpld_dump(fru);
-}
-
-static int
-pal_store_sboot_cpld_dump(uint8_t fru) {
-  return fby2_common_sboot_cpld_dump(fru);
-}
-#endif
 
 void pal_notify_nic(uint8_t slot) {
   struct timespec ts;
@@ -5814,7 +5539,7 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
     case FRU_SLOT3:
     case FRU_SLOT4:
     {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND)
+#if defined(CONFIG_FBY2_ND)
       int ret;
       uint8_t server_type = 0xFF;
       ret = fby2_get_server_type(fru, &server_type);
@@ -5823,42 +5548,12 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       }
 
       switch (server_type) {
-#if defined(CONFIG_FBY2_RC)
-        case SERVER_TYPE_RC:
-          switch(snr_num) {
-            case BIC_RC_SENSOR_POWER_ERR:
-              if (event_data[3] == 0x02) {   // 01h:PWR FAIL, 02h:SLOW BOOT
-                pal_store_sboot_cpld_dump(fru);
-              } else {
-                pal_store_cpld_dump(fru);
-              }
-              break;
-
-            case 0x00:  // don't care sensor number 00h
-              return 0;
-          }
-          break;
-#endif
-#if defined(CONFIG_FBY2_EP)
-        case SERVER_TYPE_EP:
-          switch(snr_num) {
-            case BIC_EP_SENSOR_POWER_ERR:
-              pal_store_cpld_dump(fru);
-              break;
-
-            case 0x00:  // don't care sensor number 00h
-              return 0;
-          }
-          break;
-#endif
-#if defined(CONFIG_FBY2_ND)
         case SERVER_TYPE_ND:
           switch(snr_num) {
             case 0x00:  // don't care sensor number 00h
               return 0;
           }
           break;
-#endif
         case SERVER_TYPE_TL:
           switch(snr_num) {
             case CATERR_B:
@@ -5950,289 +5645,6 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel)
   /* Write the value "0" which means FRU_STATUS_BAD */
   return pal_set_key_value(key, "0");
 }
-
-#if defined(CONFIG_FBY2_RC)
-int
-pal_parse_sel_rc(uint8_t fru, uint8_t *sel, char *error_log)
-{
-  uint8_t snr_num = sel[11];
-  uint8_t *event_data = &sel[10];
-  uint8_t *ed = &event_data[3];
-  bool parsed = false;
-  char crisel[128];
-
-  switch(snr_num) {
-    case PROCHOT_EXT:
-      strcpy(error_log, "");
-      parsed = true;
-
-      sprintf(crisel, "PROCHOT ASSERT,FRU:%u", fru);
-      pal_add_cri_sel(crisel);
-      break;
-    case BIC_RC_SENSOR_POWER_ERR:
-      strcpy(error_log, "");
-      if (ed[0] == 0x1) {
-        strcat(error_log, "SYS_PWROK failure");
-        /* Also try logging to Critial log file, if available */
-        sprintf(crisel, "SYS_PWROK failure,FRU:%u", fru);
-        pal_add_cri_sel(crisel);
-      } else if (ed[0] == 0x2) {
-        strcat(error_log, "Slow Boot");
-        /* Also try logging to Critial log file, if available */
-        sprintf(crisel, "Slow Boot,FRU:%u", fru);
-        pal_add_cri_sel(crisel);
-      }
-      else
-        strcat(error_log, "Unknown");
-
-      parsed = true;
-      break;
-    case BIC_RC_SENSOR_RAS_CRIT:
-    case BIC_RC_SENSOR_RAS_INFO:
-    case BIC_RC_SENSOR_RAS_FATAL:
-      strcpy(error_log, "");
-      switch (ed[0] & 0x0F) {
-        case 0x01:
-          strcat(error_log, "State Asserted");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-    case BIC_RC_SENSOR_PROC_FAIL:
-      strcpy(error_log, "");
-      if (ed[0] == 0x05) {
-        strcat(error_log, "Configuration Error - Secure Boot Failure");
-      } else {
-        strcat(error_log, "Unknown");
-      }
-      parsed = true;
-      break;
-    case BIC_RC_SENSOR_THROTTLE_STATUS:
-      strcpy(error_log, "");
-      switch (ed[0]) {
-        case 0x00:
-          strcat(error_log, "INA230_Throttle");
-          break;
-        case 0x01:
-          strcat(error_log, "DDR2_Event_Throttle");
-          break;
-        case 0x02:
-          strcat(error_log, "DDR3_Event_Throttle");
-          break;
-        case 0x03:
-          strcat(error_log, "DDR4_Event_Throttle");
-          break;
-        case 0x04:
-          strcat(error_log, "DDR5_Event_Throttle");
-          break;
-        case 0x05:
-          strcat(error_log, "APC_CBF_Hot_Throttle");
-          break;
-        case 0x06:
-          strcat(error_log, "VR510_Hot_Throttle");
-          break;
-        case 0x07:
-          strcat(error_log, "VR423_Hot_Throttle");
-          break;
-        case 0x08:
-          strcat(error_log, "Fast_Throttle");
-          break;
-        case 0x09:
-          strcat(error_log, "QDF_Throttle");
-          break;
-        case 0x0A:
-          strcat(error_log, "QDF_Light_Throttle");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-  }
-
-  if (parsed == true) {
-    if ((event_data[2] & 0x80) == 0) {
-      strcat(error_log, " Assertion");
-    } else {
-      strcat(error_log, " Deassertion");
-    }
-    return 0;
-  }
-
-  pal_parse_sel_helper(fru, sel, error_log);
-
-  return 0;
-}
-#endif
-
-#if defined(CONFIG_FBY2_EP)
-int
-pal_parse_sel_ep(uint8_t fru, uint8_t *sel, char *error_log)
-{
-  uint8_t snr_num = sel[11];
-  uint8_t *event_data = &sel[10];
-  uint8_t *ed = &event_data[3];
-  uint8_t sen_type = event_data[0];
-  char temp_log[512] = {0};
-  bool parsed = false;
-
-  switch(snr_num) {
-    case MEMORY_ECC_ERR:
-    case MEMORY_ERR_LOG_DIS:
-      strcpy(error_log, "");
-      if (snr_num == MEMORY_ECC_ERR) {
-        // SEL from MEMORY_ECC_ERR Sensor
-        if ((ed[0] & 0x0F) == 0x0) {
-          if (sen_type == 0x0C) {
-            strcat(error_log, "Correctable");
-          } else if (sen_type == 0x10)
-            strcat(error_log, "Correctable ECC error Logging Disabled");
-        } else if ((ed[0] & 0x0F) == 0x1) {
-          strcat(error_log, "Uncorrectable");
-        } else if ((ed[0] & 0x0F) == 0x2) {
-          strcat(error_log, "Parity Error");
-        } else if ((ed[0] & 0x0F) == 0x5)
-          strcat(error_log, "Correctable ECC error Logging Limit Reached");
-        else
-          strcat(error_log, "Unknown");
-      } else {
-        // SEL from MEMORY_ERR_LOG_DIS Sensor
-        if ((ed[0] & 0x0F) == 0x0)
-          strcat(error_log, "Correctable Memory Error Logging Disabled");
-        else
-          strcat(error_log, "Unknown");
-      }
-
-      if (((ed[1] & 0xC) >> 2) == 0x0) {  /* All Info Valid */
-        /* If critical SEL logging is available, do it */
-        if (sen_type == 0x0C) {
-          if ((ed[0] & 0x0F) == 0x0) {
-            sprintf(temp_log, "DIMM%02X ECC err,FRU:%u", ed[2], fru);
-            pal_add_cri_sel(temp_log);
-          } else if ((ed[0] & 0x0F) == 0x1) {
-            sprintf(temp_log, "DIMM%02X UECC err,FRU:%u", ed[2], fru);
-            pal_add_cri_sel(temp_log);
-          } else if ((ed[0] & 0x0F) == 0x2) {
-            sprintf(temp_log, "DIMM%02X Parity err,FRU:%u", ed[2], fru);
-            pal_add_cri_sel(temp_log);
-          }
-        }
-        /* Then continue parse the error into a string. */
-        /* All Info Valid                               */
-        sprintf(temp_log, " (DIMM %02X) Logical Rank %d", ed[2], ed[1] & 0x03);
-      } else if (((ed[1] & 0xC) >> 2) == 0x1) {
-        /* DIMM info not valid */
-        sprintf(temp_log, " (CPU# %d, CHN# %d)",
-            (ed[2] & 0xE0) >> 5, (ed[2] & 0x1C) >> 2);
-      } else if (((ed[1] & 0xC) >> 2) == 0x2) {
-        /* CHN info not valid */
-        sprintf(temp_log, " (CPU# %d, DIMM# %d)",
-            (ed[2] & 0xE0) >> 5, ed[2] & 0x3);
-      } else if (((ed[1] & 0xC) >> 2) == 0x3) {
-        /* CPU info not valid */
-        sprintf(temp_log, " (CHN# %d, DIMM# %d)",
-            (ed[2] & 0x1C) >> 2, ed[2] & 0x3);
-      }
-      strcat(error_log, temp_log);
-      parsed = true;
-      break;
-    case BIC_EP_SENSOR_SYSTEM_STATUS:
-      strcpy(error_log, "");
-      switch (ed[0] & 0x0F) {
-        case 0x05:
-          strcat(error_log, "HSC_Throttle");
-          break;
-        case 0x06:
-          strcat(error_log, "MB_Throttle");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-    case BIC_EP_SENSOR_VR_HOT:
-      strcpy(error_log, "");
-      switch (ed[0] & 0x0F) {
-        case 0x00:
-          strcat(error_log, "SRAM_CORE_VR_HOT");
-          break;
-        case 0x01:
-          strcat(error_log, "MEM_SOC_VR_HOT");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-    case BIC_EP_SENSOR_CPU_DIMM_HOT:
-      strcpy(error_log, "");
-      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x00FFFF)
-        strcat(error_log, "PROCHOT");
-      else
-        strcat(error_log, "Unknown");
-      sprintf(temp_log, "CPU_DIMM_HOT %s", error_log);
-      pal_add_cri_sel(temp_log);
-      parsed = true;
-      break;
-    case NBU_ERROR:
-      strcpy(error_log, "");
-      if (ed[0] == 0xAB) {
-        strcat(error_log, "Uncorrectable");
-      } else if (ed[0] == 0xAC) {
-        strcat(error_log, "Correctable");
-      } else {
-        strcat(error_log, "Unknown");
-      }
-      sprintf(temp_log, " (POST code %02X) ", ed[1]);
-      strcat(error_log, temp_log);
-      switch (ed[2]) {
-        case 0x00:
-          strcat(error_log, "NBU Tag Correctable ECC Error");
-          break;
-        case 0x01:
-          strcat(error_log, "NBU Tag Uncorrectable ECC Error");
-          break;
-        case 0x02:
-          strcat(error_log, "NBU BAR Address Error");
-          break;
-        case 0x03:
-          strcat(error_log, "NBU Snoop Filter Correctable ECC Error");
-          break;
-        case 0x04:
-          strcat(error_log, "NBU Snoop Filter Uncorrectable ECC Error");
-          break;
-        case 0x05:
-          strcat(error_log, "NBU Timeout Error");
-          break;
-        default:
-          strcat(error_log, "Unknown");
-          break;
-      }
-      parsed = true;
-      break;
-  }
-
-  if (parsed == true) {
-    if ((event_data[2] & 0x80) == 0) {
-      strcat(error_log, " Assertion");
-    } else {
-      strcat(error_log, " Deassertion");
-    }
-    return 0;
-  }
-
-  pal_parse_sel_helper(fru, sel, error_log);
-
-  return 0;
-
-}
-#endif
 
 #if defined(CONFIG_FBY2_ND)
 int
@@ -6942,7 +6354,7 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP) || defined(CONFIG_FBY2_ND) || defined(CONFIG_FBY2_GPV2)
+#if defined(CONFIG_FBY2_ND) || defined(CONFIG_FBY2_GPV2)
   int ret = -1;
   uint8_t slot_type = 0xFF;
   uint8_t server_type = 0xFF;
@@ -6955,24 +6367,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
       syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
     }
 
-    if (server_type > SERVER_TYPE_EP) {
-      ret = fby2_get_server_type_directly(fru, &server_type);
-      if (ret) {
-        syslog(LOG_ERR, "%s, Get server type directly failed", __func__);
-      }
-    }
-
     switch (server_type) {
-  #if defined(CONFIG_FBY2_RC)
-      case SERVER_TYPE_RC:
-        pal_parse_sel_rc(fru, sel, error_log);
-        break;
-  #endif
-  #if defined(CONFIG_FBY2_EP)
-      case SERVER_TYPE_EP:
-        pal_parse_sel_ep(fru, sel, error_log);
-        break;
-  #endif
   #if defined(CONFIG_FBY2_ND)
       case SERVER_TYPE_ND:
         pal_parse_sel_nd(fru, sel, error_log);
@@ -8448,18 +7843,7 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
 	int i;
 	int completion_code = CC_UNSPECIFIED_ERROR;
 	*res_len = 0;
-#if defined(CONFIG_FBY2_EP)
-	int ret;
-	uint8_t server_type = 0xFF;
-	ret = fby2_get_server_type(slot, &server_type);
-	if (ret) {
-		syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-	}
 
-	if (server_type == SERVER_TYPE_EP) {
-		return CC_INVALID_CMD;
-	}
-#endif
 	sprintf(key, "slot%d_cpu_ppin", slot);
 
 	for (i = 0; i < SIZE_CPU_PPIN; i++) {
@@ -8926,40 +8310,6 @@ pal_sensor_assert_handle_nd(uint8_t fru, uint8_t snr_num, float val, char* thres
 }
 
 void
-pal_sensor_assert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
-  char crisel[128];
-  sensor_desc_t *snr_desc;
-
-  switch (snr_num) {
-    case BIC_RC_SENSOR_SOC_TEMP_DIODE:
-      sprintf(crisel, "SOC Temp DIODE %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
-      break;
-    case BIC_RC_SENSOR_SOC_TEMP_IMC:
-      sprintf(crisel, "SOC Temp IMC %s %.0fC - ASSERT,FRU:%u", thresh_name, val, fru);
-      break;
-    case BIC_RC_SENSOR_P12V_MB:
-    case BIC_RC_SENSOR_P3V3_STBY_MB:
-    case BIC_RC_SENSOR_P3V2_MB:
-    case BIC_RC_SENSOR_PV_BAT:
-    case BIC_RC_SENSOR_PVDDQ_423:
-    case BIC_RC_SENSOR_PVDDQ_510:
-    case BIC_RC_SENSOR_PVDDQ_423_VR_VOL:
-    case BIC_RC_SENSOR_PVDDQ_510_VR_VOL:
-    case BIC_RC_SENSOR_CVR_APC_VOL:
-    case BIC_RC_SENSOR_CVR_CBF_VOL:
-    case BIC_RC_SENSOR_INA230_VOL:
-      snr_desc = get_sensor_desc(fru, snr_num);
-      sprintf(crisel, "%s %s %.2fV - ASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
-      break;
-    default:
-      return;
-  }
-
-  pal_add_cri_sel(crisel);
-  return;
-}
-
-void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char crisel[128];
   char thresh_name[8];
@@ -9002,11 +8352,6 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
           return;
         }
         switch (server_type) {
-#if defined(CONFIG_FBY2_RC)
-          case SERVER_TYPE_RC:
-            pal_sensor_assert_handle_rc(fru, snr_num, val, thresh_name);
-            break;
-#endif
 #if defined(CONFIG_FBY2_ND)
           case SERVER_TYPE_ND:
             pal_sensor_assert_handle_nd(fru, snr_num, val, thresh_name);
@@ -9185,40 +8530,6 @@ pal_sensor_deassert_handle_nd(uint8_t fru, uint8_t snr_num, float val, char* thr
 }
 
 void
-pal_sensor_deassert_handle_rc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
-  char crisel[128];
-  sensor_desc_t *snr_desc;
-
-  switch (snr_num) {
-    case BIC_RC_SENSOR_SOC_TEMP_DIODE:
-      sprintf(crisel, "SOC Temp DIODE %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
-      break;
-    case BIC_RC_SENSOR_SOC_TEMP_IMC:
-      sprintf(crisel, "SOC Temp IMC %s %.0fC - DEASSERT,FRU:%u", thresh_name, val, fru);
-      break;
-    case BIC_RC_SENSOR_P12V_MB:
-    case BIC_RC_SENSOR_P3V3_STBY_MB:
-    case BIC_RC_SENSOR_P3V2_MB:
-    case BIC_RC_SENSOR_PV_BAT:
-    case BIC_RC_SENSOR_PVDDQ_423:
-    case BIC_RC_SENSOR_PVDDQ_510:
-    case BIC_RC_SENSOR_PVDDQ_423_VR_VOL:
-    case BIC_RC_SENSOR_PVDDQ_510_VR_VOL:
-    case BIC_RC_SENSOR_CVR_APC_VOL:
-    case BIC_RC_SENSOR_CVR_CBF_VOL:
-    case BIC_RC_SENSOR_INA230_VOL:
-      snr_desc = get_sensor_desc(fru, snr_num);
-      sprintf(crisel, "%s %s %.2fV - DEASSERT,FRU:%u", snr_desc->name, thresh_name, val, fru);
-      break;
-    default:
-      return;
-  }
-
-  pal_add_cri_sel(crisel);
-  return;
-}
-
-void
 pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char crisel[128];
   char thresh_name[8];
@@ -9261,11 +8572,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
           return;
         }
         switch (server_type) {
-#if defined(CONFIG_FBY2_RC)
-          case SERVER_TYPE_RC:
-            pal_sensor_deassert_handle_rc(fru, snr_num, val, thresh_name);
-            break;
-#endif
 #if defined(CONFIG_FBY2_ND)
           case SERVER_TYPE_ND:
             pal_sensor_deassert_handle_nd(fru, snr_num, val, thresh_name);
@@ -9391,25 +8697,6 @@ int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   uint8_t max_index = FW_P1V05_VR;
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-  int ret;
-  uint8_t server_type = 0xFF;
-
-  ret = fby2_get_server_type(fru, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    return -1;
-  }
-
-  switch (server_type) {
-    case SERVER_TYPE_RC:
-      max_index = FW_DDR423_VR;
-      break;
-    case SERVER_TYPE_EP:
-      max_index = FW_DDR_BH_VR;
-      break;
-  }
-#endif
 
   if (target > max_index)
     return -1;
@@ -9427,42 +8714,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
         *res_len = 2;
         break;
       default:
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-        switch (server_type) {
-          case SERVER_TYPE_RC:
-            switch (target) {
-              case FW_IMC:
-                *res_len = 8;
-                break;
-              default:
-                *res_len = 5;
-                break;
-            }
-            break;
-          case SERVER_TYPE_EP:
-            switch (target) {
-              case FW_M3:
-              case FW_DDR_AG_VR:
-              case FW_DDR_BH_VR:
-                *res_len = 2;
-                break;
-              default:
-                *res_len = 4;
-                break;
-            }
-            break;
-          default:
-            switch (target) {
-              case FW_ME:
-                *res_len = 5;
-                break;
-              default:
-                *res_len = 4;
-                break;
-            }
-            break;
-        }
-#else
         switch (target) {
           case FW_ME:
             *res_len = 5;
@@ -9471,7 +8722,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
             *res_len = 4;
             break;
         }
-#endif
         break;
     }
   } else {
@@ -10174,31 +9424,7 @@ pal_is_mcu_ready(uint8_t bus) {
 
 void
 pal_get_me_name(uint8_t fru, char *target_name) {
-#if defined(CONFIG_FBY2_RC) || defined(CONFIG_FBY2_EP)
-  int ret;
-  uint8_t server_type = 0xFF;
-
-  ret = fby2_get_server_type(fru, &server_type);
-  if (ret) {
-    syslog(LOG_ERR, "%s, Get server type failed\n", __func__);
-    return;
-  }
-
-  switch (server_type) {
-    case SERVER_TYPE_RC:
-      strcpy(target_name, "IMC");
-      break;
-    case SERVER_TYPE_EP:
-      strcpy(target_name, "M3");
-      break;
-    case SERVER_TYPE_TL:
-    default:
-      strcpy(target_name, "ME");
-      break;
-  }
-#else
   strcpy(target_name, "ME");
-#endif
   return;
 }
 

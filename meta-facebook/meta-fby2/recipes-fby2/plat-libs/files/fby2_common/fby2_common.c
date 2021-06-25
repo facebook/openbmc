@@ -40,12 +40,6 @@
 #define CRASHDUMP_FILE      "/mnt/data/crashdump_"
 #define CRASHDUMP_PID       "/var/run/autodump%d.pid"
 
-#define CPLDDUMP_BIN       "/usr/local/bin/cpld-dump.sh"
-#define CPLDDUMP_PID       "/var/run/cplddump%d.pid"
-
-#define SBOOT_CPLDDUMP_BIN       "/usr/local/bin/sboot-cpld-dump.sh"
-#define SBOOT_CPLDDUMP_PID       "/var/run/sbootcplddump%d.pid"
-
 #define FAN_CONFIG_FILE "/tmp/fan_config"
 
 #define PTHREAD_SET_CANCEL_ENABLE() do {                                          \
@@ -64,10 +58,6 @@ struct threadinfo {
 };
 
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
-
-static struct threadinfo t_cpld_dump[MAX_NUM_FRUS] = {0, };
-
-static struct threadinfo t_sboot_cpld_dump[MAX_NUM_FRUS] = {0, };
 
 int
 fby2_common_fru_name(uint8_t fru, char *str) {
@@ -688,160 +678,6 @@ fby2_common_get_ierr(uint8_t fru, bool *value) {
   } else {
     *value = false;
   }
-  return 0;
-}
-
-void *
-generate_cpld_dump(void *arg) {
-
-  uint8_t fru = *(uint8_t *) arg;
-  char cmd[128];
-  char fname[112];
-  char fruname[16];
-
-  // Usually the pthread cancel state are enable by default but
-  // here we explicitly would like to enable them
-  PTHREAD_SET_CANCEL_ENABLE();
-
-  fby2_common_fru_name(fru, fruname);
-
-  memset(fname, 0, sizeof(fname));
-  sprintf(fname, CPLDDUMP_PID, fru);
-  if (access(fname, F_OK) == 0) {
-    memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd,"rm %s",fname);
-    log_system(cmd);
-  }
-
-  // Execute automatic CPLD dump
-  memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s", CPLDDUMP_BIN, fruname);
-  log_system(cmd);
-
-  t_cpld_dump[fru-1].is_running = 0;
-
-  pthread_exit(NULL);
-}
-
-void *
-generate_sboot_cpld_dump(void *arg) {
-
-  uint8_t fru = *(uint8_t *) arg;
-  char cmd[128];
-  char fname[120];
-  char fruname[16];
-
-  // Usually the pthread cancel state are enable by default but
-  // here we explicitly would like to enable them
-  PTHREAD_SET_CANCEL_ENABLE();
-
-  fby2_common_fru_name(fru, fruname);
-
-  memset(fname, 0, sizeof(fname));
-  sprintf(fname, SBOOT_CPLDDUMP_PID, fru);
-  if (access(fname, F_OK) == 0) {
-    memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd,"rm %s",fname);
-    log_system(cmd);
-  }
-
-  // Execute automatic CPLD dump for slow boot
-  memset(cmd, 0, 128);
-  sprintf(cmd, "%s %s", SBOOT_CPLDDUMP_BIN, fruname);
-  log_system(cmd);
-
-  t_sboot_cpld_dump[fru-1].is_running = 0;
-
-  pthread_exit(NULL);
-}
-
-int
-fby2_common_cpld_dump(uint8_t fru) {
-
-  int ret;
-  char cmd[100];
-
-  // Check if the CPLD dump script exist
-  if (access(CPLDDUMP_BIN, F_OK) == -1) {
-    syslog(LOG_CRIT, "fby2_common_cpld_dump:CPLD dump for FRU: %d failed : "
-        "cpld dump binary is not present", fru);
-    return 0;
-  }
-
-  // Check if CPLD dump for that fru is already running.
-  // If yes, kill that thread and start a new one.
-  if (t_cpld_dump[fru-1].is_running) {
-    ret = pthread_cancel(t_cpld_dump[fru-1].pt);
-    if (ret == ESRCH) {
-      syslog(LOG_INFO, "fby2_common_cpld_dump: No CPLD dump pthread exists");
-    } else {
-      pthread_join(t_cpld_dump[fru-1].pt, NULL);
-      sprintf(cmd, "ps | grep '{cpld-dump.sh}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      log_system(cmd);
-#ifdef DEBUG
-      syslog(LOG_INFO, "fby2_common_cpld_dump: Previous CPLD dump thread is cancelled");
-#endif
-    }
-  }
-
-  // Start a thread to generate the CPLD dump
-  t_cpld_dump[fru-1].fru = fru;
-
-  if (pthread_create(&(t_cpld_dump[fru-1].pt), NULL, generate_cpld_dump, (void*) &t_cpld_dump[fru-1].fru) < 0) {
-    syslog(LOG_WARNING, "fby2_common_cpld_dump: pthread_create for"
-      " FRU %d failed\n", fru);
-    return -1;
-  }
-
-  t_cpld_dump[fru-1].is_running = 1;
-
-  syslog(LOG_INFO, "fby2_common_cpld_dump: CPLD dump for FRU: %d is being generated.", fru);
-
-  return 0;
-}
-
-int
-fby2_common_sboot_cpld_dump(uint8_t fru) {
-
-  int ret;
-  char cmd[100];
-
-  // Check if the CPLD dump script exist for slow boot
-  if (access(SBOOT_CPLDDUMP_BIN, F_OK) == -1) {
-    syslog(LOG_CRIT, "fby2_common_sboot_cpld_dump:CPLD dump for FRU: %d failed : "
-        "cpld dump binary for slow boot is not present", fru);
-    return 0;
-  }
-
-  // Check if CPLD dump of slow boot for that fru is already running.
-  // If yes, kill that thread and start a new one.
-  if (t_sboot_cpld_dump[fru-1].is_running) {
-    ret = pthread_cancel(t_sboot_cpld_dump[fru-1].pt);
-    if (ret == ESRCH) {
-      syslog(LOG_INFO, "fby2_common_sboot_cpld_dump: No CPLD dump pthread exists for slow boot");
-    } else {
-      pthread_join(t_sboot_cpld_dump[fru-1].pt, NULL);
-      sprintf(cmd, "ps | grep '{sboot-cpld-dump}' | grep 'slot%d' | awk '{print $1}'| xargs kill", fru);
-      log_system(cmd);
-#ifdef DEBUG
-      syslog(LOG_INFO, "fby2_common_sboot_cpld_dump: Previous CPLD dump thread is cancelled for slow boot");
-#endif
-    }
-  }
-
-  // Start a thread to generate the CPLD dump for slow boot
-  t_sboot_cpld_dump[fru-1].fru = fru;
-
-  if (pthread_create(&(t_sboot_cpld_dump[fru-1].pt), NULL, generate_sboot_cpld_dump, (void*) &t_sboot_cpld_dump[fru-1].fru) < 0) {
-    syslog(LOG_WARNING, "fby2_common_sboot_cpld_dump: pthread_create for"
-      " FRU %d failed\n", fru);
-    return -1;
-  }
-
-  t_sboot_cpld_dump[fru-1].is_running = 1;
-
-  syslog(LOG_INFO, "fby2_common_sboot_cpld_dump: CPLD dump for slow boot for FRU: %d is being generated.", fru);
-
   return 0;
 }
 

@@ -20,7 +20,7 @@
 
 from subprocess import check_output
 
-from rest_utils import running_systemd
+from common_utils import running_systemd
 
 
 def get_ntpq_stats():

@@ -27,24 +27,29 @@ try:
 except ImportError:
     ATTESTATION_AVAILABLE = False
     # Doing this so that we don't break upstream
+from aiohttp.web import Application
+from compute_rest_shim import RestShim
 from node import node
-from tree import tree
 
 ACCEPTABLE_ALGORITHMS = ["sha1", "sha256"]
 
 
-def get_tree_attestation() -> tree:
-    tree_attestation = tree("attestation", node())
+def setup_attestation_endpoints(app: Application) -> None:
+    attestation_shim = RestShim(node(), "/api/attestation")
+    app.router.add_get(attestation_shim.path, attestation_shim.get_handler)
     if not ATTESTATION_AVAILABLE:
         # Return witout actually adding any endpoints/attaching
         # them to any logic
-        return tree_attestation
+        return
     # GET /attestation/system_information
     # Always try to keep these in sync with the CLI
-    tree_attestation.addChild(tree("system_information", NodeSystemInfo()))
+    sysinfo_shim = RestShim(NodeSystemInfo(), "/api/attestation/system_information")
+    app.router.add_get(sysinfo_shim.path, sysinfo_shim.get_handler)
+
     tpm_actions = ["ek-cert", "create-aik", "pcr-quote", "challenge-aik", "load-aik"]
-    tree_attestation.addChild(tree("tpm", get_tpm_nodes(tpm_actions)))
-    return tree_attestation
+    tpm_shim = RestShim(get_tpm_nodes(tpm_actions), "/api/attestation/tpm")
+    app.router.add_get(tpm_shim.path, tpm_shim.get_handler)
+    app.router.add_post(tpm_shim.path, tpm_shim.post_handler)
 
 
 class NodeSystemInfo(node):

@@ -18,17 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
-import rest_firmware_info
-import rest_presence
-import rest_seutil
 import rest_feutil
+import rest_firmware_info
 import rest_gb_freq
+import rest_presence
 import rest_sensors
+import rest_seutil
 import rest_switch_reset
 import rest_system_led_info
 import rest_vddcore
 from aiohttp import web
-from rest_utils import dumps_bytestr
+from common_utils import dumps_bytestr
 
 
 class boardApp_Handler:

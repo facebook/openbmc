@@ -24,7 +24,7 @@ import rest_i2cflush
 import rest_seutil
 import rest_usb2i2c_reset
 from aiohttp import web
-from rest_utils import dumps_bytestr, get_endpoints
+from common_utils import dumps_bytestr, get_endpoints
 
 
 class boardApp_Handler:

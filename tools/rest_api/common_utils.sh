@@ -39,7 +39,7 @@ function prepare_working_directory(){
         if [[ $# != 1 ]]; then echo "Usage: prepare_working_directory <plat_specific_src_dir>">&2; return 1; fi
         cd "$pardir" || exit 1
         plat_specific_src_dir=$1
-        outdir="$BBPATH/tmp/work/x86_64-linux/rest-api-native/"
+        outdir="$BBPATH/tmp/workarmv*-fb-linux-gnueabi/rest-api/0.1-r1/"
         # Remove old symlinks
         if [[ -e "$outdir" ]]; then
             for file in $(find "$outdir" -type l -iname '*.py'); do
@@ -52,7 +52,7 @@ function prepare_working_directory(){
         fi
 
         # Build test once
-        bitbake rest-api-native --force  >/dev/null 2>/dev/null || true
+        bitbake rest-api --force  >/dev/null 2>/dev/null || true
 
         # Link source files to the output directory so that source changes are reflected immediately
         set +x

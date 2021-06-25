@@ -24,7 +24,8 @@ from collections import namedtuple
 
 from aiohttp import web
 from aiohttp.log import server_logger
-from rest_utils import DEFAULT_TIMEOUT_SEC, dumps_bytestr
+from common_utils import dumps_bytestr
+from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 MAX_PIM_NUM = 8

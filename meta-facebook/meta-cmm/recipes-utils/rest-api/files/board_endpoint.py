@@ -25,7 +25,7 @@ import rest_chassis_eeprom
 import rest_component_presence
 import rest_firmware
 from aiohttp import web
-from rest_utils import dumps_bytestr, get_endpoints
+from common_utils import dumps_bytestr
 
 
 # A separate decorator for board specific API function

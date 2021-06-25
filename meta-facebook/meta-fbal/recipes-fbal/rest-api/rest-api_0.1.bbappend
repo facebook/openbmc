@@ -1,4 +1,4 @@
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,6 +15,5 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://plat_tree.py \
-           "
-
+SRC_URI += "file://board_setup_routes.py \
+          "

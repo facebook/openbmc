@@ -29,7 +29,7 @@ import rest_seutil
 import rest_smbinfo
 import rest_system_led_info
 from aiohttp import web
-from rest_utils import dumps_bytestr
+from common_utils import dumps_bytestr
 
 
 class boardApp_Handler:

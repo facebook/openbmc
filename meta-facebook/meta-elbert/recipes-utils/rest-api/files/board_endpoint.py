@@ -31,7 +31,7 @@ import rest_sensors
 import rest_seutil
 import rest_smbinfo
 from aiohttp import web
-from rest_utils import dumps_bytestr
+from common_utils import dumps_bytestr
 
 
 class boardApp_Handler:

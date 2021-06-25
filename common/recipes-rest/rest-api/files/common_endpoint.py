@@ -33,51 +33,15 @@ import rest_psu_update
 import rest_sensors
 import rest_server
 from aiohttp import web
-from rest_utils import dumps_bytestr, get_endpoints
-
-
-def common_force_async(func):
-    async def func_wrapper(self, *args, **kwargs):
-        # Convert the possibly blocking helper function into async
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            self.common_executor, func, self, *args, **kwargs
-        )
-        return result
-
-    return func_wrapper
+from common_utils import (
+    common_force_async,
+    get_data_from_generator,
+    get_endpoints,
+    dumps_bytestr,
+)
 
 
 class commonApp_Handler:
-
-    # common handler will use its own executor (thread based),
-    # we initentionally separated this from the executor of
-    # board-specific REST handler, so that any problem in
-    # common REST handlers will not interfere with board-specific
-    # REST handler, and vice versa
-    def __init__(self):
-        # Max number of concurrent thread is set to 5,
-        # in order to ensure enough concurrency while
-        # not overloading CPU too much
-        self.common_executor = ThreadPoolExecutor(5)
-
-    # When we call request.json() in asynchronous function, a generator
-    # will be returned. Upon calling next(), the generator will either :
-    #
-    # 1) return the next data as usual,
-    #   - OR -
-    # 2) throw StopIteration, with its first argument as the data
-    #    (this is for indicating that no more data is available)
-    #
-    # Not sure why aiohttp's request generator is implemented this way, but
-    # the following function will handle both of the cases mentioned above.
-    def get_data_from_generator(self, data_generator):
-        data = None
-        try:
-            data = next(data_generator)
-        except StopIteration as e:
-            data = e.args[0]
-        return data
 
     # Handler for root resource endpoint
     def helper_rest_api(self, request):
@@ -156,7 +120,7 @@ class commonApp_Handler:
 
     # Handler for uServer resource endpoint
     def helper_rest_server_act_hdl(self, request):
-        data = self.get_data_from_generator(request.json())
+        data = get_data_from_generator(request.json())
         return web.json_response(rest_server.server_action(data), dumps=dumps_bytestr)
 
     @common_force_async
@@ -197,7 +161,7 @@ class commonApp_Handler:
 
     # Handler for psu_update resource action
     def helper_psu_update_hdl_post(self, request):
-        data = self.get_data_from_generator(request.json())
+        data = get_data_from_generator(request.json())
         return web.json_response(rest_psu_update.begin_job(data), dumps=dumps_bytestr)
 
     @common_force_async

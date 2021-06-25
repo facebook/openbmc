@@ -17,46 +17,46 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from node_api import get_node_api
+
+from aiohttp.web import Application
+from compute_rest_shim import RestShim
 from node_bmc import get_node_bmc
 from node_fruid import get_node_fruid
 from node_logs import get_node_logs
 from node_sensors import get_node_sensors
 from node_server import get_node_server_2s
 from node_sled import get_node_sled
-from tree import tree
-
-from aiohttp.web import Application
 
 
 # Initialize Platform specific Resource Tree
 def setup_board_routes(app: Application, write_enabled: bool):
 
-    # Create /api end point as root node
-    r_api = tree("api", data=get_node_api())
-
     # Add /api/sled to represent entire SLED
-    r_sled = tree("sled", data=get_node_sled())
-    r_api.addChild(r_sled)
+    sled_shim = RestShim(get_node_sled(), "/api/sled")
+    app.router.add_get(sled_shim.path, sled_shim.get_handler)
+    app.router.add_post(sled_shim.path, sled_shim.post_handler)
 
     # Add mb /api/sled/mb
-    r_mb = tree("mb", data=get_node_server_2s(1, "mb"))
-    r_sled.addChild(r_mb)
+    sled_mb_shim = RestShim(get_node_server_2s(1, "mb"), "/api/sled/mb")
+    app.router.add_get(sled_mb_shim.path, sled_mb_shim.get_handler)
+    app.router.add_post(sled_mb_shim.path, sled_mb_shim.post_handler)
 
     # Add /api/sled/mb/fruid end point
-    r_temp = tree("fruid", data=get_node_fruid("mb"))
-    r_mb.addChild(r_temp)
+    fruid_shim = RestShim(get_node_fruid("mb"), "/api/sled/mb/fruid")
+    app.router.add_get(fruid_shim.path, fruid_shim.get_handler)
+    app.router.add_post(fruid_shim.path, fruid_shim.post_handler)
 
     # /api/sled/mb/bmc end point
-    r_temp = tree("bmc", data=get_node_bmc())
-    r_mb.addChild(r_temp)
+    bmc_shim = RestShim(get_node_bmc(), "/api/sled/mb/bmc")
+    app.router.add_get(bmc_shim.path, bmc_shim.get_handler)
+    app.router.add_post(bmc_shim.path, bmc_shim.post_handler)
 
     # /api/sled/mb/sensors end point
-    r_temp = tree("sensors", data=get_node_sensors("mb"))
-    r_mb.addChild(r_temp)
+    sled_sensor_shim = RestShim(get_node_sensors("mb"), "/api/sled/mb/sensors")
+    app.router.add_get(sled_sensor_shim.path, sled_sensor_shim.get_handler)
+    app.router.add_post(sled_sensor_shim.path, sled_sensor_shim.post_handler)
 
     # /api/sled/mb/logs end point
-    r_temp = tree("logs", data=get_node_logs("mb"))
-    r_mb.addChild(r_temp)
-
-    r_api.setup(app, write_enabled)
+    sled_logs_shim = RestShim(get_node_logs("mb"), "/api/sled/mb/logs")
+    app.router.add_get(sled_logs_shim.path, sled_logs_shim.get_handler)
+    app.router.add_post(sled_logs_shim.path, sled_logs_shim.post_handler)

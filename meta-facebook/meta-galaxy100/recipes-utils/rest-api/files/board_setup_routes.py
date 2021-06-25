@@ -24,6 +24,7 @@ from aiohttp.web import Application
 
 # REMEMBER POST HANDLER add_post
 
+
 def setup_board_routes(app: Application, write_enabed: bool):
     bhandler = boardApp_Handler()
     app.router.add_get(board_routes[0], bhandler.rest_fruid_scm_hdl)

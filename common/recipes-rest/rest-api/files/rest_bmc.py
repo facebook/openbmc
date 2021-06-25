@@ -26,8 +26,8 @@ from node_bmc import get_node_bmc
 
 
 # Handler for BMC resource endpoint
-def get_bmc():
+async def get_bmc():
     bmc_node = get_node_bmc()
-    info = bmc_node.getInformation()
+    info = await bmc_node.getInformation()
     result = {"Information": info, "Actions": [], "Resources": []}
     return result

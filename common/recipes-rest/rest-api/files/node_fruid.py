@@ -20,6 +20,7 @@
 
 from subprocess import *
 
+from common_utils import async_exec
 from node import node
 
 
@@ -36,12 +37,11 @@ class fruidNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         result = {}
         cmd = "/usr/local/bin/fruid-util " + self.name
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-        data = data.decode()
-        sdata = data.split("\n")
+        _, stdout, _ = await async_exec(cmd, shell=True)
+        sdata = stdout.splitlines()
         for line in sdata:
             # skip lines with --- or startin with FRU
             if line.startswith("FRU"):

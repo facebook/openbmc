@@ -33,7 +33,7 @@ class spbNode(node):
         else:
             self.actions = actions
 
-    def doAction(self, data, param={}):
+    async def doAction(self, data, param={}):
         if pal_sled_action(data["action"]) == -1:
             res = "failure"
         else:

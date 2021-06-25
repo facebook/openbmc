@@ -21,6 +21,8 @@ import os
 import re
 import subprocess
 
+from common_utils import async_exec
+
 
 interested_keys = {
     "Certificates fallback": "cert_fallback_time",
@@ -35,7 +37,7 @@ interested_keys = {
 }
 
 
-def get_vboot_status():
+async def get_vboot_status():
     info = dict()
     info["status"] = "-1"
     info["status_text"] = "Unsupported"
@@ -43,11 +45,9 @@ def get_vboot_status():
     if not os.path.isfile(vboot_util):
         return info
     try:
-        data = (
-            subprocess.check_output(["/usr/local/bin/vboot-util"], shell=True)
-            .decode()
-            .splitlines()
-        )
+        retcode, stdout, _ = await async_exec(["/usr/local/bin/vboot-util"])
+        data = stdout.splitlines()
+
         info["status_text"] = data[-1].strip()
         if "Verified boot is not supported" in info["status_text"]:
             return info

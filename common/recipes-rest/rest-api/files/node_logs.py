@@ -19,8 +19,10 @@
 #
 import json
 import re
+from shlex import quote
 from subprocess import *
 
+from common_utils import async_exec
 from node import node
 
 
@@ -37,21 +39,19 @@ class logsNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         linfo = []
-        cmd = "/usr/local/bin/log-util " + self.name + " --print" + " --json"
-        data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-        data = data.decode()
-        return json.loads(data)
+        cmd = "/usr/local/bin/log-util " + quote(self.name) + " --print --json"
+        _, stdout, _ = await async_exec(cmd, shell=True)
+        return json.loads(stdout)
 
-    def doAction(self, data, param={}):
+    async def doAction(self, data, param={}):
         if data["action"] != "clear":
             res = "failure"
         else:
-            cmd = "/usr/local/bin/log-util " + self.name + " --clear"
-            data = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
-            data = data.decode()
-            if data.startswith("Usage"):
+            cmd = "/usr/local/bin/log-util " + quote(self.name) + " --clear"
+            _, stdout, _ = await async_exec(cmd, shell=True)
+            if stdout.startswith("Usage"):
                 res = "failure"
             else:
                 res = "success"

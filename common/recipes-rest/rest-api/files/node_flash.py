@@ -18,7 +18,7 @@ class flashNode(node):
         else:
             self.actions = actions
 
-    def getInformation(self, param={}):
+    async def getInformation(self, param={}):
         # Get vendor name
         vendor_name = " "
         data = kv_get("ssd_vendor")

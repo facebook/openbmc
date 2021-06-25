@@ -18,23 +18,27 @@
 # Boston, MA 02110-1301 USA
 #
 
+import asyncio
 import functools
 import json
+import os
 import os.path
 import re
 import typing as t
+from shlex import quote
 from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
 import kv
 import rest_pal_legacy
 from boot_source import is_boot_from_secondary
+from common_utils import async_exec
 from node import node
 from vboot import get_vboot_status
 
 PROC_MTD_PATH = "/proc/mtd"
 
-# Read all contents of file path specified.
+# Read all contents of file path specified
 def read_file_contents(path):
     try:
         with open(path, "r") as proc_file:
@@ -63,15 +67,15 @@ def SPIVendorID2Name(manufacturer_id):
         return "Unknown"
 
 
-def getSPIVendorLegacy(spi_id):
+async def getSPIVendorLegacy(spi_id):
     cmd = "cat /tmp/spi0.%d_vendor.dat | cut -c1-2" % (spi_id)
-    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    manufacturer_id = data.strip("\n")
+    _, stdout, _ = await async_exec(cmd, shell=True)
+    manufacturer_id = stdout.strip("\n")
     return SPIVendorID2Name(manufacturer_id)
 
 
 def getMTD(name):
-    mtd_name = '"' + name + '"'
+    mtd_name = quote(name)
     with open(PROC_MTD_PATH) as f:
         lines = f.readlines()
         for line in lines:
@@ -96,9 +100,9 @@ def getSPIVendorNew(spi_id):
     return "Unknown"
 
 
-def getSPIVendor(spi_id):
+async def getSPIVendor(spi_id):
     if os.path.isfile("/tmp/spi0.%d_vendor.dat" % (spi_id)):
-        return getSPIVendorLegacy(spi_id)
+        return await getSPIVendorLegacy(spi_id)
     return getSPIVendorNew(spi_id)
 
 
@@ -127,7 +131,7 @@ class bmcNode(node):
         else:
             self.actions = actions
 
-    def _getUbootVer(self):
+    async def _getUbootVer(self):
         # Get U-boot Version
         uboot_version = None
         uboot_ver_regex = r"^U-Boot\W+(?P<uboot_ver>20\d{2}\.\d{2})\W+.*$"
@@ -135,12 +139,12 @@ class bmcNode(node):
         mtd_meta = getMTD("meta")
         if mtd_meta == None:
             mtd0_str_dump_cmd = ["/usr/bin/strings", "/dev/mtd0"]
-            with Popen(mtd0_str_dump_cmd, stdout=PIPE, universal_newlines=True) as proc:
-                for line in proc.stdout:
-                    matched = uboot_ver_re.fullmatch(line.strip())
-                    if matched:
-                        uboot_version = matched.group("uboot_ver")
-                        break
+            _, stdout, _ = await async_exec(mtd0_str_dump_cmd)
+            for line in stdout.splitlines():
+                matched = uboot_ver_re.fullmatch(line.strip())
+                if matched:
+                    uboot_version = matched.group("uboot_ver")
+                    break
         else:
             try:
                 mtd_dev = "/dev/" + mtd_meta
@@ -151,19 +155,19 @@ class bmcNode(node):
                 uboot_version = None
         return uboot_version
 
-    def getUbootVer(self):
+    async def getUbootVer(self):
         UBOOT_VER_KV_KEY = "u-boot-ver"
         uboot_version = None
         try:
             uboot_version = kv.kv_get(UBOOT_VER_KV_KEY)
         except kv.KeyOperationFailure:
             # not cahced, read and cache it
-            uboot_version = self._getUbootVer()
+            uboot_version = await self._getUbootVer()
             if uboot_version:
                 kv.kv_set(UBOOT_VER_KV_KEY, uboot_version, kv.FCREATE)
         return uboot_version
 
-    def getTpmTcgVer(self):
+    async def getTpmTcgVer(self):
         out_str = "NA"
         tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
         if os.path.isfile(tpm1_caps):
@@ -181,14 +185,19 @@ class bmcNode(node):
             )
             for cmd in cmd_list:
                 try:
-                    lines = check_output(cmd, shell=True).decode().split("\n")
-                    out_str = lines[2].rstrip().split('"')[1]
+                    retcode, stdout, _ = await async_exec(cmd, shell=True)
+                    if retcode != 0:
+                        # non-async implementation was using raising check_output
+                        raise Exception(
+                            "Command {} returned non-0 exit code".format(cmd)
+                        )
+                    out_str = stdout.splitlines()[2].rstrip().split('"')[1]
                     break
                 except Exception:
                     pass
         return out_str
 
-    def getTpmFwVer(self):
+    async def getTpmFwVer(self):
         out_str = "NA"
         tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
         if os.path.isfile(tpm1_caps):
@@ -206,8 +215,13 @@ class bmcNode(node):
             )
             for cmd in cmd_list:
                 try:
-                    line = check_output(cmd, shell=True)
-                    value = int(line.decode().rstrip().split(":")[1], 16)
+                    retcode, stdout, _ = await async_exec(cmd, shell=True)
+                    if retcode != 0:
+                        # non-async implementation was using raising check_output
+                        raise Exception(
+                            "Command {} returned non-0 exit code".format(cmd)
+                        )
+                    value = int(stdout.rstrip().split(":")[1], 16)
                     out_str = "%d.%d" % (value >> 16, value & 0xFFFF)
                     break
                 except Exception:
@@ -237,7 +251,7 @@ class bmcNode(node):
                     pass
         return meminfo
 
-    def getInformation(self, param=None):
+    async def getInformation(self, param=None):
         # Get Platform Name
         name = rest_pal_legacy.pal_get_platform_name()
 
@@ -252,9 +266,7 @@ class bmcNode(node):
             mac_addr = ":".join(("%012X" % mac)[i : i + 2] for i in range(0, 12, 2))
 
         # Get BMC Reset Reason
-        wdt_counter = (
-            Popen("devmem 0x1e785010", shell=True, stdout=PIPE).stdout.read().decode()
-        )
+        _, wdt_counter, _ = await async_exec(["devmem", "0x1e785010"])
         wdt_counter = int(wdt_counter, 0)
         wdt_counter &= 0xFF00
 
@@ -269,8 +281,8 @@ class bmcNode(node):
             reset_reason = "User Initiated Reset or WDT Reset"
 
         # Get BMC's Up Time
-        data = Popen("uptime", shell=True, stdout=PIPE).stdout.read().decode()
-        uptime = data.strip()
+        _, stdout, _ = await async_exec("uptime", shell=True)
+        uptime = stdout.strip()
 
         # Use another method, ala /proc, but keep the old one for backwards
         # compat.
@@ -283,8 +295,8 @@ class bmcNode(node):
         load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
 
         # Get Usage information
-        data = Popen("top -b n1", shell=True, stdout=PIPE).stdout.read().decode()
-        adata = data.split("\n")
+        _, stdout, _ = await async_exec(["top", "-b", "n1"])
+        adata = stdout.split("\n")
         mem_usage = adata[0]
         cpu_usage = adata[1]
 
@@ -292,45 +304,43 @@ class bmcNode(node):
 
         # Get OpenBMC version
         obc_version = ""
-        data = Popen("cat /etc/issue", shell=True, stdout=PIPE).stdout.read().decode()
+        _, stdout, _ = await async_exec(["cat", "/etc/issue"])
 
         # OpenBMC Version
-        ver = re.search(r"[v|V]([\w\d._-]*)\s", data)
+        ver = re.search(r"[v|V]([\w\d._-]*)\s", stdout)
         if ver:
             obc_version = ver.group(1)
 
         # U-Boot version
-        uboot_version = self.getUbootVer()
+        uboot_version = await self.getUbootVer()
         if uboot_version is None:
             uboot_version = "NA"
 
         # Get kernel release and kernel version
         kernel_release = ""
-        data = Popen("uname -r", shell=True, stdout=PIPE).stdout.read().decode()
-        kernel_release = data.strip("\n")
+        _, stdout, _ = await async_exec(["uname", "-r"])
+        kernel_release = stdout.strip("\n")
 
         kernel_version = ""
-        data = Popen("uname -v", shell=True, stdout=PIPE).stdout.read().decode()
-        kernel_version = data.strip("\n")
+        _, stdout, _ = await async_exec(["uname", "-v"])
+        kernel_version = stdout.strip("\n")
 
         # Get TPM version
         tpm_tcg_version = "NA"
         tpm_fw_version = "NA"
         if os.path.exists("/sys/class/tpm/tpm0"):
-            tpm_tcg_version = self.getTpmTcgVer()
-            tpm_fw_version = self.getTpmFwVer()
+            tpm_tcg_version = await self.getTpmTcgVer()
+            tpm_fw_version = await self.getTpmFwVer()
 
-        spi0_vendor = getSPIVendor(0)
-        spi1_vendor = getSPIVendor(1)
+        spi0_vendor = await getSPIVendor(0)
+        spi1_vendor = await getSPIVendor(1)
 
         # ASD status - check if ASD daemon/asd-test is currently running
-        asd_status = bool(
-            Popen("ps | grep -i [a]sd", shell=True, stdout=PIPE).stdout.read()
-        )
+        _, asd_status, _ = await async_exec("ps | grep -i [a]sd", shell=True)
 
         boot_from_secondary = is_boot_from_secondary()
 
-        vboot_info = get_vboot_status()
+        vboot_info = await get_vboot_status()
 
         used_fd_count = read_file_contents("/proc/sys/fs/file-nr")[0].split()[0]
 
@@ -366,8 +376,8 @@ class bmcNode(node):
 
         return info
 
-    def doAction(self, data, param=None):
-        Popen("sleep 1; /sbin/reboot", shell=True, stdout=PIPE)
+    async def doAction(self, data, param=None):
+        await async_exec("sleep 1; /sbin/reboot", shell=True)
         return {"result": "success"}
 
 

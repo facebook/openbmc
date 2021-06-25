@@ -101,14 +101,10 @@ class commonApp_Handler:
     def rest_fruid_pim_hdl(self, request):
         return self.helper_rest_fruid_pim_hdl(request)
 
-    # Handler for sys/bmc resource endpoint
-    def helper_rest_bmc_hdl(self, request):
-        result = rest_bmc.get_bmc()
-        return web.json_response(result, dumps=dumps_bytestr)
 
-    @common_force_async
-    def rest_bmc_hdl(self, request):
-        return self.helper_rest_bmc_hdl(request)
+    async def rest_bmc_hdl(self, request):
+        result = await rest_bmc.get_bmc()
+        return web.json_response(result, dumps=dumps_bytestr)
 
     # Handler for sys/server resource endpoint
     def helper_rest_server_hdl(self, request):

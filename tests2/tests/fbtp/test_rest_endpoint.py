@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import functools
 import unittest
 
 from common.base_rest_endpoint_test import BaseRestEndpointTest
@@ -29,8 +30,19 @@ class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
     User can choose to sends these lists from jsons too.
     """
 
-    def test_rest_endpoints(self):
-        endpoints = REST_END_POINTS
-        for k, v in endpoints.items():
-            with self.subTest(k):
-                self.verify_endpoint_attributes(k, v)
+    @classmethod
+    def _gen_parameterised_tests(cls):
+        # _test_usage_string_template -> test_usage_string_{cmd}
+        for endpoint, resources in REST_END_POINTS.items():
+            setattr(
+                cls,
+                "test_restendpoint_{}".format(endpoint),
+                functools.partialmethod(
+                    cls.verify_endpoint_attributes,
+                    endpoint,
+                    resources,
+                ),
+            )
+
+
+RestEndpointTest._gen_parameterised_tests()

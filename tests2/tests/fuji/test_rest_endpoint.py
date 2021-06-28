@@ -83,6 +83,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     SCM_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/scm"
     ALL_FIRMWARE_INFO_ENDPOINT = "/api/sys/firmware_info/all"
     PIM_INFO_ENDPOINT = "/api/sys/piminfo"
+    SMB_INFO_ENDPOINT = "/api/sys/smbinfo"
     PIM_SERIAL_ENDPOINT = "/api/sys/pimserial"
 
     # "/api/sys"
@@ -211,6 +212,16 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.set_endpoint_fruid_scm_attributes()
         self.verify_endpoint_attributes(
             RestEndpointTest.FRUID_SCM_ENDPOINT, self.endpoint_fruid_scm_attrb
+        )
+
+    # "/api/sys/smbutil"
+    def set_endpoint_fruid_smb_attributes(self):
+        self.endpoint_fruid_smb_attrb = self.FRUID_ATTRIBUTES
+
+    def test_endpoint_api_sys_fruid_smb(self):
+        self.set_endpoint_fruid_smb_attributes()
+        self.verify_endpoint_attributes(
+            RestEndpointTest.SMB_INFO_ENDPOINT, self.endpoint_fruid_smb_attrb
         )
 
     # "/api/sys/mb/fruid"

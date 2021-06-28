@@ -44,10 +44,6 @@ fi
 
 TL_PRODUCT_ID0=39
 TL_PRODUCT_ID1=30
-RC_PRODUCT_ID0=43
-RC_PRODUCT_ID1=52
-EP_PRODUCT_ID0=50
-EP_PRODUCT_ID1=45
 ND_PRODUCT_ID0=44
 ND_PRODUCT_ID1=4E
 
@@ -70,12 +66,6 @@ for (( i=0; i<${#SLOT[@]}; i++ )); do
         if [[ "$product_id_l" == "$TL_PRODUCT_ID0" && "$product_id_h" == "$TL_PRODUCT_ID1" ]]; then
           #TL
           server_type=0
-        elif [[ "$product_id_l" == "$RC_PRODUCT_ID0" && "$product_id_h" == "$RC_PRODUCT_ID1" ]]; then
-          #RC
-          server_type=1
-        elif [[ "$product_id_l" == "$EP_PRODUCT_ID0" && "$product_id_h" == "$EP_PRODUCT_ID1" ]]; then
-          #EP
-          server_type=2
         elif [[ "$product_id_l" == "$ND_PRODUCT_ID0" && "$product_id_h" == "$ND_PRODUCT_ID1" ]]; then
           #ND
           server_type=4

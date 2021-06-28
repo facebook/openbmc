@@ -136,11 +136,16 @@ do
     if wedge_is_pim_present "$pim"; then
         # PIM 2-9, SMBUS 16-23
         bus_id="${pim_bus[$i]}"
+        i2c_device_add "$bus_id" 0x50 24c512  # EEPROM
+        # Only allow writes to certain registers for
+        # power controllers UCD9090/TPS546D24
+        retry_command 3 enable_ucd9090_security_mode "$bus_id" 0x4e
+        retry_command 3 enable_tps546d24_wp "$bus_id" 0x16
+        retry_command 3 enable_tps546d24_wp "$bus_id" 0x18
         i2c_device_add "$bus_id" 0x16 pmbus   # TPS546D24
         i2c_device_add "$bus_id" 0x18 pmbus   # TPS546D24
         i2c_device_add "$bus_id" 0x4a lm73    # Temp sensor
-        i2c_device_add "$bus_id" 0x4e ucd9090 # UCD9090A
-        i2c_device_add "$bus_id" 0x50 24c512  # EEPROM
+        i2c_device_add "$bus_id" 0x4e ucd9090 # UCD9090
 
         fru="$(peutil "$pim" 2>&1)"
         if echo "$fru" | grep -q '88-8D'; then

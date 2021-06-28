@@ -106,13 +106,12 @@ while true; do
   do
     if [ "${pim_found[$i]}" -eq "0" ]; then
       pim_number="$((i+2))"
-      pim_addr=${pim_bus[$i]}-00$dpm_addr  # 16-004e for example
       # Check if Switch card senses the PIM presence
       if wedge_is_pim_present "$pim_number"; then
          # Check if device was probed and driver was installed
-         drv_path=/sys/bus/i2c/drivers/ucd9000/$pim_addr
+         drv_path=/sys/bus/i2c/drivers/ucd9000/"${pim_bus[$i]}-00$dpm_addr"
          if [ -e "$drv_path"/gpio ]; then
-           create_pim_gpio "$((i+2))" "${pim_addr}"
+           create_pim_gpio "$((i+2))" "${pim_bus[$i]}-00$dpm_addr"
            update_pim_sensors "$((i+2))"
            pim_found[$i]=1
          fi
@@ -124,10 +123,15 @@ while true; do
   for i in "${pim_index[@]}"
   do
     if [ "${pim_found[$i]}" -eq "1" ]; then
-       if [ ! -f "/tmp/.pim$((i+2))_powered_off" ]; then
-          power_on_pim $((i+2)) y
+       drv_path=/sys/bus/i2c/drivers/ucd9000/"${pim_bus[$i]}-00$dpm_addr"
+       if [ -e "$drv_path"/gpio ]; then
+          if [ ! -f "/tmp/.pim$((i+2))_powered_off" ]; then
+             power_on_pim $((i+2)) y
+          else
+             power_off_pim $((i+2)) y
+          fi
        else
-          power_off_pim $((i+2)) y
+          logger pim_enable: PIM"$((i+2))" UCD9090B GPIOs not defined
        fi
     fi
 

@@ -156,6 +156,58 @@ wedge_power_off_board() {
     echo 0 > "$SCM_PWR_ON_SYSFS"
 }
 
+enable_ucd9090_security_mode() {
+    bus="$1"
+    dev="$2"
+    # If unlocked, lock it
+    i2cset -f -y "$bus" "$dev" 0xf2 \
+       0x6f 0xff 0xff 0xff 0xff 0xff 0xff 0xc0 0xff 0xff \
+       0xff 0xff 0xff 0xff 0x00 0x00 0x00 0x00 0x00 0x00 \
+       0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xfe 0x42 \
+       0x0f 0xdf s
+    locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+    if [ "$locked" -eq 0 ]; then
+        i2cset -f -y "$bus" "$dev" 0xf1 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
+        locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+        if [ "$locked" -eq 0 ]; then
+            echo "Failed to lock UCD9090B $bus-00$dev"
+        fi
+    else
+        echo "UCD bus $bus device $dev already locked!"
+        return 0
+    fi
+}
+
+disable_ucd9090_security_mode() {
+    bus="$1"
+    dev="$2"
+    # If locked, unlock it
+    locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+    if [ "$locked" -eq 0 ]; then
+        echo "UCD bus $bus device $dev already unlocked!"
+        return 0
+    else
+        i2cset -f -y "$bus" "$dev" 0xf1 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
+        locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+        if [ "$locked" -eq 0 ]; then
+            return 0
+        else
+           echo "Failed to lock UCD9090B $bus-00$dev"
+           return 1
+        fi
+    fi
+}
+
+enable_tps546d24_wp() {
+   # Disable all writes except for WRITE_PROTECT 0x10
+   i2cset -f -y $1 $2 0x10 0x80
+}
+
+disable_tps546d24_wp() {
+   # Enable all writes
+   i2cset -f -y $1 $2 0x10 0x0
+}
+
 power_on_pim() {
     pim=$1
     old_rst_value=$(gpio_get PIM"${pim}"_FPGA_RESET_L keepdirection)
@@ -184,7 +236,19 @@ power_on_pim() {
     fi
 
     sleep 0.5 # Give FPGA some time to finish initialization
+    # Take UCD9090B in/out of security mode to perform GPIO writes
+    bus=$((14+pim))
+    dev="0x4e"
+    logger pim_enable: Unlocking PIM"$pim" UCD9090B security
+    retry_command 3 disable_ucd9090_security_mode "$bus" "$dev"
     gpio_set PIM"${pim}"_FPGA_RESET_L 1  # FPGA out of reset
+    logger pim_enable: Locking PIM"$pim" UCD9090B security
+    retry_command 3 enable_ucd9090_security_mode "$bus" "$dev"
+
+    logger pim_enable: Enable WRITE_PRTECT on PIM"$pim" TPS chips
+    retry_command 3 enable_tps546d24_wp "$bus" 0x16
+    retry_command 3 enable_tps546d24_wp "$bus" 0x18
+
     sleep 0.1
 
     skip_pim_off_cache=$2
@@ -203,7 +267,14 @@ power_off_pim() {
        return
     fi
 
-    gpio_set PIM"${pim}"_FPGA_RESET_L 0  # FPGA in reset
+    # Take UCD9090B in/out of security mode to perform GPIO writes
+    bus=$((14+pim))
+    dev="0x4e"
+    logger pim_enable: Unlocking PIM"$pim" UCD9090B security
+    retry_command 3 disable_ucd9090_security_mode "$bus" "$dev"
+    gpio_set PIM"${pim}"_FPGA_RESET_L 0  # FPGA in of reset
+    logger pim_enable: Locking PIM"$pim" UCD9090B security
+    retry_command 3 enable_ucd9090_security_mode "$bus" "$dev"
     sleep 0.1
 
     skip_pim_off_cache=$2
@@ -224,9 +295,13 @@ retry_command() {
         exit=$?
         count=$((count+1))
         if [ "$count" -lt "$retries" ]; then
-            echo "Attempt $count/$retries failed with $exit, retrying..."
+            msg="Attempt $count/$retries failed with $exit, retrying..."
+            echo "$msg"
+            logger retry_command: "$msg"
         else
-            echo "Retry $count/$retries failed with $exit, no more retries left"
+            msg="Retry $count/$retries failed with $exit, no more retries left"
+            echo "$msg"
+            logger retry_command: "$msg"
             return $exit
         fi
     done

@@ -337,7 +337,7 @@ class bmcNode(node):
 
         # ASD status - check if ASD daemon/asd-test is currently running
         _, asd_status, _ = await async_exec("ps | grep -i [a]sd", shell=True)
-
+        asd_status = bool(asd_status)
         boot_from_secondary = is_boot_from_secondary()
 
         vboot_info = await get_vboot_status()

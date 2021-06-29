@@ -33,8 +33,9 @@ except BaseException:
 
 
 class Log_Simple:
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, debug=False):
         self._verbose = verbose
+        self._debug = debug
         self.fp = sys.stdout
 
     def verbose(self, message):
@@ -44,8 +45,9 @@ class Log_Simple:
     def info(self, message):
         print(message, file=self.fp)
 
-    def error(self, message):
-        print(message, file=self.fp)
+    def debug(self, message):
+        if self._debug:
+            print(message, file=self.fp)
 
 
 class OpenBMCApiCrawler(object):
@@ -81,17 +83,21 @@ class OpenBMCApiCrawler(object):
         if not url:
             return
         try:
+            self.endpoints[url] = None
             resp = urlopen(self.base_url + url, context=self.ctx)
-        except HTTPError as e:
-            self.logger.error("fail to open endpoint {} due to: {}".format(url, str(e)))
+            data = json.loads(resp.read().decode("utf-8"))
+            info = data["Information"]
+            if info and isinstance(info, dict):
+                self.endpoints[url] = [title for title, _ in info.items()]
+            elif info and isinstance(info, list):
+                self.endpoints[url] = [_info.split(":")[0] for _info in info]
+            return data["Resources"]
+        except HTTPError as error:
+            self.logger.debug("fail to open {} due to: {}".format(url, str(error)))
             return
-        data = json.loads(resp.read().decode("utf-8"))
-        info = data["Information"]
-        if info and isinstance(info, dict):
-            self.endpoints[url] = [title for title, _ in info.items()]
-        elif info and isinstance(info, list):
-            self.endpoints[url] = [_info.split(":")[0] for _info in info]
-        return data["Resources"]
+        except Exception as e:
+            self.logger.debug("fail to load info of {} due to: {}".format(url, str(e)))
+            return
 
     def crawler(self, url=None):
         if not url:
@@ -131,11 +137,25 @@ if __name__ == "__main__":
         help="increase output verbosity",
     )
     parser.add_argument(
+        "-d",
+        "--debug",
+        action="store_true",
+        default=False,
+        help="print out debug message",
+    )
+    parser.add_argument(
         "-e",
         "--encrypt",
         action="store_true",
         default=False,
         help="enable SSL",
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        default=False,
+        help="list the api",
     )
     parser.add_argument(
         "-c",
@@ -178,7 +198,7 @@ if __name__ == "__main__":
     if (args.cert and args.key is None) or (args.key and args.cert is None):
         parser.error("cert/key (-c, -k) must both present")
 
-    logger = Log_Simple(verbose=args.verbose)
+    logger = Log_Simple(verbose=args.verbose, debug=args.debug)
 
     if args.outfile == "-":
         logger.fp = sys.stderr
@@ -192,6 +212,10 @@ if __name__ == "__main__":
         encrypt=args.encrypt, url=args.url, cert=args.cert, key=args.key, logger=logger
     )
     endpts_crawler.crawler(args.api)
+    if args.list:
+        for api in endpts_crawler.endpoints.keys():
+            print(api)
+        sys.exit(0)
     if args.json_format:
         endpts_crawler.dump_api_info_json_format(outfile)
     else:

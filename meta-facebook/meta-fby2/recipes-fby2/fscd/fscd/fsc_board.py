@@ -107,20 +107,6 @@ loc_map = {
     "e1": "_dimm7_location",
 }
 
-loc_map_rc = {
-    "b": "_dimm0_location",
-    "a": "_dimm1_location",
-    "c": "_dimm2_location",
-    "d": "_dimm3_location",
-}
-
-loc_map_ep = {
-    "a": "_dimm0_location",
-    "b": "_dimm1_location",
-    "c": "_dimm2_location",
-    "d": "_dimm3_location",
-}
-
 loc_map_nd = {
     "a": "_dimm0_location",
     "c": "_dimm2_location",
@@ -182,18 +168,6 @@ def set_all_pwm(boost):
     return response
 
 
-def rc_stby_sensor_check(board):
-    f = libgpio.GPIO(shadow=fru_map[board]["slot_12v_status"])
-    if f.get_value() == libgpio.GPIOValue.HIGH:
-        f = libgpio.GPIO(shadow=fru_map[board]["bic_ready_gpio"])
-        if f.get_value() == libgpio.GPIOValue.LOW:
-            return 1
-        else:
-            return 0
-    else:
-        return 0
-
-
 fscd_counter = 0
 board_for_counter = ""
 sname_for_counter = ""
@@ -239,9 +213,6 @@ def sensor_valid_check(board, sname, check_name, attribute):
         sname = sname.replace(board + "_", "")
     Logger.debug("board=%s sname=%s" % (board, sname))
 
-    if match(r"soc_temp_diode", sname) is not None:
-        return rc_stby_sensor_check(board)
-
     try:
         if attribute["type"] == "power_status":
             with open(
@@ -262,33 +233,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     if bic_sts[0] == "0":
                         if match(r"soc_dimm", sname) is not None:
                             server_type = lpal_hndl.pal_get_server_type(slot_id)
-                            if int(server_type) == 1:  # RC Server
-                                # check DIMM present
-                                with open(
-                                    "/mnt/data/kv_store/sys_config/"
-                                    + fru_map[board]["name"]
-                                    + loc_map_rc[sname[9:10]],
-                                    "rb",
-                                ) as f:
-                                    dimm_sts = f.read(1)
-                                if dimm_sts[0] != 1:
-                                    return 0
-                                else:
-                                    return 1
-                            elif int(server_type) == 2:  # EP Server
-                                # check DIMM present
-                                with open(
-                                    "/mnt/data/kv_store/sys_config/"
-                                    + fru_map[board]["name"]
-                                    + loc_map_ep[sname[8:9]],
-                                    "rb",
-                                ) as f:
-                                    dimm_sts = f.read(1)
-                                if dimm_sts[0] != 1:
-                                    return 0
-                                else:
-                                    return 1
-                            elif int(server_type) == 4:  # ND Server
+                            if int(server_type) == 4:  # ND Server
                                 # check DIMM present
                                 with open(
                                     "/mnt/data/kv_store/sys_config/"

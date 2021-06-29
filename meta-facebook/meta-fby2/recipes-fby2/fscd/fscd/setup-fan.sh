@@ -96,19 +96,11 @@ do
 done
 
 case "$sku_type" in
-   "0")
+   "0") # 4S
      case "$server_type" in
        "0")
          echo "Run FSC 4 TLs Config"
          cp /etc/FSC_FBY2_MP_4TL_config.json ${default_fsc_config_path}
-       ;;
-       "4369")
-         echo "Run FSC 4 RCs Config"
-         cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
-       ;;
-       "8738")
-         echo "Run FSC 4 EPs Config"
-         cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
        ;;
        "17476")
          echo "Run FSC 4 NDs Config"
@@ -123,16 +115,10 @@ case "$sku_type" in
        ;;
      esac
    ;;
-   "514")
+   "514") # 2S + 2GP
      if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then
        echo "Run FSC 2 GPs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
-     elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
-       echo "Run FSC 4 RCs Config"
-       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
-     elif [[ $(get_server_type 2) == "2" && $(get_server_type 4) == "2" ]] ; then
-       echo "Run FSC 2 GPs and 2 EPs Config"
-       cp /etc/FSC_FBEP_DVT_2GP_2EP_config.json ${default_fsc_config_path}
      elif [[ $(get_server_type 2) == "4" && $(get_server_type 4) == "4" ]] ; then
        echo "Run FSC 4 NDs Config"
        cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
@@ -144,16 +130,10 @@ case "$sku_type" in
        cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
      fi
    ;;
-   "257")
+   "257") # 2S + 2CF
      if [[ $(get_server_type 2) == "0" && $(get_server_type 4) == "0" ]] ; then
        echo "Run FSC 2 CFs and 2 TLs Config"
        cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
-     elif [[ $(get_server_type 2) == "1" && $(get_server_type 4) == "1" ]] ; then
-       echo "Run FSC 4 RCs Config"
-       cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
-     elif [[ $(get_server_type 2) == "2" && $(get_server_type 4) == "2" ]] ; then
-       echo "Run FSC 4 EPs Config"
-       cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
      elif [[ $(get_server_type 2) == "4" && $(get_server_type 4) == "4" ]] ; then
        echo "Run FSC 4 NDs Config"
        cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
@@ -181,13 +161,7 @@ case "$sku_type" in
         fi
       done
 
-      if [ "$server_type_tmp" == "1" ] ; then
-        echo "Unexpected sku type! Use FSC 4 RCs Config as default config"
-        cp /etc/FSC_FBRC_DVT_4RC_config.json ${default_fsc_config_path}
-      elif [ "$server_type_tmp" == "2" ] ; then
-        echo "Unexpected sku type! Use FSC 4 EPs Config as default config"
-        cp /etc/FSC_FBEP_DVT_4EP_config.json ${default_fsc_config_path}
-      elif [ "$server_type_tmp" == "4" ] ; then
+      if [ "$server_type_tmp" == "4" ] ; then
         echo "Unexpected sku type! Use FSC 4 NDs Config as default config"
         cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
         if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then

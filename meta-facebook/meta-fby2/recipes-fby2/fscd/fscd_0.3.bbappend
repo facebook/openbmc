@@ -26,12 +26,6 @@ SRC_URI += "file://init_pwm.sh \
             file://FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
             file://FSC_FBY2_PVT_2CF_2TL_config.json \
             file://FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
-            file://FSC_FBRC_DVT_4RC_config.json \
-            file://FSC_FBRC_DVT_4RC_zone1.fsc \
-            file://FSC_FBEP_DVT_4EP_config.json \
-            file://FSC_FBEP_DVT_4EP_zone1.fsc \
-            file://FSC_FBEP_DVT_2GP_2EP_config.json \
-            file://FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
             file://FSC_FBGPV2_DVT_config.json \
             file://FSC_FBGPV2_10KFAN_DVT_config.json \
             file://FSC_FBGPV2_VSI_DVT_config.json \
@@ -56,9 +50,6 @@ FSC_BIN_FILES += "init_pwm.sh \
 FSC_CONFIG += "FSC_FBY2_MP_4TL_config.json \
                FSC_FBY2_PVT_2GP_2TL_config.json \
                FSC_FBY2_PVT_2CF_2TL_config.json \
-               FSC_FBRC_DVT_4RC_config.json \
-               FSC_FBEP_DVT_4EP_config.json \
-               FSC_FBEP_DVT_2GP_2EP_config.json \
                FSC_FBGPV2_DVT_config.json \
                FSC_FBGPV2_10KFAN_DVT_config.json \
                FSC_FBGPV2_VSI_DVT_config.json \
@@ -73,9 +64,6 @@ FSC_CONFIG += "FSC_FBY2_MP_4TL_config.json \
 FSC_ZONE_CONFIG +="FSC_FBY2_MP_4TL_zone1.fsc \
                    FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
                    FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
-                   FSC_FBRC_DVT_4RC_zone1.fsc \
-                   FSC_FBEP_DVT_4EP_zone1.fsc \
-                   FSC_FBEP_DVT_2GP_2EP_zone1.fsc \
                    FSC_FBGPV2_DVT_zone1.fsc \
                    FSC_FBYV250_DVT_zone1.fsc \
                    FSC_NORTHDOME_DVT_4ND_zone1.fsc \

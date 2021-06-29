@@ -18,6 +18,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <ctime>
+#include <stack>
+#include <regex>
 #include <stdio.h>
 #include <fstream>
 #include <unistd.h>
@@ -33,6 +36,8 @@
 
 #define BOOKMARK_BEGIN(FRU, TYPE) syslog(LOG_CRIT, "SEL Injection in FRU: %d beginning of type: %s", FRU, TYPE)
 #define BOOKMARK_END(FRU) syslog(LOG_CRIT, "SEL Injection in FRU: %d ending", FRU)
+
+using time_pair = std::pair<std::string, std::string>;
 
 float get_sensor_value(uint8_t fru, int snr_num) {
     float snr_value;
@@ -128,6 +133,60 @@ void ipmi_callback() {
     std::cout << "called an ipmi function" << std::endl;
 }
 
+void del_logs(std::vector<time_pair> time_pairs) {
+    for (time_pair period : time_pairs) {
+        char buffer[256];
+        sprintf(buffer, "log-util all --clear -s '%s' -e '%s'", period.first.c_str(), period.second.c_str());
+        int ret = system(buffer);
+        if (ret)
+            std::cout << "Error calling log-util: " << ret << std::endl;
+    }
+}
+
+void clear_sel() {
+    std::vector<time_pair> del_times;
+    std::stack<std::string> match_times;
+    char cmd[] = "log-util all --print";
+    std::regex log_regex(R"((\d+)(\s+)(\w+)(\s+)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s+)((\w|\-)+)(\s+)(.+))");
+    std::smatch reg_match;
+
+    FILE* file_stream = popen(cmd, "r");
+
+    // check for valid file
+    if (!file_stream)
+        std::cout << "Did not find any log files" << std::endl;
+
+    ssize_t read_size;
+    size_t line_size = 256;
+    char* line_buffer = NULL;
+    while ((read_size = getline(&line_buffer, &line_size, file_stream)) != -1) {
+        std::string line = line_buffer;
+        line_buffer = NULL;
+        if (std::regex_search(line, reg_match, log_regex)) {
+            if (reg_match[7].str().compare("syseventgen-util") == 0) {
+                if (reg_match[10].str().find("beginning") != std::string::npos) {
+                    match_times.push(reg_match[5].str());
+                } else if (reg_match[10].str().find("ending") != std::string::npos) {
+                    if (match_times.empty()) {
+                        del_times.push_back(std::make_pair(reg_match[5].str(), reg_match[5].str()));
+                    } else {
+                        del_times.push_back(std::make_pair(match_times.top(), reg_match[5].str()));
+                        match_times.pop();
+                    }
+                }
+            }
+        }
+    }
+
+    // there is a case where we don't have an ending log
+    while (!match_times.empty()) {
+        del_times.push_back(std::make_pair(match_times.top(), match_times.top()));
+        match_times.pop();
+    }
+
+    del_logs(del_times);
+}
+
 int main(int argc, char **argv)
 {
     /*
@@ -146,6 +205,10 @@ int main(int argc, char **argv)
     CLI::App app{"System Event Generation Util"};
     app.set_help_flag();
     app.set_help_all_flag("-h,--help");
+
+    app.add_subcommand("clear", "Get rid of all injected SEL's")->callback([&]() {
+        clear_sel();
+    });
 
     // get all of the options from the json and add them as subcommands
     for (auto& elem : jsonFile.items()) {

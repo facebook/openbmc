@@ -2614,38 +2614,6 @@ pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
 }
 
 bool
-pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id) {
-  bool ret = false;
-  switch(fru) {
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      if (sensor_id == BIC_SENSOR_DP_MARVELL_HSM_TEMP) {
-        char key[MAX_KEY_LEN] = {0};
-        char value[MAX_VALUE_LEN] = {0};
-        struct pcie_info* pcie_info = (struct pcie_info *) value;
-
-        sprintf(key, DP_INNER_PCIE_INFO_KEY, fru);
-        if (kv_get(key, value, NULL, KV_FPERSIST) != 0) {
-          // pcie_info file not exist
-          ret = true;
-        } else if (pcie_info->vendor_id == PCIE_VENDOR_MARVELL_HSM && pcie_info->device_id == PCIE_DEVICE_MARVELL_HSM) {
-          // dp marvell hsm
-          ret =  false;
-        } else {
-          // other pcie cards
-          ret =  true;
-        }
-      }
-      break;
-    default:
-      break;
-  }
-  return ret;
-}
-
-bool
 pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
   uint8_t pwr_status = 0;
 

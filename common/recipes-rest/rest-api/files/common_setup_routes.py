@@ -20,6 +20,7 @@
 from aiohttp.log import server_logger
 from aiohttp.web import Application
 from common_endpoint import commonApp_Handler
+from redfish_common_routes import Redfish
 from rest_utils import common_routes
 
 try:
@@ -87,4 +88,6 @@ def setup_common_routes(app: Application, write_enabled: bool):
         app.router.add_get(common_routes[12], chandler.rest_modbus_get)
         app.router.add_post(common_routes[13], chandler.rest_modbus_cmd_post)
     # common routes for all openbmc.
-    # at this point there is none :'(
+    server_logger.info("Adding Redfish common routes")
+    redfish = Redfish()
+    redfish.setup_redfish_common_routes(app)

@@ -17,9 +17,18 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston
 
+. /usr/local/fbpackages/utils/ast-functions
+
 rev=$(kv get mb_rev)
 
 if [ $rev -eq 0 ]; then
-  i2cset -y -f 21 0x77 0x6 0
-  i2cset -y -f 22 0x77 0x6 0
+  gp_carrier1_prsnt=$(gpio_get NVME_0_1_PRSNTB_R_N)
+  if [ $gp_carrier1_prsnt -eq 0 ]; then
+    i2cset -y -f 21 0x77 0x6 0
+  fi
+
+  gp_carrier2_prsnt=$(gpio_get NVME_2_3_PRSNTB_R_N)
+  if [ $gp_carrier2_prsnt -eq 0 ]; then
+    i2cset -y -f 22 0x77 0x6 0
+  fi
 fi

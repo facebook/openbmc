@@ -36,7 +36,6 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest.py \
            file://common_utils.py \
            file://common_webapp.py \
-           file://common_endpoint.py \
            file://common_middlewares.py \
            file://common_logging.py \
            file://common_auth.py \
@@ -113,7 +112,8 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://redfish_chassis.py \
             file://redfish_managers.py \
             ', \
-           'file://board_endpoint.py \
+            'file://common_endpoint.py \
+            file://board_endpoint.py \
             file://rest_watchdog.py \
             file://rest_bmc.py \
             file://rest_fruid.py \

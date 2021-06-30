@@ -31,6 +31,7 @@
 #include "CLI/CLI.hpp"
 #include <openbmc/pal.h>
 #include <openbmc/sdr.h>
+#include <openbmc/ipmi.h>
 #include <nlohmann/json.hpp>
 #include "syseventgen-util.h"
 
@@ -38,6 +39,12 @@
 #define BOOKMARK_END(FRU) syslog(LOG_CRIT, "SEL Injection in FRU: %d ending", FRU)
 
 using time_pair = std::pair<std::string, std::string>;
+
+std::string hex_int_to_string(int hex) {
+    char hex_c[10];
+    sprintf(hex_c, "0X%02X", hex);
+    return std::string(hex_c);
+}
 
 float get_sensor_value(uint8_t fru, int snr_num) {
     float snr_value;
@@ -129,8 +136,54 @@ void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsi
     BOOKMARK_END(fru);
 }
 
-void ipmi_callback() {
-    std::cout << "called an ipmi function" << std::endl;
+void ipmi_callback(
+        unsigned int delay,
+        const std::string& payload,
+        int call_type,
+        uint8_t fru,
+        const std::string& sel_data) {
+    BOOKMARK_BEGIN(fru, "ipmi");
+
+    // Decern between calling payload and constructing call
+    if (payload.empty()) {
+        std::string ipmi_call = "ipmi-util ";
+        ipmi_call += (hex_int_to_string(fru) + " ");
+
+        switch (call_type) {
+            case 0: // oem add ras sel
+                ipmi_call += (hex_int_to_string(NETFN_OEM_REQ << 2) + " ");
+                ipmi_call += (hex_int_to_string(CMD_OEM_ADD_RAS_SEL) + " ");
+                break;
+            case 1: // sensor alert imm msg
+                ipmi_call += (hex_int_to_string(NETFN_SENSOR_REQ << 2) + " ");
+                ipmi_call += (hex_int_to_string(CMD_SENSOR_ALERT_IMMEDIATE_MSG) + " ");
+                ipmi_call += "0x00 0x00 0x00 0x00 0x00 ";
+                break;
+            case 2: // storage add sel
+                ipmi_call += (hex_int_to_string(NETFN_STORAGE_REQ << 2) + " ");
+                ipmi_call += (hex_int_to_string(CMD_STORAGE_ADD_SEL) + " ");
+                break;
+            case 3: // sensor add plat event msg
+                ipmi_call += (hex_int_to_string(NETFN_SENSOR_REQ << 2) + " ");
+                ipmi_call += (hex_int_to_string(CMD_SENSOR_PLAT_EVENT_MSG) + " ");
+                break;
+        }
+        ipmi_call += sel_data;
+
+        std::cout << "Calling ipmi command: " << ipmi_call << std::endl;
+        int ret = system(ipmi_call.c_str());
+        if (ret) {
+            std::cout << "IPMI call failed with code: " << ret <<std::endl;
+        }
+
+    } else {
+        int ret = system(payload.c_str());
+        if (ret)
+            std::cout << "Payload failed with code: " << ret << std::endl;
+    }
+
+    usleep(delay * 1000);
+    BOOKMARK_END(fru);
 }
 
 void del_logs(std::vector<time_pair> time_pairs) {
@@ -227,7 +280,12 @@ int main(int argc, char **argv)
                             delay);
                         break;
                     case 1: // ipmi
-                        ipmi_callback();
+                        ipmi_callback(
+                            delay,
+                            val.value("payload", ""),
+                            val["sel_subtypes"][0].get<int>(),
+                            val["sel_subtypes"][1].get<uint8_t>(),
+                            val["sel_subtypes"][2].get<std::string>());
                         break;
                     case 2: // gpio
                         break;

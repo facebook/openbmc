@@ -7,7 +7,8 @@ project('syseventgen-util', 'c', 'cpp',
 cc = meson.get_compiler('c')
 syseventgen_deps = [
     cc.find_library('pal'),
-    cc.find_library('sdr')
+    cc.find_library('sdr'),
+    cc.find_library('ipmi')
 ]
 
 syseventgen_headers = files (

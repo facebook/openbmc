@@ -303,11 +303,11 @@ PAL_SENSOR_MAP dpb_sensor_map[] = {
   [DPB_HSC_P12V_CLIP] =
   {"DPB_HSC_P12V_CLIP", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
   [DPB_HSC_CUR] =
-  {"DPB_HSC_CUR", EXPANDER, NULL, false, {73.53, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"DPB_HSC_CUR", EXPANDER, NULL, false, {70, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [DPB_HSC_CUR_CLIP] =
   {"DPB_HSC_CUR_CLIP", EXPANDER, NULL, false, {165, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [DPB_HSC_PWR] =
-  {"DPB_HSC_PWR", EXPANDER, NULL, false, {920, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  {"DPB_HSC_PWR", EXPANDER, NULL, false, {875, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [DPB_HSC_PWR_CLIP] =
   {"DPB_HSC_PWR_CLIP", EXPANDER, NULL, false, {2062, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [FAN_0_FRONT] =
@@ -344,15 +344,15 @@ PAL_SENSOR_MAP scc_sensor_map[] = {
   [SCC_P1V8_E_SENSE] =
   {"SCC_P1V8_E_SENSE", EXPANDER, NULL, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT},
   [SCC_P1V5_E_SENSE] =
-  {"SCC_P1V5_E_SENSE", EXPANDER, NULL, false, {1.52, 0, 0, 1.38, 0, 0, 0, 0}, VOLT},
+  {"SCC_P1V5_E_SENSE", EXPANDER, NULL, false, {1.52, 0, 0, 1.37, 0, 0, 0, 0}, VOLT},
   [SCC_P0V92_E_SENSE] =
   {"SCC_P0V92_E_SENSE", EXPANDER, NULL, false, {0.95, 0, 0, 0.89, 0, 0, 0, 0}, VOLT},
   [SCC_P1V8_C_SENSE] =
   {"SCC_P1V8_C_SENSE", EXPANDER, NULL, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT},
   [SCC_P1V5_C_SENSE] =
-  {"SCC_P1V5_C_SENSE", EXPANDER, NULL, false, {1.52, 0, 0, 1.38, 0, 0, 0, 0}, VOLT},
+  {"SCC_P1V5_C_SENSE", EXPANDER, NULL, false, {1.52, 0, 0, 1.37, 0, 0, 0, 0}, VOLT},
   [SCC_P0V865_C_SENSE] =
-  {"SCC_P0V865_C_SENSE", EXPANDER, NULL, false, {0.90, 0, 0, 0.84, 0, 0, 0, 0}, VOLT},
+  {"SCC_P0V865_C_SENSE", EXPANDER, NULL, false, {0.89, 0, 0, 0.83, 0, 0, 0, 0}, VOLT},
   [SCC_HSC_P12V] =
   {"SCC_HSC_P12V", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
   [SCC_HSC_CUR] =
@@ -368,9 +368,9 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
   [E1S0_CUR] =
-  {"E1S_X0_CUR", ADC128_IN0, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X0_CUR", ADC128_IN0, read_adc128, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S1_CUR] =
-  {"E1S_X1_CUR", ADC128_IN1, read_adc128, false, {1.1, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X1_CUR", ADC128_IN1, read_adc128, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S0_TEMP] =
   {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =

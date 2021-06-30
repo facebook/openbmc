@@ -51,6 +51,10 @@ main(int argc, char **argv) {
     return pal_set_key_value(tstr, argv[3]);
   } else if((strcmp(argv[1], "carrier1") == 0) || (strcmp(argv[1], "carrier2") == 0)) {
 
+    if(atoi(argv[2]) < 0 || atoi(argv[2]) > 7) {
+      goto err_exit;
+    }
+
     printf("fpc-util: %s %s amber LED is %s\n", argv[1], argv[2], argv[4]);
 
     return pal_set_amber_led(argv[1], argv[2], argv[4]);

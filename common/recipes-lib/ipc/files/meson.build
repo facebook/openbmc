@@ -19,3 +19,7 @@ pkg.generate(libraries: [ipc_lib],
     name: meson.project_name(),
     version: meson.project_version(),
     description: 'ipc abstraction library')
+
+ipc_test = executable('test-ipc', 'ipc.c', 'ipc-test.c',
+        dependencies: thread_lib)
+test('ipc-tests', ipc_test)

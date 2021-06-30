@@ -39,7 +39,7 @@ gpio_desc_t *power_debug_en_gpio = NULL;
 gpio_desc_t *preq_gpio = NULL;
 
 /* Input pins */
-static void gpio_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr);
+static void gpio_handle(gpiopoll_pin_t *gpio, gpio_value_t last, gpio_value_t curr);
 static void *gpio_poll_thread(void *unused);
 static struct gpiopoll_config g_gpios[3] = {
   {"RST_PLTRST_BMC_N", "0", GPIO_EDGE_BOTH, gpio_handle, NULL},

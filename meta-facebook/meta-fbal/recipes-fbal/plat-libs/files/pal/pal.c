@@ -1620,15 +1620,14 @@ static int pal_ipmb_bypass (uint8_t *req_data, uint8_t req_len,
 static
 int pal_ncsi_bypass (uint8_t *req_data, uint8_t req_len,
                      uint8_t *res_data, uint8_t *res_len) {
-  uint8_t cmd, tlen;
+  uint8_t cmd;
   uint8_t channel = 0;
   uint8_t netdev = 0;
   int cc=CC_UNSPECIFIED_ERROR;
   NCSI_NL_MSG_T *msg = NULL;
   NCSI_NL_RSP_T *rsp = NULL;
 
-  tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
-  if (tlen < 0) {
+  if (req_len < 7) {  // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
     return CC_INVALID_LENGTH;
   }
 
@@ -1647,7 +1646,7 @@ int pal_ncsi_bypass (uint8_t *req_data, uint8_t req_len,
   sprintf(msg->dev_name, "eth%d", netdev);
   msg->channel_id = channel;
   msg->cmd = cmd;
-  msg->payload_length = tlen;
+  msg->payload_length = req_len - 7;
 
   for (int i=0; i<msg->payload_length; i++) {
     msg->msg_payload[i] = req_data[4+i];
@@ -1933,7 +1932,7 @@ pal_get_syscfg_text(char *text) {
     if(kv_get(key, value, &ret, KV_FPERSIST) == 0 && ret >= 6) {
       dimm_speed =  value[1]<<8 | value[0];
       dimm_capacity = (value[5]<<24 | value[4]<<16 | value[3]<<8 | value[2])/1024;
-      sprintf(&entry[strlen(entry)], "%dMhz/%dGB", dimm_speed, dimm_capacity);
+      sprintf(&entry[strlen(entry)], "%dMhz/%uGB", dimm_speed, dimm_capacity);
     }
 
     sprintf(&entry[strlen(entry)], "\n");

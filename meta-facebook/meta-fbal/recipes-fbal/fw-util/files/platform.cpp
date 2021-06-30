@@ -14,9 +14,9 @@
 
 class palBiosComponent : public BiosComponent {
   public:
-    palBiosComponent(std::string fru, std::string comp, std::string mtd, 
-                     std::string devpath, std::string dev, std::string shadow,
-                     bool level, std::string verp) :
+    palBiosComponent(const std::string &fru, const std::string &comp, const std::string &mtd,
+                     const std::string &devpath, const std::string &dev, const std::string &shadow,
+                     bool level, const std::string &verp) :
       BiosComponent(fru, comp, mtd, devpath, dev, shadow, level, verp) {}
     int update_finish(void) override;
     int setDeepSleepWell(bool setting) override;

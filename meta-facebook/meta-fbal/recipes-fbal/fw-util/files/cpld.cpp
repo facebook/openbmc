@@ -71,7 +71,7 @@ class CpldComponent : public Component {
   altera_max10_attr_t attr;
   int _update(const char *path, uint8_t is_signed);
   public:
-    CpldComponent(string fru, string comp, uint8_t type, uint8_t ctype, uint8_t bus, uint8_t addr)
+    CpldComponent(const string &fru, const string &comp, uint8_t type, uint8_t ctype, uint8_t bus, uint8_t addr)
       : Component(fru, comp), pld_type(type),
         attr{bus, addr, s_attrs[ctype].img_type, s_attrs[ctype].start_addr, s_attrs[ctype].end_addr,
              ON_CHIP_FLASH_IP_CSR_BASE, ON_CHIP_FLASH_IP_DATA_REG, DUAL_BOOT_IP_BASE} {}

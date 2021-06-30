@@ -129,7 +129,7 @@ _write_pdb_fruid(uint8_t fru_id, uint16_t offset, uint8_t count, uint8_t *buf) {
     return -1;
   }
 
-  return ret;
+  return 0;
 }
 
 int
@@ -197,9 +197,8 @@ fbal_read_pdb_fruid(uint8_t fru_id, const char *path, int fru_size) {
 
 int
 fbal_write_pdb_fruid(uint8_t fru_id, const char *path) {
-  int fd, ret = -1;
+  int fd, ret = -1, count;
   uint16_t offset;
-  uint8_t count;
   uint8_t buf[64] = {0};
 
   fd = open(path, O_RDONLY, 0666);

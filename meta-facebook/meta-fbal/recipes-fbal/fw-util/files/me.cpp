@@ -5,7 +5,7 @@ using namespace std;
 
 class MeComponent : public Component {
   public:
-    MeComponent(string fru, string comp)
+    MeComponent(const string &fru, const string &comp)
       : Component(fru, comp) {}
     int print_version() {
       char ver[128] = {0};

@@ -58,7 +58,7 @@ static int read_cpu0_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu1_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu2_dimm_temp(uint8_t dimm_id, float *value);
 static int read_cpu3_dimm_temp(uint8_t dimm_id, float *value);
-static int read_NM_pch_temp(uint8_t nm_snr_id, float *value);
+static int read_NM_pch_temp(uint8_t nm_id, float *value);
 static int read_ina260_vol(uint8_t ina260_id, float *value);
 static int read_ina260_pwr(uint8_t ina260_id, float *value);
 static int read_vr_vout(uint8_t vr_id, float *value);
@@ -72,12 +72,6 @@ static int get_nm_rw_info(uint8_t nm_id, uint8_t* nm_bus, uint8_t* nm_addr, uint
 static uint8_t m_TjMax[CPU_ID_NUM] = {0};
 static float m_Dts[CPU_ID_NUM] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 static uint8_t postcodes_last[256] = {0};
-
-// For DEBUG card sensor naming config
-struct debug_card_naming_config {
-  uint8_t offset;
-  char debug_card_name[32];
-};
 
 //4S Master BMC Sensor List
 const uint8_t mb_4s_m_tray0_sensor_list[] = {
@@ -1169,7 +1163,7 @@ cmd_peci_get_thermal_margin(uint8_t cpu_addr, float* value) {
     return -1;
   }
 
-  *value = (float)(tmp >> 6);
+  *value = (float)(tmp / 64);
   return 0;
 }
 
@@ -1879,12 +1873,12 @@ read_NM_pch_temp(uint8_t nm_id, float *value) {
 
 /*==========================================
 Read temperature sensor TMP421 value.
-Interface: temp_id: temperature id
+Interface: snr_id: temperature id
            *value: real temperature value
            return: error code
 ============================================*/
 static int
-read_sensor(uint8_t id, float *value) {
+read_sensor(uint8_t snr_id, float *value) {
   int ret;
 
   struct {
@@ -1898,13 +1892,13 @@ read_sensor(uint8_t id, float *value) {
     {"tmp421-i2c-19-4e", "MB_OUTLET_L_REMOTE_TEMP"},
     {"tmp421-i2c-19-4f", "MB_OUTLET_R_REMOTE_TEMP"},
   };
-  if (id >= ARRAY_SIZE(devs)) {
+  if (snr_id >= ARRAY_SIZE(devs)) {
     return -1;
   }
 
-  ret = sensors_read(devs[id].chip, devs[id].label, value);
+  ret = sensors_read(devs[snr_id].chip, devs[snr_id].label, value);
 
-  if( id == TEMP_REMOTE_INLET) {
+  if (snr_id == TEMP_REMOTE_INLET) {
 #ifdef DEBUG
     syslog(LOG_DEBUG, "Temp Calibration Bef=%f, Cal=%f\n", *value, InletCalibration);
 #endif

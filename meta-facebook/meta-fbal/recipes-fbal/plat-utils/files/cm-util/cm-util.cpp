@@ -19,7 +19,7 @@
  */
 
 #include <iostream>
-#include  <iomanip>
+#include <iomanip>
 #include <set>
 #include <map>
 #include <string>
@@ -30,11 +30,6 @@
 
 struct ModeDesc {
   uint8_t mode;
-  const std::string desc;
-};
-
-struct UsbChDesc {
-  uint8_t channel;
   const std::string desc;
 };
 
@@ -107,11 +102,12 @@ static int get_mode()
   }
   auto get_mode_desc = [](uint8_t md) {
     std::string desc = "Unknown mode: " + std::to_string(int(md));
-    for (const auto &pair : mode_map) {
-      if (md == pair.second.mode) {
-        desc = pair.first + ": " + pair.second.desc;
-        break;
-      }
+    auto iter = find_if(mode_map.begin(), mode_map.end(),
+                        [&md](const auto &pair) {
+                          return (md == pair.second.mode);
+                        });
+    if (iter != mode_map.end()) {
+      desc = iter->first + ": " + iter->second.desc;
     }
     return desc;
   };

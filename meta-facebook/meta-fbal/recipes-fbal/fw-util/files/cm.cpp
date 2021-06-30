@@ -12,7 +12,7 @@ class CmComponent : public McuFwComponent {
   uint8_t slv_addr;
   uint8_t type;
   public:
-    CmComponent(string fru, string comp, string name, uint8_t bus, uint8_t addr, uint8_t is_signed)
+    CmComponent(const string &fru, const string &comp, const string &name, uint8_t bus, uint8_t addr, uint8_t is_signed)
       : McuFwComponent(fru, comp, name, bus, addr, is_signed), pld_name(name), bus_id(bus), slv_addr(addr), type(is_signed) {}
     int print_version();
     int update(string image);
@@ -23,7 +23,7 @@ class CmBlComponent : public McuFwBlComponent {
   uint8_t slv_addr;
   uint8_t target_id;
   public:
-    CmBlComponent(string fru, string comp, uint8_t bus, uint8_t addr, uint8_t target)
+    CmBlComponent(const string &fru, const string &comp, uint8_t bus, uint8_t addr, uint8_t target)
       : McuFwBlComponent(fru, comp, bus, addr, target), bus_id(bus), 
                          slv_addr(addr), target_id(target) {}
     int print_version();
@@ -40,7 +40,7 @@ int CmComponent::print_version() {
     else {
       printf("CM Version: v%x.%02x\n", ver[0], ver[1]);
     }
-  } catch(string err) {
+  } catch(string &err) {
     printf("CM Version: NA (%s)\n", err.c_str());
   }
   return 0;
@@ -56,7 +56,7 @@ int CmBlComponent::print_version() {
     else {
       printf("CM Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
     }
-  } catch(string err) {
+  } catch(string &err) {
     printf("CM Bootloader Version: NA (%s)\n", err.c_str());
   }
   return 0;

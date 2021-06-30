@@ -25,7 +25,7 @@ struct gpio_evt {
   gpio_value_t value;
 };
 
-static void gpio_handle(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr);
+static void gpio_handle(gpiopoll_pin_t *gpio, gpio_value_t last, gpio_value_t curr);
 static void *gpio_poll_thread(void *unused);
 static struct gpiopoll_config g_gpios[JTAG_EVENT_NUM] = {
   {"RST_PLTRST_BMC_N", "0", GPIO_EDGE_BOTH, gpio_handle, NULL},
@@ -176,7 +176,7 @@ static void gpio_handle(gpiopoll_pin_t *gpio, gpio_value_t last, gpio_value_t cu
   }
 }
 
-static void *gpio_poll_thread(void *fru) {
+static void *gpio_poll_thread(void *unused) {
   gpio_poll(polldesc, -1);
   return NULL;
 }
@@ -328,7 +328,6 @@ static STATUS
 on_xdp_present_event(Target_Control_Handle* state, ASD_EVENT* event)
 {
     STATUS result = ST_OK;
-    int value;
     (void)state; /* unused */
 
     *event = ASD_EVENT_NONE;

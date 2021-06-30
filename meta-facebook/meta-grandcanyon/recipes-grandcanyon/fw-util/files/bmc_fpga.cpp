@@ -12,6 +12,7 @@
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include <facebook/bic.h>
+#include <facebook/fbgc_common.h>
 #include "bmc_fpga.h"
 
 using namespace std;
@@ -37,12 +38,26 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
   }
 
   size = fpgaFile.tellg();
-  if (size != MAX10_RPD_SIZE + 1) {
+  if (size != (MAX10_RPD_SIZE + IDENTIFY_OFFSET + 1)) {
     cout << "Invalid image size: " << size << endl;
+    cout << "If you are updating with old version firmware, please use force update."  <<endl;
     goto end;
   }
 
-  fpgaFile.seekg(MAX10_RPD_SIZE, ios::beg);
+  // Compare MD5 of image
+  if (check_image_md5(image.c_str(), MAX10_RPD_SIZE, (MAX10_RPD_SIZE + MD5_OFFSET)) < 0) {
+    cout << "Image file has corrupted"<< endl;
+    goto end;
+  }
+
+  // Compare signature of image
+  if (check_image_signature(image.c_str(), (MAX10_RPD_SIZE + SIGNATURE_OFFSET)) < 0) {
+    cout << "The image is not for Grand Canyon"<< endl;
+    goto end;
+  }
+
+  // Check ID of image
+  fpgaFile.seekg((MAX10_RPD_SIZE + IDENTIFY_OFFSET), ios::beg);
   fpgaFile.read(read_buffer, sizeof(read_buffer));
 
   if (fpgaFile.gcount() != sizeof(read_buffer)) {

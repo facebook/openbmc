@@ -23,6 +23,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <openssl/md5.h>
 #include <openbmc/ipmi.h>
 
 #ifdef __cplusplus
@@ -110,6 +111,10 @@ extern "C" {
 #define SKU_SIZE           (SKU_UIC_ID_SIZE + SKU_UIC_TYPE_SIZE)
 #define MAX_SKU_VALUE      (1 << SKU_SIZE)
 #define SYSTEM_INFO        "system_info"
+
+#define MD5_READ_BYTES     (1024)
+
+#define PLAT_SIG_SIZE      (16)
 
 enum {
   FRU_ALL = 0,
@@ -214,6 +219,8 @@ int string_2_byte(const char* c);
 bool start_with(const char *s, const char *p);
 int split(char **dst, char *src, char *delim, int max_size);
 int fbgc_common_get_system_stage(uint8_t *stage);
+int check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset);
+int check_image_signature(const char* image_path, uint32_t sig_offset);
 
 #ifdef __cplusplus
 } // extern "C"

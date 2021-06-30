@@ -38,6 +38,9 @@
 #include <facebook/fbgc_gpio.h>
 #include <openbmc/kv.h>
 
+// Platform signature of image: Grand Canyon
+const char platform_signature[PLAT_SIG_SIZE] = {0x47, 0x72, 0x61, 0x6e, 0x64, 0x20, 0x43, 0x61, 0x6e, 0x79, 0x6f, 0x6e, 0x20, 0x20, 0x20, 0x20};
+
 int
 fbgc_common_get_chassis_type(uint8_t *type) {
   char system_info[MAX_VALUE_LEN] = {0};
@@ -229,4 +232,127 @@ fbgc_common_get_system_stage(uint8_t *stage) {
   }
 
   return 0;
+}
+
+int
+check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
+  int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
+  char read_buf[MD5_READ_BYTES] = {0};
+  char md5_digest[MD5_DIGEST_LENGTH] = {0};
+  MD5_CTX context;
+
+  if (image_path == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to NULL parameters.", __func__);
+    return -1;
+  }
+
+  if (cal_size <= 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to wrong calculate size: %d.", __func__, cal_size);
+    return -1;
+  }
+
+  if (md5_offset <= 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to wrong offset of MD5: 0x%X.", __func__, md5_offset);
+    return -1;
+  }
+
+  fd = open(image_path, O_RDONLY);
+
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to calculate MD5.", __func__, image_path);
+    return -1;
+  }
+
+  lseek(fd, 0, SEEK_SET);
+
+  ret = MD5_Init(&context);
+  if (ret == 0) {
+    syslog(LOG_WARNING, "%s(): failed to initialize MD5 context.", __func__);
+    ret = -1;
+    goto exit;
+  }
+
+  while (sum < cal_size) {
+    read_bytes = MD5_READ_BYTES;
+    if ((sum + MD5_READ_BYTES) > cal_size) {
+      read_bytes = cal_size - sum;
+    }
+
+    byte_num = read(fd, read_buf, read_bytes);
+    ret = MD5_Update(&context, read_buf, byte_num);
+    if (ret == 0) {
+      syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
+      ret = -1;
+      goto exit;
+    }
+    sum += byte_num;
+  }
+
+  ret = MD5_Final((uint8_t*)md5_digest, &context);
+  if (ret == 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 of %s.", __func__, image_path);
+    ret = -1;
+    goto exit;
+  }
+
+  memset(read_buf, 0, sizeof(read_buf));
+  lseek(fd, md5_offset, SEEK_SET);
+  byte_num = read(fd, read_buf, MD5_DIGEST_LENGTH);
+
+  if (byte_num != MD5_DIGEST_LENGTH) {
+    syslog(LOG_WARNING, "%s(): failed to read the signature of %s.", __func__, image_path);
+    ret = -1;
+    goto exit;
+  }
+
+  if (strncmp(md5_digest, read_buf, sizeof(md5_digest)) != 0) {
+    ret = -1;
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
+
+int
+check_image_signature(const char* image_path, uint32_t sig_offset) {
+  int fd = 0, ret = 0, byte_num = 0;
+  char read_buf[PLAT_SIG_SIZE] = {0};
+
+  if ((image_path == NULL)) {
+   syslog(LOG_WARNING, "%s(): failed to check platform signature of image due to NULL parameter.", __func__);
+    ret = -1;
+    goto exit;
+  }
+
+  if (sig_offset <= 0) {
+    syslog(LOG_WARNING, "%s(): failed to check platform signature of %s due to wrong offset: 0x%X", __func__, image_path, sig_offset);
+    ret = -1;
+    goto exit;
+  }
+
+  fd = open(image_path, O_RDONLY);
+
+  if (fd < 0 ) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to check platform signature.", __func__, image_path);
+    ret = -1;
+    goto exit;
+  }
+
+  lseek(fd, sig_offset, SEEK_SET);
+  byte_num = read( fd, read_buf, sizeof(read_buf));
+
+  if (byte_num != sizeof(read_buf)) {
+    syslog(LOG_WARNING, "%s(): failed to check platform signature of %s because read failed.", __func__, image_path);
+    ret = -1;
+    goto exit;
+  }
+
+  if (strncmp(platform_signature, read_buf, sizeof(read_buf)) != 0) {
+    ret = -1;
+  }
+
+exit:
+  close(fd);
+  return ret;
 }

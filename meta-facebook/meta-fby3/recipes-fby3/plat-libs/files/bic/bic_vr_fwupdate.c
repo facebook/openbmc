@@ -1182,10 +1182,13 @@ static struct tool {
 
 static char*
 get_vr_name(uint8_t intf, uint8_t bus, uint8_t addr, uint8_t comp) {
-  int i;
+  int i = 0;
   for ( i = 0; i< dev_table_size; i++ ) {
-          //check addr first, if it's false, check comp further
-    if ( (addr == dev_list[i].addr || comp == dev_list[i].comp) && \
+    // becasue all VRs on SB are defined to use the same comp(FW_VR)
+    // if we use OR here, all VR names on SB will be treated as VCCIN/VSA
+    // since bus, intf, and comp are the same on SB.
+    // therefore, we should use AND here.
+    if (  addr == dev_list[i].addr && comp == dev_list[i].comp && \
           bus == dev_list[i].bus && intf == dev_list[i].intf) {
       return dev_list[i].dev_name;
     }
@@ -1201,7 +1204,8 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
 
   while ( i < dev_table_size ) {
     if ( dev_list[i].intf == intf && dev_list[i].comp == comp ) {
-      printf("Find: %s, ", dev_list[i].dev_name );
+      // we can't print VR's name here because we still need more information to help us identify
+      // intf and comp are not enough to us to help identify the VR name.
       ret = bic_get_vr_device_id(slot_id, 0/*unused*/, rbuf, &rlen, dev_list[i].bus, dev_list[i].addr, intf);
       if ( ret == BIC_STATUS_SUCCESS && rlen <= TI_DEVID_LEN/*the longest length of dev id*/) {
         *vr_bus = dev_list[i].bus;
@@ -1228,7 +1232,7 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
     *sel_vendor = VR_ISL;
   }
 
-  printf("VR vendor=%s(%x.%x) \n", (*sel_vendor == VR_IFX)?"IFX": \
+  printf("Find the VR device, Vendor=%s(%x.%x) \n", (*sel_vendor == VR_IFX)?"IFX": \
                                    (*sel_vendor == VR_TI)?"TI": \
                                    (*sel_vendor == VR_ISL)?"ISL":"VY", rlen, *sel_vendor);
   return BIC_STATUS_SUCCESS;
@@ -1236,7 +1240,7 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
 
 int
 update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool usb_update) {
-  int ret = 0;
+  int ret = BIC_STATUS_FAILURE;
   int i = 0;
   uint8_t devid[6] = {0};
   uint8_t sel_vendor = 0;
@@ -1272,7 +1276,8 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
   }
 
   //step 3 - check DEVID
-  if ( memcmp(vr_list[0].devid, devid, vr_list[0].devid_len) != 0 ) {
+  //the Vishay firmware file doesn't provide the device id, skip it
+  if ( (sel_vendor != VR_VY) && (memcmp(vr_list[0].devid, devid, vr_list[0].devid_len) != 0) ) {
     printf("Device ID is not match!\n");
     printf(" Expected ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", vr_list[0].devid[i]);
@@ -1280,13 +1285,22 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
     printf(" Actual ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", devid[i]);
     printf("\n");
-    ret = -1;
+    ret = BIC_STATUS_FAILURE;
     goto error_exit;
   }
 
   // bus/intf info is not included in the fw file.
   vr_list[0].bus = vr_bus;
   vr_list[0].intf = intf;
+
+  // addr info is not included in the VY fw file.
+  if ( sel_vendor == VR_VY ) {
+    if ( comp == FW_2OU_3V3_VR1 ) vr_list[0].addr = VR_2OU_P3V3_STBY1;
+    if ( comp == FW_2OU_3V3_VR2 ) vr_list[0].addr = VR_2OU_P3V3_STBY2;
+    if ( comp == FW_2OU_3V3_VR3 ) vr_list[0].addr = VR_2OU_P3V3_STBY3;
+    if ( comp == FW_2OU_1V8_VR  ) vr_list[0].addr = VR_2OU_P1V8;
+    if ( vr_list[0].addr == 0xff ) { printf("Err: undefined component: %X\n", comp); return BIC_STATUS_FAILURE; }
+  }
 
   //step 4 - program
   //For now, we only support to be input 1 file.

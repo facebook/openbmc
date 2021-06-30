@@ -65,11 +65,12 @@ def _handle_error():
 def kv_get(key, flags=0, binary=False):
     key_c = ctypes.create_string_buffer(key.encode())
     value = ctypes.create_string_buffer(256)
-    ret = lkv_hndl.kv_get(key_c, value, 0, ctypes.c_uint(flags))
+    length = ctypes.c_size_t(0)
+    ret = lkv_hndl.kv_get(key_c, value, ctypes.byref(length), ctypes.c_uint(flags))
     if ret != 0:
         _handle_error()
     if binary:
-        return value.value
+        return value[:length.value]
     return value.value.decode()
 
 

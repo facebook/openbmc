@@ -20,21 +20,27 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from utils.test_utils import running_systemd
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "dhclient -6 -d -D LL",
-            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "front-paneld",
             "bicmond",
             "ipmbd",
             "ipmid",
             "mTerm_server",
             "rest.py",
-            "restapi",
             "rsyslogd",
             "sensord",
             "usbmon.sh",
         ]
+        if not running_systemd():
+            self.expected_process.extend(
+                [
+                    "dhclient -6 -d -D LL",
+                    "dhclient -pf /var/run/dhclient.eth0.pid eth0",
+                    "restapi",
+                ]
+            )

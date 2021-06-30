@@ -84,6 +84,7 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
            'file://compute_rest_shim.py \
             file://rest_crawler.py \
             file://node_attestation.py \
+            file://node_api.py \
             file://node_dpb.py \
             file://node_flash.py \
             file://node_iom.py \

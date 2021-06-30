@@ -51,8 +51,11 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
     cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
     return -1;
   }
-  cerr << "Putting ME into recovery mode..." << endl;
-  me_recovery(slot_id, RECOVERY_MODE);
+
+  if (!force) {
+    cerr << "Putting ME into recovery mode..." << endl;
+    me_recovery(slot_id, RECOVERY_MODE);
+  }
   // cerr << "Enabling USB..." << endl;
   // bic_set_gpio(slot_id, RST_USB_HUB_N_R, GPIO_HIGH);
   sleep(1);
@@ -73,8 +76,10 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   cerr << "Switching BIOS SPI MUX for default value..." << endl;
   bic_set_gpio(slot_id, FM_SPI_PCH_MASTER_SEL_R, GPIO_LOW);
   sleep(3);
-  cerr << "Doing ME Reset..." << endl;
-  me_reset(slot_id);
+  if (!force) {
+    cerr << "Doing ME Reset..." << endl;
+    me_reset(slot_id);
+  }
   cerr << "Power-cycling the server..." << endl;
   sleep(5);
   pal_set_server_power(slot_id, SERVER_12V_CYCLE);

@@ -417,7 +417,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   if (!bic_have_checksum_sha256(slot_id)) {
     if (dedup && !(dedup_env != NULL && *dedup_env == '2')) {
       fprintf(stderr, "Strong checksum function is not available, disabling "
-              "deduplication. Update BIC firmware to at least 31.04\n");
+              "deduplication.\n");
       dedup = false;
     }
     cs_len = SIMPLE_DIGEST_LENGTH * 2;

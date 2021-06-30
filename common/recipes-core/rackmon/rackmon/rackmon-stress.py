@@ -118,14 +118,16 @@ def rackmon_run_stats(before, after):
         print("ERROR: %s PSUs were taked out during experiment" % (",".join(removed)))
     if len(added) > 0:
         print("ERROR: %s PSUs were added during experiment" % (",".join(added)))
+    total_timeouts = 0
+    total_baud_changes = 0
+    total_crc = 0
     for psu in before:
         if psu not in after:
             continue
-        crcs = after[psu]["crc"] - before[psu]["crc"]
-        timeouts = after[psu]["timeouts"] - before[psu]["timeouts"]
-        baud_before = before[psu]["baud"]
-        baud_after = after[psu]["baud"]
-        return baud_after - baud_before, crcs, timeouts
+        total_crc += after[psu]["crc"] - before[psu]["crc"]
+        total_timeouts += after[psu]["timeouts"] - before[psu]["timeouts"]
+        total_baud_changes += 1 if before[psu]["baud"] != after[psu]["baud"] else 0
+    return total_baud_changes, total_crc, total_timeouts
 
 
 class CPUProfiler:

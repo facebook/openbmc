@@ -27,6 +27,7 @@
 #define PWM_MASK     0x0f
 
 #define DEVICE_KEY "sys_config/fru%d_B_drive0_model_name"
+#define FAN0_PATH "/sys/class/hwmon/hwmon0/fan0_input"
 
 enum {
   /* Fan Type */
@@ -916,6 +917,33 @@ static int compare(const void *arg1, const void *arg2) {
 }
 
 int
+read_device(const char *device, float *value) {
+  FILE *fp = NULL;
+
+  if (device == NULL || value == NULL) {
+    syslog(LOG_ERR, "%s: Invalid parameter", __func__);
+    return -1;
+  }
+
+  fp = fopen(device, "r");
+  if (fp == NULL) {
+#ifdef DEBUG
+    syslog(LOG_INFO, "%s failed to open device %s error: %s", __func__, device, strerror(errno));
+#endif
+    return -1;
+  }
+
+  if (fscanf(fp, "%f", value) != 1) {
+    syslog(LOG_INFO, "%s failed to read device %s error: %s", __func__, device, strerror(errno));
+    fclose(fp);
+    return -1;
+  }
+  fclose(fp);
+
+  return 0;
+}
+
+int
 get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t type = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
@@ -1198,11 +1226,15 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     }
 
     if (fan > pal_tach_cnt ||
-        snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
+        snprintf(label, sizeof(label), "fan%d", fan) > sizeof(label)) {
       syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
       return -1;
     }
-    ret = sensors_read_fan(label, &value);
+    if (fan == 0) {
+      ret = read_device(FAN0_PATH, &value);
+    } else {
+      ret = sensors_read_fan(label, &value);
+    }
   } else if ( bmc_location == NIC_BMC ) {
     if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
     else ret = bic_get_fan_speed(fan, &value);

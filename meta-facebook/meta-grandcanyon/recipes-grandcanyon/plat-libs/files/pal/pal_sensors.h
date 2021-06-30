@@ -38,7 +38,7 @@
 
 // ADC128 INFO
 #define ADC128_GIMON                 (52)    // unit: (uA/A)
-#define ADC128_RIMON                 (10000) // unit: (ohm)
+#define ADC128_RIMON                 (20000) // unit: (ohm)
 
 // ADS1015 INFO
 #define IOCM_VOLTAGE_SENSOR_DIR      "/sys/bus/i2c/devices/13-0049/iio\\:device*"

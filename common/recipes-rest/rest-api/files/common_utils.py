@@ -99,14 +99,10 @@ async def async_exec(
             *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
 
-    try:
-        await asyncio.wait_for(proc.wait(), timeout=30.0)
-    except asyncio.TimeoutError:
-        # command timed out!
-        raise
-
     stdout, stderr = await proc.communicate()
     data = stdout.decode()
     err = stderr.decode()
+
+    await proc.wait()
 
     return proc.returncode, data, err

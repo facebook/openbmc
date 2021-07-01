@@ -7,7 +7,9 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://me-util.c;beginline=4;endline=16;md5=b66b777f082370423b0fa6f12a3dc4db"
 
 inherit meson
+inherit legacy-packages
 
+pkgdir = "me-util"
 SRC_URI = "file://me-util.c \
            file://meson.build \
           "
@@ -16,4 +18,3 @@ S = "${WORKDIR}"
 
 DEPENDS = "libbic libpal libipmi libipmb libfbgc-common"
 RDEPENDS_${PN} += "libbic libpal libipmi libipmb libfbgc-common"
-

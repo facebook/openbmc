@@ -24,6 +24,12 @@ function run_on_bmc() {
     ssh root@"$target_bmc" "$cmd"
 }
 
+function purge_target_dir() {
+    run_on_bmc "mv /usr/local/fbpackages/rest-api/acl_config.py /tmp/acl_config.bak"
+    run_on_bmc "rm -rf /usr/local/fbpackages/rest-api/*"
+    run_on_bmc "mv /tmp/acl_config.bak /usr/local/fbpackages/rest-api/acl_config.py"
+}
+
 function get_remote_platform() {
     version_str=$(run_on_bmc "cat /etc/issue")
     remote_platform=$(echo "$version_str"| cut -d' ' -f 3 | cut -d'-' -f 1)
@@ -60,6 +66,8 @@ function run_rest_on_bmc() {
 function do_the_loop(){
     plat_specific_src_dir=$1
     kill_rest
+    echo "Purging target directory"
+    purge_target_dir
     echo "Uploading full initial state to BMC"
     upload_full_rest_to_bmc
     echo "Preparing stdout logging conf"

@@ -7,6 +7,12 @@
 // UIC FPGA command
 #define CMD_CODE_NIC_POWER_CONTROL 0x3
 
+// BS FPGA command
+#define BS_FPGA_SERVER_POWER_CTRL 0x0F
+
+#define SERVER_POWER_BTN_HIGH 1
+#define SERVER_POWER_BTN_LOW  0
+
 enum {
   POWER_STATUS_ALREADY_OK = 1,
   POWER_STATUS_OK = 0,
@@ -32,5 +38,8 @@ int pal_get_last_pwr_state(uint8_t fru, char *state);
 int pal_set_last_pwr_state(uint8_t fru, char *state);
 uint8_t pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_data);
 void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len);
+int pal_server_power_ctrl(uint8_t action);
+int pal_set_pwr_btn(uint8_t val);
+int pal_server_power_cycle();
 
 #endif

@@ -115,6 +115,14 @@ extern "C" {
 #define MD5_READ_BYTES     (1024)
 
 #define PLAT_SIG_SIZE      (16)
+//The delay of power control
+#define DELAY_DC_POWER_CYCLE 5
+#define DELAY_DC_POWER_OFF 6
+#define DELAY_GRACEFUL_SHUTDOWN 1
+#define DELAY_DC_POWER_ON 1
+#define DELAY_RESET 1
+
+#define PWR_CTRL_ACT_CNT 3
 
 enum {
   FRU_ALL = 0,

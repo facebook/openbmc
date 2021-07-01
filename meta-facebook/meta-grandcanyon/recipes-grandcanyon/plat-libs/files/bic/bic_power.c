@@ -41,16 +41,6 @@
 #define POWER_BTN_HIGH ((1 << BS_FPGA_PWR_BTN_BIT) | (1 << BS_FPGA_RST_BTN_BIT))
 #define POWER_BTN_LOW  ((0 << BS_FPGA_PWR_BTN_BIT) | (1 << BS_FPGA_RST_BTN_BIT))
 
-//The delay of power control
-#define DELAY_DC_POWER_CYCLE 5
-#define DELAY_DC_POWER_OFF 6
-#define DELAY_GRACEFUL_SHUTDOWN 1
-#define DELAY_DC_POWER_ON 1
-#define DELAY_RESET 1
-
-#define PWR_CTRL_ACT_CNT 3
-
-
 static int
 bic_set_pwr_btn(uint8_t val) {
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};

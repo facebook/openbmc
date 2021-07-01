@@ -142,6 +142,10 @@ extern "C" {
 #define WWID_SIZE    (8)
 #define WWID_OFFSET  (0x400)
 
+#define MAX_BS_FPGA_VER_LEN      4
+#define GET_BS_FPGA_VER_ADDR     0x40
+#define GET_BS_FPGA_VER_OFFSET   (0x28002000)
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -414,6 +418,7 @@ bool pal_is_ioc_ready(uint8_t i2c_bus);
 int pal_check_fru_is_valid(const char* fruid_path);
 int pal_get_cached_value(char *key, char *value);
 int pal_set_cached_value(char *key, char *value);
+int pal_get_bs_fpga_ver(uint8_t *ver, uint8_t ver_len);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -40,6 +40,7 @@ class BicFwBlComponent : public Component {
     BicFwBlComponent(string fru, string comp, uint8_t _fw_comp)
       : Component(fru, comp), fw_comp(_fw_comp), server(FRU_SERVER, fru) {}
     int update(string image);
+    int fupdate(string image);
     int print_version();
     void get_version(json& j);
 };
@@ -136,7 +137,9 @@ int BicFwBlComponent::update_internal(string image, bool force) {
   int ret = 0;
 
   try {
-    server.ready();
+    if (force == false) {
+      server.ready();
+    }
     ret = bic_update_fw(FRU_SERVER, fw_comp, (char *)image.c_str(), (force) ? FORCE_UPDATE_SET : FORCE_UPDATE_UNSET);
 
     if (ret != BIC_FW_UPDATE_SUCCESS) {
@@ -163,6 +166,10 @@ int BicFwBlComponent::update_internal(string image, bool force) {
 
 int BicFwBlComponent::update(string image) {
   return update_internal(image, false);
+}
+
+int BicFwBlComponent::fupdate(string image) {
+  return update_internal(image, true);
 }
 
 int BicFwBlComponent::get_ver_str(string& s) {

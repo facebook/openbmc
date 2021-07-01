@@ -124,7 +124,7 @@ def populate_server_node(app: Application, num: int):
         platinfo_path = os.path.join(base_route, "bios", "plat-info")
         platinfo_shim = RestShim(
             get_node_bios_plat_info_trunk("slot" + repr(num)),
-            populate_server_node,
+            platinfo_path,
         )
         app.router.add_get(platinfo_path, platinfo_shim.get_handler)
         # Add /api/server(1-n)/bios/boot-order/boot_mode

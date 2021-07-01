@@ -1464,9 +1464,9 @@ pal_specific_plat_fan_check(bool status)
   }
 
   if(chassis_status == CHASSIS_OUT) {
-    printf("Chassis Fan Latch Open: True\n");
+    printf("Sled Fan Latch Open: True\n");
   } else {
-    printf("Chassis Fan Latch Open: False\n");
+    printf("Sled Fan Latch Open: False\n");
   }
 
   return;

@@ -1,7 +1,5 @@
 REST_END_POINTS = {
-    "/api": [
-        "Description", "version"
-    ],
+    "/api": ["Description", "version"],
     "/api/bmc": [
         "At-Scale-Debug Running",
         "CPU Usage",
@@ -25,7 +23,7 @@ REST_END_POINTS = {
         "open-fds",
         "u-boot version",
         "uptime",
-        "vboot"
+        "vboot",
     ],
     "/api/sensors": [
         "AIRFLOW",
@@ -226,11 +224,9 @@ REST_END_POINTS = {
         "UIC_ADC_P3V3_STBY",
         "UIC_ADC_P5V_STBY",
         "UIC_INLET_TEMP",
-        "UIC_P12V_ISENSE_CUR"
+        "UIC_P12V_ISENSE_CUR",
     ],
-    "/api/logs": [
-        "Logs"
-    ],
+    "/api/logs": ["Logs"],
     "/api/fans": [
         "Fan 0 Front Speed",
         "Fan 1 Front Speed",
@@ -240,23 +236,12 @@ REST_END_POINTS = {
         "FSCD Driver",
         "Sensor Fail",
         "Fan Fail",
-        "Chassis Fan Latch Open"
     ],
-    "/api/nic": [
-        "Description"
-    ],
-    "/api/nic/logs": [
-        "Logs"
-    ],
-    "/api/nic/sensors": [
-        "NIC_SENSOR_TEMP"
-    ],
-    "/api/uic": [
-        "Description"
-    ],
-    "/api/uic/logs": [
-        "Logs"
-    ],
+    "/api/nic": ["Description"],
+    "/api/nic/logs": ["Logs"],
+    "/api/nic/sensors": ["NIC_SENSOR_TEMP"],
+    "/api/uic": ["Description"],
+    "/api/uic/logs": ["Logs"],
     "/api/uic/fruid": [
         "Board Custom Data 1",
         "Board Custom Data 2",
@@ -276,7 +261,7 @@ REST_END_POINTS = {
         "Product Name",
         "Product Part Number",
         "Product Serial",
-        "Product Version"
+        "Product Version",
     ],
     "/api/uic/bmc": [
         "At-Scale-Debug Running",
@@ -301,7 +286,7 @@ REST_END_POINTS = {
         "open-fds",
         "u-boot version",
         "uptime",
-        "vboot"
+        "vboot",
     ],
     "/api/uic/sensors": [
         "UIC_ADC_P12V_DPB",
@@ -314,17 +299,11 @@ REST_END_POINTS = {
         "UIC_ADC_P3V3_STBY",
         "UIC_ADC_P5V_STBY",
         "UIC_INLET_TEMP",
-        "UIC_P12V_ISENSE_CUR"
+        "UIC_P12V_ISENSE_CUR",
     ],
-    "/api/uic/health": [
-        "Status of enclosure health LED"
-    ],
-    "/api/uic/identify": [
-        "Status of identify LED"
-    ],
-    "/api/dpb": [
-        "Description"
-    ],
+    "/api/uic/health": ["Status of enclosure health LED"],
+    "/api/uic/identify": ["Status of identify LED"],
+    "/api/dpb": ["Description"],
     "/api/dpb/fruid": [
         "Board Mfg",
         "Board Mfg Date",
@@ -341,7 +320,7 @@ REST_END_POINTS = {
         "Product Name",
         "Product Part Number",
         "Product Serial",
-        "Product Version"
+        "Product Version",
     ],
     "/api/dpb/sensors": [
         "AIRFLOW",
@@ -475,11 +454,9 @@ REST_END_POINTS = {
         "HDD_SMART_TEMP_32",
         "HDD_SMART_TEMP_33",
         "HDD_SMART_TEMP_34",
-        "HDD_SMART_TEMP_35"
+        "HDD_SMART_TEMP_35",
     ],
-    "/api/dpb/logs": [
-        "Logs"
-    ],
+    "/api/dpb/logs": ["Logs"],
     "/api/dpb/fans": [
         "Fan 0 Front Speed",
         "Fan 1 Front Speed",
@@ -489,20 +466,17 @@ REST_END_POINTS = {
         "FSCD Driver",
         "Sensor Fail",
         "Fan Fail",
-        "Chassis Fan Latch Open"
     ],
     "/api/dpb/error" : [
         "Error Code",
-        "Error Counter"
+        "Error Counter",
     ],
     "/api/dpb/hdd-status" : [
         "Abnormal HDD ID",
         "Missing HDD ID",
-        "Normal HDD ID"
+        "Normal HDD ID",
     ],
-    "/api/scc": [
-        "Description"
-    ],
+    "/api/scc": ["Description"],
     "/api/scc/fruid": [
         "Board Mfg",
         "Board Mfg Date",
@@ -519,11 +493,9 @@ REST_END_POINTS = {
         "Product Name",
         "Product Part Number",
         "Product Serial",
-        "Product Version"
+        "Product Version",
     ],
-    "/api/scc/logs": [
-        "Logs"
-    ],
+    "/api/scc/logs": ["Logs"],
     "/api/scc/sensors": [
         "SCC_EXP_TEMP",
         "SCC_HSC_CUR",
@@ -538,11 +510,11 @@ REST_END_POINTS = {
         "SCC_P1V8_E_SENSE",
         "SCC_P3V3_E_SENSE",
         "SCC_TEMP_1",
-        "SCC_TEMP_2"
+        "SCC_TEMP_2",
     ],
     "/api/server": [
         "BIC_ok",
-        "Power status"
+        "Power status",
     ],
     "/api/server/fruid": [
         "Board Mfg",
@@ -560,7 +532,7 @@ REST_END_POINTS = {
         "Product Name",
         "Product Part Number",
         "Product Serial",
-        "Product Version"
+        "Product Version",
     ],
     "/api/server/sensors": [
         "BS_INLET_TEMP",
@@ -603,11 +575,9 @@ REST_END_POINTS = {
         "BS_DIMMDE_VR_TEM",
         "BS_DIMMDE_VR_CUR",
         "BS_DIMMDE_VR_VOL",
-        "BS_DIMMDE_VR_PWR"
+        "BS_DIMMDE_VR_PWR",
     ],
-    "/api/server/logs": [
-        "Logs"
-    ],
+    "/api/server/logs": ["Logs"],
     "/api/server/config": [
         "ntp_server",
         "pwr_server_last_state",
@@ -616,22 +586,16 @@ REST_END_POINTS = {
         "server_sel_error",
         "server_sensor_health",
         "sysfw_ver_server",
-        "system_identify_server"
+        "system_identify_server",
     ],
-    "/api/server/bios": [
-        "Description"
-    ],
-    "/api/server/bios/boot-order": [
-        "Description"
-    ],
+    "/api/server/bios": ["Description"],
+    "/api/server/bios/boot-order": ["Description"],
     "/api/server/bios/boot-order/boot_mode": [
         "Boot Mode",
         "Note #1: Actions Format:",
-        "Note #2: Boot Mode No."
+        "Note #2: Boot Mode No.",
     ],
-    "/api/server/bios/boot-order/clear_cmos": [
-        "Clear CMOS Function"
-    ],
+    "/api/server/bios/boot-order/clear_cmos": ["Clear CMOS Function"],
     "/api/server/bios/boot-order/force_boot_bios_setup": [
         "Force Boot to BIOS Setup Function"
     ],
@@ -640,17 +604,9 @@ REST_END_POINTS = {
         "Note #1: Actions Format:",
         "Note #2: Boot Order No.",
     ],
-    "/api/server/bios/postcode": [
-        "POST Code"
-    ],
-    "/api/server/bios/plat-info": [
-        "Platform Information"
-    ],
-    "/api/e1s_iocm": [
-        "Description"
-    ],
-    "/api/e1s_iocm/logs": [
-        "Logs"
-    ]
+    "/api/server/bios/postcode": ["POST Code"],
+    "/api/server/bios/plat-info": ["Platform Information"],
+    "/api/e1s_iocm": ["Description"],
+    "/api/e1s_iocm/logs": ["Logs"]
 }
 

@@ -193,6 +193,7 @@ def arg_parser():
             "yamp",
             "elbert",
             "fby3",
+            "fbgc",
         ],
     )
     parser.add_argument(

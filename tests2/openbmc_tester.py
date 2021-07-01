@@ -60,6 +60,7 @@ def arg_parse():
             "fbttn",
             "fuji",
             "yamp",
+            "fbgc",
         ],
     )
 

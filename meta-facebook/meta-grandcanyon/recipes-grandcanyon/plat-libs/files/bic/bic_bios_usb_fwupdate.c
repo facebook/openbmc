@@ -29,6 +29,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openssl/sha.h>
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
@@ -37,22 +38,45 @@
 #define TI_PRODUCT_ID 0x0007
 
 #define USB_PKT_SIZE 0x200
-#define USB_DAT_SIZE (USB_PKT_SIZE-7)
+#define USB_DAT_SIZE (USB_PKT_SIZE - USB_PKT_HDR_SIZE)
+#define USB_PKT_SIZE_BIG 0x1000
+#define USB_DAT_SIZE_BIG (USB_PKT_SIZE_BIG - USB_PKT_HDR_SIZE)
 
 #define MAX_USB_CFG_DATA_SIZE 512
 #define MAX_USB_UPDATE_TARGET_LEN 64
 
 #define USB_PKT_DATA_OFFSET 7
 
-int interface_ref = 0;
-int alt_interface = 0 , interface_number = 0;
+#define BIOS_UPDATE_BLK_SIZE (64*1024)
+#define BIOS_UPDATE_IMG_SIZE (32*1024*1024)
+#define SIMPLE_DIGEST_LENGTH 4
+#define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
 
 typedef struct {
   uint8_t dummy;
   uint32_t offset;
   uint16_t length;
-  uint8_t data[USB_DAT_SIZE];
+  uint8_t data[0];
 } __attribute__((packed)) bic_usb_packet;
+#define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
+
+#define NUM_ATTEMPTS 5
+
+int interface_ref = 0;
+int alt_interface = 0 , interface_number = 0;
+
+struct bic_get_fw_cksum_sha256_req {
+  uint8_t iana_id[SIZE_IANA_ID];
+  uint8_t target;
+  uint32_t offset;
+  uint32_t length;
+} __attribute__((packed));
+
+struct bic_get_fw_cksum_sha256_res {
+  uint8_t iana_id[SIZE_IANA_ID];
+  uint8_t cksum[32];
+} __attribute__((packed));
+
 
 // Read checksum of various components
 int
@@ -100,13 +124,40 @@ bic_send:
 }
 
 int
+bic_get_fw_cksum_sha256(uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
+  int ret = 0;
+  struct bic_get_fw_cksum_sha256_req req = {
+    .iana_id = {0x9c, 0x9c, 0x00},
+    .target = target,
+    .offset = offset,
+    .length = len,
+  };
+  struct bic_get_fw_cksum_sha256_res res = {0};
+  uint8_t rlen = sizeof(res);
+
+  if (cksum == NULL) {
+    syslog(LOG_ERR, "%s(): NULL checksum parameter", __func__);
+    return -1;
+  }
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, BIC_CMD_OEM_FW_CKSUM_SHA256, (uint8_t *) &req, sizeof(req), (uint8_t *) &res, &rlen);
+  if ((ret != 0) || (rlen != sizeof(res))) {
+    syslog(LOG_ERR, "%s(): unexpected response, length = %u, ret = %d", __func__, rlen, ret);
+    return -1;
+  }
+  memcpy(cksum, res.cksum, sizeof(res.cksum));
+
+  return 0;
+}
+
+int
 verify_bios_image(int fd, long size) {
   int ret = -1;
-  int rc = 0, i = 0;
+  int rc, i;
   uint32_t offset = 0;
-  uint32_t tcksum = 0, gcksum = 0;
-  volatile uint16_t count = 0;
-  uint8_t target = 0, last_pkt = 0x00;
+  uint32_t tcksum, gcksum = 0;
+  volatile uint16_t count;
+  uint8_t target, last_pkt = 0x00;
   uint8_t *tbuf = NULL;
 
   // Checksum calculation for BIOS image
@@ -117,11 +168,12 @@ verify_bios_image(int fd, long size) {
 
   if ((offset = lseek(fd, 0, SEEK_SET))) {
     syslog(LOG_ERR, "%s: fail to init file offset %d, errno = %d", __func__, offset, errno);
+    free(tbuf);
     return -1;
   }
   while (1) {
     count = read(fd, tbuf, BIOS_VERIFY_PKT_SIZE);
-    if (count <= 0) {
+    if (count == 0) {
       if (offset >= size) {
         ret = 0;
       }
@@ -183,7 +235,7 @@ int print_configuration(struct libusb_device_handle *hDevice, struct libusb_conf
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle) {
   struct libusb_device_handle *hDevice_req;
   struct libusb_config_descriptor *config;
-  int altsetting_index = 0, endpoint_index = 0, interface_index = 0;
+  int altsetting_index, endpoint_index, interface_index = 0;
 
   hDevice_req = handle;
   libusb_get_active_config_descriptor(dev, &config);
@@ -225,10 +277,10 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
 
 static int
 _send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt) {
-  const int transferlen = pkt->length + 7;
+  const int transferlen = pkt->length + USB_PKT_HDR_SIZE;
   int transferred = 0;
   int retries = 3;
-  int ret = 0;
+  int ret;
 
   // _debug_bic_usb_packet(pkt);
   while(true)
@@ -402,25 +454,85 @@ error_exit:
   return -1;
 }
 
+static int
+calc_checksum_simple(const uint8_t *buf, size_t len, uint8_t *out) {
+  uint32_t cs = 0;
+
+  if ((buf == NULL) || (out == NULL)) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+  while (len-- > 0) {
+    cs += *buf++;
+  }
+  *((uint32_t *) out) = cs;
+  return 0;
+}
+
+static int
+calc_checksum_sha256(const void *buf, size_t len, uint8_t *out) {
+  if ((buf == NULL) || (out == NULL)) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+  SHA256_CTX ctx = {0};
+  memset(out, 0, STRONG_DIGEST_LENGTH);
+  if (SHA256_Init(&ctx) != 1) {
+    return -1;
+  }
+  if (SHA256_Update(&ctx, buf, len) != 1) {
+    return -1;
+  }
+  if (SHA256_Final(out, &ctx) != 1) {
+    return -1;
+  }
+  return 0;
+}
+
+static bool
+bic_have_checksum_sha256() {
+  uint8_t cs[STRONG_DIGEST_LENGTH] = {0};
+  return (bic_get_fw_cksum_sha256(UPDATE_BIOS, 0, BIOS_UPDATE_BLK_SIZE, cs) == 0);
+}
+
+static int
+get_block_checksum(size_t offset, int cs_len, uint8_t *out) {
+  int rc = 0;
+
+  if (out == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+  if (cs_len == STRONG_DIGEST_LENGTH) {
+    rc = bic_get_fw_cksum_sha256(UPDATE_BIOS, offset, BIOS_UPDATE_BLK_SIZE, out);
+  } else {
+    rc = bic_get_fw_cksum(UPDATE_BIOS, offset, BIOS_VERIFY_PKT_SIZE, out);
+    if (rc == 0) {
+      rc = bic_get_fw_cksum(UPDATE_BIOS, offset + BIOS_VERIFY_PKT_SIZE,
+                            BIOS_VERIFY_PKT_SIZE, out + SIMPLE_DIGEST_LENGTH);
+    }
+  }
+  return rc;
+}
+
 int
 bic_update_fw_usb(uint8_t comp, const char *image_file, usb_dev* udev) {
   struct stat st;
-  uint32_t chunk_sz = BIOS_PKT_SIZE;  // bic usb write block size
-  uint32_t file_sz = 0;
-  uint32_t actual_send_sz = 0;
-  uint32_t align_pkt_cnt = 0;
-  uint32_t dsize = 0, offset = 0, last_offset = 0, shift_offset = 0;
-  uint16_t count = 0, read_count = 0;
-  uint8_t buf[USB_PKT_SIZE] = {0};
-  bic_usb_packet *pkt = (bic_usb_packet *) buf;
-  int i = 0, fd = -1;
-  char update_target[MAX_USB_UPDATE_TARGET_LEN] = {0};
-  uint32_t usb_pkt_cnt = 0;
-  int ret = -1;
+  int ret = -1, fd = -1, rc = 0, i = 0;
+  int num_blocks_written = 0, num_blocks_skipped = 0, num_blocks;
+  uint8_t *buf = NULL;
+  uint32_t file_sz = 0, write_offset = 0, file_offset = 0, num_to_read;
+  ssize_t num_read;
+  uint8_t fcs[STRONG_DIGEST_LENGTH] = {0}, cs[STRONG_DIGEST_LENGTH] = {0};
+  int cs_len = STRONG_DIGEST_LENGTH;
+  int attempts = NUM_ATTEMPTS;
+  const char *dedup_env = getenv("DEDUP");
+  const char *verify_env = getenv("VERIFY");
+  bool dedup = (dedup_env != NULL ? (!strcmp(dedup_env, "on")) : true);
+  bool verify = (verify_env != NULL ? (!strcmp(verify_env, "on")) : true);
 
   if (comp == FW_BIOS) {
-    shift_offset = 0;
-    strcpy(update_target, "bios\0");
+    write_offset = 0;
   } else {
     printf("ERROR: not supported component [comp:%u]!\n", comp);
     goto error_exit;
@@ -434,67 +546,132 @@ bic_update_fw_usb(uint8_t comp, const char *image_file, usb_dev* udev) {
   }
   fstat(fd, &st);
   file_sz = st.st_size;  
-  align_pkt_cnt = (st.st_size/chunk_sz);
-  if (st.st_size % chunk_sz) {
-    align_pkt_cnt += 1;
-  }
-  actual_send_sz = align_pkt_cnt * chunk_sz;
-  dsize = actual_send_sz / 20;
-
-  // Write chunks of binary data in a loop
-  offset = 0;
-  last_offset = 0;
-  i = 1;
-  while (1) {
-    memset(buf, 0xFF, sizeof(buf));
-
-    // For bic usb, send packets in blocks of 64K
-    if ((offset + USB_DAT_SIZE) > (i * BIOS_PKT_SIZE)) {
-      read_count = (i * BIOS_PKT_SIZE) - offset;
-      i++;
-    } else {
-      read_count = USB_DAT_SIZE; 
-    }
-
-    // Read from file
-    if (offset < file_sz) {
-      count = read(fd, &buf[USB_PKT_DATA_OFFSET], read_count);
-      if (count < 0) {
-        syslog(errno, "failed to read %s", image_file);
-        goto error_exit;
-      }
-    } else if (offset < actual_send_sz) { /* padding */
-      count = read_count;
-    } else {
-      break;
-    }
-
-    pkt->offset = (offset + shift_offset);
-    pkt->length = count;
-
-    if (_send_bic_usb_packet(udev, pkt) != 0) {
-      goto error_exit;
-    }
-
-    usb_pkt_cnt += 1;
-    offset += count;
-    if ( (last_offset + dsize) <= offset ) {
-      _set_fw_update_ongoing(60);
-      printf("updated %s: %d %%\n", update_target, (offset / dsize) * 5);
-      last_offset += dsize;
-    }
-  }
-
-  _set_fw_update_ongoing(60 * 2);
-  if (verify_bios_image(fd, file_sz)) {
+  buf = malloc(USB_PKT_HDR_SIZE + BIOS_UPDATE_BLK_SIZE);
+  if (buf == NULL) {
+    printf("Failed to allocate memory\n");
     goto error_exit;
   }
+
+  num_blocks = file_sz / BIOS_UPDATE_BLK_SIZE;
+  
+  if (!bic_have_checksum_sha256()) {
+    printf("Strong checksum function is not available, disabling "
+            "deduplication. Update BIC firmware to at least v21.01\n");
+    dedup = false;
+    cs_len = SIMPLE_DIGEST_LENGTH * 2;
+  }
+  printf("Updating from %s, dedup is %s, verification is %s.\n",
+            image_file, (dedup ? "on" : "off"), (verify ? "on" : "off"));  
+  while (attempts > 0) {
+    uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
+    size_t file_buf_pos = 0;
+    size_t file_buf_num_bytes = 0;
+    if (write_offset > 0) {
+      printf("\r%d/%d blocks (%d written, %d skipped)...",
+          num_blocks_written + num_blocks_skipped,
+          num_blocks, num_blocks_written, num_blocks_skipped);
+      fflush(stderr);
+    }
+    if (file_offset >= file_sz) {
+      break;
+    }
+    // Read a block of data from file.
+    if (attempts < NUM_ATTEMPTS) {
+      // If retrying, seek back to the correct position.
+      lseek(fd, file_offset, SEEK_SET);
+    }
+    file_buf_num_bytes = 0;
+    do {
+      num_to_read = BIOS_UPDATE_BLK_SIZE - file_buf_num_bytes;
+      num_read = read(fd, file_buf, num_to_read);
+      if (num_read < 0) {
+        printf("read error: %d\n", errno);
+        goto error_exit;
+      }
+      file_buf_num_bytes += num_read;
+    } while (file_buf_num_bytes < BIOS_UPDATE_BLK_SIZE &&
+             errno == EINTR);
+    // Pad to 64K with 0xff, if needed.
+    for (i = file_buf_num_bytes; i < BIOS_UPDATE_BLK_SIZE; i++) {
+      file_buf[i] = '\xff';
+    }
+    // Check if we need to write this block at all.
+    if (dedup || verify) {
+      if (cs_len == STRONG_DIGEST_LENGTH) {
+        rc = calc_checksum_sha256(file_buf, BIOS_UPDATE_BLK_SIZE, fcs);
+      } else {
+        rc = calc_checksum_simple(file_buf, BIOS_VERIFY_PKT_SIZE, fcs);
+        if (rc == 0) {
+          rc = calc_checksum_simple(file_buf + BIOS_VERIFY_PKT_SIZE,
+                                    BIOS_VERIFY_PKT_SIZE, fcs + SIMPLE_DIGEST_LENGTH);
+        }
+      }
+      if (rc != 0) {
+        printf("calc_checksum error: %d (cs_len %d)\n", rc, cs_len);
+        goto error_exit;
+      }
+    }
+    if (dedup) {
+      rc = get_block_checksum(write_offset, cs_len, cs);
+      if (rc == 0 && memcmp(cs, fcs, cs_len) == 0) {
+        write_offset += BIOS_UPDATE_BLK_SIZE;
+        file_offset += file_buf_num_bytes;
+        num_blocks_skipped++;
+        attempts = NUM_ATTEMPTS;
+        continue;
+      }
+    }
+    while ((file_buf_pos < file_buf_num_bytes) && (attempts > 0)) {
+      int count = file_buf_num_bytes - file_buf_pos;
+      // 4K USB packets and SHA256 checksums were added together,
+      // so if we have SHA256 checksum, we can use big packets as well.
+      size_t limit = (cs_len == STRONG_DIGEST_LENGTH ? USB_DAT_SIZE_BIG : USB_DAT_SIZE);
+      if (count > limit) count = limit;
+      bic_usb_packet *pkt = (bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
+      pkt->dummy = CMD_OEM_1S_UPDATE_FW;
+      pkt->offset = write_offset + file_buf_pos;
+      pkt->length = count;
+      rc = _send_bic_usb_packet(udev, pkt);
+      if (rc < 0) {
+        printf("failed to write %d bytes @ %x: %d\n", count, write_offset, rc);
+        attempts--;
+        continue;
+      }
+      file_buf_pos += count;
+    }
+    // Verify written data.
+    if (verify) {
+      rc = get_block_checksum( write_offset, cs_len, cs);
+      if (rc != 0) {
+        printf("get_block_checksum @ %x failed (cs_len %d)\n", write_offset, cs_len);
+        attempts--;
+        continue;
+      }
+      if (memcmp(cs, fcs, cs_len) != 0) {
+        printf("Data checksum mismatch @ %x (cs_len %d, 0x%016llx vs 0x%016llx)\n",
+            write_offset, cs_len, *((uint64_t *) cs), *((uint64_t *) fcs));
+        attempts--;
+        continue;
+      }
+    }
+    write_offset += BIOS_UPDATE_BLK_SIZE;
+    file_offset += file_buf_num_bytes;
+    num_blocks_written++;
+    attempts = NUM_ATTEMPTS;
+  }
+  if (attempts == 0) {
+    printf(" Failed after %d retry.\n", NUM_ATTEMPTS);
+    goto error_exit;
+  }
+
+  printf(" finished.\n");
   ret = 0;
 
 error_exit:
   if (fd >= 0) {
     close(fd);
   }
+  free(buf);
 
   return ret;
 }

@@ -36,6 +36,7 @@ extern const uint32_t IANA_ID;
 
 enum NETFN_OEM_38 {
   BIC_CMD_OEM_GET_SET_GPIO      = 0x41,
+  BIC_CMD_OEM_FW_CKSUM_SHA256   = 0x43,
   BIC_CMD_OEM_BMC_FAN_CTRL      = 0x50,
   BIC_CMD_OEM_SET_FAN_DUTY      = 0xF1,
   BIC_CMD_OEM_FAN_CTRL_STAT     = 0xF2,

@@ -2230,22 +2230,28 @@ pal_is_crashdump_ongoing(uint8_t fru)
 // Determine if BMC is AC on
 int
 pal_is_bmc_por(void) {
+  int ret = 0;
   char ast_por_flag[MAX_VALUE_LEN] = {0x0};
   char ast_por_true[] = "1";
-  uint32_t reg_value = 0;
+  uint32_t reg_value = 0, sig = 0;
 
   if (kv_get("ast_por_flag", ast_por_flag, NULL, 0) < 0) {
-    // Check External reset EXTRST# event log (SCU074[1]) to to determine if this boot is AC on or not
+    // Read Boot Magic
+    phymem_get_dword(SRAM_BMC_REBOOT_BASE, BOOT_MAGIC_OFFSET, &sig);
+    // Check Power on reset SRST# event log (SCU074[0]) to determine if this boot is AC on or not
     phymem_get_dword(SCU_BASE, REG_SCU074, &reg_value);
-    if ((reg_value & OFFSET_EXTRST_EVENT_LOG) == 0) {
+    if ((sig != BOOT_MAGIC) && ((reg_value & OFFSET_SRST_EVENT_LOG) == 1)) {
       // Power ON Reset
       kv_set("ast_por_flag", STR_VALUE_1, 0, 0);
-      return 1;
+      ret = 1;
     } else {
       // External Reset
       kv_set("ast_por_flag", STR_VALUE_0, 0, 0);
-      return 0;
+      ret = 0;
     }
+    // Clear SCU074
+    phymem_set_dword(SCU_BASE, REG_SCU074, 0xffffffff);
+    return ret;
   }
 
   if (strncmp(ast_por_flag, ast_por_true, strlen(ast_por_true)) == 0) {

@@ -112,7 +112,12 @@ extern "C" {
 // System Control Unit (SCU) Register
 #define SCU_BASE                   0x1E6E2000
 #define REG_SCU074                 0x74
-#define OFFSET_EXTRST_EVENT_LOG    (1 << 1)
+#define OFFSET_SRST_EVENT_LOG      (1 << 0)
+
+// Boot magic
+#define SRAM_BMC_REBOOT_BASE       0x10015000
+#define BOOT_MAGIC_OFFSET          0xC08
+#define BOOT_MAGIC                 0xFB420054
 
 #define ROUTE_UART2_TO_IO2  (0)
 #define ROUTE_UART6_TO_IO6  ((1 << 9) | (1 << 11))

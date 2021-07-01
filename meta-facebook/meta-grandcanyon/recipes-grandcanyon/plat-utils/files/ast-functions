@@ -130,9 +130,11 @@ server_power_status() {
 is_bmc_por() {
   kv_por_flag=`$KV_CMD get $KEY_AST_POR_FLAG`
   if [ ! -n "$kv_por_flag" ]; then
-    # Check External reset EXTRST# event log (SCU074[1]) to to determine if this boot is AC on or not
+    # Read Boot Magic
+    sig=$(devmem 0x10015c08 2>/dev/null)
+    # Check Power on reset SRST# event log (SCU074[0]) to determine if this boot is AC on or not
     val=$(devmem 0x1e6e2074 2>/dev/null)
-    if [ "$((val & 0x2))" == "0" ]; then
+    if [[ "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
       # Power ON Reset
       $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_1
       echo $STR_VALUE_1
@@ -141,6 +143,8 @@ is_bmc_por() {
       $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_0
       echo $STR_VALUE_0
     fi
+    # Clear SCU074
+    devmem 0x1e6e2074 32 $((val & 0xffffffff)) 2>/dev/null
   else
     echo $kv_por_flag
   fi

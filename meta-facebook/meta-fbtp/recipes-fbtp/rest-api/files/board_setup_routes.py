@@ -77,5 +77,5 @@ def setup_board_routes(app: Application, write_enabled: bool):
 
     # /api/sled/mezz0/logs end point
     mezz0_logs_shim = RestShim(get_node_logs("nic"), "/api/sled/mezz/logs")
-    app.router.add_post(mezz0_logs_shim.path, mezz0_logs_shim.get_handler)
+    app.router.add_get(mezz0_logs_shim.path, mezz0_logs_shim.get_handler)
     app.router.add_post(mezz0_logs_shim.path, mezz0_logs_shim.post_handler)

@@ -123,7 +123,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
 
     # Add /api/dpb/error end point
     dpb_error_shim = RestShim(get_node_enclosure_error(), "/api/dpb/error")
-    app.router.add_get(dpb_error_shim, dpb_error_shim.get_handler)
+    app.router.add_get(dpb_error_shim.path, dpb_error_shim.get_handler)
     # Add /api/dpb/flash-health end point
     dpb_flash_health_shim = RestShim(
         get_node_enclosure_flash_health(), "/api/dpb/flash-health"
@@ -193,7 +193,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
         "/api/server/bios/pcie-port-config",
     )
     app.router.add_get(pcie_port_config_shim.path, pcie_port_config_shim.get_handler)
-    app.router.add_post(pcie_port_config_shim, pcie_port_config_shim.post_handler)
+    app.router.add_post(pcie_port_config_shim.path, pcie_port_config_shim.post_handler)
     # Add /api/server/bios/boot-order/boot_mode node
     boot_mode_shim = RestShim(
         get_node_bios_boot_mode("server"),
@@ -224,4 +224,4 @@ def setup_board_routes(app: Application, write_enabled: bool):
         "/api/server/bios/boot-order/boot_order",
     )
     app.router.add_get(boot_order_node_shim.path, boot_order_node_shim.get_handler)
-    app.router.add_post(boot_order_node_shim, boot_order_node_shim.post_handler)
+    app.router.add_post(boot_order_node_shim.path, boot_order_node_shim.post_handler)

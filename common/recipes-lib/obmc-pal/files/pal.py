@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
+
 """
 Thin python wrappers over libpal.so
 Whenever possible, using the same name as the original function to
@@ -29,7 +30,6 @@ import re
 from contextlib import suppress
 from functools import lru_cache
 from typing import Dict, Tuple, List
-
 
 libpal = ctypes.CDLL("libpal.so.0")
 

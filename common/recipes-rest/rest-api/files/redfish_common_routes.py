@@ -1,3 +1,4 @@
+import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
 
@@ -37,3 +38,25 @@ class Redfish:
         app.router.add_post(
             "/redfish/v1/Managers/1/EthernetInterfaces/1", self.controller
         )
+
+    def setup_multisled_routes(self, app: Application):
+        no_of_slots = rest_pal_legacy.pal_get_num_slots()
+        for i in range(1, no_of_slots):
+            app.router.add_get(
+                "/redfish/v1/Chassis/server{}".format(i), self.controller
+            )
+            app.router.add_post(
+                "/redfish/v1/Chassis/server{}".format(i), self.controller
+            )
+            app.router.add_get(
+                "/redfish/v1/Chassis/server{}/Power".format(i), self.controller
+            )
+            app.router.add_post(
+                "/redfish/v1/Chassis/server{}/Power".format(i), self.controller
+            )
+            app.router.add_get(
+                "/redfish/v1/Chassis/server{}/Thermal".format(i), self.controller
+            )
+            app.router.add_post(
+                "/redfish/v1/Chassis/server{}/Thermal".format(i), self.controller
+            )

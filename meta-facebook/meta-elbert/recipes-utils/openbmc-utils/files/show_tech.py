@@ -21,12 +21,13 @@
 # This script is for dumping debug information on elbert
 
 import argparse
+import os
 import string
 import subprocess
 import time
 
 
-VERSION = "0.7"
+VERSION = "0.8"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -202,11 +203,10 @@ def logDump():
     print("################################")
     print("##########  DPM LOGS  ##########")
     print("################################\n")
-    print(
-        "#### DPM LOG ####\n{}\n".format(
-            runCmd("cat /mnt/data1/log/dpm_log", echo=True),
-        )
-    )
+    print("#### DPM LOG ####")
+    if os.path.exists("/mnt/data1/log/dpm_log.1"):
+        print("{}\n".format(runCmd("cat /mnt/data1/log/dpm_log.1", echo=True)))
+    print("{}\n".format(runCmd("cat /mnt/data1/log/dpm_log", echo=True)))
 
 
 def i2cDetectDump():

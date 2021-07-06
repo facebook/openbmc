@@ -38,7 +38,9 @@ SRC_URI += "file://board-utils.sh \
             file://setup_i2c.sh \
             file://seutil \
             file://dpm_dump.sh \
+            file://dpm_utils.sh \
             file://dpm_ver.sh \
+            file://pim_dpm_dump.sh \
             file://show_tech.py \
             file://psu_show_tech.py \
             file://pim_enable.sh \
@@ -66,6 +68,8 @@ OPENBMC_UTILS_FILES += " \
     setup_i2c.sh \
     seutil \
     dpm_dump.sh \
+    dpm_utils.sh \
+    pim_dpm_dump.sh \
     dpm_ver.sh \
     show_tech.py \
     psu_show_tech.py \

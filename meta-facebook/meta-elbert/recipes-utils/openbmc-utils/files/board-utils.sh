@@ -163,12 +163,12 @@ enable_ucd9090_security_mode() {
     i2cset -f -y "$bus" "$dev" 0xf2 \
        0x6f 0xff 0xff 0xff 0xff 0xff 0xff 0xc0 0xff 0xff \
        0xff 0xff 0xff 0xff 0x00 0x00 0x00 0x00 0x00 0x00 \
-       0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xff 0xfe 0x42 \
-       0x0f 0xdf s
-    locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+       0xff 0xff 0xff 0xff 0xff 0xff 0xfe 0xff 0xfe 0x42 \
+       0x0f 0xd7 s
+    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
     if [ "$locked" -eq 0 ]; then
         i2cset -f -y "$bus" "$dev" 0xf1 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
-        locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
         if [ "$locked" -eq 0 ]; then
             echo "Failed to lock UCD9090B $bus-00$dev"
         fi
@@ -182,13 +182,13 @@ disable_ucd9090_security_mode() {
     bus="$1"
     dev="$2"
     # If locked, unlock it
-    locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
     if [ "$locked" -eq 0 ]; then
         echo "UCD bus $bus device $dev already unlocked!"
         return 0
     else
         i2cset -f -y "$bus" "$dev" 0xf1 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
-        locked="$(printf "%d" "$(i2cget -f -y $bus $dev 0xf1 i | tail -n 1)")"
+        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
         if [ "$locked" -eq 0 ]; then
             return 0
         else
@@ -200,12 +200,12 @@ disable_ucd9090_security_mode() {
 
 enable_tps546d24_wp() {
    # Disable all writes except for WRITE_PROTECT 0x10
-   i2cset -f -y $1 $2 0x10 0x80
+   i2cset -f -y "$1" "$2" 0x10 0x80
 }
 
 disable_tps546d24_wp() {
    # Enable all writes
-   i2cset -f -y $1 $2 0x10 0x0
+   i2cset -f -y "$1" "$2" 0x10 0x0
 }
 
 power_on_pim() {

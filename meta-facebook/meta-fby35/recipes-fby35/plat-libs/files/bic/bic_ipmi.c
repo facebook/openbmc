@@ -407,11 +407,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_BB_BIC:
       fw_comp = FW_BIC;
       break;
-    case FW_1OU_BIC_BOOTLOADER:
-    case FW_2OU_BIC_BOOTLOADER:
-    case FW_BB_BIC_BOOTLOADER:
-      fw_comp = FW_BIC_BOOTLOADER;
-      break;
     default:
       fw_comp = comp;
       break;
@@ -422,16 +417,13 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_CPLD:
     case FW_ME:
     case FW_BIC:
-    case FW_BIC_BOOTLOADER:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
-    case FW_1OU_BIC_BOOTLOADER:
     case FW_1OU_CPLD:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
-    case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
     case FW_2OU_3V3_VR1:
     case FW_2OU_3V3_VR2:
@@ -447,7 +439,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
-    case FW_BB_BIC_BOOTLOADER:
     case FW_BB_CPLD:
       intf = BB_BIC_INTF;
       break;
@@ -458,11 +449,8 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_CPLD:
     case FW_ME:
     case FW_BIC:
-    case FW_BIC_BOOTLOADER:
     case FW_1OU_BIC:
-    case FW_1OU_BIC_BOOTLOADER:
     case FW_2OU_BIC:
-    case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_3V3_VR1:
     case FW_2OU_3V3_VR2:
     case FW_2OU_3V3_VR3:
@@ -475,7 +463,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_PESW_PART_MAP0_VER:
     case FW_2OU_PESW_PART_MAP1_VER:
     case FW_BB_BIC:
-    case FW_BB_BIC_BOOTLOADER:
       ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
       break;
     case FW_1OU_CPLD:

@@ -1924,8 +1924,6 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_BB_FW_EVENT:
       if (event_data[1] == FW_BB_BIC) {
         strncpy(component_str, "BIC", sizeof(component_str));
-      } else if (event_data[1] == FW_BB_BIC_BOOTLOADER) {
-        strncpy(component_str, "BIC bootloader", sizeof(component_str));
       } else if (event_data[1] == FW_BB_CPLD) {
         strncpy(component_str, "CPLD", sizeof(component_str));
       } else {
@@ -2425,8 +2423,6 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         if (event_data[2] == SEL_ASSERT) {
           if (event_data[4] == FW_BB_BIC) {
           kv_set("bb_fw_update", "bic", 0, 0);
-          } else if (event_data[4] == FW_BB_BIC_BOOTLOADER) {
-            kv_set("bb_fw_update", "bootloader", 0, 0);
           } else if (event_data[4] == FW_BB_CPLD) {
             kv_set("bb_fw_update", "cpld", 0, 0);
           } else {
@@ -3421,7 +3417,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   } else {
     switch(target) {
     case FW_1OU_BIC:
-    case FW_1OU_BIC_BOOTLOADER:
     case FW_1OU_CPLD:
       config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
       if (!((bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
@@ -3429,7 +3424,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       }
       break;
     case FW_2OU_BIC:
-    case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
       config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
       if ( fby35_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
@@ -3442,7 +3436,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       }
       break;
     case FW_BB_BIC:
-    case FW_BB_BIC_BOOTLOADER:
     case FW_BB_CPLD:
       if(bmc_location != NIC_BMC) {
         goto not_support;
@@ -3486,10 +3479,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   case FW_1OU_BIC:
   case FW_2OU_BIC:
   case FW_BB_BIC:
-  case FW_BIC_BOOTLOADER:
-  case FW_1OU_BIC_BOOTLOADER:
-  case FW_2OU_BIC_BOOTLOADER:
-  case FW_BB_BIC_BOOTLOADER:
     *res_len = 2;
     break;
   case FW_BIOS:

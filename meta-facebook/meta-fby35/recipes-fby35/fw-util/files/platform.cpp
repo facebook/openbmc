@@ -20,11 +20,10 @@ MeComponent     me_fw1("slot1", "me", FRU_SLOT1);
 
 //slot1 2ou bic/bicbl/cpld
 BicFwExtComponent     bic_2ou_fw1("slot1", "2ou_bic"  , FRU_SLOT1, "2ou", FW_2OU_BIC);
-BicFwExtBlComponent bicbl_2ou_fw1("slot1", "2ou_bicbl", FRU_SLOT1, "2ou", FW_2OU_BIC_BOOTLOADER);
 
 //slot1 sb bic/bicbl/cpld/bios/vr
 BicFwExtComponent     bic_fw1("slot1", "bic"  , FRU_SLOT1, "sb", FW_BIC);
-//BicFwExtBlComponent bicbl_fw1("slot1", "bicbl", FRU_SLOT1, "sb", FW_BIC_BOOTLOADER);
+BicFwExtComponent bic_rcvy_fw1("slot1", "bic_rcvy", FRU_SLOT1, "sb", FW_BIC_RCVY);
 //BmcCpldComponent     cpld_fw1("slot1", "cpld", MAX10_10M25, 3 + FRU_SLOT1, 0x40);
 CpldExtComponent     cpld_fw1("slot1", "cpld" , FRU_SLOT1, "sb", FW_CPLD);
 BiosComponent        bios_fw1("slot1", "bios" , FRU_SLOT1, FW_BIOS);
@@ -48,7 +47,6 @@ class ClassConfig {
 
         //slot1 bb bic/bicbl/cpld
         static BicFwExtComponent     bic_bb_fw1("slot1", "bb_bic"  , FRU_SLOT1, "bb", FW_BB_BIC);
-        static BicFwExtBlComponent bicbl_bb_fw1("slot1", "bb_bicbl", FRU_SLOT1, "bb", FW_BB_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_bb_fw1("slot1", "bb_cpld" , FRU_SLOT1, "bb", FW_BB_CPLD);
 
         if (board_type != E1S_BOARD) {
@@ -79,61 +77,51 @@ class ClassConfig {
 
         //slot1 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw1("slot1", "1ou_bic"  , FRU_SLOT1, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw1("slot1", "1ou_bicbl", FRU_SLOT1, "1ou", FW_1OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_1ou_fw1("slot1", "1ou_cpld" , FRU_SLOT1, "1ou", FW_1OU_CPLD);
 
         //slot2 sb bic/bicbl/cpld/bios/vr
         static BicFwExtComponent     bic_fw2("slot2", "bic"  , FRU_SLOT2, "sb", FW_BIC);
-        static BicFwExtBlComponent bicbl_fw2("slot2", "bicbl", FRU_SLOT2, "sb", FW_BIC_BOOTLOADER);
-        //static BmcCpldComponent     cpld_fw2("slot2", "cpld", MAX10_10M25, 3 + FRU_SLOT2, 0x40);
+        static BicFwExtComponent bic_rcvy_fw2("slot2", "bic_rcvy", FRU_SLOT2, "sb", FW_BIC_RCVY);
         static CpldExtComponent     cpld_fw2("slot2", "cpld" , FRU_SLOT2, "sb", FW_CPLD);
         static BiosComponent        bios_fw2("slot2", "bios" , FRU_SLOT2, FW_BIOS);
         static VrComponent            vr_fw2("slot2", "vr"   , FRU_SLOT2, FW_VR);
 
         //slot2 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw2("slot2", "1ou_bic"  , FRU_SLOT2, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw2("slot2", "1ou_bicbl", FRU_SLOT2, "1ou", FW_1OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_1ou_fw2("slot2", "1ou_cpld" , FRU_SLOT2, "1ou", FW_1OU_CPLD);
         
         //slot2 2ou bic/bicbl/cpld
         static BicFwExtComponent     bic_2ou_fw2("slot2", "2ou_bic"  , FRU_SLOT2, "2ou", FW_2OU_BIC);
-        static BicFwExtBlComponent bicbl_2ou_fw2("slot2", "2ou_bicbl", FRU_SLOT2, "2ou", FW_2OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_2ou_fw2("slot2", "2ou_cpld" , FRU_SLOT2, "2ou", FW_2OU_CPLD);
 
         //slot3 sb bic/bicbl/cpld/bios/vr
         static BicFwExtComponent     bic_fw3("slot3", "bic"  , FRU_SLOT3, "sb", FW_BIC);
-        static BicFwExtBlComponent bicbl_fw3("slot3", "bicbl", FRU_SLOT3, "sb", FW_BIC_BOOTLOADER);
-        //static BmcCpldComponent     cpld_fw3("slot3", "cpld", MAX10_10M25, 3 + FRU_SLOT3, 0x40);
+        static BicFwExtComponent bic_rcvy_fw3("slot3", "bic_rcvy", FRU_SLOT3, "sb", FW_BIC_RCVY);
         static CpldExtComponent     cpld_fw3("slot3", "cpld" , FRU_SLOT3, "sb", FW_CPLD);
         static BiosComponent        bios_fw3("slot3", "bios" , FRU_SLOT3, FW_BIOS);
         static VrComponent            vr_fw3("slot3", "vr"   , FRU_SLOT3, FW_VR);
 
         //slot3 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw3("slot3", "1ou_bic"  , FRU_SLOT3, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw3("slot3", "1ou_bicbl", FRU_SLOT3, "1ou", FW_1OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_1ou_fw3("slot3", "1ou_cpld" , FRU_SLOT3, "1ou", FW_1OU_CPLD);
 
         //slot3 2ou bic/bicbl/cpld
         static BicFwExtComponent     bic_2ou_fw3("slot3", "2ou_bic"  , FRU_SLOT3, "2ou", FW_2OU_BIC);
-        static BicFwExtBlComponent bicbl_2ou_fw3("slot3", "2ou_bicbl", FRU_SLOT3, "2ou", FW_2OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_2ou_fw3("slot3", "2ou_cpld" , FRU_SLOT3, "2ou", FW_2OU_CPLD);
 
         //slot4 sb bic/bicbl/cpld/bios/vr
         static BicFwExtComponent     bic_fw4("slot4", "bic"  , FRU_SLOT4, "sb", FW_BIC);
-        static BicFwExtBlComponent bicbl_fw4("slot4", "bicbl", FRU_SLOT4, "sb", FW_BIC_BOOTLOADER);
-        //static BmcCpldComponent     cpld_fw4("slot4", "cpld", MAX10_10M25, 3 + FRU_SLOT4, 0x40);
+        static BicFwExtComponent bic_rcvy_fw4("slot4", "bic_rcvy", FRU_SLOT4, "sb", FW_BIC_RCVY);
         static CpldExtComponent     cpld_fw4("slot4", "cpld" , FRU_SLOT4, "sb", FW_CPLD);
         static BiosComponent        bios_fw4("slot4", "bios" , FRU_SLOT4, FW_BIOS);
         static VrComponent            vr_fw4("slot4", "vr"   , FRU_SLOT4, FW_VR);
 
         //slot4 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw4("slot4", "1ou_bic"  , FRU_SLOT4, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw4("slot4", "1ou_bicbl", FRU_SLOT4, "1ou", FW_1OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_1ou_fw4("slot4", "1ou_cpld" , FRU_SLOT4, "1ou", FW_1OU_CPLD);
 
         //slot4 2ou bic/bicbl/cpld
         static BicFwExtComponent     bic_2ou_fw4("slot4", "2ou_bic"  , FRU_SLOT4, "2ou", FW_2OU_BIC);
-        static BicFwExtBlComponent bicbl_2ou_fw4("slot4", "2ou_bicbl", FRU_SLOT4, "2ou", FW_2OU_BIC_BOOTLOADER);
         static CpldExtComponent     cpld_2ou_fw4("slot4", "2ou_cpld" , FRU_SLOT4, "2ou", FW_2OU_CPLD);
 
         static BmcCpldComponent cpld_bmc("bmc", "cpld", MAX10_10M25, 12, 0x40);

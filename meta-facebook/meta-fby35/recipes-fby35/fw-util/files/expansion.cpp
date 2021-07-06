@@ -18,9 +18,7 @@ void ExpansionBoard::ready()
   switch(fw_comp) {
     case FW_CPLD:
     case FW_BIC:
-    case FW_BIC_BOOTLOADER:
     case FW_BB_BIC:
-    case FW_BB_BIC_BOOTLOADER:
     case FW_BB_CPLD:
       return;
   }
@@ -37,7 +35,6 @@ void ExpansionBoard::ready()
   config_status = (uint8_t) ret;
   switch (fw_comp) {
     case FW_1OU_BIC:
-    case FW_1OU_BIC_BOOTLOADER:
       if ( (config_status & PRESENT_1OU) != PRESENT_1OU )
         is_present = false;
       break;
@@ -54,7 +51,6 @@ void ExpansionBoard::ready()
       }
       break;
     case FW_2OU_BIC:
-    case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
         throw string("Failed to get 2OU board type");

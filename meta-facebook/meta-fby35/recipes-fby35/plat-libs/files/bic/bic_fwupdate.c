@@ -1122,6 +1122,137 @@ exit:
   return ret;
 }
 
+static int
+recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
+  int ret = -1, retry = 0;
+  int fd = 0, i2cfd = 0;
+  int file_size;
+  uint8_t tbuf[2] = {0x00};
+  uint8_t tlen = 2;
+  uint8_t bmc_location = 0;
+  char cmd[64] = {0};
+
+  //check params
+  ret = is_valid_intf(intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() invalid intf(val=0x%x) was caught!\n", __func__, intf);
+    goto error_exit;
+  }
+
+  //get fd and file size
+  fd = open_and_get_size(path, &file_size);
+  if ( fd < 0 ) {
+    syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d\n", __func__, path, fd);
+    goto error_exit;
+  }
+
+  printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
+
+  //check the content of the image
+  if( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
+    printf("Invalid BIC file!\n");
+    ret = -1;
+    goto error_exit;
+  }
+
+  printf("Set slot UART to SB BIC\n");
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    tbuf[1] = 0x02;
+  } else {
+    tbuf[1] = 0x01;
+  }
+
+  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+    goto error_exit;
+  }
+
+  retry = 0;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == RETRY_TIME) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+  tbuf[0]=0x01;
+  tbuf[1]=0x03;
+  retry = 0;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == RETRY_TIME) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+  printf("Setting BIC boot from UART\n");
+  tbuf[0]=0x10;
+  tbuf[1]=0x01;
+  retry = 0;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == RETRY_TIME) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 115200", slot_id);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    goto error_exit;
+  }
+
+  snprintf(cmd, sizeof(cmd), "cat %s > /dev/ttyS%d", path, slot_id);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    goto error_exit;
+  }
+
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 57600", slot_id);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    goto error_exit;
+  }
+
+  printf("Please execute BIC firmware update and"
+    " do the slot 12-cycle for finishing the BIC recovery\n");
+
+error_exit:
+  if ( i2cfd > 0 ) close(i2cfd);
+  if ( fd > 0 ) close(fd);
+
+  return ret;
+}
+
+#if 0
 #define IPMB_MAX_SEND 224
 #define IPMB_BIC_RETRY 3
 static int
@@ -1235,6 +1366,7 @@ exit:
 
   return ret;
 }
+#endif
 
 static int
 stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
@@ -1261,28 +1393,20 @@ get_component_name(uint8_t comp) {
       return "SB CPLD";
     case FW_BIC:
       return "SB BIC";
-    case FW_BIC_BOOTLOADER:
-      return "SB BIC Bootloader";
     case FW_VR:
       return "VR";
     case FW_BIOS:
       return "BIOS";
     case FW_1OU_BIC:
       return "1OU BIC";
-    case FW_1OU_BIC_BOOTLOADER:
-      return "1OU BIC Bootloader";
     case FW_1OU_CPLD:
       return "1OU CPLD";
     case FW_2OU_BIC:
       return "2OU BIC";
-    case FW_2OU_BIC_BOOTLOADER:
-      return "2OU BIC Bootloader";
     case FW_2OU_CPLD:
       return "2OU CPLD";
     case FW_BB_BIC:
       return "BB BIC";
-    case FW_BB_BIC_BOOTLOADER:
-      return "BB BIC Bootloader";
     case FW_BB_CPLD:
       return "BB CPLD";
     case FW_BIOS_CAPSULE:
@@ -1385,17 +1509,15 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CPLD:
     case FW_ME:
     case FW_BIC:
-    case FW_BIC_BOOTLOADER:
+    case FW_BIC_RCVY:
     case FW_VR:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
-    case FW_1OU_BIC_BOOTLOADER:
     case FW_1OU_CPLD:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
-    case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
     case FW_2OU_PESW:
     case FW_2OU_PESW_VR:
@@ -1418,7 +1540,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
-    case FW_BB_BIC_BOOTLOADER:
     case FW_BB_CPLD:
       intf = BB_BIC_INTF;
       break;
@@ -1477,11 +1598,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BB_BIC:
       ret = update_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
       break;
-    case FW_BIC_BOOTLOADER:
-    case FW_1OU_BIC_BOOTLOADER:
-    case FW_2OU_BIC_BOOTLOADER:
-    case FW_BB_BIC_BOOTLOADER:
-      ret = update_bic_bootloader_fw(slot_id, UPDATE_BIC_BOOTLOADER, intf , path, force);
+    case FW_BIC_RCVY:
+      ret = recovery_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
       break;
     case FW_1OU_CPLD:
     case FW_2OU_CPLD:

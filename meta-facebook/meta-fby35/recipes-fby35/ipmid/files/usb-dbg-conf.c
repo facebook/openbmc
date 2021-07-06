@@ -616,14 +616,6 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
       strcat(fw_text, entry);
     }
 
-    //Print Bridge-IC Bootloader Version
-    if (bic_get_fw_ver(slot_id, FW_BIC_BOOTLOADER, ver)) {
-      strcat(fw_text,"BICbl_ver:\nNA\n");
-    } else {
-      sprintf(entry,"BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
-      strcat(fw_text, entry);
-    }
-
     if (pal_get_fw_info(slot_id, FW_CPLD, ver, &rlen)) {
       strcat(fw_text,"CPLD_ver:\nNA\n");
     } else {

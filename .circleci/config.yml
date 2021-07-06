@@ -111,7 +111,6 @@ workflows:
             - build:
                 requires:
                     - setup
-                    - unit-test
                 matrix:
                     parameters:
                         machine: [

@@ -1,4 +1,5 @@
 inherit python3native
+RDEPENDS_${PN}-ptest += "python3-coverage"
 
 do_unit_test() {
 }

@@ -186,7 +186,9 @@ do_install_class-target() {
 do_compile_ptest() {
 cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
-python -m unittest discover /usr/local/fbpackages/rest-api
+  coverage erase
+  coverage run -m unittest discover /usr/local/fbpackages/rest-api
+  coverage report -m --omit="*/test*"
 EOF
 }
 

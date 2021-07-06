@@ -21,6 +21,7 @@ from fsc_util import Logger
 import re
 import os
 import kv
+import libgpio
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -69,14 +70,11 @@ def set_all_pwm(boost):
 
 
 def bmc_read_power():
-    with open(
-      "/tmp/gpionames/PWRGD_CPU0_LVC3/value", "r"
-    ) as f:
-      pwr_sts = f.read(1)
-    if pwr_sts[0] == "1":
-      return 1
-    else:
-      return 0
+    with libgpio.GPIO(shadow="PWRGD_CPU0_LVC3") as gpio:
+        if gpio.get_value() == libgpio.GPIOValue.HIGH:
+            return 1
+        return 0
+
 
 def is_dev_prsnt(filename):
     try:
@@ -85,9 +83,10 @@ def is_dev_prsnt(filename):
             return 1
         return 0
 
-    except:
+    except Exception:
         return 1
-                              
+
+
 def sensor_valid_check(board, sname, check_name, attribute):
     cmd = ""
     data = ""
@@ -98,10 +97,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
             pwr_sts = bmc_read_power()
             if pwr_sts == 1:
                 if re.match(r"(.*)dimm(.*)", sname) is not None:
-                    snr_split=sname.split('_')
+                    snr_split = sname.split("_")
                     cpu_num = int(snr_split[4][3])
                     pos = int(snr_split[6][1])
-                    dimm_num = str(cpu_num*12 + pos*2)
+                    dimm_num = str(cpu_num * 12 + pos * 2)
                     dimm_name = "sys_config/fru1_dimm" + dimm_num + "_location"
                     return is_dev_prsnt(dimm_name)
                 return 1

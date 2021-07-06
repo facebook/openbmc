@@ -8,6 +8,9 @@ from common_webapp import WebApp
 
 common_executor = ThreadPoolExecutor(5)
 
+# cache for endpoint_children
+ENDPOINT_CHILDREN = {}
+
 
 def common_force_async(func):
     # common handler will use its own executor (thread based),
@@ -51,11 +54,16 @@ def get_endpoints(path: str):
     splitpaths = {}
     splitpaths = path.split("/")
     position = len(splitpaths)
-    for route in app.router.resources():
-        rest_route_path = route.url().split("/")
-        if len(rest_route_path) > position and path in route.url():
-            endpoints.add(rest_route_path[position])
-    return sorted(endpoints)
+    if path in ENDPOINT_CHILDREN:
+        endpoints = ENDPOINT_CHILDREN[path]
+    else:
+        for route in app.router.resources():
+            rest_route_path = route.url().split("/")
+            if len(rest_route_path) > position and path in route.url():
+                endpoints.add(rest_route_path[position])
+        endpoints = sorted(endpoints)
+        ENDPOINT_CHILDREN[path] = endpoints
+    return endpoints
 
 
 # aiohttp allows users to pass a "dumps" function, which will convert

@@ -115,11 +115,11 @@ workflows:
                     parameters:
                         machine: [
                             angelslanding,
+                            clearcreek,
+                            cloudripper,
                             cmm,
                             elbert,
                             emeraldpools,
-                            clearcreek,
-                            cloudripper,
                             fbgp2,
                             fbtp,
                             fbttn,
@@ -131,11 +131,11 @@ workflows:
                             lightning,
                             minipack,
                             northdome,
+                            qemux86,
                             sonorapass,
                             wedge,
                             wedge100,
                             wedge400,
                             yamp,
                             yosemite,
-                            qemux86,
                             ]

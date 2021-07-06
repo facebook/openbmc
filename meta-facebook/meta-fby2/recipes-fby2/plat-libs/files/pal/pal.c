@@ -216,7 +216,7 @@ typedef struct {
   };
 } __attribute__((packed)) mca_bank;
 
-#define CRASHDUMP_ND_BIN       "/usr/local/bin/crashdump_amd.sh"
+#define CRASHDUMP_ND_BIN       "/usr/local/bin/crashdump_amd.sh --event"
 #define MAX_CRASHDUMP_CMD_SIZE 1024
 #define MAX_CRASHDUMP_FILE_NAME_LENGTH 128
 #define MAX_VAILD_LIST_LENGTH 128
@@ -227,6 +227,7 @@ typedef struct {
 
 #define PSB_CONFIG_RAW "slot%d_psb_config_raw"
 
+uint8_t crashdump_initial(uint8_t slot);
 #endif /* CONFIG_FBY2_ND */
 
 #define TIME_SYNC_KEY "time_sync"
@@ -5552,6 +5553,11 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           switch(snr_num) {
             case 0x00:  // don't care sensor number 00h
               return 0;
+            case CATERR_B:
+              if (event_data[3] == 0x00 ||  // 00h:IERR
+                  event_data[3] == 0x0B)    // 0Bh:MCERR
+                crashdump_initial(fru);
+              break;
           }
           break;
         case SERVER_TYPE_TL:
@@ -10656,7 +10662,7 @@ uint8_t crashdump_initial(uint8_t slot) {
     sysinfo(&info);
     snprintf(value, sizeof(value), "%ld", (info.uptime+1200));
     snprintf(fname, sizeof(fname), CRASHDUMP_TIMESTAMP_FILE, slot);
-    kv_set(fname, value, 0, KV_FCREATE);
+    kv_set(fname, value, 0, 0);
   }
 
   completion_code = CC_SUCCESS;
@@ -10677,12 +10683,6 @@ uint8_t save_mca_to_file(
   FILE* pFile;
   char file_path[MAX_CRASHDUMP_FILE_NAME_LENGTH] = "";
   bool last_bank = false;
-
-  if(mca_list_counter[slot] == 0) {
-    if(crashdump_initial(slot + 1)) {
-      return completion_code;
-    }
-  }
 
   /* slot is 0 based, slot_id is 1 based */
   snprintf(

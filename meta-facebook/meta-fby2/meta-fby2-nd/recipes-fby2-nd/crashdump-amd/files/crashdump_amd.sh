@@ -19,7 +19,10 @@
 
 FRUID_UTIL="/usr/local/bin/fruid-util"
 FW_UTIL="/usr/bin/fw-util"
-SLOT_NAME=$1
+SLOT_NAME=""
+RUN_MODE="manual"
+
+SCRIPT_PATH="${0}"
 
 function dump_sensor_history() 
 {
@@ -31,7 +34,7 @@ function dump_sensor_history()
    && /usr/local/bin/sensor-util nic --history $SENSOR_HISTORY 
 }
 
-function dump_sensor_threshold() 
+function dump_sensor_threshold()
 {
   local SLOT=$1
 
@@ -39,6 +42,30 @@ function dump_sensor_threshold()
    && /usr/local/bin/sensor-util spb --threshold \
    && /usr/local/bin/sensor-util nic --threshold
 }
+
+function script_filename()
+{
+  N=${SCRIPT_PATH##*/}
+  N=${N#[SK]??}
+  echo $N
+}
+
+while (( "$#" )); do
+  case "$1" in
+    -e|--event)
+      RUN_MODE="event"
+      shift
+      ;;
+    -*|--*=) # unsupported flags
+      echo "Error: Unsupported flag $1" >&2
+      exit 1
+      ;;
+    *) # preserve positional arguments
+      SLOT_NAME="$1"
+      shift
+      ;;
+  esac
+done
 
 case $SLOT_NAME in
     slot1)
@@ -54,12 +81,16 @@ case $SLOT_NAME in
       SLOT_NUM=4
       ;;
     *)
-      N=${0##*/}
-      N=${N#[SK]??}
-      echo "Usage: $N {slot1|slot2|slot3|slot4}"
+      echo "Usage: $(script_filename) {slot1|slot2|slot3|slot4}"
       exit 1
       ;;
 esac
+
+# We only support event triggered crashdump for now
+if [ "$RUN_MODE" == "manual" ]; then
+  echo "$(script_filename): Manual trigger not supported"
+  exit 1
+fi
 
 # File format autodump<slot_id>.pid (See pal_is_crashdump_ongoing()
 # function definition)

@@ -3865,8 +3865,8 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      return 10;
     case FRU_BMC:
+      return 10;
     case FRU_NIC:
     default:
       return 4;

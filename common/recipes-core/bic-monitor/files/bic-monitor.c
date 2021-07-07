@@ -36,7 +36,11 @@
 #include <openbmc/misc-utils.h>
 
 #define BICMOND_NAME          "bicmond"
-#define DELAY_BICMOND_READ    5 // minimum interval of GPIO read, in seconds.
+/* Workaroud: change minimum interval of GPIO read from 5 seconds to 3 seconds,
+ * to reduce the COMe side PostCode time issue after wedge_power.sh off then
+ * wedge_power.sh on.
+ */
+#define DELAY_BICMOND_READ    3 // minimum interval of GPIO read, in seconds.
 
 #define GPIOD_VERBOSE(fmt, args...) \
   do {                              \

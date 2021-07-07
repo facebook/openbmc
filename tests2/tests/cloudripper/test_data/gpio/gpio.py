@@ -231,8 +231,4 @@ GPIOS = {
         "active_low": "0",
         "direction": "in",
     },
-    "SYS_CPLD_INT_L_R": {
-        "active_low": "0",
-        "direction": "in",
-    },
 }

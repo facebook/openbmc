@@ -52,6 +52,11 @@ jobs:
             - attach_workspace:
                 at: /tmp/job
             - run:
+                name: Set up git config for testing user.
+                command: |
+                    git config --global user.email "openbmc-circleci@fb.com"
+                    git config --global user.name "CircleCI Testing"
+            - run:
                 name: Adding usersetup to sudoer
                 command: |
                     sed -e '/usersetup/ s/^#*/#/' -i /etc/sudoers.usersetup
@@ -87,6 +92,11 @@ jobs:
         steps:
             - attach_workspace:
                 at: /tmp/job
+            - run:
+                name: Set up git config for testing user.
+                command: |
+                    git config --global user.email "openbmc-circleci@fb.com"
+                    git config --global user.name "CircleCI Testing"
             - run:
                 name: Check build required.
                 command: |

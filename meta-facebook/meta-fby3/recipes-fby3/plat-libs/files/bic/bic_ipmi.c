@@ -69,7 +69,7 @@ typedef struct _sdr_rec_hdr_t {
 
 #define BB_FW_UPDATE_STAT_FILE "/tmp/cache_store/bb_fw_update"
 
-#define GPIO_FALSE_DIR "/tmp/gpio/bic%d"
+#define GPIO_FALSE_DIR "/tmp/gpio/bic%d_%d"
 
 enum {
   M2_PWR_OFF = 0x00,
@@ -1478,7 +1478,7 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf) {
   int fd, flen;
   char fpath[30], fdata;
   for (i = 0; i < MAX_GPIO_PINS; i++) {
-    sprintf(fpath, GPIO_FALSE_DIR, i);
+    sprintf(fpath, GPIO_FALSE_DIR, slot_id, i);
     if (!access(fpath, F_OK)) {
       fd = open(fpath, O_RDONLY);
       if (fd == -1) {
@@ -1504,7 +1504,7 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf) {
 
       // Now we can change it to whatever we want
       gpio->gpio[i/32] |= (((fdata - 0x30) & 0x1) << (i % 32));
-      syslog(LOG_INFO, "Injected %d into gpio %d", (fdata - 0x30), i);
+      syslog(LOG_INFO, "Injected %d into gpio %d at slot %d", (fdata - 0x30), i, slot_id);
     }
   }
 #endif // ENABLE_INJECITON

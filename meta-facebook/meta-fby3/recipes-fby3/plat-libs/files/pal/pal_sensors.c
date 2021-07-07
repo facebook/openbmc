@@ -1429,8 +1429,8 @@ enum {
 static int
 read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   static bool is_inited = false;
+  static bool is_config_dp = false;
   static uint8_t config = CONFIG_A;
-  uint8_t type_2ou = UNKNOWN_BOARD;
 
   //try to get the system type. The default config is CONFIG_A.
   if ( is_inited == false ) {
@@ -1443,7 +1443,10 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
     else if ( strcmp(sys_conf, "Type_10") == 0 ) config = CONFIG_B;
     else if ( strcmp(sys_conf, "Type_15") == 0 ) config = CONFIG_D;
-    else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
+    else if ( strcmp(sys_conf, "Type_DP") == 0 ) {
+      config = CONFIG_D;
+      is_config_dp = true;
+    } else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
 
     syslog(LOG_WARNING, "%s() Get the system type: %s", __func__, sys_conf);
     is_inited = true;
@@ -1466,14 +1469,9 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
       *val += temp_val;
     }
 
-    if (config == CONFIG_D && i == FRU_SLOT1) {
-      if (fby3_common_get_2ou_board_type(FRU_SLOT1, &type_2ou) < 0) {
-        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
-        return READING_NA;
-      } else if (type_2ou == DP_RISER_BOARD) {
-        //DP only has slot1
-        return PAL_EOK;
-      }
+    if (is_config_dp && i == FRU_SLOT1) {
+      //DP only has slot1
+      return PAL_EOK;
     }
   }
 

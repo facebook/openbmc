@@ -56,6 +56,7 @@ function init_class1_fsc(){
       target_fsc_config="/etc/FSC_CLASS1_POC_CONFIG_D_GPV3.json"
     elif [ "$type_2ou" == "0x06" ]; then
       echo "use DP fan table"
+      config_type="DP"
       target_fsc_config="/etc/FSC_CLASS1_EVT_DP.json"
     else
       target_fsc_config="/etc/FSC_CLASS1_type15.json"
@@ -154,7 +155,7 @@ function reload_sled_fsc() {
     else
       if [ $cnt -eq 2 ]; then
         run_fscd=true
-      elif [[ $cnt -eq 1 && "$(get_2ou_board_type $(get_cpld_bus 1))" == "0x06" ]]; then
+      elif [[ $cnt -eq 1 && "$sys_config" == "Type_DP" ]]; then
         # DP system only has one slot
         run_fscd=true
       fi

@@ -1,5 +1,5 @@
 {
-  "version": "fby3-dp-v2-2021.04.07",
+  "version": "fby3-dp-v3-2021.06.28",
   "pwm_transition_value": 60,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -46,12 +46,14 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 30, 10 ],
-        [ 31, 10 ],
-        [ 32, 11 ],
-        [ 33, 11 ],
-        [ 34, 12 ],
-        [ 35, 12 ]
+        [ 22, 10 ],
+        [ 25, 12 ],
+        [ 27, 13 ],
+        [ 30, 14 ],
+        [ 32, 15 ],
+        [ 35, 16 ],
+        [ 37, 20 ],
+        [ 39, 40 ]
       ]
     },
     "linear_cpu_margin": {
@@ -155,8 +157,8 @@
       "setpoint": 79,
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
-      "kp": -1,
-      "ki": -0.035,
+      "kp": -3,
+      "ki": -0.01,
       "kd": 0
     }
   },

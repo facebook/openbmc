@@ -100,6 +100,11 @@ enum net_intf_act {
   NET_INTF_ENABLE,
 };
 
+enum {
+  UNBIND = 0,
+  BIND = 1
+};
+
 struct pal_key_cfg {
   char *name;
   char *def_val;
@@ -1062,88 +1067,102 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 
 int
 pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
-  int ret = -1;
+  int ret = 0;
   char cmd[MAX_PATH_LEN] = {0};
+  char path[MAX_PATH_LEN] = {0};
+  FILE *fp = NULL;
 
   if (device_name == NULL) {
     syslog(LOG_ERR, "%s device name is null", __func__);
     return -1;
   }
 
-  snprintf(cmd, sizeof(cmd),
-            "echo %s %d > /sys/class/i2c-dev/i2c-%d/device/new_device",
-              device_name, addr, bus);
+  snprintf(path, sizeof(path), "/sys/class/i2c-dev/i2c-%d/device/new_device", bus);
+  fp = fopen(path, "w");
+  if(fp == NULL) {
+    syslog(LOG_ERR, "%s Failed to open file: %s. %s", __func__, path, strerror(errno));
+    return -1;
+  }
 
-#if DEBUG
-  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
-#endif
+  snprintf(cmd, sizeof(cmd), "%s %d",device_name, addr);
+  if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
+    syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
 
-  ret = run_command(cmd);
+  fclose(fp);
 
   return ret;
 }
 
 int
 pal_del_i2c_device(uint8_t bus, uint8_t addr) {
-  int ret = -1;
+  int ret = 0;
   char cmd[MAX_PATH_LEN] = {0};
+  char path[MAX_PATH_LEN] = {0};
+  FILE *fp = NULL;
 
-  snprintf(cmd, sizeof(cmd), "echo %d > /sys/class/i2c-dev/i2c-%d/device/delete_device",
-           addr, bus);
+  snprintf(path, sizeof(path), "/sys/class/i2c-dev/i2c-%d/device/delete_device", bus);
+  fp = fopen(path, "w");
+  if(fp == NULL) {
+    syslog(LOG_ERR, "%s Failed to open file: %s. %s", __func__, path, strerror(errno));
+    return -1;
+  }
 
-#if DEBUG
-  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
-#endif
+  snprintf(cmd, sizeof(cmd), "%d", addr);
+  if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
+    syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
 
-  ret = run_command(cmd);
+  fclose(fp);
+
+  return ret;
+}
+
+static int
+i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8_t operation) {
+  int ret = 0;
+  char cmd[MAX_PATH_LEN] = {0};
+  char path[MAX_PATH_LEN] = {0};
+  FILE *fp = NULL;
+
+  if (driver_name == NULL) {
+    syslog(LOG_ERR, "%s driver name is null", __func__);
+    return -1;
+  }
+
+  if (operation == BIND) {
+    snprintf(path, sizeof(path), "/sys/bus/i2c/drivers/%s/bind", driver_name);
+  } else {
+    snprintf(path, sizeof(path), "/sys/bus/i2c/drivers/%s/unbind", driver_name);
+  }
+
+  fp = fopen(path, "w");
+  if(fp == NULL) {
+    syslog(LOG_ERR, "%s Failed to open file: %s. %s", __func__, path, strerror(errno));
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd), "%d-00%d", bus, addr);
+  if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
+    syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
+    ret = -1;
+  }
+
+  fclose(fp);
 
   return ret;
 }
 
 int
 pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
-  int ret = -1;
-  char cmd[MAX_PATH_LEN] = {0};
-
-  if (driver_name == NULL) {
-    syslog(LOG_ERR, "%s driver name is null", __func__);
-    return -1;
-  }
-
-  snprintf(cmd, sizeof(cmd),
-            "echo %d-00%d > /sys/bus/i2c/drivers/%s/bind",
-              bus, addr, driver_name);
-
-#if DEBUG
-  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
+  return i2c_device_binding_operation(bus, addr, driver_name, BIND);
 }
 
 int
 pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
-  int ret = -1;
-  char cmd[MAX_PATH_LEN] = {0};
-
-  if (driver_name == NULL) {
-    syslog(LOG_ERR, "%s driver name is null", __func__);
-    return -1;
-  }
-
-  snprintf(cmd, sizeof(cmd),
-            "echo %d-00%d > /sys/bus/i2c/drivers/%s/unbind",
-              bus, addr, driver_name);
-
-#if DEBUG
-  syslog(LOG_WARNING, "%s Cmd: %s", __func__, cmd);
-#endif
-
-  ret = run_command(cmd);
-
-  return ret;
+  return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
 }
 
 // To get the platform sku

@@ -30,7 +30,7 @@ plat_i2c_tree = {
     "12-003e": {"name": "smb_syscpld", "driver": "smb_syscpld"},
     "13-0060": {"name": "domfpga", "driver": "domfpga"},
     "16-004d": {"name": "ir35215", "driver": "ir35215"},
-    "17-0040": {"name": "xdpe132g5c", "driver": "xdpe12284"},
+    "17-0040": {"name": "xdpe132g5c", "driver": "xdpe132g5c"},
     "18-003a": {"name": "powr1220", "driver": "powr1220"},
     "19-0068": {"name": "xdpe12284", "driver": "xdpe12284"},
     "20-000e": {"name": "pxe1211", "driver": "pxe1610"},

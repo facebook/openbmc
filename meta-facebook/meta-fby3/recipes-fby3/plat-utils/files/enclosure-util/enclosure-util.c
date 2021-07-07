@@ -352,6 +352,9 @@ main(int argc, char **argv) {
   } else if ( type_2ou == E1S_BOARD ) {
     device_start = DEV_ID0_2OU;
     device_end = DEV_ID5_2OU;
+  } else if ( type_2ou == DP_RISER_BOARD ) {
+    printf("DP not support \n");
+    goto exit;
   } else if ( present == PRESENT_1OU ) {
     device_start = DEV_ID0_1OU;
     device_end = DEV_ID3_1OU;

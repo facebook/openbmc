@@ -69,6 +69,8 @@ typedef struct _sdr_rec_hdr_t {
 
 #define BB_FW_UPDATE_STAT_FILE "/tmp/cache_store/bb_fw_update"
 
+#define GPIO_FALSE_DIR "/tmp/gpio/bic%d"
+
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -585,7 +587,7 @@ get_gpv3_bus_number(uint8_t dev_id) {
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:
     case DEV_ID0_2OU:
-    case DEV_ID1_2OU:    
+    case DEV_ID1_2OU:
       return 0x2;
     case FW_2OU_M2_DEV2:
     case FW_2OU_M2_DEV3:
@@ -673,10 +675,10 @@ bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
   uint8_t tlen = 4;
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0;
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_SNR_MONITOR, tbuf, tlen, rbuf, &rlen, intf); 
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_SNR_MONITOR, tbuf, tlen, rbuf, &rlen, intf);
 }
 
-int 
+int
 bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
   uint8_t rbuf[16] = {0};
@@ -688,13 +690,13 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   int val = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
-  
+
   while (retry < 3) {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
     if (ret == 0) break;
     retry++;
   }
-  
+
   if (ret == 0) {
     *type = rbuf[3];
     val = *type;
@@ -702,7 +704,7 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
     syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
     val = ret;
   }
-  
+
   snprintf(tmp_str, sizeof(tmp_str), "%d", val);
   kv_set(key, tmp_str, 0, 0);
   return ret;
@@ -733,7 +735,7 @@ bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
-  
+
   tbuf[3] = dev_id; // 0'base
   tbuf[4] = status; // 0->off, 1->on
   while (retry < 3) {
@@ -741,11 +743,11 @@ bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
     if (ret == 0) break;
     retry++;
   }
-  
+
   if (ret != 0) {
     syslog(LOG_WARNING, "[%s] fail at slot%u dev%u", __func__, slot_id, dev_id);
   }
-  
+
   return ret;
 }
 
@@ -780,7 +782,7 @@ bic_spe_led_ctrl(uint8_t dev_id, uint8_t option, uint8_t* status) {
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
-  
+
   if (status == NULL) {
     syslog(LOG_WARNING, "%s() status is missing", __func__);
     return -1;
@@ -794,7 +796,7 @@ bic_spe_led_ctrl(uint8_t dev_id, uint8_t option, uint8_t* status) {
     }
     retry++;
   }
-  
+
   if (ret != 0) {
     syslog(LOG_WARNING, "%s() fail at dev%u", __func__, dev_id);
   }
@@ -807,7 +809,7 @@ bic_spe_led_ctrl(uint8_t dev_id, uint8_t option, uint8_t* status) {
     // byte 3: status
     *status = rbuf[3];
   }
-  
+
   return ret;
 }
 
@@ -990,19 +992,19 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
     }
- 
+
     //get the CRC32 of the VR
     tbuf[2] = 0x00; //read cnt
     tbuf[3] = 0x00; //command code
     tbuf[4] = 0x62;
     tlen = 5;
-    
+
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
     }
-    
+
     tbuf[2] = 0x2; //read cnt
     tbuf[3] = 0x42; //command code
     tlen = 4;
@@ -1011,7 +1013,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
     }
-    
+
     tbuf[2] = 0x2; //read cnt
     tbuf[3] = 0x43; //command code
     tlen = 4;
@@ -1022,7 +1024,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
     }
     snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     kv_set(key, ver_str, 0, 0);
-    
+
   error_exit:
     rc = flock(fd, LOCK_UN);
     if (rc == -1) {
@@ -1033,7 +1035,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
     close(fd);
     remove(path);
     return ret;
-    
+
   } else if ( rlen > 4 ) {
     //TI
     tbuf[2] = 0x02; //read cnt
@@ -1044,7 +1046,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       return ret;
     }
-    
+
     snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
     kv_set(key, ver_str, 0, 0);
   } else {
@@ -1076,7 +1078,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       return ret;
     }
-    
+
     snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     kv_set(key, ver_str, 0, 0);
   }
@@ -1090,7 +1092,7 @@ bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, c
 
   snprintf(key, sizeof(key), "slot%x_vr_%02xh_crc", slot_id, addr);
   if (kv_get(key, tmp_str, NULL, 0)) {
-    
+
     if (bic_get_vr_ver(slot_id, intf, bus, addr, key, tmp_str))
       return -1;
   }
@@ -1098,7 +1100,7 @@ bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, c
   if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
     return -1;
 
-  return 0;  
+  return 0;
 }
 
 int
@@ -1153,7 +1155,7 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
   int val = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
-  
+
   if (kv_get(key, tmp_str, NULL, 0)) {
     // get form bic
     tbuf[0] = 0x05; //bus id
@@ -1378,7 +1380,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
   index = (gpio / 8) + 3; //3 is the size of IANA ID
   pin = 1 << (gpio % 8);
   tbuf[index] = pin;
-  
+
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
   *data = rbuf[3];
   return ret;
@@ -1470,6 +1472,43 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf) {
   // Ignore first 3 bytes of IANA ID
   memcpy((uint8_t*) gpio, &rbuf[3], rlen);
 
+ #ifdef ENABLE_INJECTION
+  // After getting the real values, check for injected vals
+  uint32_t i, bmask;
+  int fd, flen;
+  char fpath[30], fdata;
+  for (i = 0; i < MAX_GPIO_PINS; i++) {
+    sprintf(fpath, GPIO_FALSE_DIR, i);
+    if (!access(fpath, F_OK)) {
+      fd = open(fpath, O_RDONLY);
+      if (fd == -1) {
+        syslog(LOG_WARNING, "Could not open bic injection file for gpio %d", i);
+        return -1;
+      }
+
+      flen = read(fd, &fdata, 1);
+      if (flen == 0) {
+        close(fd);
+        return -1;
+      }
+
+      int fret = close(fd);
+      if (fret) {
+        syslog(LOG_WARNING, "Failed to close bic injection file for gpio %d", i);
+        return -1;
+      }
+
+      // First set the bit to 0
+      bmask = 1 << (i % 32);
+      gpio->gpio[i/32] &= ~bmask;
+
+      // Now we can change it to whatever we want
+      gpio->gpio[i/32] |= (((fdata - 0x30) & 0x1) << (i % 32));
+      syslog(LOG_INFO, "Injected %d into gpio %d", (fdata - 0x30), i);
+    }
+  }
+#endif // ENABLE_INJECITON
+
   return ret;
 }
 
@@ -1545,7 +1584,7 @@ bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status) {
 
   while (retry < 3) {
     ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_FAN_CTRL_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-    if (ret == 0) break; 
+    if (ret == 0) break;
     retry++;
   }
   if (ret != 0) {
@@ -1808,7 +1847,7 @@ bic_notify_fan_mode(int mode) {
     fan_event.slot = UNKNOWN_SLOT;
     syslog(LOG_WARNING, "%s(): wrong response while getting MB index", __func__);
   }
-  
+
   memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
   req.bypass_intf = BMC_INTF;
   fan_event.mode = mode;
@@ -1836,7 +1875,7 @@ bic_notify_fan_mode(int mode) {
   return 0;
 }
 
-int 
+int
 bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type) {
   int ret = 0;
   uint8_t retry = MAX_READ_RETRY;
@@ -1929,7 +1968,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
   } else if (board_type == E1S_BOARD) {
     // case 2OU E1S
-    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control 
+    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
   } else {
     // case 1/2OU M.2
     tbuf[3] = dev_id;
@@ -2034,7 +2073,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
   } else if (board_type == E1S_BOARD) {
     // case 2OU E1S
-    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control 
+    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
   } else {
     // case 1/2OU M.2
     tbuf[3] = dev_id;
@@ -2154,7 +2193,7 @@ bic_get_mb_index(uint8_t *index) {
   if (rlen == sizeof(GET_MB_INDEX_RESP)) {
     *index = resp.index;
   } else {
-    syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d", 
+    syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d",
           __func__, rlen, sizeof(GET_MB_INDEX_RESP));
     return -1;
   }
@@ -2240,13 +2279,13 @@ bic_check_bb_fw_update_ongoing() {
   uint8_t mb_index = 0;
   int ret = 0;
   char update_stat[MAX_VALUE_LEN] = {0};
-  
+
   // if key exist, BB fw is updating by another slot
   if (access(BB_FW_UPDATE_STAT_FILE, F_OK) == 0) {
     if (kv_get("bb_fw_update", update_stat, NULL, 0) != 0) {
       printf("Fail to get BB firmware update status\n");
       strncpy(update_stat, "unknown", sizeof(update_stat));
-    }    
+    }
     printf("BB firmware: %s update is ongoing\n", update_stat);
     return -1;
   }
@@ -2264,7 +2303,7 @@ bic_check_bb_fw_update_ongoing() {
     if (kv_get("bb_fw_update", update_stat, NULL, 0) != 0) {
       printf("Fail to get BB firmware update status\n");
       strncpy(update_stat, "unknown", sizeof(update_stat));
-    }    
+    }
     printf("BB firmware: %s update is ongoing\n", update_stat);
     return -1;
   }

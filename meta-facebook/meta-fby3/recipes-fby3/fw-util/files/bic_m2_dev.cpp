@@ -102,18 +102,13 @@ int M2DevComponent::update_internal(string image, bool force) {
 
     // nvme type - SPH/BRCM
     // nvme status is 0 which means the device is not ready
-    // if so, we should use `--force` instead of implementing the function as a normal update
-    if ( force == true ) {
-      if ( bmc_location != NIC_BMC ) {
-        // BRCM VK recovery update
-        cerr << "BRCM VK Recovery Update" << endl;
-        ret = bic_disable_brcm_parity_init(slot_id, fw_comp);
-        if ( ret < 0 ) throw string("Failed to disable BRCM parity init");
-      }
-    } else {
-      if ( nvme_ready == 0 ) {
-        throw string("The device is not ready");
-      }
+    // tooling team doesn’t care that it’s recovery or normal update, it expects a unified syntax
+    // remove `--force` flag here
+    if ( bmc_location != NIC_BMC ) {
+      // BRCM VK recovery update
+      cerr << "BRCM VK Recovery Update" << endl;
+      ret = bic_disable_brcm_parity_init(slot_id, fw_comp);
+      if ( ret < 0 ) throw string("Failed to disable BRCM parity init");
     }
 
     // no matter which one is used, bic_update_fw will be called in the end

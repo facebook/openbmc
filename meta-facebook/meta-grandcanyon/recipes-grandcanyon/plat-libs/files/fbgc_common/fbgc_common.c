@@ -32,14 +32,15 @@
 #include <string.h>
 #include <time.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include <facebook/fbgc_gpio.h>
 #include "fbgc_common.h"
-#include <openbmc/libgpio.h>
-#include <facebook/fbgc_gpio.h>
 #include <openbmc/kv.h>
 
 // Platform signature of image: Grand Canyon
 const char platform_signature[PLAT_SIG_SIZE] = {0x47, 0x72, 0x61, 0x6e, 0x64, 0x20, 0x43, 0x61, 0x6e, 0x79, 0x6f, 0x6e, 0x20, 0x20, 0x20, 0x20};
+
+const char* board_stage[] = {"Pre EVT", "EVT", "DVT", "PVT", "MP"};
 
 int
 fbgc_common_get_chassis_type(uint8_t *type) {
@@ -354,5 +355,44 @@ check_image_signature(const char* image_path, uint32_t sig_offset) {
 
 exit:
   close(fd);
+  return ret;
+}
+
+int
+get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
+  int i2cfd = 0, ret = 0, retry = 0;
+  uint8_t tbuf[1] = {0};
+  uint8_t tlen = 0;
+
+  if (board_rev_id == NULL) {
+    syslog(LOG_WARNING, "%s(): fail to get board revision id due to NULL parameter", __func__);
+  }
+
+  i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, BS_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s(): fail to open device: I2C BUS: %d", __func__, I2C_BS_FPGA_BUS);
+    return i2cfd;
+  }
+
+  tbuf[0] = BS_FPGA_BOARD_REV_ID_OFFSET;
+  tlen = sizeof(tbuf);
+
+  while (retry < MAX_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, tbuf, tlen, board_rev_id, board_rev_id_len);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      ret = 0;
+      break;
+    }
+  }
+
+  if (retry == MAX_RETRY) {
+    syslog(LOG_WARNING, "%s(): fail to read server FPGA offset: 0x%02X via i2c\n", __func__, BS_FPGA_BOARD_REV_ID_OFFSET);
+    ret = -1;
+  }
+
+  close(i2cfd);
   return ret;
 }

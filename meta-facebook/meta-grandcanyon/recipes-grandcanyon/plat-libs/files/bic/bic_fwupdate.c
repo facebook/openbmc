@@ -570,14 +570,15 @@ is_valid_bic_image(uint8_t comp, int fd, int file_size, char* path){
 #define REVISION_ID(x) ((x >> 4) & 0x0f)
 #define COMPONENT_ID(x) (x & 0x0f)
 
-  int ret = BIC_STATUS_FAILURE;
+  int ret = BIC_STATUS_FAILURE, board_type_index = 0;
   uint8_t rbuf[BIC_VALIDATE_READ_LEN] = {0};
   uint8_t rlen = sizeof(rbuf);
-  uint8_t sel_tag = 0xff;
+  uint8_t sel_tag = 0xff, fw_rev_id = 0xff, board_rev_id = 0xff;
   uint32_t sel_offset = 0xffffffff;
   uint32_t sig_offset = 0xffffffff;
   uint32_t md5_offset = 0xffffffff;
- 
+  bool board_rev_is_invalid = false;
+
   switch (comp) {
     case UPDATE_BIC:
       sel_tag = BICBR_TAG;
@@ -604,6 +605,39 @@ is_valid_bic_image(uint8_t comp, int fd, int file_size, char* path){
   }
 
   if ( rbuf[0] != sel_tag || COMPONENT_ID(rbuf[1]) != COMPONENT_ID(BIC_BS) ) {
+    goto error_exit;
+  }
+
+  // Check f/w and server board stage
+  if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
+    goto error_exit;
+  }
+
+  fw_rev_id = REVISION_ID(rbuf[1]);
+  board_type_index = board_rev_id - 1;
+  if (board_type_index < 0) {
+    board_type_index = 0;
+  }
+
+  if ((fw_rev_id > STAGE_MP) || (board_type_index > STAGE_MP)) {
+    syslog(LOG_WARNING, "%s() wrong board revision ID, f/w REV ID: %d, board REV ID: %d", __func__, fw_rev_id, board_type_index);
+    goto error_exit;
+  }
+
+  // PVT & MP firmware could be used in common
+  if (board_type_index < STAGE_PVT) {
+    if (fw_rev_id != board_type_index) {
+      board_rev_is_invalid = true;
+    }
+  } else {
+    if (fw_rev_id < STAGE_PVT) {
+      board_rev_is_invalid = true;
+    }
+  }
+
+  if (board_rev_is_invalid == true) {
+    printf("If you want to update the %s f/w on the %s system, please use force update.\n",
+            board_stage[fw_rev_id], board_stage[board_type_index]);
     goto error_exit;
   }
 

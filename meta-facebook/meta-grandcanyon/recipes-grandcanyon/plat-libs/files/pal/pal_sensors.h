@@ -15,7 +15,6 @@
 
 #define MAX_GET_RPM_RETRY            15
 #define MAX_NIC_TEMP_RETRY           5      // 10 seconds
-#define MAX_RETRY                    3
 #define MAX_SDR_PATH                 32
 #define SDR_PATH                     "/tmp/sdr_%s.bin"
 #define SDR_TYPE_FULL_SENSOR_RECORD  0x1

@@ -124,6 +124,12 @@ extern "C" {
 
 #define PWR_CTRL_ACT_CNT 3
 
+#define MAX_RETRY        (3)
+
+#define BS_FPGA_BOARD_REV_ID_OFFSET (0x07)
+
+extern const char *board_stage[];
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,
@@ -229,6 +235,7 @@ int split(char **dst, char *src, char *delim, int max_size);
 int fbgc_common_get_system_stage(uint8_t *stage);
 int check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset);
 int check_image_signature(const char* image_path, uint32_t sig_offset);
+int get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len);
 
 #ifdef __cplusplus
 } // extern "C"

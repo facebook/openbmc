@@ -372,6 +372,19 @@ power_on_post_actions() {
   return 0;
 }
 
+static int
+power_12v_on_post_actions() {
+  int ret = 0;
+  
+  // Update Server FPGA version
+  ret = pal_set_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to update Server FPGA version", __func__);
+  }
+  
+  return ret;
+}
+
 int
 pal_get_server_12v_power(uint8_t fru, uint8_t *status) {
   int ret = 0;
@@ -615,7 +628,13 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_12V_ON) {
         return POWER_STATUS_ALREADY_OK;
       }
-      return server_power_12v_on();
+      
+      ret = server_power_12v_on();
+      if (ret == 0) {
+        power_12v_on_post_actions();
+      }
+      
+      return ret;
 
     case SERVER_12V_OFF:
       if (status == SERVER_12V_OFF) {
@@ -643,6 +662,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         sleep(SERVER_AC_CYCLE_DELAY);
         if (server_power_12v_on() < 0) {
           return POWER_STATUS_ERR;
+        } else {
+          power_12v_on_post_actions();
         }
       }
       break;

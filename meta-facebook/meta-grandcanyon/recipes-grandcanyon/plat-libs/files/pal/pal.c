@@ -3582,3 +3582,64 @@ pal_get_bs_fpga_ver(uint8_t *ver, uint8_t ver_len) {
   close(i2cfd);
   return ret;
 }
+
+int
+pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str) {
+  char key[MAX_KEY_LEN] = {0};
+
+  if (ver_str == NULL) {
+    syslog(LOG_WARNING, "Fail to get FPGA version cache because parameter *ver_str is NULL.");
+    return -1;
+  }
+
+  snprintf(key, sizeof(key), "fpga_bus%d_addr%02Xh_version", bus, addr);
+
+  if (kv_get(key, ver_str, NULL, 0) != 0) {
+    if (pal_set_fpga_ver_cache(bus, addr) != 0) {
+      return -1;
+    }
+  }
+
+  kv_get(key, ver_str, NULL, 0);
+
+  return 0;
+}
+
+int
+pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
+  uint32_t ver_reg = GET_BS_FPGA_VER_OFFSET;
+  int i2cfd = 0, ret = 0;
+  uint8_t tbuf[MAX_BS_FPGA_VER_LEN] = {0x00};
+  uint8_t rbuf[MAX_BS_FPGA_VER_LEN] = {0x00};
+  uint8_t rlen = sizeof(rbuf), tlen = sizeof(tbuf);
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "Failed to set FPGA version cache value due to I2C BUS: %d open failed.", bus);
+    return i2cfd;
+  }
+
+  if (ioctl(i2cfd, I2C_SLAVE, addr) < 0) {
+    syslog(LOG_ERR, "Failed to set FPGA version cache value due to talk to slave%02Xh failed.", addr);
+    ret = -1;
+  } else {
+    memcpy(tbuf, &ver_reg, tlen);
+
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, rbuf, rlen);
+    if (ret == 0) {
+      snprintf(key, sizeof(key), "fpga_bus%d_addr%02Xh_version", bus, addr);
+      snprintf(value, sizeof(value), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+      kv_set(key, value, 0, 0);
+
+    } else {
+      syslog(LOG_ERR, "Fail to set FPGA version cache value due to i2c_rdwr_msg_transfer failed. bus: %d addr: %02Xh ret: %d", bus, addr, ret);
+    }
+  }
+
+  close(i2cfd);
+
+  return ret;
+}
+

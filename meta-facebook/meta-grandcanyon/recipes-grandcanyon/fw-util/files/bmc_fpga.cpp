@@ -12,6 +12,7 @@
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
 #include <facebook/bic.h>
+#include <openbmc/pal.h>
 #include <facebook/fbgc_common.h>
 #include "bmc_fpga.h"
 
@@ -81,31 +82,9 @@ end:
 
 int BmcFpgaComponent::get_ver_str(string& s) {
   int ret = 0;
-  char ver[32] = {0};
-  uint32_t ver_reg = ON_CHIP_FLASH_USER_VER;
-  uint8_t tbuf[4] = {0x00};
-  uint8_t rbuf[4] = {0x00};
-  uint8_t tlen = 4;
-  uint8_t rlen = 4;
-  int i2cfd = 0;
-
-  memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
-  reverse(tbuf, tbuf + 4);
-
-  if ((i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM)) < 0) {
-    cout << "Failed to open i2c bus: " << bus << endl;
-    return -1;
-  }
-
-  if (ioctl(i2cfd, I2C_SLAVE, addr) < 0) {
-    cout << "Failed to talk to slave@0x" << hex << addr << endl;
-    ret = -1;
-  } else {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, rbuf, rlen);
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
-  }
-
-  close(i2cfd);
+  char ver[MAX_VALUE_LEN] = {0};
+  
+  ret = pal_get_fpga_ver_cache(bus, addr, ver);
   s = string(ver);
 
   return ret;

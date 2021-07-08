@@ -419,6 +419,8 @@ int pal_check_fru_is_valid(const char* fruid_path);
 int pal_get_cached_value(char *key, char *value);
 int pal_set_cached_value(char *key, char *value);
 int pal_get_bs_fpga_ver(uint8_t *ver, uint8_t ver_len);
+int pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);
+int pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr);
 
 #ifdef __cplusplus
 } // extern "C"

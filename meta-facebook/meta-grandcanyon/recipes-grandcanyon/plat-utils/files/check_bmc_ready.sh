@@ -5,7 +5,6 @@
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 MAX_RETRY=600         # wait 10 mins before give up
-NOT_READY_DAEMON=""
 
 total_daemon="sensord ipmid fscd front-paneld gpiod gpiointrd ncsid healthd ipmbd_2 ipmbd_7 ipmbd_10"
 
@@ -71,7 +70,8 @@ check_bmc_ready() {
     
   while [ "$retry" -lt "$MAX_RETRY" ]
   do
-  
+    NOT_READY_DAEMON=""
+
     for daemon in $total_daemon
     do
       result="$(check_daemon_status "$daemon")"

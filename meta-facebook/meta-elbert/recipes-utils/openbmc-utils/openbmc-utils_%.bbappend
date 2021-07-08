@@ -51,6 +51,7 @@ SRC_URI += "file://board-utils.sh \
             file://meta_info.sh \
             file://beacon_led.sh \
             file://setup_bcm53134.sh \
+            file://th4_qspi_ver.sh \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -79,6 +80,7 @@ OPENBMC_UTILS_FILES += " \
     spi_pim_ver.sh \
     meta_info.sh \
     beacon_led.sh \
+    th4_qspi_ver.sh \
     "
 
 DEPENDS_append = " update-rc.d-native"

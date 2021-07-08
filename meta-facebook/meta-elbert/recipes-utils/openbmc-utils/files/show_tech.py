@@ -290,6 +290,11 @@ def showtech(verboseLevel=0):
             runCmd("/usr/local/bin/pim_types.sh", verbose=True)
         )
     )
+    print(
+        "##### TH4 CONFIGURATION #####\n{}".format(
+            runCmd("/usr/local/bin/th4_qspi_ver.sh", verbose=True)
+        )
+    )
 
     # Dump EEPROMS
     dumpWeutil("CHASSIS", verbose=verbose)

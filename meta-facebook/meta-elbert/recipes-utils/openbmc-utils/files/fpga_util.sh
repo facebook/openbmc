@@ -278,6 +278,7 @@ program_spi_image() {
     echo "Selected partition $PARTITION to program."
     # Clear any cached pim header version files
     rm /tmp/.pim_spi_header* 2>/dev/null
+    rm /tmp/.qspi_spi_image* 2>/dev/null
 
     if [ "$FPGA_TYPE" -ge 0 ] ; then
         # Verify the image type
@@ -384,6 +385,9 @@ read_spi_partition_image() {
         HEADER_PIM_BASE)
            PARTITION="header_pim_base"
            ;;
+        HEADER_TH4_QSPI)
+           PARTITION="header_th4_qspi"
+           ;;
         TH4_QSPI)
            BS=1K # TH4 QSPI is small, use 1K increments
            COUNT=32 # TH4 QSPI is <32KB
@@ -423,7 +427,7 @@ read_spi_partition_image() {
     rm "$TEMP"
 }
 
-strip_pim_header() {
+strip_image_header() {
     ORIG_IMAGE="$1"
     NEW_IMAGE="$2"
     POS=$(head -c4096 "$ORIG_IMAGE" | hexdump -v -e '/1 "%u\n"' | \
@@ -452,7 +456,7 @@ do_pim() {
             # Image with header stripped
             BIN_IMAGE="/tmp/stripped_pim_image"
             connect_pim_flash
-            strip_pim_header "$2" "$BIN_IMAGE"
+            strip_image_header "$2" "$BIN_IMAGE"
             program_spi_image "$BIN_IMAGE" "SPINOR" "$3" "$1"
             rm "$BIN_IMAGE"
             ;;
@@ -483,14 +487,21 @@ do_pim() {
 do_th4_qspi() {
     case "${1^^}" in
         PROGRAM|VERIFY)
+            # Image with header stripped
+            BIN_IMAGE="/tmp/stripped_qspi_image"
             unbind_spi_nor
             connect_th4_qspi_flash
-            program_spi_image "$2" "FLASHROM" th4_qspi "$1"
+            strip_image_header "$2" "$BIN_IMAGE"
+            program_spi_image "$BIN_IMAGE" "FLASHROM" th4_qspi "$1"
             ;;
         READ)
             unbind_spi_nor
             connect_th4_qspi_flash
-            read_spi_partition_image "$2" "FLASHROM" th4_qspi
+            if [ -z "$3" ]; then
+                read_spi_partition_image "$2" "FLASHROM" th4_qspi
+            else
+                read_spi_partition_image "$2" "FLASHROM" "$3"
+            fi
             ;;
         *)
             echo "TH4 QSPI only supports program/verify/read action. Exiting..."
@@ -539,6 +550,9 @@ case "$1" in
       ;;
    th4_qspi) shift 1
       do_th4_qspi "$@"
+      ;;
+   header_th4_qspi) shift 1
+      do_th4_qspi "$@" header_th4_qspi
       ;;
    *)
       usage

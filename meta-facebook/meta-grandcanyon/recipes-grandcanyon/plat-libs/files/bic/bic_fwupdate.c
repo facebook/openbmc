@@ -676,7 +676,6 @@ update_bic_runtime_fw(uint8_t comp, char *path, uint8_t force) {
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd = %d\n", __func__, path, fd);
     goto exit;
   }
-  printf("file size = %d bytes\n", file_size);
 
   //check the content of the image
   if (force == 0) {
@@ -688,7 +687,14 @@ update_bic_runtime_fw(uint8_t comp, char *path, uint8_t force) {
       ret = -1;
       goto exit;
     }
+  } else {
+    // If image contains MD5 bytes, minus 16 bytes of MD5
+    if (check_image_md5(path, (file_size - MD5_DIGEST_LENGTH), (file_size - MD5_DIGEST_LENGTH)) >= 0) {
+      file_size -= MD5_DIGEST_LENGTH;
+    }
   }
+  printf("file size = %d bytes\n", file_size);
+
   ret = update_bic(fd, file_size, force);
 
 exit:
@@ -761,7 +767,6 @@ update_bic_bootloader_fw(uint8_t comp, char *path, uint8_t force) {
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d", __func__, path, fd);
     goto exit;
   }
-  printf("file size = %d bytes, comp = 0x%x\n", file_size, comp);
 
   //check the content of the image
   if (force == 0) {
@@ -773,7 +778,13 @@ update_bic_bootloader_fw(uint8_t comp, char *path, uint8_t force) {
       ret = -1;
       goto exit;
     }
+  } else {
+    // If image contains MD5 bytes, minus 16 bytes of MD5.
+    if (check_image_md5(path, (file_size - MD5_DIGEST_LENGTH), (file_size - MD5_DIGEST_LENGTH)) >= 0) {
+      file_size -= MD5_DIGEST_LENGTH;
+    }
   }
+  printf("file size = %d bytes, comp = 0x%x\n", file_size, comp);
 
   ret = update_fw_bic_bootloader(comp, fd, file_size);
 

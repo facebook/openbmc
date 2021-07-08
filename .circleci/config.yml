@@ -66,9 +66,12 @@ jobs:
                 command: |
                     chown -R usersetup:usersetup /tmp/job
             - run:
-                name: Check build required.
+                name: Check build required. Halt the CI if not needed.
                 command: |
                     runuser -m usersetup -c './tools/circle-ci/check-build-required ptest'
+                    if [ $? -eq 1 ]; then
+                        circleci-agent step halt
+                    fi
             - run:
                 name: Download sstate cache.
                 command: |
@@ -101,6 +104,9 @@ jobs:
                 name: Check build required.
                 command: |
                     ./tools/circle-ci/check-build-required
+                    if [ $? -eq 1 ]; then
+                        circleci-agent step halt
+                    fi
             - run:
                 name: Download sstate cache.
                 command: |

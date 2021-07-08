@@ -80,8 +80,8 @@ do
 done
 
 if [ "x$FORCE_BUILD" == "x1" ]; then
-    exit
+    exit 0
 fi
 
 echo "$FORCE Build unnecessary; halt ci."
-circleci-agent step halt
+exit 1

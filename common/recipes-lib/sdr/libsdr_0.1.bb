@@ -13,11 +13,14 @@ BBCLASSEXTEND = "native"
 SRC_URI = "file://Makefile \
            file://sdr.c \
            file://sdr.h \
+           file://sdr.py \
           "
 
 S = "${WORKDIR}"
 
-DEPENDS += " libipmi libpal "
+DEPENDS += " libipmi libpal"
+
+inherit python3-dir
 
 do_install() {
 	  install -d ${D}${libdir}
@@ -25,7 +28,10 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 sdr.h ${D}${includedir}/openbmc/sdr.h
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    install -m 644 ${S}/sdr.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
-FILES_${PN} = "${libdir}/libsdr.so"
+FILES_${PN} = "${libdir}/libsdr.so \
+                ${PYTHON_SITEPACKAGES_DIR}/sdr.py"
 FILES_${PN}-dev = "${includedir}/openbmc/sdr.h"

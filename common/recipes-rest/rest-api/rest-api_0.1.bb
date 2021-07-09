@@ -69,7 +69,13 @@ SRC_URI = "file://setup-rest-api.sh \
            file://restapi.service \
            file://board_setup_routes.py \
            file://redfish_common_routes.py \
+           file://redfish_service_root.py \
+           file://redfish_account_service.py \
+           file://redfish_chassis.py \
+           file://redfish_managers.py \
            file://test_redfish_common_routes.py \
+           file://redfish_base.py \
+           file://test_redfish_controllers.py \
         "
 
 S = "${WORKDIR}"
@@ -108,10 +114,6 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://node_e1s_iocm.py \
             file://node_uic.py \
             file://test_node_sensors.py \
-            file://redfish_service_root.py \
-            file://redfish_account_service.py \
-            file://redfish_chassis.py \
-            file://redfish_managers.py \
             ', \
             'file://common_endpoint.py \
             file://board_endpoint.py \

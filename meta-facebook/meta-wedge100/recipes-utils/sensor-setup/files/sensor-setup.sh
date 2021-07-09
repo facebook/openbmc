@@ -135,12 +135,21 @@ pem_sensor_calibration() {
     if [ "$((fru1_version))" -ge "$((0x02))" ] || \
        [ "$((fru2_version))" -ge "$((0x02))" ]; then
         rsense_val=1.55
+        rsense_val2=1.55
     else
-        rsense_val=1.35
+        rsense_val=1.465
+        rsense_val2=1.35
     fi
 
-    sed "s/rsense/$rsense_val/g" "${SENSORS_CONF_PATH}/custom/ltc4151.conf" \
-        > "${SENSORS_CONF_PATH}/ltc4151.conf"
+    sed "s/rsense/$rsense_val/1" "${SENSORS_CONF_PATH}/custom/ltc4151.conf" \
+        > "/tmp/ltc4151.conf"
+
+    sed "s/rsense/$rsense_val2/1" "/tmp/ltc4151.conf" \
+         > "${SENSORS_CONF_PATH}/ltc4151.conf"
+
+    # remove temporary file
+    rm -rf /tmp/ltc4151.conf
+    
 }
 
 #

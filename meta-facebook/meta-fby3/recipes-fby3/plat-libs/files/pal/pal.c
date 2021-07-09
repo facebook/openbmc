@@ -4133,3 +4133,57 @@ int pal_postprocess_after_updating_fw(uint8_t slot_id) {
   is_called = true;
   return ret;
 }
+
+int pal_dp_hba_fan_table_check(void) {
+  //DP only slot1
+  uint8_t slot = FRU_SLOT1;
+  int ret = 0, config_status = 0;
+  uint8_t bmc_location = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+  uint8_t tbuf[16] = {0xb8, 0x40, 0x57, 0x01 ,0x00 ,0x30 ,0x06 ,0x05 ,0x61 ,0x00 ,0x00 ,0x00 ,0x60 ,0x01};
+  uint8_t rbuf[10] = {0x00};
+  uint8_t tlen = 14;
+  uint8_t rlen = 10;
+  uint16_t read_vid = 0x0, read_did = 0x0;
+  char cmd[64] = {0};
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  config_status = bic_is_m2_exp_prsnt(slot);
+  if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
+    //check if GPv3 is installed
+    if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+    }
+  }
+
+  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    if (type_2ou == DP_RISER_BOARD) {
+      ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+      if (ret == 0) {
+        read_vid = rbuf[6] << 8 | rbuf[5];
+        read_did = rbuf[8] << 8 | rbuf[7];;
+        if ((read_vid == HBA_VID) && (read_did == HBA_DID)) {
+          snprintf(cmd, sizeof(cmd), "ln -sf %s %s", DP_HBA_FAN_TBL_PATH, DEFAULT_FSC_CFG_PATH);
+          ret = system(cmd);
+          if (ret != 0) {
+            syslog(LOG_WARNING, "%s() can not import DP-HBA fan table", __func__);
+            return ret;
+          }
+
+          ret = system("/usr/bin/sv restart fscd");
+          if (ret != 0) {
+            syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
+            return ret;
+          }
+        }
+      }
+    }
+  }
+
+  return ret;
+}

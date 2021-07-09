@@ -66,6 +66,10 @@ extern "C" {
 
 #define MAX_SNR_NAME 32
 
+#define DP_HBA_FAN_TBL_PATH "/etc/FSC_CLASS1_DVT_DP_HBA.json"
+#define DEFAULT_FSC_CFG_PATH "/etc/fsc-config.json"
+
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -198,6 +202,12 @@ enum {
   DEV_FRU_IGNORE,
 };
 
+//HBA card information
+enum {
+  HBA_VID = 0x1077, // QLogic Corp.
+  HBA_DID = 0x2071, // ISP2714-based 16/32Gb Fibre Channel to PCIe Adapter
+};
+
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -220,6 +230,7 @@ int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
 int pal_check_slot_cpu_present(uint8_t slot_id);
 int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
+int pal_dp_hba_fan_table_check(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

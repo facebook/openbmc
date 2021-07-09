@@ -61,6 +61,7 @@ static long int retry_sec[MAX_NUM_SLOTS] = {0};
 static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
+static bool dp_hsm_check = false;
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
@@ -706,6 +707,11 @@ gpio_monitor_poll(void *ptr) {
         kv_set(host_key[fru-1], "1", 0, 0);
         bios_post_cmplt[fru-1] = true;
         retry_sec[fru-1] = 0;
+        // Check if it is DP-HSM when first boot
+        if (!dp_hsm_check) {
+          pal_dp_hba_fan_table_check();
+          dp_hsm_check = true;
+        }
       }
       retry_sec[fru-1]++;
     } else {

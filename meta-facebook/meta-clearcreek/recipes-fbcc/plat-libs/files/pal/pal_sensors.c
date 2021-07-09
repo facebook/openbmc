@@ -1534,9 +1534,9 @@ read_bay_temp(uint8_t bay_id, float *value) {
   return ret;
 }
 
+static float max_nvme_temp0 = -99, max_nvme_temp1 = -99;
 static int
 read_nvme_temp(uint8_t sensor_num, float *value) {
-  static float max_nvme_temp0 = -99, max_nvme_temp1 = -99;
   int ret = 0;
   int bus_id = 0, nvme_id = 0;
   int fd = 0;
@@ -1551,7 +1551,9 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
         return READING_NA;
       } else {
         *value = max_nvme_temp0;
-        max_nvme_temp0 = -99;
+        if (pal_is_server_off()) {
+          max_nvme_temp1 = -99;
+        }
         return PAL_EOK;
       }
       break;
@@ -1560,7 +1562,9 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
         return READING_NA;
       } else {
         *value = max_nvme_temp1;
-        max_nvme_temp1 = -99;
+        if (pal_is_server_off()) {
+          max_nvme_temp1 = -99;
+        }
         return PAL_EOK;
       }
       break;

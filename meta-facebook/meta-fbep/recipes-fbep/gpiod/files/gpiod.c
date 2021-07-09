@@ -501,11 +501,11 @@ static void gpio_event_hsc_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
   gpio_event_handle_pwr_brake(gp, last, curr);
   sync_dbg_led(ERR_HSC_1_ALERT, curr == GPIO_VALUE_LOW? true: false);
   if (curr == GPIO_VALUE_LOW) {
-    if (check_hsc_alert(gp, 16, 0x53, LTC4282_REG_FAULT_LOG) < 0)
+    if (check_hsc_alert(gp, 16, 0x53 << 1, LTC4282_REG_FAULT_LOG) < 0)
       syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_1");
     if (!pal_is_server_off() &&
-	(check_hsc_alert(gp, 16, 0x13, ADM127x_REG_STATUS_IOUT) < 0 ||
-        check_hsc_alert(gp, 16, 0x13, ADM127x_REG_STATUS_INPUT) < 0)) {
+	(check_hsc_alert(gp, 16, 0x13 << 1, ADM127x_REG_STATUS_IOUT) < 0 ||
+        check_hsc_alert(gp, 16, 0x13 << 1, ADM127x_REG_STATUS_INPUT) < 0)) {
       syslog(LOG_WARNING, "Failed to get alert status from P48V HSC_1");
     }
   }
@@ -516,11 +516,11 @@ static void gpio_event_hsc_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
   gpio_event_handle_pwr_brake(gp, last, curr);
   sync_dbg_led(ERR_HSC_2_ALERT, curr == GPIO_VALUE_LOW? true: false);
   if (curr == GPIO_VALUE_LOW) {
-    if (check_hsc_alert(gp, 17, 0x40, LTC4282_REG_FAULT_LOG) < 0)
+    if (check_hsc_alert(gp, 17, 0x40 << 1, LTC4282_REG_FAULT_LOG) < 0)
       syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_2");
     if (!pal_is_server_off() &&
-	(check_hsc_alert(gp, 17, 0x10, ADM127x_REG_STATUS_IOUT) < 0 ||
-        check_hsc_alert(gp, 17, 0x10, ADM127x_REG_STATUS_INPUT) < 0)) {
+	(check_hsc_alert(gp, 17, 0x10 << 1, ADM127x_REG_STATUS_IOUT) < 0 ||
+        check_hsc_alert(gp, 17, 0x10 << 1, ADM127x_REG_STATUS_INPUT) < 0)) {
       syslog(LOG_WARNING, "Failed to get alert status from P48V HSC_2");
     }
   }

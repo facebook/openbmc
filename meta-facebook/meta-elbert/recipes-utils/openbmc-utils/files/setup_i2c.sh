@@ -82,6 +82,7 @@ calibrate_th4_max6581
 hwmon_device_add 3 0x4e ucd90160 # UCD90160
 i2c_device_add 3 0x60 raa228228  # RA228228
 i2c_device_add 3 0x62 isl68226   # ISL68226
+enable_switchcard_power_security
 
 # SMBus 4
 i2c_device_add 4 0x23 smbcpld
@@ -102,6 +103,7 @@ i2c_device_add 6 0x4c max6658
 i2c_device_add 7 0x50 24c512
 
 # SMBus 9 SCM DPM UCD90320
+retry_command 3 enable_power_security_mode 9 0x11 "UCD90320U"
 hwmon_device_add 9 0x11 ucd90320
 gpio_export_by_offset 9-0011 13 SCM_FPGA_LATCH_L
 
@@ -139,7 +141,7 @@ do
         i2c_device_add "$bus_id" 0x50 24c512  # EEPROM
         # Only allow writes to certain registers for
         # power controllers UCD9090/TPS546D24
-        retry_command 3 enable_ucd9090_security_mode "$bus_id" 0x4e
+        retry_command 3 enable_power_security_mode "$bus_id" 0x4e "UCD9090B"
         retry_command 3 enable_tps546d24_wp "$bus_id" 0x16
         retry_command 3 enable_tps546d24_wp "$bus_id" 0x18
         i2c_device_add "$bus_id" 0x16 pmbus   # TPS546D24
@@ -150,6 +152,7 @@ do
         fru="$(peutil "$pim" 2>&1)"
         if echo "$fru" | grep -q '88-8D'; then
             i2c_device_add "$bus_id" 0x54 isl68224 # ISL68224
+            retry_command 3 maybe_enable_isl_wp "$bus_id" 0x54
         fi
     else
         echo "PIM${pim} not present... skipping."

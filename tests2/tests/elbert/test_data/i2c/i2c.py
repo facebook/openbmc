@@ -39,3 +39,20 @@ psu_devices = [
     # Address, name, driver
     ("0058", "psu_driver", "psu_driver")
 ]
+
+secure_devices = [
+    # Name, bus, device, type
+    ("SMB UCD", 3, 0x4E, "ucd"),
+    ("SMB ISL1", 3, 0x60, "pmbus-0x40"),
+    ("SMB ISL2", 3, 0x62, "pmbus-0x40"),
+    ("SCM UCD", 9, 0x11, "ucd"),
+]
+
+pim_secure_devices = [
+    # Name, device, type, pim_type
+    ("UCD", 0x4E, "ucd", None),
+    ("TPS-UPPER", 0x16, "pmbus-0x80", None),
+    ("TPS-UPPER", 0x18, "pmbus-0x80", None),
+    # Only present on 7388-8D
+    ("ISL", 0x54, "pmbus-0x40", "PIM8DDM"),
+]

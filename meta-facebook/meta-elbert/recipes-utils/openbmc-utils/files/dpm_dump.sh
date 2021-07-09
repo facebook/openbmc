@@ -19,6 +19,7 @@
 
 # shellcheck disable=SC1091
 source /usr/local/bin/dpm_utils.sh
+source /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
@@ -41,9 +42,13 @@ fi
 echo "Reading DPM logs..."
 read_logs "$switchcard_bus" "SWITCHCARD" >> "$logfile"
 
-echo "Clearing SWITCHCARD DPM logs..."
+# The UCD90160B does not support a security bitmask. Disable
+# security in order to update the clock. Security will be
+# re-enabled later in the boot.
+retry_command 3 disable_power_security_mode 3 0x4e "UCD90160B"
 update_clock "$switchcard_bus"
 # For the switchcard UCD90160B, there are 18 bytes to clear
+echo "Clearing SWITCHCARD DPM logs..."
 i2cset -y 3 0x4e 0xea 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 s
 
 echo "Dumping and clearing PIM DPM logs..."

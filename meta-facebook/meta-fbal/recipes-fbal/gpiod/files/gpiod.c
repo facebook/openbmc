@@ -867,6 +867,27 @@ static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 }
 
 static void
+upi_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+}
+
+static void
+upi_init_handler(gpiopoll_pin_t *desc, gpio_value_t value) {
+  int ret;
+  uint8_t mode;
+  
+  ret = pal_get_host_system_mode(&mode);
+  if ( ret != 0 )
+    syslog(LOG_WARNING, "%s get mode fail\n", __func__);
+
+
+  //2S can't plug in UPI board, 4S can't lose UPI borad
+  if ( mode == MB_2S_MODE && value == GPIO_VALUE_LOW)
+      log_gpio_change(desc, value, 0);
+  else if ( (mode == MB_4S_EP_MODE || mode == MB_4S_EX_MODE) &&  value == GPIO_VALUE_HIGH )
+      log_gpio_change(desc, value, 0);
+}
+
+static void
 platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value) {
   struct timespec ts;
   char data[MAX_VALUE_LEN];
@@ -1001,6 +1022,10 @@ static struct gpiopoll_config g_gpios[] = {
   {"FM_PVCCIN_CPU0_PWR_IN_ALERT_N", "GPIOAA2", GPIO_EDGE_FALLING, cpu0_pvccin_pwr_in_handler, NULL},
   {"FM_PVCCIN_CPU1_PWR_IN_ALERT_N", "GPIOAA3", GPIO_EDGE_FALLING, cpu1_pvccin_pwr_in_handler, NULL},
   {"PWRGD_CPU0_LVC3", "GPIOZ1", GPIO_EDGE_BOTH, cpu_pwr_handler, init_cpu_pwr},
+  {"PRSNT_UPI_BD_1_N", "GPIOO5", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
+  {"PRSNT_UPI_BD_2_N", "GPIOO6", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
+  {"PRSNT_UPI_BD_3_N", "GPIOO7", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
+  {"PRSNT_UPI_BD_4_N", "GPIOP0", GPIO_EDGE_BOTH, upi_detect_handler, upi_init_handler},
 };
 
 int main(int argc, char **argv)

@@ -186,6 +186,71 @@ void ipmi_callback(
     BOOKMARK_END(fru);
 }
 
+void bic_gpio_callback(unsigned int delay, uint8_t fru, unsigned int gpio_num) {
+    // get the current value
+    std::string bic_format = std::to_string(gpio_num) + " \\w+: (\\d)";
+    std::regex bic_regex(bic_format);
+    std::smatch reg_match;
+
+    char fru_name[16], cmd[128];
+    if (pal_get_fru_name(fru, fru_name)) {
+        std::cout << "Invalid FRU" << std::endl;
+        return;
+    }
+    sprintf(cmd, "bic-util %s --get_gpio", fru_name);
+    FILE* file_stream = popen(cmd, "r");
+
+    if (!file_stream) {
+        std::cout << "Could not get current gpio values" << std::endl;
+        return;
+    }
+
+    ssize_t read_size;
+    size_t line_size = 256;
+    char* line_buffer = NULL;
+    int current_value = -1;
+    while ((read_size = getline(&line_buffer, &line_size, file_stream)) != -1) {
+        std::string line = line_buffer;
+        if (std::regex_search(line, reg_match, bic_regex)) {
+            current_value = stoi(reg_match[1].str());
+            break;
+        }
+    }
+
+    if (current_value == -1) {
+        std::cout << "Specified GPIO value does not exist" << std::endl;
+        return;
+    }
+
+    // write a to a file the new value
+    BOOKMARK_BEGIN(fru, "bic-gpio");
+
+    std::string bic_file = "/tmp/gpio/bic"
+        + std::to_string(fru)
+        + "_"
+        + std::to_string(gpio_num);
+    std::ofstream tmp_file;
+
+    tmp_file.open(bic_file);
+    if (!tmp_file.is_open()) {
+        std::cout << "Failed to open file " << bic_file << std::endl;
+    }
+
+    tmp_file << (!current_value ? "1" : "0");
+    tmp_file.close();
+
+    // wait the delay
+    usleep(delay * 1000);
+
+    // delete the file
+    if (remove(bic_file.c_str()) != 0)
+        std::cout << "Could not delete tmp file" << std::endl;
+
+    // wait for de-asserts
+    usleep(delay * 1000);
+    BOOKMARK_END(fru);
+}
+
 void del_logs(std::vector<time_pair> time_pairs) {
     for (time_pair period : time_pairs) {
         char buffer[256];
@@ -288,6 +353,10 @@ int main(int argc, char **argv)
                             val["sel_subtypes"][2].get<std::string>());
                         break;
                     case 2: // gpio
+                        bic_gpio_callback(
+                        delay,
+                        val["sel_subtypes"][0].get<uint8_t>(),
+                        val["sel_subtypes"][1].get<unsigned int>());
                         break;
                     case 3: // ncsi
                         break;

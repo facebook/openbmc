@@ -3552,38 +3552,6 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data) {
 }
 
 int
-pal_get_bs_fpga_ver(uint8_t *ver, uint8_t ver_len) {
-  uint32_t ver_reg = GET_BS_FPGA_VER_OFFSET;
-  int i2cfd = 0, ret = 0;
-  uint8_t tbuf[MAX_BS_FPGA_VER_LEN] = {0x00};
-  uint8_t rbuf[MAX_BS_FPGA_VER_LEN] = {0x00};
-  uint8_t rlen = sizeof(rbuf), tlen = sizeof(tbuf);
-  
-  if (ver == NULL) {
-    syslog(LOG_WARNING, "Fail to get Server FPGA version because parameter *ver is NULL.");
-    return -1;
-  }
-  
-  i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if (i2cfd < 0) {
-    syslog(LOG_ERR, "Fail to get Server FPGA version because I2C BUS: %d open failed.", I2C_BS_FPGA_BUS);
-    return i2cfd;
-  }
-  
-  memcpy(tbuf, &ver_reg, tlen);
-  
-  ret = i2c_rdwr_msg_transfer(i2cfd, GET_BS_FPGA_VER_ADDR << 1, tbuf, tlen, rbuf, rlen);
-  if (ret == 0) {
-    memcpy(ver, rbuf, ver_len);
-  } else {
-    syslog(LOG_ERR, "Fail to get Server FPGA version because i2c_rdwr_msg_transfer failed. ret: %d", ret);
-  }
-  
-  close(i2cfd);
-  return ret;
-}
-
-int
 pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str) {
   char key[MAX_KEY_LEN] = {0};
 

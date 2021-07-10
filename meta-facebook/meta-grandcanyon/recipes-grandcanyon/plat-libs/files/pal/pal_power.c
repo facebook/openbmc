@@ -457,7 +457,14 @@ pal_get_server_12v_power(uint8_t fru, uint8_t *status) {
 
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
-  int ret = 0;
+  int ret = 0, i2cfd = 0;
+  char server_fpga_ver[MAX_VALUE_LEN] = {0};
+  char server_fpga_stage[MAX_VALUE_LEN] = {0};
+  char server_fpga_ver_num[MAX_VALUE_LEN] = {0};
+  bool is_ctrl_via_bic = true;
+  i2c_master_rw_command command;
+  uint8_t res = 0;
+  int rlen = sizeof(res);
   
   if (status == NULL) {
     syslog(LOG_WARNING, "%s() NULL pointer: *status", __func__);
@@ -474,12 +481,45 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     // return earlier if power state is SERVER_12V_OFF or error happened
     return ret;
   }
+  
+  ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR, server_fpga_ver);
+  if (ret == 0) {
+    snprintf(server_fpga_stage, sizeof(server_fpga_stage), "%c%c", server_fpga_ver[4], server_fpga_ver[5]);
+    snprintf(server_fpga_ver_num, sizeof(server_fpga_ver_num), "%c%c", server_fpga_ver[6], server_fpga_ver[7]);
+    
+    if (((strcmp(server_fpga_stage, "0D") == 0) && (atoi(server_fpga_ver_num) >= 0x02))
+      || (strcmp(server_fpga_stage, "0A") == 0)) {
+      is_ctrl_via_bic = false;
+    }
+  }
 
-  ret = bic_get_server_power_status(status);
-  if (ret < 0) {
-    // if bic not responding, we reset status to SERVER_12V_ON
-    *status = SERVER_12V_ON;
-    syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
+  if (is_ctrl_via_bic == false) {
+    i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, BS_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "Fail to control server power because I2C BUS: %d open failed", I2C_BS_FPGA_BUS);
+      return i2cfd;
+    }
+  
+    memset(&command, 0, sizeof(command));
+    command.offset = BS_FPGA_SERVER_POWER_STATUS;
+  
+    ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, (uint8_t *)&command.offset, sizeof(command.offset), &res, rlen);
+    close(i2cfd);
+    
+    *status = GETBIT(res, 0);
+    if (ret < 0) {
+      // if server FPGA not responding, we reset status to SERVER_12V_ON
+      *status = SERVER_12V_ON;
+      syslog(LOG_WARNING, "%s(): SERVER FPGA no response, server DC power status is unknown\n", __func__);
+    }
+    
+  } else {
+    ret = bic_get_server_power_status(status);
+    if (ret < 0) {
+      // if bic not responding, we reset status to SERVER_12V_ON
+      *status = SERVER_12V_ON;
+      syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
+    }
   }
 
   return 0;
@@ -490,8 +530,10 @@ int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status = 0;
   int ret = 0;
-  uint8_t server_fpga_ver[MAX_BS_FPGA_VER_LEN] = {0};
   bool is_ctrl_via_bic = true;
+  char server_fpga_ver[MAX_VALUE_LEN] = {0};
+  char server_fpga_stage[MAX_VALUE_LEN] = {0};
+  char server_fpga_ver_num[MAX_VALUE_LEN] = {0};
 
   if (fru != FRU_SERVER) {
     syslog(LOG_WARNING, "%s: fru %u not a server\n", __func__, fru);
@@ -505,9 +547,14 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   
   // Check Server FPGA f/w version
   // (1)new: BMC control directly (2)old: control via BIC
-  ret = pal_get_bs_fpga_ver((uint8_t *)&server_fpga_ver, sizeof(server_fpga_ver));
+  ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR, server_fpga_ver);
   if (ret == 0) {
-    if (((server_fpga_ver[1] == 0x0D) && (server_fpga_ver[0] >= 0x02)) || (server_fpga_ver[1] == 0x0A)) {
+    snprintf(server_fpga_stage, sizeof(server_fpga_stage), "%c%c", server_fpga_ver[4], server_fpga_ver[5]);
+    snprintf(server_fpga_ver_num, sizeof(server_fpga_ver_num), "%c%c", server_fpga_ver[6], server_fpga_ver[7]);
+    
+    // after stage: DVT num: 02 support BMC control directly
+    if (((strcmp(server_fpga_stage, "0D") == 0) && (atoi(server_fpga_ver_num) >= 0x02))
+      || (strcmp(server_fpga_stage, "0A") == 0)) {
       is_ctrl_via_bic = false;
     }
   }

@@ -101,6 +101,8 @@ static char sel_error_record[NUM_SERVER_FRU] = {0};
 
 #define MAX_COMPONENT_LEN 32 //include the string terminal 
 
+#define MAX_PWR_LOCK_STR 32
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -1888,7 +1890,9 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   char fan_mode_str[FAN_MODE_STR_LEN] = {0};
   char component_str[MAX_COMPONENT_LEN] = {0};
+  char val[MAX_PWR_LOCK_STR] = {0};
   uint8_t type_2ou = UNKNOWN_BOARD;
+  struct timespec ts;
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -2008,8 +2012,13 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "SLED Power Lock");
       // the longest time spent is to update PESW recovery update, it spends about 2000s
       // set 2400s for insurance
-      if (event_data[1] == SEL_ASSERT) pal_set_fw_update_ongoing(FRU_SLOT1, 60*40);
-      else pal_set_fw_update_ongoing(FRU_SLOT1, 0);
+      if (event_data[1] == SEL_ASSERT) {
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        snprintf(val, sizeof(val), "%ld", ts.tv_sec + 60*40);
+        kv_set("pwr_lock", val, 0, 0);
+       } else {
+         kv_set("pwr_lock", "0", 0, 0);
+       }
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");

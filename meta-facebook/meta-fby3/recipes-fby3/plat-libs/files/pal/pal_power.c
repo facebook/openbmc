@@ -454,6 +454,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           }
         }
       } else {
+        if ((bmc_location == NIC_BMC) &&
+          ((pal_is_fw_update_ongoing(fru) == true) || (pal_is_fw_update_ongoing(FRU_BMC) == true))) {
+          syslog(LOG_WARNING, "%s(): Please make sure no firmware update is ongoing\n", __func__);
+          return POWER_STATUS_ERR;
+        }
         if ( bic_do_12V_cycle(fru) < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -467,6 +472,35 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   }
 
   return POWER_STATUS_OK;
+}
+
+
+static bool
+pal_is_pwr_lock_deassert(uint8_t fru) {
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = 0;
+  struct timespec ts;
+  uint8_t cpld_flag = 0;
+
+  ret = kv_get("pwr_lock", value, NULL, 0);
+  if (ret < 0) {
+    // power lock never asserted
+    if (errno == ENOENT) {
+      return true;
+    }
+    syslog(LOG_WARNING, "%s() Cannot get the power lock key", __func__);
+    return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) >= ts.tv_sec) {
+    return false;
+  }
+  if (bic_get_pwr_lock_flag(&cpld_flag) < 0 || cpld_flag == true) {
+    return false;
+  }
+
+  return true;
 }
 
 int
@@ -483,11 +517,10 @@ pal_sled_cycle(void) {
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
-    uint8_t is_pwr_lock = 0;
     // check power lock flag
-    if ( (ret = bic_get_pwr_lock_flag(&is_pwr_lock)) < 0 || is_pwr_lock > 0 ) {
+    if ((pal_is_fw_update_ongoing(FRU_SLOT1) == true) || (pal_is_pwr_lock_deassert(FRU_SLOT1) == false)) {
       printf("power lock flag is asserted, please make sure no firmware update is ongoing\n");
-      printf("If you still want to proceed, please clean the flag manually! ret=%d, lock=%d\n", ret, is_pwr_lock);
+      printf("If you still want to proceed, please clean the flag manually! ret=%d, lock=%d %d\n", ret, pal_is_fw_update_ongoing(FRU_SLOT1), pal_is_pwr_lock_deassert(FRU_SLOT1));
       return PAL_ENOTSUP;
     }
 

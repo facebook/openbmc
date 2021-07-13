@@ -3472,6 +3472,85 @@ error_exit:
   return ret;
 }
 
+static int
+pal_get_cpld_ver(uint8_t fru, uint8_t* data_buf, uint8_t* data_len) {
+  int ret = 0;
+  const uint8_t cpld_addr = 0x80;
+  uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
+  uint8_t rbuf[4] = {0x00};
+  uint8_t tlen = 4;
+  uint8_t rlen = 4;
+  uint8_t i2c_bus = 0;
+  int i2cfd = 0;
+
+  switch (fru){
+  case FRU_SLOT1:
+  case FRU_SLOT2:
+  case FRU_SLOT3:
+  case FRU_SLOT4:
+    i2c_bus = fby3_common_get_bus_id(fru) + 4;
+    break;
+  case FRU_BB:
+    i2c_bus = 12;
+    break;
+  default:
+    return -1;
+  }
+
+  ret = i2c_cdev_slave_open(i2c_bus, cpld_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "Failed to open bus 12");
+    return -1;
+  }
+  i2cfd = ret;
+  ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr, tbuf, tlen, rbuf, rlen);
+  if ( i2cfd > 0 )
+    close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer to slave@0x%02X on bus %d", __func__, cpld_addr, i2c_bus);
+    return -1;
+  }
+
+  memcpy(data_buf, rbuf, rlen);
+  if (data_len != NULL) {
+    *data_len = rlen;
+  }
+
+  return 0;
+}
+
+int
+pal_get_bb_fw_info(unsigned char target, char* ver_str) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (target == FW_CPLD) {
+    uint8_t data_buf[4] = {0};
+    uint8_t data_len;
+
+    sprintf(key, "bb_cpld_ver");
+    // kv cache exist
+    if (kv_get(key, value, NULL, 0) == 0) {
+      memcpy(ver_str, value, 8);
+      return 0;
+    }
+
+    // get version by i2c
+    if (pal_get_cpld_ver(FRU_BB, data_buf, &data_len) < 0) {
+      return -1;
+    }
+
+    // write cache
+    sprintf(value, "%02X%02X%02X%02X", data_buf[3], data_buf[2], data_buf[1], data_buf[0]);
+    kv_set(key, value, 8, 0);
+    memcpy(ver_str, value, 8);
+    return 0;
+  }
+
+  // unsupported target
+  return -1;
+}
+
 int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
@@ -3488,24 +3567,8 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   }
 
   if (target == FW_CPLD) {
-    const uint8_t cpld_addr = 0x80; /*8-bit addr*/
-    uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
-    uint8_t tlen = 4;
-    uint8_t rlen = 4;
-    uint8_t i2c_bus = fby3_common_get_bus_id(fru) + 4;
-    int i2cfd = -1;
-    ret = i2c_cdev_slave_open(i2c_bus, cpld_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to talk to slave@0x%02X on bus %d. Err: %s\n", \
-                                          __func__, cpld_addr, i2c_bus, strerror(errno));
-      goto error_exit;
-    }
-
-    i2cfd = ret;
-    ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr, tbuf, tlen, res, rlen);
-    if ( i2cfd > 0 ) close(i2cfd);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer to slave@0x%02X on bus %d", __func__, cpld_addr, i2c_bus);
+    ret = pal_get_cpld_ver(fru, res, res_len);
+    if (ret < 0) {
       goto error_exit;
     }
   } else if(target == FW_BIOS) {

@@ -231,6 +231,7 @@ int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8
 int pal_check_slot_cpu_present(uint8_t slot_id);
 int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
 int pal_dp_hba_fan_table_check(void);
+int pal_get_bb_fw_info(unsigned char target, char* ver_str);
 #ifdef __cplusplus
 } // extern "C"
 #endif

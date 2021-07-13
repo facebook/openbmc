@@ -19,6 +19,7 @@ BBLAYERS ?= " \
   ##OEROOT##/../../../meta-aspeed \
   ##OEROOT##/../../../meta-facebook \
   ##OEROOT##/../../../meta-facebook/meta-python3 \
+  ##OEROOT##/../../../meta-facebook/meta-backports \
   ##OEROOT##/../../../meta-delta \
   ##OEROOT##/../../../meta-delta/meta-agc032a \
   "

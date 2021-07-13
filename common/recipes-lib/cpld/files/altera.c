@@ -54,6 +54,7 @@ enum {
 static int g_i2c_file = 0;
 static uint8_t g_i2c_bridge_addr = 0;
 static char g_i2c_file_dp[64];
+static unsigned long g_i2c_funcs = 0;
 
 
 // on-chip Flash IP
@@ -97,6 +98,11 @@ int get_i2c_register(int file, uint8_t addr, uint32_t reg, uint32_t *val)
   int ret = 0;
   uint8_t outbuf[4], inbuf[4];
   uint32_t readval;
+  struct i2c_msg messages[] = {
+    { addr, 0, sizeof(outbuf), outbuf },
+    { addr, I2C_M_RD, sizeof(inbuf), inbuf },
+  };
+  struct i2c_rdwr_ioctl_data ioctl_data = { messages, 2 };
 
   if (ioctl(file, I2C_SLAVE, addr) < 0) {
     /* ERROR HANDLING; you can check errno to see what went wrong */
@@ -108,11 +114,21 @@ int get_i2c_register(int file, uint8_t addr, uint32_t reg, uint32_t *val)
   outbuf[1] = (reg >> 16 ) & 0xFF;
   outbuf[2] = (reg >> 8 )  & 0xFF;
   outbuf[3] = (reg >> 0 )  & 0xFF;
-  ret = write(file, outbuf, 4);
-  DEBUGMSG(" write() ret = %d\r\n", ret);
 
-  // dummy read 4 byte
-  ret = read(file, inbuf, 4);
+  if (g_i2c_funcs & I2C_FUNC_I2C) {
+    ret = ioctl(file, I2C_RDWR, &ioctl_data);
+    if (ret == 2) {
+      ret = sizeof(inbuf);  // update read length
+    } else {
+      ret = 0;
+    }
+  } else {
+    ret = write(file, outbuf, 4);
+    DEBUGMSG(" write() ret = %d\r\n", ret);
+
+    // dummy read 4 byte
+    ret = read(file, inbuf, 4);
+  }
 
   readval =  (inbuf[0] << 0);
   readval |= (inbuf[1] << 8);
@@ -128,6 +144,13 @@ int get_i2c_register(int file, uint8_t addr, uint32_t reg, uint32_t *val)
 void max10_update_init(int i2c_file)
 {
   g_i2c_file = i2c_file;
+
+  // check i2c functionality
+  if (ioctl(g_i2c_file, I2C_FUNCS, &g_i2c_funcs) < 0) {
+     /* ERROR HANDLING; you can check errno to see what went wrong */
+     syslog(LOG_WARNING, "ioctl(file, I2C_FUNCS) fail.");
+     g_i2c_funcs = 0;
+  }
 
   // Set timeout /* set timeout in units of 10 ms */
   if (ioctl(g_i2c_file, I2C_TIMEOUT, 1000) < 0) {
@@ -146,6 +169,7 @@ void max10_done()
 {
   close(g_i2c_file);
   g_i2c_file = 0;
+  g_i2c_funcs = 0;
 }
 
 int max10_reg_write(int address, int data)

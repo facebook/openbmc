@@ -998,6 +998,8 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
   int recheck = MAX_CHECK_DEVICE_TIME;
   uint16_t vid = EXP1_TI_VENDOR_ID;
   uint16_t pid = EXP1_TI_PRODUCT_ID;
+  int i = 0;
+  int path_len = 0;
 
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -1018,6 +1020,12 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
     goto error_exit;
   }
 
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
   do {
     cnt = libusb_get_device_list(NULL, &udev->devs);
     if (cnt < 0) {
@@ -1033,11 +1041,28 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
         goto error_exit;
       }
 
-      ret = libusb_open(udev->dev, &udev->handle);
-      if ( ret < 0 ) {
-        printf("Error opening device -- exit\n");
+      path_len = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
+      if (path_len < 0) {
+        printf("Error get port number\n");
         libusb_free_device_list(udev->devs,1);
         goto error_exit;
+      }
+
+      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+        if ( udev->path[1] != slot_id) {
+          continue;
+        }
+      }
+
+      ret = libusb_open(udev->dev, &udev->handle);
+      if ( ret < 0 ) {
+        printf("Error opening device");
+        printf(" path: %d", udev->path[0]);
+        for (i = 1; i < path_len; i++) {
+          printf(".%d", udev->path[i]);
+        }
+        printf("\n");
+        continue; //continue checking other devices
       }
 
       if( (vid == udev->desc.idVendor) && (pid == udev->desc.idProduct) ) {
@@ -1048,28 +1073,10 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
           goto error_exit;
         }
 
-        ret = fby3_common_get_bmc_location(&bmc_location);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-          goto error_exit;
-        }
-
-        ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
-        if (ret < 0) {
-          printf("Error get port number\n");
-          libusb_free_device_list(udev->devs,1);
-          goto error_exit;
-        }
-
-        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-          if ( udev->path[1] != slot_id) {
-            continue;
-          }
-        }
         printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
         printf(" path: %d", udev->path[0]);
-        for (index = 1; index < ret; index++) {
-          printf(".%d", udev->path[index]);
+        for (i = 1; i < path_len; i++) {
+          printf(".%d", udev->path[i]);
         }
         printf("\n");
 
@@ -1352,12 +1359,40 @@ update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
   int ret = 0;
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+  uint8_t retries = 3;
 
   udev->ci = 1;
   udev->epaddr = 0x1;
 
+  if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) == PRESENT_2OU ) {
+    if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+      syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",slot_id);
+      printf("Failed to get slot%d 2ou board type\n",slot_id);
+    }
+  }
+
   // init usb device
-  ret = bic_init_exp_usb_dev(slot_id, intf, udev);
+  do {
+    ret = bic_init_exp_usb_dev(slot_id, intf, udev);
+    if ( ret < 0 ) {
+      if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Reset
+        printf("bic_init_exp_usb_dev: slot: %d retrying..\n", slot_id);
+        syslog(LOG_WARNING, "bic_init_exp_usb_dev: slot: %d retrying..\n", slot_id);
+        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_1_3, VALUE_LOW, intf);
+        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_2, VALUE_LOW, intf);
+        bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
+        msleep(100);
+        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_1_3, VALUE_HIGH, intf);
+        msleep(100);
+        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_2, VALUE_HIGH, intf);
+        msleep(100);
+        bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+        sleep(20); // wait for usb ready
+      } else break;
+    } else break;
+  } while ( retries-- > 0 );
+
   if (ret < 0) {
     goto error_exit;
   }

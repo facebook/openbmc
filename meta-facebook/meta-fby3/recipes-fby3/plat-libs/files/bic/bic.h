@@ -44,6 +44,8 @@ extern "C" {
 #define MAX_CHECK_DEVICE_TIME 8
 #define GPIO_RST_USB_HUB 0x10
 #define EXP_GPIO_RST_USB_HUB 0x9
+#define GPV3_GPIO_RST_USB_HUB_2 0x5E
+#define GPV3_GPIO_RST_USB_HUB_1_3 0x5D
 #define VALUE_LOW 0
 #define VALUE_HIGH 1
 

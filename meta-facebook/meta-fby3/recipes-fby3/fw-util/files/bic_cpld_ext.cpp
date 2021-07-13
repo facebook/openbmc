@@ -1,6 +1,7 @@
 #include "fw-util.h"
 #include <cstdio>
 #include <cstring>
+#include <syslog.h>
 #include "server.h"
 #include <openbmc/pal.h>
 #include "bic_cpld_ext.h"
@@ -12,6 +13,7 @@ using namespace std;
 int CpldExtComponent::update(string image) {
   int ret = 0;
   int intf = FEXP_BIC_INTF;
+  uint8_t type_2ou = UNKNOWN_BOARD;
   string comp = component();
   try {
     server.ready();
@@ -20,12 +22,19 @@ int CpldExtComponent::update(string image) {
       intf = FEXP_BIC_INTF;
     } else {
       intf = REXP_BIC_INTF;
+      if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) == PRESENT_2OU ) {
+        if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+          syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",slot_id);
+          printf("Failed to get slot%d 2ou board type\n",slot_id);
+        }
+      }
     }
-    remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_HIGH, intf);
+    if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+      remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_HIGH, intf);
+    }
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
-    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
-    remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
+    // bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
   } catch (string err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
@@ -35,6 +44,7 @@ int CpldExtComponent::update(string image) {
 int CpldExtComponent::fupdate(string image) {
   int ret = 0;
   int intf = FEXP_BIC_INTF;
+  uint8_t type_2ou = UNKNOWN_BOARD;
   string comp = component();
   try {
     server.ready();
@@ -43,12 +53,19 @@ int CpldExtComponent::fupdate(string image) {
       intf = FEXP_BIC_INTF;
     } else {
       intf = REXP_BIC_INTF;
+      if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) == PRESENT_2OU ) {
+        if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+          syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",slot_id);
+          printf("Failed to get slot%d 2ou board type\n",slot_id);
+        }
+      }
     }
-    remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_HIGH, intf);
+    if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+      remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_HIGH, intf);
+    }
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_SET);
-    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
-    remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
+    // bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
   } catch (string err) {
     return FW_STATUS_NOT_SUPPORTED;
   }

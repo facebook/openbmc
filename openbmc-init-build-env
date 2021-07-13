@@ -33,7 +33,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-agc032a:lf-dunfell
 # zeus platforms (pending upgrade)
   meta-fby35:zeus
-  meta-agc032a:zeus
 # Legacy platforms pending kernel upgrade
   meta-fby2-gpv2:rocko
   meta-fby2:rocko

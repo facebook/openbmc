@@ -38,6 +38,7 @@
 #include <facebook/fby35_gpio.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
+#define POC1_BOARD_ID 0x0
 
 struct delayed_log {
   useconds_t usec;
@@ -296,6 +297,11 @@ usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   int ret = 0, i2cfd = 0, retry=0;
   uint8_t tbuf[1] = {0x08}, rbuf[1] = {0};
   uint8_t tlen = 1, rlen = 1;
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
+
+  assert(cfg);
+  sscanf(cfg->description, "GPIOS2");
+  log_gpio_change(gp, curr, 0);
 
   if (curr == GPIO_VALUE_LOW) {
     i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -306,7 +312,7 @@ usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
 
     retry = 0;
     while (retry < MAX_READ_RETRY) {
-      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
       if ( ret < 0 ) {
         retry++;
         msleep(100);
@@ -320,12 +326,12 @@ usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
     if ( i2cfd > 0 ) close(i2cfd);
 
     // Do not handle in POC1
-    if (rbuf[0] == 0) {
+    if (rbuf[0] == POC1_BOARD_ID) {
       return;
     }
 
     gpio_set_value_by_shadow("USB_BMC_EN_R", GPIO_VALUE_LOW);
-    msleep(50);
+    msleep(250);
     gpio_set_value_by_shadow("USB_BMC_EN_R", GPIO_VALUE_HIGH);
   }
 }

@@ -92,6 +92,14 @@ elif [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ]; then
     exit 1
   fi
 
+  # Enable I2C of E1.S when BIOS auto power-on the server
+  sleep 1
+  status="$(server_power_status)"
+  if [ "$status" = "$SERVER_STATUS_DC_ON" ]; then
+    gpio_set E1S_1_P3V3_PG_R 1
+    gpio_set E1S_2_P3V3_PG_R 1
+  fi
+
   check_por_config
   # Check server DC status according to power policy
   if [ "$IS_NEEDED_SERVER_POWER_ON" = true ]; then

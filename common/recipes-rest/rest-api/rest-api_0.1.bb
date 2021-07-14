@@ -51,6 +51,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://vboot.py \
            file://run_rest \
            file://rest.cfg \
+           file://rest_ntpstatus.py \
            file://rest_utils.py \
            file://rest_fscd_sensor_data.py \
            file://rest_modbus_cmd.py \
@@ -128,7 +129,6 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://rest_psu_update.py \
             file://eeprom_utils.py \
             file://rest_fcpresent.py \
-            file://rest_ntpstatus.py \
             file://rest_helper.py \
             file://test_common_middlewares.py \
             file://test_rest_gpios.py \

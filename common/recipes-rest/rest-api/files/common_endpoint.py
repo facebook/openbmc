@@ -101,7 +101,6 @@ class commonApp_Handler:
     def rest_fruid_pim_hdl(self, request):
         return self.helper_rest_fruid_pim_hdl(request)
 
-
     async def rest_bmc_hdl(self, request):
         result = await rest_bmc.get_bmc()
         return web.json_response(result, dumps=dumps_bytestr)
@@ -163,14 +162,6 @@ class commonApp_Handler:
     @common_force_async
     def psu_update_hdl_post(self, request):
         return self.helper_psu_update_hdl_post(request)
-
-    # Handler for ntp status
-    def helper_rest_ntp_status(self, request):
-        return web.json_response(**rest_ntpstatus.get_ntp_stats(), dumps=dumps_bytestr)
-
-    @common_force_async
-    def rest_ntp_status(self, request):
-        return self.helper_rest_ntp_status(request)
 
     # Handler for additional fscd sensor data
     @staticmethod

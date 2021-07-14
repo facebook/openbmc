@@ -17,9 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import node
 from aiohttp.log import server_logger
 from aiohttp.web import Application
 from redfish_common_routes import Redfish
+from rest_ntpstatus import rest_ntp_status_handler
 
 try:
     from compute_rest_shim import RestShim
@@ -63,6 +65,8 @@ def setup_common_routes(app: Application, write_enabled: bool):
         # /api/fans end point
         fans_shim = RestShim(get_node_fans(), "/api/fans")
         app.router.add_get(fans_shim.path, fans_shim.get_handler)
+        sys_shim = RestShim(node.node(), "/api/sys")
+        app.router.add_get(sys_shim.path, sys_shim.get_handler)
 
         # /attestation endpoints
         setup_attestation_endpoints(app)
@@ -83,11 +87,12 @@ def setup_common_routes(app: Application, write_enabled: bool):
         app.router.add_get(common_routes[8], chandler.rest_fcpresent_hdl)
         app.router.add_get(common_routes[9], chandler.psu_update_hdl)
         app.router.add_post(common_routes[9], chandler.psu_update_hdl_post)
-        app.router.add_get(common_routes[10], chandler.rest_ntp_status)
-        app.router.add_post(common_routes[11], chandler.rest_fscd_sensor_data_post)
-        app.router.add_get(common_routes[12], chandler.rest_modbus_get)
-        app.router.add_post(common_routes[13], chandler.rest_modbus_cmd_post)
+        app.router.add_post(common_routes[10], chandler.rest_fscd_sensor_data_post)
+        app.router.add_get(common_routes[11], chandler.rest_modbus_get)
+        app.router.add_post(common_routes[12], chandler.rest_modbus_cmd_post)
     # common routes for all openbmc.
+    server_logger.info("Adding common routes")
+    app.router.add_get("/api/sys/ntp", rest_ntp_status_handler)
     server_logger.info("Adding Redfish common routes")
     redfish = Redfish()
     redfish.setup_redfish_common_routes(app)

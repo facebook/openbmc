@@ -467,11 +467,8 @@ REST_END_POINTS = {
         "Sensor Fail",
         "Fan Fail",
     ],
-    "/api/dpb/error" : [
-        "Error Code",
-        "Error Counter",
-    ],
-    "/api/dpb/hdd-status" : [
+    "/api/dpb/error": ["Error Counter"],
+    "/api/dpb/hdd-status": [
         "Abnormal HDD ID",
         "Missing HDD ID",
         "Normal HDD ID",
@@ -607,6 +604,5 @@ REST_END_POINTS = {
     "/api/server/bios/postcode": ["POST Code"],
     "/api/server/bios/plat-info": ["Platform Information"],
     "/api/e1s_iocm": ["Description"],
-    "/api/e1s_iocm/logs": ["Logs"]
+    "/api/e1s_iocm/logs": ["Logs"],
 }
-

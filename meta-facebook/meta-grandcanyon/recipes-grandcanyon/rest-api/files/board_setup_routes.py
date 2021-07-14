@@ -30,7 +30,6 @@ from node_bios import (
     get_node_bios_clear_cmos,
     get_node_bios_force_boot_setup,
     get_node_bios_boot_order,
-    get_node_bios_pcie_port_config_trunk,
 )
 from node_bmc import get_node_bmc
 from node_config import get_node_config
@@ -210,13 +209,6 @@ def setup_board_routes(app: Application, write_enabled: bool):
         "/api/server/bios/plat-info",
     )
     app.router.add_get(plat_info_shim.path, plat_info_shim.get_handler)
-    # Add /api/server/bios/pcie-port-config node
-    pcie_port_config_shim = RestShim(
-        get_node_bios_pcie_port_config_trunk("server"),
-        "/api/server/bios/pcie-port-config",
-    )
-    app.router.add_get(pcie_port_config_shim.path, pcie_port_config_shim.get_handler)
-    app.router.add_post(pcie_port_config_shim.path, pcie_port_config_shim.post_handler)
     # Add /api/server/bios/boot-order/boot_mode node
     boot_mode_shim = RestShim(
         get_node_bios_boot_mode("server"),

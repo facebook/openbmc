@@ -110,7 +110,7 @@ class PowerModuleDetectionTest(unittest.TestCase):
             )
 
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
-            cmd = "/sys/bus/i2c/devices/25-0058/hwmon/hwmon21/"
+            cmd = "/sys/bus/i2c/devices/25-0058/hwmon/hwmon22/"
             sysfs_nodes_results = self.check_ltc4282_sysfs_nodes(cmd)
             self.assertTrue(
                 sysfs_nodes_results[0],
@@ -146,7 +146,7 @@ class PowerModuleDetectionTest(unittest.TestCase):
             )
 
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
-            path = "/sys/bus/i2c/devices/25-0018/hwmon/hwmon22/"
+            path = "/sys/bus/i2c/devices/25-0018/hwmon/hwmon23/"
             sysfs_nodes_results = self.check_max6615_sysfs_nodes(path)
             self.assertTrue(
                 sysfs_nodes_results[0],

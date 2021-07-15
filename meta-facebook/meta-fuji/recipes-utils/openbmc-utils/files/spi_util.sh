@@ -652,6 +652,10 @@ operate_spi1_dev(){
                 read_spi1_dev "$dev" "$file"
         ;;
         "write")
+                if [ ! -f "$file" ]; then
+                    echo "$file not exist!!!"
+                    exit 1
+                fi
                 write_spi1_dev "$dev" "$file"
         ;;
         "erase")
@@ -674,6 +678,10 @@ operate_spi2_dev(){
                 read_spi2_dev "$dev" "$file"
         ;;
         "write")
+                if [ ! -f "$file" ]; then
+                    echo "$file not exist!!!"
+                    exit 1
+                fi
                 write_spi2_dev "$dev" "$file"
         ;;
         "erase")

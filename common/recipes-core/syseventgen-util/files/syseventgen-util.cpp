@@ -366,4 +366,7 @@ int main(int argc, char **argv)
     }
     app.require_subcommand(0, 1);
     CLI11_PARSE(app, argc, argv);
+    if (app.get_subcommands().size() == 0) {
+        std::cout << app.help() << std::endl;
+    }
 }

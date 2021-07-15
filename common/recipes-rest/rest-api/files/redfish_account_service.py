@@ -3,7 +3,7 @@ from common_utils import dumps_bytestr
 from redfish_base import validate_keys
 
 
-async def get_account_service(request: str) -> web.json_response:
+async def get_account_service(request: str) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#AccountService.AccountService",
         "@odata.id": "/redfish/v1/AccountService",

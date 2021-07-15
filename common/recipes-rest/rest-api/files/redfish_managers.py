@@ -91,7 +91,7 @@ def get_ipv4_gateway() -> str:
     return gw_ip
 
 
-async def get_managers(request: str) -> web.json_response:
+async def get_managers(request: str) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#ManagerCollection.ManagerCollection",
         "@odata.id": "/redfish/v1/Managers",
@@ -104,7 +104,7 @@ async def get_managers(request: str) -> web.json_response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_managers_members(request: str) -> web.json_response:
+async def get_managers_members(request: str) -> web.Response:
     uuid_data = str(rest_pal_legacy.pal_get_uuid())
     with open("/etc/issue") as etc_issue:
         firmware_version = etc_issue.read().rstrip("\n")
@@ -136,7 +136,7 @@ async def get_managers_members(request: str) -> web.json_response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_manager_ethernet(request: str) -> web.json_response:
+async def get_manager_ethernet(request: str) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#EthernetInterfaceCollection.EthernetInterfaceCollection",  # noqa: B950
         "@odata.id": "/redfish/v1/Managers/System/EthernetInterfaces",
@@ -150,7 +150,7 @@ async def get_manager_ethernet(request: str) -> web.json_response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_ethernet_members(request: str) -> web.json_response:
+async def get_ethernet_members(request: str) -> web.Response:
     eth_intf = rest_pal_legacy.pal_get_eth_intf_name()
     mac_address = get_mac_address(eth_intf)
     host_name = socket.gethostname()
@@ -194,7 +194,7 @@ async def get_ethernet_members(request: str) -> web.json_response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_manager_network(request: str) -> web.json_response:
+async def get_manager_network(request: str) -> web.Response:
     host_name = socket.gethostname()
     fqdn = get_fqdn_str()
     body = {

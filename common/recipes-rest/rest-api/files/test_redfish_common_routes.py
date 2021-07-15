@@ -1,13 +1,21 @@
+import sys
+import types
 import unittest
 from unittest import mock
 
 from aiohttp import web
-from redfish_common_routes import Redfish
 
 
 class TestCommonRoutes(unittest.TestCase):
+    def setUp(self):
+        super().setUp()
+        sys.modules["pal"] = types.ModuleType("pal")
+        sys.modules["sdr"] = types.ModuleType("sdr")
+
     def test_common_routes(self):
         app = web.Application()
+        from redfish_common_routes import Redfish
+
         redfish = Redfish()
         redfish.setup_redfish_common_routes(app)
         registered_routes = set()
@@ -38,6 +46,8 @@ class TestCommonRoutes(unittest.TestCase):
                 with mock.patch("rest_pal_legacy.pal_get_num_slots", pal_mock):
                     routes_expected = []
                     app = web.Application()
+                    from redfish_common_routes import Redfish
+
                     redfish = Redfish()
                     redfish.setup_multisled_routes(app)
                 for i in range(1, pal_response):

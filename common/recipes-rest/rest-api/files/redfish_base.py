@@ -47,11 +47,14 @@ VALID_KEYS = {
     "SSDP",
     "ProtocolEnabled",
     "Port",
+    "Temperatures",
+    "Fans",
+    "Redundancy",
 }
 
 
 async def validate_keys(body: t.Dict[str, t.Any]) -> None:
-    required_keys = {"@odata.context", "@odata.id", "@odata.type"}
+    required_keys = {"@odata.id", "@odata.type"}
     for required_key in required_keys:
         if required_key not in body:
             raise NotImplementedError(

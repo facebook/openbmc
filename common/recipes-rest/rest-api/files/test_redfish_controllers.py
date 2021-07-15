@@ -1,4 +1,7 @@
 import asyncio
+import sys
+import types
+import typing as t
 import unittest
 from unittest.mock import mock_open, Mock
 
@@ -6,7 +9,6 @@ import aiohttp.web
 import redfish_managers
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
-from redfish_common_routes import Redfish
 
 
 class TestRedfishControllers(AioHTTPTestCase):
@@ -16,16 +18,28 @@ class TestRedfishControllers(AioHTTPTestCase):
         # Python >= 3.8 smartly uses AsyncMock automatically if the target
         # is a coroutine. However, this breaks compatibility with older python versions,
         # so forcing new_callable=MagicMock to preserve backwards compatibility
+        sys.modules["pal"] = types.ModuleType("pal")
+        sys.modules["sdr"] = types.ModuleType("sdr")
         file_contents_dict = {
             "/etc/issue": "OpenBMC Release fby2-v2020.49.2",
             "/etc/hosts": "x localhost.localdomain",
             # prefix 'x' so the logic in get_fqdn_str() can process this
         }
-
+        # mocking a tuple instead of ThreshSensor because sdr lib isn't available here
+        sensor_thresh = t.NamedTuple(
+            "sensor_thresh",
+            [
+                ("unc_thresh", float),
+                ("ucr_thresh", float),
+                ("unr_thresh", float),
+                ("lnc_thresh", float),
+                ("lcr_thresh", float),
+                ("lnr_thresh", float),
+            ],
+        )
         self.patches = [
             unittest.mock.patch(
                 "rest_pal_legacy.pal_get_platform_name",
-                new_callable=unittest.mock.MagicMock,
                 return_value="FBY2",
             ),
             unittest.mock.patch(
@@ -39,7 +53,6 @@ class TestRedfishControllers(AioHTTPTestCase):
             ),
             unittest.mock.patch(
                 "socket.gethostname",
-                new_callable=unittest.mock.MagicMock,
                 return_value="sled0502ju-oob.06.ftw3.facebook.com",
             ),
             unittest.mock.patch(
@@ -49,12 +62,10 @@ class TestRedfishControllers(AioHTTPTestCase):
             ),
             unittest.mock.patch(
                 "redfish_managers.get_mac_address",
-                new_callable=unittest.mock.MagicMock,
                 return_value="98:03:9B:A4:D6:3F",
             ),
             unittest.mock.patch(
                 "redfish_managers.get_ipv4_ip_address",
-                new_callable=unittest.mock.MagicMock,
                 return_value="10.0.2.15",
             ),
             unittest.mock.patch(
@@ -64,13 +75,65 @@ class TestRedfishControllers(AioHTTPTestCase):
             ),
             unittest.mock.patch(
                 "redfish_managers.get_ipv4_gateway",
-                new_callable=unittest.mock.MagicMock,
                 return_value="10.0.2.2",
             ),
             unittest.mock.patch(
                 "redfish_managers.get_ipv6_ip_address",
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
+            ),
+            unittest.mock.patch(
+                "pal.pal_fru_name_map",
+                create=True,
+                return_value={"slot1": 1, "slot2": 2, "slot3": 3, "slot4": 4, "spb": 5},
+            ),
+            unittest.mock.patch(
+                "pal.pal_is_fru_prsnt",
+                create=True,
+                return_value=True,
+            ),
+            unittest.mock.patch(
+                "pal.pal_get_fru_sensor_list",
+                create=True,
+                return_value=[129, 128],
+            ),
+            unittest.mock.patch(
+                "sdr.sdr_get_sensor_units",
+                create=True,
+                return_value="C",
+            ),
+            unittest.mock.patch(
+                "pal.sensor_read",
+                create=True,
+                side_effect=[24.9444444444, 31.944444444],
+            ),
+            unittest.mock.patch(
+                "sdr.sdr_get_sensor_thresh",
+                new_callable=unittest.mock.MagicMock,
+                create=True,
+                side_effect=[
+                    sensor_thresh(
+                        40.000,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ),
+                    sensor_thresh(
+                        70.000000,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ),
+                ],
+            ),
+            unittest.mock.patch(
+                "sdr.sdr_get_sensor_name",
+                create=True,
+                side_effect=["SP_INLET_TEMP", "SP_OUTLET_TEMP"],
             ),
         ]
 
@@ -284,8 +347,60 @@ class TestRedfishControllers(AioHTTPTestCase):
         self.assertEqual(resp, expected_resp)
         self.assertEqual(req.status, 200)
 
+    @unittest_run_loop
+    async def get_chassis_thermal(self):
+        expected_resp = {
+            "Redundancy": "",
+            "@odata.type": "#Thermal.v1_7_0.Thermal",
+            "@odata.id": "/redfish/v1/Chassis/1/Thermal",
+            "Fans": "",
+            "Id": "Thermal",
+            "Temperatures": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/1U/Thermal#/Temperatures/0",
+                    "FruName": "spb",
+                    "LowerThresholdNonCritical": 0,
+                    "LowerThresholdCritical": 0,
+                    "PhysicalContext": "Chassis",
+                    "UpperThresholdCritical": 40,
+                    "MemberId": 0,
+                    "UpperThresholdNonCritical": 0,
+                    "UpperThresholdFatal": 0,
+                    "ReadingCelsius": 24.94,
+                    "Name": "SP_INLET_TEMP",
+                    "SensorNumber": 129,
+                    "LowerThresholdFatal": 0,
+                    "Status": {"Health": "OK", "State": "Enabled"},
+                },
+                {
+                    "@odata.id": "/redfish/v1/Chassis/1U/Thermal#/Temperatures/1",
+                    "FruName": "spb",
+                    "LowerThresholdNonCritical": 0,
+                    "LowerThresholdCritical": 0,
+                    "PhysicalContext": "Chassis",
+                    "UpperThresholdCritical": 70,
+                    "MemberId": 1,
+                    "UpperThresholdNonCritical": 0,
+                    "UpperThresholdFatal": 0,
+                    "ReadingCelsius": 31.94,
+                    "Name": "SP_OUTLET_TEMP",
+                    "SensorNumber": 128,
+                    "LowerThresholdFatal": 0,
+                    "Status": {"Health": "OK", "State": "Enabled"},
+                },
+            ],
+            "Name": "Thermal",
+        }
+        req = await self.client.request("GET", "/redfish/v1/Chassis/1/Thermal")
+        resp = await req.json()
+        self.maxDiff = None
+        self.assertEqual(resp, expected_resp)
+        self.assertEqual(req.status, 200)
+
     async def get_application(self):
         webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])
+        from redfish_common_routes import Redfish
+
         redfish = Redfish()
         redfish.setup_redfish_common_routes(webapp)
         return webapp

@@ -312,6 +312,11 @@ int main(int argc, char **argv)
      */
 
     std::ifstream fileStream("/etc/syseventgen.conf");
+    if (!fileStream.is_open()) {
+        std::cout << "Configuration file needed." << std::endl;
+        std::cout << "Please create one and place it at /etc/syseventgen.conf" << std::endl;
+        return -1;
+    }
     nlohmann::json jsonFile = nlohmann::json::parse(fileStream);
 
     // get the delay from the JSON file

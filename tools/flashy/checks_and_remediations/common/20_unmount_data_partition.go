@@ -21,7 +21,6 @@ package common
 
 import (
 	"log"
-	"os"
 	"strings"
 	"syscall"
 	"time"
@@ -53,16 +52,6 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 	}
 
 	if dataMounted {
-		// rsyslog will be killed by fuser, direct logs to stderr only.
-		// Try to restart syslog at the end of this function, but if this fails
-		// it is fine, as syslog will be restarted in the start of the next
-		// step (as the CustomLogger gets the syslog writer).
-		log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
-		log.SetOutput(os.Stderr)
-		defer func() {
-			logger.StartSyslog()
-		}()
-
 		// attempt to unmount first, if failed, remount RO.
 		log.Printf("Found /mnt/data mounted, unmounting now.")
 		err = runDataPartitionUnmountProcess()
@@ -167,6 +156,16 @@ var validateSshdConfig = func() error {
 }
 
 var killDataPartitionProcesses = func() {
+	// rsyslog will be killed by fuser, direct logs to stderr only.
+	// Try to restart syslog at the end of this function, but if this fails
+	// it is fine, as syslog will be restarted in the start of the next
+	// step (as the CustomLogger gets the syslog writer).
+	log.Printf("fuser will kill rsyslog and cause errors, turning off syslog logging now")
+	logger.InitCustomLoggerStderrOnly()
+	defer func() {
+		logger.InitCustomLogger()
+	}()
+
 	// fuser -km /mnt/data
 	log.Printf("Killing all processes accessing /mnt/data")
 	cmd := []string{"fuser", "-km", "/mnt/data"}

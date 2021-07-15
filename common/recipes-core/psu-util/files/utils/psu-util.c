@@ -118,7 +118,7 @@ main(int argc, const char *argv[]) {
   }
   if (!prsnt) {
     printf("PSU%d is not present!\n", psu_slot + 1);
-    return -1;
+    return 0;
   }
 
   if (!strcmp(argv[2], "--get_psu_info")) {

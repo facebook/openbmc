@@ -259,8 +259,8 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
     if (strlen(fruid->multirecord_smart_fan.clei_code) != 0) {
       printf("%-27s: %s", "\nSmart Fan CLEI Code", fruid->multirecord_smart_fan.clei_code);
     }
-    printf("%-27s: %d", "\nSmart Fan Voltage (10mV)", fruid->multirecord_smart_fan.voltage);
-    printf("%-27s: %d", "\nSmart Fan Current (10mA)", fruid->multirecord_smart_fan.current);
+    printf("%-27s: %d", "\nSmart Fan Voltage (mV)", fruid->multirecord_smart_fan.voltage);
+    printf("%-27s: %d", "\nSmart Fan Current (mA)", fruid->multirecord_smart_fan.current);
     printf("%-27s: %d", "\nSmart Fan Front RPM", fruid->multirecord_smart_fan.rpm_front);
     printf("%-27s: %d", "\nSmart Fan Rear RPM", fruid->multirecord_smart_fan.rpm_rear);
   }

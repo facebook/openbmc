@@ -1,0 +1,26 @@
+#!/bin/sh
+
+EMMC_MOUNT_POINT="/mnt/data1"
+LOG_DIR="$EMMC_MOUNT_POINT/cri_sel"
+LOG_CNT="$LOG_DIR/cri_sel_cnt"
+MAX_CNT=10
+
+if [ -d $EMMC_MOUNT_POINT ]; then
+    [ -d $LOG_DIR ] || mkdir -p $LOG_DIR
+    [ -e $LOG_CNT ] || touch $LOG_CNT
+    cnt=$(cat $LOG_CNT)
+
+    if [ "$cnt" == "$MAX_CNT" ]; then
+        cnt=1
+    else
+        cnt=$((${cnt} + 1))
+    fi
+
+    echo $cnt > $LOG_CNT
+    mv /mnt/data/cri_sel /mnt/data/cri_sel.0
+    touch /mnt/data/cri_sel
+    cp /mnt/data/cri_sel.0 $LOG_DIR/cri_sel.$cnt
+else
+    mv /mnt/data/cri_sel /mnt/data/cri_sel.0
+    touch /mnt/data/cri_sel
+fi

@@ -1,0 +1,257 @@
+{
+    "pwm_transition_value": 50,
+    "pwm_boost_value": 70,
+    "fan_limit_upper_pwm":100,
+    "fan_limit_lower_pwm":0,
+    "ramp_rate":100,
+    "sample_interval_ms": 8000,
+    "boost": {
+      "fan_fail": true,
+      "sensor_fail": false,
+      "progressive": true
+    },
+    "fan_dead_boost": {
+      "data": [
+        [1,0]
+      ]
+    },
+    "chassis_intrusion": true,
+    "enable_fsc_sensor_check": true,
+    "watchdog": true ,
+    "min_rpm": 1000,
+    "profiles": {
+      "linear_lf": {
+        "read_source" : {
+          "sysfs" : "/sys/bus/i2c/devices/4-004b/hwmon/hwmon*/temp1_input"
+        },
+        "read_limit": {
+          "valid": {
+            "limit": 125,
+            "threshold": 20,
+            "action": "host_warning"
+          },
+          "invalid": {
+            "limit": -40,
+            "threshold": 10,
+            "action": "host_warning"
+          }
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 6,
+        "data": [
+          [5, 40],
+          [40, 60],
+          [50, 80],
+          [60, 100]
+        ]
+      },
+      "linear_rf": {
+        "read_source" : {
+          "sysfs" : "/sys/bus/i2c/devices/4-0049/hwmon/hwmon*/temp1_input"
+        },
+        "read_limit": {
+          "valid": {
+            "limit": 125,
+            "threshold": 20,
+            "action": "host_warning"
+          },
+          "invalid": {
+            "limit": -40,
+            "threshold": 10,
+            "action": "host_warning"
+          }
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 6,
+        "data": [
+          [5, 40],
+          [40, 60],
+          [50, 80],
+          [60, 100]
+        ]
+      },
+      "linear_upper_mac": {
+        "read_source" : {
+          "sysfs" : "/sys/bus/i2c/devices/4-004a/hwmon/hwmon*/temp1_input"
+        },
+        "read_limit": {
+          "valid": {
+            "limit": 125,
+            "threshold": 20,
+            "action": "host_warning"
+          },
+          "invalid": {
+            "limit": -40,
+            "threshold": 10,
+            "action": "host_warning"
+          }
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 6,
+        "data": [
+          [5, 40],
+          [40, 60],
+          [50, 80],
+          [60, 100]
+        ]
+      },
+      "linear_lower_mac": {
+        "read_source" : {
+          "sysfs" : "/sys/bus/i2c/devices/4-004e/hwmon/hwmon*/temp1_input"
+        },
+        "read_limit": {
+          "valid": {
+            "limit": 125,
+            "threshold": 20,
+            "action": "host_warning"
+          },
+          "invalid": {
+            "limit": -40,
+            "threshold": 10,
+            "action": "host_warning"
+          }
+        },
+        "type": "linear",
+        "positive_hysteresis": 0,
+        "negative_hysteresis": 6,
+        "data": [
+          [5, 40],
+          [40, 60],
+          [50, 80],
+          [60, 100]
+        ]
+      }
+    },
+    "fans": {
+      "1": {
+        "label" : "Fan 1 Front",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002e/fan1_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002e/pwm1",
+          "max_duty_register": 255
+        }
+      },
+      "2": {
+        "label" : "Fan 1 Rear",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002e/fan2_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002e/pwm2",
+          "max_duty_register": 255
+        }
+      },
+      "3": {
+        "label" : "Fan 2 Front",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/fan1_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/pwm1",
+          "max_duty_register": 255
+        }
+      },
+      "4": {
+        "label" : "Fan 2 Rear",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/fan2_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/pwm2",
+          "max_duty_register": 255
+        }
+      },
+      "5": {
+        "label" : "Fan 3 Front",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/fan3_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/pwm3",
+          "max_duty_register": 255
+        }
+      },
+      "6": {
+        "label" : "Fan 3 Rear",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/fan4_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/pwm4",
+          "max_duty_register": 255
+        }
+      },
+      "7": {
+        "label" : "Fan 4 Front",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/fan5_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-004c/pwm5",
+          "max_duty_register": 255
+        }
+      },
+      "8": {
+        "label" : "Fan 4 Rear",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/fan1_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/pwm1",
+          "max_duty_register": 255
+        }
+      },
+      "9": {
+        "label" : "Fan 5 Front",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/fan2_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/pwm2",
+          "max_duty_register": 255
+        }
+      },
+      "10": {
+        "label" : "Fan 5 Rear",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/fan3_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/pwm3",
+          "max_duty_register": 255
+        }
+      },
+      "11": {
+        "label" : "Fan 6 Front",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/fan4_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/pwm4",
+          "max_duty_register": 255
+        }
+      },
+      "12": {
+        "label" : "Fan 6 Rear",
+        "read_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/fan5_input"
+        },
+        "write_source" : {
+          "sysfs": "/sys/bus/i2c/devices/3-002d/pwm5",
+          "max_duty_register": 255
+        }
+      }
+    },
+    "zones": {
+      "zone_1": {
+        "pwm_output": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "expr_file": "zone-agc032a.fsc"
+        }
+    }
+  }
+  

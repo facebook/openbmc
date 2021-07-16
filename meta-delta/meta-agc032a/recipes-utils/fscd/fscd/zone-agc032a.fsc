@@ -1,0 +1,6 @@
+max([
+  linear_lf(smb:lf_temp),
+  linear_rf(smb:rf_temp),
+  linear_upper_mac(smb:upper_temp),
+  linear_lower_mac(smb:lower_temp)
+])

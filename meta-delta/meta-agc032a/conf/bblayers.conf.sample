@@ -1,0 +1,28 @@
+# LAYER_CONF_VERSION is increased each time build/conf/bblayers.conf
+# changes incompatibly
+LCONF_VERSION = "6"
+
+BBPATH = "${TOPDIR}"
+BBFILES ?= ""
+
+BBLAYERS ?= " \
+  ##OEROOT##/meta \
+  ##OEROOT##/meta-poky \
+  ##OEROOT##/meta-yocto-bsp \
+  ##OEROOT##/../meta-openembedded/meta-oe \
+  ##OEROOT##/../meta-openembedded/meta-networking \
+  ##OEROOT##/../meta-openembedded/meta-python \
+  ##OEROOT##/../meta-openembedded/meta-perl \
+  ##OEROOT##/../../.. \
+  ##OEROOT##/../meta-security \
+  ##OEROOT##/../meta-security/meta-tpm \
+  ##OEROOT##/../../../meta-aspeed \
+  ##OEROOT##/../../../meta-facebook \
+  ##OEROOT##/../../../meta-facebook/meta-python3 \
+  ##OEROOT##/../../../meta-delta \
+  ##OEROOT##/../../../meta-delta/meta-agc032a \
+  "
+BBLAYERS_NON_REMOVABLE ?= " \
+  ##OEROOT##/meta \
+  ##OEROOT##/meta-yocto \
+  "

@@ -1,0 +1,673 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sensors  
+  title: Swagger doc for /api/sensors  
+  version: 1.0.0
+paths: 
+  /api/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  MB Inlet Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  MB Outlet Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  FRONT IO Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PCH Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC CPU Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC Therm Margin: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC CPU TjMax: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  CPU Package Pwr: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMA Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMB Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMC Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMD Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMME Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMF Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SSD0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HSC Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIN VR Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCSA VR Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIO VR Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  3V3_STBY VR Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_ABC VR Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_DEF VR Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P12V_STBY Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P3V_BAT Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P3V3_STBY Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P1V05_PCH Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVNN_PCH Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HSC Input Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIN VR Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCSA VR Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIO VR Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P3V3_STBY VR Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_ABC VR Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_DEF VR Vol: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HSC Output Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIN VR Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCSA VR Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIO VR Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P3V3_STBY VR Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_ABC VR Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_DEF VR Cur: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HSC Input Pwr: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HSC Input AvgPwr: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIN VR Pout: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCSA VR Pout: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VCCIO VR Pout: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P3V3_STBY VRPout: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_ABC VRPout: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  VDDQ_DEF VRPout: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  NIC_SENSOR_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN0_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN1_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN2_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN3_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN4_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN5_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN6_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN7_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_PWM0: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_PWM1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_PWM2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_PWM3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_OUTLET_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_INLET_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_P5V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_P12V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_P3V3_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_P1V15_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_P1V2_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_P2V5_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_VIN: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_PIN: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_EIN: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_IOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_PEAK_IOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_HSC_PEAK_PIN: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_MEDUSA_VOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_MEDUSA_VIN: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_MEDUSA_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_MEDUSA_PWR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_MEDUSA_VDELTA: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_PDB_DL_VDELTA: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_PDB_BB_VDELTA: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_CURR_LEAKAGE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN_IOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_FAN_PWR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_NIC_P12V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_NIC_IOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  BMC_SENSOR_NIC_PWR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SYSTEM_AIRFLOW: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

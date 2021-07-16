@@ -1,0 +1,35 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server3/bios/boot-order/boot_mode  
+  title: Swagger doc for /api/server3/bios/boot-order/boot_mode  
+  version: 1.0.0
+paths: 
+  /api/server3/bios/boot-order/boot_mode: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Boot Mode: 
+                    type: string
+                  Note #1: Actions Format:: 
+                    type: string
+                  Note #2: Boot Mode No.: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

@@ -28,10 +28,12 @@
 #define RES_IOC_TEMP_OFFSET        (RES_NUM_SENSOR_OFFSET + 4)
 #define RES_IOC_TEMP_VALID_OFFSET  (RES_IOC_TEMP_OFFSET + 4)
 #define RES_IOC_FW_VER_OFFSET      76
+#define RES_PL_CMD_RESP_NOT_READY  0xA6
 
 #define READ_IOC_TEMP_FAILED       -1
 
 #define IOC_READY_TIME             90  //IOC firmware ready time, unit: seconds
+#define I2C_MSLAVE_POLL_TIME       100 // 100 milliseconds
 
 typedef enum {
   VDM_RESET,

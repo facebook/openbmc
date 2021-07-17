@@ -130,7 +130,7 @@ mctp_i2c_read(uint8_t i2c_bus, uint8_t bmc_slave_addr, uint8_t *buf, uint8_t *le
   for (i = 0; i < I2C_RETRIES_MAX; i++) {
     read_len = i2c_mslave_read(bmc_slave, buf, MCTP_MAX_READ_SIZE);
     if (read_len <= 0) {
-      i2c_mslave_poll(bmc_slave, 3000); /* 3 seconds */
+      i2c_mslave_poll(bmc_slave, I2C_MSLAVE_POLL_TIME); /* 100 milliseconds */
       continue;
     } else {
       break;
@@ -156,6 +156,9 @@ static int
 clear_slave_mqueue(uint8_t i2c_bus, uint8_t bmc_slave_addr) {
 
   uint8_t buf[MCTP_MAX_READ_SIZE] = {0};
+  int read_len = 0;
+  int i = 0;
+
   i2c_mslave_t *bmc_slave = NULL;
 
   bmc_slave = i2c_mslave_open(i2c_bus, bmc_slave_addr);
@@ -164,7 +167,16 @@ clear_slave_mqueue(uint8_t i2c_bus, uint8_t bmc_slave_addr) {
     return -1;
   }
 
-  i2c_mslave_read(bmc_slave, buf, MCTP_MAX_READ_SIZE);
+  for (i = 0; i < I2C_RETRIES_MAX; i++) {
+    read_len = i2c_mslave_read(bmc_slave, buf, MCTP_MAX_READ_SIZE);
+    if (read_len <= 0) {
+      i2c_mslave_poll(bmc_slave, I2C_MSLAVE_POLL_TIME); /* 100 milliseconds */
+      continue;
+    } else {
+      break;
+    }
+  }
+
   i2c_mslave_close(bmc_slave);
 
   return 0;
@@ -247,10 +259,10 @@ set_write_buf(uint8_t *write_buf, uint8_t tag, ioc_command command) {
 
 int 
 mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *resp_buf, uint8_t *resp_len) {
-  int ret = 0, dev = -1;
+  int ret = 0, dev = -1, write_len = 0, retry = 0;
   uint8_t write_buf[MCTP_MAX_WRITE_SIZE] = {0};
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
-  uint8_t write_len = 0, read_len = 0, resp_pl = 0, excepted_pl = 0;
+  uint8_t read_len = 0, resp_pl = 0, excepted_pl = 0;
 
   if ((resp_buf == NULL) || (resp_len == NULL)) {
     syslog(LOG_WARNING, "%s(): Failed to write i2c raw due to NULL parameter.", __func__);
@@ -280,30 +292,30 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
     return -1;
   }
 
-  // Clear slave mqueue
-  if (clear_slave_mqueue(iocd_config.bus_id, BMC_SLAVE_ADDR) < 0) {
-    syslog(LOG_WARNING, "%s(): Failed to clear bus:%d slave-mqueue", __func__, iocd_config.bus_id);
-    close(dev);
-    return -1;
-  }
+  do {
+    ret = mctp_i2c_write(dev, iocd_config.bus_id, slave_addr, write_buf, write_len);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c write failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
+      close(dev);
+      return -1;
+    }
 
-  ret = mctp_i2c_write(dev, iocd_config.bus_id, slave_addr, write_buf, write_len);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c write failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
-    close(dev);
-    return -1;
-  }
+    ret = mctp_i2c_read(iocd_config.bus_id, BMC_SLAVE_ADDR, read_buf, &read_len);
+    if ((ret < 0) || (read_len < MCTP_MIN_READ_SIZE)) {
+      syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c read failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
+      close(dev);
+      return -1;
+    }
 
-  if (command == COMMAND_RESUME) {
-    msleep(50);
-  }
-
-  ret = mctp_i2c_read(iocd_config.bus_id, BMC_SLAVE_ADDR, read_buf, &read_len);
-  if ((ret < 0) || (read_len < MCTP_MIN_READ_SIZE)) {
-    syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c read failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
-    close(dev);
-    return -1;
-  }
+    // Clear the second package of the response of "command resume"
+    if (command == COMMAND_RESUME) {
+      if (clear_slave_mqueue(iocd_config.bus_id, BMC_SLAVE_ADDR) < 0) {
+        syslog(LOG_WARNING, "%s(): Failed to clear bus:%d slave-mqueue", __func__, iocd_config.bus_id);
+        close(dev);
+        return -1;
+      }
+    }
+  } while ((read_buf[RES_PAYLOAD_OFFSET] == RES_PL_CMD_RESP_NOT_READY) && (++retry < I2C_RETRIES_MAX));
 
   // Check respond payload ID
   if (command != VDM_RESET) {
@@ -312,7 +324,17 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
 
     if (resp_pl != excepted_pl) {
 #ifdef DEBUG
+      int i = 0;
+      char temp[8] = {0}, log[MCTP_MAX_READ_SIZE*2] = {0};
+
       syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d due to the wrong payload ID: %x, expected: %x", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, resp_pl, excepted_pl);
+
+      for (i = 0; i < read_len; i++) {
+        memset(temp, 0, 8);
+        sprintf(temp, "%02X ", read_buf[i]);
+        strcat(log, temp);
+      }
+      syslog(LOG_WARNING, "%s(): %s, read data on bus:%d, read_len:%d, data: %s", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, read_len, log);
 #endif
       close(dev);
       return -1;
@@ -331,6 +353,12 @@ vdm_reset(uint8_t slave_addr) {
   bool is_failed = false;
   uint8_t tag = 0xFF, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
+
+  // Clear slave mqueue
+  if (clear_slave_mqueue(iocd_config.bus_id, BMC_SLAVE_ADDR) < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to clear bus:%d slave-mqueue", __func__, iocd_config.bus_id);
+    return -1;
+  }
 
   memset(read_buf, 0, sizeof(read_buf));
   if (mctp_ioc_command(slave_addr, tag, VDM_RESET, read_buf, &read_len) < 0) {

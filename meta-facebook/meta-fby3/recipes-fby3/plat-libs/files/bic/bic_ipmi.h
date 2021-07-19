@@ -103,7 +103,7 @@ int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_read
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);
 int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
 int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
-int bic_reset(uint8_t slot_id);
+int bic_reset(uint8_t slot_id, uint8_t intf);
 int bic_clear_cmos(uint8_t slot_id);
 int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);

@@ -2108,14 +2108,13 @@ bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf,
 }
 
 int
-bic_reset(uint8_t slot_id) {
+bic_reset(uint8_t slot_id, uint8_t intf) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
-  int ret;
+  int ret = BIC_STATUS_FAILURE;
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen);
-
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen, intf);
   return ret;
 }
 

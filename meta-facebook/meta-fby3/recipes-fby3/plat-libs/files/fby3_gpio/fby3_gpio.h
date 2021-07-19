@@ -25,8 +25,8 @@ extern "C" {
 
 #include <facebook/bic.h>
 
-uint8_t fby3_get_gpio_list_size(void);
-int fby3_get_gpio_name(uint8_t fru, uint8_t gpio, char *name);
+uint8_t fby3_get_gpio_list_size(uint8_t intf);
+int fby3_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, uint8_t intf);
 
 #ifdef __cplusplus
 } // extern "C"

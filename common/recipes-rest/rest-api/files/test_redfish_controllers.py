@@ -5,21 +5,21 @@ import typing as t
 import unittest
 from unittest.mock import mock_open, Mock
 
+# workaround bc pal and sdr are unavailable in unit test envs
+sys.modules["pal"] = types.ModuleType("pal")
+sys.modules["sdr"] = types.ModuleType("sdr")
+
 import aiohttp.web
-import redfish_managers
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
 
 
 class TestRedfishControllers(AioHTTPTestCase):
     def setUp(self):
-        super().setUp()
         asyncio.set_event_loop(asyncio.new_event_loop())
         # Python >= 3.8 smartly uses AsyncMock automatically if the target
         # is a coroutine. However, this breaks compatibility with older python versions,
         # so forcing new_callable=MagicMock to preserve backwards compatibility
-        sys.modules["pal"] = types.ModuleType("pal")
-        sys.modules["sdr"] = types.ModuleType("sdr")
         file_contents_dict = {
             "/etc/issue": "OpenBMC Release fby2-v2020.49.2",
             "/etc/hosts": "x localhost.localdomain",
@@ -83,6 +83,11 @@ class TestRedfishControllers(AioHTTPTestCase):
                 return_value=asyncio.Future(),
             ),
             unittest.mock.patch(
+                "pal.pal_get_platform_name",
+                create=True,
+                return_value="fby2",
+            ),
+            unittest.mock.patch(
                 "pal.pal_fru_name_map",
                 create=True,
                 return_value={"slot1": 1, "slot2": 2, "slot3": 3, "slot4": 4, "spb": 5},
@@ -113,16 +118,16 @@ class TestRedfishControllers(AioHTTPTestCase):
                 create=True,
                 side_effect=[
                     sensor_thresh(
-                        40.000,
                         0,
+                        40.000,
                         0,
                         0,
                         0,
                         0,
                     ),
                     sensor_thresh(
-                        70.000000,
                         0,
+                        70.000000,
                         0,
                         0,
                         0,
@@ -143,11 +148,15 @@ class TestRedfishControllers(AioHTTPTestCase):
 
         ipv6 = "2401:db00:1130:60ff:face:0:5:0"
         ipv4 = "255.255.255.0"
+        import redfish_managers
 
         redfish_managers.get_ipv4_netmask.return_value.set_result(ipv4)
         redfish_managers.get_ipv6_ip_address.return_value.set_result(ipv6)
 
+        super().setUp()
+
     def mapped_mock_open(self, file_contents_dict):
+        real_open = open
         mock_files = {}
         for fname, content in file_contents_dict.items():
             mock_files[fname] = mock_open(read_data=content).return_value
@@ -156,7 +165,7 @@ class TestRedfishControllers(AioHTTPTestCase):
             if fname in mock_files:
                 return mock_files[fname]
             else:
-                raise ValueError("Behaviour not defined for file {}".format(fname))
+                return real_open(fname, *args, **kwargs)
 
         mock_opener = Mock()
         mock_opener.side_effect = my_open
@@ -348,7 +357,7 @@ class TestRedfishControllers(AioHTTPTestCase):
         self.assertEqual(req.status, 200)
 
     @unittest_run_loop
-    async def get_chassis_thermal(self):
+    async def test_get_chassis_thermal(self):
         expected_resp = {
             "Redundancy": "",
             "@odata.type": "#Thermal.v1_7_0.Thermal",

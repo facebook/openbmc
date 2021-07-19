@@ -1,5 +1,3 @@
-import sys
-import types
 import unittest
 from unittest import mock
 
@@ -9,8 +7,6 @@ from aiohttp import web
 class TestCommonRoutes(unittest.TestCase):
     def setUp(self):
         super().setUp()
-        sys.modules["pal"] = types.ModuleType("pal")
-        sys.modules["sdr"] = types.ModuleType("sdr")
 
     def test_common_routes(self):
         app = web.Application()

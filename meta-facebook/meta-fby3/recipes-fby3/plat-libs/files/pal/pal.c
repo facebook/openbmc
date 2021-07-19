@@ -103,6 +103,9 @@ static char sel_error_record[NUM_SERVER_FRU] = {0};
 
 #define MAX_PWR_LOCK_STR 32
 
+static int key_func_por_cfg(int event, void *arg);
+static int key_func_pwr_last_state(int event, void *arg);
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -124,15 +127,15 @@ struct pal_key_cfg {
   {SYSFW_VER "2", "0", NULL},
   {SYSFW_VER "3", "0", NULL},
   {SYSFW_VER "4", "0", NULL},
-  {"pwr_server1_last_state", "on", NULL},
-  {"pwr_server2_last_state", "on", NULL},
-  {"pwr_server3_last_state", "on", NULL},
-  {"pwr_server4_last_state", "on", NULL},
+  {"pwr_server1_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server2_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server3_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server4_last_state", "on", key_func_pwr_last_state},
   {"timestamp_sled", "0", NULL},
-  {"slot1_por_cfg", "lps", NULL},
-  {"slot2_por_cfg", "lps", NULL},
-  {"slot3_por_cfg", "lps", NULL},
-  {"slot4_por_cfg", "lps", NULL},
+  {"slot1_por_cfg", "lps", key_func_por_cfg},
+  {"slot2_por_cfg", "lps", key_func_por_cfg},
+  {"slot3_por_cfg", "lps", key_func_por_cfg},
+  {"slot4_por_cfg", "lps", key_func_por_cfg},
   {"slot1_boot_order", "0100090203ff", NULL},
   {"slot2_boot_order", "0100090203ff", NULL},
   {"slot3_boot_order", "0100090203ff", NULL},
@@ -313,6 +316,26 @@ pal_key_index(char *key) {
   syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
 #endif
   return -1;
+}
+
+static int
+key_func_pwr_last_state(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+key_func_por_cfg(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "lps") && strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
 }
 
 int

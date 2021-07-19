@@ -53,6 +53,7 @@ server_power_12v_on() {
     if ((ret == 0) && (status == SERVER_12V_ON)) {
       goto exit;
     } else {
+      ret = -1;
       times++;
       sleep(1);
     }
@@ -103,6 +104,7 @@ server_power_12v_off() {
     if ((ret == 0) && (status == SERVER_12V_OFF)) {
       goto exit;
     } else {
+      ret = -1;
       times++;
       sleep(1);
     }
@@ -672,7 +674,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       return bic_server_power_ctrl(SET_HOST_RESET);
 
     case SERVER_12V_ON:
-      if (status == SERVER_12V_ON) {
+      if (status != SERVER_12V_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
       

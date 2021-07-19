@@ -42,8 +42,8 @@
   "0x1: present"
 
 #define led_bit_help_str                        \
-  "0x0: LED On\n"                               \
-  "0x1: LED Off"
+  "0x0: LED Off\n"                               \
+  "0x1: LED On"
 
 #define fan_ok_bit_help_str                     \
   "0x0: Fan fault occured\n"                    \

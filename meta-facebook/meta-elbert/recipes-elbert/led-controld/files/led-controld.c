@@ -155,16 +155,16 @@ void elbert_update_fan_led(struct system_status* status) {
       // If current fan is not good, do the best effort to set fan led to amber
       snprintf(
           buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_GREEN);
-      elbert_write_sysfs(buf, 1);
+      elbert_write_sysfs(buf, 0);
       snprintf(
           buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_RED);
-      elbert_write_sysfs(buf, 1);
+      elbert_write_sysfs(buf, 0);
       snprintf(
           buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_BLUE);
-      elbert_write_sysfs(buf, this_fan_ok ? 0 : 1);
+      elbert_write_sysfs(buf, this_fan_ok ? 1 : 0);
       snprintf(
           buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_AMBER);
-      elbert_write_sysfs(buf, this_fan_ok ? 1 : 0);
+      elbert_write_sysfs(buf, this_fan_ok ? 0 : 1);
     }
     status->fan_ok[fan - 1] = this_fan_ok;
   }
@@ -402,14 +402,14 @@ void elbert_init_all_led() {
   for (fan = 1; fan <= ELBERT_MAX_FAN; fan++) {
     snprintf(
         buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_GREEN);
-    elbert_write_sysfs(buf, 1);
-    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_RED);
-    elbert_write_sysfs(buf, 1);
-    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_BLUE);
     elbert_write_sysfs(buf, 0);
+    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_RED);
+    elbert_write_sysfs(buf, 0);
+    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_BLUE);
+    elbert_write_sysfs(buf, 1);
     snprintf(
         buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_AMBER);
-    elbert_write_sysfs(buf, 1);
+    elbert_write_sysfs(buf, 0);
   }
 }
 

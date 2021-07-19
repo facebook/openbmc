@@ -36,25 +36,25 @@ def elbert_set_fan_led(fan, color="led_blue"):
         if fan > 5 or fan < 1:
             break
 
-        # 1 means off
-        green_value = 1
-        red_value = 1
-        blue_value = 1
-        amber_value = 1
+        # 0 means off
+        green_value = 0
+        red_value = 0
+        blue_value = 0
+        amber_value = 0
         green_key = FCM_CPLD + "fan" + str(fan) + "_led_green"
         red_key = FCM_CPLD + "fan" + str(fan) + "_led_red"
         blue_key = FCM_CPLD + "fan" + str(fan) + "_led_blue"
         amber_key = FCM_CPLD + "fan" + str(fan) + "_led_amber"
 
-        # 0 means on
+        # 1 means on
         if "red" in color:
-            red_value = 0
+            red_value = 1
         elif "blue" in color:
-            blue_value = 0
+            blue_value = 1
         elif "green" in color:
-            green_value = 0
+            green_value = 1
         elif "amber" in color:
-            amber_value = 0
+            amber_value = 1
         else:
             return 0  # error
 

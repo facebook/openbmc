@@ -102,13 +102,9 @@ int set_i2c_clock_400k(uint8_t i2c_bus_num)
 int set_fscd(bool setting)
 {
   char cmd[100] = {0};
-  const char* setting_str = (setting) ? "start":"stop";
-  sprintf(cmd, "sv %s fscd", setting_str);
-  if (system(cmd)) {
-    printf("set fscd %s failed\n", setting_str);
-    return -1;
-  }
-  return 0;
+  const char* setting_str = (setting) ? "start" : "force-stop";
+  sprintf(cmd, "sv %s fscd > /dev/null 2>&1", setting_str);
+  return system(cmd);
 }
 
 int CmComponent::update(string image)

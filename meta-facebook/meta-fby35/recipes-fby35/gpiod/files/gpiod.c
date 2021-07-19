@@ -862,6 +862,9 @@ host_pwr_mon() {
   long int tick = 0;
   int power_off_delay = NON_PFR_POWER_OFF_DELAY;
 
+  // set flag to notice BMC gpiod server_power_monitor is ready
+  kv_set("flag_gpiod_server_pwr", STR_VALUE_1, 0, 0);
+
   pthread_detach(pthread_self());
 
   if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {

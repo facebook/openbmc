@@ -2,6 +2,7 @@
 DEVMEM=/sbin/devmem
 GPIOCLI_CMD=/usr/local/bin/gpiocli
 ASPEEDCHIP="aspeed-gpio"
+KV_CMD=/usr/bin/kv
 
 devmem_set_bit() {
     local addr

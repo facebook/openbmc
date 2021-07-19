@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <sys/un.h>
 #include <sys/file.h>
+#include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
@@ -534,6 +535,12 @@ main(int argc, char **argv) {
       openlog("gpiointrd", LOG_CONS, LOG_DAEMON);
       syslog(LOG_INFO, "gpiointrd: daemon started");
 
+      // set flag to notice BMC gpiointrd is ready
+      kv_set("flag_gpiointrd", STR_VALUE_1, 0, 0);
+
+      // set flag to notice BMC gpiod fru_missing_monitor is ready
+      kv_set("flag_gpiod_fru_miss", STR_VALUE_1, 0, 0);
+
       polldesc = gpio_poll_open(gpiop, gpio_cnt);
       if ( polldesc == NULL ) {
         syslog(LOG_CRIT, "Cannot start poll operation on GPIOs");
@@ -541,6 +548,10 @@ main(int argc, char **argv) {
         if (gpio_poll(polldesc, POLL_TIMEOUT)) {
           syslog(LOG_CRIT, "Poll returned error");
         }
+
+        // clear the flag
+        kv_set("flag_gpiointrd", STR_VALUE_0, 0, 0);
+
         gpio_poll_close(polldesc);
       }
     }

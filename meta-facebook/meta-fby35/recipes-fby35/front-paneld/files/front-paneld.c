@@ -17,13 +17,30 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <unistd.h>
 #include <stdio.h>
 #include <syslog.h>
 #include <pthread.h>
+#include <string.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
+#include <facebook/fby35_common.h>
+#include <facebook/bic.h>
+#include <openbmc/obmc-i2c.h>
 
+// Function to reverse elements of an array
+void reverse(uint8_t arr[], int n)
+{
+    uint8_t aux[n];
 
+    for ( int i = 0; i < n; i++ ) {
+        aux[n-1-i] = arr[i];
+    }
+
+    for ( int i = 0; i < n; i++ ) {
+        arr[i] = aux[i];
+    }
+}
 
 // Thread for update the uart_select
 static void *
@@ -68,10 +85,83 @@ debug_card_handler() {
   return 0;
 }
 
+// Thread to handle LED state of the server at given slot
+static void *
+led_handler() {
+#define DELAY_PERIOD 1
+#define CPLD_STAGE 0x0A
+#define CPLD_VER 0x05
+  int i = 0;
+  uint8_t slot_hlth = 0;
+  uint8_t bmc_location = 0;
+  uint8_t num_of_slots = 0;
+  uint8_t status = 0;
+  bool slot_err[4] = {false, false, false, false};
+  bool slot_ready[4] = {false, false, false, false};
+  uint8_t led_mode = LED_CRIT_PWR_OFF_MODE;
+  bool set_led = false;
+  int ret;
+
+  fby35_common_get_bmc_location(&bmc_location);
+  num_of_slots = (bmc_location == NIC_BMC)?FRU_SLOT1:FRU_SLOT4;
+
+  // set flag to notice BMC front-paneld system_status_led_handler is ready
+  kv_set("flag_front_sys_status_led", STR_VALUE_1, 0, 0);
+
+  while(1) {
+    for ( i = FRU_SLOT1; i <= num_of_slots; i++ ) {
+      ret = pal_get_server_power(i, &status);
+      if ( ret < 0 || status == SERVER_12V_OFF ) {
+        slot_ready[i-1] = false;
+        continue;
+      }
+
+      // Re-init when Server reset
+      if ( slot_ready[i-1] == false ) {
+        slot_ready[i-1] = true;
+      }
+
+      // get health status
+      if ( pal_get_fru_health(i, &slot_hlth) < 0 ) {
+        syslog(LOG_WARNING,"%s() failed to get the health status of slot%d\n", __func__, i);
+        sleep(DELAY_PERIOD);
+        continue;
+      }
+
+      // if it's FRU_STATUS_BAD, get the current power status
+      if ( slot_hlth == FRU_STATUS_BAD && slot_err[i-1] == false ) {
+        if ( pal_get_server_power(i, &status) < 0 ) {
+          syslog(LOG_WARNING,"%s() failed to get the power status of slot%d\n", __func__, i);
+        } else {
+          // set status
+          led_mode = ( status == SERVER_POWER_OFF )?LED_CRIT_PWR_OFF_MODE:LED_CRIT_PWR_ON_MODE;
+          set_led = true;
+          slot_err[i-1] = true;
+        }
+      } else if ( slot_hlth == FRU_STATUS_GOOD && slot_err[i-1] == true ) {
+        // set status
+        // led_mode - dont care
+        set_led = true;
+        slot_err[i-1] = false;
+      }
+
+      // skip it if it's not needed
+      if ( set_led == true ) {
+        if ( pal_sb_set_amber_led(i, slot_err[i-1], led_mode) < 0 ) {
+          syslog(LOG_WARNING,"%s() failed to set the fault led of slot%d\n", __func__, i);
+        } else set_led = false;
+      }
+    }
+    sleep(DELAY_PERIOD);
+  }
+  return 0;
+}
+
 
 int
 main (int argc, char * const argv[]) {
   pthread_t tid_debug_card;
+  pthread_t tid_led;
   int rc;
   int pid_file;
 
@@ -91,7 +181,12 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
-  pthread_join(tid_debug_card, NULL);
+  if (pthread_create(&tid_led, NULL, led_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for led error\n");
+    exit(1);
+  }
 
+  pthread_join(tid_debug_card, NULL);
+  pthread_join(tid_led, NULL);
   return 0;
 }

@@ -30,6 +30,7 @@ SRC_URI = "file://ast-functions \
            file://setup-sic.sh \
            file://check_eth0_ipv4.sh \
            file://recovery-bic-util \
+           file://check_bmc_ready.sh \
           "
 
 pkgdir = "utils"
@@ -37,7 +38,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sync_date.sh sol-util recovery-bic-util "
+binfiles = " sync_date.sh sol-util recovery-bic-util check_bmc_ready.sh "
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 "
@@ -82,6 +83,9 @@ do_install() {
   install -m 755 setup-sic.sh ${D}${sysconfdir}/init.d/setup-sic.sh
   update-rc.d -r ${D} setup-sic.sh start 68 5 .
 
+  # install check_bmc_ready.sh
+  install -m 755 check_bmc_ready.sh ${D}${sysconfdir}/init.d/check_bmc_ready.sh
+  update-rc.d -r ${D} check_bmc_ready.sh start 100 5 .
 }
 
 FILES_${PN} += "/usr/local ${sysconfdir}"

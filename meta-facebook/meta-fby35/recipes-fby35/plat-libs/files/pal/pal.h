@@ -65,6 +65,8 @@ extern "C" {
 #define PWR_UTL_LOCK "/var/run/power-util_%d.lock"
 
 #define MAX_SNR_NAME 32
+#define STR_VALUE_0  "0"
+#define STR_VALUE_1  "1"
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];

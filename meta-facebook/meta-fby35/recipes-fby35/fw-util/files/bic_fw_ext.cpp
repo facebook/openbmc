@@ -60,6 +60,11 @@ int BicFwExtComponent::print_version() {
   string ver("");
   string board_name = name;
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
+
+  if (fw_comp == FW_BIC_RCVY) {
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
   try {
     server.ready();
     expansion.ready();

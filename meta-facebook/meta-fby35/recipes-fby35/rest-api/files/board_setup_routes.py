@@ -41,21 +41,6 @@ from node_mezz import get_node_mezz
 from node_sensors import get_node_sensors
 from node_server import get_node_server
 from node_spb import get_node_spb
-from redfish_account_service import get_account_service
-from redfish_chassis import (
-    get_chassis,
-    get_chassis_members,
-    get_chassis_power,
-    get_chassis_thermal,
-)
-from redfish_managers import (
-    get_managers,
-    get_managers_members,
-    get_manager_ethernet,
-    get_ethernet_members,
-    get_manager_network,
-)
-from redfish_service_root import get_redfish, get_service_root
 from rest_pal_legacy import pal_is_fru_prsnt, pal_get_num_slots
 
 

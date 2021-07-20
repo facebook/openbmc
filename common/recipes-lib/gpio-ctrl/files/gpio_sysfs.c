@@ -49,6 +49,10 @@
 #define GPIO_SYSFS_VALUE_FILE          GPIO_SYSFS_PIN_PATH "/value"
 #define GPIO_SYSFS_DIRECTION_FILE      GPIO_SYSFS_PIN_PATH "/direction"
 
+#define GPIO_FALSE_SYSFS_ROOT   "/tmp/gpio/false"
+#define GPIO_FALSE_SYSFS_PIN_PATH		GPIO_FALSE_SYSFS_ROOT "/gpio%d"
+#define GPIO_FALSE_SYSFS_VALUE_FILE          GPIO_FALSE_SYSFS_PIN_PATH "/value"
+
 /*
  * Macros to reference gpio file descriptors.
  */
@@ -265,9 +269,28 @@ static int sysfs_gpio_get_value(gpio_desc_t *gdesc, gpio_value_t *value)
 	if (gsysfs_setup_fd(pathname, &GPIO_VALUE_FD(gdesc)) != 0)
 		return -1;
 
-	if (gsysfs_read_str(pathname, GPIO_VALUE_FD(gdesc),
-			    buf, sizeof(buf)) != 0)
-		return -1;
+#ifdef ENABLE_INJECTION
+    // first check to see if false directory exists
+    char false_pathname[GPIO_SYSFS_PATH_SIZE];
+	snprintf(false_pathname, GPIO_SYSFS_PATH_SIZE,
+            GPIO_FALSE_SYSFS_VALUE_FILE, gdesc->pin_num);
+    int false_fd = -1;
+
+    if (gsysfs_setup_fd(false_pathname, &false_fd) == 0) {
+        if (gsysfs_read_str(false_pathname, false_fd,
+                    buf, sizeof(buf)) != 0)
+            return -1;
+    } else {
+        // no false directory, try like normal
+#endif // ENABLE_INJECTION
+
+        if (gsysfs_read_str(pathname, GPIO_VALUE_FD(gdesc),
+                    buf, sizeof(buf)) != 0)
+            return -1;
+
+#ifdef ENABLE_INJECTION
+    }
+#endif // ENABLE_INJECTION
 
 	val = strtol(buf, NULL, 10);
 	*value = (val ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW);

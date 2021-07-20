@@ -1,34 +1,45 @@
+import time
 import typing as t
 
 import pal
 import sdr
 
 
-TemperatureSensor = t.NamedTuple(
-    "TemperatureSensor",
+SensorDetails = t.NamedTuple(
+    "SensorDetails",
     [
         ("sensor_name", str),
         ("sensor_number", int),
         ("fru_name", str),
-        ("reading_celsius", str),
+        ("reading", str),
         #  Not referencing sdr.ThreshSensor as sdr is unavailable on unit test env
         ("sensor_thresh", "sdr.ThreshSensor"),
+        ("sensor_unit", str),
+        ("sensor_history", "pal.SensorHistory")
+        #  Not referencing pal.SensorHistory as pal is unavailable on unit test env
     ],
 )
 
 
-def get_temperature_sensors(fru_name: str) -> t.List[TemperatureSensor]:
+def get_sensor_details(
+    fru_name: str, desired_sensor_units: t.List[str]
+) -> t.List[SensorDetails]:
     fru_name_map = pal.pal_fru_name_map()
     fru_id = fru_name_map[fru_name]
-    temperature_sensors = []
+    sensor_details_list = []
     if pal.pal_is_fru_prsnt(fru_id):  # Check if the fru is present
         sensor_ids_list = pal.pal_get_fru_sensor_list(fru_id)
         for sensor_id in sensor_ids_list:
-            if "C" in sdr.sdr_get_sensor_units(fru_id, sensor_id):
+            sensor_unit = sdr.sdr_get_sensor_units(fru_id, sensor_id)
+            if sensor_unit in desired_sensor_units:
                 try:
                     reading = pal.sensor_read(fru_id, sensor_id)
                     reading = round(reading, 2)
-                except pal.LibSdrError:
+                    start_time = int(time.time()) - 60
+                    sensor_history = pal.sensor_read_history(
+                        fru_id, sensor_id, start_time
+                    )
+                except pal.LibPalError:
                     print(
                         "Failed to get reading for fru: {fru_name} , sensor_id: {sensor_id}".format(  # noqa: B950
                             fru_name=fru_name, sensor_id=sensor_id
@@ -37,29 +48,37 @@ def get_temperature_sensors(fru_name: str) -> t.List[TemperatureSensor]:
                 try:
                     sensor_thresh = sdr.sdr_get_sensor_thresh(fru_id, sensor_id)
                     sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
-                    temperature_sensor = TemperatureSensor(
-                        sensor_name, sensor_id, fru_name, reading, sensor_thresh
+                    sensor_details = SensorDetails(
+                        sensor_name,
+                        sensor_id,
+                        fru_name,
+                        reading,
+                        sensor_thresh,
+                        sensor_unit,
+                        sensor_history,
                     )
-                    temperature_sensors.append(temperature_sensor)
+                    sensor_details_list.append(sensor_details)
                 except sdr.LibSdrError:
                     print(
                         "Failed to get sensor thresh for fru: {fru_name} , sensor_id: {sensor_id}".format(  # noqa: B950
                             fru_name=fru_name, sensor_id=sensor_id
                         )
                     )
-    return temperature_sensors
+    return sensor_details_list
 
 
-def get_temperature_sensors_helper(fru_name=None) -> t.List[TemperatureSensor]:
-    temperature_sensors = []
+def get_sensor_details_helper(
+    sensor_units: t.List[str], fru_name: t.Optional[str] = None
+) -> t.List[SensorDetails]:
+    all_sensor_details = []
     if fru_name is None:
         fru_name_list = get_single_sled_frus()
         for fru in fru_name_list:
-            temperature_sensors += get_temperature_sensors(fru)
+            all_sensor_details += get_sensor_details(fru, sensor_units)
     else:
-        temperature_sensors = get_temperature_sensors(fru_name)
+        all_sensor_details = get_sensor_details(fru_name, sensor_units)
 
-    return temperature_sensors
+    return all_sensor_details
 
 
 def get_single_sled_frus() -> t.List[str]:

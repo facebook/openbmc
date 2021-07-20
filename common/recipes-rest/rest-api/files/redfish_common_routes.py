@@ -2,7 +2,7 @@ import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
 from redfish_account_service import get_account_service
-from redfish_chassis import get_chassis, get_chassis_members, ChassisThermal
+from redfish_chassis import get_chassis, get_chassis_members, RedfishChassis
 from redfish_managers import (
     get_managers,
     get_managers_members,
@@ -18,6 +18,7 @@ class Redfish:
         return web.json_response()
 
     def setup_redfish_common_routes(self, app: Application):
+        redfish_chassis = RedfishChassis()
         app.router.add_get("/redfish", get_redfish)
         app.router.add_post("/redfish", self.controller)
         app.router.add_get("/redfish/v1", get_service_root)
@@ -28,14 +29,15 @@ class Redfish:
         app.router.add_post("/redfish/v1/Chassis", self.controller)
         app.router.add_get("/redfish/v1/Chassis/1", get_chassis_members)
         app.router.add_post("/redfish/v1/Chassis/1", self.controller)
-        app.router.add_get("/redfish/v1/Chassis/1/Power", self.controller)
-        app.router.add_post("/redfish/v1/Chassis/1/Power", self.controller)
-        chassis_thermal = ChassisThermal()
         app.router.add_get(
             "/redfish/v1/Chassis/1/Thermal",
-            chassis_thermal.get_chassis_thermal,
+            redfish_chassis.get_chassis_thermal,
         )
         app.router.add_post("/redfish/v1/Chassis/1/Thermal", self.controller)
+        app.router.add_get(
+            "/redfish/v1/Chassis/1/Power", redfish_chassis.get_chassis_power
+        )
+        app.router.add_post("/redfish/v1/Chassis/1/Power", self.controller)
         app.router.add_get("/redfish/v1/Managers", get_managers)
         app.router.add_post("/redfish/v1/Managers", self.controller)
         app.router.add_get("/redfish/v1/Managers/1", get_managers_members)

@@ -24,12 +24,7 @@ async def get_chassis_members(request: str, fru_name: str) -> web.Response:
     return web.json_response()
 
 
-async def get_chassis_power(request: str, fru_name: str) -> web.Response:
-    # will implement in next diff in the stack
-    return web.json_response()
-
-
-class ChassisThermal:
+class RedfishChassis:
     fru_name = None
 
     def __init__(self, fru_name: t.Optional[str] = None):
@@ -39,20 +34,56 @@ class ChassisThermal:
     async def get_chassis_thermal(self, request: str) -> web.Response:
         body = {}
         if redfish_chassis_helper.is_platform_supported():
-            temperature_sensors = redfish_chassis_helper.get_temperature_sensors_helper(
-                self.fru_name
+            temperature_sensors = redfish_chassis_helper.get_sensor_details_helper(
+                ["C"], self.fru_name
             )
             temperature_sensors_json = make_temperature_sensors_json_body(
                 temperature_sensors
             )
+            fan_sensors = redfish_chassis_helper.get_sensor_details_helper(
+                ["RPM", "%"], self.fru_name
+            )
+            redundancy_list = []
+            fan_sensors_json = make_fan_sensors_json_body(fan_sensors, redundancy_list)
             body = {
                 "@odata.type": "#Thermal.v1_7_0.Thermal",
                 "@odata.id": "/redfish/v1/Chassis/1/Thermal",
                 "Id": "Thermal",
                 "Name": "Thermal",
                 "Temperatures": temperature_sensors_json,
-                "Fans": "",  # will implement in next diffs in the stack
-                "Redundancy": "",  # will implement in next diffs in the stack
+                "Fans": fan_sensors_json,
+                "Redundancy": [
+                    {
+                        "@odata.id": "/redfish/v1/Chassis/1/Thermal#/Redundancy/0",
+                        "MemberId": "0",
+                        "Name": "BaseBoard System Fans",
+                        "RedundancySet": redundancy_list,
+                        "Mode": "N+m",
+                        "Status": {"State": "Enabled", "Health": "OK"},
+                    }
+                ],
+            }
+            await validate_keys(body)
+        else:
+            raise NotImplementedError("Redfish is not supported in this platform")
+        return web.json_response(body, dumps=dumps_bytestr)
+
+    async def get_chassis_power(self, request: str) -> web.Response:
+        body = {}
+        if redfish_chassis_helper.is_platform_supported():
+            power_control_sensors = redfish_chassis_helper.get_sensor_details_helper(
+                ["Amps", "Watts", "Volts"], self.fru_name
+            )
+            power_control_sensors_json = make_power_sensors_json_body(
+                power_control_sensors
+            )
+            body = {
+                "@odata.context": "/redfish/v1/$metadata#Power.Power",
+                "@odata.id": "/redfish/v1/Chassis/1/Power",
+                "@odata.type": "#Power.v1_5_0.Power",
+                "Id": "Power",
+                "Name": "Power",
+                "PowerControl": power_control_sensors_json,
             }
             await validate_keys(body)
         else:
@@ -61,26 +92,95 @@ class ChassisThermal:
 
 
 def make_temperature_sensors_json_body(
-    temperature_sensors: t.List[redfish_chassis_helper.TemperatureSensor],
+    temperature_sensors: t.List[redfish_chassis_helper.SensorDetails],
 ) -> t.List[t.Dict[str, t.Any]]:
     all_temperature_sensors = []
     for idx, temperature_sensor in enumerate(temperature_sensors):
         sensor_threshold = temperature_sensor.sensor_thresh
         temperature_json = {
-            "@odata.id": "/redfish/v1/Chassis/1U/Thermal#/Temperatures/{}".format(idx),
+            "@odata.id": "/redfish/v1/Chassis/1/Thermal#/Temperatures/{}".format(idx),
             "MemberId": idx,
             "Name": temperature_sensor.sensor_name,
             "SensorNumber": temperature_sensor.sensor_number,
             "FruName": temperature_sensor.fru_name,
             "Status": {"State": "Enabled", "Health": "OK"},
-            "ReadingCelsius": temperature_sensor.reading_celsius,
-            "UpperThresholdNonCritical": sensor_threshold.unc_thresh,
-            "UpperThresholdCritical": sensor_threshold.ucr_thresh,
-            "UpperThresholdFatal": sensor_threshold.unr_thresh,
-            "LowerThresholdNonCritical": sensor_threshold.lnc_thresh,
-            "LowerThresholdCritical": sensor_threshold.lcr_thresh,
-            "LowerThresholdFatal": sensor_threshold.lnr_thresh,
+            "ReadingCelsius": temperature_sensor.reading,
+            "UpperThresholdNonCritical": round(sensor_threshold.unc_thresh, 2),
+            "UpperThresholdCritical": round(sensor_threshold.ucr_thresh, 2),
+            "UpperThresholdFatal": round(sensor_threshold.unr_thresh, 2),
+            "LowerThresholdNonCritical": round(sensor_threshold.lnc_thresh, 2),
+            "LowerThresholdCritical": round(sensor_threshold.lcr_thresh, 2),
+            "LowerThresholdFatal": round(sensor_threshold.lnr_thresh, 2),
             "PhysicalContext": "Chassis",
         }
         all_temperature_sensors.append(temperature_json)
     return all_temperature_sensors
+
+
+def make_fan_sensors_json_body(
+    fan_sensors: t.List[redfish_chassis_helper.SensorDetails],
+    redundancy_list: t.List[t.Dict[str, t.Any]],
+) -> t.List[t.Dict[str, t.Any]]:
+    all_fan_sensors = []
+    for idx, fan_sensor in enumerate(fan_sensors):
+        sensor_threshold = fan_sensor.sensor_thresh
+        fan_json = {
+            "@odata.id": "/redfish/v1/Chassis/1/Thermal#/Fans/{}".format(idx),
+            "MemberId": idx,
+            "Name": fan_sensor.sensor_name,
+            "PhysicalContext": "Backplane",
+            "SensorNumber": fan_sensor.sensor_number,
+            "FruName": fan_sensor.fru_name,
+            "Status": {"State": "Enabled", "Health": "OK"},
+            "Reading": fan_sensor.reading,
+            "ReadingUnits": fan_sensor.sensor_unit,
+            "LowerThresholdFatal": round(sensor_threshold.lnr_thresh, 2),
+            "Redundancy": [
+                {
+                    "@odata.id": "/redfish/v1/Chassis/1/Thermal#/Redundancy/{}".format(
+                        idx
+                    )
+                },
+            ],
+        }
+        all_fan_sensors.append(fan_json)
+        redundancy_list.append({"@odata.id": fan_json["@odata.id"]})
+    return all_fan_sensors
+
+
+def make_power_sensors_json_body(
+    power_sensors: t.List[redfish_chassis_helper.SensorDetails],
+) -> t.List[t.Dict[str, t.Any]]:
+    all_power_sensors = []
+    period = 60
+    for idx, power_sensor in enumerate(power_sensors):
+        sensor_threshold = power_sensor.sensor_thresh
+        _sensor_history = power_sensor.sensor_history
+        power_json = [
+            {
+                "@odata.id": "/redfish/v1/Chassis/1/Power#/PowerControl/{}".format(idx),
+                "MemberId": idx,
+                "Name": power_sensor.sensor_name,
+                "SensorNumber": power_sensor.sensor_number,
+                "PhysicalContext": "Chassis",
+                "FruName": power_sensor.fru_name,
+                "PowerLimit": {
+                    "LimitInWatts": round(sensor_threshold.ucr_thresh, 2),
+                    "LimitException": "LogEventOnly",
+                },
+                "PowerMetrix": {
+                    "IntervalInMin": period / 60,
+                    "MinIntervalConsumedWatts": round(
+                        _sensor_history.min_intv_consumed, 2
+                    ),
+                    "MaxIntervalConsumedWatts": round(
+                        _sensor_history.max_intv_consumed, 2
+                    ),
+                    "AverageIntervalConsumedWatts": round(
+                        _sensor_history.avg_intv_consumed, 2
+                    ),
+                },
+            }
+        ]
+        all_power_sensors.append(power_json)
+    return all_power_sensors

@@ -29,7 +29,7 @@ import ctypes
 import re
 from contextlib import suppress
 from functools import lru_cache
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, NamedTuple
 
 libpal = ctypes.CDLL("libpal.so.0")
 
@@ -202,3 +202,31 @@ def sensor_read(fru_id: int, snr_num: int) -> float:
         return sensor_cache_read(fru_id, snr_num)
 
     return sensor_raw_read(fru_id, snr_num)
+
+
+SensorHistory = NamedTuple(
+    "SensorHistory",
+    [
+        ("min_intv_consumed", float),
+        ("max_intv_consumed", float),
+        ("avg_intv_consumed", float),
+    ],
+)
+
+
+def sensor_read_history(fru_id: int, snr_num: int, start_time: int) -> SensorHistory:
+    min_val = ctypes.c_float()
+    max_val = ctypes.c_float()
+    avg_val = ctypes.c_float()
+    ret = libpal.sensor_read_history(
+        fru_id,
+        snr_num,
+        ctypes.pointer(min_val),
+        ctypes.pointer(avg_val),
+        ctypes.pointer(max_val),
+        start_time,
+    )
+    if ret != 0:
+        raise LibPalError("sensor_read_history() returned " + str(ret))
+
+    return SensorHistory(min_val.value, max_val.value, avg_val.value)

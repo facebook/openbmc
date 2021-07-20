@@ -50,6 +50,7 @@ VALID_KEYS = {
     "Temperatures",
     "Fans",
     "Redundancy",
+    "PowerControl",
 }
 
 

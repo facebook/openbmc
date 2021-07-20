@@ -77,7 +77,10 @@ SRC_URI = "file://setup-rest-api.sh \
            file://redfish_managers.py \
            file://test_redfish_common_routes.py \
            file://redfish_base.py \
-           file://test_redfish_controllers.py \
+           file://test_redfish_root_controller.py \
+           file://test_redfish_account_controller.py \
+           file://test_redfish_managers_controller.py \
+           file://test_redfish_chassis_controller.py \
         "
 
 S = "${WORKDIR}"

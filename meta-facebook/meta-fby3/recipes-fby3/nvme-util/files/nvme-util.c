@@ -115,6 +115,7 @@ main(int argc, char **argv) {
   uint8_t slot_id = 0xff;
   uint8_t dev_id = DEV_NONE;
   uint8_t bmc_location = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
   int (*read_write_nvme_data)(uint8_t, uint8_t, int, char **);
   struct sigaction sa;
 
@@ -141,6 +142,27 @@ main(int argc, char **argv) {
       printf("%s is not supported\n", argv[2]);
       break;
     } else m_intf = REXP_BIC_INTF;
+
+    // check 2OU status
+    ret = bic_is_m2_exp_prsnt(slot_id);
+    if ( ret < 0 ) {
+      printf("%s() Cannot get the m2 prsnt status\n", __func__);
+      break;
+    }
+
+    if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
+      if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
+        printf("Failed to get slot%d 2ou board type\n",slot_id);
+        break;
+      }
+      if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+        printf("2ou board type 0x%02x is not supported, only support GPV3\n",type_2ou);
+        break;
+      }
+    } else {
+      printf("2ou board is not present\n");
+      break;
+    }
 
     //device
     if ( pal_get_dev_id(argv[2], &dev_id) < 0 ) {

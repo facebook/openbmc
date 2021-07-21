@@ -296,6 +296,15 @@ int BmcCpldComponent::update_cpld(string image)
 
   if (slot_found != string::npos) {
     bmc_location_str = fru_name+ " " + "SB";
+    //Check Server Board is Ready
+    try {
+      uint8_t slot_id = fru_name.at(4) - '0';
+      Server server(slot_id, fru_name);
+      server.ready();
+    } catch(string& err) {
+      printf("%s\n", err.c_str());
+      return FW_STATUS_NOT_SUPPORTED;
+    }
   }
 
   syslog(LOG_CRIT, "Updating CPLD on %s. File: %s", bmc_location_str.c_str(), image_tmp.c_str());

@@ -68,8 +68,7 @@ jobs:
             - run:
                 name: Check build required. Halt the CI if not needed.
                 command: |
-                    runuser -m usersetup -c './tools/circle-ci/check-build-required ptest'
-                    if [ $? -eq 1 ]; then
+                    if ! runuser -m usersetup -c './tools/circle-ci/check-build-required ptest'; then
                         circleci-agent step halt
                     fi
             - run:
@@ -103,8 +102,7 @@ jobs:
             - run:
                 name: Check build required.
                 command: |
-                    ./tools/circle-ci/check-build-required
-                    if [ $? -eq 1 ]; then
+                    if ! ./tools/circle-ci/check-build-required; then
                         circleci-agent step halt
                     fi
             - run:

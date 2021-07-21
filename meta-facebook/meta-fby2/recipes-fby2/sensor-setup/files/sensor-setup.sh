@@ -99,6 +99,8 @@ if [ $kernel_ver == 4 ]; then
     config_adc 15    0  1000 0
 fi
 
+gpio_export MB_HSC_RSENSE_SRC GPIOA2
+
 spb_type=$(get_spb_type)
 
 # ADM1278 Configuration
@@ -117,7 +119,14 @@ if [ $spb_type == "1" ]; then
    # 0xe18 = 3608 (dec)
    #(3608*10-20475)/ (800*0.3)= 65.0208A
    # 65.0208* 0.92259 = 59.9875A
-   i2cset -y -f 10 0x40 0x4a 0x0e18 w
+
+   # Get ADM1278 Rsense source, low: main source, high: 2nd source
+   src=$(gpio_get MB_HSC_RSENSE_SRC GPIOA2)
+   if [ $src == "0" ]; then
+      i2cset -y -f 10 0x40 0x4a 0x0e18 w
+   else
+      i2cset -y -f 10 0x40 0x4a 0x0d9f w
+   fi
 elif [[ $spb_type == "2" || $spb_type == "3" ]]; then
    # FBND Platform
    # Clear PEAK_PIN & PEAK_IOUT register

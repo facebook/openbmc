@@ -4414,6 +4414,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   static uint8_t is_last_time_out = 0;
   uint8_t is_time_out = 0;
   static uint8_t check_flag = POST_END_CHECK;
+  gpio_value_t src = 0;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -4473,12 +4474,21 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     // On successful sensor read
     if (fru == FRU_SPB) {
       int spb_type = 0;
+
       spb_type = fby2_common_get_spb_type();
+      fby2_common_get_gpio_val("MB_HSC_RSENSE_SRC", &src);
+
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
-        power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
+        // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
+          power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
+        }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
-        power_value_adjust(get_power_cali_table(spb_type), (float *)value);
+        // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
+          power_value_adjust(get_power_cali_table(spb_type), (float *)value);
+        }
       }
       if (sensor_num == SP_SENSOR_BMC_HSC_PIN) {
         ret = calc_bmc_hsc_value((float *)value);

@@ -60,6 +60,12 @@
 
 #define OBMC_DUMP_STAT_KEY "obmc_dump_stat"
 
+// PPR definition
+#define PPR_MAX_ROW_COUNT 100
+#define PPR_MAX_HISTORY_COUNT 100
+#define PPR_ROW_ADDR_DATA_LEN 8
+#define PPR_HISTORY_DATA_LEN 17
+
 static unsigned char IsTimerStart[MAX_NODES] = {0};
 
 static unsigned char bmc_global_enable_setting[] = {0x0c,0x0c,0x0c,0x0c};
@@ -2668,9 +2674,12 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int selector = req->data[0],  i =1 , para, size = 0, offset;
+  uint8_t selector = req->data[0];
+  uint8_t ppr_enable, ppr_type, ppr_action = 0;
+  int size = 0, offset;
   char temp[20]= {0};
   char filepath[128]= {0};
+  bool append_mode = true;
   FILE *fp = NULL;
 
   if (access("/mnt/data/ppr/", F_OK) == -1)
@@ -2679,17 +2688,16 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
   *res_len = 0;
   res->cc = CC_SUCCESS;
   switch(selector) {
-    case 1:
-      if( req->data[1] & 0x80) {
-        para = req->data[1] & 0x7f;
-        if( para != PPR_SOFT && para != PPR_HARD  && para != PPR_TEST_MODE) {
+    case PPR_ACTION:
+      ppr_enable = req->data[1] & 0x80;
+      ppr_type = req->data[1] & 0x7f;
+      if (ppr_enable) {
+        if (ppr_type != PPR_SOFT && ppr_type != PPR_HARD  && ppr_type != PPR_TEST_MODE) {
           res->cc = CC_INVALID_DATA_FIELD;
           return;
         }
-        sprintf(temp, "%c", req->data[1]);
+        ppr_action = req->data[1];
       }
-      else
-        sprintf(temp, "%c", 0);
 
       sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
       fp = fopen(filepath, "r");
@@ -2710,29 +2718,29 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
       fclose(fp);
       sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_action", req->payload_id);
       fp = fopen(filepath, "w");
-      if(fp != NULL)
-        fwrite(temp, sizeof(char), 1, fp);
+      if (fp != NULL) {
+        fwrite(&ppr_action, sizeof(uint8_t), 1, fp);
+      }
       break;
-    case 2:
-      if(req->data[1]>100) {
+    case PPR_ROW_COUNT:
+      if (req->data[1] > PPR_MAX_ROW_COUNT) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
       else
       {
-        sprintf(temp, "%c", req->data[1]);
         sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
         fp = fopen(filepath, "w");
         if(fp != NULL)
-          fwrite(temp, sizeof(char), 1, fp);
+          fwrite(&req->data[1], sizeof(uint8_t), 1, fp);
       }
       break;
-    case 3:
-      if(req->data[1] < 0 || req->data[1] >100) {
+    case PPR_ROW_ADDR:
+      if (req->data[1] > PPR_MAX_ROW_COUNT) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
-      if(req_len != 12) {
+      if (req_len != (PPR_ROW_ADDR_DATA_LEN + 4)) {
         res->cc = CC_INVALID_LENGTH;
         return;
       }
@@ -2741,40 +2749,38 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
       fseek(fp, 0, SEEK_END);
       size = ftell(fp);
       fseek(fp, 0, SEEK_SET);
-      if(size >= 50 * 8) {
+
+      append_mode = true;
+      offset = 0;
+      if(size != 0) {
+        while (fread(temp, sizeof(uint8_t), PPR_ROW_ADDR_DATA_LEN, fp)) {
+          offset = ftell(fp);
+          if(temp[0] == req->data[1]) {
+            append_mode = false;
+            fclose(fp);
+            fp = fopen(filepath, "w+");
+            offset = ftell(fp) - PPR_ROW_ADDR_DATA_LEN;
+            if (offset < 0)
+              offset = 0;
+            break;
+          }
+        }
+      }
+
+      if (append_mode && size > PPR_MAX_ROW_COUNT * PPR_ROW_ADDR_DATA_LEN) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         fclose(fp);
         return;
       }
-      offset = 0;
-      if(size != 0) {
-        while(fread(temp, 1, 8, fp)) {
-          offset = ftell(fp);
-           if(temp[0] == req->data[1]) {
-           fclose(fp);
-           sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_addr", req->payload_id);
-           fp = fopen(filepath, "w+");
-             offset =  ftell(fp) - 8;
-             if (offset < 0)
-               offset = 0;
-             break;
-           }
-        }
-      }
       fseek(fp, offset , SEEK_SET);
-      i = 1;
-      while( i <= req_len - 4) {
-        sprintf(temp, "%c", req->data[i]);
-        fwrite(temp, sizeof(char), 1, fp);
-        i++;
-      }
-    break;
-    case 4:
-      if(req->data[1] < 0 || req->data[1] >100) {
+      fwrite(&req->data[1], sizeof(uint8_t), PPR_ROW_ADDR_DATA_LEN, fp);
+      break;
+    case PPR_HISTORY_DATA:
+      if (req->data[1] > PPR_MAX_HISTORY_COUNT) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
-      if(req_len != 21) {
+      if (req_len != (PPR_HISTORY_DATA_LEN + 4)) {
         res->cc = CC_INVALID_LENGTH;
         return;
       }
@@ -2783,33 +2789,32 @@ oem_set_ppr (unsigned char *request, unsigned char req_len,
       fseek(fp, 0, SEEK_END);
       size = ftell(fp);
       fseek(fp, 0, SEEK_SET);
-      if(size >= 50 * 17) {
-        res->cc = CC_PARAM_OUT_OF_RANGE;
-        fclose(fp);
-        return;
-      }
+
+
+      append_mode = true;
       offset = 0;
       if(size != 0) {
-        while(fread(temp, 1, 17, fp)) {
+        while (fread(temp, sizeof(uint8_t), PPR_HISTORY_DATA_LEN, fp)) {
           offset = ftell(fp);
           if(temp[0] == req->data[1]) {
+            append_mode = false;
             fclose(fp);
-            sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_history_data", req->payload_id);
             fp = fopen(filepath, "w+");
-            offset =  ftell(fp) - 17;
+            offset = ftell(fp) - PPR_HISTORY_DATA_LEN;
             if (offset < 0)
               offset = 0;
             break;
           }
         }
       }
-      fseek(fp, offset , SEEK_SET);
-      i=1;
-      while( i <= req_len - 4) {
-        sprintf(temp, "%c", req->data[i]);
-        fwrite(temp, sizeof(char), 1, fp);
-        i++;
+
+      if (append_mode && size > PPR_MAX_HISTORY_COUNT * PPR_HISTORY_DATA_LEN) {
+        res->cc = CC_PARAM_OUT_OF_RANGE;
+        fclose(fp);
+        return;
       }
+      fseek(fp, offset , SEEK_SET);
+      fwrite(&req->data[1], sizeof(uint8_t), PPR_HISTORY_DATA_LEN, fp);
       break;
     default:
       res->cc = CC_INVALID_PARAM;
@@ -2826,7 +2831,7 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  int selector = req->data[0], i = 0;
+  uint8_t selector = req->data[0];
   FILE *fp = NULL;
   char filepath[128]= {0};
   char temp[20], kpath[20];
@@ -2835,9 +2840,10 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
   if (access(kpath, F_OK) == -1)
     mkdir(kpath, 0777);
 
+  *res_len = 0;
   res->cc = CC_SUCCESS;
   switch(selector) {
-    case 1:
+    case PPR_ACTION:
       sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
       fp = fopen(filepath, "r");
       if (!fp) {
@@ -2875,7 +2881,7 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
       }
       *res_len = 1;
       break;
-    case 2:
+    case PPR_ROW_COUNT:
       sprintf(filepath, "/mnt/data/ppr/fru%d_ppr_row_count", req->payload_id);
       fp = fopen(filepath, "r");
       if (!fp) {
@@ -2893,8 +2899,8 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
       }
       *res_len = 1;
       break;
-    case 3:
-      if(req->data[1] < 0 || req->data[1] >100) {
+    case PPR_ROW_ADDR:
+      if (req->data[1] > PPR_MAX_ROW_COUNT) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
@@ -2904,19 +2910,15 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
-      while(fread(res->data, 1, 8, fp)) {
+      while(fread(res->data, sizeof(uint8_t), PPR_ROW_ADDR_DATA_LEN, fp)) {
         if(res->data[0] == req->data[1]) {
-          i = 1;
+          *res_len = PPR_ROW_ADDR_DATA_LEN;
           break;
         }
       }
-      if(i!=1)
-        *res_len = 0;
-      else
-        *res_len = 8;
       break;
-    case 4:
-      if(req->data[1] < 0 || req->data[1] >100) {
+    case PPR_HISTORY_DATA:
+      if (req->data[1] > PPR_MAX_HISTORY_COUNT) {
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
@@ -2926,16 +2928,12 @@ oem_get_ppr (unsigned char *request, unsigned char req_len,
         res->cc = CC_PARAM_OUT_OF_RANGE;
         return;
       }
-      while(fread(res->data, 1, 17, fp)) {
+      while(fread(res->data, sizeof(uint8_t), PPR_HISTORY_DATA_LEN, fp)) {
         if(res->data[0] == req->data[1]) {
-          i = 1;
+          *res_len = PPR_HISTORY_DATA_LEN;
           break;
         }
       }
-      if(i!=1)
-        *res_len = 0;
-      else
-        *res_len = 17;
       break;
     default:
       res->cc = CC_INVALID_PARAM;

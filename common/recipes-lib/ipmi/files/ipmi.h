@@ -656,6 +656,14 @@ enum
   BIC_INTF_IMC = 0x10,
 };
 
+//PPR Selector
+enum PPR_SELECTOR {
+  PPR_ACTION = 0x1,
+  PPR_ROW_COUNT = 0x2,
+  PPR_ROW_ADDR = 0x3,
+  PPR_HISTORY_DATA = 0x4,
+};
+
 //PPR Action
 enum
 {

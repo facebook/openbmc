@@ -2,7 +2,7 @@ import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
 from redfish_account_service import get_account_service
-from redfish_chassis import get_chassis, get_chassis_members, RedfishChassis
+from redfish_chassis import RedfishChassis
 from redfish_managers import (
     get_managers,
     get_managers_members,
@@ -25,9 +25,9 @@ class Redfish:
         app.router.add_post("/redfish/v1", self.controller)
         app.router.add_get("/redfish/v1/AccountService", get_account_service)
         app.router.add_post("/redfish/v1/AccountService", self.controller)
-        app.router.add_get("/redfish/v1/Chassis", get_chassis)
+        app.router.add_get("/redfish/v1/Chassis", redfish_chassis.get_chassis)
         app.router.add_post("/redfish/v1/Chassis", self.controller)
-        app.router.add_get("/redfish/v1/Chassis/1", get_chassis_members)
+        app.router.add_get("/redfish/v1/Chassis/1", redfish_chassis.get_chassis_members)
         app.router.add_post("/redfish/v1/Chassis/1", self.controller)
         app.router.add_get(
             "/redfish/v1/Chassis/1/Thermal",
@@ -61,22 +61,27 @@ class Redfish:
 
     def setup_multisled_routes(self, app: Application):
         no_of_slots = rest_pal_legacy.pal_get_num_slots()
-        for i in range(1, no_of_slots):
+        for i in range(1, no_of_slots + 1):  # +1 to iterate uptill last slot
+            server_name = "server{}".format(i)
+            redfish_chassis = RedfishChassis("slot{}".format(i))
             app.router.add_get(
-                "/redfish/v1/Chassis/server{}".format(i), self.controller
+                "/redfish/v1/Chassis/{}".format(server_name),
+                redfish_chassis.get_chassis_members,
             )
             app.router.add_post(
-                "/redfish/v1/Chassis/server{}".format(i), self.controller
+                "/redfish/v1/Chassis/{}".format(server_name), self.controller
             )
             app.router.add_get(
-                "/redfish/v1/Chassis/server{}/Power".format(i), self.controller
+                "/redfish/v1/Chassis/{}/Power".format(server_name),
+                redfish_chassis.get_chassis_power,
             )
             app.router.add_post(
-                "/redfish/v1/Chassis/server{}/Power".format(i), self.controller
+                "/redfish/v1/Chassis/{}/Power".format(server_name), self.controller
             )
             app.router.add_get(
-                "/redfish/v1/Chassis/server{}/Thermal".format(i), self.controller
+                "/redfish/v1/Chassis/{}/Thermal".format(server_name),
+                redfish_chassis.get_chassis_thermal,
             )
             app.router.add_post(
-                "/redfish/v1/Chassis/server{}/Thermal".format(i), self.controller
+                "/redfish/v1/Chassis/{}/Thermal".format(server_name), self.controller
             )

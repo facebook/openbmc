@@ -46,13 +46,14 @@ class TestCommonRoutes(unittest.TestCase):
 
                     redfish = Redfish()
                     redfish.setup_multisled_routes(app)
-                for i in range(1, pal_response):
-                    routes_expected.append("/redfish/v1/Chassis/server{}".format(i))
+                for i in range(1, pal_response + 1):  # +1 to iterate uptill last slot
+                    server_name = "server{}".format(i)
+                    routes_expected.append("/redfish/v1/Chassis/{}".format(server_name))
                     routes_expected.append(
-                        "/redfish/v1/Chassis/server{}/Power".format(i)
+                        "/redfish/v1/Chassis/{}/Power".format(server_name)
                     )
                     routes_expected.append(
-                        "/redfish/v1/Chassis/server{}/Thermal".format(i)
+                        "/redfish/v1/Chassis/{}/Thermal".format(server_name)
                     )
                 registered_routes = set()
                 for route in app.router.resources():

@@ -26,7 +26,6 @@ VALID_KEYS = {
     "EthernetInterfaces",
     "LogServices",
     "Links",
-    "Links",
     "Actions",
     "target",
     "HostName",
@@ -51,6 +50,13 @@ VALID_KEYS = {
     "Fans",
     "Redundancy",
     "PowerControl",
+    "ChassisType",
+    "Manufacturer",
+    "Model",
+    "SerialNumber",
+    "PowerState",
+    "Thermal",
+    "Power",
 }
 
 

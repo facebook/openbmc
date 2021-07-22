@@ -90,6 +90,21 @@ def get_single_sled_frus() -> t.List[str]:
     return fru_list
 
 
+def get_chassis_members_json() -> t.List[t.Dict[str, t.Any]]:
+    if "slot4" in pal.pal_fru_name_map():
+        # return chassis members for a multisled platform
+        return [
+            {"@odata.id": "/redfish/v1/Chassis/1"},
+            {"@odata.id": "/redfish/v1/Chassis/server1"},
+            {"@odata.id": "/redfish/v1/Chassis/server2"},
+            {"@odata.id": "/redfish/v1/Chassis/server3"},
+            {"@odata.id": "/redfish/v1/Chassis/server4"},
+        ]
+    else:
+        # return chassis members for a single sled platform
+        return [{"@odata.id": "/redfish/v1/Chassis/1"}]
+
+
 def is_platform_supported() -> bool:
     UNSUPPORTED_PLATFORMS = ["yamp", "wedge40", "wedge100"]
     return pal.pal_get_platform_name() not in UNSUPPORTED_PLATFORMS

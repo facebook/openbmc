@@ -40,6 +40,8 @@
 
 using time_pair = std::pair<std::string, std::string>;
 
+bool verbose;
+
 std::string hex_int_to_string(int hex) {
     char hex_c[10];
     sprintf(hex_c, "0X%02X", hex);
@@ -106,7 +108,9 @@ void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsi
     BOOKMARK_BEGIN(fru, "sensor");
 
     sprintf(util_call, payload, target_value);
-    std::cout << "Calling: " << util_call << std::endl;
+    if (verbose) {
+        std::cout << "Calling: " << util_call << std::endl;
+    }
     ret = system(util_call);
     if (ret) {
         std::cout << "Error in setting threshold: " << ret << std::endl;
@@ -124,7 +128,9 @@ void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsi
         return;
     }
     sprintf(util_call, "threshold-util %s --set %s UCR %f", fru_name, snr_str.c_str(), curr_thresh);
-    std::cout << "Calling: " << util_call << std::endl;
+    if (verbose) {
+        std::cout << "Calling: " << util_call << std::endl;
+    }
     ret = system(util_call);
     if (ret) {
         std::cout << "Error in returning threshold to original value" << std::endl;
@@ -170,16 +176,46 @@ void ipmi_callback(
         }
         ipmi_call += sel_data;
 
-        std::cout << "Calling ipmi command: " << ipmi_call << std::endl;
-        int ret = system(ipmi_call.c_str());
-        if (ret) {
-            std::cout << "IPMI call failed with code: " << ret <<std::endl;
+        if (verbose) {
+            std::cout << "Calling ipmi command: " << ipmi_call << std::endl;
+        }
+
+        FILE* file_stream = popen(ipmi_call.c_str(), "r");
+        if (!file_stream) {
+            std::cout << "IPMI call failed" <<std::endl;
+        }
+
+        if (verbose) {
+            ssize_t read_size;
+            size_t line_size = 256;
+            char* line_buffer = NULL;
+            int current_value = -1;
+            while ((read_size = getline(&line_buffer, &line_size, file_stream)) != -1) {
+                std::cout << "Received payload: " << line_buffer << std::endl;
+            }
+
         }
 
     } else {
-        int ret = system(payload.c_str());
-        if (ret)
-            std::cout << "Payload failed with code: " << ret << std::endl;
+        if (verbose) {
+            std::cout << "Calling ipmi command: " << payload << std::endl;
+        }
+
+        FILE* file_stream = popen(payload.c_str(), "r");
+        if (!file_stream) {
+            std::cout << "IPMI call failed" <<std::endl;
+        }
+
+        if (verbose) {
+            ssize_t read_size;
+            size_t line_size = 256;
+            char* line_buffer = NULL;
+            int current_value = -1;
+            while ((read_size = getline(&line_buffer, &line_size, file_stream)) != -1) {
+                std::cout << "Received payload: " << line_buffer << std::endl;
+            }
+
+        }
     }
 
     usleep(delay * 1000);
@@ -213,6 +249,10 @@ void bic_gpio_callback(unsigned int delay, uint8_t fru, unsigned int gpio_num) {
         std::string line = line_buffer;
         if (std::regex_search(line, reg_match, bic_regex)) {
             current_value = stoi(reg_match[1].str());
+            if (verbose) {
+                std::cout << "Found current value " << std::to_string(current_value)
+                    << std::endl;
+            }
             break;
         }
     }
@@ -239,6 +279,11 @@ void bic_gpio_callback(unsigned int delay, uint8_t fru, unsigned int gpio_num) {
     tmp_file << (!current_value ? "1" : "0");
     tmp_file.close();
 
+    if (verbose) {
+        std::cout << "Creating temp file " << bic_file << " with value "
+            << (!current_value ? "1" : "0") << std::endl;
+    }
+
     // wait the delay
     usleep(delay * 1000);
 
@@ -258,6 +303,10 @@ void del_logs(std::vector<time_pair> time_pairs) {
                              "' -e '" +
                              period.second +
                              "'";
+        if (verbose) {
+            std::cout << "Calling: " << buffer << std::endl;
+        }
+
         int ret = system(buffer.c_str());
         if (ret)
             std::cout << "Error calling log-util: " << ret << std::endl;
@@ -271,6 +320,10 @@ void print_logs(std::vector<time_pair> time_pairs) {
                              "' -e '" +
                              period.second +
                              "'";
+        if (verbose) {
+            std::cout << "Calling: " << buffer << std::endl;
+        }
+
         int ret = system(buffer.c_str());
         if (ret)
             std::cout << "Error calling log-util: " << ret << std::endl;
@@ -354,6 +407,8 @@ int main(int argc, char **argv)
     CLI::App app{"System Event Generation Util"};
     app.set_help_flag();
     app.set_help_all_flag("-h,--help");
+
+    app.add_flag("-v,--verbose", verbose, "Turn on verbose outputs");
 
     app.add_subcommand("clear", "Get rid of all injected SEL's")->callback([&]() {
         clear_sel();

@@ -30,34 +30,34 @@ function init_class2_sensord() {
 }
 
 function init_class1_sensord() {
-  # Check for the slots present and run sensord for those slots only.
-  # if [ $(is_server_prsnt 1) == "1" ]; then
-  #   if [ $(is_slot_12v_on 1) == "1" ]; then
-  #     SLOTS="$SLOTS slot1"
-  #     read_system_conf "slot1"
-  #   fi
-  # fi
+  #Check for the slots present and run sensord for those slots only.
+  if [ $(is_server_prsnt 1) == "1" ]; then
+    if [ $(is_slot_12v_on 1) == "1" ]; then
+      SLOTS="$SLOTS slot1"
+      read_system_conf "slot1"
+    fi
+  fi
 
-  # if [ $(is_server_prsnt 2) == "1" ]; then
-  #   if [ $(is_slot_12v_on 2) == "1" ]; then
-  #     SLOTS="$SLOTS slot2"
-  #     read_system_conf "slot2"
-  #   fi
-  # fi
+  if [ $(is_server_prsnt 2) == "1" ]; then
+    if [ $(is_slot_12v_on 2) == "1" ]; then
+      SLOTS="$SLOTS slot2"
+      read_system_conf "slot2"
+    fi
+  fi
 
-  # if [ $(is_server_prsnt 3) == "1" ]; then
-  #   if [ $(is_slot_12v_on 3) == "1" ]; then
-  #     SLOTS="$SLOTS slot3"
-  #     read_system_conf "slot3"
-  #   fi
-  # fi
+  if [ $(is_server_prsnt 3) == "1" ]; then
+    if [ $(is_slot_12v_on 3) == "1" ]; then
+      SLOTS="$SLOTS slot3"
+      read_system_conf "slot3"
+    fi
+  fi
 
-  # if [ $(is_server_prsnt 4) == "1" ]; then
-  #   if [ $(is_slot_12v_on 4) == "1" ]; then
-  #     SLOTS="$SLOTS slot4"
-  #     read_system_conf "slot4"
-  #   fi
-  # fi
+  if [ $(is_server_prsnt 4) == "1" ]; then
+    if [ $(is_slot_12v_on 4) == "1" ]; then
+      SLOTS="$SLOTS slot4"
+      read_system_conf "slot4"
+    fi
+  fi
 
   SLOTS="$SLOTS bmc nic"
 }

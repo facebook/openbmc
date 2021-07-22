@@ -50,6 +50,9 @@ if ! [ $bmc_location -eq 9 ]; then
     /usr/bin/fw-util slot4 --version > /dev/null
   fi
 
+  #enable the register of the temperature of hsc
+  /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
+
   # Clear PEAK_PIN & PEAK_IOUT register
   /usr/sbin/i2cset -y 11 0x40 0xd0 0x0000 w
   /usr/sbin/i2cset -y 11 0x40 0xda 0x0000 w

@@ -528,6 +528,7 @@ gpio_monitor_poll(void *ptr) {
     //check PWRGD_CPU_LVC3_R is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) && 
          (GET_BIT(n_pin_val, PWRGD_CPU_LVC3_R) != GET_BIT(o_pin_val, PWRGD_CPU_LVC3_R))) {
+      rst_timer(fru);
       set_pwrgd_cpu_flag(fru, true);  
       //update the value since the bit is not monitored
       SET_BIT(o_pin_val, PWRGD_CPU_LVC3_R, GET_BIT(n_pin_val, PWRGD_CPU_LVC3_R));
@@ -704,6 +705,7 @@ host_pwr_mon() {
       //delay to change the power mode of NIC
       if ( is_util_run_flag > 0 || access(SET_NIC_PWR_MODE_LOCK, F_OK) == 0) {
         retry = 0;
+        usleep(DELAY_GPIOD_READ);
         continue;
       }
 

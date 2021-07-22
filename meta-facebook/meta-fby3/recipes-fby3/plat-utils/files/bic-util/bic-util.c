@@ -794,19 +794,23 @@ error_exit:
 
 static int
 util_get_board_revision(uint8_t slot_id, char *comp) {
-  bic_gpio_t gpio = {0};
-  uint8_t type_1ou = 0;
-  uint8_t status = 0;
   int ret = 0;
+  int retry = 0;
+  uint8_t type_1ou = 0;
+  uint8_t tbuf[5] = {0x9C, 0x9C, 0x00, 0x00, 0x00};
+  uint8_t rbuf[256] = {0};
+  uint8_t tlen = 5;
+  uint8_t rlen = 0;
+  uint8_t board_rev_id0 = 0, board_rev_id1 = 0, board_rev_id2 = 0;
 
   if (strcmp("1ou", comp) == 0) {
-    status = bic_is_m2_exp_prsnt_cache(slot_id);
-    if ( status < 0 ) {
+    ret = bic_is_m2_exp_prsnt_cache(slot_id);
+    if ( ret < 0 ) {
       printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
       return -1;
     }
 
-    if ( (status & PRESENT_1OU) != PRESENT_1OU ) {
+    if ( (ret & PRESENT_1OU) != PRESENT_1OU ) {
       printf("1OU board is not present\n");
       return -1;
     }
@@ -816,18 +820,51 @@ util_get_board_revision(uint8_t slot_id, char *comp) {
       return -1;
     }
 
-    ret = bic_get_gpio(slot_id, &gpio, FEXP_BIC_INTF);
-    if ( ret < 0 ) {
-      printf("%s() bic_get_gpio returns %d\n", __func__, ret);
-      return ret;
+    tbuf[4] = 50; //FW_BOARD_REV_ID0
+    do {
+      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SINGLE_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, FEXP_BIC_INTF);
+    } while (ret && (retry++ <= 3));
+    if (ret) {
+      printf("get BOARD_REV_ID0 fail, retry 3 times\n");
+      return -1;
+    }
+    board_rev_id0 = rbuf[3] ? 1 : 0;
+    printf("BOARD_REV_ID0: %d\n", board_rev_id0);
+
+    tbuf[4] = 51; //FW_BOARD_REV_ID1
+    retry = 0;
+    do {
+      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SINGLE_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, FEXP_BIC_INTF);
+    } while (ret && (retry++ <= 3));
+    if (ret) {
+      printf("get BOARD_REV_ID1 fail, retry 3 times\n");
+      return -1;
+    }
+    board_rev_id1 = rbuf[3] ? 1 : 0;
+    printf("BOARD_REV_ID1: %d\n", board_rev_id1);
+
+    tbuf[4] = 73; //FW_BOARD_REV_ID2
+    retry = 0;
+    do {
+      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SINGLE_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, FEXP_BIC_INTF);
+    } while (ret && (retry++ <= 3));
+    if (ret) {
+      printf("get BOARD_REV_ID2 fail, retry 3 times\n");
+      return -1;
+    }
+    board_rev_id2 = rbuf[3] ? 1 : 0;
+    printf("BOARD_REV_ID2: %d\n", board_rev_id2);
+
+    if ( board_rev_id0 && board_rev_id1 ) {
+      printf("Efuse: Maxim, ");
+    } else {
+      printf("Efuse: TI, ");
     }
 
-    printf("BOARD_REV_ID1: %d\n", BIT_VALUE(gpio, 43));
-    printf("BOARD_REV_ID0: %d\n", BIT_VALUE(gpio, 42));
-    if (BIT_VALUE(gpio, 42) && BIT_VALUE(gpio, 43)) {
-      printf("E1S expansion Maxim\n");
+    if ( board_rev_id2 ) {
+      printf("Clock buffer: IDT1 \n");
     } else {
-      printf("E1S expansion TI\n");
+      printf("Clock buffer: IDT2 \n");
     }
   }
   return 0;

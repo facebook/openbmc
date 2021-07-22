@@ -253,16 +253,32 @@ void bic_gpio_callback(unsigned int delay, uint8_t fru, unsigned int gpio_num) {
 
 void del_logs(std::vector<time_pair> time_pairs) {
     for (time_pair period : time_pairs) {
-        char buffer[256];
-        sprintf(buffer, "log-util all --clear -s '%s' -e '%s'", period.first.c_str(), period.second.c_str());
-        int ret = system(buffer);
+        std::string buffer = "log-util all --clear -s '" +
+                             period.first +
+                             "' -e '" +
+                             period.second +
+                             "'";
+        int ret = system(buffer.c_str());
         if (ret)
             std::cout << "Error calling log-util: " << ret << std::endl;
     }
 }
 
-void clear_sel() {
-    std::vector<time_pair> del_times;
+void print_logs(std::vector<time_pair> time_pairs) {
+    for (time_pair period : time_pairs) {
+        std::string buffer = "log-util all --print -s '" +
+                             period.first +
+                             "' -e '" +
+                             period.second +
+                             "'";
+        int ret = system(buffer.c_str());
+        if (ret)
+            std::cout << "Error calling log-util: " << ret << std::endl;
+    }
+}
+
+std::vector<time_pair> find_sels() {
+    std::vector<time_pair> found_times;
     std::stack<std::string> match_times;
     char cmd[] = "log-util all --print";
     std::regex log_regex(R"((\d+)(\s+)(\w+)(\s+)(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(\s+)((\w|\-)+)(\s+)(.+))");
@@ -286,9 +302,9 @@ void clear_sel() {
                     match_times.push(reg_match[5].str());
                 } else if (reg_match[10].str().find("ending") != std::string::npos) {
                     if (match_times.empty()) {
-                        del_times.push_back(std::make_pair(reg_match[5].str(), reg_match[5].str()));
+                        found_times.push_back(std::make_pair(reg_match[5].str(), reg_match[5].str()));
                     } else {
-                        del_times.push_back(std::make_pair(match_times.top(), reg_match[5].str()));
+                        found_times.push_back(std::make_pair(match_times.top(), reg_match[5].str()));
                         match_times.pop();
                     }
                 }
@@ -298,11 +314,21 @@ void clear_sel() {
 
     // there is a case where we don't have an ending log
     while (!match_times.empty()) {
-        del_times.push_back(std::make_pair(match_times.top(), match_times.top()));
+        found_times.push_back(std::make_pair(match_times.top(), match_times.top()));
         match_times.pop();
     }
 
+    return found_times;
+}
+
+void clear_sel() {
+    std::vector<time_pair> del_times = find_sels();
     del_logs(del_times);
+}
+
+void print_sel() {
+    std::vector<time_pair> print_times = find_sels();
+    print_logs(print_times);
 }
 
 int main(int argc, char **argv)
@@ -331,6 +357,9 @@ int main(int argc, char **argv)
 
     app.add_subcommand("clear", "Get rid of all injected SEL's")->callback([&]() {
         clear_sel();
+    });
+    app.add_subcommand("print", "Print all of the injected SEL blocks")->callback([&]() {
+        print_sel();
     });
 
     // get all of the options from the json and add them as subcommands

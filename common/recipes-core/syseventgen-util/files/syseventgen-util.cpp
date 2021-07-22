@@ -296,6 +296,58 @@ void bic_gpio_callback(unsigned int delay, uint8_t fru, unsigned int gpio_num) {
     BOOKMARK_END(fru);
 }
 
+void gpio_callback(unsigned int delay, unsigned int gpio_num) {
+    // get the current value
+    std::string gpio_filepath = "/sys/class/gpio/gpio"
+        + std::to_string(gpio_num) + "/value";
+
+    std::ifstream gpio_file;
+
+    gpio_file.open(gpio_filepath);
+    if (!gpio_file.is_open()) {
+        std::cout << "Failed to open origonal gpio file" << std::endl;
+        return;
+    }
+
+    // write a to a file the new value
+    BOOKMARK_BEGIN(0, "gpio");
+
+    std::string tmp_dir = "/tmp/gpio/false/gpio"
+        + std::to_string(gpio_num);
+
+    std::string create_dir = "mkdir -p " + tmp_dir;
+
+    int ret = system(create_dir.c_str());
+    if (ret) {
+        std::cout << "Unable to create tmp dir" << std::endl;
+        return;
+    }
+
+    std::string tmp_filepath = tmp_dir +
+        + "/value";
+    std::ofstream tmp_file;
+
+    tmp_file.open(tmp_filepath);
+    if (!tmp_file.is_open()) {
+        std::cout << "Failed to open file " << tmp_filepath << std::endl;
+    }
+
+    tmp_file << (gpio_file.get() == '1'  ? "0" : "1");
+    tmp_file.close();
+    gpio_file.close();
+
+    // wait the delay
+    usleep(delay * 1000);
+
+    // delete the file
+    if (remove(tmp_filepath.c_str()) != 0)
+        std::cout << "Could not delete tmp file" << std::endl;
+
+    // wait for de-asserts
+    usleep(delay * 1000);
+    BOOKMARK_END(0);
+}
+
 void del_logs(std::vector<time_pair> time_pairs) {
     for (time_pair period : time_pairs) {
         std::string buffer = "log-util all --clear -s '" +
@@ -441,13 +493,16 @@ int main(int argc, char **argv)
                             val["sel_subtypes"][1].get<uint8_t>(),
                             val["sel_subtypes"][2].get<std::string>());
                         break;
-                    case 2: // gpio
+                    case 2: // bic gpio
                         bic_gpio_callback(
                         delay,
                         val["sel_subtypes"][0].get<uint8_t>(),
                         val["sel_subtypes"][1].get<unsigned int>());
                         break;
-                    case 3: // ncsi
+                    case 3: // gpio
+                        gpio_callback(
+                            delay,
+                            val["sel_subtypes"][0].get<unsigned int>());
                         break;
                 }
             });

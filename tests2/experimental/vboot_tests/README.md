@@ -4,7 +4,7 @@ This is a set of integration tests for Open BMC's verified-boot built using U-Bo
 
 ### Signing example
 
-The scripts in `tools/signing` can be used to sign the firmware.
+The scripts in `tools/verified-boot/signing` can be used to sign the firmware.
 
 Requirements:
 - Ubuntu: `sudo apt install python-pip && sudo pip install -U pip && sudo pip install jinja2 pycrypto`
@@ -29,9 +29,9 @@ openssl genrsa -F4 -out /tmp/subordinate/subordinate.key 4096
 openssl rsa -in /tmp/subordinate/subordinate.key -pubout > /tmp/subordinate/subordinate.pub
 ```
 
-From the `tools/signing` directory:
+From the `tools/verified-boot/signing` directory:
 ```sh
-cd tools/signing
+cd tools/verified-boot/signing
 ```
 
 Create the ROM's key-enrollment-key (KEK) compiled DTB:
@@ -50,7 +50,7 @@ Create the rarely-signed subordinate-key compiled DTB:
 Sign the subordinate-key compiled DTB using the KEK:
 ```sh
 ./fit-signsub \
-  --mkimage $POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage \
+  --mkimage $POKY_BUILD/tmp/sysroots-components/x86_64/u-boot-tools-native/usr/bin/mkimage \
   --keydir /tmp/kek \
   /tmp/subordinate/subordinate.dtb /tmp/subordinate/subordinate.dtb.signed
 ```
@@ -60,12 +60,19 @@ Sign the subordinate-key compiled DTB using the KEK:
 Sign the firmware using the subordinate key, add the KEK store, and signed subordinate store:
 ```sh
 ./fit-sign \
-  --mkimage $POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage \
+  --mkimage $POKY_BUILD/tmp/sysroots-components/x86_64/u-boot-tools/native/usr/bin/mkimage \
   --sign-os \
   --kek /tmp/kek/kek.dtb \
   --signed-subordinate /tmp/subordinate/subordinate.dtb.signed \
   --keydir /tmp/subordinate \
   $POKY_BUILD/tmp/deploy/images/fbtp/flash-fbtp $POKY_BUILD/tmp/deploy/images/fbtp/flash-fbtp.signed
+```
+
+Alternatively, just use the `vboot-sign` wrapper script:
+
+```sh
+./vboot-sign --build $POKY_BUILD --python python2.7 --setup
+./vboot-sign --build $POKY_BUILD --python python2.7
 ```
 
 ### Hardware tokens

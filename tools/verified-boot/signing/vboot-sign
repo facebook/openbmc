@@ -118,15 +118,16 @@ pushd "$SIGN_SCRIPT_HOME" || { echo "change PWD to $SIGN_SCRIPT_HOME fail"; exit
 
 if [ "$SETUP" == "YES" ]; then
   mkdir -p "$KEYS"
+  mkdir -p "$KEYS/kek"
+  mkdir -p "$KEYS/subordinate"
   if [ -n "$PLATFORM_TYPE" ]; then
     echo "Setup signing content for HSM in $KEYS"
     pushd "$KEYS" || { echo "switch CWD to $KEYS failed"; exit 1; }
-      secrets_tool get_from_group --out_file ks.zip SIGNING_CONTENT OPENBMC_VBOOT2_KS && unzip ks.zip && rm ks.zip
+      secrets_tool get_from_group --out_file ks.zip SIGNING_CONTENT OPENBMC_VBOOT2_KS && unzip ks.zip && rm ks.zip \
+        && mv kek.* "$KEYS/kek/" && mv subordinate.* "$KEYS/subordinate/"
     popd
   else
     echo "Setup signing content in $KEYS"
-    mkdir -p "$KEYS/kek"
-    mkdir -p "$KEYS/subordinate"
     openssl genrsa -F4 -out "$KEYS/kek/kek.key" 4096
     openssl rsa -in "$KEYS/kek/kek.key" -pubout > "$KEYS/kek/kek.pub"
     openssl genrsa -F4 -out "$KEYS/subordinate/subordinate.key" 4096
@@ -157,8 +158,8 @@ fi
 LD_LIBRARY_PATH=$POKY_BUILD/tmp/sysroots-components/x86_64/openssl-native/usr/lib:$LD_LIBRARY_PATH \
 $PYTHON ./fit-sign $SIGNKEY \
                   --mkimage "$MKIMAGE" \
-                  --kek "$KEYS/kek.dtb.${PLATFORM_TYPE}" \
-                  --signed-subordinate "$KEYS/subordinate.dtb.signed.${PLATFORM_TYPE}" \
+                  --kek "$KEYS/kek/kek.dtb${PLATFORM_TYPE:+.$PLATFORM_TYPE}" \
+                  --signed-subordinate "$KEYS/subordinate/subordinate.dtb.signed${PLATFORM_TYPE:+.$PLATFORM_TYPE}" \
                   --sign-os \
                   "$IMAGE_PATH" \
                   "${IMAGE_PATH}.signed"

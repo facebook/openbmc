@@ -140,8 +140,9 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             ', d)}"
 
 RDEPENDS_${PN}_class-target += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
-                  'libpal python3-psutil', '', d)}"
+                  'python3-psutil', '', d)}"
 
+RDEPENDS_${PN}_class-target =+ 'libpal libsdr'
 pkgdir = "rest-api"
 
 

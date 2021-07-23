@@ -33,7 +33,6 @@ import (
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/galaxy100"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/wedge100"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/yamp"
-	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/minipack"
 	_ "github.com/facebook/openbmc/tools/flashy/flash_procedure"
 	_ "github.com/facebook/openbmc/tools/flashy/utilities"
 )

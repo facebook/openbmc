@@ -189,7 +189,6 @@ void ipmi_callback(
             ssize_t read_size;
             size_t line_size = 256;
             char* line_buffer = NULL;
-            int current_value = -1;
             while ((read_size = getline(&line_buffer, &line_size, file_stream)) != -1) {
                 std::cout << "Received payload: " << line_buffer << std::endl;
             }
@@ -210,7 +209,6 @@ void ipmi_callback(
             ssize_t read_size;
             size_t line_size = 256;
             char* line_buffer = NULL;
-            int current_value = -1;
             while ((read_size = getline(&line_buffer, &line_size, file_stream)) != -1) {
                 std::cout << "Received payload: " << line_buffer << std::endl;
             }

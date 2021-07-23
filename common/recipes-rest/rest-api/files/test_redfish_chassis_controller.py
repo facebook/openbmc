@@ -10,6 +10,7 @@ sys.modules["sdr"] = types.ModuleType("sdr")
 
 import aiohttp.web
 import pal
+import redfish_chassis_helper
 import sdr
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
@@ -107,6 +108,11 @@ class TestChassisService(AioHTTPTestCase):
                 create=True,
                 new=type("LibPalError", (Exception,), {}),
             ),
+            unittest.mock.patch(
+                "redfish_chassis_helper.get_fru_info",
+                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+                return_value=asyncio.Future(),
+            ),
         ]
 
         for p in self.patches:
@@ -147,8 +153,8 @@ class TestChassisService(AioHTTPTestCase):
     @unittest_run_loop
     async def test_get_chassis_members(self):
         "Testing chassis members for both single sled frus and multisled frus"
-
         for server_name in ["1", "server1", "server2", "server3", "server4"]:
+            fru_name = self.get_fru_name(server_name)
             with self.subTest(server_name=server_name):
                 sdr.sdr_get_sensor_thresh.side_effect = [
                     sensor_thresh(
@@ -160,6 +166,13 @@ class TestChassisService(AioHTTPTestCase):
                         0,
                     ),
                 ]
+                redfish_chassis_helper.get_fru_info.return_value = asyncio.Future()
+                redfish_chassis_helper.get_fru_info.return_value.set_result(
+                    redfish_chassis_helper.FruInfo(
+                        fru_name, "Wiwynn", "WTL19121DSMA1", "Yosemite V2 MP"
+                    )
+                )
+
                 expected_resp = {
                     "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
                     "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
@@ -167,9 +180,14 @@ class TestChassisService(AioHTTPTestCase):
                     "Id": "1",
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
-                    "Manufacturer": "",  # will add input in next diff
-                    "Model": "",  # will add input in next diff
-                    "SerialNumber": "",  # will add input in next diff
+                    "FruInfo": [
+                        {
+                            "FruName": fru_name,
+                            "Manufacturer": "Wiwynn",
+                            "Model": "Yosemite V2 MP",
+                            "SerialNumber": "WTL19121DSMA1",
+                        },
+                    ],
                     "PowerState": "On",
                     "Status": {"State": "Enabled", "Health": "OK"},
                     "Thermal": {

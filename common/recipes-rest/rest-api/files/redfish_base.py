@@ -57,6 +57,7 @@ VALID_KEYS = {
     "PowerState",
     "Thermal",
     "Power",
+    "FruInfo",
 }
 
 

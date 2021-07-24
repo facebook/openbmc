@@ -2069,48 +2069,112 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num) {
   }
 }
 
+static int
+set_exp_uart_bridging(uint8_t bridging_status) {
+  uint8_t bmc_rev_id = 0;
+  uint32_t reg_value = 0, hicr9_value = 0, hicra_value = 0;
+  exp_uart_bridging_cmd cmd = {0};
+  int fd = 0, retry = 0, ret = CC_SUCCESS;
+  bool is_ctrl_via_fpga = false;
+  char uic_fpga_ver[MAX_VALUE_LEN] = {0};
+  char uic_fpga_stage[MAX_VALUE_LEN] = {0};
+  char uic_fpga_ver_num[MAX_VALUE_LEN] = {0};
+
+  switch (bridging_status) {
+    case ENABLE_BRIDGING:
+      hicr9_value = ROUTE_IO2_TO_IO6;
+      hicra_value = ROUTE_IO6_TO_IO2;
+      break;
+    case DISABLE_BRIDGING:
+      hicr9_value = ROUTE_UART6_TO_IO6;
+      hicra_value = ROUTE_UART2_TO_IO2;
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: failed to route UART due to wrong status", __func__);
+      return CC_INVALID_PARAM;
+  }
+
+  // Get BMC Revision ID
+  phymem_get_dword(SCU_BASE, REG_SCU014, &reg_value);
+  bmc_rev_id = (reg_value >> OFFSET_BMC_REV_ID) & 0xf;
+
+  // Get UIC FPGA firmware version
+  if (pal_get_fpga_ver_cache(I2C_UIC_FPGA_BUS, GET_FPGA_VER_ADDR, uic_fpga_ver) == 0) {
+    snprintf(uic_fpga_stage, sizeof(uic_fpga_stage), "%c%c", uic_fpga_ver[4], uic_fpga_ver[5]);
+    snprintf(uic_fpga_ver_num, sizeof(uic_fpga_ver_num), "%c%c", uic_fpga_ver[6], uic_fpga_ver[7]);
+
+    // Support to route in UIC FPGA with firmware version D04
+    if (((strcmp(uic_fpga_stage, "0D") == 0) && (atoi(uic_fpga_ver_num) >= 0x04))
+      || (strcmp(uic_fpga_stage, "0A") == 0)) {
+      is_ctrl_via_fpga = true;
+    }
+  } else {
+    syslog(LOG_WARNING, "%s: failed to route UART because failed to get UIC FPGA firmware version", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  if (bmc_rev_id < ASPEED_A2) {
+    // Routing by BMC. Not support routing with UART6/IO6 after A2 silicon
+    // set HICR9 register
+    if (phymem_set_dword(LPC_CTR_BASE, HICR9_ADDR, hicr9_value) < 0) {
+      syslog(LOG_WARNING, "%s: failed to route UART by setting HICR9 with 0x%X", __func__, hicr9_value);
+      return CC_UNSPECIFIED_ERROR;
+    }
+
+    // set HICRA register
+    if (phymem_set_dword(LPC_CTR_BASE, HICRA_ADDR, hicra_value) < 0) {
+      syslog(LOG_WARNING, "%s: failed to route UART by setting HICRA with 0x%X", __func__, hicra_value);
+      return CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    // Routing by FGPA
+    if (is_ctrl_via_fpga == false) {
+      syslog(LOG_ERR, "%s: failed to route UART by UIC FPGA because firmware version is too old, please update.", __func__);
+      return CC_NOT_SUPP_IN_CURR_STATE;
+    }
+
+    cmd.exp_uart_bridging_cmd_code = UIC_FPGA_UART_BRIDGING_OFFSET;
+    cmd.exp_uart_bridging_mode = bridging_status;
+
+    fd = i2c_cdev_slave_open(I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "%s() Failed to open i2c bus %d", __func__, I2C_UIC_FPGA_BUS);
+      return CC_UNSPECIFIED_ERROR;
+    }
+
+    while (retry < MAX_RETRY) {
+      ret = i2c_rdwr_msg_transfer(fd, UIC_FPGA_SLAVE_ADDR, (uint8_t *)&cmd, sizeof(cmd), NULL, 0);
+      if (ret < 0) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+
+    if (retry == MAX_RETRY) {
+      syslog(LOG_WARNING, "%s() Failed to send \"set exander UART briding\" command to UIC FPGA", __func__);
+      ret = CC_UNSPECIFIED_ERROR;
+    }
+  }
+
+  if (fd >= 0) {
+    close(fd);
+  }
+
+  return ret;
+}
+
 int
 pal_setup_exp_uart_bridging(void) {
 
-  uint32_t reg_value = 0;
-
-  // set HICR9 register to route IO2 to IO6
-  reg_value = ROUTE_IO2_TO_IO6;
-  if (phymem_set_dword(LPC_CTR_BASE, HICR9_ADDR, reg_value) < 0) {
-    syslog(LOG_WARNING, "%s: failed to route IO2 to IO6", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  // set HICRA register to route IO6 to IO2
-  reg_value = ROUTE_IO6_TO_IO2;
-  if (phymem_set_dword(LPC_CTR_BASE, HICRA_ADDR, reg_value) < 0) {
-    syslog(LOG_WARNING, "%s: failed to route IO6 to IO2", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
+  return set_exp_uart_bridging(ENABLE_BRIDGING);
 }
 
 int
 pal_teardown_exp_uart_bridging(void) {
 
-  uint32_t reg_value = 0;
-
-  // set HICR9 register to default (route UART6 to IO6)
-  reg_value = ROUTE_UART6_TO_IO6;
-  if (phymem_set_dword(LPC_CTR_BASE, HICR9_ADDR, reg_value) < 0) {
-    syslog(LOG_WARNING, "%s: failed to route UART6 to IO6", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  // set HICRA register to default (route UART2 to IO2)
-  reg_value = ROUTE_UART2_TO_IO2;
-  if (phymem_set_dword(LPC_CTR_BASE, HICRA_ADDR, reg_value) < 0) {
-    syslog(LOG_WARNING, "%s: failed to route UART2 to IO2", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
+  return set_exp_uart_bridging(DISABLE_BRIDGING);
 }
 
 int
@@ -3575,10 +3639,10 @@ pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str) {
 
 int
 pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
-  uint32_t ver_reg = GET_BS_FPGA_VER_OFFSET;
+  uint32_t ver_reg = GET_FPGA_VER_OFFSET;
   int i2cfd = 0, ret = 0;
-  uint8_t tbuf[MAX_BS_FPGA_VER_LEN] = {0x00};
-  uint8_t rbuf[MAX_BS_FPGA_VER_LEN] = {0x00};
+  uint8_t tbuf[MAX_FPGA_VER_LEN] = {0x00};
+  uint8_t rbuf[MAX_FPGA_VER_LEN] = {0x00};
   uint8_t rlen = sizeof(rbuf), tlen = sizeof(tbuf);
   char key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};

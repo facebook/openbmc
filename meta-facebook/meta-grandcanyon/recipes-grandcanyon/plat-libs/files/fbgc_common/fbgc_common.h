@@ -128,6 +128,8 @@ extern "C" {
 
 #define BS_FPGA_BOARD_REV_ID_OFFSET (0x07)
 
+#define UIC_FPGA_UART_BRIDGING_OFFSET (0x13)
+
 extern const char *board_stage[];
 
 enum {

@@ -379,7 +379,7 @@ power_12v_on_post_actions() {
   int ret = 0;
   
   // Update Server FPGA version
-  ret = pal_set_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR);
+  ret = pal_set_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_FPGA_VER_ADDR);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): Failed to update Server FPGA version", __func__);
   }
@@ -484,7 +484,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     return ret;
   }
   
-  ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR, server_fpga_ver);
+  ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_FPGA_VER_ADDR, server_fpga_ver);
   if (ret == 0) {
     snprintf(server_fpga_stage, sizeof(server_fpga_stage), "%c%c", server_fpga_ver[4], server_fpga_ver[5]);
     snprintf(server_fpga_ver_num, sizeof(server_fpga_ver_num), "%c%c", server_fpga_ver[6], server_fpga_ver[7]);
@@ -549,7 +549,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   
   // Check Server FPGA f/w version
   // (1)new: BMC control directly (2)old: control via BIC
-  ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_BS_FPGA_VER_ADDR, server_fpga_ver);
+  ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_FPGA_VER_ADDR, server_fpga_ver);
   if (ret == 0) {
     snprintf(server_fpga_stage, sizeof(server_fpga_stage), "%c%c", server_fpga_ver[4], server_fpga_ver[5]);
     snprintf(server_fpga_ver_num, sizeof(server_fpga_ver_num), "%c%c", server_fpga_ver[6], server_fpga_ver[7]);

@@ -111,8 +111,10 @@ extern "C" {
 
 // System Control Unit (SCU) Register
 #define SCU_BASE                   0x1E6E2000
+#define REG_SCU014                 0x14
 #define REG_SCU074                 0x74
 #define OFFSET_SRST_EVENT_LOG      (1 << 0)
+#define OFFSET_BMC_REV_ID          (16)
 
 // Boot magic
 #define SRAM_BMC_REBOOT_BASE       0x10015000
@@ -142,9 +144,9 @@ extern "C" {
 #define WWID_SIZE    (8)
 #define WWID_OFFSET  (0x400)
 
-#define MAX_BS_FPGA_VER_LEN      4
-#define GET_BS_FPGA_VER_ADDR     0x40
-#define GET_BS_FPGA_VER_OFFSET   (0x28002000)
+#define MAX_FPGA_VER_LEN      4
+#define GET_FPGA_VER_ADDR     0x40
+#define GET_FPGA_VER_OFFSET   (0x28002000)
 
 typedef enum {
   STATUS_LED_OFF,
@@ -246,6 +248,14 @@ enum {
   NIC_PE_RST_HIGH  = 0x01,
 };
 
+// BMC hardware revision ID
+enum {
+  ASPEED_A0 = 0x0,
+  ASPEED_A1 = 0x1,
+  ASPEED_A2 = 0x2,
+  ASPEED_A3 = 0x3
+};
+
 typedef struct {
 	uint8_t pcie_cfg;
 	uint8_t completion_code;
@@ -317,6 +327,11 @@ typedef struct {
   uint8_t wwid[WWID_SIZE];
 } ioc_wwid_req;
 
+typedef struct {
+  uint8_t exp_uart_bridging_cmd_code;
+  uint8_t exp_uart_bridging_mode;
+} exp_uart_bridging_cmd;
+
 enum {
   UIC_SIDEA          = 1,
   UIC_SIDEB          = 2,
@@ -374,6 +389,11 @@ enum {
 enum IOC_WWID_COMPONENT {
   SCC_IOC_WWID  = 0x0,
   IOCM_IOC_WWID = 0x1,
+};
+
+enum exp_uart_bridging_status {
+  DISABLE_BRIDGING = 0x0,
+  ENABLE_BRIDGING  = 0x1,
 };
 
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);

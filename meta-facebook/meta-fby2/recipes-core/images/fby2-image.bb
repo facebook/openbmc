@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   setup-gpio \
   at \
   name-util \
+  syseventgen-util \
   "

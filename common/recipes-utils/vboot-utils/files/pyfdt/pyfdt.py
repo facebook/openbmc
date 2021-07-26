@@ -152,7 +152,7 @@ class FdtProperty(object):
             return FdtPropertyWords.init_raw(name, raw_value)
         elif len(raw_value) and len(raw_value):
             padding = 4 - (len(raw_value) % 4)
-            return FdtPropertyWords.init_raw(name, raw_value + "\0" * padding)
+            return FdtPropertyWords.init_raw(name, raw_value + b"\0" * padding)
         else:
             return FdtProperty(name)
 

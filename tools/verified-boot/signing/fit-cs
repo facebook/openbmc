@@ -20,8 +20,8 @@ from distutils import spawn
 
 def genWords(bits, num):
     words = []
-    b2_32 = 2 ** 32L
-    for i in xrange(bits / 32):
+    b2_32 = 2 ** 32
+    for i in range(int(bits / 32)):
         n = num % b2_32
         words.insert(0, "0x%x" % n)
         num = num >> 32
@@ -48,7 +48,7 @@ def genKey(name, filename):
     # Here be dragons, this really doesn't handle a u64.
     key["exponent"] = "0x0 0x%x" % pubkey.e
 
-    b2_32 = 2 ** 32L
+    b2_32 = 2 ** 32
     n0_invp = (number.inverse(pubkey.n, b2_32) - b2_32) * -1
     key["n0inverse"] = "0x%x" % n0_invp
 
@@ -71,7 +71,7 @@ def decompileSource(filename):
 
 def compileSource(source, output, s=1):
     with tempfile.NamedTemporaryFile() as tmp:
-        tmp.write(source)
+        tmp.write(source.encode("utf-8"))
         tmp.flush()
         spawn.spawn(
             [dtc, "-I", "dts", "-O", "dtb", "-o", output, tmp.name])

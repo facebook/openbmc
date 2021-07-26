@@ -9,11 +9,11 @@
 
 import os
 import argparse
-import StringIO
 import tempfile
 import sys
 
 from distutils import spawn
+from io import BytesIO
 
 from pyfdt import pyfdt
 from pyfdt import pkcs11
@@ -60,7 +60,7 @@ if __name__ == '__main__':
 
     with open(args.filename, 'rb') as fh:
         subordinate = fh.read()
-        fit_io = StringIO.StringIO(subordinate)
+        fit_io = BytesIO(subordinate)
         dtb = pyfdt.FdtBlobParse(fit_io)
         fdt = dtb.to_fdt()
 
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     subordinate_source = fdt.to_dts()
     with tempfile.NamedTemporaryFile() as tmp:
-        tmp.write(subordinate_source)
+        tmp.write(subordinate_source.encode("utf-8"))
         tmp.flush()
 
         cmd = [args.mkimage, "-f", tmp.name, "-k", args.keydir,

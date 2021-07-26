@@ -2296,23 +2296,57 @@ pal_log_clear(char *fru) {
 int
 pal_is_debug_card_prsnt(uint8_t *status) {
   int ret = -1;
-  gpio_value_t value;
-  gpio_desc_t *gpio = gpio_open_by_shadow(GPIO_OCP_DEBUG_BMC_PRSNT_N);
-  if (!gpio) {
+  uint8_t bmc_location = 0;
+  int retry = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return -1;
   }
 
-  ret = gpio_get_value(gpio, &value);
-  gpio_close(gpio);
+  if(bmc_location == NIC_BMC) {
 
-  if (ret != 0) {
-    return -1;
+    uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+    uint8_t rbuf[16] = {0x00};
+    uint8_t tlen = 3;
+    uint8_t rlen = 1;
+
+    while (retry < 3) {
+      ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_DBG_PRSNT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+      if (ret == 0) {
+        break;
+      }
+      retry++;
+    }
+
+    if (ret != 0) {
+      return -1;
+    }
+    if(rbuf[3] == 0x0) {
+       *status = 1;
+    } else {
+      *status = 0;
+    }
   }
+  else {
+    gpio_value_t value;
+    gpio_desc_t *gpio = gpio_open_by_shadow(GPIO_OCP_DEBUG_BMC_PRSNT_N);
+    if (!gpio) {
+      return -1;
+    }
 
-  if (value == 0x0) {
-    *status = 1;
-  } else {
-    *status = 0;
+    ret = gpio_get_value(gpio, &value);
+    gpio_close(gpio);
+
+    if (ret != 0) {
+      return -1;
+    }
+    if (value == 0x0) {
+      *status = 1;
+    } else {
+      *status = 0;
+    }
   }
 
   return 0;
@@ -2328,37 +2362,50 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
   int st_idx = slot_id, end_idx = slot_id;
   uint8_t tbuf[2] = {0x00};
   uint8_t tlen = 2;
+  uint8_t bmc_location = 0; //the value of bmc_location is board id.
 
-  i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "Failed to open bus 12\n");
-    return i2cfd;
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return -1;
   }
 
-  // adjust the st_idx and end_idx, we need to reset all reg values
-  // when uart_pos is at BMC position
-  if ( slot_id == UART_POS_BMC ) {
-    st_idx = FRU_SLOT1;
-    end_idx = FRU_SLOT4;
+  if (bmc_location == NIC_BMC) {
+    //did not set cpld register
+    ret = 0;
   }
+  else {
+    i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "Failed to open bus 12\n");
+      return i2cfd;
+    }
 
-  do {
-     tbuf[0] = BB_CPLD_IO_BASE_OFFSET + st_idx; //get the correspoding reg
-     tbuf[1] = io_sts; // data to be written
-     ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
-     if ( ret < 0 ) {
-       retry--;
-     } else {
-       st_idx++; //move on
-       retry = MAX_RETRY; //reset it
-     }
-  } while ( retry > 0 && st_idx <= end_idx );
+    // adjust the st_idx and end_idx, we need to reset all reg values
+    // when uart_pos is at BMC position
+    if ( slot_id == UART_POS_BMC ) {
+      st_idx = FRU_SLOT1;
+      end_idx = FRU_SLOT4;
+    }
 
-  if ( retry == 0 ) {
-    syslog(LOG_WARNING, "Failed to update IO sts after performed 3 time attempts. reg:%02X, data: %02X\n", tbuf[0], tbuf[1]);
+    do {
+       tbuf[0] = BB_CPLD_IO_BASE_OFFSET + st_idx; //get the corresponding reg
+       tbuf[1] = io_sts; // data to be written
+       ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
+       if ( ret < 0 ) {
+         retry--;
+       } else {
+         st_idx++; //move on
+         retry = MAX_RETRY; //reset it
+       }
+    } while ( retry > 0 && st_idx <= end_idx );
+
+    if ( retry == 0 ) {
+      syslog(LOG_WARNING, "Failed to update IO sts after performed 3 time attempts. reg:%02X, data: %02X\n", tbuf[0], tbuf[1]);
+    }
+
+    if ( i2cfd > 0 ) close(i2cfd);
   }
-
-  if ( i2cfd > 0 ) close(i2cfd);
   return ret;
 }
 
@@ -2382,29 +2429,65 @@ pal_get_uart_select_from_cpld(uint8_t *uart_select) {
   int fd = 0;
   int retry = 3;
   int ret = -1;
-  uint8_t tbuf[1] = {0x00};
-  uint8_t rbuf[1] = {0x00};
+  uint8_t tbuf[3] = {0x00};
+  uint8_t rbuf[4] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
+  uint8_t bmc_location = 0; //the value of bmc_location is board id.
 
-  fd = open("/dev/i2c-12", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 12");
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return -1;
   }
 
-  tbuf[0] = DEBUG_CARD_UART_MUX;
-  tlen = 1;
-  rlen = 1;
+  if(bmc_location == NIC_BMC) {
+    tbuf[0] = 0x9c;
+    tbuf[1] = 0x9c;
+    tbuf[2] = 0x00;
+    tlen = 3;
+    rlen = 1;
 
-  while (ret < 0 && retry-- > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+    retry = 0;
+
+    while (retry < 3) {
+      ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_DBG_UART, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+      if (ret == 0) {
+        break;
+      }
+      retry++;
+    }
+    if (ret != 0) {
+      return -1;
+    }
+
+    if((rbuf[3] == 0) || (rbuf[3] == 1) || (rbuf[3] == 4))
+      rbuf[0] = 0;
+    else if((rbuf[3] == 2) || (rbuf[3] == 3) || (rbuf[3] == 5) || (rbuf[3] == 6))
+      rbuf[0] = 1;
+    else
+      return -1;
   }
-  if (fd > 0) {
-    close(fd);
-  }
-  if (ret < 0) {
-    return -1;
+  else {
+    fd = open("/dev/i2c-12", O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "Failed to open bus 12");
+      return -1;
+    }
+
+    tbuf[0] = DEBUG_CARD_UART_MUX;
+    tlen = 1;
+    rlen = 1;
+
+    while (ret < 0 && retry-- > 0) {
+      ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+    }
+    if (fd > 0) {
+      close(fd);
+    }
+    if (ret < 0) {
+      return -1;
+    }
   }
 
   *uart_select = rbuf[0];
@@ -2418,40 +2501,73 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
   int ret = -1;
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  uint8_t tbuf[2] = {0x00};
+  uint8_t tbuf[5] = {0x00};
   uint8_t rbuf[1] = {0x00};
   uint8_t offset = 0;
+  uint8_t bmc_location = 0; //the value of bmc_location is board id.
+  uint8_t index = 0;
 
-  fd = open("/dev/i2c-12", O_RDWR);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "Failed to open bus 12");
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return -1;
   }
 
-  switch (uart_select) {
-    case 1:
-      offset = SLOT1_POSTCODE_OFFSET;
-      break;
-    case 2:
-      offset = SLOT2_POSTCODE_OFFSET;
-      break;
-    case 3:
-      offset = SLOT3_POSTCODE_OFFSET;
-      break;
-    case 4:
-      offset = SLOT4_POSTCODE_OFFSET;
-      break;
-  }
+  if(bmc_location == NIC_BMC) {
+    uint8_t bus = 0;
 
-  tbuf[0] = offset;
-  tbuf[1] = postcode;
-  tlen = 2;
-  rlen = 0;
-  while (ret < 0 && retry-- > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+    if(bic_get_mb_index(&index) !=0)
+      return -1;
+
+    if((uart_select == FRU_SLOT1) && (index == FRU_SLOT3))
+      offset = SLOT3_POSTCODE_OFFSET;
+    else
+      offset = SLOT1_POSTCODE_OFFSET;
+
+    tbuf[0] = (bus << 1) + 1;
+    tbuf[1] = CPLD_ADDRESS;
+    tbuf[2] = 0x00;
+    tbuf[3] = offset; // offset 00
+    tbuf[4] = postcode;
+    tlen = 5;
+    rlen = 0;
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret != 0) {
+      return -1;
+    }
   }
-  if (fd > 0) {
-    close(fd);
+  else {
+    fd = open("/dev/i2c-12", O_RDWR);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "Failed to open bus 12");
+      return -1;
+    }
+
+    switch (uart_select) {
+      case 1:
+        offset = SLOT1_POSTCODE_OFFSET;
+        break;
+      case 2:
+        offset = SLOT2_POSTCODE_OFFSET;
+        break;
+      case 3:
+        offset = SLOT3_POSTCODE_OFFSET;
+        break;
+      case 4:
+        offset = SLOT4_POSTCODE_OFFSET;
+        break;
+    }
+
+    tbuf[0] = offset;
+    tbuf[1] = postcode;
+    tlen = 2;
+    rlen = 0;
+    while (ret < 0 && retry-- > 0) {
+      ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+    }
+    if (fd > 0) {
+      close(fd);
+    }
   }
 
   return ret;

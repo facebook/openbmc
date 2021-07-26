@@ -62,6 +62,7 @@ typedef struct _sdr_rec_hdr_t {
 
 #define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
+#define KV_MB_INDEX               "get_mb_index"
 
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 
@@ -2178,23 +2179,37 @@ bic_get_mb_index(uint8_t *index) {
   GET_MB_INDEX_RESP resp = {0};
   uint8_t rlen = 0;
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), KV_MB_INDEX);
 
   if (index == NULL) {
     syslog(LOG_WARNING, "%s(): invalid index parameter", __func__);
     return -1;
   }
-  memset(tbuf, 0, sizeof(tbuf));
-  memset(&resp, 0, sizeof(resp));
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
-    syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
-    return -1;
+
+  if (kv_get(key, tmp_str, NULL, 0)) {
+    memset(tbuf, 0, sizeof(tbuf));
+    memset(&resp, 0, sizeof(resp));
+    if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
+      syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
+      return -1;
+    }
+    if (rlen == sizeof(GET_MB_INDEX_RESP)) {
+      *index = resp.index;
+    } else {
+      syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d", 
+            __func__, rlen, sizeof(GET_MB_INDEX_RESP));
+      return -1;
+    }
+
+    snprintf(tmp_str, sizeof(tmp_str), "%d", *index);
+    kv_set(key, tmp_str, 0, 0);
   }
-  if (rlen == sizeof(GET_MB_INDEX_RESP)) {
-    *index = resp.index;
-  } else {
-    syslog(LOG_WARNING, "%s(): wrong response length (%d), while getting MB index, expected = %d",
-          __func__, rlen, sizeof(GET_MB_INDEX_RESP));
-    return -1;
+  else {
+    // get from cache
+    *index = atoi(tmp_str);
   }
 
   return 0;

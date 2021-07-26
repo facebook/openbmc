@@ -609,7 +609,7 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
         current_cnt += cri_sensor_gpv3_cnt;
       }
     }
-
+    
     *desc = dynamic_cri_sensor;
     *desc_count = current_cnt;
   }
@@ -668,7 +668,15 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
 {
   char entry[256];
   uint8_t ver[32] = {0};
+  int ret = 0;
+  const uint8_t cpld_addr = 0x80;
+  uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
+  uint8_t rbuf[4] = {0x00};
+  uint8_t tlen = 4;
   uint8_t rlen = 4;
+  uint8_t i2c_bus = 12;
+  int i2cfd = 0;
+  uint8_t bmc_location = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
   if (fw_text == NULL)
@@ -679,10 +687,32 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
 
   //CPLD Version
   if (slot_id == FRU_ALL) { //uart select BMC position
-    if (pal_get_bb_fw_info(FW_CPLD, (char*)ver) == 0) {
-      sprintf(entry,"CPLD_ver:\n%s\n", ver);
-      strcat(fw_text, entry);
+    ret = fby3_common_get_bmc_location(&bmc_location);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "Failed to get bmc locaton");
+      return -1;
     }
+
+    if(bmc_location == NIC_BMC) {
+      i2c_bus = 9;
+    }
+
+    ret = i2c_cdev_slave_open(i2c_bus, cpld_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "Failed to open bus %d",i2c_bus);
+      return -1;
+    }
+
+    i2cfd = ret;
+    ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr, tbuf, tlen, rbuf, rlen);
+    if ( i2cfd > 0 ) 
+      close(i2cfd);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer to slave@0x%02X on bus %d", __func__, cpld_addr, i2c_bus);
+      return -1;
+    }
+    sprintf(entry,"CPLD_ver:\n%02X%02X%02X%02X\n", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    strcat(fw_text, entry);
   } else {
     //Bridge-IC Version
     if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
@@ -752,15 +782,35 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
 
 int plat_get_extra_sysinfo(uint8_t fru, char *info)
 {
+  int ret = 0;
   char fru_name[16];
+  uint8_t index = 0;
+  uint8_t bmc_location = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "Failed to get bmc locaton");
+    return -1;
+  }
+
+  if(bmc_location == NIC_BMC) {
+    if(bic_get_mb_index(&index) !=0)
+      return -1;
+    if((fru == FRU_SLOT1) && (index == FRU_SLOT3))
+      fru = FRU_SLOT3;
+  }
 
   if(fru == FRU_ALL) {
     fru = FRU_BMC;
   }
 
   if (!pal_get_fru_name( fru, fru_name)) {
-
-    sprintf(info, "FRU:%s", fru_name);
+    if(fru == FRU_BMC) {
+      sprintf(info, "FRU:%s%d", fru_name,index);
+    }
+    else {
+      sprintf(info, "FRU:%s", fru_name);
+    }
   }
   return 0;
 }

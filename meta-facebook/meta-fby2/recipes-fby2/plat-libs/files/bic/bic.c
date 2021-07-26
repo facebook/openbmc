@@ -113,6 +113,8 @@
 #define DEVICE_MUX_ADDR 0xE2
 #define MAX_GPV2_DRIVE_NUM 12
 
+#define GPIO_FALSE_DIR "/tmp/gpio/bic%d_%llu"
+
 #pragma pack(push, 1)
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -638,6 +640,43 @@ bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio) {
     // invert gpio pin 21 (ND_FM_BIOS_POST_COMPT_N) for northdome platform
     gpio->gpio = gpio->gpio ^ (1 << ND_FM_BIOS_POST_COMPT_N);
   }
+
+#ifdef ENABLE_INJECTION
+  // putting this after the data checksum
+  uint64_t i, bmask;
+  int fd, flen;
+  char fpath[30], fdata;
+  for (i = 0; i < MAX_GPIO_PINS; i++) {
+    sprintf(fpath, GPIO_FALSE_DIR, slot_id, i);
+    if (!access(fpath, F_OK)) {
+      fd = open(fpath, O_RDONLY);
+      if (fd == -1) {
+        syslog(LOG_WARNING, "Could not open bic injection file for gpio %llu", i);
+        return -1;
+      }
+
+      flen = read(fd, &fdata, 1);
+      if (flen == 0) {
+        close(fd);
+        return -1;
+      }
+
+      int fret = close(fd);
+      if (fret) {
+        syslog(LOG_WARNING, "Failed to close bic injection file for gpio %llu", i);
+        return -1;
+      }
+
+      // First set the bit to 0
+      bmask = 1 << (i % 64);
+      gpio->gpio &= ~bmask;
+
+      // Now we can change it to whatever we want
+      gpio->gpio |= (((fdata - 0x30) & 0x1) << (i % 64));
+      syslog(LOG_INFO, "Injected %d into gpio %llu at slot %d", (fdata - 0x30), i, slot_id);
+    }
+  }
+#endif // ENABLE_INJECTION
 
   return ret;
 }

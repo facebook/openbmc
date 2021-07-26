@@ -263,6 +263,12 @@ void bic_gpio_callback(unsigned int delay, uint8_t fru, unsigned int gpio_num) {
     // write a to a file the new value
     BOOKMARK_BEGIN(fru, "bic-gpio");
 
+    int ret = system("mkdir -p /tmp/gpio");
+    if (ret) {
+        std::cout << "failed to make gpio directory" << std::endl;
+        return;
+    }
+
     std::string bic_file = "/tmp/gpio/bic"
         + std::to_string(fru)
         + "_"

@@ -97,9 +97,9 @@ static char sel_error_record[NUM_SERVER_FRU] = {0};
 
 #define IPMI_GET_VER_FRU_NUM  5
 #define IPMI_GET_VER_MAX_COMP 9
-#define MAX_FW_VER_LEN        32  //include the string terminal 
+#define MAX_FW_VER_LEN        32  //include the string terminal
 
-#define MAX_COMPONENT_LEN 32 //include the string terminal 
+#define MAX_COMPONENT_LEN 32 //include the string terminal
 
 #define MAX_PWR_LOCK_STR 32
 
@@ -1393,6 +1393,57 @@ static int pal_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   return 0;
 }
 
+static int pal_get_e1s_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
+  int retry = 0;
+  int ret = 0;
+  int ssd_count = 0;
+  int i2cfd = -1;
+  uint8_t bus = 0;
+  uint8_t tbuf[2] = {0x05};
+  uint8_t rbuf[2] = {0};
+
+  ret = fby3_common_get_bus_id(slot_id);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, slot_id);
+    return -1;
+  }
+
+  bus = (uint8_t)ret + 4;
+  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
+    return -1;
+  }
+
+  while (retry < 3) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 1, rbuf, 1);
+    if (ret == 0)
+      break;
+    retry++;
+  }
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer", __func__);
+    return -1;
+  }
+
+  if ( i2cfd > 0 ) close(i2cfd);
+
+  for(int i=1; i<=4; i++) {
+    if ( (rbuf[0] & (0x1<<i)) == 0 ) {
+      ssd_count++;
+    }
+  }
+  syslog(LOG_WARNING, "%s() ssd_count: %d", __func__, ssd_count);
+
+  if (ssd_count >= 2) {
+    *pcie_config = CONFIG_B_E1S_T3;
+  } else {
+    *pcie_config = CONFIG_B_E1S_T10;
+  }
+
+  return 0;
+}
+
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;
@@ -1428,7 +1479,11 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     } else if (config_status == 1) {
       bic_get_1ou_type(slot, &type_1ou);
       if (type_1ou == EDSFF_1U) {
-        pcie_conf = CONFIG_B_E1S;
+        if (pal_get_e1s_pcie_config(slot, &pcie_conf)) {
+          // Unable to get correct PCIE configuration
+          pcie_conf = CONFIG_B_E1S_T10;
+        }
+        syslog(LOG_INFO, "%s() pcie_conf = %02X\n", __func__, pcie_conf);
       } else {
         pcie_conf = CONFIG_B;
       }
@@ -1991,7 +2046,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       } else {
         snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by unknown slot", fan_mode_str);
       }
-      
+
       strcat(error_log, log_msg);
       break;
     case SYS_BB_FW_EVENT:
@@ -2679,7 +2734,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           kv_del("bb_fw_update", 0);
           fby3_common_service_ctrl("sensord", SV_START);
         }
-        
+
         return PAL_EOK;
       } else if (event_data[3] == SYS_SEL_ACK){
         clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -4084,7 +4139,7 @@ pal_get_sensor_util_timeout(uint8_t fru) {
   }
 }
 
-// IPMI OEM Command 
+// IPMI OEM Command
 // netfn: NETFN_OEM_1S_REQ (0x38)
 // command code: CMD_OEM_1S_GET_SYS_FW_VER (0x40)
 int
@@ -4104,21 +4159,21 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util bmc --version cpld | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version fscd | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version tpm | awk '{print $NF}'",
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
       NULL
     },
     // NIC
     {
       "/usr/bin/fw-util nic --version | awk '{print $NF}'",
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       NULL
     },
     // Base board
@@ -4127,10 +4182,10 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util slot1 --version bb_bicbl | awk '{print $NF}'",
       "/usr/bin/fw-util slot1 --version bb_cpld | awk '{print $NF}'",
       NULL,
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       NULL
     },
     // Server board
@@ -4149,12 +4204,12 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     {
       "/usr/bin/fw-util slot1 --version 2ou_bic | awk '{print $NF}'",
       "/usr/bin/fw-util slot1 --version 2ou_bicbl | awk '{print $NF}'",
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       NULL
     }
   };
@@ -4398,3 +4453,4 @@ int pal_dp_hba_fan_table_check(void) {
 
   return ret;
 }
+

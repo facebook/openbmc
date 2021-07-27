@@ -47,6 +47,5 @@ IMAGE_INSTALL += " \
   weutil-dhcp-id \
   "
 
-IMAGE_INSTALL_remove += "libaggregate-sensor-ptest"
 
 SERIAL_CONSOLES += "115200;ttyS4"

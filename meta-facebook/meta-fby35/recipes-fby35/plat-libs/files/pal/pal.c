@@ -42,7 +42,7 @@
 #include <sys/un.h>
 #include "pal.h"
 
-#define PLATFORM_NAME "yosemitev3"
+#define PLATFORM_NAME "yosemitev35"
 #define LAST_KEY "last_key"
 
 #define GUID_SIZE 16

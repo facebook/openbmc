@@ -60,7 +60,7 @@ else
   /usr/bin/fw-util slot1 --version > /dev/null
 fi
 
-echo -n "Setup sensor monitoring for FBYV3... "
+echo -n "Setup sensor monitoring for FBYV35... "
 runsv /etc/sv/sensord > /dev/null 2>&1 &
 
 echo "done."

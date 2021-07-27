@@ -25,9 +25,9 @@ SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
-DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native"
+DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native libobmc-mmc"
 
-REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter"
+REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter libobmc-mmc"
 RDEPENDS_${PN} += "${REST_API_RDEPENDS}"
 RDEPENDS_${PN}_class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
 
@@ -134,6 +134,8 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://eeprom_utils.py \
             file://rest_fcpresent.py \
             file://rest_helper.py \
+            file://rest_mmc.py \
+            file://test_rest_mmc.py \
             file://test_common_middlewares.py \
             file://test_rest_gpios.py \
             file://boardroutes.py\

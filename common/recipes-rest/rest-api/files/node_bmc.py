@@ -30,6 +30,7 @@ from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
 import kv
+import rest_mmc
 import rest_pal_legacy
 from boot_source import is_boot_from_secondary
 from common_utils import async_exec
@@ -372,6 +373,7 @@ class bmcNode(node):
             "load-15": load_avg[2],
             "open-fds": used_fd_count,
             "MTD Parts": read_proc_mtd(),
+            "mmc-info": await rest_mmc.get_mmc_info(),
         }
 
         return info

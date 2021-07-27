@@ -22,11 +22,13 @@ SCM_PROGRAM=false
 SMB_PROGRAM=false
 CACHED_SCM_PWR_ON_SYSFS="0x1"
 
+# Temporary path for 32MB read
+TEMP_SPI_IMAGE="/tmp/tmp_spi_image"
 
 # Check if another fw upgrade is ongoing
 check_fwupgrade_running
 
-trap disconnect_program_paths INT TERM QUIT EXIT
+trap cleanup INT TERM QUIT EXIT
 
 usage() {
     program=$(basename "$0")
@@ -36,6 +38,11 @@ usage() {
     echo "               pim, pim_base, pim16q, pim8ddm"
     echo "      <action> : program, verify, erase (spi only)"
     exit 1
+}
+
+cleanup() {
+    disconnect_program_paths
+    rm -f $TEMP_SPI_IMAGE
 }
 
 disconnect_program_paths() {
@@ -360,7 +367,6 @@ program_spi_image() {
 
 read_spi_partition_image() {
     DEST="$1" # READ Image output path
-    TEMP="/tmp/tmp_pim_image" # Temporary path for 32MB read
     BS="1M" # Default partition is 1MB
     COUNT=1 # Default partition size is 1 * BS
     SKIP_MB=0
@@ -422,9 +428,14 @@ read_spi_partition_image() {
     echo "Selected partition $PARTITION to read."
 
     flashrom -p "$DRIVER" \
-        --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP"
-    dd if="$TEMP" of="$DEST" bs="$BS" count="$COUNT" skip="$SKIP_MB" 2> /dev/null
-    rm "$TEMP"
+        --layout /etc/elbert_pim.layout --image "$PARTITION" -r "$TEMP_SPI_IMAGE" \
+        || return 1
+    sleep 1
+    flashrom -p "$DRIVER" \
+        --layout /etc/elbert_pim.layout --image "$PARTITION" -v "$TEMP_SPI_IMAGE" \
+        || return 1
+    dd if="$TEMP_SPI_IMAGE" of="$DEST" bs="$BS" count="$COUNT" skip="$SKIP_MB" 2> /dev/null
+    return 0
 }
 
 strip_image_header() {
@@ -463,9 +474,11 @@ do_pim() {
         READ)
             connect_pim_flash
             if [ -z "$3" ]; then
-                flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2"
+                flashrom -p linux_mtd:dev="$SMB_MTD" -r "$2" || exit 1
+                sleep 1
+                flashrom -p linux_mtd:dev="$SMB_MTD" -v "$2" || exit 1
             else
-                read_spi_partition_image "$2" "SPINOR" "$3"
+                read_spi_partition_image "$2" "SPINOR" "$3" || exit 1
             fi
             ;;
         ERASE)
@@ -498,9 +511,9 @@ do_th4_qspi() {
             unbind_spi_nor
             connect_th4_qspi_flash
             if [ -z "$3" ]; then
-                read_spi_partition_image "$2" "FLASHROM" th4_qspi
+                read_spi_partition_image "$2" "FLASHROM" th4_qspi || exit 1
             else
-                read_spi_partition_image "$2" "FLASHROM" "$3"
+                read_spi_partition_image "$2" "FLASHROM" "$3" || exit 1
             fi
             ;;
         *)

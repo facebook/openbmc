@@ -122,6 +122,8 @@ enum {
   CONFIG_D_DP_X8 = 0x09,
   CONFIG_D_DP_X4 = 0x0a,
   CONFIG_B_E1S_T3 = 0x0b,
+  CONFIG_C_CWC_SINGLE = 0x0c,
+  CONFIG_C_CWC_DUAL = 0x0d,
   CONFIG_UNKNOWN = 0xff,
 };
 

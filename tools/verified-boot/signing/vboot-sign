@@ -50,6 +50,9 @@ case $key in
     --help)
     HELP=YES
     ;;
+    --force)
+    FORCE=YES
+    ;;
     *)
             # unknown option
     ;;
@@ -70,6 +73,8 @@ if [ "$HELP" == "YES" ]; then
   echo "    Generate the keys in KEYS_DIR (See above for default path)"
   echo "-S|--HSM {compute|storage|network|training}"
   echo "    Use FB HSM keyname ncipher/simple/obmc-<platform_type>-sub-0 key to sign"
+  echo "--force"
+  echo "    Force signing with self-signed, non-HSM keys on new images"
   exit 0
 fi
 
@@ -162,7 +167,8 @@ $PYTHON ./fit-sign $SIGNKEY \
                   --signed-subordinate "$KEYS/subordinate/subordinate.dtb.signed${PLATFORM_TYPE:+.$PLATFORM_TYPE}" \
                   --sign-os \
                   "$IMAGE_PATH" \
-                  "${IMAGE_PATH}.signed"
+                  "${IMAGE_PATH}.signed" \
+                  ${FORCE:+--force}
 
 # Go back
 popd

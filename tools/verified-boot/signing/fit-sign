@@ -28,7 +28,7 @@ FBOBMC_PART_INFO_KEY = "part_infos"
 
 def update_rom_checksum():
     rom_changed = False
-    with open(args.output, 'r') as fh:
+    with open(args.output, 'rb') as fh:
         fh.seek(0)
         current_md5 = hashlib.md5(fh.read(args.rom_size)).hexdigest()
         if current_md5 != rom_part_info["md5"]:

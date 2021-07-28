@@ -805,7 +805,7 @@ int plat_get_extra_sysinfo(uint8_t fru, char *info)
   }
 
   if (!pal_get_fru_name( fru, fru_name)) {
-    if(fru == FRU_BMC) {
+    if(fru == FRU_BMC && bmc_location == NIC_BMC) {
       sprintf(info, "FRU:%s%d", fru_name,index);
     }
     else {

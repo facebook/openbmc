@@ -2522,8 +2522,7 @@ pal_get_uart_select_from_cpld(uint8_t *uart_select) {
       rbuf[0] = 1;
     else
       return -1;
-  }
-  else {
+  } else {
     fd = open("/dev/i2c-12", O_RDWR);
     if (fd < 0) {
       syslog(LOG_WARNING, "Failed to open bus 12");
@@ -2534,8 +2533,11 @@ pal_get_uart_select_from_cpld(uint8_t *uart_select) {
     tlen = 1;
     rlen = 1;
 
-    while (ret < 0 && retry-- > 0) {
+    while (retry-- > 0) {
       ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+      if (ret == 0) {
+        break;
+      }
     }
     if (fd > 0) {
       close(fd);

@@ -55,7 +55,7 @@ def setup_attestation_endpoints(app: Application) -> None:
 class NodeSystemInfo(node):
     @staticmethod
     # GET /attestation/system_information
-    async def getInformation(param={}):
+    async def getInformation(param):
         args = {}
         # Default args
         args["algo"] = "sha256"
@@ -87,7 +87,7 @@ class NodeTPM(node):
         self.actions = actions
         self.tpm = obmc_attestation.tpm2.Tpm2v4()
 
-    async def doAction(self, data, param={}):
+    async def doAction(self, data, param):
         # We will delete the action key from the data
         # and directly pass it onto the underlying function
         # as kwargs hoping that the function callee

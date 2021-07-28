@@ -753,6 +753,11 @@ pal_get_all_thresh_from_file(uint8_t fru, thresh_sensor_t *sinfo, int mode) {
     return ret;
   }
 
+  if (!sensor_list) {
+    syslog(LOG_ERR, "%s: pal_get_fru_sensor_list returns null list", __func__);
+    return -1;
+  }
+
   fd = open(fpath, O_RDONLY);
   if (fd < 0) {
     syslog(LOG_ERR, "%s: open failed for %s, errno : %d %s\n", __func__, fpath, errno, strerror(errno));

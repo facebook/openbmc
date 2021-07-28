@@ -41,6 +41,7 @@ const char *cpld_list[] = {
   "LCMXO2-7000HC",
   "MAX10-10M16",
   "MAX10-10M25",
+  "MAX10-10M04",
 };
 
 static int cpld_probe(cpld_intf_t intf, uint8_t id, void *attr)
@@ -211,7 +212,7 @@ int cpld_verify(char *file)
     return -1;
   }
 
-  cur_dev->cpld_verify(fp_in);
+  ret = cur_dev->cpld_verify(fp_in);
   fclose(fp_in);
 
   return ret;

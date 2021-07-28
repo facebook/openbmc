@@ -275,9 +275,9 @@ def parse_all_sensors_util(sensor_data):
                 symname = symbolize_sensorname(name)
                 result[symname] = SensorValue(sid, name, value, None, status, 0, 0)
             continue
-        # normal case match
+        # normal case match only numeric/threshold sensors
         m = re.match(
-            r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)?\s+.\s+\((.+)\)$", line
+            r"^(.*)\((0x..?)\)\s+:\s+([\d\.]+)\s+([^\s]+)?\s+.\s+\((.+)\)$", line
         )
         if m is not None:
             sid = int(m.group(2), 16)

@@ -173,6 +173,8 @@ enum {
   MAJOR_ERR_OFFSET      = 0x08,
   MINOR_ERR_OFFSET      = 0x09,
   UFM_STATUS_OFFSET     = 0x0A,
+  PCH_BIC_PWR_FAULT_OFFSET = 0x09,
+  CPU_PWR_FAULT_OFFSET = 0x0A,
 };
 
 enum {

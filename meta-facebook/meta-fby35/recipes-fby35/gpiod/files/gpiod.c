@@ -109,6 +109,22 @@ err_t last_panic_err[] = {
   {0x09, "LAST_PANIC_ACM_BIOS_AUTH_FAILED"},
 };
 
+err_t bic_pch_pwr_fault[] = {
+  {0x01, "P1V8_STBY"},
+  {0x02, "P1V26_STBY"},
+  {0x04, "P1V2_STBY"},
+  {0x08, "P1V05_STBY"},
+};
+
+err_t cpu_pwr_fault[] = {
+  {0x01, "PVCCD_HV_CPU"},
+  {0x02, "PVCCIN_CPU"},
+  {0x04, "PVNN_MAIN_CPU"},
+  {0x08, "PVCCINFAON_CPU"},
+  {0x10, "PVCCFA_EHV_FIVRA_CPU"},
+  {0x20, "PVCCFA_EHV_CPU"},
+};
+
 char *host_key[] = {"fru1_host_ready",
                     "fru2_host_ready",
                     "fru3_host_ready",
@@ -636,6 +652,100 @@ check_pfr_mailbox(uint8_t fru) {
   if ( i2cfd > 0 ) close(i2cfd);
 }
 
+void
+check_bic_pch_pwr_fault(uint8_t fru) {
+  int ret = 0, i2cfd = 0, retry=0, index = 0;
+  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
+  uint8_t tlen = 1, rlen = 1;
+  uint8_t bus = 0;
+  uint8_t pwr_fault = 0;
+  size_t table_size = sizeof(bic_pch_pwr_fault)/sizeof(err_t);
+
+  ret = fby35_common_get_bus_id(fru) + 4;
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
+      return;
+    }
+
+  bus = (uint8_t)ret;
+  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "Failed to open bus %d\n", bus);
+    return;
+  }
+
+  tbuf[0] = PCH_BIC_PWR_FAULT_OFFSET;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      pwr_fault = rbuf[0];
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+  for (index = 0; index < table_size; index++) {
+    if (GETBIT(pwr_fault, index)) {
+      syslog(LOG_CRIT, "FRU: %d, PCH/BIC power fault: %s (0x%02X)", fru, bic_pch_pwr_fault[index].err_des, pwr_fault);
+    }
+  }
+  if ( i2cfd > 0 ) close(i2cfd);
+}
+
+
+void
+check_cpu_pwr_fault(uint8_t fru) {
+  int ret = 0, i2cfd = 0, retry=0, index = 0;
+  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
+  uint8_t tlen = 1, rlen = 1;
+  uint8_t bus = 0;
+  uint8_t pwr_fault = 0;
+  size_t table_size = sizeof(cpu_pwr_fault)/sizeof(err_t);
+
+  ret = fby35_common_get_bus_id(fru) + 4;
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
+      return;
+    }
+
+  bus = (uint8_t)ret;
+  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "Failed to open bus %d\n", bus);
+    return;
+  }
+
+  tbuf[0] = CPU_PWR_FAULT_OFFSET;
+  retry = 0;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      pwr_fault = rbuf[0];
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+  }
+
+  for (index = 0; index < table_size; index++) {
+    if (GETBIT(pwr_fault, index)) {
+      syslog(LOG_CRIT, "FRU: %d, CPU power fault: %s (0x%02X)", fru, cpu_pwr_fault[index].err_des, pwr_fault);
+    }
+  }
+  if ( i2cfd > 0 ) close(i2cfd);
+}
+
+
 /* Monitor the gpio pins */
 static void *
 gpio_monitor_poll(void *ptr) {
@@ -649,6 +759,7 @@ gpio_monitor_poll(void *ptr) {
   uint8_t power_policy = POWER_CFG_UKNOWN;
   uint8_t bmc_location = 0;
   char pwr_state[256] = {0};
+  bool chk_bic_pch_pwr_flag = true;
 
   /* Check for initial Asserts */
   gpios = get_struct_gpio_pin(fru);
@@ -678,6 +789,11 @@ gpio_monitor_poll(void *ptr) {
       rst_timer(fru);
       kv_set(host_key[fru-1], "0", 0, 0);
 
+      if (chk_bic_pch_pwr_flag) {
+        check_bic_pch_pwr_fault(fru);
+        chk_bic_pch_pwr_flag = false;
+      }
+
       //rst old & new pin val
       memset(&o_pin_val, 0, sizeof(o_pin_val));
       memset(&n_pin_val, 0, sizeof(n_pin_val));
@@ -693,6 +809,8 @@ gpio_monitor_poll(void *ptr) {
     if (GET_BIT(n_pin_val, BMC_READY) == 0) {
       bic_set_gpio(fru, BMC_READY, 1);
     }
+
+    if (!chk_bic_pch_pwr_flag) chk_bic_pch_pwr_flag = true;
 
     // Get CPLD io sts
     cpld_io_sts[fru] = (GET_BIT(n_pin_val, PWRGD_SYS_PWROK)  << 0x0) | \
@@ -901,6 +1019,7 @@ host_pwr_mon() {
             pal_set_last_pwr_state(fru, "off");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+          check_cpu_pwr_fault(fru);
         }
         host_off_flag |= 0x1 << i;
       } else if ( tick >= POWER_ON_DELAY ) {

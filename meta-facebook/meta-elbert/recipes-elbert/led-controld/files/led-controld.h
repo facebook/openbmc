@@ -76,7 +76,7 @@
 #define ELBERT_PARSE_ERR -2
 #define ELBERT_FS_ERR -3
 
-#define ELBERT_FAN_RPM_MIN 4000
+#define ELBERT_FAN_RPM_MIN 3000
 
 #define ELBERT_MAX_FAN 5
 #define ELBERT_MAX_PSU 4

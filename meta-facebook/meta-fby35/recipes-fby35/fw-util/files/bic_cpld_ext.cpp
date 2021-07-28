@@ -3,7 +3,6 @@
 #include <cstring>
 #include "server.h"
 #include <openbmc/pal.h>
-#include <openbmc/obmc-i2c.h>
 #include "bic_cpld_ext.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
@@ -57,29 +56,21 @@ int CpldExtComponent::fupdate(string image) {
 }
 
 int CpldExtComponent::get_ver_str(string& s) {
-  char ver[32] = {0};
   int ret = 0;
-  uint8_t tbuf[4] = {0xC0, 0x0, 0x0, 0x0};
+  char ver[32] = {0};
   uint8_t rbuf[4] = {0};
-  uint8_t tlen = 4;
-  uint8_t rlen = 4;
-  int i2cfd = 0;
 
   if (fw_comp == FW_CPLD) {
-    i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, SB_CPLD_ADDRESS_UPDATE, I2C_SLAVE_FORCE_CLAIM);
-    if ( i2cfd < 0 ) {
-      return -1;
-    }
-    ret = i2c_rdwr_msg_transfer(i2cfd, SB_CPLD_ADDRESS_UPDATE << 1, tbuf, tlen, rbuf, rlen);
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
-
-    if ( i2cfd > 0 ) close(i2cfd);
+    ret = pal_get_cpld_ver(slot_id, rbuf);
   } else {
     ret = bic_get_fw_ver(slot_id, fw_comp, rbuf);
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   }
 
-  s = string(ver);
+  if (!ret) {
+    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+    s = string(ver);
+  }
+
   return ret;
 }
 

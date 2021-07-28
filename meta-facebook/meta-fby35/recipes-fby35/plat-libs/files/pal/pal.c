@@ -106,6 +106,12 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define MAX_COMPONENT_LEN 32 //include the string terminal 
 
+#define BMC_CPLD_BUS     (12)
+#define CPLD_FW_VER_ADDR (0x80)
+#define BMC_CPLD_VER_REG (0x28002000)
+#define SB_CPLD_VER_REG  (0x000000c0)
+#define KEY_BMC_CPLD_VER "bmc_cpld_ver"
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -3370,6 +3376,56 @@ error_exit:
 }
 
 int
+pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
+  int ret, i2cfd;
+  uint8_t rbuf[4] = {0};
+  uint8_t i2c_bus = BMC_CPLD_BUS;
+  uint8_t cpld_addr = CPLD_FW_VER_ADDR;
+  uint32_t ver_reg = BMC_CPLD_VER_REG;
+  char value[MAX_VALUE_LEN] = {0};
+
+  switch (fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      i2c_bus = fby35_common_get_bus_id(fru) + 4;
+      ver_reg = SB_CPLD_VER_REG;
+      break;
+    case FRU_BMC:
+      if (!kv_get(KEY_BMC_CPLD_VER, value, NULL, 0)) {
+        *(uint32_t *)rbuf = strtol(value, NULL, 16);
+        memcpy(ver, rbuf, sizeof(rbuf));
+        return 0;
+      }
+      break;
+    default:
+      return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(i2c_bus, cpld_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus %u", i2c_bus);
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr, (uint8_t *)&ver_reg, sizeof(ver_reg), rbuf, sizeof(rbuf));
+  close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() i2c_rdwr_msg_transfer to slave@0x%02X on bus %u failed", __func__, cpld_addr, i2c_bus);
+    return -1;
+  }
+
+  if (fru == FRU_BMC) {
+    snprintf(value, sizeof(value), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    kv_set(KEY_BMC_CPLD_VER, value, 0, 0);
+  }
+  memcpy(ver, rbuf, sizeof(rbuf));
+
+  return 0;
+}
+
+int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   uint8_t bmc_location = 0;
@@ -3385,24 +3441,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   }
 
   if (target == FW_CPLD) {
-    const uint8_t cpld_addr = 0x80; /*8-bit addr*/
-    uint8_t tbuf[4] = {0x00, 0x20, 0x00, 0x28};
-    uint8_t tlen = 4;
-    uint8_t rlen = 4;
-    uint8_t i2c_bus = fby35_common_get_bus_id(fru) + 4;
-    int i2cfd = -1;
-    ret = i2c_cdev_slave_open(i2c_bus, cpld_addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to talk to slave@0x%02X on bus %d. Err: %s\n", \
-                                          __func__, cpld_addr, i2c_bus, strerror(errno));
-      goto error_exit;
-    }
-
-    i2cfd = ret;
-    ret = i2c_rdwr_msg_transfer(i2cfd, cpld_addr, tbuf, tlen, res, rlen);
-    if ( i2cfd > 0 ) close(i2cfd);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer to slave@0x%02X on bus %d", __func__, cpld_addr, i2c_bus);
+    if (pal_get_cpld_ver(fru, res)) {
       goto error_exit;
     }
   } else if(target == FW_BIOS) {

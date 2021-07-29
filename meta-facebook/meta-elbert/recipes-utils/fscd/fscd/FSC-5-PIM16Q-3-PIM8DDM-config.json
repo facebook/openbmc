@@ -60,7 +60,7 @@
         },
         "invalid": {
           "limit": -60,
-          "threshold": 10,
+          "threshold": 60,
           "action": "host_shutdown"
         }
       },
@@ -85,7 +85,7 @@
         },
         "invalid": {
           "limit": -60,
-          "threshold": 10,
+          "threshold": 60,
           "action": "host_shutdown"
         }
       },
@@ -110,7 +110,7 @@
         },
         "invalid": {
           "limit": -60,
-          "threshold": 10,
+          "threshold": 60,
           "action": "host_shutdown"
         }
       },
@@ -134,7 +134,7 @@
         },
         "invalid": {
           "limit": -60,
-          "threshold": 10,
+          "threshold": 60,
           "action": "host_warning"
         }
       },
@@ -158,7 +158,7 @@
         },
         "invalid": {
           "limit": -60,
-          "threshold": 10,
+          "threshold": 60,
           "action": "host_warning"
         }
       },

@@ -151,6 +151,7 @@ do
 
         fru="$(peutil "$pim" 2>&1)"
         if echo "$fru" | grep -q '88-8D'; then
+            i2c_device_add "$bus_id" 0x40 pmbus # MP5023
             i2c_device_add "$bus_id" 0x54 isl68224 # ISL68224
             retry_command 3 maybe_enable_isl_wp "$bus_id" 0x54
         fi

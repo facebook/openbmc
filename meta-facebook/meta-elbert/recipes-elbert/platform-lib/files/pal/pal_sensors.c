@@ -337,6 +337,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -379,6 +384,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -421,6 +431,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -463,6 +478,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -505,6 +525,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -547,6 +572,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -589,6 +619,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   }, {
     PIM_POS_3V3_U_VOUT,
     PIM_POS_3V3_U_TEMP,
@@ -631,6 +666,11 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
     PIM_ISL_IOUT_LOOP0,
     PIM_ISL_IOUT_LOOP1,
     PIM_ISL_IOUT_LOOP2,
+    PIM_ECB_VIN,
+    PIM_ECB_VOUT,
+    PIM_ECB_TEMP,
+    PIM_ECB_POWER,
+    PIM_ECB_CURR,
   },
 };
 
@@ -952,6 +992,26 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_ISL_IOUT_LOOP2][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_ISL_IOUT_LOOP2][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_ISL_IOUT_LOOP2][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VIN][UCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VIN][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VIN][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VIN][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VOUT][UCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VOUT][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VOUT][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_VOUT][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_TEMP][UCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_TEMP][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_TEMP][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_TEMP][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_POWER][UCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_POWER][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_POWER][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_POWER][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_CURR][UCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_CURR][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_CURR][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_ECB_CURR][LNC_THRESH] = 0; // unset
       }
       break;
   }
@@ -1694,6 +1754,31 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_ISL68224_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, CURR(6), value);
       break;
+    case PIM_ECB_VIN:
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_ECB_DEVICE_ADDR);
+      ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
+      *value = *value / 32;
+      break;
+    case PIM_ECB_VOUT:
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_ECB_DEVICE_ADDR);
+      ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+      *value = *value / 32;
+      break;
+    case PIM_ECB_TEMP:
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_ECB_DEVICE_ADDR);
+      ret = read_attr(fru, sensor_num, full_name, TEMP(1), value);
+      *value = *value / 2;
+      break;
+    case PIM_ECB_POWER:
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_ECB_DEVICE_ADDR);
+      ret = read_attr(fru, sensor_num, full_name, POWER(1), value);
+      *value = *value / 1000;
+      break;
+    case PIM_ECB_CURR:
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_ECB_DEVICE_ADDR);
+      ret = read_attr(fru, sensor_num, full_name, CURR(1), value);
+      *value = *value / 16;
+      break;
     default:
       ret = READING_NA;
       break;
@@ -2358,6 +2443,21 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
     case PIM_ISL_IOUT_LOOP2:
       sprintf(name, "PIM%d_ISL_IOUT_LOOP2", pimid);
       break;
+    case PIM_ECB_VIN:
+      sprintf(name, "PIM%d_ECB_VIN", pimid);
+      break;
+    case PIM_ECB_VOUT:
+      sprintf(name, "PIM%d_ECB_VOUT", pimid);
+      break;
+    case PIM_ECB_TEMP:
+      sprintf(name, "PIM%d_ECB_TEMP", pimid);
+      break;
+    case PIM_ECB_POWER:
+      sprintf(name, "PIM%d_ECB_POWER", pimid);
+      break;
+    case PIM_ECB_CURR:
+      sprintf(name, "PIM%d_ECB_CURR", pimid);
+      break;
     default:
       return -1;
   }
@@ -2611,6 +2711,8 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM_ISL_VOUT_LOOP0:
     case PIM_ISL_VOUT_LOOP1:
     case PIM_ISL_VOUT_LOOP2:
+    case PIM_ECB_VIN:
+    case PIM_ECB_VOUT:
       sprintf(units, VOLT_UNIT);
       break;
     case PIM_POS_3V3_U_TEMP:
@@ -2624,6 +2726,7 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM_ISL_TEMP5:
     case PIM_ISL_TEMP6:
     case PIM_ISL_TEMP7:
+    case PIM_ECB_TEMP:
       sprintf(units, TEMP_UNIT);
       break;
     case PIM_POS_3V3_U_CURR:
@@ -2634,6 +2737,7 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM_ISL_IOUT_LOOP0:
     case PIM_ISL_IOUT_LOOP1:
     case PIM_ISL_IOUT_LOOP2:
+    case PIM_ECB_CURR:
       sprintf(units, CURR_UNIT);
       break;
     case PIM_ISL_PIN_LOOP0:
@@ -2642,6 +2746,7 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
     case PIM_ISL_POUT_LOOP0:
     case PIM_ISL_POUT_LOOP1:
     case PIM_ISL_POUT_LOOP2:
+    case PIM_ECB_POWER:
       sprintf(units, POWER_UNIT);
       break;
     default:

@@ -77,6 +77,11 @@ PIM_8DDM_SENSORS = [
     "PIM{}_ISL_IOUT_LOOP0",
     "PIM{}_ISL_IOUT_LOOP1",
     "PIM{}_ISL_IOUT_LOOP2",
+    "PIM{}_ECB_VIN",
+    "PIM{}_ECB_VOUT",
+    "PIM{}_ECB_TEMP",
+    "PIM{}_ECB_POWER",
+    "PIM{}_ECB_CURR",
 ]
 
 SCM_SENSORS = [

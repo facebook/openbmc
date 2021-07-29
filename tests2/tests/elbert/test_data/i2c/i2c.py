@@ -30,6 +30,7 @@ pim8ddm = [
     # Address, name, driver
     ("0016", "pmbus", "pmbus"),
     ("0018", "pmbus", "pmbus"),
+    ("0040", "pmbus", "pmbus"),
     ("004a", "lm73", "lm73"),
     ("004e", "ucd9090", "ucd9000"),
     ("0050", "24c512", "at24"),

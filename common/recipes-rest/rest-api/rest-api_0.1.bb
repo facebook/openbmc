@@ -55,6 +55,8 @@ SRC_URI = "file://setup-rest-api.sh \
            file://rest_utils.py \
            file://rest_fscd_sensor_data.py \
            file://rest_modbus_cmd.py \
+           file://rest_mmc.py \
+           file://test_rest_mmc.py \
            file://test_rest_modbus_cmd.py \
            file://test_async_ratelimiter.py \
            file://test_auth_enforcer.py \
@@ -134,8 +136,6 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://eeprom_utils.py \
             file://rest_fcpresent.py \
             file://rest_helper.py \
-            file://rest_mmc.py \
-            file://test_rest_mmc.py \
             file://test_common_middlewares.py \
             file://test_rest_gpios.py \
             file://boardroutes.py\

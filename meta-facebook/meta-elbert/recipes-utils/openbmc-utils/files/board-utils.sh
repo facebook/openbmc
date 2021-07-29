@@ -239,6 +239,16 @@ disable_power_security_mode() {
 }
 
 enable_tps546d24_wp() {
+    # If WP is enabled, disable to restore operating memory to default
+    enabled="$(printf "%d" "$(i2cget -f -y "$1" "$2" 0x10)")"
+    if [ "$enabled" -ne 0 ]; then
+        disable_tps546d24_wp "$1" "$2"
+    fi
+
+    # Send byte to RESTORE_USER_ALL register 0x16
+    i2cset -f -y "$1" "$2" 0x16 c
+    sleep 0.1
+
     # Disable all writes except for WRITE_PROTECT
     i2cset -f -y "$1" "$2" 0x10 0x80
 }

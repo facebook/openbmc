@@ -839,7 +839,7 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
         return -1;
       }
 
-      fd_tmpbin = open(path, O_WRONLY);
+      fd_tmpbin = open(path, O_WRONLY | O_CREAT, 0666);
       if (fd_tmpbin == -1) {
         printf("Unable to open the %s file: %s\n", path, strerror(errno));
         syslog(LOG_ERR, "Unable to open the %s file: %s", path, strerror(errno));

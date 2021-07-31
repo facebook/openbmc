@@ -32,10 +32,6 @@ SRC_URI += "\
         file://bic_bios.cpp \
         file://bic_vr.h \
         file://bic_vr.cpp \
-        file://bic_capsule.h \
-        file://bic_capsule.cpp \
-        file://bmc_cpld_capsule.h \
-        file://bmc_cpld_capsule.cpp \
         file://bic_pcie_sw.cpp \
         file://bic_pcie_sw.h \
         file://bic_expansion_vr.cpp \
@@ -47,7 +43,7 @@ SRC_URI += "\
         file://bic_m2_dev.h \
         "
 
-CXXFLAGS += " -DBIC_SUPPORT "
-DEPENDS += " libbic libfpga libfby35-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
-RDEPENDS_${PN} += " libbic libfpga libfby35-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
-LDFLAGS += " -lbic -lfpga -lfby35_common -lnl-wrapper -lkv -lobmc-i2c -lmcu"
+CXXFLAGS += "-DBIC_SUPPORT"
+DEPENDS += "libbic libfpga libfby35-common libncsi libnl-wrapper libobmc-i2c libmcu"
+RDEPENDS_${PN} += "libbic libfpga libfby35-common libnl-wrapper libobmc-i2c libmcu"
+LDFLAGS += "-lbic -lfpga -lfby35_common -lnl-wrapper -lobmc-i2c -lmcu"

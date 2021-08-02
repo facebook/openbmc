@@ -396,3 +396,24 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   close(i2cfd);
   return ret;
 }
+
+int
+fbgc_common_dev_id(char *str, uint8_t *dev) {
+  if ((str == NULL) || (dev == NULL)) {
+    syslog(LOG_WARNING, "%s(): Failed to get device id due to NULL parameter", __func__);
+    return -1;
+  }
+
+  if (strcmp(str, "e1s0") == 0) {
+    *dev = DEV_ID0_E1S;
+  } else if (strcmp(str, "e1s1") == 0) {
+    *dev = DEV_ID1_E1S;
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "s%(): Wrong device name: %s", __func__, str);
+#endif
+    return -1;
+  }
+
+  return 0;
+}

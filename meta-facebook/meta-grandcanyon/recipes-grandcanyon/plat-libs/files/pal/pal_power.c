@@ -847,3 +847,122 @@ pal_server_power_cycle() {
 
   return ret;
 }
+
+int
+pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
+  gpio_value_t val = 0;
+  int ret = 0;
+  uint8_t chassis_type = 0;
+  
+  if ((status == NULL) || (type == NULL)) {
+    syslog(LOG_WARNING, "%s(): Failed to get device power due to parameter is NULL", __func__);
+    return POWER_STATUS_ERR;
+  }
+  
+  ret = fbgc_common_get_chassis_type(&chassis_type);
+  if ((ret < 0) || (chassis_type != CHASSIS_TYPE5)) {
+    syslog(LOG_WARNING, "%s(): Only Type5 support E1S", __func__);
+    return POWER_STATUS_ERR;
+  }
+  
+  if (pal_get_server_12v_power(slot_id, status) < 0) {
+    return POWER_STATUS_ERR;
+  }
+  
+  if ((*status) == SERVER_12V_OFF) {
+    *status = DEVICE_POWER_OFF;
+    syslog(LOG_WARNING, "%s(): device power is off due to server is 12V-off", __func__);
+    return 0;
+  }
+  
+  if (dev_id == DEV_ID0_E1S) {
+    val = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_3V3EFUSE_PGOOD));
+  } else if (dev_id == DEV_ID1_E1S) {
+    val = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_2_3V3EFUSE_PGOOD));
+  } else {
+    syslog(LOG_WARNING, "%s(): wrong device id: %d", __func__, dev_id);
+    return POWER_STATUS_ERR;
+  }
+  
+  *status = val;
+  
+  return 0;
+}
+
+int
+pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
+  uint8_t e1s_pwr_status = 0, type = 0;
+  int ret = 0;
+  uint8_t chassis_type = 0, server_power_status = 0;
+  
+  ret = fbgc_common_get_chassis_type(&chassis_type);
+  if ((ret < 0) || (chassis_type != CHASSIS_TYPE5)) {
+    syslog(LOG_WARNING, "%s(): Only Type5 support control E1.S power", __func__);
+    return -1;
+  }
+  
+  ret = pal_get_server_12v_power(slot_id, &server_power_status);
+  if ((ret < 0) || (server_power_status == SERVER_12V_OFF)) {
+    syslog(LOG_WARNING, "%s(): Failed to control E1.S power due to server is 12V-off", __func__);
+    return POWER_STATUS_ERR;
+  }
+  
+  if (pal_get_device_power(slot_id, dev_id, &e1s_pwr_status, &type) < 0) {
+    return -1;
+  }
+  
+  switch(cmd) {
+    case SERVER_POWER_ON:
+      if (e1s_pwr_status == DEVICE_POWER_ON) {
+        return POWER_STATUS_ALREADY_OK;
+      }
+      ret = pal_set_dev_power_status(dev_id, DEVICE_POWER_ON);
+      break;
+    case SERVER_POWER_OFF:
+      if (e1s_pwr_status == DEVICE_POWER_OFF) {
+        return POWER_STATUS_ALREADY_OK;
+      }
+      ret = pal_set_dev_power_status(dev_id, DEVICE_POWER_OFF);
+      break;
+    default:
+      ret = -1;
+  }
+  
+  return ret;
+}
+
+int
+pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd) {
+  int i2cfd, ret = 0;
+  i2c_master_rw_command command;
+  
+  memset(&command, 0, sizeof(command));
+  
+  if (dev_id == DEV_ID0_E1S) {
+    command.offset = BS_FPGA_E1S0_POWER_CTRL;
+  } else if (dev_id == DEV_ID1_E1S) {
+    command.offset = BS_FPGA_E1S1_POWER_CTRL;
+  } else {
+    syslog(LOG_ERR, "Fail to control E1.S power due to wrong device id: %d", dev_id);
+    return -1;
+  }
+  
+  if (cmd == DEVICE_POWER_ON) {
+    command.val = E1S_POWER_ADD;
+  } else if (cmd == DEVICE_POWER_OFF){
+    command.val = E1S_POWER_REMOVE;
+  } else {
+    syslog(LOG_ERR, "Fail to control E1.S power due to wrong action: %d", cmd);
+    return -1;
+  }
+  
+  i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, BS_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "Fail to control E1.S power due to I2C BUS: %d open failed", I2C_BS_FPGA_BUS);
+    return i2cfd;
+  }
+    
+  ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, (uint8_t *)&command, sizeof(command), NULL, 0);
+  close(i2cfd);
+  return ret;
+}

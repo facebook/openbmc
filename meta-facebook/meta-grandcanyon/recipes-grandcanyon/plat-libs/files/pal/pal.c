@@ -72,6 +72,9 @@ const char pal_fru_list_sensor_history[] = "all, server, uic, nic, e1s_iocm";
 // export to power-util
 const char pal_server_list[] = "server";
 
+const char pal_dev_pwr_list[] = "e1s0, e1s1";
+const char pal_dev_pwr_option_list[] = "status, off, on";
+
 // export to fruid-util
 const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm, fan0, fan1, fan2, fan3";
 const char pal_fru_list_rw[] = "server, bmc, uic, nic, e1s_iocm";
@@ -3673,5 +3676,28 @@ pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
   close(i2cfd);
 
   return ret;
+}
+
+int pal_get_num_devs(uint8_t slot, uint8_t *num) {
+
+  if (num == NULL) {
+    syslog(LOG_ERR, "%s: Failed to get device num due to parameter *num is NULL", __func__);
+    return -1;
+  }
+  
+  *num = MAX_NUM_DEVS - 1;
+  
+  return 0;
+}
+
+int
+pal_get_dev_id(char *str, uint8_t *dev) {
+  
+  if ((str == NULL) || (dev == NULL)) {
+    syslog(LOG_ERR, "%s: Failed to get device id due to parameter is NULL", __func__);
+    return -1;
+  }
+  
+  return fbgc_common_dev_id(str, dev);
 }
 

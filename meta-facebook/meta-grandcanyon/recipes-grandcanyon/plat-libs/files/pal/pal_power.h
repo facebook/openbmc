@@ -10,15 +10,25 @@
 // BS FPGA command
 #define BS_FPGA_SERVER_POWER_CTRL 0x0F
 #define BS_FPGA_SERVER_POWER_STATUS 0x04
+#define BS_FPGA_E1S0_POWER_CTRL 0x0D
+#define BS_FPGA_E1S1_POWER_CTRL 0x0C
 
 #define SERVER_POWER_BTN_HIGH 1
 #define SERVER_POWER_BTN_LOW  0
+
+#define E1S_POWER_ADD       0x00
+#define E1S_POWER_REMOVE    0x01
 
 enum {
   POWER_STATUS_ALREADY_OK = 1,
   POWER_STATUS_OK = 0,
   POWER_STATUS_ERR = -1,
   POWER_STATUS_FRU_ERR = -2,
+};
+
+enum {
+  DEVICE_POWER_OFF = 0x0,
+  DEVICE_POWER_ON = 0x1,
 };
 
 typedef enum {
@@ -42,5 +52,6 @@ void pal_get_chassis_status(uint8_t fru, uint8_t *req_data, uint8_t *res_data, u
 int pal_server_power_ctrl(uint8_t action);
 int pal_set_pwr_btn(uint8_t val);
 int pal_server_power_cycle();
+int pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd);
 
 #endif

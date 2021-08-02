@@ -43,6 +43,7 @@ extern "C" {
 #define MAX_NODES       1
 #define FRUID_SIZE      512
 #define CUSTOM_FRU_LIST 1
+#define FRU_DEVICE_LIST 1
 
 #define MAX_FRU_CMD_STR   16
 
@@ -164,6 +165,8 @@ extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
 extern const char pal_fru_list[];
 extern const char pal_pwm_list[];
+extern const char pal_dev_pwr_list[];
+extern const char pal_dev_pwr_option_list[];
 extern const char pal_tach_list[];
 extern const char pal_server_list[];
 

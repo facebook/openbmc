@@ -1,5 +1,6 @@
 {
   "version": "1.0",
+  "log_rearm": true,
   "heartbeat": {
     "interval": 50
   },

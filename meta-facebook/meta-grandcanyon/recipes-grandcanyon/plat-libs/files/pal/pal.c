@@ -134,6 +134,7 @@ struct pal_key_cfg {
   {"bmc_health", "1", NULL},
   {"timestamp_sled", "0", NULL},
   {"heartbeat_health", "1", NULL},
+  {"fan_dead_rearm", "0", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -2697,6 +2698,14 @@ pal_log_clear(char *fru) {
     ret = pal_set_key_value("heartbeat_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear heartbeat health value", __func__);
+    }
+    ret = kv_set("fan_dead_rearm", "1", 0, 1);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to set fan dead re-arm value, err: %s", __func__, strerror(errno));
+    }
+    ret = kv_set("healthd_rearm", "1", 0, 0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to set healthd re-arm value, err: %s", __func__, strerror(errno));
     }
   }
 }

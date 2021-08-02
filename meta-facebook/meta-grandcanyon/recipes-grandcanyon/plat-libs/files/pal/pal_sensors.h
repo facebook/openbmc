@@ -35,10 +35,6 @@
 #define NVMe_GET_STATUS_LEN          (8)
 #define NVMe_TEMP_REG                (0x03)
 
-// ADC128 INFO
-#define ADC128_GIMON                 (52)    // unit: (uA/A)
-#define ADC128_RIMON                 (20000) // unit: (ohm)
-
 // ADS1015 INFO
 #define IOCM_VOLTAGE_SENSOR_DIR      "/sys/bus/i2c/devices/13-0049/iio\\:device*"
 #define IOCM_VOLTAGE_SENSOR_PATH     "%s/in_voltage%d_raw"
@@ -299,6 +295,8 @@ enum {
 // NIC sensors
 enum {
   NIC_SENSOR_TEMP = 0x82,
+  NIC_SENSOR_P12V = 0x83,
+  NIC_SENSOR_CUR = 0x84,
 
   // PLDM numeric sensors
   NIC_SOC_TEMP = PLDM_NUMERIC_SENSOR_START,
@@ -316,6 +314,10 @@ enum {
   E1S1_CUR = 0x21,
   E1S0_TEMP = 0x22,
   E1S1_TEMP = 0x23,
+  E1S0_P12V = 0x24,
+  E1S1_P12V = 0x25,
+  E1S0_P3V3 = 0x26,
+  E1S1_P3V3 = 0x27,
 };
 
 // IOC Module sensors
@@ -347,6 +349,12 @@ enum {
 enum {
   ADC128_IN0 = 0,
   ADC128_IN1,
+  ADC128_IN2,
+  ADC128_IN3,
+  ADC128_IN4,
+  ADC128_IN5,
+  ADC128_IN6,
+  ADC128_IN7,
 };
 
 // GENERIC I2C Sensors

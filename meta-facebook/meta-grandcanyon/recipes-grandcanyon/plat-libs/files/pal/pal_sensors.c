@@ -364,6 +364,10 @@ PAL_SENSOR_MAP scc_sensor_map[] = {
 PAL_SENSOR_MAP nic_sensor_map[] = {
   [NIC_SENSOR_TEMP] =
   {"NIC_SENSOR_TEMP", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [NIC_SENSOR_P12V] =
+  {"NIC_SENSOR_P12V", ADC128_IN6, read_adc128, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  [NIC_SENSOR_CUR] =
+  {"NIC_SENSOR_CUR", ADC128_IN7, read_adc128, false, {2.2, 0, 0, 0, 0, 0, 0, 0}, CURR},
 };
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
@@ -375,6 +379,14 @@ PAL_SENSOR_MAP e1s_sensor_map[] = {
   {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =
   {"E1S_X1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [E1S0_P12V] =
+  {"E1S_X0_P12V", ADC128_IN2, read_adc128, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  [E1S1_P12V] =
+  {"E1S_X1_P12V", ADC128_IN3, read_adc128, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  [E1S0_P3V3] =
+  {"E1S_X0_P3V3", ADC128_IN4, read_adc128, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [E1S1_P3V3] =
+  {"E1S_X1_P3V3", ADC128_IN5, read_adc128, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
 };
 
 PAL_SENSOR_MAP iocm_sensor_map[] = {
@@ -606,6 +618,8 @@ const uint8_t scc_sensor_list[] = {
 
 const uint8_t nic_sensor_list[] = {
   NIC_SENSOR_TEMP,
+  NIC_SENSOR_P12V,
+  NIC_SENSOR_CUR,
 };
 
 const uint8_t e1s_sensor_list[] = {
@@ -613,6 +627,10 @@ const uint8_t e1s_sensor_list[] = {
   E1S1_CUR,
   E1S0_TEMP,
   E1S1_TEMP,
+  E1S0_P12V,
+  E1S1_P12V,
+  E1S0_P3V3,
+  E1S1_P3V3,
 };
 
 const uint8_t iocm_sensor_list[] = {
@@ -655,6 +673,12 @@ PAL_DEV_INFO temp_dev_list[] = {
 PAL_DEV_INFO adc128_dev_list[] = {
   {"adc128d818-i2c-9-1d",  "E1S0_CUR"},
   {"adc128d818-i2c-9-1d",  "E1S1_CUR"},
+  {"adc128d818-i2c-9-1d",  "E1S0_P12V"},
+  {"adc128d818-i2c-9-1d",  "E1S1_P12V"},
+  {"adc128d818-i2c-9-1d",  "E1S0_P3V3"},
+  {"adc128d818-i2c-9-1d",  "E1S1_P3V3"},
+  {"adc128d818-i2c-9-1d",  "NIC_P12V"},
+  {"adc128d818-i2c-9-1d",  "NIC_CUR"},
 };
 
 // ADS1015 PGA settings in DTS of each channel, unit: mV
@@ -947,6 +971,11 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
   return ret;
 }
 
+static bool
+is_adc128_e1s(uint8_t id) {
+  return (id < ADC128_IN6);
+}
+
 static int
 read_adc128(uint8_t id, float *value) {
   int ret = 0;
@@ -955,13 +984,17 @@ read_adc128(uint8_t id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  if (is_e1s_iocm_present(id) == false) {
+  if (is_adc128_e1s(id) && is_e1s_iocm_present(id % 2) == false) {
     return ERR_SENSOR_NA;
   }
 
   ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
-  // I_OUT(A) = V_IMON(V) * 10^6 / G_IMON(uA/A) / R_IMON(ohm)
-  *value = (*value) * 1000000 / ADC128_GIMON / ADC128_RIMON;
+
+  if (id == ADC128_IN7) { // NIC current doesn't support negative value
+    if (*value < 0) {
+      *value = 0;
+    }
+  }
 
   return ret;
 }

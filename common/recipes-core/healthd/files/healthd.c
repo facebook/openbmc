@@ -95,9 +95,12 @@
 #define SLED_TS_TIMEOUT 100    //SLED Time Sync Timeout
 
 #define KV_KEY_IMAGE_VERSIONS "image_versions"
+#define KV_KEY_HEALTHD_REARM  "healthd_rearm"
 
 #define BIC_HEALTH_INTERVAL 60 //seconds
 #define BIC_RESET_ERR_CNT   3
+
+#define LOG_REARM_CHECK_INTERVAL 3 // seconds
 
 struct i2c_bus_s {
   uint32_t offset;
@@ -202,6 +205,8 @@ static bool nm_monitor_enabled = false;
 static int nm_monitor_interval = DEFAULT_MONITOR_INTERVAL;
 static unsigned char nm_retry_threshold = 0;
 static bool nm_transmission_via_bic = false;
+static uint8_t is_duplicated_unaccess_event[MAX_NUM_FRUS] = {false};
+static uint8_t is_duplicated_abnormal_event[MAX_NUM_FRUS] = {false};
 
 /* Verified-boot state check */
 static bool vboot_state_check = false;
@@ -217,6 +222,9 @@ extern void * pfr_monitor();
 /* BIC health monitor */
 static bool bic_health_enabled = false;
 static uint8_t bic_fru = 0;
+
+/* healthd log rearm monitor */
+static bool log_rearm_enabled = false;
 
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
@@ -588,6 +596,10 @@ initialize_configuration(void) {
   v = json_object_get(conf, "version");
   if (v && json_is_string(v)) {
     syslog(LOG_INFO, "Loaded configuration version: %s\n", json_string_value(v));
+  }
+  v = json_object_get(conf, "log_rearm");
+  if (v && json_is_boolean(v)) {
+    log_rearm_enabled = json_is_true(v);
   }
   initialize_hb_config(json_object_get(conf, "heartbeat"));
   initialize_cpu_config(json_object_get(conf, "bmc_cpu_utilization"));
@@ -1174,8 +1186,6 @@ void check_nm_selftest_result(uint8_t fru, int result)
 {
   static uint8_t no_response_retry[MAX_NUM_FRUS] = {0};
   static uint8_t abnormal_status_retry[MAX_NUM_FRUS] = {0};
-  static uint8_t is_duplicated_unaccess_event[MAX_NUM_FRUS] = {false};
-  static uint8_t is_duplicated_abnormal_event[MAX_NUM_FRUS] = {false};
   char fru_name[10]={0};
   int fru_index = fru - 1;//fru id is start from 1.
 
@@ -1279,7 +1289,6 @@ nm_monitor()
     {
       nm_selftest(fru);
     }
-
     sleep(nm_monitor_interval);
   }
 
@@ -1748,6 +1757,33 @@ next_run:
   return NULL;
 }
 
+static void *
+log_rearm_check() {
+  int ret = 0;
+  char val[MAX_KEY_LEN] = {0};
+
+  while (1) {
+    ret = kv_get(KV_KEY_HEALTHD_REARM, val, NULL, 0);
+    if (ret < 0) {
+      sleep(LOG_REARM_CHECK_INTERVAL);
+      continue;
+    }
+    if (strcmp(val, "1") == 0) {
+      if (nm_monitor_enabled == true) {        
+        memset(is_duplicated_unaccess_event, 0, sizeof(is_duplicated_unaccess_event));
+        memset(is_duplicated_abnormal_event, 0, sizeof(is_duplicated_abnormal_event));
+      }
+      if (vboot_state_check && vboot_supported()) {
+        check_vboot_state();
+      }
+      kv_set(KV_KEY_HEALTHD_REARM, "0", 0, 0);
+    }
+    sleep(LOG_REARM_CHECK_INTERVAL);
+  }
+  
+  return NULL;
+}
+
 void sig_handler(int signo) {
   // Catch SIGALRM and SIGTERM. If recived signal record BMC log
   syslog(LOG_CRIT, "BMC health daemon stopped.");
@@ -1768,6 +1804,7 @@ main(int argc, char **argv) {
   pthread_t tid_pfr_monitor;
   pthread_t tid_timestamp_handler;
   pthread_t tid_bic_health_monitor;
+  pthread_t tid_log_rearm_check;
 
   if (argc > 1) {
     exit(1);
@@ -1870,7 +1907,10 @@ main(int argc, char **argv) {
       exit(1);
     }
   }
-
+  if (pthread_create(&tid_log_rearm_check, NULL, log_rearm_check, NULL)) {
+    syslog(LOG_WARNING, "pthread_create for log re-arm monitor error\n");
+    exit(1);
+  }
 
   pthread_join(tid_watchdog, NULL);
 
@@ -1912,6 +1952,10 @@ main(int argc, char **argv) {
   if (bic_health_enabled) {
     pthread_join(tid_bic_health_monitor, NULL);
   }
+
+  if (log_rearm_enabled){
+    pthread_join(tid_log_rearm_check, NULL);
+  }  
 
   return 0;
 }

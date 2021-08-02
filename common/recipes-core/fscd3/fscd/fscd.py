@@ -26,6 +26,7 @@ import sys
 import threading
 import time
 import traceback
+import kv
 from contextlib import contextmanager
 
 import fsc_board
@@ -48,6 +49,7 @@ SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
 FAN_FAIL_RECORD_DIR = "/tmp/fanfail_record/"
 RAMFS_CONFIG = "/etc/fsc-config.json"
 CONFIG_DIR = "/etc/fsc"
+FAN_DEAD_REARM_KEY = "fan_dead_rearm"
 # Enable the following for testing only
 # RAMFS_CONFIG = '/tmp/fsc-config.json'
 # CONFIG_DIR = '/tmp'
@@ -163,6 +165,7 @@ class Fscd(object):
             self.get_fan_mode = True
         else:
             self.get_fan_mode = False
+        self.need_rearm = False
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -541,6 +544,18 @@ class Fscd(object):
                         ].source.last_error_level = last_error_level
         return ret
 
+    def check_fan_rearm(self):
+        try:
+            status = kv.kv_get(FAN_DEAD_REARM_KEY, 1)
+        except kv.KeyNotFoundFailure:
+            return False
+
+        if status == "1":
+            kv.kv_set(FAN_DEAD_REARM_KEY, "0", 1)
+            return True
+        else:
+            return False
+
     def update_dead_fans(self, dead_fans):
         """
         Check for dead and recovered fans
@@ -557,8 +572,9 @@ class Fscd(object):
                 dead_fans.discard(fan)
 
         recovered_fans = last_dead_fans - dead_fans
-        newly_dead_fans = dead_fans - last_dead_fans
-        if len(newly_dead_fans) > 0:
+        newly_dead_fans = dead_fans - last_dead_fans        
+        
+        if len(newly_dead_fans) > 0 or (self.need_rearm and len(dead_fans) > 0):            
             if self.fanpower:
                 Logger.warn("%d fans failed" % (len(dead_fans),))
             else:
@@ -617,11 +633,15 @@ class Fscd(object):
                 run normal mode
 
         """
+        self.need_rearm = self.check_fan_rearm()
         ctx = {}
         if not self.sensor_filter_all:
             sensors_tuples = self.machine.read_sensors(self.sensors, None)
             self.fsc_safe_guards(sensors_tuples)
         for zone in self.zones:
+            if self.need_rearm:
+                zone.transitional_assert_flag = False;
+                zone.missing_sensor_assert_flag = [False] * len(zone.expr_meta["ext_vars"])
             if self.sensor_filter_all:
                 sensors_tuples = self.machine.read_sensors(self.sensors, zone.expr_meta)
                 self.fsc_safe_guards(sensors_tuples)

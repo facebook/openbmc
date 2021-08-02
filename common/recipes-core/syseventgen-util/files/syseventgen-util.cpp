@@ -66,7 +66,10 @@ float get_sensor_value(uint8_t fru, int snr_num) {
 }
 
 
-void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsigned int delay) {
+void sensor_callback(unsigned int delay,
+                     uint8_t fru,
+                     const std::string& snr_str,
+                     const std::string& bound = "UCR") {
     // Interpret the sensor string
     char* snr_end;
     int snr_num = strtol(snr_str.c_str(), &snr_end, 0);
@@ -79,7 +82,6 @@ void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsi
     int ret;
     float curr_value = get_sensor_value(fru, snr_num);
     float curr_thresh;
-    char util_call[256];
 
     // store the current threshold to properly restore it
     thresh_sensor_t snr = {};
@@ -94,24 +96,56 @@ void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsi
         std::cout << "No threshold in specified sensor" << std::endl;
         return;
     }
-    curr_thresh = snr.ucr_thresh;
 
     float buffer = 5;
     float target_value;
-    if (curr_value > buffer || curr_value < 0) {
-        target_value = curr_value - buffer;
+    if (bound == "UCR") {
+        curr_thresh = snr.ucr_thresh;
+        if (curr_value > buffer || curr_value < 0) {
+            target_value = curr_value - buffer;
+        } else {
+            target_value = 0;
+        }
+    } else if (bound == "LCR") {
+        curr_thresh = snr.lcr_thresh;
+        target_value = std::min(curr_thresh + 5, snr.ucr_thresh);
     } else {
-        target_value = 0;
+        std::cout << "Invalid or unsupported bound type" << std::endl;
+    }
+
+    // get the fru name
+    char fru_name[16];
+    ret = pal_get_fru_name(fru, fru_name);
+    if (ret) {
+        std::cout << "Error getting the fru name" << std::endl;
+        return;
     }
 
     // start the bookend log
     BOOKMARK_BEGIN(fru, "sensor");
 
-    sprintf(util_call, payload, target_value);
+    std::string set_cmd = "threshold-util " +
+                          std::string(fru_name) +
+                          " --set " +
+                          snr_str +
+                          " " +
+                          bound +
+                          " " +
+                          std::to_string(target_value);
+
+    std::string clr_cmd = "threshold-util " +
+                          std::string(fru_name) +
+                          " --set " +
+                          snr_str +
+                          " " +
+                          bound +
+                          " " +
+                          std::to_string(curr_thresh);
+
     if (verbose) {
-        std::cout << "Calling: " << util_call << std::endl;
+        std::cout << "Calling: " << set_cmd << std::endl;
     }
-    ret = system(util_call);
+    ret = system(set_cmd.c_str());
     if (ret) {
         std::cout << "Error in setting threshold: " << ret << std::endl;
         return;
@@ -121,17 +155,10 @@ void sensor_callback(uint8_t fru, std::string snr_str, const char* payload, unsi
     usleep(delay * 1000); // convert us to ms
 
     // set the threshold back
-    char fru_name[16];
-    ret = pal_get_fru_name(fru, fru_name);
-    if (ret) {
-        std::cout << "Error getting the fru name" << std::endl;
-        return;
-    }
-    sprintf(util_call, "threshold-util %s --set %s UCR %f", fru_name, snr_str.c_str(), curr_thresh);
     if (verbose) {
-        std::cout << "Calling: " << util_call << std::endl;
+        std::cout << "Calling: " << clr_cmd << std::endl;
     }
-    ret = system(util_call);
+    ret = system(clr_cmd.c_str());
     if (ret) {
         std::cout << "Error in returning threshold to original value" << std::endl;
         return;
@@ -483,11 +510,18 @@ int main(int argc, char **argv)
             command->callback([&]() {
                 switch (val["sel_type"].get<int>()) {
                     case 0: // sensor
-                        sensor_callback(
-                            val["sel_subtypes"][0].get<uint8_t>(),
-                            val["sel_subtypes"][1].get<std::string>(),
-                            val["payload"].get<std::string>().append(" %f").c_str(),
-                            delay);
+                        try {
+                            sensor_callback(
+                                delay,
+                                val["sel_subtypes"][0].get<uint8_t>(),
+                                val["sel_subtypes"][1].get<std::string>(),
+                                val["sel_subtypes"][2].get<std::string>());
+                        } catch (const nlohmann::detail::type_error& e) {
+                            sensor_callback(
+                                delay,
+                                val["sel_subtypes"][0].get<uint8_t>(),
+                                val["sel_subtypes"][1].get<std::string>());
+                        }
                         break;
                     case 1: // ipmi
                         ipmi_callback(

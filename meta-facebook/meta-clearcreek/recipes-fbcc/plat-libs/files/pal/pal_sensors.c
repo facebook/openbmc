@@ -712,6 +712,10 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     sprintf(str, "%.2f",*((float*)value));
   }
 
+  if(ret == READING_SKIP) {
+    return ret;
+  }
+
   if(kv_set(key, str, 0, 0) < 0) {
     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
     return -1;

@@ -60,6 +60,13 @@ STR_VALUE_1="1"
 SYNC_TIME_OK=0
 SEL_TIME_RESPONSE_LEN=12
 
+# system stage
+STAGE_PRE_EVT=0
+STAGE_EVT=1
+STAGE_DVT=2
+STAGE_PVT=3
+STAGE_MP=4
+
 gpio_set() {
   local shadow val
   shadow=$1
@@ -92,6 +99,16 @@ get_chassis_type() {
   else
     return -1
   fi
+}
+
+get_system_stage() {
+  local stage=0
+  for i in $(seq 2 -1 0); do
+    val=$(gpio_get BOARD_REV_ID${i})
+    ((stage*=2))
+    ((stage+=$val))
+  done
+  echo $stage
 }
 
 is_module_loaded() {

@@ -23,9 +23,47 @@
 UIC_LOCATION_A_STR="01 "
 UIC_LOCATION_B_STR="02 "
 
+get_uic_location_by_gpio()
+{
+  if [ "$(gpio_get BMC_UIC_LOCATION_IN)" = "$GPIO_VALUE_LOW" ]; then
+    return "$UIC_LOCATION_A"
+  else
+    return "$UIC_LOCATION_B"
+  fi
+}
+
+get_uic_location_by_exp()
+{
+  RETRY=20
+
+  while [ $RETRY -gt 0 ]
+  do
+    # * UIC_ID: 1=UIC_A; 2=UIC_B
+
+    uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
+
+    if [ "$uic_id" = "$UIC_LOCATION_A_STR" ] || [ "$uic_id" = "$UIC_LOCATION_B_STR" ]; then
+      return "$uic_id"
+    fi
+
+    logger -s -p user.warn -t check_pal_sku "Retrying get uic location"
+    RETRY=$((RETRY-1))
+    sleep 1
+  done
+  logger -s -p user.warn -t check_pal_sku "Get uic location - failed"
+
+  return 0
+}
+
 get_sku()
 {
-  get_uic_location
+  stage=$(get_system_stage)
+  if [ "$stage" -lt "$STAGE_DVT" ]; then
+    get_uic_location_by_exp
+  else
+    get_uic_location_by_gpio
+  fi
+
   uic_id=$?
   get_chassis_type
   uic_type=$?
@@ -50,28 +88,7 @@ get_sku()
   return $pal_sku
 }
 
-get_uic_location()
-{
-  RETRY=20
 
-  while [[ $RETRY -gt 0 ]]
-  do
-    # * UIC_ID: 1=UIC_A; 2=UIC_B
-
-    uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
-
-    if [[ "$uic_id" = "$UIC_LOCATION_A_STR" ]] || [[ "$uic_id" = "$UIC_LOCATION_B_STR" ]]; then
-      return $uic_id
-    fi
-
-    logger -s -p user.warn -t check_pal_sku "Retrying get uic location"
-    RETRY=$(($RETRY-1))
-    sleep 1
-  done
-  logger -s -p user.warn -t check_pal_sku "Get uic location - failed"
-
-  return 0
-}
 get_sku
 pal_sku=$?
 printf "Platform SKU: %s (" "$pal_sku"

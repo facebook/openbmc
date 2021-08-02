@@ -40,8 +40,6 @@
 #define MONITOR_SERVER_POWER_STATUS_INTERVAL    1  // seconds
 #define MONITOR_SCC_STBY_POWER_INTERVAL         1  // seconds
 
-#define E1S_IOCM_SLOT_NUM 2
-
 static void
 e1s_iocm_remove_event(int e1s_iocm_slot_id, uint8_t *present_status, uint8_t *gpio_power_good_pin) {
   char cmd[MAX_PATH_LEN] = {0};

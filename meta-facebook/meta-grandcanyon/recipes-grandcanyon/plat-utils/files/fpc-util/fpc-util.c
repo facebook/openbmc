@@ -26,23 +26,35 @@
 #include <openbmc/pal.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/kv.h>
+#include <facebook/fbgc_common.h>
 
 static void
 print_usage_help(void) {
+  uint8_t chassis_type = 0;
+  
   printf("Usage: fpc-util --identify <on/off>\n");
   printf("       fpc-util --identify on <optional>..\n");
   printf("         <optional>:\n");
   printf("           --interval <1/5/10>     This is an optional setting. If this option is not set, will use 0.5 second by default.\n");
   printf("                                   User can set 1, 5, or 10 to adjust the blinking rate to 1, 5, 10 seconds.\n");
   printf("       fpc-util --status <yellow/blue/off>\n");
-  printf("       fpc-util --e1s0 <on/off>\n");
-  printf("       fpc-util --e1s1 <on/off>\n");
+  
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to get chassis type.", __func__);
+    return;
+  }
+
+  if (chassis_type == CHASSIS_TYPE5) {
+    printf("       fpc-util --e1s0 <on/off/blinking>\n");
+    printf("       fpc-util --e1s1 <on/off/blinking>\n");
+  }
 }
 
 int
 main(int argc, char **argv) {
   int ret = 0;
   char key[MAX_KEY_LEN] = {0};
+  uint8_t chassis_type = 0;
   
   memset(key, 0x0, sizeof(key));
   
@@ -111,19 +123,36 @@ main(int argc, char **argv) {
     } else {
       goto err_exit;
     }
-  } else if (strcmp(argv[1], "--e1s0") == 0) {
-    if (strcmp(argv[2], "on") == 0) {
-      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S0_LED, LED_ON);
-    } else if (strcmp(argv[2], "off") == 0) {
-      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S0_LED, LED_OFF);
-    } else {
-      goto err_exit;
-    }
-  } else if (strcmp(argv[1], "--e1s1") == 0) {
-    if (strcmp(argv[2], "on") == 0) {
-      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S1_LED, LED_ON);
-    } else if (strcmp(argv[2], "off") == 0) {
-      return pal_set_e1s_led(FRU_E1S_IOCM, ID_E1S1_LED, LED_OFF);
+  } 
+  
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type.", __func__);
+    return -1;
+  }
+  
+  if (chassis_type == CHASSIS_TYPE5) {
+    if (strcmp(argv[1], "--e1s0") == 0) {
+      snprintf(key, sizeof(key), "e1s0_led_status");
+      if (strcmp(argv[2], "on") == 0) {
+        return kv_set(key, "on", 0, 0);
+      } else if (strcmp(argv[2], "off") == 0) {
+        return kv_set(key, "off", 0, 0);
+      } else if (strcmp(argv[2], "blinking") == 0) {
+        return kv_set(key, "blinking", 0, 0);
+      } else {
+        goto err_exit;
+      }
+    } else if (strcmp(argv[1], "--e1s1") == 0) {
+      snprintf(key, sizeof(key), "e1s1_led_status");
+      if (strcmp(argv[2], "on") == 0) {
+        return kv_set(key, "on", 0, 0);
+      } else if (strcmp(argv[2], "off") == 0) {
+        return kv_set(key, "off", 0, 0);
+      } else if (strcmp(argv[2], "blinking") == 0) {
+        return kv_set(key, "blinking", 0, 0);
+      } else {
+        goto err_exit;
+      }
     } else {
       goto err_exit;
     }

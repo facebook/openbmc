@@ -149,6 +149,8 @@ extern "C" {
 #define GET_FPGA_VER_ADDR     0x40
 #define GET_FPGA_VER_OFFSET   (0x28002000)
 
+#define E1S_IOCM_SLOT_NUM 2
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,

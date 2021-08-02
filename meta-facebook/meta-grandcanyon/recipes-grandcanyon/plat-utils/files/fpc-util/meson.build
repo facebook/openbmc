@@ -11,6 +11,7 @@ dep_libs = [
     dependency('libipmi'),
     dependency('libipmb'),
     dependency('libkv'),
+    dependency('libfbgc_common'),
 ]
 
 executable('fpc-util', 'fpc-util.c', dependencies : dep_libs)

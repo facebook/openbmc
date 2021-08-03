@@ -136,7 +136,7 @@ class TestChassisService(AioHTTPTestCase):
             "@odata.id": "/redfish/v1/Chassis",
             "@odata.type": "#ChassisCollection.ChassisCollection",
             "Name": "Chassis Collection",
-            "Members@odata.count": 1,
+            "Members@odata.count": 5,
             "Members": [
                 {"@odata.id": "/redfish/v1/Chassis/1"},
                 {"@odata.id": "/redfish/v1/Chassis/server1"},
@@ -358,13 +358,14 @@ class TestChassisService(AioHTTPTestCase):
                                 "FruName": fru_name,
                                 "SensorNumber": 224,
                                 "Name": "SP_P5V",
-                                "PowerMetrix": {
+                                "PowerMetrics": {
                                     "MaxIntervalConsumedWatts": 5.03,
                                     "MinIntervalConsumedWatts": 5.02,
                                     "IntervalInMin": 1,
                                     "AverageIntervalConsumedWatts": 5.03,
                                 },
                                 "MemberId": 0,
+                                "Status": {"State": "Enabled", "Health": "OK"},
                             }
                         ],
                     ],

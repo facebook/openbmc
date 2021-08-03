@@ -30,7 +30,7 @@ SensorDetails = t.NamedTuple(
 )
 
 FRUID_UTIL_PATH = "/usr/local/bin/fruid-util"
-WEUTIL_PATH = "/usr/local/bin/weutil"
+WEUTIL_PATH = "/usr/bin/weutil"
 
 """ sensor type constants as defined in sensors.py """
 LIB_SENSOR_FAN = 1
@@ -175,13 +175,17 @@ __CACHE_FRU_INFO = {}  # type: t.Dict[str, FruInfo]
 
 async def get_fru_info_helper(fru_name: t.Optional[str] = None) -> t.List[FruInfo]:
     frus_info_list = []
-    if fru_name is None:
-        fru_name_list = get_single_sled_frus()
-        for fru in fru_name_list:
-            fru_info = await get_fru_info(fru)
+    if is_libpal_supported():  # for compute and new fboss platforms
+        if fru_name is None:  # for single sled platforms
+            fru_name_list = get_single_sled_frus()
+            for fru in fru_name_list:
+                fru_info = await get_fru_info(fru)
+                frus_info_list.append(fru_info)
+        else:  # for multisled platforms
+            fru_info = await get_fru_info(fru_name)
             frus_info_list.append(fru_info)
-    else:
-        fru_info = await get_fru_info(fru_name)
+    else:  # for older fboss platforms
+        fru_info = await get_fru_info("BMC")
         frus_info_list.append(fru_info)
 
     return frus_info_list
@@ -192,12 +196,16 @@ async def get_fru_info(fru_name: str) -> FruInfo:
         return __CACHE_FRU_INFO[fru_name]
 
     fru_details_dict = {}
+    product_name_key = "Product Name"
     if is_fruid_util_available():  # then its a compute platform
         cmd = [FRUID_UTIL_PATH, fru_name, "--json"]
         _, fru_details, _ = await async_exec(cmd)
         fru_details_list = json.loads(fru_details)
         if fru_details_list:  # if its not empty
             fru_details_dict = fru_details_list[0]
+        # update keys as per fruid util output
+        product_manufacturer_key = "Product Manufacturer"
+        product_serial_key = "Product Serial"
     elif is_we_util_available():  # then its an fboss platform
         cmd = [WEUTIL_PATH]
         _, fru_details, _ = await async_exec(cmd)
@@ -206,15 +214,18 @@ async def get_fru_info(fru_name: str) -> FruInfo:
             key_pair = line.split(":")
             if len(key_pair) > 1:
                 fru_details_dict[key_pair[0]] = key_pair[1]
+        # update keys as per weutil output
+        product_manufacturer_key = "System Manufacturer"
+        product_serial_key = "Product Serial Number"
     else:
         raise NotImplementedError("Can't get fru info for fru : {}".format(fru_name))
 
     try:
         fru_info = FruInfo(
             fru_name,
-            fru_details_dict["Product Manufacturer"].strip(),
-            fru_details_dict["Product Serial"].strip(),
-            fru_details_dict["Product Name"].strip(),
+            fru_details_dict[product_manufacturer_key].strip(),
+            fru_details_dict[product_serial_key].strip(),
+            fru_details_dict[product_name_key].strip(),
         )
         __CACHE_FRU_INFO[fru_name] = fru_info
         return fru_info
@@ -242,7 +253,7 @@ def get_single_sled_frus() -> t.List[str]:
 
 
 def get_chassis_members_json() -> t.List[t.Dict[str, t.Any]]:
-    if "slot4" in pal.pal_fru_name_map():
+    if is_libpal_supported() and "slot4" in pal.pal_fru_name_map():
         # return chassis members for a multisled platform
         return [
             {"@odata.id": "/redfish/v1/Chassis/1"},

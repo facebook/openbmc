@@ -28,7 +28,7 @@ class RedfishChassis:
             "@odata.id": "/redfish/v1/Chassis",
             "@odata.type": "#ChassisCollection.ChassisCollection",
             "Name": "Chassis Collection",
-            "Members@odata.count": 1,
+            "Members@odata.count": len(members_json),
             "Members": members_json,
         }
         await validate_keys(body)
@@ -36,9 +36,6 @@ class RedfishChassis:
 
     async def get_chassis_members(self, request: str) -> web.Response:
         server_name = self.get_server_name()
-        if not redfish_chassis_helper.is_libpal_supported():
-            raise NotImplementedError("Redfish is not supported in this platform")
-
         frus_info_list = await redfish_chassis_helper.get_fru_info_helper(self.fru_name)
         fru_info_json = make_fru_info_json_body(frus_info_list)
         body = {
@@ -114,14 +111,20 @@ class RedfishChassis:
     async def get_chassis_power(self, request: str) -> web.Response:
         server_name = self.get_server_name()
         body = {}
-        if not redfish_chassis_helper.is_libpal_supported():
-            raise NotImplementedError("Redfish is not supported in this platform")
-
-        power_control_sensors = (
-            redfish_chassis_helper.get_sensor_details_using_libpal_helper(
-                ["Amps", "Watts", "Volts"], self.fru_name
+        # for compute and new fboss platforms
+        if redfish_chassis_helper.is_libpal_supported():
+            power_control_sensors = (
+                redfish_chassis_helper.get_sensor_details_using_libpal_helper(
+                    ["Amps", "Watts", "Volts"], self.fru_name
+                )
             )
-        )
+        else:  # for older fboss platforms
+            power_control_sensors = (
+                redfish_chassis_helper.get_older_fboss_sensor_details(
+                    "BMC", redfish_chassis_helper.LIB_SENSOR_POWER
+                )
+            )
+
         power_control_sensors_json = make_power_sensors_json_body(
             power_control_sensors, server_name
         )
@@ -173,7 +176,7 @@ def make_temperature_sensors_json_body(
         status = {
             "Status": {"State": "Enabled", "Health": "OK"}
         }  # default unless we have bad reading value
-        if redfish_chassis_helper.is_libpal_supported():  # for compute platforms
+        if redfish_chassis_helper.is_libpal_supported():  # for compute and new fboss
             threshold_json = {
                 "UpperThresholdNonCritical": round(sensor_threshold.unc_thresh, 2),
                 "UpperThresholdCritical": round(sensor_threshold.ucr_thresh, 2),
@@ -182,7 +185,9 @@ def make_temperature_sensors_json_body(
                 "LowerThresholdCritical": round(sensor_threshold.lcr_thresh, 2),
                 "LowerThresholdFatal": round(sensor_threshold.lnr_thresh, 2),
             }
-        else:  # for fboss platforms
+        else:  # for older fboss platforms
+            # Adding these placeholder values because we don't have these metrics
+            # for fboss platforms via sensors.py
             threshold_json = {
                 "UpperThresholdNonCritical": 0,
                 "UpperThresholdCritical": round(temperature_sensor.ucr_thresh, 2),
@@ -232,17 +237,18 @@ def make_fan_sensors_json_body(
                 },
             ],
         }
-        status = {
-            "Status": {"State": "Enabled", "Health": "OK"}
-        }  # default unless we have bad reading value
-        if sensor_threshold is None:  # for an fboss platform
+
+        # default status unless we have bad reading value
+        status = {"Status": {"State": "Enabled", "Health": "OK"}}
+        if sensor_threshold is None:  # for older fboss platforms
+            # placeholder lower thresh bc sensors.py doesn't provide this
             fan_json["LowerThresholdFatal"] = 0
             # in case of a bad reading value, update status
             if fan_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
                 status = {
                     "Status": {"State": "UnavailableOffline", "Health": "Critical"}
                 }
-        else:  # for a compute platform
+        else:  # for compute and new fboss platforms
             fan_json["LowerThresholdFatal"] = round(sensor_threshold.lnr_thresh, 2)
         fan_json.update(status)
         all_fan_sensors.append(fan_json)
@@ -252,39 +258,51 @@ def make_fan_sensors_json_body(
 
 def make_power_sensors_json_body(
     power_sensors: t.List[redfish_chassis_helper.SensorDetails], server_name: str
-) -> t.List[t.Dict[str, t.Any]]:
+) -> t.List[t.List[t.Dict[str, t.Any]]]:
     all_power_sensors = []
     period = 60
     for idx, power_sensor in enumerate(power_sensors):
+        power_json_list = []
         sensor_threshold = power_sensor.sensor_thresh
         _sensor_history = power_sensor.sensor_history
-        power_json = [
-            {
-                "@odata.id": "/redfish/v1/Chassis/{server_name}/Power#/PowerControl/{idx}".format(  # noqa: B950
-                    server_name=server_name, idx=idx
-                ),
-                "MemberId": idx,
-                "Name": power_sensor.sensor_name,
-                "SensorNumber": power_sensor.sensor_number,
-                "PhysicalContext": "Chassis",
-                "FruName": power_sensor.fru_name,
-                "PowerLimit": {
-                    "LimitInWatts": round(sensor_threshold.ucr_thresh, 2),
-                    "LimitException": "LogEventOnly",
-                },
-                "PowerMetrix": {
-                    "IntervalInMin": period / 60,
-                    "MinIntervalConsumedWatts": round(
-                        _sensor_history.min_intv_consumed, 2
-                    ),
-                    "MaxIntervalConsumedWatts": round(
-                        _sensor_history.max_intv_consumed, 2
-                    ),
-                    "AverageIntervalConsumedWatts": round(
-                        _sensor_history.avg_intv_consumed, 2
-                    ),
-                },
-            }
-        ]
-        all_power_sensors.append(power_json)
+        # default status unless we have bad reading value
+        status_val = {"State": "Enabled", "Health": "OK"}
+        if redfish_chassis_helper.is_libpal_supported():  # for compute and new fboss
+            min_interval_watts = round(_sensor_history.min_intv_consumed, 2)
+            max_interval_watts = round(_sensor_history.max_intv_consumed, 2)
+            avg_interval_watts = round(_sensor_history.avg_intv_consumed, 2)
+            limit_in_watts = round(sensor_threshold.ucr_thresh, 2)
+        else:  # for older fboss platforms
+            # Adding these placeholder values because we don't have these metrics
+            # for fboss platforms via sensors.py
+            min_interval_watts = 0
+            max_interval_watts = 0
+            avg_interval_watts = 0
+            limit_in_watts = 0
+            # in case of a bad reading value, update status
+            if power_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
+                status_val = {"State": "UnavailableOffline", "Health": "Critical"}
+        power_json_item = {
+            "@odata.id": "/redfish/v1/Chassis/{server_name}/Power#/PowerControl/{idx}".format(  # noqa: B950
+                server_name=server_name, idx=idx
+            ),
+            "MemberId": idx,
+            "Name": power_sensor.sensor_name,
+            "SensorNumber": power_sensor.sensor_number,
+            "PhysicalContext": "Chassis",
+            "FruName": power_sensor.fru_name,
+            "PowerMetrics": {
+                "IntervalInMin": period / 60,
+                "MinIntervalConsumedWatts": min_interval_watts,
+                "MaxIntervalConsumedWatts": max_interval_watts,
+                "AverageIntervalConsumedWatts": avg_interval_watts,
+            },
+            "PowerLimit": {
+                "LimitInWatts": limit_in_watts,
+                "LimitException": "LogEventOnly",
+            },
+            "Status": status_val,
+        }
+        power_json_list.append(power_json_item)
+        all_power_sensors.append(power_json_list)
     return all_power_sensors

@@ -29,6 +29,15 @@
 #define USB_DAT_SIZE (USB_PKT_SIZE-7)
 #define BIOS_PKT_SIZE 32
 
+#define USB_MAX_LEVEL 7
+
+static int cwc_usb_depth = 3;
+static uint8_t cwc_usb_ports[] = {1, 3, 3};
+static int top_gpv3_usb_depth = 5;
+static int bot_gpv3_usb_depth = 5;
+static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 3};
+static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 3};
+
 int alt_interface,interface_number;
 
 //#define CPLD_DEBUG
@@ -109,17 +118,38 @@ send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8
       }
 
       if ( board_type == GPV3_MCHP_BOARD ||
-           board_type == GPV3_BRCM_BOARD ) {
+           board_type == GPV3_BRCM_BOARD || 
+           board_type == CWC_MCHP_BOARD ) {
         bus = 0x13;
       } else {
         bus = 0x01;
       }
+    } else if ( RREXP_BIC_INTF1 == intf || RREXP_BIC_INTF2 == intf ) {
+      bus = 0x13;
     } else {
       bus = 0x01;
     }
   }
 
-  txbuf[6] = bus;
+  if ( RREXP_BIC_INTF1 == intf || RREXP_BIC_INTF2 == intf ) {
+    txbuf[3] = REXP_BIC_INTF;
+    txbuf[4] = NETFN_OEM_1S_REQ << 2;
+    txbuf[5] = CMD_OEM_1S_MSG_OUT;
+    memcpy(&txbuf[6], (uint8_t *)&IANA_ID, 3);
+    txbuf[9] = intf;
+    txbuf[10] = NETFN_APP_REQ << 2;
+    txbuf[11] = CMD_APP_MASTER_WRITE_READ;
+    txbuf[12] = bus;
+    txbuf[13] = addr;
+    txbuf[14] = read_cnt;
+    txlen += 6;
+  } else {
+    txbuf[6] = bus;
+  }
+
+  if (txlen + data_len >= 256) {
+    return -1;
+  }
 
   if ( data_len > 0 ) {
     memcpy(&txbuf[txlen], data, data_len);
@@ -136,13 +166,24 @@ send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8
     }
   }
 
-  if ( retries == 0 || rxbuf[6] != 0x0 || rxlen < 7 ) {
-     //printf("%s() read/write register fails after retry 3 times. ret=%d \n", __func__,  ret);
-     return -1;
-  }
+  if ( RREXP_BIC_INTF1 == intf || RREXP_BIC_INTF2 == intf ) {
+    if ( retries == 0 || rxbuf[6] != 0x0 || rxbuf[13] != 0x0 || rxlen < 14 ) {
+      //printf("%s() read/write register fails after retry 3 times. ret=%d \n", __func__,  ret);
+      return -1;
+    }
 
-  if ( read_cnt > 0 ) {
-    memcpy(rsp, &rxbuf[7], read_cnt);
+    if ( read_cnt > 0 ) {
+      memcpy(rsp, &rxbuf[14], read_cnt);
+    }
+  } else {
+    if ( retries == 0 || rxbuf[6] != 0x0 || rxlen < 7 ) {
+      //printf("%s() read/write register fails after retry 3 times. ret=%d \n", __func__,  ret);
+      return -1;
+    }
+
+    if ( read_cnt > 0 ) {
+      memcpy(rsp, &rxbuf[7], read_cnt);
+    }
   }
 
   return ret;
@@ -1000,6 +1041,7 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
   uint16_t pid = EXP1_TI_PRODUCT_ID;
   int i = 0;
   int path_len = 0;
+  uint8_t board_type = 0;
 
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -1012,7 +1054,9 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
   if ( intf == FEXP_BIC_INTF) {
     vid = EXP1_TI_VENDOR_ID;
     pid = EXP1_TI_PRODUCT_ID;
-  } else if ( intf == REXP_BIC_INTF) {
+  } else if ( intf == REXP_BIC_INTF ||
+              intf == RREXP_BIC_INTF1 ||
+              intf == RREXP_BIC_INTF2 ) {
     vid = EXP2_TI_VENDOR_ID;
     pid = EXP2_TI_PRODUCT_ID;
   } else {
@@ -1024,6 +1068,13 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
     goto error_exit;
+  }
+
+  if (bmc_location == NIC_BMC) { 
+    if (fby3_common_get_2ou_board_type(slot_id, &board_type) < 0) {
+      syslog(LOG_ERR, "%s() Fails to get 2ou board type", __func__);
+      goto error_exit;
+    }
   }
 
   do {
@@ -1066,6 +1117,41 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
       }
 
       if( (vid == udev->desc.idVendor) && (pid == udev->desc.idProduct) ) {
+        if (board_type == CWC_MCHP_BOARD) {
+          if (intf == REXP_BIC_INTF) {
+            if (path_len == cwc_usb_depth && 
+                udev->path[0] == cwc_usb_ports[0] && 
+                udev->path[1] == cwc_usb_ports[1] && 
+                udev->path[2] == cwc_usb_ports[2] ) {
+              printf("Find cwc usb\n");
+            } else {
+              continue;
+            }
+          } else if (intf == RREXP_BIC_INTF1) {
+            if (path_len == top_gpv3_usb_depth && 
+                udev->path[0] == top_gpv3_usb_ports[0] && 
+                udev->path[1] == top_gpv3_usb_ports[1] && 
+                udev->path[2] == top_gpv3_usb_ports[2] &&
+                udev->path[3] == top_gpv3_usb_ports[3] &&
+                udev->path[4] == top_gpv3_usb_ports[4] ) {
+              printf("Find top gpv3 usb\n");
+            } else {
+              continue;
+            }
+          } else if (intf == RREXP_BIC_INTF2) {
+            if (path_len == bot_gpv3_usb_depth && 
+                udev->path[0] == bot_gpv3_usb_ports[0] && 
+                udev->path[1] == bot_gpv3_usb_ports[1] && 
+                udev->path[2] == bot_gpv3_usb_ports[2] &&
+                udev->path[3] == bot_gpv3_usb_ports[3] &&
+                udev->path[4] == bot_gpv3_usb_ports[4]) {
+              printf("Find bot gpv3 usb\n");
+            } else {
+              continue;
+            }
+          }
+        }
+
         ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
         if ( ret < 0 ) {
           printf("Error get Manufacturer string descriptor -- exit\n");

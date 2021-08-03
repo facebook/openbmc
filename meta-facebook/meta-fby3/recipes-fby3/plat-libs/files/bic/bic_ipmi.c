@@ -64,6 +64,8 @@ typedef struct _sdr_rec_hdr_t {
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
 #define KV_MB_INDEX               "get_mb_index"
 
+#define KV_SLOT_IS_2U_TOPBOT_PRESENT "slot%x_is_2u_topbot_prsnt"
+
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 
 #define BIC_SENSOR_SYSTEM_STATUS  0x46
@@ -483,12 +485,73 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:
+    case FW_CWC_BIC:
+    case FW_GPV3_TOP_BIC:
+    case FW_GPV3_BOT_BIC:
       fw_comp = FW_BIC;
       break;
     case FW_1OU_BIC_BOOTLOADER:
     case FW_2OU_BIC_BOOTLOADER:
     case FW_BB_BIC_BOOTLOADER:
+    case FW_CWC_BIC_BL:
+    case FW_GPV3_TOP_BIC_BL:
+    case FW_GPV3_BOT_BIC_BL:
       fw_comp = FW_BIC_BOOTLOADER;
+      break;
+    case FW_CWC_CPLD:
+    case FW_GPV3_TOP_CPLD:
+    case FW_GPV3_BOT_CPLD:
+      fw_comp = FW_2OU_CPLD;
+      break;
+    case FW_CWC_PESW:
+    case FW_GPV3_TOP_PESW:
+    case FW_GPV3_BOT_PESW:
+      fw_comp = FW_2OU_PESW_FW_VER;
+      break;
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+      fw_comp = FW_2OU_PESW_VR;
+      break;
+    case FW_2U_TOP_PESW_CFG_VER:
+    case FW_2U_BOT_PESW_CFG_VER:
+      fw_comp = FW_2OU_PESW_CFG_VER;
+      break;
+    case FW_2U_TOP_PESW_FW_VER:
+    case FW_2U_BOT_PESW_FW_VER:
+      fw_comp = FW_2OU_PESW_FW_VER;
+      break;
+    case FW_2U_TOP_PESW_BL0_VER:
+    case FW_2U_BOT_PESW_BL0_VER:
+      fw_comp = FW_2OU_PESW_BL0_VER;
+      break;
+    case FW_2U_TOP_PESW_BL1_VER:
+    case FW_2U_BOT_PESW_BL1_VER:
+      fw_comp = FW_2OU_PESW_BL1_VER;
+      break;
+    case FW_2U_TOP_PESW_PART_MAP0_VER:
+    case FW_2U_BOT_PESW_PART_MAP0_VER:
+      fw_comp = FW_2OU_PESW_PART_MAP0_VER;
+      break;
+    case FW_2U_TOP_PESW_PART_MAP1_VER:
+    case FW_2U_BOT_PESW_PART_MAP1_VER:
+      fw_comp = FW_2OU_PESW_PART_MAP1_VER;
+      break;
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_BOT_3V3_VR1:
+      fw_comp = FW_2OU_3V3_VR1;
+      break;
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_BOT_3V3_VR2:
+      fw_comp = FW_2OU_3V3_VR2;
+      break;
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_BOT_3V3_VR3:
+      fw_comp = FW_2OU_3V3_VR3;
+      break;
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_1V8_VR:
+      fw_comp = FW_2OU_1V8_VR;
       break;
     default:
       fw_comp = comp;
@@ -522,12 +585,51 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_PESW_BL1_VER:
     case FW_2OU_PESW_PART_MAP0_VER:
     case FW_2OU_PESW_PART_MAP1_VER:
+    case FW_CWC_BIC:
+    case FW_CWC_BIC_BL:
+    case FW_CWC_CPLD:
+    case FW_CWC_PESW:
+    case FW_CWC_PESW_VR:
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
     case FW_BB_BIC_BOOTLOADER:
     case FW_BB_CPLD:
       intf = BB_BIC_INTF;
+      break;
+    case FW_GPV3_TOP_BIC:
+    case FW_GPV3_TOP_BIC_BL:
+    case FW_GPV3_TOP_CPLD:
+    case FW_GPV3_TOP_PESW:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_2U_TOP_PESW_CFG_VER:
+    case FW_2U_TOP_PESW_FW_VER:
+    case FW_2U_TOP_PESW_BL0_VER:
+    case FW_2U_TOP_PESW_BL1_VER:
+    case FW_2U_TOP_PESW_PART_MAP0_VER:
+    case FW_2U_TOP_PESW_PART_MAP1_VER:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FW_GPV3_BOT_BIC:
+    case FW_GPV3_BOT_BIC_BL:
+    case FW_GPV3_BOT_CPLD:
+    case FW_GPV3_BOT_PESW:
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_BOT_PESW_CFG_VER:
+    case FW_2U_BOT_PESW_FW_VER:
+    case FW_2U_BOT_PESW_BL0_VER:
+    case FW_2U_BOT_PESW_BL1_VER:
+    case FW_2U_BOT_PESW_PART_MAP0_VER:
+    case FW_2U_BOT_PESW_PART_MAP1_VER:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
+      intf = RREXP_BIC_INTF2;
       break;
   }
 
@@ -554,6 +656,41 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_2OU_PESW_PART_MAP1_VER:
     case FW_BB_BIC:
     case FW_BB_BIC_BOOTLOADER:
+    case FW_CWC_BIC:
+    case FW_GPV3_TOP_BIC:
+    case FW_GPV3_BOT_BIC:
+    case FW_CWC_BIC_BL:
+    case FW_GPV3_TOP_BIC_BL:
+    case FW_GPV3_BOT_BIC_BL:
+    case FW_CWC_PESW:
+    case FW_GPV3_TOP_PESW:
+    case FW_GPV3_BOT_PESW:
+    case FW_CWC_CPLD:
+    case FW_GPV3_TOP_CPLD:
+    case FW_GPV3_BOT_CPLD:
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_TOP_PESW_CFG_VER:
+    case FW_2U_TOP_PESW_FW_VER:
+    case FW_2U_TOP_PESW_BL0_VER:
+    case FW_2U_TOP_PESW_BL1_VER:
+    case FW_2U_TOP_PESW_PART_MAP0_VER:
+    case FW_2U_TOP_PESW_PART_MAP1_VER:
+    case FW_2U_BOT_PESW_CFG_VER:
+    case FW_2U_BOT_PESW_FW_VER:
+    case FW_2U_BOT_PESW_BL0_VER:
+    case FW_2U_BOT_PESW_BL1_VER:
+    case FW_2U_BOT_PESW_PART_MAP0_VER:
+    case FW_2U_BOT_PESW_PART_MAP1_VER:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
       ret = _bic_get_fw_ver(slot_id, fw_comp, ver, intf);
       break;
     case FW_1OU_CPLD:
@@ -665,7 +802,7 @@ int
 bic_enable_vr_fault_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
   uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, ( enable == true )?0x1:0x0};
   uint8_t tlen = 4;
-  uint8_t rbuf[16] = {0};
+  uint8_t rbuf[24] = {0};
   uint8_t rlen = 0;
   return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_VR_MONITOR, tbuf, tlen, rbuf, &rlen, intf);
 }
@@ -1206,6 +1343,81 @@ bic_is_m2_exp_prsnt_cache(uint8_t slot_id) {
   return val;
 }
 
+int
+bic_is_2u_top_bot_prsnt(uint8_t slot_id) {
+#define REG_CWC_CPLD_GPV3_PRSNT 0x04
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+  int val = 0;
+
+  snprintf(key, sizeof(key), KV_SLOT_IS_2U_TOPBOT_PRESENT, slot_id);
+  
+  if (kv_get(key, tmp_str, NULL, 0)) {
+    int i2cfd = BIC_STATUS_FAILURE;
+    int ret = BIC_STATUS_FAILURE;
+    uint8_t tbuf = 0x0;
+    uint8_t rbuf = 0x0;
+    uint8_t tlen = 0x0;
+    uint8_t rlen = 0x0;
+    uint8_t retry = MAX_READ_RETRY;
+
+    i2cfd = i2c_cdev_slave_open(FRU_SLOT1 + SLOT_BUS_BASE, CWC_CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open i2c device %d", __func__, CWC_CPLD_ADDRESS);
+      return i2cfd;
+    }
+
+    tbuf = REG_CWC_CPLD_GPV3_PRSNT;
+    tlen = 1;
+    rlen = 1;
+    do {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CWC_CPLD_ADDRESS, &tbuf, tlen, &rbuf, rlen);
+      if ( ret < 0 ) {
+        msleep(100);
+      } else {
+        break;
+      }
+    } while( retry-- > 0 );
+
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    } else {
+      if ( (rbuf & 0x03) == 0 ) {
+        val |= PRESENT_2U_TOP;
+      }
+      if ( (rbuf & 0x0C) == 0 ) {
+        val |= PRESENT_2U_BOT;
+      }
+    }
+
+    if ( i2cfd > 0 ) {
+      close(i2cfd);
+    }
+
+    snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+    kv_set(key, tmp_str, 0, 0);
+    return val;
+  } else {
+    // get from cache
+    val = atoi(tmp_str);
+    return val;
+  }
+}
+
+int
+bic_is_2u_top_bot_prsnt_cache(uint8_t slot_id) {
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+  int val = 0;
+
+  snprintf(key, sizeof(key), KV_SLOT_IS_2U_TOPBOT_PRESENT, slot_id);
+  if (kv_get(key, tmp_str, NULL, 0))
+    return -1;
+
+  val = atoi(tmp_str);
+  return val;
+}
+
 /*
     0x2E 0xDF: Force Intel ME Recovery
 Request
@@ -1388,6 +1600,29 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
 }
 
 int
+remote_bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data, uint8_t intf) {
+  uint8_t tbuf[13] = {0x00};
+  uint8_t rbuf[6] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t index = 0;
+  uint8_t pin = 0;
+  int ret = 0;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  //get the buffer index
+  index = (gpio / 8) + 3; //3 is the size of IANA ID
+  pin = 1 << (gpio % 8);
+  tbuf[index] = pin;
+  
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
+  *data = rbuf[3];
+  return ret;
+}
+
+int
 bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
   uint8_t tbuf[14] = {0x00};
   uint8_t rbuf[6] = {0x00};
@@ -1407,6 +1642,29 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
   tbuf[13] = data & 0x1f;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
+  return ret;
+}
+
+int
+remote_bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data, uint8_t intf) {
+  uint8_t tbuf[14] = {0x00};
+  uint8_t rbuf[6] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t index = 0;
+  uint8_t pin = 0;
+  int ret = 0;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  //get the buffer index
+  index = (gpio / 8) + 3; //3 is the size of IANA ID
+  pin = 1 << (gpio % 8);
+  tbuf[index] = pin;
+  tbuf[13] = data & 0x1f;
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
   return ret;
 }
 
@@ -1958,6 +2216,8 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
       syslog(LOG_ERR, "%s() Cannot get 2ou board_type", __func__);
       board_type = M2_BOARD;
     }
+  } else if (intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2) {
+    board_type = M2_BOARD;
   } else {
     return -1;
   }
@@ -2020,6 +2280,9 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
 
       // No VPP and hotplug on GPv3, skip it
       if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) break;
+    } else if (intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2) {
+      board_type = M2_BOARD;
+      break;
     } else {
       return -1;
     }

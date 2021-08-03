@@ -72,7 +72,11 @@ const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
 
+const char pal_m2_dual_list[] = "2U-dev0_1, 2U-dev2_3, 2U-dev4_5, 2U-dev6_7, 2U-dev8_9, 2U-dev10_11, 2U-dev12_13";
+
 static char sel_error_record[NUM_SERVER_FRU] = {0};
+
+const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -625,7 +629,18 @@ pal_get_dev_list(uint8_t fru, char *list)
 int
 pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
+  uint8_t bmc_location = 0, board_type = 0;
   int ret = 0;
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    if (fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
+      syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
+    }
+  } 
 
   switch (fru) {
     case FRU_SLOT1:
@@ -650,6 +665,14 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_BB:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
       break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (board_type == CWC_MCHP_BOARD) {
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_HAS_DEVICE;
+      } else {
+        ret = -1;
+      }
+      break;
     default:
       ret = -1;
       break;
@@ -660,12 +683,15 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 int
 pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 {
-  if (fru < FRU_SLOT1 || fru > FRU_SLOT4)
-    return -1;
+  if ( (fru < FRU_SLOT1 || fru > FRU_SLOT4) && (fru != FRU_2U_TOP && fru != FRU_2U_BOT) ) {
+      return -1;
+  }
   if (dev >= DEV_ID0_1OU && dev <= DEV_ID13_2OU) {
     *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
       (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
   } else if (dev >= BOARD_1OU && dev <= BOARD_2OU) {
+    *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+  } else if (dev >= BOARD_2OU_TOP && dev <= BOARD_2OU_CWC) {
     *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
   } else {
     *caps = 0;
@@ -762,12 +788,18 @@ pal_get_slot_index(unsigned char payload_id)
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int ret = PAL_EOK;
-  uint8_t bmc_location = 0;
+  int val = 0;
+  uint8_t bmc_location = 0, board_type = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return ret;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    if (fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
+      syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
+    }
   }
 
   switch (fru) {
@@ -796,6 +828,37 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       break;
     case FRU_BMC:
       *status = 1;
+      break;
+    case FRU_2U:
+      if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    case FRU_CWC:
+      if (board_type == CWC_MCHP_BOARD) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (board_type == CWC_MCHP_BOARD) {
+        if ((val = bic_is_2u_top_bot_prsnt(FRU_SLOT1)) > 0) {
+          if ((fru == FRU_2U_TOP && (val & PRESENT_2U_TOP)) || 
+              (fru == FRU_2U_BOT && (val & PRESENT_2U_BOT))) {
+            *status = 1;
+          } else {
+            *status = 0;
+          }
+        } else {
+          *status = 0;
+        }
+      } else {
+        *status = 0;
+      }
       break;
     default:
       *status = 0;
@@ -859,6 +922,18 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_NICEXP:
       sprintf(name, "nicexp");
+      break;
+    case FRU_2U:
+      sprintf(name, DEV_NAME_2U);
+      break;
+    case FRU_CWC:
+      sprintf(name, DEV_NAME_2U_CWC);
+      break;
+    case FRU_2U_TOP:
+      sprintf(name, DEV_NAME_2U_TOP);
+      break;
+    case FRU_2U_BOT:
+      sprintf(name, DEV_NAME_2U_BOT);
       break;
     case FRU_AGGREGATE:
       ret = PAL_EOK; //it's the virtual FRU.
@@ -951,6 +1026,15 @@ pal_get_fruid_path(uint8_t fru, char *path) {
   case FRU_NICEXP:
     sprintf(fname, "nicexp");
     break;
+  case FRU_CWC:
+    sprintf(fname, "slot1_dev%d", BOARD_2OU_CWC);
+    break;
+  case FRU_2U_TOP:
+    sprintf(fname, "slot1_dev%d", BOARD_2OU_TOP);
+    break;
+  case FRU_2U_BOT:
+    sprintf(fname, "slot1_dev%d", BOARD_2OU_BOT);
+    break;  
   default:
     syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
     ret = PAL_ENOTSUP;
@@ -1002,6 +1086,15 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
     if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+    }
+    if (type_2ou == CWC_MCHP_BOARD) {
+      if (dev_id == BOARD_2OU_CWC) {
+        return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
+      } else if (dev_id == BOARD_2OU_TOP) {
+        return bic_write_fruid(fru, 0, path, RREXP_BIC_INTF1);
+      } else if (dev_id == BOARD_2OU_BOT) {
+        return bic_write_fruid(fru, 0, path, RREXP_BIC_INTF2);
+      }
     } else if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
       return bic_write_fruid(fru, 1, path, NONE_INTF);
     } else if ( dev_id == BOARD_2OU ) {
@@ -1087,6 +1180,10 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+    case FRU_2U:
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
       ret = pal_get_server_12v_power(fru, &status_12v);
       if(ret < 0 || status_12v == SERVER_12V_OFF) {
         *status = 0;
@@ -1495,6 +1592,8 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   } else {
     if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
       pcie_conf = CONFIG_C_GPV3;
+    } else if ( type_2ou == CWC_MCHP_BOARD ) {
+      pcie_conf = CONFIG_C_CWC_SINGLE;
     } else {
       pcie_conf = CONFIG_C;
     }
@@ -2814,6 +2913,10 @@ pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
     case FRU_SLOT4:
       fby3_common_dev_name(dev, dev_name);
       break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      fby3_common_exp_dev_name(dev, dev_name);
+      break;
     default:
       return -1;
   }
@@ -2826,12 +2929,32 @@ pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name)
 int
 pal_get_dev_name(uint8_t fru, uint8_t dev, char *name)
 {
+  uint8_t bmc_location = 0, board_type = 0;
+  int ret = 0;
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    if (fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
+      syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
+    }
+  }
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
       fby3_common_dev_name(dev, name);
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (board_type == CWC_MCHP_BOARD) {
+        fby3_common_exp_dev_name(dev, name);
+      } else {
+        return -1;
+      }
       break;
     default:
       return -1;
@@ -4139,6 +4262,11 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+    case FRU_2U:
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      return 10;
     case FRU_BMC:
       return 10;
     case FRU_NIC:
@@ -4462,3 +4590,27 @@ int pal_dp_hba_fan_table_check(void) {
   return ret;
 }
 
+int pal_is_cwc(void) {
+  static uint8_t bmc_location = UNKNOWN_BOARD;
+  static uint8_t board_type = UNKNOWN_BOARD;
+
+  if (board_type == UNKNOWN_BOARD) {
+    if (fby3_common_get_bmc_location(&bmc_location) < 0) {
+      syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+      return PAL_ENOTSUP;
+    }
+
+    if ( bmc_location == NIC_BMC ) {
+      if (fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+        return PAL_ENOTSUP;
+      }
+    }
+  }
+  
+  return board_type == CWC_MCHP_BOARD ? PAL_EOK : PAL_ENOTSUP;
+}
+
+int pal_get_cwc_id(char *str, uint8_t *fru) {
+  return fby3_common_get_exp_id(str, fru) == 0 ? PAL_EOK : PAL_ENOTSUP;
+}

@@ -37,6 +37,8 @@
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
+const char *exp_list[] = {"2U", "2U-cwc", "2U-top", "2U-bot"};
+const uint8_t exp_id_list[] = {FRU_2U, FRU_CWC, FRU_2U_TOP, FRU_2U_BOT};
 
 int
 fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
@@ -51,6 +53,26 @@ fby3_common_get_fru_id(char *str, uint8_t *fru) {
   for (fru_id = FRU_ALL; fru_id <= MAX_NUM_FRUS; fru_id++) {
     if ( strcmp(str, slot_list[fru_id]) == 0 ) {
       *fru = fru_id;
+      found_id = true;
+      break;
+    }
+  }
+
+  if ( found_id == false ) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+fby3_common_get_exp_id(char *str, uint8_t *fru) {
+  int fru_id = 0;
+  bool found_id = false;
+
+  for (fru_id = 0; fru_id < MAX_NUM_EXPS; fru_id++) {
+    if ( strcmp(str, exp_list[fru_id]) == 0 ) {
+      *fru = exp_id_list[fru_id];
       found_id = true;
       break;
     }
@@ -81,6 +103,19 @@ fby3_common_get_slot_id(char *str, uint8_t *fru) {
   }
 
   return 0;
+}
+
+int 
+fby3_common_exp_get_num_devs(uint8_t fru, uint8_t *num) {
+  switch (fru) {
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      *num = DEV_ID13_2OU; 
+      return 0;
+    break;
+  }
+
+  return -1;
 }
 
 int 
@@ -329,6 +364,12 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
     *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {
     *dev = BOARD_2OU;
+  } else if (!strcmp(str, DEV_NAME_2U_TOP)) {
+    *dev = BOARD_2OU_TOP;
+  } else if (!strcmp(str, DEV_NAME_2U_BOT)) {
+    *dev = BOARD_2OU_BOT;
+  } else if (!strcmp(str, DEV_NAME_2U_CWC)) {
+    *dev = BOARD_2OU_CWC;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");
@@ -338,6 +379,50 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
 
   return 0;
 }
+
+int
+fby3_common_get_exp_dev_id(char *str, uint8_t *dev) {
+
+  if (!strcmp(str, "all")) {
+    *dev = FRU_ALL;
+  } else if (!strcmp(str, "2U-dev0")) {
+    *dev = DEV_ID0_2OU;
+  } else if (!strcmp(str, "2U-dev1")) {
+    *dev = DEV_ID1_2OU;
+  } else if (!strcmp(str, "2U-dev2")) {
+    *dev = DEV_ID2_2OU;
+  } else if (!strcmp(str, "2U-dev3")) {
+    *dev = DEV_ID3_2OU;
+  } else if (!strcmp(str, "2U-dev4")) {
+    *dev = DEV_ID4_2OU;
+  } else if (!strcmp(str, "2U-dev5")) {
+    *dev = DEV_ID5_2OU;
+  } else if (!strcmp(str, "2U-dev6")) {
+    *dev = DEV_ID6_2OU;
+  } else if (!strcmp(str, "2U-dev7")) {
+    *dev = DEV_ID7_2OU;
+  } else if (!strcmp(str, "2U-dev8")) {
+    *dev = DEV_ID8_2OU;
+  } else if (!strcmp(str, "2U-dev9")) {
+    *dev = DEV_ID9_2OU;
+  } else if (!strcmp(str, "2U-dev10")) {
+    *dev = DEV_ID10_2OU;
+  } else if (!strcmp(str, "2U-dev11")) {
+    *dev = DEV_ID11_2OU;
+  } else if (!strcmp(str, "2U-dev12")) {
+    *dev = DEV_ID12_2OU;
+  } else if (!strcmp(str, "2U-dev13")) {
+    *dev = DEV_ID13_2OU;
+  }  else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");
+#endif
+    return -1;
+  }
+
+  return 0;
+}
+
 
 int
 fby3_common_dev_name(uint8_t dev, char *str) {
@@ -384,6 +469,12 @@ fby3_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "1U");
   } else if (dev == BOARD_2OU) {
     strcpy(str, "2U");
+  } else if (dev == BOARD_2OU_TOP) {
+    strcpy(str, DEV_NAME_2U_TOP);
+  } else if (dev == BOARD_2OU_BOT) {
+    strcpy(str, DEV_NAME_2U_BOT);
+  } else if (dev == BOARD_2OU_CWC) {
+    strcpy(str, DEV_NAME_2U_CWC);
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");
@@ -392,6 +483,54 @@ fby3_common_dev_name(uint8_t dev, char *str) {
   }
   return 0;
 }
+
+int
+fby3_common_exp_dev_name(uint8_t dev, char *str) {
+
+  if (dev == FRU_ALL) {
+    strcpy(str, "all");
+  } else if (dev == DEV_ID0_2OU) {
+    strcpy(str, "2U-dev0");
+  } else if (dev == DEV_ID1_2OU) {
+    strcpy(str, "2U-dev1");
+  } else if (dev == DEV_ID2_2OU) {
+    strcpy(str, "2U-dev2");
+  } else if (dev == DEV_ID3_2OU) {
+    strcpy(str, "2U-dev3");
+  } else if (dev == DEV_ID4_2OU) {
+    strcpy(str, "2U-dev4");
+  } else if (dev == DEV_ID5_2OU) {
+    strcpy(str, "2U-dev5");
+  } else if (dev == DEV_ID6_2OU) {
+    strcpy(str, "2U-dev6");
+  } else if (dev == DEV_ID7_2OU) {
+    strcpy(str, "2U-dev7");
+  } else if (dev == DEV_ID8_2OU) {
+    strcpy(str, "2U-dev8");
+  } else if (dev == DEV_ID9_2OU) {
+    strcpy(str, "2U-dev9");
+  } else if (dev == DEV_ID10_2OU) {
+    strcpy(str, "2U-dev10");
+  } else if (dev == DEV_ID11_2OU) {
+    strcpy(str, "2U-dev11");
+  } else if (dev == DEV_ID12_2OU) {
+    strcpy(str, "2U-dev12");
+  } else if (dev == DEV_ID13_2OU) {
+    strcpy(str, "2U-dev13");
+  } else {
+#ifdef DEBUG
+    syslog(LOG_WARNING, "fby3_common_dev_id: Wrong fru id");
+#endif
+    return -1;
+  }
+  return 0;
+}
+
+
+
+
+
+
 
 static int
 _fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {

@@ -66,6 +66,7 @@ extern "C" {
 extern const char *slot_usage;
 
 #define MAX_NUM_FRUS 8
+#define MAX_NUM_EXPS 4
 
 #define MAX_SYS_REQ_LEN  128  //include the string terminal
 #define MAX_SYS_RESP_LEN 128  //include the string terminal
@@ -90,6 +91,11 @@ extern const char *slot_usage;
 #define IANA_LEN 3
 #define UNKNOWN_SLOT 0xFF
 
+#define DEV_NAME_2U_TOP "2U-top"
+#define DEV_NAME_2U_BOT "2U-bot"
+#define DEV_NAME_2U_CWC "2U-cwc"
+#define DEV_NAME_2U "2U"
+
 enum {
   FRU_ALL       = 0,
   FRU_SLOT1     = 1,
@@ -100,6 +106,11 @@ enum {
   FRU_NIC       = 6,
   FRU_BMC       = 7,
   FRU_NICEXP    = 8, //the fru is used when bmc is located on class 2
+  FRU_EXP_BASE  = 30,
+  FRU_2U        = 30,
+  FRU_CWC       ,
+  FRU_2U_TOP    ,
+  FRU_2U_BOT    ,
   FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 
@@ -124,6 +135,9 @@ enum {
   DEV_ID13_2OU = 0x12,
   BOARD_1OU,
   BOARD_2OU,
+  BOARD_2OU_TOP,
+  BOARD_2OU_BOT,
+  BOARD_2OU_CWC,
 
   MAX_NUM_DEVS,
 };
@@ -154,6 +168,9 @@ enum {
   FRU_ID_2OU_DEV11  = 22,
   FRU_ID_2OU_DEV12  = 23,
   FRU_ID_2OU_DEV13  = 24,
+  FRU_ID_BOARD_2OU_TOP = 30,
+  FRU_ID_BOARD_2OU_BOT = 31,
+  FRU_ID_BOARD_2OU_CWC = 32,
 };
 
 enum {
@@ -195,6 +212,7 @@ enum {
   GPV3_MCHP_BOARD = 0x03,
   GPV3_BRCM_BOARD = 0x00,
   DP_RISER_BOARD = 0x06,
+  CWC_MCHP_BOARD = 0x04,
   UNKNOWN_BOARD = 0xff,
 };
 
@@ -287,6 +305,7 @@ int fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
 int fby3_common_get_bmc_location(uint8_t *id);
 int fby3_common_get_fru_id(char *str, uint8_t *fru);
 int fby3_common_check_slot_id(uint8_t fru);
+int fby3_common_exp_get_num_devs(uint8_t fru, uint8_t *num);
 int fby3_common_get_slot_id(char *str, uint8_t *fru);
 int fby3_common_get_bus_id(uint8_t slot_id);
 int fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val);
@@ -296,6 +315,9 @@ int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
 int fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
 int fby3_common_service_ctrl (char* service, uint8_t action);
+int fby3_common_get_exp_id(char *str, uint8_t *fru);
+int fby3_common_get_exp_dev_id(char *str, uint8_t *dev);
+int fby3_common_exp_dev_name(uint8_t dev, char *str);
 
 #ifdef __cplusplus
 } // extern "C"

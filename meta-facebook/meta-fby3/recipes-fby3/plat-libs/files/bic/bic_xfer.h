@@ -66,6 +66,8 @@ enum {
   BB_BIC_INTF   = 0x10,
   BMC_INTF      = 0x1a,
   REXP_BIC_INTF = 0x15,
+  RREXP_BIC_INTF1 = 0x45,
+  RREXP_BIC_INTF2 = 0x40,
   NONE_INTF     = 0xff,
 };
 
@@ -79,6 +81,7 @@ enum {
   BICSPE = 0x07,
   BICGPV3 = 0x08,
   BIC1OU_E1S = 0x09,
+  BICCWC = 0x0A,
 };
 
 void msleep(int msec);

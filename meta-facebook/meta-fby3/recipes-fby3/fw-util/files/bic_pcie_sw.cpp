@@ -97,7 +97,56 @@ int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp, const uin
   char ver[32] = {0};
   uint8_t rbuf[4] = {0};
   int ret = 0;
-  ret = bic_get_fw_ver(slot_id, alt_fw_comp, rbuf);
+  uint8_t input_comp = alt_fw_comp;
+
+  if (board_type == CWC_MCHP_BOARD) {
+    switch (alt_fw_comp) {
+      case FW_2OU_PESW_CFG_VER:
+        if (fw_comp == FW_GPV3_TOP_PESW) {
+          input_comp = FW_2U_TOP_PESW_CFG_VER;
+        } else if (fw_comp == FW_GPV3_BOT_PESW) {
+          input_comp = FW_2U_BOT_PESW_CFG_VER;
+        }
+        break;
+      case FW_2OU_PESW_FW_VER:
+        if (fw_comp == FW_GPV3_TOP_PESW) {
+          input_comp = FW_2U_TOP_PESW_FW_VER;
+        } else if (fw_comp == FW_GPV3_BOT_PESW) {
+          input_comp = FW_2U_BOT_PESW_FW_VER;
+        }
+        break;
+      case FW_2OU_PESW_BL0_VER:
+        if (fw_comp == FW_GPV3_TOP_PESW) {
+          input_comp = FW_2U_TOP_PESW_BL0_VER;
+        } else if (fw_comp == FW_GPV3_BOT_PESW) {
+          input_comp = FW_2U_BOT_PESW_BL0_VER;
+        }
+        break;
+      case FW_2OU_PESW_BL1_VER:
+        if (fw_comp == FW_GPV3_TOP_PESW) {
+          input_comp = FW_2U_TOP_PESW_BL1_VER;
+        } else if (fw_comp == FW_GPV3_BOT_PESW) {
+          input_comp = FW_2U_BOT_PESW_BL1_VER;
+        }
+        break;
+      case FW_2OU_PESW_PART_MAP0_VER:
+        if (fw_comp == FW_GPV3_TOP_PESW) {
+          input_comp = FW_2U_TOP_PESW_PART_MAP0_VER;
+        } else if (fw_comp == FW_GPV3_BOT_PESW) {
+          input_comp = FW_2U_BOT_PESW_PART_MAP0_VER;
+        }
+        break;
+      case FW_2OU_PESW_PART_MAP1_VER:
+        if (fw_comp == FW_GPV3_TOP_PESW) {
+          input_comp = FW_2U_TOP_PESW_PART_MAP1_VER;
+        } else if (fw_comp == FW_GPV3_BOT_PESW) {
+          input_comp = FW_2U_BOT_PESW_PART_MAP1_VER;
+        }
+        break;
+    }
+  }
+
+  ret = bic_get_fw_ver(slot_id, input_comp, rbuf);
   snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
   s = string(ver);
   if ( alt_fw_comp != FW_2OU_PESW_CFG_VER && alt_fw_comp != FW_2OU_PESW_FW_VER ) {

@@ -85,6 +85,8 @@ extern const char pal_dev_fru_list[];
 extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
 extern const char pal_fan_opt_list[];
+extern const char pal_fru_exp_list[];
+extern const char pal_m2_dual_list[];
 
 enum {
   LED_LOCATE_MODE = 0x0,
@@ -236,6 +238,8 @@ int pal_check_slot_cpu_present(uint8_t slot_id);
 int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
 int pal_dp_hba_fan_table_check(void);
 int pal_get_bb_fw_info(unsigned char target, char* ver_str);
+int pal_is_cwc(void);
+int pal_get_cwc_id(char *str, uint8_t *fru);
 #ifdef __cplusplus
 } // extern "C"
 #endif

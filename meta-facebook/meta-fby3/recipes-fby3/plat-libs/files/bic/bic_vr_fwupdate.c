@@ -43,6 +43,7 @@
 #define MAX_RETRY 3
 #define VR_SB_BUS 0x8
 #define VR_2OU_BUS 0x1
+#define VR_CWC_BUS 0x3
 
 typedef struct {
   uint8_t command;
@@ -64,6 +65,13 @@ static int vr_cnt = 0;
 
 //4 VRs are on the server board
 static vr vr_list[4] = {0};
+
+static int cwc_usb_depth = 3;
+static uint8_t cwc_usb_ports[] = {1, 3, 3};
+static int top_gpv3_usb_depth = 5;
+static int bot_gpv3_usb_depth = 5;
+static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 3};
+static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 3};
 
 static uint8_t
 cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len)
@@ -1030,6 +1038,8 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   //select PID/VID
   switch(dev->intf) {
     case REXP_BIC_INTF:
+    case RREXP_BIC_INTF1:
+    case RREXP_BIC_INTF2:
       bic_usb_pid = EXP2_TI_PRODUCT_ID;
       bic_usb_vid = EXP2_TI_VENDOR_ID;
       break;
@@ -1041,18 +1051,29 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   //select INDEX
   switch(comp) {
     case FW_2OU_PESW_VR:
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
       usb_idx = USB_2OU_ISL_VR_IDX;
       break;
     case FW_2OU_3V3_VR1:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_BOT_3V3_VR1:
       usb_idx = USB_2OU_VY_VR_STBY1;
       break;
     case FW_2OU_3V3_VR2:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_BOT_3V3_VR2:
       usb_idx = USB_2OU_VY_VR_STBY2;
       break;
     case FW_2OU_3V3_VR3:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_BOT_3V3_VR3:
       usb_idx = USB_2OU_VY_VR_STBY3;
       break;
     case FW_2OU_1V8_VR:
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_1V8_VR:
       usb_idx = USB_2OU_VY_VR_P1V8;
       break;
     default:
@@ -1061,8 +1082,11 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   }
 
   // get remaining_writes
-  if ( FW_2OU_PESW_VR  == comp ) ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
-  else ret = bic_get_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), &remaining_writes, dev->intf);
+  if ( FW_2OU_PESW_VR == comp || FW_CWC_PESW_VR == comp || FW_GPV3_TOP_PESW_VR == comp || FW_GPV3_BOT_PESW_VR == comp ) {
+    ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
+  } else {
+    ret = bic_get_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), &remaining_writes, dev->intf);
+  }
 
   // check the result of execution
   if ( ret < 0 ) {
@@ -1080,8 +1104,36 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
 
   bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
 
-  // init usb device
-  if ( (ret = bic_init_usb_dev(slot_id, udev, bic_usb_pid, bic_usb_vid)) < 0 ) goto error_exit;
+  switch(comp) {
+    case FW_CWC_PESW_VR:
+      if ( (ret = bic_init_usb_dev_ports(slot_id, udev, bic_usb_pid, bic_usb_vid, cwc_usb_depth, cwc_usb_ports)) < 0 ) {
+        goto error_exit;
+      }
+      break;
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+      if ( (ret = bic_init_usb_dev_ports(slot_id, udev, bic_usb_pid, bic_usb_vid, top_gpv3_usb_depth, top_gpv3_usb_ports)) < 0 ) {
+        goto error_exit;
+      }
+      break;
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
+      if ( (ret = bic_init_usb_dev_ports(slot_id, udev, bic_usb_pid, bic_usb_vid, bot_gpv3_usb_depth, bot_gpv3_usb_ports)) < 0 ) {
+        goto error_exit;
+      }
+      break;
+    default:
+      // init usb device
+      if ( (ret = bic_init_usb_dev(slot_id, udev, bic_usb_pid, bic_usb_vid)) < 0 ) {
+        goto error_exit;
+      }
+  }
 
   // allocate mem
   buf = malloc(USB_PKT_HDR_SIZE + DEFAULT_DATA_SIZE);
@@ -1112,6 +1164,9 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
 
   switch(comp) {
     case FW_2OU_PESW_VR:
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
       {
         int retry = MAX_RETRY;
         sleep(1);
@@ -1131,6 +1186,14 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     case FW_2OU_3V3_VR2:
     case FW_2OU_3V3_VR3:
     case FW_2OU_1V8_VR:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
       ret = bic_set_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), (remaining_writes - 1), dev->intf);
       if ( ret < 0 ) {
         printf("Failed to update remaining_writes for Vishay VR %02X\n", comp);
@@ -1164,7 +1227,18 @@ struct dev_table {
   {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY1, "VR_P3V3_STBY1", FW_2OU_3V3_VR1},
   {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY2, "VR_P3V3_STBY2", FW_2OU_3V3_VR2},
   {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY3, "VR_P3V3_STBY3", FW_2OU_3V3_VR3},
-  {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P1V8,       "VR_P1V8",       FW_2OU_1V8_VR}
+  {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P1V8,       "VR_P1V8",       FW_2OU_1V8_VR},
+  {REXP_BIC_INTF, VR_CWC_BUS, VCCIN_ADDR,        "VR_P1V8/P0V84", FW_CWC_PESW_VR},
+  {RREXP_BIC_INTF1, VR_2OU_BUS, VR_PESW_ADDR,    "VR_P0V84/P0V9", FW_GPV3_TOP_PESW_VR},
+  {RREXP_BIC_INTF2, VR_2OU_BUS, VR_PESW_ADDR,    "VR_P0V84/P0V9", FW_GPV3_BOT_PESW_VR},
+  {RREXP_BIC_INTF1, VR_2OU_BUS, VR_2OU_P3V3_STBY1, "VR_P3V3_STBY1", FW_2U_TOP_3V3_VR1},
+  {RREXP_BIC_INTF1, VR_2OU_BUS, VR_2OU_P3V3_STBY2, "VR_P3V3_STBY2", FW_2U_TOP_3V3_VR2},
+  {RREXP_BIC_INTF1, VR_2OU_BUS, VR_2OU_P3V3_STBY3, "VR_P3V3_STBY3", FW_2U_TOP_3V3_VR3},
+  {RREXP_BIC_INTF1, VR_2OU_BUS, VR_2OU_P1V8,     "VR_P1V8",       FW_2U_TOP_1V8_VR},
+  {RREXP_BIC_INTF2, VR_2OU_BUS, VR_2OU_P3V3_STBY1, "VR_P3V3_STBY1", FW_2U_BOT_3V3_VR1},
+  {RREXP_BIC_INTF2, VR_2OU_BUS, VR_2OU_P3V3_STBY2, "VR_P3V3_STBY2", FW_2U_BOT_3V3_VR2},
+  {RREXP_BIC_INTF2, VR_2OU_BUS, VR_2OU_P3V3_STBY3, "VR_P3V3_STBY3", FW_2U_BOT_3V3_VR3},
+  {RREXP_BIC_INTF2, VR_2OU_BUS, VR_2OU_P1V8,     "VR_P1V8",       FW_2U_BOT_1V8_VR},
 };
 
 int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
@@ -1223,7 +1297,10 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
   if ( rlen == IFX_DEVID_LEN ) {
     *sel_vendor = VR_IFX;
     // the length of IFX and VY is the same, check it further
-    if ( intf == REXP_BIC_INTF && dev_list[i].comp != FW_2OU_PESW_VR ) {
+    if ( (intf == REXP_BIC_INTF && dev_list[i].comp != FW_2OU_PESW_VR) ||
+         (intf == REXP_BIC_INTF && dev_list[i].comp != FW_CWC_PESW_VR) ||
+         (intf == RREXP_BIC_INTF1 && dev_list[i].comp != FW_GPV3_TOP_PESW_VR) ||
+         (intf == RREXP_BIC_INTF2 && dev_list[i].comp != FW_GPV3_BOT_PESW_VR) ) {
       *sel_vendor = VR_VY;
     }
   } else if (rlen == TI_DEVID_LEN ) {
@@ -1248,7 +1325,7 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
 
   //when bmc tries to read its device ID, it may report CML fault
   //disble vr monitor before updating it or false alarm events will be issued
-  if ( intf == REXP_BIC_INTF ) {
+  if ( intf == REXP_BIC_INTF || intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2 ) {
     printf("disabling VR fault monitor...\n");
     if ( bic_enable_vr_fault_monitor(slot_id, false, intf) < 0 ) {
       printf("%s() Failed to disable VR fault monitor\n", __func__);

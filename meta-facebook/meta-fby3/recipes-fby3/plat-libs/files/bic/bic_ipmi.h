@@ -88,7 +88,9 @@ int remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value, uint8_t
 int bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value);
 int bic_asd_init(uint8_t slot_id, uint8_t cmd);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data);
+int remote_bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data, uint8_t intf);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data);
+int remote_bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data, uint8_t intf);
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_set_sys_guid(uint8_t slot_id, uint8_t *guid);
 int bic_do_sled_cycle(uint8_t slot_id);
@@ -119,6 +121,8 @@ int bic_bypass_to_another_bmc(uint8_t* data, uint8_t len);
 int bic_notify_pwr_lock_sel(uint8_t dir_type);
 int bic_get_pwr_lock_flag(uint8_t *flag);
 int bic_ack_sel(uint8_t event);
+int bic_is_2u_top_bot_prsnt(uint8_t slot_id);
+int bic_is_2u_top_bot_prsnt_cache(uint8_t slot_id);
 
 #ifdef __cplusplus
 } // extern "C"

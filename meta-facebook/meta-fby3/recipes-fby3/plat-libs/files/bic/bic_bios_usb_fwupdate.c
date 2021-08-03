@@ -149,7 +149,7 @@ send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
 }
 
 int
-bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
+bic_init_usb_dev_ports(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id, const int depth, const uint8_t ports[])
 {
   int ret;
   int index = 0;
@@ -157,6 +157,8 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, cons
   ssize_t cnt;
   uint8_t bmc_location = 0;
   int recheck = MAX_CHECK_DEVICE_TIME;
+  uint8_t dev_ports[USB_MAX_LEVEL] = {0};
+  int i = 0;
 
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -189,6 +191,22 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, cons
       }
 
       if( (vendor_id == udev->desc.idVendor) && (product_id == udev->desc.idProduct) ) {
+        if (depth > 0 && ports != NULL) {
+          if (depth == libusb_get_port_numbers(udev->dev, dev_ports, USB_MAX_LEVEL)) {
+            for (i = 0; i < depth; ++i) {
+              if (dev_ports[i] != ports[i]) {
+                break;
+              }
+            }
+
+            if (i != depth) {
+              continue;
+            }
+          } else {
+            continue;
+          }
+        }
+
         ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
         if ( ret < 0 ) {
           printf("Error get Manufacturer string descriptor -- exit\n");
@@ -308,6 +326,12 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, cons
   return 0;
 error_exit:
   return -1;
+}
+
+int
+bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
+{
+  return bic_init_usb_dev_ports(slot_id, udev, product_id, vendor_id, 0, NULL);
 }
 
 static int

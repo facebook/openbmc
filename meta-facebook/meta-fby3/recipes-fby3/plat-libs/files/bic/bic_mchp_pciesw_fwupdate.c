@@ -52,6 +52,13 @@ enum {
   PESW_VALID_STS        = 0x01,
 };
 
+static int cwc_usb_depth = 3;
+static uint8_t cwc_usb_ports[] = {1, 3, 3};
+static int top_gpv3_usb_depth = 5;
+static int bot_gpv3_usb_depth = 5;
+static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 3};
+static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 3};
+
 char pesw_image_path[5][PATH_MAX+1] = {{"\0"}, {"\0"}, {"\0"}, {"\0"}, {"\0"}};
 static int
 _process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry);
@@ -181,6 +188,22 @@ _switch_pesw_to_recovery(uint8_t slot_id, uint8_t intf, bool is_low) {
 }
 
 static int
+_switch_cwc_pesw_to_recovery(uint8_t slot_id, uint8_t intf, bool is_low) {
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00, 1, 18, (is_low == true)?0:1};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 6;
+  uint8_t rlen = 0;
+
+  printf("Pulling %s FM_BIC_PESW_RECOVERY_0...\n", (is_low == true)?"donw":"high");
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    printf("Failed to pull %s FM_BIC_PESW_RECOVERY_0\n", (is_low == true)?"donw":"high");
+  }
+  return ret;
+}
+
+static int
 _switch_i2c_mux_to_pesw(uint8_t slot_id, uint8_t intf) {
   uint8_t tbuf[5] = {0x13, 0xE2, 0x00, 0x00, 0x02};
   uint8_t rbuf[16] = {0};
@@ -266,7 +289,7 @@ _toggle_pesw(uint8_t slot_id, uint8_t intf, uint8_t type, bool is_rcvry) {
 }
 
 static int
-_get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
+_get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status, uint8_t intf) {
   uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, 0x01};  // IANA ID + data
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
@@ -274,7 +297,7 @@ _get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
   int retries = 3;
 
   do {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen, REXP_BIC_INTF);
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen, intf);
     if ( ret != BIC_STATUS_SUCCESS ) {
       sleep(1);
       syslog(LOG_ERR,"_get_pcie_sw_update_status: slot: %d, retrying..\n", slot_id);
@@ -288,7 +311,7 @@ _get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
 }
 
 static int
-_poll_pcie_sw_update_status(uint8_t slot_id) {
+_poll_pcie_sw_update_status(uint8_t slot_id, uint8_t intf) {
 #define PCIE_SW_MAX_RETRY 50
 
   enum {
@@ -318,7 +341,7 @@ _poll_pcie_sw_update_status(uint8_t slot_id) {
 
   for ( j = 0; j < PCIE_SW_MAX_RETRY; j++ ) {
     // get status
-    ret = _get_pcie_sw_update_status(slot_id, status);
+    ret = _get_pcie_sw_update_status(slot_id, status, intf);
     if ( ret < 0 ) {
       break;
     }
@@ -432,7 +455,7 @@ int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t 
     // wait for PCIe
     if ( (temp_comp & 0x80) == 0x80 ) {
       block_offset = offset; //update block offset
-      if ( (ret = _poll_pcie_sw_update_status(slot_id)) < 0 ) break;
+      if ( (ret = _poll_pcie_sw_update_status(slot_id, intf)) < 0 ) break;
       if ( offset == file_size ) break;
     }
   }
@@ -468,7 +491,7 @@ _send_bic_usb_packet(usb_dev* udev, bic_usb_ext_packet *pkt) {
 }
 
 int
-bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name) {
+bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name, uint8_t intf) {
   int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size = 0;
@@ -519,7 +542,7 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
       break;
     }
 
-    if ( (ret = _poll_pcie_sw_update_status(slot_id)) < 0 ) break;
+    if ( (ret = _poll_pcie_sw_update_status(slot_id, intf)) < 0 ) break;
 
     // update offset
     write_offset += read_bytes;
@@ -540,7 +563,7 @@ error_exit:
 }
 
 static int
-_quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bool is_rcvry) {
+_quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bool is_rcvry, uint8_t board_type) {
   int ret = _toggle_pesw(slot_id, intf, type, is_rcvry);
   if ( is_rcvry == false ) return ret;
 
@@ -564,7 +587,11 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bo
   }
 
   // recover it
-  ret = _switch_pesw_to_recovery(slot_id, intf, false);
+  if (board_type == CWC_MCHP_BOARD && intf == REXP_BIC_INTF) {
+    ret = _switch_cwc_pesw_to_recovery(slot_id, intf, false);
+  } else {
+    ret = _switch_pesw_to_recovery(slot_id, intf, false);
+  }
   if ( ret < 0 ) {
     goto error_exit;
   }
@@ -608,7 +635,7 @@ error_exit:
 }
 
 static int
-_enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
+_enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry, uint8_t board_type) {
   int ret = BIC_STATUS_FAILURE;
   uint8_t tbuf[6] = {0};
   uint8_t rbuf[16] = {0};
@@ -619,7 +646,11 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
 
   printf("Starting running PESW recovery\n");
 
-  ret = _switch_pesw_to_recovery(slot_id, intf, true);
+  if (board_type == CWC_MCHP_BOARD && intf == REXP_BIC_INTF) {
+    ret = _switch_cwc_pesw_to_recovery(slot_id, intf, true);
+  } else {
+    ret = _switch_pesw_to_recovery(slot_id, intf, true);
+  }
   if ( ret < 0 ) {
     goto error_exit;
   }
@@ -647,16 +678,24 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
   printf("Waiting for BIC...\n");
   sleep(8);
 
-  printf("Switching I2C mux to PESW...\n");
-  ret = _switch_i2c_mux_to_pesw(slot_id, intf);
-  if ( ret < 0 ) {
-    printf("Failed to switch i2c mux\n");
-    goto error_exit;
+  if (board_type == CWC_MCHP_BOARD && intf == REXP_BIC_INTF) {
+    printf("Skip switching I2C mux to PESW\n");
+  } else {
+    printf("Switching I2C mux to PESW...\n");
+    ret = _switch_i2c_mux_to_pesw(slot_id, intf);
+    if ( ret < 0 ) {
+      printf("Failed to switch i2c mux\n");
+      goto error_exit;
+    }
   }
 
   printf("Detecting PESW...");
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-  tbuf[3] = 0x09;
+  if (board_type == CWC_MCHP_BOARD && intf == REXP_BIC_INTF) {
+    tbuf[3] = 0x01;
+  } else {
+    tbuf[3] = 0x09;
+  }
   tlen = 4;
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x60, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
@@ -696,7 +735,7 @@ _process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, 
     //do nothing
     printf("Please update it via USB!\n");
   } else {
-    ret = bic_update_pesw_fw_usb(slot_id, pesw_image_path[idx], udev, comp_name[idx]);
+    ret = bic_update_pesw_fw_usb(slot_id, pesw_image_path[idx], udev, comp_name[idx], intf);
     if ( ret < 0 ) {
       printf("Failed to update %s\n", comp_name[idx]);
       goto error_exit;
@@ -743,6 +782,20 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
   int ret = BIC_STATUS_FAILURE;
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
+  uint8_t bmc_location = 0, board_type = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  if (bmc_location == NIC_BMC) { 
+    if (fby3_common_get_2ou_board_type(slot_id, &board_type) < 0) {
+      syslog(LOG_ERR, "%s() Fails to get 2ou board type", __func__);
+      goto error_exit;
+    }
+  }
 
   // USB is the default path for PESW update, we just make sure USB can be initialized,
   // If users choose to send data via IPMB, skip it
@@ -750,14 +803,27 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
     udev->ci = 1;
     udev->epaddr = 0x1;
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
-    if ( (ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID)) < 0 )
+
+    if (board_type == CWC_MCHP_BOARD) {
+      if (intf == RREXP_BIC_INTF1) { 
+        ret = bic_init_usb_dev_ports(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID, top_gpv3_usb_depth, top_gpv3_usb_ports);
+      } else if (intf == RREXP_BIC_INTF2) {
+        ret = bic_init_usb_dev_ports(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID, bot_gpv3_usb_depth, bot_gpv3_usb_ports);
+      } else {
+        ret = bic_init_usb_dev_ports(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID, cwc_usb_depth, cwc_usb_ports);
+      }
+    } else {
+      ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID);
+    }
+
+    if ( ret < 0 )
       goto error_exit;
   }
 
   gettimeofday(&start, NULL);
 
   // should it run into rcvry?
-  if ( _enter_pesw_rcvry_mode(slot_id, intf, is_rcvry) < 0 ) {
+  if ( _enter_pesw_rcvry_mode(slot_id, intf, is_rcvry, board_type) < 0 ) {
     goto error_exit;
   }
 
@@ -772,7 +838,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
   }
 
   // quit
-  if ( _quit_pesw_update(slot_id, type, udev, intf, is_rcvry) < 0 ) {
+  if ( _quit_pesw_update(slot_id, type, udev, intf, is_rcvry, board_type) < 0 ) {
     goto error_exit;
   }
 

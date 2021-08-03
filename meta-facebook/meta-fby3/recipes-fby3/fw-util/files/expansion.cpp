@@ -14,6 +14,7 @@ void ExpansionBoard::ready()
   uint8_t config_status = 0;
   bool is_present = true;
   int ret = 0;
+  int exp_present = 0;
 
   switch(fw_comp) {
     case FW_CPLD:
@@ -88,8 +89,55 @@ void ExpansionBoard::ready()
           throw string("DC-off");
       }
       break;
+    case FW_CWC_BIC:
+    case FW_CWC_BIC_BL:
+    case FW_CWC_CPLD:
+    case FW_CWC_PESW:
+    case FW_GPV3_TOP_BIC:
+    case FW_GPV3_TOP_BIC_BL:
+    case FW_GPV3_TOP_CPLD:
+    case FW_GPV3_TOP_PESW:
+    case FW_GPV3_BOT_BIC:
+    case FW_GPV3_BOT_BIC_BL:
+    case FW_GPV3_BOT_CPLD:
+    case FW_GPV3_BOT_PESW:
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+      if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
+        throw string("Failed to get 2OU board type");
+      }
+      if ((config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou != CWC_MCHP_BOARD) {
+        is_present = false;
+      } else {
+        exp_present = bic_is_2u_top_bot_prsnt(slot_id);
+      }
+      break;
     default:
       break;
+  }
+
+  if (is_present) {
+    switch (fw_comp) {
+      case FW_GPV3_TOP_BIC:
+      case FW_GPV3_TOP_BIC_BL:
+      case FW_GPV3_TOP_CPLD:
+      case FW_GPV3_TOP_PESW:
+      case FW_GPV3_TOP_PESW_VR:
+        if ((exp_present & PRESENT_2U_TOP) == 0) {
+          throw board_name + " is empty";
+        }
+        break;
+      case FW_GPV3_BOT_BIC:
+      case FW_GPV3_BOT_BIC_BL:
+      case FW_GPV3_BOT_CPLD:
+      case FW_GPV3_BOT_PESW:
+      case FW_GPV3_BOT_PESW_VR:
+        if ((exp_present & PRESENT_2U_BOT) == 0) {
+          throw board_name + " is empty";
+        }
+        break;
+    }
   }
 
   if ( is_present == false )

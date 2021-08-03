@@ -65,6 +65,9 @@ fruid_to_devid mapping[] = {
   { FRU_ID_2OU_DEV11    ,DEV_ID11_2OU },
   { FRU_ID_2OU_DEV12    ,DEV_ID12_2OU },
   { FRU_ID_2OU_DEV13    ,DEV_ID13_2OU },
+  { FRU_ID_BOARD_2OU_TOP ,BOARD_2OU_TOP },
+  { FRU_ID_BOARD_2OU_BOT ,BOARD_2OU_BOT },
+  { FRU_ID_BOARD_2OU_CWC ,BOARD_2OU_CWC },
 };
 
 /*

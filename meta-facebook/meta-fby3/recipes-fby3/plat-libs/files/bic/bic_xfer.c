@@ -155,6 +155,47 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       }
 
       break;
+
+    case RREXP_BIC_INTF1:
+    case RREXP_BIC_INTF2:
+      if ( tlen + MIN_IPMB_REQ_LEN + MIN_IPMB_BYPASS_LEN * 2 > MAX_IPMB_RES_LEN ) {
+        syslog(LOG_WARNING, "%s() xfer length is too long. len=%d, max=%d", __func__, (tlen + MIN_IPMB_REQ_LEN + MIN_IPMB_BYPASS_LEN * 2), MAX_IPMB_RES_LEN);
+        return BIC_STATUS_FAILURE;
+      }
+
+      tmp_len = 3;
+      memcpy(tmp_buf, (uint8_t *)&IANA_ID, tmp_len);
+      tmp_buf[tmp_len++] = REXP_BIC_INTF;
+      tmp_buf[tmp_len++] = NETFN_OEM_1S_REQ << 2;
+      tmp_buf[tmp_len++] = CMD_OEM_1S_MSG_OUT;
+      memcpy(&tmp_buf[tmp_len], (uint8_t *)&IANA_ID, 3);
+      tmp_len += 3;
+      tmp_buf[tmp_len++] = intf;
+      tmp_buf[tmp_len++] = netfn << 2;
+      tmp_buf[tmp_len++] = cmd;
+      memcpy(&tmp_buf[tmp_len], tbuf, tlen);
+      tmp_len += tlen;
+
+      ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rsp_buf, &rsp_len);
+      //rsp_buf[6] is the completion code
+      if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && (rsp_buf[6] != CC_SUCCESS || rsp_buf[13] != CC_SUCCESS)) ) {
+        syslog(LOG_WARNING, "%s() The 2nd or 3rd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
+        syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd: %02X\n", __func__, netfn << 2, cmd);
+        switch(rsp_buf[13]) {
+        case CC_NOT_SUPP_IN_CURR_STATE:
+          ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
+          break;
+        default:
+          ret = BIC_STATUS_FAILURE;
+          break;
+        }
+      } else { 
+        //catch the data and ignore the packet of the bypass command.
+        *rlen = rsp_len - 14;
+        memmove(rbuf, &rsp_buf[14], *rlen);
+      }
+
+      break;
   }
   return ret;
 }

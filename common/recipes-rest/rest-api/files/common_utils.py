@@ -58,8 +58,9 @@ def get_endpoints(path: str):
         endpoints = ENDPOINT_CHILDREN[path]
     else:
         for route in app.router.resources():
-            rest_route_path = route.url().split("/")
-            if len(rest_route_path) > position and path in route.url():
+            string = str(route)
+            rest_route_path = string[string.index("  ") :].split("/")
+            if len(rest_route_path) > position and path in string:
                 endpoints.add(rest_route_path[position])
         endpoints = sorted(endpoints)
         ENDPOINT_CHILDREN[path] = endpoints

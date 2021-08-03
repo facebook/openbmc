@@ -7,6 +7,7 @@ import unittest
 # workaround bc pal and sdr are unavailable in unit test envs
 sys.modules["pal"] = types.ModuleType("pal")
 sys.modules["sdr"] = types.ModuleType("sdr")
+sys.modules["sensors"] = types.ModuleType("sensors")
 
 import aiohttp.web
 import pal

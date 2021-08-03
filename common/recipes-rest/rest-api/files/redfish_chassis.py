@@ -36,7 +36,7 @@ class RedfishChassis:
 
     async def get_chassis_members(self, request: str) -> web.Response:
         server_name = self.get_server_name()
-        if not redfish_chassis_helper.is_platform_supported():
+        if not redfish_chassis_helper.is_libpal_supported():
             raise NotImplementedError("Redfish is not supported in this platform")
 
         frus_info_list = await redfish_chassis_helper.get_fru_info_helper(self.fru_name)
@@ -63,19 +63,28 @@ class RedfishChassis:
     async def get_chassis_thermal(self, request: str) -> web.Response:
         server_name = self.get_server_name()
         body = {}
-        if not redfish_chassis_helper.is_platform_supported():
-            raise NotImplementedError("Redfish is not supported in this platform")
+        if redfish_chassis_helper.is_libpal_supported():  # for compute and
+            # newer fboss platforms that support libpal
+            temperature_sensors = (
+                redfish_chassis_helper.get_sensor_details_using_libpal_helper(
+                    ["C"], self.fru_name
+                )
+            )
+            fan_sensors = redfish_chassis_helper.get_sensor_details_using_libpal_helper(
+                ["RPM", "%"], self.fru_name
+            )
+        else:  # for older fboss platforms that don't support libpal
+            temperature_sensors = redfish_chassis_helper.get_older_fboss_sensor_details(
+                "BMC", redfish_chassis_helper.LIB_SENSOR_TEMPERATURE
+            )
+            fan_sensors = redfish_chassis_helper.get_older_fboss_sensor_details(
+                "BMC", redfish_chassis_helper.LIB_SENSOR_FAN
+            )
 
-        temperature_sensors = redfish_chassis_helper.get_sensor_details_helper(
-            ["C"], self.fru_name
-        )
+        redundancy_list = []
         temperature_sensors_json = make_temperature_sensors_json_body(
             temperature_sensors, server_name
         )
-        fan_sensors = redfish_chassis_helper.get_sensor_details_helper(
-            ["RPM", "%"], self.fru_name
-        )
-        redundancy_list = []
         fan_sensors_json = make_fan_sensors_json_body(
             fan_sensors, redundancy_list, server_name
         )
@@ -105,11 +114,13 @@ class RedfishChassis:
     async def get_chassis_power(self, request: str) -> web.Response:
         server_name = self.get_server_name()
         body = {}
-        if not redfish_chassis_helper.is_platform_supported():
+        if not redfish_chassis_helper.is_libpal_supported():
             raise NotImplementedError("Redfish is not supported in this platform")
 
-        power_control_sensors = redfish_chassis_helper.get_sensor_details_helper(
-            ["Amps", "Watts", "Volts"], self.fru_name
+        power_control_sensors = (
+            redfish_chassis_helper.get_sensor_details_using_libpal_helper(
+                ["Amps", "Watts", "Volts"], self.fru_name
+            )
         )
         power_control_sensors_json = make_power_sensors_json_body(
             power_control_sensors, server_name
@@ -157,14 +168,38 @@ def make_temperature_sensors_json_body(
             "FruName": temperature_sensor.fru_name,
             "Status": {"State": "Enabled", "Health": "OK"},
             "ReadingCelsius": temperature_sensor.reading,
-            "UpperThresholdNonCritical": round(sensor_threshold.unc_thresh, 2),
-            "UpperThresholdCritical": round(sensor_threshold.ucr_thresh, 2),
-            "UpperThresholdFatal": round(sensor_threshold.unr_thresh, 2),
-            "LowerThresholdNonCritical": round(sensor_threshold.lnc_thresh, 2),
-            "LowerThresholdCritical": round(sensor_threshold.lcr_thresh, 2),
-            "LowerThresholdFatal": round(sensor_threshold.lnr_thresh, 2),
             "PhysicalContext": "Chassis",
         }
+        status = {
+            "Status": {"State": "Enabled", "Health": "OK"}
+        }  # default unless we have bad reading value
+        if redfish_chassis_helper.is_libpal_supported():  # for compute platforms
+            threshold_json = {
+                "UpperThresholdNonCritical": round(sensor_threshold.unc_thresh, 2),
+                "UpperThresholdCritical": round(sensor_threshold.ucr_thresh, 2),
+                "UpperThresholdFatal": round(sensor_threshold.unr_thresh, 2),
+                "LowerThresholdNonCritical": round(sensor_threshold.lnc_thresh, 2),
+                "LowerThresholdCritical": round(sensor_threshold.lcr_thresh, 2),
+                "LowerThresholdFatal": round(sensor_threshold.lnr_thresh, 2),
+            }
+        else:  # for fboss platforms
+            threshold_json = {
+                "UpperThresholdNonCritical": 0,
+                "UpperThresholdCritical": round(temperature_sensor.ucr_thresh, 2),
+                "UpperThresholdFatal": 0,
+                "LowerThresholdNonCritical": 0,
+                "LowerThresholdCritical": 0,
+                "LowerThresholdFatal": 0,
+            }
+
+            # in case of a bad reading value, update status
+            if temperature_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
+                status = {
+                    "Status": {"State": "UnavailableOffline", "Health": "Critical"}
+                }
+
+        temperature_json.update(threshold_json)
+        temperature_json.update(status)
         all_temperature_sensors.append(temperature_json)
     return all_temperature_sensors
 
@@ -189,7 +224,6 @@ def make_fan_sensors_json_body(
             "Status": {"State": "Enabled", "Health": "OK"},
             "Reading": fan_sensor.reading,
             "ReadingUnits": fan_sensor.sensor_unit,
-            "LowerThresholdFatal": round(sensor_threshold.lnr_thresh, 2),
             "Redundancy": [
                 {
                     "@odata.id": "/redfish/v1/Chassis/{server_name}/Thermal#/Redundancy/{idx}".format(  # noqa: B950
@@ -198,6 +232,19 @@ def make_fan_sensors_json_body(
                 },
             ],
         }
+        status = {
+            "Status": {"State": "Enabled", "Health": "OK"}
+        }  # default unless we have bad reading value
+        if sensor_threshold is None:  # for an fboss platform
+            fan_json["LowerThresholdFatal"] = 0
+            # in case of a bad reading value, update status
+            if fan_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
+                status = {
+                    "Status": {"State": "UnavailableOffline", "Health": "Critical"}
+                }
+        else:  # for a compute platform
+            fan_json["LowerThresholdFatal"] = round(sensor_threshold.lnr_thresh, 2)
+        fan_json.update(status)
         all_fan_sensors.append(fan_json)
         redundancy_list.append({"@odata.id": fan_json["@odata.id"]})
     return all_fan_sensors

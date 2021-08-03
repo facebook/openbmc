@@ -111,7 +111,7 @@ wedge_power_on_board() {
 
 wedge_prepare_cpld_update() {
     echo "Stop fscd service."
-    sv stop fscd
+    systemctl stop fscd.service
 
     echo "Disable watchdog."
     /usr/local/bin/wdtcli stop

@@ -213,6 +213,7 @@ extern err_t minor_auth_error[];
 extern err_t minor_update_error[];
 
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
+int pal_get_uart_select_from_kv(uint8_t *uart_select);
 int pal_get_cpld_ver(uint8_t fru, uint8_t *ver);
 int pal_check_pfr_mailbox(uint8_t fru);
 int set_pfr_i2c_filter(uint8_t slot_id, uint8_t value);

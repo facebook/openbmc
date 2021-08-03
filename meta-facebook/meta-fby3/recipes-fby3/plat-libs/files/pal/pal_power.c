@@ -754,8 +754,19 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   char key[MAX_KEY_LEN];
   char buff[MAX_VALUE_LEN] = {0};
   int policy = 3;
-  uint8_t status, ret;
+  int ret = 0;
+  uint8_t status = 0;
+  uint8_t uart_select = 0x00;
   unsigned char *data = res_data;
+
+  if(slot == 5) {   //handle the case, command sent from debug Card
+    ret = pal_get_uart_select_from_kv(&uart_select);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get debug_card_uart_select\n", __func__);
+    }
+    // if uart_select is BMC, the following code will return default data.
+    slot = uart_select;
+  }
 
   sprintf(key, "slot%u_por_cfg", slot);
   if (pal_get_key_value(key, buff) == 0) {

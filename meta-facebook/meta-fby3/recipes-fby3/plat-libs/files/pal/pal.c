@@ -2695,6 +2695,12 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
       break;
     case BIC_SENSOR_SYSTEM_STATUS:
       switch(event_data[3]) {
+        // it's not the fault event, filter it
+        // or the amber LED will blink
+        case 0x80: //E1S_1OU_M2_PRESENT
+        case 0x60: //SYS_SLED_PWR_CTRL
+        case 0x18: //SYS_ACK_SEL
+        case 0x15: //SYS_BB_FW_EVENT
         case 0x14: //SYS_FAN_SERVICE
         case 0x11: //SYS_SLOT_PRSNT
         case 0x0B: //SYS_M2_VPP

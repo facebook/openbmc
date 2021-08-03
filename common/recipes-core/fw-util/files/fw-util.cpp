@@ -43,6 +43,12 @@ std::atomic<bool> quit_process(false);
 string exec_name = "Unknown";
 map<string, map<string, Component *, partialLexCompare>, partialLexCompare> * Component::fru_list = NULL;
 
+#ifdef CONFIG_FBY3_CWC
+static bool fruExt = false; //if cwc option in the argument
+static bool cwcPlat = false;//cwc platform
+static uint8_t expFru = 0;  //cwc id
+#endif
+
 Component::Component(string fru, string component)
   : _fru(fru), _component(component), _sys(), update_initiated(false)
 {
@@ -142,6 +148,55 @@ void fw_util_sig_handler(int signo)
   syslog(LOG_DEBUG, "fw_util_sig_handler signo=%d requesting exit", signo);
 }
 
+#ifdef CONFIG_FBY3_CWC
+void remove_unused_comp()
+{
+  (*Component::fru_list)["slot1"].erase("2ou_bic");
+  (*Component::fru_list)["slot1"].erase("2ou_bicbl");
+}
+
+void print_cwc_usage()
+{
+  if (cwcPlat) {
+    cout << "       " << exec_name << " slot1 --version FRU2 [all|COMPONENT]" << endl;
+    cout << "       " << exec_name << " slot1 --update FRU2 [--]COMPONENT IMAGE_PATH" << endl;
+    cout << "       " << exec_name << " slot1 --force --update FRU2 [--]COMPONENT IMAGE_PATH" << endl;
+    cout << "       " << exec_name << " slot1 --dump FRU2 [--]COMPONENT IMAGE_PATH" << endl;
+    cout << "       " << exec_name << " slot1 --update FRU2 COMPONENT IMAGE_PATH --schedule now" << endl;
+  }
+}
+
+void print_cwc_fru()
+{
+  if (cwcPlat) {
+    cout << endl;
+    cout << left << setw(10) << "FRU2" << " : 2U-cwc, 2U-top, 2U-bot" << endl;
+  }
+}
+
+bool if_skip_cwc_comp(string &comp_name, string fru_name)
+{
+  if (cwcPlat && fru_name == "slot1") {
+    int len = comp_name.length();
+
+    if (comp_name.find("_top") != std::string::npos) {
+      comp_name = comp_name.substr(0, len-4);
+    } else {
+      /**
+       * top/bot gpv3 share the same options with cwc
+       * they are distinguished by fru2 option
+       */
+      if ((comp_name.find("_cwc") != std::string::npos) ||
+          (comp_name.find("_bot") != std::string::npos)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+#endif
+
 void usage()
 {
   cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
@@ -151,6 +206,9 @@ void usage()
   cout << "       " << exec_name << " FRU --update COMPONENT IMAGE_PATH --schedule now" << endl;
   cout << "       " << exec_name << " all --show-schedule" << endl;
   cout << "       " << exec_name << " all --delete-schedule TASK_ID" << endl;
+#ifdef CONFIG_FBY3_CWC
+  print_cwc_usage();
+#endif
   cout << endl;
   cout << left << setw(10) << "FRU" << " : Components" << endl;
   cout << "---------- : ----------" << endl;
@@ -160,6 +218,13 @@ void usage()
     for (auto ckv : fkv.second) {
       string comp_name = ckv.first;
       Component *c = ckv.second;
+
+#ifdef CONFIG_FBY3_CWC
+      if (if_skip_cwc_comp(comp_name, fru_name)) {
+        continue;
+      }
+#endif
+
       if (comp_name.find(" ") == comp_name.npos) {
         // No spaces in the component name, print as-is.
         cout << comp_name;
@@ -175,7 +240,84 @@ void usage()
     }
     cout << endl;
   }
+#ifdef CONFIG_FBY3_CWC
+  print_cwc_fru();
+#endif
 }
+
+#ifdef CONFIG_FBY3_CWC
+void init_cwc_env()
+{
+  if (pal_is_cwc() == PAL_EOK)
+  {
+    remove_unused_comp();
+    cwcPlat = true;
+  }
+}
+
+void extract_cwc_option_force(int *argc, char *argv[], string fru, string &fru2)
+{
+  if (cwcPlat && fru == "slot1") {
+    if ((*argc) >= 5 && pal_get_cwc_id(argv[4], &expFru) == 0) {
+      fruExt = true;
+      fru2.assign(argv[4]);
+    }
+  }
+
+  if (fruExt && (*argc) >= 5) {
+    for (int i = 4; i < (*argc)-1; ++i) {
+      argv[i] = argv[i+1];
+    }
+
+    (*argc)--;
+  }
+}
+
+void extract_cwc_option(int *argc, char *argv[], string fru, string &fru2)
+{
+  if (cwcPlat && fru == "slot1") {
+    if ((*argc) >= 4 && pal_get_cwc_id(argv[3], &expFru) == 0) {
+      fruExt = true;
+      fru2.assign(argv[3]);
+    }
+  }
+
+  if (fruExt && (*argc) >= 4) {
+    for (int i = 3; i < (*argc)-1; ++i) {
+      argv[i] = argv[i+1];
+    }
+
+    (*argc)--;
+  }
+}
+
+void cwc_option_normalize(string fru2, string &component)
+{
+  if (fruExt && component != "all") {
+    if (fru2 == "2U-cwc") {
+      component += "_cwc";
+    } else if (fru2 == "2U-top") {
+      component += "_top";
+    } else if (fru2 == "2U-bot") {
+      component += "_bot";
+    }
+  }
+}
+
+bool if_cwc_option_skipped(string fru2, string component, string comp_name)
+{
+  if (fruExt && component == "all") {
+    if (fru2 == "2U-cwc" && comp_name.find("_cwc") == string::npos) {
+      return true;
+    } else if (fru2 == "2U-top" && comp_name.find("_top") == string::npos) {
+      return true;
+    } else if (fru2 == "2U-bot" && comp_name.find("_bot") == string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -184,6 +326,10 @@ int main(int argc, char *argv[])
   struct sigaction sa;
 
   Component::fru_list_setup();
+
+#ifdef CONFIG_FBY3_CWC
+  init_cwc_env();
+#endif
 
 #ifdef __TEST__
   testing::InitGoogleTest(&argc, argv);
@@ -205,8 +351,14 @@ int main(int argc, char *argv[])
   json json_array(nullptr);
   bool add_task = false;
   Scheduler tasker;
+#ifdef CONFIG_FBY3_CWC
+  string fru2("");
+#endif
 
   if (action == "--force") {
+#ifdef CONFIG_FBY3_CWC
+    extract_cwc_option_force(&argc, argv, fru, fru2);
+#endif
     if (argc < 4) {
       usage();
       return -1;
@@ -225,6 +377,9 @@ int main(int argc, char *argv[])
       }
     }
   } else {
+#ifdef CONFIG_FBY3_CWC
+    extract_cwc_option(&argc, argv, fru, fru2);
+#endif
     if (argc >= 4) {
       component.assign(argv[3]);
       if (component.compare(0, 2, "--") == 0) {
@@ -246,6 +401,10 @@ int main(int argc, char *argv[])
       }
     }
   }
+
+#ifdef CONFIG_FBY3_CWC
+  cwc_option_normalize(fru2, component);
+#endif
 
   if ((action == "--update") || (action == "--dump")) {
     if (argc != 5 && argc != 7 ) {
@@ -341,6 +500,12 @@ int main(int argc, char *argv[])
             if (fru == "all" && component == c->alias_component())
               continue;
           }
+
+#ifdef CONFIG_FBY3_CWC
+          if (if_cwc_option_skipped(fru2, component, comp_name)) {
+            continue;
+          }
+#endif
 
           // We are going to add a task but print fw version
           // or do fw update.

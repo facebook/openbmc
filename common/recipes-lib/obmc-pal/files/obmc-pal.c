@@ -2791,3 +2791,13 @@ int __attribute__((weak))
 pal_get_server_12v_power(uint8_t fru_id, uint8_t *status) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_is_cwc(void) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_cwc_id(char *str, uint8_t *fru) {
+  return PAL_ENOTSUP;
+}

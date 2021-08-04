@@ -185,6 +185,8 @@ cpld_update_hw_mode(){
         result=$?
 }
 
+wedge_prepare_cpld_update
+
 case $5 in
     hw)
         cpld_update_hw_mode

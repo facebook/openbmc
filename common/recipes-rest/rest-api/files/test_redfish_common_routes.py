@@ -16,7 +16,7 @@ class TestCommonRoutes(unittest.TestCase):
         redfish.setup_redfish_common_routes(app)
         registered_routes = set()
         for route in app.router.resources():
-            registered_routes.add(route.url())
+            registered_routes.add(str(route.url_for()))
         routes_expected = [
             "/redfish",
             "/redfish/v1",
@@ -57,6 +57,6 @@ class TestCommonRoutes(unittest.TestCase):
                     )
                 registered_routes = set()
                 for route in app.router.resources():
-                    registered_routes.add(route.url())
+                    registered_routes.add(str(route.url_for()))
                 self.maxDiff = None
                 self.assertEqual(sorted(routes_expected), sorted(registered_routes))

@@ -14,5 +14,12 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+
+SRC_URI += " \
+    file://plat/meson.build \
+    file://pal_crashdump_nd.h \
+    file://pal_crashdump_nd.c \
+    "
 
 CFLAGS_prepend = " -DCONFIG_FBY2_ND -DCONFIG_FBY2_KERNEL "

@@ -1202,7 +1202,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
       break;
   }
 
-  printf("please perform a sled-cycle to take effect\n");
+  printf("please perform a sled-cycle or 12V-cycle to take effect\n");
 
 error_exit:
   if ( buf != NULL ) free(buf);

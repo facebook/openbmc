@@ -454,9 +454,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           }
         }
       } else {
-        if ((bmc_location == NIC_BMC) &&
-          ((pal_is_fw_update_ongoing(fru) == true) || (pal_is_fw_update_ongoing(FRU_BMC) == true))) {
-          syslog(LOG_WARNING, "%s(): Please make sure no firmware update is ongoing\n", __func__);
+        if ((bmc_location == NIC_BMC) && (true == pal_is_fw_update_ongoing_system()) ) {
+          printf("Please make sure no firmware update is ongoing\n");
           return POWER_STATUS_ERR;
         }
         if ( bic_do_12V_cycle(fru) < 0 ) {

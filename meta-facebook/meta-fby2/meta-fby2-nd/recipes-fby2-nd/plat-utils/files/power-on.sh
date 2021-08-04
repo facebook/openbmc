@@ -144,21 +144,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
     fi
   done
 
-  # Wait for all slots finish power-up
-  while [ $RETRY -lt 10 ]
-  do
-    FINISH=1
-    for i in ${POWER_ON_SLOT[@]}
-    do
-      status=$(power-util slot$i status)
-      if [ ${status:(-3)} == "OFF" ]; then
-        FINISH=0
-      fi
-    done
-    if [ $FINISH -eq 1 ]; then
-      break
-    fi
-    RETRY=$(($RETRY+1))
-    sleep 1
-  done
+  # Wait for all slots to finish power-up.
+  wait
+
 fi

@@ -515,7 +515,7 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
                   general_info, dimm_location_str, (sel[13]&0x01)?"PPR fail":"PPR success");
           break;
         case MEM_NO_DIMM:
-          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s", 
+          sprintf(error_log, "GeneralInfo: MemEvent(0x%02X), DIMM Failure Event: %s",
                   general_info, mem_event[event_type]);
           break;
         default:
@@ -2800,4 +2800,9 @@ pal_is_cwc(void) {
 int __attribute__((weak))
 pal_get_cwc_id(char *str, uint8_t *fru) {
   return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  return CC_NOT_SUPP_IN_CURR_STATE;
 }

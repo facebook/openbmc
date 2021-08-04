@@ -202,7 +202,10 @@ KNOWN_USAGE_STRINGS = {
         "mknod [-m MODE] NAME TYPE MAJOR MINOR",
         "mknod [-m MODE] NAME TYPE [MAJOR MINOR]",  # BusyBox 1.30.1
     ],
-    "mktemp": ["mktemp [-dt] [-p DIR] [TEMPLATE]"],
+    "mktemp": [
+        "mktemp [-dt] [-p DIR] [TEMPLATE]",
+        "mktemp [-dt] [-p DIR, --tmpdir[=DIR]] [TEMPLATE]",  # BusyBox 1.31.1
+    ],
     "more": [
         "more [FILE]...",  # noqa: B950
         "more [options] <file>...",  # BusyBox 1.30.1

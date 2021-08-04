@@ -6,7 +6,6 @@ from shutil import which
 
 import pal
 import sdr
-import sensors
 from common_utils import async_exec
 
 
@@ -118,6 +117,8 @@ def get_older_fboss_sensor_details(
     """Returns sensor details using sensors.py for older fboss
     platforms that don't support libpal i.e. yamp, wedge, wedge100"""
     sensor_details_list = []
+    import sensors
+
     sensors.init()
     for chip in sensors.ChipIterator():
         for sensor in sensors.FeatureIterator(chip):

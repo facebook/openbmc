@@ -57,6 +57,7 @@
 #define BIT(value, index) ((value >> index) & 1)
 
 #define FBY2_PLATFORM_NAME "FBY2"
+#define FBND_PLATFORM_NAME "Northdome"
 #define FBY2_MAX_NUM_SLOTS 4
 
 #define PAGE_SIZE  0x1000
@@ -2580,7 +2581,11 @@ post_exit:
 // Platform Abstraction Layer (PAL) Functions
 int
 pal_get_platform_name(char *name) {
+#ifdef CONFIG_FBY2_ND
+  strcpy(name, FBND_PLATFORM_NAME);
+#else
   strcpy(name, FBY2_PLATFORM_NAME);
+#endif
 
   return 0;
 }

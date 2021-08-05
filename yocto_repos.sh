@@ -21,7 +21,7 @@ lf_master_repos=(
     lf-openbmc:9dccc52b9
 )
 lf_dunfell_repos=(
-    lf-openbmc:9add46f3d
+    lf-openbmc:0d7b32aa6
 )
 lf_gatesgarth_repos=(
     lf-openbmc:56721c97f

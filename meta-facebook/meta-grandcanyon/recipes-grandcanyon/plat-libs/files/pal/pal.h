@@ -401,6 +401,19 @@ enum exp_uart_bridging_status {
   ENABLE_BRIDGING  = 0x1,
 };
 
+enum DEV_ACTION {
+  GET_DEV_POWER = 0x0,
+  SET_DEV_POWER = 0x1,
+  GET_DEV_LED   = 0x2,
+  SET_DEV_LED   = 0x3,
+};
+
+enum DEV_LED_STATUS {
+  DEV_LED_OFF      = 0x0,
+  DEV_LED_ON       = 0x1,
+  DEV_LED_BLINKING = 0x2,
+};
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);

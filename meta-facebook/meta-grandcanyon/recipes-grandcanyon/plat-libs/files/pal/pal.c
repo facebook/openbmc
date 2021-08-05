@@ -3710,3 +3710,107 @@ pal_get_dev_id(char *str, uint8_t *dev) {
   return fbgc_common_dev_id(str, dev);
 }
 
+int
+pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  uint8_t dev_type = 0, dev_id = 0;
+  uint8_t chassis_type = 0;
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char val[MAX_VALUE_LEN] = {0};
+  
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s: Failed to handle device power due to parameters are NULL.", __func__);
+    return CC_INVALID_PARAM;
+  }
+  
+  if ((req_len < 2) || (req_len > 3)) {
+    return CC_INVALID_LENGTH;
+  }
+  
+  ret = fbgc_common_get_chassis_type(&chassis_type);
+  if ((ret < 0) || (chassis_type != CHASSIS_TYPE5)) {
+    syslog(LOG_WARNING, "%s: Failed to handle device power due to only support Type5.", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  
+  // Action: get device power
+  if ((req_data[1] == GET_DEV_POWER) && (req_len == 2)) {
+    dev_id = req_data[0] + 1;
+    
+    ret = pal_get_device_power(slot, dev_id, &res_data[0], &dev_type);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get device %d power", __func__, dev_id);
+      return CC_UNSPECIFIED_ERROR;
+    }
+    
+    *res_len = 1;
+  
+  // Action: set device power
+  } else if ((req_data[1] == SET_DEV_POWER) && (req_len == 3)) {
+    dev_id = req_data[0] + 1;
+    
+    if ((req_data[2] != DEVICE_POWER_ON) && (req_data[2] != DEVICE_POWER_OFF)) {
+      syslog(LOG_ERR, "%s: Failed to set device power due to wrong power status: 0x%02X.", __func__, req_data[2]);
+      return CC_UNSPECIFIED_ERROR; 
+    }
+    
+    ret = pal_set_dev_power_status(dev_id, req_data[2]);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s: Failed to set device %d power.", __func__, dev_id);
+      return CC_UNSPECIFIED_ERROR;
+    }
+  
+  // Action: get device led
+  } else if ((req_data[1] == GET_DEV_LED) && (req_len == 2)) {
+    snprintf(key, sizeof(key), "e1s%d_led_status", req_data[0]);
+    
+    ret = kv_get(key, val, NULL, 0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s: Failed to get device %d led status.", __func__, dev_id);
+      return CC_UNSPECIFIED_ERROR;
+    }
+    
+    if (strcmp(val, "on") == 0) {
+      res_data[0] = DEV_LED_ON;
+      
+    } else if (strcmp(val, "off") == 0) {
+      res_data[0] = DEV_LED_OFF;
+      
+    } else if (strcmp(val, "blinking") == 0) {
+      res_data[0] = DEV_LED_BLINKING;
+    }
+    
+    *res_len = 1;
+  
+  // Action: set device led
+  } else if ((req_data[1] == SET_DEV_LED) && (req_len == 3)) {
+    snprintf(key, sizeof(key), "e1s%d_led_status", req_data[0]);
+    
+    if (req_data[2] == DEV_LED_ON) {
+      snprintf(val, sizeof(val), "on");
+      
+    } else if (req_data[2] == DEV_LED_OFF) {
+      snprintf(val, sizeof(val), "off");
+      
+    } else if (req_data[2] == DEV_LED_BLINKING) {
+      snprintf(val, sizeof(val), "blinking");
+      
+    } else {
+      syslog(LOG_ERR, "%s: Failed to set device led status due to wrong led status: 0x%02X.", __func__, req_data[2]);
+      return CC_UNSPECIFIED_ERROR;
+    }
+    
+    ret = kv_set(key, val, 0, 0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s: Failed to set device %d led status.", __func__, dev_id);
+      return CC_UNSPECIFIED_ERROR;
+    }
+    
+  } else {
+    syslog(LOG_ERR, "%s: Failed to handle device: 0x%02X action: 0x%02X req_len: %d", __func__, req_data[0], req_data[0], req_len);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  return CC_SUCCESS;
+}
+

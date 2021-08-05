@@ -77,10 +77,8 @@ resetModuleDeviceAll(){
         fi
     done
     if [ ${module} != $1 ]; then
-        echo "Unsupported Module entered or wrong command usage. To see list of supported modules/devices"
-        echo "Please run 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
-        echo "Command Usage is: <cmm-modules-devices-reset.sh><module_name>[Optional:which_device] or "
-        echo "<cmm-modules-devices-reset.sh><module_name><all>"
+        echo "Error: unsupported module name <$1>!"
+        usage
     fi
   unset module value
 }
@@ -112,22 +110,20 @@ resetModuleDevice(){
         fi
     done
     if  [ ${module} != $1 ] || [ ${device} != $2 ]; then 
-        echo "Unsupported Module/Device entered or wrong command usage. To see list of supported modules/devices"
-        echo "Please run 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
-        echo "Command Usage is: <cmm-modules-devices-reset.sh><module_name>[Optional:which_device] or "
-        echo "<cmm-modules-devices-reset.sh><module_name><all>"
+        echo "Error: unsupported module/device name!"
+        usage
     fi
     unset module m_value device d_value
 }
 
 #List supported modules and devices for the user
 viewModuleDevices(){
-    echo "Listing available modules:"
+    echo "Available modules:"
     for key in ${MODULES[*]}; do
         module=${key%%:*}
         echo "$module"     
     done
-    echo -e "\nListing available devices:"
+    echo -e "\nAvailable devices:"
 
     for key in ${DEVICES[*]}; do
         device=${key%%:*}
@@ -136,11 +132,20 @@ viewModuleDevices(){
     unset module device
 }
 
+usage() {
+    echo "Usage: cmm-modules-devices-reset.sh <module> [device]"
+    echo ""
+
+    viewModuleDevices
+
+    echo ""
+    echo "Example: cmm-modules-devices-reset.sh LC101"
+}
+
 #parse command line arguments
 if [ $# == 0 ]; then
-      echo "please enter the module name."
-      echo "If unsure what modules/devices are available"
-      echo "Please run 'cmm-modules-devices-reset view-modules-devices' without the single quotes."
+      echo "Error: <module> parameter is missing!"
+      usage
 elif [ $# == 1 ]; then 
     if [ $1 = "view-modules-devices" ]; then
           viewModuleDevices
@@ -150,6 +155,7 @@ elif [ $# == 1 ]; then
 elif [ $# == 2 ]; then
       resetModuleDevice $1 $2
 else
-      echo "error wrong command"
+      echo "Error: invalid command line arguments!"
+      usage
       exit 1
 fi

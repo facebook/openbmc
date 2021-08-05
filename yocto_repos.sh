@@ -29,7 +29,7 @@ lf_dunfell_repos=(
     lf-openbmc:9add46f3d
 )
 lf_gatesgarth_repos=(
-    lf-openbmc:18c6a7704
+    lf-openbmc:56721c97f
 )
 lf_hardknott_repos=(
     lf-openbmc:8c7c9f834

@@ -68,8 +68,8 @@ static const char *option_list[] = {
   "--FAST_PROCHOT_N",
   "--IRQ_PVCCIN_CPU1_VRHOT_LVC3_N",
   "--IRQ_PVCCIO_CPU_VRHOT_LVC3_N",
-  "--FM_Throttle",
-  "--OC_Warning",
+  "--FM_THROTTLE_N",
+  "--OC_WARNING",
 };
 
 static void
@@ -126,7 +126,8 @@ control_via_cpld(uint8_t slot_id, uint8_t ctrl_bit, uint8_t enable) {
     printf("FAST_PROCHOT_N                         : %s\n", (rbuf[0] >> FAST_PROCHOT_N) & 0x1 ? "Enable":"Disable");
     printf("IRQ_PVCCIN_CPU1_VRHOT_LVC3_N           : %s\n", (rbuf[0] >> IRQ_PVCCIN_CPU1_VRHOT_LVC3_N) & 0x1 ? "Enable":"Disable");
     printf("IRQ_PVCCIO_CPU_VRHOT_LVC3_N            : %s\n", (rbuf[0] >> IRQ_PVCCIO_CPU_VRHOT_LVC3_N) & 0x1 ? "Enable":"Disable");
-    printf("IRQ_SML1_PMBUS_ALERT_N / FM_THROTTLE_N : %s\n", (rbuf[0] >> FM_THROTTLE_N) & 0x1 ? "Enable":"Disable");
+    printf("FM_THROTTLE_N                          : %s\n", (rbuf[0] >> FM_THROTTLE_N) & 0x1 ? "Enable":"Disable");
+    printf("OC_WARNING                             : %s\n", (rbuf[0] >> FM_THROTTLE_N) & 0x1 ? "Enable":"Disable");
     if ( i2cfd > 0 ) close(i2cfd);
     return 0;
   }
@@ -207,10 +208,10 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if ( strcmp(argv[2], "--OC_Warning") == 0 ) {
+  if ( strcmp(argv[2], "--OC_WARNING") == 0 ) {
     return control_via_cpld(slot_id, FM_THROTTLE_N, enable);
 
-  } else if ( strcmp(argv[2], "--FM_Throttle") == 0 ) {
+  } else if ( strcmp(argv[2], "--FM_THROTTLE_N") == 0 ) {
     return control_via_cpld(slot_id, FM_THROTTLE_N, enable);
 
   } else if ( strcmp(argv[2], "--IRQ_PVCCIO_CPU_VRHOT_LVC3_N") == 0 ) {

@@ -18,7 +18,7 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
 
 def release_patches(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro == 'warrior':
+    if distro != 'rocko':
         return "file://0001-libfdt-Make-it-compatible-with-newer-dtc.patch"
     return ""
 SRC_URI += '${@release_patches(d)}'

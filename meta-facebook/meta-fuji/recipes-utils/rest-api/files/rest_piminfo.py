@@ -87,7 +87,9 @@ def get_piminfo():
     pim_type, pim_fpga_ver = prepare_piminfo()
     pim_ver = prepare_pimver()
     for pim_number in range(1, 9):
-        result["PIM" + str(pim_number)] = {
+        # Making PIM number 2-based, to be consistent with
+        # other FB switch platforms
+        result["PIM" + str(pim_number + 1)] = {
             "type": pim_type[str(pim_number)],
             "fpga_ver": pim_fpga_ver[str(pim_number)],
             "ver": pim_ver[str(pim_number)],

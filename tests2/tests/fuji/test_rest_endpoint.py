@@ -554,7 +554,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     # "/api/sys/piminfo"
     def set_endpoint_piminfo_attributes(self):
         self.endpoint_piminfo_attrb = [
-            "PIM1",
             "PIM2",
             "PIM3",
             "PIM4",
@@ -562,6 +561,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "PIM6",
             "PIM7",
             "PIM8",
+            "PIM9",
         ]
 
     def test_endpoint_api_sys_piminfo(self):

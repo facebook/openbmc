@@ -52,3 +52,11 @@ fi
 if [ "$(gpio_get OCP_V3_7_PRSNTB_R_N)" == "0" ]; then
   i2c_device_add 13 0x50 24c32
 fi
+
+if [ "$(gpio_get NVME_0_1_PRSNTB_R_N)" == "0" ]; then
+  i2c_device_add 21 0x50 24c64
+fi
+
+if [ "$(gpio_get NVME_2_3_PRSNTB_R_N)" == "0" ]; then
+  i2c_device_add 22 0x50 24c64
+fi

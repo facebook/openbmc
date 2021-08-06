@@ -38,7 +38,6 @@ if [ $gp_carrier1_prsnt -eq 0 ]; then
   i2cset -y -f 21 0x1f 0x0b 0x2
   i2c_device_add 21 0x1d adc128d818
   i2c_device_add 21 0x1f adc128d818
-  i2c_device_add 21 0x50 24c64
 fi
 
 gp_carrier2_prsnt=$(gpio_get NVME_2_3_PRSNTB_R_N)
@@ -49,7 +48,6 @@ if [ $gp_carrier2_prsnt -eq 0 ]; then
   i2cset -y -f 22 0x1f 0x0b 0x2
   i2c_device_add 22 0x1d adc128d818
   i2c_device_add 22 0x1f adc128d818
-  i2c_device_add 22 0x50 24c64
 fi
 
 #Set PWR_AVR to 128 samples

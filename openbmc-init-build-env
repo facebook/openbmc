@@ -112,13 +112,14 @@ if [ -z "$DISTRO_OVERRIDE" ]; then
     for override in ${PLAT_DISTRO_OVERRIDES[*]}; do
         override_plat=${override%%:*}
         override_distro=${override##*:}
-        if [[ "${platform/${override_plat}/}" != "${platform}" ]]; then
+        if [ -z "${platform/${override_plat}/}" ]; then
             # override happens
             _distro="${override_distro}"
             break
         fi
     done
 fi
+
 unset DISTRO_DEFAULT PLAT_DISTRO_OVERRIDES DISTRO_OVERRIDE
 unset override override_plat override_distro
 

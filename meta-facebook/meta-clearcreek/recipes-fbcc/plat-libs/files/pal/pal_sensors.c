@@ -63,38 +63,6 @@ static float vr_avd_volt[vr_NUM];
 static float vr_avd_curr[vr_NUM];
 
 const uint8_t mb_sensor_list[] = {
-  MB_NIC_0_TEMP,
-  MB_NIC_0_VOLT,
-  MB_NIC_0_CURR,
-  MB_NIC_0_POWER,
-  MB_NIC_1_TEMP,
-  MB_NIC_1_VOLT,
-  MB_NIC_1_CURR,
-  MB_NIC_1_POWER,
-  MB_NIC_2_TEMP,
-  MB_NIC_2_VOLT,
-  MB_NIC_2_CURR,
-  MB_NIC_2_POWER,
-  MB_NIC_3_TEMP,
-  MB_NIC_3_VOLT,
-  MB_NIC_3_CURR,
-  MB_NIC_3_POWER,
-  MB_NIC_4_TEMP,
-  MB_NIC_4_VOLT,
-  MB_NIC_4_CURR,
-  MB_NIC_4_POWER,
-  MB_NIC_5_TEMP,
-  MB_NIC_5_VOLT,
-  MB_NIC_5_CURR,
-  MB_NIC_5_POWER,
-  MB_NIC_6_TEMP,
-  MB_NIC_6_VOLT,
-  MB_NIC_6_CURR,
-  MB_NIC_6_POWER,
-  MB_NIC_7_TEMP,
-  MB_NIC_7_VOLT,
-  MB_NIC_7_CURR,
-  MB_NIC_7_POWER,
   MB_VR_P0V8_VDD0_TEMP,
   MB_VR_P0V8_VDD0_VOUT,
   MB_VR_P0V8_VDD0_CURR,
@@ -281,6 +249,62 @@ const uint8_t e1s_2_sensor_list[] = {
   BAY_1_6_NVME_CTEMP,
   BAY_1_7_NVME_CTEMP,
   BAY_1_NVME_CTEMP,
+};
+
+const uint8_t nic0_sensor_list[] = {
+  MB_NIC_0_TEMP,
+  MB_NIC_0_VOLT,
+  MB_NIC_0_CURR,
+  MB_NIC_0_POWER,
+};
+
+const uint8_t nic1_sensor_list[] = {
+  MB_NIC_1_TEMP,
+  MB_NIC_1_VOLT,
+  MB_NIC_1_CURR,
+  MB_NIC_1_POWER,
+};
+
+const uint8_t nic2_sensor_list[] = {
+  MB_NIC_2_TEMP,
+  MB_NIC_2_VOLT,
+  MB_NIC_2_CURR,
+  MB_NIC_2_POWER,
+};
+
+const uint8_t nic3_sensor_list[] = {
+  MB_NIC_3_TEMP,
+  MB_NIC_3_VOLT,
+  MB_NIC_3_CURR,
+  MB_NIC_3_POWER,
+};
+
+const uint8_t nic4_sensor_list[] = {
+  MB_NIC_4_TEMP,
+  MB_NIC_4_VOLT,
+  MB_NIC_4_CURR,
+  MB_NIC_4_POWER,
+};
+
+const uint8_t nic5_sensor_list[] = {
+  MB_NIC_5_TEMP,
+  MB_NIC_5_VOLT,
+  MB_NIC_5_CURR,
+  MB_NIC_5_POWER,
+};
+
+const uint8_t nic6_sensor_list[] = {
+  MB_NIC_6_TEMP,
+  MB_NIC_6_VOLT,
+  MB_NIC_6_CURR,
+  MB_NIC_6_POWER,
+};
+
+const uint8_t nic7_sensor_list[] = {
+  MB_NIC_7_TEMP,
+  MB_NIC_7_VOLT,
+  MB_NIC_7_CURR,
+  MB_NIC_7_POWER,
 };
 
 PAL_I2C_BUS_INFO nic_info_list[] = {
@@ -601,6 +625,14 @@ size_t m2_1_sensor_cnt = sizeof(m2_1_sensor_list)/sizeof(uint8_t);
 size_t m2_2_sensor_cnt = sizeof(m2_2_sensor_list)/sizeof(uint8_t);
 size_t e1s_1_sensor_cnt = sizeof(e1s_1_sensor_list)/sizeof(uint8_t);
 size_t e1s_2_sensor_cnt = sizeof(e1s_2_sensor_list)/sizeof(uint8_t);
+size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
+size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
+size_t nic2_sensor_cnt = sizeof(nic2_sensor_list)/sizeof(uint8_t);
+size_t nic3_sensor_cnt = sizeof(nic3_sensor_list)/sizeof(uint8_t);
+size_t nic4_sensor_cnt = sizeof(nic4_sensor_list)/sizeof(uint8_t);
+size_t nic5_sensor_cnt = sizeof(nic5_sensor_list)/sizeof(uint8_t);
+size_t nic6_sensor_cnt = sizeof(nic6_sensor_list)/sizeof(uint8_t);
+size_t nic7_sensor_cnt = sizeof(nic7_sensor_list)/sizeof(uint8_t);
 
 bool check_pwron_time(int time) {
   char str[MAX_VALUE_LEN] = {0};
@@ -641,6 +673,14 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
     case FRU_PDB:
     case FRU_CARRIER1:
     case FRU_CARRIER2:
+    case FRU_NIC0:
+    case FRU_NIC1:
+    case FRU_NIC2:
+    case FRU_NIC3:
+    case FRU_NIC4:
+    case FRU_NIC5:
+    case FRU_NIC6:
+    case FRU_NIC7:
       server_off = pal_is_server_off();
       id = sensor_map[sensor_num].id;
       if (server_off) {
@@ -757,6 +797,14 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_PDB:
   case FRU_CARRIER1:
   case FRU_CARRIER2:
+  case FRU_NIC0:
+  case FRU_NIC1:
+  case FRU_NIC2:
+  case FRU_NIC3:
+  case FRU_NIC4:
+  case FRU_NIC5:
+  case FRU_NIC6:
+  case FRU_NIC7:
     sprintf(name, "%s", sensor_map[sensor_num].snr_name);
     break;
   default:
@@ -773,6 +821,14 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_PDB:
   case FRU_CARRIER1:
   case FRU_CARRIER2:
+  case FRU_NIC0:
+  case FRU_NIC1:
+  case FRU_NIC2:
+  case FRU_NIC3:
+  case FRU_NIC4:
+  case FRU_NIC5:
+  case FRU_NIC6:
+  case FRU_NIC7:
     switch(thresh) {
     case UCR_THRESH:
       *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
@@ -818,6 +874,14 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case FRU_PDB:
     case FRU_CARRIER1:
     case FRU_CARRIER2:
+    case FRU_NIC0:
+    case FRU_NIC1:
+    case FRU_NIC2:
+    case FRU_NIC3:
+    case FRU_NIC4:
+    case FRU_NIC5:
+    case FRU_NIC6:
+    case FRU_NIC7:
       switch(scale) {
         case TEMP:
           sprintf(units, "C");
@@ -907,15 +971,36 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
       }
       break;
     case FRU_NIC0:
+      *sensor_list = (uint8_t *) nic0_sensor_list;
+      *cnt = nic0_sensor_cnt;
+      break;
     case FRU_NIC1:
+      *sensor_list = (uint8_t *) nic1_sensor_list;
+      *cnt = nic1_sensor_cnt;
+      break;
     case FRU_NIC2:
+      *sensor_list = (uint8_t *) nic2_sensor_list;
+      *cnt = nic2_sensor_cnt;
+      break;
     case FRU_NIC3:
+      *sensor_list = (uint8_t *) nic3_sensor_list;
+      *cnt = nic3_sensor_cnt;
+      break;
     case FRU_NIC4:
+      *sensor_list = (uint8_t *) nic4_sensor_list;
+      *cnt = nic4_sensor_cnt;
+      break;
     case FRU_NIC5:
+      *sensor_list = (uint8_t *) nic5_sensor_list;
+      *cnt = nic5_sensor_cnt;
+      break;
     case FRU_NIC6:
+      *sensor_list = (uint8_t *) nic6_sensor_list;
+      *cnt = nic6_sensor_cnt;
+      break;
     case FRU_NIC7:
-        *sensor_list = NULL;
-        *cnt = 0;
+      *sensor_list = (uint8_t *) nic7_sensor_list;
+      *cnt = nic7_sensor_cnt;
       break;
     default:
       syslog(LOG_WARNING, "%s, get key fail", __FUNCTION__);

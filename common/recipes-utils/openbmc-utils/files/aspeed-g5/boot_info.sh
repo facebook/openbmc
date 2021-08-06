@@ -54,6 +54,9 @@ WDT2_CNT_RELAOD_REG="0x1e785024"
 WDT2_CNT_RESTART_REG="0x1e785028"
 WDT2_CTRL_REG="0x1e78502c"
 
+# FMC04 CE Control register
+FMC_CE_CTRL_REG="0x1e620004"
+
 check_boot_source(){
     # Please refer to reg WDT1/WDT2 Control Register definition to
     # understand this code block, WDT1 is on page 646 of ast2500v16.pdf
@@ -138,6 +141,12 @@ bmc_boot_from() {
     # WDT magic number to restart WDT counter to decrease.
     devmem "$WDT2_CNT_RESTART_REG" 32 0x4755
     devmem "$WDT2_CTRL_REG" 32 $boot_source
+
+    # Workaround by set default value to FMC04 of "unable to boot 2nd flash issue"
+    # only for Wedge400/Wedge400C
+    if grep -q "wedge400" /etc/issue; then
+        devmem "$FMC_CE_CTRL_REG" w 0x700
+    fi
 }
 
 bios_boot_info() {

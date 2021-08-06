@@ -15,16 +15,17 @@ async def get_service_root(request: str) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
         "@odata.id": "/redfish/v1/",
-        "@odata.type": "#ServiceRoot.v1_3_0.ServiceRoot",
+        "@odata.type": "#ServiceRoot.v1_9_0.ServiceRoot",
         "Id": "RootService",
         "Name": "Root Service",
         "Product": product_name,
-        "RedfishVersion": "1.0.0",
+        "RedfishVersion": "1.6.0",
         "UUID": uuid_data,
+        "SessionService": {"@odata.id": "/redfish/v1/SessionService"},
         "Chassis": {"@odata.id": "/redfish/v1/Chassis"},
         "Managers": {"@odata.id": "/redfish/v1/Managers"},
-        "SessionService": {"@odata.id": "/redfish/v1/SessionService"},
         "AccountService": {"@odata.id": "/redfish/v1/AccountService"},
+        "Links": {"Sessions": {"@odata.id": "/redfish/v1/SessionService/Sessions"}},
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)

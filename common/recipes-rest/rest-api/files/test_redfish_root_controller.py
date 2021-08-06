@@ -41,16 +41,17 @@ class TestRootService(AioHTTPTestCase):
         expected_resp = {
             "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
             "@odata.id": "/redfish/v1/",
-            "@odata.type": "#ServiceRoot.v1_3_0.ServiceRoot",
+            "@odata.type": "#ServiceRoot.v1_9_0.ServiceRoot",
             "Id": "RootService",
             "Name": "Root Service",
             "Product": "FBY2",
-            "RedfishVersion": "1.0.0",
+            "RedfishVersion": "1.6.0",
             "UUID": "bd7e0200-8227-3a1c-30c0-286261016903",
+            "SessionService": {"@odata.id": "/redfish/v1/SessionService"},
             "Chassis": {"@odata.id": "/redfish/v1/Chassis"},
             "Managers": {"@odata.id": "/redfish/v1/Managers"},
-            "SessionService": {"@odata.id": "/redfish/v1/SessionService"},
             "AccountService": {"@odata.id": "/redfish/v1/AccountService"},
+            "Links": {"Sessions": {"@odata.id": "/redfish/v1/SessionService/Sessions"}},
         }
         req = await self.client.request("GET", "/redfish/v1")
         resp = await req.json()

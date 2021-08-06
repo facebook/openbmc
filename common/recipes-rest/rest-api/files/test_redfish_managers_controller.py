@@ -114,6 +114,8 @@ class TestManagerService(AioHTTPTestCase):
             "@odata.type": "#Manager.v1_1_0.Manager",
             "ManagerType": "BMC",
             "UUID": "bd7e0200-8227-3a1c-30c0-286261016903",
+            "Name": "Manager",
+            "Id": "BMC",
             "Status": {"State": "Enabled", "Health": "OK"},
             "FirmwareVersion": "OpenBMC Release fby2-v2020.49.2",
             "NetworkProtocol": {"@odata.id": "/redfish/v1/Managers/1/NetworkProtocol"},

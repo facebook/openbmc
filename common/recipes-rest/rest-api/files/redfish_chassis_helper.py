@@ -15,7 +15,7 @@ SensorDetails = t.NamedTuple(
         ("sensor_name", str),
         ("sensor_number", int),
         ("fru_name", str),
-        ("reading", float),
+        ("reading", int),
         # Not referencing sdr.ThreshSensor as sdr is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_thresh", t.Optional["sdr.ThreshSensor"]),
@@ -23,7 +23,7 @@ SensorDetails = t.NamedTuple(
         # Not referencing pal.SensorHistory as pal is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_history", t.Optional["pal.SensorHistory"]),
-        ("ucr_thresh", t.Optional[float]),  # for older fboss platforms as an
+        ("ucr_thresh", t.Optional[int]),  # for older fboss platforms as an
         # alternative for sensors_thresh bc sensors.py only give us upper threshold
     ],
 )
@@ -65,7 +65,7 @@ def get_sensor_details_using_libpal(
         if sensor_unit in desired_sensor_units:
             try:
                 reading = pal.sensor_read(fru_id, sensor_id)
-                reading = round(reading, 2)
+                reading = int(reading)
                 start_time = int(time.time()) - 60
                 sensor_history = pal.sensor_read_history(fru_id, sensor_id, start_time)
             except pal.LibPalError as e:
@@ -74,9 +74,13 @@ def get_sensor_details_using_libpal(
                         fru_name=fru_name, sensor_id=sensor_id, e=repr(e)
                     )
                 )
+                reading = SAD_SENSOR  # default value when we can't get reading
+                sensor_history = None
             try:
                 sensor_thresh = sdr.sdr_get_sensor_thresh(fru_id, sensor_id)
                 sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
+                if sensor_unit == "%":
+                    sensor_unit = "Percent"  # DMTF accepts this unit as text
                 sensor_details = SensorDetails(
                     sensor_name,
                     sensor_id,
@@ -152,11 +156,11 @@ def get_older_fboss_sensor_details(
                     sensor_name=sensor_name,
                     sensor_number=0,  # default bc sensors.py doesn't provide sensor id
                     fru_name=fru_name,
-                    reading=subfeatures_dict[reading_key],
+                    reading=int(subfeatures_dict[reading_key]),
                     sensor_thresh=None,  # bc sensors.py doesn't provide ThreshSensor
                     sensor_unit=sensor_unit_dict[desired_sensor_type],
                     sensor_history=None,  # bc sensors.py doesn't provide sensor history
-                    ucr_thresh=subfeatures_dict[ucr_key],
+                    ucr_thresh=int(subfeatures_dict[ucr_key]),
                 )
                 sensor_details_list.append(sensor_details)
 

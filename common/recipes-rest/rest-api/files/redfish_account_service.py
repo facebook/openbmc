@@ -15,3 +15,15 @@ async def get_account_service(request: str) -> web.Response:
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)
+
+
+async def get_accounts(request: str) -> web.Response:
+    body = {
+        "@odata.type": "#ManagerAccountCollection.ManagerAccountCollection",
+        "Name": "Accounts Collection",
+        "Members@odata.count": 0,
+        "Members": [],
+        "@odata.id": "/redfish/v1/AccountService/Accounts",
+    }
+    await validate_keys(body)
+    return web.json_response(body, dumps=dumps_bytestr)

@@ -1,7 +1,7 @@
 import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
-from redfish_account_service import get_account_service
+from redfish_account_service import get_account_service, get_accounts
 from redfish_chassis import RedfishChassis
 from redfish_managers import (
     get_managers,
@@ -9,8 +9,10 @@ from redfish_managers import (
     get_manager_ethernet,
     get_manager_network,
     get_ethernet_members,
+    get_manager_log_services,
 )
 from redfish_service_root import get_redfish, get_service_root
+from redfish_session_service import get_session_service, get_session
 
 
 class Redfish:
@@ -25,6 +27,12 @@ class Redfish:
         app.router.add_post("/redfish/v1", self.controller)
         app.router.add_get("/redfish/v1/AccountService", get_account_service)
         app.router.add_post("/redfish/v1/AccountService", self.controller)
+        app.router.add_get("/redfish/v1/AccountService/Accounts", get_accounts)
+        app.router.add_post("/redfish/v1/AccountService/Accounts", self.controller)
+        app.router.add_get("/redfish/v1/SessionService", get_session_service)
+        app.router.add_post("/redfish/v1/SessionService", self.controller)
+        app.router.add_get("/redfish/v1/SessionService/Sessions", get_session)
+        app.router.add_post("/redfish/v1/SessionService/Sessions", self.controller)
         app.router.add_get("/redfish/v1/Chassis", redfish_chassis.get_chassis)
         app.router.add_post("/redfish/v1/Chassis", self.controller)
         app.router.add_get("/redfish/v1/Chassis/1", redfish_chassis.get_chassis_members)
@@ -42,6 +50,10 @@ class Redfish:
         app.router.add_post("/redfish/v1/Managers", self.controller)
         app.router.add_get("/redfish/v1/Managers/1", get_managers_members)
         app.router.add_post("/redfish/v1/Managers/1", self.controller)
+        app.router.add_get(
+            "/redfish/v1/Managers/1/LogServices", get_manager_log_services
+        )
+        app.router.add_post("/redfish/v1/Managers/1/LogServices", self.controller)
         app.router.add_get(
             "/redfish/v1/Managers/1/EthernetInterfaces", get_manager_ethernet
         )

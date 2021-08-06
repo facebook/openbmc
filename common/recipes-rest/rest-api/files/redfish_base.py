@@ -58,6 +58,10 @@ VALID_KEYS = {
     "Thermal",
     "Power",
     "FruInfo",
+    "ServiceEnabled",
+    "SessionTimeout",
+    "Sessions",
+    "Oem",
 }
 
 

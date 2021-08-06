@@ -21,6 +21,7 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish",
             "/redfish/v1",
             "/redfish/v1/AccountService",
+            "/redfish/v1/AccountService/Accounts",
             "/redfish/v1/Chassis",
             "/redfish/v1/Chassis/1",
             "/redfish/v1/Chassis/1/Power",
@@ -30,6 +31,9 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/Managers/1/EthernetInterfaces",
             "/redfish/v1/Managers/1/NetworkProtocol",
             "/redfish/v1/Managers/1/EthernetInterfaces/1",
+            "/redfish/v1/Managers/1/LogServices",
+            "/redfish/v1/SessionService",
+            "/redfish/v1/SessionService/Sessions",
         ]
         self.maxDiff = None
         self.assertEqual(sorted(routes_expected), sorted(registered_routes))

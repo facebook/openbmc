@@ -85,7 +85,7 @@ class TestChassisService(AioHTTPTestCase):
                 side_effect=[
                     sensor_thresh(
                         0,
-                        5.5,
+                        5,
                         0,
                         0,
                         0,
@@ -181,14 +181,9 @@ class TestChassisService(AioHTTPTestCase):
                     "Id": "1",
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
-                    "FruInfo": [
-                        {
-                            "FruName": fru_name,
-                            "Manufacturer": "Wiwynn",
-                            "Model": "Yosemite V2 MP",
-                            "SerialNumber": "WTL19121DSMA1",
-                        },
-                    ],
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
                     "PowerState": "On",
                     "Status": {"State": "Enabled", "Health": "OK"},
                     "Thermal": {
@@ -214,7 +209,6 @@ class TestChassisService(AioHTTPTestCase):
         "Testing thermal response for both single sled frus and multisled frus"
 
         for server_name in ["1", "server1", "server2", "server3", "server4"]:
-            fru_name = self.get_fru_name(server_name)
             with self.subTest(server_name=server_name):
                 pal.pal_get_fru_sensor_list.side_effect = [[129], [70]]
                 sdr.sdr_get_sensor_units.side_effect = ["C", "RPM"]
@@ -222,7 +216,7 @@ class TestChassisService(AioHTTPTestCase):
                     "SP_INLET_TEMP",
                     "SP_FAN0_TACH",
                 ]
-                pal.sensor_read.side_effect = [24.9444444444, 7177]
+                pal.sensor_read.side_effect = [24, 7177]
                 sdr.sdr_get_sensor_thresh.side_effect = [
                     sensor_thresh(
                         0,
@@ -257,6 +251,7 @@ class TestChassisService(AioHTTPTestCase):
                                 }
                             ],
                             "Mode": "N+m",
+                            "MinNumNeeded": 1,
                             "Status": {"State": "Enabled", "Health": "OK"},
                         },
                     ],
@@ -268,15 +263,14 @@ class TestChassisService(AioHTTPTestCase):
                             "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Temperatures/0".format(  # noqa: B950
                                 server_name
                             ),
-                            "FruName": fru_name,
                             "LowerThresholdNonCritical": 0,
                             "LowerThresholdCritical": 0,
                             "PhysicalContext": "Chassis",
                             "UpperThresholdCritical": 40,
-                            "MemberId": 0,
+                            "MemberId": "0",
                             "UpperThresholdNonCritical": 0,
                             "UpperThresholdFatal": 0,
-                            "ReadingCelsius": 24.94,
+                            "ReadingCelsius": 24,
                             "Name": "SP_INLET_TEMP",
                             "SensorNumber": 129,
                             "LowerThresholdFatal": 0,
@@ -289,9 +283,8 @@ class TestChassisService(AioHTTPTestCase):
                             "Reading": 7177,
                             "ReadingUnits": "RPM",
                             "SensorNumber": 70,
-                            "MemberId": 0,
+                            "MemberId": "0",
                             "Status": {"State": "Enabled", "Health": "OK"},
-                            "FruName": fru_name,
                             "PhysicalContext": "Backplane",
                             "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Fans/0".format(  # noqa: B950
                                 server_name
@@ -320,7 +313,6 @@ class TestChassisService(AioHTTPTestCase):
     async def test_get_chassis_power(self):
         "Testing power response for both single sled frus and multisled frus"
         for server_name in ["1", "server1", "server2", "server3", "server4"]:
-            fru_name = self.get_fru_name(server_name)
             with self.subTest(server_name=server_name):
                 pal.pal_get_fru_sensor_list.side_effect = [[224]]
                 sdr.sdr_get_sensor_units.side_effect = ["Amps"]
@@ -345,29 +337,25 @@ class TestChassisService(AioHTTPTestCase):
                     "Id": "Power",
                     "Name": "Power",
                     "PowerControl": [
-                        [
-                            {
-                                "PowerLimit": {
-                                    "LimitException": "LogEventOnly",
-                                    "LimitInWatts": 5.5,
-                                },
-                                "PhysicalContext": "Chassis",
-                                "@odata.id": "/redfish/v1/Chassis/{}/Power#/PowerControl/0".format(  # noqa: B950
-                                    server_name
-                                ),
-                                "FruName": fru_name,
-                                "SensorNumber": 224,
-                                "Name": "SP_P5V",
-                                "PowerMetrics": {
-                                    "MaxIntervalConsumedWatts": 5.03,
-                                    "MinIntervalConsumedWatts": 5.02,
-                                    "IntervalInMin": 1,
-                                    "AverageIntervalConsumedWatts": 5.03,
-                                },
-                                "MemberId": 0,
-                                "Status": {"State": "Enabled", "Health": "OK"},
-                            }
-                        ],
+                        {
+                            "PowerLimit": {
+                                "LimitException": "LogEventOnly",
+                                "LimitInWatts": 5,
+                            },
+                            "PhysicalContext": "Chassis",
+                            "@odata.id": "/redfish/v1/Chassis/{}/Power#/PowerControl/0".format(  # noqa: B950
+                                server_name
+                            ),
+                            "Name": "SP_P5V",
+                            "PowerMetrics": {
+                                "MaxConsumedWatts": 5,
+                                "MinConsumedWatts": 5,
+                                "IntervalInMin": 1,
+                                "AverageConsumedWatts": 5,
+                            },
+                            "MemberId": "0",
+                            "Status": {"State": "Enabled", "Health": "OK"},
+                        }
                     ],
                 }
                 req = await self.client.request(

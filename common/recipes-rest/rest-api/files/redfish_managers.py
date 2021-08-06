@@ -113,6 +113,8 @@ async def get_managers_members(request: str) -> web.Response:
         "@odata.id": "/redfish/v1/Managers/1",
         "@odata.type": "#Manager.v1_1_0.Manager",
         "ManagerType": "BMC",
+        "Id": "BMC",
+        "Name": "Manager",
         "UUID": uuid_data,
         "Status": {"State": "Enabled", "Health": "OK"},
         "FirmwareVersion": firmware_version,
@@ -131,6 +133,19 @@ async def get_managers_members(request: str) -> web.Response:
                 ],
             }
         },
+    }
+    await validate_keys(body)
+    return web.json_response(body, dumps=dumps_bytestr)
+
+
+async def get_manager_log_services(request: str) -> web.Response:
+    body = {
+        "@odata.type": "#LogServiceCollection.LogServiceCollection",
+        "Name": "Log Service Collection",
+        "Description": "Collection of Log Services for this Manager",
+        "Members@odata.count": 0,
+        "Members": [],
+        "@odata.id": "/redfish/v1/Managers/1/LogServices",
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)

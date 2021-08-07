@@ -55,3 +55,5 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[28], bhandler.rest_sensors_pim8_hdl)
     app.router.add_get(board_routes[29], bhandler.rest_sensors_pim9_hdl)
     app.router.add_get(board_routes[30], bhandler.rest_sensors_fan_hdl)
+    # scdinfo : an alias of smbinfo (for the compatibility with FB Infra Tools)
+    app.router.add_get(board_routes[31], bhandler.rest_smbinfo_hdl)

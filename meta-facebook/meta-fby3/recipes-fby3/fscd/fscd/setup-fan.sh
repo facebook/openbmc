@@ -134,13 +134,19 @@ function start_sled_fsc() {
 function reload_sled_fsc() {
   bmc_location=$(get_bmc_board_id)
   if [ $bmc_location -eq 9 ]; then
-    #The BMC of class2 need to check the present status from BB BIC
-    slot1_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 27 | awk '{print $12}')
-    slot3_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 28 | awk '{print $12}')
-    if [ "$slot1_prsnt" == "01" ] || [ "$slot3_prsnt" == "01" ]; then
-      run_fscd=false
-    else
+    exp_board=$(get_2ou_board_type 4)
+
+    if [ $exp_board == "0x04" ]; then
       run_fscd=true
+    else
+      #The BMC of class2 need to check the present status from BB BIC
+      slot1_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 27 | awk '{print $12}')
+      slot3_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 28 | awk '{print $12}')
+      if [ "$slot1_prsnt" == "01" ] || [ "$slot3_prsnt" == "01" ]; then
+        run_fscd=false
+      else
+        run_fscd=true
+      fi
     fi
   else
     cnt=`get_all_server_prsnt`

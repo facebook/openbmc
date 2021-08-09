@@ -1,19 +1,10 @@
-#include <iostream>
-#include <sstream>
-#include <string>
 #include <cstdio>
-#include <cstring>
-#include <unistd.h>
-#include <fcntl.h>
-#include <algorithm>
-#include <sys/mman.h>
 #include <syslog.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
-#include "server.h"
 #include "bmc_cpld.h"
+#include "server.h"
 #include <facebook/bic.h>
-#include <facebook/fby35_common.h>
 
 using namespace std;
 #define JBC_FILE_NAME ".jbc"

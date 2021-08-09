@@ -1,10 +1,7 @@
-#include "fw-util.h"
 #include <cstdio>
-#include <cstring>
-#include "server.h"
+#include <unistd.h>
 #include <openbmc/pal.h>
 #include "bic_pcie_sw.h"
-#include <unistd.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 

@@ -1,18 +1,10 @@
-#include <iostream>
-#include <sstream>
-#include <string>
 #include <cstdio>
-#include <cstring>
-#include <unistd.h>
-#include <fcntl.h>
-#include <algorithm>
-#include <sys/mman.h>
 #include <syslog.h>
+#include <openbmc/pal.h>
 #include "bic_m2_dev.h"
-#include <openbmc/kv.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
-#include <openbmc/pal.h>
+
 using namespace std;
 
 #define FFI_0_ACCELERATOR 0x01

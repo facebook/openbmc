@@ -1,7 +1,4 @@
-#include "fw-util.h"
 #include <cstdio>
-#include <cstring>
-#include "server.h"
 #include <openbmc/pal.h>
 #include "bic_cpld_ext.h"
 #ifdef BIC_SUPPORT
@@ -26,7 +23,7 @@ int CpldExtComponent::update(string image) {
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
     remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
-  } catch (string err) {
+  } catch (string& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -49,7 +46,7 @@ int CpldExtComponent::fupdate(string image) {
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_SET);
     //bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     //remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
-  } catch (string err) {
+  } catch (string& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

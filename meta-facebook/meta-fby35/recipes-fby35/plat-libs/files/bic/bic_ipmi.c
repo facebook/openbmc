@@ -58,8 +58,6 @@ typedef struct _sdr_rec_hdr_t {
 
 #define SIZE_SYS_GUID 16
 
-#define MAX_VER_STR_LEN 80
-
 #define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
 
@@ -332,10 +330,9 @@ _write_fruid(uint8_t slot_id, uint8_t fru_id, uint32_t offset, uint8_t count, ui
 int
 bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t intf) {
   int ret = -1;
+  int fd, count;
   uint32_t offset;
-  uint8_t count;
   uint8_t buf[64] = {0};
-  int fd;
 
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
@@ -622,7 +619,7 @@ bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
     return -1;
 
   val = atoi(tmp_str);
-  if (val < 0 && val > 255)
+  if (val < 0 || val > 255)
     return -1;
 
   *type = val;
@@ -1616,7 +1613,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 
   if (intf == FEXP_BIC_INTF) {
     table = 1;
-    bic_get_1ou_type(slot_id, &board_type);
+    ret = bic_get_1ou_type(slot_id, &board_type);
     if (ret < 0) {
       syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
       board_type = M2_BOARD;

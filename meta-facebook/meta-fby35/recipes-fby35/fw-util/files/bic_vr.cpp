@@ -1,18 +1,9 @@
-#include <iostream>
-#include <sstream>
-#include <string>
 #include <cstdio>
-#include <cstring>
-#include <unistd.h>
-#include <fcntl.h>
-#include <algorithm>
-#include <sys/mman.h>
-#include <syslog.h>
+#include <openbmc/pal.h>
 #include "bic_vr.h"
-#include <openbmc/kv.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
-#include <openbmc/pal.h>
+
 using namespace std;
  
 map<uint8_t, string> list = {{0xC0, "VCCIN/VCCFA_EHV_FIVRA"},
@@ -22,7 +13,7 @@ map<uint8_t, string> list = {{0xC0, "VCCIN/VCCFA_EHV_FIVRA"},
 int VrComponent::get_ver_str(uint8_t& addr, string& s) {
   int ret = 0;
   constexpr auto bus = 0x5;
-  char ver_str[MAX_VALUE_LEN] = {0};
+  char ver_str[MAX_VER_STR_LEN] = {0};
   ret = bic_get_vr_ver_cache(slot_id, NONE_INTF, bus, addr, ver_str);
   s = string(ver_str);
   return ret;
@@ -88,7 +79,7 @@ int VrComponent::print_version()
         throw "Error in getting the version of " + vr.second;
       }
       cout << vr.second << " Version : " << ver << endl;
-    } catch (string err) {
+    } catch (string& err) {
       printf("%s Version : NA (%s)\n", vr.second.c_str(), err.c_str());
     }
   }
@@ -101,13 +92,9 @@ int VrComponent::update(string image)
   int ret = 0;
   try {
     server.ready();
-    ret = set_pfr_i2c_filter(slot_id, DISABLE_PFR_I2C_FILTER);
-    if (ret < 0) return -1;
     ret = bic_update_fw(slot_id, FW_VR, (char *)image.c_str(), FORCE_UPDATE_UNSET);
     if (ret < 0) return -1;
-    ret = set_pfr_i2c_filter(slot_id, ENABLE_PFR_I2C_FILTER);
-    if (ret < 0) return -1;
-  } catch (string err) {
+  } catch (string& err) {
     printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }

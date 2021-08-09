@@ -1,18 +1,9 @@
-#include <iostream>
-#include <sstream>
-#include <string>
 #include <cstdio>
-#include <cstring>
-#include <unistd.h>
-#include <fcntl.h>
-#include <algorithm>
-#include <sys/mman.h>
-#include <syslog.h>
+#include <openbmc/pal.h>
 #include "bic_vr.h"
-#include <openbmc/kv.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
-#include <openbmc/pal.h>
+
 using namespace std;
 
 int VrExtComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {

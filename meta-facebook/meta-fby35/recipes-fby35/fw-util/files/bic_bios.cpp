@@ -1,10 +1,8 @@
-#include "bic_bios.h"
-#include <sstream>
 #include <cstdio>
-#include <cstring>
 #include <syslog.h>
 #include <unistd.h>
 #include <openbmc/pal.h>
+#include "bic_bios.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -16,7 +14,7 @@ using namespace std;
 #define GPIO_HIGH 1
 #define GPIO_LOW 0
 
-int BiosComponent::update_internal(const std::string &image, int fd, bool force) {
+int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
   uint8_t status;
   int retry_count = 0;
@@ -24,7 +22,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   try {
     cerr << "Checking if the server is ready..." << endl;
     server.ready();
-  } catch(string err) {
+  } catch(string& err) {
     cerr << "Server is not ready." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }

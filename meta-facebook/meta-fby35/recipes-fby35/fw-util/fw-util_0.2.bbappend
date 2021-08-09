@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
-SRC_URI += "\
+SRC_URI += " \
         file://nic_ext.cpp \
         file://nic_ext.h \
         file://bmc_cpld.cpp \
@@ -29,7 +29,6 @@ SRC_URI += "\
         file://expansion.cpp \
         file://bic_cpld_ext.cpp \
         file://bic_cpld_ext.h \
-        file://bic_bios.cpp \
         file://bic_vr.h \
         file://bic_vr.cpp \
         file://bic_pcie_sw.cpp \
@@ -41,6 +40,13 @@ SRC_URI += "\
         file://mcu_fw.cpp \
         file://bic_m2_dev.cpp \
         file://bic_m2_dev.h \
+        "
+
+SRC_URI_remove = " \
+        file://bic_cpld.cpp \
+        file://bic_cpld.h \
+        file://bic_fw.cpp \
+        file://bic_fw.h \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"

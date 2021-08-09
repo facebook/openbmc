@@ -1,6 +1,4 @@
-#include <iostream>
 #include <cstdio>
-#include <cstring>
 #include <openbmc/pal.h>
 #include "expansion.h"
 #ifdef BIC_SUPPORT

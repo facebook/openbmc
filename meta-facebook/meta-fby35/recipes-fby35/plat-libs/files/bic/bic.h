@@ -47,6 +47,8 @@ extern "C" {
 #define VALUE_LOW 0
 #define VALUE_HIGH 1
 
+#define MAX_VER_STR_LEN 80
+
 /*IFX VR pages*/
 #define VR_PAGE   0x00
 #define VR_PAGE32 0x32

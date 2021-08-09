@@ -1,5 +1,6 @@
 #ifndef _EXPANSION_H_
 #define _EXPANSION_H_
+#include <string>
 #include "server.h"
 
 using namespace std;
@@ -11,7 +12,7 @@ class ExpansionBoard : public Server {
     string board_name;
     uint8_t fw_comp = 0;
   public:
-    ExpansionBoard(uint8_t _slot_id, string _fru, string _board_name, uint8_t _fw_comp) 
+    ExpansionBoard(uint8_t _slot_id, const string& _fru, const string& _board_name, uint8_t _fw_comp)
       : Server(_slot_id, fru), slot_id(_slot_id), fru(_fru), board_name(_board_name), fw_comp(_fw_comp) {}
     // Throws exception if not
     void ready();

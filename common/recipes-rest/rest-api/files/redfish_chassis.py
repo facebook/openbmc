@@ -163,18 +163,8 @@ def make_temperature_sensors_json_body(
         status = {
             "Status": {"State": "Enabled", "Health": "OK"}
         }  # default unless we have bad reading value
-        if redfish_chassis_helper.is_libpal_supported():  # for compute and new fboss
-            threshold_json = {
-                "UpperThresholdNonCritical": int(sensor_threshold.unc_thresh),
-                "UpperThresholdCritical": int(sensor_threshold.ucr_thresh),
-                "UpperThresholdFatal": int(sensor_threshold.unr_thresh),
-                "LowerThresholdNonCritical": int(sensor_threshold.lnc_thresh),
-                "LowerThresholdCritical": int(sensor_threshold.lcr_thresh),
-                "LowerThresholdFatal": int(sensor_threshold.lnr_thresh),
-            }
-        else:  # for older fboss platforms
-            # Adding these placeholder values because we don't have these metrics
-            # for fboss platforms via sensors.py
+
+        if sensor_threshold is None or not redfish_chassis_helper.is_libpal_supported():
             threshold_json = {
                 "UpperThresholdNonCritical": 0,
                 "UpperThresholdCritical": int(temperature_sensor.ucr_thresh),
@@ -182,6 +172,15 @@ def make_temperature_sensors_json_body(
                 "LowerThresholdNonCritical": 0,
                 "LowerThresholdCritical": 0,
                 "LowerThresholdFatal": 0,
+            }
+        else:
+            threshold_json = {
+                "UpperThresholdNonCritical": int(sensor_threshold.unc_thresh),
+                "UpperThresholdCritical": int(sensor_threshold.ucr_thresh),
+                "UpperThresholdFatal": int(sensor_threshold.unr_thresh),
+                "LowerThresholdNonCritical": int(sensor_threshold.lnc_thresh),
+                "LowerThresholdCritical": int(sensor_threshold.lcr_thresh),
+                "LowerThresholdFatal": int(sensor_threshold.lnr_thresh),
             }
 
         # in case of a bad reading value, update status
@@ -227,13 +226,12 @@ def make_fan_sensors_json_body(
         if sensor_threshold is None:  # for older fboss platforms
             # placeholder lower thresh bc sensors.py doesn't provide this
             fan_json["LowerThresholdFatal"] = 0
-            # in case of a bad reading value, update status
-            if fan_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
-                status = {
-                    "Status": {"State": "UnavailableOffline", "Health": "Critical"}
-                }
         else:  # for compute and new fboss platforms
             fan_json["LowerThresholdFatal"] = int(sensor_threshold.lnr_thresh)
+
+        # in case of a bad reading value, update status
+        if fan_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
+            status = {"Status": {"State": "UnavailableOffline", "Health": "Critical"}}
         fan_json.update(status)
         all_fan_sensors.append(fan_json)
         redundancy_list.append({"@odata.id": fan_json["@odata.id"]})

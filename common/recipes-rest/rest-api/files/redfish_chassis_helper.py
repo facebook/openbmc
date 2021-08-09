@@ -2,6 +2,7 @@ import json
 import os
 import time
 import typing as t
+from json.decoder import JSONDecodeError
 from shutil import which
 
 import pal
@@ -44,10 +45,6 @@ sensor_unit_dict = {
 SAD_SENSOR = -99999  # default reading for values not found.
 
 
-class SensorReadError(Exception):
-    pass
-
-
 def get_sensor_details_using_libpal(
     fru_name: str, desired_sensor_units: t.List[str]
 ) -> t.List[SensorDetails]:
@@ -68,36 +65,33 @@ def get_sensor_details_using_libpal(
                 reading = int(reading)
                 start_time = int(time.time()) - 60
                 sensor_history = pal.sensor_read_history(fru_id, sensor_id, start_time)
-            except pal.LibPalError as e:
-                raise SensorReadError(
-                    "Failed to get reading for fru: {fru_name} , sensor_id: {sensor_id} : {e}".format(  # noqa: B950
-                        fru_name=fru_name, sensor_id=sensor_id, e=repr(e)
-                    )
-                )
+            except pal.LibPalError:
                 reading = SAD_SENSOR  # default value when we can't get reading
                 sensor_history = None
+
             try:
                 sensor_thresh = sdr.sdr_get_sensor_thresh(fru_id, sensor_id)
+            except sdr.LibSdrError:
+                sensor_thresh = None
+
+            try:
                 sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
-                if sensor_unit == "%":
-                    sensor_unit = "Percent"  # DMTF accepts this unit as text
-                sensor_details = SensorDetails(
-                    sensor_name,
-                    sensor_id,
-                    fru_name,
-                    reading,
-                    sensor_thresh,
-                    sensor_unit,
-                    sensor_history,
-                    None,
-                )
-                sensor_details_list.append(sensor_details)
-            except sdr.LibSdrError as e:
-                raise SensorReadError(
-                    "Failed to get sensor thresh for fru: {fru_name} , sensor_id: {sensor_id} : {e}".format(  # noqa: B950
-                        fru_name=fru_name, sensor_id=sensor_id, e=repr(e)
-                    )
-                )
+            except sdr.LibSdrError:
+                sensor_name = None
+
+            if sensor_unit == "%":
+                sensor_unit = "Percent"  # DMTF accepts this unit as text
+            sensor_details = SensorDetails(
+                sensor_name,
+                sensor_id,
+                fru_name,
+                reading,
+                sensor_thresh,
+                sensor_unit,
+                sensor_history,
+                0,
+            )
+            sensor_details_list.append(sensor_details)
     return sensor_details_list
 
 
@@ -203,14 +197,18 @@ async def get_fru_info(fru_name: str) -> FruInfo:
     fru_details_dict = {}
     product_name_key = "Product Name"
     if is_fruid_util_available():  # then its a compute platform
-        cmd = [FRUID_UTIL_PATH, fru_name, "--json"]
-        _, fru_details, _ = await async_exec(cmd)
-        fru_details_list = json.loads(fru_details)
-        if fru_details_list:  # if its not empty
-            fru_details_dict = fru_details_list[0]
         # update keys as per fruid util output
         product_manufacturer_key = "Product Manufacturer"
         product_serial_key = "Product Serial"
+        cmd = [FRUID_UTIL_PATH, fru_name, "--json"]
+        _, fru_details, _ = await async_exec(cmd)
+        try:
+            fru_details_list = json.loads(fru_details)
+            if fru_details_list:  # if its not empty
+                fru_details_dict = fru_details_list[0]
+        except JSONDecodeError:
+            pass
+
     elif is_we_util_available():  # then its an fboss platform
         cmd = [WEUTIL_PATH]
         _, fru_details, _ = await async_exec(cmd)

@@ -120,9 +120,6 @@ do_install_append() {
     install -d "${D}${sysconfdir}/logrotate.d"
     install -m 644 ${WORKDIR}/rsyslog.conf ${D}${sysconfdir}/rsyslog.conf
 
-    # This overwrites the "syslog" file from the package.
-    install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.d/syslog
-
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
         mkdir -p "${D}/${systemd_unitdir}/system"
         install -m 0644 ${WORKDIR}/rsyslog.service ${D}${systemd_unitdir}/system/

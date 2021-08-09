@@ -38,7 +38,10 @@ do_install_append() {
     install -m 644 ${WORKDIR}/rotate_emmc ${D}${sysconfdir}/logrotate.d/emmc
   fi
 
-  install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.rsyslog
+  # Replaces the syslog or logrotate.rsyslog file from the package with our
+  # custom config (filename depends on upstream package).
+  rm -f ${D}${sysconfdir}/logrotate.d/logrotate.rsyslog
+  install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.d/syslog
 }
 
 FILES_${PN} += "/usr/local/fbpackages/rotate"

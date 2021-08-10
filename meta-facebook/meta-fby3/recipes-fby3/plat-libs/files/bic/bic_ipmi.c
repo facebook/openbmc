@@ -2240,7 +2240,11 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 
   // Ignore first 3 bytes of IANA ID
   *status = rbuf[3];
-  *nvme_ready = (intf == REXP_BIC_INTF)?rbuf[4]:0x1; //1 is assigned directly. for REXP_EXP_INTF, we assige it from rbuf[4]
+  if (intf == REXP_BIC_INTF || intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2) {
+    *nvme_ready = rbuf[4]; //1 is assigned directly. for REXP_EXP_INTF, we assige it from rbuf[4]
+  } else {
+    *nvme_ready = 0x1;
+  }
   if ( ffi != NULL ) *ffi = rbuf[5];   // FFI_0 0:Storage 1:Accelerator
   if ( meff != NULL ) *meff = rbuf[6];  // MEFF  0x35: M.2 22110 0xF0: Dual M.2
   if ( vendor_id != NULL ) *vendor_id = (rbuf[7] << 8 ) | rbuf[8]; // PCIe Vendor ID

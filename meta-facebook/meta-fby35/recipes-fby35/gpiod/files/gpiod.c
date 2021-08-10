@@ -67,46 +67,18 @@ pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER};
 #define SET_BIT(list, index, bit) \
            if ( bit == 0 ) {      \
-             (((uint8_t*)&list)[index/8]) &= ~(0x1 << (index % 8)); \
+             (((uint8_t*)&list)[index/8]) &= ~(0x1 << (7-(index % 8))); \
            } else {                                                 \
-             (((uint8_t*)&list)[index/8]) |= 0x1 << (index % 8);    \
+             (((uint8_t*)&list)[index/8]) |= 0x1 << (7-(index % 8));    \
            }                                                        \
 
 #define GET_BIT(list, index) \
-           (((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1) \
+           ((((uint8_t*)&list)[index/8]) >> (7 - (index % 8))) & 0x1\
 
 bic_gpio_t gpio_ass_val = {
   .gpio[0] = 0,
   .gpio[1] = 0,
   .gpio[2] = 0,
-};
-
-err_t last_recovery_err[] = {
-  /* Value indicating last FW Recovery reason. */
-  {0x01, "LAST_RECOVERY_PCH_ACTIVE"},
-  {0x02, "LAST_RECOVERY_PCH_RECOVERY"},
-  {0x03, "LAST_RECOVERY_ME_LAUNCH_FAIL"},
-  {0x04, "LAST_RECOVERY_ACM_LAUNCH_FAIL"},
-  {0x05, "LAST_RECOVERY_IBB_LAUNCH_FAIL"},
-  {0x06, "LAST_RECOVERY_OBB_LAUNCH_FAIL"},
-  {0x07, "LAST_RECOVERY_BMC_ACTIVE"},
-  {0x08, "LAST_RECOVERY_BMC_RECOVERY"},
-  {0x09, "LAST_RECOVERY_BMC_LAUNCH_FAIL"},
-  {0x0A, "LAST_RECOVERY_FORCED_ACTIVE_FW_RECOVERY"},
-};
-
-err_t last_panic_err[] = {
-  /* Value indicating last Panic reason. */
-  {0x00, "LAST_PANIC_DEFAULT"},
-  {0x01, "LAST_PANIC_PCH_UPDATE_INTENT"},
-  {0x02, "LAST_PANIC_BMC_UPDATE_INTENT"},
-  {0x03, "LAST_PANIC_BMC_RESET_DETECTED"},
-  {0x04, "LAST_PANIC_BMC_WDT_EXPIRED"},
-  {0x05, "LAST_PANIC_ME_WDT_EXPIRED"},
-  {0x06, "LAST_PANIC_ACM_BIOS_WDT_EXPIRED"},
-  {0x07, "LAST_PANIC_RESERVED_1"},
-  {0x08, "LAST_PANIC_RESERVED_2"},
-  {0x09, "LAST_PANIC_ACM_BIOS_AUTH_FAILED"},
 };
 
 err_t bic_pch_pwr_fault[] = {
@@ -460,9 +432,9 @@ populate_gpio_pins(uint8_t fru) {
     return;
   }
 
-  // Only monitor RST_PLTRST_BUF_N & RST_RSMRST_BMC_N
-  gpios[RST_RSMRST_BMC_N].flag = 1; // CPLD PFR alert pin
+  // Only monitor RST_PLTRST_BUF_N & FM_BMC_DEBUG_ENABLE_N
   gpios[RST_PLTRST_BUF_N].flag = 1; // Platform reset pin
+  gpios[FM_BMC_DEBUG_ENABLE_N].flag = 1; // Debug enable pin
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GET_BIT(gpio_ass_val, i);
@@ -482,174 +454,6 @@ init_gpio_pins() {
     populate_gpio_pins(fru);
   }
 
-}
-
-void
-check_pfr_mailbox(uint8_t fru) {
-  char path[128];
-  int ret = 0, i2cfd = 0, retry=0, index = 0;
-  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
-  uint8_t tlen = 1, rlen = 1;
-  uint8_t rcvy_err = 0, panic_err = 0, major_err = 0, minor_err = 0;
-  uint8_t rcvy_cnt = 0, panic_cnt = 0;
-  char *rcvy_str = "NA", *panic_str = "NA", *major_str = "NA", *minor_str = "NA";
-  // Check SB PFR status
-  snprintf(path, sizeof(path), "/dev/i2c-%d", (fru+SLOT_BUS_BASE));
-  i2cfd = open(path, O_RDWR);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
-  }
-
-  tbuf[0] = RCVY_CNT_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      rcvy_cnt = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  tbuf[0] = LAST_RCVY_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      rcvy_err = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  tbuf[0] = PANIC_CNT_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      panic_cnt = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  tbuf[0] = LAST_PANIC_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      panic_err = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  tbuf[0] = MAJOR_ERR_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      major_err = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  tbuf[0] = MINOR_ERR_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      minor_err = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-  if ( i2cfd > 0 ) close(i2cfd);
-
-  if ( rcvy_cnt != 0 ) {
-    syslog(LOG_CRIT, "FRU: %d, PFR - Recovery count: %d", fru, rcvy_cnt);
-  }
-
-  if ( rcvy_err != 0 ) {
-    for (index = 0; index < (sizeof(last_recovery_err)/sizeof(err_t)); index++) {
-      if (rcvy_err == last_recovery_err[index].err_id) {
-        rcvy_str = last_recovery_err[index].err_des;
-        break;
-      }
-    }
-    syslog(LOG_CRIT, "FRU: %d, PFR - Last recovery reason: %s (0x%02X)", fru, rcvy_str, rcvy_err);
-  }
-
-  if ( panic_cnt != 0 ) {
-    syslog(LOG_CRIT, "FRU: %d, PFR - Panic event count: %d", fru, panic_cnt);
-  }
-
-  if ( panic_err != 0 ) {
-    for (index = 0; index < (sizeof(last_panic_err)/sizeof(err_t)); index++) {
-      if (panic_err == last_panic_err[index].err_id) {
-        panic_str = last_panic_err[index].err_des;
-        break;
-      }
-    }
-    syslog(LOG_CRIT, "FRU: %d, PFR - Last panic reason: %s (0x%02X)", fru, panic_str, panic_err);
-  }
-
-  if ( (major_err != 0) || (minor_err != 0) ) {
-    if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
-      major_str = "MAJOR_ERROR_PCH_AUTH_FAILED";
-      for (index = 0; index < minor_auth_size; index++) {
-        if (minor_err == minor_auth_error[index].err_id) {
-          minor_str = minor_auth_error[index].err_des;
-          break;
-        }
-      }
-    } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_PCH_FAILED ) {
-      major_str = "MAJOR_ERROR_UPDATE_FROM_PCH_FAILED";
-      for (index = 0; index < minor_update_size; index++) {
-        if (minor_err == minor_update_error[index].err_id) {
-          minor_str = minor_update_error[index].err_des;
-          break;
-        }
-      }
-    } else {
-      major_str = "unknown major error";
-    }
-
-    syslog(LOG_CRIT, "FRU: %d, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", fru, major_str, major_err, minor_str, minor_err);
-  }
-
-  if ( i2cfd > 0 ) close(i2cfd);
 }
 
 void
@@ -773,9 +577,6 @@ gpio_monitor_poll(void *ptr) {
     syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
   }
 
-  //Init POST status
-  gpios[RST_RSMRST_BMC_N].status = GET_BIT(o_pin_val, RST_RSMRST_BMC_N);
-
   while (1) {
     //check the fw update is ongoing
     if ( pal_is_fw_update_ongoing(fru) == true ) {
@@ -865,48 +666,18 @@ gpio_monitor_poll(void *ptr) {
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
     
-          if (i == RST_RSMRST_BMC_N) {
-            printf("RST_RSMRST_BMC_N is ASSERT !\n");
-          } else if (i == RST_PLTRST_BUF_N) {
+          if (i == RST_PLTRST_BUF_N) {
             rst_timer(fru);
+          } else if (i == FM_BMC_DEBUG_ENABLE_N) {
+            printf("FM_BMC_DEBUG_ENABLE_N is ASSERT !\n");
+            syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is ASSERT: %d", fru, gpios[i].status);
           }
         } else {
-          if (i == RST_RSMRST_BMC_N) {
-            printf("RST_RSMRST_BMC_N is DEASSERT !\n");
-
-            //get power restore policy
-            //defined by IPMI Spec/Section 28.2.
-            pal_get_chassis_status(fru, NULL, chassis_sts, &chassis_sts_len);
-
-            //byte[1], bit[6:5]: power restore policy
-            power_policy = (*chassis_sts >> 5);
-
-            //Check power policy and last power state
-            if (power_policy == POWER_CFG_LPS) {
-              //if (!last_ps) {
-              pal_get_last_pwr_state(fru, pwr_state);
-              //last_ps = pwr_state;
-              //}
-              if (!(strcmp(pwr_state, "on"))) {
-                sleep(3);
-                if ( bmc_location != NIC_BMC) {
-                  pal_server_set_nic_power(SERVER_POWER_ON);
-                }
-                pal_set_server_power(fru, SERVER_POWER_ON);
-              }
-            }
-            else if (power_policy == POWER_CFG_ON) {
-              sleep(3);
-              if ( bmc_location != NIC_BMC) {
-                pal_server_set_nic_power(SERVER_POWER_ON);
-              }
-              pal_set_server_power(fru, SERVER_POWER_ON);
-            }
-#if 0
-            check_pfr_mailbox(fru);
-#endif
-          } else if (i == RST_PLTRST_BUF_N) {
+          if (i == RST_PLTRST_BUF_N) {
             rst_timer(fru);
+          } else if (i == FM_BMC_DEBUG_ENABLE_N) {
+            printf("FM_BMC_DEBUG_ENABLE_N is DEASSERT !\n");
+            syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is DEASSERT: %d", fru, gpios[i].status);
           }
         }
       }
@@ -967,7 +738,6 @@ host_pwr_mon() {
 #define MAX_NIC_PWR_RETRY   15
 #define POWER_ON_DELAY       2
 #define NON_PFR_POWER_OFF_DELAY  -2
-#define PFR_POWER_OFF_DELAY     -60
 #define HOST_READY 500
   char path[64] = {0};
   uint8_t host_off_flag = 0;
@@ -988,14 +758,6 @@ host_pwr_mon() {
   if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
     syslog(LOG_WARNING, "Failed to get the location of BMC");
     bmc_location = NIC_BMC;//default value
-  }
-
-  for ( i = 0; i < MAX_NUM_SLOTS; i++ ) {
-    if ( ((SLOTS_MASK >> i) & 0x1) != 0x1) continue; // skip since fru${i} is not present
-    fru = i + 1;
-    if (pal_is_slot_pfr_active(fru) == PFR_ACTIVE) {
-      power_off_delay = PFR_POWER_OFF_DELAY;
-    }
   }
 
   while (1) {

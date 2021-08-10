@@ -88,6 +88,7 @@ const char *gpio_pin_name[] = {
   "FM_CPU_BIC_PROCHOT_LVT3_N",
   "IRQ_PVCCD_CPU0_VRHOT_LVC3_N",    //60
   "FM_PVCCIN_CPU0_PWR_IN_ALERT_N",
+  "FM_THROTTLE_IN_N",
   "SGPIO_BMC_CLK_R",
   "SGPIO_BMC_LD_R_N",
   "SGPIO_BMC_DOUT_R",

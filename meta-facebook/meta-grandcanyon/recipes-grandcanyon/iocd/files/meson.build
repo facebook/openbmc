@@ -7,6 +7,7 @@ project('iocd', 'c',
 cc = meson.get_compiler('c')
 
 dep_libs = [
+    cc.find_library('obmc-mctp'),
     dependency('libfbgc_common'),
     dependency('libobmc-i2c'),
     dependency('libipc'),

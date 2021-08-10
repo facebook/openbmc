@@ -1,0 +1,33 @@
+From 9d487c334d5018b4ace9107279b42438600383b9 Mon Sep 17 00:00:00 2001
+From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
+Date: Wed, 4 Aug 2021 11:21:34 +0800
+Subject: [PATCH] Increase the size of smbus tx buffer
+
+---
+ libmctp-smbus.h | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/libmctp-smbus.h b/libmctp-smbus.h
+index 59c632d..9b3a6ae 100644
+--- a/libmctp-smbus.h
++++ b/libmctp-smbus.h
+@@ -8,6 +8,7 @@ extern "C" {
+ #include "libmctp.h"
+ 
+ #define MCTP_HEADER_SIZE 4
++#define MCTP_PKT_PL_HEADER_SIZE 16
+ #define MCTP_PAYLOAD_SIZE 64
+ 
+ #define SMBUS_HEADER_SIZE 4
+@@ -15,7 +16,7 @@ extern "C" {
+ 
+ #define SMBUS_TX_BUFF_SIZE                                                     \
+ 	((MCTP_HEADER_SIZE) + (SMBUS_HEADER_SIZE) + (MCTP_PAYLOAD_SIZE) +      \
+-	 (SMBUS_PEC_BYTE_SIZE))
++	 (SMBUS_PEC_BYTE_SIZE) + (MCTP_PKT_PL_HEADER_SIZE))
+ 
+ #define IS_MUX_PORT 0x80
+ #define PULL_MODEL_HOLD 0x40
+-- 
+2.28.0
+

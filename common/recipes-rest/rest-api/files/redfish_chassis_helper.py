@@ -54,7 +54,7 @@ def get_sensor_details_using_libpal(
     fru_id = fru_name_map[fru_name]
     sensor_details_list = []
     if not pal.pal_is_fru_prsnt(fru_id):  # Check if the fru is present
-        raise NotImplementedError("Fru is not present {}".format(fru_name))
+        return sensor_details_list
 
     sensor_ids_list = pal.pal_get_fru_sensor_list(fru_id)
     for sensor_id in sensor_ids_list:

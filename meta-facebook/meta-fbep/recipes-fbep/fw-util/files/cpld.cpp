@@ -30,16 +30,9 @@ class CpldComponent : public Component {
       if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
         // Print CPLD Version
         if (cpld_get_ver((unsigned int *)&var)) {
-          printf("CPLD Version: NA, ");
+          printf("CPLD Version: NA\n");
         } else {
-          printf("CPLD Version: %02X%02X%02X%02X, ", var[3], var[2], var[1], var[0]);
-        }
-
-        // Print CPLD Device ID
-        if (cpld_get_device_id((unsigned int *)&var)) {
-          printf("CPLD DeviceID: NA\n");
-        } else {
-          printf("CPLD DeviceID: %02X%02X%02X%02X\n", var[3], var[2], var[1], var[0]);
+          printf("CPLD Version: %02X%02X%02X%02X\n", var[3], var[2], var[1], var[0]);
         }
         cpld_intf_close(INTF_JTAG);
       }

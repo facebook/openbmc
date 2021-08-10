@@ -842,7 +842,7 @@ pal_set_status_led(uint8_t fru, status_led_color color) {
     val_blue   = GPIO_VALUE_LOW;
     break;
   case STATUS_LED_BLUE:
-    val_yellow = GPIO_VALUE_LOW;
+    val_yellow = GPIO_VALUE_HIGH;
     val_blue   = GPIO_VALUE_HIGH;
     break;
   case STATUS_LED_YELLOW:

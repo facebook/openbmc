@@ -9,7 +9,7 @@ char *exp_error_code_description[] = {
 	"Expander I2C bus 6 crash",
 	"Expander I2C bus 7 crash",
 	"Expander I2C bus 0 crash",
-	"Expander Reserved",
+	"IOC HeartBeat loss",
 	"Expander Reserved",                 // Error Code 10
 	"SCC voltage critical",
 	"SCC_HSC voltage critical",

@@ -387,7 +387,7 @@ alter_to_fsc_style_sensor_name (char * str) {
 static void*
 get_sensor_reading(void *sensor_data) {
 
-  get_sensor_reading_struct *sensor_info = sensor_data;
+  get_sensor_reading_struct *sensor_info = (get_sensor_reading_struct *)sensor_data;
   int i = 0,j = 0;
   uint8_t snr_num;
   float fvalue;
@@ -689,7 +689,7 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
       return 0;
     }
     strcpy(fruname, AGGREGATE_SENSOR_FRU_NAME);
-    sensor_list = malloc(sizeof(uint8_t) * cnt);
+    sensor_list = (uint8_t*)malloc(sizeof(uint8_t) * cnt);
     if (!sensor_list) {
       return -1;
     }

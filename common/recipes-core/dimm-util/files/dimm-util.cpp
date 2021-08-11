@@ -643,6 +643,9 @@ static int parse_cmdline_args(int argc, char **argv,
       return ERR_INVALID_SYNTAX;
     }
   }
+  if (optind < argc) {
+    return ERR_INVALID_SYNTAX;
+  }
 
   return 0;
 }

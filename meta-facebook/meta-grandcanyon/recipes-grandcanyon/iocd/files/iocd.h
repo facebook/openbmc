@@ -7,32 +7,33 @@
 #include <string.h>
 #include <sys/types.h>
 
-#define MAX_PATH_SIZE              64
+#define MAX_PID_PATH_SIZE          64
 #define MAX_REQUESTS               2
 #define MAX_MCTP_RETRY_CNT         3
 #define I2C_RETRIES_MAX            5
 
 #define MCTP_MAX_WRITE_SIZE        90
 #define MCTP_MAX_READ_SIZE         1024
+#define MCTP_MIN_READ_SIZE         15
 #define PKT_PAYLOAD_HDR_EXTRA_SIZE 9
 #define IOC_SLAVE_ADDRESS          0x68
-#define DEFAULT_EID                0x8
 
-#define MESSAGE_TYPE               0xFE
+#define SMBUS_COMMAND_CODE         0x0F
+#define HEADER_VERSION             0x01
+#define BRCM_MSG_TAG               0xC8
+#define MESSAGE_TYPE               0x7E
 
-#define RES_PAYLOAD_OFFSET         5
-#define RES_NUM_SENSOR_OFFSET      74
+#define RES_PAYLOAD_OFFSET         11
+#define RES_NUM_SENSOR_OFFSET      80
 #define RES_IOC_TEMP_OFFSET        (RES_NUM_SENSOR_OFFSET + 4)
 #define RES_IOC_TEMP_VALID_OFFSET  (RES_IOC_TEMP_OFFSET + 4)
-#define RES_IOC_FW_VER_OFFSET      70
+#define RES_IOC_FW_VER_OFFSET      76
 #define RES_PL_CMD_RESP_NOT_READY  0xA6
 
 #define READ_IOC_TEMP_FAILED       -1
 
-#define IOC_READY_TIME             90  // IOC firmware ready time, unit: seconds
+#define IOC_READY_TIME             90  //IOC firmware ready time, unit: seconds
 #define I2C_MSLAVE_POLL_TIME       100 // 100 milliseconds
-
-#define SYSFS_SLAVE_QUEUE "/sys/bus/i2c/devices/%d-10%02x/slave-mqueue"
 
 typedef enum {
   VDM_RESET,
@@ -41,6 +42,19 @@ typedef enum {
   COMMAND_RESUME,
   COMMAND_DONE,
 } ioc_command;
+
+struct mctp_smbus_header_tx {
+  uint8_t command_code;  
+  uint8_t byte_count;  
+  uint8_t source_slave_address;  
+};
+
+struct mctp_hdr {
+  uint8_t ver;  
+  uint8_t dest;  
+  uint8_t src;  
+  uint8_t flags_seq_tag;  
+};
 
 typedef struct {
   uint8_t message_type;

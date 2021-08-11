@@ -19,9 +19,9 @@ SRC_URI = "file://meson.build \
 
 S = "${WORKDIR}"
 
-LDFLAGS += "-lpal -lobmc-i2c -lkv -lobmc-mctp -lmctp_intel"
-DEPENDS += " libpal update-rc.d-native libfbgc-common libobmc-i2c libipc libkv libobmc-mctp libmctp-intel "
-RDEPENDS_${PN} += " libpal libfbgc-common libobmc-i2c libipc libkv libobmc-mctp libmctp-intel "
+LDFLAGS += "-lpal -lobmc-i2c -lkv"
+DEPENDS += " libpal update-rc.d-native libfbgc-common libobmc-i2c libipc libkv "
+RDEPENDS_${PN} += " libpal libfbgc-common libobmc-i2c libipc libkv "
 
 do_install_append() {
   install -d ${D}${sysconfdir}/init.d

@@ -108,7 +108,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     self.checkBootOrderStatus(fru, "--boot_mode", "UEFI")
                     cmd = [
                         "bios-util",
-                        "server",
+                        fru,
                         "--boot_order",
                         "set",
                         "--boot_mode",
@@ -118,7 +118,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     self.checkBootOrderStatus(fru, "--boot_mode", "Legacy")
                     cmd = [
                         "bios-util",
-                        "server",
+                        fru,
                         "--boot_order",
                         "set",
                         "--boot_mode",
@@ -131,7 +131,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     # test set bootmode: Legacy -> UEFI -> Legacy
                     cmd = [
                         "bios-util",
-                        "server",
+                        fru,
                         "--boot_order",
                         "set",
                         "--boot_mode",
@@ -141,7 +141,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     self.checkBootOrderStatus(fru, "--boot_mode", "UEFI")
                     cmd = [
                         "bios-util",
-                        "server",
+                        fru,
                         "--boot_order",
                         "set",
                         "--boot_mode",

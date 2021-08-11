@@ -24,6 +24,7 @@ int CpldExtComponent::update(string image) {
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
     remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
   } catch (string& err) {
+    printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -34,8 +35,8 @@ int CpldExtComponent::fupdate(string image) {
   //int intf = FEXP_BIC_INTF;
   //string comp = component();
   try {
-    /*server.ready();
-    expansion.ready();
+    server.ready();
+    /*expansion.ready();
     if (comp == "1ou_cpld") {
       intf = FEXP_BIC_INTF;
     } else {
@@ -47,6 +48,7 @@ int CpldExtComponent::fupdate(string image) {
     //bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     //remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
   } catch (string& err) {
+    printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

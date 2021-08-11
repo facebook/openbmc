@@ -27,7 +27,14 @@
 # Short-Description: Setup sensor monitoring
 ### END INIT INFO
 
-echo -n "Setup sensor monitoring for FBGC... "
+. /usr/local/fbpackages/utils/ast-functions
+
+echo "Setup sensor monitoring for FBGC... "
+
+# Store vr information before sensor monitoring 
+if [ "$(is_sb_bic_ready 1)" -eq "1" ]; then
+    /usr/bin/fw-util server --version > /dev/null
+fi
 
 runsv /etc/sv/sensord > /dev/null 2>&1 &
 

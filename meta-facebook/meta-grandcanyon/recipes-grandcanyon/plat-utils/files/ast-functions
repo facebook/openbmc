@@ -188,3 +188,22 @@ is_server_12v_on() {
     echo false
   fi
 }
+
+# Check to see if Server Board Present & Bridge-IC is ready
+is_sb_bic_ready() {
+  local ready
+  local val
+
+  if [[ $(is_server_prsnt) == "$SERVER_ABSENT" ]]; then
+    ready=0
+  else
+    val=$(gpio_get "BIC_READY_IN")
+    if [ "$val" -eq "$GPIO_VALUE_HIGH" ]; then
+      ready=1
+    else
+      ready=0
+    fi
+  fi
+
+  echo $ready
+}

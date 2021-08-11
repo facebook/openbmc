@@ -203,6 +203,19 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   uint8_t tlen = 0;
   int ret = 0;
 
+  // set VR page
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00; //read cnt
+  tbuf[3] = CMD_INF_VR_SET_PAGE; //command code
+  tbuf[4] = 0x01;
+  tlen = 5;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s():%d Failed to send command code to switch VR page. ret=%d", __func__,__LINE__, ret);
+    return ret;
+  }
+
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
   tbuf[2] = 0x07; //read back 7 bytes
@@ -324,9 +337,8 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t rlen = 0;
   uint8_t remaining_writes = 0;
-  char path[MAX_PATH_LEN] = {0};
   int fd = 0;
-  int ret = 0, rc = 0;
+  int ret = 0;
 
   ret = bic_get_vr_device_id(rbuf, &rlen, bus, addr);
   if (ret < 0) {
@@ -343,9 +355,12 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
     //to avoid sensord changing the page of VRs, so use the LOCK file
     //to stop monitoring sensors of VRs
     fd = open(SERVER_SENSOR_LOCK, O_CREAT | O_RDWR, 0666);
-    rc = flock(fd, LOCK_EX | LOCK_NB);
-    if (rc != 0) {
+    ret = flock(fd, LOCK_EX | LOCK_NB);
+    if (ret != 0) {
       if (EWOULDBLOCK == errno) {
+        syslog(LOG_WARNING, "%s():%d Failed to lock VR sensor reading", __func__,__LINE__);
+        remove(SERVER_SENSOR_LOCK);
+        close(fd);
         return -1;
       }
     }
@@ -391,14 +406,12 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
     kv_set(key, ver_str, 0, 0);
     
   error_exit:
-    rc = flock(fd, LOCK_UN);
-    if (rc == -1) {
-      syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
-      close(fd);
-      return rc;
+    ret = flock(fd, LOCK_UN);
+    if (ret == -1) {
+      syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, SERVER_SENSOR_LOCK);
     }
     close(fd);
-    remove(path);
+    remove(SERVER_SENSOR_LOCK);
     return ret;
     
   } else if (rlen > 4) {

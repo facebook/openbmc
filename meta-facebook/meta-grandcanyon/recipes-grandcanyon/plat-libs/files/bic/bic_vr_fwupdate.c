@@ -774,9 +774,8 @@ vr_IFX_program(vr *dev, uint8_t force) {
 #define REG1_STS_CHECK 0x01
 #define REG2_STS_CHECK 0x0A
   int i = 0;
-  int ret = 0, rc = 0;
+  int ret = 0;
   int fd = 0;
-  char path[MAX_PATH_LEN] = {0};
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t tlen = 0;
@@ -791,9 +790,12 @@ vr_IFX_program(vr *dev, uint8_t force) {
   //to avoid sensord changing the page of VRs, so use the LOCK file
   //to stop monitoring sensors of VRs
   fd = open(SERVER_SENSOR_LOCK, O_CREAT | O_RDWR, 0666);
-  rc = flock(fd, LOCK_EX | LOCK_NB);
-  if (rc != 0) {
+  ret = flock(fd, LOCK_EX | LOCK_NB);
+  if (ret != 0) {
     if (EWOULDBLOCK == errno) {
+      syslog(LOG_WARNING, "%s():%d Failed to lock VR sensor reading", __func__,__LINE__);
+      remove(SERVER_SENSOR_LOCK);
+      close(fd);
       return -1;
     }
   }
@@ -939,14 +941,12 @@ vr_IFX_program(vr *dev, uint8_t force) {
   }
 
 error_exit:
-  rc = flock(fd, LOCK_UN);
-  if (rc == -1) {
-    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
-    close(fd);
-    return rc;
+  ret = flock(fd, LOCK_UN);
+  if (ret == -1) {
+    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, SERVER_SENSOR_LOCK);
   }
   close(fd);
-  remove(path);
+  remove(SERVER_SENSOR_LOCK);
 
   return ret;
 }

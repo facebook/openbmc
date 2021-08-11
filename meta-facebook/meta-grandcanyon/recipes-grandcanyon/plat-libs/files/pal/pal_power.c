@@ -16,12 +16,15 @@
 #include <facebook/fbgc_gpio.h>
 #include "pal.h"
 
+#define MAX_CMD_LEN 64
+
 static int
 server_power_12v_on() {
   int i2cfd = 0;
   uint8_t status = 0;
   int ret = 0, retry = 0, times = 0;
   i2c_master_rw_command command;
+  char cmd[MAX_CMD_LEN] = {0};
   
   memset(&command, 0, sizeof(command));
   command.offset = 0x00;
@@ -51,6 +54,12 @@ server_power_12v_on() {
   while(times < WAIT_POWER_STATUS_CHANGE_TIME) {
     ret = pal_get_server_12v_power(FRU_SERVER, &status);
     if ((ret == 0) && (status == SERVER_12V_ON)) {
+      // store VR version to cache
+      snprintf(cmd, sizeof(cmd), "/usr/bin/fw-util server --version vr > /dev/null 2>&1");
+      if (system(cmd) != 0) {
+        syslog(LOG_WARNING, "%s(): get VR version failed\n", __func__);
+        ret = PAL_ENOTSUP;
+      }
       goto exit;
     } else {
       ret = -1;
@@ -73,6 +82,7 @@ server_power_12v_off() {
   uint8_t status = 0;
   int ret = 0, retry = 0, times = 0;
   i2c_master_rw_command command;
+  char cmd[MAX_CMD_LEN] = {0};
   
   memset(&command, 0, sizeof(command));
   command.offset = 0x00;
@@ -102,6 +112,12 @@ server_power_12v_off() {
   while(times < WAIT_POWER_STATUS_CHANGE_TIME) {
     ret = pal_get_server_12v_power(FRU_SERVER, &status);
     if ((ret == 0) && (status == SERVER_12V_OFF)) {
+      // clear VR verison cache
+      snprintf(cmd, sizeof(cmd), "rm -f /tmp/cache_store/vr_*_crc");
+      if (system(cmd) != 0) {
+        syslog(LOG_WARNING, "%s(): remove VR version cache failed\n", __func__);
+        ret = PAL_ENOTSUP;
+      }
       goto exit;
     } else {
       ret = -1;

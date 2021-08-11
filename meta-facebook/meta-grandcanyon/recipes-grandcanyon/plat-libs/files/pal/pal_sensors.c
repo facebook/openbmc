@@ -1572,7 +1572,9 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = 0;
 
   if (access(SERVER_SENSOR_LOCK, F_OK) == 0) { // BIC is updating VR
-    return READING_SKIP;
+    if ((sensor_num >= BS_VR_VCCIN_TEMP) && (sensor_num <= BS_VR_DIMM_DE_PWR)) {
+      return READING_SKIP;
+    }
   }
 
   if (bic_get_sensor_reading(sensor_num, &sensor) < 0) {

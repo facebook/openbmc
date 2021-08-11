@@ -26,7 +26,7 @@
 //proxy to DBus objects are stored to optimize performance
 static GDBusProxy* _proxy_sensor_service = NULL;
 static GDBusProxy* _proxy_fru[MAX_NUM_FRUS] = {NULL};
-static GDBusProxy* _proxy_sensor[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {NULL};
+static GDBusProxy* _proxy_sensor[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {NULL};
 
 static GDBusProxy*
 get_dbus_proxy(const char* path, const char* interface) {

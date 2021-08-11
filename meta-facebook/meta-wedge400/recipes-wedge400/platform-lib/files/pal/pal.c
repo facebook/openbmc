@@ -68,7 +68,7 @@ struct threadinfo {
   pthread_t pt;
 };
 
-static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
 
 /* List of BIC Discrete sensors to be monitored */
@@ -583,10 +583,10 @@ const uint8_t psu2_sensor_list[] = {
 };
 
 
-float scm_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float smb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float pem_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float psu_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float scm_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float smb_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float pem_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float psu_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
@@ -601,7 +601,7 @@ size_t pem2_discrete_cnt = sizeof(pem2_discrete_list)/sizeof(uint8_t);
 size_t psu1_sensor_cnt = sizeof(psu1_sensor_list)/sizeof(uint8_t);
 size_t psu2_sensor_cnt = sizeof(psu2_sensor_list)/sizeof(uint8_t);
 
-static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 static float hsc_rsense[MAX_NUM_FRUS] = {0};
 
@@ -2360,7 +2360,7 @@ bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
   int8_t b_exp, r_exp;
   uint8_t x, m_lsb, m_msb, b_lsb, b_msb, thresh_val;
   uint16_t m = 0, b = 0;
-  sensor_info_t sinfo[MAX_SENSOR_NUM] = {0};
+  sensor_info_t sinfo[MAX_SENSOR_NUM + 1] = {0};
   sdr_full_t *sdr;
 
   while ((ret = bic_sensor_sdr_init(fru, sinfo)) == ERR_NOT_READY &&

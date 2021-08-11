@@ -123,7 +123,7 @@ char * def_val_list[] = {
   LAST_KEY /* Same as last entry of the key_list */
 };
 
-sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 int
 pal_get_pim_type(uint8_t fru, int retry) {

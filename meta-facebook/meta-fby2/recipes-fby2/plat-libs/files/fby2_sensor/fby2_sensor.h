@@ -412,7 +412,7 @@ extern const uint8_t bic_nd_sensor_list[];
 extern const uint8_t bic_nd_discrete_list[];
 #endif
 
-extern float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1];
+extern float nic_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1];
 
 extern size_t bic_sensor_cnt;
 

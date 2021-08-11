@@ -148,14 +148,14 @@ typedef struct {
 
 } sensor_check_t;
 
-static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 typedef struct {
   char name[32];
 
 } sensor_desc_t;
 
-static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 char * key_list[] = {
 "server_pcie_port_config",

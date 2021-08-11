@@ -61,10 +61,10 @@ static int read_curr_leakage(uint8_t snr_number, float *value);
 static int read_pdb_dl_vdelta(uint8_t snr_number, float *value);
 
 static int pal_sdr_init(uint8_t fru);
-static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
-static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM] = {0};
-static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM] = {0};
+static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
+static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 
 int pwr_off_flag[MAX_NODES] = {0};
 int temp_cnt = 0;

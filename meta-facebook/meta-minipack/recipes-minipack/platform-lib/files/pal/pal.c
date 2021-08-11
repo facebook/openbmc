@@ -85,9 +85,9 @@ typedef struct {
   char name[NAME_MAX];
 } sensor_path_t;
 
-static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_desc_t m_snr_desc[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
-static sensor_path_t snr_path[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_path_t snr_path[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 /* List of BIC Discrete sensors to be monitored */
 const uint8_t bic_discrete_list[] = {
@@ -511,10 +511,10 @@ const uint8_t psu4_sensor_list[] = {
   PSU4_SENSOR_TEMP3,
 };
 
-float scm_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float smb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float pim_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float psu_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float scm_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float smb_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float pim_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float psu_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
@@ -533,7 +533,7 @@ size_t psu2_sensor_cnt = sizeof(psu2_sensor_list)/sizeof(uint8_t);
 size_t psu3_sensor_cnt = sizeof(psu3_sensor_list)/sizeof(uint8_t);
 size_t psu4_sensor_cnt = sizeof(psu4_sensor_list)/sizeof(uint8_t);
 
-static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 static float hsc_rsense[MAX_NUM_FRUS] = {0};
 static int hsc_power_div = 1;

@@ -233,7 +233,7 @@ const uint8_t asic7_sensor_list[] = {
   MB_GPU7_PWCS,
 };
 
-float sensors_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {
+float sensors_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {
 //{	UCR,	UNC,	UNR,	LCR,	LNC,	LNR,	POS,	NEG}
   [MB_FAN0_TACH_I] =
   {0,	13000,	0,	0,	1000,	0,	0,	0,	0},

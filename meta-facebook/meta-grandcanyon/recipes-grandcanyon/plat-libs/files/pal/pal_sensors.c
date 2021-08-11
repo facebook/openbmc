@@ -34,7 +34,7 @@ static void apply_inlet_correction(float *value);
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
 
-static sensor_info_t g_sinfo[MAX_SENSOR_NUM] = {0};
+static sensor_info_t g_sinfo[MAX_SENSOR_NUM + 1] = {0};
 static bool is_sdr_init[FRU_CNT] = {false};
 
 //{SensorName, ID, FUNCTION, STBY_READ, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}

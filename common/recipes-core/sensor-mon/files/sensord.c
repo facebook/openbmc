@@ -42,8 +42,8 @@
 #define MAX_SENSOR_CHECK_RETRY 3
 #define MAX_ASSERT_CHECK_RETRY 1
 
-static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
-static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM] = {0};
+static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
+static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1] = {0};
 
 static void
 print_usage() {
@@ -481,8 +481,8 @@ snr_monitor(void *arg) {
   float curr_val;
   uint8_t *sensor_list, *discrete_list;
   thresh_sensor_t *snr;
-  uint32_t snr_poll_interval[MAX_SENSOR_NUM] = {0};
-  uint8_t snr_read_fail[MAX_SENSOR_NUM] = {0};
+  uint32_t snr_poll_interval[MAX_SENSOR_NUM + 1] = {0};
+  uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
 
   ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   if (ret < 0) {
@@ -661,7 +661,7 @@ aggregate_snr_monitor(void *unused)
   uint8_t fru = AGGREGATE_SENSOR_FRU_ID;
   uint8_t snr_num;
   thresh_sensor_t *snr;
-  uint8_t snr_read_fail[MAX_SENSOR_NUM] = {0};
+  uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
 
   if(aggregate_sensor_init(NULL)) {
     syslog(LOG_WARNING, "Initializing aggregate sensors failed!");

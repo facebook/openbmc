@@ -142,7 +142,7 @@ typedef struct {
 
 } sensor_check_t;
 
-static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_check_t m_snr_chk[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 char * key_list[] = {
 "pwr_server1_last_state",

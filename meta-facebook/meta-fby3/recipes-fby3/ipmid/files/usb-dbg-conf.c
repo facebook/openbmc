@@ -17,7 +17,7 @@
 #define ESC_ALT ESCAPE"[5;7m"
 #define ESC_RST ESCAPE"[m"
 
-static sensor_desc_t dynamic_cri_sensor[MAX_SENSOR_NUM] = {0};
+static sensor_desc_t dynamic_cri_sensor[MAX_SENSOR_NUM + 1] = {0};
 
 //These postcodes are defined in document "F08 BIOS Specification" Revision: 2A
 static post_desc_t pdesc_phase1[] = {

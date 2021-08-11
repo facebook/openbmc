@@ -562,10 +562,10 @@ const uint8_t bic_nd_discrete_list[] = {
 };
 #endif
 
-float spb_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float dc_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float nic_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
-float dc_cf_sensor_threshold[MAX_SENSOR_NUM][MAX_SENSOR_THRESHOLD + 1] = {0};
+float spb_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float dc_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float nic_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float dc_cf_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 /*
 PLDM sensor threshold are populated in shared memory object by ncsid
@@ -822,8 +822,8 @@ enum ina_register {
 #define GET_DEV_VALID_FALG(flag, dev_id) ((flag>>(dev_id-1)) & 1)
 #define SET_DEV_VALID_FALG(flag, dev_id) (flag |= (1<<(dev_id-1)))
 
-static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
-static ipmi_general_sensor_reading_t g_sread[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
+static ipmi_general_sensor_reading_t g_sread[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static uint16_t dev_valid_flag[MAX_NUM_FRUS] = {0};
 
 void

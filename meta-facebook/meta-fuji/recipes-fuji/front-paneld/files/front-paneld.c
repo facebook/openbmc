@@ -192,7 +192,7 @@ pim_thresh_init(uint8_t fru) {
   int i, sensor_cnt;
   uint8_t snr_num;
   uint8_t *sensor_list;
-  thresh_sensor_t snr[MAX_NUM_FRUS][MAX_SENSOR_NUM] = {0};
+  thresh_sensor_t snr[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
   pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
   for (i = 0; i < sensor_cnt; i++) {

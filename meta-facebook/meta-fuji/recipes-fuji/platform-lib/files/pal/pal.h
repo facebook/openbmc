@@ -277,7 +277,7 @@ enum {
   BOARD_FUJI_DVT1       = 0x43,
 };
 
-extern sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM];
+extern sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1];
 
 int pal_post_enable(uint8_t slot);
 int pal_post_disable(uint8_t slot);

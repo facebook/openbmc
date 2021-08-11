@@ -12,12 +12,9 @@
 #include <openbmc/kv.h>
 
 #define DEVICE_TREE_HEADER_SIZE (4*10)
-#define MTD_REGION_SIZE 0x60000
 #define MTD_PKT_SIZE 0x10000
-#define ROM_MTD "/dev/mtd7" // BMC flash0
-#define ROMX_MTD "/dev/mtd0" // BMC flash1
 
-int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock)
+int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, uint32_t mtd_region_size)
 {
   int fd = 0, ret = -1;
   int offs, rcnt, end, size_pos, size, dt_offs;
@@ -29,7 +26,7 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock)
   *img_lock = 0x00;
   *img_sig = 0x00;
 
-  buf = (uint8_t *)malloc(MTD_REGION_SIZE);
+  buf = (uint8_t *)malloc(mtd_region_size);
   if (!buf) {
     syslog(LOG_WARNING,"%s: malloc failed", __func__);
     return -1;
@@ -49,9 +46,9 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock)
     }
 
     offs = 0;
-    while (offs < MTD_REGION_SIZE) {
-      rcnt = ((offs + MTD_PKT_SIZE) <= MTD_REGION_SIZE) ? MTD_PKT_SIZE : (MTD_REGION_SIZE - offs);
-      rcnt = read(fd, buf, MTD_REGION_SIZE);
+    while (offs < mtd_region_size) {
+      rcnt = ((offs + MTD_PKT_SIZE) <= mtd_region_size) ? MTD_PKT_SIZE : (mtd_region_size - offs);
+      rcnt = read(fd, buf, mtd_region_size);
       if (rcnt <= 0) {
         if (errno == EINTR) {
           continue;
@@ -61,11 +58,11 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock)
       }
       offs += rcnt;
     }
-    if (offs < MTD_REGION_SIZE) {
+    if (offs < mtd_region_size) {
       break;
     }
 
-    end = MTD_REGION_SIZE - sizeof(magic_number);
+    end = mtd_region_size - sizeof(magic_number);
     // Scan through the region looking for the version signature.
     for (offs = 0; offs < end; offs++) {
       if (!memcmp(buf+offs, magic_number, sizeof(magic_number))) {
@@ -95,11 +92,10 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock)
   return ret;
 }
 
-bool get_mtd_name(char* mtd_name)
+bool get_mtd_name(char* mtd_name, char* partition_name, uint32_t* size)
 {
     FILE* partitions = fopen("/proc/mtd", "r");
     char line[256], mnt_name[32];
-    char uboot_name[] = "\"u-bootro\"";
     unsigned int mtd_no;
     bool found = false;
 
@@ -107,9 +103,9 @@ bool get_mtd_name(char* mtd_name)
       return false;
     }
     while (fgets(line, sizeof(line), partitions)) {
-      if (sscanf(line, "mtd%d: %*x %*x %s",
-            &mtd_no, mnt_name) == 2)  {
-        if (!strcmp(uboot_name, mnt_name)) {
+      if (sscanf(line, "mtd%d: %x %*x %s",
+            &mtd_no,size, mnt_name) == 3)  {
+        if (!strcmp(partition_name, mnt_name)) {
           sprintf(mtd_name, "/dev/mtd%d", mtd_no);
           found = true;
           break;
@@ -122,8 +118,9 @@ bool get_mtd_name(char* mtd_name)
 
 bool get_rom_ver_from_mtd(char *ver_rom, char *ver_uboot)
 {
-  char mtd_name[32];
-  if (!get_mtd_name(mtd_name)) {
+  char mtd_name[32] = {0};
+  uint32_t size;
+  if (!get_mtd_name(mtd_name,"\"u-bootro\"",&size) && !get_mtd_name(mtd_name,"\"recovery\"",&size)) {
     return false;
   }
 
@@ -170,9 +167,12 @@ bool get_rom_ver(char *ver_rom, char *ver_uboot)
 
 int main(int argc, char *argv[])
 {
-  char buf[128];
+  char buf[128] = {0};
   char ver_rom[MAX_VALUE_LEN] = {0};
   char ver_uboot[MAX_VALUE_LEN] = {0};
+  char rom_name[32] = {0};
+  char romx_name[32] = {0};
+  uint32_t rom_size = 0, romx_size = 0;
   struct vbs *v;
   uint8_t img_sig = 0, img_lock = 0;
 
@@ -211,14 +211,18 @@ int main(int argc, char *argv[])
   printf("Flags recovery_retried:  0x%02x\n", v->recovery_retries);
   printf("\n");
   if (get_rom_ver(ver_rom, ver_uboot)) {
-    check_lock_signed(ROM_MTD,&img_sig,&img_lock);
     printf("ROM version:             %s\n", ver_rom);
     printf("ROM U-Boot version:      %s\n", ver_uboot);
-    printf("FLASH0 Signed:           0x%02x\n", img_sig);
-    printf("FLASH0 Locked:           0x%02x\n", img_lock);
-    check_lock_signed(ROMX_MTD,&img_sig,&img_lock);
-    printf("FLASH1 Signed:           0x%02x\n", img_sig);
-    printf("FLASH1 Locked:           0x%02x\n", img_lock);
+    if (get_mtd_name(rom_name,"\"rom\"", &rom_size)) {
+      check_lock_signed(rom_name,&img_sig,&img_lock,rom_size);
+      printf("FLASH0 Signed:           0x%02x\n", img_sig);
+      printf("FLASH0 Locked:           0x%02x\n", img_lock);
+    }
+    if (get_mtd_name(romx_name,"\"romx\"", &romx_size)) {
+      check_lock_signed(romx_name,&img_sig,&img_lock,romx_size);
+      printf("FLASH1 Signed:           0x%02x\n", img_sig);
+      printf("FLASH1 Locked:           0x%02x\n", img_lock);
+    }
     printf("\n");
   }
   printf("Status CRC: 0x%04x\n", v->crc);

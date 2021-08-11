@@ -458,6 +458,7 @@ int pal_get_cached_value(char *key, char *value);
 int pal_set_cached_value(char *key, char *value);
 int pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);
 int pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr);
+int pal_clear_event_only_error_ack();
 
 #ifdef __cplusplus
 } // extern "C"

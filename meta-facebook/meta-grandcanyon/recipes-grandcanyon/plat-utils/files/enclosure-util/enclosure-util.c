@@ -46,6 +46,7 @@ print_usage_help(void) {
   printf("Usage: enclosure-util --error\n");
   printf("         Expander error code range: 1~100\n");
   printf("         BMC error code range:      0x64~0xFF\n");
+  printf("       enclosure-util --ack-clear\n");
   printf("       enclosure-util --hdd-status\n");
   printf("       enclosure-util --hdd-status <hdd id 0~%d>\n", (MAX_NUM_HDD_SLOT - 1));
   if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
@@ -213,6 +214,9 @@ main(int argc, char **argv) {
     } else if (strcmp(argv[1], "--hdd-status") == 0) {
       show_hdd_status(hdd_id);
       return 0;
+    } else if (strcmp(argv[1], "--ack-clear") == 0) {
+      printf("Notice: This command is used to clear known errors caused by event-only SEL.\n");
+      return pal_clear_event_only_error_ack();
     }
     
     if (fbgc_common_get_chassis_type(&chassis_type) < 0) {

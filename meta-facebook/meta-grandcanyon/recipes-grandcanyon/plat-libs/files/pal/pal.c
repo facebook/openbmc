@@ -85,8 +85,6 @@ const char *fru_str_list[] = {"all", "server", "bmc", "uic", "dpb", "scc", "nic"
 const char pal_pwm_list[] = "0";
 const char pal_tach_list[] = "0...7";
 
-static uint8_t sel_error_record = 0;
-
 size_t pal_pwm_cnt = 1;
 size_t pal_tach_cnt = 8;
 
@@ -2386,6 +2384,7 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
   uint8_t event_dir = EVENT_DEASSERT;
+  int sel_error_record = 0, sel_event_error_record = 0;
 
   if (event_data == NULL) {
     syslog(LOG_ERR, "%s(): Failed to handle BIC sel because event data is NULL", __func__);
@@ -2394,8 +2393,6 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
 
   // Event Dir is used to check the assertion of event. Refer to IPMI v2.0 Section 32.1.
   event_dir = event_data[2] & 0x80;
-  memset(key, 0, sizeof(key));
-  snprintf(key, sizeof(key), "server_sel_error");
 
   switch (snr_num) {
     case CATERR_B:
@@ -2411,13 +2408,31 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
   }
 
   if (is_err_server_sel == true) {
-    if ( event_dir == EVENT_ASSERT ) {
+    // Get and update SEL error record
+    snprintf(key, sizeof(key), "sel_error_record");
+    if (kv_get(key, val, NULL, 0) == 0) {
+      sel_error_record = atoi(val);
+    }
+    
+    if (event_dir == EVENT_ASSERT) {
       sel_error_record++;
     } else {
       sel_error_record--;
     }
+    
+    snprintf(val, sizeof(val), "%d", sel_error_record);
+    kv_set(key, val, 0, 0);
 
-    if (sel_error_record > 0) {
+
+    // Get SEL event error record
+    snprintf(key, sizeof(key), "sel_event_error_record");
+    if (kv_get(key, val, NULL, 0) == 0) {
+      sel_event_error_record = atoi(val);
+    }
+
+    // Update server_sel_error
+    snprintf(key, sizeof(key), "server_sel_error");
+    if ((sel_error_record > 0) || (sel_event_error_record > 0)) {
       snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
     } else {
       snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
@@ -2458,19 +2473,32 @@ int
 pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
+  int sel_event_error_record = 0;
 
   if (sel == NULL) {
     syslog(LOG_ERR, "%s(): Failed to handle OEM unified sel due to NULL parameter.", __func__);
     return PAL_ENOTREADY;
   }
+  
+  // Update SEL event error record
+  snprintf(key, sizeof(key), "sel_event_error_record");
+  if (kv_get(key, val, NULL, 0) == 0) {
+    sel_event_error_record = atoi(val);
+  }
+  
+  sel_event_error_record++;
+  
+  snprintf(val, sizeof(val), "%d", sel_event_error_record);
+  if (kv_set(key, val, 0, 0) < 0) {
+    syslog(LOG_ERR, "%s(): Failed to handle OEM unified sel due to pal_set_key_value failed. key: %s", __func__, key);
+    return PAL_ENOTREADY;
+  }
 
+  // Update server_sel_error
   memset(key, 0, sizeof(key));
   memset(val, 0, sizeof(val));
-
   snprintf(key, sizeof(key), "server_sel_error");
   snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
-
-  sel_error_record++;
 
   if (pal_set_key_value(key, val) < 0) {
     syslog(LOG_ERR, "%s(): Failed to handle OEM unified sel because failed set key value of %s.", __func__, key);
@@ -2621,7 +2649,8 @@ pal_log_clear(char *fru) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server sel error value", __func__);
     }
-    sel_error_record = 0;
+    kv_set("sel_error_record", STR_VALUE_0, 0, 0);
+    kv_set("sel_event_error_record", STR_VALUE_0, 0, 0);
 
   } else if (strcmp(fru, "uic") == 0) {
     ret = pal_set_key_value("uic_sensor_health", val);
@@ -2663,7 +2692,8 @@ pal_log_clear(char *fru) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear server sel error value", __func__);
     }
-    sel_error_record = 0;
+    kv_set("sel_error_record", STR_VALUE_0, 0, 0);
+    kv_set("sel_event_error_record", STR_VALUE_0, 0, 0);
 
     ret = pal_set_key_value("uic_sensor_health", val);
     if (ret < 0) {
@@ -3814,3 +3844,40 @@ pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
   return CC_SUCCESS;
 }
 
+int
+pal_clear_event_only_error_ack () {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char val[MAX_VALUE_LEN] = {0};
+  int sel_error_record = 0, sel_event_error_record = 0;
+  
+  // Clear SEL event error record  
+  snprintf(key, sizeof(key), "sel_event_error_record");
+  snprintf(val, sizeof(val), "%d", sel_event_error_record);
+  ret = kv_set(key, val, 0, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to clear event only error record due to pal_set_key_value failed. key: %s", __func__, key);
+    return -1;
+  }
+  
+  // Get SEL error record
+  snprintf(key, sizeof(key), "sel_error_record");
+  if (kv_get(key, val, NULL, 0) == 0) {
+    sel_error_record = atoi(val);
+  }
+  
+  // Update server_sel_error
+  snprintf(key, sizeof(key), "server_sel_error");
+  if (sel_error_record > 0) {
+    snprintf(val, sizeof(val), "%d", FRU_STATUS_BAD);
+  } else {
+    snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
+  }
+  
+  ret = pal_set_key_value(key, val);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to update error record due to pal_set_key_value failed. key: %s", __func__, key);
+  }
+  
+  return ret;
+}

@@ -2798,7 +2798,17 @@ pal_is_cwc(void) {
 }
 
 int __attribute__((weak))
-pal_get_cwc_id(char *str, uint8_t *fru) {
+pal_get_cwc_id(char *str, uint8_t *id) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_exp_power(uint8_t fru, uint8_t *status) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_set_exp_power(uint8_t fru, uint8_t cmd) {
   return PAL_ENOTSUP;
 }
 

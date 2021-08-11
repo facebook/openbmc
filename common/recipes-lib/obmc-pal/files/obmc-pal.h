@@ -575,6 +575,8 @@ int pal_get_ioc_wwid(uint8_t ioc_component, uint8_t *res_data, uint8_t *res_len)
 int pal_is_cwc(void);
 int pal_get_cwc_id(char *str, uint8_t *fru);
 int pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_get_exp_power(uint8_t fru, uint8_t *status);
+int pal_set_exp_power(uint8_t fru, uint8_t cmd);
 
 #ifdef __cplusplus
 }

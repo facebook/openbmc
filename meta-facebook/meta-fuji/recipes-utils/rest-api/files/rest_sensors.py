@@ -36,7 +36,7 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # different from sensors command. So we need a separate REST api handler
 # for this.
 #
-def get_fru_sensor(fru):
+def get_fru_sensor(fru, removeNA=False):
     result = {}
     cmd = "/usr/local/bin/sensor-util"
     proc = subprocess.Popen([cmd, fru], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -70,7 +70,14 @@ def get_fru_sensor(fru):
             value = float(value)
             result[key] = "{:.2f}".format(value)
         except Exception:
-            result[key] = "NA"
+            # Some of FB Infra services expect "0" instead of NA,
+            # even when the PSU is not available or not responding.
+            if removeNA:
+                # Special case; replace NA with 0
+                result[key] = "0"
+            else:
+                # Regular case
+                result[key] = "NA"
     return result
 
 
@@ -83,19 +90,23 @@ def get_smb_sensors():
 
 
 def get_psu1_sensors():
-    return {"Information": get_fru_sensor("psu1"), "Actions": [], "Resources": []}
+    return {"Information": get_fru_sensor("psu1", removeNA=True), \
+            "Actions": [], "Resources": []}
 
 
 def get_psu2_sensors():
-    return {"Information": get_fru_sensor("psu2"), "Actions": [], "Resources": []}
+    return {"Information": get_fru_sensor("psu2", removeNA=True), \
+            "Actions": [], "Resources": []}
 
 
 def get_psu3_sensors():
-    return {"Information": get_fru_sensor("psu3"), "Actions": [], "Resources": []}
+    return {"Information": get_fru_sensor("psu3", removeNA=True), \
+            "Actions": [], "Resources": []}
 
 
 def get_psu4_sensors():
-    return {"Information": get_fru_sensor("psu4"), "Actions": [], "Resources": []}
+    return {"Information": get_fru_sensor("psu4", removeNA=True), \
+            "Actions": [], "Resources": []}
 
 
 def get_pim1_sensors():
@@ -151,7 +162,8 @@ def get_all_sensors():
     ]
 
     for fru in frus:
-        sresult = get_fru_sensor(fru)
+        sresult = get_fru_sensor(fru,
+                removeNA=True if fru.startswith("psu") else False)
         result.append(sresult)
 
     fresult = {"Information": result, "Actions": [], "Resources": frus}

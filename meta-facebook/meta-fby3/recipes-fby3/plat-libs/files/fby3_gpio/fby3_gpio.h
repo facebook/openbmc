@@ -27,6 +27,8 @@ extern "C" {
 
 uint8_t fby3_get_gpio_list_size(uint8_t intf);
 int fby3_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, uint8_t intf);
+int fby3_get_exp_gpio_name(uint8_t fru, uint8_t gpio, char *name);
+uint8_t fby3_get_exp_gpio_list_size(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -36,6 +36,8 @@
 #include <time.h>
 
 static uint8_t bmc_location = 0xff;
+static uint8_t board = UNKNOWN_BOARD;
+static uint8_t expFru = 0;
 const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
 
@@ -66,8 +68,15 @@ print_usage_help(void) {
   int i;
 
   printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
+  if (board == CWC_MCHP_BOARD) {
+    printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <[0..n]data_bytes_to_send>\n", slot_usage);
+  }
   printf("Usage: bic-util <%s> <option>\n", slot_usage);
-  printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n", slot_usage);
+  if (board == CWC_MCHP_BOARD) {
+    printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <option>\n", slot_usage);
+  } else {
+    printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n", slot_usage);
+  }
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
@@ -79,11 +88,69 @@ print_usage_help(void) {
   }
 }
 
+static int
+util_check_exp_status(uint8_t exp) {
+  uint8_t status = 0, intf = 0;
+  int ret = 0;
+
+  switch (exp) {
+    case FRU_CWC:
+      intf = REXP_BIC_INTF;
+      break;
+    case FRU_2U_TOP:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FRU_2U_BOT:
+      intf = RREXP_BIC_INTF2;
+      break;
+    default:
+      printf("Unknown exp fru : %d\n", exp);
+      return -1;
+  }
+
+  ret = pal_is_fru_prsnt(exp, &status);
+
+  if (ret < 0) {
+    printf("unable to check fru presence\n");
+  } else {
+    if (status == 1) {
+      ret = pal_get_exp_power(exp, &status);
+    } else {
+      printf("Fru is empty, unable to check BIC status\n");
+      return -1;
+    }
+  }
+
+  if (ret < 0) {
+    printf("unable to check fru power\n");
+  } else {
+    if (status == SERVER_12V_ON) {
+      if ( is_bic_ready(exp, intf) == BIC_STATUS_SUCCESS ) {
+        printf("BIC status ok\n");
+        ret = 0;
+      } else {
+        printf("Error: BIC not ready\n");
+        ret = -1;
+      }
+    } else {
+      printf("Fru is 12V-off, unable to check BIC status\n");
+      ret = -1;
+    }
+  }
+
+  return ret;
+}
+
 // Check BIC status
 static int
 util_check_status(uint8_t slot_id) {
   int ret = 0;
   uint8_t status;
+
+  if (slot_id == FRU_SLOT1 && 
+      (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT)) {
+    return util_check_exp_status(expFru);
+  }
 
   // BIC status is only valid if 12V-on. check this first
   ret = pal_get_server_12v_power(slot_id, &status);
@@ -189,6 +256,7 @@ process_command(uint8_t slot_id, int argc, char **argv, uint8_t intf) {
 
     retry--;
   }
+
   if (ret) {
     printf("BIC no response!\n");
     return ret;
@@ -259,9 +327,17 @@ util_get_gpio(uint8_t slot_id, uint8_t intf) {
     return ret;
   }
 
+  if (expFru > 0) {
+    gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
+  }
+
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
+    if (expFru > 0) {
+      fby3_get_exp_gpio_name(expFru, i, gpio_pin_name);
+    } else {
+      fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
+    }
     printf("%d %s: %d\n",i , gpio_pin_name, BIT_VALUE(gpio, i));
   }
 
@@ -274,12 +350,20 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
   char gpio_pin_name[32] = "\0";
   int ret = -1;
 
+  if (expFru > 0) {
+    gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
+  }
+
   if ( gpio_num > gpio_pin_cnt ) {
     printf("slot %d: Invalid GPIO pin number %d\n", slot_id, gpio_num);
     return ret;
   }
 
-  fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
+  if (expFru > 0) {
+    fby3_get_exp_gpio_name(expFru, gpio_num, gpio_pin_name);
+  } else {
+    fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
+  }
   printf("slot %d: setting [%d]%s to %d\n", slot_id, gpio_num, gpio_pin_name, gpio_val);
 
   ret = remote_bic_set_gpio(slot_id, gpio_num, gpio_val, intf);
@@ -943,6 +1027,10 @@ main(int argc, char **argv) {
   uint8_t intf = NONE_INTF;
   int i = 0;
 
+  if (pal_is_cwc() == PAL_EOK) {
+    board = CWC_MCHP_BOARD;
+  }
+
   if (argc < 3) {
     goto err_exit;
   }
@@ -972,36 +1060,57 @@ main(int argc, char **argv) {
     }
   }
 
-  // get the argv_idx and intf
-  if ( strncmp(argv[2], "2ou", 3) == 0 ) intf = REXP_BIC_INTF;
-  else if ( strncmp(argv[2], "2U-cwc", 6) == 0 ); //do nothing
-  else if ( strncmp(argv[2], "2U-top", 6) == 0 ); //do nothing
-  else if ( strncmp(argv[2], "2U-bot", 6) == 0 ); //do nothing
+  if (board == CWC_MCHP_BOARD && argc >= 4) {
+    if ( !fby3_common_get_exp_id(argv[2], &expFru) ) {
+      for (i = 2; i < argc - 1; ++i ) {
+        argv[i] = argv[i+1];  //remove additional cwc option to remain the order of options
+      }
 
-  // check if 1/2OU present
-  if ( intf != NONE_INTF ) {
-    ret = bic_is_m2_exp_prsnt_cache(slot_id);
-    if ( ret < 0 ) {
-      printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
-      return BIC_STATUS_FAILURE;
+      argc--;
     }
+  }
 
-    //return if the 1ou/2ou is not present
-    if ( intf == FEXP_BIC_INTF ) {
-      if ( (bmc_location == NIC_BMC) || (ret & PRESENT_1OU) != PRESENT_1OU ) {
-        printf("1OU is not present\n");
+  if (board == CWC_MCHP_BOARD) {
+    switch (expFru) {
+      case FRU_CWC:
+        intf = REXP_BIC_INTF;
+        break;
+      case FRU_2U_TOP:
+        intf = RREXP_BIC_INTF1;
+        break;
+      case FRU_2U_BOT:
+        intf = RREXP_BIC_INTF2;
+        break;
+    }
+  } else {
+    // get the argv_idx and intf
+    if ( strncmp(argv[2], "2ou", 3) == 0 ) intf = REXP_BIC_INTF;
+
+    // check if 1/2OU present
+    if ( intf != NONE_INTF ) {
+      ret = bic_is_m2_exp_prsnt_cache(slot_id);
+      if ( ret < 0 ) {
+        printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
         return BIC_STATUS_FAILURE;
       }
-    } else {
-      if ( (ret & PRESENT_2OU) != PRESENT_2OU ) {
-        printf("2OU is not present\n");
-        return BIC_STATUS_FAILURE;
-      }
-    }
 
-    // adjust the content since we dont want to modify the logic below
-    memmove(&argv[2], &argv[3], sizeof(char*) * (argc - 3));
-    argc--;
+      //return if the 1ou/2ou is not present
+      if ( intf == FEXP_BIC_INTF ) {
+        if ( (bmc_location == NIC_BMC) || (ret & PRESENT_1OU) != PRESENT_1OU ) {
+          printf("1OU is not present\n");
+          return BIC_STATUS_FAILURE;
+        }
+      } else {
+        if ( (ret & PRESENT_2OU) != PRESENT_2OU ) {
+          printf("2OU is not present\n");
+          return BIC_STATUS_FAILURE;
+        }
+      }
+
+      // adjust the content since we dont want to modify the logic below
+      memmove(&argv[2], &argv[3], sizeof(char*) * (argc - 3));
+      argc--;
+    }
   }
 
   if ( strncmp(argv[2], "--", 2) == 0 ) {

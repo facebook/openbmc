@@ -205,8 +205,72 @@ const char *gpio_pin_name_2ou[] = {
   "PWRGD_P5V_STBY_R",
 };
 
+const char *cwc_gpio_pins[] = {
+  "BIC_FLASH_EN_R1",
+  "BIC_HEARTBEAT_LED_R_N",
+  "BIC_READY",
+  "BIC_REMOTE_DEBUG_SELECT_N_R",
+  "BIC_USB2_1_OC_N_R1",
+  "BIC_USB2_2_OC_N_R1",
+  "BOARD_ID_0",
+  "BOARD_ID_1",
+  "BOARD_ID_2",
+  "BOARD_ID_3",
+  "CARD_TYPE_DETECTION_CW_0",
+  "CARD_TYPE_DETECTION_CW_1",
+  "CARD_TYPE_DETECTION_CW_2",
+  "FM_BIC_PESW_MULTI_CONFIG0",
+  "FM_BIC_PESW_MULTI_CONFIG1",
+  "FM_BIC_PESW_MULTI_CONFIG2",
+  "FM_BIC_PESW_MULTI_CONFIG3",
+  "FM_BIC_PESW_MULTI_CONFIG4",
+  "FM_BIC_PESW_RECOVERY_0",
+  "FM_BIC_PESW_RECOVERY_1",
+  "FM_BOT_GPV3_HSC_EN",
+  "FM_TOP_GPV3_HSC_EN",
+  "FM_CW_HSC_EN",
+  "FM_P0V84_EN",
+  "FM_P1V8_EN",
+  "FM_P3V3_EN",
+  "FM_P5V_EN",
+  "FM_POWER_EN",
+  "FM_GP_BOT_PRSNT1_N",
+  "FM_GP_BOT_PRSNT2_N",
+  "FM_GP_TOP_PRSNT1_N",
+  "FM_GP_TOP_PRSNT2_N",
+  "FM_PLD_VCCIO_3_4_5_P1V8",
+  "FM_PLD_VCCIO_3_4_5_P3V3SB_R",
+  "HSC_BOT_ALERT1_N",
+  "HSC_BOT_ALERT2_N",
+  "HSC_BOT_FAULT_N",
+  "HSC_BOT_PWROK",
+  "HSC_CW_ALERT1_N",
+  "HSC_CW_ALERT2_N",
+  "HSC_CW_FAULT_N",
+  "HSC_CW_PWROK",
+  "HSC_TOP_ALERT1_N",
+  "HSC_TOP_ALERT2_N",
+  "HSC_TOP_FAULT_N",
+  "HSC_TOP_PWROK",
+  "PESW_SYS_ERROR_3V3_N",
+  "PWRGD_P0V84",
+  "PWRGD_P1V8",
+  "PWRGD_P3V3_STBY",
+  "PWRGD_P5V",
+  "RFU_PD_cable_detect",
+  "SMB_CW_INA233_ALRT_N",
+  "SMB_VR_ISL69250_ALERT_N",
+  "TYPE_C_PLUG_DETECT_PESW",
+  "UART_MUX_RESET_N_R",
+  "UCN2_CC_PD",
+  "USB_HUB_RESET_N_R1",
+  "USB_MUX_CB_R",
+  "USB_MUX_EN_N_R",
+};
+
 const uint8_t gpio_pin_size_sb = sizeof(gpio_pin_name_sb)/sizeof(gpio_pin_name_sb[0]);
 const uint8_t gpio_pin_size_2ou = sizeof(gpio_pin_name_2ou)/sizeof(gpio_pin_name_2ou[0]);
+const uint8_t cwc_gpio_pin_size = sizeof(cwc_gpio_pins)/sizeof(cwc_gpio_pins[0]);
 
 uint8_t
 fby3_get_gpio_list_size(uint8_t intf) {
@@ -218,6 +282,17 @@ fby3_get_gpio_list_size(uint8_t intf) {
     default:
       return 0;
   }
+}
+
+uint8_t
+fby3_get_exp_gpio_list_size(uint8_t fru) {
+  if (fru == FRU_CWC) {
+    return cwc_gpio_pin_size;
+  } else if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    return gpio_pin_size_2ou;
+  }
+    
+  return 0;
 }
 
 int
@@ -254,5 +329,26 @@ fby3_get_gpio_name(uint8_t fru, uint8_t gpio, char *name, uint8_t intf) {
   }
 
   sprintf(name, "%s", gpio_name_table[gpio]);
+  return 0;
+}
+
+int
+fby3_get_exp_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
+  if (fru == FRU_CWC) {
+    if (gpio >= cwc_gpio_pin_size) {
+      return -1;
+    }
+
+    sprintf(name, "%s", cwc_gpio_pins[gpio]);
+  } else if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    if (gpio >= gpio_pin_size_2ou) {
+      return -1;
+    }
+
+    sprintf(name, "%s", gpio_pin_name_2ou[gpio]);
+  } else {
+    return -1;
+  }
+
   return 0;
 }

@@ -19,6 +19,11 @@
 
 #ifndef _AGGREGATE_SENSOR_H_
 #define _AGGREGATE_SENSOR_H_
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -34,5 +39,9 @@ int aggregate_sensor_units(size_t index, char *units);
 int aggregate_sensor_init(const char *conf_file);
 
 void aggregate_sensor_conf_print(bool syslog);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

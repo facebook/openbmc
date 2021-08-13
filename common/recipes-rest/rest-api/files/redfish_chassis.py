@@ -211,7 +211,9 @@ def make_fan_sensors_json_body(
             "SensorNumber": fan_sensor.sensor_number,
             "Status": {"State": "Enabled", "Health": "OK"},
             "Reading": int(fan_sensor.reading),
-            "ReadingUnits": fan_sensor.sensor_unit,
+            # removed ReadingUnits because we were hardcoding it for
+            # older fboss platforms that could be incorrect. If we
+            # can get correct units from sensors.py, we can add it back.
             "Redundancy": [
                 {
                     "@odata.id": "/redfish/v1/Chassis/{server_name}/Thermal#/Redundancy/0".format(  # noqa: B950
@@ -256,13 +258,20 @@ def make_power_sensors_json_body(
             max_interval_watts = round(_sensor_history.max_intv_consumed, 2)
             avg_interval_watts = round(_sensor_history.avg_intv_consumed, 2)
             limit_in_watts = round(sensor_threshold.ucr_thresh, 2)
-        else:  # for older fboss platforms
-            # Adding these placeholder values because we don't have these metrics
-            # for fboss platforms via sensors.py
-            min_interval_watts = 0
-            max_interval_watts = 0
-            avg_interval_watts = 0
-            limit_in_watts = 0
+        else:  # for older fboss platforms or unhealthy sensors
+            if power_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
+                watts_reading = 0
+            else:
+                watts_reading = power_sensor.reading
+
+            min_interval_watts = watts_reading
+            max_interval_watts = watts_reading
+            avg_interval_watts = watts_reading
+            limit_in_watts = power_sensor.ucr_thresh  # if its a platform
+            # that supports libpal and has an unhealthy sensor, ucr_thresh will
+            # be defaulted to 0. Otherwise, we will get an actual value if
+            # its an healthy sensor i.e. on older fboss platforms.
+
         # in case of a bad reading value, update status
         if power_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
             status_val = {"State": "UnavailableOffline", "Health": "Critical"}

@@ -281,7 +281,6 @@ class TestChassisService(AioHTTPTestCase):
                         {
                             "Name": "SP_FAN0_TACH",
                             "Reading": 7177,
-                            "ReadingUnits": "RPM",
                             "SensorNumber": 70,
                             "MemberId": "0",
                             "Status": {"State": "Enabled", "Health": "OK"},

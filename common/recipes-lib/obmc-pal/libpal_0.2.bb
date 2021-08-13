@@ -6,7 +6,19 @@ SECTION = "libs"
 PR = "r1"
 
 LICENSE = "LGPLv2"
-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/LGPL-2.1;md5=1a6d268fd218675ffea8be556788b780"
+
+# The license LGPL-2.1 was removed in Hardknott.
+# Use LGPL-2.1-only instead.
+def lic_file_name(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro in [ 'rocko', 'zeus', 'dunfell', 'gatesgarth' ]:
+        return "LGPL-2.1;md5=1a6d268fd218675ffea8be556788b780"
+
+    return "LGPL-2.1-only;md5=1a6d268fd218675ffea8be556788b780"
+
+LIC_FILES_CHKSUM = "\
+    file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
+    "
 
 SRC_URI = "\
     file://meson.build \

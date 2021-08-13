@@ -24,7 +24,20 @@ DESCRIPTION = "Daemon to handle RESTful interface."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+
+# The license GPL-2.0 was removed in Hardknott.
+# Use GPL-2.0-only instead.
+def lic_file_name(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro in [ 'rocko', 'zeus', 'dunfell', 'gatesgarth' ]:
+        return "GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
+
+    return "GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
+
+LIC_FILES_CHKSUM = "\
+    file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
+    "
+
 DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native libobmc-mmc"
 
 REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter libobmc-mmc"

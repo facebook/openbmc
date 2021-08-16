@@ -1034,6 +1034,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   uint8_t usb_idx = 0;
   uint8_t *buf = NULL;
   uint8_t remaining_writes = 0x00;
+  uint8_t vy_vr_idx = 0;
 
   //select PID/VID
   switch(dev->intf) {
@@ -1060,21 +1061,25 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     case FW_2U_TOP_3V3_VR1:
     case FW_2U_BOT_3V3_VR1:
       usb_idx = USB_2OU_VY_VR_STBY1;
+      vy_vr_idx = 0;
       break;
     case FW_2OU_3V3_VR2:
     case FW_2U_TOP_3V3_VR2:
     case FW_2U_BOT_3V3_VR2:
       usb_idx = USB_2OU_VY_VR_STBY2;
+      vy_vr_idx = 1;
       break;
     case FW_2OU_3V3_VR3:
     case FW_2U_TOP_3V3_VR3:
     case FW_2U_BOT_3V3_VR3:
       usb_idx = USB_2OU_VY_VR_STBY3;
+      vy_vr_idx = 2;
       break;
     case FW_2OU_1V8_VR:
     case FW_2U_TOP_1V8_VR:
     case FW_2U_BOT_1V8_VR:
       usb_idx = USB_2OU_VY_VR_P1V8;
+      vy_vr_idx = 3;
       break;
     default:
       printf("%s() comp(0x%02X) didn't support USB firmware update\n", __func__, comp);
@@ -1085,7 +1090,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
   if ( FW_2OU_PESW_VR == comp || FW_CWC_PESW_VR == comp || FW_GPV3_TOP_PESW_VR == comp || FW_GPV3_BOT_PESW_VR == comp ) {
     ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
   } else {
-    ret = bic_get_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), &remaining_writes, dev->intf);
+    ret = bic_get_vishay_vr_remaining_writes(slot_id, vy_vr_idx, &remaining_writes, dev->intf);
   }
 
   // check the result of execution
@@ -1194,7 +1199,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     case FW_2U_BOT_3V3_VR2:
     case FW_2U_BOT_3V3_VR3:
     case FW_2U_BOT_1V8_VR:
-      ret = bic_set_vishay_vr_remaining_writes(slot_id, (comp - FW_2OU_3V3_VR1), (remaining_writes - 1), dev->intf);
+      ret = bic_set_vishay_vr_remaining_writes(slot_id, vy_vr_idx, (remaining_writes - 1), dev->intf);
       if ( ret < 0 ) {
         printf("Failed to update remaining_writes for Vishay VR %02X\n", comp);
       }
@@ -1372,10 +1377,18 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
 
   // addr info is not included in the VY fw file.
   if ( sel_vendor == VR_VY ) {
-    if ( comp == FW_2OU_3V3_VR1 ) vr_list[0].addr = VR_2OU_P3V3_STBY1;
-    if ( comp == FW_2OU_3V3_VR2 ) vr_list[0].addr = VR_2OU_P3V3_STBY2;
-    if ( comp == FW_2OU_3V3_VR3 ) vr_list[0].addr = VR_2OU_P3V3_STBY3;
-    if ( comp == FW_2OU_1V8_VR  ) vr_list[0].addr = VR_2OU_P1V8;
+    if ( comp == FW_2OU_3V3_VR1 || comp == FW_2U_TOP_3V3_VR1 || comp == FW_2U_BOT_3V3_VR1 ) {
+      vr_list[0].addr = VR_2OU_P3V3_STBY1;
+    }
+    if ( comp == FW_2OU_3V3_VR2 || comp == FW_2U_TOP_3V3_VR2 || comp == FW_2U_BOT_3V3_VR2 ) {
+      vr_list[0].addr = VR_2OU_P3V3_STBY2;
+    }
+    if ( comp == FW_2OU_3V3_VR3 || comp == FW_2U_TOP_3V3_VR3 || comp == FW_2U_BOT_3V3_VR3 ) {
+      vr_list[0].addr = VR_2OU_P3V3_STBY3;
+    }
+    if ( comp == FW_2OU_1V8_VR || comp == FW_2U_TOP_1V8_VR || comp == FW_2U_BOT_1V8_VR ) {
+      vr_list[0].addr = VR_2OU_P1V8;
+    }
     if ( vr_list[0].addr == 0xff ) { printf("Err: undefined component: %X\n", comp); return BIC_STATUS_FAILURE; }
   }
 

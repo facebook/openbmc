@@ -13,9 +13,9 @@
     },
     "livingston" : {
         "filename"    : "livingston.astp",
-        "version" : "14.5",
+        "version" : "14.6",
         "hash"    : "sha1sum",
-        "hash_value" : "fff63a0846b938461e6e78b13a71399e0cf75323"
+        "hash_value" : "c71e752c9e22a67dca91bfda4d10a574684a8454"
     },
     "sperry" : {
         "filename"    : "sperry.axsvf",

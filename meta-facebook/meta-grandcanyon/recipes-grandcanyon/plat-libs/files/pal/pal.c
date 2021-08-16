@@ -3438,8 +3438,10 @@ pal_get_ioc_wwid(uint8_t ioc_component, uint8_t *res_data, uint8_t *res_len)
 
 bool
 pal_is_ioc_ready(uint8_t i2c_bus) {
+  uint8_t bios_post_cmplt = 0;
   uint8_t server_status = 0, fru_present_flag = 0;
   gpio_value_t scc_pwr_status = 0;
+  bic_gpio_t gpio = {0};
 
   // Check server power status
   if (pal_get_server_power(FRU_SERVER, &server_status) < 0){
@@ -3472,6 +3474,17 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
     return is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER);
   } else {
     syslog(LOG_WARNING, "%s() Failed to check IOC is ready due to unknown i2c bus: %d", __func__, i2c_bus);
+    return false;
+  }
+
+  // Check BIOS is completed via BIC
+  if (bic_get_gpio(&gpio) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);
+    return false;
+  }
+
+  bios_post_cmplt = ((((uint8_t*)&gpio)[BIOS_POST_CMPLT/8]) >> (BIOS_POST_CMPLT % 8)) & 0x1;
+  if (bios_post_cmplt != GPIO_VALUE_LOW) {
     return false;
   }
 

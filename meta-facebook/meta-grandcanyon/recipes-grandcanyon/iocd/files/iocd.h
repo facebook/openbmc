@@ -10,7 +10,7 @@
 #define MAX_PID_PATH_SIZE          64
 #define MAX_REQUESTS               2
 #define MAX_MCTP_RETRY_CNT         3
-#define I2C_RETRIES_MAX            5
+#define I2C_RETRIES_MAX            15
 
 #define MCTP_MAX_WRITE_SIZE        90
 #define MCTP_MAX_READ_SIZE         1024
@@ -22,17 +22,20 @@
 #define HEADER_VERSION             0x01
 #define BRCM_MSG_TAG               0xC8
 #define MESSAGE_TYPE               0x7E
+#define MESSAGE_TYPE_PEC           0xFE
 
 #define RES_PAYLOAD_OFFSET         11
 #define RES_NUM_SENSOR_OFFSET      80
 #define RES_IOC_TEMP_OFFSET        (RES_NUM_SENSOR_OFFSET + 4)
 #define RES_IOC_TEMP_VALID_OFFSET  (RES_IOC_TEMP_OFFSET + 4)
 #define RES_IOC_FW_VER_OFFSET      76
+
+#define RES_PL_PEC_FAILURE         0xA1
 #define RES_PL_CMD_RESP_NOT_READY  0xA6
+#define RES_PL_RESET_IN_PROGRESS   0xA9
 
 #define READ_IOC_TEMP_FAILED       -1
 
-#define IOC_READY_TIME             90  //IOC firmware ready time, unit: seconds
 #define I2C_MSLAVE_POLL_TIME       100 // 100 milliseconds
 
 typedef enum {

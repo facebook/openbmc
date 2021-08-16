@@ -151,6 +151,8 @@ extern "C" {
 
 #define E1S_IOCM_SLOT_NUM 2
 
+#define BIOS_POST_CMPLT   67
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,

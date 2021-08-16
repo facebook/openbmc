@@ -38,16 +38,23 @@
 #include "iocd.h"
 
 pthread_mutex_t m_ioc    = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t cond_ioc  = PTHREAD_COND_INITIALIZER;
 
 static struct {
   uint8_t bus_id;
   uint8_t fru_num;
+  bool check_pec;
+  bool is_support_pec;
   char fru_name[MAX_FRU_CMD_STR];
+  int i2c_fd;
+  i2c_mslave_t *bmc_slave;
 } iocd_config = {
   .bus_id = 0,
   .fru_num = 0,
+  .check_pec = false,
+  .is_support_pec = true,
   .fru_name = {0},
+  .i2c_fd = -1,
+  .bmc_slave = NULL,
 };
 
 static int
@@ -83,19 +90,19 @@ parse_cmdline_args(int argc, char* const argv[])
 }
 
 int
-mctp_i2c_write(int dev, uint8_t i2c_bus, uint8_t slave_addr, uint8_t *buf, uint8_t len) {
+mctp_i2c_write(uint8_t slave_addr, uint8_t *buf, uint8_t len) {
   int ret = 0;
   int i = 0;
 
   if (buf == NULL) {
-    syslog(LOG_WARNING, "%s(): Failed to write i2c raw to bus:%d due to NULL parameter", __func__, i2c_bus);
+    syslog(LOG_WARNING, "%s(): Failed to write i2c raw to bus:%d due to NULL parameter", __func__, iocd_config.bus_id);
     return -1;
   }
 
   for (i = 0; i < I2C_RETRIES_MAX; i++) {
-    ret = i2c_rdwr_msg_transfer(dev, slave_addr, buf, len, NULL, 0);
+    ret = i2c_rdwr_msg_transfer(iocd_config.i2c_fd, slave_addr, buf, len, NULL, 0);
     if (ret < 0) {
-      msleep(20);
+      msleep(100);
       continue;
     } else {
       break;
@@ -103,7 +110,7 @@ mctp_i2c_write(int dev, uint8_t i2c_bus, uint8_t slave_addr, uint8_t *buf, uint8
   }
 
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): Failed to write i2c raw to bus:%d", __func__, i2c_bus);
+    syslog(LOG_WARNING, "%s(): Failed to write i2c raw to bus:%d", __func__, iocd_config.bus_id);
     return -1;
   }
 
@@ -111,26 +118,19 @@ mctp_i2c_write(int dev, uint8_t i2c_bus, uint8_t slave_addr, uint8_t *buf, uint8
 }
 
 int
-mctp_i2c_read(uint8_t i2c_bus, uint8_t bmc_slave_addr, uint8_t *buf, uint8_t *len) {
+mctp_i2c_read(uint8_t *buf, uint8_t *len) {
 
   int i = 0, read_len = 0;
-  i2c_mslave_t *bmc_slave = NULL;
 
   if ((buf == NULL) || (len == NULL)) {
-    syslog(LOG_WARNING, "%s(): Failed to read i2c raw from bus:%d due to NULL parameters", __func__, i2c_bus);
-    return -1;
-  }
-
-  bmc_slave = i2c_mslave_open(i2c_bus, bmc_slave_addr);
-  if (bmc_slave == NULL) {
-    syslog(LOG_WARNING, "%s(): Failed to read i2c raw from bus:%d because failed to open bmc as slave", __func__, i2c_bus);
+    syslog(LOG_WARNING, "%s(): Failed to read i2c raw from bus:%d due to NULL parameters", __func__, iocd_config.bus_id);
     return -1;
   }
 
   for (i = 0; i < I2C_RETRIES_MAX; i++) {
-    read_len = i2c_mslave_read(bmc_slave, buf, MCTP_MAX_READ_SIZE);
+    read_len = i2c_mslave_read(iocd_config.bmc_slave, buf, MCTP_MAX_READ_SIZE);
     if (read_len <= 0) {
-      i2c_mslave_poll(bmc_slave, I2C_MSLAVE_POLL_TIME); /* 100 milliseconds */
+      i2c_mslave_poll(iocd_config.bmc_slave, I2C_MSLAVE_POLL_TIME); /* 100 milliseconds */
       continue;
     } else {
       break;
@@ -138,56 +138,96 @@ mctp_i2c_read(uint8_t i2c_bus, uint8_t bmc_slave_addr, uint8_t *buf, uint8_t *le
   }
 
   if (read_len <= 0) {
-    syslog(LOG_WARNING, "%s(): Failed to read i2c raw from bus:%d because response length is wrong: %d", __func__, i2c_bus, read_len);
-    i2c_mslave_close(bmc_slave);
+    syslog(LOG_WARNING, "%s(): Failed to read i2c raw from bus:%d because response length is wrong: %d", __func__, iocd_config.bus_id, read_len);
     return -1;
   } else {
     *len = read_len;
-  }
-
-  if (bmc_slave != NULL) {
-    i2c_mslave_close(bmc_slave);
   }
 
   return 0;
 }
 
 static int
-clear_slave_mqueue(uint8_t i2c_bus, uint8_t bmc_slave_addr) {
+clear_slave_mqueue() {
 
   uint8_t buf[MCTP_MAX_READ_SIZE] = {0};
   int read_len = 0;
   int i = 0;
 
-  i2c_mslave_t *bmc_slave = NULL;
-
-  bmc_slave = i2c_mslave_open(i2c_bus, bmc_slave_addr);
-  if (bmc_slave == NULL) {
-    syslog(LOG_WARNING, "%s(): Failed to clear slave-mqueue bus: %d, address: %x, because failed to open bmc as slave", __func__, i2c_bus, bmc_slave_addr);
-    return -1;
-  }
-
   for (i = 0; i < I2C_RETRIES_MAX; i++) {
-    read_len = i2c_mslave_read(bmc_slave, buf, MCTP_MAX_READ_SIZE);
+    read_len = i2c_mslave_read(iocd_config.bmc_slave, buf, MCTP_MAX_READ_SIZE);
     if (read_len <= 0) {
-      i2c_mslave_poll(bmc_slave, I2C_MSLAVE_POLL_TIME); /* 100 milliseconds */
+      i2c_mslave_poll(iocd_config.bmc_slave, I2C_MSLAVE_POLL_TIME); /* 100 milliseconds */
       continue;
     } else {
       break;
     }
   }
 
-  i2c_mslave_close(bmc_slave);
-
   return 0;
+}
+
+static uint8_t crc8_calculate(uint16_t d)
+{
+  const uint32_t poly_check = 0x1070 << 3;
+  int i = 0;
+
+  for (i = 0; i < 8; i++) {
+    if (d & 0x8000) {
+      d = d ^ poly_check;
+    }
+    d = d << 1;
+  }
+
+  return (uint8_t)(d >> 8);
+}
+
+/* Incremental CRC8 over count bytes in the array pointed to by p */
+static int pec_calculate(uint8_t crc, uint8_t *p, size_t count)
+{
+  int i = 0;
+
+  if (p == NULL) {
+    return -1;
+  }
+
+  for (i = 0; i < count; i++) {
+    crc = crc8_calculate((crc ^ p[i]) << 8);
+  }
+
+  return (int)crc;
+}
+
+static int calculate_pec_byte(uint8_t *buf, size_t len, bool is_i2c_pec)
+{
+  int ret = 0;
+  uint8_t pec = 0, address = 0;
+
+  if (buf == NULL) {
+    return -1;
+  }
+
+  if (is_i2c_pec == true) {
+    address = IOC_SLAVE_ADDRESS;
+    ret = pec_calculate(0, &address, 1);
+    if (ret < 0) {
+      return -1;
+    }
+    pec = (uint8_t) ret;
+  }
+
+  return pec_calculate(pec, buf, len);
 }
 
 static int 
 set_write_buf(uint8_t *write_buf, uint8_t tag, ioc_command command) {
+  int pec = 0;
   uint8_t res_len = 0;
   struct mctp_smbus_header_tx smbus_header = {0};
   struct mctp_hdr mctp_header = {0};
   pkt_payload_hdr payload_header = {0};
+  size_t mctp_pkt_header_size = 0;
+  bool is_i2c_pec = false;
 
   if (write_buf == NULL) {
     syslog(LOG_WARNING, "%s(): failed to set write buffer of %s due to NULL parameter.", __func__, ioc_command_map[command].command_name);
@@ -205,7 +245,8 @@ set_write_buf(uint8_t *write_buf, uint8_t tag, ioc_command command) {
   
   smbus_header.command_code         = SMBUS_COMMAND_CODE;
   smbus_header.source_slave_address = (BMC_SLAVE_ADDR << 1) + 1;
-  smbus_header.byte_count           = (1 + sizeof(mctp_header) + sizeof(payload_header));
+  // Add 1 byte of Source Slave Address 
+  smbus_header.byte_count           = (sizeof(mctp_header) + sizeof(payload_header) + 1);
 
   if (ioc_command_map[command].pkt_pl_hdr.is_need_request) {
     smbus_header.byte_count += (PKT_PAYLOAD_HDR_EXTRA_SIZE + ioc_command_map[command].pkt_pl_hdr.payload_len[0]);
@@ -216,7 +257,13 @@ set_write_buf(uint8_t *write_buf, uint8_t tag, ioc_command command) {
   mctp_header.src                 = 0x00;
   mctp_header.flags_seq_tag       = BRCM_MSG_TAG;
 
-  payload_header.message_type     = MESSAGE_TYPE;
+  if (iocd_config.is_support_pec == true) {
+    // Add 1 byte of PEC
+    smbus_header.byte_count += 1;
+    payload_header.message_type = MESSAGE_TYPE_PEC;
+  } else {
+    payload_header.message_type = MESSAGE_TYPE;
+  }
   payload_header.vendor_id[0]     = 0x10;
   payload_header.vendor_id[1]     = 0x00;
   payload_header.payload_id       = ioc_command_map[command].pkt_pl_hdr.payload_id;
@@ -228,7 +275,8 @@ set_write_buf(uint8_t *write_buf, uint8_t tag, ioc_command command) {
   memcpy(write_buf + sizeof(smbus_header), &mctp_header, sizeof(mctp_header));
   memcpy(write_buf + sizeof(smbus_header) + sizeof(mctp_header), &payload_header, sizeof(payload_header));
 
-  res_len = sizeof(smbus_header) + sizeof(mctp_header) + sizeof(payload_header);
+  mctp_pkt_header_size = sizeof(smbus_header) + sizeof(mctp_header);
+  res_len = mctp_pkt_header_size + sizeof(payload_header);
 
   switch (command)
   {
@@ -254,12 +302,33 @@ set_write_buf(uint8_t *write_buf, uint8_t tag, ioc_command command) {
       break;
   }
 
+  if ((res_len > 0) && (iocd_config.is_support_pec == true)) {
+    // Calculate VDM PEC
+    pec = calculate_pec_byte(&write_buf[mctp_pkt_header_size], (res_len - mctp_pkt_header_size), is_i2c_pec);
+    if (pec < 0) {
+      syslog(LOG_WARNING, "%s(): Failed to calculate the PEC of MCTP payload packet.", __func__);
+      return -1;
+    }
+    write_buf[res_len] = (uint8_t)pec;
+    res_len++;
+
+    // Calculate I2C PEC
+    is_i2c_pec = true;
+    pec = calculate_pec_byte(write_buf, res_len, is_i2c_pec);
+    if (pec < 0) {
+      syslog(LOG_WARNING, "%s(): Failed to calculate the PEC of whole packet.", __func__);
+      return -1;
+    }
+    write_buf[res_len] = (uint8_t)pec;
+    res_len++;
+  }
+
   return res_len;
 }
 
 int 
 mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *resp_buf, uint8_t *resp_len) {
-  int ret = 0, dev = -1, write_len = 0, retry = 0;
+  int ret = 0, write_len = 0, retry = 0;
   uint8_t write_buf[MCTP_MAX_WRITE_SIZE] = {0};
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
   uint8_t read_len = 0, resp_pl = 0, excepted_pl = 0;
@@ -276,9 +345,6 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
     return -1;
   }
 
-  memset(write_buf, 0, sizeof(write_buf));
-  memset(read_buf, 0, sizeof(read_buf));
-
   write_len = set_write_buf(write_buf, tag, command);
 
   if (write_len < 0) {
@@ -286,36 +352,48 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
     return -1;
   }
 
-  dev = i2c_cdev_slave_open(iocd_config.bus_id, slave_addr, I2C_SLAVE);
-  if (dev < 0) {
-    syslog(LOG_WARNING, "%s(): Failed to write i2c raw to bus:%d because failed to open i2c device", __func__, iocd_config.bus_id);
-    return -1;
+#ifdef DEBUG
+  // Print write buffer data
+  int i = 0;
+  char temp[8] = {0}, log[MCTP_MAX_READ_SIZE*2] = {0};
+
+  for (i = 0; i < write_len; i++) {
+    memset(temp, 0, sizeof(temp));
+    sprintf(temp, "%02X ", write_buf[i]);
+    strcat(log, temp);
   }
+  syslog(LOG_WARNING, "%s(): %s, write data to bus:%d, tag:%02X, write_len:%d, data: %s", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, tag, write_len, log);
+#endif
 
   do {
-    ret = mctp_i2c_write(dev, iocd_config.bus_id, slave_addr, write_buf, write_len);
+    ret = mctp_i2c_write(slave_addr, write_buf, write_len);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c write failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
-      close(dev);
       return -1;
     }
 
-    ret = mctp_i2c_read(iocd_config.bus_id, BMC_SLAVE_ADDR, read_buf, &read_len);
+    memset(read_buf, 0, sizeof(read_buf));
+    ret = mctp_i2c_read(read_buf, &read_len);
     if ((ret < 0) || (read_len < MCTP_MIN_READ_SIZE)) {
       syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c read failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
-      close(dev);
       return -1;
     }
 
     // Clear the second package of the response of "command resume"
     if (command == COMMAND_RESUME) {
-      if (clear_slave_mqueue(iocd_config.bus_id, BMC_SLAVE_ADDR) < 0) {
+      if (clear_slave_mqueue() < 0) {
         syslog(LOG_WARNING, "%s(): Failed to clear bus:%d slave-mqueue", __func__, iocd_config.bus_id);
-        close(dev);
         return -1;
       }
     }
-  } while ((read_buf[RES_PAYLOAD_OFFSET] == RES_PL_CMD_RESP_NOT_READY) && (++retry < I2C_RETRIES_MAX));
+
+    // Retry if response is not ready.
+    if (read_buf[RES_PAYLOAD_OFFSET] == RES_PL_CMD_RESP_NOT_READY) {
+      msleep(500);
+    } else {
+      break;
+    }
+  } while (++retry < I2C_RETRIES_MAX);
 
   // Check respond payload ID
   if (command != VDM_RESET) {
@@ -323,20 +401,17 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
     excepted_pl = ioc_command_map[command].pkt_pl_hdr.res_payload_id;
 
     if (resp_pl != excepted_pl) {
+       syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d due to the wrong payload ID: %x, expected: %x", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, resp_pl, excepted_pl);
 #ifdef DEBUG
-      int i = 0;
-      char temp[8] = {0}, log[MCTP_MAX_READ_SIZE*2] = {0};
-
-      syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d due to the wrong payload ID: %x, expected: %x", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, resp_pl, excepted_pl);
-
+      // Print read buffer data
+      memset(log, 0, sizeof(log));
       for (i = 0; i < read_len; i++) {
-        memset(temp, 0, 8);
+        memset(temp, 0, sizeof(temp));
         sprintf(temp, "%02X ", read_buf[i]);
         strcat(log, temp);
       }
-      syslog(LOG_WARNING, "%s(): %s, read data on bus:%d, read_len:%d, data: %s", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, read_len, log);
+      syslog(LOG_WARNING, "%s(): %s, read data on bus:%d, tag:%02X, read_len:%d, data: %s", __func__, ioc_command_map[command].command_name, iocd_config.bus_id, tag, read_len, log);
 #endif
-      close(dev);
       return -1;
     }
   }
@@ -344,7 +419,39 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
   memcpy(resp_buf, &read_buf, read_len);
   *resp_len = read_len;
 
-  close(dev);
+  return 0;
+}
+
+static int
+check_ioc_support_pec(uint8_t slave_addr) {
+  uint8_t tag = 0xFF, read_len = 0;
+  uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
+
+  iocd_config.is_support_pec = true;
+  // Clear slave mqueue
+  if (clear_slave_mqueue() < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to clear bus:%d slave-mqueue", __func__, iocd_config.bus_id);
+    return -1;
+  }
+
+  if (mctp_ioc_command(slave_addr, tag, VDM_RESET, read_buf, &read_len) < 0) {
+    syslog(LOG_WARNING, "%s(): VDM reset failed, bus: %d", __func__, iocd_config.bus_id);
+    return -1;
+  }
+
+  if (read_buf[RES_PAYLOAD_OFFSET] == RES_PL_PEC_FAILURE) {
+    syslog(LOG_WARNING, "%s(): %s IOC firmware doesn't support handling PEC byte, bus: %d", __func__, iocd_config.fru_name, iocd_config.bus_id);
+    iocd_config.is_support_pec = false;
+  } else if (read_buf[RES_PAYLOAD_OFFSET] == RES_PL_RESET_IN_PROGRESS) {
+    iocd_config.is_support_pec = false;
+  } else if (read_buf[RES_PAYLOAD_OFFSET] == ioc_command_map[VDM_RESET].pkt_pl_hdr.res_payload_id) {
+    iocd_config.is_support_pec = true;
+  } else {
+    return -1;
+  }
+
+  iocd_config.check_pec = true;
+
   return 0;
 }
 
@@ -354,13 +461,6 @@ vdm_reset(uint8_t slave_addr) {
   uint8_t tag = 0xFF, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
 
-  // Clear slave mqueue
-  if (clear_slave_mqueue(iocd_config.bus_id, BMC_SLAVE_ADDR) < 0) {
-    syslog(LOG_WARNING, "%s(): Failed to clear bus:%d slave-mqueue", __func__, iocd_config.bus_id);
-    return -1;
-  }
-
-  memset(read_buf, 0, sizeof(read_buf));
   if (mctp_ioc_command(slave_addr, tag, VDM_RESET, read_buf, &read_len) < 0) {
     syslog(LOG_WARNING, "%s(): VDM reset failed, bus: %d", __func__, iocd_config.bus_id);
     is_failed = true;
@@ -418,39 +518,49 @@ set_ioc_temp(int value) {
 
 static void *
 get_ioc_temp() {
-  int value = 0, wait_time = IOC_READY_TIME;
+  int value = 0;
   bool is_failed = true;
   uint8_t tag = 0x01, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
 
+  iocd_config.i2c_fd = i2c_cdev_slave_open(iocd_config.bus_id, IOC_SLAVE_ADDRESS, I2C_SLAVE);
+  if (iocd_config.i2c_fd < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to open i2c device on bus:%d", __func__, iocd_config.bus_id);
+    goto cleanup;
+  }
+
+  iocd_config.bmc_slave = i2c_mslave_open(iocd_config.bus_id, BMC_SLAVE_ADDR);
+  if (iocd_config.bmc_slave == NULL) {
+    syslog(LOG_WARNING, "%s(): Failed to open bmc as slave on bus:%d", __func__, iocd_config.bus_id);
+    goto cleanup;
+  }
+
   while (1) {
     // Check IOC is ready to be access
-    pthread_mutex_trylock(&m_ioc);
-    if (pal_is_ioc_ready(iocd_config.bus_id) == false) {
-      wait_time = IOC_READY_TIME;
-      set_ioc_temp(READ_IOC_TEMP_FAILED);
-      is_failed = true;
-      sleep(1);
-      continue;
-    } else {
-      if (wait_time > 0) {
-        wait_time--;
-        set_ioc_temp(READ_IOC_TEMP_FAILED);
-        sleep(1);
-        continue;
-      } else {
-        pthread_cond_signal(&cond_ioc);
-        pthread_mutex_unlock(&m_ioc);
+    pthread_mutex_lock(&m_ioc);
+    while (1) {
+      if (pal_is_ioc_ready(iocd_config.bus_id) == true) {
+        if (iocd_config.check_pec == false) {
+          if (check_ioc_support_pec(IOC_SLAVE_ADDRESS) < 0) {
+            is_failed = true;
+            set_ioc_temp(READ_IOC_TEMP_FAILED);
+            sleep (10);
+            continue;
+          }
+        }
+        break;
       }
+      is_failed = true;
+      set_ioc_temp(READ_IOC_TEMP_FAILED);
+      sleep(1);
     }
 
-    pthread_mutex_lock(&m_ioc);
     if (is_failed == true) {
       if (vdm_reset(IOC_SLAVE_ADDRESS) < 0) {
         syslog(LOG_WARNING, "%s(): failed to get %s IOC temperature because VDM reset failed", __func__, iocd_config.fru_name);
 
-        pthread_cond_signal(&cond_ioc);
         pthread_mutex_unlock(&m_ioc);
+        iocd_config.check_pec = false;
         continue;
       }
       tag = 0x01;
@@ -482,12 +592,12 @@ get_ioc_temp() {
       syslog(LOG_WARNING, "%s(): failed to get %s IOC temperature because command done failed", __func__, iocd_config.fru_name);
       is_failed = true;
     }
-    pthread_cond_signal(&cond_ioc);
     pthread_mutex_unlock(&m_ioc);
 
     if (is_failed == false) {
       set_ioc_temp(value);
     } else {
+      iocd_config.check_pec = false;
       set_ioc_temp(READ_IOC_TEMP_FAILED);
     }
 
@@ -499,6 +609,15 @@ get_ioc_temp() {
     sleep (2);
   }
 
+cleanup:
+  if (iocd_config.i2c_fd >= 0) {
+    close(iocd_config.i2c_fd);
+  }
+
+  if (iocd_config.bmc_slave != NULL) {
+    i2c_mslave_close(iocd_config.bmc_slave);
+  }
+
   return NULL;
 }
 
@@ -508,26 +627,13 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
   uint8_t tag = 0, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
   uint8_t ioc_fw_ver[IOC_FW_VER_SIZE] = {0};
-  struct timeval now = {0};
-  struct timespec time_out = {0};
-  
+
   if ((res_buf == NULL) || (res_len == NULL)) {
     syslog(LOG_WARNING, "%s(): Failed to get %s IOC firmware version due to NULL parameter.", __func__, iocd_config.fru_name);
     return -1;
   }
 
   pthread_mutex_lock(&m_ioc);
-
-  gettimeofday(&now, NULL);
-  time_out.tv_sec  = now.tv_sec + TIMEOUT_IOC;
-  time_out.tv_nsec = now.tv_usec * 1000;
-
-  if (pthread_cond_timedwait(&cond_ioc, &m_ioc, &time_out) == ETIMEDOUT) {
-    syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because thread timeout", __func__, iocd_config.fru_name);
-    *res_len = 0;
-    pthread_mutex_unlock(&m_ioc);
-    return -1;
-  }
 
   if (vdm_reset(slave_addr) < 0) {
     syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because VDM reset failed", __func__, iocd_config.fru_name);
@@ -549,7 +655,7 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
     is_failed = true;
   }
 
-  if ((is_failed == false) && (read_len == ioc_command_map[GET_IOC_FW].pkt_pl_hdr.response_len[0])) {
+  if ((is_failed == false) && (read_len >= ioc_command_map[GET_IOC_FW].pkt_pl_hdr.response_len[0])) {
     memset(ioc_fw_ver, 0, sizeof(ioc_fw_ver));
     memcpy(ioc_fw_ver, &read_buf[RES_IOC_FW_VER_OFFSET], sizeof(ioc_fw_ver));
   } else {

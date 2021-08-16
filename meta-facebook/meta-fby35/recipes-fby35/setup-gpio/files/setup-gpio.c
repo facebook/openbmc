@@ -29,6 +29,9 @@
 #define GPIO_BASE    	0x1E780000
 #define REG_GPIO0FC   	0x0FC
 
+#define SCU_BASE        0x1E6E2000
+#define REG_SCU630      0x630
+
 int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const char *pin_name, int offset, gpio_direction_t direction, gpio_value_t value)
 {
 	int ret = 0;
@@ -95,13 +98,18 @@ main(int argc, char **argv) {
 	printf("Set up BMC GPIO pins...\n");
 	setup_gpios_by_table(GPIO_CHIP_ASPEED, bmc_gpio_table);
 
-	//printf("Set up GPIO-expander GPIO pins...\n");
-	//setup_gpios_by_table(GPIO_CHIP_I2C_IO_EXP, gpio_expander_gpio_table);
-
 	// # Disable GPION4-BMC_READY pin reset tolerant
 	phymem_get_dword(GPIO_BASE, REG_GPIO0FC, &reg_value);
 	reg_value = reg_value & 0xFFFFEFFF;
 	phymem_set_dword(GPIO_BASE, REG_GPIO0FC, reg_value);
+
+	/*
+	Disable the below BMC GPIO internal pull-down: GPIOS2
+	*/
+	// GPIOS2-P5V_USB_PG_BMC
+	phymem_get_dword(SCU_BASE, REG_SCU630, &reg_value);
+	reg_value = reg_value | 0x00040000;
+	phymem_set_dword(SCU_BASE, REG_SCU630, reg_value);
 
 	printf("done.\n");
 

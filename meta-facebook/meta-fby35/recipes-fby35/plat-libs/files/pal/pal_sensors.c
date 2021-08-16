@@ -29,8 +29,8 @@
 #define DEVICE_KEY "sys_config/fru%d_B_drive0_model_name"
 #define FAN0_PATH "/sys/class/hwmon/hwmon0/fan0_input"
 
-#define DUAL_FAN_UCR  13500
-#define DUAL_FAN_UNC  10200
+#define DUAL_FAN_UCR 13800
+#define DUAL_FAN_UNC 10200
 
 enum {
   /* Fan Type */
@@ -842,10 +842,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
   {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
   {"BMC_SENSOR_NIC_P12V", ADC12, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT},//0xD2
-  {"BMC_SENSOR_NIC_PWR" , 0xD3, read_cached_val, true, {82.5, 0, 0, 0, 0, 0, 0, 0}, POWER},//0xD3
-  {"BMC_SENSOR_P1V0_STBY", ADC7, read_adc_val, true, {1.1, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xD4
-  {"BMC_SENSOR_P0V6_STBY", ADC8, read_adc_val, true, {0.63, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xD5
-  {"BMC_SENSOR_P3V3_RGM_STBY", ADC13, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0xD6
+  {"BMC_SENSOR_NIC_PWR" , 0xD3, read_cached_val, true, {82.5, 0, 101.875, 0, 0, 0, 0, 0}, POWER},//0xD3
+  {"BMC_SENSOR_P1V0_STBY", ADC7, read_adc_val, true, {1.07, 1.05, 1.13, 0.93, 0.83, 0.95, 0, 0}, VOLT}, //0xD4
+  {"BMC_SENSOR_P0V6_STBY", ADC8, read_adc_val, true, {0.642, 0.63, 0, 0.558, 0, 0.57, 0, 0}, VOLT}, //0xD5
+  {"BMC_SENSOR_P3V3_RGM_STBY", ADC13, read_adc_val, true, {3.531, 3.465, 0, 3.069, 0, 3.135, 0, 0}, VOLT}, //0xD6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD7
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
@@ -872,20 +872,20 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_INLET_TEMP",  TEMP_INLET,  read_temp, true, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xED
   {"BMC_OUTLET_TEMP", TEMP_OUTLET, read_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xEE
   {"NIC_SENSOR_TEMP", TEMP_NIC, read_temp, true, {105, 0, 120, 0, 0, 0, 0, 0}, TEMP}, //0xEF
-  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.486, 0, 0, 4.524, 0, 0, 0, 0}, VOLT}, //0xF0
-  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF1
-  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.629, 0, 0, 2.976, 0, 0, 0, 0}, VOLT}, //0xF2
-  {"BMC_SENSOR_P1V8_STBY", ADC5, read_adc_val, true, {1.98, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF3
-  {"BMC_SENSOR_P1V2_STBY", ADC6, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0xF4
-  {"BMC_SENSOR_P2V5_STBY", ADC3, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
-  {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
-  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
+  {"BMC_SENSOR_P5V", ADC0, read_adc_val, true, {5.5, 5.4, 5.65, 4.5, 4.15, 4.6, 0, 0}, VOLT}, //0xF0
+  {"BMC_SENSOR_P12V", ADC1, read_adc_val, true, {13.2, 12.96, 14.333, 10.08, 10.091, 11.04, 0, 0}, VOLT}, //0xF1
+  {"BMC_SENSOR_P3V3_STBY", ADC2, read_adc_val, true, {3.531, 3.465, 3.729, 3.069, 2.739, 3.135, 0, 0}, VOLT}, //0xF2
+  {"BMC_SENSOR_P1V8_STBY", ADC5, read_adc_val, true, {1.926, 1.89, 0, 1.674, 0, 1.71, 0, 0}, VOLT}, //0xF3
+  {"BMC_SENSOR_P1V2_STBY", ADC6, read_adc_val, true, {1.284, 1.26, 1.356, 1.116, 0.996, 1.14, 0, 0}, VOLT}, //0xF4
+  {"BMC_SENSOR_P2V5_STBY", ADC3, read_adc_val, true, {2.675, 2.625, 0, 2.325, 2.375, 0, 0, 0}, VOLT}, //0xF5
+  {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_medusa_val, true, {13.75, 13.5, 13.9, 11.25, 9.25, 11.5, 0, 0}, VOLT}, //0xF6
+  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 12.96, 14.333, 10.8, 10.091, 11.04, 0, 0}, VOLT}, //0xF7
   {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
-  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
-  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
-  {"BMC_SENSOR_FAN_IOUT", ADC10, read_adc_val, 0, {25.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
-  {"BMC_SENSOR_NIC_IOUT", ADC11, read_adc_val, 0, {6.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
-  {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
+  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {287.5, 0, 398.75, 0, 0, 0, 0, 0}, POWER}, //0xF9
+  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {23, 0, 31.9, 0, 0, 0, 0, 0}, CURR}, //0xFA
+  {"BMC_SENSOR_FAN_IOUT", ADC10, read_adc_val, 0, {14.52, 0, 39.2, 0, 0, 0, 0, 0}, CURR}, //0xFB
+  {"BMC_SENSOR_NIC_IOUT", ADC11, read_adc_val, 0, {6.6, 0, 8.15, 0, 0, 0, 0, 0}, CURR}, //0xFC
+  {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_medusa_val, true, {13.75, 13.5, 13.9, 11.25, 9.25, 11.5, 0, 0}, VOLT}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
@@ -1745,10 +1745,7 @@ read_adc_val(uint8_t adc_id, float *value) {
       //BMC will show 0.00 amps. make it show 0.01 at least.
       if ( *value < 0.01 ) *value = 0.01;
     } else if ( ADC11 == adc_id ) {
-      *value = *value/0.16/1.27;  // EVT: /0.16/0.649
-
-      //adjust the reading to make it more accurate
-      *value = (*value - 0.5) * 0.98;
+      *value = *value/0.22/1.2;
 
       //it's not support to show the negative value, make it show 0.01 at least.
       if ( *value <= 0 ) *value = 0.01;
@@ -2239,7 +2236,7 @@ pal_bmc_fan_threshold_init() {
     return -1;
   } else {
     if (fan_type != SINGLE_TYPE) {
-      // set fan tach UCR to 13500 if it's not single type
+      // set fan tach UCR to 13800 if it's not single type
       sensor_map[BMC_SENSOR_FAN0_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
       sensor_map[BMC_SENSOR_FAN1_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
       sensor_map[BMC_SENSOR_FAN2_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
@@ -2257,6 +2254,7 @@ pal_bmc_fan_threshold_init() {
       sensor_map[BMC_SENSOR_FAN5_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
       sensor_map[BMC_SENSOR_FAN6_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
       sensor_map[BMC_SENSOR_FAN7_TACH].snr_thresh.unc_thresh = DUAL_FAN_UNC;
+
     }
 #ifdef DEBUG
     syslog(LOG_INFO, "%s() fan tach threshold initialized, fan_type: %u", __func__, fan_type);
@@ -2566,8 +2564,8 @@ pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
     const char *vendor_id;
     const char *device_id;
   } drives[] = { // Unsupported sensor reading drives
-    {"1344",  "5410"}, // Micron
-    {"15B7",  "5002"}, // WD
+    {"1344", "5410"}, // Micron
+    {"15B7", "5002"}, // WD
     {"1179", "011a"}, // Toshiba
   };
   char key[100] = {0};

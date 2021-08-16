@@ -116,6 +116,13 @@ led_handler() {
 
   while(1) {
     for ( i = FRU_SLOT1; i <= num_of_slots; i++ ) {
+      if ( pal_is_fw_update_ongoing(i) == true ) {
+        // the time it takes to update the firmware depends on the component
+        // sleep periodically because we don't need to check it frequently
+        sleep(10);
+        continue;
+      }
+
       ret = pal_get_server_power(i, &status);
       if ( ret < 0 || status == SERVER_12V_OFF ) {
         slot_ready[i-1] = false;

@@ -76,10 +76,10 @@ def main():
     # modify the registers
     set_register()
 
-    if brd_type is 0:
+    if brd_type == 0:
         print("Using GPIO Wedge400 table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v1_th3)
-    elif brd_type is 1:
+    elif brd_type == 1:
         print("Using GPIO Wedge400-C table ", end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v1_gb)
     else:

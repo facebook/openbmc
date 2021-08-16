@@ -52,10 +52,10 @@ fby3_get_fruid_path(uint8_t fru, uint8_t dev_id, char *path) {
       sprintf(fname, "bb");
       break;
     case FRU_2U_TOP:
-      sprintf(fname, "slot1");
+      sprintf(fname, DEV_NAME_2U_TOP);
       break;
     case FRU_2U_BOT:
-      sprintf(fname, "slot1");
+      sprintf(fname, DEV_NAME_2U_BOT);
       break;
     default:
       syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);

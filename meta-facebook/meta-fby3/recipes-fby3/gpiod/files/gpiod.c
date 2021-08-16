@@ -118,8 +118,8 @@ struct threadinfo {
   uint8_t fru;
   pthread_t pt;
 };
-static struct threadinfo t_fru_cache[MAX_NUM_FRUS] = {0, };
-static uint8_t dev_fru_complete[MAX_NODES + 1][MAX_NUM_GPV3_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
+static struct threadinfo t_fru_cache[MAX_NUM_FRUS+MAX_NUM_EXPS] = {0, };
+static uint8_t dev_fru_complete[MAX_NODES + MAX_NUM_EXPS + 1][MAX_NUM_GPV3_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
 
 static int
 fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
@@ -129,13 +129,21 @@ fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
   char fruid_path[64] = {0};
   uint8_t offset = 0;
   struct stat st;
+  uint8_t intf = 0;
 
   fru_id += DEV_ID0_2OU - 1;
   offset = DEV_ID0_2OU - 1;
 
-  sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
-  sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, REXP_BIC_INTF);
-  ret = bic_read_fruid(slot_id, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF);
+  if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
+    intf = slot_id == FRU_2U_TOP ? RREXP_BIC_INTF1 : RREXP_BIC_INTF2;
+    pal_get_dev_fruid_path(slot_id, fru_id, fruid_path);
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
+    ret = bic_read_fruid(FRU_SLOT1, fru_id - offset , fruid_temp_path, &fru_size, intf);
+  } else {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, REXP_BIC_INTF);
+    ret = bic_read_fruid(slot_id, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF);
+  }
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() slot%d dev%d is not present, fru_size: %d\n", __func__, slot_id, fru_id - offset, fru_size);
   }
@@ -162,6 +170,8 @@ fru_cache_dump(void *arg) {
   uint8_t nvme_ready = 0;
   uint8_t all_nvme_ready = 0;
   uint8_t dev_id;
+  uint8_t flagIdx = fru;
+  uint8_t fruIdx = fru - 1;
   const int max_retry = 3;
   int oldstate;
   int finish_count = 0; // fru finish
@@ -179,7 +189,17 @@ fru_cache_dump(void *arg) {
   // Check 2OU BIC Self Test Result
   do {
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-    ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result, REXP_BIC_INTF);
+    if (fru == FRU_2U_TOP) {
+      ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF1);
+      flagIdx = MAX_NODES + FRU_2U_TOP - FRU_EXP_BASE;
+      fruIdx = fru - FRU_EXP_BASE + MAX_NUM_FRUS - 1;
+    } else if (fru == FRU_2U_BOT) {
+      ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF2);
+      flagIdx = MAX_NODES + FRU_2U_BOT - FRU_EXP_BASE;
+      fruIdx = fru - FRU_EXP_BASE + MAX_NUM_FRUS - 1;
+    } else {
+      ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result, REXP_BIC_INTF);
+    }
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
     if (ret == 0) {
       syslog(LOG_INFO, "bic_get_self_test_result of slot%u: %X %X", fru, self_test_result[0], self_test_result[1]);
@@ -198,7 +218,7 @@ fru_cache_dump(void *arg) {
 
     syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
 
-    if (dev_fru_complete[fru][dev_id] != DEV_FRU_NOT_COMPLETE) {
+    if (dev_fru_complete[flagIdx][dev_id] != DEV_FRU_NOT_COMPLETE) {
       finish_count++;
       continue;
     }
@@ -229,7 +249,7 @@ fru_cache_dump(void *arg) {
             syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
           } else { // Success
             free_fruid_info(&fruid);
-            dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+            dev_fru_complete[flagIdx][dev_id] = DEV_FRU_COMPLETE;
             finish_count++;
             syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
           }
@@ -271,7 +291,7 @@ fru_cache_dump(void *arg) {
 
       nvme_ready_count++;
 
-      if (dev_fru_complete[fru][dev_id] == DEV_FRU_NOT_COMPLETE) { // try to get fru or not
+      if (dev_fru_complete[flagIdx][dev_id] == DEV_FRU_NOT_COMPLETE) { // try to get fru or not
         if (type == DEV_TYPE_BRCM_ACC) { // device type has FRU
           retry = 0;
           while (1) {
@@ -297,14 +317,14 @@ fru_cache_dump(void *arg) {
               syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
             } else { // Success
               free_fruid_info(&fruid);
-              dev_fru_complete[fru][dev_id] = DEV_FRU_COMPLETE;
+              dev_fru_complete[flagIdx][dev_id] = DEV_FRU_COMPLETE;
               finish_count++;
               syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
             }
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
           }
         } else {
-          dev_fru_complete[fru][dev_id] = DEV_FRU_IGNORE;
+          dev_fru_complete[flagIdx][dev_id] = DEV_FRU_IGNORE;
           finish_count++;
           syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU", fru, dev_id-1);
         }
@@ -324,7 +344,7 @@ fru_cache_dump(void *arg) {
 
   } while ((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS));
 
-  t_fru_cache[fru-1].is_running = 0;
+  t_fru_cache[fruIdx].is_running = 0;
   syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);
 
   pthread_detach(pthread_self());
@@ -336,6 +356,7 @@ fru_cahe_init(uint8_t fru) {
   int ret, i;
   uint8_t idx;
   uint8_t type_2ou = UNKNOWN_BOARD;
+  uint8_t topbot = 0;
 
   if (fru != FRU_SLOT1 && fru != FRU_SLOT3) {
     return -1;
@@ -347,12 +368,25 @@ fru_cahe_init(uint8_t fru) {
     syslog(LOG_WARNING, "%s() slot%u Failed to get 2OU board type", __func__,fru);
     return -1;
   }
-  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD &&
+      type_2ou != CWC_MCHP_BOARD) {
     syslog(LOG_WARNING, "%s() slot%u 2OU board type = %u (not GPv3)", __func__,fru,type_2ou);
     return -1;
   }
 
-  idx = fru - 1;
+  if (type_2ou == CWC_MCHP_BOARD) {
+    topbot = bic_is_2u_top_bot_prsnt(fru);
+    fru = FRU_2U_TOP;
+    if ((topbot & PRESENT_2U_TOP) == 0) {
+      goto fru_cache_ends;
+    }
+  }
+fru_cache_starts:
+  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    idx = fru - FRU_EXP_BASE + MAX_NUM_FRUS - 1;
+  } else {
+    idx = fru - 1;
+  }
 
   // If yes, kill that thread and start a new one
   if (t_fru_cache[idx].is_running) {
@@ -373,6 +407,15 @@ fru_cahe_init(uint8_t fru) {
   }
   t_fru_cache[idx].is_running = 1;
   syslog(LOG_INFO, "%s: FRU %d cache is being generated.", __func__, fru);
+
+fru_cache_ends:
+  if (type_2ou == CWC_MCHP_BOARD && fru == FRU_2U_TOP) {
+    fru = FRU_2U_BOT;
+
+    if ((topbot & PRESENT_2U_BOT) > 0) {
+      goto fru_cache_starts;
+    }
+  }
 
   return 0;
 }

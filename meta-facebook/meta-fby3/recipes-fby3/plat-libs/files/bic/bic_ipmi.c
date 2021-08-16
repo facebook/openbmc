@@ -2142,21 +2142,33 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
-  if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) != PRESENT_2OU ) {
-    syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
-    *type = DEV_TYPE_UNKNOWN;
-    return -1;
+  if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
+    type_2ou = CWC_MCHP_BOARD;
+  } else {
+    if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) != PRESENT_2OU ) {
+      syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
+      *type = DEV_TYPE_UNKNOWN;
+      return -1;
+    }
+    ret = fby3_common_get_2ou_board_type(slot_id, &type_2ou);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
+      *type = DEV_TYPE_UNKNOWN;
+      return -1;
+    }
   }
-  ret = fby3_common_get_2ou_board_type(slot_id, &type_2ou);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
-    *type = DEV_TYPE_UNKNOWN;
-    return -1;
-  }
-  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) {
 
     while (retry) {
-      ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+      if (slot_id == FRU_2U_TOP) {
+        ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, nvme_ready, status, &ffi, &meff, 
+                                      &vendor_id, &major_ver,&minor_ver, RREXP_BIC_INTF1);
+      } else if (slot_id == FRU_2U_BOT) {
+        ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, nvme_ready, status, &ffi, &meff, 
+                                      &vendor_id, &major_ver,&minor_ver, RREXP_BIC_INTF2);
+      } else {
+        ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+      }
       if (!ret)
         break;
       msleep(50);

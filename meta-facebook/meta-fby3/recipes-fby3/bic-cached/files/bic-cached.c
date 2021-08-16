@@ -55,7 +55,15 @@ remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
   if (intf == FEXP_BIC_INTF) {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_1OU);
   } else if (intf == REXP_BIC_INTF) {
-    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU);
+    if (pal_is_cwc() == PAL_EOK) {
+      sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU_CWC);
+    } else {
+      sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU);
+    }
+  } else if (intf == RREXP_BIC_INTF1) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU_TOP);
+  } else if (intf == RREXP_BIC_INTF2) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU_BOT);
   } else {
     sprintf(fruid_path, "/tmp/fruid_slot%d.%d.bin", slot_id, intf);
   }
@@ -81,6 +89,7 @@ int
 fruid_cache_init(uint8_t slot_id) {
   // Initialize Slot0's fruid
   int ret=0, present = 0, remote_f_ret = 0, remote_r_ret = 0;
+  int remote_rr1_ret = 0, remote_rr2_ret = 0;
   int fru_size=0;
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
@@ -105,8 +114,18 @@ fruid_cache_init(uint8_t slot_id) {
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
       // dump 2ou board fru
       remote_r_ret = remote_fruid_cache_init(slot_id, 0, REXP_BIC_INTF);
+      if (pal_is_cwc() == PAL_EOK) {
+        present = bic_is_2u_top_bot_prsnt(slot_id);
+
+        if (present & PRESENT_2U_TOP) {
+          remote_rr1_ret = remote_fruid_cache_init(slot_id, 0, RREXP_BIC_INTF1);
+        }
+        if (present & PRESENT_2U_BOT) {
+          remote_rr2_ret = remote_fruid_cache_init(slot_id, 0, RREXP_BIC_INTF2);
+        }
+      }
     }
-    return (remote_f_ret + remote_r_ret);
+    return (remote_f_ret + remote_r_ret + remote_rr1_ret + remote_rr2_ret);
   } else { // Baseboard BMC
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
       // dump 1ou board fru
@@ -226,6 +245,15 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   close(fd);
   rename(sdr_temp_path, sdr_path);
 
+   /**
+   * 2 gpv3 in cwc have the same sdr
+   * and thus their sdr have to be stored into separate files
+   */
+  if (pal_is_cwc() == PAL_EOK &&
+      (intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2)) {
+    return ret;
+  }
+
   sprintf(sdr_temp_path, "/tmp/sdr_slot%d.bin", slot_id);
 
   FILE *fp1 = fopen(sdr_temp_path, "a");
@@ -256,6 +284,7 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
 int
 sdr_cache_init(uint8_t slot_id) {
   int ret = 0, remote_f_ret = 0, remote_r_ret = 0, present = 0, rc;
+  int remote_rr1_ret = 0, remote_rr2_ret = 0;
   int fd;
   int retry = 0;
   uint8_t rlen;
@@ -341,6 +370,17 @@ sdr_cache_init(uint8_t slot_id) {
     if (present == 2 || present == 3) {
       remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
     }
+
+    if (pal_is_cwc() == PAL_EOK) {
+      present = bic_is_2u_top_bot_prsnt(slot_id);
+
+      if (present & PRESENT_2U_TOP) {
+        remote_rr1_ret = remote_sdr_cache_init(slot_id, RREXP_BIC_INTF1);
+      }
+      if (present & PRESENT_2U_BOT) {
+        remote_rr2_ret = remote_sdr_cache_init(slot_id, RREXP_BIC_INTF2);
+      }
+    }
   } else {
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
       remote_f_ret = remote_sdr_cache_init(slot_id, FEXP_BIC_INTF);
@@ -355,9 +395,10 @@ sdr_cache_init(uint8_t slot_id) {
     }
   }
 
-  if (remote_f_ret != 0 || remote_r_ret != 0) {
-    syslog(LOG_WARNING, "Failed to get the remote sdr of slot%u. remote_f_ret: %d, remote_r_ret:%d, %d", slot_id, remote_f_ret, remote_r_ret, (remote_f_ret+remote_r_ret));
-    return (remote_f_ret + remote_r_ret);
+  if (remote_f_ret != 0 || remote_r_ret != 0 || remote_rr1_ret || remote_rr2_ret) {
+    syslog(LOG_WARNING, "Failed to get the remote sdr of slot%u. remote_f_ret: %d, remote_r_ret:%d, %d, remote_rr1_ret:%d remote_rr2_ret:%d", 
+          slot_id, remote_f_ret, remote_r_ret, (remote_f_ret+remote_r_ret), remote_rr1_ret, remote_rr2_ret);
+    return (remote_f_ret + remote_r_ret + remote_rr1_ret + remote_rr2_ret);
   }
 
   return ret;

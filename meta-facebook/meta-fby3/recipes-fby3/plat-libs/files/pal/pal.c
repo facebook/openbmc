@@ -4407,9 +4407,21 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
 
 int
 pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id) {
-  if ( bic_mux_select(slot_id, get_gpv3_bus_number(dev_id), dev_id, REXP_BIC_INTF) < 0 ) {
-    printf("* Failed to select MUX\n");
-    return BIC_STATUS_FAILURE;
+  if ( slot_id == FRU_2U_TOP ) {
+    if ( bic_mux_select(FRU_SLOT1, get_gpv3_bus_number(dev_id), dev_id, RREXP_BIC_INTF1) < 0 ) {
+      printf("* Failed to select MUX from top GPV3\n");
+      return BIC_STATUS_FAILURE;
+    }
+  } else if ( slot_id == FRU_2U_BOT ) {
+    if ( bic_mux_select(FRU_SLOT1, get_gpv3_bus_number(dev_id), dev_id, RREXP_BIC_INTF2) < 0 ) {
+      printf("* Failed to select MUX from bot GPV3\n");
+      return BIC_STATUS_FAILURE;
+    }
+  } else {
+    if ( bic_mux_select(slot_id, get_gpv3_bus_number(dev_id), dev_id, REXP_BIC_INTF) < 0 ) {
+      printf("* Failed to select MUX\n");
+      return BIC_STATUS_FAILURE;
+    }
   }
   return BIC_STATUS_SUCCESS;
 }

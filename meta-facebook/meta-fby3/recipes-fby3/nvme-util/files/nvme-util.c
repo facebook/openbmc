@@ -31,10 +31,14 @@
 #define MAX_RETRY 3
 static uint8_t m_slot_id = 0;
 static uint8_t m_intf = 0;
+static uint8_t expFru = 0;
 
 static void
 print_usage_help(void) {
   printf("Usage: nvme-util <slot1|slot3> <2U-dev[0..n]> <register> <read length> <[0..n]data_bytes_to_send>\n");
+  if ( pal_is_cwc() == PAL_EOK ) {
+    printf("Usage: nvme-util <slot1> <2U-top|2U-bot> <2U-dev[0..n]> <register> <read length> <[0..n]data_bytes_to_send>\n");
+  }
 }
 
 static int
@@ -52,7 +56,11 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
   printf("%s %u Drive%d\n", stype_str, slot_id, dev_id - DEV_ID0_2OU); // 0-based number
 
   // mux select
-  ret = pal_gpv3_mux_select(slot_id, dev_id);
+  if ( expFru != 0 ) {
+    ret = pal_gpv3_mux_select(expFru, dev_id);
+  } else {
+    ret = pal_gpv3_mux_select(slot_id, dev_id);
+  }
   if (ret) {
     return ret; // fail to select mux
   }
@@ -118,8 +126,19 @@ main(int argc, char **argv) {
   uint8_t type_2ou = UNKNOWN_BOARD;
   int (*read_write_nvme_data)(uint8_t, uint8_t, int, char **);
   struct sigaction sa;
+  int i = 0;
 
   do {
+
+    if ( pal_is_cwc() == PAL_EOK && argc >= 4 ) {
+      if ( !fby3_common_get_exp_id(argv[2], &expFru) ) {
+        for (i = 2; i < argc - 1; ++i ) {
+          argv[i] = argv[i+1]; //remove additional cwc option to remain the order of options
+        }
+        argc--;
+      }
+    }
+
     if ( argc < 5 ) {
       print_usage_help();
       break;
@@ -141,7 +160,17 @@ main(int argc, char **argv) {
     if ( strncmp(argv[2], DEV_PREFIX, strlen(DEV_PREFIX)) != 0 ) {
       printf("%s is not supported\n", argv[2]);
       break;
-    } else m_intf = REXP_BIC_INTF;
+    } else {
+      if ( expFru != 0 ) {
+        if ( expFru == FRU_2U_TOP ) {
+          m_intf = RREXP_BIC_INTF1;
+        } else if ( expFru == FRU_2U_BOT ) {
+          m_intf = RREXP_BIC_INTF2;
+        } else break;
+      } else {
+        m_intf = REXP_BIC_INTF;
+      }
+    }
 
     // check 2OU status
     ret = bic_is_m2_exp_prsnt(slot_id);
@@ -155,7 +184,7 @@ main(int argc, char **argv) {
         printf("Failed to get slot%d 2ou board type\n",slot_id);
         break;
       }
-      if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+      if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != CWC_MCHP_BOARD ) {
         printf("2ou board type 0x%02x is not supported, only support GPV3\n",type_2ou);
         break;
       }

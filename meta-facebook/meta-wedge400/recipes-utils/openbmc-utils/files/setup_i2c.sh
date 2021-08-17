@@ -172,4 +172,7 @@ i2c_device_add "$(get_mux_bus_num 11-0076 7)" 0x52 24c64           # FAN tray
 #
 i2c_check_driver_binding
 
-/usr/local/bin/rebind-driver.sh
+# Hack only needed for wedge400c.
+if [ "$brd_type" = "1" ]; then
+    /usr/local/bin/rebind-driver.sh
+fi

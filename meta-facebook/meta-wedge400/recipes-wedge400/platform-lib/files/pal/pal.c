@@ -6466,7 +6466,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
         break;
 
     default:
-      return -1;
+      return ERR_SENSOR_NA;
   }
 
   ret = pal_get_key_value(key, cvalue);

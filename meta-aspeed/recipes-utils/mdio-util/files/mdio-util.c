@@ -47,6 +47,7 @@ static int debug=0;
 #define AST_G6_IO_BASE             0x1e650000
 #define AST_G6_PHYCR_READ_BIT      BIT(27)
 #define AST_G6_PHYCR_WRITE_BIT     BIT(26)
+#define AST_G6_PHYCR_BUSY_BIT      BIT(31)
 static char ast_g6_phycr_offset[] = {0x0, 0x8, 0x10, 0x18};
 static char ast_g6_phydata_offset[]={0x4, 0xc, 0x14, 0x1c};
 
@@ -101,8 +102,40 @@ exit:
     return ret;
 }
 
+// Check and wait R/W operation to complete
+static int wait_complete_operation(uint32_t chip, uint32_t mdio_bus) {
+  uint32_t ctrl_status = 0;
+  uint32_t mdio_addr = 0;
+  int count = 0;
+  int max_count = 300;
+  int query_delay = 10000;  //unit in us, 10000us = 10ms
+  uint32_t status_bit_mask = 0;
+
+  if (chip == AST_G5) {
+    mdio_addr = ast_g5_io_base[mdio_bus - 1] + AST_G5_PHYCR_REG_OFFSET;
+    status_bit_mask = PHYCR_READ_BIT_AST_G5 | PHYCR_WRITE_BIT_AST_G5;
+  } else if (chip == AST_G6) {
+    mdio_addr = AST_G6_IO_BASE + ast_g6_phycr_offset[mdio_bus - 1];
+    status_bit_mask = AST_G6_PHYCR_BUSY_BIT;
+  } else {
+    return -1;
+  }
+
+  if (run_devmem(mdio_addr, &ctrl_status, READ_OP) == -1)
+    return -1;
+
+  while (ctrl_status & status_bit_mask) {
+    usleep(query_delay);
+    if (run_devmem(mdio_addr, &ctrl_status, READ_OP) == -1 || count > max_count)
+      return -1;
+    count++;
+  }
+
+  return 0;
+}
+
 //AST_G5
-static int read_flageration_ast_g5(uint32_t mdio_bus, uint32_t phy, uint32_t phy_reg)
+static int read_mdio_ast_g5(uint32_t mdio_bus, uint32_t phy, uint32_t phy_reg)
 {
     uint32_t mdio_addr = 0;
     uint32_t ctrl = 0;
@@ -113,24 +146,28 @@ static int read_flageration_ast_g5(uint32_t mdio_bus, uint32_t phy, uint32_t phy
     ctrl |= ((phy & 0x1F) << 16);
     ctrl |= ((phy_reg & 0x1F) << 21);
     ctrl |= PHYCR_READ_BIT_AST_G5;
-    
+
     if(run_devmem(mdio_addr, &ctrl, WRITE_OP) == -1)
         return -1;
-    usleep(100);
+
+    if(wait_complete_operation(AST_G5, mdio_bus) == -1)
+        return -1;
+
     mdio_addr = ast_g5_io_base[mdio_bus - 1] + AST_G5_PHYDATA_REG_OFFSET;
     if(run_devmem(mdio_addr, &ctrl, READ_OP) == -1)
         return -1;
+
     ctrl = ctrl >> 16;
     printf("Read from PHY 0x%x.0x%x, value is 0x%x\n", phy, phy_reg, ctrl);
     return 0;
 }
 
-static int write_flageration_ast_g5(uint32_t mdio_bus, uint32_t phy,
+static int write_mdio_ast_g5(uint32_t mdio_bus, uint32_t phy,
                                   uint32_t phy_reg, uint32_t value)
 {
-    uint32_t mdio_addr=0;
-    uint32_t ctrl=0;
-    uint32_t data_reg=0;
+    uint32_t mdio_addr = 0;
+    uint32_t ctrl = 0;
+    uint32_t data_reg = 0;
     mdio_addr = ast_g5_io_base[mdio_bus - 1] + AST_G5_PHYCR_REG_OFFSET;
     if(run_devmem(mdio_addr, &ctrl, READ_OP) == -1)
         return -1;
@@ -144,13 +181,12 @@ static int write_flageration_ast_g5(uint32_t mdio_bus, uint32_t phy,
         return -1;
     if(run_devmem(mdio_addr, &ctrl, WRITE_OP) == -1)
         return -1;
-    usleep(100);
-    printf("Write to PHY 0x%x.0x%x, value is 0x%x\n", phy, phy_reg, value);
+
     return 0;
 }
 
 //ast_g6
-static int read_flageration_ast_g6(uint32_t mdio_bus, uint32_t phy, uint32_t phy_reg)
+static int read_mdio_ast_g6(uint32_t mdio_bus, uint32_t phy, uint32_t phy_reg)
 {
     uint32_t mdio_addr = 0;
     uint32_t ctrl = 0;
@@ -164,7 +200,10 @@ static int read_flageration_ast_g6(uint32_t mdio_bus, uint32_t phy, uint32_t phy
     ctrl |= AST_G6_PHYCR_READ_BIT;
     if(run_devmem(mdio_addr, &ctrl, WRITE_OP) == -1)
         return -1;
-    usleep(100);
+
+    if(wait_complete_operation(AST_G6, mdio_bus) == -1)
+        return -1;
+
     mdio_addr = AST_G6_IO_BASE + ast_g6_phydata_offset[mdio_bus - 1];
     if(run_devmem(mdio_addr, &ctrl, READ_OP) == -1)
         return -1;
@@ -173,7 +212,7 @@ static int read_flageration_ast_g6(uint32_t mdio_bus, uint32_t phy, uint32_t phy
     return 0;
 }
 
-static int write_flageration_ast_g6(uint32_t mdio_bus, uint32_t phy,
+static int write_mdio_ast_g6(uint32_t mdio_bus, uint32_t phy,
                                     uint32_t phy_reg, uint32_t value)
 {
     uint32_t mdio_addr = 0;
@@ -190,9 +229,51 @@ static int write_flageration_ast_g6(uint32_t mdio_bus, uint32_t phy,
     temp_value |= ctrl;
     if(run_devmem(mdio_addr, &temp_value, WRITE_OP) == -1)
         return -1;
-    usleep(100);
-    printf("Write to PHY 0x%x.0x%x, value is 0x%x\n", phy, phy_reg, value);
+
     return 0;
+}
+
+static int read_mdio_op(uint32_t chip, uint32_t mdio_bus, uint32_t phy,
+                        uint32_t phy_reg) {
+  int ret = 0 ;
+  switch (chip) {
+    case AST_G5:
+      ret = read_mdio_ast_g5(mdio_bus, phy, phy_reg);
+      break;
+    case AST_G6:
+      ret = read_mdio_ast_g6(mdio_bus, phy, phy_reg);
+      break;
+    default:
+      return -1;
+  }
+
+  return ret;
+}
+
+static int write_mdio_op(uint32_t chip, uint32_t mdio_bus, uint32_t phy,
+                        uint32_t phy_reg, uint32_t value) {
+  int ret = 0 ;
+  switch (chip) {
+    case AST_G5:
+      ret = write_mdio_ast_g5(mdio_bus, phy, phy_reg, value);
+      break;
+    case AST_G6:
+      ret = write_mdio_ast_g6(mdio_bus, phy, phy_reg, value);
+      break;
+    default:
+      return -1;
+  }
+
+  if (ret) {
+    return -1;
+  }
+
+  if (wait_complete_operation(chip, mdio_bus) == -1) {
+    return -1;
+  }
+
+  printf("Write to PHY 0x%x.0x%x, value is 0x%x\n", phy, phy_reg, value);
+  return 0;
 }
 
 void print_usage()
@@ -336,38 +417,28 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    if(read_flag) {
-        if(debug)
-            printf("Debug: read mdio: %d, phy: 0x%x, reg: 0x%x ...\n",
-                    mdio_bus, phy, phy_reg);
-        switch(chip) {
-        case AST_G6:
-            read_flageration_ast_g6(mdio_bus, phy, phy_reg);
-            break;
-        case AST_G5:
-            read_flageration_ast_g5(mdio_bus, phy, phy_reg);
-            break;
-        default:
-            break;
-        }
-        return 0;
+    if (read_flag) {
+      if (debug) {
+        printf("Debug: read mdio: %d, phy: 0x%x, reg: 0x%x ...\n",
+                mdio_bus, phy, phy_reg);
+      }
+      if (read_mdio_op(chip, mdio_bus, phy, phy_reg)) {
+        printf("Error: failed to read mdio: %d from PHY 0x%x.0x%x\n",
+                mdio_bus, phy, phy_reg);
+        return -1;
+      }
     }
 
-    if(write_flag) {
-        if(debug)
-            printf("Debug: write mdio: %d, phy: 0x%x, reg: 0x%x, value: 0x%x ...\n",
-                    mdio_bus, phy, phy_reg, data);
-        switch(chip) {
-        case AST_G6:
-            write_flageration_ast_g6(mdio_bus, phy, phy_reg, data);
-            break;
-        case AST_G5:
-            write_flageration_ast_g5(mdio_bus, phy, phy_reg, data);
-            break;
-        default:
-            break;
-        }
-        return 0;
+    if (write_flag) {
+      if (debug) {
+        printf("Debug: write mdio: %d, phy: 0x%x, reg: 0x%x, value: 0x%x ...\n",
+                mdio_bus, phy, phy_reg, data);
+      }
+      if (write_mdio_op(chip, mdio_bus, phy, phy_reg, data)) {
+        printf("Error: failed to write mdio: %d to PHY 0x%x.0x%x, value is 0x%x\n",
+                mdio_bus, phy, phy_reg, data);
+        return -1;
+      }
     }
 
     return 0;

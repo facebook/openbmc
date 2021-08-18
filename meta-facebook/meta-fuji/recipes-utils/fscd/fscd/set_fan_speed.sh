@@ -31,6 +31,19 @@ if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+# check percent argument be number
+if ! [[ $1 =~ ^[0-9]+$ ]]; then
+    echo "Percent argument can be only integer number"
+    usage
+    exit 1
+fi
+# check percent in range 0-100
+if [ $1 -lt 0 ] || [ $1 -gt 100 ]; then
+    echo "Percent argument out of range"
+    usage
+    exit 1
+fi
+
 # Top FCM    (BUS=64) PWM 1 ~ 4 control Fan 1 3 5 7
 # Bottom FCM (BUS=72) PWM 1 ~ 4 control Fan 2 4 6 8
 BUS="64 72"

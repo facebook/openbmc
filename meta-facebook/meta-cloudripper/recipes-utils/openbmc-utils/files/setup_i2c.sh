@@ -153,12 +153,3 @@ i2c_device_add 54 0x52 24c64                # FAN2 EEPROM
 # Bus 55: i2c bus 15 mux, channel 7
 i2c_device_add 55 0x52 24c64                # FAN1 EEPROM
 
-#
-# Check if I2C devices are bound to drivers. A summary message (total #
-# of devices and # of devices without drivers) will be dumped at the end
-# of this function.
-#
-i2c_check_driver_binding "fix-binding"
-
-/usr/local/bin/xdpe12284-hack.sh
-/usr/local/bin/rebind-driver.sh

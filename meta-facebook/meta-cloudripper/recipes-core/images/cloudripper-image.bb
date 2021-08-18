@@ -33,6 +33,7 @@ IMAGE_INSTALL += " \
   rest-api \
   sensor-util \
   sensor-mon \
+  sensor-setup \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \

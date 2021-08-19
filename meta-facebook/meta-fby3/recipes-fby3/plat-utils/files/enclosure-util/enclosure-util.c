@@ -42,17 +42,22 @@ char path[64] = {0};
 int fd;
 static uint8_t m_slot_id = 0;
 static uint8_t type_2ou = UNKNOWN_BOARD;
+static uint8_t expFru = 0;
 
 static void
 print_usage_help(void) {
   printf("Usage: enclosure-util <slot1|slot2|slot3|slot4> --drive-status <all|1U-dev[0..3]|2U-dev[0..13]>\n");
   printf("       enclosure-util <slot1|slot2|slot3|slot4> --drive-health\n");
+  if ( pal_is_cwc() == PAL_EOK ) {
+    printf("Usage: enclosure-util <slot1> <2U-top|2U-bot> --drive-status <all|2U-dev[0..13]>\n");
+    printf("       enclosure-util <slot1> <2U-top|2U-bot> --drive-health\n");
+  }
 }
 
 static int
-ssd_monitor_enable(uint8_t slot_id, bool enable) {
+ssd_monitor_enable(uint8_t slot_id, uint8_t intf, bool enable) {
   int ret = 0;
-  ret = bic_enable_ssd_sensor_monitor(slot_id, enable, REXP_BIC_INTF);
+  ret = bic_enable_ssd_sensor_monitor(slot_id, enable, intf);
   if ( enable == false ) {
     msleep(100);
   }
@@ -103,7 +108,7 @@ drive_status(ssd_data *ssd) {
 
 static int
 drive_health(ssd_data *ssd) {
-  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) { // Not GPv3
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != CWC_MCHP_BOARD ) { // Not GPv3
     // since accelerator doesn't implement SMART WARNING, do not check it.
     if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
       return NVME_BAD_HEALTH;
@@ -169,7 +174,7 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
   memset(&ssd, 0x00, sizeof(ssd_data));
 
   //prevent the invalid access
-  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != E1S_BOARD) {
+  if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != E1S_BOARD && type_2ou != CWC_MCHP_BOARD ) {
     bic_get_1ou_type(slot_id, &type_1ou);
     get_mapping_parameter(device_id, type_1ou, &bus, &intf, &mux);
   }
@@ -187,6 +192,17 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
     }
     bus = get_gpv3_bus_number(device_id);
     intf = REXP_BIC_INTF;
+  } else if ( type_2ou == CWC_MCHP_BOARD ) {
+    ret = pal_gpv3_mux_select(expFru, device_id);
+    if (ret) {
+      return ret;
+    }
+    bus = get_gpv3_bus_number(device_id);
+    if (expFru == FRU_2U_TOP) {
+      intf = RREXP_BIC_INTF1;
+    } else if (expFru == FRU_2U_BOT) {
+      intf = RREXP_BIC_INTF2;
+    }
   } else if (type_1ou != EDSFF_1U) { // E1S no need but 1/2OU need to stop sensor monitor then switch mux
     tbuf[0] = (bus << 1) + 1;
     tbuf[1] = 0x02; // mux address
@@ -263,9 +279,19 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd) {
 
 static void
 enclosure_sig_handler(int sig) {
-  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Config C or Config D GPv3
-    if ( ssd_monitor_enable(m_slot_id, true) < 0 ) {
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) { // Config C or Config D GPv3
+    if (expFru == FRU_2U_TOP) {
+      if ( ssd_monitor_enable(m_slot_id, RREXP_BIC_INTF1, true) < 0 ) {
+        printf("err: failed to enable SSD monitoring");
+      }
+    } else if (expFru == FRU_2U_BOT) {
+      if ( ssd_monitor_enable(m_slot_id, RREXP_BIC_INTF2, true) < 0 ) {
+        printf("err: failed to enable SSD monitoring");
+      }
+    } else if (expFru == 0) {
+      if ( ssd_monitor_enable(m_slot_id, REXP_BIC_INTF, true) < 0 ) {
       printf("err: failed to enable SSD monitoring");
+      }
     }
   }
   if (flock(fd, LOCK_UN)) {
@@ -285,6 +311,17 @@ main(int argc, char **argv) {
   uint8_t device_start = 0, device_end = 0;
   uint8_t is_slot_present = 0;
   struct sigaction sa;
+  uint8_t intf = 0;
+  int i = 0;
+
+  if (pal_is_cwc() == PAL_EOK && argc >= 4) {
+    if ( !fby3_common_get_exp_id(argv[2], &expFru) ) {
+        for ( i = 2; i < argc - 1; ++i ) {
+          argv[i] = argv[i+1];  //remove additional cwc option to remain the order of options
+        }
+        argc--;
+      }
+  }
 
   if (argc != 3 && argc != 4) {
     print_usage_help();
@@ -297,7 +334,15 @@ main(int argc, char **argv) {
     print_usage_help();
     return -1;
   }
-
+  if ( expFru != 0 ) {
+    if ( expFru == FRU_2U_TOP ) {
+      intf = RREXP_BIC_INTF1;
+    } else if ( expFru == FRU_2U_BOT ) {
+      intf = RREXP_BIC_INTF2;
+    }
+  } else  {
+    intf = REXP_BIC_INTF;
+  }
   m_slot_id = slot_id;
 
   // need to check slot present
@@ -342,10 +387,10 @@ main(int argc, char **argv) {
     }
   }
 
-  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Config C or Config D GPv3
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) { // Config C or Config D GPv3
     device_start = DEV_ID0_2OU;
     device_end = DEV_ID13_2OU;
-    if ( ssd_monitor_enable(slot_id, false) < 0 ) {
+    if ( ssd_monitor_enable(slot_id, intf, false) < 0 ) {
       printf("err: failed to disable SSD monitoring\n");
       goto exit;
     }
@@ -397,8 +442,8 @@ main(int argc, char **argv) {
   }
   
 exit:
-  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Config C or Config D GPv3
-    if ( ssd_monitor_enable(slot_id, true) < 0 ) {
+  if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) { // Config C or Config D GPv3
+    if ( ssd_monitor_enable(slot_id, intf, true) < 0 ) {
       printf("err: failed to enable SSD monitoring");
     }
   }

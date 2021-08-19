@@ -84,12 +84,12 @@ static int read_curr_leakage(uint8_t snr_number, float *value);
 static int read_pdb_dl_vdelta(uint8_t snr_number, float *value);
 
 static int pal_sdr_init(uint8_t fru);
-static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
-static bool sdr_init_done[MAX_NUM_FRUS] = {false};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS+MAX_NUM_EXPS][MAX_SENSOR_NUM + 1] = {0};
+static bool sdr_init_done[MAX_NUM_FRUS+MAX_NUM_EXPS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
-static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
+static uint8_t bic_dynamic_skip_sensor_list[4+MAX_NUM_EXPS][MAX_SENSOR_NUM + 1] = {0};
 
-int pwr_off_flag[MAX_NODES] = {0};
+int pwr_off_flag[MAX_NODES+MAX_NUM_EXPS] = {0};
 int temp_cnt = 0;
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
@@ -442,6 +442,38 @@ const uint8_t bic_spe_sensor_list[] = {
   BIC_SPE_SENSOR_SSD4_CUR,
   BIC_SPE_SENSOR_SSD5_CUR,
   BIC_SPE_SENSOR_12V_MAIN_CUR,
+};
+
+const uint8_t bic_cwc_sensor_list[] = {
+  BIC_CWC_SENSOR_OUTLET_TEMP_T,
+  BIC_CWC_SENSOR_PCIE_SWITCH_T,
+  BIC_CWC_SENSOR_NUM_V_12,
+  BIC_CWC_SENSOR_NUM_V_3_3_S,
+  BIC_CWC_SENSOR_NUM_V_1_8,
+  BIC_CWC_SENSOR_NUM_V_5,
+  BIC_CWC_SENSOR_NUM_P_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_V_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_C_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_T_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_P_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_V_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_C_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_T_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_P_3V3_AUX,
+  BIC_CWC_SENSOR_NUM_V_3V3_AUX,
+  BIC_CWC_SENSOR_NUM_C_3V3_AUX,
+  BIC_CWC_SENSOR_NUM_P_HSC_CWC,
+  BIC_CWC_SENSOR_NUM_V_HSC_CWC,
+  BIC_CWC_SENSOR_NUM_C_HSC_CWC,
+  BIC_CWC_SENSOR_NUM_T_HSC_CWC,
+  BIC_CWC_SENSOR_NUM_P_HSC_BOT,
+  BIC_CWC_SENSOR_NUM_V_HSC_BOT,
+  BIC_CWC_SENSOR_NUM_C_HSC_BOT,
+  BIC_CWC_SENSOR_NUM_T_HSC_BOT,
+  BIC_CWC_SENSOR_NUM_P_HSC_TOP,
+  BIC_CWC_SENSOR_NUM_V_HSC_TOP,
+  BIC_CWC_SENSOR_NUM_C_HSC_TOP,
+  BIC_CWC_SENSOR_NUM_T_HSC_TOP,
 };
 
 const uint8_t bic_skip_sensor_list[] = {
@@ -939,6 +971,7 @@ size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t
 size_t bic_2ou_gpv3_skip_sensor_cnt = sizeof(bic_2ou_gpv3_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_dp_sensor_cnt = sizeof(bic_dp_sensor_list)/sizeof(uint8_t);
+size_t cwc_sensor_cnt = sizeof(bic_cwc_sensor_list)/sizeof(uint8_t);
 
 static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
@@ -965,7 +998,9 @@ int
 get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
   uint8_t type = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
+  uint8_t fruNb = fru;
   static uint8_t current_cnt = 0;
+  fru = (fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? (fru-FRU_EXP_BASE+4) : fru;
 
   if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
 
@@ -981,20 +1016,26 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
       fby3_common_get_2ou_board_type(FRU_SLOT1, &type_2ou);
     }
 
-    if (type == EDSFF_1U) {
-      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
-      current_cnt += bic_1ou_edsff_skip_sensor_cnt;
-    } else {
-      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
-      current_cnt += bic_1ou_skip_sensor_cnt;
-    }
-
-    if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+    if (type_2ou == CWC_MCHP_BOARD &&
+        (fruNb == FRU_2U_TOP || fruNb == FRU_2U_BOT)) {
       memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
-      current_cnt += bic_2ou_gpv3_skip_sensor_cnt;
+              current_cnt += bic_2ou_gpv3_skip_sensor_cnt;
     } else {
-      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
-      current_cnt += bic_2ou_skip_sensor_cnt;
+      if (type == EDSFF_1U) {
+        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
+        current_cnt += bic_1ou_edsff_skip_sensor_cnt;
+      } else {
+        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
+        current_cnt += bic_1ou_skip_sensor_cnt;
+      }
+
+      if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
+        current_cnt += bic_2ou_gpv3_skip_sensor_cnt;
+      } else {
+        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
+        current_cnt += bic_2ou_skip_sensor_cnt;
+      }
     }
   }
 
@@ -1067,6 +1108,9 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       } else if (board_type == DP_RISER_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dp_sensor_list, bic_dp_sensor_cnt);
         current_cnt += bic_dp_sensor_cnt;
+      } else if (board_type == CWC_MCHP_BOARD) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_cwc_sensor_list, cwc_sensor_cnt);
+        current_cnt += cwc_sensor_cnt;
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
         current_cnt += bic_2ou_sensor_cnt;
@@ -1082,6 +1126,18 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) bic_dynamic_sensor_list[fru-1];
     *cnt = current_cnt;
     break;
+
+  case FRU_CWC:
+    *sensor_list = (uint8_t *) bic_cwc_sensor_list;
+    *cnt = cwc_sensor_cnt;
+    break;
+  case FRU_2U:
+  case FRU_2U_TOP:
+  case FRU_2U_BOT:
+    *sensor_list = (uint8_t *) bic_2ou_gpv3_sensor_list;
+    *cnt = bic_2ou_gpv3_sensor_cnt;
+    break;
+
   default:
     if (fru > MAX_NUM_FRUS)
       return -1;
@@ -1095,6 +1151,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 int
 pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   switch(fru) {
+    case FRU_2U:
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      *sensor_list = NULL;
+      *cnt = 0;
+      break;
+
     case FRU_BMC:
     default:
       if (fru > MAX_NUM_FRUS)
@@ -1995,6 +2059,8 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
 
       for (i = 0; i < skip_sensor_cnt; i++) {
         if ( sensor_num == bic_skip_list[i] ) {
@@ -2015,30 +2081,32 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   char path[128];
-  sprintf(path, SLOT_SENSOR_LOCK, fru);
+  uint8_t slot = (fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? FRU_SLOT1 : fru;
+  uint8_t node = (fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? (fru-FRU_EXP_BASE+MAX_NODES) : fru;
+  sprintf(path, SLOT_SENSOR_LOCK, slot);
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
-  ret = bic_get_server_power_status(fru, &power_status);
+  ret = bic_get_server_power_status(slot, &power_status);
   if (ret < 0) {
     return READING_NA;
   }
 
   if (power_status != SERVER_POWER_ON) {
-    pwr_off_flag[fru-1] = 1;
+    pwr_off_flag[node-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
     if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
       return READING_NA;
     }
-  } else if (power_status == SERVER_POWER_ON && pwr_off_flag[fru-1]) {
+  } else if (power_status == SERVER_POWER_ON && pwr_off_flag[node-1]) {
     if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt < skip_sensor_cnt)){
       temp_cnt ++;
       return READING_NA;
     }
 
     if (temp_cnt == skip_sensor_cnt) {
-      pwr_off_flag[fru-1] = 0;
+      pwr_off_flag[node-1] = 0;
       temp_cnt = 0;
     }
   }
@@ -2048,23 +2116,29 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_SKIP;
   }
 
-  //check snr number first. If it not holds, it will move on
-  if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-  } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
-       ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
-  } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
-               (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
-              ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
-                                                                 //So, we take 0x49 ~ 0x4D here
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-  } else if ( sensor_num == 0x43 && (config_status & PRESENT_2OU) == PRESENT_2OU ) { // DP Riser
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
-  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
-    ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
+  if (fru == FRU_2U_TOP) {
+    ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF1);
+  } else if (fru == FRU_2U_BOT) {
+    ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF2);
   } else {
-    return READING_NA;
+    //check snr number first. If it not holds, it will move on
+    if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+    } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
+        ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+    } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
+                (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
+                ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
+                                                                  //So, we take 0x49 ~ 0x4D here
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
+    } else if ( sensor_num == 0x43 && (config_status & PRESENT_2OU) == PRESENT_2OU ) { // DP Riser
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
+    } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
+    } else {
+      return READING_NA;
+    }
   }
 
   if ( ret < 0 ) {
@@ -2077,7 +2151,11 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_NA;
   }
 
-  sdr = &g_sinfo[fru-1][sensor_num].sdr;
+  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    sdr = &g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE][sensor_num].sdr;
+  } else {
+    sdr = &g_sinfo[fru-1][sensor_num].sdr;
+  }
   //syslog(LOG_WARNING, "%s() fru %x, sensor_num:0x%x, val:0x%x, type: %x", __func__, fru, sensor_num, sensor.value, sdr->type);
   if ( sdr->type != 1 ) {
     *value = sensor.value;
@@ -2136,8 +2214,8 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
       break;
   }
 
-  if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {
-    pwr_off_flag[fru-1] = 1;
+  if ( bic_get_server_power_status(slot, &power_status) < 0 || power_status != SERVER_POWER_ON) {
+    pwr_off_flag[node-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
     if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
       return READING_NA;
@@ -2156,6 +2234,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t id=0;
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
+  static uint8_t exp_status = 0;
 
   if ( bmc_location == 0 ) {
     if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -2205,6 +2284,37 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = sensor_map[sensor_num].read_sensor(id, (float*) value);
       //Over temperature protection
       pal_nic_otp_check((float*)value, sensor_map[sensor_num].snr_thresh.unr_thresh, sensor_map[sensor_num].snr_thresh.ucr_thresh);
+      break;
+
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if ( config_status[FRU_SLOT1-1] == CONFIG_UNKNOWN ) {
+        ret = bic_is_m2_exp_prsnt(FRU_SLOT1);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to run bic_is_m2_exp_prsnt", __func__);
+        } else {
+          config_status[FRU_SLOT1-1] = (uint8_t)ret;
+        }
+        syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, FRU_SLOT1, config_status[FRU_SLOT1-1]);
+      }
+
+      if ((fru == FRU_2U_TOP && (exp_status & PRESENT_2U_TOP) == 0) || 
+          (fru == FRU_2U_BOT && (exp_status & PRESENT_2U_BOT) == 0)) {
+        exp_status = bic_is_2u_top_bot_prsnt(FRU_SLOT1);
+      }
+
+      if ((fru == FRU_2U_TOP && (exp_status & PRESENT_2U_TOP) == 0) || 
+          (fru == FRU_2U_BOT && (exp_status & PRESENT_2U_BOT) == 0) ||
+          pal_is_fw_update_ongoing(FRU_SLOT1)) {
+        ret = READING_NA;
+        break;
+      }
+
+      if ( pal_sdr_init(fru) == ERR_NOT_READY ) {
+        ret = READING_NA;
+      } else {
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1]);
+      }
       break;
 
     default:
@@ -2358,6 +2468,19 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
       return PAL_ENOTSUP;
     break;
 
+    case FRU_2U:
+      sprintf(fru_name, "slot1.%d", REXP_BIC_INTF);
+      break;
+    case FRU_CWC:
+      sprintf(fru_name, "slot1.%d", REXP_BIC_INTF);
+      break;
+    case FRU_2U_TOP:
+      sprintf(fru_name, "slot1.%d", RREXP_BIC_INTF1);
+      break;
+    case FRU_2U_BOT:
+      sprintf(fru_name, "slot1.%d", RREXP_BIC_INTF1);
+      break;
+
     default:
       syslog(LOG_WARNING, "%s() Wrong fru id %d", __func__, fru);
     return PAL_ENOTSUP;
@@ -2446,11 +2569,41 @@ error_exit:
 
 static bool
 pal_is_sdr_init(uint8_t fru) {
+ switch (fru) {
+   case FRU_2U:
+    fru = MAX_NUM_FRUS;
+    break;
+  case FRU_CWC:
+    fru = MAX_NUM_FRUS+1;
+    break;
+  case FRU_2U_TOP:
+    fru = MAX_NUM_FRUS+2;
+    break;
+  case FRU_2U_BOT:
+    fru = MAX_NUM_FRUS+3;
+    break;
+  }
+
   return sdr_init_done[fru - 1];
 }
 
 static void
 pal_set_sdr_init(uint8_t fru, bool set) {
+  switch (fru) {
+   case FRU_2U:
+    fru = MAX_NUM_FRUS;
+    break;
+  case FRU_CWC:
+    fru = MAX_NUM_FRUS+1;
+    break;
+  case FRU_2U_TOP:
+    fru = MAX_NUM_FRUS+2;
+    break;
+  case FRU_2U_BOT:
+    fru = MAX_NUM_FRUS+3;
+    break;
+  }
+
   sdr_init_done[fru - 1] = set;
 }
 
@@ -2465,7 +2618,11 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   //syslog(LOG_WARNING, "%s() pal_is_sdr_init  bool %d, fru %d, snr_num: %x\n", __func__, pal_is_sdr_init(fru), fru, g_sinfo[fru-1][1].sdr.sensor_num);
   if ( true == pal_is_sdr_init(fru) ) {
-    memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+    if (fru > MAX_NUM_FRUS) {
+      memcpy(sinfo, g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+    } else {
+      memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+    }
     goto error_exit;
   }
 
@@ -2491,7 +2648,12 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   while ( prsnt_retry-- > 0 ) {
     // get the status of m2 board
-    ret = bic_is_m2_exp_prsnt(fru);
+    if (fru == FRU_2U_TOP || fru == FRU_2U_BOT || fru == FRU_CWC || fru == FRU_2U) {
+      ret = bic_is_m2_exp_prsnt(FRU_SLOT1);
+    } else {
+      ret = bic_is_m2_exp_prsnt(fru);
+    }
+    
     if ( ret < 0 ) {
       sleep(3);
       continue;
@@ -2499,12 +2661,41 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
     if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
       //if it's present, get its type
-      fby3_common_get_2ou_board_type(fru, &board_type);
+      if (fru == FRU_2U_TOP || fru == FRU_2U_BOT || fru == FRU_CWC || fru == FRU_2U) {
+        fby3_common_get_2ou_board_type(FRU_SLOT1, &board_type);
+      } else {
+        fby3_common_get_2ou_board_type(fru, &board_type);
+      }
     }
     break;
   }
   if ( ret < 0 ) {
     syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU\n", __func__);
+    goto error_exit;
+  }
+
+  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    prsnt_retry = MAX_READ_RETRY;
+
+    while ( prsnt_retry-- > 0 ) {
+      // get the status of m2 board
+      ret = bic_is_2u_top_bot_prsnt(FRU_SLOT1);
+      if ( ret < 0 ) {
+        sleep(3);
+        continue;
+      }
+
+      if ( (fru == FRU_2U_TOP && (ret & PRESENT_2U_TOP) == 0) ||
+           (fru == FRU_2U_BOT && (ret & PRESENT_2U_BOT) == 0) ) {
+        syslog(LOG_ERR, "2U top/bot not exist\n");
+        goto error_exit;
+      }
+      break;
+    }
+  }
+
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Couldn't get the status of 2U top/bot\n", __func__);
     goto error_exit;
   }
 
@@ -2515,7 +2706,11 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
       sleep(1);
       continue;
     } else {
-      memcpy(g_sinfo[fru-1], sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+      if (fru > MAX_NUM_FRUS) {
+        memcpy(g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE], sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+      } else {
+        memcpy(g_sinfo[fru-1], sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
+      }
       pal_set_sdr_init(fru, true);
       break;
     }
@@ -2529,8 +2724,12 @@ static int
 pal_sdr_init(uint8_t fru) {
 
   if ( false == pal_is_sdr_init(fru) ) {
-
-    sensor_info_t *sinfo = g_sinfo[fru-1];
+    sensor_info_t *sinfo = NULL;
+    if (fru > MAX_NUM_FRUS) {
+      sinfo = g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE];
+    } else {
+      sinfo = g_sinfo[fru-1];
+    }
 
     if (pal_sensor_sdr_init(fru, sinfo) < 0) {
       //syslog(LOG_WARNING, "%s() Failed to run pal_sensor_sdr_init fru%d\n", __func__, fru);

@@ -27,6 +27,11 @@ function read_system_conf() {
 function init_class2_sensord() {
   SLOTS="slot1 bmc nic"
   read_system_conf "slot1"
+
+  board=$(get_2ou_board_type 4)
+  if [ $board == "0x04" ]; then
+    SLOTS="$SLOTS 2U-top 2U-bot"
+  fi
 }
 
 function init_class1_sensord() {

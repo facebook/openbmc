@@ -16,4 +16,4 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-CFLAGS_prepend = " "
+CFLAGS_prepend = " -DCONFIG_FBY3_CWC "

@@ -41,8 +41,15 @@
 #define STOP_PERIOD 10
 #define MAX_SENSOR_CHECK_RETRY 3
 #define MAX_ASSERT_CHECK_RETRY 1
+#ifdef CONFIG_FBY3_CWC
+#define MAX_SENSORD_FRU MAX_NUM_FRUS+MAX_NUM_EXPS
+#define IDX_TO_NB(f) (f-MAX_NUM_FRUS+FRU_EXP_BASE)
+#define NB_TO_IDX(x) (x-FRU_EXP_BASE+MAX_NUM_FRUS)
+#else
+#define MAX_SENSORD_FRU MAX_NUM_FRUS
+#endif
 
-static thresh_sensor_t g_snr[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
+static thresh_sensor_t g_snr[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
 static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1] = {0};
 
 static void
@@ -87,7 +94,7 @@ get_struct_thresh_sensor(uint8_t fru) {
     return g_aggregate_snr;
   }
 
-  if (fru < 1 || fru > MAX_NUM_FRUS) {
+  if (fru < 1 || fru > MAX_SENSORD_FRU) {
     syslog(LOG_WARNING, "get_struct_thresh_sensor: Wrong FRU ID %d\n", fru);
     return NULL;
   }
@@ -105,6 +112,11 @@ init_fru_snr_thresh(uint8_t fru) {
   int sensor_cnt;
   uint8_t *sensor_list;
   thresh_sensor_t *snr;
+#ifdef CONFIG_FBY3_CWC
+  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+#else
+  uint8_t fruNb = fru;
+#endif
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
@@ -114,7 +126,7 @@ init_fru_snr_thresh(uint8_t fru) {
     return -1;
   }
 
-  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  ret = pal_get_fru_sensor_list(fruNb, &sensor_list, &sensor_cnt);
   if (ret < 0) {
     return ret;
   }
@@ -122,22 +134,22 @@ init_fru_snr_thresh(uint8_t fru) {
   for (i = 0; i < sensor_cnt; i++) {
     snr_num = sensor_list[i];
 
-    ret = sdr_get_snr_thresh(fru, snr_num, &snr[snr_num]);
+    ret = sdr_get_snr_thresh(fruNb, snr_num, &snr[snr_num]);
     if (ret < 0) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "init_fru_snr_thresh: sdr_get_snr_thresh for FRU: %d", fru);
 #endif /* DEBUG */
       continue;
     }
-    pal_alter_sensor_poll_interval(fru, snr_num, &(snr[snr_num].poll_interval));
+    pal_alter_sensor_poll_interval(fruNb, snr_num, &(snr[snr_num].poll_interval));
 
-    pal_init_sensor_check(fru, snr_num, (void *)&snr[snr_num]);
+    pal_init_sensor_check(fruNb, snr_num, (void *)&snr[snr_num]);
   }
 
   if (access(THRESHOLD_PATH, F_OK) == -1) {
         mkdir(THRESHOLD_PATH, 0777);
   }
-  ret = pal_copy_all_thresh_to_file(fru, snr);
+  ret = pal_copy_all_thresh_to_file(fruNb, snr);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: Fail to copy thresh to file for FRU: %d", __func__, fru);
     return ret;
@@ -219,6 +231,11 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
   thresh_sensor_t *snr;
   uint8_t retry = 0;
   int ret;
+#ifdef CONFIG_FBY3_CWC
+  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+#else
+  uint8_t fruNb = fru;
+#endif
 
   snr = get_struct_thresh_sensor(fru);
 
@@ -247,7 +264,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
     if (retry < MAX_SENSOR_CHECK_RETRY) {
       msleep(50);
-      ret = sensor_raw_read_helper(fru, snr_num, curr_val);
+      ret = sensor_raw_read_helper(fruNb, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
@@ -323,6 +340,11 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
   thresh_sensor_t *snr;
   uint8_t retry = 0;
   int ret;
+#ifdef CONFIG_FBY3_CWC
+  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+#else
+  uint8_t fruNb = fru;
+#endif
 
   snr = get_struct_thresh_sensor(fru);
 
@@ -355,7 +377,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
 
     if (retry < MAX_ASSERT_CHECK_RETRY) {
       msleep(50);
-      ret = sensor_raw_read_helper(fru, snr_num, curr_val);
+      ret = sensor_raw_read_helper(fruNb, snr_num, curr_val);
       if (ret < 0)
         return -1;
     }
@@ -422,6 +444,11 @@ static int
 reinit_snr_threshold(uint8_t fru, int mode) {
   int ret = 0;
   thresh_sensor_t *snr;
+#ifdef CONFIG_FBY3_CWC
+  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+#else
+  uint8_t fruNb = fru;
+#endif
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
@@ -429,7 +456,7 @@ reinit_snr_threshold(uint8_t fru, int mode) {
     syslog(LOG_WARNING, "%s: get_struct_thresh_sensor failed",__func__);
 #endif /* DEBUG */
   }
-  ret = pal_get_all_thresh_from_file(fru, snr, mode);
+  ret = pal_get_all_thresh_from_file(fruNb, snr, mode);
   if (0 != ret) {
     syslog(LOG_WARNING, "%s: Fail to get threshold from file for slot%d", __func__, fru);
     return -1;
@@ -444,8 +471,13 @@ thresh_reinit_chk(uint8_t fru) {
   char fpath[64] = {0};
   char initpath[64] = {0};
   char fru_name[32];
+#ifdef CONFIG_FBY3_CWC
+  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+#else
+  uint8_t fruNb = fru;
+#endif
 
-  ret = pal_get_fru_name(fru, fru_name);
+  ret = pal_get_fru_name(fruNb, fru_name);
   if (ret < 0) {
     printf("%s: Fail to get fru%d name\n", __func__, fru);
     return -1;
@@ -483,14 +515,21 @@ snr_monitor(void *arg) {
   thresh_sensor_t *snr;
   uint32_t snr_poll_interval[MAX_SENSOR_NUM + 1] = {0};
   uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
+#ifdef CONFIG_FBY3_CWC
+  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+  uint8_t slot = fru >= MAX_NUM_FRUS ? FRU_SLOT1 : fru;
+#else
+  uint8_t fruNb = fru;
+  uint8_t slot = fru;
+#endif
 
-  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  ret = pal_get_fru_sensor_list(fruNb, &sensor_list, &sensor_cnt);
   if (ret < 0) {
     pthread_detach(pthread_self());
     pthread_exit(NULL);
   }
 
-  ret = pal_get_fru_discrete_list(fru, &discrete_list, &discrete_cnt);
+  ret = pal_get_fru_discrete_list(fruNb, &discrete_list, &discrete_cnt);
   if (ret < 0) {
     pthread_detach(pthread_self());
     pthread_exit(NULL);
@@ -509,14 +548,14 @@ snr_monitor(void *arg) {
 
   for (i = 0; i < discrete_cnt; i++) {
     snr_num = discrete_list[i];
-    pal_get_sensor_name(fru, snr_num, snr[snr_num].name);
+    pal_get_sensor_name(fruNb, snr_num, snr[snr_num].name);
   }
 
   // set flag to notice BMC sensord snr_monitor  is ready
   kv_set("flag_sensord_monitor", "1", 0, 0);
 
   while(1) {
-    if (pal_is_fw_update_ongoing(fru)) {
+    if (pal_is_fw_update_ongoing(slot)) {
       sleep(STOP_PERIOD);
       continue;
     }
@@ -546,7 +585,7 @@ snr_monitor(void *arg) {
           continue;
         }
         snr_poll_interval[snr_num] = snr[snr_num].poll_interval;
-        if (!(ret = sensor_raw_read_helper(fru, snr_num, &curr_val))) {
+        if (!(ret = sensor_raw_read_helper(fruNb, snr_num, &curr_val))) {
           sensor_fail_assert_clear(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
           check_thresh_assert(fru, snr_num, UNC_THRESH, &curr_val);
           check_thresh_assert(fru, snr_num, UCR_THRESH, &curr_val);
@@ -569,7 +608,7 @@ snr_monitor(void *arg) {
 
     for (i = 0; i < discrete_cnt; i++) {
       snr_num = discrete_list[i];
-      ret = sensor_raw_read_helper(fru, snr_num, &curr_val);
+      ret = sensor_raw_read_helper(fruNb, snr_num, &curr_val);
       if (!ret && (snr[snr_num].curr_state != (int) curr_val)) {
         pal_sensor_discrete_check(fru, snr_num, snr[snr_num].name,
             snr[snr_num].curr_state, (int) curr_val);
@@ -719,7 +758,7 @@ run_sensord(int argc, char **argv) {
   int ret, arg;
   uint8_t fru;
   int fru_flag = 0;
-  pthread_t thread_snr[MAX_NUM_FRUS];
+  pthread_t thread_snr[MAX_SENSORD_FRU];
   pthread_t sensor_health;
   pthread_t agg_sensor_mon;
 
@@ -727,15 +766,25 @@ run_sensord(int argc, char **argv) {
   while(arg < argc) {
 
     ret = pal_get_fru_id(argv[arg], &fru);
-    if (ret < 0)
+    if (ret < 0) {
+#ifdef CONFIG_FBY3_CWC
+      uint8_t expFru = 0;
+      if (pal_is_cwc() == PAL_EOK && pal_get_cwc_id(argv[arg], &expFru) == 0) {
+        fru = NB_TO_IDX(expFru);  //expansions starts from the end of fru
+      } else {
+#endif
       return ret;
+#ifdef CONFIG_FBY3_CWC
+      }
+#endif
+    }
 
     fru_flag = SETBIT(fru_flag, fru);
     arg++;
   }
 
   ret = pal_sensor_monitor_initial();
-  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+  for (fru = 1; fru <= MAX_SENSORD_FRU; fru++) {
 
     if (GETBIT(fru_flag, fru)) {
 
@@ -769,7 +818,7 @@ run_sensord(int argc, char **argv) {
 
   pthread_join(sensor_health, NULL);
 
-  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+  for (fru = 1; fru <= MAX_SENSORD_FRU; fru++) {
 
     if (GETBIT(fru_flag, fru))
       pthread_join(thread_snr[fru-1], NULL);

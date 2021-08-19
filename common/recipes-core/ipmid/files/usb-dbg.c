@@ -44,6 +44,7 @@
 #define ESC_MCU_RUN_VER ESCAPE"R"
 #define ESC_ALT ESCAPE"[5;7m"
 #define ESC_RST ESCAPE"[m"
+#define ESC_NOR ESCAPE"[0m"
 
 #define LINE_DELIMITER '\x1F'
 
@@ -711,7 +712,7 @@ udbg_get_cri_sensor (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count,
       if (temp_thresh[0] != 0)
         snprintf(str, sizeof(str), ESC_ALT"%s%s%s"ESC_RST, cri_sensor[i].name, temp_val, temp_thresh);
       else
-        snprintf(str, sizeof(str), "%s%s", cri_sensor[i].name, temp_val);
+        snprintf(str, sizeof(str), ESC_NOR"%s%s"ESC_RST, cri_sensor[i].name, temp_val);
       frame_snr.append(&frame_snr, str, 0);
     }
   }  // End of update frame

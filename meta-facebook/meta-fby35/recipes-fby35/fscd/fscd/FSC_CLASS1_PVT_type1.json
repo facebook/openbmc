@@ -13,12 +13,12 @@
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
-    "front_io_temp": {
+    "fio_temp": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_cpu": {
+    "cpu": {
       "attribute": {
         "type" : "power_status"
       }
@@ -158,40 +158,40 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "kv" : "bmc_sensor224"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "kv" : "bmc_sensor225"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "kv" : "bmc_sensor226"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 2"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "3": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
+        "kv" : "bmc_sensor227"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 3"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     }
   },
   "zones": {
     "zone_1": {
-      "pwm_output": [0, 1, 2, 3],
+      "pwm_output": [0],
       "expr_file": "FSC_CLASS1_EVT_type1_zone1.fsc"
     }
   }

@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 from ctypes import CDLL, c_uint8, byref
-from re import match
+from re import search
 from subprocess import PIPE, Popen
 
 from fsc_util import Logger
@@ -52,11 +52,11 @@ fru_map = {
 
 dimm_location_name_map = {
     "a": "_dimm0_location",
-    "b": "_dimm2_location",
-    "c": "_dimm4_location",
-    "d": "_dimm6_location",
-    "e": "_dimm8_location",
-    "f": "_dimm10_location",
+    "c": "_dimm2_location",
+    "d": "_dimm4_location",
+    "e": "_dimm6_location",
+    "g": "_dimm8_location",
+    "h": "_dimm10_location",
 }
 
 # For now, it only supports 1OU
@@ -155,7 +155,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if (status.value == 6): # 12V-off
                 return 0
 
-            if (match(r"front_io_temp", sname) is not None) and (status.value == 0 or status.value == 1):
+            if (search(r"fio_temp", sname) is not None) and (status.value == 0 or status.value == 1):
                 return 1
 
             file = "/tmp/cache_store/" + host_ready_map[board]
@@ -167,9 +167,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 return 0
 
             if (status.value == 1): # power on
-                if match(r"soc_cpu|soc_therm", sname) is not None:
+                if search(r"cpu|soc_therm", sname) is not None:
                     is_valid_check = True
-                elif match(r"spe_ssd", sname) is not None:
+                elif search(r"spe_ssd", sname) is not None:
                     # get SSD present status
                     cmd = '/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x34 0x9c 0x9c 0x0 0x0 0x3'
                     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
@@ -186,13 +186,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         return 0
                 else:
                     suffix = ""
-                    if  match(r"1ou_m2", sname) is not None:
+                    if  search(r"1ou_m2", sname) is not None:
                         # 1ou_m2_a_temp. key is at 7
                         suffix = m2_1ou_name_map[sname[7]]
-                    elif match(r"soc_dimm", sname) is not None:
+                    elif search(r"soc_dimm", sname) is not None:
                         # soc_dimma_temp. key is at 8
                         suffix = dimm_location_name_map[sname[8]]
-
                     file = "/mnt/data/kv_store/sys_config/" + fru_map[board]["name"] + suffix
                     if is_dev_prsnt(file) == True:
                         is_valid_check = True
@@ -203,7 +202,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 if (status.value == 1): # power on
                     file = "/tmp/cache_store/" + host_ready_map[board]
                     if not os.path.exists(file):
-                       return 0
+                        return 0
                     with open(file,"r") as f:
                         flag_status = f.read()
                     if (flag_status == "1"):

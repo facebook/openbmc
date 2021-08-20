@@ -130,6 +130,10 @@ unset platform
 # Keep it around so that we can source scripts out of our tree afterward.
 REPO_ROOT="$(pwd)"
 
+if [ -d "yocto/${_distro}/workaround-bin/" ]; then
+    PATH="$(realpath "yocto/${_distro}/workaround-bin"):$PATH"
+fi
+
 # shellcheck disable=SC1090
 # distro can vary, so we can't use a shellcheck directive to point to next
 . "yocto/${_distro}/poky/oe-init-build-env" "$@"

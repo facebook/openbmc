@@ -79,7 +79,7 @@
     "regenerating_interval": 1200
   },
   "verified_boot": {
-    "enabled": false
+    "enabled": true
   },
   "bmc_timestamp": {
     "enabled": true

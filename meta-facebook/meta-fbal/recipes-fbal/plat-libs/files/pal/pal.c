@@ -1485,12 +1485,9 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
   uint8_t rlen;
   int ret;
 
-  if (pal_skip_access_me())
-    return PAL_EOK;
-
   // If device is slave, fake the data of selftest,
-  // which is {0x55, 0x00} refer common/healthd.c line.1198
-  if (!pal_get_config_is_master()){
+  // which is {0x55, 0x00} refer common/healthd.c 
+  if (!pal_get_config_is_master() || pal_skip_access_me()){
     data[0] = 0x55;
     data[1] = 0x00;
     return PAL_EOK;

@@ -14,9 +14,9 @@ SETUP=NO
 HELP=NO
 PLATFORM_TYPE=""
 
-PYTHON=/usr/local/bin/python
+PYTHON=/usr/local/bin/python3
 if [ ! -x $PYTHON ]; then
-  PYTHON=/usr/bin/python
+  PYTHON=/usr/bin/python3
 fi
 
 while [[ $# -gt 0 ]]

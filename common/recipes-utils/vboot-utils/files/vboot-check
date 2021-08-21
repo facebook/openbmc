@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -23,7 +23,7 @@ import json
 import sys
 import traceback
 
-VBOOT_CHECK_VERSION = "5"
+VBOOT_CHECK_VERSION = "6"
 # Define the exit code
 EC_SUCCESS = 0
 EC_SPLROM_BAD = 1

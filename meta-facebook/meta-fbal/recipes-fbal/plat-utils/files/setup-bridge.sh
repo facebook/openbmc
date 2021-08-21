@@ -80,32 +80,8 @@ mac_peer=("${mac[@]/#/0x}")
 echo "Set MAC Address Filter for $peer_name: ${mac_peer[*]:1}"
 /usr/local/bin/ncsi-util 0x0e "${mac_peer[@]:1}" 0x02 0x01
 
-#Clear eth0_mac_fixup.sh to avoid race condition.
-killall eth0_mac_fixup.sh
-sleep 2
-
-#IP Bridge
-ip link set down eth0
-ip link set down usb0
-brctl addbr br0
-brctl addif br0 eth0
 brctl addif br0 usb0
-ifconfig br0 hw ether "$(cat /sys/class/net/eth0/address)"
-ip link set up eth0
 ip link set up usb0
-ip link set up br0
-
-#Clear eth0 Client
-sv stop dhc6
-ip -6 addr flush dev eth0
-ip -4 addr flush dev eth0
-killall dhclient
-
-#Restart DHCP
-echo "DHCPv6..."
-sv start dhc6
-echo "DHCPv4..."
-dhclient -d -pf /var/run/dhclient.eth0.pid br0 &
 
 
 echo "Detect USB Lost..."

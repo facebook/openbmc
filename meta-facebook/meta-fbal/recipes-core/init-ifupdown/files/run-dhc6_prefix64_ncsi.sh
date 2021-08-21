@@ -33,29 +33,37 @@ ll=
 for _ in {1..30}; do
   # wait getting address from NC-SI
   if [ "$(cat /sys/class/net/eth0/addr_assign_type)" = "3" ]; then
+    if [ "$(cat /sys/class/net/eth0/address)" != "$(cat /sys/class/net/br0/address)" ]; then
+      ifconfig br0 hw ether "$(cat /sys/class/net/eth0/address)"
+    fi
     exp_ll=$(mac_to_ll "$(cat /sys/class/net/eth0/address)")
     ll=$(ip -6 addr show dev eth0 scope link | sed -e's/^.*inet6 \([^ ]*\)\/.*$/\1/;t;d')
-    if [ "$ll" = "$exp_ll" ]; then
-      break
-    fi
+    br_ll=$(ip -6 addr show dev br0 scope link | sed -e's/^.*inet6 \([^ ]*\)\/.*$/\1/;t;d')
     # re-generate link-local address
-    ip -6 addr flush dev eth0 scope link
-    echo 1 > /proc/sys/net/ipv6/conf/eth0/addr_gen_mode
-    echo 0 > /proc/sys/net/ipv6/conf/eth0/addr_gen_mode
+    if [ "$ll" != "$exp_ll" ]; then
+      ip -6 addr flush dev eth0
+      echo 1 > /proc/sys/net/ipv6/conf/eth0/addr_gen_mode
+      echo 0 > /proc/sys/net/ipv6/conf/eth0/addr_gen_mode
+    fi
+    if [ "$br_ll" != "$exp_ll" ]; then
+      ip -6 addr flush dev br0
+      echo 1 > /proc/sys/net/ipv6/conf/br0/addr_gen_mode
+      echo 0 > /proc/sys/net/ipv6/conf/br0/addr_gen_mode
+    fi
     break;
   fi
   sleep 1
 done
 
-if [ "$ll" != "$exp_ll" ]; then
+if [[ "$ll" != "$exp_ll" || "$br_ll" != "$exp_ll" ]]; then
   for _ in {1..100}; do
     usleep 10000
     ll=$(ip -6 addr show dev eth0 scope link | sed -e's/^.*inet6 \([^ ]*\)\/.*$/\1/;t;d')
-    if [ "$ll" = "$exp_ll" ]; then
+    br_ll=$(ip -6 addr show dev br0 scope link | sed -e's/^.*inet6 \([^ ]*\)\/.*$/\1/;t;d')
+    if [[ "$ll" = "$exp_ll" && "$br_ll" = "$exp_ll" ]]; then
       break;
     fi
   done
 fi
 
-[ -d /sys/class/net/br0 ] && idev=br0 || idev=eth0
-exec dhclient -6 -d -D LL --address-prefix-len 64 -pf ${pid} $idev "$@"
+exec dhclient -6 -d -D LL --address-prefix-len 64 -pf ${pid} br0 "$@"

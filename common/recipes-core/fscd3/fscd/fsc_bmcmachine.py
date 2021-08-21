@@ -277,7 +277,7 @@ def parse_all_sensors_util(sensor_data):
             continue
         # normal case match only numeric/threshold sensors
         m = re.match(
-            r"^(.*)\((0x..?)\)\s+:\s+([\d\.]+)\s+([^\s]+)?\s+.\s+\((.+)\)$", line
+            r"^(.*)\((0x..?)\)\s+:\s+(-?[\d\.]+)\s+([^\s]+)?\s+.\s+\((.+)\)$", line
         )
         if m is not None:
             sid = int(m.group(2), 16)

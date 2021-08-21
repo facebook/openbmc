@@ -337,7 +337,7 @@ class bmcNode(node):
         spi1_vendor = await getSPIVendor(1)
 
         # ASD status - check if ASD daemon/asd-test is currently running
-        _, asd_status, _ = await async_exec("ps | grep -i [a]sd", shell=True)
+        _, asd_status, _ = await async_exec("ps | grep -ie [a]sd -ie [y]aapd", shell=True)
         asd_status = bool(asd_status)
         boot_from_secondary = is_boot_from_secondary()
 

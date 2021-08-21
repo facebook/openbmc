@@ -562,6 +562,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       } else {
         ret = pal_server_power_ctrl(SET_DC_POWER_ON);
       }
+      
+      if (ret == 0) {
+        ret = pal_check_server_power_change_correct(SET_DC_POWER_ON);
+      }
 
       if (ret == 0) {
         power_on_post_actions();
@@ -580,6 +584,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         ret = bic_server_power_ctrl(SET_DC_POWER_OFF);
       } else {
         ret = pal_server_power_ctrl(SET_DC_POWER_OFF);
+      }
+      
+      if (ret == 0) {
+        ret = pal_check_server_power_change_correct(SET_DC_POWER_OFF);
       }
       
       if (ret == 0) {
@@ -611,6 +619,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       }
       
       if (ret == 0) {
+        ret = pal_check_server_power_change_correct(SET_DC_POWER_ON);
+      }
+      
+      if (ret == 0) {
         power_on_post_actions();
       }
       return ret;
@@ -627,6 +639,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         ret = bic_server_power_ctrl(SET_GRACEFUL_POWER_OFF);
       } else {
         ret = pal_server_power_ctrl(SET_GRACEFUL_POWER_OFF);
+      }
+      
+      if (ret == 0) {
+        ret = pal_check_server_power_change_correct(SET_GRACEFUL_POWER_OFF);
       }
       
       if (ret == 0) {
@@ -932,4 +948,32 @@ pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd) {
   ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, (uint8_t *)&command, sizeof(command), NULL, 0);
   close(i2cfd);
   return ret;
+}
+
+int
+pal_check_server_power_change_correct(uint8_t action) {
+  int times = 0, ret = 0;
+  uint8_t status = 0;
+  
+  while (times < WAIT_POWER_STATUS_CHANGE_TIME) {
+    ret = pal_get_server_power(FRU_SERVER, &status);
+    
+    if (ret == 0) {
+      if ((action == SET_DC_POWER_ON) && (status == STAT_DC_ON)) {
+        return ret;
+      } else if ((action == SET_DC_POWER_OFF) && (status == STAT_DC_OFF)) {
+        return ret;
+      } else if ((action == SET_GRACEFUL_POWER_OFF) && (status == STAT_DC_OFF)) {
+        return ret;
+      }
+    }
+    
+    times++;
+    sleep(1);
+  }
+
+  syslog(LOG_ERR, "%s(): power state doesn't change correctly.\n", __func__);
+
+  return -1;
+
 }

@@ -10611,11 +10611,10 @@ pal_add_cper_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 #if defined(CONFIG_FBY2_ND)
 uint8_t save_psb_config_info_to_kvstore(uint8_t slot, uint8_t* req_data, uint8_t req_len) {
   char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
 
   snprintf(key,MAX_KEY_LEN, PSB_CONFIG_RAW, slot);
-  kv_set(key, req_data, req_len, 0);
+  kv_set(key, (const char*)req_data, req_len, 0);
 
   completion_code = CC_SUCCESS;
   return completion_code;

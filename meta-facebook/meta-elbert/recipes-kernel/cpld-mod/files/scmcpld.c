@@ -233,12 +233,20 @@ static const i2c_dev_attr_st scmcpld_attr_table[] = {
     0x15, 0, 3,
   },
   {
-    "beacon_len",
+    "beacon_led",
     "0x1: On\n"
     "0x0: Off",
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,
     0x17, 5, 1,
+  },
+  {
+    "beacon_led_flash",
+    "0x1: Flash per flash_rate registers\n"
+    "0x0: No flash",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x17, 0, 3,
   },
   {
     "switchcard_powergood",

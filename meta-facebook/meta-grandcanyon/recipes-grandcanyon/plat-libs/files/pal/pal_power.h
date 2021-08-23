@@ -53,5 +53,10 @@ int pal_server_power_ctrl(uint8_t action);
 int pal_set_pwr_btn(uint8_t val);
 int pal_server_power_cycle();
 int pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd);
+int pal_host_power_off_pre_actions();
+int pal_host_power_off_post_actions();
+int pal_host_power_on_pre_actions();
+int pal_host_power_on_post_actions();
+int pal_restore_host_power_on_pre_actions();
 
 #endif

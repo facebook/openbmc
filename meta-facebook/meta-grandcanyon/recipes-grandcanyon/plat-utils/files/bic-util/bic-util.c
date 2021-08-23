@@ -31,6 +31,7 @@
 #include <facebook/bic.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/pal.h>
+#include <openbmc/pal_power.h>
 #include <facebook/fbgc_common.h>
 #include <facebook/fbgc_gpio.h>
 #include <sys/time.h>
@@ -527,8 +528,22 @@ util_bic_clear_cmos() {
     printf("Clear CMOS via bic-util is not supported for system before DVT, please use bios-util instead\n");
     goto out;
   }
+  /* clear CMOS will restore BS to default config and auto power on BS */
+  if (pal_host_power_on_pre_actions() < 0) {
+    printf("Power on pre-actions failed\n");
+    goto out;
+  }
   ret = bic_clear_cmos();
   printf("Performing CMOS clear, status %d\n", ret);
+
+  if (ret == 0) {
+    if (pal_check_server_power_change_correct(SET_DC_POWER_ON) == 0) {
+      pal_host_power_on_post_actions();
+    }
+  } else {
+    pal_restore_host_power_on_pre_actions();
+  }
+
   ret = pal_set_nic_perst(NIC_PE_RST_HIGH);
   if (ret < 0) {
     printf("Failed to set nic card PERST high\n");

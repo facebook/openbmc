@@ -257,8 +257,8 @@ set_nic_power_mode(nic_power_control_mode nic_mode) {
   return ret;
 }
 
-static int
-power_off_pre_actions() {
+int
+pal_host_power_off_pre_actions() {
   if (gpio_set_init_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW) < 0) {
     syslog(LOG_ERR, "%s() Failed to disable E1S0/IOCM I2C\n", __func__);
     return -1;
@@ -271,8 +271,8 @@ power_off_pre_actions() {
   return 0;
 }
 
-static int
-power_off_post_actions() {
+int
+pal_host_power_off_post_actions() {
   int ret = 0;
 
   ret = set_nic_power_mode(NIC_VAUX_MODE);
@@ -283,8 +283,8 @@ power_off_post_actions() {
   return ret;
 }
 
-static int
-power_on_pre_actions() {
+int
+pal_host_power_on_pre_actions() {
   int ret = 0;
 
   ret = set_nic_power_mode(NIC_VMAIN_MODE);
@@ -295,8 +295,20 @@ power_on_pre_actions() {
   return ret;
 }
 
-static int
-power_on_post_actions() {
+int
+pal_restore_host_power_on_pre_actions() {
+  int ret = 0;
+
+  ret = set_nic_power_mode(NIC_VAUX_MODE);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set NIC to VAUX mode\n", __func__);
+  }
+
+  return ret;
+}
+
+int
+pal_host_power_on_post_actions() {
   char path[MAX_PATH_LEN] = {0};
   int ret = 0;
   uint8_t chassis_type = 0;
@@ -552,7 +564,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_ON) {
         return POWER_STATUS_ALREADY_OK;
       }
-      ret = power_on_pre_actions();
+      ret = pal_host_power_on_pre_actions();
       if (ret < 0) {
         return POWER_STATUS_ERR;
       }
@@ -568,7 +580,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       }
 
       if (ret == 0) {
-        power_on_post_actions();
+        pal_host_power_on_post_actions();
       }
       return ret;
       
@@ -576,7 +588,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
-      if (power_off_pre_actions() < 0 ) {
+      if (pal_host_power_off_pre_actions() < 0 ) {
         return POWER_STATUS_ERR;
       }
 
@@ -591,13 +603,13 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       }
       
       if (ret == 0) {
-        power_off_post_actions();
+        pal_host_power_off_post_actions();
       }
       return ret;
 
     case SERVER_POWER_CYCLE:
       if (status == SERVER_POWER_ON) {
-        if (power_off_pre_actions() < 0 ) {
+        if (pal_host_power_off_pre_actions() < 0 ) {
           return POWER_STATUS_ERR;
         }
         
@@ -608,7 +620,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         }
         
         if (ret == 0) {
-          power_on_post_actions();
+          pal_host_power_on_post_actions();
         }
       }
       
@@ -623,7 +635,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       }
       
       if (ret == 0) {
-        power_on_post_actions();
+        pal_host_power_on_post_actions();
       }
       return ret;
 
@@ -631,7 +643,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
-      if (power_off_pre_actions() < 0 ) {
+      if (pal_host_power_off_pre_actions() < 0 ) {
         return POWER_STATUS_ERR;
       }
       
@@ -646,7 +658,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       }
       
       if (ret == 0) {
-        power_off_post_actions();
+        pal_host_power_off_post_actions();
       }
       return ret;
 
@@ -672,12 +684,12 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_12V_OFF) {
         return POWER_STATUS_ALREADY_OK;
       }
-      if (power_off_pre_actions() < 0 ) {
+      if (pal_host_power_off_pre_actions() < 0 ) {
         return POWER_STATUS_ERR;
       }
       ret = server_power_12v_off();
       if (ret == 0) {
-        power_off_post_actions();
+        pal_host_power_off_post_actions();
       }
       return ret;
 
@@ -685,7 +697,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_12V_OFF) {
         return server_power_12v_on();
       } else {
-        if (power_off_pre_actions() < 0 ) {
+        if (pal_host_power_off_pre_actions() < 0 ) {
           return POWER_STATUS_ERR;
         }
         if (server_power_12v_off() < 0) {

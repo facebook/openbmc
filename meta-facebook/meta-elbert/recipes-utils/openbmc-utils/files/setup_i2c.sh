@@ -174,5 +174,8 @@ do
     fi
 done
 
+# Print total number of devices.
+i2c_check_driver_binding
+
 # Apply lm_sensor threshold settings.
 sensors -s

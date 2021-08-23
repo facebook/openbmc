@@ -944,7 +944,7 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
       if(!strcmp(value, "m.2")) {
           *sensor_list = (uint8_t *) m2_1_sensor_list;
           *cnt = m2_1_sensor_cnt;
-      } else if(!strcmp(value, "e1.s")) {
+      } else if( (!strcmp(value, "e1.s")) ||  (!strcmp(value, "e1.s_v2")) ) {
           *sensor_list = (uint8_t *) e1s_1_sensor_list;
           *cnt = e1s_1_sensor_cnt;
       }
@@ -953,7 +953,7 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
       if(!strcmp(value, "m.2")) {
           *sensor_list = (uint8_t *) m2_2_sensor_list;
           *cnt = m2_2_sensor_cnt;
-      } else if(!strcmp(value, "e1.s")) {
+      } else if( (!strcmp(value, "e1.s")) ||  (!strcmp(value, "e1.s_v2")) ) {
           *sensor_list = (uint8_t *) e1s_2_sensor_list;
           *cnt = e1s_2_sensor_cnt;
       }

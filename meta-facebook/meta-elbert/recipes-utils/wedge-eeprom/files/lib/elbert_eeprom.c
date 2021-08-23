@@ -370,6 +370,14 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
               FBW_EEPROM_F_ASSEMBLY_NUMBER);
           // We allocate FBW_EEPROM_F_ASSEMBLY_NUMBER + 3
           eeprom->fbw_assembly_number[FBW_EEPROM_F_ASSEMBLY_NUMBER + 2] = '\0';
+
+          // Set production state based on ASY:
+          // Production = 1, Prototype  = 0
+          if (isalpha(eeprom->fbw_assembly_number[FBW_EEPROM_F_ASSEMBLY_NUMBER - 2]) ||
+              isalpha(eeprom->fbw_assembly_number[FBW_EEPROM_F_ASSEMBLY_NUMBER - 1]))
+            eeprom->fbw_production_state = 1;
+          else
+            eeprom->fbw_production_state = 0;
           break;
 
       case ELBERT_EEPROM_FIELD_SKU:

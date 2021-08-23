@@ -269,6 +269,7 @@ def showtech(verboseLevel=0):
         )
     )
     print("##### BMC SYSTEM TIME #####\n{}".format(runCmd("date")))
+    print("##### BMC HOSTNAME #####\n{}".format(runCmd("hostname")))
     print(
         "##### BMC version #####\nbuilt: {}{}".format(
             runCmd("cat /etc/version"), runCmd("cat /etc/issue")

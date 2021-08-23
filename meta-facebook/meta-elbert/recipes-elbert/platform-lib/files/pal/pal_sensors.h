@@ -72,9 +72,16 @@ extern "C" {
 #define CURR_UNIT "Amps"
 #define POWER_UNIT "Watts"
 #define FAN_UNIT "RPM"
+#define CFM_UNIT "CFM"
 
 #define UNIT_DIV 1000
 #define READING_NA -2
+
+// Used for system airflow calculation
+#define PWM_MAX 255
+#define CFM_STEP 10
+#define KV_SYS_AIRFLOW_CFG_KEY "sys_airflow_cfg"
+#define BASE_TEN 10
 
 // Sensors on SCM
 enum {
@@ -243,6 +250,16 @@ enum {
   FAN5_RPM,
   FAN_CARD_BOARD_TEMP,
   FAN_CARD_OUTLET_TEMP,
+  SYSTEM_AIRFLOW,
+};
+
+enum
+{
+  CONFIG_8PIM16Q_0PIM8DDM_2PSU,
+  CONFIG_5PIM16Q_3PIM8DDM_2PSU,
+  CONFIG_2PIM16Q_6PIM8DDM_4PSU,
+  CONFIG_0PIM16Q_8PIM8DDM_4PSU,
+  CONFIG_UNKNOWN,
 };
 
 int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt);

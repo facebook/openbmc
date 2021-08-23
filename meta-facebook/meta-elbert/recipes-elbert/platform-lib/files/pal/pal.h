@@ -38,6 +38,7 @@ extern "C" {
 #define ELBERT_MAX_NUM_SLOTS 1
 #define MAX_NODES 1
 #define MAX_PIM 8
+#define MAX_FAN 5
 
 #define LAST_KEY "last_key"
 #define SCMCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(12-0043)"/%s"

@@ -21,6 +21,8 @@ SMB_P2_DETECT_PATH="/tmp/.smb_p2_board"
 DS4520_BUS=8
 DS4520_DEV=$(( 0x50 ))
 DS4520_IO0_REG=0xf2
+UCD_SECURITY_REG=0xf1
+WRITE_PROTECT_REG=0x10
 
 wedge_iso_buf_enable() {
     return 0
@@ -203,10 +205,11 @@ enable_power_security_mode() {
     # Some UCD models support a security bitmask
     maybe_set_security_bitmask "$bus" "$dev" "$model"
 
-    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
+    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
     if [ "$locked" -eq 0 ]; then
-        i2cset -f -y "$bus" "$dev" 0xf1 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
-        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
+        # Write a new 6-byte password, enabling security
+        i2cset -f -y "$bus" "$dev" "$UCD_SECURITY_REG" 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
+        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
         if [ "$locked" -eq 0 ]; then
             echo "Failed to lock $model $bus-00$dev"
             return 1
@@ -221,14 +224,16 @@ disable_power_security_mode() {
     bus="$1"
     dev="$2"
     model="$3"
+
     # If locked, unlock it
-    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
+    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
     if [ "$locked" -eq 0 ]; then
         echo "UCD bus $bus device $dev already unlocked!"
         return 0
     else
-        i2cset -f -y "$bus" "$dev" 0xf1 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
-        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" 0xf1 i | tail -n 1)")"
+        # If security is enabled, disable security by writing the correct password
+        i2cset -f -y "$bus" "$dev" "$UCD_SECURITY_REG" 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
+        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
         if [ "$locked" -eq 0 ]; then
             return 0
         else
@@ -239,13 +244,19 @@ disable_power_security_mode() {
 }
 
 enable_tps546d24_wp() {
-    # Disable all writes except for WRITE_PROTECT
-    i2cset -f -y "$1" "$2" 0x10 0x80
+    bus="$1"
+    dev="$2"
+
+    # Disable all writes except for WRITE_PROTECT and STORE_USER_ALL
+    i2cset -f -y "$bus" "$dev" "$WRITE_PROTECT_REG" 0x80
 }
 
 disable_tps546d24_wp() {
+    bus="$1"
+    dev="$2"
+
     # Enable all writes
-    i2cset -f -y "$1" "$2" 0x10 0x0
+    i2cset -f -y "$bus" "$dev" "$WRITE_PROTECT_REG" 0x0
 }
 
 # Not all PIMs have the ISL68224. Calling this for a PIM
@@ -261,7 +272,7 @@ maybe_enable_isl_wp() {
     fi
     
     # Disable all writes except for WRITE_PROTECT, OPERATION, and PAGE
-    i2cset -f -y "$bus" "$dev" 0x10 0x40
+    i2cset -f -y "$bus" "$dev" "$WRITE_PROTECT_REG" 0x40
 }
 
 maybe_disable_isl_wp() {

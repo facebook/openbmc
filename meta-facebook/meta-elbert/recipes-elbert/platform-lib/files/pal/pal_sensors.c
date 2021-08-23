@@ -53,6 +53,26 @@
 
 static uint8_t psu_bus[] = { 24, 25, 26, 27 };
 
+static float cfm_lookup_8pim16q_0pim8ddm_2psu[] = {
+  89.15, 112.14, 147.91, 176.69, 212.77, 250.76,
+  285.81, 315.18, 347.17, 378.02, 381.12
+};
+
+static float cfm_lookup_5pim16q_3pim8ddm_2psu[] = {
+  95.41, 122.05, 151.8, 186.63, 223.53, 259.95,
+  297.9, 329.78, 362.11, 390.28, 394.78
+};
+
+static float cfm_lookup_2pim16q_6pim8ddm_4psu[] = {
+  92.33, 117.19, 147.91, 176.69, 220.89, 259.96,
+  301.83, 338.58, 373.32, 410.86, 412.29
+};
+
+static float cfm_lookup_0pim16q_8pim8ddm_4psu[] = {
+  95.41, 122.05, 151.8, 179.97, 226.14, 262.21,
+  303.77, 342.04, 378.02, 417.96, 417.96
+};
+
 typedef struct {
   char name[32];
 } sensor_desc_t;
@@ -736,6 +756,7 @@ const uint8_t fan_sensor_list[] = {
   FAN5_RPM,
   FAN_CARD_BOARD_TEMP,
   FAN_CARD_OUTLET_TEMP,
+  SYSTEM_AIRFLOW,
 };
 
 float scm_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
@@ -1906,6 +1927,145 @@ psu_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 }
 
 static int
+fan_init_sys_airflow_cfg_key(void) {
+  char value[MAX_VALUE_LEN];
+
+  snprintf(value, sizeof(value), "%d", CONFIG_UNKNOWN);
+  kv_set(KV_SYS_AIRFLOW_CFG_KEY, value, 0, KV_FCREATE);
+  return 0;
+}
+
+static int
+fan_sys_airflow_cfg_log(int curr_state) {
+  int ret, old_state;
+  char old_value[MAX_VALUE_LEN] = {0};
+  char curr_value[MAX_VALUE_LEN] = {0};
+
+  ret = kv_get(KV_SYS_AIRFLOW_CFG_KEY, old_value, NULL, 0);
+  if (ret < 0) {
+    return ret;
+  }
+
+  old_state = atoi(old_value);
+
+  if (curr_state != old_state) {
+    switch(curr_state) {
+      case CONFIG_8PIM16Q_0PIM8DDM_2PSU:
+        syslog(LOG_CRIT,
+               "SYSTEM_AIRFLOW: 8 PIM16Q 0 PIM8DDM 2 PSU "
+               "fan configuration detected");
+        break;
+      case CONFIG_5PIM16Q_3PIM8DDM_2PSU:
+        syslog(LOG_CRIT,
+               "SYSTEM_AIRFLOW: 5 PIM16Q 3 PIM8DDM 2 PSU "
+               "fan configuration detected");
+        break;
+      case CONFIG_2PIM16Q_6PIM8DDM_4PSU:
+        syslog(LOG_CRIT,
+               "SYSTEM_AIRFLOW: 2 PIM16Q 6 PIM8DDM 4 PSU "
+               "fan configuration detected");
+        break;
+      case CONFIG_0PIM16Q_8PIM8DDM_4PSU:
+        syslog(LOG_CRIT,
+               "SYSTEM_AIRFLOW: 0 PIM16Q 8 PIM8DDM 4 PSU "
+               "fan configuration detected");
+        break;
+      case CONFIG_UNKNOWN:
+      default:
+        syslog(LOG_CRIT,
+               "SYSTEM_AIRFLOW: UNKNOWN fan configuration detected, "
+               "assuming 0 PIM16Q 8 PIM8DDM 4 PSU fan configuration");
+        break;
+    }
+
+    snprintf(curr_value, sizeof(curr_value), "%d", curr_state);
+    kv_set(KV_SYS_AIRFLOW_CFG_KEY, curr_value, 0, 0);
+  }
+
+  return 0;
+}
+
+static int
+fan_sys_airflow_cfg_check(void) {
+  uint8_t fru, psu_prsnt, pim_type;
+  uint8_t num_pim8ddm = 0, num_pim16q = 0, num_psu = 0;
+
+  for (fru = FRU_PIM2; fru <= FRU_PIM9; fru++) {
+    pim_type = pal_get_pim_type_from_file(fru);
+    if (pim_type == PIM_TYPE_16Q) {
+      num_pim16q++;
+    } else if (pim_type == PIM_TYPE_8DDM) {
+      num_pim8ddm++;
+    }
+  }
+
+  for (fru = FRU_PSU1; fru <= FRU_PSU4; fru++) {
+    pal_is_fru_prsnt(fru, &psu_prsnt);
+    if (psu_prsnt) {
+      num_psu++;
+    }
+  }
+
+  if (num_pim16q == 8 && num_pim8ddm == 0 && num_psu == 2) {
+    return CONFIG_8PIM16Q_0PIM8DDM_2PSU;
+  } else if (num_pim16q == 5 && num_pim8ddm == 3 && num_psu == 2) {
+    return CONFIG_5PIM16Q_3PIM8DDM_2PSU;
+  } else if (num_pim16q == 2 && num_pim8ddm == 6 && num_psu == 4) {
+    return CONFIG_2PIM16Q_6PIM8DDM_4PSU;
+  } else if (num_pim16q == 0 && num_pim8ddm == 8 && num_psu == 4) {
+    return CONFIG_0PIM16Q_8PIM8DDM_4PSU;
+  } else {
+    return CONFIG_UNKNOWN;
+  }
+}
+
+static int
+fan_sys_airflow_read(float *value) {
+  int cfg, pwm_value, pwm_pct, cfm_div, cfm_rem, fan;
+  float pwm_total = 0, cfm_delta, *cfm_lookup;
+  sensor_path_t pwm_path;
+
+  cfg = fan_sys_airflow_cfg_check();
+  fan_sys_airflow_cfg_log(cfg);
+
+  switch(cfg) {
+    case CONFIG_8PIM16Q_0PIM8DDM_2PSU:
+      cfm_lookup = cfm_lookup_8pim16q_0pim8ddm_2psu;
+      break;
+    case CONFIG_5PIM16Q_3PIM8DDM_2PSU:
+      cfm_lookup = cfm_lookup_5pim16q_3pim8ddm_2psu;
+      break;
+    case CONFIG_2PIM16Q_6PIM8DDM_4PSU:
+      cfm_lookup = cfm_lookup_2pim16q_6pim8ddm_4psu;
+      break;
+    case CONFIG_0PIM16Q_8PIM8DDM_4PSU:
+      cfm_lookup = cfm_lookup_0pim16q_8pim8ddm_4psu;
+      break;
+    case CONFIG_UNKNOWN:
+    default:
+      cfm_lookup = cfm_lookup_0pim16q_8pim8ddm_4psu;
+      break;
+  }
+
+  for (fan = 1; fan <= MAX_FAN; fan++) {
+    snprintf(pwm_path.name, sizeof(pwm_path.name), "%s/fan%d_pwm",
+             FAN_CPLD_DEVICE, fan);
+    if (device_read(pwm_path.name, &pwm_value)) {
+      return -1;
+    }
+    pwm_total += pwm_value;
+  }
+
+  pwm_pct = (pwm_total * 100) / (PWM_MAX * MAX_FAN);
+  cfm_div = pwm_pct / CFM_STEP;
+  cfm_rem = pwm_pct % CFM_STEP;
+  cfm_delta = (cfm_lookup[cfm_div + 1] - cfm_lookup[cfm_div]) / CFM_STEP * cfm_rem;
+  *value = cfm_lookup[cfm_div] + cfm_delta;
+
+  return 0;
+}
+
+static int
 fan_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
   int i = 0;
@@ -1940,6 +2100,9 @@ fan_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         break;
       case FAN_CARD_OUTLET_TEMP:
         ret = read_attr(fru, sensor_num, FAN_MAX6658_DEVICE, TEMP(2), value);
+        break;
+      case SYSTEM_AIRFLOW:
+        ret = fan_sys_airflow_read(value);
         break;
       default:
         ret = READING_NA;
@@ -2531,6 +2694,9 @@ get_fan_sensor_name(uint8_t sensor_num, char *name) {
     case FAN_CARD_OUTLET_TEMP:
       sprintf(name, "FAN_CARD_OUTLET_TEMP");
       break;
+    case SYSTEM_AIRFLOW:
+      sprintf(name, "SYSTEM_AIRFLOW");
+      break;
     default:
       return -1;
   }
@@ -2799,6 +2965,9 @@ get_fan_sensor_units(uint8_t sensor_num, char *units) {
     case FAN_CARD_BOARD_TEMP:
     case FAN_CARD_OUTLET_TEMP:
       sprintf(units, TEMP_UNIT);
+      break;
+    case SYSTEM_AIRFLOW:
+      sprintf(units, CFM_UNIT);
       break;
     default:
       return -1;
@@ -3269,6 +3438,10 @@ sensor_thresh_array_init(uint8_t fru) {
       fan_sensor_threshold[FAN_CARD_OUTLET_TEMP][UCR_THRESH] = 90;
       fan_sensor_threshold[FAN_CARD_OUTLET_TEMP][LNC_THRESH] = 0; // unset
       fan_sensor_threshold[FAN_CARD_OUTLET_TEMP][LCR_THRESH] = 0; // unset
+      fan_sensor_threshold[SYSTEM_AIRFLOW][UNC_THRESH] = 0; // unset
+      fan_sensor_threshold[SYSTEM_AIRFLOW][UCR_THRESH] = 0; // unset
+      fan_sensor_threshold[SYSTEM_AIRFLOW][LNC_THRESH] = 0; // unset
+      fan_sensor_threshold[SYSTEM_AIRFLOW][LCR_THRESH] = 0; // unset
       break;
   }
   init_threshold_done[fru] = true;
@@ -3425,6 +3598,9 @@ pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
     case FRU_PSU3:
     case FRU_PSU4:
       psu_init_acok_key(fru);
+      break;
+    case FRU_FAN:
+      fan_init_sys_airflow_cfg_key();
       break;
   }
 

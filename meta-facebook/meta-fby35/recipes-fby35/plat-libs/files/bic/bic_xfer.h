@@ -21,14 +21,14 @@
 #ifndef __BIC_XFER_H__
 #define __BIC_XFER_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
 #include <facebook/fby35_common.h>
 #include "bic.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 //Netfn, Cmd, IANA data1,2,3, intf
 #define MIN_IPMB_BYPASS_LEN 6

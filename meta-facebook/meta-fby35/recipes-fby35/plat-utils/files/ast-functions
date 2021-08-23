@@ -66,80 +66,23 @@ get_bmc_board_id() {
 # Store and Clear POR bit
 store_clear_por()
 {
-  local bus rst sig val pwr_flag pfr_status
+  local sig val
 
   if [ -f /tmp/ast_por ]; then
     return
   fi
-
-  if [ "$(get_bmc_board_id)" -eq 9 ]; then
-    bus=9
-  else
-    bus=12
-  fi
-
-  # PFR - Check if it is CPLD update
-  for i in {1..3}; do
-    pwr_flag=$(/usr/sbin/i2cget -y $bus 0x38 0x68 2>/dev/null)
-    if [ $? -eq 0 ]; then
-      break
-    fi
-    pwr_flag=1
-    sleep 0.2
-  done
-
-  # PFR - Check provision
-  for i in {1..3}; do
-    pfr_status=$(/usr/sbin/i2cget -y $bus 0x38 0xa 2>/dev/null)
-    if [ $? -eq 0 ]; then
-      break
-    fi
-    pfr_status=0
-    sleep 0.2
-  done
-
-  if [[ "$((pfr_status & 0x20))" == "32" && ! -f /mnt/data/kv_store/pfr_file ]]; then
-      echo 1 > /mnt/data/kv_store/pfr_file
-  fi
-
-  # 0x06: Panic event count; 0x07: Last Panic reason
-  for i in {1..3}; do
-    rst=$(/usr/sbin/i2cget -y $bus 0x38 0x06 w 2>/dev/null)
-    if [ $? -eq 0 ]; then
-      break
-    fi
-    rst=0
-    sleep 0.2
-  done
 
   # Read Boot Magic
   sig=$(devmem 0x1e721208 2>/dev/null)
 
   # Read the Watch Dog Flag
   val=$(devmem 0x1e6e2074 2>/dev/null)
-  if [[ "$((rst & 0xffff))" == "0" && "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
+  if [[ "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
       # Power ON Reset
       echo 1 > /tmp/ast_por
   else
       echo 0 > /tmp/ast_por
   fi
-
-  # Check CPLD power on flag
-  if [[ "$((pwr_flag & 0xff))" == "0" && "$((pfr_status & 0x20))" == "32" ]]; then
-      # PFR - power on flag
-      echo 1 > /tmp/ast_por
-      echo 1 > /mnt/data/kv_store/pfr_file
-  fi
-
-  # Check the CPLD PFR status change from PFR to Non-PFR via PFR update
-  file_value=$(cat /mnt/data/kv_store/pfr_file 2>/dev/null)
-  if [[ "$((pfr_status & 0x20))" == "0" && "$((file_value))" == "1" ]]; then
-      echo 1 > /tmp/ast_por
-      echo 0 > /mnt/data/kv_store/pfr_file
-  fi
-
-  # Clear record register
-  /usr/sbin/i2cset -y $bus 0x38 0x68 0x00 2>/dev/null
 
   # Clear Power On Reset bit
   devmem 0x1e6e2074 32 $((val & 0xfffffffe)) 2>/dev/null

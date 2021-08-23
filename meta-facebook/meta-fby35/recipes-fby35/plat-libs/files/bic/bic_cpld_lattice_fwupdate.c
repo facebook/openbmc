@@ -3,19 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <syslog.h>
-#include <errno.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/time.h>
-#include <time.h>
-#include <openbmc/kv.h>
 #include <libusb-1.0/libusb.h>
 #include <openbmc/obmc-i2c.h>
 #include "bic_cpld_lattice_fwupdate.h"
-#include "bic_bios_fwupdate.h"
+#include "bic_xfer.h"
 
 #define EXP1_TI_VENDOR_ID 0x1CBF
 #define EXP1_TI_PRODUCT_ID 0x0007
@@ -23,16 +16,13 @@
 #define EXP2_TI_VENDOR_ID 0x1CC0
 #define EXP2_TI_PRODUCT_ID 0x0007
 
-#define MAX_RETRY  500
+#define MAX_RETRY 500
 #define LATTICE_COL_SIZE 128
 
 #define USB_PKT_SIZE 0x20
-#define USB_DAT_SIZE (USB_PKT_SIZE-7)
-#define BIOS_PKT_SIZE 32
-
-int alt_interface,interface_number;
 
 //#define CPLD_DEBUG
+
 typedef struct
 {
   unsigned long int QF;
@@ -677,7 +667,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
       dev_info->QF = atol(data_buf);
 
 #ifdef CPLD_DEBUG
-      printf("[QF]%ld\n",dev_info->QF);
+      printf("[QF]%lu\n",dev_info->QF);
 #endif
     }
     else if ( startWith(tmp_buf, TAG_CF_START/*"L000"*/) )
@@ -734,7 +724,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
           /*convert string to byte data*/
           ShiftData(data_buf, &dev_info->CF[current_addr], LATTICE_COL_SIZE);
 #ifdef CPLD_DEBUG
-          printf("[%d]%x %x %x %x\n",dev_info->CF_Line, dev_info->CF[current_addr],dev_info->CF[current_addr+1],dev_info->CF[current_addr+2],dev_info->CF[current_addr+3]);
+          printf("[%u]%x %x %x %x\n",dev_info->CF_Line, dev_info->CF[current_addr],dev_info->CF[current_addr+1],dev_info->CF[current_addr+2],dev_info->CF[current_addr+3]);
 #endif
           //each data has 128bits(4*unsigned int), so the for-loop need to be run 4 times
           for ( i = 0; i < sizeof(unsigned int); i++ )
@@ -750,7 +740,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
         else
         {
 #ifdef CPLD_DEBUG
-          printf("[%s]CF Line: %d\n", __func__, dev_info->CF_Line);
+          printf("[%s]CF Line: %u\n", __func__, dev_info->CF_Line);
 #endif
           CFStart = 0;
         }
@@ -842,7 +832,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
         else
         {
 #ifdef CPLD_DEBUG
-          printf("[%s]UFM Line: %d\n", __func__, dev_info->UFM_Line);
+          printf("[%s]UFM Line: %u\n", __func__, dev_info->UFM_Line);
 #endif
           UFMStart = 0;
         }
@@ -1300,7 +1290,7 @@ resend:
           retries--;
           if (!retries) {
             ret = -1;
-            break;
+            goto exit;
           }
           msleep(100);
           goto resend;

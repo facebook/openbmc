@@ -25,62 +25,16 @@
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
-#include <math.h>
-#include <string.h>
 #include <pthread.h>
 #include <assert.h>
-#include <sys/un.h>
-#include <sys/file.h>
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
-#include <facebook/fby35_gpio.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
 #define POC1_BOARD_ID 0x0
-
-struct delayed_log {
-  useconds_t usec;
-  char msg[1024];
-};
-
-err_t platform_state[] = {
-  /* Value of the PFR state. */
-  // CPLD Nios firmware T0 flow
-  {0x01, "PLATFORM_STATE_CPLD_NIOS_WAITING_TO_START"},
-  {0x02, "PLATFORM_STATE_CPLD_NIOS_STARTED"},
-  {0x03, "PLATFORM_STATE_ENTER_TMIN1"},
-  {0x04, "PLATFORM_STATE_TMIN1_RESERVED1"},
-  {0x05, "PLATFORM_STATE_TMIN1_RESERVED2"},
-  {0x06, "PLATFORM_STATE_BMC_FLASH_AUTHENTICATION"},
-  {0x07, "PLATFORM_STATE_PCH_FLASH_AUTHENTICATION"},
-  {0x08, "PLATFORM_STATE_AUTHENTICATION_FAILED_LOCKDOWN"},
-  {0x09, "PLATFORM_STATE_ENTER_T0"},
-  // Timed Boot Progress
-  {0x0A, "PLATFORM_STATE_T0_BMC_BOOTED"},
-  {0x0B, "PLATFORM_STATE_T0_ME_BOOTED"},
-  {0x0C, "PLATFORM_STATE_T0_ACM_BOOTED"},
-  {0x0D, "PLATFORM_STATE_T0_BIOS_BOOTED"},
-  {0x0E, "PLATFORM_STATE_T0_BOOT_COMPLETE"},
-  // Update event
-  {0x10, "PLATFORM_STATE_PCH_FW_UPDATE"},
-  {0x11, "PLATFORM_STATE_BMC_FW_UPDATE"},
-  {0x12, "PLATFORM_STATE_CPLD_UPDATE"},
-  {0x13, "PLATFORM_STATE_CPLD_UPDATE_IN_RECOVERY_MODE"},
-  {0x14, "PLATFORM_STATE_COPY_STAGING_TO_RECOVERY"},
-  // Recovery
-  {0x40, "PLATFORM_STATE_TMIN1_FW_RECOVERY"},
-  {0x41, "PLATFORM_STATE_TMIN1_FORCED_ACTIVE_FW_RECOVERY"},
-  {0x42, "PLATFORM_STATE_WDT_TIMEOUT_RECOVERY"},
-  {0x43, "PLATFORM_STATE_CPLD_RECOVERY_IN_RECOVERY_MODE"},
-  // PIT
-  {0x44, "PLATFORM_STATE_PIT_L1_LOCKDOWN"},
-  {0x45, "PLATFORM_STATE_PIT_L2_FW_SEALED"},
-  {0x46, "PLATFORM_STATE_PIT_L2_PCH_HASH_MISMATCH_LOCKDOWN"},
-  {0x47, "PLATFORM_STATE_PIT_L2_BMC_HASH_MISMATCH_LOCKDOWN"},
-};
 
 static void 
 log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
@@ -176,55 +130,6 @@ issue_slot_ocp_fault_sel(uint8_t slot_id) {
   lib_ipmi_handle(tbuf, tlen, rbuf, &rlen);
 }
 
-#if 0
-static void
-issue_slot_plt_state_sel(uint8_t slot_id) {
-  char path[128];
-  int ret = 0, i2cfd = 0, retry=0, index = 0;
-  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
-  uint8_t tlen = 1, rlen = 1;
-  uint8_t o_plat_state = -1, n_plat_state = 0;
-  char *plat_str = "NA";
-
-  snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id+SLOT_BUS_BASE));
-  i2cfd = open(path, O_RDWR);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
-  }
-
-  tbuf[0] = PLATFORM_STATE_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      n_plat_state = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  if ( i2cfd > 0 ) close(i2cfd);
-
-  if ( n_plat_state != o_plat_state && n_plat_state != 0x00) {
-    for (index = 0; index < (sizeof(platform_state)/sizeof(err_t)); index++) {
-      if (n_plat_state == platform_state[index].err_id) {
-        plat_str = platform_state[index].err_des;
-        break;
-      }
-    }
-    if ( (n_plat_state != 0x01) && (n_plat_state != 0x02) ) {
-      syslog(LOG_CRIT, "FRU: %d, PFR - Platform state: %s (0x%02X)", slot_id, plat_str, n_plat_state);
-    }
-    o_plat_state = n_plat_state;
-  }
-}
-#endif
-
 static void
 slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   uint32_t slot_id;
@@ -236,26 +141,6 @@ slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   log_gpio_change(gp, curr, 0);
   issue_slot_ocp_fault_sel(slot_id);
 }
-
-#if 0
-static void
-slot_pfr_plt_state_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  uint32_t slot_id;
-  uint8_t bmc_location;
-
-  if (fby35_common_get_bmc_location(&bmc_location) < 0 ) {
-    return;
-  }
-  if (bmc_location == NIC_BMC) {
-    slot_id = 1;
-  } else {
-    const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-    assert(cfg);
-    sscanf(cfg->shadow, "SMB_BMC_SLOT%u_ALT_N", &slot_id);
-  }
-  issue_slot_plt_state_sel(slot_id);
-}
-#endif
 
 static void
 slot_power_control(char *opt) {

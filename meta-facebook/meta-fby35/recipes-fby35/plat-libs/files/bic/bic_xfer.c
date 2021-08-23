@@ -28,17 +28,11 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/libgpio.h>
 #include "bic_xfer.h"
-
-#ifndef ARRAY_SIZE
-#define ARRAY_SIZE(a)   (sizeof(a) / sizeof((a)[0]))
-#endif
 
 const uint32_t IANA_ID = 0x009C9C;
 
@@ -359,7 +353,7 @@ send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t of
     if (ret != BIC_STATUS_SUCCESS) {
       if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE)
         return ret;
-      printf("%s() slot: %d, target: %d, offset: %d, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
+      printf("%s() slot: %d, target: %d, offset: %u, len: %d retrying..\n", __func__, slot_id, comp, offset, len);
     }
   } while( (ret < 0) && (retries--));
 

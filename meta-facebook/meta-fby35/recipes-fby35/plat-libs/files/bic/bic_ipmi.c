@@ -27,23 +27,18 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
 #include "bic_ipmi.h"
+#include "bic_xfer.h"
 
 //FRU
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
 #define FRUID_SIZE 256
-
-//GPIO
-#define GPIO_LOW 0
-#define GPIO_HIGH 1
-#define GPIO_HSC_MUX_SWITCH 0x2F
 
 //SDR
 #define SDR_READ_COUNT_MAX 0x1A

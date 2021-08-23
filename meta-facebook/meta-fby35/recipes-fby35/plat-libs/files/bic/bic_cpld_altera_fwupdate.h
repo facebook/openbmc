@@ -25,9 +25,6 @@
 extern "C" {
 #endif
 
-#include "bic_xfer.h"
-#include "bic.h"
-
 int update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force);
 
 #ifdef __cplusplus

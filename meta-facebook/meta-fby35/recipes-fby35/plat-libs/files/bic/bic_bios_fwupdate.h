@@ -25,12 +25,8 @@
 extern "C" {
 #endif
 
-#include "bic_xfer.h"
-#include "bic.h"
 #include <libusb-1.0/libusb.h>
-
-#define BIOS_CAPSULE_OFFSET 0x7F0000
-#define CPLD_CAPSULE_OFFSET 0x17F0000
+#include "bic_xfer.h"
 
 /*2OU BIC USB ID*/
 #define EXP2_TI_VENDOR_ID 0x1CC0
@@ -59,7 +55,6 @@ typedef struct {
 #define USB_PKT_EXT_HDR_SIZE (sizeof(bic_usb_ext_packet))
 
 int print_configuration(struct libusb_device_handle *hDevice,struct libusb_config_descriptor *config);
-int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);
 int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt);

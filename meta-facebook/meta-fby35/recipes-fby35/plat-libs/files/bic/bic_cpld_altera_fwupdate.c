@@ -26,14 +26,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <syslog.h>
-#include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include <time.h>
 #include <openbmc/obmc-i2c.h>
 #include "bic_cpld_altera_fwupdate.h"
+#include "bic_ipmi.h"
+#include "bic_xfer.h"
 
 //#define DEBUG
 
@@ -472,7 +471,7 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
       sleep(1);
-      printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\n", slot_id, target, offset, len);
+      printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\n", slot_id, target, offset, len);
     } else break;
   } while ( retries-- > 0 );
 
@@ -598,7 +597,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     offset += read_count;
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(slot_id, 60);
-      printf("\rupdated cpld: %d %%", offset/dsize);
+      printf("\rupdated cpld: %u %%", offset/dsize);
       fflush(stdout);
       last_offset += dsize;
     }

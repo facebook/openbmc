@@ -18,22 +18,15 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <time.h>
 #include <unistd.h>
-
+#include <sys/time.h>
 #include <openssl/sha.h>
-
-#include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
 #define USB_PKT_SIZE 0x200
@@ -389,12 +382,6 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   if (comp == FW_BIOS) {
     what = "BIOS";
     write_offset = 0;
-  } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
-    what = "BIOS capsule to PCH";
-    write_offset = BIOS_CAPSULE_OFFSET;
-  } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
-    what = "CPLD capsule to PCH";
-    write_offset = CPLD_CAPSULE_OFFSET;
   } else {
     fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
     goto out;
@@ -500,9 +487,9 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       pkt->offset = write_offset + file_buf_pos;
       pkt->length = count;
       udev->epaddr = USB_INPUT_PORT;
-      int rc = send_bic_usb_packet(udev, pkt);
+      rc = send_bic_usb_packet(udev, pkt);
       if (rc < 0) {
-        fprintf(stderr, "failed to write %d bytes @ %d: %d\n", count, write_offset, rc);
+        fprintf(stderr, "failed to write %zu bytes @ %zu: %d\n", count, write_offset, rc);
         send_packet_fail = true;
         break;  //prevent the endless while loop.
       }
@@ -514,7 +501,6 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
         send_packet_fail = true;
         break;  //prevent the endless while loop.
       }
-
 
       file_buf_pos += count;
     }
@@ -528,12 +514,12 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
     if (verify) {
       rc = get_block_checksum(slot_id, write_offset, cs_len, cs);
       if (rc != 0) {
-        fprintf(stderr, "get_block_checksum @ %d failed (cs_len %d)\n", write_offset, cs_len);
+        fprintf(stderr, "get_block_checksum @ %zu failed (cs_len %d)\n", write_offset, cs_len);
         attempts--;
         continue;
       }
       if (memcmp(cs, fcs, cs_len) != 0) {
-        fprintf(stderr, "Data checksum mismatch @ %d (cs_len %d, 0x%016llx vs 0x%016llx)\n",
+        fprintf(stderr, "Data checksum mismatch @ %zu (cs_len %d, 0x%016llx vs 0x%016llx)\n",
             write_offset, cs_len, *((uint64_t *) cs), *((uint64_t *) fcs));
         attempts--;
         continue;

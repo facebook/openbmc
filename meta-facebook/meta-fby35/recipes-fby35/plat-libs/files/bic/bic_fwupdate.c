@@ -28,17 +28,19 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openbmc/obmc-i2c.h>
 #include "bic_fwupdate.h"
+#include "bic_ipmi.h"
+#include "bic_xfer.h"
+#include "bic_bios_fwupdate.h"
 #include "bic_cpld_altera_fwupdate.h"
 #include "bic_cpld_lattice_fwupdate.h"
-#include "bic_vr_fwupdate.h"
-#include "bic_bios_fwupdate.h"
-#include "bic_mchp_pciesw_fwupdate.h"
 #include "bic_m2_fwupdate.h"
+#include "bic_mchp_pciesw_fwupdate.h"
+#include "bic_vr_fwupdate.h"
+
 //#define DEBUG
 
 /****************************/
@@ -112,7 +114,7 @@ bic_send:
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
   if ((ret) && (retries--)) {
     sleep(1);
-    printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\
+    printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\
            \n",    slot_id, target, offset, len);
     goto bic_send;
   }
@@ -302,7 +304,7 @@ read_bic_update_ack_status(uint8_t slot_id, int i2cfd, uint8_t intf) {
     print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen);
 #endif
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-    if ( rlen <= 0 ) {
+    if ( rlen == 0 ) {
       printf("%s() invalid lenth %d", __func__, rlen);
       ret = -1;
     }
@@ -456,11 +458,11 @@ send_bic_image_data(uint8_t slot_id, int i2cfd, uint16_t len, uint8_t *buf, uint
 static int
 send_bic_runtime_image_data(uint8_t slot_id, int fd, int i2cfd, int file_size, const uint8_t bytes_per_read, uint8_t intf) {
   uint8_t buf[256] = {0};
-  uint8_t read_bytes = 0;
   int ret = -1;
   int dsize = 0;
   int last_offset = 0;
-  int offset = 0;;
+  int offset = 0;
+  ssize_t read_bytes;
 
   dsize = file_size / 20;
 
@@ -517,9 +519,10 @@ update_bic(uint8_t slot_id, uint8_t comp, char *image, int file_size, uint8_t fo
   struct timeval start, end;
   int ret = -1, rc;
   uint32_t offset;
-  volatile uint16_t count, read_count;
+  volatile uint16_t read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
+  ssize_t count;
   int fd;
   int i;
   //int remain = 0;
@@ -591,7 +594,7 @@ update_bic(uint8_t slot_id, uint8_t comp, char *image, int file_size, uint8_t fo
     offset += count;
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(slot_id, 60);
-      printf("\rupdated bic: %d %%", offset/dsize);
+      printf("\rupdated bic: %u %%", offset/dsize);
       fflush(stdout);
       last_offset += dsize;
     }
@@ -1409,14 +1412,6 @@ get_component_name(uint8_t comp) {
       return "BB BIC";
     case FW_BB_CPLD:
       return "BB CPLD";
-    case FW_BIOS_CAPSULE:
-      return "BIOS Capsule, Target to Active Region";
-    case FW_BIOS_RCVY_CAPSULE:
-      return "BIOS Capsule, Target to Recovery Region";
-    case FW_CPLD_CAPSULE:
-      return "CPLD Capsule, Target to Active Region";
-    case FW_CPLD_RCVY_CAPSULE:
-      return "CPLD Capsule, Target to Recovery Region";
     case FW_2OU_PESW:
       return "2OU PCIe Switch";
     case FW_2OU_PESW_VR:
@@ -1553,8 +1548,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   if (bmc_location == NIC_BMC) {
     switch (comp) {
       case FW_BIOS:
-      case FW_BIOS_CAPSULE:
-      case FW_BIOS_RCVY_CAPSULE:
         if (loc != NULL) {
           stop_fscd_service = true;
         }
@@ -1621,14 +1614,11 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       break;
     case FW_BB_CPLD:
       ret = update_bic_cpld_altera(slot_id, path, intf, force);
+      break;
     case FW_CPLD:
       ret = update_bic_cpld_lattice(slot_id, path, intf, force);
       break;
     case FW_BIOS:
-    case FW_BIOS_CAPSULE:
-    case FW_CPLD_CAPSULE:
-    case FW_BIOS_RCVY_CAPSULE:
-    case FW_CPLD_RCVY_CAPSULE:
       if (loc != NULL) {
         ret = update_bic_bios(slot_id, comp, path, FORCE_UPDATE_SET);
       } else {
@@ -1671,7 +1661,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         printf("* Failed to stop bic sensor monitor\n");
         break;
       }
-      uint8_t nvme_ready = 0, status = 0, type = 0;
+      uint8_t nvme_ready = 0, type = 0;
       ret = bic_get_dev_info(slot_id, (comp - FW_2OU_M2_DEV0) + 1, &nvme_ready ,&status, &type);
       if (ret) {
         printf("* Failed to read m.2 device's info\n");

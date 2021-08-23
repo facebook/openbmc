@@ -21,11 +21,12 @@
 #ifndef __BIC_IPMI_H__
 #define __BIC_IPMI_H__
 
-#include "bic_xfer.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <stdbool.h>
+#include <openbmc/ipmi.h>
 
 enum {
   DEV_TYPE_UNKNOWN,

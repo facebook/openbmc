@@ -25,8 +25,7 @@
 extern "C" {
 #endif
 
-#include "bic_xfer.h"
-#include "bic.h"
+#include <stdbool.h>
 
 int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool is_usb);
 

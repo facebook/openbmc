@@ -25,9 +25,6 @@
 extern "C" {
 #endif
 
-#include "bic_xfer.h"
-#include "bic.h"
-
 #define AST_BIC_IPMB_WRITE_COUNT_MAX 224
 #define PKT_SIZE (64*1024)
 

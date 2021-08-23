@@ -24,18 +24,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/time.h>
-#include <time.h>
 #include <dirent.h>
-#include <limits.h>
 #include "bic_mchp_pciesw_fwupdate.h"
-#include <openbmc/kv.h>
+#include "bic_power.h"
+#include "bic_ipmi.h"
+#include "bic_xfer.h"
+
 enum {
   PESW_BOOTLOADER_RCVRY = 0x00,
   PESW_PARTMAP          = 0x01,
@@ -374,11 +372,11 @@ int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t 
   uint8_t per_read = 0;
   uint8_t buf[256] = {0};
   uint16_t buf_size = sizeof(buf);
-  uint16_t read_bytes = 0;
   uint32_t offset = 0;
   uint32_t block_offset = 0;
   uint32_t last_offset = 0;
   uint32_t dsize = 0;
+  ssize_t read_bytes = 0;
   int last_data_pcie_sw_flag = 0; // We already sent 1008 byte
   dsize = file_size / 20;
 
@@ -470,29 +468,30 @@ _send_bic_usb_packet(usb_dev* udev, bic_usb_ext_packet *pkt) {
 int
 bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name) {
   int ret = BIC_STATUS_FAILURE;
-  int fd = 0;
+  int fd = -1;
   int file_size = 0;
   uint8_t *buf = NULL;
 
   fd = open_and_get_size(image_file, &file_size);
   if ( fd < 0 ) {
     printf("%s() cannot open the file: %s, fd=%d", __func__, image_file, fd);
-    goto error_exit;
+    return ret;
   }
 
   // allocate memory
   buf = malloc(USB_PKT_EXT_HDR_SIZE + MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
   if ( buf == NULL ) {
     printf("%s() failed to allocate memory\n", __func__);
-    goto error_exit;
+    close(fd);
+    return ret;
   }
 
   uint8_t *file_buf = buf + USB_PKT_EXT_HDR_SIZE;
   size_t write_offset = 0;
   size_t last_offset = 0;
   size_t dsize = file_size / 20;
-
   ssize_t read_bytes = 0;
+
   while (1) {
     // read MAX_FW_PCIE_SWITCH_BLOCK_SIZE
     read_bytes = read(fd, file_buf, MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
@@ -515,7 +514,7 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
 
     int rc = _send_bic_usb_packet(udev, pkt); // send data
     if ( rc < 0 ) {
-      printf("%s() failed to write %d bytes @ %d: %d\n", __func__, read_bytes, write_offset, rc);
+      printf("%s() failed to write %zd bytes @ %zu: %d\n", __func__, read_bytes, write_offset, rc);
       break;
     }
 
@@ -533,9 +532,9 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
     if ( write_offset == file_size ) break;
   }
 
-error_exit:
-  if ( fd > 0 ) close(fd);
-  if ( buf != NULL ) free(buf);
+  close(fd);
+  free(buf);
+
   return ret;
 }
 

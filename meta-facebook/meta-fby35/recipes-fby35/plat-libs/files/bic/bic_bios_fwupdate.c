@@ -25,14 +25,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <time.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
-#include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
 /****************************/
@@ -75,7 +72,7 @@ bic_send:
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
   if ((ret) && (retries--)) {
     sleep(1);
-    printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\
+    printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\
            \n",    slot_id, target, offset, len);
     goto bic_send;
   }
@@ -92,14 +89,14 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
   if (size < BIOS_VER_REGION_SIZE)
     return -1;
 
-  buf = (uint8_t *)malloc(BIOS_VER_REGION_SIZE);
-  if (!buf) {
-    return -1;
-  }
-
   offs = size - BIOS_VER_REGION_SIZE;
   if (lseek(fd, offs, SEEK_SET) != (off_t)offs) {
     syslog(LOG_ERR, "%s: lseek to %d failed", __func__, offs);
+    return -1;
+  }
+
+  buf = (uint8_t *)malloc(BIOS_VER_REGION_SIZE);
+  if (!buf) {
     return -1;
   }
 
@@ -140,7 +137,7 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
 
 // Read checksum of various components
 int
-bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver) {
+bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
   uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
@@ -178,7 +175,7 @@ bic_send:
 #endif
 
   //Ignore IANA ID
-  memcpy(ver, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
+  memcpy(cksum, &rbuf[SIZE_IANA_ID], rlen-SIZE_IANA_ID);
 
   return ret;
 }
@@ -283,9 +280,10 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   struct timeval start, end;
   int ret = -1, rc;
   uint32_t offset, shift_offset = 0;
-  volatile uint16_t count, read_count;
+  volatile uint16_t read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
+  ssize_t count;
   int fd;
   int i;
   int remain = 0;
@@ -361,10 +359,6 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
     // Send data to Bridge-IC
     if (comp == FW_BIOS) {
       shift_offset = 0;
-    } else if ( (comp == FW_BIOS_CAPSULE) || (comp == FW_BIOS_RCVY_CAPSULE) ){
-      shift_offset = BIOS_CAPSULE_OFFSET;
-    } else if ( (comp == FW_CPLD_CAPSULE) || (comp == FW_CPLD_RCVY_CAPSULE) ) {
-      shift_offset = CPLD_CAPSULE_OFFSET;
     }
     rc = _update_fw(slot_id, target, offset + shift_offset, count, buf);
 
@@ -376,18 +370,16 @@ update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
     offset += count;
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(slot_id, 60);
-      printf("\rupdated bios: %d %%", offset/dsize);
+      printf("\rupdated bios: %u %%", offset/dsize);
       fflush(stdout);
       last_offset += dsize;
     }
   }
   printf("\n");
 
-  // if (comp != FW_BIOS_CAPSULE && comp != FW_CPLD_CAPSULE && comp != FW_BIOS_RCVY_CAPSULE && comp != FW_CPLD_RCVY_CAPSULE) {
-  //   _set_fw_update_ongoing(slot_id, 60 * 2);
-  //   if (verify_bios_image(slot_id, fd, st.st_size)) {
-  //     goto error_exit;
-  //   }
+  // _set_fw_update_ongoing(slot_id, 60 * 2);
+  // if (verify_bios_image(slot_id, fd, st.st_size)) {
+  //   goto error_exit;
   // }
 
   gettimeofday(&end, NULL);

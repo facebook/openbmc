@@ -27,12 +27,12 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/file.h>
 #include "bic_vr_fwupdate.h"
 #include "bic_ipmi.h"
+#include "bic_xfer.h"
 
 //#define DEBUG
 

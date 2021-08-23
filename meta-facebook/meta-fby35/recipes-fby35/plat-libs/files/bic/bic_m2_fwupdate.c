@@ -24,16 +24,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <syslog.h>
 #include <errno.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <time.h>
 #include "bic_m2_fwupdate.h"
-#include <openbmc/kv.h>
+#include "bic_ipmi.h"
+#include "bic_xfer.h"
 
 #define MAX_RETRY 5
 
@@ -144,8 +139,8 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
   int addr = CFM0_START;
   int tmp = addr;
   int i = 0;
+  ssize_t read_bytes;
   const uint8_t bytes_per_read = DEV_UPDATE_BATCH_SIZE;
-  uint16_t read_bytes = 0;
   uint32_t offset = 0;
   uint32_t last_offset = 0;
   uint32_t dsize = file_size / 20;
@@ -186,7 +181,6 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
       _set_fw_update_ongoing(slot_id, 60);
       last_offset += dsize;
     }
- 
   }
 
   printf("* Please do the power-cycle to take it affect!\n"); 
@@ -281,8 +275,8 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
 #define DEV_I2C_WRITE_COUNT_MAX 224
 
   int ret = -1;
+  ssize_t count;
   uint32_t offset;
-  volatile uint16_t count;
   uint8_t buf[256] = {0};
 
   printf("updating fw on slot %d device %d:\n", slot_id,comp-FW_2OU_M2_DEV0);
@@ -394,9 +388,9 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(slot_id, 60);
       if (file_size/100 < 100)
-        printf("\rupdated brcm vk: %d %%", offset/dsize*100);
+        printf("\rupdated brcm vk: %u %%", offset/dsize*100);
       else
-        printf("\rupdated brcm vk: %d %%", offset/dsize);
+        printf("\rupdated brcm vk: %u %%", offset/dsize);
       fflush(stdout);
       last_offset += dsize;
     }

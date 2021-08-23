@@ -49,9 +49,6 @@
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
-#define PFR_NICEXP_BUS 9  // NICEXP PFR
-#define PFR_BB_BUS 12     // Baseboard PFR
-#define PFR_MAILBOX_ADDR (0x70)
 #define NUM_SERVER_FRU  4
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
@@ -257,29 +254,6 @@ PCIE_ERR_DECODE pcie_err_tab[] = {
     {0xA1, "SERR (non-AER)"},
     {0xFF, "None"}
 };
-
-err_t minor_auth_error[] = {
-  /*MAJOR_ERROR_BMC_AUTH_FAILED or MAJOR_ERROR_PCH_AUTH_FAILED */
-  {0x01, "MINOR_ERROR_AUTH_ACTIVE"},
-  {0x02, "MINOR_ERROR_AUTH_RECOVERY"},
-  {0x03, "MINOR_ERROR_AUTH_ACTIVE_AND_RECOVERY"},
-  {0x04, "MINOR_ERROR_AUTH_ALL_REGIONS"},
-};
-err_t minor_update_error[] = {
-  /* MAJOR_ERROR_PCH_UPDATE_FAIELD or MAJOR_ERROR_BMC_UPDATE_FAIELD */
-  {0x01, "MINOR_ERROR_INVALID_UPDATE_INTENT"},
-  {0x02, "MINOR_ERROR_FW_UPDATE_INVALID_SVN"},
-  {0x03, "MINOR_ERROR_FW_UPDATE_AUTH_FAILED"},
-  {0x04, "MINOR_ERROR_FW_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
-  {0x05, "MINOR_ERROR_FW_UPDATE_ACTIVE_UPDATE_NOT_ALLOWED"},
-  /* MAJOR_ERROR_CPLD_UPDATE_FAIELD */
-  {0x06, "MINOR_ERROR_CPLD_UPDATE_INVALID_SVN"},
-  {0x07, "MINOR_ERROR_CPLD_UPDATE_AUTH_FAILED"},
-  {0x08, "MINOR_ERROR_CPLD_UPDATE_EXCEEDED_MAX_FAILED_ATTEMPTS"},
-};
-
-size_t minor_auth_size = sizeof(minor_auth_error)/sizeof(err_t);
-size_t minor_update_size = sizeof(minor_update_error)/sizeof(err_t);
 
 static int
 pal_key_index(char *key) {
@@ -1420,7 +1394,7 @@ pal_is_cmd_valid(uint8_t *data)
   uint8_t address = data[1];
 
   // protect slot1,2,3,4 BIC
-  if ( address == 0x40 && bus_num >= 0 && bus_num <= 3) {
+  if (address == 0x40 && bus_num <= 3) {
     return -1;
   }
 
@@ -2246,7 +2220,7 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
 }
 
 int
-pal_get_uart_select_from_kv(uint8_t *pos) {
+pal_get_uart_select_from_kv(uint8_t *uart_select) {
   char value[MAX_VALUE_LEN] = {0};
   uint8_t loc;
   int ret = -1;
@@ -2254,7 +2228,7 @@ pal_get_uart_select_from_kv(uint8_t *pos) {
   ret = kv_get("debug_card_uart_select", value, NULL, 0);
   if (!ret) {
     loc = atoi(value);
-    *pos = loc;
+    *uart_select = loc;
   }
 
   return ret;
@@ -2617,7 +2591,7 @@ pal_set_fan_ctrl (char *ctrl_opt) {
       if(fgets(buf, sizeof(buf), fp) != NULL) {
         printf("Auto Mode:%s",buf);
       }
-      if(fp != NULL) pclose(fp);
+      pclose(fp);
     }
   } else {  // AUTO_MODE or MANUAL_MODE
     if(ctrl_mode == AUTO_MODE) {
@@ -2646,228 +2620,6 @@ pal_set_fan_ctrl (char *ctrl_opt) {
       }
     }
 
-  }
-
-  return ret;
-}
-
-int
-pal_get_pfr_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
-  int ret;
-  uint8_t bmc_location = 0;
-
-  if ((ret = fby35_common_get_bmc_location(&bmc_location))) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;
-  }
-
-  switch (fru) {
-    case FRU_BMC:
-      *bus = (bmc_location == NIC_BMC) ? PFR_NICEXP_BUS : PFR_BB_BUS;
-      *addr = PFR_MAILBOX_ADDR;
-      *bridged = false;
-      break;
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      if ((bmc_location == NIC_BMC) && (fru != FRU_SLOT1)) {
-        ret = -1;
-        break;
-      }
-
-      if ((ret = fby35_common_get_bus_id(fru)) < 0) {
-        syslog(LOG_WARNING, "%s() get bus failed, fru %d\n", __func__, fru);
-        break;
-      }
-
-      *bus = ret + 4;  // I2C_4 ~ I2C_7
-      *addr = PFR_MAILBOX_ADDR;
-      *bridged = false;
-      ret = 0;
-      break;
-    default:
-      ret = -1;
-      break;
-  }
-  return ret;
-}
-
-int
-pal_is_pfr_active(void) {
-  int pfr_active = PFR_NONE;
-  int ifd, retry = 3;
-  uint8_t tbuf[8], rbuf[8];
-  char dev_i2c[16];
-  uint8_t bus, addr;
-  bool bridged;
-
-  if (pal_get_pfr_address(FRU_BMC, &bus, &addr, &bridged)) {
-    return pfr_active;
-  }
-
-  sprintf(dev_i2c, "/dev/i2c-%d", bus);
-  ifd = open(dev_i2c, O_RDWR);
-  if (ifd < 0) {
-    return pfr_active;
-  }
-
-  tbuf[0] = 0x0A;
-  do {
-    if (!i2c_rdwr_msg_transfer(ifd, addr, tbuf, 1, rbuf, 1)) {
-      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
-      break;
-    }
-
-#ifdef DEBUG
-    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
-#endif
-    if (--retry > 0)
-      msleep(20);
-  } while (retry > 0);
-  close(ifd);
-
-  return pfr_active;
-}
-
-int
-pal_is_slot_pfr_active(uint8_t fru) {
-  int pfr_active = PFR_NONE;
-  int ifd, retry = 3;
-  uint8_t tbuf[8], rbuf[8];
-  uint8_t bus, addr;
-  bool bridged;
-
-  if (pal_get_pfr_address(fru, &bus, &addr, &bridged)) {
-    return pfr_active;
-  }
-
-  ifd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if (ifd < 0) {
-    return pfr_active;
-  }
-
-  tbuf[0] = 0x0A;
-  do {
-    if (!i2c_rdwr_msg_transfer(ifd, addr, tbuf, 1, rbuf, 1)) {
-      pfr_active = (rbuf[0] & 0x20) ? PFR_ACTIVE : PFR_UNPROVISIONED;
-      break;
-    }
-
-#ifdef DEBUG
-    syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", 4, tbuf[0]);
-#endif
-    if (--retry > 0)
-      msleep(20);
-  } while (retry > 0);
-  close(ifd);
-
-  return pfr_active;
-}
-
-int
-pal_fw_update_finished(uint8_t fru, const char *comp, int status) {
-  int ret = 0;
-  int ifd, retry = 3;
-  uint8_t buf[16];
-  uint8_t rbuf[16];
-  char dev_i2c[16];
-  uint8_t bus, addr;
-  bool bridged;
-
-  if (pal_get_pfr_address(FRU_BMC, &bus, &addr, &bridged)) {
-    return -1;
-  }
-
-  ret = status;
-  if (ret == 0) {
-    sprintf(dev_i2c, "/dev/i2c-%d", bus);
-    ifd = open(dev_i2c, O_RDWR);
-    if (ifd < 0) {
-      return -1;
-    }
-
-    buf[0] = 0x13;  // BMC update intent
-    if (!strcmp(comp, "bmc")) {
-      buf[1] = UPDATE_BMC_ACTIVE;
-      buf[1] |= UPDATE_AT_RESET;
-    } else if (!strcmp(comp, "pfr_cpld")) {
-      buf[1] = UPDATE_CPLD_ACTIVE;
-    } else {
-      close(ifd);
-      return -1;
-    }
-
-    sync();
-    printf("sending update intent to CPLD...\n");
-    fflush(stdout);
-    sleep(1);
-    do {
-      ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 2, rbuf, 1);
-      if (ret) {
-        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x", addr, buf[0]);
-        if (--retry > 0) {
-          msleep(100);
-        }
-      }
-    } while (ret && retry > 0);
-
-    buf[1] |= rbuf[0];
-
-    do {
-      ret = i2c_rdwr_msg_transfer(ifd, addr, buf, 2, NULL, 0);
-      if (ret) {
-        syslog(LOG_WARNING, "i2c%u xfer failed, cmd: %02x %02x", addr, buf[0], buf[1]);
-        if (--retry > 0) {
-          msleep(100);
-        }
-      }
-    } while (ret && retry > 0);
-    close(ifd);
-  }
-
-  return ret;
-}
-
-int
-pal_get_pfr_update_address(uint8_t fru, uint8_t *bus, uint8_t *addr, bool *bridged) {
-  int ret;
-  uint8_t bmc_location = 0;
-
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-  }
-
-  switch (fru) {
-    case FRU_BB:
-    case FRU_BMC:
-      *bus = (bmc_location == NIC_BMC) ? PFR_NICEXP_BUS : PFR_BB_BUS;
-      *addr = CPLD_UPDATE_ADDR;
-      *bridged = false;
-      break;
-    case FRU_SLOT1:
-    case FRU_SLOT2:
-    case FRU_SLOT3:
-    case FRU_SLOT4:
-      if ((bmc_location == NIC_BMC) && (fru != FRU_SLOT1)) {
-        ret = -1;
-        break;
-      }
-
-      if ((ret = fby35_common_get_bus_id(fru)) < 0) {
-        syslog(LOG_WARNING, "%s() get bus failed, fru %d\n", __func__, fru);
-        break;
-      }
-
-      *bus = ret + 4;  // I2C_4 ~ I2C_7
-      *addr = CPLD_UPDATE_ADDR;
-      *bridged = false;
-      ret = 0;
-      break;
-    default:
-      ret = -1;
-      break;
   }
 
   return ret;
@@ -2917,11 +2669,11 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 
   switch (select) {
     case BYPASS_BIC:
-      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
-      if (tlen < 0) {
+      if (req_len < 6) {
         completion_code = CC_INVALID_LENGTH;
         break;
       }
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
 
       netfn = req_data[1];
       cmd = req_data[2];
@@ -2938,11 +2690,11 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       }
       break;
     case BYPASS_ME:
-      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
-      if (tlen < 0) {
+      if (req_len < 6) {
         completion_code = CC_INVALID_LENGTH;
         break;
       }
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), data[1] (bypass netfn), data[2] (bypass cmd)
 
       netfn = req_data[1];
       cmd = req_data[2];
@@ -2960,11 +2712,11 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
       }
       break;
     case BYPASS_NCSI:
-      tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
-      if (tlen < 0) {
+      if (req_len < 7) {
         completion_code = CC_INVALID_LENGTH;
         break;
       }
+      tlen = req_len - 7; // payload_id, netfn, cmd, data[0] (select), netdev, channel, cmd
 
       netdev = req_data[1];
       channel = req_data[2];
@@ -3002,11 +2754,11 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 
       break;
     case BYPASS_NETWORK:
-      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), netdev, netenable
-      if (tlen != 0) {
+      if (req_len != 6) {
         completion_code = CC_INVALID_LENGTH;
         break;
       }
+      tlen = req_len - 6; // payload_id, netfn, cmd, data[0] (select), netdev, netenable
 
       netdev = req_data[1];
       netenable = req_data[2];
@@ -3038,119 +2790,6 @@ pal_get_nic_fru_id(void)
 }
 
 int
-pal_check_pfr_mailbox(uint8_t fru) {
-  int ret = 0, i2cfd = 0, retry=0, index = 0;
-  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
-  uint8_t tlen = 1, rlen = 1;
-  uint8_t major_err = 0, minor_err = 0;
-  char *major_str = "NA", *minor_str = "NA";
-  char fru_str[32] = {0};
-  uint8_t bus, addr;
-  bool bridged;
-
-  if (pal_get_pfr_address(fru, &bus, &addr, &bridged)) {
-    syslog(LOG_WARNING, "%s() Failed to do pal_get_pfr_address(), FRU%d", __func__, fru);
-    return -1;
-  }
-
-  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
-    return -1;
-  }
-
-  tbuf[0] = MAJOR_ERR_OFFSET;
-  tlen = 1;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      sleep(1);
-    } else {
-      major_err = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  tbuf[0] = MINOR_ERR_OFFSET;
-  tlen = 1;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      sleep(1);
-    } else {
-      minor_err = rbuf[0];
-      break;
-    }
-  }
-
-  if ( i2cfd > 0 ) close(i2cfd);
-
-  if ( (major_err != 0) || (minor_err != 0) ) {
-    if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
-      major_str = "MAJOR_ERROR_BMC_AUTH_FAILED";
-      for (index = 0; index < minor_auth_size; index++) {
-        if (minor_err == minor_auth_error[index].err_id) {
-          minor_str = minor_auth_error[index].err_des;
-          break;
-        }
-      }
-    } else if ( major_err == MAJOR_ERROR_PCH_AUTH_FAILED ) {
-      major_str = "MAJOR_ERROR_PCH_AUTH_FAILED";
-      for (index = 0; index < minor_auth_size; index++) {
-        if (minor_err == minor_auth_error[index].err_id) {
-          minor_str = minor_auth_error[index].err_des;
-          break;
-        }
-      }
-    } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_PCH_FAILED ) {
-      major_str = "MAJOR_ERROR_UPDATE_FROM_PCH_FAILED";
-      for (index = 0; index < minor_update_size; index++) {
-        if (minor_err == minor_update_error[index].err_id) {
-          minor_str = minor_update_error[index].err_des;
-          break;
-        }
-      }
-    } else if ( major_err == MAJOR_ERROR_UPDATE_FROM_BMC_FAILED ) {
-      major_str = "MAJOR_ERROR_UPDATE_FROM_BMC_FAILED";
-      for (index = 0; index < minor_update_size; index++) {
-        if (minor_err == minor_update_error[index].err_id) {
-          minor_str = minor_update_error[index].err_des;
-          break;
-        }
-      }
-    } else {
-      major_str = "unknown major error";
-    }
-
-    switch (fru) {
-      case FRU_BMC:
-        snprintf(fru_str, sizeof(fru_str), "BMC");
-        break;
-      case FRU_SLOT1:
-      case FRU_SLOT2:
-      case FRU_SLOT3:
-      case FRU_SLOT4:
-        snprintf(fru_str, sizeof(fru_str), "FRU: %d", fru);
-        break;
-      default:
-        break;
-    }
-
-    syslog(LOG_CRIT, "%s, PFR - Major error: %s (0x%02X), Minor error: %s (0x%02X)", fru_str, major_str, major_err, minor_str, minor_err);
-    return -1;
-  }
-
-  return 0;
-}
-
-int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t mfg_id[] = {0x9c, 0x9c, 0x00};
@@ -3164,41 +2803,6 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
   }
 
   return 0;
-}
-
-
-int
-set_pfr_i2c_filter(uint8_t slot_id, uint8_t value) {
-  int ret;
-  uint8_t tbuf[2] = {0};
-  uint8_t tlen = 2;
-  char path[128];
-  int i2cfd = 0, retry=0;
-
-  snprintf(path, sizeof(path), "/dev/i2c-%d", (slot_id + SLOT_BUS_BASE));
-  i2cfd = open(path, O_RDWR);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %s", __func__, path);
-    return -1;
-  }
-  retry = 0;
-  tbuf[0] = PFR_I2C_FILTER_OFFSET;
-  tbuf[1] = value;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      break;
-    }
-  }
-  if ( i2cfd > 0 ) close(i2cfd);
-
-  if ( retry == RETRY_TIME ) return -1;
-
-  return 0;
-
 }
 
 int
@@ -3318,63 +2922,6 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   return ret;
 }
 
-int pal_set_bios_cap_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  int i2cfd = 0, ret = 0;
-  uint8_t status;
-  uint8_t bus;
-  uint8_t retry = 0;
-  uint32_t ver_reg = BIOS_CAP_STAG_MAILBOX;
-  uint8_t tbuf[18] = {0};
-  uint8_t tlen = BIOS_CAP_VER_LEN;
-
-  ret = fby35_common_check_slot_id(slot);
-  if (ret < 0 ) {
-    ret = PAL_ENOTSUP;
-    goto error_exit;
-  }
-
-  ret = pal_is_fru_prsnt(slot, &status);
-  if ( ret < 0 || status == 0 ) {
-    ret = PAL_ENOTREADY;
-    goto error_exit;
-  }
-
-  ret = fby35_common_get_bus_id(slot) + 4;
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, slot);
-    goto error_exit;
-  }
-
-  bus = (uint8_t)ret;
-  i2cfd = i2c_cdev_slave_open(bus, CPLD_INTENT_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0) {
-    printf("Failed to open bus %d. Err: %s\n", bus, strerror(errno));
-    goto error_exit;
-  }
-
-  memcpy(tbuf, (uint8_t *)&ver_reg, 1);
-  memcpy(&tbuf[1], req_data, tlen);
-  tlen = tlen + 1;
-
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_INTENT_CTRL_ADDR, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      sleep(1);
-    } else {
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-error_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
-  *res_len = 0;
-  return ret;
-}
-
 int
 pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
   int ret, i2cfd;
@@ -3480,12 +3027,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
         goto not_support;
       }
       break;
-    case FW_BIOS_CAPSULE:
-    case FW_CPLD_CAPSULE:
-    case FW_BIOS_RCVY_CAPSULE:
-    case FW_CPLD_RCVY_CAPSULE:
-      // TODO
-      goto not_support;
     default:
       if (target >= FW_COMPONENT_LAST_ID)
         goto not_support;
@@ -3876,17 +3417,18 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     }
   };
 
+  if (res_len == NULL) {
+    syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *res_len", __func__);
+    return CC_INVALID_PARAM;
+  }
   *res_len = 0;
+
   if (req_data == NULL) {
     syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *req_data", __func__);
     return CC_INVALID_PARAM;
   }
   if (res_data == NULL) {
     syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *res_data", __func__);
-    return CC_INVALID_PARAM;
-  }
-  if (res_len == NULL) {
-    syslog(LOG_ERR, "%s(): IPMI request failed due to NULL parameter: *res_len", __func__);
     return CC_INVALID_PARAM;
   }
 
@@ -3917,10 +3459,7 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     *res_len = strlen(buf);
     strncpy((char*)res_data, buf, MAX_FW_VER_LEN);
   }
-
-  if (fp != NULL) {
-    pclose(fp);
-  }
+  pclose(fp);
 
   return CC_SUCCESS;
 }

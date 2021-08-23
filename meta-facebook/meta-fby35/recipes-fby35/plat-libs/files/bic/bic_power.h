@@ -21,8 +21,6 @@
 #ifndef __BIC_POWER_H__
 #define __BIC_POWER_H__
 
-#include "bic_xfer.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

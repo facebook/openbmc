@@ -24,13 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <syslog.h>
-#include <errno.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include "bic_power.h"
+#include "bic_xfer.h"
 
 //The value of power button to CPLD
 #define POWER_BTN_HIGH 0x3

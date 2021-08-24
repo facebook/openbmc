@@ -58,7 +58,77 @@ check_por_config() {
   fi
 }
 
+function init_4u_gpv3_bic() {
+  GPV3_PRESENT=$(/usr/sbin/i2cget -y 4 0x50 0x04)
+
+  if [ $((GPV3_PRESENT & 0x03)) -eq 0 ]; then
+    retry=3
+
+    while [ $retry -gt 0 ]; do
+      res=$(/usr/bin/bic-util slot1 2U-top 0xe0 0x70 0x9c 0x9c 0x0 0x1 0x0)
+
+      if [[ ${res:0:8} == "9C 9C 00" ]]; then
+        logger "Init top gpv3 position"
+        break
+      else
+        retry=$((retry - 1))
+        sleep 1
+      fi
+    done
+
+    if [ $retry -eq 0 ]; then
+      logger "Fail to init top gpv3 position"
+    fi
+  fi
+
+  if [ $((GPV3_PRESENT & 0x0C)) -eq 0 ]; then
+    retry=3
+
+    while [ $retry -gt 0 ]; do
+      res=$(/usr/bin/bic-util slot1 2U-bot 0xe0 0x70 0x9c 0x9c 0x0 0x1 0x1)
+
+      if [[ ${res:0:8} == "9C 9C 00" ]]; then
+        logger "Init bot gpv3 position"
+        break
+      else
+        retry=$((retry - 1))
+        sleep 1
+      fi
+    done
+
+    if [ $retry -eq 0 ]; then
+      logger "Fail to init bot gpv3 position"
+    fi
+  fi
+}
+
+function init_2u_gpv3_bic() {
+  retry=3
+  while [ $retry -gt 0 ]; do
+    res=$(/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x70 0x9c 0x9c 0x0 0x1 0xff)
+
+    if [[ ${res:0:29} == "9C 9C 00 15 E4 70 00 9C 9C 00" ]]; then
+      logger "Init gpv3 position"
+      break
+    else
+      retry=$((retry - 1))
+      sleep 1
+    fi
+  done
+
+  if [ $retry -eq 0 ]; then
+    logger "Fail to init gpv3 position"
+  fi
+}
+
 function init_class2_server() {
+  EXP_BOARD_TYPE=$(get_2ou_board_type 4)
+  if [ $EXP_BOARD_TYPE == "0x04" ]; then
+    init_4u_gpv3_bic
+  elif [ $EXP_BOARD_TYPE == "0x00" ] || [ $EXP_BOARD_TYPE == "0x03" ]; then
+    init_2u_gpv3_bic
+  fi
+
   if [ $(is_bmc_por) -eq 1 ]; then
     devmem_clear_bit $(scu_addr 9c) 17
 

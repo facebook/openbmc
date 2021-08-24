@@ -15,12 +15,12 @@ MACHINE_METAS="\
 FORCE="[FORCE]"
 INFO="       "
 
-# Branches not named 'master' or 'helium' are likely PRs but might not have
+# Branches not named 'main' or 'helium' are likely PRs but might not have
 # the CIRCLE_PULL_REQUEST set yet.  This happens in some private repositories
 # where developers commit as named branches and then issue pull requests.
 #
-# Assume any branch name not 'master' or 'helium' is going to be a PR.
-if [ "x${CIRCLE_BRANCH}" == "xmaster" -o \
+# Assume any branch name not 'main' or 'helium' is going to be a PR.
+if [ "x${CIRCLE_BRANCH}" == "xmain" -o \
      "x${CIRCLE_BRANCH}" == "xhelium" ]; then
     # Non-PR builds do not have CIRCLE_PULL_REQUEST set.  If not set, then
     # force a full build.
@@ -37,11 +37,11 @@ fi
 # Then we ran rest of CLI as root: runuser -m usersetup -c [command]
 # If/else condition is added to avoid git permission error in above situation
 if [ $# -eq 0 ]; then
-  ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)"
+  ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/main)"
   # Get all modified files for this commit.
   ALL_MODIFIED_FILES=$(git diff --name-only "$ORIGIN_COMMIT" --)
 else
-  ORIGIN_COMMIT="$(sudo git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)"
+  ORIGIN_COMMIT="$(sudo git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/main)"
   # Get all modified files for this commit.
   ALL_MODIFIED_FILES=$(sudo git diff --name-only "$ORIGIN_COMMIT" --)
 fi

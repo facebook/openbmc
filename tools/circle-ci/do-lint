@@ -55,7 +55,7 @@ is_c_family_file() {
   fi
 }
 
-ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/master)"
+ORIGIN_COMMIT="$(git merge-base HEAD origin/helium 2>/dev/null || git merge-base HEAD origin/main)"
 
 MODIFIED_FILES="$(git diff --diff-filter=d --name-only "$ORIGIN_COMMIT" --)"
 

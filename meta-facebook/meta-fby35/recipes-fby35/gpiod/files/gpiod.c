@@ -68,12 +68,12 @@ pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
 #define SET_BIT(list, index, bit) \
            if ( bit == 0 ) {      \
              (((uint8_t*)&list)[index/8]) &= ~(0x1 << (7-(index % 8))); \
-           } else {                                                 \
+           } else {                                                     \
              (((uint8_t*)&list)[index/8]) |= 0x1 << (7-(index % 8));    \
-           }                                                        \
+           }
 
 #define GET_BIT(list, index) \
-           ((((uint8_t*)&list)[index/8]) >> (7 - (index % 8))) & 0x1\
+           (((((uint8_t*)&list)[index/8]) >> (7-(index % 8))) & 0x1)
 
 bic_gpio_t gpio_ass_val = {
   .gpio[0] = 0,
@@ -102,7 +102,7 @@ char *host_key[] = {"fru1_host_ready",
                     "fru3_host_ready",
                     "fru4_host_ready"};
 
-static inline void set_pwrgd_cpu_flag(uint8_t fru, bool val){
+static inline void set_pwrgd_cpu_flag(uint8_t fru, bool val) {
   pthread_mutex_lock(&pwrgd_cpu_mutex[fru-1]);
   is_pwrgd_cpu_chagned[fru-1] = val;
   pthread_mutex_unlock(&pwrgd_cpu_mutex[fru-1]);
@@ -638,7 +638,8 @@ gpio_monitor_poll(void *ptr) {
     //check PWRGD_CPU_LVC3 is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) && 
          (GET_BIT(n_pin_val, PWRGD_CPU_LVC3) != GET_BIT(o_pin_val, PWRGD_CPU_LVC3))) {
-      set_pwrgd_cpu_flag(fru, true);  
+      rst_timer(fru);
+      set_pwrgd_cpu_flag(fru, true);
       //update the value since the bit is not monitored
       SET_BIT(o_pin_val, PWRGD_CPU_LVC3, GET_BIT(n_pin_val, PWRGD_CPU_LVC3));
     }
@@ -821,6 +822,7 @@ host_pwr_mon() {
       //delay to change the power mode of NIC
       if ( is_util_run_flag > 0 || access(SET_NIC_PWR_MODE_LOCK, F_OK) == 0) {
         retry = 0;
+        usleep(DELAY_GPIOD_READ);
         continue;
       }
 

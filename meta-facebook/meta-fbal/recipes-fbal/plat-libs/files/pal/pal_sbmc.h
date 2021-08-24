@@ -15,6 +15,8 @@ int cmd_mb1_bridge_to_ep(uint8_t ipmi_cmd, uint8_t ipmi_netfn,
 int cmd_mb1_set_cc_reset(uint8_t t_bmc_addr);
 
 int cmd_smbc_me_entry_recovery_mode(uint8_t t_bmc_addr);
+int cmd_mb_set_fscd (uint8_t t_bmc_addr, uint8_t setting);
+int cmd_mb_set_fw_update_ongoing (uint8_t t_bmc_addr, uint8_t fruid, uint16_t timeout);
 
 #endif
 

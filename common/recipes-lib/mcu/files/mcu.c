@@ -245,7 +245,10 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
     printf("start ipmbd_%d -u...\n", bus);
     sleep(2);
 
-    mcu_enable_update(bus, addr);
+    if (mcu_enable_update(bus, addr)) {
+      syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed!\n", bus, addr);
+      goto error_exit;
+    }
 
     // Kill ipmbd "--enable-bic-update" for this slot
     snprintf(cmd, sizeof(cmd), "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus);

@@ -171,7 +171,7 @@ cmd_mb0_set_cc_reset(uint8_t t_bmc_addr) {
 
 //Send Master ME to recovery mode from slave
 int
-cmd_smbc_me_entry_recovery_mode(uint8_t t_bmc_addr) {
+cmd_smbc_me_entry_recovery_mode (uint8_t t_bmc_addr) {
   uint8_t cmd = CMD_OEM_BYPASS_CMD;
   uint8_t netfn = NETFN_OEM_REQ;
   uint8_t tlen;
@@ -189,4 +189,37 @@ cmd_smbc_me_entry_recovery_mode(uint8_t t_bmc_addr) {
 
   tlen = 7;
   return bmc_ipmb_swap_info_process(cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
+}
+
+int cmd_mb_set_fscd (uint8_t t_bmc_addr, uint8_t setting)
+{
+  uint8_t ipmi_cmd = CMD_OEM_SET_FSCD;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  uint8_t tlen;
+
+  tbuf[0] = setting;
+  tlen = 1;
+
+  return bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
+}
+
+int cmd_mb_set_fw_update_ongoing (uint8_t t_bmc_addr, uint8_t fruid, uint16_t timeout)
+{
+  uint8_t ipmi_cmd = CMD_OEM_SET_FW_UPDATE_STATE;
+  uint8_t netfn = NETFN_OEM_REQ;
+  uint8_t tbuf[8];
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  uint8_t tlen;
+
+  tbuf[0] = fruid;
+  tbuf[1] = timeout >> 8;
+  tbuf[2] = timeout & 0x00FF;
+  tlen = 3;
+
+  return bmc_ipmb_swap_info_process(ipmi_cmd, netfn, t_bmc_addr, tbuf, tlen, rbuf, &rlen);
+
 }

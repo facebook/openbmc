@@ -3520,7 +3520,7 @@ oem_set_fscd(unsigned char *request, unsigned char req_len,
   switch (data)
   {
     case 0x00:
-      sprintf(cmd, "sv stop fscd");
+      sprintf(cmd, "sv force-stop fscd");
       break;
     case 0x01:
       sprintf(cmd, "sv start fscd");

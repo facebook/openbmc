@@ -54,6 +54,9 @@ def board_callout(callout="None", **kwargs):
     if "read_power" in callout:
         return bmc_read_power()
     elif "init_fans" in callout:
+        CM_FRU_ID = 2
+        if lpal_hndl.pal_is_fw_update_ongoing(CM_FRU_ID):
+            return 0
         boost = 100  # define a boost for the platform or respect fscd override
         if "boost" in kwargs:
             boost = kwargs["boost"]

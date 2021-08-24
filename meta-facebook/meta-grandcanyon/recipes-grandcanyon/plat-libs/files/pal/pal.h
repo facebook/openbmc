@@ -408,6 +408,7 @@ enum DEV_ACTION {
   SET_DEV_POWER = 0x1,
   GET_DEV_LED   = 0x2,
   SET_DEV_LED   = 0x3,
+  GET_DEV_PRESENT = 0x4,
 };
 
 enum DEV_LED_STATUS {

@@ -10614,9 +10614,9 @@ uint8_t save_psb_config_info_to_kvstore(uint8_t slot, uint8_t* req_data, uint8_t
   uint8_t completion_code = CC_UNSPECIFIED_ERROR;
 
   snprintf(key,MAX_KEY_LEN, PSB_CONFIG_RAW, slot);
-  kv_set(key, (const char*)req_data, req_len, 0);
-
-  completion_code = CC_SUCCESS;
+  if (kv_set(key, (const char*)req_data, req_len, 0) == 0) {
+    completion_code = CC_SUCCESS;
+  }
   return completion_code;
 }
 

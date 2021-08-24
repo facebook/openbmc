@@ -695,7 +695,7 @@ pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
     if (pal_is_cwc() == PAL_EOK) {
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
     } else {
-      *caps = 0;  
+      *caps = 0;
     }
   } else {
     *caps = 0;
@@ -851,7 +851,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_2U_BOT:
       if (board_type == CWC_MCHP_BOARD) {
         if ((val = bic_is_2u_top_bot_prsnt(FRU_SLOT1)) > 0) {
-          if ((fru == FRU_2U_TOP && (val & PRESENT_2U_TOP)) || 
+          if ((fru == FRU_2U_TOP && (val & PRESENT_2U_TOP)) ||
               (fru == FRU_2U_BOT && (val & PRESENT_2U_BOT))) {
             *status = 1;
           } else {
@@ -1038,7 +1038,7 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     break;
   case FRU_2U_BOT:
     sprintf(fname, "slot1_dev%d", BOARD_2OU_BOT);
-    break;  
+    break;
   default:
     syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
     ret = PAL_ENOTSUP;
@@ -1103,7 +1103,7 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
 
       /**
        * Do not write vendor fru
-       */ 
+       */
       printf("Fru write to this device is not supported\n");
     } else if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
       return bic_write_fruid(fru, 1, path, NONE_INTF);
@@ -3028,10 +3028,12 @@ pal_set_fan_ctrl (char *ctrl_opt) {
       return -1;
     }
 
-    // notify the other BMC except for getting fan mode
-    if ( ctrl_mode != GET_FAN_MODE && (bic_notify_fan_mode(ctrl_mode) < 0) ) {
-      syslog(LOG_WARNING, "%s() Failed to call bic_notify_fan_mode. ctrl_mode=%02X", __func__, ctrl_mode);
-      return -1;
+    if (pal_is_cwc() != PAL_EOK) {
+      // notify the other BMC except for getting fan mode
+      if ( ctrl_mode != GET_FAN_MODE && (bic_notify_fan_mode(ctrl_mode) < 0) ) {
+        syslog(LOG_WARNING, "%s() Failed to call bic_notify_fan_mode. ctrl_mode=%02X", __func__, ctrl_mode);
+        return -1;
+      }
     }
   }
 
@@ -4523,7 +4525,7 @@ int pal_is_cwc(void) {
       }
     }
   }
-  
+
   return board_type == CWC_MCHP_BOARD ? PAL_EOK : PAL_ENOTSUP;
 }
 

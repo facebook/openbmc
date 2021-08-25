@@ -46,7 +46,7 @@ class BmcFpgaComponent : public Component {
     altera_max10_attr_t attr;
     bool is_valid_image(string image, bool force);
     int create_update_image(string image, string update_image);
-    int update_fpga(string image);
+    int update_fpga(string image, string update_image);
     int update_wrapper(string image, bool force);
     int get_ver_str(string& s);
   public:

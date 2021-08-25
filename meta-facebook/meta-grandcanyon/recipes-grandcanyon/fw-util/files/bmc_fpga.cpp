@@ -160,7 +160,7 @@ end:
   return ret;
 }
 
-int BmcFpgaComponent::update_fpga(string image)
+int BmcFpgaComponent::update_fpga(string image, string update_image)
 {
   int ret = 0;
   char key[32] = {0};
@@ -173,7 +173,7 @@ int BmcFpgaComponent::update_fpga(string image)
     cout << "Cannot open i2c!" << endl;
     ret = FW_STATUS_FAILURE;
   } else {
-    ret = cpld_program((char *)image.c_str(), key, false);
+    ret = cpld_program((char *)update_image.c_str(), key, false);
     cpld_intf_close(INTF_I2C);
     if ( ret < 0 ) {
       cout << "Error Occur at updating FPGA FW!" << endl;
@@ -181,7 +181,7 @@ int BmcFpgaComponent::update_fpga(string image)
   }
 
   syslog(LOG_CRIT, "Updated %s FPGA. File: %s. Result: %s", fru_name.c_str(), image.c_str(), (ret < 0) ? "Fail" : "Success");
-  remove(image.c_str());
+  remove(update_image.c_str());
 
   return ret;
 }
@@ -198,7 +198,7 @@ int BmcFpgaComponent::update_wrapper(string image, bool force)
     return FW_STATUS_FAILURE;
   }
 
-  return update_fpga(update_image);
+  return update_fpga(image, update_image);
 }
 
 int BmcFpgaComponent::update(string image)

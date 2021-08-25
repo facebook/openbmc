@@ -5,6 +5,7 @@ import typing as t
 from json.decoder import JSONDecodeError
 from shutil import which
 
+import aggregate_sensor as libag
 import pal
 import sdr
 from common_utils import async_exec
@@ -105,7 +106,6 @@ def get_sensor_details_using_libpal_helper(
             all_sensor_details += get_sensor_details_using_libpal(fru, sensor_units)
     else:
         all_sensor_details = get_sensor_details_using_libpal(fru_name, sensor_units)
-
     return all_sensor_details
 
 
@@ -160,6 +160,37 @@ def get_older_fboss_sensor_details(
 
     sensors.cleanup()
     return sensor_details_list
+
+
+def get_aggregate_sensors() -> t.List[SensorDetails]:
+    """This method helps us get aggregate sensors like
+    SYSTEM_AIRFLOW that we can't get using libpal and sensors.py"""
+    libag.aggregate_sensor_init()
+    as_size = libag.aggregate_sensor_count()
+    ag_sensors_list = []  # type: t.List[SensorDetails]
+    for i in range(as_size):
+        try:
+            sensor_name = libag.aggregate_sensor_name(i)
+        except libag.LibAggregateError:
+            # If we can't get the sensor_name, we don't
+            # populate this sensor. Move to next iteration
+            continue
+        try:
+            reading = libag.aggregate_sensor_read(i)
+        except libag.LibAggregateError:
+            reading = SAD_SENSOR  # so we know its unhealthy sensor
+        sensor_details = SensorDetails(
+            sensor_name="Chassis/Chassis/" + sensor_name,
+            sensor_number=0,  # set default to 0
+            fru_name="Chassis",
+            reading=int(reading),
+            sensor_thresh=None,  # set to default
+            sensor_unit=None,  # set to default
+            sensor_history=None,  # set to default
+            ucr_thresh=0,  # set to default
+        )
+        ag_sensors_list.append(sensor_details)
+    return ag_sensors_list
 
 
 FruInfo = t.NamedTuple(

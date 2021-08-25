@@ -158,7 +158,7 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
 RDEPENDS_${PN}_class-target += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
                   'python3-psutil', 'sensors-py', d)}"
 
-RDEPENDS_${PN}_class-target =+ 'libpal libsdr'
+RDEPENDS_${PN}_class-target =+ 'libpal libsdr libaggregate-sensor'
 pkgdir = "rest-api"
 
 

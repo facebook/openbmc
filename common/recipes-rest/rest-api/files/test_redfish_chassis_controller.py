@@ -8,6 +8,7 @@ import unittest
 sys.modules["pal"] = types.ModuleType("pal")
 sys.modules["sdr"] = types.ModuleType("sdr")
 sys.modules["sensors"] = types.ModuleType("sensors")
+sys.modules["aggregate_sensor"] = types.ModuleType("aggregate_sensor")
 
 import aiohttp.web
 import pal
@@ -113,6 +114,10 @@ class TestChassisService(AioHTTPTestCase):
                 "redfish_chassis_helper.get_fru_info",
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
+            ),
+            unittest.mock.patch(
+                "redfish_chassis_helper.get_aggregate_sensors",
+                return_value=[],
             ),
         ]
 

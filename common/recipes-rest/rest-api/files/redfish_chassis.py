@@ -79,6 +79,8 @@ class RedfishChassis:
             fan_sensors = redfish_chassis_helper.get_older_fboss_sensor_details(
                 "BMC", redfish_chassis_helper.LIB_SENSOR_FAN
             )
+        # Get aggregate sensors and add at the end of fan sensors list
+        fan_sensors.extend(redfish_chassis_helper.get_aggregate_sensors())
 
         redundancy_list = []
         temperature_sensors_json = make_temperature_sensors_json_body(
@@ -259,18 +261,21 @@ def make_power_sensors_json_body(
             avg_interval_watts = round(_sensor_history.avg_intv_consumed, 2)
             limit_in_watts = round(sensor_threshold.ucr_thresh, 2)
         else:  # for older fboss platforms or unhealthy sensors
-            if power_sensor.reading == redfish_chassis_helper.SAD_SENSOR:
-                watts_reading = 0
-            else:
-                watts_reading = power_sensor.reading
+            pw_reading = power_sensor.reading
+            if pw_reading == redfish_chassis_helper.SAD_SENSOR or pw_reading < 0:
+                pw_reading = 0
 
-            min_interval_watts = watts_reading
-            max_interval_watts = watts_reading
-            avg_interval_watts = watts_reading
+            min_interval_watts = pw_reading
+            max_interval_watts = pw_reading
+            avg_interval_watts = pw_reading
             limit_in_watts = power_sensor.ucr_thresh  # if its a platform
             # that supports libpal and has an unhealthy sensor, ucr_thresh will
             # be defaulted to 0. Otherwise, we will get an actual value if
             # its an healthy sensor i.e. on older fboss platforms.
+            if limit_in_watts < 0:
+                # Redfish schema doesn't allow values < 0 for limit_in_watts.
+                # So, if its a negative, default it to 0.
+                limit_in_watts = 0
 
         # in case of a bad reading value, update status
         if power_sensor.reading == redfish_chassis_helper.SAD_SENSOR:

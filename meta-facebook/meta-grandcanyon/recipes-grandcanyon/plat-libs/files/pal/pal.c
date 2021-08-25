@@ -3471,7 +3471,9 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
     }
   } else if (i2c_bus == I2C_T5E1S0_T7IOC_BUS) {
     // Check IOCM IOC present
-    return is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER);
+    if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
+      return false;
+    }
   } else {
     syslog(LOG_WARNING, "%s() Failed to check IOC is ready due to unknown i2c bus: %d", __func__, i2c_bus);
     return false;

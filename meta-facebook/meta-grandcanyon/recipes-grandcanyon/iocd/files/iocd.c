@@ -633,6 +633,11 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
     return -1;
   }
 
+  if (iocd_config.check_pec == false) {
+    syslog(LOG_WARNING, "%s(): Failed to get %s IOC firmware version because IOC firmware is not ready.", __func__, iocd_config.fru_name);
+    return -1;
+  }
+
   pthread_mutex_lock(&m_ioc);
 
   if (vdm_reset(slave_addr) < 0) {

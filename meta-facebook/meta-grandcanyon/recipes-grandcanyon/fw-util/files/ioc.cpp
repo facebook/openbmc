@@ -31,7 +31,7 @@ int IOCComponent :: print_version()
   transform(fru_name.begin(), fru_name.end(), fru_name.begin(), ::toupper);
 
   if (pal_is_ioc_ready(i2c_bus) == false) {
-    printf("Error in getting the version of %s IOC\n", fru_name.c_str());
+    printf("%s IOC firmware is not ready\n", fru_name.c_str());
     return FW_STATUS_FAILURE;
   }
 
@@ -42,6 +42,7 @@ int IOCComponent :: print_version()
     printf("%s IOC Version: %d.%d%d%d.%02d-0000\n", fru_name.c_str(), ver[7], ver[6], ver[5], ver[4], ver[0]);
   } else {
     printf("Error in getting the version of %s IOC\n", fru_name.c_str());
+    printf("Please check /var/log/messages\n");
   }
 
   return ret;

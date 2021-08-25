@@ -23,7 +23,9 @@ import functools
 import json
 import os
 import os.path
+import psutil
 import re
+import threading
 import typing as t
 from shlex import quote
 from subprocess import PIPE, Popen, check_output, CalledProcessError
@@ -38,6 +40,19 @@ from node import node
 from vboot import get_vboot_status
 
 PROC_MTD_PATH = "/proc/mtd"
+CPU_PCT = psutil.cpu_times_percent()  # type: psutil._pslinux.scputimes
+
+
+def update_cpu_pct_counter():
+    global CPU_PCT
+    while True:
+        CPU_PCT = psutil.cpu_times_percent(interval=60)
+
+
+percent_updater = threading.Thread(target=update_cpu_pct_counter)
+percent_updater.daemon = True
+percent_updater.start()
+
 
 # Read all contents of file path specified
 def read_file_contents(path):
@@ -294,21 +309,32 @@ class bmcNode(node):
         # Pull load average directory from proc instead of processing it from
         # the contents of uptime command output later.
         load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
+        cpu_usage = "CPU:  {usr_pct:.0f}% usr  {sys_pct:.0f}% sys   {nice_pct:.0f}% nic   {idle_pct:.0f}% idle   {iowait_pct:.0f}% io   {irq_pct:.0f}% irq   {sirq_pct:.0f}% sirq".format(  # noqa: B950
+            usr_pct=CPU_PCT.user,
+            sys_pct=CPU_PCT.system,
+            nice_pct=CPU_PCT.nice,
+            idle_pct=CPU_PCT.idle,
+            iowait_pct=CPU_PCT.iowait,
+            irq_pct=CPU_PCT.irq,
+            sirq_pct=CPU_PCT.softirq,
+        )
+        memory_info = self.getMemInfo()
 
-        # Get Usage information
-        _, stdout, _ = await async_exec(["top", "-b", "n1"])
-        adata = stdout.split("\n")
-        mem_usage = adata[0]
-        cpu_usage = adata[1]
-
-        memory = self.getMemInfo()
+        # Mem: 175404K used, 260324K free, 21436K shrd, 0K buff, 112420K cached
+        mem_usage = "Mem: {used_mem}K used, {free_mem}K free, {shared_mem}K shrd, {buffer_mem}K buff, {cached_mem}K cached".format(  # noqa: B950
+            used_mem=memory_info["MemTotal"] - memory_info["MemFree"],
+            free_mem=memory_info["MemFree"],
+            shared_mem=memory_info["Shmem"],
+            buffer_mem=memory_info["Buffers"],
+            cached_mem=memory_info["Cached"],
+        )
 
         # Get OpenBMC version
         obc_version = ""
-        _, stdout, _ = await async_exec(["cat", "/etc/issue"])
-
+        with open("/etc/issue") as f:
+            raw_version_str = f.read()
         # OpenBMC Version
-        ver = re.search(r"[v|V]([\w\d._-]*)\s", stdout)
+        ver = re.search(r"[v|V]([\w\d._-]*)\s", raw_version_str)
         if ver:
             obc_version = ver.group(1)
 
@@ -356,7 +382,7 @@ class bmcNode(node):
             # more pass-through proxy
             "uptime": uptime_seconds,
             "Memory Usage": mem_usage,
-            "memory": memory,
+            "memory": memory_info,
             "CPU Usage": cpu_usage,
             "OpenBMC Version": obc_version,
             "u-boot version": uboot_version,

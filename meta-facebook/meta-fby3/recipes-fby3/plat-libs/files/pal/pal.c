@@ -96,6 +96,8 @@ const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
 #define ENABLE_STR "enable"
 #define DISABLE_STR "disable"
 #define STATUS_STR "status"
+#define WAKEUP_STR "wakeup"
+#define SLEEP_STR  "sleep"
 #define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
 #define FAN_MODE_STR_LEN 8 // include the string terminal
 
@@ -550,24 +552,105 @@ error_exit:
   return ret;
 }
 
-bool
-pal_is_fw_update_ongoing(uint8_t fruid) {
-  char key[MAX_KEY_LEN];
-  char value[MAX_VALUE_LEN] = {0};
-  int ret;
+int
+pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
+  char key[64] = {0};
+  char value[64] = {0};
   struct timespec ts;
+  static uint8_t bmc_location = 0;
+  static bool is_called = false;
 
-  sprintf(key, "fru%d_fwupd", fruid);
-  ret = kv_get(key, value, NULL, 0);
-  if (ret < 0) {
-     return false;
+  // get the location
+  if ( (bmc_location == 0) && (fby3_common_get_bmc_location(&bmc_location) < 0) ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return PAL_ENOTSUP;
   }
 
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) > ts.tv_sec)
-     return true;
+  if ( is_called == true ) return PAL_EOK;
 
-  return false;
+  // postprocess function
+  // the destructor in fw-util(system.cpp) will call set_update_ongoing twice
+  // add the flag to avoid running it again
+  if ( tmout == 0 ) {
+    if ( bmc_location == NIC_BMC ) {
+      sleep(3);
+    }
+    is_called = true;
+  }
+
+  // set fw_update_ongoing flag
+  sprintf(key, "fru%d_fwupd", fruid);
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  // preprocess function
+  if ( (bmc_location == NIC_BMC) && (tmout > 0) ) {
+    // when fw_update_ongoing is set, need to wait for a while
+    // make sure all daemons go into pal_is_fw_update_ongoing
+    sleep(5);
+  }
+
+  // set pwr_lock_flag to prevent unexpected power control
+  if ( (bmc_location == NIC_BMC) && \
+       (bic_set_crit_act_flag((tmout > 0)?SEL_ASSERT:SEL_DEASSERT) < 0) ) {
+    printf("Failed to set power lock, dir_type = %s\n", (tmout > 0)?"ASSERT":"DEASSERT");
+    return PAL_ENOTSUP;
+  }
+
+  return PAL_EOK;
+}
+
+bool
+pal_get_crit_act_status(int fd) {
+#define SB_CPLD_PWR_LOCK_REGISTER 0x10
+  int ret = PAL_EOK;
+  uint8_t tbuf = SB_CPLD_PWR_LOCK_REGISTER;
+  uint8_t rbuf = 0x0;
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+  uint8_t retry = MAX_READ_RETRY;
+
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, &tbuf, tlen, &rbuf, rlen);
+    if ( ret < 0 ) msleep(100);
+    else break;
+  } while( retry-- > 0 );
+
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do I2C Rd/Wr, something went wrong?", __func__);
+    rbuf = 1; // If something went wrong, don't lock the power or users can't run sled-cycle
+  }
+
+  return (rbuf == 0); // rbuf == 0 means power lock flag is asserted;
+}
+
+// for class 2 only
+bool
+pal_is_fan_manual_mode(uint8_t slot_id) {
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = kv_get("fan_manual", value, NULL, 0);
+
+  if (ret < 0) {
+    // return false because there is no critical activity in progress
+    if (errno == ENOENT) {
+      return false;
+    }
+
+    syslog(LOG_WARNING, "%s() Cannot get fan_manual", __func__);
+    return true;
+  }
+
+  return (strncmp(value, "1", 1) == 0)?true:false;
+}
+
+bool
+pal_is_fw_update_ongoing(uint8_t fruid) {
+  return bic_is_fw_update_ongoing(fruid);
 }
 
 int
@@ -2063,23 +2146,15 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_SLOT_PRSNT     = 0x11,
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
-    SYS_FAN_SERVICE    = 0x14,
-    SYS_BB_FW_EVENT    = 0x15,
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
-    SYS_ACK_SEL           = 0x18,
-    SYS_SLED_PWR_CTRL     = 0x60,
     E1S_1OU_M2_PRESENT    = 0x80,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
-  char fan_mode_str[FAN_MODE_STR_LEN] = {0};
-  char component_str[MAX_COMPONENT_LEN] = {0};
-  char val[MAX_PWR_LOCK_STR] = {0};
   uint8_t type_2ou = UNKNOWN_BOARD;
-  struct timespec ts;
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -2144,33 +2219,6 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       pal_get_2ou_vr_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "2OU VR fault");
       break;
-    case SYS_FAN_SERVICE:
-      if (event_data[2] == FAN_MANUAL_MODE) {
-        snprintf(fan_mode_str, sizeof(fan_mode_str), "manual");
-      } else {
-        snprintf(fan_mode_str, sizeof(fan_mode_str), "auto");
-      }
-      if ((event_data[1] == FRU_SLOT1) || (event_data[1] == FRU_SLOT3)) {
-        snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by slot%d", fan_mode_str, event_data[1]);
-      } else {
-        snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by unknown slot", fan_mode_str);
-      }
-
-      strcat(error_log, log_msg);
-      break;
-    case SYS_BB_FW_EVENT:
-      if (event_data[1] == FW_BB_BIC) {
-        strncpy(component_str, "BIC", sizeof(component_str));
-      } else if (event_data[1] == FW_BB_BIC_BOOTLOADER) {
-        strncpy(component_str, "BIC bootloader", sizeof(component_str));
-      } else if (event_data[1] == FW_BB_CPLD) {
-        strncpy(component_str, "CPLD", sizeof(component_str));
-      } else {
-        strncpy(component_str, "unknown component", sizeof(component_str));
-      }
-      snprintf(log_msg, sizeof(log_msg), "Baseboard firmware %s update is ongoing", component_str);
-      strcat(error_log, log_msg);
-      break;
     case SYS_DP_X8_PWR_FAULT:
       fby3_common_get_2ou_board_type(fru, &type_2ou);
       if (type_2ou == M2_BOARD) {
@@ -2187,25 +2235,6 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_DP_X16_PWR_FAULT:
       strcat(error_log, "DP x16 Riser Power Fault");
-      break;
-    case SYS_ACK_SEL:
-      if (event_data[1] == SYS_FAN_SERVICE) {
-        strcat(error_log, "Add SEL to notify fan mode event successfully");
-      } else if (event_data[1] == SYS_BB_FW_EVENT) {
-        strcat(error_log, "Add SEL to notify BB firmware update event successfully");
-      }
-      break;
-    case SYS_SLED_PWR_CTRL:
-      strcat(error_log, "SLED Power Lock");
-      // the longest time spent is to update PESW recovery update, it spends about 2000s
-      // set 2400s for insurance
-      if (event_data[1] == SEL_ASSERT) {
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        snprintf(val, sizeof(val), "%ld", ts.tv_sec + 60*40);
-        kv_set("pwr_lock", val, 0, 0);
-       } else {
-         kv_set("pwr_lock", "0", 0, 0);
-       }
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");
@@ -2275,7 +2304,6 @@ pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 
   switch (event_data[0]) {
     case SLED_CYCLE:
-      pal_set_nic_perst(fru, NIC_PE_RST_LOW);
       strcat(error_log, "SLED_CYCLE by BB BIC");
       break;
     case SLOT:
@@ -2470,6 +2498,8 @@ pal_is_debug_card_prsnt(uint8_t *status) {
   }
 
   if(bmc_location == NIC_BMC) {
+    // when updating firmware, front-paneld should pend to avoid the invalid access
+    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
 
     uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
     uint8_t rbuf[16] = {0x00};
@@ -2790,8 +2820,6 @@ static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
   bool is_cri_sel = false;
-  struct timespec ts;
-  char val[MAX_VALUE_LEN] = {0};
 
   switch (snr_num) {
     case CATERR_B:
@@ -2807,10 +2835,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         // it's not the fault event, filter it
         // or the amber LED will blink
         case 0x80: //E1S_1OU_M2_PRESENT
-        case 0x60: //SYS_SLED_PWR_CTRL
-        case 0x18: //SYS_ACK_SEL
         case 0x15: //SYS_BB_FW_EVENT
-        case 0x14: //SYS_FAN_SERVICE
         case 0x11: //SYS_SLOT_PRSNT
         case 0x0B: //SYS_M2_VPP
         case 0x07: //SYS_FW_TRIGGER
@@ -2826,37 +2851,6 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           syslog(LOG_WARNING, "%s() can not reload setup-fan.sh", __func__);
           return -1;
         }
-      } else if (event_data[3] == SYS_FAN_EVENT) {
-        bic_ack_sel(event_data[3]);
-        if (pal_is_fw_update_ongoing(fru) == true) {
-          return PAL_EOK;
-        }
-        // start/stop fscd according fan mode change
-        fby3_common_service_ctrl("fscd", event_data[DATA_INDEX_2]);
-      } else if (event_data[3] == SYS_BB_FW_UPDATE) {
-        bic_ack_sel(event_data[3]);
-        if (event_data[2] == SEL_ASSERT) {
-          if (event_data[4] == FW_BB_BIC) {
-            kv_set("bb_fw_update", "bic", 0, 0);
-          } else if (event_data[4] == FW_BB_BIC_BOOTLOADER) {
-            kv_set("bb_fw_update", "bootloader", 0, 0);
-          } else if (event_data[4] == FW_BB_CPLD) {
-            kv_set("bb_fw_update", "cpld", 0, 0);
-          } else {
-            kv_set("bb_fw_update", "unknown", 0, 0);
-          }
-          fby3_common_service_ctrl("sensord", SV_STOP);
-        } else if (event_data[2] == SEL_DEASSERT) {
-          // if BB fw update complete, delete the key
-          kv_del("bb_fw_update", 0);
-          fby3_common_service_ctrl("sensord", SV_START);
-        }
-
-        return PAL_EOK;
-      } else if (event_data[3] == SYS_SEL_ACK){
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        snprintf(val, sizeof(val), "%ld", ts.tv_sec);
-        kv_set("peer_bmc_ack_time", val, 0, 0);
       }
       break;
   }
@@ -2993,6 +2987,46 @@ pal_handle_dcmi(uint8_t fru, uint8_t *request, uint8_t req_len, uint8_t *respons
   return 0;
 }
 
+// only for class 2
+static int
+pal_init_fan_mode(uint8_t ctrl_mode) {
+#define FAN_MANUAL 3
+#define FAN_AUTO   6
+  int ret = PAL_ENOTSUP;
+  uint8_t low_time = 0;
+
+  // assign low_time
+  if ( AUTO_MODE == ctrl_mode ) low_time = FAN_AUTO;
+  else if ( MANUAL_MODE == ctrl_mode ) low_time = FAN_MANUAL;
+  else {
+    printf("it's not supported, ctrl_mode = %02X\n", ctrl_mode);
+    return ret;
+  }
+
+  // set crit_act bit and then sleep
+  ret = bic_set_crit_act_flag(SEL_ASSERT);
+  if ( ret < 0 ) {
+    // if we cant notify the other BMC, force to run the mode
+    // because it's just a notification
+    syslog(LOG_WARNING, "Failed to assert crit_act bit");
+  } else {
+    printf("Setup fan mode control...\n");
+    // if we want to do something before sleeping, put here
+    sleep (low_time);
+  }
+
+  // recover the flag
+  if ( ret == PAL_EOK ) {
+    ret = bic_set_crit_act_flag(SEL_DEASSERT);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "Failed to deassert crit_act bit");
+    }
+    sleep(2); // need to wait for gpiod to be ready
+  }
+
+  return ret;
+}
+
 int
 pal_set_fan_ctrl (char *ctrl_opt) {
   FILE* fp = NULL;
@@ -3008,31 +3042,49 @@ pal_set_fan_ctrl (char *ctrl_opt) {
     return ret;
   }
 
-  if (!strcmp(ctrl_opt, ENABLE_STR)) {
-    ctrl_mode = AUTO_MODE;
-    snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
-  } else if (!strcmp(ctrl_opt, DISABLE_STR)) {
-    ctrl_mode = MANUAL_MODE;
-    snprintf(cmd, sizeof(cmd), "sv force-stop fscd > /dev/null 2>&1");
-  } else if (!strcmp(ctrl_opt, STATUS_STR)) {
-    ctrl_mode = GET_FAN_MODE;
-  } else {
+  // get the option
+  if (!strcmp(ctrl_opt, ENABLE_STR)) ctrl_mode = AUTO_MODE;
+  else if (!strcmp(ctrl_opt, DISABLE_STR)) ctrl_mode = MANUAL_MODE;
+  else if (!strcmp(ctrl_opt, STATUS_STR)) ctrl_mode = GET_FAN_MODE;
+  else if (!strcmp(ctrl_opt, WAKEUP_STR)) ctrl_mode = WAKEUP_MODE;
+  else if (!strcmp(ctrl_opt, SLEEP_STR))  ctrl_mode = SLEEP_MODE;
+  else {
+    syslog(LOG_WARNING, "%s() it's not supported, ctrl_opt=%s\n", __func__, ctrl_opt);
     return -1;
   }
 
-  // notify baseboard bic and another slot BMC (Class 2)
-  if (bmc_location == NIC_BMC) {
-    // get/set fan status
-    if ( bic_set_fan_auto_mode(ctrl_mode, &status) < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to call bic_set_fan_auto_mode. ctrl_mode=%02X", __func__, ctrl_mode);
-      return -1;
-    }
+  // assign the command if needed
+  switch (ctrl_mode) {
+    case AUTO_MODE:
+    case WAKEUP_MODE:
+      snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
+      break;
+    case MANUAL_MODE:
+    case SLEEP_MODE:
+      snprintf(cmd, sizeof(cmd), "sv force-stop fscd > /dev/null 2>&1");
+      break;
+  }
 
-    if (pal_is_cwc() != PAL_EOK) {
+  // special fan case for class 2
+  if (bmc_location == NIC_BMC) {
+    // use WAKEUP_MODE/SLEEP_MODE to skip the above code, adjust it back
+    // so we can use the original logic to start fscd
+    if ( ctrl_mode == WAKEUP_MODE || ctrl_mode == SLEEP_MODE ) {
+      ctrl_mode = (ctrl_mode == WAKEUP_MODE)?AUTO_MODE:MANUAL_MODE;
+    } else {
       // notify the other BMC except for getting fan mode
-      if ( ctrl_mode != GET_FAN_MODE && (bic_notify_fan_mode(ctrl_mode) < 0) ) {
-        syslog(LOG_WARNING, "%s() Failed to call bic_notify_fan_mode. ctrl_mode=%02X", __func__, ctrl_mode);
+      if ( (pal_is_cwc() != PAL_EOK) && (ctrl_mode != GET_FAN_MODE) && (pal_init_fan_mode(ctrl_mode) < 0) ) {
+        syslog(LOG_WARNING, "%s() Failed to call pal_init_fan_mode. ctrl_mode=%02X", __func__, ctrl_mode);
         return -1;
+      }
+
+      // get/set/ fan mode
+      if ( bic_set_fan_auto_mode(ctrl_mode, &status) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to call bic_set_fan_auto_mode. ctrl_mode=%02X", __func__, ctrl_mode);
+        return -1;
+      } else {
+        // set the flag by itself, so it can handle requests from the other BMC
+        kv_set("fan_manual", (ctrl_mode == AUTO_MODE)?"0":"1", 0, 0);
       }
     }
   }
@@ -3084,7 +3136,6 @@ pal_set_fan_ctrl (char *ctrl_opt) {
         if(ret != 0) return ret;
       }
     }
-
   }
 
   return ret;

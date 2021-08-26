@@ -287,6 +287,46 @@ _verify_fruid(uint8_t *data, int fru_size) {
   return BIC_STATUS_SUCCESS;
 }
 
+bool
+bic_is_crit_act_ongoing(uint8_t fruid) {
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = kv_get("pwr_lock", value, NULL, 0);
+
+  if (ret < 0) {
+    // power lock hasn't been asserted
+    if (errno == ENOENT) {
+      // return false because there is no critical activity in progress
+      return false;
+    }
+
+    syslog(LOG_WARNING, "%s() Cannot get pwr_lock", __func__);
+    return true;
+  }
+
+  // if pwr_lock is 1, return true
+  return (strncmp(value, "1", 1) == 0)?true:false;
+}
+
+bool
+bic_is_fw_update_ongoing(uint8_t fruid) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int ret = BIC_STATUS_SUCCESS;
+  struct timespec ts;
+
+  sprintf(key, "fru%d_fwupd", fruid);
+  ret = kv_get(key, value, NULL, 0);
+  if (ret < 0) {
+     return false;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (strtoul(value, NULL, 10) > ts.tv_sec)
+     return true;
+
+  return false;
+}
+
 int
 bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf) {
 #define RETRY_DELAY 3
@@ -311,14 +351,20 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
     goto error_exit;
   }
 
-  do {
+  while ( retry < RETRY_3_TIME ) {
+    if ( bic_is_fw_update_ongoing(slot_id) == true ) {
+      sleep(5);
+      continue;
+    }
+
     // Read the FRUID information
     ret = bic_get_fruid_info(slot_id, fru_id, &info, intf);
     if ( ret < 0 ) {
       syslog(LOG_ERR, "bic_read_fruid: bic_read_fruid_info returns %d\n", ret);
       sleep(RETRY_DELAY * (retry + 1));
     } else break;
-  } while ( retry++ < RETRY_TIME );
+    retry++;
+  }
 
   if ( retry == RETRY_3_TIME ) goto error_exit;
   else ret = BIC_STATUS_FAILURE;
@@ -338,7 +384,12 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
   }
 
   retry = 0;
-  do {
+  while ( retry < RETRY_TIME) {
+    if ( bic_is_fw_update_ongoing(slot_id) == true ) {
+      sleep(5);
+      continue;
+    }
+
     // Read chunks of FRUID binary data in a loop
     offset = 0;
     nread = *fru_size;
@@ -372,10 +423,12 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
     }
 
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() verified fruid failed, slot:%d, retry:%d, intf:%02X\n", __func__, slot_id, retry, intf);
+      syslog(LOG_WARNING, "%s() verified fruid failed, slot:%d, retry:%d, intf:%02X, size: %d\n", __func__, slot_id, retry, intf, offset);
       sleep(RETRY_DELAY * (retry + 1));
     } else break;
-  } while ( retry++ < RETRY_TIME );
+
+    retry++;
+  }
 
 error_exit:
   if ( buf != NULL ) free(buf);
@@ -1978,46 +2031,7 @@ bic_prepare_sel_hdr(IPMI_SEL_MSG *sel, uint8_t dir_type) {
 
 // Only for class 2 system to get the power lock bit
 int
-bic_get_pwr_lock_flag(uint8_t *flag) {
-#define SB_CPLD_PWR_LOCK_REGISTER 0x10
-  int i2cfd = BIC_STATUS_FAILURE;
-  int ret = BIC_STATUS_FAILURE;
-  uint8_t tbuf = 0x0;
-  uint8_t rbuf = 0x0;
-  uint8_t tlen = 0x0;
-  uint8_t rlen = 0x0;
-  uint8_t retry = MAX_READ_RETRY;
-
-  i2cfd = i2c_cdev_slave_open(FRU_SLOT1 + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-    return i2cfd;
-  }
-
-  tbuf = SB_CPLD_PWR_LOCK_REGISTER;
-  tlen = 1;
-  rlen = 1;
-  do {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, &tbuf, tlen, &rbuf, rlen);
-    if ( ret < 0 ) {
-      msleep(100);
-    } else break;
-  } while( retry-- > 0 );
-
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-  }
-
-  *flag = (rbuf == 0)?0x1:0x0; // rbuf = 0 means power lock flag is asserted
-
-  if ( i2cfd > 0 ) close(i2cfd);
-
-  return ret;
-}
-
-// Only for class 2 system to issue the power lock sel
-static int
-_set_pwr_lock_flag(uint8_t dir_type) {
+bic_set_crit_act_flag(uint8_t dir_type) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t tbuf[5] = {CPLD_BB_BUS, CPLD_FLAG_REG_ADDR, 0x0/*read cnt*/, 0x10/*base reg*/, 0x0/*data*/};
   uint8_t rbuf[5] = {0};
@@ -2043,95 +2057,6 @@ _set_pwr_lock_flag(uint8_t dir_type) {
   }
 
   return ret;
-}
-
-int
-bic_notify_pwr_lock_sel(uint8_t dir_type) {
-  int ret = BIC_STATUS_SUCCESS;
-  IPMI_SEL_MSG sel = {0};
-
-  // prepare the sel
-  bic_prepare_sel_hdr(&sel, dir_type/*dir type*/);
-
-  // set sel's attribute
-  sel.snr_type = SEL_SNR_TYPE_PWR_LOCK;
-  sel.event_data[0] = SYS_SLED_PWR_LOCK;
-  sel.event_data[1] = dir_type;
-
-  ret = bic_bypass_to_another_bmc((uint8_t*)&sel, sizeof(sel));
-  if (ret < 0) {
-    // log the event to know the event is lost or not
-    syslog(LOG_WARNING, "%s(): failed to send power lock sel to another bmc", __func__);
-  }
-
-  // set BB CPLD
-  ret = _set_pwr_lock_flag(dir_type);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s(): failed to set power lock flag", __func__);
-  }
-
-  return ret;
-}
-
-// Only For Class 2
-int
-bic_notify_fan_mode(int mode) {
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
-  BYPASS_MSG req = {0};
-  IPMI_SEL_MSG sel = {0};
-  GET_MB_INDEX_RESP resp = {0};
-  FAN_SERVICE_EVENT fan_event = {0};
-  int retry = 3;
-  char value[MAX_VALUE_LEN] = {0};
-  struct timespec ts;
-
-  // prepare the sel
-  bic_prepare_sel_hdr(&sel, SEL_ASSERT);
-
-  // set sel's attribute
-  sel.snr_type = SEL_SNR_TYPE_FAN;
-  fan_event.type = SYS_FAN_EVENT;
-
-  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_GET_MB_INDEX, tbuf, 0, (uint8_t*) &resp, &rlen, BB_BIC_INTF) < 0) {
-    syslog(LOG_WARNING, "%s(): fail to get MB index", __func__);
-    return -1;
-  }
-  if (rlen == sizeof(GET_MB_INDEX_RESP)) {
-    fan_event.slot = resp.index;
-  } else {
-    fan_event.slot = UNKNOWN_SLOT;
-    syslog(LOG_WARNING, "%s(): wrong response while getting MB index", __func__);
-  }
-
-  memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
-  req.bypass_intf = BMC_INTF;
-  fan_event.mode = mode;
-
-  memcpy(sel.event_data, (uint8_t*) &fan_event, MIN(sizeof(sel.event_data), sizeof(fan_event)));
-  memcpy(req.bypass_data, (uint8_t*) &sel, MIN(sizeof(req.bypass_data), sizeof(sel)));
-
-  tlen = sizeof(iana_id) + 1 + sizeof(sel); // IANA ID + interface + add SEL command
-
-  while (retry > 0) {
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF);
-    sleep(2);
-    kv_get("peer_bmc_ack_time", value, NULL, 0);
-    if (strtoul(value, NULL, 10) >= ts.tv_sec) {
-      break;
-    }
-    retry--;
-  }
-  // Another BMC might not alive if no response with retry 3 times, log it and keep going
-  if (retry == 0) {
-    syslog(LOG_WARNING, "%s(): fail to notify another BMC fan mode changed", __func__);
-  }
-
-  return 0;
 }
 
 int

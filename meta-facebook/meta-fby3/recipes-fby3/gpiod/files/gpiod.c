@@ -62,6 +62,8 @@ static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
 static bool dp_hsm_check = false;
+static uint8_t bmc_location = 0;
+
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
@@ -274,8 +276,13 @@ fru_cache_dump(void *arg) {
 
   // If NVMe is ready, try to get the FRU which was failed to get and
   // update the fan speed control table according to the device type
-  do {
+  while ((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS)) {
     nvme_ready_count = 0;
+    if ( pal_is_fw_update_ongoing(fru) == true ) {
+      sleep(5);
+      continue;
+    }
+
     for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
       if (status[dev_id] == DEVICE_POWER_OFF) {// M.2 device is present or not
         nvme_ready_count++;
@@ -342,7 +349,7 @@ fru_cache_dump(void *arg) {
     }
     sleep(10);
 
-  } while ((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS));
+  }
 
   t_fru_cache[fruIdx].is_running = 0;
   syslog(LOG_INFO, "%s: FRU %d cache is finished.", __func__, fru);
@@ -496,7 +503,6 @@ gpio_monitor_poll(void *ptr) {
   uint8_t chassis_sts[8] = {0};
   uint8_t chassis_sts_len;
   uint8_t power_policy = POWER_CFG_UKNOWN;
-  uint8_t bmc_location = 0;
   char pwr_state[256] = {0};
 
   /* Check for initial Asserts */
@@ -665,6 +671,73 @@ cpld_io_mon() {
 }
 
 static void *
+crit_act_mon() {
+  int i2cfd = 0;
+  int ret = 0;
+  bool crit_act_is_asserted = false;
+  bool is_pwr_lock_set = false;
+  uint8_t cnt = 0;
+
+  pthread_detach(pthread_self());
+
+  if ( bmc_location != NIC_BMC ) {
+    syslog(LOG_INFO, "%s() disable the crit_act_mon\n", __func__);
+    pthread_exit(0);
+  }
+
+  i2cfd = i2c_cdev_slave_open(FRU_SLOT1 + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+    pthread_exit(0);
+  }
+
+  while (1) {
+    // get the flag
+    crit_act_is_asserted = pal_get_crit_act_status(i2cfd);
+    if ( crit_act_is_asserted == true ) {
+      // count it
+      cnt++;
+
+      // force lock
+      if ( is_pwr_lock_set == false ) {
+        kv_set("pwr_lock", "1", 0, 0);
+        is_pwr_lock_set = true;
+        syslog(LOG_WARNING, "pwr_lock is set");
+      }
+    }
+
+    // sleep periodically
+    sleep(1);
+
+    // if is_pwr_lock_set is true and crit_act_is_asserted is false, we need to proceed
+    if ( is_pwr_lock_set != true || crit_act_is_asserted != false ) continue;
+
+    // run the corresponding action according to cnt
+    if ( cnt >= 2 && cnt <= 4 ) { // fan mode ctrl - manuel
+      kv_set("fan_manual", "1", 0, 0);
+      syslog(LOG_WARNING, "fan_manual is set");
+
+      if ( pal_set_fan_ctrl("sleep") < 0 ) syslog(LOG_WARNING, "fscd is still running based on fan_manual(1)\n");
+
+    } else if ( cnt >= 5 && cnt <= 7 ) { // fan mode ctrl - auto
+      if ( pal_set_fan_ctrl("wakeup") < 0 ) syslog(LOG_WARNING, "fscd is not running, try again\n");
+
+      kv_set("fan_manual", "0", 0, 0);
+      syslog(LOG_WARNING, "fan_manual is cancelled");
+    }
+
+    // recover pwr_lock
+    kv_set("pwr_lock", "0", 0, 0);
+    syslog(LOG_WARNING, "pwr_lock is cancelled");
+    is_pwr_lock_set = false;
+    cnt = 0;
+  }
+
+  close(i2cfd);
+  pthread_exit(0);
+}
+
+static void *
 host_pwr_mon() {
 #define MAX_NIC_PWR_RETRY   15
 #define POWER_ON_DELAY       2
@@ -674,7 +747,6 @@ host_pwr_mon() {
   uint8_t host_off_flag = 0;
   uint8_t is_util_run_flag = 0;
   uint8_t fru = 0;
-  uint8_t bmc_location = 0;
   bool nic_pwr_set_off = false;
   int i = 0;
   int retry = 0;
@@ -682,11 +754,6 @@ host_pwr_mon() {
   int power_off_delay = NON_PFR_POWER_OFF_DELAY;
 
   pthread_detach(pthread_self());
-
-  if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
-    syslog(LOG_WARNING, "Failed to get the location of BMC");
-    bmc_location = NIC_BMC;//default value
-  }
 
   while (1) {
     for ( i = 0; i < MAX_NUM_SLOTS; i++ ) {
@@ -790,6 +857,13 @@ run_gpiod(int argc, void **argv) {
   pthread_t tid_host_pwr_mon;
   pthread_t tid_gpio[MAX_NUM_SLOTS];
   pthread_t tid_cpld_io_mon;
+  pthread_t tid_crit_act_mon;
+
+  // get the bmc location
+ if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
+    syslog(LOG_WARNING, "Failed to get the location of BMC, default value = NIC_BMC\n");
+    bmc_location = NIC_BMC;
+  }
 
   /* Check for which fru do we need to monitor the gpio pins */
   fru_flag = 0;
@@ -821,6 +895,10 @@ run_gpiod(int argc, void **argv) {
 
   if (pthread_create(&tid_cpld_io_mon, NULL, cpld_io_mon, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for cpld_io_mon fail\n");
+  }
+
+  if (pthread_create(&tid_crit_act_mon, NULL, crit_act_mon, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for crit_act_mon fail\n");
   }
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {

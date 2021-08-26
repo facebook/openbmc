@@ -30,7 +30,7 @@ int BicFwExtComponent::update_internal(string image, bool force) {
       }
       return FW_STATUS_FAILURE;
     }
-  } catch (string err) {
+  } catch (string& err) {
     printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }
@@ -63,12 +63,16 @@ int BicFwExtComponent::print_version() {
   try {
     server.ready();
     expansion.ready();
+    if ( fw_comp == FW_BB_BIC && bic_is_crit_act_ongoing(slot_id) == true ) {
+      throw string("A critical activity is ongoing on the sled");
+    }
+
     // Print Bridge-IC Version
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + board_name;
+      throw string("Error in getting the version of " + board_name);
     }
     cout << board_name << " Bridge-IC Version: " << ver << endl;
-  } catch(string err) {
+  } catch(string& err) {
     printf("%s Bridge-IC Version: NA (%s)\n", board_name.c_str(), err.c_str());
   }
   return FW_STATUS_SUCCESS;
@@ -144,12 +148,16 @@ int BicFwExtBlComponent::print_version() {
   try {
     server.ready();
     expansion.ready();
+    if ( fw_comp == FW_BB_BIC_BOOTLOADER && bic_is_crit_act_ongoing(slot_id) == true ) {
+      throw string("A critical activity is ongoing on the sled");
+    }
+
     // Print Bridge-IC Bootloader Version
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + board_name;
+      throw string("Error in getting the version of " + board_name);
     }
     cout << board_name << " Bridge-IC Bootloader Version: " << ver << endl;
-  } catch(string err) {
+  } catch(string& err) {
     printf("%s Bridge-IC Bootloader Version: NA (%s)\n", board_name.c_str(), err.c_str());
   }
   return FW_STATUS_SUCCESS;

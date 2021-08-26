@@ -1171,6 +1171,15 @@ pal_get_fru_discrete_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 static int
+pal_is_fan_aval() {
+  if ( (pal_is_fw_update_ongoing(FRU_SLOT1) == true) || \
+       (bic_is_crit_act_ongoing(FRU_SLOT1) == true) ) {
+    return false;
+  }
+  return true;
+}
+
+static int
 pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
   static bool is_cached = false;
   static unsigned int cached_id = 0;
@@ -1257,6 +1266,10 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     }
     return sensors_write_fan(label, (float)pwm);
   } else if (bmc_location == NIC_BMC) {
+    if ( pal_is_fan_aval() == false ) {
+      // bypass because a critical activity or fw_updating is ongoing
+      return PAL_EOK;
+    }
     ret = bic_set_fan_auto_mode(GET_FAN_MODE, &status);
     if (ret < 0) {
       return -1;
@@ -1277,7 +1290,8 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     if ( (status == MANUAL_MODE) && (!is_fscd_run) ) {
       return bic_manual_set_fan_speed(fan, pwm);
     } else {
-      return bic_set_fan_speed(fan, pwm);
+      if ( pal_is_fan_manual_mode(FRU_SLOT1) == true ) return PAL_EOK;
+      else return bic_set_fan_speed(fan, pwm);
     }
   }
 
@@ -1315,8 +1329,13 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     }
     ret = sensors_read_fan(label, &value);
   } else if ( bmc_location == NIC_BMC ) {
-    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
-    else {
+    // if fan is run in manual mode, we still can read RPM
+    if ( pal_is_fan_aval() == false ) {
+      // we can't return PAL_ENOTSUP here because fscd will issue fan dead events
+      // therefore, report a temporary value.
+      ret = PAL_EOK;
+      value = 7500;
+    } else {
       // check the rpm since it would be 0 when the fan is plugged out
       // make it show NA
       ret = (bic_get_fan_speed(fan, &value) < 0)?PAL_ENOTSUP:(((int)value > 0))?PAL_EOK:PAL_ENOTSUP;
@@ -1345,8 +1364,13 @@ int pal_get_fan_name(uint8_t num, char *name)
 static int
 _pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
   if ( bmc_location == NIC_BMC ) {
-    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
-    else return bic_get_fan_pwm(pwm, value);
+    // if fan is run in manual mode, we still can read PWM
+    if ( pal_is_fan_aval() == false ) {
+      // we can't return PAL_ENOTSUP here because fscd will issue fan dead events
+      // therefore, report a temporary value.
+      *value = 70;
+      return PAL_EOK;
+    } else return bic_get_fan_pwm(pwm, value);
   }
 
   char label[32] = {0};

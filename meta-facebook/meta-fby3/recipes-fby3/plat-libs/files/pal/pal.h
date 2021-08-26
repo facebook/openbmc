@@ -138,6 +138,8 @@ enum {
   MANUAL_MODE  = 0x00,
   AUTO_MODE    = 0x01,
   GET_FAN_MODE = 0x02,
+  WAKEUP_MODE  = 0x03,
+  SLEEP_MODE   = 0x04,
 };
 
 #define MAX_NODES     (4)
@@ -240,6 +242,8 @@ int pal_dp_hba_fan_table_check(void);
 int pal_get_bb_fw_info(unsigned char target, char* ver_str);
 int pal_is_cwc(void);
 int pal_get_cwc_id(char *str, uint8_t *fru);
+bool pal_get_crit_act_status(int fd);
+bool pal_is_fan_manual_mode(uint8_t slot_id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

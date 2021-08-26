@@ -1456,6 +1456,13 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       break;
   }
 
+  // if intf is BB_BIC_INTF and the critical activity bit is asserted
+  if ( (intf == BB_BIC_INTF) && (bic_is_crit_act_ongoing(slot_id) == true) ) {
+    printf("A critical activity is ongoing on the sled, exit.\n");
+    ret = BIC_STATUS_FAILURE;
+    goto error_exit;
+  }
+
   //run cmd
   switch (comp) {
     case FW_BIC:
@@ -1579,7 +1586,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       }
       break;
   }
-
+error_exit:
   syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
   if (fd_opened) {
     close(fd);

@@ -89,9 +89,13 @@ int CpldExtComponent::print_version() {
   try {
     server.ready();
     expansion.ready();
+    if ( fw_comp == FW_BB_CPLD && bic_is_crit_act_ongoing(slot_id) == true ) {
+      throw string("A critical activity is ongoing on the sled");
+    }
+
     // Print Bridge-IC Version
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of " + board_name;
+      throw string("Error in getting the version of " + board_name);
     }
     cout << board_name << " CPLD Version: " << ver << endl;
   } catch(string& err) {

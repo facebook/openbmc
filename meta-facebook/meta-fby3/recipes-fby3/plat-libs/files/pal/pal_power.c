@@ -47,9 +47,6 @@ server_power_off(uint8_t fru) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;
   }
-  if ( bmc_location == NIC_BMC ) {
-    if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
-  }
   return bic_server_power_off(fru);
 }
 
@@ -63,9 +60,6 @@ server_power_on(uint8_t fru) {
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;
-  }
-  if ( bmc_location == NIC_BMC ) {
-    if ( pal_set_nic_perst(fru, NIC_PE_RST_HIGH) < 0 ) return POWER_STATUS_ERR;
   }
   return bic_server_power_on(fru);
 }
@@ -464,35 +458,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   return POWER_STATUS_OK;
 }
 
-
-static bool
-pal_is_pwr_lock_deassert(uint8_t fru) {
-  char value[MAX_VALUE_LEN] = {0};
-  int ret = 0;
-  struct timespec ts;
-  uint8_t cpld_flag = 0;
-
-  ret = kv_get("pwr_lock", value, NULL, 0);
-  if (ret < 0) {
-    // power lock never asserted
-    if (errno == ENOENT) {
-      return true;
-    }
-    syslog(LOG_WARNING, "%s() Cannot get the power lock key", __func__);
-    return false;
-  }
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  if (strtoul(value, NULL, 10) >= ts.tv_sec) {
-    return false;
-  }
-  if (bic_get_pwr_lock_flag(&cpld_flag) < 0 || cpld_flag == true) {
-    return false;
-  }
-
-  return true;
-}
-
 int
 pal_sled_cycle(void) {
   int ret = PAL_EOK;
@@ -508,9 +473,10 @@ pal_sled_cycle(void) {
     ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
   } else {
     // check power lock flag
-    if ((pal_is_fw_update_ongoing(FRU_SLOT1) == true) || (pal_is_pwr_lock_deassert(FRU_SLOT1) == false)) {
+    if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) {
       printf("power lock flag is asserted, please make sure no firmware update is ongoing\n");
-      printf("If you still want to proceed, please clean the flag manually! ret=%d, lock=%d %d\n", ret, pal_is_fw_update_ongoing(FRU_SLOT1), pal_is_pwr_lock_deassert(FRU_SLOT1));
+      printf("If you still want to proceed, please clean the flag manually!\n");
+      syslog(LOG_CRIT, "SLED_CYCLE failed because a critical activity is ongoing\n");
       return PAL_ENOTSUP;
     }
 

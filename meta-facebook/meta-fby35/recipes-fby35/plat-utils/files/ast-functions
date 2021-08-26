@@ -73,7 +73,7 @@ store_clear_por()
   fi
 
   # Read Boot Magic
-  sig=$(devmem 0x1e721208 2>/dev/null)
+  sig=$(devmem 0x10015c08 2>/dev/null)
 
   # Read the Watch Dog Flag
   val=$(devmem 0x1e6e2074 2>/dev/null)
@@ -85,7 +85,7 @@ store_clear_por()
   fi
 
   # Clear Power On Reset bit
-  devmem 0x1e6e2074 32 $((val & 0xfffffffe)) 2>/dev/null
+  devmem 0x1e6e2074 32 0x1 2>/dev/null
 }
 
 # Check to see if BMC power-on-reset

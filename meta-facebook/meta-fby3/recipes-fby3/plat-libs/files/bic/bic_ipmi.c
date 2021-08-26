@@ -2244,24 +2244,33 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
   } else {
     // case 1/2OU M.2
-    tbuf[3] = dev_id;
+    if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+      tbuf[3] = dev_id - DUAL_DEV_ID0_2OU + DUAL_DEV_BIC_ID0;
+    } else {
+      tbuf[3] = dev_id;
+    }
   }
 
   tbuf[4] = 0x3;  //get power status
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DEV_POWER, tbuf, tlen, rbuf, &rlen, intf);
 
-  // Ignore first 3 bytes of IANA ID
-  *status = rbuf[3];
-  if (intf == REXP_BIC_INTF || intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2) {
-    *nvme_ready = rbuf[4]; //1 is assigned directly. for REXP_EXP_INTF, we assige it from rbuf[4]
+  if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) { //dual m.2 sitauation, it will return two byte.
+    status[0] = rbuf[3];
+    status[1] = rbuf[4];
   } else {
-    *nvme_ready = 0x1;
+    // Ignore first 3 bytes of IANA ID
+    *status = rbuf[3];
+    if (intf == REXP_BIC_INTF || intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2) {
+      *nvme_ready = rbuf[4]; //1 is assigned directly. for REXP_EXP_INTF, we assige it from rbuf[4]
+    } else {
+      *nvme_ready = 0x1;
+    }
+    if ( ffi != NULL ) *ffi = rbuf[5];   // FFI_0 0:Storage 1:Accelerator
+    if ( meff != NULL ) *meff = rbuf[6];  // MEFF  0x35: M.2 22110 0xF0: Dual M.2
+    if ( vendor_id != NULL ) *vendor_id = (rbuf[7] << 8 ) | rbuf[8]; // PCIe Vendor ID
+    if ( major_ver != NULL ) *major_ver = rbuf[9];  //FW version Major Revision
+    if ( minor_ver != NULL ) *minor_ver = rbuf[10]; //FW version Minor Revision
   }
-  if ( ffi != NULL ) *ffi = rbuf[5];   // FFI_0 0:Storage 1:Accelerator
-  if ( meff != NULL ) *meff = rbuf[6];  // MEFF  0x35: M.2 22110 0xF0: Dual M.2
-  if ( vendor_id != NULL ) *vendor_id = (rbuf[7] << 8 ) | rbuf[8]; // PCIe Vendor ID
-  if ( major_ver != NULL ) *major_ver = rbuf[9];  //FW version Major Revision
-  if ( minor_ver != NULL ) *minor_ver = rbuf[10]; //FW version Minor Revision
 
   return ret;
 }
@@ -2356,7 +2365,11 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
   } else {
     // case 1/2OU M.2
-    tbuf[3] = dev_id;
+    if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+      tbuf[3] = dev_id - DUAL_DEV_ID0_2OU + DUAL_DEV_BIC_ID0;
+    } else {
+      tbuf[3] = dev_id;
+    }
   }
 
   tbuf[4] = status;  //set power status

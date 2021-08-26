@@ -360,6 +360,18 @@ fby3_common_dev_id(char *str, uint8_t *dev) {
     *dev = DEV_ID12_2OU;
   } else if (!strcmp(str, "2U-dev13")) {
     *dev = DEV_ID13_2OU;
+  } else if (!strcmp(str, "2U-dev0_1")) {
+    *dev = DUAL_DEV_ID0_2OU;
+  } else if (!strcmp(str, "2U-dev2_3")) {
+    *dev = DUAL_DEV_ID1_2OU;
+  } else if (!strcmp(str, "2U-dev4_5")) {
+    *dev = DUAL_DEV_ID2_2OU;
+  } else if (!strcmp(str, "2U-dev6_7")) {
+    *dev = DUAL_DEV_ID3_2OU;
+  } else if (!strcmp(str, "2U-dev8_9")) {
+    *dev = DUAL_DEV_ID4_2OU;
+  } else if (!strcmp(str, "2U-dev10_11")) {
+    *dev = DUAL_DEV_ID5_2OU;
   } else if (!strcmp(str, "1U")) {
     *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {

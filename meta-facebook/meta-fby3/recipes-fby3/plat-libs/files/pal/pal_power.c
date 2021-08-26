@@ -626,6 +626,16 @@ pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp) {
     }
     rsp[0] = dev_id - 4;
     rsp[1] = REXP_BIC_INTF;
+  } else if (( dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) && ((config_status & PRESENT_2OU) == PRESENT_2OU)) {
+    uint8_t type = 0xff;
+    if ( fby3_common_get_2ou_board_type(slot_id, &type) < 0 ) {
+      return POWER_STATUS_FRU_ERR;
+    } else if ( type != GPV3_MCHP_BOARD && type != GPV3_BRCM_BOARD ) {
+      //If dev doesn't belong to GPv3, return
+      if ( dev_id > end_2ou_yv3_idx ) return POWER_STATUS_FRU_ERR;
+    }
+    rsp[0] = dev_id;
+    rsp[1] = REXP_BIC_INTF;
   } else {
     // dev not found
     return POWER_STATUS_FRU_ERR;
@@ -656,6 +666,8 @@ pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *
       if (dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID13_2OU) {
         dev_id -= 4;
         intf = RREXP_BIC_INTF1;
+      } else if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+        intf = RREXP_BIC_INTF1;
       } else {
         printf("Device not found \n");
         return POWER_STATUS_FRU_ERR;
@@ -664,6 +676,8 @@ pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *
     case FRU_2U_BOT:
       if (dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID13_2OU) {
         dev_id -= 4;
+        intf = RREXP_BIC_INTF2;
+      } else if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
         intf = RREXP_BIC_INTF2;
       } else {
         printf("Device not found \n");
@@ -691,11 +705,39 @@ pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *
 }
 
 int
+pal_get_dual_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
+  uint8_t dev0 = DEV_ID0_2OU + (dev_id - DUAL_DEV_ID0_2OU) * 2;
+  uint8_t dev1 = DEV_ID0_2OU + (dev_id - DUAL_DEV_ID0_2OU) * 2 + 1;
+
+  if (pal_get_device_power(slot_id, dev0, &status[0], type) < 0) {
+      return -1;
+  }
+  if (pal_get_device_power(slot_id, dev1, &status[1], type) < 0) {
+      return -1;
+  }
+  
+  return 0;
+}
+
+int
 pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
   int ret = 0;
   uint8_t nvme_ready = 0;
   uint8_t intf = 0;
   uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
+
+  if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+    uint8_t dual_sta[2] = {0};
+    if (pal_get_dual_power(slot_id, dev_id, dual_sta, type)) {
+      return POWER_STATUS_ERR;
+    }
+    if (dual_sta[0] == DEVICE_POWER_ON && dual_sta[1] == DEVICE_POWER_ON) {
+      *status = DEVICE_POWER_ON;
+    } else {
+      *status = DEVICE_POWER_OFF;
+    }
+    return 0;
+  }
 
   if (pal_is_cwc() == PAL_EOK && (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT)) {
     return pal_get_exp_device_power(slot_id, dev_id, status, type);
@@ -742,20 +784,20 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
 
 int
 pal_set_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t cmd) {
-  uint8_t sta = 0, type = 0;
+  uint8_t sta[2] = {0}, type = 0;
   int ret = 0;
   uint8_t intf = 0;
 
-  if (pal_get_exp_power(exp, &sta)) {
+  if (pal_get_exp_power(exp, sta)) {
     return POWER_STATUS_ERR;
   }
 
-  if (sta == SERVER_12V_OFF) {
+  if (sta[0] == SERVER_12V_OFF) {
     printf("Fru:%d is off \n", exp);
     return 0;
   }
 
-  if (pal_get_exp_device_power(exp, dev_id, &sta, &type)) {
+  if (pal_get_exp_device_power(exp, dev_id, sta, &type)) {
     return POWER_STATUS_ERR;
   }
 
@@ -763,6 +805,8 @@ pal_set_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t cmd) {
     case FRU_2U_TOP:
       if (dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID13_2OU) {
         dev_id -= 4;
+        intf = RREXP_BIC_INTF1;
+      } else if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
         intf = RREXP_BIC_INTF1;
       } else {
         printf("Device not found \n");
@@ -772,6 +816,8 @@ pal_set_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t cmd) {
     case FRU_2U_BOT:
       if (dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID13_2OU) {
         dev_id -= 4;
+        intf = RREXP_BIC_INTF2;
+      } else if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
         intf = RREXP_BIC_INTF2;
       } else {
         printf("Device not found \n");
@@ -783,9 +829,25 @@ pal_set_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t cmd) {
       return POWER_STATUS_FRU_ERR;
   }
 
+  if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+    if (cmd == SERVER_POWER_ON) {
+      if (sta[0] == DEVICE_POWER_ON && sta[1] == DEVICE_POWER_ON) {
+        sta[0] = DEVICE_POWER_ON;
+      } else {
+        sta[0] = DEVICE_POWER_OFF;
+      }
+    } else {  //off or cycle
+      if (sta[0] == DEVICE_POWER_OFF && sta[1] == DEVICE_POWER_OFF) {
+        sta[0] = DEVICE_POWER_OFF;
+      } else {
+        sta[0] = DEVICE_POWER_ON;
+      }
+    }
+  }
+
   switch(cmd) {
     case SERVER_POWER_ON:
-      if (sta == DEVICE_POWER_ON) {
+      if (sta[0] == DEVICE_POWER_ON) {
         return 1;
       } else {
         ret = bic_set_dev_power_status(FRU_SLOT1, dev_id, DEVICE_POWER_ON, intf);
@@ -794,16 +856,15 @@ pal_set_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t cmd) {
       break;
 
     case SERVER_POWER_OFF:
-      if (sta == DEVICE_POWER_OFF) {
+      if (sta[0] == DEVICE_POWER_OFF) {
         return 1;
       } else {
         ret = bic_set_dev_power_status(FRU_SLOT1, dev_id, DEVICE_POWER_OFF, intf);
         return ret;
       }
       break;
-
     case SERVER_POWER_CYCLE:
-      if (sta == DEVICE_POWER_ON) {
+      if (sta[0] == DEVICE_POWER_ON) {
         ret = bic_set_dev_power_status(FRU_SLOT1, dev_id, DEVICE_POWER_OFF, intf);
         if (ret < 0) {
           return -1;
@@ -813,7 +874,7 @@ pal_set_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t cmd) {
 
         ret = bic_set_dev_power_status(FRU_SLOT1, dev_id, DEVICE_POWER_ON, intf);
         return ret;
-      } else if (sta == DEVICE_POWER_OFF) {
+      } else if (sta[0] == DEVICE_POWER_OFF) {
         ret = bic_set_dev_power_status(FRU_SLOT1, dev_id, DEVICE_POWER_ON, intf);
         return ret;
       }
@@ -832,6 +893,7 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   uint8_t status, type, type_1ou = 0;
   uint8_t intf = 0;
   uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
+  uint8_t dual_sta[2] = {0};
 
   if (pal_is_cwc() == PAL_EOK && (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT)) {
     return pal_set_exp_device_power(slot_id, dev_id, cmd);
@@ -841,9 +903,14 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   if ( ret < 0 ) {
     return POWER_STATUS_FRU_ERR;
   }
-
-  if (pal_get_device_power(slot_id, dev_id, &status, &type) < 0) {
-    return -1;
+  if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+    if (pal_get_dual_power(slot_id, dev_id, dual_sta, &type) < 0) {
+      return -1;
+    }
+  } else {
+    if (pal_get_device_power(slot_id, dev_id, &status, &type) < 0) {
+      return -1;
+    }
   }
 
   if ( pal_is_valid_expansion_dev(slot_id, dev_id, rsp) < 0 ) {
@@ -853,6 +920,22 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
 
   dev_id = rsp[0];
   intf = rsp[1];
+
+  if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+    if (cmd == SERVER_POWER_ON) {
+      if (dual_sta[0] == DEVICE_POWER_ON && dual_sta[1] == DEVICE_POWER_ON) {
+        status = DEVICE_POWER_ON;
+      } else {
+        status = DEVICE_POWER_OFF;
+      }
+    } else {  //off or cycle
+      if (dual_sta[0] == DEVICE_POWER_OFF && dual_sta[1] == DEVICE_POWER_OFF) {
+        status = DEVICE_POWER_OFF;
+      } else {
+        status = DEVICE_POWER_ON;
+      }
+    }
+  }
 
   switch(cmd) {
     case SERVER_POWER_ON:

@@ -90,6 +90,7 @@ extern const char *slot_usage;
 #define MAX_BYPASS_DATA_LEN  256
 #define IANA_LEN 3
 #define UNKNOWN_SLOT 0xFF
+#define DUAL_DEV_BIC_ID0 15
 
 #define DEV_NAME_2U_TOP "2U-top"
 #define DEV_NAME_2U_BOT "2U-bot"
@@ -139,6 +140,12 @@ enum {
   BOARD_2OU_TOP = MAX_NUM_DEVS,
   BOARD_2OU_BOT,
   BOARD_2OU_CWC,
+  DUAL_DEV_ID0_2OU,
+  DUAL_DEV_ID1_2OU,
+  DUAL_DEV_ID2_2OU,
+  DUAL_DEV_ID3_2OU,
+  DUAL_DEV_ID4_2OU,
+  DUAL_DEV_ID5_2OU,
 
   MAX_NUM_DEVS_CWC,
 };

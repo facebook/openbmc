@@ -15,6 +15,7 @@ class IOCComponent : public Component {
     IOCComponent(string fru, string comp)
       : Component(fru, comp) {}
     int print_version();
+    int get_ver_str(string& s);
 };
 
 #endif

@@ -47,6 +47,7 @@ static struct {
   char fru_name[MAX_FRU_CMD_STR];
   int i2c_fd;
   i2c_mslave_t *bmc_slave;
+  char ioc_ver_key[MAX_KEY_LEN];
 } iocd_config = {
   .bus_id = 0,
   .fru_num = 0,
@@ -55,6 +56,7 @@ static struct {
   .fru_name = {0},
   .i2c_fd = -1,
   .bmc_slave = NULL,
+  .ioc_ver_key = {0},
 };
 
 static int
@@ -535,6 +537,9 @@ get_ioc_temp() {
     goto cleanup;
   }
 
+  snprintf(iocd_config.ioc_ver_key, sizeof(iocd_config.ioc_ver_key), "ioc_%d_fw_ver", iocd_config.bus_id);
+  kv_set(iocd_config.ioc_ver_key, "", 0, 0);
+
   while (1) {
     // Check IOC is ready to be access
     pthread_mutex_lock(&m_ioc);
@@ -544,6 +549,7 @@ get_ioc_temp() {
           if (check_ioc_support_pec(IOC_SLAVE_ADDRESS) < 0) {
             is_failed = true;
             set_ioc_temp(READ_IOC_TEMP_FAILED);
+            kv_set(iocd_config.ioc_ver_key, "", 0, 0);
             sleep (10);
             continue;
           }
@@ -552,6 +558,7 @@ get_ioc_temp() {
       }
       is_failed = true;
       set_ioc_temp(READ_IOC_TEMP_FAILED);
+      kv_set(iocd_config.ioc_ver_key, "", 0, 0);
       sleep(1);
     }
 
@@ -624,9 +631,10 @@ cleanup:
 int
 get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
   bool is_failed = false;
-  uint8_t tag = 0, read_len = 0;
+  uint8_t tag = 0x01, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
   uint8_t ioc_fw_ver[IOC_FW_VER_SIZE] = {0};
+  char ioc_fw_ver_str[MAX_VALUE_LEN] = {0};
 
   if ((res_buf == NULL) || (res_len == NULL)) {
     syslog(LOG_WARNING, "%s(): Failed to get %s IOC firmware version due to NULL parameter.", __func__, iocd_config.fru_name);
@@ -638,50 +646,60 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
     return -1;
   }
 
-  pthread_mutex_lock(&m_ioc);
+  if (pal_get_cached_value(iocd_config.ioc_ver_key, ioc_fw_ver_str) != 0) {
+    syslog(LOG_WARNING, "%s(): Failed to get %s IOC firmware version due to kv get failed.", __func__, iocd_config.fru_name);
+    return -1;
+  }
 
-  if (vdm_reset(slave_addr) < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because VDM reset failed", __func__, iocd_config.fru_name);
+  // Get IOC firmware version from IOC if the cache is empty
+  if (strncmp(ioc_fw_ver_str, "", sizeof(ioc_fw_ver_str)) == 0) {
+    pthread_mutex_lock(&m_ioc);
+
+    if (vdm_reset(slave_addr) < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because VDM reset failed", __func__, iocd_config.fru_name);
+      pthread_mutex_unlock(&m_ioc);
+      return -1;
+    }
+
+    memset(read_buf, 0, sizeof(read_buf));
+    if (mctp_ioc_command(slave_addr, tag, GET_IOC_FW, read_buf, &read_len) < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version", __func__, iocd_config.fru_name);
+      is_failed = true;
+    }
+
+    memset(read_buf, 0, sizeof(read_buf));
+    if (mctp_ioc_command(slave_addr, tag, COMMAND_RESUME, read_buf, &read_len) < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because command resume failed", __func__, iocd_config.fru_name);
+      is_failed = true;
+    }
+
+    if ((is_failed == false) && (read_len >= ioc_command_map[GET_IOC_FW].pkt_pl_hdr.response_len[0])) {
+      memcpy(ioc_fw_ver, &read_buf[RES_IOC_FW_VER_OFFSET], sizeof(ioc_fw_ver));
+    } else {
+      syslog(LOG_WARNING, "%s(): failed to get the correct %s IOC firmware version.", __func__, iocd_config.fru_name);
+      is_failed = true;
+    }
+
+    memset(read_buf, 0, sizeof(read_buf));
+    if (mctp_ioc_command(slave_addr, tag, COMMAND_DONE, read_buf, &read_len) < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because command done failed", __func__, iocd_config.fru_name);
+      is_failed = true;
+    }
     pthread_mutex_unlock(&m_ioc);
-    return -1;
+
+    if (is_failed == true) {
+      *res_len = 0;
+      return -1;
+    }
+
+    snprintf(ioc_fw_ver_str, sizeof(ioc_fw_ver_str), "%d.%d%d%d.%02d-0000", ioc_fw_ver[7], ioc_fw_ver[6], ioc_fw_ver[5], ioc_fw_ver[4], ioc_fw_ver[0]);
+    if (pal_set_cached_value(iocd_config.ioc_ver_key, ioc_fw_ver_str) < 0) {
+      return -1;
+    }
   }
 
-  tag = 0x01;
-
-  memset(read_buf, 0, sizeof(read_buf));
-  if (mctp_ioc_command(slave_addr, tag, GET_IOC_FW, read_buf, &read_len) < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version", __func__, iocd_config.fru_name);
-    is_failed = true;
-  }
-
-  memset(read_buf, 0, sizeof(read_buf));
-  if (mctp_ioc_command(slave_addr, tag, COMMAND_RESUME, read_buf, &read_len) < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because command resume failed", __func__, iocd_config.fru_name);
-    is_failed = true;
-  }
-
-  if ((is_failed == false) && (read_len >= ioc_command_map[GET_IOC_FW].pkt_pl_hdr.response_len[0])) {
-    memset(ioc_fw_ver, 0, sizeof(ioc_fw_ver));
-    memcpy(ioc_fw_ver, &read_buf[RES_IOC_FW_VER_OFFSET], sizeof(ioc_fw_ver));
-  } else {
-    syslog(LOG_WARNING, "%s(): failed to get the correct %s IOC firmware version.", __func__, iocd_config.fru_name);
-    is_failed = true;
-  }
-
-  memset(read_buf, 0, sizeof(read_buf));
-  if (mctp_ioc_command(slave_addr, tag, COMMAND_DONE, read_buf, &read_len) < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get %s IOC firmware version because command done failed", __func__, iocd_config.fru_name);
-    is_failed = true;
-  }
-  pthread_mutex_unlock(&m_ioc);
-
-  if (is_failed == true) {
-    *res_len = 0;
-    return -1;
-  }
-
-  memcpy(res_buf, &ioc_fw_ver, sizeof(ioc_fw_ver));
-  *res_len = sizeof(ioc_fw_ver);
+  res_buf[0] = IOC_FW_VER_SIZE;
+  *res_len = 1;
 
   return 0;
 }

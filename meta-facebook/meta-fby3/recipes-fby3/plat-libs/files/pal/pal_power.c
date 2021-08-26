@@ -143,14 +143,6 @@ server_power_12v_on(uint8_t fru) {
 
   sleep(1);
 
-  snprintf(cmd, sizeof(cmd), "sv start ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru));
-  if (system(cmd) != 0) {
-    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-    ret = PAL_ENOTSUP;
-    goto error_exit;
-  }
-  sleep(2);
-
   // vr cached info was removed when 12v_off was performed
   // we generate it again to avoid accessing VR devices at the same time.
   snprintf(cmd, sizeof(cmd), "/usr/bin/fw-util slot%d --version vr > /dev/null 2>&1", fru);
@@ -189,13 +181,6 @@ server_power_12v_off(uint8_t fru) {
   snprintf(cmd, 64, "rm -f /tmp/cache_store/slot%d_vr*", fru);
   if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-  }
-
-  snprintf(cmd, sizeof(cmd), "sv stop ipmbd_%d > /dev/null 2>&1", fby3_common_get_bus_id(fru));
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      ret = PAL_ENOTSUP;
-      goto error_exit;
   }
 
   ret = fby3_common_set_fru_i2c_isolated(fru, GPIO_VALUE_LOW);

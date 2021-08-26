@@ -18,11 +18,16 @@
 #include <facebook/bic.h>
 #include "pal.h"
 
+#define ADC128_E1S_PIN_CNT  6
+#define MAX_E1S_VOL_SNR_SKIP   2
+
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t nic_id, float *value);
 static int read_e1s_temp(uint8_t e1s_id, float *value);
-static int read_adc128(uint8_t id, float *value);
+static int read_adc128_e1s(uint8_t id, float *value);
+static int read_adc128_iocm(uint8_t id, float *value);
+static int read_adc128_nic(uint8_t id, float *value);
 static int read_ads1015(uint8_t id, float *value);
 static int read_ioc_temp(uint8_t id, float *value);
 static bool is_e1s_iocm_i2c_enabled(uint8_t id);
@@ -365,28 +370,28 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
   [NIC_SENSOR_TEMP] =
   {"NIC_SENSOR_TEMP", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [NIC_SENSOR_P12V] =
-  {"NIC_SENSOR_P12V", ADC128_IN6, read_adc128, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  {"NIC_SENSOR_P12V", ADC128_IN6, read_adc128_nic, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [NIC_SENSOR_CUR] =
-  {"NIC_SENSOR_CUR", ADC128_IN7, read_adc128, false, {2.2, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"NIC_SENSOR_CUR", ADC128_IN7, read_adc128_nic, false, {2.2, 0, 0, 0, 0, 0, 0, 0}, CURR},
 };
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
   [E1S0_CUR] =
-  {"E1S_X0_CUR", ADC128_IN0, read_adc128, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X0_CUR", ADC128_IN0, read_adc128_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S1_CUR] =
-  {"E1S_X1_CUR", ADC128_IN1, read_adc128, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X1_CUR", ADC128_IN1, read_adc128_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S0_TEMP] =
   {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =
   {"E1S_X1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S0_P12V] =
-  {"E1S_X0_P12V", ADC128_IN2, read_adc128, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  {"E1S_X0_P12V", ADC128_IN2, read_adc128_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [E1S1_P12V] =
-  {"E1S_X1_P12V", ADC128_IN3, read_adc128, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  {"E1S_X1_P12V", ADC128_IN3, read_adc128_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [E1S0_P3V3] =
-  {"E1S_X0_P3V3", ADC128_IN4, read_adc128, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  {"E1S_X0_P3V3", ADC128_IN4, read_adc128_e1s, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
   [E1S1_P3V3] =
-  {"E1S_X1_P3V3", ADC128_IN5, read_adc128, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  {"E1S_X1_P3V3", ADC128_IN5, read_adc128_e1s, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
 };
 
 PAL_SENSOR_MAP iocm_sensor_map[] = {
@@ -399,7 +404,7 @@ PAL_SENSOR_MAP iocm_sensor_map[] = {
   [IOCM_P0V865] =
   {"IOCM_P0V865", ADS1015_IN3, read_ads1015, false, {0.89, 0, 0, 0.85, 0, 0, 0, 0}, VOLT},
   [IOCM_CUR] =
-  {"IOCM_CUR", ADC128_IN0, read_adc128, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"IOCM_CUR", ADC128_IN0, read_adc128_iocm, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [IOCM_TEMP] =
   {"IOCM_TEMP", TEMP_IOCM, read_temp, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [IOCM_IOC_TEMP] =
@@ -937,11 +942,9 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
   uint8_t tbuf[1] = {0};
   uint8_t rbuf[NVMe_GET_STATUS_LEN] = {0};
 
-  if (e1s_id >= ARRAY_SIZE(e1s_info_list)) {
-    return ERR_SENSOR_NA;
-  }
-
-  if (is_e1s_iocm_present(e1s_id) == false) {
+  if ((e1s_id >= ARRAY_SIZE(e1s_info_list)) ||
+      (is_e1s_iocm_present(e1s_id) == false) ||
+      (is_e1s_iocm_i2c_enabled(e1s_id) == false)) {
     return ERR_SENSOR_NA;
   }
 
@@ -972,29 +975,84 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
 }
 
 static bool
-is_adc128_e1s(uint8_t id) {
-  return (id < ADC128_IN6);
+is_e1s_power_good(uint8_t id) {
+  uint8_t e1s_pwr_status = 0, type = 0;
+
+  if (pal_get_device_power(FRU_SERVER, (id + 1), &e1s_pwr_status, &type) < 0) { // id is 1 base here
+    return false;
+  }
+
+  if (e1s_pwr_status == DEVICE_POWER_OFF) {
+    return false;
+  }
+
+  return true;
 }
 
 static int
-read_adc128(uint8_t id, float *value) {
+read_adc128_e1s(uint8_t id, float *value) {
+  int ret = 0;
+  static uint8_t e1s_adc_skip_times[ADC128_E1S_PIN_CNT] = {0};
+
+  if (id >= ARRAY_SIZE(adc128_dev_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (is_e1s_iocm_present(id % 2) == false) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (is_e1s_power_good(id % 2) == false) {
+    e1s_adc_skip_times[id] = MAX_E1S_VOL_SNR_SKIP;
+    return ERR_SENSOR_NA;
+  }
+
+  if (e1s_adc_skip_times[id] != 0) { // wait sensor reading ready while E1.S power on
+    e1s_adc_skip_times[id]--;
+    return READING_SKIP;
+  }
+
+  ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
+
+  return ret;
+}
+
+static int
+read_adc128_nic(uint8_t id, float *value) {
+  int ret = 0;
+  uint8_t prsnt_status = 0;
+
+  if (id >= ARRAY_SIZE(adc128_dev_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  if ((pal_is_fru_prsnt(FRU_NIC, &prsnt_status) < 0) || 
+      (prsnt_status == FRU_ABSENT)) {
+    return ERR_SENSOR_NA;
+  }
+
+  ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
+
+  if ((id == ADC128_IN7) && (*value < 0)) { // NIC current doesn't support negative value
+    *value = 0;
+  }
+
+  return ret;
+}
+
+static int
+read_adc128_iocm(uint8_t id, float *value) {
   int ret = 0;
 
   if (id >= ARRAY_SIZE(adc128_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
-  if (is_adc128_e1s(id) && is_e1s_iocm_present(id % 2) == false) {
+  if (is_e1s_iocm_present(id) == false) {
     return ERR_SENSOR_NA;
   }
 
   ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
-
-  if (id == ADC128_IN7) { // NIC current doesn't support negative value
-    if (*value < 0) {
-      *value = 0;
-    }
-  }
 
   return ret;
 }

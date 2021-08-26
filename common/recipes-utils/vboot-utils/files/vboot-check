@@ -299,18 +299,18 @@ def md5_check(fh, image_meta):
     check_map = {}
     check_map["spl"] = MD5SUM_UNCHECK
     check_map["rec-u-boot"] = MD5SUM_UNCHECK
+    retval = {}
 
-    print("")
     for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
         if part_info["name"] in check_map.keys():
             fh.seek(part_info["offset"])
             pdata = fh.read(part_info["size"])
             pmd5 = hashlib.md5(pdata).hexdigest()
-            print(
-                "{} md5sum: {}: {}".format(
-                    part_info["name"], pmd5, "OK" if pmd5 == part_info["md5"] else "BAD"
-                )
-            )
+            retval[part_info["name"]] = {
+                "found": True,
+                "md5": pmd5,
+                "status": "OK" if pmd5 == part_info["md5"] else "BAD",
+            }
             if pmd5 == part_info["md5"]:
                 check_map[part_info["name"]] = MD5SUM_VALID
             else:
@@ -318,49 +318,60 @@ def md5_check(fh, image_meta):
 
     # print out unchecked partition
     for part in [key for key in check_map.keys() if check_map[key] == MD5SUM_UNCHECK]:
-        print("{} md5sum: not fount in meta: BAD".format(part))
+        retval[part] = {"found": False, "status": "BAD"}
 
-    print("")
     if not all(value == MD5SUM_VALID for value in check_map.values()):
-        return EC_MD5SUM_BAD
+        raise VbootParserException(code=EC_MD5SUM_BAD)
 
-    return EC_SUCCESS
+    return retval
 
 
 def main():
-    # check md5sum if image_meta is not None
-    if image_meta is not None and not args.locked_bmc:
+    try:
+        ret = {}
+        # check md5sum if image_meta is not None
+        if image_meta is not None and not args.locked_bmc:
+            with open(args.filename, "rb") as fh:
+                checksums = md5_check(fh, image_meta)
+
+            if checksums:
+                ret["checksums"] = {}
+                for k, v in checksums.items():
+                    ret["checksums"][k] = v
+
         with open(args.filename, "rb") as fh:
-            ret = md5_check(fh, image_meta)
-            if ret != EC_SUCCESS:
-                return ret
+            data = fh.read(args.rom_size)
 
-    with open(args.filename, "rb") as fh:
-        data = fh.read(args.rom_size)
+            data_size = len(data)
+            if data_size < 4:
+                print(
+                    "Not sure what this file contains: %s" % (args.filename),
+                    file=sys.stderr,
+                )
+                return EC_EXCEPTION
+            # sanity check the file first instrcution is
+            # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
+            # the <reset-vector> location can be different
+            # SPL: \x0f for AST2500, \x1f for AST2600
+            # U-Boot: \xBE for AST2500, \xC0 for AST2600
+            if data[1:4] != b"\x00\x00\xea":
+                print("Non-flash file inputs are not supported", file=sys.stderr)
+                return EC_EXCEPTION
 
-        data_size = len(data)
-        if data_size < 4:
-            print(
-                "Not sure what this file contains: %s" % (args.filename),
-                file=sys.stderr,
-            )
-            return EC_EXCEPTION
-        # sanity check the file first instrcution is
-        # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
-        # the <reset-vector> location can be different
-        # SPL: \x0f for AST2500, \x1f for AST2600
-        # U-Boot: \xBE for AST2500, \xC0 for AST2600
-        if data[1:4] != b"\x00\x00\xea":
-            print("Non-flash file inputs are not supported", file=sys.stderr)
-            return EC_EXCEPTION
-
-        try:
-            ret = decode_flash(fh, data)
+            ret.update(decode_flash(fh, data))
             ret.update(decode_os(fh))
 
             if args.json:
                 print(json.dumps(ret))
             else:
+                if "checksums" in ret:
+                    print("")
+                    for k, v in ret["checksums"].items():
+                        if v["found"]:
+                            print("{} md5sum: {}: {}".format(k, v["md5"], v["status"]))
+                        else:
+                            print("{} md5sum: not fount in meta: BAD".format(k))
+                    print("")
                 print("Lockbit: %s" % ret["lockbit"])
                 print("SPL FIT offset: %s" % ret["spl_fit_offset"])
                 for key in ret["spl_keys"]:
@@ -438,10 +449,10 @@ def main():
                     )
                 )
 
-        except VbootParserException as e:
-            return e.code
+    except VbootParserException as e:
+        return e.code
 
-        return EC_SUCCESS
+    return EC_SUCCESS
 
 
 def load_image_meta():

@@ -59,7 +59,6 @@ const char *force_pwr_option_list = "on, 12V-on";
 #endif
 
 #ifdef CONFIG_FBY3_CWC
-static const char * pal_m2_dual = pal_m2_dual_list;
 static uint8_t expFru = 0;  //id of cwc and gpv3
 #endif
 
@@ -97,7 +96,7 @@ print_usage() {
       pal_server_list, pwr_option_list);
 #ifdef CONFIG_FBY3_CWC
   if (pal_is_cwc() == PAL_EOK) {
-    printf("Usage: power-util [ %s ] [2U-cwc, 2U-top, 2U-bot] [status, 12V-on, 12V-off, 12V-cycle]\n", pal_server_list);
+    printf("Usage: power-util [ %s ] [ 2U-cwc, 2U-top, 2U-bot ] [ status, 12V-on, 12V-off, 12V-cycle ]\n", pal_server_list);
   }
 #endif
 
@@ -109,8 +108,8 @@ print_usage() {
       pal_server_list, pal_dev_list_power, dev_pwr_option_list);
 #ifdef CONFIG_FBY3_CWC
     if (pal_is_cwc() == PAL_EOK) {
-      printf("Usage: power-util [ %s ] [2U-top, 2U-bot] [ %s, %s ] [ %s ]\n",
-        pal_server_list, pal_dev_list_power, pal_m2_dual, dev_pwr_option_list);
+      printf("Usage: power-util [ %s ] [ 2U-top, 2U-bot ] [ %s ] [ %s ]\n",
+        pal_server_list, pal_dev_list_power, dev_pwr_option_list);
     }
 #endif
   }

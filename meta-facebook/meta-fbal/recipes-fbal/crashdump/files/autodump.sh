@@ -79,8 +79,11 @@ LOGS=$(basename $DUMP_FILE)
 if [ "$ACD" == true ] ; then
   $DUMP_UTIL
 
-  if [ $(($(/usr/bin/kv get mb_skt) >> 1)) -eq 1 ]; then
+  mode=$(($(/usr/bin/kv get mb_skt) >> 1))
+  if [ "$mode" -eq 0 ]; then
     PARSE_UTIL+=" -p $MAP_DIR/4s_device_map.json -m $MAP_DIR/4s_memory_map.json"
+  elif [ "$mode" -eq 1 ]; then
+    PARSE_UTIL+=" -p $MAP_DIR/ex_device_map.json -m $MAP_DIR/ex_memory_map.json"
   fi
 
   # shellcheck disable=SC2012

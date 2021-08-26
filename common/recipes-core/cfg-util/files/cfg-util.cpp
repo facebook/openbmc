@@ -115,6 +115,11 @@ main(int argc, char **argv) {
 
   // Handle Reset Default factory settings
   if ((argc == 2) && (!strcmp(argv[1], "--clear"))){
+      if (pal_is_fw_update_ongoing_system()) {
+        printf("FW update is ongoing, block the command.\n");
+        return -1;
+      }
+
       printf("Reset BMC data to default factory settings and BMC will be reset...\n");
       if(system("rm /mnt/data/* -rf > /dev/null 2>&1") != 0) {
         printf("Cleaning persistent storage failed!\n");

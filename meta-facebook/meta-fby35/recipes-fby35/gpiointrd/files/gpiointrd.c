@@ -283,7 +283,7 @@ static void
     "BB_BUTTON_BMC_CO_N_R",
     "AC_ON_OFF_BTN_BMC_SLOT1_N_R",
     "AC_ON_OFF_BTN_SLOT2_N",
-    "AC_ON_OFF_BTN_BMC_SLOT1_N_R",
+    "AC_ON_OFF_BTN_BMC_SLOT3_N_R",
     "AC_ON_OFF_BTN_SLOT4_N"
   };
   uint8_t action[BTN_ARRAY_SIZE] = {0};

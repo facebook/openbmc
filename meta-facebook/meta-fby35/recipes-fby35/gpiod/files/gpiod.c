@@ -563,6 +563,7 @@ gpio_monitor_poll(void *ptr) {
   uint8_t power_policy = POWER_CFG_UKNOWN;
   uint8_t bmc_location = 0;
   char pwr_state[256] = {0};
+  uint8_t pwr_sts = 0;
   bool chk_bic_pch_pwr_flag = true;
 
   /* Check for initial Asserts */
@@ -590,7 +591,8 @@ gpio_monitor_poll(void *ptr) {
       rst_timer(fru);
       kv_set(host_key[fru-1], "0", 0, 0);
 
-      if (chk_bic_pch_pwr_flag) {
+      ret = pal_get_server_12v_power(fru, &pwr_sts);
+      if ( ret == PAL_EOK && pwr_sts == SERVER_12V_ON && chk_bic_pch_pwr_flag) {
         check_bic_pch_pwr_fault(fru);
         chk_bic_pch_pwr_flag = false;
       }

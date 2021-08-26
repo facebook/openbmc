@@ -117,12 +117,12 @@ main(int argc, char **argv) {
     }
 
     // reset status and read bic_is_m2_exp_prsnt_cache
-    status = CONFIG_UNKNOWN;
-    status = bic_is_m2_exp_prsnt_cache(fru);
-    if ( status < 0 ) {
-      printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
+    ret = bic_is_m2_exp_prsnt_cache(fru);
+    if ( ret < 0 ) {
+      printf("Failed to get 1OU & 2OU present status\n");
       goto err_exit;
     }
+    status = (uint8_t) ret;
 
     if (bmc_location != NIC_BMC) {
       // is 1OU present?

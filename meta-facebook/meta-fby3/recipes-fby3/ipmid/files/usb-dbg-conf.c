@@ -738,7 +738,10 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
       strcat(fw_text, entry);
     }
 
-    if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) == PRESENT_2OU ) {
+    ret = bic_is_m2_exp_prsnt(slot_id);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "Failed to get 1ou & 2ou present status");
+    } else if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
       if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
         syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",slot_id);
       } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {

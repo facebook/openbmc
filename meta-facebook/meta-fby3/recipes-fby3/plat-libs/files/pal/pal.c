@@ -3948,7 +3948,7 @@ int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   uint8_t bmc_location = 0;
-  uint8_t config_status = CONFIG_UNKNOWN ;
+  uint8_t config_status;
   int ret = PAL_ENOTSUP;
   uint8_t tmp_cpld_swap[4] = {0};
   uint8_t type_2ou = UNKNOWN_BOARD;
@@ -3978,7 +3978,12 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     case FW_1OU_BIC:
     case FW_1OU_BIC_BOOTLOADER:
     case FW_1OU_CPLD:
-      config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get 1ou & 2ou present status", __func__);
+        goto error_exit;
+      }
+      config_status = (uint8_t) ret;
       if (!((bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
         goto not_support;
       }
@@ -3986,7 +3991,12 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     case FW_2OU_BIC:
     case FW_2OU_BIC_BOOTLOADER:
     case FW_2OU_CPLD:
-      config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get 1ou & 2ou present status", __func__);
+        goto error_exit;
+      }
+      config_status = (uint8_t) ret;
       if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
         syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
       }

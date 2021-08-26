@@ -108,6 +108,10 @@ fruid_cache_init(uint8_t slot_id) {
 
   // Get remote FRU
   present = bic_is_m2_exp_prsnt(slot_id);
+  if (present < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get 1ou & 2ou present status", __func__);
+    return -1;
+  }
   fby3_common_get_bmc_location(&bmc_location);
   if (bmc_location == NIC_BMC) { //NIC BMC
     remote_f_ret = remote_fruid_cache_init(slot_id, 0, BB_BIC_INTF);
@@ -155,11 +159,11 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   int retry = 0;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  char *path = NULL;
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
+  char *path = sdr_temp_path;
   ssize_t bytes_wr;
-  uint8_t present = 0;
+  int present = 0;
   uint8_t bmc_location = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
@@ -175,7 +179,6 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   req.nbytes = BYTES_ENTIRE_RECORD;
 
   // Read Slot0's SDR records and store
-  path = sdr_temp_path;
   unlink(path);
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
@@ -193,6 +196,10 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
 
   if ((slot_id == FRU_SLOT1) || (slot_id == FRU_SLOT3)) {
     present = bic_is_m2_exp_prsnt(slot_id);
+    if (present < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get 1ou & 2ou present status", __func__);
+      return -1;
+    }
     fby3_common_get_bmc_location(&bmc_location);
     if (bmc_location != NIC_BMC) { // Baseboard BMC
       if (PRESENT_2OU == (PRESENT_2OU & present)) {
@@ -289,9 +296,9 @@ sdr_cache_init(uint8_t slot_id) {
   int retry = 0;
   uint8_t rlen;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  char *path = NULL;
   char sdr_temp_path[64] = {0};
   char sdr_path[64] = {0};
+  char *path = sdr_temp_path;
   ssize_t bytes_wr;
   uint8_t bmc_location = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
@@ -308,7 +315,6 @@ sdr_cache_init(uint8_t slot_id) {
   req.nbytes = BYTES_ENTIRE_RECORD;
 
   // Read Slot0's SDR records and store
-  path = sdr_temp_path;
   unlink(path);
   fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
   if (fd < 0) {
@@ -364,6 +370,10 @@ sdr_cache_init(uint8_t slot_id) {
 
   // Get remote SDR
   present = bic_is_m2_exp_prsnt(slot_id);
+  if (present < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get 1ou & 2ou present status", __func__);
+    return -1;
+  }
   fby3_common_get_bmc_location(&bmc_location);
   if (bmc_location == NIC_BMC) {
     remote_f_ret = remote_sdr_cache_init(slot_id, BB_BIC_INTF);

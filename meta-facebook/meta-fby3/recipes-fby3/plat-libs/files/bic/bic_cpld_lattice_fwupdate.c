@@ -1451,7 +1451,13 @@ update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
   udev->ci = 1;
   udev->epaddr = 0x1;
 
-  if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) == PRESENT_2OU ) {
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if (ret < 0) {
+    syslog(LOG_WARNING,"Failed to get 1ou & 2ou present status");
+    printf("Failed to get 1ou & 2ou present status\n");
+    goto error_exit;
+  }
+  if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
     if ( fby3_common_get_2ou_board_type(slot_id, &type_2ou) < 0) {
       syslog(LOG_WARNING, "Failed to get slot%d 2ou board type\n",slot_id);
       printf("Failed to get slot%d 2ou board type\n",slot_id);

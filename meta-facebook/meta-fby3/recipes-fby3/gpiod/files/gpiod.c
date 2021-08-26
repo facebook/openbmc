@@ -368,7 +368,13 @@ fru_cahe_init(uint8_t fru) {
   if (fru != FRU_SLOT1 && fru != FRU_SLOT3) {
     return -1;
   }
-  if ( (bic_is_m2_exp_prsnt(fru) & PRESENT_2OU) != PRESENT_2OU ) {
+
+  ret = bic_is_m2_exp_prsnt(fru);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get 1OU & 2OU present status, return val: %d", __func__, ret);
+    return -1;
+  } 
+  if ( (ret & PRESENT_2OU) != PRESENT_2OU ) {
     return -1;
   }
   if ( fby3_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {

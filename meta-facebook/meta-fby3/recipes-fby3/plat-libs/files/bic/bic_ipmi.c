@@ -2070,16 +2070,19 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
     type_2ou = CWC_MCHP_BOARD;
   } else {
-    if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) != PRESENT_2OU ) {
+    ret = bic_is_m2_exp_prsnt(slot_id);
+    if (ret < 0) {
+      syslog(LOG_WARNING,"%s() Failed to get 1ou & 2ou present status", __func__);
+      goto err_out;
+    }
+    if ( (ret & PRESENT_2OU) != PRESENT_2OU ) {
       syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
-      *type = DEV_TYPE_UNKNOWN;
-      return -1;
+      goto err_out;
     }
     ret = fby3_common_get_2ou_board_type(slot_id, &type_2ou);
     if ( ret < 0 ) {
       syslog(LOG_WARNING,"%s() Cannot get 2ou board type", __func__);
-      *type = DEV_TYPE_UNKNOWN;
-      return -1;
+      goto err_out;
     }
   }
   if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) {
@@ -2124,8 +2127,8 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
     return 0;
   }
 
+err_out:
   *type = DEV_TYPE_UNKNOWN;
-
   return -1;
 }
 

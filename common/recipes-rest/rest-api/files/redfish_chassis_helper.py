@@ -34,14 +34,18 @@ FRUID_UTIL_PATH = "/usr/local/bin/fruid-util"
 WEUTIL_PATH = "/usr/bin/weutil"
 
 """ sensor type constants as defined in sensors.py """
+LIB_SENSOR_IN = 0
 LIB_SENSOR_FAN = 1
 LIB_SENSOR_TEMPERATURE = 2
 LIB_SENSOR_POWER = 3
+LIB_SENSOR_CURR = 5
 
 sensor_unit_dict = {
     LIB_SENSOR_FAN: "RPM",
     LIB_SENSOR_TEMPERATURE: "C",
-    LIB_SENSOR_POWER: "Volts",
+    LIB_SENSOR_POWER: "Watts",
+    LIB_SENSOR_IN: "Amps",
+    LIB_SENSOR_CURR: "Volts",
 }
 SAD_SENSOR = -99999  # default reading for values not found.
 
@@ -80,6 +84,8 @@ def get_sensor_details_using_libpal(
             except sdr.LibSdrError:
                 sensor_name = None
 
+            sensor_name = fru_name + "/" + fru_name + "/" + sensor_name
+
             if sensor_unit == "%":
                 sensor_unit = "Percent"  # DMTF accepts this unit as text
             sensor_details = SensorDetails(
@@ -110,7 +116,7 @@ def get_sensor_details_using_libpal_helper(
 
 
 def get_older_fboss_sensor_details(
-    fru_name: str, desired_sensor_type: int
+    fru_name: str, desired_sensor_type: t.List[int]
 ) -> t.List[SensorDetails]:
     """Returns sensor details using sensors.py for older fboss
     platforms that don't support libpal i.e. yamp, wedge, wedge100"""
@@ -120,12 +126,14 @@ def get_older_fboss_sensor_details(
     sensors.init()
     for chip in sensors.ChipIterator():
         for sensor in sensors.FeatureIterator(chip):
-            if sensor.type == desired_sensor_type:
+            if sensor.type in desired_sensor_type:
                 chip_name = sensors.chip_snprintf_name(chip)
+                adapter_name = sensors.get_adapter_name(chip.bus)
                 sensor_tag = sensor.name.decode("utf-8")
                 reading_key = sensor_tag + "_input"
                 ucr_key = sensor_tag + "_max"
-                sensor_name = chip_name + "." + sensors.get_label(chip, sensor)
+                sensor_label = sensors.get_label(chip, sensor)
+                sensor_name = chip_name + "/" + adapter_name + "/" + sensor_label
                 sfs = list(sensors.SubFeatureIterator(chip, sensor))
                 sf_keys = []
                 sf_vals = []
@@ -152,7 +160,7 @@ def get_older_fboss_sensor_details(
                     fru_name=fru_name,
                     reading=int(subfeatures_dict[reading_key]),
                     sensor_thresh=None,  # bc sensors.py doesn't provide ThreshSensor
-                    sensor_unit=sensor_unit_dict[desired_sensor_type],
+                    sensor_unit=sensor_unit_dict[sensor.type],
                     sensor_history=None,  # bc sensors.py doesn't provide sensor history
                     ucr_thresh=int(subfeatures_dict[ucr_key]),
                 )

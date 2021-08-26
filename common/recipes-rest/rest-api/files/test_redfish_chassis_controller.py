@@ -215,6 +215,7 @@ class TestChassisService(AioHTTPTestCase):
 
         for server_name in ["1", "server1", "server2", "server3", "server4"]:
             with self.subTest(server_name=server_name):
+                fru_name = self.get_fru_name(server_name)
                 pal.pal_get_fru_sensor_list.side_effect = [[129], [70]]
                 sdr.sdr_get_sensor_units.side_effect = ["C", "RPM"]
                 sdr.sdr_get_sensor_name.side_effect = [
@@ -276,7 +277,9 @@ class TestChassisService(AioHTTPTestCase):
                             "UpperThresholdNonCritical": 0,
                             "UpperThresholdFatal": 0,
                             "ReadingCelsius": 24,
-                            "Name": "SP_INLET_TEMP",
+                            "Name": "{fru_name}/{fru_name}/SP_INLET_TEMP".format(
+                                fru_name=fru_name
+                            ),
                             "SensorNumber": 129,
                             "LowerThresholdFatal": 0,
                             "Status": {"Health": "OK", "State": "Enabled"},
@@ -284,7 +287,9 @@ class TestChassisService(AioHTTPTestCase):
                     ],
                     "Fans": [
                         {
-                            "Name": "SP_FAN0_TACH",
+                            "Name": "{fru_name}/{fru_name}/SP_FAN0_TACH".format(
+                                fru_name=fru_name
+                            ),
                             "Reading": 7177,
                             "SensorNumber": 70,
                             "MemberId": "0",
@@ -318,6 +323,7 @@ class TestChassisService(AioHTTPTestCase):
         "Testing power response for both single sled frus and multisled frus"
         for server_name in ["1", "server1", "server2", "server3", "server4"]:
             with self.subTest(server_name=server_name):
+                fru_name = self.get_fru_name(server_name)
                 pal.pal_get_fru_sensor_list.side_effect = [[224]]
                 sdr.sdr_get_sensor_units.side_effect = ["Amps"]
                 sdr.sdr_get_sensor_name.side_effect = ["SP_P5V"]
@@ -350,7 +356,9 @@ class TestChassisService(AioHTTPTestCase):
                             "@odata.id": "/redfish/v1/Chassis/{}/Power#/PowerControl/0".format(  # noqa: B950
                                 server_name
                             ),
-                            "Name": "SP_P5V",
+                            "Name": "{fru_name}/{fru_name}/SP_P5V".format(
+                                fru_name=fru_name
+                            ),
                             "PowerMetrics": {
                                 "MaxConsumedWatts": 5,
                                 "MinConsumedWatts": 5,

@@ -108,13 +108,13 @@ elif [ $carrier1 = "0x22" ] || [ $carrier1 = "0x44" ]; then
     i2cset -y -f 22 0x77 0x02 0x00
     echo "Carrier#1 Type is e1.s"
     break
-elif [ $carrier0 = "0x33" ]; then
-    $KVSET_CMD set "carrier_0" "e1.s_v2"
+elif [ $carrier1 = "0x33" ]; then
+    $KVSET_CMD set "carrier_1" "e1.s_v2"
     i2cset -y -f 22 0x77 0x02 0x00
     echo "Carrier#1 Type is e1.s_v2"
     break
-elif [ $carrier0 = "0xdd" ]; then
-    $KVSET_CMD set "carrier_0" "m.2_v2"
+elif [ $carrier1 = "0xdd" ]; then
+    $KVSET_CMD set "carrier_1" "m.2_v2"
     i2cset -y -f 22 0x77 0x02 0xFF
     echo "Carrier#1 Type is m.2_v2"
     #Set M.2 carrier INA219 Calibration register

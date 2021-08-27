@@ -280,7 +280,7 @@ class FwEntityUpgrader(object):
         item_successful: Status of all entities in list upgraded successfully or not
         """
         if self._is_post_action_set_in_json():
-            if not item_successful == UpgradeState.FAIL:
+            if item_successful == UpgradeState.FAIL:
                 logging.info(
                     "=== Will not run post action command,"
                     "as one or more instances of this fw_entity failed to upgrade"
@@ -289,12 +289,12 @@ class FwEntityUpgrader(object):
                 post_action = self._fw_info[UFW_POST_ACTION]
                 if self._dryrun:
                     post_action = "echo dryrun: " + post_action
-                logging.debug(
+                logging.info(
                     "=== Running post action command : {}".format(post_action)
                 )
                 subprocess.check_output(post_action, shell=True)  # noqa p204
             else:
-                logging.warn("=== Could not determine upgrade state")
+                logging.info("=== Upgrade skipped. Will not run post action")
 
     # ========================================================================
     # API publically accessible for upgrading entity

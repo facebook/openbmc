@@ -488,22 +488,6 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   int rpd_filesize = 0;
   int read_bytes = 0;
 
-  //Two BMCs are designed in Config C.
-  //They can access the CPLD of the baseboard at the same time.
-  //This means the CPLD can be updated in parallel.
-  //The update is unacceptable in Config C. Therefore, the BMC notify another BMC when update start.
-  //Before the update, BMC check twice if the update flag is set.
-  //Since the update don't start, return ret if one of them is failure.
-  if ( intf == BB_BIC_INTF && force != FORCE_UPDATE_SET) {
-    if (bic_check_bb_fw_update_ongoing() != 0) {
-      return -1;
-    }
-    if (bic_set_bb_fw_update_ongoing(FW_BB_CPLD, SEL_ASSERT) != 0) {
-      printf("Failed to set firmware update ongoing\n");
-      return -1;
-    }
-  }
-
   SectorType_t secType = Sector_CFM0;
 
   printf("OnChip Flash Status = 0x%X., slot_id 0x%x, sectype 0x%x, intf: 0x%x, ", Max10_get_status(slot_id, intf), slot_id, secType, intf);
@@ -612,12 +596,6 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   printf("\nElapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
 
 error_exit:
-  if ( intf == BB_BIC_INTF ) {
-    if (bic_set_bb_fw_update_ongoing(FW_BB_CPLD, SEL_DEASSERT) != 0) {
-      printf("Failed to notify firmware update finish\n");
-      ret = -1;
-    }
-  }
   if ( fd > 0 ) close(fd);
   if ( rpd_file != NULL ) free(rpd_file);
 

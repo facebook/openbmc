@@ -2499,7 +2499,8 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 
   if(bmc_location == NIC_BMC) {
     // when updating firmware, front-paneld should pend to avoid the invalid access
-    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
+    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true || \
+         bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
 
     uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
     uint8_t rbuf[16] = {0x00};
@@ -2835,7 +2836,6 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         // it's not the fault event, filter it
         // or the amber LED will blink
         case 0x80: //E1S_1OU_M2_PRESENT
-        case 0x15: //SYS_BB_FW_EVENT
         case 0x11: //SYS_SLOT_PRSNT
         case 0x0B: //SYS_M2_VPP
         case 0x07: //SYS_FW_TRIGGER

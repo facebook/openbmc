@@ -2159,6 +2159,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     } else if ( sensor_num == 0x43 && (config_status & PRESENT_2OU) == PRESENT_2OU ) { // DP Riser
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
+      if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return READING_NA;
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
     } else {
       return READING_NA;

@@ -115,12 +115,9 @@ uint8_t get_gpv3_channel_number(uint8_t dev_id);
 int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 bool bic_is_fw_update_ongoing(uint8_t fruid);
 bool bic_is_crit_act_ongoing(uint8_t fruid);
-int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
-int bic_check_bb_fw_update_ongoing();
 int bic_get_mb_index(uint8_t *index);
 int bic_bypass_to_another_bmc(uint8_t* data, uint8_t len);
 int bic_set_crit_act_flag(uint8_t dir_type);
-int bic_ack_sel(uint8_t event);
 int bic_is_2u_top_bot_prsnt(uint8_t slot_id);
 int bic_is_2u_top_bot_prsnt_cache(uint8_t slot_id);
 

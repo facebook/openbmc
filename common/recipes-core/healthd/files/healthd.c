@@ -102,6 +102,8 @@
 
 #define LOG_REARM_CHECK_INTERVAL 3 // seconds
 
+#define MAX_LOG_SIZE 128
+
 struct i2c_bus_s {
   uint32_t offset;
   char     *name;
@@ -152,6 +154,13 @@ enum ASSERT_BIT {
   BIT_MEM_OVER_THRESHOLD = 1,
   BIT_RECOVERABLE_ECC    = 2,
   BIT_UNRECOVERABLE_ECC  = 3,
+};
+
+enum BIC_ERROR {
+  BIC_HB_ERR = 0,
+  BIC_IPMB_ERR,
+  BIC_READY_ERR,
+  BIC_ERR_TYPE_CNT,
 };
 
 /* Heartbeat configuration */
@@ -1705,7 +1714,14 @@ timestamp_handler()
 static void *
 bic_health_monitor() {
   int err_cnt = 0;
+  int i = 0;
   uint8_t status = 0;
+  uint8_t err_type[BIC_RESET_ERR_CNT] = {0};
+  uint8_t type = 0;
+  const char* err_str[BIC_ERR_TYPE_CNT] = {
+    "heartbeat", "IPMB", "BIC ready"
+  };
+  char err_log[MAX_LOG_SIZE] = "\0";
   bool is_already_reset = false;
 
   // set flag to notice BMC healthd bic_health_monitor is ready
@@ -1718,22 +1734,21 @@ bic_health_monitor() {
 
     // Read BIC ready pin to check BIC boots up completely
     if ((pal_is_bic_ready(bic_fru, &status) < 0) || (status == false)) {
-      err_cnt++;
+      err_type[err_cnt++] = BIC_READY_ERR;
       goto next_run;
     }
 
     // Check whether BIC heartbeat works 
     if (pal_is_bic_heartbeat_ok(bic_fru) == false) {
-      err_cnt++;
+      err_type[err_cnt++] = BIC_HB_ERR;
       goto next_run;
     }
 
     // Send a IPMB command to check IPMB service works normal
     if (pal_bic_self_test() < 0) {
-      err_cnt++;
+      err_type[err_cnt++] = BIC_IPMB_ERR;
       goto next_run;
     }
-
     // if all check pass, clear error counter and reset flag
     err_cnt = 0;
     is_already_reset = false;
@@ -1746,7 +1761,15 @@ next_run:
     if ((err_cnt >= BIC_RESET_ERR_CNT) && (is_already_reset == false)) {
       // if error counter over 3, reset BIC by hardware
       if (pal_bic_hw_reset() == 0) {
-        syslog(LOG_CRIT, "FRU %d BIC reset by BIC health monitor", bic_fru);
+        for (i = 0; i < BIC_RESET_ERR_CNT; i++) {
+          type = err_type[i];
+          strcat(err_log, err_str[type]);
+          if (i != BIC_RESET_ERR_CNT - 1) { // last one
+            strcat(err_log, ", ");
+          }          
+        }
+        syslog(LOG_CRIT, "FRU %d BIC reset by BIC health monitor due to health check failed in following order: %s", 
+                bic_fru, err_log);
         err_cnt = 0;
         is_already_reset = true;
       }

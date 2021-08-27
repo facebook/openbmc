@@ -1309,6 +1309,52 @@ get_component_name(uint8_t comp) {
       return "2OU M2 Dev10";
     case FW_2OU_M2_DEV11:
       return "2OU M2 Dev11";
+    case FW_CWC_BIC:
+      return "CWC BIC";
+    case FW_CWC_BIC_BL:
+      return "CWC BIC Bootloader";
+    case FW_CWC_CPLD:
+      return "CWC CPLD";
+    case FW_CWC_PESW:
+      return "CWC PCIe Switch";
+    case FW_GPV3_TOP_BIC:
+      return "2U Top BIC";
+    case FW_GPV3_TOP_BIC_BL:
+      return "2U Top BIC Bootloader";
+    case FW_GPV3_TOP_CPLD:
+      return "2U Top CPLD";
+    case FW_GPV3_TOP_PESW:
+      return "2U Top PCIe Switch";
+    case FW_GPV3_BOT_BIC:
+      return "2U Bottom BIC";
+    case FW_GPV3_BOT_BIC_BL:
+      return "2U Bottom BIC Bootloader";
+    case FW_GPV3_BOT_CPLD:
+      return "2U Bottom CPLD";
+    case FW_GPV3_BOT_PESW:
+      return "2U Bottom PCIe Switch";
+    case FW_CWC_PESW_VR:
+      return "CWC PCIe VR";
+    case FW_GPV3_TOP_PESW_VR:
+      return "2U Top PCIe VR";
+    case FW_GPV3_BOT_PESW_VR:
+      return "2U Bottom PCIe VR";
+    case FW_2U_TOP_3V3_VR1:
+      return "2U Top VR_P3V3_STBY1";
+    case FW_2U_TOP_3V3_VR2:
+      return "2U Top VR_P3V3_STBY2";
+    case FW_2U_TOP_3V3_VR3:
+      return "2U Top VR_P3V3_STBY3";
+    case FW_2U_TOP_1V8_VR:
+      return "2U Top VR_P1V8";
+    case FW_2U_BOT_3V3_VR1:
+      return "2U Bottom VR_P3V3_STBY1";
+    case FW_2U_BOT_3V3_VR2:
+      return "2U Bottom VR_P3V3_STBY2";
+    case FW_2U_BOT_3V3_VR3:
+      return "2U Bottom VR_P3V3_STBY3";
+    case FW_2U_BOT_1V8_VR:
+      return "2U Bottom VR_P1V8";
     default:
       return "Unknown";
   }

@@ -182,6 +182,41 @@ uint8_t GPIO_BOARD_REV_ID_TABLE[MAX_NUM_OF_BOARD_REV_ID_GPIO] = {
   GPIO_BOARD_REV_ID2,
 };
 
+PCIE_ERR_DECODE pcie_err_table[] = {
+  {0x00, "Receiver Error"},
+  {0x01, "Bad TLP"},
+  {0x02, "Bad DLLP"},
+  {0x03, "Replay Time-out"},
+  {0x04, "Replay Rollover"},
+  {0x05, "Advisory Non-Fatal"},
+  {0x06, "Corrected Internal Error"},
+  {0x07, "Header Log Overflow"},
+  {0x20, "Data Link Protocol Error"},
+  {0x21, "Surprise Down Error"},
+  {0x22, "Poisoned TLP"},
+  {0x23, "Flow Control Protocol Error"},
+  {0x24, "Completion Timeout"},
+  {0x25, "Completer Abort"},
+  {0x26, "Unexpected Completion"},
+  {0x27, "Receiver Buffer Overflow"},
+  {0x28, "Malformed TLP"},
+  {0x29, "ECRC Error"},
+  {0x2A, "Unsupported Request"},
+  {0x2B, "ACS Violation"},
+  {0x2C, "Uncorrectable Internal Error"},
+  {0x2D, "MC Blocked TLP"},
+  {0x2E, "AtomicOp Egress Blocked"},
+  {0x2F, "TLP Prefix Blocked Error"},
+  {0x30, "Poisoned TLP Egress Blocked"},
+  {0x50, "Received ERR_COR Message"},
+  {0x51, "Received ERR_NONFATAL Message"},
+  {0x52, "Received ERR_FATAL Message"},
+  {0x59, "LER was triggered by ERR_NONFATAL"},
+  {0x5A, "LER was triggered by ERR_FATAL"},
+  {0xA0, "PERR (non-AER)"},
+  {0xA1, "SERR (non-AER)"},
+  {0xFF, "None"}
+};
 
 static int
 pal_key_index(char *key) {
@@ -3910,4 +3945,105 @@ pal_clear_event_only_error_ack () {
   }
   
   return ret;
+}
+
+static void
+pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char **err1_desc, char **err2_desc, int *err1_size, int *err2_size) {
+  int i = 0;
+  int err_desc_size = 0;
+  int err_table_size = (sizeof(pcie_err_table) / sizeof(PCIE_ERR_DECODE));
+
+  for ( i = 0; i < err_table_size; i++ ) {
+    if ( err2_id == pcie_err_table[i].err_id ) {
+      err_desc_size = strlen(pcie_err_table[i].err_desc) + ERROR_ID_LOG_LEN + 2;
+      *err2_desc = calloc(err_desc_size, sizeof(char));
+      *err2_size = err_desc_size;
+      snprintf(*err2_desc, err_desc_size, ", ErrID2: 0x%02X(%s)",err2_id, pcie_err_table[i].err_desc);
+      continue;
+    } else if ( err1_id == pcie_err_table[i].err_id ) {
+      err_desc_size = strlen(pcie_err_table[i].err_desc) + ERROR_ID_LOG_LEN + 2;
+      *err1_desc = calloc(err_desc_size, sizeof(char));
+      *err1_size = err_desc_size;
+      snprintf(*err1_desc, err_desc_size, ", ErrID1: 0x%02X(%s)",err1_id, pcie_err_table[i].err_desc);
+      continue;
+    }
+
+    if ( *err1_desc != NULL && *err2_desc != NULL ) {
+      break;
+    }
+  }
+
+  if (*err2_desc == NULL) {
+    *err2_desc = calloc(ERROR_ID_LOG_LEN, sizeof(char));
+    *err2_size = ERROR_ID_LOG_LEN;
+    snprintf(*err2_desc, ERROR_ID_LOG_LEN, ", ErrID2: 0x%02X", err2_id);
+  }
+
+  if (*err1_desc == NULL) {
+    *err1_desc = calloc(ERROR_ID_LOG_LEN, sizeof(char));
+    *err1_size = ERROR_ID_LOG_LEN;
+    snprintf(*err1_desc, ERROR_ID_LOG_LEN, ", ErrID1: 0x%02X", err1_id);
+  }
+
+  return;
+}
+
+int
+pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
+#define ERROR_LOG_LEN 256
+
+  uint8_t general_info = 0;
+  uint8_t error_type = 0;
+  uint8_t err_id1 = 0, err_id2 = 0;
+  uint8_t bus_id = 0, dev_id = 0, fun_id = 0;
+  uint16_t totalerrid1cnt = 0, err_info = 0;
+  uint8_t plat = 0;
+  char temp_log[ERROR_LOG_LEN/2] = {0};
+  char *err1_descript = NULL, *err2_descript = NULL;
+  int err1_size = 0, err2_size = 0;
+
+  if ((sel == NULL) || (error_log == NULL)) {
+    syslog(LOG_WARNING, "%s(): Failed to parse OEM unfied SEL due to NULL parameters.", __func__);
+    return PAL_ENOTSUP;
+  }
+
+  error_log[0] = '\0';
+  general_info = (uint8_t) sel[3];
+  error_type = general_info & 0x0f;
+  err_info = ((sel[9] << 8) | sel[8]);
+  dev_id = sel[10] >> 3;
+  fun_id = sel[10] & 0x7;
+  bus_id = sel[11];
+  totalerrid1cnt = ((sel[13] << 8) | sel[12]);
+  err_id2 = sel[14];
+  err_id1 = sel[15];
+
+  switch (error_type) {
+    case UNIFIED_PCIE_ERR:
+      plat = (general_info & 0x10) >> 4;
+      if (plat == 0) {  //x86
+        pal_search_pcie_err(err_id1, err_id2, &err1_descript, &err2_descript, &err1_size, &err2_size);
+        snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X",
+                general_info, bus_id, dev_id, fun_id, totalerrid1cnt);
+        if (err2_descript != NULL) {
+          strncat(error_log, err2_descript, err2_size);
+          free(err2_descript);
+        }
+        if (err1_descript != NULL) {
+          strncat(error_log, err1_descript, err1_size);
+          free(err1_descript);
+        }
+      } else {
+        snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X, TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
+                general_info, err_info, bus_id, dev_id, fun_id, totalerrid1cnt, err_id2, err_id1);
+      }
+      snprintf(temp_log, sizeof(temp_log), "B %02X D %02X F %02X PCIe err,FRU:%u", bus_id, dev_id, fun_id, fru);
+      pal_add_cri_sel(temp_log);
+
+      return PAL_EOK;
+  }
+
+  pal_parse_oem_unified_sel_common(fru, sel, error_log);
+
+  return PAL_EOK;
 }

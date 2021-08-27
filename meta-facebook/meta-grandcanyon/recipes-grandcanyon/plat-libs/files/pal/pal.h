@@ -153,6 +153,8 @@ extern "C" {
 
 #define BIOS_POST_CMPLT   67
 
+#define ERROR_ID_LOG_LEN  16
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -338,6 +340,11 @@ typedef struct {
   uint8_t exp_uart_bridging_cmd_code;
   uint8_t exp_uart_bridging_mode;
 } exp_uart_bridging_cmd;
+
+typedef struct {
+    uint8_t err_id;
+    char *err_desc;
+} PCIE_ERR_DECODE;
 
 enum {
   UIC_SIDEA          = 1,

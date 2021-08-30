@@ -66,6 +66,18 @@ class ClassConfig {
           static VrExtComponent  top_vr_p3v3_2_fw1("slot1", "2U_vr_stby2_top", FRU_SLOT1, "2U-top", FW_2U_TOP_3V3_VR2);
           static VrExtComponent  top_vr_p3v3_3_fw1("slot1", "2U_vr_stby3_top", FRU_SLOT1, "2U-top", FW_2U_TOP_3V3_VR3);
           static VrExtComponent  top_vr_p1v8_fw1("slot1", "2U_vr_p1v8_top", FRU_SLOT1, "2U-top", FW_2U_TOP_1V8_VR);
+          static M2DevComponent  m2_top_dev0("slot1", "2U-dev0_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV0);
+          static M2DevComponent  m2_top_dev1("slot1", "2U-dev1_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV1);
+          static M2DevComponent  m2_top_dev2("slot1", "2U-dev2_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV2);
+          static M2DevComponent  m2_top_dev3("slot1", "2U-dev3_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV3);
+          static M2DevComponent  m2_top_dev4("slot1", "2U-dev4_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV4);
+          static M2DevComponent  m2_top_dev5("slot1", "2U-dev5_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV5);
+          static M2DevComponent  m2_top_dev6("slot1", "2U-dev6_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV6);
+          static M2DevComponent  m2_top_dev7("slot1", "2U-dev7_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV7);
+          static M2DevComponent  m2_top_dev8("slot1", "2U-dev8_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV8);
+          static M2DevComponent  m2_top_dev9("slot1", "2U-dev9_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV9);
+          static M2DevComponent  m2_top_dev10("slot1", "2U-dev10_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV10);
+          static M2DevComponent  m2_top_dev11("slot1", "2U-dev11_top", FRU_SLOT1, "2U-top", FW_TOP_M2_DEV11);
           static BicFwExtComponent bot_bic_fw("slot1", "2U_bic_bot", FRU_SLOT1, "2U-bot", FW_GPV3_BOT_BIC);
           static BicFwExtBlComponent bot_bicbl_fw("slot1", "2U_bicbl_bot", FRU_SLOT1, "2U-bot", FW_GPV3_BOT_BIC_BL);
           static CpldExtComponent bot_cpld_fw("slot1", "2U_cpld_bot" , FRU_SLOT1, "2U-bot", FW_GPV3_BOT_CPLD);
@@ -75,6 +87,18 @@ class ClassConfig {
           static VrExtComponent  bot_vr_p3v3_2_fw1("slot1", "2U_vr_stby2_bot", FRU_SLOT1, "2U-bot", FW_2U_BOT_3V3_VR2);
           static VrExtComponent  bot_vr_p3v3_3_fw1("slot1", "2U_vr_stby3_bot", FRU_SLOT1, "2U-bot", FW_2U_BOT_3V3_VR3);
           static VrExtComponent  bot_vr_p1v8_fw1("slot1", "2U_vr_p1v8_bot", FRU_SLOT1, "2U-bot", FW_2U_BOT_1V8_VR);
+          static M2DevComponent  m2_bot_dev0("slot1", "2U-dev0_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV0);
+          static M2DevComponent  m2_bot_dev1("slot1", "2U-dev1_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV1);
+          static M2DevComponent  m2_bot_dev2("slot1", "2U-dev2_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV2);
+          static M2DevComponent  m2_bot_dev3("slot1", "2U-dev3_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV3);
+          static M2DevComponent  m2_bot_dev4("slot1", "2U-dev4_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV4);
+          static M2DevComponent  m2_bot_dev5("slot1", "2U-dev5_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV5);
+          static M2DevComponent  m2_bot_dev6("slot1", "2U-dev6_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV6);
+          static M2DevComponent  m2_bot_dev7("slot1", "2U-dev7_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV7);
+          static M2DevComponent  m2_bot_dev8("slot1", "2U-dev8_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV8);
+          static M2DevComponent  m2_bot_dev9("slot1", "2U-dev9_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV9);
+          static M2DevComponent  m2_bot_dev10("slot1", "2U-dev10_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV10);
+          static M2DevComponent  m2_bot_dev11("slot1", "2U-dev11_bot", FRU_SLOT1, "2U-bot", FW_BOT_M2_DEV11);
         } else if (board_type != E1S_BOARD) {
           static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
           static VrExtComponent  vr_2ou_vr_p3v3_1_fw1("slot1", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);

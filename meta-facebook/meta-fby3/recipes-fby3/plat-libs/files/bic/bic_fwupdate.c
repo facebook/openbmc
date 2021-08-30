@@ -1355,6 +1355,54 @@ get_component_name(uint8_t comp) {
       return "2U Bottom VR_P3V3_STBY3";
     case FW_2U_BOT_1V8_VR:
       return "2U Bottom VR_P1V8";
+    case FW_TOP_M2_DEV0:
+      return "2U Top M2 Dev0";
+    case FW_TOP_M2_DEV1:
+      return "2U Top M2 Dev1";
+    case FW_TOP_M2_DEV2:
+      return "2U Top M2 Dev2";
+    case FW_TOP_M2_DEV3:
+      return "2U Top M2 Dev3";
+    case FW_TOP_M2_DEV4:
+      return "2U Top M2 Dev4";
+    case FW_TOP_M2_DEV5:
+      return "2U Top M2 Dev5";
+    case FW_TOP_M2_DEV6:
+      return "2U Top M2 Dev6";
+    case FW_TOP_M2_DEV7:
+      return "2U Top M2 Dev7";
+    case FW_TOP_M2_DEV8:
+      return "2U Top M2 Dev8";
+    case FW_TOP_M2_DEV9:
+      return "2U Top M2 Dev9";
+    case FW_TOP_M2_DEV10:
+      return "2U Top M2 Dev10";
+    case FW_TOP_M2_DEV11:
+      return "2U Top M2 Dev11";
+    case FW_BOT_M2_DEV0:
+      return "2U Bottom M2 Dev0";
+    case FW_BOT_M2_DEV1:
+      return "2U Bottom M2 Dev1";
+    case FW_BOT_M2_DEV2:
+      return "2U Bottom M2 Dev2";
+    case FW_BOT_M2_DEV3:
+      return "2U Bottom M2 Dev3";
+    case FW_BOT_M2_DEV4:
+      return "2U Bottom M2 Dev4";
+    case FW_BOT_M2_DEV5:
+      return "2U Bottom M2 Dev5";
+    case FW_BOT_M2_DEV6:
+      return "2U Bottom M2 Dev6";
+    case FW_BOT_M2_DEV7:
+      return "2U Bottom M2 Dev7";
+    case FW_BOT_M2_DEV8:
+      return "2U Bottom M2 Dev8";
+    case FW_BOT_M2_DEV9:
+      return "2U Bottom M2 Dev9";
+    case FW_BOT_M2_DEV10:
+      return "2U Bottom M2 Dev10";
+    case FW_BOT_M2_DEV11:
+      return "2U Bottom M2 Dev11";
     default:
       return "Unknown";
   }
@@ -1459,6 +1507,18 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_2U_TOP_3V3_VR2:
     case FW_2U_TOP_3V3_VR3:
     case FW_2U_TOP_1V8_VR:
+    case FW_TOP_M2_DEV0:
+    case FW_TOP_M2_DEV1:
+    case FW_TOP_M2_DEV2:
+    case FW_TOP_M2_DEV3:
+    case FW_TOP_M2_DEV4:
+    case FW_TOP_M2_DEV5:
+    case FW_TOP_M2_DEV6:
+    case FW_TOP_M2_DEV7:
+    case FW_TOP_M2_DEV8:
+    case FW_TOP_M2_DEV9:
+    case FW_TOP_M2_DEV10:
+    case FW_TOP_M2_DEV11:
       intf = RREXP_BIC_INTF1;
       break;
     case FW_GPV3_BOT_BIC:
@@ -1470,6 +1530,18 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_2U_BOT_3V3_VR2:
     case FW_2U_BOT_3V3_VR3:
     case FW_2U_BOT_1V8_VR:
+    case FW_BOT_M2_DEV0:
+    case FW_BOT_M2_DEV1:
+    case FW_BOT_M2_DEV2:
+    case FW_BOT_M2_DEV3:
+    case FW_BOT_M2_DEV4:
+    case FW_BOT_M2_DEV5:
+    case FW_BOT_M2_DEV6:
+    case FW_BOT_M2_DEV7:
+    case FW_BOT_M2_DEV8:
+    case FW_BOT_M2_DEV9:
+    case FW_BOT_M2_DEV10:
+    case FW_BOT_M2_DEV11:
       intf = RREXP_BIC_INTF2;
       break;
   }
@@ -1583,18 +1655,52 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_2OU_M2_DEV9:
     case FW_2OU_M2_DEV10:
     case FW_2OU_M2_DEV11:
+    case FW_TOP_M2_DEV0:
+    case FW_TOP_M2_DEV1:
+    case FW_TOP_M2_DEV2:
+    case FW_TOP_M2_DEV3:
+    case FW_TOP_M2_DEV4:
+    case FW_TOP_M2_DEV5:
+    case FW_TOP_M2_DEV6:
+    case FW_TOP_M2_DEV7:
+    case FW_TOP_M2_DEV8:
+    case FW_TOP_M2_DEV9:
+    case FW_TOP_M2_DEV10:
+    case FW_TOP_M2_DEV11:
+    case FW_BOT_M2_DEV0:
+    case FW_BOT_M2_DEV1:
+    case FW_BOT_M2_DEV2:
+    case FW_BOT_M2_DEV3:
+    case FW_BOT_M2_DEV4:
+    case FW_BOT_M2_DEV5:
+    case FW_BOT_M2_DEV6:
+    case FW_BOT_M2_DEV7:
+    case FW_BOT_M2_DEV8:
+    case FW_BOT_M2_DEV9:
+    case FW_BOT_M2_DEV10:
+    case FW_BOT_M2_DEV11:
       if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
         printf("* Failed to stop bic sensor monitor\n");
         break;
       }
-      uint8_t nvme_ready = 0, status = 0, type = 0;
-      ret = bic_get_dev_info(slot_id, (comp - FW_2OU_M2_DEV0) + 1, &nvme_ready ,&status, &type);
+      uint8_t nvme_ready = 0, status = 0, type = 0, m2_dev = 0;
+      if (comp >= FW_TOP_M2_DEV0 && comp <= FW_TOP_M2_DEV11) {
+        m2_dev = (comp - FW_TOP_M2_DEV0) + FW_2OU_M2_DEV0;
+        ret = bic_get_dev_info(FRU_2U_TOP, (comp - FW_TOP_M2_DEV0) + 1, &nvme_ready ,&status, &type);
+      } else if (comp >= FW_BOT_M2_DEV0 && comp <= FW_BOT_M2_DEV11) {
+        m2_dev = (comp - FW_BOT_M2_DEV0) + FW_2OU_M2_DEV0;
+        ret = bic_get_dev_info(FRU_2U_BOT, (comp - FW_BOT_M2_DEV0) + 1, &nvme_ready ,&status, &type);
+      } else {
+        m2_dev = comp;
+        ret = bic_get_dev_info(slot_id, (comp - FW_2OU_M2_DEV0) + 1, &nvme_ready ,&status, &type);
+      }
+      
       if (ret) {
         printf("* Failed to read m.2 device's info\n");
         ret = BIC_STATUS_FAILURE;
         break;
       } else {
-        ret = update_bic_m2_fw(slot_id, comp, path, intf, force, type);
+        ret = update_bic_m2_fw(slot_id, m2_dev, path, intf, force, type);
       }
       //run it anyway
       if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {

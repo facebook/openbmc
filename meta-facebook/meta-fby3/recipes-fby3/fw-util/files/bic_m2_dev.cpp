@@ -32,16 +32,27 @@ int M2DevComponent::print_version()
   int ret = 0;
   uint8_t nvme_ready = 0, status = 0, ffi = 0, meff = 0, major_ver = 0, minor_ver = 0;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
+  uint8_t intf = REXP_BIC_INTF;
   uint16_t vendor_id = 0;
   static bool is_dual_m2 = false;
   //static uint8_t cnt = 0;
+
+  if ( fw_comp >= FW_TOP_M2_DEV0 && fw_comp <= FW_TOP_M2_DEV11 ) {
+    idx = (fw_comp - FW_TOP_M2_DEV0) + 1;
+    intf = RREXP_BIC_INTF1;
+  } else if ( fw_comp >= FW_BOT_M2_DEV0 && fw_comp <= FW_BOT_M2_DEV11 ) {
+    idx = (fw_comp - FW_BOT_M2_DEV0) + 1;
+    intf = RREXP_BIC_INTF2;
+  }
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     server.ready();
     expansion.ready();
+
     ret = bic_get_dev_power_status(slot_id, idx, &nvme_ready, &status, \
-                                   &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+                                  &ffi, &meff, &vendor_id, &major_ver,&minor_ver, intf);
+
     if ( ret < 0 ) {
       throw string("Error in getting the version");
     } else if ( idx % 2 > 0 ) {
@@ -75,6 +86,15 @@ int M2DevComponent::update_internal(string image, bool force) {
   uint8_t nvme_ready = 0, status = 0, type = DEV_TYPE_UNKNOWN;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
   uint8_t bmc_location = 0;
+  uint8_t fru = slot_id;
+
+  if ( fw_comp >= FW_TOP_M2_DEV0 && fw_comp <= FW_TOP_M2_DEV11 ) {
+    idx = (fw_comp - FW_TOP_M2_DEV0) + 1;
+    fru = FRU_2U_TOP;
+  } else if ( fw_comp >= FW_BOT_M2_DEV0 && fw_comp <= FW_BOT_M2_DEV11 ) {
+    idx = (fw_comp - FW_BOT_M2_DEV0) + 1;
+    fru = FRU_2U_BOT;
+  }
 
   try {
     // get BMC location
@@ -88,7 +108,7 @@ int M2DevComponent::update_internal(string image, bool force) {
     expansion.ready();
 
     // need to make sure M2 exists
-    ret = pal_get_dev_info(slot_id, idx, &nvme_ready ,&status, &type);
+    ret = pal_get_dev_info(fru, idx, &nvme_ready ,&status, &type);
     if ( ret < 0 ) {
       throw string("Error in getting the m2 device info");
     }

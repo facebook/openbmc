@@ -4,8 +4,6 @@ ME_UTIL="/usr/local/bin/me-util"
 FRUID_UTIL="/usr/local/bin/fruid-util"
 FW_UTIL="/usr/bin/fw-util"
 SLOT_NAME=$1
-INTERFACE="PECI_INTERFACE"
-PCIE_INTERFACE="PECI_INTERFACE"
 
 function is_numeric {
   if [ $(echo "$1" | grep -cE "^\-?([[:xdigit:]]+)(\.[[:xdigit:]]+)?$") -gt 0 ]; then
@@ -118,22 +116,6 @@ RES=$($ME_UTIL $SLOT_NAME 0x18 0x01)
 echo "$RES" >> $CRASHDUMP_FILE
 RET=$?
 
-# if ME has response and in operational mode, PECI through ME
-if [ "$RET" -eq "0" ] && [ "${RES:6:1}" == "0" ]; then
-  RES=$($ME_UTIL $SLOT_NAME 0xb8 0x40 0x57 0x01 0x00 0x30 0x05 0x05 0xa1 0x00 0x00 0x00 0x00)
-  RET=$?
-  if [ "$RET" -eq "0" ] && [ "${RES:0:11}" == "57 01 00 40" ]; then
-    INTERFACE="ME_INTERFACE"
-  else
-    INTERFACE="PECI_INTERFACE"
-  fi
-  # else use wired PECI directly
-else
-  # echo "Use BIC wired PECI interface due to ME abnormal"
-  INTERFACE="PECI_INTERFACE"
-fi
-PCIE_INTERFACE=$INTERFACE
-
 # Major Firmware Revision
 REV=$(echo $RES| awk '{print $3;}')
 # Check whether the first parameter is numeric or not
@@ -173,17 +155,7 @@ if [ "$?" == 1 ] ;then
       fi
     fi
   fi
-
-  # PCI config read is not support ME DMI interface
-  RES=$($ME_UTIL $SLOT_NAME 0xb8 0x40 0x57 0x01 0x00 0x30 0x06 0x05 0x61 0x00 0x00 0x81 0x0D 0x00)
-  RET=$?
-  if [ "$RET" -eq "0" ] && [ "${RES:0:19}" == "Completion Code: AC" ]; then
-    PCIE_INTERFACE="PECI_INTERFACE"
-  fi
 fi
-
-echo "Set coreid msr interface = $INTERFACE" >> $CRASHDUMP_FILE
-echo "Set pcie dwr interface = $PCIE_INTERFACE" >> $CRASHDUMP_FILE
 
 # Sensors & sensor thresholds
 echo "Sensor history at dump:" >> $CRASHDUMP_FILE 2>&1
@@ -191,17 +163,46 @@ $DUMP_SCRIPT $SLOT_NAME "sensors" >> $CRASHDUMP_FILE
 echo "Sensor threshold at dump:" >> $CRASHDUMP_FILE 2>&1
 $DUMP_SCRIPT $SLOT_NAME "threshold" >> $CRASHDUMP_FILE
 
-#COREID dump
-$DUMP_SCRIPT $SLOT_NAME "coreid" $INTERFACE >> $CRASHDUMP_FILE
-#MSR dump
-$DUMP_SCRIPT $SLOT_NAME "msr" $INTERFACE >> $CRASHDUMP_FILE
-#PCIe dump
-$DUMP_SCRIPT $SLOT_NAME "pcie" $PCIE_INTERFACE >> $CRASHDUMP_FILE
+echo COREID dump
+date
+echo "Dumping coreid.."
+$DUMP_SCRIPT $SLOT_NAME "coreid"  >> $CRASHDUMP_FILE
+date
+echo "Dumping pcu.."
+$DUMP_SCRIPT $SLOT_NAME "pcu"  >> $CRASHDUMP_FILE
+date
+echo "Dumping ubox.."
+$DUMP_SCRIPT $SLOT_NAME "ubox"  >> $CRASHDUMP_FILE
+date
+echo "Dumping pcie.."
+$DUMP_SCRIPT $SLOT_NAME "pcie"  >> $CRASHDUMP_FILE
+date
+echo "Dumping iio.."
+$DUMP_SCRIPT $SLOT_NAME "iio"  >> $CRASHDUMP_FILE
+date
+echo "Dumping imc.."
+$DUMP_SCRIPT $SLOT_NAME "imc"  >> $CRASHDUMP_FILE
+date
+echo "Dumping mesh.."
+$DUMP_SCRIPT $SLOT_NAME "mesh"  >> $CRASHDUMP_FILE
+date
+echo "Dumping upi.."
+$DUMP_SCRIPT $SLOT_NAME "upi"  >> $CRASHDUMP_FILE
+date
+echo "Dumping uncore.."
+$DUMP_SCRIPT $SLOT_NAME "uncore"  >> $CRASHDUMP_FILE
+date
+echo "Dumping tor.."
+$DUMP_SCRIPT $SLOT_NAME "tor"  >> $CRASHDUMP_FILE
+date
+echo "Dumping core mca.."
+#MSR dump (core MCA)
+$DUMP_SCRIPT $SLOT_NAME "msr"  >> $CRASHDUMP_FILE
 
 # only second/dwr autodump need to rename accordingly
 if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
   # dwr
-  $DUMP_SCRIPT $SLOT_NAME  "dwr" $PCIE_INTERFACE >> $CRASHDUMP_FILE
+  $DUMP_SCRIPT $SLOT_NAME  "dwr" >> $CRASHDUMP_FILE
 
   # rename the archieve file based on whether dump in DWR mode or not
   if [ "$?" == "2" ]; then

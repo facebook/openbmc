@@ -23,9 +23,16 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://dump.sh \
             file://crashdump_coreid \
-            file://crashdump_msr \
+            file://crashdump_pcu \
+            file://crashdump_ubox \
             file://crashdump_pcie \
-            file://crashdump_pcie_bus \
+            file://crashdump_pcie_pch \
+            file://crashdump_iio \
+            file://crashdump_imc \
+            file://crashdump_mesh \
+            file://crashdump_upi \
+            file://crashdump_uncore \
+            file://crashdump_msr \
             file://autodump.sh \
             file://COPYING \
            "
@@ -45,9 +52,16 @@ do_install() {
   install -d $dst
   install -d $bin
   install -m 644 crashdump_coreid ${dst}/crashdump_coreid
-  install -m 644 crashdump_msr ${dst}/crashdump_msr
+  install -m 644 crashdump_pcu ${dst}/crashdump_pcu
+  install -m 644 crashdump_ubox ${dst}/crashdump_ubox
   install -m 644 crashdump_pcie ${dst}/crashdump_pcie
-  install -m 644 crashdump_pcie_bus ${dst}/crashdump_pcie_bus
+  install -m 644 crashdump_pcie_pch ${dst}/crashdump_pcie_pch
+  install -m 644 crashdump_iio ${dst}/crashdump_iio
+  install -m 644 crashdump_imc ${dst}/crashdump_imc
+  install -m 644 crashdump_mesh ${dst}/crashdump_mesh
+  install -m 644 crashdump_upi ${dst}/crashdump_upi
+  install -m 644 crashdump_uncore ${dst}/crashdump_uncore
+  install -m 644 crashdump_msr ${dst}/crashdump_msr
   for f in ${binfiles}; do
     install -m 755 $f ${dst}/$f
     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f

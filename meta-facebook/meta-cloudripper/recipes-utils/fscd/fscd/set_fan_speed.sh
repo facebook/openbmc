@@ -32,6 +32,21 @@ if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
     exit 1
 fi
 
+# check percent argument be number
+check_number=$(echo "$1" | grep -E "^[0-9]+$")
+if [ "$check_number" = '' ]; then
+    echo "Percent argument can be only integer number"
+    usage
+    exit 1
+fi
+
+# check percent in range 0-100
+if [ "$1" -lt 0 ] || [ "$1" -gt 100 ]; then
+    echo "Percent argument out of range"
+    usage
+    exit 1
+fi
+
 # FCB PWM 1 ~ 4 control Fantray 1 2 3 4
 if [ "$#" -eq 1 ]; then
     FAN_UNIT="1 2 3 4"

@@ -976,54 +976,38 @@ error_exit:
 int
 bic_is_m2_exp_prsnt(uint8_t slot_id) {
   uint8_t tbuf[4] = {0};
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rbuf[8] = {0};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
-  int ret = 0;
-  int present = 0;
+  int ret, val = 0;
+  int retry = 0;
   char key[MAX_KEY_LEN] = {0};
   char tmp_str[MAX_VALUE_LEN] = {0};
-  int val = 0;
 
   snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
+  if (!kv_get(key, tmp_str, NULL, 0)) {
+    val = atoi(tmp_str);
+    return val;
+  }
 
   tbuf[0] = 0x03; //bus id
   tbuf[1] = 0x42; //slave addr
   tbuf[2] = 0x01; //read 1 byte
   tbuf[3] = 0x0D; //register offset
 
-  ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-  present = rbuf[0] & 0xC;
-
-  if ( ret < 0 ) {
+  while (retry++ < 3) {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (!ret)
+      break;
+  }
+  if (ret < 0) {
     val = -1;
   } else {
-    if ( present == 0) {
-      val = 3; //1OU+2OU present
-    } else if ( present == 8) {
-      val = 1; //1OU present
-    } else if ( present == 4) {
-      val = 2; //2OU present
-    }
+    val = ((rbuf[0] & 0xC) >> 2) ^ 0x3;  // (PRESENT_2OU | PRESENT_1OU)
+    snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+    kv_set(key, tmp_str, 0, 0);
   }
 
-  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
-  kv_set(key, tmp_str, 0, 0);
-  return val;
-}
-
-int
-bic_is_m2_exp_prsnt_cache(uint8_t slot_id) {
-  char key[MAX_KEY_LEN] = {0};
-  char tmp_str[MAX_VALUE_LEN] = {0};
-  int val = 0;
-
-  snprintf(key, sizeof(key), KV_SLOT_IS_M2_EXP_PRESENT, slot_id);
-  if (kv_get(key, tmp_str, NULL, 0))
-    return -1;
-
-  val = atoi(tmp_str);
   return val;
 }
 
@@ -1546,7 +1530,8 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
-  if ( (bic_is_m2_exp_prsnt(slot_id) & PRESENT_2OU) != PRESENT_2OU ) {
+  ret = bic_is_m2_exp_prsnt(slot_id);
+  if ((ret < 0) || ((ret & PRESENT_2OU) != PRESENT_2OU)) {
     syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
     *type = DEV_TYPE_UNKNOWN;
     return -1;

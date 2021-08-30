@@ -76,9 +76,7 @@ pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
            (((((uint8_t*)&list)[index/8]) >> (7-(index % 8))) & 0x1)
 
 bic_gpio_t gpio_ass_val = {
-  .gpio[0] = 0,
-  .gpio[1] = 0,
-  .gpio[2] = 0,
+  {0, 0, 0}, // gpio[0], gpio[1], gpio[2]
 };
 
 err_t bic_pch_pwr_fault[] = {
@@ -348,14 +346,15 @@ fru_cache_dump(void *arg) {
 
 int
 fru_cahe_init(uint8_t fru) {
-  int ret, i;
+  int ret;
   uint8_t idx;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
   if (fru != FRU_SLOT1 && fru != FRU_SLOT3) {
     return -1;
   }
-  if ( (bic_is_m2_exp_prsnt(fru) & PRESENT_2OU) != PRESENT_2OU ) {
+  ret = bic_is_m2_exp_prsnt(fru);
+  if ((ret < 0) || ((ret & PRESENT_2OU) != PRESENT_2OU)) {
     return -1;
   }
   if ( fby35_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
@@ -556,14 +555,9 @@ gpio_monitor_poll(void *ptr) {
 
   int i, ret = 0;
   uint8_t fru = (int)ptr;
+  uint8_t pwr_sts = 0;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
-  uint8_t chassis_sts[8] = {0};
-  uint8_t chassis_sts_len;
-  uint8_t power_policy = POWER_CFG_UKNOWN;
-  uint8_t bmc_location = 0;
-  char pwr_state[256] = {0};
-  uint8_t pwr_sts = 0;
   bool chk_bic_pch_pwr_flag = true;
 
   /* Check for initial Asserts */
@@ -908,7 +902,7 @@ run_gpiod(int argc, void **argv) {
 
 int
 main(int argc, void **argv) {
-  int dev, rc, pid_file;
+  int rc, pid_file;
 
   if (argc < 2) {
     print_usage();

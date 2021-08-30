@@ -1335,6 +1335,10 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   }
 
   config_status = bic_is_m2_exp_prsnt(slot);
+  if (config_status < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the status of 1OU/2OU", __func__);
+    config_status = 0;
+  }
   if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
     //check if GPv3 is installed
     if ( fby35_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
@@ -1630,7 +1634,7 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
 
     ret = bic_is_m2_exp_prsnt(fru);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Cannot get bic_is_m2_exp_prsnt\n", __func__);
+      syslog(LOG_WARNING, "%s() Cannot get the status of 1OU/2OU", __func__);
       break;
     } else config_status = (uint8_t)ret;
 
@@ -2976,7 +2980,7 @@ int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {
   uint8_t bmc_location = 0;
-  uint8_t config_status = CONFIG_UNKNOWN ;
+  uint8_t config_status = CONFIG_UNKNOWN;
   int ret = PAL_ENOTSUP;
   uint8_t tmp_cpld_swap[4] = {0};
   uint8_t type_2ou = UNKNOWN_BOARD;
@@ -3004,14 +3008,24 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     switch(target) {
     case FW_1OU_BIC:
     case FW_1OU_CPLD:
-      config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      ret = bic_is_m2_exp_prsnt(fru);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU", __func__);
+        goto error_exit;
+      }
+      config_status = ret;
       if (!((bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
         goto not_support;
       }
       break;
     case FW_2OU_BIC:
     case FW_2OU_CPLD:
-      config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+      ret = bic_is_m2_exp_prsnt(fru);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU", __func__);
+        goto error_exit;
+      }
+      config_status = ret;
       if ( fby35_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
         syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
       }

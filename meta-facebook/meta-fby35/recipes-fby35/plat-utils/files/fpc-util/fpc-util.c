@@ -95,16 +95,14 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    // reset status and read bic_is_m2_exp_prsnt_cache
-    status = CONFIG_UNKNOWN;
-    status = bic_is_m2_exp_prsnt_cache(fru);
-    if ( status < 0 ) {
-      printf("Couldn't read bic_is_m2_exp_prsnt_cache\n");
+    ret = bic_is_m2_exp_prsnt(fru);
+    if ( ret < 0 ) {
+      printf("Couldn't get the status of 1OU/2OU\n");
       goto err_exit;
     }
 
     // is 1OU present?
-    if ( (status & PRESENT_1OU) != PRESENT_1OU ) {
+    if ( (ret & PRESENT_1OU) != PRESENT_1OU ) {
       printf("1OU board is not present, device identification only support in E1S 1OU board\n");
       goto err_exit;
     }

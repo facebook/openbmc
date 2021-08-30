@@ -1018,7 +1018,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT4:
     memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
     current_cnt = bic_sensor_cnt;
-    config_status = (pal_is_fw_update_ongoing(fru) == false) ? bic_is_m2_exp_prsnt(fru):bic_is_m2_exp_prsnt_cache(fru);
+    config_status = bic_is_m2_exp_prsnt(fru);
     if (config_status < 0) config_status = 0;
 
     // 1OU
@@ -1178,17 +1178,17 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
       return -1;
     }
     snprintf(cmd, sizeof(cmd), "sv status fscd | grep run | wc -l");
-    if((fp = popen(cmd, "r")) == NULL) {
+    if ((fp = popen(cmd, "r"))) {
+      if (fgets(buf, sizeof(buf), fp)) {
+        res = atoi(buf);
+        if (res == 0) {
+          is_fscd_run = false;
+        }
+      }
+      pclose(fp);
+    } else {
       is_fscd_run = false;
     }
-
-    if(fgets(buf, sizeof(buf), fp) != NULL) {
-      res = atoi(buf);
-      if(res == 0) {
-        is_fscd_run = false;
-      }
-    }
-    pclose(fp);
 
     if ( (status == MANUAL_MODE) && (!is_fscd_run) ) {
       return bic_manual_set_fan_speed(fan, pwm);
@@ -1651,7 +1651,7 @@ read_medusa_val(uint8_t snr_number, float *value) {
 }
 
 static int
-read_temp(uint8_t id, float *value) {
+read_temp(uint8_t snr_id, float *value) {
   struct {
     const char *chip;
     const char *label;
@@ -1661,11 +1661,11 @@ read_temp(uint8_t id, float *value) {
     {"tmp421-i2c-8-1f", "NIC_SENSOR_TEMP"},
     {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
   };
-  if (id >= ARRAY_SIZE(devs)) {
+  if (snr_id >= ARRAY_SIZE(devs)) {
     return -1;
   }
 
-  return sensors_read(devs[id].chip, devs[id].label, value);
+  return sensors_read(devs[snr_id].chip, devs[snr_id].label, value);
 }
 
 static int
@@ -2031,7 +2031,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   }
 
   //check snr number first. If it not holds, it will move on
-  if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
+  if (sensor_num <= 0x42) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
   } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
        ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {

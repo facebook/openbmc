@@ -99,6 +99,10 @@ fruid_cache_init(uint8_t slot_id) {
 
   // Get remote FRU
   present = bic_is_m2_exp_prsnt(slot_id);
+  if (present < 0) {
+    syslog(LOG_WARNING, "%s: Couldn't get the status of 1OU/2OU", __func__);
+    return present;
+  }
   fby35_common_get_bmc_location(&bmc_location);
   if (bmc_location == NIC_BMC) { //NIC BMC
     remote_f_ret = remote_fruid_cache_init(slot_id, 0, BB_BIC_INTF);
@@ -316,6 +320,10 @@ sdr_cache_init(uint8_t slot_id) {
 
   // Get remote SDR
   present = bic_is_m2_exp_prsnt(slot_id);
+  if (present < 0) {
+    syslog(LOG_WARNING, "%s: Couldn't get the status of 1OU/2OU", __func__);
+    return present;
+  }
   fby35_common_get_bmc_location(&bmc_location);
   if (bmc_location == NIC_BMC) {
     remote_f_ret = remote_sdr_cache_init(slot_id, BB_BIC_INTF);
@@ -423,7 +431,7 @@ main (int argc, char * const argv[])
   //get the slot_id
   ret = fby35_common_get_slot_id(argv[index], &slot_id);
   if ( ret <  0 ) {
-    syslog(LOG_WARNING, "%s() slot is incorrect %s\n", __func__, argv[ret]);
+    syslog(LOG_WARNING, "%s() slot is incorrect %s\n", __func__, argv[index]);
   }
 
   sprintf(path, BIC_CACHED_PID, slot_id);

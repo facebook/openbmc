@@ -70,16 +70,6 @@ i2c_device_add 6 0x21 pca9534          # PCA9534
 i2c_device_add 1 0x3a powr1220          # SMB power sequencer
 i2c_device_add 1 0x4d ir35215           # TH3 serdes voltage/current monitor on the left
 i2c_device_add 1 0x47 ir35215           # TH3 serdes voltage/current monitor on the right
-if [ "$brd_type" = "0" ]; then          # Only Wedge400
-    i2c_device_add 1 0x60 isl68137      # TH3 core voltage/current monitor
-elif [ "$brd_type" = "1" ]; then        # Only Wedge400-2
-    i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-2 GB core voltage/current monitor
-    if [ "$brd_rev" = "0" ]; then
-        i2c_device_add 1 0x43 ir35215   # Wedge400-2 GB serdes voltage/current monitor
-    else
-        i2c_device_add 1 0x0e pxe1211   # Wedge400-2 EVT2 or later GB serdes voltage/current monitor
-    fi
-fi
 
 # # Bus 3
 i2c_device_add 3 0x48 tmp75            # SMB temp. sensor
@@ -88,12 +78,7 @@ i2c_device_add 3 0x4a tmp75            # SMB temp. sensor
 i2c_device_add 3 0x4b tmp75            # SMB temp. sensor
 i2c_device_add 3 0x4c tmp421           # SMB temp. sensor
 i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
-if [ "$brd_type" = "0" ]; then         # Only Wedge400
-i2c_device_add 3 0x4f tmp422           # TH3 temp. sensor
-fi
-if [ $((brd_type)) -eq 1 ]; then       # Only Wedge400C
-i2c_device_add 3 0x2a net_asic        # GB temp. sensor
-fi
+
 
 # # i2c-mux 2-0070, channel 1
 i2c_device_add "$(get_mux_bus_num 2-0070 0)" 0x10 adm1278 # SCM Hotswap
@@ -107,11 +92,6 @@ i2c_device_add "$(get_mux_bus_num 2-0070 3)" 0x52 24c64   # EEPROM
 
 # # i2c-mux 2, channel 5
 i2c_device_add "$(get_mux_bus_num 2-0070 4)" 0x50 24c02   # BMC54616S EEPROM
-
-# Wedge400 DVT2 or later, wedge400c EVT2 or later has BSM eeprom
-if [[ "$brd_type" -eq 0 && "$brd_rev" -ge 3 ]] || [[ "$brd_type" -eq 1 && "$brd_rev" -ge 1 ]]; then
-i2c_device_add "$(get_mux_bus_num 2-0070 6)" 0x56 24c64   # BSM EEPROM
-fi
 
 # # i2c-mux 8-0070, channel 1
 if [ "$(wedge_power_supply_type 1)" = "PSU" ]; then
@@ -127,14 +107,6 @@ if [ "$(wedge_power_supply_type 2)" = "PSU" ]; then
 else
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x58 ltc4282      # PEM2 Driver
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x18 max6615      # PEM2 Driver
-fi
-
-# BCM54616 EEPROMs are removed physically on Wedge400-C DVT units
-if [ "$brd_type_rev" != "WEDGE400-C_DVT" ]; then
-    # # i2c-mux 8-0070, channel 3
-    i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x50 24c02          # BCM54616 EEPROM
-    # # i2c-mux 8-0070, channel 4
-    i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x50 24c02          # BCM54616 EEPROM
 fi
 
 # # i2c-mux 8-0070, channel 5
@@ -164,6 +136,36 @@ i2c_device_add "$(get_mux_bus_num 11-0076 6)" 0x52 24c64           # FAN tray
 
 # # i2c-mux 11-0076, channel 8
 i2c_device_add "$(get_mux_bus_num 11-0076 7)" 0x52 24c64           # FAN tray
+
+fixup_wedge400_wedge400c_driver() {
+    if [ "$brd_type" = "0" ]; then          # Only Wedge400
+        i2c_device_add 1 0x60 isl68137      # TH3 core voltage/current monitor
+        i2c_device_add 3 0x4f tmp422        # TH3 temp. sensor
+    elif [ "$brd_type" = "1" ]; then        # Only Wedge400-2
+        i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-2 GB core voltage/current monitor
+        i2c_device_add 3 0x2a net_asic        # GB temp. sensor
+        if [ "$brd_rev" = "0" ]; then
+            i2c_device_add 1 0x43 ir35215   # Wedge400-2 GB serdes voltage/current monitor
+        else
+            i2c_device_add 1 0x0e pxe1211   # Wedge400-2 EVT2 or later GB serdes voltage/current monitor
+        fi
+    fi
+
+    # BCM54616 EEPROMs are removed physically on Wedge400-C DVT units
+    if [ "$brd_type_rev" != "WEDGE400-C_DVT" ]; then
+        # # i2c-mux 8-0070, channel 3
+        i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x50 24c02          # BCM54616 EEPROM
+        # # i2c-mux 8-0070, channel 4
+        i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x50 24c02          # BCM54616 EEPROM
+    fi
+
+    # Wedge400 DVT2 or later, wedge400c EVT2 or later has BSM eeprom
+    if [[ "$brd_type" -eq 0 && "$brd_rev" -ge 3 ]] || [[ "$brd_type" -eq 1 && "$brd_rev" -ge 1 ]]; then
+        i2c_device_add "$(get_mux_bus_num 2-0070 6)" 0x56 24c64   # BSM EEPROM
+    fi
+}
+
+fixup_wedge400_wedge400c_driver
 
 #
 # Check if I2C devices are bound to drivers. A summary message (total #

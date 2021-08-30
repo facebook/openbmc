@@ -281,7 +281,7 @@ def write_test_fdt(data, fdt):
     new_content = fdt.to_dtb()
     write_content(args.offset, new_content)
     padding = args.size - len(new_content)
-    write_content(args.offset + len(new_content), '\0' * padding)
+    write_content(args.offset + len(new_content), b'\0' * padding)
 
     offset = args.size + args.offset
     write_content(offset, data[offset:])

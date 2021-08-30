@@ -1731,6 +1731,13 @@ bic_health_monitor() {
     if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {
       goto next_run;
     }
+    
+    // Check if bic is updating
+    if (pal_is_fw_update_ongoing(bic_fru) == true) {
+      err_cnt = 0;
+      sleep(BIC_HEALTH_INTERVAL);
+      continue;
+    }
 
     // Read BIC ready pin to check BIC boots up completely
     if ((pal_is_bic_ready(bic_fru, &status) < 0) || (status == false)) {

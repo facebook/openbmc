@@ -87,7 +87,7 @@ func ensureFlashWritable(stepParams step.StepParams) step.StepExitError {
 		errMsg := errors.Errorf(
 			"U-Boot environment is read only: flash chips swapped?" +
 			" Error code: %v, stderr: %v", err, stderr)
-		errRet = step.ExitUnsafeToReboot{Err: errMsg}
+		errRet = step.ExitBrokenSystem{Err: errMsg}
 		log.Printf("U-Boot environment is READ ONLY")
 	} else {
 		log.Printf("U-Boot environment confirmed writable")

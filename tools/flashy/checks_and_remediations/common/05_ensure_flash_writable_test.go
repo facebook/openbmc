@@ -97,7 +97,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 			failSet:           false,
 			failCheck:         true,
 			failClear:         false,
-			want:              step.ExitUnsafeToReboot{
+			want:              step.ExitBrokenSystem{
                                 Err: errors.Errorf("U-Boot environment is read only: flash chips swapped? Error code: <nil>, stderr: ")},
 		},
 		{

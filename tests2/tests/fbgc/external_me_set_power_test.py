@@ -28,9 +28,9 @@ class MESetPowerTest(BaseMESetPowerTest, unittest.TestCase):
     def set_ssh_session_bmc_hostname(self):
         # Using IPMI to get BMC IP
         raw_ip = run_shell_cmd("ipmitool raw 0x0C 0x02 0x00 0xC5").split(" ")
-        self.bmc_hostname = "{:02d}{:02d}::{:02d}{:02d}".format(
-            int(raw_ip[2]),
-            int(raw_ip[3]),
-            int(raw_ip[16]),
-            int(raw_ip[17]),
+        self.bmc_hostname = "{:02x}{:02x}::{:02x}{:02x}".format(
+            int(raw_ip[2], 16),
+            int(raw_ip[3], 16),
+            int(raw_ip[16], 16),
+            int(raw_ip[17], 16),
         )

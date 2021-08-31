@@ -709,9 +709,9 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   int ret = 0;
   uint8_t status = 0;
   uint8_t uart_select = 0x00;
-  unsigned char *data = res_data;
+  uint8_t *data = res_data;
 
-  if(slot == 5) {   //handle the case, command sent from debug Card
+  if (slot == FRU_BB) {  // handle the case, command sent from debug Card
     ret = pal_get_uart_select_from_kv(&uart_select);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s() Failed to get debug_card_uart_select\n", __func__);
@@ -720,25 +720,29 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
     slot = uart_select;
   }
 
-  sprintf(key, "slot%u_por_cfg", slot);
-  if (pal_get_key_value(key, buff) == 0) {
-    if (!memcmp(buff, "off", strlen("off")))
-      policy = 0;
-    else if (!memcmp(buff, "lps", strlen("lps")))
-      policy = 1;
-    else if (!memcmp(buff, "on", strlen("on")))
-      policy = 2;
-    else
-      policy = 3;
-  }
-
-  // Current Power State
-  ret = pal_get_server_power(slot, &status);
-  if (ret >= 0) {
-    *data++ = status | (policy << 5);
-  } else {
-    syslog(LOG_WARNING, "pal_get_chassis_status: pal_get_server_power failed for slot%u", slot);
+  if (slot == FRU_ALL) {
     *data++ = 0x00 | (policy << 5);
+  } else {
+    sprintf(key, "slot%u_por_cfg", slot);
+    if (pal_get_key_value(key, buff) == 0) {
+      if (!memcmp(buff, "off", strlen("off")))
+        policy = 0;
+      else if (!memcmp(buff, "lps", strlen("lps")))
+        policy = 1;
+      else if (!memcmp(buff, "on", strlen("on")))
+        policy = 2;
+      else
+        policy = 3;
+    }
+
+    // Current Power State
+    ret = pal_get_server_power(slot, &status);
+    if (ret >= 0) {
+      *data++ = status | (policy << 5);
+    } else {
+      syslog(LOG_WARNING, "pal_get_chassis_status: pal_get_server_power failed for slot%u", slot);
+      *data++ = 0x00 | (policy << 5);
+    }
   }
 
   *data++ = 0x00;   // Last Power Event

@@ -2448,13 +2448,13 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
     if (kv_get(key, val, NULL, 0) == 0) {
       sel_error_record = atoi(val);
     }
-    
+
     if (event_dir == EVENT_ASSERT) {
       sel_error_record++;
     } else {
       sel_error_record--;
     }
-    
+
     snprintf(val, sizeof(val), "%d", sel_error_record);
     kv_set(key, val, 0, 0);
 
@@ -2514,15 +2514,15 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
     syslog(LOG_ERR, "%s(): Failed to handle OEM unified sel due to NULL parameter.", __func__);
     return PAL_ENOTREADY;
   }
-  
+
   // Update SEL event error record
   snprintf(key, sizeof(key), "sel_event_error_record");
   if (kv_get(key, val, NULL, 0) == 0) {
     sel_event_error_record = atoi(val);
   }
-  
+
   sel_event_error_record++;
-  
+
   snprintf(val, sizeof(val), "%d", sel_event_error_record);
   if (kv_set(key, val, 0, 0) < 0) {
     syslog(LOG_ERR, "%s(): Failed to handle OEM unified sel due to pal_set_key_value failed. key: %s", __func__, key);
@@ -3773,20 +3773,20 @@ int pal_get_num_devs(uint8_t slot, uint8_t *num) {
     syslog(LOG_ERR, "%s: Failed to get device num due to parameter *num is NULL", __func__);
     return -1;
   }
-  
+
   *num = MAX_NUM_DEVS - 1;
-  
+
   return 0;
 }
 
 int
 pal_get_dev_id(char *str, uint8_t *dev) {
-  
+
   if ((str == NULL) || (dev == NULL)) {
     syslog(LOG_ERR, "%s: Failed to get device id due to parameter is NULL", __func__);
     return -1;
   }
-  
+
   return fbgc_common_dev_id(str, dev);
 }
 
@@ -3797,16 +3797,16 @@ pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
   int ret = 0;
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
-  
+
   if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
     syslog(LOG_WARNING, "%s: Failed to handle device power due to parameters are NULL.", __func__);
     return CC_INVALID_PARAM;
   }
-  
+
   if ((req_len < 2) || (req_len > 3)) {
     return CC_INVALID_LENGTH;
   }
-  
+
   ret = fbgc_common_get_chassis_type(&chassis_type);
   if ((ret < 0) || (chassis_type != CHASSIS_TYPE5)) {
     syslog(LOG_WARNING, "%s: Failed to handle device power due to only support Type5.", __func__);
@@ -3818,78 +3818,78 @@ pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
     syslog(LOG_ERR, "%s: Failed to handle device power due to wrong device id: %d.", __func__, dev_id);
     return CC_PARAM_OUT_OF_RANGE;
   }
-  
+
   // Action: get device power
   if ((req_data[1] == GET_DEV_POWER) && (req_len == 2)) {
-    
+
     ret = pal_get_device_power(slot, dev_id + 1, &res_data[0], &dev_type);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s: Failed to get device %d power", __func__, dev_id);
       return CC_UNSPECIFIED_ERROR;
     }
-    
+
     *res_len = 1;
-  
+
   // Action: set device power
   } else if ((req_data[1] == SET_DEV_POWER) && (req_len == 3)) {
-    
+
     if ((req_data[2] != DEVICE_POWER_ON) && (req_data[2] != DEVICE_POWER_OFF)) {
       syslog(LOG_ERR, "%s: Failed to set device power due to wrong power status: 0x%02X.", __func__, req_data[2]);
-      return CC_UNSPECIFIED_ERROR; 
+      return CC_UNSPECIFIED_ERROR;
     }
-    
+
     ret = pal_set_dev_power_status(dev_id + 1, req_data[2]);
     if (ret < 0) {
       syslog(LOG_ERR, "%s: Failed to set device %d power.", __func__, dev_id);
       return CC_UNSPECIFIED_ERROR;
     }
-  
+
   // Action: get device led
   } else if ((req_data[1] == GET_DEV_LED) && (req_len == 2)) {
     snprintf(key, sizeof(key), "e1s%d_led_status", dev_id);
-    
+
     ret = kv_get(key, val, NULL, 0);
     if (ret < 0) {
       syslog(LOG_ERR, "%s: Failed to get device %d led status.", __func__, dev_id);
       return CC_UNSPECIFIED_ERROR;
     }
-    
+
     if (strcmp(val, "on") == 0) {
       res_data[0] = DEV_LED_ON;
-      
+
     } else if (strcmp(val, "off") == 0) {
       res_data[0] = DEV_LED_OFF;
-      
+
     } else if (strcmp(val, "blinking") == 0) {
       res_data[0] = DEV_LED_BLINKING;
     }
-    
+
     *res_len = 1;
-  
+
   // Action: set device led
   } else if ((req_data[1] == SET_DEV_LED) && (req_len == 3)) {
     snprintf(key, sizeof(key), "e1s%d_led_status", dev_id);
-    
+
     if (req_data[2] == DEV_LED_ON) {
       snprintf(val, sizeof(val), "on");
-      
+
     } else if (req_data[2] == DEV_LED_OFF) {
       snprintf(val, sizeof(val), "off");
-      
+
     } else if (req_data[2] == DEV_LED_BLINKING) {
       snprintf(val, sizeof(val), "blinking");
-      
+
     } else {
       syslog(LOG_ERR, "%s: Failed to set device led status due to wrong led status: 0x%02X.", __func__, req_data[2]);
       return CC_UNSPECIFIED_ERROR;
     }
-    
+
     ret = kv_set(key, val, 0, 0);
     if (ret < 0) {
       syslog(LOG_ERR, "%s: Failed to set device %d led status.", __func__, dev_id);
       return CC_UNSPECIFIED_ERROR;
     }
-  
+
   // Action: get device present
   } else if ((req_data[1] == GET_DEV_PRESENT) && (req_len == 2)) {
 
@@ -3900,7 +3900,7 @@ pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
     }
 
     *res_len = 1;
-  
+
   } else {
     syslog(LOG_ERR, "%s: Failed to handle device: 0x%02X action: 0x%02X req_len: %d", __func__, dev_id, req_data[1], req_len);
     return CC_UNSPECIFIED_ERROR;
@@ -3915,8 +3915,8 @@ pal_clear_event_only_error_ack () {
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
   int sel_error_record = 0, sel_event_error_record = 0;
-  
-  // Clear SEL event error record  
+
+  // Clear SEL event error record
   snprintf(key, sizeof(key), "sel_event_error_record");
   snprintf(val, sizeof(val), "%d", sel_event_error_record);
   ret = kv_set(key, val, 0, 0);
@@ -3924,13 +3924,13 @@ pal_clear_event_only_error_ack () {
     syslog(LOG_ERR, "%s(): Failed to clear event only error record due to pal_set_key_value failed. key: %s", __func__, key);
     return -1;
   }
-  
+
   // Get SEL error record
   snprintf(key, sizeof(key), "sel_error_record");
   if (kv_get(key, val, NULL, 0) == 0) {
     sel_error_record = atoi(val);
   }
-  
+
   // Update server_sel_error
   snprintf(key, sizeof(key), "server_sel_error");
   if (sel_error_record > 0) {
@@ -3938,12 +3938,12 @@ pal_clear_event_only_error_ack () {
   } else {
     snprintf(val, sizeof(val), "%d", FRU_STATUS_GOOD);
   }
-  
+
   ret = pal_set_key_value(key, val);
   if (ret < 0) {
     syslog(LOG_ERR, "%s(): Failed to update error record due to pal_set_key_value failed. key: %s", __func__, key);
   }
-  
+
   return ret;
 }
 
@@ -4046,4 +4046,26 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   pal_parse_oem_unified_sel_common(fru, sel, error_log);
 
   return PAL_EOK;
+}
+
+int
+pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_ERR, "%s(): Failed to set fw update status due to parameters are NULL.", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  if (req_len != 2) {
+    return CC_INVALID_LENGTH;
+  }
+
+  ret = pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]));
+  if (ret < 0) {
+    return CC_UNSPECIFIED_ERROR;
+  }
+  *res_len = 0;
+
+  return CC_SUCCESS;
 }

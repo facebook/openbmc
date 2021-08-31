@@ -178,7 +178,7 @@ class BaseMESetPowerTest(object):
             print("Check power ...")
         Logger.info("Check power ...")
         
-        if re.search("{} Watts".format(self.DEFAULT_LIMIT_POWER), self.power_result):
+        if re.search("{} Watts".format(self.DEFAULT_LIMIT_POWER), self.power_result.decode("utf-8")):
             return True
         else:
             return False

@@ -71,4 +71,5 @@ IMAGE_INSTALL += " \
   mctp-util \
   usbutils \
   syseventgen-util \
+  usbip \
   "

@@ -165,13 +165,8 @@ struct pal_key_cfg {
 };
 
 MAPTOSTRING root_port_common_mapping[] = {
-    // NIC
-    { 0xB2, 0, 0x4A, "Class 2", "NIC"}, // Class 2 NIC
-    { 0x63, 3, 0x2D, "Class 1", "NIC"}, // Class 1 NIC
-
-    // DL
-    { 0x63, 2, 0x2C, "Num 0", "SB" },   // PVT switch Num 1 to 0
-    { 0x00, 0x1D, 0xFF, "Num 1", "SB"}, // PVT -> Remove
+    { 0x4B, 1, 0x2A, "Num 0", "SB" },   // Boot Drive
+    { 0x4B, 5, 0x2E, "Class 1", "NIC"}, // Class 1 NIC
 };
 
 MAPTOSTRING root_port_mapping[] = {
@@ -1674,8 +1669,8 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
     *tbl = root_port_mapping_gpv3;
     *cnt = sizeof(root_port_mapping_gpv3)/sizeof(MAPTOSTRING);
   } else {
-    *tbl = root_port_mapping;
-    *cnt = sizeof(root_port_mapping)/sizeof(MAPTOSTRING);
+    *tbl = root_port_common_mapping;
+    *cnt = sizeof(root_port_common_mapping)/sizeof(MAPTOSTRING);
   }
   return;
 }
@@ -3056,6 +3051,8 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
 
   switch(target) {
   case FW_CPLD:
+    *res_len = 4;
+    break;
   case FW_1OU_CPLD:
   case FW_2OU_CPLD:
   case FW_BB_CPLD:

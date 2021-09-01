@@ -1407,6 +1407,10 @@ int
 pal_get_debug_card_uart_sel(uint8_t *uart_sel) {
   int i = 0;
   gpio_value_t val = GPIO_VALUE_INVALID;
+  uint8_t uart_sel_tmp = 0;
+  uint8_t uart_sel_list[] = { DEBUG_UART_SEL_BMC, DEBUG_UART_SEL_HOST, DEBUG_UART_SEL_BIC,
+    DEBUG_UART_SEL_EXP_SMART, DEBUG_UART_SEL_EXP_SDB,
+    DEBUG_UART_SEL_IOC_T5_SMART, DEBUG_UART_SEL_IOC_T7_SMART };
 
   if (uart_sel == NULL) {
     syslog(LOG_ERR, "%s Invalid parameter: UART selection\n", __func__);
@@ -1422,9 +1426,11 @@ pal_get_debug_card_uart_sel(uint8_t *uart_sel) {
       return -1;
     }
     // convert GPIOs to number
-    (*uart_sel) <<= 1;
-    (*uart_sel) |= (uint8_t)val;
+    uart_sel_tmp <<= 1;
+    uart_sel_tmp |= (uint8_t)val;
   }
+
+  (*uart_sel) = uart_sel_list[uart_sel_tmp];
 
   return 0;
 }

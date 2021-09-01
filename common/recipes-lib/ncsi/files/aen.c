@@ -179,7 +179,7 @@ process_NCSI_AEN(AEN_Packet *buf)
     // OEM AENs
 
     char nic_vendor_iana[MAX_VALUE_LEN] = {0};
-    ret = kv_get("nic_vendor", nic_vendor_iana, NULL, KV_FPERSIST);
+    ret = kv_get("nic_vendor", nic_vendor_iana, NULL, 0);
 
     if (!ret) {
       // https://www.iana.org/assignments/enterprise-numbers/enterprise-numbers

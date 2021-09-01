@@ -322,9 +322,9 @@ init_version_data(Get_Version_ID_Response *buf)
   nwrite = snprintf(logbuf+i, nleft, "%s ", version);
 
   // store vendor IANA in kv_store
-  snprintf(iana_str, sizeof(iana_str), "%d", vendor_IANA);
-  if ((ret = kv_set("nic_vendor", iana_str, 0, KV_FPERSIST | KV_FCREATE)) < 0) {
-    syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+  snprintf(iana_str, sizeof(iana_str), "%u", vendor_IANA);
+  if ((ret = kv_set("nic_vendor", iana_str, 0, 0)) < 0) {
+    syslog(LOG_WARNING, "init_version_data: kv_set failed. %d", ret);
   }
 
   syslog(LOG_INFO, "%s", logbuf);
@@ -978,7 +978,7 @@ ncsi_tx_handler(void *sfd) {
 
     if (gEnablePldmMonitoring) {
       // read any PLDM sensors that's available
-      ret = pldm_monitoring(sock_fd);
+      pldm_monitoring(sock_fd);
     }
 
     ret = check_valid_mac_addr();

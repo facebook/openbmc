@@ -171,7 +171,7 @@ prepare_ncsi_req_msg_libnl(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
-    printf("%s, Error: failed nl_msg buffer allocation(%d)\n",
+    printf("%s, Error: failed nl_msg buffer allocation(%zu)\n",
            __FUNCTION__, sizeof(NCSI_NL_MSG_T));
     return -1;
   }
@@ -281,8 +281,7 @@ static int send_nl_data_libnl(int socket_fd, generic_msg_t *gmsg)
     syslog(LOG_ERR, "%s failed to add rsp", __FUNCTION__);
   }
 
-  if (nl_rsp)
-    free(nl_rsp);
+  free(nl_rsp);
   return ret;
 }
 
@@ -451,9 +450,9 @@ init_version_data(Get_Version_ID_Response *buf)
   nwrite = snprintf(logbuf+i, nleft, "%s ", version);
 
   // store vendor IANA in kv_store
-  snprintf(iana_str, sizeof(iana_str), "%d", vendor_IANA);
-  if ((ret = kv_set("nic_vendor", iana_str, 0, KV_FPERSIST | KV_FCREATE)) < 0) {
-    syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed. %d", ret);
+  snprintf(iana_str, sizeof(iana_str), "%u", vendor_IANA);
+  if ((ret = kv_set("nic_vendor", iana_str, 0, 0)) < 0) {
+    syslog(LOG_WARNING, "init_version_data: kv_set failed. %d", ret);
   }
 
   syslog(LOG_INFO, "%s", logbuf);
@@ -490,7 +489,7 @@ send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd, uint8_t ncsi_cmd,
 
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
-    printf("%s, Error: failed nl_msg buffer allocation(%d)\n",
+    printf("%s, Error: failed nl_msg buffer allocation(%zu)\n",
            __FUNCTION__, sizeof(NCSI_NL_MSG_T));
     return -1;
   }
@@ -1221,7 +1220,7 @@ ncsi_tx_handler(void *arg) {
 
     if (gEnablePldmMonitoring) {
       // read any PLDM sensors that's available
-      ret = pldm_monitoring(sock_fd);
+      pldm_monitoring(sock_fd);
     }
 
     ret = check_valid_mac_addr();

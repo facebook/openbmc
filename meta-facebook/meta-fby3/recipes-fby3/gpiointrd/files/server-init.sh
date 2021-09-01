@@ -69,6 +69,7 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   done
   set_nic_power
 else
+  /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1
   /usr/local/bin/power-util "slot${slot_num}" 12V-on
   /usr/local/bin/bic-cached -s "slot${slot_num}"
   /usr/local/bin/bic-cached -f "slot${slot_num}"

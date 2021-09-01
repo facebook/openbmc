@@ -410,7 +410,13 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if ( bmc_location == NIC_BMC || pal_get_server_12v_power(fru, &status) < 0 ) {
         return POWER_STATUS_ERR;
       }
-      return (status == SERVER_12V_ON)?POWER_STATUS_ALREADY_OK:server_power_12v_on(fru);
+      if (status == SERVER_12V_ON) {
+        pal_power_policy_control(fru, NULL);
+        return POWER_STATUS_ALREADY_OK;
+      } else {
+        return server_power_12v_on(fru);
+      }
+
       break;
 
     case SERVER_12V_OFF:

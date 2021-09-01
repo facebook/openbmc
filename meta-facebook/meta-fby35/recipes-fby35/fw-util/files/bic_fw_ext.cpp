@@ -9,8 +9,10 @@ using namespace std;
 int BicFwExtComponent::update_internal(const string& image, bool force) {
   int ret = 0;
   try {
-    server.ready();
-    expansion.ready();
+    if (fw_comp != FW_BIC_RCVY) {
+      server.ready();
+      expansion.ready();
+    }
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force)?FORCE_UPDATE_SET:FORCE_UPDATE_UNSET);
 
     if (ret != BIC_FW_UPDATE_SUCCESS) {

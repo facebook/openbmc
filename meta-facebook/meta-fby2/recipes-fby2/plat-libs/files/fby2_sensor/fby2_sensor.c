@@ -243,6 +243,10 @@ const uint8_t bic_gpv2_sdr_alter_sensor_list[] = {
 };
 #endif
 
+const uint8_t nd_bic_sdr_accuracy_sensor_support_list[] = {
+  BIC_ND_SENSOR_INA230_POWER,
+};
+
 const uint8_t bic_sdr_accuracy_sensor_support_list[] = {
   BIC_SENSOR_VCCIN_VR_POUT,
   BIC_SENSOR_INA230_POWER,
@@ -1569,6 +1573,8 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
   bool is_accuracy_sensor = false;
   uint8_t server_type = 0xFF;
   int slot_type = 3;
+  const uint8_t *accuracy_sensor_list;
+  size_t accuracy_sensor_list_sz;
 
   slot_type = fby2_get_slot_type(fru);
 
@@ -1580,15 +1586,21 @@ bic_read_sensor_wrapper(uint8_t fru, uint8_t sensor_num, bool discrete,
 
     switch(server_type){
       case SERVER_TYPE_ND:
+        accuracy_sensor_list = nd_bic_sdr_accuracy_sensor_support_list;
+        accuracy_sensor_list_sz = sizeof(nd_bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t);
         break;
       case SERVER_TYPE_TL:
-        for (i=0; i < sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t); i++) {
-          if (bic_sdr_accuracy_sensor_support_list[i] == sensor_num)
-            is_accuracy_sensor = true;
-        }
+        accuracy_sensor_list = bic_sdr_accuracy_sensor_support_list;
+        accuracy_sensor_list_sz = sizeof(bic_sdr_accuracy_sensor_support_list)/sizeof(uint8_t);
         break;
       default:
         return -1;
+    }
+
+    for (i=0; i < accuracy_sensor_list_sz; i++) {
+      if (accuracy_sensor_list[i] == sensor_num) {
+        is_accuracy_sensor = true;
+      }
     }
 
     // accuracy sensor VCCIN_VR_POUT, INA230_POWER and SOC_PACKAGE_PWR

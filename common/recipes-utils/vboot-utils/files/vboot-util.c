@@ -79,7 +79,9 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, ui
           if (*img_lock && *img_sig) //find lock snd sig
             break;
         }
-        break;
+        // if doesn't find lock or sign, keep finding the next magic number
+        if (*img_lock || *img_sig)
+          break;
       }
     }
   } while (0);

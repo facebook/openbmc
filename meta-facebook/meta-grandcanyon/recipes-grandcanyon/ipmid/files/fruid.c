@@ -78,6 +78,7 @@ plat_fruid_init() {
   char path[128] = {0};
   int path_len = sizeof(path);
   uint8_t chassis_type = 0;
+  uint8_t status = 0;
 
   //create the fru binary in /tmp/
   //fruid_bmc.bin
@@ -112,13 +113,19 @@ plat_fruid_init() {
     syslog(LOG_WARNING, "%s() Failed to get chassis type", __func__);
   }
 
-  if (chassis_type == CHASSIS_TYPE7) {
-    snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
-    if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
-      syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
-    }
-    if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
-      syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
+  if ((chassis_type == CHASSIS_TYPE7) && 
+      (access(FRU_IOCM_BIN, F_OK) == -1)) {
+    if (pal_get_server_power(FRU_SERVER, &status) < 0) {
+      syslog(LOG_WARNING, "%s() Read IOCM FRU failed: get server power error", __func__);
+    } else if (status != SET_DC_POWER_ON) {
+      syslog(LOG_WARNING, "%s() Skip IOCM FRU reading, wait server power on", __func__);
+    } else {
+      snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+      if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+      } else if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
+        syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
+      }
     }
   }
 

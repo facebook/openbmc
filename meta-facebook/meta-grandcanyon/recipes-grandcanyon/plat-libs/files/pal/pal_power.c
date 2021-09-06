@@ -342,11 +342,15 @@ pal_host_power_on_post_actions() {
         return -2;
       }
     }
-
-    snprintf(path, sizeof(path), EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
-    if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
-      syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
-      return -2;
+    if (access(FRU_IOCM_BIN, F_OK) == -1) {
+      snprintf(path, sizeof(path), EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+      if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+        return -2;
+      }
+      if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
+        syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
+      }
     }
   }
 

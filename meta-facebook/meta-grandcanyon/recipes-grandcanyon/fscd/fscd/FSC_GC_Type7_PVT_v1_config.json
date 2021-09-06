@@ -1,5 +1,5 @@
 {
-  "version": "fbgc-type7-dvt-v1",
+  "version": "fbgc-type7-pvt-v1",
   "pwm_transition_value": 70,
   "pwm_boost_value": 80,
   "sample_interval_ms": 3000,
@@ -37,11 +37,19 @@
       "data": [
         [ -76, 20 ],
         [ -16, 20 ],
-        [ -12, 24 ],
-        [ -8, 32 ],
-        [ -7, 35 ],
-        [ -4, 50 ],
-        [ -2, 70 ]
+        [ -15, 22 ],
+        [ -14, 24 ],
+        [ -13, 26 ],
+        [ -12, 28 ],
+        [ -11, 30 ],
+        [ -10, 32 ],
+        [ -9, 34 ],
+        [ -8, 36 ],
+        [ -7, 40 ],
+        [ -6, 50 ],
+        [ -4, 55 ],
+        [ -3, 65 ],
+        [ -2, 75 ]
       ]
     },
     "pid_soc_therm_margin": {
@@ -50,7 +58,7 @@
       },
       "type": "pid",
       "setpoint": -9,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -1.5,
       "ki": -0.035,
@@ -66,7 +74,24 @@
       "data": [
         [ 0, 20 ],
         [ 76, 20 ],
+        [ 77, 22 ],
+        [ 78, 24 ],
+        [ 79, 26 ],
+        [ 80, 28 ],
+        [ 81, 30 ],
+        [ 82, 32 ],
+        [ 83, 34 ],
+        [ 84, 36 ],
+        [ 85, 38 ],
+        [ 86, 40 ],
+        [ 87, 42 ],
+        [ 88, 44 ],
+        [ 89, 46 ],
+        [ 90, 48 ],
         [ 91, 50 ],
+        [ 92, 55 ],
+        [ 93, 60 ],
+        [ 94, 65 ],
         [ 95, 70 ]
       ]
     },
@@ -78,7 +103,7 @@
       "setpoint": 88,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
-      "kp": -1.6,
+      "kp": -1.5,
       "ki": -0.1,
       "kd": 0
     },
@@ -92,9 +117,25 @@
       "data": [
         [ 0, 20 ],
         [ 75, 20 ],
+        [ 76, 21 ],
+        [ 77, 22 ],
+        [ 78, 23 ],
+        [ 79, 24 ],
+        [ 80, 25 ],
+        [ 81, 26 ],
+        [ 82, 27 ],
+        [ 83, 28 ],
+        [ 84, 29 ],
         [ 85, 30 ],
+        [ 86, 32 ],
+        [ 87, 34 ],
+        [ 88, 36 ],
+        [ 89, 38 ],
         [ 90, 40 ],
-        [ 95, 55 ]
+        [ 91, 43 ],
+        [ 92, 46 ],
+        [ 93, 52 ],
+        [ 94, 55 ]
       ]
     },
     "pid_scc_ioc_temp": {
@@ -102,12 +143,87 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 65,
+      "setpoint": 88,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
       "kp": -1.5,
-      "ki": -0.035,
+      "ki": -0.1,
       "kd": 0
+    },
+    "linear_boot_drv_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 0, 20 ],
+        [ 55, 20 ],
+        [ 56, 21 ],
+        [ 57, 22 ],
+        [ 58, 23 ],
+        [ 59, 24 ],
+        [ 60, 25 ],
+        [ 61, 26 ],
+        [ 62, 27 ],
+        [ 63, 28 ],
+        [ 64, 29 ],
+        [ 65, 30 ],
+        [ 66, 32 ],
+        [ 67, 34 ],
+        [ 68, 36 ],
+        [ 69, 38 ],
+        [ 70, 40 ],
+        [ 71, 42 ],
+        [ 72, 44 ],
+        [ 73, 46 ],
+        [ 74, 48 ]
+      ]
+    },
+    "pid_boot_drv_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -1.5,
+      "ki": -0.02,
+      "kd": 0
+    },
+    "linear_uic_inlet_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 20 ],
+        [ 25, 20 ],
+        [ 26, 21 ],
+        [ 27, 22 ],
+        [ 28, 23 ],
+        [ 29, 24 ],
+        [ 30, 25 ],
+        [ 31, 26 ],
+        [ 32, 27 ],
+        [ 33, 28 ],
+        [ 34, 29 ],
+        [ 35, 30 ],
+        [ 36, 32 ],
+        [ 37, 34 ],
+        [ 38, 36 ],
+        [ 39, 38 ],
+        [ 40, 40 ],
+        [ 41, 42 ],
+        [ 42, 44 ],
+        [ 43, 46 ],
+        [ 44, 48 ],
+        [ 45, 50 ]
+      ]
     }
   },
   "fans": {
@@ -142,7 +258,7 @@
   "zones": {
     "zone_0": {
       "pwm_output": [0],
-      "expr_file": "FSC_GC_Type7_DVT_v1_zone0.fsc"
+      "expr_file": "FSC_GC_Type7_PVT_v1_zone0.fsc"
     }
   }
 }

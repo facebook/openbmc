@@ -436,22 +436,31 @@ check_ioc_support_pec(uint8_t slave_addr) {
     return -1;
   }
 
+  // Do "VDM reset" to check if IOC F/w could support PEC.
   if (mctp_ioc_command(slave_addr, tag, VDM_RESET, read_buf, &read_len) < 0) {
     syslog(LOG_WARNING, "%s(): VDM reset failed, bus: %d", __func__, iocd_config.bus_id);
     return -1;
   }
 
   if (read_buf[RES_PAYLOAD_OFFSET] == RES_PL_PEC_FAILURE) {
-    syslog(LOG_WARNING, "%s(): %s IOC firmware doesn't support handling PEC byte, bus: %d", __func__, iocd_config.fru_name, iocd_config.bus_id);
     iocd_config.is_support_pec = false;
   } else if (read_buf[RES_PAYLOAD_OFFSET] == RES_PL_RESET_IN_PROGRESS) {
-    iocd_config.is_support_pec = false;
-  } else if (read_buf[RES_PAYLOAD_OFFSET] == ioc_command_map[VDM_RESET].pkt_pl_hdr.res_payload_id) {
-    iocd_config.is_support_pec = true;
-  } else {
+    // If the response status is "reset in progress", continue to do "command resume" and "command done".
+    if (mctp_ioc_command(slave_addr, tag, COMMAND_RESUME, read_buf, &read_len) < 0) {
+      iocd_config.is_support_pec = false;
+    }
+
+    if (mctp_ioc_command(slave_addr, tag, COMMAND_DONE, read_buf, &read_len) < 0) {
+      iocd_config.is_support_pec = false;
+    }
+  } else if (read_buf[RES_PAYLOAD_OFFSET] != ioc_command_map[VDM_RESET].pkt_pl_hdr.res_payload_id) {
+    syslog(LOG_WARNING, "%s(): Failed to check if %s IOC firmware could support PEC byte beacuse wrong payload ID: %02X", __func__, iocd_config.fru_name, read_buf[RES_PAYLOAD_OFFSET]);
     return -1;
   }
 
+  if (iocd_config.is_support_pec == false) {
+    syslog(LOG_WARNING, "%s(): %s IOC firmware doesn't support handling PEC byte, bus: %d", __func__, iocd_config.fru_name, iocd_config.bus_id);
+  }
   iocd_config.check_pec = true;
 
   return 0;
@@ -568,6 +577,7 @@ get_ioc_temp() {
 
         pthread_mutex_unlock(&m_ioc);
         iocd_config.check_pec = false;
+        sleep (1);
         continue;
       }
       tag = 0x01;

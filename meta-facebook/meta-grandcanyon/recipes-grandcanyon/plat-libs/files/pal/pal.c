@@ -3520,6 +3520,11 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
     return false;
   }
 
+  // Check if BIC is updating
+  if (pal_is_fw_update_ongoing(FRU_SERVER) == true) {
+    return false;
+  }
+
   // Check BIOS is completed via BIC
   if (bic_get_gpio(&gpio) < 0) {
     syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);

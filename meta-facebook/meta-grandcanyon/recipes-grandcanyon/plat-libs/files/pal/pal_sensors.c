@@ -1040,6 +1040,24 @@ read_adc128_nic(uint8_t id, float *value) {
   return ret;
 }
 
+static bool
+is_iocm_power_good(void) { // check IOCM power from main connector
+  gpio_value_t val = 0;
+  
+  val = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_E1S_1_3V3EFUSE_PGOOD));
+
+  if (val == GPIO_VALUE_INVALID) {
+    syslog(LOG_WARNING, "%s() Faild to get GPIO: E1S_1_3V3EFUSE_PGOOD", __func__);
+    return false;
+  }
+
+  if (val == GPIO_VALUE_HIGH) {
+    return true;
+  }
+
+  return false;  
+}
+
 static int
 read_adc128_iocm(uint8_t id, float *value) {
   int ret = 0;
@@ -1049,6 +1067,10 @@ read_adc128_iocm(uint8_t id, float *value) {
   }
 
   if (is_e1s_iocm_present(id) == false) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (is_iocm_power_good() == false) {
     return ERR_SENSOR_NA;
   }
 

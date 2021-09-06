@@ -52,7 +52,7 @@ type ExitUnsafeToReboot struct {
 	Err error
 }
 
-type ExitBrokenSystem struct {
+type ExitBadFlashChip struct {
   Err error
 }
 
@@ -84,16 +84,16 @@ func (e ExitUnsafeToReboot) GetType() string {
 	return "ExitUnsafeToReboot"
 }
 
-func (e ExitBrokenSystem) GetError() string {
+func (e ExitBadFlashChip) GetError() string {
 	return e.Err.Error()
 }
 
-func (e ExitBrokenSystem) GetExitCode() int {
+func (e ExitBadFlashChip) GetExitCode() int {
 	return FLASHY_ERROR_BROKEN_SYSTEM
 }
 
-func (e ExitBrokenSystem) GetType() string {
-	return "ExitBrokenSystem"
+func (e ExitBadFlashChip) GetType() string {
+	return "ExitBadFlashChip"
 }
 
 func (e ExitUnknownError) GetError() string {
@@ -138,7 +138,7 @@ func HandleStepError(err StepExitError) {
 
 	case ExitUnsafeToReboot,
 		ExitUnknownError,
-    ExitBrokenSystem:
+    ExitBadFlashChip:
 
 		encodeExitError(err)
 		exit(err.GetExitCode())

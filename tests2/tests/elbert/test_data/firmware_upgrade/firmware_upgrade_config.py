@@ -45,6 +45,7 @@ UPGRADING_TIMEOUT = {
     "pim_base": 30,
     "pim8ddm": 30,
     "pim16q": 30,
+    "th4_qspi": 30,
 }
 EXPECTED_KEYWORD = [
     "closed by remote host",

@@ -42,7 +42,7 @@ class SystemAirflowConfigTest(unittest.TestCase):
         pim16q_count = 0
         pim8ddm_count = 0
         for pim in range(2, 10):
-            cmd = "cat /tmp/cache_store/pim{}_type".format(pim)
+            cmd = "/usr/bin/kv get pim{}_type".format(pim)
             pim_type = run_shell_cmd(cmd)
             if pim_type == "16q":
                 pim16q_count += 1

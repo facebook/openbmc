@@ -320,7 +320,7 @@ GPIOS = {
         "edge": "none",
         "value": "0",
     },
-    "BMC_GPIO55": {
+    "BMC_EMMC_RST_N": {
         "active_low": "0",
         "direction": "out",
         "uevent": "",

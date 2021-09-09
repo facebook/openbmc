@@ -48,9 +48,6 @@ i2c_device_add 2 0x3e scmcpld               # SCM CPLD
 
 # Bus 24: i2c bus 2 mux, channel 0
 i2c_device_add 24 0x10 adm1278              # adm1278
-# Bus 25: i2c bus 2 mux, channel 1
-i2c_device_add 25 0x4c tmp75                # tmp75
-i2c_device_add 25 0x4d tmp75                # tmp75
 # Bus 26: i2c bus 2 mux, channel 2
 # None
 # Bus 27: i2c bus 2 mux, channel 3
@@ -65,24 +62,12 @@ i2c_device_add 28 0x50 24c02                # SCM BCM546161S EEPROM
 # i2c_device_add 31 0x50 si53108            # si53108 do not enable this
 
 # Bus 3
-i2c_device_add 3 0x4a tmp75                 # i2c tmp75
-
-# Bus 32: i2c bus 3 mux, channel 0
-i2c_device_add 32 0x48 tmp75                # tmp75
-# Bus 33: i2c bus 3 mux, channel 1
-i2c_device_add 33 0x49 tmp75                # tmp75
-# Bus 34: i2c bus 3 mux, channel 2
-i2c_device_add 34 0x4b tmp75                # tmp75
 # Bus 35: i2c bus 3 mux, channel 3
 i2c_device_add 35 0x4c tmp421               # tmp421
 # Bus 36: i2c bus 3 mux, channel 4
 i2c_device_add 36 0x4d tmp421               # tmp421
-# Bus 37: i2c bus 3 mux, channel 5
-i2c_device_add 37 0x4e tmp75                # tmp75
 # Bus 38: i2c bus 3 mux, channel 6
 i2c_device_add 38 0x2a net_asic             # GB switch i2c driver
-# Bus 39: i2c bus 3 mux, channel 7
-i2c_device_add 39 0x4f tmp75                # tmp75
 
 # Bus 4
 i2c_device_add 4 0x27 pca9555               # PCA9555 GPIO expander for debug card
@@ -98,7 +83,6 @@ i2c_device_add 6 0x21 pca9534               # pca9534 GPIO expander
 # i2c_device_add 7 0x2e tpm_tis_i2c         # i2c tpm, driver binding in device tree
 
 # Bus 8
-i2c_device_add 8 0x4a tmp75                 # i2c tmp75
 i2c_device_add 8 0x51 24c64                 # i2c EEPROM
 # Bus 40: i2c bus 8 mux, channel 0
 # i2c_device_add 40 0xa0/0xb0 24c02/24c64   # PSU1 EEPROM
@@ -139,9 +123,6 @@ i2c_device_add 13 0x60 domfpga              # DOM FPGA 1
 i2c_device_add 48 0x3e fcbcpld              # FCM CPLD
 # Bus 49: i2c bus 15 mux, channel 1
 i2c_device_add 49 0x51 24c64                # FCM EEPROM
-# Bus 50: i2c bus 15 mux, channel 2
-i2c_device_add 50 0x48 tmp75                # FCM TMP75
-i2c_device_add 50 0x49 tmp75                # FCM TMP75
 # Bus 51: i2c bus 15 mux, channel 3
 i2c_device_add 51 0x10 adm1278              # FCM Hotswap adm1278
 # Bus 52: i2c bus 15 mux, channel 4
@@ -153,3 +134,94 @@ i2c_device_add 54 0x52 24c64                # FAN2 EEPROM
 # Bus 55: i2c bus 15 mux, channel 7
 i2c_device_add 55 0x52 24c64                # FAN1 EEPROM
 
+# cloudripper will mix the NXP LM75 and TI TMP1075 sensor chips
+# LM75 not support device id read, but TI TMP1075 support
+# BMC can access TMP1075 0x0F address to get TMP1075 device id
+TMP1075_ID=0x75
+fixup_lm75_tmp1075_devices() {
+    # Bus 25: i2c bus 2 mux, channel 1
+    DEV_ID=$(i2cget -y -f 25 0x4c 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 25 0x4c tmp1075              # i2c tmp1075
+    else
+        i2c_device_add 25 0x4c lm75                 # i2c lm75
+    fi
+
+    DEV_ID=$(i2cget -y -f 25 0x4d 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 25 0x4d tmp1075              # i2c tmp1075
+    else
+        i2c_device_add 25 0x4d lm75                 # i2c lm75
+    fi
+
+    # Bus 3
+    DEV_ID=$(i2cget -y -f 3 0x4a 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 3 0x4a tmp1075               # i2c tmp1075
+    else
+        i2c_device_add 3 0x4a lm75                  # i2c lm75
+    fi
+
+    # Bus 32: i2c bus 3 mux, channel 0
+    DEV_ID=$(i2cget -y -f 32 0x48 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 32 0x48 tmp1075              # i2c tmp1075
+    else
+        i2c_device_add 32 0x48 lm75                 # i2c lm75
+    fi
+    # Bus 33: i2c bus 3 mux, channel 1
+    DEV_ID=$(i2cget -y -f 33 0x49 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 33 0x49 tmp1075              # i2c tmp1075
+    else
+        i2c_device_add 33 0x49 lm75                 # i2c lm75
+    fi
+    # Bus 34: i2c bus 3 mux, channel 2
+    DEV_ID=$(i2cget -y -f 34 0x4b 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 34 0x4b tmp1075              # tmp1075
+    else
+        i2c_device_add 34 0x4b lm75                 # i2c lm75
+    fi
+
+    # Bus 37: i2c bus 3 mux, channel 5
+    DEV_ID=$(i2cget -y -f 37 0x4e 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 37 0x4e tmp1075              # i2c tmp1075
+    else
+        i2c_device_add 37 0x4e lm75                 # i2c lm75
+    fi
+
+    # Bus 39: i2c bus 3 mux, channel 7
+    DEV_ID=$(i2cget -y -f 39 0x4f 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 39 0x4f tmp1075              # i2c tmp1075
+    else
+        i2c_device_add 39 0x4f lm75                 # i2c lm75
+    fi
+
+    # Bus 8
+    DEV_ID=$(i2cget -y -f 8 0x4a 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 8 0x4a tmp1075               # i2c tmp1075
+    else
+        i2c_device_add 8 0x4a lm75                  # i2c lm75
+    fi
+
+    # Bus 50: i2c bus 15 mux, channel 2
+    DEV_ID=$(i2cget -y -f 50 0x48 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 50 0x48 tmp1075              # FCM tmp1075
+    else
+        i2c_device_add 50 0x48 lm75                 # FCM lm75
+    fi
+
+    DEV_ID=$(i2cget -y -f 50 0x49 0x0f)
+    if [ "$DEV_ID" = "$TMP1075_ID" ]; then
+        i2c_device_add 50 0x49 tmp1075              # FCM tmp1075
+    else
+        i2c_device_add 50 0x49 lm75                 # FCM lm75
+    fi
+}
+
+fixup_lm75_tmp1075_devices

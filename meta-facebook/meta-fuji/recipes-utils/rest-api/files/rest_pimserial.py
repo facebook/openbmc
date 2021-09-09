@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-import json
 import re
 import subprocess
 
@@ -27,12 +26,11 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 
 # Handler for getting PIM info
 
-pimserial_re = re.compile("\s*(\S.*) : (\S.*)")
+pimserial_re = re.compile(r"\s*(\S.*) : (\S.*)")
 
 
 def prepare_pimserial():
     pim_serial = {
-        "PIM1": "NA",
         "PIM2": "NA",
         "PIM3": "NA",
         "PIM4": "NA",
@@ -40,6 +38,7 @@ def prepare_pimserial():
         "PIM6": "NA",
         "PIM7": "NA",
         "PIM8": "NA",
+        "PIM9": "NA",
     }
     proc = subprocess.Popen(
         ["/usr/local/bin/dump_pim_serials.sh", "-u"],
@@ -53,7 +52,7 @@ def prepare_pimserial():
             m = pimserial_re.match(text_line, 0)
             if m:
                 pim_serial[m.group(1)] = m.group(2)
-    except Exception as ex:
+    except Exception:
         pass
 
     return pim_serial

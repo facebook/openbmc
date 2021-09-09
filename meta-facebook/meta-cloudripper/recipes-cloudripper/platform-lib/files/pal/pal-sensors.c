@@ -109,7 +109,6 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
 const uint8_t scm_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
-  SCM_SENSOR_HSC_IN_VOLT,
   SCM_SENSOR_HSC_OUT_VOLT,
   SCM_SENSOR_HSC_OUT_CURR,
 };
@@ -118,7 +117,6 @@ const uint8_t scm_sensor_list[] = {
 const uint8_t scm_all_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
-  SCM_SENSOR_HSC_IN_VOLT,
   SCM_SENSOR_HSC_OUT_VOLT,
   SCM_SENSOR_HSC_OUT_CURR,
   BIC_SENSOR_MB_OUTLET_TEMP,
@@ -171,43 +169,31 @@ const uint8_t smb_sensor_list[] = {
   SMB_SENSOR_1220_VCCA,
   SMB_SENSOR_1220_VCCINP,
   SMB_SENSOR_VDDA_IN_VOLT,
-  SMB_SENSOR_VDDA_IN_CURR,
-  SMB_SENSOR_VDDA_IN_POWER,
   SMB_SENSOR_VDDA_OUT_VOLT,
   SMB_SENSOR_VDDA_OUT_CURR,
   SMB_SENSOR_VDDA_OUT_POWER,
   SMB_SENSOR_VDDA_TEMP1,
   SMB_SENSOR_PCIE_IN_VOLT,
-  SMB_SENSOR_PCIE_IN_CURR,
-  SMB_SENSOR_PCIE_IN_POWER,
   SMB_SENSOR_PCIE_OUT_VOLT,
   SMB_SENSOR_PCIE_OUT_CURR,
   SMB_SENSOR_PCIE_OUT_POWER,
   SMB_SENSOR_PCIE_TEMP1,
   SMB_SENSOR_IR3R3V_LEFT_IN_VOLT,
-  SMB_SENSOR_IR3R3V_LEFT_IN_CURR,
-  SMB_SENSOR_IR3R3V_LEFT_IN_POWER,
   SMB_SENSOR_IR3R3V_LEFT_OUT_VOLT,
   SMB_SENSOR_IR3R3V_LEFT_OUT_CURR,
   SMB_SENSOR_IR3R3V_LEFT_OUT_POWER,
   SMB_SENSOR_IR3R3V_LEFT_TEMP,
   SMB_SENSOR_IR3R3V_RIGHT_IN_VOLT,
-  SMB_SENSOR_IR3R3V_RIGHT_IN_CURR,
-  SMB_SENSOR_IR3R3V_RIGHT_IN_POWER,
   SMB_SENSOR_IR3R3V_RIGHT_OUT_VOLT,
   SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR,
   SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER,
   SMB_SENSOR_IR3R3V_RIGHT_TEMP,
   SMB_SENSOR_SW_CORE_IN_VOLT,
-  SMB_SENSOR_SW_CORE_IN_CURR,
-  SMB_SENSOR_SW_CORE_IN_POWER,
   SMB_SENSOR_SW_CORE_OUT_VOLT,
   SMB_SENSOR_SW_CORE_OUT_CURR,
   SMB_SENSOR_SW_CORE_OUT_POWER,
   SMB_SENSOR_SW_CORE_TEMP1,
   SMB_SENSOR_XPDE_HBM_IN_VOLT,
-  SMB_SENSOR_XPDE_HBM_IN_CURR,
-  SMB_SENSOR_XPDE_HBM_IN_POWER,
   SMB_SENSOR_XPDE_HBM_OUT_VOLT,
   SMB_SENSOR_XPDE_HBM_OUT_CURR,
   SMB_SENSOR_XPDE_HBM_OUT_POWER,
@@ -215,51 +201,37 @@ const uint8_t smb_sensor_list[] = {
 
   /* PXE1211C */
   SMB_SENSOR_VDDCK_0_IN_VOLT,
-  SMB_SENSOR_VDDCK_0_IN_CURR,
-  SMB_SENSOR_VDDCK_0_IN_POWER,
   SMB_SENSOR_VDDCK_0_OUT_VOLT,
   SMB_SENSOR_VDDCK_0_OUT_CURR,
   SMB_SENSOR_VDDCK_0_OUT_POWER,
   SMB_SENSOR_VDDCK_0_TEMP,
   SMB_SENSOR_VDDCK_1_IN_VOLT,
-  SMB_SENSOR_VDDCK_1_IN_CURR,
-  SMB_SENSOR_VDDCK_1_IN_POWER,
   SMB_SENSOR_VDDCK_1_OUT_VOLT,
   SMB_SENSOR_VDDCK_1_OUT_CURR,
   SMB_SENSOR_VDDCK_1_OUT_POWER,
   SMB_SENSOR_VDDCK_1_TEMP,
   SMB_SENSOR_VDDCK_2_IN_VOLT,
-  SMB_SENSOR_VDDCK_2_IN_CURR,
-  SMB_SENSOR_VDDCK_2_IN_POWER,
   SMB_SENSOR_VDDCK_2_OUT_VOLT,
   SMB_SENSOR_VDDCK_2_OUT_CURR,
   SMB_SENSOR_VDDCK_2_OUT_POWER,
   SMB_SENSOR_VDDCK_2_TEMP,
 
   SMB_SENSOR_XDPE_LEFT_1_IN_VOLT,
-  SMB_SENSOR_XDPE_LEFT_1_IN_CURR,
-  SMB_SENSOR_XDPE_LEFT_1_IN_POWER,
   SMB_SENSOR_XDPE_LEFT_1_OUT_VOLT,
   SMB_SENSOR_XDPE_LEFT_1_OUT_CURR,
   SMB_SENSOR_XDPE_LEFT_1_OUT_POWER,
   SMB_SENSOR_XDPE_LEFT_1_TEMP,
   SMB_SENSOR_XDPE_LEFT_2_IN_VOLT,
-  SMB_SENSOR_XDPE_LEFT_2_IN_CURR,
-  SMB_SENSOR_XDPE_LEFT_2_IN_POWER,
   SMB_SENSOR_XDPE_LEFT_2_OUT_VOLT,
   SMB_SENSOR_XDPE_LEFT_2_OUT_CURR,
   SMB_SENSOR_XDPE_LEFT_2_OUT_POWER,
   SMB_SENSOR_XDPE_LEFT_2_TEMP,
   SMB_SENSOR_XDPE_RIGHT_1_IN_VOLT,
-  SMB_SENSOR_XDPE_RIGHT_1_IN_CURR,
-  SMB_SENSOR_XDPE_RIGHT_1_IN_POWER,
   SMB_SENSOR_XDPE_RIGHT_1_OUT_VOLT,
   SMB_SENSOR_XDPE_RIGHT_1_OUT_CURR,
   SMB_SENSOR_XDPE_RIGHT_1_OUT_POWER,
   SMB_SENSOR_XDPE_RIGHT_1_TEMP,
   SMB_SENSOR_XDPE_RIGHT_2_IN_VOLT,
-  SMB_SENSOR_XDPE_RIGHT_2_IN_CURR,
-  SMB_SENSOR_XDPE_RIGHT_2_IN_POWER,
   SMB_SENSOR_XDPE_RIGHT_2_OUT_VOLT,
   SMB_SENSOR_XDPE_RIGHT_2_OUT_CURR,
   SMB_SENSOR_XDPE_RIGHT_2_OUT_POWER,
@@ -961,9 +933,6 @@ static int scm_sensor_read(uint8_t sensor_num, float *value) {
         if (*value < 0)
           *value = 0;
         break;
-      case SCM_SENSOR_HSC_IN_VOLT:
-        ret = read_hsc_volt_1(SCM_HSC_DEVICE, 1, value);
-        break;
       case SCM_SENSOR_HSC_OUT_VOLT:
         ret = read_hsc_volt_2(SCM_HSC_DEVICE, 1, value);
         break;
@@ -1206,12 +1175,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_FCM_HSC_OUT_VOLT:
       ret = read_hsc_volt_2(SMB_FCM_HSC_DEVICE, 1, value);
       break;
-    case SMB_SENSOR_VDDA_IN_CURR:
-      ret = read_attr(SMB_VDDA_DEVICE, CURR(1), value);
-      break;
-    case SMB_SENSOR_PCIE_IN_CURR:
-      ret = read_attr(SMB_PCIE_DEVICE, CURR(1), value);
-      break;
     case SMB_SENSOR_VDDA_OUT_CURR:
       ret = read_attr(SMB_VDDA_DEVICE, CURR(3), value);
       *value = *value * 1.0433 + 0.3926;
@@ -1220,26 +1183,14 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_PCIE_DEVICE, CURR(3), value);
       *value = *value * 0.9994 + 1.0221;
       break;
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_CURR:
-      ret = read_attr(SMB_PCIE_DEVICE, CURR(2), value);
-      break;
-    case SMB_SENSOR_IR3R3V_LEFT_IN_CURR:
-      ret = read_attr(SMB_VDDA_DEVICE, CURR(2), value);
-      break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR:
       ret = read_attr(SMB_PCIE_DEVICE, CURR(4), value);
       break;
     case SMB_SENSOR_IR3R3V_LEFT_OUT_CURR:
       ret = read_attr(SMB_VDDA_DEVICE, CURR(4), value);
       break;
-    case SMB_SENSOR_SW_CORE_IN_CURR:
-      ret = read_attr(SMB_XPDE_DEVICE, CURR(1), value);
-      break;
     case SMB_SENSOR_SW_CORE_OUT_CURR:
       ret = read_attr(SMB_XPDE_DEVICE, CURR(3), value);
-      break;
-    case SMB_SENSOR_XPDE_HBM_IN_CURR:
-      ret = read_attr(SMB_XPDE_DEVICE, CURR(2), value);
       break;
     case SMB_SENSOR_XPDE_HBM_OUT_CURR:
       ret = read_attr(SMB_XPDE_DEVICE, CURR(4), value);
@@ -1250,14 +1201,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
       if (*value < 0)
         *value = 0;
       break;
-    case SMB_SENSOR_VDDA_IN_POWER:
-      ret = read_attr(SMB_VDDA_DEVICE,  POWER(1), value);
-      *value /= 1000;
-      break;
-    case SMB_SENSOR_PCIE_IN_POWER:
-      ret = read_attr(SMB_PCIE_DEVICE,  POWER(1), value);
-      *value /= 1000;
-      break;
     case SMB_SENSOR_VDDA_OUT_POWER:
       ret = read_attr(SMB_VDDA_DEVICE,  POWER(3), value);
       *value /= 1000;
@@ -1265,14 +1208,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_PCIE_OUT_POWER:
       ret = read_attr(SMB_PCIE_DEVICE,  POWER(3), value);
       *value /= 1000;
-      break;
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_POWER:
-      ret = read_attr(SMB_PCIE_DEVICE,  POWER(2), value);
-      *value = *value / 1000;
-      break;
-    case SMB_SENSOR_IR3R3V_LEFT_IN_POWER:
-      ret = read_attr(SMB_VDDA_DEVICE,  POWER(2), value);
-      *value = *value / 1000;
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER:
       ret = read_attr(SMB_PCIE_DEVICE,  POWER(4), value);
@@ -1282,16 +1217,8 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_VDDA_DEVICE,  POWER(4), value);
       *value = *value / 1000 * 2;
       break;
-    case SMB_SENSOR_SW_CORE_IN_POWER:
-      ret = read_attr(SMB_XPDE_DEVICE, POWER(1), value);
-      *value /= 1000;
-      break;
     case SMB_SENSOR_SW_CORE_OUT_POWER:
       ret = read_attr(SMB_XPDE_DEVICE, POWER(3), value);
-      *value /= 1000;
-      break;
-    case SMB_SENSOR_XPDE_HBM_IN_POWER:
-      ret = read_attr(SMB_XPDE_DEVICE, POWER(2), value);
       *value /= 1000;
       break;
     case SMB_SENSOR_XPDE_HBM_OUT_POWER:
@@ -1304,13 +1231,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_XDPE_LEFT_1_IN_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(1), value);
-      break;
-    case SMB_SENSOR_XDPE_LEFT_1_IN_CURR:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, CURR(1), value);
-      break;
-    case SMB_SENSOR_XDPE_LEFT_1_IN_POWER:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, POWER(1), value);
-      *value /= 1000;
       break;
     case SMB_SENSOR_XDPE_LEFT_1_OUT_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(3), value);
@@ -1328,13 +1248,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_XDPE_LEFT_2_IN_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(2), value);
       break;
-    case SMB_SENSOR_XDPE_LEFT_2_IN_CURR:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, CURR(2), value);
-      break;
-    case SMB_SENSOR_XDPE_LEFT_2_IN_POWER:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, POWER(2), value);
-      *value /= 1000;
-      break;
     case SMB_SENSOR_XDPE_LEFT_2_OUT_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(4), value);
       break;
@@ -1351,13 +1264,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_XDPE_RIGHT_1_IN_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(1), value);
       break;
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_CURR:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, CURR(1), value);
-      break;
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_POWER:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, POWER(1), value);
-      *value /= 1000;
-      break;
     case SMB_SENSOR_XDPE_RIGHT_1_OUT_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(3), value);
       break;
@@ -1373,13 +1279,6 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_XDPE_RIGHT_2_IN_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(2), value);
-      break;
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_CURR:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, CURR(2), value);
-      break;
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_POWER:
-      ret = read_attr(SMB_XPDE_LEFT_DEVICE, POWER(2), value);
-      *value /= 1000;
       break;
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_VOLT:
       ret = read_attr(SMB_XPDE_LEFT_DEVICE, VOLT(4), value);
@@ -1466,15 +1365,8 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_VDDCK_0_OUT_VOLT:
       ret = read_attr(SMB_PXE1211_DEVICE, VOLT(4), value);
       break;
-    case SMB_SENSOR_VDDCK_0_IN_CURR:
-      ret = read_attr(SMB_PXE1211_DEVICE, CURR(1), value);
-      break;
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
       ret = read_attr(SMB_PXE1211_DEVICE, CURR(4), value);
-      break;
-    case SMB_SENSOR_VDDCK_0_IN_POWER:
-      ret = read_attr(SMB_PXE1211_DEVICE, POWER(1), value);
-      *value /= 1000;
       break;
     case SMB_SENSOR_VDDCK_0_OUT_POWER:
       ret = read_attr(SMB_PXE1211_DEVICE, POWER(4), value);
@@ -1489,15 +1381,8 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_VDDCK_1_OUT_VOLT:
       ret = read_attr(SMB_PXE1211_DEVICE, VOLT(5), value);
       break;
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
-      ret = read_attr(SMB_PXE1211_DEVICE, CURR(2), value);
-      break;
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
       ret = read_attr(SMB_PXE1211_DEVICE, CURR(5), value);
-      break;
-    case SMB_SENSOR_VDDCK_1_IN_POWER:
-      ret = read_attr(SMB_PXE1211_DEVICE, POWER(2), value);
-      *value /= 1000;
       break;
     case SMB_SENSOR_VDDCK_1_OUT_POWER:
       ret = read_attr(SMB_PXE1211_DEVICE, POWER(5), value);
@@ -1512,15 +1397,8 @@ static int smb_sensor_read(uint8_t sensor_num, float *value) {
     case SMB_SENSOR_VDDCK_2_OUT_VOLT:
       ret = read_attr(SMB_PXE1211_DEVICE, VOLT(6), value);
       break;
-    case SMB_SENSOR_VDDCK_2_IN_CURR:
-      ret = read_attr(SMB_PXE1211_DEVICE, CURR(3), value);
-      break;
     case SMB_SENSOR_VDDCK_2_OUT_CURR:
       ret = read_attr(SMB_PXE1211_DEVICE, CURR(6), value);
-      break;
-    case SMB_SENSOR_VDDCK_2_IN_POWER:
-      ret = read_attr(SMB_PXE1211_DEVICE, POWER(3), value);
-      *value /= 1000;
       break;
     case SMB_SENSOR_VDDCK_2_OUT_POWER:
       ret = read_attr(SMB_PXE1211_DEVICE, POWER(6), value);
@@ -1737,9 +1615,6 @@ static int get_scm_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case SCM_SENSOR_INLET_TEMP:
       sprintf(name, "SCM_INLET_TEMP");
-      break;
-    case SCM_SENSOR_HSC_IN_VOLT:
-      sprintf(name, "SCM_HSC_INTPUT_12V_VOLT");
       break;
     case SCM_SENSOR_HSC_OUT_VOLT:
       sprintf(name, "SCM_HSC_OUTPUT_12V_VOLT");
@@ -2044,38 +1919,20 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_FCM_HSC_OUT_VOLT:
       sprintf(name, "FCM_HSC_OUTPUT_12V_VOLT");
       break;
-    case SMB_SENSOR_VDDA_IN_CURR:
-      sprintf(name, "SMB_XP0R94V_VDDA_IN_CURR");
-      break;
     case SMB_SENSOR_VDDA_OUT_CURR:
       sprintf(name, "SMB_XP0R94V_VDDA_OUT_CURR");
-      break;
-    case SMB_SENSOR_PCIE_IN_CURR:
-      sprintf(name, "SMB_XP0R75V_PCIE_IN_CURR");
       break;
     case SMB_SENSOR_PCIE_OUT_CURR:
       sprintf(name, "SMB_XP0R75V_PCIE_OUT_CURR");
       break;
-    case SMB_SENSOR_IR3R3V_LEFT_IN_CURR:
-      sprintf(name, "SMB_XP3R3V_LEFT_IN_CURR");
-      break;
     case SMB_SENSOR_IR3R3V_LEFT_OUT_CURR:
       sprintf(name, "SMB_XP3R3V_LEFT_OUT_CURR");
-      break;
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_CURR:
-      sprintf(name, "SMB_XP3R3V_RIGHT_IN_CURR");
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR:
       sprintf(name, "SMB_XP3R3V_RIGHT_OUT_CURR");
       break;
-    case SMB_SENSOR_SW_CORE_IN_CURR:
-      sprintf(name, "SMB_VDD_CORE_IN_CURR");
-      break;
     case SMB_SENSOR_SW_CORE_OUT_CURR:
       sprintf(name, "SMB_VDD_CORE_OUT_CURR");
-      break;
-    case SMB_SENSOR_XPDE_HBM_IN_CURR:
-      sprintf(name, "SMB_XP1R2V_HBM_IN_CURR");
       break;
     case SMB_SENSOR_XPDE_HBM_OUT_CURR:
       sprintf(name, "SMB_XP1R2V_HBM_OUT_CURR");
@@ -2083,38 +1940,20 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_FCM_HSC_OUT_CURR:
       sprintf(name, "FCM_HSC_OUTPUT_12V_CURR");
       break;
-    case SMB_SENSOR_VDDA_IN_POWER:
-      sprintf(name, "SMB_XP0R94V_VDDA_IN_POWER");
-      break;
     case SMB_SENSOR_VDDA_OUT_POWER:
       sprintf(name, "SMB_XP0R94V_VDDA_OUT_POWER");
-      break;
-    case SMB_SENSOR_PCIE_IN_POWER:
-      sprintf(name, "SMB_XP0R75V_PCIE_IN_POWER");
       break;
     case SMB_SENSOR_PCIE_OUT_POWER:
       sprintf(name, "SMB_XP0R75V_PCIE_OUT_POWER");
       break;
-    case SMB_SENSOR_IR3R3V_LEFT_IN_POWER:
-      sprintf(name, "SMB_XP3R3V_LEFT_IN_POWER");
-      break;
     case SMB_SENSOR_IR3R3V_LEFT_OUT_POWER:
       sprintf(name, "SMB_XP3R3V_LEFT_OUT_POWER");
-      break;
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_POWER:
-      sprintf(name, "SMB_XP3R3V_RIGHT_IN_POWER");
       break;
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER:
       sprintf(name, "SMB_XP3R3V_RIGHT_OUT_POWER");
       break;
-    case SMB_SENSOR_SW_CORE_IN_POWER:
-      sprintf(name, "SMB_VDD_CORE_IN_POWER");
-      break;
     case SMB_SENSOR_SW_CORE_OUT_POWER:
       sprintf(name, "SMB_VDD_CORE_OUT_POWER");
-      break;
-    case SMB_SENSOR_XPDE_HBM_IN_POWER:
-      sprintf(name, "SMB_XP1R2V_HBM_IN_POWER");
       break;
     case SMB_SENSOR_XPDE_HBM_OUT_POWER:
       sprintf(name, "SMB_XP1R2V_HBM_OUT_POWER");
@@ -2185,12 +2024,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_VDDCK_0_IN_VOLT:
       sprintf(name, "SMB_VDDCK_1P15V_0_IN_VOLT");
       break;
-    case SMB_SENSOR_VDDCK_0_IN_CURR:
-      sprintf(name, "SMB_VDDCK_1P15V_0_IN_CURR");
-      break;
-    case SMB_SENSOR_VDDCK_0_IN_POWER:
-      sprintf(name, "SMB_VDDCK_1P15V_0_IN_POWER");
-      break;
     case SMB_SENSOR_VDDCK_0_OUT_VOLT:
       sprintf(name, "SMB_VDDCK_1P15V_0_OUT_VOLT");
       break;
@@ -2205,12 +2038,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case SMB_SENSOR_VDDCK_1_IN_VOLT:
       sprintf(name, "SMB_VDDCK_1P15V_1_IN_VOLT");
-      break;
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
-      sprintf(name, "SMB_VDDCK_1P15V_1_IN_CURR");
-      break;
-    case SMB_SENSOR_VDDCK_1_IN_POWER:
-      sprintf(name, "SMB_VDDCK_1P15V_1_IN_POWER");
       break;
     case SMB_SENSOR_VDDCK_1_OUT_VOLT:
       sprintf(name, "SMB_VDDCK_1P15V_1_OUT_VOLT");
@@ -2227,12 +2054,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_VDDCK_2_IN_VOLT:
       sprintf(name, "SMB_VDDCK_1P15V_2_IN_VOLT");
       break;
-    case SMB_SENSOR_VDDCK_2_IN_CURR:
-      sprintf(name, "SMB_VDDCK_1P15V_2_IN_CURR");
-      break;
-    case SMB_SENSOR_VDDCK_2_IN_POWER:
-      sprintf(name, "SMB_VDDCK_1P15V_2_IN_POWER");
-      break;
     case SMB_SENSOR_VDDCK_2_OUT_VOLT:
       sprintf(name, "SMB_VDDCK_1P15V_2_OUT_VOLT");
       break;
@@ -2247,12 +2068,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case SMB_SENSOR_XDPE_LEFT_1_IN_VOLT:
       sprintf(name, "SMB_XP0R9V_LEFT_IN_VOLT");
-      break;
-    case SMB_SENSOR_XDPE_LEFT_1_IN_CURR:
-      sprintf(name, "SMB_XP0R9V_LEFT_IN_CURR");
-      break;
-    case SMB_SENSOR_XDPE_LEFT_1_IN_POWER:
-      sprintf(name, "SMB_XP0R9V_LEFT_IN_POWER");
       break;
     case SMB_SENSOR_XDPE_LEFT_1_OUT_VOLT:
       sprintf(name, "SMB_XP0R9V_LEFT_OUT_VOLT");
@@ -2269,12 +2084,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_XDPE_LEFT_2_IN_VOLT:
       sprintf(name, "SMB_XP1R85V_LEFT_IN_VOLT");
       break;
-    case SMB_SENSOR_XDPE_LEFT_2_IN_CURR:
-      sprintf(name, "SMB_XP1R85V_LEFT_IN_CURR");
-      break;
-    case SMB_SENSOR_XDPE_LEFT_2_IN_POWER:
-      sprintf(name, "SMB_XP1R85V_LEFT_IN_POWER");
-      break;
     case SMB_SENSOR_XDPE_LEFT_2_OUT_VOLT:
       sprintf(name, "SMB_XP1R85V_LEFT_OUT_VOLT");
       break;
@@ -2290,12 +2099,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_SENSOR_XDPE_RIGHT_1_IN_VOLT:
       sprintf(name, "SMB_XP0R9V_RIGHT_IN_VOLT");
       break;
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_CURR:
-      sprintf(name, "SMB_XP0R9V_RIGHT_IN_CURR");
-      break;
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_POWER:
-      sprintf(name, "SMB_XP0R9V_RIGHT_IN_POWER");
-      break;
     case SMB_SENSOR_XDPE_RIGHT_1_OUT_VOLT:
       sprintf(name, "SMB_XP0R9V_RIGHT_OUT_VOLT");
       break;
@@ -2310,12 +2113,6 @@ static int get_smb_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case SMB_SENSOR_XDPE_RIGHT_2_IN_VOLT:
       sprintf(name, "SMB_XP1R85V_RIGHT_IN_VOLT");
-      break;
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_CURR:
-      sprintf(name, "SMB_XP1R85V_RIGHT_IN_CURR");
-      break;
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_POWER:
-      sprintf(name, "SMB_XP1R85V_RIGHT_IN_POWER");
       break;
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_VOLT:
       sprintf(name, "SMB_XP1R85V_RIGHT_OUT_VOLT");
@@ -2458,7 +2255,6 @@ static int get_scm_sensor_units(uint8_t sensor_num, char *units) {
     case BIC_SENSOR_SOC_TJMAX:
       sprintf(units, "C");
       break;
-    case SCM_SENSOR_HSC_IN_VOLT:
     case SCM_SENSOR_HSC_OUT_VOLT:
     case BIC_SENSOR_P3V3_MB:
     case BIC_SENSOR_P12V_MB:
@@ -2592,60 +2388,34 @@ static int get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_VOLT:
       sprintf(units, "Volts");
       break;
-    case SMB_SENSOR_VDDA_IN_CURR:
     case SMB_SENSOR_VDDA_OUT_CURR:
-    case SMB_SENSOR_PCIE_IN_CURR:
     case SMB_SENSOR_PCIE_OUT_CURR:
-    case SMB_SENSOR_IR3R3V_LEFT_IN_CURR:
     case SMB_SENSOR_IR3R3V_LEFT_OUT_CURR:
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_CURR:
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR:
-    case SMB_SENSOR_SW_CORE_IN_CURR:
     case SMB_SENSOR_SW_CORE_OUT_CURR:
-    case SMB_SENSOR_XPDE_HBM_IN_CURR:
     case SMB_SENSOR_XPDE_HBM_OUT_CURR:
     case SMB_SENSOR_FCM_HSC_OUT_CURR:
-    case SMB_SENSOR_VDDCK_0_IN_CURR:
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
-    case SMB_SENSOR_VDDCK_2_IN_CURR:
     case SMB_SENSOR_VDDCK_2_OUT_CURR:
-    case SMB_SENSOR_XDPE_LEFT_1_IN_CURR:
     case SMB_SENSOR_XDPE_LEFT_1_OUT_CURR:
-    case SMB_SENSOR_XDPE_LEFT_2_IN_CURR:
     case SMB_SENSOR_XDPE_LEFT_2_OUT_CURR:
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_CURR:
     case SMB_SENSOR_XDPE_RIGHT_1_OUT_CURR:
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_CURR:
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_CURR:
       sprintf(units, "Amps");
       break;
-    case SMB_SENSOR_VDDA_IN_POWER:
     case SMB_SENSOR_VDDA_OUT_POWER:
-    case SMB_SENSOR_PCIE_IN_POWER:
     case SMB_SENSOR_PCIE_OUT_POWER:
-    case SMB_SENSOR_IR3R3V_LEFT_IN_POWER:
     case SMB_SENSOR_IR3R3V_LEFT_OUT_POWER:
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_POWER:
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER:
-    case SMB_SENSOR_SW_CORE_IN_POWER:
     case SMB_SENSOR_SW_CORE_OUT_POWER:
-    case SMB_SENSOR_XPDE_HBM_IN_POWER:
     case SMB_SENSOR_XPDE_HBM_OUT_POWER:
-    case SMB_SENSOR_VDDCK_0_IN_POWER:
     case SMB_SENSOR_VDDCK_0_OUT_POWER:
-    case SMB_SENSOR_VDDCK_1_IN_POWER:
     case SMB_SENSOR_VDDCK_1_OUT_POWER:
-    case SMB_SENSOR_VDDCK_2_IN_POWER:
     case SMB_SENSOR_VDDCK_2_OUT_POWER:
-    case SMB_SENSOR_XDPE_LEFT_1_IN_POWER:
     case SMB_SENSOR_XDPE_LEFT_1_OUT_POWER:
-    case SMB_SENSOR_XDPE_LEFT_2_IN_POWER:
     case SMB_SENSOR_XDPE_LEFT_2_OUT_POWER:
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_POWER:
     case SMB_SENSOR_XDPE_RIGHT_1_OUT_POWER:
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_POWER:
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_POWER:
     case SMB_SENSOR_FCM_HSC_IN_POWER:
       sprintf(units, "Watts");
@@ -2740,10 +2510,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
 
   switch (fru) {
     case FRU_SCM:
-      scm_sensor_threshold[SCM_SENSOR_OUTLET_TEMP][UCR_THRESH] = 90;
-      scm_sensor_threshold[SCM_SENSOR_INLET_TEMP][UCR_THRESH] = 60;
-      scm_sensor_threshold[SCM_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 12.6;
-      scm_sensor_threshold[SCM_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.4;
+      scm_sensor_threshold[SCM_SENSOR_OUTLET_TEMP][UCR_THRESH] = 96;
+      scm_sensor_threshold[SCM_SENSOR_INLET_TEMP][UCR_THRESH] = 66;
       scm_sensor_threshold[SCM_SENSOR_HSC_OUT_VOLT][UCR_THRESH] = 12.6;
       scm_sensor_threshold[SCM_SENSOR_HSC_OUT_VOLT][LCR_THRESH] = 11.4;
       scm_sensor_threshold[SCM_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 5;
@@ -2849,8 +2617,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
 
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_IN_VOLT][LCR_THRESH] = 11.4;
-      smb_sensor_threshold[SMB_SENSOR_SW_CORE_TEMP1][UCR_THRESH] = 85;
-      smb_sensor_threshold[SMB_SENSOR_SW_CORE_TEMP1][LCR_THRESH] = -40;
+      smb_sensor_threshold[SMB_SENSOR_SW_CORE_TEMP1][UCR_THRESH] = 125;
+      smb_sensor_threshold[SMB_SENSOR_SW_CORE_TEMP1][LCR_THRESH] = -5;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_OUT_VOLT][UCR_THRESH] = 0.85;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_OUT_VOLT][LCR_THRESH] = 0.8;
       smb_sensor_threshold[SMB_SENSOR_SW_CORE_OUT_CURR][UCR_THRESH] = 370;
@@ -2858,10 +2626,10 @@ static void sensor_thresh_array_init(uint8_t fru) {
 
       smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_IN_VOLT][LCR_THRESH] = 11.4;
-      smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_TEMP1][UCR_THRESH] = 85;
-      smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_TEMP1][LCR_THRESH] = -40;
       smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_OUT_VOLT][UCR_THRESH] = 1.24;
       smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_OUT_VOLT][LCR_THRESH] = 1.16;
+      smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_TEMP1][UCR_THRESH] = 125;
+      smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_TEMP1][LCR_THRESH] = -5;
       smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_OUT_CURR][UCR_THRESH] = 36;
       smb_sensor_threshold[SMB_SENSOR_XPDE_HBM_OUT_POWER][UCR_THRESH] = 44.64;
 
@@ -2924,17 +2692,17 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_XDPE_RIGHT_2_TEMP][UCR_THRESH] = 85;
       smb_sensor_threshold[SMB_SENSOR_XDPE_RIGHT_2_TEMP][LCR_THRESH] = -40;
 
-      smb_sensor_threshold[SMB_SENSOR_LM75B_U28_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_LM75B_U25_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_LM75B_U56_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_LM75B_U55_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_LM75B_U2_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_LM75B_U13_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TMP421_U62_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_TMP421_U63_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_BMC_LM75B_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_DOM1_MAX_TEMP][UCR_THRESH] = 65;
-      smb_sensor_threshold[SMB_DOM2_MAX_TEMP][UCR_THRESH] = 65;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U28_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U25_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U56_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U55_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U2_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_LM75B_U13_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_TMP421_U62_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_TMP421_U63_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_BMC_LM75B_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_DOM1_MAX_TEMP][UCR_THRESH] = 71;
+      smb_sensor_threshold[SMB_DOM2_MAX_TEMP][UCR_THRESH] = 71;
 
       smb_sensor_threshold[SMB_SENSOR_GB_HIGH_TEMP][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_GB_TEMP1][UCR_THRESH] = 105;
@@ -2951,8 +2719,8 @@ static void sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_GB_HBM_TEMP2][UCR_THRESH] = 105;
 
       /* FCM BOARD */
-      smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U1_TEMP][UCR_THRESH] = 80;
-      smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U2_TEMP][UCR_THRESH] = 80;
+      smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U1_TEMP][UCR_THRESH] = 86;
+      smb_sensor_threshold[SMB_SENSOR_FCM_LM75B_U2_TEMP][UCR_THRESH] = 86;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_IN_VOLT][UCR_THRESH] = 12.6;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_IN_VOLT][LCR_THRESH] = 11.4;
       smb_sensor_threshold[SMB_SENSOR_FCM_HSC_IN_POWER][UCR_THRESH] = 302.4;
@@ -2983,19 +2751,23 @@ static void sensor_thresh_array_init(uint8_t fru) {
       psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 180;
       psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 12.6;
       psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 11.4;
-      psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 3.46;
-      psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 3.2;
+      psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 3.43;
+      psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 3.15;
       psu_sensor_threshold[PSU1_SENSOR_IN_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 10.04;
+      psu_sensor_threshold[PSU1_SENSOR_IN_CURR + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 0.07;
       psu_sensor_threshold[PSU1_SENSOR_12V_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 166.7;
+      psu_sensor_threshold[PSU1_SENSOR_12V_CURR + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1;
       psu_sensor_threshold[PSU1_SENSOR_STBY_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 3;
       psu_sensor_threshold[PSU1_SENSOR_IN_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 2208.9;
+      psu_sensor_threshold[PSU1_SENSOR_IN_POWER + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 15.4;
       psu_sensor_threshold[PSU1_SENSOR_12V_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 2100.42;
+      psu_sensor_threshold[PSU1_SENSOR_12V_POWER + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 11.4;
       psu_sensor_threshold[PSU1_SENSOR_STBY_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 10.38;
       psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 35750;
       psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
-      psu_sensor_threshold[PSU1_SENSOR_TEMP1 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 65;
-      psu_sensor_threshold[PSU1_SENSOR_TEMP2 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 100;
-      psu_sensor_threshold[PSU1_SENSOR_TEMP3 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 125;
+      psu_sensor_threshold[PSU1_SENSOR_TEMP1 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 71;
+      psu_sensor_threshold[PSU1_SENSOR_TEMP2 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 106;
+      psu_sensor_threshold[PSU1_SENSOR_TEMP3 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 131;
       break;
   }
   init_done[fru] = true;
@@ -3181,7 +2953,6 @@ static void scm_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SCM_SENSOR_INLET_TEMP:
       *value = 30;
       break;
-    case SCM_SENSOR_HSC_IN_VOLT:
     case SCM_SENSOR_HSC_OUT_VOLT:
     case SCM_SENSOR_HSC_OUT_CURR:
       *value = 30;
@@ -3255,19 +3026,15 @@ static void smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_1220_VCCA:
     case SMB_SENSOR_1220_VCCINP:
     case SMB_SENSOR_VDDA_IN_VOLT:
-    case SMB_SENSOR_VDDA_IN_CURR:
     case SMB_SENSOR_VDDA_OUT_VOLT:
     case SMB_SENSOR_VDDA_OUT_CURR:
     case SMB_SENSOR_PCIE_IN_VOLT:
-    case SMB_SENSOR_PCIE_IN_CURR:
     case SMB_SENSOR_PCIE_OUT_VOLT:
     case SMB_SENSOR_PCIE_OUT_CURR:
     case SMB_SENSOR_IR3R3V_LEFT_IN_VOLT:
-    case SMB_SENSOR_IR3R3V_LEFT_IN_CURR:
     case SMB_SENSOR_IR3R3V_LEFT_OUT_VOLT:
     case SMB_SENSOR_IR3R3V_LEFT_OUT_CURR:
     case SMB_SENSOR_IR3R3V_RIGHT_IN_VOLT:
-    case SMB_SENSOR_IR3R3V_RIGHT_IN_CURR:
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_VOLT:
     case SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR:
     case SMB_SENSOR_SW_CORE_IN_VOLT:
@@ -3276,9 +3043,7 @@ static void smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_SENSOR_XPDE_HBM_OUT_VOLT:
     case SMB_SENSOR_FCM_HSC_IN_VOLT:
     case SMB_SENSOR_FCM_HSC_OUT_VOLT:
-    case SMB_SENSOR_SW_CORE_IN_CURR:
     case SMB_SENSOR_SW_CORE_OUT_CURR:
-    case SMB_SENSOR_XPDE_HBM_IN_CURR:
     case SMB_SENSOR_XPDE_HBM_OUT_CURR:
     case SMB_SENSOR_FCM_HSC_OUT_CURR:
     case SMB_BMC_ADC0_VSEN:
@@ -3295,30 +3060,23 @@ static void smb_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case SMB_BMC_ADC11_VSEN:
     case SMB_SENSOR_VDDCK_0_IN_VOLT:
     case SMB_SENSOR_VDDCK_0_OUT_VOLT:
-    case SMB_SENSOR_VDDCK_0_IN_CURR:
     case SMB_SENSOR_VDDCK_0_OUT_CURR:
     case SMB_SENSOR_VDDCK_1_IN_VOLT:
     case SMB_SENSOR_VDDCK_1_OUT_VOLT:
-    case SMB_SENSOR_VDDCK_1_IN_CURR:
     case SMB_SENSOR_VDDCK_1_OUT_CURR:
     case SMB_SENSOR_VDDCK_2_IN_VOLT:
     case SMB_SENSOR_VDDCK_2_OUT_VOLT:
-    case SMB_SENSOR_VDDCK_2_IN_CURR:
     case SMB_SENSOR_VDDCK_2_OUT_CURR:
     case SMB_SENSOR_XDPE_LEFT_1_IN_VOLT:
-    case SMB_SENSOR_XDPE_LEFT_1_IN_CURR:
     case SMB_SENSOR_XDPE_LEFT_1_OUT_VOLT:
     case SMB_SENSOR_XDPE_LEFT_1_OUT_CURR:
     case SMB_SENSOR_XDPE_LEFT_2_IN_VOLT:
-    case SMB_SENSOR_XDPE_LEFT_2_IN_CURR:
     case SMB_SENSOR_XDPE_LEFT_2_OUT_VOLT:
     case SMB_SENSOR_XDPE_LEFT_2_OUT_CURR:
     case SMB_SENSOR_XDPE_RIGHT_1_IN_VOLT:
-    case SMB_SENSOR_XDPE_RIGHT_1_IN_CURR:
     case SMB_SENSOR_XDPE_RIGHT_1_OUT_VOLT:
     case SMB_SENSOR_XDPE_RIGHT_1_OUT_CURR:
     case SMB_SENSOR_XDPE_RIGHT_2_IN_VOLT:
-    case SMB_SENSOR_XDPE_RIGHT_2_IN_CURR:
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_VOLT:
     case SMB_SENSOR_XDPE_RIGHT_2_OUT_CURR:
       *value = 30;

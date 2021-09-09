@@ -17,19 +17,20 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
+# shellcheck disable=SC1091
+# shellcheck disable=SC2002
 . /usr/local/bin/openbmc-utils.sh
 
-for index in 1 2 3 4 5 6 7 8
+for index in 2 3 4 5 6 7 8 9
 do
-    pim_path=${SMBCPLD_SYSFS_DIR}/pim${index}_present_L
-    pim_prsnt=$(cat $pim_path 2> /dev/null | head -n 1)
+    pim_path=${SMBCPLD_SYSFS_DIR}/pim$((index-1))_present_L
+    pim_prsnt=$(cat "$pim_path" 2> /dev/null | head -n 1)
     
     #pimserial cache file doesn't exist, but pim is present
-    if [ ! -f /tmp/pim${index}_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
-        /usr/local/bin/peutil $index |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim${index}_serial.txt
+    if [ ! -f /tmp/pim$((index-1))_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
+        /usr/local/bin/peutil $((index-1)) |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim$((index-1))_serial.txt
     fi
-    serial=$(cat /tmp/pim${index}_serial.txt)
-    echo PIM${index} : ${serial}
+    serial=$(cat /tmp/pim$((index-1))_serial.txt)
+    echo PIM${index} : "${serial}"
 done
 

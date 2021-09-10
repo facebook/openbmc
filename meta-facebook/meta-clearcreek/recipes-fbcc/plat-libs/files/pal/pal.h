@@ -115,6 +115,14 @@ enum {
 #define KEY_PDB_SNR_HEALTH "pdb_sensor_health"
 #define KEY_CARRIER1_SNR_HEALTH "carrier1_sensor_health"
 #define KEY_CARRIER2_SNR_HEALTH "carrier2_sensor_health"
+#define KEY_NIC0_SNR_HEALTH "nic0_sensor_health"
+#define KEY_NIC1_SNR_HEALTH "nic1_sensor_health"
+#define KEY_NIC2_SNR_HEALTH "nic2_sensor_health"
+#define KEY_NIC3_SNR_HEALTH "nic3_sensor_health"
+#define KEY_NIC4_SNR_HEALTH "nic4_sensor_health"
+#define KEY_NIC5_SNR_HEALTH "nic5_sensor_health"
+#define KEY_NIC6_SNR_HEALTH "nic6_sensor_health"
+#define KEY_NIC7_SNR_HEALTH "nic7_sensor_health"
 
 
 #ifdef __cplusplus

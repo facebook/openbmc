@@ -126,7 +126,7 @@ int pal_get_fru_id(char *str, uint8_t *fru)
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;
   } else if (!strcmp(str, "mb") || !strcmp(str, "vr") ||
-             !strcmp(str, "bmc") || !strcmp(str, "nic")) {
+             !strcmp(str, "bmc")) {
     *fru = FRU_MB;
   } else if (!strcmp(str, "bsm")) {
     *fru = FRU_BSM;

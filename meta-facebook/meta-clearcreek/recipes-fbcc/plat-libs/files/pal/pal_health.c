@@ -26,6 +26,30 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
     case FRU_CARRIER2:
       sprintf(key, "carrier2_sensor_health");
       break;
+    case FRU_NIC0:
+      sprintf(key, "nic0_sensor_health");
+      break;
+    case FRU_NIC1:
+      sprintf(key, "nic1_sensor_health");
+      break;
+    case FRU_NIC2:
+      sprintf(key, "nic2_sensor_health");
+      break;
+    case FRU_NIC3:
+      sprintf(key, "nic3_sensor_health");
+      break;
+    case FRU_NIC4:
+      sprintf(key, "nic4_sensor_health");
+      break;
+    case FRU_NIC5:
+      sprintf(key, "nic5_sensor_health");
+      break;
+    case FRU_NIC6:
+      sprintf(key, "nic6_sensor_health");
+      break;
+    case FRU_NIC7:
+      sprintf(key, "nic7_sensor_health");
+      break;
     default:
       return -1;
   }

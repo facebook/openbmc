@@ -3,6 +3,18 @@
 # shellcheck disable=SC1091
 . /usr/local/fbpackages/utils/ast-functions
 
+
+asic_mac_check() {
+  mac3=$(ncsi-util 0x17 | awk -F'mac_3 = ' '{print $2}')
+
+  if [[ "$mac3" -eq "0x0" ]]
+  then
+    echo "ASIC MAC address recovery!"
+    /usr/local/bin/ncsi-util 0x0e "${mac_peer[@]:1}" 0x02 0x01 > /dev/null 2>&1 &
+  fi
+
+}
+
 usb_dev_lost() {
   while true; do
     usb_pre=$(ifconfig -a | grep usb)
@@ -10,6 +22,8 @@ usb_dev_lost() {
     if [ "$usb_pre" == "" ]; then
       echo "==Lost Usb Ethernet Device=="
       break
+    else
+      asic_mac_check
     fi
 
     sleep 10

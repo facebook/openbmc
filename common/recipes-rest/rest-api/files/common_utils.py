@@ -39,7 +39,7 @@ def common_force_async(func):
 #
 # Not sure why aiohttp's request generator is implemented this way, but
 # the following function will handle both of the cases mentioned above.
-def get_data_from_generator(self, data_generator):
+def get_data_from_generator(data_generator):
     data = None
     try:
         data = next(data_generator)

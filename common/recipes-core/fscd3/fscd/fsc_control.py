@@ -17,7 +17,7 @@
 #
 import math
 
-from fsc_util import Logger
+from fsc_util import Logger, clamp
 
 
 class PID:
@@ -200,3 +200,97 @@ class TTable4Curve:
             )
             self.last_out = min([mini, self.last_out])
         return self.last_out
+
+
+class IndependentPID:
+    def __init__(self, pTable):
+        self.last_error = 0
+        self.I = 0
+        self.kp = pTable.get("kp", 0.0)
+        self.ki = pTable.get("ki", 0.0)
+        self.kd = pTable.get("kd", 0.0)
+        self.minval = pTable.get("setpoint", 0.0) - pTable.get(
+            "negative_hysteresis", 0.0
+        )
+        self.maxval = pTable.get("setpoint", 0.0) + pTable.get(
+            "positive_hysteresis", 0.0
+        )
+        self.minimum_outval = pTable.get(
+            "minimum_outval", 0.001
+        )  # set minimum_outval to 0.001 if not defined
+        self.maximum_outval = 100
+        self.pos_slew = pTable.get("positive_slew_rate", 0.0)
+        self.neg_slew = pTable.get("negative_slew_rate", 0.0)
+        self.last_out = 0
+        self.last_value = 0
+
+    # PI control only, D term is not used
+    def run(self, value, ctx):
+        dt = ctx["dt"]
+
+        # if measured value is lower than the limitation, run the PID controller to reduce the fan speed and increase the temperature (positive error and negative output)
+        if value < self.minval:
+            error = self.minval - value
+            # if the measured value in last time is higher than self. minval, reset the I term to be zero and recalculate the output
+            if self.last_value > self.minval:
+                self.I = 0
+        # if measured value is higher than self.maxval, run the PID controller to increase the fan speed and reduce the temperature (negative error and positive output)
+        elif value > self.maxval:
+            error = self.maxval - value
+            # if the measured value in last time is lower than self. maxval, reset the I term to be zero and recalculate the output
+            if self.last_value < self.maxval:
+                self.I = 0
+        else:  # just retutn last_out if measured value within minval & maxval
+            self.last_out = clamp(
+                self.last_out, self.minimum_outval, self.maximum_outval
+            )
+            return self.last_out
+
+        # calculate out value
+        self.I = self.I + error * dt
+        out = self.kp * error + self.ki * self.I
+
+        # calculate slew rate
+        max_slew_out = 0
+        min_slew_out = 0
+        if self.pos_slew > 0:
+            max_slew_out = self.last_out + (self.pos_slew * dt)
+            out = min(out, max_slew_out)
+
+        if self.neg_slew < 0:
+            min_slew_out = self.last_out + (self.neg_slew * dt)
+            out = max(out, min_slew_out)
+
+        Logger.info(
+            "New PID debug: kp=%.2f, ki=%.2f, kd=%.2f, maxval=%.2f, minval=%.2f"
+            % (self.kp, self.ki, self.kd, self.maxval, self.minval)
+        )
+        Logger.info(
+            "New PID debug: pos_slew=%.2f, neg_slew=%.2f, minimum_outval=%.2f"
+            % (self.pos_slew, self.neg_slew, self.minimum_outval)
+        )
+        Logger.info(
+            "New PID debug: last_out=%.2f, last_error=%.2f, last_value=%.2f"
+            % (self.last_out, self.last_error, self.last_value)
+        )
+        Logger.info(
+            "New PID debug: out=%.2f, error=%.2f, value=%.2f" % (out, error, value)
+        )
+        Logger.info(
+            "New PID debug: I=%.2f, dt=%.2f, max_slew_out=%.2f, min_slew_out=%.2f"
+            % (self.I, dt, max_slew_out, min_slew_out)
+        )
+
+        self.last_out = clamp(out, self.minimum_outval, self.maximum_outval)
+        self.last_error = error
+        self.last_value = value
+
+        return self.last_out
+
+
+class Feedforward:
+    def __init__(self, pTable):
+        self.kf = pTable.get("kf", 0.0)
+
+    def run(self, value, ctx):
+        return self.kf * value

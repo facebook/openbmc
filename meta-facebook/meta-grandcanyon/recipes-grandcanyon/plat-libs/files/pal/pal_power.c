@@ -545,7 +545,12 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   }
   
   if (is_ctrl_via_bic == true) {
-    printf("Warning: Server FPGA fw version is too old, please update\n");
+    // if get fail show wrong message
+    if (ret < 0) {
+      printf("Warning: Server FPGA fw version is missing or not ready, control via BIC\n");
+    } else {
+      printf("Warning: Server FPGA fw version is too old, please update\n");
+    }    
   }
 
   // Discard all the non-12V power control commands if 12V is off

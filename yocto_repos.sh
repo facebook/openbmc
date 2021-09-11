@@ -27,5 +27,5 @@ lf_gatesgarth_repos=(
     lf-openbmc:56721c97f
 )
 lf_hardknott_repos=(
-    lf-openbmc:8c7c9f834
+    lf-openbmc:d767d3fb1
 )

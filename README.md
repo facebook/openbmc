@@ -47,9 +47,9 @@ Note: In the instruction set below, references to <platform> for some of the ste
 
 3. Initialize a build directory for the platform to build. In the `openbmc` directory:
  ```bash
- $ source openbmc-init-build-env meta-facebook/meta-wedge
+ $ source openbmc-init-build-env wedge
  ```
- Choose between `meta-wedge`, `meta-wedge100`, `meta-yosemite`, or any of the other platforms listed in the meta-facebook directory.
+ Choose between `wedge`, `wedge100`, `yosemite`, or any of the other platforms listed in the meta-facebook directory.
  After this step, you will be dropped into a build directory, `openbmc/build`.
 
 4. Start the build within the build directory:
@@ -88,7 +88,7 @@ $ devtool reset linux-aspeed
 ## FAQ
 1-  BMC will take care of the controlling the system / fan based on the sensor/device status (I assume it may even shutdown in case of multiple failures or high temperature). How can we debug such issues? Is there any event/critical logs maintained in the the BMC? Can we have list of files which we can be looked into in case of such issues?
 
-Answer: To debug those issues, you will have to refer to the logs. 
+Answer: To debug those issues, you will have to refer to the logs.
 A: For Rest api related issues, please look at the rest logs under /tmp/ (example: /tmp/rest.log)
 B: For FSCD related issues, please look at the fscd logs for /var/log/ (example: /var/log/fscd.log)
 C: For mTerm log (data from the X86 CPU side), please look at /var/log/mTerm<something>.log (it's usually /var/log/mTerm_wedge.log on most platform)
@@ -97,7 +97,7 @@ E: For everything else, look at /var/log/messages
 
 2) How do we configure the BMC sensor thresholds for fan / temp / others ? Do we have any command which can be used from the OpenBmc shell?
 
-A- For fan RPM, you can run set_fan_speed.sh to change it (use get_fan_speed.sh to read the value back) from the OpenBMC shell. Some platforms, especially storage/compute ones, use fan-util.  Those scripts are under /usr/local/bin on the BMC. Please keep in mind that fscd process will change the fan speed RPM based so your changed values won't stay for long unless you turn off the watchdog and kill fscd. if you want to change the temperature threshold, you will have to modify the codes and build a new BMC image.  
+A- For fan RPM, you can run set_fan_speed.sh to change it (use get_fan_speed.sh to read the value back) from the OpenBMC shell. Some platforms, especially storage/compute ones, use fan-util.  Those scripts are under /usr/local/bin on the BMC. Please keep in mind that fscd process will change the fan speed RPM based so your changed values won't stay for long unless you turn off the watchdog and kill fscd. if you want to change the temperature threshold, you will have to modify the codes and build a new BMC image.
 
 ## How can I contribute
 

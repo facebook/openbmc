@@ -33,8 +33,7 @@ static int read_ioc_temp(uint8_t id, float *value);
 static bool is_e1s_iocm_i2c_enabled(uint8_t id);
 static int get_current_dir(const char *device, char *dir_name);
 static int set_e1s_sensor_name(char *sensor_name, char side);
-
-static void apply_inlet_correction(float *value);
+static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_cnt);
 
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
@@ -691,7 +690,7 @@ static int ads1015_pga_setting[] = {
   4096, 2048, 2048, 1024
 };
 
-static inlet_corr_t g_ict[] = {
+static inlet_corr_t server_ict[] = {
   //airflow, offset value
   { 0,  8 },    // airflow: 0-44
   { 45, 5 },    // airflow: 45-63
@@ -703,8 +702,25 @@ static inlet_corr_t g_ict[] = {
   { 296, 1.5 }, // airflow: 296-369
 };
 
-static uint8_t g_ict_count = sizeof(g_ict)/sizeof(inlet_corr_t);
+static inlet_corr_t uic_ict[] = {
+  //airflow, offset value
+  { 0, 7.27 },   // airflow: 0-39
+  { 40, 5.91 },  // airflow: 40-48
+  { 49, 4.79 },  // airflow: 49-60
+  { 61, 3.8 },   // airflow: 61-72
+  { 73, 3.33 },  // airflow: 73-81
+  { 82, 3.03 },  // airflow: 82-93
+  { 94, 2.79 },  // airflow: 94-103
+  { 104, 2.67 }, // airflow: 104-127
+  { 128, 2.36 }, // airflow: 128-164
+  { 165, 2 },    // airflow: 165-204
+  { 205, 1.68 }, // airflow: 205-286
+  { 287, 1.33 }, // airflow: 287-367
+  { 368, 1.3 },  // airflow: 368-
+};
 
+static size_t server_ict_count = ARRAY_SIZE(server_ict);
+static size_t uic_ict_count = ARRAY_SIZE(uic_ict);
 
 size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
 size_t uic_sensor_cnt = ARRAY_SIZE(uic_sensor_list);
@@ -1760,13 +1776,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       
       // Inlet sensor correction
       if (sensor_num == BS_INLET_TEMP) {
-        apply_inlet_correction((float *)value);
+        apply_inlet_correction((float *)value, server_ict, server_ict_count);
       }
     }
     break;
   case FRU_UIC:
     id = uic_sensor_map[sensor_num].id;
     ret = uic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+
+    // UIC Inlet temperature correction
+    if (sensor_num == UIC_INLET_TEMP) {
+      apply_inlet_correction((float *)value, uic_ict, uic_ict_count);
+    }
     break;
   case FRU_DPB:
   case FRU_SCC:
@@ -2067,29 +2088,23 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   return ret;
 }
 
-static void apply_inlet_correction(float *value) {
-  static float offset_value = 0;
+static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_cnt) {
+  float offset_value = 0;
   float airflow_value = 0;
   int i = 0, ret = 0;
-  inlet_corr_t *ict = NULL;
-  uint8_t ict_cnt = 0;
-  
+
   if (value == NULL) {
     syslog(LOG_WARNING, "%s(): fail to regulate inlet sensor because NULL parameter: *value", __func__);
     return;
   }
-  
+
   // Get airflow value
   ret = pal_sensor_read_raw(FRU_DPB, AIRFLOW, &airflow_value);
   if (ret < 0) {
-     // If get airflow fail, use the previous offset
-    *(float*)value -= offset_value;
+    syslog(LOG_WARNING, "%s(): fail to regulate inlet sensor because fail to get airflow", __func__);
     return;
   }
-  
-  ict = g_ict;
-  ict_cnt = g_ict_count;
-  
+
   // Scan the correction table to get correction value
   offset_value = ict[0].offset_value;
   for (i = 1; i < ict_cnt; i++) {

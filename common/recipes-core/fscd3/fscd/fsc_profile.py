@@ -15,7 +15,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from fsc_control import PID, TTable, IncrementPID, TTable4Curve
+from fsc_control import (
+    PID,
+    TTable,
+    IncrementPID,
+    TTable4Curve,
+    IndependentPID,
+    Feedforward,
+)
 from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceJson
 from fsc_util import Logger
 
@@ -92,6 +99,12 @@ def make_controller(pTable):
             pTable["negative_hysteresis"],
             pTable["positive_hysteresis"],
         )
+        return controller
+    if pTable["type"] == "independentpid":
+        controller = IndependentPID(pTable)
+        return controller
+    if pTable["type"] == "feedforward":
+        controller = Feedforward(pTable)
         return controller
     err = "Don't understand profile type '%s'" % (pTable["type"])
     Logger.error(err)

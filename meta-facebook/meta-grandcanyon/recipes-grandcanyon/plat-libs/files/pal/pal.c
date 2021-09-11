@@ -3743,7 +3743,7 @@ pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str) {
 int
 pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
   uint32_t ver_reg = GET_FPGA_VER_OFFSET;
-  int i2cfd = 0, ret = 0;
+  int i2cfd = 0, ret = 0, retry = 0;
   uint8_t tbuf[MAX_FPGA_VER_LEN] = {0x00};
   uint8_t rbuf[MAX_FPGA_VER_LEN] = {0x00};
   uint8_t rlen = sizeof(rbuf), tlen = sizeof(tbuf);
@@ -3762,13 +3762,20 @@ pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
   } else {
     memcpy(tbuf, &ver_reg, tlen);
 
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, rbuf, rlen);
-    if (ret == 0) {
-      snprintf(key, sizeof(key), "fpga_bus%d_addr%02Xh_version", bus, addr);
-      snprintf(value, sizeof(value), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
-      kv_set(key, value, 0, 0);
-
-    } else {
+    while (retry < MAX_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, tlen, rbuf, rlen);
+      if (ret == 0) {
+        snprintf(key, sizeof(key), "fpga_bus%d_addr%02Xh_version", bus, addr);
+        snprintf(value, sizeof(value), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+        kv_set(key, value, 0, 0);
+        break;
+      } else {
+        retry++;
+        msleep(100);
+      }
+    }
+    
+    if (retry == MAX_RETRY) {
       syslog(LOG_ERR, "Fail to set FPGA version cache value due to i2c_rdwr_msg_transfer failed. bus: %d addr: %02Xh ret: %d", bus, addr, ret);
     }
   }

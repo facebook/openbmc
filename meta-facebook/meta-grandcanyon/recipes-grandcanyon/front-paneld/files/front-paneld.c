@@ -391,8 +391,8 @@ e1s_led_sync_handler() {
   enum LED_HIGH_ACTIVE blinking_list[E1S_IOCM_SLOT_NUM] = {LED_ON, LED_ON};
   
   // set default
-  kv_set(key_list[0], "on", 0, 0);
-  kv_set(key_list[1], "on", 0, 0);
+  kv_set(key_list[0], "off", 0, 0);
+  kv_set(key_list[1], "off", 0, 0);
   
   while(1) {
     for (i = 0; i < E1S_IOCM_SLOT_NUM; i++) {

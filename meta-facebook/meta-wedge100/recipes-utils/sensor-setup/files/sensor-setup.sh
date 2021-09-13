@@ -72,36 +72,10 @@ config_adc_channels() {
 fixup_i2c_devices() {
     mux_driver="pca954x"
     mux_device="7-0070"
-    psu1_device="14-005a"
-    psu2_device="15-0059"
-
-    if [ -n "$LEGACY_KERNEL" ]; then
-        psu_driver="pfe1100"
-    else
-        psu_driver="bel-pfe"
-    fi
 
     if [ ! -e "${SYSFS_I2C_DRIVERS}/${mux_driver}/${mux_device}" ]; then
         echo "Re-probe i2c switch $mux_device.."
         i2c_bind_driver "$mux_driver" "$mux_device"
-
-        # A small delay to ensure all the i2c mux channels are ready.
-        sleep 1
-    fi
-
-    if wedge_psu_is_present 1; then
-        if [ ! -e "${SYSFS_I2C_DEVICES}/${psu1_device}" ]; then
-            i2c_device_add 14 0x5a pfe1100
-        elif [ ! -e "${SYSFS_I2C_DRIVERS}/${psu_driver}/${psu1_device}" ]; then
-            i2c_bind_driver "$psu_driver" "$psu1_device"
-        fi
-    fi
-    if wedge_psu_is_present 2; then
-        if [ ! -e "${SYSFS_I2C_DEVICES}/${psu2_device}" ]; then
-            i2c_device_add 15 0x59 pfe1100
-        elif [ ! -e "${SYSFS_I2C_DRIVERS}/${psu_driver}/${psu2_device}" ]; then
-            i2c_bind_driver "$psu_driver" "$psu2_device"
-        fi
     fi
 }
 

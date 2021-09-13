@@ -1191,7 +1191,7 @@ bmc_health_monitor()
   return NULL;
 }
 
-void check_nm_selftest_result(uint8_t fru, int result)
+void check_nm_selftest_result(uint8_t fru, int result, uint8_t *selftest_result)
 {
   static uint8_t no_response_retry[MAX_NUM_FRUS] = {0};
   static uint8_t abnormal_status_retry[MAX_NUM_FRUS] = {0};
@@ -1234,7 +1234,7 @@ void check_nm_selftest_result(uint8_t fru, int result)
         if ( !is_duplicated_abnormal_event[fru_index] )
         {
           is_duplicated_abnormal_event[fru_index] = true;
-          syslog(LOG_CRIT, "ASSERT: ME Status - Controller Access Degraded or Unavailable on the %s", fru_name);
+          syslog(LOG_CRIT, "ASSERT: ME Status - Controller Access Degraded or Unavailable on the %s, result: %02Xh, %02Xh", fru_name, selftest_result[0], selftest_result[1]);
         }
       }
       else
@@ -1282,7 +1282,7 @@ nm_selftest(uint8_t fru) {
       //if nm has no response, suppose it is in the not support state
       result = PAL_ENOTSUP;
     }
-    check_nm_selftest_result(fru, result);
+    check_nm_selftest_result(fru, result, data);
   }
 }
 

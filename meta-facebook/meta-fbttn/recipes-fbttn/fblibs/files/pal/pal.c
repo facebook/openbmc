@@ -2948,8 +2948,8 @@ int pal_minisas_led(uint8_t port, uint8_t operation) {
 
 int
 pal_get_pwm_value(uint8_t fan_num, uint8_t *value) {
-  char path[64] = {0};
-  char device_name[64] = {0};
+  char path[LARGEST_DEVICE_NAME] = {0};
+  char device_name[LARGEST_DEVICE_NAME] = {0};
   int val = 0;
   int pwm_enable = 0;
 

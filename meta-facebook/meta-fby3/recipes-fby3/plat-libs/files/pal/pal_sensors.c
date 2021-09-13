@@ -657,6 +657,19 @@ const uint8_t bic_1ou_edsff_skip_sensor_list[] = {
   BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
+const uint8_t bic_cwc_skip_sensor_list[] = {
+  BIC_CWC_SENSOR_PCIE_SWITCH_T,
+  BIC_CWC_SENSOR_NUM_V_1_8,
+  BIC_CWC_SENSOR_NUM_P_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_V_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_C_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_T_P1V8_VR,
+  BIC_CWC_SENSOR_NUM_P_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_V_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_C_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_T_P0V84_VR,
+};
+
 const uint8_t bic_dp_sensor_list[] = {
   BIC_SENSOR_DP_MARVELL_HSM_TEMP,
 };
@@ -972,6 +985,7 @@ size_t bic_2ou_gpv3_skip_sensor_cnt = sizeof(bic_2ou_gpv3_skip_sensor_list)/size
 size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_dp_sensor_cnt = sizeof(bic_dp_sensor_list)/sizeof(uint8_t);
 size_t cwc_sensor_cnt = sizeof(bic_cwc_sensor_list)/sizeof(uint8_t);
+size_t bic_cwc_skip_sensor_cnt = sizeof(bic_cwc_skip_sensor_list)/sizeof(uint8_t);
 
 static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
@@ -1020,6 +1034,9 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
         (fruNb == FRU_2U_TOP || fruNb == FRU_2U_BOT)) {
       memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
               current_cnt += bic_2ou_gpv3_skip_sensor_cnt;
+    } else if (type_2ou == CWC_MCHP_BOARD) {
+        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_cwc_skip_sensor_list, bic_cwc_skip_sensor_cnt);
+        current_cnt += bic_cwc_skip_sensor_cnt;
     } else {
       if (type == EDSFF_1U) {
         memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);

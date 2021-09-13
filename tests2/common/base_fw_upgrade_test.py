@@ -503,7 +503,7 @@ class BaseFwUpgradeTest(object):
                 current_ver = self.receive_command_output_from_UUT(only_last=True)
 
             version_length = len(current_ver)
-            if version_length > 10 or version_length == 0:
+            if version_length > 11 or version_length == 0:
                 current_ver = "N/A"
                 need_to_upgrade = True
                 warning_msg = (

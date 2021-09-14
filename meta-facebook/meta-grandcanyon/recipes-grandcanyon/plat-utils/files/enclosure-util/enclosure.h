@@ -153,5 +153,5 @@ char *bmc_error_code_description[] = {
 	"BMC remote heartbeat is abnormal",
 	"SCC local heartbeat is abnormal",
 	"SCC remote heartbeat is abnormal",
-	"BMC Reserved", // Error Code 0xFF
+	"BIC heartbeat is abnormal", // Error Code 0xFF
 };

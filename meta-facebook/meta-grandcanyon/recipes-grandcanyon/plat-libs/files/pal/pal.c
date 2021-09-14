@@ -1871,7 +1871,7 @@ int
 pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len) {
   FILE *err_file = NULL;
   int i = 0, ret = 0;
-  int err_tmp = 0;
+  unsigned int err_tmp = 0;
 
   if (error_code_array == NULL) {
     syslog(LOG_WARNING, "%s(): fail to read error code because NULL parameter: *error_code_byte", __func__);
@@ -2813,24 +2813,31 @@ void pal_update_ts_sled() {
   }
 }
 
-int
-pal_get_heartbeat(float *hb_val, uint8_t component) {
+bool
+pal_is_heartbeat_ok(uint8_t component) {
   char label[MAX_PWM_LABEL_LEN] = {0};
   int ret = 0;
+  float hb_val = 0;
 
-  if (hb_val == NULL) {
-    syslog(LOG_WARNING, "%s(): fail to get heartbeat because parameter: *hb_val is NULL", __func__);
+  if (component == HEARTBEAT_BIC) {
+    // BIC heartbeat index is 0, so it can't use tacho driver to read data
+    return pal_is_bic_heartbeat_ok(FRU_SERVER);
+
+  } else {
+    snprintf(label, sizeof(label), "fan%d", component);
+    // get heartbeat from tacho driver
+    ret = sensors_read_fan(label, &hb_val);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): fail to get heartbeat, component = %d", __func__, component);
+      return false;
+    }
+
+    if (hb_val == 0) {
+      return false;
+    }
   }
 
-  memset(label, 0, sizeof(label));
-  snprintf(label, sizeof(label), "fan%d", component);
-  // get heartbeat from tacho driver
-  ret = sensors_read_fan(label, hb_val);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): fail to get heartbeat, component = %d", __func__, component);
-  }
-
-  return ret;
+  return true;
 }
 
 int
@@ -3229,6 +3236,7 @@ pal_is_bic_ready(uint8_t fru, uint8_t *status) {
 
 bool
 pal_is_bic_heartbeat_ok(uint8_t fru) {
+  uint8_t power_status = 0, server_present = 0;
   int hb_val = 0;
   int ret = 0;
 
@@ -3236,6 +3244,17 @@ pal_is_bic_heartbeat_ok(uint8_t fru) {
     syslog(LOG_WARNING, "%s(): FRU %x does not have BIC component", __func__, fru);
     return PAL_ENOTSUP;
   }
+
+  ret = pal_is_fru_prsnt(fru, &server_present);
+  if ((ret == 0) && (server_present == FRU_ABSENT)) {
+    return true;
+  }
+
+  ret = pal_get_server_12v_power(fru, &power_status);
+  if ((ret == 0) && (power_status == SERVER_12V_OFF)) {
+    return true;
+  }
+
   ret = read_device(BIC_HEARTBEAT_PATH, &hb_val);
   if ((ret < 0) || (hb_val == 0)) {
     return false;

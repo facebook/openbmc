@@ -47,11 +47,10 @@
 
 #define MAX_NUM_CHECK_FRU_HEALTH          5
 
-#define HEARTBEAT_MISSING_VALUE           0
 #define HEARTBEAT_TIMEOUT                 180 // second = 3 mins
 #define HEARTBEAT_NORMAL                  1
 #define HEARTBEAT_ABNORMAL                0
-#define MAX_NUM_CHECK_HB_HEALTH           3
+#define MAX_NUM_CHECK_HB_HEALTH           4
 
 // Thread to handle LED state of the SLED
 static void *
@@ -288,14 +287,13 @@ dbg_card_show_error_code() {
 static void *
 heartbeat_health_handler() {
   // 0: BMC remote hb  1: scc local hb  2: scc remote hb
-  uint8_t hb_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_REMOTE_BMC, HEARTBEAT_LOCAL_SCC, HEARTBEAT_REMOTE_SCC};
-  float hb_value_list[MAX_NUM_CHECK_HB_HEALTH] = {-1, -1, -1};
-  uint8_t cur_hb_status_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL};
-  uint8_t pre_hb_status_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL};
-  int hb_timer[MAX_NUM_CHECK_HB_HEALTH] = {0, 0, 0};
+  uint8_t hb_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_REMOTE_BMC, HEARTBEAT_LOCAL_SCC, HEARTBEAT_REMOTE_SCC, HEARTBEAT_BIC};
+  uint8_t cur_hb_status_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL};
+  uint8_t pre_hb_status_list[MAX_NUM_CHECK_HB_HEALTH] = {HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL, HEARTBEAT_NORMAL};
+  int hb_timer[MAX_NUM_CHECK_HB_HEALTH] = {0, 0, 0, 0};
   uint8_t hb_error_code_list[MAX_NUM_CHECK_HB_HEALTH] = {
-    ERR_CODE_BMC_REMOTE_HB_HEALTH, ERR_CODE_SCC_LOCAL_HB_HEALTH, ERR_CODE_SCC_REMOTE_HB_HEALTH};
-  char* log_desc_list[MAX_NUM_CHECK_HB_HEALTH] = {"BMC remote", "SCC local", "SCC remote"};
+    ERR_CODE_BMC_REMOTE_HB_HEALTH, ERR_CODE_SCC_LOCAL_HB_HEALTH, ERR_CODE_SCC_REMOTE_HB_HEALTH, ERR_CODE_BIC_HB_HEALTH};
+  char* log_desc_list[MAX_NUM_CHECK_HB_HEALTH] = {"BMC remote", "SCC local", "SCC remote", "BIC"};
   uint8_t chassis_type = 0;
   char val[MAX_VALUE_LEN] = {0};
   int ret = 0, i = 0;
@@ -319,22 +317,19 @@ heartbeat_health_handler() {
     }
 
     for (i = 0; i < MAX_NUM_CHECK_HB_HEALTH; i++) {
-      // Type 5 detect: BMC_RMT, SCC_LOC
-      // Type 7 detect: SCC_LOC, SCC_RMT
-      // Unknown type detect: SCC_LOC
+      // Type 5 detect: BMC_RMT, SCC_LOC, BIC
+      // Type 7 detect: SCC_LOC, SCC_RMT, BIC
+      // Unknown type detect: SCC_LOC, BIC
       if (((ret == 0) && (chassis_type == CHASSIS_TYPE5) && (hb_list[i] != HEARTBEAT_REMOTE_SCC))
          || ((ret == 0) && (chassis_type == CHASSIS_TYPE7) && (hb_list[i] != HEARTBEAT_REMOTE_BMC))
-         || (hb_list[i] == HEARTBEAT_LOCAL_SCC)) {
+         || (hb_list[i] == HEARTBEAT_LOCAL_SCC)
+         || (hb_list[i] == HEARTBEAT_BIC)) {
          
         // Get and check HB value
-        ret = pal_get_heartbeat(&hb_value_list[i], hb_list[i]);
-        if (ret == 0) {
-          if (hb_value_list[i] == HEARTBEAT_MISSING_VALUE) {
-            // if value is equal HEARTBEAT_MISSING_VALUE represents heartbeat is missing.
-            hb_timer[i]++;
-          } else if (hb_value_list[i] > HEARTBEAT_MISSING_VALUE) {
-            hb_timer[i] = 0;
-          }
+        if (pal_is_heartbeat_ok(hb_list[i]) == true) {
+          hb_timer[i] = 0;
+        } else {
+          hb_timer[i] += 1;
         }
         
         // Timeout detect: no response continuous 3 mins

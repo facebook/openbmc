@@ -104,6 +104,7 @@ extern "C" {
 #define ERR_CODE_BMC_REMOTE_HB_HEALTH    0xFC
 #define ERR_CODE_SCC_LOCAL_HB_HEALTH     0xFD
 #define ERR_CODE_SCC_REMOTE_HB_HEALTH    0xFE
+#define ERR_CODE_BIC_HB_HEALTH           0xFF
 
 // Host Interface Control Register
 #define LPC_CTR_BASE        0x1E789000
@@ -458,7 +459,7 @@ int pal_get_drive_status(const char* i2c_bus_dev);
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_get_tach_cnt();
-int pal_get_heartbeat(float *hb_val, uint8_t component);
+bool pal_is_heartbeat_ok(uint8_t component);
 int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
 int pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len);
 int pal_set_nic_perst(uint8_t val);

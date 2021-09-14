@@ -50,6 +50,8 @@
 
 #define MAX_SEND_NL_MSG_RETRY 3
 
+int nl_conf = -1;  // default value indicating auto-detection
+
 enum {
   STATE_IDLE=0,
   STATE_LEARN_COMPONENTS,
@@ -154,7 +156,7 @@ close_and_exit:
 }
 
 // Determine NC-SI netlink send method
-static void determine_nl_method(int nl_conf)
+static void determine_nl_method()
 {
   struct utsname unamebuf;
 
@@ -446,6 +448,8 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
       nl_resp = NULL;
       if ((pldmCmd == CMD_APPLY_COMPLETE) || (pldmCmdStatus == -1))
         break;
+      if (nl_conf == 0) // Linux 4.1
+        msleep(10); // add dealy to reduce retry sending request to NIC
     } else {
       printf("unknown PLDM cmd 0x%x\n", pldmCmd);
       waitcycle++;
@@ -765,7 +769,6 @@ static ncsi_util_vendor_t *find_vendor_by_name(const char *name)
 int main(int argc, char **argv)
 {
   ncsi_util_vendor_t *vendor = &vendors[NCSI_UTIL_VENDOR_DMTF]; // default
-  int nl_conf = -1;  // default value indicating auto-detection
   int argflag;
   int i;
   ncsi_util_args_t util_args;
@@ -816,7 +819,7 @@ int main(int argc, char **argv)
   }
 
   // Determine netlink send function
-  determine_nl_method(nl_conf);
+  determine_nl_method();
 
   // Configure NC-SI lib to use printf for logging for this util
   ncsi_config_log(NCSI_LOG_METHOD_PRINTF);

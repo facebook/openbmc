@@ -755,18 +755,17 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     return 0;
   }
 
+#ifdef CONFIG_FBY3_CWC
+  if (fru == FRU_CWC) {
+    fru = FRU_SLOT1;
+  }
+#endif
+
   if (history_clear) {
     clear_sensor_history(fru, sensor_list, sensor_cnt, sensor_num);
   } else if (history) {
     get_sensor_history(fru, sensor_list, sensor_cnt, sensor_num, period);
   } else {
-  #ifdef CONFIG_FBY3_CWC
-    if (fru == FRU_CWC) {
-      data.fru = FRU_SLOT1;
-    } else {
-      data.fru = fru;
-    }
-#endif
     data.fru = fru;
     data.sensor_cnt = sensor_cnt;
     data.sensor_num = sensor_num;
@@ -936,7 +935,15 @@ main(int argc, char **argv) {
   if (!strcmp(fruname, AGGREGATE_SENSOR_FRU_NAME)) {
     fru = AGGREGATE_SENSOR_FRU_ID;
   } else {
+#ifdef CONFIG_FBY3_CWC
+    if (cwcPlat > 0 && expFru > 0) {
+      ret = pal_get_cwc_id(fruname, &fru);
+    } else {
+#endif
     ret = pal_get_fru_id(fruname, &fru);
+#ifdef CONFIG_FBY3_CWC
+    }
+#endif
     if (ret < 0) {
       print_usage();
       return ret;

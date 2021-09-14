@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from tests.wedge100.power_supply import get_power_type
 from utils.test_utils import running_systemd
 
 
@@ -27,7 +28,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
             "fscd",
-            "psumuxmon",
             "rackmond",
             "rest.py",
             "mTerm_server",
@@ -38,3 +38,8 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             self.expected_process.extend(
                 ["/var/run/dhclient.eth0.pid", "/var/run/dhclient6.eth0.pid"]
             )
+
+        # "psumuxmon" is not needed on switches with PSU power supplies.
+        power_type = get_power_type()
+        if power_type.startswith("pem"):
+            self.expected_process.append("psumuxmon")

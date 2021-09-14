@@ -20,9 +20,14 @@
 import os
 import unittest
 
-from tests.wedge400.helper.libpal import pal_detect_power_supply_present, BoardRevision
-from tests.wedge400.test_data.sysfs_nodes.sysfs_nodes import LTC4282_SYSFS_NODES
-from tests.wedge400.test_data.sysfs_nodes.sysfs_nodes import MAX6615_SYSFS_NODES
+from tests.wedge400.helper.libpal import (
+    pal_detect_power_supply_present,
+    BoardRevision,
+)
+from tests.wedge400.test_data.sysfs_nodes.sysfs_nodes import (
+    LTC4282_SYSFS_NODES,
+    MAX6615_SYSFS_NODES,
+)
 from utils.cit_logger import Logger
 
 
@@ -33,6 +38,16 @@ class PowerModuleDetectionTest(unittest.TestCase):
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
+
+    def sysfs_realpath(self, path):
+        """
+        Realpath from sysfs path
+        use for getting realpath of hwmon path
+        """
+        try:
+            return os.popen("realpath " + path).read().split("\n")[0]
+        except Exception:
+            return None
 
     def sysfs_read(self, inp):
         """
@@ -98,7 +113,8 @@ class PowerModuleDetectionTest(unittest.TestCase):
         # if not ,do not need to run this test
 
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1":
-            cmd = "/sys/bus/i2c/devices/24-0058/hwmon/hwmon21/"
+            path = "/sys/bus/i2c/devices/24-0058/hwmon/hwmon*/"
+            cmd = self.sysfs_realpath(path)
             sysfs_nodes_results = self.check_ltc4282_sysfs_nodes(cmd)
             self.assertTrue(
                 sysfs_nodes_results[0],
@@ -110,7 +126,8 @@ class PowerModuleDetectionTest(unittest.TestCase):
             )
 
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
-            cmd = "/sys/bus/i2c/devices/25-0058/hwmon/hwmon22/"
+            path = "/sys/bus/i2c/devices/25-0058/hwmon/hwmon*/"
+            cmd = self.sysfs_realpath(path)
             sysfs_nodes_results = self.check_ltc4282_sysfs_nodes(cmd)
             self.assertTrue(
                 sysfs_nodes_results[0],
@@ -134,8 +151,9 @@ class PowerModuleDetectionTest(unittest.TestCase):
         # if not ,do not need to run this test
 
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1":
-            path = "/sys/bus/i2c/devices/24-0018/hwmon/hwmon22/"
-            sysfs_nodes_results = self.check_max6615_sysfs_nodes(path)
+            path = "/sys/bus/i2c/devices/24-0018/hwmon/hwmon*/"
+            cmd = self.sysfs_realpath(path)
+            sysfs_nodes_results = self.check_max6615_sysfs_nodes(cmd)
             self.assertTrue(
                 sysfs_nodes_results[0],
                 "{} path failed {} with value {}".format(
@@ -146,8 +164,9 @@ class PowerModuleDetectionTest(unittest.TestCase):
             )
 
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":
-            path = "/sys/bus/i2c/devices/25-0018/hwmon/hwmon23/"
-            sysfs_nodes_results = self.check_max6615_sysfs_nodes(path)
+            path = "/sys/bus/i2c/devices/25-0018/hwmon/hwmon*/"
+            cmd = self.sysfs_realpath(path)
+            sysfs_nodes_results = self.check_max6615_sysfs_nodes(cmd)
             self.assertTrue(
                 sysfs_nodes_results[0],
                 "{} path failed {} with value {}".format(

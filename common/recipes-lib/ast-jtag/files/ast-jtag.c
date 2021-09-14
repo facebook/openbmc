@@ -53,6 +53,8 @@ static int _ast_jtag_open(void)
     // Set to desired mode
     if (ioctl(jtag_fd, JTAG_SIOCMODE, &m) < 0) {
       perror("Failed to set JTAG mode!\n");
+      close(jtag_fd);
+      jtag_fd = -1;
       return -1;
     }
   }
@@ -63,6 +65,7 @@ static int _ast_jtag_open(void)
 static void _ast_jtag_close(void)
 {
   close(jtag_fd);
+  jtag_fd = -1;
 }
 
 static unsigned int _ast_get_jtag_freq(void)

@@ -142,9 +142,27 @@ operate_spi1_dev(){
 read_spi2_dev(){
     dev=$1
     file=$2
+    file_temp="$file"_temp
     echo -n "Reading ${dev} to $file ... "
-    dd if=/sys/bus/spi/devices/spi2.1/eeprom of="$file"
-    echo "Done"
+    # Sometimes the read back BCM5389_EE image one bit fail.
+    # still not found the real root cause
+    for n in 1 2 3 4 5
+    do
+        echo "Reading $file $n times"
+        dd if=/sys/bus/spi/devices/spi2.1/eeprom of="$file"
+        sleep 1
+        dd if=/sys/bus/spi/devices/spi2.1/eeprom of="$file_temp"
+        if ! diff $file $file_temp >/dev/null; then
+            # read-back file differ
+            rm -rf "$file"*
+        else
+            # read-back file same
+            rm -rf $file_temp;
+            return;
+        fi
+    done
+    logger -p user.err "Unable to read the correct $file after 5 retries"
+    exit 1
 }
 
 write_spi2_dev(){

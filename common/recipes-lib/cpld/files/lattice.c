@@ -203,7 +203,7 @@ LCMXO2Family_SendCFdata(CPLDInfo *dev_info)
 
   for (i = 0; i < dev_info->CF_Line; i++)
   {
-    printf("Writing Data: %d/%d (%.2f%%) \r",(i+1), dev_info->CF_Line, (((i+1)/(float)dev_info->CF_Line)*100));
+    printf("Writing Data: %d/%u (%.2f%%) \r",(i+1), dev_info->CF_Line, (((i+1)/(float)dev_info->CF_Line)*100));
 
     CurrentAddr = (i * LATTICE_COL_SIZE) / 32;
 
@@ -384,7 +384,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
       dev_info->QF = atol(data_buf);
 
 #ifdef CPLD_DEBUG
-      printf("[QF]%ld\n",dev_info->QF);
+      printf("[QF]%lu\n",dev_info->QF);
 #endif
     }
     else if ( startWith(tmp_buf, TAG_CF_START/*"L000"*/) )
@@ -426,7 +426,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
     if ( CFStart )
     {
 #ifdef VERBOSE_DEBUG
-      printf("[%s][%d][%c]", __func__, strlen(tmp_buf), tmp_buf[0]);
+      printf("[%s][%zu][%c]", __func__, strlen(tmp_buf), tmp_buf[0]);
 #endif
       if ( !startWith(tmp_buf, TAG_CF_START/*"L000"*/) && strlen(tmp_buf) != 1 )
       {
@@ -441,7 +441,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
           /*convert string to byte data*/
           ShiftData(data_buf, &dev_info->CF[current_addr], LATTICE_COL_SIZE);
 #ifdef VERBOSE_DEBUG
-          printf("[%d]%x %x %x %x\n",dev_info->CF_Line, dev_info->CF[current_addr],dev_info->CF[current_addr+1],dev_info->CF[current_addr+2],dev_info->CF[current_addr+3]);
+          printf("[%u]%x %x %x %x\n",dev_info->CF_Line, dev_info->CF[current_addr],dev_info->CF[current_addr+1],dev_info->CF[current_addr+2],dev_info->CF[current_addr+3]);
 #endif
           //each data has 128bits(4*unsigned int), so the for-loop need to be run 4 times
           for ( i = 0; i < sizeof(unsigned int); i++ )
@@ -457,7 +457,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
         else
         {
 #ifdef CPLD_DEBUG
-          printf("[%s]CF Line: %d\n", __func__, dev_info->CF_Line);
+          printf("[%s]CF Line: %u\n", __func__, dev_info->CF_Line);
 #endif
           CFStart = 0;
         }
@@ -549,7 +549,7 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int 
         else
         {
 #ifdef CPLD_DEBUG
-          printf("[%s]UFM Line: %d\n", __func__, dev_info->UFM_Line);
+          printf("[%s]UFM Line: %u\n", __func__, dev_info->UFM_Line);
 #endif
           UFMStart = 0;
         }
@@ -594,12 +594,12 @@ LCMXO2Family_cpld_verify(CPLDInfo *dev_info)
   usleep(1000);
 
 #ifdef CPLD_DEBUG
-  printf("[%s] dev_info->CF_Line: %d\n", __func__, dev_info->CF_Line);
+  printf("[%s] dev_info->CF_Line: %u\n", __func__, dev_info->CF_Line);
 #endif
 
   for(i = 0; i < dev_info->CF_Line; i++)
   {
-    printf("Verify Data: %d/%d (%.2f%%) \r",(i+1), dev_info->CF_Line, (((i+1)/(float)dev_info->CF_Line)*100));
+    printf("Verify Data: %d/%u (%.2f%%) \r",(i+1), dev_info->CF_Line, (((i+1)/(float)dev_info->CF_Line)*100));
 
     current_addr = (i * LATTICE_COL_SIZE) / 32;
 
@@ -657,15 +657,10 @@ LCMXO2Family_cpld_Start()
 
   //LSC_CHECK_BUSY(0xF0) instruction
   dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
-
   if (dr_data[0] != 0)
   {
     printf("[%s] Device Busy, status = %x\n", __func__, dr_data[0]);
     ret = -1;
-  }
-  else
-  {
-    ret = 0;
   }
 
 #ifdef CPLD_DEBUG
@@ -673,15 +668,10 @@ LCMXO2Family_cpld_Start()
 #endif
   //READ_STATUS(0x3C) instruction
   dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_STATUS);
-
   if (dr_data[0] != 0)
   {
     printf("[%s] Device Busy, status = %x\n", __func__, dr_data[0]);
     ret = -1;
-  }
-  else
-  {
-    ret = 0;
   }
 
   return ret;
@@ -810,15 +800,10 @@ LCMXO2Family_cpld_Erase(int erase_type)
   ast_jtag_tdi_xfer(JTAG_STATE_TLRESET, LATTICE_INS_LENGTH, dr_data);
 
   dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_BUSY);
-
   if (dr_data[0] != 0)
   {
     printf("[%s] Device Busy, status = %x\n", __func__, dr_data[0]);
     ret = -1;
-  }
-  else
-  {
-    ret = 0;
   }
 
 #ifdef CPLD_DEBUG
@@ -827,15 +812,10 @@ LCMXO2Family_cpld_Erase(int erase_type)
 #endif
 
   dr_data[0] = LCMXO2Family_Check_Device_Status(CHECK_STATUS);
-
   if (dr_data[0] != 0)
   {
     printf("Erase Failed, status = %x\n", dr_data[0]);
     ret = -1;
-  }
-  else
-  {
-    ret = 0;
   }
 
 #ifdef CPLD_DEBUG
@@ -942,22 +922,19 @@ LCMXO2Family_cpld_Get_Ver(unsigned int *ver)
   unsigned int dr_data[4]={0};
 
   ret = LCMXO2Family_cpld_Check_ID();
-
   if (ret < 0)
   {
     printf("[%s] Unknown Device ID!\n", __func__);
     goto error_exit;
   }
 
-  ret = LCMXO2Family_cpld_Start();
+  //Shift in READ USERCODE(0xC0) instruction;
+  ret = ast_jtag_sir_xfer(JTAG_STATE_TLRESET, LATTICE_INS_LENGTH, LCMXO2_USERCODE);
   if (ret < 0)
   {
-    printf("[%s] Enter Transparent mode Error!\n", __func__);
+    printf("[%s] Shift READ USERCODE(0xC0) instruction Error!\n", __func__);
     goto error_exit;
   }
-
-  //Shift in READ USERCODE(0xC0) instruction;
-  ast_jtag_sir_xfer(JTAG_STATE_TLRESET, LATTICE_INS_LENGTH, LCMXO2_USERCODE);
 
 #ifdef CPLD_DEBUG
   printf("[%s] READ USERCODE(0xC0)\n", __func__);
@@ -965,14 +942,13 @@ LCMXO2Family_cpld_Get_Ver(unsigned int *ver)
 
   //Read UserCode
   dr_data[0] = 0;
-  ast_jtag_tdo_xfer(JTAG_STATE_TLRESET, 32, dr_data);
-  *ver = dr_data[0];
-
-  ret = LCMXO2Family_cpld_End();
+  ret = ast_jtag_tdo_xfer(JTAG_STATE_TLRESET, 32, dr_data);
   if (ret < 0)
   {
-    printf("[%s] Exit Transparent Mode Failed!\n", __func__);
+    printf("[%s] Read Usercode Error!\n", __func__);
+    goto error_exit;
   }
+  *ver = dr_data[0];
 
 error_exit:
   return ret;

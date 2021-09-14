@@ -77,12 +77,10 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   if (!force) {
     cerr << "Doing ME Reset..." << endl;
     me_reset(slot_id);
+    sleep(5);
   }
   cerr << "Power-cycling the server..." << endl;
-  sleep(5);
-  pal_set_server_power(slot_id, SERVER_12V_CYCLE);
-  sleep(5);
-  pal_set_server_power(slot_id, SERVER_POWER_ON);
+  pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
   return ret;
 }
 

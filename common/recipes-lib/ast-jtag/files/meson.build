@@ -9,8 +9,10 @@ install_headers(
     'jtag.h',
     subdir: 'openbmc')
 
+cc = meson.get_compiler('c')
 libs = [
-  dependency('threads')
+  dependency('threads'),
+  cc.find_library('misc-utils')
 ]
 
 srcs = files(

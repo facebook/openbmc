@@ -1,11 +1,14 @@
 #include <unistd.h>
 
 #include "ast-jtag-intf.h"
+#include <openbmc/misc-utils.h>
 
 extern struct jtag_ops jtag0_ops;
 extern struct jtag_ops astjtag_ops;
 
 static struct jtag_ops *jtag_ops = &jtag0_ops;
+static int lock_fd = -1;
+
 
 __attribute__((constructor))
 void __attribute__((constructor)) ast_jtag_init(void)
@@ -17,7 +20,6 @@ void __attribute__((constructor)) ast_jtag_init(void)
   }
 }
 
-
 void ast_jtag_set_mode(unsigned int mode)
 {
   jtag_ops->set_mode(mode);
@@ -25,12 +27,26 @@ void ast_jtag_set_mode(unsigned int mode)
 
 int ast_jtag_open(void)
 {
-  return jtag_ops->open();
+  if (lock_fd != -1) {
+    return -1;
+  }
+  if ((lock_fd = single_instance_lock("ast-jtag")) < 0) {
+    return -1;
+  }
+  int ret = jtag_ops->open();
+  if (ret) {
+    single_instance_unlock(lock_fd);
+    lock_fd = -1;
+    return ret;
+  }
+  return ret;
 }
 
 void ast_jtag_close(void)
 {
   jtag_ops->close();
+  single_instance_unlock(lock_fd);
+  lock_fd = -1;
 }
 
 unsigned int ast_get_jtag_freq(void)

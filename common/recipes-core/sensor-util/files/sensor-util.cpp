@@ -693,6 +693,7 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
   char fruname[16] = {0};
   struct timespec timeout;
   get_sensor_reading_struct data;
+  char fru_list[256] = {0};
 
   //Setup timeout for each fru get_sensor_reading
   memset(&timeout, 0, sizeof(timeout));
@@ -719,6 +720,14 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     if (pal_get_fru_name(fru, fruname)) {
       sprintf(fruname, "fru%d", fru);
     }
+
+    // Check if platform supports the FRU
+    if (pal_get_fru_list(fru_list) == 0) {
+      if ( strstr(fru_list, fruname) == NULL ) {
+        return 0;
+      }
+    }
+
     ret = pal_is_fru_prsnt(fru, &status);
     if (ret < 0) {
       if (json == 0)

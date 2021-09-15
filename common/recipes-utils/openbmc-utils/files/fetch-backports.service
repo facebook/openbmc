@@ -26,7 +26,8 @@ ConditionFileIsExecutable=/mnt/data/etc/rc.local
 [Service]
 Type=oneshot
 ExecStart=/mnt/data/etc/rc.local
-TimeoutSec=180
+TimeoutStartUSec=180s
+TimeoutStopUSec=infinity
 RemainAfterExit=yes
 GuessMainPID=no
 

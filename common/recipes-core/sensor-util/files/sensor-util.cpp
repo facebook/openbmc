@@ -193,6 +193,18 @@ static int convert_period(char *str, long *val) {
 }
 
 static int
+get_fru_name(uint8_t fru, char *name)
+{
+  int ret = 0;
+  if (fru == AGGREGATE_SENSOR_FRU_ID) {
+    strcpy(name, "aggregate");
+  } else {
+    ret = pal_get_fru_name(fru, name);
+  }
+  return ret;
+}
+
+static int
 is_pldm_sensor(uint8_t snr_num, uint8_t fru)
 {
   if (fru == pal_get_nic_fru_id() &&
@@ -442,7 +454,7 @@ get_sensor_reading(void *sensor_data) {
       ret = sdr_get_snr_thresh(sensor_info->fru, snr_num, &thresh);
       pal_alter_sensor_thresh_flag(sensor_info->fru, snr_num, &(thresh.flag));
       if (ret == ERR_SENSOR_NA) {
-        pal_get_fru_name(sensor_info->fru, fruname);
+        get_fru_name(sensor_info->fru, fruname);
         printf("%s SDR is missing!\n", fruname);
 
         //modify the flag to true if we get the sensor reading
@@ -461,7 +473,7 @@ get_sensor_reading(void *sensor_data) {
 
     // for loop compare
     if (filter) {
-      pal_get_fru_name(sensor_info->fru, fruname);
+      get_fru_name(sensor_info->fru, fruname);
       sprintf(filter_sensor_name,"%s_%s", fruname,thresh.name);
       alter_to_fsc_style_sensor_name(filter_sensor_name);
       for (j=0;j<sensor_info->filter_len;j++) {
@@ -569,7 +581,7 @@ get_sensor_history(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, int num, i
     } else {
       ret = sdr_get_snr_thresh(fru, snr_num, &thresh);
       if (ret == ERR_SENSOR_NA) {
-        pal_get_fru_name(fru, fruname);
+        get_fru_name(fru, fruname);
         printf("%s SDR is missing!\n", fruname);
         return;
       }
@@ -641,7 +653,7 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
   abs_time.tv_sec += timeout->tv_sec;
   abs_time.tv_nsec += timeout->tv_nsec;
 
-  pal_get_fru_name(sensor_data->fru, fruname);
+  get_fru_name(sensor_data->fru, fruname);
 
   //Make get_sensor_reading a thread
   if (pthread_create(&tid_get_sensor_reading, NULL, get_sensor_reading, (void *) sensor_data) < 0) {
@@ -717,7 +729,7 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     }
     sensor_cnt = (int)cnt;
   } else {
-    if (pal_get_fru_name(fru, fruname)) {
+    if (get_fru_name(fru, fruname)) {
       sprintf(fruname, "fru%d", fru);
     }
 

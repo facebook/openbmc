@@ -20,68 +20,43 @@
 
 import unittest
 
-from tests.wedge400.test_data.firmware_upgrade.firmware_upgrade_config import (
+from tests.yamp.test_data.firmware_upgrade.firmware_upgrade_config import (
     FwUpgradeTest,
 )
 
 
 class ScmFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
     """
-        Individual test for System Control Management CPLD
+    Individual test for System Control Management CPLD
     """
 
     def test_scm_fw_upgrade(self):
         super().do_external_firmware_upgrade("dawson")
 
 
-class FcmFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
-    """
-        Individual test for Fan Control Management CPLD
-    """
-
-    def test_fcm_fw_upgrade(self):
-        super().do_external_firmware_upgrade("fcm")
-
-
 class SmbFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
     """
-        Individual test for System Management Board CPLD
+    Individual test for switch card cpld which is
+    also called livingston
     """
 
     def test_smb_fw_upgrade(self):
-        super().do_external_firmware_upgrade("smb")
-
-
-class PwrFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
-    """
-        Individual test for Power CPLD
-    """
-
-    def test_pwr_fw_upgrade(self):
-        super().do_external_firmware_upgrade("pwr")
+        super().do_external_firmware_upgrade("livingston")
 
 
 class FpgaFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
     """
-        Individual test for DOM FPGA
+    Individual test for PIM FPGA which is also
+    called sperry
     """
 
     def test_fpga_fw_upgrade(self):
-        super().do_external_firmware_upgrade("fpga")
-
-
-class BicFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
-    """
-        Individual test for Bridge-IC
-    """
-
-    def test_bic_fw_upgrade(self):
-        super().do_external_firmware_upgrade("bic")
+        super().do_external_firmware_upgrade("sperry")
 
 
 class BiosFwUpgradeTest(FwUpgradeTest, unittest.TestCase):
     """
-        Individual test for Master BIOS
+    Individual test for Master BIOS
     """
 
     def test_bios_fw_upgrade(self):

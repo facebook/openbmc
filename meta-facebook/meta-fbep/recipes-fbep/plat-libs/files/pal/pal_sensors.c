@@ -1215,7 +1215,9 @@ static int sensors_read_12v_adc(uint8_t sensor_num, float *value)
 
 static int sensors_read_common_therm(uint8_t sensor_num, float *value)
 {
-  int ret;
+  int ret, index;
+  static bool checked[6] = {false, false, false, false, false, false};
+  *value = 0.0;
 
   switch (sensor_num) {
     case MB_SENSOR_INLET:
@@ -1238,6 +1240,22 @@ static int sensors_read_common_therm(uint8_t sensor_num, float *value)
       break;
     default:
       return ERR_SENSOR_NA;
+  }
+
+  if (ret == 0) {
+    if (sensor_num == PDB_SENSOR_OUTLET || sensor_num == PDB_SENSOR_OUTLET_REMOTE)
+      index = sensor_num - PDB_SENSOR_OUTLET;
+    else
+      index = sensor_num - MB_SENSOR_INLET;
+
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      if (!checked[index]) {
+        checked[index] = true;
+        return ERR_SENSOR_NA;
+      }
+    } else {
+      checked[index] = false;
+    }
   }
 
   return ret < 0? ERR_SENSOR_NA: 0;
@@ -1389,7 +1407,9 @@ static int sensors_read_vr(uint8_t sensor_num, float *value)
 
 static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
 {
-  int ret;
+  int ret, index;
+  static bool checked[8] = {false, false, false, false, false, false, false, false};
+  *value = 0.0;
 
   switch (sensor_num) {
     case PDB_HSC_P12V_1_CURR:
@@ -1461,6 +1481,24 @@ static int sensors_read_12v_hsc(uint8_t sensor_num, float *value)
       break;
     default:
       ret = ERR_SENSOR_NA;
+  }
+
+  if (ret == 0) {
+    if (sensor_num <= PDB_HSC_P12V_1_PWR)
+      index = sensor_num - PDB_HSC_P12V_1_VIN;
+    else if (sensor_num <= PDB_HSC_P12V_2_PWR)
+      index = sensor_num - PDB_HSC_P12V_2_VIN + 4;
+    else
+      return 0;
+
+    if (*value <= sensors_threshold[sensor_num][LCR_THRESH]) {
+      if (!checked[index]) {
+        checked[index] = true;
+        return ERR_SENSOR_NA;
+      }
+    } else {
+      checked[index] = false;
+    }
   }
 
   return ret < 0? ERR_SENSOR_NA: 0;

@@ -22,20 +22,34 @@ enum {
 
 class CpldComponent : public Component {
   public:
-    CpldComponent(string fru, string comp)
+    CpldComponent(const string &fru, const string &comp)
       : Component(fru, comp) {}
     int print_version() {
-      uint8_t var[4];
+      char strbuf[MAX_VALUE_LEN] = {0};
+      uint8_t ver[4];
+      int ret = -1;
+      string comp = this->component();
 
-      if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
-        // Print CPLD Version
-        if (cpld_get_ver((unsigned int *)&var)) {
-          printf("CPLD Version: NA\n");
-        } else {
-          printf("CPLD Version: %02X%02X%02X%02X\n", var[3], var[2], var[1], var[0]);
+      do {
+        if (!kv_get(comp.c_str(), strbuf, NULL, 0))
+          break;
+
+        if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
+          ret = cpld_get_ver((uint32_t *)ver);
+          cpld_intf_close(INTF_JTAG);
         }
-        cpld_intf_close(INTF_JTAG);
-      }
+
+        if (ret) {
+          sprintf(strbuf, "NA");
+          break;
+        }
+
+        sprintf(strbuf, "%02X%02X%02X%02X", ver[3], ver[2], ver[1], ver[0]);
+        kv_set(comp.c_str(), strbuf, 0, 0);
+      } while (0);
+
+      transform(comp.begin(), comp.end(),comp.begin(), ::toupper);
+      sys().output << comp << " Version: " << string(strbuf) << endl;
 
       return 0;
     }
@@ -51,10 +65,11 @@ class CpldComponent : public Component {
           printf("Error Occur at updating CPLD FW!\n");
         } else {
           syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
-	}
+        }
       } else {
         printf("Cannot open JTAG!\n");
       }
+
       return ret;
     }
 };
@@ -63,7 +78,7 @@ class DumbCpldComponent : public Component {
   uint8_t pld_type;
   altera_max10_attr_t attr;
   public:
-    DumbCpldComponent(string fru, string comp, uint8_t type, uint8_t ctype, uint8_t bus, uint8_t addr)
+    DumbCpldComponent(const string &fru, const string &comp, uint8_t type, uint8_t ctype, uint8_t bus, uint8_t addr)
       : Component(fru, comp), pld_type(type), attr{bus, addr, 0, 0, 0, 0, 0, 0} {}
     int print_version();
 };

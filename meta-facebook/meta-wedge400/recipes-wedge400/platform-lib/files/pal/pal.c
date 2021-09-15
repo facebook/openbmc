@@ -6337,6 +6337,7 @@ cleanup:
 
 void set_scm_led(int brd_rev)
 {
+  static int prev_userver_state = USERVER_STATE_NONE;
   char path[LARGEST_DEVICE_NAME];
   char cmd[64];
   char buffer[256];
@@ -6352,6 +6353,10 @@ void set_scm_led(int brd_rev)
   }
 
   if (!power) {
+    if (prev_userver_state != USERVER_STATE_POWER_OFF) {
+      OBMC_WARN("%s: micro server is power off\n",__func__);
+      prev_userver_state = USERVER_STATE_POWER_OFF;
+    }
     set_sled(brd_rev, SLED_CLR_RED, SLED_SMB);
     return;
   }
@@ -6368,11 +6373,19 @@ void set_scm_led(int brd_rev)
 
   ret = pclose(fp);
   if(ret == 0) { // PING OK
+    if (prev_userver_state != USERVER_STATE_NORMAL) {
+      OBMC_WARN("%s: micro server in normal state",__func__);
+      prev_userver_state = USERVER_STATE_NORMAL;
+    }
     set_sled(brd_rev,SLED_CLR_GREEN,SLED_SMB);
     return;
   }
 
 error:
+  if (prev_userver_state != USERVER_STATE_PING_DOWN) {
+    OBMC_WARN("%s: can't ping to %s",__func__,scm_ip_usb);
+    prev_userver_state = USERVER_STATE_PING_DOWN;
+  }
   set_sled(brd_rev,SLED_CLR_YELLOW,SLED_SMB);
   sleep(LED_INTERVAL);
 }

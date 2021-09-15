@@ -587,6 +587,16 @@ enum
   SCM_LED_BLUE = 0x01,
   SCM_LED_AMBER = 0x05,
 };
+
+// userver state use for set_scm_led()
+enum
+{
+  USERVER_STATE_NONE = 0,
+  USERVER_STATE_NORMAL,
+  USERVER_STATE_POWER_OFF,
+  USERVER_STATE_PING_DOWN,
+};
+
 /* Add button function for Debug Card */
 enum {
   HAND_SW_SERVER = 0,

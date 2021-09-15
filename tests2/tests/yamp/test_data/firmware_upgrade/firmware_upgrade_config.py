@@ -37,13 +37,10 @@ except Exception:
 
 # Override default settings
 UPGRADING_TIMEOUT = {
-    "bic": 300,
-    "bios": 1200,
-    "fpga": 900,
-    "dawson": 300,
-    "fcm": 300,
-    "pwr": 300,
-    "smb": 300,
+    "livingston": 350,
+    "bios": 1500,
+    "sperry": 970,
+    "dawson": 350,
 }
 EXPECTED_KEYWORD = [
     "closed by remote host",
@@ -68,7 +65,7 @@ except Exception:
 
 class FwUpgradeTest(BaseFwUpgradeTest):
     """
-        Class to initialize common settings for the external firmware testing
+    Class to initialize common settings for the external firmware testing
     """
 
     @abstractmethod

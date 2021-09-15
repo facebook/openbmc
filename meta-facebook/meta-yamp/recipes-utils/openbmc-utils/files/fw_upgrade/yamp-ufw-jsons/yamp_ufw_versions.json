@@ -3,7 +3,7 @@
         "filename"    : "coreboot-glacier.rom",
         "version" : "",
         "hash"    : "sha1sum",
-        "hash_value" : "3532409737e641902365d3103f17a86e301a73f9"
+        "hash_value" : "5bd65442ea3d7eb9b738e9bc7dceaea9fac5eb51"
     },
     "dawson" : {
         "filename"    : "dawson.astp",

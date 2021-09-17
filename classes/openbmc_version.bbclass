@@ -18,7 +18,8 @@ def get_openbmc_version(d):
     gitdir = os.path.join(cur, '.git')
     if cur and is_openbmc_root(cur):
         version = ''
-        git_cmd = ['git', '--git-dir=%s' % gitdir , '--work-tree=%s' % cur]
+        git_cmd = ['export PSEUDO_DISABLED=1;', \
+                   'git', '--git-dir=%s' % gitdir , '--work-tree=%s' % cur]
         tags_cmd = git_cmd + ['tag', '--points-at', 'HEAD']
         exitstatus, output = oe.utils.getstatusoutput(' '.join(tags_cmd))
         if exitstatus == 0:

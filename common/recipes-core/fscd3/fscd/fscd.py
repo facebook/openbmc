@@ -61,60 +61,68 @@ class LibWatchdogError(Exception):
     pass
 
 
-@contextmanager
-def _libwatchdog_open_watchdog():
+def open_watchdog():
     """
-    Context manager that opens the watchdog file and automatically
-    releases it on context closes
+    Open the watchdog. Once watchdog is opened by fscd, other processes
+    won't be able to control watchdog until watchdog is closed by fscd.
     """
     if libwatchdog.open_watchdog(0, 0) != 0:
         raise LibWatchdogError("Failed to open watchdog")
 
-    yield
 
+def release_watchdog():
+    """
+    Close the watchdog opened by watchdog_open().
+    """
     if libwatchdog.release_watchdog() != 0:
         raise LibWatchdogError("Failed to release watchdog")
 
 
 def kick_watchdog():
     """kick the watchdog device."""
-    try:
-        with _libwatchdog_open_watchdog():
-            ret = libwatchdog.kick_watchdog()
-            if ret != 0:
-                raise LibWatchdogError("kick_watchdog() returned " + str(ret))
-
-        Logger.info("Kicked watchdog successfully")
-
-    except LibWatchdogError as e:
-        Logger.error("Failed to kick watchdog: " + repr(e))
-
-
-def start_watchdog():
-    # kick watchdog once and get feedback if something is horribly wrong
-    # before starting the thread
-    kick_watchdog()
-
-    _WATCHDOG_THREAD.start()
+    if libwatchdog.kick_watchdog() != 0:
+        raise LibWatchdogError("Failed to kick watchdog")
 
 
 def stop_watchdog():
+    """stop the watchdog timer."""
+    ret = libwatchdog.stop_watchdog()
+    if ret != 0:
+        raise LibWatchdogError("stop_watchdog() returned " + str(ret))
+
+
+def fscd_setup_watchdog():
+    """
+    Open the watchdog and start a thread to kick the watchdog periodically.
+    """
+    # Note: we will not release the watchdog until fscd exists, and it
+    # also means other processes won't be able to control watchdog unless
+    # killing fscd.
+    open_watchdog()
+
+    # An extra kicking is not necessary, but it doesn't hurt to do so.
+    kick_watchdog()
+
+    #
+    # XXX is it a good idea to kick watchdog in a separate thread???
+    # If fscd main thread fscd.run() got stuck, then BMC will be running
+    # without thermal control, and watchdog cannot help us in this case.
+    #
+    _WATCHDOG_THREAD.start()
+
+
+def fscd_release_watchdog(stop_wdt=False):
     """stop the watchdog device."""
     Logger.info("Stopping watchdog thread")
     _WATCHDOG_STOP.set()
     _WATCHDOG_THREAD.join()
     Logger.info("Watchdog thread stopped")
 
-    try:
-        with _libwatchdog_open_watchdog():
-            ret = libwatchdog.stop_watchdog()
-            if ret != 0:
-                raise LibWatchdogError("stop_watchdog() returned " + str(ret))
-
+    if stop_wdt:
+        stop_watchdog()
         Logger.info("watchdog stopped")
 
-    except LibWatchdogError as e:
-        Logger.error("Failed to stop watchdog: " + repr(e))
+    release_watchdog()
 
 
 ## Watchdog thread definition, see {start,stop}_watchdog() above
@@ -227,7 +235,7 @@ class Fscd(object):
             self.ramp_rate = self.fsc_config["ramp_rate"]
         if self.watchdog:
             Logger.info("watchdog pinging enabled")
-            start_watchdog()
+            fscd_setup_watchdog()
         self.interval = self.fsc_config["sample_interval_ms"] / 1000.0
         if "fan_recovery_time" in self.fsc_config:
             self.fan_recovery_time = self.fsc_config["fan_recovery_time"]
@@ -880,12 +888,12 @@ class Fscd(object):
 
 
 def handle_term(signum, frame):
-    global wdfile
     board_callout(callout="init_fans", boost=DEFAULT_INIT_TRANSITIONAL)
     Logger.warn("killed by signal %d" % (signum,))
-    if signum == signal.SIGQUIT and wdfile:
-        Logger.info("Killed with SIGQUIT - stopping watchdog.")
-        stop_watchdog()
+    if signum == signal.SIGQUIT:
+        fscd_release_watchdog(stop_wdt=True)
+    else:
+        fscd_release_watchdog()
     sys.exit("killed")
 
 
@@ -907,3 +915,4 @@ if __name__ == "__main__":
         traceback.print_exc()
         for line in traceback.format_exc().split("\n"):
             Logger.crit(line)
+        fscd_release_watchdog()

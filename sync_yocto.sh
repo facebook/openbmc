@@ -54,8 +54,10 @@ do
     if [ "lf-openbmc" = "$repo_name" ]; then
         repo_name="lf-openbmc"
         repo_path="./yocto/${branch}"
+        repo_patch_var="${real_branch}_openbmc_patch"
     else
         repo_path="./yocto/${branch}/${repo_name}"
+        repo_patch_var="${branch}_${repo_name/-/_}_patch"
     fi
 
     # Remove the repo in the branch
@@ -69,6 +71,9 @@ do
     # Add specific commit of repo into yocto/branch/repo/ worktree
     if [ $FETCH_ONLY -eq 0 ]; then
       git worktree add -f ${repo_path} ${commit_id}
+      if [ -n "${!repo_patch_var}" ]; then
+          git -C ${repo_path} am $(realpath ./yocto/patches/${!repo_patch_var})
+      fi
     fi
   done
 done

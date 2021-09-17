@@ -134,6 +134,9 @@ REPO_ROOT="$(pwd)"
 if [ -d "yocto/${_distro}/workaround-bin/" ]; then
     PATH="$(realpath "yocto/${_distro}/workaround-bin"):$PATH"
 fi
+if [ -d "facebook/workaround-bin" ]; then
+  PATH="$(realpath facebook/workaround-bin):$PATH"
+fi
 
 # shellcheck disable=SC1090
 # distro can vary, so we can't use a shellcheck directive to point to next

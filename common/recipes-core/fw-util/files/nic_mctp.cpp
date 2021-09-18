@@ -20,7 +20,7 @@ static int get_nic_ver(uint8_t bus, uint8_t dst_eid)
   struct obmc_mctp_binding *mctp_binding;
 
   pal_get_bmc_ipmb_slave_addr(&addr, bus);
-  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, NCSI_MAX_PAYLOAD);
+  mctp_binding = obmc_mctp_smbus_init(bus, addr, NIC_SLAVE_ADDR, src_eid, NCSI_MAX_PAYLOAD);
   if (mctp_binding == NULL) {
     return -1;
   }
@@ -66,7 +66,7 @@ int MCTPOverSMBusNicComponent::update(string image)
   struct obmc_mctp_binding *mctp_binding;
 
   pal_get_bmc_ipmb_slave_addr(&addr, _bus_id);
-  mctp_binding = obmc_mctp_smbus_init(_bus_id, addr, src_eid, -1); // Default size
+  mctp_binding = obmc_mctp_smbus_init(_bus_id, addr, NIC_SLAVE_ADDR, src_eid, -1); // Default size
   if (mctp_binding == NULL) {
     return -1;
   }

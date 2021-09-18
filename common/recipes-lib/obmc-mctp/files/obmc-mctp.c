@@ -31,7 +31,6 @@
 
 //#define DEBUG
 #define SYSFS_SLAVE_QUEUE "/sys/bus/i2c/devices/%d-10%02x/slave-mqueue"
-#define NIC_SLAVE_ADDR 0x64
 
 struct mctp_smbus_pkt_private *smbus_extra_params = NULL;
 
@@ -58,7 +57,7 @@ static void rx_handler(uint8_t eid, void *data, void *msg, size_t len,
   memcpy(&p->Msg_Type, msg, len);
 }
 
-struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t addr, uint8_t src_eid,
+struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t src_addr, uint8_t dst_addr, uint8_t src_eid,
                                                int pkt_size)
 {
   int fd;
@@ -101,9 +100,9 @@ struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t addr, uint8_
   smbus_extra_params->mux_hold_timeout = 0;
   smbus_extra_params->mux_flags = 0;
   smbus_extra_params->fd = fd;
-  smbus_extra_params->slave_addr = NIC_SLAVE_ADDR;
+  smbus_extra_params->slave_addr = dst_addr;
 
-  snprintf(slave_queue, sizeof(slave_queue), SYSFS_SLAVE_QUEUE, bus, addr);
+  snprintf(slave_queue, sizeof(slave_queue), SYSFS_SLAVE_QUEUE, bus, src_addr);
   fd = open(slave_queue, O_RDONLY);
   if (fd < 0) {
     syslog(LOG_ERR, "%s: open %s failed", __func__, slave_queue);
@@ -406,7 +405,7 @@ int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
   return 0;
 }
 
-int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+int send_mctp_cmd(uint8_t bus, uint16_t src_addr, uint8_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen)
 {
   int ret = -1;
@@ -414,7 +413,7 @@ int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
   struct obmc_mctp_binding *mctp_binding;
   struct mctp_binding_smbus *smbus;
 
-  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, NCSI_MAX_PAYLOAD);
+  mctp_binding = obmc_mctp_smbus_init(bus, src_addr, dst_addr, src_eid, NCSI_MAX_PAYLOAD);
   if (mctp_binding == NULL) {
     syslog(LOG_ERR, "%s: Error: mctp binding failed", __func__);
     return -1;
@@ -452,7 +451,7 @@ int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
   struct mctp_binding_smbus *smbus;
 
 
-  mctp_binding = obmc_mctp_smbus_init(bus, addr, src_eid, SPDM_MAX_PAYLOAD);
+  mctp_binding = obmc_mctp_smbus_init(bus, addr, NIC_SLAVE_ADDR, src_eid, SPDM_MAX_PAYLOAD);
   if (mctp_binding == NULL) {
     syslog(LOG_ERR, "%s: Error: mctp binding failed", __func__);
     return -1;

@@ -45,13 +45,15 @@
 #define noDEBUG
 
 static void default_mctp_util_usage(void) {
-  printf("Usage: mctp-util [options] <bus#> <dst_eid> <type> <cmd payload> \n");
+  printf("Usage: mctp-util [options] <bus#> <dst_addr> <dst_eid> <type> <cmd payload> \n");
   printf("Sends MCTP data over SMbus \n");
   printf("Options\n");
   printf("       -h             this help\n");
   printf("       -d             decode response\n");
   printf("Command fields\n");
   printf("       <bus#>         I2C Bus number\n");
+  printf("       <dst_addr>     destination slave address\n");
+  printf("        NIC slave addr  - 0x64\n");
   printf("       <dst_eid>      destination EID\n");
   printf("       <type>         MCTP message type\n");
   printf("           0            - MCTP Control Message\n");
@@ -70,13 +72,14 @@ int main(int argc, char **argv)
   uint8_t mctp_type = 0;
   uint8_t tbuf[MAX_PAYLOAD_SIZE] = {0};
   uint8_t rbuf[MAX_PAYLOAD_SIZE] = {0};
-  uint16_t addr = 0;
+  uint16_t bmc_addr = 0;
+  uint8_t dst_addr = 0;
   int tlen = 0;
   int rlen = 0;
   int ret = -1;
   int i = 1;
   int decode_flag = 0;
-  int minargc = 5;
+  int minargc = 6;
   int argflag;
  /*
    * Handle util common options.
@@ -99,14 +102,14 @@ int main(int argc, char **argv)
     }
   }
 
-  if (argc < minargc) { // min params: mctp-util <bus> <eid> <type> <data>
+  if (argc < minargc) { // min params: mctp-util <bus> <dst_addr> <eid> <type> <data>
     printf("argc(%d) < minargc(%d)\n", argc, minargc);
     ret = -1;
     goto bail;
   }
 
-  if (argc > (MAX_PAYLOAD_SIZE + 3 + decode_flag)) {  //     mctp-util <bus> <eid>    (extra 3)
-                                                      //  or mctp-util -d <bus> <eid> (extra 4)
+  if (argc > (MAX_PAYLOAD_SIZE + 4 + decode_flag)) {  //     mctp-util <bus> <dst_addr> <eid>    (extra 4)
+                                                      //  or mctp-util -d <bus> <dst_addr> <eid> (extra 5)
     printf("max size (%d) exceeded\n", MAX_PAYLOAD_SIZE);
     ret = -1;
     goto bail;
@@ -117,6 +120,7 @@ int main(int argc, char **argv)
     goto bail;
   }
   bus = (uint8_t)strtoul(argv[optind++], NULL, 0);
+  dst_addr = (uint8_t)strtoul(argv[optind++], NULL, 0);
   eid = (uint8_t)strtoul(argv[optind++], NULL, 0);
   mctp_type = (uint8_t)strtoul(argv[optind++], NULL, 0);
   tbuf[tlen++] = mctp_type;
@@ -125,15 +129,15 @@ int main(int argc, char **argv)
   }
 
 #ifdef DEBUG
-  printf("argc=%d bus=%d eid=%d type=%d\n", argc, bus, eid, mctp_type);
+  printf("argc=%d bus=%d dst_addr=0x%X eid=%d type=%d\n", argc, bus, dst_addr, eid, mctp_type);
   printf("data: ");
   for (i = 1; i<tlen; ++i)
     printf("0x%x ", tbuf[i]);
   printf("\n");
 #endif
 
-  pal_get_bmc_ipmb_slave_addr(&addr, bus);
-  ret = send_mctp_cmd(bus, addr, DEFAULT_EID, eid, tbuf, tlen, rbuf, &rlen);
+  pal_get_bmc_ipmb_slave_addr(&bmc_addr, bus);
+  ret = send_mctp_cmd(bus, bmc_addr, dst_addr, DEFAULT_EID, eid, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     printf("Error sending MCTP cmd, ret = %d\n", ret);
   } else {

@@ -66,6 +66,8 @@ struct mctp_ncsi_rsp {
   struct ncsi_rsp_pkt pkt;
 } __attribute__((packed));
 
+#define NIC_SLAVE_ADDR 0x64
+
 /* PLDM Definition */
 #define PLDM_HDR_VER (0x0 << 6) // 2-bits
 
@@ -144,7 +146,7 @@ struct obmc_mctp_pldm_rsp {
 } __attribute__((packed));
 
 // Initialize libmctp core
-struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t addr, uint8_t src_eid,
+struct obmc_mctp_binding* obmc_mctp_smbus_init(uint8_t bus, uint8_t src_addr, uint8_t dst_addr, uint8_t src_eid,
                                                int pkt_size);
 void obmc_mctp_smbus_free(struct obmc_mctp_binding* binding);
 
@@ -172,7 +174,7 @@ int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
                       uint8_t tag, uint8_t iid,
                       uint8_t tid);
 
-int send_mctp_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+int send_mctp_cmd(uint8_t bus, uint16_t src_addr, uint8_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
 
 int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,

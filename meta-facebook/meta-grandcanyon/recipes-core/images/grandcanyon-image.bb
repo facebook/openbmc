@@ -59,4 +59,5 @@ IMAGE_INSTALL += " \
   bic-util \
   iocd \
   otp \
+  mctp-util \
   "

@@ -38,10 +38,20 @@ enum {
   LNR,
 };
 
+#ifdef CONFIG_FBY3_CWC
+  uint8_t exp_fru = 0;
+#endif
+
 static void
 print_usage_help(void) {
   printf("Usage: threshold-util [fru] <--set> <snr_num> [thresh_type] <threshold_value>\n");
   printf("       threshold-util [fru] <--clear>\n");
+#ifdef CONFIG_FBY3_CWC
+  if (pal_is_cwc() == PAL_EOK) {
+    printf("Usage: threshold-util slot1 [2U-top|2U-bot] <--set> <snr_num> [thresh_type] <threshold_value>\n");
+    printf("       threshold-util slot1 [2U-top|2U-bot] <--clear>\n");
+  }
+#endif
   printf("       [fru]           : %s\n", pal_fru_list);
   printf("       <snr_num>    : 0xXX\n");
   printf("       [thresh_type]   : UCR, UNC, UNR, LCR, LNC, LNR\n");
@@ -122,6 +132,19 @@ main(int argc, char **argv) {
   int ret = -1;
   char *end = NULL;
 
+#ifdef CONFIG_FBY3_CWC
+  int i = 0;
+  if (pal_is_cwc() == PAL_EOK &&
+      pal_get_cwc_id(argv[2], &exp_fru) == 0) {
+    for (i = 2; i < argc - 1; ++i) {
+      argv[i] = argv[i+1];
+    }
+    if (argc > 3) {
+      argc--;
+    }
+  }
+#endif
+
   // Check for border conditions
   if ((argc != 3) && (argc != 6)) {
     print_usage_help();
@@ -133,6 +156,12 @@ main(int argc, char **argv) {
     print_usage_help();
     return ret;
   }
+
+#ifdef CONFIG_FBY3_CWC
+  if (pal_is_cwc() == PAL_EOK && exp_fru > 0) {
+    fru = exp_fru;
+  }
+#endif
 
   ret = is_fru_valid(fru);
   if (ret < 0) {

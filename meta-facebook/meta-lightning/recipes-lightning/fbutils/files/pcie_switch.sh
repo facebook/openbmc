@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. /usr/bin/kv
+KV_CMD=/usr/bin/kv
 
 i2c_scan9=$(i2cdetect -y 9)
 i2c_scan10=$(i2cdetect -y 10)
@@ -9,10 +9,10 @@ i2c_scan10=$(i2cdetect -y 10)
 if ([[ $i2c_scan9 == *"5d"* ]] && [[ $i2c_scan9 == *"5e"* ]] && [[ $i2c_scan9 == *"5f"* ]] \
   && [[ $i2c_scan10 == *"5d"* ]] && [[ $i2c_scan10 == *"5e"* ]] && [[ $i2c_scan10 == *"5f"* ]])
 then
-  kv_set "pcie_switch_vendor" "PLX"
+  ${KV_CMD} set "pcie_switch_vendor" "PLX"
   echo -e "PLX switch selected"
 else
-  kv_set "pcie_switch_vendor" "PMC"
+  ${KV_CMD} set "pcie_switch_vendor" "PMC"
   echo -e "PMC switch selected"
 fi
 

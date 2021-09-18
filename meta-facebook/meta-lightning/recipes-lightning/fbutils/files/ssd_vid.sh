@@ -1,7 +1,7 @@
 #!/bin/bash
 
 . /usr/local/fbpackages/utils/ast-functions
-. /usr/bin/kv
+KV_CMD=/usr/bin/kv
 
 MUX_BASE=0x08
 I2C_7_MUX_ADDR=0x71
@@ -47,19 +47,19 @@ do
         VID=$(i2cget -y 7 $I2C_NVME_INTF_ADDR $I2C_VID_ADDR w)
         if ([[ $VID == *$INTEL* ]])
         then
-            kv_set "ssd_vendor" "intel"
+            ${KV_CMD} set "ssd_vendor" "intel"
             exit 0
         elif ([[ $VID == *$SEAGATE* ]])
         then
-            kv_set "ssd_vendor" "seagate"
+            ${KV_CMD} set "ssd_vendor" "seagate"
             exit 0
         elif ([[ $VID == *$SAMSUNG* ]])
         then
-            kv_set "ssd_vendor" "samsung"
+            ${KV_CMD} set "ssd_vendor" "samsung"
             exit 0
         elif ([[ $VID == *$TOSHIBA* ]])
         then
-            kv_set "ssd_vendor" "toshiba"
+            ${KV_CMD} set "ssd_vendor" "toshiba"
             exit 0
         fi
 
@@ -93,23 +93,23 @@ do
         VID=$(i2cget -y 8 $I2C_NVME_INTF_ADDR $I2C_VID_ADDR w)
         if ([[ $VID == *$INTEL* ]])
         then
-            kv_set "ssd_vendor" "intel"
+            ${KV_CMD} set "ssd_vendor" "intel"
             exit 0
         elif ([[ $VID == *$SEAGATE* ]])
         then
-            kv_set "ssd_vendor" "seagate"
+            ${KV_CMD} set "ssd_vendor" "seagate"
             exit 0
         elif ([[ $VID == *$SAMSUNG* ]])
         then
-            kv_set "ssd_vendor" "samsung"
+            ${KV_CMD} set "ssd_vendor" "samsung"
             exit 0
         elif ([[ $VID == *$TOSHIBA* ]])
         then
-            kv_set "ssd_vendor" "toshiba"
+            ${KV_CMD} set "ssd_vendor" "toshiba"
             exit 0
         fi
 done
 
-kv_set "ssd_vendor" "unknown"
+${KV_CMD} set "ssd_vendor" "unknown"
 
 exit 0

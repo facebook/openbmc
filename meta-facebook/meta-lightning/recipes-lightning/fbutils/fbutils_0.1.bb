@@ -24,7 +24,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 SRC_URI = "file://ast-functions \
            file://power_led.sh \
            file://post_led.sh \
-           file://pcie_switch.py \
+           file://pcie_switch.sh \
            file://ssd_sku.sh \
            file://ssd_vid.sh \
            file://setup_adc.sh \
@@ -67,8 +67,8 @@ do_install() {
   # the script to set ADC
   install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
   update-rc.d -r ${D} setup_adc.sh start 90 5 .
-  install -m 755 pcie_switch.py ${D}${sysconfdir}/init.d/pcie_switch.py
-  update-rc.d -r ${D} pcie_switch.py start 50 5 .
+  install -m 755 pcie_switch.sh ${D}${sysconfdir}/init.d/pcie_switch.sh
+  update-rc.d -r ${D} pcie_switch.sh start 50 5 .
   install -m 755 ssd_sku.sh ${D}${sysconfdir}/init.d/ssd_sku.sh
   update-rc.d -r ${D} ssd_sku.sh start 51 5 .
   install -m 755 ssd_vid.sh ${D}${sysconfdir}/init.d/ssd_vid.sh

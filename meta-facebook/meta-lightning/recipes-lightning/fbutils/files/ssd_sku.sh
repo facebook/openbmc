@@ -1,7 +1,7 @@
 #!/bin/bash
 
 . /usr/local/fbpackages/utils/ast-functions
-. /usr/bin/kv
+KV_CMD=/usr/bin/kv
 
 MUX_BASE=0x08
 I2C_7_MUX_ADDR=0x71
@@ -40,7 +40,7 @@ do
                 i2c_scan7=$(i2cdetect -y 7)
                 if ([[ $i2c_scan7 == *$M2CARD_AMB_ADDR* ]])
                 then
-                        kv_set "ssd_sku_info" "M2"
+                        ${KV_CMD} set "ssd_sku_info" "M2"
                         exit 0
                 fi
         fi
@@ -73,12 +73,12 @@ do
                 i2c_scan8=$(i2cdetect -y 8)
                 if ([[ $i2c_scan8 == *$M2CARD_AMB_ADDR* ]])
                 then
-                        kv_set "ssd_sku_info" "M2"
+                        ${KV_CMD} set "ssd_sku_info" "M2"
                         exit 0
                 fi
         fi
 done
 
-kv_set "ssd_sku_info" "U2"
+${KV_CMD} set "ssd_sku_info" "U2"
 
 exit 0

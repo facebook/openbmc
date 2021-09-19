@@ -36,7 +36,7 @@
 #include <openbmc/kv.h>
 #include <facebook/fbgc_gpio.h>
 
-#define MONITOR_FRUS_PRESENT_STATUS_INTERVAL    60 // seconds
+#define MONITOR_FRUS_PRESENT_STATUS_INTERVAL    1  // seconds
 #define MONITOR_SERVER_POWER_STATUS_INTERVAL    1  // seconds
 #define MONITOR_SCC_STBY_POWER_INTERVAL         1  // seconds
 

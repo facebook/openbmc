@@ -926,6 +926,11 @@ class Pcard(object):
 
         self.power_supply_probe()
 
+        # PSU/PEM devices were created in power_supply_probe() but driver
+        # binding may be delayed a bit. Let's sleep for a short period so
+        # the drivers are ready.
+        time.sleep(5)
+
         self.power_supply_init()
 
         self.power_type_cache_init()

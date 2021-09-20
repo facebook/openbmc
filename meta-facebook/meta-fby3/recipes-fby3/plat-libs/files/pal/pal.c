@@ -2206,7 +2206,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_M2_OCP_DETECT:
       pal_get_m2_str_name(event_data[1], event_data[2], error_log);
-      strcat(error_log, "Load Switch OCP");
+      strcat(error_log, "INA233 Alert");
       break;
     case SYS_SLOT_PRSNT:
       snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);

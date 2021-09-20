@@ -2446,3 +2446,35 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
 
   return 0;
 }
+
+int
+bic_enable_ina233_alert(uint8_t fru, bool enable) {
+  uint8_t tbuf[5] = {0x00};
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  uint8_t ret = BIC_STATUS_FAILURE;
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  tbuf[3] = 0x1;
+  tbuf[4] = enable?0x0:0x1;
+
+  switch(fru) {
+    case FRU_2U_TOP:
+      ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INA233_ALERT_CTRL, tbuf, tlen, rbuf, &rlen, RREXP_BIC_INTF1);
+      break;
+    case FRU_2U_BOT:
+      ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INA233_ALERT_CTRL, tbuf, tlen, rbuf, &rlen, RREXP_BIC_INTF2);
+      break;
+    case FRU_CWC:
+      ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INA233_ALERT_CTRL, tbuf, tlen, rbuf, &rlen, RREXP_BIC_INTF1);
+      if ( ret != BIC_STATUS_SUCCESS ) break;
+      ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INA233_ALERT_CTRL, tbuf, tlen, rbuf, &rlen, RREXP_BIC_INTF2);
+      if ( ret != BIC_STATUS_SUCCESS ) break;
+      break;
+    default:
+      printf("not expantion fru: %d\n", fru);
+      return ret;
+  }
+  return ret;
+}

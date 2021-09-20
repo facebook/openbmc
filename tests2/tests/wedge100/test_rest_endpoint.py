@@ -51,9 +51,15 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         """
         kmods_list = []
         if dev == "pem1" and presence_value == 1:
-            kmods_list.append("ltc4151-i2c-7-6f")
+            if os.path.exists("/sys/bus/i2c/devices/14-006f/"):
+                kmods_list.append("ltc4151-i2c-14-6f")
+            else:
+                kmods_list.append("ltc4151-i2c-15-6f")
         elif dev == "pem2" and presence_value == 1:
-            kmods_list.extend(["ltc4151-i2c-7-6f", "ltc4281-i2c-7-4a"])
+            if os.path.exists("/sys/bus/i2c/devices/14-006f/"):
+                kmods_list.extend(["ltc4151-i2c-14-6f", "ltc4281-i2c-14-4a"])
+            else:
+                kmods_list.extend(["ltc4151-i2c-15-6f", "ltc4281-i2c-15-4a"])
         elif dev == "psu1" or dev == "psu2":
             if presence_value == 1:
                 # TODO: PFE driver unstable now. That section

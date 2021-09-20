@@ -1378,6 +1378,10 @@ int
 pal_set_exp_power(uint8_t fru, uint8_t cmd) {
   uint8_t status = 0;
 
+  if (pal_is_fw_update_ongoing(FRU_SLOT1)) {
+    printf("fw update is on going on fru:%d...\n", FRU_SLOT1);
+    return POWER_STATUS_ERR;
+  }
   if (pal_get_exp_power(fru, &status) < 0) {
     return POWER_STATUS_ERR;
   }

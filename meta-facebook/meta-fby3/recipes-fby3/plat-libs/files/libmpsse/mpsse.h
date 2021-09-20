@@ -12,7 +12,9 @@ int tap_reset_to_rti(struct ftdi_context *ftdi);
 
 // mpsse start
 int find_devlist(struct ftdi_context *ftdi);
+int open_dev_bypath(struct ftdi_context *ftdi, int len, uint8_t ports[]);
 int init_dev(struct ftdi_context *ftdi);
+int init_dev_no_open(struct ftdi_context *ftdi);
 int mpsse_trigger_trst(struct ftdi_context *ftdi);
 int mpsse_init_conf(struct ftdi_context *ftdi, uint16_t tck);
 // mpsse end

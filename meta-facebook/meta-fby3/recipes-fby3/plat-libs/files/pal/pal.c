@@ -4593,3 +4593,28 @@ int pal_is_cwc(void) {
 int pal_get_cwc_id(char *str, uint8_t *fru) {
   return fby3_common_get_exp_id(str, fru) == 0 ? PAL_EOK : PAL_ENOTSUP;
 }
+
+int pal_get_asd_sw_status(uint8_t fru) {
+  int intf = 0, slot = 0;
+  bic_gpio_t gpio = {0};
+
+  switch (fru) {
+    case FRU_2U_TOP:
+      intf = RREXP_BIC_INTF1;
+      slot = FRU_SLOT1;
+      break;
+    case FRU_2U_BOT:
+      intf = RREXP_BIC_INTF2;
+      slot = FRU_SLOT1;
+      break;
+    default:
+      return 0;
+  }
+
+  if (bic_get_gpio(slot, &gpio, intf) == 0) {
+    if (gpio.gpio[3] & 0x01) {
+      return 1;
+    }
+  }
+  return 0;
+}

@@ -262,7 +262,7 @@ enum {
 
 /* Generic GPIO configuration */
 typedef struct _bic_gpio_t {
-  uint32_t gpio[3]; 
+  uint32_t gpio[4]; 
 } bic_gpio_t;
 
 typedef struct _bic_gpio_config_t {

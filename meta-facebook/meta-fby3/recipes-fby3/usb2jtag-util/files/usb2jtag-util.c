@@ -30,24 +30,55 @@
 #include <libftdi1/ftdi.h>
 #include <openbmc/obmc-i2c.h>
 #include <facebook/mpsse.h>
+#include <openbmc/pal.h>
+
+#define FRU_2U_TOP 32
+#define FRU_2U_BOT 33
+static int top_gpv3_usb_depth = 5;
+static int bot_gpv3_usb_depth = 5;
+static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 1};
+static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 1};
 
 static void
 print_usage_help(void) {
-  printf("Usage: usb2jtag-util slot[1|3] --dev [0~11]\n");
-  printf("Usage: usb2jtag-util slot[1|3] --trst\n");
+  if ( pal_is_cwc() == PAL_EOK ) {
+    printf("Usage: usb2jtag-util slot1 [2U-top|2U-bot] --dev [0~11]\n");
+    printf("Usage: usb2jtag-util slot1 [2U-top|2U-bot] --trst\n");
+  } else {
+    printf("Usage: usb2jtag-util slot[1|3] --dev [0~11]\n");
+    printf("Usage: usb2jtag-util slot[1|3] --trst\n");
+  }
 }
 
-int init_mpsse(struct ftdi_context *ftdi, uint16_t tck) {
-  // find dev
-  if ( find_devlist(ftdi) < 0 ) return -1;
-  if ( init_dev(ftdi) < 0 ) return -1;
-  if ( mpsse_init_conf(ftdi, tck) < 0 ) return -1;
+int init_mpsse(struct ftdi_context *ftdi, uint16_t tck, uint8_t slot_id) {
+  if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
+    int len = slot_id == FRU_2U_TOP ? top_gpv3_usb_depth : bot_gpv3_usb_depth;
+    uint8_t *ports = slot_id == FRU_2U_TOP ? top_gpv3_usb_ports : bot_gpv3_usb_ports;
+
+    if (pal_get_asd_sw_status(slot_id)) {
+      printf("ASD switch is not correctly set!\n");
+    }
+    if (open_dev_bypath(ftdi, len, ports)) {
+      return -1;
+    }
+    if (init_dev_no_open(ftdi)) {
+      return -1;
+    }
+    if ( mpsse_init_conf(ftdi, tck) < 0 ) {
+      return -1;
+    }
+  } else {
+    // find dev
+    if ( find_devlist(ftdi) < 0 ) return -1;
+    if ( init_dev(ftdi) < 0 ) return -1;
+    if ( mpsse_init_conf(ftdi, tck) < 0 ) return -1;
+  }
   return 0;
 }
 
-void trigger_trst(struct ftdi_context *ftdi) {
+void trigger_trst(struct ftdi_context *ftdi, uint8_t slot_id) {
   //init mpsse
-  if ( init_mpsse(ftdi, 0) < 0 ) {
+  if ( init_mpsse(ftdi, 0, slot_id) < 0 ) {
     printf("Couldn't init the IC\n");
     return;
   }
@@ -58,8 +89,33 @@ void trigger_trst(struct ftdi_context *ftdi) {
 int
 switch_cpld_mux(uint8_t slot_id, uint8_t dev) {
   const uint8_t cpld_addr = 0x5C; //7-bit addr
-  uint8_t bus = slot_id + 3;
+  const uint8_t cwc_cpld = 0x50; //7-bit addr
+  uint8_t bus = (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) ? 4 : slot_id + 3;
   int ret = 0;
+
+  if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
+    int fd = i2c_cdev_slave_open(bus, cwc_cpld, I2C_SLAVE_FORCE_CLAIM);
+    if ( fd < 0 ) {
+      printf("Failed to open i2c bus:%d\n", bus);
+      return -1;
+    }
+
+    uint8_t buf[2] = {0x00, slot_id-FRU_2U_TOP};
+    ret = i2c_rdwr_msg_transfer(fd, (cwc_cpld << 1), buf, sizeof(buf), NULL, 0);
+    if ( ret < 0 ) {
+      printf("Failed to switch cwc i2c mux to fru:%d\n", slot_id);
+    } else {
+      printf("Switch cwc mux to fru:%d\n", slot_id);
+    }
+
+    if ( fd > 0 ) {
+      close(fd);
+    }
+    if ( ret < 0 ) {
+      return -1;
+    }
+  }
+
   int  i2cfd = i2c_cdev_slave_open(bus, cpld_addr, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     printf("Failed to open i2c bus\n");
@@ -78,11 +134,11 @@ switch_cpld_mux(uint8_t slot_id, uint8_t dev) {
   return ret;
 }
 
-void scan_dev_byte_mode(struct ftdi_context *ftdi, uint8_t dev, uint16_t tck) {
+void scan_dev_byte_mode(struct ftdi_context *ftdi, uint8_t dev, uint16_t tck, uint8_t slot_id) {
   uint8_t JTAG_IDCODE = 0x06;
 
   //init mpsse
-  if ( init_mpsse(ftdi, tck) < 0 ) {
+  if ( init_mpsse(ftdi, tck, slot_id) < 0 ) {
     printf("Couldn't init the IC\n");
     return;
   }
@@ -115,6 +171,7 @@ int
 main(int argc, char **argv) {
   struct ftdi_context *ftdi = NULL;
   int ret = 0;
+  int i = 0;
   uint8_t slot_id = 0;
   uint8_t dev = 0;
 
@@ -128,11 +185,24 @@ main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  if ( strncmp(argv[1], "slot1", 5) == 0 ) slot_id = 1;
-  else if ( strncmp(argv[1], "slot3", 5) == 0 ) slot_id = 3;
+  if ( strncmp(argv[1], "slot1", 5) == 0 ) {
+    slot_id = 1;
+    if ( pal_is_cwc() == PAL_EOK && strncmp(argv[2], "2U-top", 6) == 0 ) {
+      slot_id = FRU_2U_TOP;
+    } else if ( pal_is_cwc() == PAL_EOK && strncmp(argv[2], "2U-bot", 6) == 0 ) {
+      slot_id = FRU_2U_BOT;
+    }
+  } else if ( strncmp(argv[1], "slot3", 5) == 0 ) slot_id = 3;
   else {
     printf("%s is not supported!\n", argv[1]);
     return EXIT_FAILURE;
+  }
+
+  if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
+    for (i = 2; i < argc-1; ++i) {
+      argv[i] = argv[i+1];
+    }
+    argc--;
   }
 
   if ( (argc == 4 || argc == 5) && (strncmp(argv[2], "--dev", 5) == 0) ) {
@@ -143,11 +213,11 @@ main(int argc, char **argv) {
     } else {
       if ( switch_cpld_mux(slot_id, dev) < 0 ) {}
       else {
-        scan_dev_byte_mode(ftdi, dev, tck);
+        scan_dev_byte_mode(ftdi, dev, tck, slot_id);
       }
     }
   } else if ( argc == 3 && (strncmp(argv[2], "--trst", 6) == 0) ) {   
-    trigger_trst(ftdi);
+    trigger_trst(ftdi, slot_id);
   } else {
     print_usage_help();
   }

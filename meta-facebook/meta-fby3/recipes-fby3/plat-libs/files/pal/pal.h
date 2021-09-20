@@ -242,6 +242,7 @@ int pal_dp_hba_fan_table_check(void);
 int pal_get_bb_fw_info(unsigned char target, char* ver_str);
 int pal_is_cwc(void);
 int pal_get_cwc_id(char *str, uint8_t *fru);
+int pal_get_asd_sw_status(uint8_t fru);
 bool pal_get_crit_act_status(int fd);
 bool pal_is_fan_manual_mode(uint8_t slot_id);
 #ifdef __cplusplus

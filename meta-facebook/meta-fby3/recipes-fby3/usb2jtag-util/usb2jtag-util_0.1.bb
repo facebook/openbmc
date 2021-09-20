@@ -12,7 +12,8 @@ SRC_URI = "file://usb2jtag-util.c \
            file://meson.build \
           "
 
-DEPENDS += " libobmc-i2c libusb1 libftdi libmpsse "
-RDEPENDS_${PN} += " libobmc-i2c libftdi libmpsse "
+LDFLAGS += " -lpal "
+DEPENDS += " libobmc-i2c libusb1 libftdi libmpsse libpal "
+RDEPENDS_${PN} += " libobmc-i2c libftdi libmpsse libpal "
 
 S = "${WORKDIR}"

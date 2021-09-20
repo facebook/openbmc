@@ -2100,7 +2100,7 @@ pal_get_m2vpp_str_name(uint8_t fru, uint8_t comp, uint8_t root_port, char *error
 
 static const char*
 pal_get_board_name(uint8_t comp) {
-  const char *comp_str[5] = {"ServerBoard", "1OU", "2OU", "SPE", "GPv3"};
+  const char *comp_str[8] = {"ServerBoard", "1OU", "2OU", "SPE", "GPv3", "CWC", "TOP GPv3", "BOT GPv3"};
   const uint8_t comp_size = ARRAY_SIZE(comp_str);
   if ( comp < comp_size ) {
     return comp_str[comp];

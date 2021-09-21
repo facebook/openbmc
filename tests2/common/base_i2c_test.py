@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
+import fnmatch
 import os
 from abc import abstractmethod
 
@@ -52,7 +53,7 @@ class BaseI2cTest(object):
 
         # Verify device name/type is correct.
         name = I2cSysfsUtils.i2c_device_get_name(i2c_path)
-        if name != i2c_info["name"]:
+        if not fnmatch.fnmatch(name, i2c_info["name"]):
             err_str += "name mismatch: expect %s, actual %s; " % (
                 i2c_info["name"],
                 name,

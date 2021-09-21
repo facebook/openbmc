@@ -1768,6 +1768,7 @@ next_run:
     if ((err_cnt >= BIC_RESET_ERR_CNT) && (is_already_reset == false)) {
       // if error counter over 3, reset BIC by hardware
       if (pal_bic_hw_reset() == 0) {
+        memset(err_log, 0, sizeof(err_log));
         for (i = 0; i < BIC_RESET_ERR_CNT; i++) {
           type = err_type[i];
           strcat(err_log, err_str[type]);

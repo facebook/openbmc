@@ -76,6 +76,20 @@ bulk_create_i2c_mux() {
 }
 
 #
+# We've seen some intermittent i2c transaction failures on i2c8 because
+# some slaves (on Fan Control Boards) NACK the address stage.
+# We are not quite clear if it's caused by flaw(s) in i2c switch channel
+# selection, or due to the "longer" distance between BMC SoC and Fan
+# Control Boards (compared with other i2c buses on Galaxy Chassis), but
+# increasing base clock divisor (which impacts bus free time as well as
+# data setup/hold time) helps to fix/mitigate the issue.
+#
+# Below line updates i2c8 (0-based) I2CD04: Clock and AC Timing Control
+# Register #1 value from default 0xFFFFE003 to 0xFFF77004.
+#
+devmem 0x1E78A344 32 0xFFF77004
+
+#
 # Let's check a few i2c switches on fabric cards to determine if these
 # switches were already created in kernel space.
 #

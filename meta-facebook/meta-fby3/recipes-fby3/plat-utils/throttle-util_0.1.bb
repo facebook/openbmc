@@ -14,11 +14,11 @@ S = "${WORKDIR}/throttle-util"
 CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
 LDFLAGS = " -lobmc-i2c -lbic -lpal -lfby3_common -lfby3_gpio "
 DEPENDS += " libbic libpal libfby3-common libfby3-gpio libobmc-i2c "
-RDEPENDS_${PN} += " libbic libpal libfby3-common libfby3-gpio libobmc-i2c "
+RDEPENDS:${PN} += " libbic libpal libfby3-common libfby3-gpio libobmc-i2c "
 
 do_install() {
   install -d ${D}${bindir}
   install -m 0755 throttle-util ${D}${bindir}/throttle-util
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

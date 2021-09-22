@@ -25,8 +25,8 @@ CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm2", "-DCONFIG_TPM_V2", "
 CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm1", "-DCONFIG_TPM_V1", "", d)}'
 
 DEPENDS = "python3 libvbs libkv"
-RDEPENDS_${PN}-python3 += "python3-core"
-RDEPENDS_${PN} += "libvbs libkv"
+RDEPENDS:${PN}-python3 += "python3-core"
+RDEPENDS:${PN} += "libvbs libkv"
 
 PACKAGES += "${PN}-python3"
 inherit distutils3 python3-dir
@@ -61,6 +61,6 @@ do_install() {
 
 }
 
-FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}"
-FILES_${PN} += "/usr/local/bin/"
-FILES_${PN} += "/usr/bin/"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}"
+FILES:${PN} += "/usr/local/bin/"
+FILES:${PN} += "/usr/bin/"

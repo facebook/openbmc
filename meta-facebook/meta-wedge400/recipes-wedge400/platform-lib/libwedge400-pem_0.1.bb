@@ -28,7 +28,7 @@ SRC_URI = "file://wedge400_pem \
 LDFLAGS = "-lfruid -lpal -lobmc-i2c -lobmc-pmbus"
 
 DEPENDS += "libfruid libpal libobmc-i2c libobmc-pmbus"
-RDEPENDS_${PN} += "libfruid libpal libobmc-i2c libobmc-pmbus"
+RDEPENDS:${PN} += "libfruid libpal libobmc-i2c libobmc-pmbus"
 
 S = "${WORKDIR}/wedge400_pem"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 wedge400-pem.h ${D}${includedir}/facebook/wedge400-pem.h
 }
 
-FILES_${PN} = "${libdir}/libwedge400-pem.so"
-FILES_${PN}-dev = "${includedir}/facebook/wedge400-pem.h"
+FILES:${PN} = "${libdir}/libwedge400-pem.so"
+FILES:${PN}-dev = "${includedir}/facebook/wedge400-pem.h"

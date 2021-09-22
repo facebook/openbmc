@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_append := "${THISDIR}/files:"
+FILESEXTRAPATHS:append := "${THISDIR}/files:"
 SRC_URI += "file://pal_peci-util.c \
            "
 DEPENDS += "libgpio-ctrl"
-RDEPENDS_${PN} += "libgpio-ctrl"
+RDEPENDS:${PN} += "libgpio-ctrl"
 LDFLAGS += "-lgpio-ctrl"

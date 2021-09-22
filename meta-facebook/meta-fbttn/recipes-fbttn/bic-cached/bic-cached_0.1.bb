@@ -8,8 +8,8 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libbic libpal update-rc.d-native"
-RDEPENDS_${PN} = "libbic libpal"
+DEPENDS:append = "libbic libpal update-rc.d-native"
+RDEPENDS:${PN} = "libbic libpal"
 
 SRC_URI = "file://Makefile \
            file://setup-bic-cached.sh \
@@ -37,4 +37,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "

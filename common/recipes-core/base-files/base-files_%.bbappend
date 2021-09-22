@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://aliases.sh \
@@ -9,7 +9,7 @@ SRC_URI += " \
 # Change the value to 0 will disable this feature.
 CONSOLE_IDLE_TIMEOUT ?= "300"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}/${sysconfdir}/profile.d
     install -m 644 aliases.sh ${D}/${sysconfdir}/profile.d/aliases.sh
     if [[ ${CONSOLE_IDLE_TIMEOUT} -ne 0 ]]; then

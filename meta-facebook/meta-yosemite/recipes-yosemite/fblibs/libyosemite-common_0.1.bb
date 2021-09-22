@@ -23,7 +23,7 @@ do_install() {
     install -m 0644 yosemite_common.h ${D}${includedir}/facebook/yosemite_common.h
 }
 
-FILES_${PN} = "${libdir}/libyosemite_common.so"
-FILES_${PN}-dev = "${includedir}/facebook/yosemite_common.h"
+FILES:${PN} = "${libdir}/libyosemite_common.so"
+FILES:${PN}-dev = "${includedir}/facebook/yosemite_common.h"
 
-RDEPENDS_${PN} += " libkv"
+RDEPENDS:${PN} += " libkv"

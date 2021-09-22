@@ -48,7 +48,7 @@ inherit distutils3
 inherit systemd
 inherit ptest
 DEPENDS += "update-rc.d-native libkv libwatchdog"
-RDEPENDS_${PN} += "python3-syslog python3-ply libkv libwatchdog"
+RDEPENDS:${PN} += "python3-syslog python3-ply libkv libwatchdog"
 
 FSC_BIN_FILES = ""
 
@@ -79,7 +79,7 @@ do_work_systemd() {
     install -m 644 fscd.service ${D}${systemd_system_unitdir}
 }
 
-do_install_append() {
+do_install:append() {
     bin="${D}/usr/local/bin"
     install -d $bin
     install -d ${D}${sysconfdir}
@@ -122,6 +122,6 @@ do_install_ptest() {
 }
 
 
-FILES_${PN} += "${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} += "${prefix}/local/bin ${sysconfdir} "
 
-SYSTEMD_SERVICE_${PN} = "fscd.service"
+SYSTEMD_SERVICE:${PN} = "fscd.service"

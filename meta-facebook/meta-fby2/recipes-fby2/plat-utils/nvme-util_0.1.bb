@@ -18,5 +18,5 @@ do_install() {
 
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += " libbic libfby2-sensor libpal libobmc-i2c"
-RDEPENDS_${PN} += " libbic libfby2-sensor libpal libobmc-i2c"
-FILES_${PN} = "${bindir}"
+RDEPENDS:${PN} += " libbic libfby2-sensor libpal libobmc-i2c"
+FILES:${PN} = "${bindir}"

@@ -26,7 +26,7 @@ SRC_URI = "file://src \
 
 LDFLAGS += " -llog "
 DEPENDS += "openbmc-utils libgpio liblog"
-RDEPENDS_${PN} = "libgpio liblog"
+RDEPENDS:${PN} = "libgpio liblog"
 
 S = "${WORKDIR}/src"
 
@@ -36,4 +36,4 @@ do_install() {
   install -m 755 mdio-bb ${D}${bindir}/mdio-bb
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

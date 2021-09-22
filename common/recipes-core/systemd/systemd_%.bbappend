@@ -1,6 +1,6 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-FILES_${PN}-catalog-extralocales = \
+FILES:${PN}-catalog-extralocales = \
             "${exec_prefix}/lib/systemd/catalog/*.*.catalog"
 PACKAGES =+ "${PN}-catalog-extralocales"
 
@@ -20,12 +20,12 @@ PACKAGECONFIG = " \
 
 EXTRA_OEMESON += "-Ddns-servers=''"
 
-ALTERNATIVE_${PN} += "init"
+ALTERNATIVE:${PN} += "init"
 ALTERNATIVE_TARGET[init] = "${rootlibexecdir}/systemd/systemd"
 ALTERNATIVE_LINK_NAME[init] = "${base_sbindir}/init"
 ALTERNATIVE_PRIORITY[init] ?= "300"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:${THISDIR}/policy.conf:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/policy.conf:"
 
 SRC_URI += " \
         file://coredump.conf \
@@ -33,7 +33,7 @@ SRC_URI += " \
         file://lastlog.conf \
 "
 
-do_install_append() {
+do_install:append() {
     install -m 644 -D ${WORKDIR}/journald-maxlevel.conf ${D}${systemd_unitdir}/journald.conf.d/maxlevel.conf
 
     # The journal will store its logs in tmpfs and yocto's default will kill the BMC

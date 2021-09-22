@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "\
         file://bios.cpp \
@@ -35,5 +35,5 @@ SRC_URI += "\
         "
 
 DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
-RDEPENDS_${PN} += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
+RDEPENDS:${PN} += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
 LDFLAGS += "-lmcu -lnm -lpal -lfpga -last-jtag -lvr -lnl-wrapper -lkv -lobmc-i2c"

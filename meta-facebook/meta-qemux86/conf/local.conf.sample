@@ -13,6 +13,6 @@ PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"
 DISTRO ?= "openbmc-fb"
 
 # Enable ptest to be built into the image.
-DISTRO_FEATURES_append = " ptest"
+DISTRO_FEATURES:append = " ptest"
 
 SOC_FAMILY = "aspeed-g5"

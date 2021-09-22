@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += "file://plat/meson.build"
 
@@ -12,7 +12,7 @@ DEPENDS += " \
     libnvme-mi \
     "
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     libbic \
     libexp \
     libmctp \

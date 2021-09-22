@@ -27,6 +27,6 @@ SRC_URI = "file://usbcli.cpp \
            file://CMakeLists.txt \
           "
 
-DEPENDS_append = "libusb1"
+DEPENDS:append = "libusb1"
 
 inherit cmake

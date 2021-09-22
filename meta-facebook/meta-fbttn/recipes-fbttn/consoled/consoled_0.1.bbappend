@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup-consoled.sh \
            "
@@ -45,4 +45,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/consoled ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/consoled ${prefix}/local/bin ${sysconfdir} "

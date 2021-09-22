@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/kconfig_5.x:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/kconfig_5.x:"
 
 SRC_URI += "file://cmm.cfg \
            "

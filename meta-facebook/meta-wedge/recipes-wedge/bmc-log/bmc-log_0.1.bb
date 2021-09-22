@@ -42,4 +42,4 @@ do_install() {
 	update-rc.d -r ${D} bmc-log.sh start 92 S .
 }
 
-FILES_${PN} = "${sbindir} ${sysconfdir} "
+FILES:${PN} = "${sbindir} ${sysconfdir} "

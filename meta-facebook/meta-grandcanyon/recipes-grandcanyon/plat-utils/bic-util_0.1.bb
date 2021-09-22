@@ -13,6 +13,6 @@ inherit meson
 S = "${WORKDIR}/bic-util"
 
 DEPENDS += "libbic libpal libfbgc-common libfbgc-gpio"
-RDEPENDS_${PN} += "libbic libpal libfbgc-common libfbgc-gpio"
+RDEPENDS:${PN} += "libbic libpal libfbgc-common libfbgc-gpio"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

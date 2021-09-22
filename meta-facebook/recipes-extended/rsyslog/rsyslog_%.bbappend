@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rsyslog.conf \
             file://rotate_emmc \
@@ -13,7 +13,7 @@ SRC_URI += "file://rsyslog.conf \
 
 MTERM_LOG_FILES ?= "mTerm_${MACHINE}"
 
-do_install_append() {
+do_install:append() {
   dst="${D}/usr/local/fbpackages/rotate"
   rsysconf="${D}${sysconfdir}/rsyslog.d"
   install -d $dst
@@ -44,4 +44,4 @@ do_install_append() {
   install -m 644 ${WORKDIR}/rsyslog.logrotate ${D}${sysconfdir}/logrotate.d/syslog
 }
 
-FILES_${PN} += "/usr/local/fbpackages/rotate"
+FILES:${PN} += "/usr/local/fbpackages/rotate"

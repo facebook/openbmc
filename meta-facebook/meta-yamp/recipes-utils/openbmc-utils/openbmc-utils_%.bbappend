@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://bios_util.sh \
             file://board-utils.sh \
@@ -62,7 +62,7 @@ OPENBMC_UTILS_FILES += " \
     dpm_dump.sh \
     "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 do_install_board() {
     # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -107,8 +107,8 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/yamp_bios.layout ${D}${sysconfdir}/yamp_bios.layout
 }
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

@@ -40,8 +40,8 @@ S = "${WORKDIR}"
 # the tools for BMC will be installed in the image
 binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh "
 
-DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} += "bash python3 gpiocli "
+DEPENDS:append = "update-rc.d-native"
+RDEPENDS:${PN} += "bash python3 gpiocli "
 
 do_install() {
   # install the package dir
@@ -76,4 +76,4 @@ do_install() {
   update-rc.d -r ${D} check_bmc_ready.sh start 100 5 .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"

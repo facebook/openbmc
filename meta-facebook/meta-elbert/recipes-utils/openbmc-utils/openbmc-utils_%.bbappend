@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
 
@@ -83,7 +83,7 @@ OPENBMC_UTILS_FILES += " \
     th4_qspi_ver.sh \
     "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 do_install_board() {
     # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -140,8 +140,8 @@ do_install_board() {
     install -m 0755 ${WORKDIR}/elbert_pim.layout ${D}${sysconfdir}/elbert_pim.layout
 }
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

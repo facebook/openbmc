@@ -34,4 +34,4 @@ do_install() {
 	install -m 0755 po-eeprom ${D}${bindir}/po-eeprom
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

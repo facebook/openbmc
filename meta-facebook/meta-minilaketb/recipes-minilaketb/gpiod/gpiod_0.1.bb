@@ -37,7 +37,7 @@ CFLAGS += " -lbic -lminilaketb_gpio -lpal "
 
 DEPENDS += " libbic libminilaketb-gpio libpal "
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libbic libminilaketb-gpio libpal "
+RDEPENDS:${PN} += " libbic libminilaketb-gpio libpal "
 
 pkgdir = "gpiod"
 
@@ -62,4 +62,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "

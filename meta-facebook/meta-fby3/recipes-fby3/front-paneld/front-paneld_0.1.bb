@@ -8,7 +8,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = " libfby3-common libpal libbic libkv update-rc.d-native libobmc-i2c "
+DEPENDS:append = " libfby3-common libpal libbic libkv update-rc.d-native libobmc-i2c "
 
 SRC_URI = "file://Makefile \
            file://setup-front-paneld.sh \
@@ -41,7 +41,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
-RDEPENDS_${PN} += " libfby3-common libpal libbic libkv libobmc-i2c "
+FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
+RDEPENDS:${PN} += " libfby3-common libpal libbic libkv libobmc-i2c "
 
 LDFLAGS = " -lobmc-i2c "

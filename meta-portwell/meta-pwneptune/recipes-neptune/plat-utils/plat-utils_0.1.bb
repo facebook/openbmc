@@ -40,7 +40,7 @@ S = "${WORKDIR}"
 binfiles = "power_led.sh sync_date.sh sol-util \
   "
 
-DEPENDS_append = "update-rc.d-native"
+DEPENDS:append = "update-rc.d-native"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -73,6 +73,6 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 70 S .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"
 
-RDEPENDS_${PN} = "bash"
+RDEPENDS:${PN} = "bash"

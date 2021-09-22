@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "\
         file://nic_ext.cpp \
@@ -34,7 +34,7 @@ SRC_URI += "\
         file://grandcanyon.json \
         "
 
-do_unpack_append () {
+do_unpack:append () {
     bb.build.exec_func('do_replace_image_parts_json', d)
 }
 
@@ -46,5 +46,5 @@ do_replace_image_parts_json() {
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
-RDEPENDS_${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
+RDEPENDS:${PN} += " libpal libbic libncsi libnl-wrapper libkv libfpga libfbgc-common libexp libipc "
 LDFLAGS += " -lpal -lbic -lnl-wrapper -lkv -lfpga -lexp -lipc -lfbgc_common "

@@ -32,7 +32,7 @@ HEADERS = "fby3_fruid.h"
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lfby3_common"
 DEPENDS += "libfby3-common"
-RDEPENDS_${PN} += "libfby3-common"
+RDEPENDS:${PN} += "libfby3-common"
 
 S = "${WORKDIR}/fby3_fruid"
 
@@ -49,5 +49,5 @@ do_install() {
   install -m 0644 fby3_fruid.h ${D}${includedir}/facebook/fby3_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libfby3_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby3_fruid.h"
+FILES:${PN} = "${libdir}/libfby3_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby3_fruid.h"

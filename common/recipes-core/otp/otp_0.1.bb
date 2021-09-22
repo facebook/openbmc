@@ -19,4 +19,4 @@ SRC_URI = "file://aspeed-otp.h \
 
 S = "${WORKDIR}"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

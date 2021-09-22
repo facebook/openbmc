@@ -16,6 +16,6 @@ SRC_URI = "\
 S = "${WORKDIR}"
 
 DEPENDS += "libipmi libipc"
-RDEPENDS_${PN} += "libipmi libipc"
+RDEPENDS:${PN} += "libipmi libipc"
 
 inherit meson

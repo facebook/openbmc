@@ -39,5 +39,5 @@ do_install() {
     install -m 0644 fby3_gpio.h ${D}${includedir}/facebook/fby3_gpio.h
 }
 
-FILES_${PN} = "${libdir}/libfby3_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby3_gpio.h"
+FILES:${PN} = "${libdir}/libfby3_gpio.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby3_gpio.h"

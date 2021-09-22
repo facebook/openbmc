@@ -22,12 +22,12 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS_append = " -lwedge_eeprom -lfruid -lpal -lobmc-i2c -llog -lbic"
+LDFLAGS:append = " -lwedge_eeprom -lfruid -lpal -lobmc-i2c -llog -lbic"
 
-DEPENDS_append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libbic update-rc.d-native libgpio"
-RDEPENDS_${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio libbic bash"
+DEPENDS:append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libbic update-rc.d-native libgpio"
+RDEPENDS:${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio libbic bash"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
             file://setup-ipmid.sh \
             file://run-ipmid.sh \
@@ -57,4 +57,4 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "

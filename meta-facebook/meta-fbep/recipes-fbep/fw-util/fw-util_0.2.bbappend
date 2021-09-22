@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://nic.cpp \
             file://cpld.cpp \
@@ -33,5 +33,5 @@ SRC_URI += "file://nic.cpp \
            "
 
 DEPENDS += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic"
-RDEPENDS_${PN} += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic "
+RDEPENDS:${PN} += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic "
 LDFLAGS += " -lmcu -lfpga -last-jtag -lvr -lkv -lobmc-i2c -lasic"

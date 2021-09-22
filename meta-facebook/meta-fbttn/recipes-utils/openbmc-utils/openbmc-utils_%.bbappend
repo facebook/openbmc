@@ -15,14 +15,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://setup_adc.sh \
            "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
-do_install_append() {
+do_install:append() {
     install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
     update-rc.d -r ${D} setup_adc.sh start 91 5 .
 }

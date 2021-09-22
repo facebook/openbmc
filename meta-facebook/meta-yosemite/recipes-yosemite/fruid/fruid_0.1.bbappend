@@ -19,6 +19,6 @@
 S = "${WORKDIR}"
 
 
-#DEPENDS_prepend = "libyosemite-fruid"
+#DEPENDS:prepend = "libyosemite-fruid"
 
-#RDEPENDS_${PN} += "libyosemite-fruid"
+#RDEPENDS:${PN} += "libyosemite-fruid"

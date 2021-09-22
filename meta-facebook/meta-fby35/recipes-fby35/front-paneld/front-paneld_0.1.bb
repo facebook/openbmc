@@ -8,7 +8,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libfby35-common libpal libkv update-rc.d-native"
+DEPENDS:append = "libfby35-common libpal libkv update-rc.d-native"
 
 SRC_URI = "file://Makefile \
            file://setup-front-paneld.sh \
@@ -41,8 +41,8 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
-RDEPENDS_${PN} += "libfby35-common libpal libkv"
+FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
+RDEPENDS:${PN} += "libfby35-common libpal libkv"
 
 
 # Inhibit complaints about .debug directories:

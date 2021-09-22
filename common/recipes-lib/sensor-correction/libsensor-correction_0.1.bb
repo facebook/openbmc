@@ -15,7 +15,7 @@ SRC_URI = "file://CMakeLists.txt \
 SENSOR_CORR_CONFIG = "sensor-correction-conf.json"
 S = "${WORKDIR}"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}
   for f in ${SENSOR_CORR_CONFIG}; do
     install -m 644 ${WORKDIR}/$f ${D}${sysconfdir}/$f
@@ -23,6 +23,6 @@ do_install_append() {
 }
 
 DEPENDS =+ "libkv jansson"
-RDEPENDS_${PN} += "libkv jansson"
+RDEPENDS:${PN} += "libkv jansson"
 
 inherit cmake

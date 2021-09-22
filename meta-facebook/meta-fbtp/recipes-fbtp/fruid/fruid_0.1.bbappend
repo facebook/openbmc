@@ -18,7 +18,7 @@
 
 #S = "${WORKDIR}"
 
-#CFLAGS_prepend = " -DCONFIG_YOSEMITE"
-#LDFLAGS_append = " -lyosemite_fruid"
+#CFLAGS:prepend = " -DCONFIG_YOSEMITE"
+#LDFLAGS:append = " -lyosemite_fruid"
 
-#DEPENDS_prepend = "libyosemite-fruid"
+#DEPENDS:prepend = "libyosemite-fruid"

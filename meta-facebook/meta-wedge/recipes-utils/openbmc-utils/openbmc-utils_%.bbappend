@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
            file://us_console.sh \
@@ -43,8 +43,8 @@ OPENBMC_UTILS_FILES += " \
   setup_switch.py us_monitor.sh reset_brcm.sh reset_cp2112.sh \
   "
 
-DEPENDS_append = " update-rc.d-native"
-RDEPENDS_${PN} += "python3-core"
+DEPENDS:append = " update-rc.d-native"
+RDEPENDS:${PN} += "python3-core"
 
 do_install_board() {
   # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -78,8 +78,8 @@ do_install_board() {
   update-rc.d -r ${D} power-on.sh start 85 S .
 }
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

@@ -36,7 +36,7 @@ CFLAGS += "-Wall -Werror "
 LDFLAGS += "-lobmc-mmc"
 
 DEPENDS += " libobmc-mmc"
-RDEPENDS_${PN} += " libobmc-mmc"
+RDEPENDS:${PN} += " libobmc-mmc"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -50,4 +50,4 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/mmcraw ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/mmcraw ${prefix}/local/bin"

@@ -35,7 +35,7 @@ binfiles += "dump.sh \
             "
 
 pkgdir = "crashdump"
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -52,4 +52,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/crashdump ${prefix}/local/bin "
+FILES:${PN} = "${FBPACKAGEDIR}/crashdump ${prefix}/local/bin "

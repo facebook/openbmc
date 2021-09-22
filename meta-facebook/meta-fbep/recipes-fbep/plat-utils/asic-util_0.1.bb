@@ -17,7 +17,7 @@ do_install() {
 }
 
 DEPENDS += "libpal libasic libgpio-ctrl libkv cli11 "
-RDEPENDS_${PN} += "libpal libasic libgpio-ctrl libkv "
+RDEPENDS:${PN} += "libpal libasic libgpio-ctrl libkv "
 LDFLAGS += "-lpal -lasic -lgpio-ctrl -lkv "
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

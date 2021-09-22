@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://mTerm/run \
             file://sol.sh \
@@ -26,9 +26,9 @@ S = "${WORKDIR}"
 # Go with default names of mTerm for MTERM_SERVICES
 # since we have just one console.
 
-do_install_append() {
+do_install:append() {
     install -d ${D}/usr/local/bin
     install -m 755 sol.sh ${D}/usr/local/bin/sol.sh
 }
 
-FILES_${PN} += "/usr/local/bin"
+FILES:${PN} += "/usr/local/bin"

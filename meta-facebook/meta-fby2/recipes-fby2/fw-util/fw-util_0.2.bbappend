@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://vr.cpp \
             file://bic_bios_ext.cpp \
@@ -34,5 +34,5 @@ SRC_URI += "file://vr.cpp \
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libmcu libfby2-sensor libfby2-common libnl-wrapper "
-RDEPENDS_${PN} += "libipmi libipmb libbic libmcu libfby2-sensor libfby2-common libnl-wrapper"
+RDEPENDS:${PN} += "libipmi libipmb libbic libmcu libfby2-sensor libfby2-common libnl-wrapper"
 LDFLAGS += " -lipmi -lipmb -lbic -lmcu -lfby2_sensor -lfby2_common -lnl-wrapper "

@@ -37,7 +37,7 @@ CFLAGS += " -lbic -lfbttn_gpio -lpal -lkv "
 
 DEPENDS += " libbic libfbttn-gpio libpal libkv "
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libbic libfbttn-gpio libpal libkv "
+RDEPENDS:${PN} += " libbic libfbttn-gpio libpal libkv "
 
 pkgdir = "gpiod"
 
@@ -62,4 +62,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "

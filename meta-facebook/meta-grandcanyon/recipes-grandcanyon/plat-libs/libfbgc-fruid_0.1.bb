@@ -12,7 +12,7 @@ SRC_URI = "file://fbgc_fruid \
           "
 
 DEPENDS += "libfbgc-common libbic"
-RDEPENDS_${PN} += "libfbgc-common libbic"
+RDEPENDS:${PN} += "libfbgc-common libbic"
 
 S = "${WORKDIR}/fbgc_fruid"
 

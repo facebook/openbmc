@@ -36,5 +36,5 @@ def get_vbs_base_addr(soc_family):
 
 
 CFLAGS += "${@ get_vbs_base_addr('${SOC_FAMILY}') }"
-FILES_${PN} = "${libdir}/libvbs.so"
-FILES_${PN}-dev = "${includedir}/openbmc/vbs.h"
+FILES:${PN} = "${libdir}/libvbs.so"
+FILES:${PN}-dev = "${includedir}/openbmc/vbs.h"

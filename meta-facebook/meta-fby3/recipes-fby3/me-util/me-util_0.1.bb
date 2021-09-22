@@ -20,7 +20,7 @@ pkgdir = "me-util"
 CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lipmi -lipmb -lbic -lpal -lfby3_common"
 DEPENDS = "libbic libpal libipmi libipmb libfby3-common"
-RDEPENDS_${PN} += "libbic libpal libipmi libipmb libfby3-common"
+RDEPENDS:${PN} += "libbic libpal libipmi libipmb libfby3-common"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -35,4 +35,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"

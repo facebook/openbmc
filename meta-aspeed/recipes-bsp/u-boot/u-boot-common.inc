@@ -56,7 +56,7 @@ python () {
 }
 
 # Merge the defconfig segment and tweak for verified boot
-do_configure_prepend() {
+do_configure:prepend() {
   do_configure_merge_and_tweak
 }
 
@@ -96,13 +96,13 @@ do_configure_merge_and_tweak() {
 #
 # prepend action which updates .scmversion with OPENBMC_VERSION
 # to do_compile to make sure when OPENBMC_VERSION update get into u-boot
-do_compile_prepend_bld-uboot() {
+do_compile:prepend:bld-uboot() {
   echo " ${OPENBMC_VERSION}" > ${S}/.scmversion
   echo " ${OPENBMC_VERSION}" > ${B}/.scmversion
 }
 
 # build recovery u-boot when verified-boot enabled
-do_compile_append_bld-uboot() {
+do_compile:append:bld-uboot() {
   if [ "x${VERIFIED_BOOT}" != "x" ] ; then
     bbnote "Build the Recovery u-boot for verfifed boot"
     defconfig_option_on CONFIG_ASPEED_RECOVERY_BUILD ${S}/configs/${UBOOT_MACHINE}
@@ -111,7 +111,7 @@ do_compile_append_bld-uboot() {
   fi
 }
 
-do_install_append_bld-uboot() {
+do_install:append:bld-uboot() {
   if [ "x${VERIFIED_BOOT}" != "x" ]; then
     install -d ${D}/boot
     install -m 644 ${B}-recovery/${UBOOT_BINARY} ${D}/boot/${UBOOT_RECOVERY_IMAGE}
@@ -119,7 +119,7 @@ do_install_append_bld-uboot() {
   fi
 }
 
-do_deploy_append_bld-uboot() {
+do_deploy:append:bld-uboot() {
   if [ "x${VERIFIED_BOOT}" != "x" ]; then
     install -d ${DEPLOYDIR}
     install -m 644 ${B}-recovery/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_RECOVERY_IMAGE}

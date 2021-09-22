@@ -10,7 +10,7 @@
 # for more details.
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "\
             file://openbmc-gpio-1/board_gpio_table_v2.py \

@@ -14,6 +14,6 @@ SRC_URI = "file://usb2jtag-util.c \
 
 LDFLAGS += " -lpal "
 DEPENDS += " libobmc-i2c libusb1 libftdi libmpsse libpal "
-RDEPENDS_${PN} += " libobmc-i2c libftdi libmpsse libpal "
+RDEPENDS:${PN} += " libobmc-i2c libftdi libmpsse libpal "
 
 S = "${WORKDIR}"

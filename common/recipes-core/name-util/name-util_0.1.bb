@@ -18,5 +18,5 @@ SRC_URI += "file://tests/name-test.cpp  \
 
 S = "${WORKDIR}"
 DEPENDS += "libpal cli11 nlohmann-json gtest"
-RDEPENDS_${PN} += "libpal"
-FILES_${PN} = "${prefix}/local/bin/name-util"
+RDEPENDS:${PN} += "libpal"
+FILES:${PN} = "${prefix}/local/bin/name-util"

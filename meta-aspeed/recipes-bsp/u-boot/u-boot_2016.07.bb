@@ -27,7 +27,7 @@ SRC_URI += '${@release_patches(d)}'
 PV = "v2016.07"
 S = "${WORKDIR}/git"
 
-FILES_${PN} = "${sysconfdir}"
+FILES:${PN} = "${sysconfdir}"
 
 inherit uboot-config deploy
 require verified-boot.inc

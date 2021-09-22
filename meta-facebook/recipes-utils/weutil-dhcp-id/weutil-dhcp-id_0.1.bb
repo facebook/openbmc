@@ -21,7 +21,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://dhcp-id;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-RDEPENDS_${PN} += " bash wedge-eeprom "
+RDEPENDS:${PN} += " bash wedge-eeprom "
 
 SRC_URI = "file://dhcp-id \
            file://enterprise-num \
@@ -36,4 +36,4 @@ do_install() {
   install -m 755 enterprise-num ${localbindir}/enterprise-num
 }
 
-FILES_${PN} = " ${sysconfdir} /usr/local"
+FILES:${PN} = " ${sysconfdir} /usr/local"

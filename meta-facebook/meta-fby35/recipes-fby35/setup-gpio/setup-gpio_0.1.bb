@@ -18,7 +18,7 @@ binfiles = "setup-gpio \
            "
 DEPENDS += " libpal libgpio-ctrl libfby35-gpio libphymem "
 DEPENDS += " update-rc.d-native "
-RDEPENDS_${PN} += " libpal libgpio-ctrl libfby35-gpio libphymem "
+RDEPENDS:${PN} += " libpal libgpio-ctrl libfby35-gpio libphymem "
 
 pkgdir = "setup-gpio"
 
@@ -38,4 +38,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/setup-gpio/ ${prefix}/local/bin ${sysconfdir}"
+FILES:${PN} = "${FBPACKAGEDIR}/setup-gpio/ ${prefix}/local/bin ${sysconfdir}"

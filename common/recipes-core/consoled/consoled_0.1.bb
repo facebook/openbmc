@@ -14,7 +14,7 @@ S = "${WORKDIR}"
 LDFLAGS =+ " -lpal "
 
 DEPENDS =+ " libpal "
-RDEPENDS_${PN} =+ "libpal"
+RDEPENDS:${PN} =+ "libpal"
 
 binfiles = "consoled"
 
@@ -31,4 +31,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/consoled ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/consoled ${prefix}/local/bin"

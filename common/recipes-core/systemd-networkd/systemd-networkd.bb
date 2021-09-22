@@ -29,9 +29,9 @@ do_install() {
     install -m 0644 configure-eth0.service ${D}${systemd_system_unitdir}
 }
 
-FILES_${PN} = "${sysconfdir} "
-SYSTEMD_SERVICE_${PN} = "eth0_mac_fixup.service configure-eth0.service"
-CONFFILES_${PN} = "${sysconfdir}/systemd/network/30-usb0.network \
+FILES:${PN} = "${sysconfdir} "
+SYSTEMD_SERVICE:${PN} = "eth0_mac_fixup.service configure-eth0.service"
+CONFFILES:${PN} = "${sysconfdir}/systemd/network/30-usb0.network \
                  ${sysconfdir}/systemd/network/10-eth0.network \
                  ${sysconfdir}/systemd/network/20-eth0.4088.network \
                  ${sysconfdir}/systemd/network/20-eth0.4088.netdev \

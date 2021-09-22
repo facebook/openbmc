@@ -23,11 +23,11 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://modbus.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 LDFLAGS += "-llog -lmisc-utils"
 DEPENDS += "libgpio liblog libmisc-utils"
-RDEPENDS_${PN} = "libgpio liblog libmisc-utils python3-core bash"
+RDEPENDS:${PN} = "libgpio liblog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):
   prof_enabled = d.getVar("RACKMON_PROFILING", False)
@@ -129,8 +129,8 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/rackmon ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/rackmon ${prefix}/local/bin ${sysconfdir} "
 
-FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+FILES:${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
 
-SYSTEMD_SERVICE_${PN} = "rackmond.service configure-rackmond.service"
+SYSTEMD_SERVICE:${PN} = "rackmond.service configure-rackmond.service"

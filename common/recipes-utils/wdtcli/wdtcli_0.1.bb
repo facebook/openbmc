@@ -34,8 +34,8 @@ binfiles = "wdtcli \
 
 CFLAGS += "-Wall -Werror "
 LDFLAGS += " -lwatchdog"
-RDEPENDS_${PN} += " libwatchdog"
-DEPENDS_append = " libwatchdog"
+RDEPENDS:${PN} += " libwatchdog"
+DEPENDS:append = " libwatchdog"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -49,4 +49,4 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/wdtcli ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/wdtcli ${prefix}/local/bin"

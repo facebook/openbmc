@@ -17,11 +17,11 @@ do_patch[noexec] = "1"
 deltask do_populate_sysroot
 
 DEPENDS = " udev tcp-wrappers "
-RDEPENDS_${PN} = " tcp-wrappers udev hwdata "
+RDEPENDS:${PN} = " tcp-wrappers udev hwdata "
 S = "${WORKDIR}/src"
 
 # configure the source code
-do_configure_prepend () {
+do_configure:prepend () {
   mkdir -p ${S}
   cp -rf ${STAGING_KERNEL_DIR}/tools/usb/usbip/* ${S}
   sed -i 's/-Werror//g' ${S}/configure.ac

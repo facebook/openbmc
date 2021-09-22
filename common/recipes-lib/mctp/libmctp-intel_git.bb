@@ -21,12 +21,12 @@ inherit pkgconfig cmake
 
 S = "${WORKDIR}/git"
 
-do_configure_append() {
+do_configure:append() {
   cd ${S}
   cmake
 }
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${libdir}
   install libmctp_intel.so ${D}${libdir}/libmctp_intel.so
   lnr ${D}${libdir}/libmctp_intel.so ${D}${libdir}/libmctp_intel.so.0
@@ -34,5 +34,5 @@ do_install_append() {
   install -m 0644 ${S}/*.h ${D}${includedir}/
 }
 
-FILES_${PN} = "${libdir}/libmctp_intel.so ${libdir}/libmctp_intel.so.0"
-FILES_${PN}-dev = "${includedir}/*.h"
+FILES:${PN} = "${libdir}/libmctp_intel.so ${libdir}/libmctp_intel.so.0"
+FILES:${PN}-dev = "${includedir}/*.h"

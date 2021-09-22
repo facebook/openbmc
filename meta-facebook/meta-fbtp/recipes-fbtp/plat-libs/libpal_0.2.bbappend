@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
     file://machine_config.c \
@@ -15,7 +15,7 @@ DEPENDS += " \
     libvr \
     plat-utils \
     "
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     libgpio-ctrl \
     libme \
     libmisc-utils \

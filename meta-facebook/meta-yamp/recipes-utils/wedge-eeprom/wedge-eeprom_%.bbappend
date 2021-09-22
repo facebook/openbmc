@@ -14,7 +14,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LIC_FILES_CHKSUM = "file://yamp_weutil.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 SRC_URI += " \
           file://utils/yamp_eeprom.h \
@@ -25,4 +25,4 @@ SRC_URI += " \
 
 LDFLAGS += "-llog"
 DEPENDS += "liblog"
-RDEPENDS_${PN} += "liblog"
+RDEPENDS:${PN} += "liblog"

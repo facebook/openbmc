@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://platform.cpp \
             file://vr.cpp \
@@ -29,5 +29,5 @@ SRC_URI += "file://platform.cpp \
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libexp libmcu"
-RDEPENDS_${PN} += "libipmi libipmb libbic libexp libmcu"
+RDEPENDS:${PN} += "libipmi libipmb libbic libexp libmcu"
 LDFLAGS += " -lipmi -lipmb -lbic -lexp -lmcu"

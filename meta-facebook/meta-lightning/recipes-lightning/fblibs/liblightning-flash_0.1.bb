@@ -28,7 +28,7 @@ SRC_URI = "file://lightning_flash \
 
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += " liblightning-common libobmc-i2c"
-RDEPENDS_${PN} += "libobmc-i2c"
+RDEPENDS:${PN} += "libobmc-i2c"
 
 S = "${WORKDIR}/lightning_flash"
 
@@ -41,6 +41,6 @@ do_install() {
     install -m 0644 lightning_flash.h ${D}${includedir}/facebook/lightning_flash.h
 }
 
-FILES_${PN} = "${libdir}/liblightning_flash.so"
-FILES_${PN}-dev = "${includedir}/facebook/lightning_flash.h"
-RDEPENDS_${PN} += " liblightning-common"
+FILES:${PN} = "${libdir}/liblightning_flash.so"
+FILES:${PN}-dev = "${includedir}/facebook/lightning_flash.h"
+RDEPENDS:${PN} += " liblightning-common"

@@ -35,7 +35,7 @@ do_install() {
 }
 
 DEPENDS += "libkv"
-RDEPENDS_${PN} = "libkv"
+RDEPENDS:${PN} = "libkv"
 
-FILES_${PN} = "${libdir}/libncsi.so"
-FILES_${PN}-dev = "${includedir}/openbmc/*"
+FILES:${PN} = "${libdir}/libncsi.so"
+FILES:${PN}-dev = "${includedir}/openbmc/*"

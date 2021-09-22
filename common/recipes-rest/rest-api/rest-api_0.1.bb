@@ -38,11 +38,11 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-DEPENDS_append = " update-rc.d-native aiohttp-native json-log-formatter-native libobmc-mmc"
+DEPENDS:append = " update-rc.d-native aiohttp-native json-log-formatter-native libobmc-mmc"
 
 REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter libobmc-mmc"
-RDEPENDS_${PN} += "${REST_API_RDEPENDS}"
-RDEPENDS_${PN}_class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
+RDEPENDS:${PN} += "${REST_API_RDEPENDS}"
+RDEPENDS:${PN}:class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
 
 
 SRC_URI = "file://setup-rest-api.sh \
@@ -155,10 +155,10 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://boardroutes.py\
             ', d)}"
 
-RDEPENDS_${PN}_class-target += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
+RDEPENDS:${PN}:class-target += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
                   '', 'sensors-py', d)}"
 
-RDEPENDS_${PN}_class-target =+ 'libpal libsdr libaggregate-sensor python3-psutil'
+RDEPENDS:${PN}:class-target =+ 'libpal libsdr libaggregate-sensor python3-psutil'
 pkgdir = "rest-api"
 
 
@@ -178,7 +178,7 @@ install_sysv() {
     update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
 }
 
-do_install_class-target() {
+do_install:class-target() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   acld="${D}/usr/local/fbpackages/${pkgdir}/acl_providers"
   bin="${D}/usr/local/bin"
@@ -217,7 +217,7 @@ EOF
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
 BBCLASSEXTEND += "native nativesdk"
 
-SYSTEMD_SERVICE_${PN} = "restapi.service"
+SYSTEMD_SERVICE:${PN} = "restapi.service"

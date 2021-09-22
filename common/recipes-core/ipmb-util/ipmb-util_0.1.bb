@@ -32,6 +32,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmb-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/ipmb-util ${prefix}/local/bin"
 
-RDEPENDS_${PN} = "libipmi libipmb bash"
+RDEPENDS:${PN} = "libipmi libipmb bash"

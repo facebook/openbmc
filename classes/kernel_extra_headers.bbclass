@@ -18,4 +18,4 @@ kernel_extra_headers_do_install() {
 
 EXPORT_FUNCTIONS do_install
 
-FILES_${PN}-dev += "${LINUX_EXTRA_HEADER_BASE}"
+FILES:${PN}-dev += "${LINUX_EXTRA_HEADER_BASE}"

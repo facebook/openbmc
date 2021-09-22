@@ -50,4 +50,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin"

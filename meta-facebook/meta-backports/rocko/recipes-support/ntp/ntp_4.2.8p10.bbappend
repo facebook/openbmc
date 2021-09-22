@@ -6,5 +6,5 @@
 #
 # Backport split of ntpq from warrior to rocko.
 
-PACKAGES_prepend = "ntpq "
-FILES_ntpq = "${sbindir}/ntpq"
+PACKAGES:prepend = "ntpq "
+FILES:ntpq = "${sbindir}/ntpq"

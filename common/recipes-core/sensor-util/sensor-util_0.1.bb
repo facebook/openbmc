@@ -18,7 +18,7 @@ S = "${WORKDIR}"
 pkgdir = "sensor-util"
 
 DEPENDS =+ " libsdr libpal libaggregate-sensor jansson"
-RDEPENDS_${PN} =+ "libsdr libpal libaggregate-sensor jansson"
-FILES_${PN} = "${prefix}/local/bin/sensor-util"
+RDEPENDS:${PN} =+ "libsdr libpal libaggregate-sensor jansson"
+FILES:${PN} = "${prefix}/local/bin/sensor-util"
 
 

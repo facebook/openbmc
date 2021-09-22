@@ -22,6 +22,6 @@ do_install() {
     install -m 0644 lightning_gpio.h ${D}${includedir}/facebook/lightning_gpio.h
 }
 
-FILES_${PN} = "${libdir}/liblightning_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/lightning_gpio.h"
-RDEPENDS_${PN} += " liblightning-common libgpio"
+FILES:${PN} = "${libdir}/liblightning_gpio.so"
+FILES:${PN}-dev = "${includedir}/facebook/lightning_gpio.h"
+RDEPENDS:${PN} += " liblightning-common libgpio"

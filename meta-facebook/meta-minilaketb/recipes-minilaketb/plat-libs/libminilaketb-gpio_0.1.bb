@@ -39,5 +39,5 @@ do_install() {
     install -m 0644 minilaketb_gpio.h ${D}${includedir}/facebook/minilaketb_gpio.h
 }
 
-FILES_${PN} = "${libdir}/libminilaketb_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/minilaketb_gpio.h"
+FILES:${PN} = "${libdir}/libminilaketb_gpio.so"
+FILES:${PN}-dev = "${includedir}/facebook/minilaketb_gpio.h"

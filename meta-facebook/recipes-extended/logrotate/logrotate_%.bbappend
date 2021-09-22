@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_append := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:append := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
             file://logrotate-3.9.1/examples/logrotate-default \
@@ -9,7 +9,7 @@ SRC_URI += " \
 LOGROTATE_SYSTEMD_TIMER_BASIS = "hourly"
 LOGROTATE_SYSTEMD_TIMER_ACCURACY = "30m"
 
-do_install_append() {
+do_install:append() {
     install -p -m 644 ${WORKDIR}/logrotate-3.9.1/examples/logrotate-default ${D}${sysconfdir}/logrotate.conf
     install -p -m 644 ${WORKDIR}/logrotate-3.9.1/examples/wtmp_default ${D}${sysconfdir}/logrotate.d/wtmp
 

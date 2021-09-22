@@ -1,13 +1,13 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_0.sh \
              file://run-ipmbd_4.sh \
            "
-RDEPENDS_${PN} += " libbic jansson libipmb"
+RDEPENDS:${PN} += " libbic jansson libipmb"
 
-CFLAGS_prepend = " -DCONFIG_MINIPACK "
+CFLAGS:prepend = " -DCONFIG_MINIPACK "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -31,4 +31,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "

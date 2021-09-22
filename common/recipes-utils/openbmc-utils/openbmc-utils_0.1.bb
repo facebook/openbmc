@@ -90,7 +90,7 @@ inherit systemd
 inherit python3-dir
 
 DEPENDS = "update-rc.d-native python3-setuptools"
-RDEPENDS_${PN} += "\
+RDEPENDS:${PN} += "\
     bash \
     python3-core \
     ${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
@@ -220,10 +220,10 @@ do_install() {
 
 }
 
-FILES_${PN} += "/usr/local"
-FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/cpu_monitor.py"
+FILES:${PN} += "/usr/local"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/cpu_monitor.py"
 
-SYSTEMD_SERVICE_${PN} = " \
+SYSTEMD_SERVICE:${PN} = " \
     early.service \
     rm_poweroff_cmd.service \
     setup-reboot.service \

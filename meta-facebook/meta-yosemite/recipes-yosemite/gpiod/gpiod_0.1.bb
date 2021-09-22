@@ -35,9 +35,9 @@ binfiles = "gpiod \
 CFLAGS += " -lbic -lyosemite_gpio -lpal "
 
 DEPENDS += " libbic libyosemite-gpio libpal "
-DEPENDS_append = " update-rc.d-native "
+DEPENDS:append = " update-rc.d-native "
 
-RDEPENDS_${PN} += " libbic libyosemite-gpio libpal"
+RDEPENDS:${PN} += " libbic libyosemite-gpio libpal"
 
 
 pkgdir = "gpiod"
@@ -59,4 +59,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "

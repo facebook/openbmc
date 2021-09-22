@@ -15,15 +15,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/psu:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/psu:"
 
 SRC_URI += "file://psu-platform.h \
             file://psu-platform.c \
           "
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${includedir}/facebook
   install -m 0644 psu-platform.h ${D}${includedir}/facebook/psu-platform.h
 }
 
-FILES_${PN}-dev += "${includedir}/facebook/psu-platform.h"
+FILES:${PN}-dev += "${includedir}/facebook/psu-platform.h"

@@ -29,7 +29,7 @@ SRC_URI = "file://meson.build \
           "
 
 DEPENDS += "libipc"
-RDEPENDS_${PN} += "libipc"
+RDEPENDS:${PN} += "libipc"
 
 S = "${WORKDIR}"
 

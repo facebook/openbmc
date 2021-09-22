@@ -23,7 +23,7 @@ SRC_URI = "\
 S = "${WORKDIR}"
 
 DEPENDS += " cli11  nlohmann-json gtest libpal libobmc-mctp "
-RDEPENDS_${PN} += " libpal libobmc-mctp "
-RDEPENDS_${PN}-ptest += " libpal libobmc-mctp "
-FILES_${PN} = "${prefix}/local/bin/attest-util"
+RDEPENDS:${PN} += " libpal libobmc-mctp "
+RDEPENDS:${PN}-ptest += " libpal libobmc-mctp "
+FILES:${PN} = "${prefix}/local/bin/attest-util"
 

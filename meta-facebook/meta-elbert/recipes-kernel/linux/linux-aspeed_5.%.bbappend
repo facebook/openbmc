@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/config_5.x:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/config_5.x:"
 
 SRC_URI += "file://elbert.cfg \
            "

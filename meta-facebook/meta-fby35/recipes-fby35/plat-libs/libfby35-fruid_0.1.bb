@@ -32,7 +32,7 @@ HEADERS = "fby35_fruid.h"
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lfby35_common"
 DEPENDS += "libfby35-common"
-RDEPENDS_${PN} += "libfby35-common"
+RDEPENDS:${PN} += "libfby35-common"
 
 S = "${WORKDIR}/fby35_fruid"
 
@@ -49,5 +49,5 @@ do_install() {
   install -m 0644 fby35_fruid.h ${D}${includedir}/facebook/fby35_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libfby35_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby35_fruid.h"
+FILES:${PN} = "${libdir}/libfby35_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby35_fruid.h"

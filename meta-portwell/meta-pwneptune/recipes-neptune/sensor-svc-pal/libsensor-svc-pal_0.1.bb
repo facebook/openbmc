@@ -16,6 +16,6 @@ DEPENDS += "libkv plat-utils libipmi libipmb obmc-pal libme libvr"
 
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} += " libkv libme libipmb libvr"
+RDEPENDS:${PN} += " libkv libme libipmb libvr"
 
 inherit cmake

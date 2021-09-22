@@ -5,7 +5,7 @@ PR = "r1"
 
 inherit packagegroup
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
   fw-util \
   obmc-dump \
   gpiocli \

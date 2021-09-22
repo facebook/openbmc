@@ -17,13 +17,13 @@ dst="${PYTHON_SITEPACKAGES_DIR}/aiohttp.egg-info"
 dst1="${PYTHON_SITEPACKAGES_DIR}/aiohttp"
 
 	
-RDEPENDS_${PN}_append = "\
+RDEPENDS:${PN}:append = "\
   async-timeout \
   chardet \
   multidict \
   yarl \
   "
-DEPENDS_append_class-native = "\
+DEPENDS:append:class-native = "\
   async-timeout-native \
   chardet-native \
   multidict-native \
@@ -89,5 +89,5 @@ do_configure() {
 do_compile() {
 }
 
-FILES_${PN} = "${dst} ${dst1}"
+FILES:${PN} = "${dst} ${dst1}"
 BBCLASSEXTEND += "native nativesdk"

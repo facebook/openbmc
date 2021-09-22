@@ -39,5 +39,5 @@ do_install() {
     install -m 0644 fbttn_fruid.h ${D}${includedir}/facebook/fbttn_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libfbttn_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/fbttn_fruid.h"
+FILES:${PN} = "${libdir}/libfbttn_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/fbttn_fruid.h"

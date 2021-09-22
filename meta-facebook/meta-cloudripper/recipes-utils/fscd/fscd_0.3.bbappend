@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
 SRC_URI += "file://get_fan_speed.sh \
             file://set_fan_speed.sh \

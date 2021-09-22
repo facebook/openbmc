@@ -17,7 +17,7 @@ do_install() {
 }
 
 DEPENDS += " libbic libpal libobmc-i2c libfby35-common "
-RDEPENDS_${PN} += " libbic libpal libobmc-i2c libfby35-common "
+RDEPENDS:${PN} += " libbic libpal libobmc-i2c libfby35-common "
 CFLAGS += " -lbic -lpal -lobmc-i2c -lfby35_common "
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

@@ -36,6 +36,6 @@ do_install() {
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
 DEPENDS += "libbic libpal libfruid"
-RDEPENDS_${PN} += "libbic libpal libfruid"
+RDEPENDS:${PN} += "libbic libpal libfruid"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

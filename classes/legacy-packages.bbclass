@@ -12,7 +12,7 @@
 #
 # If 'pkgdir' is not set then only the /usr/local/bin symlinks will be made.
 
-do_install_append() {
+do_install:append() {
     if [ "x${pkgdir}" != "x" ]; then
         pkgpath=${D}/usr/local/fbpackages/${pkgdir}
     fi
@@ -30,4 +30,4 @@ do_install_append() {
     done
 }
 
-FILES_${PN}_append = " /usr/local/bin /usr/local/fbpackages"
+FILES:${PN}:append = " /usr/local/bin /usr/local/fbpackages"

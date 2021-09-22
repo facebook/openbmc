@@ -39,7 +39,7 @@ S = "${WORKDIR}"
 
 binfiles = "power_led.sh post_led.sh"
 
-DEPENDS_append = "update-rc.d-native"
+DEPENDS:append = "update-rc.d-native"
 
 do_install() {
   # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -77,5 +77,5 @@ do_install() {
   update-rc.d -r ${D} disable_wdt2.sh start 60 5 .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
-RDEPENDS_${PN} += " bash"
+FILES:${PN} += "/usr/local ${sysconfdir}"
+RDEPENDS:${PN} += " bash"

@@ -17,5 +17,5 @@ do_install() {
 }
 
 DEPENDS += " libbic libfby2-sensor libnvme-mi libpal"
-RDEPENDS_${PN} += " libbic libfby2-sensor libnvme-mi libpal"
-FILES_${PN} = "${bindir}"
+RDEPENDS:${PN} += " libbic libfby2-sensor libnvme-mi libpal"
+FILES:${PN} = "${bindir}"

@@ -17,6 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libbic libfbttn-gpio"
-RDEPENDS_${PN} += "libbic libfbttn-gpio"
+RDEPENDS:${PN} += "libbic libfbttn-gpio"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

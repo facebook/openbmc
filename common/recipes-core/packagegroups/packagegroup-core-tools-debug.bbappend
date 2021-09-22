@@ -3,4 +3,4 @@
 # Remove it explicitly. When we need to use it, we can always copy the
 # mtrace results out and run mtrace utility outside of BMC.
 MTRACE = ""
-MTRACE_libc-glibc = ""
+MTRACE:libc-glibc = ""

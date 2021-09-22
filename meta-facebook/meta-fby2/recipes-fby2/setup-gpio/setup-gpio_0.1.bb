@@ -16,9 +16,9 @@ S = "${WORKDIR}"
 
 DEPENDS += "libpal libgpio-ctrl libfby2-common libphymem"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += "libpal libgpio-ctrl libfby2-common libphymem"
+RDEPENDS:${PN} += "libpal libgpio-ctrl libfby2-common libphymem"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -m 755 ${S}/setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 50 S .

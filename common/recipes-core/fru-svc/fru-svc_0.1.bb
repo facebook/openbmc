@@ -30,7 +30,7 @@ S = "${WORKDIR}"
 
 LDFLAGS =+ "-lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils -lfruid"
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags libfruid update-rc.d-native"
-RDEPENDS_${PN} += "dbus"
+RDEPENDS:${PN} += "dbus"
 
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"
@@ -69,4 +69,4 @@ do_install() {
   done
 }
 
-FILES_${PN} = "${prefix}/local/bin ${sysconfdir}"
+FILES:${PN} = "${prefix}/local/bin ${sysconfdir}"

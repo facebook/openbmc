@@ -15,7 +15,7 @@ S = "${WORKDIR}"
 binfiles = "setup-gpio \
            "
 DEPENDS += " libgpio-ctrl update-rc.d-native "
-RDEPENDS_${PN} += " libgpio-ctrl "
+RDEPENDS:${PN} += " libgpio-ctrl "
 LDFLAGS += " -lgpio-ctrl "
 
 pkgdir = "setup-gpio"
@@ -36,4 +36,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/setup-gpio/ ${prefix}/local/bin ${sysconfdir}"
+FILES:${PN} = "${FBPACKAGEDIR}/setup-gpio/ ${prefix}/local/bin ${sysconfdir}"

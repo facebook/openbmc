@@ -22,7 +22,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://setup-conf.sh;beginline=3;endline=18;md5=700bc730f27f8d9b05ac017220c137e5"
 
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 SRC_URI = "file://setup-conf.sh \
           "
@@ -38,4 +38,4 @@ do_install() {
   update-rc.d -r ${D} setup-conf.sh start 03 S 5 .
 }
 
-FILES_${PN} = "${prefix}/local/bin ${sysconfdir} ${bindir}"
+FILES:${PN} = "${prefix}/local/bin ${sysconfdir} ${bindir}"

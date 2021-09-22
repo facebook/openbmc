@@ -68,8 +68,8 @@ do_install_ptest() {
 
 LDFLAGS =+ " -lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv -lobmc-i2c"
 DEPENDS += " nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
-RDEPENDS_${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
-RDEPENDS_${PN}-ptest += "${RDEPENDS_fw-util}"
+RDEPENDS:${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
+RDEPENDS:${PN}-ptest += "${RDEPENDS_fw-util}"
 
 CXXFLAGS += "\
   -Wno-psabi \
@@ -83,6 +83,6 @@ do_install() {
   install -m 0644 ${WORKDIR}/image_parts.json ${D}${sysconfdir}/image_parts.json
 }
 
-FILES_${PN} = "${prefix}/bin"
-FILES_${PN} += "${sysconfdir}/image_parts.json"
-FILES_${PN}-ptest = "${libdir}/fw-util/ptest"
+FILES:${PN} = "${prefix}/bin"
+FILES:${PN} += "${sysconfdir}/image_parts.json"
+FILES:${PN}-ptest = "${libdir}/fw-util/ptest"

@@ -37,7 +37,7 @@ CFLAGS += " -lbic -lminilaketb_gpio -lpal "
 
 DEPENDS += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libkv"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libkv"
+RDEPENDS:${PN} += " libgpio libminilaketb-common libbic libminilaketb-sensor libminilaketb-gpio libpal libkv"
 
 pkgdir = "gpiointrd"
 
@@ -62,4 +62,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiointrd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiointrd ${prefix}/local/bin ${sysconfdir} "

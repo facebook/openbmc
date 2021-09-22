@@ -27,8 +27,8 @@ SRC_URI = "file://ftditool.c \
            file://ftdi-eeprom.h \
           "
 
-RDEPENDS_${PN} += "libusb1"
-DEPENDS_append = "libusb1"
+RDEPENDS:${PN} += "libusb1"
+DEPENDS:append = "libusb1"
 LDFLAGS += "-L . -l usb-1.0 "
 
 S = "${WORKDIR}"
@@ -47,4 +47,4 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/ftditool ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ftditool ${prefix}/local/bin ${sysconfdir} "

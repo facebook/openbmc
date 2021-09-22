@@ -5,7 +5,7 @@ PR = "r1"
 
 inherit packagegroup
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
   aiohttp \
   async-timeout \
   chardet \

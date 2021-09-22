@@ -40,11 +40,11 @@ SRC_URI = "file://meson.build \
 S = "${WORKDIR}"
 
 DEPENDS += "libmisc-utils libobmc-i2c gtest gmock"
-RDEPENDS_${PN} += " libmisc-utils libobmc-i2c python3-core"
-RDEPENDS_${PN}-ptest += "libmisc-utils libobmc-i2c"
+RDEPENDS:${PN} += " libmisc-utils libobmc-i2c python3-core"
+RDEPENDS:${PN}-ptest += "libmisc-utils libobmc-i2c"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${S}/libgpio.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
-FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/libgpio.py"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/libgpio.py"

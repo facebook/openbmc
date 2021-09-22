@@ -1,5 +1,5 @@
 # Copyright 2017-present Facebook. All Rights Reserved.
-FILESEXTRAPATHS_append := "${THISDIR}/files:"
+FILESEXTRAPATHS:append := "${THISDIR}/files:"
 
 DEPENDS += "libbic \
             libkv \
@@ -7,7 +7,7 @@ DEPENDS += "libbic \
             libipmi \
            "
 
-RDEPENDS_${PN} += "libbic \
+RDEPENDS:${PN} += "libbic \
                    libkv  \
                    libfby35-common \
                    libipmi \

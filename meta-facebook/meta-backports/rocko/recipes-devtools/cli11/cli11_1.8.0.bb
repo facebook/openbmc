@@ -18,6 +18,6 @@ EXTRA_OECMAKE += "-DCLANG_TIDY=OFF -DBUILD_TESTING=OFF"
 DEPENDS += "boost gtest gmock nlohmann-json"
 
 # cli11 is a header only C++ library, so the main package will be empty.
-RDEPENDS_${PN}-dev = ""
+RDEPENDS:${PN}-dev = ""
 
-FILES_${PN}-dev += "${libdir}/cmake/CLI11"
+FILES:${PN}-dev += "${libdir}/cmake/CLI11"

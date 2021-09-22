@@ -47,7 +47,7 @@ inherit distutils3
 
 DEPENDS = "python3 python3-setuptools update-rc.d-native"
 
-RDEPENDS_${PN} = "python3-core"
+RDEPENDS:${PN} = "python3-core"
 
 do_board_defined_soc_table() {
     if [ "${OPENBMC_GPIO_SOC_TABLE}" != "soc_gpio_table.py" ]; then
@@ -56,7 +56,7 @@ do_board_defined_soc_table() {
 }
 addtask board_defined_soc_table after do_unpack before do_build
 
-do_install_append() {
+do_install:append() {
     localbindir="${D}/usr/local/bin"
     install -d ${localbindir}
     for f in ${OPENBMC_GPIO_UTILS}; do

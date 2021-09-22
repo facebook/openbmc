@@ -19,6 +19,6 @@
 # Include blkdiscard in util-linux for mmc secure erase.
 #
 PACKAGES += "util-linux-blkdiscard"
-FILES_util-linux-blkdiscard = "${sbindir}/blkdiscard"
-RDEPENDS_util-linux-runuser += "libpam"
-RRECOMMENDS_${PN} += "util-linux-blkdiscard"
+FILES:util-linux-blkdiscard = "${sbindir}/blkdiscard"
+RDEPENDS:util-linux-runuser += "libpam"
+RRECOMMENDS:${PN} += "util-linux-blkdiscard"

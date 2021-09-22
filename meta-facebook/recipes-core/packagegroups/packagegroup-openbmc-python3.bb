@@ -13,7 +13,7 @@ def pg_python3_typing(d):
         return "python3-typing"
     return ""
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
   python3-asyncio \
   python3-compression \
   python3-core \

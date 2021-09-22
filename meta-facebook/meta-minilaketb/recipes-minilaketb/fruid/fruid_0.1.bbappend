@@ -18,8 +18,8 @@
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_MINILAKETB"
-LDFLAGS_append = " -lminilaketb_fruid"
+CFLAGS:prepend = " -DCONFIG_MINILAKETB"
+LDFLAGS:append = " -lminilaketb_fruid"
 
-DEPENDS_prepend = "libminilaketb-fruid "
-RDEPENDS_${PN} += "libminilaketb-fruid"
+DEPENDS:prepend = "libminilaketb-fruid "
+RDEPENDS:${PN} += "libminilaketb-fruid"

@@ -18,7 +18,7 @@ binfiles = "apml-util \
 pkgdir = "apml-util"
 
 DEPENDS = " libbic libfby2-common"
-RDEPENDS_${PN} += "libbic libfby2-common"
+RDEPENDS:${PN} += "libbic libfby2-common"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -33,4 +33,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/apml-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/apml-util ${prefix}/local/bin"

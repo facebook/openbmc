@@ -18,9 +18,9 @@ SRC_URI = "file://meson.build \
 S = "${WORKDIR}"
 
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio "
-RDEPENDS_${PN} += " libpal libgpio-ctrl libfbgc-common libfbgc-gpio "
+RDEPENDS:${PN} += " libpal libgpio-ctrl libfbgc-common libfbgc-gpio "
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv

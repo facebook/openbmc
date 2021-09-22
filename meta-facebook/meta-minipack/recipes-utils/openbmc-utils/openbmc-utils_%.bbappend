@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += " boot-info"
@@ -82,7 +82,7 @@ OPENBMC_UTILS_FILES += " \
     wedge_us_mac.sh \
     "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 do_install_board() {
     # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -120,8 +120,8 @@ do_install_board() {
 
 }
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

@@ -32,6 +32,6 @@ do_install() {
     install -m 644 ${S}/sdr.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
-FILES_${PN} = "${libdir}/libsdr.so \
+FILES:${PN} = "${libdir}/libsdr.so \
                 ${PYTHON_SITEPACKAGES_DIR}/sdr.py"
-FILES_${PN}-dev = "${includedir}/openbmc/sdr.h"
+FILES:${PN}-dev = "${includedir}/openbmc/sdr.h"

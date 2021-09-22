@@ -37,7 +37,7 @@ PV = "v2019.01"
 DEFAULT_PREFERENCE = "-1"
 S = "${WORKDIR}/git"
 
-FILES_${PN} = "${sysconfdir}"
+FILES:${PN} = "${sysconfdir}"
 
 inherit uboot-config deploy
 require verified-boot.inc

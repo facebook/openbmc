@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "\
         file://nic_ext.cpp \
@@ -49,5 +49,5 @@ SRC_URI += "\
 
 CXXFLAGS += " -DBIC_SUPPORT -DCONFIG_FBY3_CWC "
 DEPENDS += " libbic libfpga libfby3-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
-RDEPENDS_${PN} += " libbic libfpga libfby3-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
+RDEPENDS:${PN} += " libbic libfpga libfby3-common libncsi libnl-wrapper libkv libobmc-i2c libmcu"
 LDFLAGS += " -lbic -lfpga -lfby3_common -lnl-wrapper -lkv -lobmc-i2c -lmcu"

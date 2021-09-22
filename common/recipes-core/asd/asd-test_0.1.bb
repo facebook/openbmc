@@ -17,5 +17,5 @@ do_install() {
     install -m 0755 asd-test ${D}${bindir}/asd-test
 }
 
-FILES_${PN} = "${bindir}"
-RDEPENDS_${PN} = "libasd-jtagintf"
+FILES:${PN} = "${bindir}"
+RDEPENDS:${PN} = "libasd-jtagintf"

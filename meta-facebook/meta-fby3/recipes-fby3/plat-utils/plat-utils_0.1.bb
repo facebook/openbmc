@@ -39,8 +39,8 @@ S = "${WORKDIR}"
 # the tools for BMC will be installed in the image
 binfiles = " sync_date.sh sol-util "
 
-DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} += "bash python3 "
+DEPENDS:append = "update-rc.d-native"
+RDEPENDS:${PN} += "bash python3 "
 
 do_install() {
   # install the package dir
@@ -84,4 +84,4 @@ do_install() {
 
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"

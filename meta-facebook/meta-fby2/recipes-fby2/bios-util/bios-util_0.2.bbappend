@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://bios_plat_info.py \
             file://BIOS_UTIL_FBY2.json \
@@ -30,4 +30,4 @@ BIOS_UTIL_CONFIG += "BIOS_UTIL_FBY2.json"
 
 BIOS_UTIL_INIT_FILE += "setup_bios_util.sh"
 
-RDEPENDS_${PN} += "libpal"
+RDEPENDS:${PN} += "libpal"

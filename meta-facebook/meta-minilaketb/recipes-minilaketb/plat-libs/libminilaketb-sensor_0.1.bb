@@ -22,7 +22,7 @@ do_install() {
     install -m 0644 minilaketb_sensor.h ${D}${includedir}/facebook/minilaketb_sensor.h
 }
 
-FILES_${PN} = "${libdir}/libminilaketb_sensor.so"
-FILES_${PN}-dev = "${includedir}/facebook/minilaketb_sensor.h"
+FILES:${PN} = "${libdir}/libminilaketb_sensor.so"
+FILES:${PN}-dev = "${includedir}/facebook/minilaketb_sensor.h"
 
-RDEPENDS_${PN} += " libnvme-mi minilaketb-sensors libobmc-i2c"
+RDEPENDS:${PN} += " libnvme-mi minilaketb-sensors libobmc-i2c"

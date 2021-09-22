@@ -21,5 +21,5 @@ do_install() {
     install -m 0644 fbttn_common.h ${D}${includedir}/facebook/fbttn_common.h
 }
 
-FILES_${PN} = "${libdir}/libfbttn_common.so"
-FILES_${PN}-dev = "${includedir}/facebook/fbttn_common.h"
+FILES:${PN} = "${libdir}/libfbttn_common.so"
+FILES:${PN}-dev = "${includedir}/facebook/fbttn_common.h"

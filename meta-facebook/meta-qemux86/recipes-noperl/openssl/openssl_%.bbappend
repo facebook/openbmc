@@ -1,1 +1,1 @@
-RDEPENDS_${PN}-ptest_remove = "perl"
+RDEPENDS:${PN}-ptest:remove = "perl"

@@ -27,6 +27,6 @@ EMMC_REQUIRED_PACKAGES = "\
                        '${EMMC_BTRFS_REQUIRED_PACKAGES}', d)} \
 "
 
-RDEPENDS_${PN} += "\
+RDEPENDS:${PN} += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'emmc', '${EMMC_REQUIRED_PACKAGES}', '', d)} \
   "

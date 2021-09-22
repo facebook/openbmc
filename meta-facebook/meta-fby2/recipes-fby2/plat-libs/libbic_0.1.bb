@@ -12,8 +12,8 @@ SRC_URI = "file://bic \
 LDFLAGS += " -lmisc-utils -lobmc-i2c -lgpio-ctrl -lcrypto"
 
 DEPENDS += "libmisc-utils libfby2-common libipmi libipmb libkv plat-utils libobmc-i2c libgpio-ctrl openssl "
-RDEPENDS_${PN} += " libmisc-utils libobmc-i2c libgpio-ctrl openssl "
-DEPENDS_append = " libmisc-utils libgpio-ctrl"
+RDEPENDS:${PN} += " libmisc-utils libobmc-i2c libgpio-ctrl openssl "
+DEPENDS:append = " libmisc-utils libgpio-ctrl"
 
 S = "${WORKDIR}/bic"
 
@@ -26,5 +26,5 @@ do_install() {
     install -m 0644 bic.h ${D}${includedir}/facebook/bic.h
 }
 
-FILES_${PN} = "${libdir}/libbic.so*"
-FILES_${PN}-dev = "${includedir}/facebook/bic.h"
+FILES:${PN} = "${libdir}/libbic.so*"
+FILES:${PN}-dev = "${includedir}/facebook/bic.h"

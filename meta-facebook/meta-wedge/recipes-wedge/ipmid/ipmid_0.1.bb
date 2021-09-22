@@ -22,10 +22,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-LDFLAGS_append = " -lwedge_eeprom -llog"
+LDFLAGS:append = " -lwedge_eeprom -llog"
 
-DEPENDS_append = "libwedge-eeprom liblog update-rc.d-native"
-RDEPENDS_${PN} += "libwedge-eeprom liblog"
+DEPENDS:append = "libwedge-eeprom liblog update-rc.d-native"
+RDEPENDS:${PN} += "libwedge-eeprom liblog"
 
 inherit systemd
 
@@ -80,6 +80,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
 
-SYSTEMD_SERVICE_${PN} = "ipmid.service"
+SYSTEMD_SERVICE:${PN} = "ipmid.service"

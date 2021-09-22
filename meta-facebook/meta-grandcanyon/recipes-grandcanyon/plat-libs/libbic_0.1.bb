@@ -12,7 +12,7 @@ SRC_URI = "file://bic \
           "
 
 DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libipmb libfbgc-common libusb1 openssl"
-RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv libipmb libfbgc-common libusb1"
+RDEPENDS:${PN} += "libobmc-i2c libgpio-ctrl libkv libipmb libfbgc-common libusb1"
 
 S = "${WORKDIR}/bic"
 

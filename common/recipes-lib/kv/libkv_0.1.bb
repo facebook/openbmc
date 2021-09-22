@@ -53,12 +53,12 @@ SRC_URI = "\
 S = "${WORKDIR}"
 
 DEPENDS += "python3-setuptools"
-RDEPENDS_${PN} += "python3-core bash"
+RDEPENDS:${PN} += "python3-core bash"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${S}/kv.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
-FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/kv.py"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/kv.py"
 
 BBCLASSEXTEND = "native nativesdk"

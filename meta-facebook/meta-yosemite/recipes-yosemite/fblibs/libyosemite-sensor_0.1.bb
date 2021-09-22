@@ -11,7 +11,7 @@ SRC_URI = "file://yosemite_sensor \
           "
 LDFLAGS += "-lobmc-i2c"
 DEPENDS =+ " libipmi libipmb libbic libyosemite-common libobmc-i2c obmc-pal "
-RDEPENDS_${PN} =+ " libobmc-i2c "
+RDEPENDS:${PN} =+ " libobmc-i2c "
 
 S = "${WORKDIR}/yosemite_sensor"
 
@@ -23,5 +23,5 @@ do_install() {
     install -m 0644 yosemite_sensor.h ${D}${includedir}/facebook/yosemite_sensor.h
 }
 
-FILES_${PN} = "${libdir}/libyosemite_sensor.so"
-FILES_${PN}-dev = "${includedir}/facebook/yosemite_sensor.h"
+FILES:${PN} = "${libdir}/libyosemite_sensor.so"
+FILES:${PN}-dev = "${includedir}/facebook/yosemite_sensor.h"

@@ -32,7 +32,7 @@ SRC_URI =+ "file://Makefile \
 S = "${WORKDIR}"
 
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils glog gflags"
-RDEPENDS_${PN} += "dbus"
+RDEPENDS:${PN} += "dbus"
 
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"
@@ -57,4 +57,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/platform-svc ${prefix}/local/bin ${sysconfdir}"
+FILES:${PN} = "${FBPACKAGEDIR}/platform-svc ${prefix}/local/bin ${sysconfdir}"

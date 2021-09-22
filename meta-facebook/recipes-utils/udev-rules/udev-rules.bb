@@ -33,4 +33,4 @@ do_install() {
     install -m 0644 persistent_devices.rules ${dst}/rules.d/80-persistent-devices.rules
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

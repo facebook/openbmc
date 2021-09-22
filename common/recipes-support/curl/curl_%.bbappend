@@ -1,2 +1,2 @@
-PACKAGECONFIG_remove = "gnutls"
-PACKAGECONFIG_append = " ssl"
+PACKAGECONFIG:remove = "gnutls"
+PACKAGECONFIG:append = " ssl"

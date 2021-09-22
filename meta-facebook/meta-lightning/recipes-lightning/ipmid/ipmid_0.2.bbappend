@@ -16,9 +16,9 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += " libipmi libfruid update-rc.d-native"
-RDEPENDS_${PN} += "libipmi libfruid"
+RDEPENDS:${PN} += "libipmi libfruid"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
           "
 CFLAGS += " -DCONFIG_YOSEMITE "

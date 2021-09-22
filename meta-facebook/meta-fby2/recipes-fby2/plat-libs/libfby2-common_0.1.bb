@@ -21,11 +21,11 @@ do_install() {
     install -m 0644 fby2_common.h ${D}${includedir}/facebook/fby2_common.h
 }
 
-FILES_${PN} = "${libdir}/libfby2_common.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby2_common.h"
+FILES:${PN} = "${libdir}/libfby2_common.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby2_common.h"
 
-DEPENDS_append = "libkv"
+DEPENDS:append = "libkv"
 
 DEPENDS += " libgpio-ctrl "
-RDEPENDS_${PN} += " libgpio-ctrl "
+RDEPENDS:${PN} += " libgpio-ctrl "
 LDFLAGS += " -lgpio-ctrl "

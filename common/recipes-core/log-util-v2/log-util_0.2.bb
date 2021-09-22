@@ -40,7 +40,7 @@ SRC_URI = "file://Makefile \
           "
 
 PROVIDES += "log-util-v2"
-RPROVIDES_${PN} += "log-util-v2"
+RPROVIDES:${PN} += "log-util-v2"
 
 inherit ptest
 do_compile_ptest() {
@@ -61,8 +61,8 @@ do_install() {
 
 S = "${WORKDIR}"
 DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
-RDEPENDS_${PN} += "libpal"
-RDEPENDS_${PN}-ptest += "libpal"
+RDEPENDS:${PN} += "libpal"
+RDEPENDS:${PN}-ptest += "libpal"
 
-FILES_${PN} = "${prefix}/local/bin/log-util"
-FILES_${PN}-ptest = "${libdir}/log-util/ptest"
+FILES:${PN} = "${prefix}/local/bin/log-util"
+FILES:${PN}-ptest = "${libdir}/log-util/ptest"

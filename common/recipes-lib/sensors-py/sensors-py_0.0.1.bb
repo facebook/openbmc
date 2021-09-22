@@ -16,7 +16,7 @@ LIC_FILES_CHKSUM = "\
     "
 
 DEPENDS = "python3 libobmc-sensors"
-FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
 
 SRC_URI = "https://github.com/paroj/sensors.py/archive/refs/heads/master.zip \
            file://001-load-so-fix.patch \
@@ -31,4 +31,4 @@ do_install() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${S}/sensors.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
-FILES_${PN} = "${PYTHON_SITEPACKAGES_DIR}/sensors.py"
+FILES:${PN} = "${PYTHON_SITEPACKAGES_DIR}/sensors.py"

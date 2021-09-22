@@ -18,7 +18,7 @@ binfiles = "guid-util \
 pkgdir = "guid-util"
 
 DEPENDS = "libpal"
-RDEPENDS_${PN} = "libpal"
+RDEPENDS:${PN} = "libpal"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -33,4 +33,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/guid-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/guid-util ${prefix}/local/bin"

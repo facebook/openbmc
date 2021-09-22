@@ -34,8 +34,8 @@ binfiles = "gpiocli \
 
 CFLAGS += "-Wall -Werror "
 LDFLAGS += " -lgpio-ctrl -lmisc-utils"
-RDEPENDS_${PN} += " libgpio-ctrl libmisc-utils"
-DEPENDS_append = " libgpio-ctrl libmisc-utils"
+RDEPENDS:${PN} += " libgpio-ctrl libmisc-utils"
+DEPENDS:append = " libgpio-ctrl libmisc-utils"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -49,4 +49,4 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/gpiocli ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/gpiocli ${prefix}/local/bin"

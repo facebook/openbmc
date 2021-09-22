@@ -9,8 +9,8 @@ LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d
 
 inherit meson
 
-DEPENDS_append = " libbic libpal update-rc.d-native "
-RDEPENDS_${PN} += " libbic libpal "
+DEPENDS:append = " libbic libpal update-rc.d-native "
+RDEPENDS:${PN} += " libbic libpal "
 
 SRC_URI = "file://meson.build \
            file://setup-bic-cached.sh \
@@ -19,7 +19,7 @@ SRC_URI = "file://meson.build \
 
 S = "${WORKDIR}"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 ${S}/setup-bic-cached.sh ${D}${sysconfdir}/init.d/setup-bic-cached.sh

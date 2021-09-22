@@ -3,7 +3,7 @@
 # Set up internal source mirrors and block the internet.
 INHERIT += "fb-source-mirror fb-only-network"
 # If you need to download new packages from the internet you can
-# temporarily add 'INHERIT_remove = "fb-only-network"' to your
+# temporarily add 'INHERIT:remove = "fb-only-network"' to your
 # `conf/local.conf`.
 
 # Save local tarballs for all packages we download.

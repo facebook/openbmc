@@ -44,4 +44,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/obmc-dump ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/obmc-dump ${prefix}/local/bin"

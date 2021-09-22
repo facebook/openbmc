@@ -10,7 +10,7 @@ SRC_URI = "file://fbal_fruid \
           "
 
 DEPENDS += "libipmi libipmb"
-RDEPENDS_${PN} += "libipmb"
+RDEPENDS:${PN} += "libipmb"
 LDFLAGS += "-lipmb"
 
 S = "${WORKDIR}/fbal_fruid"
@@ -23,5 +23,5 @@ do_install() {
   install -m 0644 fbal_fruid.h ${D}${includedir}/facebook/fbal_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libfbal-fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/fbal_fruid.h"
+FILES:${PN} = "${libdir}/libfbal-fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/fbal_fruid.h"

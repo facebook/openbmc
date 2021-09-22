@@ -1,6 +1,6 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 #
-IMAGE_FSTYPES_remove = "cpio.lzma.u-boot"
+IMAGE_FSTYPES:remove = "cpio.lzma.u-boot"
 IMAGE_FSTYPES += "container"
 
 inherit image_types

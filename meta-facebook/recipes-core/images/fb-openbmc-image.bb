@@ -8,7 +8,7 @@ COMPRESSIONTYPES += "zst"
 
 ZSTD_COMPRESSION_LEVEL="-19"
 
-CONVERSION_CMD_zst = "zstd -f -k -T0 -c ${ZSTD_COMPRESSION_LEVEL} ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type} > ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}.zst"
+CONVERSION_CMD:zst = "zstd -f -k -T0 -c ${ZSTD_COMPRESSION_LEVEL} ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type} > ${IMAGE_NAME}${IMAGE_NAME_SUFFIX}.${type}.zst"
 CONVERSION_DEPENDS_zst = "zstd-native"
 ### end ZSTD support ###
 
@@ -38,7 +38,7 @@ openbmc_rootfs_fixup() {
 
 }
 
-IMAGE_FEATURES_append = " \
+IMAGE_FEATURES:append = " \
     ssh-server-openssh \
     tools-debug \
     "
@@ -85,8 +85,8 @@ SYSTEMD_DEFAULT_TARGET = "graphical.target"
 # systemd uses systemd-networkd, so make minor tweaks to use it instead of
 # 'init-ifupdown'.
 IMAGE_INSTALL += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'systemd-networkd', '', d)}"
-IMAGE_INSTALL_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
-SYSVINIT_SCRIPTS_remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
+IMAGE_INSTALL:remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
+SYSVINIT_SCRIPTS:remove += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'init-ifupdown', '', d)}"
 
 #
 # "openssl-bin" (which provides "/usr/bin/openssl") is needed by backport

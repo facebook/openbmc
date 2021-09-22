@@ -18,7 +18,7 @@ binfiles = "snapshot-util \
 pkgdir = "snapshot-util"
 
 DEPENDS += "libbic libpal"
-RDEPENDS_${PN} += "libbic libpal"
+RDEPENDS:${PN} += "libbic libpal"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -33,4 +33,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/snapshot-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/snapshot-util ${prefix}/local/bin"

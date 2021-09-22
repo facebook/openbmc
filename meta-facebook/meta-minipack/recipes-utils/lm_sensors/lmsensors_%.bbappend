@@ -1,5 +1,5 @@
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://minipack.conf \
             file://adm1278-PIM16O.conf \
@@ -9,7 +9,7 @@ SRC_URI += "file://minipack.conf \
             file://adm1278-SCM.conf \
            "
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${sysconfdir}/sensors.d
     install -m 644 ../minipack.conf ${D}${sysconfdir}/sensors.d/minipack.conf
     install -d ${D}${sysconfdir}/sensors.d/custom

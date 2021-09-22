@@ -13,7 +13,7 @@ SRC_URI = "file://fby35_common \
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lgpio-ctrl -lkv"
 DEPENDS += "libobmc-i2c libgpio-ctrl libkv"
-RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv"
+RDEPENDS:${PN} += "libobmc-i2c libgpio-ctrl libkv"
 
 S = "${WORKDIR}/fby35_common"
 
@@ -26,5 +26,5 @@ do_install() {
   install -m 0644 fby35_common.h ${D}${includedir}/facebook/fby35_common.h
 }
 
-FILES_${PN} = "${libdir}/libfby35_common.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby35_common.h"
+FILES:${PN} = "${libdir}/libfby35_common.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby35_common.h"

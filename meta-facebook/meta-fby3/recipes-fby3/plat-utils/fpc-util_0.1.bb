@@ -17,7 +17,7 @@ do_install() {
 }
 
 DEPENDS += " libbic libpal libobmc-i2c libfby3-common libkv"
-RDEPENDS_${PN} += " libbic libpal libobmc-i2c libfby3-common libkv"
+RDEPENDS:${PN} += " libbic libpal libobmc-i2c libfby3-common libkv"
 CFLAGS += " -lbic -lpal -lobmc-i2c -lfby3_common -lkv"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

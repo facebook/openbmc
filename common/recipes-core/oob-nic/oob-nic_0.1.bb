@@ -46,7 +46,7 @@ LDFLAGS += "-llog -lobmc-i2c"
 DEPENDS += "openbmc-utils liblog libobmc-i2c"
 DEPENDS += "update-rc.d-native"
 
-RDEPENDS_${PN} += "liblog libobmc-i2c"
+RDEPENDS:${PN} += "liblog libobmc-i2c"
 
 do_install() {
   install -d ${D}${sbindir}
@@ -58,4 +58,4 @@ do_install() {
   update-rc.d -r ${D} oob-nic.sh start 80 S .
 }
 
-FILES_${PN} = " ${sbindir} ${sysconfdir} "
+FILES:${PN} = " ${sbindir} ${sysconfdir} "

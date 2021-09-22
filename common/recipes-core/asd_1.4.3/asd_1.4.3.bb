@@ -49,7 +49,7 @@ DEPENDS = "openssl  \
            libpal \
            "
 
-RDEPENDS_${PN} = "openssl  \
+RDEPENDS:${PN} = "openssl  \
                   libpal \
                  "
 
@@ -67,5 +67,5 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/asd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/asd ${prefix}/local/bin ${sysconfdir} "
 

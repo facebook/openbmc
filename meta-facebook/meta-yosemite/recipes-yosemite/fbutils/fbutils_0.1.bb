@@ -37,7 +37,7 @@ S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh power_util.py"
 
-DEPENDS_append = "update-rc.d-native"
+DEPENDS:append = "update-rc.d-native"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -61,5 +61,5 @@ do_install() {
   update-rc.d -r ${D} power-on.sh start 70 5 .
 }
 
-RDEPENDS_${PN} += "bash"
-FILES_${PN} += "/usr/local ${sysconfdir}"
+RDEPENDS:${PN} += "bash"
+FILES:${PN} += "/usr/local ${sysconfdir}"

@@ -24,7 +24,7 @@ do_install() {
     install -m 0644 bic.h ${D}${includedir}/facebook/bic.h
 }
 
-FILES_${PN} = "${libdir}/libbic.so*"
-FILES_${PN}-dev = "${includedir}/facebook/bic.h"
+FILES:${PN} = "${libdir}/libbic.so*"
+FILES:${PN}-dev = "${includedir}/facebook/bic.h"
 
-RDEPENDS_${PN} += " libipmb libkv libobmc-i2c"
+RDEPENDS:${PN} += " libipmb libkv libobmc-i2c"

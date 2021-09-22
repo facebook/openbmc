@@ -39,5 +39,5 @@ do_install() {
     install -m 0644 yosemite_fruid.h ${D}${includedir}/facebook/yosemite_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libyosemite_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/yosemite_fruid.h"
+FILES:${PN} = "${libdir}/libyosemite_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/yosemite_fruid.h"

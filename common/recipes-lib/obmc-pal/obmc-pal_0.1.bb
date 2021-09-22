@@ -35,5 +35,5 @@ do_install() {
   cp obmc_pal_sensors.h ${D}${includedir}/openbmc/obmc_pal_sensors.h
 }
 
-FILES_${PN}-dev += "${includedir}openbmc/obmc-pal.h ${includedir}openbmc/obmc_pal_sensors.h"
+FILES:${PN}-dev += "${includedir}openbmc/obmc-pal.h ${includedir}openbmc/obmc_pal_sensors.h"
 DEPENDS += " libkv libipmi libipmb"

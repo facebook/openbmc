@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-do_install_append() {
+do_install:append() {
     # We don't want to use the bind version of nslookup because
     # it has some issues using the search section of resolv.conf
     # when resolving non-fqdns.
@@ -38,8 +38,8 @@ do_install_append() {
     fi
 }
 
-FILES_${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+FILES:${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
 
 #SYSTEMD_SERVICES_{$PN} += "named.service"
 
-ALTERNATIVE_${PN}-utils_remove = "nslookup"
+ALTERNATIVE:${PN}-utils:remove = "nslookup"

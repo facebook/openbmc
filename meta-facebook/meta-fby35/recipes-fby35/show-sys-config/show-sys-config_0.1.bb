@@ -20,7 +20,7 @@ pkgdir = "show_sys_config"
 CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lipmi -lipmb -lbic -lpal -lfby35_common -ljansson"
 DEPENDS = "libbic libpal libipmi libipmb libfby35-common jansson"
-RDEPENDS_${PN} += "libbic libpal libipmi libipmb libfby35-common jansson"
+RDEPENDS:${PN} += "libbic libpal libipmi libipmb libfby35-common jansson"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -35,7 +35,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/show_sys_config ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/show_sys_config ${prefix}/local/bin"
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

@@ -26,7 +26,7 @@ SRC_URI = "file://lib \
 
 LDFLAGS += "-llog -lobmc-i2c -lwedge_eeprom"
 DEPENDS += "liblog libobmc-i2c libwedge-eeprom"
-RDEPENDS_${PN} = "liblog libobmc-i2c libwedge-eeprom"
+RDEPENDS:${PN} = "liblog libobmc-i2c libwedge-eeprom"
 
 S = "${WORKDIR}/lib"
 
@@ -38,5 +38,5 @@ do_install() {
     install -m 0644 elbert_eeprom.h ${D}${includedir}/facebook/elbert_eeprom.h
 }
 
-FILES_${PN} = "${libdir}/libelbert_eeprom.so"
-FILES_${PN}-dev = "${includedir}/facebook/elbert_eeprom.h"
+FILES:${PN} = "${libdir}/libelbert_eeprom.so"
+FILES:${PN}-dev = "${includedir}/facebook/elbert_eeprom.h"

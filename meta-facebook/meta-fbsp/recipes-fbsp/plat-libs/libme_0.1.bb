@@ -21,5 +21,5 @@ do_install() {
     install -m 0644 me.h ${D}${includedir}/facebook/me.h
 }
 
-FILES_${PN} = "${libdir}/libme.so"
-FILES_${PN}-dev = "${includedir}/facebook/me.h"
+FILES:${PN} = "${libdir}/libme.so"
+FILES:${PN}-dev = "${includedir}/facebook/me.h"

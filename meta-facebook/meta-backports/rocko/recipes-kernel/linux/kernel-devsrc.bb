@@ -88,5 +88,5 @@ do_install() {
 do_install[lockfiles] = "${TMPDIR}/kernel-scripts.lock"
 
 PACKAGES = "kernel-devsrc"
-FILES_${PN} = "${KERNEL_SRC_PATH}"
-RDEPENDS_${PN} = "bc"
+FILES:${PN} = "${KERNEL_SRC_PATH}"
+RDEPENDS:${PN} = "bc"

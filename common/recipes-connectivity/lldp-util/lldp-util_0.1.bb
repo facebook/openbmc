@@ -18,4 +18,4 @@ do_install() {
   install -m 755 lldp-util ${D}${bindir}
 }
 
-FILES_${PN} = " ${bindir} "
+FILES:${PN} = " ${bindir} "

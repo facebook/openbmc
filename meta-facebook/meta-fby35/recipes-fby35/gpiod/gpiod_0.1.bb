@@ -37,7 +37,7 @@ CFLAGS += " -lbic -lfby35_gpio -lpal -lobmc-i2c -lfby35_common -lkv -lfruid"
 
 DEPENDS += " libbic libfby35-gpio libpal libobmc-i2c libfby35-common libkv libfruid"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libbic libfby35-gpio libpal libobmc-i2c libfby35-common libkv libfruid"
+RDEPENDS:${PN} += " libbic libfby35-gpio libpal libobmc-i2c libfby35-common libkv libfruid"
 
 pkgdir = "gpiod"
 
@@ -62,7 +62,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
 
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"

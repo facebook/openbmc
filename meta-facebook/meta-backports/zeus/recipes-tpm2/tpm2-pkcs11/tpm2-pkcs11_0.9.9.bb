@@ -16,6 +16,6 @@ S = "${WORKDIR}/git"
 
 inherit autotools-brokensep pkgconfig
 
-do_configure_prepend () {
+do_configure:prepend () {
     ${S}/bootstrap
 }

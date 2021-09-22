@@ -25,7 +25,7 @@ inherit meson
 
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
 SRC_URI = "file://dump.sh \
            file://crashdump_coreid \

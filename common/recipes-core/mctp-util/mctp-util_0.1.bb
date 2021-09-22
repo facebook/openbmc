@@ -30,9 +30,9 @@ do_install() {
 }
 
 DEPENDS += "libpal libobmc-mctp"
-RDEPENDS_${PN} += "libpal libobmc-mctp"
+RDEPENDS:${PN} += "libpal libobmc-mctp"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/mctp-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/mctp-util ${prefix}/local/bin"

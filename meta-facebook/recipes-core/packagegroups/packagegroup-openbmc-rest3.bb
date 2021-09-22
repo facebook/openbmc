@@ -5,7 +5,7 @@ PR = "r1"
 
 inherit packagegroup
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
   packagegroup-openbmc-python3 \
   rest-api \
   "

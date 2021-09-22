@@ -39,6 +39,6 @@ do_install() {
     install -m 0644 lightning_fruid.h ${D}${includedir}/facebook/lightning_fruid.h
 }
 
-FILES_${PN} = "${libdir}/liblightning_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/lightning_fruid.h"
-RDEPENDS_${PN} += " liblightning-common "
+FILES:${PN} = "${libdir}/liblightning_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/lightning_fruid.h"
+RDEPENDS:${PN} += " liblightning-common "

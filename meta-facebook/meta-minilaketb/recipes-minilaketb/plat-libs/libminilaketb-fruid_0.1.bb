@@ -27,7 +27,7 @@ SRC_URI = "file://minilaketb_fruid \
           "
 
 DEPENDS += " libminilaketb-common libminilaketb-sensor "
-RDEPENDS_${PN} += "libpal"
+RDEPENDS:${PN} += "libpal"
 
 S = "${WORKDIR}/minilaketb_fruid"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 minilaketb_fruid.h ${D}${includedir}/facebook/minilaketb_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libminilaketb_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/minilaketb_fruid.h"
+FILES:${PN} = "${libdir}/libminilaketb_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/minilaketb_fruid.h"

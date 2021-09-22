@@ -15,4 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CFLAGS_prepend = "-DPSU_NUM=2"
+CFLAGS:prepend = "-DPSU_NUM=2"

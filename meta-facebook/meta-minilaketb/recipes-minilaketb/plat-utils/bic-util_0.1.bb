@@ -19,7 +19,7 @@ do_install() {
     install -m 0755 bic-util ${D}${bindir}/bic-util
 }
 DEPENDS += "libbic libminilaketb-gpio libminilaketb-sensor"
-RDEPENDS_${PN} += "libbic libminilaketb-gpio libminilaketb-sensor "
+RDEPENDS:${PN} += "libbic libminilaketb-gpio libminilaketb-sensor "
 
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

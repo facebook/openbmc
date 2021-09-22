@@ -21,7 +21,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://sensor-setup.sh;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 SRC_URI = "file://sensor-setup.sh \
           "
@@ -35,4 +35,4 @@ do_install() {
   update-rc.d -r ${D} sensor-setup.sh start 90 S .
 }
 
-FILES_${PN} = " ${sysconfdir} "
+FILES:${PN} = " ${sysconfdir} "

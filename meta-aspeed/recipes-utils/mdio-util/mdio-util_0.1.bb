@@ -45,4 +45,4 @@ do_install() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/mdio-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/mdio-util ${prefix}/local/bin"

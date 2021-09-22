@@ -17,7 +17,7 @@
 
 inherit systemd
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
           file://openbmc-gpio-1/board_gpio_table_v1.py \
@@ -31,7 +31,7 @@ OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
 
 DEPENDS += "update-rc.d-native"
 
-do_install_append() {
+do_install:append() {
      install -d ${D}${sysconfdir}/init.d
      install -d ${D}${sysconfdir}/rcS.d
 
@@ -45,6 +45,6 @@ do_install_append() {
      fi
 }
 
-FILES_${PN} += "/usr/local/bin ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '', '${sysconfdir}', d)}"
+FILES:${PN} += "/usr/local/bin ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '', '${sysconfdir}', d)}"
 
-SYSTEMD_SERVICE_${PN} = "openbmc_gpio_setup.service"
+SYSTEMD_SERVICE:${PN} = "openbmc_gpio_setup.service"

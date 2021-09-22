@@ -12,7 +12,7 @@ SRC_URI = "file://obmc-mctp.c \
           "
 
 DEPENDS += "libncsi libpldm libmctp-intel"
-RDEPENDS_${PN} += "libncsi libpldm libmctp-intel"
+RDEPENDS:${PN} += "libncsi libpldm libmctp-intel"
 LDFLAGS += "-lpldm -lmctp_intel"
 
 S = "${WORKDIR}"
@@ -25,5 +25,5 @@ do_install() {
     install -m 0644 obmc-mctp.h ${D}${includedir}/openbmc/obmc-mctp.h
 }
 
-FILES_${PN} = "${libdir}/libobmc-mctp.so"
-FILES_${PN}-dev = "${includedir}/openbmc/obmc-mctp.h"
+FILES:${PN} = "${libdir}/libobmc-mctp.so"
+FILES:${PN}-dev = "${includedir}/openbmc/obmc-mctp.h"

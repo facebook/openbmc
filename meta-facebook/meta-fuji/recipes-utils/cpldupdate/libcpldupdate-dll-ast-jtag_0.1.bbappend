@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-cmake_do_configure_append() {
+cmake_do_configure:append() {
     # Fuji use AST2620 Jtag Controller master 2
     JTAG_SYSFS_DIR="/sys/devices/platform/ahb/ahb:apb/1e6e4100.jtag/"
     echo >> ${WORKDIR}/CMakeLists.txt

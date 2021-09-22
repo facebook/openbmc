@@ -1,15 +1,15 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_1.sh \
              file://run-ipmbd_4.sh \
              file://run-ipmbd_9.sh \
            "
-DEPENDS_append = " plat-utils update-rc.d-native"
+DEPENDS:append = " plat-utils update-rc.d-native"
 
-# CFLAGS_prepend = " -DCONFIG_FBTP"
-CFLAGS_prepend = " -DCONFIG_PWNEPTUNE"
+# CFLAGS:prepend = " -DCONFIG_FBTP"
+CFLAGS:prepend = " -DCONFIG_PWNEPTUNE"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -33,7 +33,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
 
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INHIBIT_PACKAGE_STRIP = "1"

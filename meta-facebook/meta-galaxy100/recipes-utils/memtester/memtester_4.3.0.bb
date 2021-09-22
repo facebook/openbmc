@@ -32,4 +32,4 @@ do_install() {
     install -m 0755 memtester ${D}${bindir}/memtester
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

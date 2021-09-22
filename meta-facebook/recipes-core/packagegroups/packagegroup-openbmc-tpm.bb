@@ -5,7 +5,7 @@ PR = "r1"
 
 inherit packagegroup
 
-RDEPENDS_${PN} += "\
+RDEPENDS:${PN} += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', 'tpm-tools', '', d)} \
   ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', 'trousers', '', d)} \
   \

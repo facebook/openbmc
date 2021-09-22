@@ -30,7 +30,7 @@ SRC_URI = "file://Makefile \
 S = "${WORKDIR}"
 
 DEPENDS += " liblog libbic libpal update-rc.d-native "
-RDEPENDS_${PN} += " liblog libbic libpal "
+RDEPENDS:${PN} += " liblog libbic libpal "
 LDFLAGS = "-llog -lbic -lpal"
 
 binfiles = "bic-cached"
@@ -52,4 +52,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "

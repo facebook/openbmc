@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
     file://plat/meson.build \
@@ -19,7 +19,7 @@ DEPENDS += " \
     libobmc-i2c \
     switchtec-user \
     "
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     libobmc-sensors \
     libgpio-ctrl \
     libobmc-i2c \

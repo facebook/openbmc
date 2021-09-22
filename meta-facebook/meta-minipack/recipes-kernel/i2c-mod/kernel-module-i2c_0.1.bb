@@ -31,6 +31,6 @@ S = "${WORKDIR}"
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 
-RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
+RDEPENDS:${PN} += "kernel-module-i2c-dev-sysfs"
 
 KERNEL_MODULE_AUTOLOAD += "ir3595 isl68127 max34461 psu_driver"

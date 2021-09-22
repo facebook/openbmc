@@ -25,7 +25,7 @@ SRC_URI = "http://www.rsyslog.com/download/files/download/rsyslog/${BPN}-${PV}.t
            file://use-pkgconfig-to-check-libgcrypt.patch \
 "
 
-SRC_URI_append_libc-musl = " \
+SRC_URI:append:libc-musl = " \
     file://0001-Undefine-GLOB_BRACE.patch \
     file://0001-Include-sys-time-h.patch \
 "
@@ -115,7 +115,7 @@ do_install_ptest() {
         sed -i -e 's:../plugins/.*/.libs/:../runtime/.libs/:g'
 }
 
-do_install_append() {
+do_install:append() {
     install -d "${D}${sysconfdir}/init.d"
     install -d "${D}${sysconfdir}/logrotate.d"
     install -m 644 ${WORKDIR}/rsyslog.conf ${D}${sysconfdir}/rsyslog.conf
@@ -129,28 +129,28 @@ do_install_append() {
     fi
 }
 
-FILES_${PN} += "${bindir}"
+FILES:${PN} += "${bindir}"
 
 INITSCRIPT_NAME = "syslog"
 INITSCRIPT_PARAMS = "defaults"
 
-CONFFILES_${PN} = "${sysconfdir}/rsyslog.conf"
+CONFFILES:${PN} = "${sysconfdir}/rsyslog.conf"
 
-RCONFLICTS_${PN} = "busybox-syslog sysklogd syslog-ng"
+RCONFLICTS:${PN} = "busybox-syslog sysklogd syslog-ng"
 
-RPROVIDES_${PN} += "${PN}-systemd"
-RREPLACES_${PN} += "${PN}-systemd"
-RCONFLICTS_${PN} += "${PN}-systemd"
-SYSTEMD_SERVICE_${PN} = "${BPN}.service"
+RPROVIDES:${PN} += "${PN}-systemd"
+RREPLACES:${PN} += "${PN}-systemd"
+RCONFLICTS:${PN} += "${PN}-systemd"
+SYSTEMD_SERVICE:${PN} = "${BPN}.service"
 
-RDEPENDS_${PN} += "logrotate"
+RDEPENDS:${PN} += "logrotate"
 
 # for rsyslog-ptest
 VALGRIND = "valgrind"
-VALGRIND_mips = ""
-VALGRIND_mips64 = ""
-VALGRIND_mips64n32 = ""
-VALGRIND_arm = ""
-VALGRIND_aarch64 = ""
-RDEPENDS_${PN}-ptest += "make diffutils gzip bash gawk coreutils procps"
-RRECOMMENDS_${PN}-ptest += "${TCLIBC}-dbg ${VALGRIND}"
+VALGRIND:mips = ""
+VALGRIND:mips64 = ""
+VALGRIND:mips64n32 = ""
+VALGRIND:arm = ""
+VALGRIND:aarch64 = ""
+RDEPENDS:${PN}-ptest += "make diffutils gzip bash gawk coreutils procps"
+RRECOMMENDS:${PN}-ptest += "${TCLIBC}-dbg ${VALGRIND}"

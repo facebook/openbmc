@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
             file://FSC_BC_Type5_MP_v3_config.json \
@@ -43,7 +43,7 @@ FSC_ZONE_CONFIG += "FSC_BC_Type5_MP_v2_zone0.fsc \
 
 FSC_INIT_FILE += "setup-fan.sh"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}
   install -d ${D}${sysconfdir}/init.d
   

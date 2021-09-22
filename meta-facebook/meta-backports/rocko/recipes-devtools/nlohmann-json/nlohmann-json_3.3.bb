@@ -18,14 +18,14 @@ EXTRA_OECMAKE += "-DJSON_BuildTests=OFF"
 
 # nlohmann-json is a header only C++ library, so the main package will be empty.
 
-RDEPENDS_${PN}-dev = ""
+RDEPENDS:${PN}-dev = ""
 
 BBCLASSEXTEND = "native nativesdk"
 
 # other packages commonly reference the file directly as "json.hpp"
 # create symlink to allow this usage
-do_install_append() {
+do_install:append() {
     ln -s nlohmann/json.hpp ${D}${includedir}/json.hpp
 }
-FILES_${PN}-dev += "${includedir}/nlohmann/json.h ${includedir}/json.hpp"
-FILES_${PN}-dev += "${libdir}/cmake/nlohmann_json"
+FILES:${PN}-dev += "${includedir}/nlohmann/json.h ${includedir}/json.hpp"
+FILES:${PN}-dev += "${libdir}/cmake/nlohmann_json"

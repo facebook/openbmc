@@ -32,6 +32,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmi-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/ipmi-util ${prefix}/local/bin"
 
-RDEPENDS_${PN} = "libipmi libpal"
+RDEPENDS:${PN} = "libipmi libpal"

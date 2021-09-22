@@ -33,5 +33,5 @@ do_install() {
 	install -m 0644 fbsettings.txt ${D}${sysconfdir}/fbsettings.txt
 }
 
-FILES_${PN} = "${bindir}"
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} = "${bindir}"
+FILES:${PN} += "${sysconfdir}"

@@ -18,7 +18,7 @@
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_LIGHTNING"
-LDFLAGS_append = " -llightning_fruid"
+CFLAGS:prepend = " -DCONFIG_LIGHTNING"
+LDFLAGS:append = " -llightning_fruid"
 
-DEPENDS_prepend = "liblightning-fruid "
+DEPENDS:prepend = "liblightning-fruid "

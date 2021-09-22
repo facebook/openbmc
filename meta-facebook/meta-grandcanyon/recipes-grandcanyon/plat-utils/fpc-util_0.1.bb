@@ -18,6 +18,6 @@ do_install() {
 }
 
 DEPENDS += " libpal libipmi libipmb "
-RDEPENDS_${PN} += " libpal libipmi libipmb "
+RDEPENDS:${PN} += " libpal libipmi libipmb "
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

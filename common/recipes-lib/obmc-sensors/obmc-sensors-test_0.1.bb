@@ -34,11 +34,11 @@ do_compile() {
 }
 
 DEPENDS += "libobmc-sensors"
-RDEPENDS_${PN} += "libobmc-sensors"
+RDEPENDS:${PN} += "libobmc-sensors"
 
 do_install() {
     install -d ${D}${bindir}
     install -m 0755 obmc-sensors-test ${D}${bindir}/obmc-sensors-test
 }
 
-FILES_${PN} = "${bindir}/obmc-sensors-test"
+FILES:${PN} = "${bindir}/obmc-sensors-test"

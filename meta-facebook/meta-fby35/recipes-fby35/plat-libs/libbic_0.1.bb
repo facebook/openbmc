@@ -17,7 +17,7 @@ CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lipmb -lcrypto -lgpio-ctrl -lusb-1.0"
 
 DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libkv libusb1 libfby35-common openssl"
-RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libfby35-common"
+RDEPENDS:${PN} += "libobmc-i2c libgpio-ctrl libfby35-common"
 
 S = "${WORKDIR}/bic"
 
@@ -36,5 +36,5 @@ do_install() {
     done
 }
 
-FILES_${PN} = "${libdir}/libbic.so*"
-FILES_${PN}-dev = "${includedir}/facebook"
+FILES:${PN} = "${libdir}/libbic.so*"
+FILES:${PN}-dev = "${includedir}/facebook"

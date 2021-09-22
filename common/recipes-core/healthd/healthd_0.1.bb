@@ -62,10 +62,10 @@ do_install() {
 
 }
 
-RDEPENDS_${PN} =+ " libpal jansson libwatchdog libvbs libobmc-i2c libmisc-utils "
+RDEPENDS:${PN} =+ " libpal jansson libwatchdog libvbs libobmc-i2c libmisc-utils "
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/healthd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/healthd ${prefix}/local/bin ${sysconfdir} "
 
-SYSTEMD_SERVICE_${PN} = "healthd.service"
+SYSTEMD_SERVICE:${PN} = "healthd.service"

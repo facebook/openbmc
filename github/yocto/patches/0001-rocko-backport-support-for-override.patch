@@ -1,0 +1,286 @@
+From 36fb9f8147db73091419841ef0816f3a571ee9f6 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Mon, 17 Feb 2020 10:25:52 -0500
+Subject: [PATCH] rocko: backport support for ':' override
+
+    data: Don't allow renameVar calls with equivalent keys
+    data_smart/parse: Allow ':' characters in variable/function names
+    data_smart: Allow colon in variable expansion regex
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ bitbake/lib/bb/data_smart.py                 | 45 +++++++++++++++++---
+ bitbake/lib/bb/parse/ast.py                  |  2 +
+ bitbake/lib/bb/parse/parse_py/BBHandler.py   | 19 +++++----
+ bitbake/lib/bb/parse/parse_py/ConfHandler.py |  2 +-
+ bitbake/lib/bb/tests/codeparser.py           |  9 +++-
+ 5 files changed, 59 insertions(+), 18 deletions(-)
+
+diff --git a/bitbake/lib/bb/data_smart.py b/bitbake/lib/bb/data_smart.py
+index 7b09af5cf1..54dec973fb 100644
+--- a/bitbake/lib/bb/data_smart.py
++++ b/bitbake/lib/bb/data_smart.py
+@@ -39,8 +39,8 @@ from bb.COW  import COWDictBase
+ logger = logging.getLogger("BitBake.Data")
+ 
+ __setvar_keyword__ = ["_append", "_prepend", "_remove"]
+-__setvar_regexp__ = re.compile('(?P<base>.*?)(?P<keyword>_append|_prepend|_remove)(_(?P<add>[^A-Z]*))?$')
+-__expand_var_regexp__ = re.compile(r"\${[^{}@\n\t :]+}")
++__setvar_regexp__ = re.compile(r'(?P<base>.*?)(?P<keyword>_append|_prepend|_remove)(_(?P<add>[^A-Z]*))?$')
++__expand_var_regexp__ = re.compile(r"\${[a-zA-Z0-9\-_+./~:]+?}")
+ __expand_python_regexp__ = re.compile(r"\${@.+?}")
+ 
+ def infer_caller_details(loginfo, parent = False, varval = True):
+@@ -52,7 +52,7 @@ def infer_caller_details(loginfo, parent = False, varval = True):
+     if not loginfo:
+         loginfo['ignore'] = True
+         return
+-    # Infer caller's likely values for variable (var) and value (value), 
++    # Infer caller's likely values for variable (var) and value (value),
+     # to reduce clutter in the rest of the code.
+     above = None
+     def set_above():
+@@ -498,6 +498,8 @@ class DataSmart(MutableMapping):
+ 
+     def setVar(self, var, value, **loginfo):
+         #print("var=" + str(var) + "  val=" + str(value))
++        var = var.replace(":", "_")
++        self.expand_cache = {}
+         parsing=False
+         if 'parsing' in loginfo:
+             parsing=True
+@@ -611,6 +613,12 @@ class DataSmart(MutableMapping):
+         """
+         Rename the variable key to newkey
+         """
++        key = key.replace(":", "_")
++        newkey = newkey.replace(":", "_")
++        if key == newkey:
++            bb.warn("Calling renameVar with equivalent keys (%s) is invalid" % key)
++            return
++
+         if '_remote_data' in self.dict:
+             connector = self.dict["_remote_data"]["_content"]
+             res = connector.renameVar(key, newkey)
+@@ -660,6 +668,8 @@ class DataSmart(MutableMapping):
+         self.setVar(var + "_prepend", value, ignore=True, parsing=True)
+ 
+     def delVar(self, var, **loginfo):
++        var = var.replace(":", "_")
++        self.expand_cache = {}
+         if '_remote_data' in self.dict:
+             connector = self.dict["_remote_data"]["_content"]
+             res = connector.delVar(var)
+@@ -692,6 +702,8 @@ class DataSmart(MutableMapping):
+                          override = None
+ 
+     def setVarFlag(self, var, flag, value, **loginfo):
++        var = var.replace(":", "_")
++        self.expand_cache = {}
+         if '_remote_data' in self.dict:
+             connector = self.dict["_remote_data"]["_content"]
+             res = connector.setVarFlag(var, flag, value)
+@@ -720,6 +732,18 @@ class DataSmart(MutableMapping):
+             self.dict["__exportlist"]["_content"].add(var)
+ 
+     def getVarFlag(self, var, flag, expand=True, noweakdefault=False, parsing=False):
++        var = var.replace(":", "_")
++        if flag == "_content":
++            cachename = var
++        else:
++            if not flag:
++                bb.warn("Calling getVarFlag with flag unset is invalid")
++                return None
++            cachename = var + "[" + flag + "]"
++
++        if expand and cachename in self.expand_cache:
++            return self.expand_cache[cachename].value
++
+         local_var, overridedata = self._findVar(var)
+         value = None
+         if flag == "_content" and overridedata is not None and not parsing:
+@@ -766,7 +790,7 @@ class DataSmart(MutableMapping):
+                 if o:
+                     for o2 in o.split("_"):
+                         if not o2 in self.overrides:
+-                            match = False                            
++                            match = False
+                 if match:
+                     value = value + r
+ 
+@@ -780,7 +804,7 @@ class DataSmart(MutableMapping):
+                 if o:
+                     for o2 in o.split("_"):
+                         if not o2 in self.overrides:
+-                            match = False                            
++                            match = False
+                 if match:
+                     value = r + value
+ 
+@@ -801,7 +825,7 @@ class DataSmart(MutableMapping):
+                 if o:
+                     for o2 in o.split("_"):
+                         if not o2 in self.overrides:
+-                            match = False                            
++                            match = False
+                 if match:
+                     removes.extend(self.expand(r).split())
+ 
+@@ -816,6 +840,8 @@ class DataSmart(MutableMapping):
+         return value
+ 
+     def delVarFlag(self, var, flag, **loginfo):
++        var = var.replace(":", "_")
++        self.expand_cache = {}
+         if '_remote_data' in self.dict:
+             connector = self.dict["_remote_data"]["_content"]
+             res = connector.delVarFlag(var, flag)
+@@ -838,6 +864,7 @@ class DataSmart(MutableMapping):
+             del self.dict[var][flag]
+ 
+     def appendVarFlag(self, var, flag, value, **loginfo):
++        var = var.replace(":", "_")
+         loginfo['op'] = 'append'
+         loginfo['flag'] = flag
+         self.varhistory.record(**loginfo)
+@@ -845,6 +872,7 @@ class DataSmart(MutableMapping):
+         self.setVarFlag(var, flag, newvalue, ignore=True)
+ 
+     def prependVarFlag(self, var, flag, value, **loginfo):
++        var = var.replace(":", "_")
+         loginfo['op'] = 'prepend'
+         loginfo['flag'] = flag
+         self.varhistory.record(**loginfo)
+@@ -852,6 +880,7 @@ class DataSmart(MutableMapping):
+         self.setVarFlag(var, flag, newvalue, ignore=True)
+ 
+     def setVarFlags(self, var, flags, **loginfo):
++        var = var.replace(":", "_")
+         self.expand_cache = {}
+         infer_caller_details(loginfo)
+         if not var in self.dict:
+@@ -866,6 +895,7 @@ class DataSmart(MutableMapping):
+             self.dict[var][i] = flags[i]
+ 
+     def getVarFlags(self, var, expand = False, internalflags=False):
++        var = var.replace(":", "_")
+         local_var, _ = self._findVar(var)
+         flags = {}
+ 
+@@ -882,6 +912,7 @@ class DataSmart(MutableMapping):
+ 
+ 
+     def delVarFlags(self, var, **loginfo):
++        var = var.replace(":", "_")
+         self.expand_cache = {}
+         if not var in self.dict:
+             self._makeShadowCopy(var)
+@@ -945,7 +976,7 @@ class DataSmart(MutableMapping):
+     def __iter__(self):
+         deleted = set()
+         overrides = set()
+-        def keylist(d):        
++        def keylist(d):
+             klist = set()
+             for key in d:
+                 if key in ["_data", "_remote_data"]:
+diff --git a/bitbake/lib/bb/parse/ast.py b/bitbake/lib/bb/parse/ast.py
+index dba4540f5e..cf45577adf 100644
+--- a/bitbake/lib/bb/parse/ast.py
++++ b/bitbake/lib/bb/parse/ast.py
+@@ -114,6 +114,7 @@ class DataNode(AstNode):
+     def eval(self, data):
+         groupd = self.groupd
+         key = groupd["var"]
++        key = key.replace(":", "_")
+         loginfo = {
+             'variable': key,
+             'file': self.filename,
+@@ -224,6 +225,7 @@ class ExportFuncsNode(AstNode):
+     def eval(self, data):
+ 
+         for func in self.n:
++            func = func.replace(":", "_")
+             calledfunc = self.classname + "_" + func
+ 
+             if data.getVar(func, False) and not data.getVarFlag(func, 'export_func', False):
+diff --git a/bitbake/lib/bb/parse/parse_py/BBHandler.py b/bitbake/lib/bb/parse/parse_py/BBHandler.py
+index f89ad24273..0a2f63f70b 100644
+--- a/bitbake/lib/bb/parse/parse_py/BBHandler.py
++++ b/bitbake/lib/bb/parse/parse_py/BBHandler.py
+@@ -38,14 +38,15 @@ from .ConfHandler import include, init
+ # For compatibility
+ bb.deprecate_import(__name__, "bb.parse", ["vars_from_file"])
+ 
+-__func_start_regexp__    = re.compile( r"(((?P<py>python)|(?P<fr>fakeroot))\s*)*(?P<func>[\w\.\-\+\{\}\$]+)?\s*\(\s*\)\s*{$" )
+-__inherit_regexp__       = re.compile( r"inherit\s+(.+)" )
+-__export_func_regexp__   = re.compile( r"EXPORT_FUNCTIONS\s+(.+)" )
+-__addtask_regexp__       = re.compile("addtask\s+(?P<func>\w+)\s*((before\s*(?P<before>((.*(?=after))|(.*))))|(after\s*(?P<after>((.*(?=before))|(.*)))))*")
+-__deltask_regexp__       = re.compile("deltask\s+(?P<func>\w+)")
+-__addhandler_regexp__    = re.compile( r"addhandler\s+(.+)" )
+-__def_regexp__           = re.compile( r"def\s+(\w+).*:" )
+-__python_func_regexp__   = re.compile( r"(\s+.*)|(^$)" )
++__func_start_regexp__    = re.compile(r"(((?P<py>python(?=(\s|\()))|(?P<fr>fakeroot(?=\s)))\s*)*(?P<func>[\w\.\-\+\{\}\$:]+)?\s*\(\s*\)\s*{$" )
++__inherit_regexp__       = re.compile(r"inherit\s+(.+)" )
++__export_func_regexp__   = re.compile(r"EXPORT_FUNCTIONS\s+(.+)" )
++__addtask_regexp__       = re.compile(r"addtask\s+(?P<func>\w+)\s*((before\s*(?P<before>((.*(?=after))|(.*))))|(after\s*(?P<after>((.*(?=before))|(.*)))))*")
++__deltask_regexp__       = re.compile(r"deltask\s+(?P<func>\w+)(?P<ignores>.*)")
++__addhandler_regexp__    = re.compile(r"addhandler\s+(.+)" )
++__def_regexp__           = re.compile(r"def\s+(\w+).*:" )
++__python_func_regexp__   = re.compile(r"(\s+.*)|(^$)|(^#)" )
++__python_tab_regexp__    = re.compile(r" *\t")
+ 
+ __infunc__ = []
+ __inpython__ = False
+@@ -203,7 +204,7 @@ def feeder(lineno, s, fn, root, statements, eof=False):
+ 
+     # Skip empty lines
+     if s == '':
+-        return   
++        return
+ 
+     # Skip comments
+     if s[0] == '#':
+diff --git a/bitbake/lib/bb/parse/parse_py/ConfHandler.py b/bitbake/lib/bb/parse/parse_py/ConfHandler.py
+index 97aa130431..7248af9790 100644
+--- a/bitbake/lib/bb/parse/parse_py/ConfHandler.py
++++ b/bitbake/lib/bb/parse/parse_py/ConfHandler.py
+@@ -33,7 +33,7 @@ from bb.parse import ParseError, resolve_file, ast, logger, handle
+ __config_regexp__  = re.compile( r"""
+     ^
+     (?P<exp>export\s+)?
+-    (?P<var>[a-zA-Z0-9\-_+.${}/~]+?)
++    (?P<var>[a-zA-Z0-9\-_+.${}/~:]+?)
+     (\[(?P<flag>[a-zA-Z0-9\-_+.]+)\])?
+ 
+     \s* (
+diff --git a/bitbake/lib/bb/tests/codeparser.py b/bitbake/lib/bb/tests/codeparser.py
+index e30e78c158..baa57d110e 100644
+--- a/bitbake/lib/bb/tests/codeparser.py
++++ b/bitbake/lib/bb/tests/codeparser.py
+@@ -27,7 +27,7 @@ import bb
+ logger = logging.getLogger('BitBake.TestCodeParser')
+ 
+ # bb.data references bb.parse but can't directly import due to circular dependencies.
+-# Hack around it for now :( 
++# Hack around it for now :(
+ import bb.parse
+ import bb.data
+ 
+@@ -123,6 +123,13 @@ ${D}${libdir}/pkgconfig/*.pc
+         self.parseExpression("sed -i -e 's:IP{:I${:g' $pc")
+         self.assertExecs(set(["sed"]))
+ 
++    def test_parameter_expansion_modifiers(self):
++        # -,+ and : are also valid modifiers for parameter expansion, but are
++        # valid characters in bitbake variable names, so are not included here
++        for i in ('=', '?', '#', '%', '##', '%%'):
++            name = "foo%sbar" % i
++            self.parseExpression("${%s}" % name)
++            self.assertNotIn(name, self.references)
+ 
+     def test_until(self):
+         self.parseExpression("until false; do echo true; done")
+-- 
+2.32.0
+

@@ -1,2 +1,3 @@
-# Ignore all entries in this directory
+# Ignore all entries in this directory except patches.
 *
+!patches/*

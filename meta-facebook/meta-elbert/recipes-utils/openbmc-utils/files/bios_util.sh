@@ -82,7 +82,7 @@ read_flash() {
 
 if [ "$1" = "erase" ]; then
     echo "Erasing flash content ..."
-    flashrom -f linux_mtd:dev="$SCM_MTD" -E || exit 1
+    flashrom -f -p linux_mtd:dev="$SCM_MTD" -E || exit 1
 elif [ "$1" = "read" ]; then
     retry_command 5 read_flash "$2" || exit 1
 elif [ "$1" = "verify" ]; then

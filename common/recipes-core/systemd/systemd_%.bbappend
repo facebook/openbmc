@@ -1,9 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-FILES:${PN}-catalog-extralocales = \
-            "${exec_prefix}/lib/systemd/catalog/*.*.catalog"
-PACKAGES =+ "${PN}-catalog-extralocales"
-
 PACKAGECONFIG = " \
         coredump \
         hostnamed \

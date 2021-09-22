@@ -112,6 +112,8 @@ void elbert_update_fan_led(struct system_status* status) {
   int fan;
   int read_val = 0, rc = 0;
 
+  /* FSCD sets the LEDs on each fan, so don't do that here. Only set the FAN
+     status LED. */
   for (fan = 1; fan <= ELBERT_MAX_FAN; fan++) {
     this_fan_ok = true;
     snprintf(
@@ -149,22 +151,6 @@ void elbert_update_fan_led(struct system_status* status) {
 
     if (!this_fan_ok) {
       all_fan_ok = false;
-    }
-
-    if (this_fan_ok != status->fan_ok[fan - 1]) {
-      // If current fan is not good, do the best effort to set fan led to amber
-      snprintf(
-          buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_GREEN);
-      elbert_write_sysfs(buf, 0);
-      snprintf(
-          buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_RED);
-      elbert_write_sysfs(buf, 0);
-      snprintf(
-          buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_BLUE);
-      elbert_write_sysfs(buf, this_fan_ok ? 1 : 0);
-      snprintf(
-          buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_AMBER);
-      elbert_write_sysfs(buf, this_fan_ok ? 0 : 1);
     }
     status->fan_ok[fan - 1] = this_fan_ok;
   }
@@ -393,24 +379,10 @@ void elbert_update_sys_led(struct system_status* status) {
 }
 
 void elbert_init_all_led() {
-  int fan = 0;
-  char buf[ELBERT_BUFFER_SZ];
   elbert_set_sysled("psu", 1, 0, 0);
   elbert_set_sysled("fan", 1, 0, 0);
   elbert_set_sysled("sc", 1, 0, 0);
   elbert_set_sysled("system", 1, 0, 0);
-  for (fan = 1; fan <= ELBERT_MAX_FAN; fan++) {
-    snprintf(
-        buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_GREEN);
-    elbert_write_sysfs(buf, 0);
-    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_RED);
-    elbert_write_sysfs(buf, 0);
-    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_BLUE);
-    elbert_write_sysfs(buf, 1);
-    snprintf(
-        buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_AMBER);
-    elbert_write_sysfs(buf, 0);
-  }
 }
 
 void init_system_status(struct system_status* status) {

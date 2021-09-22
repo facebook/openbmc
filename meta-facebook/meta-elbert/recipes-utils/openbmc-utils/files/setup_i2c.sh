@@ -168,6 +168,8 @@ do
     if [ "$((psu_prsnt))" -eq 1 ]; then
         # PSU 1-4, SMBUS 22-25
         bus_id=$((23 + id))
+        echo "Enable WRITE_PROTECT on PSU$id"
+        retry_command 3 enable_psu_wp "$bus_id" 0x58
         i2c_device_add "$bus_id" 0x58 psu_driver
     else
         echo "PSU${id} not present... skipping."

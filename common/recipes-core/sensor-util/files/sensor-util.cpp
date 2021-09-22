@@ -736,7 +736,18 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     // Check if platform supports the FRU
     if (pal_get_fru_list(fru_list) == 0) {
       if ( strstr(fru_list, fruname) == NULL ) {
+#ifdef CONFIG_FBY3_CWC
+        if (pal_is_cwc() == PAL_EOK) {
+          uint8_t cwc_fru = 0;
+          if (pal_get_cwc_id(fruname, &cwc_fru) != PAL_EOK) {
+            return 0;
+          }
+        } else {
+#endif
         return 0;
+#ifdef CONFIG_FBY3_CWC
+        }
+#endif
       }
     }
 

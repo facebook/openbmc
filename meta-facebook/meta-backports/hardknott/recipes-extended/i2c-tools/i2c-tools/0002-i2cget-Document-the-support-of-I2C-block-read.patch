@@ -1,0 +1,74 @@
+From 8ec865da8977a0edc438732ece380c64954ceed9 Mon Sep 17 00:00:00 2001
+From: Jean Delvare <jdelvare@suse.de>
+Date: Tue, 13 Jul 2021 10:16:28 +0200
+Subject: [PATCH 2/3] i2cget: Document the support of I2C block read
+
+Mention I2C block read support in the i2cget(8) manual page, together
+with an example.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Reviewed-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Tested-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+---
+ tools/i2cget.8 | 24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/tools/i2cget.8 b/tools/i2cget.8
+index da17ed4..e0b8644 100644
+--- a/tools/i2cget.8
++++ b/tools/i2cget.8
+@@ -1,4 +1,4 @@
+-.TH I2CGET 8 "October 2017"
++.TH I2CGET 8 "July 2021"
+ .SH "NAME"
+ i2cget \- read from I2C/SMBus chip registers
+ 
+@@ -9,7 +9,7 @@ i2cget \- read from I2C/SMBus chip registers
+ .RB [ -a ]
+ .I i2cbus
+ .I chip-address
+-.RI [ "data-address " [ mode ]]
++.RI [ "data-address " [ "mode " [ length ]]]
+ .br
+ .B i2cget
+ .B -V
+@@ -49,12 +49,18 @@ an integer between 0x00 and 0xFF. If omitted, the currently active register
+ will be read (if that makes sense for the considered chip).
+ .PP
+ The \fImode\fR parameter, if specified, is one of the letters \fBb\fP,
+-\fBw\fP or \fBc\fP, corresponding to a read byte data, a read word data or a
+-write byte/read byte transaction, respectively. A \fBp\fP can also be appended
+-to the \fImode\fR parameter to enable PEC. If the \fImode\fR parameter is omitted,
++\fBw\fP, \fBc\fP, or \fBi\fP, corresponding to a read byte data, a read
++word data, a write byte/read byte, or an I2C block read transaction,
++respectively. A \fBp\fP can also be appended to the \fImode\fR parameter to
++enable PEC, except for I2C block transactions. If the \fImode\fR
++parameter is omitted,
+ i2cget defaults to a read byte data transaction, unless \fIdata-address\fR is
+ also omitted, in which case the default (and only valid) transaction is a
+ single read byte.
++.PP
++The \fIlength\fR parameter, if applicable and specified, sets the length
++of the block transaction. Valid values are between 1 and 32. Default value
++is 32.
+ 
+ .SH WARNING
+ i2cget can be extremely dangerous if used improperly. I2C and SMBus are designed
+@@ -112,6 +118,14 @@ concerns raised above still stand, however in this case there is no SMBus
+ equivalent, so this is the only way to read data from a large EEPROM if your
+ master isn't fully I2C capable. With a fully I2C capable master, you would
+ use \fIi2ctransfer\fR to achieve the same in a safe and faster way.
++.PP
++Read the first 8 bytes of an EEPROM device at 7-bit address 0x50
++on bus 4 (i2c-4):
++.nf
++.RS
++# i2cget -y 4 0x50 0x00 i 8
++.RE
++.fi
+ 
+ .SH BUGS
+ To report bugs or send fixes, please write to the Linux I2C mailing list
+-- 
+2.32.0
+

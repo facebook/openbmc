@@ -1,0 +1,108 @@
+From b86acfc8c6584648a288ca1d9b6d58b4da4905b3 Mon Sep 17 00:00:00 2001
+From: Jean Delvare <jdelvare@suse.de>
+Date: Tue, 13 Jul 2021 10:16:32 +0200
+Subject: [PATCH 3/3] i2cget: Add support for SMBus block read
+
+Now that i2cget supports I2C block read, adding support for SMBus
+block read is trivial. This restores the symmetry between i2cset and
+i2cget, and paves the road for the removal of SMBus block read
+support from i2cdump.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Reviewed-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Tested-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+---
+ tools/i2cget.8 |  6 +++---
+ tools/i2cget.c | 18 ++++++++++++++++--
+ 2 files changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/tools/i2cget.8 b/tools/i2cget.8
+index e0b8644..83c6f7d 100644
+--- a/tools/i2cget.8
++++ b/tools/i2cget.8
+@@ -50,9 +50,9 @@ will be read (if that makes sense for the considered chip).
+ .PP
+ The \fImode\fR parameter, if specified, is one of the letters \fBb\fP,
+ \fBw\fP, \fBc\fP, or \fBi\fP, corresponding to a read byte data, a read
+-word data, a write byte/read byte, or an I2C block read transaction,
+-respectively. A \fBp\fP can also be appended to the \fImode\fR parameter to
+-enable PEC, except for I2C block transactions. If the \fImode\fR
++word data, a write byte/read byte, an SMBus block read, or an I2C block read
++transaction, respectively. A \fBp\fP can also be appended to the \fImode\fR
++parameter to enable PEC, except for I2C block transactions. If the \fImode\fR
+ parameter is omitted,
+ i2cget defaults to a read byte data transaction, unless \fIdata-address\fR is
+ also omitted, in which case the default (and only valid) transaction is a
+diff --git a/tools/i2cget.c b/tools/i2cget.c
+index 32af2a6..38bd44a 100644
+--- a/tools/i2cget.c
++++ b/tools/i2cget.c
+@@ -1,6 +1,6 @@
+ /*
+     i2cget.c - A user-space program to read an I2C register.
+-    Copyright (C) 2005-2012  Jean Delvare <jdelvare@suse.de>
++    Copyright (C) 2005-2021  Jean Delvare <jdelvare@suse.de>
+ 
+     Based on i2cset.c:
+     Copyright (C) 2001-2003  Frodo Looijaard <frodol@dds.nl>, and
+@@ -48,6 +48,7 @@ static void help(void)
+ 		"    b (read byte data, default)\n"
+ 		"    w (read word data)\n"
+ 		"    c (write byte/read byte)\n"
++		"    s (read SMBus block data)\n"
+ 		"    i (read I2C block data)\n"
+ 		"    Append p for SMBus PEC\n"
+ 		"  LENGTH is the I2C block data length (between 1 and %d, default %d)\n",
+@@ -93,6 +94,13 @@ static int check_funcs(int file, int size, int daddress, int pec)
+ 		}
+ 		break;
+ 
++	case I2C_SMBUS_BLOCK_DATA:
++		if (!(funcs & I2C_FUNC_SMBUS_READ_BLOCK_DATA)) {
++			fprintf(stderr, MISSING_FUNC_FMT, "SMBus block read");
++			return -1;
++		}
++		break;
++
+ 	case I2C_SMBUS_I2C_BLOCK_DATA:
+ 		if (!(funcs & I2C_FUNC_SMBUS_READ_I2C_BLOCK)) {
+ 			fprintf(stderr, MISSING_FUNC_FMT, "I2C block read");
+@@ -150,6 +158,7 @@ static int confirm(const char *filename, int address, int size, int daddress,
+ 			size == I2C_SMBUS_BYTE ? (daddress < 0 ?
+ 			"read byte" : "write byte/read byte") :
+ 			size == I2C_SMBUS_BYTE_DATA ? "read byte data" :
++			size == I2C_SMBUS_BLOCK_DATA ? "read SMBus block data" :
+ 			"read word data");
+ 	if (pec)
+ 		fprintf(stderr, "PEC checking enabled.\n");
+@@ -225,6 +234,7 @@ int main(int argc, char *argv[])
+ 		case 'b': size = I2C_SMBUS_BYTE_DATA; break;
+ 		case 'w': size = I2C_SMBUS_WORD_DATA; break;
+ 		case 'c': size = I2C_SMBUS_BYTE; break;
++		case 's': size = I2C_SMBUS_BLOCK_DATA; break;
+ 		case 'i': size = I2C_SMBUS_I2C_BLOCK_DATA; break;
+ 		default:
+ 			fprintf(stderr, "Error: Invalid mode!\n");
+@@ -279,6 +289,9 @@ int main(int argc, char *argv[])
+ 	case I2C_SMBUS_WORD_DATA:
+ 		res = i2c_smbus_read_word_data(file, daddress);
+ 		break;
++	case I2C_SMBUS_BLOCK_DATA:
++		res = i2c_smbus_read_block_data(file, daddress, block_data);
++		break;
+ 	case I2C_SMBUS_I2C_BLOCK_DATA:
+ 		res = i2c_smbus_read_i2c_block_data(file, daddress, length, block_data);
+ 		break;
+@@ -292,7 +305,8 @@ int main(int argc, char *argv[])
+ 		exit(2);
+ 	}
+ 
+-	if (size == I2C_SMBUS_I2C_BLOCK_DATA) {
++	if (size == I2C_SMBUS_BLOCK_DATA ||
++	    size == I2C_SMBUS_I2C_BLOCK_DATA) {
+ 		int i;
+ 
+ 		for (i = 0; i < res - 1; ++i)
+-- 
+2.32.0
+

@@ -41,3 +41,4 @@ def get_openbmc_version(d):
     return version
 
 OPENBMC_VERSION := "${@get_openbmc_version(d)}"
+DISTRO_VERSION := "${OPENBMC_VERSION}"

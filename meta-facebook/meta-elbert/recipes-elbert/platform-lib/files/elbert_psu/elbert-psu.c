@@ -153,6 +153,15 @@ static int delta_img_hdr_parse(const char* file_path) {
   return ret;
 }
 
+static void delta_set_wp(uint8_t num, uint8_t mode) {
+  if (mode == ENABLE_ALL_CMDS) {
+    printf("-- Write Protect Disabled --\n");
+  } else {
+    printf("-- Write Protect Enabled --\n");
+  }
+  i2c_smbus_write_byte_data(psu[num].fd, WRITE_PROTECT, mode);
+}
+
 static int delta_unlock_upgrade(uint8_t num) {
   uint8_t i;
   uint8_t block[DELTA_ID_LEN + 1];
@@ -163,7 +172,7 @@ static int delta_unlock_upgrade(uint8_t num) {
   }
 
   /* Make sure to enable all commands in case previous upgrading failed. */
-  i2c_smbus_write_byte_data(psu[num].fd, WRITE_PROTECT, ENABLE_ALL_CMDS);
+  delta_set_wp(num, ENABLE_ALL_CMDS);
   i2c_smbus_write_block_data(psu[num].fd, UNLOCK_UPGRADE, sizeof(block), block);
   return 0;
 }
@@ -401,6 +410,7 @@ static int update_delta_psu(
 
     delta_boot_flag(num, NORMAL_MODE, WRITE);
     msleep(BOOT_FLAG_DELAY);
+    delta_set_wp(num, OPERATION_PAGE_ONLY);
 
     ret = delta_boot_flag(num, BOOT_MODE, READ);
     if ((ret & 0x7) == 0x4) {
@@ -470,7 +480,7 @@ int do_update_psu(uint8_t num, const char* file_path, const char* vendor) {
     goto update_exit;
   }
 
-  if (vendor == NULL) {
+  if (vendor == NULL || vendor[0] == '\0') {
     ret = get_mfr_model(num, block);
     if (ret < 0) {
       printf("Cannot Get PSU Model\n");

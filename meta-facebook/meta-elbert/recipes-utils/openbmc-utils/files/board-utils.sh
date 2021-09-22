@@ -301,6 +301,22 @@ disable_switchcard_power_security() {
     retry_command 3 disable_isp_wp 3 0x62
 }
 
+enable_psu_wp() {
+    bus="$1"
+    dev="$2"
+
+    # Disable all writes except for WRITE_PROTECT, OPERATION, and PAGE
+    i2cset -f -y "$bus" "$dev" "$WRITE_PROTECT_REG" 0x40
+}
+
+disable_psu_wp() {
+    bus="$1"
+    dev="$2"
+
+    # Enable all writes
+    i2cset -f -y "$bus" "$dev" "$WRITE_PROTECT_REG" 0x0
+}
+
 power_on_pim() {
     pim=$1
     old_rst_value=$(gpio_get PIM"${pim}"_FPGA_RESET_L keepdirection)

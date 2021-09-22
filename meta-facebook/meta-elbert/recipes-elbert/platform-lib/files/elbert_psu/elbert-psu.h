@@ -69,7 +69,9 @@ extern "C" {
 #define SECONDARY_DELAY 5
 #define FLASH_DELAY 1000
 
+/* WRITE_PROTECT values */
 #define ENABLE_ALL_CMDS 0x00
+#define OPERATION_PAGE_ONLY 0x40
 
 typedef struct _i2c_info_t {
   int fd;

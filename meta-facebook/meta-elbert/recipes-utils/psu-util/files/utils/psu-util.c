@@ -18,24 +18,34 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <unistd.h>
+#include <getopt.h>
 #include <facebook/elbert-psu.h>
 
 #define NUM_PSU_SLOTS 4
 #define REQ_BACKUP_PSUS 1
+#define BUFSIZE 255
 
 static void
-print_usage(const char *name) {
-  printf("Usage: %s <psu1|psu2|psu3|psu4> --update <file_path> [vendor]\n", name);
+print_usage(void) {
+  printf("Usage: psu-util <psu1|psu2|psu3|psu4> --update <file_path> "
+         "[--vendor <vendor>]\n");
 }
 
 int
-main(int argc, const char *argv[]) {
+main(int argc, char *argv[]) {
   uint8_t psu_num = 0, prsnt = 0, pwr_ok = 0, backup_psus = 0;
-  int pid_file = 0, ret = 0;
-  int i;
+  int pid_file = 0, ret = 0, opt_index = 0, i, opt;
+  char fw_file[BUFSIZE + 1] = {0}, vendor[BUFSIZE + 1] = {0};
+
+  static struct option long_options[] = {
+    {"update", required_argument, NULL, 'u'},
+    {"vendor", required_argument, NULL, 'v'},
+    {NULL, 0, NULL, 0}
+  };
 
   if (argc < 3) {
-    print_usage(argv[0]);
+    print_usage();
     return -1;
   }
 
@@ -52,8 +62,22 @@ main(int argc, const char *argv[]) {
     psu_num = 3;
   }
   else {
-    print_usage(argv[0]);
+    print_usage();
     return -1;
+  }
+
+  while ((opt = getopt_long(argc, argv, "u:v", long_options, &opt_index)) != -1) {
+    switch(opt) {
+      case 'u':
+        snprintf(fw_file, BUFSIZE, "%s", optarg);
+        break;
+      case 'v':
+        snprintf(vendor, BUFSIZE, "%s", optarg);
+        break;
+      default:
+        print_usage();
+        return -1;
+    }
   }
 
   pid_file = open("/var/run/psu-util.pid", O_CREAT | O_RDWR, 0666);
@@ -71,6 +95,17 @@ main(int argc, const char *argv[]) {
     return -1;
   }
 
+  ret = is_psu_power_ok(psu_num, &pwr_ok);
+  if (ret) {
+    return ret;
+  }
+  if (!pwr_ok) {
+    printf("PSU%d power is not OK!\nPlease verify that the PSU is not connected "
+           "to AC power.\nThe PSU must be connected to AC power in order to perform "
+           "this firmware update.\n", psu_num + 1);
+    return -1;
+  }
+
   for (i = 0; i < NUM_PSU_SLOTS; i++) {
     if (i != psu_num) {
       is_psu_power_ok(i, &pwr_ok);
@@ -80,23 +115,18 @@ main(int argc, const char *argv[]) {
     }
   }
   if (backup_psus < REQ_BACKUP_PSUS) {
-    printf("At least %d other PSU must be functional to perform update.\n",
+    printf("At least %d other PSUs must be functional to perform update.\n",
            REQ_BACKUP_PSUS);
     return -1;
   }
 
-  if (!strcmp(argv[2], "--update") && argv[3] != NULL) {
-    ret = do_update_psu(psu_num, argv[3], argv[4]);
-    if (ret) {
-      syslog(LOG_WARNING, "PSU%d update fail!", psu_num + 1);
-      printf("PSU%d update fail!\n", psu_num + 1);
-    } else {
-      syslog(LOG_WARNING, "PSU%d update success!", psu_num + 1);
-    }
-  }
-  else {
-    print_usage(argv[0]);
-    return -1;
+  ret = do_update_psu(psu_num, fw_file, vendor);
+  if (ret) {
+    syslog(LOG_WARNING, "PSU%d update fail!", psu_num + 1);
+    printf("PSU%d update fail!\n", psu_num + 1);
+  } else {
+    syslog(LOG_WARNING, "PSU%d update success!", psu_num + 1);
+    printf("PSU%d update success!\n", psu_num + 1);
   }
 
   return ret;

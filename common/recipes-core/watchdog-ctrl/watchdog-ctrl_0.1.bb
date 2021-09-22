@@ -43,4 +43,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/watchdog_ctrl ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/watchdog_ctrl ${prefix}/local/bin ${sysconfdir} "

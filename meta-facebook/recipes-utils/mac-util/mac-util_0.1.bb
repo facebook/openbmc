@@ -9,8 +9,8 @@ LIC_FILES_CHKSUM = "file://mac-util.cpp;beginline=4;endline=16;md5=94a0865391a64
 SRC_URI += "file://mac-util.cpp \
            file://Makefile \
           "
-SRC_URI_append_${MACHINE} = "file://${MACHINE}/eeprom.h "
-CXXFLAGS_prepend_${MACHINE} += "-I${MACHINE}"
+SRC_URI:append_${MACHINE} = "file://${MACHINE}/eeprom.h "
+CXXFLAGS:prepend_${MACHINE} += "-I${MACHINE}"
 LDFLAGS += "-lobmc-i2c"
 
 S = "${WORKDIR}"
@@ -21,6 +21,6 @@ do_install() {
 }
 
 DEPENDS += "cli11 libobmc-i2c"
-RDEPENDS_${PN} += "libobmc-i2c"
+RDEPENDS:${PN} += "libobmc-i2c"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

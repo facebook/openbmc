@@ -16,8 +16,8 @@
 # Boston, MA 02110-1301 USA
 LDFLAGS += " -lwedge_eeprom -lbic"
 DEPENDS += " libwedge-eeprom libipmi libfruid libsdr libbic update-rc.d-native"
-RDEPENDS_${PN} += "libipmi libkv libwedge-eeprom libbic"
+RDEPENDS:${PN} += "libipmi libkv libwedge-eeprom libbic"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
            "

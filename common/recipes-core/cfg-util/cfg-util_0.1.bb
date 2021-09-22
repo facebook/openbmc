@@ -31,6 +31,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/cfg-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/cfg-util ${prefix}/local/bin"
 
-RDEPENDS_${PN} = "libpal libmisc-utils "
+RDEPENDS:${PN} = "libpal libmisc-utils "

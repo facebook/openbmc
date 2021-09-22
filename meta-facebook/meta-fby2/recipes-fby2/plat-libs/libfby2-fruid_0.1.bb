@@ -27,7 +27,7 @@ SRC_URI = "file://fby2_fruid \
           "
 
 DEPENDS += " libfby2-common libfby2-sensor "
-RDEPENDS_${PN} += "libpal"
+RDEPENDS:${PN} += "libpal"
 
 S = "${WORKDIR}/fby2_fruid"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 fby2_fruid.h ${D}${includedir}/facebook/fby2_fruid.h
 }
 
-FILES_${PN} = "${libdir}/libfby2_fruid.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby2_fruid.h"
+FILES:${PN} = "${libdir}/libfby2_fruid.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby2_fruid.h"

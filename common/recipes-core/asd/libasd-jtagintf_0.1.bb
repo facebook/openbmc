@@ -26,5 +26,5 @@ do_install() {
   install -m 0644 libasd-jtagintf.so ${D}${libdir}/libasd-jtagintf.so
 }
 
-FILES_${PN} = "${libdir}/libasd-jtagintf.so"
-FILES_${PN}-dev = "${includedir}/asd"
+FILES:${PN} = "${libdir}/libasd-jtagintf.so"
+FILES:${PN}-dev = "${includedir}/asd"

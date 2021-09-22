@@ -42,6 +42,6 @@ do_install() {
     done
 }
 
-RDEPENDS_${PN} = "python3-core"
+RDEPENDS:${PN} = "python3-core"
 
-FILES_${PN} += "/usr/local"
+FILES:${PN} += "/usr/local"

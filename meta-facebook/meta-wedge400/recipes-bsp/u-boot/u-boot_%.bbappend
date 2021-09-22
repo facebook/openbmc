@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-do_configure_prepend() {
+do_configure:prepend() {
     #
     # append "ubi.mtd=data0" to bootargs if "mtd-ubifs" is enabled.
     #

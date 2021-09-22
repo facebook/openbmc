@@ -23,6 +23,6 @@ do_install() {
   install -m 0644 ${S}/linux/peci-ioctl.h ${D}${includedir}/linux/peci-ioctl.h
 }
 
-FILES_${PN} = "${libdir}/libpeci.so ${libdir}/libpeci.so.1"
-INSANE_SKIP_${PN} += "dev-so"
-FILES_${PN}-dev = "${includedir}/peci.h ${includedir}/linux/peci-ioctl.h"
+FILES:${PN} = "${libdir}/libpeci.so ${libdir}/libpeci.so.1"
+INSANE_SKIP:${PN} += "dev-so"
+FILES:${PN}-dev = "${includedir}/peci.h ${includedir}/linux/peci-ioctl.h"

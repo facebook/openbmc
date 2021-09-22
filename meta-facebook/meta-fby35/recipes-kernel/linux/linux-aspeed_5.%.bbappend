@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/plat_conf:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 
 SRC_URI += "file://fby35.cfg \
 	"

@@ -1,1 +1,1 @@
-RDEPENDS_${PN} = "tzdata-core"
+RDEPENDS:${PN} = "tzdata-core"

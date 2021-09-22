@@ -5,7 +5,7 @@ PR = "r1"
 
 inherit packagegroup
 
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
   bind-utils \
   curl \
   iproute2 \
@@ -20,7 +20,7 @@ def openbmc_net_dhcpclient(d):
         return "dhcp-client"
     return "dhcpcd"
 
-RDEPENDS_${PN}_append = " \
+RDEPENDS:${PN}:append = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
                          '', \
                          'ntp ntpq sntp ' + openbmc_net_dhcpclient(d), d)} \

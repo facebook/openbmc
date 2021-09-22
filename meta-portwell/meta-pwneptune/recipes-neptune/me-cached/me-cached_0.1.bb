@@ -8,7 +8,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://me-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libme update-rc.d-native"
+DEPENDS:append = "libme update-rc.d-native"
 
 SRC_URI = "file://Makefile \
            file://setup-me-cached.sh \
@@ -36,7 +36,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/me-cached ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/me-cached ${prefix}/local/bin ${sysconfdir} "
 
 # Inhibit complaints about .debug directories:
 

@@ -34,7 +34,7 @@ binfiles = "gpiod \
 
 LDFLAGS += "-lpal -lgpio-ctrl -lobmc-i2c -lkv"
 DEPENDS += " libpal libgpio-ctrl update-rc.d-native libobmc-i2c libkv"
-RDEPENDS_${PN} = "libpal libgpio-ctrl libobmc-i2c libkv"
+RDEPENDS:${PN} = "libpal libgpio-ctrl libobmc-i2c libkv"
 
 pkgdir = "gpiod"
 
@@ -55,7 +55,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
 
 
 

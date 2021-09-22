@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
         file://nic_ext.cpp \
@@ -42,7 +42,7 @@ SRC_URI += " \
         file://bic_m2_dev.h \
         "
 
-SRC_URI_remove = " \
+SRC_URI:remove = " \
         file://bic_cpld.cpp \
         file://bic_cpld.h \
         file://bic_fw.cpp \
@@ -51,5 +51,5 @@ SRC_URI_remove = " \
 
 CXXFLAGS += "-DBIC_SUPPORT"
 DEPENDS += "libbic libfpga libfby35-common libncsi libnl-wrapper libobmc-i2c libmcu"
-RDEPENDS_${PN} += "libbic libfpga libfby35-common libnl-wrapper libobmc-i2c libmcu"
+RDEPENDS:${PN} += "libbic libfpga libfby35-common libnl-wrapper libobmc-i2c libmcu"
 LDFLAGS += "-lbic -lfpga -lfby35_common -lnl-wrapper -lobmc-i2c -lmcu"

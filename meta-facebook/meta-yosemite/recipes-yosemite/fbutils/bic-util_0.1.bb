@@ -21,6 +21,6 @@ do_install() {
 
 DEPENDS += "libbic libyosemite-gpio"
 
-RDEPENDS_${PN} += "libbic libyosemite-gpio"
+RDEPENDS:${PN} += "libbic libyosemite-gpio"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

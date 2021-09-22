@@ -39,8 +39,8 @@ pkgdir = "utils"
 
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} += "gpiocli"
-DEPENDS_append = "update-rc.d-native"
+RDEPENDS:${PN} += "gpiocli"
+DEPENDS:append = "update-rc.d-native"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -76,6 +76,6 @@ do_install() {
   update-rc.d -r ${D} setup-pon-driver.sh start 63 5 .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"
 
-RDEPENDS_${PN} = "bash"
+RDEPENDS:${PN} = "bash"

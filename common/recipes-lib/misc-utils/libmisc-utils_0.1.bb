@@ -97,8 +97,8 @@ do_install() {
     echo "${@ get_cpu_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/cpu_model
 }
 
-FILES_${PN} = "${libdir}/libmisc-utils.so"
-FILES_${PN} += "${sysconfdir}/soc_model"
-FILES_${PN} += "${sysconfdir}/cpu_model"
-FILES_${PN}-dev = "${includedir}/openbmc/misc-utils.h"
-FILES_${PN}-ptest = "${libdir}/libmisc-utils/ptest/test-libmisc-utils ${libdir}/libmisc-utils/ptest/run-ptest"
+FILES:${PN} = "${libdir}/libmisc-utils.so"
+FILES:${PN} += "${sysconfdir}/soc_model"
+FILES:${PN} += "${sysconfdir}/cpu_model"
+FILES:${PN}-dev = "${includedir}/openbmc/misc-utils.h"
+FILES:${PN}-ptest = "${libdir}/libmisc-utils/ptest/test-libmisc-utils ${libdir}/libmisc-utils/ptest/run-ptest"

@@ -1,1 +1,1 @@
-RDEPENDS_${PN}_remove = "python"
+RDEPENDS:${PN}:remove = "python"

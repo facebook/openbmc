@@ -31,11 +31,11 @@ S = "${WORKDIR}/utils"
 LDFLAGS = "-lpsu"
 
 DEPENDS += "libpsu"
-RDEPENDS_${PN} += "libpsu"
+RDEPENDS:${PN} += "libpsu"
 
 do_install() {
   install -d ${D}${bindir}
   install -m 755 psu-util ${D}${bindir}/psu-util
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

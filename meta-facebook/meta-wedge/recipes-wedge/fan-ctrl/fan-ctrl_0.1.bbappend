@@ -15,10 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = "libwedge-eeprom update-rc.d-native libwatchdog libgpio-ctrl libmisc-utils libobmc-i2c"
-RDEPENDS_${PN} += "libwedge-eeprom libwatchdog libgpio-ctrl libmisc-utils libobmc-i2c"
+DEPENDS:append = "libwedge-eeprom update-rc.d-native libwatchdog libgpio-ctrl libmisc-utils libobmc-i2c"
+RDEPENDS:${PN} += "libwedge-eeprom libwatchdog libgpio-ctrl libmisc-utils libobmc-i2c"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \
             file://init_pwm.sh \
             file://pwm_common.sh \
@@ -35,7 +35,7 @@ binfiles += "get_fan_speed.sh \
             set_fan_speed.sh \
            "
 
-LDFLAGS_append = " -lwedge_eeprom -lwatchdog -lgpio-ctrl -lmisc-utils -lobmc-i2c"
+LDFLAGS:append = " -lwedge_eeprom -lwatchdog -lgpio-ctrl -lmisc-utils -lobmc-i2c"
 
 pkgdir = "fan_ctrl"
 
@@ -59,4 +59,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/fan_ctrl ${prefix}/local/bin ${sysconfdir} "

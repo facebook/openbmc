@@ -19,6 +19,6 @@ SRC_URI = "file://meson.build \
 S = "${WORKDIR}"
 
 DEPENDS =+ "libncsi"
-RDEPENDS_${PN} =+ "libncsi"
+RDEPENDS:${PN} =+ "libncsi"
 
 inherit meson

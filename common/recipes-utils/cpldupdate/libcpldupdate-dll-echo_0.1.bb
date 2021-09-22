@@ -33,4 +33,4 @@ DEPENDS += "libcpldupdate-dll-helper"
 
 # The shared library is used used as package instead of -dev
 FILES_SOLIBSDEV = ""
-FILES_${PN} += "usr/lib"
+FILES:${PN} += "usr/lib"

@@ -30,5 +30,5 @@ do_install() {
     install -m 0644 gpio.h ${D}${includedir}/openbmc/gpio.h
 }
 
-FILES_${PN} = "${libdir}/libgpio.so"
-FILES_${PN}-dev = "${includedir}/openbmc/gpio.h"
+FILES:${PN} = "${libdir}/libgpio.so"
+FILES:${PN}-dev = "${includedir}/openbmc/gpio.h"

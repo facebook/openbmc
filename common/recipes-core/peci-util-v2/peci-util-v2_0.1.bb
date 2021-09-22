@@ -18,7 +18,7 @@ binfiles = "peci-util \
 pkgdir = "peci-util"
 
 DEPENDS = "libpeci "
-RDEPENDS_${PN} = "libpeci "
+RDEPENDS:${PN} = "libpeci "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -33,4 +33,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/peci-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/peci-util ${prefix}/local/bin"

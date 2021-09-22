@@ -30,9 +30,9 @@ do_install() {
 }
 
 DEPENDS += "libpal libkv jansson"
-RDEPENDS_${PN} += "libpal libkv jansson"
+RDEPENDS:${PN} += "libpal libkv jansson"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/dimm-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/dimm-util ${prefix}/local/bin"

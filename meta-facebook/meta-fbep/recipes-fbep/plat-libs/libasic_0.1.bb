@@ -11,7 +11,7 @@ SRC_URI = "file://asic \
           "
 LDFLAGS += "-lobmc-i2c -lgpio-ctrl "
 DEPENDS += "libobmc-i2c libgpio-ctrl "
-RDEPENDS_${PN} += "libobmc-i2c "
+RDEPENDS:${PN} += "libobmc-i2c "
 
 S = "${WORKDIR}/asic"
 
@@ -23,5 +23,5 @@ do_install() {
     install -m 0644 asic.h ${D}${includedir}/facebook/asic.h
 }
 
-FILES_${PN} = "${libdir}/libasic.so"
-FILES_${PN}-dev = "${includedir}/facebook/asic.h"
+FILES:${PN} = "${libdir}/libasic.so"
+FILES:${PN}-dev = "${includedir}/facebook/asic.h"

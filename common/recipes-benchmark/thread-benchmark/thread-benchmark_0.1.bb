@@ -18,7 +18,7 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-RDEPENDS_${PN} += "python3-core openbmc-utils"
+RDEPENDS:${PN} += "python3-core openbmc-utils"
 
 SRC_URI = "file://Makefile \
            file://thread-benchmark.c \
@@ -43,4 +43,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/thread-benchmark ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/thread-benchmark ${prefix}/local/bin"

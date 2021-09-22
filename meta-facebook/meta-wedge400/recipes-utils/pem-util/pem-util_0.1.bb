@@ -31,11 +31,11 @@ S = "${WORKDIR}/utils"
 LDFLAGS = "-lfruid -lpal -lwedge400-pem "
 
 DEPENDS += "libwedge400-pem"
-RDEPENDS_${PN} += "libwedge400-pem"
+RDEPENDS:${PN} += "libwedge400-pem"
 
 do_install() {
   install -d ${D}${bindir}
   install -m 755 pem-util ${D}${bindir}/pem-util
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

@@ -32,4 +32,4 @@ do_install() {
   install -m 0644 hr_nanosleep.h ${D}${includedir}/openbmc/hr_nanosleep.h
 }
 
-FILES_${PN}-dev = "${includedir}/openbmc/hr_nanosleep.h"
+FILES:${PN}-dev = "${includedir}/openbmc/hr_nanosleep.h"

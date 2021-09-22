@@ -46,5 +46,5 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/slot-util ${prefix}/local/bin"
-RDEPENDS_${PN} += "bash"
+FILES:${PN} = "${FBPACKAGEDIR}/slot-util ${prefix}/local/bin"
+RDEPENDS:${PN} += "bash"

@@ -1,15 +1,15 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_1.sh \
              file://run-ipmbd_3.sh \
              file://run-ipmbd_5.sh \
              file://run-ipmbd_7.sh \
            "
-DEPENDS_append = " fbutils "
+DEPENDS:append = " fbutils "
 
-CFLAGS_prepend = " -DCONFIG_YOSEMITE"
+CFLAGS:prepend = " -DCONFIG_YOSEMITE"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -39,4 +39,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "

@@ -1,1 +1,1 @@
-RDEPENDS_${PN}_remove = "gdb"
+RDEPENDS:${PN}:remove = "gdb"

@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://usb-dbg-conf.c \
            "
 
-DEPENDS_append += "libgpio"
-LDFLAGS_append += "-lgpio"
+DEPENDS:append += "libgpio"
+LDFLAGS:append += "-lgpio"

@@ -18,7 +18,7 @@ binfiles = "me-util \
 pkgdir = "me-util"
 
 DEPENDS = " libbic libpal "
-RDEPENDS_${PN} += "bash libbic libpal"
+RDEPENDS:${PN} += "bash libbic libpal"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -33,4 +33,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"

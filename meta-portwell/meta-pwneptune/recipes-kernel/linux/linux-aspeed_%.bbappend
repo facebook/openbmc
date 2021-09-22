@@ -2,7 +2,7 @@ LINUX_VERSION_EXTENSION = "-pwneptune"
 
 COMPATIBLE_MACHINE = "pwneptune"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://defconfig \
            "

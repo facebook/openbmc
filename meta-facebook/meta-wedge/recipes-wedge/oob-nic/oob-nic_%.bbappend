@@ -1,3 +1,3 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 DEPENDS += "libwedge-eeprom"
-RDEPENDS_${PN} += "libwedge-eeprom"
+RDEPENDS:${PN} += "libwedge-eeprom"

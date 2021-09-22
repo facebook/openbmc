@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
     file://plat/meson.build \
@@ -21,7 +21,7 @@ DEPENDS += " \
 
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     jansson \
     libbic \
     libfby2-common \

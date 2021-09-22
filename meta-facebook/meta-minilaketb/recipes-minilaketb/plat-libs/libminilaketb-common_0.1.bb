@@ -21,5 +21,5 @@ do_install() {
     install -m 0644 minilaketb_common.h ${D}${includedir}/facebook/minilaketb_common.h
 }
 
-FILES_${PN} = "${libdir}/libminilaketb_common.so"
-FILES_${PN}-dev = "${includedir}/facebook/minilaketb_common.h"
+FILES:${PN} = "${libdir}/libminilaketb_common.so"
+FILES:${PN}-dev = "${includedir}/facebook/minilaketb_common.h"

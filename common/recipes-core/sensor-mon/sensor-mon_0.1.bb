@@ -41,7 +41,7 @@ binfiles = "sensord \
 CFLAGS += " -lsdr -lpal -laggregate-sensor "
 
 DEPENDS += " libpal libsdr libaggregate-sensor update-rc.d-native"
-RDEPENDS_${PN} += "libpal libsdr libaggregate-sensor bash "
+RDEPENDS:${PN} += "libpal libsdr libaggregate-sensor bash "
 
 pkgdir = "sensor-mon"
 
@@ -82,6 +82,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir} ${systemd_system_unitdir}"
+FILES:${PN} = "${FBPACKAGEDIR}/sensor-mon ${prefix}/local/bin ${sysconfdir} ${systemd_system_unitdir}"
 
-SYSTEMD_SERVICE_${PN} = "sensord.service"
+SYSTEMD_SERVICE:${PN} = "sensord.service"

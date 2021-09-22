@@ -21,5 +21,5 @@ do_install() {
     install -m 0644 me.h ${D}${includedir}/openbmc/me.h
 }
 
-FILES_${PN} = "${libdir}/libme.so"
-FILES_${PN}-dev = "${includedir}/openbmc/me.h"
+FILES:${PN} = "${libdir}/libme.so"
+FILES:${PN}-dev = "${includedir}/openbmc/me.h"

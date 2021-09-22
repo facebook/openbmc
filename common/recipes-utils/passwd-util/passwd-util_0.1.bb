@@ -22,7 +22,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://passwd-util;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 SRC_URI = "file://passwd-util \
           "
@@ -39,4 +39,4 @@ do_install() {
   update-rc.d -r ${D} passwd-util start 05 S 5 .
 }
 
-FILES_${PN} = "${prefix}/local/bin ${sysconfdir} ${bindir}"
+FILES:${PN} = "${prefix}/local/bin ${sysconfdir} ${bindir}"

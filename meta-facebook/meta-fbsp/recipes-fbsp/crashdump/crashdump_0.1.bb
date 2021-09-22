@@ -35,7 +35,7 @@ S = "${WORKDIR}"
 pkgdir = "crashdump"
 binfiles = "autodump.sh dump.sh"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/peci
   install -m 644 crashdump_p0_coreid ${D}${sysconfdir}/peci/crashdump_p0_coreid
   install -m 644 crashdump_p0_msr ${D}${sysconfdir}/peci/crashdump_p0_msr
@@ -55,6 +55,6 @@ do_install_append() {
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} += "${sysconfdir} ${prefix}/local/bin ${FBPACKAGEDIR}/${pkgdir}"
-DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} = "bash"
+FILES:${PN} += "${sysconfdir} ${prefix}/local/bin ${FBPACKAGEDIR}/${pkgdir}"
+DEPENDS:append = "update-rc.d-native"
+RDEPENDS:${PN} = "bash"

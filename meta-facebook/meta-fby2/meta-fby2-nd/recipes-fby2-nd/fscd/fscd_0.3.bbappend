@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-do_install_append() {
+do_install:append() {
   # remove the original order 68 and set to 71
   update-rc.d -f -r ${D} setup-fan.sh remove
   update-rc.d -r ${D} setup-fan.sh start 71 5 .

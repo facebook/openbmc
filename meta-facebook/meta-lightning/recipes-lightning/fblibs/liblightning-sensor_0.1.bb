@@ -23,6 +23,6 @@ do_install() {
     install -m 0644 lightning_sensor.h ${D}${includedir}/facebook/lightning_sensor.h
 }
 
-FILES_${PN} = "${libdir}/liblightning_sensor.so"
-FILES_${PN}-dev = "${includedir}/facebook/lightning_sensor.h"
-RDEPENDS_${PN} += " libipmi liblightning-common liblightning-flash liblightning-gpio libobmc-i2c"
+FILES:${PN} = "${libdir}/liblightning_sensor.so"
+FILES:${PN}-dev = "${includedir}/facebook/lightning_sensor.h"
+RDEPENDS:${PN} += " libipmi liblightning-common liblightning-flash liblightning-gpio libobmc-i2c"

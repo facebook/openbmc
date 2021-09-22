@@ -1,6 +1,6 @@
 inherit systemd
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://fetch-backports.service \
             file://setup_i2c.service \
@@ -9,9 +9,9 @@ SRC_URI += "file://fetch-backports.service \
             file://enable_watchdog_ext_signal.service \
 "
 
-FILES_${PN} += "${systemd_system_unitdir} /usr/local/bin"
+FILES:${PN} += "${systemd_system_unitdir} /usr/local/bin"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${systemd_system_unitdir}
     install -d ${D}/usr/local/bin
     install -m 0644 fetch-backports.service ${D}${systemd_system_unitdir}
@@ -22,7 +22,7 @@ do_install_append() {
 }
 
 
-SYSTEMD_SERVICE_${PN} += "power-on.service \
+SYSTEMD_SERVICE:${PN} += "power-on.service \
                       setup_board.service \
                       enable_watchdog_ext_signal.service \
                       setup_i2c.service \

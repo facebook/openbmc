@@ -37,7 +37,7 @@ CFLAGS += " -lbic -lfby2_gpio -lpal "
 
 DEPENDS += " libbic libfby2-gpio libpal "
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libbic libfby2-gpio libpal "
+RDEPENDS:${PN} += " libbic libfby2-gpio libpal "
 
 pkgdir = "gpiod"
 
@@ -62,4 +62,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "

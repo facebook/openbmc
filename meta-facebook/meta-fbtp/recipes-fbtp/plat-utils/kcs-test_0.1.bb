@@ -18,4 +18,4 @@ do_install() {
 
 DEPENDS += " "
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

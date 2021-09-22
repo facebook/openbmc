@@ -8,8 +8,8 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://exp-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libpal libexp update-rc.d-native"
-RDEPENDS_${PN} += "libpal libexp"
+DEPENDS:append = "libpal libexp update-rc.d-native"
+RDEPENDS:${PN} += "libpal libexp"
 
 inherit meson
 
@@ -20,7 +20,7 @@ SRC_URI = "file://meson.build \
 
 S = "${WORKDIR}"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -m 755 ${S}/setup-exp-cached.sh ${D}${sysconfdir}/init.d/setup-exp-cached.sh

@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://get_fan_speed.sh \
             file://set_fan_speed.sh \
             file://setup-fan.sh \
@@ -31,7 +31,7 @@ binfiles = "                                    \
     fand					\
     "
 
-CXXFLAGS_prepend = "-DCONFIG_WEDGE100 "
+CXXFLAGS:prepend = "-DCONFIG_WEDGE100 "
 
 do_install() {
   bin="${D}/usr/local/bin"

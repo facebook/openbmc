@@ -25,7 +25,7 @@ do_install() {
 }
 
 DEPENDS += "libncsi libnl"
-RDEPENDS_${PN} += "libnl"
+RDEPENDS:${PN} += "libnl"
 
-FILES_${PN} = "${libdir}/libnl-wrapper.so"
-FILES_${PN}-dev = "${includedir}/openbmc/*"
+FILES:${PN} = "${libdir}/libnl-wrapper.so"
+FILES:${PN}-dev = "${includedir}/openbmc/*"

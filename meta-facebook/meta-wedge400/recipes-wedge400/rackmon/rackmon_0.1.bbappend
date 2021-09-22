@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rackmon_platform.c \
             file://setup-rackmond.sh \
@@ -24,4 +24,4 @@ SRC_URI += "file://rackmon_platform.c \
 CFLAGS += "-DDEFAULT_TTY=\\"/dev/ttyUSB0\\" "
 LDFLAGS += "-llog"
 DEPENDS += "liblog"
-RDEPENDS_${PN} += "liblog"
+RDEPENDS:${PN} += "liblog"

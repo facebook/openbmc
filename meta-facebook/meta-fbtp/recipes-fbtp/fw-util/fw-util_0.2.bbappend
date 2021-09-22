@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://vr.cpp \
             file://platform.cpp \
@@ -30,5 +30,5 @@ SRC_URI += "file://vr.cpp \
            "
 
 DEPENDS += "libgpio libme libfpga libmcu libvr libmisc-utils"
-RDEPENDS_${PN} += "libgpio libme libfpga libmcu libvr libmisc-utils"
+RDEPENDS:${PN} += "libgpio libme libfpga libmcu libvr libmisc-utils"
 LDFLAGS += " -lgpio -lme -lfpga -lmcu -lvr -lmisc-utils"

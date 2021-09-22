@@ -15,7 +15,7 @@ SRC_URI[sha256sum] = "d8ac85cff80f12829130d0e48ff9833d7469c6736bb73295ab6d25ef9a
 
 S = "${WORKDIR}/stress-ng-${PV}"
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${bindir}
     install -m 755 ${S}/stress-ng ${D}${bindir}/stress-ng
 }

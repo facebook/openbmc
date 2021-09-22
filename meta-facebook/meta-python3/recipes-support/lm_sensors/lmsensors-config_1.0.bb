@@ -11,7 +11,7 @@ SRC_URI = "file://fancontrol \
 "
 S = "${WORKDIR}"
 
-RDEPENDS_${PN}-dev = ""
+RDEPENDS:${PN}-dev = ""
 
 do_install() {
     # Install fancontrol configuration file
@@ -29,7 +29,7 @@ PACKAGES =+ "${PN}-libsensors"
 PACKAGES =+ "${PN}-fancontrol"
 
 # libsensors configuration file
-FILES_${PN}-libsensors = "${sysconfdir}/sensors.d/sensors.conf"
+FILES:${PN}-libsensors = "${sysconfdir}/sensors.d/sensors.conf"
 
 # fancontrol script configuration file
-FILES_${PN}-fancontrol = "${sysconfdir}/fancontrol"
+FILES:${PN}-fancontrol = "${sysconfdir}/fancontrol"

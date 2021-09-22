@@ -39,8 +39,8 @@ SRC_URI = "file://lsmmc.c \
 
 inherit python3-dir
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${S}/obmc_mmc.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
-FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/obmc_mmc.py"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/obmc_mmc.py"

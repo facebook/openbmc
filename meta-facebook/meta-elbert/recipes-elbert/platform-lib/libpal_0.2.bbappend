@@ -17,7 +17,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += "file://plat/meson.build \
             file://pal_sensors.c \
@@ -34,7 +34,7 @@ DEPENDS += "libgpio-ctrl \
             libelbert-eeprom \
             libobmc-i2c \
             "
-RDEPENDS_${PN} += "libgpio-ctrl \
+RDEPENDS:${PN} += "libgpio-ctrl \
                    liblog \
                    libmisc-utils \
                    libsensor-correction \

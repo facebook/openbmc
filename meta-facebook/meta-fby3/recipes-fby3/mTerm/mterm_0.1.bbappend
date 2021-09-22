@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://mTerm1/run \
             file://mTerm2/run \
@@ -33,7 +33,7 @@ MTERM_SERVICES = "mTerm1 \
                   mTerm4 \
                  "
 
-do_install_append() {
+do_install:append() {
   #remove the old setting
   update-rc.d -f -r ${D} mTerm-service-setup.sh remove
 

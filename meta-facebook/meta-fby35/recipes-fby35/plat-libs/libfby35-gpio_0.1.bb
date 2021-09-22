@@ -27,7 +27,7 @@ SRC_URI = "file://fby35_gpio \
           "
 
 DEPENDS += " libbic libgpio-ctrl"
-RDEPENDS_${PN} += " libgpio-ctrl "
+RDEPENDS:${PN} += " libgpio-ctrl "
 
 S = "${WORKDIR}/fby35_gpio"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 fby35_gpio.h ${D}${includedir}/facebook/fby35_gpio.h
 }
 
-FILES_${PN} = "${libdir}/libfby35_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/fby35_gpio.h"
+FILES:${PN} = "${libdir}/libfby35_gpio.so"
+FILES:${PN}-dev = "${includedir}/facebook/fby35_gpio.h"

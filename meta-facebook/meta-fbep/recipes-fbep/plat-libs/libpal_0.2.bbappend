@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pal:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
 SRC_URI += " \
     file://pal_calibration.h \
@@ -18,7 +18,7 @@ DEPENDS += " \
     libasic \
     switchtec-user \
     "
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     libgpio-ctrl \
     libobmc-i2c \
     libobmc-sensors \

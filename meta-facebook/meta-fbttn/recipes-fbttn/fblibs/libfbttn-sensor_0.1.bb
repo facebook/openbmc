@@ -10,7 +10,7 @@ LIC_FILES_CHKSUM = "file://fbttn_sensor.c;beginline=8;endline=20;md5=da35978751a
 SRC_URI = "file://fbttn_sensor \
           "
 DEPENDS =+ " libipmi libipmb libbic libmctp libfbttn-common libobmc-i2c obmc-pal libnvme-mi "
-RDEPENDS_${PN} += "libobmc-i2c libnvme-mi "
+RDEPENDS:${PN} += "libobmc-i2c libnvme-mi "
 LDFLAGS += "-lobmc-i2c"
 
 S = "${WORKDIR}/fbttn_sensor"
@@ -23,5 +23,5 @@ do_install() {
     install -m 0644 fbttn_sensor.h ${D}${includedir}/facebook/fbttn_sensor.h
 }
 
-FILES_${PN} = "${libdir}/libfbttn_sensor.so"
-FILES_${PN}-dev = "${includedir}/facebook/fbttn_sensor.h"
+FILES:${PN} = "${libdir}/libfbttn_sensor.so"
+FILES:${PN}-dev = "${includedir}/facebook/fbttn_sensor.h"

@@ -88,14 +88,14 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
 
 LDFLAGS += " -lobmc-i2c "
 DEPENDS += " libpal libsdr libkv libfruid libipc libobmc-i2c libipmi libipmb libfruid update-rc.d-native"
-RDEPENDS_${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid libobmc-i2c "
+RDEPENDS:${PN} += " libpal libsdr libfruid libipc libkv libipmi libipmb libfruid libobmc-i2c "
 
 binfiles = "ipmid"
 
 pkgdir = "ipmid"
 
-SYSTEMD_SERVICE_${PN} = "ipmid.service"
+SYSTEMD_SERVICE:${PN} = "ipmid.service"

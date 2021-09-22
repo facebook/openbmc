@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += " boot-info"
@@ -53,14 +53,14 @@ OPENBMC_UTILS_FILES += " \
     cmm-modules-devices-reset.sh \
     "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
-RDEPENDS_${PN} += "python3-core"
+RDEPENDS:${PN} += "python3-core"
 
 # Disable automount because 'setup_persist_log' is used instead.
 OPENBMC_UTILS_CUSTOM_EMMC_MOUNT = "1"
 
-do_install_append() {
+do_install:append() {
     # the script to mount emmc to /var/log
     install -m 0755 ${WORKDIR}/setup_persist_log.sh ${D}${sysconfdir}/init.d/setup_persist_log.sh
     update-rc.d -r ${D} setup_persist_log.sh start 05 S .

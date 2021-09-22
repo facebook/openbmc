@@ -15,9 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
 SRC_URI += "file://get_fan_speed.sh \
             file://set_fan_speed.sh \
@@ -30,7 +30,7 @@ SRC_URI += "file://get_fan_speed.sh \
 FSC_BIN_FILES += "get_fan_speed.sh \
                   set_fan_speed.sh "
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 FSC_CONFIG += "fsc-config.json"
 
 FSC_ZONE_CONFIG +="zone.fsc"

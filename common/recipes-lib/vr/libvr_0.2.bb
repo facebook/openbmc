@@ -21,7 +21,7 @@ SRC_URI = "file://meson.build \
           "
 
 DEPENDS += "libobmc-pmbus libkv libpal libobmc-i2c "
-RDEPENDS_${PN} += "libobmc-pmbus libkv libpal libobmc-i2c "
+RDEPENDS:${PN} += "libobmc-pmbus libkv libpal libobmc-i2c "
 
 S = "${WORKDIR}"
 

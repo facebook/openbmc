@@ -36,5 +36,5 @@ do_install() {
     install -m 0644 wedge_eeprom.h ${D}${includedir}/facebook/wedge_eeprom.h
 }
 
-FILES_${PN} = "${libdir}/libwedge_eeprom.so"
-FILES_${PN}-dev = "${includedir}/facebook/wedge_eeprom.h"
+FILES:${PN} = "${libdir}/libwedge_eeprom.so"
+FILES:${PN}-dev = "${includedir}/facebook/wedge_eeprom.h"

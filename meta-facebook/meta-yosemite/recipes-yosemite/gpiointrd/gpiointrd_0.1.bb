@@ -37,8 +37,8 @@ CFLAGS += " -lpal "
 
 DEPENDS += " libgpio libpal"
 
-RDEPENDS_${PN} += " libgpio libpal "
-DEPENDS_append = " update-rc.d-native "
+RDEPENDS:${PN} += " libgpio libpal "
+DEPENDS:append = " update-rc.d-native "
 
 pkgdir = "gpiointrd"
 
@@ -63,4 +63,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiointrd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiointrd ${prefix}/local/bin ${sysconfdir} "

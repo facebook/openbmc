@@ -43,7 +43,7 @@ S = "${WORKDIR}"
 
 LDFLAGS =+ " -lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils -lobmc-i2c"
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags libobmc-i2c"
-RDEPENDS_${PN} += "dbus libobmc-i2c"
+RDEPENDS:${PN} += "dbus libobmc-i2c"
 
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"
@@ -68,4 +68,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/sensor-svc ${prefix}/local/bin ${sysconfdir}"
+FILES:${PN} = "${FBPACKAGEDIR}/sensor-svc ${prefix}/local/bin ${sysconfdir}"

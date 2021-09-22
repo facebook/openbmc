@@ -16,12 +16,12 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += " libipmi libfruid update-rc.d-native libsdr libgpio libminilaketb-fruid"
-RDEPENDS_${PN} += "libipmi libfruid libsdr libgpio libminilaketb-fruid libbic"
+RDEPENDS:${PN} += "libipmi libfruid libsdr libgpio libminilaketb-fruid libbic"
 
 CFLAGS += "-DCONFIG_MINILAKETB"
 LDFLAGS += " -lipmb -lbic -lgpio -lminilaketb_fruid"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
            file://usb-dbg-conf.c \
           "

@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://init \
             file://sshd_config \
@@ -7,10 +7,10 @@ SRC_URI += "file://init \
 
 PR .= ".3"
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 SSH_IDLE_TIMEOUT ?= "1800"
 
-do_configure_append() {
+do_configure:append() {
     sed -ri "s/__OPENBMC_VERSION__/${OPENBMC_VERSION}/g" sshd_config
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
@@ -25,7 +25,7 @@ do_configure_append() {
     fi
 }
 
-do_install_append() {
+do_install:append() {
     install -d ${D}/${sysconfdir}/profile.d
     if [ "${SSH_IDLE_TIMEOUT}" -ne "0" ]; then
         install -m 644 ../ssh_idle_logout.sh ${D}/${sysconfdir}/profile.d/ssh_idle_logout.sh

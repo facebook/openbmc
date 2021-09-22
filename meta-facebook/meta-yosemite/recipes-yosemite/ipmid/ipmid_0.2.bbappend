@@ -17,7 +17,7 @@
 
 DEPENDS += "libipmi libfruid update-rc.d-native"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
           "
 CFLAGS += " -DCONFIG_YOSEMITE "

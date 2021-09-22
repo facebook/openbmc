@@ -16,10 +16,10 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += "libipmi libipmb libfruid libfbal-fruid update-rc.d-native"
-RDEPENDS_${PN} += "libipmi libipmb libfruid libfbal-fruid"
+RDEPENDS:${PN} += "libipmi libipmb libfruid libfbal-fruid"
 LDFLAGS += "-lipmb -lfruid -lfbal-fruid"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
             file://usb-dbg-conf.c \
            "

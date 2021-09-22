@@ -29,6 +29,6 @@ S = "${WORKDIR}/git"
 python () {
     if d.getVar('DISTRO_CODENAME') == 'rocko':
         d.appendVar(
-            'FILES_kernel-base',
+            'FILES:kernel-base',
             ' ${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.builtin.modinfo')
 }

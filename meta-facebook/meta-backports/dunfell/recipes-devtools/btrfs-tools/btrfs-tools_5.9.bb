@@ -11,8 +11,8 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=fcb02dc552a041dee27e4b85c7396067"
 SECTION = "base"
 DEPENDS = "util-linux attr e2fsprogs lzo acl"
-DEPENDS_append_class-target = " udev"
-RDEPENDS_${PN} = "libgcc"
+DEPENDS:append:class-target = " udev"
+RDEPENDS:${PN} = "libgcc"
 
 SRCREV = "2e1fa482300449042ff6612bb51027f3f5765270"
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/kdave/btrfs-progs.git \
@@ -29,13 +29,13 @@ inherit ${@bb.utils.contains('PACKAGECONFIG', 'python', 'distutils3-base', '', d
 
 CLEANBROKEN = "1"
 
-EXTRA_OECONF_append_libc-musl = " --disable-backtrace "
+EXTRA_OECONF:append:libc-musl = " --disable-backtrace "
 EXTRA_PYTHON_CFLAGS = "${DEBUG_PREFIX_MAP}"
-EXTRA_PYTHON_CFLAGS_class-native = ""
+EXTRA_PYTHON_CFLAGS:class-native = ""
 EXTRA_PYTHON_LDFLAGS = "${LDFLAGS}"
 EXTRA_OEMAKE = "V=1 'EXTRA_PYTHON_CFLAGS=${EXTRA_PYTHON_CFLAGS}' 'EXTRA_PYTHON_LDFLAGS=${EXTRA_PYTHON_LDFLAGS}'"
 
-do_configure_prepend() {
+do_configure:prepend() {
 	# Upstream doesn't ship this and autoreconf won't install it as automake isn't used.
 	mkdir -p ${S}/config
 	cp -f $(automake --print-libdir)/install-sh ${S}/config/
@@ -43,7 +43,7 @@ do_configure_prepend() {
 
 S = "${WORKDIR}/git"
 
-do_install_append() {
+do_install:append() {
     if [ "${@bb.utils.filter('PACKAGECONFIG', 'python', d)}" ]; then
         oe_runmake 'DESTDIR=${D}' 'PYTHON_SITEPACKAGES_DIR=${PYTHON_SITEPACKAGES_DIR}' install_python
     fi

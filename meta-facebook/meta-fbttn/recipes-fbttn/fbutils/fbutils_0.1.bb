@@ -45,10 +45,10 @@ binfiles = "sol-util power_led.sh post_led.sh \
   mdio.py setup_rov.sh power_util.py \
   check_pal_sku.sh "
 
-DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} += "bash"
-RDEPENDS_${PN} += "python3-core"
-RDEPENDS_${PN} += "gpiocli"
+DEPENDS:append = "update-rc.d-native"
+RDEPENDS:${PN} += "bash"
+RDEPENDS:${PN} += "python3-core"
+RDEPENDS:${PN} += "gpiocli"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -78,4 +78,4 @@ do_install() {
   update-rc.d -r ${D} setup-por.sh start 63 5 .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"

@@ -28,7 +28,7 @@ SRC_URI = "file://minipack_psu \
 LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog"
 
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
-RDEPENDS_${PN} += "libfruid libpal libobmc-i2c liblog"
+RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
 
 S = "${WORKDIR}/minipack_psu"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 minipack-psu.h ${D}${includedir}/facebook/minipack-psu.h
 }
 
-FILES_${PN} = "${libdir}/libminipack-psu.so"
-FILES_${PN}-dev = "${includedir}/facebook/minipack-psu.h"
+FILES:${PN} = "${libdir}/libminipack-psu.so"
+FILES:${PN}-dev = "${includedir}/facebook/minipack-psu.h"

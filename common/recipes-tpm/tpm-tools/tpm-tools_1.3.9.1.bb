@@ -17,13 +17,13 @@ SRC_URI += " \
 SRC_URI[md5sum] = "1532293aa632a0eaa7e60df87c779855"
 SRC_URI[sha256sum] = "9cb714e2650826e2e932f65bc0ba9d61b927dc5fea47f2c2a2b64f0fdfcbfa68"
 
-do_install_append() {
+do_install:append() {
   install -m 755 src/tpm_mgmt/tpm_startup ${D}${sbindir}/tpm_startup
   install -m 744 src/tpm_mgmt/tpm_reset ${D}${sbindir}/tpm_reset
   install -m 744 ../tpm_integrationtest ${D}${bindir}/tpm_integrationtest
 }
 
-do_configure_prepend() {
+do_configure:prepend() {
     # man8 has a dependency on pod2man.  We don't use manpages, so just
     # erase it.
     echo > ${S}/man/Makefile.am

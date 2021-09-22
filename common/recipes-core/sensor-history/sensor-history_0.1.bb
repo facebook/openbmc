@@ -14,7 +14,7 @@ S = "${WORKDIR}"
 binfiles = "sensor-history"
 
 DEPENDS =+ "libpal"
-RDEPENDS_${PN} =+ "libpal"
+RDEPENDS:${PN} =+ "libpal"
 
 pkgdir = "sensor-util"
 
@@ -29,4 +29,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/sensor-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/sensor-util ${prefix}/local/bin"

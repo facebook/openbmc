@@ -39,5 +39,5 @@ do_install() {
     install -m 0644 yosemite_gpio.h ${D}${includedir}/facebook/yosemite_gpio.h
 }
 
-FILES_${PN} = "${libdir}/libyosemite_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/yosemite_gpio.h"
+FILES:${PN} = "${libdir}/libyosemite_gpio.so"
+FILES:${PN}-dev = "${includedir}/facebook/yosemite_gpio.h"

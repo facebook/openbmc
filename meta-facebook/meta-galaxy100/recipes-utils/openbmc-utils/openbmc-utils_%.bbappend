@@ -10,7 +10,7 @@
 # for more details.
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://board-utils.sh \
       file://power-on.sh \
@@ -40,8 +40,8 @@ SRC_URI += "file://board-utils.sh \
       file://sensors_config_fix.service \
       "
 
-RDEPENDS_${PN} += " python3 bash"
-DEPENDS_append += " update-rc.d-native"
+RDEPENDS:${PN} += " python3 bash"
+DEPENDS:append += " update-rc.d-native"
 
 inherit systemd
 
@@ -131,10 +131,10 @@ do_install_board() {
     fi
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"
 
 SYSTEMD_SERVICES_${PN} += "us_monitor.service \
                        fix_fru_eeprom.service \
                         sensors_config_fix.service"
 
-SYSTEMD_SERVICES_${PN}_remove += "setup_board.service"
+SYSTEMD_SERVICES_${PN}:remove += "setup_board.service"

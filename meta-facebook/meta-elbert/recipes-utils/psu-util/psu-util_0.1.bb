@@ -31,11 +31,11 @@ S = "${WORKDIR}/utils"
 LDFLAGS = "-lfruid -lpal -lelbert-psu "
 
 DEPENDS += "libelbert-psu libfruid libpal"
-RDEPENDS_${PN} += "libelbert-psu libfruid libpal"
+RDEPENDS:${PN} += "libelbert-psu libfruid libpal"
 
 do_install() {
   install -d ${D}${bindir}
   install -m 755 psu-util ${D}${bindir}/psu-util
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

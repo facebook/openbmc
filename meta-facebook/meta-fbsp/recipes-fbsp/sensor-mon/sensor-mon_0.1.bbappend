@@ -15,6 +15,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-CFLAGS_prepend = " -DDYN_THRESH_FRU1 "
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+CFLAGS:prepend = " -DDYN_THRESH_FRU1 "
 SENSORD_MONITORED_FRUS = "mb nic0 nic1 fcb riser1 riser2"

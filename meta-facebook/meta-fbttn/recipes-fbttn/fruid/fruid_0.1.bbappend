@@ -18,7 +18,7 @@
 
 S = "${WORKDIR}"
 
-CFLAGS_prepend = " -DCONFIG_FBTTN"
-LDFLAGS_append = " -lfbttn_fruid"
+CFLAGS:prepend = " -DCONFIG_FBTTN"
+LDFLAGS:append = " -lfbttn_fruid"
 
-DEPENDS_prepend = "libfbttn-fruid "
+DEPENDS:prepend = "libfbttn-fruid "

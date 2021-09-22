@@ -17,6 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libpal"
-RDEPENDS_${PN} += "libipmi libipmb libbic libpal"
+RDEPENDS:${PN} += "libipmi libipmb libbic libpal"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

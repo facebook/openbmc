@@ -13,7 +13,7 @@ SRC_URI = "file://nvme-util.c \
 CFLAGS += " -Wall -Werror -lbic -D_XOPEN_SOURCE "
 LDFLAGS += " -lbic -lpal -lfby3_common"
 DEPENDS += " libbic libpal libfby3-common "
-RDEPENDS_${PN} += " libbic libpal libfby3-common "
+RDEPENDS:${PN} += " libbic libpal libfby3-common "
 
 S = "${WORKDIR}"
 
@@ -22,5 +22,5 @@ do_install() {
   install -m 0755 nvme-util ${D}${bindir}/nvme-util
 }
 
-FILES_${PN} = " ${bindir} "
+FILES:${PN} = " ${bindir} "
 

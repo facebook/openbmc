@@ -15,6 +15,6 @@ SRC_URI = "file://meson.build \
 S = "${WORKDIR}"
 
 DEPENDS = " libipmb libipmi libobmc-i2c"
-RDEPENDS_${PN} = "libipmb libipmi libobmc-i2c"
+RDEPENDS:${PN} = "libipmb libipmi libobmc-i2c"
 
 inherit meson

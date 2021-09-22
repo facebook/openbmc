@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_append := "${THISDIR}/files:"
+FILESEXTRAPATHS:append := "${THISDIR}/files:"
 SRC_URI += "file://pal_peci-util.c \
             file://crashdump_p0_coreid \
             file://crashdump_p0_msr \
@@ -29,7 +29,7 @@ SRC_URI += "file://pal_peci-util.c \
 binfiles += "autodump.sh \
             "
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/peci
   install -m 644 crashdump_p0_coreid ${D}${sysconfdir}/peci/crashdump_p0_coreid
   install -m 644 crashdump_p0_msr ${D}${sysconfdir}/peci/crashdump_p0_msr
@@ -50,5 +50,5 @@ do_install_append() {
 
 DEPENDS += " libgpio"
 
-FILES_${PN} += "${sysconfdir} "
+FILES:${PN} += "${sysconfdir} "
 

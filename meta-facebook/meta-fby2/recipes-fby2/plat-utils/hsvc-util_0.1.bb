@@ -17,6 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libfby2-common libfby2-sensor libpal"
-RDEPENDS_${PN} += "libfby2-common libfby2-sensor libpal"
+RDEPENDS:${PN} += "libfby2-common libfby2-sensor libpal"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

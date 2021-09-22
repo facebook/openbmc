@@ -18,5 +18,5 @@ do_install() {
 }
 
 
-FILES_${PN} = "${dst}"
+FILES:${PN} = "${dst}"
 BBCLASSEXTEND += "native nativesdk"

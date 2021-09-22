@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://init_pwm.sh \
             file://setup-fan.sh \
@@ -69,7 +69,7 @@ FSC_ZONE_CONFIG +="FSC_FBY2_MP_4TL_zone1.fsc \
                    FSC_NORTHDOME_DVT_4ND_zone1.fsc \
                   "
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -m 755 setup-fan.sh ${D}${sysconfdir}/init.d/setup-fan.sh
   update-rc.d -r ${D} setup-fan.sh start 68 5 .

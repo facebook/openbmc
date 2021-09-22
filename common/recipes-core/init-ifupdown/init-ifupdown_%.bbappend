@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://dhcp_vendor_info \
             file://dhcpv6_up \
@@ -42,14 +42,14 @@ do_install_dhcp_vendor_info() {
     ${D}${sysconfdir}/network/if-pre-up.d/dhcp_vendor_info
 }
 
-do_install_append() {
+do_install:append() {
 
   do_install_dhcp_vendor_info
   do_install_dhcp
 }
 
-FILES_${PN} += "${sysconfdir}/network/if-up.d/dhcpv6_up \
+FILES:${PN} += "${sysconfdir}/network/if-up.d/dhcpv6_up \
                 ${sysconfdir}/network/if-down.d/dhcpv6_down \
                "
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 DEPENDS += "update-rc.d-native"

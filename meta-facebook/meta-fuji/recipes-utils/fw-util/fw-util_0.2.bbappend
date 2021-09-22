@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://cpld_fpga.cpp \
             file://server.cpp \
@@ -24,5 +24,5 @@ SRC_URI += "file://cpld_fpga.cpp \
            "
 CXXFLAGS += " -DBIC_SUPPORT -DCOMMON_BIC_SUPPORT"
 DEPENDS += "libipmi libipmb libbic libpal libobmc-i2c"
-RDEPENDS_${PN} += "libipmi libipmb libbic libpal libobmc-i2c"
+RDEPENDS:${PN} += "libipmi libipmb libbic libpal libobmc-i2c"
 LDFLAGS += " -lipmi -lipmb -lbic -lpal -lobmc-i2c"

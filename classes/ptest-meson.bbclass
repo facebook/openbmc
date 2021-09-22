@@ -6,9 +6,9 @@ DEPENDS += "\
     chrpath-native \
     "
 
-RDEPENDS_${PN}-ptest += "meson"
+RDEPENDS:${PN}-ptest += "meson"
 
-do_compile_append() {
+do_compile:append() {
     cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
 meson test --no-rebuild --verbose

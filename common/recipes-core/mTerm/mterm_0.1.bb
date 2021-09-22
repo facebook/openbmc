@@ -94,6 +94,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN}-dbg += "${FBPACKAGEDIR}/mTerm/.debug"
-FILES_${PN} += "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"
-SYSTEMD_SERVICE_${PN} = "${MTERM_SYSTEMD_SERVICES}"
+FILES:${PN}-dbg += "${FBPACKAGEDIR}/mTerm/.debug"
+FILES:${PN} += "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"
+SYSTEMD_SERVICE:${PN} = "${MTERM_SYSTEMD_SERVICES}"

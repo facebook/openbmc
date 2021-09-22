@@ -19,14 +19,14 @@
 
 inherit systemd
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_0.sh \
              file://run-ipmbd_4.sh \
              file://ipmbd.service \
            "
 
-RDEPENDS_${PN} += "bash"
+RDEPENDS:${PN} += "bash"
 
 
 do_work_sysv() {
@@ -73,6 +73,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
 
-SYSTEMD_SERVICE_${PN} += "ipmbd.service"
+SYSTEMD_SERVICE:${PN} += "ipmbd.service"

@@ -50,8 +50,8 @@ binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py minilaketb_power.sh power_util.py \
   check_slot_type.sh hotservice-reinit.sh check_server_type.sh"
 
-DEPENDS_append = "update-rc.d-native"
-RDEPENDS_${PN} += "bash python3 "
+DEPENDS:append = "update-rc.d-native"
+RDEPENDS:${PN} += "bash python3 "
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -87,4 +87,4 @@ do_install() {
   update-rc.d -r ${D} setup-platform.sh start 91 S .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"

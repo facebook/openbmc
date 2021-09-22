@@ -1,6 +1,6 @@
 PR .= ".1"
 
-do_install_append() {
+do_install:append() {
   if [ "${EXTRA_SUDOERS_CONFIG}" ]; then
     echo "
 # The following lines were included via EXTRA_SUDOERS_CONFIG

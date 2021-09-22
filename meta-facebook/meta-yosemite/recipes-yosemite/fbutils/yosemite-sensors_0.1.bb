@@ -18,6 +18,6 @@ do_install() {
 
 DEPENDS += "libyosemite-sensor"
 
-RDEPENDS_${PN} += "libyosemite-sensor"
+RDEPENDS:${PN} += "libyosemite-sensor"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

@@ -33,5 +33,5 @@ do_configure () {
 do_compile() {
 }
 
-FILES_${PN} = "${dst} ${dst1}"
+FILES:${PN} = "${dst} ${dst1}"
 BBCLASSEXTEND += "native nativesdk"

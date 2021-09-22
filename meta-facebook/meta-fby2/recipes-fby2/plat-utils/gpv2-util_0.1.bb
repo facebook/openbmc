@@ -17,6 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libpal jansson libfby2-sensor"
-RDEPENDS_${PN} += "libbic libpal jansson libfby2-sensor"
+RDEPENDS:${PN} += "libbic libpal jansson libfby2-sensor"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

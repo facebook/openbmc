@@ -1,11 +1,11 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rsyslog.conf \
             file://rotate_logfile \
             file://rotate_cri_sel \
 "
 
-do_install_append() {
+do_install:append() {
   dst="${D}/usr/local/fbpackages/rotate"
   install -d $dst
   install -m 755 ${WORKDIR}/rotate_logfile ${dst}/logfile
@@ -38,4 +38,4 @@ do_install_append() {
   sed -i "s/__BMC_VERSION_TAG__/${version}/g" ${D}${sysconfdir}/rsyslog.conf
 }
 
-FILES_${PN} += "/usr/local/fbpackages/rotate"
+FILES:${PN} += "/usr/local/fbpackages/rotate"

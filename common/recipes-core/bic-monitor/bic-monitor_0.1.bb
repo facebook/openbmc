@@ -40,7 +40,7 @@ CFLAGS += " -Werror "
 LDFLAGS += " -lbic -lpal -llog -lmisc-utils"
 
 DEPENDS += " libbic libpal liblog libmisc-utils update-rc.d-native"
-RDEPENDS_${PN} += " libbic libpal liblog libmisc-utils bash"
+RDEPENDS:${PN} += " libbic libpal liblog libmisc-utils bash"
 
 pkgdir = "bicmond"
 
@@ -79,6 +79,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/bicmond ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/bicmond ${prefix}/local/bin ${sysconfdir} "
 
-SYSTEMD_SERVICE_${PN} = "bicmond.service"
+SYSTEMD_SERVICE:${PN} = "bicmond.service"

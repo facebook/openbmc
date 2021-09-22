@@ -11,7 +11,7 @@ SRC_URI = "file://bic \
           "
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += "libminilaketb-common libipmi libipmb libkv plat-utils libobmc-i2c "
-RDEPENDS_${PN} += "libobmc-i2c"
+RDEPENDS:${PN} += "libobmc-i2c"
 
 S = "${WORKDIR}/bic"
 
@@ -24,5 +24,5 @@ do_install() {
     install -m 0644 bic.h ${D}${includedir}/facebook/bic.h
 }
 
-FILES_${PN} = "${libdir}/libbic.so*"
-FILES_${PN}-dev = "${includedir}/facebook/bic.h"
+FILES:${PN} = "${libdir}/libbic.so*"
+FILES:${PN}-dev = "${includedir}/facebook/bic.h"

@@ -10,7 +10,7 @@ inherit image_types
 # we may do our fit conversions.
 # TODO:
 # More up-stream-worthy method is to use the chaining of conversions.
-CONVERSION_CMD_u-boot = "oe_mkimage ${IMAGE_NAME}.rootfs.${type} none"
+CONVERSION_CMD:u-boot = "oe_mkimage ${IMAGE_NAME}.rootfs.${type} none"
 
 require recipes-bsp/u-boot/verified-boot.inc
 
@@ -63,7 +63,7 @@ UBOOT_FIT_SOURCE ?= "${STAGING_DIR_HOST}/etc/u-boot-fit-${MACHINE}.its"
 UBOOT_FIT[vardepsexclude] = "DATETIME"
 UBOOT_FIT ?= "u-boot-fit-${MACHINE}-${DATETIME}.itb"
 UBOOT_FIT_LINK ?= "u-boot-fit-${MACHINE}.itb"
-DEPENDS_append = " dtc-native"
+DEPENDS:append = " dtc-native"
 
 IMAGE_PREPROCESS_COMMAND += " generate_data_mount_dir ; "
 IMAGE_POSTPROCESS_COMMAND += " flash_image_generate ; "

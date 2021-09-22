@@ -1,6 +1,6 @@
 # Copyright 2021-present Facebook. All Rights Reserved.
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://syseventgen.conf \
             "
 
@@ -11,4 +11,4 @@ do_install() {
   install -m 0644 ${WORKDIR}/syseventgen.conf ${D}${sysconfdir}
 }
 
-FILES_${PN} = "${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "

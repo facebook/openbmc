@@ -34,4 +34,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/fruid-util-v2 ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/fruid-util-v2 ${prefix}/local/bin"

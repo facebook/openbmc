@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-#FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+#FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SUMMARY = "Reflash and recover devices that have booted from their second chip"
 DESCRIPTION = "Restore from second chip"
@@ -38,5 +38,5 @@ do_install() {
     install -m 0755 reflash_primary_chip.sh $bin
 }
 
-FILES_${PN} = "${prefix}/local/bin"
-RDEPENDS_${PN} += "bash"
+FILES:${PN} = "${prefix}/local/bin"
+RDEPENDS:${PN} += "bash"

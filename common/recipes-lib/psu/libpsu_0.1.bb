@@ -32,7 +32,7 @@ SRC_URI = "file://psu.c \
 LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog"
 
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
-RDEPENDS_${PN} += "libfruid libpal libobmc-i2c liblog"
+RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
 
 S = "${WORKDIR}"
 
@@ -44,5 +44,5 @@ do_install() {
     install -m 0644 psu.h ${D}${includedir}/facebook/psu.h
 }
 
-FILES_${PN} = "${libdir}/libpsu.so"
-FILES_${PN}-dev = "${includedir}/facebook/psu.h"
+FILES:${PN} = "${libdir}/libpsu.so"
+FILES:${PN}-dev = "${includedir}/facebook/psu.h"

@@ -33,4 +33,4 @@ do_install() {
   install -m 0644 Ipc.h ${D}${includedir}/ipc-interface/Ipc.h
 }
 
-FILES_${PN}-dev = "${includedir}/ipc-interface/Ipc.h"
+FILES:${PN}-dev = "${includedir}/ipc-interface/Ipc.h"

@@ -13,7 +13,7 @@ SRC_URI[sha256sum] = "cabce7e83c3470546285d275a2586d95a9c74463fa6b498e89a3042371
 S = "${WORKDIR}/switchtec-user-${PV}"
 
 DEPENDS += " openssl"
-RDEPENDS_${PN} += " openssl"
+RDEPENDS:${PN} += " openssl"
 
 do_configure() {
   ./configure --host=${HOST_SYS}
@@ -29,5 +29,5 @@ do_install() {
   install -m 755 switchtec ${D}${bindir}/switchtec
 }
 
-FILES_${PN} = "${libdir}/libswitchtec.so ${libdir}/libswitchtec.so.2 ${bindir}/switchtec"
-FILES_${PN}-dev = "${includedir}/switchtec"
+FILES:${PN} = "${libdir}/libswitchtec.so ${libdir}/libswitchtec.so.2 ${bindir}/switchtec"
+FILES:${PN}-dev = "${includedir}/switchtec"

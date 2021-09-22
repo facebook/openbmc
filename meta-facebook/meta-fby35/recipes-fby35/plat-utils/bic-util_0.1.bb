@@ -14,11 +14,11 @@ S = "${WORKDIR}/bic-util"
 CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
 LDFLAGS = "-lbic -lpal -lfby35_common -lfby35_gpio -lusb-1.0"
 DEPENDS += "libbic libpal libfby35-common libfby35-gpio"
-RDEPENDS_${PN} += "libbic libpal libfby35-common libfby35-gpio"
+RDEPENDS:${PN} += "libbic libpal libfby35-common libfby35-gpio"
 
 do_install() {
   install -d ${D}${bindir}
   install -m 0755 bic-util ${D}${bindir}/bic-util
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

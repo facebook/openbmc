@@ -12,7 +12,7 @@
 
 SUMMARY = "Galaxy100 CPLD drivers"
 LICENSE = "GPLv2"
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
 inherit module kernel_extra_headers_export
@@ -30,7 +30,7 @@ S = "${WORKDIR}"
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 
-RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
+RDEPENDS:${PN} += "kernel-module-i2c-dev-sysfs"
 
 KERNEL_MODULE_AUTOLOAD += "                     \
  syscpld                                        \

@@ -18,7 +18,7 @@
 LICENSE="GPLv2"
 LIC_FILES_CHKSUM="file://hostname.service;beginline=3;endline=16;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 inherit systemd
 
@@ -27,13 +27,13 @@ SRC_URI += " \
         file://hostname.sh \
 "
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${systemd_system_unitdir} ${D}/usr/local/bin
     install -m 0644 hostname.service ${D}${systemd_system_unitdir}
     install -m 0755 hostname.sh ${D}/usr/local/bin/hostname.sh
     rm -f ${D}${sysconfdir}/init.d/hostname.sh
 }
 
-FILES_${PN} = "/usr/local/bin ${systemd_system_unitdir}"
-SYSTEMD_SERVICE_${PN} = "hostname.service"
-RDEPENDS_${PN} = "bash"
+FILES:${PN} = "/usr/local/bin ${systemd_system_unitdir}"
+SYSTEMD_SERVICE:${PN} = "hostname.service"
+RDEPENDS:${PN} = "bash"

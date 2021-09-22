@@ -39,5 +39,5 @@ do_install() {
     install -m 0644 fbttn_gpio.h ${D}${includedir}/facebook/fbttn_gpio.h
 }
 
-FILES_${PN} = "${libdir}/libfbttn_gpio.so"
-FILES_${PN}-dev = "${includedir}/facebook/fbttn_gpio.h"
+FILES:${PN} = "${libdir}/libfbttn_gpio.so"
+FILES:${PN}-dev = "${includedir}/facebook/fbttn_gpio.h"

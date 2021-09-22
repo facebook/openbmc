@@ -26,8 +26,8 @@ LIC_FILES_CHKSUM = "file://emmcd.c;beginline=5;endline=17;md5=da35978751a9d71b73
 
 inherit meson
 
-RDEPENDS_${PN} += "liblog libmisc-utils"
-DEPENDS_append = " update-rc.d-native liblog libmisc-utils"
+RDEPENDS:${PN} += "liblog libmisc-utils"
+DEPENDS:append = " update-rc.d-native liblog libmisc-utils"
 
 SRC_URI = "file://emmcd.c \
            file://meson.build \
@@ -60,7 +60,7 @@ install_systemd() {
     install -m 644 ${S}/emmcd.service ${D}${systemd_system_unitdir}
 }
 
-do_install_append() {
+do_install:append() {
   if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
       install_systemd
   else
@@ -68,4 +68,4 @@ do_install_append() {
   fi
 }
 
-SYSTEMD_SERVICE_${PN} = "emmcd.service"
+SYSTEMD_SERVICE:${PN} = "emmcd.service"

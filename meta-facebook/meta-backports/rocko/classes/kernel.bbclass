@@ -57,13 +57,13 @@ python __anonymous () {
 
         d.appendVar('PACKAGES', ' ' + 'kernel-image-' + typelower)
 
-        d.setVar('FILES_kernel-image-' + typelower, '/' + imagedest + '/' + type + '-${KERNEL_VERSION_NAME}' + ' /' + imagedest + '/' + type)
+        d.setVar('FILES:kernel-image-' + typelower, '/' + imagedest + '/' + type + '-${KERNEL_VERSION_NAME}' + ' /' + imagedest + '/' + type)
 
-        d.appendVar('RDEPENDS_kernel-image', ' ' + 'kernel-image-' + typelower)
+        d.appendVar('RDEPENDS:kernel-image', ' ' + 'kernel-image-' + typelower)
 
-        d.setVar('PKG_kernel-image-' + typelower, 'kernel-image-' + typelower + '-${KERNEL_VERSION_PKG_NAME}')
+        d.setVar('PKG:kernel-image-' + typelower, 'kernel-image-' + typelower + '-${KERNEL_VERSION_PKG_NAME}')
 
-        d.setVar('ALLOW_EMPTY_kernel-image-' + typelower, '1')
+        d.setVar('ALLOW_EMPTY:kernel-image-' + typelower, '1')
 
     image = d.getVar('INITRAMFS_IMAGE')
     if image:
@@ -101,7 +101,7 @@ inherit ${KERNEL_CLASSES}
 # the symlink.
 do_unpack[cleandirs] += " ${S} ${STAGING_KERNEL_DIR} ${B} ${STAGING_KERNEL_BUILDDIR}"
 do_clean[cleandirs] += " ${S} ${STAGING_KERNEL_DIR} ${B} ${STAGING_KERNEL_BUILDDIR}"
-base_do_unpack_append () {
+base_do_unpack:append () {
     s = d.getVar("S")
     if s[-1] == '/':
         # drop trailing slash, so that os.symlink(kernsrc, s) doesn't use s as directory name and fail
@@ -238,7 +238,7 @@ do_bundle_initramfs () {
 }
 do_bundle_initramfs[dirs] = "${B}"
 
-python do_devshell_prepend () {
+python do_devshell:prepend () {
     os.environ["LDFLAGS"] = ''
 }
 
@@ -491,7 +491,7 @@ kernel_do_configure() {
 	fi
 
 	# Copy defconfig to .config if .config does not exist. This allows
-	# recipes to manage the .config themselves in do_configure_prepend().
+	# recipes to manage the .config themselves in do_configure:prepend().
 	if [ -f "${WORKDIR}/defconfig" ] && [ ! -f "${B}/.config" ]; then
 		cp "${WORKDIR}/defconfig" "${B}/.config"
 	fi
@@ -513,27 +513,27 @@ EXPORT_FUNCTIONS do_compile do_install do_configure
 # kernel-base becomes kernel-${KERNEL_VERSION}
 # kernel-image becomes kernel-image-${KERNEL_VERSION}
 PACKAGES = "kernel kernel-base kernel-vmlinux kernel-image kernel-dev kernel-modules"
-FILES_${PN} = ""
-FILES_kernel-base = "${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.order ${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.builtin"
-FILES_kernel-image = ""
-FILES_kernel-dev = "/boot/System.map* /boot/Module.symvers* /boot/config* ${KERNEL_SRC_PATH} ${nonarch_base_libdir}/modules/${KERNEL_VERSION}/build"
-FILES_kernel-vmlinux = "/boot/vmlinux-${KERNEL_VERSION_NAME}"
-FILES_kernel-modules = ""
-RDEPENDS_kernel = "kernel-base"
+FILES:${PN} = ""
+FILES:kernel-base = "${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.order ${nonarch_base_libdir}/modules/${KERNEL_VERSION}/modules.builtin"
+FILES:kernel-image = ""
+FILES:kernel-dev = "/boot/System.map* /boot/Module.symvers* /boot/config* ${KERNEL_SRC_PATH} ${nonarch_base_libdir}/modules/${KERNEL_VERSION}/build"
+FILES:kernel-vmlinux = "/boot/vmlinux-${KERNEL_VERSION_NAME}"
+FILES:kernel-modules = ""
+RDEPENDS:kernel = "kernel-base"
 # Allow machines to override this dependency if kernel image files are
 # not wanted in images as standard
-RDEPENDS_kernel-base ?= "kernel-image"
-PKG_kernel-image = "kernel-image-${@legitimize_package_name('${KERNEL_VERSION}')}"
-RDEPENDS_kernel-image += "${@base_conditional('KERNEL_IMAGETYPE', 'vmlinux', 'kernel-vmlinux', '', d)}"
-PKG_kernel-base = "kernel-${@legitimize_package_name('${KERNEL_VERSION}')}"
-RPROVIDES_kernel-base += "kernel-${KERNEL_VERSION}"
-ALLOW_EMPTY_kernel = "1"
-ALLOW_EMPTY_kernel-base = "1"
-ALLOW_EMPTY_kernel-image = "1"
-ALLOW_EMPTY_kernel-modules = "1"
-DESCRIPTION_kernel-modules = "Kernel modules meta package"
+RDEPENDS:kernel-base ?= "kernel-image"
+PKG:kernel-image = "kernel-image-${@legitimize_package_name('${KERNEL_VERSION}')}"
+RDEPENDS:kernel-image += "${@base_conditional('KERNEL_IMAGETYPE', 'vmlinux', 'kernel-vmlinux', '', d)}"
+PKG:kernel-base = "kernel-${@legitimize_package_name('${KERNEL_VERSION}')}"
+RPROVIDES:kernel-base += "kernel-${KERNEL_VERSION}"
+ALLOW_EMPTY:kernel = "1"
+ALLOW_EMPTY:kernel-base = "1"
+ALLOW_EMPTY:kernel-image = "1"
+ALLOW_EMPTY:kernel-modules = "1"
+DESCRIPTION:kernel-modules = "Kernel modules meta package"
 
-pkg_postinst_kernel-base () {
+pkg_postinst:kernel-base () {
 	if [ ! -e "$D/lib/modules/${KERNEL_VERSION}" ]; then
 		mkdir -p $D/lib/modules/${KERNEL_VERSION}
 	fi
@@ -544,7 +544,7 @@ pkg_postinst_kernel-base () {
 	fi
 }
 
-PACKAGESPLITFUNCS_prepend = "split_kernel_packages "
+PACKAGESPLITFUNCS:prepend = "split_kernel_packages "
 
 python split_kernel_packages () {
     do_split_packages(d, root='${nonarch_base_libdir}/firmware', file_regex='^(.*)\.(bin|fw|cis|csp|dsp)$', output_pattern='kernel-firmware-%s', description='Firmware for %s', recursive=True, extra_depends='')

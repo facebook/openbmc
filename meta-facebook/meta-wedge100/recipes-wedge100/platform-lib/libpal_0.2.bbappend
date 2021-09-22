@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://plat/meson.build \
@@ -11,7 +11,7 @@ DEPENDS += " \
 
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
-RDEPENDS_${PN} += " \
+RDEPENDS:${PN} += " \
     libobmc-i2c \
     libsensor-correction \
     "

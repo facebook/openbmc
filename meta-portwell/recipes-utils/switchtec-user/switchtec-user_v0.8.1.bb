@@ -26,6 +26,6 @@ do_install() {
 }
  
 DEPENDS += "ncurses"
-FILES_${PN} = "${bindir} ${libdir}/libswitchtec.so.5 ${libdir}/libswitchtec.a"
+FILES:${PN} = "${bindir} ${libdir}/libswitchtec.so.5 ${libdir}/libswitchtec.a"
  
 INHIBIT_PACKAGE_STRIP = "1"

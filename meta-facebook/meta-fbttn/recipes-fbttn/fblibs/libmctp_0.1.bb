@@ -12,7 +12,7 @@ SRC_URI = "file://mctp \
 
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += "libobmc-i2c "
-RDEPENDS_${PN} += "libobmc-i2c"
+RDEPENDS:${PN} += "libobmc-i2c"
 
 S = "${WORKDIR}/mctp"
 
@@ -24,5 +24,5 @@ do_install() {
     install -m 0644 mctp.h ${D}${includedir}/facebook/mctp.h
 }
 
-FILES_${PN} += "${libdir}/libmctp.so"
-FILES_${PN}-dev = "${includedir}/facebook/mctp.h"
+FILES:${PN} += "${libdir}/libmctp.so"
+FILES:${PN}-dev = "${includedir}/facebook/mctp.h"

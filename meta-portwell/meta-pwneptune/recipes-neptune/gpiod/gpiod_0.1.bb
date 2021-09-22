@@ -52,7 +52,7 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
 
-RDEPENDS_${PN} = "libpal libgpio libocpdbg-lcd"
+RDEPENDS:${PN} = "libpal libgpio libocpdbg-lcd"
 

@@ -33,7 +33,7 @@ S = "${WORKDIR}"
 
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += "libobmc-i2c"
-RDEPENDS_${PN} += "libobmc-i2c"
+RDEPENDS:${PN} += "libobmc-i2c"
 
 do_install() {
     install -d ${D}${libdir}
@@ -44,5 +44,5 @@ do_install() {
     install -m 0644 pmbus.h ${D}${includedir}/openbmc/pmbus.h
 }
 
-FILES_${PN} = "${libdir}/libobmc-pmbus.so"
-FILES_${PN}-dev = "${includedir}/openbmc/obmc-pmbus.h ${includedir}/openbmc/pmbus.h"
+FILES:${PN} = "${libdir}/libobmc-pmbus.so"
+FILES:${PN}-dev = "${includedir}/openbmc/obmc-pmbus.h ${includedir}/openbmc/pmbus.h"

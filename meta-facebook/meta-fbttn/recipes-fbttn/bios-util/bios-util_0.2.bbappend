@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/bios-util:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/bios-util:"
 
 SRC_URI += "file://bios_plat_info.py \
             file://bios_pcie_port_config.py \

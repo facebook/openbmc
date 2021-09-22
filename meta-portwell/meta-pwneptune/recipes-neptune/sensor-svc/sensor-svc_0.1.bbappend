@@ -1,6 +1,6 @@
 # Copyright 2017-present Facebook. All Rights Reserved.
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI =+ "file://setup-sensor-svcd.sh \
             file://run-sensor-svcd.sh \
@@ -10,9 +10,9 @@ S = "${WORKDIR}"
 
 LDFLAGS =+ "-lgpio -lsensor-svc-pal -lkv -lipmb -lgpio -lobmc-pal"
 DEPENDS =+ "update-rc.d-native libgpio libsensor-svc-pal"
-RDEPENDS_${PN} += "libgpio"
+RDEPENDS:${PN} += "libgpio"
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv

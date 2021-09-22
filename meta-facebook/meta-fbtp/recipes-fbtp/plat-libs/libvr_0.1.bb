@@ -11,7 +11,7 @@ SRC_URI = "file://vr \
           "
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += "libobmc-i2c libkv"
-RDEPENDS_${PN} += "libobmc-i2c libkv"
+RDEPENDS:${PN} += "libobmc-i2c libkv"
 
 S = "${WORKDIR}/vr"
 
@@ -23,5 +23,5 @@ do_install() {
     install -m 0644 vr.h ${D}${includedir}/openbmc/vr.h
 }
 
-FILES_${PN} = "${libdir}/libvr.so"
-FILES_${PN}-dev = "${includedir}/openbmc/vr.h"
+FILES:${PN} = "${libdir}/libvr.so"
+FILES:${PN}-dev = "${includedir}/openbmc/vr.h"

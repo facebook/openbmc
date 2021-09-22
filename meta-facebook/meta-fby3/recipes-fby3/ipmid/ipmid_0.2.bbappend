@@ -16,12 +16,12 @@
 # Boston, MA 02110-1301 USA
 
 DEPENDS += " libipmi libfruid update-rc.d-native libsdr libfby3-fruid libncsi libfby3-common"
-RDEPENDS_${PN} += "libipmi libfruid libsdr libfby3-fruid libbic libncsi libfby3-common"
+RDEPENDS:${PN} += "libipmi libfruid libsdr libfby3-fruid libbic libncsi libfby3-common"
 
 CFLAGS += "-DCONFIG_FBY3"
 LDFLAGS += " -lipmb -lbic -lncsi -lfby3_fruid -lfby3_common"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://fruid.c \
             file://usb-dbg-conf.c \
            "

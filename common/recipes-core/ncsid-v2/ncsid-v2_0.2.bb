@@ -44,8 +44,8 @@ do_install() {
 
 DEPENDS += "libpal libncsi libpldm libkv libnl-wrapper"
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} = "libpal libncsi libpldm libkv libnl-wrapper"
+RDEPENDS:${PN} = "libpal libncsi libpldm libkv libnl-wrapper"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ncsid ${prefix}/local/bin ${sysconfdir}"
+FILES:${PN} = "${FBPACKAGEDIR}/ncsid ${prefix}/local/bin ${sysconfdir}"

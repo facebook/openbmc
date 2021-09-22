@@ -17,7 +17,7 @@
 
 inherit systemd
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rest_i2cflush.py \
             file://board_endpoint.py \

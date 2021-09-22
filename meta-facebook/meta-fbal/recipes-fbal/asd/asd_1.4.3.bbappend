@@ -1,12 +1,12 @@
 # Copyright 2017-present Facebook. All Rights Reserved.
-FILESEXTRAPATHS_append := "${THISDIR}/files:"
+FILESEXTRAPATHS:append := "${THISDIR}/files:"
 
 DEPENDS += "libkv \
             libipmi \
             libgpio-ctrl \
            "
 
-RDEPENDS_${PN} += "libkv  \
+RDEPENDS:${PN} += "libkv  \
                    libipmi \
                    libgpio-ctrl \
                   "

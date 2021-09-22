@@ -17,6 +17,6 @@ do_install() {
 }
 
 DEPENDS += "libminilaketb-sensor"
-RDEPENDS_${PN} += "libminilaketb-sensor"
+RDEPENDS:${PN} += "libminilaketb-sensor"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

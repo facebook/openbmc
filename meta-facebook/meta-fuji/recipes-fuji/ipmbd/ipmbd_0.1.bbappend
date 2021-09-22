@@ -17,12 +17,12 @@
 # Boston, MA 02110-1301 USA
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_0.sh \
              file://run-ipmbd_4.sh \
            "
-RDEPENDS_${PN} += " libbic jansson libipmb bash"
+RDEPENDS:${PN} += " libbic jansson libipmb bash"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -46,4 +46,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "

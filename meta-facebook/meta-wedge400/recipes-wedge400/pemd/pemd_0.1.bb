@@ -36,7 +36,7 @@ binfiles = "pemd \
 CFLAGS += " -llog -lpal -lwedge400-pem "
 
 DEPENDS += " liblog libpal libwedge400-pem update-rc.d-native "
-RDEPENDS_${PN} += " liblog libpal libwedge400-pem "
+RDEPENDS:${PN} += " liblog libpal libwedge400-pem "
 
 pkgdir = "pemd"
 
@@ -61,4 +61,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/pemd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/pemd ${prefix}/local/bin ${sysconfdir} "

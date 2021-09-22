@@ -1,1 +1,1 @@
-RDEPENDS_{PN} += " bash "
+RDEPENDS:{PN} += " bash "

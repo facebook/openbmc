@@ -17,14 +17,14 @@
 # Boston, MA 02110-1301 USA
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://cloudripper.conf \
            "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
-do_install_append() {
+do_install:append() {
 
     install -d ${D}${sysconfdir}/sensors.d
     install -m 644 ${WORKDIR}/cloudripper.conf ${D}${sysconfdir}/sensors.d/cloudripper.conf

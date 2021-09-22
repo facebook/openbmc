@@ -73,10 +73,10 @@ do_install() {
 
 }
 
-RDEPENDS_${PN} += "libpal"
+RDEPENDS:${PN} += "libpal"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} += "${FBPACKAGEDIR}/bios-util ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} += "${FBPACKAGEDIR}/bios-util ${prefix}/local/bin ${sysconfdir} "
 
-RDEPENDS_${PN} += "python3-core"
+RDEPENDS:${PN} += "python3-core"

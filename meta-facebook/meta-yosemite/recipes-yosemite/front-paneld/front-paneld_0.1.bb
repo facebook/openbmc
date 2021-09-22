@@ -8,7 +8,7 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 
-DEPENDS_append = "libpal update-rc.d-native"
+DEPENDS:append = "libpal update-rc.d-native"
 
 SRC_URI = "file://Makefile \
            file://setup-front-paneld.sh \
@@ -36,6 +36,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-RDEPENDS_${PN} = "libpal"
+RDEPENDS:${PN} = "libpal"
 
-FILES_${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "

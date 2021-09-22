@@ -27,8 +27,8 @@ SRC_URI = "file://watchdogd.sh \
            file://setup-watchdogd.sh \
           "
 
-RDEPENDS_${PN} += " python3 bash"
-DEPENDS_append += " update-rc.d-native"
+RDEPENDS:${PN} += " python3 bash"
+DEPENDS:append += " update-rc.d-native"
 
 # Why do rocko needs python3 and krogoth didn't?
 #
@@ -56,5 +56,5 @@ do_install() {
   install -m 755 setup-watchdogd.sh ${D}${sysconfdir}/init.d/setup-watchdogd.sh
   update-rc.d -r ${D} setup-watchdogd.sh start 95 2 3 4 5  .
 }
-FILES_${PN} = "${bindir}"
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} = "${bindir}"
+FILES:${PN} += "${sysconfdir}"

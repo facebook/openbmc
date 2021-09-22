@@ -29,6 +29,6 @@ S = "${WORKDIR}"
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 
-RDEPENDS_${PN} += "kernel-module-i2c-dev-sysfs"
+RDEPENDS:${PN} += "kernel-module-i2c-dev-sysfs"
 
 KERNEL_MODULE_AUTOLOAD += ""

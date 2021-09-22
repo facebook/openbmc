@@ -17,4 +17,4 @@ SRC_URI = "file://me-util.c \
 S = "${WORKDIR}"
 
 DEPENDS = "libbic libpal libipmi libipmb libfbgc-common"
-RDEPENDS_${PN} += "libbic libpal libipmi libipmb libfbgc-common"
+RDEPENDS:${PN} += "libbic libpal libipmi libipmb libfbgc-common"

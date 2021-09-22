@@ -17,5 +17,5 @@ do_install() {
 }
 
 DEPENDS += " libbic libnvme-mi libpal libfby35-common"
-RDEPENDS_${PN} += " libbic libnvme-mi libpal libfby35-common"
-FILES_${PN} = "${bindir}"
+RDEPENDS:${PN} += " libbic libnvme-mi libpal libfby35-common"
+FILES:${PN} = "${bindir}"

@@ -38,7 +38,7 @@ S = "${WORKDIR}"
 
 LDFLAGS += "-lsensors"
 DEPENDS += "lmsensors"
-RDEPENDS_${PN} += "lmsensors-sensors"
+RDEPENDS:${PN} += "lmsensors-sensors"
 
 do_install() {
     install -d ${D}${libdir}
@@ -48,5 +48,5 @@ do_install() {
     install -m 0644 obmc-sensors.h ${D}${includedir}/openbmc/obmc-sensors.h
 }
 
-FILES_${PN} = "${libdir}/libobmc-sensors.so"
-FILES_${PN}-dev = "${includedir}/openbmc/obmc-sensors.h"
+FILES:${PN} = "${libdir}/libobmc-sensors.so"
+FILES:${PN}-dev = "${includedir}/openbmc/obmc-sensors.h"

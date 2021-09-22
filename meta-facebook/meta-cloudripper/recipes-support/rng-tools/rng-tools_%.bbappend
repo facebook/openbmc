@@ -1,4 +1,4 @@
-PACKAGECONFIG_remove = "libjitterentropy"
+PACKAGECONFIG:remove = "libjitterentropy"
 
 #disable for now as rng-tools rely on deprecated systemd-udev-settle.service 
-SYSTEMD_AUTO_ENABLE_rng-tools = "disable"
+SYSTEMD_AUTO_ENABLE:rng-tools = "disable"

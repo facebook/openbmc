@@ -37,7 +37,7 @@ CFLAGS += " -lbic -lfby2_gpio -lpal -lfruid"
 
 DEPENDS += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv libfruid libgpio-ctrl "
 DEPENDS += "update-rc.d-native"
-RDEPENDS_${PN} += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv libfruid libgpio-ctrl "
+RDEPENDS:${PN} += " libgpio libfby2-common libbic libfby2-sensor libfby2-gpio libpal libkv libfruid libgpio-ctrl "
 LDFLAGS += " -lgpio-ctrl "
 
 pkgdir = "gpiointrd"
@@ -63,4 +63,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiointrd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiointrd ${prefix}/local/bin ${sysconfdir} "

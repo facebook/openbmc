@@ -17,7 +17,7 @@ do_install() {
 }
 
 DEPENDS += "libpal cli11 libobmc-i2c libkv"
-RDEPENDS_${PN} += "libpal libobmc-i2c libkv"
+RDEPENDS:${PN} += "libpal libobmc-i2c libkv"
 LDFLAGS += "-lobmc-i2c -lkv"
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

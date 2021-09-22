@@ -15,10 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 CFLAGS += " -Wall -Werror "
 
-DEPENDS_append = "update-rc.d-native"
+DEPENDS:append = "update-rc.d-native"
 
 SRC_URI += " \
           file://openbmc-gpio-1/board_gpio_table.py \
@@ -29,13 +29,13 @@ SRC_URI += " \
           "
 OPENBMC_GPIO_SOC_TABLE = "ast2400_gpio_table.py"
 
-FILES_${PN} += "/usr/local/bin ${sysconfdir}"
+FILES:${PN} += "/usr/local/bin ${sysconfdir}"
 
-do_install_append() {
+do_install:append() {
      install -d ${D}${sysconfdir}/init.d
      install -d ${D}${sysconfdir}/rcS.d
      install -m 755 openbmc_gpio_setup.py ${D}${sysconfdir}/init.d/openbmc_gpio_setup.py
      update-rc.d -r ${D} openbmc_gpio_setup.py start 59 5 .
 }
 
-FILES_${PN} += "/usr/local/bin ${sysconfdir}"
+FILES:${PN} += "/usr/local/bin ${sysconfdir}"

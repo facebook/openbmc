@@ -28,7 +28,7 @@ SRC_URI = "file://elbert_psu \
 LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog"
 
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
-RDEPENDS_${PN} += "libfruid libpal libobmc-i2c liblog"
+RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
 
 S = "${WORKDIR}/elbert_psu"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 elbert-psu.h ${D}${includedir}/facebook/elbert-psu.h
 }
 
-FILES_${PN} = "${libdir}/libelbert-psu.so"
-FILES_${PN}-dev = "${includedir}/facebook/elbert-psu.h"
+FILES:${PN} = "${libdir}/libelbert-psu.so"
+FILES:${PN}-dev = "${includedir}/facebook/elbert-psu.h"

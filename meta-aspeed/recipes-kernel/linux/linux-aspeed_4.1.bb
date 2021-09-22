@@ -15,7 +15,7 @@ include linux-aspeed.inc
 
 S = "${WORKDIR}/git"
 
-do_configure_prepend() {
+do_configure:prepend() {
     # in kernel.bbclass::kernel_do_configure(), the code only copies defconfig to
     # .config if "${B}/.config" is not there. That causes issue that if defconfig
     # is changed, the kernel build will not pick up the new kernel config.

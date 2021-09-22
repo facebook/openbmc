@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://platform.cpp \
             file://bic_bios_ext.cpp \
@@ -24,5 +24,5 @@ SRC_URI += "file://platform.cpp \
            "
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic"
-RDEPENDS_${PN} += "libipmi libipmb libbic"
+RDEPENDS:${PN} += "libipmi libipmb libbic"
 LDFLAGS += " -lipmi -lipmb -lbic"

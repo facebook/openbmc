@@ -12,6 +12,6 @@ SRC_URI = " file://libmpsse \
           "
 
 DEPENDS += " libusb1 libftdi "
-RDEPENDS_${PN} += " libusb1 libftdi "
+RDEPENDS:${PN} += " libusb1 libftdi "
 
 S = "${WORKDIR}/libmpsse"

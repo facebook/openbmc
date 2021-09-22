@@ -36,7 +36,7 @@ binfiles = "gpiod \
 CFLAGS += " -llog -lbic -lwedge400_gpio -lpal "
 
 DEPENDS += " liblog libbic libwedge400-gpio libpal update-rc.d-native "
-RDEPENDS_${PN} += " liblog libbic libwedge400-gpio libpal "
+RDEPENDS:${PN} += " liblog libbic libwedge400-gpio libpal "
 
 pkgdir = "gpiod"
 
@@ -61,4 +61,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "

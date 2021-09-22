@@ -69,9 +69,9 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/bic-cache ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/bic-cache ${prefix}/local/bin ${sysconfdir} "
 
 DEPENDS += " libbic libpal liblog update-rc.d-native"
-RDEPENDS_${PN} += " libbic libpal liblog bash"
+RDEPENDS:${PN} += " libbic libpal liblog bash"
 
-SYSTEMD_SERVICE_${PN} = "setup_bic_cache.service"
+SYSTEMD_SERVICE:${PN} = "setup_bic_cache.service"

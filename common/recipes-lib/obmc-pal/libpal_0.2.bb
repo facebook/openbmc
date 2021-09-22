@@ -42,17 +42,17 @@ DEPENDS += " \
     obmc-pal \
     "
 
-EXTRA_OEMESON_append = "-Dmachine=\"${MACHINE}\""
+EXTRA_OEMESON:append = "-Dmachine=\"${MACHINE}\""
 
 S = "${WORKDIR}"
 
 inherit python3-dir
 
-do_install_append() {
+do_install:append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${S}/pal.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
-FILES_${PN} += "${PYTHON_SITEPACKAGES_DIR}/pal.py"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/pal.py"
 
 inherit meson

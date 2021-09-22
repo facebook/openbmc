@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += "boot-info"
@@ -69,7 +69,7 @@ OPENBMC_UTILS_FILES += " \
     xdpe12284-hack.sh \
     "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 inherit systemd
 
 do_work_sysv() {
@@ -151,13 +151,13 @@ do_install_board() {
   fi
 }
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"
 
-SYSTEMD_SERVICE_${PN} += "mount_data1.service setup_gpio.service"
+SYSTEMD_SERVICE:${PN} += "mount_data1.service setup_gpio.service"
 
 #Not needed for cloudripper
-SYSTEMD_SERVICE_${PN}_remove = "enable_watchdog_ext_signal.service"
+SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"

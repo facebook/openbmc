@@ -14,7 +14,7 @@ S = "${WORKDIR}"
 binfiles = "threshold-util"
 
 DEPENDS =+ " libsdr libpal "
-RDEPENDS_${PN} =+ "libsdr libpal "
+RDEPENDS:${PN} =+ "libsdr libpal "
 
 pkgdir = "threshold-util"
 
@@ -29,4 +29,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/threshold-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/threshold-util ${prefix}/local/bin"

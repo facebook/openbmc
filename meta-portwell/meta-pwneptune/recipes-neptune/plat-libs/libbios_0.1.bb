@@ -21,5 +21,5 @@ do_install() {
     install -m 0644 bios.h ${D}${includedir}/openbmc/bios.h
 }
 
-FILES_${PN} = "${libdir}/libbios.so"
-FILES_${PN}-dev = "${includedir}/openbmc/bios.h"
+FILES:${PN} = "${libdir}/libbios.so"
+FILES:${PN}-dev = "${includedir}/openbmc/bios.h"

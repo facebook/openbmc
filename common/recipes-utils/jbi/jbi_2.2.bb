@@ -27,7 +27,7 @@ S = "${WORKDIR}/code"
 
 LDFLAGS += "-llog -lgpio-ctrl"
 DEPENDS += "hr-nanosleep liblog libgpio-ctrl"
-RDEPENDS_${PN} += "libgpio-ctrl liblog"
+RDEPENDS:${PN} += "libgpio-ctrl liblog"
 
 do_install() {
   bin="${D}/usr/local/bin"
@@ -35,6 +35,6 @@ do_install() {
   install -m 755 jbi ${bin}/jbi
 }
 
-FILES_${PN} = "/usr/local/bin"
+FILES:${PN} = "/usr/local/bin"
 
-FILES_${PN}-dbg += "/usr/local/bin/.debug"
+FILES:${PN}-dbg += "/usr/local/bin/.debug"

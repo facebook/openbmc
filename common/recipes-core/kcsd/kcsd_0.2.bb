@@ -52,8 +52,8 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/kcsd ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/kcsd ${prefix}/local/bin ${sysconfdir} "
 
-RDEPENDS_${PN} = "libipmi libgpio-ctrl liblog"
+RDEPENDS:${PN} = "libipmi libgpio-ctrl liblog"
 
-SYSTEMD_SERVICE_${PN} = "kcsd@.service kcsd.target"
+SYSTEMD_SERVICE:${PN} = "kcsd@.service kcsd.target"

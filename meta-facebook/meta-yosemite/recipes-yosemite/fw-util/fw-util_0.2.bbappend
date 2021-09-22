@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://vr.cpp \
             file://platform.cpp \
@@ -23,5 +23,5 @@ SRC_URI += "file://vr.cpp \
            "
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libyosemite-sensor"
-RDEPENDS_${PN} += "libipmi libipmb libbic libyosemite-sensor"
+RDEPENDS:${PN} += "libipmi libipmb libbic libyosemite-sensor"
 LDFLAGS += " -lipmi -lipmb -lbic -lyosemite_sensor "

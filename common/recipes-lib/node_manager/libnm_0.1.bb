@@ -31,7 +31,7 @@ S = "${WORKDIR}"
 
 LDFLAGS += "-lipmb -lipmi"
 DEPENDS += "libipmb libipmi"
-RDEPENDS_${PN} += "libipmb libipmi"
+RDEPENDS:${PN} += "libipmb libipmi"
 
 
 do_install() {
@@ -43,5 +43,5 @@ do_install() {
 }
 
 
-FILES_${PN} = "${libdir}/libnm.so"
-FILES_${PN}-dev = "${includedir}/openbmc/nm.h"
+FILES:${PN} = "${libdir}/libnm.so"
+FILES:${PN}-dev = "${includedir}/openbmc/nm.h"

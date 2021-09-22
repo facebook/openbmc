@@ -29,6 +29,6 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/me-util ${prefix}/local/bin"
 
-RDEPENDS_${PN} = "bash ipmb-util "
+RDEPENDS:${PN} = "bash ipmb-util "

@@ -26,6 +26,6 @@ SRC_URI = "file://gpio.c \
 
 DEPENDS += "liblog"
 LDFLAGS += " -llog"
-RDEPENDS_${PN} += " liblog"
+RDEPENDS:${PN} += " liblog"
 
 include libgpio.inc

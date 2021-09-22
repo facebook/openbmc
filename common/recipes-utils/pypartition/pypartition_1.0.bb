@@ -54,7 +54,7 @@ python -m unittest discover /usr/local/fbpackages/pypartition
 EOF
 }
 
-do_install_class-target() {
+do_install:class-target() {
   dst="${D}/usr/local/fbpackages/pypartition"
   install -d $dst
   for f in ${S}/*.py; do
@@ -72,5 +72,5 @@ do_install_class-target() {
 
 BBCLASSEXTEND += "native nativesdk"
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/pypartition"
-FILES_${PN}-ptest = "${libdir}/pypartition/ptest/run-ptest"
+FILES:${PN} = "${FBPACKAGEDIR}/pypartition"
+FILES:${PN}-ptest = "${libdir}/pypartition/ptest/run-ptest"

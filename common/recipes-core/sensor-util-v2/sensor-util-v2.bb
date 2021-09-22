@@ -15,7 +15,7 @@ binfiles = "sensor-util-v2"
 
 LDFLAGS =+ "-lglib-2.0 -lgio-2.0"
 DEPENDS =+ "glib-2.0"
-RDEPENDS_${PN} =+ "glib-2.0"
+RDEPENDS:${PN} =+ "glib-2.0"
 
 pkgdir = "sensor-util-v2"
 
@@ -33,4 +33,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/sensor-util-v2 ${prefix}/local/bin"
+FILES:${PN} = "${FBPACKAGEDIR}/sensor-util-v2 ${prefix}/local/bin"

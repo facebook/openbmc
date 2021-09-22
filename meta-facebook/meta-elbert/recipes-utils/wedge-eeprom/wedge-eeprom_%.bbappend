@@ -14,11 +14,11 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LIC_FILES_CHKSUM = "file://elbert_weutil.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 SRC_URI += " \
           file://utils/elbert_weutil.c \
           file://utils/Makefile \
           "
-RDEPENDS_${PN} += "libelbert-eeprom"
+RDEPENDS:${PN} += "libelbert-eeprom"
 DEPENDS += "libelbert-eeprom"

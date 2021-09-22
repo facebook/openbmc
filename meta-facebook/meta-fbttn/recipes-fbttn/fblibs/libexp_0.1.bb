@@ -21,5 +21,5 @@ do_install() {
     install -m 0644 exp.h ${D}${includedir}/facebook/exp.h
 }
 
-FILES_${PN} += "${libdir}/libexp.so"
-FILES_${PN}-dev = "${includedir}/facebook/exp.h"
+FILES:${PN} += "${libdir}/libexp.so"
+FILES:${PN}-dev = "${includedir}/facebook/exp.h"

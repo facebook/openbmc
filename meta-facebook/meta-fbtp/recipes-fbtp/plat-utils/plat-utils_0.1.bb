@@ -38,8 +38,8 @@ S = "${WORKDIR}"
 binfiles = "power_led.sh sync_date.sh sol-util \
   "
 
-RDEPENDS_${PN} += "gpiocli"
-DEPENDS_append = "update-rc.d-native"
+RDEPENDS:${PN} += "gpiocli"
+DEPENDS:append = "update-rc.d-native"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"
@@ -66,6 +66,6 @@ do_install() {
   update-rc.d -r ${D} power-on.sh start 66 5 .
 }
 
-FILES_${PN} += "/usr/local ${sysconfdir}"
+FILES:${PN} += "/usr/local ${sysconfdir}"
 
-RDEPENDS_${PN} = "bash"
+RDEPENDS:${PN} = "bash"

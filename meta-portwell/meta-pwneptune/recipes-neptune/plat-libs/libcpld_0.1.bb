@@ -19,5 +19,5 @@ do_install() {
     install -m 0644 cpld.h ${D}${includedir}/openbmc/cpld.h
 }
 
-FILES_${PN} = "${libdir}/libcpld.so"
-FILES_${PN}-dev = "${includedir}/openbmc/cpld.h"
+FILES:${PN} = "${libdir}/libcpld.so"
+FILES:${PN}-dev = "${includedir}/openbmc/cpld.h"

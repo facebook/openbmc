@@ -23,8 +23,8 @@ LIC_FILES_CHKSUM = "file://sensor-setup.sh;beginline=5;endline=18;md5=73f63c7616
 
 inherit systemd
 
-DEPENDS_append = " update-rc.d-native"
-RDEPENDS_${PN} += "bash"
+DEPENDS:append = " update-rc.d-native"
+RDEPENDS:${PN} += "bash"
 
 SRC_URI = "file://sensor-setup.sh \
     file://sensor-setup.service \
@@ -55,6 +55,6 @@ do_install() {
     fi
 }
 
-FILES_${PN} = " ${sysconfdir} /usr/local "
+FILES:${PN} = " ${sysconfdir} /usr/local "
 
-SYSTEMD_SERVICE_${PN} = "sensor-setup.service"
+SYSTEMD_SERVICE:${PN} = "sensor-setup.service"

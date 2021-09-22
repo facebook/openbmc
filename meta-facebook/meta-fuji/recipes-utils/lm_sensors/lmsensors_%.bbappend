@@ -17,16 +17,16 @@
 # Boston, MA 02110-1301 USA
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://fuji.conf \
             file://PIM16Q.conf \
             file://PIM16O.conf \
            "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
-do_install_append() {
+do_install:append() {
 
     install -d ${D}${sysconfdir}/sensors.d
     install -d ${D}${sysconfdir}/sensors.d/custom

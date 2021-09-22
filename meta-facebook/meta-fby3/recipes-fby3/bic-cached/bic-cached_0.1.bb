@@ -15,7 +15,7 @@ SRC_URI = "file://Makefile \
 CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lfby3_common -lbic -lpal"
 DEPENDS = "libipmi libipmb libfby3-common libbic libpal update-rc.d-native"
-RDEPENDS_${PN} = "libipmi libipmb libfby3-common libbic libpal"
+RDEPENDS:${PN} = "libipmi libipmb libfby3-common libbic libpal"
 
 S = "${WORKDIR}"
 
@@ -38,4 +38,4 @@ do_install() {
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
-FILES_${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "

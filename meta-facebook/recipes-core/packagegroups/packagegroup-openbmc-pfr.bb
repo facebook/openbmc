@@ -10,6 +10,6 @@ PFR_REQUIRED_PACKAGES = "\
   jbi \
 "
 
-RDEPENDS_${PN} += "\
+RDEPENDS:${PN} += "\
   ${@bb.utils.contains('MACHINE_FEATURES', 'pfr', '${PFR_REQUIRED_PACKAGES}', '', d)} \
   "

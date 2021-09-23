@@ -2640,10 +2640,13 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       snprintf(key, sizeof(key), "uic_sensor_health");
       break;
     case FRU_DPB:
-    case FRU_SCC:
-      // SCC and DPB sensor event SEL are sent by Expander
+      // DPB sensor event SEL are sent by Expander
       // health value will change when get SEL
       return 0;
+    case FRU_SCC:
+      // SCC IOC temperature is monitoring by BMC and the rest of sensors of SCC are monitoring by Expander.
+      snprintf(key, sizeof(key), "scc_sensor_health");
+      break;
     case FRU_NIC:
       snprintf(key, sizeof(key), "nic_sensor_health");
       break;
@@ -4105,4 +4108,14 @@ pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_
   *res_len = 0;
 
   return CC_SUCCESS;
+}
+
+int
+pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
+  // Only SCC IOC temperature is monitoring by BMC
+  if ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP)) {
+    return 1;
+  }
+
+  return 0;
 }

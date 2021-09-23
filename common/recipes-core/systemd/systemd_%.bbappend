@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-PACKAGECONFIG = " \
+PACKAGECONFIG:openbmc-fb = " \
         coredump \
         hostnamed \
         kmod \

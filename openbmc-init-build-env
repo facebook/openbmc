@@ -12,7 +12,7 @@ declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
-#   -- none --
+  meta-bletchley:lf-master
 # hardknott platforms (latest)
 # gatesgarth platforms (pending upgrade)
 #   -- none --

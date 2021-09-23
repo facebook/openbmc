@@ -8,18 +8,17 @@ BBFILES ?= ""
 BBLAYERS ?= " \
   ##OEROOT##/meta \
   ##OEROOT##/meta-poky \
-  ##OEROOT##/meta-yocto-bsp \
-  ##OEROOT##/../meta-openembedded/meta-oe \
-  ##OEROOT##/../meta-openembedded/meta-networking \
-  ##OEROOT##/../meta-openembedded/meta-python \
-  ##OEROOT##/../../.. \
-  ##OEROOT##/../meta-security/meta-tpm \
-  ##OEROOT##/../../../meta-aspeed \
-  ##OEROOT##/../../../meta-facebook \
-  ##OEROOT##/../../../meta-facebook/meta-fby2 \
-  ##OEROOT##/../../../meta-facebook/meta-fby2/meta-fby2-nd \
-  ##OEROOT##/../../../meta-facebook/meta-python3 \
-  ##OEROOT##/../../../meta-facebook/meta-backports \
+  ##OEROOT##/meta-openembedded/meta-oe \
+  ##OEROOT##/meta-openembedded/meta-networking \
+  ##OEROOT##/meta-openembedded/meta-python \
+  ##OEROOT##/../.. \
+  ##OEROOT##/meta-security/meta-tpm \
+  ##OEROOT##/../../meta-aspeed \
+  ##OEROOT##/../../meta-facebook \
+  ##OEROOT##/../../meta-facebook/meta-fby2 \
+  ##OEROOT##/../../meta-facebook/meta-fby2/meta-fby2-nd \
+  ##OEROOT##/../../meta-facebook/meta-python3 \
+  ##OEROOT##/../../meta-facebook/meta-backports \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \

@@ -137,9 +137,22 @@ if [ -d "facebook/workaround-bin" ]; then
   PATH="$(realpath facebook/workaround-bin):$PATH"
 fi
 
+# Old distros required going into the poky directory to find the poky metas,
+# but lf-based distros have them in the yocto root.  Some of the meta-phosphor
+# recipes get confused if COREROOT is one level deeper.
+case ${_distro} in
+    lf-*)
+        _poky=""
+        ;;
+
+    *)
+        _poky="/poky"
+        ;;
+esac
+
 # shellcheck disable=SC1090
 # distro can vary, so we can't use a shellcheck directive to point to next
-. "yocto/${_distro}/poky/oe-init-build-env" "$@"
+. "yocto/${_distro}${_poky}/oe-init-build-env" "$@"
 
 if [ -d "${REPO_ROOT}/facebook" ]; then
   "${REPO_ROOT}/facebook/facebookify.sh" "$(pwd)"

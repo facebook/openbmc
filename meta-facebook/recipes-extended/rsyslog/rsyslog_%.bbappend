@@ -1,19 +1,20 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://rsyslog.conf \
-            file://rotate_emmc \
-            file://rotate_logfile \
-            file://rotate_cri_sel \
-            file://rotate_console_log \
-            file://rsyslog.logrotate \
-            file://rsyslog-emmc.conf \
-            file://rsyslog-mterm.conf \
-            file://rsyslog-remote.conf \
-"
+SRC_URI:append:openbmc-fb = "\
+    file://rsyslog.conf \
+    file://rotate_emmc \
+    file://rotate_logfile \
+    file://rotate_cri_sel \
+    file://rotate_console_log \
+    file://rsyslog.logrotate \
+    file://rsyslog-emmc.conf \
+    file://rsyslog-mterm.conf \
+    file://rsyslog-remote.conf \
+    "
 
 MTERM_LOG_FILES ?= "mTerm_${MACHINE}"
 
-do_install:append() {
+do_install:append:openbmc-fb() {
   dst="${D}/usr/local/fbpackages/rotate"
   rsysconf="${D}${sysconfdir}/rsyslog.d"
   install -d $dst

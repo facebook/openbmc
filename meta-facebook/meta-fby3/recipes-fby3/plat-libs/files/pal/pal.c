@@ -2759,9 +2759,10 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
     tbuf[1] = postcode;
     tlen = 2;
     rlen = 0;
-    while (ret < 0 && retry-- > 0) {
+    do {
       ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-    }
+    } while (ret < 0 && retry-- > 0);
+
     if (fd > 0) {
       close(fd);
     }

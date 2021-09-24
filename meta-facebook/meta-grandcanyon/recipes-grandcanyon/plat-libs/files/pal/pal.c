@@ -117,7 +117,6 @@ struct pal_key_cfg {
   {"server_por_cfg", "on", NULL},
   {"sysfw_ver_server", "0", NULL},
   {"system_identify_led_interval", "default", NULL},
-  {"pwr_server_last_state", "on", NULL},
   {"system_info", "0", NULL},
   {"scc_ioc_fw_recovery", "0", NULL},
   {"iocm_ioc_fw_recovery", "0", NULL},
@@ -257,12 +256,23 @@ pal_cfg_key_check(char *key) {
 int
 pal_get_key_value(char *key, char *value) {
   int index = 0;
+  int ret = 0;
 
   // Check key is defined and valid
   if ((index = pal_key_index(key)) < 0) {
     return -1;
   }
-  return kv_get(key, value, NULL, KV_FPERSIST);
+
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
+  if ((ret == 0) && (strcmp(key, "server_por_cfg") == 0)) {
+    if (strcmp(value, "lps") == 0) {
+      printf("Warning: LPS state is deprecated, set the power policy to be ON by default.\n");
+      snprintf(value, MAX_VALUE_LEN, "on");
+      kv_set(key, value, 0, KV_FPERSIST);
+    }
+  }
+
+  return ret;
 }
 
 int
@@ -276,6 +286,13 @@ pal_set_key_value(char *key, char *value) {
     ret = key_cfg[index].function(KEY_BEFORE_SET, value);
     if (ret < 0) {
       return ret;
+    }
+  }
+
+  if (strcmp(key, "server_por_cfg") == 0) {
+    if (strcmp(value, "lps") == 0) {
+      printf("Warning: LPS state is deprecated, set the power policy to be ON by default.\n");
+      snprintf(value, MAX_VALUE_LEN, "on");
     }
   }
 

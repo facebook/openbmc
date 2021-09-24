@@ -171,11 +171,9 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
   int ret = 0;
   uint8_t chassis_type = 0;
   char power_policy_cfg[MAX_VALUE_LEN] = {0};
-  char last_power_status[MAX_VALUE_LEN] = {0};
   uint8_t e1s_iocm_gpio_power_good_pin[E1S_IOCM_SLOT_NUM] = {GPIO_E1S_1_P3V3_PG_R, GPIO_E1S_2_P3V3_PG_R};
   
   memset(power_policy_cfg, 0, sizeof(power_policy_cfg));
-  memset(last_power_status, 0, sizeof(last_power_status));
 
   if (fru_id == FRU_SERVER) {
     // AC on server
@@ -197,22 +195,6 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
       if (ret < 0) {
         syslog(LOG_ERR, "%s(): Failed to DC on server\n", __func__);
         return;
-      }
-      
-    } else if (strcmp(power_policy_cfg, "lps") == 0){
-      ret = pal_get_last_pwr_state(FRU_SERVER, last_power_status);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "%s(): Failed to get last power status\n", __func__);
-        return;
-      }
-      
-      if (strcmp(power_policy_cfg, "on") == 0) {
-        sleep(3);
-        ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_ON);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s(): Failed to DC on server\n", __func__);
-          return;
-        }
       }
     }
     
@@ -424,17 +406,12 @@ fru_missing_monitor() {
 
 static void *
 server_power_monitor() {
-  char pwr_util_lock_file[MAX_FILE_PATH] = {0}; 
   uint8_t server_present = FRU_PRESENT;
   uint8_t server_pre_pwr_status = -1, server_cur_pwr_status = -1;
   uint8_t post_code[MAX_POSTCODE_LEN] = {0};
   size_t post_code_len = 0;
   bool is_need_cache = true;
   int ret = 0;
-  FILE *fp = NULL;
-  
-  memset(pwr_util_lock_file, 0, sizeof(pwr_util_lock_file));
-  snprintf(pwr_util_lock_file, sizeof(pwr_util_lock_file), POWER_UTIL_LOCK, FRU_SERVER);
   
   // set flag to notice BMC gpiod server_power_monitor is ready
   kv_set("flag_gpiod_server_pwr", STR_VALUE_1, 0, 0);
@@ -468,25 +445,11 @@ server_power_monitor() {
           //*****Server power from on change to off
           if ((server_pre_pwr_status == SERVER_POWER_ON)
            && ((server_cur_pwr_status == SERVER_POWER_OFF) || (server_cur_pwr_status == SERVER_12V_OFF))) {
-            // Change lps if power-util is NOT running.
-            fp = fopen(pwr_util_lock_file, "r");
-            if (fp == NULL) { // File is absent, means power-util is not running
-              pal_set_last_pwr_state(FRU_SERVER, "off");
-            } else {
-              fclose(fp);
-            }
-
             syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);
         
           //*****Server power from off change to on
           } else if (((server_pre_pwr_status == SERVER_POWER_OFF) || (server_pre_pwr_status == SERVER_12V_OFF))
                    && (server_cur_pwr_status == SERVER_POWER_ON)) {
-            fp = fopen(pwr_util_lock_file, "r");
-            if (fp == NULL) {
-              pal_set_last_pwr_state(FRU_SERVER, "on");
-            } else {
-              fclose(fp);
-            }
             // Store post code when server power on
             is_need_cache = true;
             syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);

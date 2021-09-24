@@ -32,27 +32,17 @@ check_por_config()
 
     # Case LPS
     elif [ "$PWR_POLICY" = "lps" ]; then
+      logger -s -p user.warn -t power-on "LPS state is deprecated, set the power policy to be ON by default."
+      # LPS doesn't be supported, set power policy on
+      $KV_CMD set "server_por_cfg" "on" persistent
 
-      # Check if the file/key doesn't exist
-      if [ ! -f "${KEYDIR}/pwr_server_last_state" ]; then
-        LS="on"
-        IS_NEEDED_SERVER_POWER_ON=true
-      else
-        LS=$(cat ${KEYDIR}/pwr_server_last_state)
-        if [ "$LS" = "on" ]; then
-          IS_NEEDED_SERVER_POWER_ON=true
-        elif [ "$LS" = "off" ]; then
-          IS_NEEDED_SERVER_POWER_ON=false
-        fi
-      fi
+      PWR_POLICY="on"
+      IS_NEEDED_SERVER_POWER_ON=true
+      
     fi
   fi
 
-  if [ "$PWR_POLICY" = "lps" ]; then
-    logger -s -p user.info -t power-on "Power Policy: $PWR_POLICY, Last Power State: $LS"
-  else
-    logger -s -p user.info -t power-on "Power Policy: $PWR_POLICY"
-  fi
+  logger -s -p user.info -t power-on "Power Policy: $PWR_POLICY"
 }
 
 # Check Server is present or not:

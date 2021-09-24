@@ -156,7 +156,8 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
       }
       break;
     case POWER_CFG_LPS:
-      if (pal_set_key_value(key, "lps") != 0) {
+      syslog(LOG_WARNING, "LPS state is deprecated, set the power policy to be ON by default.");
+      if (pal_set_key_value(key, "on") != 0) {
         completion_code = CC_UNSPECIFIED_ERROR;
       }
       break;
@@ -744,40 +745,6 @@ pal_sled_cycle(void) {
   }
 
   return POWER_STATUS_OK;
-}
-
-int
-pal_set_last_pwr_state(uint8_t fru, char *state) {
-  int ret = 0;
-  
-  if (state == NULL) {
-    syslog(LOG_WARNING, "%s() NULL pointer: *state", __func__);
-    return -1;
-  }
-
-  ret = pal_set_key_value("pwr_server_last_state", state);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s: pal_set_key_value failed", __func__);
-  }
-
-  return ret;
-}
-
-int
-pal_get_last_pwr_state(uint8_t fru, char *state) {
-  int ret = 0;
-  
-  if (state == NULL) {
-    syslog(LOG_WARNING, "%s() NULL pointer: *state", __func__);
-    return -1;
-  }
-
-  ret = pal_get_key_value("pwr_server_last_state", state);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s: pal_get_key_value failed", __func__);
-  }
-
-  return ret;
 }
 
 int

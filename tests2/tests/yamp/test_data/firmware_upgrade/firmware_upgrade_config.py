@@ -45,7 +45,6 @@ UPGRADING_TIMEOUT = {
 EXPECTED_KEYWORD = [
     "closed by remote host",
     "not supported",
-    "No EEPROM/flash",
     "FAIL!",
     "returned error",  # end of failed expected keyword
     "PASS!",

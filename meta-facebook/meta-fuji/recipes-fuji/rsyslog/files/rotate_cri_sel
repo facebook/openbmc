@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# Copyright 2020-present Facebook. All Rights Reserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+EMMC_MOUNT_POINT="/mnt/data1"
+LOG_DIR="$EMMC_MOUNT_POINT/cri_sel"
+LOG_CNT="$LOG_DIR/cri_sel_cnt"
+MAX_CNT=10
+
+if [ -d $EMMC_MOUNT_POINT ]; then
+    [ -d $LOG_DIR ] || mkdir -p $LOG_DIR
+    [ -e $LOG_CNT ] || touch $LOG_CNT
+    cnt=$(cat $LOG_CNT)
+
+    if [ $((cnt)) -eq $MAX_CNT ]; then
+        cnt=1
+    else
+        cnt=$((cnt + 1))
+    fi
+
+    echo $cnt > $LOG_CNT
+    mv /mnt/data/cri_sel /mnt/data/cri_sel.0
+    touch /mnt/data/cri_sel
+    cp /mnt/data/cri_sel.0 $LOG_DIR/cri_sel.$cnt
+else
+    mv /mnt/data/cri_sel /mnt/data/cri_sel.0
+    touch /mnt/data/cri_sel
+fi

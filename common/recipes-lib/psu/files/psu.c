@@ -1422,7 +1422,9 @@ get_psu_info(uint8_t num) {
 
   if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL)) ||
       !strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K)) ||
-      !strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
+      !strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL)) ||
+      !strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL)) ||
+      !strncmp((char *)block, MURATA_MODEL_2K, strlen(MURATA_MODEL_2K))) {
     size = OPTN_TIME_PRESENT;
   } else {
     size = STATUS_FAN;
@@ -1526,7 +1528,9 @@ get_blackbox_info(uint8_t num, const char *option) {
 
   if (strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL)) &&
       strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K)) &&
-      strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
+      strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL)) &&
+      strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL)) &&
+      strncmp((char *)block, MURATA_MODEL_2K, strlen(MURATA_MODEL_2K))) {
     printf("PSU%d not support blackbox!\n", psu_num);
     close(psu[num].fd);
     return -1;

@@ -1,3 +1,4 @@
+#
 # Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,15 +15,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=mTerm server monitoring
+After=openbmc_gpio_setup.service setup_i2c.service
+Wants=setup_i2c.service
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Service]
+ExecStart=/usr/local/bin/mTerm_server wedge /dev/ttyS4
 
-SRC_URI += "file://mTerm/run \
-            file://mTerm_server.service \
-           "
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
-
-S = "${WORKDIR}"
-
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
+[Install]
+WantedBy=multi-user.target

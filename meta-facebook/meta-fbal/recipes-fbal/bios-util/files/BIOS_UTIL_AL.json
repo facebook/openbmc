@@ -12,17 +12,16 @@
     "supported": true
   },
   "plat_info": {
-    "supported": true
+    "supported": false
   },
   "pcie_port_config": {
     "supported": false,
-    "pcie_ports": "slot1, slot2, slot3, slot4"
+    "pcie_ports": ""
   },
   "postcode": {
     "supported": true
   },
-  "force_cmos_clear": {
+  "force_cmos_clear" : {
     "supported": true
   }
 }
-

@@ -12,6 +12,7 @@ from bios_pcie_port_config import *
 from bios_plat_info import *
 from bios_postcode import *
 from bios_tpm_physical_presence import *
+from bios_force_clear_cmos import force_clear_cmos
 
 
 BIOS_UTIL_CONFIG = "/usr/local/fbpackages/bios-util/bios_support.json"
@@ -36,6 +37,8 @@ def bios_main_fru(fru, command):
         pcie_port_config(fru, sys.argv[1:])
     elif command == "--tpm-physical-presence":
         tpm_physical_presence(fru, sys.argv[1:])
+    elif command == "--force-clear-cmos":
+        force_clear_cmos(fru)
 
 
 class check_bios_util(object):
@@ -125,7 +128,14 @@ class check_bios_util(object):
                     choices=["set", "get"],
                     help="Set or get BIOS boot order",
                 )
-
+        if self.force_clear_cmos:
+            group.add_argument(
+                "--force-clear-cmos",
+                dest="command",
+                action="store",
+                choices=["set"],
+                help="Set force clear CMOS GPIO for server",
+            )
         if self.tpm_presence:
             group.add_argument(
                 "--tpm-physical-presence",
@@ -194,6 +204,7 @@ class check_bios_util(object):
     def get_config_params(self):
         self.bios_util_action = "false"
         self.tpm_presence = False
+        self.force_clear_cmos = False
         if (
             "boot_mode" in self.bios_support_config
             and "supported" in self.bios_support_config["boot_mode"]
@@ -243,6 +254,11 @@ class check_bios_util(object):
             and "supported" in self.bios_support_config["tpm_presence"]
         ):
             self.tpm_presence = self.bios_support_config["tpm_presence"]["supported"]
+        if (
+            "force_clear_cmos" in self.bios_support_config
+            and "supported" in self.bios_support_config["force_clear_cmos"]
+        ):
+            self.force_clear_cmos = True
 
         if (
             self.boot_mode
@@ -253,6 +269,7 @@ class check_bios_util(object):
             or self.pcie_port_config
             or self.postcode
             or self.tpm_presence
+            or self.force_clear_cmos
         ):
             self.bios_util_action = "true"
 

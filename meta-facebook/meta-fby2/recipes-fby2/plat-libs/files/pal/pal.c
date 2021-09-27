@@ -9316,29 +9316,6 @@ pal_can_change_power(uint8_t fru)
 }
 
 int
-pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
-  char key[64] = {0};
-  char value[64] = {0};
-  struct timespec ts;
-
-  if (fruid == FRU_BMC) {    //BMC update action belongs to SPB range
-    fruid = FRU_SPB;
-  }
-
-  sprintf(key, "fru%d_fwupd", fruid);
-
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
-
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
-  }
-
-  return 0;
-}
-
-int
 pal_ipmb_processing(int bus, void *buf, uint16_t size) {
   char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN];

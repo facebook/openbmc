@@ -145,6 +145,8 @@ lightning_ssd_vendor(uint8_t *ssd_vendor) {
     *ssd_vendor = SEAGATE;
   else if (strstr(vendor, "samsung") != NULL)
     *ssd_vendor = SAMSUNG;
+  else if (strstr(vendor, "wd") != NULL)
+    *ssd_vendor = WD;
   else {
     syslog(LOG_DEBUG, "%s(): Cannot find corresponding SSD vendor", __func__);
     return -1;

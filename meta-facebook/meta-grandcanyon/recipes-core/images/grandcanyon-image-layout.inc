@@ -14,7 +14,7 @@ def fbobmc_get_image_part_table(d):
         (  0x000E0000,  "u-boot-env",   64          , "data",       0),
         (  0x000F0000,  "image-meta",   64          , "meta",       0),
         (  0x00100000,  "os-fit",       -1          , "fit",        d.expand("${DEPLOY_DIR_IMAGE}/${FIT_LINK}")),
-        (  0x02000000,  "data0",        4 * 1024    , "mtdonly",    None),
+        (  0x02000000,  "data0",        32 * 1024    , "mtdonly",    None),
     )
 
     image_part_table_vboot = (
@@ -25,7 +25,7 @@ def fbobmc_get_image_part_table(d):
         (  0x000F0000,  "image-meta",   64          ,   "meta",     0),
         (  0x00100000,  "u-boot-fit",   640         ,   "fit",      d.expand("${DEPLOY_DIR_IMAGE}/${UBOOT_FIT_LINK}") ),
         (  0x001A0000,  "os-fit",       -1          ,   "fit",      d.expand("${DEPLOY_DIR_IMAGE}/${FIT_LINK}")),
-        (  0x02000000,  "data0",        4 * 1024    ,   "mtdonly",   None),
+        (  0x02000000,  "data0",        32 * 1024    ,   "mtdonly",   None),
     )
 
     if d.getVar("VERIFIED_BOOT"):

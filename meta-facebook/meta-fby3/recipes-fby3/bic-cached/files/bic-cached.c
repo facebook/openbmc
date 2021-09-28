@@ -123,9 +123,13 @@ fruid_cache_init(uint8_t slot_id) {
 
         if (present & PRESENT_2U_TOP) {
           remote_rr1_ret = remote_fruid_cache_init(slot_id, 0, RREXP_BIC_INTF1);
+        } else {
+          syslog(LOG_CRIT, "TOP GPv3 board is not present");
         }
         if (present & PRESENT_2U_BOT) {
           remote_rr2_ret = remote_fruid_cache_init(slot_id, 0, RREXP_BIC_INTF2);
+        } else {
+          syslog(LOG_CRIT, "BOT GPv3 board is not present");
         }
       }
     }

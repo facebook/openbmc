@@ -2123,6 +2123,14 @@ pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
   return;
 }
 
+static void
+pal_get_gpv3_not_present_str_name(uint8_t comp, uint8_t gpv3_name, char *error_log) {
+  const char *gpv3_present_list_str[5] = {"TOP_GPv3_PRESENT1", "TOP_GPv3_PRESENT2", "BOT_GPv3_PRESENT1", "BOT_GPv3_PRESENT2"};
+  const uint8_t gpv3_present_list_size = ARRAY_SIZE(gpv3_present_list_str);
+  snprintf(error_log, 256, "%s/%s ", pal_get_board_name(comp), (gpv3_name < gpv3_present_list_size)?gpv3_present_list_str[gpv3_name]:"Undefined GPv3");
+  return;
+}
+
 static int
 pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
@@ -2146,6 +2154,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_SLOT_PRSNT     = 0x11,
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
+    SYS_GPV3_NOT_PRESENT  = 0x14,
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
     E1S_1OU_M2_PRESENT    = 0x80,
@@ -2218,6 +2227,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_2OU_VR_FAULT:
       pal_get_2ou_vr_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "2OU VR fault");
+      break;
+    case SYS_GPV3_NOT_PRESENT:
+      pal_get_gpv3_not_present_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "GPv3 Board Not Present Warning");
       break;
     case SYS_DP_X8_PWR_FAULT:
       fby3_common_get_2ou_board_type(fru, &type_2ou);

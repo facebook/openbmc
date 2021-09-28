@@ -49,6 +49,7 @@ enum {
   INTEL = 0x01,
   SEAGATE,
   SAMSUNG,
+  WD
 };
 
 int lightning_common_fru_name(uint8_t fru, char *str);

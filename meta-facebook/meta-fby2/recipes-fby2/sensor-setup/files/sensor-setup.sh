@@ -27,6 +27,73 @@
 # Short-Description: Power on micro-server
 ### END INIT INFO
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/i2c-utils.sh
+
+check_i2c_device_bind() {
+   # $1 - driver name
+   # $2 - device path in <bus>-00<addr> format.
+   chk_driver_dir="/sys/bus/i2c/drivers/$1"
+
+   if [ ! -L "$chk_driver_dir"/"$2" ]; then
+      # device not found in driver folder
+      return 1
+   fi
+
+   # bind success
+   return 0
+}
+
+init_northdome_inlet_temp_type() {
+   key_name="inlet_temp_type"
+   dev_uid_1="9-004e"
+   dev_name_1="tmp421"
+   dev_driver_1="$(i2c_driver_map $dev_name_1)"
+   dev_uid_2="9-0048"
+   dev_name_2="tmp75"
+   dev_driver_2="$(i2c_driver_map $dev_name_2)"
+   retry_count=3
+   val="unknow"
+
+   while [ "$retry_count" -gt "0" ]
+   do
+      check_i2c_device_bind $dev_driver_1 $dev_uid_1 && val=$dev_name_1 && break
+      check_i2c_device_bind $dev_driver_2 $dev_uid_2 && val=$dev_name_2 && break
+
+      # both sensors not  successful binding, rebind again
+      i2c_bind_driver $dev_driver_1 $dev_uid_1
+      i2c_bind_driver $dev_driver_2 $dev_uid_2
+
+      retry_count=$((retry_count-1))
+   done
+
+   kv set "$key_name" "$val"
+}
+
+init_northdome_outlet_temp_type() {
+   key_name="outlet_temp_type"
+   dev_uid_1="9-004f"
+   dev_name_1="tmp421"
+   dev_driver_1="$(i2c_driver_map $dev_name_1)"
+   dev_uid_2="9-0049"
+   dev_name_2="tmp75"
+   dev_driver_2="$(i2c_driver_map $dev_name_2)"
+   retry_count=3
+   val="unknow"
+
+   while [ "$retry_count" -gt "0" ]
+   do
+      check_i2c_device_bind $dev_driver_1 $dev_uid_1 && val=$dev_name_1 && break
+      check_i2c_device_bind $dev_driver_2 $dev_uid_2 && val=$dev_name_2 && break
+
+      # both sensors not  successful binding, rebind again
+      i2c_bind_driver $dev_driver_1 $dev_uid_1
+      i2c_bind_driver $dev_driver_2 $dev_uid_2
+
+      retry_count=$((retry_count-1))
+   done
+
+   kv set "$key_name" "$val"
+}
 
 # Eventually, this will be used to configure the various (mostly
 # i2c-based) sensors, once we have a kernel version that supports
@@ -43,14 +110,14 @@ kernel_ver=$(get_kernel_ver)
 if [ $kernel_ver == 4 ]; then
     modprobe lm75
     modprobe pmbus
-    
+
     # Enable the ADC inputs;  adc0 - adc15 are connected to various voltage sensors
     # adc12 - adc15 are for SLOT_TYPE
-    
+
     PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-    
+
     # setup ADC channels
-    
+
     ADC_PATH="/sys/devices/platform/ast_adc.0"
     # For FBY2 tyep V:
     # channel 0:  r1:  5.36K; r2:  2.0K; v2: 0mv
@@ -69,7 +136,7 @@ if [ $kernel_ver == 4 ]; then
     # channel 13: r1:     1K; r2:    0K; v2: 0mv
     # channel 14: r1:     1K; r2:    0K; v2: 0mv
     # channel 15: r1:     1K; r2:    0K; v2: 0mv
-    
+
     config_adc() {
         channel=$1
         r1=$2
@@ -80,7 +147,7 @@ if [ $kernel_ver == 4 ]; then
         echo $v2 > ${ADC_PATH}/adc${channel}_v2
         echo 1 > ${ADC_PATH}/adc${channel}_en
     }
-    
+
     config_adc 0  5360  2000 0
     config_adc 1 15800  2000 0
     config_adc 2  2870  2000 0
@@ -162,4 +229,10 @@ fi
 if [ $kernel_ver == 4 ]; then
   rmmod adm1275
   modprobe adm1275
+fi
+
+# init inlet & outlet temp sensor type cache
+if [ "$spb_type" -eq "3" ]; then
+   init_northdome_inlet_temp_type
+   init_northdome_outlet_temp_type
 fi

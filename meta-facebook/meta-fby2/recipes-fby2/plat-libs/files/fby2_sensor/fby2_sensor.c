@@ -1145,13 +1145,56 @@ read_temp_attr(const char *device, const char *attr, float *value) {
 }
 
 #if defined(CONFIG_FBY2_ND)
+enum SENSOR_TYPE_ID {
+  SNR_TYPE_TMP421 = 0,
+  SNR_TYPE_TMP75  = 1,
+  // keep this as last one
+  SNR_TYPE_UNKNOW = 255
+};
+
+static uint8_t get_temp_sensor_type(char *key) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (kv_get(key, value, NULL, 0) < 0) {
+    return SNR_TYPE_UNKNOW;
+  }
+
+  if (strcmp(value, "tmp421") == 0) {
+    return SNR_TYPE_TMP421;
+  } else if (strcmp(value, "tmp75") == 0) {
+    return SNR_TYPE_TMP75;
+  }
+
+  return SNR_TYPE_UNKNOW;
+}
+
 static int
 read_temp_lmsensors(uint8_t id, float *value) {
+  static bool is_init = false;
+  static uint8_t inlet_type;
+  static uint8_t outlet_type;
   int ret = -1;
+
+  if (!is_init) {
+    inlet_type = get_temp_sensor_type("inlet_temp_type");
+    outlet_type = get_temp_sensor_type("outlet_temp_type");
+    syslog(LOG_INFO, "inlet_temp_type: %u", inlet_type);
+    syslog(LOG_INFO, "outlet_temp_type: %u", outlet_type);
+    is_init = true;
+  }
+
   if (id == SP_SENSOR_INLET_TEMP) {
-    ret = sensors_read("tmp421-i2c-9-4e", "INLET_TEMP", value);
+    if (inlet_type == SNR_TYPE_TMP75) {
+      ret = sensors_read("tmp75-i2c-9-48", "INLET_TEMP", value);
+    } else {
+      ret = sensors_read("tmp421-i2c-9-4e", "INLET_TEMP", value);
+    }
   } else if (id == SP_SENSOR_OUTLET_TEMP) {
-    ret = sensors_read("tmp421-i2c-9-4f", "OUTLET_TEMP", value);
+    if (outlet_type == SNR_TYPE_TMP75) {
+      ret = sensors_read("tmp75-i2c-9-49", "OUTLET_TEMP", value);
+    } else {
+      ret = sensors_read("tmp421-i2c-9-4f", "OUTLET_TEMP", value);
+    }
   }
 
   return ret;

@@ -591,8 +591,7 @@ gpio_monitor_poll(void *ptr) {
         chk_bic_pch_pwr_flag = false;
       }
 
-      //rst old & new pin val
-      memset(&o_pin_val, 0, sizeof(o_pin_val));
+      //rst new pin val
       memset(&n_pin_val, 0, sizeof(n_pin_val));
 
       //Normally, BIC can always be accessed except 12V-off or 12V-cycle

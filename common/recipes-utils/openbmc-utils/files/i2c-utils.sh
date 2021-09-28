@@ -112,6 +112,8 @@ i2c_driver_map() {
             echo "adm1275";;
         "tmp75" | "lm75" | "tmp1075")
             echo "lm75";;
+        "tmp421")
+            echo "tmp421";;
         "pca9505" | "pca9534" | "pca9535")
             echo "pca953x";;
         "pca9548")

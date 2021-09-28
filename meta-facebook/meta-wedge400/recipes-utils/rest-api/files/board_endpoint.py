@@ -90,6 +90,12 @@ class boardApp_Handler:
             rest_presence.get_presence_info_psu(), dumps=dumps_bytestr
         )
 
+    # Handler for sys/presence/psu resource endpoint
+    async def rest_presence_pem_hdl(self, request):
+        return web.json_response(
+            rest_presence.get_presence_info_pem(), dumps=dumps_bytestr
+        )
+
     # Handler for sys/feutil resource endpoint
     async def rest_feutil_hdl(self, request):
         return web.json_response(rest_feutil.get_feutil(), dumps=dumps_bytestr)

@@ -13,7 +13,9 @@ fan3 : 1
 fan4 : 1
 POWER SUPPLIES
 psu1 : 0
-psu2 : 1
+psu2 : 0
+pem1 : 0
+pem2 : 1
 DEBUG CARD
 debug_card : 0
 """
@@ -31,7 +33,9 @@ class TestRestConfig(unittest.TestCase):
                 "fan3": "1",
                 "fan4": "1",
                 "psu1": "0",
-                "psu2": "1",
+                "psu2": "0",
+                "pem1": "0",
+                "pem2": "1",
                 "debug_card": "0",
             },
         )

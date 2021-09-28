@@ -80,6 +80,21 @@ function get_psu_presence
   done
 }
 
+# Pem 
+function get_pem_presence
+{
+  val=$(lsmod | grep ltc4282)
+  for i in {1..2}; do
+    key="pem1${i}"
+    file="$SMB_DIR/psu_present_${i}_N_int_status"
+    if [ -z "$val" ]; then
+      echo "$key : 0"
+    else
+      get_presense "$file" "$key"
+    fi
+  done
+}
+
 # Debug card
 function get_debug_card_presence
 {
@@ -115,6 +130,8 @@ else
     get_fan_presence
   elif [[ $1 = "psu" ]]; then
     get_psu_presence
+  elif [[ $1 = "pem" ]]; then
+    get_pem_presence
   elif [[ $1 = "debug_card" ]]; then
     get_debug_card_presence
   else

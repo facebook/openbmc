@@ -57,9 +57,17 @@ def get_presence_info_psu() -> Dict:
     }
 
 
+def get_presence_info_pem() -> Dict:
+    return {
+        "Information": get_presence_info_data("pem"),
+        "Actions": [],
+        "Resources": [],
+    }
+
+
 def get_presence_info() -> Dict:
     result = []
-    devices = ["scm", "fan", "psu"]
+    devices = ["scm", "fan", "psu", "pem"]
     for dev in devices:
         result.append(get_presence_info_data(dev))
     return {"Information": result, "Actions": [], "Resources": devices}

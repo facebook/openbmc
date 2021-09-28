@@ -49,4 +49,5 @@ board_routes = [
     "/api/sys/switch_reset/only_reset",
     "/api/sys/gb_freq",
     "/api/sys/modbus_registers",
+    "/api/sys/presence/pem",
 ]

@@ -537,8 +537,7 @@ gpio_monitor_poll(void *ptr) {
       rst_timer(fru);
       kv_set(host_key[fru-1], "0", 0, 0);
 
-      //rst old & new pin val
-      memset(&o_pin_val, 0, sizeof(o_pin_val));
+      //rst new pin val
       memset(&n_pin_val, 0, sizeof(n_pin_val));
 
       //Normally, BIC can always be accessed except 12V-off or 12V-cycle

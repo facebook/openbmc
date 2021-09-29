@@ -5,7 +5,7 @@
 
 
 asic_mac_check() {
-  mac3=$(ncsi-util 0x17 | awk -F'mac_3 = ' '{print $2}')
+  mac3=$(/usr/local/bin/ncsi-util 0x17 | awk -F'mac_3 = ' '{print $2}')
 
   if [[ "$mac3" -eq "0x0" ]]
   then
@@ -42,6 +42,26 @@ usb_dev_detect() {
     sleep 10
   done
 }
+
+
+#Check MAC Filter for AL
+for _ in {0..2}; do
+  mapfile mac <<< "$(/usr/local/bin/ncsi-util 0x17 | grep -E "mac_[1-2]" | awk '{print $3}')"
+  if [ ${#mac[@]} -ne 2 ]; then
+    continue
+  fi
+
+  mac_al=$(for i in {24..0..8}; do printf "%02x:" $((mac[0]>>i & 0xff)); done; \
+        printf %02x:%02x $((mac[1]>>24 & 0xff)) $((mac[1]>>16 & 0xff)))
+  exp_mac=$(cat /sys/class/net/eth0/address)
+  if [ "$exp_mac" = "$mac_al" ]; then
+    break
+  fi
+  logger -s -p user.warn -t setup-bridge "Recover MAC Address Filter: $mac_al to $exp_mac"
+  IFS=":" read -r -a mac <<< "$exp_mac"
+  mac_al=("${mac[@]/#/0x}")
+  /usr/local/bin/ncsi-util 0x0e "${mac_al[@]}" 0x01 0x01 > /dev/null 2>&1
+done
 
 
 #Detect Cable Present

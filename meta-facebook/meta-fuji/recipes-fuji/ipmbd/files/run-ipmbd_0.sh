@@ -18,10 +18,4 @@
 # Boston, MA 02110-1301 USA
 #
 
-# shellcheck disable=SC1091
-source /usr/local/bin/openbmc-utils.sh
-if [ -e /sys/bus/i2c/devices/0-1010 ]; then
-    i2c_device_delete 0 0x1010
-fi
-i2c_device_add 0 0x1010 slave-mqueue
 exec /usr/local/bin/ipmbd 0 1

@@ -266,9 +266,14 @@ def exec_bunch(commands, logger):
 
 
 def systemd_available(logger):
-    with open("/proc/1/comm") as f:
-        c = f.readline()
-        return "systemd" in c
+    try:
+        with open("/proc/1/comm") as f:
+            c = f.readline()
+            return "systemd" in c
+    catch IOError:
+        """ /proc/<pid>/comm is not available on linux < 2.6.33. systemd is not
+        supported on 2.6.x so we can safely return False."""
+        return False
 
 
 def restart_healthd(logger, wait=False, supervisor="sv"):

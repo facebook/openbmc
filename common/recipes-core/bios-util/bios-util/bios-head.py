@@ -18,6 +18,8 @@ def bios_main():
         for fruname in frulist:
             fru = pal_get_fru_id(fruname)
             if fru >= 0:
+                if not pal_is_fru_prsnt(fru):
+                    continue
                 if pal_is_slot_server(fru) == True:
                     print("%s:" % (fruname))
                     bios_main_fru(fru, command)

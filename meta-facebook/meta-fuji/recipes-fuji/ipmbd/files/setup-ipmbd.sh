@@ -28,9 +28,14 @@
 #
 ### END INIT INFO
 
-echo "Starting IPMB Rx/Tx Daemon"
-
+echo -n "Starting IPMB Rx/Tx Daemon ..."
 ulimit -q 1024000
-runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
-runsv /etc/sv/ipmbd_4 > /dev/null 2>&1 &
 
+declare -a ipmbd_list
+ipmbd_list=(0 4)
+for ipmb in "${ipmbd_list[@]}"
+do
+    runsv "/etc/sv/ipmbd_$ipmb" &> /dev/null &
+done
+
+echo "Done"

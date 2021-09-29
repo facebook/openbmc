@@ -48,6 +48,8 @@ SRC_URI += "file://setup-gpio.sh \
             file://reinit_all_pim.sh \
             file://wedge_us_mac.sh \
             file://eth0_mac_fixup.sh \
+            file://mount_data1.service \
+            file://setup_gpio.service \
            "
 
 OPENBMC_UTILS_FILES += " \
@@ -76,16 +78,9 @@ OPENBMC_UTILS_FILES += " \
     wedge_us_mac.sh \
     "
 DEPENDS:append = " update-rc.d-native"
+inherit systemd
 
-do_install_board() {
-    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
-    olddir="/usr/local/fbpackages/utils"
-    install -d ${D}${olddir}
-    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
-
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
+do_work_sysv() {
     # the script to mount /mnt/data
     install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
@@ -123,8 +118,56 @@ do_install_board() {
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 
-do_install:append() {
+do_work_systemd() {
+  # TODO: We'd want to run all the logic here that is run in mound_data0.sh
+  install -d ${D}/usr/local/bin
+  install -d ${D}${systemd_system_unitdir}
+
+  # mount secondary storage (emmc) to /mnt/data1
+  install -m 755 ${WORKDIR}/mount_data1.sh ${D}/usr/local/bin/mount_data1.sh
+
+  install -m 755 setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
+
+  install -m 755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+
+  # networking is done after rcS, any start level within rcS
+  # for mac fixup should work
+  install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+
+  install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+
+  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+
+  install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+
+  install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}
+
+}
+
+do_install_board() {
+  # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+  olddir="/usr/local/fbpackages/utils"
+  install -d ${D}${olddir}
+  ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
+
+  # init
+  install -d ${D}${sysconfdir}/init.d
+  install -d ${D}${sysconfdir}/rcS.d
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+    do_work_systemd
+  else
+    do_work_sysv
+  fi
+}
+
+
+do_install_append() {
   do_install_board
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE:${PN} += "mount_data1.service setup_gpio.service"
+
+#Not needed for fuji
+SYSTEMD_SERVICE:${PN}_remove = "enable_watchdog_ext_signal.service"

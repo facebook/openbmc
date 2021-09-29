@@ -450,3 +450,10 @@ class TestSystem(unittest.TestCase):
                 system.reboot(dry_run, "testing", self.logger)
                 mocked_call.assert_called_once_with(expected_arguments)
                 mocked_shutdown.assert_called()
+
+    @patch.object(system, "open", create=True)
+    def test_systemd_available_old_kernel(self, mock_open):
+        mock_open.return_value = IOError("No such file")
+        result = system.systemd_available(self.logger)
+        self.assertFalse(result, "Missing /proc/1/comm assumes kernel <2.6.33")
+        mock_open.assert_called_once_with("/proc/1/comm")

@@ -205,6 +205,7 @@ static int get_pax_ver(uint8_t paxid, uint8_t type, char *ver)
   dev = switchtec_open(device_name);
   if (dev == NULL) {
     syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+    pax_unlock(fd);
     return -1;
   }
 

@@ -201,11 +201,6 @@ enable_bic_update_with_param(uint8_t slot_id, uint8_t intf) {
   return ret;
 }
 
-/*static int
-enable_bic_update(uint8_t slot_id) {
-  return enable_bic_update_with_param(slot_id, NONE_INTF);
-}*/
-
 static int
 enable_remote_bic_update(uint8_t slot_id, uint8_t intf) {
   return enable_bic_update_with_param(slot_id, intf);
@@ -515,67 +510,38 @@ send_bic_runtime_image_data(uint8_t slot_id, int fd, int i2cfd, int file_size, c
 }
 
 static int
-update_bic(uint8_t slot_id, uint8_t comp, char *image, int file_size, uint8_t force) {
+update_bic(uint8_t slot_id, int fd, int file_size) {
   struct timeval start, end;
   int ret = -1, rc;
-  uint32_t offset;
+  uint32_t dsize, last_offset;
+  uint32_t offset, boundary;
   volatile uint16_t read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
   ssize_t count;
-  int fd;
-  int i;
-  //int remain = 0;
-  //unsigned char buff[1];
 
   printf("updating fw on slot %d:\n", slot_id);
 
-  uint32_t dsize, last_offset;
-  struct stat st;
-  // Open the file exclusively for read
-  fd = open(image, O_RDONLY, 0666);
-  if (fd < 0) {
-    printf("ERROR: invalid file path!\n");
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
-    goto error_exit;
-  }
-
-  stat(image, &st);
-
-  syslog(LOG_CRIT, "Update bic: update bic firmware on slot %d\n", slot_id);
-
-  if (fd > 0) {
-    close(fd);
-  }
-
-  fd = open(image, O_RDONLY, 0666);
-  if (fd < 0) {
-    printf("ERROR: invalid file path!\n");
-    syslog(LOG_ERR, "bic_update_fw: open fails for path: %s\n", image);
-    goto error_exit;
-  }
-
-  stat(image, &st);
-  dsize = st.st_size/100;
-
   // Write chunks of binary data in a loop
-  offset = 0;
+  dsize = file_size/100;
   last_offset = 0;
-  i = 1;
+  offset = 0;
+  boundary = PKT_SIZE;
   target = UPDATE_BIC;
   gettimeofday(&start, NULL);
   while (1) {
-    memset(buf, 0xFF, sizeof(buf));
-    // For BIOS, send packets in blocks of 64K
-    if ((offset+AST_BIC_IPMB_WRITE_COUNT_MAX) > (i * PKT_SIZE)) {
-      read_count = (i * PKT_SIZE) - offset;
-      i++;
-    } else {
+    // send packets in blocks of 64K
+    if ((offset + AST_BIC_IPMB_WRITE_COUNT_MAX) < boundary) {
       read_count = AST_BIC_IPMB_WRITE_COUNT_MAX;
+    } else {
+      read_count = boundary - offset;
     }
 
     // Read from file
     count = read(fd, buf, read_count);
+    if ((count < 0) && (errno == EINTR)) {
+      continue;
+    }
     if (count <= 0 || count > read_count) {
       break;
     }
@@ -585,13 +551,15 @@ update_bic(uint8_t slot_id, uint8_t comp, char *image, int file_size, uint8_t fo
     }
     // Send data to Bridge-IC
     rc = _update_fw(slot_id, target, offset, count, buf);
-
     if (rc) {
       goto error_exit;
     }
 
     // Update counter
     offset += count;
+    if (offset >= boundary) {
+      boundary += PKT_SIZE;
+    }
     if ((last_offset + dsize) <= offset) {
       _set_fw_update_ongoing(slot_id, 60);
       printf("\rupdated bic: %u %%", offset/dsize);
@@ -601,164 +569,17 @@ update_bic(uint8_t slot_id, uint8_t comp, char *image, int file_size, uint8_t fo
   }
   printf("\n");
 
-  _set_fw_update_ongoing(slot_id, 60 * 2);
-
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+  if (offset >= file_size) {
+    ret = 0;
+  }
 
-  ret = 0;
 error_exit:
   printf("\n");
-  syslog(LOG_CRIT, "Update : updating bios firmware is exiting on slot %d\n", slot_id);
-
-  if (fd > 0) {
-    close(fd);
-  }
 
   return ret;
 }
-
-
-#if 0
-static int
-update_bic(uint8_t slot_id, int fd, int file_size) {
-  int ret = -1;
-  int i2cfd;
-  char cmd[100] = {0};
-  size_t cmd_size = sizeof(cmd);
-  uint8_t bus_num;
-  const uint8_t I2CBASE = 0x40;
-  const uint8_t bytes_per_read = 252;
-  struct rlimit mqlim;
-
-  //step1 -get the bus number and open the dev of i2c
-  bus_num = fby35_common_get_bus_id(slot_id);
-
-  i2cfd = i2c_open(bus_num, BRIDGE_SLAVE_ADDR);
-  if ( i2cfd < 0 ) {
-    printf("Cannot open /dev/i2c-%d\n", bus_num);
-    goto exit;
-  }
-
-  //step2 - kill ipmbd
-  snprintf(cmd, cmd_size, "sv stop ipmbd_%d", bus_num);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_STATUS_FAILURE;
-  }
-  printf("stop ipmbd for slot %x..\n", slot_id);
-
-  //step3 - adjust the i2c speed and set properties of mqlim
-  snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFFE303", I2CBASE + (I2CBASE * bus_num) + 4);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_STATUS_FAILURE;
-  }
-  sleep(1);
-  printf("stopped ipmbd for slot %x..\n", slot_id);
-
-  if ( is_bic_ready(slot_id, NONE_INTF) < 0 ) {
-    printf("BIC is not ready after sleep 1s\n");
-    goto exit;
-  }
-
-  mqlim.rlim_cur = RLIM_INFINITY;
-  mqlim.rlim_max = RLIM_INFINITY;
-  if ( setrlimit(RLIMIT_MSGQUEUE, &mqlim) < 0) {
-    goto exit;
-  }
-
-  snprintf(cmd, cmd_size, "/usr/local/bin/ipmbd -u %d %d > /dev/null 2>&1 &", bus_num, slot_id);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_STATUS_FAILURE;
-  }
-  printf("start ipmbd -u for this slot %x..\n", slot_id);
-
-  //assume ipmbd that it will be ready in 2s
-  sleep(2);
-
-  //step4 - enable bic update
-  ret = enable_bic_update(slot_id);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to enable the bic update", __func__);
-    //goto exit;
-  }
-
-  //step5 - kill ipmbd
-  snprintf(cmd, cmd_size, "ps -w | grep -v 'grep' | grep 'ipmbd -u %d' |awk '{print $1}'| xargs kill", bus_num);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_STATUS_FAILURE;
-  }
-  printf("stop ipmbd -u for slot %x..\n", slot_id);
-
-  //make sure that BIC enters bootloader
-  sleep(3);
-
-  //step6 - send cmd 0x21 to notice BIC the update will start
-  ret = send_start_bic_update(slot_id, i2cfd, file_size, NONE_INTF);
-  if ( ret < 0 ) {
-    printf("Failed to send a signal to start the update of BIC\n");
-    goto exit;
-  }
-
-  msleep(600);
-
-  //step7 - check the response
-  ret = read_bic_update_ack_status(slot_id, i2cfd, NONE_INTF);
-  if ( ret < 0 ) {
-    printf("Failed to get the response of the command\n");
-    goto exit;
-  }
-
-  //step8 - loop to send all the image data
-  ret = send_bic_runtime_image_data(slot_id, fd, i2cfd, file_size, bytes_per_read, NONE_INTF);
-  if ( ret < 0 ) {
-    printf("Failed to send image data\n");
-    goto exit;
-  }
-
-  msleep(500);
-
-  //step9 - run the new image
-  ret = send_complete_signal(slot_id, i2cfd, NONE_INTF);
-  if ( ret < 0 ) {
-    printf("Failed to send a complete signal\n");
-  }
-
-  //step10 - check the response
-  ret = read_bic_update_ack_status(slot_id, i2cfd, NONE_INTF);
-  if ( ret < 0 ) {
-    printf("Failed to get the response of the command\n");
-    goto exit;
-  }
-
-exit:
-  //step11 - recover the i2c speed
-  snprintf(cmd, cmd_size, "devmem 0x1e78a%03X w 0xFFFCB300", I2CBASE + (I2CBASE * bus_num) + 4);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_STATUS_FAILURE;
-  }
-  msleep(500);
-
-  //step12 - restart the ipmbd
-  snprintf(cmd, cmd_size, "sv start ipmbd_%d", bus_num);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-      return BIC_STATUS_FAILURE;
-  }
-
-  sleep(3);
-
-  if ( i2cfd > 0 ) {
-    close(i2cfd);
-  }
-
-  return ret;
-}
-#endif
 
 static int
 update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
@@ -1078,7 +899,7 @@ error_exit:
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   int ret = -1;
-  int fd = 0;
+  int fd = -1;
   int file_size;
 
   //check params
@@ -1098,7 +919,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
 
   //check the content of the image
-  if( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
+  if ( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
     printf("Invalid BIC file!\n");
     ret = -1;
     goto exit;
@@ -1112,13 +933,13 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
       ret = update_remote_bic(slot_id, intf, fd, file_size);
       break;
     case NONE_INTF:
-      ret = update_bic(slot_id, comp, path, file_size, force);
+      ret = update_bic(slot_id, fd, file_size);
       break;
   }
 
 exit:
 
-  if ( fd > 0 ) {
+  if ( fd >= 0 ) {
     close(fd);
   }
 
@@ -1254,122 +1075,6 @@ error_exit:
 
   return ret;
 }
-
-#if 0
-#define IPMB_MAX_SEND 224
-#define IPMB_BIC_RETRY 3
-static int
-update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size) {
-  const uint8_t bytes_per_read = IPMB_MAX_SEND;
-  uint8_t buf[256] = {0};
-  uint16_t buf_size = sizeof(buf);
-  uint16_t read_bytes = 0;
-  uint32_t offset = 0;
-  uint32_t last_offset = 0;
-  uint32_t dsize = 0;
-  int ret = -1, retry = IPMB_BIC_RETRY;
-  uint8_t self_test_result[2] = {0};
-  uint8_t bmc_location = 0;
-
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return -1;
-  }
-  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
-    if (bic_check_bb_fw_update_ongoing() != 0) {
-      return -1;
-    }
-    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC_BOOTLOADER, SEL_ASSERT) != 0) {
-      printf("Failed to set firmware update ongoing\n");
-      return -1;
-    }
-  }
-
-  dsize = file_size / 20;
-
-  if ( lseek(fd, 0, SEEK_SET) != 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot reinit the fd to the beginning. errstr=%s", __func__, strerror(errno));
-    return -1;
-  }
-
-  printf("Update BIC bootloader\n");
-  while (1) {
-    memset(buf, 0, buf_size);
-    read_bytes = read(fd, buf, bytes_per_read);
-    if ( read_bytes <= 0 ) {
-      //no more bytes can be read
-      break;
-    }
-
-    if ((offset + read_bytes) >= file_size) {
-      comp |= 0x80;
-    }
-    ret = send_image_data_via_bic(slot_id, comp, intf, offset, read_bytes, 0x0, buf);
-    if (ret != BIC_STATUS_SUCCESS)
-      break;
-
-    offset += read_bytes;
-    if ((last_offset + dsize) <= offset) {
-      printf("updated bic bootloader: %d %%\n", (offset/dsize)*5);
-      fflush(stdout);
-      last_offset += dsize;
-    }
-  }
-
-  // Wait for warm reset finished
-  sleep(3);
-  while (retry > 0){
-    sleep(1);
-    ret = bic_get_self_test_result(slot_id, (uint8_t *)&self_test_result, NONE_INTF);
-    if (ret == 0) {
-      break;
-    } else {
-      retry--;
-    }
-  }
-
-  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
-    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC_BOOTLOADER, SEL_DEASSERT) != 0) {
-      printf("Failed to notify firmware update finish\n");
-      ret = -1;
-    }
-  }
-
-  return ret;
-}
-
-static int
-update_bic_bootloader_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
-  int fd = 0;
-  int ret = 0;
-  int file_size = 0;
-
-  fd = open_and_get_size(path, &file_size);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d", __func__, path, fd);
-    goto exit;
-  }
-
-  printf("file size = %d bytes, slot = %d, comp = 0x%x\n", file_size, slot_id, comp);
-
-  //check the content of the image
-  ret = is_valid_bic_image(slot_id, comp, intf, fd, file_size);
-  if (ret < 0) {
-    printf("Invalid BIC bootloader file!\n");
-    goto exit;
-  }
-
-  ret = update_fw_bic_bootloader(slot_id, comp, intf, fd, file_size);
-
-exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
-  return ret;
-}
-#endif
 
 static int
 stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {

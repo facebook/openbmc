@@ -19,12 +19,17 @@
 using namespace std;
 
 bool BmcFpgaComponent::is_valid_image(string image, bool force) {
+#define REVISION_ID(x) ((x >> 4) & 0x0f)
+#define COMPONENT_ID(x) (x & 0x0f)
+
   char read_buffer[1] = {0};
   char identity = 0;
   int size = 0;
   bool ret = false;
+  bool board_rev_is_invalid = false;
   ifstream fpgaFile;
   uint8_t fpga_id_table[2] = {UIC_FPGA_ID, BS_FPGA_ID};
+  uint8_t fw_rev_id = 0xff, board_rev_id = 0xff;
 
   fpgaFile.open(image, ios::in | ios::binary | ios::ate);
 
@@ -66,9 +71,53 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
     goto end;
   }
 
-  identity = read_buffer[0] & 0xf;
+  identity = COMPONENT_ID(read_buffer[0]);
   if (identity != fpga_id_table[location]) {
     cout << "Invalid id:" << (int)identity << endl;
+    goto end;
+  }
+
+  // Check f/w and board stage
+  fw_rev_id = REVISION_ID(read_buffer[0]);
+
+  switch (location) {
+    case UIC_FPGA_LOCATION:
+      if (fbgc_common_get_system_stage(&board_rev_id) < 0) {
+        cout << "Failed to get stage of UIC" << endl;
+        goto end;
+      }
+      break;
+    case BS_FPGA_LOCATION:
+      if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
+        cout << "Failed to get stage of Barton Springs" << endl;
+        goto end;
+      }
+      if (board_rev_id > 0) {
+        board_rev_id--;
+      }
+      break;
+    default:
+      goto end;
+  }
+
+  if ((fw_rev_id > STAGE_MP) || (board_rev_id > STAGE_MP)) {
+    cout << "Wrong revision ID, f/w REV ID: " << (int)fw_rev_id << ", board REV ID: " << (int)board_rev_id << endl;
+    goto end;
+  }
+
+  // PVT & MP firmware could be used in common
+  if (board_rev_id < STAGE_PVT) {
+    if (fw_rev_id != board_rev_id) {
+      board_rev_is_invalid = true;
+    }
+  } else {
+    if (fw_rev_id < STAGE_PVT) {
+      board_rev_is_invalid = true;
+    }
+  }
+
+  if (board_rev_is_invalid == true) {
+    cout << "If you want to update the " << board_stage[fw_rev_id] << " f/w on the " << board_stage[board_rev_id] << " system, please use force update." << endl;
     goto end;
   }
 

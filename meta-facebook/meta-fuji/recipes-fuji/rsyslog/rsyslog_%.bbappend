@@ -16,7 +16,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://rotate_logfile \
             file://rotate_cri_sel \
@@ -31,7 +31,7 @@ do_work_systemd() {
   install -m 644 ${WORKDIR}/rsyslog.service ${D}${systemd_unitdir}/system
 }
 
-do_install_append() {
+do_install:append() {
   dst="${D}/usr/local/fbpackages/rotate"
   install -m 755 ${WORKDIR}/rotate_logfile ${dst}/logfile
   install -m 755 ${WORKDIR}/rotate_cri_sel ${dst}/cri_sel
@@ -41,4 +41,4 @@ do_install_append() {
   fi
 }
 
-FILES_${PN} += "/usr/local/fbpackages/rotate"
+FILES:${PN} += "/usr/local/fbpackages/rotate"

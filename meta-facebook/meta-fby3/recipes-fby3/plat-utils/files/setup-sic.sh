@@ -106,13 +106,72 @@ function init_class1_sic(){
   done
 }
 
+function check_4u_gpv3_type() {
+  echo "Check 4U GPv3 type" >> $LOG
+  # get the top configure
+  cmd="slot1 0xe0 0x02 0x9c 0x9c 0x0 0x15 0xe0 0x02 0x9c 0x9c 0x0 0x45 0xe0 0x66 0x9c 0x9c 0x0 0x0"
+  run_cmd "$cmd"
+  top_cfg=$(cut -d' ' -f2 <<<"$(cat $LOG | tail -n 1)")
+  echo "top_cfg result: $top_cfg" >> $LOG
+
+  echo "" >> $LOG
+
+  # get the bot configure
+  cmd="slot1 0xe0 0x02 0x9c 0x9c 0x0 0x15 0xe0 0x02 0x9c 0x9c 0x0 0x40 0xe0 0x66 0x9c 0x9c 0x0 0x0"
+  run_cmd "$cmd"
+  bot_cfg=$(cut -d' ' -f2 <<<"$(cat $LOG | tail -n 1)")
+  echo "bot_cfg result: $bot_cfg" >> $LOG
+
+  if ! [ "$bot_cfg" == "$top_cfg" ]; then
+    echo "BMC doesn't support multi config" >> $LOG
+    echo "Use TOP_CFG ${top_cfg} by default" >> $LOG
+  fi
+
+  echo $top_cfg
+}
+
+function check_2u_gpv3_type() {
+  echo "Check 2U GPv3 type" >> $LOG
+
+  cmd="slot1 0xe0 0x02 0x9c 0x9c 0x0 0x15 0xe0 0x66 0x9c 0x9c 0x0 0x0"
+  run_cmd "$cmd"
+
+  cfg=$(cut -d' ' -f11 <<<"$(cat $LOG | tail -n 1)")
+  echo -n "result: " >> $LOG
+  echo $cfg | tee -a $LOG
+}
+
 function init_class2_sic(){
   local slot="slot1"
+  local cfg=""
+
   val=$(get_m2_prsnt_sts $slot)
   echo "$slot" >> $LOG
   if [ $val = 0 ] || [ $val = 4 ]; then
     echo "2OU:" >> $LOG
-    init_vishay_ic $slot $REXP_INTF
+    # 0h = GPv3 with BRCM
+    # 1h = 2OU EXP w/o PCIe Switch
+    # 2h = SPE
+    # 3h = GPv3 w/ MCHP
+    # 4h = CWC w/ MCHP
+    # 5h = TBD
+    # 6h = DPv1, class 1
+    # 7h = DPv2, class 1
+    EXP_BOARD_TYPE=$(get_2ou_board_type 4) #only slot1
+    if [ $EXP_BOARD_TYPE == "0x01" ]; then
+      init_vishay_ic $slot $REXP_INTF
+    else
+      # GPv3, CWC, and SPE
+      echo "no need to initialize it because it's done by BIC or no VRs" >> $LOG
+      # check if it's 2U or 4U GPv3
+      if [ $EXP_BOARD_TYPE == "0x04" ]; then
+        cfg=$(check_4u_gpv3_type)
+      elif [ $EXP_BOARD_TYPE == "0x03" ]; then
+        cfg=$(check_2u_gpv3_type)
+      fi
+
+      [[ ! -z "$cfg" ]] && /usr/bin/kv set "gpv3_cfg" "$cfg" create
+    fi
   else
     echo "2OU is not present" >> $LOG
   fi

@@ -187,7 +187,7 @@ class BasePowerUtilTest(unittest.TestCase):
                     else:
                         count -= 1
                         time.sleep(2)
-                    self.assertTrue(False, "slot {} is not ON after reset".format(slot))
+                self.assertTrue(False, "slot {} is not ON after reset".format(slot))
 
     def test_slot_cycle(self):
         """
@@ -213,7 +213,7 @@ class BasePowerUtilTest(unittest.TestCase):
                     else:
                         count -= 1
                         time.sleep(2)
-                    self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
+                self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
 
     def test_12V_slot_off(self):
         """
@@ -291,4 +291,4 @@ class BasePowerUtilTest(unittest.TestCase):
                     else:
                         count -= 1
                         time.sleep(2)
-                    self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
+                self.assertTrue(False, "slot {} is not ON after cycle".format(slot))

@@ -22,6 +22,7 @@ import unittest
 
 from common.base_rest_endpoint_test import BaseRestEndpointTest
 from tests.fby3.test_data.restendpoints.restendpoints import REST_END_POINTS
+from utils.test_utils import qemu_check
 
 
 class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
@@ -38,7 +39,9 @@ class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
                 cls,
                 "test_restendpoint_{}".format(endpoint),
                 functools.partialmethod(
-                    cls.verify_endpoint_attributes,
+                    unittest.skipIf(
+                        qemu_check() and endpoint != "/api", "test env is QEMU, skipped"
+                    )(cls.verify_endpoint_attributes),
                     endpoint,
                     resources,
                 ),

@@ -17,10 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 from common.base_cpu_utilization_test import BaseCpuUtilizationTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class CpuUtilizationTest(BaseCpuUtilizationTest):
     def init_cpu_variables(self):
         """

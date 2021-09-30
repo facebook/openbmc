@@ -57,7 +57,9 @@ class BaseBiosUtilTest(unittest.TestCase):
                 boot_orders = m.group(1).split(",")
                 for opt in boot_orders:
                     self.assertIn(
-                        opt.strip(), boot_options, "{} not found in boot_options".format(opt)
+                        opt.strip(),
+                        boot_options,
+                        "{} not found in boot_options".format(opt),
                     )
 
     def checkBootOrderStatus(self, fru, opt, status):

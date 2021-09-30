@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_mboot_test import BaseMBootTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FBY3MBootTest(BaseMBootTest, unittest.TestCase):
     def set_check_list(self):
         self.check_list = {"spl", "key-store", "u-boot"}

@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_fru_test import CommonFruTest
+from utils.test_utils import qemu_check
 
 
 class FruSlot1Test(CommonFruTest, unittest.TestCase):
@@ -27,38 +28,42 @@ class FruSlot1Test(CommonFruTest, unittest.TestCase):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot1"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_fru_fields(self):
+        super().test_fru_fields()
 
-class FruSlot2Test(CommonFruTest, unittest.TestCase):
+
+class FruSlot2Test(FruSlot1Test, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot2"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
 
-class FruSlot3Test(CommonFruTest, unittest.TestCase):
+class FruSlot3Test(FruSlot1Test, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot3"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
 
-class FruSlot4Test(CommonFruTest, unittest.TestCase):
+class FruSlot4Test(FruSlot1Test, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot4"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
 
-class FruBmcTest(CommonFruTest, unittest.TestCase):
+class FruBmcTest(FruSlot1Test, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "bmc"]
         self.fru_fields = {"product": 2, "board": 2}
 
 
-class FruBbTest(CommonFruTest, unittest.TestCase):
+class FruBbTest(FruSlot1Test, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "bb"]
         self.fru_fields = {"chassis": 0, "product": 2, "board": 2}
 
 
-class FruNicTest(CommonFruTest, unittest.TestCase):
+class FruNicTest(FruSlot1Test, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "nic"]
         self.fru_fields = {"product": 0, "board": 0}

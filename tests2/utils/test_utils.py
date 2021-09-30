@@ -23,6 +23,10 @@ import re
 from utils.cit_logger import Logger
 
 
+def qemu_check():
+    return os.path.exists("/usr/local/bin/tests2/dummy_qemu")
+
+
 def mac_verify(mac):
     """
     Helper method to verify if a MAC address is properly formatted

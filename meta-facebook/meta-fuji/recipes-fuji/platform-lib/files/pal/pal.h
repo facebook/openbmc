@@ -70,7 +70,7 @@ extern "C" {
 #define LEFT_PDBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(55-0060)"/%s"
 #define RIGHT_PDBCPLD_PATH_FMT I2C_SYSFS_DEV_DIR(63-0060)"/%s"
 #define IOBFPGA_PATH_FMT I2C_SYSFS_DEV_DIR(13-0035)"/%s"
-#define SMB_SYSFS        I2C_DEV_DIR(12, 3e)
+#define SMB_SYSFS        I2C_DEV_DIR(12, 3e)"/%s"
 #define PWR_L_SYSFS_DVT  I2C_DEV_DIR(55, 60)
 #define PWR_R_SYSFS_DVT  I2C_DEV_DIR(63, 60)
 #define PWR_L_SYSFS_EVT  I2C_DEV_DIR(53, 60)
@@ -100,6 +100,7 @@ extern "C" {
 #define PIM_PRSNT_STATUS "pim%d_present_L"
 #define FAN_PRSNT_STATUS "fan%d_present"
 #define PSU_PRSNT_STATUS "psu_prnst_%d_N_status"
+#define PEM_PRSNT_STATUS PSU_PRSNT_STATUS
 #define KV_PIM_HEALTH "pim%d_sensor_health"
 #define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
 
@@ -173,15 +174,19 @@ enum {
   FRU_PSU2 = 12,
   FRU_PSU3 = 13,
   FRU_PSU4 = 14,
-  MAX_NUM_FRUS = 14,
-  FRU_FAN1 = 15,
-  FRU_FAN2 = 16,
-  FRU_FAN3 = 17,
-  FRU_FAN4 = 18,
-  FRU_FAN5 = 19,
-  FRU_FAN6 = 20,
-  FRU_FAN7 = 21,
-  FRU_FAN8 = 22,
+  FRU_PEM1 = 15,
+  FRU_PEM2 = 16,
+  FRU_PEM3 = 17,
+  FRU_PEM4 = 18,
+  MAX_NUM_FRUS = 18,
+  FRU_FAN1 = 19,
+  FRU_FAN2 = 20,
+  FRU_FAN3 = 21,
+  FRU_FAN4 = 22,
+  FRU_FAN5 = 23,
+  FRU_FAN6 = 24,
+  FRU_FAN7 = 25,
+  FRU_FAN8 = 26,
     // virtual FRU ID for fw-util 0.2, make sure they are bigger than MAX_NUM_FRUS
   FRU_BMC,
   FRU_CPLD,
@@ -303,6 +308,8 @@ int pal_light_scm_led(uint8_t led_color);
 void pal_set_pim_sts_led(uint8_t fru);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_get_cpld_board_rev(int *rev, const char *device);
+int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);
 #ifdef __cplusplus
 } // extern "C"
 #endif

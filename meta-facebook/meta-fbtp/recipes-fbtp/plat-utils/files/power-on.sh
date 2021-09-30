@@ -45,28 +45,31 @@ pwr_on_host() {
 }
 
 check_por_config() {
+  #0:Power on reset 1:first power on
   echo "$(cat /tmp/ast_por)"
 }
 
 echo -n "Power on the server..."
-#0:Power on reset 1:first power on
-if [ "$(check_por_config)" == "1" ]; then
-  pwr_on_host
-else
-  #get por cfg
-  por_conf="$KV_STORE/server_por_cfg"
-  lps_conf="$KV_STORE/pwr_server_last_state"
-  if ! [ -f $por_conf ] || ! [ -f $lps_conf ]; then
+
+#get por cfg
+por_conf="$KV_STORE/server_por_cfg"
+lps_conf="$KV_STORE/pwr_server_last_state"
+if ! [ -f $por_conf ]; then
+    # power on the server directly
+    # healthd is S91 and power-on.sh is S66 in rc5.d
+    # when the system is first powered on, BMC would power on the server directly
+    logger -s -p user.info -t power-on "Power Policy can't be found, power on the server directly"
     pwr_on_host
-  else
+else
+    # control the system power based on $por_conf
     por_val=$(cat $por_conf)
     lps_val=$(cat $lps_conf)
+    logger -s -p user.info -t power-on "Power Policy: $por_val, Last Power State: $lps_val"
     if [ "$por_val" == "on" ]; then
       pwr_on_host
     elif [ "$por_val" == "lps" ] && [ "$lps_val" == "on" ]; then
       pwr_on_host
     fi
-  fi
 fi
 
 echo "Done"

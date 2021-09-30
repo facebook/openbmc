@@ -712,6 +712,214 @@ const uint8_t pim16o_sensor_list[8][19] = {
   },
 };
 
+const uint8_t pem1_sensor_list[] = {
+  PEM1_SENSOR_IN_VOLT,
+  PEM1_SENSOR_OUT_VOLT,
+  PEM1_SENSOR_FET_BAD,
+  PEM1_SENSOR_FET_SHORT,
+  PEM1_SENSOR_CURR,
+  PEM1_SENSOR_POWER,
+  PEM1_SENSOR_FAN1_TACH,
+  PEM1_SENSOR_FAN2_TACH,
+  PEM1_SENSOR_TEMP1,
+  PEM1_SENSOR_TEMP2,
+  PEM1_SENSOR_TEMP3,
+};
+
+const uint8_t pem1_discrete_list[] = {
+  /* Discrete fault sensors on PEM1 */
+  PEM1_SENSOR_FAULT_OV,
+  PEM1_SENSOR_FAULT_UV,
+  PEM1_SENSOR_FAULT_OC,
+  PEM1_SENSOR_FAULT_POWER,
+  PEM1_SENSOR_ON_FAULT,
+  PEM1_SENSOR_FAULT_FET_SHORT,
+  PEM1_SENSOR_FAULT_FET_BAD,
+  PEM1_SENSOR_EEPROM_DONE,
+  /* Discrete ADC alert sensors on PEM2 */
+  PEM1_SENSOR_POWER_ALARM_HIGH,
+  PEM1_SENSOR_POWER_ALARM_LOW,
+  PEM1_SENSOR_VSENSE_ALARM_HIGH,
+  PEM1_SENSOR_VSENSE_ALARM_LOW,
+  PEM1_SENSOR_VSOURCE_ALARM_HIGH,
+  PEM1_SENSOR_VSOURCE_ALARM_LOW,
+  PEM1_SENSOR_GPIO_ALARM_HIGH,
+  PEM1_SENSOR_GPIO_ALARM_LOW,
+  /* Discrete status sensors on PEM1 */
+  PEM1_SENSOR_ON_STATUS,
+  PEM1_SENSOR_STATUS_FET_BAD,
+  PEM1_SENSOR_STATUS_FET_SHORT,
+  PEM1_SENSOR_STATUS_ON_PIN,
+  PEM1_SENSOR_STATUS_POWER_GOOD,
+  PEM1_SENSOR_STATUS_OC,
+  PEM1_SENSOR_STATUS_UV,
+  PEM1_SENSOR_STATUS_OV,
+  PEM1_SENSOR_STATUS_GPIO3,
+  PEM1_SENSOR_STATUS_GPIO2,
+  PEM1_SENSOR_STATUS_GPIO1,
+  PEM1_SENSOR_STATUS_ALERT,
+  PEM1_SENSOR_STATUS_EEPROM_BUSY,
+  PEM1_SENSOR_STATUS_ADC_IDLE,
+  PEM1_SENSOR_STATUS_TICKER_OVERFLOW,
+  PEM1_SENSOR_STATUS_METER_OVERFLOW,
+};
+
+const uint8_t pem2_sensor_list[] = {
+  PEM2_SENSOR_IN_VOLT,
+  PEM2_SENSOR_OUT_VOLT,
+  PEM2_SENSOR_FET_BAD,
+  PEM2_SENSOR_FET_SHORT,
+  PEM2_SENSOR_CURR,
+  PEM2_SENSOR_POWER,
+  PEM2_SENSOR_FAN1_TACH,
+  PEM2_SENSOR_FAN2_TACH,
+  PEM2_SENSOR_TEMP1,
+  PEM2_SENSOR_TEMP2,
+  PEM2_SENSOR_TEMP3,
+};
+
+const uint8_t pem2_discrete_list[] = {
+  /* Discrete fault sensors on PEM2 */
+  PEM2_SENSOR_FAULT_OV,
+  PEM2_SENSOR_FAULT_UV,
+  PEM2_SENSOR_FAULT_OC,
+  PEM2_SENSOR_FAULT_POWER,
+  PEM2_SENSOR_ON_FAULT,
+  PEM2_SENSOR_FAULT_FET_SHORT,
+  PEM2_SENSOR_FAULT_FET_BAD,
+  PEM2_SENSOR_EEPROM_DONE,
+  /* Discrete ADC alert sensors on PEM2 */
+  PEM2_SENSOR_POWER_ALARM_HIGH,
+  PEM2_SENSOR_POWER_ALARM_LOW,
+  PEM2_SENSOR_VSENSE_ALARM_HIGH,
+  PEM2_SENSOR_VSENSE_ALARM_LOW,
+  PEM2_SENSOR_VSOURCE_ALARM_HIGH,
+  PEM2_SENSOR_VSOURCE_ALARM_LOW,
+  PEM2_SENSOR_GPIO_ALARM_HIGH,
+  PEM2_SENSOR_GPIO_ALARM_LOW,
+  /* Discrete status sensors on PEM2 */
+  PEM2_SENSOR_ON_STATUS,
+  PEM2_SENSOR_STATUS_FET_BAD,
+  PEM2_SENSOR_STATUS_FET_SHORT,
+  PEM2_SENSOR_STATUS_ON_PIN,
+  PEM2_SENSOR_STATUS_POWER_GOOD,
+  PEM2_SENSOR_STATUS_OC,
+  PEM2_SENSOR_STATUS_UV,
+  PEM2_SENSOR_STATUS_OV,
+  PEM2_SENSOR_STATUS_GPIO3,
+  PEM2_SENSOR_STATUS_GPIO2,
+  PEM2_SENSOR_STATUS_GPIO1,
+  PEM2_SENSOR_STATUS_ALERT,
+  PEM2_SENSOR_STATUS_EEPROM_BUSY,
+  PEM2_SENSOR_STATUS_ADC_IDLE,
+  PEM2_SENSOR_STATUS_TICKER_OVERFLOW,
+  PEM2_SENSOR_STATUS_METER_OVERFLOW,
+};
+
+const uint8_t pem3_sensor_list[] = {
+  PEM3_SENSOR_IN_VOLT,
+  PEM3_SENSOR_OUT_VOLT,
+  PEM3_SENSOR_FET_BAD,
+  PEM3_SENSOR_FET_SHORT,
+  PEM3_SENSOR_CURR,
+  PEM3_SENSOR_POWER,
+  PEM3_SENSOR_FAN1_TACH,
+  PEM3_SENSOR_FAN2_TACH,
+  PEM3_SENSOR_TEMP1,
+  PEM3_SENSOR_TEMP2,
+  PEM3_SENSOR_TEMP3,
+};
+
+const uint8_t pem3_discrete_list[] = {
+  /* Discrete fault sensors on PEM3 */
+  PEM3_SENSOR_FAULT_OV,
+  PEM3_SENSOR_FAULT_UV,
+  PEM3_SENSOR_FAULT_OC,
+  PEM3_SENSOR_FAULT_POWER,
+  PEM3_SENSOR_ON_FAULT,
+  PEM3_SENSOR_FAULT_FET_SHORT,
+  PEM3_SENSOR_FAULT_FET_BAD,
+  PEM3_SENSOR_EEPROM_DONE,
+  /* Discrete ADC alert sensors on PEM3 */
+  PEM3_SENSOR_POWER_ALARM_HIGH,
+  PEM3_SENSOR_POWER_ALARM_LOW,
+  PEM3_SENSOR_VSENSE_ALARM_HIGH,
+  PEM3_SENSOR_VSENSE_ALARM_LOW,
+  PEM3_SENSOR_VSOURCE_ALARM_HIGH,
+  PEM3_SENSOR_VSOURCE_ALARM_LOW,
+  PEM3_SENSOR_GPIO_ALARM_HIGH,
+  PEM3_SENSOR_GPIO_ALARM_LOW,
+  /* Discrete status sensors on PEM3 */
+  PEM3_SENSOR_ON_STATUS,
+  PEM3_SENSOR_STATUS_FET_BAD,
+  PEM3_SENSOR_STATUS_FET_SHORT,
+  PEM3_SENSOR_STATUS_ON_PIN,
+  PEM3_SENSOR_STATUS_POWER_GOOD,
+  PEM3_SENSOR_STATUS_OC,
+  PEM3_SENSOR_STATUS_UV,
+  PEM3_SENSOR_STATUS_OV,
+  PEM3_SENSOR_STATUS_GPIO3,
+  PEM3_SENSOR_STATUS_GPIO2,
+  PEM3_SENSOR_STATUS_GPIO1,
+  PEM3_SENSOR_STATUS_ALERT,
+  PEM3_SENSOR_STATUS_EEPROM_BUSY,
+  PEM3_SENSOR_STATUS_ADC_IDLE,
+  PEM3_SENSOR_STATUS_TICKER_OVERFLOW,
+  PEM3_SENSOR_STATUS_METER_OVERFLOW,
+};
+
+const uint8_t pem4_sensor_list[] = {
+  PEM4_SENSOR_IN_VOLT,
+  PEM4_SENSOR_OUT_VOLT,
+  PEM4_SENSOR_FET_BAD,
+  PEM4_SENSOR_FET_SHORT,
+  PEM4_SENSOR_CURR,
+  PEM4_SENSOR_POWER,
+  PEM4_SENSOR_FAN1_TACH,
+  PEM4_SENSOR_FAN2_TACH,
+  PEM4_SENSOR_TEMP1,
+  PEM4_SENSOR_TEMP2,
+  PEM4_SENSOR_TEMP3,
+};
+
+const uint8_t pem4_discrete_list[] = {
+  /* Discrete fault sensors on PEM4 */
+  PEM4_SENSOR_FAULT_OV,
+  PEM4_SENSOR_FAULT_UV,
+  PEM4_SENSOR_FAULT_OC,
+  PEM4_SENSOR_FAULT_POWER,
+  PEM4_SENSOR_ON_FAULT,
+  PEM4_SENSOR_FAULT_FET_SHORT,
+  PEM4_SENSOR_FAULT_FET_BAD,
+  PEM4_SENSOR_EEPROM_DONE,
+  /* Discrete ADC alert sensors on PEM4 */
+  PEM4_SENSOR_POWER_ALARM_HIGH,
+  PEM4_SENSOR_POWER_ALARM_LOW,
+  PEM4_SENSOR_VSENSE_ALARM_HIGH,
+  PEM4_SENSOR_VSENSE_ALARM_LOW,
+  PEM4_SENSOR_VSOURCE_ALARM_HIGH,
+  PEM4_SENSOR_VSOURCE_ALARM_LOW,
+  PEM4_SENSOR_GPIO_ALARM_HIGH,
+  PEM4_SENSOR_GPIO_ALARM_LOW,
+  /* Discrete status sensors on PEM4 */
+  PEM4_SENSOR_ON_STATUS,
+  PEM4_SENSOR_STATUS_FET_BAD,
+  PEM4_SENSOR_STATUS_FET_SHORT,
+  PEM4_SENSOR_STATUS_ON_PIN,
+  PEM4_SENSOR_STATUS_POWER_GOOD,
+  PEM4_SENSOR_STATUS_OC,
+  PEM4_SENSOR_STATUS_UV,
+  PEM4_SENSOR_STATUS_OV,
+  PEM4_SENSOR_STATUS_GPIO3,
+  PEM4_SENSOR_STATUS_GPIO2,
+  PEM4_SENSOR_STATUS_GPIO1,
+  PEM4_SENSOR_STATUS_ALERT,
+  PEM4_SENSOR_STATUS_EEPROM_BUSY,
+  PEM4_SENSOR_STATUS_ADC_IDLE,
+  PEM4_SENSOR_STATUS_TICKER_OVERFLOW,
+  PEM4_SENSOR_STATUS_METER_OVERFLOW,
+};
+
 const uint8_t psu1_sensor_list[] = {
   PSU1_SENSOR_IN_VOLT,
   PSU1_SENSOR_12V_VOLT,
@@ -779,6 +987,7 @@ const uint8_t psu4_sensor_list[] = {
 float scm_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 float smb_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 float pim_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
+float pem_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 float psu_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
@@ -786,6 +995,14 @@ size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
 size_t scm_all_sensor_cnt = sizeof(scm_all_sensor_list)/sizeof(uint8_t);
 size_t smb_sensor_cnt_evt = sizeof(smb_sensor_list_evt)/sizeof(uint8_t);
 size_t smb_sensor_cnt_dvt = sizeof(smb_sensor_list_dvt)/sizeof(uint8_t);
+size_t pem1_sensor_cnt = sizeof(pem1_sensor_list)/sizeof(uint8_t);
+size_t pem1_discrete_cnt = sizeof(pem1_discrete_list)/sizeof(uint8_t);
+size_t pem2_sensor_cnt = sizeof(pem2_sensor_list)/sizeof(uint8_t);
+size_t pem2_discrete_cnt = sizeof(pem2_discrete_list)/sizeof(uint8_t);
+size_t pem3_sensor_cnt = sizeof(pem3_sensor_list)/sizeof(uint8_t);
+size_t pem3_discrete_cnt = sizeof(pem3_discrete_list)/sizeof(uint8_t);
+size_t pem4_sensor_cnt = sizeof(pem4_sensor_list)/sizeof(uint8_t);
+size_t pem4_discrete_cnt = sizeof(pem4_discrete_list)/sizeof(uint8_t);
 size_t psu1_sensor_cnt = sizeof(psu1_sensor_list)/sizeof(uint8_t);
 size_t psu2_sensor_cnt = sizeof(psu2_sensor_list)/sizeof(uint8_t);
 size_t psu3_sensor_cnt = sizeof(psu3_sensor_list)/sizeof(uint8_t);
@@ -1224,6 +1441,22 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) psu4_sensor_list;
     *cnt = psu4_sensor_cnt;
     break;
+  case FRU_PEM1:
+    *sensor_list = (uint8_t *) pem1_sensor_list;
+    *cnt = pem1_sensor_cnt;
+    break;
+  case FRU_PEM2:
+    *sensor_list = (uint8_t *) pem2_sensor_list;
+    *cnt = pem2_sensor_cnt;
+    break;
+  case FRU_PEM3:
+    *sensor_list = (uint8_t *) pem3_sensor_list;
+    *cnt = pem3_sensor_cnt;
+    break;
+  case FRU_PEM4:
+    *sensor_list = (uint8_t *) pem4_sensor_list;
+    *cnt = pem4_sensor_cnt;
+    break;
   default:
     if (fru > MAX_NUM_FRUS)
       return -1;
@@ -1398,6 +1631,23 @@ read_attr(uint8_t fru, uint8_t snr_num, const char *device,
 
   *value = ((float)tmp)/UNIT_DIV;
 
+  return 0;
+}
+
+static int
+read_attr_integer(const char *device, const char *attr, float *value) {
+  char full_name[LARGEST_DEVICE_NAME * 2];
+  char dir_name[LARGEST_DEVICE_NAME + 1];
+  int tmp;
+  // Get current working directory
+  if (get_current_dir(device, dir_name)) {
+    return -1;
+  }
+  snprintf(full_name, sizeof(full_name), "%s/%s", dir_name, attr);
+  if (device_read(full_name, &tmp)) {
+    return -1;
+  }
+  *value = (float)tmp;
   return 0;
 }
 
@@ -2259,6 +2509,543 @@ psu_acok_check(uint8_t fru) {
 }
 
 static int
+pem_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
+
+  int ret = -1;
+
+  switch(sensor_num) {
+    case PEM1_SENSOR_IN_VOLT:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, VOLT(1), value);
+      break;
+    case PEM1_SENSOR_OUT_VOLT:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, VOLT(2), value);
+      break;
+    case PEM1_SENSOR_FET_BAD:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, VOLT(3), value);
+      break;
+    case PEM1_SENSOR_FET_SHORT:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, VOLT(4), value);
+      break;
+    case PEM1_SENSOR_CURR:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, CURR(1), value);
+      break;
+    case PEM1_SENSOR_POWER:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, POWER(1), value);
+      *(float *)value /= 1000;
+      break;
+    case PEM1_SENSOR_TEMP1:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE, TEMP(1), value);
+      break;
+    case PEM1_SENSOR_FAN1_TACH:
+      ret = read_attr_integer(PEM1_DEVICE_EXT, "fan1_input", value);
+      break;
+    case PEM1_SENSOR_FAN2_TACH:
+      ret = read_attr_integer(PEM1_DEVICE_EXT, "fan2_input", value);
+      break;
+    case PEM1_SENSOR_TEMP2:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE_EXT, TEMP(1), value);
+      break;
+    case PEM1_SENSOR_TEMP3:
+      ret = read_attr(fru, sensor_num, PEM1_DEVICE_EXT, TEMP(2), value);
+      break;
+    case PEM1_SENSOR_FAULT_OV:
+      ret = read_attr_integer(PEM1_DEVICE, "fault_ov", value);
+      break;
+    case PEM1_SENSOR_FAULT_UV:
+      ret = read_attr_integer(PEM1_DEVICE, "fault_uv", value);
+      break;
+    case PEM1_SENSOR_FAULT_OC:
+      ret = read_attr_integer(PEM1_DEVICE, "fault_oc", value);
+      break;
+    case PEM1_SENSOR_FAULT_POWER:
+      ret = read_attr_integer(PEM1_DEVICE, "fault_power", value);
+      break;
+    case PEM1_SENSOR_ON_FAULT:
+      ret = read_attr_integer(PEM1_DEVICE, "on_fault", value);
+      break;
+    case PEM1_SENSOR_FAULT_FET_SHORT:
+      ret = read_attr_integer(PEM1_DEVICE, "fault_fet_short", value);
+      break;
+    case PEM1_SENSOR_FAULT_FET_BAD:
+      ret = read_attr_integer(PEM1_DEVICE, "fault_fet_bad", value);
+      break;
+    case PEM1_SENSOR_EEPROM_DONE:
+      ret = read_attr_integer(PEM1_DEVICE, "eeprom_done", value);
+      break;
+    case PEM1_SENSOR_POWER_ALARM_HIGH:
+      ret = read_attr_integer(PEM1_DEVICE, "power_alarm_high", value);
+      break;
+    case PEM1_SENSOR_POWER_ALARM_LOW:
+      ret = read_attr_integer(PEM1_DEVICE, "power_alarm_low", value);
+      break;
+    case PEM1_SENSOR_VSENSE_ALARM_HIGH:
+      ret = read_attr_integer(PEM1_DEVICE, "vsense_alarm_high", value);
+      break;
+    case PEM1_SENSOR_VSENSE_ALARM_LOW:
+      ret = read_attr_integer(PEM1_DEVICE, "vsense_alarm_low", value);
+      break;
+    case PEM1_SENSOR_VSOURCE_ALARM_HIGH:
+      ret = read_attr_integer(PEM1_DEVICE, "vsource_alarm_high", value);
+      break;
+    case PEM1_SENSOR_VSOURCE_ALARM_LOW:
+      ret = read_attr_integer(PEM1_DEVICE, "vsource_alarm_low", value);
+      break;
+    case PEM1_SENSOR_GPIO_ALARM_HIGH:
+      ret = read_attr_integer(PEM1_DEVICE, "gpio_alarm_high", value);
+      break;
+    case PEM1_SENSOR_GPIO_ALARM_LOW:
+      ret = read_attr_integer(PEM1_DEVICE, "gpio_alarm_low", value);
+      break;
+    case PEM1_SENSOR_ON_STATUS:
+      ret = read_attr_integer(PEM1_DEVICE, "on_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_FET_BAD:
+      ret = read_attr_integer(PEM1_DEVICE, "fet_bad", value);
+      break;
+    case PEM1_SENSOR_STATUS_FET_SHORT:
+      ret = read_attr_integer(PEM1_DEVICE, "fet_short", value);
+      break;
+    case PEM1_SENSOR_STATUS_ON_PIN:
+      ret = read_attr_integer(PEM1_DEVICE, "on_pin_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_POWER_GOOD:
+      ret = read_attr_integer(PEM1_DEVICE, "power_good", value);
+      break;
+    case PEM1_SENSOR_STATUS_OC:
+      ret = read_attr_integer(PEM1_DEVICE, "oc_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_UV:
+      ret = read_attr_integer(PEM1_DEVICE, "uv_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_OV:
+      ret = read_attr_integer(PEM1_DEVICE, "ov_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_GPIO3:
+      ret = read_attr_integer(PEM1_DEVICE, "gpio3_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_GPIO2:
+      ret = read_attr_integer(PEM1_DEVICE, "gpio2_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_GPIO1:
+      ret = read_attr_integer(PEM1_DEVICE, "gpio1_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_ALERT:
+      ret = read_attr_integer(PEM1_DEVICE, "alert_status", value);
+      break;
+    case PEM1_SENSOR_STATUS_EEPROM_BUSY:
+      ret = read_attr_integer(PEM1_DEVICE, "eeprom_busy", value);
+      break;
+    case PEM1_SENSOR_STATUS_ADC_IDLE:
+      ret = read_attr_integer(PEM1_DEVICE, "adc_idle", value);
+      break;
+    case PEM1_SENSOR_STATUS_TICKER_OVERFLOW:
+      ret = read_attr_integer(PEM1_DEVICE, "ticker_overflow", value);
+      break;
+    case PEM1_SENSOR_STATUS_METER_OVERFLOW:
+      ret = read_attr_integer(PEM1_DEVICE, "meter_overflow", value);
+      break;
+
+    case PEM2_SENSOR_IN_VOLT:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, VOLT(1), value);
+      break;
+    case PEM2_SENSOR_OUT_VOLT:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, VOLT(2), value);
+      break;
+    case PEM2_SENSOR_FET_BAD:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, VOLT(3), value);
+      break;
+    case PEM2_SENSOR_FET_SHORT:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, VOLT(4), value);
+      break;
+    case PEM2_SENSOR_CURR:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, CURR(1), value);
+      break;
+    case PEM2_SENSOR_POWER:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, POWER(1), value);
+      *(float *)value /= 1000;
+      break;
+    case PEM2_SENSOR_TEMP1:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE, TEMP(1), value);
+      break;
+    case PEM2_SENSOR_FAN1_TACH:
+      ret = read_attr_integer(PEM2_DEVICE_EXT, "fan1_input", value);
+      break;
+    case PEM2_SENSOR_FAN2_TACH:
+      ret = read_attr_integer(PEM2_DEVICE_EXT, "fan2_input", value);
+      break;
+    case PEM2_SENSOR_TEMP2:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE_EXT, TEMP(1), value);
+      break;
+    case PEM2_SENSOR_TEMP3:
+      ret = read_attr(fru, sensor_num, PEM2_DEVICE_EXT, TEMP(2), value);
+      break;
+    case PEM2_SENSOR_FAULT_OV:
+      ret = read_attr_integer(PEM2_DEVICE, "fault_ov", value);
+      break;
+    case PEM2_SENSOR_FAULT_UV:
+      ret = read_attr_integer(PEM2_DEVICE, "fault_uv", value);
+      break;
+    case PEM2_SENSOR_FAULT_OC:
+      ret = read_attr_integer(PEM2_DEVICE, "fault_oc", value);
+      break;
+    case PEM2_SENSOR_FAULT_POWER:
+      ret = read_attr_integer(PEM2_DEVICE, "fault_power", value);
+      break;
+    case PEM2_SENSOR_ON_FAULT:
+      ret = read_attr_integer(PEM2_DEVICE, "on_fault", value);
+      break;
+    case PEM2_SENSOR_FAULT_FET_SHORT:
+      ret = read_attr_integer(PEM2_DEVICE, "fault_fet_short", value);
+      break;
+    case PEM2_SENSOR_FAULT_FET_BAD:
+      ret = read_attr_integer(PEM2_DEVICE, "fault_fet_bad", value);
+      break;
+    case PEM2_SENSOR_EEPROM_DONE:
+      ret = read_attr_integer(PEM2_DEVICE, "eeprom_done", value);
+      break;
+    case PEM2_SENSOR_POWER_ALARM_HIGH:
+      ret = read_attr_integer(PEM2_DEVICE, "power_alrm_high", value);
+      break;
+    case PEM2_SENSOR_POWER_ALARM_LOW:
+      ret = read_attr_integer(PEM2_DEVICE, "power_alrm_low", value);
+      break;
+    case PEM2_SENSOR_VSENSE_ALARM_HIGH:
+      ret = read_attr_integer(PEM2_DEVICE, "vsense_alrm_high", value);
+      break;
+    case PEM2_SENSOR_VSENSE_ALARM_LOW:
+      ret = read_attr_integer(PEM2_DEVICE, "vsense_alrm_low", value);
+      break;
+    case PEM2_SENSOR_VSOURCE_ALARM_HIGH:
+      ret = read_attr_integer(PEM2_DEVICE, "vsource_alrm_high", value);
+      break;
+    case PEM2_SENSOR_VSOURCE_ALARM_LOW:
+      ret = read_attr_integer(PEM2_DEVICE, "vsource_alrm_low", value);
+      break;
+    case PEM2_SENSOR_GPIO_ALARM_HIGH:
+      ret = read_attr_integer(PEM2_DEVICE, "gpio_alrm_high", value);
+      break;
+    case PEM2_SENSOR_GPIO_ALARM_LOW:
+      ret = read_attr_integer(PEM2_DEVICE, "gpio_alrm_low", value);
+      break;
+    case PEM2_SENSOR_ON_STATUS:
+      ret = read_attr_integer(PEM2_DEVICE, "on_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_FET_BAD:
+      ret = read_attr_integer(PEM2_DEVICE, "fet_bad", value);
+      break;
+    case PEM2_SENSOR_STATUS_FET_SHORT:
+      ret = read_attr_integer(PEM2_DEVICE, "fet_short", value);
+      break;
+    case PEM2_SENSOR_STATUS_ON_PIN:
+      ret = read_attr_integer(PEM2_DEVICE, "on_pin_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_POWER_GOOD:
+      ret = read_attr_integer(PEM2_DEVICE, "power_good", value);
+      break;
+    case PEM2_SENSOR_STATUS_OC:
+      ret = read_attr_integer(PEM2_DEVICE, "oc_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_UV:
+      ret = read_attr_integer(PEM2_DEVICE, "uv_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_OV:
+      ret = read_attr_integer(PEM2_DEVICE, "ov_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_GPIO3:
+      ret = read_attr_integer(PEM2_DEVICE, "gpio3_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_GPIO2:
+      ret = read_attr_integer(PEM2_DEVICE, "gpio2_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_GPIO1:
+      ret = read_attr_integer(PEM2_DEVICE, "gpio1_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_ALERT:
+      ret = read_attr_integer(PEM2_DEVICE, "alert_status", value);
+      break;
+    case PEM2_SENSOR_STATUS_EEPROM_BUSY:
+      ret = read_attr_integer(PEM2_DEVICE, "eeprom_busy", value);
+      break;
+    case PEM2_SENSOR_STATUS_ADC_IDLE:
+      ret = read_attr_integer(PEM2_DEVICE, "adc_idle", value);
+      break;
+    case PEM2_SENSOR_STATUS_TICKER_OVERFLOW:
+      ret = read_attr_integer(PEM2_DEVICE, "ticker_overflow", value);
+      break;
+    case PEM2_SENSOR_STATUS_METER_OVERFLOW:
+      ret = read_attr_integer(PEM2_DEVICE, "meter_overflow", value);
+      break;
+
+    case PEM3_SENSOR_IN_VOLT:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, VOLT(1), value);
+      break;
+    case PEM3_SENSOR_OUT_VOLT:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, VOLT(2), value);
+      break;
+    case PEM3_SENSOR_FET_BAD:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, VOLT(3), value);
+      break;
+    case PEM3_SENSOR_FET_SHORT:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, VOLT(4), value);
+      break;
+    case PEM3_SENSOR_CURR:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, CURR(1), value);
+      break;
+    case PEM3_SENSOR_POWER:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, POWER(1), value);
+      *(float *)value /= 1000;
+      break;
+    case PEM3_SENSOR_TEMP1:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE, TEMP(1), value);
+      break;
+    case PEM3_SENSOR_FAN1_TACH:
+      ret = read_attr_integer(PEM3_DEVICE_EXT, "fan1_input", value);
+      break;
+    case PEM3_SENSOR_FAN2_TACH:
+      ret = read_attr_integer(PEM3_DEVICE_EXT, "fan2_input", value);
+      break;
+    case PEM3_SENSOR_TEMP2:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE_EXT, TEMP(1), value);
+      break;
+    case PEM3_SENSOR_TEMP3:
+      ret = read_attr(fru, sensor_num, PEM3_DEVICE_EXT, TEMP(2), value);
+      break;
+    case PEM3_SENSOR_FAULT_OV:
+      ret = read_attr_integer(PEM3_DEVICE, "fault_ov", value);
+      break;
+    case PEM3_SENSOR_FAULT_UV:
+      ret = read_attr_integer(PEM3_DEVICE, "fault_uv", value);
+      break;
+    case PEM3_SENSOR_FAULT_OC:
+      ret = read_attr_integer(PEM3_DEVICE, "fault_oc", value);
+      break;
+    case PEM3_SENSOR_FAULT_POWER:
+      ret = read_attr_integer(PEM3_DEVICE, "fault_power", value);
+      break;
+    case PEM3_SENSOR_ON_FAULT:
+      ret = read_attr_integer(PEM3_DEVICE, "on_fault", value);
+      break;
+    case PEM3_SENSOR_FAULT_FET_SHORT:
+      ret = read_attr_integer(PEM3_DEVICE, "fault_fet_short", value);
+      break;
+    case PEM3_SENSOR_FAULT_FET_BAD:
+      ret = read_attr_integer(PEM3_DEVICE, "fault_fet_bad", value);
+      break;
+    case PEM3_SENSOR_EEPROM_DONE:
+      ret = read_attr_integer(PEM3_DEVICE, "eeprom_done", value);
+      break;
+    case PEM3_SENSOR_POWER_ALARM_HIGH:
+      ret = read_attr_integer(PEM3_DEVICE, "power_alrm_high", value);
+      break;
+    case PEM3_SENSOR_POWER_ALARM_LOW:
+      ret = read_attr_integer(PEM3_DEVICE, "power_alrm_low", value);
+      break;
+    case PEM3_SENSOR_VSENSE_ALARM_HIGH:
+      ret = read_attr_integer(PEM3_DEVICE, "vsense_alrm_high", value);
+      break;
+    case PEM3_SENSOR_VSENSE_ALARM_LOW:
+      ret = read_attr_integer(PEM3_DEVICE, "vsense_alrm_low", value);
+      break;
+    case PEM3_SENSOR_VSOURCE_ALARM_HIGH:
+      ret = read_attr_integer(PEM3_DEVICE, "vsource_alrm_high", value);
+      break;
+    case PEM3_SENSOR_VSOURCE_ALARM_LOW:
+      ret = read_attr_integer(PEM3_DEVICE, "vsource_alrm_low", value);
+      break;
+    case PEM3_SENSOR_GPIO_ALARM_HIGH:
+      ret = read_attr_integer(PEM3_DEVICE, "gpio_alrm_high", value);
+      break;
+    case PEM3_SENSOR_GPIO_ALARM_LOW:
+      ret = read_attr_integer(PEM3_DEVICE, "gpio_alrm_low", value);
+      break;
+    case PEM3_SENSOR_ON_STATUS:
+      ret = read_attr_integer(PEM3_DEVICE, "on_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_FET_BAD:
+      ret = read_attr_integer(PEM3_DEVICE, "fet_bad", value);
+      break;
+    case PEM3_SENSOR_STATUS_FET_SHORT:
+      ret = read_attr_integer(PEM3_DEVICE, "fet_short", value);
+      break;
+    case PEM3_SENSOR_STATUS_ON_PIN:
+      ret = read_attr_integer(PEM3_DEVICE, "on_pin_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_POWER_GOOD:
+      ret = read_attr_integer(PEM3_DEVICE, "power_good", value);
+      break;
+    case PEM3_SENSOR_STATUS_OC:
+      ret = read_attr_integer(PEM3_DEVICE, "oc_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_UV:
+      ret = read_attr_integer(PEM3_DEVICE, "uv_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_OV:
+      ret = read_attr_integer(PEM3_DEVICE, "ov_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_GPIO3:
+      ret = read_attr_integer(PEM3_DEVICE, "gpio3_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_GPIO2:
+      ret = read_attr_integer(PEM3_DEVICE, "gpio2_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_GPIO1:
+      ret = read_attr_integer(PEM3_DEVICE, "gpio1_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_ALERT:
+      ret = read_attr_integer(PEM3_DEVICE, "alert_status", value);
+      break;
+    case PEM3_SENSOR_STATUS_EEPROM_BUSY:
+      ret = read_attr_integer(PEM3_DEVICE, "eeprom_busy", value);
+      break;
+    case PEM3_SENSOR_STATUS_ADC_IDLE:
+      ret = read_attr_integer(PEM3_DEVICE, "adc_idle", value);
+      break;
+    case PEM3_SENSOR_STATUS_TICKER_OVERFLOW:
+      ret = read_attr_integer(PEM3_DEVICE, "ticker_overflow", value);
+      break;
+    case PEM3_SENSOR_STATUS_METER_OVERFLOW:
+      ret = read_attr_integer(PEM3_DEVICE, "meter_overflow", value);
+      break;
+
+    case PEM4_SENSOR_IN_VOLT:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, VOLT(1), value);
+      break;
+    case PEM4_SENSOR_OUT_VOLT:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, VOLT(2), value);
+      break;
+    case PEM4_SENSOR_FET_BAD:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, VOLT(3), value);
+      break;
+    case PEM4_SENSOR_FET_SHORT:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, VOLT(4), value);
+      break;
+    case PEM4_SENSOR_CURR:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, CURR(1), value);
+      break;
+    case PEM4_SENSOR_POWER:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, POWER(1), value);
+      *(float *)value /= 1000;
+      break;
+    case PEM4_SENSOR_TEMP1:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE, TEMP(1), value);
+      break;
+    case PEM4_SENSOR_FAN1_TACH:
+      ret = read_attr_integer(PEM4_DEVICE_EXT, "fan1_input", value);
+      break;
+    case PEM4_SENSOR_FAN2_TACH:
+      ret = read_attr_integer(PEM4_DEVICE_EXT, "fan2_input", value);
+      break;
+    case PEM4_SENSOR_TEMP2:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE_EXT, TEMP(1), value);
+      break;
+    case PEM4_SENSOR_TEMP3:
+      ret = read_attr(fru, sensor_num, PEM4_DEVICE_EXT, TEMP(2), value);
+      break;
+    case PEM4_SENSOR_FAULT_OV:
+      ret = read_attr_integer(PEM4_DEVICE, "fault_ov", value);
+      break;
+    case PEM4_SENSOR_FAULT_UV:
+      ret = read_attr_integer(PEM4_DEVICE, "fault_uv", value);
+      break;
+    case PEM4_SENSOR_FAULT_OC:
+      ret = read_attr_integer(PEM4_DEVICE, "fault_oc", value);
+      break;
+    case PEM4_SENSOR_FAULT_POWER:
+      ret = read_attr_integer(PEM4_DEVICE, "fault_power", value);
+      break;
+    case PEM4_SENSOR_ON_FAULT:
+      ret = read_attr_integer(PEM4_DEVICE, "on_fault", value);
+      break;
+    case PEM4_SENSOR_FAULT_FET_SHORT:
+      ret = read_attr_integer(PEM4_DEVICE, "fault_fet_short", value);
+      break;
+    case PEM4_SENSOR_FAULT_FET_BAD:
+      ret = read_attr_integer(PEM4_DEVICE, "fault_fet_bad", value);
+      break;
+    case PEM4_SENSOR_EEPROM_DONE:
+      ret = read_attr_integer(PEM4_DEVICE, "eeprom_done", value);
+      break;
+    case PEM4_SENSOR_POWER_ALARM_HIGH:
+      ret = read_attr_integer(PEM4_DEVICE, "power_alrm_high", value);
+      break;
+    case PEM4_SENSOR_POWER_ALARM_LOW:
+      ret = read_attr_integer(PEM4_DEVICE, "power_alrm_low", value);
+      break;
+    case PEM4_SENSOR_VSENSE_ALARM_HIGH:
+      ret = read_attr_integer(PEM4_DEVICE, "vsense_alrm_high", value);
+      break;
+    case PEM4_SENSOR_VSENSE_ALARM_LOW:
+      ret = read_attr_integer(PEM4_DEVICE, "vsense_alrm_low", value);
+      break;
+    case PEM4_SENSOR_VSOURCE_ALARM_HIGH:
+      ret = read_attr_integer(PEM4_DEVICE, "vsource_alrm_high", value);
+      break;
+    case PEM4_SENSOR_VSOURCE_ALARM_LOW:
+      ret = read_attr_integer(PEM4_DEVICE, "vsource_alrm_low", value);
+      break;
+    case PEM4_SENSOR_GPIO_ALARM_HIGH:
+      ret = read_attr_integer(PEM4_DEVICE, "gpio_alrm_high", value);
+      break;
+    case PEM4_SENSOR_GPIO_ALARM_LOW:
+      ret = read_attr_integer(PEM4_DEVICE, "gpio_alrm_low", value);
+      break;
+    case PEM4_SENSOR_ON_STATUS:
+      ret = read_attr_integer(PEM4_DEVICE, "on_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_FET_BAD:
+      ret = read_attr_integer(PEM4_DEVICE, "fet_bad", value);
+      break;
+    case PEM4_SENSOR_STATUS_FET_SHORT:
+      ret = read_attr_integer(PEM4_DEVICE, "fet_short", value);
+      break;
+    case PEM4_SENSOR_STATUS_ON_PIN:
+      ret = read_attr_integer(PEM4_DEVICE, "on_pin_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_POWER_GOOD:
+      ret = read_attr_integer(PEM4_DEVICE, "power_good", value);
+      break;
+    case PEM4_SENSOR_STATUS_OC:
+      ret = read_attr_integer(PEM4_DEVICE, "oc_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_UV:
+      ret = read_attr_integer(PEM4_DEVICE, "uv_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_OV:
+      ret = read_attr_integer(PEM4_DEVICE, "ov_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_GPIO3:
+      ret = read_attr_integer(PEM4_DEVICE, "gpio3_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_GPIO2:
+      ret = read_attr_integer(PEM4_DEVICE, "gpio2_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_GPIO1:
+      ret = read_attr_integer(PEM4_DEVICE, "gpio1_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_ALERT:
+      ret = read_attr_integer(PEM4_DEVICE, "alert_status", value);
+      break;
+    case PEM4_SENSOR_STATUS_EEPROM_BUSY:
+      ret = read_attr_integer(PEM4_DEVICE, "eeprom_busy", value);
+      break;
+    case PEM4_SENSOR_STATUS_ADC_IDLE:
+      ret = read_attr_integer(PEM4_DEVICE, "adc_idle", value);
+      break;
+    case PEM4_SENSOR_STATUS_TICKER_OVERFLOW:
+      ret = read_attr_integer(PEM4_DEVICE, "ticker_overflow", value);
+      break;
+    case PEM4_SENSOR_STATUS_METER_OVERFLOW:
+      ret = read_attr_integer(PEM4_DEVICE, "meter_overflow", value);
+      break;
+
+    default:
+      ret = READING_NA;
+      break;
+  }
+  return ret;
+}
+
+static int
 psu_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
 
@@ -2484,6 +3271,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_PSU4:
       ret = psu_sensor_read(fru, sensor_num, value);
       break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      ret = pem_sensor_read(fru, sensor_num, value);
+      break;
     default:
       return -1;
   }
@@ -2495,6 +3288,60 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   return 0;
 }
+
+int
+pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
+
+  char key[MAX_KEY_LEN];
+  char fru_name[32];
+  int ret , delay = 500;
+  uint8_t prsnt = 0;
+  uint8_t status = 0;
+
+  pal_get_fru_name(fru, fru_name);
+
+  ret = pal_is_fru_prsnt(fru, &prsnt);
+  if (ret) {
+    return ret;
+  }
+  if (!prsnt) {
+#ifdef DEBUG
+  OBMC_INFO("pal_sensor_discrete_read_raw(): %s is not present\n", fru_name);
+#endif
+    return -1;
+  }
+
+  ret = pal_is_fru_ready(fru, &status);
+  if (ret) {
+    return ret;
+  }
+  if (!status) {
+#ifdef DEBUG
+  OBMC_INFO("pal_sensor_discrete_read_raw(): %s is not ready\n", fru_name);
+#endif
+    return -1;
+  }
+
+  sprintf(key, "%s_sensor%d", fru_name, sensor_num);
+  switch(fru) {
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      ret = pem_sensor_read(fru, sensor_num, value);
+      break;
+
+    default:
+      return -1;
+  }
+
+  if (ret == READING_NA || ret == -1) {
+    return READING_NA;
+  }
+  msleep(delay);
+
+  return 0;
+};
 
 static int
 get_scm_sensor_name(uint8_t sensor_num, char *name) {
@@ -3192,6 +4039,534 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
 }
 
 static int
+get_pem_sensor_name(uint8_t sensor_num, char *name) {
+  switch(sensor_num) {
+    case PEM1_SENSOR_IN_VOLT:
+      sprintf(name, "PEM1_IN_VOLT");
+      break;
+    case PEM1_SENSOR_OUT_VOLT:
+      sprintf(name, "PEM1_OUT_VOLT");
+      break;
+    case PEM1_SENSOR_FET_BAD:
+      sprintf(name, "PEM1_FET_BAD");
+      break;
+    case PEM1_SENSOR_FET_SHORT:
+      sprintf(name, "PEM1_FET_SHORT");
+      break;
+    case PEM1_SENSOR_CURR:
+      sprintf(name, "PEM1_CURR");
+      break;
+    case PEM1_SENSOR_POWER:
+      sprintf(name, "PEM1_POWER");
+      break;
+    case PEM1_SENSOR_FAN1_TACH:
+      sprintf(name, "PEM1_FAN1_SPEED");
+      break;
+    case PEM1_SENSOR_FAN2_TACH:
+      sprintf(name, "PEM1_FAN2_SPEED");
+      break;
+    case PEM1_SENSOR_TEMP1:
+      sprintf(name, "PEM1_HOT_SWAP_TEMP");
+      break;
+    case PEM1_SENSOR_TEMP2:
+      sprintf(name, "PEM1_AIR_INLET_TEMP");
+      break;
+    case PEM1_SENSOR_TEMP3:
+      sprintf(name, "PEM1_AIR_OUTLET_TEMP");
+      break;
+    case PEM1_SENSOR_FAULT_OV:
+      sprintf(name, "PEM1_FAULT_OV");
+      break;
+    case PEM1_SENSOR_FAULT_UV:
+      sprintf(name, "PEM1_FAULT_UV");
+      break;
+    case PEM1_SENSOR_FAULT_OC:
+      sprintf(name, "PEM1_FAULT_OC");
+      break;
+    case PEM1_SENSOR_FAULT_POWER:
+      sprintf(name, "PEM1_FAULT_POWER");
+      break;
+    case PEM1_SENSOR_ON_FAULT:
+      sprintf(name, "PEM1_FAULT_ON_PIN");
+      break;
+    case PEM1_SENSOR_FAULT_FET_SHORT:
+      sprintf(name, "PEM1_FAULT_FET_SHORT");
+      break;
+    case PEM1_SENSOR_FAULT_FET_BAD:
+      sprintf(name, "PEM1_FAULT_FET_BAD");
+      break;
+    case PEM1_SENSOR_EEPROM_DONE:
+      sprintf(name, "PEM1_EEPROM_DONE");
+      break;
+    case PEM1_SENSOR_POWER_ALARM_HIGH:
+      sprintf(name, "PEM1_POWER_ALARM_HIGH");
+      break;
+    case PEM1_SENSOR_POWER_ALARM_LOW:
+      sprintf(name, "PEM1_POWER_ALARM_LOW");
+      break;
+    case PEM1_SENSOR_VSENSE_ALARM_HIGH:
+      sprintf(name, "PEM1_VSENSE_ALARM_HIGH");
+      break;
+    case PEM1_SENSOR_VSENSE_ALARM_LOW:
+      sprintf(name, "PEM1_VSENSE_ALARM_LOW");
+      break;
+    case PEM1_SENSOR_VSOURCE_ALARM_HIGH:
+      sprintf(name, "PEM1_VSOURCE_ALARM_HIGH");
+      break;
+    case PEM1_SENSOR_VSOURCE_ALARM_LOW:
+      sprintf(name, "PEM1_VSOURCE_ALARM_LOW");
+      break;
+    case PEM1_SENSOR_GPIO_ALARM_HIGH:
+      sprintf(name, "PEM1_GPIO_ALARM_HIGH");
+      break;
+    case PEM1_SENSOR_GPIO_ALARM_LOW:
+      sprintf(name, "PEM1_GPIO_ALARM_LOW");
+      break;
+    case PEM1_SENSOR_ON_STATUS:
+      sprintf(name, "PEM1_ON_STATUS");
+      break;
+    case PEM1_SENSOR_STATUS_FET_BAD:
+      sprintf(name, "PEM1_STATUS_FET_BAD");
+      break;
+    case PEM1_SENSOR_STATUS_FET_SHORT:
+      sprintf(name, "PEM1_STATUS_FET_SHORT");
+      break;
+    case PEM1_SENSOR_STATUS_ON_PIN:
+      sprintf(name, "PEM1_STATUS_ON_PIN");
+      break;
+    case PEM1_SENSOR_STATUS_POWER_GOOD:
+      sprintf(name, "PEM1_STATUS_POWER_GOOD");
+      break;
+    case PEM1_SENSOR_STATUS_OC:
+      sprintf(name, "PEM1_STATUS_OC");
+      break;
+    case PEM1_SENSOR_STATUS_UV:
+      sprintf(name, "PEM1_STATUS_UV");
+      break;
+    case PEM1_SENSOR_STATUS_OV:
+      sprintf(name, "PEM1_STATUS_OV");
+      break;
+    case PEM1_SENSOR_STATUS_GPIO3:
+      sprintf(name, "PEM1_STATUS_GPIO3");
+      break;
+    case PEM1_SENSOR_STATUS_GPIO2:
+      sprintf(name, "PEM1_STATUS_GPIO2");
+      break;
+    case PEM1_SENSOR_STATUS_GPIO1:
+      sprintf(name, "PEM1_STATUS_GPIO1");
+      break;
+    case PEM1_SENSOR_STATUS_ALERT:
+      sprintf(name, "PEM1_STATUS_ALERT");
+      break;
+    case PEM1_SENSOR_STATUS_EEPROM_BUSY:
+      sprintf(name, "PEM1_STATUS_EEPROM_BUSY");
+      break;
+    case PEM1_SENSOR_STATUS_ADC_IDLE:
+      sprintf(name, "PEM1_STATUS_ADC_IDLE");
+      break;
+    case PEM1_SENSOR_STATUS_TICKER_OVERFLOW:
+      sprintf(name, "PEM1_STATUS_TICKER_OVERFLOW");
+      break;
+    case PEM1_SENSOR_STATUS_METER_OVERFLOW:
+      sprintf(name, "PEM1_STATUS_METER_OVERFLOW");
+      break;
+
+    case PEM2_SENSOR_IN_VOLT:
+      sprintf(name, "PEM2_IN_VOLT");
+      break;
+    case PEM2_SENSOR_OUT_VOLT:
+      sprintf(name, "PEM2_OUT_VOLT");
+      break;
+    case PEM2_SENSOR_FET_BAD:
+      sprintf(name, "PEM2_FET_BAD");
+      break;
+    case PEM2_SENSOR_FET_SHORT:
+      sprintf(name, "PEM2_FET_SHORT");
+      break;
+    case PEM2_SENSOR_CURR:
+      sprintf(name, "PEM2_CURR");
+      break;
+    case PEM2_SENSOR_POWER:
+      sprintf(name, "PEM2_POWER");
+      break;
+    case PEM2_SENSOR_FAN1_TACH:
+      sprintf(name, "PEM2_FAN1_SPEED");
+      break;
+    case PEM2_SENSOR_FAN2_TACH:
+      sprintf(name, "PEM2_FAN2_SPEED");
+      break;
+    case PEM2_SENSOR_TEMP1:
+      sprintf(name, "PEM2_HOT_SWAP_TEMP");
+      break;
+    case PEM2_SENSOR_TEMP2:
+      sprintf(name, "PEM2_AIR_INLET_TEMP");
+      break;
+    case PEM2_SENSOR_TEMP3:
+      sprintf(name, "PEM2_AIR_OUTLET_TEMP");
+      break;
+    case PEM2_SENSOR_FAULT_OV:
+      sprintf(name, "PEM2_FAULT_OV");
+      break;
+    case PEM2_SENSOR_FAULT_UV:
+      sprintf(name, "PEM2_FAULT_UV");
+      break;
+    case PEM2_SENSOR_FAULT_OC:
+      sprintf(name, "PEM2_FAULT_OC");
+      break;
+    case PEM2_SENSOR_FAULT_POWER:
+      sprintf(name, "PEM2_FAULT_POWER");
+      break;
+    case PEM2_SENSOR_ON_FAULT:
+      sprintf(name, "PEM2_FAULT_ON_PIN");
+      break;
+    case PEM2_SENSOR_FAULT_FET_SHORT:
+      sprintf(name, "PEM2_FAULT_FET_SHOET");
+      break;
+    case PEM2_SENSOR_FAULT_FET_BAD:
+      sprintf(name, "PEM2_FAULT_FET_BAD");
+      break;
+    case PEM2_SENSOR_EEPROM_DONE:
+      sprintf(name, "PEM2_EEPROM_DONE");
+      break;
+    case PEM2_SENSOR_POWER_ALARM_HIGH:
+      sprintf(name, "PEM2_POWER_ALARM_HIGH");
+      break;
+    case PEM2_SENSOR_POWER_ALARM_LOW:
+      sprintf(name, "PEM2_POWER_ALARM_LOW");
+      break;
+    case PEM2_SENSOR_VSENSE_ALARM_HIGH:
+      sprintf(name, "PEM2_VSENSE_ALARM_HIGH");
+      break;
+    case PEM2_SENSOR_VSENSE_ALARM_LOW:
+      sprintf(name, "PEM2_VSENSE_ALARM_LOW");
+      break;
+    case PEM2_SENSOR_VSOURCE_ALARM_HIGH:
+      sprintf(name, "PEM2_VSOURCE_ALARM_HIGH");
+      break;
+    case PEM2_SENSOR_VSOURCE_ALARM_LOW:
+      sprintf(name, "PEM2_VSOURCE_ALARM_LOW");
+      break;
+    case PEM2_SENSOR_GPIO_ALARM_HIGH:
+      sprintf(name, "PEM2_GPIO_ALARM_HIGH");
+      break;
+    case PEM2_SENSOR_GPIO_ALARM_LOW:
+      sprintf(name, "PEM2_GPIO_ALARM_LOW");
+      break;
+    case PEM2_SENSOR_ON_STATUS:
+      sprintf(name, "PEM2_ON_STATUS");
+      break;
+    case PEM2_SENSOR_STATUS_FET_BAD:
+      sprintf(name, "PEM2_STATUS_FET_BAD");
+      break;
+    case PEM2_SENSOR_STATUS_FET_SHORT:
+      sprintf(name, "PEM2_STATUS_FET_SHORT");
+      break;
+    case PEM2_SENSOR_STATUS_ON_PIN:
+      sprintf(name, "PEM2_STATUS_ON_PIN");
+      break;
+    case PEM2_SENSOR_STATUS_POWER_GOOD:
+      sprintf(name, "PEM2_STATUS_POWER_GOOD");
+      break;
+    case PEM2_SENSOR_STATUS_OC:
+      sprintf(name, "PEM2_STATUS_OC");
+      break;
+    case PEM2_SENSOR_STATUS_UV:
+      sprintf(name, "PEM2_STATUS_UV");
+      break;
+    case PEM2_SENSOR_STATUS_OV:
+      sprintf(name, "PEM2_STATUS_OV");
+      break;
+    case PEM2_SENSOR_STATUS_GPIO3:
+      sprintf(name, "PEM2_STATUS_GPIO3");
+      break;
+    case PEM2_SENSOR_STATUS_GPIO2:
+      sprintf(name, "PEM2_STATUS_GPIO2");
+      break;
+    case PEM2_SENSOR_STATUS_GPIO1:
+      sprintf(name, "PEM2_STATUS_GPIO1");
+      break;
+    case PEM2_SENSOR_STATUS_ALERT:
+      sprintf(name, "PEM2_STATUS_ALERT");
+      break;
+    case PEM2_SENSOR_STATUS_EEPROM_BUSY:
+      sprintf(name, "PEM2_STATUS_EEPROM_BUSY");
+      break;
+    case PEM2_SENSOR_STATUS_ADC_IDLE:
+      sprintf(name, "PEM2_STATUS_ADC_IDLE");
+      break;
+    case PEM2_SENSOR_STATUS_TICKER_OVERFLOW:
+      sprintf(name, "PEM2_STATUS_TICKER_OVERFLOW");
+      break;
+    case PEM2_SENSOR_STATUS_METER_OVERFLOW:
+      sprintf(name, "PEM2_STATUS_METER_OVERFLOW");
+      break;
+
+    case PEM3_SENSOR_IN_VOLT:
+      sprintf(name, "PEM3_IN_VOLT");
+      break;
+    case PEM3_SENSOR_OUT_VOLT:
+      sprintf(name, "PEM3_OUT_VOLT");
+      break;
+    case PEM3_SENSOR_FET_BAD:
+      sprintf(name, "PEM3_FET_BAD");
+      break;
+    case PEM3_SENSOR_FET_SHORT:
+      sprintf(name, "PEM3_FET_SHORT");
+      break;
+    case PEM3_SENSOR_CURR:
+      sprintf(name, "PEM3_CURR");
+      break;
+    case PEM3_SENSOR_POWER:
+      sprintf(name, "PEM3_POWER");
+      break;
+    case PEM3_SENSOR_FAN1_TACH:
+      sprintf(name, "PEM3_FAN1_SPEED");
+      break;
+    case PEM3_SENSOR_FAN2_TACH:
+      sprintf(name, "PEM3_FAN2_SPEED");
+      break;
+    case PEM3_SENSOR_TEMP1:
+      sprintf(name, "PEM3_HOT_SWAP_TEMP");
+      break;
+    case PEM3_SENSOR_TEMP2:
+      sprintf(name, "PEM3_AIR_INLET_TEMP");
+      break;
+    case PEM3_SENSOR_TEMP3:
+      sprintf(name, "PEM3_AIR_OUTLET_TEMP");
+      break;
+    case PEM3_SENSOR_FAULT_OV:
+      sprintf(name, "PEM3_FAULT_OV");
+      break;
+    case PEM3_SENSOR_FAULT_UV:
+      sprintf(name, "PEM3_FAULT_UV");
+      break;
+    case PEM3_SENSOR_FAULT_OC:
+      sprintf(name, "PEM3_FAULT_OC");
+      break;
+    case PEM3_SENSOR_FAULT_POWER:
+      sprintf(name, "PEM3_FAULT_POWER");
+      break;
+    case PEM3_SENSOR_ON_FAULT:
+      sprintf(name, "PEM3_FAULT_ON_PIN");
+      break;
+    case PEM3_SENSOR_FAULT_FET_SHORT:
+      sprintf(name, "PEM3_FAULT_FET_SHOET");
+      break;
+    case PEM3_SENSOR_FAULT_FET_BAD:
+      sprintf(name, "PEM3_FAULT_FET_BAD");
+      break;
+    case PEM3_SENSOR_EEPROM_DONE:
+      sprintf(name, "PEM3_EEPROM_DONE");
+      break;
+    case PEM3_SENSOR_POWER_ALARM_HIGH:
+      sprintf(name, "PEM3_POWER_ALARM_HIGH");
+      break;
+    case PEM3_SENSOR_POWER_ALARM_LOW:
+      sprintf(name, "PEM3_POWER_ALARM_LOW");
+      break;
+    case PEM3_SENSOR_VSENSE_ALARM_HIGH:
+      sprintf(name, "PEM3_VSENSE_ALARM_HIGH");
+      break;
+    case PEM3_SENSOR_VSENSE_ALARM_LOW:
+      sprintf(name, "PEM3_VSENSE_ALARM_LOW");
+      break;
+    case PEM3_SENSOR_VSOURCE_ALARM_HIGH:
+      sprintf(name, "PEM3_VSOURCE_ALARM_HIGH");
+      break;
+    case PEM3_SENSOR_VSOURCE_ALARM_LOW:
+      sprintf(name, "PEM3_VSOURCE_ALARM_LOW");
+      break;
+    case PEM3_SENSOR_GPIO_ALARM_HIGH:
+      sprintf(name, "PEM3_GPIO_ALARM_HIGH");
+      break;
+    case PEM3_SENSOR_GPIO_ALARM_LOW:
+      sprintf(name, "PEM3_GPIO_ALARM_LOW");
+      break;
+    case PEM3_SENSOR_ON_STATUS:
+      sprintf(name, "PEM3_ON_STATUS");
+      break;
+    case PEM3_SENSOR_STATUS_FET_BAD:
+      sprintf(name, "PEM3_STATUS_FET_BAD");
+      break;
+    case PEM3_SENSOR_STATUS_FET_SHORT:
+      sprintf(name, "PEM3_STATUS_FET_SHORT");
+      break;
+    case PEM3_SENSOR_STATUS_ON_PIN:
+      sprintf(name, "PEM3_STATUS_ON_PIN");
+      break;
+    case PEM3_SENSOR_STATUS_POWER_GOOD:
+      sprintf(name, "PEM3_STATUS_POWER_GOOD");
+      break;
+    case PEM3_SENSOR_STATUS_OC:
+      sprintf(name, "PEM3_STATUS_OC");
+      break;
+    case PEM3_SENSOR_STATUS_UV:
+      sprintf(name, "PEM3_STATUS_UV");
+      break;
+    case PEM3_SENSOR_STATUS_OV:
+      sprintf(name, "PEM3_STATUS_OV");
+      break;
+    case PEM3_SENSOR_STATUS_GPIO3:
+      sprintf(name, "PEM3_STATUS_GPIO3");
+      break;
+    case PEM3_SENSOR_STATUS_GPIO2:
+      sprintf(name, "PEM3_STATUS_GPIO2");
+      break;
+    case PEM3_SENSOR_STATUS_GPIO1:
+      sprintf(name, "PEM3_STATUS_GPIO1");
+      break;
+    case PEM3_SENSOR_STATUS_ALERT:
+      sprintf(name, "PEM3_STATUS_ALERT");
+      break;
+    case PEM3_SENSOR_STATUS_EEPROM_BUSY:
+      sprintf(name, "PEM3_STATUS_EEPROM_BUSY");
+      break;
+    case PEM3_SENSOR_STATUS_ADC_IDLE:
+      sprintf(name, "PEM3_STATUS_ADC_IDLE");
+      break;
+    case PEM3_SENSOR_STATUS_TICKER_OVERFLOW:
+      sprintf(name, "PEM3_STATUS_TICKER_OVERFLOW");
+      break;
+    case PEM3_SENSOR_STATUS_METER_OVERFLOW:
+      sprintf(name, "PEM3_STATUS_METER_OVERFLOW");
+      break;
+
+    case PEM4_SENSOR_IN_VOLT:
+      sprintf(name, "PEM4_IN_VOLT");
+      break;
+    case PEM4_SENSOR_OUT_VOLT:
+      sprintf(name, "PEM4_OUT_VOLT");
+      break;
+    case PEM4_SENSOR_FET_BAD:
+      sprintf(name, "PEM4_FET_BAD");
+      break;
+    case PEM4_SENSOR_FET_SHORT:
+      sprintf(name, "PEM4_FET_SHORT");
+      break;
+    case PEM4_SENSOR_CURR:
+      sprintf(name, "PEM4_CURR");
+      break;
+    case PEM4_SENSOR_POWER:
+      sprintf(name, "PEM4_POWER");
+      break;
+    case PEM4_SENSOR_FAN1_TACH:
+      sprintf(name, "PEM4_FAN1_SPEED");
+      break;
+    case PEM4_SENSOR_FAN2_TACH:
+      sprintf(name, "PEM4_FAN2_SPEED");
+      break;
+    case PEM4_SENSOR_TEMP1:
+      sprintf(name, "PEM4_HOT_SWAP_TEMP");
+      break;
+    case PEM4_SENSOR_TEMP2:
+      sprintf(name, "PEM4_AIR_INLET_TEMP");
+      break;
+    case PEM4_SENSOR_TEMP3:
+      sprintf(name, "PEM4_AIR_OUTLET_TEMP");
+      break;
+    case PEM4_SENSOR_FAULT_OV:
+      sprintf(name, "PEM4_FAULT_OV");
+      break;
+    case PEM4_SENSOR_FAULT_UV:
+      sprintf(name, "PEM4_FAULT_UV");
+      break;
+    case PEM4_SENSOR_FAULT_OC:
+      sprintf(name, "PEM4_FAULT_OC");
+      break;
+    case PEM4_SENSOR_FAULT_POWER:
+      sprintf(name, "PEM4_FAULT_POWER");
+      break;
+    case PEM4_SENSOR_ON_FAULT:
+      sprintf(name, "PEM4_FAULT_ON_PIN");
+      break;
+    case PEM4_SENSOR_FAULT_FET_SHORT:
+      sprintf(name, "PEM4_FAULT_FET_SHOET");
+      break;
+    case PEM4_SENSOR_FAULT_FET_BAD:
+      sprintf(name, "PEM4_FAULT_FET_BAD");
+      break;
+    case PEM4_SENSOR_EEPROM_DONE:
+      sprintf(name, "PEM4_EEPROM_DONE");
+      break;
+    case PEM4_SENSOR_POWER_ALARM_HIGH:
+      sprintf(name, "PEM4_POWER_ALARM_HIGH");
+      break;
+    case PEM4_SENSOR_POWER_ALARM_LOW:
+      sprintf(name, "PEM4_POWER_ALARM_LOW");
+      break;
+    case PEM4_SENSOR_VSENSE_ALARM_HIGH:
+      sprintf(name, "PEM4_VSENSE_ALARM_HIGH");
+      break;
+    case PEM4_SENSOR_VSENSE_ALARM_LOW:
+      sprintf(name, "PEM4_VSENSE_ALARM_LOW");
+      break;
+    case PEM4_SENSOR_VSOURCE_ALARM_HIGH:
+      sprintf(name, "PEM4_VSOURCE_ALARM_HIGH");
+      break;
+    case PEM4_SENSOR_VSOURCE_ALARM_LOW:
+      sprintf(name, "PEM4_VSOURCE_ALARM_LOW");
+      break;
+    case PEM4_SENSOR_GPIO_ALARM_HIGH:
+      sprintf(name, "PEM4_GPIO_ALARM_HIGH");
+      break;
+    case PEM4_SENSOR_GPIO_ALARM_LOW:
+      sprintf(name, "PEM4_GPIO_ALARM_LOW");
+      break;
+    case PEM4_SENSOR_ON_STATUS:
+      sprintf(name, "PEM4_ON_STATUS");
+      break;
+    case PEM4_SENSOR_STATUS_FET_BAD:
+      sprintf(name, "PEM4_STATUS_FET_BAD");
+      break;
+    case PEM4_SENSOR_STATUS_FET_SHORT:
+      sprintf(name, "PEM4_STATUS_FET_SHORT");
+      break;
+    case PEM4_SENSOR_STATUS_ON_PIN:
+      sprintf(name, "PEM4_STATUS_ON_PIN");
+      break;
+    case PEM4_SENSOR_STATUS_POWER_GOOD:
+      sprintf(name, "PEM4_STATUS_POWER_GOOD");
+      break;
+    case PEM4_SENSOR_STATUS_OC:
+      sprintf(name, "PEM4_STATUS_OC");
+      break;
+    case PEM4_SENSOR_STATUS_UV:
+      sprintf(name, "PEM4_STATUS_UV");
+      break;
+    case PEM4_SENSOR_STATUS_OV:
+      sprintf(name, "PEM4_STATUS_OV");
+      break;
+    case PEM4_SENSOR_STATUS_GPIO3:
+      sprintf(name, "PEM4_STATUS_GPIO3");
+      break;
+    case PEM4_SENSOR_STATUS_GPIO2:
+      sprintf(name, "PEM4_STATUS_GPIO2");
+      break;
+    case PEM4_SENSOR_STATUS_GPIO1:
+      sprintf(name, "PEM4_STATUS_GPIO1");
+      break;
+    case PEM4_SENSOR_STATUS_ALERT:
+      sprintf(name, "PEM4_STATUS_ALERT");
+      break;
+    case PEM4_SENSOR_STATUS_EEPROM_BUSY:
+      sprintf(name, "PEM4_STATUS_EEPROM_BUSY");
+      break;
+    case PEM4_SENSOR_STATUS_ADC_IDLE:
+      sprintf(name, "PEM4_STATUS_ADC_IDLE");
+      break;
+    case PEM4_SENSOR_STATUS_TICKER_OVERFLOW:
+      sprintf(name, "PEM4_STATUS_TICKER_OVERFLOW");
+      break;
+    case PEM4_SENSOR_STATUS_METER_OVERFLOW:
+      sprintf(name, "PEM4_STATUS_METER_OVERFLOW");
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
+
+static int
 get_psu_sensor_name(uint8_t sensor_num, char *name) {
 
   switch(sensor_num) {
@@ -3361,7 +4736,6 @@ int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
   int ret = -1;
-
   switch(fru) {
     case FRU_SCM:
       ret = get_scm_sensor_name(sensor_num, name);
@@ -3384,6 +4758,12 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case FRU_PSU3:
     case FRU_PSU4:
       ret = get_psu_sensor_name(sensor_num, name);
+      break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      ret = get_pem_sensor_name(sensor_num, name);
       break;
     default:
       return -1;
@@ -3769,6 +5149,70 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
 }
 
 static int
+get_pem_sensor_units(uint8_t sensor_num, char *units) {
+
+  switch(sensor_num) {
+    case PEM1_SENSOR_IN_VOLT:
+    case PEM1_SENSOR_OUT_VOLT:
+    case PEM1_SENSOR_FET_BAD:
+    case PEM1_SENSOR_FET_SHORT:
+    case PEM2_SENSOR_IN_VOLT:
+    case PEM2_SENSOR_OUT_VOLT:
+    case PEM2_SENSOR_FET_BAD:
+    case PEM2_SENSOR_FET_SHORT:
+    case PEM3_SENSOR_IN_VOLT:
+    case PEM3_SENSOR_OUT_VOLT:
+    case PEM3_SENSOR_FET_BAD:
+    case PEM3_SENSOR_FET_SHORT:
+    case PEM4_SENSOR_IN_VOLT:
+    case PEM4_SENSOR_OUT_VOLT:
+    case PEM4_SENSOR_FET_BAD:
+    case PEM4_SENSOR_FET_SHORT:
+      sprintf(units, "Volts");
+      break;
+    case PEM1_SENSOR_CURR:
+    case PEM2_SENSOR_CURR:
+    case PEM3_SENSOR_CURR:
+    case PEM4_SENSOR_CURR:
+      sprintf(units, "Amps");
+      break;
+    case PEM1_SENSOR_POWER:
+    case PEM2_SENSOR_POWER:
+    case PEM3_SENSOR_POWER:
+    case PEM4_SENSOR_POWER:
+      sprintf(units, "Watts");
+      break;
+    case PEM1_SENSOR_FAN1_TACH:
+    case PEM1_SENSOR_FAN2_TACH:
+    case PEM2_SENSOR_FAN1_TACH:
+    case PEM2_SENSOR_FAN2_TACH:
+    case PEM3_SENSOR_FAN1_TACH:
+    case PEM3_SENSOR_FAN2_TACH:
+    case PEM4_SENSOR_FAN1_TACH:
+    case PEM4_SENSOR_FAN2_TACH:
+      sprintf(units, "RPM");
+      break;
+    case PEM1_SENSOR_TEMP1:
+    case PEM1_SENSOR_TEMP2:
+    case PEM1_SENSOR_TEMP3:
+    case PEM2_SENSOR_TEMP1:
+    case PEM2_SENSOR_TEMP2:
+    case PEM2_SENSOR_TEMP3:
+    case PEM3_SENSOR_TEMP1:
+    case PEM3_SENSOR_TEMP2:
+    case PEM3_SENSOR_TEMP3:
+    case PEM4_SENSOR_TEMP1:
+    case PEM4_SENSOR_TEMP2:
+    case PEM4_SENSOR_TEMP3:
+      sprintf(units, "C");
+      break;
+     default:
+      return -1;
+  }
+  return 0;
+}
+
+static int
 get_psu_sensor_units(uint8_t sensor_num, char *units) {
 
   switch(sensor_num) {
@@ -3867,6 +5311,12 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case FRU_PSU4:
       ret = get_psu_sensor_units(sensor_num, units);
       break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      ret = get_pem_sensor_units(sensor_num, units);
+      break;
     default:
       return -1;
   }
@@ -3877,6 +5327,7 @@ static void
 sensor_thresh_array_init(uint8_t fru) {
   int i = 0, j;
   float fvalue;
+  int fru_offset;
 
   if (init_threshold_done[fru])
     return;
@@ -4040,6 +5491,25 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_SENSOR_TH4_HIGH][UCR_THRESH] = 105;
       smb_sensor_threshold[SMB_SENSOR_TH4_HIGH][UNC_THRESH] = 102;
       break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      fru_offset = fru - FRU_PEM1;
+      pem_sensor_threshold[PEM1_SENSOR_IN_VOLT + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 13.75;
+      pem_sensor_threshold[PEM1_SENSOR_IN_VOLT + (fru_offset * PEM1_SENSOR_CNT)][LCR_THRESH] = 9;
+      pem_sensor_threshold[PEM1_SENSOR_OUT_VOLT + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 13.2;
+      pem_sensor_threshold[PEM1_SENSOR_OUT_VOLT + (fru_offset * PEM1_SENSOR_CNT)][LCR_THRESH] = 10.8;
+      pem_sensor_threshold[PEM1_SENSOR_CURR + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 83.2;
+      pem_sensor_threshold[PEM1_SENSOR_POWER + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 960;
+      pem_sensor_threshold[PEM1_SENSOR_FAN1_TACH + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 24000;
+      pem_sensor_threshold[PEM1_SENSOR_FAN1_TACH + (fru_offset * PEM1_SENSOR_CNT)][LCR_THRESH] = 1000;
+      pem_sensor_threshold[PEM1_SENSOR_FAN2_TACH + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 24000;
+      pem_sensor_threshold[PEM1_SENSOR_FAN2_TACH + (fru_offset * PEM1_SENSOR_CNT)][LCR_THRESH] = 1000;
+      pem_sensor_threshold[PEM1_SENSOR_TEMP1 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 95;
+      pem_sensor_threshold[PEM1_SENSOR_TEMP1 + (fru_offset * PEM1_SENSOR_CNT)][UNC_THRESH] = 85;
+      pem_sensor_threshold[PEM1_SENSOR_TEMP2 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 65;
+      pem_sensor_threshold[PEM1_SENSOR_TEMP3 + (fru_offset * PEM1_SENSOR_CNT)][UCR_THRESH] = 65;
     case FRU_PSU1:
     case FRU_PSU2:
     case FRU_PSU3:
@@ -4105,6 +5575,12 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num,
   case FRU_PSU3:
   case FRU_PSU4:
     *val = psu_sensor_threshold[sensor_num][thresh];
+    break;
+  case FRU_PEM1:
+  case FRU_PEM2:
+  case FRU_PEM3:
+  case FRU_PEM4:
+    *val = pem_sensor_threshold[sensor_num][thresh];
     break;
   default:
     return -1;
@@ -4631,6 +6107,64 @@ pim_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
       break;
   }
 }
+static void
+pem_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
+
+  switch(sensor_num) {
+    case PEM1_SENSOR_IN_VOLT:
+    case PEM1_SENSOR_OUT_VOLT:
+    case PEM1_SENSOR_FET_BAD:
+    case PEM1_SENSOR_FET_SHORT:
+    case PEM1_SENSOR_CURR:
+    case PEM1_SENSOR_POWER:
+    case PEM1_SENSOR_FAN1_TACH:
+    case PEM1_SENSOR_FAN2_TACH:
+    case PEM1_SENSOR_TEMP1:
+    case PEM1_SENSOR_TEMP2:
+    case PEM1_SENSOR_TEMP3:
+
+    case PEM2_SENSOR_IN_VOLT:
+    case PEM2_SENSOR_OUT_VOLT:
+    case PEM2_SENSOR_FET_BAD:
+    case PEM2_SENSOR_FET_SHORT:
+    case PEM2_SENSOR_CURR:
+    case PEM2_SENSOR_POWER:
+    case PEM2_SENSOR_FAN1_TACH:
+    case PEM2_SENSOR_FAN2_TACH:
+    case PEM2_SENSOR_TEMP1:
+    case PEM2_SENSOR_TEMP2:
+    case PEM2_SENSOR_TEMP3:
+
+    case PEM3_SENSOR_IN_VOLT:
+    case PEM3_SENSOR_OUT_VOLT:
+    case PEM3_SENSOR_FET_BAD:
+    case PEM3_SENSOR_FET_SHORT:
+    case PEM3_SENSOR_CURR:
+    case PEM3_SENSOR_POWER:
+    case PEM3_SENSOR_FAN1_TACH:
+    case PEM3_SENSOR_FAN2_TACH:
+    case PEM3_SENSOR_TEMP1:
+    case PEM3_SENSOR_TEMP2:
+    case PEM3_SENSOR_TEMP3:
+
+    case PEM4_SENSOR_IN_VOLT:
+    case PEM4_SENSOR_OUT_VOLT:
+    case PEM4_SENSOR_FET_BAD:
+    case PEM4_SENSOR_FET_SHORT:
+    case PEM4_SENSOR_CURR:
+    case PEM4_SENSOR_POWER:
+    case PEM4_SENSOR_FAN1_TACH:
+    case PEM4_SENSOR_FAN2_TACH:
+    case PEM4_SENSOR_TEMP1:
+    case PEM4_SENSOR_TEMP2:
+    case PEM4_SENSOR_TEMP3:
+      *value = 30;
+      break;
+    default:
+      *value = 10;
+      break;
+  }
+}
 
 static void
 psu_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
@@ -4722,6 +6256,12 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
     case FRU_PSU4:
       psu_sensor_poll_interval(sensor_num, value);
       break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      pem_sensor_poll_interval(sensor_num, value);
+      break;
     default:
       *value = 2;
       break;
@@ -4802,6 +6342,18 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
 	case FRU_PSU4:
       sprintf(key, "psu4_sensor_health");
       break;
+  case FRU_PEM1:
+      sprintf(key, "pem1_sensor_health");
+      break;
+  case FRU_PEM2:
+      sprintf(key, "pem2_sensor_health");
+      break;
+  case FRU_PEM3:
+      sprintf(key, "pem3_sensor_health");
+      break;
+  case FRU_PEM4:
+      sprintf(key, "pem4_sensor_health");
+      break;
 
     default:
       return -1;
@@ -4867,7 +6419,18 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
 	case FRU_PSU4:
       sprintf(key, "psu4_sensor_health");
       break;
-
+  case FRU_PEM1:
+      sprintf(key, "pem1_sensor_health");
+      break;
+  case FRU_PEM2:
+      sprintf(key, "pem2_sensor_health");
+      break;
+  case FRU_PEM3:
+      sprintf(key, "pem3_sensor_health");
+      break;
+  case FRU_PEM4:
+      sprintf(key, "pem4_sensor_health");
+      break;
     default:
       return -1;
   }
@@ -5388,6 +6951,12 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_PSU3:
     case FRU_PSU4:
       cnt = psu1_sensor_cnt;
+      break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      cnt = pem1_sensor_cnt;
       break;
     default:
       if (fru > MAX_NUM_FRUS)

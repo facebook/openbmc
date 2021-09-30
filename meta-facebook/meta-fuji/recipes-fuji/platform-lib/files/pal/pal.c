@@ -67,7 +67,8 @@ struct threadinfo {
 static struct threadinfo t_dump[MAX_NUM_FRUS] = {0, };
 
 const char pal_fru_list[] = "all, scm, smb, pim1, pim2, pim3, \
-pim4, pim5, pim6, pim7, pim8, psu1, psu2, psu3, psu4";
+pim4, pim5, pim6, pim7, pim8, psu1, psu2, psu3, psu4, \
+pem1, pem2, pem3, pem4";
 
 char * key_list[] = {
 "pwr_server_last_state",
@@ -499,6 +500,14 @@ pal_get_fru_id(char *str, uint8_t *fru) {
     *fru = FRU_CPLD;
   } else if (!strcmp(str, "fpga")) {
     *fru = FRU_FPGA;
+  } else if (!strcmp(str, "pem1")) {
+    *fru = FRU_PEM1;
+  } else if (!strcmp(str, "pem2")) {
+    *fru = FRU_PEM2;
+  } else if (!strcmp(str, "pem3")) {
+    *fru = FRU_PEM3;
+  } else if (!strcmp(str, "pem4")) {
+    *fru = FRU_PEM4;
   } else {
     syslog(LOG_WARNING, "pal_get_fru_id: Wrong fru#%s", str);
     return -1;
@@ -574,6 +583,18 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_FAN8:
       strcpy(name, "fan8");
+      break;
+    case FRU_PEM1:
+      strcpy(name, "pem1");
+      break;
+    case FRU_PEM2:
+      strcpy(name, "pem2");
+      break;
+    case FRU_PEM3:
+      strcpy(name, "pem3");
+      break;
+    case FRU_PEM4:
+      strcpy(name, "pem4");
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -655,6 +676,13 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
       snprintf(tmp, sizeof(tmp),
                BOTTOM_FCMCPLD_PATH_FMT, FAN_PRSNT_STATUS);
       snprintf(path, sizeof(path), tmp, FRU_TO_FAN_ID(fru));
+      break;
+    case FRU_PEM1:
+    case FRU_PEM2:
+    case FRU_PEM3:
+    case FRU_PEM4:
+      snprintf(tmp, LARGEST_DEVICE_NAME, SMB_SYSFS, PEM_PRSNT_STATUS);
+      snprintf(path, LARGEST_DEVICE_NAME, tmp, (fru-FRU_PEM1+1));
       break;
     default:
       return -1;

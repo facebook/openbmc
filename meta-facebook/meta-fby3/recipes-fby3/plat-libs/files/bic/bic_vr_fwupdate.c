@@ -1222,16 +1222,6 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
 error_exit:
   if ( buf != NULL ) free(buf);
   bic_close_usb_dev(udev);
-  bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
-
-  if ((comp >= FW_CWC_PESW_VR && comp <= FW_GPV3_BOT_PESW_VR) ||
-      (comp >= FW_2U_TOP_3V3_VR1 && comp <= FW_2U_TOP_1V8_VR) ||
-      (comp >= FW_2U_BOT_3V3_VR1 && comp <= FW_2U_BOT_1V8_VR)) {
-    slp_time.tv_sec = 5;
-    slp_time.tv_nsec = 0;
-    nanosleep(&slp_time, NULL); //wait for usb devices to be released
-  }
-
   return ret;
 }
 

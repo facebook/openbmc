@@ -20,10 +20,12 @@
 import unittest
 
 from common.base_bic_test import CommonBicTest
+from utils.test_utils import qemu_check
 
 slots = ["slot1", "slot2", "slot3", "slot4"]
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class BicTest(CommonBicTest, unittest.TestCase):
     def set_bic_cmd(self):
         pass

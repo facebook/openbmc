@@ -42,18 +42,14 @@ class BaseGpioTest(object):
     def gpio_shadow_path(self, gpioname, attributes):
         self.assertNotEqual(gpioname, None, "GPIO name not set")
         gpio_path = os.path.join(BaseGpioTest.GPIO_SHADOW_ROOT, str(gpioname))
-        self.assertTrue(
-            os.path.exists(gpio_path), "GPIO missing={}".format(gpioname)
-        )
+        self.assertTrue(os.path.exists(gpio_path), "GPIO missing={}".format(gpioname))
 
         Logger.info("GPIO name={} present".format(gpioname))
         for item, _value in attributes.items():
             path = os.path.join(gpio_path, str(item))
             self.assertTrue(
                 os.path.exists(path),
-                "GPIO attribute missing={} attribute={}".format(
-                    gpioname, str(item)
-                ),
+                "GPIO attribute missing={} attribute={}".format(gpioname, str(item)),
             )
 
     def test_gpios(self):

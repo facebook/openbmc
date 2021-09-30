@@ -17,7 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
 

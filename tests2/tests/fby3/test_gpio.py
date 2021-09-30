@@ -21,8 +21,13 @@ import unittest
 
 from common.base_gpio_test import BaseGpioTest
 from tests.fby3.test_data.gpio.gpio import GPIOS
+from utils.test_utils import qemu_check
 
 
 class GpioTest(BaseGpioTest, unittest.TestCase):
     def set_gpios(self):
         self.gpios = GPIOS
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_gpios(self):
+        super().test_gpios()

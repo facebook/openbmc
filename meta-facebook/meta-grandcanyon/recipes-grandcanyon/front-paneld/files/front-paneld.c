@@ -42,14 +42,12 @@
 #define SYNC_SYSTEM_STATUS_LED_INTERVAL   1 //second
 #define DBG_CARD_SHOW_ERR_INTERVAL        1 //second
 #define DBG_CARD_UPDATE_ERR_INTERVAL      5 //second
-#define MONITOR_HB_HEALTH_INTERVAL        1 //second
+#define MONITOR_HB_HEALTH_INTERVAL        5 //second
 #define SYNC_E1S_STATUS_LED_INTERVAL      1 //second
 
 #define MAX_NUM_CHECK_FRU_HEALTH          5
 
 #define HEARTBEAT_TIMEOUT                 180 // second = 3 mins
-#define HEARTBEAT_NORMAL                  1
-#define HEARTBEAT_ABNORMAL                0
 #define MAX_NUM_CHECK_HB_HEALTH           4
 
 // Thread to handle LED state of the SLED
@@ -329,7 +327,7 @@ heartbeat_health_handler() {
         if (pal_is_heartbeat_ok(hb_list[i]) == true) {
           hb_timer[i] = 0;
         } else {
-          hb_timer[i] += 1;
+          hb_timer[i] += MONITOR_HB_HEALTH_INTERVAL;
         }
         
         // Timeout detect: no response continuous 3 mins

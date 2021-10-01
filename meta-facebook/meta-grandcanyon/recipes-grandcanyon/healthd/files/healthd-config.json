@@ -2,7 +2,7 @@
   "version": "1.0",
   "log_rearm": true,
   "heartbeat": {
-    "interval": 50
+    "interval": 25
   },
   "bmc_cpu_utilization" : {
     "enabled": true,

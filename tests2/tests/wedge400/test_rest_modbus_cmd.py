@@ -17,8 +17,12 @@
 # Boston, MA 02110-1301 USA
 #
 
+import unittest
+
 import common.base_rest_modbus_cmd
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class RestModbusCmdTest(common.base_rest_modbus_cmd.RestModbusCmdTest):
     pass  # just run common tests

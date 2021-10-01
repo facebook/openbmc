@@ -21,8 +21,10 @@ import unittest
 
 from common.base_switch_test import BaseSwitchTest
 from tests.wedge400.helper.libpal import pal_get_board_type
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class GibraltarTest(BaseSwitchTest, unittest.TestCase):
     """
     Test for smb_syscpld node gb_turn_on

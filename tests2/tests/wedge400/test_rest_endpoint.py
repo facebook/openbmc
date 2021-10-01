@@ -40,6 +40,7 @@ from tests.wedge400.test_data.sensors.sensors import (
 )
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -85,6 +86,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             self.endpoint_sys_attrb.append("vddcore")
             self.endpoint_sys_attrb.append("switch_reset")
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys(self):
         self.set_endpoint_sys_attributes()
         self.verify_endpoint_attributes(
@@ -131,6 +133,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PSU1) == "psu2":
             self.endpoint_sensors_attrb += PSU2_SENSORS
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
         self.verify_endpoint_attributes(
@@ -149,6 +152,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_scm_attributes(self):
         self.endpoint_fruid_scm_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_scm(self):
         self.set_endpoint_fruid_scm_attributes()
         self.verify_endpoint_attributes(
@@ -159,6 +163,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_mb_fruid_attributes(self):
         self.endpoint_mb_fruid_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_seutil_fruid(self):
         self.set_endpoint_mb_fruid_attributes()
         self.verify_endpoint_attributes(
@@ -169,6 +174,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fcm_attributes(self):
         self.endpoint_fruid_fcm_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fcm(self):
         self.set_endpoint_fruid_fcm_attributes()
         self.verify_endpoint_attributes(
@@ -179,6 +185,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan1_attributes(self):
         self.endpoint_fruid_fan1_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan1(self):
         self.set_endpoint_fruid_fan1_attributes()
         self.verify_endpoint_attributes(
@@ -189,6 +196,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan2_attributes(self):
         self.endpoint_fruid_fan2_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan2(self):
         self.set_endpoint_fruid_fan2_attributes()
         self.verify_endpoint_attributes(
@@ -199,6 +207,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan3_attributes(self):
         self.endpoint_fruid_fan3_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan3(self):
         self.set_endpoint_fruid_fan3_attributes()
         self.verify_endpoint_attributes(
@@ -209,6 +218,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan4_attributes(self):
         self.endpoint_fruid_fan4_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan4(self):
         self.set_endpoint_fruid_fan4_attributes()
         self.verify_endpoint_attributes(
@@ -219,6 +229,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_scm_presence_attributes(self):
         self.endpoint_scm_presence = ["scm"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_scm_present(self):
         self.set_endpoint_scm_presence_attributes()
         self.verify_endpoint_attributes(
@@ -229,6 +240,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_psu_presence_attributes(self):
         self.endpoint_psu_presence = ["psu1", "psu2"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_psu_present(self):
         self.set_endpoint_psu_presence_attributes()
         self.verify_endpoint_attributes(
@@ -239,6 +251,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fan_presence_attributes(self):
         self.endpoint_fan_presence = ["fan1", "fan2", "fan3", "fan4"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_fan_present(self):
         self.set_endpoint_fan_presence_attributes()
         self.verify_endpoint_attributes(
@@ -254,6 +267,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "SMBCPLD",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_cpld(self):
         self.set_endpoint_firmware_info_cpld_attributes()
         self.verify_endpoint_attributes(
@@ -265,6 +279,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_firmware_info_fpga_attributes(self):
         self.endpoint_firmware_info_fpga_attributes = ["DOMFPGA1", "DOMFPGA2"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_fpga(self):
         self.set_endpoint_firmware_info_fpga_attributes()
         self.verify_endpoint_attributes(
@@ -285,6 +300,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "BIOS Version",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_scm(self):
         self.set_endpoint_firmware_info_scm_attributes()
         self.verify_endpoint_attributes(
@@ -315,6 +331,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "P1V05 VR Version",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_all(self):
         self.set_endpoint_firmware_info_all_attributes()
         self.verify_endpoint_attributes(
@@ -348,6 +365,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         return True
 
     # "/api/sys/vddcore"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_vddcore_get(self):
         platform_type = pal_get_board_type()
         # Wedge400 need to skip vddcore
@@ -360,6 +378,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             self.fail("get vddcore failed")
 
     # "/api/sys/vddcore/{#vddcore_value}"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_vddcore_post(self):
         platform_type = pal_get_board_type()
         # Wedge400 need to skip vddcore
@@ -396,6 +415,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_api_sys_switch_reset_attributes(self):
         self.endpoint_switch_reset_attributes = ["cycle_reset", "only_reset"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_switch_reset(self):
         platform_type = pal_get_board_type()
         # Wedge400 need to skip vddcore

@@ -25,7 +25,7 @@
 #define FBY2_FRU_PATH "/tmp/fruid_%s.bin"
 #define FBY2_FRU_DEV_PATH "/tmp/fruid_%s_dev%d.bin"
 
-#define NIC_FW_VER_PATH "/tmp/cache_store/nic_fw_ver"
+#define NIC_FW_VER_PATH "nic_fw_ver"
 
 #define MFG_MELLANOX 0x19810000
 #define MFG_BROADCOM 0x3D110000

@@ -113,10 +113,11 @@ def fscd_setup_watchdog():
 
 def fscd_release_watchdog(stop_wdt=False):
     """stop the watchdog device."""
-    Logger.info("Stopping watchdog thread")
-    _WATCHDOG_STOP.set()
-    _WATCHDOG_THREAD.join()
-    Logger.info("Watchdog thread stopped")
+    if _WATCHDOG_THREAD.is_alive():
+        Logger.info("Stopping watchdog thread")
+        _WATCHDOG_STOP.set()
+        _WATCHDOG_THREAD.join()
+        Logger.info("Watchdog thread stopped")
 
     if stop_wdt:
         stop_watchdog()

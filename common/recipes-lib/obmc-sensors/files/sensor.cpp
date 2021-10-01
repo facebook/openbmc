@@ -18,6 +18,7 @@
 #include <cmath>
 #include <syslog.h>
 #include "sensor.hpp"
+#include <cstring>
 
 using namespace std;
 
@@ -51,8 +52,15 @@ float Sensor::read()
   if (subfeature == nullptr) {
     throw system_error(ENOTSUP, std::generic_category(), "Sensor feature not supported");
   }
-  if (sensors_get_value(chip, subfeature->number, &value)) {
-    throw system_error(EIO, std::generic_category(), "Sensor Read Failure");
+  if ((sensors_get_value(chip, subfeature->number, &value)) < 0) {
+    char cname[128];
+    sensors_snprintf_chip_name(cname, sizeof(cname), chip);
+    // 0 rpm will let ASPEED tacho driver reading timeout, ignore the error and report 0 rpm directlly.
+    if (strcmp(cname, "aspeed_tach-isa-0000") == 0) {
+      value = 0;
+    } else {
+      throw system_error(EIO, std::generic_category(), "Sensor Read Failure");
+    }
   }
   return float(value);
 }

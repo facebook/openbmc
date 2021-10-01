@@ -47,7 +47,7 @@ int kv_set(const char *key, const char *value, size_t len, unsigned int flags) {
 
   try {
     std::string data{value, value + len};
-    auto r = flags & KV_FPERSIST ? region::persist : region::temp;
+    auto r = (flags & KV_FPERSIST) ? region::persist : region::temp;
     kv::set(key, data, r, flags & KV_FCREATE);
 
   } catch (kv::key_already_exists& e) {
@@ -81,7 +81,7 @@ int kv_get(const char *key, char *value, size_t *len, unsigned int flags) {
   }
 
   try {
-    auto r = flags & KV_FPERSIST ? region::persist : region::temp;
+    auto r = (flags & KV_FPERSIST) ? region::persist : region::temp;
     auto result = kv::get(key, r);
     auto bytes = result.size();
 
@@ -127,7 +127,7 @@ int kv_del(const char *key, unsigned int flags)
   if (key == nullptr)
     return -1;
   try {
-    auto r = flags & KV_FPERSIST ? region::persist : region::temp;
+    auto r = (flags & KV_FPERSIST) ? region::persist : region::temp;
     kv::del(key, r);
 
   } catch(kv::key_does_not_exist& e) {

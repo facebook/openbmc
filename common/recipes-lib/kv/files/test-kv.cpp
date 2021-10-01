@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
   {
     constexpr auto key = "test4";
     std::array<char, 7> v = { 'a', 'b', 'c', '\0', 'd', 'e', 'f' };
-    size_t len = v.size();
+    len = v.size();
 
     assert(kv_set(key, v.data(), len, 0) == 0);
     assert(kv_get(key, value, &len, 0) == 0);
@@ -127,4 +127,3 @@ int main(int argc, char *argv[])
 
   return 0;
 }
-

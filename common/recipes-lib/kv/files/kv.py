@@ -19,8 +19,6 @@
 #
 import ctypes
 import errno
-import os
-
 
 lkv_hndl = ctypes.CDLL("libkv.so.0", use_errno=True)
 

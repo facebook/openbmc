@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_kernel_abi_test import BaseKernelABITest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class KernelABITest(BaseKernelABITest, unittest.TestCase):
     def set_platform_specific_paths(self):
         self.platform_dep_list = []

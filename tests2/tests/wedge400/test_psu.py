@@ -19,15 +19,19 @@
 #
 
 import unittest
+
 from common.base_psu_test import CommonPsuTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu1Test(CommonPsuTest, unittest.TestCase):
     def set_psu_cmd(self):
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 1
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu2Test(CommonPsuTest, unittest.TestCase):
     def set_psu_cmd(self):
         self.psu_cmd = "/usr/bin/psu-util"

@@ -21,11 +21,13 @@ import time
 import unittest
 
 from common.base_fscd_test import BaseFscdTest
+from tests.wedge400.helper.libpal import pal_get_board_type
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from tests.wedge400.helper.libpal import pal_get_board_type
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FscdTest(BaseFscdTest, unittest.TestCase):
 
     TEST_DATA_PATH = "/usr/local/bin/tests2/tests/wedge400/test_data/fscd"

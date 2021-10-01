@@ -19,12 +19,13 @@
 #
 import unittest
 from abc import abstractmethod
+
+from common.base_sensor_test import SensorUtilTest
 from tests.wedge400.helper.libpal import (
     pal_get_board_type_rev,
     pal_detect_power_supply_present,
     BoardRevision,
 )
-from common.base_sensor_test import SensorUtilTest
 from tests.wedge400.test_data.sensors.sensors import (
     PEM1_SENSORS,
     PEM2_SENSORS,
@@ -35,8 +36,10 @@ from tests.wedge400.test_data.sensors.sensors import (
     SMB_SENSORS_W400CEVT,
     SMB_SENSORS_W400CEVT2,
 )
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ScmSensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util scm"]

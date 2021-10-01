@@ -15,9 +15,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
 
 import common.base_rest_mmc
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class RestMMCTest(common.base_rest_mmc.RestMMCTest):
     pass  # just run common tests

@@ -55,7 +55,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         ]
 
     # "/api/sys/server"
-    @unittest.skip("Test not supported on platform")
     def set_endpoint_server_attributes(self):
         self.endpoint_server_attrb = None
         pass
@@ -69,7 +68,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
 
     # "/api/sys/firmware_info_all
-    @unittest.skip("Test not supported on platform")
     def set_endpoint_firmware_info_all_attributes(self):
         self.endpoint_firmware_info_all_attrb = None
         pass

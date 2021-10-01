@@ -21,8 +21,10 @@ import unittest
 
 from common.base_fans_test import CommonShellBasedFansTest
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FansTest(CommonShellBasedFansTest, unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
@@ -47,7 +49,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan1_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -55,7 +57,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan2_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -63,7 +65,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan3_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -71,7 +73,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan4_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -79,7 +81,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan5_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -87,7 +89,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan6_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -95,7 +97,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan7_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -103,7 +105,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan8_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -111,7 +113,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan9_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -119,7 +121,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan10_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -127,7 +129,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan11_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")
@@ -135,7 +137,7 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
 
     def test_fan12_read(self):
         """
-         For each fan read and test speed
+        For each fan read and test speed
         """
         Logger.log_testname(name=__name__)
         self.assertNotEqual(self.read_fans_cmd, None, "Get Fan cmd not set")

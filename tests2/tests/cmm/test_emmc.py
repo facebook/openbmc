@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_emmc_test import BaseEmmcTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class CmmEmmcTest(BaseEmmcTest, unittest.TestCase):
     def set_emmc_mount_point(self):
         self.emmc_mountpoint = "/var/volatile/log"

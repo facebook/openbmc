@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_watchdog_test import WatchdogTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class WatchdogTest(WatchdogTest, unittest.TestCase):
     def set_kill_watchdog_daemon_cmd(self):
         self.kill_watchdog_daemon_cmd = ["/usr/bin/killall fand"]

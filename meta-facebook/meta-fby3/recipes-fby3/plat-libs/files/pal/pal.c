@@ -2304,9 +2304,24 @@ pal_get_board_name(uint8_t comp) {
   return "Undefined board";
 }
 
+static const char*
+pal_get_cwc_dev_str(uint8_t dev) {
+  const char *dev_str[5] = {"P5V", "P3V3_STBY", "P3V3", "P1V8", "P0V84"};
+  const uint8_t dev_size = ARRAY_SIZE(dev_str);
+  if ( dev < dev_size ) {
+    return dev_str[dev];
+  }
+
+  return "Undefined device";
+}
+
 static void
-pal_get_m2_str_name(uint8_t comp, uint8_t device_num, char *error_log) {
-  snprintf(error_log, 256, "%s/Num %d ", pal_get_board_name(comp), device_num);
+pal_get_m2_str_name(uint8_t event, uint8_t comp, uint8_t device_num, char *error_log) {
+  if ((event == 0x0c || event == 0x15) && comp == 5) {
+    snprintf(error_log, 256, "%s/%s ", pal_get_board_name(comp), pal_get_cwc_dev_str(device_num));
+  } else {
+    snprintf(error_log, 256, "%s/Num %d ", pal_get_board_name(comp), device_num);
+  }
   return;
 }
 
@@ -2350,6 +2365,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_GPV3_NOT_PRESENT  = 0x14,
+    SYS_PWRGOOD_TIMEOUT   = 0x15,
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
     E1S_1OU_M2_PRESENT    = 0x80,
@@ -2396,7 +2412,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "VPP Power Control");
       break;
     case SYS_M2_PGOOD:
-      pal_get_m2_str_name(event_data[1], event_data[2], error_log);
+      pal_get_m2_str_name(event, event_data[1], event_data[2], error_log);
       strcat(error_log, "Power Good Fault");
       break;
     case SYS_VCCIO_FAULT:
@@ -2409,7 +2425,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "VCCIO Over Voltage Fault");
       break;
     case SYS_M2_OCP_DETECT:
-      pal_get_m2_str_name(event_data[1], event_data[2], error_log);
+      pal_get_m2_str_name(event, event_data[1], event_data[2], error_log);
       strcat(error_log, "INA233 Alert");
       break;
     case SYS_SLOT_PRSNT:
@@ -2426,6 +2442,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_GPV3_NOT_PRESENT:
       pal_get_gpv3_not_present_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "GPv3 Board Not Present Warning");
+      break;
+    case SYS_PWRGOOD_TIMEOUT:
+      pal_get_m2_str_name(event, event_data[1], event_data[2], error_log);
+      strcat(error_log, "Power Good Time Out");
       break;
     case SYS_DP_X8_PWR_FAULT:
       fby3_common_get_2ou_board_type(fru, &type_2ou);

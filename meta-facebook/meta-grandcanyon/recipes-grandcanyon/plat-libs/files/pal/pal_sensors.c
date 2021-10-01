@@ -1158,6 +1158,34 @@ read_device(const char *device, int *value) {
   return 0;
 }
 
+int
+write_device(const char *device, const char *value) {
+  FILE *fp;
+  int rc;
+
+  if (device == NULL || value == NULL) {
+    syslog(LOG_ERR, "%s: Invalid parameter", __func__);
+    return -1;
+  }
+
+  fp = fopen(device, "w");
+  if (fp == NULL) {
+    int err = errno;
+    syslog(LOG_INFO, "failed to open device for write %s error: %s", device, strerror(errno));
+    return err;
+  }
+
+  rc = fputs(value, fp);
+  fclose(fp);
+
+  if (rc < 0) {
+    syslog(LOG_INFO, "failed to write device %s error: %s", device, strerror(errno));
+    return -1;
+  } else {
+    return 0;
+  }
+}
+
 static int
 read_ads1015(uint8_t id, float *value) {
   int read_value = 0;

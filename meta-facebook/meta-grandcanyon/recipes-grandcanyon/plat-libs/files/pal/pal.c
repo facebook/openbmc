@@ -60,7 +60,8 @@
 #define MAX_SNR_NAME  32
 #define MAX_EVENT_STR 256
 
-#define BIC_HEARTBEAT_PATH "/sys/class/hwmon/hwmon1/fan0_input"
+#define HWMON_PWM_PATH "/sys/class/hwmon/hwmon4/pwm1"
+#define KV_KEY_BIC_HEARTBEAT  "bic_hb_status"
 
 #define NIC_CARD_PERST_CTRL 0x09
 
@@ -87,9 +88,6 @@ const char pal_tach_list[] = "0...7";
 
 size_t pal_pwm_cnt = 1;
 size_t pal_tach_cnt = 8;
-
-// TODO: temporary mapping table, will get from fan config after fan table is ready
-uint8_t fanid2pwmid_mapping[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -610,35 +608,33 @@ pal_get_fru_name(uint8_t fru, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
-  char label[MAX_PWM_LABEL_LEN] = {0};
-  int zone = 0;
+  char str[MAX_VALUE_LEN] = {0};
+  int value = 0;
 
   if (fan_id >= pal_pwm_cnt) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
-  zone = fanid2pwmid_mapping[fan_id];
-  snprintf(label, sizeof(label), "pwm%d", zone);
 
-  return sensors_write_fan(label, (float)pwm);
+  value = (int)(pwm) * 255 / 100;
+  snprintf(str, sizeof(str), "%d", value);
+
+  return write_device(HWMON_PWM_PATH, str);
 }
 
 int
 pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
-  char label[MAX_PWM_LABEL_LEN] = {0};
-  float value = 0;
+  int value = 0;
   int ret = 0;
-  int zone = 0;
 
   if (fan_id >= pal_get_tach_cnt()) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
-  zone = fanid2pwmid_mapping[fan_id];
-  snprintf(label, sizeof(label), "pwm%d", zone);
-  ret = sensors_read_fan(label, &value);
+
+  ret = read_device(HWMON_PWM_PATH, &value);
   if (ret == 0) {
-    *pwm = (uint8_t)value;
+    *pwm = (uint8_t)ceil((float)value * 100.0 / 255.0);
   }
 
   return ret;
@@ -2836,28 +2832,25 @@ void pal_update_ts_sled() {
 bool
 pal_is_heartbeat_ok(uint8_t component) {
   char label[MAX_PWM_LABEL_LEN] = {0};
-  int ret = 0;
+  char kv_value[MAX_VALUE_LEN] = {0};
   float hb_val = 0;
+  bool is_read = false;
 
-  if (component == HEARTBEAT_BIC) {
-    // BIC heartbeat index is 0, so it can't use tacho driver to read data
-    return pal_is_bic_heartbeat_ok(FRU_SERVER);
+  snprintf(label, sizeof(label), "fan%d", component);
 
-  } else {
-    snprintf(label, sizeof(label), "fan%d", component);
-    // get heartbeat from tacho driver
-    ret = sensors_read_fan(label, &hb_val);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s(): fail to get heartbeat, component = %d", __func__, component);
-      return false;
-    }
-
-    if (hb_val == 0) {
-      return false;
-    }
+  // get heartbeat from tacho driver
+  if (sensors_read_fan(label, &hb_val) < 0) {
+    syslog(LOG_WARNING, "%s(): fail to get heartbeat, component = %d", __func__, component);
+  } else if (hb_val != 0) {
+    is_read = true;
   }
 
-  return true;
+  if (component == HEARTBEAT_BIC) { // cache BIC heartbeat reading for healthd
+    snprintf(kv_value, sizeof(kv_value), "%d", is_read);
+    kv_set(KV_KEY_BIC_HEARTBEAT, kv_value, 0, 0);
+  }
+
+  return is_read;
 }
 
 int
@@ -3257,8 +3250,8 @@ pal_is_bic_ready(uint8_t fru, uint8_t *status) {
 bool
 pal_is_bic_heartbeat_ok(uint8_t fru) {
   uint8_t power_status = 0, server_present = 0;
-  int hb_val = 0;
   int ret = 0;
+  char val[MAX_VALUE_LEN] = {0};
 
   if (fru != FRU_SERVER) {
     syslog(LOG_WARNING, "%s(): FRU %x does not have BIC component", __func__, fru);
@@ -3275,12 +3268,11 @@ pal_is_bic_heartbeat_ok(uint8_t fru) {
     return true;
   }
 
-  ret = read_device(BIC_HEARTBEAT_PATH, &hb_val);
-  if ((ret < 0) || (hb_val == 0)) {
+  if (kv_get(KV_KEY_BIC_HEARTBEAT, val, NULL, 0)) {
     return false;
   }
 
-  return true;
+  return atoi(val);
 }
 
 int

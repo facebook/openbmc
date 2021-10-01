@@ -156,6 +156,9 @@ extern "C" {
 
 #define ERROR_ID_LOG_LEN  16
 
+#define HEARTBEAT_NORMAL                  1
+#define HEARTBEAT_ABNORMAL                0
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -395,10 +398,10 @@ enum {
 };
 
 enum {
-  HEARTBEAT_BIC         = 0,
-  HEARTBEAT_REMOTE_BMC  = 2,
-  HEARTBEAT_LOCAL_SCC   = 3,
-  HEARTBEAT_REMOTE_SCC  = 4,
+  HEARTBEAT_BIC         = 1,
+  HEARTBEAT_REMOTE_BMC  = 3,
+  HEARTBEAT_LOCAL_SCC   = 4,
+  HEARTBEAT_REMOTE_SCC  = 5,
 };
 
 enum IOC_WWID_COMPONENT {

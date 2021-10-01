@@ -25,9 +25,9 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 sync_date()
 {
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    if [ -f /tmp/cache_store/time_sync ] ; then
+    if  kv get time_sync ; then
       # ND Server Time Sync by IPMI command
-      output=$(cat /tmp/cache_store/time_sync)
+      output=$(kv get time_sync)
       if [ ${#output} == 11 ] ; then
         echo Syncing up BMC time with server...
         date -s @$((16#$(echo "$output" | awk '{print $4$3$2$1}')))

@@ -17,8 +17,13 @@
 # Boston, MA 02110-1301 USA
 #
 
+import unittest
+
 import common.base_obmc_mmc_test
+from utils.test_utils import qemu_check
 
 
 class LibObmcMmcTest(common.base_obmc_mmc_test.LibObmcMmcTest):
-    pass  # just run common tests
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_list_devices(self):
+        super().test_list_devices()

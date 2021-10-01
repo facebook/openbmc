@@ -222,10 +222,10 @@ function init_fsc_config_yv2nd2()
 
 function get_fan_config()
 {
-  if [ ! -f /tmp/cache_store/setup_fan_config ]; then
+  if ! kv get setup_fan_config ; then
     logger -p user.warning "Setup fan config"
     /usr/local/bin/check_fan_config.sh
-    echo 1 > /tmp/cache_store/setup_fan_config
+    kv set setup_fan_config 1
   fi
 
   fan_config=$(cat /tmp/fan_config)

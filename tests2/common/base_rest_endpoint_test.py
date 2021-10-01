@@ -21,9 +21,11 @@ import json
 import os
 import re
 import time
+import unittest
 from abc import abstractmethod
 
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
 try:
@@ -250,6 +252,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     def set_endpoint_api_attributes(self):
         self.endpoint_api_attrb = ["sys"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api(self):
         self.set_endpoint_api_attributes()
         self.verify_endpoint_attributes(
@@ -262,6 +265,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         self.endpoint_sys_attrb = None
         pass
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys(self):
         self.set_endpoint_sys_attributes()
         self.verify_endpoint_attributes(
@@ -274,6 +278,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         self.endpoint_sensors_attrb = None
         pass
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
         self.verify_endpoint_attributes(
@@ -284,6 +289,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     def set_endpoint_mb_attributes(self):
         self.endpoint_mb_attrb = self.MB_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_mb(self):
         self.set_endpoint_mb_attributes()
         self.verify_endpoint_attributes(
@@ -296,6 +302,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
         self.endpoint_server_attrb = None
         pass
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_server(self):
         self.set_endpoint_server_attributes()
         self.verify_endpoint_attributes(
@@ -306,6 +313,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     def set_endpoint_fruid_attributes(self):
         self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_mb_fruid(self):
         self.set_endpoint_fruid_attributes()
         self.verify_endpoint_attributes(
@@ -316,6 +324,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     def set_endpoint_bmc_attributes(self):
         self.endpoint_bmc_attrb = self.BMC_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_bmc(self):
         self.set_endpoint_bmc_attributes()
         self.verify_endpoint_attributes(
@@ -326,6 +335,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     def set_endpoint_mtd_attributes(self):
         self.endpoint_mtd_attrb = ["u-boot", "env", "fit", "data0", "flash0", "flash1"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_bmc_mtd(self):
         self.set_endpoint_mtd_attributes()
         info = self.get_from_endpoint(CommonRestEndpointTest.BMC_ENDPOINT)
@@ -335,6 +345,7 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
                 self.assertIn(attrib, dict_info["Information"]["MTD Parts"])
 
     # /api/sys/bmc - Secondary Boot Triggered
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_bmc_secondary_boot(self):
         info = self.get_from_endpoint(CommonRestEndpointTest.BMC_ENDPOINT)
         dict_info = json.loads(info)
@@ -356,12 +367,14 @@ class FbossRestEndpointTest(CommonRestEndpointTest):
     def set_endpoint_fc_present_attributes(self):
         self.endpoint_fc_present_attrb = ["Not Applicable"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fc_present(self):
         self.set_endpoint_fc_present_attributes()
         self.verify_endpoint_attributes(
             FbossRestEndpointTest.FC_PRESENT_ENDPOINT, self.endpoint_fc_present_attrb
         )
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_all(self):
         self.set_endpoint_firmware_info_all_attributes()
         self.assertNotEqual(self.endpoint_firmware_info_all_attrb, None)

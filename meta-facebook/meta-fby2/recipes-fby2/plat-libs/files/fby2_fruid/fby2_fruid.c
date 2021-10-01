@@ -23,6 +23,8 @@
 #include <syslog.h>
 #include "fby2_fruid.h"
 
+#define NCSI_DATA_PAYLOAD     64
+#define NCSI_MIN_DATA_PAYLOAD 36
 
 int
 plat_get_ipmb_bus_id(uint8_t slot_id) {
@@ -51,23 +53,18 @@ plat_get_ipmb_bus_id(uint8_t slot_id) {
 
 uint32_t
 fby2_get_nic_mfgid(void) {
-  FILE *fp;
-  uint8_t buf[16];
+  uint8_t buf[NCSI_DATA_PAYLOAD] = {0};
+  size_t len;
+  uint32_t nic_mfg_id = 0;
 
-  fp = fopen(NIC_FW_VER_PATH, "rb");
-  if (!fp) {
-    return MFG_UNKNOWN;
-  }
-
-  fseek(fp, 32 , SEEK_SET);
-  if (fread(buf, 1, 4, fp) != 4) {
-    syslog(LOG_WARNING, "%s: read file failed, file: %s\n", __func__, NIC_FW_VER_PATH);
-    fclose(fp);
+  if ((kv_get(NIC_FW_VER_PATH, (char *)buf, &len, 0) != 0) || ( len < NCSI_MIN_DATA_PAYLOAD)) {
+    syslog(LOG_WARNING, "%s(): Fail to read vendor ID.", __func__);
     return -1;
   }
-  fclose(fp);
 
-  return ((buf[3]<<24)|(buf[2]<<16)|(buf[1]<<8)|buf[0]);
+  // get the manufcture id
+  nic_mfg_id = (buf[35]<<24) | (buf[34]<<16) | (buf[33]<<8) | buf[32];
+  return nic_mfg_id;
 }
 
 /* Populate char path[] with the path to the fru's fruid binary dump */

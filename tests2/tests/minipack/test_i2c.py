@@ -21,8 +21,13 @@ import unittest
 
 from common.base_i2c_test import BaseI2cTest
 from tests.minipack.test_data.i2c.i2c import plat_i2c_tree
+from utils.test_utils import qemu_check
 
 
 class MinipackI2cTest(BaseI2cTest, unittest.TestCase):
     def load_golden_i2c_tree(self):
         self.i2c_tree = plat_i2c_tree
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_i2c_tree(self):
+        super().test_i2c_tree()

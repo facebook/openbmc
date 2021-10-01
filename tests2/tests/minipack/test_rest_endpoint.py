@@ -21,6 +21,7 @@ import unittest
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 from tests.minipack.test_data.sensors.sensors import SENSORS
+from utils.test_utils import qemu_check
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -88,6 +89,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_scm_attributes(self):
         self.endpoint_fruid_scm_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_scm(self):
         self.set_endpoint_fruid_scm_attributes()
         self.verify_endpoint_attributes(
@@ -107,6 +109,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "pim8",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_pim_present(self):
         self.set_endpoint_pim_presence_attributes()
         self.verify_endpoint_attributes(
@@ -126,6 +129,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "PIM8",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_piminfo(self):
         self.set_endpoint_piminfo_attributes()
         self.verify_endpoint_attributes(
@@ -133,6 +137,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         )
 
     # "/api/sys/pimserial"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_pimserial(self):
         self.set_endpoint_piminfo_attributes()
         self.verify_endpoint_attributes(
@@ -141,6 +146,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         )
 
     # "/api/sys/pimstatus"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_pimstatus(self):
         self.set_endpoint_pim_presence_attributes()
         self.verify_endpoint_attributes(
@@ -152,6 +158,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_seutil_fruid_attributes(self):
         self.endpoint_seutil_fruid_attrb = self.FRUID_ATTRIBUTES
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_mb_seutil_fruid(self):
         self.set_endpoint_seutil_fruid_attributes()
         self.verify_endpoint_attributes(
@@ -198,6 +205,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "8",
         ]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_pim(self):
         self.set_endpoint_firmware_info_pim_attributes()
         self.verify_endpoint_attributes(
@@ -210,6 +218,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         # scm attribute <-> version map.
         self.endpoint_firmware_info_scm_attributes = ["1"]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_info_scm(self):
         self.set_endpoint_firmware_info_scm_attributes()
         self.verify_endpoint_attributes(
@@ -218,6 +227,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         )
 
     # "/api/sys/firmware_info_all"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_firmware_all(self):
         self.set_endpoint_firmware_info_all_attributes()
         self.verify_endpoint_attributes(
@@ -229,6 +239,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.endpoint_system_led_info_attrb = ["sys", "smb", "psu", "fan"]
 
     # "/api/sys/system_led_info"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_system_led_info(self):
         self.set_endpoint_system_led_info_attributes()
         self.verify_endpoint_attributes(
@@ -236,6 +247,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         )
 
     # "/api/sys/pimdetails"
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_pimdetails(self):
         self.set_endpoint_firmware_info_pim_attributes()
         self.verify_endpoint_attributes(

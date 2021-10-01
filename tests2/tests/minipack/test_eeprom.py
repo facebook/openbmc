@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for weutil
@@ -37,7 +39,7 @@ class EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-SMB"]
 
 
-class SCMEepromTest(CommonEepromTest, unittest.TestCase):
+class SCMEepromTest(EepromTest, unittest.TestCase):
     """
     Test for seutil
     """
@@ -52,7 +54,7 @@ class SCMEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-SCM"]
 
 
-class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM1EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 1
     """
@@ -67,7 +69,7 @@ class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM2EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 2"]
 
@@ -78,7 +80,7 @@ class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM3EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 3"]
 
@@ -89,7 +91,7 @@ class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM4EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 4"]
 
@@ -100,7 +102,7 @@ class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM5EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 5"]
 
@@ -111,7 +113,7 @@ class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM6EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 6"]
 
@@ -122,7 +124,7 @@ class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM7EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 7"]
 
@@ -133,7 +135,7 @@ class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM8EepromTest(EepromTest, unittest.TestCase):
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
 
@@ -144,7 +146,7 @@ class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-PIM16Q"]
 
 
-class FCMTEepromTest(CommonEepromTest, unittest.TestCase):
+class FCMTEepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fcm-t
     """
@@ -159,7 +161,7 @@ class FCMTEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FCM"]
 
 
-class FCMBEepromTest(CommonEepromTest, unittest.TestCase):
+class FCMBEepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fcm-b
     """
@@ -174,7 +176,7 @@ class FCMBEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FCM"]
 
 
-class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN1EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 1
     """
@@ -189,7 +191,7 @@ class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN2EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 2
     """
@@ -204,7 +206,7 @@ class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN3EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 3
     """
@@ -219,7 +221,7 @@ class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN4EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 4
     """
@@ -234,7 +236,7 @@ class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN5EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN5EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 5
     """
@@ -249,7 +251,7 @@ class FAN5EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN6EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN6EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 6
     """
@@ -264,7 +266,7 @@ class FAN6EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN7EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN7EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 7
     """
@@ -279,7 +281,7 @@ class FAN7EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["MINIPACK-FB"]
 
 
-class FAN8EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN8EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 8
     """

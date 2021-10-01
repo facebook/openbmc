@@ -20,8 +20,17 @@
 import unittest
 
 from common.base_host_mac_test import BaseHostMacTest
+from utils.test_utils import qemu_check
 
 
 class HostMacTest(BaseHostMacTest, unittest.TestCase):
     def set_host_mac(self):
         self.host_mac_cmd = ["/usr/local/bin/wedge_us_mac.sh"]
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_host_mac(self):
+        super().test_host_mac()
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_host_mac_zero_test(self):
+        super().test_host_mac_zero_test()

@@ -20,8 +20,13 @@
 import unittest
 
 from common.base_emmc_test import BaseEmmcTest
+from utils.test_utils import qemu_check
 
 
 class MinipackEmmcTest(BaseEmmcTest, unittest.TestCase):
     def set_emmc_mount_point(self):
         self.emmc_mountpoint = "/mnt/data1"
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_emmc(self):
+        super().test_emmc()

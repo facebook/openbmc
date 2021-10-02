@@ -5,7 +5,6 @@
  */
 #include <stdexcept>
 #include <string>
-#include <vector>
 #include "kv.h"
 
 namespace kv {
@@ -15,7 +14,7 @@ enum class region { persist, temp };
 
 std::string get(const std::string& key, region r = region::temp);
 void set(const std::string& key, const std::string& value,
-         region r = region::temp, bool require_create = false);
+    region r = region::temp, bool require_create = false);
 void del(const std::string& key, region r = region::temp);
 
 struct key_already_exists : public std::logic_error {

@@ -56,7 +56,7 @@ int cmd_get(int argc, const char** argv) {
 
   // Read the kv and display it.
   try {
-    std::cout << kv::get(argv[pos_key], r);
+    std::cout << kv::get(argv[pos_key], r) << "\n";
   } catch (std::exception&) {
     // Eat any exception and simply return a bad rc.
     return 1;
@@ -103,6 +103,7 @@ int cmd_set(int argc, const char** argv) {
   kv::set(argv[pos_key], argv[pos_set_value], r, c);
   return 0;
 }
+
 
 int main(int argc, const char** argv) {
   do {

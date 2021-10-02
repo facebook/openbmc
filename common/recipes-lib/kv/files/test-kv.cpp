@@ -5,7 +5,6 @@
 #include <array>
 #include <cassert>
 #include <unistd.h>
-
 #include "kv.hpp"
 
 int main(int argc, char *argv[])

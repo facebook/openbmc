@@ -4,6 +4,7 @@
 
 #include <syslog.h>
 #include <limits>
+#include <iostream>
 
 #include "kv.hpp"
 #include "fileops.hpp"
@@ -177,5 +178,6 @@ void del(const std::string& key, region r)
 {
   FileHandle::remove(key, r);
 }
+
 
 } // namespace kv

@@ -21,6 +21,7 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 class SensorCalibrationTest(unittest.TestCase):
@@ -31,6 +32,7 @@ class SensorCalibrationTest(unittest.TestCase):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_max6581_tuned(self):
         # Test the IMP port state register
         data = run_shell_cmd("i2cget -f -y 4 0x4d 0x4a").split("\n")

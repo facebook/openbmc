@@ -22,6 +22,7 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 class OobEepromTest(unittest.TestCase):
@@ -33,6 +34,7 @@ class OobEepromTest(unittest.TestCase):
         Logger.info("Finished logging for {}".format(self._testMethodName))
         pass
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_eeprom_read(self):
         data = run_shell_cmd("{} read 0x0".format(self.eeprom_util)).split("\n")
         self.assertIn("0x0: 0xa8", data[0], "OOB EEPROM magic code missing")

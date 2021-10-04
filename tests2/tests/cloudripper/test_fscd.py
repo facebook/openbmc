@@ -23,8 +23,10 @@ import unittest
 from common.base_fscd_test import BaseFscdTest
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FscdTest(BaseFscdTest, unittest.TestCase):
 
     TEST_DATA_PATH = "/usr/local/bin/tests2/tests/cloudripper/test_data/fscd"

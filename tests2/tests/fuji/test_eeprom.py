@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for weutil
@@ -37,7 +39,7 @@ class EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["SMB"]
 
 
-class BMCEepromTest(CommonEepromTest, unittest.TestCase):
+class BMCEepromTest(EepromTest, unittest.TestCase):
     """
     Test for beutil
     """
@@ -52,7 +54,7 @@ class BMCEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["BMC"]
 
 
-class SIMEepromTest(CommonEepromTest, unittest.TestCase):
+class SIMEepromTest(EepromTest, unittest.TestCase):
     """
     Test for simutil
     """
@@ -67,7 +69,7 @@ class SIMEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["SIM"]
 
 
-class SCMEepromTest(CommonEepromTest, unittest.TestCase):
+class SCMEepromTest(EepromTest, unittest.TestCase):
     """
     Test for seutil
     """
@@ -82,7 +84,7 @@ class SCMEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["SCM"]
 
 
-class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM1EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 1
     """
@@ -97,7 +99,7 @@ class PIM1EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM2EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 2
     """
@@ -112,7 +114,7 @@ class PIM2EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM3EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 3
     """
@@ -127,7 +129,7 @@ class PIM3EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM4EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 4
     """
@@ -142,7 +144,7 @@ class PIM4EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM5EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 5
     """
@@ -157,7 +159,7 @@ class PIM5EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM6EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 6
     """
@@ -172,7 +174,7 @@ class PIM6EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM7EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 7
     """
@@ -187,7 +189,7 @@ class PIM7EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
+class PIM8EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 8
     """
@@ -202,7 +204,7 @@ class PIM8EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PIM16Q"]
 
 
-class FCMTEepromTest(CommonEepromTest, unittest.TestCase):
+class FCMTEepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fcm-t
     """
@@ -217,7 +219,7 @@ class FCMTEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FCM"]
 
 
-class FCMBEepromTest(CommonEepromTest, unittest.TestCase):
+class FCMBEepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fcm-b
     """
@@ -232,7 +234,7 @@ class FCMBEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FCM"]
 
 
-class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN1EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 1
     """
@@ -247,7 +249,7 @@ class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN2EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 2
     """
@@ -262,7 +264,7 @@ class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN3EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 3
     """
@@ -277,7 +279,7 @@ class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN4EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 4
     """
@@ -292,7 +294,7 @@ class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN5EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN5EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 5
     """
@@ -307,7 +309,7 @@ class FAN5EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN6EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN6EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 6
     """
@@ -322,7 +324,7 @@ class FAN6EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN7EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN7EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 7
     """
@@ -337,7 +339,7 @@ class FAN7EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN8EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN8EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 8
     """

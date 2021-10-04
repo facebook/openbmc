@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_switch_test import BaseSwitchTest
+from utils.test_utils import qemu_check
 
 
 class GibraltarTest(BaseSwitchTest, unittest.TestCase):
@@ -29,3 +30,7 @@ class GibraltarTest(BaseSwitchTest, unittest.TestCase):
 
     def set_swtich_node_cmd(self):
         self.path = "/sys/bus/i2c/drivers/smb_syscpld/12-003e/gb_turn_on"
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_syscpld_nodes_GB_turn_on(self):
+        super().test_syscpld_nodes_GB_turn_on()

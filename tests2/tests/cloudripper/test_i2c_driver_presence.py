@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_i2c_driver_presence_test import BaseI2cDriverPresenceTest
+from utils.test_utils import qemu_check
 
 
 class CloudripperI2cDriverPresenceTest(BaseI2cDriverPresenceTest, unittest.TestCase):
@@ -42,3 +43,7 @@ class CloudripperI2cDriverPresenceTest(BaseI2cDriverPresenceTest, unittest.TestC
             "scmcpld",
             "fcbcpld",
         ]
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_i2c_driver_presence(self):
+        super().test_i2c_driver_presence()

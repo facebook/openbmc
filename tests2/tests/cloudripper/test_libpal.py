@@ -17,9 +17,13 @@
 # Boston, MA 02110-1301 USA
 #
 
+import unittest
+
 import common.base_libpal_test
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class LibPalTest(common.base_libpal_test.LibPalTest):
     PLATFORM_NAME = "cloudripper"
 

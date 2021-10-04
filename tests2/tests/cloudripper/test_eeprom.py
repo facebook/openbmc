@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class EepromTest(CommonEepromTest, unittest.TestCase):
     """
     Test for weutil
@@ -37,7 +39,7 @@ class EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["SMB"]
 
 
-class BMCEepromTest(CommonEepromTest, unittest.TestCase):
+class BMCEepromTest(EepromTest, unittest.TestCase):
     """
     Test for beutil
     """
@@ -52,7 +54,7 @@ class BMCEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["BMC"]
 
 
-class SCMEepromTest(CommonEepromTest, unittest.TestCase):
+class SCMEepromTest(EepromTest, unittest.TestCase):
     """
     Test for seutil
     """
@@ -67,7 +69,7 @@ class SCMEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["SCM"]
 
 
-class FCMEepromTest(CommonEepromTest, unittest.TestCase):
+class FCMEepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fcm
     """
@@ -82,7 +84,7 @@ class FCMEepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FCM"]
 
 
-class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN1EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 1
     """
@@ -97,7 +99,7 @@ class FAN1EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN2EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 2
     """
@@ -112,7 +114,7 @@ class FAN2EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN3EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 3
     """
@@ -127,7 +129,7 @@ class FAN3EepromTest(CommonEepromTest, unittest.TestCase):
         self.location_on_fabric = ["FAN"]
 
 
-class FAN4EepromTest(CommonEepromTest, unittest.TestCase):
+class FAN4EepromTest(EepromTest, unittest.TestCase):
     """
     Test for feutil fan 4
     """

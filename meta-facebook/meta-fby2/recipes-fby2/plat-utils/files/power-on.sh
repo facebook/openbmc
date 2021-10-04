@@ -29,7 +29,6 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-KEYDIR=/mnt/data/kv_store
 DEF_PWR_ON=1
 TO_PWR_ON=
 POWER_ON_SLOT=
@@ -41,10 +40,10 @@ check_por_config()
   TO_PWR_ON=-1
 
   # Check if the file/key doesn't exist
-  if [ ! -f "${KEYDIR}/slot${1}_por_cfg" ]; then
+  if ! kv get slot${1}_por_cfg persistent ; then
     TO_PWR_ON=$DEF_PWR_ON
   else
-    POR=`cat ${KEYDIR}/slot${1}_por_cfg`
+    POR=`kv get slot${1}_por_cfg`
 
     # Case ON
     if [ $POR == "on" ]; then
@@ -58,10 +57,10 @@ check_por_config()
     elif [ $POR == "lps" ]; then
 
       # Check if the file/key doesn't exist
-      if [ ! -f "${KEYDIR}/pwr_server${1}_last_state" ]; then
+      if ! kv get pwr_server${1}_last_state persistent ; then
         TO_PWR_ON=$DEF_PWR_ON
       else
-        LS=`cat ${KEYDIR}/pwr_server${1}_last_state`
+        LS=`kv get /pwr_server${1}_last_state`
         if [ $LS == "on" ]; then
           TO_PWR_ON=1;
         elif [ $LS == "off" ]; then
@@ -77,8 +76,8 @@ if [ $(is_bmc_por) -eq 1 ]; then
   # Remove all GP/GPv2 info
   for i in {2..13};
   do
-    rm -rf /mnt/data/kv_store/sys_config/fru2_m2_${i}_info;
-    rm -rf /mnt/data/kv_store/sys_config/fru4_m2_${i}_info;
+    kv del sys_config/fru2_m2_${i}_info persistent ;
+    kv del sys_config/fru4_m2_${i}_info persistent ;
   done
 
   /usr/local/bin/sync_date.sh
@@ -109,7 +108,7 @@ if [ $(is_bmc_por) -eq 1 ]; then
     POWER_ON_SLOT+=(4)
     power-util slot4 on &
   fi
-  
+
   # Wait for all slots finish power-up
   while [ $RETRY -lt 10 ]
   do

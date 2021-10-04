@@ -29,8 +29,8 @@ from tests.elbert.test_data.i2c.i2c import (
     secure_devices,
     pim_secure_devices,
 )
-
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 # Map between PIM and SMBus channel
 pim_bus_p1 = [16, 17, 18, 23, 20, 21, 22, 19]
@@ -100,6 +100,7 @@ class ElbertI2cTest(BaseI2cTest, unittest.TestCase):
                         "{}: unexpected output: {}".format(name, output)
                     )
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_i2c_security(self):
         self.verify_secure_devices(secure_devices)
         pim_bus = self.get_pim_bus()
@@ -112,3 +113,7 @@ class ElbertI2cTest(BaseI2cTest, unittest.TestCase):
                     continue
                 devices.append(("PIM{} {}".format(pim, name), bus, dev, dev_type))
             self.verify_secure_devices(devices)
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_i2c_tree(self):
+        super().test_i2c_tree()

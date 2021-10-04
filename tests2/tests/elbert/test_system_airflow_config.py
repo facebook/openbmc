@@ -21,6 +21,7 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 class SystemAirflowConfigTest(unittest.TestCase):
@@ -60,6 +61,7 @@ class SystemAirflowConfigTest(unittest.TestCase):
                 psu_count += 1
         return psu_count
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_system_airflow_config(self):
         pim16q_count, pim8ddm_count = self.get_pim_count()
         psu_count = self.get_psu_count()

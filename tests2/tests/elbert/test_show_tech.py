@@ -22,6 +22,7 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
+from utils.test_utils import qemu_check
 
 
 def collect_show_tech():
@@ -29,6 +30,7 @@ def collect_show_tech():
     return run_shell_cmd(show_tech_cmd)
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ShowTechTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
@@ -43,8 +45,8 @@ class ShowTechTest(unittest.TestCase):
     def test_smb_powergood_status(self):
         powergood_status = "0x1"
         status_match = re.search(
-            r'##### SWITCHCARD POWERGOOD STATUS #####\s*{}'.format(powergood_status),
-            self.show_tech_output
+            r"##### SWITCHCARD POWERGOOD STATUS #####\s*{}".format(powergood_status),
+            self.show_tech_output,
         )
         self.assertTrue(status_match, "Switchcard powergood status is bad")
 
@@ -57,30 +59,23 @@ class ShowTechTest(unittest.TestCase):
         ]
         for fpga in fpgas:
             driver_not_detected_match = re.search(
-                r"{}:\s*FPGA_DRIVER_NOT_DETECTED".format(fpga),
-                self.show_tech_output
+                r"{}:\s*FPGA_DRIVER_NOT_DETECTED".format(fpga), self.show_tech_output
             )
             self.assertFalse(
-                driver_not_detected_match,
-                "{} driver not detected".format(fpga)
-            )
-            
-            no_version_match = re.search(
-                r"{}:\s*0.0".format(fpga),
-                self.show_tech_output
-            )
-            self.assertFalse(
-                no_version_match,
-                "{} version not detected".format(fpga)
+                driver_not_detected_match, "{} driver not detected".format(fpga)
             )
 
+            no_version_match = re.search(
+                r"{}:\s*0.0".format(fpga), self.show_tech_output
+            )
+            self.assertFalse(no_version_match, "{} version not detected".format(fpga))
+
     def test_pim_fpga_version_detected(self):
-        for pim in range(2,10):
+        for pim in range(2, 10):
             version_not_detected_match = re.search(
-                r"PIM\s*{}:\s*VERSION_NOT_DETECTED".format(pim),
-                self.show_tech_output
+                r"PIM\s*{}:\s*VERSION_NOT_DETECTED".format(pim), self.show_tech_output
             )
             self.assertFalse(
                 version_not_detected_match,
-                "PIM{} FPGA version not detected".format(pim)
-            )            
+                "PIM{} FPGA version not detected".format(pim),
+            )

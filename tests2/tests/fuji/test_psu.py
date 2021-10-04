@@ -19,28 +19,31 @@
 #
 
 import unittest
+
 from common.base_psu_test import CommonPsuTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Psu1Test(CommonPsuTest, unittest.TestCase):
     def set_psu_cmd(self):
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 1
 
 
-class Psu2Test(CommonPsuTest, unittest.TestCase):
+class Psu2Test(Psu1Test, unittest.TestCase):
     def set_psu_cmd(self):
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 2
 
 
-class Psu3Test(CommonPsuTest, unittest.TestCase):
+class Psu3Test(Psu1Test, unittest.TestCase):
     def set_psu_cmd(self):
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 3
 
 
-class Psu4Test(CommonPsuTest, unittest.TestCase):
+class Psu4Test(Psu1Test, unittest.TestCase):
     def set_psu_cmd(self):
         self.psu_cmd = "/usr/bin/psu-util"
         self.psu_id = 4

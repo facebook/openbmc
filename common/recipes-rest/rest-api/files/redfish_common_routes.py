@@ -16,59 +16,36 @@ from redfish_session_service import get_session_service, get_session
 
 
 class Redfish:
-    async def controller(self, request):
-        return web.json_response()
-
     def setup_redfish_common_routes(self, app: Application):
         redfish_chassis = RedfishChassis()
         app.router.add_get("/redfish", get_redfish)
-        app.router.add_post("/redfish", self.controller)
         app.router.add_get("/redfish/v1", get_service_root)
-        app.router.add_post("/redfish/v1", self.controller)
         app.router.add_get("/redfish/v1/AccountService", get_account_service)
-        app.router.add_post("/redfish/v1/AccountService", self.controller)
         app.router.add_get("/redfish/v1/AccountService/Accounts", get_accounts)
-        app.router.add_post("/redfish/v1/AccountService/Accounts", self.controller)
         app.router.add_get("/redfish/v1/SessionService", get_session_service)
-        app.router.add_post("/redfish/v1/SessionService", self.controller)
         app.router.add_get("/redfish/v1/SessionService/Sessions", get_session)
-        app.router.add_post("/redfish/v1/SessionService/Sessions", self.controller)
         app.router.add_get("/redfish/v1/Chassis", redfish_chassis.get_chassis)
-        app.router.add_post("/redfish/v1/Chassis", self.controller)
         app.router.add_get("/redfish/v1/Chassis/1", redfish_chassis.get_chassis_members)
-        app.router.add_post("/redfish/v1/Chassis/1", self.controller)
         app.router.add_get(
             "/redfish/v1/Chassis/1/Thermal",
             redfish_chassis.get_chassis_thermal,
         )
-        app.router.add_post("/redfish/v1/Chassis/1/Thermal", self.controller)
         app.router.add_get(
             "/redfish/v1/Chassis/1/Power", redfish_chassis.get_chassis_power
         )
-        app.router.add_post("/redfish/v1/Chassis/1/Power", self.controller)
         app.router.add_get("/redfish/v1/Managers", get_managers)
-        app.router.add_post("/redfish/v1/Managers", self.controller)
         app.router.add_get("/redfish/v1/Managers/1", get_managers_members)
-        app.router.add_post("/redfish/v1/Managers/1", self.controller)
         app.router.add_get(
             "/redfish/v1/Managers/1/LogServices", get_manager_log_services
         )
-        app.router.add_post("/redfish/v1/Managers/1/LogServices", self.controller)
         app.router.add_get(
             "/redfish/v1/Managers/1/EthernetInterfaces", get_manager_ethernet
-        )
-        app.router.add_post(
-            "/redfish/v1/Managers/1/EthernetInterfaces", self.controller
         )
         app.router.add_get(
             "/redfish/v1/Managers/1/NetworkProtocol", get_manager_network
         )
-        app.router.add_post("/redfish/v1/Managers/1/NetworkProtocol", self.controller)
         app.router.add_get(
             "/redfish/v1/Managers/1/EthernetInterfaces/1", get_ethernet_members
-        )
-        app.router.add_post(
-            "/redfish/v1/Managers/1/EthernetInterfaces/1", self.controller
         )
 
     def setup_multisled_routes(self, app: Application):
@@ -80,20 +57,11 @@ class Redfish:
                 "/redfish/v1/Chassis/{}".format(server_name),
                 redfish_chassis.get_chassis_members,
             )
-            app.router.add_post(
-                "/redfish/v1/Chassis/{}".format(server_name), self.controller
-            )
             app.router.add_get(
                 "/redfish/v1/Chassis/{}/Power".format(server_name),
                 redfish_chassis.get_chassis_power,
             )
-            app.router.add_post(
-                "/redfish/v1/Chassis/{}/Power".format(server_name), self.controller
-            )
             app.router.add_get(
                 "/redfish/v1/Chassis/{}/Thermal".format(server_name),
                 redfish_chassis.get_chassis_thermal,
-            )
-            app.router.add_post(
-                "/redfish/v1/Chassis/{}/Thermal".format(server_name), self.controller
             )

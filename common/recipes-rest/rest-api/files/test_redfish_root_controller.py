@@ -29,7 +29,7 @@ class TestRootService(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_get_redfish(self):
-        expected_resp = {"v1": "/redfish/v1"}
+        expected_resp = {"v1": "/redfish/v1/"}
         req = await self.client.request("GET", "/redfish")
         resp = await req.json()
         self.maxDiff = None

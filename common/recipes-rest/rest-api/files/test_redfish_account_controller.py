@@ -17,6 +17,7 @@ class TestAccountService(AioHTTPTestCase):
             "Name": "Account Service",
             "Description": "Account Service",
             "Accounts": {"@odata.id": "/redfish/v1/AccountService/Accounts"},
+            "Roles": {"@odata.id": "/redfish/v1/AccountService/Roles"},
         }
         req = await self.client.request("GET", "/redfish/v1/AccountService")
         resp = await req.json()

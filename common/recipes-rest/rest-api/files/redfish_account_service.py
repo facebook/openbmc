@@ -12,6 +12,7 @@ async def get_account_service(request: str) -> web.Response:
         "Name": "Account Service",
         "Description": "Account Service",
         "Accounts": {"@odata.id": "/redfish/v1/AccountService/Accounts"},
+        "Roles": {"@odata.id": "/redfish/v1/AccountService/Roles"},
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)

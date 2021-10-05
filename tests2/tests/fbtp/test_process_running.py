@@ -20,12 +20,12 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from utils.test_utils import qemu_check
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "fscd",
             "sshd",
             "dhclient -6 -d -D LL -pf /var/run/dhclient6.eth0.pid eth0",
             "mTerm_server",
@@ -43,3 +43,5 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "/usr/local/bin/kcsd 2",
             "/usr/local/bin/kcsd 1",
         ]
+        if not qemu_check():
+            self.expected_process.extend(["fscd"])

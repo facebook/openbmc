@@ -20,6 +20,9 @@ class TestCommonRoutes(unittest.TestCase):
         routes_expected = [
             "/redfish",
             "/redfish/v1",
+            "/redfish/v1/",
+            "/redfish/v1/odata",
+            "/redfish/v1/$metadata",
             "/redfish/v1/AccountService",
             "/redfish/v1/AccountService/Accounts",
             "/redfish/v1/Chassis",

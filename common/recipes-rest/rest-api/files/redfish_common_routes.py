@@ -11,7 +11,7 @@ from redfish_managers import (
     get_ethernet_members,
     get_manager_log_services,
 )
-from redfish_service_root import get_redfish, get_service_root
+from redfish_service_root import get_redfish, get_service_root, get_odata, get_metadata
 from redfish_session_service import get_session_service, get_session
 
 
@@ -20,6 +20,9 @@ class Redfish:
         redfish_chassis = RedfishChassis()
         app.router.add_get("/redfish", get_redfish)
         app.router.add_get("/redfish/v1", get_service_root)
+        app.router.add_get("/redfish/v1/", get_service_root)
+        app.router.add_get("/redfish/v1/odata", get_odata)
+        app.router.add_get("/redfish/v1/$metadata", get_metadata)
         app.router.add_get("/redfish/v1/AccountService", get_account_service)
         app.router.add_get("/redfish/v1/AccountService/Accounts", get_accounts)
         app.router.add_get("/redfish/v1/SessionService", get_session_service)

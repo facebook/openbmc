@@ -62,6 +62,11 @@ VALID_KEYS = {
     "SessionTimeout",
     "Sessions",
     "Oem",
+    "Roles",
+    "value",
+    "name",
+    "kind",
+    "url",
 }
 
 

@@ -31,7 +31,6 @@ static int read_adc128_nic(uint8_t id, float *value);
 static int read_ads1015(uint8_t id, float *value);
 static int read_ioc_temp(uint8_t id, float *value);
 static bool is_e1s_iocm_i2c_enabled(uint8_t id);
-static int get_current_dir(const char *device, char *dir_name);
 static int set_e1s_sensor_name(char *sensor_name, char side);
 static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_cnt);
 
@@ -1095,7 +1094,7 @@ read_adc128_iocm(uint8_t id, float *value) {
   return ret;
 }
 
-static int
+int
 get_current_dir(const char *device, char *dir_name) {
   char cmd[MAX_PATH_LEN + 1] = {0};
   FILE *fp = NULL;

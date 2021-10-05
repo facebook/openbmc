@@ -18,6 +18,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://bios_plat_info.py \
+            file://bios_force_clear_cmos.py \
             file://BIOS_UTIL_GC.json \
            "
 

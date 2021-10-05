@@ -58,6 +58,70 @@ static uint8_t expFru = 0;
 static uint8_t cwcPlat = 0;
 #endif
 
+static char* rtrim(char* buf)
+{
+  char* pback = buf + strlen(buf);
+
+  while ((*(--pback) == ' ') && (pback >= buf));
+  pback++;
+  *pback = '\0';
+  return buf;
+}
+
+static void fruid_trim(fruid_info_t *fruid)
+{
+  if (fruid == NULL) {
+    return;
+  }
+
+  if (fruid->chassis.flag) {
+    rtrim(fruid->chassis.type_str);
+    if (FIELD_LEN(fruid->chassis.part_type_len) > 0) rtrim(fruid->chassis.part);
+    if (FIELD_LEN(fruid->chassis.serial_type_len) > 0) rtrim(fruid->chassis.serial);
+    if (fruid->chassis.custom1 != NULL) rtrim(fruid->chassis.custom1);
+    if (fruid->chassis.custom2 != NULL) rtrim(fruid->chassis.custom2);
+    if (fruid->chassis.custom3 != NULL) rtrim(fruid->chassis.custom3);
+    if (fruid->chassis.custom4 != NULL) rtrim(fruid->chassis.custom4);
+    if (fruid->chassis.custom5 != NULL) rtrim(fruid->chassis.custom5);
+    if (fruid->chassis.custom6 != NULL) rtrim(fruid->chassis.custom6);
+  }
+
+  if (fruid->board.flag) {
+    if (FIELD_LEN(fruid->board.mfg_type_len) > 0) rtrim(fruid->board.mfg);
+    if (FIELD_LEN(fruid->board.name_type_len)> 0) rtrim(fruid->board.name);
+    if (FIELD_LEN(fruid->board.serial_type_len) > 0) rtrim(fruid->board.serial);
+    if (FIELD_LEN(fruid->board.part_type_len) > 0) rtrim(fruid->board.part);
+    if (FIELD_LEN(fruid->board.fruid_type_len) > 0) rtrim(fruid->board.fruid);
+    if (fruid->board.custom1 != NULL) rtrim(fruid->board.custom1);
+    if (fruid->board.custom2 != NULL) rtrim(fruid->board.custom2);
+    if (fruid->board.custom3 != NULL) rtrim(fruid->board.custom3);
+    if (fruid->board.custom4 != NULL) rtrim(fruid->board.custom4);
+    if (fruid->board.custom5 != NULL) rtrim(fruid->board.custom5);
+    if (fruid->board.custom6 != NULL) rtrim(fruid->board.custom6);
+  }
+
+  if (fruid->product.flag) {
+    if (FIELD_LEN(fruid->product.mfg_type_len) > 0) rtrim(fruid->product.mfg);
+    if (FIELD_LEN(fruid->product.name_type_len) > 0) rtrim(fruid->product.name);
+    if (FIELD_LEN(fruid->product.part_type_len) > 0) rtrim(fruid->product.part);
+    if (FIELD_LEN(fruid->product.version_type_len) > 0) rtrim(fruid->product.version);
+    if (FIELD_LEN(fruid->product.serial_type_len) > 0) rtrim(fruid->product.serial);
+    if (FIELD_LEN(fruid->product.asset_tag_type_len) > 0) rtrim(fruid->product.asset_tag);
+    if (FIELD_LEN(fruid->product.fruid_type_len) > 0) rtrim(fruid->product.fruid);
+    if (fruid->product.custom1 != NULL) rtrim(fruid->product.custom1);
+    if (fruid->product.custom2 != NULL) rtrim(fruid->product.custom2);
+    if (fruid->product.custom3 != NULL) rtrim(fruid->product.custom3);
+    if (fruid->product.custom4 != NULL) rtrim(fruid->product.custom4);
+    if (fruid->product.custom5 != NULL) rtrim(fruid->product.custom5);
+    if (fruid->product.custom6 != NULL) rtrim(fruid->product.custom6);
+  }
+
+  if (fruid->multirecord_smart_fan.flag) {
+    if (fruid->multirecord_smart_fan.mfg_line != NULL) rtrim(fruid->multirecord_smart_fan.mfg_line);
+    if (fruid->multirecord_smart_fan.clei_code != NULL) rtrim(fruid->multirecord_smart_fan.clei_code);
+  }
+}
+
 static void prepend_all(char *list, size_t size)
 {
   size_t len = strlen(list);
@@ -439,6 +503,7 @@ int get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_form
   fruid_info_t fruid;
 
   ret = fruid_parse(path, &fruid);
+  fruid_trim(&fruid);
 
   if (print_format == JSON_FORMAT) {
     if (ret) {

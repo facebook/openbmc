@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from utils.test_utils import qemu_check
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
@@ -28,7 +29,6 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "dhclient -6 -d -D LL",
             "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "front-paneld",
-            "fscd",
             "ipmbd",
             "ipmid",
             "mTerm_server",
@@ -38,3 +38,5 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "rsyslogd",
             "usbmon.sh",
         ]
+        if not qemu_check():
+            self.expected_process.extend(["fscd"])

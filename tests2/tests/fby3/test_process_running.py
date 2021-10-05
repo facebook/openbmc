@@ -20,12 +20,12 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from utils.test_utils import qemu_check
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "fscd",
             "sshd",
             "rsyslogd",
             "mTerm_server",
@@ -38,3 +38,5 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "front-paneld",
             "rest.py",
         ]
+        if not qemu_check():
+            self.expected_process.extend(["fscd"])

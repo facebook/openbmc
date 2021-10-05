@@ -252,7 +252,6 @@ class CommonRestEndpointTest(BaseRestEndpointTest):
     def set_endpoint_api_attributes(self):
         self.endpoint_api_attrb = ["sys"]
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api(self):
         self.set_endpoint_api_attributes()
         self.verify_endpoint_attributes(

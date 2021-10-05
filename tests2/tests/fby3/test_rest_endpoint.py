@@ -31,9 +31,32 @@ class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
     User can choose to sends these lists from jsons too.
     """
 
+    def verify_endpoint_attributes(self, endpointname, attributes):
+        """
+        re-write the parent function `verify_endpoint_attributes`
+        for qemu environment. If CIT ran inside QEMU, than we only check for /api attribute.
+        We won't continue to check resources since that will causing crash thus test
+        will fail.
+        """
+        self.assertNotEqual(
+            attributes, None, "{} endpoint attributes not set".format(endpointname)
+        )
+        info = self.get_from_endpoint(endpointname)
+        for attrib in attributes:
+            with self.subTest(attrib=attrib):
+                self.assertIn(
+                    attrib,
+                    info,
+                    msg="endpoint {} missing attrib {}".format(endpointname, attrib),
+                )
+
     @classmethod
     def _gen_parameterised_tests(cls):
         # _test_usage_string_template -> test_usage_string_{cmd}
+        if qemu_check():
+            verify_method = cls.verify_endpoint_attributes
+        else:
+            verify_method = super().verify_endpoint_attributes
         for endpoint, resources in REST_END_POINTS.items():
             setattr(
                 cls,
@@ -41,7 +64,7 @@ class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
                 functools.partialmethod(
                     unittest.skipIf(
                         qemu_check() and endpoint != "/api", "test env is QEMU, skipped"
-                    )(cls.verify_endpoint_attributes),
+                    )(verify_method),
                     endpoint,
                     resources,
                 ),

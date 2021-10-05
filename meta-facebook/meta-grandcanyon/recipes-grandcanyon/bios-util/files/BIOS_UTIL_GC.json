@@ -20,6 +20,9 @@
   },
   "postcode": {
     "supported": true
+  },
+  "force_clear_cmos": {
+    "supported": true
   }
 }
 

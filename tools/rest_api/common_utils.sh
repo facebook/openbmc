@@ -15,23 +15,84 @@ function  get_build_platform(){
 }
 
 
-function get_platform_recipe_path(){
-    if [[ $# != 1 ]]; then echo "Usage: get_platform_recipe_path <build_name>" >&2; return 1; fi
+function get_platform_parent_name(){
+    # returns either platform parent name or just platrom name if not derived
+    platform_name=$1
+
+    case "$platform_name" in
+      "fby2-nd")
+        echo "fby2"
+        ;;
+      *)
+        echo "$platform_name"
+        ;;
+    esac
+}
+
+function get_platform_meta_path(){
+    if [[ $# != 1 ]]; then echo "Usage: get_platform_meta_path <build_name> [<subplatform_name>]" >&2; return 1; fi
+
+    subplat=""
     plat="$1"
-    if [[ -d "$pardir/meta-facebook/meta-$plat/recipes-utils/rest-api/files" ]];
-    then
-        # this is a network device.
-        echo "$pardir/meta-facebook/meta-$plat/recipes-utils/rest-api/files"
+
+    parent_platform_name=$(get_platform_parent_name $platform_name)
+    if [[ "$parent_platform_name" ]] && [[ "$parent_platform_name" != "$plat" ]]; then
+      subplat="$plat"
+      plat=$parent_platform_name
+    fi
+
+    if [[ "$subplat" ]] && [[ -d "$pardir/meta-facebook/meta-$plat/meta-$subplat" ]]; then
+        echo "$pardir/meta-facebook/meta-$plat/meta-$subplat"
         return 0
     fi
-    if [[ -d "$pardir/meta-facebook/meta-$plat/recipes-$plat/rest-api/files" ]];
-    then
-        # this is a compute device.
-        echo "$pardir/meta-facebook/meta-$plat/recipes-$plat/rest-api/files"
+    if [[ -d "$pardir/meta-facebook/meta-$plat" ]]; then
+        echo "$pardir/meta-facebook/meta-$plat"
         return 0
     fi
-    echo "ERROR: Could not find rest-api/files path for platform '$plat'" >&2
+    echo "ERROR: Could not find meta-files path for platform '$plat'" >&2
     return 1
+}
+
+function get_platform_recipe_path(){
+    plat=$1
+    meta_path="$(get_platform_meta_path $plat)"
+    retval=$?
+
+    if [[ $retval -gt 0 ]]; then
+        return $retval
+    fi
+
+    if [[ -d "$meta_path/recipes-utils" ]]; then
+        # network device
+        echo "$meta_path/recipes-utils"
+        return 0
+    fi
+    if [[ -d "$meta_path/recipes-$plat" ]]; then
+        # compute device
+        echo "$meta_path/recipes-$plat"
+        return 0
+    fi
+ 
+    return 1
+}
+
+function get_machine_name(){
+    platform_name=$1
+    meta_path="$(get_platform_meta_path $1)"
+    retval=$?
+
+    if [[ $retval -ne 0 ]]; then
+        return $retval
+    fi
+
+    machine_name=$(grep ^MACHINE "$meta_path/conf/local.conf.sample" | awk '{print $NF}' | tr -d '"')
+    retval=$?
+
+    if [[ $retval -ne 0 ]]; then
+        return 1
+    fi
+
+    echo "$machine_name"
 }
 
 function prepare_working_directory(){

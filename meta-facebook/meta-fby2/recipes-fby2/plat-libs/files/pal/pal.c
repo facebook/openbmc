@@ -7106,6 +7106,9 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_NIC:
       sprintf(key, "nic_sensor_health");
       break;
+    case FRU_BMC:
+      // not available
+      return ERR_SENSOR_NA;
 
     default:
       return -1;

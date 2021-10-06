@@ -10,5 +10,5 @@ def force_clear_cmos(fru):
     }
     if fru not in name:
         raise ValueError(f"Unsupported FRU: {fru}")
-    cmd = ["/usr/local/bin/bic-util", name[fru], "--clear_cmos"]
+    cmd = ["/usr/bin/bic-util", name[fru], "--clear_cmos"]
     subprocess.check_call(cmd)

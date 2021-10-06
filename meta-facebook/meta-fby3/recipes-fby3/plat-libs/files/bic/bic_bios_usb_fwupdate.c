@@ -159,6 +159,7 @@ bic_init_usb_dev_ports(uint8_t slot_id, usb_dev* udev, const uint16_t product_id
   int recheck = MAX_CHECK_DEVICE_TIME;
   uint8_t dev_ports[USB_MAX_LEVEL] = {0};
   int i = 0;
+  int path_len = 0;
 
   ret = libusb_init(NULL);
   if (ret < 0) {
@@ -166,6 +167,12 @@ bic_init_usb_dev_ports(uint8_t slot_id, usb_dev* udev, const uint16_t product_id
     goto error_exit;
   } else {
     printf("Init libusb Successful!\n");
+  }
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
   }
 
   do {
@@ -183,11 +190,28 @@ bic_init_usb_dev_ports(uint8_t slot_id, usb_dev* udev, const uint16_t product_id
         goto error_exit;
       }
 
-      ret = libusb_open(udev->dev,&udev->handle);
-      if ( ret < 0 ) {
-        printf("Error opening device -- exit\n");
+      path_len = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
+      if (ret < 0) {
+        printf("Error get port number\n");
         libusb_free_device_list(udev->devs,1);
         goto error_exit;
+      }
+
+      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+        if ( udev->path[1] != slot_id) {
+          continue;
+        }
+      }
+
+      ret = libusb_open(udev->dev,&udev->handle);
+      if ( ret < 0 ) {
+        printf("Error opening device");
+        printf(" path: %d", udev->path[0]);
+        for (i = 1; i < path_len; i++) {
+          printf(".%d", udev->path[i]);
+        }
+        printf("\n");
+        continue; //continue checking other devices
       }
 
       if( (vendor_id == udev->desc.idVendor) && (product_id == udev->desc.idProduct) ) {
@@ -214,27 +238,9 @@ bic_init_usb_dev_ports(uint8_t slot_id, usb_dev* udev, const uint16_t product_id
           goto error_exit;
         }
 
-        ret = fby3_common_get_bmc_location(&bmc_location);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-          goto error_exit;
-        }
-
-        ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
-        if (ret < 0) {
-          printf("Error get port number\n");
-          libusb_free_device_list(udev->devs,1);
-          goto error_exit;
-        }
-
-        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-          if ( udev->path[1] != slot_id) {
-            continue;
-          }
-        }
         printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
         printf(" path: %d", udev->path[0]);
-        for (index = 1; index < ret; index++) {
+        for (index = 1; index < path_len; index++) {
           printf(".%d", udev->path[index]);
         }
         printf("\n");

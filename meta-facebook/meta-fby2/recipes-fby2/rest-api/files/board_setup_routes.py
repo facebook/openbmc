@@ -174,7 +174,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
     spb_shim = RestShim(get_node_spb(), "/api/spb")
     app.router.add_get("/api/spb", spb_shim.get_handler)
     app.router.add_post("/api/spb", spb_shim.post_handler)
-    # Add /api/mezz to represent Network Mezzaine card
+    # Add /api/mezz to represent Network Mezzanine card
     mezz_shim = RestShim(get_node_mezz(), "/api/mezz")
     app.router.add_get("/api/mezz", mezz_shim.get_handler)
 

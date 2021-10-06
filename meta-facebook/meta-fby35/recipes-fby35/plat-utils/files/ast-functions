@@ -223,16 +223,16 @@ is_bic_ready() {
 
   case $1 in
    1)
-    ready=$(gpio_get SMB_BMC_SLOT1_ALT_N)
+    ready=$(gpio_get SMB_BMC_SLOT1_ALT_R_N)
     ;;
    2)
-    ready=$(gpio_get SMB_BMC_SLOT2_ALT_N)
+    ready=$(gpio_get SMB_BMC_SLOT2_ALT_R_N)
     ;;
    3)
-    ready=$(gpio_get SMB_BMC_SLOT3_ALT_N)
+    ready=$(gpio_get SMB_BMC_SLOT3_ALT_R_N)
     ;;
    4)
-    ready=$(gpio_get SMB_BMC_SLOT4_ALT_N)
+    ready=$(gpio_get SMB_BMC_SLOT4_ALT_R_N)
     ;;
    *)
     ready="1"

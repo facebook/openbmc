@@ -23,12 +23,12 @@
 
 class node:
     def __init__(self, info=None, actions=None):
-        if info == None:
+        if info is None:
             self.info = {}
         else:
             self.info = info
 
-        if actions == None:
+        if actions is None:
             self.actions = []
         else:
             self.actions = actions

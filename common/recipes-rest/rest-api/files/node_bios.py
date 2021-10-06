@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-import os.path
-
-from common_utils import async_exec
 from node import node
 from rest_pal_legacy import *
 

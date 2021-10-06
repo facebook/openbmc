@@ -1785,6 +1785,44 @@ static int pal_get_e1s_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   return 0;
 }
 
+int
+pal_get_m2_config(uint8_t fru, uint8_t *config)
+{
+  uint8_t tbuf[8] = {0x9c, 0x9c, 0x00, 0x00};
+  uint8_t rbuf[8] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+  uint8_t intf = 0;
+  int ret = -1;
+
+  switch (fru) {
+    case FRU_CWC:
+      intf = REXP_BIC_INTF;
+      break;
+    case FRU_2U_TOP:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FRU_2U_BOT:
+      intf = RREXP_BIC_INTF2;
+      break;
+    default:
+      return -1;
+  }
+
+  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, 0x66, tbuf, tlen, rbuf, &rlen, intf);
+  if (ret == 0 && rlen == 4) {
+    if (rbuf[3] == 0x08) {
+      *config = CONFIG_C_CWC_SINGLE;
+    } else if (rbuf[3] == 0x04) {
+      *config = CONFIG_C_CWC_DUAL;
+    } else {
+      return -1;
+    }
+  }
+
+  return ret;
+}
+
 int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   uint8_t pcie_conf = 0xff;
   uint8_t *data = res_data;
@@ -1837,7 +1875,10 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
       pcie_conf = CONFIG_C_GPV3;
     } else if ( type_2ou == CWC_MCHP_BOARD ) {
-      pcie_conf = CONFIG_C_CWC_SINGLE;
+      if (pal_get_m2_config(FRU_2U_TOP, &pcie_conf) != 0) {
+        pcie_conf = CONFIG_C_CWC_SINGLE;
+        syslog(LOG_WARNING, "%s() fail to get pcie_conf, set default value = %02X\n", __func__, pcie_conf);
+      }
     } else {
       pcie_conf = CONFIG_C;
     }

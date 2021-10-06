@@ -253,7 +253,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 def get_fan_mode(scenario="None"):
     if "one_fan_failure" in scenario:
-        pwm = 60
+        if lpal_hndl.pal_is_cwc() == 0:
+            pwm = 80
+        else:
+            pwm = 60
         return fan_mode["trans_mode"], pwm
     elif "sensor_hit_UCR" in scenario:
         pwm = 100

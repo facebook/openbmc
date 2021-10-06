@@ -33,6 +33,7 @@ SRC_URI = "file://Makefile \
            file://plat-utils.c \
            file://str-utils.c \
            file://misc-utils.h \
+           file://biview.hpp \
            "
 
 # Add Test sources
@@ -41,14 +42,17 @@ SRC_URI += "file://test/main.c \
            file://test/test-file.c \
            file://test/test-path.c \
            file://test/test-str.c \
+           file://test/test-biview.cpp \
            "
 S = "${WORKDIR}"
 
 do_compile_ptest() {
   make test-libmisc-utils
+  make test-cpp-libmisc-utils
   cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
 /usr/lib/libmisc-utils/ptest/test-libmisc-utils
+/usr/lib/libmisc-utils/ptest/test-cpp-libmisc-utils
 EOF
 }
 
@@ -78,11 +82,11 @@ def get_cpu_model(soc_family):
 
 CFLAGS += "-DSOC_MODEL=${@ get_soc_model('${SOC_FAMILY}') }"
 CFLAGS += "-DCPU_MODEL=${@ get_cpu_model('${SOC_FAMILY}') }"
-
 do_install_ptest() {
   install -d ${D}${libdir}/libmisc-utils
   install -d ${D}${libdir}/libmisc-utils/ptest
   install -m 755 test-libmisc-utils ${D}${libdir}/libmisc-utils/ptest/test-libmisc-utils
+  install -m 755 test-cpp-libmisc-utils ${D}${libdir}/libmisc-utils/ptest/test-cpp-libmisc-utils
 }
 
 do_install() {
@@ -91,6 +95,7 @@ do_install() {
 
     install -d ${D}${includedir}/openbmc
     install -m 0644 misc-utils.h ${D}${includedir}/openbmc/misc-utils.h
+    install -m 0644 biview.hpp ${D}${includedir}/openbmc/biview.hpp
 
     install -d ${D}${sysconfdir}
     echo "${@ get_soc_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/soc_model
@@ -100,5 +105,5 @@ do_install() {
 FILES:${PN} = "${libdir}/libmisc-utils.so"
 FILES:${PN} += "${sysconfdir}/soc_model"
 FILES:${PN} += "${sysconfdir}/cpu_model"
-FILES:${PN}-dev = "${includedir}/openbmc/misc-utils.h"
-FILES:${PN}-ptest = "${libdir}/libmisc-utils/ptest/test-libmisc-utils ${libdir}/libmisc-utils/ptest/run-ptest"
+FILES:${PN}-dev = "${includedir}/openbmc/misc-utils.h ${includedir}/openbmc/biview.hpp"
+FILES:${PN}-ptest = "${libdir}/libmisc-utils/ptest ${libdir}/libmisc-utils/ptest/run-ptest"

@@ -20,7 +20,9 @@ lib: libmisc-utils.so
 C_SRCS := $(wildcard *.c)
 C_OBJS := ${C_SRCS:.c=.o}
 TEST_C_SRCS := $(wildcard test/*.c)
+TEST_CPP_SRCS := $(wildcard test/*.cpp)
 TEST_C_OBJS := ${TEST_C_SRCS:.c=.o}
+TEST_CPP_OBJS := ${TEST_CPP_SRCS:.cpp=.o}
 
 CFLAGS += -Wall -Werror -fPIC
 
@@ -29,6 +31,9 @@ libmisc-utils.so: $(C_OBJS)
 
 test-libmisc-utils: $(C_OBJS) $(TEST_C_OBJS)
 	$(CC) $(CFLAGS) -std=c99 -o $@ $^ $(LDFLAGS)
+
+test-cpp-libmisc-utils: $(TEST_CPP_OBJS)
+	$(CXX) $(CXXFLAGS) -std=c++17 -o $@ $^ $(LDFLAGS)
 
 $(C_SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) $< >$@

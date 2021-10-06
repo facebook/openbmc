@@ -179,9 +179,11 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
       ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tmp_buf, tmp_len, rsp_buf, &rsp_len);
       //rsp_buf[6] is the completion code
       if ( (ret < 0) || (ret == BIC_STATUS_SUCCESS && (rsp_buf[6] != CC_SUCCESS || rsp_buf[13] != CC_SUCCESS)) ) {
-        syslog(LOG_WARNING, "%s() The 2nd or 3rd BIC cannot be reached. CC: 0x%02X, intf: 0x%x, ret = %d\n", __func__, rsp_buf[6], intf, ret);
-        syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd: %02X\n", __func__, netfn << 2, cmd);
-        switch(rsp_buf[13]) {
+        if ( rsp_buf[6] != CC_SUCCESS || rsp_buf[13] != CC_SUCCESS ) {
+          syslog(LOG_WARNING, "%s() The Exp BIC cannot be reached. CC0:0x%02X, CC1:0x%02X, intf:0x%x\n", __func__, rsp_buf[6], rsp_buf[13], intf);
+        } 
+        syslog(LOG_WARNING, "%s() Netfn:%02X, Cmd:%02X Ret:%d\n", __func__, netfn << 2, cmd, ret);
+        switch(rsp_buf[13] == CC_SUCCESS ? rsp_buf[6] : rsp_buf[13]) {
         case CC_NOT_SUPP_IN_CURR_STATE:
           ret = BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
           break;

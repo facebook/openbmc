@@ -37,9 +37,12 @@
 
 static uint8_t bmc_location = 0xff;
 static uint8_t board = UNKNOWN_BOARD;
-static uint8_t expFru = 0;
+static uint8_t expFru = 0xff;
 const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
+static const uint8_t gpio_sb_usbhub[] = {16};
+static const uint8_t gpio_cwc_usbhub[] = {57};
+static const uint8_t gpio_gpv3_usbhub[] = {93, 94, 98};
 
 static const char *option_list[] = {
   "--get_gpio",
@@ -61,6 +64,8 @@ static const char *option_list[] = {
 
 static const char *class2_options[] = {
   "--get_slot_id",
+  "--set_usb_hub [0|1|2|all] [on|off|reset]",
+  "--get_usb_hub [0|1|2|all]",
 };
 
 static void
@@ -327,13 +332,13 @@ util_get_gpio(uint8_t slot_id, uint8_t intf) {
     return ret;
   }
 
-  if (expFru > 0) {
+  if (expFru != 0xff) {
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    if (expFru > 0) {
+    if (expFru != 0xff) {
       fby3_get_exp_gpio_name(expFru, i, gpio_pin_name);
     } else {
       fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
@@ -350,7 +355,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
   char gpio_pin_name[32] = "\0";
   int ret = -1;
 
-  if (expFru > 0) {
+  if (expFru != 0xff) {
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
@@ -359,7 +364,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
     return ret;
   }
 
-  if (expFru > 0) {
+  if (expFru != 0xff) {
     fby3_get_exp_gpio_name(expFru, gpio_num, gpio_pin_name);
   } else {
     fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
@@ -1017,6 +1022,144 @@ util_get_slot_id() {
   return 0;
 }
 
+static int
+set_single_usb_hub(uint8_t slot, uint8_t nb, uint8_t ctl, uint8_t intf) {
+  int ret = 0;
+  if (ctl == 2) { //reset
+    ret = remote_bic_set_gpio(slot, nb, 0, intf);
+    if (ret == 0) {
+      sleep(3); //for usb devices to be released
+      ret = remote_bic_set_gpio(slot, nb, 1, intf);
+    } 
+  } else {
+    ret = remote_bic_set_gpio(slot, nb, ctl, intf);
+  }
+  return ret;
+}
+
+static int
+util_set_usb_hub(uint8_t hub, uint8_t on_off, uint8_t fru, uint8_t intf) {
+  int ret = 0;
+  switch (fru) {
+    case FRU_CWC:
+      if (hub == 0xff || hub == 0) {
+        ret = set_single_usb_hub(FRU_SLOT1, gpio_cwc_usbhub[0], on_off, intf);
+      } else {
+        printf("Wrong usb hub number!\n");
+        return -1;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (hub == 0xff) {  //all
+        ret = set_single_usb_hub(FRU_SLOT1, gpio_gpv3_usbhub[1], on_off, intf);
+        ret = set_single_usb_hub(FRU_SLOT1, gpio_gpv3_usbhub[0], on_off, intf);
+        ret = set_single_usb_hub(FRU_SLOT1, gpio_gpv3_usbhub[2], on_off, intf);
+      } else if (hub <= 2) {
+        ret = set_single_usb_hub(FRU_SLOT1, gpio_gpv3_usbhub[hub], on_off, intf);
+      } else {
+        printf("Wrong usb hub number!\n");
+        return -1;
+      }
+      break;
+    case FRU_SLOT1:
+      if (hub == 0xff || hub == 0) {
+        ret = set_single_usb_hub(FRU_SLOT1, gpio_sb_usbhub[0], on_off, intf);
+      } else {
+        printf("Wrong usb hub number!\n");
+        return -1;
+      }
+      break;
+    default:
+      printf("Unknown fru!\n");
+      ret = -1;
+  }
+
+  if (ret) {
+    printf("Fail to set usb hub status\n");
+  }
+
+  return ret;
+}
+
+static int
+print_usb_hub_status(bic_gpio_t gpio, const uint8_t *gpio_nb, uint8_t gpio_len) {
+  uint8_t i = 0, nb = 0;
+  uint32_t offset = 0, mask = 0;
+  for (i = 0; i < gpio_len; ++i) {
+    nb = gpio_nb[i];
+    offset = 0;
+    mask = 0;
+
+    while (nb >= 32) {
+      nb -= 32;
+      offset++;
+    }
+    mask = 1 << nb;
+
+    if (gpio.gpio[offset] & mask) {
+      printf("USB HUB%d is on\n", i);
+    } else {
+      printf("USB HUB%d is off\n", i);
+    }
+  }
+
+  return 0;
+}
+
+static int
+util_get_usb_hub(uint8_t hub, uint8_t fru, uint8_t intf) {
+  int ret = 0;
+  bic_gpio_t gpio = {0};
+  uint8_t len = 0;
+  const uint8_t *start = NULL;
+  switch (fru) {
+    case FRU_CWC:
+      if (hub > 0 && hub != 0xff) {
+        printf("Wrong usb hub number!\n");
+        return -1;
+      }
+      len = 1;
+      start = &gpio_cwc_usbhub[0];
+      ret = bic_get_gpio(FRU_SLOT1, &gpio, intf);
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (hub == 0xff) {
+        len = 3;
+        start = &gpio_gpv3_usbhub[0];
+      } else if (hub <= 2) {
+        len = 1;
+        start = &gpio_gpv3_usbhub[hub];
+      } else {
+        printf("Wrong usb hub number!\n");
+        return -1;
+      }
+      ret = bic_get_gpio(FRU_SLOT1, &gpio, intf);
+      break;
+    case FRU_SLOT1:
+      if (hub > 0 && hub != 0xff) {
+        printf("Wrong usb hub number!\n");
+        return -1;
+      }
+      len = 1;
+      start = &gpio_sb_usbhub[0];
+      ret = bic_get_gpio(FRU_SLOT1, &gpio, intf);
+      break;
+    default:
+      printf("Unknown fru!\n");
+      ret = -1;
+  }
+
+  if (ret == 0) {
+    print_usb_hub_status(gpio, start, len);
+  } else {
+    printf("Fail to get usb hub status\n");
+  }
+
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t slot_id = 0;
@@ -1026,6 +1169,7 @@ main(int argc, char **argv) {
   uint8_t gpio_val = 0;
   uint8_t intf = NONE_INTF;
   int i = 0;
+  uint8_t hub = 0, ctl = 0;
 
   if (pal_is_cwc() == PAL_EOK) {
     board = CWC_MCHP_BOARD;
@@ -1061,7 +1205,13 @@ main(int argc, char **argv) {
   }
 
   if (board == CWC_MCHP_BOARD && argc >= 4) {
-    if ( !fby3_common_get_exp_id(argv[2], &expFru) ) {
+    if ( !fby3_common_get_exp_id(argv[2], &expFru) ||
+         (strncmp(argv[2], "all", 3) == 0 && 
+          (strcmp(argv[3], "--set_usb_hub") == 0 || strcmp(argv[3], "--get_usb_hub") == 0)) ) {
+      if (strncmp(argv[2], "all", 3) == 0) {
+        expFru = FRU_ALL;
+      }
+
       for (i = 2; i < argc - 1; ++i ) {
         argv[i] = argv[i+1];  //remove additional cwc option to remain the order of options
       }
@@ -1081,6 +1231,14 @@ main(int argc, char **argv) {
       case FRU_2U_BOT:
         intf = RREXP_BIC_INTF2;
         break;
+    }
+
+    if (expFru != FRU_ALL && expFru != 0xff) {
+      ret = pal_is_fru_prsnt(expFru, &is_fru_present);
+      if ( ret < 0 || is_fru_present == 0 ) {
+        printf("fru:%d is not present!\n", expFru);
+        return -1;
+      }
     }
   } else {
     // get the argv_idx and intf
@@ -1188,7 +1346,85 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_get_board_revision(slot_id, argv[3]);
+    } else if ( strcmp(argv[2], "--set_usb_hub") == 0 ) {
+      if (board == CWC_MCHP_BOARD) {
+        if ( argc == 5 ) {
+          if ( strcmp(argv[3], "all") == 0 ) {
+            hub = 0xff;
+          } else {
+            hub = atoi(argv[3]);
+          }
+          if ( strcmp(argv[4], "on") == 0 ) {
+            ctl = 1;
+          } else if ( strcmp(argv[4], "off") == 0 ) {
+            ctl = 0;
+          } else if ( strcmp(argv[4], "reset") == 0 ) {
+            ctl = 2;
+          } else {
+            goto err_exit;
+          }
 
+          if (expFru == FRU_ALL) {
+            util_set_usb_hub(hub, ctl, FRU_SLOT1, NONE_INTF);
+            util_set_usb_hub(hub, ctl, FRU_CWC, REXP_BIC_INTF);
+            if (pal_is_fru_prsnt(FRU_2U_TOP, &is_fru_present) == 0 && is_fru_present > 0) {
+              util_set_usb_hub(hub, ctl, FRU_2U_TOP, RREXP_BIC_INTF1);
+            } else {
+              printf("Top gpv3 is not present!\n");
+            }
+            if (pal_is_fru_prsnt(FRU_2U_BOT, &is_fru_present) == 0 && is_fru_present > 0) {
+              util_set_usb_hub(hub, ctl, FRU_2U_BOT, RREXP_BIC_INTF2);
+            } else {
+              printf("Bot gpv3 is not present!\n");
+            }
+            return 0;
+          } else {
+            return util_set_usb_hub(hub, ctl, expFru == 0xff ? slot_id : expFru, intf);
+          }
+        } else {
+          goto err_exit;
+        }
+      } else {
+        printf("Command not support!\n");
+        goto err_exit;
+      }
+    } else if ( strcmp(argv[2], "--get_usb_hub") == 0 ) {
+      if (board == CWC_MCHP_BOARD) {
+        if ( argc == 4 ) {
+          if ( strcmp(argv[3], "all") == 0 ) {
+            hub = 0xff;
+          } else {
+            hub = atoi(argv[3]);
+          }
+
+          if (expFru == FRU_ALL) {
+            printf("Top GPV3:\n");
+            if (pal_is_fru_prsnt(FRU_2U_TOP, &is_fru_present) == 0 && is_fru_present > 0) {
+              util_get_usb_hub(hub, FRU_2U_TOP, RREXP_BIC_INTF1);
+            } else {
+              printf("Top gpv3 is not present!\n");
+            }
+            printf("Bot GPV3:\n");
+            if (pal_is_fru_prsnt(FRU_2U_BOT, &is_fru_present) == 0 && is_fru_present > 0) {
+              util_get_usb_hub(hub, FRU_2U_BOT, RREXP_BIC_INTF2);
+            } else {
+              printf("Bot gpv3 is not present!\n");
+            }
+            printf("CWC:\n");
+            util_get_usb_hub(hub, FRU_CWC, REXP_BIC_INTF);
+            printf("Slot1:\n");
+            util_get_usb_hub(hub, FRU_SLOT1, NONE_INTF);
+            return 0;
+          } else {
+            return util_get_usb_hub(hub, expFru == 0xff ? slot_id : expFru, intf);
+          }
+        } else {
+          goto err_exit;
+        }
+      } else {
+        printf("Command not support!\n");
+        goto err_exit;
+      }
     } else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;

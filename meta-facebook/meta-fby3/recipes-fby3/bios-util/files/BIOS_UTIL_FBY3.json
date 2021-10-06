@@ -21,7 +21,7 @@
   "postcode": {
     "supported": true
   },
-  "force_cmos_clear": {
+  "force_clear_cmos": {
     "supported": true
   }
 }

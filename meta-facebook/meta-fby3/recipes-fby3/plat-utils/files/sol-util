@@ -358,7 +358,7 @@ function get_top_usb_dev() {
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
   local vendor="$2"
-  local retry=5 # timeout = 5 * 2 = 10 seconds
+  local retry=10
 
   [ -n "$3" ] && baudrate="$3"
 
@@ -419,7 +419,7 @@ function get_bot_usb_dev() {
   local baudrate="57600"
   local prefix="/dev/serial/by-path/"
   local vendor="$2"
-  local retry=5 # timeout = 5 * 2 = 10 seconds
+  local retry=10
 
   [ -n "$3" ] && baudrate="$3"
 

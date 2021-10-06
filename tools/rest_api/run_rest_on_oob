@@ -88,13 +88,22 @@ echo "[OK]"
 echo -n "Checking target oob reachability: "
 check_oob_reachable
 echo "[OK]"
+
 plat="$(get_build_platform)"
-plat_specific_src_dir=$(get_platform_recipe_path "$plat")
 echo "Current platform is $plat"
+
+platform_parent_name="$(get_platform_parent_name $plat)"
+echo "Platform parent name is $platform_parent_name"
+
+machine_name="$(get_machine_name $plat)"
+echo "Machine name is $machine_name"
+
+plat_specific_src_dir=$(get_platform_recipe_path "$platform_parent_name")
+
 remote_plat=$(get_remote_platform)
 echo "Remote platform is $remote_plat"
-if [ "$plat" != "$remote_plat" ]; then
-    echo "Remote platform '$remote_plat' does not equal build platform ('$plat')."
+if [ "$machine_name" != "$remote_plat" ]; then
+    echo "Remote platform '$remote_plat' does not equal build platform ('$machine_name')."
     echo "Refusing to continue"
     exit 1
 fi

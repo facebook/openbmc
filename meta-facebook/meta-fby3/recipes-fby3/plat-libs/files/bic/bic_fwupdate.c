@@ -1553,6 +1553,14 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     goto error_exit;
   }
 
+  if (intf == BB_BIC_INTF) {
+    if (bb_fw_update_prepare(slot_id) < 0) {
+      printf("Please check another slot BMC is not updating BB firmware\n");
+      ret = BIC_STATUS_FAILURE;
+      goto error_exit;
+    }
+  }
+
   //run cmd
   switch (comp) {
     case FW_BIC:
@@ -1709,6 +1717,11 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         break;
       }
       break;
+  }
+  if (intf == BB_BIC_INTF) {
+    if (bb_fw_update_finish(slot_id) < 0) {
+      printf("Failed to clear BB update register\n");
+    }
   }
 error_exit:
   syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");

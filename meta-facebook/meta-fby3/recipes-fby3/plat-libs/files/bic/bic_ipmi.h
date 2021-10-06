@@ -121,6 +121,8 @@ int bic_set_crit_act_flag(uint8_t dir_type);
 int bic_is_2u_top_bot_prsnt(uint8_t slot_id);
 int bic_is_2u_top_bot_prsnt_cache(uint8_t slot_id);
 int bic_enable_ina233_alert(uint8_t fru, bool enable);
+int bb_fw_update_prepare(uint8_t slot_id);
+int bb_fw_update_finish(uint8_t slot_id);
 
 #ifdef __cplusplus
 } // extern "C"

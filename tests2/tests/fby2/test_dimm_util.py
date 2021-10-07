@@ -20,8 +20,10 @@
 import unittest
 
 from common.base_dimm_util_test import BaseDimmUtilTest
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class AllDimmUtilTest(BaseDimmUtilTest, unittest.TestCase):
     FRU = "all"
 

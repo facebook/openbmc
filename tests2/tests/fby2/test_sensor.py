@@ -21,6 +21,7 @@ import unittest
 
 from common.base_sensor_test import SensorUtilTest
 from tests.fby2.test_data.sensors.sensors import SENSORS
+from utils.test_utils import qemu_check
 
 
 class Server1SensorTest(SensorUtilTest, unittest.TestCase):
@@ -29,6 +30,7 @@ class Server1SensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util {}".format(self.FRU_NAME)]
 
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_sensor_keys(self):
         result = self.get_parsed_result()
         for key in SENSORS[self.FRU_NAME]:

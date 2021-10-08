@@ -10,18 +10,31 @@
 #include <errno.h>
 #include <openbmc/vbs.h>
 #include <openbmc/kv.h>
+#include <libfdt.h>
+#define FIT_SIG_NODENAME	"signature"
+#define FIT_LOCK_NODENAME	"hwlock"
 
 #define DEVICE_TREE_HEADER_SIZE (4*10)
 #define MTD_PKT_SIZE 0x10000
 
+static uint32_t fdt_getprop_u32(const void *fdt, int node, const char *prop)
+{
+  const uint32_t *cell;
+  int len;
+
+  cell = fdt_getprop(fdt, node, prop, &len);
+  if (len != sizeof(*cell)) {
+    return 0;
+  }
+  return fdt32_to_cpu(*cell);
+}
+
 int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, uint32_t mtd_region_size)
 {
   int fd = 0, ret = -1;
-  int offs, rcnt, end, size_pos, size, dt_offs;
+  int offs, rcnt, end;
   uint8_t *buf;
   uint8_t magic_number[] = { 0xd0, 0x0d, 0xfe, 0xed}; // magic number
-  uint8_t signed_string[] = { 0x73, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65}; // signature
-  uint8_t locked_string[] = { 0x68, 0x77, 0x6c, 0x6f, 0x63, 0x6b}; // hwlock
 
   *img_lock = 0x00;
   *img_sig = 0x00;
@@ -66,19 +79,22 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, ui
     // Scan through the region looking for the version signature.
     for (offs = 0; offs < end; offs++) {
       if (!memcmp(buf+offs, magic_number, sizeof(magic_number))) {
-        size_pos = offs + sizeof(magic_number);
-        size = buf[size_pos]* 0x1000000 + buf[size_pos+1] * 0x10000 + buf[size_pos+2]* 0x100 + buf[size_pos+3];
-        ret = 0;
-        for (dt_offs = offs + DEVICE_TREE_HEADER_SIZE ; dt_offs < offs + size; dt_offs++) { // DEVICE_TREE_HEADER_SIZE
-          if (!memcmp(buf+dt_offs, locked_string, sizeof(locked_string))) {
-            *img_lock = 0x01;
-          }
-          if (!memcmp(buf+dt_offs, signed_string, sizeof(signed_string))) {
-            *img_sig = 0x01;
-          }
-          if (*img_lock && *img_sig) //find lock snd sig
-            break;
+        const void *fdt = (const void *) (buf + offs);
+
+        // if fdt header is not valid, keep finding the next magic number
+        ret = fdt_check_header(fdt);
+        if (ret) {
+          continue;
         }
+
+        if (fdt_subnode_offset(fdt, 0, FIT_SIG_NODENAME) >= 0) {
+          *img_sig = 0x01;
+        }
+
+        if (fdt_getprop_u32(fdt, 0, FIT_LOCK_NODENAME) == 1) {
+          *img_lock = 0x01;
+        }
+
         // if doesn't find lock or sign, keep finding the next magic number
         if (*img_lock || *img_sig)
           break;

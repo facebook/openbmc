@@ -2,6 +2,7 @@
   "version": "fbgc-type5-pvt-v1",
   "pwm_transition_value": 70,
   "pwm_boost_value": 80,
+  "fan_limit_upper_pwm": 90,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
@@ -10,8 +11,8 @@
   },
   "fan_dead_boost": {
     "data": [
-      [1,20],
-      [8,100]
+      [1,10],
+      [2,10]
     ]
   },
   "sensor_valid_check": {

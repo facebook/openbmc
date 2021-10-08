@@ -575,7 +575,6 @@ REST_END_POINTS = {
     "/api/server/logs": ["Logs"],
     "/api/server/config": [
         "ntp_server",
-        "pwr_server_last_state",
         "server_boot_order",
         "server_por_cfg",
         "server_sel_error",

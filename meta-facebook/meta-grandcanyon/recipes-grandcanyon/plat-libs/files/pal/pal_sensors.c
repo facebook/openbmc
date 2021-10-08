@@ -1014,6 +1014,7 @@ read_adc128_e1s(uint8_t id, float *value) {
   }
 
   if (is_e1s_iocm_present(id % 2) == false) {
+    e1s_adc_skip_times[id] = MAX_E1S_VOL_SNR_SKIP;
     return ERR_SENSOR_NA;
   }
 

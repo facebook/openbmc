@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_sensor_test import SensorUtilTest
+from tests.fby3.test_data.sensors.sensors import SENSORS
 from utils.test_utils import qemu_check
 
 
@@ -31,7 +32,10 @@ class Slot1SensorTest(SensorUtilTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_sensor_keys(self):
-        super().test_sensor_keys()
+        result = self.get_parsed_result()
+        for key in SENSORS[self.FRU_NAME]:
+            with self.subTest(sensor=key):
+                self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
 
 
 class Slot2SensorTest(Slot1SensorTest):

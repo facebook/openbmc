@@ -178,15 +178,8 @@ def make_temperature_sensors_json_body(
             "Status": {"State": "Enabled", "Health": "OK"}
         }  # default unless we have bad reading value
 
-        if sensor_threshold is None or not redfish_chassis_helper.is_libpal_supported():
-            threshold_json = {
-                "UpperThresholdNonCritical": 0,
-                "UpperThresholdCritical": int(temperature_sensor.ucr_thresh),
-                "UpperThresholdFatal": 0,
-                "LowerThresholdNonCritical": 0,
-                "LowerThresholdCritical": 0,
-                "LowerThresholdFatal": 0,
-            }
+        if sensor_threshold is None:
+            threshold_json = {}
         else:
             threshold_json = {
                 "UpperThresholdNonCritical": int(sensor_threshold.unc_thresh),
@@ -280,10 +273,7 @@ def make_power_sensors_json_body(
             min_interval_watts = pw_reading
             max_interval_watts = pw_reading
             avg_interval_watts = pw_reading
-            limit_in_watts = power_sensor.ucr_thresh  # if its a platform
-            # that supports libpal and has an unhealthy sensor, ucr_thresh will
-            # be defaulted to 0. Otherwise, we will get an actual value if
-            # its an healthy sensor i.e. on older fboss platforms.
+            limit_in_watts = power_sensor.sensor_thresh.ucr_thresh
             if limit_in_watts < 0:
                 # Redfish schema doesn't allow values < 0 for limit_in_watts.
                 # So, if its a negative, default it to 0.

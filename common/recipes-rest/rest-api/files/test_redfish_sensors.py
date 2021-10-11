@@ -34,7 +34,6 @@ fake_sensors_py_sensor_details = redfish_chassis_helper.SensorDetails(
     sensor_thresh=None,
     sensor_unit="Volts",
     sensor_history=None,
-    ucr_thresh=555,
 )
 
 

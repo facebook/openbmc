@@ -41,7 +41,7 @@ class RedfishChassis:
         body = {
             "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
             "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
-            "@odata.type": "#Chassis.v1_5_0.Chassis",
+            "@odata.type": "#Chassis.v1_15_0.Chassis",
             "Id": "1",
             "Name": "Computer System Chassis",
             "ChassisType": "RackMount",
@@ -50,6 +50,9 @@ class RedfishChassis:
             "Model": fru.model,
             "SerialNumber": fru.serial_number,
             "Status": {"State": "Enabled", "Health": "OK"},
+            "Sensors": {
+                "@odata.id": "/redfish/v1/Chassis/{}/Sensors".format(server_name)
+            },
             "Thermal": {
                 "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(server_name)
             },
@@ -70,14 +73,18 @@ class RedfishChassis:
                 )
             )
             fan_sensors = redfish_chassis_helper.get_sensor_details_using_libpal_helper(
-                ["RPM", "%"], self.fru_name
+                ["RPM", "Percent"], self.fru_name
             )
         else:  # for older fboss platforms that don't support libpal
-            temperature_sensors = redfish_chassis_helper.get_older_fboss_sensor_details(
-                "BMC", [redfish_chassis_helper.LIB_SENSOR_TEMPERATURE]
+            temperature_sensors = (
+                redfish_chassis_helper.get_older_fboss_sensor_details_filtered(
+                    "BMC", [redfish_chassis_helper.LIB_SENSOR_TEMPERATURE]
+                )
             )
-            fan_sensors = redfish_chassis_helper.get_older_fboss_sensor_details(
-                "BMC", [redfish_chassis_helper.LIB_SENSOR_FAN]
+            fan_sensors = (
+                redfish_chassis_helper.get_older_fboss_sensor_details_filtered(
+                    "BMC", [redfish_chassis_helper.LIB_SENSOR_FAN]
+                )
             )
         # Get aggregate sensors and add at the end of fan sensors list
         fan_sensors.extend(redfish_chassis_helper.get_aggregate_sensors())
@@ -125,7 +132,7 @@ class RedfishChassis:
             )
         else:  # for older fboss platforms
             power_control_sensors = (
-                redfish_chassis_helper.get_older_fboss_sensor_details(
+                redfish_chassis_helper.get_older_fboss_sensor_details_filtered(
                     "BMC",
                     [
                         redfish_chassis_helper.LIB_SENSOR_POWER,

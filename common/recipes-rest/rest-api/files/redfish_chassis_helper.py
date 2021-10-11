@@ -17,7 +17,7 @@ SensorDetails = t.NamedTuple(
         ("sensor_name", str),
         ("sensor_number", int),
         ("fru_name", str),
-        ("reading", int),
+        ("reading", float),
         # Not referencing sdr.ThreshSensor as sdr is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_thresh", t.Optional["sdr.ThreshSensor"]),
@@ -50,6 +50,46 @@ sensor_unit_dict = {
 SAD_SENSOR = -99999  # default reading for values not found.
 
 
+def get_pal_sensor(
+    fru_name: str, fru_id: int, sensor_id: int
+) -> t.Optional[SensorDetails]:
+    sensor_unit = sdr.sdr_get_sensor_units(fru_id, sensor_id)
+    try:
+        reading = pal.sensor_read(fru_id, sensor_id)
+        reading = reading
+        start_time = int(time.time()) - 60
+        sensor_history = pal.sensor_read_history(fru_id, sensor_id, start_time)
+    except pal.LibPalError:
+        reading = SAD_SENSOR  # default value when we can't get reading
+        sensor_history = None
+
+    try:
+        sensor_thresh = sdr.sdr_get_sensor_thresh(fru_id, sensor_id)
+    except sdr.LibSdrError:
+        sensor_thresh = None
+
+    try:
+        sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
+    except sdr.LibSdrError:
+        sensor_name = None
+
+    sensor_name = fru_name + "/" + fru_name + "/" + sensor_name
+
+    if sensor_unit == "%":
+        sensor_unit = "Percent"  # DMTF accepts this unit as text
+    sensor_details = SensorDetails(
+        sensor_name,
+        sensor_id,
+        fru_name,
+        reading,
+        sensor_thresh,
+        sensor_unit,
+        sensor_history,
+        0,
+    )
+    return sensor_details
+
+
 def get_sensor_details_using_libpal(
     fru_name: str, desired_sensor_units: t.List[str]
 ) -> t.List[SensorDetails]:
@@ -63,41 +103,8 @@ def get_sensor_details_using_libpal(
 
     sensor_ids_list = pal.pal_get_fru_sensor_list(fru_id)
     for sensor_id in sensor_ids_list:
-        sensor_unit = sdr.sdr_get_sensor_units(fru_id, sensor_id)
-        if sensor_unit in desired_sensor_units:
-            try:
-                reading = pal.sensor_read(fru_id, sensor_id)
-                reading = int(reading)
-                start_time = int(time.time()) - 60
-                sensor_history = pal.sensor_read_history(fru_id, sensor_id, start_time)
-            except pal.LibPalError:
-                reading = SAD_SENSOR  # default value when we can't get reading
-                sensor_history = None
-
-            try:
-                sensor_thresh = sdr.sdr_get_sensor_thresh(fru_id, sensor_id)
-            except sdr.LibSdrError:
-                sensor_thresh = None
-
-            try:
-                sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
-            except sdr.LibSdrError:
-                sensor_name = None
-
-            sensor_name = fru_name + "/" + fru_name + "/" + sensor_name
-
-            if sensor_unit == "%":
-                sensor_unit = "Percent"  # DMTF accepts this unit as text
-            sensor_details = SensorDetails(
-                sensor_name,
-                sensor_id,
-                fru_name,
-                reading,
-                sensor_thresh,
-                sensor_unit,
-                sensor_history,
-                0,
-            )
+        sensor_details = get_pal_sensor(fru_name, fru_id, sensor_id)
+        if sensor_details.sensor_unit in desired_sensor_units:
             sensor_details_list.append(sensor_details)
     return sensor_details_list
 
@@ -115,56 +122,65 @@ def get_sensor_details_using_libpal_helper(
     return all_sensor_details
 
 
-def get_older_fboss_sensor_details(
+def get_older_fboss_sensor_details_filtered(
     fru_name: str, desired_sensor_type: t.List[int]
 ) -> t.List[SensorDetails]:
     """Returns sensor details using sensors.py for older fboss
     platforms that don't support libpal i.e. yamp, wedge, wedge100"""
+    desired_sensor_units = [sensor_unit_dict[typeid] for typeid in desired_sensor_type]
+    all_sensors = get_older_fboss_sensor_details(fru_name)
+    sensor_details_list = []
+    for sensor_candidate in all_sensors:
+        if sensor_candidate.sensor_unit in desired_sensor_units:
+            sensor_details_list.append(sensor_candidate)
+    return sensor_details_list
+
+
+def get_older_fboss_sensor_details(fru_name: str) -> t.List[SensorDetails]:
     sensor_details_list = []
     import sensors
 
     sensors.init()
     for chip in sensors.ChipIterator():
         for sensor in sensors.FeatureIterator(chip):
-            if sensor.type in desired_sensor_type:
-                chip_name = sensors.chip_snprintf_name(chip)
-                adapter_name = sensors.get_adapter_name(chip.bus)
-                sensor_tag = sensor.name.decode("utf-8")
-                reading_key = sensor_tag + "_input"
-                ucr_key = sensor_tag + "_max"
-                sensor_label = sensors.get_label(chip, sensor)
-                sensor_name = chip_name + "/" + adapter_name + "/" + sensor_label
-                sfs = list(sensors.SubFeatureIterator(chip, sensor))
-                sf_keys = []
-                sf_vals = []
-                subfeatures_dict = {}
-                #  retrieving keys and values for subfeatures
-                for sf in sfs:
-                    sf_keys.append(sf.name.decode("utf-8"))
-                    try:
-                        sf_vals.append(sensors.get_value(chip, sf.number))
-                    except sensors.ErrorAccessRead:
-                        # in case of an error, we set default SAD_SENSOR
-                        subfeatures_dict[reading_key] = SAD_SENSOR
+            chip_name = sensors.chip_snprintf_name(chip)
+            adapter_name = sensors.get_adapter_name(chip.bus)
+            sensor_tag = sensor.name.decode("utf-8")
+            reading_key = sensor_tag + "_input"
+            ucr_key = sensor_tag + "_max"
+            sensor_label = sensors.get_label(chip, sensor)
+            sensor_name = chip_name + "/" + adapter_name + "/" + sensor_label
+            sfs = list(sensors.SubFeatureIterator(chip, sensor))
+            sf_keys = []
+            sf_vals = []
+            subfeatures_dict = {}
+            #  retrieving keys and values for subfeatures
+            for sf in sfs:
+                sf_keys.append(sf.name.decode("utf-8"))
+                try:
+                    sf_vals.append(sensors.get_value(chip, sf.number))
+                except sensors.ErrorAccessRead:
+                    # in case of an error, we set default SAD_SENSOR
+                    subfeatures_dict[reading_key] = SAD_SENSOR
 
-                #  for sensors that don't have upper threshold as a feature
-                if ucr_key not in sf_keys:
-                    subfeatures_dict[ucr_key] = 0  # default upper threshold val
+            #  for sensors that don't have upper threshold as a feature
+            if ucr_key not in sf_keys:
+                subfeatures_dict[ucr_key] = 0  # default upper threshold val
 
-                for key, val in zip(sf_keys, sf_vals):
-                    subfeatures_dict[key] = val
+            for key, val in zip(sf_keys, sf_vals):
+                subfeatures_dict[key] = val
 
-                sensor_details = SensorDetails(
-                    sensor_name=sensor_name,
-                    sensor_number=0,  # default bc sensors.py doesn't provide sensor id
-                    fru_name=fru_name,
-                    reading=int(subfeatures_dict[reading_key]),
-                    sensor_thresh=None,  # bc sensors.py doesn't provide ThreshSensor
-                    sensor_unit=sensor_unit_dict[sensor.type],
-                    sensor_history=None,  # bc sensors.py doesn't provide sensor history
-                    ucr_thresh=int(subfeatures_dict[ucr_key]),
-                )
-                sensor_details_list.append(sensor_details)
+            sensor_details = SensorDetails(
+                sensor_name=sensor_name,
+                sensor_number=0,  # default bc sensors.py doesn't provide sensor id
+                fru_name=fru_name,
+                reading=int(subfeatures_dict[reading_key]),
+                sensor_thresh=None,  # bc sensors.py doesn't provide ThreshSensor
+                sensor_unit=sensor_unit_dict[sensor.type],
+                sensor_history=None,  # bc sensors.py doesn't provide sensor history
+                ucr_thresh=int(subfeatures_dict[ucr_key]),
+            )
+            sensor_details_list.append(sensor_details)
 
     sensors.cleanup()
     return sensor_details_list
@@ -176,29 +192,35 @@ def get_aggregate_sensors() -> t.List[SensorDetails]:
     libag.aggregate_sensor_init()
     as_size = libag.aggregate_sensor_count()
     ag_sensors_list = []  # type: t.List[SensorDetails]
-    for i in range(as_size):
-        try:
-            sensor_name = libag.aggregate_sensor_name(i)
-        except libag.LibAggregateError:
-            # If we can't get the sensor_name, we don't
-            # populate this sensor. Move to next iteration
-            continue
-        try:
-            reading = libag.aggregate_sensor_read(i)
-        except libag.LibAggregateError:
-            reading = SAD_SENSOR  # so we know its unhealthy sensor
-        sensor_details = SensorDetails(
-            sensor_name="Chassis/Chassis/" + sensor_name,
-            sensor_number=0,  # set default to 0
-            fru_name="Chassis",
-            reading=int(reading),
-            sensor_thresh=None,  # set to default
-            sensor_unit=None,  # set to default
-            sensor_history=None,  # set to default
-            ucr_thresh=0,  # set to default
-        )
-        ag_sensors_list.append(sensor_details)
+    for sensor_id in range(as_size):
+        sensor_details = get_aggregate_sensor(sensor_id)
+        if sensor_details:
+            ag_sensors_list.append(sensor_details)
     return ag_sensors_list
+
+
+def get_aggregate_sensor(sensor_id: int) -> t.Optional[SensorDetails]:
+    try:
+        sensor_name = libag.aggregate_sensor_name(sensor_id)
+    except libag.LibAggregateError:
+        # If we can't get the sensor_name, we don't
+        # populate this sensor. Move to next iteration
+        return None
+    try:
+        reading = libag.aggregate_sensor_read(sensor_id)
+    except libag.LibAggregateError:
+        reading = SAD_SENSOR  # so we know its unhealthy sensor
+    sensor_details = SensorDetails(
+        sensor_name="Chassis/Chassis/" + sensor_name,
+        sensor_number=sensor_id,  # set default to 0
+        fru_name="Chassis",
+        reading=int(reading),
+        sensor_thresh=None,  # set to default
+        sensor_unit=None,  # set to default
+        sensor_history=None,  # set to default
+        ucr_thresh=0,  # set to default
+    )
+    return sensor_details
 
 
 FruInfo = t.NamedTuple(

@@ -16,7 +16,10 @@ class TestCommonRoutes(unittest.TestCase):
         redfish.setup_redfish_common_routes(app)
         registered_routes = set()
         for route in app.router.resources():
-            registered_routes.add(str(route.url_for()))
+            uri = route.get_info().get("path")
+            if not uri:
+                uri = route.get_info().get("formatter")
+            registered_routes.add(uri)
         routes_expected = [
             "/redfish",
             "/redfish/v1",
@@ -27,6 +30,8 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/AccountService/Accounts",
             "/redfish/v1/Chassis",
             "/redfish/v1/Chassis/1",
+            "/redfish/v1/Chassis/{fru_name}/Sensors",
+            "/redfish/v1/Chassis/{fru_name}/Sensors/{sensor_id}",
             "/redfish/v1/Chassis/1/Power",
             "/redfish/v1/Chassis/1/Thermal",
             "/redfish/v1/Managers",

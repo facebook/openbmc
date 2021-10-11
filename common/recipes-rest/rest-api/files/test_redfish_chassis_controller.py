@@ -120,7 +120,6 @@ class TestChassisService(AioHTTPTestCase):
                 return_value=[],
             ),
         ]
-
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
@@ -182,7 +181,7 @@ class TestChassisService(AioHTTPTestCase):
                 expected_resp = {
                     "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
                     "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
-                    "@odata.type": "#Chassis.v1_5_0.Chassis",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
                     "Id": "1",
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
@@ -190,6 +189,11 @@ class TestChassisService(AioHTTPTestCase):
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
                     "PowerState": "On",
+                    "Sensors": {
+                        "@odata.id": "/redfish/v1/Chassis/{}/Sensors".format(
+                            server_name
+                        )
+                    },
                     "Status": {"State": "Enabled", "Health": "OK"},
                     "Thermal": {
                         "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(

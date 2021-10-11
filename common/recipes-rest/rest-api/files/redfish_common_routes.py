@@ -1,3 +1,4 @@
+import redfish_sensors
 import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
@@ -36,6 +37,7 @@ class Redfish:
         app.router.add_get(
             "/redfish/v1/Chassis/1/Power", redfish_chassis.get_chassis_power
         )
+
         app.router.add_get("/redfish/v1/Managers", get_managers)
         app.router.add_get("/redfish/v1/Managers/1", get_managers_members)
         app.router.add_get(
@@ -49,6 +51,14 @@ class Redfish:
         )
         app.router.add_get(
             "/redfish/v1/Managers/1/EthernetInterfaces/1", get_ethernet_members
+        )
+        app.router.add_get(
+            "/redfish/v1/Chassis/{fru_name}/Sensors",
+            redfish_sensors.get_redfish_sensors_handler,
+        )
+        app.router.add_get(
+            "/redfish/v1/Chassis/{fru_name}/Sensors/{sensor_id}",
+            redfish_sensors.get_redfish_sensor_handler,
         )
 
     def setup_multisled_routes(self, app: Application):

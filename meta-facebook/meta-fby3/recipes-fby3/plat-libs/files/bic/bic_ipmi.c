@@ -861,6 +861,13 @@ bic_enable_vr_fault_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
 }
 
 int
+bic_get_gpv3_pci_link(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
+  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t tlen = 3;
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_PCI_LINK_STATUS, tbuf, tlen, rbuf, rlen, intf);
+}
+
+int
 bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
   uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, ( enable == true )?0x1:0x0};
   uint8_t tlen = 4;

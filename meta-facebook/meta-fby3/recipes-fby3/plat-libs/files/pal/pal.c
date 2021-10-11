@@ -2125,7 +2125,7 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
-static uint8_t
+uint8_t
 pal_get_gpv3_cfg() {
   char value[MAX_VALUE_LEN] = {0};
   int ret = PAL_ENOTSUP;

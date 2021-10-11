@@ -37,6 +37,7 @@ extern const uint32_t IANA_ID;
 enum {
   BIC_CMD_OEM_SET_AMBER_LED           = 0x39,
   BIC_CMD_OEM_GET_AMBER_LED_STATUS    = 0x3A,
+  BIC_CMD_OEM_GET_PCI_LINK_STATUS     = 0x3B,
   BIC_CMD_OEM_GET_SET_GPIO            = 0x41,
   BIC_CMD_OEM_GET_SET_VY_VR_CNT       = 0x42,
   BIC_CMD_OEM_FW_CKSUM_SHA256         = 0x43,

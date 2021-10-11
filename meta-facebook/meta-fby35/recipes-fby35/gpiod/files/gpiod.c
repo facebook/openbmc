@@ -586,9 +586,14 @@ gpio_monitor_poll(void *ptr) {
       kv_set(host_key[fru-1], "0", 0, 0);
 
       ret = pal_get_server_12v_power(fru, &pwr_sts);
-      if ( ret == PAL_EOK && pwr_sts == SERVER_12V_ON && chk_bic_pch_pwr_flag) {
-        check_bic_pch_pwr_fault(fru);
-        chk_bic_pch_pwr_flag = false;
+      if (ret == PAL_EOK) {
+        if (pwr_sts == SERVER_12V_ON && chk_bic_pch_pwr_flag) {
+          check_bic_pch_pwr_fault(fru);
+          chk_bic_pch_pwr_flag = false;
+        } else if (pwr_sts == SERVER_12V_OFF) {
+          SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
+          SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
+        }
       }
 
       //rst new pin val

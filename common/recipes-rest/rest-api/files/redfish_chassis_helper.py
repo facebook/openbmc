@@ -25,8 +25,6 @@ SensorDetails = t.NamedTuple(
         # Not referencing pal.SensorHistory as pal is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_history", t.Optional["pal.SensorHistory"]),
-        ("ucr_thresh", t.Optional[int]),  # for older fboss platforms as an
-        # alternative for sensors_thresh bc sensors.py only give us upper threshold
     ],
 )
 
@@ -78,14 +76,13 @@ def get_pal_sensor(
     if sensor_unit == "%":
         sensor_unit = "Percent"  # DMTF accepts this unit as text
     sensor_details = SensorDetails(
-        sensor_name,
-        sensor_id,
-        fru_name,
-        reading,
-        sensor_thresh,
-        sensor_unit,
-        sensor_history,
-        0,
+        sensor_name=sensor_name,
+        sensor_number=sensor_id,
+        fru_name=fru_name,
+        reading=reading,
+        sensor_thresh=sensor_thresh,
+        sensor_unit=sensor_unit,
+        sensor_history=sensor_history,
     )
     return sensor_details
 
@@ -174,11 +171,17 @@ def get_older_fboss_sensor_details(fru_name: str) -> t.List[SensorDetails]:
                 sensor_name=sensor_name,
                 sensor_number=0,  # default bc sensors.py doesn't provide sensor id
                 fru_name=fru_name,
-                reading=int(subfeatures_dict[reading_key]),
-                sensor_thresh=None,  # bc sensors.py doesn't provide ThreshSensor
+                reading=subfeatures_dict[reading_key],
+                sensor_thresh=sdr.ThreshSensor(
+                    ucr_thresh=subfeatures_dict[ucr_key],
+                    unc_thresh=0,
+                    unr_thresh=0,
+                    lcr_thresh=0,
+                    lnc_thresh=0,
+                    lnr_thresh=0,
+                ),
                 sensor_unit=sensor_unit_dict[sensor.type],
                 sensor_history=None,  # bc sensors.py doesn't provide sensor history
-                ucr_thresh=int(subfeatures_dict[ucr_key]),
             )
             sensor_details_list.append(sensor_details)
 
@@ -214,11 +217,10 @@ def get_aggregate_sensor(sensor_id: int) -> t.Optional[SensorDetails]:
         sensor_name="Chassis/Chassis/" + sensor_name,
         sensor_number=sensor_id,  # set default to 0
         fru_name="Chassis",
-        reading=int(reading),
+        reading=reading,
         sensor_thresh=None,  # set to default
         sensor_unit=None,  # set to default
         sensor_history=None,  # set to default
-        ucr_thresh=0,  # set to default
     )
     return sensor_details
 

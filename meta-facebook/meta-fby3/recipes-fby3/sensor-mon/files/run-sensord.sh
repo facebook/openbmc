@@ -3,9 +3,30 @@
 echo -n "Setup sensor monitoring for FBY3... "
 SLOTS=
 
+function get_bus_num() {
+  local bus=0
+  case $1 in
+    slot1)
+      bus=4
+    ;;
+    slot2)
+      bus=5
+    ;;
+    slot3)
+      bus=6
+    ;;
+    slot4)
+      bus=7
+    ;;
+  esac
+
+  echo $bus
+}
+
 read_system_conf() {
   slot_num=${1#"slot"}
   val=$(get_m2_prsnt_sts "$1")
+  i2c_bus=$(get_bus_num $1)
 
   system_type="Type_"
   #0 = 2ou and 1ou are present
@@ -13,7 +34,13 @@ read_system_conf() {
   #8 = 1ou is present
   #other = not present
   if [ "$val" -eq 0 ]; then
-    system_type=${system_type}10
+    exp_board=$(get_2ou_board_type $i2c_bus)
+
+    if [ "$exp_board" == "0x04" ] || [ "$exp_board" == "0x00" ] || [ "$exp_board" == "0x03" ]; then
+      system_type=${system_type}17
+    else
+      system_type=${system_type}10
+    fi      
   elif [ "$val" -eq 4 ]; then
     cpld_bus=$(get_cpld_bus "$slot_num")
     type_2ou=$(get_2ou_board_type "$cpld_bus")

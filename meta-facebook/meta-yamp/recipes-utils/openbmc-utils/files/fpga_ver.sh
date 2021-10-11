@@ -55,6 +55,12 @@ else
         echo "PIM $pim: NOT DETECTED"
         exitCode=1
       else
+        # val1 can never be 0 under normal operation
+        # so let's set the exitCode to 1 in case val1
+        # is 0
+        if [ "$((val1))" -eq 0 ]; then
+          exitCode=1
+        fi
         echo "PIM $pim : $((val1)).$((val2))"
       fi
     done

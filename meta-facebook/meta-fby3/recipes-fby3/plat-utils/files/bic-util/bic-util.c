@@ -36,7 +36,7 @@
 #include <time.h>
 
 static uint8_t bmc_location = 0xff;
-static uint8_t board = UNKNOWN_BOARD;
+static uint8_t riser_board = UNKNOWN_BOARD;
 static uint8_t expFru = 0xff;
 const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
@@ -66,6 +66,7 @@ static const char *class2_options[] = {
   "--get_slot_id",
   "--set_usb_hub [0|1|2|all] [on|off|reset]",
   "--get_usb_hub [0|1|2|all]",
+  "--get_pci_link",
 };
 
 static void
@@ -73,11 +74,11 @@ print_usage_help(void) {
   int i;
 
   printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
-  if (board == CWC_MCHP_BOARD) {
+  if ( riser_board  == CWC_MCHP_BOARD ) {
     printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <[0..n]data_bytes_to_send>\n", slot_usage);
   }
   printf("Usage: bic-util <%s> <option>\n", slot_usage);
-  if (board == CWC_MCHP_BOARD) {
+  if ( riser_board == CWC_MCHP_BOARD ) {
     printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <option>\n", slot_usage);
   } else {
     printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n", slot_usage);
@@ -86,7 +87,7 @@ print_usage_help(void) {
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
 
-  if (fby3_common_get_bmc_location(&bmc_location) == 0 && bmc_location == NIC_BMC) {
+  if ( riser_board == CWC_MCHP_BOARD || riser_board == GPV3_MCHP_BOARD ) {
     for (i = 0; i < sizeof(class2_options)/sizeof(class2_options[0]); i++) {
       printf("       %s\n", class2_options[i]);
     }
@@ -765,12 +766,6 @@ bic_comp_init_usb_dev(uint8_t slot_id, usb_dev* udev, char *comp)
           goto error_exit;
         }
 
-        ret = fby3_common_get_bmc_location(&bmc_location);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-          goto error_exit;
-        }
-
         ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
         if (ret < 0) {
           printf("Error get port number\n");
@@ -1160,6 +1155,73 @@ util_get_usb_hub(uint8_t hub, uint8_t fru, uint8_t intf) {
   return ret;
 }
 
+static int
+util_get_pci_link(uint8_t fru) {
+  // the bit mapping table for singel/dual M2
+  uint8_t sgl_m2_tbl[]  = {5, 4, 15, 14, 13, 12, 8, 9, 11, 10, 2, 3, 1, 0};
+  uint8_t dual_m2_tbl[] = {4, 14, 12, 8, 10, 2, 1, 0};
+  uint8_t intf_list[3] = {REXP_BIC_INTF, RREXP_BIC_INTF1, RREXP_BIC_INTF2};
+  size_t intf_end = 3;
+  size_t intf_st = 0;
+  int ret = -1;
+  enum {
+    GPV3_84CH_DUAL  = 0x4,
+    GPV3_100CH_DUAL = 0x6,
+  };
+
+  if ( riser_board == GPV3_MCHP_BOARD ) {
+    intf_st = 0;
+    intf_end = 1;
+  } else if ( riser_board == CWC_MCHP_BOARD ) {
+    intf_st = 1;
+    intf_end = 3;
+  } else {
+    printf("The system may not support the feature\n");
+    return -1;
+  }
+
+  for ( size_t i = intf_st; i < intf_end; i++ ) {
+    // start getting data
+    uint8_t rbuf[8] = {0};
+    uint8_t rlen = 0;
+    ret = bic_get_gpv3_pci_link(fru, rbuf, &rlen, intf_list[i]);
+    if ( ret < 0 ) {
+      printf("Failed to get PCI link status\n");
+      break;
+    }
+
+    uint16_t result = (rbuf[3] << 8 | rbuf[4]);
+    uint8_t m2_cfg = pal_get_gpv3_cfg();
+    uint8_t *tbl_p = sgl_m2_tbl;
+    size_t tbl_size = sizeof(sgl_m2_tbl);
+    bool is_dual = false;
+    // print data
+    if ( m2_cfg == GPV3_84CH_DUAL || m2_cfg == GPV3_100CH_DUAL ) {
+      tbl_size = sizeof(dual_m2_tbl);
+      is_dual = true;
+      tbl_p = dual_m2_tbl;
+    }
+
+    uint8_t e1s_offset = tbl_size - 2;
+    if ( intf_list[i] == REXP_BIC_INTF ) printf("2U GPv3:\n");
+    else if ( intf_list[i] == RREXP_BIC_INTF1 ) printf("4U TOP GPv3:\n");
+    else printf("4U BOT GPv3:\n");
+
+    for ( size_t j = 0 ; j < tbl_size; j++ ) {
+      char *link_status = ((result >> tbl_p[j]) & 0x1)?"Up":"Down";
+      if ( j >= e1s_offset ) printf("E1S_%d Link status: %s\n", (j - e1s_offset), link_status);
+      else {
+        char *m2_type = (is_dual == true)?"Dual":"Single";
+        uint8_t idx = (is_dual == true)?((j*2)+1):j;
+        printf("%s M2_%d Link status: %s\n", m2_type, idx, link_status);
+      }
+    }
+    printf("\n");
+  }
+
+  return ret;
+}
+
 int
 main(int argc, char **argv) {
   uint8_t slot_id = 0;
@@ -1171,8 +1233,33 @@ main(int argc, char **argv) {
   int i = 0;
   uint8_t hub = 0, ctl = 0;
 
-  if (pal_is_cwc() == PAL_EOK) {
-    board = CWC_MCHP_BOARD;
+  // because the usage of bic-util is displayed based on the platform
+  // we should get the information first
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    printf("%s() Couldn't get the location of BMC\n", __func__);
+    return -1;
+  }
+
+  // check the expansion
+  if ( bmc_location == NIC_BMC ) {
+    ret = bic_is_m2_exp_prsnt(FRU_SLOT1);
+    if ( ret < 0 ) {
+      printf("Failed to run bic_is_m2_exp_prsnt()\n");
+      return -1;
+    }
+
+    // check if the exp presence
+    if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
+      ret = fby3_common_get_2ou_board_type(FRU_SLOT1, &is_fru_present);
+      if ( ret < 0 ) {
+        printf("Failed to run fby3_common_get_2ou_board_type()\n");
+        return -1;
+      }
+
+      // get the board type
+      riser_board = is_fru_present;
+    }
   }
 
   if (argc < 3) {
@@ -1183,12 +1270,6 @@ main(int argc, char **argv) {
   if ( ret < 0 ) {
     printf("%s is invalid!\n", argv[1]);
     goto err_exit;
-  }
-
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    printf("%s() Couldn't get the location of BMC\n", __func__);
-    return -1;
   }
 
   if ( slot_id != FRU_ALL ) {
@@ -1204,7 +1285,7 @@ main(int argc, char **argv) {
     }
   }
 
-  if (board == CWC_MCHP_BOARD && argc >= 4) {
+  if ( riser_board == CWC_MCHP_BOARD && argc >= 4 ) {
     if ( !fby3_common_get_exp_id(argv[2], &expFru) ||
          (strncmp(argv[2], "all", 3) == 0 && 
           (strcmp(argv[3], "--set_usb_hub") == 0 || strcmp(argv[3], "--get_usb_hub") == 0)) ) {
@@ -1220,7 +1301,7 @@ main(int argc, char **argv) {
     }
   }
 
-  if (board == CWC_MCHP_BOARD) {
+  if ( riser_board == CWC_MCHP_BOARD ) {
     switch (expFru) {
       case FRU_CWC:
         intf = REXP_BIC_INTF;
@@ -1346,8 +1427,10 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_get_board_revision(slot_id, argv[3]);
+    } else if ( strcmp(argv[2], "--get_pci_link") == 0 ) {
+      return util_get_pci_link(slot_id);
     } else if ( strcmp(argv[2], "--set_usb_hub") == 0 ) {
-      if (board == CWC_MCHP_BOARD) {
+      if ( riser_board == CWC_MCHP_BOARD ) {
         if ( argc == 5 ) {
           if ( strcmp(argv[3], "all") == 0 ) {
             hub = 0xff;
@@ -1389,7 +1472,7 @@ main(int argc, char **argv) {
         goto err_exit;
       }
     } else if ( strcmp(argv[2], "--get_usb_hub") == 0 ) {
-      if (board == CWC_MCHP_BOARD) {
+      if ( riser_board == CWC_MCHP_BOARD ) {
         if ( argc == 4 ) {
           if ( strcmp(argv[3], "all") == 0 ) {
             hub = 0xff;

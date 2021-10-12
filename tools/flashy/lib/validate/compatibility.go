@@ -113,9 +113,9 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 // WARNING: This relies on the U-Boot version string on the image
 // there is no guarantee that this will succeed
 var getOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
-	// mmap the first 512kB of the image file
+	// mmap the first 1MB of the image file
 	imageFileBuf, err := fileutils.MmapFileRange(
-		imageFilePath, 0, 512*1024, syscall.PROT_READ, syscall.MAP_SHARED,
+		imageFilePath, 0, 1024*1024, syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
 		return "", errors.Errorf("Unable to read and mmap image file '%v': %v",

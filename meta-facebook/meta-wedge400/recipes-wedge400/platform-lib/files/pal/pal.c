@@ -564,6 +564,7 @@ const uint8_t psu1_sensor_list[] = {
   PSU1_SENSOR_TEMP1,
   PSU1_SENSOR_TEMP2,
   PSU1_SENSOR_TEMP3,
+  PSU1_SENSOR_FAN2_TACH,
 };
 
 const uint8_t psu2_sensor_list[] = {
@@ -580,6 +581,7 @@ const uint8_t psu2_sensor_list[] = {
   PSU2_SENSOR_TEMP1,
   PSU2_SENSOR_TEMP2,
   PSU2_SENSOR_TEMP3,
+  PSU2_SENSOR_FAN2_TACH,
 };
 
 
@@ -666,6 +668,8 @@ pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
     break;
   }
 }
+
+bool is_psu48(void);
 
 //For OEM command "CMD_OEM_GET_PLAT_INFO" 0x7e
 int
@@ -1022,10 +1026,18 @@ pal_get_sensor_util_timeout(uint8_t fru) {
       cnt = pem2_sensor_cnt;
       break;
     case FRU_PSU1:
-      cnt = psu1_sensor_cnt;
+      if (is_psu48) {
+        cnt = psu1_sensor_cnt;
+      } else {
+        cnt = psu1_sensor_cnt - 1;
+      }
       break;
     case FRU_PSU2:
-      cnt = psu2_sensor_cnt;
+      if (is_psu48()) {
+        cnt = psu2_sensor_cnt;
+      } else {
+        cnt = psu2_sensor_cnt - 1;
+      }
       break;
     default:
       if (fru > MAX_NUM_FRUS)
@@ -1072,11 +1084,19 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     break;
   case FRU_PSU1:
     *sensor_list = (uint8_t *) psu1_sensor_list;
-    *cnt = psu1_sensor_cnt;
+    if (is_psu48()) {
+      *cnt = psu1_sensor_cnt;
+    } else {
+      *cnt = psu1_sensor_cnt - 1;
+    }
     break;
   case FRU_PSU2:
     *sensor_list = (uint8_t *) psu2_sensor_list;
-    *cnt = psu2_sensor_cnt;
+    if (is_psu48()) {
+      *cnt = psu2_sensor_cnt;
+    } else {
+      *cnt = psu2_sensor_cnt - 1;
+    }
     break;
   default:
     if (fru > MAX_NUM_FRUS)
@@ -3514,6 +3534,9 @@ psu_sensor_read(uint8_t sensor_num, float *value) {
     case PSU1_SENSOR_TEMP3:
       ret = read_attr(PSU1_DEVICE, TEMP(3), value);
       break;
+    case PSU1_SENSOR_FAN2_TACH:
+      ret = read_fan_rpm_f(PSU1_DEVICE, 2, value);
+      break;
     case PSU2_SENSOR_IN_VOLT:
       ret = read_attr(PSU2_DEVICE, VOLT(0), value);
       break;
@@ -3552,6 +3575,9 @@ psu_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case PSU2_SENSOR_TEMP3:
       ret = read_attr(PSU2_DEVICE, TEMP(3), value);
+      break;
+    case PSU2_SENSOR_FAN2_TACH:
+      ret = read_fan_rpm_f(PSU2_DEVICE, 2, value);
       break;
     default:
       ret = READING_NA;
@@ -4648,6 +4674,12 @@ get_psu_sensor_name(uint8_t sensor_num, char *name) {
     case PSU1_SENSOR_TEMP3:
       sprintf(name, "PSU1_TEMP3");
       break;
+    case PSU1_SENSOR_FAN2_TACH:
+      if (is_psu48())
+      {
+        sprintf(name, "PSU1_FAN2_SPEED");
+      }
+      break;
     case PSU2_SENSOR_IN_VOLT:
       sprintf(name, "PSU2_IN_VOLT");
       break;
@@ -4686,6 +4718,12 @@ get_psu_sensor_name(uint8_t sensor_num, char *name) {
       break;
     case PSU2_SENSOR_TEMP3:
       sprintf(name, "PSU2_TEMP3");
+      break;
+    case PSU2_SENSOR_FAN2_TACH:
+      if (is_psu48())
+      {
+        sprintf(name, "PSU2_FAN2_SPEED");
+      }
       break;
     default:
       return -1;
@@ -4968,7 +5006,9 @@ get_psu_sensor_units(uint8_t sensor_num, char *units) {
       sprintf(units, "Watts");
       break;
     case PSU1_SENSOR_FAN_TACH:
+    case PSU1_SENSOR_FAN2_TACH:
     case PSU2_SENSOR_FAN_TACH:
+    case PSU2_SENSOR_FAN2_TACH:
       sprintf(units, "RPM");
       break;
     case PSU1_SENSOR_TEMP1:
@@ -5330,24 +5370,44 @@ sensor_thresh_array_init(uint8_t fru) {
     case FRU_PSU1:
     case FRU_PSU2:
       fru_offset = fru - FRU_PSU1;
-      psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 305;
-      psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 90;
-      psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 14.8;
-      psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 0;
-      psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 4.2;
-      psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 0;
-      psu_sensor_threshold[PSU1_SENSOR_IN_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 9;
-      psu_sensor_threshold[PSU1_SENSOR_12V_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 125;
-      psu_sensor_threshold[PSU1_SENSOR_STBY_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 5;
-      psu_sensor_threshold[PSU1_SENSOR_IN_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 1500;
-      psu_sensor_threshold[PSU1_SENSOR_12V_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 1500;
-      psu_sensor_threshold[PSU1_SENSOR_STBY_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 16.5;
-      psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 29500;
-      psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
-      psu_sensor_threshold[PSU1_SENSOR_TEMP1 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 65;
-      psu_sensor_threshold[PSU1_SENSOR_TEMP2 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 100;
-      psu_sensor_threshold[PSU1_SENSOR_TEMP3 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 125;
-      break;
+      if (is_psu48())
+      {
+        psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 59;
+        psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 40;
+        psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 12.6;
+        psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 11.4;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 3.45;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 3.15;
+        psu_sensor_threshold[PSU1_SENSOR_IN_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 40;
+        psu_sensor_threshold[PSU1_SENSOR_12V_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 140;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 3;
+        psu_sensor_threshold[PSU1_SENSOR_IN_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 1850;
+        psu_sensor_threshold[PSU1_SENSOR_12V_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 1680;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 9.9;
+        psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 32450;
+        psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
+        psu_sensor_threshold[PSU1_SENSOR_FAN2_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 21950;
+        psu_sensor_threshold[PSU1_SENSOR_FAN2_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
+      } else {
+        psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 305;
+        psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 90;
+        psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 14.8;
+        psu_sensor_threshold[PSU1_SENSOR_12V_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 0;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 4.2;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_VOLT + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 0;
+        psu_sensor_threshold[PSU1_SENSOR_IN_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 9;
+        psu_sensor_threshold[PSU1_SENSOR_12V_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 125;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_CURR + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 5;
+        psu_sensor_threshold[PSU1_SENSOR_IN_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 1500;
+        psu_sensor_threshold[PSU1_SENSOR_12V_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 1500;
+        psu_sensor_threshold[PSU1_SENSOR_STBY_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 16.5;
+        psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 29500;
+        psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
+        psu_sensor_threshold[PSU1_SENSOR_TEMP1 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 65;
+        psu_sensor_threshold[PSU1_SENSOR_TEMP2 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 100;
+        psu_sensor_threshold[PSU1_SENSOR_TEMP3 + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 125;
+        break;
+      }
   }
   init_done[fru] = true;
 }
@@ -5711,6 +5771,7 @@ psu_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PSU1_SENSOR_12V_POWER:
     case PSU1_SENSOR_STBY_POWER:
     case PSU1_SENSOR_FAN_TACH:
+    case PSU1_SENSOR_FAN2_TACH:
     case PSU1_SENSOR_TEMP1:
     case PSU1_SENSOR_TEMP2:
     case PSU1_SENSOR_TEMP3:
@@ -5724,6 +5785,7 @@ psu_sensor_poll_interval(uint8_t sensor_num, uint32_t *value) {
     case PSU2_SENSOR_12V_POWER:
     case PSU2_SENSOR_STBY_POWER:
     case PSU2_SENSOR_FAN_TACH:
+    case PSU2_SENSOR_FAN2_TACH:
     case PSU2_SENSOR_TEMP1:
     case PSU2_SENSOR_TEMP2:
     case PSU2_SENSOR_TEMP3:
@@ -7200,4 +7262,29 @@ pal_switch_uart_mux() {
     return -1;
   }
   return 0;
+}
+
+bool is_psu48(void)
+{
+  char buffer[6];
+  FILE *fp;
+  fp = popen("source /usr/local/bin/openbmc-utils.sh;wedge_power_supply_type", "r");
+
+  if(NULL == fp)
+     return -1;
+
+  if (fgets(buffer, sizeof(buffer), fp) == NULL) {
+    pclose(fp);
+    return -1;
+  }
+
+  pclose(fp);
+  if (!strcmp(buffer, "PSU48"))
+  {
+      return true;
+  }
+  else
+  {
+    return false;
+  }
 }

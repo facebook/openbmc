@@ -82,7 +82,7 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 
 	// these build names might not match for old versions, as either /etc/isssue
 	// or the image file might not be well-formed
-	if etcIssueBuildName != imageFileBuildName {
+	if etcIssueBuildName != "unknown" && etcIssueBuildName != imageFileBuildName {
 		err := errors.Errorf("OpenBMC versions from /etc/issue ('%v') and image file ('%v')"+
 			" do not match!",
 			etcIssueBuildName, imageFileBuildName)

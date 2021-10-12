@@ -91,6 +91,12 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 					"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'",
 			),
 		},
+		{
+			name:         "ancient image",
+			etcIssueVer:  "unknown-v52.1",
+			imageFileVer: "wedge40-v2019.01.3",
+			want:         nil,
+		},
 	}
 
 	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
@@ -141,6 +147,12 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 			name:    "normalization test (fby2-gpv2)",
 			ver:     "fby2-gpv2-v2019.43.1",
 			want:    "fbgp2",
+			wantErr: nil,
+		},
+		{
+			name:    "ancient example",
+			ver:     "unknown-v52.4",
+			want:    "unknown",
 			wantErr: nil,
 		},
 		{

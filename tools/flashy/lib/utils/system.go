@@ -293,7 +293,7 @@ var SystemdAvailable = func() (bool, error) {
 // in old images.
 var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	const rVersion = "version"
-	etcIssueVersionRegEx := fmt.Sprintf(`^OpenBMC Release (?P<%v>[^\s]+)`, rVersion)
+	etcIssueVersionRegEx := fmt.Sprintf(`^Open ?BMC Release (?P<%v>[^\s]+)`, rVersion)
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
@@ -311,7 +311,11 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				etcIssueFilePath, err)
 	}
 
+	// really old releases don't have the build name
 	version := etcIssueMap[rVersion]
+	if version[0] == 'v' && !strings.Contains(version, "-") {
+		version = "unknown-" + version
+	}
 	return version, nil
 }
 
@@ -319,6 +323,7 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 // by checking whether the string "OpenBMC" exists in /etc/issue.
 var IsOpenBMC = func() (bool, error) {
 	const magic = "OpenBMC"
+	const ancient_magic = "Open BMC Release"
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
@@ -327,6 +332,9 @@ var IsOpenBMC = func() (bool, error) {
 	}
 
 	isOpenBMC := strings.Contains(string(etcIssueBuf), magic)
+	if !isOpenBMC {
+		isOpenBMC = strings.Contains(string(etcIssueBuf), ancient_magic)
+	}
 	return isOpenBMC, nil
 }
 

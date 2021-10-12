@@ -54,6 +54,8 @@ typedef enum {
   MURATA_2000,
   LITEON_1500,
   LITEON_2000,
+  LITEON_DC_48,
+  DELTA_DC_48,
   UNKNOWN
 } model_name;
 
@@ -159,6 +161,10 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
     model = MURATA_1500;
   } else if (!strncmp(block, "D1U54T-W-2000-12-HC4TC-FB", 25)) {
     model = MURATA_2000;
+  } else if (!strncmp(block, "DD-2152-2L", 10)) {
+    model = LITEON_DC_48;
+  } else if (!strncmp(block, "ECD25010015", 11)) {
+    model = DELTA_DC_48;
   } else {
     model = UNKNOWN;
   }
@@ -183,6 +189,8 @@ static ssize_t psu_vin_show(struct device *dev,
     case LITEON_1500:
     case LITEON_2000:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -214,6 +222,8 @@ static ssize_t psu_iin_show(struct device *dev,
     case LITEON_1500:
     case LITEON_2000:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -247,6 +257,8 @@ static ssize_t psu_vout_show(struct device *dev,
     case LITEON_2000:
     case LITEON_1500:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -278,6 +290,8 @@ static ssize_t psu_iout_show(struct device *dev,
     case LITEON_1500:
     case LITEON_2000:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -312,6 +326,8 @@ static ssize_t psu_temp_show(struct device *dev,
     case LITEON_2000:
     case MURATA_1500:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -342,6 +358,8 @@ static ssize_t psu_fan_show(struct device *dev,
     case LITEON_1500:
     case LITEON_2000:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL) / 1000;
       break;
     case BELPOWER_1100_NA:
@@ -370,6 +388,8 @@ static ssize_t psu_power_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case DELTA_2000:
@@ -406,6 +426,8 @@ static ssize_t psu_vstby_show(struct device *dev,
     case LITEON_2000:
     case LITEON_1500:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -439,6 +461,8 @@ static ssize_t psu_istby_show(struct device *dev,
     case LITEON_1500:
     case LITEON_2000:
     case MURATA_2000:
+    case LITEON_DC_48:
+    case DELTA_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case BELPOWER_1100_NA:
@@ -471,6 +495,8 @@ static ssize_t psu_pstby_show(struct device *dev,
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
+    case DELTA_DC_48:
+    case LITEON_DC_48:
       result = linear_convert(LINEAR_11, result, NULL);
       break;
     case DELTA_2000:
@@ -548,6 +574,13 @@ static const i2c_dev_attr_st psu_attr_table[] = {
     psu_fan_show,
     NULL,
     0x90, 0, 8,
+  },
+  {
+    "fan2_input",
+    NULL,
+    psu_fan_show,
+    NULL,
+    0x91, 0, 8,
   },
   {
     "power2_input",

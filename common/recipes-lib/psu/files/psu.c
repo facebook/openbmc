@@ -21,6 +21,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/fruid.h>
 #include <openbmc/log.h>
+#include <facebook/wedge_eeprom.h>
 #include "psu.h"
 #include "psu-platform.h"
 
@@ -244,12 +245,21 @@ delta_img_hdr_parse(const char *file_path) {
   if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL, strlen(DELTA_MODEL))) {
     ret = DELTA_1500;
     printf("Vendor: Delta\n");
-  } else if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K))) {
+  } else if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL_2K,
+                                        strlen(DELTA_MODEL_2K))) {
     ret = DELTA_2000;
     printf("Vendor: Delta\n");
-  } else if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL, strlen(LITEON_MODEL))) {
+  } else if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL,
+                                        strlen(LITEON_MODEL))) {
     ret = LITEON_1500;
     printf("Vendor: Liteon\n");
+  } else if (!strncmp((char *)delta_hdr.fw_id, LITEON_MODEL_DC,
+                                        strlen(LITEON_MODEL_DC))) {
+    ret = LITEON_DC_48;
+    printf("Vendor: Liteon\n");
+  } else if (!strncmp((char *)delta_hdr.fw_id, DELTA_MODEL_DC,
+                                        strlen(DELTA_MODEL_DC))) {
+    ret = DELTA_DC_48;
   } else {
     printf("Get Image Header Fail!\n");
     close(fd_file);
@@ -755,7 +765,8 @@ murata_img_hdr_parse(const char *file_path) {
         }
         break;
       case 3:
-        if (!strncmp(((char *)hdr_buf)+target_shift, "primary", strlen("primary"))) {
+        if (!strncmp(((char *)hdr_buf)+target_shift, "primary",
+                                              strlen("primary"))) {
           murata_hdr.uc = 0x50;
         } else if (!strncmp(((char *)hdr_buf)+target_shift,
                                         "secondary", strlen("secondary"))) {
@@ -1021,7 +1032,8 @@ murata2k_img_hdr_parse(const char *file_path) {
     OBMC_WARN("MCU: unknown number 0x%x\n", murata2k_hdr.uc);
     ret = -1;
   }
-  OBMC_INFO("Ver: %d.%d\n", murata2k_hdr.app_fw_major, murata2k_hdr.app_fw_minor);
+  OBMC_INFO("Ver: %d.%d\n", murata2k_hdr.app_fw_major,
+                                    murata2k_hdr.app_fw_minor);
   close(fd_file);
 
   return ret;
@@ -1266,10 +1278,17 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
 
     if (!strncmp((char *)block, DELTA_MODEL, strlen(DELTA_MODEL))) {
       ret = update_delta_psu(num, file_path, DELTA_1500, vendor);
-    } else if (!strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K))) {
+    } else if (!strncmp((char *)block, DELTA_MODEL_2K,
+                                          strlen(DELTA_MODEL_2K))) {
       ret = update_delta_psu(num, file_path, DELTA_2000, vendor);
     } else if (!strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL))) {
       ret = update_delta_psu(num, file_path, LITEON_1500, vendor);
+    } else if (!strncmp((char *)block, LITEON_MODEL_DC,
+                                          strlen(LITEON_MODEL_DC))) {
+      ret = update_delta_psu(num, file_path, LITEON_DC_48, vendor);
+    } else if (!strncmp((char *)block, DELTA_MODEL_DC,
+                                          strlen(DELTA_MODEL_DC))) {
+      ret = update_delta_psu(num, file_path, DELTA_DC_48, vendor);
     } else if (!strncmp((char *)block, BEL_MODEL, strlen(BEL_MODEL))) {
       ret = update_belpower_psu(num, file_path);
     } else if (!strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL))) {
@@ -1370,9 +1389,9 @@ print_fruid_info(fruid_info_t *fruid, uint8_t num) {
   printf("\n");
 }
 
-/* Populate and print fruid_info by parsing the fru's binary dump */
-int
-get_eeprom_info(uint8_t num) {
+
+static int
+get_ac_psu_eeprom_info(uint8_t num) {
   int ret = -1;
   char eeprom[16];
   fruid_info_t fruid;
@@ -1394,8 +1413,110 @@ get_eeprom_info(uint8_t num) {
   }
   print_fruid_info(&fruid, num);
   free_fruid_info(&fruid);
+  return 0;
+}
+
+static void
+print_dc_psu_fru_eeprom(i2c_info_t *psu_info,
+              struct wedge_eeprom_st fruid, uint8_t num) {
+    /* Print format */
+  printf("%-27s: PSU%d (Bus:%d Addr:0x%x)", "\nFRU Information",
+                          num + 1, (psu_info+num)->bus,
+                          (psu_info+num)->eeprom_addr);
+  printf("%-27s: %s", "\n---------------", "-----------------------");
+  printf("\n%-32s: %d", "Version", fruid.fbw_version);
+  printf("\n%-32s: %s", "Product Name", fruid.fbw_product_name);
+  printf("\n%-32s: %s", "Product Part Number", fruid.fbw_product_number);
+  printf("\n%-32s: %s", "System Assembly Part Number",
+                                      fruid.fbw_assembly_number);
+  printf("\n%-32s: %s", "Facebook PCBA Part Number",
+                                      fruid.fbw_facebook_pcba_number);
+  printf("\n%-32s: %s", "Facebook PCB Part Number",
+                                      fruid.fbw_facebook_pcb_number);
+  printf("\n%-32s: %s", "ODM PCBA Part Number",
+                                      fruid.fbw_odm_pcba_number);
+  printf("\n%-32s: %s", "ODM PCBA Serial Number", fruid.fbw_odm_pcba_serial);
+  printf("\n%-32s: %d", "Product Production State", fruid.fbw_production_state);
+  printf("\n%-32s: %d", "Product Version", fruid.fbw_product_version);
+  printf("\n%-32s: %d", "Product Sub-Version", fruid.fbw_product_subversion);
+  printf("\n%-32s: %s", "Product Serial Number", fruid.fbw_product_serial);
+  printf("\n%-32s: %s", "Product Asset Tag", fruid.fbw_product_asset);
+  printf("\n%-32s: %s", "System Manufacturer", fruid.fbw_system_manufacturer);
+  printf("\n%-32s: %s", "System Manufacturing Date",
+         fruid.fbw_system_manufacturing_date);
+  printf("\n%-32s: %s", "PCB Manufacturer", fruid.fbw_pcb_manufacturer);
+  printf("\n%-32s: %s", "Assembled At", fruid.fbw_assembled);
+  printf("\n%-32s: %02X:%02X:%02X:%02X:%02X:%02X", "Local MAC",
+         fruid.fbw_local_mac[0], fruid.fbw_local_mac[1],
+         fruid.fbw_local_mac[2], fruid.fbw_local_mac[3],
+         fruid.fbw_local_mac[4], fruid.fbw_local_mac[5]);
+  printf("\n%-32s: %02X:%02X:%02X:%02X:%02X:%02X", "Extended MAC Base",
+         fruid.fbw_mac_base[0], fruid.fbw_mac_base[1],
+         fruid.fbw_mac_base[2], fruid.fbw_mac_base[3],
+         fruid.fbw_mac_base[4], fruid.fbw_mac_base[5]);
+  printf("\n%-32s: %d", "Extended MAC Address Size", fruid.fbw_mac_size);
+  printf("\n%-32s: %s", "Location on Fabric", fruid.fbw_location);
+  printf("\n%-32s: 0x%x", "CRC8", fruid.fbw_crc8);
+  printf("\n");
+}
+
+static int
+get_dc_psu_eeprom_info(i2c_info_t *psu_info,uint8_t num) {
+  int ret = -1;
+  char eeprom[16];
+
+  struct wedge_eeprom_st fruid_pem;
+  snprintf(eeprom, sizeof(eeprom), "%s", "24c02");
+  i2c_add_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr, eeprom);
+  ret = wedge_eeprom_parse((psu_info+num)->eeprom_file, &fruid_pem);
+  i2c_delete_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr);
+  printf("print EEPROM info ret = 0x%x!\n", ret);
+  if (ret) {
+    snprintf(eeprom, sizeof(eeprom), "%s", "24c64");
+    i2c_add_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr, eeprom);
+    ret = wedge_eeprom_parse((psu_info+num)->eeprom_file, &fruid_pem);
+    i2c_delete_device((psu_info+num)->bus, (psu_info+num)->eeprom_addr);
+    if (ret) {
+      printf("Failed print EEPROM info ret = 0x%x!\n", ret);
+      return -1;
+    }
+  }
+
+  if(strncmp(fruid_pem.fbw_location, "PEM", 3)){
+    return -1;
+  }
+  print_dc_psu_fru_eeprom(psu_info, fruid_pem, num);
 
   return 0;
+}
+
+/* Populate and print fruid_info by parsing the fru's binary dump */
+int
+get_eeprom_info(uint8_t num) {
+  int ret = -1;
+  uint8_t block[I2C_SMBUS_BLOCK_MAX + 1];
+
+  psu[num].fd = i2c_open(psu[num].bus, psu[num].pmbus_addr);
+  g_fd = psu[num].fd;
+  if (psu[num].fd < 0) {
+    ERR_PRINT("Fail to open i2c");
+    return -1;
+  }
+
+  if (get_mfr_model(num, block)) {
+    close(psu[num].fd);
+    return -1;
+  }
+
+  if (!strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC)) ||
+    !strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC))) {
+    ret = get_dc_psu_eeprom_info(psu, num);
+  }
+  else {
+    ret = get_ac_psu_eeprom_info(num);
+  }
+  close(psu[num].fd);
+  return ret;
 }
 
 int
@@ -1424,7 +1545,9 @@ get_psu_info(uint8_t num) {
       !strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K)) ||
       !strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL)) ||
       !strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL)) ||
-      !strncmp((char *)block, MURATA_MODEL_2K, strlen(MURATA_MODEL_2K))) {
+      !strncmp((char *)block, MURATA_MODEL_2K, strlen(MURATA_MODEL_2K)) ||
+      !strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC)) ||
+      !strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC))) {
     size = OPTN_TIME_PRESENT;
   } else {
     size = STATUS_FAN;
@@ -1530,16 +1653,21 @@ get_blackbox_info(uint8_t num, const char *option) {
       strncmp((char *)block, DELTA_MODEL_2K, strlen(DELTA_MODEL_2K)) &&
       strncmp((char *)block, LITEON_MODEL, strlen(LITEON_MODEL)) &&
       strncmp((char *)block, MURATA_MODEL, strlen(MURATA_MODEL)) &&
-      strncmp((char *)block, MURATA_MODEL_2K, strlen(MURATA_MODEL_2K))) {
+      strncmp((char *)block, MURATA_MODEL_2K, strlen(MURATA_MODEL_2K)) &&
+      strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC)) &&
+      strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC))) {
     printf("PSU%d not support blackbox!\n", psu_num);
     close(psu[num].fd);
     return -1;
   }
-
+ /*
+  * FIXME: LITEON & DELTA 48V DC EVT1 hardware doesn't report accurate data for
+  * these fields, and we will fix them step by step.
+  */
   if ((!strncmp(option, "--print", strlen("--print")))) {
     for (read_cmd[2] = 0; read_cmd[2] < 5; read_cmd[2]++) {
       ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,
-                                    read_cmd, 3, byte_buf, 42);
+                                    read_cmd, 3, byte_buf, 44);
       if (ret) {
         printf("PSU%d blackbox page %d read fail!\n", psu_num, read_cmd[2]);
         close(psu[num].fd);
@@ -1598,8 +1726,16 @@ get_blackbox_info(uint8_t num, const char *option) {
                                               linear_convert(blackbox.temp2));
       printf("%-19s (0x8F) : %.2f C", "\nTEMP3",
                                               linear_convert(blackbox.temp3));
-      printf("%-19s (0x90) : %.2f RPM\n", "\nFAN_SPEED",
+      if (!strncmp((char *)block, LITEON_MODEL_DC, strlen(LITEON_MODEL_DC)) ||
+          !strncmp((char *)block, DELTA_MODEL_DC, strlen(DELTA_MODEL_DC))) {
+            printf("%-19s (0x90) : %.2f RPM", "\nFAN_SPEED",
                                           linear_convert(blackbox.fan_speed));
+            printf("%-19s (0x91) : %.2f RPM\n", "\nFAN_SPEED2",
+                                          linear_convert(blackbox.fan2_speed));
+      } else {
+            printf("%-19s (0x90) : %.2f RPM\n", "\nFAN_SPEED",
+                                          linear_convert(blackbox.fan_speed));
+      }
     }
   } else if ((!strncmp(option, "--clear", strlen("--clear")))) {
     ret = i2c_rdwr_msg_transfer(psu[num].fd, psu[num].pmbus_addr << 1,

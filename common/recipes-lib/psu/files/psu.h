@@ -45,6 +45,7 @@ extern "C" {
 /* define for DELTA PSU */
 #define DELTA_MODEL         "ECD55020006"
 #define DELTA_MODEL_2K      "ECD15020060"
+#define DELTA_MODEL_DC      "ECD25010015"
 #define DELTA_HDR_LENGTH    32
 #define UNLOCK_UPGRADE      0xf0
 #define BOOT_FLAG           0xf1
@@ -57,6 +58,7 @@ extern "C" {
 
 /* define for LITEON PSU */
 #define LITEON_MODEL        "PS-2152-5L"
+#define LITEON_MODEL_DC     "DD-2152-2L"
 
 /* define for BELPOWER PSU */
 #define BEL_MODEL           "PFE1500-12-054NACS457"
@@ -111,6 +113,7 @@ typedef struct _blackbox_info_t {
   uint8_t temp2[2];
   uint8_t temp3[2];
   uint8_t fan_speed[2];
+  uint8_t fan2_speed[2];
   uint8_t pri_code_ver[2];
   uint8_t sec_code_ver[2];
   uint8_t optn_time_total[4];
@@ -172,6 +175,8 @@ enum {
   BELPOWER_1500_NAC,
   MURATA_1500,
   MURATA_2000,
+  LITEON_DC_48,
+  DELTA_DC_48,
   UNKNOWN
 };
 

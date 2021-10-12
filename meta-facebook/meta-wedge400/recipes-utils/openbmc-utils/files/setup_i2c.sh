@@ -94,7 +94,8 @@ i2c_device_add "$(get_mux_bus_num 2-0070 3)" 0x52 24c64   # EEPROM
 i2c_device_add "$(get_mux_bus_num 2-0070 4)" 0x50 24c02   # BMC54616S EEPROM
 
 # # i2c-mux 8-0070, channel 1
-if [ "$(wedge_power_supply_type 1)" = "PSU" ]; then
+if [ "$(wedge_power_supply_type 1)" = "PSU" ] ||
+   [ "$(wedge_power_supply_type 1)" = "PSU48" ]; then
     i2c_device_add "$(get_mux_bus_num 8-0070 0)" 0x58 psu_driver   # PSU1 Driver
 else
     i2c_device_add "$(get_mux_bus_num 8-0070 0)" 0x58 ltc4282      # PEM1 Driver
@@ -102,7 +103,8 @@ else
 fi
 
 # # i2c-mux 8-0070, channel 2
-if [ "$(wedge_power_supply_type 2)" = "PSU" ]; then
+if [ "$(wedge_power_supply_type 2)" = "PSU" ] ||
+   [ "$(wedge_power_supply_type 2)" = "PSU48" ]; then
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x58 psu_driver   # PSU2 Driver
 else
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x58 ltc4282      # PEM2 Driver

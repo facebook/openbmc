@@ -250,8 +250,6 @@ case "$command" in
         ;;
 esac
 
-exit $?
-
 if [ $set_bic -ne 0 ]; then
     # sleep 10 seconds to wait BIC ready
     (sleep 10; setup_bic.sh) &

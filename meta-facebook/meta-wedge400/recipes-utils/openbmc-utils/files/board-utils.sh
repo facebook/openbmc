@@ -48,6 +48,10 @@ FCM_CPLD_SUB_VER=$(head -n 1 "$FCMCPLD_SYSFS_DIR/cpld_sub_ver" 2> /dev/null)
 # SMB Board Rev
 SMB_CPLD_BOARD_REV=$(head -n 1 "$SMBCPLD_SYSFS_DIR/board_ver" 2> /dev/null)
 
+# 48V DC PSU P/N
+DELTA_48V="0x45 0x43 0x44 0x32 0x35 0x30 0x31 0x30 0x30 0x31 0x35"
+LITEON_48V="0x44 0x44 0x2d 0x32 0x31 0x35 0x32 0x2d 0x32 0x4c"
+
 wedge_is_us_on() {
     local val0 val1
 
@@ -151,6 +155,11 @@ wedge_power_supply_type() {
     # Only PEM has max6615 which I2C slave address is 0x18
     is_pem1=$(i2cget -f -y 24 0x18 0x0 &> /dev/null; echo $?)
     is_pem2=$(i2cget -f -y 25 0x18 0x0 &> /dev/null; echo $?)
+    if i2cget -y -f 24 0x58 0x9a s &> /dev/null;then    # PSU1
+        is_psu1_48v=$(i2cget -y -f 24 0x58 0x9a s &)
+    elif i2cget -y -f 25 0x58 0x9a s &> /dev/null;then  # PSU2
+        is_psu2_48v=$(i2cget -y -f 25 0x58 0x9a s &)
+    fi
 
     power_type=""
     if [ $# -eq 1 ]; then
@@ -176,6 +185,13 @@ wedge_power_supply_type() {
         else
             power_type="PSU"
         fi
+    fi
+    # Detect 48V DC PSU
+    if [[ "$is_psu1_48v" = "$DELTA_48V" ||
+        "$is_psu1_48v" = "$LITEON_48V" ||
+        "$is_psu2_48v" = "$DELTA_48V" ||
+        "$is_psu2_48v" = "$LITEON_48V" ]];then
+            power_type="PSU48"
     fi
     echo $power_type
 }

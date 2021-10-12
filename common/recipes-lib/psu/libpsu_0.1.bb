@@ -29,7 +29,7 @@ SRC_URI = "file://psu.c \
            file://Makefile \
           "
 
-LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog"
+LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog -lwedge_eeprom"
 
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
 RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"

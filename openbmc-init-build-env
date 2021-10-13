@@ -19,6 +19,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-clearcreek:lf-dunfell
   meta-cloudripper:lf-dunfell
   meta-cmm:lf-dunfell
+  meta-elbert:lf-dunfell
   meta-fbal:lf-dunfell
   meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell

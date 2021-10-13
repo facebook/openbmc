@@ -76,21 +76,21 @@ int elbert_read_cpld_reg(char* prefix, char* reg, int* val) {
   return elbert_read_sysfs(buf, val);
 }
 
-void elbert_set_blink_freq() {
-  int msec = BLINK_FREQ_MSEC;
+void elbert_set_blink_freq(int msec) {
   int lower = msec % 256;
   int upper = msec / 256;
   elbert_write_cpld_reg(SCM_PREFIX, SCM_LED_FREQ_H, upper);
   elbert_write_cpld_reg(SCM_PREFIX, SCM_LED_FREQ_L, lower);
 }
 
-void elbert_set_sysled(char* name, int blue, int amber, int blink) {
+void elbert_set_sysled(char* name, int blue, int amber,
+                       int green, int red, int blink) {
   char led_name[ELBERT_BUFFER_SZ];
 
   // Green and red are not used.
   snprintf(led_name, ELBERT_BUFFER_SZ, "%s%s_led", SCM_PREFIX, name);
-  elbert_write_cpld_reg(led_name, COLOR_GREEN, 0);
-  elbert_write_cpld_reg(led_name, COLOR_RED, 0);
+  elbert_write_cpld_reg(led_name, COLOR_GREEN, green);
+  elbert_write_cpld_reg(led_name, COLOR_RED, red);
 
   // System status LED blue is controlled through beacon LED register.
   if (strncmp(name, "system", ELBERT_BUFFER_SZ) == 0) {
@@ -157,9 +157,9 @@ void elbert_update_fan_led(struct system_status* status) {
 
   if (all_fan_ok != status->all_fan_ok) {
     if (all_fan_ok) {
-      elbert_set_sysled("fan", 1, 0, 0);
+      elbert_set_sysled("fan", 1, 0, 0, 0, 0);
     } else {
-      elbert_set_sysled("fan", 0, 1, 0);
+      elbert_set_sysled("fan", 0, 1, 0, 0, 0);
     }
     syslog(
         LOG_WARNING,
@@ -209,9 +209,9 @@ void elbert_update_psu_led(struct system_status* status) {
   }
   if (all_psu_ok != status->all_psu_ok) {
     if (all_psu_ok) {
-      elbert_set_sysled("psu", 1, 0, 0);
+      elbert_set_sysled("psu", 1, 0, 0, 0, 0);
     } else {
-      elbert_set_sysled("psu", 0, 1, 0);
+      elbert_set_sysled("psu", 0, 1, 0, 0, 0);
     }
     syslog(
         LOG_WARNING,
@@ -252,9 +252,9 @@ void elbert_update_smb_led(struct system_status* status) {
 
   if (smb_ok != status->smb_ok) {
     if (smb_ok) {
-      elbert_set_sysled("sc", 1, 0, 0);
+      elbert_set_sysled("sc", 1, 0, 0, 0, 0);
     } else {
-      elbert_set_sysled("sc", 0, 1, 0);
+      elbert_set_sysled("sc", 0, 1, 0, 0, 0);
       syslog(
           LOG_WARNING,
           "SMB LED color change occured previous:%s now:%s\n",
@@ -267,9 +267,20 @@ void elbert_update_smb_led(struct system_status* status) {
   status->smb_ok = smb_ok;
 }
 
-bool elbert_check_beacon_led() {
-  // Check for beacon stub file.
-  return (access(BEACON_FS_STUB, F_OK) != -1);
+bool elbert_check_beacon_led(int *beacon_mode) {
+  // Check for beacon stub file. If found, read mode.
+  int rc = 0;
+  bool beacon_on = false;
+
+  rc = elbert_read_sysfs(BEACON_FS_STUB, beacon_mode);
+  if (rc == 0 && (*beacon_mode >= BEACON_MODE_LOCATOR &&
+                  *beacon_mode <= BEACON_MODE_MAX)) {
+    beacon_on = true;
+  } else {
+    *beacon_mode = BEACON_MODE_OFF;
+  }
+
+  return beacon_on;
 }
 
 bool elbert_check_upgrade() {
@@ -301,9 +312,10 @@ void elbert_update_sys_led(struct system_status* status) {
   int rc = 0;
   int read_val = 0;
   char buf[ELBERT_BUFFER_SZ];
+  int beacon_mode;
 
   // Check if beacon LED is wanted.
-  beacon_on = elbert_check_beacon_led();
+  beacon_on = elbert_check_beacon_led(&beacon_mode);
 
   // Check system status.
   if (!status->all_psu_ok || !status->all_fan_ok || !status->smb_ok) {
@@ -339,16 +351,46 @@ void elbert_update_sys_led(struct system_status* status) {
 
   // Beacon takes priority over other policy.
   if (beacon_on) {
-    syslog(LOG_INFO, "Beacon LED is on\n");
-    elbert_set_sysled("system", 1, 0, 1);
+    // If beacon is still on and mode hasn't changed, do nothing.
+    if (beacon_mode != status->beacon_mode) {
+      switch (beacon_mode) {
+        case BEACON_MODE_LOCATOR:
+          // Blink blue @ 1s freq.
+          elbert_set_blink_freq(BEACON_BLINK_FREQ_LOCATOR);
+          elbert_set_sysled("system", 1, 0, 0, 0, 1);
+          syslog(LOG_INFO, "Beacon LED is ON in mode locator\n");
+          break;
+        case BEACON_MODE_NETSTATE:
+          // Blink red @ .25s freq.
+          elbert_set_blink_freq(BEACON_BLINK_FREQ_NETSTATE);
+          elbert_set_sysled("system", 0, 0, 0, 1, 1);
+          syslog(LOG_INFO, "Beacon LED is ON in mode netstate\n");
+          break;
+        case BEACON_MODE_DRAINED:
+          // Blink green @ .5s freq.
+          elbert_set_blink_freq(BEACON_BLINK_FREQ_DRAINED);
+          elbert_set_sysled("system", 0, 0, 1, 0, 1);
+          syslog(LOG_INFO, "Beacon LED is ON in mode drained\n");
+          break;
+        case BEACON_MODE_AUDIT:
+          // Blink amber @ .75s freq.
+          elbert_set_blink_freq(BEACON_BLINK_FREQ_AUDIT);
+          elbert_set_sysled("system", 0, 1, 0, 0, 1);
+          syslog(LOG_INFO, "Beacon LED is ON in mode audit\n");
+          break;
+        default:
+          syslog(LOG_ERR, "Beacon LED invalid mode %d\n", beacon_mode);
+          break;
+      }
+    }
   } else {
     if (elbert_check_upgrade()) {
       syslog(LOG_INFO, "Elbert is upgrading\n");
       do {
         // Alternating flash blue/amber.
-        elbert_set_sysled("system", 1, 0, 0);
+        elbert_set_sysled("system", 1, 0, 0, 0, 0);
         usleep(UPGRADE_FLASH_FREQ_USEC);
-        elbert_set_sysled("system", 0, 1, 0);
+        elbert_set_sysled("system", 0, 1, 0, 0, 0);
         usleep(UPGRADE_FLASH_FREQ_USEC);
       } while (elbert_check_upgrade());
       upgraded = true;
@@ -358,10 +400,16 @@ void elbert_update_sys_led(struct system_status* status) {
      * hasn't changed but beacon has been turned off or upgrade occurred. */
     if ((sys_ok != status->sys_ok) || (beacon_on != status->beacon_on) ||
         upgraded) {
+      // Reset blink rate after beacon off.
+      if (beacon_on != status->beacon_on && !beacon_on) {
+        elbert_set_blink_freq(DEFAULT_BLINK_FREQ_MSEC);
+        syslog(LOG_INFO, "Beacon LED is OFF\n");
+      }
+
       if (sys_ok) {
-        elbert_set_sysled("system", 1, 0, 0);
+        elbert_set_sysled("system", 1, 0, 0, 0, 0);
       } else {
-        elbert_set_sysled("system", 0, 1, 0);
+        elbert_set_sysled("system", 0, 1, 0, 0, 0);
       }
 
       if (sys_ok != status->sys_ok) {
@@ -375,14 +423,29 @@ void elbert_update_sys_led(struct system_status* status) {
   }
 
   status->beacon_on = beacon_on;
+  status->beacon_mode = beacon_mode;
   status->sys_ok = sys_ok;
 }
 
 void elbert_init_all_led() {
-  elbert_set_sysled("psu", 1, 0, 0);
-  elbert_set_sysled("fan", 1, 0, 0);
-  elbert_set_sysled("sc", 1, 0, 0);
-  elbert_set_sysled("system", 1, 0, 0);
+  int fan = 0;
+  char buf[ELBERT_BUFFER_SZ];
+  elbert_set_sysled("psu", 1, 0, 0, 0, 0);
+  elbert_set_sysled("fan", 1, 0, 0, 0, 0);
+  elbert_set_sysled("sc", 1, 0, 0, 0, 0);
+  elbert_set_sysled("system", 1, 0, 0, 0, 0);
+  for (fan = 1; fan <= ELBERT_MAX_FAN; fan++) {
+    snprintf(
+        buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_GREEN);
+    elbert_write_sysfs(buf, 0);
+    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_RED);
+    elbert_write_sysfs(buf, 0);
+    snprintf(buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_BLUE);
+    elbert_write_sysfs(buf, 1);
+    snprintf(
+        buf, ELBERT_BUFFER_SZ, "%sfan%d%s", FAN_PREFIX, fan, SMB_LED_AMBER);
+    elbert_write_sysfs(buf, 0);
+  }
 }
 
 void init_system_status(struct system_status* status) {
@@ -408,6 +471,7 @@ void init_system_status(struct system_status* status) {
 
   status->sys_ok = true;
   status->beacon_on = false;
+  status->beacon_mode = BEACON_MODE_OFF;
 }
 
 // Lightweight LED control daemon.
@@ -418,7 +482,7 @@ int main(int argc, char* const argv[]) {
   init_system_status(&status);
 
   // Initialize LED frequency.
-  elbert_set_blink_freq();
+  elbert_set_blink_freq(DEFAULT_BLINK_FREQ_MSEC);
 
   /* Since all status start as "good", turn on all blue LEDS
      This will be updated in no time, in the following loop,

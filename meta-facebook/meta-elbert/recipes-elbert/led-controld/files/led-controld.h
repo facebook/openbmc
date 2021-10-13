@@ -65,10 +65,28 @@
 #define UPGRADE_FLASH_FREQ_USEC 500000
 
 // LED Blink period (in ms).
-#define BLINK_FREQ_MSEC 500
+#define DEFAULT_BLINK_FREQ_MSEC 500
 
 // Backdoor file to flash Beacon LED.
 #define BEACON_FS_STUB "/tmp/.elbert_beacon"
+
+// Beacon LED modes.
+enum {
+  BEACON_MODE_OFF = -1,
+  BEACON_MODE_LOCATOR = 0,
+  BEACON_MODE_NETSTATE = 1,
+  BEACON_MODE_DRAINED = 2,
+  BEACON_MODE_AUDIT = 3,
+  BEACON_MODE_MAX = BEACON_MODE_AUDIT,
+};
+
+// LED flash rates associated with the above modes.
+enum {
+  BEACON_BLINK_FREQ_LOCATOR = DEFAULT_BLINK_FREQ_MSEC,
+  BEACON_BLINK_FREQ_NETSTATE = 250,
+  BEACON_BLINK_FREQ_DRAINED = 1000,
+  BEACON_BLINK_FREQ_AUDIT = 2000,
+};
 
 #define ELBERT_BUFFER_SZ 256
 #define ELBERT_READ_ERR -1
@@ -93,6 +111,7 @@ struct system_status {
   bool prev_smb_ok;
   bool sys_ok;
   bool beacon_on;
+  int beacon_mode;
   int smb_pwr_good;
   int smb_snr_health;
 };

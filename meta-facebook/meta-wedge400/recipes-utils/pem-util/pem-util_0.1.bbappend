@@ -1,5 +1,4 @@
-#
-# Copyright 2019-present Facebook. All Rights Reserved.
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,16 +14,6 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-all: pem-util
+CFLAGS_prepend = "-DPEM_NUM=2"
 
-CFLAGS += -Wall -Werror
-
-pem-util: pem-util.o
-	$(CC) $(CFLAGS) -std=gnu99 -o $@ $^ $(LDFLAGS)
-
-.PHONY: clean
-
-clean:
-	rm -rf *.o pem-util

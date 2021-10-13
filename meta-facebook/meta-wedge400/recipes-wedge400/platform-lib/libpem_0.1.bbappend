@@ -1,4 +1,4 @@
-# Copyright 2019-present Facebook. All Rights Reserved.
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,15 +15,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-lib: libwedge400-pem.so
+FILESEXTRAPATHS_prepend := "${THISDIR}/files/pem:"
 
-CFLAGS += -Wall -Werror
+SRC_URI += "file://pem-platform.h \
+            file://pem-platform.c \
+          "
 
-libwedge400-pem.so: wedge400-pem.c
-	$(CC) $(CFLAGS) -fPIC -c -o wedge400-pem.o wedge400-pem.c
-	$(CC) -shared -o libwedge400-pem.so wedge400-pem.o $(LDFLAGS) -lc
+do_install_append() {
+  install -d ${D}${includedir}/facebook
+  install -m 0644 pem-platform.h ${D}${includedir}/facebook/pem-platform.h
+}
 
-.PHONY: clean
-
-clean:
-	rm -rf *.o libwedge400-pem.so
+FILES_${PN}-dev += "${includedir}/facebook/pem-platform.h"

@@ -35,7 +35,6 @@ int CpldExtComponent::fupdate(string image) {
   //int intf = FEXP_BIC_INTF;
   //string comp = component();
   try {
-    server.ready();
     /*expansion.ready();
     if (comp == "1ou_cpld") {
       intf = FEXP_BIC_INTF;

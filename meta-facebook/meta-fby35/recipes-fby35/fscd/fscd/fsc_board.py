@@ -108,7 +108,7 @@ def board_callout(callout="None", **kwargs):
             boost = kwargs["boost"]
         return set_all_pwm(boost)
     else:
-        Logger.warning("Callout %s not handled" % callout)
+        Logger.warn("Callout %s not handled" % callout)
     pass
 
 

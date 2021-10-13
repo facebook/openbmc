@@ -17,84 +17,47 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import re
 from ctypes import CDLL, c_char_p
 from re import match
 from subprocess import PIPE, Popen
 
-from fsc_util import Logger
-
+import kv
 import libgpio
-import re
+from fsc_util import Logger
 
 lpal_hndl = CDLL("libpal.so.0")
 
-# check kernel version
-ver = Popen('uname -r', shell=True, stdout=PIPE).stdout.read()
-ver = ver.decode()
-if ver[0] == '5':
-    gpio_path = "/tmp/gpionames/"
-    fru_map = {
-        "slot1": {
-            "name": "fru1",
-            "pwr_gpio": "SLOT1_POWER_EN",
-            "bic_ready_gpio": "I2C_SLOT1_ALERT_N",
-            "slot_num": 1,
-            "slot_12v_status": "P12V_STBY_SLOT1_EN",
-        },
-        "slot2": {
-            "name": "fru2",
-            "pwr_gpio": "SLOT2_POWER_EN",
-            "bic_ready_gpio": "I2C_SLOT2_ALERT_N",
-            "slot_num": 2,
-            "slot_12v_status": "P12V_STBY_SLOT2_EN",
-        },
-        "slot3": {
-            "name": "fru3",
-            "pwr_gpio": "SLOT3_POWER_EN",
-            "bic_ready_gpio": "I2C_SLOT3_ALERT_N",
-            "slot_num": 3,
-            "slot_12v_status": "P12V_STBY_SLOT3_EN",
-        },
-        "slot4": {
-            "name": "fru4",
-            "pwr_gpio": "SLOT4_POWER_EN",
-            "bic_ready_gpio": "I2C_SLOT4_ALERT_N",
-            "slot_num": 4,
-            "slot_12v_status": "P12V_STBY_SLOT4_EN",
-        },
-    }
-else:
-    gpio_path = "/sys/class/gpio/gpio"
-    fru_map = {
-        "slot1": {
-            "name": "fru1",
-            "pwr_gpio": "64",
-            "bic_ready_gpio": "106",
-            "slot_num": 1,
-            "slot_12v_status": "116",
-        },
-        "slot2": {
-            "name": "fru2",
-            "pwr_gpio": "65",
-            "bic_ready_gpio": "107",
-            "slot_num": 2,
-            "slot_12v_status": "117",
-        },
-        "slot3": {
-            "name": "fru3",
-            "pwr_gpio": "66",
-            "bic_ready_gpio": "108",
-            "slot_num": 3,
-            "slot_12v_status": "118",
-        },
-        "slot4": {
-            "name": "fru4",
-            "pwr_gpio": "67",
-            "bic_ready_gpio": "109",
-            "slot_num": 4,
-            "slot_12v_status": "119",
-        },
-    }
+fru_map = {
+    "slot1": {
+        "name": "fru1",
+        "pwr_gpio": "SLOT1_POWER_EN",
+        "bic_ready_gpio": "I2C_SLOT1_ALERT_N",
+        "slot_num": 1,
+        "slot_12v_status": "P12V_STBY_SLOT1_EN",
+    },
+    "slot2": {
+        "name": "fru2",
+        "pwr_gpio": "SLOT2_POWER_EN",
+        "bic_ready_gpio": "I2C_SLOT2_ALERT_N",
+        "slot_num": 2,
+        "slot_12v_status": "P12V_STBY_SLOT2_EN",
+    },
+    "slot3": {
+        "name": "fru3",
+        "pwr_gpio": "SLOT3_POWER_EN",
+        "bic_ready_gpio": "I2C_SLOT3_ALERT_N",
+        "slot_num": 3,
+        "slot_12v_status": "P12V_STBY_SLOT3_EN",
+    },
+    "slot4": {
+        "name": "fru4",
+        "pwr_gpio": "SLOT4_POWER_EN",
+        "bic_ready_gpio": "I2C_SLOT4_ALERT_N",
+        "slot_num": 4,
+        "slot_12v_status": "P12V_STBY_SLOT4_EN",
+    },
+}
 
 loc_map = {
     "a0": "_dimm0_location",
@@ -157,7 +120,7 @@ def board_callout(callout="None", **kwargs):
             boost = kwargs["boost"]
         return set_all_pwm(boost)
     else:
-        Logger.warning("Callout %s not handled" % callout)
+        Logger.warn("Callout %s not handled" % callout)
     pass
 
 
@@ -176,17 +139,15 @@ sname_for_counter = ""
 def all_slots_power_off():
     all_power_off = True
     for board in fru_map:
-        with open(
-            gpio_path + fru_map[board]["pwr_gpio"] + "/value", "r"
-        ) as f:
-            pwr_sts = f.read(1)
-        if pwr_sts[0] == "1":
-            all_power_off = False
-            break
+        with libgpio.GPIO(shadow=fru_map[board]["pwr_gpio"]) as gpio:
+            if gpio.get_value() == libgpio.GPIOValue.HIGH:
+                all_power_off = False
+                break
     return all_power_off
 
+
 def sensor_fail_ignore_check(sname):
-    if (re.match(r"host_boot_temp", sname) != None):
+    if re.match(r"host_boot_temp", sname) is not None:
         return True
     return False
 
@@ -215,63 +176,56 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
     try:
         if attribute["type"] == "power_status":
-            with open(
-                gpio_path + fru_map[board]["pwr_gpio"] + "/value", "r"
-            ) as f:
-                pwr_sts = f.read(1)
-            if pwr_sts[0] == "1":
-                slot_id = fru_map[board]["slot_num"]
-                is_slot_server = lpal_hndl.pal_is_slot_support_update(slot_id)
-                if int(is_slot_server) == 1:
-                    with open(
-                        gpio_path
-                        + fru_map[board]["bic_ready_gpio"]
-                        + "/value",
-                        "r",
-                    ) as f:
-                        bic_sts = f.read(1)
-                    if bic_sts[0] == "0":
-                        if match(r"soc_dimm", sname) is not None:
-                            server_type = lpal_hndl.pal_get_server_type(slot_id)
-                            if int(server_type) == 4:  # ND Server
-                                # check DIMM present
-                                with open(
-                                    "/mnt/data/kv_store/sys_config/"
-                                    + fru_map[board]["name"]
-                                    + loc_map_nd[sname[8:9]],
-                                    "rb",
-                                ) as f:
-                                    dimm_sts = f.read(1)
-                                if dimm_sts[0] != 1:
-                                    return 0
+            with libgpio.GPIO(shadow=fru_map[board]["pwr_gpio"]) as gpio:
+                if gpio.get_value() == libgpio.GPIOValue.HIGH:
+                    slot_id = fru_map[board]["slot_num"]
+                    is_slot_server = lpal_hndl.pal_is_slot_support_update(slot_id)
+                    if int(is_slot_server) == 1:
+                        with libgpio.GPIO(
+                            shadow=fru_map[board]["bic_ready_gpio"]
+                        ) as bic_gpio:
+                            if bic_gpio.get_value() == libgpio.GPIOValue.LOW:
+                                if match(r"soc_dimm", sname) is not None:
+                                    server_type = lpal_hndl.pal_get_server_type(slot_id)
+                                    if int(server_type) == 4:  # ND Server
+                                        # check DIMM present
+                                        board_name = (
+                                            "sys_config/"
+                                            + fru_map[board]["name"]
+                                            + loc_map_nd[sname[8:9]]
+                                        )
+                                        dimm_sts = kv.kv_get(
+                                            board_name, kv.FPERSIST, binary=True
+                                        )
+                                    else:  # TL Server
+                                        # check DIMM present
+                                        board_name = (
+                                            "sys_config/"
+                                            + fru_map[board]["name"]
+                                            + loc_map[sname[8:10]]
+                                        )
+                                        dimm_sts = kv.kv_get(
+                                            board_name, kv.FPERSIST, binary=True
+                                        )
+                                    if dimm_sts[0] != 1:
+                                        return 0
+                                    else:
+                                        return 1
                                 else:
-                                    return 1
-                            else:  # TL Server
-                                # check DIMM present
-                                with open(
-                                    "/mnt/data/kv_store/sys_config/"
-                                    + fru_map[board]["name"]
-                                    + loc_map[sname[8:10]],
-                                    "rb",
-                                ) as f:
-                                    dimm_sts = f.read(1)
-                                if dimm_sts[0] != 1:
-                                    return 0
-                                else:
-                                    return 1
-                        else:
+                                    fru_name = c_char_p(board.encode("utf-8"))
+                                    snr_name = c_char_p(sname.encode("utf-8"))
+                                    is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(
+                                        fru_name, snr_name
+                                    )
+                                    return int(is_m2_prsnt)
+                    else:
+                        if match(r"dc_nvme", sname) is not None:  # GPv1
                             fru_name = c_char_p(board.encode("utf-8"))
                             snr_name = c_char_p(sname.encode("utf-8"))
                             is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(fru_name, snr_name)
                             return int(is_m2_prsnt)
-                else:
-                    if match(r"dc_nvme", sname) is not None:  # GPv1
-                        fru_name = c_char_p(board.encode("utf-8"))
-                        snr_name = c_char_p(sname.encode("utf-8"))
-                        is_m2_prsnt = lpal_hndl.pal_is_m2_prsnt(fru_name, snr_name)
-                        return int(is_m2_prsnt)
-                    return 1
-            return 0
+                        return 1
+                return 0
         else:
             Logger.debug("Sensor corresponding valid check funciton not found!")
             return 0

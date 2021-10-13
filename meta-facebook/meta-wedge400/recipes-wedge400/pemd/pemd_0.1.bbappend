@@ -1,4 +1,4 @@
-# Copyright 2019-present Facebook. All Rights Reserved.
+# Copyright 2021-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,18 +14,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-SUMMARY = "PEM Sensor Monitoring Daemon"
-DESCRIPTION = "Daemon for monitoring the PEM sensors"
-SECTION = "base"
-PR = "r1"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://pemd.c;beginline=4;endline=16;md5=219631f7c3c1e390cdedab9df4b744fd"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI = "file://Makefile \
-           file://pemd.c \
-           file://setup-pemd.sh \
-           file://run-pemd.sh \
+SRC_URI += "file://setup-pemd.sh \
+            file://run-pemd.sh \
+            file://platform_pemd.h \
+            file://platform_pemd.c \
           "
 
 S = "${WORKDIR}"
@@ -33,10 +29,10 @@ S = "${WORKDIR}"
 binfiles = "pemd \
            "
 
-CFLAGS += " -llog -lpal -lwedge400-pem "
+CFLAGS += " -llog -lpal -lpem "
 
-DEPENDS += " liblog libpal libwedge400-pem update-rc.d-native "
-RDEPENDS:${PN} += " liblog libpal libwedge400-pem "
+DEPENDS += " liblog libpal libpem update-rc.d-native "
+RDEPENDS:${PN} += " liblog libpal libpem "
 
 pkgdir = "pemd"
 

@@ -48,4 +48,10 @@ board_routes = [
     "/api/sys/sensors/pim9",
     "/api/sys/sensors/fan",
     "/api/sys/scdinfo",
+    "/api/sys/beacon",
+    "/api/sys/beacon/locator",
+    "/api/sys/beacon/netstate",
+    "/api/sys/beacon/drained",
+    "/api/sys/beacon/audit",
+    "/api/sys/beacon/off",
 ]

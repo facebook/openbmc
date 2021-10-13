@@ -20,6 +20,7 @@
 
 import re
 
+import rest_beacon
 import rest_fruid_scm
 import rest_fw_ver
 import rest_peutil
@@ -31,7 +32,7 @@ import rest_sensors
 import rest_seutil
 import rest_smbinfo
 from aiohttp import web
-from common_utils import dumps_bytestr
+from common_utils import dumps_bytestr, get_endpoints
 
 
 class boardApp_Handler:
@@ -134,3 +135,32 @@ class boardApp_Handler:
     # Handler for sys/sensors/fan resource endpoint
     async def rest_sensors_fan_hdl(self, request):
         return web.json_response(rest_sensors.get_fan_sensors(), dumps=dumps_bytestr)
+
+    # Handler for sys/beacon resource endpoint
+    async def rest_beacon_hdl(self, request):
+        result = {
+            "Information": {"Description": "Beacon LED"},
+            "Actions": [],
+            "Resources": get_endpoints("/api/sys/beacon"),
+        }
+        return web.json_response(result, dumps=dumps_bytestr)
+
+    # Handler for sys/beacon/locator resource endpoint
+    async def rest_beacon_locator_hdl(self, request):
+        return web.json_response(rest_beacon.beacon_on(mode="locator"), dumps=dumps_bytestr)
+
+    # Handler for sys/beacon/netstate resource endpoint
+    async def rest_beacon_netstate_hdl(self, request):
+        return web.json_response(rest_beacon.beacon_on(mode="netstate"), dumps=dumps_bytestr)
+
+    # Handler for sys/beacon/drained resource endpoint
+    async def rest_beacon_drained_hdl(self, request):
+        return web.json_response(rest_beacon.beacon_on(mode="drained"), dumps=dumps_bytestr)
+
+    # Handler for sys/beacon/audit resource endpoint
+    async def rest_beacon_audit_hdl(self, request):
+        return web.json_response(rest_beacon.beacon_on(mode="audit"), dumps=dumps_bytestr)
+
+    # Handler for sys/beacon/off resource endpoint
+    async def rest_beacon_off_hdl(self, request):
+        return web.json_response(rest_beacon.beacon_off(), dumps=dumps_bytestr)

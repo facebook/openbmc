@@ -328,7 +328,7 @@ void elbert_update_sys_led(struct system_status* status) {
     // If PSU and FAN are present, check if all PIMs are present too.
     for (pim = 2; pim <= ELBERT_MAX_PIM_ID; pim++) {
       snprintf(
-          buf, ELBERT_BUFFER_SZ, "%s%s", SMB_PREFIX, ELBERT_PIM_PRESENT(pim));
+          buf, ELBERT_BUFFER_SZ, "%spim%d_present", SMB_PREFIX, pim);
       rc = elbert_read_sysfs(buf, &read_val);
       if ((rc != 0) || (read_val == 0)) {
         sys_ok = false;

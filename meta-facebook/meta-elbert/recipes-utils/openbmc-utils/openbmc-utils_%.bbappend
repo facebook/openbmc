@@ -18,9 +18,9 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
+PACKAGECONFIG += "boot-info"
 
 SRC_URI += "file://board-utils.sh \
-            file://boot_info.sh \
             file://bios_util.sh \
             file://fpga_util.sh \
             file://fpga_ver.sh \
@@ -57,7 +57,6 @@ SRC_URI += "file://board-utils.sh \
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
     bios_util.sh \
-    boot_info.sh \
     fpga_util.sh \
     fpga_ver.sh \
     dump_pim_serials.sh \

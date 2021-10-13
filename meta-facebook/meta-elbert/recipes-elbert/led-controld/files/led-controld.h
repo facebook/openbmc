@@ -51,7 +51,6 @@
 #define SMB_FAN_PRESENT "_present"
 #define FAN_PREFIX "/sys/bus/i2c/drivers/fancpld/6-0060/"
 #define FAN_RPM "_input"
-#define ELBERT_PIM_PRESENT(p) "pim" #p "_present"
 
 // Firmware upgrade utilities to check for.
 #define ELBERT_BIOS_UTIL "bios_util"

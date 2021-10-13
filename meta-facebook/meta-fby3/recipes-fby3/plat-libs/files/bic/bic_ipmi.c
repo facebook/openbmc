@@ -106,6 +106,36 @@ bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_
   return bic_ipmb_send(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, &sensor_num, 1, (uint8_t *)sensor, &rlen, intf);
 }
 
+int
+bic_get_oem_sensor_reading(uint8_t slot_id, uint8_t index, ipmi_sensor_reading_t *sensor, uint8_t mul, uint8_t intf) {
+#define BIC_SENSOR_READ_NA 0x20
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, index};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  uint32_t val = 0;
+  int ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_GPV3_GET_DUAL_M2_PWR, tbuf, 4, rbuf, &rlen, intf);
+  if (ret == 0 && rlen == 5) {
+    if (mul > 0) {
+      val = (rbuf[3] + rbuf[4]) / mul;
+    } else {
+      val = (rbuf[3] + rbuf[4]);
+    }
+    sensor->flags = 0;
+    sensor->status = 0;
+    sensor->ext_status = 0;
+
+    if (val > 0xff) {
+      sensor->value = 0xff;
+    } else {
+      sensor->value = (uint8_t)val;
+    }
+  } else {
+    sensor->flags = BIC_SENSOR_READ_NA;
+  }
+
+  return ret;
+}
+
 // APP - Get Device ID
 // Netfn: 0x06, Cmd: 0x01
 int
@@ -2564,4 +2594,21 @@ bb_fw_update_prepare(uint8_t slot_id) {
 int
 bb_fw_update_finish(uint8_t slot_id) {
   return cpld_update_flag(slot_id, 0x0, 0, NULL);
+}
+
+int
+bic_get_m2_config(uint8_t *config, uint8_t slot, uint8_t intf) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, 0x00};
+  uint8_t rbuf[8] = {0x00};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  ret = bic_ipmb_send(slot, NETFN_OEM_1S_REQ, BIC_CMD_GPV3_GET_M2_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
+
+  if (ret == 0 && rlen == 4) {
+    *config = rbuf[3];
+  }
+
+  return ret;
 }

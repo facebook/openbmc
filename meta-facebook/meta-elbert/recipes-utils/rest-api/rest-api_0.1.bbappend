@@ -30,6 +30,7 @@ SRC_URI += " \
     file://rest_smbinfo.py \
     file://rest_fw_ver.py \
     file://rest_sensors.py \
+    file://rest_beacon.py \
 "
 
 binfiles1 += " \
@@ -44,4 +45,5 @@ binfiles1 += " \
     rest_smbinfo.py \
     rest_fw_ver.py \
     rest_sensors.py \
+    rest_beacon.py \
 "

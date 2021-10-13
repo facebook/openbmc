@@ -21,7 +21,6 @@ from boardroutes import *
 from aiohttp.web import Application
 
 
-# ELBERTTODO 442087 REST API SUPPORT
 def setup_board_routes(app: Application, write_enabled: bool):
     bhandler = boardApp_Handler()
     app.router.add_get(board_routes[0], bhandler.rest_fruid_scm_hdl)
@@ -57,3 +56,9 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[30], bhandler.rest_sensors_fan_hdl)
     # scdinfo : an alias of smbinfo (for the compatibility with FB Infra Tools)
     app.router.add_get(board_routes[31], bhandler.rest_smbinfo_hdl)
+    app.router.add_get(board_routes[32], bhandler.rest_beacon_hdl)
+    app.router.add_get(board_routes[33], bhandler.rest_beacon_locator_hdl)
+    app.router.add_get(board_routes[34], bhandler.rest_beacon_netstate_hdl)
+    app.router.add_get(board_routes[35], bhandler.rest_beacon_drained_hdl)
+    app.router.add_get(board_routes[36], bhandler.rest_beacon_audit_hdl)
+    app.router.add_get(board_routes[37], bhandler.rest_beacon_off_hdl)

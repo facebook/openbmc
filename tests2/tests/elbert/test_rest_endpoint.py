@@ -44,6 +44,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     PIM_SERIAL_ENDPOINT = "/api/sys/pimserial"
     PIM_STATUS_ENDPOINT = "/api/sys/pimstatus"
     SMB_INFO_ENDPOINT = "/api/sys/smbinfo"
+    BEACON_ENDPOINT = "/api/sys/beacon"
 
     # "/api/sys"
     def test_endpoint_api_sys(self):
@@ -54,6 +55,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "piminfo",
             "pimserial",
             "sensors",
+            "beacon",
         ]
 
     # "/api/sys/mb"
@@ -170,4 +172,17 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.verify_endpoint_attributes(
             RestEndpointTest.PIM_STATUS_ENDPOINT,
             self.endpoint_pim_presence,  # same keys as pim_present
+        )
+
+    # "/api/sys/beacon"
+    def test_endpoint_beacon(self):
+        endpoint_beacon = [
+            "locator",
+            "netstate",
+            "drained",
+            "audit",
+            "off",
+        ]
+        self.verify_endpoint_attributes(
+            RestEndpointTest.BEACON_ENDPOINT, endpoint_beacon
         )

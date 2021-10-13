@@ -20,6 +20,7 @@
 from ctypes import CDLL, c_uint8, byref
 from re import search
 from subprocess import PIPE, Popen
+from kv import FPERSIST, kv_get
 
 from fsc_util import Logger
 
@@ -209,6 +210,34 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         "sys_config/" + fru_map[board]["name"] + "_pcie_i04_s40_info"
                     )
                     return is_valid_dp_pcie(pcie_info_key)
+                elif search(r"gp3_m2", sname) is not None:
+                    # get GPv3 M.2 device status
+                    nvme_ready = c_uint8(0)
+                    dev_status = c_uint8(0)
+                    dev_type = c_uint8(0)
+                    dev_id = int(sdata[3]) + 1
+                    response = lpal_hndl.pal_get_dev_info(int(fru_map[board]["slot_num"]), dev_id, byref(nvme_ready) ,byref(dev_status), byref(dev_type))
+                    if response == 0:  # bic can get device power status
+                        if dev_status.value == 1:  # device power on
+                            return 1
+                        else:
+                            return 0
+                    else:
+                        return 0
+                elif search(r"gp3_e1s", sname) is not None:
+                    # get GPv3 E1.S device status
+                    nvme_ready = c_uint8(0)
+                    dev_status = c_uint8(0)
+                    dev_type = c_uint8(0)
+                    dev_id = int(sname[7]) + 13
+                    response = lpal_hndl.pal_get_dev_info(int(fru_map[board]["slot_num"]), dev_id, byref(nvme_ready) ,byref(dev_status), byref(dev_type))
+                    if response == 0:  # bic can get device power status
+                        if dev_status.value == 1:  # device power on
+                            return 1
+                        else:
+                            return 0
+                    else:
+                        return 0
                 else:
                     suffix = ""
                     if search(r"1ou_m2", sname) is not None:
@@ -253,8 +282,17 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 def get_fan_mode(scenario="None"):
     if "one_fan_failure" in scenario:
+        sled_system_conf="Type_NA"
+        try:
+            sled_system_conf = kv_get("sled_system_conf", FPERSIST)
+        except kv.KeyNotFoundFailure:
+            Logger.warn("KeyNotFoundFailure from sled_system_conf")
         if lpal_hndl.pal_is_cwc() == 0:
             pwm = 80
+        elif sled_system_conf == "Type_15":
+            # config D GPv3
+            pwm = 100
+            return fan_mode["boost_mode"], pwm
         else:
             pwm = 60
         return fan_mode["trans_mode"], pwm

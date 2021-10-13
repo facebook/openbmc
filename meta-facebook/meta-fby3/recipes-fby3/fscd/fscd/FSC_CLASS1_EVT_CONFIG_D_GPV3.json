@@ -1,9 +1,10 @@
 {
-  "version": "fby3-gpv3-config-d-v2021.01.08",
-  "pwm_transition_value": 60,
+  "version": "fby3-gpv3-config-d-v2021.10.12",
+  "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
+  "sensor_filter_all": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
@@ -13,17 +14,22 @@
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
-    "front_io_temp": {
+    "(.*)front_io_temp": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_cpu": {
+    "(.*)soc_cpu": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_dimm": {
+    "(.*)soc_dimm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)gp3": {
       "attribute": {
         "type" : "power_status"
       }
@@ -112,6 +118,36 @@
       "ki": -0.035,
       "kd": 0
     },
+    "linear_gp_m2": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [65, 70],
+        [66, 70],
+        [67, 70],
+        [68, 70],
+        [69, 70]
+      ]
+    },
+    "linear_e1s_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [65, 70],
+        [66, 70],
+        [67, 70],
+        [68, 70],
+        [69, 70]
+      ]
+    },
     "linear_nic": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -152,61 +188,61 @@
   "fans": {
     "0": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 0"
+        "kv" : "bmc_sensor224"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 0"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "1": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 1"
+        "kv" : "bmc_sensor225"
       }
     },
     "2": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 2"
+        "kv" : "bmc_sensor226"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 1"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "3": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
+        "kv" : "bmc_sensor227"
       }
     },
     "4": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 4"
+        "kv" : "bmc_sensor228"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 2"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "5": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 5"
+        "kv" : "bmc_sensor229"
       }
     },
     "6": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 6"
+        "kv" : "bmc_sensor230"
       },
       "write_source" : {
-        "util" : "/usr/local/bin/fan-util --set %d 3"
+        "util" : "/usr/local/bin/fan-util --set %d"
       }
     },
     "7": {
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 7"
+        "kv" : "bmc_sensor231"
       }
     }
   },
   "zones": {
     "zone_1": {
       "pwm_output": [0, 1, 2, 3],
-      "expr_file": "FSC_CLASS1_POC_CONFIG_D_GPV3.fsc"
+      "expr_file": "FSC_CLASS1_EVT_CONFIG_D_GPV3.fsc"
     }
   }
 }

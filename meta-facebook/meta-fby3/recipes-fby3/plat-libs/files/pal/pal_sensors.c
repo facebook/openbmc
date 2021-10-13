@@ -399,6 +399,14 @@ const uint8_t bic_2ou_gpv3_sensor_list[] = {
   BIC_GPV3_INA233_PWR_DEV11,
   BIC_GPV3_INA233_VOL_DEV11,
   BIC_GPV3_NVME_TEMP_DEV11,
+
+  //dual m2 power
+  BIC_GPV3_DUAL_M2_PWR_0_1,
+  BIC_GPV3_DUAL_M2_PWR_2_3,
+  BIC_GPV3_DUAL_M2_PWR_4_5,
+  BIC_GPV3_DUAL_M2_PWR_6_7,
+  BIC_GPV3_DUAL_M2_PWR_8_9,
+  BIC_GPV3_DUAL_M2_PWR_10_11,
 };
 
 //BIC BaseBoard Sensors
@@ -967,6 +975,22 @@ PAL_SENSOR_MAP sensor_map[] = {
 PAL_HSC_INFO hsc_info_list[] = {
   {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
 };
+
+#define IS_DUAL_M2_PWR_SNR(sn) (sn == BIC_GPV3_DUAL_M2_PWR_0_1 || \
+                                sn == BIC_GPV3_DUAL_M2_PWR_2_3 || \
+                                sn == BIC_GPV3_DUAL_M2_PWR_4_5 || \
+                                sn == BIC_GPV3_DUAL_M2_PWR_6_7 || \
+                                sn == BIC_GPV3_DUAL_M2_PWR_8_9 || \
+                                sn == BIC_GPV3_DUAL_M2_PWR_10_11 \
+                                )
+
+#define DUAL_M2_SENSOR_INDEX(nb) (nb == BIC_GPV3_DUAL_M2_PWR_0_1 ? 0 : \
+                                  nb == BIC_GPV3_DUAL_M2_PWR_2_3 ? 1 : \
+                                  nb == BIC_GPV3_DUAL_M2_PWR_4_5 ? 2 : \
+                                  nb == BIC_GPV3_DUAL_M2_PWR_6_7 ? 3 : \
+                                  nb == BIC_GPV3_DUAL_M2_PWR_8_9 ? 4 : \
+                                  nb == BIC_GPV3_DUAL_M2_PWR_10_11 ? 5 : -1 \
+                                  )
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
 size_t nicexp_sensor_cnt = sizeof(nicexp_sensor_list)/sizeof(uint8_t);
@@ -2127,6 +2151,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   sprintf(path, SLOT_SENSOR_LOCK, slot);
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
+  uint8_t m2_config = 0;
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   ret = bic_get_server_power_status(slot, &power_status);
@@ -2157,10 +2182,36 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_SKIP;
   }
 
+  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    sdr = &g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE][sensor_num].sdr;
+  } else {
+    sdr = &g_sinfo[fru-1][sensor_num].sdr;
+  }
+
   if (fru == FRU_2U_TOP) {
-    ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF1);
+    if (IS_DUAL_M2_PWR_SNR(sensor_num)) {
+      ret = bic_get_m2_config(&m2_config, slot, RREXP_BIC_INTF1);
+
+      if (ret == 0 && m2_config == CONFIG_M2_DUAL) {
+        ret = bic_get_oem_sensor_reading(slot, DUAL_M2_SENSOR_INDEX(sensor_num), &sensor, sdr->m_val, RREXP_BIC_INTF1);
+      } else {
+        sensor.flags = BIC_SENSOR_READ_NA;
+      }
+    } else {
+      ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF1);
+    }
   } else if (fru == FRU_2U_BOT) {
-    ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF2);
+    if (IS_DUAL_M2_PWR_SNR(sensor_num)) {
+      ret = bic_get_m2_config(&m2_config, slot, RREXP_BIC_INTF2);
+
+      if (ret == 0 && m2_config == CONFIG_M2_DUAL) {
+        ret = bic_get_oem_sensor_reading(slot, DUAL_M2_SENSOR_INDEX(sensor_num), &sensor, sdr->m_val, RREXP_BIC_INTF2);
+      } else {
+        sensor.flags = BIC_SENSOR_READ_NA;
+      }
+    } else {
+      ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF2);
+    }
   } else {
     //check snr number first. If it not holds, it will move on
     if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
@@ -2178,6 +2229,14 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
       if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return READING_NA;
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
+    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU && IS_DUAL_M2_PWR_SNR(sensor_num) ) {
+      ret = bic_get_m2_config(&m2_config, slot, REXP_BIC_INTF);
+
+      if (ret == 0 && m2_config == CONFIG_M2_DUAL) {
+        ret = bic_get_oem_sensor_reading(slot, DUAL_M2_SENSOR_INDEX(sensor_num), &sensor, sdr->m_val, REXP_BIC_INTF);
+      } else {
+        sensor.flags = BIC_SENSOR_READ_NA;
+      }
     } else {
       return READING_NA;
     }
@@ -2193,11 +2252,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_NA;
   }
 
-  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
-    sdr = &g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE][sensor_num].sdr;
-  } else {
-    sdr = &g_sinfo[fru-1][sensor_num].sdr;
-  }
   //syslog(LOG_WARNING, "%s() fru %x, sensor_num:0x%x, val:0x%x, type: %x", __func__, fru, sensor_num, sensor.value, sdr->type);
   if ( sdr->type != 1 ) {
     *value = sensor.value;

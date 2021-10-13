@@ -58,6 +58,11 @@ enum {
 };
 
 enum {
+  BIC_CMD_GPV3_GET_M2_CONFIG          = 0x66,
+  BIC_CMD_GPV3_GET_DUAL_M2_PWR        = 0x73,
+};
+
+enum {
   BIC_STATUS_SUCCESS                =  0,
   BIC_STATUS_FAILURE                = -1,
   BIC_STATUS_NOT_SUPP_IN_CURR_STATE = -2,

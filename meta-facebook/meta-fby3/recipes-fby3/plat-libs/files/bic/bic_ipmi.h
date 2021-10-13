@@ -59,6 +59,9 @@ enum {
 
 #define MAX_READ_RETRY 5
 
+#define CONFIG_M2_SINGLE 0x08
+#define CONFIG_M2_DUAL 0x04
+
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf);
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf);
@@ -124,6 +127,8 @@ int bic_is_2u_top_bot_prsnt_cache(uint8_t slot_id);
 int bic_enable_ina233_alert(uint8_t fru, bool enable);
 int bb_fw_update_prepare(uint8_t slot_id);
 int bb_fw_update_finish(uint8_t slot_id);
+int bic_get_oem_sensor_reading(uint8_t slot_id, uint8_t index, ipmi_sensor_reading_t *sensor, uint8_t mul, uint8_t intf);
+int bic_get_m2_config(uint8_t *config, uint8_t slot, uint8_t intf);
 
 #ifdef __cplusplus
 } // extern "C"

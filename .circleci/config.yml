@@ -26,9 +26,15 @@ jobs:
     setup:
         docker:
             - image: crops/poky:latest
+            - user: root
         resource_class: small
         working_directory: /tmp/job/project
         steps:
+            - run:
+                name: Install ca-certificates pkg
+                command: |
+                    apt-get update
+                    apt-get install -y ca-certificates
             - checkout
             - run:
                 name: Sync Yocto repositories.

@@ -3,7 +3,7 @@ from common_utils import dumps_bytestr
 from redfish_base import validate_keys
 
 
-async def get_account_service(request: str) -> web.Response:
+async def get_account_service(request) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata#AccountService.AccountService",
         "@odata.id": "/redfish/v1/AccountService",
@@ -18,13 +18,25 @@ async def get_account_service(request: str) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_accounts(request: str) -> web.Response:
+async def get_accounts(request) -> web.Response:
     body = {
         "@odata.type": "#ManagerAccountCollection.ManagerAccountCollection",
         "Name": "Accounts Collection",
         "Members@odata.count": 0,
         "Members": [],
         "@odata.id": "/redfish/v1/AccountService/Accounts",
+    }
+    await validate_keys(body)
+    return web.json_response(body, dumps=dumps_bytestr)
+
+
+async def get_roles(request) -> web.Response:
+    body = {
+        "@odata.type": "#RoleCollection.RoleCollection",
+        "Name": "Roles Collection",
+        "Members@odata.count": 0,
+        "Members": [],
+        "@odata.id": "/redfish/v1/AccountService/Roles",
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)

@@ -2,7 +2,7 @@ import redfish_sensors
 import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
-from redfish_account_service import get_account_service, get_accounts
+from redfish_account_service import get_account_service, get_accounts, get_roles
 from redfish_chassis import RedfishChassis
 from redfish_managers import (
     get_managers,
@@ -26,6 +26,7 @@ class Redfish:
         app.router.add_get("/redfish/v1/$metadata", get_metadata)
         app.router.add_get("/redfish/v1/AccountService", get_account_service)
         app.router.add_get("/redfish/v1/AccountService/Accounts", get_accounts)
+        app.router.add_get("/redfish/v1/AccountService/Roles", get_roles)
         app.router.add_get("/redfish/v1/SessionService", get_session_service)
         app.router.add_get("/redfish/v1/SessionService/Sessions", get_session)
         app.router.add_get("/redfish/v1/Chassis", redfish_chassis.get_chassis)

@@ -17,8 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import functools
 import json
+import re
 from contextlib import suppress
+from typing import List
 
 import acl_config
 import common_auth
@@ -60,24 +63,52 @@ async def jsonerrorhandler(app, handler):
 
 
 async def auth_enforcer(app, handler):
+    class RuleRegexp:
+        def __init__(self, path_regexp: str, acls: List[str]):
+            self.path_regexp = re.compile(path_regexp)
+            self.acls = acls
+
+    class ACLs:
+        def __init__(self, rules_plain, rules_regexp_raw):
+            self.rules_plain = rules_plain
+            rules_regexp = {}
+            for path_regexp in rules_regexp_raw:
+                acls = rules_regexp_raw[path_regexp]
+                for method in acls:
+                    if method not in rules_regexp:
+                        rules_regexp[method] = []
+                    rules_regexp[method].append(RuleRegexp(path_regexp, acls[method]))
+            self.rules_regexp = rules_regexp
+
+        @functools.lru_cache(maxsize=1024)
+        def get(self, method: str, path: str) -> List[str]:
+            with suppress(KeyError):
+                return self.rules_plain[path][method]
+            with suppress(KeyError):
+                for rule in self.rules_regexp[method]:
+                    if rule.path_regexp.match(path):
+                        return rule.acls
+            return None
+
+    acls_handler = ACLs(acl_config.RULES, acl_config.RULES_REGEXP)
+
     async def middleware_handler(request):
         # Assume all requests originating from localhost are privileged
         if _is_request_from_localhost(request):
             resp = await handler(request)
             return resp
 
-        acls = []
-        with suppress(KeyError):
-            acls = acl_config.RULES[request.path][request.method]
+        acls = acls_handler.get(request.method, request.path)
+
         # We only allow GET endpoints without authorization.
         # Anything else will be forbidden.
-        if not acls and request.method != "GET":
+        if acls is None and request.method != "GET":
             server_logger.info(
                 "AUTH:Missing acl config for non-get[%s] endpoint %s. Blocking access"
                 % (request.method, request.path)
             )
             raise HTTPForbidden()
-        if acls:
+        if acls is not None:
             identity = common_auth.auth_required(request)  # type: common_auth.Identity
             common_auth.permissions_required(request, acls)
             server_logger.info(

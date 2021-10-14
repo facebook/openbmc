@@ -28,6 +28,7 @@ make tracing and debugging easier
 import ctypes
 import re
 from contextlib import suppress
+from enum import Enum
 from functools import lru_cache
 from typing import Dict, Tuple, List, NamedTuple
 
@@ -40,6 +41,37 @@ PLATFORM_NAME_MAX_LEN = 256
 
 class LibPalError(Exception):
     pass
+
+
+class FruCapability(Enum):
+    FRU_CAPABILITY_FRUID_WRITE = 0
+    FRU_CAPABILITY_FRUID_READ = 1
+
+    FRU_CAPABILITY_SENSOR_READ = 2
+    FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE = 3
+    FRU_CAPABILITY_SENSOR_HISTORY = 4
+
+    FRU_CAPABILITY_SERVER = 5
+    FRU_CAPABILITY_NETWORK_CARD = 6
+    FRU_CAPABILITY_MANAGEMENT_CONTROLLER = 7
+
+    FRU_CAPABILITY_POWER_STATUS = 8
+    FRU_CAPABILITY_POWER_ON = 9
+    FRU_CAPABILITY_POWER_OFF = 10
+    FRU_CAPABILITY_POWER_CYCLE = 11
+    FRU_CAPABILITY_POWER_RESET = 12
+    FRU_CAPABILITY_POWER_12V_ON = 13
+    FRU_CAPABILITY_POWER_12V_OFF = 14
+    FRU_CAPABILITY_POWER_12V_CYCLE = 15
+    FRU_CAPABILITY_POWER_FORCE_12V_ON = 16
+    FRU_CAPABILITY_POWER_FORCE_ON = 17
+    FRU_CAPABILITY_HAS_DEVICE = 18
+
+    def num(self) -> int:
+        return self.value
+
+    def bitmask(self) -> int:
+        return 1 << self.num()
 
 
 @lru_cache(1)
@@ -127,6 +159,18 @@ def pal_is_fru_prsnt(fru_id: int) -> bool:
         raise ValueError("pal_is_fru_prsnt() returned " + str(ret))
 
     return bool(c_status.value)
+
+
+def pal_get_fru_capability(fru_id: int) -> set(FruCapability):
+    caps = set()
+    c_caps = ctypes.c_uint()
+    ret = libpal.pal_get_fru_capability(fru_id, ctypes.pointer(c_caps))
+    if ret != 0:
+        raise LibPalError()
+    for cap in FruCapability:
+        if (cap.bitmask() & c_caps.value) != 0:
+            caps.add(cap)
+    return caps
 
 
 def pal_is_slot_server(fru_id: int) -> bool:

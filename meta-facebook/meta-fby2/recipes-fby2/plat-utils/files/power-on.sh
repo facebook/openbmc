@@ -39,12 +39,11 @@ check_por_config()
 
   TO_PWR_ON=-1
 
+  POR=`kv get slot${1}_por_cfg persistent`
   # Check if the file/key doesn't exist
-  if ! kv get slot${1}_por_cfg persistent ; then
+  if [ -z "${POR}" ]; then
     TO_PWR_ON=$DEF_PWR_ON
   else
-    POR=`kv get slot${1}_por_cfg`
-
     # Case ON
     if [ $POR == "on" ]; then
       TO_PWR_ON=1;
@@ -57,10 +56,10 @@ check_por_config()
     elif [ $POR == "lps" ]; then
 
       # Check if the file/key doesn't exist
-      if ! kv get pwr_server${1}_last_state persistent ; then
+      LS=`kv get /pwr_server${1}_last_state persistent`
+      if [ -z "${LS}" ]; then
         TO_PWR_ON=$DEF_PWR_ON
       else
-        LS=`kv get /pwr_server${1}_last_state`
         if [ $LS == "on" ]; then
           TO_PWR_ON=1;
         elif [ $LS == "off" ]; then
@@ -76,8 +75,8 @@ if [ $(is_bmc_por) -eq 1 ]; then
   # Remove all GP/GPv2 info
   for i in {2..13};
   do
-    kv del sys_config/fru2_m2_${i}_info persistent ;
-    kv del sys_config/fru4_m2_${i}_info persistent ;
+    kv del sys_config/fru2_m2_${i}_info persistent > /dev/null 2>&1
+    kv del sys_config/fru4_m2_${i}_info persistent > /dev/null 2>&1
   done
 
   /usr/local/bin/sync_date.sh

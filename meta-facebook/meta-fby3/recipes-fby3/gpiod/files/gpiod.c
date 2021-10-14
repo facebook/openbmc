@@ -504,6 +504,7 @@ gpio_monitor_poll(void *ptr) {
 
   int i, ret = 0;
   uint8_t fru = (int)ptr;
+  uint8_t pwr_sts = 0;
   bic_gpio_t revised_pins, n_pin_val, o_pin_val;
   gpio_pin_t *gpios;
   uint8_t chassis_sts[8] = {0};
@@ -536,6 +537,14 @@ gpio_monitor_poll(void *ptr) {
       //rst timer
       rst_timer(fru);
       kv_set(host_key[fru-1], "0", 0, 0);
+
+      ret = pal_get_server_12v_power(fru, &pwr_sts);
+      if (ret == PAL_EOK) {
+        if (pwr_sts == SERVER_12V_OFF) {
+          SET_BIT(o_pin_val, PWRGD_CPU_LVC3_R, 0);
+          SET_BIT(o_pin_val, RST_PLTRST_BMC_N, 0);
+        }
+      }
 
       //rst new pin val
       memset(&n_pin_val, 0, sizeof(n_pin_val));

@@ -1436,7 +1436,6 @@ _update_bic_main(uint8_t slot_id, char *path, uint8_t force) {
   uint32_t offset = 0, last_offset = 0, dsize;
   struct rlimit mqlim;
   uint8_t done = 0;
-  char cvalue[MAX_VALUE_LEN];
 
   // Open the file exclusively for read
   fd = open(path, O_RDONLY, 0666);
@@ -1791,11 +1790,8 @@ error_exit2:
   bic_set_sdr_threshold_update_flag(slot_id, 0);
   if (done == 1) {    //update successfully
     memset(cmd, 0, sizeof(cmd));
-    snprintf(cmd, MAX_CMD_LEN, "(/usr/local/bin/bic-cached %d &", slot_id);   //retrieve SDR data after BIC FW update
+    snprintf(cmd, MAX_CMD_LEN, "(/usr/local/bin/bic-cached %d; /usr/bin/kv set slot%d_sdr_thresh_update 1) &", slot_id, slot_id);   //retrieve SDR data after BIC FW update
     log_system(cmd);
-    sprintf(cmd, "slot%d_sdr_thresh_update)", slot_id);
-    sprintf(cvalue, "1");
-    kv_set(cmd, cvalue, 0, 0);
   }
 
   return ret;

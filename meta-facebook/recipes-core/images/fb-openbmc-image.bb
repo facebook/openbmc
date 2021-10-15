@@ -67,15 +67,6 @@ BAD_RECOMMENDATIONS += " \
     shared-mime-info \
     "
 
-# Some packages have unit-tests but are not installed directly into an
-# image.  Add these to the NATIVE_UNIT_TESTS variable and cause the image
-# to DEPEND on it so the package is built and unit-tested.
-NATIVE_UNIT_TESTS += " \
-    pypartition-native \
-    rest-api-native \
-    "
-DEPENDS += "${NATIVE_UNIT_TESTS}"
-
 # Many of the sysv init files we already have install into runlevel 5, so
 # the automatic service files created for them by systemd add them to the
 # graphical.target.  Set that as our default until we get them all migrated

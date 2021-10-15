@@ -32,7 +32,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-wedge400:lf-dunfell
   meta-agc032a:lf-dunfell
 # zeus platforms (pending upgrade)
-  meta-elbert:zeus
   meta-fby35:zeus
 # Legacy platforms pending kernel upgrade
   meta-fby2-gpv2:rocko

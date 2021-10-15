@@ -379,9 +379,9 @@ PAL_SENSOR_MAP e1s_sensor_map[] = {
   [E1S1_CUR] =
   {"E1S_X1_CUR", ADC128_IN1, read_adc128_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S0_TEMP] =
-  {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {70, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =
-  {"E1S_X1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"E1S_X1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {70, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S0_P12V] =
   {"E1S_X0_P12V", ADC128_IN2, read_adc128_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [E1S1_P12V] =

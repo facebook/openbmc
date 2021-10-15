@@ -573,6 +573,14 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 			wantErr:         nil,
 		},
 		{
+			name: "older /etc/issue",
+			etcIssueContents: `OpenBMC Release v42
+  `,
+			etcIssueReadErr: nil,
+			want:            "unknown-v42",
+			wantErr:         nil,
+		},
+		{
 			name:             "read error",
 			etcIssueContents: ``,
 			etcIssueReadErr:  errors.Errorf("/etc/issue read error"),

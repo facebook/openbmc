@@ -97,6 +97,12 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			imageFileVer: "wedge40-v2019.01.3",
 			want:         nil,
 		},
+		{
+			name:         "older image",
+			etcIssueVer:  "unknown-v42",
+			imageFileVer: "wedge40-v2019.01.3",
+			want:         nil,
+		},
 	}
 
 	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}

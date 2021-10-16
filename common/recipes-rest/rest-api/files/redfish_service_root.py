@@ -22,6 +22,7 @@ async def get_service_root(request: str) -> web.Response:
         "RedfishVersion": "1.6.0",
         "UUID": uuid_data,
         "SessionService": {"@odata.id": "/redfish/v1/SessionService"},
+        "Systems": {"@odata.id": "/redfish/v1/Systems"},
         "Chassis": {"@odata.id": "/redfish/v1/Chassis"},
         "Managers": {"@odata.id": "/redfish/v1/Managers"},
         "AccountService": {"@odata.id": "/redfish/v1/AccountService"},

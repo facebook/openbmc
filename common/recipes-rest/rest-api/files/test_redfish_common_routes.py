@@ -43,11 +43,15 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/Managers/1/LogServices",
             "/redfish/v1/SessionService",
             "/redfish/v1/SessionService/Sessions",
+            "/redfish/v1/Systems",
         ]
         self.maxDiff = None
         self.assertEqual(sorted(routes_expected), sorted(registered_routes))
 
     def test_multisled_routes(self):
+        values = {
+            "DumpID": "DumpID",
+        }
         for pal_response in [0, 1, 4]:
             with self.subTest(pal_response=pal_response):
                 pal_mock = unittest.mock.MagicMock()
@@ -68,8 +72,29 @@ class TestCommonRoutes(unittest.TestCase):
                     routes_expected.append(
                         "/redfish/v1/Chassis/{}/Thermal".format(server_name)
                     )
+                    routes_expected.extend(
+                        [
+                            "/redfish/v1/Systems/{}".format(server_name),
+                            "/redfish/v1/Systems/{}/Bios".format(server_name),
+                            "/redfish/v1/Systems/{}/Bios/FirmwareDumps".format(
+                                server_name
+                            ),
+                            "/redfish/v1/Systems/{}/Bios/FirmwareDumps/DumpID".format(
+                                server_name
+                            ),
+                            "/redfish/v1/Systems/{}/Bios/FirmwareDumps/DumpID/Actions/BIOSFirmwareDump.ReadContent".format(
+                                server_name
+                            ),
+                            "/redfish/v1/Systems/{}/Bios/FirmwareInventory".format(
+                                server_name
+                            ),
+                        ]
+                    )
                 registered_routes = set()
                 for route in app.router.resources():
-                    registered_routes.add(str(route.url_for()))
+                    try:
+                        registered_routes.add(str(route.url_for(**values)))
+                    except TypeError:
+                        registered_routes.add(str(route.url_for()))
                 self.maxDiff = None
                 self.assertEqual(sorted(routes_expected), sorted(registered_routes))

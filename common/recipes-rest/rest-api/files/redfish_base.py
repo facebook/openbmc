@@ -1,5 +1,8 @@
 import typing as t
 
+from aiohttp import web
+from common_utils import dumps_bytestr
+
 VALID_KEYS = {
     "@odata.context",
     "@odata.id",
@@ -95,3 +98,68 @@ async def validate_keys(body: t.Dict[str, t.Any]) -> None:
                     key=repr(key), body=repr(body)
                 )
             )
+
+
+class RedfishErrorExtendedInfo:
+    def __init__(
+        self,
+        message_id: str = None,
+        message: str = None,
+        message_args: t.List[str] = None,
+        severity: str = None,
+        resolution: str = None,
+    ):
+        self.message_id = message_id
+        self.message = message
+        self.message_args = message_args
+        self.severity = severity
+        self.resolution = resolution
+
+    def as_dict(self) -> t.Dict[t.Any, t.Any]:
+        result = {}
+        if self.message_id is not None:
+            result["MessageId"] = self.message_id
+        if self.message is not None:
+            result["Message"] = self.message
+        if self.message_args is not None:
+            result["MessageArgs"] = self.message_args
+        if self.severity is not None:
+            result["Severity"] = self.severity
+        if self.resolution is not None:
+            result["Resolution"] = self.resolution
+        return result
+
+
+class RedfishError:
+    def __init__(
+        self,
+        status: int,
+        code: str = None,
+        message: str = None,
+        extended_info: t.List[RedfishErrorExtendedInfo] = None,
+    ):
+        self.status = status
+        self.code = code
+        self.message = message
+        self.extended_info = extended_info
+
+    def as_dict(self) -> t.Dict[t.Any, t.Any]:
+        result = {}
+        if self.code is not None:
+            result["code"] = self.code
+        if self.message is not None:
+            result["message"] = self.message
+        if self.extended_info is not None:
+            result["@Message.ExtendedInfo"] = self._extended_info_as_dicts()
+        return result
+
+    def _extended_info_as_dicts(self):
+        extended_info_as_dicts = []
+        for item in self.extended_info:
+            extended_info_as_dicts.append(item.as_dict())
+        return extended_info_as_dicts
+
+    def web_response(self) -> web.Response:
+        return web.json_response(
+            self.as_dict(), status=self.status, dumps=dumps_bytestr
+        )

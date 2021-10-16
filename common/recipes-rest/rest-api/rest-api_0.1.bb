@@ -85,11 +85,13 @@ SRC_URI = "file://setup-rest-api.sh \
            file://boot_source.py \
            file://restapi.service \
            file://board_setup_routes.py \
+           file://redfish_bios_firmware_dumps.py \
            file://redfish_common_routes.py \
            file://redfish_service_root.py \
            file://redfish_account_service.py \
            file://redfish_chassis.py \
            file://redfish_chassis_helper.py \
+           file://redfish_computer_system.py \
            file://redfish_managers.py \
            file://redfish_session_service.py \
            file://test_redfish_common_routes.py \
@@ -159,8 +161,8 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://boardroutes.py\
             ', d)}"
 
-RDEPENDS:${PN}:class-target += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
-                  '', 'sensors-py', d)}"
+RDEPENDS_${PN}_class-target += \
+    "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', '', 'sensors-py', d)}"
 
 RDEPENDS:${PN}:class-target =+ 'libpal libsdr libaggregate-sensor python3-psutil'
 pkgdir = "rest-api"

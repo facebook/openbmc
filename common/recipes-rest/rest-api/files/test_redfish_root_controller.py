@@ -47,6 +47,7 @@ class TestRootService(AioHTTPTestCase):
             "Product": "FBY2",
             "RedfishVersion": "1.6.0",
             "UUID": "bd7e0200-8227-3a1c-30c0-286261016903",
+            "Systems": {"@odata.id": "/redfish/v1/Systems"},
             "SessionService": {"@odata.id": "/redfish/v1/SessionService"},
             "Chassis": {"@odata.id": "/redfish/v1/Chassis"},
             "Managers": {"@odata.id": "/redfish/v1/Managers"},

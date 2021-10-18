@@ -1026,7 +1026,7 @@ pal_get_sensor_util_timeout(uint8_t fru) {
       cnt = pem2_sensor_cnt;
       break;
     case FRU_PSU1:
-      if (is_psu48) {
+      if (is_psu48()) {
         cnt = psu1_sensor_cnt;
       } else {
         cnt = psu1_sensor_cnt - 1;

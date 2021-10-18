@@ -59,7 +59,7 @@ fby2_get_nic_mfgid(void) {
 
   if ((kv_get(NIC_FW_VER_PATH, (char *)buf, &len, 0) != 0) || ( len < NCSI_MIN_DATA_PAYLOAD)) {
     syslog(LOG_WARNING, "%s(): Fail to read vendor ID.", __func__);
-    return -1;
+    return MFG_UNKNOWN;
   }
 
   // get the manufcture id

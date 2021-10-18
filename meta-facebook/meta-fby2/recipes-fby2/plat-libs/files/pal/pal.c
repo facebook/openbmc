@@ -1409,25 +1409,14 @@ nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
   uint8_t channel = 0;
   uint8_t oem_payload_length = 4;
   uint32_t nic_mfg_id = 0;
-  FILE *fp = NULL;
   NCSI_NL_MSG_T *msg = NULL;
   NCSI_NL_RSP_T *rsp = NULL;
 
-  fp = fopen(NIC_FW_VER_PATH, "rb");
-  if (!fp) {
-    syslog(LOG_WARNING, "%s(): Fail to read vendor ID.", __func__);
-    return -1;
-  }
-  if (fread(buf, sizeof(uint8_t), NCSI_DATA_PAYLOAD, fp) < NCSI_MIN_DATA_PAYLOAD) {
-    fclose(fp);
-    return -1;
-  }
-  fclose(fp);
+  nic_mfg_id = fby2_get_nic_mfgid();
 
-  // get the manufcture id
-  nic_mfg_id = (buf[35]<<24) | (buf[34]<<16) | (buf[33]<<8) | buf[32];
-
-  if (nic_mfg_id == MFG_BROADCOM) {
+  if (nic_mfg_id == MFG_UNKNOWN) {
+    return -1;
+  } else if (nic_mfg_id == MFG_BROADCOM) {
     msg = calloc(1, sizeof(NCSI_NL_MSG_T));
     memset(msg, 0, sizeof(NCSI_NL_MSG_T));
     sprintf(msg->dev_name, "eth0");

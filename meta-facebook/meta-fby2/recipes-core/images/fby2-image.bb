@@ -48,7 +48,7 @@ IMAGE_INSTALL += " \
   bios-util \
   threshold-util \
   libncsi \
-  ncsid \
+  ncsid-v2 \
   vboot-utils \
   sensordump \
   enclosure-util \

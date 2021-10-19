@@ -51,7 +51,7 @@ IMAGE_INSTALL += " \
   crashdump \
   libncsi \
   ncsi-util \
-  ncsid \
+  ncsid-v2 \
   libpldm \
   obmc-sensors-test \
   dimm-util \

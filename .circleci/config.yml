@@ -26,7 +26,7 @@ jobs:
     setup:
         docker:
             - image: crops/poky:latest
-            - user: root
+              user: root
         resource_class: small
         working_directory: /tmp/job/project
         steps:
@@ -35,6 +35,11 @@ jobs:
                 command: |
                     apt-get update
                     apt-get install -y ca-certificates
+            - run:
+                name: Set up git config for testing user.
+                command: |
+                    git config --global user.email "openbmc-circleci@fb.com"
+                    git config --global user.name "CircleCI Testing"
             - checkout
             - run:
                 name: Sync Yocto repositories.
@@ -85,6 +90,48 @@ jobs:
                 name: Build qemux86 and run package-test within
                 command: |
                     runuser -m usersetup -c 'python3 tests2/ptest-runner -b build --force-rebuild --verbose'
+    qemu-cit:
+        parameters:
+            machine:
+                type: string
+        docker:
+            - image: ubuntu:focal
+              environment:
+                  QEMU_URI: https://fb-openbmc-qemu.s3.us-east-2.amazonaws.com
+              user: root
+        resource_class: 2xlarge
+        working_directory: /tmp/job/project
+        steps:
+            - attach_workspace:
+                at: /tmp/job
+            - run:
+                name: Install Ubuntu dependencies.
+                command: |
+                    apt-get update
+                    apt-get install -y \
+                        git \
+                        python3-pip \
+                        shellcheck \
+                        cppcheck \
+                        net-tools \
+                        libaio1 \
+                        libpixman-1-dev \
+                        wget \
+                        vim
+                    DEBIAN_FRONTEND="noninteractive" apt-get -y install libglib2.0-dev
+            - run:
+                name: Install python liberaries
+                command: |
+                    pip3 install paramiko pexpect scp
+            - run:
+                name: Download qemu-system-arm
+                command: |
+                    wget "${QEMU_URI}/qemu-system-arm"
+                    chmod +x qemu-system-arm
+            - run:
+                name: execute CIT tests
+                command: |
+                    python3 tools/circle-ci/cit_test_wrapper.py << parameters.machine >>
     build:
         parameters:
             machine:
@@ -119,6 +166,10 @@ jobs:
                 name: Do build.
                 command: |
                     ./tools/circle-ci/do-build
+            - persist_to_workspace:
+                root: /tmp/job
+                paths:
+                  - project/build/tmp/deploy/images/<< parameters.machine >>/flash-<< parameters.machine >>*
 workflows:
     version: 2
     everything:
@@ -129,6 +180,7 @@ workflows:
                 requires:
                     - setup
             - build:
+                name: build-<< matrix.machine >>
                 requires:
                     - setup
                 matrix:
@@ -158,4 +210,21 @@ workflows:
                             wedge400,
                             yamp,
                             yosemite,
+                            ]
+            - qemu-cit:
+                name: qemu-cit-<< matrix.machine >>
+                requires:
+                    - build-<< matrix.machine >>
+                matrix:
+                    parameters:
+                        machine: [
+                            cloudripper,
+                            cmm,
+                            elbert,
+                            fby2,
+                            fby3,
+                            fuji,
+                            minipack,
+                            wedge400,
+                            yamp,
                             ]

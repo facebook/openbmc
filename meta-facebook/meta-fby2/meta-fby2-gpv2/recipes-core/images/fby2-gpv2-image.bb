@@ -47,7 +47,7 @@ IMAGE_INSTALL += " \
   asd-test \
   bios-util \
   threshold-util \
-  ncsid \
+  ncsid-v2 \
   vboot-utils \
   enclosure-util \
   libncsi \

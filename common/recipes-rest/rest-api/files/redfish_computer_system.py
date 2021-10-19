@@ -10,11 +10,11 @@ class RedfishComputerSystems:
         if not hasattr(pal, "pal_fru_name_map"):
             return
         fru_name_map = pal.pal_fru_name_map()
-        for key in fru_name_map:
+        for key, fruid in fru_name_map.items():
             if (
                 hasattr(pal, "FruCapability")
                 and pal.FruCapability.FRU_CAPABILITY_SERVER
-                not in pal.pal_get_fru_capability(key)
+                not in pal.pal_get_fru_capability(fruid)
             ) or (not hasattr(pal, "FruCapability") and key.find("slot") != 0):
                 continue
 

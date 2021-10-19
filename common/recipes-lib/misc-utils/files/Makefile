@@ -33,7 +33,7 @@ test-libmisc-utils: $(C_OBJS) $(TEST_C_OBJS)
 	$(CC) $(CFLAGS) -std=c99 -o $@ $^ $(LDFLAGS)
 
 test-cpp-libmisc-utils: $(TEST_CPP_OBJS)
-	$(CXX) $(CXXFLAGS) -std=c++17 -o $@ $^ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -std=c++17 -o $@ $^ $(LDFLAGS) -lgtest -lpthread -lgtest_main
 
 $(C_SRCS:.c=.d):%.d:%.c
 	$(CC) $(CFLAGS) $< >$@

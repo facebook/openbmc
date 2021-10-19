@@ -46,6 +46,8 @@ SRC_URI += "file://test/main.c \
            "
 S = "${WORKDIR}"
 
+DEPENDS += "gtest"
+
 do_compile_ptest() {
   make test-libmisc-utils
   make test-cpp-libmisc-utils

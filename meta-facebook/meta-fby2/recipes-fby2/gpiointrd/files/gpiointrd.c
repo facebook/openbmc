@@ -78,11 +78,11 @@ static pthread_mutex_t latch_open_mutex[MAX_NODES + 1];
 static uint8_t dev_fru_complete[MAX_NODES + 1][MAX_NUM_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
 static bool is_slot_missing();
 
-char *fru_prsnt_log_string[3 * MAX_NUM_FRUS] = {
+static char **fru_prsnt_log_string[3][MAX_NODES+1] = {
   // slot1, slot2, slot3, slot4
- "", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal", "",
- "", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion", "",
- "", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF",
+  {"", "Slot1 Removal", "Slot2 Removal", "Slot3 Removal", "Slot4 Removal"},
+  {"", "Slot1 Insertion", "Slot2 Insertion", "Slot3 Insertion", "Slot4 Insertion"},
+  {"", "Slot1 Removal Without 12V-OFF", "Slot2 Removal Without 12V-OFF", "Slot3 Removal Without 12V-OFF", "Slot4 Removal Without 12V-OFF"}
 };
 
 static char* gpio_slot_latch[] = { 0, "SLOT1_EJECTOR_LATCH_DETECT_N", "SLOT2_EJECTOR_LATCH_DETECT_N", "SLOT3_EJECTOR_LATCH_DETECT_N", "SLOT4_EJECTOR_LATCH_DETECT_N" };
@@ -894,7 +894,7 @@ hsvc_event_handler(void *ptr) {
           break;
         }
         if (value) {
-          sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[2*MAX_NUM_FRUS + hsvc_info->slot_id]);
+          sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[2][hsvc_info->slot_id]);
           syslog(LOG_CRIT, "%s", event_log);     //Card removal without 12V-off
           /* Turn off 12V to given slot when Server/GP/CF be removed brutally */
           if (bic_set_slot_12v(hsvc_info->slot_id, 0)) {
@@ -905,7 +905,7 @@ hsvc_event_handler(void *ptr) {
             printf("pal_slot_pair_12V_off failed for fru: %d\n", hsvc_info->slot_id);
         }
         else {
-          sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[hsvc_info->slot_id]);
+          sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[0][hsvc_info->slot_id]);
           syslog(LOG_CRIT, "%s", event_log);     //Card removal with 12V-off
         }
 
@@ -985,7 +985,7 @@ hsvc_event_handler(void *ptr) {
         break;
       }
       if (value) {      //Card has been inserted
-        sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[MAX_NUM_FRUS + hsvc_info->slot_id]);
+        sprintf(event_log, "FRU: %d, %s", hsvc_info->slot_id, fru_prsnt_log_string[1][hsvc_info->slot_id]);
         syslog(LOG_CRIT, "%s", event_log);
 
         // Create file for 12V-on re-init

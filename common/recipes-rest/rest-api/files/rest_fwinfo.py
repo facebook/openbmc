@@ -98,7 +98,7 @@ async def _get_fwutil_info_all() -> FwUtilInfo:
         [cmd, "all", "--version"]
     )
     for stdout_line in process_stdout.splitlines():
-        identifier, version = stdout_line.split(":")
+        identifier, version = stdout_line.split(":", 1)
         if identifier == "BMC Version":
             fwutil_response = fwutil_response._replace(bmc_ver=version.strip())
         if identifier == "BMC CPLD Version":

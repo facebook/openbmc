@@ -9,6 +9,7 @@ SRC_URI += " file://setup-ipmbd.sh \
              file://run-ipmbd_9.sh \
            "
 DEPENDS:append = " plat-utils update-rc.d-native"
+CFLAGS:prepend = "-DTIMEOUT_IPMB=3"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

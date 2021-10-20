@@ -262,13 +262,10 @@ enum {
 };
 
 enum {
-  DP_RETIMER_X4 = 0x00,
-  DP_RETIMER_X8 = 0x01,
-  DP_RETIMER_X16 = 0x04,
-  DP_PCIE_X4 = 0x0e,
-  DP_PCIE_X8 = 0x0d,
-  DP_PCIE_X16 = 0x0b,
-  DP_PCIE_UNKNOW = 0xff,
+  DPV2_RETIMER_X4 = 0x00,
+  DPV2_RETIMER_X8 = 0x02,
+  DPV2_RETIMER_X16 = 0x08,
+  DPV2_PCIE_UNKNOW = 0xff,
 };
 
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);

@@ -1047,7 +1047,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD){
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
         current_cnt += bic_2ou_gpv3_sensor_cnt;
-      } else if (board_type == DP_RISER_BOARD) {
+      } else if (board_type == DPV2_BOARD) {
         current_cnt += 0;
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
@@ -1412,7 +1412,6 @@ static int
 read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   static bool is_inited = false;
   static uint8_t config = CONFIG_A;
-  uint8_t type_2ou = UNKNOWN_BOARD;
 
   //try to get the system type. The default config is CONFIG_A.
   if ( is_inited == false ) {
@@ -1423,8 +1422,8 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     }
 
     if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
-    else if ( strcmp(sys_conf, "Type_10") == 0 ) config = CONFIG_B;
-    else if ( strcmp(sys_conf, "Type_15") == 0 ) config = CONFIG_D;
+    else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_17") == 0 ) config = CONFIG_D;
     else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
 
     syslog(LOG_WARNING, "%s() Get the system type: %s", __func__, sys_conf);
@@ -1434,8 +1433,8 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   int i = 0;
   float temp_val = 0;
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
-    //Only two slots are present on Config D. Skip slot2 and slot4.
-    if ( (config == CONFIG_D) && (i % 2 == 0) ) continue;
+    //Only two slots are present on Config B. Skip slot2 and slot4.
+    if ( (config == CONFIG_B) && (i % 2 == 0) ) continue;
 
     //If one of slots is failed to read, return READING_NA.
     if ( sensor_cache_read(i, target_snr_num, &temp_val) < 0) return READING_NA;
@@ -1446,16 +1445,6 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
       if ( ((int)(*val) == 0) || (temp_val < *val) ) *val = temp_val;
     } else if ( action == GET_TOTAL_VAL ) {
       *val += temp_val;
-    }
-
-    if (config == CONFIG_D && i == FRU_SLOT1) {
-      if (fby35_common_get_2ou_board_type(FRU_SLOT1, &type_2ou) < 0) {
-        syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
-        return READING_NA;
-      } else if (type_2ou == DP_RISER_BOARD) {
-        //DP only has slot1
-        return PAL_EOK;
-      }
     }
   }
 

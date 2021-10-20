@@ -39,6 +39,9 @@ init_class1_fsc() {
   if [[ "$sys_config" = "A" || "$sys_config" = "C" ]]; then
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+  elif [ "$sys_config" = "B" ]; then
+    config_type="DPV2"
+    target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
   else
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
@@ -95,11 +98,9 @@ reload_sled_fsc() {
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
-    if [[ "$sys_config" =~ ^(Type_(1|10))$ ]]; then
-      if [ "$cnt" -eq 4 ]; then
-        run_fscd=true
-      fi
-    elif [ "$cnt" -eq 2 ]; then
+    if [[ "$sys_config" =~ ^(Type_(1|10))$ && "$cnt" -eq 4 ]]; then
+      run_fscd=true
+    elif [[ "$sys_config" = "Type_DPV2" && "$cnt" -eq 2 ]]; then
       run_fscd=true
     fi
   fi

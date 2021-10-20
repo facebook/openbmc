@@ -53,7 +53,7 @@ void ExpansionBoard::ready()
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
         throw string("Failed to get 2OU board type");
       }
-      if ( (config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou == DP_RISER_BOARD)
+      if ( (config_status & PRESENT_2OU) != PRESENT_2OU || type_2ou == DPV2_BOARD )
         is_present = false;
       break;
     case FW_2OU_PESW:

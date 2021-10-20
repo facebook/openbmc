@@ -20,15 +20,19 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI += "file://setup-fan.sh \
             file://FSC_CLASS1_type1_config.json \
             file://FSC_CLASS1_type1_zone1.fsc \
+            file://FSC_CLASS1_DPV2_config.json \
+            file://FSC_CLASS1_DPV2_zone1.fsc \
             file://FSC_CLASS2_config.json \
             file://FSC_CLASS2_zone1.fsc \
            "
 
 FSC_CONFIG += "FSC_CLASS1_type1_config.json \
+               FSC_CLASS1_DPV2_config.json \
                FSC_CLASS2_config.json \
               "
 
 FSC_ZONE_CONFIG += "FSC_CLASS1_type1_zone1.fsc \
+                    FSC_CLASS1_DPV2_zone1.fsc \
                     FSC_CLASS2_zone1.fsc \
                    "
 FSC_INIT_FILE += "setup-fan.sh"

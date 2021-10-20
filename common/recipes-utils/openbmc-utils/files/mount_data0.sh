@@ -265,6 +265,16 @@ do_mount_jffs2() {
     fi
 }
 
+is_vboot_recovery_boot(){
+   recv_boot=$(/usr/local/bin/vboot-util | awk -F: -e '/recovery_boot/{ print $2 }')
+   test $(( "$recv_boot" )) -ne 0
+}
+
+if is_vboot_recovery_boot; then
+    echo "Recovery boot, skip mounting /mnt/data"
+    exit 1
+fi
+
 MTD_DATA_DEV=$(mtd_lookup_data_partition)
 if [ -z "$MTD_DATA_DEV" ]; then
     echo "No data0/dataro partition found. $MOUNT_POINT not mounted."

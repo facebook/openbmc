@@ -4,6 +4,23 @@
 
 retry=$MAX_RETRY
 
+wait_sensord_ready()
+{
+  RETRY=180   #timeout: 3 minutes
+  while [ $RETRY -gt 0 ]
+  do
+    ret=$($KV_CMD get flag_sensord_monitor)
+    if [ "$ret" = "1" ]; then
+      return 0
+    fi
+    RETRY=$((RETRY-1))
+    sleep 1
+  done
+
+  logger -s -p user.warn -t setup-fsc-config "Waiting sensord ready timeout"
+  return 1
+}
+
 while [ $retry -gt 0 ]
 do
   uic_location=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
@@ -49,6 +66,8 @@ else
   cp ${fsc_type5_default_config_path} ${default_fsc_config_path}
   echo "Setup fscd: Unknown chassis type. Use default fan table. Please confirm chassis type... "
 fi
+
+wait_sensord_ready
 
 runsv /etc/sv/fscd > /dev/null 2>&1 &
 

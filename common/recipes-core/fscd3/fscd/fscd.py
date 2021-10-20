@@ -29,14 +29,13 @@ import traceback
 import kv
 from contextlib import contextmanager
 
-import fsc_board
 import fsc_expr
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_callout, board_fan_actions, board_host_actions
 from fsc_profile import Sensor, profile_constructor
 from fsc_sensor import FscSensorSourceUtil, FscSensorSourceJson
 from fsc_util import Logger, clamp
-from fsc_zone import Fan, Zone, fan_mode
+from fsc_zone import Fan, Zone, fan_mode, BoardFanMode
 
 try:
     libwatchdog = ctypes.CDLL("libwatchdog.so")
@@ -170,10 +169,7 @@ class Fscd(object):
         self.sensor_fail_ignore = False
         self.pwm_sensor_boost_value = None
         self.output_max_boost_pwm = False
-        if "get_fan_mode" in dir(fsc_board):
-            self.get_fan_mode = True
-        else:
-            self.get_fan_mode = False
+        self.board_fan_mode = BoardFanMode()
         self.need_rearm = False
 
     # TODO: Add checks for invalid config file path
@@ -720,11 +716,10 @@ class Fscd(object):
                             "Failed fans: %s"
                             % (", ".join([str(i.label) for i in dead_fans]))
                         )
-                        if self.get_fan_mode:
+
+                        if self.board_fan_mode.is_scenario_supported("one_fan_failure"):
                             # user define
-                            set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
-                                "one_fan_failure"
-                            )
+                            set_fan_mode, set_fan_pwm = self.board_fan_mode.get_board_fan_mode("one_fan_failure")
                             # choose the higher PWM
                             pwmval = max(set_fan_pwm, pwmval)
                             if int(pwmval) == int(set_fan_pwm):

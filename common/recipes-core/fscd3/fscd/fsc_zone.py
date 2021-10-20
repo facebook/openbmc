@@ -147,6 +147,29 @@ class Fan(object):
             Logger.error("Unknown Fan source type")
 
 
+class BoardFanMode:
+    def __init__(self):
+        self.supported = False
+        self.scenario_list = []
+        if "get_fan_mode" in dir(fsc_board):
+            self.supported = True
+        if "get_fan_mode_scenario_list" in dir(fsc_board):
+            self.scenario_list = fsc_board.get_fan_mode_scenario_list
+
+    def is_supported(self, scenario):
+        return self.supported
+
+    def is_scenario_supported(self, scenario):
+        if (self.supported) and (scenario in self.scenario_list):
+            return True
+        return False
+
+    def get_board_fan_mode(self, scenario):
+        if self.is_scenario_supported(scenario):
+            return fsc_board.get_fan_mode(scenario)
+        return None, None
+
+
 class Zone:
     def __init__(
         self,
@@ -179,10 +202,7 @@ class Zone:
         self.missing_sensor_assert_retry = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_pre = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_cur = [0] * len(self.expr_meta["ext_vars"])
-        if "get_fan_mode" in dir(fsc_board):
-            self.get_fan_mode = True
-        else:
-            self.get_fan_mode = False
+        self.board_fan_mode = BoardFanMode()
         self.sensor_fail_ignore = sensor_fail_ignore
         self.sensor_assert_check = []
 
@@ -280,10 +300,8 @@ class Zone:
                             "Sensor %s reporting status %s"
                             % (sensor.name, sensor.status)
                         )
-                        if self.get_fan_mode:
-                            set_fan_mode, set_fan_pwm = fsc_board.get_fan_mode(
-                                "sensor_hit_UCR"
-                            )
+                        if self.board_fan_mode.is_scenario_supported("sensor_hit_UCR"):
+                            set_fan_mode, set_fan_pwm = self.board_fan_mode.get_board_fan_mode("sensor_hit_UCR")
                             outmin = max(outmin, set_fan_pwm)
                             if outmin == set_fan_pwm:
                                 mode = set_fan_mode
@@ -291,34 +309,41 @@ class Zone:
                             outmin = max(outmin, self.transitional)
                             if outmin == self.transitional:
                                 mode = fan_mode["trans_mode"]
-                    else:
-                        if self.sensor_fail == True:
-                            sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
-                            if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
-                                os.mkdir(SENSOR_FAIL_RECORD_DIR)
-                            if (sensor.status in ["na"]) and (
-                                self.sensor_valid_cur[sensor_index] != -1
+                    elif self.sensor_fail == True:
+                        sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
+                        if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
+                            os.mkdir(SENSOR_FAIL_RECORD_DIR)
+                        if (sensor.status in ["na"]) and (
+                            self.sensor_valid_cur[sensor_index] != -1
+                        ):
+                            self.sensor_assert_check[sensor_index].assert_check()
+                            if (self.sensor_fail_ignore) and (
+                                fsc_board.sensor_fail_ignore_check(sname)
                             ):
-                                self.sensor_assert_check[sensor_index].assert_check()
-                                if (self.sensor_fail_ignore) and (fsc_board.sensor_fail_ignore_check(sname)):
-                                    Logger.info("Ignore %s Fail" % v)
-                                elif self.sensor_assert_check[sensor_index].is_asserted():
-                                    if isinstance(self.sensor_assert_check[sensor_index], M2AssertCheck):
-                                        fail_ssd_count = fail_ssd_count + 1
-                                    else:
-                                        outmin = max(outmin, self.boost)
-                                        cause_boost_count += 1
-                                if not os.path.isfile(sensor_fail_record_path):
-                                    sensor_fail_record = open(
-                                        sensor_fail_record_path, "w"
-                                    )
-                                    sensor_fail_record.close()
-                                if outmin == self.boost:
-                                    mode = fan_mode["boost_mode"]
-                            else:
-                                self.sensor_assert_check[sensor_index].assert_clear()
-                                if os.path.isfile(sensor_fail_record_path):
-                                    os.remove(sensor_fail_record_path)
+                                Logger.info("Ignore %s Fail" % v)
+                            elif self.sensor_assert_check[sensor_index].is_asserted():
+                                if isinstance(
+                                    self.sensor_assert_check[sensor_index],
+                                    M2AssertCheck,
+                                ):
+                                    fail_ssd_count = fail_ssd_count + 1
+                                elif self.board_fan_mode.is_scenario_supported("sensor_fail"):
+                                    set_fan_mode, set_fan_pwm = self.board_fan_mode.get_board_fan_mode("sensor_fail")
+                                    outmin = max(outmin, set_fan_pwm)
+                                    mode = set_fan_mode
+                                    cause_boost_count += 1
+                                else:
+                                    outmin = max(outmin, self.boost)
+                                    cause_boost_count += 1
+                            if not os.path.isfile(sensor_fail_record_path):
+                                sensor_fail_record = open(sensor_fail_record_path, "w")
+                                sensor_fail_record.close()
+                            if outmin == self.boost:
+                                mode = fan_mode["boost_mode"]
+                        else:
+                            self.sensor_assert_check[sensor_index].assert_clear()
+                            if os.path.isfile(sensor_fail_record_path):
+                                os.remove(sensor_fail_record_path)
                 else:
                     if (not self.missing_sensor_assert_flag[sensor_index]) and (
                         self.missing_sensor_assert_retry[sensor_index] >= 2
@@ -401,8 +426,8 @@ class Zone:
                                 # handle M.2 devices/SSD fail to read case
                                 cause_boost_count += 1  # show out sensor fail record
                                 display_progressive_flag = (
-                                    1
-                                )  # do not override by normal mode
+                                    1  # do not override by normal mode
+                                )
                                 mode = fan_mode["progressive_mode"]
                             else:
                                 # M.2 devices noraml mode

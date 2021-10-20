@@ -20,7 +20,9 @@
 
 import unittest
 
-from tests.fbgc.test_data.firmware_upgrade.firmware_upgrade_config import FwUpgradeTest
+from tests.grandcanyon.test_data.firmware_upgrade.firmware_upgrade_config import (
+    FwUpgradeTest,
+)
 
 
 class ServerFPGAFwUpgradeTest(FwUpgradeTest, unittest.TestCase):

@@ -25,8 +25,18 @@ from subprocess import PIPE, Popen
 import kv
 import libgpio
 from fsc_util import Logger
+import fsc_zone
 
 lpal_hndl = CDLL("libpal.so.0")
+get_fan_mode_scenario_list = []
+
+try:
+    with open("/tmp/spb_type") as f:
+        spb_type = f.readline()
+        if spb_type == "3":  # Northdome
+            get_fan_mode_scenario_list = ["sensor_hit_UCR", "sensor_fail"]
+except:
+    Logger.warn("failed to open or read /tmp/spb_type")
 
 fru_map = {
     "slot1": {
@@ -235,3 +245,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
     except Exception:
         Logger.warn("Exception with board=%s, sensor_name=%s" % (board, sname))
     return 0
+
+
+def get_fan_mode(scenario="None"):
+    if "sensor_hit_UCR" in scenario:
+        return fsc_zone.fan_mode["boost_mode"], int(100)
+    elif "sensor_fail" in scenario:
+        return fsc_zone.fan_mode["boost_mode"], int(60)
+
+    return None, None

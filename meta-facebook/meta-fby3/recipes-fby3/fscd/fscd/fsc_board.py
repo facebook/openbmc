@@ -31,6 +31,7 @@ import kv
 import struct
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
+get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 
 lpal_hndl = CDLL("libpal.so.0")
 

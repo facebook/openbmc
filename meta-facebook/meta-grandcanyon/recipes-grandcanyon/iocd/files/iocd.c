@@ -45,18 +45,20 @@ static struct {
   bool check_pec;
   bool is_support_pec;
   char fru_name[MAX_FRU_CMD_STR];
+  char ioc_ver_key[MAX_KEY_LEN];
+  int i2c_write_failed_cnt;
   int i2c_fd;
   i2c_mslave_t *bmc_slave;
-  char ioc_ver_key[MAX_KEY_LEN];
 } iocd_config = {
   .bus_id = 0,
   .fru_num = 0,
   .check_pec = false,
   .is_support_pec = true,
   .fru_name = {0},
+  .ioc_ver_key = {0},
+  .i2c_write_failed_cnt = 0,
   .i2c_fd = -1,
   .bmc_slave = NULL,
-  .ioc_ver_key = {0},
 };
 
 static int
@@ -371,7 +373,7 @@ mctp_ioc_command(uint8_t slave_addr, uint8_t tag, ioc_command command, uint8_t *
     ret = mctp_i2c_write(slave_addr, write_buf, write_len);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s(): failed to do '%s' on bus:%d because i2c write failed.", __func__, ioc_command_map[command].command_name, iocd_config.bus_id);
-      return -1;
+      return WRITE_I2C_RAW_FAILED;
     }
 
     memset(read_buf, 0, sizeof(read_buf));
@@ -428,6 +430,7 @@ static int
 check_ioc_support_pec(uint8_t slave_addr) {
   uint8_t tag = 0xFF, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
+  int ret = 0;
 
   iocd_config.is_support_pec = true;
   // Clear slave mqueue
@@ -437,9 +440,10 @@ check_ioc_support_pec(uint8_t slave_addr) {
   }
 
   // Do "VDM reset" to check if IOC F/w could support PEC.
-  if (mctp_ioc_command(slave_addr, tag, VDM_RESET, read_buf, &read_len) < 0) {
+  ret = mctp_ioc_command(slave_addr, tag, VDM_RESET, read_buf, &read_len);
+  if (ret < 0) {
     syslog(LOG_WARNING, "%s(): VDM reset failed, bus: %d", __func__, iocd_config.bus_id);
-    return -1;
+    return ret;
   }
 
   if (read_buf[RES_PAYLOAD_OFFSET] == RES_PL_PEC_FAILURE) {
@@ -527,12 +531,64 @@ set_ioc_temp(int value) {
   return 0;
 }
 
+static int
+reattach_i2c_device(char* slave_device_path) {
+  // Detach IOC I2C device
+  if (access(slave_device_path, F_OK) == 0) {
+    if (i2c_delete_device(iocd_config.bus_id, DEVICE_ADDRESS) != 0) {
+      syslog(LOG_ERR, "%s(): Failed to delete i2c device on bus:%d", __func__, iocd_config.bus_id);
+      return -1;
+    }
+  }
+
+  if (iocd_config.i2c_fd >= 0) {
+    close(iocd_config.i2c_fd);
+  }
+
+  if (iocd_config.bmc_slave != NULL) {
+    if (i2c_mslave_close(iocd_config.bmc_slave) < 0){
+      syslog(LOG_ERR, "%s(): Failed to close slave device on bus:%d", __func__, iocd_config.bus_id);
+      return -1;
+    }
+  }
+
+  // Attach IOC I2C device
+  if (i2c_add_device(iocd_config.bus_id, DEVICE_ADDRESS, DEVICE_NAME) < 0) {
+    syslog(LOG_ERR, "%s(): Failed to add i2c device on bus:%d", __func__, iocd_config.bus_id);
+    return -1;
+  }
+
+  iocd_config.i2c_fd = i2c_cdev_slave_open(iocd_config.bus_id, IOC_SLAVE_ADDRESS, I2C_SLAVE);
+  if (iocd_config.i2c_fd < 0) {
+    syslog(LOG_ERR, "%s(): Failed to open i2c device on bus:%d", __func__, iocd_config.bus_id);
+    return -1;
+  }
+
+  iocd_config.bmc_slave = i2c_mslave_open(iocd_config.bus_id, BMC_SLAVE_ADDR);
+  if (iocd_config.bmc_slave == NULL) {
+    syslog(LOG_ERR, "%s(): Failed to open bmc as slave on bus:%d", __func__, iocd_config.bus_id);
+    return -1;
+  }
+
+  return 0;
+}
+
 static void *
 get_ioc_temp() {
-  int value = 0;
+  int value = 0, ret = 0;
   bool is_failed = true;
   uint8_t tag = 0x01, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
+  char slave_dev_path[MAX_FILE_PATH] = {0};
+
+  snprintf(slave_dev_path, sizeof(slave_dev_path), IOC_SLAVE_QUEUE, iocd_config.bus_id, DEVICE_ADDRESS);
+
+  if (access(slave_dev_path, F_OK) == -1) {
+    if (i2c_add_device(iocd_config.bus_id, DEVICE_ADDRESS, DEVICE_NAME) < 0) {
+      syslog(LOG_WARNING, "%s(): Failed to add i2c device on bus:%d", __func__, iocd_config.bus_id);
+      goto cleanup;
+    }
+  }
 
   iocd_config.i2c_fd = i2c_cdev_slave_open(iocd_config.bus_id, IOC_SLAVE_ADDRESS, I2C_SLAVE);
   if (iocd_config.i2c_fd < 0) {
@@ -555,10 +611,24 @@ get_ioc_temp() {
     while (1) {
       if (pal_is_ioc_ready(iocd_config.bus_id) == true) {
         if (iocd_config.check_pec == false) {
-          if (check_ioc_support_pec(IOC_SLAVE_ADDRESS) < 0) {
+          ret = check_ioc_support_pec(IOC_SLAVE_ADDRESS);
+          if (ret < 0) {
             is_failed = true;
             set_ioc_temp(READ_IOC_TEMP_FAILED);
             kv_set(iocd_config.ioc_ver_key, "", 0, 0);
+            // Reattach i2c devcie if i2c write failed 2 times
+            if (ret == WRITE_I2C_RAW_FAILED) {
+              if (iocd_config.i2c_write_failed_cnt >= 2) {
+                syslog(LOG_WARNING, "%s(): Failed to do i2c write, reattach i2c device on bus:%d", __func__, iocd_config.bus_id);
+                if (reattach_i2c_device(slave_dev_path) < 0) {
+                  syslog(LOG_ERR, "%s(): Failed to reattach i2c device on bus:%d", __func__, iocd_config.bus_id);
+                } else {
+                  iocd_config.i2c_write_failed_cnt = 0;
+                }
+              } else {
+                iocd_config.i2c_write_failed_cnt++;
+              }
+            }
             sleep (10);
             continue;
           }
@@ -582,6 +652,7 @@ get_ioc_temp() {
       }
       tag = 0x01;
       is_failed = false;
+      iocd_config.i2c_write_failed_cnt = 0;
     }
 
     value = 0;
@@ -627,6 +698,10 @@ get_ioc_temp() {
   }
 
 cleanup:
+  if (access(slave_dev_path, F_OK) == 0) {
+    i2c_delete_device(iocd_config.bus_id, DEVICE_ADDRESS);
+  }
+
   if (iocd_config.i2c_fd >= 0) {
     close(iocd_config.i2c_fd);
   }

@@ -96,9 +96,9 @@ is_bmc_por() {
 
 # Get 1OU/2OU present status
 get_m2_prsnt_sts() {
-  val=$(/usr/bin/bic-util $1 0x18 0x52 0x05 0x42 0x01 0x0D)
+  val=$(/usr/bin/bic-util $1 0x18 0x52 0x03 0x42 0x01 0x05)
   # if BIC is no response, set val to 255
-  if [[ $val =~ BIC* ]]; then
+  if [[ $? -ne 0 || $val =~ BIC* ]]; then
     val=255
   else
     val=$((16#$val))
@@ -393,8 +393,7 @@ is_date_synced() {
 # Get 2OU board type
 # M.2 board: 0x01
 # E1.S board: 0x02
-# GPV3 MCHP board: 0x03
-# GPV3 BRCM board: 0x00
+# DPV2: 0x07
 # unknown board: 0xff
 function get_2ou_board_type() {
   local bus=$1

@@ -120,7 +120,7 @@ fruid_cache_init(uint8_t slot_id) {
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
         syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
       }
-      if (type_2ou == DP_RISER_BOARD) {
+      if (type_2ou == DPV2_BOARD) {
         // read riser board fru form sb_bic, fruid = 1
         remote_r_ret = remote_fruid_cache_init(slot_id, 1, NONE_INTF);
       } else {
@@ -338,7 +338,7 @@ sdr_cache_init(uint8_t slot_id) {
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
           syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
       }
-      if (type_2ou != DP_RISER_BOARD) {
+      if (type_2ou != DPV2_BOARD) {
         remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
       }
     }

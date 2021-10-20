@@ -35,8 +35,13 @@
 #define RES_PL_RESET_IN_PROGRESS   0xA9
 
 #define READ_IOC_TEMP_FAILED       -1
+#define WRITE_I2C_RAW_FAILED       -2
 
 #define I2C_MSLAVE_POLL_TIME       100 // 100 milliseconds
+
+#define IOC_SLAVE_QUEUE            "/sys/bus/i2c/devices/%d-%04x/slave-mqueue"
+#define DEVICE_NAME                "slave-mqueue"
+#define DEVICE_ADDRESS             (0x1010)
 
 typedef enum {
   VDM_RESET,

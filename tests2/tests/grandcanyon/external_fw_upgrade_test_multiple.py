@@ -20,7 +20,7 @@
 
 import unittest
 
-from tests.fbgc.test_data.firmware_upgrade.firmware_upgrade_config import (
+from tests.grandcanyon.test_data.firmware_upgrade.firmware_upgrade_config import (
     FwUpgradeTest,
 )
 

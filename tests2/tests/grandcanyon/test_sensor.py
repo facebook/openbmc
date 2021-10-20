@@ -19,14 +19,34 @@
 #
 import unittest
 
-from common.base_rest_endpoint_test import BaseRestEndpointTest
-from tests.fbgc.test_data.restendpoints.restendpoints import REST_END_POINTS
+from common.base_sensor_test import SensorUtilTest
+from tests.grandcanyon.test_data.sensors.sensors import SENSORS
 
 
-class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
+class MBSensorTest(SensorUtilTest, unittest.TestCase):
+    FRU_NAME = "server"
 
-    def test_rest_endpoints(self):
-        endpoints = REST_END_POINTS
-        for k, v in endpoints.items():
-            with self.subTest(k):
-                self.verify_endpoint_attributes(k, v)
+    def set_sensors_cmd(self):
+        self.sensors_cmd = ["/usr/local/bin/sensor-util {}".format(self.FRU_NAME)]
+
+    def test_sensor_keys(self):
+        result = self.get_parsed_result()
+        for key in SENSORS[self.FRU_NAME]:
+            with self.subTest(sensor=key):
+                self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
+
+
+class UICSensorTest(MBSensorTest):
+    FRU_NAME = "uic"
+
+
+class DPBSensorTest(MBSensorTest):
+    FRU_NAME = "dpb"
+
+
+class SCCSensorTest(MBSensorTest):
+    FRU_NAME = "scc"
+
+
+class NICSensorTest(MBSensorTest):
+    FRU_NAME = "nic"

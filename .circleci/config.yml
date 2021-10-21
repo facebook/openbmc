@@ -203,7 +203,6 @@ workflows:
                             lightning,
                             minipack,
                             northdome,
-                            qemux86,
                             sonorapass,
                             wedge,
                             wedge100,

@@ -6,6 +6,7 @@ project('liblog', 'c',
 
 install_headers(
     'log.h',
+    'syslog.hpp',
     subdir: 'openbmc')
 
 libs = []

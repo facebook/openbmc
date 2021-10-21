@@ -43,6 +43,7 @@ const uint8_t intf_size = 4;
 static const uint8_t gpio_sb_usbhub[] = {16};
 static const uint8_t gpio_cwc_usbhub[] = {57};
 static const uint8_t gpio_gpv3_usbhub[] = {93, 94, 98};
+static const uint8_t gpio_cwc_usbmux[] = {58};
 
 static const char *option_list[] = {
   "--get_gpio",
@@ -64,7 +65,7 @@ static const char *option_list[] = {
 
 static const char *class2_options[] = {
   "--get_slot_id",
-  "--set_usb_hub [0|1|2|all] [on|off|reset]",
+  "--set_usb_hub [0|1|2|all] [on|off|reset|to-bmc|to-usbc]",
   "--get_usb_hub [0|1|2|all]",
   "--get_pci_link",
 };
@@ -1026,10 +1027,25 @@ set_single_usb_hub(uint8_t slot, uint8_t nb, uint8_t ctl, uint8_t intf) {
       sleep(3); //for usb devices to be released
       ret = remote_bic_set_gpio(slot, nb, 1, intf);
     } 
-  } else {
+  } else if (ctl == 0 || ctl == 1) {
     ret = remote_bic_set_gpio(slot, nb, ctl, intf);
+  } else {
+    return -1;
   }
   return ret;
+}
+
+static int
+set_usb_hub_mux(uint8_t slot, uint8_t nb, uint8_t ctl, uint8_t intf) {
+  uint8_t mux = 0;
+  if (ctl == 10) {  //to bmc
+    mux = 0;
+  } else if (ctl == 11) { //to usb c
+    mux = 1;
+  } else {
+    return -1;
+  }
+  return remote_bic_set_gpio(slot, nb, mux, intf);
 }
 
 static int
@@ -1038,7 +1054,11 @@ util_set_usb_hub(uint8_t hub, uint8_t on_off, uint8_t fru, uint8_t intf) {
   switch (fru) {
     case FRU_CWC:
       if (hub == 0xff || hub == 0) {
-        ret = set_single_usb_hub(FRU_SLOT1, gpio_cwc_usbhub[0], on_off, intf);
+        if (on_off == 10 || on_off == 11) {
+          ret = set_usb_hub_mux(FRU_SLOT1, gpio_cwc_usbmux[0], on_off, intf);
+        } else {
+          ret = set_single_usb_hub(FRU_SLOT1, gpio_cwc_usbhub[0], on_off, intf);
+        }
       } else {
         printf("Wrong usb hub number!\n");
         return -1;
@@ -1078,7 +1098,7 @@ util_set_usb_hub(uint8_t hub, uint8_t on_off, uint8_t fru, uint8_t intf) {
 }
 
 static int
-print_usb_hub_status(bic_gpio_t gpio, const uint8_t *gpio_nb, uint8_t gpio_len) {
+print_usb_hub_status(bic_gpio_t gpio, const uint8_t *gpio_nb, uint8_t gpio_len, uint8_t mux) {
   uint8_t i = 0, nb = 0;
   uint32_t offset = 0, mask = 0;
   for (i = 0; i < gpio_len; ++i) {
@@ -1093,9 +1113,17 @@ print_usb_hub_status(bic_gpio_t gpio, const uint8_t *gpio_nb, uint8_t gpio_len) 
     mask = 1 << nb;
 
     if (gpio.gpio[offset] & mask) {
-      printf("USB HUB%d is on\n", i);
+      if (gpio_nb[i] == mux) {
+        printf("USB HUB is switched to usb c\n");
+      } else {
+        printf("USB HUB%d is on\n", i);
+      }
     } else {
-      printf("USB HUB%d is off\n", i);
+      if (gpio_nb[i] == mux) {
+        printf("USB HUB is switched to bmc\n");
+      } else {
+        printf("USB HUB%d is off\n", i);
+      }
     }
   }
 
@@ -1106,7 +1134,8 @@ static int
 util_get_usb_hub(uint8_t hub, uint8_t fru, uint8_t intf) {
   int ret = 0;
   bic_gpio_t gpio = {0};
-  uint8_t len = 0;
+  uint8_t len = 0, mux = 0xff;
+  uint8_t cwc_gpio[2] = {0};
   const uint8_t *start = NULL;
   switch (fru) {
     case FRU_CWC:
@@ -1114,8 +1143,11 @@ util_get_usb_hub(uint8_t hub, uint8_t fru, uint8_t intf) {
         printf("Wrong usb hub number!\n");
         return -1;
       }
-      len = 1;
-      start = &gpio_cwc_usbhub[0];
+      len = 2;
+      cwc_gpio[0] = gpio_cwc_usbhub[0];
+      cwc_gpio[1] = gpio_cwc_usbmux[0];
+      mux = gpio_cwc_usbmux[0];
+      start = cwc_gpio;
       ret = bic_get_gpio(FRU_SLOT1, &gpio, intf);
       break;
     case FRU_2U_TOP:
@@ -1147,7 +1179,7 @@ util_get_usb_hub(uint8_t hub, uint8_t fru, uint8_t intf) {
   }
 
   if (ret == 0) {
-    print_usb_hub_status(gpio, start, len);
+    print_usb_hub_status(gpio, start, len, mux);
   } else {
     printf("Fail to get usb hub status\n");
   }
@@ -1443,6 +1475,10 @@ main(int argc, char **argv) {
             ctl = 0;
           } else if ( strcmp(argv[4], "reset") == 0 ) {
             ctl = 2;
+          } else if ( strcmp(argv[4], "to-bmc") == 0 ) {
+            ctl = 10;
+          } else if ( strcmp(argv[4], "to-usbc") == 0 ) {
+            ctl = 11;
           } else {
             goto err_exit;
           }

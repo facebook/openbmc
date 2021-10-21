@@ -30,6 +30,7 @@ SRC_URI = "file://ast-functions \
            file://sol-util \
            file://setup-sic.sh \
            file://check_eth0_ipv4.sh \
+           file://usb-util.sh \
           "
 
 pkgdir = "utils"
@@ -37,7 +38,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sync_date.sh sol-util "
+binfiles = " sync_date.sh sol-util usb-util.sh "
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 "

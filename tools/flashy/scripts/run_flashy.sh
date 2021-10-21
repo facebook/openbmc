@@ -38,22 +38,27 @@ $openbmc_flashy_path and $openbmc_image_path respectively.
 # defined in OpenBMC tools/flashy/lib/step/error.go
 FLASHY_ERROR_SAFE_TO_REBOOT=42
 FLASHY_ERROR_UNSAFE_TO_REBOOT=52
+FLASHY_ERROR_BROKEN_SYSTEM=53
 handle_flashy_error() {
-case $? in
+case $1 in
     0)
     return 0
     ;;
     $FLASHY_ERROR_SAFE_TO_REBOOT)
-    echo "Flashy exited with safe to reboot error $?" >&2
-    exit $?
+    echo "Flashy exited with safe to reboot error $1" >&2
+    exit "$1"
     ;;
     $FLASHY_ERROR_UNSAFE_TO_REBOOT)
-    echo "Flashy exited with unsafe to reboot error $?" >&2
-    exit $?
+    echo "Flashy exited with unsafe to reboot error $1" >&2
+    exit "$1"
+    ;;
+    $FLASHY_ERROR_BROKEN_SYSTEM)
+    echo "Flashy exited with broken system error $1" >&2
+    exit "$1"
     ;;
     *)
-    echo "Unknown flashy exit code $?" >&2
-    exit "$?"
+    echo "Unknown flashy exit code $1" >&2
+    exit "$1"
     ;;
 esac
 }
@@ -66,7 +71,8 @@ initialize() {
     echo "Buildname: $buildname" >&2
 
     echo "Installing flashy" >&2
-    /opt/flashy/flashy --install
+    /opt/flashy/flashy --install \
+        || handle_flashy_error "$?"
 }
 
 run_checks_and_remediations() {
@@ -87,7 +93,7 @@ run_checks_and_remediations() {
     for step in "${common_steps[@]}"
     do
         "$step" --imagepath /opt/upgrade/image --device "$device_id"\
-        || handle_flashy_error
+        || handle_flashy_error "$?"
     done
 
 
@@ -108,7 +114,7 @@ run_checks_and_remediations() {
     for step in "${platform_steps[@]}"
     do
         "$step" --imagepath /opt/upgrade/image --device "$device_id" \
-        || handle_flashy_error
+        || handle_flashy_error "$?"
     done
 }
 
@@ -116,7 +122,7 @@ run_flash() {
     echo "Starting to flash..." >&2
     /opt/flashy/flash_procedure/flash_"$buildname" \
     --imagepath "$openbmc_image_path" --device "$device_id" \
-    || handle_flashy_error
+    || handle_flashy_error "$?"
     echo "Flashing succeeded. It is safe to reboot this system." >&2
 }
 

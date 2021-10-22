@@ -44,8 +44,8 @@ async def get_redfish_sensor_handler(request):
     fru_name = request.match_info["fru_name"]
     if redfish_chassis_helper.is_libpal_supported():
         sensor_id_and_fru = request.match_info["sensor_id"]
-        target_fru_name = sensor_id_and_fru.split("_")[0]
-        sensor_id = int(sensor_id_and_fru.split("_")[1])
+        target_fru_name = "_".join(sensor_id_and_fru.split("_")[:-1])
+        sensor_id = int(sensor_id_and_fru.split("_")[-1])
     else:
         target_fru_name = "BMC"
         sensor_id = request.match_info["sensor_id"]
@@ -136,12 +136,12 @@ def _render_sensor_body(
         status_val = {"State": "Enabled", "Health": "OK"}
     if sensor.sensor_thresh:
         threshold_json = {
-            "UpperCaution": int(sensor.sensor_thresh.unc_thresh),
-            "UpperCritical": int(sensor.sensor_thresh.ucr_thresh),
-            "UpperFatal": int(sensor.sensor_thresh.unr_thresh),
-            "LowerCaution": int(sensor.sensor_thresh.lnc_thresh),
-            "LowerCritical": int(sensor.sensor_thresh.lcr_thresh),
-            "LowerFatal": int(sensor.sensor_thresh.lnr_thresh),
+            "UpperCaution": {"Reading": int(sensor.sensor_thresh.unc_thresh)},
+            "UpperCritical": {"Reading": int(sensor.sensor_thresh.ucr_thresh)},
+            "UpperFatal": {"Reading": int(sensor.sensor_thresh.unr_thresh)},
+            "LowerCaution": {"Reading": int(sensor.sensor_thresh.lnc_thresh)},
+            "LowerCritical": {"Reading": int(sensor.sensor_thresh.lcr_thresh)},
+            "LowerFatal": {"Reading": int(sensor.sensor_thresh.lnr_thresh)},
         }
     else:
         threshold_json = {}

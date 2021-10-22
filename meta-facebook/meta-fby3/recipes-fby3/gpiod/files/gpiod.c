@@ -28,6 +28,7 @@
 #include <math.h>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
 #include <sys/un.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -124,7 +125,7 @@ static struct threadinfo t_fru_cache[MAX_NUM_FRUS+MAX_NUM_EXPS] = {0, };
 static uint8_t dev_fru_complete[MAX_NODES + MAX_NUM_EXPS + 1][MAX_NUM_GPV3_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
 
 static int
-fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
+fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t less_retry) {
   int ret;
   int fru_size = 0;
   char fruid_temp_path[64] = {0};
@@ -140,11 +141,11 @@ fruid_cache_init(uint8_t slot_id, uint8_t fru_id) {
     intf = slot_id == FRU_2U_TOP ? RREXP_BIC_INTF1 : RREXP_BIC_INTF2;
     pal_get_dev_fruid_path(slot_id, fru_id, fruid_path);
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
-    ret = bic_read_fruid(FRU_SLOT1, fru_id - offset , fruid_temp_path, &fru_size, intf);
+    ret = bic_read_fruid(FRU_SLOT1, fru_id - offset , fruid_temp_path, &fru_size, intf, less_retry);
   } else {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, REXP_BIC_INTF);
-    ret = bic_read_fruid(slot_id, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF);
+    ret = bic_read_fruid(slot_id, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF, less_retry);
   }
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() slot%d dev%d is not present, fru_size: %d\n", __func__, slot_id, fru_id - offset, fru_size);
@@ -174,12 +175,13 @@ fru_cache_dump(void *arg) {
   uint8_t dev_id;
   uint8_t flagIdx = fru;
   uint8_t fruIdx = fru - 1;
+  uint8_t keepPoll = 1;
   const int max_retry = 3;
   int oldstate;
   int finish_count = 0; // fru finish
   int nvme_ready_count = 0;
-  uint8_t type_2ou = UNKNOWN_BOARD;
   fruid_info_t fruid;
+  struct timespec slp_time;
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -212,71 +214,95 @@ fru_cache_dump(void *arg) {
 
   sleep(2); //wait for BIC poll at least one cycle
 
-  // Get GPV3 devices' FRU
-  for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
-
-    //check for power status
-    ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
-
-    syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
-
-    if (dev_fru_complete[flagIdx][dev_id] != DEV_FRU_NOT_COMPLETE) {
-      finish_count++;
-      continue;
-    }
-
-    if (ret == 0) {
-      if (status[dev_id] == DEVICE_POWER_ON) {
-        retry = 0;
-        while (1) {
-          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-          ret = fruid_cache_init(fru, dev_id);
-          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-          retry++;
-
-          if ((ret == 0) || (retry == max_retry))
-            break;
-
-          msleep(50);
-        }
-
-        if (retry >= max_retry) {
-          syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
-        } else {
-          pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
-          //check file's checksum
-          pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-          ret = fruid_parse(buf, &fruid);
-          if (ret != 0) { // Fail
-            syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
-          } else { // Success
-            free_fruid_info(&fruid);
-            dev_fru_complete[flagIdx][dev_id] = DEV_FRU_COMPLETE;
-            finish_count++;
-            syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
-          }
-          pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-        }
-      } else { // DEVICE_POWER_OFF
+  if (keepPoll) {
+    for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+      if (dev_fru_complete[flagIdx][dev_id] != DEV_FRU_NOT_COMPLETE) {
         finish_count++;
       }
+    }
+  }
 
-      // sprintf(key, "slot%u_dev%u_pres", fru, dev_id-1);
-      // sprintf(buf, "%u", status[dev_id]);
-      // pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-      // if (kv_set(key, buf, 0, 0) < 0) {
-      //   syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id-1);
-      // }
-      // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-    } else { // Device Status Unknown
-      finish_count++;
-      syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id-1);
+  while (finish_count < MAX_NUM_GPV3_DEVS) {
+    // Get GPV3 devices' FRU
+    for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+
+      //check for power status
+      ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
+
+      syslog(LOG_WARNING, "fru_cache_dump1: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+
+      if (dev_fru_complete[flagIdx][dev_id] != DEV_FRU_NOT_COMPLETE) {
+        if (keepPoll) {
+          sleep(1);
+        } else {
+          finish_count++;
+        }
+        continue;
+      }
+
+      if (ret == 0) {
+        if (status[dev_id] == DEVICE_POWER_ON) {
+          retry = 0;
+          while (1) {
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_cache_init(fru, dev_id, keepPoll);
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+            retry++;
+
+            if ((ret == 0) || (retry == max_retry) || keepPoll)
+              break;
+
+            msleep(50);
+          }
+
+          if (ret != 0) {
+            syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
+          } else {
+            pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+            //check file's checksum
+            pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+            ret = fruid_parse(buf, &fruid);
+            if (ret != 0) { // Fail
+              syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d FRU data checksum is invalid", fru, dev_id-1);
+            } else { // Success
+              free_fruid_info(&fruid);
+              dev_fru_complete[flagIdx][dev_id] = DEV_FRU_COMPLETE;
+              finish_count++;
+              syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
+            }
+            pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+          }
+        } else { // DEVICE_POWER_OFF
+          if (!keepPoll) {
+            finish_count++;
+          }
+        }
+
+        // sprintf(key, "slot%u_dev%u_pres", fru, dev_id-1);
+        // sprintf(buf, "%u", status[dev_id]);
+        // pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
+        // if (kv_set(key, buf, 0, 0) < 0) {
+        //   syslog(LOG_WARNING, "fru_cache_dump: kv_set Slot%u Dev%d present status failed", fru, dev_id-1);
+        // }
+        // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+      } else { // Device Status Unknown
+        if (!keepPoll) {
+          finish_count++;
+        }
+        syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id-1);
+      }
+
+      if (keepPoll) {
+        slp_time.tv_sec = 3;
+        slp_time.tv_nsec = 0;
+        nanosleep(&slp_time, NULL);
+      }
     }
   }
 
   // If NVMe is ready, try to get the FRU which was failed to get and
   // update the fan speed control table according to the device type
-  while ((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS)) {
+  while (((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS)) && !keepPoll) {
     nvme_ready_count = 0;
     if ( pal_is_fw_update_ongoing(fru) == true ) {
       sleep(5);
@@ -291,7 +317,7 @@ fru_cache_dump(void *arg) {
 
       // check for device type
       ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
-      syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+      syslog(LOG_WARNING, "fru_cache_dump2: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
 
       if (ret || (!nvme_ready))
         continue;
@@ -303,7 +329,7 @@ fru_cache_dump(void *arg) {
           retry = 0;
           while (1) {
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-            ret = fruid_cache_init(fru, dev_id);
+            ret = fruid_cache_init(fru, dev_id, keepPoll);
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
             retry++;
 

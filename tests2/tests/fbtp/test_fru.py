@@ -17,9 +17,21 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import re
 import unittest
 
 from common.base_fru_test import CommonFruTest
+from utils.shell_util import run_cmd
+
+
+def fru_available():
+    pattern = r"SS_0|SS_1"
+    cmd = ["kv", "get", "mb_system_conf", "persistent"]
+    out = run_cmd(cmd)
+    m = re.search(pattern, out)
+    if m:
+        return False
+    return True
 
 
 class FruMbTest(CommonFruTest, unittest.TestCase):
@@ -53,6 +65,7 @@ class FruMbTest(CommonFruTest, unittest.TestCase):
         return product_fields
 
 
+@unittest.skipIf(not fru_available(), "skip test due to missing riser_slot")
 class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "riser_slot2"]
@@ -90,10 +103,11 @@ class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
         return field_funcs[field_type](num_custom)
 
 
+@unittest.skipIf(not fru_available(), "skip test due to missing riser_slot")
 class FruRiserSlot3Test(FruRiserSlot2Test):
     pass
 
 
-@unittest.skip("not available")
+@unittest.skipIf(not fru_available(), "skip test due to missing riser_slot")
 class FruRiserSlot4Test(FruRiserSlot2Test):
     pass

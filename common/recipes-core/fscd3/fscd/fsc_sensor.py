@@ -130,7 +130,6 @@ class FscSensorSourceSysfs(FscSensorBase):
                 )
             )
             self.read_source_fail_counter += 1
-            raise
 
     def write(self, value):
         """

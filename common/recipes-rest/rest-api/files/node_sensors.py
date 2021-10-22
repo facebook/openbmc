@@ -108,7 +108,7 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
             # SYSTEM_AIRFLOW               (0x0) :   15.78 CFM   | (ok)
             # SYSTEM_AIRFLOW               (0x0) :   15.62 CFM   | (ok) | UCR: NA | UNC: NA | UNR: NA | LCR: NA | LNC: NA | LNR: NA
             rx = re.compile(
-                r"(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$"
+                r"(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)?\s+\|\s+\((\S+)\)(.*)$"
             )
             # MB_CONN_P12V_INA230_PWR      (0x9B) : NA | (na)
             # MB_CONN_P12V_INA230_PWR      (0x9B) : NA | (na)
@@ -138,7 +138,7 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
                     s_name = m_val.group(1)
                     s_id = m_val.group(2)
                     s_val = m_val.group(3)
-                    s_unit = m_val.group(4)
+                    s_unit = m_val.group(4) if m_val.group(4) != None else ""
                     s_status = m_val.group(5)
                     if "thresholds" in display:
                         thres_str = m_val.group(6).strip()

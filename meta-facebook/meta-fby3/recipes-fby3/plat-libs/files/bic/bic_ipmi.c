@@ -358,7 +358,7 @@ bic_is_fw_update_ongoing(uint8_t fruid) {
 }
 
 int
-bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf) {
+bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size, uint8_t intf, uint8_t less_retry) {
 #define RETRY_DELAY 3
   int ret = BIC_STATUS_FAILURE;
   uint32_t nread = 0;
@@ -369,7 +369,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
   int fd = 0;
   ipmi_fruid_info_t info = {0};
   uint8_t *buf = NULL;
-  int retry = 0;
+  int retry = 0, retryMax = less_retry == 1 ? RETRY_3_TIME : RETRY_TIME;
 
   // Remove the file if exists already
   unlink(path);
@@ -414,7 +414,7 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
   }
 
   retry = 0;
-  while ( retry < RETRY_TIME) {
+  while ( retry < retryMax) {
     if ( bic_is_fw_update_ongoing(slot_id) == true ) {
       sleep(5);
       continue;
@@ -454,7 +454,12 @@ bic_read_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, int *fru_size,
 
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() verified fruid failed, slot:%d, retry:%d, intf:%02X, size: %d\n", __func__, slot_id, retry, intf, offset);
-      sleep(RETRY_DELAY * (retry + 1));
+
+      if (less_retry) {
+        sleep(3);
+      } else {
+        sleep(RETRY_DELAY * (retry + 1));
+      }
     } else break;
 
     retry++;

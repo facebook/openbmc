@@ -68,7 +68,7 @@ remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
     sprintf(fruid_path, "/tmp/fruid_slot%d.%d.bin", slot_id, intf);
   }
 
-  ret = bic_read_fruid(slot_id, fru_id, fruid_temp_path, &fru_size, intf);
+  ret = bic_read_fruid(slot_id, fru_id, fruid_temp_path, &fru_size, intf, 0);
   if (ret) {
     syslog(LOG_WARNING, "%s(): slot%d returns %d, fru_size: %d\n", __func__, slot_id, ret, fru_size);
   }
@@ -99,7 +99,7 @@ fruid_cache_init(uint8_t slot_id) {
   sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
   sprintf(fruid_path, "/tmp/fruid_slot%d.bin", slot_id);
 
-  ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size, NONE_INTF);
+  ret = bic_read_fruid(slot_id, 0, fruid_temp_path, &fru_size, NONE_INTF, 0);
   if (ret) {
     syslog(LOG_WARNING, "fruid_cache_init: bic_read_fruid slot%d returns %d, fru_size: %d\n", slot_id, ret, fru_size);
   }

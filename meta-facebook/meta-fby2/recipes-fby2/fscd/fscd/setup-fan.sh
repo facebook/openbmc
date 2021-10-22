@@ -73,7 +73,7 @@ function init_fsc_config_default()
         ;;
         "17476")
           echo "Run FSC 4 NDs Config"
-          cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
+          cp /etc/FSC_NORTHDOME_4ND_config.json ${default_fsc_config_path}
           if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
               cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
           fi
@@ -90,7 +90,7 @@ function init_fsc_config_default()
         cp /etc/FSC_FBY2_PVT_2GP_2TL_config.json ${default_fsc_config_path}
       elif [[ $(get_server_type 2) == "4" && $(get_server_type 4) == "4" ]] ; then
         echo "Run FSC 4 NDs Config"
-        cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
+        cp /etc/FSC_NORTHDOME_4ND_config.json ${default_fsc_config_path}
         if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
           cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
         fi
@@ -105,7 +105,7 @@ function init_fsc_config_default()
         cp /etc/FSC_FBY2_PVT_2CF_2TL_config.json ${default_fsc_config_path}
       elif [[ $(get_server_type 2) == "4" && $(get_server_type 4) == "4" ]] ; then
         echo "Run FSC 4 NDs Config"
-        cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
+        cp /etc/FSC_NORTHDOME_4ND_config.json ${default_fsc_config_path}
         if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
           cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
         fi
@@ -132,7 +132,7 @@ function init_fsc_config_default()
 
         if [ "$server_type_tmp" == "4" ] ; then
           echo "Unexpected sku type! Use FSC 4 NDs Config as default config"
-          cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
+          cp /etc/FSC_NORTHDOME_4ND_config.json ${default_fsc_config_path}
           if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
             cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
           fi
@@ -213,7 +213,7 @@ function init_fsc_config_default()
 
 function init_fsc_config_yv2nd2()
 {
-  cp /etc/FSC_NORTHDOME_DVT_4ND_config.json ${default_fsc_config_path}
+  cp /etc/FSC_NORTHDOME_4ND_config.json ${default_fsc_config_path}
   cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}
   if [ "$fan_config" == "$FAN_CONFIG_15K" ] ; then
     cp /etc/aggregate-sensor-fbnd-conf.json ${default_aggregate_config_path}

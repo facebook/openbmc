@@ -503,7 +503,9 @@ int get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_form
   fruid_info_t fruid;
 
   ret = fruid_parse(path, &fruid);
-  fruid_trim(&fruid);
+  if (ret == 0) {
+    fruid_trim(&fruid);
+  }
 
   if (print_format == JSON_FORMAT) {
     if (ret) {

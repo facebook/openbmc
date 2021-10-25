@@ -44,6 +44,10 @@ class System {
     virtual void set_update_ongoing(uint8_t fru_id, int timeo);
     virtual bool is_update_ongoing(uint8_t fru);
     virtual bool is_sled_cycle_initiated();
+    virtual bool is_healthd_running();
+    virtual bool is_reboot_ongoing();
+    virtual bool is_shutdown_non_executable();
+    virtual int wait_shutdown_non_executable(uint8_t timeout_sec);
 };
 
 #endif

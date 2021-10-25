@@ -101,4 +101,24 @@ bool System::is_sled_cycle_initiated()
   return false;
 }
 
+bool System::is_healthd_running()
+{
+  return false;
+}
+
+bool System::is_reboot_ongoing()
+{
+  return false;
+}
+
+bool System::is_shutdown_non_executable()
+{
+  return false;
+}
+
+int System::wait_shutdown_non_executable(uint8_t timeout_sec)
+{
+  return 0;
+}
+
 #endif

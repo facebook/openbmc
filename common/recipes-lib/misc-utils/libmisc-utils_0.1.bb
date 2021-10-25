@@ -34,6 +34,7 @@ SRC_URI = "file://Makefile \
            file://str-utils.c \
            file://misc-utils.h \
            file://biview.hpp \
+           file://profile.hpp \
            "
 
 # Add Test sources
@@ -43,6 +44,7 @@ SRC_URI += "file://test/main.c \
            file://test/test-path.c \
            file://test/test-str.c \
            file://test/test-biview.cpp \
+           file://test/test-profile.cpp \
            "
 S = "${WORKDIR}"
 
@@ -53,6 +55,7 @@ do_compile_ptest() {
   make test-cpp-libmisc-utils
   cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
+set -e
 /usr/lib/libmisc-utils/ptest/test-libmisc-utils
 /usr/lib/libmisc-utils/ptest/test-cpp-libmisc-utils
 EOF

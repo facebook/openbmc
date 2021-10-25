@@ -1405,7 +1405,6 @@ static int
 nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
   bool is_done = false;
   uint8_t ret = 0, retry = 0, cc = 0;
-  uint8_t buf[NCSI_DATA_PAYLOAD] = {0};
   uint8_t channel = 0;
   uint8_t oem_payload_length = 4;
   uint32_t nic_mfg_id = 0;

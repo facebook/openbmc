@@ -60,6 +60,10 @@ static uint8_t cwcPlat = 0;
 
 static char* rtrim(char* buf)
 {
+  if(strlen(buf) == 0) {
+    return buf;
+  }
+
   char* pback = buf + strlen(buf);
 
   while ((*(--pback) == ' ') && (pback >= buf));

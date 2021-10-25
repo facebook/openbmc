@@ -48,7 +48,7 @@ IMAGE_INSTALL += " \
   vboot-utils \
   libncsi \
   ncsi-util \
-  ncsid \
+  ncsid-v2 \
   libpldm \
   name-util \
   "

@@ -17,10 +17,12 @@ class UsbDbgComponent : public McuFwComponent {
 class UsbDbgBlComponent : public McuFwBlComponent {
   uint8_t bus_id;
   uint8_t slv_addr;
+  uint8_t target_id;
   public:
     UsbDbgBlComponent(std::string fru, std::string comp, uint8_t bus, uint8_t addr, uint8_t target)
-      : McuFwBlComponent(fru, comp, bus, addr, target), bus_id(bus), slv_addr(addr) {}
+      : McuFwBlComponent(fru, comp, bus, addr, target), bus_id(bus), slv_addr(addr), target_id(target) {}
     int print_version();
+    int update(std::string image);
 };
 
 #endif

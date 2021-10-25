@@ -29,6 +29,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include "mcu.h"
 
@@ -489,6 +490,18 @@ mcu_update_fw(uint8_t bus, uint8_t addr, uint8_t target, uint32_t offset, uint16
 }
 
 int
+reset_mcu(uint8_t bus, uint8_t t_addr) {
+  uint8_t ipmi_cmd = CMD_APP_COLD_RESET;
+  uint8_t netfn = NETFN_APP_REQ;
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen;
+  int ret;
+
+  ret = lib_ipmb_send_request(ipmi_cmd, netfn, NULL, 0, rbuf, &rlen, bus, t_addr, BMC_SLAVE_ADDR);
+  return ret;
+}
+
+int
 mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *path) {
   int fd, ret;
   uint32_t dsize, offset, last_offset;
@@ -539,6 +552,26 @@ mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *pat
   close(fd);
 
   ret = (offset >= st.st_size) ? 0 : -1;
+  return ret;
+}
+
+int
+dbg_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *path) {
+  int ret;
+  char key[32] = "blk_ocp_cmd";
+  char value[8] = {0};
+
+  sprintf(value, "%d", 1);
+  kv_set(key, value, 0, 0);
+
+  reset_mcu(bus, addr);
+  sleep(2);
+
+  ret = mcu_update_bootloader(bus, addr, target, path);
+
+  sprintf(value, "%d", 0);
+  kv_set(key, value, 0, 0);
+
   return ret;
 }
 

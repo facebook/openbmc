@@ -432,6 +432,7 @@ int parse_fruid_area_multirecord_smart_fan(uint8_t * multirecord,
   for (i = 0; i < SMART_FAN_MFG_LINE_LENGTH; i++) {
     fruid_multirecord_smart_fan->mfg_line[i] = multirecord[index++];
   }
+  fruid_multirecord_smart_fan->mfg_line[SMART_FAN_MFG_LINE_LENGTH] = '\0';
 
   fruid_multirecord_smart_fan->clei_code = (char *) calloc(SMART_FAN_CLEI_CODE_LENGTH + 1, sizeof(char));
   if (fruid_multirecord_smart_fan->clei_code == NULL) {
@@ -443,6 +444,7 @@ int parse_fruid_area_multirecord_smart_fan(uint8_t * multirecord,
   for (i = 0; i < SMART_FAN_CLEI_CODE_LENGTH; i++) {
     fruid_multirecord_smart_fan->clei_code[i] = multirecord[index++];
   }
+  fruid_multirecord_smart_fan->clei_code[SMART_FAN_CLEI_CODE_LENGTH] = '\0';
 
   fruid_multirecord_smart_fan->voltage = (get_dword(multirecord + index, SMART_FAN_VOL_DATA_LENGTH) * SMART_FAN_VOL_CUR_MULTIPLIER);
   index += SMART_FAN_VOL_DATA_LENGTH;
@@ -1611,8 +1613,14 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
       break;
   }
 
-  // create new FRU alloc new eeporm
-  new_fruid_len = fruid_len + ((content_len / 8) + 1) * 8;
+  // create new FRU alloc new eeprom
+  // We need the existing length + length of new content, but we can also add
+  // new optional fields (for instance if custom1 is added, the others become 0
+  // byte fields, but with a type/len byte).  For safety add enough bytes to
+  // cover all the optional fields to prevent buffer overruns.  We track the
+  // number of bytes added to the array, so only that number will be written to
+  // the eeprom.
+  new_fruid_len = fruid_len + ((content_len / 8) + 1) * 8 + total_field_opt_size;
   eeprom = (uint8_t *) malloc(new_fruid_len);
   memset(eeprom, 0, new_fruid_len);
   if (!eeprom) {

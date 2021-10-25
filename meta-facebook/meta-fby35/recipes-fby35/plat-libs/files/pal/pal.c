@@ -2363,12 +2363,21 @@ pal_store_crashdump(uint8_t fru, bool ierr) {
 static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
+  int i = 0;
   bool is_cri_sel = false;
 
   switch (snr_num) {
     case CATERR_B:
       is_cri_sel = true;
       pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
+      if (event_data[3] == 0x00) { // IERR
+        fby35_common_fscd_ctrl((event_data[2] == SEL_ASSERT) ? FAN_MANUAL_MODE : FAN_AUTO_MODE);
+        if (event_data[2] == SEL_ASSERT) {
+          for (i = 0; i < pal_pwm_cnt; i++) {
+            pal_set_fan_speed(i, 100);
+          }
+        }
+      }
       break;
     case CPU_DIMM_HOT:
     case PWR_ERR:

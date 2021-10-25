@@ -48,6 +48,7 @@ SRC_URI = " \
     file://emmc_enhance_part.sh \
     file://mount_data1.sh \
     file://setup_persist_log.sh \
+    file://setup-reboot-ongoing.sh \
     file://setup-reboot.sh \
     file://setup-reboot.service \
     file://eth0_mac_fixup.sh \
@@ -124,6 +125,9 @@ install_sysv() {
 
     install -m 755 ${WORKDIR}/setup-reboot.sh ${D}${sysconfdir}/init.d/setup-reboot.sh
     update-rc.d -r ${D} setup-reboot.sh start 89 6 .
+
+    install -m 755 ${WORKDIR}/setup-reboot-ongoing.sh ${D}${sysconfdir}/init.d/setup-reboot-ongoing.sh
+    update-rc.d -r ${D} setup-reboot-ongoing.sh stop 01 6 .
 
     if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
         if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" = "x0" ]; then

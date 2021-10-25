@@ -325,6 +325,7 @@ int main(int argc, char *argv[])
   int find_comp = 0;
   struct sigaction sa;
 
+  System system;
   Component::fru_list_setup();
 
 #ifdef CONFIG_FBY3_CWC
@@ -540,6 +541,20 @@ int main(int argc, char *argv[])
 
             string str_act("");
             c->set_update_ongoing(60 * 10);
+
+            // ensure the shutdown (reboot) will not be execute during update
+            if (system.wait_shutdown_non_executable(2)) {
+              // the permission of shutdown command not changed
+              // add warning message to syslog here, and continue the update process
+              syslog(LOG_WARNING, "fw-util: shutdown command can still be executed after 2 seconds waiting");
+            }
+
+            if (system.is_reboot_ongoing()) {
+              cout << "Aborted action due to reboot ongoing" << endl;
+              c->set_update_ongoing(0);
+              return -1;
+            }
+
             if (action == "--update") {
               if (image != "-") {
                 ret = c->update(image);

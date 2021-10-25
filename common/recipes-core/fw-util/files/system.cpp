@@ -1,3 +1,12 @@
+#if (__GNUC__ < 8)
+#include <experimental/filesystem>
+namespace std
+{
+    namespace filesystem = experimental::filesystem;
+}
+#else
+#include <filesystem>
+#endif
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -8,6 +17,7 @@
 #include <sys/mman.h>
 #include <openbmc/pal.h>
 #include <openbmc/vbs.h>
+#include <openbmc/kv.hpp>
 #include "fw-util.h"
 
 #define PAGE_SIZE                     0x1000
@@ -125,6 +135,71 @@ bool System::is_update_ongoing(uint8_t fru_id)
 bool System::is_sled_cycle_initiated()
 {
   return pal_sled_cycle_prepare();
+}
+
+bool System::is_healthd_running()
+{
+  static const char* cmd = "ps -w | grep [/]usr/local/bin/healthd";
+  return (system(cmd) == 0) ? true : false;
+}
+
+bool System::is_reboot_ongoing()
+{
+  const std::string key = "reboot_ongoing";
+  std::string val;
+  try {
+    val = kv::get(key, kv::region::temp);
+    if (val.find_first_of("1") == std::string::npos) {
+      return false;
+    }
+  } catch(std::exception& e) {
+    return false;
+  }
+  return true;
+}
+
+bool System::is_shutdown_non_executable()
+{
+  const std::vector<std::string> reboot_cmds = {
+    "/sbin/shutdown.sysvinit",
+    "/sbin/halt.sysvinit",
+    "/sbin/init"};
+
+  const std::filesystem::perms non_exec = std::filesystem::perms::owner_exec |
+                                          std::filesystem::perms::group_exec |
+                                          std::filesystem::perms::others_exec;
+
+  for (size_t i=0; i<reboot_cmds.size(); i++) {
+    std::filesystem::perms f_perms;
+    f_perms = std::filesystem::status(reboot_cmds[i]).permissions();
+    if ((f_perms & non_exec) != std::filesystem::perms::none) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+int System::wait_shutdown_non_executable(uint8_t timeout_sec)
+{
+  if (!this->is_healthd_running()) {
+    // for those platforms does't have healthd service
+    // just assume permission changed successfully
+    return 0;
+  }
+
+  while (timeout_sec > 0) {
+    if (this->is_shutdown_non_executable()) {
+      return 0;
+    }
+    sleep(1);
+    timeout_sec -= 1;
+  };
+
+  if (this->is_shutdown_non_executable()) {
+      return 0;
+  }
+  return -1;
 }
 
 #endif

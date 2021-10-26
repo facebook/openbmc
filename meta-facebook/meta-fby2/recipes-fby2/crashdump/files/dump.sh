@@ -3,8 +3,22 @@
 ME_UTIL="/usr/local/bin/me-util"
 PECI_UTIL="/usr/bin/bic-util"
 CMD_DIR="/usr/local/fbpackages/crashdump"
+INTERFACE=$3
 SENSOR_HISTORY=180
 SLOT=$1
+
+# read command from stdin
+function execute_via_me {
+  # if ME_UTIL cannot be executed, return
+  [ -x $ME_UTIL ] || \
+    return
+
+  # Adapt command to ME-UTIL format
+  cat | \
+    sed 's/^0x/0xb8 0x40 0x57 0x01 0x00 0x/g' "$1" | \
+      "$ME_UTIL" "$SLOT" --file /dev/stdin | \
+        sed 's/^57 01 00 //g'
+}
 
 # read command from stdin
 function execute_via_peci {
@@ -14,12 +28,16 @@ function execute_via_peci {
 
   cat | \
     sed 's/^0x/0xe0 0x29 0x15 0xa0 0x00 0x/g' $1 | \
-      $PECI_UTIL $SLOT --file /dev/stdin | \
+      "$PECI_UTIL" "$SLOT" --file /dev/stdin | \
         sed 's/^15 A0 00 //g'
 }
 
 function execute_cmd {
-  cat | execute_via_peci
+  if [ "$INTERFACE" == "ME_INTERFACE" ]; then
+    cat | execute_via_me 
+  else
+    cat | execute_via_peci
+  fi
 }
 
 function print_find_core_id {
@@ -227,20 +245,20 @@ function dwr_dump {
 }
 
 function print_dump_help {
-  echo "$0 <slot#> coreid    ==> for CPU CoreID"
-  echo "$0 <slot#> msr       ==> for Core MCA"
-  echo "$0 <slot#> pcu       ==> for PCU"
-  echo "$0 <slot#> ubox      ==> for UBOX"
-  echo "$0 <slot#> iio       ==> for IIO"
-  echo "$0 <slot#> imc       ==> for IMC, MC, Mmap"
-  echo "$0 <slot#> mesh      ==> for Mesh"
-  echo "$0 <slot#> upi       ==> for UPI"
-  echo "$0 <slot#> uncore    ==> for Uncore MCA"
-  echo "$0 <slot#> sensors   ==> for sensor history"
-  echo "$0 <slot#> threshold ==> for sensor threshold"
-  echo "$0 <slot#> pcie      ==> for PCIe"
-  echo "$0 <slot#> tor       ==> for TOR dump"
-  echo "$0 <slot#> dwr       ==> for DWR check"
+  echo "$0 <slot#> coreid <INTERFACE>   ==> for CPU CoreID"
+  echo "$0 <slot#> msr    <INTERFACE>   ==> for Core MCA"
+  echo "$0 <slot#> pcu    <INTERFACE>   ==> for PCU"
+  echo "$0 <slot#> ubox   <INTERFACE>   ==> for UBOX"
+  echo "$0 <slot#> iio    <INTERFACE>   ==> for IIO"
+  echo "$0 <slot#> imc    <INTERFACE>   ==> for IMC, MC, Mmap"
+  echo "$0 <slot#> mesh   <INTERFACE>   ==> for Mesh"
+  echo "$0 <slot#> upi    <INTERFACE>   ==> for UPI"
+  echo "$0 <slot#> uncore <INTERFACE>   ==> for Uncore MCA"
+  echo "$0 <slot#> sensors              ==> for sensor history"
+  echo "$0 <slot#> threshold            ==> for sensor threshold"
+  echo "$0 <slot#> pcie   <INTERFACE>   ==> for PCIe"
+  echo "$0 <slot#> tor    <INTERFACE>   ==> for TOR dump"
+  echo "$0 <slot#> dwr    <INTERFACE>   ==> for DWR check"
   exit 1
 }
 
@@ -250,7 +268,15 @@ if [ "$#" -eq 1 ] && [ $1 = "time" ]; then
   exit 0
 fi
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -eq 2 ]; then
+  if [ "$2" != "sensors" ] && [ "$2" != "threshold" ]; then
+    print_dump_help
+  fi
+elif [ "$#" -eq 3 ]; then
+  if [ "$INTERFACE" != "ME_INTERFACE" ] && [ "$INTERFACE" != "PECI_INTERFACE" ]; then
+    print_dump_help
+  fi
+else
   print_dump_help
 fi
 

@@ -20,9 +20,11 @@
 #
 
 ME_UTIL="/usr/local/bin/me-util"
+BIC_UTIL="/usr/bin/bic-util"
 FRUID_UTIL="/usr/local/bin/fruid-util"
 FW_UTIL="/usr/bin/fw-util"
 SLOT_NAME=$1
+INTERFACE="PECI_INTERFACE"
 
 function is_numeric {
   if [ $(echo "$1" | grep -cE "^\-?([[:xdigit:]]+)(\.[[:xdigit:]]+)?$") -gt 0 ]; then
@@ -133,7 +135,19 @@ echo "$RES" >> $CRASHDUMP_FILE
 echo "Get Device ID:" >> $CRASHDUMP_FILE
 RES=$($ME_UTIL $SLOT_NAME 0x18 0x01)
 echo "$RES" >> $CRASHDUMP_FILE
+
+echo "Get CPU Microcode Update Revision:" >> "$CRASHDUMP_FILE"
+RES="$($BIC_UTIL $SLOT_NAME 0xe0 0x29 0x15 0xa0 0x00 0x30 0x05 0x05 0xa1 0x00 0x00 0x04 0x00)"
+echo "$RES" >> "$CRASHDUMP_FILE"
 RET=$?
+
+if [ "$RET" -eq "0" ] && [ "${RES:0:11}" == "15 A0 00 40" ]; then
+  echo "Use BIC wired PECI interface"
+  INTERFACE="PECI_INTERFACE"
+else
+  echo "Use PECI through ME interface due to BIC wired PECI abnormal"
+  INTERFACE="ME_INTERFACE"
+fi
 
 # Major Firmware Revision
 REV=$(echo $RES| awk '{print $3;}')
@@ -185,43 +199,43 @@ $DUMP_SCRIPT $SLOT_NAME "threshold" >> $CRASHDUMP_FILE
 echo COREID dump
 date
 echo "Dumping coreid.."
-$DUMP_SCRIPT $SLOT_NAME "coreid"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "coreid" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping pcu.."
-$DUMP_SCRIPT $SLOT_NAME "pcu"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "pcu" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping ubox.."
-$DUMP_SCRIPT $SLOT_NAME "ubox"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "ubox" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping pcie.."
-$DUMP_SCRIPT $SLOT_NAME "pcie"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "pcie" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping iio.."
-$DUMP_SCRIPT $SLOT_NAME "iio"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "iio" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping imc.."
-$DUMP_SCRIPT $SLOT_NAME "imc"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "imc" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping mesh.."
-$DUMP_SCRIPT $SLOT_NAME "mesh"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "mesh" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping upi.."
-$DUMP_SCRIPT $SLOT_NAME "upi"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "upi" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping uncore.."
-$DUMP_SCRIPT $SLOT_NAME "uncore"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "uncore" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping tor.."
-$DUMP_SCRIPT $SLOT_NAME "tor"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "tor" $INTERFACE >> "$CRASHDUMP_FILE"
 date
 echo "Dumping core mca.."
 #MSR dump (core MCA)
-$DUMP_SCRIPT $SLOT_NAME "msr"  >> $CRASHDUMP_FILE
+"$DUMP_SCRIPT" "$SLOT_NAME" "msr" $INTERFACE >> "$CRASHDUMP_FILE"
 
 # only second/dwr autodump need to rename accordingly
 if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
   # dwr
-  $DUMP_SCRIPT $SLOT_NAME  "dwr" >> $CRASHDUMP_FILE
+  $DUMP_SCRIPT $SLOT_NAME  "dwr" $INTERFACE >> $CRASHDUMP_FILE
 
   # rename the archieve file based on whether dump in DWR mode or not
   if [ "$?" == "2" ]; then

@@ -647,6 +647,7 @@ const uint8_t mb_discrete_sensor_list[] = {
   MB_SENSOR_POWER_FAIL,
   MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SENSOR_PROCESSOR_FAIL,
+  MB_SENSOR_HSC_VDELTA,
 };
 
 const uint8_t riser_slot2_sensor_list[] = {
@@ -835,6 +836,7 @@ sensor_thresh_array_init() {
   if (init_done)
     return;
 
+  mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH] = 100;
   mb_sensor_threshold[MB_SENSOR_INLET_REMOTE_TEMP][UCR_THRESH] = 40;
   mb_sensor_threshold[MB_SENSOR_OUTLET_REMOTE_TEMP][UCR_THRESH] = 90;
 
@@ -1022,6 +1024,36 @@ sensor_thresh_array_init() {
   init_board_sensors();
   init_done = true;
 }
+
+static void
+turn_off_p12v_stby() {
+
+  if (system("i2cset -y 7 0x45 0x01 0 &> /dev/null") != 0) {
+    syslog(LOG_CRIT, "turn off HSC output failed\n");
+  }
+
+  return;
+}
+
+
+static int
+read_outlet_temp(float *value) {
+  int ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_TEMP", (float *)value);
+
+  // check the return value
+  if ( ret < 0 ) {
+    return READING_NA;
+  }
+
+  // if we get the reading, check the reading is greater than or equal to its threshold
+  if ( (*value >= mb_sensor_threshold[MB_SENSOR_OUTLET_TEMP][UCR_THRESH]) ) {
+    syslog(LOG_CRIT, "MB_OUTLET_TEMP sensor is over the threshold, turn off P12V_STBY\n");
+    turn_off_p12v_stby();
+  }
+
+  return ret;
+}
+
 static int
 read_nic_temp(float *value)
 {
@@ -1046,6 +1078,81 @@ read_fan_value(const char *fan, float *value)
     sleep(2);
     ret = sensors_read_fan(fan, value);
   }
+  return ret;
+}
+
+static int
+read_hsc_vdelta_value(float *value) {
+  uint8_t bus_id = 0x4;
+  uint8_t rbuf[256] = {0x00};
+  uint8_t tlen = 0;
+  int rlen = 0;
+  float hsc_b = 0;
+  ipmb_req_t *req;
+  int ret = 0;
+  uint8_t revision_id = 0;
+  uint8_t sku_id = 0;
+  uint8_t hsc_volt_reg[2] = {0x88, 0x8B}; //VIN, VOUT
+  float hsc_volt[2] = {0}; //VIN, VOUT
+
+  if (pal_get_platform_id(&sku_id) ||
+      pal_get_board_rev_id(&revision_id)) {
+    return -1;
+  }
+
+  req = ipmb_txb();
+  req->res_slave_addr = 0x2C; //ME's Slave Address
+  req->netfn_lun = NETFN_NM_REQ<<2;
+  req->cmd = CMD_NM_SEND_RAW_PMBUS;
+  req->data[0] = 0x57;
+  req->data[1] = 0x01;
+  req->data[2] = 0x00;
+  req->data[3] = 0x86;
+  if (revision_id < BOARD_REV_PVT) { //DVT
+    //HSC slave addr check for SS and DS
+    if ((sku_id & (1 << 4))) { // DS
+      req->data[4] = 0x8A;
+    }else{    //SS
+      req->data[4] = 0x22;
+    }
+  } else { //PVT and MP
+    //HSC slave addr is the same for SS and DS
+    req->data[4] = 0x8A;
+  }
+
+  req->data[5] = 0x00;
+  req->data[6] = 0x00;
+  req->data[7] = 0x01;
+  req->data[8] = 0x02;
+  tlen = 10 + MIN_IPMB_REQ_LEN; // Data Length + Others
+
+  ret = 0;
+  for ( int i = 0; i < 2; i++ ) {
+    req->data[9] = hsc_volt_reg[i];
+    rlen = ipmb_send_buf(bus_id, tlen);
+    if ( rlen > 0 ) {
+      memset(rbuf, 0, sizeof(rbuf));
+      memcpy(rbuf, ipmb_rxb(), rlen);
+    }
+
+    if ( rlen <= 0 || rbuf[6] != 0 ) {
+      syslog(LOG_WARNING, "something went wrong, rlen=%d, req->data[9]=%02X, comp_code=%02X\n", rlen, req->data[9], rbuf[6]);
+      ret = READING_NA;
+    } else if ( rbuf[6] == 0 ) {
+      hsc_volt[i] = ((float) (rbuf[11] << 8 | rbuf[10])*100-hsc_b )/(19599);
+    }
+  }
+
+  if ( ret != READING_NA ) {
+    *value = hsc_volt[0] - hsc_volt[1];
+    if ( *value >= 0.3 ) {
+      syslog(LOG_CRIT, "HSC vdelta(Vin-Vout) %0.2f >= 0.3, turn off P12V_STBY\n", *value);
+      turn_off_p12v_stby();
+    }
+  } else {
+    syslog(LOG_INFO, "Couldn't calculate hsc_vdelta, ret= %d, vin=%0.2f vout=%0.2f\n", ret, hsc_volt[0], hsc_volt[1]);
+  }
+
   return ret;
 }
 
@@ -3797,7 +3904,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_TEMP", (float *)value);
         break;
       case MB_SENSOR_OUTLET_TEMP:
-        ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_TEMP", (float *)value);
+        ret = read_outlet_temp((float *)value);
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
         ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_REMOTE_TEMP", (float *)value);
@@ -3842,6 +3949,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_POWER_FAIL:
         ret = read_CPLD_power_fail_sts (fru, sensor_num, (float*) value, poweron_10s_flag);
         break;
+      case MB_SENSOR_HSC_VDELTA:
+        ret = read_hsc_vdelta_value((float*) value);
+        break;
       default:
         ret = READING_NA;
         break;
@@ -3863,7 +3973,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_TEMP", (float *)value);
         break;
       case MB_SENSOR_OUTLET_TEMP:
-        ret = sensors_read("tmp421-i2c-6-4f", "MB_OUTLET_TEMP", (float *)value);
+        ret = read_outlet_temp((float *)value);
         break;
       case MB_SENSOR_INLET_REMOTE_TEMP:
         ret = sensors_read("tmp421-i2c-6-4e", "MB_INLET_REMOTE_TEMP", (float *)value);
@@ -4190,7 +4300,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       case MB_SENSOR_PROCESSOR_FAIL:
         ret = check_frb3(FRU_MB, sensor_num, (float*) value);
         break;
-
+      case MB_SENSOR_HSC_VDELTA:
+        ret = read_hsc_vdelta_value((float*) value);
+        break;
       default:
         return -1;
       }

@@ -23,6 +23,7 @@ int BmcComponent::update(string image_path)
   int ret;
   string flash_image = image_path;
   stringstream cmd_str;
+  string comp = this->component();
 
   if (_mtd_name == "") {
     // Upgrade not supported
@@ -31,6 +32,7 @@ int BmcComponent::update(string image_path)
 
   if (is_valid(image_path, false) == false) {
     sys().error << image_path << " is not a valid BMC image for " << sys().name() << endl;
+    syslog(LOG_CRIT, "Updating %s Fail. File: %s is not a valid image", comp.c_str(), image_path.c_str());
     return FW_STATUS_FAILURE;
   }
 

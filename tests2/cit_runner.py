@@ -194,6 +194,7 @@ def arg_parser():
             "elbert",
             "fby3",
             "grandcanyon",
+            "fby35",
         ],
     )
     parser.add_argument(

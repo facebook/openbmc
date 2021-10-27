@@ -139,7 +139,7 @@ bool System::is_sled_cycle_initiated()
 
 bool System::is_healthd_running()
 {
-  static const char* cmd = "ps -w | grep [/]usr/local/bin/healthd";
+  static const char* cmd = "ps -w | grep [/]usr/local/bin/healthd > /dev/null";
   return (system(cmd) == 0) ? true : false;
 }
 

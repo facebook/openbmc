@@ -19,8 +19,37 @@
 #
 import os
 import re
+import subprocess
 
 from utils.cit_logger import Logger
+
+
+def check_fru_availability(fru: str) -> bool:
+    """[summary]check if FRU present
+    we use fruid-util to check, if fru present, then expected output is:
+    root@sled2401-oob:~# fruid-util slot1
+
+    FRU Information           : Server board 1
+    ---------------           : ------------------
+    Chassis Type              : Rack Mount Chassis
+    ....
+
+    Args:
+        fru (str): fru name, ex. riser_slot1, slot2
+
+    Returns:
+        bool: return true if fru present otherwise false
+    """
+    cmd = ["/usr/local/bin/fruid-util", fru]
+    f = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    out, _ = f.communicate()
+    if re.search("FRU Information", out.decode("utf-8")):
+        return True
+    return False
 
 
 def qemu_check():

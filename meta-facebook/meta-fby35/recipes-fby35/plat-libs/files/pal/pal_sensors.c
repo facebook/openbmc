@@ -2557,7 +2557,7 @@ pal_is_sensor_valid(uint8_t fru, uint8_t snr_num) {
     const char *device_id;
   } drives[] = { // Unsupported sensor reading drives
     {"1344", "5410"}, // Micron
-    {"15B7", "5002"}, // WD
+    {"15b7", "5002"}, // WD
     {"1179", "011a"}, // Toshiba
   };
   char key[100] = {0};

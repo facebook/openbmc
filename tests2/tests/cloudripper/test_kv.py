@@ -31,8 +31,6 @@ class KvTest(BaseKvTest, unittest.TestCase):
             "fan2_sensor_health",
             "fan3_sensor_health",
             "fan4_sensor_health",
-            "fcm_sensor_health",
-            "fru1_restart_cause",
             "psu1_sensor_health",
             "psu2_sensor_health",
             "pwr_server_last_state",

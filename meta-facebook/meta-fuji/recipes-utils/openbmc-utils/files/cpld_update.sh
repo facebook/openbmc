@@ -183,17 +183,17 @@ cpld_update_sw_mode(){
                 if [[  $CPLD_TYPE == "PWR-L" ]];then
                 # ispvm success return code is 1
                 expect=1
-                ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
+                ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_L_JTAG_TDO --tdi PDB_L_JTAG_TDI --tms PDB_L_JTAG_TMS --tck PDB_L_JTAG_TCK
                 elif [[  $CPLD_TYPE == "PWR-R" ]];then
                 # ispvm success return code is 1
                 expect=1
-                ispvm -f 100 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
+                ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}" --tdo PDB_R_JTAG_TDO --tdi PDB_R_JTAG_TDI --tms PDB_R_JTAG_TMS --tck PDB_R_JTAG_TCK
                 elif [[  $CPLD_TYPE == "PFR" ]];then
                 jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
                 else
                 # ispvm success return code is 1
                 expect=1
-                ispvm -f 100 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
+                ispvm -f 1000 dll $DLL_AST_JTAG_PATH "${UPDATE_IMG}"
                 fi
 
                 result=$?

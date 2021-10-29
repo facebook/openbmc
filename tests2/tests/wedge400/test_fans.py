@@ -32,8 +32,8 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
         self.kill_fan_ctrl_cmd = [
-            "/usr/local/bin/wdtcli stop",
             "/usr/bin/sv force-stop fscd",
+            "/usr/local/bin/wdtcli stop",
         ]
         self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 

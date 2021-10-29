@@ -21,7 +21,7 @@ import unittest
 
 from common.base_sensor_test import SensorUtilTest
 from tests.fby3.test_data.sensors.sensors import SENSORS
-from utils.test_utils import qemu_check
+from utils.test_utils import qemu_check, check_fru_availability
 
 
 class Slot1SensorTest(SensorUtilTest, unittest.TestCase):
@@ -32,6 +32,8 @@ class Slot1SensorTest(SensorUtilTest, unittest.TestCase):
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_sensor_keys(self):
+        if not check_fru_availability(self.FRU_NAME):
+            self.skipTest("skip test due to {} not available".format(self.FRU_NAME))
         result = self.get_parsed_result()
         for key in SENSORS[self.FRU_NAME]:
             with self.subTest(sensor=key):

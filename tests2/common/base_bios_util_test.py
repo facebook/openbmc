@@ -23,6 +23,7 @@ from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
+from utils.test_utils import check_fru_availability
 
 
 class BaseBiosUtilTest(unittest.TestCase):
@@ -49,6 +50,8 @@ class BaseBiosUtilTest(unittest.TestCase):
         ]
         for fru in self.fru_list:
             with self.subTest(fru=fru):
+                if not check_fru_availability(fru):
+                    self.skipTest("skip test due to {} not available".format(fru))
                 cmd = ["bios-util", fru, "--boot_order", "get", "--boot_order"]
                 pattern = r"Boot Order: ([a-zA-Z0-9,\s\-]+?)\n"
                 out = run_cmd(cmd)
@@ -86,6 +89,8 @@ class BaseBiosUtilTest(unittest.TestCase):
         """
         for fru in self.fru_list:
             with self.subTest(fru=fru):
+                if not check_fru_availability(fru):
+                    self.skipTest("skip test due to {} not available".format(fru))
                 self.disableBootOrder(fru, "--clear_CMOS")
                 self.enableBootOrder(fru, "--clear_CMOS")
 
@@ -95,6 +100,8 @@ class BaseBiosUtilTest(unittest.TestCase):
         """
         for fru in self.fru_list:
             with self.subTest(fru=fru):
+                if not check_fru_availability(fru):
+                    self.skipTest("skip test due to {} not available".format(fru))
                 self.enableBootOrder(fru, "--clear_CMOS")
                 self.disableBootOrder(fru, "--clear_CMOS")
 
@@ -104,6 +111,8 @@ class BaseBiosUtilTest(unittest.TestCase):
         """
         for fru in self.fru_list:
             with self.subTest(fru=fru):
+                if not check_fru_availability(fru):
+                    self.skipTest("skip test due to {} not available".format(fru))
                 try:
                     # DEFAULT boot_mode is UEFI
                     # test set bootmode: UEFI -> Legacy -> UEFI
@@ -155,6 +164,8 @@ class BaseBiosUtilTest(unittest.TestCase):
     def test_postcode_get(self):
         for fru in self.fru_list:
             with self.subTest(fru=fru):
+                if not check_fru_availability(fru):
+                    self.skipTest("skip test due to {} not available".format(fru))
                 cmd = ["bios-util", fru, "--postcode", "get"]
                 out = run_cmd(cmd)
                 pattern = r"^([A-F0-9\s\n]+)$"

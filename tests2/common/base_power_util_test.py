@@ -24,6 +24,7 @@ from abc import abstractmethod
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
+from utils.test_utils import check_fru_availability
 
 
 class BasePowerUtilTest(unittest.TestCase):
@@ -38,10 +39,11 @@ class BasePowerUtilTest(unittest.TestCase):
     def tearDown(self):
         Logger.info("turn all slots back to ON state")
         for slot in self.slots:
-            if self.slot_status(slot, status="off"):
-                self.turn_slot(slot, status="on")
-            elif self.slot_12V_status(slot, status="off"):
-                self.turn_12V_slot(slot, status="on")
+            if check_fru_availability(slot):
+                if self.slot_status(slot, status="off"):
+                    self.turn_slot(slot, status="on")
+                elif self.slot_12V_status(slot, status="off"):
+                    self.turn_12V_slot(slot, status="on")
         Logger.info("Finished logging for {}".format(self._testMethodName))
 
     def slot_status(self, slot, status=None):
@@ -106,6 +108,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 cmd = ["power-util", slot, "status"]
                 cli_out = run_cmd(cmd)
                 self.assertIsNotNone(
@@ -121,6 +125,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 # turn on the slot if its OFF
                 if self.slot_status(slot, status="off"):
                     self.turn_slot(slot, status="on")
@@ -131,12 +137,14 @@ class BasePowerUtilTest(unittest.TestCase):
                     cli_out = run_cmd(cmd)
                     m = r.search(cli_out)
                     if m:
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                if count == 0:
+                    self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                else:
+                    self.assertTrue(True)
 
     def test_slot_on(self):
         """
@@ -146,6 +154,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 # turn off the slot if its ON
                 if self.slot_status(slot, status="on"):
                     self.turn_slot(slot, status="off")
@@ -156,12 +166,14 @@ class BasePowerUtilTest(unittest.TestCase):
                     cli_out = run_cmd(cmd)
                     m = r.search(cli_out)
                     if m:
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                if count == 0:
+                    self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                else:
+                    self.assertTrue(True)
 
     def test_slot_reset(self):
         """
@@ -171,6 +183,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 cmd = ["power-util", slot, "reset"]
                 cli_out = run_cmd(cmd)
                 # check if BMC is doing reset
@@ -182,12 +196,14 @@ class BasePowerUtilTest(unittest.TestCase):
                 count = 3
                 while count > 0:
                     if self.slot_status(slot, status="on"):
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "slot {} is not ON after reset".format(slot))
+                if count == 0:
+                    self.assertTrue(False, "slot {} is not ON after reset".format(slot))
+                else:
+                    self.assertTrue(True)
 
     def test_slot_cycle(self):
         """
@@ -197,6 +213,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 cmd = ["power-util", slot, "cycle"]
                 cli_out = run_cmd(cmd)
                 # check if BMC is doing cycling
@@ -208,12 +226,14 @@ class BasePowerUtilTest(unittest.TestCase):
                 count = 3
                 while count > 0:
                     if self.slot_status(slot, status="on"):
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
+                if count == 0:
+                    self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
+                else:
+                    self.assertTrue(True)
 
     def test_12V_slot_off(self):
         """
@@ -223,6 +243,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 # turn on the slot if its OFF or 12V-off
                 if self.slot_status(slot, status="off"):
                     self.turn_slot(slot, status="on")
@@ -235,12 +257,14 @@ class BasePowerUtilTest(unittest.TestCase):
                     cli_out = run_cmd(cmd)
                     m = r.search(cli_out)
                     if m:
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                if count == 0:
+                    self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                else:
+                    self.assertTrue(True)
 
     def test_12V_slot_on(self):
         """
@@ -250,6 +274,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 # turn off the slot if its ON
                 if self.slot_status(slot, status="on"):
                     self.turn_12V_slot(slot, status="off")
@@ -260,12 +286,14 @@ class BasePowerUtilTest(unittest.TestCase):
                     cli_out = run_cmd(cmd)
                     m = r.search(cli_out)
                     if m:
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                if count == 0:
+                    self.assertTrue(False, "Unexcpected output: {}".format(cli_out))
+                else:
+                    self.assertTrue(True)
 
     def test_12V_slot_cycle(self):
         """
@@ -275,6 +303,8 @@ class BasePowerUtilTest(unittest.TestCase):
         r = re.compile(pattern)
         for slot in self.slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 cmd = ["power-util", slot, "12V-cycle"]
                 cli_out = run_cmd(cmd)
                 # check if BMC is doing cycling
@@ -286,9 +316,11 @@ class BasePowerUtilTest(unittest.TestCase):
                 count = 3
                 while count > 0:
                     if self.slot_status(slot, status="on"):
-                        self.assertTrue(True)
-                        return
+                        break
                     else:
                         count -= 1
                         time.sleep(2)
-                self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
+                if count == 0:
+                    self.assertTrue(False, "slot {} is not ON after cycle".format(slot))
+                else:
+                    self.assertTrue(True)

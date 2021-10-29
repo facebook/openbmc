@@ -20,51 +20,60 @@
 import unittest
 
 from common.base_fru_test import CommonFruTest
-from utils.test_utils import qemu_check
+from utils.test_utils import qemu_check, check_fru_availability
 
 
 class FruSlot1Test(CommonFruTest, unittest.TestCase):
     def setUp(self):
+        self.fru = "slot1"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot1"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_fru_fields(self):
+        if not check_fru_availability(self.fru):
+            self.skipTest("skip test due to {} not available".format(self.fru))
         super().test_fru_fields()
 
 
 class FruSlot2Test(FruSlot1Test, unittest.TestCase):
     def setUp(self):
+        self.fru = "slot2"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot2"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
 
 class FruSlot3Test(FruSlot1Test, unittest.TestCase):
     def setUp(self):
+        self.fru = "slot3"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot3"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
 
 class FruSlot4Test(FruSlot1Test, unittest.TestCase):
     def setUp(self):
+        self.fru = "slot4"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot4"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
 
 class FruBmcTest(FruSlot1Test, unittest.TestCase):
     def setUp(self):
+        self.fru = "bmc"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "bmc"]
         self.fru_fields = {"product": 2, "board": 2}
 
 
 class FruBbTest(FruSlot1Test, unittest.TestCase):
     def setUp(self):
+        self.fru = "bb"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "bb"]
         self.fru_fields = {"chassis": 0, "product": 2, "board": 2}
 
 
 class FruNicTest(FruSlot1Test, unittest.TestCase):
     def setUp(self):
+        self.fru = "nic"
         self.fru_cmd = ["/usr/local/bin/fruid-util", "nic"]
         self.fru_fields = {"product": 0, "board": 0}
 

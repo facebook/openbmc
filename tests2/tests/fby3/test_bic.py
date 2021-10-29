@@ -20,7 +20,7 @@
 import unittest
 
 from common.base_bic_test import CommonBicTest
-from utils.test_utils import qemu_check
+from utils.test_utils import check_fru_availability, qemu_check
 
 slots = ["slot1", "slot2", "slot3", "slot4"]
 
@@ -33,18 +33,24 @@ class BicTest(CommonBicTest, unittest.TestCase):
     def test_bic_dev_id(self):
         for slot in slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_dev_id()
 
     def test_bic_gpio(self):
         for slot in slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_gpio()
 
     def test_bic_gpio_config(self):
         for slot in slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_gpio_config()
 
@@ -55,6 +61,8 @@ class BicTest(CommonBicTest, unittest.TestCase):
     def test_bic_post_code(self):
         for slot in slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_post_code()
 
@@ -62,13 +70,17 @@ class BicTest(CommonBicTest, unittest.TestCase):
         regex = r"((^Server Board:.*)|(^(.+:\s([0-9]+|((0x|0X)[0-9a-zA-Z]+)),)\s*))"
         for slot in slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_sdr(regex=regex)
 
     def test_bic_sensor(self):
-        regex = r"((^Server Board:.*)|(^(.+:\s([0-9]+|((0x|0X)[0-9a-zA-Z]+)),)\s*))"
+        regex = r"((^Server Board:.*)|(^(.+:\s([0-9]+|((0x|0X)[0-9a-zA-Z]+)),)\s*))|\s\S+returns -1"
         for slot in slots:
             with self.subTest(slot=slot):
+                if not check_fru_availability(slot):
+                    self.skipTest("skip test due to {} not available".format(slot))
                 self.bic_cmd = "/usr/bin/bic-util {}".format(slot)
                 super().test_bic_sensor(regex=regex)
 

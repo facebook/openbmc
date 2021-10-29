@@ -74,6 +74,10 @@ PWR_USRV_SYSFS="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
 PWR_USRV_FORCE_OFF="${SCMCPLD_SYSFS_DIR}/com_exp_pwr_force_off"
 PIM_RST_SYSFS="${SMBCPLD_SYSFS_DIR}"
 
+# 48V DC PSU P/N
+DELTA_48V="0x45 0x43 0x44 0x32 0x35 0x30 0x31 0x30 0x30 0x31 0x35"
+LITEON_48V="0x44 0x44 0x2d 0x32 0x31 0x35 0x32 0x2d 0x32 0x4c"
+
 wedge_board_rev() {
     local val0 val1 val2
     val0=$(gpio_get_value BMC_CPLD_BOARD_REV_ID0)
@@ -119,4 +123,32 @@ wedge_board_ver() {
             echo "BOARD_FUJI_UNDEFINED_${board_ver}"
             ;;
     esac
+}
+
+wedge_power_supply_type() {
+
+    if i2cget -y -f 48 0x58 0x9a s &> /dev/null;then    # PSU1
+        is_psu1_48v=$(i2cget -y -f 48 0x58 0x9a s &)
+    elif i2cget -y -f 49 0x5a 0x9a s &> /dev/null;then  # PSU2
+        is_psu2_48v=$(i2cget -y -f 49 0x5a 0x9a s &)
+    elif i2cget -y -f 56 0x58 0x9a s &> /dev/null;then  # PSU3
+        is_psu3_48v=$(i2cget -y -f 56 0x58 0x9a s &)
+    elif i2cget -y -f 57 0x5a 0x9a s &> /dev/null;then  # PSU4
+        is_psu4_48v=$(i2cget -y -f 57 0x5a 0x9a s &)
+    fi
+
+    # Detect 48V DC PSU
+    if [[ "$is_psu1_48v" = "$DELTA_48V" ||
+        "$is_psu1_48v" = "$LITEON_48V" ||
+        "$is_psu2_48v" = "$DELTA_48V" ||
+        "$is_psu2_48v" = "$LITEON_48V" ||
+        "$is_psu3_48v" = "$DELTA_48V" ||
+        "$is_psu3_48v" = "$LITEON_48V" ||
+        "$is_psu4_48v" = "$DELTA_48V" ||
+        "$is_psu4_48v" = "$LITEON_48V" ]];then
+            power_type="PSU48"
+    else
+            power_type="PSU"
+    fi
+    echo $power_type
 }

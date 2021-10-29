@@ -34,6 +34,7 @@ IMAGE_INSTALL += " \
   sensor-util \
   sensor-mon \
   sensor-setup \
+  threshold-util \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \

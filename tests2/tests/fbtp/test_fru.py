@@ -17,21 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import re
 import unittest
 
 from common.base_fru_test import CommonFruTest
-from utils.shell_util import run_cmd
-
-
-def fru_available():
-    pattern = r"SS_0|SS_1"
-    cmd = ["kv", "get", "mb_system_conf", "persistent"]
-    out = run_cmd(cmd)
-    m = re.search(pattern, out)
-    if m:
-        return False
-    return True
+from utils.test_utils import check_fru_availability
 
 
 class FruMbTest(CommonFruTest, unittest.TestCase):
@@ -65,10 +54,10 @@ class FruMbTest(CommonFruTest, unittest.TestCase):
         return product_fields
 
 
-@unittest.skipIf(not fru_available(), "skip test due to missing riser_slot")
 class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
     def setUp(self):
-        self.fru_cmd = ["/usr/local/bin/fruid-util", "riser_slot2"]
+        self.fru = "riser_slot2"
+        self.fru_cmd = ["/usr/local/bin/fruid-util", self.fru]
         self.fru_fields = {"product": 1, "board": 4}
 
     def getBoardFields(self, num_custom=0):
@@ -102,12 +91,21 @@ class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
         )
         return field_funcs[field_type](num_custom)
 
+    def test_fru_fields(self):
+        if not check_fru_availability(self.fru):
+            self.skipTest("skip test due to {} not available".format(self.fru))
+        super().test_fru_fields()
 
-@unittest.skipIf(not fru_available(), "skip test due to missing riser_slot")
+
 class FruRiserSlot3Test(FruRiserSlot2Test):
-    pass
+    def setUp(self):
+        self.fru = "riser_slot3"
+        self.fru_cmd = ["/usr/local/bin/fruid-util", self.fru]
+        self.fru_fields = {"product": 1, "board": 4}
 
 
-@unittest.skipIf(not fru_available(), "skip test due to missing riser_slot")
 class FruRiserSlot4Test(FruRiserSlot2Test):
-    pass
+    def setUp(self):
+        self.fru = "riser_slot4"
+        self.fru_cmd = ["/usr/local/bin/fruid-util", self.fru]
+        self.fru_fields = {"product": 1, "board": 4}

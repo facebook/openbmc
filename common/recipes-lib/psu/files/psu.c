@@ -444,7 +444,8 @@ update_delta_psu(uint8_t num, const char *file_path,
       return UPDATE_SKIP;
     }
   }
-  if (ret == DELTA_1500 || ret == LITEON_1500 || ret == DELTA_2000) {
+  if (ret == DELTA_1500 || ret == LITEON_1500 || ret == DELTA_2000 ||
+                           ret == LITEON_DC_48) {
     if (delta_hdr.byte_per_blk != 16) {
       printf("Image block size invalid!\n");
       return UPDATE_SKIP;
@@ -1313,6 +1314,8 @@ do_update_psu(uint8_t num, const char *file_path, const char *vendor) {
       ret = update_murata_psu(num ,file_path);
     } else if (!strncasecmp(vendor, "2k-murata", strlen("2k-murata"))) {
       ret = update_murata2k_psu(num ,file_path);
+    } else if (!strncasecmp(vendor, "48-liteon", strlen("48-liteon"))) {
+      ret = update_delta_psu(num, file_path, LITEON_DC_48, vendor);
     } else {
       printf("Unsupported vendor: %s\n", vendor);
       ret = UPDATE_SKIP;

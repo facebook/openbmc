@@ -205,11 +205,11 @@ enable_power_security_mode() {
     # Some UCD models support a security bitmask
     maybe_set_security_bitmask "$bus" "$dev" "$model"
 
-    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
+    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" s | awk '{print $(NF)}')")"
     if [ "$locked" -eq 0 ]; then
         # Write a new 6-byte password, enabling security
         i2cset -f -y "$bus" "$dev" "$UCD_SECURITY_REG" 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
-        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
+        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" s | awk '{print $(NF)}')")"
         if [ "$locked" -eq 0 ]; then
             echo "Failed to lock $model $bus-00$dev"
             return 1
@@ -226,14 +226,14 @@ disable_power_security_mode() {
     model="$3"
 
     # If locked, unlock it
-    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
+    locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" s | awk '{print $(NF)}')")"
     if [ "$locked" -eq 0 ]; then
         echo "UCD bus $bus device $dev already unlocked!"
         return 0
     else
         # If security is enabled, disable security by writing the correct password
         i2cset -f -y "$bus" "$dev" "$UCD_SECURITY_REG" 0x06 0x31 0x32 0x33 0x34 0x35 0x36 i
-        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" i | tail -n 1)")"
+        locked="$(printf "%d" "$(i2cget -f -y "$bus" "$dev" "$UCD_SECURITY_REG" s | awk '{print $(NF)}')")"
         if [ "$locked" -eq 0 ]; then
             return 0
         else
@@ -297,8 +297,8 @@ enable_switchcard_power_security() {
 
 disable_switchcard_power_security() {
     retry_command 3 disable_power_security_mode 3 0x4e "UCD90160B"
-    retry_command 3 disable_isp_wp 3 0x60
-    retry_command 3 disable_isp_wp 3 0x62
+    retry_command 3 maybe_disable_isl_wp 3 0x60
+    retry_command 3 maybe_disable_isl_wp 3 0x62
 }
 
 enable_psu_wp() {

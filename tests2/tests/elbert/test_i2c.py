@@ -87,7 +87,7 @@ class ElbertI2cTest(BaseI2cTest, unittest.TestCase):
         for name, bus, dev, dev_type in devices:
             if dev_type == "ucd":
                 output = run_shell_cmd("i2cget -f -y {} {} 0xf1 i".format(bus, dev))
-                if "0x000000000001" not in output:
+                if "0x00 0x00 0x00 0x00 0x00 0x01" not in output:
                     raise AssertionError(
                         "{}: unexpected output: {}".format(name, output)
                     )

@@ -82,11 +82,11 @@ clear_faults() {
 
     update_clock "$bus"
 
-    misc_config="$(i2cget -y "$bus" 0x4e 0xfc i | tail -n 1)"
-    config_byte="$((0x${misc_config:2:2}))"
-    b2="$((0x${misc_config:4:2}))"
-    b3="$((0x${misc_config:6:2}))"
-    b4="$((0x${misc_config:8:2}))"
+    misc_config="$(i2cget -y "$bus" 0x4e 0xfc s)"
+    config_byte="$(echo "$misc_config" | awk '{print $1}')"
+    b2="$(echo "$misc_config" | awk '{print $2}')"
+    b3="$(echo "$misc_config" | awk '{print $3}')"
+    b4="$(echo "$misc_config" | awk '{print $4}')"
 
     # In order for faults to be cleared in non-volatile store, the
     # brownout bit in the misc_config byte needs to be cleared.

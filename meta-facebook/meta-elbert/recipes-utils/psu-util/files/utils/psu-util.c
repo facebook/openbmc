@@ -95,17 +95,6 @@ main(int argc, char *argv[]) {
     return -1;
   }
 
-  ret = is_psu_power_ok(psu_num, &pwr_ok);
-  if (ret) {
-    return ret;
-  }
-  if (!pwr_ok) {
-    printf("PSU%d power is not OK!\nPlease verify that the PSU is not connected "
-           "to AC power.\nThe PSU must be connected to AC power in order to perform "
-           "this firmware update.\n", psu_num + 1);
-    return -1;
-  }
-
   for (i = 0; i < NUM_PSU_SLOTS; i++) {
     if (i != psu_num) {
       is_psu_power_ok(i, &pwr_ok);

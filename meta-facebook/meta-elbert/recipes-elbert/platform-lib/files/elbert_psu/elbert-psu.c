@@ -363,6 +363,7 @@ static int update_delta_psu(
     const char* file_path,
     uint8_t model,
     const char* vendor) {
+  uint8_t pwr_ok = 0;
   int ret = -1;
 
   ret = delta_img_hdr_parse(file_path);
@@ -376,6 +377,24 @@ static int update_delta_psu(
     if (ioctl(psu[num].fd, I2C_PEC, 1) < 0) {
       ERR_PRINT("update_delta_psu()");
       return UPDATE_SKIP;
+    }
+
+    /* Check PSU for input power, which is needed for upgrade. If PSU
+     * is already unlocked in bootloader mode, then skip power check as
+     * it is expected to fail.
+     */
+    ret = delta_boot_flag(num, BOOT_MODE, READ);
+    if (!(ret & DELTA_PSU_BOOT_UNLOCKED_BOOTLOADER_MASK)) {
+      ret = is_psu_power_ok(num, &pwr_ok);
+      if (ret) {
+         return ret;
+      }
+      if (!pwr_ok) {
+        printf("PSU%d power is not OK!\nPlease verify that the PSU is not connected "
+               "to AC power.\nThe PSU must be connected to AC power in order to perform "
+               "this firmware update.\n", num + 1);
+         return UPDATE_SKIP;
+      }
     }
 
     delta_unlock_upgrade(num);

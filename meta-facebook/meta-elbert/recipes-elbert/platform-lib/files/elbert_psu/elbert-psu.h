@@ -60,6 +60,8 @@ extern "C" {
 #define RESERVED_LINE_0 2
 #define RESERVED_LINE_1 12
 
+#define DELTA_PSU_BOOT_UNLOCKED_BOOTLOADER_MASK 0xC
+
 /* Vendor-defined time delays, in ms */
 #define UNLOCK_DELAY 5
 #define BOOT_FLAG_DELAY 3000

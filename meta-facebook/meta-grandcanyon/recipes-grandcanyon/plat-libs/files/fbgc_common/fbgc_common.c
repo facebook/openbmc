@@ -42,6 +42,44 @@ const char platform_signature[PLAT_SIG_SIZE] = {0x47, 0x72, 0x61, 0x6e, 0x64, 0x
 
 const char* board_stage[] = {"Pre EVT", "EVT", "DVT", "PVT", "MP"};
 
+static int
+get_chassis_type_by_gpio(uint8_t *type) {
+  int chassis_type_value = 0;
+  gpio_value_t uic_loc_type_in = GPIO_VALUE_INVALID;
+  gpio_value_t uic_rmt_type_in = GPIO_VALUE_INVALID;
+  gpio_value_t scc_loc_type_0 = GPIO_VALUE_INVALID;
+  gpio_value_t scc_rmt_type_0 = GPIO_VALUE_INVALID;
+
+  uic_loc_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_LOC_TYPE_IN));
+  uic_rmt_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_RMT_TYPE_IN));
+  scc_loc_type_0  = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_LOC_TYPE_0));
+  scc_rmt_type_0  = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_RMT_TYPE_0));
+
+  if ((uic_loc_type_in == GPIO_VALUE_INVALID) || (uic_rmt_type_in == GPIO_VALUE_INVALID) ||
+      (scc_loc_type_0 == GPIO_VALUE_INVALID)  || (scc_rmt_type_0 == GPIO_VALUE_INVALID)) {
+    syslog(LOG_ERR, "%s() failed to get chassis type gpio", __func__);
+    return -1;
+  }
+
+  //                 UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
+  // Type 5                        0                 0                0                0
+  // Type 7 Headnode               0                 1                0                1
+
+  chassis_type_value = CHASSIS_TYPE_BIT_3(uic_loc_type_in) | CHASSIS_TYPE_BIT_2(uic_rmt_type_in) |
+                       CHASSIS_TYPE_BIT_1(scc_loc_type_0)  | CHASSIS_TYPE_BIT_0(scc_rmt_type_0);
+
+  if (chassis_type_value == CHASSIS_TYPE_5_VALUE) {
+    *type = CHASSIS_TYPE5;
+  } else if (chassis_type_value == CHASSIS_TYPE_7_VALUE) {
+    *type = CHASSIS_TYPE7;
+  } else {
+    syslog(LOG_ERR, "%s() Unknown chassis type.", __func__);
+    return -1;
+  }
+
+  return 0;
+}
+
 int
 fbgc_common_get_chassis_type(uint8_t *type) {
   char system_info[MAX_VALUE_LEN] = {0};
@@ -55,9 +93,13 @@ fbgc_common_get_chassis_type(uint8_t *type) {
 
   ret = kv_get(SYSTEM_INFO, system_info, NULL, KV_FPERSIST);
 
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s(): Failed to get chassis type because failed to get key value of %s\n", __func__, SYSTEM_INFO);
-    goto error;
+  if (ret < 0) { //cache not ready, get from gpio directly
+    if (get_chassis_type_by_gpio(type) < 0) {
+      syslog(LOG_ERR, "%s(): Unknown chassis type.\n", __func__);
+      goto error;
+    } else {
+      return 0;
+    }
   }
 
   sku_value = atoi(system_info);

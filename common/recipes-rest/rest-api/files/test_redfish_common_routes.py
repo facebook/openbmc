@@ -44,6 +44,8 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/SessionService",
             "/redfish/v1/SessionService/Sessions",
             "/redfish/v1/Systems",
+            "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
+            "/redfish/v1/Managers/1/Actions/Manager.Reset",
         ]
         self.maxDiff = None
         self.assertEqual(sorted(routes_expected), sorted(registered_routes))

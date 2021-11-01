@@ -14,6 +14,7 @@ from redfish_managers import (
     get_ethernet_members,
     get_manager_log_services,
 )
+from redfish_powercycle import powercycle_post_handler, oobcycle_post_handler
 from redfish_service_root import get_redfish, get_service_root, get_odata, get_metadata
 from redfish_session_service import get_session_service, get_session
 
@@ -72,6 +73,14 @@ class Redfish:
         app.router.add_get(
             "/redfish/v1/Chassis/{fru_name}/Sensors/{sensor_id}",
             redfish_sensors.get_redfish_sensor_handler,
+        )
+        app.router.add_post(
+            "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
+            powercycle_post_handler,
+        )
+        app.router.add_post(
+            "/redfish/v1/Managers/1/Actions/Manager.Reset",
+            oobcycle_post_handler,
         )
 
     def setup_multisled_routes(self, app: Application):

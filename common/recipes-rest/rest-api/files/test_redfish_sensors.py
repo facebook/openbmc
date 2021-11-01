@@ -254,12 +254,12 @@ class TestRedfishSensors(AioHTTPTestCase):
                             "ReadingUnits": "Amps",
                             "Status": {"Health": "OK", "State": "Enabled"},
                             "Thresholds": {
-                                "LowerCaution": 0,
-                                "LowerCritical": 0,
-                                "LowerFatal": 0,
-                                "UpperCaution": 0,
-                                "UpperCritical": 5,
-                                "UpperFatal": 0,
+                                "LowerCaution": {"Reading": 0},
+                                "LowerCritical": {"Reading": 0},
+                                "LowerFatal": {"Reading": 0},
+                                "UpperCaution": {"Reading": 0},
+                                "UpperCritical": {"Reading": 5},
+                                "UpperFatal": {"Reading": 0},
                             },
                         }
                     ],
@@ -312,12 +312,12 @@ class TestRedfishSensors(AioHTTPTestCase):
                     "ReadingUnits": "Amps",
                     "Status": {"Health": "OK", "State": "Enabled"},
                     "Thresholds": {
-                        "LowerCaution": 0,
-                        "LowerCritical": 0,
-                        "LowerFatal": 0,
-                        "UpperCaution": 0,
-                        "UpperCritical": 5,
-                        "UpperFatal": 0,
+                        "LowerCaution": {"Reading": 0},
+                        "LowerCritical": {"Reading": 0},
+                        "LowerFatal": {"Reading": 0},
+                        "UpperCaution": {"Reading": 0},
+                        "UpperCritical": {"Reading": 5},
+                        "UpperFatal": {"Reading": 0},
                     },
                 }
                 req = await self.client.request(

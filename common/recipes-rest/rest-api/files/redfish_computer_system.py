@@ -57,6 +57,22 @@ class RedfishComputerSystems:
             "Bios": {
                 "@odata.id": "/redfish/v1/Systems/{}/Bios".format(server_name),
             },
+            "Actions": {
+                "#ComputerSystem.Reset": {
+                    "target": "/redfish/v1/Systems/{}/Actions/ComputerSystem.Reset".format(  # noqa B950
+                        server_name
+                    ),
+                    "ResetType@Redfish.AllowableValues": [
+                        "On",
+                        "ForceOff",
+                        "GracefulShutdown",
+                        "GracefulRestart",
+                        "ForceRestart",
+                        "ForceOn",
+                        "PushPowerButton",
+                    ],
+                },
+            },
         }
         await validate_keys(body)
         return web.json_response(body, dumps=dumps_bytestr)

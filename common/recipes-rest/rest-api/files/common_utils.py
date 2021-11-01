@@ -113,5 +113,4 @@ async def async_exec(
     err = stderr.decode()
 
     await proc.wait()
-
     return proc.returncode, data, err

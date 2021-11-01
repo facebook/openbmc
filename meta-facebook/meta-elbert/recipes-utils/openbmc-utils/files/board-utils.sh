@@ -128,6 +128,14 @@ wedge_is_pim_present() {
    return 1
 }
 
+wedge_pim_type() {
+   pim="$1"
+
+   busId=$(wedge_pim_bus "$pim")
+   pim_type=$(/usr/bin/kv get pim"$pim"_type)
+   echo "$pim_type"
+}
+
 wedge_power_off_asic() {
     # ASIC put into reset
     echo 1 > "$SMB_TH4_RST_ON_SYSFS"

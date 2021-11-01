@@ -39,11 +39,10 @@ class BasePowerUtilTest(unittest.TestCase):
     def tearDown(self):
         Logger.info("turn all slots back to ON state")
         for slot in self.slots:
-            if check_fru_availability(slot):
-                if self.slot_status(slot, status="off"):
-                    self.turn_slot(slot, status="on")
-                elif self.slot_12V_status(slot, status="off"):
-                    self.turn_12V_slot(slot, status="on")
+            if self.slot_status(slot, status="off"):
+                self.turn_slot(slot, status="on")
+            elif self.slot_12V_status(slot, status="off"):
+                self.turn_12V_slot(slot, status="on")
         Logger.info("Finished logging for {}".format(self._testMethodName))
 
     def slot_status(self, slot, status=None):

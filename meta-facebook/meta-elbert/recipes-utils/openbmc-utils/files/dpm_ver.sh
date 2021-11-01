@@ -47,16 +47,37 @@ do
     fi
 done
 
+show_isl_ver() {
+  name="$1"
+  bus="$2"
+  addr="$3"
+
+  mdl=$(i2cdump -f -y "${bus}" "${addr}" s 0x9a | grep 00: | awk '{print $5$4$3$2}')
+  mfr=$(i2cdump -f -y "${bus}" "${addr}" s 0x9b | grep 00: | awk '{print $5$4$3$2}')
+  rstr="SFT${mdl:1:5}${mdl:6:2}$(printf "%02d" "0x$mfr")"
+  echo "$name: $rstr"
+}
+
 # ISL68226 Revision
-isl_mdl=$(i2cdump -f -y 3 0x62 s 0x9a | grep 00: | awk '{print $5$4$3$2}')
-isl_mfr=$(i2cdump -f -y 3 0x62 s 0x9b | grep 00: | awk '{print $5$4$3$2}')
-isl_rstr="SFT${isl_mdl:1:5}${isl_mdl:6:2}$(printf "%02d" "0x$isl_mfr")"
-echo "SMB ISL68226: $isl_rstr"
+show_isl_ver "SMB ISL68226" 3 0x62
 
 # RAA228228 Revision
-raa_mdl=$(i2cdump -f -y 3 0x60 s 0x9a | grep 00: | awk '{print $5$4$3$2}')
-raa_mfr=$(i2cdump -f -y 3 0x60 s 0x9b | grep 00: | awk '{print $5$4$3$2}')
-raa_rstr="SFT${raa_mdl:1:5}${raa_mdl:6:2}$(printf "%02d" "0x$raa_mfr")"
-echo "SMB RAA228228: $raa_rstr"
+show_isl_ver "SMB RAA228228" 3 0x60
+
+# PIM ISL Revision
+pim_isl_addr='0x54'
+for i in "${pim_index[@]}"
+do
+    pim=$((i+2))
+    pim_type=$(wedge_pim_type "$pim")
+    if [[ "$pim_type" == "8ddm" ]]; then
+        bus_id="${pim_bus[$i]}"
+        show_isl_ver "PIM${pim} ISL68224" "$bus_id" "$pim_isl_addr"
+    elif [[ "$pim_type" == "16q" ]]; then
+        echo "PIM${pim} has no ISL... skipping."
+    elif [[ "$pim_type" == "unplug" ]]; then
+        echo "PIM${pim} not present... skipping."
+    fi
+done
 
 echo "!!! Done."

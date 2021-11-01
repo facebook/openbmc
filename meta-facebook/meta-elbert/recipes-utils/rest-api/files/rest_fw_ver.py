@@ -19,11 +19,8 @@
 #
 
 import re
-import subprocess
 from asyncio.subprocess import PIPE, create_subprocess_exec
 from typing import Dict
-
-from rest_utils import DEFAULT_TIMEOUT_SEC
 
 
 def _parse_all_fpga_ver(data) -> Dict:
@@ -56,24 +53,25 @@ def _parse_all_fpga_ver(data) -> Dict:
     """
     rs = {}
     pim = 0
-    pim_rx = re.compile("^PIM ([2-9])\s*:\s*(\S+)")
-    fpga_rx = re.compile("([a-zA-Z]+)[_ ]FPGA\s*:\s*(\S+)")
-    cpld_rx = re.compile("([a-zA-Z]+_CPLD)\s*:\s*(\S+)")
-    for l in data.splitlines():
-        m = pim_rx.match(l)
+    pim_rx = re.compile(r"^PIM ([2-9])\s*:\s*(\S+)")
+    fpga_rx = re.compile(r"([a-zA-Z]+)[_ ]FPGA\s*:\s*(\S+)")
+    cpld_rx = re.compile(r"([a-zA-Z]+_CPLD)\s*:\s*(\S+)")
+    for line in data.splitlines():
+        m = pim_rx.match(line)
         if m:
             pim = m.group(1)
             rs["PIM " + pim] = m.group(2)
             continue
-        m = fpga_rx.match(l)
+        m = fpga_rx.match(line)
         if m:
             rs[m.group(1)] = m.group(2)
             continue
-        m = cpld_rx.match(l)
+        m = cpld_rx.match(line)
         if m:
             rs[m.group(1)] = m.group(2)
 
     return rs
+
 
 def _parse_all_dpm_ver(data) -> Dict:
     """Example output:
@@ -89,32 +87,47 @@ def _parse_all_dpm_ver(data) -> Dict:
     PIM9.: SFT012990103
     SMB ISL68226: SFT013200105
     SMB RAA228228: SFT000000102
+    PIM2 ISL68224: SFT014820103
+    PIM3 ISL68224: SFT014820103
+    PIM4 ISL68224: SFT014820103
+    PIM5 ISL68224: SFT014820103
+    PIM6 ISL68224: SFT014820103
+    PIM7 ISL68224: SFT014820103
+    PIM8 ISL68224: SFT014820103
+    PIM9 ISL68224: SFT014820103
 
     Will return a dict of the form:
     {"SCM DPM": "SFT013030202",
     "SMB DPM": "SFT013180104",
     "PIM2 DPM": "SFT012990103",
     "SMB ISL68226": "SFT013200105",
-    "SMB RAA228228": "SFT000000102"}
+    "SMB RAA228228": "SFT000000102,
+    "PIM2 ISL68224": "SFT014820103"}
     """
     rs = {}
     pim = 0
-    pim_rx = re.compile("^PIM([2-9])\.\s*:\s*(\S+)")
-    scm_rx = re.compile("^(SCM)\.:\s*(\S+)")
-    smb_rx = re.compile("^(SMB)\.:\s*(\S+)")
-    smb_isl_rx = re.compile("^(SMB ISL68226):\s*(\S+)")
-    smb_raa_rx = re.compile("^(SMB RAA228228):\s*(\S+)")
+    pim_rx = re.compile(r"^PIM([2-9])\.\s*:\s*(\S+)")
+    scm_rx = re.compile(r"^(SCM)\.:\s*(\S+)")
+    smb_rx = re.compile(r"^(SMB)\.:\s*(\S+)")
+    smb_isl_rx = re.compile(r"^(SMB ISL68226):\s*(\S+)")
+    smb_raa_rx = re.compile(r"^(SMB RAA228228):\s*(\S+)")
+    pim_isl_rx = re.compile(r"^(PIM[2-9] ISL68224):\s*(\S+)")
 
-    for l in data.splitlines():
-        m = pim_rx.match(l)
+    for line in data.splitlines():
+        m = pim_rx.match(line)
         if m:
             pim = m.group(1)
             rs["PIM" + pim + " DPM"] = m.group(2)
             continue
-        for rx in [scm_rx, smb_rx, smb_isl_rx, smb_raa_rx]:
-            m = rx.match(l)
+        for rx in [scm_rx, smb_rx]:
+            m = rx.match(line)
             if m:
                 rs[m.group(1) + " DPM"] = m.group(2)
+                continue
+        for rx in [smb_isl_rx, smb_raa_rx, pim_isl_rx]:
+            m = rx.match(line)
+            if m:
+                rs[m.group(1)] = m.group(2)
                 continue
     return rs
 

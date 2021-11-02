@@ -35,18 +35,22 @@ class BasePowerUtilTest(unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)
         self.set_slots()
+        self.slots_present = {}
+        for slot in self.slots:
+            self.slots_present[slot] = True if check_fru_availability(slot) else False
 
     def tearDown(self):
         Logger.info("turn all slots back to ON state")
-        for slot in self.slots:
-            if self.slot_status(slot, status="off"):
-                self.turn_slot(slot, status="on")
-            elif self.slot_12V_status(slot, status="off"):
-                self.turn_12V_slot(slot, status="on")
+        for slot, present in self.slots_present.items():
+            if present:
+                if self.slot_status(slot, status="off"):
+                    self.turn_slot(slot, status="on")
+                elif self.slot_12V_status(slot, status="off"):
+                    self.turn_12V_slot(slot, status="on")
         Logger.info("Finished logging for {}".format(self._testMethodName))
 
     def slot_status(self, slot, status=None):
-        cmd = ["power-util", slot, "status"]
+        cmd = ["/usr/local/bin/power-util", slot, "status"]
         cli_out = run_cmd(cmd).split(":")
         if len(cli_out) < 2:
             raise Exception("unexpected output: {}".format(cli_out))
@@ -55,7 +59,7 @@ class BasePowerUtilTest(unittest.TestCase):
         return False
 
     def slot_12V_status(self, slot, status=None):
-        cmd = ["power-util", slot, "status"]
+        cmd = ["/usr/local/bin/power-util", slot, "status"]
         cli_out = run_cmd(cmd).split(":")
         if len(cli_out) < 2:
             raise Exception("unexpected output: {}".format(cli_out))
@@ -64,7 +68,7 @@ class BasePowerUtilTest(unittest.TestCase):
         return False
 
     def turn_slot(self, slot, status=None):
-        cmd = ["power-util", slot, status]
+        cmd = ["/usr/local/bin/power-util", slot, status]
         Logger.info("turn {} {} now..".format(slot, status))
         cli_out = run_cmd(cmd)
         pattern = r"^Powering fru.*to {} state.*$"
@@ -82,7 +86,7 @@ class BasePowerUtilTest(unittest.TestCase):
         return False
 
     def turn_12V_slot(self, slot, status=None):
-        cmd = ["power-util", slot, "12V-{}".format(status)]
+        cmd = ["/usr/local/bin/power-util", slot, "12V-{}".format(status)]
         Logger.info("turn {} {} now..".format(slot, status))
         cli_out = run_cmd(cmd)
         pattern = r"^12V Powering fru.*to {} state.*$"
@@ -109,7 +113,7 @@ class BasePowerUtilTest(unittest.TestCase):
             with self.subTest(slot=slot):
                 if not check_fru_availability(slot):
                     self.skipTest("skip test due to {} not available".format(slot))
-                cmd = ["power-util", slot, "status"]
+                cmd = ["/usr/local/bin/power-util", slot, "status"]
                 cli_out = run_cmd(cmd)
                 self.assertIsNotNone(
                     r.match(cli_out),
@@ -130,7 +134,7 @@ class BasePowerUtilTest(unittest.TestCase):
                 if self.slot_status(slot, status="off"):
                     self.turn_slot(slot, status="on")
                 self.turn_slot(slot, status="off")
-                cmd = ["power-util", slot, "status"]
+                cmd = ["/usr/local/bin/power-util", slot, "status"]
                 count = 3
                 while count > 0:
                     cli_out = run_cmd(cmd)
@@ -159,7 +163,7 @@ class BasePowerUtilTest(unittest.TestCase):
                 if self.slot_status(slot, status="on"):
                     self.turn_slot(slot, status="off")
                 self.turn_slot(slot, status="on")
-                cmd = ["power-util", slot, "status"]
+                cmd = ["/usr/local/bin/power-util", slot, "status"]
                 count = 3
                 while count > 0:
                     cli_out = run_cmd(cmd)
@@ -184,7 +188,7 @@ class BasePowerUtilTest(unittest.TestCase):
             with self.subTest(slot=slot):
                 if not check_fru_availability(slot):
                     self.skipTest("skip test due to {} not available".format(slot))
-                cmd = ["power-util", slot, "reset"]
+                cmd = ["/usr/local/bin/power-util", slot, "reset"]
                 cli_out = run_cmd(cmd)
                 # check if BMC is doing reset
                 self.assertIsNotNone(
@@ -214,7 +218,7 @@ class BasePowerUtilTest(unittest.TestCase):
             with self.subTest(slot=slot):
                 if not check_fru_availability(slot):
                     self.skipTest("skip test due to {} not available".format(slot))
-                cmd = ["power-util", slot, "cycle"]
+                cmd = ["/usr/local/bin/power-util", slot, "cycle"]
                 cli_out = run_cmd(cmd)
                 # check if BMC is doing cycling
                 self.assertIsNotNone(
@@ -250,7 +254,7 @@ class BasePowerUtilTest(unittest.TestCase):
                 elif self.slot_12V_status(slot, status="off"):
                     self.turn_12V_slot(slot, status="on")
                 self.turn_12V_slot(slot, status="off")
-                cmd = ["power-util", slot, "status"]
+                cmd = ["/usr/local/bin/power-util", slot, "status"]
                 count = 3
                 while count > 0:
                     cli_out = run_cmd(cmd)
@@ -279,7 +283,7 @@ class BasePowerUtilTest(unittest.TestCase):
                 if self.slot_status(slot, status="on"):
                     self.turn_12V_slot(slot, status="off")
                 self.turn_12V_slot(slot, status="on")
-                cmd = ["power-util", slot, "status"]
+                cmd = ["/usr/local/bin/power-util", slot, "status"]
                 count = 3
                 while count > 0:
                     cli_out = run_cmd(cmd)
@@ -304,7 +308,7 @@ class BasePowerUtilTest(unittest.TestCase):
             with self.subTest(slot=slot):
                 if not check_fru_availability(slot):
                     self.skipTest("skip test due to {} not available".format(slot))
-                cmd = ["power-util", slot, "12V-cycle"]
+                cmd = ["/usr/local/bin/power-util", slot, "12V-cycle"]
                 cli_out = run_cmd(cmd)
                 # check if BMC is doing cycling
                 self.assertIsNotNone(

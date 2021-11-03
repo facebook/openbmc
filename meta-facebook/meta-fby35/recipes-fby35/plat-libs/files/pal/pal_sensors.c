@@ -1616,7 +1616,7 @@ read_medusa_val(uint8_t snr_number, float *value) {
       if ( is_ltc4282 == false ) {
         //The current in light load cannot be sensed. The value should be 0.
         if ( (int)(*value) != 0 ) {
-          *value = (*value + 3) * 0.97;
+          *value = (*value + 3) * 0.94;
         }
       }
       break;
@@ -1626,7 +1626,7 @@ read_medusa_val(uint8_t snr_number, float *value) {
         //The current is 0 amps when the system is in light load.
         //So, the power is 0, too.
         if ( (int)(*value) != 0 ) {
-          *value = (*value * 0.98) + 25;
+          *value = (*value * 0.95) + 24;
         }
       }
       break;
@@ -1845,7 +1845,7 @@ static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
 
   if ( get_hsc_reading(hsc_id, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) return READING_NA;
-  *value *= 0.99; //improve the accuracy of PIN to +-2%
+  *value *= 0.96; //improve the accuracy of PIN to +-2%
   return PAL_EOK;
 }
 
@@ -1853,7 +1853,7 @@ static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
 
   if ( get_hsc_reading(hsc_id, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) < 0 ) return READING_NA;
-  *value *= 0.99; //improve the accuracy of IOUT to +-2%
+  *value *= 0.96; //improve the accuracy of IOUT to +-2%
   return PAL_EOK;
 }
 

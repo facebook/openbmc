@@ -7271,11 +7271,11 @@ bool is_psu48(void)
   fp = popen("source /usr/local/bin/openbmc-utils.sh;wedge_power_supply_type", "r");
 
   if(NULL == fp)
-     return -1;
+     return false;
 
   if (fgets(buffer, sizeof(buffer), fp) == NULL) {
     pclose(fp);
-    return -1;
+    return false;
   }
 
   pclose(fp);

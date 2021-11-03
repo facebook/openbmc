@@ -464,6 +464,39 @@
             ]
         },
         {
+            "alias": "openbmc-buildci-fby35-determinator",
+            "args": {
+                "name": "openbmc-buildci-fby35-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-fby35-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform fby35"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby35/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-buildci-fuji-determinator",
             "args": {
                 "name": "openbmc-buildci-fuji-determinator",
@@ -1259,6 +1292,39 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fby3/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-fby35-determinator",
+            "args": {
+                "name": "openbmc-cit-fby35-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-fby35-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform fby35"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-fby35/.*"
                     ]
                 }
             ],

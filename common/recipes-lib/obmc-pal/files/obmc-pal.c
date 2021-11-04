@@ -2806,3 +2806,9 @@ int __attribute__((weak))
 pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   return CC_NOT_SUPP_IN_CURR_STATE;
 }
+
+int __attribute__((weak))
+pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len)
+{
+  return PAL_ENOTSUP;
+}

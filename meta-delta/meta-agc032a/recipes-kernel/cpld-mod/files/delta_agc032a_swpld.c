@@ -1011,6 +1011,7 @@ static struct attribute *swpld1_device_attrs[] = {
     &sensor_dev_attr_synce_eeprom_wb.dev_attr.attr,
     &sensor_dev_attr_console_sel.dev_attr.attr,
     &sensor_dev_attr_sys_eeprom_wb.dev_attr.attr,
+    NULL
 };
 
 
@@ -1774,6 +1775,7 @@ static struct attribute *swpld2_device_attrs[] = {
     &sensor_dev_attr_qsfp_p14_intr.dev_attr.attr,
     &sensor_dev_attr_qsfp_p15_intr.dev_attr.attr,
     &sensor_dev_attr_qsfp_p16_intr.dev_attr.attr,
+    NULL
 };
 
 
@@ -2612,6 +2614,7 @@ static struct attribute *swpld3_device_attrs[] = {
     &sensor_dev_attr_sfp_p1_txfault.dev_attr.attr,
     &sensor_dev_attr_sfp_p0_txdis.dev_attr.attr,
     &sensor_dev_attr_sfp_p1_txdis.dev_attr.attr,
+    NULL
 };
 
 static struct attribute_group swpld1_device_attr_group = {
@@ -2667,25 +2670,25 @@ static int __init swpld_probe(struct platform_device *pdev)
         return -ENODEV;
     }
 
-    parent = i2c_get_adapter(BUS8);
+    parent = i2c_get_adapter(BUS7);
     if (!parent) {
-        printk(KERN_ERR "Parent adapter (%d) not found\n", BUS8);
+        printk(KERN_ERR "Parent adapter (%d) not found\n", BUS7);
         return -ENODEV;
     }
 
-    pdata[swpld1].client = i2c_new_dummy(parent, pdata[swpld1].reg_addr);
+    pdata[swpld1].client = i2c_new_dummy_device(parent, pdata[swpld1].reg_addr);
     if (!pdata[swpld1].client) {
         printk(KERN_ERR "Fail to create dummy i2c client for addr %d\n", pdata[swpld1].reg_addr);
         goto error_swpld1;
     }
 
-    pdata[swpld2].client = i2c_new_dummy(parent, pdata[swpld2].reg_addr);
+    pdata[swpld2].client = i2c_new_dummy_device(parent, pdata[swpld2].reg_addr);
     if (!pdata[swpld2].client) {
         printk(KERN_ERR "Fail to create dummy i2c client for addr %d\n", pdata[swpld2].reg_addr);
         goto error_swpld2;
     }
 
-    pdata[swpld3].client = i2c_new_dummy(parent, pdata[swpld3].reg_addr);
+    pdata[swpld3].client = i2c_new_dummy_device(parent, pdata[swpld3].reg_addr);
     if (!pdata[swpld3].client) {
         printk(KERN_ERR "Fail to create dummy i2c client for addr %d\n", pdata[swpld3].reg_addr);
         goto error_swpld3;
@@ -2744,6 +2747,7 @@ error_swpld2:
     i2c_unregister_device(pdata[swpld1].client);
 error_swpld1:
     i2c_put_adapter(parent);
+    return ret;
 }
 
 static int __exit swpld_remove(struct platform_device *pdev)

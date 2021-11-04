@@ -3483,7 +3483,16 @@ oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
   }
 
   snprintf(string_log, string_log_len+1, "%s", &req->data[5]);
+
+  // To avoid repeat display when Expander executes reset test
+  // will filter fan fru checksum SEL
+  if (!pal_handle_fan_fru_checksum_sel(string_log, string_log_len)) {
+    res->cc = CC_SUCCESS;
+    return;
+  }
+
   syslog(LOG_CRIT, "%s", string_log);
+  
   if (!pal_handle_string_sel(string_log, string_log_len))
     res->cc = CC_SUCCESS;
   else

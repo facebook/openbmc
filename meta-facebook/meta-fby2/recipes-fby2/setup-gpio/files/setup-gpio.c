@@ -521,6 +521,9 @@ main(int argc, char **argv) {
 		ioexp_export("8-0049", 3, "SINGLE_FAN_TYPE");
 	}
 
+	// HSC_SELECT: GPIOA1
+	gpio_export_by_name(ASPPED_CHIP, "GPIOA1", "HSC_SELECT");
+
 	fby2_common_get_fan_type(); // initialize fan type
 
 	// Disable PWM reset during external reset

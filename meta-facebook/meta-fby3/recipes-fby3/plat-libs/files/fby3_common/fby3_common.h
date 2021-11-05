@@ -112,6 +112,7 @@ enum {
   FRU_CWC       ,
   FRU_2U_TOP    ,
   FRU_2U_BOT    ,
+  FRU_2U_SLOT3  ,
   FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 

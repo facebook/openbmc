@@ -39,6 +39,11 @@ const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
 const char *exp_list[] = {"2U", "2U-cwc", "2U-top", "2U-bot"};
 const uint8_t exp_id_list[] = {FRU_2U, FRU_CWC, FRU_2U_TOP, FRU_2U_BOT};
+const uint8_t slot3_exp_id_list[] = {FRU_2U_SLOT3};
+const char *slot1_exp_list[] = {"slot1-2U", "slot1-2U-exp", "slot1-2U-top", "slot1-2U-bot"};
+const char *slot3_exp_list[] = {"slot3-2U"};
+const int slot1_exp_size = sizeof(slot1_exp_list)/sizeof(slot1_exp_list[0]);
+const int slot3_exp_size = sizeof(slot3_exp_list)/sizeof(slot3_exp_list[0]);
 
 int
 fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
@@ -55,6 +60,19 @@ fby3_common_get_fru_id(char *str, uint8_t *fru) {
       *fru = fru_id;
       found_id = true;
       break;
+    }
+  }
+
+  for (fru_id = 0; found_id == false && fru_id < slot1_exp_size; fru_id++) {
+    if ( strcmp(str, slot1_exp_list[fru_id]) == 0 ) {
+      *fru = exp_id_list[fru_id];
+      found_id = true;
+    }
+  }
+  for (fru_id = 0; found_id == false && fru_id < slot3_exp_size; fru_id++) {
+    if ( strcmp(str, slot3_exp_list[fru_id]) == 0 ) {
+      *fru = slot3_exp_id_list[fru_id];
+      found_id = true;
     }
   }
 

@@ -4899,3 +4899,25 @@ int pal_get_asd_sw_status(uint8_t fru) {
   }
   return 0;
 }
+
+int pal_is_exp(void) {
+  return pal_is_cwc();
+}
+
+int pal_get_fru_slot(uint8_t fru, uint8_t *slot) {
+  switch (fru) {
+    case FRU_2U:
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      *slot = FRU_SLOT1;
+      break;
+    case FRU_2U_SLOT3:
+      *slot = FRU_SLOT3;
+      break;
+    default:
+      *slot = fru;
+      break;
+  }
+  return PAL_EOK;
+}

@@ -86,6 +86,56 @@ mnt_point_health_check() {
     return "$mnt_error"
 }
 
+get_reboot_cause_addr() {
+    data_type=$1
+    soc_model=$(cat /etc/soc_model)
+
+    if [ "$soc_model" == "SOC_MODEL_ASPEED_G6" ]; then
+        # ast_g6
+        # sram reboot base:     0x10015000
+        # sram reboot offset:   0xC00
+        # cmd offset:           0x4
+        # sig offset:           0x8
+        if [ "$data_type" == "cmd" ]; then
+            echo "0x10015C04"
+        elif [ "$data_type" == "sig" ]; then
+            echo "0x10015C08"
+        fi
+    else
+        # ast_g5 & ast_g4
+        # sram reboot base:     0x1E721000
+        # sram reboot offset:   0x200
+        # reboot cmd offset:    0x4
+        # sig offset:           0x8
+        if [ "$data_type" == "cmd" ]; then
+            echo "0x1E721204"
+        elif [ "$data_type" == "sig" ]; then
+            echo "0x1E721208"
+        fi
+    fi
+}
+
+is_ubifs_error_set() {
+    BOOT_MAGIC="0xFB420054"
+    reboot_sig_addr=$(get_reboot_cause_addr sig)
+    reboot_sig_val=$(devmem $reboot_sig_addr 2>/dev/null)
+    if [ "$reboot_sig_val" != "$BOOT_MAGIC" ]; then
+        # Power on reset
+        return 1
+    fi
+
+    # Read reboot command flags
+    reboot_cmd_addr=$(get_reboot_cause_addr cmd)
+    reboot_cmd_flags=$(devmem $reboot_cmd_addr 2>/dev/null)
+    if [ "$((reboot_cmd_flags & 0x4))" -eq 0 ]; then
+        # UBIFS_ERROR not set
+        return 1
+    fi
+
+    # UBIFS_ERROR is set
+    return 0
+}
+
 ubifs_format() {
     mtd_chardev="$1"
     ubi_dev="$2"
@@ -207,7 +257,10 @@ do_mount_ubifs() {
     #      migrate a BMC from jffs2 to ubifs for the first time.
     #   2) the mtd partition or ubi volume is corrupted for some reasons.
     #
-    if [ -e "$ubi_vol" ]; then
+    if is_ubifs_error_set; then
+        echo "UBIFS ERROR flag is set, start recovery.."
+        need_recovery=1
+    elif [ -e "$ubi_vol" ]; then
         if ubifs_mount "$ubi_vol" "$mnt_point"; then
             echo "Check ubifs filesystem health on $ubi_vol.."
 

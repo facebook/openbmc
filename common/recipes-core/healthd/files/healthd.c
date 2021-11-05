@@ -89,6 +89,7 @@
 // reboot command
 #define FLAG_REBOOT_CMD               (1 << 0)
 #define FLAG_CFG_UTIL                 (1 << 1)
+#define FLAG_UBIFS_ERROR              (1 << 2)
 
 #define HB_SLEEP_TIME (5 * 60)
 #define HB_TIMESTAMP_COUNT (60 * 60 / HB_SLEEP_TIME)
@@ -101,6 +102,8 @@
 #define BIC_RESET_ERR_CNT   3
 
 #define LOG_REARM_CHECK_INTERVAL 3 // seconds
+
+#define DEFAULT_UBIFS_HEALTH_INTERVAL 30 // seconds
 
 #define MAX_LOG_SIZE 128
 
@@ -234,6 +237,17 @@ static uint8_t bic_fru = 0;
 
 /* healthd log rearm monitor */
 static bool log_rearm_enabled = false;
+
+/* UBIFS Health Monitor */
+struct ubifs_health_monitor_config
+{
+  bool enabled;
+  int monitor_interval;
+};
+static struct ubifs_health_monitor_config uhm_config = {
+  .enabled          = false,
+  .monitor_interval = DEFAULT_UBIFS_HEALTH_INTERVAL,
+};
 
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
@@ -591,6 +605,26 @@ static void initialize_bic_health_config(json_t *obj) {
   bic_fru = json_integer_value(tmp);
 }
 
+static void initialize_ubifs_health_config(json_t *obj) {
+  json_t *tmp = NULL;
+
+  if (obj == NULL) {
+    return;
+  }
+  tmp = json_object_get(obj, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+  uhm_config.enabled = json_is_true(tmp);
+
+  tmp = json_object_get(obj, "monitor_interval");
+  if (tmp && json_is_number(tmp)) {
+    uhm_config.monitor_interval = json_integer_value(tmp);
+    if (uhm_config.monitor_interval <= 0)
+      uhm_config.monitor_interval = DEFAULT_UBIFS_HEALTH_INTERVAL;
+  }
+}
+
 static int
 initialize_configuration(void) {
   json_error_t error;
@@ -621,6 +655,7 @@ initialize_configuration(void) {
   initialize_vboot_config(json_object_get(conf, "verified_boot"));
   initialize_bmc_timestamp_config(json_object_get(conf, "bmc_timestamp"));
   initialize_bic_health_config(json_object_get(conf, "bic_health"));
+  initialize_ubifs_health_config(json_object_get(conf, "ubifs_health"));
 
   json_decref(conf);
 
@@ -1630,6 +1665,11 @@ log_reboot_cause(char *sled_off_time)
         syslog(LOG_CRIT, "Reset BMC data to default factory settings");
       }
 
+      if ((reboot_detected_flag & FLAG_UBIFS_ERROR)) {
+        reboot_detected_flag &= ~(FLAG_UBIFS_ERROR);
+        syslog(LOG_CRIT, "UBIFS Error detected during boot");
+      }
+
       if ((reboot_detected_flag & FLAG_REBOOT_CMD)) {
         syslog(LOG_CRIT, "BMC Reboot detected - caused by reboot command");
       } else {
@@ -1815,6 +1855,56 @@ log_rearm_check() {
   return NULL;
 }
 
+static void *
+ubifs_health_monitor() {
+  const char ubifs_ro_error[] = "/sys/kernel/debug/ubifs/ubi0_0/ro_error";
+  FILE *fp;
+  int val;
+  int mem_fd;
+  uint8_t *bmc_reboot_base;
+  uint32_t sram_bmc_reboot_base = 0x0;
+  uint32_t sram_offset = 0x0;
+
+  if (get_soc_model() == SOC_MODEL_ASPEED_G6) {
+    sram_bmc_reboot_base = AST_G6_SRAM_BMC_REBOOT_BASE;
+    sram_offset = AST_G6_SRAM_BMC_REBOOT_OFFSET;
+  } else {
+    sram_bmc_reboot_base = AST_SRAM_BMC_REBOOT_BASE;
+    sram_offset = AST_SRAM_BMC_REBOOT_OFFSET;
+  }
+
+  while (1) {
+    fp = fopen(ubifs_ro_error, "r");
+    if (fp == NULL) {
+      syslog(LOG_ERR, "%s: open %s failed", __func__, ubifs_ro_error);
+    } else if (fscanf(fp, "%d", &val) != 1) {
+      syslog(LOG_ERR, "%s: read %s failed", __func__, ubifs_ro_error);
+    } else if (val != 0) {
+      syslog(LOG_CRIT, "%s: ubifs (/dev/ubi0_0) in read-only mode (ro_error=%d)", __func__, val);
+
+      mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
+      if (mem_fd < 0) {
+        syslog(LOG_ERR, "devmem open failed");
+      } else {
+        bmc_reboot_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mem_fd, sram_bmc_reboot_base);
+        if (bmc_reboot_base == NULL) {
+          syslog(LOG_ERR, "Mapping SRAM_BMC_REBOOT_BASE failed");
+        } else {
+          BMC_REBOOT_BY_CMD(bmc_reboot_base, sram_offset) |= BIT_RECORD_LOG | FLAG_UBIFS_ERROR;
+        }
+        close(mem_fd);
+      }
+      fclose(fp);
+      break;
+    }
+    fclose(fp);
+    sleep(uhm_config.monitor_interval);
+  }
+
+  pal_bmc_reboot(RB_AUTOBOOT);
+  return NULL;
+}
+
 void sig_handler(int signo) {
   // Catch SIGALRM and SIGTERM. If recived signal record BMC log
   syslog(LOG_CRIT, "BMC health daemon stopped.");
@@ -1836,6 +1926,7 @@ main(int argc, char **argv) {
   pthread_t tid_timestamp_handler;
   pthread_t tid_bic_health_monitor;
   pthread_t tid_log_rearm_check;
+  pthread_t tid_ubifs_health_monitor;
 
   if (argc > 1) {
     exit(1);
@@ -1942,6 +2033,12 @@ main(int argc, char **argv) {
     syslog(LOG_WARNING, "pthread_create for log re-arm monitor error\n");
     exit(1);
   }
+  if (uhm_config.enabled) {
+    if (pthread_create(&tid_ubifs_health_monitor, NULL, ubifs_health_monitor, NULL)) {
+      syslog(LOG_WARNING, "pthread_create for ubifs health monitor error\n");
+      exit(1);
+    }
+  }
 
   pthread_join(tid_watchdog, NULL);
 
@@ -1986,6 +2083,10 @@ main(int argc, char **argv) {
 
   if (log_rearm_enabled){
     pthread_join(tid_log_rearm_check, NULL);
+  }
+
+  if (uhm_config.enabled) {
+    pthread_join(tid_ubifs_health_monitor, NULL);
   }  
 
   return 0;

@@ -211,8 +211,10 @@ enum {
 
 //HBA card information
 enum {
-  HBA_VID = 0x1077, // QLogic Corp.
-  HBA_DID = 0x2071, // ISP2714-based 16/32Gb Fibre Channel to PCIe Adapter
+  HBA_M_VID = 0x1077, // Marvell QLogic Corp.
+  HBA_B_VID = 0x10DF, // BRCM QLogic Corp.
+  HBA_M_DID = 0x2071, // ISP2714-based 16/32Gb Fibre Channel to PCIe Adapter
+  HBA_B_DID = 0xF400, // ISP2714-based 16/32Gb Fibre Channel to PCIe Adapter
 };
 
 typedef struct {

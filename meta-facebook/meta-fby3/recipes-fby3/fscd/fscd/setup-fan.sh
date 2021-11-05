@@ -161,9 +161,11 @@ function reload_sled_fsc() {
     else
       if [ $cnt -eq 2 ]; then
         run_fscd=true
-      elif [[ $cnt -eq 1 && "$sys_config" == "Type_DP" ]]; then
+      elif [ $cnt -eq 1 ]; then
         # DP system only has one slot
-        run_fscd=true
+        if [ "$sys_config" == "Type_DP" ] || [ "$sys_config" == "Type_DPB" ]; then
+          run_fscd=true
+        fi
       fi
     fi
   fi

@@ -248,6 +248,8 @@ int pal_get_asd_sw_status(uint8_t fru);
 uint8_t pal_get_gpv3_cfg();
 bool pal_get_crit_act_status(int fd);
 bool pal_is_fan_manual_mode(uint8_t slot_id);
+int pal_is_exp(void);
+int pal_get_fru_slot(uint8_t fru, uint8_t *slot);
 #ifdef __cplusplus
 } // extern "C"
 #endif

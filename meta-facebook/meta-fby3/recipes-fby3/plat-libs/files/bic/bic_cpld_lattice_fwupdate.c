@@ -954,7 +954,7 @@ int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
 
       offset += read_count;
       if ( (record_offset + fsize) <= i ) {
-        _set_fw_update_ongoing(slot_id, 60);
+        _set_fw_update_ongoing(slot_id, 300);
         printf("updated cpld: %d %%\n", (i/fsize)*5);
         record_offset += fsize;
       }
@@ -1362,7 +1362,7 @@ resend:
 
         offset += read_count;
         if ( (record_offset + fsize) <= i ) {
-          _set_fw_update_ongoing(slot_id, 60);
+          _set_fw_update_ongoing(slot_id, 300);
           printf("updated cpld: %d %%\n", (i/fsize)*5);
           record_offset += fsize;
         }

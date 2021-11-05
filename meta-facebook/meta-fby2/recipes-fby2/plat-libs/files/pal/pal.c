@@ -1414,7 +1414,8 @@ nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
   nic_mfg_id = fby2_get_nic_mfgid();
 
   if (nic_mfg_id == MFG_UNKNOWN) {
-    return -1;
+    printf("Unknow NIC manufacturer id!\n");
+    ret = -1;
   } else if (nic_mfg_id == MFG_BROADCOM) {
     msg = calloc(1, sizeof(NCSI_NL_MSG_T));
     memset(msg, 0, sizeof(NCSI_NL_MSG_T));
@@ -1460,11 +1461,22 @@ nic_powerup_prep(uint8_t slot_id, uint8_t reinit_type) {
         print_ncsi_completion_codes(rsp);
       }
     } else {
-      syslog(LOG_INFO, "Power-up perpare is done");
+      syslog(LOG_INFO, "Power-up prepare is done");
     }
     free(rsp);
     free(msg);
   }
+
+#ifdef CONFIG_FBY2_ND
+  // Workaround for NIC firmware issue
+  // To prevent slot can not be powered off or 12V-off when NIC firmware crashed
+  // Add extra messages to inform user the command fail, but always return 0 (successful)
+  if (ret != 0) {
+    printf("Discard power-up prepare command fail, continue the power action...\n");
+    syslog(LOG_WARNING, "%s(): Discard power-up prepare command fail, continue the power action", __func__);
+    ret = 0;
+  }
+#endif
 
   return ret;
 }

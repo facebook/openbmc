@@ -835,6 +835,21 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
       }
     }
   }
+
+#ifdef CONFIG_FBY3_CWC
+  if (cwcPlat > 0 && fru == FRU_SLOT1 && dev_id == DEV_ALL) {
+    int ret1 = 0, ret2 = 0;
+    ret1 = print_fru(FRU_2U_TOP, device, allow_absent, print_format, fru_array);
+    ret2 = print_fru(FRU_2U_BOT, device, allow_absent, print_format, fru_array);
+
+    if (ret1 < 0) {
+      ret = ret1;
+    } else if (ret2 < 0) {
+      ret = ret2;
+    }
+  }
+#endif
+
   return ret;
 
 error:

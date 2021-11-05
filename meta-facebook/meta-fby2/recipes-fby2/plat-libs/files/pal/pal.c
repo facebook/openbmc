@@ -5782,6 +5782,9 @@ parse_psb_error_sel_nd(uint8_t *event_data, char *error_log) {
     case 0x64:
       strcat(error_log, "P0: Timeout error attempting to fuse");
       break;
+    case 0x69:
+      strcat(error_log, "BIOS OEM key revoked");
+      break;
     case 0x6C:
       strcat(error_log, "P0: Error in BIOS Directory Table - Reset image not found");
       break;

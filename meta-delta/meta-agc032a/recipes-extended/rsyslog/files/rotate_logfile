@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mv /mnt/data/logfile /mnt/data/logfile.0
+touch /mnt/data/logfile
+

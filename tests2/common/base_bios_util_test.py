@@ -52,7 +52,7 @@ class BaseBiosUtilTest(unittest.TestCase):
             with self.subTest(fru=fru):
                 if not check_fru_availability(fru):
                     self.skipTest("skip test due to {} not available".format(fru))
-                cmd = ["bios-util", fru, "--boot_order", "get", "--boot_order"]
+                cmd = ["/usr/local/bin/bios-util", fru, "--boot_order", "get", "--boot_order"]
                 pattern = r"Boot Order: ([a-zA-Z0-9,\s\-]+?)\n"
                 out = run_cmd(cmd)
                 m = re.search(pattern, out)
@@ -66,7 +66,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     )
 
     def checkBootOrderStatus(self, fru, opt, status):
-        cmd = ["bios-util", fru, "--boot_order", "get", opt]
+        cmd = ["/usr/local/bin/bios-util", fru, "--boot_order", "get", opt]
         out = run_cmd(cmd)
         pattern = r"^.*: (.*?)\n$"
         m = re.search(pattern, out)
@@ -74,12 +74,12 @@ class BaseBiosUtilTest(unittest.TestCase):
         self.assertEqual(m.group(1), status)
 
     def disableBootOrder(self, fru, opt):
-        cmd = ["bios-util", fru, "--boot_order", "disable", opt]
+        cmd = ["/usr/local/bin/bios-util", fru, "--boot_order", "disable", opt]
         run_cmd(cmd)
         self.checkBootOrderStatus(fru, opt, "Disabled")
 
     def enableBootOrder(self, fru, opt):
-        cmd = ["bios-util", fru, "--boot_order", "enable", opt]
+        cmd = ["/usr/local/bin/bios-util", fru, "--boot_order", "enable", opt]
         run_cmd(cmd)
         self.checkBootOrderStatus(fru, opt, "Enabled")
 
@@ -118,7 +118,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     # test set bootmode: UEFI -> Legacy -> UEFI
                     self.checkBootOrderStatus(fru, "--boot_mode", "UEFI")
                     cmd = [
-                        "bios-util",
+                        "/usr/local/bin/bios-util",
                         fru,
                         "--boot_order",
                         "set",
@@ -128,7 +128,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     run_cmd(cmd)
                     self.checkBootOrderStatus(fru, "--boot_mode", "Legacy")
                     cmd = [
-                        "bios-util",
+                        "/usr/local/bin/bios-util",
                         fru,
                         "--boot_order",
                         "set",
@@ -141,7 +141,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     # DEFAULT boot_mode is Legacy
                     # test set bootmode: Legacy -> UEFI -> Legacy
                     cmd = [
-                        "bios-util",
+                        "/usr/local/bin/bios-util",
                         fru,
                         "--boot_order",
                         "set",
@@ -151,7 +151,7 @@ class BaseBiosUtilTest(unittest.TestCase):
                     run_cmd(cmd)
                     self.checkBootOrderStatus(fru, "--boot_mode", "UEFI")
                     cmd = [
-                        "bios-util",
+                        "/usr/local/bin/bios-util",
                         fru,
                         "--boot_order",
                         "set",
@@ -166,7 +166,7 @@ class BaseBiosUtilTest(unittest.TestCase):
             with self.subTest(fru=fru):
                 if not check_fru_availability(fru):
                     self.skipTest("skip test due to {} not available".format(fru))
-                cmd = ["bios-util", fru, "--postcode", "get"]
+                cmd = ["/usr/local/bin/bios-util", fru, "--postcode", "get"]
                 out = run_cmd(cmd)
-                pattern = r"^([A-F0-9\s\n]+)$"
+                pattern = r"^([A-F0-9\s\n]+)$|^$"
                 self.assertRegex(out, pattern)

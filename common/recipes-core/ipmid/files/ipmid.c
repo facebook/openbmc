@@ -4416,7 +4416,7 @@ ipmi_handle_oem_usb_dbg(unsigned char *request, unsigned char req_len,
   char key[32] = "blk_ocp_cmd";
   char value[8] = {0};
 
-  if ( kv_get(key, value, 0, 0) != 0 || atoi(value) != 0) {
+  if ( kv_get(key, value, 0, 0) == 0 && atoi(value) != 0) {
     syslog(LOG_INFO, "lock cmd");
     res->cc = CC_NOT_SUPP_IN_CURR_STATE;
     *res_len = 0;

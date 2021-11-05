@@ -46,7 +46,12 @@ read_system_conf() {
     type_2ou=$(get_2ou_board_type "$cpld_bus")
     if [ "$type_2ou" = "0x06" ]; then
       # DP slot
-      system_type=${system_type}DP
+      dp_type=$(/usr/bin/kv get "sled_system_conf" persistent)
+      if [ "$dp_type" = "Type_DPB" ]; then
+        system_type=${system_type}DPB
+      else
+        system_type=${system_type}DP
+      fi
     else
       system_type=${system_type}1
     fi

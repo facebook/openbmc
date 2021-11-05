@@ -4818,7 +4818,7 @@ int pal_dp_hba_fan_table_check(void) {
       if (ret == 0) {
         read_vid = rbuf[6] << 8 | rbuf[5];
         read_did = rbuf[8] << 8 | rbuf[7];;
-        if ((read_vid == HBA_VID) && (read_did == HBA_DID)) {
+        if (((read_vid == HBA_M_VID) && (read_did == HBA_M_DID)) || ((read_vid == HBA_B_VID) && (read_did == HBA_B_DID))) {
           snprintf(cmd, sizeof(cmd), "ln -sf %s %s", DP_HBA_FAN_TBL_PATH, DEFAULT_FSC_CFG_PATH);
           ret = system(cmd);
           if (ret != 0) {
@@ -4829,6 +4829,17 @@ int pal_dp_hba_fan_table_check(void) {
           ret = system("/usr/bin/sv restart fscd");
           if (ret != 0) {
             syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
+            return ret;
+          }
+
+          ret = kv_set("sled_system_conf", "Type_DPB", 0, KV_FPERSIST);
+          if (ret < 0)  {
+            syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
+          }
+
+          ret = system("/usr/bin/sv restart sensord");
+          if (ret != 0) {
+            syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
             return ret;
           }
         }

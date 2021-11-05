@@ -1,5 +1,5 @@
 {
-  "version": "FSCv1.2",
+  "version": "FSCV1.3",
   "pwm_transition_value": 60,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -29,7 +29,7 @@
         "type" : "power_status"
       }
     },
-    "(.*)dp_marvell_hsm_t": {
+    "(.*)dp_pcie_temp": {
       "attribute": {
         "type" : "power_status"
       }
@@ -85,7 +85,7 @@
       },
       "type": "pid",
       "setpoint": -8,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -1.35,
       "ki": -0.01,
@@ -132,7 +132,7 @@
         [78, 11],
         [79, 12],
         [80, 12],
-        [81, 13],        
+        [81, 13],
         [82, 13],
         [83, 14],
         [84, 15],

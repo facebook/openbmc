@@ -45,10 +45,18 @@ extern "C" {
 #define PRESENT_2U_BOT 0x02
 
 #define MAX_CHECK_DEVICE_TIME 8
-#define GPIO_RST_USB_HUB 0x10
-#define EXP_GPIO_RST_USB_HUB 0x9
-#define GPV3_GPIO_RST_USB_HUB_2 0x5E
-#define GPV3_GPIO_RST_USB_HUB_1_3 0x5D
+
+/*GPIO USB HUB reset pin*/
+enum {
+  EXP_GPIO_RST_USB_HUB   = 9,
+  GPIO_RST_USB_HUB       = 16,
+  CWC_GPIO_RST_USB_HUB   = 57,
+  CWC_GPIO_USB_MUX       = 58,
+  GPV3_GPIO_RST_USB_HUB1 = 93,
+  GPV3_GPIO_RST_USB_HUB2 = 94,
+  GPV3_GPIO_RST_USB_HUB3 = 98,
+};
+
 #define VALUE_LOW 0
 #define VALUE_HIGH 1
 

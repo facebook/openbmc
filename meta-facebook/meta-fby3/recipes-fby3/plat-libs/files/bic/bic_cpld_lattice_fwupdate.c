@@ -1471,15 +1471,7 @@ update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
       if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) { // Reset
         printf("bic_init_exp_usb_dev: slot: %d retrying..\n", slot_id);
         syslog(LOG_WARNING, "bic_init_exp_usb_dev: slot: %d retrying..\n", slot_id);
-        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_1_3, VALUE_LOW, intf);
-        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_2, VALUE_LOW, intf);
-        bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
-        msleep(100);
-        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_1_3, VALUE_HIGH, intf);
-        msleep(100);
-        remote_bic_set_gpio(slot_id, GPV3_GPIO_RST_USB_HUB_2, VALUE_HIGH, intf);
-        msleep(100);
-        bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+        bic_usb_hub_reset(slot_id, type_2ou, intf);
         sleep(20); // wait for usb ready
       } else break;
     } else break;

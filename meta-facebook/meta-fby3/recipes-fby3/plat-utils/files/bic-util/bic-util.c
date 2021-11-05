@@ -40,10 +40,10 @@ static uint8_t riser_board = UNKNOWN_BOARD;
 static uint8_t expFru = 0xff;
 const static char *intf_name[4] = {"Server Board", "Front Expansion Board", "Riser Expansion Board", "Baseboard"};
 const uint8_t intf_size = 4;
-static const uint8_t gpio_sb_usbhub[] = {16};
-static const uint8_t gpio_cwc_usbhub[] = {57};
-static const uint8_t gpio_gpv3_usbhub[] = {93, 94, 98};
-static const uint8_t gpio_cwc_usbmux[] = {58};
+static const uint8_t gpio_sb_usbhub[] = {GPIO_RST_USB_HUB};
+static const uint8_t gpio_cwc_usbhub[] = {CWC_GPIO_RST_USB_HUB};
+static const uint8_t gpio_gpv3_usbhub[] = {GPV3_GPIO_RST_USB_HUB1, GPV3_GPIO_RST_USB_HUB2, GPV3_GPIO_RST_USB_HUB3};
+static const uint8_t gpio_cwc_usbmux[] = {CWC_GPIO_USB_MUX};
 
 static const char *option_list[] = {
   "--get_gpio",

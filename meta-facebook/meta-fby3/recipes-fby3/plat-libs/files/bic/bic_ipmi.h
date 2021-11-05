@@ -109,6 +109,7 @@ int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, ui
 int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
 int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
 int bic_reset(uint8_t slot_id, uint8_t intf);
+int bic_usb_hub_reset(uint8_t slot_id, uint8_t board_type, uint8_t intf);
 int bic_clear_cmos(uint8_t slot_id);
 int bic_inform_sled_cycle(void);
 int bic_get_gpv3_pci_link(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);

@@ -1417,6 +1417,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   char ipmb_content[] = "ipmb";
   char* loc = NULL;
   bool stop_bic_monitoring = false;
+  bool reset_usbhub = false;
   char fdstr[32] = {0};
   bool fd_opened = false;
 
@@ -1491,6 +1492,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CWC_CPLD:
     case FW_CWC_PESW:
     case FW_CWC_PESW_VR:
+      reset_usbhub = true;
       intf = REXP_BIC_INTF;
       break;
     case FW_BB_BIC:
@@ -1519,6 +1521,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_TOP_M2_DEV9:
     case FW_TOP_M2_DEV10:
     case FW_TOP_M2_DEV11:
+      reset_usbhub = true;
       intf = RREXP_BIC_INTF1;
       break;
     case FW_GPV3_BOT_BIC:
@@ -1542,6 +1545,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BOT_M2_DEV9:
     case FW_BOT_M2_DEV10:
     case FW_BOT_M2_DEV11:
+      reset_usbhub = true;
       intf = RREXP_BIC_INTF2;
       break;
   }
@@ -1558,6 +1562,24 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       printf("Please check another slot BMC is not updating BB firmware\n");
       ret = BIC_STATUS_FAILURE;
       goto error_exit;
+    }
+  }
+
+  // reset HUB if needed
+  // because many devices are attached to the USB HUB,
+  // perform the reset to make sure the HUB can work normally with the power change
+  if ( reset_usbhub == true ) {
+    uint8_t status = 0;
+    ret = bic_get_server_power_status(slot_id, &status);
+    if ( ret < 0 ) {
+      printf("Failed to get the power status\n");
+      goto error_exit;
+    } else if ( status == 0/*SERVER_POWER_OFF*/ ) {
+      // run reset
+      ret = bic_usb_hub_reset(slot_id, board_type, intf);
+      if ( ret < 0 ) {
+        goto error_exit;
+      }
     }
   }
 

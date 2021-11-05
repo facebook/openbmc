@@ -2352,6 +2352,51 @@ bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf,
 }
 
 int
+bic_usb_hub_reset(uint8_t slot_id, uint8_t board_type, uint8_t intf) {
+  uint8_t rst_list[] = {GPV3_GPIO_RST_USB_HUB1, GPV3_GPIO_RST_USB_HUB2, GPV3_GPIO_RST_USB_HUB3, CWC_GPIO_RST_USB_HUB, GPIO_RST_USB_HUB};
+  size_t st_idx = 0;
+  size_t end_idx = sizeof(rst_list);
+  int ret = BIC_STATUS_FAILURE;
+
+  // if intf is REXP_BIC_INTF and board_type is CWC_MCHP_BOARD
+  //   rst seq: CWC HUB -> SB HUB
+  // else if intf is REXP_BIC_INTF
+  //   rst seq: GPV3 HUB1/2/3 -> SB HUB
+  // else if intf is RREXP_BIC_INTF1 or RREXP_BIC_INTF2
+  //   rst seq: GPV3 HUB1/2/3 -> CWC HUB -> SB HUB
+  if ( intf == REXP_BIC_INTF ) {
+    if ( board_type == CWC_MCHP_BOARD ) {
+      st_idx = 3;
+    } else {
+      // 2U config doesnt contain CWC
+      rst_list[3] = GPIO_RST_USB_HUB;
+      end_idx--;
+    }
+  } else if ( intf == RREXP_BIC_INTF1 || intf == RREXP_BIC_INTF2 ) {
+    // do nothing
+  } else {
+    syslog(LOG_WARNING, "intf(%02Xh) and board_type(%02Xh) are not supported\n", intf, board_type);
+    return ret;
+  }
+
+  // reset
+  printf("HUB reset...");
+  for ( size_t i = 0; i < 2; i++ ) {
+    for ( size_t j = st_idx; j < end_idx; j++ ) {
+      ret = remote_bic_set_gpio(slot_id, rst_list[j], i, intf);
+      if ( ret < 0 ) {
+        printf("Failed to reset USB HUB, pin#:%02X, val:%02X, intf:%02X, board_type:%02X\n", rst_list[i], i, intf, board_type);
+        break;
+      }
+      if ( i == VALUE_HIGH ) msleep(500);
+    }
+  }
+  printf("Done\n");
+
+  return ret;
+}
+
+int
 bic_reset(uint8_t slot_id, uint8_t intf) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};

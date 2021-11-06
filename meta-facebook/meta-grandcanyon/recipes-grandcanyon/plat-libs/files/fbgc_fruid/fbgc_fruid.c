@@ -43,7 +43,7 @@ fbgc_get_fruid_name(uint8_t fru, char *name) {
       snprintf(name, MAX_FRU_NAME_STR, "User Interface Card");
       break;
     case FRU_DPB:
-      snprintf(name, MAX_FRU_NAME_STR, "Drive Plan Board");
+      snprintf(name, MAX_FRU_NAME_STR, "Drive Plane Board");
       break;
     case FRU_SCC:
       snprintf(name, MAX_FRU_NAME_STR, "Storage Controller Card");

@@ -122,7 +122,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(uic_identify_shim.path, uic_identify_shim.get_handler)
     app.router.add_post(uic_identify_shim.path, uic_identify_shim.post_handler)
 
-    # Add /api/dpb to represent Drive Plan Board
+    # Add /api/dpb to represent Drive Plane Board
     dpb_shim = RestShim(get_node_dpb(), "/api/dpb")
     app.router.add_get(dpb_shim.path, dpb_shim.get_handler)
 

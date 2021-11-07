@@ -87,5 +87,8 @@
   },
   "bmc_timestamp": {
     "enabled": true
+  },
+  "ubifs_health": {
+    "enabled": true
   }
 }

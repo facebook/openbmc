@@ -87,6 +87,7 @@ static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS+MAX_NUM_EXPS][MAX_SENSOR_NUM + 1] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS+MAX_NUM_EXPS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
+static uint8_t bic_dynamic_gpv3_cwc_sensor_list[MAX_SENSOR_NUM + 1] = {0};
 static uint8_t bic_dynamic_skip_sensor_list[4+MAX_NUM_EXPS][MAX_SENSOR_NUM + 1] = {0};
 
 int pwr_off_flag[MAX_NODES+MAX_NUM_EXPS] = {0};
@@ -399,7 +400,9 @@ const uint8_t bic_2ou_gpv3_sensor_list[] = {
   BIC_GPV3_INA233_PWR_DEV11,
   BIC_GPV3_INA233_VOL_DEV11,
   BIC_GPV3_NVME_TEMP_DEV11,
+};
 
+const uint8_t bic_2ou_gpv3_dual_m2_sensor_list[] = {
   //dual m2 power
   BIC_GPV3_DUAL_M2_PWR_0_1,
   BIC_GPV3_DUAL_M2_PWR_2_3,
@@ -1001,6 +1004,7 @@ size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t);
+size_t bic_2ou_gpv3_dual_m2_sensor_cnt = sizeof(bic_2ou_gpv3_dual_m2_sensor_list)/sizeof(uint8_t);
 size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t);
@@ -1146,6 +1150,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD){
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
         current_cnt += bic_2ou_gpv3_sensor_cnt;
+        if ( bmc_location == NIC_BMC ) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_dual_m2_sensor_list, bic_2ou_gpv3_dual_m2_sensor_cnt);
+          current_cnt += bic_bb_sensor_cnt;
+        }
       } else if (board_type == DP_RISER_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dp_sensor_list, bic_dp_sensor_cnt);
         current_cnt += bic_dp_sensor_cnt;
@@ -1175,8 +1183,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_2U:
   case FRU_2U_TOP:
   case FRU_2U_BOT:
-    *sensor_list = (uint8_t *) bic_2ou_gpv3_sensor_list;
-    *cnt = bic_2ou_gpv3_sensor_cnt;
+    memcpy(&bic_dynamic_gpv3_cwc_sensor_list[current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
+    current_cnt = bic_2ou_gpv3_sensor_cnt;
+    if ( bmc_location == NIC_BMC ) {
+      memcpy(&bic_dynamic_gpv3_cwc_sensor_list[current_cnt], bic_2ou_gpv3_dual_m2_sensor_list, bic_2ou_gpv3_dual_m2_sensor_cnt);
+      current_cnt += bic_bb_sensor_cnt;
+    }
+    *sensor_list = (uint8_t *) bic_dynamic_gpv3_cwc_sensor_list;
+    *cnt = current_cnt;
     break;
 
   default:

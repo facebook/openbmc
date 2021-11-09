@@ -217,6 +217,7 @@ do_install:class-target() {
 do_compile_ptest() {
 cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
+  set -e
   coverage erase
   coverage run -m unittest discover /usr/local/fbpackages/rest-api
   coverage report -m --omit="*/test*"

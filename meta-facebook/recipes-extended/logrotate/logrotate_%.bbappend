@@ -15,10 +15,17 @@ do_install:append() {
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         # XXX For now we build Yocto with systemd enabled and sysvinit
-        # compat to allow remaining sysvinit scripts to continue working. 
+        # compat to allow remaining sysvinit scripts to continue working.
         # With both systemd & sysvinit compat on, the logrotate recipe gets
-        # it wrong and installs both the crontab entry and systemd timer. 
+        # it wrong and installs both the crontab entry and systemd timer.
         # When sysvinit compat is removed then this can go away.
         rm -f ${D}${sysconfdir}/cron.daily/logrotate
+    else
+        # logrotate by default installed as cron.daily job by logrotate recipe
+        # but current all platforms setup  do log rotate hourly "reusing" cron.daily
+        # to avoid confusing, move it to cron.hourly
+        bbnote "move logrotate from cron.daily to cron.hourly"
+        install -d ${D}${sysconfdir}/cron.hourly
+        mv ${D}${sysconfdir}/cron.daily/logrotate ${D}${sysconfdir}/cron.hourly/logrotate
     fi
 }

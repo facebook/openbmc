@@ -31,6 +31,7 @@
 echo -n "Setup crond..."
   mkdir /etc/cron
   mkdir /etc/cron/crontabs
-  echo "0 * * * * run-parts /etc/cron.daily" > /etc/cron/crontabs/root
+  echo "0 * * * * run-parts /etc/cron.hourly" > /etc/cron/crontabs/root
+  echo "0 0 * * * run-parts /etc/cron.daily" >> /etc/cron/crontabs/root
   /etc/init.d/busybox-cron start
 echo "done."

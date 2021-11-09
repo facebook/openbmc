@@ -1115,12 +1115,16 @@ print_usb_hub_status(bic_gpio_t gpio, const uint8_t *gpio_nb, uint8_t gpio_len, 
     if (gpio.gpio[offset] & mask) {
       if (gpio_nb[i] == mux) {
         printf("USB HUB is switched to usb c\n");
+      } else if (gpio_len == 1) {
+        printf("USB HUB is on\n");
       } else {
         printf("USB HUB%d is on\n", i);
       }
     } else {
       if (gpio_nb[i] == mux) {
         printf("USB HUB is switched to bmc\n");
+      } else if (gpio_len == 1) {
+        printf("USB HUB is off\n");
       } else {
         printf("USB HUB%d is off\n", i);
       }

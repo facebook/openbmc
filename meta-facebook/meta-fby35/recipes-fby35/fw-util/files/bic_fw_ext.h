@@ -12,6 +12,12 @@ enum {
   BIC_FW_UPDATE_NOT_SUPP_IN_CURR_STATE = -2,
 };
 
+typedef struct image_check {
+  std::string new_path;
+  bool result;
+  bool sign;
+} image_info;
+
 class BicFwExtComponent : public Component {
   uint8_t slot_id = 0;
   uint8_t fw_comp = 0;
@@ -28,6 +34,7 @@ class BicFwExtComponent : public Component {
     int fupdate(string image);
     int print_version();
     void get_version(json& j);
+    image_info check_image(string image, bool force);
 };
 
 #endif

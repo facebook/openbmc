@@ -54,9 +54,6 @@ extern "C" {
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (7 - (index % 8))) & 0x1\
 
-#define REVISION_ID(x) ((x >> 4) & 0x0f)
-#define COMPONENT_ID(x) (x & 0x0f)
-
 #define NIC_CPLD_BUS 9
 #define BB_CPLD_BUS 12
 #define CPLD_ADDRESS 0x1E
@@ -96,46 +93,6 @@ typedef struct
   uint8_t path[8];
 } usb_dev;
 
-enum {
-  FW_CPLD = 1,
-  FW_BIC,
-  FW_ME,
-  FW_BIC_RCVY,
-  FW_VR,               // 5
-  FW_BIOS,
-  FW_1OU_BIC,
-  FW_1OU_CPLD,
-  FW_2OU_BIC,
-  FW_2OU_CPLD,         // 10
-  FW_BB_BIC,
-  FW_BB_CPLD,
-  FW_2OU_3V3_VR1,
-  FW_2OU_3V3_VR2,
-  FW_2OU_3V3_VR3,      // 15
-  FW_2OU_1V8_VR,
-  FW_2OU_PESW_VR,
-  FW_2OU_PESW_CFG_VER,
-  FW_2OU_PESW_FW_VER,
-  FW_2OU_PESW_BL0_VER, // 20
-  FW_2OU_PESW_BL1_VER,
-  FW_2OU_PESW_PART_MAP0_VER,
-  FW_2OU_PESW_PART_MAP1_VER,
-  FW_2OU_PESW,
-  FW_2OU_M2_DEV0,      // 25
-  FW_2OU_M2_DEV1,
-  FW_2OU_M2_DEV2,
-  FW_2OU_M2_DEV3,
-  FW_2OU_M2_DEV4,
-  FW_2OU_M2_DEV5,      // 30
-  FW_2OU_M2_DEV6,
-  FW_2OU_M2_DEV7,
-  FW_2OU_M2_DEV8,
-  FW_2OU_M2_DEV9,
-  FW_2OU_M2_DEV10,     // 35
-  FW_2OU_M2_DEV11,
-  // last id
-  FW_COMPONENT_LAST_ID
-};
 
 enum {
   VR_ISL = 0x0,

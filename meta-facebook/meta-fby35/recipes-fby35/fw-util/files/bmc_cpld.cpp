@@ -1,17 +1,19 @@
 #include <cstdio>
 #include <syslog.h>
+#include <sys/stat.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/kv.h>
 #include "bmc_cpld.h"
 #include "server.h"
 #include <facebook/bic.h>
 
 using namespace std;
 #define JBC_FILE_NAME ".jbc"
+#define MAX10_RPD_SIZE 0x23000
+#define CPLD_NEW_VER_KEY "%s_cpld_new_ver"
 
 image_info BmcCpldComponent::check_image(string image, bool force) {
-const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
-#define MAX10_RPD_SIZE 0x5C000
   string flash_image = image;
   uint8_t bmc_location = 0;
   string fru_name = fru();
@@ -19,16 +21,12 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
   string bmc_str = "bmc";
   size_t slot_found = fru_name.find(slot_str);
   size_t bmc_found = fru_name.find(bmc_str);
+  size_t img_size = 0;
+  size_t w_b = 0;
   uint8_t slot_id = 0;
-  int ret = -1;
-  int i2cfd = 0;
-  uint8_t tbuf[1] = {0};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int retry= 0;
-  int board_type_index = 0;
-  bool board_rev_is_invalid = false;
+  uint8_t board_type_index = 0;
+  struct stat file_info;
+  uint8_t fw_comp = 0;
 
   image_info image_sts = {"", false};
 
@@ -37,10 +35,12 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
     image_sts.result = true;
     return image_sts;
   }
-
+  if (stat(image.c_str(), &file_info) < 0) {
+    cerr << "Cannot check " << image << " file information" << endl;
+    return image_sts;
+  }  
   if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
-    printf("Failed to initialize the fw-util\n");
-    exit(EXIT_FAILURE);
+    cerr << "Cannot open " << image << " for reading" << endl;
   }
 
   //create a new tmp file
@@ -61,132 +61,57 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
     return image_sts;
   }
 
-  uint8_t *memblock = new uint8_t [MAX10_RPD_SIZE + 1];//data_size + signed byte
-  uint8_t signed_byte = 0;
-  size_t r_b = read(fd_r, memblock, MAX10_RPD_SIZE + 1);
-  size_t w_b = 0;
-
-  //it's an old image
-  if ( r_b == MAX10_RPD_SIZE ) {
-    signed_byte = 0x0;
-  } else if ( r_b == (MAX10_RPD_SIZE + 1) ) {
-    signed_byte = memblock[MAX10_RPD_SIZE] & 0xff;
-    r_b = r_b - 1;  //only write data to tmp file
+  uint8_t *memblock = new uint8_t [file_info.st_size];
+  if (read(fd_r, memblock, file_info.st_size) != file_info.st_size) {
+    cerr << "Cannot read file " << image_sts.new_path << endl;
+    goto err_exit;
   }
 
-  w_b = write(fd_w, memblock, r_b);
+  w_b = write(fd_w, memblock, MAX10_RPD_SIZE);
 
   //check size
-  if ( r_b != w_b ) {
+  if ( MAX10_RPD_SIZE != w_b ) {
     cerr << "Cannot create the tmp file - " << image_sts.new_path << endl;
-    cerr << "Read: " << r_b << " Write: " << w_b << endl;
+    cerr << "Read: " << MAX10_RPD_SIZE << " Write: " << w_b << endl;
     image_sts.result = false;
   }
-  
+  if (file_info.st_size == MAX10_RPD_SIZE + IMG_POSTFIX_SIZE)
+    image_sts.sign = true;
+
   if ( force == false ) {
+    if (file_info.st_size != MAX10_RPD_SIZE + IMG_POSTFIX_SIZE) {
+      cerr << "Image " << image << " is not a signed image, please use --force option" << endl;
+      goto err_exit;
+    }
     // Read Board Revision from CPLD
     if ( ((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
-      i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
-        return image_sts;
+      if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
+        cerr << "Failed to get board revision ID" << endl;
+        goto err_exit;
       }
-
-      tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
-         return image_sts;
-      }
+      fw_comp = FW_BB_CPLD;
     } else if (slot_found != string::npos) {
       slot_id = fru_name.at(4) - '0';
-      i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
-        return image_sts;
+      if (get_board_rev(slot_id, BOARD_ID_SB, &board_type_index) < 0) {
+        cerr << "Failed to get board revision ID" << endl;
+        goto err_exit;
       }
-
-      tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
-        return image_sts;
-      }
+      fw_comp = FW_CPLD;
     }
-
-    board_type_index = rbuf[0] - 1;
-    if (board_type_index < 0) {
-      board_type_index = 0;
-    }
-
-    // PVT & MP firmware could be used in common
-    if (board_type_index < CPLD_BOARD_PVT_REV) {
-      if (REVISION_ID(signed_byte) != board_type_index) {
-        board_rev_is_invalid = true;
-      }
+    img_size = file_info.st_size - IMG_POSTFIX_SIZE;
+    if (fby35_common_is_valid_img(image.c_str(), (FW_IMG_INFO*)(memblock + img_size), fw_comp, board_type_index) == false) {
+      goto err_exit;
     } else {
-      if (REVISION_ID(signed_byte) < CPLD_BOARD_PVT_REV) {
-        board_rev_is_invalid = true;
-      }
-    }
-
-    //CPLD is located on class 2(NIC_EXP)
-    if ( bmc_location == NIC_BMC ) {
-      if ( (COMPONENT_ID(signed_byte) == NICEXP) && (bmc_found != string::npos) ) {
-        image_sts.result = true;
-      } else if ( !board_rev_is_invalid && (COMPONENT_ID(signed_byte) == BICDL) && (slot_found != string::npos)) {
-        image_sts.result = true;
-      } else {
-        if (board_rev_is_invalid && (slot_found != string::npos)) {
-             cout << "To prevent this update on " << fru_name <<", please use the f/w of "
-             << board_type[board_type_index].c_str() <<" on the " << board_type[board_type_index].c_str() <<" system." << endl;
-             cout << "To force the update, please use the --force option." << endl;
-        }
-
-        cout << "image is not a valid CPLD image for " << fru_name << endl;
-      }
-    } else if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-      if ( !board_rev_is_invalid && (COMPONENT_ID(signed_byte) == BICBB) && (bmc_found != string::npos) ) {
-        image_sts.result = true;
-      } else if ( !board_rev_is_invalid && (COMPONENT_ID(signed_byte) == BICDL) && (slot_found != string::npos) ) {
-        image_sts.result = true;
-      } else {
-        if (board_rev_is_invalid) {
-             cout << "To prevent this update on " << fru_name <<", please use the f/w of "
-             << board_type[board_type_index].c_str() <<" on the " << board_type[board_type_index].c_str() <<" system." << endl;
-             cout << "To force the update, please use the --force option." << endl;
-        }
-
-        cout << "image is not a valid CPLD image for " << fru_name << endl;
-      }
-    }
+      image_sts.result = true;
+    }   
   }
 
+err_exit:
   //release the resource
-  close(fd_r);
-  close(fd_w);
+  if (fd_r >= 0)
+    close(fd_r);
+  if (fd_w >= 0)
+    close(fd_w);
   delete[] memblock;
 
   return image_sts;
@@ -210,7 +135,11 @@ int BmcCpldComponent::print_version()
 {
   string ver("");
   string fru_name = fru();
+  char ver_key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
   size_t slot_found = fru_name.find("slot");
+  int ret = 0;
+
   try {
     // Print CPLD Version
     if (slot_found != string::npos) {
@@ -225,6 +154,13 @@ int BmcCpldComponent::print_version()
       throw "Error in getting the version of " + fru_name;
     }
     cout << fru_name << " CPLD Version: " << ver << endl;
+    snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str());
+    ret = kv_get(ver_key, value, NULL, 0);
+    if ((ret < 0) && (errno == ENOENT)) { // no update before
+      cout << fru_name << " CPLD Version After activation: " << ver << endl;
+    } else if (ret == 0) {
+      cout << fru_name << " CPLD Version After activation: " << value << endl;
+    }
   } catch(string& err) {
     printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
   }
@@ -253,10 +189,12 @@ void BmcCpldComponent::get_version(json& j) {
   }
 }
 
-int BmcCpldComponent::update_cpld(string image) 
+int BmcCpldComponent::update_cpld(string image, bool force, bool sign) 
 {
   int ret = 0;
   char key[32] = {0};
+  char ver_key[MAX_KEY_LEN] = {0};
+  char ver[16] = {0};
   uint8_t bmc_location = 0;
   string bmc_location_str;
   string image_tmp;
@@ -276,7 +214,6 @@ int BmcCpldComponent::update_cpld(string image)
   } else {
     bmc_location_str = "baseboard";
   }
-
   if (slot_found != string::npos) {
     bmc_location_str = fru_name+ " " + "SB";
   }
@@ -301,6 +238,19 @@ int BmcCpldComponent::update_cpld(string image)
     }
   }
 
+  snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str());
+  if (fby35_common_get_img_ver(image_tmp.c_str(), ver, FW_BB_CPLD) < 0) {
+     kv_set(ver_key, "Unknown", 0, 0);
+  } else {
+    if (ret) {
+      kv_set(ver_key, "NA", 0, 0);
+    } else if (force && (sign == false)) {
+      kv_set(ver_key, "Unknown", 0, 0);
+    } else {
+      kv_set(ver_key, ver, 0, 0);
+    }
+  }
+
   syslog(LOG_CRIT, "Updated CPLD on %s. File: %s. Result: %s", bmc_location_str.c_str(), image_tmp.c_str(), (ret < 0)?"Fail":"Success"); 
   return ret;
 }
@@ -318,8 +268,7 @@ int BmcCpldComponent::update(string image)
   //use the new path
   image = image_sts.new_path;
 
-  ret = update_cpld(image);
-
+  ret = update_cpld(image, FORCE_UPDATE_UNSET, image_sts.sign);
   //remove the tmp file, but jbc has no temp file now
   if (image.find(JBC_FILE_NAME) == string::npos) {
     remove(image.c_str());
@@ -335,7 +284,7 @@ int BmcCpldComponent::fupdate(string image)
 
   image = image_sts.new_path;
 
-  ret = update_cpld(image);
+  ret = update_cpld(image, FORCE_UPDATE_SET, image_sts.sign);
 
   //remove the tmp file, but jbc has no temp file now
   if (image.find(JBC_FILE_NAME) == string::npos) {

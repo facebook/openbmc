@@ -37,6 +37,7 @@
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
+const char platform_signature[PLAT_SIG_SIZE] = "Yosemite V3.5   ";
 
 int
 fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
@@ -526,4 +527,249 @@ exit:
   }
 
   return ret;
+}
+
+int
+fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data) {
+  int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
+  char read_buf[MD5_READ_BYTES] = {0};
+  char md5_digest[MD5_DIGEST_LENGTH] = {0};
+  MD5_CTX context;
+
+  if (image_path == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to NULL parameters.", __func__);
+    return -1;
+  }
+
+  if (cal_size <= 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to wrong calculate size: %d.", __func__, cal_size);
+    return -1;
+  }
+
+  fd = open(image_path, O_RDONLY);
+
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to calculate MD5.", __func__, image_path);
+    return -1;
+  }
+
+  lseek(fd, 0, SEEK_SET);
+
+  ret = MD5_Init(&context);
+  if (ret == 0) {
+    syslog(LOG_WARNING, "%s(): failed to initialize MD5 context.", __func__);
+    ret = -1;
+    goto exit;
+  }
+
+  while (sum < cal_size) {
+    read_bytes = MD5_READ_BYTES;
+    if ((sum + MD5_READ_BYTES) > cal_size) {
+      read_bytes = cal_size - sum;
+    }
+
+    byte_num = read(fd, read_buf, read_bytes);
+    ret = MD5_Update(&context, read_buf, byte_num);
+    if (ret == 0) {
+      syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
+      ret = -1;
+      goto exit;
+    }
+    sum += byte_num;
+  }
+
+  ret = MD5_Final((uint8_t*)md5_digest, &context);
+  if (ret == 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5 of %s.", __func__, image_path);
+    ret = -1;
+    goto exit;
+  }
+
+#ifdef DEBUG
+  int i = 0;
+  printf("calculated MD5:\n")
+  for(i = 0; i < 16; i++) {
+    printf("%02X ", ((uint8_t*)md5_digest)[i]);
+  }
+  printf("\nImage MD5");
+  for(i = 0; i < 16; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+#endif
+
+  if (strncmp(md5_digest, (char*)data, sizeof(md5_digest)) != 0) {
+    printf("Checksum incorrect. This image is corrupted\n");
+    ret = -1;
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
+
+int
+fby35_common_check_image_signature(uint8_t* data) {
+  int ret = 0;
+
+  if (strncmp(platform_signature, (char*)data, PLAT_SIG_SIZE) != 0) {
+    printf("This image is not for Yv3.5 platform\n");
+    ret = -1;
+  }
+  return ret;
+}
+
+int
+fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp) {
+  int fd = 0;
+  int byte_num = 0;
+  int ret = 0;
+  char buf[FW_VER_SIZE] = {0};
+  struct stat file_info;
+  uint32_t offset = 0x0;
+
+  if (stat(image_path, &file_info) < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to check file infomation.", __func__, image_path);
+    return false;
+  }
+  offset = file_info.st_size - IMG_POSTFIX_SIZE + IMG_FW_VER_OFFSET;
+  fd = open(image_path, O_RDONLY);
+  if (fd < 0 ) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to check version.", __func__, image_path);
+    ret = -1;
+    goto exit;
+  }
+  lseek(fd, offset, SEEK_SET);
+  byte_num = read(fd, buf, FW_VER_SIZE);
+  if (byte_num != FW_VER_SIZE) {
+    syslog(LOG_WARNING, "%s(): failed to get image version", __func__);
+    ret = -1;
+    goto exit;
+  }
+  switch(comp) {
+    case FW_CPLD:
+    case FW_1OU_CPLD:
+    case FW_2OU_CPLD:
+    case FW_BB_CPLD:
+      snprintf(ver, 16, "%02X%02X%02X%02X", buf[3], buf[2], buf[1], buf[0]);
+      break;
+    case FW_BIC:
+    case FW_1OU_BIC:
+    case FW_2OU_BIC:
+    case FW_BB_BIC:
+      snprintf(ver, 16, "v%x.%02X", buf[3], buf[2]);
+      break;
+    default:
+      ret = -1;
+      goto exit;
+  }
+
+exit:
+  if (fd >= 0) 
+    close(fd);
+  
+  return ret;
+}
+
+bool
+fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id) {
+  const char* board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
+  uint8_t signed_byte = 0x0;
+  uint8_t bmc_location = 0;
+  uint8_t board_id = 0;
+  struct stat file_info;
+
+  if (stat(img_path, &file_info) < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to check file infomation.", __func__, img_path);
+    return false;
+  }
+
+  if (fby35_common_check_image_signature(img_info->plat_sig) < 0) {
+    return false;
+  }
+
+  if (fby35_common_check_image_md5(img_path, file_info.st_size - IMG_POSTFIX_SIZE, img_info->md5_sum) < 0) {
+    return false;
+  }
+
+  signed_byte = img_info->err_proof;
+  switch (rev_id) {
+    case FW_REV_POC1:
+    case FW_REV_POC2:
+      if (REVISION_ID(signed_byte) != FW_REV_POC2) {
+        printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");
+        return false;
+      }
+      break;
+    case FW_REV_PVT:
+    case FW_REV_MP:
+      // PVT & MP firmware could be used in common
+      if (REVISION_ID(signed_byte) < FW_REV_PVT) {
+        printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
+              board_type[rev_id]);
+        return false;
+      }
+      break;
+    default:
+      if (REVISION_ID(signed_byte) != rev_id) {
+        printf("Please use %s firmware on %s system\n To force the update, please use the --force option.\n",
+              board_type[rev_id], board_type[rev_id]);
+        return false;
+      }
+  }
+  
+ 
+  if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
+    printf("Can not get the BMC location\n");
+    return false;
+  }
+
+  switch(comp) {
+    case FW_CPLD:
+    case FW_BIC:
+    case FW_BIOS:
+      board_id = BOARD_ID_SB;
+      break;
+    case FW_BB_CPLD:
+      if (bmc_location == NIC_BMC) {
+        board_id = BOARD_ID_NIC_EXP;
+      } else {
+        board_id = BOARD_ID_BB;
+      }
+      break;
+    case FW_BB_BIC:
+       board_id = BOARD_ID_BB;
+       break;
+    default:
+      break;
+  }
+  if (BOARD_ID(signed_byte) != board_id) {
+    printf("Wrong firmware image component.\n");
+    return false;
+  }
+
+  switch(comp) {    
+    case FW_CPLD:
+    case FW_1OU_CPLD:
+    case FW_2OU_CPLD:
+    case FW_BB_CPLD:
+      if (COMPONENT_ID(signed_byte) != COMP_CPLD) {
+        printf("Not a valid CPLD firmware image.\n");
+        return false;
+      }
+      break;
+    case FW_BIC:
+    case FW_1OU_BIC:
+    case FW_2OU_BIC:
+    case FW_BB_BIC:
+      if (COMPONENT_ID(signed_byte) != COMP_BIC) {
+        printf("Not a valid BIC firmware image.\n");
+        return false;
+      }
+      break;
+    default:
+      return true;
+  }
+
+  return true;
 }

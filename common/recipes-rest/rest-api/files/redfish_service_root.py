@@ -12,6 +12,13 @@ async def get_redfish(request: str) -> web.Response:
 async def get_service_root(request: str) -> web.Response:
     product_name = str(rest_pal_legacy.pal_get_platform_name())
     uuid_data = str(rest_pal_legacy.pal_get_uuid())
+    odata_ver = 4.0
+    headers = {
+        "Link": "</redfish/v1/schemas/ServiceRoot.v1_9_0.json>; rel=describedby",
+        "Allow": "GET",
+        "CACHE-CONTROL": "max-age=1800",
+        "OData-Version": str(odata_ver),
+    }
     body = {
         "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
         "@odata.id": "/redfish/v1/",
@@ -28,8 +35,14 @@ async def get_service_root(request: str) -> web.Response:
         "AccountService": {"@odata.id": "/redfish/v1/AccountService"},
         "Links": {"Sessions": {"@odata.id": "/redfish/v1/SessionService/Sessions"}},
     }
+    if request.method == "HEAD":
+        return web.json_response(headers=headers)
+    if "OData-Version" in request.headers:
+        if float(request.headers["OData-Version"]) > odata_ver:
+            return web.json_response(status=412)
+
     await validate_keys(body)
-    return web.json_response(body, dumps=dumps_bytestr)
+    return web.json_response(body, headers=headers, dumps=dumps_bytestr)
 
 
 async def get_odata(request: str) -> web.Response:
@@ -2490,4 +2503,4 @@ async def get_metadata(request: str) -> web.Response:
     </edmx:DataServices>
 </edmx:Edmx>
 """
-    return web.Response(text=body, content_type="application/xml")
+    return web.Response(text=body.strip(), content_type="application/xml")

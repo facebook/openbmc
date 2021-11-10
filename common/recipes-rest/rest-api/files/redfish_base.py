@@ -79,6 +79,8 @@ VALID_KEYS = {
     "name",
     "kind",
     "url",
+    "NameServers",
+    "LinkStatus",
 }
 
 

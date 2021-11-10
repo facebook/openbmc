@@ -203,7 +203,11 @@ class TestChassisService(AioHTTPTestCase):
                     "Power": {
                         "@odata.id": "/redfish/v1/Chassis/{}/Power".format(server_name)
                     },
-                    "Links": {},
+                    "Links": {
+                        "ManagedBy": [
+                            {"@odata.id": "/redfish/v1/Chassis/{}".format(server_name)}
+                        ]
+                    },
                 }
                 req = await self.client.request(
                     "GET", "/redfish/v1/Chassis/{}".format(server_name)

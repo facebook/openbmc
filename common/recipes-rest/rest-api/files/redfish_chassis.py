@@ -57,7 +57,11 @@ class RedfishChassis:
                 "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(server_name)
             },
             "Power": {"@odata.id": "/redfish/v1/Chassis/{}/Power".format(server_name)},
-            "Links": {},
+            "Links": {
+                "ManagedBy": [
+                    {"@odata.id": "/redfish/v1/Chassis/{}".format(server_name)}
+                ]
+            },
         }
         await validate_keys(body)
         return web.json_response(body, dumps=dumps_bytestr)

@@ -27,6 +27,9 @@ class RedfishComputerSystems:
             )
 
     async def get_collection_descriptor(self, request: web.Request) -> web.Response:
+        headers = {
+            "Link": "</redfish/v1/schemas/v1/ComputerSystemCollection.json>; rel=describedby"
+        }
         body = {
             "@odata.id": "/redfish/v1/Systems",
             "@odata.context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
@@ -36,7 +39,7 @@ class RedfishComputerSystems:
             "Members": self.collection,
         }
         await validate_keys(body)
-        return web.json_response(body, dumps=dumps_bytestr)
+        return web.json_response(body, headers=headers, dumps=dumps_bytestr)
 
     def has_server(self, server_name) -> bool:
         for server in self.collection:

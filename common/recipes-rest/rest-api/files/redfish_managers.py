@@ -204,6 +204,8 @@ async def get_ethernet_members(request: str) -> web.Response:
             }
         ],
         "StaticNameServers": [],
+        "NameServers": [],
+        "LinkStatus": "LinkUp",
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)
@@ -212,6 +214,9 @@ async def get_ethernet_members(request: str) -> web.Response:
 async def get_manager_network(request: str) -> web.Response:
     host_name = socket.gethostname()
     fqdn = get_fqdn_str()
+    headers = {
+        "Link": "</redfish/v1/schemas/ManagerNetworkProtocol.v1_2_0.json>; rel=describedby"
+    }
     body = {
         "@odata.context": "/redfish/v1/$metadata#ManagerNetworkProtocol.ManagerNetworkProtocol",  # noqa: B950
         "@odata.id": "/redfish/v1/Managers/1/NetworkProtocol",
@@ -234,4 +239,4 @@ async def get_manager_network(request: str) -> web.Response:
         },
     }
     await validate_keys(body)
-    return web.json_response(body, dumps=dumps_bytestr)
+    return web.json_response(body, headers=headers, dumps=dumps_bytestr)

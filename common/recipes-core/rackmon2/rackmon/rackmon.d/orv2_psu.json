@@ -1,0 +1,52 @@
+{
+    "name": "orv2_psu",
+    "address_range": [
+        160,
+        191
+    ],
+    "probe_register": 104,
+    "default_baudrate": 19200,
+    "preferred_baudrate": 19200,
+    "registers": [
+        {
+            "begin": 0,
+            "length": 8,
+            "name": "MFG_MODEL",
+            "format": "ascii"
+        },
+        {
+            "begin": 152,
+            "length": 1,
+            "name": "RPM fan0",
+            "keep": 10,
+            "format": "decimal"
+        },
+        {
+            "begin": 127,
+            "length": 1,
+            "name": "BBU Absolute State of Charge",
+            "keep": 10,
+            "format": "fixedpoint",
+            "precision": 6
+        },
+        {
+            "begin": 104,
+            "length": 1,
+            "name": "PSU Status register",
+            "keep": 10,
+            "changes_only": true,
+            "format": "table",
+            "table": {
+                "Main Converter Fail": 0,
+                "Aux 54V Converter Fail": 1,
+                "Battery Charger Fail": 2,
+                "Current Feed (Boost Converter) Fail": 3,
+                "Temp Alarm   Alarm set at shutdown temp": 4,
+                "Fan Alarm": 5,
+                "Battery Alarm Set for BBU Fail or BBU voltage =< 26 VDC": 6,
+                "SoH Requested": 7,
+                "SoH Discharge": 8
+            }
+        }
+    ]
+}

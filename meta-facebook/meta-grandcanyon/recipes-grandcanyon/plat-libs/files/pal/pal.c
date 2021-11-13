@@ -4147,3 +4147,152 @@ pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
 
   return 0;
 }
+
+int
+pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len) {
+  char path[MAX_PATH_LEN] = {0};
+  int fruid_len = 0, bytes_rd = 0;
+  uint8_t serial_addr = 0, produce_start_addr = 0;
+  FILE *fruid_fd;
+  uint8_t *eeprom;
+  int ret = 0;
+
+  if (serial_num == NULL) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to parameter is NULL.", __func__, fan_id);
+    return ret;
+  }
+
+  ret = pal_get_fruid_path(FRU_FAN0 + fan_id, path);
+  if (ret < 0) {
+    return -1;
+  }
+
+  ret = -1;
+  fruid_fd = fopen(path, "rb");
+  if (fruid_fd == NULL) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to unable to open the file %s", __func__, fan_id, path);
+    return ret;
+  }
+
+  fseek(fruid_fd, 0, SEEK_END);
+  fruid_len = (uint32_t) ftell(fruid_fd);
+  if (fruid_len == 0) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to file %s is empty", __func__, fan_id, path);
+    goto exit;
+  }
+
+  fseek(fruid_fd, 0, SEEK_SET);
+
+  eeprom = (uint8_t *) malloc(fruid_len);
+  if (eeprom == NULL) {
+    syslog(LOG_ERR, "%s: FAN%d FRU malloc: memory allocation failed", __func__, fan_id);
+    goto exit;
+  }
+
+  bytes_rd = fread(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+  if (bytes_rd != fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file size is wrong: %d, expected: %d",
+      __func__, fan_id, bytes_rd, fruid_len);
+    goto exit;
+  }
+
+  // Read Produce Serial Number
+  if (FRUID_HEADER_OFFSET_PRODUCT_INFO >= fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
+      __func__, fan_id, fruid_len, FRUID_HEADER_OFFSET_PRODUCT_INFO);
+    goto exit;
+  }
+  produce_start_addr = eeprom[FRUID_HEADER_OFFSET_PRODUCT_INFO]*FRUID_OFFSET_MULTIPLIER;
+  
+  if (produce_start_addr >= fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
+      __func__, fan_id, fruid_len, produce_start_addr);
+    goto exit;
+  }
+  serial_addr = produce_start_addr + FRUID_PRODUCT_OFFSET_SERIAL;
+  
+  if (serial_addr >= fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
+      __func__, fan_id, fruid_len, serial_addr);
+    goto exit;
+  }
+  memcpy(serial_num, &eeprom[serial_addr], serial_len);
+  
+  ret = 0;
+
+exit:
+  if (fruid_fd != NULL) {
+    fclose(fruid_fd);
+  }
+
+  if (eeprom != NULL) {
+    free(eeprom);
+  }
+
+  return ret;
+}
+
+int
+pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
+  uint8_t *fanfru_check_sel;
+  uint8_t *fanfru_check_bin;
+  char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  char *temp_str;
+  int i = 0, j = 0, ret = 0;
+  uint8_t check_len = 0, check_index = 1;
+
+  if (log == NULL) {
+    syslog(LOG_WARNING, "%s: Failed to handle fan fru certified SEL due to parameters is NULL.", __func__);
+    return -1;
+  }
+
+  // if SEL doesn't contain FANFRU certified data
+  // don't handle
+  if (strstr(log, "FANFRU:") == NULL) {
+    return -1;
+  }
+
+  temp_str = strtok(log, ":");
+  temp_str = strtok(NULL, ":");
+  for (i = 0; i < SINGLE_FAN_CNT; i++) { // 4 fans
+    // Get certified data lenght from SEL
+    check_len = temp_str[check_index];
+    check_index = check_index + 1;
+
+    // if fanN check len equal to 0
+    // indicate Expander could not get the correct SN of fanN
+    // SEL will not bring value of fanN
+    // Skip the fanN update
+    if (check_len == 0) {
+      continue;
+    }
+
+    // Get certified data from SEL
+    fanfru_check_sel = (uint8_t *) malloc(check_len);
+    for (j = 0; j < check_len; j++) {
+      fanfru_check_sel[j] = temp_str[check_index + j];
+      if (fanfru_check_sel[j] == 0) {
+        syslog(LOG_WARNING, "%s: Failed to handle fan fru certified SEL due to SEL isn't complete.", __func__);
+        free(fanfru_check_sel);
+        return -1;
+      }
+    }
+    check_index = check_index + check_len;
+
+    // Get certified data from bin file
+    fanfru_check_bin = (uint8_t *) malloc(check_len);
+    ret = pal_get_fanfru_serial_num(i, fanfru_check_bin, check_len);
+
+    // If get data failed or is different
+    // run exp-cache to udpate FAN FRU binary data
+    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0)) {
+      snprintf(cmd, sizeof(cmd), "/usr/bin/exp-cached --update_fan fan%d> /dev/null 2>&1 &", i);
+      run_command(cmd);
+    }
+
+    free(fanfru_check_sel);
+    free(fanfru_check_bin);
+  }
+
+  return 0;
+}

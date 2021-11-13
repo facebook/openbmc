@@ -32,6 +32,10 @@ extern "C" {
 #define FRUID_HEADER_SIZE     (8)
 #define FRUID_HEADER_EMPTY    (0x07)
 
+#define FRUID_OFFSET_MULTIPLIER                        8
+#define FRUID_HEADER_OFFSET_PRODUCT_INFO               0x04
+#define FRUID_PRODUCT_OFFSET_SERIAL                    0x58
+
 int fbgc_get_fruid_name(uint8_t fru, char *name);
 int fbgc_get_fruid_path(uint8_t fru, char *path);
 int fbgc_get_fruid_eeprom_path(uint8_t fru, char *path);

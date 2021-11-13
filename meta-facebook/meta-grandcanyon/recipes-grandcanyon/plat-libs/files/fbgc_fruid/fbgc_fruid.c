@@ -121,7 +121,12 @@ fbgc_get_fruid_path(uint8_t fru, char *path) {
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
   }
-  snprintf(path, MAX_BIN_FILE_STR, COMMON_FRU_PATH, fname);
+
+  if ((fru == FRU_FAN0) || (fru == FRU_FAN1) || (fru == FRU_FAN2) || (fru == FRU_FAN3)) {
+    snprintf(path, MAX_BIN_FILE_STR, COMMON_FAN_FRU_PATH, fname);
+  } else {
+    snprintf(path, MAX_BIN_FILE_STR, COMMON_FRU_PATH, fname);
+  }
 
   return 0;
 }

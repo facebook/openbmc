@@ -40,10 +40,8 @@ FBOBMC_PART_INFO_KEY = "part_infos"
 
 
 class VbootParserException(Exception):
-    def __init__(self, message, code):
-        super().__init__(message)
+    def __init__(self, code):
         self.code = code
-
 
 if sys.version_info[0] == 3:
     import io
@@ -327,133 +325,127 @@ def md5_check(fh, image_meta):
 
 
 def main():
-    try:
-        ret = {}
-        # check md5sum if image_meta is not None
-        if image_meta is not None and not args.locked_bmc:
-            with open(args.filename, "rb") as fh:
-                checksums = md5_check(fh, image_meta)
-
-            if checksums:
-                ret["checksums"] = {}
-                for k, v in checksums.items():
-                    ret["checksums"][k] = v
-
+    ret = {}
+    # check md5sum if image_meta is not None
+    if image_meta is not None and not args.locked_bmc:
         with open(args.filename, "rb") as fh:
-            data = fh.read(args.rom_size)
+            checksums = md5_check(fh, image_meta)
 
-            data_size = len(data)
-            if data_size < 4:
-                print(
-                    "Not sure what this file contains: %s" % (args.filename),
-                    file=sys.stderr,
-                )
-                return EC_EXCEPTION
-            # sanity check the file first instrcution is
-            # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
-            # the <reset-vector> location can be different
-            # SPL: \x0f for AST2500, \x1f for AST2600
-            # U-Boot: \xBE for AST2500, \xC0 for AST2600
-            if data[1:4] != b"\x00\x00\xea":
-                print("Non-flash file inputs are not supported", file=sys.stderr)
-                return EC_EXCEPTION
+        if checksums:
+            ret["checksums"] = {}
+            for k, v in checksums.items():
+                ret["checksums"][k] = v
 
-            ret.update(decode_flash(fh, data))
-            ret.update(decode_os(fh))
+    with open(args.filename, "rb") as fh:
+        data = fh.read(args.rom_size)
 
-            if args.json:
-                print(json.dumps(ret))
-            else:
-                if "checksums" in ret:
-                    print("")
-                    for k, v in ret["checksums"].items():
-                        if v["found"]:
-                            print("{} md5sum: {}: {}".format(k, v["md5"], v["status"]))
-                        else:
-                            print("{} md5sum: not fount in meta: BAD".format(k))
-                    print("")
-                print("Lockbit: %s" % ret["lockbit"])
-                print("SPL FIT offset: %s" % ret["spl_fit_offset"])
-                for key in ret["spl_keys"]:
-                    print(
-                        "  SPL KEK: %s (%s) (signs %s)"
-                        % (
-                            key["key"],
-                            key["algo"],
-                            key["required"],
-                        ),
-                    )
+        data_size = len(data)
+        if data_size < 4:
+            print(
+                "Not sure what this file contains: %s" % (args.filename),
+                file=sys.stderr,
+            )
+            raise VbootParserException(EC_EXCEPTION)
+
+        # sanity check the file first instrcution is
+        # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
+        # the <reset-vector> location can be different
+        # SPL: \x0f for AST2500, \x1f for AST2600
+        # U-Boot: \xBE for AST2500, \xC0 for AST2600
+        if data[1:4] != b"\x00\x00\xea":
+            print("Non-flash file inputs are not supported", file=sys.stderr)
+            raise VbootParserException(EC_EXCEPTION)
+
+        ret.update(decode_flash(fh, data))
+        ret.update(decode_os(fh))
+
+        if args.json:
+            print(json.dumps(ret))
+        else:
+            if "checksums" in ret:
                 print("")
-
-                print("Subordinate date: %s" % (ret["subordinate_date"],))
-                print("Subordinate timestamp: %s" % (ret["subordinate_timestamp"],))
-                print(
-                    "Subordinate keys signing key: %s"
-                    % (ret["subordinate_keys_signing_key"])
-                )
-                print(
-                    "Subordinate keys hash (%s): %s: %s"
-                    % (
-                        ret["subordinate_keys_hash_algo"],
-                        ret["subordinate_keys_hash"],
-                        ret["subordinate_key_hash_status"],
-                    )
-                )
-                for key in ret["subordinate_keys"]:
-                    print(
-                        "  Subordinate: %s (%s) (signs %s)"
-                        % (
-                            key["key"],
-                            key["algo"],
-                            key["required"],
-                        ),
-                    )
+                for k, v in ret["checksums"].items():
+                    if v["found"]:
+                        print("{} md5sum: {}: {}".format(k, v["md5"], v["status"]))
+                    else:
+                        print("{} md5sum: not fount in meta: BAD".format(k))
                 print("")
-
-                print("U-Boot date: %s" % (ret["uboot_date"]))
-                print("U-Boot timestamp: %s" % (ret["uboot_timestamp"]))
+            print("Lockbit: %s" % ret["lockbit"])
+            print("SPL FIT offset: %s" % ret["spl_fit_offset"])
+            for key in ret["spl_keys"]:
                 print(
-                    "U-Boot configuration signing key: %s"
-                    % (ret["uboot_configuration_signing_key"])
-                )
-                print(
-                    "U-Boot hash (%s): %s: %s"
+                    "  SPL KEK: %s (%s) (signs %s)"
                     % (
-                        ret["uboot_hash_algo"],
-                        ret["uboot_hash"],
-                        ret["uboot_hash_status"],
-                    )
+                        key["key"],
+                        key["algo"],
+                        key["required"],
+                    ),
                 )
-                print("")
+            print("")
 
-                print("Kernel/ramdisk date: %s" % (ret["os_date"]))
-                print("Kernel/ramdisk timestamp: %s" % (ret["os_timestamp"]))
-                print(
-                    "Kernel/ramdisk configuration signing key: %s"
-                    % (ret["os_configuration_signing_key"])
+            print("Subordinate date: %s" % (ret["subordinate_date"],))
+            print("Subordinate timestamp: %s" % (ret["subordinate_timestamp"],))
+            print(
+                "Subordinate keys signing key: %s"
+                % (ret["subordinate_keys_signing_key"])
+            )
+            print(
+                "Subordinate keys hash (%s): %s: %s"
+                % (
+                    ret["subordinate_keys_hash_algo"],
+                    ret["subordinate_keys_hash"],
+                    ret["subordinate_key_hash_status"],
                 )
+            )
+            for key in ret["subordinate_keys"]:
                 print(
-                    "Kernel hash (%s): %s: %s"
+                    "  Subordinate: %s (%s) (signs %s)"
                     % (
-                        ret["kernel_hash_algo"],
-                        ret["kernel_hash"],
-                        ret["kernel_hash_status"],
-                    )
+                        key["key"],
+                        key["algo"],
+                        key["required"],
+                    ),
                 )
-                print(
-                    "Ramdisk hash (%s): %s: %s"
-                    % (
-                        ret["ramdisk_hash_algo"],
-                        ret["ramdisk_hash"],
-                        ret["ramdisk_hash_status"],
-                    )
+            print("")
+
+            print("U-Boot date: %s" % (ret["uboot_date"]))
+            print("U-Boot timestamp: %s" % (ret["uboot_timestamp"]))
+            print(
+                "U-Boot configuration signing key: %s"
+                % (ret["uboot_configuration_signing_key"])
+            )
+            print(
+                "U-Boot hash (%s): %s: %s"
+                % (
+                    ret["uboot_hash_algo"],
+                    ret["uboot_hash"],
+                    ret["uboot_hash_status"],
                 )
+            )
+            print("")
 
-    except VbootParserException as e:
-        return e.code
-
-    return EC_SUCCESS
-
+            print("Kernel/ramdisk date: %s" % (ret["os_date"]))
+            print("Kernel/ramdisk timestamp: %s" % (ret["os_timestamp"]))
+            print(
+                "Kernel/ramdisk configuration signing key: %s"
+                % (ret["os_configuration_signing_key"])
+            )
+            print(
+                "Kernel hash (%s): %s: %s"
+                % (
+                    ret["kernel_hash_algo"],
+                    ret["kernel_hash"],
+                    ret["kernel_hash_status"],
+                )
+            )
+            print(
+                "Ramdisk hash (%s): %s: %s"
+                % (
+                    ret["ramdisk_hash_algo"],
+                    ret["ramdisk_hash"],
+                    ret["ramdisk_hash_status"],
+                )
+            )
 
 def load_image_meta():
     print("Try loading image meta from image %s" % args.filename, file=sys.stderr)
@@ -565,8 +557,12 @@ if __name__ == "__main__":
         print("verifying legacy image", file=sys.stderr)
 
     try:
-        sys.exit(main())
+        main()
+    except VbootParserException as e:
+        traceback.print_exc()
+        sys.exit(e.code)
     except Exception as e:
-        print("Exception: %s" % (str(e)), file=sys.stderr)
         traceback.print_exc()
         sys.exit(EC_EXCEPTION)
+
+    sys.exit(EC_SUCCESS)

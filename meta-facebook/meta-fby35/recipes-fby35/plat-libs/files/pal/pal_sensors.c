@@ -27,7 +27,6 @@
 #define PWM_MASK     0x0f
 
 #define DEVICE_KEY "sys_config/fru%d_B_drive0_model_name"
-#define FAN0_PATH "/sys/class/hwmon/hwmon0/fan0_input"
 
 #define DUAL_FAN_UCR 13500
 #define DUAL_FAN_UNC 10200
@@ -1173,7 +1172,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
       snprintf(label, sizeof(label), "pwm%d", pwm_num) > sizeof(label)) {
       return -1;
     }
-    return sensors_write_fan(label, (float)pwm);
+    return sensors_write_pwmfan(pwm_num, (float)pwm);
   } else if (bmc_location == NIC_BMC) {
     ret = bic_set_fan_auto_mode(GET_FAN_MODE, &status);
     if (ret < 0) {
@@ -1227,15 +1226,11 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     }
 
     if (fan > pal_tach_cnt ||
-        snprintf(label, sizeof(label), "fan%d", fan) > sizeof(label)) {
+        snprintf(label, sizeof(label), "fan%d", fan + 1) > sizeof(label)) {
       syslog(LOG_WARNING, "%s: invalid fan#:%d", __func__, fan);
       return -1;
     }
-    if (fan == 0) {
-      ret = read_device(FAN0_PATH, &value);
-    } else {
-      ret = sensors_read_fan(label, &value);
-    }
+    ret = sensors_read_fan(label, &value);
   } else if ( bmc_location == NIC_BMC ) {
     if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
     else ret = bic_get_fan_speed(fan, &value);
@@ -1266,10 +1261,7 @@ _pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
     if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
     else return bic_get_fan_pwm(pwm, value);
   }
-
-  char label[32] = {0};
-  snprintf(label, sizeof(label), "pwm%d", pwm);
-  return sensors_read_fan(label, value);
+  return sensors_read_pwmfan(pwm, value);
 }
 
 // Provide the fan pwm to fan-util and it also will be called by read_fan_pwm

@@ -45,9 +45,13 @@ int sensors_write(const char *chip, const char *label, float value);
 
 // Read Fan RPM (fan1-fanN) or PWM (pwm1-pwmN)
 int sensors_read_fan(const char *label, float *value);
+// Read Fan PWM in driver "pwm-fanN"
+int sensors_read_pwmfan(const int pwm_id, float *value);
 
 // Write Fan PWM (pwm1-pwmN)
 int sensors_write_fan(const char *label, float value);
+// Write Fan PWM in driver "pwm-fanN"
+int sensors_write_pwmfan(const int pwm_id, float value);
 
 // Read ADC value
 int sensors_read_adc(const char *label, float *value);

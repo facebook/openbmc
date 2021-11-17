@@ -79,6 +79,16 @@ extern "C" int sensors_read_fan(const char *label, float *value)
   return sensors_read("ast_pwm-isa-0000", label, value);
 }
 
+extern "C" int sensors_read_pwmfan(const int pwm_id, float *value)
+{
+  char chip_name[64]= {0};
+  snprintf(chip_name, sizeof(chip_name), "pwmfan-isa-00%02d", pwm_id);
+  if (sensors.find(chip_name) != sensors.end()) {
+    return sensors_read(chip_name, "pwm1", value);
+  }
+  return -1;
+}
+
 extern "C" int sensors_write_fan(const char *label, float value)
 {
   if (sensors.find("aspeed_pwm_tacho-isa-0000") != sensors.end()) {
@@ -91,6 +101,16 @@ extern "C" int sensors_write_fan(const char *label, float value)
     return sensors_write("aspeed_tach-isa-0000", label, value);
   }
   return sensors_write("ast_pwm-isa-0000", label, value);
+}
+
+extern "C" int sensors_write_pwmfan(const int pwm_id, float value)
+{
+  char chip_name[64] = {0};
+  snprintf(chip_name, sizeof(chip_name), "pwmfan-isa-00%02d", pwm_id);
+  if (sensors.find(chip_name) != sensors.end()) {
+    return sensors_write(chip_name, "pwm1", value);
+  }
+  return -1;
 }
 
 extern "C" int sensors_read_adc(const char *label, float *value)

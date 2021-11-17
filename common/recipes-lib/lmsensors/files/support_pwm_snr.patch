@@ -1,0 +1,190 @@
+diff --git a/lib/sensors.h b/lib/sensors.h
+index ce55bf3..a3bbee7 100644
+--- a/lib/sensors.h
++++ b/lib/sensors.h
+@@ -141,6 +141,7 @@ typedef enum sensors_feature_type {
+ 	SENSORS_FEATURE_ENERGY		= 0x04,
+ 	SENSORS_FEATURE_CURR		= 0x05,
+ 	SENSORS_FEATURE_HUMIDITY	= 0x06,
++	SENSORS_FEATURE_PWM		= 0x07,
+ 	SENSORS_FEATURE_MAX_MAIN,
+ 	SENSORS_FEATURE_VID		= 0x10,
+ 	SENSORS_FEATURE_INTRUSION	= 0x11,
+@@ -237,6 +238,11 @@ typedef enum sensors_subfeature_type {
+ 	SENSORS_SUBFEATURE_CURR_CRIT_ALARM,
+ 
+ 	SENSORS_SUBFEATURE_HUMIDITY_INPUT = SENSORS_FEATURE_HUMIDITY << 8,
++	
++	SENSORS_SUBFEATURE_PWM_IO = SENSORS_FEATURE_PWM << 8,
++	SENSORS_SUBFEATURE_PWM_FREQ,
++	SENSORS_SUBFEATURE_PWM_ENABLE = (SENSORS_FEATURE_PWM << 8) | 0x80,
++	SENSORS_SUBFEATURE_PWM_MODE,
+ 
+ 	SENSORS_SUBFEATURE_VID = SENSORS_FEATURE_VID << 8,
+ 
+diff --git a/lib/sysfs.c b/lib/sysfs.c
+index f44a88d..bfa2396 100644
+--- a/lib/sysfs.c
++++ b/lib/sysfs.c
+@@ -149,6 +149,7 @@ int get_type_scaling(sensors_subfeature_type type)
+ 	case SENSORS_SUBFEATURE_HUMIDITY_INPUT:
+ 		return 1000;
+ 	case SENSORS_SUBFEATURE_FAN_INPUT:
++	case SENSORS_SUBFEATURE_PWM_IO:
+ 		return 1;
+ 	case SENSORS_SUBFEATURE_POWER_AVERAGE:
+ 	case SENSORS_SUBFEATURE_ENERGY_INPUT:
+@@ -187,6 +188,12 @@ char *get_feature_name(sensors_feature_type ftype, char *sfname)
+ 			sensors_fatal_error(__func__, "Out of memory");
+ 
+ 		break;
++	case SENSORS_FEATURE_PWM:
++		/* Not all pwm subfeatures have a underscore in there name */
++		name = strndup(sfname, 4);
++		if (!name)
++			sensors_fatal_error(__func__, "Out of memory");
++
+ 	default:
+ 		name = strdup(sfname);
+ 		if (!name)
+@@ -325,6 +332,14 @@ static const struct subfeature_type_match intrusion_matches[] = {
+ 	{ "beep", SENSORS_SUBFEATURE_INTRUSION_BEEP },
+ 	{ NULL, 0 }
+ };
++
++static const struct subfeature_type_match pwm_matches[] = {
++	{ "enable", SENSORS_SUBFEATURE_PWM_ENABLE },
++	{ "mode", SENSORS_SUBFEATURE_PWM_MODE },
++	{ "freq", SENSORS_SUBFEATURE_PWM_FREQ },
++	{ NULL, 0 }
++};
++
+ static struct feature_type_match matches[] = {
+ 	{ "temp%d%c", temp_matches },
+ 	{ "in%d%c", in_matches },
+@@ -335,6 +350,7 @@ static struct feature_type_match matches[] = {
+ 	{ "energy%d%c", energy_matches },
+ 	{ "intrusion%d%c", intrusion_matches },
+ 	{ "humidity%d%c", humidity_matches },
++	{ "pwm%d%c", pwm_matches },
+ };
+ 
+ /* Return the subfeature type and channel number based on the subfeature
+@@ -351,14 +367,18 @@ sensors_subfeature_type sensors_subfeature_get_type(const char *name, int *nr)
+ 		*nr = 0;
+ 		return SENSORS_SUBFEATURE_BEEP_ENABLE;
+ 	}
+-
+-	for (i = 0; i < ARRAY_SIZE(matches); i++)
+-		if ((count = sscanf(name, matches[i].name, nr, &c)))
++	for (i = 0; i < ARRAY_SIZE(matches); i++) {
++		if ((count = sscanf(name, matches[i].name, nr, &c))) {
++			/* Needed for matching pwm[1-*] */
++			if (matches[i].submatches == pwm_matches) {
++				return SENSORS_SUBFEATURE_PWM_IO;
++			}
+ 			break;
++		}
++	}
+ 
+ 	if (i == ARRAY_SIZE(matches) || count != 2 || c != '_')
+ 		return SENSORS_SUBFEATURE_UNKNOWN;  /* no match */
+-
+ 	submatches = matches[i].submatches;
+ 	name = strchr(name + 3, '_') + 1;
+ 	for (i = 0; submatches[i].name != NULL; i++)
+@@ -464,6 +484,7 @@ static int sensors_read_dynamic_chip(sensors_chip_features *chip,
+ 		case SENSORS_FEATURE_ENERGY:
+ 		case SENSORS_FEATURE_CURR:
+ 		case SENSORS_FEATURE_HUMIDITY:
++		case SENSORS_FEATURE_PWM:
+ 			nr--;
+ 			break;
+ 		default:
+@@ -701,8 +722,11 @@ static int sensors_read_one_sysfs_chip(const char *dev_path,
+ 	if ((!subsys || !strcmp(subsys, "platform") ||
+ 			!strcmp(subsys, "of_platform"))) {
+ 		/* must be new ISA (platform driver) */
+-		if (sscanf(dev_name, "%*[a-z0-9_].%d", &entry.chip.addr) != 1)
+-			entry.chip.addr = 0;
++		if (sscanf(dev_name, "%*[a-z0-9_].%d", &entry.chip.addr) != 1) {
++			if (sscanf(dev_name, "pwm-fan%d", &entry.chip.addr) == 0) {
++				entry.chip.addr = 0;
++			}
++		}
+ 		entry.chip.bus.type = SENSORS_BUS_TYPE_ISA;
+ 		entry.chip.bus.nr = 0;
+ 	} else if (subsys && !strcmp(subsys, "acpi")) {
+diff --git a/prog/sensors/chips.c b/prog/sensors/chips.c
+index 5b9f08f..f08351d 100644
+--- a/prog/sensors/chips.c
++++ b/prog/sensors/chips.c
+@@ -689,6 +689,58 @@ static void print_chip_humidity(const sensors_chip_name *name,
+ 	free(label);
+ }
+ 
++static void print_chip_pwm(const sensors_chip_name *name,
++			   const sensors_feature *feature,
++			   int label_size)
++{
++	const sensors_subfeature *sfio, *sffreq, *sfenable, *sfmode;
++	char *label;
++	double val;
++
++	if (!(label = sensors_get_label(name, feature))) {
++		fprintf(stderr, "ERROR: Can't get label of feature %s!\n",
++			feature->name);
++		return;
++	}
++	print_label(label, label_size);
++	free(label);
++
++	sfio = sensors_get_subfeature(name, feature,
++				      SENSORS_SUBFEATURE_PWM_IO);
++	if (sfio && !get_input_value(name, sfio, &val))
++		printf("    %3.0f%%", val / 2.55);
++	else
++		printf("     N/A");
++
++	sffreq = sensors_get_subfeature(name, feature,
++					SENSORS_SUBFEATURE_PWM_FREQ);
++	sfmode = sensors_get_subfeature(name, feature,
++					 SENSORS_SUBFEATURE_PWM_MODE);
++	if (sffreq || sfmode) {
++		printf("  (");
++		if (sffreq)
++			printf("freq = %.0f Hz", get_value(name, sffreq));
++
++		if (sfmode) {
++			if (!get_input_value(name, sfmode, &val))
++				printf("%smode = %s", sffreq ? ", " : "",
++				       (int) val ? "pwm" : "dc");
++			else
++				printf("%smode = N/A", sffreq ? ", " : "");
++		}
++
++		printf(")");
++	}
++
++	sfenable = sensors_get_subfeature(name, feature,
++					  SENSORS_SUBFEATURE_PWM_ENABLE);
++
++	if (sfenable && !get_input_value(name, sfenable, &val) &&
++	    (int) val == 1)
++		printf("  MANUAL CONTROL");
++
++	printf("\n");
++}
+ static void print_chip_beep_enable(const sensors_chip_name *name,
+ 				   const sensors_feature *feature,
+ 				   int label_size)
+@@ -826,6 +878,9 @@ void print_chip(const sensors_chip_name *name)
+ 		case SENSORS_FEATURE_HUMIDITY:
+ 			print_chip_humidity(name, feature, label_size);
+ 			break;
++		case SENSORS_FEATURE_PWM:
++			print_chip_pwm(name, feature, label_size);
++			break;
+ 		default:
+ 			continue;
+ 		}

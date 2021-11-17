@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import json
+
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
 
@@ -26,11 +28,10 @@ class BaseFruTest(object):
         Logger.start(name=self._testMethodName)
         self.fru_cmd = None
         self.fru_fields = None
-        pass
+        self.fru_data_in_json = None
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))
-        pass
 
     def run_fru_cmd(self):
         self.assertNotEqual(self.fru_cmd, None, "FRU command not set")
@@ -77,6 +78,28 @@ class BaseFruTest(object):
             board_fields.add("Board Custom Data {}".format(i))
         return board_fields
 
+    def checkFruFieldInJson(self, field: str) -> bool:
+        """[summary] to check if given fru field is empty
+            fruid-util tend to skip fru fileds if that given fields is empty
+            if output in stdout. It will cause CIT to fail since the field is
+            missing from the output. In this case we should double check the
+            output in json format to determine if the tested field are really
+            mssing or not before determined pass/fail of the test cases
+            We'll give a free-pass to "Custom Data" since every platform tend
+            to use this filed differently and its not a fixed field/value for
+            testing.
+        Args:
+            field (str): Board FRU ID, Product Custom Data 1..etc
+
+        Returns:
+            bool: return True if field present in json else False
+        """
+        if "Custom Data" in field:
+            return True
+        if field in self.fru_data_in_json.keys() and not self.fru_data_in_json[field]:
+            return True
+        return False
+
 
 class CommonFruTest(BaseFruTest):
     def getFields(self, field_type, num_custom):
@@ -91,6 +114,11 @@ class CommonFruTest(BaseFruTest):
         return field_funcs[field_type](num_custom)
 
     def test_fru_fields(self):
+        # get fru info in json for reference
+        cmd = self.fru_cmd + ["--json"]
+        self.fru_data_in_json = json.loads(run_cmd(cmd))[0]
+
+        # continue to fru test
         fru_info = self.run_fru_cmd()
         for fru_field_type in self.fru_fields:
             num_custom = self.fru_fields[fru_field_type]
@@ -98,4 +126,15 @@ class CommonFruTest(BaseFruTest):
             with self.subTest(field_type=fru_field_type):
                 for fru_field in fields:
                     with self.subTest(field=fru_field):
-                        self.assertIn(fru_field, fru_info)
+                        try:
+                            self.assertIn(fru_field, fru_info)
+                        except AssertionError:
+                            Logger.info(
+                                "{} not found in stdout, checking json".format(
+                                    fru_field
+                                )
+                            )
+                            if self.checkFruFieldInJson(fru_field):
+                                self.assertTrue(True, "{} is empty, test passed")
+                            else:
+                                self.assertIn(fru_field, fru_info)

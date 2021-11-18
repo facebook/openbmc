@@ -576,6 +576,7 @@ int pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len
 int pal_get_exp_power(uint8_t fru, uint8_t *status);
 int pal_set_exp_power(uint8_t fru, uint8_t cmd);
 int pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len);
+int pal_is_exp(void);
 
 #ifdef __cplusplus
 }

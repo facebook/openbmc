@@ -2812,3 +2812,8 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len)
 {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_is_exp(void) {
+  return PAL_ENOTSUP;
+}

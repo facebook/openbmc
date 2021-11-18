@@ -1278,13 +1278,13 @@ get_component_name(uint8_t comp) {
     case FW_2OU_PESW_VR:
       return "2OU PCIe VR";
     case FW_2OU_3V3_VR1:
-      return "VR_P3V3_STBY1";
+      return "2OU VR_P3V3_STBY1";
     case FW_2OU_3V3_VR2:
-      return "VR_P3V3_STBY2";
+      return "2OU VR_P3V3_STBY2";
     case FW_2OU_3V3_VR3:
-      return "VR_P3V3_STBY3";
+      return "2OU VR_P3V3_STBY3";
     case FW_2OU_1V8_VR:
-      return "VR_P1V8";
+      return "2OU VR_P1V8";
     case FW_2OU_M2_DEV0:
       return "2OU M2 Dev0";
     case FW_2OU_M2_DEV1:

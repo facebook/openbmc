@@ -31,6 +31,7 @@
 #include <syslog.h>
 #include <atomic>
 #include <openbmc/pal.h>
+#include <openbmc/misc-utils.h>
 #ifdef __TEST__
 #include <gtest/gtest.h>
 #endif
@@ -323,6 +324,7 @@ int main(int argc, char *argv[])
 {
   int ret = 0;
   int find_comp = 0;
+  int lfd;
   struct sigaction sa;
 
   System system;
@@ -518,10 +520,21 @@ int main(int argc, char *argv[])
             cerr << "Upgrade aborted due to fw update preparing" << endl;
             return -1;
           }
+
+          lfd = single_instance_lock_blocked(string("fw-util_"+c->fru()).c_str());
+          if (lfd < 0) {
+            syslog(LOG_WARNING, "Error getting single_instance_lock");
+          }
           if (c->is_update_ongoing()) {
             cerr << "Upgrade aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+            single_instance_unlock(lfd);
             return -1;
           }
+          if (action.rfind("--version", 0) == string::npos && fru != "all") {
+            // update or dump
+            c->set_update_ongoing(60 * 10);
+          }
+          single_instance_unlock(lfd);
 
           if (action == "--version") {
             ret = c->print_version();
@@ -540,7 +553,6 @@ int main(int argc, char *argv[])
             }
 
             string str_act("");
-            c->set_update_ongoing(60 * 10);
 
             // ensure the shutdown (reboot) will not be execute during update
             if (system.wait_shutdown_non_executable(2)) {

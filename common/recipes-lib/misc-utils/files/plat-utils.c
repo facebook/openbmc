@@ -69,7 +69,7 @@ k_version_t get_kernel_version(void)
  * Returns file descriptor if the pid file can be locked; otherwise -1 is
  * returned.
  */
-int single_instance_lock(const char *name)
+static int _single_instance_lock(const char *name, int opt)
 {
 	int fd, ret;
 	char path[PATH_MAX];
@@ -89,7 +89,7 @@ int single_instance_lock(const char *name)
 	if (fd < 0)
 		return -1;
 
-	ret = flock(fd, LOCK_EX | LOCK_NB);
+	ret = flock(fd, LOCK_EX | opt);
 	if (ret < 0) {
 		int saved_errno = errno;
 		close(fd);
@@ -98,6 +98,16 @@ int single_instance_lock(const char *name)
 	}
 
 	return fd;
+}
+
+int single_instance_lock(const char *prog_name)
+{
+	return _single_instance_lock(prog_name, LOCK_NB);
+}
+
+int single_instance_lock_blocked(const char *prog_name)
+{
+	return _single_instance_lock(prog_name, 0);
 }
 
 /*

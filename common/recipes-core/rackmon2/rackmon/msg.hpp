@@ -33,6 +33,13 @@ struct Msg {
   Msg& operator>>(uint8_t& d);
   Msg& operator>>(uint16_t& d);
 
+  constexpr auto begin() noexcept {
+    return raw.begin();
+  }
+  auto end() noexcept {
+    return raw.begin() + len;
+  }
+
  protected:
   void finalize();
   void validate();

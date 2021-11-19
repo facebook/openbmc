@@ -70,14 +70,14 @@ int main(int argc, char* argv[]) {
 
   CLI11_PARSE(app, argc, argv);
 
-  if (raw_cmd)
+  if (*raw_cmd)
     do_raw_cmd(req, raw_cmd_timeout, expected_len);
-  else if (status_cmd)
+  else if (*status_cmd)
     do_cmd("status");
-  else if (data_cmd)
+  else if (*data_cmd)
     do_cmd("data");
-  else if (pause_cmd)
+  else if (*pause_cmd)
     do_cmd("pause");
-  else if (resume_cmd)
-    do_cmd("resume_cmd");
+  else if (*resume_cmd)
+    do_cmd("resume");
 }

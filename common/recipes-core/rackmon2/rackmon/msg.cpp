@@ -56,7 +56,7 @@ uint16_t Msg::crc16() {
   uint8_t crc_hi = 0xFF; // high CRC byte initialized
   uint8_t crc_lo = 0xFF; // low CRC byte initialized
 
-  for (auto& b : raw) {
+  for (const auto &b : *this) {
     size_t idx = crc_hi ^ b;
     crc_hi = crc_lo ^ table_crc_hi[idx];
     crc_lo = table_crc_lo[idx];

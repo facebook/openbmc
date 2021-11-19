@@ -36,7 +36,7 @@ void Device::write(const uint8_t* buf, size_t len) {
   }
 }
 
-void Device::ioctl(int cmd, void* data) {
+void Device::ioctl(int32_t cmd, void* data) {
   int ret = ::ioctl(dev_fd, cmd, data);
   if (ret == -1) {
     throw std::system_error(
@@ -44,17 +44,18 @@ void Device::ioctl(int cmd, void* data) {
   }
 }
 
-void Device::wait_read(int timeout_us) {
+void Device::wait_read(int timeout_ms) {
   fd_set fdset;
   struct timeval timeout;
+  struct timeval *timeout_ptr = nullptr;
   FD_ZERO(&fdset);
   FD_SET(dev_fd, &fdset);
-  if (timeout_us > 0) {
+  if (timeout_ms > 0) {
     timeout.tv_sec = 0;
-    timeout.tv_usec = timeout_us;
+    timeout.tv_usec = timeout_ms * 1000;
+    timeout_ptr = &timeout;
   }
-  int rc =
-      select(dev_fd + 1, &fdset, NULL, NULL, timeout_us >= 0 ? &timeout : NULL);
+  int rc = select(dev_fd + 1, &fdset, NULL, NULL, timeout_ptr);
   if (rc == -1) {
     throw std::system_error(sys_error(), "select returned error for " + dev);
   }
@@ -63,7 +64,7 @@ void Device::wait_read(int timeout_us) {
   }
 }
 
-void Device::read(uint8_t* buf, size_t exact_len, int timeout_us) {
+void Device::read(uint8_t* buf, size_t exact_len, int timeout_ms) {
   uint8_t read_buf[16];
   std::memset(buf, 0, exact_len);
   size_t pos = 0;
@@ -74,7 +75,7 @@ void Device::read(uint8_t* buf, size_t exact_len, int timeout_us) {
   size_t max_iter = (1 + exact_len / sizeof(read_buf)) * 4;
   for (pos = 0, iter = 0; pos < exact_len && iter < max_iter; iter++) {
     try {
-      wait_read(timeout_us);
+      wait_read(timeout_ms);
     } catch (std::system_error& e) {
       // Print error and ignore/retry
       std::cerr << e.what() << std::endl;

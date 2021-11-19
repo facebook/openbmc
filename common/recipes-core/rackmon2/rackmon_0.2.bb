@@ -70,6 +70,7 @@ SRC_URI = "file://meson.build \
            file://modbus_device.hpp \
            file://rackmon.cpp \
            file://rackmon.hpp \
+           file://pollthread.hpp \
            file://rackmon_sock.cpp \
            file://rackmon_svc_unix.hpp \
            file://rackmon_svc_unix.cpp \

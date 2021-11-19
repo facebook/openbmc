@@ -24,6 +24,7 @@ class Modbus {
   uint32_t get_default_baudrate() const {
     return default_baudrate;
   }
+  const std::string& name() {return device_path;}
 
   void initialize(const nlohmann::json& j);
 

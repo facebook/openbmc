@@ -76,13 +76,13 @@ print_usage_help(void) {
 
   printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
   if ( riser_board  == CWC_MCHP_BOARD ) {
-    printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <[0..n]data_bytes_to_send>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U-exp|slot1-2U-top|slot1-2U-bot> <[0..n]data_bytes_to_send>\n");
   }
   printf("Usage: bic-util <%s> <option>\n", slot_usage);
   if ( riser_board == CWC_MCHP_BOARD ) {
-    printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <option>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U-exp|slot1-2U-top|slot1-2U-bot> <--reset|--get_gpio|--set_gpio|--get_dev_id|--set_usb_hub|--get_usb_hub>\n");
   } else {
-    printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n");
   }
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
@@ -334,13 +334,13 @@ util_get_gpio(uint8_t slot_id, uint8_t intf) {
     return ret;
   }
 
-  if (expFru != 0xff) {
+  if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    if (expFru != 0xff) {
+    if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
       fby3_get_exp_gpio_name(expFru, i, gpio_pin_name);
     } else {
       fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
@@ -357,7 +357,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
   char gpio_pin_name[32] = "\0";
   int ret = -1;
 
-  if (expFru != 0xff) {
+  if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
@@ -366,7 +366,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
     return ret;
   }
 
-  if (expFru != 0xff) {
+  if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
     fby3_get_exp_gpio_name(expFru, gpio_num, gpio_pin_name);
   } else {
     fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
@@ -1304,7 +1304,15 @@ main(int argc, char **argv) {
 
   ret = fby3_common_get_slot_id(argv[1], &slot_id);
   if ( ret < 0 ) {
-    printf("%s is invalid!\n", argv[1]);
+    if ( (riser_board == CWC_MCHP_BOARD || riser_board == GPV3_MCHP_BOARD || riser_board == GPV3_BRCM_BOARD) && 
+        pal_get_fru_id(argv[1], &expFru) ) {
+      printf("%s is invalid!\n", argv[1]);
+      goto err_exit;
+    }
+  }
+
+  if (expFru != 0xff && pal_get_fru_slot(expFru, &slot_id)) {
+    printf("Fail to get fru:%d slot id!\n", expFru);
     goto err_exit;
   }
 
@@ -1321,22 +1329,6 @@ main(int argc, char **argv) {
     }
   }
 
-  if ( riser_board == CWC_MCHP_BOARD && argc >= 4 ) {
-    if ( !fby3_common_get_exp_id(argv[2], &expFru) ||
-         (strncmp(argv[2], "all", 3) == 0 && 
-          (strcmp(argv[3], "--set_usb_hub") == 0 || strcmp(argv[3], "--get_usb_hub") == 0)) ) {
-      if (strncmp(argv[2], "all", 3) == 0) {
-        expFru = FRU_ALL;
-      }
-
-      for (i = 2; i < argc - 1; ++i ) {
-        argv[i] = argv[i+1];  //remove additional cwc option to remain the order of options
-      }
-
-      argc--;
-    }
-  }
-
   if ( riser_board == CWC_MCHP_BOARD ) {
     switch (expFru) {
       case FRU_CWC:
@@ -1350,16 +1342,18 @@ main(int argc, char **argv) {
         break;
     }
 
-    if (expFru != FRU_ALL && expFru != 0xff) {
+    if ( intf != NONE_INTF ) {
       ret = pal_is_fru_prsnt(expFru, &is_fru_present);
       if ( ret < 0 || is_fru_present == 0 ) {
-        printf("fru:%d is not present!\n", expFru);
+        printf("exp:%d is not present!\n", expFru);
         return -1;
       }
     }
   } else {
     // get the argv_idx and intf
-    if ( strncmp(argv[2], "2ou", 3) == 0 ) intf = REXP_BIC_INTF;
+    if (expFru == FRU_2U) {
+      intf = REXP_BIC_INTF;
+    }
 
     // check if 1/2OU present
     if ( intf != NONE_INTF ) {
@@ -1381,10 +1375,6 @@ main(int argc, char **argv) {
           return BIC_STATUS_FAILURE;
         }
       }
-
-      // adjust the content since we dont want to modify the logic below
-      memmove(&argv[2], &argv[3], sizeof(char*) * (argc - 3));
-      argc--;
     }
   }
 

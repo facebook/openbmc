@@ -66,6 +66,7 @@ void Rackmon::mark_active(uint8_t addr) {
   std::unique_lock lock(devices_mutex);
   std::unique_ptr<ModbusDevice> dev = std::move(dormant_devices.at(addr));
   dormant_devices.erase(addr);
+  dev->clear_unstable();
   active_devices[addr] = std::move(dev);
 }
 
@@ -114,7 +115,7 @@ std::vector<uint8_t> Rackmon::monitor_active() {
     try {
       dev_it->second->monitor();
     } catch (...) {
-      if (dev_it->second->is_flaky()) {
+      if (dev_it->second->is_unstable()) {
         uint8_t addr = dev_it->first;
         ret.push_back(addr);
       }

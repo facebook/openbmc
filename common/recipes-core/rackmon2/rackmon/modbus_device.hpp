@@ -62,8 +62,11 @@ class ModbusDevice {
       std::vector<uint16_t>& regs);
 
   void monitor();
-  bool is_flaky() const {
+  bool is_unstable() const {
     return info.num_consecutive_failures > max_consecutive_failures;
+  }
+  void clear_unstable() {
+    info.num_consecutive_failures = 0;
   }
   time_t last_active() const {
     return info.last_active;

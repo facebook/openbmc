@@ -45,11 +45,8 @@ class ModbusDevice {
   Modbus& interface;
   uint8_t addr;
   const RegisterMap& register_map;
-  uint32_t baudrate;
-  uint32_t num_consecutive_failures = 0;
-  time_t last_active_time = 0;
   std::mutex history_mutex{};
-  ModbusDeviceMonitorData mon_data{};
+  ModbusDeviceMonitorData info{};
 
  public:
   ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg);
@@ -66,20 +63,20 @@ class ModbusDevice {
 
   void monitor();
   bool is_flaky() const {
-    return num_consecutive_failures > max_consecutive_failures;
+    return info.num_consecutive_failures > max_consecutive_failures;
   }
   time_t last_active() const {
-    return last_active_time;
+    return info.last_active;
   }
   // Simple func, returns a copy of the monitor
   // data.
   ModbusDeviceMonitorData get_monitor_data() {
     std::unique_lock lk(history_mutex);
     // Makes a deep copy.
-    return mon_data;
+    return info;
   }
   ModbusDeviceStatus get_status() {
     std::unique_lock lk(history_mutex);
-    return mon_data;
+    return info;
   }
 };

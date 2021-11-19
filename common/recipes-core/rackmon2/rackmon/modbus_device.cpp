@@ -7,11 +7,11 @@ using nlohmann::json;
 ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
     : interface(iface),
       addr(a),
-      register_map(reg),
-      baudrate(reg.default_baudrate) {
-  mon_data.addr = a;
+      register_map(reg) {
+  info.addr = a;
+  info.baudrate = reg.default_baudrate;
   for (auto& it : reg.register_descriptors) {
-    mon_data.history.emplace_back(it.first, it.second.keep, it.second.length);
+    info.history.emplace_back(it.first, it.second.keep, it.second.length);
   }
 }
 
@@ -21,26 +21,26 @@ void ModbusDevice::command(
     modbus_time timeout,
     modbus_time settle_time) {
   try {
-    interface.command(req, resp, baudrate, timeout, settle_time);
-    num_consecutive_failures = 0;
-    last_active_time = std::time(0);
+    interface.command(req, resp, info.baudrate, timeout, settle_time);
+    info.num_consecutive_failures = 0;
+    info.last_active = std::time(0);
   } catch (timeout_exception& e) {
-    mon_data.timeouts++;
-    num_consecutive_failures++;
+    info.timeouts++;
+    info.num_consecutive_failures++;
     throw;
   } catch (crc_exception& e) {
-    mon_data.crc_failures++;
-    num_consecutive_failures++;
+    info.crc_failures++;
+    info.num_consecutive_failures++;
     throw;
   } catch (std::runtime_error& e) {
-    mon_data.misc_failures++;
-    num_consecutive_failures++;
+    info.misc_failures++;
+    info.num_consecutive_failures++;
     std::cerr << e.what() << std::endl;
     throw;
   } catch (...) {
     std::cerr << "Unknown exception" << std::endl;
-    mon_data.misc_failures++;
-    num_consecutive_failures++;
+    info.misc_failures++;
+    info.num_consecutive_failures++;
     throw;
   }
 }
@@ -56,7 +56,7 @@ void ModbusDevice::ReadHoldingRegisters(
 void ModbusDevice::monitor() {
   uint32_t timestamp = std::time(0);
   std::unique_lock lk(history_mutex);
-  for (auto& h : mon_data.history) {
+  for (auto& h : info.history) {
     uint16_t reg = h.reg_addr;
     auto& v = h.history[h.idx];
     if (register_map.at(reg).changes_only) {

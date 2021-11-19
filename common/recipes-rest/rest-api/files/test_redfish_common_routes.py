@@ -45,6 +45,10 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/SessionService/Sessions",
             "/redfish/v1/Systems",
             "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}",
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Entries",
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}"
+            + "/Entries/{EntryID}",
             "/redfish/v1/Managers/1/Actions/Manager.Reset",
         ]
         self.maxDiff = None
@@ -84,9 +88,9 @@ class TestCommonRoutes(unittest.TestCase):
                             "/redfish/v1/Systems/{}/Bios/FirmwareDumps/DumpID".format(
                                 server_name
                             ),
-                            "/redfish/v1/Systems/{}/Bios/FirmwareDumps/DumpID/Actions/BIOSFirmwareDump.ReadContent".format(
-                                server_name
-                            ),
+                            "/redfish/v1/Systems/{}".format(server_name)
+                            + "/Bios/FirmwareDumps/DumpID/Actions"
+                            + "/BIOSFirmwareDump.ReadContent",
                             "/redfish/v1/Systems/{}/Bios/FirmwareInventory".format(
                                 server_name
                             ),

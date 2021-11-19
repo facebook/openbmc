@@ -92,6 +92,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://redfish_chassis.py \
            file://redfish_chassis_helper.py \
            file://redfish_computer_system.py \
+           file://redfish_log_service.py \
            file://redfish_managers.py \
            file://redfish_session_service.py \
            file://redfish_powercycle.py \
@@ -105,6 +106,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://test_redfish_chassis_controller.py \
            file://test_rest_fwinfo.py \
            file://test_redfish_sensors.py \
+           file://test_redfish_log_service.py \
         "
 
 S = "${WORKDIR}"

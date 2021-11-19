@@ -6,6 +6,7 @@ from redfish_account_service import get_account_service, get_accounts, get_roles
 from redfish_bios_firmware_dumps import RedfishBIOSFirmwareDumps
 from redfish_chassis import RedfishChassis
 from redfish_computer_system import RedfishComputerSystems
+from redfish_log_service import RedfishLogService
 from redfish_managers import (
     get_managers,
     get_managers_members,
@@ -23,12 +24,15 @@ class Redfish:
     def __init__(self):
         self.computer_systems = RedfishComputerSystems()
         self.bios_firmware_dumps = RedfishBIOSFirmwareDumps()
+        self.log_service = RedfishLogService()
 
     async def controller(self, request):
         return web.json_response()
 
     def setup_redfish_common_routes(self, app: Application):
         redfish_chassis = RedfishChassis()
+        redfish_log_service = self.log_service.get_log_service_controller()
+
         app.router.add_get("/redfish", get_redfish)
         app.router.add_get("/redfish/v1", get_service_root)
         app.router.add_get("/redfish/v1/", get_service_root)
@@ -77,6 +81,19 @@ class Redfish:
         app.router.add_post(
             "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
             powercycle_post_handler,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}",
+            redfish_log_service.get_log_service,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Entries",
+            redfish_log_service.get_log_service_entries,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}"
+            + "/Entries/{EntryID}",
+            redfish_log_service.get_log_service_entry,
         )
         app.router.add_post(
             "/redfish/v1/Managers/1/Actions/Manager.Reset",

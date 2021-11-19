@@ -81,6 +81,15 @@ VALID_KEYS = {
     "url",
     "NameServers",
     "LinkStatus",
+    "DateTime",
+    "DateTimeLocalOffset",
+    "Entries",
+    "LogEntryType",
+    "MaxNumberOfRecords",
+    "OverWritePolicy",
+    "SyslogFilters",
+    "LogFacilities",
+    "LowestSeverity",
 }
 
 

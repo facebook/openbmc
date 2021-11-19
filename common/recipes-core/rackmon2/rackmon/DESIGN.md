@@ -61,17 +61,16 @@ enabling/disabling read. It also overrides `wait_write` method to actually
 poll the device on write completion.
 
 Also in `uart.hpp` we have `AspeedRS485Device` which inherits from `UARTDevice`.
-This is the abstraction for the native RS485 Device on the ASPEED Chip. Note, this
-is used only by wedge100 while wedge400 can use `UARTDevice`. The reason
-for the specialization is because the wedge100 requires the writer to
-send commands with READ disabled (Which is not necessary for the UARTDevice
-particularly the FDTI USB device using in wedge400 and future does the right
-thing here and we do not need to disable READ). Disabling READ during write
-has a special problem where if the caller takes too long to re-enable READ
-we may miss the incoming response. Hence, we need to muck around the thread
-priorities to get to enabling READ ASAP.
-NOTE: This could be because of a BUG somewhere. FIXME. In a perfect world,
-we should not need a write() specialization.
+This is the abstraction for the native RS485 Device on the ASPEED Chip. With
+special IOCTL needed at device open (Used by wedge100. Wedge400 canuses the FDTI
+USB device and hence needs the default UARTDevice).
+
+*Note, the write specialization is because we need to send commands with READ
+disabled. Disabling READ during write has a special problem where if the
+caller takes too long to re-enable READ we may miss the incoming response.
+Hence, we need to muck around the thread priorities to get to enabling READ ASAP.
+NOTE: If we dont do this, `wait_write` ends up busy-looping.
+TODO: Check if we can get away with not doing a `wait_write` and disabling `READ`.*
 
 All these inheritances are here to allow us to unit-test individual interfaces
 and allow us to mock any layer.

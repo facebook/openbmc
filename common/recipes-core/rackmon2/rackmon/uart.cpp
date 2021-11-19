@@ -1,4 +1,3 @@
-
 #include <fcntl.h>
 #include <linux/serial.h>
 #include <pthread.h>
@@ -86,11 +85,6 @@ void UARTDevice::wait_write() {
 }
 
 void UARTDevice::write(const uint8_t* buf, size_t len) {
-  Device::write(buf, len);
-  wait_write();
-}
-
-void AspeedRS485Device::write(const uint8_t* buf, size_t len) {
   // Write with read disabled. Hence we need to do this
   // as fast as possible. So, muck around with the priorities
   // to make sure we get there.
@@ -98,7 +92,8 @@ void AspeedRS485Device::write(const uint8_t* buf, size_t len) {
   sp.sched_priority = 50;
   pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
   read_disable();
-  UARTDevice::write(buf, len);
+  Device::write(buf, len);
+  wait_write();
   read_enable();
   pthread_setschedparam(pthread_self(), SCHED_OTHER, &sp);
 }

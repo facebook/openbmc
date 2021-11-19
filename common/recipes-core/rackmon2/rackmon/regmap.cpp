@@ -44,7 +44,7 @@ void from_json(const json& j, RegisterInterval& i) {
   j.at("name").get_to(i.name);
   i.keep = j.value("keep", 1);
   i.changes_only = j.value("changes_only", false);
-  j.at("format").get_to(i.format);
+  i.format = j.value("format", RegisterFormatType::HEX);
   if (i.format == RegisterFormatType::FIXED_POINT) {
     j.at("precision").get_to(i.precision);
   } else if (i.format == RegisterFormatType::TABLE) {

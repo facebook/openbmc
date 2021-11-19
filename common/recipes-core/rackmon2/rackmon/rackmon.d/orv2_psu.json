@@ -36,17 +36,17 @@
             "keep": 10,
             "changes_only": true,
             "format": "table",
-            "table": {
-                "Main Converter Fail": 0,
-                "Aux 54V Converter Fail": 1,
-                "Battery Charger Fail": 2,
-                "Current Feed (Boost Converter) Fail": 3,
-                "Temp Alarm   Alarm set at shutdown temp": 4,
-                "Fan Alarm": 5,
-                "Battery Alarm Set for BBU Fail or BBU voltage =< 26 VDC": 6,
-                "SoH Requested": 7,
-                "SoH Discharge": 8
-            }
+            "table": [
+              [0, "Main Converter Fail"],
+              [1, "Aux 54V Converter Fail"],
+              [2, "Battery Charger Fail"],
+              [3, "Current Feed (Boost Converter) Fail"],
+              [4, "Temp Alarm   Alarm set at shutdown temp"],
+              [5, "Fan Alarm"],
+              [6, "Battery Alarm Set for BBU Fail or BBU voltage =< 26 VDC"],
+              [7, "SoH Requested"],
+              [8, "SoH Discharge"]
+            ]
         }
     ]
 }

@@ -58,7 +58,7 @@ struct RegisterInterval {
   bool changes_only = false;
   RegisterFormatType format = RegisterFormatType::HEX;
   uint16_t precision = 0;
-  std::map<std::string, uint8_t> table{};
+  std::vector<std::tuple<uint8_t, std::string>> table;
 };
 
 struct RegisterMap {

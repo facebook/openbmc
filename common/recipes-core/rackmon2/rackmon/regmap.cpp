@@ -39,6 +39,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
     })
 
 void from_json(const json& j, RegisterInterval& i) {
+  j.at("begin").get_to(i.begin);
   j.at("length").get_to(i.length);
   j.at("name").get_to(i.name);
   i.keep = j.value("keep", 1);
@@ -51,6 +52,7 @@ void from_json(const json& j, RegisterInterval& i) {
   }
 }
 void to_json(json& j, const RegisterInterval& i) {
+  j["begin"] = i.begin;
   j["length"] = i.length;
   j["name"] = i.name;
   j["keep"] = i.keep;
@@ -81,7 +83,12 @@ void to_json(json& j, const RegisterMap& m) {
   j["name"] = m.name;
   j["preferred_baudrate"] = m.preferred_baudrate;
   j["default_baudrate"] = m.preferred_baudrate;
-  j["registers"] = m.register_descriptors;
+  j["registers"] = {};
+  std::transform(
+      m.register_descriptors.begin(),
+      m.register_descriptors.end(),
+      std::back_inserter(j["registers"]),
+      [](const auto& kv) {return kv.second;});
 }
 
 RegisterMap& RegisterMapDatabase::at(uint16_t addr) {

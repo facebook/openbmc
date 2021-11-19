@@ -1217,20 +1217,32 @@ exit:
 }
 
 static int
-stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
+ctrl_bic_sensor_monitor(uint8_t slot_id, uint8_t intf, bool stop_bic_montr_en) {
   int ret = 0;
-  printf("* Turning off BIC sensor monitor...\n");
-  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
-  sleep(2);
+
+  printf("* Turning %s BIC sensor monitor...\n", (stop_bic_montr_en == true)?"off":"on");
+
+  ret = bic_enable_ssd_sensor_monitor(slot_id, stop_bic_montr_en, intf);
+  if ( ret < 0 ) {
+    printf("* Failed to %s bic sensor monitor aborted!\n", (stop_bic_montr_en == true)?"stop":"start");
+  } else sleep(2);
+
   return ret;
 }
 
 static int
-start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
-  int ret = 0;
-  printf("* Turning on BIC sensor monitor...\n");
-  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
-  sleep(2);
+ctrl_pesw_error_monitor(uint8_t slot_id, uint8_t intf, bool stop_bic_montr_en) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, (stop_bic_montr_en == true)?0x00:0x01};
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen = 0;
+  int ret = BIC_STATUS_SUCCESS;
+
+  printf("* Turning %s PESW error monitor...\n", (stop_bic_montr_en == true)?"off":"on");
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_PESW_ERR_MONITOR, tbuf, 4, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    printf("Failed to %s PESW error monitor, is the BIC firmware too old(<= D02)? aborted!\n", (stop_bic_montr_en == true)?"stop":"start");
+  } else sleep(2);
+
   return ret;
 }
 
@@ -1608,21 +1620,16 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CWC_CPLD:
     case FW_GPV3_TOP_CPLD:
     case FW_GPV3_BOT_CPLD:
-      if ( stop_bic_monitoring == true && (ret = stop_bic_sensor_monitor(slot_id, intf)) < 0 ) {
-        printf("* Failed to stop bic sensor monitor\n");
+      if ( (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
         break;
       }
 
       ret = (loc != NULL)?update_bic_cpld_lattice(slot_id, path, intf, force): \
                           update_bic_cpld_lattice_usb(slot_id, path, intf, force);
 
-      //check ret first and then check stop_bic_monitoring flag
-      //run start_bic_sensor_monitor() and assgin a new val to ret in the end
-      if ( (ret == BIC_STATUS_SUCCESS) && (stop_bic_monitoring == true) && \
-           (ret = start_bic_sensor_monitor(slot_id, intf)) < 0 ) {
-        printf("* Failed to start bic sensor monitor\n");
-        break;
-      }
+      if ( (ret == BIC_STATUS_SUCCESS) && \
+           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
+
       break;
     case FW_BB_CPLD:
     case FW_CPLD:
@@ -1667,11 +1674,24 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CWC_PESW:
     case FW_GPV3_TOP_PESW:
     case FW_GPV3_BOT_PESW:
+      // we should stop polling sensors while updating PESW
+      if ( ((ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0) || \
+           ((ret = ctrl_pesw_error_monitor(slot_id, intf, stop_bic_monitoring)) < 0) ) {
+        break;
+      }
+
+      // run the update
       if (board_type == GPV3_BRCM_BOARD) {
         ret = BIC_STATUS_FAILURE; /*not supported*/
       } else {
         ret = update_bic_mchp(slot_id, comp, path, intf, force, (loc != NULL)?false:true);
       }
+
+      // start polling again
+      if ( (ret == BIC_STATUS_SUCCESS) && \
+           (((ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0) || \
+           ((ret = ctrl_pesw_error_monitor(slot_id, intf, !stop_bic_monitoring)) < 0)) );
+
       break;
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:
@@ -1709,10 +1729,10 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BOT_M2_DEV9:
     case FW_BOT_M2_DEV10:
     case FW_BOT_M2_DEV11:
-      if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
-        printf("* Failed to stop bic sensor monitor\n");
+      if ( (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
         break;
       }
+
       uint8_t nvme_ready = 0, status = 0, type = 0, m2_dev = 0;
       if (comp >= FW_TOP_M2_DEV0 && comp <= FW_TOP_M2_DEV11) {
         m2_dev = (comp - FW_TOP_M2_DEV0) + FW_2OU_M2_DEV0;
@@ -1732,14 +1752,13 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       } else {
         ret = update_bic_m2_fw(slot_id, m2_dev, path, intf, force, type);
       }
-      //run it anyway
-      if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
-        printf("* Failed to start bic sensor monitor\n");
-        ret = BIC_STATUS_FAILURE;
-        break;
-      }
+
+      if ( (ret == BIC_STATUS_SUCCESS) && \
+           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
+
       break;
-  }
+  } /*end of switch*/
+
   if (intf == BB_BIC_INTF) {
     if (bb_fw_update_finish(slot_id) < 0) {
       printf("Failed to clear BB update register\n");

@@ -51,6 +51,7 @@ enum {
   BIC_CMD_OEM_GET_DBG_UART            = 0x6A,
   BIC_CMD_OEM_GET_DBG_PRSNT           = 0x6B,
   BIC_CMD_OEM_INA233_ALERT_CTRL       = 0x71,
+  BIC_CMD_OEM_PESW_ERR_MONITOR        = 0x72,
   BIC_CMD_OEM_GET_BOARD_ID            = 0xA0,
   BIC_CMD_OEM_GET_MB_INDEX            = 0xF0,
   BIC_CMD_OEM_SET_FAN_DUTY            = 0xF1,

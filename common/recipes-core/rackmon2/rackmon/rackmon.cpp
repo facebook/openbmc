@@ -82,24 +82,25 @@ std::vector<uint8_t> Rackmon::inspect_dormant() {
   time_t curr = std::time(0);
   std::vector<uint8_t> ret{};
   std::shared_lock lock(devices_mutex);
-  for (auto it = dormant_devices.begin(); it != dormant_devices.end();) {
+  for (const auto& it : dormant_devices) {
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
-    if ((it->second->last_active() + dormant_min_inactive_time) < curr) {
-      RegisterMap& rmap = regmap_db.at(it->first);
+    if ((it.second->last_active() + dormant_min_inactive_time) < curr) {
+      RegisterMap& rmap = regmap_db.at(it.first);
       uint16_t probe = rmap.probe_register;
       std::vector<uint16_t> v(1);
       try {
-        uint8_t addr = it->first;
-        it->second->ReadHoldingRegisters(probe, v);
+        uint8_t addr = it.first;
+        it.second->ReadHoldingRegisters(probe, v);
         ret.push_back(addr);
       } catch (...) {
-        it++;
+        continue;
       }
     }
   }
   return ret;
 }
+
 void Rackmon::recover_dormant() {
   std::vector<uint8_t> candidates = inspect_dormant();
   for (auto& addr : candidates) {
@@ -110,12 +111,13 @@ void Rackmon::recover_dormant() {
 std::vector<uint8_t> Rackmon::monitor_active() {
   std::vector<uint8_t> ret{};
   std::shared_lock lock(devices_mutex);
-  for (auto dev_it = active_devices.begin(); dev_it != active_devices.end();) {
+  for (const auto& dev_it : active_devices) {
     try {
-      dev_it->second->monitor();
-    } catch (...) {
-      if (dev_it->second->is_unstable()) {
-        uint8_t addr = dev_it->first;
+      dev_it.second->monitor();
+    } catch (std::exception& e) {
+      std::cout << "Caught: " << e.what() << std::endl;
+      if (dev_it.second->is_unstable()) {
+        uint8_t addr = dev_it.first;
         ret.push_back(addr);
       }
     }
@@ -131,12 +133,20 @@ void Rackmon::monitor(void) {
   last_monitor_time = std::time(0);
 }
 
+bool Rackmon::is_device_known(uint8_t addr)
+{
+  std::shared_lock lk(devices_mutex);
+  if (active_devices.find(addr) != active_devices.end())
+    return true;
+  if (dormant_devices.find(addr) != dormant_devices.end())
+    return true;
+  return false;
+}
+
 void Rackmon::scan_all() {
   std::cout << "Starting scan of all devices" << std::endl;
   for (auto& addr : possible_dev_addrs) {
-    if (active_devices.find(addr) != active_devices.end())
-      continue;
-    if (dormant_devices.find(addr) != dormant_devices.end())
+    if (is_device_known(addr))
       continue;
     probe(addr);
   }
@@ -152,8 +162,7 @@ void Rackmon::scan() {
   }
 
   // Probe for the address only if we already dont know it.
-  if (active_devices.find(*it) == active_devices.end() &&
-         dormant_devices.find(*it) == dormant_devices.end()) {
+  if (!is_device_known(*it)) {
     probe(*it);
     last_scan_time = std::time(0);
   }

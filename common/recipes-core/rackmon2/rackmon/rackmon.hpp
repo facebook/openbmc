@@ -67,6 +67,8 @@ class Rackmon {
   // Try and recover dormant devices.
   void recover_dormant();
 
+  bool is_device_known(uint8_t);
+
   // Does a monitoring scan of all defined registers
   // returns detected dormant devices.
   std::vector<uint8_t> monitor_active();

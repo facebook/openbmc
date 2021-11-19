@@ -67,11 +67,15 @@ void RackmonUNIXSocketService::handle_json_command(
   req.at("type").get_to(cmd);
   if (cmd == "raw") {
     Msg req_m, resp_m;
-    req_m.raw = req["cmd"];
-    req_m.len = req["cmd"].size();
+    for (auto &b : req["cmd"])
+      req_m << uint8_t(b);
     resp_m.len = req["response_length"];
     modbus_time timeout = modbus_time(req.value("timeout", 0));
     rackmond.rawCmd(req_m, resp_m, timeout);
+    resp["data"] = {};
+    for (size_t i = 0; i < resp_m.len; i++) {
+      resp["data"].push_back(int(resp_m.raw[i]));
+    }
   } else if (cmd == "status") {
     RackmonStatus ret;
     rackmond.get_monitor_status(ret);
@@ -95,7 +99,7 @@ void RackmonUNIXSocketService::handle_json_command(
 void RackmonUNIXSocketService::handle_json_command(
     const json& req,
     RackmonSock& cli) {
-  auto print_msg = [req](std::exception& e) {
+  auto print_msg = [&req](std::exception& e) {
     std::cerr << "ERROR Executing: " << req["type"] << e.what() << std::endl;
   };
   json resp;
@@ -234,13 +238,18 @@ void RackmonUNIXSocketService::register_exit_handler() {
 }
 
 void RackmonUNIXSocketService::initialize(int argc, char* argv[]) {
+  std::cout << "Loading configuration" << std::endl;
   rackmond.load(rackmon_configuration_path, rackmon_regmap_dir_path);
+  std::cout << "Starting rackmon threads" << std::endl;
+  rackmond.start();
   // rackmond.start();
   register_exit_handler();
+  std::cout << "Creating Rackmon UNIX service" << std::endl;
   sock = std::make_unique<RackmonService>();
 }
 
 void RackmonUNIXSocketService::deinitialize() {
+  std::cout << "Deinitializing... stopping rackmond" << std::endl;
   rackmond.stop();
   sock = nullptr;
   if (backchannel_req != -1) {

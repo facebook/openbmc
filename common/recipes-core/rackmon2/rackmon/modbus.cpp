@@ -40,6 +40,7 @@ void Modbus::initialize(const json& j) {
   } else {
     throw std::runtime_error("Unknown device type: " + device_type);
   }
+  dev->open();
 }
 
 void from_json(const json& j, Modbus& m) {

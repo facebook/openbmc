@@ -16,8 +16,8 @@ ReadHoldingRegistersResp::ReadHoldingRegistersResp(std::vector<uint16_t>& r)
     : regs(r) {
   if (!r.size())
     throw std::underflow_error("Response too small");
-  // addr(1), func(1), addr(2), count(1), <2 * count regs>, crc(2)
-  len = 7 + (2 * r.size());
+  // addr(1), func(1), bytecount(1), <2 * count regs>, crc(2)
+  len = 5 + (2 * r.size());
 }
 
 void ReadHoldingRegistersResp::decode() {

@@ -2,6 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <thread>
+#include <iomanip>
 
 using nlohmann::json;
 using namespace std::literals;
@@ -43,8 +44,10 @@ bool Rackmon::probe(Modbus& iface, uint8_t addr) {
     iface.command(req, resp, rmap.default_baudrate, probe_timeout);
     std::unique_lock lock(devices_mutex);
     active_devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);
+    std::cout << std::hex << std::setw(2) << std::setfill('0');
+    std::cout << "Found " << int(addr) << " on " << iface.name() << std::endl;
     return true;
-  } catch (...) {
+  } catch (std::exception& e) {
     return false;
   }
 }
@@ -58,6 +61,8 @@ void Rackmon::probe(uint8_t addr) {
 }
 
 void Rackmon::mark_active(uint8_t addr) {
+  std::cout << std::hex << std::setw(2) << std::setfill('0');
+  std::cout << "Device marked as active: " << int(addr) << std::endl;
   std::unique_lock lock(devices_mutex);
   std::unique_ptr<ModbusDevice> dev = std::move(dormant_devices.at(addr));
   dormant_devices.erase(addr);
@@ -65,6 +70,8 @@ void Rackmon::mark_active(uint8_t addr) {
 }
 
 void Rackmon::mark_dormant(uint8_t addr) {
+  std::cout << std::hex << std::setw(2) << std::setfill('0');
+  std::cout << "Device marked as dormant: " << int(addr) << std::endl;
   std::unique_lock lock(devices_mutex);
   std::unique_ptr<ModbusDevice> dev = std::move(active_devices.at(addr));
   active_devices.erase(addr);
@@ -130,16 +137,13 @@ void Rackmon::monitor(void) {
 }
 
 void Rackmon::scan_all() {
+  std::cout << "Starting scan of all devices" << std::endl;
   for (auto& addr : possible_dev_addrs) {
     if (active_devices.find(addr) != active_devices.end())
       continue;
     if (dormant_devices.find(addr) != dormant_devices.end())
       continue;
-    try {
-      probe(addr);
-    } catch (...) {
-      continue;
-    }
+    probe(addr);
   }
 }
 

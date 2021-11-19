@@ -1,7 +1,6 @@
 #include "rackmon.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
-#include <thread>
 #include <iomanip>
 
 using nlohmann::json;
@@ -125,16 +124,11 @@ std::vector<uint8_t> Rackmon::monitor_active() {
 }
 
 void Rackmon::monitor(void) {
-  while (!req_stop.load()) {
-    if (scan_active.load()) {
-      std::vector<uint8_t> dormant = monitor_active();
-      for (auto& addr : dormant) {
-        mark_dormant(addr);
-      }
-    }
-    last_monitor_time = std::time(0);
-    std::this_thread::sleep_for(2min);
+  std::vector<uint8_t> dormant = monitor_active();
+  for (auto& addr : dormant) {
+    mark_dormant(addr);
   }
+  last_monitor_time = std::time(0);
 }
 
 void Rackmon::scan_all() {
@@ -149,52 +143,44 @@ void Rackmon::scan_all() {
 }
 
 void Rackmon::scan() {
-  auto it = possible_dev_addrs.begin();
-  // circular iterator
-  auto next_it = [this](auto& it) {
-    it++;
-    if (it == possible_dev_addrs.end()) {
-      it = possible_dev_addrs.begin();
-    }
-    return it;
-  };
-
-  while (!req_stop.load()) {
-    if (force_scan.load()) {
-      scan_all();
-      force_scan = false;
-      continue;
-    }
-
-    // Try and recover dormant devices
-    recover_dormant();
-
-    // Dont try to waste time scanning known
-    // active/dormant devices.
-    if (active_devices.find(*it) != active_devices.end() ||
-        dormant_devices.find(*it) != dormant_devices.end()) {
-      it = next_it(it);
-      continue;
-    }
-    probe(*it);
-    it = next_it(it);
-    last_scan_time = std::time(0);
-    std::this_thread::sleep_for(2min);
+  // Circular iterator.
+  static auto it = possible_dev_addrs.begin();
+  if (force_scan.load()) {
+    scan_all();
+    force_scan = false;
+    return;
   }
+
+  // Probe for the address only if we already dont know it.
+  if (active_devices.find(*it) == active_devices.end() &&
+         dormant_devices.find(*it) == dormant_devices.end()) {
+    probe(*it);
+    last_scan_time = std::time(0);
+  }
+
+  // Try and recover dormant devices
+  recover_dormant();
+  if (++it == possible_dev_addrs.end())
+    it = possible_dev_addrs.begin();
 }
 
 void Rackmon::start() {
+  auto start_thread = [this](auto func) {
+    threads.emplace_back(
+        std::make_unique<PollThread<Rackmon>>(func, this, 2min));
+    threads.back()->start();
+  };
   if (threads.size() != 0)
     throw std::runtime_error("Already running");
-  req_stop = false;
-  threads.push_back(std::thread(&Rackmon::scan, this));
-  threads.push_back(std::thread(&Rackmon::monitor, this));
+  start_thread(&Rackmon::scan);
+  start_thread(&Rackmon::monitor);
 }
 
 void Rackmon::stop() {
-  req_stop = true;
-  while (threads.size()) {
-    threads.back().join();
+  // TODO We probably need a timer to ensure we
+  // are not waiting here forever.
+  while (threads.size() > 0) {
+    threads.back()->stop();
     threads.pop_back();
   }
 }

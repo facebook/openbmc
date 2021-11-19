@@ -4,6 +4,7 @@
 #include <thread>
 #include "modbus.hpp"
 #include "modbus_device.hpp"
+#include "pollthread.hpp"
 
 struct RackmonStatus {
   bool started;
@@ -17,7 +18,7 @@ void to_json(nlohmann::json& j, const RackmonStatus& m);
 class Rackmon {
   static constexpr time_t dormant_min_inactive_time = 300;
   static constexpr modbus_time probe_timeout = std::chrono::milliseconds(50);
-  std::vector<std::thread> threads{};
+  std::vector<std::unique_ptr<PollThread<Rackmon>>> threads{};
   // Has to be before defining active or dormant devices
   // to ensure users get destroyed before the interface.
   std::vector<std::unique_ptr<Modbus>> interfaces{};
@@ -38,12 +39,6 @@ class Rackmon {
   // loaded register maps. A majority of these are not expected
   // to exist, but are candidates for a scan.
   std::vector<uint8_t> possible_dev_addrs{};
-
-  // Request the scan/monitor threads to stop by setting to true.
-  std::atomic<bool> req_stop = false;
-  // Set to false to stop monitoring. Note, user might need to
-  // wait for ongoing scan/monitor cycle to complete.
-  std::atomic<bool> scan_active = true;
 
   // As an optimization, devices are normally scanned one by one
   // This allows someone to initiate a forced full scan.

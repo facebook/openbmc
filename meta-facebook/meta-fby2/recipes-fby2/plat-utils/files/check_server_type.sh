@@ -69,6 +69,9 @@ for (( i=0; i<${#SLOT[@]}; i++ )); do
         elif [[ "$product_id_l" == "$ND_PRODUCT_ID0" && "$product_id_h" == "$ND_PRODUCT_ID1" ]]; then
           #ND
           server_type=4
+          RES=$(/usr/bin/bic-util slot$slot_id 0xE0 0x2A 0x15 0xA0 0x00 0x01)
+          postcode=$(echo $RES| awk '{print $7$6$5$4;}')
+          /usr/bin/kv set slot${slot_id}_last_postcode $postcode
         else
           #unknown
           server_type=3

@@ -10830,6 +10830,30 @@ pal_get_tpm_timeout(uint8_t slot) {
   return atoi(cvalue);
 }
 
+int
+pal_set_last_postcode(uint8_t slot, uint32_t postcode) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_last_postcode", slot);
+  snprintf(str,MAX_VALUE_LEN, "%08X", postcode);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_last_postcode(uint8_t slot, char* postcode) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  sprintf(key, "slot%u_last_postcode", slot);
+
+  ret = kv_get(key, postcode,NULL,0);
+  if (ret) {
+    syslog(LOG_WARNING,"pal_get_last_postcode failed");
+    return -1;
+  }
+  return 0;
+}
+
 void *
 pal_check_start_TPMTimer(void* arg) { //called by daemon threads
   int slot_id = (int) arg;
@@ -11146,6 +11170,9 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
   uint8_t byte2 = (postcode_dw >> 8) & 0xFF;
   uint8_t prsnt, pos;
   int ret;
+
+  // update current post code to debug card's SYS Info page
+  pal_set_last_postcode(slot, postcode_dw);
 
   // Check for debug card presence
   ret = pal_is_debug_card_prsnt(&prsnt);

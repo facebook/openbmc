@@ -767,8 +767,14 @@ udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, 
     frame_info.init(&frame_info, FRAME_BUFF_SIZE);
     snprintf(frame_info.title, 32, "SYS_Info");
 
+    pres_dev = line_buff;
     if (plat_get_extra_sysinfo(pos, line_buff) == 0) {
-      frame_info.append(&frame_info, line_buff, 0);
+      pres_dev = strtok(pres_dev, delim);
+      if (pres_dev) {
+        do {
+          frame_info.append(&frame_info, pres_dev, 0);
+        } while ((pres_dev = strtok(NULL, delim)) != NULL);
+      }
     }
 
     // FRU

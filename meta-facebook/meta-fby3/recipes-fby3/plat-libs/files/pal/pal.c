@@ -2349,8 +2349,16 @@ pal_get_m2_str_name(uint8_t event, uint8_t comp, uint8_t device_num, char *error
 static void
 pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
   const char *vr_list_str[5] = {"P3V3_STBY1", "P3V3_STBY2", "P3V3_STBY3", "P1V8", "PESW VR"};
+  const char *cwc_vr_list[] = {"PESW VR"};
+  const char *board = pal_get_board_name(comp);
   const uint8_t vr_list_size = ARRAY_SIZE(vr_list_str);
-  snprintf(error_log, 256, "%s/%s ", pal_get_board_name(comp), (vr_num < vr_list_size)?vr_list_str[vr_num]:"Undefined VR");
+  const uint8_t cwc_vr_list_size = ARRAY_SIZE(cwc_vr_list);
+
+  if (strcmp(board, "CWC") == 0) {
+    snprintf(error_log, 256, "%s/%s ", board, (vr_num < cwc_vr_list_size)?cwc_vr_list[vr_num]:"Undefined VR");
+  } else {
+    snprintf(error_log, 256, "%s/%s ", board, (vr_num < vr_list_size)?vr_list_str[vr_num]:"Undefined VR");
+  }
   return;
 }
 

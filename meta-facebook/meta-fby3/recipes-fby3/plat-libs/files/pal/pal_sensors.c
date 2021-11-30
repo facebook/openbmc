@@ -1584,7 +1584,12 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value, uint8_t bmc
     avg_pwm = avg_pwm / (float)cnt;
     if ( inited == false ) {
       inited = true;
-      sensor_correction_init("/etc/sensor-frontIO-correction.json");
+
+      if (pal_is_cwc() == PAL_EOK) {
+        sensor_correction_init("/etc/sensor-frontIO-correction_cwc.json");
+      } else {
+        sensor_correction_init("/etc/sensor-frontIO-correction.json");
+      }
     }
     sensor_correction_apply(fru, snr_num, avg_pwm, value);
   } else {

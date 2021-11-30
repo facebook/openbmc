@@ -165,8 +165,12 @@ struct pal_key_cfg {
 };
 
 MAPTOSTRING root_port_common_mapping[] = {
-    { 0x4B, 1, 0x2A, "Num 0", "SB" },   // Boot Drive
-    { 0x4B, 5, 0x2E, "Class 1", "NIC"}, // Class 1 NIC
+    // XCC
+    { 0x4B, 1, 0x21, "Num 0", "SB" },   // root_port=0x2A, Boot Drive
+    { 0x4B, 5, 0x25, "Class 1", "NIC"}, // root_port=0x2E, Class 1 NIC
+    // MCC
+    { 0xBB, 7, 0x47, "Num 0", "SB" },   // root_port=0x4G, Boot Drive
+    { 0xBB, 1, 0x41, "Class 1", "NIC"}, // root_port=0x4A, Class 1 NIC
 };
 
 MAPTOSTRING root_port_mapping[] = {

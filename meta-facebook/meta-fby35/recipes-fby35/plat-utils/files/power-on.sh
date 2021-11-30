@@ -25,45 +25,39 @@
 # Default-Stop:
 # Short-Description: Power on Server
 ### END INIT INFO
-. /usr/local/fbpackages/utils/ast-functions
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-KEYDIR=/mnt/data/kv_store
+# shellcheck disable=SC1091
+. /usr/local/fbpackages/utils/ast-functions
+
 DEF_PWR_ON=1
 TO_PWR_ON=
 
 check_por_config() {
-  TO_PWR_ON=-1
+  TO_PWR_ON=0
 
-  # Check if the file/key doesn't exist
-  if [ ! -f "${KEYDIR}/slot${1}_por_cfg" ]; then
-    TO_PWR_ON=$DEF_PWR_ON
-  else
-    POR=`cat ${KEYDIR}/slot${1}_por_cfg`
-
-    if [ $POR == "on" ]; then
-      TO_PWR_ON=1;
-    elif [ $POR == "lps" ]; then
-      # Check if the file/key doesn't exist
-      if [ ! -f "${KEYDIR}/pwr_server${1}_last_state" ]; then
-        TO_PWR_ON=$DEF_PWR_ON
-      else
-        LS=`cat ${KEYDIR}/pwr_server${1}_last_state`
-        if [ $LS == "on" ]; then
+  if POR=$(kv get "slot${1}_por_cfg" persistent); then
+    if [ "$POR" = "lps" ]; then
+      if LS=$(kv get "pwr_server${1}_last_state" persistent); then
+        if [ "$LS" = "on" ]; then
           TO_PWR_ON=1;
         fi
+      else
+        TO_PWR_ON=$DEF_PWR_ON
       fi
+    elif [ "$POR" = "on" ]; then
+      TO_PWR_ON=1;
     fi
+  else
+    TO_PWR_ON=$DEF_PWR_ON
   fi
 }
 
-function init_class2_server() {
-  if [ $(is_bmc_por) -eq 1 ]; then
-    devmem_clear_bit $(scu_addr 70) 13
-
+init_class2_server() {
+  if [ "$(is_bmc_por)" -eq 1 ]; then
     check_por_config 1
-    if [ $TO_PWR_ON -eq 1 ] ; then
+    if [ "$(is_sb_bic_ready 1)" = "1" ] && [ $TO_PWR_ON -eq 1 ]; then
       power-util slot1 on
     fi
   fi
@@ -71,47 +65,43 @@ function init_class2_server() {
   show_sys_config -r > /dev/null
 }
 
-function init_class1_server() {
+init_class1_server() {
   # Check whether it is fresh power on reset
-  if [ $(is_bmc_por) -eq 1 ]; then
+  if [ "$(is_bmc_por)" -eq 1 ]; then
     # Disable clearing of PWM block on WDT SoC Reset
-    devmem_clear_bit $(scu_addr 70) 13
+    devmem_clear_bit "$(scu_addr 70)" 13
 
     check_por_config 1
-    if [ $(is_sb_bic_ready 1) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ "$(is_sb_bic_ready 1)" = "1" ] && [ $TO_PWR_ON -eq 1 ]; then
       power-util slot1 on
     fi
 
     check_por_config 2
-    if [ $(is_sb_bic_ready 2) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ "$(is_sb_bic_ready 2)" = "1" ] && [ $TO_PWR_ON -eq 1 ]; then
       power-util slot2 on
     fi
 
     check_por_config 3
-    if [ $(is_sb_bic_ready 3) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ "$(is_sb_bic_ready 3)" = "1" ] && [ $TO_PWR_ON -eq 1 ]; then
       power-util slot3 on
     fi
 
     check_por_config 4
-    if [ $(is_sb_bic_ready 4) == "1" ] && [ $TO_PWR_ON -eq 1 ] ; then
+    if [ "$(is_sb_bic_ready 4)" = "1" ] && [ $TO_PWR_ON -eq 1 ]; then
       power-util slot4 on
     fi
   fi
 }
 
-if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-  date -s "2018-01-01 00:00:00"
-fi
-
 /usr/local/bin/sync_date.sh
 
 bmc_location=$(get_bmc_board_id)
-if [ $bmc_location -eq 9 ]; then
-  #The BMC of class2
-  init_class2_server
-elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
+if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
   #The BMC of class1
   init_class1_server
+elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
+  #The BMC of class2
+  init_class2_server
 else
-  echo -n "Is board id correct(id=$bmc_location)?..."
+  echo "Is board id correct(id=$bmc_location)?..."
 fi

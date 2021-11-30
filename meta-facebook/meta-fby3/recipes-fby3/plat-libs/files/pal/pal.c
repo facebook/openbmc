@@ -939,7 +939,7 @@ pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 
 int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  int ret = CC_UNSPECIFIED_ERROR;
+  int ret;
   uint8_t *data = res_data;
   uint8_t bmc_location = 0; //the value of bmc_location is board id.
   *res_len = 0;
@@ -947,37 +947,20 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    goto error_exit;
+    return CC_UNSPECIFIED_ERROR;
   }
 
   *data++ = bmc_location;
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    int dev, retry = 3;
-    uint8_t tbuf[4] = {0};
-    uint8_t rbuf[4] = {0};
+    uint8_t bb_rev = 0x00;
 
-    dev = open("/dev/i2c-12", O_RDWR);
-    if ( dev < 0 ) {
-      return -1;
-    }
-
-    while ((--retry) > 0) {
-      tbuf[0] = 8;
-      ret = i2c_rdwr_msg_transfer(dev, 0x1E, tbuf, 1, rbuf, 1);
-      if (!ret)
-        break;
-      if (retry)
-        msleep(10);
-    }
-
-    close(dev);
+    ret = fby3_common_get_bb_board_rev(&bb_rev);
     if (ret) {
       *data++ = 0x00; //board rev id
     } else {
-      *data++ = rbuf[0]; //board rev id
+      *data++ = bb_rev; //board rev id
     }
-
   } else {
     // Config C can not get rev id form NIC EXP CPLD so far
     *data++ = 0x00; //board rev id
@@ -986,11 +969,8 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   *data++ = slot; //slot id
   *data++ = 0x00; //slot type. server = 0x00
   *res_len = data - res_data;
-  ret = CC_SUCCESS;
 
-error_exit:
-
-  return ret;
+  return CC_SUCCESS;
 }
 
 int
@@ -1750,14 +1730,14 @@ static int pal_get_e1s_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   }
 
   bus = (uint8_t)ret + 4;
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
     return -1;
   }
 
   while (retry < 3) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 1, rbuf, 1);
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1);
     if (ret == 0)
       break;
     retry++;
@@ -4019,14 +3999,14 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
     }
 
     bus = (uint8_t)ret;
-    i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+    i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
     if ( i2cfd < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
       return -1;
     }
 
     //read 06h from SB CPLD
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
     if ( i2cfd > 0 ) close(i2cfd);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
@@ -4495,7 +4475,7 @@ pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
   }
   bus = (uint8_t)ret + 4;
 
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     printf("%s() Couldn't open i2c bus%d, err: %s\n", __func__, bus, strerror(errno));
     goto err_exit;
@@ -4519,9 +4499,9 @@ pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
     syslog(LOG_WARNING, "%s() fru:%d, led_on:%d, led_mode:%d\n", __func__, fru, led_on, led_mode);
   }
 
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 2, NULL, 0);
+  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 2, NULL, 0);
   if ( ret < 0 ) {
-    printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, SB_CPLD_ADDR, strerror(errno));
+    printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, CPLD_ADDRESS, strerror(errno));
   }
 
 err_exit:

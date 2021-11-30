@@ -86,28 +86,9 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
   if ( force == false ) {
     // Read Board Revision from CPLD
     if ( ((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
-      i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
+      if ( fby3_common_get_bb_board_rev(rbuf) ) {
+        cout << "Failed to get board rev" << endl;
         return image_sts;
-      }
-
-      tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
-         return image_sts;
       }
     } else if (slot_found != string::npos) {
       slot_id = fru_name.at(4) - '0';

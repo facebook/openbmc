@@ -175,6 +175,17 @@ elif [ $BOARD_ID -eq 14 ] || [ $BOARD_ID -eq 7 ]; then
   gpio_export RST_BMC_USB_HUB_N_R GPIOE4
   gpio_set RST_BMC_USB_HUB_N_R 1
 
+  # GPIOG4-HSC_BB_BMC_DETECT2
+  # GPIOG6-HSC_BB_BMC_DETECT1
+  devmem_clear_bit $(scu_addr 84) 4
+  devmem_clear_bit $(scu_addr 84) 6
+  devmem_clear_bit $(scu_addr 94) 12
+  gpio_export HSC_BB_BMC_DETECT2 GPIOG4
+  gpio_export HSC_BB_BMC_DETECT1 GPIOG6
+
+  # GPIOI5-HSC_BB_BMC_DETECT0
+  gpio_export HSC_BB_BMC_DETECT0 GPIOI5
+
   # GPIOI0-FAN0_BMC_CPLD_EN_R
   # GPIOI1-FAN1_BMC_CPLD_EN_R
   # GPIOI2-FAN2_BMC_CPLD_EN_R

@@ -2266,7 +2266,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     bus_num = fby3_common_get_bus_id(slot_id) + 4;
 
     //set the present status of M.2
-    fd = i2c_open(bus_num, SB_CPLD_ADDR);
+    fd = i2c_open(bus_num, CPLD_ADDRESS >> 1);
     if ( fd < 0 ) {
       printf("Cannot open /dev/i2c-%d\n", bus_num);
       ret = BIC_STATUS_FAILURE;
@@ -2276,7 +2276,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
     tlen = 1;
     rlen = 1;
-    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
       goto error_exit;
@@ -2298,7 +2298,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
 
     tlen = 2;
     rlen = 0;
-    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
       goto error_exit;

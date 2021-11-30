@@ -73,12 +73,8 @@ enum {
 #define REVISION_ID(x) ((x >> 4) & 0x0f)
 #define COMPONENT_ID(x) (x & 0x0f)
 
-#define NIC_CPLD_BUS 9
-#define BB_CPLD_BUS 12
-#define CPLD_ADDRESS 0x1E
 #define CWC_CPLD_ADDRESS 0xA0
 #define SLOT_BUS_BASE 3
-#define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
 #define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
 #define CPLD_BOARD_PVT_REV 3
 #define CPLD_FLAG_REG_ADDR 0x1F

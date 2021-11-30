@@ -14,10 +14,16 @@
 #define ADM1278_PEAK_IOUT  (0xD0)
 #define ADM1278_PEAK_PIN   (0xDA)
 
+//MP5990
+#define MP5990_SLAVE_ADDR (0x80)
+#define MP5990_PEAK_IOUT  (0xA6)
+#define MP5990_PEAK_PIN   (0xA3)
+
 //PMBus
 #define PMBUS_PAGE         (0x00)
 #define PMBUS_VOUT_MODE    (0x20)
 #define PMBUS_VOUT_COMMAND (0x21)
+#define PMBUS_READ_EIN     (0x86)
 #define PMBUS_READ_VIN     (0x88)
 #define PMBUS_READ_IIN     (0x89)
 #define PMBUS_READ_VOUT    (0x8B)
@@ -475,7 +481,7 @@ typedef struct {
 //HSC INFO
 enum {
   HSC_ID0 = 0,
-  HSC_ID1,
+  HSC_MP5990,
 };
 
 typedef struct {

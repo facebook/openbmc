@@ -1269,6 +1269,34 @@ pal_get_gpv3_hsc(int bus, uint8_t *val) {
 }
 
 int
+pal_set_vr_interrupt(uint8_t fru, uint8_t enable) {
+  switch (fru) {
+    case FRU_CWC:
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, REXP_BIC_INTF)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-cwc vr interrupt", __func__);
+      }
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF1)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-top vr interrupt", __func__);
+      }
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF2)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-bot vr interrupt", __func__);
+      }
+      break;
+    case FRU_2U_TOP:
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF1)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-top vr interrupt", __func__);
+      }
+      break;
+    case FRU_2U_BOT:
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF2)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-bot vr interrupt", __func__);
+      }
+      break;
+  }
+  return 0;
+}
+
+int
 pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
   int i2cfd = BIC_STATUS_FAILURE;
   int ret = BIC_STATUS_FAILURE;
@@ -1323,6 +1351,10 @@ pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
       goto error_exit;
   }
 
+  if (!pwr_on) {
+    pal_set_vr_interrupt(fru, 0);
+  }
+
   i2cfd = i2c_cdev_slave_open(bus, CWC_CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     ina_alert_ret = i2cfd;
@@ -1342,6 +1374,13 @@ pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
   if ( ret < 0 ) {
     ina_alert_ret = ret;
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+
+    if (!pwr_on) {
+      pal_set_vr_interrupt(fru, 1);
+    }
+  } else if (pwr_on) {
+    msleep(100);
+    pal_set_vr_interrupt(fru, 1);
   }
 
   if ( i2cfd > 0 ) {

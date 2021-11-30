@@ -68,59 +68,93 @@ wedge_is_us_on() {
 }
 
 wedge_board_type_rev(){
-    type=$(wedge_board_type)
+    full_board_type=$(wedge_full_board_type)
+    board_type=$(wedge_board_type)
     rev=$(wedge_board_rev)
-    if [ $((type)) -eq 0 ]; then
-        case $rev in
-            0)
-                echo "WEDGE400_EVT/EVT3"
-                ;;
-            2)
-                echo "WEDGE400_DVT"
-                ;;
-            3)
-                echo "WEDGE400_DVT2/PVT1/PV2"
-                ;;
-            4)
-                echo "WEDGE400_PVT3"
-                ;;
-            5)
-                echo "WEDGE400_MP"
-                ;;
-            *)
-                echo "WEDGE400 (Undefine $rev)"
-                ;;
-        esac
-    elif [ $((type)) -eq 1 ]; then
-        case $rev in
-            0)
-                echo "WEDGE400-C_EVT"
-                ;;
-            1)
-                echo "WEDGE400-C_EVT2"
-                ;;
-            2)
-                echo "WEDGE400-C_DVT"
-                ;;
-            3)
-                echo "WEDGE400-C_DVT2"
-                ;;
-            *)
-                echo "WEDGE400-C_(Undefine $rev)"
-                ;;
-        esac
+    if [ $((board_type)) -eq 0 ]; then
+        if [ $(( full_board_type&2 )) -ne 0 ]; then
+            case $rev in
+                6)
+                    echo "WEDGE400_MP_RESPIN"
+                    ;;
+                *)
+                    echo "WEDGE400 (Undefine $rev)"
+                    ;;
+            esac
+        else
+            case $rev in
+                0)
+                    echo "WEDGE400_EVT/EVT3"
+                    ;;
+                2)
+                    echo "WEDGE400_DVT"
+                    ;;
+                3)
+                    echo "WEDGE400_DVT2/PVT1/PV2"
+                    ;;
+                4)
+                    echo "WEDGE400_PVT3"
+                    ;;
+                5)
+                    echo "WEDGE400_MP"
+                    ;;
+                *)
+                    echo "WEDGE400 (Undefine $rev)"
+                    ;;
+            esac
+        fi
+    elif [ $((board_type)) -eq 1 ]; then
+        if [ $(( full_board_type&2 )) -ne 0 ]; then
+            case $rev in
+                6)
+                    echo "WEDGE400-C_MP_RESPIN"
+                    ;;
+                *)
+                    echo "WEDGE400-C (Undefine $rev)"
+                    ;;
+            esac
+        else
+            case $rev in
+                0)
+                    echo "WEDGE400-C_EVT"
+                    ;;
+                1)
+                    echo "WEDGE400-C_EVT2"
+                    ;;
+                2)
+                    echo "WEDGE400-C_DVT"
+                    ;;
+                3)
+                    echo "WEDGE400-C_DVT2"
+                    ;;
+                *)
+                    echo "WEDGE400-C_(Undefine $rev)"
+                    ;;
+            esac
+        fi
     else
         echo "Undefine_($type,$rev)"
     fi
 }
 
+
+
 wedge_board_type() {
-    rev=$(gpio_get BMC_CPLD_BOARD_TYPE)
+    rev=$(gpio_get BMC_CPLD_BOARD_TYPE_0)
     if [ $((rev)) -eq 0 ]; then
         echo 1  # Wedge400-C
     else
         echo 0  # Wedge400
     fi
+}
+
+wedge_full_board_type() {
+    # Wedge400 MP respin or later is added more 2 pins to indicate new board type
+    local val0 val1 val2
+    val0=$(gpio_get BMC_CPLD_BOARD_TYPE_0)
+    val1=$(gpio_get BMC_CPLD_BOARD_TYPE_1)
+    val2=$(gpio_get BMC_CPLD_BOARD_TYPE_2)
+    echo $((val0 | (val1 << 1) | (val2 << 2)))
 }
 
 wedge_slot_id() {

@@ -171,7 +171,9 @@ extern "C" {
 #define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
 #define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"
 #define GPIO_SMB_REV_ID_2   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID2/%s"
-#define GPIO_BMC_BRD_TPYE   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE/%s"
+#define GPIO_BMC_BRD_TYPE_0   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE_0/%s"
+#define GPIO_BMC_BRD_TYPE_1   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE_1/%s"
+#define GPIO_BMC_BRD_TYPE_2   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE_2/%s"
 #define GPIO_POSTCODE_0     "/tmp/gpionames/GPIO_H0/%s"
 #define GPIO_POSTCODE_1     "/tmp/gpionames/GPIO_H1/%s"
 #define GPIO_POSTCODE_2     "/tmp/gpionames/GPIO_H2/%s"
@@ -240,10 +242,12 @@ enum {
   BOARD_WEDGE400_DVT2_PVT_PVT2  = 0x03,
   BOARD_WEDGE400_PVT3           = 0x04,
   BOARD_WEDGE400_MP             = 0x05,
+  BOARD_WEDGE400_MP_RESPIN      = 0x06,
   BOARD_WEDGE400C_EVT           = 0x10,
   BOARD_WEDGE400C_EVT2          = 0x11,
   BOARD_WEDGE400C_DVT           = 0x12,
   BOARD_WEDGE400C_DVT2          = 0x13,
+  BOARD_WEDGE400C_MP_RESPIN     = 0x14,
   BOARD_UNDEFINED               = 0xFF,
 };
 
@@ -641,6 +645,7 @@ int pal_set_th3_power(int option);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_get_board_rev(int *rev);
 int pal_get_board_type(uint8_t *brd_type);
+int pal_get_full_board_type(uint8_t *full_brd_type);
 int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);

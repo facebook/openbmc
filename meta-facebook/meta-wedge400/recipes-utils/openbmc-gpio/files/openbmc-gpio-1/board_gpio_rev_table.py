@@ -26,6 +26,8 @@ from openbmc_gpio_table import BoardGPIO
 board_gpio_rev_table = [
     BoardGPIO("GPIOG4", "BMC_CPLD_BOARD_REV_ID0"),
     BoardGPIO("GPIOG5", "BMC_CPLD_BOARD_REV_ID1"),
-    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_TYPE"),
+    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_TYPE_0"),
     BoardGPIO("GPIOG7", "BMC_CPLD_BOARD_REV_ID2"),
+    BoardGPIO("GPION6", "BMC_CPLD_BOARD_TYPE_1"),
+    BoardGPIO("GPION7", "BMC_CPLD_BOARD_TYPE_2"),
 ]

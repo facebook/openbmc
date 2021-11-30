@@ -1729,7 +1729,7 @@ pal_get_board_type(uint8_t *brd_type){
   char path[LARGEST_DEVICE_NAME + 1];
   int val;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TPYE, "value");
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_0, "value");
   if (device_read(path, &val)) {
     return CC_UNSPECIFIED_ERROR;
   }
@@ -1746,32 +1746,77 @@ pal_get_board_type(uint8_t *brd_type){
 }
 
 int
+pal_get_full_board_type(uint8_t *full_brd_type) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  int val_id_0, val_id_1, val_id_2;
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_0, "value");
+  if (device_read(path, &val_id_0)) {
+    return -1;
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_1, "value");
+  if (device_read(path, &val_id_1)) {
+    return -1;
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_2, "value");
+  if (device_read(path, &val_id_2)) {
+    return -1;
+  }
+
+  *full_brd_type = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
+
+  return 0;
+}
+
+int
 pal_get_board_type_rev(uint8_t *brd_type_rev){
   int brd_rev;
   uint8_t brd_type;
+  uint8_t full_brd_type;
   if( pal_get_board_rev(&brd_rev) != 0 ||
-      pal_get_board_type(&brd_type) != 0 ){
+      pal_get_board_type(&brd_type) != 0 ||
+      pal_get_full_board_type(&full_brd_type) != 0 ){
         return -1;
   } else if ( brd_type == BRD_TYPE_WEDGE400 ){
-    switch ( brd_rev ) {
-      case 0x00: *brd_type_rev = BOARD_WEDGE400_EVT_EVT3; break;
-      case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
-      case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
-      case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
-      case 0x05: *brd_type_rev = BOARD_WEDGE400_MP; break;
-      default:
-        *brd_type_rev = BOARD_UNDEFINED;
-        return -1;
+    if ( full_brd_type & 0x02 ) {  // Indicates MP RESPIN type.
+      switch ( brd_rev ) {
+        case 0x06: *brd_type_rev = BOARD_WEDGE400_MP_RESPIN; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
+    } else {
+      switch ( brd_rev ) {
+        case 0x00: *brd_type_rev = BOARD_WEDGE400_EVT_EVT3; break;
+        case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
+        case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
+        case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
+        case 0x05: *brd_type_rev = BOARD_WEDGE400_MP; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
     }
   } else if ( brd_type == BRD_TYPE_WEDGE400C ){
-    switch ( brd_rev ) {
-      case 0x00: *brd_type_rev = BOARD_WEDGE400C_EVT; break;
-      case 0x01: *brd_type_rev = BOARD_WEDGE400C_EVT2; break;
-      case 0x02: *brd_type_rev = BOARD_WEDGE400C_DVT; break;
-      case 0x03: *brd_type_rev = BOARD_WEDGE400C_DVT2; break;
-      default:
-        *brd_type_rev = BOARD_UNDEFINED;
-        return -1;
+    if ( full_brd_type & 0x02 ) { // Indicates MP RESPIN type.
+      switch ( brd_rev ) {
+        case 0x06: *brd_type_rev = BOARD_WEDGE400C_MP_RESPIN; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
+    } else {
+      switch ( brd_rev ) {
+        case 0x00: *brd_type_rev = BOARD_WEDGE400C_EVT; break;
+        case 0x01: *brd_type_rev = BOARD_WEDGE400C_EVT2; break;
+        case 0x02: *brd_type_rev = BOARD_WEDGE400C_DVT; break;
+        case 0x03: *brd_type_rev = BOARD_WEDGE400C_DVT2; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
     }
   } else {
     *brd_type_rev = BOARD_UNDEFINED;

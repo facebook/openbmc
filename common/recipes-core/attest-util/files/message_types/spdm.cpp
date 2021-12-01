@@ -89,11 +89,11 @@ vector<uint8_t> sendSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &messa
 
 
 void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
-  string encodedResponse = "DUMMYRESPONSE";
   string errorMessage = "";
   string encodedMessage;
   vector<uint8_t> returnMessage;
-
+  vector<string> messages;
+  const string delimiter = ",";
 
   if (opt.inputFileName.length() != 0) {
     // Read in file. (Existence already checked)
@@ -109,35 +109,49 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
     throw CLI::CallForHelp();
   }
 
-  // decode from base64.
-  vector<uint8_t> message = decodeBase64(encodedMessage);
-
-  if (opt.debugOutput == true) {
-    std::cout << "Decoded message is:" << std::endl;
-    printHexValues(&(message[0]), message.size());
+  messages = splitMessage(encodedMessage, delimiter); 
+ 
+  vector<vector<uint8_t>> decodedMessages;
+  for (int index = 0; index < messages.size(); ++index) {
+    // decode from base64.
+    decodedMessages.push_back(decodeBase64(messages[index]));
   }
 
-  // Validate Payload
-  if (isPayloadValid(message)) {
-    if(opt.debugOutput == true)
-      std::cout << "Message is valid SPDM message!" << std::endl;
 
-    // send message over MCTP
-    returnMessage = sendSpdmMessage(8, opt.device, message, opt.debugOutput);
+  for (int index = 0; index < messages.size(); ++index) {
+    string encodedResponse = "DUMMYRESPONSE";
+    vector<uint8_t> message = decodedMessages[index];
 
-    if(returnMessage.size() > 0) {
-      // Remove the MCTP header.
-      returnMessage.erase(returnMessage.begin(), returnMessage.begin()+3);
-      // Re-encode response to base64
-      encodedResponse = encodeBase64(returnMessage);
-      errorMessage = "Success";
-    } else {
-      errorMessage = "Empty Response";
+    if (opt.debugOutput == true)
+      std::cout << "Attempting to send SPDM message: " << index << std::endl;
+    
+    if (opt.debugOutput == true) {
+      std::cout << "Decoded message is:" << std::endl;
+      printHexValues(&(message[0]), message.size());
     }
-  } else {
-    errorMessage = "Payload is not an SPDM message";
-  }
 
-  // Handle response
-  acceptedOutputs.at(opt.outputType)(encodedResponse, errorMessage);
+    // Validate Payload
+    if (isPayloadValid(message)) {
+      if(opt.debugOutput == true)
+        std::cout << "Message is valid SPDM message!" << std::endl;
+
+      // send message over MCTP
+      returnMessage = sendSpdmMessage(8, opt.device, message, opt.debugOutput);
+
+      if(returnMessage.size() > 0) {
+        // Remove the MCTP header.
+        returnMessage.erase(returnMessage.begin(), returnMessage.begin()+3);
+        // Re-encode response to base64
+        encodedResponse = encodeBase64(returnMessage);
+        errorMessage = "Success";
+      } else {
+        errorMessage = "Empty Response";
+      }
+    } else {
+      errorMessage = "Payload is not an SPDM message";
+    }
+
+    // Handle response
+    acceptedOutputs.at(opt.outputType)(encodedResponse, errorMessage);
+  }
 }

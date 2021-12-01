@@ -25,20 +25,31 @@ static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t nic_id, float *value);
 static int read_e1s_temp(uint8_t e1s_id, float *value);
-static int read_adc128_e1s(uint8_t id, float *value);
-static int read_adc128_iocm(uint8_t id, float *value);
-static int read_adc128_nic(uint8_t id, float *value);
-static int read_ads1015(uint8_t id, float *value);
+static int read_voltage_e1s(uint8_t id, float *value);
+static int read_current_iocm(uint8_t id, float *value);
+static int read_voltage_nic(uint8_t id, float *value);
+static int read_voltage_iocm(uint8_t id, float *value);
 static int read_ioc_temp(uint8_t id, float *value);
-static bool is_e1s_iocm_i2c_enabled(uint8_t id);
 static int set_e1s_sensor_name(char *sensor_name, char side);
 static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_cnt);
+static int read_dpb_vol_wrapper(uint8_t id, float *value);
 
 static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
 
 static sensor_info_t g_sinfo[MAX_SENSOR_NUM + 1] = {0};
 static bool is_sdr_init[FRU_CNT] = {false};
+
+static uint8_t dpb_source_info = UNKNOWN_SOURCE;
+static uint8_t iocm_source_info = UNKNOWN_SOURCE;
+
+static bool owning_iocm_snr_flag = false;
+static bool iocm_snr_ready = false;
+static uint8_t pre_status = 0xff;
+static bool e1s_removed[2] = {0};
+static bool iocm_removed = false;
+static uint8_t e1s_adc_skip_times[ADC128_E1S_PIN_CNT] = {0};
+static uint8_t max_iocm_reinit_times = MAX_RETRY;
 
 //{SensorName, ID, FUNCTION, STBY_READ, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP uic_sensor_map[] = {
@@ -368,41 +379,41 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
   [NIC_SENSOR_TEMP] =
   {"NIC_SENSOR_TEMP", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [NIC_SENSOR_P12V] =
-  {"NIC_SENSOR_P12V", ADC128_IN6, read_adc128_nic, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  {"NIC_SENSOR_P12V", ADC128_IN6, read_voltage_nic, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [NIC_SENSOR_CUR] =
-  {"NIC_SENSOR_CUR", ADC128_IN7, read_adc128_nic, false, {2.2, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"NIC_SENSOR_CUR", ADC128_IN7, read_voltage_nic, false, {2.2, 0, 0, 0, 0, 0, 0, 0}, CURR},
 };
 
 PAL_SENSOR_MAP e1s_sensor_map[] = {
   [E1S0_CUR] =
-  {"E1S_X0_CUR", ADC128_IN0, read_adc128_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X0_CUR", ADC128_IN0, read_voltage_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S1_CUR] =
-  {"E1S_X1_CUR", ADC128_IN1, read_adc128_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"E1S_X1_CUR", ADC128_IN1, read_voltage_e1s, false, {1.6, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [E1S0_TEMP] =
   {"E1S_X0_TEMP", T5_E1S0_T7_IOC_AVENGER, read_e1s_temp, false, {70, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S1_TEMP] =
   {"E1S_X1_TEMP", T5_E1S1_T7_IOCM_VOLT, read_e1s_temp, false, {70, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [E1S0_P12V] =
-  {"E1S_X0_P12V", ADC128_IN2, read_adc128_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  {"E1S_X0_P12V", ADC128_IN2, read_voltage_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [E1S1_P12V] =
-  {"E1S_X1_P12V", ADC128_IN3, read_adc128_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
+  {"E1S_X1_P12V", ADC128_IN3, read_voltage_e1s, false, {13, 0, 0, 11, 0, 0, 0, 0}, VOLT},
   [E1S0_P3V3] =
-  {"E1S_X0_P3V3", ADC128_IN4, read_adc128_e1s, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  {"E1S_X0_P3V3", ADC128_IN4, read_voltage_e1s, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
   [E1S1_P3V3] =
-  {"E1S_X1_P3V3", ADC128_IN5, read_adc128_e1s, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  {"E1S_X1_P3V3", ADC128_IN5, read_voltage_e1s, false, {3.465, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
 };
 
 PAL_SENSOR_MAP iocm_sensor_map[] = {
   [IOCM_P3V3_STBY] =
-  {"IOCM_P3V3_STBY", ADS1015_IN0, read_ads1015, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  {"IOCM_P3V3_STBY", ADS1015_IN0, read_voltage_iocm, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
   [IOCM_P1V8] =
-  {"IOCM_P1V8", ADS1015_IN1, read_ads1015, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT},
+  {"IOCM_P1V8", ADS1015_IN1, read_voltage_iocm, false, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT},
   [IOCM_P1V5] =
-  {"IOCM_P1V5", ADS1015_IN2, read_ads1015, false, {1.49, 0, 0, 1.41, 0, 0, 0, 0}, VOLT},
+  {"IOCM_P1V5", ADS1015_IN2, read_voltage_iocm, false, {1.49, 0, 0, 1.41, 0, 0, 0, 0}, VOLT},
   [IOCM_P0V865] =
-  {"IOCM_P0V865", ADS1015_IN3, read_ads1015, false, {0.89, 0, 0, 0.85, 0, 0, 0, 0}, VOLT},
+  {"IOCM_P0V865", ADS1015_IN3, read_voltage_iocm, false, {0.89, 0, 0, 0.85, 0, 0, 0, 0}, VOLT},
   [IOCM_CUR] =
-  {"IOCM_CUR", ADC128_IN0, read_adc128_iocm, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"IOCM_CUR", ADC128_IN0, read_current_iocm, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [IOCM_TEMP] =
   {"IOCM_TEMP", TEMP_IOCM, read_temp, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [IOCM_IOC_TEMP] =
@@ -684,6 +695,24 @@ PAL_DEV_INFO adc128_dev_list[] = {
   {"adc128d818-i2c-9-1d",  "NIC_CUR"},
 };
 
+PAL_DEV_INFO ltc2990_dev_list[] = {
+  {"ltc2990-i2c-13-4c",  "IOCM_P3V3"},
+  {"ltc2990-i2c-13-4c",  "IOCM_P1V8"},
+  {"ltc2990-i2c-13-4c",  "IOCM_P1V5"},
+  {"ltc2990-i2c-13-4c",  "IOCM_P0V865"},
+};
+
+PAL_DEV_INFO ltc2991_dev_list[] = {
+  {"ltc2991-i2c-9-48",  "E1S0_CUR"},
+  {"ltc2991-i2c-9-48",  "E1S1_CUR"},
+  {"ltc2991-i2c-9-48",  "E1S0_P12V"},
+  {"ltc2991-i2c-9-48",  "E1S1_P12V"},
+  {"ltc2991-i2c-9-48",  "E1S0_P3V3"},
+  {"ltc2991-i2c-9-48",  "E1S1_P3V3"},
+  {"ltc2991-i2c-9-48",  "NIC_P12V"},
+  {"ltc2991-i2c-9-48",  "NIC_CUR"},
+};
+
 // ADS1015 PGA settings in DTS of each channel, unit: mV
 static int ads1015_pga_setting[] = {
   4096, 2048, 2048, 1024
@@ -786,6 +815,15 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 }
 
 static int
+sensors_read_wrapper(const char *chip, const char *label, float *value) {
+  int ret = 0;
+
+  ret = sensors_read(chip, label, value);
+  if (ret == -1) ret = ERR_FAILURE; // normalize the error code
+  return ret;
+}
+
+static int
 read_adc_val(uint8_t adc_id, float *value) {
   int ret = 0;
 
@@ -805,29 +843,11 @@ read_adc_val(uint8_t adc_id, float *value) {
 
 static int
 read_temp(uint8_t id, float *value) {
-  int ret = 0;
-
   if (id >= ARRAY_SIZE(temp_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
-  if (id == TEMP_IOCM) { // type 7
-    if (is_e1s_iocm_i2c_enabled(T5_E1S1_T7_IOCM_VOLT) == false) {
-      return ERR_SENSOR_NA;
-    }
-    if (access(IOCM_TMP75_DEVICE_DIR, F_OK) == -1) {
-      ret = pal_add_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_TMP75_ADDR, IOCM_TMP75_DEVICE_NAME);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "%s() Failed to add i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
-           __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_TMP75_ADDR, IOCM_TMP75_DEVICE_NAME, ret);
-        syslog(LOG_WARNING, "%s() Cannot read temperature sensors of IOC Module\n", __func__);
-        return ERR_SENSOR_NA;
-      }
-      sensors_reinit();
-    }
-  }
-
-  return sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  return sensors_read_wrapper(temp_dev_list[id].chip, temp_dev_list[id].label, value);
 }
 
 /* Check the valid range of NIC Temperature. */
@@ -925,7 +945,7 @@ is_e1s_iocm_present(uint8_t id) {
   return true;
 }
 
-static bool
+bool
 is_e1s_iocm_i2c_enabled(uint8_t id) {
   gpio_value_t val = 0;
 
@@ -1005,20 +1025,34 @@ is_e1s_power_good(uint8_t id) {
 }
 
 static int
-read_adc128_e1s(uint8_t id, float *value) {
+read_dpb_vol_wrapper(uint8_t id, float *value) {
   int ret = 0;
-  static uint8_t e1s_adc_skip_times[ADC128_E1S_PIN_CNT] = {0};
+
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: Null parameter", __func__);
+    return ERR_SENSOR_NA;
+  }
+
+  if (dpb_source_info == MAIN_SOURCE) {
+    ret = sensors_read_wrapper(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
+  } else if (dpb_source_info == SECOND_SOURCE) {
+    ret = sensors_read_wrapper(ltc2991_dev_list[id].chip, ltc2991_dev_list[id].label, value);
+  } else {
+    ret = ERR_SENSOR_NA;
+  }
+
+  return ret;
+}
+
+static int
+read_voltage_e1s(uint8_t id, float *value) {
+  int ret = 0;
 
   if (id >= ARRAY_SIZE(adc128_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
-  if (is_e1s_iocm_present(id % 2) == false) {
-    e1s_adc_skip_times[id] = MAX_E1S_VOL_SNR_SKIP;
-    return ERR_SENSOR_NA;
-  }
-
-  if (is_e1s_power_good(id % 2) == false) {
+  if (is_e1s_power_good(id % 2) == false) { // power-util power off E1.S
     e1s_adc_skip_times[id] = MAX_E1S_VOL_SNR_SKIP;
     return ERR_SENSOR_NA;
   }
@@ -1028,13 +1062,12 @@ read_adc128_e1s(uint8_t id, float *value) {
     return READING_SKIP;
   }
 
-  ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
-
+  ret = read_dpb_vol_wrapper(id, value);
   return ret;
 }
 
 static int
-read_adc128_nic(uint8_t id, float *value) {
+read_voltage_nic(uint8_t id, float *value) {
   int ret = 0;
   uint8_t prsnt_status = 0;
 
@@ -1047,7 +1080,7 @@ read_adc128_nic(uint8_t id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
+  ret = read_dpb_vol_wrapper(id, value);
 
   if ((id == ADC128_IN7) && (*value < 0)) { // NIC current doesn't support negative value
     *value = 0;
@@ -1075,14 +1108,10 @@ is_iocm_power_good(void) { // check IOCM power from main connector
 }
 
 static int
-read_adc128_iocm(uint8_t id, float *value) {
+read_current_iocm(uint8_t id, float *value) {
   int ret = 0;
 
   if (id >= ARRAY_SIZE(adc128_dev_list)) {
-    return ERR_SENSOR_NA;
-  }
-
-  if (is_e1s_iocm_present(id) == false) {
     return ERR_SENSOR_NA;
   }
 
@@ -1090,7 +1119,7 @@ read_adc128_iocm(uint8_t id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  ret = sensors_read(adc128_dev_list[id].chip, adc128_dev_list[id].label, value);
+  ret = read_dpb_vol_wrapper(id, value);
 
   return ret;
 }
@@ -1191,33 +1220,6 @@ read_ads1015(uint8_t id, float *value) {
   int read_value = 0;
   char full_dir_name[MAX_PATH_LEN * 2] = {0};
   char dir_name[MAX_PATH_LEN] = {0};
-  int ret = 0;
-
-  if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == false) {
-    return ERR_SENSOR_NA;
-  }
-
-  if (is_e1s_iocm_i2c_enabled(T5_E1S1_T7_IOCM_VOLT) == false) {
-    if (access(IOCM_ADS1015_BIND_DIR, F_OK) != -1) { // unbind device if bound
-      ret = pal_unbind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "%s() Failed to unbind i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
-           __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME, ret);
-        syslog(LOG_WARNING, "%s() Cannot read voltage sensors of IOC Module\n", __func__);
-      }
-    }
-    return ERR_SENSOR_NA;
-  }
-
-  if (access(IOCM_ADS1015_BIND_DIR, F_OK) == -1) { // bind device if not bound
-    ret = pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s() Failed to bind i2c device on bus: %u, addr: 0x%X, device: %s, ret : %d\n",
-        __func__, I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME, ret);
-      syslog(LOG_WARNING, "%s() Cannot read voltage sensors of IOC Module\n", __func__);
-      return ERR_SENSOR_NA;
-    }
-  }
 
   if (get_current_dir(IOCM_VOLTAGE_SENSOR_DIR, dir_name) < 0) {
     syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, IOCM_VOLTAGE_SENSOR_PATH);
@@ -1236,6 +1238,31 @@ read_ads1015(uint8_t id, float *value) {
   *value = ((float)read_value) * ads1015_pga_setting[id] / ADS1015_PGA_DEFAULT / ADS1015_DIV_UNIT;
 
   return 0;
+}
+
+static int
+read_ltc2990(uint8_t id, float *value) {
+  if (id >= ARRAY_SIZE(ltc2990_dev_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  return sensors_read_wrapper(ltc2990_dev_list[id].chip, ltc2990_dev_list[id].label, value);
+}
+
+static int
+read_voltage_iocm(uint8_t id, float *value) {
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: Null parameter", __func__);
+    return ERR_SENSOR_NA;
+  }
+
+  if (iocm_source_info == MAIN_SOURCE) {
+    return read_ads1015(id, value);
+  } else if (iocm_source_info == SECOND_SOURCE) {
+    return read_ltc2990(id, value);
+  } else {
+    return ERR_SENSOR_NA;
+  }
 }
 
 static int
@@ -1779,6 +1806,226 @@ end:
   return ret;
 }
 
+static void
+get_current_source(const char *key, uint8_t *source_info) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (key == NULL || source_info == NULL) {
+    syslog(LOG_WARNING, "%s Failed by null parameter\n", __func__);
+    return;
+  }
+
+  if (*source_info != UNKNOWN_SOURCE) { // cached before
+    return;
+  }
+
+  if (kv_get(key, value, NULL, 0) == 0) {
+    if (strcmp(value, STR_MAIN_SOURCE) == 0) {
+      *source_info = MAIN_SOURCE;
+    } else if (strcmp(value, STR_SECOND_SOURCE) == 0) {
+      *source_info = SECOND_SOURCE;
+    } else {
+      syslog(LOG_WARNING, "%s() Unknown source info: %s. Switch to main source configuration\n", __func__, value);
+      kv_set(key, STR_MAIN_SOURCE, 0, 0);
+      *source_info = MAIN_SOURCE; // set to default
+    }
+  }
+
+  return;
+}
+
+int pal_sensor_monitor_initial(void) {
+  owning_iocm_snr_flag = true;
+  kv_set(KEY_IOCM_SNR_READY, IOCM_SNR_NOT_READY, 0, 0);
+}
+
+static bool
+get_iocm_snr_ready_flag() {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (owning_iocm_snr_flag) {
+    return iocm_snr_ready;
+  } else {
+    if (kv_get(KEY_IOCM_SNR_READY, value, NULL, 0) == 0) {
+      if (strcmp(value, IOCM_SNR_READY) == 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+static void
+set_iocm_snr_ready_flag(bool value) {
+  if (owning_iocm_snr_flag) {
+    iocm_snr_ready = value;
+    if (value) {
+      kv_set(KEY_IOCM_SNR_READY, IOCM_SNR_READY, 0, 0);
+    } else {
+      kv_set(KEY_IOCM_SNR_READY, IOCM_SNR_NOT_READY, 0, 0);
+    }
+  }
+}
+
+static void
+do_i2c_isolation(const char *shadow, gpio_value_t value) {
+  if (!owning_iocm_snr_flag) {
+    return;
+  }
+
+  if (gpio_set_init_value_by_shadow(shadow, value) < 0) {
+    syslog(LOG_ERR, "%s() Failed to set GPIO %s to %x\n", __func__, shadow, value);
+  }
+}
+
+static int
+check_e1s_iocm_present(uint8_t sensor_num, uint8_t chassis_type) {
+  uint8_t id = 0;
+
+  // Disable I2C while E1.S/IOCM is missing
+  if (chassis_type == CHASSIS_TYPE5) {
+    id = e1s_sensor_map[sensor_num].id % 2;
+    if (is_e1s_iocm_present(id) == false) {
+      if (id == T5_E1S0_T7_IOC_AVENGER) {
+        do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW);
+      } else if (id == T5_E1S1_T7_IOCM_VOLT) {
+        do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_LOW);
+      }
+      e1s_removed[id] = true;
+      return ERR_SENSOR_NA;
+    }
+  } else if (chassis_type == CHASSIS_TYPE7) {
+    if ((is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) ||
+        (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT) == false)) {
+      do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW);
+      do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_LOW);
+      set_iocm_snr_ready_flag(false);
+      iocm_removed = true;
+      return ERR_SENSOR_NA;
+    }
+  }
+
+  return 0;
+}
+
+static bool
+is_e1s_iocm_removed(uint8_t sensor_num, uint8_t chassis_type) {
+  uint8_t id = 0;
+  if (chassis_type == CHASSIS_TYPE5) {
+    id = e1s_sensor_map[sensor_num].id % 2;
+    return e1s_removed[id];
+  } else if (chassis_type == CHASSIS_TYPE7) {
+    return iocm_removed;
+  }
+
+  return false;
+}
+
+static void
+set_e1s_adc_skip_times(uint8_t e1s_id) {
+  int i = 0, start = 0;
+
+  start = (e1s_id == T5_E1S0_T7_IOC_AVENGER) ? 0 : 1;
+  for (i = start; i < ADC128_E1S_PIN_CNT; i+=2) {
+    e1s_adc_skip_times[i] = MAX_E1S_VOL_SNR_SKIP;
+  }
+}
+
+static int
+check_server_dc_power(uint8_t sensor_num, uint8_t chassis_type) {
+  uint8_t status = 0;
+  int i = 0;
+
+  if (pal_get_server_power(FRU_SERVER, &status) < 0) {
+    do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW);
+    do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_LOW);
+    return ERR_SENSOR_NA;
+  }
+
+  /* Skip isolation actions while:
+   *  1. Not running as sensord 
+   *  2. No power change and hotplug happened
+   */
+  if (!owning_iocm_snr_flag || 
+      (status == pre_status && is_e1s_iocm_removed(sensor_num, chassis_type) == false)) {
+    return (status == SERVER_POWER_ON) ? 0 : ERR_SENSOR_NA;
+  }
+
+  // do i2c isolation by server DC power
+  if (status == SERVER_POWER_ON) {  // E1.S & IOCM are powered on
+    if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER)) {
+      set_e1s_adc_skip_times(T5_E1S0_T7_IOC_AVENGER);
+      do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_HIGH);
+      e1s_removed[T5_E1S0_T7_IOC_AVENGER] = false;
+      iocm_removed = false;
+    }
+    if (is_e1s_iocm_present(T5_E1S1_T7_IOCM_VOLT)) {
+      set_e1s_adc_skip_times(T5_E1S1_T7_IOCM_VOLT);
+      do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_HIGH);
+      e1s_removed[T5_E1S1_T7_IOCM_VOLT] = false;
+      iocm_removed = false;
+    }
+    pre_status = status;
+  } else { // E1.S & IOCM are powered off
+    do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW);
+    do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_2_P3V3_PG_R), GPIO_VALUE_LOW);
+    if (chassis_type == CHASSIS_TYPE7) {
+      set_iocm_snr_ready_flag(false);
+    }
+    pre_status = status;
+    return ERR_SENSOR_NA;
+  }
+
+  return 0;
+}
+
+static void
+read_iocm_fru() {
+  char path[MAX_PATH_LEN] = {0};
+
+  if (access(FRU_IOCM_BIN, F_OK) == -1 && access(IOCM_EEPROM_BIND_DIR, F_OK) == 0) {
+    snprintf(path, sizeof(path), EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
+    if ((pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN)) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
+    }
+    if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
+      syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
+    }
+  }
+}
+
+static void
+reload_iocm_sensors() {
+  char value[MAX_VALUE_LEN] = {0};
+
+  // clean up
+  iocm_source_info = UNKNOWN_SOURCE;
+  unlink(FRU_IOCM_BIN);
+  kv_del(KEY_IOCM_SOURCE_INFO, 0);
+
+  pal_unbind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_EEPROM_ADDR, IOCM_EEPROM_DRIVER_NAME, IOCM_EEPROM_BIND_DIR);
+  pal_unbind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_TMP75_ADDR, IOCM_TMP75_DRIVER_NAME, IOCM_TMP75_BIND_DIR);
+  pal_unbind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_LTC2990_ADDR, IOCM_LTC2990_DRIVER_NAME, IOCM_LTC2990_BIND_DIR);
+  pal_unbind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME, IOCM_ADS1015_BIND_DIR);
+
+  pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_EEPROM_ADDR, IOCM_EEPROM_DRIVER_NAME, IOCM_EEPROM_BIND_DIR);
+  pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_TMP75_ADDR, IOCM_TMP75_DRIVER_NAME, IOCM_TMP75_BIND_DIR);
+  read_iocm_fru();
+  // check IOCM source
+  run_command("/usr/local/bin/check_2nd_source.sh e1s_iocm > /dev/NULL 2>&1");
+
+  if (kv_get(KEY_IOCM_SOURCE_INFO, value, NULL, 0) == 0) {
+    if (strcmp(value, STR_MAIN_SOURCE) == 0) {
+      pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_ADS1015_ADDR, IOCM_ADS1015_DRIVER_NAME, IOCM_ADS1015_BIND_DIR);
+    } else if (strcmp(value, STR_SECOND_SOURCE) == 0) {
+      pal_bind_i2c_device(I2C_T5E1S1_T7IOC_BUS, IOCM_LTC2990_ADDR, IOCM_LTC2990_DRIVER_NAME, IOCM_LTC2990_BIND_DIR);
+    }
+  }
+  // reload sensor map
+  sensors_reinit();
+  set_iocm_snr_ready_flag(true);
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -1830,6 +2077,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     }
     break;
   case FRU_NIC:
+    get_current_source(KEY_DPB_SOURCE_INFO, &dpb_source_info);
     id = nic_sensor_map[sensor_num].id;
     ret = nic_sensor_map[sensor_num].read_sensor(id, (float*) value);
     break;
@@ -1838,13 +2086,36 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       syslog(LOG_WARNING, "%s() Failed to get chassis type\n", __func__);
       return ERR_UNKNOWN_FRU;
     }
+    if ((ret = check_e1s_iocm_present(sensor_num, chassis_type)) < 0) {
+      break;
+    }
+    if ((ret = check_server_dc_power(sensor_num, chassis_type)) < 0) {
+      break;
+    }
+    get_current_source(KEY_DPB_SOURCE_INFO, &dpb_source_info);
     if (chassis_type == CHASSIS_TYPE5) {
       id = e1s_sensor_map[sensor_num].id;
       ret = e1s_sensor_map[sensor_num].read_sensor(id, (float*) value);
       break;
     } else if (chassis_type == CHASSIS_TYPE7) {
+      if (get_iocm_snr_ready_flag() == false) {
+        if (owning_iocm_snr_flag) {
+          reload_iocm_sensors();
+        } else {
+          ret = ERR_SENSOR_NA;
+          break;
+        }
+      }
+      get_current_source(KEY_IOCM_SOURCE_INFO, &iocm_source_info);
       id = iocm_sensor_map[sensor_num].id;
       ret = iocm_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      if (ret == ERR_FAILURE) { // hotswap happened during sensor monitor interval, reinit IOCM sensors
+        if (max_iocm_reinit_times-- > 0) {
+          set_iocm_snr_ready_flag(false);
+        }
+      } else if (ret == 0) {
+        max_iocm_reinit_times = MAX_RETRY;
+      }
       break;
     } else {
       syslog(LOG_WARNING, "%s() Unknow chassis type %u\n", __func__, chassis_type);

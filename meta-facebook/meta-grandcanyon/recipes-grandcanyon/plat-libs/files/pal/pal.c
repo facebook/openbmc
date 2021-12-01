@@ -1213,7 +1213,7 @@ i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8
     return -1;
   }
 
-  snprintf(cmd, sizeof(cmd), "%d-00%d", bus, addr);
+  snprintf(cmd, sizeof(cmd), "%d-00%02x", bus, addr);
   if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
     syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
     ret = -1;
@@ -1225,13 +1225,19 @@ i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8
 }
 
 int
-pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
-  return i2c_device_binding_operation(bus, addr, driver_name, BIND);
+pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
+  if (bind_dir != NULL && access(bind_dir, F_OK) != 0) {
+    return i2c_device_binding_operation(bus, addr, driver_name, BIND);
+  }
+  return 0;
 }
 
 int
-pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
-  return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
+pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
+  if (bind_dir != NULL && access(bind_dir, F_OK) == 0) {
+    return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
+  }
+  return 0;
 }
 
 // To get the platform sku
@@ -3563,6 +3569,9 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
   } else if (i2c_bus == I2C_T5E1S0_T7IOC_BUS) {
     // Check IOCM IOC present
     if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
+      return false;
+    }
+    if (is_e1s_iocm_i2c_enabled(T5_E1S0_T7_IOC_AVENGER) == false) {
       return false;
     }
   } else {

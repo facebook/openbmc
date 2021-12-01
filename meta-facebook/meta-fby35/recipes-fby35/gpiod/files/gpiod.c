@@ -820,7 +820,7 @@ host_pwr_mon() {
     if ( host_off_flag == SLOTS_MASK ) {
       //Need to make sure the hosts are off instead of power cycle
       //delay to change the power mode of NIC
-      if ( is_util_run_flag > 0 || access(SET_NIC_PWR_MODE_LOCK, F_OK) == 0) {
+      if ( is_util_run_flag > 0 ) {
         retry = 0;
         usleep(DELAY_GPIOD_READ);
         continue;
@@ -839,6 +839,8 @@ host_pwr_mon() {
       if ( pal_server_set_nic_power(SERVER_POWER_OFF) == 0 ) {
         syslog(LOG_CRIT, "NIC Power is set to VAUX");
         nic_pwr_set_off = true;
+      } else {
+        retry = 0;
       }
     } else if ( retry < MAX_NIC_PWR_RETRY && nic_pwr_set_off == true) {
       syslog(LOG_CRIT, "NIC Power is set to VMAIN");

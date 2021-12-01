@@ -11,6 +11,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
 #include "pal.h"
 
 #define CPLD_PWR_CTRL_BUS 12
@@ -233,84 +234,94 @@ pal_get_server_12v_power(uint8_t slot_id, uint8_t *status) {
   return ret;
 }
 
+static int
+set_nic_pwr_en_time(void) {
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  snprintf(value, sizeof(value), "%ld", ts.tv_sec + 10);
+  if (kv_set("nic_pwr", value, 0, 0) < 0) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+check_nic_pwr_en_time(void) {
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  if (kv_get("nic_pwr", value, NULL, 0)) {
+     return 0;
+  }
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (ts.tv_sec >= strtoul(value, NULL, 10)) {
+     return 0;
+  }
+
+  return -1;
+}
+
 int
 pal_server_set_nic_power(const uint8_t expected_pwr) {
-  int i = 0;
-  int ret = 0;
-  uint8_t svr_sts = 0;
-  uint8_t pwr_sts = 0;
-  uint8_t pwr_cnt = 0;
-  uint8_t svr_cnt = 0;
+  int ret = -1;
+  int lockfd = -1, ifd = -1;
+  uint8_t tbuf[4] = {0x0f, (expected_pwr&0x1),};
+  uint8_t rbuf[4] = {0};
 
-  for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
-    ret = fby35_common_is_fru_prsnt(i, &svr_sts);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "Failed to get the prsnt sts. fru%d", i);
-      return PAL_ENOTSUP;
-    }
-
-    //it's prsnt
-    if ( svr_sts != 0 ) {
-      svr_cnt++;
-      //read slot/12V pwr
-      if ( expected_pwr == SERVER_12V_OFF ) {
-        ret = pal_get_server_12v_power(i, &pwr_sts);
-        if ( ret == PAL_EOK && pwr_sts == SERVER_12V_ON ) {
-          ret = bic_get_server_power_status(i, &pwr_sts);
-        }
-      } else if ( expected_pwr == SERVER_POWER_ON || \
-               expected_pwr == SERVER_POWER_OFF ) {
-        ret = pal_get_server_12v_power(i, &pwr_sts);
-        if (ret == PAL_EOK && pwr_sts == SERVER_12V_ON) {
-          ret = bic_get_server_power_status(i, &pwr_sts);
-        }
-      } else return PAL_ENOTSUP;
-
-      if ( ret < 0 ) {
-        syslog(LOG_WARNING, "Failed to get the pwr sts. fru%d", i);
-        return PAL_ENOTSUP;
+  do {
+    if ( SERVER_POWER_ON == expected_pwr ) {
+      lockfd = single_instance_lock_blocked("nic_pwr");
+    } else {  // SERVER_POWER_OFF
+      if ( (lockfd = single_instance_lock("nic_pwr")) < 0 ) {
+        break;  // break since there is SERVER_POWER_ON processing
       }
-
-      //check all slot pwrs
-      if ( (pwr_sts == SERVER_12V_OFF) || (pwr_sts == SERVER_POWER_OFF) ) pwr_cnt++;
     }
+
+    ifd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( ifd < 0 ) {
+      syslog(LOG_WARNING, "Failed to open bus %d", CPLD_PWR_CTRL_BUS);
+      break;
+    }
+
+    if ( SERVER_POWER_ON == expected_pwr ) {
+      set_nic_pwr_en_time();
+      ret = retry_cond(!i2c_rdwr_msg_transfer(ifd, CPLD_PWR_CTRL_ADDR, tbuf, 1, rbuf, 1),
+                       2, 100);
+      if ( !ret && (rbuf[0] & 0x1) ) {  // nic power is already ON
+        break;
+      }
+    } else if ( check_nic_pwr_en_time() != 0 ) {  // SERVER_POWER_OFF
+      break;  // break since there is SERVER_POWER_ON processing
+    }
+
+    ret = retry_cond(!i2c_rdwr_msg_transfer(ifd, CPLD_PWR_CTRL_ADDR, tbuf, 2, NULL, 0),
+                     2, 100);
+    if ( lockfd >= 0 ) {
+      single_instance_unlock(lockfd);
+      lockfd = -1;
+    }
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "Failed to change NIC Power mode");
+      break;
+    }
+
+    if ( SERVER_POWER_ON == expected_pwr ) {
+      sleep(2);  // wait 2s for PERST# when waking up
+    }
+  } while (0);
+
+  if ( ifd >= 0 ) {
+    close(ifd);
+  }
+  if ( lockfd >= 0 ) {
+    single_instance_unlock(lockfd);
   }
 
-  //return if one of them is on/off
-  if ( pwr_cnt != svr_cnt ) return PAL_ENOTREADY;
-
-  //change the power mode of NIC to expected_pwr
-  int fd = -1;
-  uint8_t tbuf[2] = {0x0f, (expected_pwr&0x1)};
-  uint8_t tlen = sizeof(tbuf);
-  int pid_file = 0;
-
-  if ( SERVER_POWER_ON == expected_pwr ) {
-    pid_file = open(SET_NIC_PWR_MODE_LOCK, O_CREAT | O_RDWR, 0666);
-  }
-
-  fd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( fd < 0 ) {
-    syslog(LOG_WARNING, "Failed to open bus 12");
-    return PAL_ENOTSUP;
-  }
-
-  ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to change NIC Power mode");
-  } else {
-    //if one of them want to wake up, we need to set it and sleep 2s to wait for PERST#
-    //2s is enough for CPLD
-    if ( SERVER_POWER_ON == expected_pwr ) sleep(2);
-  }
-
-  if ( pid_file > 0 ) {
-    close(pid_file);
-    remove(SET_NIC_PWR_MODE_LOCK);
-  }
-  if ( fd > 0 ) close(fd);
-
-  return (ret < 0)?PAL_ENOTSUP:PAL_EOK;
+  return (!ret)?PAL_EOK:PAL_ENOTSUP;
 }
 
 int
@@ -417,12 +428,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
       //if ( status == SERVER_12V_OFF ) return POWER_STATUS_ALREADY_OK;
       return server_power_12v_off(fru);
-#if 0
-      if ( server_power_12v_off(fru) == PAL_EOK ) {
-        ret = pal_server_set_nic_power(SERVER_12V_OFF);
-        return (ret == PAL_ENOTSUP)?POWER_STATUS_ERR:POWER_STATUS_OK;
-      } else return POWER_STATUS_ERR;
-#endif
       break;
 
     case SERVER_12V_CYCLE:

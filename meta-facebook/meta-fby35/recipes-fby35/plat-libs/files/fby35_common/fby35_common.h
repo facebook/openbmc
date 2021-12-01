@@ -99,7 +99,7 @@ extern const char *slot_usage;
 
 #define MD5_READ_BYTES     (1024)
 
-#define REVISION_ID(x)  (((x >> 4) & 0x07) + 1)
+#define REVISION_ID(x)  ((x >> 4) & 0x07)
 #define BOARD_ID(x)     (x & 0x0f)
 #define COMPONENT_ID(x) (x >> 7)
 
@@ -227,8 +227,7 @@ enum comp_id {
 };
 
 enum fw_rev {
-  FW_REV_POC1 = 0,
-  FW_REV_POC2,
+  FW_REV_POC = 0,
   FW_REV_EVT,
   FW_REV_DVT,
   FW_REV_PVT,

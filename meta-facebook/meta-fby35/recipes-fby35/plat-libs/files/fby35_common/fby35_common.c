@@ -587,7 +587,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
 #endif
 
   if (strncmp(md5_digest, (char*)data, sizeof(md5_digest)) != 0) {
-    printf("Checksum incorrect. This image is corrupted\n");
+    printf("Checksum incorrect. This image is corrupted or unsigned\n");
     ret = -1;
   }
 
@@ -661,7 +661,7 @@ exit:
 
 bool
 fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id) {
-  const char* board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
+  const char* board_type[] = {"POC", "EVT", "DVT", "PVT", "MP"};
   uint8_t signed_byte = 0x0;
   uint8_t bmc_location = 0;
   uint8_t board_id = 0;
@@ -682,9 +682,8 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
 
   signed_byte = img_info->err_proof;
   switch (rev_id) {
-    case FW_REV_POC1:
-    case FW_REV_POC2:
-      if (REVISION_ID(signed_byte) != FW_REV_POC2) {
+    case FW_REV_POC:
+      if (REVISION_ID(signed_byte) != FW_REV_POC) {
         printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");
         return false;
       }

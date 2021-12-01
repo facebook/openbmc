@@ -9,9 +9,6 @@
 
 using namespace std;
 
-#define LATTICE_IMG_SIZE_POC 0x167DB9
-#define LATTICE_IMG_SIZE_EVT 0xD1991
-
 #define CPLD_NEW_VER_KEY "%s_%s_new_ver"
 
 img_info CpldExtComponent::check_image(string image, bool force) {
@@ -61,23 +58,7 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   size_t w_b = 0;
   size_t tmp_size = 0;
 
-  switch(r_b) {
-    case LATTICE_IMG_SIZE_POC:
-    case (LATTICE_IMG_SIZE_POC + IMG_POSTFIX_SIZE):
-      tmp_size = LATTICE_IMG_SIZE_POC;
-      break;
-    case LATTICE_IMG_SIZE_EVT:
-    case (LATTICE_IMG_SIZE_EVT + IMG_POSTFIX_SIZE):
-      tmp_size = LATTICE_IMG_SIZE_EVT;
-      break;
-    default:
-      cerr << image <<" image size is invalid" << endl;
-      goto err_exit;
-  }
-  if ((r_b == LATTICE_IMG_SIZE_POC + IMG_POSTFIX_SIZE) || 
-    (r_b == LATTICE_IMG_SIZE_EVT + IMG_POSTFIX_SIZE)) {
-    image_sts.sign = true;
-  }
+  tmp_size = r_b;
   w_b = write(fd_w, memblock, tmp_size);
   //check size
   if ( tmp_size != w_b ) {
@@ -87,11 +68,6 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   }
 
   if ( force == false ) {
-    if ((file_info.st_size != LATTICE_IMG_SIZE_EVT + IMG_POSTFIX_SIZE) && 
-        (file_info.st_size != LATTICE_IMG_SIZE_POC + IMG_POSTFIX_SIZE)) {
-      cerr << "Image " << image << " is not a signed image, please use --force option" << endl;
-      goto err_exit;
-    }
     // Read Board Revision from CPLD
     if ( ((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
       if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
@@ -147,7 +123,7 @@ int CpldExtComponent::update_cpld(string image, bool force) {
   } else {
     if (ret) {
       kv_set(ver_key, "NA", 0, 0);
-    } else if (force && image_sts.sign == false) {
+    } else if (force) {
       kv_set(ver_key, "Unknown", 0, 0);
     } else {
       kv_set(ver_key, ver, 0, 0);

@@ -4606,8 +4606,8 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
   static const char* cmd_table[IPMI_GET_VER_FRU_NUM][IPMI_GET_VER_MAX_COMP] = {
     // BMC
     {
-      "/usr/bin/fw-util bmc --version bmc | awk '{print $NF}'",
-      "/usr/bin/fw-util bmc --version rom | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version bmc | grep 'Version:' | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version rom | grep 'Version:' | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version cpld | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version fscd | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version tpm | awk '{print $NF}'",

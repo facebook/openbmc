@@ -45,13 +45,6 @@ class Redfish:
         app.router.add_get("/redfish/v1/SessionService/Sessions", get_session)
         app.router.add_get("/redfish/v1/Chassis", redfish_chassis.get_chassis)
         app.router.add_get("/redfish/v1/Chassis/1", redfish_chassis.get_chassis_members)
-        app.router.add_get(
-            "/redfish/v1/Chassis/1/Thermal",
-            redfish_chassis.get_chassis_thermal,
-        )
-        app.router.add_get(
-            "/redfish/v1/Chassis/1/Power", redfish_chassis.get_chassis_power
-        )
 
         app.router.add_get(
             "/redfish/v1/Systems", self.computer_systems.get_collection_descriptor
@@ -110,17 +103,6 @@ class Redfish:
             app.router.add_get(
                 "/redfish/v1/Chassis/{}".format(server_name),
                 redfish_chassis.get_chassis_members,
-            )
-            app.router.add_get(
-                "/redfish/v1/Chassis/{}/Power".format(server_name),
-                redfish_chassis.get_chassis_power,
-            )
-            app.router.add_get(
-                "/redfish/v1/Chassis/{}/Thermal".format(server_name),
-                redfish_chassis.get_chassis_thermal,
-            )
-            app.router.add_post(
-                "/redfish/v1/Chassis/{}/Thermal".format(server_name), self.controller
             )
             app.router.add_get(
                 "/redfish/v1/Systems/{}".format(server_name),

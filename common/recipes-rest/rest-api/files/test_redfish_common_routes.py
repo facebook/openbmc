@@ -33,8 +33,6 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/Chassis/1",
             "/redfish/v1/Chassis/{fru_name}/Sensors",
             "/redfish/v1/Chassis/{fru_name}/Sensors/{sensor_id}",
-            "/redfish/v1/Chassis/1/Power",
-            "/redfish/v1/Chassis/1/Thermal",
             "/redfish/v1/Managers",
             "/redfish/v1/Managers/1",
             "/redfish/v1/Managers/1/EthernetInterfaces",
@@ -72,12 +70,6 @@ class TestCommonRoutes(unittest.TestCase):
                 for i in range(1, pal_response + 1):  # +1 to iterate uptill last slot
                     server_name = "server{}".format(i)
                     routes_expected.append("/redfish/v1/Chassis/{}".format(server_name))
-                    routes_expected.append(
-                        "/redfish/v1/Chassis/{}/Power".format(server_name)
-                    )
-                    routes_expected.append(
-                        "/redfish/v1/Chassis/{}/Thermal".format(server_name)
-                    )
                     routes_expected.extend(
                         [
                             "/redfish/v1/Systems/{}".format(server_name),

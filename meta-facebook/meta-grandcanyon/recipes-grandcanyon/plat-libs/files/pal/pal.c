@@ -1012,6 +1012,38 @@ pal_is_slot_server(uint8_t fru) {
 }
 
 int
+pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver) {
+  int ret = 0;
+  uint8_t bios_post_cmplt = 0;
+  bic_gpio_t gpio = {0};
+
+  // Check BIOS is completed via BIC
+  if (bic_get_gpio(&gpio) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);
+    return -1;
+  }
+  bios_post_cmplt = ((((uint8_t*)&gpio)[BIOS_POST_CMPLT/8]) >> (BIOS_POST_CMPLT % 8)) & 0x1;
+  if (bios_post_cmplt != GPIO_VALUE_LOW) {
+    syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
+    return -1;
+  }
+
+  // Get BIOS firmware version from BIC if key: sysfw_ver_server is not set
+  if (bic_get_sys_fw_ver(ver) < 0) {
+    syslog(LOG_WARNING, "%s() failed to get system firmware version from BIC", __func__);
+    return -1;
+  }
+
+  // Set BIOS firmware version to key: sysfw_ver_server
+  if (pal_set_sysfw_ver(slot, ver) < 0) {
+    syslog(LOG_WARNING, "%s() failed to set key value of system firmware version", __func__);
+    return -1;
+  }
+
+  return ret;
+}
+
+int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i = 0, ret = 0;
   int tmp_len = 0;
@@ -1057,9 +1089,10 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
   snprintf(key, sizeof(key), "sysfw_ver_server");
   ret = pal_get_key_value(key, str);
-  if (ret != 0) {
-    syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
-    return PAL_ENOTSUP;
+
+  // Get BIOS f/w version from BIC if get key value failed or if key value was not set.
+  if ((ret != 0) || (strcmp(str, "0") == 0)) {
+    return pal_get_sysfw_ver_from_bic(slot, ver);
   }
 
   for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {

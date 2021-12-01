@@ -480,6 +480,7 @@ int pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr);
 int pal_clear_event_only_error_ack();
 int pal_check_server_power_change_correct(uint8_t action);
 int pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len);
+int pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -64,6 +64,10 @@ class Redfish:
         app.router.add_get(
             "/redfish/v1/Managers/1/EthernetInterfaces/1", get_ethernet_members
         )
+        app.router.add_post(
+            "/redfish/v1/Managers/1/Actions/Manager.Reset",
+            oobcycle_post_handler,
+        )
         app.router.add_get(
             "/redfish/v1/Chassis/{fru_name}/Sensors",
             redfish_sensors.get_redfish_sensors_handler,
@@ -89,50 +93,35 @@ class Redfish:
             + "/Entries/{EntryID}",
             redfish_log_service.get_log_service_entry,
         )
-        app.router.add_post(
-            "/redfish/v1/Managers/1/Actions/Manager.Reset",
-            oobcycle_post_handler,
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}",
+            self.computer_systems.get_system_descriptor,
         )
-
-    def setup_multisled_routes(self, app: Application):
-        no_of_slots = rest_pal_legacy.pal_get_num_slots()
-        for i in range(1, no_of_slots + 1):  # +1 to iterate uptill last slot
-            server_name = "server{}".format(i)
-            computer_system = self.computer_systems.get_server(server_name)
-            bios_firmware_dumps = self.bios_firmware_dumps.get_server(server_name)
-            app.router.add_get(
-                "/redfish/v1/Systems/{}".format(server_name),
-                computer_system.get_system_descriptor,
-            )
-            app.router.add_get(
-                "/redfish/v1/Systems/{}/Bios".format(server_name),
-                computer_system.get_bios_descriptor,
-            )
-            app.router.add_get(
-                "/redfish/v1/Systems/{}/Bios/FirmwareInventory".format(server_name),
-                computer_system.get_bios_firmware_inventory,
-            )
-            app.router.add_get(
-                "/redfish/v1/Systems/{}/Bios/FirmwareDumps".format(server_name),
-                bios_firmware_dumps.get_collection_descriptor,
-            )
-            app.router.add_post(
-                "/redfish/v1/Systems/{}".format(server_name)
-                + "/Bios/FirmwareDumps/{DumpID}",
-                bios_firmware_dumps.create_dump,
-            )
-            app.router.add_get(
-                "/redfish/v1/Systems/{}".format(server_name)
-                + "/Bios/FirmwareDumps/{DumpID}",
-                bios_firmware_dumps.get_dump_descriptor,
-            )
-            app.router.add_get(
-                "/redfish/v1/Systems/{}".format(server_name)
-                + "/Bios/FirmwareDumps/{DumpID}/Actions/BIOSFirmwareDump.ReadContent",
-                bios_firmware_dumps.read_dump_content,
-            )
-            app.router.add_delete(
-                "/redfish/v1/Systems/{}".format(server_name)
-                + "/Bios/FirmwareDumps/{DumpID}",
-                bios_firmware_dumps.delete_dump,
-            )
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}/Bios",
+            self.computer_systems.get_bios_descriptor,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareInventory",
+            self.computer_systems.get_bios_firmware_inventory,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps",
+            self.bios_firmware_dumps.get_collection_descriptor,
+        )
+        app.router.add_post(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            self.bios_firmware_dumps.create_dump,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            self.bios_firmware_dumps.get_dump_descriptor,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}/Actions/BIOSFirmwareDump.ReadContent",
+            self.bios_firmware_dumps.read_dump_content,
+        )
+        app.router.add_delete(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            self.bios_firmware_dumps.delete_dump,
+        )

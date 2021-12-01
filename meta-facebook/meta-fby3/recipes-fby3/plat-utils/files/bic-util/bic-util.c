@@ -82,7 +82,7 @@ print_usage_help(void) {
   if ( riser_board == CWC_MCHP_BOARD ) {
     printf("Usage: bic-util <slot1-2U-exp|slot1-2U-top|slot1-2U-bot> <--reset|--get_gpio|--set_gpio|--get_dev_id|--set_usb_hub|--get_usb_hub>\n");
   } else {
-    printf("Usage: bic-util <slot1-2U> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n");
+    printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_gpio_config|--set_gpio_config|--get_dev_id>\n", slot_usage);
   }
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
@@ -382,18 +382,22 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
 }
 
 static int
-util_get_gpio_config(uint8_t slot_id) {
+util_get_gpio_config(uint8_t slot_id, uint8_t intf) {
   int ret = 0;
   uint8_t i;
-  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(NONE_INTF);
+  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(intf);
   char gpio_pin_name[32] = "\0";
   bic_gpio_config_t gpio_config = {0}; 
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    fby3_get_gpio_name(slot_id, i, gpio_pin_name, NONE_INTF);
+    fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
     //printf("%d %s: %d\n",i , gpio_pin_name, BIT_VALUE(gpio, i));
-    ret = bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config);
+    if ( intf != NONE_INTF ) {
+      ret = remote_bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config,intf);
+    } else {
+      ret = bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config);
+    }
     if ( ret < 0 ) {
       printf("Failed to get %s config\n\n", gpio_pin_name);
       continue;
@@ -418,9 +422,9 @@ util_get_gpio_config(uint8_t slot_id) {
 }
 
 static int
-util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val) {
+util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val, uint8_t intf) {
   int ret = 0;
-  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(NONE_INTF);
+  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(intf);
   char gpio_pin_name[32] = "\0";
 
   if ( gpio_num > gpio_pin_cnt ) {
@@ -428,9 +432,13 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val) {
     return ret;
   }
 
-  fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, NONE_INTF);
+  fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
   printf("slot %d: setting GPIO [%d]%s config to 0x%02x\n", slot_id, gpio_num, gpio_pin_name, config_val);
-  ret = bic_set_gpio_config(slot_id, gpio_num, config_val);
+  if ( intf != NONE_INTF ) {
+    ret = remote_bic_set_gpio_config(slot_id, gpio_num, config_val,intf);
+  } else {
+    ret = bic_set_gpio_config(slot_id, gpio_num, config_val);
+  }
   if (ret < 0) {
     printf("%s() bic_set_gpio_config returns %d\n", __func__, ret);
   }
@@ -1389,14 +1397,14 @@ main(int argc, char **argv) {
       if ( gpio_num > 0xff || gpio_val > 1 ) goto err_exit;
       return util_set_gpio(slot_id, gpio_num, gpio_val, intf);
     } else if ( strcmp(argv[2], "--get_gpio_config") == 0 ) {
-      return util_get_gpio_config(slot_id);
+      return util_get_gpio_config(slot_id, intf);
     } else if ( strcmp(argv[2], "--set_gpio_config") == 0 ) {
       if ( argc != 5 ) goto err_exit;
 
       gpio_num = atoi(argv[3]);
       gpio_val = (uint8_t)strtol(argv[4], NULL, 0);
       if ( gpio_num > 0xff ) goto err_exit;
-      else return util_set_gpio_config(slot_id, gpio_num, gpio_val);
+      else return util_set_gpio_config(slot_id, gpio_num, gpio_val, intf);
     } else if ( strcmp(argv[2], "--check_status") == 0 ) {
       return util_check_status(slot_id);
     } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {

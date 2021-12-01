@@ -1696,7 +1696,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
 
 int
 remote_bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data, uint8_t intf) {
-  uint8_t tbuf[13] = {0x00};
+  uint8_t tbuf[16] = {0x00};
   uint8_t rbuf[6] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = sizeof(tbuf);
@@ -1742,7 +1742,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
 
 int
 remote_bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data, uint8_t intf) {
-  uint8_t tbuf[14] = {0x00};
+  uint8_t tbuf[17] = {0x00};
   uint8_t rbuf[6] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = sizeof(tbuf);
@@ -1757,7 +1757,7 @@ remote_bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data, uint8_t 
   index = (gpio / 8) + 3; //3 is the size of IANA ID
   pin = 1 << (gpio % 8);
   tbuf[index] = pin;
-  tbuf[13] = data & 0x1f;
+  tbuf[16] = data & 0x1f;
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
   return ret;

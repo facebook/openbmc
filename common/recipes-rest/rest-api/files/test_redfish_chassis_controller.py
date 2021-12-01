@@ -120,11 +120,7 @@ class TestChassisService(AioHTTPTestCase):
                         )
                     },
                     "Status": {"State": "Enabled", "Health": "OK"},
-                    "Links": {
-                        "ManagedBy": [
-                            {"@odata.id": "/redfish/v1/Chassis/{}".format(server_name)}
-                        ]
-                    },
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
                 }
                 req = await self.client.request(
                     "GET", "/redfish/v1/Chassis/{}".format(server_name)

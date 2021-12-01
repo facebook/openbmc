@@ -53,11 +53,7 @@ class RedfishChassis:
             "Sensors": {
                 "@odata.id": "/redfish/v1/Chassis/{}/Sensors".format(server_name)
             },
-            "Links": {
-                "ManagedBy": [
-                    {"@odata.id": "/redfish/v1/Chassis/{}".format(server_name)}
-                ]
-            },
+            "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
         }
         await validate_keys(body)
         return web.json_response(body, dumps=dumps_bytestr)

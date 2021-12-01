@@ -30,7 +30,7 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/AccountService/Accounts",
             "/redfish/v1/AccountService/Roles",
             "/redfish/v1/Chassis",
-            "/redfish/v1/Chassis/1",
+            "/redfish/v1/Chassis/{fru_name}",
             "/redfish/v1/Chassis/{fru_name}/Sensors",
             "/redfish/v1/Chassis/{fru_name}/Sensors/{sensor_id}",
             "/redfish/v1/Managers",
@@ -69,7 +69,6 @@ class TestCommonRoutes(unittest.TestCase):
                     redfish.setup_multisled_routes(app)
                 for i in range(1, pal_response + 1):  # +1 to iterate uptill last slot
                     server_name = "server{}".format(i)
-                    routes_expected.append("/redfish/v1/Chassis/{}".format(server_name))
                     routes_expected.extend(
                         [
                             "/redfish/v1/Systems/{}".format(server_name),

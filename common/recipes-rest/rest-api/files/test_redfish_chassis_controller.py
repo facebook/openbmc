@@ -18,7 +18,6 @@ from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
 
 
-
 class TestChassisService(AioHTTPTestCase):
     def setUp(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
@@ -130,11 +129,20 @@ class TestChassisService(AioHTTPTestCase):
                 self.assertEqual(resp, expected_resp)
                 self.assertEqual(req.status, 200)
 
+    @unittest_run_loop
+    async def test_multislot_routes_return_notfound_on_singleslot(self):
+        with unittest.mock.patch(
+            "rest_pal_legacy.pal_get_num_slots",
+            create=True,
+            return_value=1,
+        ):
+            req = await self.client.request("GET", "/redfish/v1/Chassis/server4")
+            self.assertEqual(req.status, 404)
+
     async def get_application(self):
         webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])
         from redfish_common_routes import Redfish
 
         redfish = Redfish()
         redfish.setup_redfish_common_routes(webapp)
-        redfish.setup_multisled_routes(webapp)
         return webapp

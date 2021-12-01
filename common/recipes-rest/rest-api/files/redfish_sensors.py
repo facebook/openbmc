@@ -4,6 +4,7 @@ from functools import lru_cache
 import aggregate_sensor
 import pal
 import redfish_chassis_helper
+import rest_pal_legacy
 from aiohttp import web
 from common_utils import dumps_bytestr
 from redfish_base import validate_keys
@@ -17,23 +18,30 @@ except Exception:
 # controller for /redfish/v1/Chassis/{fru}/Sensors
 async def get_redfish_sensors_handler(request):
     expand_members = "$expand" in request.query_string
-    fru_name = request.match_info["fru_name"]
-    fru_names = _get_fru_names(fru_name)
+    server_name = request.match_info["fru_name"]
+    try:
+        fru_names = _get_fru_names(server_name)
+    except ValueError:
+        return web.json_response(
+            status=404,
+        )
     if len(fru_names) == 0:
         return web.json_response(
-            {"Error": "Invalid FRU {fru_name}".format(fru_name=fru_name)},
+            {"Error": "Invalid FRU {server_name}".format(server_name=server_name)},
             dumps=dumps_bytestr,
             status=400,
         )
     members_json = await _get_sensor_members(
-        parent_resource=fru_name, fru_names=fru_names, expand=expand_members
+        parent_resource=server_name, fru_names=fru_names, expand=expand_members
     )
     body = {
         "@odata.type": "#SensorCollection.SensorCollection",
         "Name": "Chassis sensors",
         "Members@odata.count": len(members_json),
         "Members": members_json,
-        "@odata.id": "/redfish/v1/Chassis/{fru_name}/Sensors".format(fru_name=fru_name),
+        "@odata.id": "/redfish/v1/Chassis/{server_name}/Sensors".format(
+            server_name=server_name
+        ),
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)
@@ -41,7 +49,7 @@ async def get_redfish_sensors_handler(request):
 
 # controller for /redfish/v1/Chassis/{fru}/Sensors/{fru_name}_{sensor_id}
 async def get_redfish_sensor_handler(request):
-    fru_name = request.match_info["fru_name"]
+    server_name = request.match_info["fru_name"]
     if redfish_chassis_helper.is_libpal_supported():
         sensor_id_and_fru = request.match_info["sensor_id"]
         target_fru_name = "_".join(sensor_id_and_fru.split("_")[:-1])
@@ -51,12 +59,12 @@ async def get_redfish_sensor_handler(request):
         sensor_id = request.match_info["sensor_id"]
     sensor = await _get_sensor(fru_name=target_fru_name, sensor_id=sensor_id)
     if sensor:
-        body = _render_sensor_body(fru_name, sensor)
+        body = _render_sensor_body(server_name, sensor)
     else:
         return web.json_response(
             {
                 "Error": "sensor not found fru_name={fru_name}, sensor_id={sensor_id}".format(  # noqa: B950
-                    fru_name=fru_name, sensor_id=sensor_id
+                    fru_name=server_name, sensor_id=sensor_id
                 )
             },
             dumps=dumps_bytestr,
@@ -205,16 +213,21 @@ def _get_phy_context(sensor_name: str) -> str:
 
 
 @lru_cache()
-def _get_fru_names(fru_name: str) -> t.List[str]:
-    if fru_name == "1":  # Chassis/1 represents the Chassis on all platforms
+def _get_fru_names(server_name: str) -> t.List[str]:
+    if server_name == "1":  # Chassis/1 represents the Chassis on all platforms
         if redfish_chassis_helper.is_libpal_supported():
             return redfish_chassis_helper.get_single_sled_frus()
         else:
             return ["BMC"]
-    elif "server" in fru_name:
-        fru_names = [
-            fru_name.replace("server", "slot")
-        ]  # we expose slot1-4 as server 1-4 in our routes.
-    else:
-        fru_names = []
+    elif "server" in server_name:
+        if rest_pal_legacy.pal_get_num_slots() > 1:
+            fru_names = [
+                server_name.replace("server", "slot")
+            ]  # we expose slot1-4 as server 1-4 in our routes.
+        else:
+            raise ValueError(
+                "{server_name} server_name is invalid for slingle slot servers".format(
+                    server_name=server_name
+                )
+            )
     return fru_names

@@ -1,10 +1,10 @@
+import redfish_chassis
 import redfish_sensors
 import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
 from redfish_account_service import get_account_service, get_accounts, get_roles
 from redfish_bios_firmware_dumps import RedfishBIOSFirmwareDumps
-from redfish_chassis import RedfishChassis
 from redfish_computer_system import RedfishComputerSystems
 from redfish_log_service import RedfishLogService
 from redfish_managers import (
@@ -30,7 +30,6 @@ class Redfish:
         return web.json_response()
 
     def setup_redfish_common_routes(self, app: Application):
-        redfish_chassis = RedfishChassis()
         redfish_log_service = self.log_service.get_log_service_controller()
 
         app.router.add_get("/redfish", get_redfish)
@@ -44,7 +43,9 @@ class Redfish:
         app.router.add_get("/redfish/v1/SessionService", get_session_service)
         app.router.add_get("/redfish/v1/SessionService/Sessions", get_session)
         app.router.add_get("/redfish/v1/Chassis", redfish_chassis.get_chassis)
-        app.router.add_get("/redfish/v1/Chassis/1", redfish_chassis.get_chassis_members)
+        app.router.add_get(
+            "/redfish/v1/Chassis/{fru_name}", redfish_chassis.get_chassis_member
+        )
 
         app.router.add_get(
             "/redfish/v1/Systems", self.computer_systems.get_collection_descriptor
@@ -97,13 +98,8 @@ class Redfish:
         no_of_slots = rest_pal_legacy.pal_get_num_slots()
         for i in range(1, no_of_slots + 1):  # +1 to iterate uptill last slot
             server_name = "server{}".format(i)
-            redfish_chassis = RedfishChassis("slot{}".format(i))
             computer_system = self.computer_systems.get_server(server_name)
             bios_firmware_dumps = self.bios_firmware_dumps.get_server(server_name)
-            app.router.add_get(
-                "/redfish/v1/Chassis/{}".format(server_name),
-                redfish_chassis.get_chassis_members,
-            )
             app.router.add_get(
                 "/redfish/v1/Systems/{}".format(server_name),
                 computer_system.get_system_descriptor,

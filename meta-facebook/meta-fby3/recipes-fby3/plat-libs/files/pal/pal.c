@@ -890,7 +890,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_FRUID_ALL;
+        *caps = FRU_CAPABILITY_SENSOR_ALL;
       } else {
         ret = -1;
       }
@@ -1245,13 +1245,13 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     sprintf(fname, "nicexp");
     break;
   case FRU_CWC:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU_CWC);
+    sprintf(fname, "slot1_dev%d", BOARD_2OU);
     break;
   case FRU_2U_TOP:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU_TOP);
+    sprintf(fname, "2U-top");
     break;
   case FRU_2U_BOT:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU_BOT);
+    sprintf(fname, "2U-bot");
     break;
   default:
     syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
@@ -1273,6 +1273,10 @@ pal_fruid_write(uint8_t fru, char *path)
     return PAL_ENOTSUP;
   } else if (fru == FRU_BB) {
     return bic_write_fruid(FRU_SLOT1, 0, path, BB_BIC_INTF);
+  } else if (fru == FRU_2U_TOP) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, RREXP_BIC_INTF1);
+  } else if (fru == FRU_2U_BOT) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, RREXP_BIC_INTF2);
   }
 
   return bic_write_fruid(fru, 0, path, NONE_INTF);
@@ -1307,12 +1311,8 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
       syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
     }
     if (type_2ou == CWC_MCHP_BOARD) {
-      if (dev_id == BOARD_2OU_CWC) {
+      if (fru == FRU_SLOT1 && dev_id == BOARD_2OU) {
         return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
-      } else if (dev_id == BOARD_2OU_TOP) {
-        return bic_write_fruid(fru, 0, path, RREXP_BIC_INTF1);
-      } else if (dev_id == BOARD_2OU_BOT) {
-        return bic_write_fruid(fru, 0, path, RREXP_BIC_INTF2);
       }
 
       /**
@@ -3152,11 +3152,7 @@ int
 pal_get_num_devs(uint8_t slot, uint8_t *num) {
 
   if (fby3_common_check_slot_id(slot) == 0) {
-    if (pal_is_cwc() == PAL_EOK) {
-      *num = MAX_NUM_DEVS_CWC - 1;
-    } else {
-      *num = MAX_NUM_DEVS - 1;
-    }
+    *num = MAX_NUM_DEVS - 1;
   } else if (pal_is_cwc() == PAL_EOK && (slot == FRU_2U_TOP || slot == FRU_2U_BOT)) {
     return fby3_common_exp_get_num_devs(slot, num);
   } else {
@@ -4906,6 +4902,35 @@ int pal_get_fru_slot(uint8_t fru, uint8_t *slot) {
     default:
       *slot = fru;
       break;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_exp_fru_list(uint8_t *list, uint8_t *len) {
+  if (pal_is_cwc() == PAL_EOK) {
+    list[0] = FRU_CWC;
+    list[1] = FRU_2U_TOP;
+    list[2] = FRU_2U_BOT;
+    *len = 3;
+  } else {
+    *len = 0;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_exp_arg_name(uint8_t fru, char *name) {
+  switch (fru) {
+    case FRU_CWC:
+      sprintf(name, "slot1-2U-exp");
+      break;
+    case FRU_2U_TOP:
+      sprintf(name, "slot1-2U-top");
+      break;
+    case FRU_2U_BOT:
+      sprintf(name, "slot1-2U-bot");
+      break;
+    default:
+      return PAL_ENOTSUP;
   }
   return PAL_EOK;
 }

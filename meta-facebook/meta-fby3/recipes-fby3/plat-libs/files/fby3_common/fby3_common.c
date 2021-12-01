@@ -519,6 +519,14 @@ fby3_common_exp_dev_name(uint8_t dev, char *str) {
 
   if (dev == FRU_ALL) {
     strcpy(str, "all");
+  } else if (dev == DEV_ID0_1OU) {
+    strcpy(str, "1U-dev0");
+  } else if (dev == DEV_ID1_1OU) {
+    strcpy(str, "1U-dev1");
+  } else if (dev == DEV_ID2_1OU) {
+    strcpy(str, "1U-dev2");
+  } else if (dev == DEV_ID3_1OU) {
+    strcpy(str, "1U-dev3");
   } else if (dev == DEV_ID0_2OU) {
     strcpy(str, "2U-dev0");
   } else if (dev == DEV_ID1_2OU) {

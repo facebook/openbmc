@@ -250,6 +250,8 @@ bool pal_get_crit_act_status(int fd);
 bool pal_is_fan_manual_mode(uint8_t slot_id);
 int pal_is_exp(void);
 int pal_get_fru_slot(uint8_t fru, uint8_t *slot);
+int pal_get_exp_fru_list(uint8_t *list, uint8_t *len);
+int pal_get_exp_arg_name(uint8_t fru, char *name);
 #ifdef __cplusplus
 } // extern "C"
 #endif

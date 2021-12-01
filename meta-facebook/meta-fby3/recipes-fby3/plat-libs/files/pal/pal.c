@@ -705,9 +705,6 @@ error_exit:
 
 int
 pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
-  char key[64] = {0};
-  char value[64] = {0};
-  struct timespec ts;
   static uint8_t bmc_location = 0;
   static bool is_called = false;
 
@@ -730,13 +727,9 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   }
 
   // set fw_update_ongoing flag
-  sprintf(key, "fru%d_fwupd", fruid);
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
-
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
+  if ( _set_fw_update_ongoing(fruid, tmout) < 0 ) {
+    printf("Failed to set fw update ongoing\n");
+    return PAL_ENOTSUP;
   }
 
   // preprocess function

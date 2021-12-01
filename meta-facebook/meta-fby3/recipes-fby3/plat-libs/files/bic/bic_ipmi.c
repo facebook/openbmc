@@ -337,6 +337,7 @@ bic_is_crit_act_ongoing(uint8_t fruid) {
   return (strncmp(value, "1", 1) == 0)?true:false;
 }
 
+#define FW_UPDATING_STR "fru%d_fwupd"
 bool
 bic_is_fw_update_ongoing(uint8_t fruid) {
   char key[MAX_KEY_LEN] = {0};
@@ -344,7 +345,7 @@ bic_is_fw_update_ongoing(uint8_t fruid) {
   int ret = BIC_STATUS_SUCCESS;
   struct timespec ts;
 
-  sprintf(key, "fru%d_fwupd", fruid);
+  sprintf(key, FW_UPDATING_STR, fruid);
   ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
      return false;
@@ -355,6 +356,25 @@ bic_is_fw_update_ongoing(uint8_t fruid) {
      return true;
 
   return false;
+}
+
+int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  sprintf(key, FW_UPDATING_STR, slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
 }
 
 int

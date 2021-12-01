@@ -60,11 +60,11 @@
 #define MAX_SNR_NAME  32
 #define MAX_EVENT_STR 256
 
-#define HWMON_PWM_PATH "/sys/devices/platform/pwm-fan0/hwmon/hwmon*"
-#define PWM1           "pwm1"
 #define KV_KEY_BIC_HEARTBEAT  "bic_hb_status"
 
 #define NIC_CARD_PERST_CTRL 0x09
+
+#define PWM_ZONE            0
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -609,51 +609,28 @@ pal_get_fru_name(uint8_t fru, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
-  char str[MAX_VALUE_LEN] = {0};
-  char full_dir_name[MAX_PATH_LEN * 2] = {0};
-  char dir_name[MAX_PATH_LEN] = {0};
-  int value = 0;
 
   if (fan_id >= pal_pwm_cnt) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
 
-  value = (int)(pwm) * 255 / 100;
-  snprintf(str, sizeof(str), "%d", value);
-
-  if (get_current_dir(HWMON_PWM_PATH, dir_name) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, HWMON_PWM_PATH);
-    return -1;
-  }
-
-  snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, PWM1);
-
-  return write_device(full_dir_name, str);
+  return sensors_write_pwmfan(PWM_ZONE, (float)pwm);
 }
 
 int
 pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
-  int value = 0;
+  float value = 0;
   int ret = 0;
-  char full_dir_name[MAX_PATH_LEN * 2] = {0};
-  char dir_name[MAX_PATH_LEN] = {0};
 
   if (fan_id >= pal_get_tach_cnt()) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
 
-  if (get_current_dir(HWMON_PWM_PATH, dir_name) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, HWMON_PWM_PATH);
-    return -1;
-  }
-
-  snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, PWM1);
-
-  ret = read_device(full_dir_name, &value);
+  ret = sensors_read_pwmfan(PWM_ZONE, &value);
   if (ret == 0) {
-    *pwm = (uint8_t)ceil((float)value * 100.0 / 255.0);
+    *pwm = (uint8_t)value;
   }
 
   return ret;

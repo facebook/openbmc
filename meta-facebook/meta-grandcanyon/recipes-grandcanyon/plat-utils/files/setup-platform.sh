@@ -20,6 +20,9 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
+# Get current dpb source info
+sh /usr/local/bin/check_2nd_source.sh dpb > /dev/NULL
+
 # Get platform SKU
 sleep 1
 sh /usr/local/bin/check_pal_sku.sh > /dev/NULL

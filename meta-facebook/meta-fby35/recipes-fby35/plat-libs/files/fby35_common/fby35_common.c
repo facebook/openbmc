@@ -153,20 +153,13 @@ int
 fby35_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   int i2cfd = 0;
   int ret = 0;
-  uint8_t bmc_location = 0;
   uint8_t bus = 0;
   uint8_t tbuf[1] = {0x02};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 1;
   uint8_t rlen = 1;
 
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    goto error_exit;
-  }
-
-  //a bus starts from 4 
+  // a bus starts from 4
   ret = fby35_common_get_bus_id(fru) + 4;
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
@@ -187,7 +180,7 @@ fby35_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   }
 
   *val = (rbuf[0] & 0x2) >> 1;
-  
+
 error_exit:
   if ( i2cfd > 0 ) {
     close(i2cfd);
@@ -222,25 +215,20 @@ fby35_common_get_bus_id(uint8_t slot_id) {
 int
 fby35_common_get_bmc_location(uint8_t *id) {
   static bool is_cached = false;
-  static unsigned int cached_id = 0;
+  static uint8_t cached_id = 0;
 
   if ( is_cached == false ) {
-    const char *shadows[] = {
-      "BOARD_ID0",
-      "BOARD_ID1",
-      "BOARD_ID2",
-      "BOARD_ID3",
-    };
+    char value[MAX_VALUE_LEN] = {0};
 
-    if ( gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+    if ( kv_get("board_id", value, NULL, 0) ) {
       return -1;
     }
 
+    cached_id = (uint8_t)atoi(value);
     is_cached = true;
   }
 
-  *id = (uint8_t)cached_id;
-
+  *id = cached_id;
   return 0;
 }
 

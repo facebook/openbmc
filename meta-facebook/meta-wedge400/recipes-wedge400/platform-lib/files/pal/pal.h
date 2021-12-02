@@ -617,6 +617,15 @@ enum
   SLED_SMB = 4,
 };
 
+// LED positon at front-panel
+// for all version except Wedge400 MP Respin
+enum {
+  SLED_1 = 1,
+  SLED_2 = 2,
+  SLED_3 = 3,
+  SLED_4 = 4,
+};
+
 enum
 {
   SCM_LED_BLUE = 0x01,

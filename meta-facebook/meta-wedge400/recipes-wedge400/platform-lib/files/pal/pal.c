@@ -6475,6 +6475,29 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   int dev, ret;
   uint8_t io0_reg = 0x02, io1_reg = 0x03;
   uint8_t clr_val, val_io0, val_io1;
+  int led_id = -1;
+  uint8_t brd_type;
+  uint8_t brd_type_rev;
+  pal_get_board_type(&brd_type);
+  pal_get_board_type_rev(&brd_type_rev);
+
+  // in Wedge400 MP Respin LED position are swaped
+  if(brd_type == BRD_TYPE_WEDGE400 && brd_type_rev == BOARD_WEDGE400_MP_RESPIN){
+    switch (led_name) {
+      case SLED_SYS: led_id = SLED_2; break;
+      case SLED_FAN: led_id = SLED_4; break;
+      case SLED_PSU: led_id = SLED_3; break;
+      case SLED_SMB: led_id = SLED_1; break;
+    }
+  } else {
+    switch (led_name) {
+      case SLED_SYS: led_id = SLED_1; break;
+      case SLED_FAN: led_id = SLED_2; break;
+      case SLED_PSU: led_id = SLED_3; break;
+      case SLED_SMB: led_id = SLED_4; break;
+    }
+  }
+
   dev = open(LED_DEV, O_RDWR);
   if(dev < 0) {
     OBMC_ERROR(-1, "%s: open() failed\n", __func__);
@@ -6503,12 +6526,12 @@ set_sled(int brd_rev, uint8_t color, int led_name)
 
   clr_val = color;
 
-  if(led_name == SLED_FAN || led_name == SLED_SMB) {
+  if(led_id == SLED_2 || led_id == SLED_4) {
     clr_val = clr_val << 3;
     val_io0 = (val_io0 & 0x7) | clr_val;
     val_io1 = (val_io1 & 0x7) | clr_val;
   }
-  else if(led_name == SLED_SYS || led_name == SLED_PSU) {
+  else if(led_id == SLED_1 || led_id == SLED_3) {
     val_io0 = (val_io0 & 0x38) | clr_val;
     val_io1 = (val_io1 & 0x38) | clr_val;
   }
@@ -6516,7 +6539,7 @@ set_sled(int brd_rev, uint8_t color, int led_name)
     OBMC_WARN("%s: unknown led name\n", __func__);
   }
 
-  if(led_name == SLED_SYS || led_name == SLED_FAN) {
+  if(led_id == SLED_1 || led_id == SLED_2) {
     i2c_smbus_write_byte_data(dev, io0_reg, val_io0);
   } else {
     i2c_smbus_write_byte_data(dev, io1_reg, val_io1);

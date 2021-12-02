@@ -191,6 +191,7 @@ const uint8_t bic_sensor_list[] = {
 
   //BIC - power sensors
   BIC_SENSOR_HSC_INPUT_PWR,
+
   //BIC_SENSOR_HSC_INPUT_AVGPWR,
   BIC_SENSOR_VCCIN_VR_POUT,
   BIC_SENSOR_FIVRA_VR_POUT,
@@ -1978,12 +1979,13 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
   uint8_t power_status = 0;
-  ipmi_sensor_reading_t sensor = {0};
+  snr_reading_ret sensor = {0};
   sdr_full_t *sdr = NULL;
   char path[128];
   sprintf(path, SLOT_SENSOR_LOCK, fru);
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
+  uint8_t reading_msb = 0;
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   ret = bic_get_server_power_status(fru, &power_status);
@@ -2056,10 +2058,11 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   uint16_t b = 0;
   int8_t b_exp, r_exp;
 
+  reading_msb = (sensor.read_type == ACCURATE_CMD) ? 7 : 15;
   if ((sdr->sensor_units1 & 0xC0) == 0x00) {  // unsigned
     x = sensor.value;
   } else if ((sdr->sensor_units1 & 0xC0) == 0x40) {  // 1's complements
-    x = (sensor.value & 0x80) ? (0-(~sensor.value)) : sensor.value;
+    x = (sensor.value & (1 << reading_msb)) ? (0-(~sensor.value)) : sensor.value;
   } else if ((sdr->sensor_units1 & 0xC0) == 0x80) {  // 2's complements
     x = (int8_t)sensor.value;
   } else { // Does not return reading
@@ -2089,7 +2092,9 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
 
   //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x s_units1=%x", __func__, sensor_num, x, m, b, b_exp, r_exp, sdr->sensor_units1);
   *value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
-
+  if (sensor.read_type == ACCURATE_CMD) {
+    *value /= 255;
+  }
   //correct the value
   switch (sensor_num) {
     case BIC_SENSOR_FIO_TEMP:

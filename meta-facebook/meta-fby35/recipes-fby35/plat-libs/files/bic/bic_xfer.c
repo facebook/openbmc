@@ -247,6 +247,9 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   // Handle IPMB response
   if (res->cc) {
     syslog(LOG_ERR, "bic_ipmb_wrapper: slot%d netfn: 0x%02X cmd: 0x%02X, Completion Code: 0x%02X ", slot_id, netfn, cmd, res->cc);
+    if (res->cc == CC_INVALID_CMD) {
+      return BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
+    }
     return BIC_STATUS_FAILURE;
   }
 

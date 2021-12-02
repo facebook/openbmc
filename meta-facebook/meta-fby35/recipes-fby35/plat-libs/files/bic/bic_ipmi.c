@@ -78,6 +78,10 @@ enum {
   M2_ROOT_PORT5 = 0x5,
 };
 
+enum {
+  SNR_READ_CACHE = 0,
+  SNR_READ_FORCE = 1,
+};
 
 uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
                                    {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
@@ -86,12 +90,45 @@ uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3
 uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT1, M2_ROOT_PORT0},
                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
 
+static int snr_read_support[4] = {UNKNOWN_CMD, UNKNOWN_CMD, UNKNOWN_CMD, UNKNOWN_CMD};
+
 // S/E - Get Sensor reading
 // Netfn: 0x04, Cmd: 0x2d
+// S/E - Get Accuracy Sensor reading
+// Netfn: 0x38, Cmd: 0x23
 int
-bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf) {
+bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor, uint8_t intf) {
   uint8_t rlen = 0;
-  return bic_ipmb_send(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, &sensor_num, 1, (uint8_t *)sensor, &rlen, intf);
+  int ret = 0;
+  uint8_t tbuf[5] = {0x9c, 0x9c, 0x0, sensor_num, SNR_READ_CACHE};
+  ipmi_sensor_reading_t std_sensor = {0};
+  ipmi_accurate_sensor_reading_t acur_sensor = {0};
+
+  do {
+    if (snr_read_support[slot_id-1] == STANDARD_CMD) {
+      ret = bic_ipmb_send(slot_id, NETFN_SENSOR_REQ, CMD_SENSOR_GET_SENSOR_READING, &sensor_num, 1, (uint8_t *)&std_sensor, &rlen, intf);
+      sensor->value = std_sensor.value;
+      sensor->flags = std_sensor.flags;
+      sensor->status = std_sensor.status;
+      sensor->ext_status = std_sensor.ext_status;
+      sensor->read_type = STANDARD_CMD;
+    } else if (snr_read_support[slot_id-1] == ACCURATE_CMD) {
+      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 5, (uint8_t *)&acur_sensor, &rlen, intf);
+      if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE) {
+        // not support accurate reading, switch to standard command
+        snr_read_support[slot_id-1] = STANDARD_CMD;
+        continue;
+      }      
+      sensor->value = (acur_sensor.val_msb << 8) + acur_sensor.val_lsb;
+      sensor->flags = acur_sensor.flags;
+      sensor->read_type = ACCURATE_CMD;
+    } else { // first read, try accurate command
+      snr_read_support[slot_id-1] = ACCURATE_CMD;
+      continue;
+    }
+  } while (0);
+  
+  return ret;
 }
 
 // APP - Get Device ID

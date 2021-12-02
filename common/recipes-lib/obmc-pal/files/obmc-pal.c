@@ -2817,3 +2817,18 @@ int __attribute__((weak))
 pal_is_exp(void) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_get_exp_fru_list(uint8_t *list, uint8_t *len) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_exp_arg_name(uint8_t fru, char *name) {
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_get_fru_slot(uint8_t fru, uint8_t *slot) {
+  return PAL_ENOTSUP;
+}

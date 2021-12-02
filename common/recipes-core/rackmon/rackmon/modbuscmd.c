@@ -34,7 +34,7 @@
 
 void usage() {
   fprintf(stderr,
-      "modbuscmd [-v] [-t <timeout in ms>] [-x <expected response length>] modbus_command\n"
+      "modbuscmd [-v] [-t <timeout in ms>] [-x <expected response length>] [-r <rack no.>] modbus_command\n"
       "\tmodbus command should be specified in hex\n"
       "\teg:\ta40300000008\n"
       "\tif an expected response length is provided, modbuscmd will stop receving and check crc immediately "
@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
     size_t cmd_len = 0;
     int expected = 0;
     uint32_t timeout = 0;
+    int rack = 0;
     verbose = 0;
     rackmond_command *cmd = NULL;
     char *response = NULL;
@@ -110,23 +111,30 @@ int main(int argc, char **argv) {
 #endif
 
     int opt;
-    while((opt = getopt(argc, argv, "w:x:t:g:vp")) != -1) {
+    while((opt = getopt(argc, argv, "w:x:t:g:r:vp")) != -1) {
       switch (opt) {
         case 'p':
           measure_profile_overhead = 1;
           break;
-      case 'x':
-        expected = atoi(optarg);
-        break;
-      case 't':
-        timeout = atol(optarg);
-        break;
-      case 'v':
-        verbose = 1;
-        break;
-      default:
-        usage();
-        break;
+        case 'x':
+          expected = atoi(optarg);
+          break;
+        case 't':
+          timeout = atol(optarg);
+          break;
+        case 'r':
+          rack = atoi(optarg);
+          if (rack < 0 || rack > 2) {
+            fprintf(stderr, " Rack no. invalid, should be 0-2\n");
+            exit(1);
+          }
+          break;
+        case 'v':
+          verbose = 1;
+          break;
+        default:
+          usage();
+          break;
       }
     }
     if (measure_profile_overhead)
@@ -148,6 +156,7 @@ int main(int argc, char **argv) {
     
     cmd = malloc(sizeof(rackmond_command) + cmd_len);
     cmd->type = COMMAND_TYPE_RAW_MODBUS;
+    cmd->rack = rack;
     cmd->raw_modbus.custom_timeout = timeout;
     memcpy(cmd->raw_modbus.data, modbus_cmd, cmd_len);
     decode_hex_in_place(cmd->raw_modbus.data, &cmd_len);

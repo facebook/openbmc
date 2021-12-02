@@ -1,124 +1,128 @@
 swagger: "2.0"
-info:
-  description: Swagger doc for /api/bmc
-  title: Swagger doc for /api/bmc
+info: 
+  description: Swagger doc for /api/bmc  
+  title: Swagger doc for /api/bmc  
   version: 1.0.0
-paths:
-  /api/bmc:
-    get:
+paths: 
+  /api/bmc: 
+    get: 
       produces: [application/json]
-      responses:
-        200:
+      responses: 
+        200: 
           description: ok
-          schema:
+          schema: 
             type: object
             additionalProperties: false
-            properties:
-              Information:
+            properties: 
+              Information: 
                 type: object
                 additionalProperties: false
-                properties:
-                  Reset Reason:
+                properties: 
+                  load-15: 
                     type: string
-                  TPM TCG version:
+                  Uptime: 
                     type: string
-                  At-Scale-Debug Running:
+                  At-Scale-Debug Running: 
                     type: boolean
-                  SPI0 Vendor:
+                  Memory Usage: 
                     type: string
-                  OpenBMC Version:
+                  SPI1 Vendor: 
                     type: string
-                  CPU Usage:
+                  TPM TCG version: 
                     type: string
-                  Memory Usage:
+                  mmc-info: 
+                    type: object
+                    format: nullable
+                  MAC Addr: 
                     type: string
-                  memory:
+                  open-fds: 
+                    type: string
+                  u-boot version: 
+                    type: string
+                  kernel version: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  uptime: 
+                    type: string
+                  Description: 
+                    type: string
+                  memory: 
                     type: object
                     additionalProperties: false
-                    properties:
-                      Shmem:
+                    properties: 
+                      MemFree: 
                         type: integer
                         format: int32
-                      Cached:
+                      MemAvailable: 
                         type: integer
                         format: int32
-                      MemAvailable:
+                      MemTotal: 
                         type: integer
                         format: int32
-                      MemFree:
+                      Buffers: 
                         type: integer
                         format: int32
-                      MemTotal:
+                      Cached: 
                         type: integer
                         format: int32
-                      Buffers:
+                      Shmem: 
                         type: integer
                         format: int32
-                  kernel version:
-                    type: string
-                  load-5:
-                    type: string
-                  uptime:
-                    type: string
-                  u-boot version:
-                    type: string
-                  Description:
-                    type: string
-                  Uptime:
-                    type: string
-                  load-1:
-                    type: string
-                  TPM FW version:
-                    type: string
-                  open-fds:
-                    type: string
-                  MAC Addr:
-                    type: string
-                  SPI1 Vendor:
-                    type: string
-                  load-15:
-                    type: string
-                  MTD Parts:
+                  MTD Parts: 
                     type: array
-                    items:
+                    items: 
                       type: string
-                  Secondary Boot Triggered:
+                  load-1: 
+                    type: string
+                  Secondary Boot Triggered: 
                     type: boolean
-                  vboot:
+                  load-5: 
+                    type: string
+                  Reset Reason: 
+                    type: string
+                  OpenBMC Version: 
+                    type: string
+                  vboot: 
                     type: object
                     additionalProperties: false
-                    properties:
-                      recovery_retried:
+                    properties: 
+                      hardware_enforce: 
                         type: string
-                      cert_fallback_time:
+                      uboot_time: 
                         type: string
-                      hardware_enforce:
+                      software_enforce: 
                         type: string
-                      status:
+                      tpm_status: 
                         type: string
-                      uboot_time:
+                      uboot_fallback_time: 
                         type: string
-                      status_crc:
+                      cert_fallback_time: 
                         type: string
-                      uboot_fallback_time:
+                      recovery_retried: 
                         type: string
-                      force_recovery:
+                      status_text: 
                         type: string
-                      cert_time:
+                      status_crc: 
                         type: string
-                      status_text:
+                      recovery_boot: 
                         type: string
-                      tpm_status:
+                      force_recovery: 
                         type: string
-                      software_enforce:
+                      cert_time: 
                         type: string
-                      recovery_boot:
+                      status: 
                         type: string
-              Resources:
+                  CPU Usage: 
+                    type: string
+              Resources: 
                 type: array
-                items:
+                items: 
                   type: string
-              Actions:
+              Actions: 
                 type: array
-                items:
+                items: 
                   type: string
+            

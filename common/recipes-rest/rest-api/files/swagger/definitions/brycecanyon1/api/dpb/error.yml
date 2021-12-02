@@ -18,11 +18,9 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Error Code f7: 
+                  Error Code e0: 
                     type: string
                   Error Counter: 
-                    type: string
-                  Error Code e0: 
                     type: string
               Resources: 
                 type: array

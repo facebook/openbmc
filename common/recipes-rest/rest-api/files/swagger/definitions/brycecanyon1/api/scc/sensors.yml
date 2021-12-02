@@ -18,6 +18,12 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
+                  SCC_HSC_POWER: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SCC_HSC_CURR: 
                     type: object
                     additionalProperties: false
@@ -30,7 +36,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SCC_HSC_VOLT: 
+                  P1V5_C_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P3V3_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -42,25 +54,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  IOC_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V5_C_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   P0V975_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P0V9_SENSE: 
+                  SCC_HSC_VOLT: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -78,13 +78,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  P3V3_SENSE: 
+                  IOC_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SCC_HSC_POWER: 
+                  P0V9_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 

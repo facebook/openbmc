@@ -18,39 +18,35 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Chassis Part Number: 
-                    type: string
-                  Product Version: 
-                    type: string
-                  Product FRU ID: 
-                    type: string
-                  Board Part Number: 
-                    type: string
-                  Product Part Number: 
-                    type: string
-                  Product Manufacturer: 
-                    type: string
-                  Chassis Type: 
-                    type: string
-                  Product Custom Data 1: 
-                    type: string
-                  Board Mfg: 
-                    type: string
-                  Board Product: 
-                    type: string
-                  Board Serial: 
+                  Product Serial: 
                     type: string
                   Board Mfg Date: 
                     type: string
-                  Product Serial: 
+                  Board Part Number: 
                     type: string
-                  Chassis Serial Number: 
+                  Board Serial: 
+                    type: string
+                  Product Custom Data 1: 
+                    type: string
+                  Chassis Type: 
+                    type: string
+                  Product Manufacturer: 
+                    type: string
+                  Chassis Part Number: 
                     type: string
                   Product Asset Tag: 
                     type: string
+                  Product Part Number: 
+                    type: string
                   Product Name: 
                     type: string
-                  Board FRU ID: 
+                  Chassis Serial Number: 
+                    type: string
+                  Product Version: 
+                    type: string
+                  Board Product: 
+                    type: string
+                  Board Mfg: 
                     type: string
               Resources: 
                 type: array

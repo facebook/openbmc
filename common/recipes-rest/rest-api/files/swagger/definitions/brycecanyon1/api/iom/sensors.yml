@@ -24,13 +24,49 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  ADC_P3V3: 
+                  IOM_HSC_VOLT: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  ADC_P3V3_M2: 
+                  ADC_P3V3_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  M2_Ambient_Temp_2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ML_SENSOR_HSC_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_HSC_POWER: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P1V8_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_NIC_Ambient_Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  M2_SMART_Temp_2: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -48,79 +84,7 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  ADC_P2V5_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_HSC_CURR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_HSC_POWER: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ML_SENSOR_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P1V2_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  M2_Ambient_Temp_2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  M2_SMART_Temp_1: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  M2_SMART_Temp_2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_NIC_Ambient_Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   M2_Ambient_Temp_1: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P3V3_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P5V_STBY: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -132,7 +96,43 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  ADC_P1V8_STBY: 
+                  ADC_P3V3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P3V3_M2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P1V2_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_HSC_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P5V_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P2V5_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  M2_SMART_Temp_1: 
                     type: object
                     additionalProperties: false
                     properties: 

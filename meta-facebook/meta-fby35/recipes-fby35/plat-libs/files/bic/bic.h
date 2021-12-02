@@ -53,7 +53,7 @@ extern "C" {
 #define VR_PAGE62 0x62
 
 #define BIT_VALUE(list, index) \
-           ((((uint8_t*)&list)[index/8]) >> (7 - (index % 8))) & 0x1\
+           ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
 
 #define NIC_CPLD_BUS 9
 #define BB_CPLD_BUS 12

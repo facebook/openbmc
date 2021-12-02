@@ -199,7 +199,7 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, tlen, rbuf, &rlen);
 
-  *power_status = (rbuf[3] & 0x20) >> 5;
+  *power_status = (rbuf[4] & 0x80) >> 7;
 
   return ret;
 }

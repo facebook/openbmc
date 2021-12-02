@@ -67,13 +67,13 @@ pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER};
 #define SET_BIT(list, index, bit) \
            if ( bit == 0 ) {      \
-             (((uint8_t*)&list)[index/8]) &= ~(0x1 << (7-(index % 8))); \
+             (((uint8_t*)&list)[index/8]) &= ~(0x1 << (index % 8)); \
            } else {                                                     \
-             (((uint8_t*)&list)[index/8]) |= 0x1 << (7-(index % 8));    \
+             (((uint8_t*)&list)[index/8]) |= 0x1 << (index % 8);    \
            }
 
 #define GET_BIT(list, index) \
-           (((((uint8_t*)&list)[index/8]) >> (7-(index % 8))) & 0x1)
+           (((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1)
 
 bic_gpio_t gpio_ass_val = {
   {0, 0, 0}, // gpio[0], gpio[1], gpio[2]

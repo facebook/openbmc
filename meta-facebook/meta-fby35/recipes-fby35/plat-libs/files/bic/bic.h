@@ -34,7 +34,8 @@ extern "C" {
 #define PRESENT_2OU 2
 #define RETRY_3_TIME 3
 #define RETRY_TIME 10
-#define IPMB_RETRY_DELAY_TIME 500
+#define IPMB_RETRY_TIME 3
+#define IPMB_RETRY_DELAY 100
 
 #define MAX_CHECK_DEVICE_TIME 8
 #define GPIO_RST_USB_HUB 0x10

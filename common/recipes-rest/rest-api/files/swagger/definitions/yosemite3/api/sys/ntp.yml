@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/server1  
-  title: Swagger doc for /api/server1  
+  description: Swagger doc for /api/sys/ntp  
+  title: Swagger doc for /api/sys/ntp  
   version: 1.0.0
 paths: 
-  /api/server1: 
+  /api/sys/ntp: 
     get: 
       produces: [application/json]
       responses: 
@@ -18,11 +18,24 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Power status: 
-                    type: string
-                  BIC_ok: 
+                  stratum: 
                     type: integer
                     format: int32
+                  when: 
+                    type: integer
+                    format: int32
+                  poll: 
+                    type: integer
+                    format: int32
+                  reach: 
+                    type: integer
+                    format: int32
+                  delay: 
+                    type: number
+                  offset: 
+                    type: number
+                  jitter: 
+                    type: number
               Actions: 
                 type: array
                 items: 

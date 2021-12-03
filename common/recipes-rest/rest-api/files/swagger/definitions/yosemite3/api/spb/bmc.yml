@@ -70,6 +70,8 @@ paths:
                     type: string
                   At-Scale-Debug Running: 
                     type: boolean
+                  Secondary Boot Triggered: 
+                    type: boolean
                   vboot: 
                     type: object
                     additionalProperties: false
@@ -108,6 +110,13 @@ paths:
                     type: string
                   open-fds: 
                     type: string
+                  MTD Parts: 
+                    type: array
+                    items: 
+                      type: string
+                  mmc-info: 
+                    type: object
+                    format: nullable
               Actions: 
                 type: array
                 items: 

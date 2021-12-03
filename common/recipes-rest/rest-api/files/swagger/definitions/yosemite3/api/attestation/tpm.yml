@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/server4/bios/boot-order/boot_mode  
-  title: Swagger doc for /api/server4/bios/boot-order/boot_mode  
+  description: Swagger doc for /api/attestation/tpm  
+  title: Swagger doc for /api/attestation/tpm  
   version: 1.0.0
 paths: 
-  /api/server4/bios/boot-order/boot_mode: 
+  /api/attestation/tpm: 
     get: 
       produces: [application/json]
       responses: 
@@ -18,11 +18,7 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Boot Mode: 
-                    type: string
-                  Note #1: Actions Format:: 
-                    type: string
-                  Note #2: Boot Mode No.: 
+                  reason: 
                     type: string
               Actions: 
                 type: array

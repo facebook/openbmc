@@ -194,6 +194,16 @@ void Rackmon::get_monitor_status(RackmonStatus& ret) {
       [](auto& kv) { return kv.second->get_status(); });
 }
 
+void Rackmon::get_monitor_data_formatted(
+    std::vector<ModbusDeviceFormattedData>& ret) {
+  ret.clear();
+  std::shared_lock lock(devices_mutex);
+  std::transform(
+      devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
+        return kv.second->get_formatted_data();
+      });
+}
+
 void to_json(json& j, const RackmonStatus& m) {
   j["running_status"] = m.started;
   j["last_scan"] = m.last_scan;

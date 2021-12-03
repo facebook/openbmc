@@ -88,8 +88,10 @@ void RackmonUNIXSocketService::handle_json_command(
     rackmond.stop();
   } else if (cmd == "resume") {
     rackmond.start();
-  } else if (cmd == "info") {
-    // TODO
+  } else if (cmd == "formatted_data") {
+    std::vector<ModbusDeviceFormattedData> ret;
+    rackmond.get_monitor_data_formatted(ret);
+    resp["monitor_data"] = ret;
   } else {
     throw std::logic_error("UNKNOWN_CMD: " + cmd);
   }

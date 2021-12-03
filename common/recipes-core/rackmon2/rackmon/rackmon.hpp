@@ -89,8 +89,6 @@ class Rackmon {
   // Get status of devices
   void get_monitor_status(RackmonStatus& ret);
 
-  // TODO, this actually uses the formatting options in the regmap.
-  std::string getMonitorDataParsed() {
-    return "";
-  }
+  // Get formatted monitor data
+  void get_monitor_data_formatted(std::vector<ModbusDeviceFormattedData>& ret);
 };

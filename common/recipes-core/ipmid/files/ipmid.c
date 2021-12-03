@@ -3482,7 +3482,7 @@ oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
     return;
   }
 
-  snprintf(string_log, string_log_len+1, "%s", &req->data[5]);
+  memcpy(string_log, &req->data[5], string_log_len+1);
 
   // To avoid repeat display when Expander executes reset test
   // will filter fan fru checksum SEL

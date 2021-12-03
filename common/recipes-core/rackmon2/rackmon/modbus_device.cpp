@@ -5,9 +5,7 @@
 using nlohmann::json;
 
 ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
-    : interface(iface),
-      addr(a),
-      register_map(reg) {
+    : interface(iface), addr(a), register_map(reg) {
   info.addr = a;
   info.baudrate = reg.default_baudrate;
   for (auto& it : reg.register_descriptors) {
@@ -58,21 +56,15 @@ void ModbusDevice::monitor() {
   std::unique_lock lk(register_list_mutex);
   for (auto& h : info.register_list) {
     uint16_t reg = h.reg_addr;
-    auto& v = h.history[h.idx];
-    if (register_map.at(reg).changes_only) {
-      std::vector<uint16_t> value(v.value.size());
-      ReadHoldingRegisters(reg, value);
-      int prev_idx = h.idx == 0 ? h.history.size() - 1 : h.idx - 1;
-      if (h.history[prev_idx].timestamp == 0 ||
-          h.history[prev_idx].value != value) {
-        v.value = value;
-        v.timestamp = timestamp;
-        h.idx = (h.idx + 1) % h.history.size();
-      }
-    } else {
-      ReadHoldingRegisters(reg, v.value);
-      v.timestamp = timestamp;
-      h.idx = (h.idx + 1) % h.history.size();
+    auto& v = h.front();
+    ReadHoldingRegisters(reg, v.value);
+    v.timestamp = timestamp;
+    // If we dont care about changes or if we do
+    // and we notice that the value is different
+    // from the previous, increment store to
+    // point to the next.
+    if (!v.desc.changes_only || v != h.back()) {
+      ++h;
     }
   }
 }

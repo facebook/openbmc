@@ -65,7 +65,17 @@ struct RegisterValue {
   const RegisterDescriptor& desc;
   uint32_t timestamp = 0;
   std::vector<uint16_t> value;
-  explicit RegisterValue(const RegisterDescriptor& d) : desc(d), value(d.length) {}
+  explicit RegisterValue(const RegisterDescriptor& d)
+      : desc(d), value(d.length) {}
+  bool operator==(const RegisterValue& other) const {
+    return timestamp != 0 && other.timestamp != 0 && value == other.value;
+  }
+  bool operator!=(const RegisterValue& other) const {
+    return timestamp == 0 || other.timestamp == 0 || value != other.value;
+  }
+  operator bool() const {
+    return timestamp != 0;
+  }
 };
 
 void to_json(nlohmann::json& j, const RegisterValue& m);
@@ -79,6 +89,15 @@ struct RegisterValueStore {
  public:
   explicit RegisterValueStore(const RegisterDescriptor& d)
       : desc(d), reg_addr(d.begin), history(d.keep, RegisterValue(d)) {}
+  RegisterValue& back() {
+    return idx == 0 ? history.back() : history[idx - 1];
+  }
+  RegisterValue& front() {
+    return history[idx];
+  }
+  void operator++() {
+    idx = (idx + 1) % history.size();
+  }
 };
 void to_json(nlohmann::json& j, const RegisterValueStore& m);
 

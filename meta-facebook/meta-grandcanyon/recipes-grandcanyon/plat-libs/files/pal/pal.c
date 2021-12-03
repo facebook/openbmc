@@ -4290,11 +4290,6 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
     fanfru_check_sel = (uint8_t *) malloc(check_len);
     for (j = 0; j < check_len; j++) {
       fanfru_check_sel[j] = temp_str[check_index + j];
-      if (fanfru_check_sel[j] == 0) {
-        syslog(LOG_WARNING, "%s: Failed to handle fan fru certified SEL due to SEL isn't complete.", __func__);
-        free(fanfru_check_sel);
-        return -1;
-      }
     }
     check_index = check_index + check_len;
 

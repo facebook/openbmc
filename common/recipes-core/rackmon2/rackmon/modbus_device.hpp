@@ -16,27 +16,8 @@ struct ModbusDeviceStatus {
 };
 void to_json(nlohmann::json& j, const ModbusDeviceStatus& m);
 
-struct RegisterValue {
-  uint32_t timestamp = 0;
-  std::vector<uint16_t> value;
-  explicit RegisterValue(uint16_t length) : value(length) {}
-};
-
-void to_json(nlohmann::json& j, const RegisterValue& m);
-
-struct RegisterValueHistory {
-  uint16_t reg_addr;
-  std::vector<RegisterValue> history;
-  int32_t idx = 0;
-
- public:
-  RegisterValueHistory(uint16_t reg, uint16_t keep, uint16_t length)
-      : reg_addr(reg), history(keep, RegisterValue(length)) {}
-};
-void to_json(nlohmann::json& j, const RegisterValueHistory& m);
-
 struct ModbusDeviceMonitorData : public ModbusDeviceStatus {
-  std::vector<RegisterValueHistory> history{};
+  std::vector<RegisterValueStore> register_list{};
 };
 void to_json(nlohmann::json& j, const ModbusDeviceMonitorData& m);
 
@@ -45,7 +26,7 @@ class ModbusDevice {
   Modbus& interface;
   uint8_t addr;
   const RegisterMap& register_map;
-  std::mutex history_mutex{};
+  std::mutex register_list_mutex{};
   ModbusDeviceMonitorData info{};
 
  public:
@@ -74,12 +55,12 @@ class ModbusDevice {
   // Simple func, returns a copy of the monitor
   // data.
   ModbusDeviceMonitorData get_monitor_data() {
-    std::unique_lock lk(history_mutex);
+    std::unique_lock lk(register_list_mutex);
     // Makes a deep copy.
     return info;
   }
   ModbusDeviceStatus get_status() {
-    std::unique_lock lk(history_mutex);
+    std::unique_lock lk(register_list_mutex);
     return info;
   }
 };

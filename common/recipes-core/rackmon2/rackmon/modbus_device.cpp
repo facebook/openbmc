@@ -11,7 +11,7 @@ ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
   info.addr = a;
   info.baudrate = reg.default_baudrate;
   for (auto& it : reg.register_descriptors) {
-    info.history.emplace_back(it.first, it.second.keep, it.second.length);
+    info.register_list.emplace_back(it.second);
   }
 }
 
@@ -55,8 +55,8 @@ void ModbusDevice::ReadHoldingRegisters(
 
 void ModbusDevice::monitor() {
   uint32_t timestamp = std::time(0);
-  std::unique_lock lk(history_mutex);
-  for (auto& h : info.history) {
+  std::unique_lock lk(register_list_mutex);
+  for (auto& h : info.register_list) {
     uint16_t reg = h.reg_addr;
     auto& v = h.history[h.idx];
     if (register_map.at(reg).changes_only) {
@@ -77,22 +77,6 @@ void ModbusDevice::monitor() {
   }
 }
 
-void to_json(json& j, const RegisterValue& m) {
-  j["time"] = m.timestamp;
-  std::stringstream ss;
-  for (auto& d : m.value) {
-    uint8_t l = d & 0xff, h = (d >> 8) & 0xff;
-    ss << std::setfill('0') << std::setw(2) << std::right << std::hex << int(l);
-    ss << std::setfill('0') << std::setw(2) << std::right << std::hex << int(h);
-  }
-  j["data"] = ss.str();
-}
-
-void to_json(json& j, const RegisterValueHistory& m) {
-  j["begin"] = m.reg_addr;
-  j["readings"] = m.history;
-}
-
 void to_json(json& j, const ModbusDeviceStatus& m) {
   j["addr"] = m.addr;
   j["crc_fails"] = m.crc_failures;
@@ -106,5 +90,5 @@ void to_json(json& j, const ModbusDeviceMonitorData& m) {
   const ModbusDeviceStatus& s = m;
   to_json(j, s);
   j["now"] = std::time(0);
-  j["ranges"] = m.history;
+  j["ranges"] = m.register_list;
 }

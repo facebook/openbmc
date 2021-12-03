@@ -50,7 +50,7 @@ enum RegisterFormatType {
   TABLE,
 };
 
-struct RegisterInterval {
+struct RegisterDescriptor {
   uint16_t begin = 0;
   uint16_t length = 0;
   std::string name{};
@@ -61,14 +61,35 @@ struct RegisterInterval {
   std::vector<std::tuple<uint8_t, std::string>> table;
 };
 
+struct RegisterValue {
+  const RegisterDescriptor& desc;
+  uint32_t timestamp = 0;
+  std::vector<uint16_t> value;
+  explicit RegisterValue(const RegisterDescriptor& d) : desc(d), value(d.length) {}
+};
+
+void to_json(nlohmann::json& j, const RegisterValue& m);
+
+struct RegisterValueStore {
+  const RegisterDescriptor& desc;
+  uint16_t reg_addr;
+  std::vector<RegisterValue> history;
+  int32_t idx = 0;
+
+ public:
+  explicit RegisterValueStore(const RegisterDescriptor& d)
+      : desc(d), reg_addr(d.begin), history(d.keep, RegisterValue(d)) {}
+};
+void to_json(nlohmann::json& j, const RegisterValueStore& m);
+
 struct RegisterMap {
   addr_range applicable_addresses;
   std::string name;
   uint8_t probe_register;
   uint32_t default_baudrate;
   uint32_t preferred_baudrate;
-  std::map<uint16_t, RegisterInterval> register_descriptors;
-  const RegisterInterval& at(uint16_t reg) const {
+  std::map<uint16_t, RegisterDescriptor> register_descriptors;
+  const RegisterDescriptor& at(uint16_t reg) const {
     return register_descriptors.at(reg);
   }
 };
@@ -84,8 +105,8 @@ struct RegisterMapDatabase {
 // JSON conversion
 void from_json(const nlohmann::json& j, RegisterMap& m);
 void from_json(const nlohmann::json& j, addr_range& a);
-void from_json(const nlohmann::json& j, RegisterInterval& i);
+void from_json(const nlohmann::json& j, RegisterDescriptor& i);
 
 void from_json(nlohmann::json& j, const RegisterMap& m);
 void from_json(nlohmann::json& j, const addr_range& a);
-void from_json(nlohmann::json& j, const RegisterInterval& i);
+void from_json(nlohmann::json& j, const RegisterDescriptor& i);

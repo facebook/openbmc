@@ -1,5 +1,6 @@
 #include "regmap.hpp"
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 
 #if (__GNUC__ < 8)
@@ -38,7 +39,7 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {RegisterFormatType::TABLE, "table"},
     })
 
-void from_json(const json& j, RegisterInterval& i) {
+void from_json(const json& j, RegisterDescriptor& i) {
   j.at("begin").get_to(i.begin);
   j.at("length").get_to(i.length);
   j.at("name").get_to(i.name);
@@ -51,7 +52,7 @@ void from_json(const json& j, RegisterInterval& i) {
     j.at("table").get_to(i.table);
   }
 }
-void to_json(json& j, const RegisterInterval& i) {
+void to_json(json& j, const RegisterDescriptor& i) {
   j["begin"] = i.begin;
   j["length"] = i.length;
   j["name"] = i.name;
@@ -65,13 +66,29 @@ void to_json(json& j, const RegisterInterval& i) {
   }
 }
 
+void to_json(json& j, const RegisterValue& m) {
+  j["time"] = m.timestamp;
+  std::stringstream ss;
+  for (auto& d : m.value) {
+    uint8_t l = d & 0xff, h = (d >> 8) & 0xff;
+    ss << std::setfill('0') << std::setw(2) << std::right << std::hex << int(l);
+    ss << std::setfill('0') << std::setw(2) << std::right << std::hex << int(h);
+  }
+  j["data"] = ss.str();
+}
+
+void to_json(json& j, const RegisterValueStore& m) {
+  j["begin"] = m.reg_addr;
+  j["readings"] = m.history;
+}
+
 void from_json(const json& j, RegisterMap& m) {
   j.at("address_range").get_to(m.applicable_addresses);
   j.at("probe_register").get_to(m.probe_register);
   j.at("name").get_to(m.name);
   j.at("preferred_baudrate").get_to(m.preferred_baudrate);
   j.at("default_baudrate").get_to(m.default_baudrate);
-  std::vector<RegisterInterval> tmp;
+  std::vector<RegisterDescriptor> tmp;
   j.at("registers").get_to(tmp);
   for (auto& i : tmp) {
     m.register_descriptors[i.begin] = i;
@@ -88,7 +105,7 @@ void to_json(json& j, const RegisterMap& m) {
       m.register_descriptors.begin(),
       m.register_descriptors.end(),
       std::back_inserter(j["registers"]),
-      [](const auto& kv) {return kv.second;});
+      [](const auto& kv) { return kv.second; });
 }
 
 RegisterMap& RegisterMapDatabase::at(uint16_t addr) {

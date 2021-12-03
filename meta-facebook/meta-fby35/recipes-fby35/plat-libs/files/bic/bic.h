@@ -133,8 +133,8 @@ enum {
 
 enum {
   //BIC to BMC
-  USB_INPUT_PORT = 0x2,
-  USB_OUTPUT_PORT = 0x81,
+  USB_INPUT_PORT = 0x3,
+  USB_OUTPUT_PORT = 0x82,
 };
 
 /* Generic GPIO configuration */

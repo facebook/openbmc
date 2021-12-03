@@ -97,11 +97,7 @@ void Rackmon::monitor(void) {
   for (const auto& dev_it : devices) {
     if (!dev_it.second->is_active())
       continue;
-    try {
-      dev_it.second->monitor();
-    } catch (std::exception& e) {
-      std::cout << "Caught: " << e.what() << std::endl;
-    }
+    dev_it.second->monitor();
   }
   last_monitor_time = std::time(0);
 }

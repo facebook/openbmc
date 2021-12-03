@@ -57,7 +57,14 @@ void ModbusDevice::monitor() {
   for (auto& h : info.register_list) {
     uint16_t reg = h.reg_addr;
     auto& v = h.front();
-    ReadHoldingRegisters(reg, v.value);
+    try {
+      ReadHoldingRegisters(reg, v.value);
+    } catch (std::exception& e) {
+      std::cout << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x"
+                << std::hex << reg << ' ' << h.desc.name
+                << " caught: " << e.what() << std::endl;
+      continue;
+    }
     v.timestamp = timestamp;
     // If we dont care about changes or if we do
     // and we notice that the value is different
@@ -74,7 +81,7 @@ ModbusDeviceFormattedData ModbusDevice::get_formatted_data() {
   ModbusDeviceFormattedData data;
   data.ModbusDeviceStatus::operator=(info);
   data.type = register_map.name;
-  for (const auto &reg : info.register_list) {
+  for (const auto& reg : info.register_list) {
     data.register_list.emplace_back(std::move(reg.format()));
   }
   return data;

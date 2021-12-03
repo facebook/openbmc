@@ -14,104 +14,113 @@ paths:
             type: object
             additionalProperties: false
             properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
               Information: 
                 type: object
                 additionalProperties: false
                 properties: 
-                  Description: 
-                    type: string
-                  SPI0 Vendor: 
-                    type: string
-                  Reset Reason: 
-                    type: string
-                  load-1: 
-                    type: string
-                  vboot: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      force_recovery: 
-                        type: string
-                      recovery_retried: 
-                        type: string
-                      tpm_status: 
-                        type: string
-                      software_enforce: 
-                        type: string
-                      status_crc: 
-                        type: string
-                      hardware_enforce: 
-                        type: string
-                      status: 
-                        type: string
-                      recovery_boot: 
-                        type: string
-                      status_text: 
-                        type: string
-                      uboot_fallback_time: 
-                        type: string
-                      uboot_time: 
-                        type: string
-                      cert_time: 
-                        type: string
-                      cert_fallback_time: 
-                        type: string
-                  open-fds: 
-                    type: string
-                  CPU Usage: 
+                  MTD Parts: 
+                    type: array
+                    items: 
+                      type: string
+                  load-5: 
                     type: string
                   Uptime: 
                     type: string
                   u-boot version: 
                     type: string
+                  vboot: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      status: 
+                        type: string
+                      recovery_boot: 
+                        type: string
+                      status_crc: 
+                        type: string
+                      software_enforce: 
+                        type: string
+                      recovery_retried: 
+                        type: string
+                      force_recovery: 
+                        type: string
+                      hardware_enforce: 
+                        type: string
+                      cert_fallback_time: 
+                        type: string
+                      tpm_status: 
+                        type: string
+                      uboot_time: 
+                        type: string
+                      cert_time: 
+                        type: string
+                      status_text: 
+                        type: string
+                      uboot_fallback_time: 
+                        type: string
+                  Description: 
+                    type: string
+                  kernel version: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
                   Memory Usage: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  uptime: 
+                    type: string
+                  Secondary Boot Triggered: 
+                    type: boolean
+                  CPU Usage: 
+                    type: string
+                  At-Scale-Debug Running: 
+                    type: boolean
+                  Reset Reason: 
+                    type: string
+                  mmc-info: 
+                    type: object
+                    format: nullable
+                  load-15: 
+                    type: string
+                  TPM TCG version: 
+                    type: string
+                  load-1: 
+                    type: string
+                  OpenBMC Version: 
+                    type: string
+                  SPI1 Vendor: 
+                    type: string
+                  MAC Addr: 
+                    type: string
+                  open-fds: 
                     type: string
                   memory: 
                     type: object
                     additionalProperties: false
                     properties: 
-                      Shmem: 
+                      MemAvailable: 
                         type: integer
                         format: int32
                       Cached: 
                         type: integer
                         format: int32
-                      MemAvailable: 
-                        type: integer
-                        format: int32
-                      MemFree: 
+                      Buffers: 
                         type: integer
                         format: int32
                       MemTotal: 
                         type: integer
                         format: int32
-                      Buffers: 
+                      Shmem: 
                         type: integer
                         format: int32
-                  load-5: 
-                    type: string
-                  SPI1 Vendor: 
-                    type: string
-                  load-15: 
-                    type: string
-                  TPM FW version: 
-                    type: string
-                  kernel version: 
-                    type: string
-                  MAC Addr: 
-                    type: string
-                  TPM TCG version: 
-                    type: string
-                  OpenBMC Version: 
-                    type: string
-                  uptime: 
-                    type: string
-                  At-Scale-Debug Running: 
-                    type: boolean
-              Resources: 
-                type: array
-                items: 
-                  type: string
+                      MemFree: 
+                        type: integer
+                        format: int32
               Actions: 
                 type: array
                 items: 

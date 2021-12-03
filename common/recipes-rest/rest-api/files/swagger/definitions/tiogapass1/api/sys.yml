@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/fans  
-  title: Swagger doc for /api/fans  
+  description: Swagger doc for /api/sys  
+  title: Swagger doc for /api/sys  
   version: 1.0.0
 paths: 
-  /api/fans: 
+  /api/sys: 
     get: 
       produces: [application/json]
       responses: 
@@ -19,9 +19,8 @@ paths:
                 items: 
                   type: string
               Information: 
-                type: array
-                items: 
-                  type: string
+                type: object
+                format: nullable
               Actions: 
                 type: array
                 items: 

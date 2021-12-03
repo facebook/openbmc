@@ -63,6 +63,9 @@ int main(int argc, char* argv[]) {
   raw_cmd->add_option("cmd", req, "Request command bytes, ex: a40300000008");
   auto status_cmd = app.add_subcommand("status", "Return status of rackmon");
   auto data_cmd = app.add_subcommand("data", "Return detailed monitoring data");
+  bool format_data = false;
+  data_cmd->add_flag(
+      "-f,--format", format_data, "Formats the data as per the register map");
   auto pause_cmd = app.add_subcommand("pause", "Pause monitoring");
   auto resume_cmd = app.add_subcommand("resume", "Resume monitoring");
 
@@ -75,7 +78,7 @@ int main(int argc, char* argv[]) {
   else if (*status_cmd)
     do_cmd("status");
   else if (*data_cmd)
-    do_cmd("data");
+    do_cmd(format_data ? "formatted_data" : "data");
   else if (*pause_cmd)
     do_cmd("pause");
   else if (*resume_cmd)

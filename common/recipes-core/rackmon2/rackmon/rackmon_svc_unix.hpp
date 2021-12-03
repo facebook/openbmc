@@ -17,6 +17,8 @@ class RackmonSock {
   int create_service();
   int create_client();
 
+  void sendchunk(const char *buf, uint16_t buf_len);
+  bool recvchunk(std::vector<char>& resp);
  public:
   RackmonSock(int fd) : sock(fd) {}
   int get_sock() {

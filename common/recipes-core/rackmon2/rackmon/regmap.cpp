@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <numeric>
+#include <sstream>
 
 #if (__GNUC__ < 8)
 #include <experimental/filesystem>
@@ -13,6 +15,11 @@ namespace filesystem = experimental::filesystem;
 #endif
 
 using nlohmann::json;
+
+static void stream_hex(std::ostream& os, size_t num, size_t ndigits) {
+  os << std::hex << std::setfill('0') << std::setw(ndigits) << std::right
+     << num;
+}
 
 bool addr_range::operator<(const addr_range& rhs) const {
   return range.second < rhs.range.first;
@@ -66,15 +73,112 @@ void to_json(json& j, const RegisterDescriptor& i) {
   }
 }
 
+int32_t RegisterValue::to_integer(const std::vector<uint16_t>& value) {
+  // TODO We currently do not need more than 32bit values as per
+  // our current/planned regmaps. If such a value should show up in the
+  // future, then we might need to return std::variant<int32_t,int64_t>.
+  if (value.size() > 2)
+    throw std::out_of_range("Value does not fit as decimal");
+  // Everything in modbus is Big-endian. So when we have a list
+  // of registers forming a larger value; For example,
+  // a 32bit value would be 2 16bit regs.
+  // Then the first register would be the upper nibble of the
+  // resulting 32bit value.
+  return std::accumulate(
+      value.begin(), value.end(), 0, [](int32_t ac, uint16_t v) {
+        return (ac << 16) + v;
+      });
+}
+
+std::string RegisterValue::to_string(const std::vector<uint16_t>& value) {
+  std::stringstream os;
+  // When displaying as a hexstring, the choice is made to make it
+  // readable, so 0x1234 is printed as "1234". Hence the reason we
+  // are printing in the order of MSB:LSB.
+  for (auto& d : value) {
+    uint8_t l = d & 0xff, h = (d >> 8) & 0xff;
+    stream_hex(os, h, 2);
+    stream_hex(os, l, 2);
+  }
+  return os.str();
+}
+
+std::string RegisterValue::format() const {
+  std::stringstream os;
+  switch (desc.format) {
+    case RegisterFormatType::ASCII: {
+      // String is stored normally H L H L, so a we
+      // need reswap the bytes in each nibble.
+      for (auto& reg : value) {
+        char ch = reg >> 8;
+        char cl = reg & 0xff;
+        if (ch == '\0')
+          break;
+        os << ch;
+        if (cl == '\0')
+          break;
+        os << cl;
+      }
+      break;
+    }
+    case RegisterFormatType::DECIMAL: {
+      os << std::dec << to_integer(value);
+      break;
+    }
+    case RegisterFormatType::FIXED_POINT: {
+      int32_t ivalue = to_integer(value);
+      // Y = X / 2^N
+      os << std::setprecision(desc.precision)
+         << (float(ivalue) / float(1 << desc.precision));
+      break;
+    }
+    case RegisterFormatType::TABLE: {
+      // We could technically be clever and pack this as a
+      // JSON object. But considering this is designed for
+      // human consumption only, we can make it pretty
+      // (and backwards compatible with V1's output).
+      uint32_t ivalue = (uint32_t)to_integer(value);
+      for (const auto& [pos, n] : desc.table) {
+        bool bit = (ivalue & (1 << pos)) != 0;
+        if (bit)
+          os << "*[1] ";
+        else
+          os << " [0] ";
+        os << n << '\n';
+      }
+      break;
+    }
+    case RegisterFormatType::HEX:
+    default: {
+      os << to_string(value);
+      break;
+    }
+  }
+  return os.str();
+}
+
 void to_json(json& j, const RegisterValue& m) {
   j["time"] = m.timestamp;
+  j["data"] = m.to_string(m.value);
+}
+
+std::string RegisterValueStore::format() const {
   std::stringstream ss;
-  for (auto& d : m.value) {
-    uint8_t l = d & 0xff, h = (d >> 8) & 0xff;
-    ss << std::setfill('0') << std::setw(2) << std::right << std::hex << int(l);
-    ss << std::setfill('0') << std::setw(2) << std::right << std::hex << int(h);
+
+  // Format we are going for.
+  // "  <0x0000> MFG_MODEL                        :700-014671-0000  "
+  ss << "  <0x";
+  stream_hex(ss, desc.begin, 4);
+  ss << "> " << std::setfill(' ') << std::setw(32) << std::left << desc.name
+     << " :";
+  for (const auto& v : history) {
+    if (v) {
+      ss << v.format();
+      if (desc.format != RegisterFormatType::TABLE)
+        ss << ' ';
+    }
   }
-  j["data"] = ss.str();
+  return ss.str();
 }
 
 void to_json(json& j, const RegisterValueStore& m) {

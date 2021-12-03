@@ -76,6 +76,9 @@ struct RegisterValue {
   operator bool() const {
     return timestamp != 0;
   }
+  static int32_t to_integer(const std::vector<uint16_t>& value);
+  static std::string to_string(const std::vector<uint16_t>& value);
+  std::string format() const;
 };
 
 void to_json(nlohmann::json& j, const RegisterValue& m);
@@ -98,6 +101,7 @@ struct RegisterValueStore {
   void operator++() {
     idx = (idx + 1) % history.size();
   }
+  std::string format() const;
 };
 void to_json(nlohmann::json& j, const RegisterValueStore& m);
 

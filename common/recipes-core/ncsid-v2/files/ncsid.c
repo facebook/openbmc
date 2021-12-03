@@ -796,6 +796,7 @@ init_nic_config(nl_usr_sk_t *sfd)
   NCSI_NL_RSP_T *resp_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
   NCSI_Response_Packet* pNcsiResp;
   int ret = 0;
+  int i = 0, retry_max = 3;
 
   if (!resp_buf) {
     syslog(LOG_ERR, "init_nic_config: failed to allocate resp buffer (%d)",
@@ -804,8 +805,15 @@ init_nic_config(nl_usr_sk_t *sfd)
   }
 
   // get NIC CAPABILITY
-  ret = send_cmd_and_get_resp(sfd, NCSI_GET_CAPABILITIES, 0, NULL, resp_buf);
-  if (ret < 0) {
+  for (i = 0; i < retry_max; ++i) {
+    ret = send_cmd_and_get_resp(sfd, NCSI_GET_CAPABILITIES, 0, NULL, resp_buf);
+    if (ret < 0) {
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (ret < 0) { 
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_CAPABILITIES);
     ret = -1;
@@ -816,7 +824,14 @@ init_nic_config(nl_usr_sk_t *sfd)
 
 
   // get NIC Manufacturer and firmware version
-  ret = send_cmd_and_get_resp(sfd, NCSI_GET_VERSION_ID,  0, NULL, resp_buf);
+  for (i = 0; i < retry_max; ++i) {
+    ret = send_cmd_and_get_resp(sfd, NCSI_GET_VERSION_ID,  0, NULL, resp_buf);
+    if (ret < 0) {
+      msleep(100);
+    } else {
+      break;
+    }
+  }
   if (ret < 0) {
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_VERSION_ID);

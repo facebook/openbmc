@@ -559,7 +559,7 @@ power_util(uint8_t fru, uint8_t opt, bool force) {
       syslog(LOG_CRIT, "SLED_CYCLE starting...");
       pal_update_ts_sled();
       sync();
-      sleep(1);
+      sleep(2);
       ret = pal_sled_cycle();
       break;
 

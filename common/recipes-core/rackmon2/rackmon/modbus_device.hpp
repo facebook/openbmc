@@ -21,6 +21,12 @@ struct ModbusDeviceMonitorData : public ModbusDeviceStatus {
 };
 void to_json(nlohmann::json& j, const ModbusDeviceMonitorData& m);
 
+struct ModbusDeviceFormattedData : public ModbusDeviceStatus {
+  std::string type;
+  std::vector<std::string> register_list{};
+};
+void to_json(nlohmann::json& j, const ModbusDeviceFormattedData& m);
+
 class ModbusDevice {
   static constexpr uint32_t max_consecutive_failures = 10;
   Modbus& interface;
@@ -63,4 +69,5 @@ class ModbusDevice {
     std::unique_lock lk(register_list_mutex);
     return info;
   }
+  ModbusDeviceFormattedData get_formatted_data();
 };

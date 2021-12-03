@@ -69,6 +69,17 @@ void ModbusDevice::monitor() {
   }
 }
 
+ModbusDeviceFormattedData ModbusDevice::get_formatted_data() {
+  std::unique_lock lk(register_list_mutex);
+  ModbusDeviceFormattedData data;
+  data.ModbusDeviceStatus::operator=(info);
+  data.type = register_map.name;
+  for (const auto &reg : info.register_list) {
+    data.register_list.emplace_back(std::move(reg.format()));
+  }
+  return data;
+}
+
 void to_json(json& j, const ModbusDeviceStatus& m) {
   j["addr"] = m.addr;
   j["crc_fails"] = m.crc_failures;
@@ -81,6 +92,14 @@ void to_json(json& j, const ModbusDeviceStatus& m) {
 void to_json(json& j, const ModbusDeviceMonitorData& m) {
   const ModbusDeviceStatus& s = m;
   to_json(j, s);
+  j["now"] = std::time(0);
+  j["ranges"] = m.register_list;
+}
+
+void to_json(json& j, const ModbusDeviceFormattedData& m) {
+  const ModbusDeviceStatus& s = m;
+  to_json(j, s);
+  j["type"] = m.type;
   j["now"] = std::time(0);
   j["ranges"] = m.register_list;
 }

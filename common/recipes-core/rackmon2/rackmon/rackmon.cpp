@@ -42,7 +42,7 @@ bool Rackmon::probe(Modbus& iface, uint8_t addr) {
     ReadHoldingRegistersResp resp(v);
     iface.command(req, resp, rmap.default_baudrate, probe_timeout);
     std::unique_lock lock(devices_mutex);
-    active_devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);
+    devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);
     std::cout << std::hex << std::setw(2) << std::setfill('0');
     std::cout << "Found " << int(addr) << " on " << iface.name() << std::endl;
     return true;
@@ -59,30 +59,13 @@ void Rackmon::probe(uint8_t addr) {
       break;
 }
 
-void Rackmon::mark_active(uint8_t addr) {
-  std::cout << std::hex << std::setw(2) << std::setfill('0');
-  std::cout << "Device marked as active: " << int(addr) << std::endl;
-  std::unique_lock lock(devices_mutex);
-  std::unique_ptr<ModbusDevice> dev = std::move(dormant_devices.at(addr));
-  dormant_devices.erase(addr);
-  dev->clear_unstable();
-  active_devices[addr] = std::move(dev);
-}
-
-void Rackmon::mark_dormant(uint8_t addr) {
-  std::cout << std::hex << std::setw(2) << std::setfill('0');
-  std::cout << "Device marked as dormant: " << int(addr) << std::endl;
-  std::unique_lock lock(devices_mutex);
-  std::unique_ptr<ModbusDevice> dev = std::move(active_devices.at(addr));
-  active_devices.erase(addr);
-  dormant_devices[addr] = std::move(dev);
-}
-
 std::vector<uint8_t> Rackmon::inspect_dormant() {
   time_t curr = std::time(0);
   std::vector<uint8_t> ret{};
   std::shared_lock lock(devices_mutex);
-  for (const auto& it : dormant_devices) {
+  for (const auto& it : devices) {
+    if (it.second->is_active())
+      continue;
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
     if ((it.second->last_active() + dormant_min_inactive_time) < curr) {
@@ -104,43 +87,28 @@ std::vector<uint8_t> Rackmon::inspect_dormant() {
 void Rackmon::recover_dormant() {
   std::vector<uint8_t> candidates = inspect_dormant();
   for (auto& addr : candidates) {
-    mark_active(addr);
+    std::unique_lock lock(devices_mutex);
+    devices.at(addr)->set_active();
   }
 }
 
-std::vector<uint8_t> Rackmon::monitor_active() {
-  std::vector<uint8_t> ret{};
+void Rackmon::monitor(void) {
   std::shared_lock lock(devices_mutex);
-  for (const auto& dev_it : active_devices) {
+  for (const auto& dev_it : devices) {
+    if (!dev_it.second->is_active())
+      continue;
     try {
       dev_it.second->monitor();
     } catch (std::exception& e) {
       std::cout << "Caught: " << e.what() << std::endl;
-      if (dev_it.second->is_unstable()) {
-        uint8_t addr = dev_it.first;
-        ret.push_back(addr);
-      }
     }
-  }
-  return ret;
-}
-
-void Rackmon::monitor(void) {
-  std::vector<uint8_t> dormant = monitor_active();
-  for (auto& addr : dormant) {
-    mark_dormant(addr);
   }
   last_monitor_time = std::time(0);
 }
 
-bool Rackmon::is_device_known(uint8_t addr)
-{
+bool Rackmon::is_device_known(uint8_t addr) {
   std::shared_lock lk(devices_mutex);
-  if (active_devices.find(addr) != active_devices.end())
-    return true;
-  if (dormant_devices.find(addr) != dormant_devices.end())
-    return true;
-  return false;
+  return devices.find(addr) != devices.end();
 }
 
 void Rackmon::scan_all() {
@@ -196,17 +164,20 @@ void Rackmon::stop() {
 
 void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
   uint8_t addr = req.addr;
-  active_devices.at(addr)->command(req, resp, timeout);
+  std::shared_lock lock(devices_mutex);
+  if (!devices.at(addr)->is_active()) {
+    throw std::exception();
+  }
+  devices.at(addr)->command(req, resp, timeout);
 }
 
 void Rackmon::get_monitor_data(std::vector<ModbusDeviceMonitorData>& ret) {
   ret.clear();
   std::shared_lock lock(devices_mutex);
   std::transform(
-      active_devices.begin(),
-      active_devices.end(),
-      std::back_inserter(ret),
-      [](auto& kv) { return kv.second->get_monitor_data(); });
+      devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
+        return kv.second->get_monitor_data();
+      });
 }
 
 void Rackmon::get_monitor_status(RackmonStatus& ret) {
@@ -215,23 +186,16 @@ void Rackmon::get_monitor_status(RackmonStatus& ret) {
   ret.last_monitor = last_monitor_time;
 
   std::shared_lock lock(devices_mutex);
-  ret.active_devices.clear();
-  ret.dormant_devices.clear();
+  ret.devices.clear();
   std::transform(
-      active_devices.begin(),
-      active_devices.end(),
-      std::back_inserter(ret.active_devices),
-      [](auto& kv) { return kv.second->get_status(); });
-  std::transform(
-      dormant_devices.begin(),
-      dormant_devices.end(),
-      std::back_inserter(ret.dormant_devices),
+      devices.begin(),
+      devices.end(),
+      std::back_inserter(ret.devices),
       [](auto& kv) { return kv.second->get_status(); });
 }
 
 void to_json(json& j, const RackmonStatus& m) {
   j["running_status"] = m.started;
   j["last_scan"] = m.last_scan;
-  j["active_devices"] = m.active_devices;
-  j["dormant_devices"] = m.dormant_devices;
+  j["devices"] = m.devices;
 }

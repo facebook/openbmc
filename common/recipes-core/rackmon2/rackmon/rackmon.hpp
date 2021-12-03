@@ -10,8 +10,7 @@ struct RackmonStatus {
   bool started;
   time_t last_scan;
   time_t last_monitor;
-  std::vector<ModbusDeviceStatus> active_devices;
-  std::vector<ModbusDeviceStatus> dormant_devices;
+  std::vector<ModbusDeviceStatus> devices;
 };
 void to_json(nlohmann::json& j, const RackmonStatus& m);
 
@@ -26,14 +25,8 @@ class Rackmon {
 
   mutable std::shared_mutex devices_mutex{};
 
-  // These devices are reachable and are functioning
-  // properly.
-  std::map<uint8_t, std::unique_ptr<ModbusDevice>> active_devices{};
-
-  // These devices were active at one point. Now, they
-  // are either bad or removed. These will be scanned
-  // more regularly than the unknown addresses.
-  std::map<uint8_t, std::unique_ptr<ModbusDevice>> dormant_devices{};
+  // These devices discovered on actively monitored busses
+  std::map<uint8_t, std::unique_ptr<ModbusDevice>> devices{};
 
   // contains all the possible address allowed by currently
   // loaded register maps. A majority of these are not expected
@@ -56,12 +49,6 @@ class Rackmon {
 
   // --------- Private Methods --------
 
-  // Marks an address as dormant
-  void mark_dormant(uint8_t addr);
-
-  // Marks an address as active
-  void mark_active(uint8_t addr);
-
   // probe dormant devices and return recovered devices.
   std::vector<uint8_t> inspect_dormant();
   // Try and recover dormant devices.
@@ -69,9 +56,6 @@ class Rackmon {
 
   bool is_device_known(uint8_t);
 
-  // Does a monitoring scan of all defined registers
-  // returns detected dormant devices.
-  std::vector<uint8_t> monitor_active();
   // Monitor loop. Blocks forever as long as req_stop is true.
   void monitor();
 

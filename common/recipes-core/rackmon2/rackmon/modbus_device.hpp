@@ -43,10 +43,10 @@ class ModbusDevice {
       std::vector<uint16_t>& regs);
 
   void monitor();
-  bool is_unstable() const {
-    return info.num_consecutive_failures > max_consecutive_failures;
+  bool is_active() const {
+    return info.num_consecutive_failures < max_consecutive_failures;
   }
-  void clear_unstable() {
+  void set_active() {
     info.num_consecutive_failures = 0;
   }
   time_t last_active() const {

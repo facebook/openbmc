@@ -1222,7 +1222,7 @@ ctrl_bic_sensor_monitor(uint8_t slot_id, uint8_t intf, bool stop_bic_montr_en) {
 
   printf("* Turning %s BIC sensor monitor...\n", (stop_bic_montr_en == true)?"off":"on");
 
-  ret = bic_enable_ssd_sensor_monitor(slot_id, stop_bic_montr_en, intf);
+  ret = bic_enable_ssd_sensor_monitor(slot_id, !stop_bic_montr_en, intf);
   if ( ret < 0 ) {
     printf("* Failed to %s bic sensor monitor aborted!\n", (stop_bic_montr_en == true)?"stop":"start");
   } else sleep(2);
@@ -1620,14 +1620,14 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CWC_CPLD:
     case FW_GPV3_TOP_CPLD:
     case FW_GPV3_BOT_CPLD:
-      if ( (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
+      if ( stop_bic_monitoring && (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
         break;
       }
 
       ret = (loc != NULL)?update_bic_cpld_lattice(slot_id, path, intf, force): \
                           update_bic_cpld_lattice_usb(slot_id, path, intf, force);
 
-      if ( (ret == BIC_STATUS_SUCCESS) && \
+      if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
            (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
 
       break;
@@ -1675,8 +1675,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_GPV3_TOP_PESW:
     case FW_GPV3_BOT_PESW:
       // we should stop polling sensors while updating PESW
-      if ( ((ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0) || \
-           ((ret = ctrl_pesw_error_monitor(slot_id, intf, stop_bic_monitoring)) < 0) ) {
+      if ( (stop_bic_monitoring && (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0) || \
+           (stop_bic_monitoring && (ret = ctrl_pesw_error_monitor(slot_id, intf, stop_bic_monitoring)) < 0) ) {
         break;
       }
 
@@ -1688,7 +1688,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       }
 
       // start polling again
-      if ( (ret == BIC_STATUS_SUCCESS) && \
+      if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
            (((ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0) || \
            ((ret = ctrl_pesw_error_monitor(slot_id, intf, !stop_bic_monitoring)) < 0)) );
 
@@ -1729,7 +1729,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BOT_M2_DEV9:
     case FW_BOT_M2_DEV10:
     case FW_BOT_M2_DEV11:
-      if ( (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
+      if ( stop_bic_monitoring && (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
         break;
       }
 
@@ -1753,7 +1753,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         ret = update_bic_m2_fw(slot_id, m2_dev, path, intf, force, type);
       }
 
-      if ( (ret == BIC_STATUS_SUCCESS) && \
+      if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
            (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
 
       break;

@@ -2246,6 +2246,7 @@ int
 fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
   int retry = 0;
+  uint8_t server_type = 0xFF;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2273,7 +2274,12 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
                  retry++;
                  sleep(1);
               } else {
-                host_sensors_sdr_init(fru, sinfo);
+                if (fby2_get_server_type(fru, &server_type)) {
+                  syslog(LOG_ERR, "%s, Get server type %d failed", __func__,server_type);
+                }
+                if (server_type != SERVER_TYPE_ND) { // ND handle host boot temp by BIC
+                  host_sensors_sdr_init(fru, sinfo);
+                }
 #ifdef CONFIG_FBY2_GPV2
                 gpv2_sensors_sdr_init(fru, sinfo);
 #endif

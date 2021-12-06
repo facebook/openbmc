@@ -696,33 +696,65 @@ sensor_thresh_array_init() {
     }
   }
   //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
-  spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;
-  spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.5;
-  spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.63;
-  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.97;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.63;
-  spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.97;
-  spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.265;
-  spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][LCR_THRESH] = 1.035;
-  spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][UCR_THRESH] = 1.32;
-  spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][LCR_THRESH] = 1.08;
-  spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][UCR_THRESH] = 2.75;
-  spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][LCR_THRESH] = 2.25;
-  spb_sensor_threshold[SP_P1V8_STBY][UCR_THRESH] = 1.98;
-  spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.62;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
+
+  if (spb_type == TYPE_SPB_YV2ND2) {
+    spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.25;
+    spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.75;
+    spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.47;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 3.13;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.47;
+    spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 3.13;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.22;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][LCR_THRESH] = 1.08;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][UCR_THRESH] = 1.27;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][LCR_THRESH] = 1.13;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][UCR_THRESH] = 2.63;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][LCR_THRESH] = 2.37;
+    spb_sensor_threshold[SP_P1V8_STBY][UCR_THRESH] = 1.9;
+    spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.7;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 100;
+  } else {
+    spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;
+    spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.5;
+    spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.63;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.97;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.63;
+    spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.97;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.265;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][LCR_THRESH] = 1.035;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][UCR_THRESH] = 1.32;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][LCR_THRESH] = 1.08;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][UCR_THRESH] = 2.75;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][LCR_THRESH] = 2.25;
+    spb_sensor_threshold[SP_P1V8_STBY][UCR_THRESH] = 1.98;
+    spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.62;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
+  }
+
   if (spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND2) {
     if ((fby2_get_slot_type(FRU_SLOT1)==SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) == SLOT_TYPE_GPV2)) { // For GPv2 case
       spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 63;

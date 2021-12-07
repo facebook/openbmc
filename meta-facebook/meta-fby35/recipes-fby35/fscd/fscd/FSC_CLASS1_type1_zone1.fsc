@@ -5,10 +5,10 @@ max([
   linear_cpu_margin(slot4:soc_therm_margin) + pid_cpu_margin(slot4:soc_therm_margin),
   linear_frontIO_inlet(
     max([
-      slot1:fio_temp,
-      slot2:fio_temp,
-      slot3:fio_temp,
-      slot4:fio_temp])),
+      slot1:front_io_temp,
+      slot2:front_io_temp,
+      slot3:front_io_temp,
+      slot4:front_io_temp])),
   linear_dimm(
     max([
       slot1:dimma_temp,

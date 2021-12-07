@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 inherit python3unittest
+inherit python3flakes
 inherit systemd
 inherit ptest
 
@@ -220,9 +221,12 @@ do_compile_ptest() {
 cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
   set -e
+  echo "[UNIT TESTS]"
   coverage erase
   coverage run -m unittest discover /usr/local/fbpackages/rest-api
   coverage report -m --omit="*/test*"
+  echo "[PYFLAKES]"
+  pyflakes /usr/local/fbpackages/rest-api/*.py
 EOF
 }
 

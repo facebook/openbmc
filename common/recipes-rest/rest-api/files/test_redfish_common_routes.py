@@ -1,6 +1,4 @@
 import unittest
-from unittest import mock
-
 from aiohttp import web
 
 

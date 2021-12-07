@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-import json
 import re
 import subprocess
 
@@ -30,12 +29,11 @@ def get_sensors():
     result = []
     proc = subprocess.Popen(["sensors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
     except proc.TimeoutError as ex:
         data = ex.output
         data = data.decode()
-        err = ex.error
 
     data = re.sub("\(.+?\)", "", data)
     for edata in data.split("\n\n"):
@@ -68,10 +66,9 @@ def get_sensors_full():
         ["sensors", "-u"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     try:
-        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     except proc.TimeoutError as ex:
         data = ex.output
-        err = ex.error
 
     # The output of sensors -u is a series of sections separated
     # by blank lines.  Each section looks like this:

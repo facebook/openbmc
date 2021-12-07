@@ -18,20 +18,18 @@
 # Boston, MA 02110-1301 USA
 #
 
-import asyncio
 import functools
 import json
 import os
 import os.path
-import psutil
 import re
 import threading
 import typing as t
 from shlex import quote
-from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
 import kv
+import psutil
 import rest_mmc
 import rest_pal_legacy
 from boot_source import is_boot_from_secondary
@@ -363,7 +361,9 @@ class bmcNode(node):
         spi1_vendor = await getSPIVendor(1)
 
         # ASD status - check if ASD daemon/asd-test is currently running
-        _, asd_status, _ = await async_exec("ps | grep -ie [a]sd -ie [y]aapd", shell=True)
+        _, asd_status, _ = await async_exec(
+            "ps | grep -ie [a]sd -ie [y]aapd", shell=True
+        )
         asd_status = bool(asd_status)
         boot_from_secondary = is_boot_from_secondary()
 

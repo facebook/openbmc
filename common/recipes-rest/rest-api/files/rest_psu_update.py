@@ -21,7 +21,6 @@
 import json
 import os
 import os.path
-import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -78,7 +77,7 @@ def begin_job(jobdesc):
         with os.fdopen(fwfd, "wb") as fwfile:
             fwfile.write(fwdata.read())
             fwfile.flush()
-    except:
+    except Exception:
         os.remove(statusfilepath)
         raise
 

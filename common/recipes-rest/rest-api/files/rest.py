@@ -28,7 +28,6 @@ import os.path
 import ssl
 import sys
 
-from aiohttp import web
 from aiohttp.log import access_logger
 from async_ratelimiter import AsyncRateLimiter
 from common_logging import ACCESS_LOG_FORMAT, get_logger_config

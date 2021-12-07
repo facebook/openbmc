@@ -3,7 +3,7 @@ import os
 import socket
 import struct
 from uuid import getnode as get_mac
-from subprocess import *
+
 import rest_pal_legacy
 from aiohttp import web
 from common_utils import async_exec, dumps_bytestr

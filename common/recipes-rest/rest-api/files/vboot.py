@@ -67,6 +67,6 @@ async def get_vboot_status():
                 value = a[1].strip()
                 if key in interested_keys:
                     info[interested_keys[key]] = value
-    except (OSError, subprocess.CalledProcessError) as e:
+    except (OSError, subprocess.CalledProcessError):
         pass
     return info

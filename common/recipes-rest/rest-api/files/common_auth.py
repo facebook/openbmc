@@ -25,7 +25,7 @@ import typing as t
 from contextlib import suppress
 
 from aiohttp.log import server_logger
-from aiohttp.web import Request, HTTPForbidden, HTTPUnauthorized
+from aiohttp.web import Request, HTTPForbidden
 
 Identity = t.NamedTuple(
     "Identity",

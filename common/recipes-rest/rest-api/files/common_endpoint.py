@@ -17,10 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import asyncio
-import json
-from concurrent.futures import ThreadPoolExecutor
-
 import rest_bmc
 import rest_fcpresent
 import rest_fruid
@@ -28,7 +24,6 @@ import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
 import rest_modbus_cmd
-import rest_ntpstatus
 import rest_psu_update
 import rest_sensors
 import rest_server

@@ -1,6 +1,5 @@
 import redfish_chassis
 import redfish_sensors
-import rest_pal_legacy
 from aiohttp import web
 from aiohttp.web import Application
 from redfish_account_service import get_account_service, get_accounts, get_roles

@@ -59,35 +59,7 @@ class configNode(node):
             result = {"status": "unsupported"}
         return result
 
-    async def doAction(self, data, param={}):
-        res = "failure"
-        if "update" not in data:
-            return {"result": "parameter-error"}
-
-        # Get the list of parameters to be updated
-        params = data["update"]
-        for key in list(params.keys()):
-            # update only if the key starts with the name
-            if key.find(self.name) != -1 or key.find(self.altname) != -1:
-                try:
-                    await pal_set_key_value(key, params[key])
-                    res = "success"
-                    continue
-                except TimeoutError as e:
-                    res = e.output.strip()
-                    break
-                except ValueError as e:
-                    res = str(e).strip()
-                    break
-            else:
-                res = "refused: %s" % key
-                break
-        if res == "":
-            res = "failure"
-        result = {"result": res}
-        return result
-
 
 def get_node_config(name):
-    actions = ["update"]
+    actions = []
     return configNode(name=name, actions=actions)

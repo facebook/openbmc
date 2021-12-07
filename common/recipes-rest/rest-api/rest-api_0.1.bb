@@ -17,6 +17,7 @@
 
 inherit python3unittest
 inherit python3flakes
+inherit python3typecheck
 inherit systemd
 inherit ptest
 
@@ -227,6 +228,8 @@ cat <<EOF > ${WORKDIR}/run-ptest
   coverage report -m --omit="*/test*"
   echo "[PYFLAKES]"
   pyflakes /usr/local/fbpackages/rest-api/*.py
+  echo "[MYPY]"
+  mypy --ignore-missing-imports /usr/local/fbpackages/rest-api/*.py
 EOF
 }
 

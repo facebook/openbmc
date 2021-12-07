@@ -20,6 +20,7 @@
 
 import asyncio
 import collections
+from typing import Dict, Tuple
 
 
 class AsyncRateLimiter:
@@ -33,7 +34,9 @@ class AsyncRateLimiter:
     """
 
     def __init__(self, slidewindow_size: int, limit: int):
-        self._request_counter = collections.Counter()
+        self._request_counter = (
+            collections.Counter()
+        )  # type: Dict[Tuple[str,str,str], int]
         self.slidewindow_size = slidewindow_size
         self.limit = limit
 

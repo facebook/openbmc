@@ -4,12 +4,12 @@ from common_utils import dumps_bytestr
 from redfish_base import validate_keys
 
 
-async def get_redfish(request: str) -> web.Response:
+async def get_redfish(request: web.Request) -> web.Response:
     body = {"v1": "/redfish/v1/"}
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_service_root(request: str) -> web.Response:
+async def get_service_root(request: web.Request) -> web.Response:
     product_name = str(rest_pal_legacy.pal_get_platform_name())
     uuid_data = str(rest_pal_legacy.pal_get_uuid())
     odata_ver = 4.0

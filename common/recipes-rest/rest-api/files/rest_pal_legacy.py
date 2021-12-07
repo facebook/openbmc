@@ -40,9 +40,11 @@ import os
 import uuid
 from ctypes import CDLL, c_char_p, c_ubyte, c_uint32, create_string_buffer, pointer
 from subprocess import PIPE, CalledProcessError, Popen, check_output
+from typing import Optional
 
 from common_utils import async_exec
 
+lpal_hndl = None  # type: Optional[CDLL]
 try:
     lpal_hndl = CDLL("libpal.so.0")
 except OSError:

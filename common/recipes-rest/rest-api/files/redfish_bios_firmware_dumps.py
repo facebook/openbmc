@@ -51,7 +51,7 @@ def _assert_valid_server_name_and_dump_id(server_name: str, dump_id: str):
     _assert_valid_dump_id(dump_id)
 
 
-def _get_dump_header(server_name: str, dump_id: str) -> Optional[Dict[str, Any]]:
+def _get_dump_header(server_name: str, dump_id: str) -> Dict[str, Any]:
     _assert_valid_server_name_and_dump_id(server_name, dump_id)
     return {
         "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}".format(
@@ -92,7 +92,7 @@ class RedfishBIOSFirmwareDumps:
 
     async def _dump_collection_of_server(
         self, server_name: str
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Optional[Dict[str, Any]]]:
         _assert_valid_server_name(server_name)
         server_dirpath = os.path.join(self.images_dir, server_name)
         dumps = []

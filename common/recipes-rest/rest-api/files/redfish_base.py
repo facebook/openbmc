@@ -124,8 +124,8 @@ class RedfishErrorExtendedInfo:
         self.severity = severity
         self.resolution = resolution
 
-    def as_dict(self) -> t.Dict[t.Any, t.Any]:
-        result = {}
+    def as_dict(self) -> t.Dict[str, t.Any]:
+        result = {}  # type: t.Dict[str, t.Any]
         if self.message_id is not None:
             result["MessageId"] = self.message_id
         if self.message is not None:

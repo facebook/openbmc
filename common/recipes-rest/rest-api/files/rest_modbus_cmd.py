@@ -186,7 +186,7 @@ def _validate_payload_commands(commands: List[str]) -> None:
                 )
             )
 
-        if not all(0 <= x <= 0xFF for x in cmd):
+        if not all(0 <= int(x) <= 0xFF for x in cmd):
             raise ValueError(
                 "Byte value out of range in .commands[{i}] ({cmd})".format(
                     i=i, cmd=repr(cmd)
@@ -196,7 +196,7 @@ def _validate_payload_commands(commands: List[str]) -> None:
         if cmd[1] not in ALLOWED_OPCODES:
             raise ValueError(
                 "Command opcode 0x{cmd_1:02x} ({cmd_1}) is not allowed in .commands[{i}][1] ({cmd})".format(  # noqa: B950
-                    i=i, cmd_1=cmd[1], cmd=repr(cmd)
+                    i=i, cmd_1=int(cmd[1]), cmd=repr(cmd)
                 )
             )
 

@@ -1,5 +1,6 @@
 import json
 from shutil import which
+from typing import Dict, List, Sequence
 
 import common_utils
 import pal
@@ -20,7 +21,7 @@ class InvalidLogUtilResponse(RuntimeError):
 
 
 class RedfishLogService:
-    def get_log_service_controller(self) -> "RedfishLogService":
+    def get_log_service_controller(self) -> "RedfishLogServiceController":
         return RedfishLogServiceController(self)
 
     def get_server_name(self, fru_name: str) -> str:
@@ -43,7 +44,9 @@ class RedfishLogService:
     def is_log_util_available(self) -> bool:
         return which(LOG_UTIL_PATH) is not None
 
-    async def _get_log_service_entries_sel(self, fru_name: str) -> dict:
+    async def _get_log_service_entries_sel(
+        self, fru_name: str
+    ) -> Sequence[Dict[str, str]]:
         log_service_id = "SEL"
         server_name = self.get_server_name(fru_name)
 
@@ -56,7 +59,7 @@ class RedfishLogService:
         # We need to load the initial JSON entries, then
         # modify the entries format to meet RedFish Schema
         raw_sel_entries = json.loads(sel_entries)
-        redfish_sel_entries = []
+        redfish_sel_entries = []  # type: List[Dict[str, str]]
 
         # We need each entry to be aware of where it is,
         # and indexed by 1 per Redfish Schema

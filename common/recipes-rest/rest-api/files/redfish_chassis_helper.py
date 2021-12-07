@@ -21,7 +21,7 @@ SensorDetails = t.NamedTuple(
         # Not referencing sdr.ThreshSensor as sdr is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_thresh", t.Optional["sdr.ThreshSensor"]),
-        ("sensor_unit", str),
+        ("sensor_unit", t.Optional[str]),
         # Not referencing pal.SensorHistory as pal is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_history", t.Optional["pal.SensorHistory"]),
@@ -48,9 +48,7 @@ sensor_unit_dict = {
 SAD_SENSOR = -99999  # default reading for values not found.
 
 
-def get_pal_sensor(
-    fru_name: str, fru_id: int, sensor_id: int
-) -> t.Optional[SensorDetails]:
+def get_pal_sensor(fru_name: str, fru_id: int, sensor_id: int) -> SensorDetails:
     sensor_unit = sdr.sdr_get_sensor_units(fru_id, sensor_id)
     try:
         reading = pal.sensor_read(fru_id, sensor_id)
@@ -94,7 +92,7 @@ def get_sensor_details_using_libpal(
     Those are compute and newer fboss platforms"""
     fru_name_map = pal.pal_fru_name_map()
     fru_id = fru_name_map[fru_name]
-    sensor_details_list = []
+    sensor_details_list = []  # type: t.List[SensorDetails]
     if not pal.pal_is_fru_prsnt(fru_id):  # Check if the fru is present
         return sensor_details_list
 
@@ -227,7 +225,12 @@ def get_aggregate_sensor(sensor_id: int) -> t.Optional[SensorDetails]:
 
 FruInfo = t.NamedTuple(
     "FruInfo",
-    [("fru_name", str), ("manufacturer", str), ("serial_number", int), ("model", str)],
+    [
+        ("fru_name", str),
+        ("manufacturer", t.Optional[str]),
+        ("serial_number", t.Optional[int]),
+        ("model", t.Optional[str]),
+    ],
 )
 
 

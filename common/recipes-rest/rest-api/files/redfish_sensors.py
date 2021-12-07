@@ -95,7 +95,7 @@ async def _get_sensor_members(
             # we expose aggregate sensors under the Chassis, so only do this
             # if parent_resource is 1
             for sensor_id in range(aggregate_sensor.aggregate_sensor_count()):
-                sensor = _get_sensor("aggregate", sensor_id)
+                sensor = await _get_sensor("aggregate", sensor_id)
                 if sensor:
                     child = _render_sensor(parent_resource, sensor, expand)
                     members_json.append(child)
@@ -106,11 +106,14 @@ async def _get_sensor(
     fru_name: str, sensor_id: t.Union[int, str]
 ) -> t.Optional[redfish_chassis_helper.SensorDetails]:
     if fru_name == "aggregate":
-        sensor = redfish_chassis_helper.get_aggregate_sensor(sensor_id)
+        sensor = redfish_chassis_helper.get_aggregate_sensor(sensor_id)  # type: ignore
+        return sensor
     else:
         if redfish_chassis_helper.is_libpal_supported():
             fru_id = fru_name_map[fru_name]
-            sensor = redfish_chassis_helper.get_pal_sensor(fru_name, fru_id, sensor_id)
+            sensor = redfish_chassis_helper.get_pal_sensor(
+                fru_name, fru_id, int(sensor_id)
+            )
             return sensor
         else:
             # i know this is ugly,
@@ -137,7 +140,7 @@ def _render_sensor(
 
 def _render_sensor_body(
     parent_resource: str, sensor: redfish_chassis_helper.SensorDetails
-) -> t.Optional[t.Dict[str, t.Any]]:
+) -> t.Dict[str, t.Any]:
     if sensor.reading == redfish_chassis_helper.SAD_SENSOR:
         status_val = {"State": "UnavailableOffline", "Health": "Critical"}
     else:

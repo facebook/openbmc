@@ -405,7 +405,8 @@ class bmcNode(node):
         return info
 
     async def doAction(self, data, param=None):
-        await async_exec("sleep 1; /sbin/reboot", shell=True)
+        if not t.TYPE_CHECKING:
+            await async_exec("sleep 1; /sbin/reboot", shell=True)
         return {"result": "success"}
 
 

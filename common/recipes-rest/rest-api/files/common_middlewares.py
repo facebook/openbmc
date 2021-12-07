@@ -21,7 +21,7 @@ import functools
 import json
 import re
 from contextlib import suppress
-from typing import List
+from typing import List, Optional
 
 import acl_config
 import common_auth
@@ -81,7 +81,7 @@ async def auth_enforcer(app, handler):
             self.rules_regexp = rules_regexp
 
         @functools.lru_cache(maxsize=1024)
-        def get(self, method: str, path: str) -> List[str]:
+        def get(self, method: str, path: str) -> Optional[List[str]]:
             with suppress(KeyError):
                 return self.rules_plain[path][method]
             with suppress(KeyError):

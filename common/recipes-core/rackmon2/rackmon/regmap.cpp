@@ -141,10 +141,10 @@ std::string RegisterValue::format() const {
       for (const auto& [pos, n] : desc.table) {
         bool bit = (ivalue & (1 << pos)) != 0;
         if (bit)
-          os << "*[1] ";
+          os << "\n*[1] ";
         else
-          os << " [0] ";
-        os << n << '\n';
+          os << "\n [0] ";
+        os << n;
       }
       break;
     }
@@ -173,9 +173,11 @@ std::string RegisterValueStore::format() const {
      << " :";
   for (const auto& v : history) {
     if (v) {
-      ss << v.format();
       if (desc.format != RegisterFormatType::TABLE)
         ss << ' ';
+      else
+        ss << '\n';
+      ss << v.format();
     }
   }
   return ss.str();

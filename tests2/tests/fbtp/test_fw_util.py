@@ -20,10 +20,12 @@
 import unittest
 
 from common.base_fw_util_test import CommonFwUtilTest
+from utils.test_utils import qemu_check
 
 PLATFORM = "fbtp"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
     def set_platform(self):
         self.platform = PLATFORM

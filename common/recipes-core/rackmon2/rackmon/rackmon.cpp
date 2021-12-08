@@ -165,6 +165,8 @@ void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
     throw std::exception();
   }
   devices.at(addr)->command(req, resp, timeout);
+  // Add back the CRC removed by validate.
+  resp.len += 2;
 }
 
 std::vector<ModbusDeviceStatus> Rackmon::list_devices() {

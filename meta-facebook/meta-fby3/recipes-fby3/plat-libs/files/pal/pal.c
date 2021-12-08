@@ -77,6 +77,7 @@ const char pal_m2_dual_list[] = "";
 static char sel_error_record[NUM_SERVER_FRU] = {0};
 
 const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
+const char pal_exp_list[] = "slot1, slot2, slot3, slot4, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -4926,4 +4927,17 @@ int pal_get_exp_arg_name(uint8_t fru, char *name) {
       return PAL_ENOTSUP;
   }
   return PAL_EOK;
+}
+
+int pal_get_print_fru_name(const char **list) {
+  if (pal_is_cwc() == PAL_EOK) {
+    *list = pal_exp_list;
+  } else {
+    return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_root_fru(uint8_t fru, uint8_t *root) {
+  return pal_get_fru_slot(fru, root);
 }

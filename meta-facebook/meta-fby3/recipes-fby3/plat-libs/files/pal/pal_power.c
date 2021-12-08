@@ -315,6 +315,11 @@ int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
 
+  if (pal_is_cwc() == PAL_EOK &&
+      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
+    return pal_get_exp_power(fru, status);
+  }
+
   ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
     return POWER_STATUS_FRU_ERR;
@@ -340,6 +345,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   int ret = 0;
   uint8_t bmc_location = 0;
+
+  if (pal_is_cwc() == PAL_EOK &&
+      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
+    return pal_set_exp_power(fru, cmd);
+  }
 
   ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
@@ -535,7 +545,12 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   int ret;
   char key[MAX_KEY_LEN] = {0};
 
-  sprintf(key, "pwr_server%d_last_state", (int) fru);
+  if (pal_is_cwc() == PAL_EOK && 
+      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
+    sprintf(key, "pwr_server%d_last_state", FRU_SLOT1);
+  } else {
+    sprintf(key, "pwr_server%d_last_state", (int) fru);
+  }
 
   ret = pal_get_key_value(key, state);
   if (ret < 0) {
@@ -1434,10 +1449,13 @@ pal_set_exp_12v_cycle(uint8_t fru) {
 
 int
 pal_set_exp_power(uint8_t fru, uint8_t cmd) {
-  uint8_t status = 0;
+  uint8_t status = 0, root = 0;
 
-  if (pal_is_fw_update_ongoing(FRU_SLOT1)) {
-    printf("fw update is on going on fru:%d...\n", FRU_SLOT1);
+  if (pal_get_root_fru(fru, &root) != PAL_EOK) {
+    return POWER_STATUS_ERR;
+  }
+  if (pal_is_fw_update_ongoing(root)) {
+    printf("fw update is on going on fru:%d...\n", root);
     return POWER_STATUS_ERR;
   }
   if (pal_get_exp_power(fru, &status) < 0) {
@@ -1479,7 +1497,7 @@ pal_set_exp_power(uint8_t fru, uint8_t cmd) {
       }
       break;
     default:
-      printf("unknown expantion command : %d\n", cmd);
+      printf("command not supported for fru:%d\n", fru);
       return POWER_STATUS_ERR;
   }
   return 0;

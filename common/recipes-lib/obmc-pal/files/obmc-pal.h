@@ -580,6 +580,8 @@ int pal_is_exp(void);
 int pal_get_exp_fru_list(uint8_t *list, uint8_t *len);
 int pal_get_exp_arg_name(uint8_t fru, char *name);
 int pal_get_fru_slot(uint8_t fru, uint8_t *slot);
+int pal_get_print_fru_name(const char **list);
+int pal_get_root_fru(uint8_t fru, uint8_t *slot);
 
 #ifdef __cplusplus
 }

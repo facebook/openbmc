@@ -37,7 +37,7 @@ class RackmonUNIXSocketService {
   // Handle a connection from a client. Currently
   // we can deal with one client at a time, but we
   // could easily extend this to multiple with threading.
-  void handle_connection(RackmonSock& sock);
+  void handle_connection(std::unique_ptr<RackmonSock> sock);
 
  public:
   RackmonUNIXSocketService() {}
@@ -68,7 +68,7 @@ void RackmonUNIXSocketService::handle_json_command(
   req.at("type").get_to(cmd);
   if (cmd == "raw") {
     Msg req_m, resp_m;
-    for (auto &b : req["cmd"])
+    for (auto& b : req["cmd"])
       req_m << uint8_t(b);
     resp_m.len = req["response_length"];
     modbus_time timeout = modbus_time(req.value("timeout", 0));
@@ -238,7 +238,9 @@ void RackmonUNIXSocketService::register_exit_handler() {
   }
 }
 
-void RackmonUNIXSocketService::initialize(int /*unused */, char** /* unused */) {
+void RackmonUNIXSocketService::initialize(
+    int /*unused */,
+    char** /* unused */) {
   log_info << "Loading configuration" << std::endl;
   rackmond.load(rackmon_configuration_path, rackmon_regmap_dir_path);
   log_info << "Starting rackmon threads" << std::endl;
@@ -263,11 +265,12 @@ void RackmonUNIXSocketService::deinitialize() {
   }
 }
 
-void RackmonUNIXSocketService::handle_connection(RackmonSock& sock) {
+void RackmonUNIXSocketService::handle_connection(
+    std::unique_ptr<RackmonSock> sock) {
   std::vector<char> buf;
 
   try {
-    sock.recv(buf);
+    sock->recv(buf);
   } catch (...) {
     log_error << "Failed to receive message" << std::endl;
     return;
@@ -281,16 +284,16 @@ void RackmonUNIXSocketService::handle_connection(RackmonSock& sock) {
   }
 
   if (is_json)
-    handle_json_command(req, sock);
+    handle_json_command(req, *sock);
   else
-    handle_legacy_command(buf, sock);
+    handle_legacy_command(buf, *sock);
 }
 
 void RackmonUNIXSocketService::do_loop() {
   struct sockaddr_un client;
   struct pollfd pfd[2] = {
-      { sock->get_sock(), POLLIN, 0},
-      { backchannel_handler, POLLIN, 0},
+      {sock->get_sock(), POLLIN, 0},
+      {backchannel_handler, POLLIN, 0},
   };
 
   while (1) {
@@ -324,8 +327,12 @@ void RackmonUNIXSocketService::do_loop() {
         log_error << "Failed to accept new connection" << std::endl;
         continue;
       }
-      RackmonSock clisock(clifd);
-      handle_connection(clisock);
+      auto clisock = std::make_unique<RackmonSock>(clifd);
+      auto tid = std::thread(
+          &RackmonUNIXSocketService::handle_connection,
+          this,
+          std::move(clisock));
+      tid.detach();
     }
   }
 }

@@ -83,6 +83,13 @@ SRC_URI += "file://rackmon.conf \
 
 S = "${WORKDIR}"
 
+install_wrapper() {
+  echo "#!/bin/bash" > $2
+  echo "set -e" >> $2
+  echo $1 >> $2
+  chmod 755 $2
+}
+
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
 
@@ -110,7 +117,14 @@ do_install:append() {
     for f in ${S}/rackmon.d/*; do
       install ${f} ${D}${sysconfdir}/rackmon.d/
     done
+    bin="${D}/usr/local/bin"
+    install_wrapper "/usr/local/bin/rackmoncli list" ${bin}/rackmonstatus
+    install_wrapper "/usr/local/bin/rackmoncli data --json" ${bin}/rackmondata
+    install_wrapper "/usr/local/bin/rackmoncli data --format" ${bin}/rackmoninfo
+    install_wrapper "/usr/local/bin/rackmoncli raw \$@" ${bin}/modbuscmd
+    install_wrapper "/usr/local/bin/rackmoncli \$@" ${bin}/rackmonctl
 }
+
 
 FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "
 

@@ -1,4 +1,5 @@
 #include "dev.hpp"
+#include "log.hpp"
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
@@ -78,7 +79,7 @@ void Device::read(uint8_t* buf, size_t exact_len, int timeout_ms) {
       wait_read(timeout_ms);
     } catch (std::system_error& e) {
       // Print error and ignore/retry
-      std::cerr << e.what() << std::endl;
+      log_error << e.what() << std::endl;
     }
     int read_size = ::read(dev_fd, read_buf, sizeof(read_buf));
     if (read_size < 0) {

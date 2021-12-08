@@ -1,4 +1,5 @@
 #include "modbus_device.hpp"
+#include "log.hpp"
 #include <iomanip>
 #include <sstream>
 
@@ -33,10 +34,10 @@ void ModbusDevice::command(
   } catch (std::runtime_error& e) {
     info.misc_failures++;
     info.num_consecutive_failures++;
-    std::cerr << e.what() << std::endl;
+    log_error << e.what() << std::endl;
     throw;
   } catch (...) {
-    std::cerr << "Unknown exception" << std::endl;
+    log_error << "Unknown exception" << std::endl;
     info.misc_failures++;
     info.num_consecutive_failures++;
     throw;
@@ -60,7 +61,7 @@ void ModbusDevice::monitor() {
     try {
       ReadHoldingRegisters(reg, v.value);
     } catch (std::exception& e) {
-      std::cout << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x"
+      log_info << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x"
                 << std::hex << reg << ' ' << h.desc.name
                 << " caught: " << e.what() << std::endl;
       continue;

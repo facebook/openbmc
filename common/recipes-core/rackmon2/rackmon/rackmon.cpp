@@ -1,4 +1,5 @@
 #include "rackmon.hpp"
+#include "log.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
@@ -43,8 +44,8 @@ bool Rackmon::probe(Modbus& iface, uint8_t addr) {
     iface.command(req, resp, rmap.default_baudrate, probe_timeout);
     std::unique_lock lock(devices_mutex);
     devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);
-    std::cout << std::hex << std::setw(2) << std::setfill('0');
-    std::cout << "Found " << int(addr) << " on " << iface.name() << std::endl;
+    log_info << std::hex << std::setw(2) << std::setfill('0')
+             << "Found " << int(addr) << " on " << iface.name() << std::endl;
     return true;
   } catch (std::exception& e) {
     return false;
@@ -108,7 +109,7 @@ bool Rackmon::is_device_known(uint8_t addr) {
 }
 
 void Rackmon::scan_all() {
-  std::cout << "Starting scan of all devices" << std::endl;
+  log_info << "Starting scan of all devices" << std::endl;
   for (auto& addr : possible_dev_addrs) {
     if (is_device_known(addr))
       continue;

@@ -47,13 +47,14 @@ def get_profile_flag(d):
     return "-DPROFILING"
   return ""
 
-CFLAGS += "${@get_profile_flag(d)}"
+CFLAGS += "${@get_profile_flag(d)} -DRACKMON_SYSLOG"
 
 
 SRC_URI = "file://meson.build \
            file://rackmond.service \
            file://run-rackmond.sh \
            file://setup-rackmond.sh \
+           file://log.hpp \
            file://dev.cpp \
            file://dev.hpp \
            file://modbus_cmds.cpp \

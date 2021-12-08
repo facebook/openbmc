@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <unordered_map>
+#include "log.hpp"
 
 #include "uart.hpp"
 
@@ -81,7 +82,7 @@ void UARTDevice::wait_write() {
     // never should hit this if kernel supports RS485 mode
   }
   if (loops > 0)
-    std::cerr << "Waited loops: " << loops << '\n';
+    log_error << "Waited loops: " << loops << '\n';
 }
 
 void UARTDevice::write(const uint8_t* buf, size_t len) {

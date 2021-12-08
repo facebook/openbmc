@@ -27,8 +27,10 @@ cc = meson.get_compiler('c')
 deps = [
   dependency('threads'),
 #  cc.find_library('misc-utils'),
-#  cc.find_library('log'),
 ]
+add_global_arguments('-DRACKMON_SYSLOG=1', language : 'cpp')
+deps += [ cc.find_library('log') ]
+
 cc = meson.get_compiler('cpp')
 if cc.get_id() == 'gcc' and cc.version().version_compare('<9')
     deps += [ cc.find_library('stdc++fs') ]

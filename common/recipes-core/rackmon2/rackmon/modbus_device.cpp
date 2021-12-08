@@ -87,13 +87,18 @@ ModbusDeviceFormattedData ModbusDevice::get_formatted_data() {
   return data;
 }
 
+NLOHMANN_JSON_SERIALIZE_ENUM(ModbusDeviceMode,
+{
+  {ModbusDeviceMode::ACTIVE, "active"},
+  {ModbusDeviceMode::DORMANT, "dormant"}
+})
+
 void to_json(json& j, const ModbusDeviceStatus& m) {
   j["addr"] = m.addr;
   j["crc_fails"] = m.crc_failures;
   j["timeouts"] = m.timeouts;
   j["misc_fails"] = m.misc_failures;
-  j["last_active"] = m.last_active;
-  j["consecutive_failures"] = m.num_consecutive_failures;
+  j["mode"] = m.get_mode();
 }
 
 void to_json(json& j, const ModbusDeviceMonitorData& m) {

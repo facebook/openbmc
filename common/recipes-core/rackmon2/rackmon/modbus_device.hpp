@@ -5,7 +5,13 @@
 #include "modbus_cmds.hpp"
 #include "regmap.hpp"
 
+enum ModbusDeviceMode {
+  ACTIVE = 0,
+  DORMANT = 1
+};
+
 struct ModbusDeviceStatus {
+  static constexpr uint32_t max_consecutive_failures = 10;
   uint8_t addr = 0;
   uint32_t baudrate = 0;
   uint32_t crc_failures = 0;
@@ -13,6 +19,10 @@ struct ModbusDeviceStatus {
   uint32_t misc_failures = 0;
   time_t last_active = 0;
   uint32_t num_consecutive_failures = 0;
+  ModbusDeviceMode get_mode() const {
+    return num_consecutive_failures < max_consecutive_failures ?
+      ModbusDeviceMode::ACTIVE : ModbusDeviceMode::DORMANT;
+  }
 };
 void to_json(nlohmann::json& j, const ModbusDeviceStatus& m);
 
@@ -28,7 +38,6 @@ struct ModbusDeviceFormattedData : public ModbusDeviceStatus {
 void to_json(nlohmann::json& j, const ModbusDeviceFormattedData& m);
 
 class ModbusDevice {
-  static constexpr uint32_t max_consecutive_failures = 10;
   Modbus& interface;
   uint8_t addr;
   const RegisterMap& register_map;
@@ -50,7 +59,7 @@ class ModbusDevice {
 
   void monitor();
   bool is_active() const {
-    return info.num_consecutive_failures < max_consecutive_failures;
+    return info.get_mode() == ModbusDeviceMode::ACTIVE;
   }
   void set_active() {
     info.num_consecutive_failures = 0;

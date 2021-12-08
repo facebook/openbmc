@@ -14,15 +14,6 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Power status: 
-                    type: string
-                  BIC_ok: 
-                    type: integer
-                    format: int32
               Actions: 
                 type: array
                 items: 
@@ -31,4 +22,13 @@ paths:
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  BIC_ok: 
+                    type: integer
+                    format: int32
+                  Power status: 
+                    type: string
             

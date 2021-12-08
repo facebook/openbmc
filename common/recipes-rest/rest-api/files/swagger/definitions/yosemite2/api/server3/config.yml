@@ -14,28 +14,6 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  pwr_server3_last_state: 
-                    type: string
-                  slot3_cpu_ppin: 
-                    type: string
-                  slot3_sel_error: 
-                    type: string
-                  sysfw_ver_slot3: 
-                    type: string
-                  slot3_sensor_health: 
-                    type: string
-                  slot3_por_cfg: 
-                    type: string
-                  slot3_trigger_hpr: 
-                    type: string
-                  slot3_boot_order: 
-                    type: string
-                  identify_slot3: 
-                    type: string
               Actions: 
                 type: array
                 items: 
@@ -44,4 +22,26 @@ paths:
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  slot3_boot_order: 
+                    type: string
+                  pwr_server3_last_state: 
+                    type: string
+                  slot3_trigger_hpr: 
+                    type: string
+                  slot3_sel_error: 
+                    type: string
+                  identify_slot3: 
+                    type: string
+                  slot3_cpu_ppin: 
+                    type: string
+                  slot3_por_cfg: 
+                    type: string
+                  slot3_sensor_health: 
+                    type: string
+                  sysfw_ver_slot3: 
+                    type: string
             

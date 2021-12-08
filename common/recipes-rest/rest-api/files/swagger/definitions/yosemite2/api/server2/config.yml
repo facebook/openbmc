@@ -14,28 +14,6 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  pwr_server2_last_state: 
-                    type: string
-                  slot2_por_cfg: 
-                    type: string
-                  sysfw_ver_slot2: 
-                    type: string
-                  slot2_cpu_ppin: 
-                    type: string
-                  slot2_sensor_health: 
-                    type: string
-                  slot2_trigger_hpr: 
-                    type: string
-                  slot2_sel_error: 
-                    type: string
-                  slot2_boot_order: 
-                    type: string
-                  identify_slot2: 
-                    type: string
               Actions: 
                 type: array
                 items: 
@@ -44,4 +22,26 @@ paths:
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  slot2_por_cfg: 
+                    type: string
+                  pwr_server2_last_state: 
+                    type: string
+                  slot2_boot_order: 
+                    type: string
+                  slot2_sensor_health: 
+                    type: string
+                  identify_slot2: 
+                    type: string
+                  slot2_trigger_hpr: 
+                    type: string
+                  sysfw_ver_slot2: 
+                    type: string
+                  slot2_cpu_ppin: 
+                    type: string
+                  slot2_sel_error: 
+                    type: string
             

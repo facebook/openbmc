@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api  
-  title: Swagger doc for /api  
+  description: Swagger doc for /api/fans  
+  title: Swagger doc for /api/fans  
   version: 1.0.0
 paths: 
-  /api: 
+  /api/fans: 
     get: 
       produces: [application/json]
       responses: 
@@ -23,11 +23,7 @@ paths:
                 items: 
                   type: string
               Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  version: 
-                    type: string
-                  Description: 
-                    type: string
+                type: array
+                items: 
+                  type: string
             

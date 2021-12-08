@@ -14,12 +14,6 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Force Boot to BIOS Setup Function: 
-                    type: string
               Actions: 
                 type: array
                 items: 
@@ -28,4 +22,10 @@ paths:
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Force Boot to BIOS Setup Function: 
+                    type: string
             

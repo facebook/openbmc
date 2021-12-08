@@ -14,16 +14,6 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Note #1: Actions Format:: 
-                    type: string
-                  Boot Mode: 
-                    type: string
-                  Note #2: Boot Mode No.: 
-                    type: string
               Actions: 
                 type: array
                 items: 
@@ -32,4 +22,14 @@ paths:
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Boot Mode: 
+                    type: string
+                  Note #2: Boot Mode No.: 
+                    type: string
+                  Note #1: Actions Format:: 
+                    type: string
             

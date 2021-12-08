@@ -14,113 +14,37 @@ paths:
             type: object
             additionalProperties: false
             properties: 
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
               Information: 
                 type: object
                 additionalProperties: false
                 properties: 
-                  PVCCIO VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCIO VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   PVCCSA VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  PVDDQ_AB VR Pout: 
+                  MB Outlet Temp_B: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  PVCCIN VR Curr: 
+                  PVCCSA VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P3V3_STBY_MB: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V05_PCH: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCSA VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V05PCH VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCIO VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_DE VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCIO VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVNNPCH: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_AB VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PV_BAT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVNN_PCH VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_DE VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVNN_PCH VR Pout: 
+                  SOC DIMMB1 Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -132,55 +56,25 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMB0 Temp: 
+                  PVCCSA VR Pout: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P1V05PCH VR Curr: 
+                  PVDDQ_DE VR Pout: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P12V_STBY_MB: 
+                  PVCCIO VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC DIMME1 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_DE VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMME0 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_DE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Tjmax: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCIN VR Vol: 
+                  MB Outlet Temp_T: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -192,19 +86,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  PVCCIN VR Pout: 
+                  INA230 Power: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC Therm Margin: 
+                  PVCCIN VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  PVDDQ_AB: 
+                  PVNN_PCH VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -216,7 +110,73 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  P1V05PCH VR Temp: 
+                  PVNN_PCH VR Curr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V05PCH VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVDDQ_DE VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMD1 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVDDQ_AB VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Package Pwr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVDDQ_AB VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P3V3_STBY_MB: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMME0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVNN_PCH VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Tjmax: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  INA230 Voltage: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -234,6 +194,48 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SOC DIMMB0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMD0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HOST_BOOT_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Therm Margin: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVDDQ_AB: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVCCIO VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVDDQ_AB VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   P3V3_MB: 
                     type: object
                     additionalProperties: false
@@ -246,19 +248,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMD1 Temp: 
+                  SOC DIMME1 Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMD0 Temp: 
+                  P1V05PCH VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  INA230 Voltage: 
+                  PVCCIN VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -270,31 +272,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  PVNN_PCH VR Temp: 
+                  P1V05PCH VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  MB Outlet Temp_B: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_AB VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Package Pwr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMB1 Temp: 
+                  PVDDQ_DE VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -306,37 +290,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  NVMe2 CTemp: 
+                  PVCCIN VR Pout: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMA0 Temp: 
+                  PVDDQ_DE: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  MB Outlet Temp_T: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCSA VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  INA230 Power: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDQ_DE VR Temp: 
+                  P12V_STBY_MB: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -348,12 +314,52 @@ paths:
                     properties: 
                       value: 
                         type: string
-              Actions: 
-                type: array
-                items: 
-                  type: string
-              Resources: 
-                type: array
-                items: 
-                  type: string
+                  PV_BAT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVNNPCH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVCCIO VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  NVMe2 CTemp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVDDQ_DE VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V05_PCH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVCCIO VR Curr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMA0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
             

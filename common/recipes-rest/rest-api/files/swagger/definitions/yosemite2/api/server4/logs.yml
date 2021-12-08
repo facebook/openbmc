@@ -14,6 +14,14 @@ paths:
             type: object
             additionalProperties: false
             properties: 
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
               Information: 
                 type: object
                 additionalProperties: false
@@ -24,9 +32,9 @@ paths:
                       type: object
                       additionalProperties: false
                       properties: 
-                        APP_NAME: 
-                          type: string
                         FRU_NAME: 
+                          type: string
+                        APP_NAME: 
                           type: string
                         TIME_STAMP: 
                           type: string
@@ -34,12 +42,4 @@ paths:
                           type: string
                         MESSAGE: 
                           type: string
-              Actions: 
-                type: array
-                items: 
-                  type: string
-              Resources: 
-                type: array
-                items: 
-                  type: string
             

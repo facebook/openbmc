@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api  
-  title: Swagger doc for /api  
+  description: Swagger doc for /api/sys/ntp  
+  title: Swagger doc for /api/sys/ntp  
   version: 1.0.0
 paths: 
-  /api: 
+  /api/sys/ntp: 
     get: 
       produces: [application/json]
       responses: 
@@ -26,8 +26,6 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  version: 
-                    type: string
-                  Description: 
+                  reason: 
                     type: string
             

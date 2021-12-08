@@ -26,11 +26,19 @@ import sys
 import traceback
 
 from image_meta import FBOBMCImageMeta
-from vboot_common import EC_EXCEPTION, EC_SUCCESS, get_fdt, get_fdt_from_file, read_vbs
+from vboot_common import (
+    EC_EXCEPTION,
+    EC_SUCCESS,
+    EC_MEASURE_FAIL_BASE,
+    get_fdt,
+    get_fdt_from_file,
+    read_vbs,
+    VBS_ERROR_TYPE_OFFSET,
+    VBS_ERROR_CODE_OFFSET,
+)
 
 
-MBOOT_CHECK_VERSION = "4"
-
+MBOOT_CHECK_VERSION = "5"
 FIT_SIGN_HASH_ALGO = "sha256"
 
 
@@ -344,18 +352,8 @@ def gen_attest_allowlists(flash0_meta, flash1_meta):
     return EC_SUCCESS
 
 
-def main():
-    if args.image:
-        flash0_meta = FBOBMCImageMeta(args.image)
-        flash1_meta = FBOBMCImageMeta(args.image)
-    else:
-        flash0_meta = FBOBMCImageMeta(args.flash0)
-        flash1_meta = FBOBMCImageMeta(args.flash1)
-
-    if args.components:
-        return gen_attest_allowlists(flash0_meta, flash1_meta)
-
-    mboot_measures = [
+def get_all_measures(flash0_meta, flash1_meta):
+    return [
         {  # SPL
             "component": "spl",
             "pcr_id": 0,
@@ -421,6 +419,170 @@ def main():
         },
     ]
 
+
+def get_vboot_success_measures(flash0_meta, flash1_meta):
+    return [
+        {  # SPL
+            "component": "spl",
+            "pcr_id": 0,
+            "algo": args.algo,
+            "expect": measure_spl(args.algo, flash0_meta).hex(),
+            "measure": "NA",
+        },
+        {  # key-store
+            "component": "key-store",
+            "pcr_id": 1,
+            "algo": args.algo,
+            "expect": measure_keystore(args.algo, flash1_meta).hex(),
+            "measure": "NA",
+        },
+        {  # u-boot
+            "component": "u-boot",
+            "pcr_id": 2,
+            "algo": args.algo,
+            "expect": measure_uboot(args.algo, flash1_meta, args.recal).hex(),
+            "measure": "NA",
+        },
+        {  # vbs
+            "component": "vbs",
+            "pcr_id": 5,
+            "algo": args.algo,
+            "expect": measure_vbs(args.algo).hex() if args.tpm else "NA",
+            "measure": "NA",
+        },
+        {  # os
+            "component": "os",
+            "pcr_id": 9,
+            "algo": args.algo,
+            "expect": measure_os(args.algo, flash1_meta, args.recal).hex(),
+            "measure": "NA",
+        },
+    ]
+
+
+def get_vboot_os_invalid_measures(flash0_meta, flash1_meta):
+    return [
+        {  # SPL
+            "component": "spl",
+            "pcr_id": 0,
+            "algo": args.algo,
+            "expect": measure_spl(args.algo, flash0_meta).hex(),
+            "measure": "NA",
+        },
+        {  # key-store
+            "component": "key-store",
+            "pcr_id": 1,
+            "algo": args.algo,
+            "expect": measure_keystore(args.algo, flash1_meta).hex(),
+            "measure": "NA",
+        },
+        {  # u-boot
+            "component": "u-boot",
+            "pcr_id": 2,
+            "algo": args.algo,
+            "expect": measure_uboot(args.algo, flash1_meta, args.recal).hex(),
+            "measure": "NA",
+        },
+        {  # vbs
+            "component": "vbs",
+            "pcr_id": 5,
+            "algo": args.algo,
+            "expect": measure_vbs(args.algo).hex() if args.tpm else "NA",
+            "measure": "NA",
+        },
+        {  # recovery-os
+            "component": "recovery-os",
+            "pcr_id": 9,
+            "algo": args.algo,
+            "expect": measure_os(args.algo, flash0_meta, args.recal).hex(),
+            "measure": "NA",
+        },
+    ]
+
+
+def get_vboot_general_fail_measures(flash0_meta, flash1_meta):
+    return [
+        {  # SPL
+            "component": "spl",
+            "pcr_id": 0,
+            "algo": args.algo,
+            "expect": measure_spl(args.algo, flash0_meta).hex(),
+            "measure": "NA",
+        },
+        {  # key-store
+            "component": "key-store",
+            "pcr_id": 1,
+            "algo": args.algo,
+            "expect": measure_keystore(args.algo, flash1_meta).hex(),
+            "measure": "NA",
+        },
+        {  # Recovery u-boot
+            "component": "rec-u-boot",
+            "pcr_id": 2,
+            "algo": args.algo,
+            "expect": measure_rcv_uboot(args.algo, flash0_meta).hex(),
+            "measure": "NA",
+        },
+        {  # vbs
+            "component": "vbs",
+            "pcr_id": 5,
+            "algo": args.algo,
+            "expect": measure_vbs(args.algo).hex() if args.tpm else "NA",
+            "measure": "NA",
+        },
+        {  # recovery-os
+            "component": "recovery-os",
+            "pcr_id": 9,
+            "algo": args.algo,
+            "expect": measure_os(args.algo, flash0_meta, args.recal).hex(),
+            "measure": "NA",
+        },
+    ]
+
+
+def get_vboot_status():
+    vbs_data = read_vbs()
+    return vbs_data[VBS_ERROR_TYPE_OFFSET], vbs_data[VBS_ERROR_CODE_OFFSET]
+
+
+def get_need_checked_measures(flash0_meta, flash1_meta):
+    # not running on BMC we are calculating expected measurement
+    # of the input image
+    if not args.tpm:
+        return get_all_measures(flash0_meta, flash1_meta)
+
+    # running on BMC we are doing measurement checking
+    # get the measures need to check based on vboot status
+    vbs_err_type, vbs_err_code = get_vboot_status()
+    if vbs_err_type == 0 and vbs_err_code == 0:
+        return get_vboot_success_measures(flash0_meta, flash1_meta)
+
+    if vbs_err_type == 6 and vbs_err_code == 60:
+        return get_vboot_os_invalid_measures(flash0_meta, flash1_meta)
+
+    return get_vboot_general_fail_measures(flash0_meta, flash1_meta)
+
+
+def main():
+    flash0_meta = None
+    flash1_meta = None
+    try:
+        if args.image:
+            flash0_meta = FBOBMCImageMeta(args.image)
+            flash1_meta = FBOBMCImageMeta(args.image)
+        else:
+            flash0_meta = FBOBMCImageMeta(args.flash0)
+            flash1_meta = FBOBMCImageMeta(args.flash1)
+    except Exception:
+        # now just bypass and let the invalid flasX_meta be None
+        # we will catch the error later when we need measure it
+        pass
+
+    if args.components:
+        return gen_attest_allowlists(flash0_meta, flash1_meta)
+
+    mboot_measures = get_need_checked_measures(flash0_meta, flash1_meta)
+
     if args.tpm:
         for measure in mboot_measures:
             measure["measure"] = read_tpm2_pcr(measure["algo"], measure["pcr_id"]).hex()
@@ -434,7 +596,13 @@ def main():
             )
             print(f'   [{measure["measure"]}] (pcr{measure["pcr_id"]})')
 
-    return EC_SUCCESS
+    ret = EC_SUCCESS
+    if args.tpm:
+        for measure in mboot_measures:
+            if measure["measure"] != measure["expect"]:
+                ret = EC_MEASURE_FAIL_BASE + measure["pcr_id"]
+
+    return ret
 
 
 if __name__ == "__main__":

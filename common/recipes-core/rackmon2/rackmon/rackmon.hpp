@@ -6,14 +6,6 @@
 #include "modbus_device.hpp"
 #include "pollthread.hpp"
 
-struct RackmonStatus {
-  bool started;
-  time_t last_scan;
-  time_t last_monitor;
-  std::vector<ModbusDeviceStatus> devices;
-};
-void to_json(nlohmann::json& j, const RackmonStatus& m);
-
 class Rackmon {
   static constexpr time_t dormant_min_inactive_time = 300;
   static constexpr modbus_time probe_timeout = std::chrono::milliseconds(50);
@@ -83,11 +75,11 @@ class Rackmon {
   // Executes the Raw command. Throws an exception on error.
   void rawCmd(Msg& req, Msg& resp, modbus_time timeout);
 
+  // Get status of devices
+  std::vector<ModbusDeviceStatus> list_devices();
+
   // Get monitored data
   void get_monitor_data(std::vector<ModbusDeviceMonitorData>& ret);
-
-  // Get status of devices
-  void get_monitor_status(RackmonStatus& ret);
 
   // Get formatted monitor data
   void get_monitor_data_formatted(std::vector<ModbusDeviceFormattedData>& ret);

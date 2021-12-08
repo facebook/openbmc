@@ -167,6 +167,17 @@ void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
   devices.at(addr)->command(req, resp, timeout);
 }
 
+std::vector<ModbusDeviceStatus> Rackmon::list_devices() {
+  std::shared_lock lock(devices_mutex);
+  std::vector<ModbusDeviceStatus> ret;
+  std::transform(
+      devices.begin(),
+      devices.end(),
+      std::back_inserter(ret),
+      [](auto& kv) { return kv.second->get_status(); });
+  return ret;
+}
+
 void Rackmon::get_monitor_data(std::vector<ModbusDeviceMonitorData>& ret) {
   ret.clear();
   std::shared_lock lock(devices_mutex);
@@ -174,20 +185,6 @@ void Rackmon::get_monitor_data(std::vector<ModbusDeviceMonitorData>& ret) {
       devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
         return kv.second->get_monitor_data();
       });
-}
-
-void Rackmon::get_monitor_status(RackmonStatus& ret) {
-  ret.started = threads.size() > 0;
-  ret.last_scan = last_scan_time;
-  ret.last_monitor = last_monitor_time;
-
-  std::shared_lock lock(devices_mutex);
-  ret.devices.clear();
-  std::transform(
-      devices.begin(),
-      devices.end(),
-      std::back_inserter(ret.devices),
-      [](auto& kv) { return kv.second->get_status(); });
 }
 
 void Rackmon::get_monitor_data_formatted(
@@ -198,10 +195,4 @@ void Rackmon::get_monitor_data_formatted(
       devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
         return kv.second->get_formatted_data();
       });
-}
-
-void to_json(json& j, const RackmonStatus& m) {
-  j["running_status"] = m.started;
-  j["last_scan"] = m.last_scan;
-  j["devices"] = m.devices;
 }

@@ -76,14 +76,12 @@ void RackmonUNIXSocketService::handle_json_command(
     for (size_t i = 0; i < resp_m.len; i++) {
       resp["data"].push_back(int(resp_m.raw[i]));
     }
-  } else if (cmd == "status") {
-    RackmonStatus ret;
-    rackmond.get_monitor_status(ret);
-    resp["monitor_status"] = ret;
+  } else if (cmd == "list") {
+    resp["data"] = rackmond.list_devices();
   } else if (cmd == "data") {
     std::vector<ModbusDeviceMonitorData> ret;
     rackmond.get_monitor_data(ret);
-    resp["monitor_data"] = ret;
+    resp["data"] = ret;
   } else if (cmd == "pause") {
     rackmond.stop();
   } else if (cmd == "resume") {
@@ -91,7 +89,7 @@ void RackmonUNIXSocketService::handle_json_command(
   } else if (cmd == "formatted_data") {
     std::vector<ModbusDeviceFormattedData> ret;
     rackmond.get_monitor_data_formatted(ret);
-    resp["monitor_data"] = ret;
+    resp["data"] = ret;
   } else {
     throw std::logic_error("UNKNOWN_CMD: " + cmd);
   }

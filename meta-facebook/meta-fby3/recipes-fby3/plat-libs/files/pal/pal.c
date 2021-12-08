@@ -708,6 +708,7 @@ int
 pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   static uint8_t bmc_location = 0;
   static bool is_called = false;
+  uint8_t slot = fruid;
 
   // get the location
   if ( (bmc_location == 0) && (fby3_common_get_bmc_location(&bmc_location) < 0) ) {
@@ -727,8 +728,12 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
     is_called = true;
   }
 
+  if (pal_is_cwc() == PAL_EOK) {
+    pal_get_fru_slot(fruid, &slot);
+  }
+
   // set fw_update_ongoing flag
-  if ( _set_fw_update_ongoing(fruid, tmout) < 0 ) {
+  if ( _set_fw_update_ongoing(slot, tmout) < 0 ) {
     printf("Failed to set fw update ongoing\n");
     return PAL_ENOTSUP;
   }
@@ -795,7 +800,11 @@ pal_is_fan_manual_mode(uint8_t slot_id) {
 
 bool
 pal_is_fw_update_ongoing(uint8_t fruid) {
-  return bic_is_fw_update_ongoing(fruid);
+  uint8_t slot = fruid;
+  if (pal_is_cwc() == PAL_EOK) {
+    pal_get_fru_slot(fruid, &slot);
+  }
+  return bic_is_fw_update_ongoing(slot);
 }
 
 int

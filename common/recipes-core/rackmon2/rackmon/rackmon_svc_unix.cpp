@@ -52,7 +52,7 @@ class RackmonUNIXSocketService {
   // The main service loop. This will block
   // till someone requests it to exit.
   void do_loop();
-  static void trigger_exit(int signum) {
+  static void trigger_exit(int /* unused */) {
     svc.request_exit();
   }
   static RackmonUNIXSocketService svc;
@@ -237,7 +237,7 @@ void RackmonUNIXSocketService::register_exit_handler() {
   }
 }
 
-void RackmonUNIXSocketService::initialize(int argc, char* argv[]) {
+void RackmonUNIXSocketService::initialize(int /*unused */, char** /* unused */) {
   std::cout << "Loading configuration" << std::endl;
   rackmond.load(rackmon_configuration_path, rackmon_regmap_dir_path);
   std::cout << "Starting rackmon threads" << std::endl;
@@ -288,14 +288,8 @@ void RackmonUNIXSocketService::handle_connection(RackmonSock& sock) {
 void RackmonUNIXSocketService::do_loop() {
   struct sockaddr_un client;
   struct pollfd pfd[2] = {
-      {
-          .fd = sock->get_sock(),
-          .events = POLLIN,
-      },
-      {
-          .fd = backchannel_handler,
-          .events = POLLIN,
-      },
+      { sock->get_sock(), POLLIN, 0},
+      { backchannel_handler, POLLIN, 0},
   };
 
   while (1) {

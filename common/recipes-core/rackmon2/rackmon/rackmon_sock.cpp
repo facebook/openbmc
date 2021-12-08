@@ -1,9 +1,8 @@
 #include "rackmon_svc_unix.hpp"
 
 std::tuple<struct sockaddr_un, size_t> RackmonSock::get_service_addr() {
-  struct sockaddr_un ret = {
-      .sun_family = AF_UNIX,
-  };
+  struct sockaddr_un ret{};
+  ret.sun_family = AF_UNIX;
   std::strcpy(ret.sun_path, sock_path.data());
   return std::make_tuple(ret, sock_path.size() + sizeof(ret.sun_family));
 }

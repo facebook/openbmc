@@ -55,7 +55,7 @@ void AspeedRS485Device::open() {
 }
 
 void UARTDevice::set_attribute(bool read_en) {
-  struct termios tio = {0};
+  struct termios tio{};
   cfsetspeed(&tio, speed_map.at(baudrate));
   tio.c_cflag |= PARENB;
   tio.c_cflag |= CLOCAL;

@@ -21,8 +21,10 @@ import unittest
 
 from common.base_sensor_test import SensorUtilTest
 from tests.fbttn.test_data.sensors.sensors import SENSORS
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class MBSensorTest(SensorUtilTest, unittest.TestCase):
     FRU_NAME = "server"
 

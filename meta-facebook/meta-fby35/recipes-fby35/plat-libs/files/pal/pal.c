@@ -109,6 +109,9 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SB_CPLD_VER_REG  (0x000000c0)
 #define KEY_BMC_CPLD_VER "bmc_cpld_ver"
 
+#define ERROR_LOG_LEN 256
+#define ERR_DESC_LEN 64
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -247,6 +250,9 @@ PCIE_ERR_DECODE pcie_err_tab[] = {
     {0x50, "Received ERR_COR Message"},
     {0x51, "Received ERR_NONFATAL Message"},
     {0x52, "Received ERR_FATAL Message"},
+    {0x53, "DPC triggered by uncorrectable error"},
+    {0x54, "DPC triggered by ERR_NONFATAL"},
+    {0x55, "DPC triggered by ERR_FATAL"},
     {0x59, "LER was triggered by ERR_NONFATAL"},
     {0x5A, "LER was triggered by ERR_FATAL"},
     {0xA0, "PERR (non-AER)"},
@@ -1680,20 +1686,20 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
 }
 
 static void
-pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char **err1_desc, char **err2_desc) {
-  int i = 0;
+pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char *err1_desc, char *err2_desc) {
+  int i;
   int size = (sizeof(pcie_err_tab)/sizeof(PCIE_ERR_DECODE));
 
   for ( i = 0; i < size; i++ ) {
     if ( err2_id == pcie_err_tab[i].err_id ) {
-      *err2_desc = pcie_err_tab[i].err_descr;
+      snprintf(err2_desc, ERR_DESC_LEN, "(%s)", pcie_err_tab[i].err_descr);
       continue;
     } else if ( err1_id == pcie_err_tab[i].err_id ) {
-      *err1_desc = pcie_err_tab[i].err_descr;
+      snprintf(err1_desc, ERR_DESC_LEN, "(%s)", pcie_err_tab[i].err_descr);
       continue;
     }
 
-    if ( strcmp(*err1_desc,"NA") && strcmp(*err2_desc,"NA") ) {
+    if ( err1_desc[0] && err2_desc[0] ) {
       break;
     }
   }
@@ -1720,7 +1726,7 @@ pal_search_pcie_dev(MAPTOSTRING *tbl, int size, uint8_t bmc_location, uint8_t de
 }
 
 static void
-pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location, char **err1_str, char **err2_str) {
+pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location, char *err1_str, char *err2_str) {
   uint8_t bmc_location = 0;
   uint8_t dev = pdata[0] >> 3;
   uint8_t bus = pdata[1];
@@ -2086,8 +2092,6 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 int
 pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-#define ERROR_LOG_LEN 256
-
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat = 0;
@@ -2095,17 +2099,17 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   error_log[0] = '\0';
   char *sil = "NA";
   char *location = "NA";
-  char *err1_descript = "NA", *err2_descript = "NA";
+  char err1_desc[ERR_DESC_LEN] = {0}, err2_desc[ERR_DESC_LEN] = {0};
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
-        pal_get_pcie_err_string(fru, &sel[10], &sil, &location, &err1_descript, &err2_descript);
+        pal_get_pcie_err_string(fru, &sel[10], &sil, &location, err1_desc, err2_desc);
 
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,"
-                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
-                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);
+                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X%s, ErrID1: 0x%02X%s",
+                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_desc, sel[15], err1_desc);
       } else {
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X,"
                             "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
@@ -3385,21 +3389,21 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util bmc --version cpld | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version fscd | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version tpm | awk '{print $NF}'",
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
       NULL
     },
     // NIC
     {
       "/usr/bin/fw-util nic --version | awk '{print $NF}'",
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       NULL
     },
     // Base board
@@ -3408,10 +3412,10 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util slot1 --version bb_bicbl | awk '{print $NF}'",
       "/usr/bin/fw-util slot1 --version bb_cpld | awk '{print $NF}'",
       NULL,
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       NULL
     },
     // Server board
@@ -3429,12 +3433,12 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     {
       "/usr/bin/fw-util slot1 --version 2ou_bic | awk '{print $NF}'",
       "/usr/bin/fw-util slot1 --version 2ou_bicbl | awk '{print $NF}'",
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
-      NULL, 
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
+      NULL,
       NULL
     }
   };

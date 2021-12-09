@@ -99,9 +99,9 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define IPMI_GET_VER_FRU_NUM  5
 #define IPMI_GET_VER_MAX_COMP 9
-#define MAX_FW_VER_LEN        32  //include the string terminal 
+#define MAX_FW_VER_LEN        32  //include the string terminal
 
-#define MAX_COMPONENT_LEN 32 //include the string terminal 
+#define MAX_COMPONENT_LEN 32 //include the string terminal
 
 #define BMC_CPLD_BUS     (12)
 #define CPLD_FW_VER_ADDR (0x80)
@@ -111,6 +111,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define ERROR_LOG_LEN 256
 #define ERR_DESC_LEN 64
+static int key_func_pwr_last_state(int event, void *arg);
+static int key_func_por_cfg(int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -133,15 +135,15 @@ struct pal_key_cfg {
   {SYSFW_VER "2", "0", NULL},
   {SYSFW_VER "3", "0", NULL},
   {SYSFW_VER "4", "0", NULL},
-  {"pwr_server1_last_state", "on", NULL},
-  {"pwr_server2_last_state", "on", NULL},
-  {"pwr_server3_last_state", "on", NULL},
-  {"pwr_server4_last_state", "on", NULL},
+  {"pwr_server1_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server2_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server3_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server4_last_state", "on", key_func_pwr_last_state},
   {"timestamp_sled", "0", NULL},
-  {"slot1_por_cfg", "lps", NULL},
-  {"slot2_por_cfg", "lps", NULL},
-  {"slot3_por_cfg", "lps", NULL},
-  {"slot4_por_cfg", "lps", NULL},
+  {"slot1_por_cfg", "lps", key_func_por_cfg},
+  {"slot2_por_cfg", "lps", key_func_por_cfg},
+  {"slot3_por_cfg", "lps", key_func_por_cfg},
+  {"slot4_por_cfg", "lps", key_func_por_cfg},
   {"slot1_boot_order", "0100090203ff", NULL},
   {"slot2_boot_order", "0100090203ff", NULL},
   {"slot3_boot_order", "0100090203ff", NULL},
@@ -279,6 +281,26 @@ pal_key_index(char *key) {
   syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
 #endif
   return -1;
+}
+
+static int
+key_func_pwr_last_state(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
+}
+
+static int
+key_func_por_cfg(int event, void *arg) {
+  if (event == KEY_BEFORE_SET) {
+    if (strcmp((char *)arg, "lps") && strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
+      return -1;
+  }
+
+  return 0;
 }
 
 int
@@ -1907,7 +1929,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       } else {
         snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by unknown slot", fan_mode_str);
       }
-      
+
       strcat(error_log, log_msg);
       break;
     case SYS_BB_FW_EVENT:
@@ -2428,7 +2450,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           // if BB fw update complete, delete the key
           kv_del("bb_fw_update", 0);
         }
-        
+
         return PAL_EOK;
       }
       break;
@@ -3369,7 +3391,7 @@ pal_get_sensor_util_timeout(uint8_t fru) {
   }
 }
 
-// IPMI OEM Command 
+// IPMI OEM Command
 // netfn: NETFN_OEM_1S_REQ (0x38)
 // command code: CMD_OEM_1S_GET_SYS_FW_VER (0x40)
 int

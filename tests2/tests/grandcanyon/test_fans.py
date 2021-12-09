@@ -17,14 +17,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
-import pal
 import ctypes
+import unittest
 
 from common.base_fans_test import CommonFanUtilBasedFansTest
 from utils.cit_logger import Logger
 
-libpal = ctypes.CDLL("libpal.so.0")
 
 UNKNOWN_FAN_CNT = 0
 SINGLE_FAN_CNT = 4
@@ -33,6 +31,7 @@ DUAL_FAN_CNT = 8
 
 class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
     def pal_get_tach_cnt(self) -> int:
+        libpal = ctypes.CDLL("libpal.so.0")
         fan_cnt = libpal.pal_get_tach_cnt()
         if fan_cnt == UNKNOWN_FAN_CNT:
             raise ValueError("Unknown fan count")

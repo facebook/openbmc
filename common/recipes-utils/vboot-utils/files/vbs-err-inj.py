@@ -7,12 +7,10 @@ import sys
 import traceback
 from collections import namedtuple, OrderedDict
 
+from vboot_common import read_vbs, write_vbs, VBS_SIZE
 
-VBS_ERROR_INJECTION_VERSION = 1
-SRAM_OFFSET = 0x1E720000
-SRAM_SIZE = 36 * 1024
-VBS_OFFSET = 0x200
-VBS_SIZE = 56
+
+VBS_ERROR_INJECTION_VERSION = 2
 
 EC_SUCCESS = 0
 EC_EXCEPTION = 2
@@ -167,45 +165,6 @@ def unpack_vbs(vbs_data: bytearray) -> OrderedDict:
     ), f"vbs pack size {VBS_PACK_STR}  is not {VBS_SIZE}"
     vbs = VBS(*struct.unpack(VBS_PACK_STR, vbs_data))
     return vbs._asdict()
-
-
-def write_vbs(vbs_data: bytearray):
-    memfn = None
-    assert (
-        len(vbs_data) == VBS_SIZE
-    ), f"vbs_data length {len(vbs_data)} is not {VBS_SIZE}"
-    try:
-        memfn = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
-        with mmap.mmap(
-            memfn,
-            SRAM_SIZE,
-            mmap.MAP_SHARED,
-            mmap.PROT_READ | mmap.PROT_WRITE,
-            offset=SRAM_OFFSET,
-        ) as sram:
-            sram.seek(VBS_OFFSET)
-            sram.write(vbs_data)
-    finally:
-        if memfn is not None:
-            os.close(memfn)
-
-
-def read_vbs() -> bytearray:
-    memfn = None
-    try:
-        memfn = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
-        with mmap.mmap(
-            memfn,
-            SRAM_SIZE,
-            mmap.MAP_SHARED,
-            mmap.PROT_READ | mmap.PROT_WRITE,
-            offset=SRAM_OFFSET,
-        ) as sram:
-            sram.seek(VBS_OFFSET)
-            return sram.read(VBS_SIZE)
-    finally:
-        if memfn is not None:
-            os.close(memfn)
 
 
 def list_vbs_error_code():

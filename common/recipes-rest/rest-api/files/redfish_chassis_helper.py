@@ -67,8 +67,7 @@ def get_pal_sensor(fru_name: str, fru_id: int, sensor_id: int) -> SensorDetails:
     try:
         sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
     except sdr.LibSdrError:
-        sensor_name = None
-
+        sensor_name = str(sensor_id)
     sensor_name = fru_name + "/" + fru_name + "/" + sensor_name
 
     if sensor_unit == "%":

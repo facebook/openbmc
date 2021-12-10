@@ -215,14 +215,14 @@ enum CTRL_LOW_ACTIVE{
 /* Enum for type of Upper and Lower threshold values */
 enum {
   SENSOR_VALID = 0x0,
-  UCR_THRESH = 0x01,
-  UNC_THRESH,
-  UNR_THRESH,
-  LCR_THRESH,
-  LNC_THRESH,
-  LNR_THRESH,
-  POS_HYST,
-  NEG_HYST,
+  UCR_THRESH = 0x01,  /* Upper Critical */
+  UNC_THRESH,         /* Upper Non-Critical */
+  UNR_THRESH,         /* Upper Non-Recoverable */
+  LCR_THRESH,         /* Lower Critical */
+  LNC_THRESH,         /* Lower Non-Critical */
+  LNR_THRESH,         /* Lower Non-Recoverable */
+  POS_HYST,           /* Positive Hysteresis */
+  NEG_HYST,           /* Negative Hysteresis */
 };
 
 enum {

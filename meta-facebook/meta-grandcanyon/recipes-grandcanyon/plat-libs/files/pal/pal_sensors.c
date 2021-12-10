@@ -7,6 +7,7 @@
 #include <time.h>
 #include <sys/mman.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <string.h>
 #include <ctype.h>
 #include <openbmc/kv.h>
@@ -50,6 +51,8 @@ static bool e1s_removed[2] = {0};
 static bool iocm_removed = false;
 static uint8_t e1s_adc_skip_times[ADC128_E1S_PIN_CNT] = {0};
 static uint8_t max_iocm_reinit_times = MAX_RETRY;
+static bool scc_thresh_init = false;
+static bool dpb_thresh_init = false;
 
 //{SensorName, ID, FUNCTION, STBY_READ, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP uic_sensor_map[] = {
@@ -1315,6 +1318,238 @@ read_ioc_temp(uint8_t id, float *value) {
 }
 
 static int
+exp_read_sensor_thresh_wrapper(uint8_t fru, uint8_t *sensor_list, thresh_sensor_t *snr_thresh, int sensor_cnt, uint8_t index) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rlen = 0, tlen = 0;
+  uint8_t snr_num = 0;
+  int ret = 0, i = 0, retry = 0;
+  int tach_cnt = 0;
+  float high_crit = 0, high_warn = 0, low_crit = 0, low_warn = 0;
+  EXPANDER_THRES_DATA *p_thres_data = NULL;
+
+  if ((sensor_list == NULL) || (snr_thresh == NULL)) {
+    syslog(LOG_WARNING, "%s() failed to get sensor threshold from expander because NULL pointer\n", __func__);
+    return -1;
+  }
+
+  tbuf[0] = sensor_cnt;
+  for(i = 0 ; i < sensor_cnt; i++) {
+    tbuf[i + 1] = sensor_list[i + index];  //feed sensor number to tbuf
+  }
+  tlen = sensor_cnt + 1;
+
+  //send tbuf with sensor count and numbers to get specific sensor threshold data from exp
+  do {
+    ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_SENSOR_THRESHOLD, tbuf, tlen, rbuf, &rlen);
+    retry++;
+  } while ((ret < 0) && (retry < MAX_RETRY));
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() expander_ipmb_wrapper failed. ret: %d\n", __func__, ret);
+    return ret;
+  }
+
+  tach_cnt = pal_get_tach_cnt();
+
+  p_thres_data = (EXPANDER_THRES_DATA *)(&rbuf[1]);
+
+  for(i = 0; i < sensor_cnt; i++) {
+    snr_num = p_thres_data[i].sensor_num;
+    snr_thresh[snr_num].flag = GETMASK(SENSOR_VALID) | GETMASK(UCR_THRESH) | 
+      GETMASK(UNC_THRESH) | GETMASK(LCR_THRESH) | GETMASK(LNC_THRESH);
+    pal_get_sensor_name(fru, snr_num, snr_thresh[snr_num].name);
+    pal_get_sensor_units(fru, snr_num, snr_thresh[snr_num].units);
+
+    if (strncmp(snr_thresh[snr_num].units, "C", sizeof(snr_thresh[snr_num].units)) == 0) {
+      high_crit = p_thres_data[i].high_crit_2;
+      high_warn = p_thres_data[i].high_warn_2;
+      low_crit = p_thres_data[i].low_crit_2;
+      low_warn = p_thres_data[i].low_warn_2;
+    } else if (strncmp(snr_thresh[snr_num].units, "RPM", sizeof(snr_thresh[snr_num].units)) == 0) {
+      high_crit = (((p_thres_data[i].high_crit_1 << 8) + p_thres_data[i].high_crit_2)) * 10;
+      high_warn = (((p_thres_data[i].high_warn_1 << 8) + p_thres_data[i].high_warn_2)) * 10;
+      low_crit = (((p_thres_data[i].low_crit_1 << 8) + p_thres_data[i].low_crit_2)) * 10;
+      low_warn = (((p_thres_data[i].low_warn_1 << 8) + p_thres_data[i].low_warn_2)) * 10;
+
+      if (tach_cnt == SINGLE_FAN_CNT) {
+        if ((snr_num == FAN_0_REAR) || (snr_num == FAN_1_REAR)
+          || (snr_num == FAN_2_REAR) || (snr_num == FAN_3_REAR)) {
+            continue;
+          }
+      } else if (tach_cnt == UNKNOWN_FAN_CNT) {
+        continue;
+      }
+    } else if (strncmp(snr_thresh[snr_num].units, "Watts", sizeof(snr_thresh[snr_num].units)) == 0) {
+      high_crit = (((p_thres_data[i].high_crit_1 << 8) + p_thres_data[i].high_crit_2));
+      high_warn = (((p_thres_data[i].high_warn_1 << 8) + p_thres_data[i].high_warn_2));
+      low_crit = (((p_thres_data[i].low_crit_1 << 8) + p_thres_data[i].low_crit_2));
+      low_warn = (((p_thres_data[i].low_warn_1 << 8) + p_thres_data[i].low_warn_2));
+    } else {
+      high_crit = (float)(((p_thres_data[i].high_crit_1 << 8) + p_thres_data[i].high_crit_2)) / 100;
+      high_warn = (float)(((p_thres_data[i].high_warn_1 << 8) + p_thres_data[i].high_warn_2)) / 100;
+      low_crit = (float)(((p_thres_data[i].low_crit_1 << 8) + p_thres_data[i].low_crit_2)) / 100;
+      low_warn = (float)(((p_thres_data[i].low_warn_1 << 8) + p_thres_data[i].low_warn_2)) / 100;
+    }
+
+    // Get threshold of SCC_IOC_TEMP from sensor map
+    if ((fru == FRU_SCC) && (snr_num == SCC_IOC_TEMP)) {
+      high_crit = scc_sensor_map[snr_num].snr_thresh.ucr_thresh;
+      high_warn = scc_sensor_map[snr_num].snr_thresh.unc_thresh;
+      low_crit = scc_sensor_map[snr_num].snr_thresh.lcr_thresh;
+      low_warn = scc_sensor_map[snr_num].snr_thresh.lnc_thresh;
+    }
+    snr_thresh[snr_num].ucr_thresh = high_crit;
+    snr_thresh[snr_num].unc_thresh = high_warn;
+    snr_thresh[snr_num].lcr_thresh = low_crit;
+    snr_thresh[snr_num].lnc_thresh = low_warn;
+    if (snr_thresh[snr_num].ucr_thresh == 0) {
+      snr_thresh[snr_num].flag = CLEARBIT(snr_thresh[snr_num].flag, UCR_THRESH);
+    }
+    if (snr_thresh[snr_num].unc_thresh == 0) {
+      snr_thresh[snr_num].flag = CLEARBIT(snr_thresh[snr_num].flag, UNC_THRESH);
+    }
+    if (snr_thresh[snr_num].lcr_thresh == 0) {
+      snr_thresh[snr_num].flag = CLEARBIT(snr_thresh[snr_num].flag, LCR_THRESH);
+    }
+    if (snr_thresh[snr_num].lnc_thresh == 0) {
+      snr_thresh[snr_num].flag = CLEARBIT(snr_thresh[snr_num].flag, LNC_THRESH);
+    }
+  }
+
+  return ret;
+}
+
+static int
+exp_get_sensor_thresh_from_file(uint8_t fru) {
+  uint8_t *sensor_list = NULL;
+  uint8_t snr_num = 0, bytes_rd = 0;
+  uint8_t buf[MAX_THERSH_LEN] = {0};
+  int fd = 0, cnt = 0, sensor_cnt = 0, ret = 0;
+  char fru_name[MAX_FRU_CMD_STR] = {0};
+  char fpath[MAX_PATH_LEN] = {0};
+  thresh_sensor_t snr_thresh[MAX_SENSOR_NUM + 1] = {0};
+  PAL_SENSOR_MAP *sensor_map = NULL;
+
+  switch (fru) {
+    case FRU_DPB:
+      sensor_map = dpb_sensor_map;
+      break;
+    case FRU_SCC:
+      sensor_map = scc_sensor_map;
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: Unknown FRU:%d", __func__, fru);
+      return ERR_UNKNOWN_FRU;
+  }
+
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to get sensor list of FRU:%d", __func__, fru);
+    return ret;
+  }
+
+  ret = pal_get_fru_name(fru, fru_name);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to get FRU:%d name", __func__, fru);
+    return ret;
+  }
+
+  sprintf(fpath, INIT_THRESHOLD_BIN, fru_name);
+  // INIT_THRESHOLD_BIN doesn't exist, use initial sensor map.
+  if (access(fpath, F_OK) == -1) {
+    return 0;
+  }
+
+  fd = open(fpath, O_RDONLY);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s: open failed for %s, errno : %d %s\n", __func__, fpath, errno, strerror(errno));
+    return -1;
+  }
+
+  while ((bytes_rd = read(fd, buf, sizeof(thresh_sensor_t))) > 0) {
+    if (bytes_rd != sizeof(thresh_sensor_t)) {
+      syslog(LOG_WARNING, "%s: read returns %d bytes\n", __func__, bytes_rd);
+      close(fd);
+      return -1;
+    }
+
+    snr_num = sensor_list[cnt];
+    memcpy(&snr_thresh[snr_num], &buf, sizeof(thresh_sensor_t));
+    memcpy(&(sensor_map[snr_num].snr_thresh.ucr_thresh), &(snr_thresh[snr_num].ucr_thresh), sizeof(PAL_SENSOR_THRESHOLD));
+    memset(buf, 0, sizeof(buf));
+    cnt++;
+
+    if (cnt == sensor_cnt) {
+      break;
+    }
+  }
+
+  close(fd);
+  return ret;
+}
+
+int
+pal_exp_sensor_threshold_init(uint8_t fru) {
+  int i = 0, ret = 0, remain = 0, sensor_cnt = 0, read_cnt = 0, index = 0;
+  uint8_t snr_num = 0;
+  uint8_t *sensor_list = NULL;
+  char fru_name[MAX_FRU_CMD_STR] = {0};
+  char fpath[MAX_PATH_LEN] = {0};
+  char initpath[MAX_PATH_LEN] = {0};
+  char cmd[MAX_SYS_CMD_REQ_LEN + MAX_PATH_LEN*2] = {0};
+  thresh_sensor_t snr_thresh[MAX_SENSOR_NUM + 1] = {0};
+
+  // Get sensors' threshold of SCC and DPB
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() get sensor list failed \n", __func__);
+    return ret;
+  }
+
+  ret = pal_get_fru_name(fru, fru_name);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() fail to get FRU:%d name\n", __func__, fru);
+    return ret;
+  }
+
+  remain = sensor_cnt;
+  while (remain > 0) {
+    read_cnt = (remain > MAX_EXP_IPMB_THRESH_COUNT) ? MAX_EXP_IPMB_THRESH_COUNT : remain;
+    ret = exp_read_sensor_thresh_wrapper(fru, sensor_list, snr_thresh, read_cnt, index);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() fail to get sensors' threshold of FRU:%d from expander\n", __func__, fru);
+      return ret;
+    }
+    remain -= read_cnt;
+    index += read_cnt;
+  }
+
+  if (access(THRESHOLD_PATH, F_OK) == -1) {
+    mkdir(THRESHOLD_PATH, 0777);
+  }
+
+  ret = pal_copy_all_thresh_to_file(fru, snr_thresh);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to copy thresh to file for FRU: %d", __func__, fru);
+    return ret;
+  }
+
+  // Create THRESHOLD_BIN for the threshold initialization of sensord.
+  sprintf(fpath, THRESHOLD_BIN, fru_name);
+  sprintf(initpath, INIT_THRESHOLD_BIN, fru_name);
+  if (access(fpath, F_OK) != 0) {
+    sprintf(cmd,"cp -rf %s %s", initpath, fpath);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s failed", cmd);
+      ret = -1;
+    }
+  }
+
+  return ret;
+}
+
+static int
 exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8_t index) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[256] = {0x00};
@@ -2206,6 +2441,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
+  bool *exp_thresh_init = NULL;
   uint8_t chassis_type = 0;
   PAL_SENSOR_MAP * sensor_map = NULL;
 
@@ -2214,9 +2450,11 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     sensor_map = uic_sensor_map;
     break;
   case FRU_DPB:
+    exp_thresh_init = &dpb_thresh_init;
     sensor_map = dpb_sensor_map;
     break;
   case FRU_SCC:
+    exp_thresh_init = &scc_thresh_init;
     sensor_map = scc_sensor_map;
     break;
   case FRU_NIC:
@@ -2239,6 +2477,16 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     }
   default:
     return ERR_UNKNOWN_FRU;
+  }
+
+  if ((fru == FRU_DPB) || (fru == FRU_SCC)) {
+    // sensord don't need to get threshold of SCC_IOC_TEMP from file.
+    if ((owning_iocm_snr_flag == false) && (*exp_thresh_init == false)) {
+      if (exp_get_sensor_thresh_from_file(fru) < 0) {
+        syslog(LOG_WARNING, "%s:fail to get sensor threshold of FRU:%d, use initial sensors' threshold\n", __func__, fru);
+      }
+      *exp_thresh_init = true;
+    }
   }
 
   switch(thresh) {

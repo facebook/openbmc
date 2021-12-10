@@ -150,6 +150,28 @@ sensor_timestamp_init(void) {
   }
 }
 
+void
+sensor_threshold_init(void) {
+  int i = 0, ret = 0;
+  uint8_t ver[FW_VERSION_LENS] = {0};
+
+  // Support to get SCC/DPB threshold with expander f/w version 18
+  ret = expander_get_fw_ver(ver, sizeof(ver));
+  if ((ret == 0) && (ver[3] >= 0x12)) {
+    // Get sensors' threshold of SCC and DPB
+    for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
+      ret = pal_exp_sensor_threshold_init(expander_fruid_list[i]);
+      if (ret < 0) {
+        syslog(LOG_CRIT, "%s() failed to initialize sensors' threshold of FRU:%d \n", __func__, expander_fruid_list[i]);
+      }
+    }
+  } else {
+    syslog(LOG_CRIT, "%s() Not support to get SCC/DPB sensors' threshold from expander\n", __func__);
+  }
+
+  return;
+}
+
 int
 main (int argc, char * const argv[])
 {
@@ -162,6 +184,7 @@ main (int argc, char * const argv[])
   if (strcmp(argv[1], "--booting") == 0) {
     sensor_timestamp_init();
     fruid_cache_init();
+    sensor_threshold_init();
 
   } else if (strcmp(argv[1], "--update_fan") == 0) {
     if (strcmp(argv[2], "fan0") == 0) {

@@ -10,6 +10,7 @@
 #define NIC_INFO_SLAVE_ADDR          (0x3E)
 #define NIC_INFO_TEMP_CMD            (0x1)
 
+#define MAX_EXP_IPMB_THRESH_COUNT    20
 #define MAX_EXP_IPMB_SENSOR_COUNT    40
 #define EXP_SENSOR_WAIT_TIME         5      // 5 seconds
 
@@ -428,6 +429,18 @@ typedef struct {
 } EXPANDER_SENSOR_DATA;
 
 typedef struct {
+  uint8_t sensor_num;
+  uint8_t high_crit_1;
+  uint8_t high_crit_2;
+  uint8_t high_warn_1;
+  uint8_t high_warn_2;
+  uint8_t low_crit_1;
+  uint8_t low_crit_2;
+  uint8_t low_warn_1;
+  uint8_t low_warn_2;
+} EXPANDER_THRES_DATA;
+
+typedef struct {
   int airflow_value;
   float offset_value;
 } inlet_corr_t;
@@ -439,5 +452,6 @@ int write_device(const char *device, const char *value);
 int get_current_dir(const char *device, char *dir_name);
 int pal_sensor_monitor_initial(void);
 bool is_e1s_iocm_i2c_enabled(uint8_t id);
+int pal_exp_sensor_threshold_init(uint8_t fru);
 
 #endif

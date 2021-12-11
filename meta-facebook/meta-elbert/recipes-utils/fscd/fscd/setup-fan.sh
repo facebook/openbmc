@@ -53,6 +53,7 @@ num_pim8ddm=0
 pim_list="2 3 4 5 6 7 8 9"
 for pim in ${pim_list}; do
      fru="$(peutil "$pim" 2>&1)"
+     # PIM 16CD and 16CD2 are equivilant for FSCD
      if echo "$fru" | grep -q '88-16CD'; then
          num_pim16q=$((num_pim16q+1))
      elif echo "$fru" | grep -q '88-8D'; then

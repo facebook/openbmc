@@ -63,6 +63,9 @@
 #define ELBERT_EEPROM_FIELD_HWREV   0x0B
 #define ELBERT_EEPROM_FIELD_SERIAL  0x0E
 #define ELBERT_EEPROM_FIELD_MFGTIME2  0x17
+#define ELBERT_MAX_CHAR_LENGTH 10
+#define ELBERT_PIM16CD2 "7388-16CD2"
+#define ELBERT_PIM16CD "7388-16CD"
 #define ELBERT_PIM8DDM "7388-8D"
 
 // Map between PIM and SMBus channel
@@ -222,7 +225,7 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   int ver_major = 0;
   int ver_minor = 0;
   int dot_location = 0;
-  int sku_length = FBW_EEPROM_F_PRODUCT_NUMBER + 1; // Elbert uses 9 char fields
+  int sku_length = ELBERT_MAX_CHAR_LENGTH;
   char local_target[256];
   char field_value[ELBERT_EEPROM_SIZE]; // Will never overflow
   char fn[64];
@@ -381,17 +384,31 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
           break;
 
       case ELBERT_EEPROM_FIELD_SKU:
-          memcpy(eeprom->fbw_product_number, field_value, sku_length);
-          // This cuts off the Product field into 9 characters max
-          // We allocate FBW_EEPROM_F_PRODUCT_NUMBER + 2
-          eeprom->fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER + 1] = '\0';
+          memcpy(eeprom->fbw_product_asset, field_value, sku_length);
+          // Elbert SKU names can be from 8 to 10 char long
+          // Use product_asset field instead of product_name as it allocates
+          // more char in the eeprom struct.
 
-          // Remove garbage characters from the end of 7388-8D
+          /* Remove garbage characters from the end of 7388-16CD2 */
           if(!strncmp(
-                   eeprom->fbw_product_number,
+                   eeprom->fbw_product_asset,
+                   ELBERT_PIM16CD2,
+                   strlen(ELBERT_PIM16CD2))) {
+            eeprom->fbw_product_asset[strlen(ELBERT_PIM16CD2)] = '\0';
+          }
+          /* Remove garbage characters from the end of 7388-16CD */
+          else if(!strncmp(
+                   eeprom->fbw_product_asset,
+                   ELBERT_PIM16CD,
+                   strlen(ELBERT_PIM16CD))) {
+            eeprom->fbw_product_asset[strlen(ELBERT_PIM16CD)] = '\0';
+          }
+          /* Remove garbage characters from the end of 7388-8D */
+          else if(!strncmp(
+                   eeprom->fbw_product_asset,
                    ELBERT_PIM8DDM,
                    strlen(ELBERT_PIM8DDM))) {
-            eeprom->fbw_product_number[FBW_EEPROM_F_PRODUCT_NUMBER - 1] = '\0';
+            eeprom->fbw_product_asset[strlen(ELBERT_PIM8DDM)] = '\0';
           }
           break;
 

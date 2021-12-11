@@ -118,7 +118,15 @@ pim_monitor_handler(void *unused) {
           pim_type = pal_get_pim_type(fru, PIM_RETRY);
 
           if (pim_type != pim_type_old[num]) {
-            if (pim_type == PIM_TYPE_16Q) {
+            if (pim_type == PIM_TYPE_16Q2) {
+              if (!pal_set_pim_type_to_file(fru, "16q2")) {
+                syslog(LOG_INFO, "PIM %d type is 16Q2", num);
+                pim_type_old[num] = PIM_TYPE_16Q2;
+              } else {
+                syslog(LOG_WARNING,
+                       "pal_set_pim_type_to_file: PIM %d set 16Q2 failed", num);
+              }
+            } else if (pim_type == PIM_TYPE_16Q) {
               if (!pal_set_pim_type_to_file(fru, "16q")) {
                 syslog(LOG_INFO, "PIM %d type is 16Q", num);
                 pim_type_old[num] = PIM_TYPE_16Q;

@@ -30,7 +30,9 @@ for pim in ${pim_list}; do
     else
         pim_type='NOT DETECTED'
         fru="$(/usr/local/bin/peutil "$pim" 2>&1)"
-        if echo "$fru" | grep -q '88-16CD'; then
+        if echo "$fru" | grep -q '88-16CD2'; then
+            pim_type='PIM16Q2'
+        elif echo "$fru" | grep -q '88-16CD'; then
             pim_type='PIM16Q'
         elif echo "$fru" | grep -q '88-8D'; then
             pim_type='PIM8DDM'

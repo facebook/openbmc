@@ -52,14 +52,25 @@ create_pim_gpio() {
   pim=$1
   chip=$2
 
+  if [ -f "/tmp/.pim${pim}_nogpio" ]; then
+      return
+  fi
+
   fru="$(peutil "$pim" 2>&1)"
-  if echo "$fru" | grep -q '88-16CD'; then
+  pim_sensors_path="/etc/sensors.d/pim${pim}.conf"
+  if echo "$fru" | grep -q '88-16CD2'; then
+      # PIM16Q2 have no UCD9090 GPIOs, cache this to avoid retrying
+      pim_type='PIM16Q2'
+      touch "/tmp/.pim${pim}_nogpio"
+      logger pim_enable: registered "${pim_type}" PIM"${pim}"
+      return
+  elif echo "$fru" | grep -q '88-16CD'; then
       pim_type='PIM16Q'
       try_create_gpio "$chip" 22 PIM"$pim"_FPGA_RESET_L  # GPIO17 PIN26
       try_create_gpio "$chip" 4  PIM"$pim"_FULL_POWER_EN # GPIO9  PIN14
       try_create_gpio "$chip" 20 PIM"$pim"_FPGA_DONE     # GPIO15 PIN24
       try_create_gpio "$chip" 21 PIM"$pim"_FPGA_INIT     # GPIO16 PIN25
-  elif echo "$fru" | grep -q '88-8D'; then
+   elif echo "$fru" | grep -q '88-8D'; then
       pim_type='PIM8DDM'
       try_create_gpio "$chip" 22 PIM"$pim"_FPGA_RESET_L  # GPIO17 PIN26
       try_create_gpio "$chip" 8  PIM"$pim"_FULL_POWER_EN # GPI1   PIN22
@@ -93,7 +104,9 @@ update_pim_sensors() {
   pim_type=$(pim_types.sh | grep "PIM ${pim}" | cut -d ' ' -f 3 |
              tr '[:upper:]' '[:lower:]')
 
-  if [ "${pim_type}" == "pim16q" ] || [ "${pim_type}" == "pim8ddm" ]; then
+  if [ "${pim_type}" == "pim16q" ] ||
+     [ "${pim_type}" == "pim16q2" ] ||
+     [ "${pim_type}" == "pim8ddm" ]; then
     template_path="/etc/sensors.d/.${pim_type}.conf"
     pattern="s/{bus}/${bus_id}/g; s/{pim}/${pim}/g"
     sed "${pattern}" "${template_path}" > "${pim_sensors_path}"
@@ -101,19 +114,20 @@ update_pim_sensors() {
 }
 
 while true; do
-  # 1. For any uncovered PIM, try to discover
+  # 1. For any uncovered PIM, try to discover gpios
   for i in "${pim_index[@]}"
   do
     if [ "${pim_found[$i]}" -eq "0" ]; then
       pim_number="$((i+2))"
       # Check if Switch card senses the PIM presence
       if wedge_is_pim_present "$pim_number"; then
+         pim_found[$i]=1
+         # Update PIM sensors conf
+         update_pim_sensors "$pim_number"
          # Check if device was probed and driver was installed
          drv_path=/sys/bus/i2c/drivers/ucd9000/"${pim_bus[$i]}-00$dpm_addr"
          if [ -e "$drv_path"/gpio ]; then
            create_pim_gpio "$((i+2))" "${pim_bus[$i]}-00$dpm_addr"
-           update_pim_sensors "$((i+2))"
-           pim_found[$i]=1
          fi
       fi
     fi
@@ -122,21 +136,24 @@ while true; do
   # 2. For discovered gpios, try turning it on
   for i in "${pim_index[@]}"
   do
+    pim_number="$((i+2))"
     if [ "${pim_found[$i]}" -eq "1" ]; then
        drv_path=/sys/bus/i2c/drivers/ucd9000/"${pim_bus[$i]}-00$dpm_addr"
-       if [ -e "$drv_path"/gpio ]; then
-          if [ ! -f "/tmp/.pim$((i+2))_powered_off" ]; then
-             power_on_pim $((i+2)) y
+       if [ ! -f "/tmp/.pim${pim_number}_nogpio" ]; then
+          if [ -e "$drv_path"/gpio ]; then
+             if [ ! -f "/tmp/.pim${pim_number}_powered_off" ]; then
+                power_on_pim "${pim_number}" y
+             else
+                power_off_pim "${pim_number}" y
+             fi
           else
-             power_off_pim $((i+2)) y
+             logger pim_enable: PIM"${pim_number}" UCD9090B GPIOs not defined
           fi
-       else
-          logger pim_enable: PIM"$((i+2))" UCD9090B GPIOs not defined
        fi
     fi
 
     # Clear pimserial endpoint cache
-    clear_pimserial_cache $((i+2))
+    clear_pimserial_cache "${pim_number}"
 
   done
   # Sleep 5 seconds until the next loop.

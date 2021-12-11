@@ -29,6 +29,7 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # Handler for getting PIM info
 pim_number_re = re.compile("^PIM ([2-9])\s*:\s*(\S+)")
 
+
 def prepare_pimver():
     pim_fpga_ver = {str(i): "NA" for i in range(2, 10)}
     current_pim = 0
@@ -84,13 +85,15 @@ def prepare_piminfo():
                         pim_version_str += version.strip()
                     counter = counter + 1
                 elif "Product Part Number" in text_line:
-                    _, part_number  = text_line.split(":")
+                    _, part_number = text_line.split(":")
             pim_ver[pim] = pim_version_str
 
-            if '88-16CD' in part_number:
-                pim_type[pim] = '16Q'
-            elif '88-8D' in part_number:
-                pim_type[pim] = '8DDM'
+            if "88-16CD2" in part_number:
+                pim_type[pim] = "16Q2"
+            elif "88-16CD" in part_number:
+                pim_type[pim] = "16Q"
+            elif "88-8D" in part_number:
+                pim_type[pim] = "8DDM"
 
         except Exception:
             pass

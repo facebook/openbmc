@@ -21,6 +21,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://wedge400.conf \
             file://wedge400c.conf \
+            file://wedge400-evt-mp.conf \
+            file://wedge400-respin.conf \
            "
 
 DEPENDS:append = " update-rc.d-native"
@@ -31,5 +33,7 @@ do_install:append() {
     install -d ${D}${sysconfdir}/sensors.d/custom
     install -m 644 ${WORKDIR}/wedge400.conf ${D}${sysconfdir}/sensors.d/custom/wedge400.conf
     install -m 644 ${WORKDIR}/wedge400c.conf ${D}${sysconfdir}/sensors.d/custom/wedge400c.conf
+    install -m 644 ${WORKDIR}/wedge400-evt-mp.conf ${D}${sysconfdir}/sensors.d/custom/wedge400-evt-mp.conf
+    install -m 644 ${WORKDIR}/wedge400-respin.conf ${D}${sysconfdir}/sensors.d/custom/wedge400-respin.conf
 
 }

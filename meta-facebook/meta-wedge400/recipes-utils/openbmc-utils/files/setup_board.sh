@@ -53,6 +53,7 @@ echo 0x3 > "$SMBCPLD_SYSFS_DIR/uart_selection"
 
 # Read board type from Board type GPIO pin and save to cache
 brd_type=$(wedge_board_type)
+brd_rev=$(wedge_board_rev)
 if [ ! -d /tmp/cache_store ]; then
   mkdir /tmp/cache_store
 fi
@@ -61,6 +62,12 @@ echo "$brd_type" > /tmp/cache_store/board_type
 # Check board type to select lmsensor configuration
 if [ $((brd_type)) -eq 0 ]; then
   cp /etc/sensors.d/custom/wedge400.conf /etc/sensors.d/wedge400.conf
+  # Check board revision
+  if [ $((brd_rev)) -ge 6 ]; then # for respin or newer
+    cp /etc/sensors.d/custom/wedge400-respin.conf /etc/sensors.d/wedge400-respin.conf
+  else
+    cp /etc/sensors.d/custom/wedge400-evt-mp.conf /etc/sensors.d/wedge400-evt-mp.conf
+  fi;
 elif  [ $((brd_type)) -eq 1 ]; then
   cp /etc/sensors.d/custom/wedge400c.conf /etc/sensors.d/wedge400c.conf
 fi

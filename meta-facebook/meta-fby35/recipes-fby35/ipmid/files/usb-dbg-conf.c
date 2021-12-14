@@ -406,7 +406,7 @@ static sensor_desc_t cri_sensor_sb[] =
   {"P3V_BAT Vol:"          , BIC_SENSOR_P3V_BAT_VOL        , "V"    , FRU_ALL, 2},
   {"P3V3_STBY Vol:"        , BIC_SENSOR_P3V3_STBY_VOL      , "V"    , FRU_ALL, 2},
   {"P1V05_PCH Vol:"        , BIC_SENSOR_P1V05_PCH_STBY_VOL , "V"    , FRU_ALL, 2},
-  {"P1V08_PCH Vol:"        , BIC_SENSOR_P1V08_PCH_STBY_VOL , "V"    , FRU_ALL, 2},
+  {"P1V8_STBY Vol:"        , BIC_SENSOR_P1V8_STBY_VOL      , "V"    , FRU_ALL, 2},
   {"HSC Input Vol:"        , BIC_SENSOR_HSC_INPUT_VOL      , "V"    , FRU_ALL, 2},
   {"VCCIN VR Vol:"         , BIC_SENSOR_VCCIN_VR_VOL       , "V"    , FRU_ALL, 2},
   {"FIVRA VR Vol:"         , BIC_SENSOR_FIVRA_VR_VOL       , "V"    , FRU_ALL, 2},

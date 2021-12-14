@@ -153,7 +153,6 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_CPU_TEMP,
   BIC_SENSOR_CPU_THERM_MARGIN,
   BIC_SENSOR_CPU_TJMAX,
-  //BIC_SENSOR_SOC_PKG_PWR,
   BIC_SENSOR_DIMMA0_TEMP,
   BIC_SENSOR_DIMMC0_TEMP,
   BIC_SENSOR_DIMMD0_TEMP,
@@ -173,7 +172,11 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_P3V_BAT_VOL,
   BIC_SENSOR_P3V3_STBY_VOL,
   BIC_SENSOR_P1V05_PCH_STBY_VOL,
-  BIC_SENSOR_P1V08_PCH_STBY_VOL,
+  BIC_SENSOR_P1V8_STBY_VOL,
+  BIC_SENSOR_P5V_STBY_VOL,
+  BIC_SENSOR_P12V_DIMM_VOL,
+  BIC_SENSOR_P1V2_STBY_VOL,
+  BIC_SENSOR_P3V3_M2_VOL,
   BIC_SENSOR_HSC_INPUT_VOL,
   BIC_SENSOR_VCCIN_VR_VOL,
   BIC_SENSOR_FIVRA_VR_VOL,
@@ -190,9 +193,8 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_FAON_VR_CUR,
 
   //BIC - power sensors
+  BIC_SENSOR_CPU_PWR,
   BIC_SENSOR_HSC_INPUT_PWR,
-
-  //BIC_SENSOR_HSC_INPUT_AVGPWR,
   BIC_SENSOR_VCCIN_VR_POUT,
   BIC_SENSOR_FIVRA_VR_POUT,
   BIC_SENSOR_EHV_VR_POUT,
@@ -438,6 +440,8 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_VCCD_VR_TEMP,
   BIC_SENSOR_FAON_VR_TEMP,
   //BIC - voltage sensors
+  BIC_SENSOR_P12V_DIMM_VOL,
+  BIC_SENSOR_P3V3_M2_VOL,
   BIC_SENSOR_VCCIN_VR_VOL,
   BIC_SENSOR_FIVRA_VR_VOL,
   BIC_SENSOR_EHV_VR_VOL,
@@ -1044,7 +1048,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       if (board_type == E1S_BOARD) { // Sierra point expansion
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_spe_sensor_list, bic_spe_sensor_cnt);
         current_cnt += bic_spe_sensor_cnt;
-      } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD){
+      } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
         current_cnt += bic_2ou_gpv3_sensor_cnt;
       } else if (board_type == DPV2_BOARD) {
@@ -1589,7 +1593,7 @@ read_medusa_val(uint8_t snr_number, float *value) {
     strcat(chip, "-i2c-11-44");
     //MP5920 is 12-bit ADC. Use the flag to do the calibration of sensors of mp5920.
     //Make the readings more reliable
-    if( strstr(chip, "mp5920")  != NULL ) is_ltc4282 = false;
+    if ( strstr(chip, "mp5920")  != NULL ) is_ltc4282 = false;
     syslog(LOG_WARNING, "%s() Use '%s', flag:%d", __func__, chip, is_ltc4282);
   }
 
@@ -1937,7 +1941,7 @@ pal_fan_fail_otp_check(void) {
     syslog(LOG_WARNING, "Failed to get the location of BMC");
   }
 
-  if ( is_fan_fail_otp_asserted == false && bmc_location != NIC_BMC){
+  if ( is_fan_fail_otp_asserted == false && bmc_location != NIC_BMC) {
     is_fan_fail_otp_asserted = true;
     snprintf(sel_str, sizeof(sel_str), "all fans failed");
     pal_all_slot_power_ctrl(SERVER_12V_OFF, sel_str);
@@ -1957,7 +1961,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
 
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
-  switch(fru){
+  switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
@@ -1975,7 +1979,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
 }
 
 static int
-pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status){
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status) {
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
   uint8_t power_status = 0;
@@ -2000,7 +2004,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
       return READING_NA;
     }
   } else if (power_status == SERVER_POWER_ON && pwr_off_flag[fru-1]) {
-    if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt < skip_sensor_cnt)){
+    if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt < skip_sensor_cnt)) {
       temp_cnt ++;
       return READING_NA;
     }
@@ -2012,7 +2016,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   }
 
   ret = access(path, F_OK);
-  if(ret == 0) {
+  if (ret == 0) {
     return READING_SKIP;
   }
 
@@ -2058,13 +2062,13 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   uint16_t b = 0;
   int8_t b_exp, r_exp;
 
-  reading_msb = (sensor.read_type == ACCURATE_CMD) ? 7 : 15;
   if ((sdr->sensor_units1 & 0xC0) == 0x00) {  // unsigned
     x = sensor.value;
   } else if ((sdr->sensor_units1 & 0xC0) == 0x40) {  // 1's complements
+    reading_msb = (sensor.read_type == ACCURATE_CMD) ? 15 : 7;
     x = (sensor.value & (1 << reading_msb)) ? (0-(~sensor.value)) : sensor.value;
   } else if ((sdr->sensor_units1 & 0xC0) == 0x80) {  // 2's complements
-    x = (int8_t)sensor.value;
+    x = (sensor.read_type == ACCURATE_CMD) ? (int16_t)sensor.value : (int8_t)sensor.value;
   } else { // Does not return reading
     return READING_NA;
   }
@@ -2093,7 +2097,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   //syslog(LOG_WARNING, "%s() snr#0x%x raw:%x m=%x b=%x b_exp=%x r_exp=%x s_units1=%x", __func__, sensor_num, x, m, b, b_exp, r_exp, sdr->sensor_units1);
   *value = ((m * x) + (b * pow(10, b_exp))) * (pow(10, r_exp));
   if (sensor.read_type == ACCURATE_CMD) {
-    *value /= 255;
+    *value /= 256;
   }
   //correct the value
   switch (sensor_num) {
@@ -2189,7 +2193,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   } else {
     sprintf(str, "%.2f",*((float*)value));
   }
-  if(kv_set(key, str, 0, 0) < 0) {
+  if (kv_set(key, str, 0, 0) < 0) {
     syslog(LOG_WARNING, "pal_sensor_read_raw: cache_set key = %s, str = %s failed.", key, str);
     return -1;
   } else {
@@ -2386,7 +2390,7 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
         sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
         sdr->m_val = 0x04;
       }
-    } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR || snr_num == BIC_SENSOR_HSC_INPUT_AVGPWR){
+    } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR || snr_num == BIC_SENSOR_HSC_INPUT_AVGPWR) {
       if (bmc_location == NIC_BMC) {
         sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
         sdr->m_val = 0x04;

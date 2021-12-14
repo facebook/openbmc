@@ -82,7 +82,7 @@ print_usage_help(void) {
   if ( riser_board == CWC_MCHP_BOARD ) {
     printf("Usage: bic-util <slot1-2U-exp|slot1-2U-top|slot1-2U-bot> <--reset|--get_gpio|--set_gpio|--get_dev_id|--set_usb_hub|--get_usb_hub>\n");
   } else {
-    printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_gpio_config|--set_gpio_config|--get_dev_id>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U|slot3-2U> <--reset|--get_gpio|--set_gpio|--get_gpio_config|--set_gpio_config|--get_dev_id>\n");
   }
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)

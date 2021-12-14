@@ -229,10 +229,10 @@ enum {
 };
 
 enum {
-  VR_ISL = 0x0,
+  VR_ISL = 0x0, // Renesas vr vendor ID
   VR_TI  = 0x1,
-  VR_IFX = 0x2,
-  VR_VY  = 0x3,
+  VR_IFX = 0x2, // Infineon vr vendor ID
+  VR_VY  = 0x3, // Vishay vr vendor ID
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,

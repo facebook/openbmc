@@ -827,6 +827,110 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   return ret;
 }
 
+// OEM - Get Firmware Version
+// Netfn: 0x38, Cmd: 0x0B
+static int
+_bic_get_vr_vendor_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf, uint8_t *rlen) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, fw_comp}; //IANA ID + FW_COMP
+  uint8_t rbuf[16] = {0x00};
+  int ret = BIC_STATUS_FAILURE;
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 4, rbuf, rlen, intf);
+  if ( ret < 0 || *rlen < 4 ) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, *rlen, slot_id, intf);
+  } else {
+    //Ignore IANA ID
+    *rlen = *rlen - 3;
+    memcpy(ver, &rbuf[3], *rlen);
+    ret = BIC_STATUS_SUCCESS;
+  }
+  return ret;
+}
+
+int
+bic_get_vr_vendor_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t *rlen) {
+  uint8_t fw_comp = 0x0;
+  uint8_t intf = 0x0;
+  int ret = BIC_STATUS_FAILURE;
+
+  //get the component
+  switch(comp) {
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+      fw_comp = FW_2OU_PESW_VR;
+      break;
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_BOT_3V3_VR1:
+      fw_comp = FW_2OU_3V3_VR1;
+      break;
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_BOT_3V3_VR2:
+      fw_comp = FW_2OU_3V3_VR2;
+      break;
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_BOT_3V3_VR3:
+      fw_comp = FW_2OU_3V3_VR3;
+      break;
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_1V8_VR:
+      fw_comp = FW_2OU_1V8_VR;
+      break;
+    default:
+      fw_comp = comp;
+      break;
+  }
+
+  // get the intf
+  switch (comp) {
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+    case FW_2OU_PESW_VR:
+    case FW_CWC_PESW_VR:
+      intf = REXP_BIC_INTF;
+      break;
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
+      intf = RREXP_BIC_INTF2;
+      break;
+  }
+
+  // run cmd
+  switch (comp) {
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+    case FW_2OU_PESW_VR:
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
+      ret = _bic_get_vr_vendor_fw_ver(slot_id, fw_comp, ver, intf, rlen);
+      break;
+  }
+  return ret;
+}
+
 uint8_t
 get_gpv3_bus_number(uint8_t dev_id) {
   switch(dev_id) {

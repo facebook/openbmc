@@ -76,8 +76,8 @@ const char pal_m2_dual_list[] = "";
 
 static char sel_error_record[NUM_SERVER_FRU] = {0};
 
-const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
-const char pal_exp_list[] = "slot1, slot2, slot3, slot4, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
+const char pal_exp_server_list[] = "slot1, slot2, slot3, slot4, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
+const char pal_exp_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -109,6 +109,10 @@ const char pal_exp_list[] = "slot1, slot2, slot3, slot4, slot1-2U-exp, slot1-2U-
 #define MAX_COMPONENT_LEN 32 //include the string terminal
 
 #define MAX_PWR_LOCK_STR 32
+
+#ifndef FRU_CAPABILITY_SENSOR_SLAVE
+#define FRU_CAPABILITY_SENSOR_SLAVE (1UL << 19)
+#endif
 
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_pwr_last_state(int event, void *arg);
@@ -893,7 +897,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_SENSOR_ALL;
+        *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_SENSOR_SLAVE;
       } else {
         ret = -1;
       }
@@ -4940,7 +4944,7 @@ int pal_get_exp_arg_name(uint8_t fru, char *name) {
 
 int pal_get_print_fru_name(const char **list) {
   if (pal_is_cwc() == PAL_EOK) {
-    *list = pal_exp_list;
+    *list = pal_exp_server_list;
   } else {
     return PAL_ENOTSUP;
   }
@@ -4949,4 +4953,13 @@ int pal_get_print_fru_name(const char **list) {
 
 int pal_get_root_fru(uint8_t fru, uint8_t *root) {
   return pal_get_fru_slot(fru, root);
+}
+
+int pal_get_print_sensor_name(const char **list) {
+  if (pal_is_cwc() == PAL_EOK) {
+    *list = pal_exp_fru_list;
+  } else {
+    return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
 }

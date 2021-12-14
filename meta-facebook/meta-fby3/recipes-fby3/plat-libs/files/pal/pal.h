@@ -85,7 +85,6 @@ extern const char pal_dev_fru_list[];
 extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
 extern const char pal_fan_opt_list[];
-extern const char pal_fru_exp_list[];
 extern const char pal_m2_dual_list[];
 
 enum {
@@ -254,6 +253,7 @@ int pal_get_exp_fru_list(uint8_t *list, uint8_t *len);
 int pal_get_exp_arg_name(uint8_t fru, char *name);
 int pal_get_print_fru_name(const char **list);
 int pal_get_root_fru(uint8_t fru, uint8_t *root);
+int pal_get_print_sensor_name(const char **list);
 #ifdef __cplusplus
 } // extern "C"
 #endif

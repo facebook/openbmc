@@ -280,7 +280,9 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
   //change the power mode of NIC to expected_pwr
   int fd = -1;
   uint8_t tbuf[2] = {0x0f, (expected_pwr&0x1)};
-  uint8_t tlen = sizeof(tbuf);
+  uint8_t tlen = 1;
+  uint8_t rbuf[1];
+  uint8_t rlen = 1;
   int pid_file = 0;
 
   if ( SERVER_POWER_ON == expected_pwr ) {
@@ -293,13 +295,27 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
     return PAL_ENOTSUP;
   }
 
-  ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to change NIC Power mode");
+  ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+  if ( ret < 0) {
+    syslog(LOG_WARNING, "Failed to get NIC Power mode in CPLD");
   } else {
-    //if one of them want to wake up, we need to set it and sleep 2s to wait for PERST#
-    //2s is enough for CPLD
-    if ( SERVER_POWER_ON == expected_pwr ) sleep(2);
+    // change the power mode of NIC when orginal mode in cpld is different
+    if (rbuf[0] != expected_pwr) {
+      tlen = 2;
+      ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "Failed to change NIC Power mode");
+      } else {
+        //if one of them want to wake up, we need to set it and sleep 2s to wait for PERST#
+        //2s is enough for CPLD
+        if ( SERVER_POWER_ON == expected_pwr ) {
+          syslog(LOG_CRIT, "NIC Power is set to VMAIN");
+          sleep(2);
+        } else if ( SERVER_POWER_OFF == expected_pwr ) {
+          syslog(LOG_CRIT, "NIC Power is set to VAUX");
+        }
+      }
+    }
   }
 
   if ( pid_file > 0 ) {

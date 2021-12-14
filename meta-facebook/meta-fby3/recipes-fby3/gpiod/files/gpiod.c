@@ -870,11 +870,9 @@ host_pwr_mon() {
     if ( retry == MAX_NIC_PWR_RETRY && nic_pwr_set_off == false) {
       //set off here because users may power off the host from OS instead of BMC
       if ( pal_server_set_nic_power(SERVER_POWER_OFF) == 0 ) {
-        syslog(LOG_CRIT, "NIC Power is set to VAUX");
         nic_pwr_set_off = true;
       }
     } else if ( retry < MAX_NIC_PWR_RETRY && nic_pwr_set_off == true) {
-      syslog(LOG_CRIT, "NIC Power is set to VMAIN");
       nic_pwr_set_off = false;
       //Don't change NIC Power to normal here.
       //Because the power seq. of NIC will be affected. We should change it before turning on any one of the slots.

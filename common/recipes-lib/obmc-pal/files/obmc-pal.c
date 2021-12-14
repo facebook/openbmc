@@ -2842,3 +2842,8 @@ int __attribute__((weak))
 pal_get_root_fru(uint8_t fru, uint8_t *root) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_get_print_sensor_name(const char **list) {
+  return PAL_ENOTSUP;
+}

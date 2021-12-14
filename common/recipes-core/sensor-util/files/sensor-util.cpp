@@ -62,13 +62,6 @@ static pthread_mutex_t timer = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t done = PTHREAD_COND_INITIALIZER;
 static pthread_condattr_t done_attr;
 static bool done_flag = false;
-#ifdef CONFIG_FBY3_CWC
-#define FRU_CWC 31
-#define FRU_2U_TOP 32
-#define FRU_2U_BOT 33
-static uint8_t expFru = 0;
-static uint8_t cwcPlat = 0;
-#endif
 
 // This is for get_sensor_reading
 typedef struct {
@@ -115,20 +108,13 @@ const char *sensor_status[] = {
 
 static void
 print_usage() {
+  const char *fru_list = pal_fru_list;
+  if (pal_get_print_sensor_name(&fru_list) != PAL_EOK) {
+    fru_list = pal_fru_list;
+  }
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
   printf("       sensor-util [fru] <option> ..\n\n");
-#ifdef CONFIG_FBY3_CWC
-  if (cwcPlat) {
-    printf("Usage: sensor-util <slot1> [fru2] <sensor num> <option> ..\n");
-    printf("       sensor-util <slot1> [fru2] <option> ..\n\n");
-  }
-#endif
-  printf("       [fru]           : %s\n", pal_fru_list);
-#ifdef CONFIG_FBY3_CWC
-  if (cwcPlat) {
-    printf("       [fru2]          : %s\n", pal_fru_exp_list);
-  }
-#endif
+  printf("       [fru]           : %s\n", fru_list);
   printf("       [historical fru]: %s\n", pal_fru_list_sensor_history_t);
   printf("       Use \"aggregate\" as the [fru] to print just aggregated sensors defined for this platform\n");
   printf("       <sensor num>: 0xXX (Omit [sensor num] means all sensors.)\n");
@@ -706,6 +692,8 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
   struct timespec timeout;
   get_sensor_reading_struct data;
   char fru_list[256] = {0};
+  uint8_t expList[MAX_NUM_FRUS] = {0}, len = 0, i = 0, root = 0;
+  unsigned int caps = 0;
 
   //Setup timeout for each fru get_sensor_reading
   memset(&timeout, 0, sizeof(timeout));
@@ -736,18 +724,13 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     // Check if platform supports the FRU
     if (pal_get_fru_list(fru_list) == 0) {
       if ( strstr(fru_list, fruname) == NULL ) {
-#ifdef CONFIG_FBY3_CWC
-        if (pal_is_cwc() == PAL_EOK) {
-          uint8_t cwc_fru = 0;
-          if (pal_get_cwc_id(fruname, &cwc_fru) != PAL_EOK) {
+        if (pal_is_exp() == PAL_EOK) {
+          if (pal_get_exp_arg_name(fru, fruname) != PAL_EOK) {
             return 0;
           }
         } else {
-#endif
-        return 0;
-#ifdef CONFIG_FBY3_CWC
+          return 0;
         }
-#endif
       }
     }
 
@@ -787,18 +770,30 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     return 0;
   }
 
-#ifdef CONFIG_FBY3_CWC
-  if (fru == FRU_CWC) {
-    fru = FRU_SLOT1;
+  if (pal_get_fru_capability(fru, &caps) == PAL_EOK) {
+    if (caps & FRU_CAPABILITY_SENSOR_SLAVE) {
+      pal_get_root_fru(fru, &root);
+    }
   }
-#endif
 
   if (history_clear) {
-    clear_sensor_history(fru, sensor_list, sensor_cnt, sensor_num);
+    if ((caps & FRU_CAPABILITY_SENSOR_SLAVE) && root > 0) {
+      clear_sensor_history(root, sensor_list, sensor_cnt, sensor_num);
+    } else {
+      clear_sensor_history(fru, sensor_list, sensor_cnt, sensor_num);
+    }
   } else if (history) {
-    get_sensor_history(fru, sensor_list, sensor_cnt, sensor_num, period);
+    if ((caps & FRU_CAPABILITY_SENSOR_SLAVE) && root > 0) {
+      get_sensor_history(root, sensor_list, sensor_cnt, sensor_num, period);
+    } else {
+      get_sensor_history(fru, sensor_list, sensor_cnt, sensor_num, period);
+    }
   } else {
-    data.fru = fru;
+    if ((caps & FRU_CAPABILITY_SENSOR_SLAVE) && root > 0) {
+      data.fru = root;
+    } else {
+      data.fru = fru;
+    }
     data.sensor_cnt = sensor_cnt;
     data.sensor_num = sensor_num;
     data.threshold = threshold;
@@ -820,7 +815,24 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
       printf("\n");
   }
 
-  return 0;
+  ret = 0;
+  if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(expList, &len) == PAL_EOK) {
+    for (i = 0; i < len; ++i) {
+      char name[16] = {0};
+      if (pal_get_fru_capability(expList[i], &caps) == PAL_EOK &&
+          (caps & FRU_CAPABILITY_SENSOR_SLAVE)) {
+        continue;
+      }
+      if (pal_get_root_fru(expList[i], &root) == PAL_EOK && root == fru) {
+        if (pal_get_exp_arg_name(expList[i], name) == PAL_EOK) {
+          printf("%s:\n", name);
+        }
+        ret |= print_sensor(expList[i], sensor_num, allow_absent, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
+      }
+    }
+  }
+
+  return ret;
 }
 
 int parse_args(int argc, char *argv[], char *fruname,
@@ -896,20 +908,6 @@ int parse_args(int argc, char *argv[], char *fruname,
   }
   strcpy(fruname, argv[optind]);
 
-#ifdef CONFIG_FBY3_CWC
-  if (cwcPlat > 0 && strcmp(fruname, "slot1") == 0) {
-    if (argc >= 3 && optind < argc-1) {
-      pal_get_cwc_id(argv[optind+1], &expFru);
-    }
-  }
-
-  if (expFru > 0) {
-    optind++;
-    strcpy(fruname, argv[optind]);
-    fruname[strlen(argv[optind])] = 0;
-  }
-#endif
-
   if (*filter) {
     if (argc <= optind + 1) {
       printf("No sensor name\n");
@@ -951,12 +949,6 @@ main(int argc, char **argv) {
   char ** filter_list = argv + 3;
   json_t *fru_sensor_obj = json_object();
 
-#ifdef CONFIG_FBY3_CWC
-  if (pal_is_cwc() == PAL_EOK) {
-    cwcPlat = 1;
-  }
-#endif
-
   if (parse_args(argc, argv, fruname,
         &history_clear, &history,
         &threshold, &force, &json, &filter, &period, &num)) {
@@ -967,15 +959,7 @@ main(int argc, char **argv) {
   if (!strcmp(fruname, AGGREGATE_SENSOR_FRU_NAME)) {
     fru = AGGREGATE_SENSOR_FRU_ID;
   } else {
-#ifdef CONFIG_FBY3_CWC
-    if (cwcPlat > 0 && expFru > 0) {
-      ret = pal_get_cwc_id(fruname, &fru);
-    } else {
-#endif
     ret = pal_get_fru_id(fruname, &fru);
-#ifdef CONFIG_FBY3_CWC
-    }
-#endif
     if (ret < 0) {
       print_usage();
       return ret;
@@ -983,47 +967,23 @@ main(int argc, char **argv) {
     if (history_clear || history) {
       //Check if the input FRU is exist in sensor history list
       if (NULL == strstr(pal_fru_list_sensor_history_t, fruname)) {
-#ifdef CONFIG_FBY3_CWC
-        if (cwcPlat > 0 && NULL != strstr(pal_fru_exp_list, fruname)) {
-          goto history_exit;
-        }
-#endif
         print_usage();
         exit(-1);
       }
     }
   }
-#ifdef CONFIG_FBY3_CWC
-history_exit:
-#endif
+
   if (fru == 0) {
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
       ret |= print_sensor(fru, num, true, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     }
     ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, true, history, threshold, false, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-#ifdef CONFIG_FBY3_CWC
-  if (cwcPlat > 0) {
-    printf("====================TOP GPV3====================\n");
-    ret = print_sensor(FRU_2U_TOP, num, false, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-    printf("===================BOTTOM GPV3===================\n");
-    ret = print_sensor(FRU_2U_BOT, num, false, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-  }
-#endif
   } else if (pal_get_pair_fru(fru, &pair_fru)) {
     ret = print_sensor(fru, num, false, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     ret = print_sensor(pair_fru, num, false, history, threshold, pair_fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len ,period, fru_sensor_obj);
   } else {
     ret = print_sensor(fru, num, false, history, threshold, fru == AGGREGATE_SENSOR_FRU_ID ? false : force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
   }
-
-#ifdef CONFIG_FBY3_CWC
-  if (cwcPlat > 0 && fru == FRU_SLOT1) {
-    printf("====================TOP GPV3====================\n");
-    ret = print_sensor(FRU_2U_TOP, num, false, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-    printf("===================BOTTOM GPV3===================\n");
-    ret = print_sensor(FRU_2U_BOT, num, false, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-  }
-#endif
 
   if (json) {
     json_dumpf(fru_sensor_obj, stdout, 4);

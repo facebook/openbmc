@@ -146,6 +146,8 @@ enum {
 
   /* Other capabilities can be added here in a
    * backwards compatible way */
+  /* Sensors of this fru depends on root fru */
+  FRU_CAPABILITY_SENSOR_SLAVE = (1UL << 19),
 
   /* Magic to indicate all capabilities */
   FRU_CAPABILITY_ALL = 0xffffffffUL
@@ -582,6 +584,7 @@ int pal_get_exp_arg_name(uint8_t fru, char *name);
 int pal_get_fru_slot(uint8_t fru, uint8_t *slot);
 int pal_get_print_fru_name(const char **list);
 int pal_get_root_fru(uint8_t fru, uint8_t *slot);
+int pal_get_print_sensor_name(const char **list);
 
 #ifdef __cplusplus
 }

@@ -278,6 +278,33 @@ world and the CLI.
 The service layer is not abstracted in the hopes of reusing `main.cpp` so
 feel free to do whatever you want.
 
+# Profiling
+rackmond can be recompiled with latency profiling enabled. This is done by:
+```
+RACKMON_PROFILING=1 BB_ENV_EXTRAWHITE="$BB_ENV_EXTRAWHITE RACKMON_PROFILING" bitbake rackmon
+```
+and copying over the generated IPK `tmp/deploy/ipk/armv6/rackmon_0.2-r1_armv6.ipk` to
+the BMC and installing it:
+```
+opkg install --force_reinstall ./rackmon_0.2-r1_armv6.ipk
+```
+Then restarting it using the appropriate service manager (`sv restart rackmond` or `systemctl restart rackmond`).
+You can retrieve the profile data from rackmond using:
+```
+rackmoncli profile
+PROFILE modbus::182 : 46 ms
+PROFILE rawcmd::182 : 46 ms
+PROFILE modbus::165 : 46 ms
+PROFILE rawcmd::165 : 46 ms
+PROFILE modbus::165 : 42 ms
+PROFILE rawcmd::165 : 42 ms
+PROFILE modbus::164 : 39 ms
+<snip>
+```
+this automatically clears the store. Note, if we do not retrieve the profile store, there
+is nothing clearing up the memory, there is no upper-limit. So, don't use on production :-)
+
+
 # Upcoming
 
 * Baudrate negotiation

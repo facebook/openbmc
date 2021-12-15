@@ -37,20 +37,19 @@ LIC_FILES_CHKSUM = "\
 
 DEPENDS:append = " update-rc.d-native"
 
-LDFLAGS += "-llog -lmisc-utils"
 DEPENDS += "liblog libmisc-utils nlohmann-json cli11"
 RDEPENDS:${PN} = "liblog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):
   prof_enabled = d.getVar("RACKMON_PROFILING", False)
   if prof_enabled:
-    return "-DPROFILING"
-  return ""
-
-CFLAGS += "${@get_profile_flag(d)} -DRACKMON_SYSLOG"
+    return "true"
+  return "false"
+EXTRA_OEMESON += "-Dprofiling=${@get_profile_flag(d)}"
 
 
 SRC_URI = "file://meson.build \
+           file://meson_options.txt \
            file://rackmond.service \
            file://run-rackmond.sh \
            file://setup-rackmond.sh \

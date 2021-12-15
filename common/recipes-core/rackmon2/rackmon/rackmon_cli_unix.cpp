@@ -111,7 +111,7 @@ static void print_text(const std::string& req_s, json& j) {
   std::string status;
   j.at("status").get_to(status);
   if (status == "SUCCESS") {
-    if (req_s == "data" || req_s == "formatted_data")
+    if (req_s == "data" || req_s == "formatted_data" || req_s == "profile")
       print_nested(j["data"]);
     else if (req_s == "list")
       print_table(j["data"]);
@@ -199,6 +199,11 @@ int main(int argc, char* argv[]) {
           "-f,--format",
           format_data,
           "Formats the data as per the register map");
+
+  // Profile
+  app.add_subcommand("profile", "Print profiling data collected from last read")
+    ->callback(
+        [&]() { do_cmd("profile", json_fmt); });
 
   // Pause command
   app.add_subcommand("pause", "Pause monitoring")->callback([&]() {

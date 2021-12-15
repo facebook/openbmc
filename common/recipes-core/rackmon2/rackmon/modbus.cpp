@@ -1,4 +1,5 @@
 #include "modbus.hpp"
+#include "log.hpp"
 #include <fstream>
 #include <thread>
 
@@ -10,6 +11,8 @@ void Modbus::command(
     uint32_t baud,
     modbus_time timeout,
     modbus_time settle_time) {
+  RACKMON_PROFILE_SCOPE(modbus_command,
+      "modbus::" + std::to_string(int(req.addr)), profile_store);
   if (timeout == modbus_time::zero())
     timeout = default_timeout;
   if (baud == 0)

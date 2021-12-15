@@ -1,5 +1,5 @@
-project('rackmon', 'c', 'cpp',
-    version: '0.1',
+project('rackmon', 'cpp',
+    version: '0.2',
     license: 'GPL2',
     # Meson 0.40 only supports c++1z as an alias for c++17.
     default_options: [
@@ -23,15 +23,22 @@ srcs = files(
     'rackmon_svc_unix.cpp',
 )
 
-cc = meson.get_compiler('c')
+cc = meson.get_compiler('cpp')
 deps = [
   dependency('threads'),
 #  cc.find_library('misc-utils'),
 ]
-add_global_arguments('-DRACKMON_SYSLOG=1', language : 'cpp')
-deps += [ cc.find_library('log') ]
 
-cc = meson.get_compiler('cpp')
+if get_option('syslog') == true
+    add_global_arguments('-DRACKMON_SYSLOG=1', language : 'cpp')
+    deps += [ cc.find_library('log') ]
+endif
+
+if get_option('profiling') == true
+    add_global_arguments('-DPROFILING=1', language : 'cpp')
+    deps += [ cc.find_library('misc-utils') ]
+endif
+
 if cc.get_id() == 'gcc' and cc.version().version_compare('<9')
     deps += [ cc.find_library('stdc++fs') ]
 endif

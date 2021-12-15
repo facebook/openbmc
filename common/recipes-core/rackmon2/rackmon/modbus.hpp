@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <sstream>
 #include "msg.hpp"
 #include "uart.hpp"
 
@@ -16,9 +17,10 @@ class Modbus {
   uint32_t default_baudrate = 0;
   modbus_time default_timeout = modbus_time::zero();
   modbus_time min_delay = modbus_time::zero();
+  std::stringstream& profile_store;
 
  public:
-  Modbus() {}
+  explicit Modbus(std::stringstream& prof) : profile_store(prof) {}
   virtual ~Modbus() {}
 
   uint32_t get_default_baudrate() const {

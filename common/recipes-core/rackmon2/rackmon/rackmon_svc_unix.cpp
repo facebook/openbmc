@@ -91,6 +91,8 @@ void RackmonUNIXSocketService::handle_json_command(
     std::vector<ModbusDeviceFormattedData> ret;
     rackmond.get_monitor_data_formatted(ret);
     resp["data"] = ret;
+  } else if (cmd == "profile") {
+    resp["data"] = rackmond.get_profile_data();
   } else {
     throw std::logic_error("UNKNOWN_CMD: " + cmd);
   }

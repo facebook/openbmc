@@ -1,0 +1,3 @@
+option('profiling', type : 'boolean', value : false)
+option('syslog', type : 'boolean', value : true)
+

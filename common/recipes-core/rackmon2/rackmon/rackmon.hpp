@@ -17,6 +17,8 @@ class Rackmon {
 
   mutable std::shared_mutex devices_mutex{};
 
+  std::stringstream profile_store{};
+
   // These devices discovered on actively monitored busses
   std::map<uint8_t, std::unique_ptr<ModbusDevice>> devices{};
 
@@ -83,4 +85,7 @@ class Rackmon {
 
   // Get formatted monitor data
   void get_monitor_data_formatted(std::vector<ModbusDeviceFormattedData>& ret);
+
+  // Get profile data
+  std::string get_profile_data();
 };

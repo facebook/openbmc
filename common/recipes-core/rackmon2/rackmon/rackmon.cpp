@@ -17,7 +17,7 @@ void Rackmon::load(
   json j;
   ifs >> j;
   for (const auto& iface_conf : j["interfaces"]) {
-    std::unique_ptr<Modbus> iface = std::make_unique<Modbus>();
+    std::unique_ptr<Modbus> iface = std::make_unique<Modbus>(profile_store);
     iface->initialize(iface_conf);
     interfaces.push_back(std::move(iface));
   }
@@ -161,6 +161,7 @@ void Rackmon::stop() {
 
 void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
   uint8_t addr = req.addr;
+  RACKMON_PROFILE_SCOPE(raw_cmd, "rawcmd::" + std::to_string(int(req.addr)), profile_store);
   std::shared_lock lock(devices_mutex);
   if (!devices.at(addr)->is_active()) {
     throw std::exception();
@@ -198,4 +199,10 @@ void Rackmon::get_monitor_data_formatted(
       devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
         return kv.second->get_formatted_data();
       });
+}
+
+std::string Rackmon::get_profile_data() {
+  std::stringstream ss;
+  profile_store.swap(ss);
+  return ss.str();
 }

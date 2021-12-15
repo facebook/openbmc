@@ -101,3 +101,25 @@ fi
 logger -s -p user.warn -t check_2nd_src "$FRU source: $RET"
 
 $KV_CMD set $KEY_SOURCE_INFO "$RET"
+
+if [ -f /etc/modprobe.d/modprobe.conf ]; then
+  rm /etc/modprobe.d/modprobe.conf
+fi
+
+if [ "$FRU" = "dpb" ]; then
+  if [ ! -d /sys/bus/i2c/drivers/adc128d818 ] && [ "$RET" = "$MAIN_SRC" ]; then
+    modprobe adc128d818
+  fi
+  if [ ! -d /sys/bus/i2c/drivers/ltc2991 ] && [ "$RET" = "$SECOND_SRC" ]; then
+    modprobe ltc2991
+  fi
+fi
+
+if [ "$FRU" = "e1s_iocm" ]; then
+  if [ ! -d /sys/bus/i2c/drivers/ads1015 ] && [ "$RET" = "$MAIN_SRC" ]; then
+    modprobe ti_ads1015
+  fi
+  if [ ! -d /sys/bus/i2c/drivers/ltc2990 ] && [ "$RET" = "$SECOND_SRC" ]; then
+    modprobe ltc2990
+  fi
+fi

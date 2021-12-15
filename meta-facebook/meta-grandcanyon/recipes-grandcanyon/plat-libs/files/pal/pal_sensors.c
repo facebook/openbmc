@@ -2072,6 +2072,10 @@ get_current_source(const char *key, uint8_t *source_info) {
 int pal_sensor_monitor_initial(void) {
   owning_iocm_snr_flag = true;
   kv_set(KEY_IOCM_SNR_READY, IOCM_SNR_NOT_READY, 0, 0);
+  // get current dpb source and load corresponding driver
+  run_command("/usr/local/bin/check_2nd_source.sh dpb > /dev/NULL 2>&1");
+  // reload sensor map
+  sensors_reinit();
 }
 
 static bool

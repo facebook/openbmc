@@ -101,6 +101,7 @@ do_install() {
     install -d ${D}${includedir}/openbmc
     install -m 0644 misc-utils.h ${D}${includedir}/openbmc/misc-utils.h
     install -m 0644 biview.hpp ${D}${includedir}/openbmc/biview.hpp
+    install -m 0644 profile.hpp ${D}${includedir}/openbmc/profile.hpp
 
     install -d ${D}${sysconfdir}
     echo "${@ get_soc_model('${SOC_FAMILY}') }" > ${D}${sysconfdir}/soc_model
@@ -110,5 +111,5 @@ do_install() {
 FILES:${PN} = "${libdir}/libmisc-utils.so"
 FILES:${PN} += "${sysconfdir}/soc_model"
 FILES:${PN} += "${sysconfdir}/cpu_model"
-FILES:${PN}-dev = "${includedir}/openbmc/misc-utils.h ${includedir}/openbmc/biview.hpp"
+FILES:${PN}-dev = "${includedir}/openbmc/misc-utils.h ${includedir}/openbmc/biview.hpp ${includedir}/openbmc/profile.hpp"
 FILES:${PN}-ptest = "${libdir}/libmisc-utils/ptest ${libdir}/libmisc-utils/ptest/run-ptest"

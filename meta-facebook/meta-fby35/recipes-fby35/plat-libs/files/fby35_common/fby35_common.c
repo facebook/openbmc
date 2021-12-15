@@ -661,10 +661,11 @@ exit:
 
 bool
 fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id) {
-  const char* board_type[] = {"POC", "EVT", "DVT", "PVT", "MP"};
+  const char* board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   uint8_t signed_byte = 0x0;
   uint8_t bmc_location = 0;
   uint8_t board_id = 0;
+  uint8_t stage_idx = 0;
   struct stat file_info;
 
   if (stat(img_path, &file_info) < 0) {
@@ -681,35 +682,6 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
   }
 
   signed_byte = img_info->err_proof;
-  switch (rev_id) {
-    case FW_REV_POC:
-      if (REVISION_ID(signed_byte) != FW_REV_POC) {
-        printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");
-        return false;
-      }
-      break;
-    case FW_REV_PVT:
-    case FW_REV_MP:
-      // PVT & MP firmware could be used in common
-      if (REVISION_ID(signed_byte) < FW_REV_PVT) {
-        printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
-              board_type[rev_id]);
-        return false;
-      }
-      break;
-    default:
-      if (REVISION_ID(signed_byte) != rev_id) {
-        printf("Please use %s firmware on %s system\n To force the update, please use the --force option.\n",
-              board_type[rev_id], board_type[rev_id]);
-        return false;
-      }
-  }
-  
- 
-  if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
-    printf("Can not get the BMC location\n");
-    return false;
-  }
 
   switch(comp) {
     case FW_CPLD:
@@ -734,6 +706,39 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     printf("Wrong firmware image component.\n");
     return false;
   }
+  stage_idx = (board_id == BOARD_ID_SB) ? (rev_id + 1) : rev_id;
+
+  switch (rev_id) {
+    case FW_REV_POC:
+      if (REVISION_ID(signed_byte, board_id) != FW_REV_POC) {
+        printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");
+        return false;
+      }
+      break;
+    case FW_REV_PVT:
+    case FW_REV_MP:
+      // PVT & MP firmware could be used in common
+      if (REVISION_ID(signed_byte, board_id) < FW_REV_PVT) {
+        printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
+              board_type[stage_idx]);
+        return false;
+      }
+      break;
+    default:
+      if (REVISION_ID(signed_byte, board_id) != rev_id) {
+        printf("Please use %s firmware on %s system\n To force the update, please use the --force option.\n",
+              board_type[stage_idx], board_type[stage_idx]);
+        return false;
+      }
+  }
+  
+ 
+  if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
+    printf("Can not get the BMC location\n");
+    return false;
+  }
+
+
 
   switch(comp) {    
     case FW_CPLD:

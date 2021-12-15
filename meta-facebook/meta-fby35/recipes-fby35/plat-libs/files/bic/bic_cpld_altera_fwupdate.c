@@ -372,11 +372,11 @@ is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
 
         // PVT & MP firmware could be used in common
         if (board_type_index < CPLD_BOARD_PVT_REV) {
-          if (REVISION_ID(signed_byte) != board_type_index) {
+          if (REVISION_ID(signed_byte, BOARD_ID_BB) != board_type_index) {
             board_rev_is_invalid = true;
           }
         } else {
-          if (REVISION_ID(signed_byte) < CPLD_BOARD_PVT_REV) {
+          if (REVISION_ID(signed_byte, BOARD_ID_BB) < CPLD_BOARD_PVT_REV) {
             board_rev_is_invalid = true;
           }
         }
@@ -417,11 +417,11 @@ is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
 
         // PVT & MP firmware could be used in common
         if (board_type_index < CPLD_BOARD_PVT_REV) {
-          if (REVISION_ID(signed_byte) != board_type_index) {
+          if (REVISION_ID(signed_byte, BOARD_ID_SB) != board_type_index) {
             board_rev_is_invalid = true;
           }
         } else {
-          if (REVISION_ID(signed_byte) < CPLD_BOARD_PVT_REV) {
+          if (REVISION_ID(signed_byte, BOARD_ID_SB) < CPLD_BOARD_PVT_REV) {
             board_rev_is_invalid = true;
           }
         }

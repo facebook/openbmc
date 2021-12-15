@@ -99,7 +99,7 @@ extern const char *slot_usage;
 
 #define MD5_READ_BYTES     (1024)
 
-#define REVISION_ID(x)  ((x >> 4) & 0x07)
+#define REVISION_ID(x, board_id)  (((x >> 4) & 0x07) + ((board_id == 1) ? 0 : 1))
 #define BOARD_ID(x)     (x & 0x0f)
 #define COMPONENT_ID(x) (x >> 7)
 

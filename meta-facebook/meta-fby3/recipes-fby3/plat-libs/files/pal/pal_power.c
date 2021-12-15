@@ -494,6 +494,7 @@ int
 pal_sled_cycle(void) {
   int ret = PAL_EOK;
   uint8_t bmc_location = 0;
+  uint8_t hsc_det = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -502,7 +503,14 @@ pal_sled_cycle(void) {
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
+    if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
+      return -1;
+    }
+    if ( hsc_det == HSC_DET_MP5990 ) {
+      ret = system("i2cset -y 11 0x40 0xf c &> /dev/null");
+    } else {
+      ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
+    }
   } else {
     // check power lock flag
     if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) {

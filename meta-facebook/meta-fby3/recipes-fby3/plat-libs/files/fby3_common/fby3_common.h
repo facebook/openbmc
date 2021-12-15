@@ -228,6 +228,13 @@ enum {
   UNKNOWN_BOARD = 0xff,
 };
 
+enum {
+  HSC_DET_ADM1278 = 0,
+  HSC_DET_LTC4282,
+  HSC_DET_MP5990,
+  HSC_DET_ADM1276,
+};
+
 enum fan_mode {
   FAN_MANUAL_MODE = 0,
   FAN_AUTO_MODE,

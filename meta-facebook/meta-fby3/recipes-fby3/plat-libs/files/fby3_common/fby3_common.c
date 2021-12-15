@@ -626,6 +626,7 @@ fby3_common_get_bb_board_rev(uint8_t *rev) {
   int retry = 3;
   uint8_t tbuf[4] = {BB_CPLD_BOARD_REV_ID_REGISTER};
   uint8_t rbuf[4] = {0};
+  uint8_t hsc_det = 0;
   static bool is_cached = false;
   static uint8_t cached_id = 0;
 
@@ -650,6 +651,17 @@ fby3_common_get_bb_board_rev(uint8_t *rev) {
     if (retry <= 0) {
       return -1;
     }
+
+    if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
+      return -1;
+    }
+    if ( hsc_det == HSC_DET_ADM1278 ) {
+      // old board, BOARD_REV_ID3 is floating.
+      cached_id = rbuf[0] & 0x7;
+    } else {
+      cached_id = rbuf[0] & 0xF;
+    }
+
     cached_id = rbuf[0];
     is_cached = true;
   }

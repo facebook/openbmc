@@ -52,12 +52,6 @@ enum {
 };
 
 enum {
-  HSC_DET_ADM1276 = 0,
-  HSC_DET_LTC4282,
-  HSC_DET_MP5990,
-};
-
-enum {
   // Vendor ID
   PCIE_VENDOR_MARVELL_HSM = 0x8086,
   PCIE_VENDOR_NCIPHER_HSM = 0x1957,
@@ -1007,6 +1001,35 @@ PAL_ATTR_INFO mp5990_info_list[] = {
 PAL_HSC_INFO hsc_info_list[] = {
   {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
   {HSC_MP5990, MP5990_SLAVE_ADDR,  mp5990_info_list},
+};
+
+struct power_coeff {
+  float val;
+  float coeff;
+};
+
+static const struct power_coeff mp5990_curr_cali_table[] = {
+  { 5,  1.02731 },
+  { 8,  1.01257 },
+  { 10, 1.01270 },
+  { 13, 1.01343 },
+  { 15, 1.01394 },
+  { 18, 1.00540 },
+  { 20, 1.00673 },
+  { 23, 1.00569 },
+  { 0.0,   0.0 }
+};
+
+static const struct power_coeff mp5990_pwr_cali_table[] = {
+  { 60,  1.060262 },
+  { 97,  1.024449 },
+  { 121, 1.018210 },
+  { 156, 1.022174 },
+  { 180, 1.017156 },
+  { 215, 1.014175 },
+  { 239, 1.013756 },
+  { 274, 1.011664 },
+  { 0.0,   0.0 }
 };
 
 #define IS_DUAL_M2_PWR_SNR(sn) (sn == BIC_GPV3_DUAL_M2_PWR_0_1 || \
@@ -2142,11 +2165,47 @@ read_mp5990_ein(uint8_t hsc_id, float *value) {
   return PAL_EOK;
 }
 
+
+
+/* curr/power calibration */
+static void
+value_adjust(const struct power_coeff *table, float *value) {
+  float x0, x1, y0, y1, x;
+  int i;
+
+  x = *value;
+  x0 = table[0].val;
+  y0 = table[0].coeff;
+  if (x0 >= *value) {
+    *value = x * y0;
+    return;
+  }
+
+  for (i = 1; table[i].val > 0.0; i++) {
+    if (*value < table[i].val)
+      break;
+
+    x0 = table[i].val;
+    y0 = table[i].coeff;
+  }
+  if (table[i].val <= 0.0) {
+    *value = x * y0;
+    return;
+  }
+
+  // if value is bwtween x0 and x1, use linear interpolation method.
+  x1 = table[i].val;
+  y1 = table[i].coeff;
+  *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
+  return;
+}
+
 static int
 read_mp5990_pin(uint8_t hsc_id, float *value) {
   if ( get_hsc_reading(hsc_id, HSC_POWER, PMBUS_READ_PIN, value, NULL) ) {
     return READING_NA;
   }
+  value_adjust(mp5990_pwr_cali_table, value);
   return PAL_EOK;
 }
 
@@ -2155,6 +2214,7 @@ read_mp5990_iout(uint8_t hsc_id, float *value) {
   if ( get_hsc_reading(hsc_id, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) ) {
     return READING_NA;
   }
+  value_adjust(mp5990_curr_cali_table, value);
   return PAL_EOK;
 }
 
@@ -2482,7 +2542,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char fru_name[32];
   int ret=0;
   uint8_t id=0;
-  uint8_t bb_rev, hsc_det;
+  uint8_t hsc_det;
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
   static uint8_t exp_status = 0;
@@ -2511,16 +2571,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     if ( hsc_init || fru != FRU_BMC ) {
       break;
     }
-
-    if ( fby3_common_get_bb_board_rev(&bb_rev) ) {
-      break;
-    }
-    if ( bb_rev < BB_REV_2ND_HSC ) {
-      // ADM1278 only, unnecessary to init
-      hsc_init = 1;
-      break;
-    }
-
     if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
       break;
     }

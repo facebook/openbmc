@@ -6,9 +6,9 @@ This module provides the platform information to users.
 Users can run `bios-util slotX --plat_info get` to call it.
 """
 
-from subprocess import PIPE, Popen
 import json
 import re
+from subprocess import PIPE, Popen
 
 SHOW_SYS_CONFIG = "/usr/local/bin/show_sys_config"
 
@@ -44,9 +44,9 @@ def plat_info(fru):
             pcie_configuration = json_data["server_config"]["slot" + str(fru)][
                 "Type"
             ].lower()
-            if re.search(r"a|c", pcie_configuration):
+            if re.search(r"a|b", pcie_configuration):
                 pcie_configuration = "4x Crater Lakes"
-            elif re.search(r"b|d", pcie_configuration):
+            elif re.search(r"c|d", pcie_configuration):
                 pcie_configuration = "2x Crater Lakes"
 
         print("Presense: " + present)

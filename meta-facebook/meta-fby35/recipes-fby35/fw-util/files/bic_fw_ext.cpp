@@ -155,10 +155,18 @@ int BicFwExtComponent::fupdate(string image) {
 int BicFwExtComponent::get_ver_str(string& s) {
   uint8_t ver[32] = {0};
   char ver_str[32] = {0};
+  uint8_t* plat_name = NULL;
   int ret = 0;
   // Get Bridge-IC Version
   ret = bic_get_fw_ver(slot_id, fw_comp, ver);
-  snprintf(ver_str, sizeof(ver_str), "v%x.%02x", ver[0], ver[1]);
+  if (strlen((char*)ver) == 2) { // old version format
+    snprintf(ver_str, sizeof(ver_str), "v%x.%02x", ver[0], ver[1]);
+  } else if (strlen((char*)ver) >= 4){ // new version format
+    plat_name = ver + 4;
+    snprintf(ver_str, sizeof(ver_str), "oby35-%s-v%02x%02x.%02x.%02x", (char*)plat_name, ver[0], ver[1], ver[2], ver[3]);
+  } else {
+    snprintf(ver_str, sizeof(ver_str), "Format not supported");
+  }
   s = string(ver_str);
   return ret;
 }

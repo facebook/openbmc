@@ -418,6 +418,17 @@ _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
     memcpy(ver, &rbuf[3], rlen-3);
     ret = BIC_STATUS_SUCCESS;
   }
+  switch (fw_comp) {
+    case FW_BIC:
+    case FW_1OU_BIC:
+    case FW_2OU_BIC:
+    case FW_BB_BIC:
+      ver[rlen - 2] = '\0';
+      break;
+    default:
+      // do nothing
+      break;
+  }
 
   return ret;
 }

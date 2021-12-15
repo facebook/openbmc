@@ -433,7 +433,10 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
                     general_info, dimm_location_str,
                     mem_err[event_type], sel[13], (sel[15]<<8)|sel[14]);
           }
+          sprintf(temp_log, "DIMM %s initialization fails", dimm_str);
+          pal_add_cri_sel(temp_log);
           break;
+
         default:
           pal_convert_to_dimm_str(dimm_info.socket, dimm_info.channel, dimm_info.slot, dimm_str);
           estr_idx = (event_type < ARRAY_SIZE(mem_err)) ? event_type : (ARRAY_SIZE(mem_err) - 1);

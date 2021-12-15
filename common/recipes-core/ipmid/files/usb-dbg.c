@@ -48,7 +48,12 @@
 
 #define LINE_DELIMITER '\x1F'
 
+#ifdef CONFIG_FBY3
+#define FRAME_BUFF_SIZE 5120
+#else
 #define FRAME_BUFF_SIZE 4096
+#endif
+
 #define FRAME_PAGE_BUF_SIZE 256
 
 #define MAX_UART_SEL_NAME_SIZE    16

@@ -101,6 +101,8 @@ server_power_12v_on(uint8_t fru) {
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
   uint8_t tlen = 0;
+  uint8_t rbuf[2] = {0};
+  uint8_t rlen = 0;
   int ret = 0, retry= 0;
 
   i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -110,6 +112,41 @@ server_power_12v_on(uint8_t fru) {
   }
 
   tbuf[0] = 0x09 + (fru-1);
+  tlen = 1;
+  rlen = 1;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s()%d Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, __LINE__, tlen);
+    goto error_exit;
+  }
+
+  if (rbuf[0] == AC_ON) {
+    tbuf[1] = AC_OFF;
+    tlen = 2;
+    while (retry < MAX_READ_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+    if (retry == MAX_READ_RETRY) {
+      syslog(LOG_WARNING, "%s()%d Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, __LINE__, tlen);
+      goto error_exit;
+    }
+    sleep(2);
+  }
+
   tbuf[1] = AC_ON;
   tlen = 2;
   retry = 0;

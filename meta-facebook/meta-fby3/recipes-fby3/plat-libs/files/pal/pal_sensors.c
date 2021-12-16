@@ -33,6 +33,10 @@
 #define DUAL_FAN_UCR  13500
 #define DUAL_FAN_UNC  10200
 
+#define MAX_SENSORD_FRU MAX_NUM_FRUS+MAX_NUM_EXPS
+#define NB_TO_IDX(x) (x-FRU_EXP_BASE+MAX_NUM_FRUS)
+#define IDX_TO_NB(f) (f-MAX_NUM_FRUS+FRU_EXP_BASE)
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -111,6 +115,8 @@ size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
 const char pal_fan_opt_list[] = "enable, disable, status";
+
+static thresh_sensor_t m_snr_desc[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
 
 const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_FAN0_TACH,
@@ -3162,4 +3168,463 @@ pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
   }
 
   return false;
+}
+
+static thresh_sensor_t *
+get_sensor_desc(uint8_t fru, uint8_t snr_num) {
+  switch(fru) {
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      fru = NB_TO_IDX(fru);
+      break;
+    default:
+      break;
+  }
+  return &m_snr_desc[fru-1][snr_num];
+}
+
+int
+pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+
+  thresh_sensor_t *psnr = (thresh_sensor_t *)snr;
+  thresh_sensor_t *snr_desc;
+
+  snr_desc = get_sensor_desc(fru, snr_num);
+  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+  return 0;
+}
+
+void
+pal_sensor_assert_handle_gpv3(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128];
+  thresh_sensor_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_GPV3_ADC_P12V_STBY_VOL:
+    case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+    case BIC_GPV3_ADC_P1V8_VOL:
+    case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+    case BIC_GPV3_VR_P1V8_VOLTAGE:
+    case BIC_GPV3_VR_P0V84_VOLTAGE:
+    case BIC_GPV3_E1S_1_12V_VOLTAGE:
+    case BIC_GPV3_E1S_2_12V_VOLTAGE:
+    case BIC_GPV3_INA233_VOL_DEV0:
+    case BIC_GPV3_INA233_VOL_DEV1:
+    case BIC_GPV3_INA233_VOL_DEV2:
+    case BIC_GPV3_INA233_VOL_DEV3:
+    case BIC_GPV3_INA233_VOL_DEV4:
+    case BIC_GPV3_INA233_VOL_DEV5:
+    case BIC_GPV3_INA233_VOL_DEV6:
+    case BIC_GPV3_INA233_VOL_DEV7:
+    case BIC_GPV3_INA233_VOL_DEV8:
+    case BIC_GPV3_INA233_VOL_DEV9:
+    case BIC_GPV3_INA233_VOL_DEV10:
+    case BIC_GPV3_INA233_VOL_DEV11:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Assert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_assert_handle_cwc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128];
+  char fru_name[32] = {0};
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  switch(fru) {
+    case FRU_SLOT1:
+      switch(snr_num) {
+        case BIC_CWC_SENSOR_NUM_V_12:
+        case BIC_CWC_SENSOR_NUM_V_3_3_S:
+        case BIC_CWC_SENSOR_NUM_V_1_8:
+        case BIC_CWC_SENSOR_NUM_V_5:
+        case BIC_CWC_SENSOR_NUM_V_P1V8_VR:
+        case BIC_CWC_SENSOR_NUM_V_P0V84_VR:
+        case BIC_CWC_SENSOR_NUM_V_3V3_AUX:
+        case BIC_CWC_SENSOR_NUM_V_HSC_CWC:
+        case BIC_CWC_SENSOR_NUM_V_HSC_BOT:
+        case BIC_CWC_SENSOR_NUM_V_HSC_TOP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %.2f %s - Assert", snr_desc->name, val, thresh_name);
+          break;
+        default:
+         return;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      ret = pal_get_fruid_name(fru, fru_name);
+      if ( ret < 0) {
+        return;
+      }
+      switch(snr_num) {
+        case BIC_GPV3_ADC_P12V_STBY_VOL:
+        case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+        case BIC_GPV3_ADC_P1V8_VOL:
+        case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+        case BIC_GPV3_VR_P1V8_VOLTAGE:
+        case BIC_GPV3_VR_P0V84_VOLTAGE:
+        case BIC_GPV3_E1S_1_12V_VOLTAGE:
+        case BIC_GPV3_E1S_2_12V_VOLTAGE:
+        case BIC_GPV3_INA233_VOL_DEV0:
+        case BIC_GPV3_INA233_VOL_DEV1:
+        case BIC_GPV3_INA233_VOL_DEV2:
+        case BIC_GPV3_INA233_VOL_DEV3:
+        case BIC_GPV3_INA233_VOL_DEV4:
+        case BIC_GPV3_INA233_VOL_DEV5:
+        case BIC_GPV3_INA233_VOL_DEV6:
+        case BIC_GPV3_INA233_VOL_DEV7:
+        case BIC_GPV3_INA233_VOL_DEV8:
+        case BIC_GPV3_INA233_VOL_DEV9:
+        case BIC_GPV3_INA233_VOL_DEV10:
+        case BIC_GPV3_INA233_VOL_DEV11:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %s %.2f%s - Assert", fru_name, snr_desc->name, val, thresh_name);
+          break;
+        default:
+          return;
+      }
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cri_sel [128];
+  char thresh_name[10];
+  static uint8_t board_type = UNKNOWN_BOARD;
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  fru = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+
+  switch (thresh) {
+    case UNR_THRESH:
+      sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+      sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+      sprintf(thresh_name, "UNC");
+      break;
+    case LNR_THRESH:
+      sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+      sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+      sprintf(thresh_name, "LNC");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() Wrong thresh enum value\n", __func__);
+      return;
+  }
+
+  if (fru != FRU_BMC && fru != FRU_NIC) {
+    ret = pal_get_2ou_board_type(fru, &board_type);
+    if (ret < 0) {
+      return;
+    }
+  }
+
+  switch (board_type) {
+    case GPV3_MCHP_BOARD:
+    case GPV3_BRCM_BOARD:
+      pal_sensor_assert_handle_gpv3(fru, snr_num, val, thresh_name);
+      break;
+    case CWC_MCHP_BOARD:
+      pal_sensor_assert_handle_cwc(fru, snr_num, val, thresh_name);
+      break;
+    default:
+      break;
+  }
+
+  switch(snr_num) {
+    case BMC_SENSOR_FAN0_TACH:
+    case BMC_SENSOR_FAN1_TACH:
+    case BMC_SENSOR_FAN2_TACH:
+    case BMC_SENSOR_FAN3_TACH:
+    case BMC_SENSOR_FAN4_TACH:
+    case BMC_SENSOR_FAN5_TACH:
+    case BMC_SENSOR_FAN6_TACH:
+    case BMC_SENSOR_FAN7_TACH:
+    case BIC_SENSOR_CPU_TEMP:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.0f %s - Assert", snr_desc->name, val, thresh_name);
+      break;
+    case BMC_SENSOR_P5V:
+    case BMC_SENSOR_P12V:
+    case BMC_SENSOR_P3V3_STBY:
+    case BMC_SENSOR_P1V15_BMC_STBY:
+    case BMC_SENSOR_P1V2_BMC_STBY:
+    case BMC_SENSOR_P2V5_BMC_STBY:
+    case BMC_SENSOR_MEDUSA_VOUT:
+    case BMC_SENSOR_HSC_VIN:
+    case BMC_SENSOR_MEDUSA_VIN:
+    case BMC_SENSOR_MEDUSA_VDELTA:
+    case BMC_SENSOR_PDB_DL_VDELTA:
+    case BMC_SENSOR_PDB_BB_VDELTA:
+    case BMC_SENSOR_NIC_P12V:
+    case BIC_SENSOR_P12V_STBY_VOL:
+    case BIC_SENSOR_P3V_BAT_VOL:
+    case BIC_SENSOR_P3V3_STBY_VOL:
+    case BIC_SENSOR_P1V05_PCH_STBY_VOL:
+    case BIC_SENSOR_PVNN_PCH_STBY_VOL:
+    case BIC_SENSOR_HSC_INPUT_VOL:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_P3V3_STBY_VR_VOL:
+    case BIC_PVDDQ_ABC_VR_VOL:
+    case BIC_PVDDQ_DEF_VR_VOL:
+    case BIC_BB_SENSOR_MEDUSA_VOUT:
+    case BIC_BB_SENSOR_HSC_VIN:
+    case BIC_BB_SENSOR_P5V:
+    case BIC_BB_SENSOR_P12V:
+    case BIC_BB_SENSOR_P3V3_STBY:
+    case BIC_BB_SENSOR_P1V2_BMC_STBY:
+    case BIC_BB_SENSOR_P2V5_BMC_STBY:
+    case BIC_BB_SENSOR_MEDUSA_VIN:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Assert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle_gpv3(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128];
+  thresh_sensor_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_GPV3_ADC_P12V_STBY_VOL:
+    case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+    case BIC_GPV3_ADC_P1V8_VOL:
+    case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+    case BIC_GPV3_VR_P1V8_VOLTAGE:
+    case BIC_GPV3_VR_P0V84_VOLTAGE:
+    case BIC_GPV3_E1S_1_12V_VOLTAGE:
+    case BIC_GPV3_E1S_2_12V_VOLTAGE:
+    case BIC_GPV3_INA233_VOL_DEV0:
+    case BIC_GPV3_INA233_VOL_DEV1:
+    case BIC_GPV3_INA233_VOL_DEV2:
+    case BIC_GPV3_INA233_VOL_DEV3:
+    case BIC_GPV3_INA233_VOL_DEV4:
+    case BIC_GPV3_INA233_VOL_DEV5:
+    case BIC_GPV3_INA233_VOL_DEV6:
+    case BIC_GPV3_INA233_VOL_DEV7:
+    case BIC_GPV3_INA233_VOL_DEV8:
+    case BIC_GPV3_INA233_VOL_DEV9:
+    case BIC_GPV3_INA233_VOL_DEV10:
+    case BIC_GPV3_INA233_VOL_DEV11:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Deassert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle_cwc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128] = {0};
+  char fru_name[32] = {0};
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  switch(fru) {
+    case FRU_SLOT1:
+      switch(snr_num) {
+        case BIC_CWC_SENSOR_NUM_V_12:
+        case BIC_CWC_SENSOR_NUM_V_3_3_S:
+        case BIC_CWC_SENSOR_NUM_V_1_8:
+        case BIC_CWC_SENSOR_NUM_V_5:
+        case BIC_CWC_SENSOR_NUM_V_P1V8_VR:
+        case BIC_CWC_SENSOR_NUM_V_P0V84_VR:
+        case BIC_CWC_SENSOR_NUM_V_3V3_AUX:
+        case BIC_CWC_SENSOR_NUM_V_HSC_CWC:
+        case BIC_CWC_SENSOR_NUM_V_HSC_BOT:
+        case BIC_CWC_SENSOR_NUM_V_HSC_TOP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %.2f %s - Deassert", snr_desc->name, val, thresh_name);
+          break;
+        default:
+          return;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      ret = pal_get_fruid_name(fru, fru_name);
+      if ( ret < 0) {
+        return;
+      }
+      switch(snr_num) {
+        case BIC_GPV3_ADC_P12V_STBY_VOL:
+        case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+        case BIC_GPV3_ADC_P1V8_VOL:
+        case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+        case BIC_GPV3_VR_P1V8_VOLTAGE:
+        case BIC_GPV3_VR_P0V84_VOLTAGE:
+        case BIC_GPV3_E1S_1_12V_VOLTAGE:
+        case BIC_GPV3_E1S_2_12V_VOLTAGE:
+        case BIC_GPV3_INA233_VOL_DEV0:
+        case BIC_GPV3_INA233_VOL_DEV1:
+        case BIC_GPV3_INA233_VOL_DEV2:
+        case BIC_GPV3_INA233_VOL_DEV3:
+        case BIC_GPV3_INA233_VOL_DEV4:
+        case BIC_GPV3_INA233_VOL_DEV5:
+        case BIC_GPV3_INA233_VOL_DEV6:
+        case BIC_GPV3_INA233_VOL_DEV7:
+        case BIC_GPV3_INA233_VOL_DEV8:
+        case BIC_GPV3_INA233_VOL_DEV9:
+        case BIC_GPV3_INA233_VOL_DEV10:
+        case BIC_GPV3_INA233_VOL_DEV11:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %s %.2f%s - Deassert", fru_name, snr_desc->name, val, thresh_name);
+          break;
+        default:
+          return;
+      }
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cri_sel [128];
+  char thresh_name[10];
+  static uint8_t board_type = UNKNOWN_BOARD;
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  fru = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+
+  switch (thresh) {
+    case UNR_THRESH:
+      sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+      sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+      sprintf(thresh_name, "UNC");
+      break;
+    case LNR_THRESH:
+      sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+      sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+      sprintf(thresh_name, "LNC");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() Wrong thresh enum value\n", __func__);
+      return;
+  }
+
+  if (fru != FRU_BMC && fru != FRU_NIC) {
+    ret = pal_get_2ou_board_type(fru, &board_type);
+    if (ret < 0) {
+      return;
+    }
+  }
+
+  switch (board_type) {
+    case GPV3_MCHP_BOARD:
+    case GPV3_BRCM_BOARD:
+      pal_sensor_deassert_handle_gpv3(fru, snr_num, val, thresh_name);
+      break;
+    case CWC_MCHP_BOARD:
+      pal_sensor_deassert_handle_cwc(fru, snr_num, val, thresh_name);
+      break;
+    default:
+      break;
+  }
+
+  switch(snr_num) {
+    case BMC_SENSOR_FAN0_TACH:
+    case BMC_SENSOR_FAN1_TACH:
+    case BMC_SENSOR_FAN2_TACH:
+    case BMC_SENSOR_FAN3_TACH:
+    case BMC_SENSOR_FAN4_TACH:
+    case BMC_SENSOR_FAN5_TACH:
+    case BMC_SENSOR_FAN6_TACH:
+    case BMC_SENSOR_FAN7_TACH:
+    case BIC_SENSOR_CPU_TEMP:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.0f %s - Deassert", snr_desc->name, val, thresh_name);
+      break;
+    case BMC_SENSOR_P5V:
+    case BMC_SENSOR_P12V:
+    case BMC_SENSOR_P3V3_STBY:
+    case BMC_SENSOR_P1V15_BMC_STBY:
+    case BMC_SENSOR_P1V2_BMC_STBY:
+    case BMC_SENSOR_P2V5_BMC_STBY:
+    case BMC_SENSOR_MEDUSA_VOUT:
+    case BMC_SENSOR_HSC_VIN:
+    case BMC_SENSOR_MEDUSA_VIN:
+    case BMC_SENSOR_MEDUSA_VDELTA:
+    case BMC_SENSOR_PDB_DL_VDELTA:
+    case BMC_SENSOR_PDB_BB_VDELTA:
+    case BMC_SENSOR_NIC_P12V:
+    case BIC_SENSOR_P12V_STBY_VOL:
+    case BIC_SENSOR_P3V_BAT_VOL:
+    case BIC_SENSOR_P3V3_STBY_VOL:
+    case BIC_SENSOR_P1V05_PCH_STBY_VOL:
+    case BIC_SENSOR_PVNN_PCH_STBY_VOL:
+    case BIC_SENSOR_HSC_INPUT_VOL:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_P3V3_STBY_VR_VOL:
+    case BIC_PVDDQ_ABC_VR_VOL:
+    case BIC_PVDDQ_DEF_VR_VOL:
+    case BIC_BB_SENSOR_MEDUSA_VOUT:
+    case BIC_BB_SENSOR_HSC_VIN:
+    case BIC_BB_SENSOR_P5V:
+    case BIC_BB_SENSOR_P12V:
+    case BIC_BB_SENSOR_P3V3_STBY:
+    case BIC_BB_SENSOR_P1V2_BMC_STBY:
+    case BIC_BB_SENSOR_P2V5_BMC_STBY:
+    case BIC_BB_SENSOR_MEDUSA_VIN:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Deassert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
 }

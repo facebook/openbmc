@@ -2378,7 +2378,7 @@ pal_get_gpv3_not_present_str_name(uint8_t comp, uint8_t gpv3_name, char *error_l
 }
 
 static int
-pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
     SYS_THERM_TRIP     = 0x00,
     SYS_FIVR_FAULT     = 0x01,
@@ -2407,14 +2407,19 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     E1S_1OU_M2_PRESENT    = 0x80,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
+  uint8_t event_dir = sel[12] & 0x80;
+  uint8_t *event_data = &sel[13];
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   uint8_t type_2ou = UNKNOWN_BOARD;
+  char cri_sel[128];
 
   switch (event) {
     case SYS_THERM_TRIP:
       strcat(error_log, "System thermal trip");
+      sprintf(cri_sel, "%s - %s", error_log, ((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_FIVR_FAULT:
       strcat(error_log, "System FIVR fault");
@@ -2427,12 +2432,18 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_UV_DETECT:
       strcat(error_log, "Under Voltage Warning");
+      sprintf(cri_sel, "CPU FPH by UV - %s",((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_OC_DETECT:
       strcat(error_log, "OC Warning");
+      sprintf(cri_sel, "CPU FPH by OC - %s",((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_OCP_FAULT_WARN:
       strcat(error_log, "OCP Fault Warning");
+      sprintf(cri_sel, "CPU FPH by OCP Fault - %s",((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_FW_TRIGGER:
       strcat(error_log, "Firmware");
@@ -2637,7 +2648,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       pal_parse_vr_event(fru, event_data, error_log);
       break;
     case BIC_SENSOR_SYSTEM_STATUS:
-      pal_parse_sys_sts_event(fru, event_data, error_log);
+      pal_parse_sys_sts_event(fru, sel, error_log);
       break;
     case ME_SENSOR_SMART_CLST:
       pal_parse_smart_clst_event(fru, event_data, error_log);
@@ -2819,9 +2830,12 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
   int ret = PAL_EOK;
   int retry = MAX_RETRY;
   int st_idx = slot_id, end_idx = slot_id;
-  uint8_t tbuf[2] = {0x00};
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 2;
+  uint8_t rlen = 0;
   uint8_t bmc_location = 0; //the value of bmc_location is board id.
+  uint8_t index = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -2830,8 +2844,28 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
   }
 
   if (bmc_location == NIC_BMC) {
-    //did not set cpld register
-    ret = 0;
+    uint8_t bus = 0;
+    //class 2 might have slot1 or slot3
+    if(bic_get_mb_index(&index) != 0) {
+      return -1;
+    }
+
+    if(slot_id == UART_POS_BMC) {
+      index =  index == FRU_SLOT3 ? FRU_SLOT3 : FRU_SLOT1;
+    }
+
+    tbuf[0] = (bus << 1) + 1;
+    tbuf[1] = CPLD_ADDRESS;
+    tbuf[2] = 0x00; //read 0 byte
+    tbuf[3] = BB_CPLD_IO_BASE_OFFSET + index;
+    tbuf[4] = io_sts;
+    tlen = 5;
+    rlen = 0;
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret != 0) {
+      syslog(LOG_WARNING, "Failed to update IO sts. reg:%02X, data: %02X\n", tbuf[3], tbuf[1]);
+      return ret;
+    }
   }
   else {
     i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -4960,6 +4994,45 @@ int pal_get_print_sensor_name(const char **list) {
     *list = pal_exp_fru_list;
   } else {
     return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_2ou_board_type(uint8_t fru, uint8_t *type_2ou) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+  uint8_t slot = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC\n", __func__);
+    return ret;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    ret = pal_get_fru_slot(fru, &slot);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get slot of fru\n",__func__);
+      return ret;
+    }
+
+    ret = fby3_common_get_2ou_board_type(slot, type_2ou);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get 2ou board type\n",__func__);
+      return ret;
+    }
+  } else {
+    *type_2ou = UNKNOWN_BOARD;
+    return ret;
+  }
+  return ret;
+}
+
+int pal_is_sensor_num_exceed(uint8_t sensor_num) {
+  if (sensor_num > MAX_SENSOR_NUM) {
+    syslog(LOG_CRIT, "Amount of sensors is more than Maximum value");
+    return PAL_ENOTSUP;
+  } else {
+    return PAL_EOK;
   }
   return PAL_EOK;
 }

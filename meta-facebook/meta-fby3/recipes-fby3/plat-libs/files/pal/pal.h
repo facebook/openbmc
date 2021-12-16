@@ -254,6 +254,9 @@ int pal_get_exp_arg_name(uint8_t fru, char *name);
 int pal_get_print_fru_name(const char **list);
 int pal_get_root_fru(uint8_t fru, uint8_t *root);
 int pal_get_print_sensor_name(const char **list);
+int pal_get_2ou_board_type(uint8_t fru, uint8_t *type_2ou);
+int pal_is_sensor_num_exceed(uint8_t sensor_num);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

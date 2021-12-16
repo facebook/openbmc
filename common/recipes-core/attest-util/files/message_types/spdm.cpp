@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-mctp.h>
+#include <chrono>
+#include <ctime>
 
 #define DEFAULT_EID 0x8
 #define MAX_PAYLOAD_SIZE 4099 // including Message Header and body
@@ -49,6 +51,11 @@ CLI::App* SpdmMessage::setupSubcommand(
   sub->add_option("-o,--output", opt->outputType, "Output type")
       ->check(CLI::IsMember(acceptedOutputs));
 
+  // Allow benchmarking of SPDM message by repeatedly sending message.
+  // Message will be sent N times.
+  opt->benchmarkCount = 0;
+  sub->add_option("-b,--benchmark", opt->benchmarkCount, "Benchmark the SPDM message by sending N times and report average time");
+
   return sub;
 }
 
@@ -57,6 +64,47 @@ static bool isPayloadValid(vector<uint8_t> payload) {
   if (payload.size() == 0 || payload[0] != 0x05)
     return false;
   return true;
+}
+
+void benchmarkSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, uint8_t runCount) {
+  uint8_t rbuf[MAX_PAYLOAD_SIZE] = {0};
+  uint16_t addr = 0;
+  int rlen = 0;
+
+  std::chrono::milliseconds wallTimeSum = std::chrono::milliseconds(0);
+  std::clock_t cpuTimeSum = 0;
+
+  pal_get_bmc_ipmb_slave_addr(&addr, bus);
+  
+  std::cout << "Starting spdm round trip benchmark -- Running " << +runCount << " times..." << std::endl;
+  
+  for (int index = 0; index < runCount; ++index) { 
+    auto wallStart = std::chrono::high_resolution_clock::now();
+    std::clock_t cpuStart = std::clock();
+
+    send_spdm_cmd(bus, addr, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
+    
+    auto wallEnd = std::chrono::high_resolution_clock::now();
+    std::clock_t cpuEnd = std::clock();
+
+    auto wallClockInterval = std::chrono::duration_cast<std::chrono::milliseconds>(wallEnd - wallStart);
+    std::clock_t cpuClockInterval = cpuEnd - cpuStart; 
+    wallTimeSum += wallClockInterval;
+    cpuTimeSum += cpuClockInterval;
+
+    std::cout << "Run : " << index << std::endl;
+    std::cout << "\tWall-clock time: " << wallClockInterval.count() << std::endl;
+    std::cout << "\tCPU time: " << ((float)cpuClockInterval) / (CLOCKS_PER_SEC / 1000) << std::endl;
+  }
+
+  std::cout << std::endl;
+
+  wallTimeSum /= runCount;
+  double cpuAverageMilli = ((float)cpuTimeSum / (float)runCount) / (CLOCKS_PER_SEC / 1000);
+
+  std::cout << "Average wall clock time is: " << wallTimeSum.count() << " Milliseconds." << std::endl;
+  std::cout << "Average CPU time is: " << cpuAverageMilli << " Milliseconds." << std::endl;
+  return;
 }
 
 vector<uint8_t> sendSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, bool debugOutput) {
@@ -94,6 +142,7 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
   vector<uint8_t> returnMessage;
   vector<string> messages;
   const string delimiter = ",";
+  const uint8_t bus = 8;
 
   if (opt.inputFileName.length() != 0) {
     // Read in file. (Existence already checked)
@@ -117,6 +166,13 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
     decodedMessages.push_back(decodeBase64(messages[index]));
   }
 
+  if(opt.benchmarkCount > 0) {
+    if(decodedMessages.size() != 1) 
+      throw CLI::ValidationError("Benchmark can only be run with a single spd message.");
+    
+    benchmarkSpdmMessage(bus, opt.device, decodedMessages[0], opt.benchmarkCount);
+    return;
+  }
 
   for (int index = 0; index < messages.size(); ++index) {
     string encodedResponse = "DUMMYRESPONSE";
@@ -136,7 +192,7 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
         std::cout << "Message is valid SPDM message!" << std::endl;
 
       // send message over MCTP
-      returnMessage = sendSpdmMessage(8, opt.device, message, opt.debugOutput);
+      returnMessage = sendSpdmMessage(bus, opt.device, message, opt.debugOutput);
 
       if(returnMessage.size() > 0) {
         // Remove the MCTP header.

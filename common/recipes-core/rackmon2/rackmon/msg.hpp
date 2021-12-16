@@ -18,12 +18,11 @@ struct Msg {
   std::array<uint8_t, max_modbus_length> raw;
   uint8_t& addr = raw[0];
   size_t len = 0;
-  size_t off = 0; // Next to be read
 
   virtual ~Msg() {}
 
   void clear() {
-    len = off = 0;
+    len = 0;
   }
   // Push to the end
   Msg& operator<<(uint8_t d);
@@ -44,7 +43,6 @@ struct Msg {
   void finalize();
   void validate();
 
- private:
   // Truely private. Used by finalize() and validate().
   uint16_t crc16();
 

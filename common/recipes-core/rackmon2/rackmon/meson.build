@@ -10,7 +10,7 @@ project('rackmon', 'cpp',
     meson_version: '>=0.40',
 )
 
-srcs = files(
+common = files(
     'dev.cpp',
     'modbus_cmds.cpp',
     'modbus.cpp',
@@ -20,13 +20,18 @@ srcs = files(
     'regmap.cpp',
     'rackmon.cpp',
     'rackmon_sock.cpp',
+)
+srcs = common + files(
     'rackmon_svc_unix.cpp',
+)
+test_srcs = common + files(
+    'tests/msg_test.cpp',
+    'tests/dev_test.cpp',
 )
 
 cc = meson.get_compiler('cpp')
 deps = [
   dependency('threads'),
-#  cc.find_library('misc-utils'),
 ]
 
 if get_option('syslog') == true
@@ -42,6 +47,11 @@ endif
 if cc.get_id() == 'gcc' and cc.version().version_compare('<9')
     deps += [ cc.find_library('stdc++fs') ]
 endif
+test_deps = deps + [
+  cc.find_library('gtest'),
+  cc.find_library('gmock'),
+  cc.find_library('gtest_main'),
+]
 
 rackmond_exe = executable(
     'rackmond', 
@@ -57,3 +67,9 @@ rackmon_cli_exe = executable(
   install: true,
   install_dir: 'local/bin'
 )
+
+rackmond_test = executable('test-rackmond', test_srcs,
+  dependencies: test_deps,
+  install_dir: 'lib/rackmon/ptest',
+)
+test('rackmond-tests', rackmond_test)

@@ -16,6 +16,7 @@
 # Boston, MA 02110-1301 USA
 inherit systemd
 inherit meson
+inherit ptest-meson
 
 SUMMARY = "Rackmon Functionality"
 DESCRIPTION = "Rackmon Functionality"
@@ -79,6 +80,11 @@ SRC_URI = "file://meson.build \
 # Configuration files
 SRC_URI += "file://rackmon.conf \
             file://rackmon.d/orv2_psu.json \
+           "
+
+# Test sources
+SRC_URI += "file://tests/msg_test.cpp \
+            file://tests/dev_test.cpp \
            "
 
 S = "${WORKDIR}"

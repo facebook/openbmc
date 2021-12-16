@@ -134,6 +134,7 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us, const char *ca
     CHECK_LATENCY_END("rackmond::%s::modbuscmd::read_wait::select", caller);
     if(rv == -1) {
       perror("select()");
+      break;
     } else if (rv == 0) {
       break;
     }
@@ -142,15 +143,15 @@ size_t read_wait(int fd, char* dst, size_t maxlen, int mdelay_us, const char *ca
     CHECK_LATENCY_END("rackmond::%s::modbuscmd::read_wait::read", caller);
     if(read_size < 0) {
       if(errno == EAGAIN) continue;
-      fprintf(stderr, "read error: %s\n", strerror(errno));
-      exit(1);
+      perror("read_error");
+      break;
     }
     if((pos + read_size) <= maxlen) {
       memcpy(dst + pos, read_buf, read_size);
       pos += read_size;
     } else {
-      return pos;
       fprintf(stderr, "Response buffer overflowed!\n");
+      break;
     }
   }
   return pos;

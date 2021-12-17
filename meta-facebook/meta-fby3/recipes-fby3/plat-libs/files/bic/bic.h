@@ -75,7 +75,6 @@ enum {
 
 #define CWC_CPLD_ADDRESS 0xA0
 #define SLOT_BUS_BASE 3
-#define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
 #define CPLD_BOARD_PVT_REV 3
 #define CPLD_FLAG_REG_ADDR 0x1F
 #define CPLD_BB_BUS 0x01

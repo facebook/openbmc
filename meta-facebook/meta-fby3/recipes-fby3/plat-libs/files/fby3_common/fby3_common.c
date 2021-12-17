@@ -619,6 +619,37 @@ fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   return 0;
 }
 
+int
+fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev) {
+  int i2cfd = 0;
+  int retry = 3;
+  uint8_t tbuf[1] = {SB_CPLD_BOARD_REV_ID_REGISTER};
+  uint8_t rbuf[1] = {0};
+
+  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %d: %s",
+           __func__, slot_id + SLOT_BUS_BASE, strerror(errno));
+    return -1;
+  }
+  
+  do {
+    if (!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1)) {
+      break;
+    }
+    if (--retry) {
+      usleep(100*1000);
+    }
+  } while (retry > 0);
+
+  close(i2cfd);
+  if (retry <= 0) {
+    return -1;
+  }
+  
+  *rev = rbuf[0];
+  return 0;
+}
 
 int
 fby3_common_get_bb_board_rev(uint8_t *rev) {
@@ -626,7 +657,6 @@ fby3_common_get_bb_board_rev(uint8_t *rev) {
   int retry = 3;
   uint8_t tbuf[4] = {BB_CPLD_BOARD_REV_ID_REGISTER};
   uint8_t rbuf[4] = {0};
-  uint8_t hsc_det = 0;
   static bool is_cached = false;
   static uint8_t cached_id = 0;
 
@@ -651,17 +681,6 @@ fby3_common_get_bb_board_rev(uint8_t *rev) {
     if (retry <= 0) {
       return -1;
     }
-
-    if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
-      return -1;
-    }
-    if ( hsc_det == HSC_DET_ADM1278 ) {
-      // old board, BOARD_REV_ID3 is floating.
-      cached_id = rbuf[0] & 0x7;
-    } else {
-      cached_id = rbuf[0] & 0xF;
-    }
-
     cached_id = rbuf[0];
     is_cached = true;
   }

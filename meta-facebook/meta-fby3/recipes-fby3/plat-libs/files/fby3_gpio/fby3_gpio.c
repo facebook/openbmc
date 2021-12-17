@@ -102,6 +102,9 @@ const char *gpio_pin_name_sb[] = {
   "FM_BIOS_POST_CMPLT_BMC_N",
   "RST_BMC_R_N",
   "BMC_READY",
+  "HSC_DETECT0",
+  "HSC_DETECT1",
+  "HSC_DETECT2",
 };
 
 const char *gpio_pin_name_2ou[] = {

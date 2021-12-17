@@ -47,10 +47,12 @@ extern "C" {
 #define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
 #define FRU_DEV_PATH   "/tmp/fruid_slot%d_dev%d.bin"
 
+#define SLOT_BUS_BASE 3
 #define BB_CPLD_BUS 12
 #define NIC_CPLD_BUS 9
 #define CPLD_ADDRESS 0x1E
 #define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
+#define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
 
 #define NIC_FRU_BUS     8
 #define CLASS1_FRU_BUS 11
@@ -337,6 +339,7 @@ int fby3_common_get_exp_id(char *str, uint8_t *fru);
 int fby3_common_get_exp_dev_id(char *str, uint8_t *dev);
 int fby3_common_exp_dev_name(uint8_t dev, char *str);
 int fby3_common_get_bb_board_rev(uint8_t *rev);
+int fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev);
 int fby3_common_get_hsc_bb_detect(uint8_t *id);
 
 #ifdef __cplusplus

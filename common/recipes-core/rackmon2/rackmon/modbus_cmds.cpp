@@ -30,10 +30,7 @@ void ReadHoldingRegistersResp::decode() {
   // Pop fields from behind
   *this >> byte_count >> function >> dev_addr;
   if (function != expected_function)
-    throw std::runtime_error(
-        "Unexpected function for 0x3: " + std::to_string(function));
+    throw bad_resp_error("function", 0x3, function);
   if (byte_count != (regs.size() * 2))
-    throw std::runtime_error(
-        "Unexpected byte_count: " + std::to_string(byte_count) +
-        " Expected: " + std::to_string(2 * regs.size()));
+    throw bad_resp_error("byte_count", regs.size() * 2, byte_count);
 }

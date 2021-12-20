@@ -2,6 +2,13 @@
 
 #include "msg.hpp"
 
+struct bad_resp_error : public std::runtime_error {
+  bad_resp_error(const std::string& field, uint32_t exp, uint32_t val)
+      : std::runtime_error(
+            "Bad Response Received FIELD:" + field + " Expected: " +
+            std::to_string(exp) + " Got: " + std::to_string(val)) {}
+};
+
 //---------- Read Holding Registers -------
 
 struct ReadHoldingRegistersReq : public Msg {

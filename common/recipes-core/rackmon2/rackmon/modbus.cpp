@@ -1,7 +1,7 @@
 #include "modbus.hpp"
-#include "log.hpp"
 #include <fstream>
 #include <thread>
+#include "log.hpp"
 
 using nlohmann::json;
 
@@ -11,8 +11,10 @@ void Modbus::command(
     uint32_t baud,
     modbus_time timeout,
     modbus_time settle_time) {
-  RACKMON_PROFILE_SCOPE(modbus_command,
-      "modbus::" + std::to_string(int(req.addr)), profile_store);
+  RACKMON_PROFILE_SCOPE(
+      modbus_command,
+      "modbus::" + std::to_string(int(req.addr)),
+      profile_store);
   if (timeout == modbus_time::zero())
     timeout = default_timeout;
   if (baud == 0)
@@ -28,6 +30,21 @@ void Modbus::command(
   }
 }
 
+std::unique_ptr<UARTDevice> Modbus::make_device(
+    const std::string& device_type,
+    const std::string& device_path,
+    uint32_t baud) {
+  std::unique_ptr<UARTDevice> ret;
+  if (device_type == "default") {
+    ret = std::make_unique<UARTDevice>(device_path, baud);
+  } else if (device_type == "aspeed_rs485") {
+    ret = std::make_unique<AspeedRS485Device>(device_path, baud);
+  } else {
+    throw std::runtime_error("Unknown device type: " + device_type);
+  }
+  return ret;
+}
+
 void Modbus::initialize(const json& j) {
   j.at("device_path").get_to(device_path);
   j.at("baudrate").get_to(default_baudrate);
@@ -36,13 +53,7 @@ void Modbus::initialize(const json& j) {
   default_timeout = modbus_time(j.value("default_timeout", 300));
   min_delay = modbus_time(j.value("min_delay", 0));
   ignored_addrs = j.value("ignored_addrs", std::set<uint8_t>{});
-  if (device_type == "default") {
-    dev = std::make_unique<UARTDevice>(device_path, default_baudrate);
-  } else if (device_type == "aspeed_rs485") {
-    dev = std::make_unique<AspeedRS485Device>(device_path, default_baudrate);
-  } else {
-    throw std::runtime_error("Unknown device type: " + device_type);
-  }
+  dev = make_device(device_type, device_path, default_baudrate);
   dev->open();
 }
 

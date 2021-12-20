@@ -85,6 +85,7 @@ SRC_URI += "file://rackmon.conf \
 # Test sources
 SRC_URI += "file://tests/msg_test.cpp \
             file://tests/dev_test.cpp \
+            file://tests/modbus_cmds_test.cpp \
            "
 
 S = "${WORKDIR}"

@@ -19,7 +19,7 @@ zeus_repos=(
 )
 zeus_poky_patch="0001-zeus-backport-support-for-override.patch"
 lf_master_repos=(
-    lf-openbmc:e6866cac1
+    lf-openbmc:538683f3a
 )
 lf_dunfell_repos=(
     lf-openbmc:fff6b3483

@@ -28,6 +28,7 @@ test_srcs = common + files(
     'tests/msg_test.cpp',
     'tests/dev_test.cpp',
     'tests/modbus_cmds_test.cpp',
+    'tests/modbus_test.cpp',
 )
 
 cc = meson.get_compiler('cpp')

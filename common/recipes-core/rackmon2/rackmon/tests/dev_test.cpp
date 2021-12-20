@@ -3,7 +3,7 @@
 #include <chrono>
 #include <fstream>
 #include <thread>
-#include "../dev.hpp"
+#include "dev.hpp"
 
 using namespace std::literals;
 

@@ -71,5 +71,6 @@ rackmon_cli_exe = executable(
 rackmond_test = executable('test-rackmond', test_srcs,
   dependencies: test_deps,
   install_dir: 'lib/rackmon/ptest',
+  cpp_args: ['-I.'],
 )
 test('rackmond-tests', rackmond_test)

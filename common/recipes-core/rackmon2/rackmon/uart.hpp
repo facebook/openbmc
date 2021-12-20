@@ -8,19 +8,18 @@ class UARTDevice : public Device {
  protected:
   int baudrate = -1;
 
-  void wait_write() override;
-  void set_attribute(bool read_en);
+  virtual void wait_write() override;
+  virtual void set_attribute(bool read_en, int baud);
 
   void read_enable() {
-    set_attribute(true);
+    set_attribute(true, baudrate);
   }
   void read_disable() {
-    set_attribute(false);
+    set_attribute(false, baudrate);
   }
 
  public:
   UARTDevice(const std::string& dev, int baud) : Device(dev), baudrate(baud) {}
-  virtual ~UARTDevice();
 
   int get_baudrate() const {
     return baudrate;
@@ -29,7 +28,7 @@ class UARTDevice : public Device {
     if (baud == baudrate)
       return;
     baudrate = baud;
-    set_attribute(true);
+    set_attribute(true, baud);
   }
 
   virtual void open() override;

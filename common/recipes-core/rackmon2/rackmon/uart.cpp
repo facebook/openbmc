@@ -32,13 +32,9 @@ const std::unordered_map<int, speed_t> speed_map = {
     {57600, B57600},
     {115200, B115200}};
 
-UARTDevice::~UARTDevice(void) {
-  Device::close();
-}
-
 void UARTDevice::open() {
   Device::open();
-  set_attribute(true);
+  set_attribute(true, baudrate);
 }
 
 void AspeedRS485Device::open() {
@@ -55,9 +51,9 @@ void AspeedRS485Device::open() {
   ioctl(TIOCSRS485, &rs485conf);
 }
 
-void UARTDevice::set_attribute(bool read_en) {
-  struct termios tio{};
-  cfsetspeed(&tio, speed_map.at(baudrate));
+void UARTDevice::set_attribute(bool read_en, int baud) {
+  struct termios tio {};
+  cfsetspeed(&tio, speed_map.at(baud));
   tio.c_cflag |= PARENB;
   tio.c_cflag |= CLOCAL;
   tio.c_cflag |= CS8;

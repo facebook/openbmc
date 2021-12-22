@@ -29,7 +29,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -42,7 +42,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -55,7 +55,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -68,7 +68,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -81,7 +81,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -94,7 +94,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -107,7 +107,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -122,7 +122,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -135,7 +135,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -148,7 +148,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -161,7 +161,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -174,7 +174,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string
@@ -187,7 +187,7 @@ paths:
                           component: 
                             type: string
                           pcr_id: 
-                            type: integer
+                            type: number
                             format: int32
                           algo: 
                             type: string

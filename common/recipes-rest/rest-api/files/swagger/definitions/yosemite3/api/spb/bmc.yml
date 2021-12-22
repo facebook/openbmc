@@ -35,22 +35,22 @@ paths:
                     additionalProperties: false
                     properties: 
                       MemTotal: 
-                        type: integer
+                        type: number
                         format: int32
                       MemFree: 
-                        type: integer
+                        type: number
                         format: int32
                       MemAvailable: 
-                        type: integer
+                        type: number
                         format: int32
                       Buffers: 
-                        type: integer
+                        type: number
                         format: int32
                       Cached: 
-                        type: integer
+                        type: number
                         format: int32
                       Shmem: 
-                        type: integer
+                        type: number
                         format: int32
                   CPU Usage: 
                     type: string

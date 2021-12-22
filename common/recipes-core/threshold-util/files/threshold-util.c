@@ -122,6 +122,8 @@ main(int argc, char **argv) {
   uint8_t fru;
   uint8_t snr_num = 0;
   uint8_t thresh_type = 0;
+  uint8_t list[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
+  unsigned int caps = 0;
   float threshold_value;
   int ret = -1;
   char *end = NULL;
@@ -188,6 +190,23 @@ main(int argc, char **argv) {
         if (ret < 0)
           printf("Fail to set sensor 0x%x threshold for fru%d\n", snr_num, fru);
       }
+
+      if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(list, &len) == PAL_EOK) {
+        for (i = 0; i < len; ++i) {
+          if (pal_get_fru_capability(list[i], &caps) == PAL_EOK &&
+              (caps & FRU_CAPABILITY_HAS_DEVICE)) {
+            if (!pal_is_sensor_existing(list[i], snr_num)) {
+              printf("Could not find sensor 0x%x for fru%d\n", snr_num, list[i]);
+              continue;
+            }
+
+            ret = pal_sensor_thresh_modify(list[i], snr_num, thresh_type, threshold_value);
+            if (ret < 0) {
+              printf("Fail to set sensor 0x%x threshold for fru%d\n", snr_num, list[i]);
+            }
+          }
+        }
+      }
     } else {
       if (!pal_is_sensor_existing(fru, snr_num)) {
         printf("Could not find sensor 0x%x for fru%d\n", snr_num, fru);
@@ -204,6 +223,18 @@ main(int argc, char **argv) {
         ret |= clear_thresh_value_setting(fru);
         if (ret < 0) {
           printf("Fail to clear threshold for fru%d\n", fru);
+        }
+      }
+
+      if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(list, &len) == PAL_EOK) {
+        for (i = 0; i < len; ++i) {
+          if (pal_get_fru_capability(list[i], &caps) == PAL_EOK &&
+              (caps & FRU_CAPABILITY_HAS_DEVICE)) {
+            ret |= clear_thresh_value_setting(list[i]);
+            if (ret < 0) {
+              printf("Fail to clear threshold for fru%d\n", list[i]);
+            }
+          }
         }
       }
     } else {

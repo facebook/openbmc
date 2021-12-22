@@ -40,12 +40,27 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-DEPENDS:append = " update-rc.d-native aiohttp-native json-log-formatter-native libobmc-mmc"
+# For older distros we should use our own recipe (aiohttp) but for newer
+# ones we should use the one from Yocto (python3-aiohttp).
+def aiohttp_dep(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro in [ 'rocko', 'zeus', 'dunfell' ]:
+        return "aiohttp"
+    return "python3-aiohttp"
 
-REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter libobmc-mmc"
-RDEPENDS:${PN} += "${REST_API_RDEPENDS}"
-RDEPENDS:${PN}:class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
-
+DEPENDS:append = " update-rc.d-native"
+RDEPENDS:${PN} += " \
+    ${@aiohttp_dep(d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', '', 'sensors-py', d)} \
+    json-log-formatter \
+    libaggregate-sensor \
+    libgpio-ctrl \
+    libobmc-mmc \
+    libpal \
+    libsdr \
+    python3-core \
+    python3-psutil\
+"
 
 SRC_URI = "file://setup-rest-api.sh \
            file://rest.py \
@@ -167,10 +182,6 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://boardroutes.py\
             ', d)}"
 
-RDEPENDS_${PN}_class-target += \
-    "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', '', 'sensors-py', d)}"
-
-RDEPENDS:${PN}:class-target =+ 'libpal libsdr libaggregate-sensor python3-psutil'
 pkgdir = "rest-api"
 
 
@@ -236,6 +247,5 @@ EOF
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
-BBCLASSEXTEND += "native nativesdk"
 
 SYSTEMD_SERVICE:${PN} = "restapi.service"

@@ -453,7 +453,7 @@ int fby2_get_server_type(uint8_t fru, uint8_t *type);
 int fby2_get_server_type_directly(uint8_t fru, uint8_t *type);
 int fby2_mux_control(char *device, uint8_t addr, uint8_t channel);
 int fby2_disable_gp_m2_monior(uint8_t slot_id, uint8_t dis);
-int fby2_check_hsc_sts_iout(uint8_t mask);
+int fby2_check_hsc_sts_iout();
 int fby2_check_hsc_fault(void);
 int fby2_get_m2_info_from_bios(uint8_t slot_id, uint8_t dev_index, bool *present, uint16_t *vendor_id, uint16_t * device_id, uint8_t* link_speed, uint8_t* link_width);
 int fby2_get_m2_type_from_bios(uint8_t slot_id, uint8_t dev_index, uint8_t *type);

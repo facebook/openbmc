@@ -104,6 +104,12 @@ enum {
   TYPE_GPV2_A_GPV2 = 68,
 };
 
+enum SPB_HSC_TYPE {
+  SPB_HSC_UNKNOW  = -1,
+  SPB_HSC_ADM1278 = 0,  // GPIO_VALUE_LOW
+  SPB_HSC_LTC4282 = 1,  // GPIO_VALUE_HIGH
+};
+
 typedef struct {
   char slot_key[32];
   char slot_def_val[32];
@@ -127,6 +133,7 @@ typedef struct {
 #endif
 
 #define GPIO_BMC_READY_N                  "BMC_READY_N"
+#define GPIO_HSC_SELECT                   "HSC_SELECT"
 #define GPIO_PE_BUFF_OE_0_R_N             "PE_BUFF_OE_0_R_N"
 #define GPIO_PE_BUFF_OE_1_R_N             "PE_BUFF_OE_1_R_N"
 #define GPIO_PE_BUFF_OE_2_R_N             "PE_BUFF_OE_2_R_N"
@@ -247,6 +254,7 @@ int fby2_common_get_gpio_val(char *shadow, int *val);
 int fby2_common_get_spb_rev(void);
 int fby2_common_get_board_id(void);
 int fby2_common_get_baseboard_id(void);
+int fby2_common_get_spb_hsc_type(void);
 int fby2_common_get_gpio_from_cache(char *shadow, int *val);
 #ifdef __cplusplus
 } // extern "C"

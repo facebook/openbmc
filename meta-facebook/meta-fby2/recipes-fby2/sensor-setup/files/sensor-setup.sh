@@ -194,8 +194,8 @@ if [ $spb_type == "1" ]; then
    else
       i2cset -y -f 10 0x40 0x4a 0x0d9f w
    fi
-elif [[ $spb_type == "2" || $spb_type == "3" ]]; then
-   # FBND Platform
+elif [ $spb_type == "2" ]; then
+   # FBND Rome & GPv2 Platform
    # Clear PEAK_PIN & PEAK_IOUT register
    i2cset -y -f 10 0x40 0xd0 0x0000 w
    i2cset -y -f 10 0x40 0xda 0x0000 w
@@ -209,6 +209,46 @@ elif [[ $spb_type == "2" || $spb_type == "3" ]]; then
    #(3684*10-20475)/ (800*0.3)= 68.1875A
    # 68.1875* 0.92355 = 62.9746A
    i2cset -y -f 10 0x40 0x4a 0x0e64 w
+elif [ $spb_type == "3" ]; then
+   # FBND Milan Platform
+   if [ $(gpio_get HSC_SELECT A1) == "0" ]; then
+      # ADM1278
+      echo "HSC Type: ADM1278"
+      # Clear PEAK_PIN & PEAK_IOUT register
+      i2cset -y -f 10 0x40 0xd0 0x0000 w
+      i2cset -y -f 10 0x40 0xda 0x0000 w
+
+      #
+      i2cset -y -f 10 0x40 0xd4 0x3d1c w
+      i2cset -y -f 10 0x40 0xd5 0x0400 w
+
+      # calibrtion to get HSC to trigger 63A based on EE team input
+      # 0x0de9 = 3561 (dec)
+      #(3561*10-20475)/ (800*0.3)= 63.0625A
+      # 63.0625 * 0.9989997 = 62.9994A
+      i2cset -y -f 10 0x40 0x4a 0x0de9 w
+   else
+      # LTC4282
+      echo "HSC Type: LTC4282"
+
+      # ILIM_ADJUST (0x11)
+      # bit[7-5]: 000b
+      # bit[4-3]: 10b
+      # bit[2]: 0b
+      # bit[1]: 1b
+      # bit[0]: 0b
+      i2cset -y -f 10 0x41 0x11 0x12 b
+
+      i2cset -y -f 10 0x41 0x02 0x04 b
+      # Set VSENSE MAX for OC Warning
+      # (75 * 0.04)/(255* 0.001* 0.1875)= 62.745098039 A
+      i2cset -y -f 10 0x41 0x03 0x20 b
+      i2cset -y -f 10 0x41 0x0d 0x4B b
+
+      # Clear PEAK_PIN & PEAK_IOUT register
+      i2cset -y -f 10 0x41 0x44 0x0000 w
+      i2cset -y -f 10 0x41 0x4A 0x0000 w
+   fi
 else
    # Yosemite V2 Platform
    # Clear PEAK_PIN & PEAK_IOUT register

@@ -3298,7 +3298,15 @@ pal_sled_cycle(void) {
 #endif
 
   // Send command to HSC power cycle
-  log_system("i2cset -y 10 0x40 0xd9 c");
+  int spb_hsc_type = fby2_common_get_spb_hsc_type();
+  if (spb_hsc_type == SPB_HSC_ADM1278) {
+    log_system("i2cset -y 10 0x40 0xd9 c");
+  } else if (spb_hsc_type == SPB_HSC_LTC4282){
+    log_system("i2cset -y 10 0x41 0x1d 0x80");
+  } else {
+    syslog(LOG_ERR, "pal_sled_cycle: unknown spb_hsc_type %d",spb_hsc_type);
+    return -1;  // unknow HSC type
+  }
 
   return 0;
 }
@@ -4424,19 +4432,23 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     // On successful sensor read
     if (fru == FRU_SPB) {
       int spb_type = 0;
+      int spb_hsc_type = 0;
 
       spb_type = fby2_common_get_spb_type();
       fby2_common_get_gpio_val("MB_HSC_RSENSE_SRC", &src);
+      spb_hsc_type = fby2_common_get_spb_hsc_type();
 
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
         // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
-        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH) ||
+            !(fby2_common_get_spb_type() == TYPE_SPB_YV2ND2 && spb_hsc_type == SPB_HSC_LTC4282)) {
           power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
         }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
         // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
-        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)||
+            !(fby2_common_get_spb_type() == TYPE_SPB_YV2ND2 && spb_hsc_type == SPB_HSC_LTC4282)) {
           power_value_adjust(get_power_cali_table(spb_type), (float *)value);
         }
       }

@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -26,15 +26,9 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  slot4_boot_order: 
-                    type: string
-                  pwr_server4_last_state: 
-                    type: string
-                  slot4_sensor_health: 
-                    type: string
-                  slot4_por_cfg: 
-                    type: string
                   slot4_trigger_hpr: 
+                    type: string
+                  slot4_cpu_ppin: 
                     type: string
                   sysfw_ver_slot4: 
                     type: string
@@ -42,6 +36,12 @@ paths:
                     type: string
                   identify_slot4: 
                     type: string
-                  slot4_cpu_ppin: 
+                  slot4_por_cfg: 
+                    type: string
+                  pwr_server4_last_state: 
+                    type: string
+                  slot4_boot_order: 
+                    type: string
+                  slot4_sensor_health: 
                     type: string
             

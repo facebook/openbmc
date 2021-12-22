@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -26,42 +26,42 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Chassis Serial Number: 
+                  Product Serial: 
                     type: string
-                  Chassis Type: 
-                    type: string
-                  Board Serial: 
-                    type: string
-                  Board Mfg Date: 
-                    type: string
-                  Board Part Number: 
-                    type: string
-                  Board Custom Data 1: 
-                    type: string
-                  Board Product: 
+                  Product FRU ID: 
                     type: string
                   Product Part Number: 
                     type: string
-                  Chassis Part Number: 
+                  Chassis Type: 
                     type: string
                   Product Version: 
                     type: string
                   Product Manufacturer: 
                     type: string
-                  Product FRU ID: 
-                    type: string
-                  Product Custom Data 1: 
-                    type: string
-                  Board Mfg: 
-                    type: string
-                  Product Serial: 
+                  Board Product: 
                     type: string
                   Board FRU ID: 
                     type: string
-                  Product Name: 
+                  Board Serial: 
+                    type: string
+                  Product Custom Data 1: 
+                    type: string
+                  Chassis Serial Number: 
+                    type: string
+                  Product Custom Data 2: 
                     type: string
                   Product Asset Tag: 
                     type: string
-                  Product Custom Data 2: 
+                  Board Part Number: 
+                    type: string
+                  Board Mfg Date: 
+                    type: string
+                  Product Name: 
+                    type: string
+                  Board Mfg: 
+                    type: string
+                  Board Custom Data 1: 
+                    type: string
+                  Chassis Part Number: 
                     type: string
             

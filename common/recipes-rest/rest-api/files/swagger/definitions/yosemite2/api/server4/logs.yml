@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -32,14 +32,14 @@ paths:
                       type: object
                       additionalProperties: false
                       properties: 
-                        FRU_NAME: 
-                          type: string
                         APP_NAME: 
+                          type: string
+                        FRU_NAME: 
                           type: string
                         TIME_STAMP: 
                           type: string
-                        FRU#: 
-                          type: string
                         MESSAGE: 
+                          type: string
+                        FRU#: 
                           type: string
             

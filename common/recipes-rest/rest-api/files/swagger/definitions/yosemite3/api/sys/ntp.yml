@@ -18,24 +18,8 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  stratum: 
-                    type: integer
-                    format: int32
-                  when: 
-                    type: integer
-                    format: int32
-                  poll: 
-                    type: integer
-                    format: int32
-                  reach: 
-                    type: integer
-                    format: int32
-                  delay: 
-                    type: number
-                  offset: 
-                    type: number
-                  jitter: 
-                    type: number
+                  reason: 
+                    type: string
               Actions: 
                 type: array
                 items: 

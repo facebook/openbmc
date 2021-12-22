@@ -51,16 +51,16 @@ paths:
                         additionalProperties: false
                         properties: 
                           vendor: 
-                            type: string
+                            type: object
                             format: nullable
                           model: 
-                            type: string
+                            type: object
                             format: nullable
                           serial_number: 
-                            type: string
+                            type: object
                             format: nullable
                           part_number: 
-                            type: string
+                            type: object
                             format: nullable
                   fw_info: 
                     type: object

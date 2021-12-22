@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -26,36 +26,42 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
+                  Product Serial: 
+                    type: string
+                  Product FRU ID: 
+                    type: string
+                  Product Part Number: 
+                    type: string
                   Board Serial: 
                     type: string
-                  Board Mfg Date: 
-                    type: string
-                  Board Part Number: 
-                    type: string
-                  Board Custom Data 1: 
-                    type: string
-                  Board Custom Data 2: 
+                  Product Manufacturer: 
                     type: string
                   Board Product: 
                     type: string
-                  Product Version: 
+                  Board Custom Data 2: 
                     type: string
-                  Product Manufacturer: 
+                  Board Custom Data 3: 
+                    type: string
+                  Board Custom Data 1: 
+                    type: string
+                  Product Custom Data 1: 
                     type: string
                   Product Custom Data 3: 
                     type: string
                   Product Custom Data 2: 
                     type: string
-                  Product Custom Data 1: 
+                  Product Asset Tag: 
                     type: string
-                  Product Name: 
+                  Board Part Number: 
                     type: string
-                  Product Serial: 
+                  Product Version: 
+                    type: string
+                  Board Mfg Date: 
+                    type: string
+                  Board Mfg: 
                     type: string
                   Board FRU ID: 
                     type: string
-                  Product Part Number: 
-                    type: string
-                  Board Mfg: 
+                  Product Name: 
                     type: string
             

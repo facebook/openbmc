@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -30,6 +30,30 @@ paths:
                     type: object
                     additionalProperties: false
                     properties: 
+                      slot1: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          vendor: 
+                            type: string
+                          model: 
+                            type: string
+                          serial_number: 
+                            type: string
+                          part_number: 
+                            type: string
+                      nic: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          vendor: 
+                            type: string
+                          model: 
+                            type: string
+                          serial_number: 
+                            type: string
+                          part_number: 
+                            type: string
                       nicexp: 
                         type: object
                         additionalProperties: false
@@ -46,30 +70,6 @@ paths:
                           part_number: 
                             type: string
                             format: nullable
-                      nic: 
-                        type: object
-                        additionalProperties: false
-                        properties: 
-                          vendor: 
-                            type: string
-                          model: 
-                            type: string
-                          serial_number: 
-                            type: string
-                          part_number: 
-                            type: string
-                      slot1: 
-                        type: object
-                        additionalProperties: false
-                        properties: 
-                          vendor: 
-                            type: string
-                          model: 
-                            type: string
-                          serial_number: 
-                            type: string
-                          part_number: 
-                            type: string
                   fw_info: 
                     type: object
                     additionalProperties: false

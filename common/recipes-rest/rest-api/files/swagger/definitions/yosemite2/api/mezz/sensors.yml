@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -26,37 +26,7 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  NIC_HEALTH_STATE (PLDM): 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  NIC_SOC_TEMP (PLDM): 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PORT_0_LINK_SPEED (PLDM): 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   MEZZ_SENSOR_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PORT_0_LINK_STATE (PLDM): 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PORT_0_TEMP (PLDM): 
                     type: object
                     additionalProperties: false
                     properties: 

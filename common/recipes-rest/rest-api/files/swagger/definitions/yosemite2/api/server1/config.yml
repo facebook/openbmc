@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
@@ -26,22 +26,22 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  slot1_sel_error: 
-                    type: string
-                  pwr_server1_last_state: 
-                    type: string
-                  slot1_por_cfg: 
+                  sysfw_ver_slot1: 
                     type: string
                   slot1_sensor_health: 
                     type: string
                   slot1_trigger_hpr: 
                     type: string
+                  slot1_por_cfg: 
+                    type: string
+                  pwr_server1_last_state: 
+                    type: string
                   slot1_cpu_ppin: 
+                    type: string
+                  slot1_sel_error: 
                     type: string
                   identify_slot1: 
                     type: string
                   slot1_boot_order: 
-                    type: string
-                  sysfw_ver_slot1: 
                     type: string
             

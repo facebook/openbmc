@@ -20,6 +20,8 @@ paths:
                 properties: 
                   Error Counter: 
                     type: string
+                  Error Code 0xF7: 
+                    type: string
               Actions: 
                 type: array
                 items: 

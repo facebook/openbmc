@@ -18,49 +18,49 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  E1S_B0_CUR: 
+                  E1S_A0_CUR: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B1_CUR: 
+                  E1S_A1_CUR: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B0_TEMP: 
+                  E1S_A0_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B1_TEMP: 
+                  E1S_A1_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B0_P12V: 
+                  E1S_A0_P12V: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B1_P12V: 
+                  E1S_A1_P12V: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B0_P3V3: 
+                  E1S_A0_P3V3: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  E1S_B1_P3V3: 
+                  E1S_A1_P3V3: 
                     type: object
                     additionalProperties: false
                     properties: 

@@ -16,8 +16,7 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
-                properties:  
+                format: nullable
               Actions: 
                 type: array
                 items: 

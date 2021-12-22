@@ -20,6 +20,10 @@ paths:
                 properties: 
                   Boot Mode: 
                     type: string
+                  Note #1: Actions Format:: 
+                    type: string
+                  Note #2: Boot Mode No.: 
+                    type: string
               Actions: 
                 type: array
                 items: 

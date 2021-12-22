@@ -21,13 +21,13 @@ paths:
                   Power status: 
                     type: string
                   BIC_ok: 
-                    type: integer
+                    type: number
                     format: int32
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

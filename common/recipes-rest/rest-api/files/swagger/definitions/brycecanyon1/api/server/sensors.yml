@@ -18,37 +18,13 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  VCCSCSUS VR Pout: 
+                  SOC DIMMA1 Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMB0 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCGBE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PCH Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  MB Outlet Temp: 
+                  VDDR VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -60,13 +36,73 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  INA230 Power: 
+                  PVDDR: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VCCSCSUS VR Temp: 
+                  VCCGBE VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Tjmax: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VDDR VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCIN VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMA0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  1V05PCH VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VDDR VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCIN VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -84,55 +120,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  1V05PCH VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   P3V3_MB: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VCCGBE VR Temp: 
+                  PCH Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC Therm Margin: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCIN VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VDDR VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCSCSUS VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMB1 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDR: 
+                  SOC DIMMB0 Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -144,13 +144,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  VDDR VR Temp: 
+                  1V05PCH VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VCCIN VR Vol: 
+                  SOC Therm Margin: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -168,49 +174,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  VCCSCSUS VR Curr: 
+                  SOC DIMMB1 Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VCCIN VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  1V05PCH VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCGBE VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Package Pwr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCIN VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  1V05PCH VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  1V05PCH VR Curr: 
+                  PVCCGBE: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -228,25 +198,37 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMA1 Temp: 
+                  MB Outlet Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VDDR VR Vol: 
+                  VCCSCSUS VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P5V_STBY_MB: 
+                  VCCIN VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC Tjmax: 
+                  VCCGBE VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  1V05PCH VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  INA230 Power: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -258,17 +240,35 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SOC DIMMA0 Temp: 
+                  P5V_STBY_MB: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-              Resources: 
+                  SOC Package Pwr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  1V05PCH VR Curr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCIN VR Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

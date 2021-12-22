@@ -18,15 +18,13 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Error Code e0: 
-                    type: string
                   Error Counter: 
                     type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

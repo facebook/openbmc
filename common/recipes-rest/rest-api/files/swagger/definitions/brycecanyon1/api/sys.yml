@@ -17,11 +17,11 @@ paths:
               Information: 
                 type: object
                 format: nullable
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

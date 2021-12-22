@@ -176,12 +176,15 @@ fru_cache_dump(void *arg) {
   uint8_t flagIdx = fru;
   uint8_t fruIdx = fru - 1;
   uint8_t keepPoll = 1;
+  uint8_t root = fru;
   const int max_retry = 3;
   int oldstate;
   int finish_count = 0; // fru finish
   int nvme_ready_count = 0;
   fruid_info_t fruid;
   struct timespec slp_time;
+
+  pal_get_root_fru(fru, &root);
 
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -192,6 +195,13 @@ fru_cache_dump(void *arg) {
 
   // Check 2OU BIC Self Test Result
   do {
+    if ( pal_is_fw_update_ongoing(root) == true ) {
+      slp_time.tv_sec = 5;
+      slp_time.tv_nsec = 0;
+      nanosleep(&slp_time, NULL);
+      continue;
+    }
+
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
     if (fru == FRU_2U_TOP) {
       ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF1);
@@ -225,6 +235,12 @@ fru_cache_dump(void *arg) {
   while (finish_count < MAX_NUM_GPV3_DEVS) {
     // Get GPV3 devices' FRU
     for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+      if ( pal_is_fw_update_ongoing(root) == true ) {
+        slp_time.tv_sec = 5;
+        slp_time.tv_nsec = 0;
+        nanosleep(&slp_time, NULL);
+        continue;
+      }
 
       //check for power status
       ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
@@ -304,7 +320,7 @@ fru_cache_dump(void *arg) {
   // update the fan speed control table according to the device type
   while (((finish_count < MAX_NUM_GPV3_DEVS) || (nvme_ready_count < MAX_NUM_GPV3_DEVS)) && !keepPoll) {
     nvme_ready_count = 0;
-    if ( pal_is_fw_update_ongoing(fru) == true ) {
+    if ( pal_is_fw_update_ongoing(root) == true ) {
       sleep(5);
       continue;
     }

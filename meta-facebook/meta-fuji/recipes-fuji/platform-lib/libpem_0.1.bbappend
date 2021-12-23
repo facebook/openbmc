@@ -21,7 +21,7 @@ SRC_URI += "file://pem-platform.h \
             file://pem-platform.c \
           "
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${includedir}/facebook
   install -m 0644 pem-platform.h ${D}${includedir}/facebook/pem-platform.h
 }

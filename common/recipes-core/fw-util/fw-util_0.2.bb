@@ -69,7 +69,7 @@ do_install_ptest() {
 LDFLAGS += "-lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv -lobmc-i2c -lmisc-utils"
 DEPENDS += "nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c libmisc-utils"
 RDEPENDS:${PN} += "libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c libmisc-utils"
-RDEPENDS:${PN}-ptest += "${RDEPENDS_fw-util}"
+RDEPENDS:${PN}-ptest += "${RDEPENDS:${PN}}"
 
 CXXFLAGS += "\
   -Wno-psabi \

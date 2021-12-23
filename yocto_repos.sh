@@ -3,7 +3,6 @@ branches=(
     zeus
     lf-master
     lf-dunfell
-    lf-hardknott
     lf-honister
 )
 
@@ -24,9 +23,6 @@ lf_master_repos=(
 )
 lf_dunfell_repos=(
     lf-openbmc:fff6b3483
-)
-lf_hardknott_repos=(
-    lf-openbmc:d767d3fb1
 )
 lf_honister_repos=(
     lf-openbmc:89e2f5ce9

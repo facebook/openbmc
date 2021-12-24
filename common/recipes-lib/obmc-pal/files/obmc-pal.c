@@ -2850,3 +2850,8 @@ int __attribute__((weak))
 pal_get_print_sensor_name(const char **list) {
   return PAL_ENOTSUP;
 }
+
+int __attribute__((weak))
+pal_handle_oem_1s_update_sdr(uint8_t slot) {
+  return PAL_ENOTSUP;
+}

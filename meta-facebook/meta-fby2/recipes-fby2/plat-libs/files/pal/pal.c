@@ -11383,4 +11383,14 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
 
   return PAL_EOK;
 }
+
+int
+pal_handle_oem_1s_update_sdr(uint8_t slot) {
+  char cmd[128] = {0};
+  // do not get sdr during sdr update
+  bic_set_sdr_threshold_update_flag(slot, 0);
+  snprintf(cmd, 128, "(/usr/local/bin/bic-cached %d; /usr/bin/kv set slot%d_sdr_thresh_update 1) &", slot, slot);   //retrieve SDR data after BIC FW update
+  log_system(cmd);
+  return PAL_EOK;
+}
 #endif

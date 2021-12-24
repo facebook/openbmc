@@ -206,11 +206,11 @@ static void nvidia_ncsi_util_usage(void)
   ncsi_util_common_usage();
   printf("       -d [type]      GetDebugData\n");
   printf("                        devdump  - Device Info dump\n");
-  // printf("                        fwdump  - FW Info dump\n");     // Nvidia not support yet
+  printf("                        fwdump  - FW Info dump\n");
   printf("       -o [file]      Output file\n");
   printf("\nSample commands:\n");
   printf("       ncsi-util -m nvidia -d devdump -o /tmp/nic.dev\n");
-  // printf("       ncsi-util -m nvidia -d fwdump -o /tmp/nic.fw\n"); // Nvidia not support yet
+  printf("       ncsi-util -m nvidia -d fwdump -o /tmp/nic.fw\n");
   printf("\n");
 }
 

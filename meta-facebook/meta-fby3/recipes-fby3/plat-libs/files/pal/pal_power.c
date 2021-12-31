@@ -543,10 +543,22 @@ pal_sled_cycle(void) {
     if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
       return -1;
     }
-    if ( hsc_det == HSC_DET_MP5990 ) {
-      ret = system("i2cset -y 11 0x40 0xf c &> /dev/null");
-    } else {
-      ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
+    switch (hsc_det) {
+      case HSC_DET_ADM1278:
+        ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
+        break;
+      case HSC_DET_LTC4282:
+        ret = system("i2cset -y -f 11 0x40 0x1d 0x80 b &> /dev/null");
+        break;
+      case HSC_DET_MP5990:
+        ret = system("i2cset -y 11 0x40 0xf c &> /dev/null");
+        break;
+      case HSC_DET_ADM1276:
+        ret = system("i2cset -y 11 0x20 0xd9 c &> /dev/null");
+        break;
+      default:
+        syslog(LOG_WARNING, "%s Invalid HSC detection: %u\n", __func__, hsc_det);
+        return -1;
     }
   } else {
     // check power lock flag

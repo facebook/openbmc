@@ -928,10 +928,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ID0, read_hsc_peak_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC8
-  {"BMC_SENSOR_HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC9
+  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ADM1278, read_hsc_peak_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC8
+  {"BMC_SENSOR_HSC_PEAK_PIN", HSC_ADM1278, read_hsc_peak_pin, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC9
   {"BMC_SENSOR_FAN_PWR", 0xCA, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCA
-  {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
+  {"BMC_SENSOR_HSC_EIN", HSC_ADM1278, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0.8, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
@@ -976,10 +976,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0xF4
   {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
   {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
-  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
-  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
-  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
-  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
+  {"BMC_SENSOR_HSC_VIN", HSC_ADM1278, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
+  {"BMC_SENSOR_HSC_TEMP", HSC_ADM1278, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
+  {"BMC_SENSOR_HSC_PIN" , HSC_ADM1278, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
+  {"BMC_SENSOR_HSC_IOUT", HSC_ADM1278, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
   {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {25.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {6.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
   {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
@@ -1003,10 +1003,20 @@ PAL_ATTR_INFO mp5990_info_list[] = {
   {HSC_TEMP, 1, 0, 1},
 };
 
+//ADM1276
+PAL_ATTR_INFO adm1276_info_list[] = {
+  // 0 V to 20 V range
+  {HSC_VOLTAGE, 19199, 0, 100},
+  {HSC_CURRENT, 807 * ADM1276_RSENSE, 20475, 10},
+  {HSC_POWER, 6043 * ADM1276_RSENSE, 0, 100},
+};
+
 //HSC
 PAL_HSC_INFO hsc_info_list[] = {
-  {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_ADM1278, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_LTC4282, 0, NULL},
   {HSC_MP5990, MP5990_SLAVE_ADDR,  mp5990_info_list},
+  {HSC_ADM1276, ADM1276_SLAVE_ADDR, adm1276_info_list}
 };
 
 struct power_coeff {
@@ -1885,6 +1895,8 @@ read_temp(uint8_t id, float *value) {
     {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP"},
     {"tmp421-i2c-8-1f", "NIC_SENSOR_TEMP"},
     {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
+    {"tmp401-i2c-12-4c",  "BMC_OUTLET_TEMP"},
+    {"tmp401-i2c-12-4c",  "BMC_SENSOR_HSC_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -2022,8 +2034,8 @@ get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t
     return READING_NA;
   }
 
-  if ( rlen != 2 ) {
-    if ( raw_data != NULL ) memcpy(raw_data, rbuf, rlen);
+  if ( raw_data != NULL ) {
+    memcpy(raw_data, rbuf, rlen);
   } else {
     float m = hsc_info_list[hsc_id].info[type].m;
     float b = hsc_info_list[hsc_id].info[type].b;
@@ -2541,6 +2553,218 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   return ret;
 }
 
+static int
+sensors_read_hsc(uint8_t sensor_num, float *value) {
+#define HSC_LTC4282_CHIP "ltc4282-i2c-11-40"
+  int ret = 0;
+
+  switch (sensor_num) {
+    case BMC_SENSOR_HSC_PEAK_IOUT:
+      ret = sensors_read(HSC_LTC4282_CHIP, "curr1_max", value);
+      break;
+    case BMC_SENSOR_HSC_PEAK_PIN:
+      ret = sensors_read(HSC_LTC4282_CHIP, "power1_input_highest", value);
+      break;
+    case BMC_SENSOR_HSC_VIN:
+      ret = sensors_read(HSC_LTC4282_CHIP, "HSC_VIN", value);
+      break;
+    case BMC_SENSOR_HSC_PIN:
+      ret = sensors_read(HSC_LTC4282_CHIP, "HSC_PIN", value);
+      break;
+    case BMC_SENSOR_HSC_IOUT:
+      ret = sensors_read(HSC_LTC4282_CHIP, "HSC_IOUT", value);
+      break;
+    default:
+      syslog(LOG_ERR, "%s Invalid sensor number: %u", __func__, sensor_num);
+      ret = READING_NA;
+      break;
+  }
+
+  return ret;
+}
+
+static int
+i2c_rdwr_msg_transfer_retry(int fd, uint8_t addr, uint8_t *tbuf,
+			  uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
+  int ret = -1;
+  int retry = MAX_RETRY;
+
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
+  }
+
+  return ret;
+}
+
+enum {
+  SET_BIT = 0,
+  CLEAR_BIT,
+};
+
+static int
+set_clear_bit(int fd, uint8_t addr, uint8_t reg, uint8_t bit, uint8_t op) {
+  int ret = 0;
+  uint8_t tbuf[2] = {reg};
+  uint8_t rbuf[1] = {0};
+
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 1, rbuf, 1);
+  if (ret < 0) return ret;
+
+  tbuf[1] = rbuf[0];
+
+  if (op == SET_BIT) {
+    tbuf[1] = SETBIT(tbuf[1], bit);
+  } else if (op == CLEAR_BIT) {
+    tbuf[1] = CLEARBIT(tbuf[1], bit);
+  } else {
+    return -1;
+  }
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 2, rbuf, 0);
+
+  return ret;
+}
+
+static int
+read_ltc4282_ein(uint8_t hsc_id, float *value) {
+#define LTC4282_ENERGY_REG   0x12
+#define LTC4282_CONTROL_REG  0x1D
+#define LTC4282_STATUS_REG   0x1f
+#define LTC4282_METER_HALT_BIT 5
+#define LTC4282_METER_RESET_BIT 6
+
+  const uint8_t bus = 11;
+  uint8_t addr = LTC4282_SLAVE_ADDR;
+  int fd = 0;
+  int ret = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint64_t energy = 0;
+  uint32_t counter = 0;
+  bool ticker_overflow = false;
+  bool meter_overflow = false;
+  static uint64_t last_energy = 0;
+  static uint32_t last_counter = 0;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s Failed to open bus %u", __func__, bus);
+    return READING_NA;
+  }
+
+// halt
+  ret = set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_HALT_BIT, SET_BIT);
+  if (ret < 0) {
+    goto exit;
+  }
+
+// get readings (energy, time counter)
+  tbuf[0] = LTC4282_ENERGY_REG;
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 1, rbuf, 10);
+  if (ret < 0) {
+    goto exit;
+  }
+
+  energy = ((uint64_t)rbuf[0]<<(uint64_t)40) |
+           ((uint64_t)rbuf[1]<<(uint64_t)32) |
+           ((uint64_t)rbuf[2]<<(uint64_t)24) |
+           ((uint64_t)rbuf[3]<<(uint64_t)16) |
+           ((uint64_t)rbuf[4]<<(uint64_t)8)  |
+           ((uint64_t)rbuf[5]);
+  counter = ((uint32_t)rbuf[6]<<(uint32_t)24) |
+            ((uint32_t)rbuf[7]<<(uint32_t)16) |
+            ((uint32_t)rbuf[8]<<(uint32_t)8) |
+            ((uint32_t)rbuf[9]);
+
+// get overflow flag
+  tbuf[0] = LTC4282_STATUS_REG;
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 1, rbuf, 1);
+  if (ret < 0) {
+    goto exit;
+  }
+  meter_overflow = BIT(rbuf[0], 0);
+  ticker_overflow = BIT(rbuf[0], 1);
+
+// overflow
+  if (meter_overflow || ticker_overflow) {
+    // reset meter, counter and status reg
+    set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_RESET_BIT, SET_BIT);
+    set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_RESET_BIT, CLEAR_BIT);
+    ret = READING_NA;
+    goto exit;
+  }
+// calculate ein
+  if ((counter - last_counter) == 0) goto exit;
+  *value = (float)(((energy - last_energy)/(counter - last_counter)));
+  *value = (*value)*0x04*16.64*256/0.0005/65535/65535/100;
+
+  last_energy = energy;
+  last_counter = counter;
+
+exit:
+// continue
+  set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_HALT_BIT, CLEAR_BIT);
+
+  if (ret < 0) ret = READING_NA;
+  close(fd);
+
+  return ret;
+}
+
+static void
+update_hsc_sensor_map(uint8_t hsc_det) {
+  switch(hsc_det) {
+    case HSC_DET_LTC4282:
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = BMC_SENSOR_HSC_PEAK_IOUT;
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = BMC_SENSOR_HSC_PEAK_PIN;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_EIN].id = BMC_SENSOR_HSC_EIN;
+      sensor_map[BMC_SENSOR_HSC_EIN].read_sensor = read_ltc4282_ein;
+      sensor_map[BMC_SENSOR_HSC_VIN].id = BMC_SENSOR_HSC_VIN;
+      sensor_map[BMC_SENSOR_HSC_VIN].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
+      sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
+      sensor_map[BMC_SENSOR_HSC_PIN].id = BMC_SENSOR_HSC_PIN;
+      sensor_map[BMC_SENSOR_HSC_PIN].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_IOUT].id = BMC_SENSOR_HSC_IOUT;
+      sensor_map[BMC_SENSOR_HSC_IOUT].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+      break;
+    case HSC_DET_MP5990:
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].read_sensor = read_mp5990_peak_iout;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].read_sensor = read_mp5990_peak_pin;
+      sensor_map[BMC_SENSOR_HSC_EIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_EIN].read_sensor = read_mp5990_ein;
+      sensor_map[BMC_SENSOR_HSC_VIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_TEMP].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PIN].read_sensor = read_mp5990_pin;
+      sensor_map[BMC_SENSOR_HSC_IOUT].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_IOUT].read_sensor = read_mp5990_iout;
+      break;
+    case HSC_DET_ADM1276: 
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_EIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_VIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
+      sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
+      sensor_map[BMC_SENSOR_HSC_PIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_IOUT].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+     break;
+    default:
+      syslog(LOG_ERR, "HSC detection: Unknown source: %u, using main source configuration", hsc_det);
+      break;
+  }
+
+  return;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -2580,19 +2804,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
       break;
     }
-    if ( hsc_det == HSC_DET_MP5990 ) {
-      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].read_sensor = read_mp5990_peak_iout;
-      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].read_sensor = read_mp5990_peak_pin;
-      sensor_map[BMC_SENSOR_HSC_EIN].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_EIN].read_sensor = read_mp5990_ein;
-      sensor_map[BMC_SENSOR_HSC_VIN].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_TEMP].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_PIN].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_PIN].read_sensor = read_mp5990_pin;
-      sensor_map[BMC_SENSOR_HSC_IOUT].id = HSC_MP5990;
-      sensor_map[BMC_SENSOR_HSC_IOUT].read_sensor = read_mp5990_iout;
+    if ( hsc_det != HSC_DET_ADM1278 ) {
+      update_hsc_sensor_map(hsc_det);
     }
     hsc_init = 1;
   } while (0);

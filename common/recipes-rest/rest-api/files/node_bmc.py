@@ -18,11 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 
+import asyncio
 import functools
 import json
 import os
 import os.path
 import re
+import subprocess
 import threading
 import typing as t
 from shlex import quote
@@ -135,6 +137,12 @@ def read_proc_mtd() -> t.List[str]:
 
 
 class bmcNode(node):
+    # Reads from TPM device files (e.g. /sys/class/tpm/tpm0/device/caps)
+    # can hang the event loop on unhealthy systems. Cache version values
+    # here and use _fill_tpm_ver_info() to asynchronously fill these values
+    _TPM_VER_INFO = ("NA", "NA")  # (tpm_fw_version, tpm_tcg_version)
+    _TPM_VER_INFO_ATTEMPTED = False
+
     def __init__(self, info=None, actions=None):
         if info is None:
             self.info = {}
@@ -144,6 +152,8 @@ class bmcNode(node):
             self.actions = []
         else:
             self.actions = actions
+
+        asyncio.ensure_future(self._fill_tpm_ver_info_loop())
 
     async def _getUbootVer(self):
         # Get U-boot Version
@@ -181,7 +191,33 @@ class bmcNode(node):
                 kv.kv_set(UBOOT_VER_KV_KEY, uboot_version, kv.FCREATE)
         return uboot_version
 
-    async def getTpmTcgVer(self):
+    @classmethod
+    async def _fill_tpm_ver_info_loop(cls) -> None:
+        if cls._TPM_VER_INFO_ATTEMPTED:
+            # Fetch already attempted, doing nothing.
+            return
+        cls._TPM_VER_INFO_ATTEMPTED = True
+
+        # Try updating _TPM_VER_INFO until all TPM version info values
+        # are filled
+        while "NA" in cls._TPM_VER_INFO:
+            await cls._fill_tpm_ver_info()
+            await asyncio.sleep(30)
+
+    @classmethod
+    async def _fill_tpm_ver_info(cls) -> None:
+        # Fetch TPM version info in thread executors (to protect the event loop
+        # from e.g. /sys/class/tpm/tpm0/device/caps reads hanging forever)
+        loop = asyncio.get_event_loop()
+        if os.path.exists("/sys/class/tpm/tpm0"):
+            tpm_fw_version = await loop.run_in_executor(None, cls.getTpmFwVer)
+            tpm_tcg_version = await loop.run_in_executor(None, cls.getTpmTcgVer)
+
+            # Cache read values in _TPM_VER_INFO
+            cls._TPM_VER_INFO = (tpm_fw_version, tpm_tcg_version)
+
+    @staticmethod
+    def getTpmTcgVer():
         out_str = "NA"
         tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
         if os.path.isfile(tpm1_caps):
@@ -199,19 +235,15 @@ class bmcNode(node):
             )
             for cmd in cmd_list:
                 try:
-                    retcode, stdout, _ = await async_exec(cmd, shell=True)
-                    if retcode != 0:
-                        # non-async implementation was using raising check_output
-                        raise Exception(
-                            "Command {} returned non-0 exit code".format(cmd)
-                        )
+                    stdout = subprocess.check_output(cmd, shell=True)  # noqa: P204
                     out_str = stdout.splitlines()[2].rstrip().split('"')[1]
                     break
                 except Exception:
                     pass
         return out_str
 
-    async def getTpmFwVer(self):
+    @staticmethod
+    def getTpmFwVer():
         out_str = "NA"
         tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
         if os.path.isfile(tpm1_caps):
@@ -229,12 +261,7 @@ class bmcNode(node):
             )
             for cmd in cmd_list:
                 try:
-                    retcode, stdout, _ = await async_exec(cmd, shell=True)
-                    if retcode != 0:
-                        # non-async implementation was using raising check_output
-                        raise Exception(
-                            "Command {} returned non-0 exit code".format(cmd)
-                        )
+                    stdout = subprocess.check_output(cmd, shell=True)  # noqa: P204
                     value = int(stdout.rstrip().split(":")[1], 16)
                     out_str = "%d.%d" % (value >> 16, value & 0xFFFF)
                     break
@@ -351,11 +378,7 @@ class bmcNode(node):
         kernel_version = stdout.strip("\n")
 
         # Get TPM version
-        tpm_tcg_version = "NA"
-        tpm_fw_version = "NA"
-        if os.path.exists("/sys/class/tpm/tpm0"):
-            tpm_tcg_version = await self.getTpmTcgVer()
-            tpm_fw_version = await self.getTpmFwVer()
+        tpm_fw_version, tpm_tcg_version = self._TPM_VER_INFO
 
         spi0_vendor = await getSPIVendor(0)
         spi1_vendor = await getSPIVendor(1)

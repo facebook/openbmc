@@ -1,7 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append:openbmc-fb = " \
-            file://busybox.cfg \
+            file://fb-busybox.cfg \
             file://setup_crond.sh \
             file://cron.daily/biosfwimages-cleanup.sh \
            "

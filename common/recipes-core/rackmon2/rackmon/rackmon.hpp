@@ -26,6 +26,7 @@ class Rackmon {
   // loaded register maps. A majority of these are not expected
   // to exist, but are candidates for a scan.
   std::vector<uint8_t> possible_dev_addrs{};
+  std::vector<uint8_t>::iterator next_dev_it{};
 
   // As an optimization, devices are normally scanned one by one
   // This allows someone to initiate a forced full scan.

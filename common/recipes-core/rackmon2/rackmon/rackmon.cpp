@@ -32,6 +32,7 @@ void Rackmon::load(
       continue;
     }
   }
+  next_dev_it = possible_dev_addrs.begin();
 }
 
 bool Rackmon::probe(Modbus& iface, uint8_t addr) {
@@ -118,7 +119,6 @@ void Rackmon::scan_all() {
 
 void Rackmon::scan() {
   // Circular iterator.
-  static auto it = possible_dev_addrs.begin();
   if (force_scan.load()) {
     scan_all();
     force_scan = false;
@@ -126,15 +126,15 @@ void Rackmon::scan() {
   }
 
   // Probe for the address only if we already dont know it.
-  if (!is_device_known(*it)) {
-    probe(*it);
+  if (!is_device_known(*next_dev_it)) {
+    probe(*next_dev_it);
     last_scan_time = std::time(0);
   }
 
   // Try and recover dormant devices
   recover_dormant();
-  if (++it == possible_dev_addrs.end())
-    it = possible_dev_addrs.begin();
+  if (++next_dev_it == possible_dev_addrs.end())
+    next_dev_it = possible_dev_addrs.begin();
 }
 
 void Rackmon::start(poll_interval interval) {

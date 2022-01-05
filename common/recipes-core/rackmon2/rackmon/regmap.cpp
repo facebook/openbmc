@@ -333,6 +333,30 @@ void to_json(json& j, const RegisterStore& m) {
   j["readings"] = m.history;
 }
 
+void from_json(const json& j, WriteActionInfo& action) {
+  j.at("interpret").get_to(action.interpret);
+  if (j.contains("shell"))
+    action.shell = j.at("shell");
+  else
+    action.shell = std::nullopt;
+  if (j.contains("value"))
+    action.value = j.at("value");
+  else
+    action.value = std::nullopt;
+  if (!action.shell && !action.value)
+    throw std::runtime_error("Bad special handler");
+}
+
+void from_json(const json& j, SpecialHandlerInfo& m) {
+  j.at("reg").get_to(m.reg);
+  j.at("len").get_to(m.len);
+  m.period = j.value("period", -1);
+  j.at("action").get_to(m.action);
+  if (m.action != "write")
+    throw std::runtime_error("Unsupported action: " + m.action);
+  j.at("info").get_to(m.info);
+}
+
 void from_json(const json& j, RegisterMap& m) {
   j.at("address_range").get_to(m.applicable_addresses);
   j.at("probe_register").get_to(m.probe_register);
@@ -343,6 +367,9 @@ void from_json(const json& j, RegisterMap& m) {
   j.at("registers").get_to(tmp);
   for (auto& i : tmp) {
     m.register_descriptors[i.begin] = i;
+  }
+  if (j.contains("special_handlers")) {
+    j.at("special_handlers").get_to(m.special_handlers);
   }
 }
 void to_json(json& j, const RegisterMap& m) {

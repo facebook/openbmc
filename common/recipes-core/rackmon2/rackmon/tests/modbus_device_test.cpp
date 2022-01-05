@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <thread>
 #include "modbus_device.hpp"
 
 using namespace std;
@@ -496,4 +497,123 @@ TEST_F(ModbusDeviceTest, MonitorFmtData) {
       R"(  <0x0000> MFG_MODEL                        : cdef bcde)";
   std::string actual = data["ranges"][0];
   ASSERT_EQ(actual, exp1_out);
+}
+
+class MockModbusDevice : public ModbusDevice {
+ public:
+  MockModbusDevice(Modbus& m, uint8_t addr, const RegisterMap& rmap)
+      : ModbusDevice(m, addr, rmap) {}
+  MOCK_METHOD4(command, void(Msg&, Msg&, modbus_time, modbus_time));
+};
+
+TEST(ModbusSpecialHandler, BasicHandlingStringValuePeriodic) {
+  Modbus mock_modbus{std::cout};
+  RegisterMap mock_rmap = R"({
+    "name": "orv3_psu",
+    "address_range": [110, 140],
+    "probe_register": 104,
+    "default_baudrate": 19200,
+    "preferred_baudrate": 19200,
+    "registers": [
+      {
+        "begin": 0,
+        "length": 2,
+        "name": "MFG_MODEL"
+      }
+    ]
+  })"_json;
+  MockModbusDevice dev(mock_modbus, 0x32, mock_rmap);
+
+  EXPECT_CALL(
+      dev,
+      command(
+          // addr(1) = 0x32,
+          // func(1) = 0x10,
+          // reg_off(2) = 0x000a (10),
+          // reg_cnt(2) = 0x0002
+          // bytes(1) = 0x04,
+          // data(2*2) = 0x3031 0x3233
+          encodeMsgContentEqual(0x3210000a00020430313233_EM),
+          _,
+          _,
+          _))
+      .Times(2);
+  ModbusSpecialHandler special;
+  SpecialHandlerInfo& info = special;
+  info = R"({
+    "reg": 10,
+    "len": 2,
+    "period": 1,
+    "action": "write",
+    "info": {
+      "interpret": "string",
+      "value": "0123"
+    }
+  })"_json;
+
+  special.handle(dev);
+  std::this_thread::sleep_for(250ms);
+  special.handle(
+      dev); // Since the period is 1, this should technically do nothing.
+  std::this_thread::sleep_for(250ms);
+  special.handle(
+      dev); // This should do nothing as well, we are less than 1 sec.
+  std::this_thread::sleep_for(1s);
+  special.handle(dev); // This should call! we are 1.25s out from first handle.
+}
+
+TEST(ModbusSpecialHandler, BasicHandlingIntegerOneShot) {
+  Modbus mock_modbus{std::cout};
+  RegisterMap mock_rmap = R"({
+    "name": "orv3_psu",
+    "address_range": [110, 140],
+    "probe_register": 104,
+    "default_baudrate": 19200,
+    "preferred_baudrate": 19200,
+    "registers": [
+      {
+        "begin": 0,
+        "length": 2,
+        "name": "MFG_MODEL"
+      }
+    ]
+  })"_json;
+  MockModbusDevice dev(mock_modbus, 0x32, mock_rmap);
+
+  EXPECT_CALL(
+      dev,
+      command(
+          // addr(1) = 0x32,
+          // func(1) = 0x10,
+          // reg_off(2) = 0x000a (10),
+          // reg_cnt(2) = 0x0002
+          // bytes(1) = 0x04,
+          // data(2*2) = 0x00bc 0x614e (hex for int 12345678)
+          encodeMsgContentEqual(0x3210000a00020400bc614e_EM),
+          _,
+          _,
+          _))
+      .Times(1);
+  ModbusSpecialHandler special;
+  SpecialHandlerInfo& info = special;
+  info = R"({
+    "reg": 10,
+    "len": 2,
+    "period": -1,
+    "action": "write",
+    "info": {
+      "interpret": "integer",
+      "shell": "echo 12345678"
+    }
+  })"_json;
+  // 12345678 == 0x00bc614e
+
+  special.handle(dev);
+  std::this_thread::sleep_for(250ms);
+  special.handle(dev); // Do the same as above, but the call should happen only
+                       // once since period = -1
+  std::this_thread::sleep_for(250ms);
+  special.handle(dev);
+  std::this_thread::sleep_for(1s);
+  special.handle(dev);
 }

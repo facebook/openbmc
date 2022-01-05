@@ -177,6 +177,24 @@ struct RegisterStore {
 };
 void to_json(nlohmann::json& j, const RegisterStore& m);
 
+struct WriteActionInfo {
+  std::optional<std::string> shell{};
+  RegisterValueType interpret;
+  std::optional<std::string> value{};
+};
+void from_json(const nlohmann::json& j, WriteActionInfo& action);
+
+struct SpecialHandlerInfo {
+  uint16_t reg;
+  uint16_t len;
+  int32_t period;
+  std::string action;
+  // XXX if we have more actions other than write,
+  // this needs to become a std::variant<...>
+  WriteActionInfo info;
+};
+void from_json(const nlohmann::json& j, SpecialHandlerInfo& m);
+
 // Container of an entire register map. This is the memory
 // representation of each JSON register map descriptors
 // at /etc/rackmon.d.
@@ -186,6 +204,7 @@ struct RegisterMap {
   uint8_t probe_register;
   uint32_t default_baudrate;
   uint32_t preferred_baudrate;
+  std::vector<SpecialHandlerInfo> special_handlers;
   std::map<uint16_t, RegisterDescriptor> register_descriptors;
   const RegisterDescriptor& at(uint16_t reg) const {
     return register_descriptors.at(reg);

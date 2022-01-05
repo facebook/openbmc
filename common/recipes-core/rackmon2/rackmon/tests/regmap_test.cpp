@@ -61,6 +61,7 @@ TEST(RegisterMapTest, JSONCoversion) {
   EXPECT_EQ(rmap.preferred_baudrate, 19200);
   EXPECT_EQ(rmap.name, "orv2_psu");
   EXPECT_EQ(rmap.register_descriptors.size(), 2);
+  EXPECT_EQ(rmap.special_handlers.size(), 0);
   EXPECT_EQ(rmap.at(0).begin, 0);
   EXPECT_EQ(rmap.at(0).length, 8);
   EXPECT_EQ(rmap.at(0).format, RegisterValueType::STRING);
@@ -75,6 +76,62 @@ TEST(RegisterMapTest, JSONCoversion) {
   EXPECT_EQ(rmap.at(127).changes_only, false);
   EXPECT_EQ(rmap.at(127).precision, 6);
   EXPECT_THROW(rmap.at(42), std::out_of_range);
+}
+
+TEST(RegisterMapTest, JSONCoversionSpecial) {
+  std::string inp = R"({
+    "name": "orv2_psu",
+    "address_range": [160, 191],
+    "probe_register": 104,
+    "default_baudrate": 19200,
+    "preferred_baudrate": 19200,
+    "special_handlers": [
+      {
+        "reg": 298,
+        "len": 2,
+        "period": 3600,
+        "action": "write",
+        "info": {
+          "interpret": "integer",
+          "shell": "date +%s"
+        }
+      }
+    ],
+    "registers": [
+      {
+        "begin": 0,
+        "length": 8,
+        "format": "string",
+        "name": "MFG_MODEL"
+      },
+      {
+          "begin": 127,
+          "length": 1,
+          "keep": 10,
+          "format": "float",
+          "precision": 6,
+          "name": "BBU Absolute State of Charge"
+      }
+    ]
+  })";
+  nlohmann::json j = nlohmann::json::parse(inp);
+  RegisterMap rmap = j;
+  EXPECT_EQ(rmap.applicable_addresses.range.first, 160);
+  EXPECT_EQ(rmap.applicable_addresses.range.second, 191);
+  EXPECT_EQ(rmap.probe_register, 104);
+  EXPECT_EQ(rmap.default_baudrate, 19200);
+  EXPECT_EQ(rmap.preferred_baudrate, 19200);
+  EXPECT_EQ(rmap.name, "orv2_psu");
+  EXPECT_EQ(rmap.register_descriptors.size(), 2);
+  EXPECT_EQ(rmap.special_handlers.size(), 1);
+  EXPECT_EQ(rmap.special_handlers[0].reg, 0x12A);
+  EXPECT_EQ(rmap.special_handlers[0].len, 2);
+  EXPECT_EQ(rmap.special_handlers[0].period, 3600);
+  EXPECT_EQ(rmap.special_handlers[0].action, "write");
+  EXPECT_EQ(rmap.special_handlers[0].info.interpret, RegisterValueType::INTEGER);
+  EXPECT_TRUE(rmap.special_handlers[0].info.shell);
+  EXPECT_FALSE(rmap.special_handlers[0].info.value);
+  EXPECT_EQ(rmap.special_handlers[0].info.shell.value(), R"(date +%s)");
 }
 
 class RegisterMapDatabaseTest : public ::testing::Test {

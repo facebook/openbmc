@@ -7,6 +7,19 @@
 
 enum ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 
+class ModbusDevice;
+
+struct ModbusSpecialHandler : public SpecialHandlerInfo {
+  time_t last_handle_time = 0;
+  bool handled = false;
+  bool can_handle() {
+    if (period == -1)
+      return !handled;
+    return std::time(0) > (last_handle_time + period);
+  }
+  void handle(ModbusDevice& dev);
+};
+
 struct ModbusDeviceStatus {
   static constexpr uint32_t max_consecutive_failures = 10;
   uint8_t addr = 0;
@@ -42,16 +55,19 @@ struct ModbusDeviceValueData : public ModbusDeviceStatus {
 void to_json(nlohmann::json& j, const ModbusDeviceValueData& m);
 
 class ModbusDevice {
+  friend ModbusSpecialHandler;
   Modbus& interface;
   uint8_t addr;
   const RegisterMap& register_map;
   std::mutex register_list_mutex{};
   ModbusDeviceRawData info{};
+  std::vector<ModbusSpecialHandler> special_handlers{};
 
  public:
   ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg);
+  virtual ~ModbusDevice() {}
 
-  void command(
+  virtual void command(
       Msg& req,
       Msg& resp,
       modbus_time timeout = modbus_time::zero(),

@@ -12,6 +12,11 @@ ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
   for (auto& it : reg.register_descriptors) {
     info.register_list.emplace_back(it.second);
   }
+  for (const auto& sp : reg.special_handlers) {
+    ModbusSpecialHandler hdl{};
+    hdl.SpecialHandlerInfo::operator=(sp);
+    special_handlers.push_back(hdl);
+  }
 }
 
 void ModbusDevice::command(
@@ -78,6 +83,9 @@ void ModbusDevice::ReadFileRecord(std::vector<FileRecord>& records) {
 
 void ModbusDevice::monitor() {
   uint32_t timestamp = std::time(0);
+  for (auto& h : special_handlers) {
+    h.handle(*this);
+  }
   std::unique_lock lk(register_list_mutex);
   for (auto& h : info.register_list) {
     uint16_t reg = h.reg_addr;
@@ -122,6 +130,54 @@ ModbusDeviceValueData ModbusDevice::get_value_data() {
     data.register_list.emplace_back(reg);
   }
   return data;
+}
+
+static std::string command_output(const std::string& shell) {
+  std::array<char, 128> buffer;
+  std::string result;
+  std::unique_ptr<FILE, decltype(&pclose)> pipe(
+      popen(shell.c_str(), "r"), pclose);
+  if (!pipe) {
+    throw std::runtime_error("popen() failed!");
+  }
+  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+    result += buffer.data();
+  }
+  return result;
+}
+
+void ModbusSpecialHandler::handle(ModbusDevice& dev) {
+  // Check if it is time to handle.
+  if (!can_handle())
+    return;
+  std::string str_value{};
+  WriteMultipleRegistersReq req(dev.addr, reg);
+  if (info.shell) {
+    str_value = command_output(info.shell.value());
+  } else if (info.value) {
+    str_value = info.value.value();
+  } else {
+    std::cerr << "NULL action ignored" << std::endl;
+    return;
+  }
+  if (info.interpret == RegisterValueType::INTEGER) {
+    int32_t ival = std::stoi(str_value);
+    if (len == 1)
+      req << uint16_t(ival);
+    else if (len == 2)
+      req << uint32_t(ival);
+  } else if (info.interpret == RegisterValueType::STRING) {
+    for (char c : str_value)
+      req << uint8_t(c);
+  }
+  WriteMultipleRegistersResp resp(dev.addr, reg, len);
+  try {
+    dev.command(req, resp);
+  } catch (std::exception& e) {
+    log_error << "Error executing special handler" << std::endl;
+  }
+  last_handle_time = std::time(NULL);
+  handled = true;
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(

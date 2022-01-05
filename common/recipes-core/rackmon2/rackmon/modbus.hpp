@@ -35,9 +35,9 @@ class Modbus {
       const std::string& device_path,
       uint32_t baud);
 
-  void initialize(const nlohmann::json& j);
+  virtual void initialize(const nlohmann::json& j);
 
-  void command(
+  virtual void command(
       Msg& req,
       Msg& resp,
       uint32_t baud = 0,

@@ -90,6 +90,7 @@ struct Msg {
     validate();
   }
   friend Modbus;
+  friend class Encoder;
 };
 
 // This template eventually allows us to use constant expressions
@@ -150,3 +151,25 @@ constexpr auto operator"" _M() {
 	Msg msg = ConstMsg<cs...>{};
   return msg;
 }
+
+#ifdef __TEST__
+class Encoder {
+  public:
+  Encoder() {}
+  static void encode(Msg& msg) {
+    msg.encode();
+  }
+  static void decode(Msg& msg) {
+    msg.decode();
+  }
+};
+
+// User defined constant expression. Use ConstMsg as an intermediate
+// store to hold the bytes and then convert to Msg.
+template <char... cs>
+constexpr auto operator"" _EM() {
+	Msg msg = ConstMsg<cs...>{};
+  Encoder::encode(msg);
+  return msg;
+}
+#endif

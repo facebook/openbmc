@@ -5,7 +5,9 @@ ReadHoldingRegistersReq::ReadHoldingRegistersReq(
     uint8_t a,
     uint16_t reg_off,
     uint16_t cnt)
-    : dev_addr(a), starting_addr(reg_off), reg_count(cnt) {}
+    : dev_addr(a), starting_addr(reg_off), reg_count(cnt) {
+  addr = a;
+}
 
 void ReadHoldingRegistersReq::encode() {
   *this << dev_addr << function << starting_addr << reg_count;

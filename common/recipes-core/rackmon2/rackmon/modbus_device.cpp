@@ -83,7 +83,7 @@ ModbusDeviceFormattedData ModbusDevice::get_formatted_data() {
   data.ModbusDeviceStatus::operator=(info);
   data.type = register_map.name;
   for (const auto& reg : info.register_list) {
-    data.register_list.emplace_back(std::move(reg.format()));
+    data.register_list.emplace_back(std::move(reg));
   }
   return data;
 }

@@ -11,43 +11,43 @@
         {
             "begin": 0,
             "length": 8,
-            "format": "ascii",
+            "format": "string",
             "name": "MFG_MODEL"
         },
         {
             "begin": 16,
             "length": 8,
-            "format": "ascii",
+            "format": "string",
             "name": "MFG_DATE"
         },
         {
             "begin": 32,
             "length": 8,
-            "format": "ascii",
+            "format": "string",
             "name": "FB part#"
         },
         {
             "begin": 48,
             "length": 4,
-            "format": "ascii",
+            "format": "string",
             "name": "HW Revision"
         },
         {
             "begin": 56,
             "length": 4,
-            "format": "ascii",
+            "format": "string",
             "name": "FW Revision"
         },
         {
             "begin": 64,
             "length": 16,
-            "format": "ascii",
+            "format": "string",
             "name": "MFR_SERIAL"
         },
         {
             "begin": 96,
             "length": 4,
-            "format": "ascii",
+            "format": "string",
             "name": "Workorder #"
         },
         {
@@ -55,8 +55,8 @@
             "length": 1,
             "keep": 10,
             "changes_only": true,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     8,
                     "SoH Dicharge"
@@ -101,8 +101,8 @@
             "length": 1,
             "keep": 10,
             "changes_only": true,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     2,
                     "End of Life"
@@ -244,7 +244,7 @@
             "begin": 127,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 6,
             "name": "BBU Absolute State of Charge"
         },
@@ -252,7 +252,7 @@
             "begin": 128,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 6,
             "name": "Input VAC"
         },
@@ -266,7 +266,7 @@
             "begin": 130,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 10,
             "name": "Input Current AC"
         },
@@ -291,7 +291,7 @@
         {
             "begin": 134,
             "length": 1,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 8,
             "name": "Battery Current output"
         },
@@ -304,7 +304,7 @@
         {
             "begin": 136,
             "length": 1,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 12,
             "name": "Battery Current Input"
         },
@@ -318,7 +318,7 @@
             "begin": 138,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 11,
             "name": "Output Voltage (main converter)"
         },
@@ -332,7 +332,7 @@
             "begin": 140,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 6,
             "name": "Output Current (main converter)"
         },
@@ -345,7 +345,7 @@
         {
             "begin": 142,
             "length": 1,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 9,
             "name": "IT load Voltage Output"
         },
@@ -357,7 +357,7 @@
         {
             "begin": 144,
             "length": 1,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 12,
             "name": "IT load Current Output"
         },
@@ -382,7 +382,7 @@
             "begin": 148,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 3,
             "name": "Input Power"
         },
@@ -395,7 +395,7 @@
             "begin": 150,
             "length": 1,
             "keep": 10,
-            "format": "fixedpoint",
+            "format": "float",
             "precision": 3,
             "name": "Output Power"
         },
@@ -407,7 +407,7 @@
         {
             "begin": 152,
             "length": 1,
-            "format": "decimal",
+            "format": "integer",
             "name": "RPM fan0"
         },
         {
@@ -418,7 +418,7 @@
         {
             "begin": 154,
             "length": 1,
-            "format": "decimal",
+            "format": "integer",
             "name": "RPM fan1"
         },
         {
@@ -431,7 +431,7 @@
             "begin": 156,
             "length": 1,
             "keep": 10,
-            "format": "decimal",
+            "format": "integer",
             "name": "Set fan speed"
         },
         {
@@ -478,8 +478,8 @@
         {
             "begin": 208,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     7,
                     "Com"
@@ -518,8 +518,8 @@
         {
             "begin": 209,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     11,
                     "LLC Enabled"
@@ -554,8 +554,8 @@
         {
             "begin": 210,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     10,
                     "Oring Fail"
@@ -586,8 +586,8 @@
         {
             "begin": 211,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     8,
                     "CF (Failure Failure with CF)"
@@ -618,8 +618,8 @@
         {
             "begin": 212,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     8,
                     "Aux alarm (Failure with auxiliary converter)"
@@ -642,8 +642,8 @@
         {
             "begin": 213,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     8,
                     "Charger alarm (Charger failure)"
@@ -666,8 +666,8 @@
         {
             "begin": 215,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     7,
                     "PFC temp alarm"
@@ -706,8 +706,8 @@
         {
             "begin": 216,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     0,
                     "Fan alarm (Fan failure)"
@@ -718,8 +718,8 @@
         {
             "begin": 217,
             "length": 1,
-            "format": "table",
-            "table": [
+            "format": "flags",
+            "flags": [
                 [
                     0,
                     "Internal Communication alarm (Internal Communication fail)"
@@ -755,13 +755,13 @@
         {
             "begin": 269,
             "length": 8,
-            "format": "ascii",
+            "format": "string",
             "name": "BBU Manufacturer Name"
         },
         {
             "begin": 277,
             "length": 8,
-            "format": "ascii",
+            "format": "string",
             "name": "BBU Device Name"
         },
         {

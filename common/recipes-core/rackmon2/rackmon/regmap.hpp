@@ -5,7 +5,6 @@
 #include <utility>
 #include <vector>
 
-
 // Storage for address ranges. Provides comparision operators
 // to allow for it to be used as a key in a map --> This allows
 // for us to do quick lookups of addr to register map to use.
@@ -24,14 +23,16 @@ struct addr_range {
 // in a register.
 enum RegisterValueType {
   HEX,
-  ASCII,
-  DECIMAL,
-  FIXED_POINT,
-  TABLE,
+  STRING,
+  INTEGER,
+  FLOAT,
+  FLAGS,
 };
 
 // Fully describes a Register (Retrieved from register map JSON)
 struct RegisterDescriptor {
+  using FlagDescType = std::tuple<uint8_t, std::string>;
+  using FlagsDescType = std::vector<FlagDescType>;
   // Starting address of the Register
   uint16_t begin = 0;
   // Length of the Register
@@ -49,13 +50,53 @@ struct RegisterDescriptor {
   // Describes how to interpret the contents of the register.
   RegisterValueType format = RegisterValueType::HEX;
 
-  // If the register stores a FIXED_POINT type, this provides
+  // If the register stores a FLOAT type, this provides
   // the precision.
   uint16_t precision = 0;
 
-  // If the register stores a table, this provides the desc.
-  std::vector<std::tuple<uint8_t, std::string>> table{};
+  // If the register stores flags, this provides the desc.
+  FlagsDescType flags{};
 };
+
+struct RegisterValue {
+  using FlagType = std::tuple<bool, std::string>;
+  using FlagsType = std::vector<FlagType>;
+  // Dictates which if the members of value is valid
+  RegisterValueType type = RegisterValueType::HEX;
+
+  // The timestamp of when the value was read
+  uint32_t timestamp = 0;
+
+  union Value {
+    std::vector<uint8_t> hexValue;
+    std::string strValue;
+    int32_t intValue;
+    float floatValue;
+    FlagsType flagsValue;
+    Value() {}
+    ~Value() {}
+  } value;
+
+  explicit RegisterValue(
+      const std::vector<uint16_t>& reg,
+      const RegisterDescriptor& desc,
+      uint32_t tstamp);
+  RegisterValue(const std::vector<uint16_t>& reg);
+  RegisterValue(const RegisterValue& other);
+  RegisterValue(RegisterValue&& other);
+  ~RegisterValue();
+  operator std::string();
+
+ private:
+  void make_string(const std::vector<uint16_t>& reg);
+  void make_hex(const std::vector<uint16_t>& reg);
+  void make_integer(const std::vector<uint16_t>& reg);
+  void make_float(const std::vector<uint16_t>& reg, uint16_t precision);
+  void make_flags(
+      const std::vector<uint16_t>& reg,
+      const RegisterDescriptor::FlagsDescType& flags_desc);
+};
+void to_json(nlohmann::json& j, const RegisterValue& m);
 
 // Container of a instance of a register at a given point in time.
 struct Register {
@@ -66,8 +107,7 @@ struct Register {
   // Actual value of the register/register-range
   std::vector<uint16_t> value;
 
-  explicit Register(const RegisterDescriptor& d)
-      : desc(d), value(d.length) {}
+  explicit Register(const RegisterDescriptor& d) : desc(d), value(d.length) {}
 
   // equals operator works only on valid register reads. Register
   // with a zero timestamp is considered as invalid.
@@ -83,13 +123,22 @@ struct Register {
     return timestamp != 0;
   }
   // Returns a string formatted value.
-  std::string format() const;
+  operator std::string() const;
 
-  // Helper methods to parse the registers.
-  static int32_t to_integer(const std::vector<uint16_t>& value);
-  static std::string to_string(const std::vector<uint16_t>& value);
+  // Returns the interpreted value of the register.
+  operator RegisterValue() const;
 };
 void to_json(nlohmann::json& j, const Register& m);
+
+// Container describing the register and its historical record.
+struct RegisterStoreValue {
+  uint16_t reg_addr = 0;
+  std::string name{};
+  std::vector<RegisterValue> history{};
+  RegisterStoreValue(uint16_t reg, const std::string& n)
+      : reg_addr(reg), name(n) {}
+};
+void to_json(nlohmann::json& j, const RegisterStoreValue& m);
 
 // Container of values of a single register at multiple points in
 // time. (RegisterDescriptor::keep defines the size of the depth
@@ -122,7 +171,10 @@ struct RegisterStore {
     idx = (idx + 1) % history.size();
   }
   // Returns a string formatted representation of the historical record.
-  std::string format() const;
+  operator std::string() const;
+
+  // Returns the historical record of the values
+  operator RegisterStoreValue() const;
 };
 void to_json(nlohmann::json& j, const RegisterStore& m);
 

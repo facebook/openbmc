@@ -164,13 +164,13 @@ Example configuration covering all the cases:
   "default_baudrate": 19200,
   "preferred_baudrate": 19200,
   "registers": [
-    {"begin": 0, "length": 8, "name": "MFG_MODEL", "format": "ascii"},
-    {"begin": 152, "length": 1, "name": "RPM fan0", "keep": 10, "format": "decimal"},
+    {"begin": 0, "length": 8, "name": "MFG_MODEL", "format": "string"},
+    {"begin": 152, "length": 1, "name": "RPM fan0", "keep": 10, "format": "integer"},
     {"begin": 127, "length": 1, "name": "BBU Absolute State of Charge",
-      "keep": 10, "format": "fixedpoint", "precision": 6},
+      "keep": 10, "format": "float", "precision": 6},
     {"begin": 104, "length": 1, "name": "PSU Status register", "keep": 10,
-      "changes_only": true, "format": "table",
-      "table": [
+      "changes_only": true, "format": "flags",
+      "flags": [
         [0, "Main Converter Fail"],
         [1, "Aux 54V Converter Fail"],
         [2, "Battery Charger Fail"],
@@ -197,12 +197,12 @@ Example configuration covering all the cases:
   "name": Name of the register.
   "format": How the register contents can be formatted. Possible values:
     "raw": Unformatted bytes.
-    "ascii": ASCII string.
-    "decimal": Number
-    "fixedpoint": 2s complement fixed point number. Has an associated precision
-      "precision": number of decimal places (binary bbb.bbb).
-    "table": Table (bitmask), each bit has a name provided by "table"
-      "table": map of name to bit position.
+    "string": ASCII string.
+    "integer": Number
+    "float": 2s complement fixed point number. Has an associated precision
+    "flags": flags/bitmask where, each bit has a name provided by "flags"
+  "flags": map of name to bit position (Valid when format is "flags").
+  "precision": number of integer places (binary bbb.bbb). (Valid when format is "float")
 
 There can be multiple register maps since we could potentially have
 multiple types of devices. Currently planned types:

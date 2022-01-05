@@ -1,0 +1,56 @@
+From e08585cda3e66753c25b03fa1dcf845a42cb0123 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Tue, 14 Dec 2021 18:58:12 +0800
+Subject: [PATCH] HwmonTempSensor: add HDC1080
+
+1. add HDC1080 to sensor type list
+2. re-sort sensor type list
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: I2a3054d39232c27bf0c4429db973df116f376b08
+---
+ src/HwmonTempMain.cpp | 15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/src/HwmonTempMain.cpp b/src/HwmonTempMain.cpp
+index 670947ba02..8bea671a26 100644
+--- a/src/HwmonTempMain.cpp
++++ b/src/HwmonTempMain.cpp
+@@ -46,26 +46,27 @@ static constexpr double minValueTemperature = -128; // DegreesC
+ 
+ namespace fs = std::filesystem;
+ static auto sensorTypes{
+-    std::to_array<const char*>({"xyz.openbmc_project.Configuration.EMC1412",
++    std::to_array<const char*>({"xyz.openbmc_project.Configuration.DPS310",
++                                "xyz.openbmc_project.Configuration.EMC1412",
+                                 "xyz.openbmc_project.Configuration.EMC1413",
+                                 "xyz.openbmc_project.Configuration.EMC1414",
++                                "xyz.openbmc_project.Configuration.HDC1080",
++                                "xyz.openbmc_project.Configuration.JC42",
++                                "xyz.openbmc_project.Configuration.LM75A",
++                                "xyz.openbmc_project.Configuration.LM95234",
+                                 "xyz.openbmc_project.Configuration.MAX31725",
+                                 "xyz.openbmc_project.Configuration.MAX31730",
+                                 "xyz.openbmc_project.Configuration.MAX6581",
+                                 "xyz.openbmc_project.Configuration.MAX6654",
+                                 "xyz.openbmc_project.Configuration.NCT7802",
+                                 "xyz.openbmc_project.Configuration.SBTSI",
+-                                "xyz.openbmc_project.Configuration.LM95234",
++                                "xyz.openbmc_project.Configuration.SI7020",
+                                 "xyz.openbmc_project.Configuration.TMP112",
+                                 "xyz.openbmc_project.Configuration.TMP175",
+                                 "xyz.openbmc_project.Configuration.TMP421",
+                                 "xyz.openbmc_project.Configuration.TMP441",
+-                                "xyz.openbmc_project.Configuration.LM75A",
+                                 "xyz.openbmc_project.Configuration.TMP75",
+-                                "xyz.openbmc_project.Configuration.W83773G",
+-                                "xyz.openbmc_project.Configuration.DPS310",
+-                                "xyz.openbmc_project.Configuration.SI7020",
+-                                "xyz.openbmc_project.Configuration.JC42"})};
++                                "xyz.openbmc_project.Configuration.W83773G"})};
+ 
+ static struct SensorParams
+     getSensorParameters(const std::filesystem::path& path)
+-- 
+2.32.0
+

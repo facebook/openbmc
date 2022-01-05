@@ -1,0 +1,56 @@
+From dab056e3aef002bc329ee40d96a8840c1250d656 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Thu, 23 Dec 2021 09:49:31 -0600
+Subject: [PATCH 7/7] tpm: fix NPE on probe for missing device
+
+When using the tpm_tis-spi driver on a system missing the physical TPM,
+a null pointer exception was observed.
+
+    [    0.938677] Unable to handle kernel NULL pointer dereference at virtual address 00000004
+    [    0.939020] pgd = 10c753cb
+    [    0.939237] [00000004] *pgd=00000000
+    [    0.939808] Internal error: Oops: 5 [#1] SMP ARM
+    [    0.940157] CPU: 0 PID: 48 Comm: kworker/u4:1 Not tainted 5.15.10-dd1e40c #1
+    [    0.940364] Hardware name: Generic DT based system
+    [    0.940601] Workqueue: events_unbound async_run_entry_fn
+    [    0.941048] PC is at tpm_tis_remove+0x28/0xb4
+    [    0.941196] LR is at tpm_tis_core_init+0x170/0x6ac
+
+This is due to an attempt in 'tpm_tis_remove' to use the drvdata, which
+was not initialized in 'tpm_tis_core_init' prior to the first error.
+
+Move the initialization of drvdata earlier so 'tpm_tis_remove' has
+access to it.
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+Fixes: 79ca6f74dae0 ("tpm: fix Atmel TPM crash caused by too frequent queries")
+Cc: stable@vger.kernel.org
+---
+ drivers/char/tpm/tpm_tis_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm_tis_core.c b/drivers/char/tpm/tpm_tis_core.c
+index b2659a4c4016..9813b934e6e4 100644
+--- a/drivers/char/tpm/tpm_tis_core.c
++++ b/drivers/char/tpm/tpm_tis_core.c
+@@ -950,6 +950,8 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
+ 	priv->timeout_max = TPM_TIMEOUT_USECS_MAX;
+ 	priv->phy_ops = phy_ops;
+ 
++	dev_set_drvdata(&chip->dev, priv);
++
+ 	rc = tpm_tis_read32(priv, TPM_DID_VID(0), &vendor);
+ 	if (rc < 0)
+ 		goto out_err;
+@@ -962,8 +964,6 @@ int tpm_tis_core_init(struct device *dev, struct tpm_tis_data *priv, int irq,
+ 		priv->timeout_max = TIS_TIMEOUT_MAX_ATML;
+ 	}
+ 
+-	dev_set_drvdata(&chip->dev, priv);
+-
+ 	if (is_bsw()) {
+ 		priv->ilb_base_addr = ioremap(INTEL_LEGACY_BLK_BASE_ADDR,
+ 					ILB_REMAP_SIZE);
+-- 
+2.17.1
+

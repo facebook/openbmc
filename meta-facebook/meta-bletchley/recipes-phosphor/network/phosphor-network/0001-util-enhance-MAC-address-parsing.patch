@@ -1,0 +1,119 @@
+From 15bb10e9884110a44e71703a5e109f2963d147c8 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Sun, 26 Dec 2021 20:08:20 +0800
+Subject: [PATCH] util: enhance MAC address parsing
+
+Current ether_aton does not support the MAC string without colons.
+Add extra conversion when string length equal to 12.
+
+Test log:
+1/7 config_parser             OK              0.01s
+2/7 neighbor                  OK              0.01s
+3/7 netlink                   OK              0.01s
+4/7 util                      OK              0.01s
+5/7 network_manager           OK              0.01s
+6/7 ethernet_interface        OK              0.01s
+7/7 vlan_interface            OK              0.01s
+
+Ok:                 7
+Expected Fail:      0
+Fail:               0
+Unexpected Pass:    0
+Skipped:            0
+Timeout:            0
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: Id2125af85f1c3d75424ff6ea0980c1460614f14e
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ src/util.cpp       | 24 +++++++++++++++++++-----
+ src/util.hpp       |  6 +++---
+ test/test_util.cpp |  9 +++++++++
+ 3 files changed, 31 insertions(+), 8 deletions(-)
+
+diff --git a/src/util.cpp b/src/util.cpp
+index 5c5e427321..cc84aee248 100644
+--- a/src/util.cpp
++++ b/src/util.cpp
+@@ -633,14 +633,28 @@ ether_addr getfromInventory(sdbusplus::bus::bus& bus,
+     return fromString(std::get<std::string>(value));
+ }
+ 
+-ether_addr fromString(const char* str)
++ether_addr fromString(const std::string& str)
+ {
+-    struct ether_addr* mac = ether_aton(str);
+-    if (mac == nullptr)
++    std::string mac_str{};
++    ether_addr mac{};
++
++    auto mac_c_str = str.c_str();
++
++    // MAC address without colons
++    if (str.size() == 12 && str.find(":") == std::string::npos)
++    {
++        mac_str = str.substr(0, 2) + ":" + str.substr(2, 2) + ":" +
++                  str.substr(4, 2) + ":" + str.substr(6, 2) + ":" +
++                  str.substr(8, 2) + ":" + str.substr(10, 2);
++        mac_c_str = mac_str.c_str();
++    }
++
++    if (ether_aton_r(mac_c_str, &mac) != nullptr)
+     {
+-        throw std::invalid_argument("Invalid MAC Address");
++        return mac;
+     }
+-    return *mac;
++
++    throw std::invalid_argument("Invalid MAC Address");
+ }
+ 
+ std::string toString(const ether_addr& mac)
+diff --git a/src/util.hpp b/src/util.hpp
+index 804d4920da..833c2257ee 100644
+--- a/src/util.hpp
++++ b/src/util.hpp
+@@ -44,10 +44,10 @@ ether_addr getfromInventory(sdbusplus::bus::bus& bus,
+  *  @returns A mac address in network byte order
+  *  @throws std::runtime_error for bad mac
+  */
+-ether_addr fromString(const char* str);
+-inline ether_addr fromString(const std::string& str)
++ether_addr fromString(const std::string& str);
++inline ether_addr fromString(const char* str)
+ {
+-    return fromString(str.c_str());
++    return fromString(std::string(str));
+ }
+ 
+ /** @brief Converts the given mac address bytes into a string
+diff --git a/test/test_util.cpp b/test/test_util.cpp
+index d335adc273..fc895cf86c 100644
+--- a/test/test_util.cpp
++++ b/test/test_util.cpp
+@@ -269,6 +269,9 @@ TEST(MacFromString, Bad)
+     EXPECT_THROW(fromString("0x:00:00:00:00:00"), std::invalid_argument);
+     EXPECT_THROW(fromString("00:00:00:00:00"), std::invalid_argument);
+     EXPECT_THROW(fromString(""), std::invalid_argument);
++    EXPECT_THROW(fromString("123456789XYZ"), std::invalid_argument);
++    EXPECT_THROW(fromString("123456789AB"), std::invalid_argument);
++    EXPECT_THROW(fromString("123456789ABCD"), std::invalid_argument);
+ }
+ 
+ TEST(MacFromString, Valid)
+@@ -281,6 +284,12 @@ TEST(MacFromString, Valid)
+     EXPECT_TRUE(
+         stdplus::raw::equal(ether_addr{0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
+                             fromString("0:1:2:3:4:5")));
++    EXPECT_TRUE(
++        stdplus::raw::equal(ether_addr{0x01, 0x23, 0x45, 0x67, 0x89, 0xab},
++                            fromString("0123456789AB")));
++    EXPECT_TRUE(
++        stdplus::raw::equal(ether_addr{0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa},
++                            fromString("FFEEDDccbbaa")));
+ }
+ 
+ TEST(MacToString, Valid)
+-- 
+2.32.0
+

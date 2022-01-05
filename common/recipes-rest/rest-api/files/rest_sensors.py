@@ -35,7 +35,7 @@ def get_sensors():
         data = ex.output
         data = data.decode()
 
-    data = re.sub("\(.+?\)", "", data)
+    data = re.sub(r"\(.+?\)", "", data)  # noqa: W605
     for edata in data.split("\n\n"):
         adata = edata.split("\n", 1)
         sresult = {}
@@ -55,13 +55,13 @@ def get_sensors():
 
 # Handler for sensors-full resource endpoint
 
-name_adapter_re = re.compile("(\S+)\nAdapter:\s*(\S.*?)\s*\n")
-label_re = re.compile("(\S.*):\n")
-value_re = re.compile("\s+(\S.*?):\s*(\S.*?)\s*\n")
-skipline_re = re.compile(".*\n?")
+name_adapter_re = re.compile(r"(\S+)\nAdapter:\s*(\S.*?)\s*\n")
+label_re = re.compile(r"(\S.*):\n")
+value_re = re.compile(r"\s+(\S.*?):\s*(\S.*?)\s*\n")
+skipline_re = re.compile(r".*\n?")
 
 
-def get_sensors_full():
+def get_sensors_full():  # noqa: C901
     proc = subprocess.Popen(
         ["sensors", "-u"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )

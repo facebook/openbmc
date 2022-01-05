@@ -17,14 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
-import os
-import subprocess
 from asyncio import TimeoutError
+from typing import Any, Dict, Optional
 
 from common_utils import async_exec
 from node import node
-from rest_pal_legacy import pal_set_key_value
 
 
 class configNode(node):
@@ -39,7 +36,7 @@ class configNode(node):
             self.altname = name.replace("server", "slot")
         self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         result = {}
         cmd = ["/usr/local/bin/cfg-util", "dump-all"]
         try:

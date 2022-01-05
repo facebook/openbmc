@@ -41,11 +41,11 @@ class RedfishComputerSystems:
 
     async def get_collection_descriptor(self, request: web.Request) -> web.Response:
         headers = {
-            "Link": "</redfish/v1/schemas/v1/ComputerSystemCollection.json>; rel=describedby"
+            "Link": "</redfish/v1/schemas/v1/ComputerSystemCollection.json>; rel=describedby"  # noqa: E501
         }
         body = {
             "@odata.id": "/redfish/v1/Systems",
-            "@odata.context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",
+            "@odata.context": "/redfish/v1/$metadata#ComputerSystemCollection.ComputerSystemCollection",  # noqa: E501
             "@odata.type": "#ComputerSystemCollection.ComputerSystemCollection",
             "Name": "Computer System Collection",
             "Members@odata.count": len(self.collection),

@@ -58,6 +58,6 @@ def get_wedge_slot():
     out = out.decode()
     try:
         slot = int(out.strip("\n"))
-    except:
+    except Exception:
         slot = 0
     return slot

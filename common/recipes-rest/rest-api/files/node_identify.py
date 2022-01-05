@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from subprocess import *
+from typing import Any, Dict, Optional
 
 from common_utils import async_exec
 from kv import FPERSIST, kv_get
 from node import node
-from rest_pal_legacy import *
+from rest_pal_legacy import pal_get_platform_name
 
 identify_name = {"FBTTN": "identify_slot1", "Grand Canyon": "system_identify_server"}
 
@@ -23,7 +23,7 @@ class identifyNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         # Get Platform Name
         plat_name = pal_get_platform_name()
 
@@ -35,7 +35,7 @@ class identifyNode(node):
 
         return info
 
-    async def doAction(self, data, param={}):
+    async def doAction(self, data, param: Optional[Dict[Any, Any]] = None):
         if data["action"] == "on":
             cmd = "/usr/bin/fpc-util --identify on"
             _, stdout, _ = await async_exec(cmd, shell=True)

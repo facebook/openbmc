@@ -61,9 +61,10 @@ def _get_dump_header(server_name: str, dump_id: str) -> Dict[str, Any]:
         "Name": "BIOS firmware dump",
         "Actions": {
             "#BIOSFirmwareDump.ReadContent": {
-                "target": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}/Actions/BIOSFirmwareDump.ReadContent".format(
-                    server_name, dump_id
-                )
+                "target": (
+                    "/redfish/v1/Systems/{}/Bios/FirmwareDumps/"
+                    "{}/Actions/BIOSFirmwareDump.ReadContent"
+                ).format(server_name, dump_id)
             },
         },
     }
@@ -301,7 +302,10 @@ class RedfishBIOSFirmwareDumps:
             if not os.path.exists(os.path.join(dump_dirpath, "fwutil-pid")):
                 return RedfishError(
                     status=400,
-                    message="unable to delete the dump, while it is in process of dumping",
+                    message=(
+                        "unable to delete the dump,"
+                        " while it is in process of dumping"
+                    ),
                 ).web_response()
         # delete all files
         for file_name in ["image", "exitcode", "err", "log", "fwutil-pid"]:

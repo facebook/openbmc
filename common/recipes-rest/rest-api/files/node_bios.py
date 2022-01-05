@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from typing import Any, Dict, Optional
+
 from node import node
 from rest_pal_legacy import *
 
@@ -38,7 +40,7 @@ class biosNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         info = {"Description": "BIOS Information"}
 
         return info
@@ -66,7 +68,7 @@ class bios_boot_order_trunk_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         info = {"Description": "BIOS Boot Order Information"}
 
         return info
@@ -90,7 +92,7 @@ class bios_boot_mode_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/bios-util " + self.name + " --boot_order get --boot_mode"
         _, boot_order, _ = await async_exec(cmd, shell=True)
         boot_order = boot_order.split("\n")[0].split(": ")
@@ -102,7 +104,6 @@ class bios_boot_mode_node(node):
         }
 
         return info
-
 
 
 """""" """""" """""" """""" """''
@@ -123,7 +124,7 @@ class bios_clear_cmos_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/bios-util " + self.name + " --boot_order get --clear_CMOS"
         _, clear_cmos, _ = await async_exec(cmd, shell=True)
         clear_cmos = clear_cmos.split("\n")[0].split(": ")
@@ -131,7 +132,6 @@ class bios_clear_cmos_node(node):
         info = {clear_cmos[0]: clear_cmos[1]}
 
         return info
-
 
 
 """""" """""" """""" """""" """''
@@ -152,7 +152,7 @@ class bios_force_boot_setup_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = (
             "/usr/local/bin/bios-util "
             + self.name
@@ -185,7 +185,7 @@ class bios_boot_order_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/bios-util " + self.name + " --boot_order get --boot_order"
         _, data, _ = await async_exec(cmd, shell=True)
 
@@ -242,7 +242,7 @@ class bios_postcode_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/bios-util " + self.name + " --postcode get"
         _, data, _ = await async_exec(cmd, shell=True)
         postcode = data.replace("\n", "").strip()
@@ -274,7 +274,7 @@ class bios_plat_info_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/bios-util " + self.name + " --plat_info get"
         _, plat_info, err = await async_exec(cmd, shell=True)
 
@@ -311,7 +311,7 @@ class bios_pcie_port_config_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/bios-util " + self.name + " --pcie_port_config get"
         _, pcie_port_config, err = await async_exec(cmd, shell=True)
 

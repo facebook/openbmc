@@ -140,7 +140,6 @@ class TestSensors(unittest.TestCase):
             stdout=-1,
         )
 
-
     # removing this test, since it makes no sense to me
     # TODO: someone who has a concept about this pls fix this
     # @patch.object(subprocess, "check_call")

@@ -35,7 +35,7 @@ async def post_fscd_sensor_data(request: aiohttp.web.Request) -> aiohttp.web.Res
     return aiohttp.web.json_response({"status": "OK"})
 
 
-## Utils
+# Utils
 def _validate_payload(payload, schema, path="") -> None:
     if not _schema_match(payload, schema):
         raise ValueError(

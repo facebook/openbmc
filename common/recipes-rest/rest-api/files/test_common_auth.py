@@ -17,8 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import datetime
+import ipaddress
+from unittest import mock
 
-# from request.transport.get_extra_info("peercert")
+import acl_providers.cached_acl_provider
+import common_auth
+from aiohttp import web
+from aiohttp.test_utils import AioHTTPTestCase, make_mocked_request
+
 EXAMPLE_USER_CERT = {
     "notAfter": "Jan  2 00:00:00 2000 GMT",
     "notBefore": "Jan  1 00:00:00 2000 GMT",
@@ -37,15 +44,6 @@ EXAMPLE_SVC_CERT = {
     "notBefore": "Jan  1 00:00:00 2000 GMT",
     "subject": ((("commonName", "svc:an_example_service"),),),
 }
-
-import datetime
-import ipaddress
-from unittest import mock
-
-import acl_providers.cached_acl_provider
-import common_auth
-from aiohttp import web
-from aiohttp.test_utils import AioHTTPTestCase, make_mocked_request
 
 
 class TestCommonAuth(AioHTTPTestCase):

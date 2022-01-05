@@ -161,7 +161,7 @@ class bmcNode(node):
         uboot_ver_regex = r"^U-Boot\W+(?P<uboot_ver>20\d{2}\.\d{2})\W+.*$"
         uboot_ver_re = re.compile(uboot_ver_regex)
         mtd_meta = getMTD("meta")
-        if mtd_meta == None:
+        if mtd_meta is None:
             mtd0_str_dump_cmd = ["/usr/bin/strings", "/dev/mtd0"]
             _, stdout, _ = await async_exec(mtd0_str_dump_cmd)
             for line in stdout.splitlines():
@@ -334,7 +334,11 @@ class bmcNode(node):
         # Pull load average directory from proc instead of processing it from
         # the contents of uptime command output later.
         load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
-        cpu_usage = "CPU:  {usr_pct:.0f}% usr  {sys_pct:.0f}% sys   {nice_pct:.0f}% nic   {idle_pct:.0f}% idle   {iowait_pct:.0f}% io   {irq_pct:.0f}% irq   {sirq_pct:.0f}% sirq".format(  # noqa: B950
+        cpu_usage = (
+            "CPU:  {usr_pct:.0f}% usr  {sys_pct:.0f}% sys   {nice_pct:.0f}% nic"
+            "   {idle_pct:.0f}% idle   {iowait_pct:.0f}% io   {irq_pct:.0f}% irq"
+            "   {sirq_pct:.0f}% sirq"
+        ).format(
             usr_pct=CPU_PCT.user,
             sys_pct=CPU_PCT.system,
             nice_pct=CPU_PCT.nice,
@@ -346,7 +350,10 @@ class bmcNode(node):
         memory_info = self.getMemInfo()
 
         # Mem: 175404K used, 260324K free, 21436K shrd, 0K buff, 112420K cached
-        mem_usage = "Mem: {used_mem}K used, {free_mem}K free, {shared_mem}K shrd, {buffer_mem}K buff, {cached_mem}K cached".format(  # noqa: B950
+        mem_usage = (
+            "Mem: {used_mem}K used, {free_mem}K free, {shared_mem}K shrd,"
+            " {buffer_mem}K buff, {cached_mem}K cached"
+        ).format(
             used_mem=memory_info["MemTotal"] - memory_info["MemFree"],
             free_mem=memory_info["MemFree"],
             shared_mem=memory_info["Shmem"],

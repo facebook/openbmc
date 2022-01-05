@@ -255,7 +255,7 @@ async def get_fru_info_helper(fru_name: t.Optional[str] = None) -> t.List[FruInf
     return frus_info_list
 
 
-async def get_fru_info(fru_name: str) -> FruInfo:
+async def get_fru_info(fru_name: str) -> FruInfo:  # noqa: C901
     if fru_name in __CACHE_FRU_INFO:
         return __CACHE_FRU_INFO[fru_name]
 

@@ -113,7 +113,7 @@ class TestRestFscdSensorData(AioHTTPTestCase):
             "Schema mismatch in .a: expected value (1) to match schema <class 'str'>",
         )
 
-    ## Utils
+    # Utils
     def _setup_mock_destination_file_path(self):
         mock_destination_dir = tempfile.TemporaryDirectory()  # noqa: P201
         self.addCleanup(mock_destination_dir.cleanup)

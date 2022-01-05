@@ -43,11 +43,15 @@ class SocModelError(Exception):
 
 wdt_reg = namedtuple("WDT_REG", "addr boot_source_bit")  # type: ignore
 
-# CPU Model : [(WDT timeout status reg address, bit that indicates boot source), ...]
+# CPU Model : [(WDT timeout status reg address,
+# bit that indicates boot source), ...]
 # check all WDTs to make sure
 # For netboot scenario, the WDT status tells the boot source of uboot
 register_map = {
-    SocModelId.SOC_MODEL_ASPEED_G4: [wdt_reg(0x1E785010, 1), wdt_reg(0x1E785030, 1)],
+    SocModelId.SOC_MODEL_ASPEED_G4: [
+        wdt_reg(0x1E785010, 1),
+        wdt_reg(0x1E785030, 1),
+    ],
     SocModelId.SOC_MODEL_ASPEED_G5: [
         wdt_reg(0x1E785010, 1),
         wdt_reg(0x1E785030, 1),

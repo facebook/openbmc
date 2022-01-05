@@ -28,7 +28,7 @@ def _get_fru_name_from_server_id(server_name: str) -> t.Optional[str]:
 async def get_chassis(request: web.Request) -> web.Response:
     members_json = redfish_chassis_helper.get_chassis_members_json()
     body = {
-        "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",  # noqa: B950
+        "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
         "@odata.id": "/redfish/v1/Chassis",
         "@odata.type": "#ChassisCollection.ChassisCollection",
         "Name": "Chassis Collection",

@@ -103,7 +103,10 @@ async def validate_keys(body: t.Dict[str, t.Any]) -> None:
     for key, _value in body.items():
         if key not in VALID_KEYS:
             raise NotImplementedError(
-                "key : {key} in response body : {body} is not a valid RedFish key".format(  # noqa: B950
+                (
+                    "key : {key} in response body : {body}"
+                    " is not a valid RedFish key"
+                ).format(  # noqa: B950
                     key=repr(key), body=repr(body)
                 )
             )

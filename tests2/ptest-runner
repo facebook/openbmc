@@ -152,12 +152,13 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
+    subprocess.check_call(["mkdir", "-p", rootfs+"/dev/shm"]) #fake shm for flake8
     if not os.path.exists("/.dockerenv"):
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
     else:
         base_cmd = ["sudo","chroot",rootfs]
     if args.shell:
-        subprocess.check_call(base_cmd)
+        subprocess.check_call(base_cmd + ["bash"])
     elif not args.skip_tests:
         cmd = base_cmd + ["ptest-runner"]
         exit_error = False;

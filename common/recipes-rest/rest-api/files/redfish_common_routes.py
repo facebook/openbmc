@@ -117,7 +117,10 @@ class Redfish:
             self.bios_firmware_dumps.get_dump_descriptor,
         )
         app.router.add_get(
-            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}/Actions/BIOSFirmwareDump.ReadContent",
+            (
+                "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}/"
+                "Actions/BIOSFirmwareDump.ReadContent"
+            ),
             self.bios_firmware_dumps.read_dump_content,
         )
         app.router.add_delete(

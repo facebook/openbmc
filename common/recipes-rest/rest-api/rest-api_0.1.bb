@@ -124,6 +124,7 @@ SRC_URI = "file://setup-rest-api.sh \
            file://test_rest_fwinfo.py \
            file://test_redfish_sensors.py \
            file://test_redfish_log_service.py \
+           file://.flake8 \
         "
 
 S = "${WORKDIR}"
@@ -227,6 +228,8 @@ do_install:class-target() {
   fi
 
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
+  install -m 644 ${WORKDIR}/.flake8 ${dst}/.flake8
+
 }
 
 do_compile_ptest() {
@@ -237,8 +240,9 @@ cat <<EOF > ${WORKDIR}/run-ptest
   coverage erase
   coverage run -m unittest discover /usr/local/fbpackages/rest-api
   coverage report -m --omit="*/test*"
-  echo "[PYFLAKES]"
-  pyflakes /usr/local/fbpackages/rest-api/*.py
+  mount -t tmpfs -o size=512m tmpfs /dev/shm
+  echo "[Flake8]"
+  flake8  --config /usr/local/fbpackages/rest-api/.flake8 /usr/local/fbpackages/rest-api/*.py
   echo "[MYPY]"
   mypy --ignore-missing-imports /usr/local/fbpackages/rest-api/*.py
 EOF

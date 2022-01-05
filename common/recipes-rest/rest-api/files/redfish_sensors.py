@@ -194,7 +194,7 @@ def _render_sensor_uri(
 def _get_phy_context(sensor_name: str) -> str:
     # valid physical contexts:
     # ['Room', 'Intake', 'Exhaust', 'LiquidInlet', 'LiquidOutlet', 'Front', 'Back', # noqa: B950
-    #'Upper', 'Lower', 'CPU', 'CPUSubsystem', 'GPU', 'GPUSubsystem', 'FPGA', 'Accelerator', # noqa: B950
+    # 'Upper', 'Lower', 'CPU', 'CPUSubsystem', 'GPU', 'GPUSubsystem', 'FPGA', 'Accelerator', # noqa: B950
     # 'ASIC', 'Backplane', 'SystemBoard', 'PowerSupply', 'PowerSubsystem', 'VoltageRegulator', # noqa: B950
     # 'Rectifier', 'StorageDevice', 'NetworkingDevice', 'ComputeBay', 'StorageBay', 'NetworkBay', # noqa: B950
     # 'ExpansionBay', 'PowerSupplyBay', 'Memory', 'MemorySubsystem', 'Chassis', 'Fan', # noqa: B950

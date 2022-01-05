@@ -70,7 +70,7 @@ async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
     )
 
 
-## Utils
+# Utils
 def to_bytes(cmd: t.List[int]) -> bytes:
     return b"".join(i.to_bytes(1, "little") for i in cmd)
 
@@ -141,7 +141,7 @@ class SolitonBeamFlock:
             return open(FLOCK_SOLITON_BEAM)
 
 
-## Validation logic
+# Validation logic
 def _validate_payload_schema(payload, schema, path=""):
     if type(schema) == type(payload) == dict and schema.keys() == payload.keys():
         for key, subschema in schema.items():
@@ -201,7 +201,7 @@ def _validate_payload_commands(commands: List[str]) -> None:
             )
 
 
-## Schemas
+# Schemas
 
 # Each command is a list of integers with modbus opcodes
 # e.g. [164, 3, 0, 128, 0, 1] == [0xa4, 0x03, 0x00, 0x80, 0x00, 0x01]

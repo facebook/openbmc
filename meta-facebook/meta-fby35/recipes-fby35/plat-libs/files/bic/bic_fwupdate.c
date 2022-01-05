@@ -972,11 +972,20 @@ get_component_name(uint8_t comp) {
   return "NULL";
 }
 
+static bool
+end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
+  if ((str == NULL) || (pattern == NULL)) {
+    return false;
+  }
+  return (strncmp(str + (str_len - pattern_len), pattern, pattern_len) == 0);
+}
+
 static int
 bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
+  char tmp_posfix[] = "-tmp";
   char* loc = NULL;
   bool stop_bic_monitoring = false;
   bool stop_fscd_service = false;
@@ -985,6 +994,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   int i = 0;
   char fdstr[32] = {0};
   bool fd_opened = false;
+  int origin_len = 0;
+  char origin_path[64] = {0};
 
   if (path == NULL) {
     if (fd < 0) {
@@ -1004,9 +1015,15 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
 
   loc = strstr(path, ipmb_content);
 
+  if (end_with(path, strlen(path), tmp_posfix, strlen(tmp_posfix))) {
+    origin_len = strlen(path) - strlen(tmp_posfix);
+    memcpy(origin_path, path, origin_len);
+  } else {
+    memcpy(origin_path, path, sizeof(origin_path));
+  }
 
-  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
-  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, path);
+  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, origin_path, force);
+  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, origin_path);
 
   uint8_t board_type = 0;
   if ( fby35_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
@@ -1213,7 +1230,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   }
 
 err_exit:
-  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
+  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, origin_path, (ret != 0)?"Fail":"Success");
   if (fd_opened) {
     close(fd);
   }

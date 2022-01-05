@@ -92,6 +92,7 @@ SRC_URI += "file://tests/msg_test.cpp \
             file://tests/register_test.cpp \
             file://tests/regmap_test.cpp \
             file://tests/modbus_device_test.cpp \
+            file://tests/poll_test.cpp \
            "
 
 S = "${WORKDIR}"

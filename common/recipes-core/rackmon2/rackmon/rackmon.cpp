@@ -17,9 +17,8 @@ void Rackmon::load(
   json j;
   ifs >> j;
   for (const auto& iface_conf : j["interfaces"]) {
-    std::unique_ptr<Modbus> iface = std::make_unique<Modbus>(profile_store);
-    iface->initialize(iface_conf);
-    interfaces.push_back(std::move(iface));
+    interfaces.push_back(make_interface());
+    interfaces.back()->initialize(iface_conf);
   }
   regmap_db.load(regmap_dir);
 

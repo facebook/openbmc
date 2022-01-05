@@ -59,7 +59,17 @@ class Rackmon {
   // Scan loop. Blocks forever as long as req_stop is true.
   void scan();
 
+ protected:
+  virtual std::unique_ptr<Modbus> make_interface() {
+    std::unique_ptr<Modbus> iface = std::make_unique<Modbus>(profile_store);
+    return std::move(iface);
+  }
+
  public:
+  virtual ~Rackmon() {
+    stop();
+  }
+
   // Load configuration, preferable before starting, but can be
   // done at any time, but this is a one time only.
   void load(const std::string& conf_path, const std::string& regmap_dir);

@@ -1,8 +1,8 @@
 #include "rackmon.hpp"
-#include "log.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
+#include "log.hpp"
 
 using nlohmann::json;
 using namespace std::literals;
@@ -36,7 +36,7 @@ void Rackmon::load(
 }
 
 bool Rackmon::probe(Modbus& iface, uint8_t addr) {
-  RegisterMap& rmap = regmap_db.at(addr);
+  const RegisterMap& rmap = regmap_db.at(addr);
   std::vector<uint16_t> v(1);
   try {
     ReadHoldingRegistersReq req(addr, rmap.probe_register, v.size());
@@ -44,8 +44,8 @@ bool Rackmon::probe(Modbus& iface, uint8_t addr) {
     iface.command(req, resp, rmap.default_baudrate, probe_timeout);
     std::unique_lock lock(devices_mutex);
     devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);
-    log_info << std::hex << std::setw(2) << std::setfill('0')
-             << "Found " << int(addr) << " on " << iface.name() << std::endl;
+    log_info << std::hex << std::setw(2) << std::setfill('0') << "Found "
+             << int(addr) << " on " << iface.name() << std::endl;
     return true;
   } catch (std::exception& e) {
     return false;
@@ -70,7 +70,7 @@ std::vector<uint8_t> Rackmon::inspect_dormant() {
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
     if ((it.second->last_active() + dormant_min_inactive_time) < curr) {
-      RegisterMap& rmap = regmap_db.at(it.first);
+      const RegisterMap& rmap = regmap_db.at(it.first);
       uint16_t probe = rmap.probe_register;
       std::vector<uint16_t> v(1);
       try {
@@ -161,7 +161,8 @@ void Rackmon::stop() {
 
 void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
   uint8_t addr = req.addr;
-  RACKMON_PROFILE_SCOPE(raw_cmd, "rawcmd::" + std::to_string(int(req.addr)), profile_store);
+  RACKMON_PROFILE_SCOPE(
+      raw_cmd, "rawcmd::" + std::to_string(int(req.addr)), profile_store);
   std::shared_lock lock(devices_mutex);
   if (!devices.at(addr)->is_active()) {
     throw std::exception();
@@ -175,10 +176,9 @@ std::vector<ModbusDeviceStatus> Rackmon::list_devices() {
   std::shared_lock lock(devices_mutex);
   std::vector<ModbusDeviceStatus> ret;
   std::transform(
-      devices.begin(),
-      devices.end(),
-      std::back_inserter(ret),
-      [](auto& kv) { return kv.second->get_status(); });
+      devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
+        return kv.second->get_status();
+      });
   return ret;
 }
 

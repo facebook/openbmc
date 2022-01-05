@@ -16,7 +16,6 @@ struct addr_range {
   explicit addr_range(uint8_t a) : range(a, a) {}
 
   bool contains(uint8_t) const;
-  bool operator<(const addr_range& rhs) const;
 };
 
 // Describes how we intend on interpreting the value stored
@@ -196,8 +195,15 @@ struct RegisterMap {
 // Container of multiple register maps. It is keyed off
 // the address range of each register map.
 struct RegisterMapDatabase {
-  std::map<addr_range, RegisterMap> regmaps{};
-  RegisterMap& at(uint16_t addr);
+  std::vector<std::unique_ptr<RegisterMap>> regmaps{};
+
+  // Returns a register map of a given address
+  const RegisterMap& at(uint8_t addr);
+
+  // Loads a configuration JSON into the DB.
+  void load(const nlohmann::json& j);
+
+  // Loads all configuration files in a dir into the DB.
   void load(const std::string& dir_s);
   // For debug purpose only.
   void print(std::ostream& os);

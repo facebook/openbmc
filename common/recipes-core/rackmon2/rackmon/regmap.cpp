@@ -21,10 +21,6 @@ static void stream_hex(std::ostream& os, size_t num, size_t ndigits) {
      << num;
 }
 
-bool addr_range::operator<(const addr_range& rhs) const {
-  return range.second < rhs.range.first;
-}
-
 bool addr_range::contains(uint8_t addr) const {
   return addr >= range.first && addr <= range.second;
 }
@@ -363,24 +359,31 @@ void to_json(json& j, const RegisterMap& m) {
       [](const auto& kv) { return kv.second; });
 }
 
-RegisterMap& RegisterMapDatabase::at(uint16_t addr) {
-  RegisterMap& ret = regmaps.at(addr_range(addr, addr));
-  if (!ret.applicable_addresses.contains(addr)) {
-    throw std::out_of_range("not found: " + std::to_string(addr));
-  }
-  return ret;
+const RegisterMap& RegisterMapDatabase::at(uint8_t addr) {
+  const auto& result = find_if(
+      regmaps.begin(),
+      regmaps.end(),
+      [addr](const std::unique_ptr<RegisterMap>& m) {
+        return m->applicable_addresses.contains(addr);
+      });
+  if (result == regmaps.end())
+    throw std::out_of_range("not found: " + std::to_string(int(addr)));
+  return **result;
+}
+
+void RegisterMapDatabase::load(const nlohmann::json& j) {
+  std::unique_ptr<RegisterMap> rmap = std::make_unique<RegisterMap>();
+  *rmap = j;
+  regmaps.push_back(std::move(rmap));
 }
 
 void RegisterMapDatabase::load(const std::string& dir_s) {
-  std::filesystem::path dir(dir_s);
-  for (auto const& dir_entry : std::filesystem::directory_iterator{dir}) {
-    std::string path = dir_entry.path().string();
-    std::ifstream ifs(path);
+  for (auto const& dir_entry : std::filesystem::directory_iterator{dir_s}) {
+    std::ifstream ifs(dir_entry.path().string());
     json j;
     ifs >> j;
-    addr_range range;
-    j.at("address_range").get_to(range);
-    regmaps[range] = j;
+    load(j);
+    ifs.close();
   }
 }
 
@@ -390,6 +393,6 @@ void RegisterMapDatabase::print(std::ostream& os) {
       regmaps.begin(),
       regmaps.end(),
       std::back_inserter(j),
-      [](const auto& kv) { return kv.second; });
+      [](const auto& ptr) { return *ptr; });
   os << j.dump(4);
 }

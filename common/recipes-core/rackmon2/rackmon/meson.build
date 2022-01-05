@@ -35,6 +35,7 @@ test_srcs = common + files(
     'tests/regmap_test.cpp',
     'tests/modbus_device_test.cpp',
     'tests/poll_test.cpp',
+    'tests/rackmon_test.cpp',
 )
 
 cc = meson.get_compiler('cpp')

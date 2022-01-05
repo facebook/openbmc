@@ -27,7 +27,7 @@ struct ModbusDeviceStatus {
 void to_json(nlohmann::json& j, const ModbusDeviceStatus& m);
 
 struct ModbusDeviceMonitorData : public ModbusDeviceStatus {
-  std::vector<RegisterValueStore> register_list{};
+  std::vector<RegisterStore> register_list{};
 };
 void to_json(nlohmann::json& j, const ModbusDeviceMonitorData& m);
 

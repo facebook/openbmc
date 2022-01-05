@@ -42,7 +42,7 @@ struct addr_range {
   bool operator<(const addr_range& rhs) const;
 };
 
-enum RegisterFormatType {
+enum RegisterValueType {
   HEX,
   ASCII,
   DECIMAL,
@@ -56,21 +56,21 @@ struct RegisterDescriptor {
   std::string name{};
   uint16_t keep = 1;
   bool changes_only = false;
-  RegisterFormatType format = RegisterFormatType::HEX;
+  RegisterValueType format = RegisterValueType::HEX;
   uint16_t precision = 0;
   std::vector<std::tuple<uint8_t, std::string>> table;
 };
 
-struct RegisterValue {
+struct Register {
   const RegisterDescriptor& desc;
   uint32_t timestamp = 0;
   std::vector<uint16_t> value;
-  explicit RegisterValue(const RegisterDescriptor& d)
+  explicit Register(const RegisterDescriptor& d)
       : desc(d), value(d.length) {}
-  bool operator==(const RegisterValue& other) const {
+  bool operator==(const Register& other) const {
     return timestamp != 0 && other.timestamp != 0 && value == other.value;
   }
-  bool operator!=(const RegisterValue& other) const {
+  bool operator!=(const Register& other) const {
     return timestamp == 0 || other.timestamp == 0 || value != other.value;
   }
   operator bool() const {
@@ -81,21 +81,21 @@ struct RegisterValue {
   std::string format() const;
 };
 
-void to_json(nlohmann::json& j, const RegisterValue& m);
+void to_json(nlohmann::json& j, const Register& m);
 
-struct RegisterValueStore {
+struct RegisterStore {
   const RegisterDescriptor& desc;
   uint16_t reg_addr;
-  std::vector<RegisterValue> history;
+  std::vector<Register> history;
   int32_t idx = 0;
 
  public:
-  explicit RegisterValueStore(const RegisterDescriptor& d)
-      : desc(d), reg_addr(d.begin), history(d.keep, RegisterValue(d)) {}
-  RegisterValue& back() {
+  explicit RegisterStore(const RegisterDescriptor& d)
+      : desc(d), reg_addr(d.begin), history(d.keep, Register(d)) {}
+  Register& back() {
     return idx == 0 ? history.back() : history[idx - 1];
   }
-  RegisterValue& front() {
+  Register& front() {
     return history[idx];
   }
   void operator++() {
@@ -103,7 +103,7 @@ struct RegisterValueStore {
   }
   std::string format() const;
 };
-void to_json(nlohmann::json& j, const RegisterValueStore& m);
+void to_json(nlohmann::json& j, const RegisterStore& m);
 
 struct RegisterMap {
   addr_range applicable_addresses;

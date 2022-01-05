@@ -37,13 +37,13 @@ void to_json(json& j, const addr_range& a) {
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
-    RegisterFormatType,
+    RegisterValueType,
     {
-        {RegisterFormatType::HEX, "hex"},
-        {RegisterFormatType::ASCII, "ascii"},
-        {RegisterFormatType::DECIMAL, "decimal"},
-        {RegisterFormatType::FIXED_POINT, "fixedpoint"},
-        {RegisterFormatType::TABLE, "table"},
+        {RegisterValueType::HEX, "hex"},
+        {RegisterValueType::ASCII, "ascii"},
+        {RegisterValueType::DECIMAL, "decimal"},
+        {RegisterValueType::FIXED_POINT, "fixedpoint"},
+        {RegisterValueType::TABLE, "table"},
     })
 
 void from_json(const json& j, RegisterDescriptor& i) {
@@ -52,10 +52,10 @@ void from_json(const json& j, RegisterDescriptor& i) {
   j.at("name").get_to(i.name);
   i.keep = j.value("keep", 1);
   i.changes_only = j.value("changes_only", false);
-  i.format = j.value("format", RegisterFormatType::HEX);
-  if (i.format == RegisterFormatType::FIXED_POINT) {
+  i.format = j.value("format", RegisterValueType::HEX);
+  if (i.format == RegisterValueType::FIXED_POINT) {
     j.at("precision").get_to(i.precision);
-  } else if (i.format == RegisterFormatType::TABLE) {
+  } else if (i.format == RegisterValueType::TABLE) {
     j.at("table").get_to(i.table);
   }
 }
@@ -66,14 +66,14 @@ void to_json(json& j, const RegisterDescriptor& i) {
   j["keep"] = i.keep;
   j["changes_only"] = i.changes_only;
   j["format"] = i.format;
-  if (i.format == RegisterFormatType::FIXED_POINT) {
+  if (i.format == RegisterValueType::FIXED_POINT) {
     j["precision"] = i.precision;
-  } else if (i.format == RegisterFormatType::TABLE) {
+  } else if (i.format == RegisterValueType::TABLE) {
     j["table"] = i.table;
   }
 }
 
-int32_t RegisterValue::to_integer(const std::vector<uint16_t>& value) {
+int32_t Register::to_integer(const std::vector<uint16_t>& value) {
   // TODO We currently do not need more than 32bit values as per
   // our current/planned regmaps. If such a value should show up in the
   // future, then we might need to return std::variant<int32_t,int64_t>.
@@ -90,7 +90,7 @@ int32_t RegisterValue::to_integer(const std::vector<uint16_t>& value) {
       });
 }
 
-std::string RegisterValue::to_string(const std::vector<uint16_t>& value) {
+std::string Register::to_string(const std::vector<uint16_t>& value) {
   std::stringstream os;
   // When displaying as a hexstring, the choice is made to make it
   // readable, so 0x1234 is printed as "1234". Hence the reason we
@@ -103,10 +103,10 @@ std::string RegisterValue::to_string(const std::vector<uint16_t>& value) {
   return os.str();
 }
 
-std::string RegisterValue::format() const {
+std::string Register::format() const {
   std::stringstream os;
   switch (desc.format) {
-    case RegisterFormatType::ASCII: {
+    case RegisterValueType::ASCII: {
       // String is stored normally H L H L, so a we
       // need reswap the bytes in each nibble.
       for (auto& reg : value) {
@@ -121,18 +121,18 @@ std::string RegisterValue::format() const {
       }
       break;
     }
-    case RegisterFormatType::DECIMAL: {
+    case RegisterValueType::DECIMAL: {
       os << std::dec << to_integer(value);
       break;
     }
-    case RegisterFormatType::FIXED_POINT: {
+    case RegisterValueType::FIXED_POINT: {
       int32_t ivalue = to_integer(value);
       // Y = X / 2^N
       os << std::setprecision(desc.precision)
          << (float(ivalue) / float(1 << desc.precision));
       break;
     }
-    case RegisterFormatType::TABLE: {
+    case RegisterValueType::TABLE: {
       // We could technically be clever and pack this as a
       // JSON object. But considering this is designed for
       // human consumption only, we can make it pretty
@@ -148,7 +148,7 @@ std::string RegisterValue::format() const {
       }
       break;
     }
-    case RegisterFormatType::HEX:
+    case RegisterValueType::HEX:
     default: {
       os << to_string(value);
       break;
@@ -157,12 +157,12 @@ std::string RegisterValue::format() const {
   return os.str();
 }
 
-void to_json(json& j, const RegisterValue& m) {
+void to_json(json& j, const Register& m) {
   j["time"] = m.timestamp;
   j["data"] = m.to_string(m.value);
 }
 
-std::string RegisterValueStore::format() const {
+std::string RegisterStore::format() const {
   std::stringstream ss;
 
   // Format we are going for.
@@ -173,7 +173,7 @@ std::string RegisterValueStore::format() const {
      << " :";
   for (const auto& v : history) {
     if (v) {
-      if (desc.format != RegisterFormatType::TABLE)
+      if (desc.format != RegisterValueType::TABLE)
         ss << ' ';
       else
         ss << '\n';
@@ -183,7 +183,7 @@ std::string RegisterValueStore::format() const {
   return ss.str();
 }
 
-void to_json(json& j, const RegisterValueStore& m) {
+void to_json(json& j, const RegisterStore& m) {
   j["begin"] = m.reg_addr;
   j["readings"] = m.history;
 }

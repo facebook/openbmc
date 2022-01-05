@@ -185,6 +185,7 @@ Example configuration covering all the cases:
   ]
 }
 ```
+
 "name": Name of configuration, unused by code mostly for humans.
 "address_range": (Inclusive) range of address which use the defined register map.
 "probe_register": Devices in this address range will respond successfully to this register read and can be used as a "probe" or discovery mechanism.
@@ -211,6 +212,39 @@ rackmon.d/orv3_psu.json
 rackmon.d/orv3_bbu.json
 rackmon.d/orv3_rpu.json
 ```
+
+# ORv3 Register Address types
+This more describes either up-coming or existing Register map JSONs.
+We can formally interpret the address of a MODBUS device as:
+```
+|--7--|--6--|--5--|--4--|--3--|--2--|--1--|--0--|
+| T1  | T0  | R2  | R1  | R0  | D2  | D1  | D0  |
+|-----|-----|-----|-----|-----|-----|-----|-----|
+```
+| T1 | T0 | Description |
+| -- | -- | ----------- |
+| 1 | 1 | PSU (Power Supply Unit) |
+| 0 | 1 | BBU (Battery Backup Unit) |
+| 0 | 0 | Special/Miscellaneous Device |
+| 1 | 0 | Combined PSU+BBU Device (ORv2) |
+
+
+R2:R0 - Rack address
+D2:D0 - Device address (PSU/BBU/PSU+BBU/Special).
+
+ORv3 gets rid of the concept of a shelf address and moves
+it into the device address to allow for greater flexibility.
+Legacy ORv2 devices can be considered as special extensions:
+| Bits | Interpretation |
+| ---- | -------------- |
+| R2   | Always 1       |
+| R1:R0 | Rack Address  |
+| D2   | Shelf Address  |
+| D1:D0 | PSU Address   |
+
+This information is used in constructing the "address_range" field
+of the register map. That allows us to use different maps for
+each of the device type.
 
 # Modbus device interface
 `modbus_device.hpp` defines a Modbus device. You construct it with

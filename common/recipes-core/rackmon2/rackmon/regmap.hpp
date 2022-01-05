@@ -5,43 +5,23 @@
 #include <utility>
 #include <vector>
 
-// Address formats:
-// |--7--|--6--|--5--|--4--|--3--|--2--|--1--|--0--|
-// | T1  | T0  | R2  | R1  | R0  | D2  | D1  | D0  |
-// |-----|-----|-----|-----|-----|-----|-----|-----|
-// T1:T0  | Desc
-// -------------
-// 1  1   | PSU
-// 0  1   | BBU
-// 0  0   | Special devices
-// 1  0   | PSU+BBU (ORv2)
-//
-// R2:R0 - Rack address.
-// D2:D0 - Device (PSU/BBU/PSU+BBU/Special) address.
-//
-// For legacy ORv2 devices,
-// R2 - always 1
-// R2:R1 - Rack address
-// D2 - Shelf address
-// D1:D0 - PSU Address
-//
-// For more flexibility, this is all provided by the JSON
-// regmap files. All the source files here care about
-// is the address ranges for which particular maps
-// apply. We also use this to limit our scans.
+
+// Storage for address ranges. Provides comparision operators
+// to allow for it to be used as a key in a map --> This allows
+// for us to do quick lookups of addr to register map to use.
 struct addr_range {
+  // pair of start and end address.
   std::pair<uint8_t, uint8_t> range{};
   addr_range() {}
   explicit addr_range(uint8_t a, uint8_t b) : range(a, b) {}
   explicit addr_range(uint8_t a) : range(a, a) {}
 
   bool contains(uint8_t) const;
-
-  // less operator for addr_range to allow for it to be
-  // used as a key for map (Cool range map in DB)
   bool operator<(const addr_range& rhs) const;
 };
 
+// Describes how we intend on interpreting the value stored
+// in a register.
 enum RegisterValueType {
   HEX,
   ASCII,
@@ -50,61 +30,105 @@ enum RegisterValueType {
   TABLE,
 };
 
+// Fully describes a Register (Retrieved from register map JSON)
 struct RegisterDescriptor {
+  // Starting address of the Register
   uint16_t begin = 0;
+  // Length of the Register
   uint16_t length = 0;
+  // Name of the Register
   std::string name{};
+  // How deep is the historical record? If keep is 6, rackmon
+  // will keep the latest 6 read values for later retrieval.
   uint16_t keep = 1;
+  // This is a caveat of the 'keep' value. This forces us
+  // to keep a value only if it changed from the previous read
+  // value. Useful for state information.
   bool changes_only = false;
+
+  // Describes how to interpret the contents of the register.
   RegisterValueType format = RegisterValueType::HEX;
+
+  // If the register stores a FIXED_POINT type, this provides
+  // the precision.
   uint16_t precision = 0;
-  std::vector<std::tuple<uint8_t, std::string>> table;
+
+  // If the register stores a table, this provides the desc.
+  std::vector<std::tuple<uint8_t, std::string>> table{};
 };
 
+// Container of a instance of a register at a given point in time.
 struct Register {
+  // Reference to the register descriptor.
   const RegisterDescriptor& desc;
+  // Timestamp when the register was read.
   uint32_t timestamp = 0;
+  // Actual value of the register/register-range
   std::vector<uint16_t> value;
+
   explicit Register(const RegisterDescriptor& d)
       : desc(d), value(d.length) {}
+
+  // equals operator works only on valid register reads. Register
+  // with a zero timestamp is considered as invalid.
   bool operator==(const Register& other) const {
     return timestamp != 0 && other.timestamp != 0 && value == other.value;
   }
+  // Same but opposite of the equals operator.
   bool operator!=(const Register& other) const {
     return timestamp == 0 || other.timestamp == 0 || value != other.value;
   }
+  // Returns true if the register contents is valid.
   operator bool() const {
     return timestamp != 0;
   }
+  // Returns a string formatted value.
+  std::string format() const;
+
+  // Helper methods to parse the registers.
   static int32_t to_integer(const std::vector<uint16_t>& value);
   static std::string to_string(const std::vector<uint16_t>& value);
-  std::string format() const;
 };
-
 void to_json(nlohmann::json& j, const Register& m);
 
+// Container of values of a single register at multiple points in
+// time. (RegisterDescriptor::keep defines the size of the depth
+// of the historical record).
 struct RegisterStore {
+  // Reference to the register descriptor
   const RegisterDescriptor& desc;
+  // Address of the register.
   uint16_t reg_addr;
+  // History of the register contents to keep. This is utilized as
+  // a circular buffer with idx pointing to the current slot to
+  // write.
   std::vector<Register> history;
   int32_t idx = 0;
 
  public:
   explicit RegisterStore(const RegisterDescriptor& d)
       : desc(d), reg_addr(d.begin), history(d.keep, Register(d)) {}
+
+  // Returns a reference to the last written value (Back of the list)
   Register& back() {
     return idx == 0 ? history.back() : history[idx - 1];
   }
+  // Returns the front (Next to write) reference
   Register& front() {
     return history[idx];
   }
+  // Advances the front.
   void operator++() {
     idx = (idx + 1) % history.size();
   }
+  // Returns a string formatted representation of the historical record.
   std::string format() const;
 };
 void to_json(nlohmann::json& j, const RegisterStore& m);
 
+// Container of an entire register map. This is the memory
+// representation of each JSON register map descriptors
+// at /etc/rackmon.d.
 struct RegisterMap {
   addr_range applicable_addresses;
   std::string name;
@@ -117,6 +141,8 @@ struct RegisterMap {
   }
 };
 
+// Container of multiple register maps. It is keyed off
+// the address range of each register map.
 struct RegisterMapDatabase {
   std::map<addr_range, RegisterMap> regmaps{};
   RegisterMap& at(uint16_t addr);

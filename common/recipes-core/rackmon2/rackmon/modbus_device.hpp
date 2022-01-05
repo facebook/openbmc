@@ -5,10 +5,7 @@
 #include "modbus_cmds.hpp"
 #include "regmap.hpp"
 
-enum ModbusDeviceMode {
-  ACTIVE = 0,
-  DORMANT = 1
-};
+enum ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 
 struct ModbusDeviceStatus {
   static constexpr uint32_t max_consecutive_failures = 10;
@@ -20,29 +17,36 @@ struct ModbusDeviceStatus {
   time_t last_active = 0;
   uint32_t num_consecutive_failures = 0;
   ModbusDeviceMode get_mode() const {
-    return num_consecutive_failures < max_consecutive_failures ?
-      ModbusDeviceMode::ACTIVE : ModbusDeviceMode::DORMANT;
+    return num_consecutive_failures < max_consecutive_failures
+        ? ModbusDeviceMode::ACTIVE
+        : ModbusDeviceMode::DORMANT;
   }
 };
 void to_json(nlohmann::json& j, const ModbusDeviceStatus& m);
 
-struct ModbusDeviceMonitorData : public ModbusDeviceStatus {
+struct ModbusDeviceRawData : public ModbusDeviceStatus {
   std::vector<RegisterStore> register_list{};
 };
-void to_json(nlohmann::json& j, const ModbusDeviceMonitorData& m);
+void to_json(nlohmann::json& j, const ModbusDeviceRawData& m);
 
-struct ModbusDeviceFormattedData : public ModbusDeviceStatus {
+struct ModbusDeviceFmtData : public ModbusDeviceStatus {
   std::string type;
   std::vector<std::string> register_list{};
 };
-void to_json(nlohmann::json& j, const ModbusDeviceFormattedData& m);
+void to_json(nlohmann::json& j, const ModbusDeviceFmtData& m);
+
+struct ModbusDeviceValueData : public ModbusDeviceStatus {
+  std::string type;
+  std::vector<RegisterStoreValue> register_list{};
+};
+void to_json(nlohmann::json& j, const ModbusDeviceValueData& m);
 
 class ModbusDevice {
   Modbus& interface;
   uint8_t addr;
   const RegisterMap& register_map;
   std::mutex register_list_mutex{};
-  ModbusDeviceMonitorData info{};
+  ModbusDeviceRawData info{};
 
  public:
   ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg);
@@ -69,7 +73,7 @@ class ModbusDevice {
   }
   // Simple func, returns a copy of the monitor
   // data.
-  ModbusDeviceMonitorData get_monitor_data() {
+  ModbusDeviceRawData get_raw_data() {
     std::unique_lock lk(register_list_mutex);
     // Makes a deep copy.
     return info;
@@ -78,5 +82,7 @@ class ModbusDevice {
     std::unique_lock lk(register_list_mutex);
     return info;
   }
-  ModbusDeviceFormattedData get_formatted_data();
+  ModbusDeviceFmtData get_fmt_data();
+
+  ModbusDeviceValueData get_value_data();
 };

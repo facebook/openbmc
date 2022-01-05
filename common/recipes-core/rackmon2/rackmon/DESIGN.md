@@ -255,9 +255,9 @@ It defines a `command()` method very similar to the `Modbus` class
 
 To help with monitoring it defines a `monitor()` method which will
 read all registers defined in the register map and store it in the 
-local member of type `ModbusDeviceMonitorData`.
+local member of type `ModbusDeviceRawData`.
 
-It exposes `get_monitor_data` to help users retrieve a copy of the
+It exposes `get_raw_data` to help users retrieve a copy of the
 monitored data and `is_flaky` and `last_active` to the monitor agent
 to determine/remediate flaky devices.
 

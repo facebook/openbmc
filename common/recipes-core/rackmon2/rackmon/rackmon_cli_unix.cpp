@@ -192,18 +192,23 @@ int main(int argc, char* argv[]) {
 
   // Data command (Get monitored data)
   bool format_data = false;
-  app.add_subcommand("data", "Return detailed monitoring data")
-      ->callback(
-          [&]() { do_cmd(format_data ? "formatted_data" : "data", json_fmt); })
-      ->add_flag(
-          "-f,--format",
-          format_data,
-          "Formats the data as per the register map");
+  bool value_data = false;
+  auto get_data_cmd = [&]() {
+    if (format_data)
+      return "formatted_data";
+    if (value_data)
+      return "value_data";
+    return "data";
+  };
+  auto data = app.add_subcommand("data", "Return detailed monitoring data");
+  data->callback([&]() { do_cmd(get_data_cmd(), json_fmt); });
+  data->add_flag(
+      "-f,--format", format_data, "Formats the data as per the register map");
+  data->add_flag("-v,--value", value_data, "Formats the data as values");
 
   // Profile
   app.add_subcommand("profile", "Print profiling data collected from last read")
-    ->callback(
-        [&]() { do_cmd("profile", json_fmt); });
+      ->callback([&]() { do_cmd("profile", json_fmt); });
 
   // Pause command
   app.add_subcommand("pause", "Pause monitoring")->callback([&]() {

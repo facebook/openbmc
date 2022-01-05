@@ -1,7 +1,7 @@
 #include "modbus_device.hpp"
-#include "log.hpp"
 #include <iomanip>
 #include <sstream>
+#include "log.hpp"
 
 using nlohmann::json;
 
@@ -60,39 +60,50 @@ void ModbusDevice::monitor() {
     auto& v = h.front();
     try {
       ReadHoldingRegisters(reg, v.value);
+      v.timestamp = timestamp;
+      // If we dont care about changes or if we do
+      // and we notice that the value is different
+      // from the previous, increment store to
+      // point to the next.
+      if (!v.desc.changes_only || v != h.back()) {
+        ++h;
+      }
     } catch (std::exception& e) {
-      log_info << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x"
-                << std::hex << reg << ' ' << h.desc.name
-                << " caught: " << e.what() << std::endl;
+      log_info << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x" << std::hex
+               << reg << ' ' << h.desc.name << " caught: " << e.what()
+               << std::endl;
       continue;
-    }
-    v.timestamp = timestamp;
-    // If we dont care about changes or if we do
-    // and we notice that the value is different
-    // from the previous, increment store to
-    // point to the next.
-    if (!v.desc.changes_only || v != h.back()) {
-      ++h;
     }
   }
 }
 
-ModbusDeviceFormattedData ModbusDevice::get_formatted_data() {
+ModbusDeviceFmtData ModbusDevice::get_fmt_data() {
   std::unique_lock lk(register_list_mutex);
-  ModbusDeviceFormattedData data;
+  ModbusDeviceFmtData data;
   data.ModbusDeviceStatus::operator=(info);
   data.type = register_map.name;
   for (const auto& reg : info.register_list) {
-    data.register_list.emplace_back(std::move(reg));
+    std::string str = reg;
+    data.register_list.emplace_back(std::move(str));
   }
   return data;
 }
 
-NLOHMANN_JSON_SERIALIZE_ENUM(ModbusDeviceMode,
-{
-  {ModbusDeviceMode::ACTIVE, "active"},
-  {ModbusDeviceMode::DORMANT, "dormant"}
-})
+ModbusDeviceValueData ModbusDevice::get_value_data() {
+  std::unique_lock lk(register_list_mutex);
+  ModbusDeviceValueData data;
+  data.ModbusDeviceStatus::operator=(info);
+  data.type = register_map.name;
+  for (const auto& reg : info.register_list) {
+    data.register_list.emplace_back(reg);
+  }
+  return data;
+}
+
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    ModbusDeviceMode,
+    {{ModbusDeviceMode::ACTIVE, "active"},
+     {ModbusDeviceMode::DORMANT, "dormant"}})
 
 void to_json(json& j, const ModbusDeviceStatus& m) {
   j["addr"] = m.addr;
@@ -100,16 +111,25 @@ void to_json(json& j, const ModbusDeviceStatus& m) {
   j["timeouts"] = m.timeouts;
   j["misc_fails"] = m.misc_failures;
   j["mode"] = m.get_mode();
+  j["baudrate"] = m.baudrate;
 }
 
-void to_json(json& j, const ModbusDeviceMonitorData& m) {
+void to_json(json& j, const ModbusDeviceRawData& m) {
   const ModbusDeviceStatus& s = m;
   to_json(j, s);
   j["now"] = std::time(0);
   j["ranges"] = m.register_list;
 }
 
-void to_json(json& j, const ModbusDeviceFormattedData& m) {
+void to_json(json& j, const ModbusDeviceFmtData& m) {
+  const ModbusDeviceStatus& s = m;
+  to_json(j, s);
+  j["type"] = m.type;
+  j["now"] = std::time(0);
+  j["ranges"] = m.register_list;
+}
+
+void to_json(json& j, const ModbusDeviceValueData& m) {
   const ModbusDeviceStatus& s = m;
   to_json(j, s);
   j["type"] = m.type;

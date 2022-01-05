@@ -81,10 +81,13 @@ class Rackmon {
   std::vector<ModbusDeviceStatus> list_devices();
 
   // Get monitored data
-  void get_monitor_data(std::vector<ModbusDeviceMonitorData>& ret);
+  void get_raw_data(std::vector<ModbusDeviceRawData>& ret);
 
   // Get formatted monitor data
-  void get_monitor_data_formatted(std::vector<ModbusDeviceFormattedData>& ret);
+  void get_fmt_data(std::vector<ModbusDeviceFmtData>& ret);
+
+  // Get value data
+  void get_value_data(std::vector<ModbusDeviceValueData>& ret);
 
   // Get profile data
   std::string get_profile_data();

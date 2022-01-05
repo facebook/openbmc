@@ -80,16 +80,20 @@ void RackmonUNIXSocketService::handle_json_command(
   } else if (cmd == "list") {
     resp["data"] = rackmond.list_devices();
   } else if (cmd == "data") {
-    std::vector<ModbusDeviceMonitorData> ret;
-    rackmond.get_monitor_data(ret);
+    std::vector<ModbusDeviceRawData> ret;
+    rackmond.get_raw_data(ret);
     resp["data"] = ret;
   } else if (cmd == "pause") {
     rackmond.stop();
   } else if (cmd == "resume") {
     rackmond.start();
   } else if (cmd == "formatted_data") {
-    std::vector<ModbusDeviceFormattedData> ret;
-    rackmond.get_monitor_data_formatted(ret);
+    std::vector<ModbusDeviceFmtData> ret;
+    rackmond.get_fmt_data(ret);
+    resp["data"] = ret;
+  } else if (cmd == "value_data") {
+    std::vector<ModbusDeviceValueData> ret;
+    rackmond.get_value_data(ret);
     resp["data"] = ret;
   } else if (cmd == "profile") {
     resp["data"] = rackmond.get_profile_data();

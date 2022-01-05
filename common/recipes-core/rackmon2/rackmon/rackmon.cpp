@@ -182,22 +182,30 @@ std::vector<ModbusDeviceStatus> Rackmon::list_devices() {
   return ret;
 }
 
-void Rackmon::get_monitor_data(std::vector<ModbusDeviceMonitorData>& ret) {
+void Rackmon::get_raw_data(std::vector<ModbusDeviceRawData>& ret) {
   ret.clear();
   std::shared_lock lock(devices_mutex);
   std::transform(
       devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
-        return kv.second->get_monitor_data();
+        return kv.second->get_raw_data();
       });
 }
 
-void Rackmon::get_monitor_data_formatted(
-    std::vector<ModbusDeviceFormattedData>& ret) {
+void Rackmon::get_fmt_data(std::vector<ModbusDeviceFmtData>& ret) {
   ret.clear();
   std::shared_lock lock(devices_mutex);
   std::transform(
       devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
-        return kv.second->get_formatted_data();
+        return kv.second->get_fmt_data();
+      });
+}
+
+void Rackmon::get_value_data(std::vector<ModbusDeviceValueData>& ret) {
+  ret.clear();
+  std::shared_lock lock(devices_mutex);
+  std::transform(
+      devices.begin(), devices.end(), std::back_inserter(ret), [](auto& kv) {
+        return kv.second->get_value_data();
       });
 }
 

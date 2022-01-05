@@ -239,6 +239,37 @@ TEST_F(ModbusDeviceTest, WriteMultipleReg) {
   dev.WriteMultipleRegisters(0x64, regs);
 }
 
+TEST_F(ModbusDeviceTest, ReadFileRecord) {
+  // Request and response are copied from
+  // Page 33, (Adds addr to the head)
+  // https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf
+  EXPECT_CALL(
+      get_modbus(),
+      command(
+          encodeMsgContentEqual(0x32140E0600040001000206000300090002_EM),
+          _,
+          19200,
+          modbus_time::zero(),
+          modbus_time::zero()))
+      .Times(1)
+      .WillOnce(SetMsgDecode<1>(0x32140C05060DFE0020050633CD0040_EM));
+
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap());
+
+  std::vector<FileRecord> records(2);
+  records[0].data.resize(2);
+  records[0].file_num = 4;
+  records[0].record_num = 1;
+  records[1].data.resize(2);
+  records[1].file_num = 3;
+  records[1].record_num = 9;
+  dev.ReadFileRecord(records);
+  ASSERT_EQ(records[0].data[0], 0x0DFE);
+  ASSERT_EQ(records[0].data[1], 0x20);
+  ASSERT_EQ(records[1].data[0], 0x33CD);
+  ASSERT_EQ(records[1].data[1], 0x0040);
+}
+
 TEST_F(ModbusDeviceTest, DeviceStatus) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
   ModbusDeviceStatus status = dev.get_status();

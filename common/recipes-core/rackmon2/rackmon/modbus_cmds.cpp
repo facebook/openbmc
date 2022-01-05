@@ -118,3 +118,54 @@ void WriteMultipleRegistersResp::decode() {
   check_value("starting_addr", starting_addr, expected_starting_addr);
   check_value("reg_count", reg_count, expected_reg_count);
 }
+
+ReadFileRecordReq::ReadFileRecordReq(
+    uint8_t a,
+    const std::vector<FileRecord>& rec)
+    : dev_addr(a), records(rec) {
+  addr = a;
+}
+
+void ReadFileRecordReq::encode() {
+  *this << dev_addr << function << uint8_t(0);
+  uint8_t& bytes = raw[2];
+  for (auto& rec : records) {
+    *this << reference_type << rec.file_num << rec.record_num
+          << uint16_t(rec.data.size());
+  }
+  bytes = len - 3;
+  finalize();
+}
+
+ReadFileRecordResp::ReadFileRecordResp(
+    uint8_t a,
+    std::vector<FileRecord>& rec)
+    : dev_addr(a), records(rec) {
+  // addr(1), func(1), bytes(1) ... CRC(2)
+  len = 5;
+  for (auto& r : rec) {
+    // len(1), type(1), data(N * 2)
+    len += 2 + (2 * r.data.size());
+  }
+}
+
+void ReadFileRecordResp::decode() {
+  validate();
+  // len includes addr,func,data_len, so get the expected
+  // data_len by subtracting 3 from the length after chopping
+  // off the CRC.
+  uint8_t bytes_exp = len - 3;
+  for (auto it = records.rbegin(); it != records.rend(); it++) {
+    uint8_t ref, flen;
+    FileRecord& rec = *it;
+    *this >> rec.data >> ref >> flen;
+    check_value("reference", ref, 0x6);
+    check_value("field_size", flen, 1 + (rec.data.size() * 2));
+  }
+  uint8_t data_len, got_addr;
+  *this >> data_len >> function >> got_addr;
+  check_value("data_len", data_len, bytes_exp);
+  check_value("function", function, expected_function);
+  check_value("addr", got_addr, dev_addr);
+  check_value("length", len, 0);
+}

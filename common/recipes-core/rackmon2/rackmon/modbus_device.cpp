@@ -70,6 +70,12 @@ void ModbusDevice::WriteMultipleRegisters(
   command(req, resp);
 }
 
+void ModbusDevice::ReadFileRecord(std::vector<FileRecord>& records) {
+  ReadFileRecordReq req(addr, records);
+  ReadFileRecordResp resp(addr, records);
+  command(req, resp);
+}
+
 void ModbusDevice::monitor() {
   uint32_t timestamp = std::time(0);
   std::unique_lock lk(register_list_mutex);

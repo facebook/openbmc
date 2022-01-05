@@ -95,3 +95,31 @@ struct WriteMultipleRegistersResp : public Msg {
   void decode() override;
   using Msg::encode;
 };
+
+//---------- Read File Record ----------------
+struct FileRecord {
+  uint16_t file_num = 0;
+  uint16_t record_num = 0;
+  std::vector<uint16_t> data{};
+  FileRecord() {}
+  explicit FileRecord(size_t num) : data(num) {}
+};
+
+struct ReadFileRecordReq : public Msg {
+  static constexpr uint8_t expected_function = 0x14;
+  static constexpr uint8_t reference_type = 0x6;
+  uint8_t dev_addr = 0;
+  uint8_t function = expected_function;
+  const std::vector<FileRecord>& records;
+  ReadFileRecordReq(uint8_t a, const std::vector<FileRecord>& rec);
+  void encode() override;
+};
+
+struct ReadFileRecordResp : public Msg {
+  static constexpr uint8_t expected_function = 0x14;
+  uint8_t dev_addr = 0;
+  uint8_t function = 0;
+  std::vector<FileRecord>& records;
+  ReadFileRecordResp(uint8_t a, std::vector<FileRecord>& rec);
+  void decode() override;
+};

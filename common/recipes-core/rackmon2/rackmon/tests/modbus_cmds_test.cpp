@@ -172,3 +172,30 @@ TEST(WriteMultipleRegisters, Resp) {
   msg.Msg::operator=(0x011012340002_EM);
   msg.decode();
 }
+
+TEST(ReadFileRecord, Req) {
+  std::vector<FileRecord> record(2);
+  record[0].data.resize(2);
+  record[0].file_num = 4;
+  record[0].record_num = 1;
+  record[1].data.resize(2);
+  record[1].file_num = 3;
+  record[1].record_num = 9;
+  ReadFileRecordReq req(4, record);
+  req.encode();
+  // Mimick Page 33, (Adds addr)
+  // https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf
+  EXPECT_EQ(req, 0x04140e0600040001000206000300090002_EM);
+}
+
+TEST(ReadFileRecord, Resp) {
+  std::vector<FileRecord> record(2);
+  record[0].data.resize(2);
+  record[1].data.resize(2);
+  ReadFileRecordResp msg(4, record);
+  EXPECT_EQ(msg.len, 17);
+  // Mimick Page 33 (Adds addr to resp)
+  // https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf
+  msg.Msg::operator=(0x04140C05060DFE0020050633CD0040_EM);
+  msg.decode();
+}

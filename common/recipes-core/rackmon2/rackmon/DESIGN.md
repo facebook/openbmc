@@ -338,8 +338,10 @@ PROFILE modbus::164 : 39 ms
 this automatically clears the store. Note, if we do not retrieve the profile store, there
 is nothing clearing up the memory, there is no upper-limit. So, don't use on production :-)
 
-
 # Upcoming
 
 * Baudrate negotiation
 * Writing timestamp to the device.
+
+# References
+Protocol Specification: https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf

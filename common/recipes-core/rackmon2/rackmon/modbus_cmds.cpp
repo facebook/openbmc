@@ -1,6 +1,12 @@
 #include "modbus_cmds.hpp"
 #include <algorithm>
 
+static void
+check_value(const std::string& what, uint32_t value, uint32_t expected_value) {
+  if (value != expected_value)
+    throw bad_resp_error(what, expected_value, value);
+}
+
 ReadHoldingRegistersReq::ReadHoldingRegistersReq(
     uint8_t a,
     uint16_t reg_off,
@@ -25,14 +31,7 @@ ReadHoldingRegistersResp::ReadHoldingRegistersResp(std::vector<uint16_t>& r)
 void ReadHoldingRegistersResp::decode() {
   // addr(1), func(1), count(1), <2 * count regs>, crc(2)
   validate();
-  // Pop registers from behind.
-  for (auto it = regs.rbegin(); it != regs.rend(); it++) {
-    *this >> *it;
-  }
-  // Pop fields from behind
-  *this >> byte_count >> function >> dev_addr;
-  if (function != expected_function)
-    throw bad_resp_error("function", 0x3, function);
-  if (byte_count != (regs.size() * 2))
-    throw bad_resp_error("byte_count", regs.size() * 2, byte_count);
+  *this >> regs >> byte_count >> function >> dev_addr;
+  check_value("function", function, expected_function);
+  check_value("byte_count", byte_count, regs.size() * 2);
 }

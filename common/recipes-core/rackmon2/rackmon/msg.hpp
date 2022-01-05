@@ -31,11 +31,23 @@ struct Msg {
   Msg& operator<<(uint8_t d);
   Msg& operator<<(uint16_t d);
   Msg& operator<<(uint32_t d);
+  template <typename T>
+  Msg& operator<<(std::vector<T>& d) {
+    for (T v : d)
+      *this << v;
+    return *this;
+  }
 
   // Pop from the end.
   Msg& operator>>(uint8_t& d);
   Msg& operator>>(uint16_t& d);
   Msg& operator>>(uint32_t& d);
+  template <typename T>
+  Msg& operator>>(std::vector<T>& d) {
+    for (auto it = d.rbegin(); it != d.rend(); it++)
+      *this >> *it;
+    return *this;
+  }
 
   constexpr auto begin() noexcept {
     return raw.begin();

@@ -58,6 +58,46 @@ TEST(Msg, TestMsgStream) {
   EXPECT_EQ(msg.len, 0);
 }
 
+TEST(Msg, TestStreamVectors) {
+  Msg msg;
+  std::vector<uint8_t> v8{1, 2, 3};
+  msg << v8;
+  EXPECT_EQ(msg.len, 3);
+  EXPECT_EQ(msg.raw[0], 0x1);
+  EXPECT_EQ(msg.raw[1], 0x2);
+  EXPECT_EQ(msg.raw[2], 0x3);
+  std::fill(v8.begin(), v8.end(), 0);
+  msg >> v8;
+  EXPECT_EQ(v8[0], 1);
+  EXPECT_EQ(v8[1], 2);
+  EXPECT_EQ(v8[2], 3);
+  msg.clear();
+
+  std::vector<uint16_t> v16{0x1122, 0x3344};
+  msg << v16;
+  EXPECT_EQ(msg.len, 4);
+  EXPECT_EQ(msg.raw[0], 0x11);
+  EXPECT_EQ(msg.raw[1], 0x22);
+  EXPECT_EQ(msg.raw[2], 0x33);
+  EXPECT_EQ(msg.raw[3], 0x44);
+  std::fill(v16.begin(), v16.end(), 0);
+  msg >> v16;
+  EXPECT_EQ(v16[0], 0x1122);
+  EXPECT_EQ(v16[1], 0x3344);
+  msg.clear();
+
+  std::vector<uint32_t> v32{0x11223344};
+  msg << v32;
+  EXPECT_EQ(msg.len, 4);
+  EXPECT_EQ(msg.raw[0], 0x11);
+  EXPECT_EQ(msg.raw[1], 0x22);
+  EXPECT_EQ(msg.raw[2], 0x33);
+  EXPECT_EQ(msg.raw[3], 0x44);
+  std::fill(v32.begin(), v32.end(), 0);
+  msg >> v32;
+  EXPECT_EQ(v32[0], 0x11223344);
+}
+
 TEST(Msg, TestUnderflow) {
   Msg msg;
   uint8_t v8 = 0x1;

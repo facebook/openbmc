@@ -138,16 +138,16 @@ void Rackmon::scan() {
     it = possible_dev_addrs.begin();
 }
 
-void Rackmon::start() {
-  auto start_thread = [this](auto func) {
+void Rackmon::start(poll_interval interval) {
+  auto start_thread = [this](auto func, auto intr) {
     threads.emplace_back(
-        std::make_unique<PollThread<Rackmon>>(func, this, 2min));
+        std::make_unique<PollThread<Rackmon>>(func, this, intr));
     threads.back()->start();
   };
   if (threads.size() != 0)
     throw std::runtime_error("Already running");
-  start_thread(&Rackmon::scan);
-  start_thread(&Rackmon::monitor);
+  start_thread(&Rackmon::scan, interval);
+  start_thread(&Rackmon::monitor, interval);
 }
 
 void Rackmon::stop() {

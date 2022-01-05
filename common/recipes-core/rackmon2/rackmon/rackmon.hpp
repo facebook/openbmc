@@ -65,7 +65,7 @@ class Rackmon {
   void load(const std::string& conf_path, const std::string& regmap_dir);
 
   // Start the monitoring/scanning loops
-  void start();
+  void start(poll_interval interval = std::chrono::minutes(3));
   // Stop the monitoring/scanning loops
   void stop();
 

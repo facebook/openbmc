@@ -506,6 +506,8 @@ pal_sled_cycle(void) {
   int ret;
   int i = 0;
   uint8_t bmc_location = 0, is_fru_present = 0, status = 0;
+  uint8_t tbuf[2] = {0};
+  int tlen = 0, retry = 0, i2cfd = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -525,7 +527,29 @@ pal_sled_cycle(void) {
       }
       pal_set_bic_power_off(i);
     }
-    ret = system("i2cset -y 12 0xf 0x2b 0x1 w &> /dev/null");
+
+    i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open %d, error: %s", __func__, CPLD_PWR_CTRL_BUS, strerror(errno));
+      return -1;
+    }
+  
+    tbuf[0] = 0x2B;
+    tbuf[1] = 0x01;
+    tlen = 2;
+    retry = 0;
+    while (retry < MAX_READ_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+    if (retry == MAX_READ_RETRY) {
+      syslog(LOG_WARNING, "%s() Failed to do sled cycle, max retry: %d", __func__, retry);
+    }
   } else {
     if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) {
       syslog(LOG_CRIT, "Set NIC PERST failed.\n");

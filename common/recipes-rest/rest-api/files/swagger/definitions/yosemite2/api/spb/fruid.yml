@@ -14,6 +14,48 @@ paths:
             type: object
             additionalProperties: false
             properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Product Version: 
+                    type: string
+                  Product Name: 
+                    type: string
+                  Board Serial: 
+                    type: string
+                  Product Custom Data 2: 
+                    type: string
+                  Board Product: 
+                    type: string
+                  Product Manufacturer: 
+                    type: string
+                  Board Mfg Date: 
+                    type: string
+                  Chassis Type: 
+                    type: string
+                  Chassis Part Number: 
+                    type: string
+                  Product Custom Data 1: 
+                    type: string
+                  Product Serial: 
+                    type: string
+                  Board Part Number: 
+                    type: string
+                  Product Asset Tag: 
+                    type: string
+                  Chassis Serial Number: 
+                    type: string
+                  Board Mfg: 
+                    type: string
+                  Product Part Number: 
+                    type: string
+                  Board Custom Data 1: 
+                    type: string
+                  Board FRU ID: 
+                    type: string
+                  Product FRU ID: 
+                    type: string
               Resources: 
                 type: array
                 items: 
@@ -22,46 +64,4 @@ paths:
                 type: array
                 items: 
                   type: string
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Product Serial: 
-                    type: string
-                  Product FRU ID: 
-                    type: string
-                  Product Part Number: 
-                    type: string
-                  Chassis Type: 
-                    type: string
-                  Product Version: 
-                    type: string
-                  Product Manufacturer: 
-                    type: string
-                  Board Product: 
-                    type: string
-                  Board FRU ID: 
-                    type: string
-                  Board Serial: 
-                    type: string
-                  Product Custom Data 1: 
-                    type: string
-                  Chassis Serial Number: 
-                    type: string
-                  Product Custom Data 2: 
-                    type: string
-                  Product Asset Tag: 
-                    type: string
-                  Board Part Number: 
-                    type: string
-                  Board Mfg Date: 
-                    type: string
-                  Product Name: 
-                    type: string
-                  Board Mfg: 
-                    type: string
-                  Board Custom Data 1: 
-                    type: string
-                  Chassis Part Number: 
-                    type: string
             

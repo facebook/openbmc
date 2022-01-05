@@ -14,6 +14,16 @@ paths:
             type: object
             additionalProperties: false
             properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Note #2: Boot Order No.: 
+                    type: string
+                  Note #1: Actions Format:: 
+                    type: string
+                  Boot Order: 
+                    type: string
               Resources: 
                 type: array
                 items: 
@@ -22,14 +32,4 @@ paths:
                 type: array
                 items: 
                   type: string
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Boot Order: 
-                    type: string
-                  Note #1: Actions Format:: 
-                    type: string
-                  Note #2: Boot Order No.: 
-                    type: string
             

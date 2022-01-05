@@ -14,90 +14,67 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Resources: 
-                type: array
-                items: 
-                  type: string
-              Actions: 
-                type: array
-                items: 
-                  type: string
               Information: 
                 type: object
                 additionalProperties: false
                 properties: 
-                  load-5: 
+                  Reset Reason: 
                     type: string
-                  MTD Parts: 
-                    type: array
-                    items: 
-                      type: string
-                  Uptime: 
+                  TPM FW version: 
+                    type: string
+                  TPM TCG version: 
+                    type: string
+                  Memory Usage: 
                     type: string
                   u-boot version: 
-                    type: string
-                  kernel version: 
                     type: string
                   vboot: 
                     type: object
                     additionalProperties: false
                     properties: 
-                      status: 
-                        type: string
-                      recovery_boot: 
-                        type: string
-                      cert_fallback_time: 
-                        type: string
-                      status_crc: 
-                        type: string
-                      tpm_status: 
-                        type: string
-                      software_enforce: 
-                        type: string
-                      hardware_enforce: 
-                        type: string
                       force_recovery: 
-                        type: string
-                      recovery_retried: 
                         type: string
                       cert_time: 
                         type: string
+                      cert_fallback_time: 
+                        type: string
+                      recovery_boot: 
+                        type: string
                       uboot_time: 
                         type: string
-                      uboot_fallback_time: 
+                      status_crc: 
                         type: string
                       status_text: 
                         type: string
-                  Memory Usage: 
+                      tpm_status: 
+                        type: string
+                      uboot_fallback_time: 
+                        type: string
+                      software_enforce: 
+                        type: string
+                      recovery_retried: 
+                        type: string
+                      hardware_enforce: 
+                        type: string
+                      status: 
+                        type: string
+                  CPU Usage: 
                     type: string
+                  kernel version: 
+                    type: string
+                  Secondary Boot Triggered: 
+                    type: boolean
+                  At-Scale-Debug Running: 
+                    type: boolean
                   Description: 
-                    type: string
-                  SPI1 Vendor: 
-                    type: string
-                  open-fds: 
-                    type: string
-                  TPM FW version: 
-                    type: string
-                  load-1: 
                     type: string
                   uptime: 
                     type: string
-                  At-Scale-Debug Running: 
-                    type: boolean
-                  Secondary Boot Triggered: 
-                    type: boolean
-                  CPU Usage: 
-                    type: string
-                  Reset Reason: 
-                    type: string
-                  mmc-info: 
-                    type: object
-                    format: nullable
-                  load-15: 
-                    type: string
                   OpenBMC Version: 
                     type: string
-                  TPM TCG version: 
+                  open-fds: 
+                    type: string
+                  load-15: 
                     type: string
                   SPI0 Vendor: 
                     type: string
@@ -107,15 +84,6 @@ paths:
                     type: object
                     additionalProperties: false
                     properties: 
-                      MemAvailable: 
-                        type: number
-                        format: int32
-                      Buffers: 
-                        type: number
-                        format: int32
-                      Cached: 
-                        type: number
-                        format: int32
                       Shmem: 
                         type: number
                         format: int32
@@ -125,4 +93,36 @@ paths:
                       MemTotal: 
                         type: number
                         format: int32
+                      Cached: 
+                        type: number
+                        format: int32
+                      Buffers: 
+                        type: number
+                        format: int32
+                      MemAvailable: 
+                        type: number
+                        format: int32
+                  SPI1 Vendor: 
+                    type: string
+                  mmc-info: 
+                    type: object
+                    format: nullable
+                  MTD Parts: 
+                    type: array
+                    items: 
+                      type: string
+                  Uptime: 
+                    type: string
+                  load-1: 
+                    type: string
+                  load-5: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
             

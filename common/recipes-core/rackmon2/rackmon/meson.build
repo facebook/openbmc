@@ -29,6 +29,10 @@ test_srcs = common + files(
     'tests/dev_test.cpp',
     'tests/modbus_cmds_test.cpp',
     'tests/modbus_test.cpp',
+    'tests/register_descriptor_test.cpp',
+    'tests/register_value_test.cpp',
+    'tests/register_test.cpp',
+    'tests/regmap_test.cpp',
 )
 
 cc = meson.get_compiler('cpp')

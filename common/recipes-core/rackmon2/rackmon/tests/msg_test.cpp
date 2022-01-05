@@ -121,3 +121,49 @@ TEST(Msg, TestCRC) {
   EXPECT_THROW(msg.wrap_validate(), crc_exception);
   EXPECT_THROW(msg.wrap_decode(), crc_exception);
 }
+
+TEST(Msg, ConstantLiteral) {
+  Msg msg = 0x123456789abcdef012_M;
+  ASSERT_EQ(msg.len, 9);
+  ASSERT_EQ(msg.raw[0], 0x12);
+  ASSERT_EQ(msg.raw[1], 0x34);
+  ASSERT_EQ(msg.raw[2], 0x56);
+  ASSERT_EQ(msg.raw[3], 0x78);
+  ASSERT_EQ(msg.raw[4], 0x9a);
+  ASSERT_EQ(msg.raw[5], 0xbc);
+  ASSERT_EQ(msg.raw[6], 0xde);
+  ASSERT_EQ(msg.raw[7], 0xf0);
+  ASSERT_EQ(msg.raw[8], 0x12);
+}
+
+TEST(Msg, constIter) {
+  const Msg msg = 0x1234_M;
+  auto it = msg.begin();
+  ASSERT_EQ(*it, 0x12);
+  it++;
+  ASSERT_EQ(*it, 0x34);
+  it++;
+  ASSERT_EQ(it, msg.end());
+}
+
+TEST(Msg, EqualCompare) {
+  Msg msg1 = 0x12345678_M;
+  Msg msg2 = 0x123456_M;
+  ASSERT_NE(msg1, msg2);
+  msg2 << uint8_t(0x78);
+  ASSERT_EQ(msg1, msg2);
+}
+
+TEST(Msg, CopyConstructor) {
+  Msg msg1 = 0x12345678_M;
+  Msg msg2(msg1);
+  ASSERT_EQ(msg1, msg2);
+}
+
+TEST(Msg, AssignmentOperator) {
+  Msg msg1 = 0x12345678_M;
+  Msg msg2 = 0x1234_M;
+  ASSERT_NE(msg1, msg2);
+  msg2 = msg1;
+  ASSERT_EQ(msg1, msg2);
+}

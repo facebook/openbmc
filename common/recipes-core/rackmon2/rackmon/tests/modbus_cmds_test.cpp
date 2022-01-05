@@ -8,14 +8,13 @@ using namespace testing;
 TEST(ReadHoldingRegisters, Req) {
   ReadHoldingRegistersReq msg(0x1, 0x1234, 0x20);
   msg.encode();
-  EXPECT_EQ(msg.len, 8);
+  // addr(1) = 0x01,
+  // func(1) = 0x03,
+  // reg_off(2) = 0x1234,
+  // reg_cnt(2) = 0x0020,
+  // crc(2) (Pre-computed)
+  EXPECT_EQ(msg, 0x01031234002000a4_M);
   EXPECT_EQ(msg.addr, 0x1);
-  EXPECT_EQ(msg.raw[0], 0x1);
-  EXPECT_EQ(msg.raw[1], 0x3);
-  EXPECT_EQ(msg.raw[2], 0x12);
-  EXPECT_EQ(msg.raw[3], 0x34);
-  EXPECT_EQ(msg.raw[4], 0x0);
-  EXPECT_EQ(msg.raw[5], 0x20);
   uint16_t crc;
   msg >> crc;
   EXPECT_EQ(crc, 0xa4);
@@ -23,24 +22,31 @@ TEST(ReadHoldingRegisters, Req) {
 
 TEST(ReadHoldingRegisters, GoodResp) {
   std::vector<uint16_t> vec(3);
+  std::vector<uint16_t> exp{0x1122, 0x3344, 0x5566};
   ReadHoldingRegistersResp msg(vec);
   EXPECT_EQ(msg.len, 11);
-  std::vector<uint8_t> raw{0xa, 0x3, 0x6, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x59, 0x28};
-  std::copy(raw.begin(), raw.end(), msg.raw.begin());
+  // addr(1) = 0x0a,
+  // func(1) = 0x03,
+  // bytes(1) = 0x06,
+  // regs(3*2) = 0x1122, 0x3344, 0x5566
+  // crc(2) = 0x5928 (pre-computed)
+  msg.Msg::operator=(0x0a03061122334455665928_M);
   msg.decode();
   EXPECT_EQ(msg.dev_addr, 0xa);
   EXPECT_EQ(msg.addr, 0xa);
-  EXPECT_EQ(vec[0], 0x1122);
-  EXPECT_EQ(vec[1], 0x3344);
-  EXPECT_EQ(vec[2], 0x5566);
+  EXPECT_EQ(vec, exp);
 }
 
 TEST(ReadHoldingRegisters, BadCRCResp) {
   std::vector<uint16_t> vec(3);
   ReadHoldingRegistersResp msg(vec);
   EXPECT_EQ(msg.len, 11);
-  std::vector<uint8_t> raw{0xa, 0x3, 0x6, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x59, 0x29};
-  std::copy(raw.begin(), raw.end(), msg.raw.begin());
+  // addr(1) = 0x0a,
+  // func(1) = 0x03,
+  // bytes(1) = 0x06,
+  // regs(3*2) = 0x1122, 0x3344, 0x5566
+  // crc(2) = 0x5929 (should be 0x5928)
+  msg.Msg::operator=(0x0a03061122334455665929_M);
   EXPECT_THROW(msg.decode(), crc_exception);
 }
 
@@ -49,8 +55,12 @@ TEST(ReadHoldingRegisters, BadFuncResp) {
   ReadHoldingRegistersResp msg(vec);
   EXPECT_EQ(msg.len, 11);
   // Good CRC, bad Function
-  std::vector<uint8_t> raw{0xa, 0x4, 0x6, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x18, 0xce};
-  std::copy(raw.begin(), raw.end(), msg.raw.begin());
+  // addr(1) = 0x0a,
+  // func(1) = 0x04 (should be 0x03),
+  // bytes(1) = 0x06,
+  // regs(3*2) = 0x1122, 0x3344, 0x5566
+  // crc(2) = 0x18ce
+  msg.Msg::operator=(0x0a040611223344556618ce_M);
   EXPECT_THROW(msg.decode(), bad_resp_error);
 }
 
@@ -59,7 +69,11 @@ TEST(ReadHoldingRegisters, BadBytesResp) {
   ReadHoldingRegistersResp msg(vec);
   EXPECT_EQ(msg.len, 11);
   // Good CRC, bad byte count
-  std::vector<uint8_t> raw{0xa, 0x3, 0x4, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x7a, 0xe8};
-  std::copy(raw.begin(), raw.end(), msg.raw.begin());
+  // addr(1) = 0x0a,
+  // func(1) = 0x03,
+  // bytes(1) = 0x04 (should be 6),
+  // regs(3*2) = 0x1122, 0x3344, 0x5566
+  // crc(2) = 0x7ae8
+  msg.Msg::operator=(0x0a03041122334455667ae8_M);
   EXPECT_THROW(msg.decode(), bad_resp_error);
 }

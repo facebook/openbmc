@@ -138,16 +138,12 @@ TEST_F(ModbusTest, Command) {
       .WillOnce(
           Return(ByMove(make_cmd_dev(115200, write_exp_buf, 10, resp_buf, 9))));
   bus.initialize(conf);
-  Msg req, resp;
-  std::vector<uint8_t> exp_send = {0, 1, 2, 3, 4, 5, 6, 7};
-  std::copy(exp_send.begin(), exp_send.end(), req.raw.begin());
-  req.len = 8;
+  Msg req = 0x0001020304050607_M;
+  Msg resp;
   resp.len = 9;
   bus.command(req, resp, 115200, modbus_time::zero(), modbus_time::zero());
-  std::vector<uint8_t> exp_resp = {0, 1, 2, 3, 4, 5, 6};
-  ASSERT_EQ(resp.len, 7);
-  ASSERT_EQ(
-      std::equal(exp_resp.begin(), exp_resp.end(), resp.raw.begin()), true);
+  Msg exp_resp = 0x00010203040506_M;
+  ASSERT_EQ(resp, exp_resp);
 }
 
 TEST_F(ModbusTest, CommandBadResp) {
@@ -167,10 +163,8 @@ TEST_F(ModbusTest, CommandBadResp) {
       .WillOnce(
           Return(ByMove(make_cmd_dev(115200, write_exp_buf, 10, resp_buf, 9))));
   bus.initialize(conf);
-  Msg req, resp;
-  std::vector<uint8_t> exp_send = {0, 1, 2, 3, 4, 5, 6, 7};
-  std::copy(exp_send.begin(), exp_send.end(), req.raw.begin());
-  req.len = 8;
+  Msg req = 0x0001020304050607_M;
+  Msg resp;
   resp.len = 9;
   EXPECT_THROW(
       bus.command(req, resp, 115200, modbus_time::zero(), modbus_time::zero()),

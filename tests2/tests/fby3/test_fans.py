@@ -20,7 +20,6 @@
 import unittest
 
 from common.base_fans_test import CommonFanUtilBasedFansTest
-from pal import pal_get_tach_cnt, pal_get_pwm_cnt
 from utils.cit_logger import Logger
 from utils.test_utils import qemu_check
 
@@ -28,6 +27,8 @@ from utils.test_utils import qemu_check
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
     def setUp(self):
+        from pal import pal_get_tach_cnt, pal_get_pwm_cnt
+
         Logger.start(name=self._testMethodName)
 
         tach_cnt = pal_get_tach_cnt()

@@ -4,9 +4,9 @@
 #include <functional>
 #include <thread>
 
+using poll_interval = std::chrono::seconds;
 template <class T>
 class PollThread {
-  using poll_interval = std::chrono::seconds;
   std::mutex m{};
   std::condition_variable cv{};
   std::thread tid{};

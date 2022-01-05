@@ -171,6 +171,55 @@ void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
   resp.len += 2;
 }
 
+void Rackmon::ReadHoldingRegisters(
+    uint8_t addr,
+    uint16_t reg_off,
+    std::vector<uint16_t>& regs) {
+  RACKMON_PROFILE_SCOPE(
+      raw_cmd, "readRegs::" + std::to_string(int(addr)), profile_store);
+  std::shared_lock lock(devices_mutex);
+  if (!devices.at(addr)->is_active()) {
+    throw std::exception();
+  }
+  devices.at(addr)->ReadHoldingRegisters(reg_off, regs);
+}
+
+void Rackmon::WriteSingleRegister(
+    uint8_t addr,
+    uint16_t reg_off,
+    uint16_t value) {
+  RACKMON_PROFILE_SCOPE(
+      raw_cmd, "writeReg::" + std::to_string(int(addr)), profile_store);
+  std::shared_lock lock(devices_mutex);
+  if (!devices.at(addr)->is_active()) {
+    throw std::exception();
+  }
+  devices.at(addr)->WriteSingleRegister(reg_off, value);
+}
+
+void Rackmon::WriteMultipleRegisters(
+    uint8_t addr,
+    uint16_t reg_off,
+    std::vector<uint16_t>& values) {
+  RACKMON_PROFILE_SCOPE(
+      raw_cmd, "writeRegs::" + std::to_string(int(addr)), profile_store);
+  std::shared_lock lock(devices_mutex);
+  if (!devices.at(addr)->is_active()) {
+    throw std::exception();
+  }
+  devices.at(addr)->WriteMultipleRegisters(reg_off, values);
+}
+
+void Rackmon::ReadFileRecord(uint8_t addr, std::vector<FileRecord>& records) {
+  RACKMON_PROFILE_SCOPE(
+      raw_cmd, "ReadFile::" + std::to_string(int(addr)), profile_store);
+  std::shared_lock lock(devices_mutex);
+  if (!devices.at(addr)->is_active()) {
+    throw std::exception();
+  }
+  devices.at(addr)->ReadFileRecord(records);
+}
+
 std::vector<ModbusDeviceStatus> Rackmon::list_devices() {
   std::shared_lock lock(devices_mutex);
   std::vector<ModbusDeviceStatus> ret;

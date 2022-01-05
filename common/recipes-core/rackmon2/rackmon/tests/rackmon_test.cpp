@@ -203,7 +203,22 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   rreq.raw[0] = 100; // Some unknown address, this should throw
   rreq.raw[1] = 0x3;
   rreq.len = 2;
+  std::vector<uint16_t> read_regs;
   EXPECT_THROW(mon.rawCmd(rreq, rresp, 1s), std::out_of_range);
+
+  // Only difference of implementations between Rackmon and ModbusDevice
+  // is rackmon checks validity of address. Check that we are throwing
+  // correctly. The actual functionality is tested in modbus_device_test.cpp.
+  EXPECT_THROW(
+      mon.ReadHoldingRegisters(100, 0x123, read_regs), std::out_of_range);
+  EXPECT_THROW(mon.WriteSingleRegister(100, 0x123, 0x1234), std::out_of_range);
+  EXPECT_THROW(
+      mon.WriteMultipleRegisters(100, 0x123, read_regs), std::out_of_range);
+  std::vector<FileRecord> records(1);
+  records[0].data.resize(2);
+  EXPECT_THROW(mon.ReadFileRecord(100, records), std::out_of_range);
+
+  // Use a known handled response.
   ReadHoldingRegistersReq req(161, 0, 8);
   std::vector<uint16_t> regs(8);
   ReadHoldingRegistersResp resp(regs);

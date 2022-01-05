@@ -88,6 +88,24 @@ class Rackmon {
   // Executes the Raw command. Throws an exception on error.
   void rawCmd(Msg& req, Msg& resp, modbus_time timeout);
 
+  // Read registers
+  void ReadHoldingRegisters(
+      uint8_t addr,
+      uint16_t reg_off,
+      std::vector<uint16_t>& regs);
+
+  // Write Single Register
+  void WriteSingleRegister(uint8_t addr, uint16_t reg_off, uint16_t value);
+
+  // Write multiple registers
+  void WriteMultipleRegisters(
+      uint8_t addr,
+      uint16_t reg_off,
+      std::vector<uint16_t>& values);
+
+  // Read File Record
+  void ReadFileRecord(uint8_t addr, std::vector<FileRecord>& records);
+
   // Get status of devices
   std::vector<ModbusDeviceStatus> list_devices();
 

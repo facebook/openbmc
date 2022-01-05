@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include "msg.hpp"
 
 struct bad_resp_error : public std::runtime_error {
@@ -31,4 +32,33 @@ struct ReadHoldingRegistersResp : public Msg {
   std::vector<uint16_t>& regs;
   explicit ReadHoldingRegistersResp(std::vector<uint16_t>& r);
   void decode() override;
+};
+
+//----------- Write Single Register -------
+struct WriteSingleRegisterReq : public Msg {
+  static constexpr uint8_t expected_function = 0x6;
+  uint8_t dev_addr = 0;
+  uint8_t function = expected_function;
+  uint16_t reg_off = 0;
+  uint16_t value = 0;
+  WriteSingleRegisterReq(uint8_t a, uint16_t off, uint16_t val);
+  WriteSingleRegisterReq() {}
+  void encode() override;
+  using Msg::decode;
+};
+
+struct WriteSingleRegisterResp : public Msg {
+  static constexpr uint8_t expected_function = 0x6;
+  uint8_t dev_addr = 0;
+  uint8_t function = 0;
+  uint16_t reg_off = 0;
+  uint8_t expected_dev_addr = 0;
+  uint16_t expected_reg_off = 0;
+  uint16_t value = 0;
+  std::optional<uint16_t> expected_value{};
+  WriteSingleRegisterResp(uint8_t a, uint16_t off);
+  WriteSingleRegisterResp(uint8_t a, uint16_t off, uint16_t val);
+  WriteSingleRegisterResp() {}
+  void decode() override;
+  using Msg::encode;
 };

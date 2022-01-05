@@ -52,6 +52,14 @@ void ModbusDevice::ReadHoldingRegisters(
   command(req, resp);
 }
 
+void ModbusDevice::WriteSingleRegister(
+    uint16_t register_offset,
+    uint16_t value) {
+  WriteSingleRegisterReq req(addr, register_offset, value);
+  WriteSingleRegisterResp resp(addr, register_offset);
+  command(req, resp);
+}
+
 void ModbusDevice::monitor() {
   uint32_t timestamp = std::time(0);
   std::unique_lock lk(register_list_mutex);

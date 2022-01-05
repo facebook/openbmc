@@ -77,3 +77,50 @@ TEST(ReadHoldingRegisters, BadBytesResp) {
   msg.Msg::operator=(0x0a03041122334455667ae8_M);
   EXPECT_THROW(msg.decode(), bad_resp_error);
 }
+
+TEST(WriteSingleRegister, Req) {
+  WriteSingleRegisterReq msg(0x1, 0x1234, 0x5678);
+  msg.encode();
+  // addr(1) 0x01
+  // func(1) 0x06
+  // reg_off(2) 0x1234
+  // val(2) 0x5678
+  EXPECT_EQ(msg, 0x010612345678_EM);
+  // we have already tested CRC, just ensure decode
+  // does not throw.
+  msg.decode();
+}
+
+TEST(WriteSingleRegister, Resp) {
+  WriteSingleRegisterResp msg(0x1, 0x1234);
+  EXPECT_EQ(msg.len, 8);
+  // addr(1) 0x01
+  // func(1) 0x06
+  // reg_off(2) 0x1234
+  // val(2) 0x5678
+  msg.Msg::operator=(0x010612345678_EM);
+  msg.decode();
+  EXPECT_EQ(msg.value, 0x5678);
+}
+
+TEST(WriteSingleRegister, RespSelfTest) {
+  WriteSingleRegisterResp msg(0x1, 0x1234, 0x5678);
+  EXPECT_EQ(msg.len, 8);
+  // addr(1) 0x01
+  // func(1) 0x06
+  // reg_off(2) 0x1234
+  // val(2) 0x5678
+  msg.Msg::operator=(0x010612345678_EM);
+  msg.decode();
+}
+
+TEST(WriteSingleRegister, RespSelfTestFail) {
+  WriteSingleRegisterResp msg(0x1, 0x1234, 0x5678);
+  EXPECT_EQ(msg.len, 8);
+  // addr(1) 0x01
+  // func(1) 0x06
+  // reg_off(2) 0x1234
+  // val(2) 0x5678
+  msg.Msg::operator=(0x010612345679_EM);
+  EXPECT_THROW(msg.decode(), bad_resp_error);
+}

@@ -61,6 +61,8 @@ class ModbusDevice {
       uint16_t register_offset,
       std::vector<uint16_t>& regs);
 
+  void WriteSingleRegister(uint16_t register_offset, uint16_t value);
+
   void monitor();
   bool is_active() const {
     return info.get_mode() == ModbusDeviceMode::ACTIVE;

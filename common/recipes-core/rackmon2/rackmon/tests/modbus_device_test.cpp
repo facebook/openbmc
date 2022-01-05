@@ -211,6 +211,34 @@ TEST_F(ModbusDeviceTest, WriteSingleReg) {
   dev.WriteSingleRegister(0x64, 0x1122);
 }
 
+TEST_F(ModbusDeviceTest, WriteMultipleReg) {
+  EXPECT_CALL(
+      get_modbus(),
+      command(
+          // addr(1) = 0x32,
+          // func(1) = 0x10,
+          // reg_off(2) = 0x0064,
+          // reg_cnt(2) = 0x0002,
+          // bytes(1) = 0x04,
+          // regs(2*2) = 0x1122 3344
+          encodeMsgContentEqual(0x3210006400020411223344_EM),
+          _,
+          19200,
+          modbus_time::zero(),
+          modbus_time::zero()))
+      .Times(1)
+      // addr(1) = 0x32,
+      // func(1) = 0x10,
+      // reg_off(2) = 0x0064,
+      // reg_cnt(2) = 0x0002
+      .WillOnce(SetMsgDecode<1>(0x321000640002_EM));
+
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap());
+
+  std::vector<uint16_t> regs{0x1122, 0x3344};
+  dev.WriteMultipleRegisters(0x64, regs);
+}
+
 TEST_F(ModbusDeviceTest, DeviceStatus) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
   ModbusDeviceStatus status = dev.get_status();

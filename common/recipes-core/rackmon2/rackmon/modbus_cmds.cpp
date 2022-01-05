@@ -71,3 +71,50 @@ void WriteSingleRegisterResp::decode() {
   if (expected_value)
     check_value("value", value, expected_value.value());
 }
+
+WriteMultipleRegistersReq::WriteMultipleRegistersReq(uint8_t a, uint16_t off)
+    : dev_addr(a), starting_addr(off) {
+  // addr(1), function(1), reg_start(2), reg_count(2), bytes(1)
+  addr = a;
+  len = 7;
+}
+
+void WriteMultipleRegistersReq::encode() {
+  if (len <= 7)
+    throw std::underflow_error("No registers to write");
+  uint8_t data_len = len - 7;
+  // Pad if the result does not fit in whole 16bit regs.
+  // XXX We probably need to throw here instead of padding.
+  if ((data_len % 2) != 0) {
+    *this << uint8_t(0);
+    data_len += 1;
+  }
+  // Count the total registers.
+  reg_count = data_len / 2;
+  len = 0; // Clear so we can get to the header
+  *this << dev_addr << function << starting_addr << reg_count << data_len;
+  len += data_len;
+  finalize();
+}
+
+WriteMultipleRegistersResp::WriteMultipleRegistersResp(
+    uint8_t a,
+    uint16_t off,
+    uint16_t cnt)
+    : expected_dev_addr(a),
+      expected_starting_addr(off),
+      expected_reg_count(cnt) {
+  // addr(1), func(1), reg_off(2), reg_count(2), crc(2)
+  len = 8;
+}
+
+void WriteMultipleRegistersResp::decode() {
+  // addr(1), func(1), off(2), count(2), crc(2)
+  validate();
+  // Pop fields from behind
+  *this >> reg_count >> starting_addr >> function >> dev_addr;
+  check_value("dev_addr", dev_addr, expected_dev_addr);
+  check_value("function", function, expected_function);
+  check_value("starting_addr", starting_addr, expected_starting_addr);
+  check_value("reg_count", reg_count, expected_reg_count);
+}

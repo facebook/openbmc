@@ -62,3 +62,36 @@ struct WriteSingleRegisterResp : public Msg {
   void decode() override;
   using Msg::encode;
 };
+
+//----------- Write Multiple Registers ------
+
+// Users are expected to use the << operator to
+// push in the register contents, helps them
+// take advantage of any endian-conversions privided
+// by msg.hpp
+struct WriteMultipleRegistersReq : public Msg {
+  static constexpr uint8_t expected_function = 0x10;
+  uint8_t dev_addr = 0;
+  uint8_t function = expected_function;
+  uint16_t starting_addr = 0;
+  uint16_t reg_count = 0;
+  WriteMultipleRegistersReq(uint8_t a, uint16_t off);
+  WriteMultipleRegistersReq() {}
+  void encode() override;
+  using Msg::decode;
+};
+
+struct WriteMultipleRegistersResp : public Msg {
+  static constexpr uint8_t expected_function = 0x10;
+  uint8_t dev_addr = 0;
+  uint8_t function = 0;
+  uint16_t starting_addr = 0;
+  uint16_t reg_count = 0;
+  uint8_t expected_dev_addr = 0;
+  uint16_t expected_starting_addr = 0;
+  uint16_t expected_reg_count = 0;
+  WriteMultipleRegistersResp(uint8_t a, uint16_t off, uint16_t cnt);
+  WriteMultipleRegistersResp() {}
+  void decode() override;
+  using Msg::encode;
+};

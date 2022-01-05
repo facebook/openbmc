@@ -124,3 +124,51 @@ TEST(WriteSingleRegister, RespSelfTestFail) {
   msg.Msg::operator=(0x010612345679_EM);
   EXPECT_THROW(msg.decode(), bad_resp_error);
 }
+
+TEST(WriteMultipleRegisters, Req1Reg) {
+  WriteMultipleRegistersReq msg(0x1, 0x1234);
+  // Check if we avoid writing nothing.
+  EXPECT_THROW(msg.encode(), std::underflow_error);
+  uint16_t data = 0x5678;
+  msg << data;
+  msg.encode();
+  // addr(1) 0x01,
+  // func(1) 0x10,
+  // reg_off(2) 0x1234,
+  // reg_cnt(2) 0x0001,
+  // bytes(1) 0x02,
+  // val(2) 0x5678
+  EXPECT_EQ(msg, 0x011012340001025678_EM);
+  // we have already tested CRC, just ensure decode
+  // does not throw.
+  msg.decode();
+}
+
+TEST(WriteMultipleRegisters, Req2Reg) {
+  WriteMultipleRegistersReq msg(0x1, 0x1234);
+  // Check if we avoid writing nothing.
+  EXPECT_THROW(msg.encode(), std::underflow_error);
+  uint16_t data1 = 0x5678;
+  uint16_t data2 = 0x123;
+  msg << data1 << data2;
+  msg.encode();
+  // addr(1) 0x01,
+  // func(1) 0x10,
+  // reg_off(2) 0x1234,
+  // reg_cnt(2) 0x0002,
+  // bytes(1) 0x04,
+  // val(2*2) 0x5678 0x0123
+  EXPECT_EQ(msg, 0x0110123400020456780123_EM);
+  msg.decode();
+}
+
+TEST(WriteMultipleRegisters, Resp) {
+  WriteMultipleRegistersResp msg(0x1, 0x1234, 0x2);
+  EXPECT_EQ(msg.len, 8);
+  // addr(1) 0x01,
+  // func(1) 0x10,
+  // reg_off(2) 0x1234,
+  // reg_cnt(2) 0x0002,
+  msg.Msg::operator=(0x011012340002_EM);
+  msg.decode();
+}

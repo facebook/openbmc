@@ -60,6 +60,16 @@ void ModbusDevice::WriteSingleRegister(
   command(req, resp);
 }
 
+void ModbusDevice::WriteMultipleRegisters(
+    uint16_t register_offset,
+    std::vector<uint16_t>& value) {
+  WriteMultipleRegistersReq req(addr, register_offset);
+  for (uint16_t val : value)
+    req << val;
+  WriteMultipleRegistersResp resp(addr, register_offset, value.size());
+  command(req, resp);
+}
+
 void ModbusDevice::monitor() {
   uint32_t timestamp = std::time(0);
   std::unique_lock lk(register_list_mutex);

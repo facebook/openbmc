@@ -33,6 +33,7 @@ test_srcs = common + files(
     'tests/register_value_test.cpp',
     'tests/register_test.cpp',
     'tests/regmap_test.cpp',
+    'tests/modbus_device_test.cpp',
 )
 
 cc = meson.get_compiler('cpp')
@@ -77,6 +78,6 @@ rackmon_cli_exe = executable(
 rackmond_test = executable('test-rackmond', test_srcs,
   dependencies: test_deps,
   install_dir: 'lib/rackmon/ptest',
-  cpp_args: ['-I.'],
+  cpp_args: ['-I.', '-D__TEST__'],
 )
 test('rackmond-tests', rackmond_test)

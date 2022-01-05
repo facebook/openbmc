@@ -2,13 +2,17 @@
 #include <array>
 #include <exception>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 // Forward declaration needed to just mark it as a friend.
 class Modbus;
 
 struct crc_exception : public std::runtime_error {
-  crc_exception() : std::runtime_error("CRC Exception") {}
+  crc_exception(uint16_t exp, uint16_t got)
+      : std::runtime_error(
+            "CRC Exception: " + std::to_string(got) +
+            " != " + std::to_string(exp)) {}
 };
 
 // Modbus defines a max size of 253
@@ -26,10 +30,12 @@ struct Msg {
   // Push to the end
   Msg& operator<<(uint8_t d);
   Msg& operator<<(uint16_t d);
+  Msg& operator<<(uint32_t d);
 
   // Pop from the end.
   Msg& operator>>(uint8_t& d);
   Msg& operator>>(uint16_t& d);
+  Msg& operator>>(uint32_t& d);
 
   constexpr auto begin() noexcept {
     return raw.begin();
@@ -154,7 +160,7 @@ constexpr auto operator"" _M() {
 
 #ifdef __TEST__
 class Encoder {
-  public:
+ public:
   Encoder() {}
   static void encode(Msg& msg) {
     msg.encode();

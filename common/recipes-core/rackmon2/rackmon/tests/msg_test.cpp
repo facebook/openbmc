@@ -45,6 +45,17 @@ TEST(Msg, TestMsgStream) {
   msg << v8;
   msg.clear();
   EXPECT_EQ(msg.len, 0);
+  uint32_t v32 = 0x12345678;
+  msg << v32;
+  EXPECT_EQ(msg.len, 4);
+  EXPECT_EQ(msg.raw[0], 0x12);
+  EXPECT_EQ(msg.raw[1], 0x34);
+  EXPECT_EQ(msg.raw[2], 0x56);
+  EXPECT_EQ(msg.raw[3], 0x78);
+  uint32_t e32;
+  msg >> e32;
+  EXPECT_EQ(v32, e32);
+  EXPECT_EQ(msg.len, 0);
 }
 
 TEST(Msg, TestUnderflow) {

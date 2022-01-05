@@ -116,7 +116,7 @@ TEST_F(ModbusDeviceTest, CommandTimeout) {
 TEST_F(ModbusDeviceTest, CommandCRC) {
   EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(1)
-      .WillOnce(Throw(crc_exception()));
+      .WillOnce(Throw(crc_exception(1, 2)));
 
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 

@@ -56,7 +56,7 @@ uint16_t Msg::crc16() {
   uint8_t crc_hi = 0xFF; // high CRC byte initialized
   uint8_t crc_lo = 0xFF; // low CRC byte initialized
 
-  for (const auto &b : *this) {
+  for (const auto& b : *this) {
     size_t idx = crc_hi ^ b;
     crc_hi = crc_lo ^ table_crc_hi[idx];
     crc_lo = table_crc_lo[idx];
@@ -71,8 +71,9 @@ void Msg::finalize() {
 void Msg::validate() {
   uint16_t crc;
   *this >> crc;
-  if (crc16() != crc) {
-    throw crc_exception();
+  uint16_t exp = crc16();
+  if (exp != crc) {
+    throw crc_exception(exp, crc);
   }
 }
 
@@ -86,8 +87,18 @@ Msg& Msg::operator<<(uint8_t d) {
 Msg& Msg::operator<<(uint16_t d) {
   if ((len + 2) > raw.size())
     throw std::overflow_error("encode");
-  raw[len++] = d >> 8; // Big-endin
-  raw[len++] = d & 0xff;
+  uint8_t upper = d >> 8, lower = d & 0xffff;
+  *this << upper; // Big-endian
+  *this << lower;
+  return *this;
+}
+
+Msg& Msg::operator<<(uint32_t d) {
+  if ((len + 4) > raw.size())
+    throw std::overflow_error("encode");
+  uint16_t upper = d >> 16, lower = d & 0xffff;
+  *this << upper; // Big-endian
+  *this << lower;
   return *this;
 }
 
@@ -101,7 +112,19 @@ Msg& Msg::operator>>(uint8_t& d) {
 Msg& Msg::operator>>(uint16_t& d) {
   if (len < 2)
     throw std::underflow_error("Decode");
-  d = raw[len - 2] << 8 | raw[len - 1]; // Big-endian
-  len -= 2;
+  uint8_t upper, lower;
+  *this >> lower; // Big-endian, lower is last
+  *this >> upper;
+  d = upper << 8 | lower;
+  return *this;
+}
+
+Msg& Msg::operator>>(uint32_t& d) {
+  if (len < 4)
+    throw std::underflow_error("Decode");
+  uint16_t upper, lower;
+  *this >> lower; // Big-endian, lower is last
+  *this >> upper;
+  d = upper << 16 | lower;
   return *this;
 }

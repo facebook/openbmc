@@ -22,19 +22,8 @@ SUMMARY = "Rackmon Functionality"
 DESCRIPTION = "Rackmon Functionality"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
-# The license GPL-2.0 was removed in Hardknott.
-# Use GPL-2.0-only instead.
-def lic_file_name(d):
-    distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in [ 'rocko', 'zeus', 'dunfell' ]:
-        return "GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
-
-    return "GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
-
-LIC_FILES_CHKSUM = "\
-    file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
-    "
+LICENSE = "Apache-2.0"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 DEPENDS:append = " update-rc.d-native"
 

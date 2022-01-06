@@ -537,7 +537,7 @@ TEST(ModbusSpecialHandler, BasicHandlingStringValuePeriodic) {
           _,
           _,
           _))
-      .Times(2);
+      .Times(Between(2,3));
   ModbusSpecialHandler special;
   SpecialHandlerInfo& info = special;
   info = R"({
@@ -558,7 +558,7 @@ TEST(ModbusSpecialHandler, BasicHandlingStringValuePeriodic) {
   std::this_thread::sleep_for(250ms);
   special.handle(
       dev); // This should do nothing as well, we are less than 1 sec.
-  std::this_thread::sleep_for(1s);
+  std::this_thread::sleep_for(1500ms);
   special.handle(dev); // This should call! we are 1.25s out from first handle.
 }
 

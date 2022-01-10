@@ -8,7 +8,7 @@
 
 class Rackmon {
   static constexpr time_t dormant_min_inactive_time = 300;
-  static constexpr modbus_time probe_timeout = std::chrono::milliseconds(50);
+  static constexpr ModbusTime probe_timeout = std::chrono::milliseconds(50);
   std::vector<std::unique_ptr<PollThread<Rackmon>>> threads{};
   // Has to be before defining active or dormant devices
   // to ensure users get destroyed before the interface.
@@ -86,7 +86,7 @@ class Rackmon {
   }
 
   // Executes the Raw command. Throws an exception on error.
-  void rawCmd(Msg& req, Msg& resp, modbus_time timeout);
+  void rawCmd(Msg& req, Msg& resp, ModbusTime timeout);
 
   // Read registers
   void ReadHoldingRegisters(

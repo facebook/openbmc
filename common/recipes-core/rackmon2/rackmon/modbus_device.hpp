@@ -70,8 +70,8 @@ class ModbusDevice {
   virtual void command(
       Msg& req,
       Msg& resp,
-      modbus_time timeout = modbus_time::zero(),
-      modbus_time settle_time = modbus_time::zero());
+      ModbusTime timeout = ModbusTime::zero(),
+      ModbusTime settle_time = ModbusTime::zero());
 
   void ReadHoldingRegisters(
       uint16_t register_offset,

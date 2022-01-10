@@ -158,7 +158,7 @@ void Rackmon::stop() {
   }
 }
 
-void Rackmon::rawCmd(Msg& req, Msg& resp, modbus_time timeout) {
+void Rackmon::rawCmd(Msg& req, Msg& resp, ModbusTime timeout) {
   uint8_t addr = req.addr;
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "rawcmd::" + std::to_string(int(req.addr)), profile_store);

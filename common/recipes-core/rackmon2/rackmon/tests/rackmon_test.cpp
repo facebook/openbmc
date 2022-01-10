@@ -26,8 +26,8 @@ class FakeModbus : public Modbus {
       Msg& req,
       Msg& resp,
       uint32_t b,
-      modbus_time /* unused */,
-      modbus_time /* unused */) {
+      ModbusTime /* unused */,
+      ModbusTime /* unused */) {
     encoder.encode(req);
     ASSERT_GE(req.addr, min_addr);
     ASSERT_LE(req.addr, max_addr);
@@ -74,13 +74,13 @@ class Mock3Modbus : public Modbus {
                                   Msg& req,
                                   Msg& resp,
                                   uint32_t b,
-                                  modbus_time timeout,
-                                  modbus_time sleep_time) {
+                                  ModbusTime timeout,
+                                  ModbusTime sleep_time) {
           return fake_.command(req, resp, b, timeout, sleep_time);
         }));
   }
   MOCK_METHOD1(initialize, void(const nlohmann::json& j));
-  MOCK_METHOD5(command, void(Msg&, Msg&, uint32_t, modbus_time, modbus_time));
+  MOCK_METHOD5(command, void(Msg&, Msg&, uint32_t, ModbusTime, ModbusTime));
 
   FakeModbus fake_;
 };

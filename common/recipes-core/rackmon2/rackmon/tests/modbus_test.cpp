@@ -23,7 +23,7 @@ class MockModbus : public Modbus {
  public:
   explicit MockModbus(std::stringstream& prof) : Modbus(prof) {}
   MOCK_METHOD3(
-      make_device,
+      makeDevice,
       std::unique_ptr<UARTDevice>(
           const std::string&,
           const std::string&,
@@ -96,12 +96,12 @@ TEST_F(ModbusTest, BasicDefaultInitialization) {
   conf["baudrate"] = 19200;
   std::stringstream ss;
   MockModbus bus(ss);
-  EXPECT_CALL(bus, make_device("default", "/dev/ttyUSB0", 19200))
+  EXPECT_CALL(bus, makeDevice("default", "/dev/ttyUSB0", 19200))
       .Times(1)
       .WillOnce(Return(ByMove(make_dev())));
   bus.initialize(conf);
-  ASSERT_EQ(bus.get_default_baudrate(), 19200);
-  ASSERT_EQ(bus.name(), "/dev/ttyUSB0");
+  EXPECT_EQ(bus.getDefaultBaudrate(), 19200);
+  EXPECT_EQ(bus.name(), "/dev/ttyUSB0");
 }
 
 TEST_F(ModbusTest, BasicExplicitTypeInitialization) {
@@ -113,12 +113,12 @@ TEST_F(ModbusTest, BasicExplicitTypeInitialization) {
     conf["baudrate"] = 19200;
     std::stringstream ss;
     MockModbus bus(ss);
-    EXPECT_CALL(bus, make_device(type, "/dev/ttyUSB0", 19200))
+    EXPECT_CALL(bus, makeDevice(type, "/dev/ttyUSB0", 19200))
         .Times(1)
         .WillOnce(Return(ByMove(make_dev())));
     bus.initialize(conf);
-    ASSERT_EQ(bus.get_default_baudrate(), 19200);
-    ASSERT_EQ(bus.name(), "/dev/ttyUSB0");
+    EXPECT_EQ(bus.getDefaultBaudrate(), 19200);
+    EXPECT_EQ(bus.name(), "/dev/ttyUSB0");
   }
 }
 
@@ -133,7 +133,7 @@ TEST_F(ModbusTest, Command) {
   uint8_t resp_buf[] = {0, 1, 2, 3, 4, 5, 6, 0xa1, 0xc6};
   std::stringstream ss;
   MockModbus bus(ss);
-  EXPECT_CALL(bus, make_device("default", "/dev/ttyUSB0", 19200))
+  EXPECT_CALL(bus, makeDevice("default", "/dev/ttyUSB0", 19200))
       .Times(1)
       .WillOnce(
           Return(ByMove(make_cmd_dev(115200, write_exp_buf, 10, resp_buf, 9))));
@@ -141,9 +141,9 @@ TEST_F(ModbusTest, Command) {
   Msg req = 0x0001020304050607_M;
   Msg resp;
   resp.len = 9;
-  bus.command(req, resp, 115200, modbus_time::zero(), modbus_time::zero());
+  bus.command(req, resp, 115200, ModbusTime::zero(), ModbusTime::zero());
   Msg exp_resp = 0x00010203040506_M;
-  ASSERT_EQ(resp, exp_resp);
+  EXPECT_EQ(resp, exp_resp);
 }
 
 TEST_F(ModbusTest, CommandBadResp) {
@@ -158,7 +158,7 @@ TEST_F(ModbusTest, CommandBadResp) {
       0, 1, 2, 3, 4, 5, 6, 0xa1, 0xc7}; // 0xa1c6 is correct CRC.
   std::stringstream ss;
   MockModbus bus(ss);
-  EXPECT_CALL(bus, make_device("default", "/dev/ttyUSB0", 19200))
+  EXPECT_CALL(bus, makeDevice("default", "/dev/ttyUSB0", 19200))
       .Times(1)
       .WillOnce(
           Return(ByMove(make_cmd_dev(115200, write_exp_buf, 10, resp_buf, 9))));
@@ -167,6 +167,6 @@ TEST_F(ModbusTest, CommandBadResp) {
   Msg resp;
   resp.len = 9;
   EXPECT_THROW(
-      bus.command(req, resp, 115200, modbus_time::zero(), modbus_time::zero()),
+      bus.command(req, resp, 115200, ModbusTime::zero(), ModbusTime::zero()),
       CRCError);
 }

@@ -8,41 +8,41 @@
 #include "msg.hpp"
 #include "uart.hpp"
 
-using modbus_time = std::chrono::milliseconds;
+using ModbusTime = std::chrono::milliseconds;
 class Modbus {
-  std::string device_path{};
-  std::unique_ptr<UARTDevice> dev = nullptr;
-  std::mutex mutex{};
-  std::set<uint8_t> ignored_addrs = {};
-  uint32_t default_baudrate = 0;
-  modbus_time default_timeout = modbus_time::zero();
-  modbus_time min_delay = modbus_time::zero();
-  std::ostream& profile_store;
+  std::string devicePath_{};
+  std::unique_ptr<UARTDevice> device_ = nullptr;
+  std::mutex deviceMutex_{};
+  std::set<uint8_t> ignoredAddrs_ = {};
+  uint32_t defaultBaudrate_ = 0;
+  ModbusTime defaultTimeout_ = ModbusTime::zero();
+  ModbusTime minDelay_ = ModbusTime::zero();
+  std::ostream& profileStore_;
 
  public:
-  explicit Modbus(std::ostream& prof) : profile_store(prof) {}
+  explicit Modbus(std::ostream& prof) : profileStore_(prof) {}
   virtual ~Modbus() {}
 
-  uint32_t get_default_baudrate() const {
-    return default_baudrate;
+  uint32_t getDefaultBaudrate() const {
+    return defaultBaudrate_;
   }
   const std::string& name() const {
-    return device_path;
+    return devicePath_;
   }
 
-  virtual std::unique_ptr<UARTDevice> make_device(
-      const std::string& device_type,
-      const std::string& device_path,
-      uint32_t baud);
+  virtual std::unique_ptr<UARTDevice> makeDevice(
+      const std::string& deviceType,
+      const std::string& devicePath,
+      uint32_t baudrate);
 
   virtual void initialize(const nlohmann::json& j);
 
   virtual void command(
       Msg& req,
       Msg& resp,
-      uint32_t baud = 0,
-      modbus_time timeout = modbus_time::zero(),
-      modbus_time settle_time = modbus_time::zero());
+      uint32_t baudrate = 0,
+      ModbusTime timeout = ModbusTime::zero(),
+      ModbusTime settleTime = ModbusTime::zero());
 };
 
 void from_json(const nlohmann::json& j, Modbus& m);

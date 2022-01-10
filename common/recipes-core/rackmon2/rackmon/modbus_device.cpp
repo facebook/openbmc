@@ -22,8 +22,8 @@ ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
 void ModbusDevice::command(
     Msg& req,
     Msg& resp,
-    modbus_time timeout,
-    modbus_time settle_time) {
+    ModbusTime timeout,
+    ModbusTime settle_time) {
   try {
     interface.command(req, resp, info.baudrate, timeout, settle_time);
     info.num_consecutive_failures = 0;

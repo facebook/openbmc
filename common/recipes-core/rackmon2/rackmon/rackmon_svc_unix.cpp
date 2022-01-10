@@ -71,7 +71,7 @@ void RackmonUNIXSocketService::handle_json_command(
     for (auto& b : req["cmd"])
       req_m << uint8_t(b);
     resp_m.len = req["response_length"];
-    modbus_time timeout = modbus_time(req.value("timeout", 0));
+    ModbusTime timeout = ModbusTime(req.value("timeout", 0));
     rackmond.rawCmd(req_m, resp_m, timeout);
     resp["data"] = {};
     for (size_t i = 0; i < resp_m.len; i++) {
@@ -177,7 +177,7 @@ void RackmonUNIXSocketService::handle_legacy_command(
 
   Msg resp_msg;
   resp_msg.len = req_hdr->expected_resp_length;
-  modbus_time timeout(req_hdr->custom_timeout);
+  ModbusTime timeout(req_hdr->custom_timeout);
   rackmond.rawCmd(req_msg, resp_msg, timeout);
 
   size_t resp_sz = req_hdr->expected_resp_length;

@@ -80,7 +80,7 @@ void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
       waitRead(timeoutMs);
     } catch (std::system_error& e) {
       // Print error and ignore/retry
-      log_error << e.what() << std::endl;
+      logError << e.what() << std::endl;
     }
     int readSize = ::read(deviceFd_, readBuf, sizeof(readBuf));
     if (readSize < 0) {

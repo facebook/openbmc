@@ -39,10 +39,10 @@ void ModbusDevice::command(
   } catch (std::runtime_error& e) {
     info.misc_failures++;
     info.num_consecutive_failures++;
-    log_error << e.what() << std::endl;
+    logError << e.what() << std::endl;
     throw;
   } catch (...) {
-    log_error << "Unknown exception" << std::endl;
+    logError << "Unknown exception" << std::endl;
     info.misc_failures++;
     info.num_consecutive_failures++;
     throw;
@@ -101,7 +101,7 @@ void ModbusDevice::monitor() {
         ++h;
       }
     } catch (std::exception& e) {
-      log_info << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x" << std::hex
+      logInfo << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x" << std::hex
                << reg << ' ' << h.desc.name << " caught: " << e.what()
                << std::endl;
       continue;
@@ -174,7 +174,7 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   try {
     dev.command(req, resp);
   } catch (std::exception& e) {
-    log_error << "Error executing special handler" << std::endl;
+    logError << "Error executing special handler" << std::endl;
   }
   last_handle_time = std::time(NULL);
   handled = true;

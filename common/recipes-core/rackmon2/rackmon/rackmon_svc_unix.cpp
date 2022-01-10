@@ -107,7 +107,7 @@ void RackmonUNIXSocketService::handle_json_command(
     const json& req,
     RackmonSock& cli) {
   auto print_msg = [&req](std::exception& e) {
-    log_error << "ERROR Executing: " << req["type"] << e.what() << std::endl;
+    logError << "ERROR Executing: " << req["type"] << e.what() << std::endl;
   };
   json resp;
 
@@ -145,7 +145,7 @@ void RackmonUNIXSocketService::handle_json_command(
   try {
     cli.send(resp_s.c_str(), resp_s.length());
   } catch (std::exception& e) {
-    log_error << "Unable to send response: " << e.what() << std::endl;
+    logError << "Unable to send response: " << e.what() << std::endl;
   }
 }
 
@@ -198,19 +198,19 @@ void RackmonUNIXSocketService::handle_legacy_command(
     handle_legacy_command(req_buf, resp_buf);
   } catch (std::exception& e) {
     resp_buf = {0, 0, 1, 0};
-    log_error << "Unable to handle legacy command: " << e.what() << std::endl;
+    logError << "Unable to handle legacy command: " << e.what() << std::endl;
   }
   try {
     cli.send(resp_buf.data(), resp_buf.size());
   } catch (std::exception& e) {
-    log_error << "Unable to send response: " << e.what() << std::endl;
+    logError << "Unable to send response: " << e.what() << std::endl;
   }
 }
 
 void RackmonUNIXSocketService::request_exit() {
   char c = 'c';
   if (write(backchannel_req, &c, 1) != 1) {
-    log_error << "Could not request rackmon svc to exit!" << std::endl;
+    logError << "Could not request rackmon svc to exit!" << std::endl;
   }
 }
 
@@ -247,18 +247,18 @@ void RackmonUNIXSocketService::register_exit_handler() {
 void RackmonUNIXSocketService::initialize(
     int /*unused */,
     char** /* unused */) {
-  log_info << "Loading configuration" << std::endl;
+  logInfo << "Loading configuration" << std::endl;
   rackmond.load(rackmon_configuration_path, rackmon_regmap_dir_path);
-  log_info << "Starting rackmon threads" << std::endl;
+  logInfo << "Starting rackmon threads" << std::endl;
   rackmond.start();
   // rackmond.start();
   register_exit_handler();
-  log_info << "Creating Rackmon UNIX service" << std::endl;
+  logInfo << "Creating Rackmon UNIX service" << std::endl;
   sock = std::make_unique<RackmonService>();
 }
 
 void RackmonUNIXSocketService::deinitialize() {
-  log_info << "Deinitializing... stopping rackmond" << std::endl;
+  logInfo << "Deinitializing... stopping rackmond" << std::endl;
   rackmond.stop();
   sock = nullptr;
   if (backchannel_req != -1) {
@@ -278,7 +278,7 @@ void RackmonUNIXSocketService::handle_connection(
   try {
     sock->recv(buf);
   } catch (...) {
-    log_error << "Failed to receive message" << std::endl;
+    logError << "Failed to receive message" << std::endl;
     return;
   }
   bool is_json = true;
@@ -312,25 +312,25 @@ void RackmonUNIXSocketService::do_loop() {
       // with the pipe is to handle the race condition when
       // we get a signal when we are actively handling a
       // previous request.
-      log_info << "Handling termination signal" << std::endl;
+      logInfo << "Handling termination signal" << std::endl;
       break;
     }
     if (pfd[1].revents & POLLIN) {
       char c;
       if (read(pfd[1].fd, &c, 1) != 1) {
-        log_error << "Got something but no data!" << std::endl;
+        logError << "Got something but no data!" << std::endl;
       } else if (c == 'c') {
-        log_info << "Handling termination request" << std::endl;
+        logInfo << "Handling termination request" << std::endl;
         break;
       } else {
-        log_error << "Got unknown command: " << c << std::endl;
+        logError << "Got unknown command: " << c << std::endl;
       }
     }
     if (pfd[0].revents & POLLIN) {
       int clifd =
           accept(sock->get_sock(), (struct sockaddr*)&client, &clisocklen);
       if (clifd < 0) {
-        log_error << "Failed to accept new connection" << std::endl;
+        logError << "Failed to accept new connection" << std::endl;
         continue;
       }
       auto clisock = std::make_unique<RackmonSock>(clifd);

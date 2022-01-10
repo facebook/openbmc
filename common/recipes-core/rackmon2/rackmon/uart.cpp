@@ -78,7 +78,7 @@ void UARTDevice::waitWrite() {
     // never should hit this if kernel supports RS485 mode
   }
   if (loops > 0)
-    log_error << "Waited loops: " << loops << '\n';
+    logError << "Waited loops: " << loops << '\n';
 }
 
 void UARTDevice::write(const uint8_t* buf, size_t len) {

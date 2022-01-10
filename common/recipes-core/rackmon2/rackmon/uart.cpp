@@ -13,7 +13,7 @@
 
 using namespace std::literals;
 
-const std::unordered_map<int, speed_t> speed_map = {
+const std::unordered_map<int, speed_t> kSpeedMap = {
     {0, B0},
     {50, B50},
     {110, B110},
@@ -34,30 +34,30 @@ const std::unordered_map<int, speed_t> speed_map = {
 
 void UARTDevice::open() {
   Device::open();
-  set_attribute(true, baudrate);
+  setAttribute(true, baudrate_);
 }
 
 void AspeedRS485Device::open() {
   UARTDevice::open();
-  struct serial_rs485 rs485conf {};
+  struct serial_rs485 rs485Conf {};
   /*
    * NOTE: "SER_RS485_RTS_AFTER_SEND" and "SER_RS485_RX_DURING_TX" flags
    * are not handled in kernel 4.1, but they are required in the latest
    * kernel.
    */
-  rs485conf.flags = SER_RS485_ENABLED;
-  rs485conf.flags |= (SER_RS485_RTS_AFTER_SEND | SER_RS485_RX_DURING_TX);
+  rs485Conf.flags = SER_RS485_ENABLED;
+  rs485Conf.flags |= (SER_RS485_RTS_AFTER_SEND | SER_RS485_RX_DURING_TX);
 
-  ioctl(TIOCSRS485, &rs485conf);
+  ioctl(TIOCSRS485, &rs485Conf);
 }
 
-void UARTDevice::set_attribute(bool read_en, int baud) {
+void UARTDevice::setAttribute(bool readEnable, int baudrate) {
   struct termios tio {};
-  cfsetspeed(&tio, speed_map.at(baud));
+  cfsetspeed(&tio, kSpeedMap.at(baudrate));
   tio.c_cflag |= PARENB;
   tio.c_cflag |= CLOCAL;
   tio.c_cflag |= CS8;
-  if (read_en)
+  if (readEnable)
     tio.c_cflag |= CREAD;
   tio.c_iflag |= INPCK;
   tio.c_cc[VMIN] = 1;
@@ -88,9 +88,9 @@ void UARTDevice::write(const uint8_t* buf, size_t len) {
   struct sched_param sp;
   sp.sched_priority = 50;
   pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
-  read_disable();
+  readDisable();
   Device::write(buf, len);
   waitWrite();
-  read_enable();
+  readEnable();
   pthread_setschedparam(pthread_self(), SCHED_OTHER, &sp);
 }

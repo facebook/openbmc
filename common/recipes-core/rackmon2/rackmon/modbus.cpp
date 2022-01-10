@@ -21,7 +21,7 @@ void Modbus::command(
     baud = default_baudrate;
   req.encode();
   std::lock_guard<std::mutex> lck(mutex);
-  dev->set_baudrate(baud);
+  dev->setBaudrate(baud);
   dev->write(req.raw.data(), req.len);
   dev->read(resp.raw.data(), resp.len, timeout.count());
   resp.decode();

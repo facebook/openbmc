@@ -6,29 +6,30 @@
 
 class UARTDevice : public Device {
  protected:
-  int baudrate = -1;
+  int baudrate_ = -1;
 
   virtual void waitWrite() override;
-  virtual void set_attribute(bool read_en, int baud);
+  virtual void setAttribute(bool readEnable, int baudrate);
 
-  void read_enable() {
-    set_attribute(true, baudrate);
+  void readEnable() {
+    setAttribute(true, baudrate_);
   }
-  void read_disable() {
-    set_attribute(false, baudrate);
+  void readDisable() {
+    setAttribute(false, baudrate_);
   }
 
  public:
-  UARTDevice(const std::string& dev, int baud) : Device(dev), baudrate(baud) {}
+  UARTDevice(const std::string& device, int baudrate)
+      : Device(device), baudrate_(baudrate) {}
 
-  int get_baudrate() const {
-    return baudrate;
+  int getBaudrate() const {
+    return baudrate_;
   }
-  void set_baudrate(int baud) {
-    if (baud == baudrate)
+  void setBaudrate(int baudrate) {
+    if (baudrate == baudrate_)
       return;
-    baudrate = baud;
-    set_attribute(true, baud);
+    baudrate_ = baudrate;
+    setAttribute(true, baudrate);
   }
 
   virtual void open() override;
@@ -41,6 +42,7 @@ class UARTDevice : public Device {
 
 class AspeedRS485Device : public UARTDevice {
  public:
-  AspeedRS485Device(const std::string& dev, int baud) : UARTDevice(dev, baud) {}
+  AspeedRS485Device(const std::string& device, int baudrate)
+      : UARTDevice(device, baudrate) {}
   virtual void open() override;
 };

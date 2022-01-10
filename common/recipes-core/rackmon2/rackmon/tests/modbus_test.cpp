@@ -13,10 +13,10 @@ class MockUARTDevice : public UARTDevice {
   MOCK_METHOD0(close, void());
   MOCK_METHOD2(write, void(const uint8_t*, size_t));
   MOCK_METHOD2(ioctl, void(int32_t, void*));
-  MOCK_METHOD1(wait_read, void(int));
-  MOCK_METHOD0(wait_write, void());
+  MOCK_METHOD1(waitRead, void(int));
+  MOCK_METHOD0(waitWrite, void());
   MOCK_METHOD3(read, void(uint8_t*, size_t, int));
-  MOCK_METHOD2(set_attribute, void(bool, int));
+  MOCK_METHOD2(setAttribute, void(bool, int));
 };
 
 class MockModbus : public Modbus {
@@ -68,9 +68,9 @@ class ModbusTest : public ::testing::Test {
     std::unique_ptr<MockUARTDevice> ptr =
         std::make_unique<MockUARTDevice>("/dev/ttyUSB0", 19200);
     EXPECT_CALL(*ptr, open()).Times(1);
-    // Expect set_attribute to be called since the baud calling is different.
+    // Expect setAttribute to be called since the baud calling is different.
     if (baud != 19200)
-      EXPECT_CALL(*ptr, set_attribute(true, baud)).Times(1);
+      EXPECT_CALL(*ptr, setAttribute(true, baud)).Times(1);
     // This is tricky one, we want to check if write() was called with our bytes
     // including the CRC tail.
     EXPECT_CALL(

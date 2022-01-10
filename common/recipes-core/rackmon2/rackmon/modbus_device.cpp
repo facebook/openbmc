@@ -53,7 +53,7 @@ void ModbusDevice::ReadHoldingRegisters(
     uint16_t register_offset,
     std::vector<uint16_t>& regs) {
   ReadHoldingRegistersReq req(addr, register_offset, regs.size());
-  ReadHoldingRegistersResp resp(regs);
+  ReadHoldingRegistersResp resp(addr, regs);
   command(req, resp);
 }
 

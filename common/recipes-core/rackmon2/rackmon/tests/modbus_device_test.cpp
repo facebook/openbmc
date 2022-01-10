@@ -259,11 +259,11 @@ TEST_F(ModbusDeviceTest, ReadFileRecord) {
 
   std::vector<FileRecord> records(2);
   records[0].data.resize(2);
-  records[0].file_num = 4;
-  records[0].record_num = 1;
+  records[0].fileNum = 4;
+  records[0].recordNum = 1;
   records[1].data.resize(2);
-  records[1].file_num = 3;
-  records[1].record_num = 9;
+  records[1].fileNum = 3;
+  records[1].recordNum = 9;
   dev.ReadFileRecord(records);
   ASSERT_EQ(records[0].data[0], 0x0DFE);
   ASSERT_EQ(records[0].data[1], 0x20);

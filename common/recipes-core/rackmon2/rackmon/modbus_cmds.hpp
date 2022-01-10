@@ -3,8 +3,8 @@
 #include <optional>
 #include "msg.hpp"
 
-struct bad_resp_error : public std::runtime_error {
-  bad_resp_error(const std::string& field, uint32_t exp, uint32_t val)
+struct BadResponseError : public std::runtime_error {
+  BadResponseError(const std::string& field, uint32_t exp, uint32_t val)
       : std::runtime_error(
             "Bad Response Received FIELD:" + field + " Expected: " +
             std::to_string(exp) + " Got: " + std::to_string(val)) {}
@@ -13,54 +13,78 @@ struct bad_resp_error : public std::runtime_error {
 //---------- Read Holding Registers -------
 
 struct ReadHoldingRegistersReq : public Msg {
-  static constexpr uint8_t expected_function = 0x3;
-  uint8_t dev_addr = 0;
-  uint8_t function = expected_function;
-  uint16_t starting_addr = 0;
-  uint16_t reg_count = 0;
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x3;
+  uint8_t deviceAddr_ = 0;
+  uint16_t registerOffset_ = 0;
+  uint16_t registerCount_ = 0;
 
-  ReadHoldingRegistersReq(uint8_t a, uint16_t reg_off, uint16_t cnt);
+ public:
+  ReadHoldingRegistersReq(
+      uint8_t deviceAddr,
+      uint16_t registerOffset,
+      uint16_t registerCount);
   ReadHoldingRegistersReq() {}
+
+ protected:
   void encode() override;
 };
 
 struct ReadHoldingRegistersResp : public Msg {
-  static constexpr uint8_t expected_function = 0x3;
-  uint8_t dev_addr = 0;
-  uint8_t function = 0;
-  uint8_t byte_count = 0;
-  std::vector<uint16_t>& regs;
-  explicit ReadHoldingRegistersResp(std::vector<uint16_t>& r);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x3;
+  uint8_t expectedDeviceAddr_ = 0;
+  std::vector<uint16_t>& regs_;
+
+ public:
+  explicit ReadHoldingRegistersResp(
+      uint8_t deviceAddr,
+      std::vector<uint16_t>& regs);
+
+ protected:
   void decode() override;
 };
 
 //----------- Write Single Register -------
 struct WriteSingleRegisterReq : public Msg {
-  static constexpr uint8_t expected_function = 0x6;
-  uint8_t dev_addr = 0;
-  uint8_t function = expected_function;
-  uint16_t reg_off = 0;
-  uint16_t value = 0;
-  WriteSingleRegisterReq(uint8_t a, uint16_t off, uint16_t val);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x6;
+  uint8_t deviceAddr_ = 0;
+  uint16_t registerOffset_ = 0;
+  uint16_t value_ = 0;
+
+ public:
+  WriteSingleRegisterReq(
+      uint8_t deviceAddr,
+      uint16_t registerOffset,
+      uint16_t value);
   WriteSingleRegisterReq() {}
+
+ protected:
   void encode() override;
-  using Msg::decode;
 };
 
 struct WriteSingleRegisterResp : public Msg {
-  static constexpr uint8_t expected_function = 0x6;
-  uint8_t dev_addr = 0;
-  uint8_t function = 0;
-  uint16_t reg_off = 0;
-  uint8_t expected_dev_addr = 0;
-  uint16_t expected_reg_off = 0;
-  uint16_t value = 0;
-  std::optional<uint16_t> expected_value{};
-  WriteSingleRegisterResp(uint8_t a, uint16_t off);
-  WriteSingleRegisterResp(uint8_t a, uint16_t off, uint16_t val);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x6;
+  uint8_t expectedDeviceAddr_ = 0;
+  uint16_t expectedRegisterOffset_ = 0;
+  uint16_t value_ = 0;
+  std::optional<uint16_t> expectedValue_{};
+
+ public:
+  WriteSingleRegisterResp(uint8_t deviceAddr, uint16_t registerOffset);
+  WriteSingleRegisterResp(
+      uint8_t deviceAddr,
+      uint16_t registerOffset,
+      uint16_t expectedValue);
   WriteSingleRegisterResp() {}
+  uint16_t writtenValue() const {
+    return value_;
+  }
+
+ protected:
   void decode() override;
-  using Msg::encode;
 };
 
 //----------- Write Multiple Registers ------
@@ -70,56 +94,70 @@ struct WriteSingleRegisterResp : public Msg {
 // take advantage of any endian-conversions privided
 // by msg.hpp
 struct WriteMultipleRegistersReq : public Msg {
-  static constexpr uint8_t expected_function = 0x10;
-  uint8_t dev_addr = 0;
-  uint8_t function = expected_function;
-  uint16_t starting_addr = 0;
-  uint16_t reg_count = 0;
-  WriteMultipleRegistersReq(uint8_t a, uint16_t off);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x10;
+  uint8_t deviceAddr_ = 0;
+  uint16_t registerOffset_ = 0;
+
+ public:
+  WriteMultipleRegistersReq(uint8_t deviceAddr, uint16_t registerOffset);
   WriteMultipleRegistersReq() {}
+
+ protected:
   void encode() override;
-  using Msg::decode;
 };
 
 struct WriteMultipleRegistersResp : public Msg {
-  static constexpr uint8_t expected_function = 0x10;
-  uint8_t dev_addr = 0;
-  uint8_t function = 0;
-  uint16_t starting_addr = 0;
-  uint16_t reg_count = 0;
-  uint8_t expected_dev_addr = 0;
-  uint16_t expected_starting_addr = 0;
-  uint16_t expected_reg_count = 0;
-  WriteMultipleRegistersResp(uint8_t a, uint16_t off, uint16_t cnt);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x10;
+  uint8_t expectedDeviceAddr_ = 0;
+  uint16_t expectedRegisterOffset_ = 0;
+  uint16_t expectedRegisterCount_ = 0;
+
+ public:
+  WriteMultipleRegistersResp(
+      uint8_t deviceAddr,
+      uint16_t registerOffset,
+      uint16_t registerCount);
   WriteMultipleRegistersResp() {}
+
+ protected:
   void decode() override;
-  using Msg::encode;
 };
 
 //---------- Read File Record ----------------
 struct FileRecord {
-  uint16_t file_num = 0;
-  uint16_t record_num = 0;
+  uint16_t fileNum = 0;
+  uint16_t recordNum = 0;
   std::vector<uint16_t> data{};
   FileRecord() {}
   explicit FileRecord(size_t num) : data(num) {}
 };
 
 struct ReadFileRecordReq : public Msg {
-  static constexpr uint8_t expected_function = 0x14;
-  static constexpr uint8_t reference_type = 0x6;
-  uint8_t dev_addr = 0;
-  uint8_t function = expected_function;
-  const std::vector<FileRecord>& records;
-  ReadFileRecordReq(uint8_t a, const std::vector<FileRecord>& rec);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x14;
+  static constexpr uint8_t kReferenceType = 0x6;
+  uint8_t deviceAddr_ = 0;
+  const std::vector<FileRecord>& records_;
+
+ public:
+  ReadFileRecordReq(uint8_t deviceAddr, const std::vector<FileRecord>& records);
+
+ protected:
   void encode() override;
 };
 
 struct ReadFileRecordResp : public Msg {
-  static constexpr uint8_t expected_function = 0x14;
-  uint8_t dev_addr = 0;
-  uint8_t function = 0;
-  std::vector<FileRecord>& records;
-  ReadFileRecordResp(uint8_t a, std::vector<FileRecord>& rec);
+ private:
+  static constexpr uint8_t kExpectedFunction = 0x14;
+  static constexpr uint8_t kReferenceType = 0x6;
+  uint8_t deviceAddr_ = 0;
+  std::vector<FileRecord>& records_;
+
+ public:
+  ReadFileRecordResp(uint8_t deviceAddr, std::vector<FileRecord>& records);
+
+ protected:
   void decode() override;
 };

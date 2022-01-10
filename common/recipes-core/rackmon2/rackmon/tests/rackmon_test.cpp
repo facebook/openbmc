@@ -44,25 +44,24 @@ class FakeModbus : public Modbus {
     ASSERT_EQ(req.len, 8);
     ASSERT_EQ(req.raw[2], 0);
     ASSERT_EQ(req.raw[4], 0);
-    ReadHoldingRegistersResp& regrep =
-        dynamic_cast<ReadHoldingRegistersResp&>(resp);
-    regrep.dev_addr = exp_addr;
-    regrep.function = 0x3;
     if (probed) {
-      ASSERT_EQ(req.raw[3], 0x0);
-      ASSERT_EQ(req.raw[5], 8);
-      char next_c = 'a';
-      for (uint16_t i = 0; i < 8; i++) {
-        regrep.regs[i] = (next_c << 8) | (next_c + 1);
-        next_c += 2;
-      }
+      Msg expMsg = 0x000300000008_M;
+      expMsg.addr = exp_addr;
+      Encoder::finalize(expMsg);
+      ASSERT_EQ(req, expMsg);
+      resp = 0x0003106162636465666768696a6b6c6d6e6f70_M;
     } else {
+      Msg expMsg = 0x000300680001_M;
+      expMsg.addr = exp_addr;
+      Encoder::finalize(expMsg);
+      ASSERT_EQ(req, expMsg);
       // Allow to be probed only once.
-      ASSERT_EQ(req.raw[3], 104);
-      ASSERT_EQ(req.raw[5], 1);
       probed = true;
-      regrep.regs[0] = 0;
+      resp = 0x0003020000_M;
     }
+    resp.addr = exp_addr;
+    Encoder::finalize(resp);
+    Encoder::decode(resp);
   }
 };
 
@@ -221,7 +220,7 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   // Use a known handled response.
   ReadHoldingRegistersReq req(161, 0, 8);
   std::vector<uint16_t> regs(8);
-  ReadHoldingRegistersResp resp(regs);
+  ReadHoldingRegistersResp resp(161, regs);
   mon.rawCmd(req, resp, 1s);
 
   ASSERT_EQ(regs[0], 'a' << 8 | 'b');

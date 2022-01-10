@@ -40,7 +40,7 @@ bool Rackmon::probe(Modbus& iface, uint8_t addr) {
   std::vector<uint16_t> v(1);
   try {
     ReadHoldingRegistersReq req(addr, rmap.probe_register, v.size());
-    ReadHoldingRegistersResp resp(v);
+    ReadHoldingRegistersResp resp(addr, v);
     iface.command(req, resp, rmap.default_baudrate, probe_timeout);
     std::unique_lock lock(devices_mutex);
     devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);

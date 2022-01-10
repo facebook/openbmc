@@ -176,6 +176,9 @@ class Encoder {
   static void decode(Msg& msg) {
     msg.decode();
   }
+  static void finalize(Msg& msg) {
+    msg.finalize();
+  }
 };
 
 // User defined constant expression. Use ConstMsg as an intermediate

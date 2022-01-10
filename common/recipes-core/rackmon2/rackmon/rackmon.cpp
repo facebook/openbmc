@@ -137,7 +137,7 @@ void Rackmon::scan() {
     next_dev_it = possible_dev_addrs.begin();
 }
 
-void Rackmon::start(poll_interval interval) {
+void Rackmon::start(PollThreadTime interval) {
   auto start_thread = [this](auto func, auto intr) {
     threads.emplace_back(
         std::make_unique<PollThread<Rackmon>>(func, this, intr));

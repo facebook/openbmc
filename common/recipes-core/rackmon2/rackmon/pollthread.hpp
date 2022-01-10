@@ -4,47 +4,50 @@
 #include <functional>
 #include <thread>
 
-using poll_interval = std::chrono::seconds;
+using PollThreadTime = std::chrono::seconds;
 template <class T>
 class PollThread {
-  std::mutex m{};
-  std::condition_variable cv{};
-  std::thread tid{};
-  std::atomic<bool> started = false;
+  std::mutex eventMutex_{};
+  std::condition_variable eventCV_{};
+  std::thread threadID_{};
+  std::atomic<bool> started_ = false;
 
-  std::function<void(T*)> func{};
-  T* obj = nullptr;
-  poll_interval sleep_time{5};
+  std::function<void(T*)> func_{};
+  T* obj_ = nullptr;
+  PollThreadTime sleepTime_{5};
 
   void worker() {
-    std::unique_lock lk(m);
-    while (started.load()) {
-      func(obj);
-      cv.wait_for(lk, sleep_time, [this]() { return !started.load(); });
+    std::unique_lock lk(eventMutex_);
+    while (started_.load()) {
+      func_(obj_);
+      eventCV_.wait_for(lk, sleepTime_, [this]() { return !started_.load(); });
     }
   }
-  void notify_stop() {
-    std::unique_lock lk(m);
-    started = false;
-    cv.notify_all();
+  void notifyStop() {
+    std::unique_lock lk(eventMutex_);
+    started_ = false;
+    eventCV_.notify_all();
   }
 
  public:
-  PollThread(std::function<void(T*)> fp, T* o, const poll_interval& pi)
-      : func(fp), obj(o), sleep_time(pi) {}
+  PollThread(
+      std::function<void(T*)> func,
+      T* obj,
+      const PollThreadTime& pollInterval)
+      : func_(func), obj_(obj), sleepTime_(pollInterval) {}
   ~PollThread() {
     stop();
   }
   void start() {
-    if (!started.load()) {
-      started = true;
-      tid = std::thread(&PollThread::worker, this);
+    if (!started_.load()) {
+      started_ = true;
+      threadID_ = std::thread(&PollThread::worker, this);
     }
   }
   void stop() {
-    if (started.load()) {
-      notify_stop();
-      tid.join();
+    if (started_.load()) {
+      notifyStop();
+      threadID_.join();
     }
   }
 };

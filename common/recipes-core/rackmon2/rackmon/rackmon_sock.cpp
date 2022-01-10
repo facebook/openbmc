@@ -1,13 +1,13 @@
 #include "rackmon_svc_unix.hpp"
 
-std::tuple<struct sockaddr_un, size_t> RackmonSock::get_service_addr() {
-  struct sockaddr_un ret{};
+std::tuple<struct sockaddr_un, size_t> RackmonSock::getServiceAddr() {
+  struct sockaddr_un ret {};
   ret.sun_family = AF_UNIX;
-  std::strcpy(ret.sun_path, sock_path.data());
-  return std::make_tuple(ret, sock_path.size() + sizeof(ret.sun_family));
+  std::strcpy(ret.sun_path, kSockPath.data());
+  return std::make_tuple(ret, kSockPath.size() + sizeof(ret.sun_family));
 }
 
-int RackmonSock::get_service_sock() {
+int RackmonSock::getServiceSock() {
   int ret = socket(AF_UNIX, SOCK_STREAM, 0);
   if (ret < 0) {
     throw std::system_error(
@@ -16,11 +16,11 @@ int RackmonSock::get_service_sock() {
   return ret;
 }
 
-int RackmonSock::create_service() {
-  int sock = get_service_sock();
-  unlink(sock_path.data());
-  auto [local, sock_len] = get_service_addr();
-  if (bind(sock, (struct sockaddr*)&local, sock_len) != 0) {
+int RackmonSock::createService() {
+  int sock = getServiceSock();
+  unlink(kSockPath.data());
+  auto [local, sockLen] = getServiceAddr();
+  if (bind(sock, (struct sockaddr*)&local, sockLen) != 0) {
     close(sock);
     throw std::system_error(
         std::error_code(errno, std::generic_category()), "socket_bind");
@@ -33,10 +33,10 @@ int RackmonSock::create_service() {
   return sock;
 }
 
-int RackmonSock::create_client() {
-  int sock = get_service_sock();
-  auto [rackmond_addr, addr_len] = get_service_addr();
-  if (connect(sock, (struct sockaddr*)&rackmond_addr, addr_len)) {
+int RackmonSock::createClient() {
+  int sock = getServiceSock();
+  auto [rackmondAddr, addrLen] = getServiceAddr();
+  if (connect(sock, (struct sockaddr*)&rackmondAddr, addrLen)) {
     close(sock);
     throw std::system_error(
         std::error_code(errno, std::generic_category()), "socket_listen");
@@ -45,73 +45,72 @@ int RackmonSock::create_client() {
 }
 
 RackmonSock::~RackmonSock() {
-  if (sock != -1)
-    close(sock);
+  if (sock_ != -1)
+    close(sock_);
 }
 
-void RackmonSock::sendchunk(const char *buf, uint16_t buf_len)
-{
-  if (::send(sock, &buf_len, sizeof(buf_len), 0) < 0) {
+void RackmonSock::sendChunk(const char* buf, uint16_t bufLen) {
+  if (::send(sock_, &bufLen, sizeof(bufLen), 0) < 0) {
     throw std::system_error(
-      std::error_code(errno, std::generic_category()), "send header");
+        std::error_code(errno, std::generic_category()), "send header");
   }
-  if (buf_len == 0)
+  if (bufLen == 0)
     return;
-  uint16_t sent_size = 0;
-  while (sent_size < buf_len) {
-    int chunk_size = ::send(sock, buf, buf_len - sent_size, 0);
-    if (chunk_size < 0) {
+  uint16_t sentSize = 0;
+  while (sentSize < bufLen) {
+    int chunkSize = ::send(sock_, buf, bufLen - sentSize, 0);
+    if (chunkSize < 0) {
       throw std::system_error(
-        std::error_code(errno, std::generic_category()), "send body");
+          std::error_code(errno, std::generic_category()), "send body");
     }
-    sent_size += (uint16_t)chunk_size;
-    buf += chunk_size;
+    sentSize += (uint16_t)chunkSize;
+    buf += chunkSize;
   }
 }
 
 void RackmonSock::send(const char* buf, size_t len) {
-  const size_t max_chunk_size = 0xffff;
+  const size_t kMaxChunkSize = 0xffff;
   // off == len is a special condition where we send a dummy
   // buf. This special condition of buf_len = 0 is handled
-  // in sendchunk. Hence the condition of off <= len
-  for (size_t off = 0; off <= len; off += max_chunk_size) {
+  // in sendChunk. Hence the condition of off <= len
+  for (size_t off = 0; off <= len; off += kMaxChunkSize) {
     size_t rem = len - off;
-    size_t csize = rem > max_chunk_size ? max_chunk_size : rem;
-    sendchunk(buf + off, csize);
+    size_t csize = rem > kMaxChunkSize ? kMaxChunkSize : rem;
+    sendChunk(buf + off, csize);
   }
 }
 
-bool RackmonSock::recvchunk(std::vector<char>& resp)
-{
-  uint16_t recv_len;
-  if (::recv(sock, &recv_len, sizeof(recv_len), 0) < 0) {
+bool RackmonSock::recvChunk(std::vector<char>& resp) {
+  uint16_t recvLen;
+  if (::recv(sock_, &recvLen, sizeof(recvLen), 0) < 0) {
     throw std::system_error(
-      std::error_code(errno, std::generic_category()), "recv header");
+        std::error_code(errno, std::generic_category()), "recv header");
   }
   // Received dummy, that was our last chunk!
-  if (recv_len == 0)
+  if (recvLen == 0)
     return false;
   size_t off = resp.size();
-  resp.resize(off + recv_len);
+  resp.resize(off + recvLen);
   size_t received = 0;
-  char *recv_buf = resp.data() + off;
-  while (received < recv_len) {
-    int chunk_size = ::recv(sock, recv_buf, recv_len - received, 0);
-    if (chunk_size < 0) {
+  char* recvBuf = resp.data() + off;
+  while (received < recvLen) {
+    int chunkSize = ::recv(sock_, recvBuf, recvLen - received, 0);
+    if (chunkSize < 0) {
       throw std::system_error(
-        std::error_code(errno, std::generic_category()), "recv body");
+          std::error_code(errno, std::generic_category()), "recv body");
     }
-    received += (size_t)chunk_size;
-    recv_buf += (size_t)chunk_size;
+    received += (size_t)chunkSize;
+    recvBuf += (size_t)chunkSize;
   }
   // If we received the max size, we need to receive another
   // chunk. Return true, so recv() does another iteration.
-  return recv_len == 0xffff;
+  return recvLen == 0xffff;
 }
 
 void RackmonSock::recv(std::vector<char>& resp) {
   resp.clear();
   // recvchunk returns true if there are more chunks to receive.
   // iterate over it. recvchunk will resize resp as needed.
-  while (recvchunk(resp) == true);
+  while (recvChunk(resp) == true)
+    ;
 }

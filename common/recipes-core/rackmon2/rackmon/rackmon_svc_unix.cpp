@@ -11,33 +11,33 @@ using nlohmann::json;
 
 class RackmonUNIXSocketService {
   // The configuration file paths.
-  const std::string rackmon_configuration_path = "/etc/rackmon.conf";
-  const std::string rackmon_regmap_dir_path = "/etc/rackmon.d";
-  Rackmon rackmond{};
+  const std::string kRackmonConfigurationPath = "/etc/rackmon.conf";
+  const std::string kRackmonRegmapDirPath = "/etc/rackmon.d";
+  Rackmon rackmond_{};
   // The pipe used for the signal handler to request
   // for the loops to exit.
-  int backchannel_fds[2] = {-1, -1};
+  int backChannelFDs_[2] = {-1, -1};
   // End of the pipe used by the service loop.
-  int& backchannel_handler = backchannel_fds[0];
+  int& backChannelHandler_ = backChannelFDs_[0];
   // End of the pipe to be used by the signal handler.
-  int& backchannel_req = backchannel_fds[1];
+  int& backChannelRequestor_ = backChannelFDs_[1];
   // The socket we want to receive connections from.
-  std::unique_ptr<RackmonService> sock = nullptr;
+  std::unique_ptr<RackmonService> sock_ = nullptr;
 
-  void register_exit_handler();
+  void registerExitHandler();
 
   // Handle commands with the JSON format.
-  void handle_json_command(const json& req, json& resp);
-  void handle_json_command(const json& req, RackmonSock& cli);
+  void handleJSONCommand(const json& req, json& resp);
+  void handleJSONCommand(const json& req, RackmonSock& cli);
   // Handle commands with the legacy byte format.
-  void handle_legacy_command(
+  void handleLegacyCommand(
       std::vector<char>& req_buf,
       std::vector<char>& resp_buf);
-  void handle_legacy_command(std::vector<char>& req_buf, RackmonSock& cli);
+  void handleLegacyCommand(std::vector<char>& req_buf, RackmonSock& cli);
   // Handle a connection from a client. Currently
   // we can deal with one client at a time, but we
   // could easily extend this to multiple with threading.
-  void handle_connection(std::unique_ptr<RackmonSock> sock);
+  void handleConnection(std::unique_ptr<RackmonSock> sock);
 
  public:
   RackmonUNIXSocketService() {}
@@ -48,22 +48,20 @@ class RackmonUNIXSocketService {
   void initialize(int argc, char* argv[]);
   // Clean up everything before exit.
   void deinitialize();
-  // Request the do_loop to exit.
-  void request_exit();
+  // Request the doLoop to exit.
+  void requestExit();
   // The main service loop. This will block
   // till someone requests it to exit.
-  void do_loop();
-  static void trigger_exit(int /* unused */) {
-    svc.request_exit();
+  void doLoop();
+  static void triggerExit(int /* unused */) {
+    svc.requestExit();
   }
   static RackmonUNIXSocketService svc;
 };
 
 RackmonUNIXSocketService RackmonUNIXSocketService::svc;
 
-void RackmonUNIXSocketService::handle_json_command(
-    const json& req,
-    json& resp) {
+void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
   std::string cmd;
   req.at("type").get_to(cmd);
   if (cmd == "raw") {
@@ -72,38 +70,38 @@ void RackmonUNIXSocketService::handle_json_command(
       req_m << uint8_t(b);
     resp_m.len = req["response_length"];
     ModbusTime timeout = ModbusTime(req.value("timeout", 0));
-    rackmond.rawCmd(req_m, resp_m, timeout);
+    rackmond_.rawCmd(req_m, resp_m, timeout);
     resp["data"] = {};
     for (size_t i = 0; i < resp_m.len; i++) {
       resp["data"].push_back(int(resp_m.raw[i]));
     }
   } else if (cmd == "list") {
-    resp["data"] = rackmond.listDevices();
+    resp["data"] = rackmond_.listDevices();
   } else if (cmd == "data") {
     std::vector<ModbusDeviceRawData> ret;
-    rackmond.getRawData(ret);
+    rackmond_.getRawData(ret);
     resp["data"] = ret;
   } else if (cmd == "pause") {
-    rackmond.stop();
+    rackmond_.stop();
   } else if (cmd == "resume") {
-    rackmond.start();
+    rackmond_.start();
   } else if (cmd == "formatted_data") {
     std::vector<ModbusDeviceFmtData> ret;
-    rackmond.getFmtData(ret);
+    rackmond_.getFmtData(ret);
     resp["data"] = ret;
   } else if (cmd == "value_data") {
     std::vector<ModbusDeviceValueData> ret;
-    rackmond.getValueData(ret);
+    rackmond_.getValueData(ret);
     resp["data"] = ret;
   } else if (cmd == "profile") {
-    resp["data"] = rackmond.getProfileData();
+    resp["data"] = rackmond_.getProfileData();
   } else {
     throw std::logic_error("UNKNOWN_CMD: " + cmd);
   }
   resp["status"] = "SUCCESS";
 }
 
-void RackmonUNIXSocketService::handle_json_command(
+void RackmonUNIXSocketService::handleJSONCommand(
     const json& req,
     RackmonSock& cli) {
   auto print_msg = [&req](std::exception& e) {
@@ -117,7 +115,7 @@ void RackmonUNIXSocketService::handle_json_command(
   // each exception to an error code.
   // TODO: Work with rest-api to correctly define these.
   try {
-    handle_json_command(req, resp);
+    handleJSONCommand(req, resp);
   } catch (CRCError& e) {
     resp["status"] = "CRC_ERROR";
     print_msg(e);
@@ -149,7 +147,7 @@ void RackmonUNIXSocketService::handle_json_command(
   }
 }
 
-void RackmonUNIXSocketService::handle_legacy_command(
+void RackmonUNIXSocketService::handleLegacyCommand(
     std::vector<char>& req_buf,
     std::vector<char>& resp_buf) {
   struct req_hdr {
@@ -178,7 +176,7 @@ void RackmonUNIXSocketService::handle_legacy_command(
   Msg resp_msg;
   resp_msg.len = req_hdr->expected_resp_length;
   ModbusTime timeout(req_hdr->custom_timeout);
-  rackmond.rawCmd(req_msg, resp_msg, timeout);
+  rackmond_.rawCmd(req_msg, resp_msg, timeout);
 
   size_t resp_sz = req_hdr->expected_resp_length;
   resp_buf.resize(2 + resp_sz);
@@ -190,12 +188,12 @@ void RackmonUNIXSocketService::handle_legacy_command(
       resp_buf.begin() + 2);
 }
 
-void RackmonUNIXSocketService::handle_legacy_command(
+void RackmonUNIXSocketService::handleLegacyCommand(
     std::vector<char>& req_buf,
     RackmonSock& cli) {
   std::vector<char> resp_buf;
   try {
-    handle_legacy_command(req_buf, resp_buf);
+    handleLegacyCommand(req_buf, resp_buf);
   } catch (std::exception& e) {
     resp_buf = {0, 0, 1, 0};
     logError << "Unable to handle legacy command: " << e.what() << std::endl;
@@ -207,17 +205,17 @@ void RackmonUNIXSocketService::handle_legacy_command(
   }
 }
 
-void RackmonUNIXSocketService::request_exit() {
+void RackmonUNIXSocketService::requestExit() {
   char c = 'c';
-  if (write(backchannel_req, &c, 1) != 1) {
+  if (write(backChannelRequestor_, &c, 1) != 1) {
     logError << "Could not request rackmon svc to exit!" << std::endl;
   }
 }
 
-void RackmonUNIXSocketService::register_exit_handler() {
+void RackmonUNIXSocketService::registerExitHandler() {
   struct sigaction ign_action, exit_action;
 
-  if (pipe(backchannel_fds) != 0) {
+  if (pipe(backChannelFDs_) != 0) {
     std::system_error(
         std::error_code(errno, std::generic_category()),
         "Backchannel Pipe creation");
@@ -233,7 +231,7 @@ void RackmonUNIXSocketService::register_exit_handler() {
 
   exit_action.sa_flags = 0;
   sigemptyset(&exit_action.sa_mask);
-  exit_action.sa_handler = RackmonUNIXSocketService::trigger_exit;
+  exit_action.sa_handler = RackmonUNIXSocketService::triggerExit;
   if (sigaction(SIGTERM, &exit_action, NULL) != 0) {
     throw std::system_error(
         std::error_code(errno, std::generic_category()), "SIGTERM handler");
@@ -248,30 +246,29 @@ void RackmonUNIXSocketService::initialize(
     int /*unused */,
     char** /* unused */) {
   logInfo << "Loading configuration" << std::endl;
-  rackmond.load(rackmon_configuration_path, rackmon_regmap_dir_path);
+  rackmond_.load(kRackmonConfigurationPath, kRackmonRegmapDirPath);
   logInfo << "Starting rackmon threads" << std::endl;
-  rackmond.start();
-  // rackmond.start();
-  register_exit_handler();
+  rackmond_.start();
+  registerExitHandler();
   logInfo << "Creating Rackmon UNIX service" << std::endl;
-  sock = std::make_unique<RackmonService>();
+  sock_ = std::make_unique<RackmonService>();
 }
 
 void RackmonUNIXSocketService::deinitialize() {
   logInfo << "Deinitializing... stopping rackmond" << std::endl;
-  rackmond.stop();
-  sock = nullptr;
-  if (backchannel_req != -1) {
-    close(backchannel_req);
-    backchannel_req = -1;
+  rackmond_.stop();
+  sock_ = nullptr;
+  if (backChannelRequestor_ != -1) {
+    close(backChannelRequestor_);
+    backChannelRequestor_ = -1;
   }
-  if (backchannel_handler != -1) {
-    close(backchannel_handler);
-    backchannel_handler = -1;
+  if (backChannelHandler_ != -1) {
+    close(backChannelHandler_);
+    backChannelHandler_ = -1;
   }
 }
 
-void RackmonUNIXSocketService::handle_connection(
+void RackmonUNIXSocketService::handleConnection(
     std::unique_ptr<RackmonSock> sock) {
   std::vector<char> buf;
 
@@ -290,16 +287,16 @@ void RackmonUNIXSocketService::handle_connection(
   }
 
   if (is_json)
-    handle_json_command(req, *sock);
+    handleJSONCommand(req, *sock);
   else
-    handle_legacy_command(buf, *sock);
+    handleLegacyCommand(buf, *sock);
 }
 
-void RackmonUNIXSocketService::do_loop() {
+void RackmonUNIXSocketService::doLoop() {
   struct sockaddr_un client;
   struct pollfd pfd[2] = {
-      {sock->get_sock(), POLLIN, 0},
-      {backchannel_handler, POLLIN, 0},
+      {sock_->getSock(), POLLIN, 0},
+      {backChannelHandler_, POLLIN, 0},
   };
 
   while (1) {
@@ -328,14 +325,14 @@ void RackmonUNIXSocketService::do_loop() {
     }
     if (pfd[0].revents & POLLIN) {
       int clifd =
-          accept(sock->get_sock(), (struct sockaddr*)&client, &clisocklen);
+          accept(sock_->getSock(), (struct sockaddr*)&client, &clisocklen);
       if (clifd < 0) {
         logError << "Failed to accept new connection" << std::endl;
         continue;
       }
       auto clisock = std::make_unique<RackmonSock>(clifd);
       auto tid = std::thread(
-          &RackmonUNIXSocketService::handle_connection,
+          &RackmonUNIXSocketService::handleConnection,
           this,
           std::move(clisock));
       tid.detach();
@@ -345,7 +342,7 @@ void RackmonUNIXSocketService::do_loop() {
 
 int main(int argc, char* argv[]) {
   RackmonUNIXSocketService::svc.initialize(argc, argv);
-  RackmonUNIXSocketService::svc.do_loop();
+  RackmonUNIXSocketService::svc.doLoop();
   RackmonUNIXSocketService::svc.deinitialize();
   return 0;
 }

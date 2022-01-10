@@ -10,19 +10,20 @@
 
 class RackmonSock {
  protected:
-  int sock = -1;
-  static constexpr std::string_view sock_path{"/var/run/rackmond.sock"};
-  std::tuple<struct sockaddr_un, size_t> get_service_addr();
-  int get_service_sock();
-  int create_service();
-  int create_client();
+  int sock_ = -1;
+  static constexpr std::string_view kSockPath{"/var/run/rackmond.sock"};
+  std::tuple<struct sockaddr_un, size_t> getServiceAddr();
+  int getServiceSock();
+  int createService();
+  int createClient();
 
-  void sendchunk(const char *buf, uint16_t buf_len);
-  bool recvchunk(std::vector<char>& resp);
+  void sendChunk(const char* buf, uint16_t bufLen);
+  bool recvChunk(std::vector<char>& resp);
+
  public:
-  RackmonSock(int fd) : sock(fd) {}
-  int get_sock() {
-    return sock;
+  explicit RackmonSock(int fd) : sock_(fd) {}
+  int getSock() const {
+    return sock_;
   }
   virtual ~RackmonSock();
   void send(const char* buf, size_t len);
@@ -31,10 +32,10 @@ class RackmonSock {
 
 class RackmonService : public RackmonSock {
  public:
-  RackmonService() : RackmonSock(create_service()) {}
+  RackmonService() : RackmonSock(createService()) {}
 };
 
 class RackmonClient : public RackmonSock {
  public:
-  RackmonClient() : RackmonSock(create_client()) {}
+  RackmonClient() : RackmonSock(createClient()) {}
 };

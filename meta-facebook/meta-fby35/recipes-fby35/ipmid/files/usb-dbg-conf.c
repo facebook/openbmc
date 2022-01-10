@@ -384,18 +384,18 @@ static sensor_desc_t cri_sensor_sb[] =
 {
   {"MB Inlet Temp:"        , BIC_SENSOR_INLET_TEMP         , "C"    , FRU_ALL, 0},
   {"MB Outlet Temp:"       , BIC_SENSOR_OUTLET_TEMP        , "C"    , FRU_ALL, 0},
-  {"FRONT IO Temp:"        , BIC_SENSOR_FIO_TEMP           , "C"    , FRU_ALL, 2},
+  {"FIO Temp:"             , BIC_SENSOR_FIO_TEMP           , "C"    , FRU_ALL, 0},
   {"PCH Temp:"             , BIC_SENSOR_PCH_TEMP           , "C"    , FRU_ALL, 0},
-  {"SOC CPU Temp:"         , BIC_SENSOR_CPU_TEMP           , "C"    , FRU_ALL, 0},
+  {"CPU Temp:"             , BIC_SENSOR_CPU_TEMP           , "C"    , FRU_ALL, 0},
   {"Therm Margin:"         , BIC_SENSOR_CPU_THERM_MARGIN   , "C"    , FRU_ALL, 0},
-  {"SOC CPU TjMax:"        , BIC_SENSOR_CPU_TJMAX          , "C"    , FRU_ALL, 0},
+  {"CPU TjMax:"            , BIC_SENSOR_CPU_TJMAX          , "C"    , FRU_ALL, 0},
   {"DIMMA TEMP:"           , BIC_SENSOR_DIMMA0_TEMP        , "C"    , FRU_ALL, 0},
   {"DIMMC TEMP:"           , BIC_SENSOR_DIMMC0_TEMP        , "C"    , FRU_ALL, 0},
   {"DIMMD TEMP:"           , BIC_SENSOR_DIMMD0_TEMP        , "C"    , FRU_ALL, 0},
   {"DIMME TEMP:"           , BIC_SENSOR_DIMME0_TEMP        , "C"    , FRU_ALL, 0},
   {"DIMMG TEMP:"           , BIC_SENSOR_DIMMG0_TEMP        , "C"    , FRU_ALL, 0},
   {"DIMMH TEMP:"           , BIC_SENSOR_DIMMH0_TEMP        , "C"    , FRU_ALL, 0},
-  {"SSD1 Temp:"            , BIC_SENSOR_M2A_TEMP           , "C"    , FRU_ALL, 0},
+  {"SSD0 Temp:"            , BIC_SENSOR_M2A_TEMP           , "C"    , FRU_ALL, 0},
   {"HSC Temp:"             , BIC_SENSOR_HSC_TEMP           , "C"    , FRU_ALL, 0},
   {"VCCIN VR Temp:"        , BIC_SENSOR_VCCIN_VR_TEMP      , "C"    , FRU_ALL, 0},
   {"FIVRA VR Temp:"        , BIC_SENSOR_FIVRA_VR_TEMP      , "C"    , FRU_ALL, 0},
@@ -413,19 +413,18 @@ static sensor_desc_t cri_sensor_sb[] =
   {"EHV VR Vol:"           , BIC_SENSOR_EHV_VR_VOL         , "V"    , FRU_ALL, 2},
   {"VCCD VR Vol:"          , BIC_SENSOR_VCCD_VR_VOL        , "V"    , FRU_ALL, 2},
   {"FAON VR Vol:"          , BIC_SENSOR_FAON_VR_VOL        , "V"    , FRU_ALL, 2},
-  {"HSC OutputCur:"        , BIC_SENSOR_HSC_OUTPUT_CUR     , "Amps" , FRU_ALL, 2},
-  {"VCCIN VR Cur:"         , BIC_SENSOR_VCCIN_VR_CUR       , "Amps" , FRU_ALL, 2},
-  {"FIVRA VR Cur:"         , BIC_SENSOR_FIVRA_VR_CUR       , "Amps" , FRU_ALL, 2},
-  {"EHV VR Cur:"           , BIC_SENSOR_EHV_VR_CUR         , "Amps" , FRU_ALL, 2},
-  {"VCCD VR Cur:"          , BIC_SENSOR_VCCD_VR_CUR        , "Amps" , FRU_ALL, 2},
-  {"FAON VR Cur:"          , BIC_SENSOR_FAON_VR_CUR        , "Amps" , FRU_ALL, 2},
-  {"HSC PwrIn:"            , BIC_SENSOR_HSC_INPUT_PWR      , "W"    , FRU_ALL, 0},
-  {"VCCIN VR Pout:"        , BIC_SENSOR_VCCIN_VR_POUT      , "W"    , FRU_ALL, 0},
-  {"FIVRA VR Pout:"        , BIC_SENSOR_FIVRA_VR_POUT      , "W"    , FRU_ALL, 0},
-  {"EHV VR Pout:"          , BIC_SENSOR_EHV_VR_POUT        , "W"    , FRU_ALL, 0},
+  {"HSC OutputCur:"        , BIC_SENSOR_HSC_OUTPUT_CUR     , "A"    , FRU_ALL, 2},
+  {"VCCIN VR Cur:"         , BIC_SENSOR_VCCIN_VR_CUR       , "A"    , FRU_ALL, 2},
+  {"FIVRA VR Cur:"         , BIC_SENSOR_FIVRA_VR_CUR       , "A"    , FRU_ALL, 2},
+  {"EHV VR Cur:"           , BIC_SENSOR_EHV_VR_CUR         , "A"    , FRU_ALL, 2},
+  {"VCCD VR Cur:"          , BIC_SENSOR_VCCD_VR_CUR        , "A"    , FRU_ALL, 2},
+  {"FAON VR Cur:"          , BIC_SENSOR_FAON_VR_CUR        , "A"    , FRU_ALL, 2},
+  {"HSC PwrIn:"            , BIC_SENSOR_HSC_INPUT_PWR      , "W"    , FRU_ALL, 2},
+  {"VCCIN VR Pout:"        , BIC_SENSOR_VCCIN_VR_POUT      , "W"    , FRU_ALL, 2},
+  {"FIVRA VR Pout:"        , BIC_SENSOR_FIVRA_VR_POUT      , "W"    , FRU_ALL, 2},
+  {"EHV VR Pout:"          , BIC_SENSOR_EHV_VR_POUT        , "W"    , FRU_ALL, 2},
   {"VCCD VR Pout"          , BIC_SENSOR_VCCD_VR_POUT       , "W"    , FRU_ALL, 2},
-  {"FANO VRPout:"          , BIC_SENSOR_FAON_VR_POUT       , "W"    , FRU_ALL, 2},
- 
+  {"FAON VR Pout:"         , BIC_SENSOR_FAON_VR_POUT       , "W"    , FRU_ALL, 2},
 };
 
 static sensor_desc_t cri_sensor_bmc[] =
@@ -454,21 +453,21 @@ static sensor_desc_t cri_sensor_bmc[] =
   {"HSC_VIN:"              , BMC_SENSOR_HSC_VIN            , "V"    , FRU_BMC, 2},
   {"HSC_PIN:"              , BMC_SENSOR_HSC_PIN            , "W"    , FRU_BMC, 2},
   {"HSC_EIN:"              , BMC_SENSOR_HSC_EIN            , "W"    , FRU_BMC, 2},
-  {"HSC_IOUT:"             , BMC_SENSOR_HSC_IOUT           , "Amps" , FRU_BMC, 2},
-  {"HSCP_EAK_IOUT:"        , BMC_SENSOR_HSC_PEAK_IOUT      , "Amps" , FRU_BMC, 2},
-  {"HSCPEAKPIN:"           , BMC_SENSOR_HSC_PEAK_PIN       , "W"    , FRU_BMC, 2},
+  {"HSC_IOUT:"             , BMC_SENSOR_HSC_IOUT           , "A"    , FRU_BMC, 2},
+  {"HSC_PEAK_IOUT:"        , BMC_SENSOR_HSC_PEAK_IOUT      , "A"    , FRU_BMC, 2},
+  {"HSC_PEAK_PIN:"         , BMC_SENSOR_HSC_PEAK_PIN       , "W"    , FRU_BMC, 2},
   {"MEDUSA_VOUT:"          , BMC_SENSOR_MEDUSA_VOUT        , "V"    , FRU_BMC, 2},
   {"MEDUSA_VIN:"           , BMC_SENSOR_MEDUSA_VIN         , "V"    , FRU_BMC, 2},
-  {"MEDUSA_CURR:"          , BMC_SENSOR_MEDUSA_CURR        , "Amps" , FRU_BMC, 2},
+  {"MEDUSA_CURR:"          , BMC_SENSOR_MEDUSA_CURR        , "A"    , FRU_BMC, 2},
   {"MEDUSA_PWR:"           , BMC_SENSOR_MEDUSA_PWR         , "W"    , FRU_BMC, 2},
   {"MEDUSA_VDELTA:"        , BMC_SENSOR_MEDUSA_VDELTA      , "V"    , FRU_BMC, 2},
   {"PDB_DL_VDELTA:"        , BMC_SENSOR_PDB_DL_VDELTA      , "V"    , FRU_BMC, 2},
   {"PDB_BB_VDELTA:"        , BMC_SENSOR_PDB_BB_VDELTA      , "V"    , FRU_BMC, 2},
   {"CURR_LEAKAGE:"         , BMC_SENSOR_CURR_LEAKAGE       , "%"    , FRU_BMC, 2},
-  {"FAN_IOUT:"             , BMC_SENSOR_FAN_IOUT           , "Amps" , FRU_BMC, 2},
+  {"FAN_IOUT:"             , BMC_SENSOR_FAN_IOUT           , "A"    , FRU_BMC, 2},
   {"FAN_PWR:"              , BMC_SENSOR_FAN_PWR            , "W"    , FRU_BMC, 2},
   {"NIC_P12V:"             , BMC_SENSOR_NIC_P12V           , "V"    , FRU_BMC, 2},
-  {"NIC_IOUT:"             , BMC_SENSOR_NIC_IOUT           , "Amps" , FRU_BMC, 2},
+  {"NIC_IOUT:"             , BMC_SENSOR_NIC_IOUT           , "A"    , FRU_BMC, 2},
   {"NIC_PWR:"              , BMC_SENSOR_NIC_PWR            , "W"    , FRU_BMC, 2},
 };
 
@@ -479,7 +478,6 @@ bool plat_supported(void)
 
 int plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_count)
 {
-  
   if (!desc || !desc_count) {
     return -1;
   }

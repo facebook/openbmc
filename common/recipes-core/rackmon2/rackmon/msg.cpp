@@ -3,7 +3,7 @@
 /* From libmodbus, https://github.com/stephane/libmodbus
  * Under LGPL. */
 /* Table of CRC values for high-order byte */
-static const uint8_t table_crc_hi[] = {
+static const uint8_t kTableCRCHigh[] = {
     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x00, 0xC1, 0x81, 0x40,
     0x00, 0xC1, 0x81, 0x40, 0x01, 0xC0, 0x80, 0x41, 0x01, 0xC0, 0x80, 0x41,
@@ -28,7 +28,7 @@ static const uint8_t table_crc_hi[] = {
     0x00, 0xC1, 0x81, 0x40};
 
 /* Table of CRC values for low-order byte */
-static const uint8_t table_crc_lo[] = {
+static const uint8_t kTableCRCLow[] = {
     0x00, 0xC0, 0xC1, 0x01, 0xC3, 0x03, 0x02, 0xC2, 0xC6, 0x06, 0x07, 0xC7,
     0x05, 0xC5, 0xC4, 0x04, 0xCC, 0x0C, 0x0D, 0xCD, 0x0F, 0xCF, 0xCE, 0x0E,
     0x0A, 0xCA, 0xCB, 0x0B, 0xC9, 0x09, 0x08, 0xC8, 0xD8, 0x18, 0x19, 0xD9,
@@ -53,15 +53,15 @@ static const uint8_t table_crc_lo[] = {
     0x41, 0x81, 0x80, 0x40};
 
 uint16_t Msg::crc16() {
-  uint8_t crc_hi = 0xFF; // high CRC byte initialized
-  uint8_t crc_lo = 0xFF; // low CRC byte initialized
+  uint8_t crcHigh = 0xFF; // high CRC byte initialized
+  uint8_t crcLow = 0xFF; // low CRC byte initialized
 
   for (const auto& b : *this) {
-    size_t idx = crc_hi ^ b;
-    crc_hi = crc_lo ^ table_crc_hi[idx];
-    crc_lo = table_crc_lo[idx];
+    size_t idx = crcHigh ^ b;
+    crcHigh = crcLow ^ kTableCRCHigh[idx];
+    crcLow = kTableCRCLow[idx];
   }
-  return (crc_hi << 8 | crc_lo);
+  return (crcHigh << 8 | crcLow);
 }
 
 void Msg::finalize() {
@@ -73,7 +73,7 @@ void Msg::validate() {
   *this >> crc;
   uint16_t exp = crc16();
   if (exp != crc) {
-    throw crc_exception(exp, crc);
+    throw CRCError(exp, crc);
   }
 }
 

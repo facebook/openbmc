@@ -118,7 +118,7 @@ void RackmonUNIXSocketService::handle_json_command(
   // TODO: Work with rest-api to correctly define these.
   try {
     handle_json_command(req, resp);
-  } catch (crc_exception& e) {
+  } catch (CRCError& e) {
     resp["status"] = "CRC_ERROR";
     print_msg(e);
   } catch (TimeoutException& e) {

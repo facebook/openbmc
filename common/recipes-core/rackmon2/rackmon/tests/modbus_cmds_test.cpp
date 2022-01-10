@@ -47,7 +47,7 @@ TEST(ReadHoldingRegisters, BadCRCResp) {
   // regs(3*2) = 0x1122, 0x3344, 0x5566
   // crc(2) = 0x5929 (should be 0x5928)
   msg.Msg::operator=(0x0a03061122334455665929_M);
-  EXPECT_THROW(msg.decode(), crc_exception);
+  EXPECT_THROW(msg.decode(), CRCError);
 }
 
 TEST(ReadHoldingRegisters, BadFuncResp) {

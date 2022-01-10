@@ -32,7 +32,7 @@ void ModbusDevice::command(
     info.timeouts++;
     info.num_consecutive_failures++;
     throw;
-  } catch (crc_exception& e) {
+  } catch (CRCError& e) {
     info.crc_failures++;
     info.num_consecutive_failures++;
     throw;

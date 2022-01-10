@@ -154,67 +154,67 @@ TEST(Msg, TestCRC) {
   // Pop CRC and inspect.
   uint16_t crc;
   msg >> crc;
-  ASSERT_EQ(msg.len, 3);
-  ASSERT_EQ(crc, 0x6161);
+  EXPECT_EQ(msg.len, 3);
+  EXPECT_EQ(crc, 0x6161);
   // check validate does not throw
   msg.wrap_encode();
   msg.wrap_validate();
-  ASSERT_EQ(msg.len, 3);
+  EXPECT_EQ(msg.len, 3);
   // Reset len to include CRC and check decode() does not throw.
   msg.len += 2;
   msg.wrap_decode();
-  ASSERT_EQ(msg.len, 3);
+  EXPECT_EQ(msg.len, 3);
 
   // Reset len and corrupt one byte, check both validate and
   // decode throws.
   msg.len += 2;
   msg.raw[0] = 4;
-  EXPECT_THROW(msg.wrap_validate(), crc_exception);
-  EXPECT_THROW(msg.wrap_decode(), crc_exception);
+  EXPECT_THROW(msg.wrap_validate(), CRCError);
+  EXPECT_THROW(msg.wrap_decode(), CRCError);
 }
 
 TEST(Msg, ConstantLiteral) {
   Msg msg = 0x123456789abcdef012_M;
-  ASSERT_EQ(msg.len, 9);
-  ASSERT_EQ(msg.raw[0], 0x12);
-  ASSERT_EQ(msg.raw[1], 0x34);
-  ASSERT_EQ(msg.raw[2], 0x56);
-  ASSERT_EQ(msg.raw[3], 0x78);
-  ASSERT_EQ(msg.raw[4], 0x9a);
-  ASSERT_EQ(msg.raw[5], 0xbc);
-  ASSERT_EQ(msg.raw[6], 0xde);
-  ASSERT_EQ(msg.raw[7], 0xf0);
-  ASSERT_EQ(msg.raw[8], 0x12);
+  EXPECT_EQ(msg.len, 9);
+  EXPECT_EQ(msg.raw[0], 0x12);
+  EXPECT_EQ(msg.raw[1], 0x34);
+  EXPECT_EQ(msg.raw[2], 0x56);
+  EXPECT_EQ(msg.raw[3], 0x78);
+  EXPECT_EQ(msg.raw[4], 0x9a);
+  EXPECT_EQ(msg.raw[5], 0xbc);
+  EXPECT_EQ(msg.raw[6], 0xde);
+  EXPECT_EQ(msg.raw[7], 0xf0);
+  EXPECT_EQ(msg.raw[8], 0x12);
 }
 
 TEST(Msg, constIter) {
   const Msg msg = 0x1234_M;
   auto it = msg.begin();
-  ASSERT_EQ(*it, 0x12);
+  EXPECT_EQ(*it, 0x12);
   it++;
-  ASSERT_EQ(*it, 0x34);
+  EXPECT_EQ(*it, 0x34);
   it++;
-  ASSERT_EQ(it, msg.end());
+  EXPECT_EQ(it, msg.end());
 }
 
 TEST(Msg, EqualCompare) {
   Msg msg1 = 0x12345678_M;
   Msg msg2 = 0x123456_M;
-  ASSERT_NE(msg1, msg2);
+  EXPECT_NE(msg1, msg2);
   msg2 << uint8_t(0x78);
-  ASSERT_EQ(msg1, msg2);
+  EXPECT_EQ(msg1, msg2);
 }
 
 TEST(Msg, CopyConstructor) {
   Msg msg1 = 0x12345678_M;
   Msg msg2(msg1);
-  ASSERT_EQ(msg1, msg2);
+  EXPECT_EQ(msg1, msg2);
 }
 
 TEST(Msg, AssignmentOperator) {
   Msg msg1 = 0x12345678_M;
   Msg msg2 = 0x1234_M;
-  ASSERT_NE(msg1, msg2);
+  EXPECT_NE(msg1, msg2);
   msg2 = msg1;
-  ASSERT_EQ(msg1, msg2);
+  EXPECT_EQ(msg1, msg2);
 }

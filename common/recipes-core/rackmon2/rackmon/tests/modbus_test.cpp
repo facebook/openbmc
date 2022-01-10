@@ -168,5 +168,5 @@ TEST_F(ModbusTest, CommandBadResp) {
   resp.len = 9;
   EXPECT_THROW(
       bus.command(req, resp, 115200, modbus_time::zero(), modbus_time::zero()),
-      crc_exception);
+      CRCError);
 }

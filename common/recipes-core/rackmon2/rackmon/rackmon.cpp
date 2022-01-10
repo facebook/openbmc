@@ -39,9 +39,9 @@ bool Rackmon::probe(Modbus& iface, uint8_t addr) {
   const RegisterMap& rmap = regmap_db.at(addr);
   std::vector<uint16_t> v(1);
   try {
-    ReadHoldingRegistersReq req(addr, rmap.probe_register, v.size());
+    ReadHoldingRegistersReq req(addr, rmap.probeRegister, v.size());
     ReadHoldingRegistersResp resp(addr, v);
-    iface.command(req, resp, rmap.default_baudrate, probe_timeout);
+    iface.command(req, resp, rmap.defaultBaudrate, probe_timeout);
     std::unique_lock lock(devices_mutex);
     devices[addr] = std::make_unique<ModbusDevice>(iface, addr, rmap);
     logInfo << std::hex << std::setw(2) << std::setfill('0') << "Found "
@@ -71,7 +71,7 @@ std::vector<uint8_t> Rackmon::inspect_dormant() {
     // change to something larger if required.
     if ((it.second->last_active() + dormant_min_inactive_time) < curr) {
       const RegisterMap& rmap = regmap_db.at(it.first);
-      uint16_t probe = rmap.probe_register;
+      uint16_t probe = rmap.probeRegister;
       std::vector<uint16_t> v(1);
       try {
         uint8_t addr = it.first;

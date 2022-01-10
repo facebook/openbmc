@@ -324,7 +324,7 @@ TEST_F(ModbusDeviceTest, MonitorDataValue) {
   ASSERT_EQ(data.num_consecutive_failures, 0);
   ASSERT_EQ(data.get_mode(), ModbusDeviceMode::ACTIVE);
   ASSERT_EQ(data.register_list.size(), 1);
-  ASSERT_EQ(data.register_list[0].reg_addr, 0);
+  ASSERT_EQ(data.register_list[0].regAddr, 0);
   ASSERT_EQ(data.register_list[0].name, "MFG_MODEL");
   ASSERT_EQ(data.register_list[0].history.size(), 1);
   ASSERT_NEAR(data.register_list[0].history[0].timestamp, std::time(0), 10);
@@ -342,7 +342,7 @@ TEST_F(ModbusDeviceTest, MonitorDataValue) {
   ASSERT_EQ(data2.num_consecutive_failures, 0);
   ASSERT_EQ(data2.get_mode(), ModbusDeviceMode::ACTIVE);
   ASSERT_EQ(data2.register_list.size(), 1);
-  ASSERT_EQ(data2.register_list[0].reg_addr, 0);
+  ASSERT_EQ(data2.register_list[0].regAddr, 0);
   ASSERT_EQ(data2.register_list[0].name, "MFG_MODEL");
   ASSERT_EQ(data2.register_list[0].history.size(), 2);
   ASSERT_EQ(data2.register_list[0].history[0].type, RegisterValueType::STRING);
@@ -370,7 +370,7 @@ TEST_F(ModbusDeviceTest, MonitorDataValue) {
   ASSERT_EQ(j["mode"], "active");
   ASSERT_NEAR(j["now"], std::time(0), 10);
   ASSERT_TRUE(j["ranges"].is_array() && j["ranges"].size() == 1);
-  ASSERT_EQ(j["ranges"][0]["begin"], 0);
+  ASSERT_EQ(j["ranges"][0]["regAddress"], 0);
   ASSERT_EQ(j["ranges"][0]["name"], "MFG_MODEL");
   ASSERT_TRUE(
       j["ranges"][0]["readings"].is_array() &&

@@ -5,19 +5,6 @@
 #include <utility>
 #include <vector>
 
-// Storage for address ranges. Provides comparision operators
-// to allow for it to be used as a key in a map --> This allows
-// for us to do quick lookups of addr to register map to use.
-struct addr_range {
-  // pair of start and end address.
-  std::pair<uint8_t, uint8_t> range{};
-  addr_range() {}
-  explicit addr_range(uint8_t a, uint8_t b) : range(a, b) {}
-  explicit addr_range(uint8_t a) : range(a, a) {}
-
-  bool contains(uint8_t) const;
-};
-
 // Describes how we intend on interpreting the value stored
 // in a register.
 enum RegisterValueType {
@@ -44,7 +31,7 @@ struct RegisterDescriptor {
   // This is a caveat of the 'keep' value. This forces us
   // to keep a value only if it changed from the previous read
   // value. Useful for state information.
-  bool changes_only = false;
+  bool storeChangesOnly = false;
 
   // Describes how to interpret the contents of the register.
   RegisterValueType format = RegisterValueType::HEX;
@@ -83,17 +70,22 @@ struct RegisterValue {
   RegisterValue(const std::vector<uint16_t>& reg);
   RegisterValue(const RegisterValue& other);
   RegisterValue(RegisterValue&& other);
+
+  // Constructing a union with non-trivial members is
+  // is painful enough. Lets not support assignments.
+  void operator=(const RegisterValue& other) = delete;
+  void operator=(const RegisterValue&& other) = delete;
   ~RegisterValue();
   operator std::string();
 
  private:
-  void make_string(const std::vector<uint16_t>& reg);
-  void make_hex(const std::vector<uint16_t>& reg);
-  void make_integer(const std::vector<uint16_t>& reg);
-  void make_float(const std::vector<uint16_t>& reg, uint16_t precision);
-  void make_flags(
+  void makeString(const std::vector<uint16_t>& reg);
+  void makeHex(const std::vector<uint16_t>& reg);
+  void makeInteger(const std::vector<uint16_t>& reg);
+  void makeFloat(const std::vector<uint16_t>& reg, uint16_t precision);
+  void makeFlags(
       const std::vector<uint16_t>& reg,
-      const RegisterDescriptor::FlagsDescType& flags_desc);
+      const RegisterDescriptor::FlagsDescType& flagsDesc);
 };
 void to_json(nlohmann::json& j, const RegisterValue& m);
 
@@ -131,11 +123,11 @@ void to_json(nlohmann::json& j, const Register& m);
 
 // Container describing the register and its historical record.
 struct RegisterStoreValue {
-  uint16_t reg_addr = 0;
+  uint16_t regAddr = 0;
   std::string name{};
   std::vector<RegisterValue> history{};
   RegisterStoreValue(uint16_t reg, const std::string& n)
-      : reg_addr(reg), name(n) {}
+      : regAddr(reg), name(n) {}
 };
 void to_json(nlohmann::json& j, const RegisterStoreValue& m);
 
@@ -143,37 +135,53 @@ void to_json(nlohmann::json& j, const RegisterStoreValue& m);
 // time. (RegisterDescriptor::keep defines the size of the depth
 // of the historical record).
 struct RegisterStore {
+ private:
   // Reference to the register descriptor
-  const RegisterDescriptor& desc;
+  const RegisterDescriptor& desc_;
   // Address of the register.
-  uint16_t reg_addr;
+  uint16_t regAddr_;
   // History of the register contents to keep. This is utilized as
   // a circular buffer with idx pointing to the current slot to
   // write.
-  std::vector<Register> history;
-  int32_t idx = 0;
+  std::vector<Register> history_;
+  int32_t idx_ = 0;
 
  public:
-  explicit RegisterStore(const RegisterDescriptor& d)
-      : desc(d), reg_addr(d.begin), history(d.keep, Register(d)) {}
+  explicit RegisterStore(const RegisterDescriptor& desc)
+      : desc_(desc),
+        regAddr_(desc.begin),
+        history_(desc.keep, Register(desc)) {}
 
   // Returns a reference to the last written value (Back of the list)
   Register& back() {
-    return idx == 0 ? history.back() : history[idx - 1];
+    return idx_ == 0 ? history_.back() : history_[idx_ - 1];
   }
   // Returns the front (Next to write) reference
   Register& front() {
-    return history[idx];
+    return history_[idx_];
   }
   // Advances the front.
   void operator++() {
-    idx = (idx + 1) % history.size();
+    idx_ = (idx_ + 1) % history_.size();
   }
+
+  // register address accessor
+  uint16_t regAddr() const {
+    return regAddr_;
+  }
+
+  const std::string& name() const {
+    return desc_.name;
+  }
+
   // Returns a string formatted representation of the historical record.
   operator std::string() const;
 
   // Returns the historical record of the values
   operator RegisterStoreValue() const;
+
+  // Add the JSON conversion methods as friends.
+  friend void to_json(nlohmann::json& j, const RegisterStore& m);
 };
 void to_json(nlohmann::json& j, const RegisterStore& m);
 
@@ -195,19 +203,32 @@ struct SpecialHandlerInfo {
 };
 void from_json(const nlohmann::json& j, SpecialHandlerInfo& m);
 
+// Storage for address ranges. Provides comparision operators
+// to allow for it to be used as a key in a map --> This allows
+// for us to do quick lookups of addr to register map to use.
+struct AddrRange {
+  // pair of start and end address.
+  std::pair<uint8_t, uint8_t> range{};
+  AddrRange() {}
+  explicit AddrRange(uint8_t a, uint8_t b) : range(a, b) {}
+  explicit AddrRange(uint8_t a) : range(a, a) {}
+
+  bool contains(uint8_t) const;
+};
+
 // Container of an entire register map. This is the memory
 // representation of each JSON register map descriptors
 // at /etc/rackmon.d.
 struct RegisterMap {
-  addr_range applicable_addresses;
+  AddrRange applicableAddresses;
   std::string name;
-  uint8_t probe_register;
-  uint32_t default_baudrate;
-  uint32_t preferred_baudrate;
-  std::vector<SpecialHandlerInfo> special_handlers;
-  std::map<uint16_t, RegisterDescriptor> register_descriptors;
+  uint8_t probeRegister;
+  uint32_t defaultBaudrate;
+  uint32_t preferredBaudrate;
+  std::vector<SpecialHandlerInfo> specialHandlers;
+  std::map<uint16_t, RegisterDescriptor> registerDescriptors;
   const RegisterDescriptor& at(uint16_t reg) const {
-    return register_descriptors.at(reg);
+    return registerDescriptors.at(reg);
   }
 };
 
@@ -223,16 +244,16 @@ struct RegisterMapDatabase {
   void load(const nlohmann::json& j);
 
   // Loads all configuration files in a dir into the DB.
-  void load(const std::string& dir_s);
+  void load(const std::string& dir);
   // For debug purpose only.
   void print(std::ostream& os);
 };
 
 // JSON conversion
 void from_json(const nlohmann::json& j, RegisterMap& m);
-void from_json(const nlohmann::json& j, addr_range& a);
+void from_json(const nlohmann::json& j, AddrRange& a);
 void from_json(const nlohmann::json& j, RegisterDescriptor& i);
 
 void from_json(nlohmann::json& j, const RegisterMap& m);
-void from_json(nlohmann::json& j, const addr_range& a);
+void from_json(nlohmann::json& j, const AddrRange& a);
 void from_json(nlohmann::json& j, const RegisterDescriptor& i);

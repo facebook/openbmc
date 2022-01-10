@@ -16,12 +16,12 @@ TEST(RegisterDescriptorTest, JSONConversionDefaults) {
     "name": "MFG_MODEL"
   })");
   RegisterDescriptor d = desc;
-  ASSERT_EQ(d.begin, 0);
-  ASSERT_EQ(d.length, 8);
-  ASSERT_EQ(d.name, "MFG_MODEL");
-  ASSERT_EQ(d.keep, 1);
-  ASSERT_EQ(d.changes_only, false);
-  ASSERT_EQ(d.format, RegisterValueType::HEX);
+  EXPECT_EQ(d.begin, 0);
+  EXPECT_EQ(d.length, 8);
+  EXPECT_EQ(d.name, "MFG_MODEL");
+  EXPECT_EQ(d.keep, 1);
+  EXPECT_EQ(d.storeChangesOnly, false);
+  EXPECT_EQ(d.format, RegisterValueType::HEX);
 }
 
 TEST(RegisterDescriptorTest, JSONConversionEnforceMandatory) {
@@ -54,12 +54,12 @@ TEST(RegisterDescriptorTest, JSONConversionString) {
     "name": "MFG_MODEL"
   })");
   RegisterDescriptor d = desc;
-  ASSERT_EQ(d.begin, 0);
-  ASSERT_EQ(d.length, 8);
-  ASSERT_EQ(d.name, "MFG_MODEL");
-  ASSERT_EQ(d.keep, 1);
-  ASSERT_EQ(d.changes_only, false);
-  ASSERT_EQ(d.format, RegisterValueType::STRING);
+  EXPECT_EQ(d.begin, 0);
+  EXPECT_EQ(d.length, 8);
+  EXPECT_EQ(d.name, "MFG_MODEL");
+  EXPECT_EQ(d.keep, 1);
+  EXPECT_EQ(d.storeChangesOnly, false);
+  EXPECT_EQ(d.format, RegisterValueType::STRING);
 }
 
 TEST(RegisterDescriptorTest, JSONConversionDecimalKeep) {
@@ -71,12 +71,12 @@ TEST(RegisterDescriptorTest, JSONConversionDecimalKeep) {
     "name": "Set fan speed"
   })");
   RegisterDescriptor d = desc;
-  ASSERT_EQ(d.begin, 156);
-  ASSERT_EQ(d.length, 1);
-  ASSERT_EQ(d.name, "Set fan speed");
-  ASSERT_EQ(d.keep, 10);
-  ASSERT_EQ(d.changes_only, false);
-  ASSERT_EQ(d.format, RegisterValueType::INTEGER);
+  EXPECT_EQ(d.begin, 156);
+  EXPECT_EQ(d.length, 1);
+  EXPECT_EQ(d.name, "Set fan speed");
+  EXPECT_EQ(d.keep, 10);
+  EXPECT_EQ(d.storeChangesOnly, false);
+  EXPECT_EQ(d.format, RegisterValueType::INTEGER);
 }
 
 TEST(RegisterDescriptorTest, JSONConversionFixed) {
@@ -88,13 +88,13 @@ TEST(RegisterDescriptorTest, JSONConversionFixed) {
     "name": "Input VAC"
   })");
   RegisterDescriptor d = desc;
-  ASSERT_EQ(d.begin, 127);
-  ASSERT_EQ(d.length, 1);
-  ASSERT_EQ(d.name, "Input VAC");
-  ASSERT_EQ(d.keep, 1);
-  ASSERT_EQ(d.changes_only, false);
-  ASSERT_EQ(d.format, RegisterValueType::FLOAT);
-  ASSERT_EQ(d.precision, 6);
+  EXPECT_EQ(d.begin, 127);
+  EXPECT_EQ(d.length, 1);
+  EXPECT_EQ(d.name, "Input VAC");
+  EXPECT_EQ(d.keep, 1);
+  EXPECT_EQ(d.storeChangesOnly, false);
+  EXPECT_EQ(d.format, RegisterValueType::FLOAT);
+  EXPECT_EQ(d.precision, 6);
 }
 
 TEST(RegisterDescriptorTest, JSONConversionFixedMissingPrec) {
@@ -123,17 +123,17 @@ TEST(RegisterDescriptorTest, JSONConversionTableChangesOnly) {
     ]
   })");
   RegisterDescriptor d = desc;
-  ASSERT_EQ(d.begin, 105);
-  ASSERT_EQ(d.length, 1);
-  ASSERT_EQ(d.keep, 10);
-  ASSERT_EQ(d.changes_only, true);
-  ASSERT_EQ(d.name, "Battery Status register");
-  ASSERT_EQ(d.format, RegisterValueType::FLAGS);
+  EXPECT_EQ(d.begin, 105);
+  EXPECT_EQ(d.length, 1);
+  EXPECT_EQ(d.keep, 10);
+  EXPECT_EQ(d.storeChangesOnly, true);
+  EXPECT_EQ(d.name, "Battery Status register");
+  EXPECT_EQ(d.format, RegisterValueType::FLAGS);
   std::vector<std::tuple<uint8_t, std::string>> expected = {
       {2, "End of Life"},
       {1, "Low Voltage  BBU Voltage <= 33.8"},
       {0, "BBU Fail"}};
-  ASSERT_EQ(d.flags, expected);
+  EXPECT_EQ(d.flags, expected);
 }
 
 TEST(RegisterDescriptorTest, JSONConversionTableMissing) {

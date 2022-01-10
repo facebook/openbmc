@@ -92,7 +92,7 @@ TEST(RegisterStoreTest, DataRetrievalConversions) {
   std::string str = reg;
   RegisterStoreValue val = reg;
   EXPECT_EQ(str, "  <0x0000> HELLO                            :");
-  EXPECT_EQ(val.reg_addr, 0);
+  EXPECT_EQ(val.regAddr, 0);
   EXPECT_EQ(val.name, "HELLO");
   EXPECT_EQ(val.history.size(), 0);
 
@@ -102,7 +102,7 @@ TEST(RegisterStoreTest, DataRetrievalConversions) {
   str = reg;
   val = reg;
   EXPECT_EQ(str, "  <0x0000> HELLO                            : 0123");
-  EXPECT_EQ(val.reg_addr, 0);
+  EXPECT_EQ(val.regAddr, 0);
   EXPECT_EQ(val.name, "HELLO");
   EXPECT_EQ(val.history.size(), 1);
   EXPECT_EQ(val.history[0].type, RegisterValueType::STRING);
@@ -114,7 +114,7 @@ TEST(RegisterStoreTest, DataRetrievalConversions) {
   str = reg;
   val = reg;
   EXPECT_EQ(str, "  <0x0000> HELLO                            : 0123 1234");
-  EXPECT_EQ(val.reg_addr, 0);
+  EXPECT_EQ(val.regAddr, 0);
   EXPECT_EQ(val.name, "HELLO");
   EXPECT_EQ(val.history.size(), 2);
   EXPECT_EQ(val.history[0].type, RegisterValueType::STRING);
@@ -123,10 +123,10 @@ TEST(RegisterStoreTest, DataRetrievalConversions) {
   EXPECT_EQ(val.history[1].value.strValue, "1234");
 
   nlohmann::json j = val;
-  EXPECT_TRUE(j.contains("begin") && j["begin"].is_number_integer());
+  EXPECT_TRUE(j.contains("regAddress") && j["regAddress"].is_number_integer());
   EXPECT_TRUE(j.contains("name") && j["name"].is_string());
   EXPECT_TRUE(j.contains("readings") && j["readings"].is_array());
-  EXPECT_EQ(j["begin"], 0);
+  EXPECT_EQ(j["regAddress"], 0);
   EXPECT_EQ(std::string(j["name"]), "HELLO");
   EXPECT_EQ(j["readings"].size(), 2);
   EXPECT_TRUE(j["readings"][0].is_object());

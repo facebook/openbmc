@@ -248,7 +248,7 @@ TEST_F(RackmonTest, BasicScanFoundOneMon) {
   ASSERT_EQ(data.size(), 1);
   ASSERT_EQ(data[0].type, "orv2_psu");
   ASSERT_EQ(data[0].register_list.size(), 1);
-  ASSERT_EQ(data[0].register_list[0].reg_addr, 0);
+  ASSERT_EQ(data[0].register_list[0].regAddr, 0);
   ASSERT_EQ(data[0].register_list[0].name, "MFG_MODEL");
   ASSERT_EQ(data[0].register_list[0].history.size(), 1);
   ASSERT_EQ(

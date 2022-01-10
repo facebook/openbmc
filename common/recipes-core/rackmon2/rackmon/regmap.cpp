@@ -16,19 +16,19 @@ namespace filesystem = experimental::filesystem;
 
 using nlohmann::json;
 
-static void stream_hex(std::ostream& os, size_t num, size_t ndigits) {
+static void streamHex(std::ostream& os, size_t num, size_t ndigits) {
   os << std::hex << std::setfill('0') << std::setw(ndigits) << std::right
      << num;
 }
 
-bool addr_range::contains(uint8_t addr) const {
+bool AddrRange::contains(uint8_t addr) const {
   return addr >= range.first && addr <= range.second;
 }
 
-void from_json(const json& j, addr_range& a) {
+void from_json(const json& j, AddrRange& a) {
   a.range = j;
 }
-void to_json(json& j, const addr_range& a) {
+void to_json(json& j, const AddrRange& a) {
   j = a.range;
 }
 
@@ -47,7 +47,7 @@ void from_json(const json& j, RegisterDescriptor& i) {
   j.at("length").get_to(i.length);
   j.at("name").get_to(i.name);
   i.keep = j.value("keep", 1);
-  i.changes_only = j.value("changes_only", false);
+  i.storeChangesOnly = j.value("changes_only", false);
   i.format = j.value("format", RegisterValueType::HEX);
   if (i.format == RegisterValueType::FLOAT) {
     j.at("precision").get_to(i.precision);
@@ -60,7 +60,7 @@ void to_json(json& j, const RegisterDescriptor& i) {
   j["length"] = i.length;
   j["name"] = i.name;
   j["keep"] = i.keep;
-  j["changes_only"] = i.changes_only;
+  j["changes_only"] = i.storeChangesOnly;
   j["format"] = i.format;
   if (i.format == RegisterValueType::FLOAT) {
     j["precision"] = i.precision;
@@ -69,7 +69,8 @@ void to_json(json& j, const RegisterDescriptor& i) {
   }
 }
 
-void RegisterValue::make_string(const std::vector<uint16_t>& reg) {
+void RegisterValue::makeString(const std::vector<uint16_t>& reg) {
+  // Manual construction of string (non-trivial member of union)
   new (&value.strValue)(std::string);
   // String is stored normally H L H L, so we
   // need reswap the bytes in each nibble.
@@ -85,7 +86,8 @@ void RegisterValue::make_string(const std::vector<uint16_t>& reg) {
   }
 }
 
-void RegisterValue::make_hex(const std::vector<uint16_t>& reg) {
+void RegisterValue::makeHex(const std::vector<uint16_t>& reg) {
+  // Manual construction of vector (non-trivial member of union)
   new (&value.hexValue)(std::vector<uint8_t>);
   for (uint16_t v : reg) {
     value.hexValue.push_back(v >> 8);
@@ -93,7 +95,7 @@ void RegisterValue::make_hex(const std::vector<uint16_t>& reg) {
   }
 }
 
-void RegisterValue::make_integer(const std::vector<uint16_t>& reg) {
+void RegisterValue::makeInteger(const std::vector<uint16_t>& reg) {
   // TODO We currently do not need more than 32bit values as per
   // our current/planned regmaps. If such a value should show up in the
   // future, then we might need to return std::variant<int32_t,int64_t>.
@@ -110,23 +112,23 @@ void RegisterValue::make_integer(const std::vector<uint16_t>& reg) {
       });
 }
 
-void RegisterValue::make_float(
+void RegisterValue::makeFloat(
     const std::vector<uint16_t>& reg,
     uint16_t precision) {
-  make_integer(reg);
+  makeInteger(reg);
   // Y = X / 2^N
   value.floatValue = float(value.intValue) / float(1 << precision);
 }
 
-void RegisterValue::make_flags(
+void RegisterValue::makeFlags(
     const std::vector<uint16_t>& reg,
-    const RegisterDescriptor::FlagsDescType& flags_desc) {
-  make_integer(reg);
-  uint32_t bitfield = static_cast<uint32_t>(value.intValue);
+    const RegisterDescriptor::FlagsDescType& flagsDesc) {
+  makeInteger(reg);
+  uint32_t bitField = static_cast<uint32_t>(value.intValue);
   new (&value.flagsValue)(FlagsType);
-  for (const auto& [pos, name] : flags_desc) {
-    bool bit_val = (bitfield & (1 << pos)) != 0;
-    value.flagsValue.push_back(std::make_tuple(bit_val, name));
+  for (const auto& [pos, name] : flagsDesc) {
+    bool bitVal = (bitField & (1 << pos)) != 0;
+    value.flagsValue.push_back(std::make_tuple(bitVal, name));
   }
 }
 
@@ -137,25 +139,25 @@ RegisterValue::RegisterValue(
     : type(desc.format), timestamp(tstamp) {
   switch (desc.format) {
     case RegisterValueType::STRING:
-      make_string(reg);
+      makeString(reg);
       break;
     case RegisterValueType::INTEGER:
-      make_integer(reg);
+      makeInteger(reg);
       break;
     case RegisterValueType::FLOAT:
-      make_float(reg, desc.precision);
+      makeFloat(reg, desc.precision);
       break;
     case RegisterValueType::FLAGS:
-      make_flags(reg, desc.flags);
+      makeFlags(reg, desc.flags);
       break;
     case RegisterValueType::HEX:
-      make_hex(reg);
+      makeHex(reg);
   }
 }
 
 RegisterValue::RegisterValue(const std::vector<uint16_t>& reg)
     : type(RegisterValueType::HEX) {
-  make_hex(reg);
+  makeHex(reg);
 }
 
 RegisterValue::RegisterValue(const RegisterValue& other)
@@ -298,12 +300,12 @@ RegisterStore::operator std::string() const {
   // Format we are going for.
   // "  <0x0000> MFG_MODEL                        :700-014671-0000  "
   ss << "  <0x";
-  stream_hex(ss, desc.begin, 4);
-  ss << "> " << std::setfill(' ') << std::setw(32) << std::left << desc.name
+  streamHex(ss, desc_.begin, 4);
+  ss << "> " << std::setfill(' ') << std::setw(32) << std::left << desc_.name
      << " :";
-  for (const auto& v : history) {
+  for (const auto& v : history_) {
     if (v) {
-      if (desc.format != RegisterValueType::FLAGS)
+      if (desc_.format != RegisterValueType::FLAGS)
         ss << ' ';
       else
         ss << '\n';
@@ -314,8 +316,8 @@ RegisterStore::operator std::string() const {
 }
 
 RegisterStore::operator RegisterStoreValue() const {
-  RegisterStoreValue ret(reg_addr, desc.name);
-  for (const auto& reg : history) {
+  RegisterStoreValue ret(regAddr_, desc_.name);
+  for (const auto& reg : history_) {
     if (reg)
       ret.history.emplace_back(reg);
   }
@@ -323,14 +325,14 @@ RegisterStore::operator RegisterStoreValue() const {
 }
 
 void to_json(json& j, const RegisterStoreValue& m) {
-  j["begin"] = m.reg_addr;
+  j["regAddress"] = m.regAddr;
   j["name"] = m.name;
   j["readings"] = m.history;
 }
 
 void to_json(json& j, const RegisterStore& m) {
-  j["begin"] = m.reg_addr;
-  j["readings"] = m.history;
+  j["begin"] = m.regAddr_;
+  j["readings"] = m.history_;
 }
 
 void from_json(const json& j, WriteActionInfo& action) {
@@ -358,30 +360,30 @@ void from_json(const json& j, SpecialHandlerInfo& m) {
 }
 
 void from_json(const json& j, RegisterMap& m) {
-  j.at("address_range").get_to(m.applicable_addresses);
-  j.at("probe_register").get_to(m.probe_register);
+  j.at("address_range").get_to(m.applicableAddresses);
+  j.at("probe_register").get_to(m.probeRegister);
   j.at("name").get_to(m.name);
-  j.at("preferred_baudrate").get_to(m.preferred_baudrate);
-  j.at("default_baudrate").get_to(m.default_baudrate);
+  j.at("preferred_baudrate").get_to(m.preferredBaudrate);
+  j.at("default_baudrate").get_to(m.defaultBaudrate);
   std::vector<RegisterDescriptor> tmp;
   j.at("registers").get_to(tmp);
   for (auto& i : tmp) {
-    m.register_descriptors[i.begin] = i;
+    m.registerDescriptors[i.begin] = i;
   }
   if (j.contains("special_handlers")) {
-    j.at("special_handlers").get_to(m.special_handlers);
+    j.at("special_handlers").get_to(m.specialHandlers);
   }
 }
 void to_json(json& j, const RegisterMap& m) {
-  j["address_range"] = m.applicable_addresses;
-  j["probe_register"] = m.probe_register;
+  j["address_range"] = m.applicableAddresses;
+  j["probe_register"] = m.probeRegister;
   j["name"] = m.name;
-  j["preferred_baudrate"] = m.preferred_baudrate;
-  j["default_baudrate"] = m.preferred_baudrate;
+  j["preferred_baudrate"] = m.preferredBaudrate;
+  j["default_baudrate"] = m.preferredBaudrate;
   j["registers"] = {};
   std::transform(
-      m.register_descriptors.begin(),
-      m.register_descriptors.end(),
+      m.registerDescriptors.begin(),
+      m.registerDescriptors.end(),
       std::back_inserter(j["registers"]),
       [](const auto& kv) { return kv.second; });
 }
@@ -391,7 +393,7 @@ const RegisterMap& RegisterMapDatabase::at(uint8_t addr) {
       regmaps.begin(),
       regmaps.end(),
       [addr](const std::unique_ptr<RegisterMap>& m) {
-        return m->applicable_addresses.contains(addr);
+        return m->applicableAddresses.contains(addr);
       });
   if (result == regmaps.end())
     throw std::out_of_range("not found: " + std::to_string(int(addr)));
@@ -404,8 +406,8 @@ void RegisterMapDatabase::load(const nlohmann::json& j) {
   regmaps.push_back(std::move(rmap));
 }
 
-void RegisterMapDatabase::load(const std::string& dir_s) {
-  for (auto const& dir_entry : std::filesystem::directory_iterator{dir_s}) {
+void RegisterMapDatabase::load(const std::string& dir) {
+  for (auto const& dir_entry : std::filesystem::directory_iterator{dir}) {
     std::ifstream ifs(dir_entry.path().string());
     json j;
     ifs >> j;

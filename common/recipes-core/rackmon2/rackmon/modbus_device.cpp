@@ -8,11 +8,11 @@ using nlohmann::json;
 ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
     : interface(iface), addr(a), register_map(reg) {
   info.addr = a;
-  info.baudrate = reg.default_baudrate;
-  for (auto& it : reg.register_descriptors) {
+  info.baudrate = reg.defaultBaudrate;
+  for (auto& it : reg.registerDescriptors) {
     info.register_list.emplace_back(it.second);
   }
-  for (const auto& sp : reg.special_handlers) {
+  for (const auto& sp : reg.specialHandlers) {
     ModbusSpecialHandler hdl{};
     hdl.SpecialHandlerInfo::operator=(sp);
     special_handlers.push_back(hdl);
@@ -88,7 +88,7 @@ void ModbusDevice::monitor() {
   }
   std::unique_lock lk(register_list_mutex);
   for (auto& h : info.register_list) {
-    uint16_t reg = h.reg_addr;
+    uint16_t reg = h.regAddr();
     auto& v = h.front();
     try {
       ReadHoldingRegisters(reg, v.value);
@@ -97,12 +97,12 @@ void ModbusDevice::monitor() {
       // and we notice that the value is different
       // from the previous, increment store to
       // point to the next.
-      if (!v.desc.changes_only || v != h.back()) {
+      if (!v.desc.storeChangesOnly || v != h.back()) {
         ++h;
       }
     } catch (std::exception& e) {
       logInfo << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x" << std::hex
-               << reg << ' ' << h.desc.name << " caught: " << e.what()
+               << reg << ' ' << h.name() << " caught: " << e.what()
                << std::endl;
       continue;
     }

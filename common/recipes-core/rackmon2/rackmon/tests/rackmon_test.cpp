@@ -29,9 +29,9 @@ class FakeModbus : public Modbus {
       ModbusTime /* unused */,
       ModbusTime /* unused */) {
     encoder.encode(req);
-    ASSERT_GE(req.addr, min_addr);
-    ASSERT_LE(req.addr, max_addr);
-    ASSERT_EQ(b, baud);
+    EXPECT_GE(req.addr, min_addr);
+    EXPECT_LE(req.addr, max_addr);
+    EXPECT_EQ(b, baud);
     // We are mocking a system with only one available
     // address, exp_addr. So, throw an exception for others.
     if (req.addr != exp_addr)
@@ -40,21 +40,21 @@ class FakeModbus : public Modbus {
     // to be sending any message other than read-holding-regs
     // TODO When adding support for baudrate negotitation etc
     // we might need to make this more flexible.
-    ASSERT_EQ(req.raw[1], 0x3);
-    ASSERT_EQ(req.len, 8);
-    ASSERT_EQ(req.raw[2], 0);
-    ASSERT_EQ(req.raw[4], 0);
+    EXPECT_EQ(req.raw[1], 0x3);
+    EXPECT_EQ(req.len, 8);
+    EXPECT_EQ(req.raw[2], 0);
+    EXPECT_EQ(req.raw[4], 0);
     if (probed) {
       Msg expMsg = 0x000300000008_M;
       expMsg.addr = exp_addr;
       Encoder::finalize(expMsg);
-      ASSERT_EQ(req, expMsg);
+      EXPECT_EQ(req, expMsg);
       resp = 0x0003106162636465666768696a6b6c6d6e6f70_M;
     } else {
       Msg expMsg = 0x000300680001_M;
       expMsg.addr = exp_addr;
       Encoder::finalize(expMsg);
-      ASSERT_EQ(req, expMsg);
+      EXPECT_EQ(req, expMsg);
       // Allow to be probed only once.
       probed = true;
       resp = 0x0003020000_M;
@@ -88,7 +88,7 @@ class Mock3Modbus : public Modbus {
 class MockRackmon : public Rackmon {
  public:
   MockRackmon() : Rackmon() {}
-  MOCK_METHOD0(make_interface, std::unique_ptr<Modbus>());
+  MOCK_METHOD0(makeInterface, std::unique_ptr<Modbus>());
 };
 
 class RackmonTest : public ::testing::Test {
@@ -155,7 +155,7 @@ class RackmonTest : public ::testing::Test {
 
 TEST_F(RackmonTest, BasicLoad) {
   MockRackmon mon;
-  EXPECT_CALL(mon, make_interface())
+  EXPECT_CALL(mon, makeInterface())
       .Times(1)
       .WillOnce(Return(ByMove(make_modbus(0, 0))));
   mon.load(r_conf, r_test_dir);
@@ -166,13 +166,13 @@ TEST_F(RackmonTest, BasicScanFoundNone) {
   // Mock a modbus with no active devices,
   // we expect rackmon to scan all of them on
   // start up.
-  EXPECT_CALL(mon, make_interface())
+  EXPECT_CALL(mon, makeInterface())
       .Times(1)
       .WillOnce(Return(ByMove(make_modbus(0, 3))));
   mon.load(r_conf, r_test_dir);
   mon.start();
-  std::vector<ModbusDeviceInfo> devs = mon.list_devices();
-  ASSERT_EQ(devs.size(), 0);
+  std::vector<ModbusDeviceInfo> devs = mon.listDevices();
+  EXPECT_EQ(devs.size(), 0);
   mon.stop();
   Msg req, resp;
   req.raw[0] = 100; // Some unknown address, this should throw
@@ -186,16 +186,16 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   // Mock a modbus with no active devices,
   // we expect rackmon to scan all of them on
   // start up.
-  EXPECT_CALL(mon, make_interface())
+  EXPECT_CALL(mon, makeInterface())
       .Times(1)
       .WillOnce(Return(ByMove(make_modbus(161, 4))));
   mon.load(r_conf, r_test_dir);
   mon.start();
   std::this_thread::sleep_for(1s);
-  std::vector<ModbusDeviceInfo> devs = mon.list_devices();
-  ASSERT_EQ(devs.size(), 1);
-  ASSERT_EQ(devs[0].deviceAddress, 161);
-  ASSERT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
+  std::vector<ModbusDeviceInfo> devs = mon.listDevices();
+  EXPECT_EQ(devs.size(), 1);
+  EXPECT_EQ(devs[0].deviceAddress, 161);
+  EXPECT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
   mon.stop();
 
   Msg rreq, rresp;
@@ -209,13 +209,13 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   // is rackmon checks validity of address. Check that we are throwing
   // correctly. The actual functionality is tested in modbus_device_test.cpp.
   EXPECT_THROW(
-      mon.ReadHoldingRegisters(100, 0x123, read_regs), std::out_of_range);
-  EXPECT_THROW(mon.WriteSingleRegister(100, 0x123, 0x1234), std::out_of_range);
+      mon.readHoldingRegisters(100, 0x123, read_regs), std::out_of_range);
+  EXPECT_THROW(mon.writeSingleRegister(100, 0x123, 0x1234), std::out_of_range);
   EXPECT_THROW(
-      mon.WriteMultipleRegisters(100, 0x123, read_regs), std::out_of_range);
+      mon.writeMultipleRegisters(100, 0x123, read_regs), std::out_of_range);
   std::vector<FileRecord> records(1);
   records[0].data.resize(2);
-  EXPECT_THROW(mon.ReadFileRecord(100, records), std::out_of_range);
+  EXPECT_THROW(mon.readFileRecord(100, records), std::out_of_range);
 
   // Use a known handled response.
   ReadHoldingRegistersReq req(161, 0, 8);
@@ -223,7 +223,7 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   ReadHoldingRegistersResp resp(161, regs);
   mon.rawCmd(req, resp, 1s);
 
-  ASSERT_EQ(regs[0], 'a' << 8 | 'b');
+  EXPECT_EQ(regs[0], 'a' << 8 | 'b');
 }
 
 TEST_F(RackmonTest, BasicScanFoundOneMon) {
@@ -231,29 +231,28 @@ TEST_F(RackmonTest, BasicScanFoundOneMon) {
   // Mock a modbus with no active devices,
   // we expect rackmon to scan all of them on
   // start up.
-  EXPECT_CALL(mon, make_interface())
+  EXPECT_CALL(mon, makeInterface())
       .Times(1)
       .WillOnce(Return(ByMove(make_modbus(161, 4))));
   mon.load(r_conf, r_test_dir);
   mon.start(1s);
   std::this_thread::sleep_for(1s);
-  std::vector<ModbusDeviceInfo> devs = mon.list_devices();
-  ASSERT_EQ(devs.size(), 1);
-  ASSERT_EQ(devs[0].deviceAddress, 161);
-  ASSERT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
+  std::vector<ModbusDeviceInfo> devs = mon.listDevices();
+  EXPECT_EQ(devs.size(), 1);
+  EXPECT_EQ(devs[0].deviceAddress, 161);
+  EXPECT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
   std::this_thread::sleep_for(1s);
   mon.stop();
   std::vector<ModbusDeviceValueData> data;
-  mon.get_value_data(data);
-  ASSERT_EQ(data.size(), 1);
-  ASSERT_EQ(data[0].deviceType, "orv2_psu");
-  ASSERT_EQ(data[0].registerList.size(), 1);
-  ASSERT_EQ(data[0].registerList[0].regAddr, 0);
-  ASSERT_EQ(data[0].registerList[0].name, "MFG_MODEL");
-  ASSERT_EQ(data[0].registerList[0].history.size(), 1);
-  ASSERT_EQ(
-      data[0].registerList[0].history[0].type, RegisterValueType::STRING);
-  ASSERT_EQ(
+  mon.getValueData(data);
+  EXPECT_EQ(data.size(), 1);
+  EXPECT_EQ(data[0].deviceType, "orv2_psu");
+  EXPECT_EQ(data[0].registerList.size(), 1);
+  EXPECT_EQ(data[0].registerList[0].regAddr, 0);
+  EXPECT_EQ(data[0].registerList[0].name, "MFG_MODEL");
+  EXPECT_EQ(data[0].registerList[0].history.size(), 1);
+  EXPECT_EQ(data[0].registerList[0].history[0].type, RegisterValueType::STRING);
+  EXPECT_EQ(
       data[0].registerList[0].history[0].value.strValue, "abcdefghijklmnop");
-  ASSERT_NEAR(data[0].registerList[0].history[0].timestamp, std::time(0), 10);
+  EXPECT_NEAR(data[0].registerList[0].history[0].timestamp, std::time(0), 10);
 }

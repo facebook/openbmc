@@ -7,63 +7,62 @@
 #include "pollthread.hpp"
 
 class Rackmon {
-  static constexpr time_t dormant_min_inactive_time = 300;
-  static constexpr ModbusTime probe_timeout = std::chrono::milliseconds(50);
-  std::vector<std::unique_ptr<PollThread<Rackmon>>> threads{};
+  static constexpr time_t kDormantMinInactiveTime = 300;
+  static constexpr ModbusTime kProbeTimeout = std::chrono::milliseconds(50);
+  std::vector<std::unique_ptr<PollThread<Rackmon>>> threads_{};
   // Has to be before defining active or dormant devices
   // to ensure users get destroyed before the interface.
-  std::vector<std::unique_ptr<Modbus>> interfaces{};
-  RegisterMapDatabase regmap_db{};
+  std::vector<std::unique_ptr<Modbus>> interfaces_{};
+  RegisterMapDatabase registerMapDB_{};
 
-  mutable std::shared_mutex devices_mutex{};
+  mutable std::shared_mutex devicesMutex_{};
 
-  std::stringstream profile_store{};
+  std::stringstream profileStore_{};
 
   // These devices discovered on actively monitored busses
-  std::map<uint8_t, std::unique_ptr<ModbusDevice>> devices{};
+  std::map<uint8_t, std::unique_ptr<ModbusDevice>> devices_{};
 
   // contains all the possible address allowed by currently
   // loaded register maps. A majority of these are not expected
   // to exist, but are candidates for a scan.
-  std::vector<uint8_t> possible_dev_addrs{};
-  std::vector<uint8_t>::iterator next_dev_it{};
+  std::vector<uint8_t> allPossibleDevAddrs_{};
+  std::vector<uint8_t>::iterator nextDeviceToProbe_{};
 
   // As an optimization, devices are normally scanned one by one
   // This allows someone to initiate a forced full scan.
   // This mimicks a restart of rackmond.
-  std::atomic<bool> force_scan = true;
+  std::atomic<bool> reqForceScan_ = true;
 
   // Timestamps of last scan
-  time_t last_scan_time;
-  time_t last_monitor_time;
+  time_t lastScanTime_;
+  time_t lastMonitorTime_;
 
   // Probe an interface for the presence of the address.
-  bool probe(Modbus& iface, uint8_t addr);
+  bool probe(Modbus& interface, uint8_t addr);
   // Probe all interfaces for the presence of the address.
-  void probe(uint8_t addr);
+  bool probe(uint8_t addr);
 
   // --------- Private Methods --------
 
   // probe dormant devices and return recovered devices.
-  std::vector<uint8_t> inspect_dormant();
+  std::vector<uint8_t> inspectDormant();
   // Try and recover dormant devices.
-  void recover_dormant();
+  void recoverDormant();
 
-  bool is_device_known(uint8_t);
+  bool isDeviceKnown(uint8_t);
 
   // Monitor loop. Blocks forever as long as req_stop is true.
   void monitor();
 
   // Scan all possible devices. Skips active/dormant devices.
-  void scan_all();
+  void fullScan();
 
   // Scan loop. Blocks forever as long as req_stop is true.
   void scan();
 
  protected:
-  virtual std::unique_ptr<Modbus> make_interface() {
-    std::unique_ptr<Modbus> iface = std::make_unique<Modbus>(profile_store);
-    return std::move(iface);
+  virtual std::unique_ptr<Modbus> makeInterface() {
+    return std::make_unique<Modbus>(profileStore_);
   }
 
  public:
@@ -73,7 +72,7 @@ class Rackmon {
 
   // Load configuration, preferable before starting, but can be
   // done at any time, but this is a one time only.
-  void load(const std::string& conf_path, const std::string& regmap_dir);
+  void load(const std::string& confPath, const std::string& regmapDir);
 
   // Start the monitoring/scanning loops
   void start(PollThreadTime interval = std::chrono::minutes(3));
@@ -81,43 +80,52 @@ class Rackmon {
   void stop();
 
   // Force rackmond to do a full scan on the next scan loop.
-  void force_scan_all() {
-    force_scan = true;
+  void forceScan() {
+    reqForceScan_ = true;
   }
 
   // Executes the Raw command. Throws an exception on error.
   void rawCmd(Msg& req, Msg& resp, ModbusTime timeout);
 
   // Read registers
-  void ReadHoldingRegisters(
-      uint8_t addr,
-      uint16_t reg_off,
-      std::vector<uint16_t>& regs);
+  void readHoldingRegisters(
+      uint8_t deviceAddress,
+      uint16_t registerOffset,
+      std::vector<uint16_t>& registerContents,
+      ModbusTime timeout = ModbusTime::zero());
 
   // Write Single Register
-  void WriteSingleRegister(uint8_t addr, uint16_t reg_off, uint16_t value);
+  void writeSingleRegister(
+      uint8_t deviceAddress,
+      uint16_t registerOffset,
+      uint16_t value,
+      ModbusTime timeout = ModbusTime::zero());
 
   // Write multiple registers
-  void WriteMultipleRegisters(
-      uint8_t addr,
-      uint16_t reg_off,
-      std::vector<uint16_t>& values);
+  void writeMultipleRegisters(
+      uint8_t deviceAddress,
+      uint16_t registerOffset,
+      std::vector<uint16_t>& values,
+      ModbusTime timeout = ModbusTime::zero());
 
   // Read File Record
-  void ReadFileRecord(uint8_t addr, std::vector<FileRecord>& records);
+  void readFileRecord(
+      uint8_t deviceAddress,
+      std::vector<FileRecord>& records,
+      ModbusTime timeout = ModbusTime::zero());
 
   // Get status of devices
-  std::vector<ModbusDeviceInfo> list_devices();
+  std::vector<ModbusDeviceInfo> listDevices();
 
   // Get monitored data
-  void get_raw_data(std::vector<ModbusDeviceRawData>& ret);
+  void getRawData(std::vector<ModbusDeviceRawData>& data);
 
   // Get formatted monitor data
-  void get_fmt_data(std::vector<ModbusDeviceFmtData>& ret);
+  void getFmtData(std::vector<ModbusDeviceFmtData>& data);
 
   // Get value data
-  void get_value_data(std::vector<ModbusDeviceValueData>& ret);
+  void getValueData(std::vector<ModbusDeviceValueData>& data);
 
   // Get profile data
-  std::string get_profile_data();
+  std::string getProfileData();
 };

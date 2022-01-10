@@ -906,7 +906,7 @@ start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
   return ret;
 }
 
-static char*
+char*
 get_component_name(uint8_t comp) {
   switch (comp) {
     case FW_CPLD:

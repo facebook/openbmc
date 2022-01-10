@@ -99,6 +99,9 @@ err_exit:
     close(fd_w);
   delete[] memblock;
 
+  if (image_sts.result == false) {
+     syslog(LOG_CRIT, "Update %s CPLD Fail. File: %s is not a valid image", fru().c_str(), image.c_str());
+  }
   return image_sts;
 }
 

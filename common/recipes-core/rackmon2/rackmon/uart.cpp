@@ -63,12 +63,12 @@ void UARTDevice::set_attribute(bool read_en, int baud) {
   tio.c_cc[VMIN] = 1;
   tio.c_cc[VTIME] = 0;
 
-  if (tcsetattr(dev_fd, TCSANOW, &tio)) {
+  if (tcsetattr(deviceFd_, TCSANOW, &tio)) {
     throw std::runtime_error("Setting attribute failed");
   }
 }
 
-void UARTDevice::wait_write() {
+void UARTDevice::waitWrite() {
   int loops;
   for (loops = 0; loops < 100; loops++) {
     int lsr;
@@ -90,7 +90,7 @@ void UARTDevice::write(const uint8_t* buf, size_t len) {
   pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
   read_disable();
   Device::write(buf, len);
-  wait_write();
+  waitWrite();
   read_enable();
   pthread_setschedparam(pthread_self(), SCHED_OTHER, &sp);
 }

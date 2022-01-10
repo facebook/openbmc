@@ -104,12 +104,12 @@ TEST_F(ModbusDeviceTest, BasicCommand) {
 TEST_F(ModbusDeviceTest, CommandTimeout) {
   EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(1)
-      .WillOnce(Throw(timeout_exception()));
+      .WillOnce(Throw(TimeoutException()));
 
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   Msg req, resp;
-  EXPECT_THROW(dev.command(req, resp), timeout_exception);
+  EXPECT_THROW(dev.command(req, resp), TimeoutException);
   ModbusDeviceStatus status = dev.get_status();
   ASSERT_EQ(status.timeouts, 1);
 }
@@ -143,7 +143,7 @@ TEST_F(ModbusDeviceTest, CommandMisc) {
 TEST_F(ModbusDeviceTest, MakeDormant) {
   EXPECT_CALL(get_modbus(), command(_, _, _, _, _))
       .Times(10)
-      .WillRepeatedly(Throw(timeout_exception()));
+      .WillRepeatedly(Throw(TimeoutException()));
 
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
@@ -151,7 +151,7 @@ TEST_F(ModbusDeviceTest, MakeDormant) {
     ModbusDeviceStatus status = dev.get_status();
     ASSERT_EQ(status.get_mode(), ModbusDeviceMode::ACTIVE);
     Msg req, resp;
-    EXPECT_THROW(dev.command(req, resp), timeout_exception);
+    EXPECT_THROW(dev.command(req, resp), TimeoutException);
   }
 
   ModbusDeviceStatus status = dev.get_status();

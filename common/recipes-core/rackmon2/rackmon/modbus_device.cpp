@@ -28,7 +28,7 @@ void ModbusDevice::command(
     interface.command(req, resp, info.baudrate, timeout, settle_time);
     info.num_consecutive_failures = 0;
     info.last_active = std::time(0);
-  } catch (timeout_exception& e) {
+  } catch (TimeoutException& e) {
     info.timeouts++;
     info.num_consecutive_failures++;
     throw;

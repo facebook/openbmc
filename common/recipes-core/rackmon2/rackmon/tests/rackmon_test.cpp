@@ -35,7 +35,7 @@ class FakeModbus : public Modbus {
     // We are mocking a system with only one available
     // address, exp_addr. So, throw an exception for others.
     if (req.addr != exp_addr)
-      throw timeout_exception();
+      throw TimeoutException();
     // There is really no reason at this point for rackmon
     // to be sending any message other than read-holding-regs
     // TODO When adding support for baudrate negotitation etc

@@ -8,7 +8,7 @@ class UARTDevice : public Device {
  protected:
   int baudrate = -1;
 
-  virtual void wait_write() override;
+  virtual void waitWrite() override;
   virtual void set_attribute(bool read_en, int baud);
 
   void read_enable() {

@@ -50,7 +50,7 @@ V2 addresses all these changes:
 The `Device` class provided by `dev.hpp` abstracts the OS from the rest of
 the code. Since modbus requires exact read, the `read()` method reads
 exact number of bytes rather than faithfully abstract the OS `read` call
-which returns the number of bytes read. The methods may throw a `timeout_exception`
+which returns the number of bytes read. The methods may throw a `TimeoutException`
 exception whenever something times-out. Otherwise, on errors it throws
 either `std::system_error` or `std::runtime_error`. The caller is expected
 to catch these.

@@ -121,7 +121,7 @@ void RackmonUNIXSocketService::handle_json_command(
   } catch (crc_exception& e) {
     resp["status"] = "CRC_ERROR";
     print_msg(e);
-  } catch (timeout_exception& e) {
+  } catch (TimeoutException& e) {
     resp["status"] = "TIMEOUT_ERROR";
     print_msg(e);
   } catch (std::underflow_error& e) {

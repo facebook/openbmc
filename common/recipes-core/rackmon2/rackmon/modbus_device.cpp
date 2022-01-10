@@ -5,17 +5,30 @@
 
 using nlohmann::json;
 
-ModbusDevice::ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg)
-    : interface(iface), addr(a), register_map(reg) {
-  info.addr = a;
-  info.baudrate = reg.defaultBaudrate;
-  for (auto& it : reg.registerDescriptors) {
-    info.register_list.emplace_back(it.second);
+void ModbusDeviceInfo::incErrors(uint32_t& counter) {
+  counter++;
+  if ((++numConsecutiveFailures) >= kMaxConsecutiveFailures) {
+    mode = ModbusDeviceMode::DORMANT;
   }
-  for (const auto& sp : reg.specialHandlers) {
+}
+
+ModbusDevice::ModbusDevice(
+    Modbus& interface,
+    uint8_t deviceAddress,
+    const RegisterMap& registerMap)
+    : interface_(interface), registerMap_(registerMap) {
+  info_.deviceAddress = deviceAddress;
+  info_.baudrate = registerMap.defaultBaudrate;
+  info_.deviceType = registerMap.name;
+
+  for (auto& it : registerMap.registerDescriptors) {
+    info_.registerList.emplace_back(it.second);
+  }
+
+  for (const auto& sp : registerMap.specialHandlers) {
     ModbusSpecialHandler hdl{};
     hdl.SpecialHandlerInfo::operator=(sp);
-    special_handlers.push_back(hdl);
+    specialHandlers_.push_back(hdl);
   }
 }
 
@@ -23,116 +36,133 @@ void ModbusDevice::command(
     Msg& req,
     Msg& resp,
     ModbusTime timeout,
-    ModbusTime settle_time) {
+    ModbusTime settleTime) {
+  // Try executing the command, if errors, catch the error
+  // to maintain stats on types of errors and re-throw in
+  // case the user wants to handle them in a special way.
   try {
-    interface.command(req, resp, info.baudrate, timeout, settle_time);
-    info.num_consecutive_failures = 0;
-    info.last_active = std::time(0);
+    interface_.command(req, resp, info_.baudrate, timeout, settleTime);
+    info_.numConsecutiveFailures = 0;
+    info_.lastActive = std::time(0);
   } catch (TimeoutException& e) {
-    info.timeouts++;
-    info.num_consecutive_failures++;
+    info_.incTimeouts();
     throw;
   } catch (CRCError& e) {
-    info.crc_failures++;
-    info.num_consecutive_failures++;
+    info_.incCRCErrors();
     throw;
   } catch (std::runtime_error& e) {
-    info.misc_failures++;
-    info.num_consecutive_failures++;
+    info_.incMiscErrors();
     logError << e.what() << std::endl;
     throw;
   } catch (...) {
+    info_.incMiscErrors();
     logError << "Unknown exception" << std::endl;
-    info.misc_failures++;
-    info.num_consecutive_failures++;
     throw;
   }
 }
 
-void ModbusDevice::ReadHoldingRegisters(
-    uint16_t register_offset,
-    std::vector<uint16_t>& regs) {
-  ReadHoldingRegistersReq req(addr, register_offset, regs.size());
-  ReadHoldingRegistersResp resp(addr, regs);
-  command(req, resp);
+void ModbusDevice::readHoldingRegisters(
+    uint16_t registerOffset,
+    std::vector<uint16_t>& regs,
+    ModbusTime timeout) {
+  ReadHoldingRegistersReq req(info_.deviceAddress, registerOffset, regs.size());
+  ReadHoldingRegistersResp resp(info_.deviceAddress, regs);
+  command(req, resp, timeout);
 }
 
-void ModbusDevice::WriteSingleRegister(
-    uint16_t register_offset,
-    uint16_t value) {
-  WriteSingleRegisterReq req(addr, register_offset, value);
-  WriteSingleRegisterResp resp(addr, register_offset);
-  command(req, resp);
+void ModbusDevice::writeSingleRegister(
+    uint16_t registerOffset,
+    uint16_t value,
+    ModbusTime timeout) {
+  WriteSingleRegisterReq req(info_.deviceAddress, registerOffset, value);
+  WriteSingleRegisterResp resp(info_.deviceAddress, registerOffset);
+  command(req, resp, timeout);
 }
 
-void ModbusDevice::WriteMultipleRegisters(
-    uint16_t register_offset,
-    std::vector<uint16_t>& value) {
-  WriteMultipleRegistersReq req(addr, register_offset);
+void ModbusDevice::writeMultipleRegisters(
+    uint16_t registerOffset,
+    std::vector<uint16_t>& value,
+    ModbusTime timeout) {
+  WriteMultipleRegistersReq req(info_.deviceAddress, registerOffset);
   for (uint16_t val : value)
     req << val;
-  WriteMultipleRegistersResp resp(addr, register_offset, value.size());
-  command(req, resp);
+  WriteMultipleRegistersResp resp(
+      info_.deviceAddress, registerOffset, value.size());
+  command(req, resp, timeout);
 }
 
-void ModbusDevice::ReadFileRecord(std::vector<FileRecord>& records) {
-  ReadFileRecordReq req(addr, records);
-  ReadFileRecordResp resp(addr, records);
-  command(req, resp);
+void ModbusDevice::readFileRecord(
+    std::vector<FileRecord>& records,
+    ModbusTime timeout) {
+  ReadFileRecordReq req(info_.deviceAddress, records);
+  ReadFileRecordResp resp(info_.deviceAddress, records);
+  command(req, resp, timeout);
 }
 
 void ModbusDevice::monitor() {
+  // If the number of consecutive failures has exceeded
+  // a threshold, mark the device as dormant.
   uint32_t timestamp = std::time(0);
-  for (auto& h : special_handlers) {
-    h.handle(*this);
+  for (auto& specialHandler : specialHandlers_) {
+    specialHandler.handle(*this);
   }
-  std::unique_lock lk(register_list_mutex);
-  for (auto& h : info.register_list) {
-    uint16_t reg = h.regAddr();
-    auto& v = h.front();
+  std::unique_lock lk(registerListMutex_);
+  for (auto& registerStore : info_.registerList) {
+    uint16_t registerOffset = registerStore.regAddr();
+    auto& nextRegister = registerStore.front();
     try {
-      ReadHoldingRegisters(reg, v.value);
-      v.timestamp = timestamp;
+      readHoldingRegisters(registerOffset, nextRegister.value);
+      nextRegister.timestamp = timestamp;
       // If we dont care about changes or if we do
       // and we notice that the value is different
       // from the previous, increment store to
       // point to the next.
-      if (!v.desc.storeChangesOnly || v != h.back()) {
-        ++h;
+      if (!nextRegister.desc.storeChangesOnly ||
+          nextRegister != registerStore.back()) {
+        ++registerStore;
       }
     } catch (std::exception& e) {
-      logInfo << "DEV:0x" << std::hex << int(addr) << " ReadReg 0x" << std::hex
-               << reg << ' ' << h.name() << " caught: " << e.what()
-               << std::endl;
+      logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
+              << " ReadReg 0x" << std::hex << registerOffset << ' '
+              << registerStore.name() << " caught: " << e.what() << std::endl;
       continue;
     }
   }
 }
 
-ModbusDeviceFmtData ModbusDevice::get_fmt_data() {
-  std::unique_lock lk(register_list_mutex);
+ModbusDeviceRawData ModbusDevice::getRawData() {
+  std::unique_lock lk(registerListMutex_);
+  // Makes a deep copy.
+  return info_;
+}
+
+ModbusDeviceInfo ModbusDevice::getInfo() {
+  std::unique_lock lk(registerListMutex_);
+  return info_;
+}
+
+ModbusDeviceFmtData ModbusDevice::getFmtData() {
+  std::unique_lock lk(registerListMutex_);
   ModbusDeviceFmtData data;
-  data.ModbusDeviceStatus::operator=(info);
-  data.type = register_map.name;
-  for (const auto& reg : info.register_list) {
+  data.ModbusDeviceInfo::operator=(info_);
+  for (const auto& reg : info_.registerList) {
     std::string str = reg;
-    data.register_list.emplace_back(std::move(str));
+    data.registerList.emplace_back(std::move(str));
   }
   return data;
 }
 
-ModbusDeviceValueData ModbusDevice::get_value_data() {
-  std::unique_lock lk(register_list_mutex);
+ModbusDeviceValueData ModbusDevice::getValueData() {
+  std::unique_lock lk(registerListMutex_);
   ModbusDeviceValueData data;
-  data.ModbusDeviceStatus::operator=(info);
-  data.type = register_map.name;
-  for (const auto& reg : info.register_list) {
-    data.register_list.emplace_back(reg);
+  data.ModbusDeviceInfo::operator=(info_);
+  for (const auto& reg : info_.registerList) {
+    data.registerList.emplace_back(reg);
   }
   return data;
 }
 
-static std::string command_output(const std::string& shell) {
+static std::string commandOutput(const std::string& shell) {
   std::array<char, 128> buffer;
   std::string result;
   std::unique_ptr<FILE, decltype(&pclose)> pipe(
@@ -148,36 +178,41 @@ static std::string command_output(const std::string& shell) {
 
 void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   // Check if it is time to handle.
-  if (!can_handle())
+  if (!canHandle())
     return;
-  std::string str_value{};
-  WriteMultipleRegistersReq req(dev.addr, reg);
+  std::string strValue{};
+  WriteMultipleRegistersReq req(dev.info_.deviceAddress, reg);
   if (info.shell) {
-    str_value = command_output(info.shell.value());
+    // The command is from the JSON configuration.
+    // TODO, we currently only have need to set the
+    // current UNIX time. If we want to avoid shell,
+    // we might need a different way to generalize
+    // this.
+    strValue = commandOutput(info.shell.value());
   } else if (info.value) {
-    str_value = info.value.value();
+    strValue = info.value.value();
   } else {
-    std::cerr << "NULL action ignored" << std::endl;
+    logError << "NULL action ignored" << std::endl;
     return;
   }
   if (info.interpret == RegisterValueType::INTEGER) {
-    int32_t ival = std::stoi(str_value);
+    int32_t ival = std::stoi(strValue);
     if (len == 1)
       req << uint16_t(ival);
     else if (len == 2)
       req << uint32_t(ival);
   } else if (info.interpret == RegisterValueType::STRING) {
-    for (char c : str_value)
+    for (char c : strValue)
       req << uint8_t(c);
   }
-  WriteMultipleRegistersResp resp(dev.addr, reg, len);
+  WriteMultipleRegistersResp resp(dev.info_.deviceAddress, reg, len);
   try {
     dev.command(req, resp);
   } catch (std::exception& e) {
     logError << "Error executing special handler" << std::endl;
   }
-  last_handle_time = std::time(NULL);
-  handled = true;
+  lastHandleTime_ = std::time(NULL);
+  handled_ = true;
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
@@ -185,34 +220,42 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
     {{ModbusDeviceMode::ACTIVE, "active"},
      {ModbusDeviceMode::DORMANT, "dormant"}})
 
-void to_json(json& j, const ModbusDeviceStatus& m) {
-  j["addr"] = m.addr;
-  j["crc_fails"] = m.crc_failures;
+// Legacy JSON format.
+void to_json(json& j, const ModbusDeviceInfo& m) {
+  j["addr"] = m.deviceAddress;
+  j["crc_fails"] = m.crcErrors;
   j["timeouts"] = m.timeouts;
-  j["misc_fails"] = m.misc_failures;
-  j["mode"] = m.get_mode();
+  j["misc_fails"] = m.miscErrors;
+  j["mode"] = m.mode;
   j["baudrate"] = m.baudrate;
+  j["deviceType"] = m.deviceType;
 }
 
+// Legacy JSON format.
 void to_json(json& j, const ModbusDeviceRawData& m) {
-  const ModbusDeviceStatus& s = m;
+  const ModbusDeviceInfo& s = m;
   to_json(j, s);
   j["now"] = std::time(0);
-  j["ranges"] = m.register_list;
+  j["ranges"] = m.registerList;
 }
 
+// Deprecated string JSON format.
 void to_json(json& j, const ModbusDeviceFmtData& m) {
-  const ModbusDeviceStatus& s = m;
+  const ModbusDeviceInfo& s = m;
   to_json(j, s);
-  j["type"] = m.type;
   j["now"] = std::time(0);
-  j["ranges"] = m.register_list;
+  j["ranges"] = m.registerList;
 }
 
+// v2.0 JSON Format.
 void to_json(json& j, const ModbusDeviceValueData& m) {
-  const ModbusDeviceStatus& s = m;
-  to_json(j, s);
-  j["type"] = m.type;
+  j["deviceAddress"] = m.deviceAddress;
+  j["deviceType"] = m.deviceType;
+  j["crcErrors"] = m.crcErrors;
+  j["timeouts"] = m.timeouts;
+  j["miscErrors"] = m.miscErrors;
+  j["baudrate"] = m.baudrate;
+  j["mode"] = m.mode;
   j["now"] = std::time(0);
-  j["ranges"] = m.register_list;
+  j["registers"] = m.registerList;
 }

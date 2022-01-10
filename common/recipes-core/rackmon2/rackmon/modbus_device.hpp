@@ -9,104 +9,126 @@ enum ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 
 class ModbusDevice;
 
-struct ModbusSpecialHandler : public SpecialHandlerInfo {
-  time_t last_handle_time = 0;
-  bool handled = false;
-  bool can_handle() {
+class ModbusSpecialHandler : public SpecialHandlerInfo {
+  time_t lastHandleTime_ = 0;
+  bool handled_ = false;
+  bool canHandle() {
     if (period == -1)
-      return !handled;
-    return std::time(0) > (last_handle_time + period);
+      return !handled_;
+    return std::time(0) > (lastHandleTime_ + period);
   }
+
+ public:
   void handle(ModbusDevice& dev);
 };
 
-struct ModbusDeviceStatus {
-  static constexpr uint32_t max_consecutive_failures = 10;
-  uint8_t addr = 0;
+// Generic Device information
+struct ModbusDeviceInfo {
+  static constexpr uint32_t kMaxConsecutiveFailures = 10;
+  uint8_t deviceAddress = 0;
+  std::string deviceType{"Unknown"};
   uint32_t baudrate = 0;
-  uint32_t crc_failures = 0;
+  ModbusDeviceMode mode = ModbusDeviceMode::ACTIVE;
+  uint32_t crcErrors = 0;
   uint32_t timeouts = 0;
-  uint32_t misc_failures = 0;
-  time_t last_active = 0;
-  uint32_t num_consecutive_failures = 0;
-  ModbusDeviceMode get_mode() const {
-    return num_consecutive_failures < max_consecutive_failures
-        ? ModbusDeviceMode::ACTIVE
-        : ModbusDeviceMode::DORMANT;
+  uint32_t miscErrors = 0;
+  time_t lastActive = 0;
+  uint32_t numConsecutiveFailures = 0;
+
+  void incErrors(uint32_t& counter);
+  void incTimeouts() {
+    incErrors(timeouts);
+  }
+  void incCRCErrors() {
+    incErrors(crcErrors);
+  }
+  void incMiscErrors() {
+    incErrors(miscErrors);
   }
 };
-void to_json(nlohmann::json& j, const ModbusDeviceStatus& m);
+void to_json(nlohmann::json& j, const ModbusDeviceInfo& m);
 
-struct ModbusDeviceRawData : public ModbusDeviceStatus {
-  std::vector<RegisterStore> register_list{};
+// Device raw register data
+struct ModbusDeviceRawData : public ModbusDeviceInfo {
+  std::vector<RegisterStore> registerList{};
 };
 void to_json(nlohmann::json& j, const ModbusDeviceRawData& m);
 
-struct ModbusDeviceFmtData : public ModbusDeviceStatus {
-  std::string type;
-  std::vector<std::string> register_list{};
+// Device string data format (deprecated)
+struct ModbusDeviceFmtData : public ModbusDeviceInfo {
+  std::vector<std::string> registerList{};
 };
 void to_json(nlohmann::json& j, const ModbusDeviceFmtData& m);
 
-struct ModbusDeviceValueData : public ModbusDeviceStatus {
-  std::string type;
-  std::vector<RegisterStoreValue> register_list{};
+// Device interpreted register value format
+struct ModbusDeviceValueData : public ModbusDeviceInfo {
+  std::vector<RegisterStoreValue> registerList{};
 };
 void to_json(nlohmann::json& j, const ModbusDeviceValueData& m);
 
 class ModbusDevice {
-  friend ModbusSpecialHandler;
-  Modbus& interface;
-  uint8_t addr;
-  const RegisterMap& register_map;
-  std::mutex register_list_mutex{};
-  ModbusDeviceRawData info{};
-  std::vector<ModbusSpecialHandler> special_handlers{};
+  Modbus& interface_;
+  ModbusDeviceRawData info_;
+  const RegisterMap& registerMap_;
+  std::mutex registerListMutex_{};
+  std::vector<ModbusSpecialHandler> specialHandlers_{};
 
  public:
-  ModbusDevice(Modbus& iface, uint8_t a, const RegisterMap& reg);
+  ModbusDevice(
+      Modbus& interface,
+      uint8_t deviceAddress,
+      const RegisterMap& registerMap);
   virtual ~ModbusDevice() {}
 
   virtual void command(
       Msg& req,
       Msg& resp,
       ModbusTime timeout = ModbusTime::zero(),
-      ModbusTime settle_time = ModbusTime::zero());
+      ModbusTime settleTime = ModbusTime::zero());
 
-  void ReadHoldingRegisters(
-      uint16_t register_offset,
-      std::vector<uint16_t>& regs);
+  void readHoldingRegisters(
+      uint16_t registerOffset,
+      std::vector<uint16_t>& regs,
+      ModbusTime timeout = ModbusTime::zero());
 
-  void WriteSingleRegister(uint16_t register_offset, uint16_t value);
+  void writeSingleRegister(
+      uint16_t registerOffset,
+      uint16_t value,
+      ModbusTime timeout = ModbusTime::zero());
 
-  void WriteMultipleRegisters(
-      uint16_t register_offset,
-      std::vector<uint16_t>& value);
+  void writeMultipleRegisters(
+      uint16_t registerOffset,
+      std::vector<uint16_t>& value,
+      ModbusTime timeout = ModbusTime::zero());
 
-  void ReadFileRecord(std::vector<FileRecord>& records);
+  void readFileRecord(
+      std::vector<FileRecord>& records,
+      ModbusTime timeout = ModbusTime::zero());
 
   void monitor();
-  bool is_active() const {
-    return info.get_mode() == ModbusDeviceMode::ACTIVE;
-  }
-  void set_active() {
-    info.num_consecutive_failures = 0;
-  }
-  time_t last_active() const {
-    return info.last_active;
-  }
-  // Simple func, returns a copy of the monitor
-  // data.
-  ModbusDeviceRawData get_raw_data() {
-    std::unique_lock lk(register_list_mutex);
-    // Makes a deep copy.
-    return info;
-  }
-  ModbusDeviceStatus get_status() {
-    std::unique_lock lk(register_list_mutex);
-    return info;
-  }
-  ModbusDeviceFmtData get_fmt_data();
 
-  ModbusDeviceValueData get_value_data();
+  bool isActive() const {
+    return info_.mode == ModbusDeviceMode::ACTIVE;
+  }
+  void setActive() {
+    info_.numConsecutiveFailures = 0;
+  }
+  time_t lastActive() const {
+    return info_.lastActive;
+  }
+
+  // Return structured information of the device.
+  ModbusDeviceInfo getInfo();
+
+  // Returns raw monitor register data monitored for this device.
+  ModbusDeviceRawData getRawData();
+
+  // (deprecated) Returns string formatted register data
+  ModbusDeviceFmtData getFmtData();
+
+  // Returns value formatted register data monitored for this device.
+  ModbusDeviceValueData getValueData();
+
+  // Allow special handler access into the device.
+  friend ModbusSpecialHandler;
 };

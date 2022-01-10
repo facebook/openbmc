@@ -68,26 +68,21 @@ class ModbusDeviceTest : public ::testing::Test {
 // from the register map and input parameters.
 TEST_F(ModbusDeviceTest, BasicSetup) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
-  ASSERT_TRUE(dev.is_active());
-  ModbusDeviceStatus status = dev.get_status();
-  ASSERT_EQ(status.addr, 0x32);
-  ASSERT_EQ(status.baudrate, 19200);
-  ASSERT_EQ(status.crc_failures, 0);
-  ASSERT_EQ(status.timeouts, 0);
-  ASSERT_EQ(status.misc_failures, 0);
-  ASSERT_EQ(status.num_consecutive_failures, 0);
+  EXPECT_TRUE(dev.isActive());
+  ModbusDeviceInfo status = dev.getInfo();
+  EXPECT_EQ(status.deviceAddress, 0x32);
+  EXPECT_EQ(status.baudrate, 19200);
+  EXPECT_EQ(status.crcErrors, 0);
+  EXPECT_EQ(status.timeouts, 0);
+  EXPECT_EQ(status.miscErrors, 0);
+  EXPECT_EQ(status.numConsecutiveFailures, 0);
 }
 
 // Basic command interface is a blind pass through.
 TEST_F(ModbusDeviceTest, BasicCommand) {
   EXPECT_CALL(
       get_modbus(),
-      command(
-          Eq(0x3202_M),
-          _,
-          19200,
-          ModbusTime::zero(),
-          ModbusTime::zero()))
+      command(Eq(0x3202_M), _, 19200, ModbusTime::zero(), ModbusTime::zero()))
       .Times(1)
       .WillOnce(SetArgReferee<1>(0x32020304_M));
 
@@ -98,7 +93,7 @@ TEST_F(ModbusDeviceTest, BasicCommand) {
   req.len = 2;
 
   dev.command(req, resp);
-  ASSERT_EQ(resp, 0x32020304_M);
+  EXPECT_EQ(resp, 0x32020304_M);
 }
 
 TEST_F(ModbusDeviceTest, CommandTimeout) {
@@ -110,8 +105,8 @@ TEST_F(ModbusDeviceTest, CommandTimeout) {
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), TimeoutException);
-  ModbusDeviceStatus status = dev.get_status();
-  ASSERT_EQ(status.timeouts, 1);
+  ModbusDeviceInfo status = dev.getInfo();
+  EXPECT_EQ(status.timeouts, 1);
 }
 
 TEST_F(ModbusDeviceTest, CommandCRC) {
@@ -123,8 +118,8 @@ TEST_F(ModbusDeviceTest, CommandCRC) {
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), CRCError);
-  ModbusDeviceStatus status = dev.get_status();
-  ASSERT_EQ(status.crc_failures, 1);
+  ModbusDeviceInfo status = dev.getInfo();
+  EXPECT_EQ(status.crcErrors, 1);
 }
 
 TEST_F(ModbusDeviceTest, CommandMisc) {
@@ -136,8 +131,8 @@ TEST_F(ModbusDeviceTest, CommandMisc) {
 
   Msg req, resp;
   EXPECT_THROW(dev.command(req, resp), std::runtime_error);
-  ModbusDeviceStatus status = dev.get_status();
-  ASSERT_EQ(status.misc_failures, 1);
+  ModbusDeviceInfo status = dev.getInfo();
+  EXPECT_EQ(status.miscErrors, 1);
 }
 
 TEST_F(ModbusDeviceTest, MakeDormant) {
@@ -148,15 +143,15 @@ TEST_F(ModbusDeviceTest, MakeDormant) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   for (int i = 0; i < 10; i++) {
-    ModbusDeviceStatus status = dev.get_status();
-    ASSERT_EQ(status.get_mode(), ModbusDeviceMode::ACTIVE);
+    ModbusDeviceInfo status = dev.getInfo();
+    EXPECT_EQ(status.mode, ModbusDeviceMode::ACTIVE);
     Msg req, resp;
     EXPECT_THROW(dev.command(req, resp), TimeoutException);
   }
 
-  ModbusDeviceStatus status = dev.get_status();
-  ASSERT_EQ(status.timeouts, 10);
-  ASSERT_EQ(status.get_mode(), ModbusDeviceMode::DORMANT);
+  ModbusDeviceInfo status = dev.getInfo();
+  EXPECT_EQ(status.timeouts, 10);
+  EXPECT_EQ(status.mode, ModbusDeviceMode::DORMANT);
 }
 
 TEST_F(ModbusDeviceTest, ReadHoldingRegs) {
@@ -182,8 +177,8 @@ TEST_F(ModbusDeviceTest, ReadHoldingRegs) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   std::vector<uint16_t> regs(2), exp_regs{0x1122, 0x3344};
-  dev.ReadHoldingRegisters(0x64, regs);
-  ASSERT_EQ(regs, exp_regs);
+  dev.readHoldingRegisters(0x64, regs);
+  EXPECT_EQ(regs, exp_regs);
 }
 
 TEST_F(ModbusDeviceTest, WriteSingleReg) {
@@ -209,7 +204,7 @@ TEST_F(ModbusDeviceTest, WriteSingleReg) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   std::vector<uint16_t> regs(2), exp_regs{0x1122, 0x3344};
-  dev.WriteSingleRegister(0x64, 0x1122);
+  dev.writeSingleRegister(0x64, 0x1122);
 }
 
 TEST_F(ModbusDeviceTest, WriteMultipleReg) {
@@ -237,7 +232,7 @@ TEST_F(ModbusDeviceTest, WriteMultipleReg) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   std::vector<uint16_t> regs{0x1122, 0x3344};
-  dev.WriteMultipleRegisters(0x64, regs);
+  dev.writeMultipleRegisters(0x64, regs);
 }
 
 TEST_F(ModbusDeviceTest, ReadFileRecord) {
@@ -264,29 +259,29 @@ TEST_F(ModbusDeviceTest, ReadFileRecord) {
   records[1].data.resize(2);
   records[1].fileNum = 3;
   records[1].recordNum = 9;
-  dev.ReadFileRecord(records);
-  ASSERT_EQ(records[0].data[0], 0x0DFE);
-  ASSERT_EQ(records[0].data[1], 0x20);
-  ASSERT_EQ(records[1].data[0], 0x33CD);
-  ASSERT_EQ(records[1].data[1], 0x0040);
+  dev.readFileRecord(records);
+  EXPECT_EQ(records[0].data[0], 0x0DFE);
+  EXPECT_EQ(records[0].data[1], 0x20);
+  EXPECT_EQ(records[1].data[0], 0x33CD);
+  EXPECT_EQ(records[1].data[1], 0x0040);
 }
 
 TEST_F(ModbusDeviceTest, DeviceStatus) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
-  ModbusDeviceStatus status = dev.get_status();
+  ModbusDeviceInfo status = dev.getInfo();
   nlohmann::json j = status;
-  ASSERT_EQ(status.addr, 0x32);
-  ASSERT_EQ(status.baudrate, 19200);
-  ASSERT_EQ(status.crc_failures, 0);
-  ASSERT_EQ(status.misc_failures, 0);
-  ASSERT_EQ(status.timeouts, 0);
-  ASSERT_EQ(status.get_mode(), ModbusDeviceMode::ACTIVE);
-  ASSERT_EQ(j["addr"], 0x32);
-  ASSERT_EQ(j["crc_fails"], 0);
-  ASSERT_EQ(j["misc_fails"], 0);
-  ASSERT_EQ(j["timeouts"], 0);
-  ASSERT_EQ(j["mode"], "active");
-  ASSERT_EQ(j["baudrate"], 19200);
+  EXPECT_EQ(status.deviceAddress, 0x32);
+  EXPECT_EQ(status.baudrate, 19200);
+  EXPECT_EQ(status.crcErrors, 0);
+  EXPECT_EQ(status.miscErrors, 0);
+  EXPECT_EQ(status.timeouts, 0);
+  EXPECT_EQ(status.mode, ModbusDeviceMode::ACTIVE);
+  EXPECT_EQ(j["addr"], 0x32);
+  EXPECT_EQ(j["crc_fails"], 0);
+  EXPECT_EQ(j["misc_fails"], 0);
+  EXPECT_EQ(j["timeouts"], 0);
+  EXPECT_EQ(j["mode"], "active");
+  EXPECT_EQ(j["baudrate"], 19200);
 }
 
 TEST_F(ModbusDeviceTest, MonitorDataValue) {
@@ -314,73 +309,73 @@ TEST_F(ModbusDeviceTest, MonitorDataValue) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   dev.monitor();
-  ModbusDeviceValueData data = dev.get_value_data();
-  ASSERT_EQ(data.addr, 0x32);
-  ASSERT_EQ(data.baudrate, 19200);
-  ASSERT_EQ(data.crc_failures, 0);
-  ASSERT_EQ(data.timeouts, 0);
-  ASSERT_EQ(data.misc_failures, 0);
-  ASSERT_NEAR(data.last_active, std::time(0), 10);
-  ASSERT_EQ(data.num_consecutive_failures, 0);
-  ASSERT_EQ(data.get_mode(), ModbusDeviceMode::ACTIVE);
-  ASSERT_EQ(data.register_list.size(), 1);
-  ASSERT_EQ(data.register_list[0].regAddr, 0);
-  ASSERT_EQ(data.register_list[0].name, "MFG_MODEL");
-  ASSERT_EQ(data.register_list[0].history.size(), 1);
-  ASSERT_NEAR(data.register_list[0].history[0].timestamp, std::time(0), 10);
-  ASSERT_EQ(data.register_list[0].history[0].type, RegisterValueType::STRING);
-  ASSERT_EQ(data.register_list[0].history[0].value.strValue, "abcd");
+  ModbusDeviceValueData data = dev.getValueData();
+  EXPECT_EQ(data.deviceAddress, 0x32);
+  EXPECT_EQ(data.baudrate, 19200);
+  EXPECT_EQ(data.crcErrors, 0);
+  EXPECT_EQ(data.timeouts, 0);
+  EXPECT_EQ(data.miscErrors, 0);
+  EXPECT_NEAR(data.lastActive, std::time(0), 10);
+  EXPECT_EQ(data.numConsecutiveFailures, 0);
+  EXPECT_EQ(data.mode, ModbusDeviceMode::ACTIVE);
+  EXPECT_EQ(data.registerList.size(), 1);
+  EXPECT_EQ(data.registerList[0].regAddr, 0);
+  EXPECT_EQ(data.registerList[0].name, "MFG_MODEL");
+  EXPECT_EQ(data.registerList[0].history.size(), 1);
+  EXPECT_NEAR(data.registerList[0].history[0].timestamp, std::time(0), 10);
+  EXPECT_EQ(data.registerList[0].history[0].type, RegisterValueType::STRING);
+  EXPECT_EQ(data.registerList[0].history[0].value.strValue, "abcd");
 
   dev.monitor();
-  ModbusDeviceValueData data2 = dev.get_value_data();
-  ASSERT_EQ(data2.addr, 0x32);
-  ASSERT_EQ(data2.baudrate, 19200);
-  ASSERT_EQ(data2.crc_failures, 0);
-  ASSERT_EQ(data2.timeouts, 0);
-  ASSERT_EQ(data2.misc_failures, 0);
-  ASSERT_NEAR(data2.last_active, std::time(0), 10);
-  ASSERT_EQ(data2.num_consecutive_failures, 0);
-  ASSERT_EQ(data2.get_mode(), ModbusDeviceMode::ACTIVE);
-  ASSERT_EQ(data2.register_list.size(), 1);
-  ASSERT_EQ(data2.register_list[0].regAddr, 0);
-  ASSERT_EQ(data2.register_list[0].name, "MFG_MODEL");
-  ASSERT_EQ(data2.register_list[0].history.size(), 2);
-  ASSERT_EQ(data2.register_list[0].history[0].type, RegisterValueType::STRING);
-  ASSERT_EQ(data2.register_list[0].history[0].value.strValue, "abcd");
-  ASSERT_EQ(data2.register_list[0].history[1].type, RegisterValueType::STRING);
-  ASSERT_EQ(data2.register_list[0].history[1].value.strValue, "bcde");
-  ASSERT_NEAR(data2.register_list[0].history[0].timestamp, std::time(0), 10);
-  ASSERT_NEAR(data2.register_list[0].history[1].timestamp, std::time(0), 10);
-  ASSERT_GE(
-      data2.register_list[0].history[1].timestamp,
-      data2.register_list[0].history[0].timestamp);
+  ModbusDeviceValueData data2 = dev.getValueData();
+  EXPECT_EQ(data2.deviceAddress, 0x32);
+  EXPECT_EQ(data2.baudrate, 19200);
+  EXPECT_EQ(data2.crcErrors, 0);
+  EXPECT_EQ(data2.timeouts, 0);
+  EXPECT_EQ(data2.miscErrors, 0);
+  EXPECT_NEAR(data2.lastActive, std::time(0), 10);
+  EXPECT_EQ(data2.numConsecutiveFailures, 0);
+  EXPECT_EQ(data2.mode, ModbusDeviceMode::ACTIVE);
+  EXPECT_EQ(data2.registerList.size(), 1);
+  EXPECT_EQ(data2.registerList[0].regAddr, 0);
+  EXPECT_EQ(data2.registerList[0].name, "MFG_MODEL");
+  EXPECT_EQ(data2.registerList[0].history.size(), 2);
+  EXPECT_EQ(data2.registerList[0].history[0].type, RegisterValueType::STRING);
+  EXPECT_EQ(data2.registerList[0].history[0].value.strValue, "abcd");
+  EXPECT_EQ(data2.registerList[0].history[1].type, RegisterValueType::STRING);
+  EXPECT_EQ(data2.registerList[0].history[1].value.strValue, "bcde");
+  EXPECT_NEAR(data2.registerList[0].history[0].timestamp, std::time(0), 10);
+  EXPECT_NEAR(data2.registerList[0].history[1].timestamp, std::time(0), 10);
+  EXPECT_GE(
+      data2.registerList[0].history[1].timestamp,
+      data2.registerList[0].history[0].timestamp);
 
   dev.monitor();
-  ModbusDeviceValueData data3 = dev.get_value_data();
-  ASSERT_EQ(data3.register_list[0].history.size(), 2);
+  ModbusDeviceValueData data3 = dev.getValueData();
+  EXPECT_EQ(data3.registerList[0].history.size(), 2);
   // TODO We probably need a circular iterator on the history.
   // Till then, we will probably get out of order stuff.
-  ASSERT_EQ(data3.register_list[0].history[1].value.strValue, "bcde");
-  ASSERT_EQ(data3.register_list[0].history[0].value.strValue, "cdef");
+  EXPECT_EQ(data3.registerList[0].history[1].value.strValue, "bcde");
+  EXPECT_EQ(data3.registerList[0].history[0].value.strValue, "cdef");
   nlohmann::json j = data3;
-  ASSERT_EQ(j["addr"], 0x32);
-  ASSERT_EQ(j["crc_fails"], 0);
-  ASSERT_EQ(j["timeouts"], 0);
-  ASSERT_EQ(j["misc_fails"], 0);
-  ASSERT_EQ(j["mode"], "active");
-  ASSERT_NEAR(j["now"], std::time(0), 10);
-  ASSERT_TRUE(j["ranges"].is_array() && j["ranges"].size() == 1);
-  ASSERT_EQ(j["ranges"][0]["regAddress"], 0);
-  ASSERT_EQ(j["ranges"][0]["name"], "MFG_MODEL");
-  ASSERT_TRUE(
-      j["ranges"][0]["readings"].is_array() &&
-      j["ranges"][0]["readings"].size() == 2);
-  ASSERT_NEAR(j["ranges"][0]["readings"][0]["time"], std::time(0), 10);
-  ASSERT_EQ(j["ranges"][0]["readings"][0]["value"], "cdef");
-  ASSERT_EQ(j["ranges"][0]["readings"][0]["type"], "string");
-  ASSERT_NEAR(j["ranges"][0]["readings"][1]["time"], std::time(0), 10);
-  ASSERT_EQ(j["ranges"][0]["readings"][1]["value"], "bcde");
-  ASSERT_EQ(j["ranges"][0]["readings"][1]["type"], "string");
+  EXPECT_EQ(j["deviceAddress"], 0x32);
+  EXPECT_EQ(j["crcErrors"], 0);
+  EXPECT_EQ(j["timeouts"], 0);
+  EXPECT_EQ(j["miscErrors"], 0);
+  EXPECT_EQ(j["mode"], "active");
+  EXPECT_NEAR(j["now"], std::time(0), 10);
+  EXPECT_TRUE(j["registers"].is_array() && j["registers"].size() == 1);
+  EXPECT_EQ(j["registers"][0]["regAddress"], 0);
+  EXPECT_EQ(j["registers"][0]["name"], "MFG_MODEL");
+  EXPECT_TRUE(
+      j["registers"][0]["readings"].is_array() &&
+      j["registers"][0]["readings"].size() == 2);
+  EXPECT_NEAR(j["registers"][0]["readings"][0]["time"], std::time(0), 10);
+  EXPECT_EQ(j["registers"][0]["readings"][0]["value"], "cdef");
+  EXPECT_EQ(j["registers"][0]["readings"][0]["type"], "string");
+  EXPECT_NEAR(j["registers"][0]["readings"][1]["time"], std::time(0), 10);
+  EXPECT_EQ(j["registers"][0]["readings"][1]["value"], "bcde");
+  EXPECT_EQ(j["registers"][0]["readings"][1]["type"], "string");
 }
 
 TEST_F(ModbusDeviceTest, MonitorRawData) {
@@ -408,50 +403,50 @@ TEST_F(ModbusDeviceTest, MonitorRawData) {
   ModbusDevice dev(get_modbus(), 0x32, get_regmap());
 
   dev.monitor();
-  nlohmann::json data = dev.get_raw_data();
-  ASSERT_EQ(data["addr"], 0x32);
-  ASSERT_EQ(data["crc_fails"], 0);
-  ASSERT_EQ(data["timeouts"], 0);
-  ASSERT_EQ(data["misc_fails"], 0);
-  ASSERT_EQ(data["mode"], "active");
-  ASSERT_NEAR(data["now"], std::time(0), 10);
-  ASSERT_TRUE(data["ranges"].is_array() && data["ranges"].size() == 1);
-  ASSERT_EQ(data["ranges"][0]["begin"], 0);
-  ASSERT_TRUE(
+  nlohmann::json data = dev.getRawData();
+  EXPECT_EQ(data["addr"], 0x32);
+  EXPECT_EQ(data["crc_fails"], 0);
+  EXPECT_EQ(data["timeouts"], 0);
+  EXPECT_EQ(data["misc_fails"], 0);
+  EXPECT_EQ(data["mode"], "active");
+  EXPECT_NEAR(data["now"], std::time(0), 10);
+  EXPECT_TRUE(data["ranges"].is_array() && data["ranges"].size() == 1);
+  EXPECT_EQ(data["ranges"][0]["begin"], 0);
+  EXPECT_TRUE(
       data["ranges"][0]["readings"].is_array() &&
       data["ranges"][0]["readings"].size() == 2);
-  ASSERT_NEAR(data["ranges"][0]["readings"][0]["time"], std::time(0), 10);
-  ASSERT_EQ(data["ranges"][0]["readings"][0]["data"], "61626364");
-  ASSERT_EQ(data["ranges"][0]["readings"][1]["time"], 0);
-  ASSERT_EQ(data["ranges"][0]["readings"][1]["data"], "00000000");
+  EXPECT_NEAR(data["ranges"][0]["readings"][0]["time"], std::time(0), 10);
+  EXPECT_EQ(data["ranges"][0]["readings"][0]["data"], "61626364");
+  EXPECT_EQ(data["ranges"][0]["readings"][1]["time"], 0);
+  EXPECT_EQ(data["ranges"][0]["readings"][1]["data"], "00000000");
 
   dev.monitor();
-  nlohmann::json data2 = dev.get_raw_data();
-  ASSERT_EQ(data2["addr"], 0x32);
-  ASSERT_EQ(data2["crc_fails"], 0);
-  ASSERT_EQ(data2["timeouts"], 0);
-  ASSERT_EQ(data2["misc_fails"], 0);
-  ASSERT_EQ(data2["mode"], "active");
-  ASSERT_NEAR(data2["now"], std::time(0), 10);
-  ASSERT_TRUE(data2["ranges"].is_array() && data2["ranges"].size() == 1);
-  ASSERT_EQ(data2["ranges"][0]["begin"], 0);
-  ASSERT_TRUE(
+  nlohmann::json data2 = dev.getRawData();
+  EXPECT_EQ(data2["addr"], 0x32);
+  EXPECT_EQ(data2["crc_fails"], 0);
+  EXPECT_EQ(data2["timeouts"], 0);
+  EXPECT_EQ(data2["misc_fails"], 0);
+  EXPECT_EQ(data2["mode"], "active");
+  EXPECT_NEAR(data2["now"], std::time(0), 10);
+  EXPECT_TRUE(data2["ranges"].is_array() && data2["ranges"].size() == 1);
+  EXPECT_EQ(data2["ranges"][0]["begin"], 0);
+  EXPECT_TRUE(
       data2["ranges"][0]["readings"].is_array() &&
       data2["ranges"][0]["readings"].size() == 2);
-  ASSERT_NEAR(data2["ranges"][0]["readings"][0]["time"], std::time(0), 10);
-  ASSERT_EQ(data2["ranges"][0]["readings"][0]["data"], "61626364");
-  ASSERT_NEAR(data2["ranges"][0]["readings"][1]["time"], std::time(0), 10);
-  ASSERT_EQ(data2["ranges"][0]["readings"][1]["data"], "62636465");
+  EXPECT_NEAR(data2["ranges"][0]["readings"][0]["time"], std::time(0), 10);
+  EXPECT_EQ(data2["ranges"][0]["readings"][0]["data"], "61626364");
+  EXPECT_NEAR(data2["ranges"][0]["readings"][1]["time"], std::time(0), 10);
+  EXPECT_EQ(data2["ranges"][0]["readings"][1]["data"], "62636465");
 
   dev.monitor();
-  nlohmann::json data3 = dev.get_raw_data();
-  ASSERT_TRUE(
+  nlohmann::json data3 = dev.getRawData();
+  EXPECT_TRUE(
       data3["ranges"][0]["readings"].is_array() &&
       data3["ranges"][0]["readings"].size() == 2);
-  ASSERT_NEAR(data3["ranges"][0]["readings"][0]["time"], std::time(0), 10);
-  ASSERT_EQ(data3["ranges"][0]["readings"][0]["data"], "63646566");
-  ASSERT_NEAR(data3["ranges"][0]["readings"][1]["time"], std::time(0), 10);
-  ASSERT_EQ(data3["ranges"][0]["readings"][1]["data"], "62636465");
+  EXPECT_NEAR(data3["ranges"][0]["readings"][0]["time"], std::time(0), 10);
+  EXPECT_EQ(data3["ranges"][0]["readings"][0]["data"], "63646566");
+  EXPECT_NEAR(data3["ranges"][0]["readings"][1]["time"], std::time(0), 10);
+  EXPECT_EQ(data3["ranges"][0]["readings"][1]["data"], "62636465");
 }
 
 // TODO Test Formatted data. Potentially, we could have
@@ -484,19 +479,19 @@ TEST_F(ModbusDeviceTest, MonitorFmtData) {
   dev.monitor();
   dev.monitor();
   dev.monitor();
-  nlohmann::json data = dev.get_fmt_data();
-  ASSERT_EQ(data["addr"], 0x32);
-  ASSERT_EQ(data["crc_fails"], 0);
-  ASSERT_EQ(data["timeouts"], 0);
-  ASSERT_EQ(data["misc_fails"], 0);
-  ASSERT_EQ(data["mode"], "active");
-  ASSERT_EQ(data["type"], "orv3_psu");
-  ASSERT_NEAR(data["now"], std::time(0), 10);
-  ASSERT_TRUE(data["ranges"].is_array() && data["ranges"].size() == 1);
+  nlohmann::json data = dev.getFmtData();
+  EXPECT_EQ(data["addr"], 0x32);
+  EXPECT_EQ(data["crc_fails"], 0);
+  EXPECT_EQ(data["timeouts"], 0);
+  EXPECT_EQ(data["misc_fails"], 0);
+  EXPECT_EQ(data["mode"], "active");
+  EXPECT_EQ(data["deviceType"], "orv3_psu");
+  EXPECT_NEAR(data["now"], std::time(0), 10);
+  EXPECT_TRUE(data["ranges"].is_array() && data["ranges"].size() == 1);
   std::string exp1_out =
       R"(  <0x0000> MFG_MODEL                        : cdef bcde)";
   std::string actual = data["ranges"][0];
-  ASSERT_EQ(actual, exp1_out);
+  EXPECT_EQ(actual, exp1_out);
 }
 
 class MockModbusDevice : public ModbusDevice {
@@ -537,7 +532,7 @@ TEST(ModbusSpecialHandler, BasicHandlingStringValuePeriodic) {
           _,
           _,
           _))
-      .Times(Between(2,3));
+      .Times(Between(2, 3));
   ModbusSpecialHandler special;
   SpecialHandlerInfo& info = special;
   info = R"({

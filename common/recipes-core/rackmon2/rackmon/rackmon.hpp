@@ -107,7 +107,7 @@ class Rackmon {
   void ReadFileRecord(uint8_t addr, std::vector<FileRecord>& records);
 
   // Get status of devices
-  std::vector<ModbusDeviceStatus> list_devices();
+  std::vector<ModbusDeviceInfo> list_devices();
 
   // Get monitored data
   void get_raw_data(std::vector<ModbusDeviceRawData>& ret);

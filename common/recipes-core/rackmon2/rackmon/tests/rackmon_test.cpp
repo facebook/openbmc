@@ -171,7 +171,7 @@ TEST_F(RackmonTest, BasicScanFoundNone) {
       .WillOnce(Return(ByMove(make_modbus(0, 3))));
   mon.load(r_conf, r_test_dir);
   mon.start();
-  std::vector<ModbusDeviceStatus> devs = mon.list_devices();
+  std::vector<ModbusDeviceInfo> devs = mon.list_devices();
   ASSERT_EQ(devs.size(), 0);
   mon.stop();
   Msg req, resp;
@@ -192,10 +192,10 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   mon.load(r_conf, r_test_dir);
   mon.start();
   std::this_thread::sleep_for(1s);
-  std::vector<ModbusDeviceStatus> devs = mon.list_devices();
+  std::vector<ModbusDeviceInfo> devs = mon.list_devices();
   ASSERT_EQ(devs.size(), 1);
-  ASSERT_EQ(devs[0].addr, 161);
-  ASSERT_EQ(devs[0].get_mode(), ModbusDeviceMode::ACTIVE);
+  ASSERT_EQ(devs[0].deviceAddress, 161);
+  ASSERT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
   mon.stop();
 
   Msg rreq, rresp;
@@ -237,23 +237,23 @@ TEST_F(RackmonTest, BasicScanFoundOneMon) {
   mon.load(r_conf, r_test_dir);
   mon.start(1s);
   std::this_thread::sleep_for(1s);
-  std::vector<ModbusDeviceStatus> devs = mon.list_devices();
+  std::vector<ModbusDeviceInfo> devs = mon.list_devices();
   ASSERT_EQ(devs.size(), 1);
-  ASSERT_EQ(devs[0].addr, 161);
-  ASSERT_EQ(devs[0].get_mode(), ModbusDeviceMode::ACTIVE);
+  ASSERT_EQ(devs[0].deviceAddress, 161);
+  ASSERT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
   std::this_thread::sleep_for(1s);
   mon.stop();
   std::vector<ModbusDeviceValueData> data;
   mon.get_value_data(data);
   ASSERT_EQ(data.size(), 1);
-  ASSERT_EQ(data[0].type, "orv2_psu");
-  ASSERT_EQ(data[0].register_list.size(), 1);
-  ASSERT_EQ(data[0].register_list[0].regAddr, 0);
-  ASSERT_EQ(data[0].register_list[0].name, "MFG_MODEL");
-  ASSERT_EQ(data[0].register_list[0].history.size(), 1);
+  ASSERT_EQ(data[0].deviceType, "orv2_psu");
+  ASSERT_EQ(data[0].registerList.size(), 1);
+  ASSERT_EQ(data[0].registerList[0].regAddr, 0);
+  ASSERT_EQ(data[0].registerList[0].name, "MFG_MODEL");
+  ASSERT_EQ(data[0].registerList[0].history.size(), 1);
   ASSERT_EQ(
-      data[0].register_list[0].history[0].type, RegisterValueType::STRING);
+      data[0].registerList[0].history[0].type, RegisterValueType::STRING);
   ASSERT_EQ(
-      data[0].register_list[0].history[0].value.strValue, "abcdefghijklmnop");
-  ASSERT_NEAR(data[0].register_list[0].history[0].timestamp, std::time(0), 10);
+      data[0].registerList[0].history[0].value.strValue, "abcdefghijklmnop");
+  ASSERT_NEAR(data[0].registerList[0].history[0].timestamp, std::time(0), 10);
 }

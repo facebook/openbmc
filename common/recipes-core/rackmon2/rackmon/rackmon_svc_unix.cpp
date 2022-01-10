@@ -77,7 +77,7 @@ void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
     }
   } else if (cmd == "list") {
     resp["data"] = rackmond_.listDevices();
-  } else if (cmd == "data") {
+  } else if (cmd == "raw_data") {
     std::vector<ModbusDeviceRawData> ret;
     rackmond_.getRawData(ret);
     resp["data"] = ret;
@@ -85,7 +85,7 @@ void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
     rackmond_.stop();
   } else if (cmd == "resume") {
     rackmond_.start();
-  } else if (cmd == "formatted_data") {
+  } else if (cmd == "print_data") {
     std::vector<ModbusDeviceFmtData> ret;
     rackmond_.getFmtData(ret);
     resp["data"] = ret;

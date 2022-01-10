@@ -111,7 +111,8 @@ static void print_text(const std::string& req_s, json& j) {
   std::string status;
   j.at("status").get_to(status);
   if (status == "SUCCESS") {
-    if (req_s == "data" || req_s == "formatted_data" || req_s == "profile")
+    if (req_s == "raw_data" || req_s == "print_data" || req_s == "value_data" ||
+        req_s == "profile")
       print_nested(j["data"]);
     else if (req_s == "list")
       print_table(j["data"]);
@@ -191,20 +192,11 @@ int main(int argc, char* argv[]) {
   });
 
   // Data command (Get monitored data)
-  bool format_data = false;
-  bool value_data = false;
-  auto get_data_cmd = [&]() {
-    if (format_data)
-      return "formatted_data";
-    if (value_data)
-      return "value_data";
-    return "data";
-  };
+  std::string format = "raw";
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
-  data->callback([&]() { do_cmd(get_data_cmd(), json_fmt); });
-  data->add_flag(
-      "-f,--format", format_data, "Formats the data as per the register map");
-  data->add_flag("-v,--value", value_data, "Formats the data as values");
+  data->callback([&]() { do_cmd(format + "_data", json_fmt); });
+  data->add_set(
+      "-f,--format", format, {"raw", "print", "value"}, "Format the data");
 
   // Profile
   app.add_subcommand("profile", "Print profiling data collected from last read")

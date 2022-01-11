@@ -318,7 +318,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     pal_update_ts_sled();
     syslog(LOG_CRIT, "DEASSERT: %s threshold - settled - FRU: %d, num: 0x%X "
         "curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s",thresh_name,
-        fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
+        fruNb, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
     pal_sensor_deassert_handle(fru, snr_num, *curr_val, thresh);
   }
@@ -432,7 +432,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     pal_update_ts_sled();
     syslog(LOG_CRIT, "ASSERT: %s threshold - raised - FRU: %d, num: 0x%X"
         " curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s", thresh_name,
-        fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
+        fruNb, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
     pal_sensor_assert_handle(fru, snr_num, *curr_val, thresh);
   }

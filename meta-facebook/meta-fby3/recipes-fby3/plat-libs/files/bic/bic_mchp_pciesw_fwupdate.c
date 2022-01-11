@@ -973,8 +973,6 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
 
   switch (type) {
     case PESW_MASK_S_RCVRY:
-      // want to run secure PESW recovery update but the PESW is in unsecured
-      if ( sys_conf != PESW_INIT_SECURED ) ret = BIC_STATUS_FAILURE;
       is_rcvry = true;
       break;
     case PESW_MASK_RCVRY:
@@ -992,9 +990,6 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
         if ( sys_conf == PESW_INIT_SECURED ) {
           // type and file_s_info should be the same
           if ( type != file_s_info ) ret = BIC_STATUS_FAILURE;
-        } else {
-          // if PESW is in PESW_INIT_UNSECURED but file_s_info is not 0
-          if ( file_s_info != 0 ) ret = BIC_STATUS_FAILURE;
         }
       }
       break;

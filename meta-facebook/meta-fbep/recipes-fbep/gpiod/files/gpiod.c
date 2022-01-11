@@ -56,6 +56,9 @@
 #define UV_FAULT                 (0x1 << 1)
 #define OV_FAULT                 (0x1 << 0)
 
+#define LTC4282_REG_ALERT_LOG    0x05
+#define VSENSE_ALARM_HIGH        (0x1 << 5)
+
 #define ADM127x_REG_STATUS_IOUT  0x7B
 #define IOUT_OC_FAULT            (0x1 << 7)
 #define IOUT_OC_WARN             (0x1 << 5)
@@ -378,6 +381,10 @@ int check_hsc_alert(gpiopoll_pin_t *gp, int bus_id, uint8_t addr, uint8_t reg)
       if (rbuf[0] & OV_FAULT)
 	syslog(LOG_CRIT, "%s: Overvoltage", cfg->description);
       break;
+    case LTC4282_REG_ALERT_LOG:
+      if (rbuf[0] & VSENSE_ALARM_HIGH)
+	syslog(LOG_CRIT, "%s: Overcurrent warning", cfg->description);
+      break;    
     case ADM127x_REG_STATUS_IOUT:
       if (rbuf[0] & IOUT_OC_FAULT)
 	syslog(LOG_CRIT, "%s: Overcurrent fault", cfg->description);
@@ -501,7 +508,7 @@ static void gpio_event_hsc_1_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
   gpio_event_handle_pwr_brake(gp, last, curr);
   sync_dbg_led(ERR_HSC_1_ALERT, curr == GPIO_VALUE_LOW? true: false);
   if (curr == GPIO_VALUE_LOW) {
-    if (check_hsc_alert(gp, 16, 0x53 << 1, LTC4282_REG_FAULT_LOG) < 0)
+    if (check_hsc_alert(gp, 16, 0x53 << 1, LTC4282_REG_ALERT_LOG) < 0)
       syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_1");
     if (!pal_is_server_off() &&
 	(check_hsc_alert(gp, 16, 0x13 << 1, ADM127x_REG_STATUS_IOUT) < 0 ||
@@ -516,7 +523,7 @@ static void gpio_event_hsc_2_alert(gpiopoll_pin_t *gp, gpio_value_t last, gpio_v
   gpio_event_handle_pwr_brake(gp, last, curr);
   sync_dbg_led(ERR_HSC_2_ALERT, curr == GPIO_VALUE_LOW? true: false);
   if (curr == GPIO_VALUE_LOW) {
-    if (check_hsc_alert(gp, 17, 0x40 << 1, LTC4282_REG_FAULT_LOG) < 0)
+    if (check_hsc_alert(gp, 17, 0x40 << 1, LTC4282_REG_ALERT_LOG) < 0)
       syslog(LOG_WARNING, "Failed to get alert status from P12V HSC_2");
     if (!pal_is_server_off() &&
 	(check_hsc_alert(gp, 17, 0x10 << 1, ADM127x_REG_STATUS_IOUT) < 0 ||

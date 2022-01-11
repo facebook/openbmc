@@ -139,11 +139,11 @@ bool SELFormat::fits_time_range(const std::string& start_time, const std::string
 
   // not expecting both of these strings to be in the same format just in case
   if (std::regex_search(start_time, sm, time_match)) {
-    std::tm ts;
+    std::tm ts{};
     strptime(sm[0].str().c_str(), "%Y-%m-%d %H:%M:%S", &ts);
     time_s = std::mktime(&ts);
   } else if (std::regex_search(start_time, sm, time_match_legacy)) {
-    std::tm ts;
+    std::tm ts{};
     strptime(sm[0].str().c_str(), "%m-%d %H:%M:%S", &ts);
     time_s = std::mktime(&ts);
   } else {
@@ -151,11 +151,11 @@ bool SELFormat::fits_time_range(const std::string& start_time, const std::string
   }
 
   if (std::regex_search(end_time, sm, time_match)) {
-    std::tm ts;
+    std::tm ts{};
     strptime(sm[0].str().c_str(), "%Y-%m-%d %H:%M:%S", &ts);
     time_e = std::mktime(&ts);
   } else if (std::regex_search(end_time, sm, time_match_legacy)) {
-    std::tm ts;
+    std::tm ts{};
     strptime(sm[0].str().c_str(), "%m-%d %H:%M:%S", &ts);
     time_e = std::mktime(&ts);
   } else {
@@ -164,11 +164,11 @@ bool SELFormat::fits_time_range(const std::string& start_time, const std::string
 
   // time_ is stored in a different format than displayed from what I can tell
   if (std::regex_search(time_, sm, time_match)) {
-    std::tm ts;
+    std::tm ts{};
     strptime(sm[0].str().c_str(), "%Y-%m-%d %H:%M:%S", &ts);
     time_c = std::mktime(&ts);
   } else if (std::regex_search(time_, sm, time_match_legacy)) {
-    std::tm ts;
+    std::tm ts{};
     strptime(sm[0].str().c_str(), "%m-%d %H:%M:%S", &ts);
     time_c = std::mktime(&ts);
   } else {

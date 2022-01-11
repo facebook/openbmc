@@ -139,15 +139,6 @@ server_power_12v_on(uint8_t fru) {
 
   sleep(1);
 
-  // vr cached info was removed when 12v_off was performed
-  // we generate it again to avoid accessing VR devices at the same time.
-  snprintf(cmd, sizeof(cmd), "/usr/bin/fw-util slot%d --version vr > /dev/null 2>&1", fru);
-  if (system(cmd) != 0) {
-    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-    ret = PAL_ENOTSUP;
-    goto error_exit;
-  }
-
   // SiC45X setting on 1/2ou was set in runtime
   // it was lost when 12v_off was performed,
   // need to reconfigure it again
@@ -359,7 +350,7 @@ pal_set_bic_power_off(int fru) {
     printf("Failed to open CPLD 0x%x\n", CPLD_ADDRESS);
     return -1;
   }
-  
+
   tbuf[0] = CPLD_PWR_OFF_BIC_REG;
   tbuf[1] = 0; // power off
   tlen = 2;
@@ -405,7 +396,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
     case SERVER_12V_CYCLE:
       pal_set_bic_power_off(fru);
       break;
-    case SERVER_12V_ON:    
+    case SERVER_12V_ON:
       //do nothing
       break;
     default:
@@ -560,7 +551,6 @@ pal_sled_cycle(void) {
     pal_set_bic_power_off(FRU_SLOT1);
     // Provide the time for inform another BMC
     sleep(2);
-    int i = 0;
     int retries = 3;
     for (i = 0 ; i < retries; i++) {
       //BMC always sends the command with slot id 1 on class 2

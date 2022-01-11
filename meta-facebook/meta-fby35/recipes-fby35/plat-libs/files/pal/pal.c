@@ -111,6 +111,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define ERROR_LOG_LEN 256
 #define ERR_DESC_LEN 64
+
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
 
@@ -3035,9 +3036,6 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       syslog(LOG_WARNING, "%s() Failed to get sysfw ver", __func__);
       goto error_exit;
     }
-  } else if(target == FW_VR) {
-    // TODO
-    goto not_support;
   } else {
     switch(target) {
     case FW_1OU_BIC:
@@ -3069,7 +3067,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       break;
     case FW_BB_BIC:
     case FW_BB_CPLD:
-      if(bmc_location != NIC_BMC) {
+      if (bmc_location != NIC_BMC) {
         goto not_support;
       }
       break;

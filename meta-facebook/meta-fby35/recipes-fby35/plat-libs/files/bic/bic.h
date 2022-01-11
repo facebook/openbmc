@@ -45,12 +45,19 @@ extern "C" {
 
 #define MAX_VER_STR_LEN 80
 
-/*IFX VR pages*/
-#define VR_PAGE   0x00
-#define VR_PAGE32 0x32
-#define VR_PAGE50 0x50
-#define VR_PAGE60 0x60
-#define VR_PAGE62 0x62
+/* IFX VR */
+enum {
+  IFX_MFR_AHB_ADDR    = 0xCE,
+  IFX_MFR_REG_WRITE   = 0xDE,
+  IFX_MFR_REG_READ    = 0xDF,
+  IFX_MFR_FW_CMD_DATA = 0xFD,
+  IFX_MFR_FW_CMD      = 0xFE,
+
+  OTP_PTN_RMNG  = 0x10,
+  OTP_CONF_STO  = 0x11,
+  OTP_FILE_INVD = 0x12,
+  GET_CRC       = 0x2D,
+};
 
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
@@ -108,7 +115,6 @@ enum {
   VCCIN_ADDR = 0xC0,
   VCCD_ADDR = 0xC4,
   VCCINFAON_ADDR = 0xEC,
-  VDDQ_DEF_ADDR = 0xCC,
   VR_PESW_ADDR = 0xC8,
   VR_2OU_P3V3_STBY1 = 0x28,
   VR_2OU_P3V3_STBY2 = 0x2E,
@@ -139,7 +145,7 @@ enum {
 
 /* Generic GPIO configuration */
 typedef struct _bic_gpio_t {
-  uint32_t gpio[3]; 
+  uint32_t gpio[3];
 } bic_gpio_t;
 
 typedef struct _bic_gpio_config_t {

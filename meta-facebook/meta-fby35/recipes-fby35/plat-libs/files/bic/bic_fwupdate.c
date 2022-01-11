@@ -913,8 +913,12 @@ get_component_name(uint8_t comp) {
       return "SB CPLD";
     case FW_BIC:
       return "SB BIC";
-    case FW_VR:
-      return "VR";
+    case FW_VR_VCCIN:
+      return "VCCIN/VCCFA_EHV_FIVRA";
+    case FW_VR_VCCD:
+      return "VCCD";
+    case FW_VR_VCCINFAON:
+      return "VCCINFAON/VCCFA_EHV";
     case FW_BIOS:
       return "BIOS";
     case FW_1OU_BIC:
@@ -1039,7 +1043,9 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_ME:
     case FW_BIC:
     case FW_BIC_RCVY:
-    case FW_VR:
+    case FW_VR_VCCIN:
+    case FW_VR_VCCD:
+    case FW_VR_VCCINFAON:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
@@ -1159,7 +1165,9 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         ret = update_bic_usb_bios(slot_id, comp, fd);
       }
       break;
-    case FW_VR:
+    case FW_VR_VCCIN:
+    case FW_VR_VCCD:
+    case FW_VR_VCCINFAON:
       ret = update_bic_vr(slot_id, comp, path, intf, force, false/*usb update?*/);
       break;
     case FW_2OU_3V3_VR1:
@@ -1293,7 +1301,7 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
           printf("Failed to open CPLD 0x%x\n", CPLD_ADDRESS);
           return -1;
         }
-  
+
         tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
         tlen = 1;
         rlen = 1;
@@ -1341,7 +1349,7 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
         goto error_exit;
       }
       *rev_id = rbuf[0];
-      break; 
+      break;
     default:
       syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
       return -1;

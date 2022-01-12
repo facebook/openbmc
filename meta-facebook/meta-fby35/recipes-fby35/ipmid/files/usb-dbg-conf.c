@@ -566,6 +566,7 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
   char entry[256];
   uint8_t ver[32] = {0};
   uint8_t rlen = 4;
+  uint8_t* plat_name = NULL;
 
   if (fw_text == NULL)
     return -1;
@@ -584,7 +585,15 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
     if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
       strcat(fw_text,"BIC_ver:\nNA\n");
     } else {
-      sprintf(entry,"BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+      if (strlen((char*)ver) == 2) { // old version format
+        snprintf(entry, sizeof(entry), "BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+      } else if (strlen((char*)ver) >= 4){ // new version format
+        plat_name = ver + 4;
+        snprintf(entry, sizeof(entry), "BIC_ver:\noby35-%s-v%02x%02x.%02x.%02x\n", (char*)plat_name, ver[0], ver[1], ver[2], ver[3]);
+      } else {
+        snprintf(entry, sizeof(entry), "BIC_ver:\nFormat not supported\n");
+      }
+
       strcat(fw_text, entry);
     }
 

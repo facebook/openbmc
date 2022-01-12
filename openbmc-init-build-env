@@ -34,6 +34,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-minipack:lf-dunfell
   meta-qemux86:lf-dunfell
   meta-wedge400:lf-dunfell
+  meta-grandteton:lf-dunfell
 # Legacy platforms pending kernel upgrade
   meta-fbtp:rocko
   meta-fbttn:rocko

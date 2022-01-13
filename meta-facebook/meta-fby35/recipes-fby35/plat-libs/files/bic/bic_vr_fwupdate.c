@@ -649,6 +649,7 @@ vr_IFX_mic_parser(char *image) {
 #define DATA_COMMENT   "//"
 #define DATA_XV        "XV"
 #define DATA_LEN_IN_LINE 5
+#define SEC_TRIM       0x02
   const size_t len_start = strlen(DATA_START_TAG);
   const size_t len_end = strlen(DATA_END_TAG);
   const size_t len_comment = strlen(DATA_COMMENT);
@@ -688,11 +689,13 @@ vr_IFX_mic_parser(char *image) {
       char *token_list[8] = {0};
       int token_size = split(token_list, tmp_buf, " ", DATA_LEN_IN_LINE);
 
-      if ( token_size < 1 ) {
-        // unexpected data line
+      if ( token_size < 1 ) {  // unexpected data line
         continue;
       }
       offset = (uint16_t)strtol(token_list[0], NULL, 16);
+      if ( sec_type == SEC_TRIM && offset != 0x0 ) {  // skip Trim
+        continue;
+      }
 
       for ( i = 1; i < token_size; i++ ) {  // DWORD0 ~ DWORD3
         dword = (uint32_t)strtoul(token_list[i], NULL, 16);
@@ -717,6 +720,9 @@ vr_IFX_mic_parser(char *image) {
               sum += dword;
               start_idx = data_cnt + 1;  // start of section data
               break;
+          }
+          if ( sec_type == SEC_TRIM ) {
+            break;
           }
         } else if ( (offset + i*4) == sec_size ) {  // section data CRC
           // check CRC of section data

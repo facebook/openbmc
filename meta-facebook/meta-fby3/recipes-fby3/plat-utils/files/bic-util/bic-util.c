@@ -1277,6 +1277,10 @@ main(int argc, char **argv) {
   int i = 0;
   uint8_t hub = 0, ctl = 0;
 
+  if (argc < 3) {
+    goto err_exit;
+  }
+
   // because the usage of bic-util is displayed based on the platform
   // we should get the information first
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -1295,27 +1299,56 @@ main(int argc, char **argv) {
 
     // check if the exp presence
     if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
-      ret = fby3_common_get_2ou_board_type(FRU_SLOT1, &is_fru_present);
+      ret = fby3_common_get_2ou_board_type(FRU_SLOT1, &riser_board);
       if ( ret < 0 ) {
         printf("Failed to run fby3_common_get_2ou_board_type()\n");
         return -1;
       }
-
-      // get the board type
-      riser_board = is_fru_present;
     }
-  }
 
-  if (argc < 3) {
-    goto err_exit;
-  }
+    ret = fby3_common_get_slot_id(argv[1], &slot_id);
+    if ( ret < 0 ) {
+      if ( (riser_board == CWC_MCHP_BOARD || riser_board == GPV3_MCHP_BOARD || riser_board == GPV3_BRCM_BOARD) && 
+          pal_get_fru_id(argv[1], &expFru) ) {
+        printf("%s is invalid!\n", argv[1]);
+        goto err_exit;
+      }
+    }
 
-  ret = fby3_common_get_slot_id(argv[1], &slot_id);
-  if ( ret < 0 ) {
-    if ( (riser_board == CWC_MCHP_BOARD || riser_board == GPV3_MCHP_BOARD || riser_board == GPV3_BRCM_BOARD) && 
-        pal_get_fru_id(argv[1], &expFru) ) {
-      printf("%s is invalid!\n", argv[1]);
-      goto err_exit;
+  } else {
+    ret = fby3_common_get_slot_id(argv[1], &slot_id);
+    if ( ret < 0 ) {
+      char exp_slot[16] = {0};
+      char *str;
+      strncpy(exp_slot, argv[1], sizeof(exp_slot)-1);
+      str = strtok(exp_slot,"-");
+      ret = fby3_common_get_slot_id(str, &slot_id);
+      if ( ret < 0 ) {
+        printf("%s is invalid!\n", str);
+        goto err_exit;
+      }
+
+      // Check Config D GPv3
+      ret = bic_is_m2_exp_prsnt(slot_id);
+      if ( ret < 0 ) {
+        printf("Failed to run bic_is_m2_exp_prsnt()\n");
+        return -1;
+      }
+
+      // check if the exp presence
+      if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
+        ret = fby3_common_get_2ou_board_type(slot_id, &riser_board);
+        if ( ret < 0 ) {
+          printf("Failed to run fby3_common_get_2ou_board_type()\n");
+          return -1;
+        }
+      }
+
+      if ( (riser_board == GPV3_MCHP_BOARD || riser_board == GPV3_BRCM_BOARD) &&
+          pal_get_fru_id(argv[1], &expFru) ) {
+        printf("%s is invalid!\n", argv[1]);
+        goto err_exit;
+      }
     }
   }
 
@@ -1359,7 +1392,7 @@ main(int argc, char **argv) {
     }
   } else {
     // get the argv_idx and intf
-    if (expFru == FRU_2U) {
+    if (expFru == FRU_2U || expFru == FRU_2U_SLOT3) {
       intf = REXP_BIC_INTF;
     }
 

@@ -245,11 +245,13 @@ pfr_get_pubrk_hash(uint8_t *shasum) {
   fseek(fp, 0, SEEK_SET);
   if (fread(rbuf, 1, PFM_B0_SIZE, fp) != PFM_B0_SIZE) {
     syslog(LOG_ERR, "%s: read PFM block0 failed", __func__);
+    fclose(fp);
     return -1;
   }
 
   if ((*(uint32_t *)rbuf != PFM_B0_MAGIC) || (rbuf[8] != PC_PFR_BMC_PFM)) {
     printf("PFM block0 not found\n");
+    fclose(fp);
     return -1;
   }
 
@@ -257,11 +259,13 @@ pfr_get_pubrk_hash(uint8_t *shasum) {
   rk_buf = (uint8_t *)&rbuf[64];
   if (fread(rk_buf, 1, PFM_RT_SIZE, fp) != PFM_RT_SIZE) {
     syslog(LOG_ERR, "%s: read PFM root-entry failed", __func__);
+    fclose(fp);
     return -1;
   }
 
   if (*(uint32_t *)rk_buf != PFM_RT_MAGIC) {
     printf("PFM root-entry not found\n");
+    fclose(fp);
     return -1;
   }
 
@@ -273,7 +277,7 @@ pfr_get_pubrk_hash(uint8_t *shasum) {
     rbuf[32+i] = pubrk_y[31-i];
   }
   SHA256((uint8_t *)rbuf, 64, shasum);
-
+  fclose(fp);
   return 0;
 }
 
@@ -1002,7 +1006,7 @@ enum {
   }
 
   ret = update_pfr_cpld_altera(file);
-  cpld_intf_close(INTF_I2C);
+  cpld_intf_close();
   if (ret) {
     printf("Error Occur at updating CPLD FW!\n");
   }

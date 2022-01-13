@@ -76,7 +76,7 @@ int CpldComponent::print_version() {
     }
 
     ret = cpld_get_ver((uint32_t *)ver);
-    cpld_intf_close(INTF_I2C);
+    cpld_intf_close();
   }
 
   if (ret) {
@@ -142,7 +142,7 @@ int CpldComponent::update(string image) {
     }
 
     ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), false);
-    cpld_intf_close(INTF_I2C);
+    cpld_intf_close();
     if (ret) {
       printf("Error Occur at updating CPLD FW!\n");
       break;

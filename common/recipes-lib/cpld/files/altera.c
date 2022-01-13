@@ -708,7 +708,7 @@ static void max10_dev_init(altera_max10_attr_t *attr)
   return;
 }
 
-static int cpld_dev_open(cpld_intf_t intf, uint8_t id, void *_attr)
+static int cpld_dev_open(void *_attr)
 {
   int i2c_file;
   altera_max10_attr_t *attr = (altera_max10_attr_t *)_attr;
@@ -719,30 +719,20 @@ static int cpld_dev_open(cpld_intf_t intf, uint8_t id, void *_attr)
   max10_dev_init(attr);
   max10_iic_init(attr->bus_id, attr->slv_addr);
 
-  if (intf == INTF_I2C) {
-    // Open a connection to the I2C userspace control file.
-    if ((i2c_file = open(g_i2c_file_dp, O_RDWR)) < 0) {
-      printf("Unable to open %s\n", g_i2c_file_dp);
-      return -1;
-    }
-
-    max10_update_init(i2c_file);
-  } else {
-    printf("[%s] Interface type %d is not supported\n", __func__, intf);
+  // Open a connection to the I2C userspace control file.
+  if ((i2c_file = open(g_i2c_file_dp, O_RDWR)) < 0) {
+    printf("Unable to open %s\n", g_i2c_file_dp);
     return -1;
   }
+
+  max10_update_init(i2c_file);
 
   return 0;
 }
 
-static int cpld_dev_close(cpld_intf_t intf)
+static int cpld_dev_close()
 {
-  if (intf == INTF_I2C) {
-    max10_done();
-  } else {
-    printf("[%s] Interface type %d is not supported\n", __func__, intf);
-  }
-
+  max10_done();
   return 0;
 }
 
@@ -763,6 +753,7 @@ struct cpld_dev_info altera_dev_list[] = {
   [0] = {
     .name = "MAX10-10M16",
     .dev_id = 0x01234567,
+    .intf = INTF_I2C,
     .cpld_open = cpld_dev_open,
     .cpld_close = cpld_dev_close,
     .cpld_ver = max10_get_fw_ver,
@@ -772,6 +763,7 @@ struct cpld_dev_info altera_dev_list[] = {
   [1] = {
     .name = "MAX10-10M25",
     .dev_id = 0x01234567,
+    .intf = INTF_I2C,
     .cpld_open = cpld_dev_open,
     .cpld_close = cpld_dev_close,
     .cpld_ver = max10_get_fw_ver,
@@ -781,6 +773,7 @@ struct cpld_dev_info altera_dev_list[] = {
   [2] = {
     .name = "MAX10-10M04",
     .dev_id = 0x01234567,
+    .intf = INTF_I2C,
     .cpld_open = cpld_dev_open,
     .cpld_close = cpld_dev_close,
     .cpld_ver = max10_get_fw_ver,

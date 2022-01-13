@@ -7,6 +7,9 @@ project('libfpga', 'c',
 install_headers(
     'altera.h',
     'cpld.h',
+    'lattice.h',
+    'lattice_jtag.h',
+    'lattice_i2c.h',
     subdir: 'openbmc')
 
 cc = meson.get_compiler('c')
@@ -20,6 +23,8 @@ srcs = files(
   'altera.c',
   'cpld.c',
   'lattice.c',
+  'lattice_jtag.c',
+  'lattice_i2c.c',
 )
 
 # CPLD library.

@@ -234,7 +234,7 @@ int BmcCpldComponent::update_cpld(string image, bool force, bool sign)
     } else {
       //TODO: need to update 2 CFMs
       ret = cpld_program((char *)image.c_str(), key, false);
-      cpld_intf_close(INTF_I2C);
+      cpld_intf_close();
       if ( ret < 0 ) {
         printf("Error Occur at updating CPLD FW!\n");
       }
@@ -296,4 +296,3 @@ int BmcCpldComponent::fupdate(string image)
 
   return ret;
 }
-

@@ -45,7 +45,7 @@ class CpldComponent : public Component {
           printf("CPLD Version: %02X%02X%02X%02X\n", var[3], var[2], var[1], var[0]);
         }
 
-        cpld_intf_close(INTF_I2C);
+        cpld_intf_close();
       }
 
       return 0;
@@ -71,7 +71,7 @@ class CpldComponent : public Component {
         }
 
         ret = cpld_program((char *)image.c_str(), (char *)pld_name.c_str(), false);
-        cpld_intf_close(INTF_I2C);
+        cpld_intf_close();
         if (ret) {
           printf("Error Occur at updating CPLD FW!\n");
           break;

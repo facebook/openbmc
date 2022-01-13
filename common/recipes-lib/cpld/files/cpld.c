@@ -39,12 +39,14 @@ const char *cpld_list[] = {
   "LCMXO2-2000HC",
   "LCMXO2-4000HC",
   "LCMXO2-7000HC",
+  "LCMXO3-2100C",
+  "LFMNX-50",
   "MAX10-10M16",
   "MAX10-10M25",
   "MAX10-10M04",
 };
 
-static int cpld_probe(cpld_intf_t intf, uint8_t id, void *attr)
+static int cpld_probe(void *attr)
 {
   if (cur_dev == NULL)
     return -1;
@@ -54,10 +56,10 @@ static int cpld_probe(cpld_intf_t intf, uint8_t id, void *attr)
     return -1;
   }
 
-  return cur_dev->cpld_open(intf, id, attr);
+  return cur_dev->cpld_open(attr);
 }
 
-static int cpld_remove(cpld_intf_t intf)
+static int cpld_remove()
 {
   if (cur_dev == NULL)
     return -1;
@@ -67,7 +69,7 @@ static int cpld_remove(cpld_intf_t intf)
     return -1;
   }
 
-  return cur_dev->cpld_close(intf);
+  return cur_dev->cpld_close();
 }
 
 static int cpld_malloc_list()
@@ -103,7 +105,8 @@ int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf, void *attr)
 
   dev_cnts = cpld_malloc_list();
   for (i = 0; i < dev_cnts; i++) {
-    if (!strcmp(cpld_list[cpld_index], cpld_dev_list[i]->name)) {
+    if ( !strcmp(cpld_list[cpld_index], cpld_dev_list[i]->name) &&
+         (intf == cpld_dev_list[i]->intf) ) {
       cur_dev = cpld_dev_list[i];
       break;
     }
@@ -115,14 +118,14 @@ int cpld_intf_open(uint8_t cpld_index, cpld_intf_t intf, void *attr)
     return -1;
   }
 
-  return cpld_probe(intf, cpld_index, attr);
+  return cpld_probe(attr);
 }
 
-int cpld_intf_close(cpld_intf_t intf)
+int cpld_intf_close()
 {
   int ret;
 
-  ret = cpld_remove(intf);
+  ret = cpld_remove();
   free(cpld_dev_list);
   cur_dev = NULL;
 

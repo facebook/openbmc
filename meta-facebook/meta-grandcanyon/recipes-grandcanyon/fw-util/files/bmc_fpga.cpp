@@ -223,7 +223,7 @@ int BmcFpgaComponent::update_fpga(string image, string update_image)
     ret = FW_STATUS_FAILURE;
   } else {
     ret = cpld_program((char *)update_image.c_str(), key, false);
-    cpld_intf_close(INTF_I2C);
+    cpld_intf_close();
     if ( ret < 0 ) {
       cout << "Error Occur at updating FPGA FW!" << endl;
     }
@@ -259,4 +259,3 @@ int BmcFpgaComponent::fupdate(string image)
 {
   return update_wrapper(image, true);
 }
-

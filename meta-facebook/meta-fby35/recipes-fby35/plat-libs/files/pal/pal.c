@@ -1517,7 +1517,7 @@ pal_parse_proc_fail(uint8_t fru, uint8_t *event_data, char *error_log) {
 
   switch(event_data[0]) {
     case FRB3:
-      strcat(error_log, "FRB3, ");
+      strcat(error_log, "FRB3/Processor Startup/Initialization Failure, ");
       break;
     default:
       strcat(error_log, "Undefined data, ");
@@ -1618,25 +1618,13 @@ pal_parse_smart_clst_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 static int
 pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    VCCIN_VRHOT    = 0x00,
-    VCCIO_VRHOT    = 0x01,
-    DIMM_ABC_VRHOT = 0x02,
-    DIMM_DEF_VRHOT = 0x03,
+    SOC_VRHOT    = 0x00,
   };
   uint8_t event = event_data[0];
 
   switch (event) {
-    case VCCIN_VRHOT:
-      strcat(error_log, "CPU VCCIN VR HOT Warning");
-      break;
-    case VCCIO_VRHOT:
-      strcat(error_log, "CPU VCCIO VR HOT Warning");
-      break;
-    case DIMM_ABC_VRHOT:
-      strcat(error_log, "DIMM ABC Memory VR HOT Warning");
-      break;
-    case DIMM_DEF_VRHOT:
-      strcat(error_log, "DIMM DEF Memory VR HOT Warning");
+    case SOC_VRHOT:
+      strcat(error_log, "SOC VR HOT warning");
       break;
     default:
       strcat(error_log, "Undefined VR event");
@@ -1826,23 +1814,21 @@ pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
 static int
 pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    SYS_THERM_TRIP     = 0x00,
-    SYS_FIVR_FAULT     = 0x01,
-    SYS_SURGE_CURR     = 0x02,
-    SYS_PCH_PROCHOT    = 0x03,
-    SYS_UV_DETECT      = 0x04,
-    SYS_OC_DETECT      = 0x05,
-    SYS_OCP_FAULT_WARN = 0x06,
-    SYS_FW_TRIGGER     = 0x07,
+    SYS_SOC_THERM_TRIP = 0x00,
+    SYS_THROTTLE       = 0x02,
+    SYS_PCH_THERM_TRIP = 0x03,
+    SYS_HSC_THROTTLE   = 0x05,
+    SYS_OC_DETECT      = 0x06,
+    SYS_MB_THROTTLE    = 0x07,
     SYS_HSC_FAULT      = 0x08,
     SYS_RSVD           = 0x09,
-    SYS_VR_WDT_TIMEOUT = 0x0A,
+    SYS_WDT_TIMEOUT    = 0x0A,
     SYS_M2_VPP         = 0x0B,
     SYS_M2_PGOOD       = 0x0C,
     SYS_VCCIO_FAULT    = 0x0D,
     SYS_SMI_STUCK_LOW  = 0x0E,
     SYS_OV_DETECT      = 0x0F,
-    SYS_M2_OCP_DETECT  = 0x10,
+    SYS_FM_THROTTLE    = 0x10,
     SYS_SLOT_PRSNT     = 0x11,
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
@@ -1857,35 +1843,32 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   char component_str[MAX_COMPONENT_LEN] = {0};
 
   switch (event) {
-    case SYS_THERM_TRIP:
-      strcat(error_log, "System thermal trip");
+    case SYS_SOC_THERM_TRIP:
+      strcat(error_log, "SOC Thermal trip");
       break;
-    case SYS_FIVR_FAULT:
-      strcat(error_log, "System FIVR fault");
+    case SYS_THROTTLE:
+      strcat(error_log, "SYS_Throttle throttle");
       break;
-    case SYS_SURGE_CURR:
-      strcat(error_log, "Surge Current Warning");
+    case SYS_PCH_THERM_TRIP:
+      strcat(error_log, "PCH Thermal trip");
       break;
-    case SYS_PCH_PROCHOT:
-      strcat(error_log, "PCH prochot");
+    case SYS_FM_THROTTLE:
+      strcat(error_log, "FM_Throttle throttle");
       break;
-    case SYS_UV_DETECT:
-      strcat(error_log, "Under Voltage Warning");
+    case SYS_HSC_THROTTLE:
+      strcat(error_log, "HSC_Throttle throttle");
       break;
     case SYS_OC_DETECT:
-      strcat(error_log, "OC Warning");
+      strcat(error_log, "HSC_OC Warning");
       break;
-    case SYS_OCP_FAULT_WARN:
-      strcat(error_log, "OCP Fault Warning");
-      break;
-    case SYS_FW_TRIGGER:
-      strcat(error_log, "Firmware");
+    case SYS_MB_THROTTLE:
+      strcat(error_log, "MB_Throttle throttle");
       break;
     case SYS_HSC_FAULT:
       strcat(error_log, "HSC fault");
       break;
-    case SYS_VR_WDT_TIMEOUT:
-      strcat(error_log, "VR WDT");
+    case SYS_WDT_TIMEOUT:
+      strcat(error_log, "VR Watchdog timeout");
       break;
     case SYS_M2_VPP:
       pal_get_m2vpp_str_name(fru, event_data[1], event_data[2], error_log);
@@ -1903,10 +1886,6 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_OV_DETECT:
       strcat(error_log, "VCCIO Over Voltage Fault");
-      break;
-    case SYS_M2_OCP_DETECT:
-      pal_get_m2_str_name(event_data[1], event_data[2], error_log);
-      strcat(error_log, "Load Switch OCP");
       break;
     case SYS_SLOT_PRSNT:
       snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);
@@ -2060,6 +2039,7 @@ pal_parse_button_detect_event(uint8_t fru, uint8_t *event_data, char *error_log)
 
   return PAL_EOK;
 }
+
 
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {

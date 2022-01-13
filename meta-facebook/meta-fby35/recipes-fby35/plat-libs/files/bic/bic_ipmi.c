@@ -58,7 +58,7 @@ typedef struct _sdr_rec_hdr_t {
 
 #define MIN(x,y) (((x) < (y)) ? (x) : (y))
 
-#define BIC_SENSOR_SYSTEM_STATUS  0x46
+#define BIC_SENSOR_SYSTEM_STATUS  0x10
 
 #define BB_FW_UPDATE_STAT_FILE "/tmp/cache_store/bb_fw_update"
 

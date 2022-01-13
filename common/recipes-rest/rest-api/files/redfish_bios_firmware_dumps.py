@@ -57,6 +57,7 @@ def _get_dump_header(server_name: str, dump_id: str) -> Dict[str, Any]:
         "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}".format(
             server_name, dump_id
         ),
+        "@odata.type": "#BIOSFirmwareDump.v1_0_0.BIOSFirmwareDump",
         "Id": dump_id,
         "Name": "BIOS firmware dump",
         "Actions": {
@@ -110,6 +111,8 @@ class RedfishBIOSFirmwareDumps:
             "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps".format(
                 server_name
             ),
+            "@odata.type": "#FirmwareDumps.v1_0_0.FirmwareDumps",
+            "Id": "{} BIOS dumps".format(server_name),
             "Name": "{} BIOS dumps".format(server_name),
             "Members@odata.count": len(dumps),
             "Members": dumps,

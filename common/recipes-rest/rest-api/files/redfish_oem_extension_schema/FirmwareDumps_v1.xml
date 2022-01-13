@@ -1,0 +1,150 @@
+<!---->
+<!--################################################################################       -->
+<!--# Redfish Schema:  FirmwareDumps.v1_0_0                                          -->
+<!--#                                                                                      -->
+<!--# For a detailed change log, see the README file contained in the DSP8010 bundle,      -->
+<!--# available at http://www.dmtf.org/standards/redfish                                   -->
+<!--# Copyright 2020 DMTF.                                                                 -->
+<!--# For the full DMTF copyright policy, see http://www.dmtf.org/about/policies/copyright -->
+<!--################################################################################       -->
+<!---->
+<?xml version="1.0" ?>
+<edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
+	<edmx:Reference Uri="http://redfish.dmtf.org/schemas/v1/Resource_v1.xml">
+		<edmx:Include Namespace="Resource.v1_0_0"/>
+	</edmx:Reference>
+	<edmx:Reference Uri="http://docs.oasis-open.org/odata/odata/v4.0/errata03/csd01/complete/vocabularies/Org.OData.Capabilities.V1.xml">
+		<edmx:Include Namespace="Org.OData.Capabilities.V1" Alias="Capabilities"/>
+	</edmx:Reference>
+	<edmx:Reference Uri="http://docs.oasis-open.org/odata/odata/v4.0/errata03/csd01/complete/vocabularies/Org.OData.Core.V1.xml">
+		<edmx:Include Namespace="Org.OData.Core.V1" Alias="OData"/>
+	</edmx:Reference>
+	<edmx:Reference Uri="http://redfish.dmtf.org/schemas/v1/RedfishExtensions_v1.xml">
+		<edmx:Include Namespace="RedfishExtensions.v1_0_0" Alias="Redfish"/>
+	</edmx:Reference>
+	<edmx:DataServices>
+		<Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="FirmwareDumps">
+			<Annotation Term="Redfish.OwningEntity" String="TBD"/>
+			<EntityType Name="FirmwareDumps" BaseType="Resource.v1_0_0.Resource" Abstract="true">
+				<Annotation Term="OData.Description" String="Parameters for FirmwareDumps."/>
+				<Annotation Term="OData.LongDescription" String="Parameters for FirmwareDumps."/>
+				<Annotation Term="Capabilities.InsertRestrictions">
+					<Record>
+						<PropertyValue Property="Insertable" Bool="false"/>
+					</Record>
+				</Annotation>
+				<Annotation Term="Capabilities.UpdateRestrictions">
+					<Record>
+						<PropertyValue Property="Updatable" Bool="false"/>
+					</Record>
+				</Annotation>
+				<Annotation Term="Capabilities.DeleteRestrictions">
+					<Record>
+						<PropertyValue Property="Deletable" Bool="false"/>
+					</Record>
+				</Annotation>
+			</EntityType>
+		</Schema>
+		<Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="FirmwareDumps.v1_0_0">
+			<Annotation Term="Redfish.OwningEntity" String="TBD"/>
+			<Annotation Term="Redfish.Release" String="TBD"/>
+			<EntityType Name="FirmwareDumps" BaseType="FirmwareDumps.FirmwareDumps">
+				<Property Name="Members" Type="Collection(FirmwareDumps.v1_0_0.Members)" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+			</EntityType>
+			<ComplexType Name="#BIOSFirmwareDump.ReadContent" Nullable="false">
+				<Annotation Term="OData.Description" String="TBD"/>
+				<Annotation Term="OData.LongDescription" String="TBD"/>
+				<Annotation Term="OData.AdditionalProperties" Bool="false"/>
+				<Property Name="target" Type="Edm.String" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+			</ComplexType>
+			<ComplexType Name="Actions" Nullable="false">
+				<Annotation Term="OData.Description" String="TBD"/>
+				<Annotation Term="OData.LongDescription" String="TBD"/>
+				<Annotation Term="OData.AdditionalProperties" Bool="false"/>
+				<Property Name="#BIOSFirmwareDump.ReadContent" Type="FirmwareDumps.v1_0_0.#BIOSFirmwareDump.ReadContent" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+			</ComplexType>
+			<ComplexType Name="Log" Nullable="false">
+				<Annotation Term="OData.Description" String="TBD"/>
+				<Annotation Term="OData.LongDescription" String="TBD"/>
+				<Annotation Term="OData.AdditionalProperties" Bool="false"/>
+				<Property Name="ExitCode" Type="Edm.Int64" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="Debug" Type="Edm.String" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="Error" Type="Edm.String" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+			</ComplexType>
+			<ComplexType Name="Members" Nullable="true">
+				<Annotation Term="OData.Description" String="TBD"/>
+				<Annotation Term="OData.LongDescription" String="TBD"/>
+				<Annotation Term="OData.AdditionalProperties" Bool="false"/>
+				<Property Name="Id" Type="Resource.Id" Nullable="true">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="Name" Type="Resource.Name" Nullable="true">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="Actions" Type="FirmwareDumps.v1_0_0.Actions" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="Status" Type="Resource.Status" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="Log" Type="FirmwareDumps.v1_0_0.Log" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="TimestampStartMS" Type="Edm.Int64" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="SizeCurrent" Type="Edm.Int64" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="TimestampEndMS" Type="Edm.Int64" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+				<Property Name="SizeTotal" Type="Edm.Int64" Nullable="false">
+					<Annotation Term="OData.Permissions" EnumMember="OData.Permission/Read"/>
+					<Annotation Term="OData.Description" String="TBD"/>
+					<Annotation Term="OData.LongDescription" String="TBD"/>
+				</Property>
+			</ComplexType>
+		</Schema>
+	</edmx:DataServices>
+</edmx:Edmx>

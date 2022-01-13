@@ -101,13 +101,17 @@ class RedfishComputerSystems:
 
         body = {
             "@odata.id": "/redfish/v1/Systems/{}/Bios".format(server_name),
-            "@odata.type": "#Bios.Bios",
+            "@odata.type": "#Bios.v1_1_0.Bios",
             "Name": "{} BIOS".format(server_name),
+            "Id": "{} BIOS".format(server_name),
             "Links": {
                 "ActiveSoftwareImage": {
                     "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareInventory".format(
                         server_name,
-                    )
+                    ),
+                    "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
+                    "Id": "{}/Bios".format(server_name),
+                    "Name": "{} BIOS Firmware".format(server_name),
                 },
             },
         }
@@ -124,14 +128,18 @@ class RedfishComputerSystems:
             "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareInventory".format(
                 server_name
             ),
-            "@odata.type": "#SoftwareInventory.SoftwareInventory",
+            "@odata.type": "#SoftwareInventory.v1_0_0.SoftwareInventory",
             "Id": "{}/Bios".format(server_name),
             "Name": "{} BIOS Firmware".format(server_name),
             "Oem": {
                 "Dumps": {
+                    "@odata.type": "#FirmwareDumps.v1_0_0.FirmwareDumps",
+                    "@odata.context": "/redfish/v1/$metadata#FirmwareDumps.FirmwareDumps",
                     "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps".format(
                         server_name
                     ),
+                    "Id": "{}/Bios Dumps".format(server_name),
+                    "Name": "{}/Bios Dumps".format(server_name),
                 }
             },
         }

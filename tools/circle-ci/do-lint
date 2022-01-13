@@ -22,7 +22,7 @@ do_lint_py() {
 
 do_lint_sh() {
   echo "SH: $1"
-  shellcheck "$1"
+  shellcheck -x "$1"
 }
 
 do_lint_cppcheck() {

@@ -2,7 +2,7 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-# shellcheck disable=SC1091
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
 MAX_RETRY=600         # wait 10 mins before give up

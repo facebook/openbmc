@@ -99,10 +99,13 @@ run_checks_and_remediations() {
 
     echo "Getting platform-specific checks and remediations..." >&2
     local platform_steps_output=""
-    platform_steps_output=$(find /opt/flashy/checks_and_remediations/"$buildname" \
-        -type l -maxdepth 1 | sort) \
-        || echo "No platform-specific checks and remediations found" >&2 \
-        && return 0
+    platform_steps_output="$(find /opt/flashy/checks_and_remediations/"$buildname" \
+        -type l -maxdepth 1 | sort)"
+
+    if ! [[ $platform_steps_output ]]; then
+        echo "No platform-specific checks and remediations found" >&2
+        return 0
+    fi
 
     local platform_steps=()
     readarray -t platform_steps <<<"$platform_steps_output"

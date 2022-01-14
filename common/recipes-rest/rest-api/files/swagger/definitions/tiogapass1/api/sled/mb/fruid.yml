@@ -58,7 +58,6 @@ paths:
                     type: string
                   Product Custom Data 2: 
                     type: string
-                    format: date-time
                   Chassis Part Number: 
                     type: string
                   Product Custom Data 1: 

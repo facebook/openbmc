@@ -35,7 +35,6 @@ from common_webapp import WebApp
 from rest_config import load_acl_provider, parse_config
 from setup_plat_routes import setup_plat_routes
 
-
 configpath = "/etc/rest.cfg"
 
 try:

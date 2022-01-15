@@ -64,8 +64,10 @@ TEST(BmcComponentTest, MTDVersion) {
   TmpFile mtd("U-Boot 2016.07 fbtp-v11.0");
 
   EXPECT_CALL(mock, get_mtd_name(string("flash123"), _))
-    .Times(2)
+    .Times(4)
     .WillOnce(Return(false))
+    .WillOnce(Return(false))
+    .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
 
   BmcComponentBasicMock *b = new BmcComponentBasicMock("bmc_test", "bmc_test", "", "flash123");
@@ -73,12 +75,12 @@ TEST(BmcComponentTest, MTDVersion) {
     .WillRepeatedly(ReturnRef(mock));
 
   EXPECT_EQ(0, b->print_version());
-  EXPECT_EQ(out.str(), "BMC_TEST Version: NA\n");
+  EXPECT_EQ(out.str(), "BMC_TEST Version: NA\nBMC_TEST Version After Activated: NA\n");
   EXPECT_EQ(err.str(), "");
   out.str("");
   err.str("");
   EXPECT_EQ(0, b->print_version());
-  EXPECT_EQ(out.str(), "BMC_TEST Version: fbtp-v11.0\n");
+  EXPECT_EQ(out.str(), "BMC_TEST Version: fbtp-v11.0\nBMC_TEST Version After Activated: fbtp-v11.0\n");
   EXPECT_EQ(err.str(), "");
   delete b;
 }
@@ -121,7 +123,8 @@ TEST(BmcComponentTest, MTDFlash) {
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)))
     .WillOnce(DoAll(SetArgReferee<1>(mtd.name), Return(true)));
   EXPECT_CALL(mock, get_mtd_name("", _))
-    .Times(1)
+    .Times(2)
+    .WillOnce(Return(false))
     .WillOnce(Return(false));
 
   EXPECT_CALL(mock, runcmd(string(exp_flashcp_call)))

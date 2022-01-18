@@ -4,6 +4,7 @@ import argparse
 import os
 import sys
 import time
+from shutil import copy
 from typing import Tuple
 
 import paramiko
@@ -17,6 +18,7 @@ FLASH_SIZE = 128 * 1024 * 1024
 HOST = "localhost"
 HOST_SSH_FORWARD_PORT = 2222
 QEMU_PARAMETER = "  -machine {} -nographic  -drive file={},format=raw,if=mtd \
+    -drive file={},format=raw,if=mtd \
     -net nic -net user,hostfwd=:127.0.0.1:{}-:22,hostname=qemu"
 PLATFORM_2_MACHINE = {
     "fby2": "yosemitev2-bmc",
@@ -60,7 +62,8 @@ class TestWrapper(object):
         cmd = "/tmp/job/project/qemu-system-arm"
         cmd += QEMU_PARAMETER.format(
             PLATFORM_2_MACHINE[platform],
-            self._padded_image_file,
+            self._golden_image_file,
+            self._primary_image_file,
             HOST_SSH_FORWARD_PORT,
         )
 
@@ -166,6 +169,11 @@ class TestWrapper(object):
         except Exception as e:
             print(f"fail to pad the flash file: {str(e)}")
             sys.exit(1)
+
+        self._golden_image_file = "/tmp/golden.mtd"
+        self._primary_image_file = "/tmp/primary.mtd"
+        copy(self._padded_image_file, self._golden_image_file)
+        copy(self._padded_image_file, self._primary_image_file)
 
 
 if __name__ == "__main__":

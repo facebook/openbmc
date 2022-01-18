@@ -19,7 +19,8 @@ HOST = "localhost"
 HOST_SSH_FORWARD_PORT = 2222
 QEMU_PARAMETER = "  -machine {} -nographic  -drive file={},format=raw,if=mtd \
     -drive file={},format=raw,if=mtd \
-    -net nic -net user,hostfwd=:127.0.0.1:{}-:22,hostname=qemu"
+    -netdev user,id=mlx,mfr-id=0x8119,ncsi-mac=aa:bb:cc:dd:ee:ff,hostfwd=:127.0.0.1:{}-:22,hostname=qemu \
+    -net nic,model=ftgmac100,netdev=mlx"
 PLATFORM_2_MACHINE = {
     "fby2": "yosemitev2-bmc",
     "fbttn": "brycecanyon-bmc",

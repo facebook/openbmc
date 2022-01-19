@@ -346,15 +346,15 @@ static char psu_address(int rack, int shelf, int psu) {
   return 0xA0 | rack_a | shelf_a | psu_a;
 }
 
-static bool psu_location(int addr, int *rack, int *shelf, int *psu)
+static int psu_location(int addr, int *rack, int *shelf, int *psu)
 {
   if ((addr & 0xA0)) {
     *psu = addr & 3;
     *shelf = (addr >> 2) & 1;
     *rack = (addr >> 3) & 3;
-    return true;
+    return 0;
   }
-  return false;
+  return -1;
 }
 
 static int check_psu_comms(psu_datastore_t *psu) {
@@ -420,7 +420,7 @@ static int psu_retry_limit(psu_datastore_t *info, int addr)
   }
 
   /* Do not waste time retrying on invalid PSU addresses */
-  if (!psu_location(addr, &rack, &shelf, &psu)) {
+  if (psu_location(addr, &rack, &shelf, &psu)) {
     return 1;
   }
 
@@ -1949,7 +1949,7 @@ int main(int argc, char** argv) {
           psu_str = strtok(NULL, ",")) {
         unsigned int psu_addr = strtoul(psu_str, 0, 16);
         int rack, shelf, psu;
-        if (psu_location(psu_addr, &rack, &shelf, &psu)) {
+        if (!psu_location(psu_addr, &rack, &shelf, &psu)) {
           rackmond_config.ignored_psus[rack][shelf][psu] = true;
           OBMC_INFO("Ignoring PSU: 0x%x\n", psu_addr);
         } else {

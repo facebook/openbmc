@@ -12,6 +12,7 @@ import pexpect
 from paramiko.channel import ChannelFile, ChannelStderrFile
 from pexpect import EOF, TIMEOUT
 
+PATH = "/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin"
 DEFAULT_BMC_USER = "root"
 DEFAULT_OPENBMC_PASSWORD = "0penBmc"
 FLASH_SIZE = 128 * 1024 * 1024
@@ -125,7 +126,7 @@ class TestWrapper(object):
             if count == 0:
                 print("exhaust retry, giving up..")
                 raise paramiko.ssh_exception.SSHException
-        stdin, stdout, stderr = self.ssh.exec_command(cmd)
+        stdin, stdout, stderr = self.ssh.exec_command(f"PATH={PATH} {cmd}")
         exit_status = stdout.channel.recv_exit_status()
         return exit_status, stdout, stderr
 

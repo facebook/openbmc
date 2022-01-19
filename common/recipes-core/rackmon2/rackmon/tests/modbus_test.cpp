@@ -13,7 +13,7 @@ class MockUARTDevice : public UARTDevice {
   MOCK_METHOD0(close, void());
   MOCK_METHOD2(write, void(const uint8_t*, size_t));
   MOCK_METHOD2(ioctl, void(int32_t, void*));
-  MOCK_METHOD1(waitRead, void(int));
+  MOCK_METHOD1(waitRead, int(int));
   MOCK_METHOD0(waitWrite, void());
   MOCK_METHOD3(read, void(uint8_t*, size_t, int));
   MOCK_METHOD2(setAttribute, void(bool, int));

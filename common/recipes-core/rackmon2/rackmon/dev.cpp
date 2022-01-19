@@ -7,8 +7,12 @@
 #include <iostream>
 #include "log.hpp"
 
+static std::error_code sys_error(int err) {
+  return std::error_code(err, std::generic_category());
+}
+
 static std::error_code sys_error() {
-  return std::error_code(errno, std::generic_category());
+  return sys_error(errno);
 }
 
 void Device::open() {
@@ -37,7 +41,7 @@ void Device::write(const uint8_t* buf, size_t len) {
   }
 }
 
-void Device::ioctl(int32_t cmd, void* data) {
+void Device::ioctl(unsigned long cmd, void* data) {
   int ret = ::ioctl(deviceFd_, cmd, data);
   if (ret == -1) {
     throw std::system_error(
@@ -45,7 +49,7 @@ void Device::ioctl(int32_t cmd, void* data) {
   }
 }
 
-void Device::waitRead(int timeoutMs) {
+int Device::waitRead(int timeoutMs) {
   fd_set fdset;
   struct timeval timeout;
   struct timeval* timeoutPtr = nullptr;
@@ -64,38 +68,32 @@ void Device::waitRead(int timeoutMs) {
   if (rc == 0) {
     throw TimeoutException();
   }
+  return timeoutMs > 0 ? timeout.tv_usec / 1000 : -1;
 }
 
 void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
-  uint8_t readBuf[16];
-  std::memset(buf, 0, exactLen);
-  size_t pos = 0;
-  size_t iter;
-  // We are at minimum going with len/16 iterations.
-  // Add some upper bounds on this to make sure we do
-  // not loop here forever.
-  size_t maxIter = (1 + exactLen / sizeof(readBuf)) * 4;
-  for (pos = 0, iter = 0; pos < exactLen && iter < maxIter; iter++) {
+  size_t remBytes = exactLen;
+  do {
     try {
-      waitRead(timeoutMs);
+      timeoutMs = waitRead(timeoutMs);
     } catch (std::system_error& e) {
       // Print error and ignore/retry
       logError << e.what() << std::endl;
     }
-    int readSize = ::read(deviceFd_, readBuf, sizeof(readBuf));
-    if (readSize < 0) {
-      if (errno == EAGAIN)
+    int iterReadBytes = ::read(deviceFd_, buf, remBytes);
+    if (iterReadBytes < 0) {
+      if (errno == EAGAIN) {
         continue;
+      }
       throw std::system_error(sys_error(), "read response failure");
     }
-    if ((pos + readSize) > exactLen) {
-      throw std::overflow_error("Read overflowed excpected size");
+    if (iterReadBytes != (int)exactLen) {
+      logInfo << "Read " << iterReadBytes << " out of " << exactLen << std::endl;
     }
-    std::memcpy(buf + pos, readBuf, readSize);
-    pos += readSize;
-  }
-  if (pos != exactLen) {
-    throw std::runtime_error(
-        "Aborted read after iterations: " + std::to_string(iter));
-  }
+    if (iterReadBytes > (int)remBytes) {
+      throw std::system_error(sys_error(E2BIG), "Read more than requested bytes");
+    }
+    remBytes -= iterReadBytes;
+    buf += iterReadBytes;
+  } while (remBytes > 0);
 }

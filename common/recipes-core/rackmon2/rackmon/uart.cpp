@@ -13,6 +13,7 @@
 
 using namespace std::literals;
 
+namespace {
 const std::unordered_map<int, speed_t> kSpeedMap = {
     {0, B0},
     {50, B50},
@@ -31,6 +32,7 @@ const std::unordered_map<int, speed_t> kSpeedMap = {
     {38400, B38400},
     {57600, B57600},
     {115200, B115200}};
+}
 
 void UARTDevice::open() {
   Device::open();

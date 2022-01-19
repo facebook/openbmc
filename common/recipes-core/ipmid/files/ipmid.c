@@ -627,6 +627,13 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
   *res_len = data - &res->data[0];
 }
 
+static void *
+wait_and_reboot() {
+  sleep(1);
+  pal_bmc_reboot(RB_AUTOBOOT);
+  return NULL;
+}
+
 // Cold Reset (IPMI/Section 20.2)
 static void
 app_cold_reset(unsigned char *request, unsigned char req_len,
@@ -634,6 +641,7 @@ app_cold_reset(unsigned char *request, unsigned char req_len,
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
   int i;
+  pthread_t do_reboot;
 
   *res_len = 0;
   res->cc = CC_SUCCESS;
@@ -655,8 +663,9 @@ app_cold_reset(unsigned char *request, unsigned char req_len,
   }
 
   syslog(LOG_CRIT, "BMC Cold Reset.");
-  sleep(1);
-  pal_bmc_reboot(RB_AUTOBOOT);
+  if (pthread_create(&do_reboot, NULL, wait_and_reboot, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for doing reset failed\n");
+  }
 }
 
 

@@ -84,48 +84,41 @@ class TestWrapper(object):
                 return True
         return False
 
-    def wait_for_qemu_oob_sshd_running(self) -> bool:
+    def wait_for_qemu_oob_sshd_running(self) -> None:
         if self._qemu_instance is None or not self._qemu_instance.isalive():
-            return False
-        index = -1
+            return
         for _ in range(10):
             self._qemu_instance.sendline("ps | grep ssh")
             try:
-                index = self._qemu_instance.expect("sshd", timeout=30)
+                self._qemu_instance.expect("sshd", timeout=30)
                 break
             except TIMEOUT:
                 continue
             except EOF:
                 continue
-        if index == 0:
-            # For testing, remove later
-            self.run_cmd_on_oob(
-                "ps",
-            )
-            return True
-        return False
+
+    def init_ssh(self) -> None:
+        count = 10
+        while count != 0:
+            try:
+                self.ssh = paramiko.SSHClient()
+                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                self.ssh.connect(
+                    HOST,
+                    HOST_SSH_FORWARD_PORT,
+                    DEFAULT_BMC_USER,
+                    DEFAULT_OPENBMC_PASSWORD,
+                )
+                break
+            except paramiko.ssh_exception.SSHException:
+                print("unable to connect to bmc via SSH, wait 30s to retry..")
+                time.sleep(30)
+                count -= 1
+        if count == 0:
+            print("exhaust retry, giving up..")
+            raise paramiko.ssh_exception.SSHException
 
     def run_cmd_on_oob(self, cmd: str) -> Tuple[int, ChannelFile, ChannelStderrFile]:
-        if not self.ssh:
-            count = 10
-            while count != 0:
-                try:
-                    self.ssh = paramiko.SSHClient()
-                    self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                    self.ssh.connect(
-                        HOST,
-                        HOST_SSH_FORWARD_PORT,
-                        DEFAULT_BMC_USER,
-                        DEFAULT_OPENBMC_PASSWORD,
-                    )
-                    break
-                except paramiko.ssh_exception.SSHException:
-                    print("unable to connect to bmc via SSH, wait 30s to retry..")
-                    time.sleep(30)
-                    count -= 1
-            if count == 0:
-                print("exhaust retry, giving up..")
-                raise paramiko.ssh_exception.SSHException
         stdin, stdout, stderr = self.ssh.exec_command(f"PATH={PATH} {cmd}")
         exit_status = stdout.channel.recv_exit_status()
         return exit_status, stdout, stderr
@@ -140,9 +133,7 @@ class TestWrapper(object):
     def scp_oob_all(self, localpath: str, remotepath: str):
         if not self.sftp:
             self.sftp = paramiko.SFTPClient.from_transport(self.ssh.get_transport())
-        os.chdir(os.path.split(localpath)[0])
-        parent = os.path.split(localpath)[1]
-        for walker in os.walk(parent):
+        for walker in os.walk(localpath):
             try:
                 self.sftp.mkdir(os.path.join(remotepath, walker[0]))
             except Exception:
@@ -189,17 +180,27 @@ if __name__ == "__main__":
         type=str,
         help="specify the test to run, e.g. tests.fby2.test_slot_util.SlotUtilTest.test_show_slot_by_name",
     )
+    parser.add_argument(
+        "--skip-qemu-setup",
+        action="store_true",
+        help="Skip QEMU setup if it's already running with port 22 forwarded to localhost:2222",
+    )
     args = parser.parse_args()
     platform = args.platform
     print(f"start qemu cit test on platform: {platform}")
     testWrapper = TestWrapper()
-    testWrapper.qemu_prepare_bootable_image(platform=platform)
-    print("bootable image ready..")
-    testWrapper.start_qemu(platform=platform)
+
+    if not args.skip_qemu_setup:
+        testWrapper.qemu_prepare_bootable_image(platform=platform)
+        print("bootable image ready..")
+        testWrapper.start_qemu(platform=platform)
+        testWrapper.wait_for_qemu_oob_sshd_running()
+
     print("qemu started, checking SSH connection..")
-    testWrapper.wait_for_qemu_oob_sshd_running()
+    testWrapper.init_ssh()
     print("SSH connection ok, continue..")
-    testWrapper.scp_oob_all("/tmp/job/project/tests2", "/usr/local/bin/")
+
+    testWrapper.scp_oob_all("tests2", "/usr/local/bin/")
     print("scp tests to BMC complete..")
     testWrapper.run_cmd_on_oob("touch /usr/local/bin/tests2/dummy_qemu")
     print("qemu flag set..")

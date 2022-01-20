@@ -1,3 +1,4 @@
+# Copyright 2021-present Facebook. All Rights Reserved.
 project('rackmon', 'cpp',
     version: '0.2',
     license: 'GPL2',

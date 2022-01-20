@@ -1,3 +1,4 @@
+// Copyright 2021-present Facebook. All Rights Reserved.
 #include <iomanip>
 #include <sstream>
 #include "Log.hpp"

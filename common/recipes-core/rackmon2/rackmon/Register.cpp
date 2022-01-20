@@ -1,9 +1,9 @@
-#include "regmap.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <sstream>
+#include "Register.hpp"
 
 #if (__GNUC__ < 8)
 #include <experimental/filesystem>

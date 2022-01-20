@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "modbus.hpp"
+#include "Modbus.hpp"
 
 using namespace std;
 using namespace testing;

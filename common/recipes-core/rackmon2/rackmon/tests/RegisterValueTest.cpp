@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "regmap.hpp"
+#include "Register.hpp"
 
 using namespace std;
 using namespace testing;

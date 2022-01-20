@@ -2,9 +2,9 @@
 #include <atomic>
 #include <shared_mutex>
 #include <thread>
-#include "modbus.hpp"
-#include "modbus_device.hpp"
-#include "pollthread.hpp"
+#include "Modbus.hpp"
+#include "ModbusDevice.hpp"
+#include "PollThread.hpp"
 
 class Rackmon {
   static constexpr time_t kDormantMinInactiveTime = 300;

@@ -1,11 +1,12 @@
-#include "dev.hpp"
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
-#include "log.hpp"
+#include "Log.hpp"
+
+#include "Device.hpp"
 
 static std::error_code sys_error(int err) {
   return std::error_code(err, std::generic_category());
@@ -88,10 +89,12 @@ void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
       throw std::system_error(sys_error(), "read response failure");
     }
     if (iterReadBytes != (int)exactLen) {
-      logInfo << "Read " << iterReadBytes << " out of " << exactLen << std::endl;
+      logInfo << "Read " << iterReadBytes << " out of " << exactLen
+              << std::endl;
     }
     if (iterReadBytes > (int)remBytes) {
-      throw std::system_error(sys_error(E2BIG), "Read more than requested bytes");
+      throw std::system_error(
+          sys_error(E2BIG), "Read more than requested bytes");
     }
     remBytes -= iterReadBytes;
     buf += iterReadBytes;

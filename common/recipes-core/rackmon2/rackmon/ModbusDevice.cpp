@@ -1,7 +1,7 @@
-#include "modbus_device.hpp"
 #include <iomanip>
 #include <sstream>
-#include "log.hpp"
+#include "Log.hpp"
+#include "ModbusDevice.hpp"
 
 using nlohmann::json;
 

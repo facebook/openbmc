@@ -1,4 +1,4 @@
-#include "msg.hpp"
+#include "Msg.hpp"
 
 /* From libmodbus, https://github.com/stephane/libmodbus
  * Under LGPL. */

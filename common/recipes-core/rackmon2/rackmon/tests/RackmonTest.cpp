@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <fstream>
-#include "rackmon.hpp"
+#include "Rackmon.hpp"
 
 using namespace std;
 using namespace testing;

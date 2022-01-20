@@ -5,8 +5,8 @@
 #include <mutex>
 #include <set>
 #include <sstream>
-#include "msg.hpp"
-#include "uart.hpp"
+#include "Msg.hpp"
+#include "UARTDevice.hpp"
 
 using ModbusTime = std::chrono::milliseconds;
 class Modbus {

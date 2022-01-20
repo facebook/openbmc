@@ -11,31 +11,31 @@ project('rackmon', 'cpp',
 )
 
 common = files(
-    'dev.cpp',
-    'modbus_cmds.cpp',
-    'modbus.cpp',
-    'msg.cpp',
-    'uart.cpp',
-    'modbus_device.cpp',
-    'regmap.cpp',
-    'rackmon.cpp',
-    'rackmon_sock.cpp',
+    'Device.cpp',
+    'ModbusCmds.cpp',
+    'Modbus.cpp',
+    'Msg.cpp',
+    'UARTDevice.cpp',
+    'ModbusDevice.cpp',
+    'Register.cpp',
+    'Rackmon.cpp',
+    'RackmonSock.cpp',
 )
 srcs = common + files(
-    'rackmon_svc_unix.cpp',
+    'RackmonSvcUnix.cpp',
 )
 test_srcs = common + files(
-    'tests/msg_test.cpp',
-    'tests/dev_test.cpp',
-    'tests/modbus_cmds_test.cpp',
-    'tests/modbus_test.cpp',
-    'tests/register_descriptor_test.cpp',
-    'tests/register_value_test.cpp',
-    'tests/register_test.cpp',
-    'tests/regmap_test.cpp',
-    'tests/modbus_device_test.cpp',
-    'tests/poll_test.cpp',
-    'tests/rackmon_test.cpp',
+    'tests/MsgTest.cpp',
+    'tests/DeviceTest.cpp',
+    'tests/ModbusCmdsTest.cpp',
+    'tests/ModbusTest.cpp',
+    'tests/RegisterDescriptorTest.cpp',
+    'tests/RegisterValueTest.cpp',
+    'tests/RegisterTest.cpp',
+    'tests/RegisterMapTest.cpp',
+    'tests/ModbusDeviceTest.cpp',
+    'tests/PollThreadTest.cpp',
+    'tests/RackmonTest.cpp',
 )
 
 cc = meson.get_compiler('cpp')
@@ -71,7 +71,7 @@ rackmond_exe = executable(
 )
 rackmon_cli_exe = executable(
   'rackmoncli',
-  files('rackmon_cli_unix.cpp', 'rackmon_sock.cpp'),
+  files('RackmonCliUnix.cpp', 'RackmonSock.cpp'),
   dependencies: deps,
   install: true,
   install_dir: 'local/bin'

@@ -1,11 +1,11 @@
-#include "rackmon_svc_unix.hpp"
 #include <nlohmann/json.hpp>
 #include <poll.h>
 #include <unistd.h>
 #include <csignal>
 #include <iostream>
-#include "log.hpp"
-#include "rackmon.hpp"
+#include "Log.hpp"
+#include "Rackmon.hpp"
+#include "RackmonSvcUnix.hpp"
 
 using nlohmann::json;
 

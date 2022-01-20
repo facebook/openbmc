@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <thread>
-#include "modbus_device.hpp"
+#include "ModbusDevice.hpp"
 
 using namespace std;
 using namespace testing;

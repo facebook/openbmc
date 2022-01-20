@@ -9,7 +9,7 @@ namespace filesystem = experimental::filesystem;
 #else
 #include <filesystem>
 #endif
-#include "regmap.hpp"
+#include "Register.hpp"
 
 using namespace std;
 using namespace testing;

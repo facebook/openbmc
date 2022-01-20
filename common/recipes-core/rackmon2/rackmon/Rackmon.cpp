@@ -1,8 +1,8 @@
-#include "rackmon.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
-#include "log.hpp"
+#include "Log.hpp"
+#include "Rackmon.hpp"
 
 using nlohmann::json;
 using namespace std::literals;

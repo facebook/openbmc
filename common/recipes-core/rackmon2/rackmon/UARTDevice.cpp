@@ -7,9 +7,9 @@
 #include <cstring>
 #include <iostream>
 #include <unordered_map>
-#include "log.hpp"
+#include "Log.hpp"
 
-#include "uart.hpp"
+#include "UARTDevice.hpp"
 
 using namespace std::literals;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <optional>
-#include "msg.hpp"
+#include "Msg.hpp"
 
 struct BadResponseError : public std::runtime_error {
   BadResponseError(const std::string& field, uint32_t exp, uint32_t val)

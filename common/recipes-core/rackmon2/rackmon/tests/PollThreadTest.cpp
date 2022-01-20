@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "pollthread.hpp"
+#include "PollThread.hpp"
 
 using namespace std::literals;
 using namespace testing;

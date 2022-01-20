@@ -2,7 +2,7 @@
 
 #include <mutex>
 #include <vector>
-#include "dev.hpp"
+#include "Device.hpp"
 
 class UARTDevice : public Device {
   int baudrate_ = -1;

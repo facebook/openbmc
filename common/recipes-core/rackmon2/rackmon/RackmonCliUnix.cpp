@@ -1,6 +1,6 @@
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
-#include "rackmon_svc_unix.hpp"
+#include "RackmonSvcUnix.hpp"
 
 using nlohmann::json;
 using namespace std::literals::string_literals;

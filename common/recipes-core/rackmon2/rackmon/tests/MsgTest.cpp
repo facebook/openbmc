@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "msg.hpp"
+#include "Msg.hpp"
 
 using namespace std;
 using namespace testing;

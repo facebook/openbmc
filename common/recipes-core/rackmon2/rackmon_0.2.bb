@@ -43,28 +43,28 @@ SRC_URI = "file://meson.build \
            file://rackmond.service \
            file://run-rackmond.sh \
            file://setup-rackmond.sh \
-           file://log.hpp \
-           file://dev.cpp \
-           file://dev.hpp \
-           file://modbus_cmds.cpp \
-           file://modbus_cmds.hpp \
-           file://modbus.cpp \
-           file://modbus.hpp \
-           file://msg.cpp \
-           file://msg.hpp \
-           file://uart.cpp \
-           file://uart.hpp \
-           file://regmap.cpp \
-           file://regmap.hpp \
-           file://modbus_device.cpp \
-           file://modbus_device.hpp \
-           file://rackmon.cpp \
-           file://rackmon.hpp \
-           file://pollthread.hpp \
-           file://rackmon_sock.cpp \
-           file://rackmon_svc_unix.hpp \
-           file://rackmon_svc_unix.cpp \
-           file://rackmon_cli_unix.cpp \
+           file://Log.hpp \
+           file://Device.cpp \
+           file://Device.hpp \
+           file://ModbusCmds.cpp \
+           file://ModbusCmds.hpp \
+           file://Modbus.cpp \
+           file://Modbus.hpp \
+           file://Msg.cpp \
+           file://Msg.hpp \
+           file://UARTDevice.cpp \
+           file://UARTDevice.hpp \
+           file://Register.cpp \
+           file://Register.hpp \
+           file://ModbusDevice.cpp \
+           file://ModbusDevice.hpp \
+           file://Rackmon.cpp \
+           file://Rackmon.hpp \
+           file://PollThread.hpp \
+           file://RackmonSock.cpp \
+           file://RackmonSvcUnix.hpp \
+           file://RackmonSvcUnix.cpp \
+           file://RackmonCliUnix.cpp \
           "
 # Configuration files
 SRC_URI += "file://rackmon.conf \
@@ -72,17 +72,17 @@ SRC_URI += "file://rackmon.conf \
            "
 
 # Test sources
-SRC_URI += "file://tests/msg_test.cpp \
-            file://tests/dev_test.cpp \
-            file://tests/modbus_cmds_test.cpp \
-            file://tests/modbus_test.cpp \
-            file://tests/register_descriptor_test.cpp \
-            file://tests/register_value_test.cpp \
-            file://tests/register_test.cpp \
-            file://tests/regmap_test.cpp \
-            file://tests/modbus_device_test.cpp \
-            file://tests/poll_test.cpp \
-            file://tests/rackmon_test.cpp \
+SRC_URI += "file://tests/MsgTest.cpp \
+            file://tests/DeviceTest.cpp \
+            file://tests/ModbusCmdsTest.cpp \
+            file://tests/ModbusTest.cpp \
+            file://tests/RegisterDescriptorTest.cpp \
+            file://tests/RegisterValueTest.cpp \
+            file://tests/RegisterTest.cpp \
+            file://tests/RegisterMapTest.cpp \
+            file://tests/ModbusDeviceTest.cpp \
+            file://tests/PollThreadTest.cpp \
+            file://tests/RackmonTest.cpp \
            "
 
 S = "${WORKDIR}"

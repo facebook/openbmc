@@ -1,9 +1,9 @@
 #include <nlohmann/json.hpp>
 #include <ctime>
 #include <iostream>
-#include "modbus.hpp"
-#include "modbus_cmds.hpp"
-#include "regmap.hpp"
+#include "Modbus.hpp"
+#include "ModbusCmds.hpp"
+#include "Register.hpp"
 
 enum ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 

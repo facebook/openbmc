@@ -105,6 +105,15 @@ jobs:
             - attach_workspace:
                 at: /tmp/job
             - run:
+                name: Check if CIT required based on flash presence
+                command: |
+                    if ! [[ -f /tmp/job/project/build/tmp/deploy/images/<< parameters.machine >>/flash-<< parameters.machine >> ]]; then
+                        echo "flash-<< parameters.machine >> not found, skip CIT"
+                        circleci-agent step halt
+                    else
+                        echo "BMC flash found, continue to CIT test"
+                    fi
+            - run:
                 name: Install Ubuntu dependencies.
                 command: |
                     apt-get update
@@ -226,4 +235,6 @@ workflows:
                             minipack,
                             wedge400,
                             yamp,
+                            fbttn,
+                            fbtp,
                             ]

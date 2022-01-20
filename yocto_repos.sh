@@ -25,5 +25,5 @@ lf_dunfell_repos=(
     lf-openbmc:fff6b3483
 )
 lf_honister_repos=(
-    lf-openbmc:89e2f5ce9
+    lf-openbmc:415294223
 )

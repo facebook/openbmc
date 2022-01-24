@@ -1,9 +1,22 @@
-import os
+import asyncio
 import subprocess
 import unittest
 from unittest.mock import Mock, patch
 
 from node_sensors import sensorsNode
+
+
+# It seems we have two different version of snr.getInformation(): async and
+# non-async. To be able to check results despite async-ness we add this
+# wrapper:
+def await_if_required(r):
+    if not asyncio.iscoroutine(r):
+        return r
+    loop = asyncio.new_event_loop()
+    task = loop.create_task(r)
+    loop.run_until_complete(task)
+    loop.close()
+    return task.result()
 
 
 class TestSensors(unittest.TestCase):
@@ -25,7 +38,7 @@ class TestSensors(unittest.TestCase):
         expected_status_output = {"MB_INLET_TEMP": {"value": "33.31", "status": "ok"}}
         expected_units_output = {"MB_INLET_TEMP": {"value": "33.31", "units": "C"}}
         # Get all sensors
-        self.assertEqual(snr.getInformation(), expected_full_output)
+        self.assertEqual(await_if_required(snr.getInformation()), expected_full_output)
         mocked_popen.assert_called_with(
             ["/usr/local/bin/sensor-util", "mb"], stderr=-1, stdout=-1
         )
@@ -69,7 +82,8 @@ class TestSensors(unittest.TestCase):
         expected_filtered_output = {"MB_INLET_TEMP": {"value": "33.31"}}
         # Get sensor by id.
         self.assertEqual(
-            snr.getInformation(param={"id": "0xA0"}), expected_filtered_output
+            await_if_required(snr.getInformation(param={"id": "0xA0"})),
+            expected_filtered_output,
         )
         mocked_popen.assert_called_with(
             ["/usr/local/bin/sensor-util", "mb", "0xA0"], stderr=-1, stdout=-1
@@ -96,8 +110,10 @@ class TestSensors(unittest.TestCase):
             }
         }
         self.assertEqual(
-            snr.getInformation(
-                param={"name": "MB_INLET_TEMP", "display": "thresholds"}
+            await_if_required(
+                snr.getInformation(
+                    param={"name": "MB_INLET_TEMP", "display": "thresholds"}
+                )
             ),
             expected_no_thresholds_sensor,
         )
@@ -105,8 +121,10 @@ class TestSensors(unittest.TestCase):
             ["/usr/local/bin/sensor-util", "mb", "--threshold"], stderr=-1, stdout=-1
         )
         self.assertEqual(
-            snr.getInformation(
-                param={"name": "MB_OUTLET_TEMP", "display": "thresholds,units"}
+            await_if_required(
+                snr.getInformation(
+                    param={"name": "MB_OUTLET_TEMP", "display": "thresholds,units"}
+                )
             ),
             expected_single_thresholds_sensor,
         )
@@ -125,12 +143,14 @@ class TestSensors(unittest.TestCase):
             "MB_INLET_TEMP": {"min": "32.88", "avg": "32.88", "max": "32.88"}
         }
         self.assertEqual(
-            snr.getInformation(
-                param={
-                    "name": "MB_INLET_TEMP",
-                    "display": "history",
-                    "history-period": "70",
-                }
+            await_if_required(
+                snr.getInformation(
+                    param={
+                        "name": "MB_INLET_TEMP",
+                        "display": "history",
+                        "history-period": "70",
+                    }
+                )
             ),
             expected_filtered_output,
         )

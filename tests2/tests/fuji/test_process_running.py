@@ -25,15 +25,14 @@ from common.base_process_running_test import BaseProcessRunningTest
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "dhclient -6 -d -D LL",
-            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
+            "systemd-networkd.service",
             "front-paneld",
             "bicmond",
             "ipmbd",
             "ipmid",
             "mTerm_server",
             "rest.py",
-            "restapi",
+            "restapi.service",
             "rsyslogd",
             "sensord",
             "usbmon.sh",

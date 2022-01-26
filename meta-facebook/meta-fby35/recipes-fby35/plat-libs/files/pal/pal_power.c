@@ -470,7 +470,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           if ( server_power_12v_off(fru) < 0 ) {
             return POWER_STATUS_ERR;
           }
-          sleep(2);
+          sleep(DELAY_12V_CYCLE);
           if ( server_power_12v_on(fru) < 0 ) {
             return POWER_STATUS_ERR;
           }

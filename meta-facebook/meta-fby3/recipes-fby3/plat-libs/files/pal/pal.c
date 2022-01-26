@@ -723,9 +723,7 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   // the destructor in fw-util(system.cpp) will call set_update_ongoing twice
   // add the flag to avoid running it again
   if ( tmout == 0 ) {
-    if ( bmc_location == NIC_BMC ) {
-      sleep(3);
-    }
+    sleep(3);
     is_called = true;
   }
 
@@ -740,9 +738,9 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   }
 
   // preprocess function
-  if ( (bmc_location == NIC_BMC) && (tmout > 0) ) {
+  if ( tmout > 0 ) {
     // when fw_update_ongoing is set, need to wait for a while
-    // make sure all daemons go into pal_is_fw_update_ongoing
+    // make sure all daemons pending by pal_is_fw_update_ongoing
     sleep(5);
   }
 

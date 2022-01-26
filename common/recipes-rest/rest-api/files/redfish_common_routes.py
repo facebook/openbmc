@@ -109,6 +109,10 @@ class Redfish:
             self.bios_firmware_dumps.get_collection_descriptor,
         )
         app.router.add_post(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/",
+            self.bios_firmware_dumps.create_dump,
+        )
+        app.router.add_post(
             "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
             self.bios_firmware_dumps.create_dump,
         )

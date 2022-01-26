@@ -31,6 +31,7 @@ SRC_URI += "file://board-utils.sh \
             file://pwrcpld_update.sh \
             file://rebind-driver.sh \
             file://reset_brcm.sh \
+            file://reutil \
             file://scmcpld_update.sh \
             file://set_sled.sh \
             file://set_vdd.sh \
@@ -61,6 +62,7 @@ OPENBMC_UTILS_FILES += " \
     pwrcpld_update.sh \
     rebind-driver.sh \
     reset_brcm.sh \
+    reutil \
     scmcpld_update.sh \
     set_sled.sh \
     set_vdd.sh \

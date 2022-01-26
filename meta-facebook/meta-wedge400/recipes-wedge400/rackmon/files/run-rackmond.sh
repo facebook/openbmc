@@ -21,6 +21,9 @@ if [ $((brd_type)) -ge $((0x2)) ]; then
         exit 1
     fi
 
+    # set FT4232 port 1 to GPIO Input
+    /usr/local/bin/ftdi_bitbang -I 1 -i 0 -i 1 -i 2 -i 4 -i 5 -i 6
+
     rs485_cfg=0
     rs485_cfg=$((rs485_cfg + $(/usr/local/bin/ftdi_control -o | grep CHANNEL_B_RS485 | grep -c 1 ) ))
     rs485_cfg=$((rs485_cfg + $(/usr/local/bin/ftdi_control -o | grep CHANNEL_C_RS485 | grep -c 1 ) ))

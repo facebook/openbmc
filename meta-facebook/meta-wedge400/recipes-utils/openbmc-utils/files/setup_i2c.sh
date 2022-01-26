@@ -120,6 +120,42 @@ else
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x18 max6615      # PEM2 Driver
 fi
 
+#
+# For wedge400 MP respin and later.
+# Dual footprint will mount either one temp sensor for each bus.
+# i2c-mux 8-0070, channel 3,4,5 and 7
+#
+
+if [ "$brd_type" = "0" ] && [ $((brd_rev)) -ge 6 ]; then
+    # # i2c-mux 8-0070, channel 3
+    if i2cget -y -f "$(get_mux_bus_num 8-0070 2)" 0x4d &> /dev/null; then
+        i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x4d tmp421      # TMP421_4
+    else
+        i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x4c adm1032     # ADM1032_4
+    fi
+    # # i2c-mux 8-0070, channel 4
+    if i2cget -y -f "$(get_mux_bus_num 8-0070 3)" 0x4d &> /dev/null; then
+        i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x4d tmp421      # TMP421_3
+    else
+        i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x4c adm1032     # ADM1032_3
+    fi
+    # # i2c-mux 8-0070, channel 5
+    if i2cget -y -f "$(get_mux_bus_num 8-0070 4)" 0x4d &> /dev/null; then
+        i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x4d tmp421      # TMP421_2
+    else
+        i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x4c adm1032     # ADM1032_2
+    fi
+    # # i2c-mux 8-0070, channel 7
+    if i2cget -y -f "$(get_mux_bus_num 8-0070 6)" 0x4d &> /dev/null; then
+        i2c_device_add "$(get_mux_bus_num 8-0070 6)" 0x4d tmp421      # TMP421_1
+    else
+        i2c_device_add "$(get_mux_bus_num 8-0070 6)" 0x4c adm1032     # ADM1032_1
+    fi
+fi
+#
+# End dual footprint temperature sensors
+#
+
 # # i2c-mux 8-0070, channel 5
 if [ "$brd_type_rev" != "WEDGE400_MP_RESPIN" ]; then
     i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x54 24c02        # TH3 EEPROM

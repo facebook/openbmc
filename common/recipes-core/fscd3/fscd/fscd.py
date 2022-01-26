@@ -445,6 +445,7 @@ class Fscd(object):
         ret = 0
         for fru in self.machine.frus:
             for sensor, tuple in list(sensors_tuples[fru].items()):
+                Logger.debug("sensor: %s, %d DegC" % (tuple.name, tuple.value))
                 if tuple.value is None:  # Skip sensor if the reading fail
                     continue
                 if tuple.name in self.fsc_config["profiles"]:
@@ -542,7 +543,29 @@ class Fscd(object):
                                     Logger.warn(reason)
                                     ret = 1
                                 else:
-                                    last_error_level = None
+                                    if "hysteresis" in valid_table:
+                                        valid_hysteresis = abs(valid_table["hysteresis"])
+                                        if tuple.value > (valid_read_limit - valid_hysteresis):
+                                            reason = (
+                                                sensor
+                                                + "(alarm_minor current v="
+                                                + str(tuple.value)
+                                                + ") target(t="
+                                                + str(valid_read_limit - valid_hysteresis)
+                                                + ") soak_count (n="
+                                                + str(self.sensors[tuple.name].source.soak_repeat_counter + 1)
+                                                + ") repeating"
+                                            )
+                                            self.sensors[tuple.name].source.last_error_time = int(
+                                                datetime.datetime.now().strftime("%s")
+                                            )
+                                            self.sensors[tuple.name].source.soak_repeat_counter += 1
+                                            Logger.warn(reason)
+                                            ret = 1
+                                        else:
+                                            last_error_level = None
+                                    else:
+                                        last_error_level = None
 
                         self.sensors[
                             tuple.name

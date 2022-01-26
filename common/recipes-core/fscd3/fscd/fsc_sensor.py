@@ -57,6 +57,7 @@ class FscSensorBase(object):
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
         self.read_source_wrong_counter = 0
+        self.soak_repeat_counter = 0
         self.hwmon_source = None
         self.last_error_time = 0
         self.last_error_level = None

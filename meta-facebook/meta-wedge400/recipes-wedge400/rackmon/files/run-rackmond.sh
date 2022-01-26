@@ -40,6 +40,7 @@ if [ $((brd_type)) -ge $((0x2)) ]; then
     fi
 
     export RACKMOND_MULTI_PORT=1
+    export RACKMOND_SWAP_ADDR=1
 fi
 
 exec /usr/local/bin/rackmond

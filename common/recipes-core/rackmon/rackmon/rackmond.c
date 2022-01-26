@@ -155,6 +155,8 @@ static struct {
 
   // multi port for ft4232
   bool multi_port;
+  // swap address for port2 and port3 in W400 MP Respin
+  bool swap_addr;
 
   // the value we will auto-adjust to if possible
   speed_t desired_baudrate;
@@ -339,6 +341,13 @@ static int lookup_data_slot(uint8_t addr)
 }
 
 static char psu_address(int rack, int shelf, int psu) {
+  if (rackmond_config.swap_addr) {
+    if ( rack == 1){
+      rack = 2;
+    } else if ( rack == 2){
+      rack = 1;
+    }
+  }
   int rack_a = ((rack & 3) << 3);
   int shelf_a = ((shelf & 1) << 2);
   int psu_a = (psu & 3);
@@ -352,6 +361,13 @@ static int psu_location(int addr, int *rack, int *shelf, int *psu)
     *psu = addr & 3;
     *shelf = (addr >> 2) & 1;
     *rack = (addr >> 3) & 3;
+    if (rackmond_config.swap_addr) {
+      if ( *rack == 1){
+        *rack = 2;
+      } else if ( *rack == 2){
+        *rack = 1;
+      }
+    }
     return 0;
   }
   return -1;
@@ -1930,6 +1946,16 @@ int main(int argc, char** argv) {
   } else {
     rackmond_config.multi_port = 0;
     OBMC_INFO("set RACKMOND_MULTI_PORT to %d, for FT232",
+                rackmond_config.multi_port);
+  }
+
+    if (getenv("RACKMOND_SWAP_ADDR") != NULL){
+    rackmond_config.swap_addr = 1;
+    OBMC_INFO("set RACKMOND_SWAP_ADDR to %d, for W400 MP Respin",
+                rackmond_config.multi_port);
+  } else {
+    rackmond_config.swap_addr = 0;
+    OBMC_INFO("set RACKMOND_SWAP_ADDR to %d.",
                 rackmond_config.multi_port);
   }
 

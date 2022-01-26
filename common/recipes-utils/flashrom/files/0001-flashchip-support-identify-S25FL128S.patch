@@ -1,0 +1,111 @@
+diff --git a/chipdrivers.h b/chipdrivers.h
+index cb1e877..2fb1bfc 100644
+--- a/chipdrivers.h
++++ b/chipdrivers.h
+@@ -30,6 +30,7 @@ int spi_chip_read(struct flashctx *flash, uint8_t *buf, unsigned int start, int
+ /* spi25.c */
+ int probe_spi_rdid(struct flashctx *flash);
+ int probe_spi_rdid4(struct flashctx *flash);
++int probe_spi_rdid5(struct flashctx *flash);
+ int probe_spi_rems(struct flashctx *flash);
+ int probe_spi_res1(struct flashctx *flash);
+ int probe_spi_res2(struct flashctx *flash);
+diff --git a/flashchips.c b/flashchips.c
+index 58dd4f3..45c7df1 100644
+--- a/flashchips.c
++++ b/flashchips.c
+@@ -15482,14 +15482,14 @@ const struct flashchip flashchips[] = {
+ 		.name		= "S25FL127S-256kB", /* uniform 256kB sectors */
+ 		.bustype	= BUS_SPI,
+ 		.manufacture_id	= SPANSION_ID,
+-		.model_id	= SPANSION_S25FL128,
++		.model_id	= SPANSION_S25FL128_256,
+ 		.total_size	= 16384,
+ 		.page_size	= 512,
+ 		/* supports 4B addressing */
+ 		/* OTP: 1024B total, 32B reserved; read 0x4B; write 0x42 */
+ 		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+ 		.tested		= TEST_UNTESTED,
+-		.probe		= probe_spi_rdid,
++		.probe		= probe_spi_rdid5,
+ 		.probe_timing	= TIMING_ZERO,
+ 		.block_erasers	=
+ 		{
+@@ -15516,7 +15516,7 @@ const struct flashchip flashchips[] = {
+ 		.name		= "S25FL127S-64kB", /* hybrid: 32 (top or bottom) 4 kB sub-sectors + 64 kB sectors */
+ 		.bustype	= BUS_SPI,
+ 		.manufacture_id	= SPANSION_ID,
+-		.model_id	= SPANSION_S25FL128,
++		.model_id	= SPANSION_S25FL128_64,
+ 		.total_size	= 16384,
+ 		.page_size	= 256,
+ 		/* supports 4B addressing */
+@@ -15524,7 +15524,7 @@ const struct flashchip flashchips[] = {
+ 		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
+ 		.tested		= TEST_OK_PREW,
+ 		/* FIXME: we should distinguish the configuration on probing time like we do for AT45DB chips */
+-		.probe		= probe_spi_rdid,
++		.probe		= probe_spi_rdid5,
+ 		.probe_timing	= TIMING_ZERO,
+ 		.block_erasers	=
+ 		{
+diff --git a/flashchips.h b/flashchips.h
+index 14ab6de..2c7e708 100644
+--- a/flashchips.h
++++ b/flashchips.h
+@@ -640,6 +640,8 @@
+ #define SPANSION_S25FL032A	0x0215	/* Same as S25FL032P, but the latter supports EDI and CFI */
+ #define SPANSION_S25FL064A	0x0216	/* Same as S25FL064P, but the latter supports EDI and CFI */
+ #define SPANSION_S25FL128	0x2018	/* Same ID for various S25FL127S, S25FL128P, S25FL128S and S25FL129P (including dual-die S70FL256P) variants (EDI supported) */
++#define SPANSION_S25FL128_256	0x20184D00
++#define SPANSION_S25FL128_64	0x20184D01
+ #define SPANSION_S25FL256	0x0219
+ #define SPANSION_S25FL512	0x0220
+ #define SPANSION_S25FL204	0x4013
+diff --git a/spi25.c b/spi25.c
+index 2a1d492..bedfd1a 100644
+--- a/spi25.c
++++ b/spi25.c
+@@ -96,7 +96,7 @@ int spi_write_disable(struct flashctx *flash)
+ static int probe_spi_rdid_generic(struct flashctx *flash, int bytes)
+ {
+ 	const struct flashchip *chip = flash->chip;
+-	unsigned char readarr[4];
++	unsigned char readarr[5];
+ 	uint32_t id1;
+ 	uint32_t id2;
+ 
+@@ -121,9 +121,21 @@ static int probe_spi_rdid_generic(struct flashctx *flash, int bytes)
+ 			id2 <<= 8;
+ 			id2 |= readarr[3];
+ 		}
++		if (bytes > 4) {
++			id2 <<= 8;
++			id2 |= readarr[4];
++		}
+ 	} else {
+ 		id1 = readarr[0];
+ 		id2 = (readarr[1] << 8) | readarr[2];
++		if (bytes > 3) {
++			id2 <<= 8;
++			id2 |= readarr[3];
++		}
++		if (bytes > 4) {
++			id2 <<= 8;
++			id2 |= readarr[4];
++		}
+ 	}
+ 
+ 	msg_cdbg("%s: id1 0x%02x, id2 0x%02x\n", __func__, id1, id2);
+@@ -152,6 +164,11 @@ int probe_spi_rdid4(struct flashctx *flash)
+ 	return probe_spi_rdid_generic(flash, 4);
+ }
+ 
++int probe_spi_rdid5(struct flashctx *flash)
++{
++	return probe_spi_rdid_generic(flash, 5);
++}
++
+ int probe_spi_rems(struct flashctx *flash)
+ {
+ 	const struct flashchip *chip = flash->chip;

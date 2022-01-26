@@ -2578,10 +2578,24 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
         ret = read_attr(SCM_INLET_TEMP_DEVICE, TEMP(1), value);
         break;
       case SCM_SENSOR_HSC_VOLT:
-        ret = read_hsc_volt(SCM_HSC_DEVICE, 1, value);
+        if (!check_dir_exist(SCM_HSC_ADM1278_DIR)) {
+          ret = read_hsc_volt(SCM_HSC_ADM1278_DEVICE, 1, value);
+        } else if (!check_dir_exist(SCM_HSC_LM25066_DIR)) {
+          ret = read_hsc_volt(SCM_HSC_LM25066_DEVICE, 1, value);
+        } else {
+          ret = READING_NA;
+          break;
+        }
         break;
       case SCM_SENSOR_HSC_CURR:
-        ret = read_hsc_curr(SCM_HSC_DEVICE, SCM_RSENSE, value);
+        if (!check_dir_exist(SCM_HSC_ADM1278_DIR)) {
+          ret = read_hsc_curr(SCM_HSC_ADM1278_DEVICE, SCM_RSENSE, value);
+        } else if (!check_dir_exist(SCM_HSC_LM25066_DIR)) {
+          ret = read_hsc_curr(SCM_HSC_LM25066_DEVICE, SCM_RSENSE, value);
+        } else {
+          ret = READING_NA;
+          break;
+        }
         *value = *value * 1.0036 - 0.1189;
         if (*value < 0)
           *value = 0;
@@ -2921,7 +2935,13 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       }
       break;
     case SMB_SENSOR_FCM_HSC_VOLT:
-      ret = read_hsc_volt(SMB_FCM_HSC_DEVICE, 1, value);
+      if (!check_dir_exist(SMB_FCM_HSC_ADM1278_DIR)) {
+        ret = read_hsc_volt(SMB_FCM_HSC_ADM1278_DEVICE, 1, value);
+      } else if (!check_dir_exist(SMB_FCM_HSC_LM25066_DIR)) {
+        ret = read_hsc_volt(SMB_FCM_HSC_LM25066_DEVICE, 1, value);
+      } else {
+        ret = READING_NA;
+      }
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_IN_CURR:
       ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(2), value);
@@ -2957,7 +2977,13 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_FCM_HSC_CURR:
       hsc_rsense_init(HSC_FCM, FCM_SYSFS);
-      ret = read_hsc_curr(SMB_FCM_HSC_DEVICE, hsc_rsense[HSC_FCM], value);
+      if (!check_dir_exist(SMB_FCM_HSC_ADM1278_DIR)) {
+        ret = read_hsc_curr(SMB_FCM_HSC_ADM1278_DEVICE, hsc_rsense[HSC_FCM], value);
+      } else if (!check_dir_exist(SMB_FCM_HSC_LM25066_DIR)) {
+        ret = read_hsc_curr(SMB_FCM_HSC_LM25066_DEVICE, hsc_rsense[HSC_FCM], value);
+      } else {
+        ret = READING_NA;
+      }
       *value = *value * 4.4254 - 0.2048;
       if (*value < 0)
         *value = 0;

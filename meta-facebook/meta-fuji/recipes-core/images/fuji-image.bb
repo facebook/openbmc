@@ -27,6 +27,7 @@ IMAGE_INSTALL += " \
   fw-util \
   bic-monitor \
   openbmc-utils \
+  sensor-setup \
   usb-console \
   lldp-util \
   log-util-v2 \

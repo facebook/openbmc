@@ -138,6 +138,8 @@ do_work_systemd() {
 
   install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
 
+  install -m 755 setup_avs.sh ${D}/usr/local/bin/setup_avs.sh
+
   install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
 
   install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}

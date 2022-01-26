@@ -83,8 +83,12 @@ if [ "$brd_type_rev" != "WEDGE400_MP_RESPIN" ]; then
     i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
 fi
 
-# # i2c-mux 2-0070, channel 1
-i2c_device_add "$(get_mux_bus_num 2-0070 0)" 0x10 adm1278 # SCM Hotswap
+# # i2c-mux 2-0070, channel 1, support dual footprint
+if i2cget -y -f "$(get_mux_bus_num 2-0070 0)" 0x10 &> /dev/null; then
+    i2c_device_add "$(get_mux_bus_num 2-0070 0)" 0x10 adm1278 # SCM Hotswap
+else
+    i2c_device_add "$(get_mux_bus_num 2-0070 0)" 0x44 lm25066 # SCM Hotswap
+fi
 
 # # i2c-mux 2-0070, channel 2
 if [ "$brd_type_rev" != "WEDGE400_MP_RESPIN" ]; then
@@ -131,8 +135,12 @@ i2c_device_add "$(get_mux_bus_num 11-0076 1)" 0x51 24c64           # FCM EEPROM
 i2c_device_add "$(get_mux_bus_num 11-0076 2)" 0x48 tmp75           # Temp. sensor
 i2c_device_add "$(get_mux_bus_num 11-0076 2)" 0x49 tmp75           # Temp. sensor
 
-# # i2c-mux 11-0076, channel 4
-i2c_device_add "$(get_mux_bus_num 11-0076 3)" 0x10 adm1278         # FCB hot swap
+# # i2c-mux 11-0076, channel 4, support dual footprint
+if i2cget -y -f "$(get_mux_bus_num 11-0076 3)" 0x10 &> /dev/null; then
+    i2c_device_add "$(get_mux_bus_num 11-0076 3)" 0x10 adm1278     # FCB hot swap
+else
+    i2c_device_add "$(get_mux_bus_num 11-0076 3)" 0x44 lm25066     # FCB hot swap
+fi
 
 # # i2c-mux 11-0076, channel 5
 i2c_device_add "$(get_mux_bus_num 11-0076 4)" 0x52 24c64           # FAN tray

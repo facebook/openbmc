@@ -38,7 +38,7 @@ class BaseProcessRunningTest(object):
 
     def set_process_cmd(self):
         # Run ps in "wide" to avoid process name truncation.
-        self.process_cmd = ["ps -w"]
+        self.process_cmd = ["ps -w","systemctl 2>/dev/null || true"]
 
     @abstractmethod
     def set_processes(self):
@@ -49,8 +49,11 @@ class BaseProcessRunningTest(object):
         self.assertNotEqual(
             self.process_cmd, None, "Command to get processes is not set"
         )
-        Logger.info("Executing cmd={}".format(self.process_cmd))
-        info = run_shell_cmd(cmd=self.process_cmd)
+        info = ""
+        for command in self.process_cmd:
+            Logger.info("Executing cmd={}".format(command))
+            info = info + run_shell_cmd(cmd=command)
+
         return info
 
     def test_installed_processes(self):

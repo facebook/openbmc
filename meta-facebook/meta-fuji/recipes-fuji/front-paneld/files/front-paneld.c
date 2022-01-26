@@ -57,6 +57,28 @@
 #define LED_CHECK_INTERVAL_S 5
 #define LED_SETLED_INTERVAL 100
 
+static int
+i2c_detect_sensor(int bus, uint16_t addr) {
+	int fd = -1, rc = -1;
+
+	fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+	if (fd == -1)
+		return -1;
+
+    /*
+     * In order to avoid the impaction on the later accessing the i2c sensor,
+     * use mode i2c_smbus_read_byte_data to detect the sensor
+     */
+	rc = i2c_smbus_read_byte_data(fd, 1);
+
+	i2c_cdev_slave_close(fd);
+
+	if (rc < 0)
+		return -1;
+
+	return 0;
+}
+
 /* Dynamic change lmsensors config for different PIM card type */
 static void
 add_pim_lmsensor_conf(uint8_t num, uint8_t bus, uint8_t pim_type) {
@@ -156,7 +178,7 @@ pim_driver_add(uint8_t num, uint8_t pim_type) {
   uint8_t bus = ((num - 1) * 8) + 80;
   add_pim_lmsensor_conf(num, bus, pim_type);
 
-  state = i2c_detect_device(bus + 4, ADM1278_ADDR);
+  state = i2c_detect_sensor(bus + 4, ADM1278_ADDR);
   if (state) {
     pim_device_detect_log(num, bus + 4, ADM1278_ADDR, ADM1278_NAME, state);
   }

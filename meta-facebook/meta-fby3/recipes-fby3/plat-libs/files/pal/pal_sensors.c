@@ -2829,8 +2829,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
 
       //if we can't get the config status of the blade, return READING_NA.
-      if ( pal_is_fw_update_ongoing(fru) == false && \
-           config_status[fru-1] != CONFIG_UNKNOWN ) {
+      if ( config_status[fru-1] != CONFIG_UNKNOWN ) {
         if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
         else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
       } else ret = READING_NA;

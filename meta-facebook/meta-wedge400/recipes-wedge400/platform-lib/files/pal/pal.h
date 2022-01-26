@@ -145,6 +145,23 @@ extern "C" {
 #define PEM1_DEVICE_EXT        I2C_DEV_DIR(24, 18)HW_MON_DIR
 #define PEM2_DEVICE_EXT        I2C_DEV_DIR(25, 18)HW_MON_DIR
 
+#define SMB_TMP421_1_DEVICE    I2C_DEV_DIR(30, 4d)HW_MON_DIR
+#define SMB_TMP421_2_DEVICE    I2C_DEV_DIR(28, 4d)HW_MON_DIR
+#define SMB_TMP421_3_DEVICE    I2C_DEV_DIR(27, 4d)HW_MON_DIR
+#define SMB_TMP421_4_DEVICE    I2C_DEV_DIR(26, 4d)HW_MON_DIR
+#define SMB_TMP421_1_DIR       I2C_DRIVER_DIR(tmp421, 30, 4d)
+#define SMB_TMP421_2_DIR       I2C_DRIVER_DIR(tmp421, 28, 4d)
+#define SMB_TMP421_3_DIR       I2C_DRIVER_DIR(tmp421, 27, 4d)
+#define SMB_TMP421_4_DIR       I2C_DRIVER_DIR(tmp421, 26, 4d)
+#define SMB_ADM1032_1_DEVICE   I2C_DEV_DIR(30, 4c)HW_MON_DIR
+#define SMB_ADM1032_2_DEVICE   I2C_DEV_DIR(28, 4c)HW_MON_DIR
+#define SMB_ADM1032_3_DEVICE   I2C_DEV_DIR(27, 4c)HW_MON_DIR
+#define SMB_ADM1032_4_DEVICE   I2C_DEV_DIR(26, 4c)HW_MON_DIR
+#define SMB_ADM1032_1_DIR      I2C_DRIVER_DIR(lm90, 30, 4c)
+#define SMB_ADM1032_2_DIR      I2C_DRIVER_DIR(lm90, 28, 4c)
+#define SMB_ADM1032_3_DIR      I2C_DRIVER_DIR(lm90, 27, 4c)
+#define SMB_ADM1032_4_DIR      I2C_DRIVER_DIR(lm90, 26, 4c)
+
 #define TEMP(x)                "temp"#x"_input"
 #define VOLT(x)                "in"#x"_input"
 #define VOLT_SET(x)            "vo"#x"_input"

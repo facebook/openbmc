@@ -36,8 +36,8 @@ I2C_NUM=
 
 function show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
-  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] bic"
-  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [dev0|dev1|...|devN|pesw] (baudrate)"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [bic|pesw]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [dev0|dev1|...|devN] (baudrate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
 
@@ -598,6 +598,12 @@ if [ -n "$COMP" ]; then
       echo "$DEV is not supported!"
       exit -1;
     elif [ "$COMP" == "2ou" ]; then
+
+      if [ "$DEV" == "pesw" ] && [ $# -ne 2 ]; then # not support baudrate option
+        show_usage
+        exit -1;
+      fi
+
       if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
         #check enable RST_USB_HUB_N gpio or not
         VAL=$(/usr/bin/bic-util $SLOT --get_gpio | grep 16 | awk '{print $3;}') # get gpio value

@@ -234,10 +234,17 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
                 attrs = line.split(": ")
                 self.assertIn(
                     attrs[0],
-                    ["Fan Mode", "Sensor Fail", "Fan Fail", "Sled Fan Latch Open","FSCD Driver"],
+                    [
+                        "Fan Mode",
+                        "Sensor Fail",
+                        "Fan Fail",
+                        "Sled Fan Latch Open",
+                        "FSCD Driver",
+                    ],
                     "Accepted printed attributes",
                 )
                 if attrs[0] == "Sensor Fail" and attrs[1] != "None":
+                    Logger.info("[T110707010]full output: {}".format(info))
                     self.assertEqual(attrs[1], "None", "Sensor failure")
                 continue
             fan_name = m.group(1)

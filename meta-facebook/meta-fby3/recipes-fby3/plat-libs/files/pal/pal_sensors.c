@@ -1165,6 +1165,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret = 0, config_status = 0;
   uint8_t board_type = 0;
   uint8_t current_cnt = 0;
+  char sys_conf[MAX_VALUE_LEN] = {0};
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1224,8 +1225,15 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
           current_cnt += bic_2ou_gpv3_dual_m2_sensor_cnt;
         }
       } else if (board_type == DP_RISER_BOARD) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dp_sensor_list, bic_dp_sensor_cnt);
-        current_cnt += bic_dp_sensor_cnt;
+        if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+          return -1;
+        }
+
+        if ( strcmp(sys_conf, "Type_DP") == 0 ) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dp_sensor_list, bic_dp_sensor_cnt);
+          current_cnt += bic_dp_sensor_cnt;
+        }
       } else if (board_type == CWC_MCHP_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_cwc_sensor_list, cwc_sensor_cnt);
         current_cnt += cwc_sensor_cnt;

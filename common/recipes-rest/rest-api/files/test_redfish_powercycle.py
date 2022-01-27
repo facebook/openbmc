@@ -33,6 +33,11 @@ class TestPowerCycleService(AioHTTPTestCase):
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
             ),
+            unittest.mock.patch(
+                "os.spawnvpe",
+                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+                return_value="",
+            ),
         ]
 
         for p in self.patches:

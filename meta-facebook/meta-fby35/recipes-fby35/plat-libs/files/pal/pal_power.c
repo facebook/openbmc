@@ -522,6 +522,11 @@ pal_sled_cycle(void) {
     return POWER_STATUS_ERR;
   }
 
+  ret = system("sv stop sensord > /dev/null 2>&1 &");
+  if ( ret < 0 ) {
+    printf("Fail to stop sensord\n");
+  }
+
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
     for (i = 1; i <= 4; i++) {
       ret = pal_is_fru_prsnt(i, &is_fru_present);
@@ -580,6 +585,11 @@ pal_sled_cycle(void) {
       printf("Failed to do the sled cycle. Please check the BIC is alive.\n");
       ret = -1;
     }
+  }
+
+  ret = system("sv start sensord > /dev/null 2>&1 &");
+  if ( ret < 0 ) {
+    printf("Fail to start sensord\n");
   }
 
   return ret;

@@ -84,11 +84,11 @@ typedef struct {
 enum {
   UNSET_UNIT = 0,
   TEMP = 1,
-  CURR,
-  VOLT,
-  FAN,
-  PERCENT,
-  POWER,
+  VOLT = 4,
+  CURR = 5,
+  POWER = 6,
+  FAN = 18,
+  PERCENT = 93, // Do not have % in IPMI spec
 };
 
 //Sensor Table
@@ -153,6 +153,9 @@ enum {
 
   //BIC - DP riser sensors
   BIC_SENSOR_DP_MARVELL_HSM_TEMP = 0x43,
+  BIC_SENSOR_DP_NC_HSM_TEMP = 0x4D,
+  BIC_SENSOR_DP_NC_HSM_FAN = 0x4E,
+  BIC_SENSOR_DP_NC_HSM_BAT = 0x4F,
 
   //BIC 1OU EXP Sensors
   BIC_1OU_EXP_SENSOR_OUTLET_TEMP = 0x50,

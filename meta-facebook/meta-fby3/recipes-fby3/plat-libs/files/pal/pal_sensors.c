@@ -704,6 +704,9 @@ const uint8_t bic_cwc_skip_sensor_list[] = {
 
 const uint8_t bic_dp_sensor_list[] = {
   BIC_SENSOR_DP_MARVELL_HSM_TEMP,
+  BIC_SENSOR_DP_NC_HSM_TEMP,
+  BIC_SENSOR_DP_NC_HSM_FAN,
+  BIC_SENSOR_DP_NC_HSM_BAT,
 };
 
 const uint8_t nic_sensor_list[] = {
@@ -2379,7 +2382,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
 }
 
 static int
-pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status){
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status, const uint8_t type_2ou){
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
   uint8_t power_status = 0;
@@ -2459,13 +2462,15 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
         ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU &&
+                (type_2ou == DP_RISER_BOARD) ) { // DP Riser
+      // Basically, DP only has SB_BIC
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
                 (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
                 ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
                                                                   //So, we take 0x49 ~ 0x4D here
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if ( sensor_num == 0x43 && (config_status & PRESENT_2OU) == PRESENT_2OU ) { // DP Riser
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
       if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return READING_NA;
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
@@ -2783,6 +2788,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   uint8_t hsc_det;
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
+  static uint8_t type_2ou[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   static uint8_t exp_status = 0;
   static uint8_t hsc_init = 0;
 
@@ -2835,11 +2841,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         } else config_status[fru-1] = (uint8_t)ret;
         syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
       }
+      if ((type_2ou[fru-1] == UNKNOWN_BOARD) &&
+          (config_status[fru-1] != CONFIG_UNKNOWN) &&
+          (config_status[fru-1] & PRESENT_2OU) == PRESENT_2OU) {
+        if (fby3_common_get_2ou_board_type(FRU_SLOT1, &type_2ou[fru-1]) < 0) {
+          syslog(LOG_WARNING, "%s() Failed to get 2ou board type", __func__);
+        }
+      }
 
       //if we can't get the config status of the blade, return READING_NA.
       if ( config_status[fru-1] != CONFIG_UNKNOWN ) {
         if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
-        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
+        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1], type_2ou[fru-1]);
       } else ret = READING_NA;
       break;
     case FRU_BMC:
@@ -2878,7 +2891,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if ( pal_sdr_init(fru) == ERR_NOT_READY ) {
         ret = READING_NA;
       } else {
-        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1]);
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1], type_2ou[fru-1]);
       }
       break;
 
@@ -3172,6 +3185,100 @@ pal_set_sdr_init(uint8_t fru, bool set) {
   sdr_init_done[fru - 1] = set;
 }
 
+static void
+host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
+{
+  sdr_full_t *sdr;
+  int retry = 3;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  while (retry > 0) {
+    if (fby3_common_get_2ou_board_type(fru, &type_2ou) == 0) {
+      break;
+    }
+    syslog(LOG_ERR, "%s() failed to get 2ou board type", __func__);
+    sleep(1);
+    retry--;
+  }
+
+  if (type_2ou == DP_RISER_BOARD) {
+    /* BIC_SENSOR_DP_NC_HSM_TEMP */
+    sinfo[BIC_SENSOR_DP_NC_HSM_TEMP].valid = true;
+    sdr = &sinfo[BIC_SENSOR_DP_NC_HSM_TEMP].sdr;
+    memset(sdr, 0, sizeof(*sdr));
+    strcpy(sdr->str, "DP_NC_HSM_TEMP");
+    sdr->str_type_len = strlen(sdr->str) + 1;
+    sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+    sdr->sensor_units1 = 0; // No modifiers.
+    sdr->sensor_units2 = TEMP; // C
+    sdr->sensor_num = BIC_SENSOR_DP_NC_HSM_TEMP;
+
+    sdr->m_val = 1;
+    sdr->m_tolerance = 0;
+    sdr->b_val = 0;
+    sdr->b_accuracy = 0;
+    sdr->rb_exp = 0;
+    sdr->uc_thresh = 90;
+    sdr->unc_thresh = 0;
+    sdr->unr_thresh = 0;
+    sdr->lc_thresh = 0;
+    sdr->lnc_thresh = 0;
+    sdr->lnr_thresh = 0;
+    sdr->pos_hyst = 0;
+    sdr->neg_hyst = 0;
+
+    /* BIC_SENSOR_DP_NC_HSM_FAN */
+    sinfo[BIC_SENSOR_DP_NC_HSM_FAN].valid = true;
+    sdr = &sinfo[BIC_SENSOR_DP_NC_HSM_FAN].sdr;
+    memset(sdr, 0, sizeof(*sdr));
+    strcpy(sdr->str, "DP_NC_HSM_FAN");
+    sdr->str_type_len = strlen(sdr->str) + 1;
+    sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+    sdr->sensor_units1 = 0; // No modifiers.
+    sdr->sensor_units2 = FAN; // RPM
+    sdr->sensor_num = BIC_SENSOR_DP_NC_HSM_FAN;
+
+    sdr->m_val = 1;
+    sdr->m_tolerance = 0;
+    sdr->b_val = 0;
+    sdr->b_accuracy = 0;
+    sdr->rb_exp = 0x20;
+    sdr->uc_thresh = 0;
+    sdr->unc_thresh = 0;
+    sdr->unr_thresh = 0;
+    sdr->lc_thresh = 0;
+    sdr->lnc_thresh = 0;
+    sdr->lnr_thresh = 0;
+    sdr->pos_hyst = 0;
+    sdr->neg_hyst = 0;
+
+    /* BIC_SENSOR_DP_NC_HSM_BAT */
+    sinfo[BIC_SENSOR_DP_NC_HSM_BAT].valid = true;
+    sdr = &sinfo[BIC_SENSOR_DP_NC_HSM_BAT].sdr;
+    memset(sdr, 0, sizeof(*sdr));
+    strcpy(sdr->str, "DP_NC_HSM_BAT");
+    sdr->str_type_len = strlen(sdr->str) + 1;
+    sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+    sdr->sensor_units1 = 0; // No modifiers.
+    sdr->sensor_units2 = VOLT; // Volt
+    sdr->sensor_num = BIC_SENSOR_DP_NC_HSM_BAT;
+
+    sdr->m_val = 16;
+    sdr->m_tolerance = 0;
+    sdr->b_val = 0;
+    sdr->b_accuracy = 0;
+    sdr->rb_exp = 0xD0;
+    sdr->uc_thresh = 0;
+    sdr->unc_thresh = 0;
+    sdr->unr_thresh = 0;
+    sdr->lc_thresh = 157;
+    sdr->lnc_thresh = 175;
+    sdr->lnr_thresh = 0;
+    sdr->pos_hyst = 0;
+    sdr->neg_hyst = 0;
+  }
+}
+
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
@@ -3281,6 +3388,16 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     }
   }
 
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Failed to run _sdr_init\n", __func__);
+    goto error_exit;
+  }
+
+  // update SDR for host source sensor
+  if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
+    host_sensors_sdr_init(fru, g_sinfo[fru-1]);
+  }
+
 error_exit:
   return ret;
 }
@@ -3305,6 +3422,29 @@ pal_sdr_init(uint8_t fru) {
   }
 
   return 0;
+}
+
+int
+pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value)
+{
+  int raw_value = (int) *value;
+  int ret = 0;
+  sdr_full_t *sdr;
+  if ( pal_sdr_init(fru) == ERR_NOT_READY ){
+    ret = -1;
+    syslog(LOG_WARNING, "%s() fru%d sensor number 0x%02x sdr not ready", __func__, fru, sensor_id);
+  } else {
+    if (g_sinfo[fru-1][sensor_id].valid) {
+      // syslog(LOG_WARNING, "%s() fru%d sensor number 0x%02x sdr is valid", __func__, fru, sensor_id);
+      sdr = &g_sinfo[fru-1][sensor_id].sdr;
+      pal_convert_sensor_reading(sdr, raw_value, value);
+    } else {
+      syslog(LOG_WARNING, "%s() fru%d sensor number 0x%02x sdr not valid", __func__, fru, sensor_id);
+      ret = -1;
+    }
+  }
+
+  return ret;
 }
 
 int
@@ -3847,4 +3987,31 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   }
   pal_add_cri_sel(cri_sel);
   return;
+}
+
+bool
+pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id) {
+  bool ret = false;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (sensor_id == BIC_SENSOR_DP_NC_HSM_TEMP ||
+          sensor_id == BIC_SENSOR_DP_NC_HSM_FAN ||
+          sensor_id == BIC_SENSOR_DP_NC_HSM_BAT) {
+
+        if (fby3_common_get_2ou_board_type(fru, &type_2ou) < 0) {
+          syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+        } else if (type_2ou == DP_RISER_BOARD) {
+          ret = true;
+        }
+      }
+      break;
+    default:
+      break;
+  }
+  return ret;
 }

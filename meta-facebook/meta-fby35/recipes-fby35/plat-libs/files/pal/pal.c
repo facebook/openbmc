@@ -3082,6 +3082,17 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     *res_len = 5;
     break;
   case FW_BIC:
+    *res_len = strlen((char*)res);
+    if (*res_len == 2) { // old version format
+
+    } else if (*res_len >= 4){ // new version format
+      *res_len = 7; //check BIC code, keep 7 bytes.
+    } else {
+      syslog(LOG_WARNING, "%s() Format not supported, length invalid %d", __func__, *res_len);
+      ret = -1;
+      goto error_exit;
+    }
+    break;
   case FW_1OU_BIC:
   case FW_2OU_BIC:
   case FW_BB_BIC:

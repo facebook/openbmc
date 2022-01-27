@@ -1,16 +1,9 @@
 import asyncio
-import sys
-import types
 import unittest
-
-# workaround bc pal and sdr are unavailable in unit test envs
-sys.modules["pal"] = types.ModuleType("pal")
-sys.modules["sdr"] = types.ModuleType("sdr")
-sys.modules["sensors"] = types.ModuleType("sensors")
-sys.modules["aggregate_sensor"] = types.ModuleType("aggregate_sensor")
 
 import aiohttp.web
 import redfish_chassis_helper
+import test_mock_modules  # noqa: F401
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
 

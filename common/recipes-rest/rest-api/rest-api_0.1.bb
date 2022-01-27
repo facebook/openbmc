@@ -117,10 +117,13 @@ SRC_URI = "file://setup-rest-api.sh \
            file://test_redfish_powercycle.py \
            file://redfish_base.py \
            file://redfish_sensors.py \
+           file://test_mock_modules.py \
            file://test_redfish_root_controller.py \
            file://test_redfish_account_controller.py \
            file://test_redfish_managers_controller.py \
            file://test_redfish_chassis_controller.py \
+           file://test_redfish_computer_system.py \
+           file://test_redfish_computer_system_patches.py \
            file://test_rest_fwinfo.py \
            file://test_redfish_sensors.py \
            file://test_redfish_log_service.py \

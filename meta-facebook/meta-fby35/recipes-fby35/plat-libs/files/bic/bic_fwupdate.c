@@ -999,7 +999,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   char fdstr[32] = {0};
   bool fd_opened = false;
   int origin_len = 0;
-  char origin_path[64] = {0};
+  char origin_path[128] = {0};
 
   if (path == NULL) {
     if (fd < 0) {
@@ -1020,10 +1020,13 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   loc = strstr(path, ipmb_content);
 
   if (end_with(path, strlen(path), tmp_posfix, strlen(tmp_posfix))) {
-    origin_len = strlen(path) - strlen(tmp_posfix);
-    memcpy(origin_path, path, origin_len);
+    origin_len = strlen(path) - strlen(tmp_posfix) + 1;
+    if (origin_len > sizeof(origin_path)) {
+      origin_len = sizeof(origin_path);
+    }
+    snprintf(origin_path, origin_len, "%s", path);
   } else {
-    memcpy(origin_path, path, sizeof(origin_path));
+    snprintf(origin_path, sizeof(origin_path), "%s", path);
   }
 
   fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, origin_path, force);

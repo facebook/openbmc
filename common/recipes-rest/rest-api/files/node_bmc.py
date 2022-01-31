@@ -19,8 +19,11 @@
 #
 
 import asyncio
+import datetime
 import functools
 import json
+import logging
+import mmap
 import os
 import os.path
 import re
@@ -35,7 +38,6 @@ import psutil
 import rest_mmc
 import rest_pal_legacy
 from boot_source import is_boot_from_secondary
-from common_utils import async_exec
 from node import node
 from vboot import get_vboot_status
 
@@ -53,6 +55,8 @@ percent_updater = threading.Thread(target=update_cpu_pct_counter)
 percent_updater.daemon = True
 percent_updater.start()
 
+logger = logging.getLogger("restapi")
+
 
 # Read all contents of file path specified
 def read_file_contents(path):
@@ -63,6 +67,46 @@ def read_file_contents(path):
         content = None
 
     return content
+
+
+def cache_uboot_version():
+    # Get U-boot Version
+    logger.info("Caching uboot version")
+    uboot_version = ""
+    uboot_ver_regex = r"^U-Boot\W+(?P<uboot_ver>20\d{2}\.\d{2})\W+.*$"
+    uboot_ver_re = re.compile(uboot_ver_regex)
+    mtd_meta = getMTD("meta")
+    if mtd_meta is None:
+        stdout = subprocess.check_output(["/usr/bin/strings", "/dev/mtd0"])
+        for line in stdout.splitlines():
+            matched = uboot_ver_re.fullmatch(line.decode().strip())
+            if matched:
+                uboot_version = matched.group("uboot_ver")
+                break
+    else:
+        try:
+            mtd_dev = "/dev/" + mtd_meta
+            with open(mtd_dev, "r") as f:
+                raw_data = f.readline()
+            uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
+        except Exception:
+            uboot_version = ""
+    UBOOT_VER_KV_KEY = "u-boot-ver"
+    kv.kv_set(UBOOT_VER_KV_KEY, uboot_version)
+    logger.info("Cached uboot version to kv-store")
+    logger.info("cached uboot version: %s" % (uboot_version))
+
+
+def get_wdt_counter() -> int:
+    addr = 0x1E785010
+    with open("/dev/mem", "rb") as f:
+        with mmap.mmap(
+            f.fileno(),
+            (addr // mmap.PAGESIZE + 1) * mmap.PAGESIZE,
+            mmap.MAP_SHARED,
+            mmap.PROT_READ,
+        ) as reg_map:
+            return reg_map[addr]
 
 
 def SPIVendorID2Name(manufacturer_id):
@@ -84,9 +128,10 @@ def SPIVendorID2Name(manufacturer_id):
 
 
 async def getSPIVendorLegacy(spi_id):
-    cmd = "cat /tmp/spi0.%d_vendor.dat | cut -c1-2" % (spi_id)
-    _, stdout, _ = await async_exec(cmd, shell=True)
-    manufacturer_id = stdout.strip("\n")
+    vendor_dat_path = "/tmp/spi0.%d_vendor.dat" % (spi_id)
+    manufacturer_id = ""
+    with open(vendor_dat_path, "r") as vendor_dat:
+        manufacturer_id = vendor_dat.read(2)
     return SPIVendorID2Name(manufacturer_id)
 
 
@@ -136,6 +181,9 @@ def read_proc_mtd() -> t.List[str]:
     return mtd_list
 
 
+cache_uboot_version()
+
+
 class bmcNode(node):
     # Reads from TPM device files (e.g. /sys/class/tpm/tpm0/device/caps)
     # can hang the event loop on unhealthy systems. Cache version values
@@ -155,40 +203,12 @@ class bmcNode(node):
 
         asyncio.ensure_future(self._fill_tpm_ver_info_loop())
 
-    async def _getUbootVer(self):
-        # Get U-boot Version
-        uboot_version = None
-        uboot_ver_regex = r"^U-Boot\W+(?P<uboot_ver>20\d{2}\.\d{2})\W+.*$"
-        uboot_ver_re = re.compile(uboot_ver_regex)
-        mtd_meta = getMTD("meta")
-        if mtd_meta is None:
-            mtd0_str_dump_cmd = ["/usr/bin/strings", "/dev/mtd0"]
-            _, stdout, _ = await async_exec(mtd0_str_dump_cmd)
-            for line in stdout.splitlines():
-                matched = uboot_ver_re.fullmatch(line.strip())
-                if matched:
-                    uboot_version = matched.group("uboot_ver")
-                    break
-        else:
-            try:
-                mtd_dev = "/dev/" + mtd_meta
-                with open(mtd_dev, "r") as f:
-                    raw_data = f.readline()
-                uboot_version = json.loads(raw_data)["version_infos"]["uboot_ver"]
-            except Exception:
-                uboot_version = None
-        return uboot_version
-
     async def getUbootVer(self):
         UBOOT_VER_KV_KEY = "u-boot-ver"
-        uboot_version = None
         try:
             uboot_version = kv.kv_get(UBOOT_VER_KV_KEY)
         except kv.KeyOperationFailure:
-            # not cahced, read and cache it
-            uboot_version = await self._getUbootVer()
-            if uboot_version:
-                kv.kv_set(UBOOT_VER_KV_KEY, uboot_version, kv.FCREATE)
+            uboot_version = None
         return uboot_version
 
     @classmethod
@@ -307,10 +327,7 @@ class bmcNode(node):
             mac_addr = ":".join(("%012X" % mac)[i : i + 2] for i in range(0, 12, 2))
 
         # Get BMC Reset Reason
-        _, wdt_counter, _ = await async_exec(["devmem", "0x1e785010"])
-        wdt_counter = int(wdt_counter, 0)
-        wdt_counter &= 0xFF00
-
+        wdt_counter = get_wdt_counter()
         if wdt_counter:
             por_flag = 0
         else:
@@ -321,10 +338,6 @@ class bmcNode(node):
         else:
             reset_reason = "User Initiated Reset or WDT Reset"
 
-        # Get BMC's Up Time
-        _, stdout, _ = await async_exec("uptime", shell=True)
-        uptime = stdout.strip()
-
         # Use another method, ala /proc, but keep the old one for backwards
         # compat.
         # See http://man7.org/linux/man-pages/man5/proc.5.html for details
@@ -334,6 +347,17 @@ class bmcNode(node):
         # Pull load average directory from proc instead of processing it from
         # the contents of uptime command output later.
         load_avg = read_file_contents("/proc/loadavg")[0].split()[0:3]
+
+        uptime_delta = datetime.timedelta(seconds=int(float(uptime_seconds)))
+        # '07:44:38 up 144 days, 13:12,  load average: 5.03, 5.22, 5.42'
+        # Construct uptime string for backaward compatibility reasons
+        uptime = "{now} up {uptime}, load average: {load1}, {load5}, {load15}".format(
+            now=datetime.datetime.now().strftime("%H:%M:%S"),
+            uptime=str(uptime_delta),
+            load1=load_avg[0],
+            load5=load_avg[1],
+            load15=load_avg[2],
+        )
         cpu_usage = (
             "CPU:  {usr_pct:.0f}% usr  {sys_pct:.0f}% sys   {nice_pct:.0f}% nic"
             "   {idle_pct:.0f}% idle   {iowait_pct:.0f}% io   {irq_pct:.0f}% irq"
@@ -376,13 +400,9 @@ class bmcNode(node):
             uboot_version = "NA"
 
         # Get kernel release and kernel version
-        kernel_release = ""
-        _, stdout, _ = await async_exec(["uname", "-r"])
-        kernel_release = stdout.strip("\n")
-
-        kernel_version = ""
-        _, stdout, _ = await async_exec(["uname", "-v"])
-        kernel_version = stdout.strip("\n")
+        uname = os.uname()
+        kernel_release = uname.release
+        kernel_version = uname.version
 
         # Get TPM version
         tpm_fw_version, tpm_tcg_version = self._TPM_VER_INFO
@@ -391,10 +411,13 @@ class bmcNode(node):
         spi1_vendor = await getSPIVendor(1)
 
         # ASD status - check if ASD daemon/asd-test is currently running
-        _, asd_status, _ = await async_exec(
-            "ps | grep -ie [a]sd -ie [y]aapd", shell=True
-        )
-        asd_status = bool(asd_status)
+        asd_status = False
+        for proc in psutil.process_iter():
+            if re.match("[a]sd", proc.name().lower()) or re.match(
+                "[y]aapd", proc.name().lower()
+            ):
+                asd_status = True
+                break
         boot_from_secondary = is_boot_from_secondary()
 
         vboot_info = await get_vboot_status()
@@ -436,7 +459,7 @@ class bmcNode(node):
 
     async def doAction(self, data, param=None):
         if not t.TYPE_CHECKING:
-            await async_exec("sleep 1; /sbin/reboot", shell=True)
+            os.spawnvpe("sleep 5; /sbin/reboot", shell=True)
         return {"result": "success"}
 
 

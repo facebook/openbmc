@@ -31,7 +31,7 @@ LICENSE = "GPLv2"
 # Use GPL-2.0-only instead.
 def lic_file_name(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in [ 'rocko', 'zeus', 'dunfell' ]:
+    if distro in [ 'rocko', 'dunfell' ]:
         return "GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
     return "GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
@@ -44,7 +44,7 @@ LIC_FILES_CHKSUM = "\
 # ones we should use the one from Yocto (python3-aiohttp).
 def aiohttp_dep(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in [ 'rocko', 'zeus', 'dunfell' ]:
+    if distro in [ 'rocko', 'dunfell' ]:
         return "aiohttp"
     return "python3-aiohttp"
 

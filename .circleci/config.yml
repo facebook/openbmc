@@ -139,6 +139,7 @@ jobs:
                     chmod +x qemu-system-arm
             - run:
                 name: execute CIT tests
+                no_output_timeout: 15m
                 command: |
                     python3 tools/circle-ci/cit_test_wrapper.py << parameters.machine >>
     build:

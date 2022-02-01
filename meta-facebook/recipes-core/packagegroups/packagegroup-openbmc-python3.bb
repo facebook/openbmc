@@ -9,7 +9,7 @@ inherit packagegroup
 # python3-core and no longer exists.
 def pg_python3_typing(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro == 'rocko' or distro == 'zeus' or distro == 'dunfell':
+    if distro == 'rocko' or distro == 'dunfell':
         return "python3-typing"
     return ""
 

@@ -6,15 +6,6 @@
 #include <sstream>
 #include "Register.hpp"
 
-#if (__GNUC__ < 8)
-#include <experimental/filesystem>
-namespace std {
-namespace filesystem = experimental::filesystem;
-}
-#else
-#include <filesystem>
-#endif
-
 using nlohmann::json;
 using namespace rackmon;
 
@@ -256,8 +247,8 @@ RegisterStore::operator RegisterStoreValue() const {
   return ret;
 }
 
-const RegisterMap& RegisterMapDatabase::at(uint8_t addr) {
-  const auto& result = find_if(
+const RegisterMap& RegisterMapDatabase::at(uint8_t addr) const {
+  const auto result = std::find_if(
       regmaps.begin(),
       regmaps.end(),
       [addr](const std::unique_ptr<RegisterMap>& m) {
@@ -272,16 +263,6 @@ void RegisterMapDatabase::load(const nlohmann::json& j) {
   std::unique_ptr<RegisterMap> rmap = std::make_unique<RegisterMap>();
   *rmap = j;
   regmaps.push_back(std::move(rmap));
-}
-
-void RegisterMapDatabase::load(const std::string& dir) {
-  for (auto const& dir_entry : std::filesystem::directory_iterator{dir}) {
-    std::ifstream ifs(dir_entry.path().string());
-    json j;
-    ifs >> j;
-    load(j);
-    ifs.close();
-  }
 }
 
 void RegisterMapDatabase::print(std::ostream& os) {

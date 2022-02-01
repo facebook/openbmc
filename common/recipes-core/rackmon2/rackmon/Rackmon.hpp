@@ -67,11 +67,20 @@ class Rackmon {
   virtual std::unique_ptr<Modbus> makeInterface() {
     return std::make_unique<Modbus>(profileStore_);
   }
+  const RegisterMapDatabase& getRegisterMapDatabase() const {
+    return registerMapDB_;
+  }
 
  public:
   virtual ~Rackmon() {
     stop();
   }
+
+  // Load Interface configuration.
+  void loadInterface(const nlohmann::json& config);
+
+  // Load a register map into the internal database.
+  void loadRegisterMap(const nlohmann::json& config);
 
   // Load configuration, preferable before starting, but can be
   // done at any time, but this is a one time only.
@@ -118,16 +127,16 @@ class Rackmon {
       ModbusTime timeout = ModbusTime::zero());
 
   // Get status of devices
-  std::vector<ModbusDeviceInfo> listDevices();
+  std::vector<ModbusDeviceInfo> listDevices() const;
 
   // Get monitored data
-  void getRawData(std::vector<ModbusDeviceRawData>& data);
+  void getRawData(std::vector<ModbusDeviceRawData>& data) const;
 
   // Get formatted monitor data
-  void getFmtData(std::vector<ModbusDeviceFmtData>& data);
+  void getFmtData(std::vector<ModbusDeviceFmtData>& data) const;
 
   // Get value data
-  void getValueData(std::vector<ModbusDeviceValueData>& data);
+  void getValueData(std::vector<ModbusDeviceValueData>& data) const;
 
   // Get profile data
   std::string getProfileData();

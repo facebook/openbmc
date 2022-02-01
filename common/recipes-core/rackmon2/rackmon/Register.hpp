@@ -241,13 +241,11 @@ struct RegisterMapDatabase {
   std::vector<std::unique_ptr<RegisterMap>> regmaps{};
 
   // Returns a register map of a given address
-  const RegisterMap& at(uint8_t addr);
+  const RegisterMap& at(uint8_t addr) const;
 
   // Loads a configuration JSON into the DB.
   void load(const nlohmann::json& j);
 
-  // Loads all configuration files in a dir into the DB.
-  void load(const std::string& dir);
   // For debug purpose only.
   void print(std::ostream& os);
 };

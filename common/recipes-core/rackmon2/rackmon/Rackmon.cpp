@@ -5,34 +5,64 @@
 #include "Log.hpp"
 #include "Rackmon.hpp"
 
+#if (__GNUC__ < 8)
+#include <experimental/filesystem>
+namespace std {
+namespace filesystem = experimental::filesystem;
+}
+#else
+#include <filesystem>
+#endif
+
 using nlohmann::json;
 using namespace std::literals;
 using namespace rackmon;
 
-void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
-  // TODO: Catch parse exceptions and print a pretty
-  // message on exactly which configuration fail
-  // was bad/missing.
-  std::ifstream ifs(confPath);
-  json j;
-  ifs >> j;
-  for (const auto& ifaceConf : j["interfaces"]) {
+void Rackmon::loadInterface(const nlohmann::json& config) {
+  if (threads_.size() > 0) {
+    throw std::runtime_error("Cannot load configuration when started");
+  }
+  if (interfaces_.size() > 0) {
+    throw std::runtime_error("Interfaces already loaded");
+  }
+  for (const auto& ifaceConf : config["interfaces"]) {
     interfaces_.push_back(makeInterface());
     interfaces_.back()->initialize(ifaceConf);
   }
-  registerMapDB_.load(regmapDir);
+}
 
+void Rackmon::loadRegisterMap(const nlohmann::json& config) {
+  if (threads_.size() > 0) {
+    throw std::runtime_error("Cannot load configuration when started");
+  }
+  registerMapDB_.load(config);
   // Precomputing this makes our scan soooo much easier.
-  // its 256 bytes wasted. but worth it.
-  for (uint16_t addr = 0; addr <= 0xff; addr++) {
-    try {
-      registerMapDB_.at(uint8_t(addr));
-      allPossibleDevAddrs_.push_back(uint8_t(addr));
-    } catch (std::out_of_range& e) {
-      continue;
-    }
+  // its 256 bytes wasted. but worth it. TODO use a
+  // interval list with an iterator to waste less bytes.
+  for (uint16_t addr = config["address_range"][0]; addr <= config["address_range"][1]; ++addr) {
+    allPossibleDevAddrs_.push_back(uint8_t(addr));
   }
   nextDeviceToProbe_ = allPossibleDevAddrs_.begin();
+}
+
+void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
+  auto getJSON = [](const std::string& fileName) {
+    std::ifstream ifs(fileName);
+    json contents;
+    try {
+      ifs >> contents;
+    } catch(const nlohmann::json::parse_error& ex) {
+      logError << "Error loading: " << fileName << " byte: " << ex.byte << std::endl;
+      throw;
+    }
+    ifs.close();
+    return contents;
+  };
+  loadInterface(getJSON(confPath));
+
+  for (auto const& dir_entry : std::filesystem::directory_iterator{regmapDir}) {
+    loadRegisterMap(getJSON(dir_entry.path().string()));
+  }
 }
 
 bool Rackmon::probe(Modbus& interface, uint8_t addr) {
@@ -238,7 +268,7 @@ void Rackmon::readFileRecord(
   devices_.at(deviceAddress)->readFileRecord(records, timeout);
 }
 
-std::vector<ModbusDeviceInfo> Rackmon::listDevices() {
+std::vector<ModbusDeviceInfo> Rackmon::listDevices() const {
   std::shared_lock lock(devicesMutex_);
   std::vector<ModbusDeviceInfo> devices;
   std::transform(
@@ -249,7 +279,7 @@ std::vector<ModbusDeviceInfo> Rackmon::listDevices() {
   return devices;
 }
 
-void Rackmon::getRawData(std::vector<ModbusDeviceRawData>& data) {
+void Rackmon::getRawData(std::vector<ModbusDeviceRawData>& data) const {
   data.clear();
   std::shared_lock lock(devicesMutex_);
   std::transform(
@@ -258,7 +288,7 @@ void Rackmon::getRawData(std::vector<ModbusDeviceRawData>& data) {
       });
 }
 
-void Rackmon::getFmtData(std::vector<ModbusDeviceFmtData>& data) {
+void Rackmon::getFmtData(std::vector<ModbusDeviceFmtData>& data) const {
   data.clear();
   std::shared_lock lock(devicesMutex_);
   std::transform(
@@ -267,7 +297,7 @@ void Rackmon::getFmtData(std::vector<ModbusDeviceFmtData>& data) {
       });
 }
 
-void Rackmon::getValueData(std::vector<ModbusDeviceValueData>& data) {
+void Rackmon::getValueData(std::vector<ModbusDeviceValueData>& data) const {
   data.clear();
   std::shared_lock lock(devicesMutex_);
   std::transform(

@@ -219,25 +219,3 @@ TEST_F(RegisterMapDatabaseTest, Load) {
   const auto& m7 = db.at(120);
   EXPECT_EQ(m7.name, "orv3_psu");
 }
-
-TEST_F(RegisterMapDatabaseTest, LoadAll) {
-  RegisterMapDatabase db;
-  EXPECT_THROW(db.at(160), std::out_of_range);
-  db.load(r_test_dir);
-  const auto& m1 = db.at(110);
-  EXPECT_EQ(m1.name, "orv3_psu");
-  const auto& m2 = db.at(140);
-  EXPECT_EQ(m2.name, "orv3_psu");
-  const auto& m3 = db.at(130);
-  EXPECT_EQ(m3.name, "orv3_psu");
-  const auto& m4 = db.at(160);
-  EXPECT_EQ(m4.name, "orv2_psu");
-  const auto& m5 = db.at(164);
-  EXPECT_EQ(m5.name, "orv2_psu");
-  const auto& m6 = db.at(191);
-  EXPECT_EQ(m6.name, "orv2_psu");
-  EXPECT_THROW(db.at(109), std::out_of_range);
-  EXPECT_THROW(db.at(141), std::out_of_range);
-  EXPECT_THROW(db.at(159), std::out_of_range);
-  EXPECT_THROW(db.at(192), std::out_of_range);
-}

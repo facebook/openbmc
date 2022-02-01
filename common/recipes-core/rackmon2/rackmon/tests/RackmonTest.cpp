@@ -4,6 +4,15 @@
 #include <fstream>
 #include "Rackmon.hpp"
 
+#if (__GNUC__ < 8)
+#include <experimental/filesystem>
+namespace std {
+namespace filesystem = experimental::filesystem;
+}
+#else
+#include <filesystem>
+#endif
+
 using namespace std;
 using namespace testing;
 using nlohmann::json;
@@ -91,16 +100,28 @@ class MockRackmon : public Rackmon {
  public:
   MockRackmon() : Rackmon() {}
   MOCK_METHOD0(makeInterface, std::unique_ptr<Modbus>());
+  const RegisterMapDatabase& getMap() {
+    return getRegisterMapDatabase();
+  }
 };
 
 class RackmonTest : public ::testing::Test {
  public:
-  const std::string r_test_dir = "./test_rackmon.d";
-  const std::string r_conf = "./test_rackmon.conf";
-  const std::string r_test_map = r_test_dir + "/test1.json";
+  std::string r_test_dir{};
+  std::string r_conf{};
+  std::string r_test1_map{};
+  std::string r_test2_map{};
 
  public:
   void SetUp() override {
+    std::filesystem::path test_path = std::filesystem::temp_directory_path();
+    if (!std::filesystem::exists(test_path)) {
+      test_path = std::filesystem::current_path();
+    }
+    r_test_dir = test_path / "test_rackmon.d";
+    r_conf = test_path / "test_rackmon.conf";
+    r_test1_map = test_path / "test_rackmon.d" / "test1.json";
+    r_test2_map = test_path / "test_rackmon.d" / "test2.json";
     mkdir(r_test_dir.c_str(), 0755);
     std::string json1 = R"({
         "name": "orv2_psu",
@@ -117,9 +138,10 @@ class RackmonTest : public ::testing::Test {
           }
         ]
       })";
-    std::ofstream ofs1(r_test_map);
+    std::ofstream ofs1(r_test1_map);
     ofs1 << json1;
     ofs1.close();
+
     std::string rconf_s = R"({
       "interfaces": [
         {
@@ -133,7 +155,8 @@ class RackmonTest : public ::testing::Test {
     ofs2.close();
   }
   void TearDown() override {
-    remove(r_test_map.c_str());
+    remove(r_test1_map.c_str());
+    remove(r_test2_map.c_str());
     remove(r_test_dir.c_str());
     remove(r_conf.c_str());
   }
@@ -156,11 +179,47 @@ class RackmonTest : public ::testing::Test {
 };
 
 TEST_F(RackmonTest, BasicLoad) {
+  std::string json2 = R"({
+      "name": "orv3_psu",
+      "address_range": [110, 112],
+      "probe_register": 104,
+      "default_baudrate": 19200,
+      "preferred_baudrate": 19200,
+      "registers": [
+        {
+          "begin": 0,
+          "length": 8,
+          "format": "string",
+          "name": "MFG_MODEL"
+        }
+      ]
+    })";
+  std::ofstream ofs2(r_test2_map);
+  ofs2 << json2;
+  ofs2.close();
+
   MockRackmon mon;
   EXPECT_CALL(mon, makeInterface())
       .Times(1)
       .WillOnce(Return(ByMove(make_modbus(0, 0))));
   mon.load(r_conf, r_test_dir);
+  const RegisterMapDatabase& db = mon.getMap();
+  const auto& m1 = db.at(110);
+  EXPECT_EQ(m1.name, "orv3_psu");
+  const auto& m2 = db.at(112);
+  EXPECT_EQ(m2.name, "orv3_psu");
+  const auto& m3 = db.at(111);
+  EXPECT_EQ(m3.name, "orv3_psu");
+  const auto& m4 = db.at(160);
+  EXPECT_EQ(m4.name, "orv2_psu");
+  const auto& m5 = db.at(162);
+  EXPECT_EQ(m5.name, "orv2_psu");
+  const auto& m6 = db.at(161);
+  EXPECT_EQ(m6.name, "orv2_psu");
+  EXPECT_THROW(db.at(109), std::out_of_range);
+  EXPECT_THROW(db.at(113), std::out_of_range);
+  EXPECT_THROW(db.at(159), std::out_of_range);
+  EXPECT_THROW(db.at(163), std::out_of_range);
 }
 
 TEST_F(RackmonTest, BasicScanFoundNone) {

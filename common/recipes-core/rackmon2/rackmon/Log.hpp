@@ -3,6 +3,10 @@
 #include <iostream>
 #ifdef RACKMON_SYSLOG
 #include <openbmc/syslog.hpp>
+#endif
+
+namespace rackmon {
+#ifdef RACKMON_SYSLOG
 [[maybe_unused]] static thread_local std::ostream& logError =
     openbmc::syslog_error;
 [[maybe_unused]] static thread_local std::ostream& logEarn =
@@ -14,6 +18,7 @@
 [[maybe_unused]] static thread_local std::ostream& logInfo = std::cout;
 [[maybe_unused]] static thread_local std::ostream& logEarn = std::cout;
 #endif
+} // namespace rackmon
 
 #ifdef PROFILING
 #include <openbmc/profile.hpp>
@@ -21,3 +26,4 @@
 #else
 #define RACKMON_PROFILE_SCOPE(name, desc, os)
 #endif
+

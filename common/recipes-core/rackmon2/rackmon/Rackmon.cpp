@@ -7,6 +7,7 @@
 
 using nlohmann::json;
 using namespace std::literals;
+using namespace rackmon;
 
 void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
   // TODO: Catch parse exceptions and print a pretty

@@ -9,6 +9,8 @@
 #include "RackmonSvcUnix.hpp"
 
 using nlohmann::json;
+using namespace rackmonsvc;
+using namespace rackmon;
 
 class RackmonUNIXSocketService {
   // The configuration file paths.

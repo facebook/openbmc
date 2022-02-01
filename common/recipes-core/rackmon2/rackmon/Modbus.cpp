@@ -5,6 +5,7 @@
 #include "Modbus.hpp"
 
 using nlohmann::json;
+using namespace rackmon;
 
 void Modbus::command(
     Msg& req,

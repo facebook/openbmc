@@ -5,6 +5,8 @@
 #include <functional>
 #include <thread>
 
+namespace rackmon {
+
 using PollThreadTime = std::chrono::seconds;
 template <class T>
 class PollThread {
@@ -52,3 +54,5 @@ class PollThread {
     }
   }
 };
+
+} // namespace rackmon

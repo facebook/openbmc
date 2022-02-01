@@ -1,6 +1,9 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "Msg.hpp"
 
+using namespace rackmon;
+
+namespace {
 /* From libmodbus, https://github.com/stephane/libmodbus
  * Under LGPL. */
 /* Table of CRC values for high-order byte */
@@ -52,6 +55,7 @@ static const uint8_t kTableCRCLow[] = {
     0x4B, 0x8B, 0x8A, 0x4A, 0x4E, 0x8E, 0x8F, 0x4F, 0x8D, 0x4D, 0x4C, 0x8C,
     0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42, 0x43, 0x83,
     0x41, 0x81, 0x80, 0x40};
+}
 
 uint16_t Msg::crc16() {
   uint8_t crcHigh = 0xFF; // high CRC byte initialized

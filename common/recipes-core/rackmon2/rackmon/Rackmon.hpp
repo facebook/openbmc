@@ -7,6 +7,8 @@
 #include "ModbusDevice.hpp"
 #include "PollThread.hpp"
 
+namespace rackmon {
+
 class Rackmon {
   static constexpr time_t kDormantMinInactiveTime = 300;
   static constexpr ModbusTime kProbeTimeout = std::chrono::milliseconds(50);
@@ -130,3 +132,5 @@ class Rackmon {
   // Get profile data
   std::string getProfileData();
 };
+
+} // namespace rackmon

@@ -1,6 +1,8 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "RackmonSvcUnix.hpp"
 
+using namespace rackmonsvc;
+
 std::tuple<struct sockaddr_un, size_t> RackmonSock::getServiceAddr() {
   struct sockaddr_un ret {};
   ret.sun_family = AF_UNIX;

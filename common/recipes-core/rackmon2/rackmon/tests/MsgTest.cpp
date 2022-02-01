@@ -5,6 +5,7 @@
 
 using namespace std;
 using namespace testing;
+using namespace rackmon;
 
 TEST(Msg, SaneInits) {
   Msg msg;

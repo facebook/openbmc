@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+namespace rackmon {
+
 // Describes how we intend on interpreting the value stored
 // in a register.
 enum RegisterValueType {
@@ -258,3 +260,5 @@ void from_json(const nlohmann::json& j, RegisterDescriptor& i);
 void from_json(nlohmann::json& j, const RegisterMap& m);
 void from_json(nlohmann::json& j, const AddrRange& a);
 void from_json(nlohmann::json& j, const RegisterDescriptor& i);
+
+} // namespace rackmon

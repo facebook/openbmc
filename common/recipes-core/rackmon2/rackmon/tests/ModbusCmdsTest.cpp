@@ -5,6 +5,7 @@
 
 using namespace std;
 using namespace testing;
+using namespace rackmon;
 
 TEST(ReadHoldingRegisters, Req) {
   ReadHoldingRegistersReq msg(0x1, 0x1234, 0x20);

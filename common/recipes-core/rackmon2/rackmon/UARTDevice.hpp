@@ -5,6 +5,8 @@
 #include <vector>
 #include "Device.hpp"
 
+namespace rackmon {
+
 class UARTDevice : public Device {
   int baudrate_ = -1;
  protected:
@@ -48,3 +50,5 @@ class AspeedRS485Device : public UARTDevice {
       : UARTDevice(device, baudrate) {}
   void open() override;
 };
+
+} // namespace rackmon

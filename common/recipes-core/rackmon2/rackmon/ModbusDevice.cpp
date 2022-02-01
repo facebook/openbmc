@@ -5,6 +5,7 @@
 #include "ModbusDevice.hpp"
 
 using nlohmann::json;
+using namespace rackmon;
 
 void ModbusDeviceInfo::incErrors(uint32_t& counter) {
   counter++;
@@ -216,6 +217,8 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   handled_ = true;
 }
 
+namespace rackmon {
+
 NLOHMANN_JSON_SERIALIZE_ENUM(
     ModbusDeviceMode,
     {{ModbusDeviceMode::ACTIVE, "active"},
@@ -260,3 +263,5 @@ void to_json(json& j, const ModbusDeviceValueData& m) {
   j["now"] = std::time(0);
   j["registers"] = m.registerList;
 }
+
+} // namespace rackmon

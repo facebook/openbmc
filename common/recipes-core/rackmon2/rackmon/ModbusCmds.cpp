@@ -2,6 +2,8 @@
 #include <algorithm>
 #include "ModbusCmds.hpp"
 
+using namespace rackmon;
+
 static void
 check_value(const std::string& what, uint32_t value, uint32_t expected_value) {
   if (value != expected_value)

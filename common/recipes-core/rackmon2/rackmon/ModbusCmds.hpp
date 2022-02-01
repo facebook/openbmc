@@ -4,6 +4,8 @@
 #include <optional>
 #include "Msg.hpp"
 
+namespace rackmon {
+
 struct BadResponseError : public std::runtime_error {
   BadResponseError(const std::string& field, uint32_t exp, uint32_t val)
       : std::runtime_error(
@@ -162,3 +164,5 @@ struct ReadFileRecordResp : public Msg {
  protected:
   void decode() override;
 };
+
+} // namespace rackmon

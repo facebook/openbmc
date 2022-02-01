@@ -7,6 +7,7 @@
 using namespace std;
 using namespace testing;
 using nlohmann::json;
+using namespace rackmon;
 
 // Mocks the Modbus interface.
 class Mock2Modbus : public Modbus {

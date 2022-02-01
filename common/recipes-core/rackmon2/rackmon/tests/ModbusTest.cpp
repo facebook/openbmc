@@ -6,6 +6,7 @@
 using namespace std;
 using namespace testing;
 using nlohmann::json;
+using namespace rackmon;
 
 class MockUARTDevice : public UARTDevice {
  public:

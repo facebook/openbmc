@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <vector>
 
+namespace rackmon {
+
 struct CRCError : public std::runtime_error {
   CRCError(uint16_t exp, uint16_t got)
       : std::runtime_error(
@@ -191,3 +193,5 @@ constexpr auto operator"" _EM() {
   return msg;
 }
 #endif
+
+} // namespace rackmon

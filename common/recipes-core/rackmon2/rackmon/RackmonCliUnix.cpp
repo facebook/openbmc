@@ -5,6 +5,7 @@
 
 using nlohmann::json;
 using namespace std::literals::string_literals;
+using namespace rackmonsvc;
 
 static int send_recv(const char* str, size_t len, std::vector<char>& resp) {
   RackmonClient cli;

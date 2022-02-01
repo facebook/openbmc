@@ -6,6 +6,8 @@
 #include "ModbusCmds.hpp"
 #include "Register.hpp"
 
+namespace rackmon {
+
 enum ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 
 class ModbusDevice;
@@ -133,3 +135,5 @@ class ModbusDevice {
   // Allow special handler access into the device.
   friend ModbusSpecialHandler;
 };
+
+} // namespace rackmon

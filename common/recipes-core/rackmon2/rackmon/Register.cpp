@@ -16,58 +16,17 @@ namespace filesystem = experimental::filesystem;
 #endif
 
 using nlohmann::json;
+using namespace rackmon;
 
+namespace {
 static void streamHex(std::ostream& os, size_t num, size_t ndigits) {
   os << std::hex << std::setfill('0') << std::setw(ndigits) << std::right
      << num;
 }
+}
 
 bool AddrRange::contains(uint8_t addr) const {
   return addr >= range.first && addr <= range.second;
-}
-
-void from_json(const json& j, AddrRange& a) {
-  a.range = j;
-}
-void to_json(json& j, const AddrRange& a) {
-  j = a.range;
-}
-
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    RegisterValueType,
-    {
-        {RegisterValueType::HEX, "hex"},
-        {RegisterValueType::STRING, "string"},
-        {RegisterValueType::INTEGER, "integer"},
-        {RegisterValueType::FLOAT, "float"},
-        {RegisterValueType::FLAGS, "flags"},
-    })
-
-void from_json(const json& j, RegisterDescriptor& i) {
-  j.at("begin").get_to(i.begin);
-  j.at("length").get_to(i.length);
-  j.at("name").get_to(i.name);
-  i.keep = j.value("keep", 1);
-  i.storeChangesOnly = j.value("changes_only", false);
-  i.format = j.value("format", RegisterValueType::HEX);
-  if (i.format == RegisterValueType::FLOAT) {
-    j.at("precision").get_to(i.precision);
-  } else if (i.format == RegisterValueType::FLAGS) {
-    j.at("flags").get_to(i.flags);
-  }
-}
-void to_json(json& j, const RegisterDescriptor& i) {
-  j["begin"] = i.begin;
-  j["length"] = i.length;
-  j["name"] = i.name;
-  j["keep"] = i.keep;
-  j["changes_only"] = i.storeChangesOnly;
-  j["format"] = i.format;
-  if (i.format == RegisterValueType::FLOAT) {
-    j["precision"] = i.precision;
-  } else if (i.format == RegisterValueType::FLAGS) {
-    j["flags"] = i.flags;
-  }
 }
 
 void RegisterValue::makeString(const std::vector<uint16_t>& reg) {
@@ -259,40 +218,12 @@ RegisterValue::operator std::string() {
   return os.str();
 }
 
-void to_json(json& j, const RegisterValue& m) {
-  j["type"] = m.type;
-  j["time"] = m.timestamp;
-  switch (m.type) {
-    case RegisterValueType::HEX:
-      j["value"] = m.value.hexValue;
-      break;
-    case RegisterValueType::STRING:
-      j["value"] = m.value.strValue;
-      break;
-    case RegisterValueType::INTEGER:
-      j["value"] = m.value.intValue;
-      break;
-    case RegisterValueType::FLOAT:
-      j["value"] = m.value.floatValue;
-      break;
-    case RegisterValueType::FLAGS:
-      j["value"] = m.value.flagsValue;
-      break;
-  }
-}
-
 Register::operator std::string() const {
   return RegisterValue(value, desc, timestamp);
 }
 
 Register::operator RegisterValue() const {
   return RegisterValue(value, desc, timestamp);
-}
-
-void to_json(json& j, const Register& m) {
-  j["time"] = m.timestamp;
-  std::string data = RegisterValue(m.value);
-  j["data"] = data;
 }
 
 RegisterStore::operator std::string() const {
@@ -323,6 +254,120 @@ RegisterStore::operator RegisterStoreValue() const {
       ret.history.emplace_back(reg);
   }
   return ret;
+}
+
+const RegisterMap& RegisterMapDatabase::at(uint8_t addr) {
+  const auto& result = find_if(
+      regmaps.begin(),
+      regmaps.end(),
+      [addr](const std::unique_ptr<RegisterMap>& m) {
+        return m->applicableAddresses.contains(addr);
+      });
+  if (result == regmaps.end())
+    throw std::out_of_range("not found: " + std::to_string(int(addr)));
+  return **result;
+}
+
+void RegisterMapDatabase::load(const nlohmann::json& j) {
+  std::unique_ptr<RegisterMap> rmap = std::make_unique<RegisterMap>();
+  *rmap = j;
+  regmaps.push_back(std::move(rmap));
+}
+
+void RegisterMapDatabase::load(const std::string& dir) {
+  for (auto const& dir_entry : std::filesystem::directory_iterator{dir}) {
+    std::ifstream ifs(dir_entry.path().string());
+    json j;
+    ifs >> j;
+    load(j);
+    ifs.close();
+  }
+}
+
+void RegisterMapDatabase::print(std::ostream& os) {
+  json j = {};
+  std::transform(
+      regmaps.begin(),
+      regmaps.end(),
+      std::back_inserter(j),
+      [](const auto& ptr) { return *ptr; });
+  os << j.dump(4);
+}
+
+// JSON ADL Serializers need to be defined in the same
+// namespace as the objects.
+namespace rackmon {
+
+void from_json(const json& j, AddrRange& a) {
+  a.range = j;
+}
+void to_json(json& j, const AddrRange& a) {
+  j = a.range;
+}
+
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    RegisterValueType,
+    {
+        {RegisterValueType::HEX, "hex"},
+        {RegisterValueType::STRING, "string"},
+        {RegisterValueType::INTEGER, "integer"},
+        {RegisterValueType::FLOAT, "float"},
+        {RegisterValueType::FLAGS, "flags"},
+    })
+
+void from_json(const json& j, RegisterDescriptor& i) {
+  j.at("begin").get_to(i.begin);
+  j.at("length").get_to(i.length);
+  j.at("name").get_to(i.name);
+  i.keep = j.value("keep", 1);
+  i.storeChangesOnly = j.value("changes_only", false);
+  i.format = j.value("format", RegisterValueType::HEX);
+  if (i.format == RegisterValueType::FLOAT) {
+    j.at("precision").get_to(i.precision);
+  } else if (i.format == RegisterValueType::FLAGS) {
+    j.at("flags").get_to(i.flags);
+  }
+}
+void to_json(json& j, const RegisterDescriptor& i) {
+  j["begin"] = i.begin;
+  j["length"] = i.length;
+  j["name"] = i.name;
+  j["keep"] = i.keep;
+  j["changes_only"] = i.storeChangesOnly;
+  j["format"] = i.format;
+  if (i.format == RegisterValueType::FLOAT) {
+    j["precision"] = i.precision;
+  } else if (i.format == RegisterValueType::FLAGS) {
+    j["flags"] = i.flags;
+  }
+}
+
+void to_json(json& j, const RegisterValue& m) {
+  j["type"] = m.type;
+  j["time"] = m.timestamp;
+  switch (m.type) {
+    case RegisterValueType::HEX:
+      j["value"] = m.value.hexValue;
+      break;
+    case RegisterValueType::STRING:
+      j["value"] = m.value.strValue;
+      break;
+    case RegisterValueType::INTEGER:
+      j["value"] = m.value.intValue;
+      break;
+    case RegisterValueType::FLOAT:
+      j["value"] = m.value.floatValue;
+      break;
+    case RegisterValueType::FLAGS:
+      j["value"] = m.value.flagsValue;
+      break;
+  }
+}
+
+void to_json(json& j, const Register& m) {
+  j["time"] = m.timestamp;
+  std::string data = RegisterValue(m.value);
+  j["data"] = data;
 }
 
 void to_json(json& j, const RegisterStoreValue& m) {
@@ -389,40 +434,6 @@ void to_json(json& j, const RegisterMap& m) {
       [](const auto& kv) { return kv.second; });
 }
 
-const RegisterMap& RegisterMapDatabase::at(uint8_t addr) {
-  const auto& result = find_if(
-      regmaps.begin(),
-      regmaps.end(),
-      [addr](const std::unique_ptr<RegisterMap>& m) {
-        return m->applicableAddresses.contains(addr);
-      });
-  if (result == regmaps.end())
-    throw std::out_of_range("not found: " + std::to_string(int(addr)));
-  return **result;
-}
 
-void RegisterMapDatabase::load(const nlohmann::json& j) {
-  std::unique_ptr<RegisterMap> rmap = std::make_unique<RegisterMap>();
-  *rmap = j;
-  regmaps.push_back(std::move(rmap));
-}
 
-void RegisterMapDatabase::load(const std::string& dir) {
-  for (auto const& dir_entry : std::filesystem::directory_iterator{dir}) {
-    std::ifstream ifs(dir_entry.path().string());
-    json j;
-    ifs >> j;
-    load(j);
-    ifs.close();
-  }
-}
-
-void RegisterMapDatabase::print(std::ostream& os) {
-  json j = {};
-  std::transform(
-      regmaps.begin(),
-      regmaps.end(),
-      std::back_inserter(j),
-      [](const auto& ptr) { return *ptr; });
-  os << j.dump(4);
-}
+} // namespace rackmon

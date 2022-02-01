@@ -7,6 +7,7 @@
 #include "Device.hpp"
 
 using namespace std::literals;
+using namespace rackmon;
 
 class DeviceTest : public ::testing::Test {
  protected:

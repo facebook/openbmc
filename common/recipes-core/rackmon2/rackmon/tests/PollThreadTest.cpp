@@ -5,6 +5,7 @@
 
 using namespace std::literals;
 using namespace testing;
+using namespace rackmon;
 
 struct Tester {
   MOCK_METHOD0(do_stuff, void());

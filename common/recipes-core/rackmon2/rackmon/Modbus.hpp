@@ -9,6 +9,8 @@
 #include "Msg.hpp"
 #include "UARTDevice.hpp"
 
+namespace rackmon {
+
 using ModbusTime = std::chrono::milliseconds;
 class Modbus {
   std::string devicePath_{};
@@ -47,3 +49,4 @@ class Modbus {
 };
 
 void from_json(const nlohmann::json& j, Modbus& m);
+} // namespace rackmon

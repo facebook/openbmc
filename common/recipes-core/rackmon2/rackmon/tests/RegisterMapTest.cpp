@@ -14,6 +14,7 @@ namespace filesystem = experimental::filesystem;
 
 using namespace std;
 using namespace testing;
+using namespace rackmon;
 
 //--------------------------------------------------------
 // Address Range Tests

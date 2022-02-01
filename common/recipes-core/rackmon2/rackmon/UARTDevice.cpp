@@ -13,6 +13,7 @@
 #include "UARTDevice.hpp"
 
 using namespace std::literals;
+using namespace rackmon;
 
 namespace {
 const std::unordered_map<int, speed_t> kSpeedMap = {

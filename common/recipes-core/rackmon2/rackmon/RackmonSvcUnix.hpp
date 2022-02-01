@@ -9,6 +9,8 @@
 #include <tuple>
 #include <vector>
 
+namespace rackmonsvc {
+
 class RackmonSock {
  protected:
   int sock_ = -1;
@@ -40,3 +42,5 @@ class RackmonClient : public RackmonSock {
  public:
   RackmonClient() : RackmonSock(createClient()) {}
 };
+
+} // namespace rackmonsvc

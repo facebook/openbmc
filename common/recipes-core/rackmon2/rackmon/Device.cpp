@@ -9,12 +9,16 @@
 
 #include "Device.hpp"
 
+using namespace rackmon;
+
+namespace {
 static std::error_code sys_error(int err) {
   return std::error_code(err, std::generic_category());
 }
 
 static std::error_code sys_error() {
   return sys_error(errno);
+}
 }
 
 void Device::open() {

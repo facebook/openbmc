@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <string>
 
+namespace rackmon {
+
 struct TimeoutException : public std::runtime_error {
   TimeoutException() : std::runtime_error("Timeout") {}
 };
@@ -27,3 +29,4 @@ class Device {
   virtual void ioctl(unsigned long cmd, void* data);
   virtual void read(uint8_t* buf, size_t exactLen, int timeoutMs);
 };
+} // namespace rackmon

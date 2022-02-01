@@ -7,6 +7,7 @@
 using namespace std;
 using namespace testing;
 using nlohmann::json;
+using namespace rackmon;
 
 class FakeModbus : public Modbus {
   uint8_t exp_addr;

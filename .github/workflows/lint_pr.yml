@@ -1,0 +1,100 @@
+name: lint_pr 
+on: pull_request
+jobs:
+  Run-CPPCheck:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Get PR File List 
+        run: |
+          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+          curl -s -X GET -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" $URL | jq -r '.[] | .filename' > git_diff.log
+          cat git_diff.log 
+  
+      - name: Check for C/CPP Sources
+        run : |
+          # Only keep the source files to check or CPPCheck gets confused.
+          sed '/\(c$\|cpp$\|c$\|cc$\|cu$\|cxx$\|h$\|hh$\|hpp$\|hxx$\|tcc$\)/!d' git_diff.log > /tmp/cppcheck_file_list.log
+
+          if [ -s /tmp/cppcheck_file_list.log ]; then
+            echo "contains_c_source=true" >> $GITHUB_ENV
+          else
+            echo "contains_c_source=false" >> $GITHUB_ENV
+          fi
+
+      - uses: actions/checkout@v2
+        name: Checkout Repo
+        if: env.contains_c_source == 'true'
+        
+      - uses: actions/setup-python@v2
+        name: Setup Python
+        if: env.contains_c_source == 'true'
+
+      - name: Install CPPCheck
+        if: env.contains_c_source == 'true'
+        run: sudo apt-get install -y cppcheck
+
+      - name: Run CPPCheck on Modified Source Files
+        if: env.contains_c_source == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          # These files specify the config for cppcheck and a list of errors to suppress
+          CPPCHECK_CONFIG=.circleci/lint/cppcheck/cppcheck.cfg
+          CPPCHECK_SUPPRESSED=.circleci/lint/cppcheck/cppcheck-suppressions.txt
+
+          echo "Files to check:"
+          cat /tmp/cppcheck_file_list.log
+
+          options=( "-j2"
+            "--inconclusive"
+            "--enable=performance,style,portability,information"
+            "--library=./tools/circle-ci/lint-config/cppcheck.cfg"
+            "--suppressions-list=./tools/circle-ci/lint-config/cppcheck-suppressions.txt"
+            "--file-list=/tmp/cppcheck_file_list.log"
+            "--template={file}:{line}:{column}:{message}"
+            "--output-file=/tmp/cppcheck.log"
+            "--report-progress")
+  
+          cppcheck "${options[@]}"
+
+          echo "Errors Found:"
+          cat /tmp/cppcheck.log
+
+      - uses: actions/upload-artifact@master
+        name: Upload CPPCheck error log
+        if: env.contains_c_source == 'true'
+        with:
+          name: cppcheck-output
+          path: /tmp/cppcheck.log
+
+      - name: Check for cppcheck output
+        if: env.contains_c_source == 'true'
+        run : |
+          if [ -s /tmp/cppcheck_file_list.log ]; then
+            exit 1
+          fi
+
+  Aggregate-Lint-Output:
+    needs: [Run-CPPCheck]
+    if: always() && (needs.Run-CPPCheck.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      
+      - uses: actions/checkout@v2
+        name: Checkout Repo
+       
+      - uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest 
+
+      - name: Download CPPCheck Error Log
+        uses: actions/download-artifact@v2
+        with:
+          name: cppcheck-output
+
+      - name: Run reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat cppcheck.log | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check

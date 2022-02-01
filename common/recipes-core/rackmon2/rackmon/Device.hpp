@@ -20,9 +20,7 @@ class Device {
   virtual void waitWrite() {}
  public:
   explicit Device(const std::string& device) : device_(device) {}
-  virtual ~Device() {
-    close();
-  }
+  virtual ~Device() {}
   virtual void open();
   virtual void close();
   virtual void write(const uint8_t* buf, size_t len);

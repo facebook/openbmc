@@ -1,6 +1,5 @@
 branches=(
     rocko
-    zeus
     lf-master
     lf-dunfell
     lf-honister
@@ -12,12 +11,6 @@ rocko_repos=(
     poky:5f660914cd # bitbake: bitbake-user-manual: Fixed section head typo
 )
 rocko_poky_patch="0001-rocko-backport-support-for-override.patch"
-zeus_repos=(
-    meta-openembedded:2b5dd1eb8
-    meta-security:52e83e6
-    poky:d88d62c20d # selftest/signing: Ensure build path relocation is safe
-)
-zeus_poky_patch="0001-zeus-backport-support-for-override.patch"
 lf_master_repos=(
     lf-openbmc:9a2a1dade
 )

@@ -163,7 +163,7 @@ struct ConstMsg {
 // User defined constant expression. Use ConstMsg as an intermediate
 // store to hold the bytes and then convert to Msg.
 template <char... cs>
-constexpr auto operator"" _M() {
+auto operator"" _M() {
   static_assert(sizeof...(cs) % 2 == 0, "Must be an even number of chars");
   Msg msg = ConstMsg<cs...>{};
   return msg;
@@ -187,7 +187,7 @@ class Encoder {
 // User defined constant expression. Use ConstMsg as an intermediate
 // store to hold the bytes and then convert to Msg.
 template <char... cs>
-constexpr auto operator"" _EM() {
+auto operator"" _EM() {
   Msg msg = ConstMsg<cs...>{};
   Encoder::encode(msg);
   return msg;

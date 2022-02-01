@@ -4,6 +4,8 @@ inherit kernel_fitimage
 
 require recipes-core/images/fb-openbmc-image.bb
 
+PROVIDES += "fbtp-next-image"
+
 # The offset must match with the offsets defined in
 # dev-spi-cmm.c. Rootfs starts from 4.5M
 FLASH_ROOTFS_OFFSET = "4608"

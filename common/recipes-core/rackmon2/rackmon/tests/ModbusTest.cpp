@@ -14,7 +14,7 @@ class MockUARTDevice : public UARTDevice {
   MOCK_METHOD0(open, void());
   MOCK_METHOD0(close, void());
   MOCK_METHOD2(write, void(const uint8_t*, size_t));
-  MOCK_METHOD2(ioctl, void(int32_t, void*));
+  MOCK_METHOD2(ioctl, void(unsigned long, void*));
   MOCK_METHOD1(waitRead, int(int));
   MOCK_METHOD0(waitWrite, void());
   MOCK_METHOD3(read, void(uint8_t*, size_t, int));
@@ -85,7 +85,7 @@ class ModbusTest : public ::testing::Test {
         .WillOnce(SetBufArgNPointeeTo<0>(read_bytes, read_bytes_size));
 
     std::unique_ptr<UARTDevice> ptr2 = std::move(ptr);
-    return std::move(ptr2);
+    return ptr2;
   }
 
  protected:

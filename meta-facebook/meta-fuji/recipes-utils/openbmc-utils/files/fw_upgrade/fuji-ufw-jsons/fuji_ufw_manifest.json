@@ -28,7 +28,7 @@
     },
     "16q_fpga" : {
       "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
-        "condition" : "peutil {entity}|grep Name |grep PIM_16Q",
+        "condition" : "peutil 4|grep Name |grep PIM_16Q",
         "get_version" : "fw-util fpga --version iob_fpga | cut -d ' ' -f 3",
         "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entity} {filename}",
         "continue_on_error" : true,
@@ -37,7 +37,7 @@
     },
     "16o_fpga" : { 
       "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"], 
-        "condition" : "peutil {entity}|grep Name |grep PIM_OBO", 
+        "condition" : "peutil 4|grep Name |grep PIM_OBO", 
         "get_version" : "fpga_ver.sh|grep 16O|head -{entity}|tail -1|cut -d ' ' -f 3", 
         "upgrade_cmd" : "/bin/false && /usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entity} {filename}  # Firmware missing", 
         "continue_on_error" : true, 

@@ -58,8 +58,11 @@ def prepare_piminfo():
 def prepare_pimver():
     pim_ver = {str(i): "NA" for i in range(1, 9)}
     for pim in pim_ver:
+        #peutil change requires the caller to use 2...9 scheme
+        #not 1...8, so we add 1 here
+        pim_number = str(int(pim)+1)
         stdout = subprocess.check_output(
-            ["/usr/local/bin/peutil", pim], timeout=DEFAULT_TIMEOUT_SEC
+            ["/usr/local/bin/peutil", pim_number], timeout=DEFAULT_TIMEOUT_SEC
         )
         pim_version_str = None
         counter = 0

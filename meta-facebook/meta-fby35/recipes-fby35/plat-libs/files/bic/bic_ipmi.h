@@ -117,8 +117,8 @@ int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, ui
 int bic_ifx_vr_mfr_fw(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t *resp, uint8_t intf);
 int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
 int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
+int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf);
 int bic_reset(uint8_t slot_id);
-int bic_clear_cmos(uint8_t slot_id);
 int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);
 uint8_t get_gpv3_bus_number(uint8_t dev_id);

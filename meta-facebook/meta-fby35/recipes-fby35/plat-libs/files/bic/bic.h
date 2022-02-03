@@ -47,6 +47,7 @@ extern "C" {
 
 /* IFX VR */
 enum {
+  PMBUS_STS_CML       = 0x7E,
   IFX_MFR_AHB_ADDR    = 0xCE,
   IFX_MFR_REG_WRITE   = 0xDE,
   IFX_MFR_REG_READ    = 0xDF,

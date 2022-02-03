@@ -1804,6 +1804,16 @@ error_exit:
 }
 
 int
+bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf) {
+  uint8_t tbuf[8] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t rbuf[8] = {0x00};
+  uint8_t rlen = sizeof(rbuf);
+
+  tbuf[3] = dis;  // 1: disable sensor monitor; 0: enable sensor monitor
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen, intf);
+}
+
+int
 bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf, uint8_t wcnt, uint8_t *rbuf, uint8_t rcnt) {
   uint8_t tbuf[256];
   uint8_t tlen = 3, rlen = 0;
@@ -1831,15 +1841,6 @@ bic_reset(uint8_t slot_id) {
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen);
 
   return ret;
-}
-
-int
-bic_clear_cmos(uint8_t slot_id) {
-  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
-  uint8_t rbuf[8] = {0x00};
-  uint8_t rlen = 0;
-
-  return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_CLEAR_CMOS, tbuf, 3, rbuf, &rlen);
 }
 
 // Only For Class 2

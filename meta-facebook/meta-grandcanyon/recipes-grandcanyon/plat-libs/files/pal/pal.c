@@ -3843,7 +3843,7 @@ pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
         msleep(100);
       }
     }
-    
+
     if (retry == MAX_RETRY) {
       syslog(LOG_ERR, "Fail to set FPGA version cache value due to i2c_rdwr_msg_transfer failed. bus: %d addr: %02Xh ret: %d", bus, addr, ret);
     }
@@ -4222,21 +4222,21 @@ pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len) {
     goto exit;
   }
   produce_start_addr = eeprom[FRUID_HEADER_OFFSET_PRODUCT_INFO]*FRUID_OFFSET_MULTIPLIER;
-  
+
   if (produce_start_addr >= fruid_len) {
     syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
       __func__, fan_id, fruid_len, produce_start_addr);
     goto exit;
   }
   serial_addr = produce_start_addr + FRUID_PRODUCT_OFFSET_SERIAL;
-  
+
   if (serial_addr >= fruid_len) {
     syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
       __func__, fan_id, fruid_len, serial_addr);
     goto exit;
   }
   memcpy(serial_num, &eeprom[serial_addr], serial_len);
-  
+
   ret = 0;
 
 exit:
@@ -4256,6 +4256,7 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
   uint8_t *fanfru_check_sel;
   uint8_t *fanfru_check_bin;
   char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
   char *temp_str;
   int i = 0, j = 0, ret = 0;
   uint8_t check_len = 0, check_index = 1;
@@ -4274,7 +4275,10 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
   temp_str = strtok(log, ":");
   temp_str = strtok(NULL, ":");
   for (i = 0; i < SINGLE_FAN_CNT; i++) { // 4 fans
-    // Get certified data lenght from SEL
+    memset(key, 0, sizeof(key));
+    snprintf(key, sizeof(key), "fan%d_dumped", i);
+
+    // Get certified data length from SEL
     check_len = temp_str[check_index];
     check_index = check_index + 1;
 
@@ -4306,6 +4310,8 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
 
     free(fanfru_check_sel);
     free(fanfru_check_bin);
+
+    kv_set(key, STR_VALUE_1, 0, 0);
   }
 
   return 0;

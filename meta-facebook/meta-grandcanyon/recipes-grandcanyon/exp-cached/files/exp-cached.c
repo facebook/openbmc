@@ -31,6 +31,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <facebook/exp.h>
 
 #define MAX_FRU_PATH 64
@@ -105,6 +106,7 @@ fruid_cache_init(void) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
   uint8_t rlen = 0 , tlen = 0;
+  char key[MAX_KEY_LEN] = {0};
 
   // Auto dump SCC and DPB
   for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
@@ -124,6 +126,9 @@ fruid_cache_init(void) {
   } else {
     for (i = 0; i < ARRAY_SIZE(expander_fan_fruid_list); i++) {
       exp_read_fruid_wrapper(expander_fan_fruid_list[i], COMMON_FAN_FRU_PATH);
+      memset(key, 0, sizeof(key));
+      snprintf(key, sizeof(key), "fan%d_dumped", i);
+      kv_set(key, STR_VALUE_1, 0, 0);
     }
   }
 

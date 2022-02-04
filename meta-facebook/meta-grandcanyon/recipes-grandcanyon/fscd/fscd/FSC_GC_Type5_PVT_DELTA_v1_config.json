@@ -1,5 +1,5 @@
 {
-  "version": "fbgc-type5-pvt-v1",
+  "version": "fbgc-type5-pvt-delta-v1",
   "pwm_transition_value": 70,
   "pwm_boost_value": 80,
   "fan_limit_upper_pwm": 90,

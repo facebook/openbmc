@@ -4,8 +4,10 @@ import os
 import sys
 import unittest
 
+from utils.test_utils import qemu_check
 
 BMC_START_DIR = "/usr/local/bin/tests2/tests/"
+QEMU_DENYLIST_PATH = "/usr/local/bin/tests2/qemu_denylist.txt"
 
 
 class RunTest:
@@ -103,6 +105,18 @@ class Tests:
             self.formatted_tests_set.append(
                 prefix + self.format_into_test_path(testitem)
             )
+
+        if qemu_check():
+            try:
+                with open(QEMU_DENYLIST_PATH, "r") as f:
+                    qemu_denylist = f.read().splitlines()
+            except FileNotFoundError:
+                qemu_denylist = []
+
+            self.formatted_tests_set = [
+                t for t in self.formatted_tests_set if t not in qemu_denylist
+            ]
+
         return self.formatted_tests_set
 
 

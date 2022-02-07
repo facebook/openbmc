@@ -1,8 +1,8 @@
-branches=(
+es=(
     rocko
     lf-master
     lf-dunfell
-    lf-hardknott
+    lf-honister
 )
 
 rocko_repos=(
@@ -17,6 +17,6 @@ lf_master_repos=(
 lf_dunfell_repos=(
     lf-openbmc:fff6b3483
 )
-lf_hardknott_repos=(
-    lf-openbmc:d767d3fb1
+lf_honister_repos=(
+    lf-openbmc:415294223
 )

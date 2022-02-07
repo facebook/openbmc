@@ -6,7 +6,6 @@ Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
 Aspeed did not commit tach driver to upstream for ast2600 series yet.
 To support ast26xx on OpenBMC, we need this driver and update the g6 device tree as well.
 
-Change-Id: I1714abf4fd08edead789439e5723b183d1b0d175
 Signed-off-by: Howard Chiu <howard.chiu@quantatw.com>
 ---
  arch/arm/boot/dts/aspeed-g6.dtsi    |  22 ++

@@ -31,6 +31,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <facebook/exp.h>
 
 #define MAX_FRU_PATH 64
@@ -89,10 +90,37 @@ exp_read_fruid_wrapper(uint8_t fru) {
 
 void
 fruid_cache_init(void) {
-  int i = 0;
+  int i = 0, ret = 0, retry = 0;
+  uint8_t ver[FW_VERSION_LENS] = {0};
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rlen = 0 , tlen = 0;
+  char key[MAX_KEY_LEN] = {0};
+
+  // Auto dump SCC and DPB
   for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
     exp_read_fruid_wrapper(expander_fruid_list[i]);
   }
+
+  // If use new EXP f/w, version > 17 (0x11)
+  // Ask EXP about FAN FRU state before dump
+  ret = expander_get_fw_ver(ver, sizeof(ver));
+  if ((ret == 0) && (ver[3] >= 0x11)) {
+    // If FAN FRU is ready, EXP will send SEL include FAN checksum
+    ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_FAN_FRU_STATUS, tbuf, tlen, rbuf, &rlen);
+    if ((ret < 0) || (rbuf[0] != EXP_FAN_FRU_READY)) {
+      syslog(LOG_WARNING, "%s(): Checking of FAN FRU is pending until EXP FAN FRU cache is ready.\n", __func__);
+    }
+  
+  } else {
+    for (i = 0; i < ARRAY_SIZE(expander_fan_fruid_list); i++) {
+      exp_read_fruid_wrapper(expander_fan_fruid_list[i], COMMON_FAN_FRU_PATH);
+      memset(key, 0, sizeof(key));
+      snprintf(key, sizeof(key), "fan%d_dumped", i);
+      kv_set(key, STR_VALUE_1, 0, 0);
+    }
+  }
+
   return;
 }
 

@@ -79,8 +79,27 @@ class Redfish:
             powercycle_post_handler,
         )
         app.router.add_post(
-            "/redfish/v1/Managers/1/Actions/Manager.Reset",
-            oobcycle_post_handler,
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/",
+            self.bios_firmware_dumps.create_dump,
+        )
+        app.router.add_post(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            self.bios_firmware_dumps.create_dump,
+        )
+        app.router.add_get(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            self.bios_firmware_dumps.get_dump_descriptor,
+        )
+        app.router.add_get(
+            (
+                "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}/"
+                "Actions/BIOSFirmwareDump.ReadContent"
+            ),
+            self.bios_firmware_dumps.read_dump_content,
+        )
+        app.router.add_delete(
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            self.bios_firmware_dumps.delete_dump,
         )
 
     def setup_multisled_routes(self, app: Application):

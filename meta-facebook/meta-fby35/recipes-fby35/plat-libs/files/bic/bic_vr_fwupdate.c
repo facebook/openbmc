@@ -65,6 +65,18 @@ static int vr_cnt = 0;
 //4 VRs are on the server board
 static vr vr_list[4] = {0};
 
+static struct {
+  uint8_t slot_id;
+  uint8_t intf;
+} dis_bic_vr = {0, NONE_INTF};
+
+__attribute__((destructor))
+static void en_bic_vr_monitor(void) {
+  if ( dis_bic_vr.slot_id ) {
+    bic_disable_sensor_monitor(dis_bic_vr.slot_id, 0, dis_bic_vr.intf);
+  }
+}
+
 static uint8_t
 cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len)
 {
@@ -708,7 +720,9 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
   uint8_t addr = dev->addr;
   uint8_t bus = dev->bus;
   uint8_t intf = dev->intf;
-  int len = dev->data_cnt;
+  int ret = BIC_STATUS_FAILURE;
+  int i, j, len = dev->data_cnt;
+  int size, start_idx = 0;
   vr_data *list = dev->pdata;
   
   //Infineon
@@ -724,31 +738,145 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
   }
 
   // get the remaining writes of the VR
-  ret = bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf);
-  if ( ret < 0 ) {
-    goto error_exit;
+  if ( bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get vr remaining writes", __func__);
+    return BIC_STATUS_FAILURE;
   }
 
-  // check it
-  ret = vr_remaining_writes_check(remaining_writes, force);
-  if ( ret < 0 ) {
-    goto error_exit;
+  // check remaining writes
+  if ( vr_remaining_writes_check(remaining_writes, force) < 0 ) {
+    return BIC_STATUS_FAILURE;
   }
 
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = addr;
-  //step 1 - write data to data register
-  for (i = 0; i < len; i++ ) {
-    if ( list[i].command != current_page ) {
-      //set page
-      tbuf[2] = 0x00; //read cnt
-      tbuf[3] = VR_PAGE;
-      tbuf[4] = list[i].command;
+  // to stop bic polling VR sensors
+  if ( bic_disable_sensor_monitor(slot_id, 1, intf) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to disable vr monitor", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+  dis_bic_vr.slot_id = slot_id;
+  sleep(2);
+
+  for ( i = 0; i < len; i++ ) {
+    if ( curr_sec != list[i].command ) {  // start of section
+      if ( curr_sec != 0xFF ) {  // when it's not the 1st
+        // check scratchpad data (read and compare to list data)
+        tbuf[0] = (bus << 1) + 1;
+        tbuf[1] = addr;
+        tbuf[2] = 0;    // read count
+        tbuf[3] = IFX_MFR_AHB_ADDR;
+        tbuf[4] = 4;
+        tbuf[5] = 0x00;
+        tbuf[6] = 0xe0;
+        tbuf[7] = 0x05;
+        tbuf[8] = 0x20;
+        tlen = 9;
+        ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to set scratchpad addr", __func__);
+          break;
+        }
+        msleep(10);
+
+        tbuf[2] = 6;    // read count
+        tbuf[3] = IFX_MFR_REG_READ;
+        tlen = 4;
+        for ( j = start_idx; j < i; j++ ) {
+          ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+          if ( ret < 0 ) {
+            syslog(LOG_WARNING, "%s() Failed to read data %d", __func__, j);
+            break;
+          }
+          if ( memcmp(&rbuf[1], list[j].data, 4) != 0 ) {
+            syslog(LOG_WARNING, "%s() Scratchpad(%d) mismatched!", __func__, j);
+            ret = BIC_STATUS_FAILURE;
+            break;
+          }
+        }
+        if ( ret < 0 ) {
+          break;  // TBD (enhancement): re-program the section
+        }
+
+        // upload scratchpad to OTP
+        size = (i - start_idx) * 4;
+        memcpy(tbuf, &size, 2);
+        tbuf[2] = 0x00;
+        tbuf[3] = 0x00;
+        ret = bic_ifx_vr_mfr_fw(slot_id, bus, addr, OTP_CONF_STO, tbuf, NULL, intf);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to upload data to OTP %02X", __func__, curr_sec);
+          break;
+        }
+
+        // wait for programming soak (2ms/byte, at least 200ms)
+        // ex: Config (604 bytes): (604 / 50) + 2 = 14 (1400 ms)
+        size = (size / 50) + 2;
+        for ( j = 0; j < size; j++ ) {
+          msleep(100);
+        }
+
+        tbuf[0] = (bus << 1) + 1;
+        tbuf[1] = addr;
+        tbuf[2] = 1;    // read count
+        tbuf[3] = PMBUS_STS_CML;
+        tlen = 4;
+        ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to read PMBUS_STS_CML", __func__);
+          break;
+        }
+
+        if ( rbuf[0] & 0x01 ) {
+          syslog(LOG_WARNING, "%s() CML Other Memory Fault: %02X (%d)", __func__, rbuf[0], start_idx);
+          ret = BIC_STATUS_FAILURE;
+          break;
+        }
+
+        // dummy data (end of data)
+        if ( list[i].data_len == 0 ) {
+          break;
+        }
+      }
+
+      // clear bit0 of PMBUS_STS_CML
+      tbuf[0] = (bus << 1) + 1;
+      tbuf[1] = addr;
+      tbuf[2] = 0;    // read count
+      tbuf[3] = PMBUS_STS_CML;
+      tbuf[4] = 0x01;
       tlen = 5;
       ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
       if ( ret < 0 ) {
-        syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, list[i].command);
-        goto error_exit;
+        syslog(LOG_WARNING, "%s() Failed to write PMBUS_STS_CML", __func__);
+        break;
+      }
+
+      // invalidate existing data
+      tbuf[0] = list[i].command;  // section type
+      tbuf[1] = 0x00;             // xv0
+      tbuf[2] = 0x00;
+      tbuf[3] = 0x00;
+      ret = bic_ifx_vr_mfr_fw(slot_id, bus, addr, OTP_FILE_INVD, tbuf, NULL, intf);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to invalidate %02X", __func__, list[i].command);
+        break;
+      }
+      msleep(10);
+
+      // set scratchpad addr
+      tbuf[0] = (bus << 1) + 1;
+      tbuf[1] = addr;
+      tbuf[2] = 0;    // read count
+      tbuf[3] = IFX_MFR_AHB_ADDR;
+      tbuf[4] = 4;
+      tbuf[5] = 0x00;
+      tbuf[6] = 0xe0;
+      tbuf[7] = 0x05;
+      tbuf[8] = 0x20;
+      tlen = 9;
+      ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to set scratchpad addr", __func__);
+        break;
       }
       current_page = list[i].command;
       msleep(10);//sleep 10ms and carry on to write the data
@@ -759,13 +887,21 @@ vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
     tlen = 6;
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Couldn't write data to page %02X and offset %02X", __func__, list[i].command, list[i].data[0]);
-      goto error_exit;
+      syslog(LOG_WARNING, "%s() Failed to write data %08X (%d)", __func__, *(uint32_t *)list[i].data, i);
+      break;
     }
     msleep(100);
     show_progress(slot_id, i, len);
   }
   printf("\n");
+  if ( ret < 0 ) {
+    ret = BIC_STATUS_FAILURE;
+  }
+
+  if ( bic_disable_sensor_monitor(slot_id, 0, intf) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to enable vr monitor", __func__);
+  }
+  dis_bic_vr.slot_id = 0;
 
   //step 2 - upload data to config
   tbuf[3] = VR_PAGE;

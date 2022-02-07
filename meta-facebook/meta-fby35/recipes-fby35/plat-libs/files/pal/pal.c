@@ -3074,6 +3074,17 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     *res_len = 5;
     break;
   case FW_BIC:
+    *res_len = strlen((char*)res);
+    if (*res_len == 2) { // old version format
+
+    } else if (*res_len >= 4){ // new version format
+      *res_len = 7; //check BIC code, keep 7 bytes.
+    } else {
+      syslog(LOG_WARNING, "%s() Format not supported, length invalid %d", __func__, *res_len);
+      ret = -1;
+      goto error_exit;
+    }
+    break;
   case FW_1OU_BIC:
   case FW_2OU_BIC:
   case FW_BB_BIC:
@@ -3561,7 +3572,7 @@ pal_clear_cmos(uint8_t slot_id) {
   uint8_t rtc_rst_reg = 0x2C + (slot_id - 1);
   uint8_t tbuf[2] = {rtc_rst_reg, 0x00};
   uint8_t tlen = 2;
-  uint8_t bmc_location = 0;
+  uint8_t bmc_location = 0, status = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -3572,6 +3583,7 @@ pal_clear_cmos(uint8_t slot_id) {
   if ( (bmc_location != BB_BMC) && (bmc_location != DVT_BB_BMC) ) {
     // TODO: Class 2
     printf("Not supported");
+    return -1;
   }
 
   ret = pal_set_server_power(slot_id, SERVER_12V_OFF);
@@ -3579,14 +3591,17 @@ pal_clear_cmos(uint8_t slot_id) {
     printf("Failed to set server power 12V-off\n");
     return ret;
   }
-  printf("Performing CMOS clear");
+  sleep(DELAY_12V_CYCLE);
+
+  printf("Performing CMOS clear\n");
   i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0) {
     printf("%s(): Failed to open bus %d. Err: %s\n", __func__, BB_CPLD_BUS, strerror(errno));
-    return ret;
+    return -1;
   }
 
   while ( retry < MAX_READ_RETRY ) {
+    // to generate 200ms high pulse to clear CMOS
     ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
     if ( ret < 0 ) {
       retry++;
@@ -3595,23 +3610,25 @@ pal_clear_cmos(uint8_t slot_id) {
       break;
     }
   }
+  close(i2cfd);
   if ( retry == MAX_READ_RETRY ) {
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto out;
+    return -1;
   }
+  sleep(1);
 
   ret = pal_set_server_power(slot_id, SERVER_12V_ON);
   if (ret < 0) {
     printf("Failed to set server power 12V-on\n");
-    goto out;
+    return ret;
   }
-  ret = pal_set_server_power(slot_id, SERVER_POWER_ON);
-  if (ret < 0) {
-    printf("Failed to set server power on\n");
-    goto out;
+  if ( (pal_get_server_power(slot_id, &status) == 0) && (status == SERVER_POWER_OFF) ) {
+    ret = pal_set_server_power(slot_id, SERVER_POWER_ON);
+    if (ret < 0) {
+      printf("Failed to set server power on\n");
+      return ret;
+    }
   }
 
-out:
-  if ( i2cfd > 0 ) close(i2cfd);
   return ret;
 }

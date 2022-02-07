@@ -1,6 +1,8 @@
 #ifndef __PAL_POWER_H__
 #define __PAL_POWER_H__
 
+#define DELAY_12V_CYCLE 2
+
 enum {
   DEVICE_POWER_OFF = 0x0,
   DEVICE_POWER_ON = 0x1,

@@ -7,13 +7,16 @@ source "${BASH_SOURCE%/*}/common_utils.sh"
 
 function run_test_loop(){
     plat_specific_src_dir=$1
+    python_site_pkg_dir=$2
     # Test loop
     while true; do
         inotifywait -e modify -r $(find "$common_src_dir" "$plat_specific_src_dir" -type f -iname '*.py')
-        "$BBPATH"/tmp/work/x86_64-linux/rest-api-native/*/temp/run.do_unit_test || true
+        PYTHONPATH=$python_site_pkg_dir /usr/bin/python3 -m unittest discover $BBPATH/../common/recipes-rest/rest-api/files || true
         sleep 1
     done
 }
+
+function join { local IFS="$1"; shift; echo "$*"; }
 
 
 echo "Validating environment"
@@ -24,5 +27,17 @@ plat_specific_src_dir=$(get_platform_recipe_path "$platform_parent_name")
 echo "Current platform is $plat"
 echo "Preparing working directory"
 prepare_working_directory "$plat_specific_src_dir"
+echo "Building dependencies"
+bitbake rest-api  > /dev/null
+bitbake aiohttp  > /dev/null
+bitbake multidict > /dev/null
+bitbake json-log-formatter > /dev/null
+bitbake yarl > /dev/null
+bitbake async-timeout > /dev/null
+bitbake chardet > /dev/null
+bitbake libobmc-mmc > /dev/null
+echo "Locating python site packages"
+site_packages=$(find $BBPATH -name site-packages -type d -exec readlink -f {} \; | grep arm)
+site_pkg_dir=$(join : $site_packages)
 echo "RUNNING TEST LOOP"
-run_test_loop "$plat_specific_src_dir"
+run_test_loop "$plat_specific_src_dir" "$site_pkg_dir"

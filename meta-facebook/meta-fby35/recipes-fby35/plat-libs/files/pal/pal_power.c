@@ -97,34 +97,53 @@ pal_power_policy_control(uint8_t slot, char *last_ps) {
 
 static int
 server_power_12v_on(uint8_t fru) {
+  int ret = 0;
   int i2cfd = 0;
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[4] = {0};
   char cmd[64] = {0};
-  uint8_t tbuf[2] = {0};
-  uint8_t tlen = 0;
-  int ret = 0, retry= 0;
 
   i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_PWR_CTRL_BUS);
-    goto error_exit;
+    return -1;
   }
 
-  tbuf[0] = 0x09 + (fru-1);
-  tbuf[1] = AC_ON;
-  tlen = 2;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+  do {
+    tbuf[0] = 0x09 + (fru-1);
+
+    // toggle HSC_EN when the HSC output was turned OFF
+    // ex: when HSC_FAULT#, status == SERVER_12V_OFF, but HSC_EN == AC_ON
+    ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, 1, rbuf, 1),
+                     MAX_READ_RETRY, 100);
     if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
+      syslog(LOG_WARNING, "%s() Failed to read HSC_EN", __func__);
       break;
     }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
+
+    if ( rbuf[0] == AC_ON ) {
+      tbuf[1] = AC_OFF;
+      ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, 2, NULL, 0),
+                       MAX_READ_RETRY, 100);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to write HSC_EN %u", __func__, tbuf[1]);
+        break;
+      }
+
+      sleep(1);
+    }
+
+    tbuf[1] = AC_ON;
+    ret = retry_cond(!i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, 2, NULL, 0),
+                     MAX_READ_RETRY, 100);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to write HSC_EN %u", __func__, tbuf[1]);
+      break;
+    }
+  } while (0);
+  close(i2cfd);
+  if ( ret < 0 ) {
+    return -1;
   }
 
   sleep(1);
@@ -132,7 +151,7 @@ server_power_12v_on(uint8_t fru) {
   ret = fby35_common_set_fru_i2c_isolated(fru, GPIO_VALUE_HIGH);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to enable the i2c of fru%d", __func__, fru);
-    goto error_exit;
+    return ret;
   }
 
   sleep(1);
@@ -153,13 +172,10 @@ server_power_12v_on(uint8_t fru) {
   if (system(cmd) != 0) {
     syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
     ret = PAL_ENOTSUP;
-    goto error_exit;
+    return ret;
   }
 
   pal_power_policy_control(fru, NULL);
-
-error_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
 
   return ret;
 }
@@ -356,6 +372,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
   switch (cmd) {
     case SERVER_12V_OFF:
+    case SERVER_12V_CYCLE:
     case SERVER_12V_ON:
     case SERVER_12V_CYCLE:
       //do nothing
@@ -415,7 +432,8 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         return POWER_STATUS_ERR;
       }
 
-      //if ( status == SERVER_12V_OFF ) return POWER_STATUS_ALREADY_OK;
+      if ( status == SERVER_12V_OFF ) return POWER_STATUS_ALREADY_OK;
+      pal_set_bic_power_off(fru);
       return server_power_12v_off(fru);
 #if 0
       if ( server_power_12v_off(fru) == PAL_EOK ) {
@@ -431,17 +449,18 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           return POWER_STATUS_ERR;
         }
 
-        // if (status == SERVER_12V_OFF) {
-        //   return server_power_12v_on(fru);
-        // } else {
+        if (status == SERVER_12V_OFF) {
+          return server_power_12v_on(fru);
+        } else {
+          pal_set_bic_power_off(fru);
           if ( server_power_12v_off(fru) < 0 ) {
             return POWER_STATUS_ERR;
           }
-          sleep(2);
+          sleep(DELAY_12V_CYCLE);
           if ( server_power_12v_on(fru) < 0 ) {
             return POWER_STATUS_ERR;
           }
-        // }
+        }
       } else {
         if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
         if ( bic_do_12V_cycle(fru) < 0 ) {
@@ -470,8 +489,46 @@ pal_sled_cycle(void) {
     return POWER_STATUS_ERR;
   }
 
+  ret = system("sv stop sensord > /dev/null 2>&1 &");
+  if ( ret < 0 ) {
+    printf("Fail to stop sensord\n");
+  }
+
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    ret = system("i2cset -y 12 0xf 0x2b 0x1 w &> /dev/null");
+    for (i = 1; i <= 4; i++) {
+      ret = pal_is_fru_prsnt(i, &is_fru_present);
+      if (ret < 0 || is_fru_present == 0) {
+        continue;
+      }
+      ret = pal_get_server_12v_power(i, &status);
+      if (ret < 0 || status == SERVER_12V_OFF) {
+        continue;
+      }
+      pal_set_bic_power_off(i);
+    }
+
+    i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open %d, error: %s", __func__, CPLD_PWR_CTRL_BUS, strerror(errno));
+      return -1;
+    }
+
+    tbuf[0] = 0x2B;
+    tbuf[1] = 0x01;
+    tlen = 2;
+    retry = 0;
+    while (retry < MAX_READ_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+    if (retry == MAX_READ_RETRY) {
+      syslog(LOG_WARNING, "%s() Failed to do sled cycle, max retry: %d", __func__, retry);
+    }
   } else {
     if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) {
       syslog(LOG_CRIT, "Set NIC PERST failed.\n");
@@ -495,6 +552,11 @@ pal_sled_cycle(void) {
       printf("Failed to do the sled cycle. Please check the BIC is alive.\n");
       ret = -1;
     }
+  }
+
+  ret = system("sv start sensord > /dev/null 2>&1 &");
+  if ( ret < 0 ) {
+    printf("Fail to start sensord\n");
   }
 
   return ret;

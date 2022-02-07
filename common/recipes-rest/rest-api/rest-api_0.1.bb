@@ -29,7 +29,7 @@ LICENSE = "GPLv2"
 # Use GPL-2.0-only instead.
 def lic_file_name(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in [ 'rocko', 'zeus', 'dunfell' ]:
+    if distro in [ 'rocko', 'dunfell' ]:
         return "GPL-2.0;md5=801f80980d171dd6425610833a22dbe6"
 
     return "GPL-2.0-only;md5=801f80980d171dd6425610833a22dbe6"
@@ -38,12 +38,27 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-DEPENDS:append = " update-rc.d-native aiohttp-native json-log-formatter-native libobmc-mmc"
+# For older distros we should use our own recipe (aiohttp) but for newer
+# ones we should use the one from Yocto (python3-aiohttp).
+def aiohttp_dep(d):
+    distro = d.getVar('DISTRO_CODENAME', True)
+    if distro in [ 'rocko', 'dunfell' ]:
+        return "aiohttp"
+    return "python3-aiohttp"
 
-REST_API_RDEPENDS = "python3-core aiohttp json-log-formatter libobmc-mmc"
-RDEPENDS:${PN} += "${REST_API_RDEPENDS}"
-RDEPENDS:${PN}:class-target += "${REST_API_RDEPENDS} libgpio-ctrl"
-
+DEPENDS:append = " update-rc.d-native"
+RDEPENDS:${PN} += " \
+    ${@aiohttp_dep(d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', '', 'sensors-py', d)} \
+    json-log-formatter \
+    libaggregate-sensor \
+    libgpio-ctrl \
+    libobmc-mmc \
+    libpal \
+    libsdr \
+    python3-core \
+    python3-psutil\
+"
 
 SRC_URI = "file://setup-rest-api.sh \
            file://rest.py \
@@ -99,10 +114,14 @@ SRC_URI = "file://setup-rest-api.sh \
            file://test_redfish_powercycle.py \
            file://redfish_base.py \
            file://redfish_sensors.py \
+           file://test_mock_modules.py \
            file://test_redfish_root_controller.py \
            file://test_redfish_account_controller.py \
+           file://test_redfish_bios_firmware_dumps.py \
            file://test_redfish_managers_controller.py \
            file://test_redfish_chassis_controller.py \
+           file://test_redfish_computer_system.py \
+           file://test_redfish_computer_system_patches.py \
            file://test_rest_fwinfo.py \
            file://test_redfish_sensors.py \
         "

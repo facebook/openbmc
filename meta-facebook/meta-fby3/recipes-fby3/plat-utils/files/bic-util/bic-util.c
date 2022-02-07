@@ -74,6 +74,10 @@ static void
 print_usage_help(void) {
   int i;
 
+  if (riser_board == UNKNOWN_BOARD) {
+    pal_get_2ou_board_type(FRU_SLOT1, &riser_board);
+  }
+
   printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
   if ( riser_board  == CWC_MCHP_BOARD ) {
     printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <[0..n]data_bytes_to_send>\n", slot_usage);

@@ -1,2 +1,3 @@
 Common targets are:
     elbert-image
+    elbertvboot-image # NOTE: Uncomment 'MACHINE ??= "elbervboot"' in local.conf

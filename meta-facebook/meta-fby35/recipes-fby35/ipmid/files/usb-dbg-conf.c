@@ -462,7 +462,7 @@ static sensor_desc_t cri_sensor_bmc[] =
   {"MEDUSA_CURR:"          , BMC_SENSOR_MEDUSA_CURR        , "Amps" , FRU_BMC, 2},
   {"MEDUSA_PWR:"           , BMC_SENSOR_MEDUSA_PWR         , "W"    , FRU_BMC, 2},
   {"MEDUSA_VDELTA:"        , BMC_SENSOR_MEDUSA_VDELTA      , "V"    , FRU_BMC, 2},
-  {"PDB_DL_VDELTA:"        , BMC_SENSOR_PDB_DL_VDELTA      , "V"    , FRU_BMC, 2},
+  {"PDB_CL_VDELTA:"        , BMC_SENSOR_PDB_CL_VDELTA      , "V"    , FRU_BMC, 2},
   {"PDB_BB_VDELTA:"        , BMC_SENSOR_PDB_BB_VDELTA      , "V"    , FRU_BMC, 2},
   {"CURR_LEAKAGE:"         , BMC_SENSOR_CURR_LEAKAGE       , "%"    , FRU_BMC, 2},
   {"FAN_IOUT:"             , BMC_SENSOR_FAN_IOUT           , "Amps" , FRU_BMC, 2},

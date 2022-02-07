@@ -1,28 +1,56 @@
+from typing import List
+
 import pal
 from aiohttp import web
 from common_utils import dumps_bytestr
 from redfish_base import validate_keys
 
 
+def pal_supported() -> bool:
+    UNSUPPORTED_PLATFORM_BUILDNAMES = ["yamp", "wedge", "wedge100"]
+    if not hasattr(pal, "pal_get_platform_name"):
+        return False
+    return pal.pal_get_platform_name() not in UNSUPPORTED_PLATFORM_BUILDNAMES
+
+
+def get_compute_system_names() -> List[str]:
+    if not pal_supported():
+        return ["1"]
+
+    if not hasattr(pal, "pal_fru_name_map"):
+        return [""]
+    fru_name_map = pal.pal_fru_name_map()
+
+    # The fallback way
+    if not hasattr(pal, "FruCapability") or not hasattr(pal, "pal_get_fru_capability"):
+        compute_system_names = []
+        for key, _ in fru_name_map.items():
+            if key.find("slot") != 0:
+                continue
+            server_name = key.replace("slot", "server")
+            compute_system_names.append(server_name)
+        return compute_system_names
+
+    # The right way
+    compute_system_names = []
+    for key, fruid in fru_name_map.items():
+        if pal.FruCapability.FRU_CAPABILITY_SERVER not in pal.pal_get_fru_capability(
+            fruid
+        ):
+            continue
+        server_name = key.replace("slot", "server")
+        compute_system_names.append(server_name)
+    return compute_system_names
+
+
 class RedfishComputerSystems:
     def __init__(self):
         self.collection = []
-        if not hasattr(pal, "pal_fru_name_map"):
-            return
-        fru_name_map = pal.pal_fru_name_map()
-        for key, fruid in fru_name_map.items():
-            if (
-                hasattr(pal, "FruCapability")
-                and pal.FruCapability.FRU_CAPABILITY_SERVER
-                not in pal.pal_get_fru_capability(fruid)
-            ) or (not hasattr(pal, "FruCapability") and key.find("slot") != 0):
-                continue
-
-            server_name = key.replace("slot", "server")
+        for system_name in get_compute_system_names():
             self.collection.append(
                 {
-                    "@odata.id": "/redfish/v1/Systems/{}".format(server_name),
-                    "Name": server_name,
+                    "@odata.id": "/redfish/v1/Systems/{}".format(system_name),
+                    "Name": system_name,
                 }
             )
 

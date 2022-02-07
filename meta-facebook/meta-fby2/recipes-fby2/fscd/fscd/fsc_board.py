@@ -34,7 +34,7 @@ try:
     with open("/tmp/spb_type") as f:
         spb_type = f.readline()
         if spb_type == "3":  # Northdome
-            get_fan_mode_scenario_list = ["sensor_hit_UCR", "sensor_fail"]
+            get_fan_mode_scenario_list = ["sensor_hit_UCR", "sensor_fail","one_fan_failure"]
 except:
     Logger.warn("failed to open or read /tmp/spb_type")
 
@@ -252,5 +252,7 @@ def get_fan_mode(scenario="None"):
         return fsc_zone.fan_mode["boost_mode"], int(100)
     elif "sensor_fail" in scenario:
         return fsc_zone.fan_mode["boost_mode"], int(60)
+    elif "one_fan_failure" in scenario:
+        return fsc_zone.fan_mode["trans_mode"], int(95)
 
     return None, None

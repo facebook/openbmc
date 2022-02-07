@@ -44,6 +44,13 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/SessionService",
             "/redfish/v1/SessionService/Sessions",
             "/redfish/v1/Systems",
+            "/redfish/v1/Systems/{server_name}",
+            "/redfish/v1/Systems/{server_name}/Bios",
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps",
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/",
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}/Actions/BIOSFirmwareDump.ReadContent",
+            "/redfish/v1/Systems/{server_name}/Bios/FirmwareInventory",
             "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
             "/redfish/v1/Managers/1/Actions/Manager.Reset",
         ]

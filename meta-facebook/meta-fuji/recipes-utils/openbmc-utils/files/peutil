@@ -15,7 +15,7 @@
 source /usr/local/bin/openbmc-utils.sh
 
 usage() {
-    echo "Usage $0 [1..8]"
+    echo "Usage $0 [2..9]"
 }
 
 dump_eeprom() {
@@ -34,7 +34,7 @@ is_i2cdev_exist() {
 
 show_pim_fruid() {
     pim_no=$1
-    bus=$(((pim_no-1)*8 + 81))
+    bus=$(((pim_no-2)*8 + 81))
     addr_16Q=0x56
     addr_4DD=0x53
     if [ "$(is_i2cdev_exist "$bus" "$addr_16Q")" -eq 0 ]; then
@@ -55,7 +55,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 num=$1
-if [ "$num" -ge 1 ] && [ "$num" -le 8 ];then
+if [ "$num" -ge 2 ] && [ "$num" -le 9 ];then
     show_pim_fruid "$num"
 else
     usage

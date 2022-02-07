@@ -128,6 +128,7 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
+    subprocess.check_call(["mkdir", "-p", rootfs+"/dev/shm", rootfs+"/tmp"]) #fake shm,tmp for flake8
     if not os.path.exists("/.dockerenv"):
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
     else:

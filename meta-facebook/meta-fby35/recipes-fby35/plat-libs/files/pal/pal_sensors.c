@@ -58,7 +58,7 @@ static int read_cached_val(uint8_t snr_number, float *value);
 static int read_fan_speed(uint8_t snr_number, float *value);
 static int read_fan_pwm(uint8_t pwm_id, float *value);
 static int read_curr_leakage(uint8_t snr_number, float *value);
-static int read_pdb_dl_vdelta(uint8_t snr_number, float *value);
+static int read_pdb_cl_vdelta(uint8_t snr_number, float *value);
 
 static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
@@ -111,7 +111,7 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_MEDUSA_CURR,
   BMC_SENSOR_MEDUSA_PWR,
   BMC_SENSOR_MEDUSA_VDELTA,
-  BMC_SENSOR_PDB_DL_VDELTA,
+  BMC_SENSOR_PDB_CL_VDELTA,
   BMC_SENSOR_PDB_BB_VDELTA,
   BMC_SENSOR_CURR_LEAKAGE,
   BMC_SENSOR_FAN_IOUT,
@@ -833,23 +833,24 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ID0, read_hsc_peak_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC8
-  {"BMC_SENSOR_HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC9
-  {"BMC_SENSOR_FAN_PWR", 0xCA, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCA
-  {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
-  {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
-  {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
-  {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0.8, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
-  {"BMC_SENSOR_MEDUSA_VDELTA", 0xCF, read_medusa_val, true, {0.5, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCF
-  {"BMC_SENSOR_MEDUSA_CURR", 0xD0, read_medusa_val, 0, {144, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xD0
-  {"BMC_SENSOR_MEDUSA_PWR", 0xD1, read_medusa_val, 0, {1800, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xD1
-  {"BMC_SENSOR_NIC_P12V", ADC12, read_adc_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT},//0xD2
-  {"BMC_SENSOR_NIC_PWR" , 0xD3, read_cached_val, true, {82.5, 0, 101.875, 0, 0, 0, 0, 0}, POWER},//0xD3
-  {"BMC_SENSOR_P1V0_STBY", ADC7, read_adc_val, true, {1.07, 1.05, 1.13, 0.93, 0.95, 0.83, 0, 0}, VOLT}, //0xD4
-  {"BMC_SENSOR_P0V6_STBY", ADC8, read_adc_val, true, {0.642, 0.63, 0, 0.558, 0.57, 0, 0, 0}, VOLT}, //0xD5
-  {"BMC_SENSOR_P3V3_RGM_STBY", ADC13, read_adc_val, true, {3.531, 3.465, 0, 3.069, 3.135, 0, 0, 0}, VOLT}, //0xD6
-  {"BMC_SENSOR_P5V_USB", ADC4, read_adc_val, 0, {5.35, 5.25, 5.65, 4.65, 4.75, 4.15, 0, 0}, VOLT}, //0xD7
-  {"BMC_SENSOR_P3V3_NIC", ADC14, read_adc_val, 0, {3.63, 3.564, 3.729, 2.97, 3.036, 2.95, 0, 0}, VOLT}, //0xD8
+//{                SensorName,      ID,     FUNCTION, PWR_STATUS, {  UCR,   UNC,     UNR,    LCR,    LNR,  LNC, Pos, Neg}, Unit}
+  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ID0, read_hsc_peak_iout,    0, {      0,     0,       0,      0,     0,     0, 0, 0}, CURR}, //0xC8
+  {"BMC_SENSOR_HSC_PEAK_PIN" , HSC_ID0, read_hsc_peak_pin ,    0, {      0,     0,       0,      0,     0,     0, 0, 0}, POWER}, //0xC9
+  {"BMC_SENSOR_FAN_PWR"      ,    0xCA, read_cached_val   , true, {201.465,     0,  544.88,      0,     0,     0, 0, 0}, POWER}, //0xCA
+  {"BMC_SENSOR_HSC_EIN"      , HSC_ID0, read_hsc_ein      , true, {  287.5,     0,  398.75,      0,     0,     0, 0, 0}, POWER}, //0xCB
+  {"BMC_SENSOR_PDB_CL_VDELTA",    0xCC, read_pdb_cl_vdelta, true, {    0.9,     0,       0,      0,     0,     0, 0, 0}, VOLT}, //0xCC
+  {"BMC_SENSOR_CURR_LEAKAGE" ,    0xCD, read_curr_leakage , true, {      0,     0,       0,      0,     0,     0, 0, 0}, PERCENT}, //0xCD
+  {"BMC_SENSOR_PDB_BB_VDELTA",    0xCE, read_cached_val   , true, {    0.8,     0,       0,      0,     0,     0, 0, 0}, VOLT}, //0xCE
+  {"BMC_SENSOR_MEDUSA_VDELTA",    0xCF, read_medusa_val   , true, {    0.5,     0,       0,      0,     0,     0, 0, 0}, VOLT}, //0xCF
+  {"BMC_SENSOR_MEDUSA_CURR"  ,    0xD0, read_medusa_val   ,    0, {    144,     0,       0,      0,     0,     0, 0, 0}, CURR}, //0xD0
+  {"BMC_SENSOR_MEDUSA_PWR"   ,    0xD1, read_medusa_val   ,    0, {   1800,     0,       0,      0,     0,     0, 0, 0}, POWER}, //0xD1
+  {"BMC_SENSOR_NIC_P12V"     ,   ADC12, read_adc_val      , true, {  13.32,  13.2,   14.91,  10.68, 10.17,  10.8, 0, 0}, VOLT},//0xD2
+  {"BMC_SENSOR_NIC_PWR"      ,    0xD3, read_cached_val   , true, {   82.5,     0, 101.875,      0,     0,     0, 0, 0}, POWER},//0xD3
+  {"BMC_SENSOR_P1V0_STBY"    ,    ADC7, read_adc_val      , true, {   1.08,  1.07,    1.13,   0.92,  0.83,  0.93, 0, 0}, VOLT}, //0xD4
+  {"BMC_SENSOR_P0V6_STBY"    ,    ADC8, read_adc_val      , true, {  0.648, 0.642,       0,  0.552,     0, 0.558, 0, 0}, VOLT}, //0xD5
+  {"BMC_SENSOR_P3V3_RGM_STBY",   ADC13, read_adc_val      , true, {  3.564, 3.531,       0,  3.036,     0, 3.069, 0, 0}, VOLT}, //0xD6
+  {"BMC_SENSOR_P5V_USB"      ,    ADC4, read_adc_val      ,    0, {    5.4,  5.35,    5.65,    4.6,  4.15,  4.65, 0, 0}, VOLT}, //0xD7
+  {"BMC_SENSOR_P3V3_NIC"     ,   ADC14, read_adc_val      ,    0, {  3.630, 3.597,   3.729,   2.97,  2.95, 3.003, 0, 0}, VOLT}, //0xD8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xD9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xDB
@@ -1451,9 +1452,9 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   return PAL_EOK;
 }
 
-// Calculate Deltalake vdelta
+// Calculate Crater lake vdelta
 static int
-read_pdb_dl_vdelta(uint8_t snr_number, float *value) {
+read_pdb_cl_vdelta(uint8_t snr_number, float *value) {
   float medusa_vout = 0;
   float min_hsc_vin = 0;
 

@@ -24,7 +24,7 @@ import re
 import subprocess
 from asyncio import TimeoutError
 
-from common_utils import async_exec
+import common_utils
 from node import node
 
 
@@ -36,7 +36,9 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
         cmd_util = ["/usr/local/bin/sensor-util", fru]
         sensors = []
         try:
-            retcode, stdout, stderr = await async_exec(cmd_util, shell=False)
+            retcode, stdout, stderr = await common_utils.async_exec(
+                cmd_util, shell=False
+            )
             out = stdout.decode().splitlines()
             rx = re.compile(
                 r"(\S+[\S\s]*\S+)\s+\(0x([a-fA-F\d]+)\)\s+:\s+(-?\d+\.\d+)\s+(\S+)\s+\|\s+\((\S+)\)(.*)$"
@@ -70,7 +72,7 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
         except Exception:
             print("Exception  received")
     try:
-        retcode, stdout, stderr = await async_exec(cmd, shell=True)
+        retcode, stdout, stderr = await common_utils.async_exec(cmd, shell=True)
         if retcode == 0:
             return {"result": "success"}
         else:
@@ -95,7 +97,7 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
     else:
         sensor_id_val = 0
     try:
-        retcode, stdout, stderr = await async_exec(cmd, shell=False)
+        retcode, stdout, stderr = await common_utils.async_exec(cmd, shell=False)
         out = stdout.splitlines()
         sensors = {}
         if "history" in display:

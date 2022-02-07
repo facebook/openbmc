@@ -109,6 +109,11 @@ const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
 
 #define MAX_PWR_LOCK_STR 32
 
+#ifndef FRU_CAPABILITY_SENSOR_SLAVE
+#define FRU_CAPABILITY_SENSOR_SLAVE (1UL << 19)
+#endif
+
+#define BIC_READ_EEPROM_FAILED 0xE0
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_pwr_last_state(int event, void *arg);
 
@@ -2367,6 +2372,12 @@ pal_get_m2_str_name(uint8_t event, uint8_t comp, uint8_t device_num, char *error
 }
 
 static void
+pal_get_2ou_pesw_str_name(uint8_t board_id, char *board_name_str) {
+  snprintf(board_name_str, 256, "%s ", pal_get_board_name(board_id));
+  return;
+}
+
+static void
 pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
   const char *vr_list_str[5] = {"P3V3_STBY1", "P3V3_STBY2", "P3V3_STBY3", "P1V8", "PESW VR"};
   const uint8_t vr_list_size = ARRAY_SIZE(vr_list_str);
@@ -2379,6 +2390,19 @@ pal_get_gpv3_not_present_str_name(uint8_t comp, uint8_t gpv3_name, char *error_l
   const char *gpv3_present_list_str[5] = {"TOP_GPv3_PRESENT1", "TOP_GPv3_PRESENT2", "BOT_GPv3_PRESENT1", "BOT_GPv3_PRESENT2"};
   const uint8_t gpv3_present_list_size = ARRAY_SIZE(gpv3_present_list_str);
   snprintf(error_log, 256, "%s/%s ", pal_get_board_name(comp), (gpv3_name < gpv3_present_list_size)?gpv3_present_list_str[gpv3_name]:"Undefined GPv3");
+  return;
+}
+
+static void
+pal_get_pesw_config_str_name(uint8_t board_id, uint8_t pesw_config, char *error_log) {
+  const char *pesw_config_list_str[7] = {"2U GPv3 SINGLE M.2", "2U GPv3 DUAL M.2", "4U CWC", "4U TOP GPv3 DUAL M.2", "4U BOT GPv3 DUAL M.2", "4U TOP GPv3 SINGLE M.2", "4U BOT GPv3 SINGLE M.2"};
+  const uint8_t pesw_config_list_size = ARRAY_SIZE(pesw_config_list_str);
+
+  if (pesw_config == BIC_READ_EEPROM_FAILED ) {
+    snprintf(error_log, 256, "%s/%s ", pal_get_board_name(board_id),"Read EEprom Failed");
+  } else {
+    snprintf(error_log, 256, "%s ", (pesw_config < pesw_config_list_size)?pesw_config_list_str[pesw_config]:"Undefined" );
+  }
   return;
 }
 
@@ -2409,6 +2433,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_PWRGOOD_TIMEOUT   = 0x15,
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
+    SYS_PESW_CONFIG       = 0x18,
     E1S_1OU_M2_PRESENT    = 0x80,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
@@ -2474,6 +2499,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, prsnt_str);
       break;
     case SYS_PESW_ERR:
+      pal_get_2ou_pesw_str_name(event_data[1], error_log);
       strcat(error_log, "2OU PESW error");
       break;
     case SYS_2OU_VR_FAULT:
@@ -2504,6 +2530,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_DP_X16_PWR_FAULT:
       strcat(error_log, "DP x16 Riser Power Fault");
+      break;
+    case SYS_PESW_CONFIG:
+      pal_get_pesw_config_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "PESW Config Setting");
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");

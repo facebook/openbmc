@@ -45,7 +45,9 @@ class SystemAirflowConfigTest(unittest.TestCase):
         for pim in range(2, 10):
             cmd = "/usr/bin/kv get pim{}_type".format(pim)
             pim_type = run_shell_cmd(cmd)
-            if pim_type.strip() == "16q":
+            if pim_type.strip() == "16q2":
+                pim16q_count += 1
+            elif pim_type.strip() == "16q":
                 pim16q_count += 1
             elif pim_type.strip() == "8ddm":
                 pim8ddm_count += 1

@@ -17,8 +17,23 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
+
 from common.base_enclosure_util_test import BaseEnclosureUtilTest
+from utils.test_utils import qemu_check
 
 
 class EnclosureUtilTest(BaseEnclosureUtilTest):
-    pass
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def testHddStatus(self):
+        """
+        test enclosure-util --hdd-status and verify its output
+        """
+        super().testHddStatus()
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def testHdd1Status(self):
+        """
+        test enclosure-util --hdd-status 1 and verify its output
+        """
+        super().testHdd1Status()

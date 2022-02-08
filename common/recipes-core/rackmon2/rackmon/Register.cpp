@@ -79,7 +79,7 @@ void RegisterValue::makeFlags(
   new (&value.flagsValue)(FlagsType);
   for (const auto& [pos, name] : flagsDesc) {
     bool bitVal = (bitField & (1 << pos)) != 0;
-    value.flagsValue.push_back(std::make_tuple(bitVal, name));
+    value.flagsValue.push_back(std::make_tuple(bitVal, name, pos));
   }
 }
 
@@ -190,12 +190,12 @@ RegisterValue::operator std::string() {
       // JSON object. But considering this is designed for
       // human consumption only, we can make it pretty
       // (and backwards compatible with V1's output).
-      for (auto& [bitval, name] : value.flagsValue) {
+      for (auto& [bitval, name, pos] : value.flagsValue) {
         if (bitval)
-          os << "\n*[1] ";
+          os << "\n*[1] <";
         else
-          os << "\n [0] ";
-        os << name;
+          os << "\n [0] <";
+        os << int(pos) << "> " << name;
       }
       break;
     case RegisterValueType::HEX:

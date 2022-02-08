@@ -48,7 +48,7 @@ struct RegisterDescriptor {
 };
 
 struct RegisterValue {
-  using FlagType = std::tuple<bool, std::string>;
+  using FlagType = std::tuple<bool, std::string, uint8_t>;
   using FlagsType = std::vector<FlagType>;
   // Dictates which if the members of value is valid
   RegisterValueType type = RegisterValueType::HEX;

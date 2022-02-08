@@ -164,3 +164,7 @@ class boardApp_Handler:
     # Handler for sys/beacon/off resource endpoint
     async def rest_beacon_off_hdl(self, request):
         return web.json_response(rest_beacon.beacon_off(), dumps=dumps_bytestr)
+
+    # Handler for sys/beacon/status resource endpoint
+    async def rest_beacon_status_hdl(self, request):
+        return web.json_response(rest_beacon.beacon_status(), dumps=dumps_bytestr)

@@ -186,6 +186,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "drained",
             "audit",
             "off",
+            "status",
         ]
         self.verify_endpoint_attributes(
             RestEndpointTest.BEACON_ENDPOINT, endpoint_beacon

@@ -54,4 +54,5 @@ board_routes = [
     "/api/sys/beacon/drained",
     "/api/sys/beacon/audit",
     "/api/sys/beacon/off",
+    "/api/sys/beacon/status",
 ]

@@ -56,3 +56,18 @@ def _set_beacon(on: bool = True, mode: str = "") -> Dict:
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     data = data.decode(errors="ignore")
     return _parse_beacon_status(data)
+
+# Handler for beacon/status resource endpoint
+def beacon_status() -> Dict:
+    result = {}
+    cmd = ["/usr/local/bin/beacon_led.sh", "status"]
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+    data = data.decode(errors="ignore")
+
+    adata = data.split("\n")[:-1]
+    for sdata in adata:
+        tdata = sdata.split(":", 1)
+        result[tdata[0].strip()] = tdata[1].strip()
+
+    return {"Information": result, "Actions": [], "Resources": []}

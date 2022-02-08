@@ -244,9 +244,14 @@ cat <<EOF > ${WORKDIR}/run-ptest
   coverage erase
   coverage run -m unittest discover /usr/local/fbpackages/rest-api
   coverage report -m --omit="*/test*"
-  mount -t tmpfs -o size=512m tmpfs /dev/shm
-  echo "[Flake8]"
-  flake8  --config /usr/local/fbpackages/rest-api/.flake8 /usr/local/fbpackages/rest-api/*.py
+  # We can only run flake8, which depends on multiprocessing shared memory, if
+  # we have /dev/shm.
+  if [ -e /dev/shm ]; then
+    echo "[Flake8]"
+    flake8  --config /usr/local/fbpackages/rest-api/.flake8 /usr/local/fbpackages/rest-api/*.py
+  else
+    echo "NOTE: Skipping Flake8 because /dev/shm isn't available"
+  fi
   echo "[MYPY]"
   mypy --ignore-missing-imports /usr/local/fbpackages/rest-api/*.py
 EOF

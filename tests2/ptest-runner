@@ -17,7 +17,11 @@ def openbmc_path():
 
 def recipes_with_ptest():
     openbmc = openbmc_path()
-    avoidlist = ["qemux86-image.bb", "ptest-meson-crosstarget-native_0.1.bb", "rsyslog_8.34.0.bb"]
+    avoidlist = [
+        "qemux86-image.bb",
+        "ptest-meson-crosstarget-native_0.1.bb",
+        "rsyslog_8.34.0.bb",
+    ]
 
     def contains_ptest(f):
         with open(f) as fd:
@@ -78,10 +82,14 @@ def update_conf_only(recipes, build_path):
 def clean_steps(build_path):
     clean_paths = glob.glob(build_path + "/tmp/work/core2*/*")
     clean_paths += glob.glob(build_path + "/tmp/work/qemux86*/*")
-    clean_recipes = [os.path.basename(d)+":do_clean" for d in clean_paths if "defaultpkgname" not in os.path.basename(d)]
+    clean_recipes = [
+        os.path.basename(d) + ":do_clean"
+        for d in clean_paths
+        if "defaultpkgname" not in os.path.basename(d)
+    ]
     recipes_str = " ".join(clean_recipes).strip()
     if recipes_str == "":
-      return []
+        return []
     return [f"bitbake -q {recipes_str} > /dev/null"]
 
 
@@ -89,7 +97,7 @@ def bmc_build(recipes, build_path, verbose):
     openbmc = openbmc_path()
     build_option = "-q"
     if verbose:
-      build_option = ""
+        build_option = ""
 
     build_steps = []
     if os.path.exists("/opt/rh/devtoolset-8/enable"):
@@ -113,9 +121,8 @@ def bmc_build(recipes, build_path, verbose):
     try:
         subprocess.check_call(cmd)
     except subprocess.CalledProcessError:
-      print("TEST FAILED")
-      sys.exit(1)
-
+        print("TEST FAILED")
+        sys.exit(1)
 
 
 def main(args):
@@ -152,16 +159,24 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
-    subprocess.check_call(["mkdir", "-p", rootfs+"/dev/shm", rootfs+"/tmp"]) #fake shm,tmp for flake8
+    subprocess.check_call(["mkdir", "-p", rootfs + "/tmp"])
     if not os.path.exists("/.dockerenv"):
+        # Docker containers don't let you mount stuff unless you create them
+        # with `--cap-add=SYS_ADMIN`, which is not possible in CircleCI.
+        subprocess.check_call(
+            ["mkdir", "-p", rootfs + "/dev/shm"]
+        )  # fake shm for flake8
+        subprocess.check_call(
+            ["mount", "-t", "tmpfs", "-o", "size=512m", "tmpfs", rootfs + "/dev/shm"]
+        )
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
     else:
-        base_cmd = ["sudo","chroot",rootfs]
+        base_cmd = ["sudo", "chroot", rootfs]
     if args.shell:
         subprocess.check_call(base_cmd + ["bash"])
     elif not args.skip_tests:
         cmd = base_cmd + ["ptest-runner"]
-        exit_error = False;
+        exit_error = False
         if args.recipes is None or len(args.recipes) == 0:
             cmd += all_recipes
         else:
@@ -171,14 +186,14 @@ def main(args):
             print(out)
         except subprocess.CalledProcessError as e:
             print(e.output.decode())
-            if (e.stderr is not None):
+            if e.stderr is not None:
                 print(e.stderr.decode())
             exit_error = True
         if args.execute is not None:
-            cmd = base_cmd + ["sh", '-c', args.execute]
+            cmd = base_cmd + ["sh", "-c", args.execute]
             print(subprocess.check_output(cmd).decode())
         if exit_error:
-          sys.exit(1)
+            sys.exit(1)
 
 
 parser = argparse.ArgumentParser(description="Helper to run unit-tests natively")

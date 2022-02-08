@@ -57,42 +57,15 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [
-                    8,
-                    "SoH Dicharge"
-                ],
-                [
-                    7,
-                    "SoH Requested"
-                ],
-                [
-                    6,
-                    "Battery Alarm Set for BBU Fail or BBU voltage =< 26 VDC"
-                ],
-                [
-                    5,
-                    "Fan Alarm"
-                ],
-                [
-                    4,
-                    "Temp Alarm   Alarm set at shutdown temp"
-                ],
-                [
-                    3,
-                    "Current Feed (Boost Converter) Fail"
-                ],
-                [
-                    2,
-                    "Battery Charger Fail"
-                ],
-                [
-                    1,
-                    "Aux 54V Converter Fail"
-                ],
-                [
-                    0,
-                    "Main Converter Fail"
-                ]
+                [8, "SoH Dicharge"],
+                [7, "SoH Requested"],
+                [6, "Battery Alarm Set for BBU Fail or BBU voltage =< 26 VDC"],
+                [5, "Fan Alarm"],
+                [4, "Temp Alarm Alarm set at shutdown temp"],
+                [3, "Current Feed (Boost Converter) Fail"],
+                [2, "Battery Charger Fail"],
+                [1, "Aux 54V Converter Fail"],
+                [0, "Main Converter Fail"]
             ],
             "name": "PSU Status register"
         },
@@ -103,18 +76,9 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [
-                    2,
-                    "End of Life"
-                ],
-                [
-                    1,
-                    "Low Voltage  BBU Voltage =< 33.8"
-                ],
-                [
-                    0,
-                    "BBU Fail"
-                ]
+                [2, "End of Life"],
+                [1, "Low Voltage  BBU Voltage =< 33.8"],
+                [0, "BBU Fail"]
             ],
             "name": "Battery Status register"
         },
@@ -480,38 +444,14 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    7,
-                    "Com"
-                ],
-                [
-                    6,
-                    "Fan"
-                ],
-                [
-                    5,
-                    "Temp"
-                ],
-                [
-                    4,
-                    "BC"
-                ],
-                [
-                    3,
-                    "Auxiliary"
-                ],
-                [
-                    2,
-                    "CF"
-                ],
-                [
-                    1,
-                    "LLC"
-                ],
-                [
-                    0,
-                    "PFC"
-                ]
+                [7, "Com"],
+                [6, "Fan"],
+                [5, "Temp"],
+                [4, "BC"],
+                [3, "Auxiliary"],
+                [2, "CF"],
+                [1, "LLC"],
+                [0, "PFC"]
             ],
             "name": "General Alarm"
         },
@@ -520,34 +460,13 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    11,
-                    "LLC Enabled"
-                ],
-                [
-                    10,
-                    "Input Relay on"
-                ],
-                [
-                    9,
-                    "!(Bulk_OK)"
-                ],
-                [
-                    8,
-                    "AC_OK"
-                ],
-                [
-                    3,
-                    "LLC Enabled"
-                ],
-                [
-                    1,
-                    "OVP (AC input over voltage protection asserted)"
-                ],
-                [
-                    0,
-                    "UVP (AC input under voltage protection asserted)"
-                ]
+                [11, "LLC Enabled"],
+                [10, "Input Relay on"],
+                [9, "!(Bulk_OK)"],
+                [8, "AC_OK"],
+                [3, "LLC Enabled"],
+                [1, "OVP (AC input over voltage protection asserted)"],
+                [0, "UVP (AC input under voltage protection asserted)"]
             ],
             "name": "PFC Alarm"
         },
@@ -556,30 +475,12 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    10,
-                    "Oring Fail"
-                ],
-                [
-                    9,
-                    "2ndary DSP Failure"
-                ],
-                [
-                    8,
-                    "DC/DC failure"
-                ],
-                [
-                    2,
-                    "OCP (Output Over Current protection asserted)"
-                ],
-                [
-                    1,
-                    "OVP (Output Over Voltage protection asserted)"
-                ],
-                [
-                    0,
-                    "UVP (Output Under Voltage protection asserted)"
-                ]
+                [10, "Oring Fail"],
+                [9, "2ndary DSP Failure"],
+                [8, "DC/DC failure"],
+                [2, "OCP (Output Over Current protection asserted)"],
+                [1, "OVP (Output Over Voltage protection asserted)"],
+                [0, "UVP (Output Under Voltage protection asserted)"]
             ],
             "name": "LLC Alarm"
         },
@@ -588,30 +489,12 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    8,
-                    "CF (Failure Failure with CF)"
-                ],
-                [
-                    4,
-                    "OPP (Over Power Protection [more than 4200W input to CF])"
-                ],
-                [
-                    3,
-                    "Battery_UVP"
-                ],
-                [
-                    2,
-                    "Battery_OVP"
-                ],
-                [
-                    1,
-                    "Bulk_UVP"
-                ],
-                [
-                    0,
-                    "Bulk_OVP"
-                ]
+                [8, "CF (Failure Failure with CF)"],
+                [4, "OPP (Over Power Protection [more than 4200W input to CF])"],
+                [3, "Battery_UVP"],
+                [2, "Battery_OVP"],
+                [1, "Bulk_UVP"],
+                [0, "Bulk_OVP"]
             ],
             "name": "Current Feed Alarm"
         },
@@ -620,22 +503,10 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    8,
-                    "Aux alarm (Failure with auxiliary converter)"
-                ],
-                [
-                    2,
-                    "OCP (Over Current Protection asserted)"
-                ],
-                [
-                    1,
-                    "OVP (Output Over Voltage protection asserted)"
-                ],
-                [
-                    0,
-                    "UVP (Output Under Voltage Protection asserted)"
-                ]
+                [8, "Aux alarm (Failure with auxiliary converter)"],
+                [2, "OCP (Over Current Protection asserted)"],
+                [1, "OVP (Output Over Voltage protection asserted)"],
+                [0, "UVP (Output Under Voltage Protection asserted)"]
             ],
             "name": "Auxiliary Alarm"
         },
@@ -644,22 +515,10 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    8,
-                    "Charger alarm (Charger failure)"
-                ],
-                [
-                    2,
-                    "Timeout alarm (Charger ON for more than 5hrs)"
-                ],
-                [
-                    1,
-                    "UVP (Output Under Voltage Protection asserted)"
-                ],
-                [
-                    0,
-                    "OVP (Output Overvoltage Protection asserted)"
-                ]
+                [8, "Charger alarm (Charger failure)"],
+                [2, "Timeout alarm (Charger ON for more than 5hrs)"],
+                [1, "UVP (Output Under Voltage Protection asserted)"],
+                [0, "OVP (Output Overvoltage Protection asserted)"]
             ],
             "name": "Battery Charger Alarm"
         },
@@ -668,38 +527,14 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    7,
-                    "PFC temp alarm"
-                ],
-                [
-                    6,
-                    "LLC temp alarm"
-                ],
-                [
-                    5,
-                    "CF temp alarm"
-                ],
-                [
-                    4,
-                    "Aux temp alarm"
-                ],
-                [
-                    3,
-                    "Sync Rectifier temp alarm"
-                ],
-                [
-                    2,
-                    "Oring temp alarm"
-                ],
-                [
-                    1,
-                    "Inlet temp alarm"
-                ],
-                [
-                    0,
-                    "Outlet temp alarm"
-                ]
+                [7, "PFC temp alarm"],
+                [6, "LLC temp alarm"],
+                [5, "CF temp alarm"],
+                [4, "Aux temp alarm"],
+                [3, "Sync Rectifier temp alarm"],
+                [2, "Oring temp alarm"],
+                [1, "Inlet temp alarm"],
+                [0, "Outlet temp alarm"]
             ],
             "name": "Temperature Alarm"
         },
@@ -708,10 +543,7 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    0,
-                    "Fan alarm (Fan failure)"
-                ]
+                [0, "Fan alarm (Fan failure)"]
             ],
             "name": "Fan Alarm"
         },
@@ -720,10 +552,7 @@
             "length": 1,
             "format": "flags",
             "flags": [
-                [
-                    0,
-                    "Internal Communication alarm (Internal Communication fail)"
-                ]
+                [0, "Internal Communication alarm (Internal Communication fail)"]
             ],
             "name": "Communication Alarm Status Register"
         },

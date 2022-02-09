@@ -1,19 +1,21 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#include "Device.hpp"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <chrono>
 #include <fstream>
 #include <thread>
 #include "TempDir.hpp"
-#include "Device.hpp"
 
 using namespace std::literals;
 using namespace rackmon;
 
 class DeviceTest : public ::testing::Test {
   TempDirectory test_dir_{};
+
  public:
   std::string test_device_path{};
+
  protected:
   void SetUp() override {
     test_device_path = test_dir_.path() + "/test.bin";

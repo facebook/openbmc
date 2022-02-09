@@ -26,4 +26,3 @@ namespace rackmon {
 #else
 #define RACKMON_PROFILE_SCOPE(name, desc, os)
 #endif
-

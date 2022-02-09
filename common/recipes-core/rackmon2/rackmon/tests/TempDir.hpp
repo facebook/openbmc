@@ -1,6 +1,6 @@
 // Copyright 2022-present Facebook. All Rights Reserved.
-#include <sstream>
 #include <sys/stat.h>
+#include <sstream>
 #if (__GNUC__ < 8)
 #include <experimental/filesystem>
 namespace std {
@@ -13,7 +13,8 @@ namespace filesystem = experimental::filesystem;
 namespace rackmon {
 class TempDirectory {
   std::string path_{};
-  public:
+
+ public:
   TempDirectory() {
     char mkdir_template[] = "/tmp/rackmonXXXXXX";
     path_.assign(mkdtemp(mkdir_template));
@@ -25,4 +26,4 @@ class TempDirectory {
     return path_;
   }
 };
-} // namespace rackmon;
+} // namespace rackmon

@@ -1,9 +1,9 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#include "Rackmon.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
 #include "Log.hpp"
-#include "Rackmon.hpp"
 
 #if (__GNUC__ < 8)
 #include <experimental/filesystem>
@@ -39,7 +39,9 @@ void Rackmon::loadRegisterMap(const nlohmann::json& config) {
   // Precomputing this makes our scan soooo much easier.
   // its 256 bytes wasted. but worth it. TODO use a
   // interval list with an iterator to waste less bytes.
-  for (uint16_t addr = config["address_range"][0]; addr <= config["address_range"][1]; ++addr) {
+  for (uint16_t addr = config["address_range"][0];
+       addr <= config["address_range"][1];
+       ++addr) {
     allPossibleDevAddrs_.push_back(uint8_t(addr));
   }
   nextDeviceToProbe_ = allPossibleDevAddrs_.begin();
@@ -51,8 +53,9 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
     json contents;
     try {
       ifs >> contents;
-    } catch(const nlohmann::json::parse_error& ex) {
-      logError << "Error loading: " << fileName << " byte: " << ex.byte << std::endl;
+    } catch (const nlohmann::json::parse_error& ex) {
+      logError << "Error loading: " << fileName << " byte: " << ex.byte
+               << std::endl;
       throw;
     }
     ifs.close();

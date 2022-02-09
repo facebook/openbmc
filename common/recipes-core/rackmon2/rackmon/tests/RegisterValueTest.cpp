@@ -152,12 +152,21 @@ TEST(RegisterValueTest, FLAGS) {
 TEST(RegisterValueTest, LargeFlags) {
   RegisterDescriptor d;
   d.format = RegisterValueType::FLAGS;
-  d.flags = {{0, "HELLO"}, {31, "WORLD", }, {32, "HELLO2"}, {63, "WORLD2"}};
+  d.flags = {
+      {0, "HELLO"},
+      {
+          31,
+          "WORLD",
+      },
+      {32, "HELLO2"},
+      {63, "WORLD2"}};
   RegisterValue val({0x8000, 0x0000, 0x0000, 0x0001}, d, 0x12345678);
   EXPECT_EQ(val.type, RegisterValueType::FLAGS);
   RegisterValue::FlagsType exp1 = {
-    {true, "HELLO", 0}, {false, "WORLD", 31},
-    {false, "HELLO2", 32}, {true, "WORLD2", 63}};
+      {true, "HELLO", 0},
+      {false, "WORLD", 31},
+      {false, "HELLO2", 32},
+      {true, "WORLD2", 63}};
   EXPECT_EQ(val.value.flagsValue, exp1);
 }
 

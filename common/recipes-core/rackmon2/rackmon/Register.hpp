@@ -18,10 +18,7 @@ enum RegisterValueType {
   FLAGS,
 };
 
-enum RegisterEndian {
-  BIG,
-  LITTLE
-};
+enum RegisterEndian { BIG, LITTLE };
 
 // Fully describes a Register (Retrieved from register map JSON)
 struct RegisterDescriptor {

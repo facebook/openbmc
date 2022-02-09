@@ -1,7 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#include "Register.hpp"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "Register.hpp"
 
 using namespace std;
 using namespace testing;
@@ -9,7 +9,14 @@ using namespace rackmon;
 
 TEST(RegisterTest, BasicCreationCompare) {
   RegisterDescriptor desc{
-      0, 2, "HELLO", 1, false, RegisterEndian::BIG, RegisterValueType::STRING, 0};
+      0,
+      2,
+      "HELLO",
+      1,
+      false,
+      RegisterEndian::BIG,
+      RegisterValueType::STRING,
+      0};
   Register reg(desc);
 
   EXPECT_EQ(reg.timestamp, 0);
@@ -49,7 +56,14 @@ TEST(RegisterTest, BasicCreationCompare) {
 
 TEST(RegisterTest, JSONTest) {
   RegisterDescriptor desc{
-      0, 2, "HELLO", 1, false, RegisterEndian::BIG, RegisterValueType::STRING, 0};
+      0,
+      2,
+      "HELLO",
+      1,
+      false,
+      RegisterEndian::BIG,
+      RegisterValueType::STRING,
+      0};
   Register reg(desc);
 
   EXPECT_EQ(reg.timestamp, 0);
@@ -67,7 +81,14 @@ TEST(RegisterTest, JSONTest) {
 
 TEST(RegisterStoreTest, BasicOperation) {
   RegisterDescriptor desc{
-      0, 2, "HELLO", 5, false, RegisterEndian::BIG, RegisterValueType::STRING, 0};
+      0,
+      2,
+      "HELLO",
+      5,
+      false,
+      RegisterEndian::BIG,
+      RegisterValueType::STRING,
+      0};
   RegisterStore reg(desc);
   for (uint16_t i = 0; i < 5; i++) {
     EXPECT_EQ(reg.front(), false);
@@ -88,7 +109,14 @@ TEST(RegisterStoreTest, BasicOperation) {
 
 TEST(RegisterStoreTest, DataRetrievalConversions) {
   RegisterDescriptor desc{
-      0, 2, "HELLO", 2, false, RegisterEndian::BIG, RegisterValueType::STRING, 0};
+      0,
+      2,
+      "HELLO",
+      2,
+      false,
+      RegisterEndian::BIG,
+      RegisterValueType::STRING,
+      0};
   RegisterStore reg(desc);
 
   std::string str = reg;

@@ -18,6 +18,7 @@ class Device {
   // remaining time in ms.
   virtual int waitRead(int timeoutMs);
   virtual void waitWrite() {}
+
  public:
   explicit Device(const std::string& device) : device_(device) {}
   virtual ~Device() {}

@@ -1,8 +1,8 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#include "Rackmon.hpp"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <fstream>
-#include "Rackmon.hpp"
 #include "TempDir.hpp"
 
 using namespace std;
@@ -100,6 +100,7 @@ class MockRackmon : public Rackmon {
 class RackmonTest : public ::testing::Test {
   TempDirectory test_map_dir{};
   TempDirectory test_dir{};
+
  public:
   std::string r_test_dir{};
   std::string r_conf{};
@@ -144,6 +145,7 @@ class RackmonTest : public ::testing::Test {
     ofs2 << rconf_s;
     ofs2.close();
   }
+
  public:
   std::unique_ptr<Modbus> make_modbus(uint8_t exp_addr, int num_cmd_calls) {
     json exp = R"({

@@ -1,7 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#include "Msg.hpp"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "Msg.hpp"
 
 using namespace std;
 using namespace testing;

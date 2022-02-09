@@ -19,7 +19,7 @@ static std::error_code sys_error(int err) {
 static std::error_code sys_error() {
   return sys_error(errno);
 }
-}
+} // namespace
 
 void Device::open() {
   if (deviceFd_ >= 0) {

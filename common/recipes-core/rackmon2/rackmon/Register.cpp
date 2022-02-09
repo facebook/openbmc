@@ -1,10 +1,10 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#include "Register.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <numeric>
 #include <sstream>
-#include "Register.hpp"
 
 using nlohmann::json;
 using namespace rackmon;
@@ -14,7 +14,7 @@ static void streamHex(std::ostream& os, size_t num, size_t ndigits) {
   os << std::hex << std::setfill('0') << std::setw(ndigits) << std::right
      << num;
 }
-}
+} // namespace
 
 bool AddrRange::contains(uint8_t addr) const {
   return addr >= range.first && addr <= range.second;
@@ -46,7 +46,9 @@ void RegisterValue::makeHex(const std::vector<uint16_t>& reg) {
   }
 }
 
-void RegisterValue::makeInteger(const std::vector<uint16_t>& reg, RegisterEndian end) {
+void RegisterValue::makeInteger(
+    const std::vector<uint16_t>& reg,
+    RegisterEndian end) {
   // TODO We currently do not need more than 32bit values as per
   // our current/planned regmaps. If such a value should show up in the
   // future, then we might need to return std::variant<int32_t,int64_t>.
@@ -64,8 +66,8 @@ void RegisterValue::makeInteger(const std::vector<uint16_t>& reg, RegisterEndian
         });
 
   } else {
-    value.intValue =
-        std::accumulate(reg.rbegin(), reg.rend(), 0, [](int32_t ac, uint16_t v) {
+    value.intValue = std::accumulate(
+        reg.rbegin(), reg.rend(), 0, [](int32_t ac, uint16_t v) {
           // Swap the bytes
           return (ac << 16) + (((v & 0xff) << 8) | ((v >> 8) & 0xff));
         });

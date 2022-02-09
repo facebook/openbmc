@@ -135,8 +135,8 @@ struct FileRecord {
   std::vector<uint16_t> data{};
   FileRecord() {}
   explicit FileRecord(size_t num) : data(num) {}
-  explicit FileRecord(uint16_t file, uint16_t record, size_t num) :
-      fileNum(file), recordNum(record), data(num) {}
+  explicit FileRecord(uint16_t file, uint16_t record, size_t num)
+      : fileNum(file), recordNum(record), data(num) {}
 };
 
 struct ReadFileRecordReq : public Msg {

@@ -9,8 +9,8 @@ namespace rackmon {
 
 class UARTDevice : public Device {
   int baudrate_ = -1;
- protected:
 
+ protected:
   void waitWrite() override;
   virtual void setAttribute(bool readEnable, int baudrate);
 

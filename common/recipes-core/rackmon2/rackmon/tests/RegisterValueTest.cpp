@@ -140,6 +140,18 @@ TEST(RegisterValueTest, FLAGS) {
   EXPECT_EQ(std::string(j["value"][1][1]), "WORLD");
 }
 
+TEST(RegisterValueTest, LargeFlags) {
+  RegisterDescriptor d;
+  d.format = RegisterValueType::FLAGS;
+  d.flags = {{0, "HELLO"}, {31, "WORLD", }, {32, "HELLO2"}, {63, "WORLD2"}};
+  RegisterValue val({0x8000, 0x0000, 0x0000, 0x0001}, d, 0x12345678);
+  EXPECT_EQ(val.type, RegisterValueType::FLAGS);
+  RegisterValue::FlagsType exp1 = {
+    {true, "HELLO"}, {false, "WORLD"},
+    {false, "HELLO2"}, {true, "WORLD2"}};
+  EXPECT_EQ(val.value.flagsValue, exp1);
+}
+
 TEST(RegisterValueTest, CopyMoveTest) {
   RegisterDescriptor d;
   d.format = RegisterValueType::STRING;

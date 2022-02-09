@@ -74,11 +74,15 @@ void RegisterValue::makeFloat(
 void RegisterValue::makeFlags(
     const std::vector<uint16_t>& reg,
     const RegisterDescriptor::FlagsDescType& flagsDesc) {
-  makeInteger(reg);
-  uint32_t bitField = static_cast<uint32_t>(value.intValue);
   new (&value.flagsValue)(FlagsType);
   for (const auto& [pos, name] : flagsDesc) {
-    bool bitVal = (bitField & (1 << pos)) != 0;
+    // The bit position is provided assuming the register contents
+    // are combined together to form a big-endian larger integer.
+    // Hence we need to reverse the register index. Each 16bit
+    // word is already swapped by Msg, so we do not need to do that.
+    uint16_t regIdx = reg.size() - (pos / 16) - 1;
+    uint16_t regBit = pos % 16;
+    bool bitVal = (reg[regIdx] & (1 << regBit)) != 0;
     value.flagsValue.push_back(std::make_tuple(bitVal, name, pos));
   }
 }
@@ -414,7 +418,5 @@ void to_json(json& j, const RegisterMap& m) {
       std::back_inserter(j["registers"]),
       [](const auto& kv) { return kv.second; });
 }
-
-
 
 } // namespace rackmon

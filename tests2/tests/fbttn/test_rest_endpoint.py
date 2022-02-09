@@ -62,7 +62,6 @@ class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
                 cls,
                 "test_restendpoint_{}".format(endpoint),
                 functools.partialmethod(
-                    unittest.skipIf(
                         qemu_check() and endpoint != "/api", "test env is QEMU, skipped"
                     )(verify_method),
                     endpoint,

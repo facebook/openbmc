@@ -52,7 +52,6 @@ def check_fru_availability(fru: str) -> bool:
     return False
 
 
-def qemu_check():
     return os.path.exists("/usr/local/bin/tests2/dummy_qemu")
 
 

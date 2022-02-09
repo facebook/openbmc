@@ -20,12 +20,10 @@
 import unittest
 
 from common.base_bios_util_test import BaseBiosUtilTest
-from utils.test_utils import qemu_check
 
 FRU_LIST = ["server"]
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class BiosUtilTest(BaseBiosUtilTest):
     def set_fru_list(self):
         self.fru_list = FRU_LIST

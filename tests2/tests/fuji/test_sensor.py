@@ -46,10 +46,8 @@ from tests.fuji.test_data.sensors.sensor import (
     SCM_SENSORS,
     SMB_SENSORS,
 )
-from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ScmSensorTest(SensorUtilTest, unittest.TestCase):
     def set_sensors_cmd(self):
         self.sensors_cmd = ["/usr/local/bin/sensor-util scm"]
@@ -91,7 +89,6 @@ class ScmSensorTest(SensorUtilTest, unittest.TestCase):
                 )
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class PimSensorTest(SensorUtilTest, unittest.TestCase):
     @abstractmethod
     def get_pim_sensors(self):
@@ -331,7 +328,6 @@ class Pim8SensorTest(PimSensorTest, unittest.TestCase):
         super().base_test_pim_temp_sensor_range()
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class PsuSensorTest(SensorUtilTest, unittest.TestCase):
     @abstractmethod
     def get_psu_sensors(self):

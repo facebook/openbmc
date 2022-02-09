@@ -20,7 +20,6 @@
 import unittest
 
 from common.base_image_layout_test import BaseImageLayoutTest
-from utils.test_utils import qemu_check
 
 
 class ImageLayoutTest(BaseImageLayoutTest):
@@ -46,7 +45,6 @@ class ImageLayoutTest(BaseImageLayoutTest):
         },
     }
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_spi_1_mtd(self):
         """
         Test actual image layout on spi0.1 matches image meta data

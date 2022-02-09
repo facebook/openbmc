@@ -21,7 +21,6 @@ import unittest
 
 from common.base_fans_test import CommonFanUtilBasedFansTest
 from utils.cit_logger import Logger
-from utils.test_utils import qemu_check
 
 
 class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
@@ -38,6 +37,5 @@ class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
         self.kill_fan_controller()
         self.start_fan_controller()
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_fan_pwm_set(self):
         super().test_fan_pwm_set()

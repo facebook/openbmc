@@ -20,7 +20,6 @@
 import unittest
 
 from common.base_fru_test import CommonFruTest
-from utils.test_utils import qemu_check, check_fru_availability
 
 
 class FruSlot1Test(CommonFruTest, unittest.TestCase):
@@ -29,7 +28,6 @@ class FruSlot1Test(CommonFruTest, unittest.TestCase):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "slot1"]
         self.fru_fields = {"chassis": 1, "product": 2, "board": 2}
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_fru_fields(self):
         if not check_fru_availability(self.fru):
             self.skipTest("skip test due to {} not available".format(self.fru))

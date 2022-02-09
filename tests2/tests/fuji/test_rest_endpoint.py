@@ -47,7 +47,6 @@ from tests.fuji.test_data.sensors.sensor import (
 )
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
 
 
 class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
@@ -102,7 +101,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "sensors",
         ]
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys(self):
         self.set_endpoint_sys_attributes()
         self.verify_endpoint_attributes(
@@ -187,7 +185,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             else:
                 Logger.info("/api/sys/sensors: get PIM{} sensors None".format(pim + 1))
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_sensors(self):
         self.set_endpoint_sensors_attributes()
         self.verify_endpoint_attributes(
@@ -210,7 +207,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_scm_attributes(self):
         self.endpoint_fruid_scm_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_scm(self):
         self.set_endpoint_fruid_scm_attributes()
         self.verify_endpoint_attributes(
@@ -221,7 +217,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_smb_attributes(self):
         self.endpoint_fruid_smb_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_smb(self):
         self.set_endpoint_fruid_smb_attributes()
         self.verify_endpoint_attributes(
@@ -232,7 +227,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_mb_fruid_attributes(self):
         self.endpoint_mb_fruid_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_seutil_fruid(self):
         self.set_endpoint_mb_fruid_attributes()
         self.verify_endpoint_attributes(
@@ -243,7 +237,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fcm_top_attributes(self):
         self.endpoint_fruid_fcm_top_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fcm_top(self):
         self.set_endpoint_fruid_fcm_top_attributes()
         self.verify_endpoint_attributes(
@@ -254,7 +247,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fcm_bottom_attributes(self):
         self.endpoint_fruid_fcm_bottom_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fcm_bottom(self):
         self.set_endpoint_fruid_fcm_bottom_attributes()
         self.verify_endpoint_attributes(
@@ -266,7 +258,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan1_attributes(self):
         self.endpoint_fruid_fan1_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan1(self):
         self.set_endpoint_fruid_fan1_attributes()
         self.verify_endpoint_attributes(
@@ -277,7 +268,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan2_attributes(self):
         self.endpoint_fruid_fan2_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan2(self):
         self.set_endpoint_fruid_fan2_attributes()
         self.verify_endpoint_attributes(
@@ -288,7 +278,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan3_attributes(self):
         self.endpoint_fruid_fan3_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan3(self):
         self.set_endpoint_fruid_fan3_attributes()
         self.verify_endpoint_attributes(
@@ -299,7 +288,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan4_attributes(self):
         self.endpoint_fruid_fan4_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan4(self):
         self.set_endpoint_fruid_fan4_attributes()
         self.verify_endpoint_attributes(
@@ -310,7 +298,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan5_attributes(self):
         self.endpoint_fruid_fan5_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan5(self):
         self.set_endpoint_fruid_fan5_attributes()
         self.verify_endpoint_attributes(
@@ -321,7 +308,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan6_attributes(self):
         self.endpoint_fruid_fan6_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan6(self):
         self.set_endpoint_fruid_fan6_attributes()
         self.verify_endpoint_attributes(
@@ -332,7 +318,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan7_attributes(self):
         self.endpoint_fruid_fan7_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan7(self):
         self.set_endpoint_fruid_fan7_attributes()
         self.verify_endpoint_attributes(
@@ -343,7 +328,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_fan8_attributes(self):
         self.endpoint_fruid_fan8_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_fan8(self):
         self.set_endpoint_fruid_fan8_attributes()
         self.verify_endpoint_attributes(
@@ -354,7 +338,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim1_attributes(self):
         self.endpoint_fruid_pim1_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim1(self):
         self.set_endpoint_fruid_pim1_attributes()
         self.verify_endpoint_attributes(
@@ -365,7 +348,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim2_attributes(self):
         self.endpoint_fruid_pim2_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim2(self):
         self.set_endpoint_fruid_pim2_attributes()
         self.verify_endpoint_attributes(
@@ -376,7 +358,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim3_attributes(self):
         self.endpoint_fruid_pim3_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim3(self):
         self.set_endpoint_fruid_pim3_attributes()
         self.verify_endpoint_attributes(
@@ -387,7 +368,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim4_attributes(self):
         self.endpoint_fruid_pim4_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim4(self):
         self.set_endpoint_fruid_pim4_attributes()
         self.verify_endpoint_attributes(
@@ -398,7 +378,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim5_attributes(self):
         self.endpoint_fruid_pim5_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim5(self):
         self.set_endpoint_fruid_pim5_attributes()
         self.verify_endpoint_attributes(
@@ -409,7 +388,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim6_attributes(self):
         self.endpoint_fruid_pim6_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim6(self):
         self.set_endpoint_fruid_pim6_attributes()
         self.verify_endpoint_attributes(
@@ -420,7 +398,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim7_attributes(self):
         self.endpoint_fruid_pim7_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim7(self):
         self.set_endpoint_fruid_pim7_attributes()
         self.verify_endpoint_attributes(
@@ -431,7 +408,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def set_endpoint_fruid_pim8_attributes(self):
         self.endpoint_fruid_pim8_attrb = self.FRUID_ATTRIBUTES
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_fruid_pim8(self):
         self.set_endpoint_fruid_pim8_attributes()
         self.verify_endpoint_attributes(
@@ -587,7 +563,6 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             "PIM9",
         ]
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_endpoint_api_sys_piminfo(self):
         self.set_endpoint_piminfo_attributes()
         self.verify_endpoint_attributes(

@@ -20,9 +20,7 @@
 import unittest
 
 from common.base_fw_env_test import BaseFwEnvTest
-from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class TestFwEnv(BaseFwEnvTest, unittest.TestCase):
     pass

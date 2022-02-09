@@ -22,7 +22,6 @@ import unittest
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
-from utils.test_utils import qemu_check
 
 
 def collect_show_tech():
@@ -30,7 +29,6 @@ def collect_show_tech():
     return run_shell_cmd(show_tech_cmd)
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ShowTechTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):

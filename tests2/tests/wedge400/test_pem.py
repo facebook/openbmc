@@ -20,10 +20,8 @@
 import unittest
 
 from common.base_pem_test import PemInfoTest, PemEepromTest, PemBlackboxTest
-from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Pem1InfoTest(PemInfoTest, unittest.TestCase):
     """
     Test for pem1 info
@@ -34,7 +32,6 @@ class Pem1InfoTest(PemInfoTest, unittest.TestCase):
         self.pem_id = 1
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Pem2InfoTest(PemInfoTest, unittest.TestCase):
     """
     Test for pem2 info
@@ -45,7 +42,6 @@ class Pem2InfoTest(PemInfoTest, unittest.TestCase):
         self.pem_id = 2
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Pem1EepromTest(PemEepromTest, unittest.TestCase):
     """
     Test for pem1 Eeprom
@@ -62,7 +58,6 @@ class Pem1EepromTest(PemEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PEM"]
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Pem2EepromTest(PemEepromTest, unittest.TestCase):
     """
     Test for pem2 Eeprom
@@ -79,7 +74,6 @@ class Pem2EepromTest(PemEepromTest, unittest.TestCase):
         self.location_on_fabric = ["PEM"]
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Pem1BlackboxTest(PemBlackboxTest, unittest.TestCase):
     """
     Test for pem1 Blackbox
@@ -90,7 +84,6 @@ class Pem1BlackboxTest(PemBlackboxTest, unittest.TestCase):
         self.pem_id = 1
 
 
-@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Pem2BlackboxTest(PemBlackboxTest, unittest.TestCase):
     """
     Test for pem2 Blackbox

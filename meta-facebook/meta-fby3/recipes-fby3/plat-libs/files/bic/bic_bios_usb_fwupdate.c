@@ -386,6 +386,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
 {
   int ret = -1, rc = 0;
   uint8_t *buf = NULL;
+  uint8_t usb_package_buf[USB_PKT_SIZE_BIG] = {0};
   size_t write_offset = 0;
 
   const char *what = NULL;
@@ -457,7 +458,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       break;
     }
     // Pad to 64K with 0xff, if needed.
-    for (size_t i = file_buf_num_bytes; i < BIOS_UPDATE_BLK_SIZE; i++) {
+    for (size_t i = file_buf_num_bytes; i < BIOS_UPDATE_BLK_SIZE; i++, file_buf_num_bytes++) {
       file_buf[i] = '\xff';
     }
     // Check if we need to write this block at all.
@@ -492,10 +493,11 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       // so if we have SHA256 checksum, we can use big packets as well.
       size_t limit = (cs_len == STRONG_DIGEST_LENGTH ? USB_DAT_SIZE_BIG : USB_DAT_SIZE);
       if (count > limit) count = limit;
-      bic_usb_packet *pkt = (bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
+      bic_usb_packet *pkt = (bic_usb_packet *) usb_package_buf;
       pkt->dummy = CMD_OEM_1S_UPDATE_FW;
       pkt->offset = write_offset + file_buf_pos;
       pkt->length = count;
+      memcpy(&(pkt->data), file_buf + file_buf_pos, count);
       int rc = send_bic_usb_packet(udev, pkt);
       if (rc < 0) {
         fprintf(stderr, "failed to write %d bytes @ %d: %d\n", count, write_offset, rc);

@@ -27,12 +27,9 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
   size_t bmc_found = fru_name.find(bmc_str);
   uint8_t slot_id = 0;
   int ret = -1;
-  int i2cfd = 0;
-  uint8_t tbuf[1] = {0};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int retry= 0;
+  uint8_t board_rev = 0;
+  uint8_t hsc_det = 0;
+  
   int board_type_index = 0;
   bool board_rev_is_invalid = false;
 
@@ -86,57 +83,51 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
   if ( force == false ) {
     // Read Board Revision from CPLD
     if ( ((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
-      i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
+      if ( fby3_common_get_bb_board_rev(&board_rev) ) {
+        cout << "Failed to get bb board rev" << endl;
         return image_sts;
       }
-
-      tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
+      // respin board, Need to process BOARD_REV through HSC_DETECT, keeping the original logic work
+      if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
+        cout << "Failed to get bb board rev" << endl;
+        return image_sts;
       }
-      if (retry == RETRY_TIME) {
-        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
-         return image_sts;
+      if ( hsc_det == HSC_DET_ADM1278 ) {
+        // old board, BOARD_REV_ID3 is floating.
+        board_rev &= 0x7;
+      } else {
+        // new respin board is the MP stage,
+        // rise bit3 to keep "if (board_type_index < CPLD_BOARD_PVT_REV)" work.
+        board_rev |= 0x8;
       }
     } else if (slot_found != string::npos) {
+      bic_gpio_t gpio = {0};
+      
       slot_id = fru_name.at(4) - '0';
-      i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        cout << "Failed to open CPLD "<< CPLD_ADDRESS << endl;
+      if ( fby3_common_get_sb_board_rev(slot_id, &board_rev) ) {
+        cout << "Failed to get sb board rev" << endl;
         return image_sts;
       }
-
-      tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
+      // respin board, Need to process BOARD_REV through HSC_DETECT, keeping the original logic work
+      ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
+      if ( ret < 0 ) {
+        printf("%s() bic_get_gpio returns %d\n", __func__, ret);
         return image_sts;
+      }
+      hsc_det |= ((BIT_VALUE(gpio, 77)) << 0); // 77    HSC_DETECT0
+      hsc_det |= ((BIT_VALUE(gpio, 78)) << 1); // 78    HSC_DETECT1
+      hsc_det |= ((BIT_VALUE(gpio, 79)) << 2); // 79    HSC_DETECT2
+      if ( hsc_det == HSC_DET_ADM1278 ) {
+        // old board, BOARD_REV_ID3 is floating.
+        board_rev &= 0x7;
+      } else {
+        // new respin board is the MP stage,
+        // rise bit3 to keep "if (board_type_index < CPLD_BOARD_PVT_REV)" work.
+        board_rev |= 0x8;
       }
     }
 
-    board_type_index = rbuf[0] - 1;
+    board_type_index = board_rev - 1;
     if (board_type_index < 0) {
       board_type_index = 0;
     }
@@ -314,7 +305,7 @@ int BmcCpldComponent::update_cpld(string image)
   } else {
     //TODO: need to update 2 CFMs
     ret = cpld_program((char *)image.c_str(), key, false);
-    cpld_intf_close(INTF_I2C);
+    cpld_intf_close();
     if ( ret < 0 ) {
       printf("Error Occur at updating CPLD FW!\n");
     }
@@ -357,4 +348,3 @@ int BmcCpldComponent::fupdate(string image)
   remove(image.c_str());
   return ret;
 }
-

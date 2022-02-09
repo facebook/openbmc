@@ -159,66 +159,6 @@ ubifs_format() {
     fi
 }
 
-ubifs_resize() {
-    ubi_dev="$1"
-    vol_id="$2"
-    ubi_vol="${ubi_dev}_${vol_id}"
-    mnt_point="$3"
-    backup_dir="/tmp/mnt_data_ubifs_backup"
-    ubi_dev_avali_leb=$(ubinfo "$ubi_dev" | grep "available logical eraseblocks" | awk -F':' '{print $2}' | awk '{print $1}')
-    ubi_vol_leb=$(ubinfo "$ubi_vol" | grep "Size" | awk -F':' '{print $2}' | awk '{print $1}')
-    new_vol_leb=$((ubi_dev_avali_leb+ubi_vol_leb))
-
-    if [ "$ubi_dev_avali_leb" -eq 0 ]; then
-        # no more avaliable LEBs
-        return 0
-    fi
-
-    # prepare backup data folder
-    if [ -e "$backup_dir" ]; then
-        rm -rf "$backup_dir"
-    fi
-    cp -ar "$mnt_point" "$backup_dir"
-
-    # umount mount point
-    if ! umount "$mnt_point"; then
-        rm -rf "$backup_dir"
-        echo "umount $mnt_point failed"
-        return 1
-    fi
-
-    # do resize
-    if ! ubirsvol "$ubi_dev" -n "$vol_id" -S "$new_vol_leb"; then
-        echo "ubifs volume resize failed (ubirsvol), err_code: $?"
-    elif ! mkfs.ubifs -y -r "$backup_dir" "$ubi_vol"; then
-        echo "ubifs volume resize failed (mkfs.ubifs), err_code: $?"
-    elif ! ubifs_mount "$ubi_vol" "$mnt_point"; then
-        echo "ubifs volume resize failed (ubifs_mount), err_code: $?"
-    else
-        # resize done
-        echo "ubifs volume resize done, vol: $ubi_vol, origin LEBs: $ubi_vol_leb, new LEBs: $new_vol_leb"
-        rm -rf "$backup_dir"
-        return 0
-    fi
-
-    # undo resize
-    if ! ubirsvol "$ubi_dev" -n "$vol_id" -S "$ubi_vol_leb"; then
-        echo "ubifs volume undo resize failed (ubirsvol), err_code: $?"
-    elif ! mkfs.ubifs -y -r "$backup_dir" "$ubi_vol"; then
-        echo "ubifs volume undo resize failed (mkfs.ubifs), err_code: $?"
-    elif ! ubifs_mount "$ubi_vol" "$mnt_point"; then
-        echo "ubifs volume undo resize failed (ubifs_mount), err_code: $?"
-    else
-        # undo resize done
-        echo "ubifs volume undo resize done, vol: $ubi_vol, LEBs: $ubi_vol_leb"
-        rm -rf "$backup_dir"
-        return 0
-    fi
-
-    # undo reise failed
-    return 1
-}
-
 ubifs_mount() {
     ubi_vol="$1"
     mnt_point="$2"
@@ -294,10 +234,6 @@ do_mount_ubifs() {
             echo "ubifs_mount failed after recovery. Exiting!"
             exit 1
         fi
-    fi
-
-    if ! ubifs_resize "$ubi_dev" "0" "$mnt_point"; then
-        exit 1
     fi
 }
 

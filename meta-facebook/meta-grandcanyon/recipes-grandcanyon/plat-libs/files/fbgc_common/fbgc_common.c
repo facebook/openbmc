@@ -405,9 +405,12 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   int i2cfd = 0, ret = 0, retry = 0;
   uint8_t tbuf[1] = {0};
   uint8_t tlen = 0;
+  FILE* fp = NULL;
+  char buf[MAX_SYS_CMD_RESP_LEN] = {0};
 
   if (board_rev_id == NULL) {
     syslog(LOG_WARNING, "%s(): fail to get board revision id due to NULL parameter", __func__);
+    return -1;
   }
 
   i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, BS_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -433,8 +436,23 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   if (retry == MAX_RETRY) {
     syslog(LOG_WARNING, "%s(): fail to read server FPGA offset: 0x%02X via i2c\n", __func__, BS_FPGA_BOARD_REV_ID_OFFSET);
     ret = -1;
+    goto exit;
   }
 
+  // Add this workaround to handle the wrong BS Rev ID on PVT Barton Springs.
+  if (*board_rev_id == (STAGE_DVT + 1)) {
+    if ((fp = popen("/usr/local/bin/fruid-util server | grep 'Product Version' | grep 'PVT'", "r")) == NULL) {
+      syslog(LOG_WARNING, "%s(): fail to get Product Version of Bartion Springs\n", __func__);
+      ret = -1;
+      goto exit;
+    }
+    if (fgets(buf, sizeof(buf), fp) != NULL) {
+      *board_rev_id = (STAGE_PVT + 1);
+    }
+  }
+  pclose(fp);
+
+exit:
   close(i2cfd);
   return ret;
 }

@@ -41,9 +41,9 @@ static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 1};
 
 static void
 print_usage_help(void) {
-  if ( pal_is_cwc() == PAL_EOK ) {
-    printf("Usage: usb2jtag-util slot1 [2U-top|2U-bot] --dev [0~11]\n");
-    printf("Usage: usb2jtag-util slot1 [2U-top|2U-bot] --trst\n");
+  if ( pal_is_exp() == PAL_EOK ) {
+    printf("Usage: usb2jtag-util [slot1-2U-top|slot1-2U-bot] --dev [0~11]\n");
+    printf("Usage: usb2jtag-util [slot1-2U-top|slot1-2U-bot] --trst\n");
   } else {
     printf("Usage: usb2jtag-util slot[1|3] --dev [0~11]\n");
     printf("Usage: usb2jtag-util slot[1|3] --trst\n");
@@ -185,24 +185,17 @@ main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  if ( strncmp(argv[1], "slot1", 5) == 0 ) {
+  if ( strcmp(argv[1], "slot1") == 0 ) {
     slot_id = 1;
-    if ( pal_is_cwc() == PAL_EOK && strncmp(argv[2], "2U-top", 6) == 0 ) {
-      slot_id = FRU_2U_TOP;
-    } else if ( pal_is_cwc() == PAL_EOK && strncmp(argv[2], "2U-bot", 6) == 0 ) {
-      slot_id = FRU_2U_BOT;
-    }
-  } else if ( strncmp(argv[1], "slot3", 5) == 0 ) slot_id = 3;
-  else {
+  } else if ( strcmp(argv[1], "slot3") == 0 ) {
+    slot_id = 3;
+  } else if ( strcmp(argv[1], "slot1-2U-top") == 0 ) {
+    slot_id = FRU_2U_TOP;
+  } else if ( strcmp(argv[1], "slot1-2U-bot") == 0 ) {
+    slot_id = FRU_2U_BOT;
+  } else {
     printf("%s is not supported!\n", argv[1]);
     return EXIT_FAILURE;
-  }
-
-  if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
-    for (i = 2; i < argc-1; ++i) {
-      argv[i] = argv[i+1];
-    }
-    argc--;
   }
 
   if ( (argc == 4 || argc == 5) && (strncmp(argv[2], "--dev", 5) == 0) ) {

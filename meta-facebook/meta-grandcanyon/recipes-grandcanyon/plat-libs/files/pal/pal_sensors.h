@@ -10,6 +10,7 @@
 #define NIC_INFO_SLAVE_ADDR          (0x3E)
 #define NIC_INFO_TEMP_CMD            (0x1)
 
+#define MAX_EXP_IPMB_THRESH_COUNT    20
 #define MAX_EXP_IPMB_SENSOR_COUNT    40
 #define EXP_SENSOR_WAIT_TIME         5      // 5 seconds
 
@@ -46,6 +47,22 @@
 #define E1S_SENSOR_NAME_SIDE_B       'B'
 
 #define MAX_NIC_TEMPERATURE          (130)
+
+#define KEY_IOCM_SNR_READY           "iocm_snr_ready"
+#define IOCM_SNR_READY               "1"
+#define IOCM_SNR_NOT_READY           "0"
+
+#define KEY_DPB_SOURCE_INFO          "dpb_source_info"
+#define KEY_IOCM_SOURCE_INFO         "iocm_source_info"
+#define STR_UNKNOWN_SOURCE           "0"
+#define STR_MAIN_SOURCE              "1"
+#define STR_SECOND_SOURCE            "2"
+
+enum {
+  UNKNOWN_SOURCE = 0,
+  MAIN_SOURCE,  // default
+  SECOND_SOURCE,
+};
 
 typedef struct {
   float ucr_thresh;
@@ -412,6 +429,18 @@ typedef struct {
 } EXPANDER_SENSOR_DATA;
 
 typedef struct {
+  uint8_t sensor_num;
+  uint8_t high_crit_1;
+  uint8_t high_crit_2;
+  uint8_t high_warn_1;
+  uint8_t high_warn_2;
+  uint8_t low_crit_1;
+  uint8_t low_crit_2;
+  uint8_t low_warn_1;
+  uint8_t low_warn_2;
+} EXPANDER_THRES_DATA;
+
+typedef struct {
   int airflow_value;
   float offset_value;
 } inlet_corr_t;
@@ -421,5 +450,8 @@ bool is_e1s_iocm_present(uint8_t id);
 int read_device(const char *device, int *value);
 int write_device(const char *device, const char *value);
 int get_current_dir(const char *device, char *dir_name);
+int pal_sensor_monitor_initial(void);
+bool is_e1s_iocm_i2c_enabled(uint8_t id);
+int pal_exp_sensor_threshold_init(uint8_t fru);
 
 #endif

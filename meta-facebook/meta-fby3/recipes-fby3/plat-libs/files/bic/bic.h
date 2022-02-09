@@ -73,13 +73,8 @@ enum {
 #define REVISION_ID(x) ((x >> 4) & 0x0f)
 #define COMPONENT_ID(x) (x & 0x0f)
 
-#define NIC_CPLD_BUS 9
-#define BB_CPLD_BUS 12
-#define CPLD_ADDRESS 0x1E
 #define CWC_CPLD_ADDRESS 0xA0
 #define SLOT_BUS_BASE 3
-#define BB_CPLD_BOARD_REV_ID_REGISTER 0x08
-#define SB_CPLD_BOARD_REV_ID_REGISTER 0x07
 #define CPLD_BOARD_PVT_REV 3
 #define CPLD_FLAG_REG_ADDR 0x1F
 #define CPLD_BB_BUS 0x01
@@ -233,10 +228,10 @@ enum {
 };
 
 enum {
-  VR_ISL = 0x0,
+  VR_ISL = 0x0, // Renesas vr vendor ID
   VR_TI  = 0x1,
-  VR_IFX = 0x2,
-  VR_VY  = 0x3,
+  VR_IFX = 0x2, // Infineon vr vendor ID
+  VR_VY  = 0x3, // Vishay vr vendor ID
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,

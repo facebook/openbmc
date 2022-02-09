@@ -101,6 +101,8 @@ server_power_12v_on(uint8_t fru) {
   char cmd[64] = {0};
   uint8_t tbuf[2] = {0};
   uint8_t tlen = 0;
+  uint8_t rbuf[2] = {0};
+  uint8_t rlen = 0;
   int ret = 0, retry= 0;
 
   i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -110,6 +112,41 @@ server_power_12v_on(uint8_t fru) {
   }
 
   tbuf[0] = 0x09 + (fru-1);
+  tlen = 1;
+  rlen = 1;
+  while (retry < MAX_READ_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == MAX_READ_RETRY) {
+    syslog(LOG_WARNING, "%s()%d Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, __LINE__, tlen);
+    goto error_exit;
+  }
+
+  if (rbuf[0] == AC_ON) {
+    tbuf[1] = AC_OFF;
+    tlen = 2;
+    while (retry < MAX_READ_RETRY) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        retry++;
+        msleep(100);
+      } else {
+        break;
+      }
+    }
+    if (retry == MAX_READ_RETRY) {
+      syslog(LOG_WARNING, "%s()%d Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, __LINE__, tlen);
+      goto error_exit;
+    }
+    sleep(2);
+  }
+
   tbuf[1] = AC_ON;
   tlen = 2;
   retry = 0;
@@ -280,7 +317,9 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
   //change the power mode of NIC to expected_pwr
   int fd = -1;
   uint8_t tbuf[2] = {0x0f, (expected_pwr&0x1)};
-  uint8_t tlen = sizeof(tbuf);
+  uint8_t tlen = 1;
+  uint8_t rbuf[1];
+  uint8_t rlen = 1;
   int pid_file = 0;
 
   if ( SERVER_POWER_ON == expected_pwr ) {
@@ -293,13 +332,27 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
     return PAL_ENOTSUP;
   }
 
-  ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Failed to change NIC Power mode");
+  ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, rbuf, rlen);
+  if ( ret < 0) {
+    syslog(LOG_WARNING, "Failed to get NIC Power mode in CPLD");
   } else {
-    //if one of them want to wake up, we need to set it and sleep 2s to wait for PERST#
-    //2s is enough for CPLD
-    if ( SERVER_POWER_ON == expected_pwr ) sleep(2);
+    // change the power mode of NIC when orginal mode in cpld is different
+    if (rbuf[0] != expected_pwr) {
+      tlen = 2;
+      ret = i2c_rdwr_msg_transfer(fd, CPLD_PWR_CTRL_ADDR, tbuf, tlen, NULL, 0);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "Failed to change NIC Power mode");
+      } else {
+        //if one of them want to wake up, we need to set it and sleep 2s to wait for PERST#
+        //2s is enough for CPLD
+        if ( SERVER_POWER_ON == expected_pwr ) {
+          syslog(LOG_CRIT, "NIC Power is set to VMAIN");
+          sleep(2);
+        } else if ( SERVER_POWER_OFF == expected_pwr ) {
+          syslog(LOG_CRIT, "NIC Power is set to VAUX");
+        }
+      }
+    }
   }
 
   if ( pid_file > 0 ) {
@@ -314,6 +367,11 @@ pal_server_set_nic_power(const uint8_t expected_pwr) {
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
+
+  if (pal_is_cwc() == PAL_EOK &&
+      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
+    return pal_get_exp_power(fru, status);
+  }
 
   ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
@@ -340,6 +398,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
   int ret = 0;
   uint8_t bmc_location = 0;
+
+  if (pal_is_cwc() == PAL_EOK &&
+      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
+    return pal_set_exp_power(fru, cmd);
+  }
 
   ret = fby3_common_check_slot_id(fru);
   if ( ret < 0 ) {
@@ -468,6 +531,7 @@ int
 pal_sled_cycle(void) {
   int ret = PAL_EOK;
   uint8_t bmc_location = 0;
+  uint8_t hsc_det = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -476,7 +540,26 @@ pal_sled_cycle(void) {
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
+    if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
+      return -1;
+    }
+    switch (hsc_det) {
+      case HSC_DET_ADM1278:
+        ret = system("i2cset -y 11 0x40 0xd9 c &> /dev/null");
+        break;
+      case HSC_DET_LTC4282:
+        ret = system("i2cset -y -f 11 0x40 0x1d 0x80 b &> /dev/null");
+        break;
+      case HSC_DET_MP5990:
+        ret = system("i2cset -y 11 0x40 0xf c &> /dev/null");
+        break;
+      case HSC_DET_ADM1276:
+        ret = system("i2cset -y 11 0x20 0xd9 c &> /dev/null");
+        break;
+      default:
+        syslog(LOG_WARNING, "%s Invalid HSC detection: %u\n", __func__, hsc_det);
+        return -1;
+    }
   } else {
     // check power lock flag
     if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) {
@@ -535,7 +618,12 @@ pal_get_last_pwr_state(uint8_t fru, char *state) {
   int ret;
   char key[MAX_KEY_LEN] = {0};
 
-  sprintf(key, "pwr_server%d_last_state", (int) fru);
+  if (pal_is_cwc() == PAL_EOK && 
+      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
+    sprintf(key, "pwr_server%d_last_state", FRU_SLOT1);
+  } else {
+    sprintf(key, "pwr_server%d_last_state", (int) fru);
+  }
 
   ret = pal_get_key_value(key, state);
   if (ret < 0) {
@@ -1269,6 +1357,34 @@ pal_get_gpv3_hsc(int bus, uint8_t *val) {
 }
 
 int
+pal_set_vr_interrupt(uint8_t fru, uint8_t enable) {
+  switch (fru) {
+    case FRU_CWC:
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, REXP_BIC_INTF)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-cwc vr interrupt", __func__);
+      }
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF1)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-top vr interrupt", __func__);
+      }
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF2)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-bot vr interrupt", __func__);
+      }
+      break;
+    case FRU_2U_TOP:
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF1)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-top vr interrupt", __func__);
+      }
+      break;
+    case FRU_2U_BOT:
+      if (bic_enable_vr_fault_monitor(FRU_SLOT1, enable ? true : false, RREXP_BIC_INTF2)) {
+        syslog(LOG_WARNING, "%s() Failed to disable 2U-bot vr interrupt", __func__);
+      }
+      break;
+  }
+  return 0;
+}
+
+int
 pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
   int i2cfd = BIC_STATUS_FAILURE;
   int ret = BIC_STATUS_FAILURE;
@@ -1323,6 +1439,10 @@ pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
       goto error_exit;
   }
 
+  if (!pwr_on) {
+    pal_set_vr_interrupt(fru, 0);
+  }
+
   i2cfd = i2c_cdev_slave_open(bus, CWC_CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     ina_alert_ret = i2cfd;
@@ -1342,6 +1462,13 @@ pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
   if ( ret < 0 ) {
     ina_alert_ret = ret;
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+
+    if (!pwr_on) {
+      pal_set_vr_interrupt(fru, 1);
+    }
+  } else if (pwr_on) {
+    msleep(100);
+    pal_set_vr_interrupt(fru, 1);
   }
 
   if ( i2cfd > 0 ) {
@@ -1395,10 +1522,13 @@ pal_set_exp_12v_cycle(uint8_t fru) {
 
 int
 pal_set_exp_power(uint8_t fru, uint8_t cmd) {
-  uint8_t status = 0;
+  uint8_t status = 0, root = 0;
 
-  if (pal_is_fw_update_ongoing(FRU_SLOT1)) {
-    printf("fw update is on going on fru:%d...\n", FRU_SLOT1);
+  if (pal_get_root_fru(fru, &root) != PAL_EOK) {
+    return POWER_STATUS_ERR;
+  }
+  if (pal_is_fw_update_ongoing(root)) {
+    printf("fw update is on going on fru:%d...\n", root);
     return POWER_STATUS_ERR;
   }
   if (pal_get_exp_power(fru, &status) < 0) {
@@ -1440,7 +1570,7 @@ pal_set_exp_power(uint8_t fru, uint8_t cmd) {
       }
       break;
     default:
-      printf("unknown expantion command : %d\n", cmd);
+      printf("command not supported for fru:%d\n", fru);
       return POWER_STATUS_ERR;
   }
   return 0;

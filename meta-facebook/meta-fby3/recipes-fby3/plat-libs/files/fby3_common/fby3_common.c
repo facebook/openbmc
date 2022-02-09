@@ -226,13 +226,13 @@ fby3_common_is_bic_ready(uint8_t fru, uint8_t *val) {
   }
 
   bus = (uint8_t)ret;
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
     goto error_exit;
   }
 
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
     goto error_exit;
@@ -519,6 +519,14 @@ fby3_common_exp_dev_name(uint8_t dev, char *str) {
 
   if (dev == FRU_ALL) {
     strcpy(str, "all");
+  } else if (dev == DEV_ID0_1OU) {
+    strcpy(str, "1U-dev0");
+  } else if (dev == DEV_ID1_1OU) {
+    strcpy(str, "1U-dev1");
+  } else if (dev == DEV_ID2_1OU) {
+    strcpy(str, "1U-dev2");
+  } else if (dev == DEV_ID3_1OU) {
+    strcpy(str, "1U-dev3");
   } else if (dev == DEV_ID0_2OU) {
     strcpy(str, "2U-dev0");
   } else if (dev == DEV_ID1_2OU) {
@@ -557,11 +565,6 @@ fby3_common_exp_dev_name(uint8_t dev, char *str) {
 }
 
 
-
-
-
-
-
 static int
 _fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   uint8_t bus_num = 0;
@@ -570,7 +573,7 @@ _fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   uint8_t tbuf[64], rbuf[64];
 
   bus_num = fby3_common_get_bus_id(fru_id) + 4;
-  fd = i2c_cdev_slave_open(bus_num, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  fd = i2c_cdev_slave_open(bus_num, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( fd < 0 ) {
     syslog(LOG_ERR, "Failed to open bus %d: %s", bus_num, strerror(errno));
     return -1;
@@ -579,7 +582,7 @@ _fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
   tbuf[0] = CPLD_BOARD_OFFSET;
   tlen = 1;
   rlen = 1;
-  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+  ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, errno: %s", __func__, tlen, strerror(errno));
     goto error_exit;
@@ -613,5 +616,97 @@ fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
     return -1;
   }
 
+  return 0;
+}
+
+int
+fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev) {
+  int i2cfd = 0;
+  int retry = 3;
+  uint8_t tbuf[1] = {SB_CPLD_BOARD_REV_ID_REGISTER};
+  uint8_t rbuf[1] = {0};
+
+  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %d: %s",
+           __func__, slot_id + SLOT_BUS_BASE, strerror(errno));
+    return -1;
+  }
+  
+  do {
+    if (!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1)) {
+      break;
+    }
+    if (--retry) {
+      usleep(100*1000);
+    }
+  } while (retry > 0);
+
+  close(i2cfd);
+  if (retry <= 0) {
+    return -1;
+  }
+  
+  *rev = rbuf[0];
+  return 0;
+}
+
+int
+fby3_common_get_bb_board_rev(uint8_t *rev) {
+  int i2cfd;
+  int retry = 3;
+  uint8_t tbuf[4] = {BB_CPLD_BOARD_REV_ID_REGISTER};
+  uint8_t rbuf[4] = {0};
+  static bool is_cached = false;
+  static uint8_t cached_id = 0;
+
+  if ( is_cached == false ) {
+    i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to open bus %d: %s",
+             __func__, BB_CPLD_BUS, strerror(errno));
+      return -1;
+    }
+
+    do {
+      if (!i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1)) {
+        break;
+      }
+      if (--retry) {
+        usleep(100*1000);
+      }
+    } while (retry > 0);
+
+    close(i2cfd);
+    if (retry <= 0) {
+      return -1;
+    }
+    cached_id = rbuf[0];
+    is_cached = true;
+  }
+
+  *rev = cached_id;
+  return 0;
+}
+
+int
+fby3_common_get_hsc_bb_detect(uint8_t *id) {
+  static bool is_cached = false;
+  static unsigned int cached_id = 0;
+
+  if ( is_cached == false ) {
+    const char *shadows[] = {
+      "HSC_BB_BMC_DETECT0",
+      "HSC_BB_BMC_DETECT1",
+      "HSC_BB_BMC_DETECT2",
+    };
+
+    if ( gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id) ) {
+      return -1;
+    }
+    is_cached = true;
+  }
+
+  *id = (uint8_t)cached_id;
   return 0;
 }

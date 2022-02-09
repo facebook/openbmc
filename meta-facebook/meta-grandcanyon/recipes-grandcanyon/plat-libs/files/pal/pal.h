@@ -55,17 +55,22 @@ extern "C" {
 #define IOCM_ADS1015_DRIVER_BIND_NAME     "ti_ads1015"
 #define IOCM_ADS1015_DRIVER_NAME          "ads1015"
 #define IOCM_ADS1015_BIND_DIR             "/sys/bus/i2c/drivers/ads1015/13-0049/"
-#define IOCM_ADS1015_ADDR                 (49) // unit: hex
+#define IOCM_ADS1015_ADDR                 (0x49)
+
+// LTC2990
+#define IOCM_LTC2990_DRIVER_NAME          "ltc2990"
+#define IOCM_LTC2990_BIND_DIR             "/sys/bus/i2c/drivers/ltc2990/13-004c/"
+#define IOCM_LTC2990_ADDR                 (0x4c)
 
 // IOCM TMP75
-#define IOCM_TMP75_DEVICE_DIR             "/sys/class/i2c-dev/i2c-13/device/13-004a"
-#define IOCM_TMP75_DEVICE_NAME            "tmp75"
+#define IOCM_TMP75_BIND_DIR               "/sys/bus/i2c/drivers/lm75/13-004a"
+#define IOCM_TMP75_DRIVER_NAME            "lm75"
 #define IOCM_TMP75_ADDR                   (0x4a)
 
 // IOCM EEPROM
 #define IOCM_EEPROM_BIND_DIR         "/sys/bus/i2c/drivers/at24/13-0050"
 #define IOCM_EEPROM_DRIVER_NAME      "at24"
-#define IOCM_EEPROM_ADDR             (50) //unit: hex
+#define IOCM_EEPROM_ADDR             (0x50)
 
 #define MAX_NUM_OF_BOARD_REV_ID_GPIO     3
 
@@ -435,8 +440,8 @@ int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
 int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
 int pal_del_i2c_device(uint8_t bus, uint8_t addr);
-int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
-int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name);
+int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir);
+int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir);
 int pal_get_sku(platformInformation *pal_sku);
 int pal_get_uic_location(uint8_t *uic_id);
 int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
@@ -474,6 +479,8 @@ int pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);
 int pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr);
 int pal_clear_event_only_error_ack();
 int pal_check_server_power_change_correct(uint8_t action);
+int pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len);
+int pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver);
 
 #ifdef __cplusplus
 } // extern "C"

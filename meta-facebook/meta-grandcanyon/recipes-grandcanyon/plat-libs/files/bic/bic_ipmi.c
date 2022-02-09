@@ -52,6 +52,9 @@
 #define GET_BIC_GPIO_CFG_CMD_LEN 13
 #define SET_BIC_GPIO_CFG_CMD_LEN 14
 
+#define GET_SYS_FW_VER_CMD_LEN   4
+#define SYS_FW_VER_PARAM_SEL     0x01
+
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
   uint8_t ver;
@@ -82,6 +85,14 @@ typedef struct {
   uint8_t read_count;
   uint8_t write_buffer[MASTER_WRITE_READ_MAX_WRITE_BUF_SIZE];
 } bic_master_write_read_req;
+
+typedef struct {
+  uint8_t param_revision;
+  uint8_t set_selector;
+  uint8_t encoding;
+  uint8_t str_len;
+  uint8_t str_data[SIZE_SYSFW_VER];
+} bic_get_sys_fw_ver_resp;
 
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
@@ -1088,6 +1099,44 @@ bic_get_sel(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
     return -1;
   }
   ret = bic_ipmb_wrapper(NETFN_STORAGE_REQ, CMD_STORAGE_GET_SEL, (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t), (uint8_t*)res, rlen);
+
+  return ret;
+}
+
+int
+bic_get_sys_fw_ver(uint8_t *ver) {
+  int ret = 0;
+  int ver_len = 0, data_index = 0;
+  uint8_t tlen = 0, rlen = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  bic_get_sys_fw_ver_resp sys_fw_resp;
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: failed to get system firmware version due to NULL pointer\n", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+
+  memset(&sys_fw_resp, 0, sizeof(sys_fw_resp));
+
+  tlen = GET_SYS_FW_VER_CMD_LEN;
+  tbuf[0] = 0x00;                 // parameter revision
+  tbuf[1] = SYS_FW_VER_PARAM_SEL; // parameter selector
+  tbuf[2] = 0x00;                 // set selector
+  tbuf[3] = 0x00;                 // block selector
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_SYS_INFO_PARAMS, tbuf, tlen, (uint8_t *)&sys_fw_resp, &rlen);
+  if ((ret < 0) || ((rlen - 1) != SIZE_SYSFW_VER)) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d\n", __func__, ret, rlen);
+    ret = BIC_STATUS_FAILURE;
+  } else {
+    // set remaining data byte to 0x00
+    if ((SIZE_SYSFW_VER - sys_fw_resp.str_len - 3) > 0) {
+      data_index = (int) sys_fw_resp.str_len;
+      memset(&sys_fw_resp.str_data[data_index], 0x00, (SIZE_SYSFW_VER - sys_fw_resp.str_len - 3));
+    }
+    memcpy(ver, &(sys_fw_resp.set_selector), (rlen-1));
+  }
 
   return ret;
 }

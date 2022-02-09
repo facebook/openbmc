@@ -1,4 +1,4 @@
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2021-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,5 +14,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+SUMMARY = "modprobe configuration file"
+DESCRIPTION = "overwrite modprobe behaviors"
+SECTION = "base"
+PR = "r1"
+LICENSE = "GPLv2"
+LIC_FILES_CHKSUM = "file://modprobe.conf;md5=1aaac5ad33755459b190a062ba1b9f4b"
 
-CXXFLAGS += " -DCONFIG_FBY3_CWC "
+inherit meson
+
+S = "${WORKDIR}"
+
+SRC_URI = "file://modprobe.conf \
+           file://meson.build \
+           "

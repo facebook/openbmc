@@ -15,4 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CFLAGS:prepend = " -DFRU_DEVICE_LIST -DCONFIG_FBY3_CWC "
+CFLAGS:prepend = " -DFRU_DEVICE_LIST "

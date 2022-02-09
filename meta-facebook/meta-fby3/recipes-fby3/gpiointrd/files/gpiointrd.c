@@ -217,16 +217,136 @@ issue_slot_plt_state_sel(uint8_t slot_id) {
 }
 #endif
 
+static pthread_t tid_hsc[4] = {-1, -1, -1, -1};
+static void *hsc_log_handler(void *arg) {
+  uint8_t tbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rbuf[16] = {0x00};
+  uint8_t rlen = 0;
+  int ret = 0;
+  int slot_id = (int)arg;
+
+  syslog(LOG_INFO, "%s slot%d : wait BIC ready 3s", __FUNCTION__, slot_id);
+  sleep(3);
+
+  do {
+    tbuf[0] = 0x9C;
+    tbuf[1] = 0x9C;
+    tbuf[2] = 0x00;
+    tlen = 3;
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_HSC_STATUS, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0) {
+      uint8_t oem_status = rbuf[4];
+      if ( oem_status & (1 << 2) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC TEMP FAULT (oem_status:0x%02X)", slot_id, oem_status);
+      }
+      if ( oem_status & (1 << 3) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC VIN UV FAULT (oem_status:0x%02X)", slot_id, oem_status);
+      }
+      if ( oem_status & (1 << 4) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC IOUT OC FAULT (oem_status:0x%02X)", slot_id, oem_status);
+      }
+      if ( oem_status & (1 << 5) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC VIN OV FAULT (oem_status:0x%02X)", slot_id, oem_status);
+      }
+
+    } else {
+      tbuf[0] = 0xB8;
+      tbuf[1] = 0xD9;
+      tbuf[2] = 0x57;
+      tbuf[3] = 0x01;
+      tbuf[4] = 0x00;
+      tbuf[5] = 0x06;
+      tbuf[6] = 0x80;
+      tbuf[7] = 0x00;
+      tbuf[8] = 0x00;
+      tbuf[9] = 0x01;
+      tbuf[10] = 0x02;
+      tbuf[11] = 0x79;
+      tlen = 12;
+      ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+        syslog(LOG_INFO, "slot%d : get status word fail !\n", slot_id);
+        break;
+      }
+      uint16_t status_word = rbuf[4] | (rbuf[5] << 8);
+      if ( status_word & (1 << 2) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC TEMP FAULT (status_word:0x%04X)", slot_id, status_word);
+      }
+      if ( status_word & (1 << 3) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC VIN UV FAULT (status_word:0x%04X)", slot_id, status_word);
+      }
+      if ( status_word & (1 << 4) ) {
+        syslog(LOG_CRIT, "FRU: %d, HSC IOUT OC FAULT (status_word:0x%04X)", slot_id, status_word);
+      }
+      tbuf[0] = 0xB8;
+      tbuf[1] = 0xD9;
+      tbuf[2] = 0x57;
+      tbuf[3] = 0x01;
+      tbuf[4] = 0x00;
+      tbuf[5] = 0x00;
+      tbuf[6] = 0x80;
+      tbuf[7] = 0x00;
+      tbuf[8] = 0x00;
+      tbuf[9] = 0x01;
+      tbuf[10] = 0x00;
+      tbuf[11] = 0x03;
+      tlen = 12;
+      ret = bic_me_xmit(slot_id, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+        syslog(LOG_INFO, "slot%d : sent clear fault fail!\n", slot_id);
+        break;
+      }
+    }
+  } while (0);
+
+  tid_hsc[slot_id - 1] = -1;
+  pthread_exit(NULL);
+}
+
 static void
-slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+slot_hsc_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
+  int ret = 0;
   uint32_t slot_id;
+  static uint8_t init[4] = {0};
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
   assert(cfg);
   // because we don't have consistent shadow name here, we use description instead
   sscanf(cfg->description, "GPIOM%u", &slot_id);
   slot_id += 1;
-  log_gpio_change(gp, curr, 0);
-  issue_slot_ocp_fault_sel(slot_id);
+
+  if (tid_hsc[slot_id - 1] != -1) {
+    ret = pthread_cancel(tid_hsc[slot_id - 1]);
+    if (ret == ESRCH) {
+      syslog(LOG_INFO, "%s: No hsc_log_handler thread exists", __FUNCTION__);
+    } else {
+      syslog(LOG_INFO, "%s: hsc_log_handler thread is cancelled", __FUNCTION__);
+    }
+    tid_hsc[slot_id - 1] = -1;
+  }
+
+  if ( curr == GPIO_VALUE_LOW ) {
+    log_gpio_change(gp, curr, 0);
+    issue_slot_ocp_fault_sel(slot_id);
+  } else {
+    if (init[slot_id - 1] == 0 ) {
+      init[slot_id - 1]++;
+    } else {
+      log_gpio_change(gp, curr, 0);
+    }
+
+    if (pthread_create(&tid_hsc[slot_id - 1], NULL, hsc_log_handler, (void *)slot_id) == 0) {
+      pthread_detach(tid_hsc[slot_id - 1]);
+    } else{
+      tid_hsc[slot_id - 1] = -1;
+      syslog(LOG_WARNING, "%s: create hsc_log_handler thread fail", __FUNCTION__);
+    }
+  }
+}
+
+static void
+slot_hsc_fault_init(gpiopoll_pin_t *gp, gpio_value_t curr) {
+  slot_hsc_fault_hndlr(gp, (gpio_value_t)NULL, curr);
 }
 
 #if 0
@@ -295,10 +415,10 @@ static struct gpiopoll_config g_class1_gpios[] = {
   {"FM_RESBTN_SLOT2_BMC_N",   "GPIOAC3",  GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
   {"FM_RESBTN_SLOT3_BMC_N",   "GPIOI4",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
   {"FM_RESBTN_SLOT4_BMC_N",   "GPIOI6",   GPIO_EDGE_BOTH,     slot_rst_hndler,          NULL},
-  {"HSC_FAULT_SLOT1_N",       "GPIOM0",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"HSC_FAULT_BMC_SLOT2_N_R", "GPIOM1",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"HSC_FAULT_SLOT3_N",       "GPIOM2",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"HSC_FAULT_BMC_SLOT4_N_R", "GPIOM3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
+  {"HSC_FAULT_SLOT1_N",       "GPIOM0",   GPIO_EDGE_BOTH,     slot_hsc_fault_hndlr,     slot_hsc_fault_init},
+  {"HSC_FAULT_BMC_SLOT2_N_R", "GPIOM1",   GPIO_EDGE_BOTH,     slot_hsc_fault_hndlr,     slot_hsc_fault_init},
+  {"HSC_FAULT_SLOT3_N",       "GPIOM2",   GPIO_EDGE_BOTH,     slot_hsc_fault_hndlr,     slot_hsc_fault_init},
+  {"HSC_FAULT_BMC_SLOT4_N_R", "GPIOM3",   GPIO_EDGE_BOTH,     slot_hsc_fault_hndlr,     slot_hsc_fault_init},
   {"OCP_NIC_PRSNT_BMC_N",     "GPIOM5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
 };
 

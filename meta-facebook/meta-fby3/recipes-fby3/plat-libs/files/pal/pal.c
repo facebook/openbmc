@@ -76,7 +76,8 @@ const char pal_m2_dual_list[] = "";
 
 static char sel_error_record[NUM_SERVER_FRU] = {0};
 
-const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
+const char pal_exp_server_list[] = "slot1, slot2, slot3, slot4, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
+const char pal_exp_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -114,6 +115,7 @@ const char pal_fru_exp_list[] = "2U, 2U-cwc, 2U-top, 2U-bot";
 #endif
 
 #define BIC_READ_EEPROM_FAILED 0xE0
+
 static int key_func_por_cfg(int event, void *arg);
 static int key_func_pwr_last_state(int event, void *arg);
 
@@ -710,11 +712,9 @@ error_exit:
 
 int
 pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
-  char key[64] = {0};
-  char value[64] = {0};
-  struct timespec ts;
   static uint8_t bmc_location = 0;
   static bool is_called = false;
+  uint8_t slot = fruid;
 
   // get the location
   if ( (bmc_location == 0) && (fby3_common_get_bmc_location(&bmc_location) < 0) ) {
@@ -728,26 +728,24 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   // the destructor in fw-util(system.cpp) will call set_update_ongoing twice
   // add the flag to avoid running it again
   if ( tmout == 0 ) {
-    if ( bmc_location == NIC_BMC ) {
-      sleep(3);
-    }
+    sleep(3);
     is_called = true;
   }
 
-  // set fw_update_ongoing flag
-  sprintf(key, "fru%d_fwupd", fruid);
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  ts.tv_sec += tmout;
-  sprintf(value, "%ld", ts.tv_sec);
+  if (pal_is_cwc() == PAL_EOK) {
+    pal_get_fru_slot(fruid, &slot);
+  }
 
-  if (kv_set(key, value, 0, 0) < 0) {
-     return -1;
+  // set fw_update_ongoing flag
+  if ( _set_fw_update_ongoing(slot, tmout) < 0 ) {
+    printf("Failed to set fw update ongoing\n");
+    return PAL_ENOTSUP;
   }
 
   // preprocess function
-  if ( (bmc_location == NIC_BMC) && (tmout > 0) ) {
+  if ( tmout > 0 ) {
     // when fw_update_ongoing is set, need to wait for a while
-    // make sure all daemons go into pal_is_fw_update_ongoing
+    // make sure all daemons pending by pal_is_fw_update_ongoing
     sleep(5);
   }
 
@@ -806,7 +804,11 @@ pal_is_fan_manual_mode(uint8_t slot_id) {
 
 bool
 pal_is_fw_update_ongoing(uint8_t fruid) {
-  return bic_is_fw_update_ongoing(fruid);
+  uint8_t slot = fruid;
+  if (pal_is_cwc() == PAL_EOK) {
+    pal_get_fru_slot(fruid, &slot);
+  }
+  return bic_is_fw_update_ongoing(slot);
 }
 
 int
@@ -895,7 +897,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_FRUID_ALL;
+        *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_SENSOR_SLAVE;
       } else {
         ret = -1;
       }
@@ -944,7 +946,7 @@ pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 
 int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  int ret = CC_UNSPECIFIED_ERROR;
+  int ret;
   uint8_t *data = res_data;
   uint8_t bmc_location = 0; //the value of bmc_location is board id.
   *res_len = 0;
@@ -952,37 +954,20 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    goto error_exit;
+    return CC_UNSPECIFIED_ERROR;
   }
 
   *data++ = bmc_location;
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    int dev, retry = 3;
-    uint8_t tbuf[4] = {0};
-    uint8_t rbuf[4] = {0};
+    uint8_t bb_rev = 0x00;
 
-    dev = open("/dev/i2c-12", O_RDWR);
-    if ( dev < 0 ) {
-      return -1;
-    }
-
-    while ((--retry) > 0) {
-      tbuf[0] = 8;
-      ret = i2c_rdwr_msg_transfer(dev, 0x1E, tbuf, 1, rbuf, 1);
-      if (!ret)
-        break;
-      if (retry)
-        msleep(10);
-    }
-
-    close(dev);
+    ret = fby3_common_get_bb_board_rev(&bb_rev);
     if (ret) {
       *data++ = 0x00; //board rev id
     } else {
-      *data++ = rbuf[0]; //board rev id
+      *data++ = bb_rev; //board rev id
     }
-
   } else {
     // Config C can not get rev id form NIC EXP CPLD so far
     *data++ = 0x00; //board rev id
@@ -991,11 +976,8 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   *data++ = slot; //slot id
   *data++ = 0x00; //slot type. server = 0x00
   *res_len = data - res_data;
-  ret = CC_SUCCESS;
 
-error_exit:
-
-  return ret;
+  return CC_SUCCESS;
 }
 
 int
@@ -1270,13 +1252,13 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     sprintf(fname, "nicexp");
     break;
   case FRU_CWC:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU_CWC);
+    sprintf(fname, "slot1_dev%d", BOARD_2OU);
     break;
   case FRU_2U_TOP:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU_TOP);
+    sprintf(fname, "2U-top");
     break;
   case FRU_2U_BOT:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU_BOT);
+    sprintf(fname, "2U-bot");
     break;
   default:
     syslog(LOG_WARNING, "%s() unknown fruid %d", __func__, fru);
@@ -1298,6 +1280,10 @@ pal_fruid_write(uint8_t fru, char *path)
     return PAL_ENOTSUP;
   } else if (fru == FRU_BB) {
     return bic_write_fruid(FRU_SLOT1, 0, path, BB_BIC_INTF);
+  } else if (fru == FRU_2U_TOP) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, RREXP_BIC_INTF1);
+  } else if (fru == FRU_2U_BOT) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, RREXP_BIC_INTF2);
   }
 
   return bic_write_fruid(fru, 0, path, NONE_INTF);
@@ -1332,12 +1318,8 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
       syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
     }
     if (type_2ou == CWC_MCHP_BOARD) {
-      if (dev_id == BOARD_2OU_CWC) {
+      if (fru == FRU_SLOT1 && dev_id == BOARD_2OU) {
         return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
-      } else if (dev_id == BOARD_2OU_TOP) {
-        return bic_write_fruid(fru, 0, path, RREXP_BIC_INTF1);
-      } else if (dev_id == BOARD_2OU_BOT) {
-        return bic_write_fruid(fru, 0, path, RREXP_BIC_INTF2);
       }
 
       /**
@@ -1755,14 +1737,14 @@ static int pal_get_e1s_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
   }
 
   bus = (uint8_t)ret + 4;
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
     return -1;
   }
 
   while (retry < 3) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 1, rbuf, 1);
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 1, rbuf, 1);
     if (ret == 0)
       break;
     retry++;
@@ -2380,8 +2362,16 @@ pal_get_2ou_pesw_str_name(uint8_t board_id, char *board_name_str) {
 static void
 pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
   const char *vr_list_str[5] = {"P3V3_STBY1", "P3V3_STBY2", "P3V3_STBY3", "P1V8", "PESW VR"};
+  const char *cwc_vr_list[] = {"PESW VR"};
+  const char *board = pal_get_board_name(comp);
   const uint8_t vr_list_size = ARRAY_SIZE(vr_list_str);
-  snprintf(error_log, 256, "%s/%s ", pal_get_board_name(comp), (vr_num < vr_list_size)?vr_list_str[vr_num]:"Undefined VR");
+  const uint8_t cwc_vr_list_size = ARRAY_SIZE(cwc_vr_list);
+
+  if (strcmp(board, "CWC") == 0) {
+    snprintf(error_log, 256, "%s/%s ", board, (vr_num < cwc_vr_list_size)?cwc_vr_list[vr_num]:"Undefined VR");
+  } else {
+    snprintf(error_log, 256, "%s/%s ", board, (vr_num < vr_list_size)?vr_list_str[vr_num]:"Undefined VR");
+  }
   return;
 }
 
@@ -2407,7 +2397,7 @@ pal_get_pesw_config_str_name(uint8_t board_id, uint8_t pesw_config, char *error_
 }
 
 static int
-pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
     SYS_THERM_TRIP     = 0x00,
     SYS_FIVR_FAULT     = 0x01,
@@ -2437,14 +2427,19 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     E1S_1OU_M2_PRESENT    = 0x80,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
+  uint8_t event_dir = sel[12] & 0x80;
+  uint8_t *event_data = &sel[13];
   uint8_t event = event_data[0];
   char prsnt_str[32] = {0};
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   uint8_t type_2ou = UNKNOWN_BOARD;
+  char cri_sel[128];
 
   switch (event) {
     case SYS_THERM_TRIP:
       strcat(error_log, "System thermal trip");
+      sprintf(cri_sel, "%s - %s", error_log, ((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_FIVR_FAULT:
       strcat(error_log, "System FIVR fault");
@@ -2457,12 +2452,18 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_UV_DETECT:
       strcat(error_log, "Under Voltage Warning");
+      sprintf(cri_sel, "CPU FPH by UV - %s",((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_OC_DETECT:
       strcat(error_log, "OC Warning");
+      sprintf(cri_sel, "CPU FPH by OC - %s",((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_OCP_FAULT_WARN:
       strcat(error_log, "OCP Fault Warning");
+      sprintf(cri_sel, "CPU FPH by OCP Fault - %s",((event_dir & 0x80) == 0)?"Assert":"Deassert" );
+      pal_add_cri_sel(cri_sel);
       break;
     case SYS_FW_TRIGGER:
       strcat(error_log, "Firmware");
@@ -2672,7 +2673,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       pal_parse_vr_event(fru, event_data, error_log);
       break;
     case BIC_SENSOR_SYSTEM_STATUS:
-      pal_parse_sys_sts_event(fru, event_data, error_log);
+      pal_parse_sys_sts_event(fru, sel, error_log);
       break;
     case ME_SENSOR_SMART_CLST:
       pal_parse_smart_clst_event(fru, event_data, error_log);
@@ -2854,9 +2855,12 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
   int ret = PAL_EOK;
   int retry = MAX_RETRY;
   int st_idx = slot_id, end_idx = slot_id;
-  uint8_t tbuf[2] = {0x00};
+  uint8_t tbuf[5] = {0x00};
+  uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 2;
+  uint8_t rlen = 0;
   uint8_t bmc_location = 0; //the value of bmc_location is board id.
+  uint8_t index = 0;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -2865,8 +2869,28 @@ pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
   }
 
   if (bmc_location == NIC_BMC) {
-    //did not set cpld register
-    ret = 0;
+    uint8_t bus = 0;
+    //class 2 might have slot1 or slot3
+    if(bic_get_mb_index(&index) != 0) {
+      return -1;
+    }
+
+    if(slot_id == UART_POS_BMC) {
+      index =  index == FRU_SLOT3 ? FRU_SLOT3 : FRU_SLOT1;
+    }
+
+    tbuf[0] = (bus << 1) + 1;
+    tbuf[1] = CPLD_ADDRESS;
+    tbuf[2] = 0x00; //read 0 byte
+    tbuf[3] = BB_CPLD_IO_BASE_OFFSET + index;
+    tbuf[4] = io_sts;
+    tlen = 5;
+    rlen = 0;
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret != 0) {
+      syslog(LOG_WARNING, "Failed to update IO sts. reg:%02X, data: %02X\n", tbuf[3], tbuf[1]);
+      return ret;
+    }
   }
   else {
     i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -3194,11 +3218,7 @@ int
 pal_get_num_devs(uint8_t slot, uint8_t *num) {
 
   if (fby3_common_check_slot_id(slot) == 0) {
-    if (pal_is_cwc() == PAL_EOK) {
-      *num = MAX_NUM_DEVS_CWC - 1;
-    } else {
-      *num = MAX_NUM_DEVS - 1;
-    }
+    *num = MAX_NUM_DEVS - 1;
   } else if (pal_is_cwc() == PAL_EOK && (slot == FRU_2U_TOP || slot == FRU_2U_BOT)) {
     return fby3_common_exp_get_num_devs(slot, num);
   } else {
@@ -4049,14 +4069,14 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
     }
 
     bus = (uint8_t)ret;
-    i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+    i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
     if ( i2cfd < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
       return -1;
     }
 
     //read 06h from SB CPLD
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
     if ( i2cfd > 0 ) close(i2cfd);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
@@ -4525,7 +4545,7 @@ pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
   }
   bus = (uint8_t)ret + 4;
 
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     printf("%s() Couldn't open i2c bus%d, err: %s\n", __func__, bus, strerror(errno));
     goto err_exit;
@@ -4549,9 +4569,9 @@ pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode) {
     syslog(LOG_WARNING, "%s() fru:%d, led_on:%d, led_mode:%d\n", __func__, fru, led_on, led_mode);
   }
 
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 2, NULL, 0);
+  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, 2, NULL, 0);
   if ( ret < 0 ) {
-    printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, SB_CPLD_ADDR, strerror(errno));
+    printf("%s() Couldn't write data to addr %02X, err: %s\n",  __func__, CPLD_ADDRESS, strerror(errno));
   }
 
 err_exit:
@@ -4637,7 +4657,7 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_2U_BOT:
       return 10;
     case FRU_BMC:
-      return 10;
+      return 15;
     case FRU_NIC:
     default:
       return 4;
@@ -4659,8 +4679,8 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
   static const char* cmd_table[IPMI_GET_VER_FRU_NUM][IPMI_GET_VER_MAX_COMP] = {
     // BMC
     {
-      "/usr/bin/fw-util bmc --version bmc | awk '{print $NF}'",
-      "/usr/bin/fw-util bmc --version rom | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version bmc | grep 'Version:' | awk '{print $NF}'",
+      "/usr/bin/fw-util bmc --version rom | grep 'Version:' | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version cpld | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version fscd | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version tpm | awk '{print $NF}'",
@@ -4948,6 +4968,96 @@ int pal_get_fru_slot(uint8_t fru, uint8_t *slot) {
     default:
       *slot = fru;
       break;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_exp_fru_list(uint8_t *list, uint8_t *len) {
+  if (pal_is_cwc() == PAL_EOK) {
+    list[0] = FRU_CWC;
+    list[1] = FRU_2U_TOP;
+    list[2] = FRU_2U_BOT;
+    *len = 3;
+  } else {
+    *len = 0;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_exp_arg_name(uint8_t fru, char *name) {
+  switch (fru) {
+    case FRU_CWC:
+      sprintf(name, "slot1-2U-exp");
+      break;
+    case FRU_2U_TOP:
+      sprintf(name, "slot1-2U-top");
+      break;
+    case FRU_2U_BOT:
+      sprintf(name, "slot1-2U-bot");
+      break;
+    default:
+      return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_print_fru_name(const char **list) {
+  if (pal_is_cwc() == PAL_EOK) {
+    *list = pal_exp_server_list;
+  } else {
+    return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_root_fru(uint8_t fru, uint8_t *root) {
+  return pal_get_fru_slot(fru, root);
+}
+
+int pal_get_print_sensor_name(const char **list) {
+  if (pal_is_cwc() == PAL_EOK) {
+    *list = pal_exp_fru_list;
+  } else {
+    return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
+}
+
+int pal_get_2ou_board_type(uint8_t fru, uint8_t *type_2ou) {
+  int ret = 0;
+  uint8_t bmc_location = 0;
+  uint8_t slot = 0;
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC\n", __func__);
+    return ret;
+  }
+  if ( bmc_location == NIC_BMC ) {
+    ret = pal_get_fru_slot(fru, &slot);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get slot of fru\n",__func__);
+      return ret;
+    }
+
+    ret = fby3_common_get_2ou_board_type(slot, type_2ou);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get 2ou board type\n",__func__);
+      return ret;
+    }
+  } else {
+    *type_2ou = UNKNOWN_BOARD;
+    return ret;
+  }
+  return ret;
+}
+
+int pal_is_sensor_num_exceed(uint8_t sensor_num) {
+  if (sensor_num > MAX_SENSOR_NUM) {
+    syslog(LOG_CRIT, "Amount of sensors is more than Maximum value");
+    return PAL_ENOTSUP;
+  } else {
+    return PAL_EOK;
   }
   return PAL_EOK;
 }

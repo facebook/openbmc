@@ -15,15 +15,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/pem:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/pem:"
 
 SRC_URI += "file://pem-platform.h \
             file://pem-platform.c \
           "
 
-do_install_append() {
+do_install:append() {
   install -d ${D}${includedir}/facebook
   install -m 0644 pem-platform.h ${D}${includedir}/facebook/pem-platform.h
 }
 
-FILES_${PN}-dev += "${includedir}/facebook/pem-platform.h"
+FILES:${PN}-dev += "${includedir}/facebook/pem-platform.h"

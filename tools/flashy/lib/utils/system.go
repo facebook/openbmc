@@ -300,15 +300,9 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 		return "", errors.Errorf("Error reading %v: %v",
 			etcIssueFilePath, err)
 	}
-	etcIssueStr := string(etcIssueBuf)
-
-	// handle ancient galaxy100 linecard release with missing version info
-	if strings.HasPrefix(etcIssueStr, "OpenBMC Release \n") {
-		return "unknown-v1", nil
-	}
 
 	etcIssueMap, err := GetRegexSubexpMap(
-		etcIssueVersionRegEx, etcIssueStr)
+		etcIssueVersionRegEx, string(etcIssueBuf))
 
 	if err != nil {
 		// does not match regex

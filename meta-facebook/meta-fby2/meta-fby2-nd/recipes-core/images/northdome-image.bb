@@ -47,6 +47,8 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   ipmi-util \
   guid-util \
+  asd \
+  asd-test \
   bios-util \
   threshold-util \
   ncsid-v2 \

@@ -20,15 +20,15 @@ paths:
                 properties: 
                   Abnormal Drives: 
                     type: string
-                  Missing Drives: 
-                    type: string
                   Normal Drives: 
                     type: string
-              Actions: 
+                  Missing Drives: 
+                    type: string
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

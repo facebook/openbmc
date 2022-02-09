@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from typing import Any, Dict, Optional
+from subprocess import *
 
 from kv import FPERSIST, kv_get
 from node import node
-from rest_pal_legacy import pal_get_platform_name
+from rest_pal_legacy import *
 
 
 class healthNode(node):
@@ -20,7 +20,7 @@ class healthNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         # Get Platform Name
         name = pal_get_platform_name()
 

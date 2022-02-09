@@ -26,12 +26,6 @@ pim16q = [
     ("004e", "ucd9090", "ucd9000"),
     ("0050", "24c512", "at24"),
 ]
-pim16q2 = [
-    # Address, name, driver
-    ("0016", "pmbus", "pmbus"),
-    ("0018", "pmbus", "pmbus"),
-    ("0050", "24c512", "at24"),
-]
 pim8ddm = [
     # Address, name, driver
     ("0016", "pmbus", "pmbus"),
@@ -55,25 +49,11 @@ secure_devices = [
     ("SCM UCD", 9, 0x11, "ucd"),
 ]
 
-pim16q2_secure_devices = [
-    # Name, device, type
-    ("TPS-UPPER", 0x16, "pmbus-0x80"),
-    ("TPS-UPPER", 0x18, "pmbus-0x80"),
-]
-
-pim16q_secure_devices = [
-    # Name, device, type
-    ("TPS-UPPER", 0x16, "pmbus-0x80"),
-    ("TPS-UPPER", 0x18, "pmbus-0x80"),
-    ("UCD", 0x4E, "ucd"),
-    ("UCD", 0x4E, "ucd"),
-]
-
-pim8ddm_secure_devices = [
+pim_secure_devices = [
     # Name, device, type, pim_type
-    ("TPS-UPPER", 0x16, "pmbus-0x80"),
-    ("TPS-UPPER", 0x18, "pmbus-0x80"),
-    ("UCD", 0x4E, "ucd"),
-    ("UCD", 0x4E, "ucd"),
-    ("ISL", 0x54, "pmbus-0x40"),
+    ("UCD", 0x4E, "ucd", None),
+    ("TPS-UPPER", 0x16, "pmbus-0x80", None),
+    ("TPS-UPPER", 0x18, "pmbus-0x80", None),
+    # Only present on 7388-8D
+    ("ISL", 0x54, "pmbus-0x40", "PIM8DDM"),
 ]

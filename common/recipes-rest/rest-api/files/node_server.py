@@ -18,7 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
-from typing import Any, Dict, Optional
+
+import os
+from subprocess import *
 
 from node import node
 from rest_pal_legacy import *
@@ -58,7 +60,7 @@ class serverNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         ret = pal_get_server_power(self.num)
         if ret == serverPower.SERVER_POWER_OFF:
             status = "power-off"
@@ -77,7 +79,7 @@ class serverNode(node):
 
         return info
 
-    async def doAction(self, data, param: Optional[Dict[Any, Any]] = None):
+    async def doAction(self, data, param={}):
         ret = pal_server_action(self.num, data["action"], self.fru_name)
         if ret == -2:
             res = "Should not execute power on/off/graceful_shutdown/cycle/reset on device card"

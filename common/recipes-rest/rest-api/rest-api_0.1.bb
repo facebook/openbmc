@@ -16,8 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 inherit python3unittest
-inherit python3flakes
-inherit python3typecheck
 inherit systemd
 inherit ptest
 
@@ -109,7 +107,6 @@ SRC_URI = "file://setup-rest-api.sh \
            file://redfish_chassis.py \
            file://redfish_chassis_helper.py \
            file://redfish_computer_system.py \
-           file://redfish_log_service.py \
            file://redfish_managers.py \
            file://redfish_session_service.py \
            file://redfish_powercycle.py \
@@ -127,8 +124,6 @@ SRC_URI = "file://setup-rest-api.sh \
            file://test_redfish_computer_system_patches.py \
            file://test_rest_fwinfo.py \
            file://test_redfish_sensors.py \
-           file://test_redfish_log_service.py \
-           file://.flake8 \
         "
 
 S = "${WORKDIR}"
@@ -187,6 +182,10 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://boardroutes.py\
             ', d)}"
 
+RDEPENDS_${PN}_class-target += \
+    "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', '', 'sensors-py', d)}"
+
+RDEPENDS:${PN}:class-target =+ 'libpal libsdr libaggregate-sensor python3-psutil'
 pkgdir = "rest-api"
 
 
@@ -232,28 +231,20 @@ do_install:class-target() {
   fi
 
   install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
-  install -m 644 ${WORKDIR}/.flake8 ${dst}/.flake8
-
 }
 
 do_compile_ptest() {
 cat <<EOF > ${WORKDIR}/run-ptest
 #!/bin/sh
-  set -e
-  echo "[UNIT TESTS]"
   coverage erase
   coverage run -m unittest discover /usr/local/fbpackages/rest-api
   coverage report -m --omit="*/test*"
-  mount -t tmpfs -o size=512m tmpfs /dev/shm
-  echo "[Flake8]"
-  flake8  --config /usr/local/fbpackages/rest-api/.flake8 /usr/local/fbpackages/rest-api/*.py
-  echo "[MYPY]"
-  mypy --ignore-missing-imports /usr/local/fbpackages/rest-api/*.py
 EOF
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/rest-api ${prefix}/local/bin ${sysconfdir} "
+BBCLASSEXTEND += "native nativesdk"
 
 SYSTEMD_SERVICE:${PN} = "restapi.service"

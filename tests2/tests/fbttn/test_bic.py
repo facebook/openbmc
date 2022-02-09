@@ -20,7 +20,6 @@
 import unittest
 
 from common.base_bic_test import CommonBicTest
-from utils.test_utils import qemu_check
 
 
 class BicTest(CommonBicTest, unittest.TestCase):
@@ -30,11 +29,3 @@ class BicTest(CommonBicTest, unittest.TestCase):
     @unittest.skip("Test not supported on platform")
     def test_bic_mac(self):
         pass
-
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
-    def test_bic_sdr(self, regex=None):
-        super().test_bic_sdr(regex=regex)
-
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
-    def test_bic_sensor(self, regex=None):
-        super().test_bic_sensor(regex=regex)

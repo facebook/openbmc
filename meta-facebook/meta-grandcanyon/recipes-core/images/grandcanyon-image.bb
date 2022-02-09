@@ -60,5 +60,4 @@ IMAGE_INSTALL += " \
   iocd \
   otp \
   mctp-util \
-  modprobe \
   "

@@ -20,7 +20,6 @@ DEPENDS += " \
     libobmc-i2c \
     libobmc-sensors \
     libsensor-correction \
-    libmisc-utils \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -35,7 +34,6 @@ RDEPENDS:${PN} += " \
     libobmc-i2c \
     libobmc-sensors \
     libsensor-correction \
-    libmisc-utils \
     "
 
 CFLAGS += " -Wall -Werror "

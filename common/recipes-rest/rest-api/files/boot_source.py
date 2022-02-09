@@ -23,7 +23,6 @@ import mmap
 from collections import namedtuple
 from ctypes import CDLL
 from enum import IntEnum
-from typing import Dict, List
 
 
 misc_lib_hndl = CDLL("libmisc-utils.so")
@@ -41,24 +40,20 @@ class SocModelError(Exception):
     pass
 
 
-wdt_reg = namedtuple("WDT_REG", "addr boot_source_bit")  # type: ignore
+wdt_reg = namedtuple("WDT_REG", "addr boot_source_bit")
 
-# CPU Model : [(WDT timeout status reg address,
-# bit that indicates boot source), ...]
+# CPU Model : [(WDT timeout status reg address, bit that indicates boot source), ...]
 # check all WDTs to make sure
 # For netboot scenario, the WDT status tells the boot source of uboot
 register_map = {
-    SocModelId.SOC_MODEL_ASPEED_G4: [
-        wdt_reg(0x1E785010, 1),
-        wdt_reg(0x1E785030, 1),
-    ],
+    SocModelId.SOC_MODEL_ASPEED_G4: [wdt_reg(0x1E785010, 1), wdt_reg(0x1E785030, 1)],
     SocModelId.SOC_MODEL_ASPEED_G5: [
         wdt_reg(0x1E785010, 1),
         wdt_reg(0x1E785030, 1),
         wdt_reg(0x1E785050, 1),
     ],
     SocModelId.SOC_MODEL_ASPEED_G6: [wdt_reg(0x1E620064, 4)],
-}  # type: Dict[int, List[wdt_reg]]
+}
 
 
 @functools.lru_cache(maxsize=1)
@@ -76,7 +71,7 @@ def get_soc_model() -> int:
 @functools.lru_cache(maxsize=1)
 def is_boot_from_secondary() -> bool:
     wdt_regs = register_map.get(get_soc_model())
-    max_offset = max(reg.addr for reg in wdt_regs)  # type: ignore
+    max_offset = max(reg.addr for reg in wdt_regs)
 
     with open("/dev/mem", "rb") as f:
         with mmap.mmap(
@@ -85,7 +80,7 @@ def is_boot_from_secondary() -> bool:
             mmap.MAP_SHARED,
             mmap.PROT_READ,
         ) as reg_map:
-            for reg in wdt_regs:  # type: ignore
+            for reg in wdt_regs:
                 if reg_map[reg.addr] >> reg.boot_source_bit & 0x1 == 1:
                     return True
     return False

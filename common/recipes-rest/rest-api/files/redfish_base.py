@@ -60,7 +60,9 @@ VALID_KEYS = {
     "Model",
     "SerialNumber",
     "PowerState",
+    "Thermal",
     "Thresholds",
+    "Power",
     "FruInfo",
     "PhysicalContext",
     "ReadingRangeMin",
@@ -77,17 +79,6 @@ VALID_KEYS = {
     "name",
     "kind",
     "url",
-    "NameServers",
-    "LinkStatus",
-    "DateTime",
-    "DateTimeLocalOffset",
-    "Entries",
-    "LogEntryType",
-    "MaxNumberOfRecords",
-    "OverWritePolicy",
-    "SyslogFilters",
-    "LogFacilities",
-    "LowestSeverity",
 }
 
 
@@ -103,10 +94,7 @@ async def validate_keys(body: t.Dict[str, t.Any]) -> None:
     for key, _value in body.items():
         if key not in VALID_KEYS:
             raise NotImplementedError(
-                (
-                    "key : {key} in response body : {body}"
-                    " is not a valid RedFish key"
-                ).format(  # noqa: B950
+                "key : {key} in response body : {body} is not a valid RedFish key".format(  # noqa: B950
                     key=repr(key), body=repr(body)
                 )
             )
@@ -127,8 +115,8 @@ class RedfishErrorExtendedInfo:
         self.severity = severity
         self.resolution = resolution
 
-    def as_dict(self) -> t.Dict[str, t.Any]:
-        result = {}  # type: t.Dict[str, t.Any]
+    def as_dict(self) -> t.Dict[t.Any, t.Any]:
+        result = {}
         if self.message_id is not None:
             result["MessageId"] = self.message_id
         if self.message is not None:

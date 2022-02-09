@@ -20,7 +20,6 @@
 
 import asyncio
 import collections
-from typing import Dict, Tuple
 
 
 class AsyncRateLimiter:
@@ -28,16 +27,13 @@ class AsyncRateLimiter:
     Async ratelmiter records successful requests per client,
     method and endpoint into a counter.
     Ratelimits (if enabled) are applied for all endpoints.
-    Ratelimiter is configurable from rest.cfg
-    (slidewindow size and request limit)
+    Ratelimiter is configurable from rest.cfg (slidewindow size and request limit)
     If a client hits limit within the slidewindow, requests will be denied,
     until older request records time out. Then requests are allowed again.
     """
 
     def __init__(self, slidewindow_size: int, limit: int):
-        self._request_counter = (
-            collections.Counter()
-        )  # type: Dict[Tuple[str,str,str], int]
+        self._request_counter = collections.Counter()
         self.slidewindow_size = slidewindow_size
         self.limit = limit
 
@@ -45,8 +41,7 @@ class AsyncRateLimiter:
         """
         Check if request has hit the rate limit for given slidewindow.
         """
-        # If the limit is set to 0, it means that we dont want ratelimiting.
-        # Bail early
+        # If the limit is set to 0, it means that we dont want ratelimiting. Bail early
         if self.limit == 0:
             return False
         if self._request_counter[(endpoint, method, user_agent)] >= self.limit:

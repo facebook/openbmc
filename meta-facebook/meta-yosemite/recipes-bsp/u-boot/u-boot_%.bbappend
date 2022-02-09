@@ -1,4 +1,4 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://facebook-yosemite_defconfig.append \
            "

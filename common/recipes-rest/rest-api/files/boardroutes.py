@@ -16,6 +16,5 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-130
-from typing import List
 
-board_routes = []  # type: List[str]
+board_routes = []

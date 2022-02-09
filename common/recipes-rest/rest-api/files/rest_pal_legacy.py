@@ -17,21 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import binascii
-import os
-import uuid
-from ctypes import CDLL, c_char_p, c_ubyte, c_uint32, create_string_buffer, pointer
-from subprocess import PIPE, CalledProcessError, Popen, check_output
-from typing import Optional
-
-from common_utils import async_exec
-
-lpal_hndl = None  # type: Optional[CDLL]
-try:
-    lpal_hndl = CDLL("libpal.so.0")
-except OSError:
-    lpal_hndl = None
-
 
 PAL_STATUS_UNSUPPORTED = 2
 
@@ -50,8 +35,21 @@ FRU_CAPABILITY_SENSOR_ALL = (
     | FRU_CAPABILITY_SENSOR_HISTORY
 )
 
+import binascii
+import os
+import uuid
+from ctypes import CDLL, c_char_p, c_ubyte, c_uint32, create_string_buffer, pointer
+from subprocess import PIPE, CalledProcessError, Popen, check_output
 
-def pal_get_platform_name() -> Optional[str]:
+from common_utils import async_exec
+
+try:
+    lpal_hndl = CDLL("libpal.so.0")
+except OSError:
+    lpal_hndl = None
+
+
+def pal_get_platform_name():
     if lpal_hndl is None:
         machine = "OpenBMC"
         with open("/etc/issue") as f:
@@ -141,13 +139,13 @@ def pal_get_bic_status(slot_id):
             return 0
         else:
             return 1
-    except OSError:
+    except (OSError, IOError):
         return PAL_STATUS_UNSUPPORTED  # No bic on this platform
     except (CalledProcessError):
         return 0  # bic-util returns error
 
 
-def pal_server_action(slot_id, command, fru_name=None):  # noqa: C901
+def pal_server_action(slot_id, command, fru_name=None):
     # TODO use wedge_power.sh?
     if lpal_hndl is None:
         return -1
@@ -214,7 +212,7 @@ def pal_sled_action(command):
             return -1
         else:
             return 0
-    except (OSError, CalledProcessError):
+    except (OSError, IOError, CalledProcessError):
         return -1
 
 

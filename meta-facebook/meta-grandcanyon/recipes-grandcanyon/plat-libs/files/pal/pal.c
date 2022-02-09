@@ -60,11 +60,11 @@
 #define MAX_SNR_NAME  32
 #define MAX_EVENT_STR 256
 
+#define HWMON_PWM_PATH "/sys/devices/platform/pwm-fan0/hwmon/hwmon*"
+#define PWM1           "pwm1"
 #define KV_KEY_BIC_HEARTBEAT  "bic_hb_status"
 
 #define NIC_CARD_PERST_CTRL 0x09
-
-#define PWM_ZONE            0
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -609,28 +609,51 @@ pal_get_fru_name(uint8_t fru, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
+  char str[MAX_VALUE_LEN] = {0};
+  char full_dir_name[MAX_PATH_LEN * 2] = {0};
+  char dir_name[MAX_PATH_LEN] = {0};
+  int value = 0;
 
   if (fan_id >= pal_pwm_cnt) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
 
-  return sensors_write_pwmfan(PWM_ZONE, (float)pwm);
+  value = (int)(pwm) * 255 / 100;
+  snprintf(str, sizeof(str), "%d", value);
+
+  if (get_current_dir(HWMON_PWM_PATH, dir_name) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, HWMON_PWM_PATH);
+    return -1;
+  }
+
+  snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, PWM1);
+
+  return write_device(full_dir_name, str);
 }
 
 int
 pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
-  float value = 0;
+  int value = 0;
   int ret = 0;
+  char full_dir_name[MAX_PATH_LEN * 2] = {0};
+  char dir_name[MAX_PATH_LEN] = {0};
 
   if (fan_id >= pal_get_tach_cnt()) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
 
-  ret = sensors_read_pwmfan(PWM_ZONE, &value);
+  if (get_current_dir(HWMON_PWM_PATH, dir_name) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, HWMON_PWM_PATH);
+    return -1;
+  }
+
+  snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, PWM1);
+
+  ret = read_device(full_dir_name, &value);
   if (ret == 0) {
-    *pwm = (uint8_t)value;
+    *pwm = (uint8_t)ceil((float)value * 100.0 / 255.0);
   }
 
   return ret;
@@ -1012,38 +1035,6 @@ pal_is_slot_server(uint8_t fru) {
 }
 
 int
-pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver) {
-  int ret = 0;
-  uint8_t bios_post_cmplt = 0;
-  bic_gpio_t gpio = {0};
-
-  // Check BIOS is completed via BIC
-  if (bic_get_gpio(&gpio) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);
-    return -1;
-  }
-  bios_post_cmplt = ((((uint8_t*)&gpio)[BIOS_POST_CMPLT/8]) >> (BIOS_POST_CMPLT % 8)) & 0x1;
-  if (bios_post_cmplt != GPIO_VALUE_LOW) {
-    syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
-    return -1;
-  }
-
-  // Get BIOS firmware version from BIC if key: sysfw_ver_server is not set
-  if (bic_get_sys_fw_ver(ver) < 0) {
-    syslog(LOG_WARNING, "%s() failed to get system firmware version from BIC", __func__);
-    return -1;
-  }
-
-  // Set BIOS firmware version to key: sysfw_ver_server
-  if (pal_set_sysfw_ver(slot, ver) < 0) {
-    syslog(LOG_WARNING, "%s() failed to set key value of system firmware version", __func__);
-    return -1;
-  }
-
-  return ret;
-}
-
-int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i = 0, ret = 0;
   int tmp_len = 0;
@@ -1089,10 +1080,9 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
   snprintf(key, sizeof(key), "sysfw_ver_server");
   ret = pal_get_key_value(key, str);
-
-  // Get BIOS f/w version from BIC if get key value failed or if key value was not set.
-  if ((ret != 0) || (strcmp(str, "0") == 0)) {
-    return pal_get_sysfw_ver_from_bic(slot, ver);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
+    return PAL_ENOTSUP;
   }
 
   for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
@@ -1223,7 +1213,7 @@ i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8
     return -1;
   }
 
-  snprintf(cmd, sizeof(cmd), "%d-00%02x", bus, addr);
+  snprintf(cmd, sizeof(cmd), "%d-00%d", bus, addr);
   if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
     syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
     ret = -1;
@@ -1235,19 +1225,13 @@ i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8
 }
 
 int
-pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
-  if (bind_dir != NULL && access(bind_dir, F_OK) != 0) {
-    return i2c_device_binding_operation(bus, addr, driver_name, BIND);
-  }
-  return 0;
+pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
+  return i2c_device_binding_operation(bus, addr, driver_name, BIND);
 }
 
 int
-pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
-  if (bind_dir != NULL && access(bind_dir, F_OK) == 0) {
-    return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
-  }
-  return 0;
+pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
+  return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
 }
 
 // To get the platform sku
@@ -3272,8 +3256,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
 int
 pal_bic_self_test(void) {
-  uint8_t result[SIZE_SELF_TEST_RESULT] = {0};
-  return bic_get_self_test_result(result);
+  uint8_t result = 0;
+  return bic_get_self_test_result(&result);
 }
 
 int
@@ -3579,9 +3563,6 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
   } else if (i2c_bus == I2C_T5E1S0_T7IOC_BUS) {
     // Check IOCM IOC present
     if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
-      return false;
-    }
-    if (is_e1s_iocm_i2c_enabled(T5_E1S0_T7_IOC_AVENGER) == false) {
       return false;
     }
   } else {

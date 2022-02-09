@@ -1,7 +1,7 @@
 import os
 from functools import lru_cache
 from shutil import which
-from typing import List, Optional, TYPE_CHECKING
+from typing import List, Optional
 
 import common_utils
 import rest_pal_legacy
@@ -105,10 +105,7 @@ async def oobcycle_post_handler(request: web.Request) -> web.Response:
             message=validation_error,
         ).web_response()
     else:
-        if not TYPE_CHECKING:
-            os.spawnvpe(
-                os.P_NOWAIT, "sh", ["sh", "-c", "sleep 4 && reboot"], os.environ
-            )
+        os.spawnvpe(os.P_NOWAIT, "sh", ["sh", "-c", "sleep 4 && reboot"], os.environ)
         return web.json_response(
             {"status": "OK"},
             status=200,

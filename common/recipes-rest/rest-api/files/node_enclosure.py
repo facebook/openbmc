@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from typing import Any, Dict, Optional
+from asyncio import TimeoutError
 
 from common_utils import async_exec
 from node import node
@@ -24,7 +24,7 @@ class enclosure_error_Node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         result = {}
 
         cmd = "/usr/bin/enclosure-util --error"
@@ -55,7 +55,7 @@ class enclosure_flash_health_Node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         result = {}
 
         cmd = "/usr/bin/enclosure-util --flash-health"
@@ -86,7 +86,7 @@ class enclosure_flash_status_Node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         info = {}
 
         cmd = "/usr/bin/enclosure-util --flash-status"
@@ -116,7 +116,7 @@ class enclosure_hdd_status_Node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         result = {}
 
         cmd = "/usr/bin/enclosure-util --hdd-status"
@@ -129,7 +129,7 @@ class enclosure_hdd_status_Node(node):
 
         return result
 
-    async def doAction(self, data, param: Optional[Dict[Any, Any]] = None):
+    async def doAction(self, data, param={}):
         result = {}
 
         if (

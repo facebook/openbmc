@@ -28,6 +28,7 @@ import unittest
 
 import common_auth
 from acl_providers import cached_acl_provider
+from aiohttp.test_utils import unittest_run_loop
 
 
 class TestCachedAclProvider(unittest.TestCase):

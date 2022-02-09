@@ -1,59 +1,9 @@
 max([
   linear_inlet(all:spb_sp_inlet_temp),
-  linear_ucr_trigger(all:spb_sp_outlet_temp),
-  linear_ucr_trigger(all:spb_sp_hsc_temp),
   linear_cpu_margin(all:slot1_soc_temp) + pid_cpu_margin(all:slot1_soc_temp),
   linear_cpu_margin(all:slot2_soc_temp) + pid_cpu_margin(all:slot2_soc_temp),
   linear_cpu_margin(all:slot3_soc_temp) + pid_cpu_margin(all:slot3_soc_temp),
   linear_cpu_margin(all:slot4_soc_temp) + pid_cpu_margin(all:slot4_soc_temp),
-  linear_ucr_trigger(
-    max([
-    all:slot1_mb_outlet_temp_t,
-    all:slot2_mb_outlet_temp_t,
-    all:slot3_mb_outlet_temp_t,
-    all:slot4_mb_outlet_temp_t])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_mb_outlet_temp_b,
-    all:slot2_mb_outlet_temp_b,
-    all:slot3_mb_outlet_temp_b,
-    all:slot4_mb_outlet_temp_b])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_mb_inlet_temp,
-    all:slot2_mb_inlet_temp,
-    all:slot3_mb_inlet_temp,
-    all:slot4_mb_inlet_temp])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_pvddcr_cpu_vr_t,
-    all:slot2_pvddcr_cpu_vr_t,
-    all:slot3_pvddcr_cpu_vr_t,
-    all:slot4_pvddcr_cpu_vr_t])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_pvddio_abcd_vr_t,
-    all:slot2_pvddio_abcd_vr_t,
-    all:slot3_pvddio_abcd_vr_t,
-    all:slot4_pvddio_abcd_vr_t])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_pvddio_efgh_vr_t,
-    all:slot2_pvddio_efgh_vr_t,
-    all:slot3_pvddio_efgh_vr_t,
-    all:slot4_pvddio_efgh_vr_t])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_pvddcr_soc_vr_t,
-    all:slot2_pvddcr_soc_vr_t,
-    all:slot3_pvddcr_soc_vr_t,
-    all:slot4_pvddcr_soc_vr_t])),
-  linear_ucr_trigger(
-    max([
-    all:slot1_host_boot_temp,
-    all:slot2_host_boot_temp,
-    all:slot3_host_boot_temp,
-    all:slot4_host_boot_temp])),
   linear_dimm(
    max([
     all:slot1_soc_dimma0_temp,

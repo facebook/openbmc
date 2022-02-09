@@ -14,11 +14,11 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Resources: 
+              Information: 
                 type: array
                 items: 
                   type: string
-              Information: 
+              Resources: 
                 type: array
                 items: 
                   type: string

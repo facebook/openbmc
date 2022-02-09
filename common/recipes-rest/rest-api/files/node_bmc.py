@@ -26,15 +26,15 @@ import logging
 import mmap
 import os
 import os.path
+import psutil
 import re
-import subprocess
 import threading
 import typing as t
 from shlex import quote
+from subprocess import PIPE, Popen, check_output, CalledProcessError
 from uuid import getnode as get_mac
 
 import kv
-import psutil
 import rest_mmc
 import rest_pal_legacy
 from boot_source import is_boot_from_secondary
@@ -185,12 +185,6 @@ cache_uboot_version()
 
 
 class bmcNode(node):
-    # Reads from TPM device files (e.g. /sys/class/tpm/tpm0/device/caps)
-    # can hang the event loop on unhealthy systems. Cache version values
-    # here and use _fill_tpm_ver_info() to asynchronously fill these values
-    _TPM_VER_INFO = ("NA", "NA")  # (tpm_fw_version, tpm_tcg_version)
-    _TPM_VER_INFO_ATTEMPTED = False
-
     def __init__(self, info=None, actions=None):
         if info is None:
             self.info = {}
@@ -211,33 +205,7 @@ class bmcNode(node):
             uboot_version = None
         return uboot_version
 
-    @classmethod
-    async def _fill_tpm_ver_info_loop(cls) -> None:
-        if cls._TPM_VER_INFO_ATTEMPTED:
-            # Fetch already attempted, doing nothing.
-            return
-        cls._TPM_VER_INFO_ATTEMPTED = True
-
-        # Try updating _TPM_VER_INFO until all TPM version info values
-        # are filled
-        while "NA" in cls._TPM_VER_INFO:
-            await cls._fill_tpm_ver_info()
-            await asyncio.sleep(30)
-
-    @classmethod
-    async def _fill_tpm_ver_info(cls) -> None:
-        # Fetch TPM version info in thread executors (to protect the event loop
-        # from e.g. /sys/class/tpm/tpm0/device/caps reads hanging forever)
-        loop = asyncio.get_event_loop()
-        if os.path.exists("/sys/class/tpm/tpm0"):
-            tpm_fw_version = await loop.run_in_executor(None, cls.getTpmFwVer)
-            tpm_tcg_version = await loop.run_in_executor(None, cls.getTpmTcgVer)
-
-            # Cache read values in _TPM_VER_INFO
-            cls._TPM_VER_INFO = (tpm_fw_version, tpm_tcg_version)
-
-    @staticmethod
-    def getTpmTcgVer():
+    async def getTpmTcgVer(self):
         out_str = "NA"
         tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
         if os.path.isfile(tpm1_caps):
@@ -255,15 +223,19 @@ class bmcNode(node):
             )
             for cmd in cmd_list:
                 try:
-                    stdout = subprocess.check_output(cmd, shell=True)  # noqa: P204
+                    retcode, stdout, _ = await async_exec(cmd, shell=True)
+                    if retcode != 0:
+                        # non-async implementation was using raising check_output
+                        raise Exception(
+                            "Command {} returned non-0 exit code".format(cmd)
+                        )
                     out_str = stdout.splitlines()[2].rstrip().split('"')[1]
                     break
                 except Exception:
                     pass
         return out_str
 
-    @staticmethod
-    def getTpmFwVer():
+    async def getTpmFwVer(self):
         out_str = "NA"
         tpm1_caps = "/sys/class/tpm/tpm0/device/caps"
         if os.path.isfile(tpm1_caps):
@@ -281,7 +253,12 @@ class bmcNode(node):
             )
             for cmd in cmd_list:
                 try:
-                    stdout = subprocess.check_output(cmd, shell=True)  # noqa: P204
+                    retcode, stdout, _ = await async_exec(cmd, shell=True)
+                    if retcode != 0:
+                        # non-async implementation was using raising check_output
+                        raise Exception(
+                            "Command {} returned non-0 exit code".format(cmd)
+                        )
                     value = int(stdout.rstrip().split(":")[1], 16)
                     out_str = "%d.%d" % (value >> 16, value & 0xFFFF)
                     break
@@ -374,10 +351,7 @@ class bmcNode(node):
         memory_info = self.getMemInfo()
 
         # Mem: 175404K used, 260324K free, 21436K shrd, 0K buff, 112420K cached
-        mem_usage = (
-            "Mem: {used_mem}K used, {free_mem}K free, {shared_mem}K shrd,"
-            " {buffer_mem}K buff, {cached_mem}K cached"
-        ).format(
+        mem_usage = "Mem: {used_mem}K used, {free_mem}K free, {shared_mem}K shrd, {buffer_mem}K buff, {cached_mem}K cached".format(  # noqa: B950
             used_mem=memory_info["MemTotal"] - memory_info["MemFree"],
             free_mem=memory_info["MemFree"],
             shared_mem=memory_info["Shmem"],
@@ -405,7 +379,11 @@ class bmcNode(node):
         kernel_version = uname.version
 
         # Get TPM version
-        tpm_fw_version, tpm_tcg_version = self._TPM_VER_INFO
+        tpm_tcg_version = "NA"
+        tpm_fw_version = "NA"
+        if os.path.exists("/sys/class/tpm/tpm0"):
+            tpm_tcg_version = await self.getTpmTcgVer()
+            tpm_fw_version = await self.getTpmFwVer()
 
         spi0_vendor = await getSPIVendor(0)
         spi1_vendor = await getSPIVendor(1)

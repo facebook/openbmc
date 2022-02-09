@@ -157,7 +157,7 @@ def all_slots_power_off():
 
 
 def sensor_fail_ignore_check(sname):
-    if re.match(r"(.*)host_boot_temp", sname) is not None:
+    if re.match(r"host_boot_temp", sname) is not None:
         return True
     return False
 
@@ -249,7 +249,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 def get_fan_mode(scenario="None"):
     if "sensor_hit_UCR" in scenario:
-        return fsc_zone.fan_mode["boost_mode"], int(90)
+        return fsc_zone.fan_mode["boost_mode"], int(100)
     elif "sensor_fail" in scenario:
         return fsc_zone.fan_mode["boost_mode"], int(60)
     elif "one_fan_failure" in scenario:

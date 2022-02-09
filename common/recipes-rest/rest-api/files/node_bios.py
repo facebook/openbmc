@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-from typing import Any, Dict, Optional
-
 from node import node
 from rest_pal_legacy import *
 
@@ -40,7 +38,7 @@ class biosNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         info = {"Description": "BIOS Information"}
 
         return info
@@ -68,7 +66,7 @@ class bios_boot_order_trunk_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         info = {"Description": "BIOS Boot Order Information"}
 
         return info
@@ -92,7 +90,7 @@ class bios_boot_mode_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = "/usr/local/bin/bios-util " + self.name + " --boot_order get --boot_mode"
         _, boot_order, _ = await async_exec(cmd, shell=True)
         boot_order = boot_order.split("\n")[0].split(": ")
@@ -104,6 +102,27 @@ class bios_boot_mode_node(node):
         }
 
         return info
+
+    async def doAction(self, data, param={}):
+        if data["action"] == "set" and len(data) == 2:
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order set --boot_mode "
+                + data["mode"]
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        else:
+            res = "failure"
+
+        result = {"result": res}
+
+        return result
 
 
 """""" """""" """""" """""" """''
@@ -124,7 +143,7 @@ class bios_clear_cmos_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = "/usr/local/bin/bios-util " + self.name + " --boot_order get --clear_CMOS"
         _, clear_cmos, _ = await async_exec(cmd, shell=True)
         clear_cmos = clear_cmos.split("\n")[0].split(": ")
@@ -132,6 +151,37 @@ class bios_clear_cmos_node(node):
         info = {clear_cmos[0]: clear_cmos[1]}
 
         return info
+
+    async def doAction(self, data, param={}):
+        if data["action"] == "enable":
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order enable --clear_CMOS"
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        elif data["action"] == "disable":
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order disable --clear_CMOS"
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        else:
+            res = "failure"
+
+        result = {"result": res}
+
+        return result
 
 
 """""" """""" """""" """""" """''
@@ -152,7 +202,7 @@ class bios_force_boot_setup_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = (
             "/usr/local/bin/bios-util "
             + self.name
@@ -165,6 +215,38 @@ class bios_force_boot_setup_node(node):
         info = {force_boot_bios_setup[0]: force_boot_bios_setup[1]}
 
         return info
+
+    async def doAction(self, data, param={}):
+        if data["action"] == "enable":
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order enable --force_boot_BIOS_setup"
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        elif data["action"] == "disable":
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order disable --force_boot_BIOS_setup"
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        else:
+            res = "failure"
+
+        result = {"result": res}
+
+        return result
 
 
 """""" """""" """""" """""" """''
@@ -185,7 +267,7 @@ class bios_boot_order_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = "/usr/local/bin/bios-util " + self.name + " --boot_order get --boot_order"
         _, data, _ = await async_exec(cmd, shell=True)
 
@@ -199,28 +281,68 @@ class bios_boot_order_node(node):
 
         return info
 
+    async def doAction(self, data, param={}):
+        if data["action"] == "set" and len(data) == 6:
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order set --boot_order "
+                + data["1st"]
+                + " "
+                + data["2nd"]
+                + " "
+                + data["3rd"]
+                + " "
+                + data["4th"]
+                + " "
+                + data["5th"]
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err != "" or data != "":
+                res = "failure"
+            else:
+                res = "success"
+        elif data["action"] == "disable":
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --boot_order disable --boot_order"
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        else:
+            res = "failure"
+
+        result = {"result": res}
+
+        return result
+
 
 def get_node_bios_boot_order_trunk(name):
     return bios_boot_order_trunk_node(name)
 
 
 def get_node_bios_boot_mode(name):
-    actions = []
+    actions = ["set"]
     return bios_boot_mode_node(name=name, actions=actions)
 
 
 def get_node_bios_clear_cmos(name):
-    actions = []
+    actions = ["enable", "disable"]
     return bios_clear_cmos_node(name=name, actions=actions)
 
 
 def get_node_bios_force_boot_setup(name):
-    actions = []
+    actions = ["enable", "disable"]
     return bios_force_boot_setup_node(name=name, actions=actions)
 
 
 def get_node_bios_boot_order(name):
-    actions = []
+    actions = ["set", "disable"]
     return bios_boot_order_node(name=name, actions=actions)
 
 
@@ -242,7 +364,7 @@ class bios_postcode_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = "/usr/local/bin/bios-util " + self.name + " --postcode get"
         _, data, _ = await async_exec(cmd, shell=True)
         postcode = data.replace("\n", "").strip()
@@ -274,7 +396,7 @@ class bios_plat_info_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = "/usr/local/bin/bios-util " + self.name + " --plat_info get"
         _, plat_info, err = await async_exec(cmd, shell=True)
 
@@ -311,7 +433,7 @@ class bios_pcie_port_config_node(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         cmd = "/usr/local/bin/bios-util " + self.name + " --pcie_port_config get"
         _, pcie_port_config, err = await async_exec(cmd, shell=True)
 
@@ -343,7 +465,41 @@ class bios_pcie_port_config_node(node):
 
         return info
 
+    async def doAction(self, data, param={}):
+        if data["action"] == "enable" and len(data) == 2:
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --pcie_port_config enable --"
+                + data["pcie_dev"]
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        elif data["action"] == "disable":
+            cmd = (
+                "/usr/local/bin/bios-util "
+                + self.name
+                + " --pcie_port_config disable --"
+                + data["pcie_dev"]
+            )
+            _, _, err = await async_exec(cmd, shell=True)
+
+            if err.startswith("usage"):
+                res = "failure"
+            else:
+                res = "success"
+        else:
+            res = "failure"
+
+        result = {"result": res}
+
+        return result
+
 
 def get_node_bios_pcie_port_config_trunk(name):
-    actions = []
+    actions = ["enable", "disable"]
     return bios_pcie_port_config_node(name=name, actions=actions)

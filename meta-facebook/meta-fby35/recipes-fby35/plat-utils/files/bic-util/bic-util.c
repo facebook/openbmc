@@ -356,7 +356,7 @@ static int
 util_read_sensor(uint8_t slot_id) {
   int ret = 0;
   int i = 0;
-  snr_reading_ret sensor = {0};
+  ipmi_sensor_reading_t sensor = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
@@ -391,13 +391,9 @@ util_read_sensor(uint8_t slot_id) {
       if (ret < 0 ) {
         continue;
       }
-      if (sensor.read_type == STANDARD_CMD) {
-        printf("sensor num: 0x%02X: value: 0x%02X, flags: 0x%02X, status: 0x%02X, ext_status: 0x%02X\n",
-                i, sensor.value, sensor.flags, sensor.status, sensor.ext_status);
-      } else {
-        printf("sensor num: 0x%02X: value: 0x%04X, flags: 0x%02X\n", i, sensor.value, sensor.flags);
-      }
-      
+
+      printf("sensor num: 0x%02X: value: 0x%02X, flags: 0x%02X, status: 0x%02X, ext_status: 0x%02X\n",
+              i, sensor.value, sensor.flags, sensor.status, sensor.ext_status);
     }
     printf("\n");
   }

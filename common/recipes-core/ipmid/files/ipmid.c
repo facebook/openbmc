@@ -627,13 +627,6 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
   *res_len = data - &res->data[0];
 }
 
-static void *
-wait_and_reboot() {
-  sleep(1);
-  pal_bmc_reboot(RB_AUTOBOOT);
-  return NULL;
-}
-
 // Cold Reset (IPMI/Section 20.2)
 static void
 app_cold_reset(unsigned char *request, unsigned char req_len,
@@ -641,7 +634,6 @@ app_cold_reset(unsigned char *request, unsigned char req_len,
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
   int i;
-  pthread_t do_reboot;
 
   *res_len = 0;
   res->cc = CC_SUCCESS;
@@ -663,9 +655,8 @@ app_cold_reset(unsigned char *request, unsigned char req_len,
   }
 
   syslog(LOG_CRIT, "BMC Cold Reset.");
-  if (pthread_create(&do_reboot, NULL, wait_and_reboot, NULL) < 0) {
-    syslog(LOG_WARNING, "pthread_create for doing reset failed\n");
-  }
+  sleep(1);
+  pal_bmc_reboot(RB_AUTOBOOT);
 }
 
 
@@ -3491,7 +3482,7 @@ oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
     return;
   }
 
-  memcpy(string_log, &req->data[5], string_log_len+1);
+  snprintf(string_log, string_log_len+1, "%s", &req->data[5]);
 
   // To avoid repeat display when Expander executes reset test
   // will filter fan fru checksum SEL
@@ -4225,9 +4216,6 @@ ipmi_handle_oem_1s(unsigned char *request, unsigned char req_len,
     case CMD_OEM_1S_DEV_POWER:
       // payload_id, netfn, cmd, data[0] (device id), data[1] (action), data[2] (data)
       res->cc = pal_handle_oem_1s_dev_power(req->payload_id, &req->data[0], req_len-3, &res->data[0], res_len);
-      break;
-    case CMD_OEM_1S_UPDATE_SDR:
-      res->cc = pal_handle_oem_1s_update_sdr(req->payload_id);
       break;
     default:
       res->cc = CC_INVALID_CMD;

@@ -80,15 +80,13 @@ def _get_dump_header(server_name: str, dump_id: str) -> Dict[str, Any]:
         "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}".format(
             server_name, dump_id
         ),
-        "@odata.type": "#BIOSFirmwareDump.v1_0_0.BIOSFirmwareDump",
         "Id": dump_id,
         "Name": "BIOS firmware dump",
         "Actions": {
             "#BIOSFirmwareDump.ReadContent": {
-                "target": (
-                    "/redfish/v1/Systems/{}/Bios/FirmwareDumps/"
-                    "{}/Actions/BIOSFirmwareDump.ReadContent"
-                ).format(server_name, dump_id)
+                "target": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}/Actions/BIOSFirmwareDump.ReadContent".format(
+                    server_name, dump_id
+                )
             },
         },
     }
@@ -137,8 +135,6 @@ class RedfishBIOSFirmwareDumps:
             "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps".format(
                 server_name
             ),
-            "@odata.type": "#FirmwareDumps.v1_0_0.FirmwareDumps",
-            "Id": "{} BIOS dumps".format(server_name),
             "Name": "{} BIOS dumps".format(server_name),
             "Members@odata.count": len(dumps),
             "Members": dumps,
@@ -212,8 +208,6 @@ class RedfishBIOSFirmwareDumps:
         server_name = request.match_info["server_name"]
         dump_id = request.match_info["DumpID"]
         dump_info = await self._get_dump(server_name, dump_id)
-        if dump_info is None:
-            return web.json_response(status=404)
         return web.json_response(dump_info, dumps=dumps_bytestr)
 
     @_webassert_valid_server_name
@@ -340,10 +334,7 @@ class RedfishBIOSFirmwareDumps:
             if not os.path.exists(os.path.join(dump_dirpath, "exitcode")):
                 return RedfishError(
                     status=400,
-                    message=(
-                        "unable to delete the dump,"
-                        " while it is in process of dumping"
-                    ),
+                    message="unable to delete the dump, while it is in process of dumping",
                 ).web_response()
         # delete all files
         for file_name in ["image", "exitcode", "err", "log", "fwutil-pid"]:
@@ -353,3 +344,27 @@ class RedfishBIOSFirmwareDumps:
         with suppress(FileNotFoundError):
             os.rmdir(dump_dirpath)
         return web.json_response(dump_info, dumps=dumps_bytestr)
+
+    def get_server(self, server_name: str) -> "RedfishBIOSFirmwareServerDumps":
+        return RedfishBIOSFirmwareServerDumps(self, server_name=server_name)
+
+
+class RedfishBIOSFirmwareServerDumps:
+    def __init__(self, handler: RedfishBIOSFirmwareDumps, server_name: str):
+        self.handler = handler
+        self.server_name = server_name
+
+    async def get_collection_descriptor(self, request: web.Request):
+        return await self.handler.get_collection_descriptor(self.server_name, request)
+
+    async def get_dump_descriptor(self, request: web.Request):
+        return await self.handler.get_dump_descriptor(self.server_name, request)
+
+    async def create_dump(self, request: web.Request):
+        return await self.handler.create_dump(self.server_name, request)
+
+    async def delete_dump(self, request: web.Request):
+        return await self.handler.delete_dump(self.server_name, request)
+
+    async def read_dump_content(self, request: web.Request):
+        return await self.handler.read_dump_content(self.server_name, request)

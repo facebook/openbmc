@@ -10,8 +10,8 @@ class OpenBMC:
         self.host = host
         self.baseurl = host + ":8080"
         self.conn = http.client.HTTPConnection(self.baseurl)
-        self.content = {}
-        self.actions = {}
+        self.content = dict()
+        self.actions = dict()
 
     def get_node(self, url):
         self.conn.request("GET", url)

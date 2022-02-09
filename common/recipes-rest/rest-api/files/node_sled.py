@@ -17,8 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from typing import Any, Dict, Optional
-
 from node import node
 from rest_pal_legacy import *
 
@@ -35,7 +33,7 @@ class sledNode(node):
         else:
             self.actions = actions
 
-    async def doAction(self, data, param: Optional[Dict[Any, Any]] = None):
+    async def doAction(self, data, param={}):
         if pal_sled_action(data["action"]) == -1:
             res = "failure"
         else:

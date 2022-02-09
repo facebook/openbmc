@@ -18,13 +18,12 @@
 # Boston, MA 02110-1301 USA
 #
 import subprocess
-import typing as t
 
 import libgpio
 from aiohttp.log import server_logger
 
 
-def read_gpio_by_name(name: str, chip: str = "aspeed-gpio") -> t.Optional[int]:
+def read_gpio_by_name(name: str, chip: str = "aspeed-gpio") -> int:
     try:
         gpio = libgpio.GPIO(chip=chip, name=name)
         val = gpio.get_value()
@@ -35,7 +34,7 @@ def read_gpio_by_name(name: str, chip: str = "aspeed-gpio") -> t.Optional[int]:
         return None
 
 
-def read_gpio_by_shadow(shadow_name: str) -> t.Optional[int]:
+def read_gpio_by_shadow(shadow_name: str) -> int:
     try:
         gpio = libgpio.GPIO(shadow=shadow_name)
         val = gpio.get_value()
@@ -58,6 +57,6 @@ def get_wedge_slot():
     out = out.decode()
     try:
         slot = int(out.strip("\n"))
-    except Exception:
+    except:
         slot = 0
     return slot

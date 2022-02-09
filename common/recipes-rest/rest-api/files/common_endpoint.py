@@ -17,6 +17,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import asyncio
+import json
+from concurrent.futures import ThreadPoolExecutor
+
 import rest_bmc
 import rest_fcpresent
 import rest_fruid
@@ -24,6 +28,7 @@ import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
 import rest_modbus_cmd
+import rest_ntpstatus
 import rest_psu_update
 import rest_sensors
 import rest_server
@@ -90,9 +95,7 @@ class commonApp_Handler:
 
     # Handler for sys/mb/fruid resource endpoint
     def helper_rest_fruid_pim_hdl(self, request):
-        return web.json_response(
-            rest_fruid_pim.get_fruid(), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_fruid_pim.get_fruid(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_fruid_pim_hdl(self, request):
@@ -113,9 +116,7 @@ class commonApp_Handler:
     # Handler for uServer resource endpoint
     def helper_rest_server_act_hdl(self, request):
         data = get_data_from_generator(request.json())
-        return web.json_response(
-            rest_server.server_action(data), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_server.server_action(data), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_server_act_hdl(self, request):
@@ -123,9 +124,7 @@ class commonApp_Handler:
 
     # Handler for sensors resource endpoint
     def helper_rest_sensors_hdl(self, request):
-        return web.json_response(
-            rest_sensors.get_sensors(), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_sensors.get_sensors(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_sensors_hdl(self, request):
@@ -133,9 +132,7 @@ class commonApp_Handler:
 
     # Handler for gpios resource endpoint
     def helper_rest_gpios_hdl(self, request):
-        return web.json_response(
-            rest_gpios.get_gpios(), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_gpios.get_gpios(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_gpios_hdl(self, request):
@@ -143,9 +140,7 @@ class commonApp_Handler:
 
     # Handler for peer FC presence resource endpoint
     def helper_rest_fcpresent_hdl(self, request):
-        return web.json_response(
-            rest_fcpresent.get_fcpresent(), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_fcpresent.get_fcpresent(), dumps=dumps_bytestr)
 
     @common_force_async
     def rest_fcpresent_hdl(self, request):
@@ -153,9 +148,7 @@ class commonApp_Handler:
 
     # Handler for psu_update resource endpoint
     def helper_psu_update_hdl(self, request):
-        return web.json_response(
-            rest_psu_update.get_jobs(), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_psu_update.get_jobs(), dumps=dumps_bytestr)
 
     @common_force_async
     def psu_update_hdl(self, request):
@@ -164,9 +157,7 @@ class commonApp_Handler:
     # Handler for psu_update resource action
     def helper_psu_update_hdl_post(self, request):
         data = get_data_from_generator(request.json())
-        return web.json_response(
-            rest_psu_update.begin_job(data), dumps=dumps_bytestr, status=200
-        )
+        return web.json_response(rest_psu_update.begin_job(data), dumps=dumps_bytestr)
 
     @common_force_async
     def psu_update_hdl_post(self, request):

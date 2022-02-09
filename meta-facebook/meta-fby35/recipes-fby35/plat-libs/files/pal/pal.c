@@ -99,21 +99,15 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 #define IPMI_GET_VER_FRU_NUM  5
 #define IPMI_GET_VER_MAX_COMP 9
-#define MAX_FW_VER_LEN        32  //include the string terminal
+#define MAX_FW_VER_LEN        32  //include the string terminal 
 
-#define MAX_COMPONENT_LEN 32 //include the string terminal
+#define MAX_COMPONENT_LEN 32 //include the string terminal 
 
 #define BMC_CPLD_BUS     (12)
 #define CPLD_FW_VER_ADDR (0x80)
 #define BMC_CPLD_VER_REG (0x28002000)
 #define SB_CPLD_VER_REG  (0x000000c0)
 #define KEY_BMC_CPLD_VER "bmc_cpld_ver"
-
-#define ERROR_LOG_LEN 256
-#define ERR_DESC_LEN 64
-
-static int key_func_pwr_last_state(int event, void *arg);
-static int key_func_por_cfg(int event, void *arg);
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -136,15 +130,15 @@ struct pal_key_cfg {
   {SYSFW_VER "2", "0", NULL},
   {SYSFW_VER "3", "0", NULL},
   {SYSFW_VER "4", "0", NULL},
-  {"pwr_server1_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server2_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server3_last_state", "on", key_func_pwr_last_state},
-  {"pwr_server4_last_state", "on", key_func_pwr_last_state},
+  {"pwr_server1_last_state", "on", NULL},
+  {"pwr_server2_last_state", "on", NULL},
+  {"pwr_server3_last_state", "on", NULL},
+  {"pwr_server4_last_state", "on", NULL},
   {"timestamp_sled", "0", NULL},
-  {"slot1_por_cfg", "lps", key_func_por_cfg},
-  {"slot2_por_cfg", "lps", key_func_por_cfg},
-  {"slot3_por_cfg", "lps", key_func_por_cfg},
-  {"slot4_por_cfg", "lps", key_func_por_cfg},
+  {"slot1_por_cfg", "lps", NULL},
+  {"slot2_por_cfg", "lps", NULL},
+  {"slot3_por_cfg", "lps", NULL},
+  {"slot4_por_cfg", "lps", NULL},
   {"slot1_boot_order", "0100090203ff", NULL},
   {"slot2_boot_order", "0100090203ff", NULL},
   {"slot3_boot_order", "0100090203ff", NULL},
@@ -171,12 +165,8 @@ struct pal_key_cfg {
 };
 
 MAPTOSTRING root_port_common_mapping[] = {
-    // XCC
-    { 0xB3, 1, 0x5A, "Num 0", "SB" },   // root_port=0x5A, Boot Drive
-    { 0xB3, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
-    // MCC
-    { 0xBB, 5, 0x5E, "Num 0", "SB" },   // root_port=0x5E, Boot Drive
-    { 0xBB, 1, 0x5A, "Class 1", "NIC"}, // root_port=0x5A, Class 1 NIC
+    { 0x4B, 1, 0x2A, "Num 0", "SB" },   // Boot Drive
+    { 0x4B, 5, 0x2E, "Class 1", "NIC"}, // Class 1 NIC
 };
 
 MAPTOSTRING root_port_mapping[] = {
@@ -253,9 +243,6 @@ PCIE_ERR_DECODE pcie_err_tab[] = {
     {0x50, "Received ERR_COR Message"},
     {0x51, "Received ERR_NONFATAL Message"},
     {0x52, "Received ERR_FATAL Message"},
-    {0x53, "DPC triggered by uncorrectable error"},
-    {0x54, "DPC triggered by ERR_NONFATAL"},
-    {0x55, "DPC triggered by ERR_FATAL"},
     {0x59, "LER was triggered by ERR_NONFATAL"},
     {0x5A, "LER was triggered by ERR_FATAL"},
     {0xA0, "PERR (non-AER)"},
@@ -282,26 +269,6 @@ pal_key_index(char *key) {
   syslog(LOG_WARNING, "pal_key_index: invalid key - %s", key);
 #endif
   return -1;
-}
-
-static int
-key_func_pwr_last_state(int event, void *arg) {
-  if (event == KEY_BEFORE_SET) {
-    if (strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
-      return -1;
-  }
-
-  return 0;
-}
-
-static int
-key_func_por_cfg(int event, void *arg) {
-  if (event == KEY_BEFORE_SET) {
-    if (strcmp((char *)arg, "lps") && strcmp((char *)arg, "on") && strcmp((char *)arg, "off"))
-      return -1;
-  }
-
-  return 0;
 }
 
 int
@@ -1517,7 +1484,7 @@ pal_parse_proc_fail(uint8_t fru, uint8_t *event_data, char *error_log) {
 
   switch(event_data[0]) {
     case FRB3:
-      strcat(error_log, "FRB3/Processor Startup/Initialization Failure, ");
+      strcat(error_log, "FRB3, ");
       break;
     default:
       strcat(error_log, "Undefined data, ");
@@ -1618,13 +1585,25 @@ pal_parse_smart_clst_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 static int
 pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    SOC_VRHOT    = 0x00,
+    VCCIN_VRHOT    = 0x00,
+    VCCIO_VRHOT    = 0x01,
+    DIMM_ABC_VRHOT = 0x02,
+    DIMM_DEF_VRHOT = 0x03,
   };
   uint8_t event = event_data[0];
 
   switch (event) {
-    case SOC_VRHOT:
-      strcat(error_log, "SOC VR HOT warning");
+    case VCCIN_VRHOT:
+      strcat(error_log, "CPU VCCIN VR HOT Warning");
+      break;
+    case VCCIO_VRHOT:
+      strcat(error_log, "CPU VCCIO VR HOT Warning");
+      break;
+    case DIMM_ABC_VRHOT:
+      strcat(error_log, "DIMM ABC Memory VR HOT Warning");
+      break;
+    case DIMM_DEF_VRHOT:
+      strcat(error_log, "DIMM DEF Memory VR HOT Warning");
       break;
     default:
       strcat(error_log, "Undefined VR event");
@@ -1697,20 +1676,20 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
 }
 
 static void
-pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char *err1_desc, char *err2_desc) {
-  int i;
+pal_search_pcie_err(uint8_t err1_id, uint8_t err2_id, char **err1_desc, char **err2_desc) {
+  int i = 0;
   int size = (sizeof(pcie_err_tab)/sizeof(PCIE_ERR_DECODE));
 
   for ( i = 0; i < size; i++ ) {
     if ( err2_id == pcie_err_tab[i].err_id ) {
-      snprintf(err2_desc, ERR_DESC_LEN, "(%s)", pcie_err_tab[i].err_descr);
+      *err2_desc = pcie_err_tab[i].err_descr;
       continue;
     } else if ( err1_id == pcie_err_tab[i].err_id ) {
-      snprintf(err1_desc, ERR_DESC_LEN, "(%s)", pcie_err_tab[i].err_descr);
+      *err1_desc = pcie_err_tab[i].err_descr;
       continue;
     }
 
-    if ( err1_desc[0] && err2_desc[0] ) {
+    if ( strcmp(*err1_desc,"NA") && strcmp(*err2_desc,"NA") ) {
       break;
     }
   }
@@ -1737,7 +1716,7 @@ pal_search_pcie_dev(MAPTOSTRING *tbl, int size, uint8_t bmc_location, uint8_t de
 }
 
 static void
-pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location, char *err1_str, char *err2_str) {
+pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location, char **err1_str, char **err2_str) {
   uint8_t bmc_location = 0;
   uint8_t dev = pdata[0] >> 3;
   uint8_t bus = pdata[1];
@@ -1814,21 +1793,23 @@ pal_get_2ou_vr_str_name(uint8_t comp, uint8_t vr_num, char *error_log) {
 static int
 pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    SYS_SOC_THERM_TRIP = 0x00,
-    SYS_THROTTLE       = 0x02,
-    SYS_PCH_THERM_TRIP = 0x03,
-    SYS_HSC_THROTTLE   = 0x05,
-    SYS_OC_DETECT      = 0x06,
-    SYS_MB_THROTTLE    = 0x07,
+    SYS_THERM_TRIP     = 0x00,
+    SYS_FIVR_FAULT     = 0x01,
+    SYS_SURGE_CURR     = 0x02,
+    SYS_PCH_PROCHOT    = 0x03,
+    SYS_UV_DETECT      = 0x04,
+    SYS_OC_DETECT      = 0x05,
+    SYS_OCP_FAULT_WARN = 0x06,
+    SYS_FW_TRIGGER     = 0x07,
     SYS_HSC_FAULT      = 0x08,
     SYS_RSVD           = 0x09,
-    SYS_WDT_TIMEOUT    = 0x0A,
+    SYS_VR_WDT_TIMEOUT = 0x0A,
     SYS_M2_VPP         = 0x0B,
     SYS_M2_PGOOD       = 0x0C,
     SYS_VCCIO_FAULT    = 0x0D,
     SYS_SMI_STUCK_LOW  = 0x0E,
     SYS_OV_DETECT      = 0x0F,
-    SYS_FM_THROTTLE    = 0x10,
+    SYS_M2_OCP_DETECT  = 0x10,
     SYS_SLOT_PRSNT     = 0x11,
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
@@ -1843,32 +1824,35 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   char component_str[MAX_COMPONENT_LEN] = {0};
 
   switch (event) {
-    case SYS_SOC_THERM_TRIP:
-      strcat(error_log, "SOC Thermal trip");
+    case SYS_THERM_TRIP:
+      strcat(error_log, "System thermal trip");
       break;
-    case SYS_THROTTLE:
-      strcat(error_log, "SYS_Throttle throttle");
+    case SYS_FIVR_FAULT:
+      strcat(error_log, "System FIVR fault");
       break;
-    case SYS_PCH_THERM_TRIP:
-      strcat(error_log, "PCH Thermal trip");
+    case SYS_SURGE_CURR:
+      strcat(error_log, "Surge Current Warning");
       break;
-    case SYS_FM_THROTTLE:
-      strcat(error_log, "FM_Throttle throttle");
+    case SYS_PCH_PROCHOT:
+      strcat(error_log, "PCH prochot");
       break;
-    case SYS_HSC_THROTTLE:
-      strcat(error_log, "HSC_Throttle throttle");
+    case SYS_UV_DETECT:
+      strcat(error_log, "Under Voltage Warning");
       break;
     case SYS_OC_DETECT:
-      strcat(error_log, "HSC_OC Warning");
+      strcat(error_log, "OC Warning");
       break;
-    case SYS_MB_THROTTLE:
-      strcat(error_log, "MB_Throttle throttle");
+    case SYS_OCP_FAULT_WARN:
+      strcat(error_log, "OCP Fault Warning");
+      break;
+    case SYS_FW_TRIGGER:
+      strcat(error_log, "Firmware");
       break;
     case SYS_HSC_FAULT:
       strcat(error_log, "HSC fault");
       break;
-    case SYS_WDT_TIMEOUT:
-      strcat(error_log, "VR Watchdog timeout");
+    case SYS_VR_WDT_TIMEOUT:
+      strcat(error_log, "VR WDT");
       break;
     case SYS_M2_VPP:
       pal_get_m2vpp_str_name(fru, event_data[1], event_data[2], error_log);
@@ -1886,6 +1870,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_OV_DETECT:
       strcat(error_log, "VCCIO Over Voltage Fault");
+      break;
+    case SYS_M2_OCP_DETECT:
+      pal_get_m2_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "Load Switch OCP");
       break;
     case SYS_SLOT_PRSNT:
       snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);
@@ -1909,7 +1897,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       } else {
         snprintf(log_msg, sizeof(log_msg), "Fan mode changed to %s mode by unknown slot", fan_mode_str);
       }
-
+      
       strcat(error_log, log_msg);
       break;
     case SYS_BB_FW_EVENT:
@@ -2040,7 +2028,6 @@ pal_parse_button_detect_event(uint8_t fru, uint8_t *event_data, char *error_log)
   return PAL_EOK;
 }
 
-
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
@@ -2095,6 +2082,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 int
 pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
+#define ERROR_LOG_LEN 256
+
   uint8_t general_info = (uint8_t) sel[3];
   uint8_t error_type = general_info & 0x0f;
   uint8_t plat = 0;
@@ -2102,17 +2091,17 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
   error_log[0] = '\0';
   char *sil = "NA";
   char *location = "NA";
-  char err1_desc[ERR_DESC_LEN] = {0}, err2_desc[ERR_DESC_LEN] = {0};
+  char *err1_descript = "NA", *err2_descript = "NA";
 
   switch (error_type) {
     case UNIFIED_PCIE_ERR:
       plat = (general_info & 0x10) >> 4;
       if (plat == 0) {  //x86
-        pal_get_pcie_err_string(fru, &sel[10], &sil, &location, err1_desc, err2_desc);
+        pal_get_pcie_err_string(fru, &sel[10], &sil, &location, &err1_descript, &err2_descript);
 
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: x86/PCIeErr(0x%02X), Bus %02X/Dev %02X/Fun %02X, %s/%s,"
-                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X%s, ErrID1: 0x%02X%s",
-                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_desc, sel[15], err1_desc);
+                            "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X(%s), ErrID1: 0x%02X(%s)",
+                general_info, sel[11], sel[10] >> 3, sel[10] & 0x7, location, sil, ((sel[13]<<8)|sel[12]), sel[14], err2_descript, sel[15], err1_descript);
       } else {
         snprintf(error_log, ERROR_LOG_LEN, "GeneralInfo: ARM/PCIeErr(0x%02X), Aux. Info: 0x%04X, Bus %02X/Dev %02X/Fun %02X,"
                             "TotalErrID1Cnt: 0x%04X, ErrID2: 0x%02X, ErrID1: 0x%02X",
@@ -2431,7 +2420,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           // if BB fw update complete, delete the key
           kv_del("bb_fw_update", 0);
         }
-
+        
         return PAL_EOK;
       }
       break;
@@ -3016,6 +3005,9 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       syslog(LOG_WARNING, "%s() Failed to get sysfw ver", __func__);
       goto error_exit;
     }
+  } else if(target == FW_VR) {
+    // TODO
+    goto not_support;
   } else {
     switch(target) {
     case FW_1OU_BIC:
@@ -3047,7 +3039,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       break;
     case FW_BB_BIC:
     case FW_BB_CPLD:
-      if (bmc_location != NIC_BMC) {
+      if(bmc_location != NIC_BMC) {
         goto not_support;
       }
       break;
@@ -3372,15 +3364,15 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-    case FRU_BMC:
       return 10;
+    case FRU_BMC:
     case FRU_NIC:
     default:
       return 4;
   }
 }
 
-// IPMI OEM Command
+// IPMI OEM Command 
 // netfn: NETFN_OEM_1S_REQ (0x38)
 // command code: CMD_OEM_1S_GET_SYS_FW_VER (0x40)
 int
@@ -3400,21 +3392,21 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util bmc --version cpld | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version fscd | awk '{print $NF}'",
       "/usr/bin/fw-util bmc --version tpm | awk '{print $NF}'",
-      NULL,
-      NULL,
-      NULL,
+      NULL, 
+      NULL, 
+      NULL, 
       NULL
     },
     // NIC
     {
       "/usr/bin/fw-util nic --version | awk '{print $NF}'",
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
       NULL
     },
     // Base board
@@ -3423,10 +3415,10 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
       "/usr/bin/fw-util slot1 --version bb_bicbl | awk '{print $NF}'",
       "/usr/bin/fw-util slot1 --version bb_cpld | awk '{print $NF}'",
       NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
       NULL
     },
     // Server board
@@ -3444,12 +3436,12 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     {
       "/usr/bin/fw-util slot1 --version 2ou_bic | awk '{print $NF}'",
       "/usr/bin/fw-util slot1 --version 2ou_bicbl | awk '{print $NF}'",
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
-      NULL,
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
+      NULL, 
       NULL
     }
   };

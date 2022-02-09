@@ -22,8 +22,6 @@
 #define __FBY35_COMMON_H__
 
 #include <stdbool.h>
-#include <openssl/md5.h>
-#include <sys/stat.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,21 +85,6 @@ extern const char *slot_usage;
 #define MAX_BYPASS_DATA_LEN  256
 #define IANA_LEN 3
 #define UNKNOWN_SLOT 0xFF
-
-#define MD5_SIZE              (16)
-#define PLAT_SIG_SIZE         (16)
-#define FW_VER_SIZE           (4)
-#define IMG_MD5_OFFSET        (0x0)
-#define IMG_SIGNATURE_OFFSET  ((IMG_MD5_OFFSET) + MD5_SIZE)
-#define IMG_FW_VER_OFFSET     ((IMG_SIGNATURE_OFFSET) + PLAT_SIG_SIZE)
-#define IMG_IDENTIFY_OFFSET   ((IMG_FW_VER_OFFSET) + FW_VER_SIZE)
-#define IMG_POSTFIX_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + 1)
-
-#define MD5_READ_BYTES     (1024)
-
-#define REVISION_ID(x, board_id)  (((x >> 4) & 0x07) + ((board_id == 1) ? 0 : 1))
-#define BOARD_ID(x)     (x & 0x0f)
-#define COMPONENT_ID(x) (x >> 7)
 
 enum {
   FRU_ALL       = 0,
@@ -177,7 +160,7 @@ enum {
 };
 
 enum {
-  // BOARD_ID [0:3]
+  // BOARD_ID [0:3] 
   NIC_BMC = 0x09, // 1001
   BB_BMC  = 0x0E, // 1110
   DVT_BB_BMC  = 0x07, // 0111
@@ -219,68 +202,6 @@ enum fan_mode {
 enum sel_dir {
   SEL_ASSERT = 0x6F,
   SEL_DEASSERT = 0xEF,
-};
-
-enum comp_id {
-  COMP_CPLD = 0,
-  COMP_BIC  = 1,
-};
-
-enum fw_rev {
-  FW_REV_POC = 0,
-  FW_REV_EVT,
-  FW_REV_DVT,
-  FW_REV_PVT,
-  FW_REV_MP ,
-};
-
-enum board_id {
-  BOARD_ID_SB = 1,
-  BOARD_ID_BB = 2,
-  BOARD_ID_NIC_EXP = 6,
-};
-
-enum {
-  FW_CPLD = 1,
-  FW_BIC,
-  FW_ME,
-  FW_BIC_RCVY,
-  FW_VR_VCCIN,         // 5
-  FW_VR_VCCD,
-  FW_VR_VCCINFAON,
-  FW_BIOS,
-  FW_1OU_BIC,
-  FW_1OU_CPLD,         // 10
-  FW_2OU_BIC,
-  FW_2OU_CPLD,
-  FW_BB_BIC,
-  FW_BB_CPLD,
-  FW_2OU_3V3_VR1,      // 15
-  FW_2OU_3V3_VR2,
-  FW_2OU_3V3_VR3,
-  FW_2OU_1V8_VR,
-  FW_2OU_PESW_VR,
-  FW_2OU_PESW_CFG_VER, // 20
-  FW_2OU_PESW_FW_VER,
-  FW_2OU_PESW_BL0_VER,
-  FW_2OU_PESW_BL1_VER,
-  FW_2OU_PESW_PART_MAP0_VER,
-  FW_2OU_PESW_PART_MAP1_VER,  // 25
-  FW_2OU_PESW,
-  FW_2OU_M2_DEV0,
-  FW_2OU_M2_DEV1,
-  FW_2OU_M2_DEV2,
-  FW_2OU_M2_DEV3,      // 30
-  FW_2OU_M2_DEV4,
-  FW_2OU_M2_DEV5,
-  FW_2OU_M2_DEV6,
-  FW_2OU_M2_DEV7,
-  FW_2OU_M2_DEV8,      // 35
-  FW_2OU_M2_DEV9,
-  FW_2OU_M2_DEV10,
-  FW_2OU_M2_DEV11,
-  // last id
-  FW_COMPONENT_LAST_ID
 };
 
 const static char *gpio_server_prsnt[] =
@@ -351,13 +272,6 @@ typedef struct {
   uint8_t component;
 } BB_FW_UPDATE_EVENT;
 
-typedef struct {
-  uint8_t md5_sum[MD5_SIZE];
-  uint8_t plat_sig[PLAT_SIG_SIZE];
-  uint8_t version[FW_VER_SIZE];
-  uint8_t err_proof;
-} FW_IMG_INFO;
-
 int fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby35_common_is_bic_ready(uint8_t fru, uint8_t *val);
 int fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
@@ -373,10 +287,6 @@ int fby35_common_dev_id(char *str, uint8_t *dev);
 int fby35_common_dev_name(uint8_t dev, char *str);
 int fby35_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
 int fby35_common_fscd_ctrl (uint8_t mode);
-int fby35_common_check_image_signature(uint8_t* data);
-int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
-int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data);
-bool fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id);
 
 #ifdef __cplusplus
 } // extern "C"

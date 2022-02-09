@@ -18,9 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
+import json
+import os
 import re
+import subprocess
 from asyncio import TimeoutError
-from typing import Any, Dict, List, Optional
 
 import common_utils
 from node import node
@@ -32,6 +34,7 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
         cmd += [sensor_id]
     if sensor_name != "":
         cmd_util = ["/usr/local/bin/sensor-util", fru]
+        sensors = []
         try:
             retcode, stdout, stderr = await common_utils.async_exec(
                 cmd_util, shell=False
@@ -55,9 +58,9 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
                 elif m_na:
                     s_name = m_na.group(1)
                     s_id = m_na.group(2)
-                    s_val = m_na.group(3)  # noqa: F841
-                    s_unit = "na"  # noqa: F841
-                    s_status = m_na.group(4)  # noqa: F841
+                    s_val = m_na.group(3)
+                    s_unit = "na"
+                    s_status = m_na.group(4)
                 else:
                     continue
 
@@ -78,13 +81,7 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
         return {"result": "failure"}
 
 
-async def sensor_util(  # noqa: C901
-    fru="all",
-    sensor_name="",
-    sensor_id="",
-    period="60",
-    display: Optional[List[Any]] = None,
-):
+async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", display=[]):
     cmd = ["/usr/local/bin/sensor-util", fru]
     if sensor_id != "":
         cmd += [sensor_id]
@@ -208,7 +205,7 @@ class sensorsNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
+    async def getInformation(self, param={}):
         snr_name = ""
         snr_id = ""
         period = "60"
@@ -223,7 +220,7 @@ class sensorsNode(node):
             period = param["history-period"]
         return await sensor_util(self.name, snr_name, snr_id, period, display)
 
-    async def doAction(self, info, param: Optional[Dict[Any, Any]] = None):
+    async def doAction(self, info, param={}):
         snr_name = ""
         snr = ""
         if "name" in param:

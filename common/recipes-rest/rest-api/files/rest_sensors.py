@@ -18,6 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
+import json
 import re
 import subprocess
 
@@ -29,13 +30,14 @@ def get_sensors():
     result = []
     proc = subprocess.Popen(["sensors"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
-        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
         data = data.decode()
     except proc.TimeoutError as ex:
         data = ex.output
         data = data.decode()
+        err = ex.error
 
-    data = re.sub(r"\(.+?\)", "", data)  # noqa: W605
+    data = re.sub("\(.+?\)", "", data)
     for edata in data.split("\n\n"):
         adata = edata.split("\n", 1)
         sresult = {}
@@ -55,20 +57,21 @@ def get_sensors():
 
 # Handler for sensors-full resource endpoint
 
-name_adapter_re = re.compile(r"(\S+)\nAdapter:\s*(\S.*?)\s*\n")
-label_re = re.compile(r"(\S.*):\n")
-value_re = re.compile(r"\s+(\S.*?):\s*(\S.*?)\s*\n")
-skipline_re = re.compile(r".*\n?")
+name_adapter_re = re.compile("(\S+)\nAdapter:\s*(\S.*?)\s*\n")
+label_re = re.compile("(\S.*):\n")
+value_re = re.compile("\s+(\S.*?):\s*(\S.*?)\s*\n")
+skipline_re = re.compile(".*\n?")
 
 
-def get_sensors_full():  # noqa: C901
+def get_sensors_full():
     proc = subprocess.Popen(
         ["sensors", "-u"], stdout=subprocess.PIPE, stderr=subprocess.PIPE
     )
     try:
-        data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
+        data, err = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     except proc.TimeoutError as ex:
         data = ex.output
+        err = ex.error
 
     # The output of sensors -u is a series of sections separated
     # by blank lines.  Each section looks like this:

@@ -19,7 +19,8 @@
 #
 
 
-from subprocess import check_output, CalledProcessError, PIPE, Popen
+import os
+from subprocess import *
 
 
 # return value
@@ -35,7 +36,7 @@ def get_bic_status():
             return 0
         else:
             return 1
-    except OSError:
+    except (OSError, IOError):
         return 2  # cmd not found, i.e. no BIC on this platform
     except (CalledProcessError):
         return 0  # bic-util returns error

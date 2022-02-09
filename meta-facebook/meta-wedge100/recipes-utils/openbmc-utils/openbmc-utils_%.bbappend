@@ -18,7 +18,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
-PACKAGECONFIG += " boot-info"
 
 SRC_URI += "file://enable_watchdog_ext_signal.sh \
             file://ec_version.sh \

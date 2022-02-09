@@ -905,14 +905,13 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
   uint32_t sel_offset = 0xffffffff;
   uint8_t board_type = 0;
   uint8_t board_revision_id = 0xff;
+  int i2cfd = 0;
   uint8_t tbuf[4] = {0};
   uint8_t tlen = 0;
   int ret_val = 0 , retry = 0;
   int board_type_index = 0;
   bool board_rev_is_invalid = false;
   bool check_board_revision = true;
-  bic_gpio_t gpio = {0};
-  uint8_t hsc_det = 0;
 
   switch (comp) {
     case UPDATE_BIC:
@@ -1007,27 +1006,30 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
         break;
       case NONE_INTF:
         // Read Board Revision from SB CPLD
-        if ( fby3_common_get_sb_board_rev(slot_id, &board_revision_id) ) {
-          syslog(LOG_WARNING, "Failed to get sb board rev");
+        i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+        if ( i2cfd < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
           goto error_exit;
         }
-        // respin board, Need to process BOARD_REV through HSC_DETECT, keeping the original logic work
-        ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
-        if ( ret < 0 ) {
-          syslog(LOG_WARNING, "%s() bic_get_gpio returns %d\n", __func__, ret);
+
+        tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 1;
+        rlen = 1;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
           goto error_exit;
         }
-        hsc_det |= ((BIT_VALUE(gpio, 77)) << 0); // 77    HSC_DETECT0
-        hsc_det |= ((BIT_VALUE(gpio, 78)) << 1); // 78    HSC_DETECT1
-        hsc_det |= ((BIT_VALUE(gpio, 79)) << 2); // 79    HSC_DETECT2
-        if ( hsc_det == HSC_DET_ADM1278 ) {
-          // old board, BOARD_REV_ID3 is floating.
-          board_revision_id &= 0x7;
-        } else {
-          // new respin board is the MP stage,
-          // rise bit3 to keep "if (board_type_index < CPLD_BOARD_PVT_REV)" work.
-          board_revision_id |= 0x8;
-        }
+        board_revision_id = rbuf[0];
         break;
       case FEXP_BIC_INTF:
       case REXP_BIC_INTF:
@@ -1215,32 +1217,20 @@ exit:
 }
 
 static int
-ctrl_bic_sensor_monitor(uint8_t slot_id, uint8_t intf, bool stop_bic_montr_en) {
+stop_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
   int ret = 0;
-
-  printf("* Turning %s BIC sensor monitor...\n", (stop_bic_montr_en == true)?"off":"on");
-
-  ret = bic_enable_ssd_sensor_monitor(slot_id, !stop_bic_montr_en, intf);
-  if ( ret < 0 ) {
-    printf("* Failed to %s bic sensor monitor aborted!\n", (stop_bic_montr_en == true)?"stop":"start");
-  } else sleep(2);
-
+  printf("* Turning off BIC sensor monitor...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, false, intf);
+  sleep(2);
   return ret;
 }
 
 static int
-ctrl_pesw_error_monitor(uint8_t slot_id, uint8_t intf, bool stop_bic_montr_en) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, (stop_bic_montr_en == true)?0x00:0x01};
-  uint8_t rbuf[16] = {0};
-  uint8_t rlen = 0;
-  int ret = BIC_STATUS_SUCCESS;
-
-  printf("* Turning %s PESW error monitor...\n", (stop_bic_montr_en == true)?"off":"on");
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_PESW_ERR_MONITOR, tbuf, 4, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    printf("Failed to %s PESW error monitor, is the BIC firmware too old(<= D02)? aborted!\n", (stop_bic_montr_en == true)?"stop":"start");
-  } else sleep(2);
-
+start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
+  int ret = 0;
+  printf("* Turning on BIC sensor monitor...\n");
+  ret = bic_enable_ssd_sensor_monitor(slot_id, true, intf);
+  sleep(2);
   return ret;
 }
 
@@ -1288,13 +1278,13 @@ get_component_name(uint8_t comp) {
     case FW_2OU_PESW_VR:
       return "2OU PCIe VR";
     case FW_2OU_3V3_VR1:
-      return "2OU VR_P3V3_STBY1";
+      return "VR_P3V3_STBY1";
     case FW_2OU_3V3_VR2:
-      return "2OU VR_P3V3_STBY2";
+      return "VR_P3V3_STBY2";
     case FW_2OU_3V3_VR3:
-      return "2OU VR_P3V3_STBY3";
+      return "VR_P3V3_STBY3";
     case FW_2OU_1V8_VR:
-      return "2OU VR_P1V8";
+      return "VR_P1V8";
     case FW_2OU_M2_DEV0:
       return "2OU M2 Dev0";
     case FW_2OU_M2_DEV1:
@@ -1618,16 +1608,21 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CWC_CPLD:
     case FW_GPV3_TOP_CPLD:
     case FW_GPV3_BOT_CPLD:
-      if ( stop_bic_monitoring && (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
+      if ( stop_bic_monitoring == true && (ret = stop_bic_sensor_monitor(slot_id, intf)) < 0 ) {
+        printf("* Failed to stop bic sensor monitor\n");
         break;
       }
 
       ret = (loc != NULL)?update_bic_cpld_lattice(slot_id, path, intf, force): \
                           update_bic_cpld_lattice_usb(slot_id, path, intf, force);
 
-      if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
-           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
-
+      //check ret first and then check stop_bic_monitoring flag
+      //run start_bic_sensor_monitor() and assgin a new val to ret in the end
+      if ( (ret == BIC_STATUS_SUCCESS) && (stop_bic_monitoring == true) && \
+           (ret = start_bic_sensor_monitor(slot_id, intf)) < 0 ) {
+        printf("* Failed to start bic sensor monitor\n");
+        break;
+      }
       break;
     case FW_BB_CPLD:
     case FW_CPLD:
@@ -1672,24 +1667,11 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_CWC_PESW:
     case FW_GPV3_TOP_PESW:
     case FW_GPV3_BOT_PESW:
-      // we should stop polling sensors while updating PESW
-      if ( (stop_bic_monitoring && (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0) || \
-           (stop_bic_monitoring && (ret = ctrl_pesw_error_monitor(slot_id, intf, stop_bic_monitoring)) < 0) ) {
-        break;
-      }
-
-      // run the update
       if (board_type == GPV3_BRCM_BOARD) {
         ret = BIC_STATUS_FAILURE; /*not supported*/
       } else {
         ret = update_bic_mchp(slot_id, comp, path, intf, force, (loc != NULL)?false:true);
       }
-
-      // start polling again
-      if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
-           (((ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0) || \
-           ((ret = ctrl_pesw_error_monitor(slot_id, intf, !stop_bic_monitoring)) < 0)) );
-
       break;
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:
@@ -1727,10 +1709,10 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BOT_M2_DEV9:
     case FW_BOT_M2_DEV10:
     case FW_BOT_M2_DEV11:
-      if ( stop_bic_monitoring && (ret = ctrl_bic_sensor_monitor(slot_id, intf, stop_bic_monitoring)) < 0 ) {
+      if ( stop_bic_monitoring == true && stop_bic_sensor_monitor(slot_id, intf) < 0 ) {
+        printf("* Failed to stop bic sensor monitor\n");
         break;
       }
-
       uint8_t nvme_ready = 0, status = 0, type = 0, m2_dev = 0;
       if (comp >= FW_TOP_M2_DEV0 && comp <= FW_TOP_M2_DEV11) {
         m2_dev = (comp - FW_TOP_M2_DEV0) + FW_2OU_M2_DEV0;
@@ -1750,13 +1732,14 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       } else {
         ret = update_bic_m2_fw(slot_id, m2_dev, path, intf, force, type);
       }
-
-      if ( (ret == BIC_STATUS_SUCCESS && stop_bic_monitoring) && \
-           (ret = ctrl_bic_sensor_monitor(slot_id, intf, !stop_bic_monitoring)) < 0 );
-
+      //run it anyway
+      if ( stop_bic_monitoring == true && start_bic_sensor_monitor(slot_id, intf) < 0 ) {
+        printf("* Failed to start bic sensor monitor\n");
+        ret = BIC_STATUS_FAILURE;
+        break;
+      }
       break;
-  } /*end of switch*/
-
+  }
   if (intf == BB_BIC_INTF) {
     if (bb_fw_update_finish(slot_id) < 0) {
       printf("Failed to clear BB update register\n");

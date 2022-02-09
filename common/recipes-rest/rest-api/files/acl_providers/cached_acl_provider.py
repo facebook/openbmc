@@ -56,10 +56,7 @@ class CachedAclProvider(common_acl_provider_base.AclProviderBase):
         self._load_aclrules()
 
     def _get_permissions_for_user_identity(self, identity: Identity) -> t.List[str]:
-        if identity.user:
-            return self.aclrules.get(identity.user, [])
-        else:
-            return []
+        return self.aclrules.get(identity.user, [])
 
     def is_user_authorized(self, identity: Identity, permissions: t.List[str]) -> bool:
         user_roles = self._get_permissions_for_user_identity(identity)

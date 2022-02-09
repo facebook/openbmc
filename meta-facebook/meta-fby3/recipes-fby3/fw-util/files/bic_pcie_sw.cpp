@@ -67,7 +67,7 @@ int PCIESWComponent::uart_update(string image) {
   return ret;
 }
 
-int PCIESWComponent::update_internal(string& image, bool force) {
+int PCIESWComponent::update(string image) {
   int ret = 0;
   uint8_t board_type = 0xff;
 
@@ -80,7 +80,7 @@ int PCIESWComponent::update_internal(string& image, bool force) {
     if ( board_type == GPV3_BRCM_BOARD ) {
       ret = uart_update(image);
     } else {
-      ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
+      ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
     }
   } catch (string& err) {
     cout << "Failed Reason: " << err << endl;
@@ -89,12 +89,8 @@ int PCIESWComponent::update_internal(string& image, bool force) {
   return ret;
 }
 
-int PCIESWComponent::update(string image) {
-  return update_internal(image, FORCE_UPDATE_UNSET);
-}
-
 int PCIESWComponent::fupdate(string image) {
-  return update_internal(image, FORCE_UPDATE_SET);
+  return FW_STATUS_NOT_SUPPORTED;
 }
 
 int PCIESWComponent::get_ver_str(string& s, const uint8_t alt_fw_comp, const uint8_t board_type) {

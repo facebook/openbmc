@@ -21,7 +21,7 @@ SensorDetails = t.NamedTuple(
         # Not referencing sdr.ThreshSensor as sdr is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_thresh", t.Optional["sdr.ThreshSensor"]),
-        ("sensor_unit", t.Optional[str]),
+        ("sensor_unit", str),
         # Not referencing pal.SensorHistory as pal is unavailable on unit test env
         # only for platforms that support libpal
         ("sensor_history", t.Optional["pal.SensorHistory"]),
@@ -48,7 +48,9 @@ sensor_unit_dict = {
 SAD_SENSOR = -99999  # default reading for values not found.
 
 
-def get_pal_sensor(fru_name: str, fru_id: int, sensor_id: int) -> SensorDetails:
+def get_pal_sensor(
+    fru_name: str, fru_id: int, sensor_id: int
+) -> t.Optional[SensorDetails]:
     sensor_unit = sdr.sdr_get_sensor_units(fru_id, sensor_id)
     try:
         reading = pal.sensor_read(fru_id, sensor_id)
@@ -67,7 +69,8 @@ def get_pal_sensor(fru_name: str, fru_id: int, sensor_id: int) -> SensorDetails:
     try:
         sensor_name = sdr.sdr_get_sensor_name(fru_id, sensor_id)
     except sdr.LibSdrError:
-        sensor_name = str(sensor_id)
+        sensor_name = None
+
     sensor_name = fru_name + "/" + fru_name + "/" + sensor_name
 
     if sensor_unit == "%":
@@ -91,7 +94,7 @@ def get_sensor_details_using_libpal(
     Those are compute and newer fboss platforms"""
     fru_name_map = pal.pal_fru_name_map()
     fru_id = fru_name_map[fru_name]
-    sensor_details_list = []  # type: t.List[SensorDetails]
+    sensor_details_list = []
     if not pal.pal_is_fru_prsnt(fru_id):  # Check if the fru is present
         return sensor_details_list
 
@@ -224,12 +227,7 @@ def get_aggregate_sensor(sensor_id: int) -> t.Optional[SensorDetails]:
 
 FruInfo = t.NamedTuple(
     "FruInfo",
-    [
-        ("fru_name", str),
-        ("manufacturer", t.Optional[str]),
-        ("serial_number", t.Optional[int]),
-        ("model", t.Optional[str]),
-    ],
+    [("fru_name", str), ("manufacturer", str), ("serial_number", int), ("model", str)],
 )
 
 
@@ -255,7 +253,7 @@ async def get_fru_info_helper(fru_name: t.Optional[str] = None) -> t.List[FruInf
     return frus_info_list
 
 
-async def get_fru_info(fru_name: str) -> FruInfo:  # noqa: C901
+async def get_fru_info(fru_name: str) -> FruInfo:
     if fru_name in __CACHE_FRU_INFO:
         return __CACHE_FRU_INFO[fru_name]
 

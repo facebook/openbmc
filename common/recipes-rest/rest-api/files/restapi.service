@@ -23,8 +23,7 @@ After=fscd.service openbmc_gpio_setup.service setup_i2c.service
 [Service]
 ExecStart=/usr/local/bin/rest.py
 ExecReload=/bin/kill -HUP $MAINPID
-Restart=always
-RestartSec=60s
+Restart=on-success
 
 [Install]
 WantedBy=multi-user.target

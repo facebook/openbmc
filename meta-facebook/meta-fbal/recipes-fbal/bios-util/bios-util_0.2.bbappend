@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://bios_force_clear_cmos.py \
             file://BIOS_UTIL_AL.json \
@@ -23,6 +23,6 @@ SRC_URI += "file://bios_force_clear_cmos.py \
 
 binfiles += "bios_plat_info.py"
 
-do_install:append() {
+do_install_append() {
   cp BIOS_UTIL_AL.json ${dst}/bios_support.json
 }

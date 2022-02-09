@@ -2,14 +2,14 @@ import asyncio
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import List, Union
 
 from common_webapp import WebApp
 
 common_executor = ThreadPoolExecutor(5)
 
 # cache for endpoint_children
-ENDPOINT_CHILDREN = {}  # type: Dict[str, Set[str]]
+ENDPOINT_CHILDREN = {}
 
 
 def common_force_async(func):
@@ -50,19 +50,19 @@ def get_data_from_generator(data_generator):
 
 def get_endpoints(path: str):
     app = WebApp.instance()
-    endpoints = set()  # type: Set[str]
-    splitpaths = []  # type: List[str]
+    endpoints = set()
+    splitpaths = {}
     splitpaths = path.split("/")
     position = len(splitpaths)
     if path in ENDPOINT_CHILDREN:
-        endpoints = ENDPOINT_CHILDREN[path]  # type: ignore
+        endpoints = ENDPOINT_CHILDREN[path]
     else:
         for route in app.router.resources():
             string = str(route)
             rest_route_path = string[string.index("  ") :].split("/")
             if len(rest_route_path) > position and path in string:
                 endpoints.add(rest_route_path[position])
-        endpoints = sorted(endpoints)  # type: ignore
+        endpoints = sorted(endpoints)
         ENDPOINT_CHILDREN[path] = endpoints
     return endpoints
 
@@ -98,12 +98,10 @@ def running_systemd():
 
 async def async_exec(
     cmd: Union[List[str], str], shell: bool = False
-) -> Tuple[Optional[int], str, str]:
+) -> (int, str, str):
     if shell:
         proc = await asyncio.create_subprocess_shell(
-            cmd,  # type: ignore
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
     else:
         proc = await asyncio.create_subprocess_exec(

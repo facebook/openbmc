@@ -35,22 +35,22 @@ paths:
                     additionalProperties: false
                     properties: 
                       MemTotal: 
-                        type: number
+                        type: integer
                         format: int32
                       MemFree: 
-                        type: number
+                        type: integer
                         format: int32
                       MemAvailable: 
-                        type: number
+                        type: integer
                         format: int32
                       Buffers: 
-                        type: number
+                        type: integer
                         format: int32
                       Cached: 
-                        type: number
+                        type: integer
                         format: int32
                       Shmem: 
-                        type: number
+                        type: integer
                         format: int32
                   CPU Usage: 
                     type: string
@@ -116,7 +116,8 @@ paths:
                       type: string
                   mmc-info: 
                     type: object
-                    format: nullable
+                    additionalProperties: false
+                    properties:  
               Actions: 
                 type: array
                 items: 

@@ -31,10 +31,8 @@ void read_local_mac(char *buffer)
   FILE *fp;
   sprintf(buffer, "NA");
   fp = fopen(BMC_MGMT_MACADDR, "r");
-  if (fp){
+  if (fp)
      fscanf(fp, "%s", buffer);
-     fclose(fp);
-  }
   return;
 }
 
@@ -70,8 +68,7 @@ int main(int argc, const char *argv[])
   printf("Wedge EEPROM %s:\n", fn ? fn : "");
   printf("Version: %d\n", eeprom.fbw_version);
   printf("Product Name: %s\n", eeprom.fbw_product_name);
-  // Use product_asset instead of product_number as it is larger
-  printf("Product Part Number: %s\n", eeprom.fbw_product_asset);
+  printf("Product Part Number: %s\n", eeprom.fbw_product_number);
   printf("System Assembly Part Number: %s\n", eeprom.fbw_assembly_number);
   printf("Facebook PCBA Part Number: %s\n", eeprom.fbw_facebook_pcba_number);
   printf("Facebook PCB Part Number: %s\n", eeprom.fbw_facebook_pcb_number);
@@ -81,8 +78,7 @@ int main(int argc, const char *argv[])
   printf("Product Version: %d\n", eeprom.fbw_product_version);
   printf("Product Sub-Version: %d\n", eeprom.fbw_product_subversion);
   printf("Product Serial Number: %s\n", eeprom.fbw_product_serial);
-  // Elbert Asset Tag not supported
-  printf("Product Asset Tag: \n" );
+  printf("Product Asset Tag: %s\n", eeprom.fbw_product_asset);
   printf("System Manufacturer: %s\n", eeprom.fbw_system_manufacturer);
   printf("System Manufacturing Date: %s\n",
          eeprom.fbw_system_manufacturing_date);

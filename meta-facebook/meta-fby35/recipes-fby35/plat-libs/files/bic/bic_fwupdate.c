@@ -723,6 +723,180 @@ is_valid_intf(uint8_t intf) {
 }
 
 static int
+is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file_size){
+#define BICBL_TAG 0x00
+#define BICBR_TAG 0x01
+#define BICBL_OFFSET 0x3f00
+#define BICBR_OFFSET 0x8000
+
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t rbuf[2] = {0};
+  uint8_t signed_bytes[2] = {0};
+  uint8_t rlen = sizeof(rbuf);
+  uint8_t sel_comp = 0xff;
+  uint8_t sel_tag = 0xff;
+  uint32_t sel_offset = 0xffffffff;
+  uint8_t board_type = 0;
+  uint8_t board_revision_id = 0xff;
+  int i2cfd = 0;
+  uint8_t tbuf[4] = {0};
+  uint8_t tlen = 0;
+  int ret_val = 0 , retry = 0;
+  int board_type_index = 0;
+  bool board_rev_is_invalid = false;
+  bool check_board_revision = true;
+
+  switch (comp) {
+    case UPDATE_BIC:
+      sel_tag = BICBR_TAG;
+      sel_offset = BICBR_OFFSET;
+      break;
+    case UPDATE_BIC_BOOTLOADER:
+      sel_tag = BICBL_TAG;
+      sel_offset = BICBL_OFFSET;
+      break;
+  }
+
+  switch (intf) {
+    case FEXP_BIC_INTF:
+      check_board_revision = false;
+      bic_get_1ou_type(slot_id, &board_type);
+      if (board_type == EDSFF_1U) {
+        sel_comp = BIC1OU_E1S;
+      } else {
+        sel_comp = BIC1OU;
+      }
+      break;
+    case BB_BIC_INTF:
+      sel_comp = BICBB;
+      break;
+    case REXP_BIC_INTF:
+      check_board_revision = false;
+      if ( fby35_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
+        syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+        goto error_exit;
+      }
+      if ( board_type == M2_BOARD ) {
+        sel_comp = BIC2OU;
+      } else if ( board_type == E1S_BOARD ) {
+        sel_comp = BICSPE;
+      } else {
+        sel_comp = BICGPV3;
+      }
+      break;
+    case NONE_INTF:
+      sel_comp = BICDL;
+      break;
+  }
+
+  if ( lseek(fd, sel_offset, SEEK_SET) != (off_t)sel_offset ) {
+    goto error_exit;
+  }
+
+  rlen = sizeof(rbuf);
+  if ( read(fd, rbuf, rlen) != (off_t)rlen ) {
+    goto error_exit;
+  }
+  memcpy(signed_bytes, rbuf, sizeof(signed_bytes));
+
+  if ( signed_bytes[0] != sel_tag || COMPONENT_ID(signed_bytes[1]) != COMPONENT_ID(sel_comp) ) {
+    goto error_exit;
+  }
+
+  if (check_board_revision) {
+    switch (intf) {
+      /* need to Get the corresponding Board Revision */
+      case BB_BIC_INTF:
+        // Read Board Revision from BB CPLD
+        tbuf[0] = CPLD_BB_BUS;
+        tbuf[1] = CPLD_FLAG_REG_ADDR;
+        tbuf[2] = 0x01;
+        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 4;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+
+        board_revision_id = rbuf[0];
+        break;
+      case NONE_INTF:
+        // Read Board Revision from SB CPLD
+        i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+        if ( i2cfd < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+          goto error_exit;
+        }
+
+        tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
+        tlen = 1;
+        rlen = 1;
+        retry = 0;
+        while (retry < RETRY_TIME) {
+          ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+          if ( ret_val < 0 ) {
+            retry++;
+            msleep(100);
+          } else {
+            break;
+          }
+        }
+        if (retry == RETRY_TIME) {
+          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+          goto error_exit;
+        }
+        board_revision_id = rbuf[0];
+        break;
+      case FEXP_BIC_INTF:
+      case REXP_BIC_INTF:
+        //TBD : get the Board Revision of expansion board ?
+        break;
+    }
+
+    board_type_index = board_revision_id - 1;
+    if (board_type_index < 0) {
+      board_type_index = 0;
+    }
+    // PVT & MP firmware could be used in common
+    if (board_type_index < CPLD_BOARD_PVT_REV) {
+      if (REVISION_ID(signed_bytes[1]) != board_type_index) {
+        board_rev_is_invalid = true;
+      }
+    } else {
+      if (REVISION_ID(signed_bytes[1]) < CPLD_BOARD_PVT_REV) {
+        board_rev_is_invalid = true;
+      }
+    }
+
+    if ( board_rev_is_invalid) {
+      printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
+                    slot_id, board_stage[board_type_index], board_stage[board_type_index]);
+      printf("To force the update, please use the --force option.\n");
+      goto error_exit;
+    }
+  }
+
+  ret = BIC_STATUS_SUCCESS;
+
+error_exit:
+  if ( ret == BIC_STATUS_FAILURE) {
+    printf("This file cannot be updated to this component!\n");
+  }
+
+  return ret;
+}
+
+static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   int ret = -1;
   int fd = -1;
@@ -743,6 +917,13 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   }
 
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
+
+  //check the content of the image
+  if ( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
+    printf("Invalid BIC file!\n");
+    ret = -1;
+    goto exit;
+  }
 
   //run into the different function based on the interface
   switch (intf) {
@@ -790,6 +971,13 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, 
   }
 
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
+
+  //check the content of the image
+  if( !force && is_valid_bic_image(slot_id, comp, intf, fd, file_size) ) {
+    printf("Invalid BIC file!\n");
+    ret = -1;
+    goto error_exit;
+  }
 
   printf("Set slot UART to SB BIC\n");
   ret = fby35_common_get_bmc_location(&bmc_location);
@@ -906,19 +1094,15 @@ start_bic_sensor_monitor(uint8_t slot_id, uint8_t intf) {
   return ret;
 }
 
-char*
+static char*
 get_component_name(uint8_t comp) {
   switch (comp) {
     case FW_CPLD:
       return "SB CPLD";
     case FW_BIC:
       return "SB BIC";
-    case FW_VR_VCCIN:
-      return "VCCIN/VCCFA_EHV_FIVRA";
-    case FW_VR_VCCD:
-      return "VCCD";
-    case FW_VR_VCCINFAON:
-      return "VCCINFAON/VCCFA_EHV";
+    case FW_VR:
+      return "VR";
     case FW_BIOS:
       return "BIOS";
     case FW_1OU_BIC:
@@ -976,20 +1160,11 @@ get_component_name(uint8_t comp) {
   return "NULL";
 }
 
-static bool
-end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
-  if ((str == NULL) || (pattern == NULL)) {
-    return false;
-  }
-  return (strncmp(str + (str_len - pattern_len), pattern, pattern_len) == 0);
-}
-
 static int
 bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t intf = 0x0;
   char ipmb_content[] = "ipmb";
-  char tmp_posfix[] = "-tmp";
   char* loc = NULL;
   bool stop_bic_monitoring = false;
   bool stop_fscd_service = false;
@@ -1029,8 +1204,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     snprintf(origin_path, sizeof(origin_path), "%s", path);
   }
 
-  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, origin_path, force);
-  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, origin_path);
+  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, path, force);
+  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, path);
 
   uint8_t board_type = 0;
   if ( fby35_common_get_2ou_board_type(slot_id, &board_type) < 0 ) {
@@ -1046,9 +1221,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_ME:
     case FW_BIC:
     case FW_BIC_RCVY:
-    case FW_VR_VCCIN:
-    case FW_VR_VCCD:
-    case FW_VR_VCCINFAON:
+    case FW_VR:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
@@ -1168,9 +1341,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         ret = update_bic_usb_bios(slot_id, comp, fd);
       }
       break;
-    case FW_VR_VCCIN:
-    case FW_VR_VCCD:
-    case FW_VR_VCCINFAON:
+    case FW_VR:
       ret = update_bic_vr(slot_id, comp, path, intf, force, false/*usb update?*/);
       break;
     case FW_2OU_3V3_VR1:
@@ -1241,7 +1412,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   }
 
 err_exit:
-  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, origin_path, (ret != 0)?"Fail":"Success");
+  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, path, (ret != 0)?"Fail":"Success");
   if (fd_opened) {
     close(fd);
   }
@@ -1256,111 +1427,4 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
 int
 bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
   return bic_update_fw_path_or_fd(slot_id, comp, NULL, fd, force);
-}
-
-int
-get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
-  uint8_t bmc_location = 0;
-  int i2cfd = 0;
-  uint8_t rbuf[2] = {0};
-  uint8_t rlen = sizeof(rbuf);
-  uint8_t tbuf[4] = {0};
-  uint8_t tlen = 0;
-  int ret_val = 0 , retry = 0;
-  int ret = 0;
-
-  if (fby35_common_get_bmc_location(&bmc_location) != 0) {
-    printf("Cannot get the location of BMC");
-    return -1;
-  }
-  switch (board_id) {
-    case BOARD_ID_BB:
-      if (bmc_location == NIC_BMC) {
-        // Read Board Revision from BB CPLD
-        tbuf[0] = CPLD_BB_BUS;
-        tbuf[1] = CPLD_FLAG_REG_ADDR;
-        tbuf[2] = 0x01;
-        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
-        tlen = 4;
-        retry = 0;
-        while (retry < RETRY_TIME) {
-          ret_val = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-          if ( ret_val < 0 ) {
-            retry++;
-            msleep(100);
-          } else {
-            break;
-          }
-        }
-        if (retry == RETRY_TIME) {
-          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
-          return -1;
-        }
-        *rev_id = rbuf[0];
-        break;
-      } else {
-        i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-        if ( i2cfd < 0 ) {
-          printf("Failed to open CPLD 0x%x\n", CPLD_ADDRESS);
-          return -1;
-        }
-
-        tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
-        tlen = 1;
-        rlen = 1;
-        retry = 0;
-        while (retry < RETRY_TIME) {
-          ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-          if ( ret < 0 ) {
-            retry++;
-            msleep(100);
-          } else {
-            break;
-          }
-        }
-        if (retry == RETRY_TIME) {
-          printf("Failed to do i2c_rdwr_msg_transfer\n");
-          ret = -1;
-          goto error_exit;
-        }
-        *rev_id = rbuf[0];
-      }
-      break;
-    case BOARD_ID_SB:
-      // Read Board Revision from SB CPLD
-      i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-        goto error_exit;
-      }
-      tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret_val < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-        ret = -1;
-        goto error_exit;
-      }
-      *rev_id = rbuf[0];
-      break;
-    default:
-      syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
-      return -1;
-  }
-
-error_exit:
-  if (i2cfd >= 0)
-    close(i2cfd);
-
-  return ret;
 }

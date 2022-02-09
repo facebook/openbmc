@@ -1,9 +1,7 @@
 #include <cstdio>
 #include <cstring>
-#include <syslog.h>
 #include <openbmc/pal.h>
 #include <openbmc/mcu.h>
-#include <openbmc/misc-utils.h>
 #include "usbdbg.h"
 
 
@@ -13,7 +11,7 @@ int UsbDbgComponent::print_version() {
   uint8_t ver[8];
 
   try {
-    if (!pal_is_mcu_ready(bus_id) || retry_cond(!mcu_get_fw_ver(bus_id, slv_addr, MCU_FW_RUNTIME, ver), 2, 300)) {
+    if (!pal_is_mcu_ready(bus_id) || mcu_get_fw_ver(bus_id, slv_addr, MCU_FW_RUNTIME, ver)) {
       printf("MCU Version: NA\n");
     }
     else {
@@ -29,7 +27,7 @@ int UsbDbgBlComponent::print_version() {
   uint8_t ver[8];
 
   try {
-    if (!pal_is_mcu_ready(bus_id) || retry_cond(!mcu_get_fw_ver(bus_id, slv_addr, MCU_FW_BOOTLOADER, ver), 2, 300)) {
+    if (!pal_is_mcu_ready(bus_id) || mcu_get_fw_ver(bus_id, slv_addr, MCU_FW_BOOTLOADER, ver)) {
       printf("MCU Bootloader Version: NA\n");
     }
     else {
@@ -43,14 +41,11 @@ int UsbDbgBlComponent::print_version() {
 
 int UsbDbgBlComponent::update(string image) {
   int ret;
-  string comp = this->component();
 
-  syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
   ret = dbg_update_bootloader(bus_id, slv_addr, target_id, (const char *)image.c_str());
   if (ret != 0) {
     return FW_STATUS_FAILURE;
   }
 
-  syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
   return FW_STATUS_SUCCESS;
 }

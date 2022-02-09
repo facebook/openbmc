@@ -18,283 +18,7 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  FAN1_FRONT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_21_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_18_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  FAN2_FRONT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  FAN3_REAR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  DPB_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_26_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_2_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P5V_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VDDR VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VDDR VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  DPB_12V_CURR_CLIP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  EXPANDER_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P5V_2_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  M2_SMART_Temp_1: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P0V9_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  M2_SMART_Temp_2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Therm Margin: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMA1 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_9_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVCCGBE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  MB Inlet Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  MB Outlet Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  FAN1_REAR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_16_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P3V3: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  Airflow: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  FAN2_REAR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_34_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VDDR VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V5_C_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  DPB_HSC_CURR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_25_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  DPB_12V_POWER_CLIP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCSCSUS VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCIN VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_23_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SCC_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ML_SENSOR_HSC_CURR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCIN VR Curr: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_27_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_24_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  FAN3_FRONT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PV_BAT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SCC_HSC_CURR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_HSC_CURR: 
+                  DPB_Inlet_Temp_2: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -306,97 +30,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  ADC_P1V15_STBY: 
+                  DPB_Inlet_Temp_1: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VDDR VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_4_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_17_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P0V975_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P2V5_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_6_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_30_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCSCSUS VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCIN VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P5V_4_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_22_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMA0 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V8_C_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_15_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_10_TEMP: 
+                  INA230 Voltage: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -408,7 +48,7 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  HDD_5_TEMP: 
+                  P5V_STBY_MB: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -420,121 +60,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  FAN4_FRONT: 
+                  HDD_8_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  HDD_33_TEMP: 
+                  VCCIN VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  DPB_Inlet_Temp_1: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ML_SENSOR_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_3_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  DPB_Inlet_Temp_2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  1V05PCH VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SCC_HSC_POWER: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P1V2_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  1V05PCH VR Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_12_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCGBE VR Pout: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_HSC_POWER: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P3V3_MB: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PCH Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V8_E_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P3V3_M2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_31_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMB0 Temp: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCSCSUS VR Curr: 
+                  HDD_24_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -546,61 +84,19 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  M2_Ambient_Temp_1: 
+                  FAN1_FRONT: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  FAN4_REAR: 
+                  HDD_12_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  HDD_20_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_13_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  IOM_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P12V_MB: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCGBE VR Vol: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_0_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  INA230 Power: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  VCCSCSUS VR Vol: 
+                  FAN4_FRONT: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -612,37 +108,103 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  HDD_1_TEMP: 
+                  VDDR VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  IOC_TEMP: 
+                  PV_BAT: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P5V_3_SENSE: 
+                  ADC_P1V2_STBY: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  1V05PCH VR Pout: 
+                  P5V_1_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  IOM_NIC_Ambient_Temp: 
+                  VCCGBE VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VCCGBE VR Temp: 
+                  FAN1_REAR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P2V5_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_35_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ML_SENSOR_HSC_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  EXPANDER_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_25_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Curr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V8_C_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SCC_HSC_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  DPB_P12V_CLIP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -654,7 +216,49 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  ML_SENSOR_HSC_PWR: 
+                  HDD_22_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Tjmax: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_HSC_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P5V_3_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  MB Inlet Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V05_PCH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCGBE VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -668,31 +272,37 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  P5V_STBY_MB: 
+                  1V05PCH VR Temp: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  SOC Tjmax: 
+                  VCCIN VR Curr: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  P1V05_PCH: 
+                  VCCIN VR Pout: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  VCCGBE VR Curr: 
+                  HDD_17_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  HDD_11_TEMP: 
+                  VCCIN VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ML_SENSOR_HSC_CURR: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -704,79 +314,25 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  HDD_8_TEMP: 
+                  HDD_13_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  HDD_7_TEMP: 
+                  FAN3_REAR: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  HDD_29_TEMP: 
+                  FAN3_FRONT: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  INA230 Voltage: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_35_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  MEZZ_SENSOR_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  DPB_P12V_CLIP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_P1V8_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P5V_1_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  ADC_12V: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P3V3_STBY_MB: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HDD_32_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC Package Pwr: 
+                  HDD_1_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -788,7 +344,235 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  P1V5_E_SENSE: 
+                  P1V8_E_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_32_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_26_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_16_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMA0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SCC_HSC_POWER: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_3_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  M2_Ambient_Temp_1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_10_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Package Pwr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SCC_HSC_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P1V15_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P3V3_STBY_MB: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_18_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_9_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMB0 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  DPB_HSC_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  INA230 Power: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_6_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_15_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P5V_2_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_21_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P0V975_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  M2_SMART_Temp_1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  M2_SMART_Temp_2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCGBE VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  DPB_HSC_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  DPB_12V_CURR_CLIP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_29_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  FAN2_FRONT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VDDR VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  MB Outlet Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_HSC_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V5_C_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  Airflow: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P1V8_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_7_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_5_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCSCSUS VR Vol: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -800,17 +584,233 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  VCCIN VR Temp: 
+                  ML_SENSOR_HSC_PWR: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-              Actions: 
+                  ADC_P3V3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P5V_4_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_23_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_27_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VDDR VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_4_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P3V3_MB: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VDDR VR Curr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P12V_MB: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  VCCGBE VR Curr: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_30_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  1V05PCH VR Pout: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PCH Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_11_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_34_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_HSC_POWER: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_12V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  MEZZ_SENSOR_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC Therm Margin: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  FAN4_REAR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V5_E_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_2_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P3V3_M2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PVCCGBE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  FAN2_REAR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SOC DIMMA1 Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOC_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_33_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_0_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P0V9_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  DPB_12V_POWER_CLIP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  IOM_NIC_Ambient_Temp: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_20_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  ADC_P5V_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  HDD_31_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  1V05PCH VR Vol: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

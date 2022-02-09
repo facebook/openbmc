@@ -65,9 +65,6 @@ SRC_URI = " \
 SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
                                  'file://eth0_mac_fixup.sh', '', d)}"
 
-SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
-                                 'file://data0_resize_ubifs.sh', '', d)}"
-
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
     openbmc-utils.sh \
@@ -207,8 +204,6 @@ do_install() {
     # data0 partition. Update the "mount_data0.sh" to reflect this.
     if ! echo ${MACHINE_FEATURES} | awk "/mtd-ubifs/ {exit 1}"; then
         sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${WORKDIR}/mount_data0.sh
-        install -m 0755 ${WORKDIR}/data0_resize_ubifs.sh \
-                        ${localbindir}/data0_resize_ubifs.sh
     fi
 
     for f in ${OPENBMC_UTILS_FILES}; do

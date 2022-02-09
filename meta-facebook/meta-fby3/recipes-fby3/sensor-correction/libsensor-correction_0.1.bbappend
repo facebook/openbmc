@@ -18,8 +18,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://sensor-frontIO-correction.json \
-            file://sensor-frontIO-correction_cwc.json \
            "
 SENSOR_CORR_CONFIG = "sensor-frontIO-correction.json \
-                      sensor-frontIO-correction_cwc.json \
                      "

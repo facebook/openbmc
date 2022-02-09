@@ -5,7 +5,6 @@ POWERUTIL_CMD=/usr/local/bin/power-util
 IPMBUTIL_CMD=/usr/local/bin/ipmb-util
 EXPANDERUTIL_CMD=/usr/bin/expander-util
 CFGUTIL_CMD=/usr/local/bin/cfg-util
-FRUIDUTIL_CMD=/usr/local/bin/fruid-util
 KV_CMD=/usr/bin/kv
 ME_CMD=/usr/bin/me-util
 NTP_CMD=/usr/sbin/ntpq

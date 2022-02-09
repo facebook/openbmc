@@ -2,7 +2,6 @@
 #define _BMC_CPLD_H_
 #include "fw-util.h"
 #include <openbmc/cpld.h>
-#include "bic_fw_ext.h"
 
 using namespace std;
 
@@ -26,6 +25,11 @@ enum {
   CFM_IMAGE_2,
   CFM_IMAGE_1_M04,
 };
+
+typedef struct image_check {
+  std::string new_path;
+  bool result;
+} image_info;
 
 class BmcCpldComponent : public Component {
   uint8_t pld_type;

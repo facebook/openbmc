@@ -1,17 +1,13 @@
 #include <cstdio>
 #include <syslog.h>
-#include <sys/stat.h>
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
-#include <openbmc/kv.h>
 #include "bmc_cpld.h"
 #include "server.h"
 #include <facebook/bic.h>
 
 using namespace std;
 #define JBC_FILE_NAME ".jbc"
-#define MAX10_RPD_SIZE 0x23000
-#define CPLD_NEW_VER_KEY "%s_cpld_new_ver"
 
 image_info BmcCpldComponent::check_image(const string& image, bool force) {
   string fru_name = fru();
@@ -54,7 +50,15 @@ image_info BmcCpldComponent::check_image(const string& image, bool force) {
         cerr << "Failed to get board revision ID" << endl;
         return image_sts;
       }
-      fw_comp = FW_CPLD;
+      if (retry == RETRY_TIME) {
+        cout << "Failed to do i2c_rdwr_msg_transfer " << endl;
+        return image_sts;
+      }
+    }
+
+    board_type_index = rbuf[0] - 1;
+    if (board_type_index < 0) {
+      board_type_index = 0;
     }
 
     int fd_r = open(image.c_str(), O_RDONLY);
@@ -102,11 +106,7 @@ int BmcCpldComponent::print_version()
 {
   string ver("");
   string fru_name = fru();
-  char ver_key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
   size_t slot_found = fru_name.find("slot");
-  int ret = 0;
-
   try {
     // Print CPLD Version
     if (slot_found != string::npos) {
@@ -121,13 +121,6 @@ int BmcCpldComponent::print_version()
       throw "Error in getting the version of " + fru_name;
     }
     cout << fru_name << " CPLD Version: " << ver << endl;
-    snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str());
-    ret = kv_get(ver_key, value, NULL, 0);
-    if ((ret < 0) && (errno == ENOENT)) { // no update before
-      cout << fru_name << " CPLD Version After activation: " << ver << endl;
-    } else if (ret == 0) {
-      cout << fru_name << " CPLD Version After activation: " << value << endl;
-    }
   } catch(string& err) {
     printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
   }
@@ -274,3 +267,4 @@ int BmcCpldComponent::fupdate(string image)
 {
   return update_cpld(image, true);
 }
+

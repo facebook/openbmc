@@ -34,8 +34,7 @@ void Sensor::initialize()
       subfeature->type != SENSORS_SUBFEATURE_POWER_INPUT &&
       subfeature->type != SENSORS_SUBFEATURE_ENERGY_INPUT &&
       subfeature->type != SENSORS_SUBFEATURE_CURR_INPUT &&
-      subfeature->type != SENSORS_SUBFEATURE_HUMIDITY_INPUT &&
-      subfeature->type != SENSORS_SUBFEATURE_PWM_IO) {
+      subfeature->type != SENSORS_SUBFEATURE_HUMIDITY_INPUT) {
     label.assign(subfeature->name);
   } else {
     name.assign(feature->name);

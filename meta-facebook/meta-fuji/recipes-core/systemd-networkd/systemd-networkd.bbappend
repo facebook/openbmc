@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://10-eth0.network \
            "

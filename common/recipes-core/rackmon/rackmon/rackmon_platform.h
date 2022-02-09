@@ -26,9 +26,8 @@
 /*
  * This structure holds variables/ops to perform rackmon I/O transactions.
  */
-#define MAX_DEV_PATH 32
 struct rackmon_io_handler {
-	char dev_path[MAX_DEV_PATH];
+	const char *dev_path;
 
 	int (*open)(struct rackmon_io_handler *handler);
 };

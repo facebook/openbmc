@@ -25,6 +25,10 @@ class Profile {
 
 }; // namespace openbmc
 
+#ifdef PROFILING
 #define PROFILE_SCOPE(name, ...) openbmc::Profile name(#name, ##__VA_ARGS__)
+#else
+#define PROFILE_SCOPE(name, ...)
+#endif
 
 #endif

@@ -17,6 +17,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+import json
+import re
 import subprocess
 
 # Import helper functions for Minipack PIM information fetching
@@ -26,7 +29,7 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 
 # Minipack's FRUID handler is a bit different from other FRUID handler in general,
 # in that it will include some of the inforation regarding all PIMs
-def get_fruid(cmd=["weutil"]):  # noqa: B006
+def get_fruid(cmd=["weutil"]):
     result = {}
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     try:
@@ -34,6 +37,7 @@ def get_fruid(cmd=["weutil"]):  # noqa: B006
         data = data.decode(errors="ignore")
     except proc.TimeoutError as ex:
         data = ex.output
+        err = ex.error
 
     # First, need to remove the first info line from weutil
     adata = data.split("\n", 1)

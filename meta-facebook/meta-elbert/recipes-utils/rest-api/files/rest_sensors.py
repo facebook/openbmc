@@ -38,7 +38,7 @@ from rest_utils import DEFAULT_TIMEOUT_SEC
 # different from sensors command. So we need a separate REST API handler
 # for this.
 #
-def get_fru_sensor(fru, removeNA=False):
+def get_fru_sensor(fru):
     result = {}
     cmd = "/usr/local/bin/sensor-util"
     proc = subprocess.Popen([cmd, fru], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -72,12 +72,7 @@ def get_fru_sensor(fru, removeNA=False):
             value = float(value)
             result[key] = "{:.2f}".format(value)
         except Exception:
-            # Some of FB Infra services expect "0" instead of NA,
-            # even when the PSU is not available or not responding.
-            if removeNA:
-                result[key] = "0"
-            else:
-                result[key] = "NA"
+            result[key] = "NA"
     return result
 
 
@@ -90,35 +85,19 @@ def get_smb_sensors():
 
 
 def get_psu1_sensors():
-    return {
-        "Information": get_fru_sensor("psu1, removeNA=True"),
-        "Actions": [],
-        "Resources": [],
-    }
+    return {"Information": get_fru_sensor("psu1"), "Actions": [], "Resources": []}
 
 
 def get_psu2_sensors():
-    return {
-        "Information": get_fru_sensor("psu2, removeNA=True"),
-        "Actions": [],
-        "Resources": [],
-    }
+    return {"Information": get_fru_sensor("psu2"), "Actions": [], "Resources": []}
 
 
 def get_psu3_sensors():
-    return {
-        "Information": get_fru_sensor("psu3, removeNA=True"),
-        "Actions": [],
-        "Resources": [],
-    }
+    return {"Information": get_fru_sensor("psu3"), "Actions": [], "Resources": []}
 
 
 def get_psu4_sensors():
-    return {
-        "Information": get_fru_sensor("psu4, removeNA=True"),
-        "Actions": [],
-        "Resources": [],
-    }
+    return {"Information": get_fru_sensor("psu4"), "Actions": [], "Resources": []}
 
 
 def get_pim2_sensors():
@@ -179,7 +158,7 @@ def get_all_sensors():
     ]
 
     for fru in frus:
-        sresult = get_fru_sensor(fru, removeNA=True if fru.startswith("psu") else False)
+        sresult = get_fru_sensor(fru)
         result.append(sresult)
 
     fresult = {"Information": result, "Actions": [], "Resources": frus}

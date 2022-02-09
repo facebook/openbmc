@@ -72,5 +72,4 @@ IMAGE_INSTALL += " \
   usbutils \
   syseventgen-util \
   usbip \
-  exar1420 \
   "

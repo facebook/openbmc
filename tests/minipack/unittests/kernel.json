@@ -1,0 +1,18 @@
+[
+  "adm1275",
+  "fcmcpld",
+  "g_cdc",
+  "i2c_mux",
+  "ir3595",
+  "isl68127",
+  "lm75",
+  "max34440",
+  "pdbcpld",
+  "pmbus",
+  "powr1220",
+  "psu_driver",
+  "scmcpld",
+  "smbcpld",
+  "tmp421",
+  "tpm"
+]

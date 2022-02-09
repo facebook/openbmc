@@ -18,6 +18,11 @@ enum RegisterValueType {
   FLAGS,
 };
 
+enum RegisterEndian {
+  BIG,
+  LITTLE
+};
+
 // Fully describes a Register (Retrieved from register map JSON)
 struct RegisterDescriptor {
   using FlagDescType = std::tuple<uint8_t, std::string>;
@@ -35,6 +40,9 @@ struct RegisterDescriptor {
   // to keep a value only if it changed from the previous read
   // value. Useful for state information.
   bool storeChangesOnly = false;
+
+  // Endianness of the values, default to modbus defined (big).
+  RegisterEndian endian = RegisterEndian::BIG;
 
   // Describes how to interpret the contents of the register.
   RegisterValueType format = RegisterValueType::HEX;
@@ -84,7 +92,7 @@ struct RegisterValue {
  private:
   void makeString(const std::vector<uint16_t>& reg);
   void makeHex(const std::vector<uint16_t>& reg);
-  void makeInteger(const std::vector<uint16_t>& reg);
+  void makeInteger(const std::vector<uint16_t>& reg, RegisterEndian end);
   void makeFloat(const std::vector<uint16_t>& reg, uint16_t precision);
   void makeFlags(
       const std::vector<uint16_t>& reg,

@@ -166,6 +166,7 @@ Example configuration covering all the cases:
   "registers": [
     {"begin": 0, "length": 8, "name": "MFG_MODEL", "format": "string"},
     {"begin": 152, "length": 1, "name": "RPM fan0", "keep": 10, "format": "integer"},
+    {"begin": 153, "length": 1, "name": "RPM fan0", "keep": 10, "format": "integer", "endian": "L"},
     {"begin": 127, "length": 1, "name": "BBU Absolute State of Charge",
       "keep": 10, "format": "float", "precision": 6},
     {"begin": 104, "length": 1, "name": "PSU Status register", "keep": 10,
@@ -203,6 +204,9 @@ Example configuration covering all the cases:
     "flags": flags/bitmask where, each bit has a name provided by "flags"
   "flags": map of name to bit position (Valid when format is "flags").
   "precision": number of integer places (binary bbb.bbb). (Valid when format is "float")
+  "endian": {"L" or "B" (Default)} specify how to interpret the binary value read from the register.
+            (Modbus defines endian as Big-endian, but sometimes the devices return the value in
+            little-endian especially if it is acting as a bridge to SMBus entities like the BBU).
 
 There can be multiple register maps since we could potentially have
 multiple types of devices. Currently planned types:

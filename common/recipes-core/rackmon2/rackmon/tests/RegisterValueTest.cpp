@@ -67,7 +67,16 @@ TEST(RegisterValueTest, INTEGER) {
   EXPECT_EQ(std::string(j["type"]), "integer");
   EXPECT_EQ(j["time"], 0x12345678);
   EXPECT_TRUE(j["value"].is_number_integer());
-  EXPECT_EQ(j["value"], 305419896);
+  EXPECT_EQ(j["value"], 0x12345678);
+}
+
+TEST(RegisterValueTest, LITTLE_INTEGER) {
+  RegisterDescriptor d;
+  d.format = RegisterValueType::INTEGER;
+  d.endian = RegisterEndian::LITTLE;
+  RegisterValue val({0x1234, 0x5678}, d, 0x12345678);
+  EXPECT_EQ(val.type, RegisterValueType::INTEGER);
+  EXPECT_EQ(val.value.intValue, 0x78563412);
 }
 
 TEST(RegisterValueTest, FLOAT) {

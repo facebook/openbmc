@@ -4,37 +4,23 @@
 #include <chrono>
 #include <fstream>
 #include <thread>
+#include "TempDir.hpp"
 #include "Device.hpp"
-
-#if (__GNUC__ < 8)
-#include <experimental/filesystem>
-namespace std {
-namespace filesystem = experimental::filesystem;
-}
-#else
-#include <filesystem>
-#endif
 
 using namespace std::literals;
 using namespace rackmon;
 
 class DeviceTest : public ::testing::Test {
+  TempDirectory test_dir_{};
  public:
   std::string test_device_path{};
  protected:
   void SetUp() override {
-    std::filesystem::path test_path = std::filesystem::temp_directory_path();
-    if (!std::filesystem::exists(test_path)) {
-      test_path = std::filesystem::current_path();
-    }
-    test_device_path = test_path / "test.bin";
+    test_device_path = test_dir_.path() + "/test.bin";
     std::vector<uint8_t> out = {1, 2, 3, 4};
     std::ofstream fp(test_device_path, std::ios::binary);
     std::copy(out.begin(), out.end(), std::ostreambuf_iterator<char>(fp));
     fp.close();
-  }
-  void TearDown() override {
-    remove(test_device_path.c_str());
   }
 };
 

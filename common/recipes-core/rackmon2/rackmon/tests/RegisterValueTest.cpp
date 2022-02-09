@@ -67,7 +67,16 @@ TEST(RegisterValueTest, INTEGER) {
   EXPECT_EQ(std::string(j["type"]), "integer");
   EXPECT_EQ(j["time"], 0x12345678);
   EXPECT_TRUE(j["value"].is_number_integer());
-  EXPECT_EQ(j["value"], 305419896);
+  EXPECT_EQ(j["value"], 0x12345678);
+}
+
+TEST(RegisterValueTest, LITTLE_INTEGER) {
+  RegisterDescriptor d;
+  d.format = RegisterValueType::INTEGER;
+  d.endian = RegisterEndian::LITTLE;
+  RegisterValue val({0x1234, 0x5678}, d, 0x12345678);
+  EXPECT_EQ(val.type, RegisterValueType::INTEGER);
+  EXPECT_EQ(val.value.intValue, 0x78563412);
 }
 
 TEST(RegisterValueTest, FLOAT) {
@@ -96,26 +105,26 @@ TEST(RegisterValueTest, FLAGS) {
   d.flags = {{0, "HELLO"}, {1, "WORLD"}};
   RegisterValue val1({0x0003}, d, 0x12345678);
   EXPECT_EQ(val1.type, RegisterValueType::FLAGS);
-  std::string expstr1 = "\n*[1] HELLO\n*[1] WORLD";
+  std::string expstr1 = "\n*[1] <0> HELLO\n*[1] <1> WORLD";
   std::string actstr1 = val1;
   EXPECT_EQ(expstr1, actstr1);
-  RegisterValue::FlagsType exp1 = {{true, "HELLO"}, {true, "WORLD"}};
+  RegisterValue::FlagsType exp1 = {{true, "HELLO", 0}, {true, "WORLD", 1}};
   EXPECT_EQ(val1.value.flagsValue, exp1);
 
   RegisterValue val2({0x0000}, d, 0x12345678);
   EXPECT_EQ(val1.type, RegisterValueType::FLAGS);
-  std::string expstr2 = "\n [0] HELLO\n [0] WORLD";
+  std::string expstr2 = "\n [0] <0> HELLO\n [0] <1> WORLD";
   std::string actstr2 = val2;
   EXPECT_EQ(expstr2, actstr2);
-  RegisterValue::FlagsType exp2 = {{false, "HELLO"}, {false, "WORLD"}};
+  RegisterValue::FlagsType exp2 = {{false, "HELLO", 0}, {false, "WORLD", 1}};
   EXPECT_EQ(val2.value.flagsValue, exp2);
 
   RegisterValue val3({0x0002}, d, 0x12345678);
   EXPECT_EQ(val3.type, RegisterValueType::FLAGS);
-  std::string expstr3 = "\n [0] HELLO\n*[1] WORLD";
+  std::string expstr3 = "\n [0] <0> HELLO\n*[1] <1> WORLD";
   std::string actstr3 = val3;
   EXPECT_EQ(expstr3, actstr3);
-  RegisterValue::FlagsType exp3 = {{false, "HELLO"}, {true, "WORLD"}};
+  RegisterValue::FlagsType exp3 = {{false, "HELLO", 0}, {true, "WORLD", 1}};
   EXPECT_EQ(val3.value.flagsValue, exp3);
 
   nlohmann::json j = val3;
@@ -128,8 +137,8 @@ TEST(RegisterValueTest, FLAGS) {
   EXPECT_EQ(j["value"].size(), 2);
   EXPECT_TRUE(j["value"][0].is_array());
   EXPECT_TRUE(j["value"][1].is_array());
-  EXPECT_EQ(j["value"][0].size(), 2);
-  EXPECT_EQ(j["value"][1].size(), 2);
+  EXPECT_EQ(j["value"][0].size(), 3);
+  EXPECT_EQ(j["value"][1].size(), 3);
   EXPECT_TRUE(j["value"][0][0].is_boolean());
   EXPECT_TRUE(j["value"][1][0].is_boolean());
   EXPECT_TRUE(j["value"][0][1].is_string());
@@ -138,6 +147,18 @@ TEST(RegisterValueTest, FLAGS) {
   EXPECT_TRUE(j["value"][1][0]);
   EXPECT_EQ(std::string(j["value"][0][1]), "HELLO");
   EXPECT_EQ(std::string(j["value"][1][1]), "WORLD");
+}
+
+TEST(RegisterValueTest, LargeFlags) {
+  RegisterDescriptor d;
+  d.format = RegisterValueType::FLAGS;
+  d.flags = {{0, "HELLO"}, {31, "WORLD", }, {32, "HELLO2"}, {63, "WORLD2"}};
+  RegisterValue val({0x8000, 0x0000, 0x0000, 0x0001}, d, 0x12345678);
+  EXPECT_EQ(val.type, RegisterValueType::FLAGS);
+  RegisterValue::FlagsType exp1 = {
+    {true, "HELLO"}, {false, "WORLD"},
+    {false, "HELLO2"}, {true, "WORLD2"}};
+  EXPECT_EQ(val.value.flagsValue, exp1);
 }
 
 TEST(RegisterValueTest, CopyMoveTest) {

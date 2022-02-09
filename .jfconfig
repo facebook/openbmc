@@ -2,7 +2,8 @@
     "capabilities": [
         "submit",
         "sandcastle",
-        "land"
+        "land",
+        "apply"
     ],
     "land_modes": {
         "default": {

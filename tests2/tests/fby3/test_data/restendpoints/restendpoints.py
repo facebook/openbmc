@@ -20,10 +20,6 @@
 
 REST_END_POINTS = {
     "/api": ["Description", "version"],
-    "/api/attestation": [],
-    "/api/attestation/device": [],
-    "/api/attestation/system_information": ["system_hashes", "tpm_info", "system_info"],
-    "/api/attestation/tpm": [],
     "/api/bmc": [
         "Description",
         "MAC Addr",

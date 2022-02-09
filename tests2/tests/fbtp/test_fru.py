@@ -21,8 +21,10 @@ import unittest
 
 from common.base_fru_test import CommonFruTest
 from utils.test_utils import check_fru_availability
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FruMbTest(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru_cmd = ["/usr/local/bin/fruid-util", "mb"]
@@ -54,6 +56,7 @@ class FruMbTest(CommonFruTest, unittest.TestCase):
         return product_fields
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
     def setUp(self):
         self.fru = "riser_slot2"
@@ -97,6 +100,7 @@ class FruRiserSlot2Test(CommonFruTest, unittest.TestCase):
         super().test_fru_fields()
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FruRiserSlot3Test(FruRiserSlot2Test):
     def setUp(self):
         self.fru = "riser_slot3"

@@ -24,6 +24,7 @@ from common.base_sensor_test import SensorUtilTest
 from tests.fbtp.test_data.sensors.sensors import SENSORS
 from utils.cit_logger import Logger
 from utils.shell_util import run_cmd
+from utils.test_utils import qemu_check
 
 
 class MBSensorTest(SensorUtilTest, unittest.TestCase):
@@ -39,10 +40,12 @@ class MBSensorTest(SensorUtilTest, unittest.TestCase):
                 self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class NicSensorTest(MBSensorTest):
     FRU_NAME = "nic"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Riser2SensorTest(MBSensorTest):
     FRU_NAME = "riser_slot2"
 
@@ -60,9 +63,11 @@ class Riser2SensorTest(MBSensorTest):
                 self.assertIn(key, result.keys(), "Missing sensor {}".format(key))
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Riser3SensorTest(Riser2SensorTest):
     FRU_NAME = "riser_slot3"
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class Riser4SensorTest(Riser2SensorTest):
     FRU_NAME = "riser_slot4"

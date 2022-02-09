@@ -23,11 +23,14 @@ import unittest
 from common.base_i2c_test import BaseI2cTest
 from tests.elbert.test_data.i2c.i2c import (
     plat_i2c_tree,
+    pim16q2,
     pim16q,
     pim8ddm,
     psu_devices,
     secure_devices,
-    pim_secure_devices,
+    pim16q2_secure_devices,
+    pim16q_secure_devices,
+    pim8ddm_secure_devices,
 )
 from utils.shell_util import run_shell_cmd
 from utils.test_utils import qemu_check
@@ -60,7 +63,13 @@ class ElbertI2cTest(BaseI2cTest, unittest.TestCase):
 
         # Add PIM2-9 devices for available pims
         for pim in range(2, 9 + 1):
-            if "PIM {}: PIM16Q".format(pim) in pim_types:
+            if "PIM {}: PIM16Q2".format(pim) in pim_types:
+                for address, name, driver in pim16q2:
+                    self.i2c_tree["{:02d}-{}".format(pim_bus[pim - 2], address)] = {
+                        "name": name,
+                        "driver": driver,
+                    }
+            elif "PIM {}: PIM16Q".format(pim) in pim_types:
                 for address, name, driver in pim16q:
                     self.i2c_tree["{:02d}-{}".format(pim_bus[pim - 2], address)] = {
                         "name": name,
@@ -107,10 +116,17 @@ class ElbertI2cTest(BaseI2cTest, unittest.TestCase):
         pim_types = self.get_pim_types()
         for pim in range(2, 9 + 1):
             devices = []
+            pim_secure_devices = []
             bus = pim_bus[pim - 2]
-            for name, dev, dev_type, pim_type in pim_secure_devices:
-                if pim_type and "PIM {}: {}".format(pim, pim_type) not in pim_types:
-                    continue
+
+            if "PIM {}: PIM16Q2".format(pim) in pim_types:
+                pim_secure_devices = pim16q2_secure_devices
+            elif "PIM {}: PIM16Q".format(pim) in pim_types:
+                pim_secure_devices = pim16q_secure_devices
+            elif "PIM {}: PIM8DDM".format(pim) in pim_types:
+                pim_secure_devices = pim8ddm_secure_devices
+
+            for name, dev, dev_type in pim_secure_devices:
                 devices.append(("PIM{} {}".format(pim, name), bus, dev, dev_type))
             self.verify_secure_devices(devices)
 

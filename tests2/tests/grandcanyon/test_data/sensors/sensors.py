@@ -31,10 +31,10 @@ SENSORS_SERVER = [
     "BS_HSC_OUT_CUR",
     "BS_BOOT_DRV_TEMP",
     "BS_PCH_TEMP",
-    "BS_DIMM0_TEMP",
-    "BS_DIMM1_TEMP",
-    "BS_DIMM2_TEMP",
-    "BS_DIMM3_TEMP",
+    "BS_DIMMA_TEMP",
+    "BS_DIMMB_TEMP",
+    "BS_DIMMD_TEMP",
+    "BS_DIMME_TEMP",
     "BS_CPU_TEMP",
     "BS_THERM_MARGIN",
     "BS_CPU_TJMAX",
@@ -242,4 +242,3 @@ SENSORS = {
     "scc": SENSORS_SCC,
     "nic": SENSORS_NIC,
 }
-

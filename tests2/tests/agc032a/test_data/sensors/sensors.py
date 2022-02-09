@@ -1,0 +1,106 @@
+#!/usr/bin/env python,
+#
+# Copyright 2019-present Facebook. All Rights Reserved.,
+#
+# This program file is free software; you can redistribute it and/or modify it,
+# under the terms of the GNU General Public License as published by the,
+# Free Software Foundation; version 2 of the License.,
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT,
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or,
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License,
+# for more details.,
+#
+# You should have received a copy of the GNU General Public License,
+# along with this program in a file named COPYING; if not, write to the,
+# Free Software Foundation, Inc.,,
+# 51 Franklin Street, Fifth Floor,,
+# Boston, MA 02110-1301 USA,
+#
+
+SENSORS = [
+    # Sensors on SMB
+    "SMB_SENSOR_TMP75_LF_TEMP",
+    "SMB_SENSOR_TMP75_RF_TEMP",
+    "SMB_SENSOR_TMP75_UPPER_MAC_TEMP",
+    "SMB_SENSOR_TMP75_LOWER_MAC_TEMP",
+    "FAN1_FRONT_SPEED",
+    "FAN1_REAR_SPEED",
+    "FAN2_FRONT_SPEED",
+    "FAN2_REAR_SPEED",
+    "FAN3_FRONT_SPEED",
+    "FAN3_REAR_SPEED",
+    "FAN4_FRONT_SPEED",
+    "FAN4_REAR_SPEED",
+    "FAN5_FRONT_SPEED",
+    "FAN5_REAR_SPEED",
+    "FAN6_FRONT_SPEED",
+    "ADC_VCC_12V",
+    "ADC_VCC_5V",
+    "ADC_VCC_3V3",
+    "ADC_STBY_5V",
+    "ADC_VDDC_1V2_JER1",
+    "ADC_BMC_1V2",
+    "ADC_VDD_0V91_JER1",
+    "ADC_DDR_2V5",
+    "ADC_BMC_1V15",
+    "ADC_VDDS_0V8_JER1",
+    "ADC_MAC_1V8",
+    "ADC_MB_3V_CT",
+    # Sensors on PSU1
+    "PSU1_IN_VOLT",
+    "PSU1_OUT_VOLT",
+    "PSU1_IN_CURR",
+    "PSU1_OUT_CURR",
+    "PSU1_IN_POWER",
+    "PSU1_OUT_POWER",
+    "PSU1_FAN_SPEED",
+    "PSU1_TEMP1",
+    "PSU1_TEMP2",
+]
+
+
+# Sensors on SMB
+SMB_SENSORS_Agc = [
+    "SMB_SENSOR_TMP75_LF_TEMP",
+    "SMB_SENSOR_TMP75_RF_TEMP",
+    "SMB_SENSOR_TMP75_UPPER_MAC_TEMP",
+    "SMB_SENSOR_TMP75_LOWER_MAC_TEMP",
+    "FAN1_FRONT_SPEED",
+    "FAN1_REAR_SPEED",
+    "FAN2_FRONT_SPEED",
+    "FAN2_REAR_SPEED",
+    "FAN3_FRONT_SPEED",
+    "FAN3_REAR_SPEED",
+    "FAN4_FRONT_SPEED",
+    "FAN4_REAR_SPEED",
+    "FAN5_FRONT_SPEED",
+    "FAN5_REAR_SPEED",
+    "FAN6_FRONT_SPEED",
+    "ADC_VCC_12V",
+    "ADC_VCC_5V",
+    "ADC_VCC_3V3",
+    "ADC_STBY_5V",
+    "ADC_VDDC_1V2_JER1",
+    "ADC_BMC_1V2",
+    "ADC_VDD_0V91_JER1",
+    "ADC_DDR_2V5",
+    "ADC_BMC_1V15",
+    "ADC_VDDS_0V8_JER1",
+    "ADC_MAC_1V8",
+    "ADC_MB_3V_CT",
+]
+
+PSU1_SENSORS = [
+    # Sensors on PSU1
+    "PSU1_IN_VOLT",
+    "PSU1_OUT_VOLT",
+    "PSU1_IN_CURR",
+    "PSU1_OUT_CURR",
+    "PSU1_IN_POWER",
+    "PSU1_OUT_POWER",
+    "PSU1_FAN_SPEED",
+    "PSU1_TEMP1",
+    "PSU1_TEMP2",
+]
+

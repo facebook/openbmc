@@ -21,8 +21,10 @@ import unittest
 
 from common.base_fans_test import CommonFanUtilBasedFansTest
 from utils.cit_logger import Logger
+from utils.test_utils import qemu_check
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class FansTest(CommonFanUtilBasedFansTest, unittest.TestCase):
     def setUp(self):
         Logger.start(name=self._testMethodName)

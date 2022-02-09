@@ -58,6 +58,7 @@ class ModbusTest : public ::testing::Test {
     std::unique_ptr<MockUARTDevice> ptr =
         std::make_unique<MockUARTDevice>("/dev/ttyUSB0", 19200);
     EXPECT_CALL(*ptr, open()).Times(1);
+    EXPECT_CALL(*ptr, close()).Times(1);
     std::unique_ptr<UARTDevice> ptr2 = std::move(ptr);
     return ptr2;
   }
@@ -83,6 +84,7 @@ class ModbusTest : public ::testing::Test {
     EXPECT_CALL(*ptr, read(_, read_bytes_size, _))
         .Times(1)
         .WillOnce(SetBufArgNPointeeTo<0>(read_bytes, read_bytes_size));
+    EXPECT_CALL(*ptr, close()).Times(1);
 
     std::unique_ptr<UARTDevice> ptr2 = std::move(ptr);
     return ptr2;

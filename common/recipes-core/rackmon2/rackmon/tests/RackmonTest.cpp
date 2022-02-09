@@ -3,15 +3,7 @@
 #include <gtest/gtest.h>
 #include <fstream>
 #include "Rackmon.hpp"
-
-#if (__GNUC__ < 8)
-#include <experimental/filesystem>
-namespace std {
-namespace filesystem = experimental::filesystem;
-}
-#else
-#include <filesystem>
-#endif
+#include "TempDir.hpp"
 
 using namespace std;
 using namespace testing;
@@ -106,6 +98,8 @@ class MockRackmon : public Rackmon {
 };
 
 class RackmonTest : public ::testing::Test {
+  TempDirectory test_map_dir{};
+  TempDirectory test_dir{};
  public:
   std::string r_test_dir{};
   std::string r_conf{};
@@ -114,15 +108,11 @@ class RackmonTest : public ::testing::Test {
 
  public:
   void SetUp() override {
-    std::filesystem::path test_path = std::filesystem::temp_directory_path();
-    if (!std::filesystem::exists(test_path)) {
-      test_path = std::filesystem::current_path();
-    }
-    r_test_dir = test_path / "test_rackmon.d";
-    r_conf = test_path / "test_rackmon.conf";
-    r_test1_map = test_path / "test_rackmon.d" / "test1.json";
-    r_test2_map = test_path / "test_rackmon.d" / "test2.json";
-    mkdir(r_test_dir.c_str(), 0755);
+    r_test_dir = test_map_dir.path();
+    r_conf = test_dir.path() + "/rackmon.conf";
+    r_test1_map = r_test_dir + "/test1.json";
+    r_test2_map = r_test_dir + "/test2.json";
+
     std::string json1 = R"({
         "name": "orv2_psu",
         "address_range": [160, 162],
@@ -154,13 +144,6 @@ class RackmonTest : public ::testing::Test {
     ofs2 << rconf_s;
     ofs2.close();
   }
-  void TearDown() override {
-    remove(r_test1_map.c_str());
-    remove(r_test2_map.c_str());
-    remove(r_test_dir.c_str());
-    remove(r_conf.c_str());
-  }
-
  public:
   std::unique_ptr<Modbus> make_modbus(uint8_t exp_addr, int num_cmd_calls) {
     json exp = R"({

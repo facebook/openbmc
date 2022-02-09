@@ -46,7 +46,7 @@ void RegisterValue::makeHex(const std::vector<uint16_t>& reg) {
   }
 }
 
-void RegisterValue::makeInteger(const std::vector<uint16_t>& reg) {
+void RegisterValue::makeInteger(const std::vector<uint16_t>& reg, RegisterEndian end) {
   // TODO We currently do not need more than 32bit values as per
   // our current/planned regmaps. If such a value should show up in the
   // future, then we might need to return std::variant<int32_t,int64_t>.
@@ -57,16 +57,25 @@ void RegisterValue::makeInteger(const std::vector<uint16_t>& reg) {
   // a 32bit value would be 2 16bit regs.
   // Then the first register would be the upper nibble of the
   // resulting 32bit value.
-  value.intValue =
-      std::accumulate(reg.begin(), reg.end(), 0, [](int32_t ac, uint16_t v) {
-        return (ac << 16) + v;
-      });
+  if (end == BIG) {
+    value.intValue =
+        std::accumulate(reg.begin(), reg.end(), 0, [](int32_t ac, uint16_t v) {
+          return (ac << 16) + v;
+        });
+
+  } else {
+    value.intValue =
+        std::accumulate(reg.rbegin(), reg.rend(), 0, [](int32_t ac, uint16_t v) {
+          // Swap the bytes
+          return (ac << 16) + (((v & 0xff) << 8) | ((v >> 8) & 0xff));
+        });
+  }
 }
 
 void RegisterValue::makeFloat(
     const std::vector<uint16_t>& reg,
     uint16_t precision) {
-  makeInteger(reg);
+  makeInteger(reg, RegisterEndian::BIG);
   // Y = X / 2^N
   value.floatValue = float(value.intValue) / float(1 << precision);
 }
@@ -74,12 +83,16 @@ void RegisterValue::makeFloat(
 void RegisterValue::makeFlags(
     const std::vector<uint16_t>& reg,
     const RegisterDescriptor::FlagsDescType& flagsDesc) {
-  makeInteger(reg);
-  uint32_t bitField = static_cast<uint32_t>(value.intValue);
   new (&value.flagsValue)(FlagsType);
   for (const auto& [pos, name] : flagsDesc) {
-    bool bitVal = (bitField & (1 << pos)) != 0;
-    value.flagsValue.push_back(std::make_tuple(bitVal, name));
+    // The bit position is provided assuming the register contents
+    // are combined together to form a big-endian larger integer.
+    // Hence we need to reverse the register index. Each 16bit
+    // word is already swapped by Msg, so we do not need to do that.
+    uint16_t regIdx = reg.size() - (pos / 16) - 1;
+    uint16_t regBit = pos % 16;
+    bool bitVal = (reg[regIdx] & (1 << regBit)) != 0;
+    value.flagsValue.push_back(std::make_tuple(bitVal, name, pos));
   }
 }
 
@@ -93,7 +106,7 @@ RegisterValue::RegisterValue(
       makeString(reg);
       break;
     case RegisterValueType::INTEGER:
-      makeInteger(reg);
+      makeInteger(reg, desc.endian);
       break;
     case RegisterValueType::FLOAT:
       makeFloat(reg, desc.precision);
@@ -190,12 +203,12 @@ RegisterValue::operator std::string() {
       // JSON object. But considering this is designed for
       // human consumption only, we can make it pretty
       // (and backwards compatible with V1's output).
-      for (auto& [bitval, name] : value.flagsValue) {
+      for (auto& [bitval, name, pos] : value.flagsValue) {
         if (bitval)
-          os << "\n*[1] ";
+          os << "\n*[1] <";
         else
-          os << "\n [0] ";
-        os << name;
+          os << "\n [0] <";
+        os << int(pos) << "> " << name;
       }
       break;
     case RegisterValueType::HEX:
@@ -287,6 +300,13 @@ void to_json(json& j, const AddrRange& a) {
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
+    RegisterEndian,
+    {
+        {RegisterEndian::BIG, "B"},
+        {RegisterEndian::LITTLE, "L"},
+    })
+
+NLOHMANN_JSON_SERIALIZE_ENUM(
     RegisterValueType,
     {
         {RegisterValueType::HEX, "hex"},
@@ -302,13 +322,20 @@ void from_json(const json& j, RegisterDescriptor& i) {
   j.at("name").get_to(i.name);
   i.keep = j.value("keep", 1);
   i.storeChangesOnly = j.value("changes_only", false);
+  i.endian = j.value("endian", RegisterEndian::BIG);
   i.format = j.value("format", RegisterValueType::HEX);
   if (i.format == RegisterValueType::FLOAT) {
     j.at("precision").get_to(i.precision);
   } else if (i.format == RegisterValueType::FLAGS) {
     j.at("flags").get_to(i.flags);
+    for (const auto& [pos, name] : i.flags) {
+      if ((pos / 16) >= i.length) {
+        throw std::out_of_range("Flag bit position would overflow");
+      }
+    }
   }
 }
+
 void to_json(json& j, const RegisterDescriptor& i) {
   j["begin"] = i.begin;
   j["length"] = i.length;
@@ -316,6 +343,7 @@ void to_json(json& j, const RegisterDescriptor& i) {
   j["keep"] = i.keep;
   j["changes_only"] = i.storeChangesOnly;
   j["format"] = i.format;
+  j["endian"] = i.endian;
   if (i.format == RegisterValueType::FLOAT) {
     j["precision"] = i.precision;
   } else if (i.format == RegisterValueType::FLAGS) {
@@ -414,7 +442,5 @@ void to_json(json& j, const RegisterMap& m) {
       std::back_inserter(j["registers"]),
       [](const auto& kv) { return kv.second; });
 }
-
-
 
 } // namespace rackmon

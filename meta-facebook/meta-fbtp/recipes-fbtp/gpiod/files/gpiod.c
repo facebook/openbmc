@@ -433,6 +433,19 @@ static void gpio_event_handle_PLTRST(gpiopoll_pin_t *gp, gpio_value_t last, gpio
   log_gpio_change(gp, curr, 0);
 }
 
+static void gpio_event_handle_hsc_fault(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  if (gpio_get("IRQ_HSC_FAULT_N") == GPIO_VALUE_HIGH)
+    return;
+
+  // log the event
+  log_gpio_change(gp, curr, 0);
+
+  // if it's low, turn off 12V to protect the sled
+  turn_off_p12v_stby("IRQ_HSC_FAULT_N");
+  return;
+}
+
 void cpu_present(gpiopoll_pin_t *gpdesc, gpio_value_t value)
 {
   log_gpio_change(gpdesc, value, 0);
@@ -498,7 +511,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"IRQ_PVDDQ_DEF_VRHOT_LVT3_N", "GPIOZ2", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
   {"FM_CPU1_SKTOCC_LVT3_N", "GPIOAA0", GPIO_EDGE_BOTH, gpio_event_handle_power, cpu_present},
   {"IRQ_SML1_PMBUS_ALERT_N", "GPIOAA1", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
-  {"IRQ_HSC_FAULT_N", "GPIOAB0", GPIO_EDGE_BOTH, gpio_event_handle, NULL},
+  {"IRQ_HSC_FAULT_N", "GPIOAB0", GPIO_EDGE_BOTH, gpio_event_handle_hsc_fault, NULL},
   {"IRQ_DIMM_SAVE_LVT3_N", "GPIOD4", GPIO_EDGE_BOTH, gpio_event_handle_power, NULL},
   {"FM_UARTSW_LSB_N", "GPIOQ4", GPIO_EDGE_BOTH, uart_switch, NULL},
   {"FM_UARTSW_MSB_N", "GPIOQ5", GPIO_EDGE_BOTH, uart_switch, NULL},

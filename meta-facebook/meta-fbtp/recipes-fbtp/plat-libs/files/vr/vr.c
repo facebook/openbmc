@@ -62,6 +62,12 @@
 #define READING_SKIP       1
 #define BIT(value, index) ((value >> index) & 1)
 
+// VR status bit
+#define VR_STS_OV_FAULT   (1 << 5)
+#define VR_STS_OC_FAULT   (1 << 4)
+#define VR_STS_TEMP_FAULT (1 << 2)
+#define VR_STS_FAULT      (VR_STS_OV_FAULT | VR_STS_OC_FAULT | VR_STS_TEMP_FAULT)
+
 //Used identify VR Chip info. there are 4 vr fw code in EVT3 and after
 enum
 {
@@ -132,10 +138,172 @@ msleep(int msec) {
   }
 }
 
+// declare the global i2c bus fd,
+// so, bmc no need to open the bus frequently
+static int vr_i2c_bus_fd = 0;
+
+static int
+vr_get_i2c_bus_fd() {
+  uint8_t retry = MAX_READ_RETRY;
+
+  // already opened it, return fd directly
+  if ( vr_i2c_bus_fd > 0 ) return vr_i2c_bus_fd;
+
+  // try to open the bus-5
+  while (retry > 0) {
+    vr_i2c_bus_fd = open("/dev/i2c-5", O_RDWR);
+    if (vr_i2c_bus_fd < 0) {
+      syslog(LOG_WARNING, "%s() i2c_open failed for bus#5, err:%s\n", __func__, strerror(errno));
+      retry--;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+
+  if ( retry == 0 ) {
+    syslog(LOG_WARNING, "%s() retired %d but failing to open bus#5\n", __func__, MAX_READ_RETRY);
+  }
+
+  return vr_i2c_bus_fd;
+}
+
+static void
+vr_close_i2c_bus_fd() {
+  if ( vr_i2c_bus_fd > 0 ) {
+    if ( close(vr_i2c_bus_fd) < 0 ) {
+      syslog(LOG_WARNING, "%s() i2c_close failed for bus#5, err:%s\n", __func__, strerror(errno));
+    } else {
+      // re-init vr_i2c_bus_fd
+      vr_i2c_bus_fd = 0;
+    }
+  }
+}
+
+static int
+vr_log_p12v_off_event(uint8_t vr, uint8_t sts) {
+  char event_str[64] = {0};
+
+  switch (vr) {
+    case VR_CPU0_VCCIN:
+      strcpy(event_str, "CPU0_VCCIN/VSA");
+      break;
+    case VR_CPU1_VCCIN:
+      strcpy(event_str, "CPU1_VCCIN/VSA");
+      break;
+    case VR_CPU0_VCCIO:
+      strcpy(event_str, "CPU0_VCCIO");
+      break;
+    case VR_CPU0_VDDQ_ABC:
+      strcpy(event_str, "CPU0_VDDQ_ABC");
+      break;
+    case VR_CPU0_VDDQ_DEF:
+      strcpy(event_str, "CPU0_VDDQ_DEF");
+      break;
+    case VR_CPU1_VCCIO:
+      strcpy(event_str, "CPU1_VCCIO");
+      break;
+    case VR_CPU1_VDDQ_GHJ:
+      strcpy(event_str, "CPU1_VDDQ_ABC");
+      break;
+    case VR_CPU1_VDDQ_KLM:
+      strcpy(event_str, "CPU1_VDDQ_DEF");
+      break;
+    case VR_PCH_PVNN:
+      strcpy(event_str, "PCH_PVNN");
+      break;
+    default:
+      snprintf(event_str, sizeof(event_str), "VR 0x%x", vr);
+      break;
+  }
+
+  if ((sts & VR_STS_OV_FAULT) > 0) {
+    strcat(event_str, ", OV");
+  }
+
+  if ((sts & VR_STS_OC_FAULT) > 0) {
+    strcat(event_str, ", OC");
+  }
+
+  if ((sts & VR_STS_TEMP_FAULT) > 0 ) {
+    strcat(event_str, ", OT");
+  }
+
+  strcat(event_str, ", turn off P12V_STBY");
+
+  syslog(LOG_CRIT, "%s", event_str);
+
+  return 0;
+}
+
+int
+vr_read_ov_ot_status(uint8_t vr) {
+  uint8_t tbuf[2] = {0}; // go to the main page
+  uint8_t rbuf[2] = {0};
+  uint8_t tcount = 0, rcount = 0;
+  uint8_t sts = 0x0;
+  int ret = -1;
+  int fd = 0;
+
+  fd = vr_get_i2c_bus_fd();
+  if ( fd < 0 ) {
+    return fd;
+  }
+
+  // Select page 0 and get VR status byte
+  for (int i = 0; i < 2; i++) {
+    if ( i == 0 ) {
+      // Select page 0
+      tbuf[0] = VR_CMD_PAGE;
+      tbuf[1] = 0x00; //page 0
+      tcount = 2;
+      rcount = 0;
+    } else {
+      // Get VR status byte
+      tbuf[0] = VR_CMD_STATUS_BYTE;
+      tcount = 1;
+      rcount = 1;
+    }
+
+    for ( int j = MAX_READ_RETRY; j > 0; j-- ) {
+      ret = i2c_rdwr_msg_transfer(fd, vr, tbuf, tcount, rbuf, rcount);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s(): i2c_io failed for bus#%x, dev#%x\n", __func__, VR_BUS_ID, vr);
+        msleep(100);
+      } else {
+        break; /* break 2nd for-loop */
+      }
+    } /* end of for-loop j */
+
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s(): failed to access it, idx#%d, bus#%x, dev#%x\n", __func__, i, VR_BUS_ID, vr);
+      break; /* break 1st for-loop */
+    }
+  } /* end of for-loop i */
+
+  if ((ret == 0) && (rcount > 0)) {
+    // Check if VR have OV, OC, or temperature fault
+    sts = rbuf[0] & VR_STS_FAULT;
+    if (sts > 0) {
+      // record P12V off event
+      ret = vr_log_p12v_off_event(vr, sts);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): Failed to log vr status\n", __func__);
+      } else {
+        ret = VR_GET_OV_OC_OT;
+      }
+    }
+  } else {
+    syslog(LOG_WARNING, "%s(): Failed to get vr status\n", __func__);
+    ret = -1;
+  }
+
+  return ret;
+}
+
 int
 vr_read_volt(uint8_t vr, uint8_t loop, float *value) {
   int fd;
-  char fn[32];
   static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
@@ -160,19 +328,9 @@ vr_read_volt(uint8_t vr, uint8_t loop, float *value) {
 
   count = 0;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "read_vr_volt: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
+  fd = vr_get_i2c_bus_fd();
+  if ( fd < 0 ) {
+    return fd;
   }
 
   // Set the page to read Voltage
@@ -227,17 +385,12 @@ vr_read_volt(uint8_t vr, uint8_t loop, float *value) {
   *value /= 1000;
 
 error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
   return ret;
 }
 
 int
 vr_read_curr(uint8_t vr, uint8_t loop, float *value) {
   int fd;
-  char fn[32];
   static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
@@ -262,19 +415,9 @@ vr_read_curr(uint8_t vr, uint8_t loop, float *value) {
 
   count = 0;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "read_vr_curr: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
+  fd = vr_get_i2c_bus_fd();
+  if ( fd < 0 ) {
+    return fd;
   }
 
   // Set the page to read Voltage
@@ -344,17 +487,12 @@ vr_read_curr(uint8_t vr, uint8_t loop, float *value) {
   }
 
 error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
   return ret;
 }
 
 int
 vr_read_power(uint8_t vr, uint8_t loop, float *value) {
   int fd;
-  char fn[32];
   static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
@@ -379,19 +517,9 @@ vr_read_power(uint8_t vr, uint8_t loop, float *value) {
 
   count = 0;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "read_vr_power: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
+  fd = vr_get_i2c_bus_fd();
+  if ( fd < 0 ) {
+    return fd;
   }
 
   // Set the page to read Power
@@ -445,17 +573,12 @@ vr_read_power(uint8_t vr, uint8_t loop, float *value) {
   *value = ((rbuf[1] & 0x3F) * 256 + rbuf[0] ) * 0.04;
 
 error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
   return ret;
 }
 
 int
 vr_read_temp(uint8_t vr, uint8_t loop, float *value) {
   int fd;
-  char fn[32];
   static int count = 0;
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY;
@@ -482,19 +605,9 @@ vr_read_temp(uint8_t vr, uint8_t loop, float *value) {
 
   count = 0;
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "read_vr_temp: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
+  fd = vr_get_i2c_bus_fd();
+  if ( fd < 0 ) {
+    return fd;
   }
 
   // Set the page to read Temperature
@@ -562,10 +675,6 @@ vr_read_temp(uint8_t vr, uint8_t loop, float *value) {
   }
 
 error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
   return ret;
 }
 
@@ -573,7 +682,6 @@ static int
 fetch_vr_info(uint8_t vr, char *key, uint8_t page,
   uint8_t reg1, uint8_t reg2, uint8_t *info) {
   int fd;
-  char fn[32];
   int ret = -1;
   unsigned int retry = MAX_READ_RETRY, retry_page = MAX_READ_RETRY;
   uint8_t tcount, rcount;
@@ -581,19 +689,9 @@ fetch_vr_info(uint8_t vr, char *key, uint8_t page,
   uint8_t rbuf[16] = {0};
   char value[MAX_VALUE_LEN] = {0};
 
-  snprintf(fn, sizeof(fn), "/dev/i2c-%d", VR_BUS_ID);
-  while (retry) {
-    fd = open(fn, O_RDWR);
-    if (fd < 0) {
-      syslog(LOG_WARNING, "fetch_vr_info: i2c_open failed for bus#%x\n", VR_BUS_ID);
-      retry--;
-      msleep(100);
-    } else {
-      break;
-    }
-
-    if(retry == 0)
-      goto error_exit;
+  fd = vr_get_i2c_bus_fd();
+  if ( fd < 0 ) {
+    return fd;
   }
 
   retry_page = MAX_READ_RETRY;
@@ -723,10 +821,7 @@ fetch_vr_info(uint8_t vr, char *key, uint8_t page,
   kv_set(key, value, 0, 0);
 
 error_exit:
-  if (fd > 0) {
-    close(fd);
-  }
-
+  vr_close_i2c_bus_fd();
   return ret;
 }
 

@@ -73,3 +73,14 @@ else
 fi
 
 echo "Done"
+
+echo "Check if P12V_STBY was turned off before..."
+
+check_log=$($LOGUTIL_CMD all --print | grep -v grep | grep "Turn off P12V_STBY" | tail -n 1)
+
+if [ -n "$check_log" ]; then
+   logger -s -p user.crit -t power-on "Turn off P12V_STBY because it was turned off before"
+   turn_off_p12v_stby
+fi
+
+echo "Done"

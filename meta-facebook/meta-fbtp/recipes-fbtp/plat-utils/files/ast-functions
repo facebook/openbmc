@@ -1,6 +1,7 @@
 # Copyright 2014-present Facebook. All Rights Reserved.
 DEVMEM=/sbin/devmem
 GPIOCLI_CMD=/usr/local/bin/gpiocli
+LOGUTIL_CMD=/usr/local/bin/log-util
 ASPEEDCHIP="aspeed-gpio"
 
 devmem_set_bit() {
@@ -70,4 +71,9 @@ store_clear_por()
 
   # Clear Power On Reset bit
   devmem 0x1e6e203c 32 $((val & 0xfffffffe)) 2>/dev/null
+}
+
+turn_off_p12v_stby() {
+  # Turn off HSC output
+  i2cset -y 7 0x45 0x01 0 &> /dev/null
 }

@@ -156,8 +156,8 @@ TEST(RegisterValueTest, LargeFlags) {
   RegisterValue val({0x8000, 0x0000, 0x0000, 0x0001}, d, 0x12345678);
   EXPECT_EQ(val.type, RegisterValueType::FLAGS);
   RegisterValue::FlagsType exp1 = {
-    {true, "HELLO"}, {false, "WORLD"},
-    {false, "HELLO2"}, {true, "WORLD2"}};
+    {true, "HELLO", 0}, {false, "WORLD", 31},
+    {false, "HELLO2", 32}, {true, "WORLD2", 63}};
   EXPECT_EQ(val.value.flagsValue, exp1);
 }
 

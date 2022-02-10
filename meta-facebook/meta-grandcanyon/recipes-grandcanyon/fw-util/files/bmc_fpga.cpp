@@ -86,6 +86,15 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
         cout << "Failed to get stage of UIC" << endl;
         goto end;
       }
+
+      // Align UIC board ID to system stage
+      if ((board_rev_id == UIC_STAGE_DVT) || (board_rev_id == UIC_STAGE_DVT3)) {
+        board_rev_id = STAGE_DVT;
+      } else if ((board_rev_id == UIC_STAGE_PVT) || (board_rev_id == UIC_STAGE_PVT3)) {
+        board_rev_id = STAGE_PVT;
+      } else if (board_rev_id == UIC_STAGE_MP) {
+        board_rev_id = STAGE_MP;
+      }
       break;
     case BS_FPGA_LOCATION:
       if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {

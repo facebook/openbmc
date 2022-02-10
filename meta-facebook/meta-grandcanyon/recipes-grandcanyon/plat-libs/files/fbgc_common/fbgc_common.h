@@ -208,6 +208,17 @@ enum {
   STAGE_MP
 };
 
+// UIC board ID stage
+enum {
+  UIC_STAGE_PRE_EVT = 0,
+  UIC_STAGE_EVT,
+  UIC_STAGE_DVT,
+  UIC_STAGE_DVT3,
+  UIC_STAGE_PVT,
+  UIC_STAGE_PVT3,
+  UIC_STAGE_MP
+};
+
 enum {
   DEV_ID0_E1S = 0x1,
   DEV_ID1_E1S = 0x2,

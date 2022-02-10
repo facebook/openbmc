@@ -1005,7 +1005,12 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
   } while (ret < 0 && retry > 0 );
 
   if (ret >= 0) {
-    *value = (float)(rbuf[NVMe_TEMP_REG]);
+    // valid temperature range: -60C(0xC4) ~ +127C(0x7F)
+    // C4h-FFh is two's complement, means -60 to -1
+    ret = nvme_temp_value_check((int)rbuf[NVMe_TEMP_REG], value);
+    if (ret != 0) {
+      ret = ERR_SENSOR_NA;
+    }
   }
   close(fd);
 

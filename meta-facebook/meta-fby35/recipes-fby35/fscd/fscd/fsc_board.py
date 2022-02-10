@@ -51,11 +51,11 @@ fru_map = {
 
 dimm_location_name_map = {
     "a": "_dimm0_location",
-    "c": "_dimm2_location",
-    "d": "_dimm4_location",
-    "e": "_dimm6_location",
-    "g": "_dimm8_location",
-    "h": "_dimm10_location",
+    "c": "_dimm4_location",
+    "d": "_dimm6_location",
+    "e": "_dimm8_location",
+    "g": "_dimm12_location",
+    "h": "_dimm14_location",
 }
 
 host_ready_map = {

@@ -18,6 +18,7 @@
 #ifndef _SENSORLIST_HPP_
 #define _SENSORLIST_HPP_
 #include "sensorchip.hpp"
+#include <shared_mutex>
 
 // Collection of sensor-chips. Provides efficient look-up of sensor chips.
 class SensorList : public std::map<std::string, std::unique_ptr<SensorChip>> {
@@ -35,6 +36,9 @@ class SensorList : public std::map<std::string, std::unique_ptr<SensorChip>> {
 
     // re_enumerate all sensor chips.
     void re_enumerate(const char *conf_file = nullptr);
+
+    // sensorlist shared_mutex
+    mutable std::shared_mutex listSharedMutex;
 };
 
 #endif

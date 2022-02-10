@@ -68,10 +68,14 @@ void SensorList::enumerate()
 
 void SensorList::re_enumerate(const char *conf_file)
 {
+  std::unique_lock exclock(listSharedMutex);
+  syslog(LOG_INFO, "sensor list renumerate start");
+
   sensors_cleanup();
   this->clear();
 
   _sensor_list_build(conf_file);
+  syslog(LOG_INFO, "sensor list renumerate end");
 }
 
 void SensorList::_sensor_list_build(const char* conf_file)

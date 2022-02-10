@@ -33,8 +33,9 @@ struct Msg {
   Msg& operator<<(uint32_t d);
   template <typename T>
   Msg& operator<<(std::vector<T>& d) {
-    for (T v : d)
+    for (T v : d) {
       *this << v;
+    }
     return *this;
   }
 
@@ -44,8 +45,9 @@ struct Msg {
   Msg& operator>>(uint32_t& d);
   template <typename T>
   Msg& operator>>(std::vector<T>& d) {
-    for (auto it = d.rbegin(); it != d.rend(); it++)
+    for (auto it = d.rbegin(); it != d.rend(); it++) {
       *this >> *it;
+    }
     return *this;
   }
 
@@ -68,8 +70,9 @@ struct Msg {
   }
   template <size_t size>
   explicit Msg(const std::array<uint8_t, size>& other) {
-    if (size > raw.size())
-      throw "Message too large";
+    if (size > raw.size()) {
+      throw std::overflow_error("array too big");
+    }
     len = size;
     std::copy(other.begin(), other.end(), raw.begin());
   }
@@ -79,8 +82,9 @@ struct Msg {
     return *this;
   }
   bool operator==(const Msg& other) const {
-    if (len != other.len)
+    if (len != other.len) {
       return false;
+    }
     return std::equal(begin(), end(), other.raw.begin());
   }
   bool operator!=(const Msg& other) const {
@@ -121,22 +125,28 @@ struct ConstMsg {
   static constexpr auto parse_hex(In begin, In end, Out out) {
     auto hexByte = [](char u, char l) constexpr {
       auto hexNibble = [](char b) constexpr {
-        if (b >= '0' && b <= '9')
+        if (b >= '0' && b <= '9') {
           return b - '0';
-        if (b >= 'A' && b <= 'F')
+        }
+        if (b >= 'A' && b <= 'F') {
           return 10 + (b - 'A');
-        if (b >= 'a' && b <= 'f')
+        }
+        if (b >= 'a' && b <= 'f') {
           return 10 + (b - 'a');
+        }
         return 0;
       };
       return hexNibble(u) << 4 | hexNibble(l);
     };
-    if (end - begin <= 2)
-      throw "Literal too short";
-    if (begin[0] != '0' || begin[1] != 'x')
-      throw "Invalid Prefix";
-    if ((end - begin) % 2 != 0)
-      throw "Odd length";
+    if (end - begin <= 2) {
+      throw std::underflow_error("Literal too short");
+    }
+    if (begin[0] != '0' || begin[1] != 'x') {
+      throw std::invalid_argument("literal does not start with 0x");
+    }
+    if ((end - begin) % 2 != 0) {
+      throw std::invalid_argument("literal has odd length");
+    }
     begin += 2;
     while (begin != end) {
       *out = hexByte(*begin, *(begin + 1));

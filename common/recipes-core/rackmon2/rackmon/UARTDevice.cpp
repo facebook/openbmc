@@ -61,8 +61,9 @@ void UARTDevice::setAttribute(bool readEnable, int baudrate) {
   tio.c_cflag |= PARENB;
   tio.c_cflag |= CLOCAL;
   tio.c_cflag |= CS8;
-  if (readEnable)
+  if (readEnable) {
     tio.c_cflag |= CREAD;
+  }
   tio.c_iflag |= INPCK;
   tio.c_cc[VMIN] = 1;
   tio.c_cc[VTIME] = 0;
@@ -77,12 +78,14 @@ void UARTDevice::waitWrite() {
   for (loops = 0; loops < 100; loops++) {
     int lsr;
     ioctl(TIOCSERGETLSR, &lsr);
-    if (lsr & TIOCSER_TEMT)
+    if (lsr & TIOCSER_TEMT) {
       break;
+    }
     // never should hit this if kernel supports RS485 mode
   }
-  if (loops > 0)
+  if (loops > 0) {
     logError << "Waited loops: " << loops << '\n';
+  }
 }
 
 void UARTDevice::write(const uint8_t* buf, size_t len) {

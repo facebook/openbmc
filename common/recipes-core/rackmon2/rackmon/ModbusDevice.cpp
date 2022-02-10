@@ -18,7 +18,7 @@ ModbusDevice::ModbusDevice(
     Modbus& interface,
     uint8_t deviceAddress,
     const RegisterMap& registerMap)
-    : interface_(interface), registerMap_(registerMap) {
+    : interface_(interface) {
   info_.deviceAddress = deviceAddress;
   info_.baudrate = registerMap.defaultBaudrate;
   info_.deviceType = registerMap.name;
@@ -45,7 +45,7 @@ void ModbusDevice::command(
   try {
     interface_.command(req, resp, info_.baudrate, timeout, settleTime);
     info_.numConsecutiveFailures = 0;
-    info_.lastActive = std::time(0);
+    info_.lastActive = std::time(nullptr);
   } catch (TimeoutException& e) {
     info_.incTimeouts();
     throw;
@@ -86,8 +86,9 @@ void ModbusDevice::writeMultipleRegisters(
     std::vector<uint16_t>& value,
     ModbusTime timeout) {
   WriteMultipleRegistersReq req(info_.deviceAddress, registerOffset);
-  for (uint16_t val : value)
+  for (uint16_t val : value) {
     req << val;
+  }
   WriteMultipleRegistersResp resp(
       info_.deviceAddress, registerOffset, value.size());
   command(req, resp, timeout);
@@ -104,7 +105,7 @@ void ModbusDevice::readFileRecord(
 void ModbusDevice::monitor() {
   // If the number of consecutive failures has exceeded
   // a threshold, mark the device as dormant.
-  uint32_t timestamp = std::time(0);
+  uint32_t timestamp = std::time(nullptr);
   for (auto& specialHandler : specialHandlers_) {
     specialHandler.handle(*this);
   }
@@ -180,8 +181,9 @@ static std::string commandOutput(const std::string& shell) {
 
 void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   // Check if it is time to handle.
-  if (!canHandle())
+  if (!canHandle()) {
     return;
+  }
   std::string strValue{};
   WriteMultipleRegistersReq req(dev.info_.deviceAddress, reg);
   if (info.shell) {
@@ -199,13 +201,18 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   }
   if (info.interpret == RegisterValueType::INTEGER) {
     int32_t ival = std::stoi(strValue);
-    if (len == 1)
+    if (len == 1) {
       req << uint16_t(ival);
-    else if (len == 2)
+    } else if (len == 2) {
       req << uint32_t(ival);
+    } else {
+      logError << "Value truncated to 32bits" << std::endl;
+      req << uint32_t(ival);
+    }
   } else if (info.interpret == RegisterValueType::STRING) {
-    for (char c : strValue)
+    for (char c : strValue) {
       req << uint8_t(c);
+    }
   }
   WriteMultipleRegistersResp resp(dev.info_.deviceAddress, reg, len);
   try {
@@ -213,7 +220,7 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   } catch (std::exception& e) {
     logError << "Error executing special handler" << std::endl;
   }
-  lastHandleTime_ = std::time(NULL);
+  lastHandleTime_ = std::time(nullptr);
   handled_ = true;
 }
 
@@ -239,7 +246,7 @@ void to_json(json& j, const ModbusDeviceInfo& m) {
 void to_json(json& j, const ModbusDeviceRawData& m) {
   const ModbusDeviceInfo& s = m;
   to_json(j, s);
-  j["now"] = std::time(0);
+  j["now"] = std::time(nullptr);
   j["ranges"] = m.registerList;
 }
 
@@ -247,7 +254,7 @@ void to_json(json& j, const ModbusDeviceRawData& m) {
 void to_json(json& j, const ModbusDeviceFmtData& m) {
   const ModbusDeviceInfo& s = m;
   to_json(j, s);
-  j["now"] = std::time(0);
+  j["now"] = std::time(nullptr);
   j["ranges"] = m.registerList;
 }
 

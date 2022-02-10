@@ -2,7 +2,6 @@
 #include "Register.hpp"
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 #include <numeric>
 #include <sstream>
 
@@ -28,11 +27,13 @@ void RegisterValue::makeString(const std::vector<uint16_t>& reg) {
   for (const auto& r : reg) {
     char ch = r >> 8;
     char cl = r & 0xff;
-    if (ch == '\0')
+    if (ch == '\0') {
       break;
+    }
     value.strValue += ch;
-    if (cl == '\0')
+    if (cl == '\0') {
       break;
+    }
     value.strValue += cl;
   }
 }
@@ -52,8 +53,9 @@ void RegisterValue::makeInteger(
   // TODO We currently do not need more than 32bit values as per
   // our current/planned regmaps. If such a value should show up in the
   // future, then we might need to return std::variant<int32_t,int64_t>.
-  if (reg.size() > 2)
+  if (reg.size() > 2) {
     throw std::out_of_range("Register does not fit as an integer");
+  }
   // Everything in modbus is Big-endian. So when we have a list
   // of registers forming a larger value; For example,
   // a 32bit value would be 2 16bit regs.
@@ -147,7 +149,7 @@ RegisterValue::RegisterValue(const RegisterValue& other)
   }
 }
 
-RegisterValue::RegisterValue(RegisterValue&& other)
+RegisterValue::RegisterValue(RegisterValue&& other) noexcept
     : type(other.type), timestamp(other.timestamp) {
   switch (type) {
     case RegisterValueType::HEX:
@@ -206,10 +208,11 @@ RegisterValue::operator std::string() {
       // human consumption only, we can make it pretty
       // (and backwards compatible with V1's output).
       for (auto& [bitval, name, pos] : value.flagsValue) {
-        if (bitval)
+        if (bitval) {
           os << "\n*[1] <";
-        else
+        } else {
           os << "\n [0] <";
+        }
         os << int(pos) << "> " << name;
       }
       break;
@@ -243,10 +246,11 @@ RegisterStore::operator std::string() const {
      << " :";
   for (const auto& v : history_) {
     if (v) {
-      if (desc_.format != RegisterValueType::FLAGS)
+      if (desc_.format != RegisterValueType::FLAGS) {
         ss << ' ';
-      else
+      } else {
         ss << '\n';
+      }
       ss << std::string(v);
     }
   }
@@ -256,8 +260,9 @@ RegisterStore::operator std::string() const {
 RegisterStore::operator RegisterStoreValue() const {
   RegisterStoreValue ret(regAddr_, desc_.name);
   for (const auto& reg : history_) {
-    if (reg)
+    if (reg) {
       ret.history.emplace_back(reg);
+    }
   }
   return ret;
 }
@@ -269,8 +274,9 @@ const RegisterMap& RegisterMapDatabase::at(uint8_t addr) const {
       [addr](const std::unique_ptr<RegisterMap>& m) {
         return m->applicableAddresses.contains(addr);
       });
-  if (result == regmaps.end())
+  if (result == regmaps.end()) {
     throw std::out_of_range("not found: " + std::to_string(int(addr)));
+  }
   return **result;
 }
 
@@ -394,16 +400,19 @@ void to_json(json& j, const RegisterStore& m) {
 
 void from_json(const json& j, WriteActionInfo& action) {
   j.at("interpret").get_to(action.interpret);
-  if (j.contains("shell"))
+  if (j.contains("shell")) {
     action.shell = j.at("shell");
-  else
+  } else {
     action.shell = std::nullopt;
-  if (j.contains("value"))
+  }
+  if (j.contains("value")) {
     action.value = j.at("value");
-  else
+  } else {
     action.value = std::nullopt;
-  if (!action.shell && !action.value)
+  }
+  if (!action.shell && !action.value) {
     throw std::runtime_error("Bad special handler");
+  }
 }
 
 void from_json(const json& j, SpecialHandlerInfo& m) {
@@ -411,8 +420,9 @@ void from_json(const json& j, SpecialHandlerInfo& m) {
   j.at("len").get_to(m.len);
   m.period = j.value("period", -1);
   j.at("action").get_to(m.action);
-  if (m.action != "write")
+  if (m.action != "write") {
     throw std::runtime_error("Unsupported action: " + m.action);
+  }
   j.at("info").get_to(m.info);
 }
 

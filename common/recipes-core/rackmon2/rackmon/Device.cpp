@@ -66,7 +66,7 @@ int Device::waitRead(int timeoutMs) {
     timeout.tv_usec = timeoutMs * 1000;
     timeoutPtr = &timeout;
   }
-  int rc = select(deviceFd_ + 1, &fdset, NULL, NULL, timeoutPtr);
+  int rc = select(deviceFd_ + 1, &fdset, nullptr, nullptr, timeoutPtr);
   if (rc == -1) {
     throw std::system_error(
         sys_error(), "select returned error for " + device_);

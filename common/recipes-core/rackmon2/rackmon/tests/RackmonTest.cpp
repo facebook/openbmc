@@ -30,7 +30,7 @@ class FakeModbus : public Modbus {
       Msg& resp,
       uint32_t b,
       ModbusTime /* unused */,
-      ModbusTime /* unused */) {
+      ModbusTime /* unused */) override {
     encoder.encode(req);
     EXPECT_GE(req.addr, min_addr);
     EXPECT_LE(req.addr, max_addr);

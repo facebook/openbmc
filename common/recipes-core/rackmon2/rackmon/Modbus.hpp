@@ -25,8 +25,9 @@ class Modbus {
  public:
   explicit Modbus(std::ostream& prof) : profileStore_(prof) {}
   virtual ~Modbus() {
-    if (device_)
+    if (device_) {
       device_->close();
+    }
   }
 
   uint32_t getDefaultBaudrate() const {

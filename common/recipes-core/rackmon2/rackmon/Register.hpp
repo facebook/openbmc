@@ -75,9 +75,9 @@ struct RegisterValue {
       const std::vector<uint16_t>& reg,
       const RegisterDescriptor& desc,
       uint32_t tstamp);
-  RegisterValue(const std::vector<uint16_t>& reg);
+  explicit RegisterValue(const std::vector<uint16_t>& reg);
   RegisterValue(const RegisterValue& other);
-  RegisterValue(RegisterValue&& other);
+  RegisterValue(RegisterValue&& other) noexcept;
 
   // Constructing a union with non-trivial members is
   // is painful enough. Lets not support assignments.

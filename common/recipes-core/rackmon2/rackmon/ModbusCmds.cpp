@@ -6,8 +6,9 @@ using namespace rackmon;
 
 static void
 check_value(const std::string& what, uint32_t value, uint32_t expected_value) {
-  if (value != expected_value)
+  if (value != expected_value) {
     throw BadResponseError(what, expected_value, value);
+  }
 }
 
 ReadHoldingRegistersReq::ReadHoldingRegistersReq(
@@ -30,8 +31,9 @@ ReadHoldingRegistersResp::ReadHoldingRegistersResp(
     uint8_t deviceAddr,
     std::vector<uint16_t>& regs)
     : expectedDeviceAddr_(deviceAddr), regs_(regs) {
-  if (!regs.size())
+  if (!regs.size()) {
     throw std::underflow_error("Response too small");
+  }
   // addr(1), func(1), bytecount(1), <2 * count regs>, crc(2)
   len = 5 + (2 * regs.size());
 }
@@ -86,8 +88,9 @@ void WriteSingleRegisterResp::decode() {
   check_value("function", function, kExpectedFunction);
   check_value("deviceAddr", deviceAddr, expectedDeviceAddr_);
   check_value("registerOffset", registerOffset, expectedRegisterOffset_);
-  if (expectedValue_)
+  if (expectedValue_) {
     check_value("value", value_, expectedValue_.value());
+  }
 }
 
 WriteMultipleRegistersReq::WriteMultipleRegistersReq(
@@ -102,8 +105,9 @@ WriteMultipleRegistersReq::WriteMultipleRegistersReq(
 }
 
 void WriteMultipleRegistersReq::encode() {
-  if (len <= 7)
+  if (len <= 7) {
     throw std::underflow_error("No registers to write");
+  }
   // Compute exactly how much data/registers the user
   // had streamed/encoded into the message.
   uint8_t dataLen = len - 7;

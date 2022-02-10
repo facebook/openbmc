@@ -95,12 +95,13 @@ bool Rackmon::probe(uint8_t addr) {
 }
 
 std::vector<uint8_t> Rackmon::inspectDormant() {
-  time_t curr = std::time(0);
+  time_t curr = std::time(nullptr);
   std::vector<uint8_t> ret{};
   std::shared_lock lock(devicesMutex_);
   for (const auto& it : devices_) {
-    if (it.second->isActive())
+    if (it.second->isActive()) {
       continue;
+    }
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
     if ((it.second->lastActive() + kDormantMinInactiveTime) < curr) {
@@ -130,11 +131,12 @@ void Rackmon::recoverDormant() {
 void Rackmon::monitor(void) {
   std::shared_lock lock(devicesMutex_);
   for (const auto& dev_it : devices_) {
-    if (!dev_it.second->isActive())
+    if (!dev_it.second->isActive()) {
       continue;
+    }
     dev_it.second->monitor();
   }
-  lastMonitorTime_ = std::time(0);
+  lastMonitorTime_ = std::time(nullptr);
 }
 
 bool Rackmon::isDeviceKnown(uint8_t addr) {
@@ -145,8 +147,9 @@ bool Rackmon::isDeviceKnown(uint8_t addr) {
 void Rackmon::fullScan() {
   logInfo << "Starting scan of all devices" << std::endl;
   for (auto& addr : allPossibleDevAddrs_) {
-    if (isDeviceKnown(addr))
+    if (isDeviceKnown(addr)) {
       continue;
+    }
     probe(addr);
   }
 }
@@ -162,23 +165,25 @@ void Rackmon::scan() {
   // Probe for the address only if we already dont know it.
   if (!isDeviceKnown(*nextDeviceToProbe_)) {
     probe(*nextDeviceToProbe_);
-    lastScanTime_ = std::time(0);
+    lastScanTime_ = std::time(nullptr);
   }
 
   // Try and recover dormant devices
   recoverDormant();
-  if (++nextDeviceToProbe_ == allPossibleDevAddrs_.end())
+  if (++nextDeviceToProbe_ == allPossibleDevAddrs_.end()) {
     nextDeviceToProbe_ = allPossibleDevAddrs_.begin();
+  }
 }
 
 void Rackmon::start(PollThreadTime interval) {
   auto start_thread = [this](auto func, auto intr) {
-    threads_.emplace_back(
-        std::make_unique<PollThread<Rackmon>>(func, this, intr));
-    threads_.back()->start();
+    auto t = std::make_unique<PollThread<Rackmon>>(func, this, intr);
+    t->start();
+    threads_.emplace_back(std::move(t));
   };
-  if (threads_.size() != 0)
+  if (threads_.size() != 0) {
     throw std::runtime_error("Already running");
+  }
   start_thread(&Rackmon::scan, interval);
   start_thread(&Rackmon::monitor, interval);
 }

@@ -15,10 +15,12 @@ void Modbus::command(
     ModbusTime settleTime) {
   RACKMON_PROFILE_SCOPE(
       modbusCommand, "modbus::" + std::to_string(int(req.addr)), profileStore_);
-  if (timeout == ModbusTime::zero())
+  if (timeout == ModbusTime::zero()) {
     timeout = defaultTimeout_;
-  if (baudrate == 0)
+  }
+  if (baudrate == 0) {
     baudrate = defaultBaudrate_;
+  }
   req.encode();
   std::lock_guard<std::mutex> lck(deviceMutex_);
   device_->setBaudrate(baudrate);
@@ -26,6 +28,9 @@ void Modbus::command(
   device_->read(resp.raw.data(), resp.len, timeout.count());
   resp.decode();
   if (settleTime != ModbusTime::zero()) {
+    // If the bus needs to be idle after each transaction for
+    // a given period of time, sleep here.
+    // sleep override
     std::this_thread::sleep_for(settleTime);
   }
 }

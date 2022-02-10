@@ -16,9 +16,10 @@ class ModbusSpecialHandler : public SpecialHandlerInfo {
   time_t lastHandleTime_ = 0;
   bool handled_ = false;
   bool canHandle() {
-    if (period == -1)
+    if (period == -1) {
       return !handled_;
-    return std::time(0) > (lastHandleTime_ + period);
+    }
+    return std::time(nullptr) > (lastHandleTime_ + period);
   }
 
  public:
@@ -72,7 +73,6 @@ void to_json(nlohmann::json& j, const ModbusDeviceValueData& m);
 class ModbusDevice {
   Modbus& interface_;
   ModbusDeviceRawData info_;
-  const RegisterMap& registerMap_;
   std::mutex registerListMutex_{};
   std::vector<ModbusSpecialHandler> specialHandlers_{};
 

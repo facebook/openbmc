@@ -83,15 +83,17 @@ void Msg::validate() {
 }
 
 Msg& Msg::operator<<(uint8_t d) {
-  if ((len + 1) > raw.size())
+  if ((len + 1) > raw.size()) {
     throw std::overflow_error("encode");
+  }
   raw[len++] = d;
   return *this;
 }
 
 Msg& Msg::operator<<(uint16_t d) {
-  if ((len + 2) > raw.size())
+  if ((len + 2) > raw.size()) {
     throw std::overflow_error("encode");
+  }
   uint8_t upper = d >> 8, lower = d & 0xffff;
   *this << upper; // Big-endian
   *this << lower;
@@ -99,8 +101,9 @@ Msg& Msg::operator<<(uint16_t d) {
 }
 
 Msg& Msg::operator<<(uint32_t d) {
-  if ((len + 4) > raw.size())
+  if ((len + 4) > raw.size()) {
     throw std::overflow_error("encode");
+  }
   uint16_t upper = d >> 16, lower = d & 0xffff;
   *this << upper; // Big-endian
   *this << lower;
@@ -108,15 +111,17 @@ Msg& Msg::operator<<(uint32_t d) {
 }
 
 Msg& Msg::operator>>(uint8_t& d) {
-  if (len < 1)
+  if (len < 1) {
     throw std::underflow_error("Decode");
+  }
   d = raw[--len];
   return *this;
 }
 
 Msg& Msg::operator>>(uint16_t& d) {
-  if (len < 2)
+  if (len < 2) {
     throw std::underflow_error("Decode");
+  }
   uint8_t upper, lower;
   *this >> lower; // Big-endian, lower is last
   *this >> upper;
@@ -125,8 +130,9 @@ Msg& Msg::operator>>(uint16_t& d) {
 }
 
 Msg& Msg::operator>>(uint32_t& d) {
-  if (len < 4)
+  if (len < 4) {
     throw std::underflow_error("Decode");
+  }
   uint16_t upper, lower;
   *this >> lower; // Big-endian, lower is last
   *this >> upper;

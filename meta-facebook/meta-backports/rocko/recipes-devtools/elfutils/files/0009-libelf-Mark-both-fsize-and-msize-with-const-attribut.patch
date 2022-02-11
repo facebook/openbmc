@@ -1,0 +1,42 @@
+From a01938d584b91e747167bb4b3f30ec300c4d6e43 Mon Sep 17 00:00:00 2001
+From: Mark Wielaard <mark@klomp.org>
+Date: Fri, 16 Nov 2018 09:27:00 +0100
+Subject: [PATCH] libelf: Mark both fsize and msize with const attribute.
+
+GCC9 -Wmissing-attributes pointed out that although we alias the fsize
+and msize functions only fsize was marked as const. Fix by also marking
+the msize definition as const.
+
+https://sourceware.org/bugzilla/show_bug.cgi?id=23884
+
+Signed-off-by: Mark Wielaard <mark@klomp.org>
+
+Upstream-Status: Backport [1]
+
+[1] https://sourceware.org/git/?p=elfutils.git;a=commit;h=a01938d584b91e747167bb4b3f30ec300c4d6e43
+
+Signed-off-by: Andreas Müller <schnitzeltony@gmail.com>
+---
+ libelf/ChangeLog | 5 +++++
+ libelf/libelfP.h | 4 ++--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/libelf/libelfP.h b/libelf/libelfP.h
+index fa6d55d8..9f3e8e9d 100644
+--- a/libelf/libelfP.h
++++ b/libelf/libelfP.h
+@@ -461,9 +461,9 @@ extern Elf_Type __libelf_data_type (Elf *elf, int sh_type, GElf_Xword align)
+    These functions cannot be marked internal since they are aliases
+    of the export elfXX_fsize functions.*/
+ extern size_t __elf32_msize (Elf_Type __type, size_t __count,
+-			     unsigned int __version);
++			     unsigned int __version) __const_attribute__;
+ extern size_t __elf64_msize (Elf_Type __type, size_t __count,
+-			     unsigned int __version);
++			     unsigned int __version) __const_attribute__;
+ 
+ 
+ /* Create Elf descriptor from memory image.  */
+-- 
+2.21.0
++

@@ -1,0 +1,239 @@
+{
+  "version": "Lightning_PVT_Toshiba_M2_2TB_v1",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true,
+    "progressive": true
+  },
+  "fan_dead_boost": {
+    "data": [
+      [2,10]
+    ]
+  },
+  "fail_sensor_type": {
+    "standby_sensor_fail": true,
+    "SSD_sensor_fail":true,
+    "server_sensor_fail":false
+  },
+  "ssd_progressive_algorithm":{
+    "offset_algorithm":[
+      [14,25]
+    ]
+  },
+  "watchdog": false,
+  "chassis_intrusion": true,
+  "min_rpm": 400,
+  "profiles": {
+    "linear_ambient": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
+      "data": [
+        [1 , 12],
+        [15, 12],
+        [16, 13],
+        [17, 13],
+        [18, 14],
+        [19, 14],
+        [20, 15],
+        [21, 16],
+        [22, 17],
+        [23, 18],
+        [24, 19],
+        [25, 20],
+        [26, 21],
+        [27, 22],
+        [28, 23],
+        [29, 24],
+        [30, 25],
+        [31, 26],
+        [32, 27],
+        [33, 28],
+        [34, 29],
+        [35, 30],
+        [36, 32],
+        [37, 34],
+        [38, 36],
+        [39, 38],
+        [40, 40],
+        [41, 41],
+        [42, 42],
+        [43, 43],
+        [44, 44],
+        [45, 45],
+        [46, 50],
+        [47, 55],
+        [48, 60],
+        [49, 65],
+        [50, 70]
+      ]
+    },
+    "linear_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
+      "data": [
+        [1, 10],
+        [80, 10],
+        [81, 11],
+        [82, 12],
+        [83, 14],
+        [84, 16],
+        [85, 18],
+        [86, 20],
+        [87, 20],
+        [88, 20],
+        [89, 20],
+        [90, 25],
+        [91, 30],
+        [92, 40],
+        [93, 50],
+        [94, 60],
+        [95, 70]
+      ]
+    },
+    "linear_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
+      "data": [
+        [1, 10],	
+        [60, 12],
+        [61, 14],
+        [62, 16],
+        [63, 17],
+        [64, 18],
+        [65, 19],
+        [66, 20],
+        [67, 20],
+        [68, 20],
+        [69, 20],
+        [70, 20],
+        [71, 20],
+        [72, 20],
+        [73, 20],
+        [74, 45],
+        [75, 70]
+      ]
+    },
+    "pid_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 1,
+      "kp": -10,
+      "ki": -0.008,
+      "kd": 0
+    },
+    "pid_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 84,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 1,
+      "kp": -8,
+      "ki": -0.03,
+      "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "label" : "Fan 1 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "label" : "Fan 1 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      }
+    },
+    "2": {
+      "label" : "Fan 2 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 2"
+      }
+    },
+    "3": {
+      "label" : "Fan 2 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 3"
+      }
+    },
+    "4": {
+      "label" : "Fan 3 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 4"
+      }
+    },
+    "5": {
+      "label" : "Fan 3 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 5"
+      }
+    },
+    "6": {
+      "label" : "Fan 4 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 6"
+      }
+    },
+    "7": {
+      "label" : "Fan 4 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 7"
+      }
+    },
+    "8": {
+      "label" : "Fan 5 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 8"
+      }
+    },
+    "9": {
+      "label" : "Fan 5 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 9"
+      }
+    },
+    "10": {
+      "label" : "Fan 6 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 10"
+      }
+    },
+    "11": {
+      "label" : "Fan 6 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 11"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0],
+      "expr_file": "FSC_Lightning_PVT_Toshiba_M2_2TB_v1_zone0.fsc"
+    }
+  }
+}

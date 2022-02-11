@@ -1,0 +1,43 @@
+#!/bin/bash
+#
+# Copyright 2020-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# shellcheck disable=SC1091
+source /usr/local/bin/openbmc-utils.sh
+
+dump_eeprom() {
+    local i2c_path
+	i2c_path=$(i2c_device_sysfs_abspath "${1}-00${2:2:3}")
+    weutil "${i2c_path}"/eeprom
+    return $?
+}
+
+is_i2cdev_exist() {
+    local i2c_path
+	i2c_path=$(i2c_device_sysfs_abspath "${1}-00${2:2:3}")
+    weutil "${i2c_path}"/eeprom &> /dev/null
+    echo $?
+}
+
+scm_prsnt=$(sed -n 1p < "${SMBCPLD_SYSFS_DIR}"/scm_present)
+if [ "$scm_prsnt" = "0x0" ]; then
+    if [ "$(is_i2cdev_exist 19 0x52)" -eq 0 ];then
+        dump_eeprom 19 0x52
+        exit $?
+    els
+        echo "Cannot detect SCM eeprom"
+        exit 1
+    fi
+else
+    echo "SCM is not inserted"
+    exit 1
+fi

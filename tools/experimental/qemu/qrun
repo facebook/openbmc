@@ -1,0 +1,100 @@
+#!/bin/env python3
+
+import hashlib
+import sys
+import os
+import subprocess
+
+TMPF = "/tmp/flash"
+FLASH_SIZE = 32 * 1024 * 1024
+
+def get_file_digest(bin_file, hash_size=None):
+    with open(bin_file, "rb") as f:
+        m = hashlib.md5()
+        if hash_size:
+            m.update(f.read(hash_size))
+        else:
+            m.update(f.read())
+        return m.hexdigest()
+
+
+def generate_mtd(bin_file):
+    zero_size = FLASH_SIZE - os.path.getsize(bin_file)
+    with open(TMPF, "wb") as outf, open(bin_file, "rb") as inf:
+        outf.write(inf.read())
+        outf.write(b"\0" * zero_size)
+
+
+def qemu_path():
+    def exe_path(path):
+        return path + "/build/arm-softmmu/qemu-system-arm"
+
+    def is_exe(path):
+        return os.path.isfile(path) and os.access(path, os.X_OK)
+
+    def get_local():
+        user = subprocess.check_output(['whoami']).decode().strip()
+        return "/home/" + user + "/local"
+
+    script_dir = os.path.dirname(os.path.realpath(__file__))
+    if is_exe(exe_path(script_dir)):
+        return exe_path(script_dir)
+
+    qemu_dir = get_local() + '/qemu'
+    if (not os.path.isdir(qemu_dir)):
+        subprocess.check_call(['git', 'clone', 'https://github.com/openbmc/qemu'], cwd=get_local())
+        subprocess.check_call(['git', 'submodule', 'update', '--init', 'dtc'], cwd=qemu_dir)
+    qemu_exe = exe_path(qemu_dir)
+    if (not is_exe(qemu_exe)):
+        subprocess.check_call(['mkdir', 'build'], cwd=qemu_dir)
+        subprocess.check_call(['../configure', '--target-list=arm-softmmu'], cwd=qemu_dir + "/build")
+        subprocess.check_call(['make'], cwd=qemu_dir + '/build')
+        if not is_exe(qemu_exe):
+            print("Waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            raise ValueError("QEMU Build failed!")
+    return (qemu_exe, qemu_dir + "/build/qemu-bridge-helper")
+
+
+if len(sys.argv) > 1:
+    inf = sys.argv[1]
+    print(f"Using file: {inf}")
+    if not os.path.exists(inf):
+        print(f"{inf} does not exist!")
+        sys.exit(-1)
+    in_dig = get_file_digest(inf)
+    print(f"MD5 of input: {in_dig}")
+    if os.path.exists(TMPF):
+        out_dig = get_file_digest(TMPF, os.path.getsize(inf))
+        print(f"MD5 of output: {out_dig}")
+        if out_dig != in_dig:
+            print("Mismatch, generating a new MTD")
+            generate_mtd(inf)
+        else:
+            print("Using existing image!")
+    else:
+        print("Generating a new MTD")
+        generate_mtd(inf)
+elif os.path.exists(TMPF):
+    print("Reusing generated flash from old run")
+else:
+    print(f"USAGE: {sys.argv[0]} [IMAGE FILE]")
+    print("IMAGE FILE is optional if this is the second run")
+
+exe,brhelper = qemu_path()
+
+cmd = [
+    exe,
+    "-nographic",
+    "-M",
+#    "facebook-tiogapass",
+    "ast2500-evb",
+    "-m",
+    "512M",
+    "-netdev",
+    "tap,id=tap0,script=no,ifname=tap0",
+    "-net", "nic,netdev=tap0,macaddr=00:11:22:33:44:55,model=ftgmac100",
+    "-drive",
+    f"if=mtd,format=raw,file={TMPF}",
+]
+print(" ".join(cmd))
+subprocess.check_call(cmd)

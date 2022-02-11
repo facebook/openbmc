@@ -1,0 +1,67 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/mezz/fruid  
+  title: Swagger doc for /api/mezz/fruid  
+  version: 1.0.0
+paths: 
+  /api/mezz/fruid: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Product Serial: 
+                    type: string
+                  Product Custom Data 2: 
+                    type: string
+                  Board Custom Data 1: 
+                    type: string
+                  Product Version: 
+                    type: string
+                  Board Custom Data 3: 
+                    type: string
+                  Board Custom Data 2: 
+                    type: string
+                  Board Serial: 
+                    type: string
+                  Board Part Number: 
+                    type: string
+                  Product Custom Data 3: 
+                    type: string
+                  Board Mfg Date: 
+                    type: string
+                  Product Custom Data 1: 
+                    type: string
+                  Board Product: 
+                    type: string
+                  Board Mfg: 
+                    type: string
+                  Product Manufacturer: 
+                    type: string
+                  Board FRU ID: 
+                    type: string
+                  Product Part Number: 
+                    type: string
+                  Product Asset Tag: 
+                    type: string
+                  Product FRU ID: 
+                    type: string
+                  Product Name: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

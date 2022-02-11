@@ -1,0 +1,160 @@
+{
+  "version": "yosemite-mp-r08",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "sensor_valid_check": {
+    "soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "mb": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [63, 10],
+        [65, 18],
+        [67, 25],
+        [70, 30],
+        [72, 35],
+        [74, 40],
+        [76, 50]
+      ]
+    },
+    "linear_mezz": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [83, 10],
+        [85, 18],
+        [87, 35],
+        [90, 40],
+        [92, 50],
+        [94, 60]
+      ]
+    },
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 25, 10 ],
+        [ 27, 10 ],
+        [ 29, 10 ],
+        [ 31, 10 ],
+        [ 33, 14 ],
+        [ 35, 18 ],
+        [ 37, 20 ],
+        [ 39, 22 ],
+        [ 41, 24 ],
+        [ 43, 24 ],
+        [ 45, 28 ]
+      ]
+    },
+    "linear_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ -32, 10 ],
+        [ -30, 14 ],
+        [ -28, 15 ],
+        [ -26, 16 ],
+        [ -24, 17 ],
+        [ -22, 18 ],
+        [ -20, 20 ],
+        [ -18, 22 ]
+      ]
+    },
+    "pid_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -6,
+      "negative_hysteresis": 1,
+      "positive_hysteresis": 1,
+      "kp": -1.20,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_mb_outlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 45, 10 ],
+        [ 48, 14 ],
+        [ 51, 18 ],
+        [ 53, 20 ]
+      ]
+    },
+    "pid_mb_outlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 56,
+      "negative_hysteresis": 4,
+      "positive_hysteresis": 1,
+      "kp": -2,
+      "ki": -0.025,
+      "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0, 1],
+      "expr_file": "zone1.fsc"
+    }
+  }
+}

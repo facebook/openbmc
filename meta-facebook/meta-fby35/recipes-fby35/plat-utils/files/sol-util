@@ -1,0 +1,458 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+. /usr/local/fbpackages/utils/ast-functions
+LOGFILE="/var/log/mTerm_$1.log"
+LOGFILE_B="/var/log/mTerm_$1_backup.log"
+SLED_TYPE="/mnt/data/kv_store/sled_system_conf"
+I2CSET="/usr/sbin/i2cset -y "
+
+SB_CPLD_ADDR="0x0f"
+FRONT_EXP_CPLD_ADDR="0x5d"
+RISER_EXP_CPLD_ADDR="0x5c"
+BOARD_ID=$(get_bmc_board_id)
+
+SLOT=
+SLOT_NUM=
+I2C_NUM=
+
+function show_usage() {
+  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, 1ou, 2ou] bic"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN|pesw] (baudrate)"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+}
+
+select_expansion_uart() {
+  local bus=$1
+  local addr=$2
+  local data=$3
+  local board_type=$4
+  local curr_sts=0
+
+  if [ -n "$board_type" ] &&
+     ([ $board_type == "0x00" ] || [ $board_type == "0x03" ]); then
+    curr_sts=$data
+  else
+    curr_sts=$(/usr/sbin/i2cget -y $bus $addr 0)
+    curr_sts=$((curr_sts & 0x0f))
+    curr_sts=$((curr_sts | data << 4))
+  fi
+  /usr/sbin/i2cset -y $bus $addr 0 $curr_sts
+}
+
+function get_slot_num() {
+  local slot_num=0
+  case $1 in
+    slot1)
+      slot_num=1
+    ;;
+    slot2)
+      slot_num=2
+    ;;
+    slot3)
+      slot_num=3
+    ;;
+    slot4)
+      slot_num=4
+    ;;
+  esac
+
+  echo $slot_num
+}
+
+function get_bus_num() {
+  local bus=0
+  case $1 in
+    slot1)
+      bus=4
+    ;;
+    slot2)
+      bus=5
+    ;;
+    slot3)
+      bus=6
+    ;;
+    slot4)
+      bus=7
+    ;;
+  esac
+
+  echo $bus
+}
+
+function set_uart_src() {
+  local bus=$1
+  local addr=$2
+  local data=$3
+  $I2CSET $bus $addr $data
+}
+
+function is_gpv3_board() {
+  local board_type=$1
+  local result=0
+  if [ -n "$board_type" ] &&
+      ([ "$board_type" == "0x00" ] || [ "$board_type" == "0x03" ]); then
+    result=1
+  fi
+  echo $result
+}
+
+function enable_usb_hub() {
+  local fru=$1
+  local val=$2
+  cnt=$(ls /var/lock | grep -i "LCK..platform-1e6b0000.usb-usb-0" | wc -l)
+
+  if [ $val = 1 ]; then
+    if [ $cnt = 0 ]; then
+      # TODO: remove it since GPv3 BIC will initialize it to high by default
+      /usr/bin/bic-util $fru 0xe0 0x02 0x9c 0x9c 0x00 0x15 0xe0 0x41 0x9c 0x9c 0x00 1 96 1  > /dev/null 2>&1
+      /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
+      echo -n "Initializing USB devs..."
+      sleep 20 # BMC needs to spend about 20 sec to detect slot1 and slot3 all devs.
+      dev_cnt=$(ls /dev/serial/by-path/ | wc -l)
+      if [ $dev_cnt -ge 16 ]; then
+        echo "Done"
+      else
+        echo "Fail"
+        echo "16 USB devs should be detected but BMC only found $cnt"
+        exit -1;
+      fi
+    fi
+  else
+    if [ $cnt = 0 ]; then # Close USB hub when no device is found
+      /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
+    fi
+  fi
+}
+
+function show_microcom_usage() {
+  echo "------------------TERMINAL MULTIPLEXER---------------------"
+  echo "CTRL + x : Terminate the connection."
+  echo "Run in single mode"
+  echo "-----------------------------------------------------------"
+}
+
+function get_usb_dev() {
+#The dev position should be fixed
+  local usb_path=""
+  local baudrate="57600"
+  local prefix="/dev/serial/by-path/"
+  local vendor="$2"
+
+  [ -n "$3" ] && baudrate="$3"
+
+  case $1 in
+    pesw)
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.4:1.1-port0"
+    [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+  ;;
+    dev0) # a
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.4.2.4:1.2-port0"
+  ;;
+    dev1) # b
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.1:1.0-port0"
+  ;;
+    dev2) # c
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.4.2.4:1.3-port0"
+  ;;
+    dev3) # d
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.1:1.1-port0"
+  ;;
+    dev4) # e
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.2:1.0-port0"
+  ;;
+    dev5) # f
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.1:1.2-port0"
+  ;;
+    dev6) # g
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.2:1.1-port0"
+  ;;
+    dev7) # h
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.1:1.3-port0"
+  ;;
+    dev8) # i
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.2:1.2-port0"
+  ;;
+    dev9) # j
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.4:1.2-port0"
+  ;;
+    dev10) # k
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.2:1.3-port0"
+  ;;
+    dev11) # l
+    usb_path="platform-1e6b0000.usb-usb-0:1.3.2.4:1.3-port0"
+  ;;
+  esac
+  echo "-s ${baudrate} ${prefix}${usb_path}"
+}
+
+function get_usb_dev_by_slot() {
+#The dev position should be fixed
+  local usb_path=""
+  local baudrate="57600"
+  local prefix="/dev/serial/by-path/"
+  local vendor="$3"
+
+  [ -n "$4" ] && baudrate="$4"
+
+  if [ "$SLOT" == "slot1" ]; then
+      case $2 in
+        pesw)
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.4.2.4:1.1-port0"
+        [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+      ;;
+        dev0) # a
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.2-port0" #15
+      ;;
+        dev1) # b
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.1:1.0-port0"
+      ;;
+        dev2) # c
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.3-port0" # 16
+      ;;
+        dev3) # d
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.1:1.1-port0"
+      ;;
+        dev4) # e
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.2:1.0-port0"
+      ;;
+        dev5) # f
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.1:1.2-port0"
+      ;;
+        dev6) # g
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.2:1.1-port0"
+      ;;
+        dev7) # h
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.1:1.3-port0"
+      ;;
+        dev8) # i
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.2:1.2-port0"
+      ;;
+        dev9) # j
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.0-port0" #15
+      ;;
+        dev10) # k
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.2:1.3-port0"
+      ;;
+        dev11) # l
+        usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.1-port0" # 16
+      ;;
+      esac
+   elif [ "$SLOT" == "slot3" ]; then
+      case $2 in
+        pesw)
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.4.2.4:1.1-port0"
+        [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+      ;;
+        dev0) # a
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.4:1.2-port0"
+      ;;
+        dev1) # b
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.1:1.0-port0"
+      ;;
+        dev2) # c
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.4:1.3-port0"
+      ;;
+        dev3) # d
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.1:1.1-port0"
+      ;;
+        dev4) # e
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.2:1.0-port0"
+      ;;
+        dev5) # f
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.1:1.2-port0"
+      ;;
+        dev6) # g
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.2:1.1-port0"
+      ;;
+        dev7) # h
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.1:1.3-port0"
+      ;;
+        dev8) # i
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.2:1.2-port0"
+      ;;
+        dev9) # j
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.4:1.0-port0"
+      ;;
+        dev10) # k
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.2:1.3-port0"
+      ;;
+        dev11) # l
+        usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.4:1.1-port0"
+      ;;
+      esac
+  else
+      echo "The $SLOT is invalid"
+      exit -1;
+  fi
+
+  echo "-s ${baudrate} ${prefix}${usb_path}"
+}
+
+# Only support slot[1|2|3|4]
+if [[ "$1" =~ ^(slot[1-4]{1})$ ]]; then
+  SLOT=$1
+else
+  show_usage
+  exit -1;
+fi
+
+# If users want to read a history, there is no need to run the rest
+
+if [[ "$2" == "--history" ]]; then
+  if [ $# -eq 2 ]; then
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    exit 0;
+  else
+    show_usage
+    exit -1;
+  fi
+fi
+
+SLOT_NUM=$(get_slot_num $SLOT)
+I2C_NUM=$(get_bus_num $SLOT)
+SLED_TYPE=$(cat $SLED_TYPE)
+EXP_BOARD_TYPE=
+COMP=$2
+DEV=$3
+BAUDRATE=$4
+CPLD_ADDR=
+EXP_CPLD_ADDR=
+DEV_NUM=
+
+if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
+  if ! [ "$SLOT" == "slot1" ]; then
+    echo "$SLOT is empty"
+    exit -1;
+  else
+    # notify CPLD to set the uart src to class 2
+    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
+  fi
+else
+  if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
+    echo "The $SLOT is empty"
+    exit -1;
+  elif [ $(is_slot_12v_on ${SLOT_NUM}) == "0" ]; then
+    echo "The $SLOT is 12V-off"
+    exit -1;
+  else
+    # notify CPLD to set the uart src to class 1
+    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
+  fi
+fi
+
+# check COMP and DEV
+if [ -n "$COMP" ]; then
+  # block invalid command, e.g. sol-util 2ou bic xxx
+  if [ $# -gt 4 ]; then
+    show_usage
+    exit -1;
+  fi
+
+  # check BAUDRATE is a number
+  if [ -n "$BAUDRATE" ]; then
+    if ! [[ $BAUDRATE =~ ^[0-9]+$ ]]; then
+      echo "$BAUDRATE should be a number"
+      exit -1;
+    fi
+  fi
+
+  # check COMP first
+  if [ "$COMP" == "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17|8))$ ]]; then
+    EXP_CPLD_ADDR=${FRONT_EXP_CPLD_ADDR}
+  elif [ "$COMP" == "2ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|10))$ ]]; then
+    EXP_BOARD_TYPE=$(get_2ou_board_type $I2C_NUM)
+    if [ $EXP_BOARD_TYPE == "0x02" ]; then     #E1.S board
+        EXP_CPLD_ADDR=""
+    else
+        EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
+    fi
+  elif [ "$COMP" == "sb" ]; then
+    CPLD_ADDR=${SB_CPLD_ADDR}
+  else
+    echo "$COMP is not supported!"
+    exit -1;
+  fi
+
+  # check DEV
+  if [[ "$DEV" =~ ^(dev([0-9]|1[0-1]))$ ]] || [ "$DEV" == "pesw" ] ; then
+    DEV_NUM=${3:3:4}
+    if [ "$COMP" == "1ou" ] && [[ "$DEV" =~ ^(dev([4-9]|1[0-1]))$ ]]; then
+      echo "$DEV is not supported!"
+      exit -1;
+    elif [ "$COMP" == "2ou" ]; then
+      if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
+        enable_usb_hub $SLOT 1
+        show_microcom_usage
+
+        if [ $BOARD_ID -eq 9 ]; then
+          /usr/bin/microcom $(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+        else
+          /usr/bin/microcom $(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+        fi
+
+        RET=$?
+        enable_usb_hub $SLOT 0
+        exit $RET;
+      fi
+    fi
+  elif [ "$DEV" == "bic" ]; then
+    if [ -n "$CPLD_ADDR" ]; then
+      [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] && DEV_NUM="0x2" || DEV_NUM="0x4"
+    else
+      DEV_NUM="0x6"
+      [[ "$(is_gpv3_board $EXP_BOARD_TYPE)" == "1" ]] && DEV_NUM="0xC"
+    fi
+  else
+    echo "$DEV is not supported!"
+    exit -1;
+  fi
+
+  if [ -n "$CPLD_ADDR" ]; then
+    set_uart_src $I2C_NUM $CPLD_ADDR "0x01 $DEV_NUM"
+  else
+    # redirect the uart src to an expansion board
+    if [ "$COMP" == "1ou" ]; then
+      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"
+    else
+      [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] &&
+        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01" ||
+        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
+    fi
+    if [ -n "$EXP_CPLD_ADDR" ]; then
+      select_expansion_uart $I2C_NUM $EXP_CPLD_ADDR $DEV_NUM $EXP_BOARD_TYPE
+    fi
+  fi
+else
+  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
+fi
+
+if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
+  # set UART clock source 24MHz
+  devmem_clear_bit $(scu_addr 310) $((SLOT_NUM - 1))
+fi
+
+exec /usr/local/bin/mTerm_client $SLOT
+
+echo
+echo
+echo "-----------------------"
+echo "Exit from SOL session."

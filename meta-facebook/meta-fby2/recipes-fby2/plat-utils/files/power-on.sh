@@ -1,0 +1,134 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+### BEGIN INIT INFO
+# Provides:          power-on
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Power on Server
+### END INIT INFO
+. /usr/local/fbpackages/utils/ast-functions
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+DEF_PWR_ON=1
+TO_PWR_ON=
+POWER_ON_SLOT=
+RETRY=0
+
+check_por_config()
+{
+
+  TO_PWR_ON=-1
+
+  POR=`kv get slot${1}_por_cfg persistent`
+  # Check if the file/key doesn't exist
+  if [ -z "${POR}" ]; then
+    TO_PWR_ON=$DEF_PWR_ON
+  else
+    # Case ON
+    if [ $POR == "on" ]; then
+      TO_PWR_ON=1;
+
+    # Case OFF
+    elif [ $POR == "off" ]; then
+      TO_PWR_ON=0;
+
+    # Case LPS
+    elif [ $POR == "lps" ]; then
+
+      # Check if the file/key doesn't exist
+      LS=`kv get /pwr_server${1}_last_state persistent`
+      if [ -z "${LS}" ]; then
+        TO_PWR_ON=$DEF_PWR_ON
+      else
+        if [ $LS == "on" ]; then
+          TO_PWR_ON=1;
+        elif [ $LS == "off" ]; then
+          TO_PWR_ON=0;
+        fi
+      fi
+    fi
+  fi
+}
+
+# Check whether it is fresh power on reset
+if [ $(is_bmc_por) -eq 1 ]; then
+  # Remove all GP/GPv2 info
+  for i in {2..13};
+  do
+    kv del sys_config/fru2_m2_${i}_info persistent > /dev/null 2>&1
+    kv del sys_config/fru4_m2_${i}_info persistent > /dev/null 2>&1
+  done
+
+  /usr/local/bin/sync_date.sh
+
+  # Disable clearing of PWM block on WDT SoC Reset
+  devmem_clear_bit $(scu_addr 9c) 17
+
+  check_por_config 1
+  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 1) == "1" ] && [ $(get_slot_type 1) == "0" ] ; then
+    POWER_ON_SLOT+=(1)
+    power-util slot1 on &
+  fi
+
+  check_por_config 2
+  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 2) == "1" ] && [ $(get_slot_type 2) == "0" ] ; then
+    POWER_ON_SLOT+=(2)
+    power-util slot2 on &
+  fi
+
+  check_por_config 3
+  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 3) == "1" ] && [ $(get_slot_type 3) == "0" ] ; then
+    POWER_ON_SLOT+=(3)
+    power-util slot3 on &
+  fi
+
+  check_por_config 4
+  if [ $TO_PWR_ON -eq 1 ] && [ $(is_server_prsnt 4) == "1" ] && [ $(get_slot_type 4) == "0" ] ; then
+    POWER_ON_SLOT+=(4)
+    power-util slot4 on &
+  fi
+
+  # Wait for all slots finish power-up
+  while [ $RETRY -lt 10 ]
+  do
+    FINISH=1
+    for i in ${POWER_ON_SLOT[@]}
+    do
+      status=$(power-util slot$i status)
+      if [ ${status:(-3)} == "OFF" ]; then
+        FINISH=0
+      fi
+    done
+    if [ $FINISH -eq 1 ]; then
+      break
+    fi
+    RETRY=$(($RETRY+1))
+    sleep 1
+  done
+
+  if [ $(is_date_synced) == "0" ]; then
+    # Time sync with RC Server
+    echo "Start time sync with server"
+    sh /usr/local/bin/time-sync.sh &
+  fi
+fi

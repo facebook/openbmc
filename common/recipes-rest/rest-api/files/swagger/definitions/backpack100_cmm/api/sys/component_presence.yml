@@ -1,0 +1,97 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/component_presence  
+  title: Swagger doc for /api/sys/component_presence  
+  version: 1.0.0
+paths: 
+  /api/sys/component_presence: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  fc3: 
+                    type: string
+                  psu4: 
+                    type: string
+                  fan9: 
+                    type: string
+                  psu2: 
+                    type: string
+                  fan10: 
+                    type: string
+                  cmm: 
+                    type: string
+                  fan12: 
+                    type: string
+                  lc4: 
+                    type: string
+                  lc3: 
+                    type: string
+                  lc2: 
+                    type: string
+                  lc1: 
+                    type: string
+                  fan3: 
+                    type: string
+                  fc4: 
+                    type: string
+                  fc2: 
+                    type: string
+                  fan5: 
+                    type: string
+                  fan11: 
+                    type: string
+                  psu3: 
+                    type: string
+                  fan8: 
+                    type: string
+                  scm_fc4: 
+                    type: string
+                  fc1: 
+                    type: string
+                  scm_lc1: 
+                    type: string
+                  scm_lc2: 
+                    type: string
+                  scm_lc3: 
+                    type: string
+                  scm_lc4: 
+                    type: string
+                  scm_fc3: 
+                    type: string
+                  scm_fc1: 
+                    type: string
+                  fan2: 
+                    type: string
+                  scm_fc2: 
+                    type: string
+                  psu1: 
+                    type: string
+                  fan1: 
+                    type: string
+                  fan6: 
+                    type: string
+                  fan7: 
+                    type: string
+                  fan4: 
+                    type: string
+                  peer_cmm: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

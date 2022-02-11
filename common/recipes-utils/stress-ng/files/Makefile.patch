@@ -1,0 +1,11 @@
+--- a/Makefile
++++ b/Makefile
+@@ -21,7 +21,7 @@
+ # Codename "dastardly determined distressor"
+ #
+
+-CFLAGS += -Wall -Wextra -DVERSION='"$(VERSION)"' -O2
++override CFLAGS += -Wall -Wextra -DVERSION='"$(VERSION)"' -O2
+
+ BINDIR=/usr/bin
+ MANDIR=/usr/share/man/man1

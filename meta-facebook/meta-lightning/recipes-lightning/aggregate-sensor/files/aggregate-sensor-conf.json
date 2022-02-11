@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "SYSTEM_AIRFLOW",
+      "units": "CFM",
+      "composition": {
+        "type": "conditional_linear_expression",
+        "sources": {
+          "rpm0": {
+            "fru": 3,
+            "sensor_id": 32
+          },
+          "rpm0": {
+            "fru": 3,
+            "sensor_id": 32
+          },
+          "rpm1": {
+            "fru": 3,
+            "sensor_id": 33
+          },
+          "rpm2": {
+            "fru": 3,
+            "sensor_id": 34
+          },
+          "rpm3": {
+            "fru": 3,
+            "sensor_id": 35
+          },
+          "rpm4": {
+            "fru": 3,
+            "sensor_id": 36
+          },
+          "rpm5": {
+            "fru": 3,
+            "sensor_id": 37
+          },
+          "rpm6": {
+            "fru": 3,
+            "sensor_id": 38
+          },
+          "rpm7": {
+            "fru": 3,
+            "sensor_id": 39
+          },
+          "rpm8": {
+            "fru": 3,
+            "sensor_id": 40
+          },
+          "rpm9": {
+            "fru": 3,
+            "sensor_id": 41
+          },
+          "rpm10": {
+            "fru": 3,
+            "sensor_id": 42
+          },
+          "rpm11": {
+            "fru": 3,
+            "sensor_id": 43
+          },
+          "rpm_avg": {
+            "expression": "( rpm0 + rpm1 + rpm2 + rpm3 + rpm4 + rpm5 + rpm6 + rpm7 + rpm8 + rpm9 + rpm10 + rpm11 ) / 12"
+          }
+        },
+        "linear_expressions": {
+          "EXPU2": "( ( -2 * rpm_avg * rpm_avg ) / 10000000.0 ) + ( 0.0208 * rpm_avg ) - 7.8821",
+          "EXPM2": "( ( -2 * rpm_avg * rpm_avg ) / 10000000.0 ) + ( 0.0211 * rpm_avg ) - 10.585"
+        },
+        "condition": {
+          "key": "ssd_sku_info",
+          "value_map": {
+            "U2": "EXPU2",
+            "M2": "EXPM2"
+          }
+        }
+      }
+    }
+  ]
+}

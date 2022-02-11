@@ -1,0 +1,5 @@
+max([
+  linear_chip(wedge100:chip_temp),
+  linear_exhaust(wedge100:exhaust_temp),
+  linear_userver(wedge100:userver_temp)
+])

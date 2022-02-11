@@ -1,0 +1,53 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors  
+  title: Swagger doc for /api/sys/sensors  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: array
+                items: 
+                  type: object
+                  additionalProperties: false
+                  properties: 
+                    name: 
+                      type: string
+                    Adapter: 
+                      type: string
+                    present: 
+                      type: boolean
+                    SCM_ECB_VIN: 
+                      type: string
+                    SCM_ECB_VOUT: 
+                      type: string
+                    SCM_ECB_CURR: 
+                      type: string
+                    SCM_ECB_POWER: 
+                      type: string
+                    SCM_ECB_TEMP: 
+                      type: string
+                    SCM_BOARD_TEMP: 
+                      type: string
+                    SCM_INLET_TEMP: 
+                      type: string
+                    SCM_BMC_TEMP: 
+                      type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

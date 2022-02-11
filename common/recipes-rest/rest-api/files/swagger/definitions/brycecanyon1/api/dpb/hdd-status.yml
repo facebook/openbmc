@@ -1,0 +1,35 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/dpb/hdd-status  
+  title: Swagger doc for /api/dpb/hdd-status  
+  version: 1.0.0
+paths: 
+  /api/dpb/hdd-status: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Abnormal Drives: 
+                    type: string
+                  Normal Drives: 
+                    type: string
+                  Missing Drives: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

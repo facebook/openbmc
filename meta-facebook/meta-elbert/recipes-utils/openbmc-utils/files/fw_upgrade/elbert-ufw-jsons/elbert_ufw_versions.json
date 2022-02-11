@@ -1,0 +1,54 @@
+{
+    "bios": {
+        "filename": "coreboot-elbert.rom",
+        "hash": "sha1sum",
+        "hash_value": "70c1ecb4e69d8926297d7bf6598634d944676954"
+    },
+    "fan": {
+        "filename": "elbert_fan.astp",
+        "hash": "sha1sum",
+        "hash_value": "2606a2de51618c37ddb69fc9be76d4013709b342",
+        "version": "1.11"
+    },
+    "pim16q": {
+        "filename": "elbert_pim16q.abin",
+        "hash": "sha1sum",
+        "hash_value": "17695c20092c6c48400694343d7b142b3c6dbca0",
+        "version": "7.4"
+    },
+    "pim8ddm": {
+        "filename": "elbert_pim8ddm.abin",
+        "hash": "sha1sum",
+        "hash_value": "d89be6555fc85828b2a99ed9b0a09e69b5a8aaa4",
+        "version": "8.7"
+    },
+    "pim_base": {
+        "filename": "elbert_pim_base.abin",
+        "hash": "sha1sum",
+        "hash_value": "36609afea5bac25646ed8aab504f127d48187526",
+        "version": "1.3"
+    },
+    "scm": {
+        "filename": "elbert_scm.astp",
+        "hash": "sha1sum",
+        "hash_value": "4d5c19da719549c15d29002457805a1da88b882b"
+    },
+    "smb": {
+        "filename": "elbert_smb.astp",
+        "hash": "sha1sum",
+        "hash_value": "b98c2325ef7df5659754cac27c98c61164b261fc",
+        "version": "3.7"
+    },
+    "smb_cpld": {
+        "filename": "elbert_smb_cpld.astp",
+        "hash": "sha1sum",
+        "hash_value": "a98fff3d2bb5c4ce7440971aedcb57cd2a2c3202",
+        "version": "5.1"
+    },
+    "th4_qspi": {
+        "filename": "elbert_th4_qspi.astp",
+        "hash": "sha1sum",
+        "hash_value": "d99fc0cf8ca26a4457aff1628518c9ced5547ef3",
+        "version": "D000_05"
+    }
+}

@@ -1,0 +1,3 @@
+max([
+  linear_nic(nic:nic_sensor_temp)
+])

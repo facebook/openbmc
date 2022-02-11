@@ -1,0 +1,69 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server1/fruid  
+  title: Swagger doc for /api/server1/fruid  
+  version: 1.0.0
+paths: 
+  /api/server1/fruid: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Product Version: 
+                    type: string
+                  Chassis Serial Number: 
+                    type: string
+                  Product Manufacturer: 
+                    type: string
+                  Board Serial: 
+                    type: string
+                  Board Product: 
+                    type: string
+                  Product Custom Data 1: 
+                    type: string
+                  Board Mfg: 
+                    type: string
+                  Product Serial: 
+                    type: string
+                  Product FRU ID: 
+                    type: string
+                  Chassis Type: 
+                    type: string
+                  Product Custom Data 2: 
+                    type: string
+                  Board FRU ID: 
+                    type: string
+                  Product Name: 
+                    type: string
+                  Board Custom Data 1: 
+                    type: string
+                  Board Part Number: 
+                    type: string
+                  Product Part Number: 
+                    type: string
+                  Product Asset Tag: 
+                    type: string
+                  Board Mfg Date: 
+                    type: string
+                  Chassis Custom Data 1: 
+                    type: string
+                  Chassis Part Number: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

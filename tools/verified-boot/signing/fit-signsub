@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+
+#  Copyright (c) 2014-present, Facebook, Inc.
+#  All rights reserved.
+#
+#  This source code is licensed under the BSD-style license found in the
+#  LICENSE file in the root directory of this source tree. An additional grant
+#  of patent rights can be found in the PATENTS file in the same directory.
+
+import os
+import argparse
+import tempfile
+import sys
+
+from distutils import spawn
+from io import BytesIO
+
+from pyfdt import pyfdt
+from pyfdt import pkcs11
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Example sign')
+    parser.add_argument('filename',
+        help="Input subordinate certificate store (DTB)")
+    parser.add_argument('output',
+        help="Output signed subordinate store (DTB)")
+    parser.add_argument('--mkimage', required=True, metavar="PATH",
+        help="Required path to mkimage")
+    pkey = parser.add_mutually_exclusive_group(required=True)
+    pkey.add_argument('--keydir', metavar="DIR",
+        help="Path to directory containing '.key' private key")
+    pkey.add_argument('--token', metavar="SERIAL",
+        help="Hardware token serial identifier")
+    pkey.add_argument('--keyname', metavar="HSMKEYNAME",
+        help="Use HSMKEYNAME hsm based key to sign")
+    parser.add_argument('--token-hint', metavar="HINT")
+
+    args = parser.parse_args()
+
+    if args.keyname is not None:
+        # set keydir with pathname in hsm key name
+        args.keydir = os.path.dirname(args.keyname)
+    elif args.keydir is not None:
+        pkcs11.clear_environment()
+        if not os.path.isdir(args.keydir):
+            print("The --keydir must be a directory containing a '.key' key.")
+            sys.exit(1)
+        keyfile = os.path.join(args.keydir,
+            os.path.basename(args.keydir) + ".key")
+        if not os.path.exists(keyfile):
+            print("Cannot find private key: %s" % (keyfile))
+            sys.exit(1)
+    else:
+        pkcs11.enforce_environment()
+        args.keydir = pkcs11.get_url(args.token)
+        if args.token_hint is None:
+            print("Please include a --token-hint when using a token")
+            sys.exit(1)
+
+    with open(args.filename, 'rb') as fh:
+        subordinate = fh.read()
+        fit_io = BytesIO(subordinate)
+        dtb = pyfdt.FdtBlobParse(fit_io)
+        fdt = dtb.to_fdt()
+
+    sub_image = fdt.resolve_path('/images/fdt@1/signature@1/key-name-hint')
+    if sub_image is None:
+        print("This subordinate store does not contain a signature node")
+        sys.exit(1)
+    if args.keyname:
+        requested_key_name = os.path.basename(args.keyname)
+    else:
+        requested_key_name = os.path.basename(args.keydir)
+    sub_image.strings = [requested_key_name]
+
+    subordinate_source = fdt.to_dts()
+    with tempfile.NamedTemporaryFile() as tmp:
+        tmp.write(subordinate_source.encode("utf-8"))
+        tmp.flush()
+
+        cmd = [args.mkimage, "-f", tmp.name, "-k", args.keydir,
+            "-r", args.output]
+        if args.token:
+            cmd += ['-N', 'pkcs11']
+        elif args.keyname:
+            cmd += ['-N', 'FB-HSM']
+        print(" ".join(cmd))
+        spawn.spawn(cmd)
+
+    print("Wrote signed subordinate certificate store: %s" % (args.output))

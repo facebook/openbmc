@@ -1,0 +1,222 @@
+#!/usr/bin/python3
+
+import os
+import re
+import sys
+import glob
+import shutil
+import subprocess
+import argparse
+
+
+def openbmc_path():
+    curr = os.path.abspath(__file__)
+    openbmc = os.path.dirname(curr) + "/.."
+    return os.path.abspath(openbmc)
+
+
+def recipes_with_ptest():
+    openbmc = openbmc_path()
+    avoidlist = ["qemux86-image.bb", "ptest-meson-crosstarget-native_0.1.bb", "rsyslog_8.34.0.bb"]
+
+    def contains_ptest(f):
+        with open(f) as fd:
+            if "ptest" in fd.read():
+                return True
+        return False
+
+    def recipe_name(recipe):
+        m = re.match(r"(.+)_.+\.bb$", recipe)
+        return m[1]
+
+    dirs = [
+        f
+        for f in glob.glob(f"{openbmc}/*")
+        if os.path.isdir(f)
+        and os.path.basename(f) != "yocto"
+        and not os.path.basename(f).startswith("build")
+    ]
+    recipes = set()
+    total_recipes = 0
+    for d in dirs:
+        for root, _, files in os.walk(d):
+            if "meta-backports" in root:
+                continue
+            for f in files:
+                f_full = os.path.join(root, f)
+                if f.endswith(".bb"):
+                    total_recipes += 1
+                    if f not in avoidlist and contains_ptest(f_full):
+                        recipes.add(recipe_name(f))
+    print(f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests")
+    return list(recipes)
+
+
+def update_conf_steps(recipes):
+    recipe_arg = " ".join(recipes)
+    steps = [
+        "sed -i -n '/IMAGE_INSTALL_append/!p' conf/local.conf",
+        f'echo IMAGE_INSTALL_append = \\"{recipe_arg}\\" >> conf/local.conf',
+    ]
+    return steps
+
+
+def update_conf_only(recipes, build_path):
+    steps = [f"cd {build_path}"] + update_conf_steps(recipes)
+    conf_cmd = "; ".join(steps)
+    cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", conf_cmd]
+    subprocess.check_call(cmd)
+
+
+def bmc_build(recipes, build_path, verbose):
+    openbmc = openbmc_path()
+    build_option = "-q"
+    if verbose:
+      build_option = ""
+
+    build_steps = []
+    if os.path.exists("/opt/rh/devtoolset-8/enable"):
+        build_steps += ["source /opt/rh/devtoolset-8/enable"]
+    build_steps += [
+        f"cd {openbmc}",
+        f"source ./openbmc-init-build-env qemux86 {build_path} > /dev/null",
+    ]
+    build_steps += update_conf_steps(recipes)
+    build_steps += [
+        "export LC_ALL=en_US.UTF-8",
+        "export LANG=en_US.UTF-8",
+        "export LANGUAGE=en_US.UTF-8",
+        "export MACHINE=qemux86",
+        f"bitbake {build_option} qemux86-image",
+    ]
+    build_cmd = "; ".join(build_steps)
+    cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", build_cmd]
+    subprocess.check_call(cmd)
+
+
+def main(args):
+    all_recipes = recipes_with_ptest()
+    if args.list:
+        print("Available recipes:")
+        for _r in all_recipes:
+            print(_r)
+        sys.exit(0)
+    if (
+        args.build is None
+        or not os.path.isdir(args.build)
+        or args.force_rebuild
+        or args.update_conf
+    ):
+        if args.build is None:
+            args.build = openbmc_path() + "/build-qemux86"
+        if args.update_conf:
+            update_conf_only(all_recipes, args.build)
+            sys.exit(0)
+        else:
+            bmc_build(all_recipes, args.build, args.verbose)
+
+    if not os.path.isdir(args.build):
+        print(f"{args.build} does not exist")
+        sys.exit(-1)
+    args.build = os.path.abspath(args.build)
+    deploy = args.build + "/tmp/deploy/images/qemux86"
+    rootfs_zip = deploy + "/qemux86-image-qemux86.tar.bz2"
+    rootfs_zip = os.path.abspath(rootfs_zip)
+    rootfs = deploy + "/rootfs"
+    if os.path.isdir(rootfs):
+        shutil.rmtree(rootfs)
+    os.makedirs(rootfs)
+    untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
+    subprocess.check_call(untar)
+    if not os.path.exists("/.dockerenv"):
+        base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
+    else:
+        base_cmd = ["sudo","chroot",rootfs]
+    if args.shell:
+        subprocess.check_call(base_cmd)
+    elif not args.skip_tests:
+        cmd = base_cmd + ["ptest-runner"]
+        exit_error = False;
+        if args.recipes is None or len(args.recipes) == 0:
+            cmd += all_recipes
+        else:
+            cmd += args.recipes
+        try:
+            out = subprocess.check_output(cmd).decode()
+            print(out)
+        except subprocess.CalledProcessError as e:
+            print(e.output.decode())
+            if (e.stderr is not None):
+                print(e.stderr.decode())
+            exit_error = True
+        if args.execute is not None:
+            cmd = base_cmd + ["sh", '-c', args.execute]
+            print(subprocess.check_output(cmd).decode())
+        if exit_error:
+          sys.exit(1)
+
+
+parser = argparse.ArgumentParser(description="Helper to run unit-tests natively")
+parser.add_argument(
+    "--build",
+    "-b",
+    help="Use an existing build directory instead of building one (For debugging)",
+    dest="build",
+    default=None,
+)
+parser.add_argument(
+    "--force-rebuild",
+    "-f",
+    help="Force rebuild the qemux86 image",
+    dest="force_rebuild",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--verbose",
+    "-v",
+    help="Verbose build output",
+    dest="verbose",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--skip-tests",
+    help="Skip running tests",
+    dest="skip_tests",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--shell",
+    "-s",
+    help="Drops you into a CHROOTed shell of the image (For debugging)",
+    dest="shell",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--execute",
+    "-x",
+    help="Execute command in shell before exiting",
+    dest="execute",
+    default=None,
+)
+parser.add_argument(
+    "--list",
+    "-l",
+    help="List ptest recipes",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "--update-conf",
+    "-u",
+    help="Update local.conf to add ptest recipes",
+    dest="update_conf",
+    action="store_true",
+    default=False,
+)
+parser.add_argument("recipes", nargs="*", help="Recipe(s) to test")
+args = parser.parse_args()
+main(args)

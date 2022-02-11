@@ -1,0 +1,8 @@
+max([
+  linear_inlet(spb:sp_inlet_temp),
+  linear_cpu_margin(slot1:soc_therm_margin),
+  linear_dimm(
+   max([
+    slot1:soc_dimma0_temp,
+    slot1:soc_dimmb0_temp]))
+])

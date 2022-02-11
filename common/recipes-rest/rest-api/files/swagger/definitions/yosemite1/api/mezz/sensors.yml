@@ -1,0 +1,65 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/mezz/sensors  
+  title: Swagger doc for /api/mezz/sensors  
+  version: 1.0.0
+paths: 
+  /api/mezz/sensors: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  NIC_SOC_TEMP (PLDM): 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  NIC_HEALTH_STATE (PLDM): 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PORT_0_LINK_STATE (PLDM): 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PORT_0_TEMP (PLDM): 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  PORT_0_LINK_SPEED (PLDM): 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  MEZZ_SENSOR_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

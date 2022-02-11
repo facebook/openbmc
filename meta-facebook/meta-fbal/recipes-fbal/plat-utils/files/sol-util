@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+usage() {
+  echo "Usage: sol-util [ mb ]"
+  echo "       sol-util [ mb ] --history"
+  exit -1
+}
+
+
+if [ "$1" == "mb" ]
+then
+  SLOT=$1 
+else
+  usage
+fi
+
+if [ $# -gt 1 ]; then
+  if [ $# -gt 2 ]; then
+    usage
+  fi
+  if [[ "$2" == "--history" ]]; then
+    LOGFILE="/var/log/mTerm_angelslanding.log"
+    LOGFILE_B="/var/log/mTerm_angelslanding_backup.log"
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    exit 0
+  else
+    usage
+  fi
+fi
+exec /usr/local/bin/mTerm_client angelslanding

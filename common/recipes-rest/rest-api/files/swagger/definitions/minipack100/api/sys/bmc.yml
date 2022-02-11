@@ -1,0 +1,130 @@
+swagger: "2.0"
+info:
+  description: Swagger doc for /api/sys/bmc
+  title: Swagger doc for /api/sys/bmc
+  version: 1.0.0
+paths:
+  /api/sys/bmc:
+    get:
+      produces: [application/json]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Resources:
+                type: array
+                items:
+                  type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  open-fds:
+                    type: string
+                  MAC Addr:
+                    type: string
+                  vboot:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      status:
+                        type: string
+                      status_text:
+                        type: string
+                  Memory Usage:
+                    type: string
+                  memory:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      Shmem:
+                        type: integer
+                        format: int32
+                      Cached:
+                        type: integer
+                        format: int32
+                      MemAvailable:
+                        type: integer
+                        format: int32
+                      MemFree:
+                        type: integer
+                        format: int32
+                      MemTotal:
+                        type: integer
+                        format: int32
+                      Buffers:
+                        type: integer
+                        format: int32
+                  SPI0 Vendor:
+                    type: string
+                  CPU Usage:
+                    type: string
+                  uptime:
+                    type: string
+                  load-5:
+                    type: string
+                  u-boot version:
+                    type: string
+                  TPM TCG version:
+                    type: string
+                  load-1:
+                    type: string
+                  load-15:
+                    type: string
+                  kernel version:
+                    type: string
+                  TPM FW version:
+                    type: string
+                  Reset Reason:
+                    type: string
+                  Description:
+                    type: string
+                  SPI1 Vendor:
+                    type: string
+                  At-Scale-Debug Running:
+                    type: boolean
+                  Uptime:
+                    type: string
+                  OpenBMC Version:
+                    type: string
+                  MTD Parts:
+                    type: array
+                    items:
+                      type: string
+                  Secondary Boot Triggered:
+                    type: boolean
+                  mmc-info:
+                    type: object
+                    additionalProperties: false
+                    # XXX ideally this should be an `additionalProperties` object or `patternProperties
+                    # to express any key (and not just "/dev/mmcblk0"), but flex (our validator) doesn't
+                    # seem to support either. As of H2 2021, it's unlikely BMCs will have more than one
+                    # mmc device, so it should be good for now
+                    # https://swagger.io/docs/specification/data-models/dictionaries/
+                    # https://json-schema.org/understanding-json-schema/reference/object.html#pattern-properties
+                    properties:
+                      "/dev/mmcblk0":
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          CID_MID:
+                            type: integer
+                          CID_PNM:
+                            type: string
+                          CID_PRV_MAJOR:
+                            type: integer
+                          CID_PRV_MINOR:
+                            type: integer
+                          EXT_CSD_PRE_EOL_INFO:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A:
+                            type: integer
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B:
+                            type: integer

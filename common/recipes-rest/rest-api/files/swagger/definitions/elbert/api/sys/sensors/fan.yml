@@ -1,0 +1,49 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/fan  
+  title: Swagger doc for /api/sys/sensors/fan  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/fan: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  name: 
+                    type: string
+                  Adapter: 
+                    type: string
+                  present: 
+                    type: boolean
+                  FAN1: 
+                    type: string
+                  FAN2: 
+                    type: string
+                  FAN3: 
+                    type: string
+                  FAN4: 
+                    type: string
+                  FAN5: 
+                    type: string
+                  FAN_CARD_BOARD_TEMP: 
+                    type: string
+                  FAN_CARD_OUTLET_TEMP: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

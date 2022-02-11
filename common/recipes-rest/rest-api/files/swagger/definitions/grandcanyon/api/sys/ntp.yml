@@ -1,0 +1,47 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/ntp  
+  title: Swagger doc for /api/sys/ntp  
+  version: 1.0.0
+paths: 
+  /api/sys/ntp: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  stratum: 
+                    type: integer
+                    format: int32
+                  when: 
+                    type: integer
+                    format: int32
+                  poll: 
+                    type: integer
+                    format: int32
+                  reach: 
+                    type: integer
+                    format: int32
+                  delay: 
+                    type: number
+                  offset: 
+                    type: number
+                  jitter: 
+                    type: number
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

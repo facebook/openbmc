@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+# This is how we seed the shared-state cache.
+# It is a small hack to allow builds to finish within 50 minutes.
+# The S3 cache is built on an AWS EC2 instance in the fbopenbmc account.
+
+# Create destination directory.
+mkdir -p "${CACHE_DIR}"
+
+# Download sstate-cache (and register delete trap)
+function rm_sstate_cache {
+    rm -f sstate-cache.tar
+}
+trap rm_sstate_cache EXIT
+wget "${CACHE_URI}/sstate-cache.tar"
+
+# Unpack sstate-cache
+tar -xf sstate-cache.tar -C "${CACHE_DIR}"
+
+# Set up sstate in local.conf.
+echo "SSTATE_DIR = \"${CACHE_DIR}\"" >> ./build/conf/local.conf

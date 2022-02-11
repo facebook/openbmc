@@ -1,0 +1,154 @@
+{
+  "objectType": "PlatformService",
+  "objectName": "PlatformService",
+  "sensorServiceDBusName": "org.openbmc.SensorService",
+  "sensorServiceDBusPath": "/org/openbmc/SensorService",
+  "sensorServiceDBusInterface": "org.openbmc.SensorTree",
+  "fruServiceDBusName": "org.openbmc.FruService",
+  "fruServiceDBusPath": "/org/openbmc/FruService",
+  "fruServiceDBusInterface": "org.openbmc.FruService",
+  "childObjects": [
+    {
+      "objectType": "FRU",
+      "objectName": "mb",
+      "id": "1",
+      "hotPlugSupport": "0",
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+      },
+      "childObjects":[
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_INLET_TEMP",
+          "id": "0xA0",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004e/hwmon/hwmon*/temp1_input",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_OUTLET_TEMP",
+          "id": "0xA1",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.6/i2c-6/6-004f/hwmon/hwmon*/temp1_input",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_AVA_FTEMP",
+          "id": "0x80",
+          "unit": "C",
+          "access": {
+            "type": "AVA"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_C2_1_NVME_CTEMP",
+          "id": "0x82",
+          "unit": "C",
+          "access": {
+            "type": "NVME"
+          }
+        },
+        {
+          "objectType": "Sensor",
+          "objectName": "MB_SENSOR_VR_CPU0_VCCIN_TEMP",
+          "id": "0xB1",
+          "unit": "C",
+          "access": {
+            "type": "VR",
+            "busId": "0x5",
+            "loop": "0x60",
+            "reg": "0x29",
+            "slaveAddr": "0x90"
+          }
+        }
+      ]
+    },
+    {
+      "objectType": "FRU",
+      "objectName": "nic",
+      "id": "2",
+      "hotPlugSupport": "0",
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.3/i2c-3/3-0054/eeprom"
+      },
+      "childObjects":[
+        {
+          "objectType": "Sensor",
+          "objectName": "MEZZ_SENSOR_TEMP",
+          "id": "0xA2",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*/temp2_input",
+            "retry" : "3",
+            "unitDiv": "1000"
+          }
+        }
+      ]
+    },
+    {
+      "objectType": "FRU",
+      "objectName": "IntDetectExampleFRU",
+      "hotPlugSupport": "1",
+      "hotPlugDetectionMechanism": {
+        "type": "path",
+        "path": "/tmp/hpDetectViaPathTest"
+      },
+      "fruIdAccess": {
+        "type": "I2CEEPROM",
+        "eepromPath": "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+      },
+      "childObjects":[
+        {
+          "objectType": "Sensor",
+          "objectName": "HOT_PLUG_SENSOR1",
+          "id": "0xA2",
+          "unit": "C",
+          "access": {
+            "type": "path",
+            "path": "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*/temp2_input",
+            "retry" : "3",
+            "unitDiv": "1000"
+          }
+        },
+        {
+          "objectType": "FRU",
+          "objectName": "ExtDetectExampleFRU",
+          "hotPlugSupport": "1",
+          "hotPlugDetectionMechanism": {
+            "type": "external"
+          },
+          "fruIdAccess": {
+            "type": "I2CEEPROM",
+            "eepromPath": "/sys/devices/platform/ast-i2c.6/i2c-6/6-0054/eeprom"
+          },
+          "childObjects":[
+            {
+              "objectType": "Sensor",
+              "objectName": "HOT_PLUG_SENSOR2",
+              "id": "0xA2",
+              "unit": "C",
+              "access": {
+                "type": "path",
+                "path": "/sys/devices/platform/ast-i2c.8/i2c-8/8-001f/hwmon/hwmon*/temp2_input",
+                "retry" : "3",
+                "unitDiv": "1000"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

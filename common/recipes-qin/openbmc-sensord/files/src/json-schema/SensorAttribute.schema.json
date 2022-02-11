@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://org.openbmc/schemas/SensorAttribute.schema.json#",
+  "title": "SensorAttribute",
+  "description": "information of sensor attribute for sensor object in openbmc-sensord",
+  "definitions": {
+    "sensorAttribute": {
+      "allOf": [
+        {
+          "$ref": "Attribute.schema.json#/definitions/attribute"
+        }, {
+          "properties": {
+            "addr": {
+              "description": "Non-empty addr will set SensorAttribute accessible from sensorApi",
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "sensorAttrArray": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/sensorAttribute"}
+    }
+  },
+  "type": "object",
+  "allOf": [
+    {"$ref": "#/definitions/sensorAttribute"}
+  ]
+}

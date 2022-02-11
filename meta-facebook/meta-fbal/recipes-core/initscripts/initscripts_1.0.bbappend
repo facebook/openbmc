@@ -1,0 +1,1 @@
+PRIMARY_INTERFACE = "br0"

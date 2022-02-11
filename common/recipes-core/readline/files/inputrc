@@ -1,0 +1,7 @@
+# Don't clear the eighth bit or interpret it being set as an escape sequence.
+set input-meta on
+set output-meta on
+
+# Enable control-left and control-right.
+"\e[1;5C": forward-word
+"\e[1;5D": backward-word

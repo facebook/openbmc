@@ -1,0 +1,42 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+# Set NTP server from kv_store/ntp_server
+if [ -r /mnt/data/kv_store/ntp_server ]; then
+  NTP_SERVER=$(cat /mnt/data/kv_store/ntp_server)
+fi
+if [ ! -z "${NTP_SERVER}" ]; then
+  echo "server ${NTP_SERVER} iburst" >> /etc/ntp.conf
+fi
+unset NTP_SERVER
+
+# Copy over configured ssh auth principals and trusted CA.
+if [ -s /mnt/data/etc/ssh/auth_principals_root ]; then
+  cp /mnt/data/etc/ssh/auth_principals_root /etc/ssh/auth_principals_root
+fi
+if [ -s /mnt/data/etc/ssh/trusted_ca ]; then
+  cp /mnt/data/etc/ssh/trusted_ca /etc/ssh/trusted_ca
+fi
+
+# This script will be executed at rcS S04 level, which is right after mount /mnt/data
+# and before almost anything else.
+
+if [ -x /mnt/data/etc/rc.early ]; then
+   /mnt/data/etc/rc.early
+fi

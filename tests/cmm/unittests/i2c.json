@@ -1,0 +1,302 @@
+{
+  "tmp7513": {
+    "bus": "122",
+    "address": "0x49"
+  },
+  "tmp7512": {
+    "bus": "45",
+    "address": "0x49"
+  },
+  "tmp7511": {
+    "bus": "45",
+    "address": "0x48"
+  },
+  "tmp7510": {
+    "bus": "97",
+    "address": "0x48"
+  },
+  "tmp7517": {
+    "bus": "154",
+    "address": "0x48"
+  },
+  "tmp7516": {
+    "bus": "61",
+    "address": "0x4b"
+  },
+  "tmp7515": {
+    "bus": "61",
+    "address": "0x4a"
+  },
+  "tmp7514": {
+    "bus": "49",
+    "address": "0x48"
+  },
+  "tmp7535": {
+    "bus": "61",
+    "address": "0x49"
+  },
+  "tmp7534": {
+    "bus": "61",
+    "address": "0x48"
+  },
+  "tmp7519": {
+    "bus": "77",
+    "address": "0x4b"
+  },
+  "tmp7518": {
+    "bus": "162",
+    "address": "0x49"
+  },
+  "tmp7531": {
+    "bus": "90",
+    "address": "0x48"
+  },
+  "tmp7530": {
+    "bus": "122",
+    "address": "0x4a"
+  },
+  "tmp7533": {
+    "bus": "138",
+    "address": "0x4b"
+  },
+  "tmp7532": {
+    "bus": "90",
+    "address": "0x49"
+  },
+  "tmp7536": {
+    "bus": "74",
+    "address": "0x49"
+  },
+  "tmp7571": {
+    "bus": "58",
+    "address": "0x49"
+  },
+  "tmp7564": {
+    "bus": "122",
+    "address": "0x48"
+  },
+  "tmp7565": {
+    "bus": "106",
+    "address": "0x49"
+  },
+  "tmp7556": {
+    "bus": "145",
+    "address": "0x48"
+  },
+  "tmp7557": {
+    "bus": "50",
+    "address": "0x49"
+  },
+  "tmp7539": {
+    "bus": "74",
+    "address": "0x48"
+  },
+  "tmp7555": {
+    "bus": "90",
+    "address": "0x4b"
+  },
+  "tmp7554": {
+    "bus": "90",
+    "address": "0x4a"
+  },
+  "tmp7552": {
+    "bus": "42",
+    "address": "0x48"
+  },
+  "tmp7551": {
+    "bus": "42",
+    "address": "0x49"
+  },
+  "tmp7538": {
+    "bus": "45",
+    "address": "0x4b"
+  },
+  "tmp7567": {
+    "bus": "138",
+    "address": "0x48"
+  },
+  "tmp7541": {
+    "bus": "114",
+    "address": "0x49"
+  },
+  "tmp759": {
+    "bus": "74",
+    "address": "0x4b"
+  },
+  "tmp758": {
+    "bus": "161",
+    "address": "0x48"
+  },
+  "tmp7568": {
+    "bus": "77",
+    "address": "0x49"
+  },
+  "tmp753": {
+    "bus": "154",
+    "address": "0x4a"
+  },
+  "tmp752": {
+    "bus": "81",
+    "address": "0x48"
+  },
+  "tmp751": {
+    "bus": "98",
+    "address": "0x49"
+  },
+  "tmp7550": {
+    "bus": "93",
+    "address": "0x48"
+  },
+  "tmp757": {
+    "bus": "93",
+    "address": "0x4b"
+  },
+  "tmp756": {
+    "bus": "42",
+    "address": "0x4a"
+  },
+  "tmp755": {
+    "bus": "42",
+    "address": "0x4b"
+  },
+  "tmp754": {
+    "bus": "93",
+    "address": "0x4a"
+  },
+  "tmp7566": {
+    "bus": "74",
+    "address": "0x4a"
+  },
+  "fancpld59": {
+    "bus": "179",
+    "address": "0x33"
+  },
+  "tmp7528": {
+    "bus": "106",
+    "address": "0x4b"
+  },
+  "tmp7529": {
+    "bus": "122",
+    "address": "0x4b"
+  },
+  "tmp7562": {
+    "bus": "3",
+    "address": "0x48"
+  },
+  "tmp7563": {
+    "bus": "129",
+    "address": "0x48"
+  },
+  "tmp7560": {
+    "bus": "106",
+    "address": "0x48"
+  },
+  "tmp7561": {
+    "bus": "3",
+    "address": "0x49"
+  },
+  "tmp7522": {
+    "bus": "65",
+    "address": "0x48"
+  },
+  "tmp7523": {
+    "bus": "58",
+    "address": "0x4a"
+  },
+  "tmp7520": {
+    "bus": "77",
+    "address": "0x4a"
+  },
+  "fancpld53": {
+    "bus": "171",
+    "address": "0x33"
+  },
+  "tmp7526": {
+    "bus": "106",
+    "address": "0x4a"
+  },
+  "tmp7527": {
+    "bus": "82",
+    "address": "0x49"
+  },
+  "tmp7524": {
+    "bus": "58",
+    "address": "0x4b"
+  },
+  "tmp7558": {
+    "bus": "113",
+    "address": "0x48"
+  },
+  "tmp7548": {
+    "bus": "154",
+    "address": "0x49"
+  },
+  "pfe3000": {
+    "bus": "27",
+    "address": "0x10"
+  },
+  "tmp7544": {
+    "bus": "138",
+    "address": "0x4a"
+  },
+  "tmp7545": {
+    "bus": "66",
+    "address": "0x49"
+  },
+  "tmp7546": {
+    "bus": "130",
+    "address": "0x49"
+  },
+  "tmp7569": {
+    "bus": "77",
+    "address": "0x48"
+  },
+  "tmp7540": {
+    "bus": "45",
+    "address": "0x4a"
+  },
+  "fancpld": {
+    "bus": "187",
+    "address": "0x33"
+  },
+  "tmp7543": {
+    "bus": "146",
+    "address": "0x49"
+  },
+  "fancpld47": {
+    "bus": "195",
+    "address": "0x33"
+  },
+  "tmp75": {
+    "bus": "154",
+    "address": "0x4b"
+  },
+  "tmp7570": {
+    "bus": "58",
+    "address": "0x48"
+  },
+  "pfe300025": {
+    "bus": "26",
+    "address": "0x10"
+  },
+  "tmp7537": {
+    "bus": "138",
+    "address": "0x49"
+  },
+  "pfe300021": {
+    "bus": "25",
+    "address": "0x10"
+  },
+  "pfe300042": {
+    "bus": "24",
+    "address": "0x10"
+  },
+  "tmp7549": {
+    "bus": "93",
+    "address": "0x49"
+  },
+  "presence": {
+    "bus": "13",
+    "address": "0x3e"
+  }
+}

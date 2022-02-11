@@ -1,0 +1,21 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/psu_update  
+  title: Swagger doc for /api/sys/psu_update  
+  version: 1.0.0
+paths: 
+  /api/sys/psu_update: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              jobs: 
+                type: array
+                items: 
+                  type: string
+            

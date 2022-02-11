@@ -1,0 +1,172 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+DEVMEM=/sbin/devmem
+AST_POR_FLAG=/tmp/ast_por
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+ASPEEDCHIP="aspeed-gpio"
+I2CIOEXPCHIP="i2c-io-expander"
+
+devmem_set_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val | (0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val & ~(0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+scu_addr() {
+    echo $((0x1E6E2000 + 0x$1))
+}
+
+#LPC Controller, Base Address = 0x1E78_9000
+lpc_addr() {
+    echo $((0x1E789000 + 0x$1))
+}
+
+#GPIO Controller, Base Address = 0x1E78_0000
+gpio_addr() {
+    echo $((0x1E780000 + 0x$1))
+}
+
+gpio_export() {
+    local shadow name
+    shadow=$1
+    name=$2
+    $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
+}
+
+pca9555_gpio_export() {
+    local shadow offset
+    shadow=$1
+    offset=$2
+    $GPIOCLI_CMD export --chip $I2CIOEXPCHIP --pin-offset $offset --shadow $shadow
+}
+
+gpio_set() {
+    local shadow val
+    shadow=$1
+    val=$2
+    $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+    local shadow
+    shadow=$1
+    $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+get_ast_gpio_offset() {
+    local name
+    name=$1
+    $GPIOCLI_CMD map-name-to-offset --chip $ASPEEDCHIP --pin-name $name | awk -F= '{print $2}'
+}
+
+# Store and Clear Power On Reset flag (SCU3C[0])
+store_clear_por()
+{
+  local val
+
+  if [ -f $AST_POR_FLAG ]; then
+    return
+  fi
+
+  # Read the Power On Reset flag SCU3C[0] to determine if this boot is AC on or not
+  val=$(devmem 0x1e6e203c 2>/dev/null)
+  if [ "$((val & 0x1))" == "1" ]; then
+      # Power ON Reset
+      echo 1 > $AST_POR_FLAG
+  else
+      echo 0 > $AST_POR_FLAG
+  fi
+
+  # Clear Power On Reset bit
+  devmem 0x1e6e203c 32 $((val & 0xfffffffe)) 2>/dev/null
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  store_clear_por
+  /bin/cat $AST_POR_FLAG
+}
+
+# Check to see if server is present in given slot or not
+is_server_prsnt() {
+  prsnt=$(gpio_get ML_INS_N)
+  if [ $prsnt == "0" ]; then
+    # Server is prsent
+    echo 1
+  else                                       
+    echo 0
+  fi
+}
+
+fbttn_is_server_on() {
+    local curr_pwr_cpu
+    curr_pwr_cpu=$(python -c 'import sys; sys.path.append("/usr/local/fbpackages/utils"); import power_util; print power_util.get_pwr_cpu()')
+    if [ $curr_pwr_cpu == "1" ]; then
+        echo 1
+    else
+        echo 0
+    fi
+}
+
+gpio_tolerance_fun() {
+    local gpio def_val
+    offset=0
+    gpio=$(get_ast_gpio_offset $2)
+    offset=$((${gpio}/32))
+    case "${offset}" in
+    "0" ) 
+    offset=0x1e78001c
+    ;;
+    "1" ) 
+    offset=0x1e78003c
+    ;;
+    "2" ) 
+    offset=0x1e7800ac
+    ;;
+    "3" ) 
+    offset=0x1e7800fc
+    ;;
+    "4" ) 
+    offset=0x1e78012c
+    ;;
+    "5" ) 
+    offset=0x1e78015c
+    ;;
+    "6" ) 
+    offset=0x1e78018c
+    ;;
+    "7" ) 
+    offset=0x1e7801bc
+    ;;
+    esac
+    set_bit=$((${gpio}%32))
+    devmem_set_bit $offset $set_bit
+    def_val=$(gpio_get $1)
+    if [ $def_val == 1 ]; then
+    gpio_set $1 1
+    else
+    gpio_set $1 0
+    fi
+}
+
+is_bic_ready() {
+  local ready
+  ready=$(gpio_get BIC_READY_N)
+  if [ $ready == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+

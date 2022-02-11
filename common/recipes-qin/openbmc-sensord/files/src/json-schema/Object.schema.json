@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://org.openbmc/schemas/Object.schema.json#",
+  "title": "Object",
+  "description": "object for openbmc-sensord",
+  "definitions": {
+    "genericObject": {
+      "type": "object",
+      "properties": {
+        "objectName": {"type": "string"},
+        "objectType": {"enum": ["Generic"]},
+        "attributes": {"$ref": "Attribute.schema.json#/definitions/attrArray"},
+        "childObjects": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {"$ref": "#/definitions/genericObject"},
+              {"$ref": "SensorDevice.schema.json#/definitions/sensorDevice"}
+            ]
+          }
+        }
+      },
+      "required": ["objectName", "objectType"]
+    }
+  },
+  "type": "object",
+  "allOf": [
+    {"$ref": "SensorDevice.schema.json#/definitions/sensorDevice"}
+  ]
+}

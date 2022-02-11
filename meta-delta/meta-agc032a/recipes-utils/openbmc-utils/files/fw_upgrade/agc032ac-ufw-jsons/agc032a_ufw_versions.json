@@ -1,0 +1,26 @@
+{
+    "scm" : {
+        "filename"    : "scm_cpld.jed",
+        "version" : "4.0",
+        "hash"    : "sha1sum",
+        "hash_value" : "5ddba9cbf023041edb51d4d6804c3f5e39717b0a"
+    },
+    "smb" : {
+        "filename"    : "smb_cpld.jed",
+        "version" : "2.2",
+        "hash"    : "sha1sum",
+        "hash_value" : "84c87ffc31c9b61953d59e6b2190a4c74e45a155"
+    },
+    "pwr" : {
+        "filename"    : "pwr_cpld.jed",
+        "version" : "2.2",
+        "hash"    : "sha1sum",
+        "hash_value" : "37a0697473e5ac551d2c8a8c2211df5e96509432"
+    },
+    "fpga" : {
+        "filename"    : "w400_fpga.bit",
+        "version" : "v0.56",
+        "hash"    : "sha1sum",
+        "hash_value" : "98eba83b19716cb013da0b9de538ae521b35c066"
+    }
+}

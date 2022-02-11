@@ -1,0 +1,26 @@
+#!/bin/sh
+
+EMMC_MOUNT_POINT="/mnt/data1"
+LOG_DIR="$EMMC_MOUNT_POINT/console"
+LOG_CNT="$LOG_DIR/console_cnt"
+MAX_CNT=10
+
+if [ -d $EMMC_MOUNT_POINT ]; then
+    [ -d $LOG_DIR ] || mkdir -p $LOG_DIR
+    [ -e $LOG_CNT ] || touch $LOG_CNT
+    cnt=$(cat $LOG_CNT)
+
+    if [ "$cnt" == "$MAX_CNT" ]; then
+        cnt=1
+    else
+        cnt=$((${cnt} + 1))
+    fi
+
+    echo $cnt > $LOG_CNT
+    mv /var/log/console.log /var/log/console.log.0
+    touch /var/log/console.log
+    cp /var/log/console.log.0 $LOG_DIR/console.log.$cnt
+else
+    mv /var/log/console.log /var/log/console.log.0
+    touch /var/log/console.log
+fi

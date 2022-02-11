@@ -1,0 +1,7 @@
+# This recipe overrides lm_sensors such that sensord is not compiled.
+# Sensord depends on rrdtool, gobject-introspection, libxml2, etc. and also tries
+# to pull in lighttpd.
+
+# gobject-introspection is failing building with python3.5, and libxml2 has problems
+# as well. Until these problems are solved, we compile without sensord in order to
+# save 3.5MB+ by excluding python2 and ?KB+ excluding sensord and its dependencies.

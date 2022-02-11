@@ -1,0 +1,6 @@
+K19,GPIOB0,Out,TPM_RST_N,Signal to reset TPM
+L19,GPIOB1,In,TPM_INTR,TPM interrupt
+K18,GPIOB3,Out,BMC_eMMC_RST_N,Signal to reset eMMC flash
+T2,GPIOL0_NCTS1,Out,BIOS_SEL,Enable SPI access to BIOS flash
+U1,GPIOL2_NDSR1,Out,SUP_PWR_ON,Enable CPU Power
+U2,GPIOL3_VPIHS_NRI1,Out,CPLD_JTAG_SEL_L,CPLD JTAG Deselect

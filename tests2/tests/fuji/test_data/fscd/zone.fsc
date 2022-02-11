@@ -1,0 +1,5 @@
+max([
+  linear_inlet(fuji:inlet_temp),
+  linear_switch(fuji:switch_temp),
+  linear_userver(fuji:userver_temp)
+])

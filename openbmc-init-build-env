@@ -1,0 +1,159 @@
+#!/bin/bash
+
+if [ -n "$DISTRO_OVERRIDE" ]; then
+  echo "WARNING: distro is set to ${DISTRO_OVERRIDE} based on DISTRO_OVERRIDE env variable"
+elif [ -z "$DISTRO_DEFAULT" ]; then
+  DISTRO_DEFAULT=zeus
+else
+  echo "WARNING: default distro is set to ${DISTRO_DEFAULT} based on DISTRO_DEFAULT env variable"
+fi
+
+declare -a PLAT_DISTRO_OVERRIDES
+# Add overrides here on a per-platform basis.
+PLAT_DISTRO_OVERRIDES=(
+# master / rolling-release platforms
+  meta-bletchley:lf-master
+# hardknott platforms (latest)
+#   -- none --
+# dunfell platforms (pending upgrade)
+  meta-clearcreek:lf-dunfell
+  meta-cloudripper:lf-dunfell
+  meta-cmm:lf-dunfell
+  meta-elbert:lf-dunfell
+  meta-fbal:lf-dunfell
+  meta-fbep:lf-dunfell
+  meta-fbsp:lf-dunfell
+  meta-fby2-nd:lf-dunfell
+  meta-fby3:lf-dunfell
+  meta-fuji:lf-dunfell
+  meta-grandcanyon:lf-dunfell
+  meta-minipack:lf-dunfell
+  meta-qemux86:lf-dunfell
+  meta-wedge400:lf-dunfell
+  meta-agc032a:lf-dunfell
+# zeus platforms (pending upgrade)
+  meta-fby35:zeus
+# Legacy platforms pending kernel upgrade
+  meta-fby2-gpv2:rocko
+  meta-fby2:rocko
+  meta-yosemite:rocko
+  meta-fbtp:rocko
+  meta-fbttn:rocko
+  meta-wedge:rocko
+  meta-minilaketb:rocko
+  meta-yamp:rocko
+  meta-lightning:rocko
+  meta-wedge100:rocko
+  meta-galaxy100:rocko
+)
+
+platform="$1"
+if [ -z "$DISTRO_OVERRIDE" ]; then
+  _distro="${DISTRO_DEFAULT}"
+else
+  _distro="${DISTRO_OVERRIDE}"
+fi
+
+if [ -n "$BASH_SOURCE" ]; then
+    THIS_SCRIPT=$BASH_SOURCE
+elif [ -n "$ZSH_NAME" ]; then
+    THIS_SCRIPT=$0
+else
+    THIS_SCRIPT="$(pwd)/openbmc-init-build-env"
+fi
+
+if [ -z "$ZSH_NAME" ] && [ "$0" = "$THIS_SCRIPT" ]; then
+    echo "Error: This script needs to be sourced. Please run as '. $THIS_SCRIPT $*'"
+    exit 1
+fi
+unset THIS_SCRIPT
+
+# This script relies on bash-like word splitting, so enable it in zsh.
+if [ -n "$ZSH_NAME" ]; then
+    setopt sh_word_split
+fi
+
+# Make sure specific BSP is set
+if [ -z "$TEMPLATECONF" ]; then
+    if [ -z "$1" ]; then
+        echo "A specific BSP must be provided:"
+        echo "e.g.:"
+        echo "    . openbmc-init-build-env meta-facebook/meta-wedge"
+        return 1
+    fi
+    if [ -d "$(pwd)/$1" ]; then
+        TEMPLATECONF="$(pwd)/$1/conf"
+    elif [ -d "$(pwd)/meta-$1" ]; then
+        TEMPLATECONF="$(pwd)/meta-$1/conf"
+    else
+        machines=$(find . -maxdepth 6 -path "*/machine/*" '(' -type f -o -type l ')' )
+        for md in ${machines}; do
+            machine=$(basename "$md" | sed 's/\.conf//')
+            meta=$(dirname "$(dirname "$md")")
+            meta=$(echo "$meta" | sed 's/\.\///')
+            if [ "x$machine" = "x$platform" ]; then
+                TEMPLATECONF="$(pwd)/$meta"
+                platform=$(basename "$(dirname "$meta")")
+                break
+            fi
+        done
+        if [ -z "$TEMPLATECONF" ]; then
+            echo "Neither $(pwd)/$1 nor $(pwd)/meta-$1 exists"
+            return 1
+        fi
+    fi
+    export TEMPLATECONF
+    shift 1
+fi
+
+# If user is not overriding the distro, then see
+# if there are platform overrides.
+if [ -z "$DISTRO_OVERRIDE" ]; then
+    for override in ${PLAT_DISTRO_OVERRIDES[*]}; do
+        override_plat=${override%%:*}
+        override_distro=${override##*:}
+        if [ -z "${platform/${override_plat}/}" ]; then
+            # override happens
+            _distro="${override_distro}"
+            break
+        fi
+    done
+fi
+
+unset DISTRO_DEFAULT PLAT_DISTRO_OVERRIDES DISTRO_OVERRIDE
+unset override override_plat override_distro
+
+echo "Init build environment for platform '${platform}' with distro ${_distro}..."
+unset platform
+
+# Sourcing the Yocto script causes the pwd to change to the build directory.
+# Keep it around so that we can source scripts out of our tree afterward.
+REPO_ROOT="$(pwd)"
+
+if [ -d "yocto/${_distro}/workaround-bin/" ]; then
+    PATH="$(realpath "yocto/${_distro}/workaround-bin"):$PATH"
+fi
+if [ -d "facebook/workaround-bin" ]; then
+  PATH="$(realpath facebook/workaround-bin):$PATH"
+fi
+
+# Old distros required going into the poky directory to find the poky metas,
+# but lf-based distros have them in the yocto root.  Some of the meta-phosphor
+# recipes get confused if COREROOT is one level deeper.
+case ${_distro} in
+    lf-*)
+        _poky=""
+        ;;
+
+    *)
+        _poky="/poky"
+        ;;
+esac
+
+# shellcheck disable=SC1090
+# distro can vary, so we can't use a shellcheck directive to point to next
+. "yocto/${_distro}${_poky}/oe-init-build-env" "$@"
+
+if [ -d "${REPO_ROOT}/facebook" ]; then
+  "${REPO_ROOT}/facebook/facebookify.sh" "$(pwd)"
+fi

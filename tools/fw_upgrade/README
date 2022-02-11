@@ -1,0 +1,39 @@
+Introduction:
+-------------------------------------------------------------------------------
+fw_upgrader tool provides a utility to upgrade Firmwares from BMC. This tool
+is configuration driven defined in jsons.
+
+
+What is needed for upgrade?
+-------------------------------------------------------------------------------
+1) Upgradable Firmwares
+2) Jsons that define the Firmware:
+fw_upgrader is designed to accept 2 jsons of the filenames:
+
+> *"_fw_versions.json"
+- Json file that defines the FW version and FW files and its hash itself.
+> *"_fw_manifest.json"
+- Json that defines the orchestration of 1) above. Example the commands that can
+pull versions and upgrade form BMC for a FW
+
+
+About Jsons:
+-------------------------------------------------------------------------------
+Both of the 2 json are well-defined and fw-upgrade tool assumes they comply
+with json schemas defined in
+> /tools/fw_upgrade/fw_manifest_schema.json
+> /tools/fw_upgrade/fw_version_schema.json
+
+How to generate jsons:
+-------------------------------------------------------------------------------
+Every platform can have multiple versions and combinations of the FW versions
+itself. Create the jsons based on the schema defined here. Examples:
+meta-facebook/meta-minipack/recipes-utils/openbmc-utils/files/fw-upgrade/minipack_fw_manifest.json
+meta-facebook/meta-minipack/recipes-utils/openbmc-utils/files/fw-upgrade/minipack_fw_versions.json.json
+
+Usage:
+-------------------------------------------------------------------------------
+1) Copy all the *.py files under tools/fw_upgrade to BMC.
+2) Download all the FW binaries and jsons to the same path
+3) Launch the script using:
+python fw_main.py --help

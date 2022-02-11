@@ -1,0 +1,967 @@
+swagger: "2.0"
+info:
+  description: Swagger doc for /api/sys/sensors
+  title: Swagger doc for /api/sys/sensors
+  version: 1.0.0
+paths:
+  /api/sys/sensors:
+    get:
+      produces: [application/json]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Resources:
+                type: array
+                items:
+                  type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Information:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    name:
+                      type: string
+                      pattern: "^[^ ]+$"
+                    Adapter:
+                      type: string
+                      pattern: "^[^ ]+$"
+                    PIM7_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_STBY_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    P3V3_MB_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_OUTLET_LOCAL_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_TEMP3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    P12V_MB_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_STBY_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_DIE_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_DIE_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN8_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_FAN_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_12V_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_12V_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SOC_DIMMA0_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    1V05MIX_VR_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_T_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PCH_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_STBY_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_12V_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VDDR_VR_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_CORE_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_STBY_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_CORE_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_OUTLET_REMOTE_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_IN_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_STBY_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_SERDES_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_12V_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    P5V_STBY_MB_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    P1V05_PCH_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_12V_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_SERDES_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_IN_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_B_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PDB_R_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_IN_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SOC_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN5_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_12V_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN8_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_T_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PDB_R_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VCCIN_VR_OUT_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_TEMP3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN3_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_STBY_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_IN_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN1_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    INA230_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_IN_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VCCIN_VR_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SYSTEM_AIRFLOW:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    1V05MIX_VR_OUT_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN4_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_12V_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_IN_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_12V_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_12V_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN7_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_SERDES_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PVDDR_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_IN_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN3_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    1V05MIX_VR_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VDDR_VR_OUT_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_B_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN6_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_12V_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    P3V3_STBY_MB_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT16:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SOC_PACKAGE_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN2_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_STBY_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN7_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_TEMP3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_INLET_REMOTE_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_T_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_12V_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT12:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SMB_TEMP3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SMB_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SMB_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_STBY_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN4_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SMB_TEMP5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SMB_TEMP4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_IN_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    INA230_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_STBY_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    TH3_CORE_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_FAN_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT6:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT8:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    MB_OUTLET_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_IN_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_IN_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN5_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN1_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_STBY_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_TEMP3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_B_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_HSC_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VDDR_VR_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+
+                    PSU4_12V_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_QSFP_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_T_HSC_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_FAN_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SOC_TJMAX_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SOC_THERM_MARGIN_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VDDR_VR_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    MB_INLET_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PDB_L_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PDB_L_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN2_REAR_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT11:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT15:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM1_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_IN_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU3_STBY_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    P1V05_MIX_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_B_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_B_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SOC_DIMMB0_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU2_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_MAX34461_VOLT3:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VCCIN_VR_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_MAX34461_VOLT7:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    VCCIN_VR_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_MAX34461_VOLT14:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM7_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    SCM_INLET_LOCAL_TEMP:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FCM_T_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT4:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PV_BAT_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM2_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM6_HSC_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_STBY_POWER:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    FAN6_FRONT_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT5:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM4_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM8_MAX34461_VOLT13:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU1_FAN_SPEED:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT10:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PSU4_IN_VOLT:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    1V05MIX_VR_CURR:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_TEMP1:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM3_MAX34461_VOLT9:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"
+                    PIM5_TEMP2:
+                      type: string
+                      pattern: "^[0-9]+([.][0-9]+)?$"

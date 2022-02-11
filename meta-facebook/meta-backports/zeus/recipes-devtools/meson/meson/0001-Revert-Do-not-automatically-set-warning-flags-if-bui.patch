@@ -1,0 +1,75 @@
+From d880f995ea564904c9d236f83cafadae185e92b6 Mon Sep 17 00:00:00 2001
+From: Eli Schwartz <eschwartz@archlinux.org>
+Date: Wed, 2 Sep 2020 17:46:44 -0400
+Subject: [PATCH] Revert "Do not automatically set warning flags if buildtype
+ is 'plain'"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This reverts commit 8ee1c9a07a3a35e3ed262fbc358fd86c257a966e.
+
+No rationale was given for this change prior to merging. After the fact
+it was described as desired by distro packagers, however as a distro
+packager I believe this commit hurts me.
+
+From a distro packaging perspective, we primarily care about one thing:
+previously building code should still build. Hence, -Werror is bad for
+our use case. meson handles this via -D werror which is different from
+-D warning_level and as long as the former is disabled, warnings in the
+build do not cause harm (but may attract review attention for upstream
+to fix).
+
+buildtype is a completely unrelated concern, and the intention for
+=plain is to disable debug or optimization settings that result in
+codegen differences and thus different built artifacts. This must not
+happen in distro builds because the *distributed programs* should
+conform to policy settings.
+
+Unfortunately, completely disabling warnings happens silently, and
+cannot be overridden even if you really, really believe you know what
+you're doing. It is thematically broken, since use of
+add_project_arguments() to add more -W flags is not likewise ignored.
+But if you try to add -Wall in that manner, meson will lecture you to
+use warning_level which you cannot do. And if you have custom warning
+flags which depend on options enabled by judicious use of -Wall via
+default_options: 'warning_level=1', then you end up with generated
+warnings complaining about your command line rather than your code, such
+as:
+
+cc1: warning: ‘-Wformat-y2k’ ignored without ‘-Wformat’ [-Wformat-y2k]
+cc1: warning: ‘-Wformat-extra-args’ ignored without ‘-Wformat’ [-Wformat-extra-args]
+cc1: warning: ‘-Wformat-zero-length’ ignored without ‘-Wformat’ [-Wformat-zero-length]
+cc1: warning: ‘-Wformat-contains-nul’ ignored without ‘-Wformat’ [-Wformat-contains-nul]
+cc1: warning: ‘-Wformat-security’ ignored without ‘-Wformat’ [-Wformat-security]
+
+which then break the build with -Werror.
+
+Throughout all this, a buildtype of "plain" does *not* disable -D
+werror=true, which is the part where distro builds actually break down!
+
+Users who both wish to disable debug/optimization codegen, *and* disable
+warning commentary, are encouraged to do so by doing both, not by doing
+one and having the other be assumed.
+
+Fixes #7399
+---
+ mesonbuild/backend/backends.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mesonbuild/backend/backends.py b/mesonbuild/backend/backends.py
+index bc82d158b..df6dc8f7f 100644
+--- a/mesonbuild/backend/backends.py
++++ b/mesonbuild/backend/backends.py
+@@ -670,7 +670,7 @@ class Backend:
+         # we weren't explicitly asked to not emit warnings (for Vala, f.ex)
+         if no_warn_args:
+             commands += compiler.get_no_warn_args()
+-        elif self.get_option_for_target('buildtype', target) != 'plain':
++        else:
+             commands += compiler.get_warn_args(self.get_option_for_target('warning_level', target))
+         # Add -Werror if werror=true is set in the build options set on the
+         # command-line or default_options inside project(). This only sets the
+-- 
+2.26.2
+

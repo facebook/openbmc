@@ -1,0 +1,291 @@
+#!/bin/bash
+
+. /usr/local/bin/openbmc-utils.sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+FAB_IMAGE="none"
+LC_IMAGE="none"
+SCM_IMAGE="none"
+IP="none"
+refresh_flag="none"
+auto_flag="no"
+
+lc_l=0 #right LC
+((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
+((right=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
+if [ $val -lt 8 ] && [ $right -eq 0 ]; then
+	lc_l=1 #left LC
+elif [ $val -ge 8 ]; then
+	lc_l=2 #FAB
+fi
+function usage(){
+	echo "cpldupgrade [-f <filename>]  [-l <filename>] [-s <filename>] [-a] "
+	echo "cpldupgrade -r <LC/FAB/SCM>"
+	echo "-f [cpld image name]   upgrade FAB CPLD"
+	echo "-l [cpld image name]   upgrade LC CPLD"
+	echo "-s [cpld image name]   upgrade SCM CPLD"
+	echo "-r [board name: LC FAB SCM]  refresh CPLD"
+	echo "-a refresh CPLD automatically"
+}
+
+function get_image_or_fail() {
+        ip="$1"
+        image="$2"
+
+        if [ "${ip}" != "none" ]; then
+                tftp -g -r "${image}" "${ip}"
+                if [ $? = 0 ]; then
+                        exit 1
+                fi
+        fi
+        if [ ! -f "${image}" ]; then
+                exit 1
+        fi
+}
+
+
+notify_lc_r() {
+	i=0
+	i2cset -f -y 12 0x31 0x28 0x05 2> /dev/null
+	while [ $i -lt 10 ]
+	do
+		tmp=$(i2cget -f -y 12 0x31 0x28 2> /dev/null)
+		val=$((tmp & 0x70))
+		if [ $val -eq $((0x50)) ]; then
+			i2cset -f -y 12 0x31 0x28 0x0 2> /dev/null
+			return 0
+		fi
+		i=$((i + 1))
+		usleep 500000
+	done
+	i2cset -f -y 12 0x31 0x28 0x0 2> /dev/null
+
+	return 1
+}
+if [ $# -lt 2 ]; then
+	usage
+	exit 1
+fi
+
+while getopts "f:l:s:I:r:a" arg
+do
+    case $arg in
+        f)
+			FAB_IMAGE=$OPTARG
+			if [ $lc_l -ne 2 ]; then
+				echo "This is not FAB card!"
+				exit 1
+			fi
+			;;
+        l)
+			LC_IMAGE=$OPTARG
+			if [ $lc_l -ne 0 ] && [ $lc_l -ne 1 ]; then
+				echo "This is not LC card!"
+				exit 1
+			fi
+			;;
+        s)
+			SCM_IMAGE=$OPTARG
+			;;
+		I)
+			IP=$OPTARG
+			#echo "tftp server IP: ${IP}"
+			;;
+		r)
+			refresh_flag=$OPTARG
+			;;
+		a)
+			auto_flag="yes"
+			;;
+        ?)
+			echo "unknown argument"
+			exit 1
+		;;
+    esac
+done
+
+
+shift $((OPTIND-1))
+
+
+if [ "${FAB_IMAGE}" == "none" ] && [ "${LC_IMAGE}" == "none" ] && [ "${SCM_IMAGE}" == "none" ] && [ "${refresh_flag}" == "none" ]; then
+	echo "please input image name"
+	exit 1
+fi
+
+if [ "${SCM_IMAGE}" != "none" ]; then
+	if [ $lc_l -eq 0 ]; then
+		echo "Please run the command in left of LC!"
+		exit 1
+	fi
+	if ! galaxy100_scm_is_present; then
+		echo "SCM card is not present!"
+		exit 1
+	fi
+
+        get_image_or_fail "$IP" "${SCM_IMAGE}"
+
+	echo "upgrade SCM board CPLD: ${SCM_IMAGE}"
+	ispvm scmcpld "${SCM_IMAGE}"
+	if [ $? -eq 0 ]; then
+		exit 1
+	fi
+	sleep 3
+	if [ ${auto_flag} == "yes" ];then
+		#disable the I2C buffer to EC first
+		i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
+		sleep 1
+
+		#power off COMe
+		#echo "Power off COMe, about 17s......"
+		#i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+		#sleep 2
+		#i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+		#sleep 15
+
+		#refresh CPLD
+		i2cset -y -f 0 0x10 0xd9 c 2> /dev/null
+		sleep 5
+
+		if [ $lc_l -eq 1 ]; then
+			echo -n "Notify right of LC to power on COMe......"
+			if notify_lc_r; then
+				echo "Done"
+			else
+				echo "Failed"
+			fi
+		fi
+		echo "Power off TH..."
+		i2cset -f -y 12 0x31 0x10 0xfd
+		echo -n "Power on COMe after 15s, please wait..."
+		sleep 15
+		i2cset -f -y 12 0x31 0x10 0xff
+		restore_us_com
+		echo "Done"
+	fi
+fi
+
+if [ "${FAB_IMAGE}" != "none" ]; then
+        get_image_or_fail "$IP" "${FAB_IMAGE}"
+	echo "upgrade FAB board CPLD: ${FAB_IMAGE}"
+	val=$(i2cget -f -y 12 0x31 0x10 2> /dev/null)
+	if [ "$val" = "0xff" ]; then
+		ispvm syscpld "${FAB_IMAGE}"
+		if [ $? -eq 0 ]; then
+			exit 1
+		fi
+	else
+		echo "TH power rail is power off, please power on it firstly"
+		exit 1
+	fi
+	if [ ${auto_flag} == "yes" ];then
+		sleep 3
+		if galaxy100_scm_is_present; then
+			#power off COMe
+			echo "Power off COMe, about 17s......"
+			i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+			sleep 2
+			i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+			sleep 15
+		fi
+		echo "Refresh CPLD FAB"
+		i2cset -y -f 12 0x31 0x10 0xfe 2> /dev/null
+		exit 0
+	fi
+fi
+
+if [ "${LC_IMAGE}" != "none" ]; then
+        get_image_or_fail "$IP" "${LC_IMAGE}"
+	echo "upgrade LC board CPLD: ${LC_IMAGE}"
+	val=$(i2cget -f -y 12 0x31 0x10 2> /dev/null)
+	if [ "$val" = "0xff" ]; then
+		ispvm syscpld "${LC_IMAGE}"
+		if [ $? -eq 0 ]; then
+			exit 1
+		fi
+	else
+		echo "TH power rail is power off, please power on it firstly"
+		exit 1
+	fi
+	if [ ${auto_flag} == "yes" ];then
+		sleep 3
+		if galaxy100_scm_is_present; then
+			#power off COMe
+			echo "Power off COMe, about 17s......"
+			i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+			sleep 2
+			i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+			sleep 15
+		fi
+		echo "Refresh CPLD LC"
+		i2cset -y -f 12 0x31 0x10 0xfe 2> /dev/null
+		exit 0
+	fi
+fi
+
+if [ "${refresh_flag}" == "FAB" ] || [ "${refresh_flag}" == "LC" ]; then
+	if galaxy100_scm_is_present; then
+		#power off COMe
+		echo "Power off COMe, about 17s......"
+		i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+		sleep 2
+		i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+		sleep 15
+	fi
+	echo "Refresh CPLD ${refresh_flag}"
+	i2cset -y -f 12 0x31 0x10 0xfe 2> /dev/null
+	exit 0
+elif [ "${refresh_flag}" == "SCM" ]; then
+	if [ $lc_l -eq 0 ]; then
+		echo "Please run the command in left of LC!"
+		exit 1
+	fi
+	if ! galaxy100_scm_is_present; then
+		echo "SCM card is not present!"
+		exit 1
+	fi
+	echo "Refresh CPLD ${refresh_flag}"
+	#disable the I2C buffer to EC first
+	i2cset -f -y 0 0x3e 0x18 0x07 2> /dev/null
+	sleep 1
+	#power off COMe
+	#echo "Power off COMe, about 17s......"
+	#i2cset -f -y 0 0x3e 0x10 0xfd 2> /dev/null
+	#sleep 2
+	#i2cset -f -y 0 0x3e 0x10 0xfe 2> /dev/null
+	#sleep 15
+
+	#reset TH
+	#echo "Reset TH......"
+	#i2cset -f -y 12 0x31 0x12 0xf2 2> /dev/null
+	#sleep 1
+	#i2cset -f -y 12 0x31 0x12 0xf3 2> /dev/null
+
+	#refresh CPLD
+	i2cset -y -f 0 0x10 0xd9 c 2> /dev/null
+	sleep 5
+
+	if [ $lc_l -eq 1 ]; then
+		echo -n "Notify right of LC to power on COMe......"
+		if notify_lc_r; then
+			echo "Done"
+		else
+			echo "Failed"
+		fi
+	fi
+	echo "Power off TH..."
+	i2cset -f -y 12 0x31 0x10 0xfd
+	echo -n "Power on COMe after 15s, please wait..."
+	sleep 15
+	i2cset -f -y 12 0x31 0x10 0xff
+	restore_us_com
+	echo "Done"
+	exit 0
+elif [ "${refresh_flag}" == "none" ] && [ "${auto_flag}" == "no" ]; then
+	echo "Warning! You need refresh CPLD to enable after upgrade CPLD"
+fi
+
+
+
+exit 0

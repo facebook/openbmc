@@ -1,0 +1,351 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+
+DEVMEM=/sbin/devmem
+
+FSCD_END_SLED_OUT=0
+FSCD_END_INVALID_CONFIG=1
+
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+ASPEEDCHIP="aspeed-gpio"
+
+# Get kernel version
+get_kernel_ver() {
+  if [ -f /tmp/kernel_ver ]; then
+    cat /tmp/kernel_ver
+  else
+    ver=$(uname -r)
+    echo ${ver:0:1} > /tmp/kernel_ver
+    cat /tmp/kernel_ver
+  fi
+}
+
+devmem_set_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val | (0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_bit() {
+    local addr
+    local val
+    addr=$1
+    val=$($DEVMEM $addr)
+    val=$((val & ~(0x1 << $2)))
+    $DEVMEM $addr 32 $val
+}
+
+devmem_clear_scu70_bit() {
+    local val
+    val=$((0x1 << $1))
+    $DEVMEM 0x1E6E207C 32 $val
+}
+
+scu_addr() {
+    echo $((0x1E6E2000 + 0x$1))
+}
+
+uart1_addr() {
+    echo $((0x1E783000 + 0x$1))
+}
+
+uart3_addr() {
+    echo $((0x1E78E000 + 0x$1))
+}
+
+#LPC Controller, Base Address = 0x1E78_9000
+lpc_addr() {
+    echo $((0x1E789000 + 0x$1))
+}
+
+#GPIO Controller, Base Address = 0x1E78_0000
+gpio_addr() {
+    echo $((0x1E780000 + 0x$1))
+}
+
+GPIODIR="/sys/class/gpio"
+GPIOEXPORT="$GPIODIR/export"
+
+gpio_dir() {
+    echo "/tmp/gpionames/$1"
+}
+
+gpio_export() {
+    local name shadow
+    shadow=$1
+    name=$2
+    dir=$(gpio_dir $shadow)
+    if [ ! -d ${dir} ]; then
+        $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name $name --shadow $shadow
+    fi
+}
+
+gpio_set() {
+    local shadow val
+    shadow=$1
+    name=$2
+    val=$3
+    dir=$(gpio_dir $shadow)
+    if [ ! -d ${dir} ]; then
+        $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name "GPIO"$name --shadow $shadow
+    fi
+    $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+    shadow=$1
+    name=$2
+    dir=$(gpio_dir $shadow)
+    if [ ! -d ${dir} ]; then
+        $GPIOCLI_CMD export --chip $ASPEEDCHIP --pin-name "GPIO"$name --shadow $shadow
+    fi
+    $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+# Store and Clear POR bit
+store_clear_por()
+{
+  local val sig
+
+  if [ -f /tmp/ast_por ]; then
+    return
+  fi
+
+  # Read Boot Magic
+  sig=$(devmem 0x1e721208 2>/dev/null)
+
+  # Read the Watch Dog Flag
+  val=$(devmem 0x1e6e203c 2>/dev/null)
+  if [[ "$((val & 0x1))" == "1" && "$sig" != "0xFB420054" ]]; then
+      # Power ON Reset
+      echo 1 > /tmp/ast_por
+  else
+      echo 0 > /tmp/ast_por
+  fi
+
+  # Clear Power On Reset bit
+  devmem 0x1e6e203c 32 $((val & 0xfffffffe)) 2>/dev/null
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  store_clear_por
+  /bin/cat /tmp/ast_por
+}
+
+# Check to see if server is present in given slot or not
+is_server_prsnt() {
+  local prsnt
+
+  case $1 in
+    1)
+      prsnt=$[ $(gpio_get SLOT1_PRSNT_N AA0) || $(gpio_get SLOT1_PRSNT_B_N Z0) ]
+      ;;
+    2)
+      prsnt=$[ $(gpio_get SLOT2_PRSNT_N AA1) || $(gpio_get SLOT2_PRSNT_B_N Z1) ]
+      ;;
+    3)
+      prsnt=$[ $(gpio_get SLOT3_PRSNT_N AA2) || $(gpio_get SLOT3_PRSNT_B_N Z2) ]
+      ;;
+    4)
+      prsnt=$[ $(gpio_get SLOT4_PRSNT_N AA3) || $(gpio_get SLOT4_PRSNT_B_N Z3) ]
+      ;;
+    *)
+      prsnt=$[ $(gpio_get SLOT4_PRSNT_N AA3) || $(gpio_get SLOT4_PRSNT_B_N Z3) ]
+      ;;
+  esac
+
+  if [ $prsnt == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+read_file_rertry() {
+  retries=$1
+  wait_time=$2
+  file=$3
+
+  for i in `seq 1 $retries`; do
+    value=`cat $file`
+    [ ! -z $value ] && break
+    usleep $wait_time
+  done
+
+  echo $value
+}
+
+# Get slot type (00:TwinLakes, 01:Crace Flat, 10:Glacier Point, 11:Empty Slot)
+get_slot_type() {
+  slot_file="/tmp/slot$1.bin"
+  if [ -f $slot_file ]; then
+    type=$(read_file_rertry 3 10000 $slot_file)
+    if [ -z $type ]; then
+      type=3
+    fi
+  else
+    type=3
+  fi
+
+  echo $type
+}
+
+# Get server type (00:TwinLakes, 01:RC, 10:EP, 11:Unknown)
+get_server_type() {
+  server_type_file="/tmp/server_type$1.bin"
+  if [ -f $server_type_file ]; then
+    type=$(read_file_rertry 3 10000 $server_type_file)
+    if [ -z $type ]; then
+      type=3
+    fi
+  else
+    type=3
+  fi
+
+  echo $type
+}
+
+# Check to see if Bridge-IC is ready in given slot or not
+is_bic_ready() {
+  local ready
+
+  case $1 in
+   1)
+    ready=$(gpio_get I2C_SLOT1_ALERT_N N2)
+    ;;
+   2)
+    ready=$(gpio_get I2C_SLOT2_ALERT_N N3)
+    ;;
+   3)
+    ready=$(gpio_get I2C_SLOT3_ALERT_N N4)
+    ;;
+   4)
+    ready=$(gpio_get I2C_SLOT4_ALERT_N N5)
+    ;;
+   *)
+    ready="1"
+    ;;
+  esac
+
+  if [ $ready == "0" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+fby2_is_server_on() {
+  local pwr_sts
+
+  case $1 in
+   1)
+    pwr_sts=$(gpio_get SLOT1_POWER_EN I0)
+    ;;
+   2)
+    pwr_sts=$(gpio_get SLOT2_POWER_EN I1)
+    ;;
+   3)
+    pwr_sts=$(gpio_get SLOT3_POWER_EN I2)
+    ;;
+   4)
+    pwr_sts=$(gpio_get SLOT4_POWER_EN I3)
+    ;;
+   *)
+    pwr_sts="0"
+    ;;
+  esac
+
+  echo $pwr_sts
+}
+
+get_slot_bus() {
+  local bus
+
+  case $1 in
+    1)
+      bus=1
+      ;;
+    2)
+      bus=3
+      ;;
+    3)
+      bus=5
+      ;;
+    4)
+      bus=7
+      ;;
+  esac
+
+  echo $bus
+}
+
+i2c_remove_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      I2C_DEV=`echo $DEV_SLAVE_ADDR | sed s/x/0/g`
+
+      if [ -d /sys/class/i2c-dev/i2c-$SLOT_BUS/device/$SLOT_BUS-$I2C_DEV ]; then
+         echo $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/delete_device
+      fi
+}
+
+i2c_add_device() {
+      SLOT_BUS=$1
+      DEV_SLAVE_ADDR=$2
+      DEV_NAME=$3
+
+      echo $DEV_NAME $DEV_SLAVE_ADDR > /sys/class/i2c-dev/i2c-$SLOT_BUS/device/new_device
+}
+
+# Check to see if slot 12v is on or not
+is_slot_12v_on() {
+  local gpio
+  local status
+  local dir
+
+  case $1 in
+   1)
+    status=$(gpio_get P12V_STBY_SLOT1_EN O4)
+    ;;
+   2)
+    status=$(gpio_get P12V_STBY_SLOT2_EN O5)
+    ;;
+   3)
+    status=$(gpio_get P12V_STBY_SLOT3_EN O6)
+    ;;
+   4)
+    status=$(gpio_get P12V_STBY_SLOT4_EN O7)
+    ;;
+   *)
+    status="0"
+    ;;
+  esac
+
+  if [ $status == "1" ]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+# Check to see if BMC time synced
+is_date_synced() {
+  if [ -f /tmp/sync_date ]; then
+    /bin/cat /tmp/sync_date
+  else
+    echo 0
+  fi
+}
+
+# Get platform type
+get_spb_type() {
+  /bin/cat /tmp/spb_type
+}
+
+# Get fan type
+get_fan_type() {
+  /bin/cat /tmp/fan_type
+}

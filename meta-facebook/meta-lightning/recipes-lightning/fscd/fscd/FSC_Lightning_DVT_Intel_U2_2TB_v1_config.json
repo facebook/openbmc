@@ -1,0 +1,237 @@
+{
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true,
+    "progressive": true
+  },
+  "fail_sensor_type": {
+      "standby_sensor_fail": true,
+      "SSD_sensor_fail":true,
+      "poweron_sensor_fail":false
+  },
+  "ssd_progressive_algorithm":{
+    "offset_algorithm":[
+      [14,25]
+    ]
+  },
+  "watchdog": false,
+  "min_rpm": 400,
+  "profiles": {
+    "linear_ambient": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
+      "data": [
+        [1 , 12],
+        [15, 12],
+        [16, 13],
+        [17, 13],
+        [18, 14],
+        [19, 14],
+        [20, 15],
+        [21, 16],
+        [22, 17],
+        [23, 18],
+        [24, 19],
+        [25, 20],
+        [26, 21],
+        [27, 22],
+        [28, 23],
+        [29, 24],
+        [30, 25],
+        [31, 27],
+        [32, 29],
+        [33, 31],
+        [34, 33],
+        [35, 35],
+        [36, 36],
+        [37, 37],
+        [38, 38],
+        [39, 39],
+        [40, 40]
+      ]
+    },
+    "linear_pcie_sw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
+      "data": [
+        [1 , 12],
+        [64, 12],
+        [65, 13],
+        [66, 14],
+        [67, 15],
+        [68, 16],
+        [69, 17],
+        [70, 18],
+        [71, 19],
+        [72, 20],
+        [73, 22],
+        [74, 24],
+        [75, 26],
+        [76, 28],
+        [77, 30],
+        [78, 32],
+        [79, 34],
+        [80, 36],
+        [81, 38],
+        [82, 40],
+        [83, 41],
+        [84, 42],
+ [85, 43],
+        [86, 44],
+        [87, 45]
+      ]
+    },
+    "linear_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis":0,
+      "negative_hysteresis":3,
+      "data": [
+        [1 , 10],
+        [24, 11],
+        [25, 12],
+        [26, 13],
+        [27, 14],
+        [28, 15],
+        [29, 16],
+        [30, 17],
+        [31, 18],
+        [32, 19],
+        [33, 20],
+        [34, 21],
+        [35, 22],
+        [36, 23],
+        [37, 24],
+        [38, 25],
+        [39, 26],
+        [40, 27],
+        [41, 28],
+        [42, 29],
+        [43, 30],
+        [44, 31],
+ [45, 32],
+        [46, 33],
+ [47, 34],
+        [48, 35],
+        [49, 36],
+        [50, 37],
+        [51, 38],
+        [52, 39],
+        [53, 40],
+        [54, 41],
+ [55, 42],
+        [56, 43],
+ [57, 44],
+        [58, 45]
+      ]
+    },
+    "pid_ssd": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 58,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 2,
+      "kp": -10,
+      "ki": -0.07,
+      "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "label" : "Fan 1 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "label" : "Fan 1 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      }
+    },
+    "2": {
+      "label" : "Fan 2 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 2"
+      }
+    },
+    "3": {
+      "label" : "Fan 2 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 3"
+      }
+    },
+    "4": {
+      "label" : "Fan 3 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 4"
+      }
+    },
+    "5": {
+      "label" : "Fan 3 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 5"
+      }
+    },
+    "6": {
+      "label" : "Fan 4 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 6"
+      }
+    },
+    "7": {
+      "label" : "Fan 4 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 7"
+      }
+    },
+    "8": {
+      "label" : "Fan 5 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 8"
+      }
+    },
+    "9": {
+      "label" : "Fan 5 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 9"
+      }
+    },
+    "10": {
+      "label" : "Fan 6 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 10"
+      }
+    },
+    "11": {
+      "label" : "Fan 6 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 11"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0],
+      "expr_file": "FSC_Lightning_DVT_Intel_U2_2TB_v1_zone0.fsc"
+    }
+  }
+}

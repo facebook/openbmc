@@ -1,0 +1,599 @@
+#!/usr/bin/env python3
+
+#  Copyright (c) 2014-present, Facebook, Inc.
+#  All rights reserved.
+#
+#  This source code is licensed under the BSD-style license found in the
+#  LICENSE file in the root directory of this source tree. An additional grant
+#  of patent rights can be found in the PATENTS file in the same directory.
+
+import os
+import tempfile
+import argparse
+import sys
+import time
+import json
+import datetime
+import hashlib
+
+from distutils import spawn
+from io import BytesIO
+
+from pyfdt import pyfdt
+from pyfdt import pkcs11
+
+FBOBMC_IMAGE_META_LOCATION = 0xF0000
+FBOBMC_IMAGE_META_SIZE = 64 * 1024
+FBOBMC_PART_INFO_KEY = "part_infos"
+
+def update_rom_checksum():
+    rom_changed = False
+    with open(args.output, 'rb') as fh:
+        fh.seek(0)
+        current_md5 = hashlib.md5(fh.read(args.rom_size)).hexdigest()
+        if current_md5 != rom_part_info["md5"]:
+            rom_part_info["md5"] = current_md5
+            rom_changed = True
+    return rom_changed
+
+def save_meta_data(operation):
+    image_meta["meta_update_action"] = operation
+    image_meta["meta_update_time"] = datetime.datetime.utcnow().isoformat()
+    meta_data = json.dumps(image_meta).encode("ascii")
+    meta_chksum = { "meta_md5": hashlib.md5(meta_data).hexdigest() }
+    meta_chksum_data = json.dumps(meta_chksum).encode("ascii")
+    with open(args.output, "r+b") as fh:
+        fh.seek(FBOBMC_IMAGE_META_LOCATION)
+        fh.write(meta_data + b"\n")
+        fh.write(meta_chksum_data + b"\n")
+        assert fh.tell() < (FBOBMC_IMAGE_META_LOCATION + FBOBMC_IMAGE_META_SIZE), (
+                "image_meta is too bigger to save in meta part (0x%08X %d)"
+                % (FBOBMC_IMAGE_META_LOCATION, FBOBMC_IMAGE_META_SIZE)
+            )
+
+def update_spl_checksum(operation):
+    # for image with image_meta update rom checksum in image_meta
+    if image_meta and update_rom_checksum():
+        save_meta_data(operation)
+        return
+
+    data1 = []
+    data2 = []
+    curr_checksum = ''
+    curr_info = {}
+    with open(args.output, 'rb') as fh:
+        fh.seek(0)
+        data1 = fh.read(380 * 1024)
+        curr_checksum = hashlib.md5(data1).hexdigest()
+        try:
+            curr_info = json.loads(fh.readline())
+        except ValueError:
+            pass
+        fh.seek(384 * 1024)
+        data2 = fh.read()
+
+    # We did not modify anything here.
+    if curr_checksum in curr_info:
+        return
+
+    # Generate new information
+    today = datetime.datetime.now().strftime('%A %b %d %H:%M:%S %Z %Y')
+    desc = '%s: %s' % (operation, today)
+    if len(curr_info) > 0:
+        curr_desc = next(iter(curr_info.values()))
+        desc = curr_desc + ' ' + desc
+    info = json.dumps({curr_checksum: desc}).encode('ascii')
+
+    with open(args.output, 'wb') as fh:
+        fh.seek(0)
+        fh.write(data1)
+        fh.write(info)
+        fh.write(b'\0' * ((4 * 1024) - len(info)))
+        fh.write(data2)
+
+
+def write_content(offset, data):
+    with open(args.output, 'ab' if offset > 0 else 'wb') as fh:
+        fh.seek(offset)
+        fh.write(data)
+
+
+def write_firmware(filename):
+    with open(filename, 'rb') as fh:
+        signed_content = fh.read()
+
+    write_content(args.offset, signed_content)
+    padding = args.max_size - len(signed_content)
+    write_content(args.offset + len(signed_content), b'\0' * padding)
+
+
+def write_os(filename):
+    with open(filename, 'rb') as fh:
+        signed_content = fh.read()
+        write_content(args.os, signed_content)
+
+def extract_timeback(fdt):
+    timeback = 0
+    timeback_prop = fdt.resolve_path('/timeback')
+    if timeback_prop is not None:
+        timeback = timeback_prop[0]
+        fdt.get_rootnode().remove('timeback')
+        print("Extract timeback = %d from uboot-fit to args.time_back\n" % timeback )
+
+    return timeback
+
+def inject_subordinate(unsigned_content, path):
+    with open(path, 'rb') as fh:
+        sub_data = fh.read()
+        # Read the subordinate key store as a FDT.
+        sub_fdt = get_fdt(sub_data)
+
+    fdt = get_fdt(unsigned_content)
+    args.time_back = extract_timeback(fdt)
+
+    pubkey = sub_fdt.resolve_path('/images/fdt@1')
+    if pubkey is None:
+        print("Subordinate key store does not contain /images/fdt@1")
+        sys.exit(1)
+
+    keys = fdt.resolve_path('/keys')
+    if keys is None:
+        print("The firmware does not contain a /keys subnode")
+        # This does not have a keys subnode.
+        keys = pyfdt.FdtNode('keys')
+        fdt.get_rootnode().add_subnode(keys)
+
+    existing_keys = fdt.resolve_path('/keys/fdt@1')
+    if existing_keys is not None:
+        print("Note: Removing existing signing KEK key store")
+        fdt.resolve_path('/keys').remove('fdt@1')
+
+    keys.append(pubkey)
+    return fdt.to_dtb()
+
+
+def inject_kek(rom_fit, path):
+    # Open the path to the ROM/KEK public keys
+    with open(path, 'rb') as fh:
+        kek_data = fh.read()
+        kek_fdt = get_fdt(kek_data)
+
+    kek_keys = kek_fdt.resolve_path('/signature')
+    if kek_keys is None:
+        print("ROM KEK key store does not contain /signature")
+        sys.exit(1)
+
+    fdt = get_fdt(rom_fit)
+    existing_kek_keys = fdt.resolve_path('/signature')
+    if existing_kek_keys is not None:
+        print("Note: Removing existing ROM KEK key store")
+        fdt.resolve_path('/').remove('signature')
+
+    fdt.get_rootnode().add_subnode(kek_keys)
+    return fdt.to_dtb()
+
+
+def sign_firmware(dts):
+    # Perform signing.
+    with tempfile.NamedTemporaryFile() as tmp:
+        tmp.write(dts.encode("utf-8"))
+        tmp.flush()
+        with tempfile.NamedTemporaryFile() as tmp2:
+            cmd = []
+            if args.time_back != 0:
+                cmd += [ "env", "SOURCE_DATE_EPOCH=%d" % args.time_back ]
+            cmd += [args.mkimage, "-f", tmp.name, "-E", "-k", args.keydir,
+                "-p", "%08x" % args.size, "-r", tmp2.name]
+            if args.token:
+                cmd += ['-N', 'pkcs11']
+            elif args.keyname:
+                cmd += ['-N', 'FB-HSM']
+            print(" ".join(cmd))
+            spawn.spawn(cmd)
+            info = os.stat(tmp2.name)
+            if info.st_size <= 0:
+                print("mkimage failed")
+                return 1
+            if info.st_size > args.max_size:
+                print("mkimage generated an output U-Boot exceeding %08x" % (
+                    args.max_size))
+                return 1
+            write_firmware(tmp2.name)
+    return 0
+
+
+def sign_os(dts):
+    with tempfile.NamedTemporaryFile() as tmp:
+        tmp.write(dts.encode("utf-8"))
+        tmp.flush()
+        with tempfile.NamedTemporaryFile() as tmp2:
+            cmd = []
+            if args.time_back != 0:
+                cmd += [ "env", "SOURCE_DATE_EPOCH=%d" % args.time_back ]
+            cmd += [args.mkimage, "-f", tmp.name, "-k", args.keydir,
+                "-r", tmp2.name]
+            if args.token:
+                cmd += ['-N', 'pkcs11']
+            elif args.keyname:
+                cmd += ['-N', 'FB-HSM']
+            print(" ".join(cmd))
+            spawn.spawn(cmd)
+            info = os.stat(tmp2.name)
+            if info.st_size <= 0:
+                print("mkimage failed")
+                return 1
+            write_os(tmp2.name)
+    return 0
+
+
+def set_algorithms(fdt, path):
+    # Override the requested hashing and signing algorithms.
+    algo = fdt.resolve_path("%s/signature@1/algo" % (path))
+    algo.strings = ['sha256,rsa4096']
+    return 0
+
+
+def set_hint(fdt, path):
+    # We are not validating the FIT, but checking basic sanity.
+    hint = fdt.resolve_path("%s/signature@1/key-name-hint" % (path))
+    if hint is None:
+        print("FIT does not include a signature node (%s)" % (path))
+        return 1
+
+    # The U-Boot FIT expects to be signed with the following key-name.
+    # This will cause mkimage to file if the names do not match.
+    if args.keyname is not None:
+        hint.strings = [os.path.basename(args.keyname)]
+        return 0
+    elif args.token_hint is not None:
+        hint.strings = [args.token_hint]
+        return 0
+    key_name = hint[0]
+    requested_key_name = os.path.basename(args.keydir)
+    if key_name != requested_key_name:
+        print("Note: The FIT key-name-hint (%s) does not match keydir (%s)" % (
+            key_name, requested_key_name))
+        hint.strings = [requested_key_name]
+    return 0
+
+
+def set_sign(fdt, path, images):
+    new_prop = pyfdt.FdtPropertyStrings('sign-images', images)
+    config = fdt.resolve_path("%s/signature@1" % path)
+    try:
+        config.remove('sign-images')
+    except ValueError:
+        pass
+
+    config.subdata.insert(0, new_prop)
+
+
+def get_fdt(content):
+    # Represent the FIT as an IO resource.
+    fit_io = BytesIO(content)
+    dtb = pyfdt.FdtBlobParse(fit_io)
+    fdt = dtb.to_fdt()
+    return fdt
+
+
+def write_test_fdt(data, fdt):
+    write_content(0x0, data[0:args.offset])
+    new_content = fdt.to_dtb()
+    write_content(args.offset, new_content)
+    padding = args.size - len(new_content)
+    write_content(args.offset + len(new_content), b'\0' * padding)
+
+    offset = args.size + args.offset
+    write_content(offset, data[offset:])
+
+
+def inject_lock(rom_fit):
+    fdt = get_fdt(rom_fit)
+    try:
+        fdt.get_rootnode().remove('hwlock')
+    except ValueError:
+        # hwlock not present
+        pass
+    new_prop = pyfdt.FdtPropertyWords('hwlock', [1])
+    fdt.get_rootnode().subdata.insert(0, new_prop)
+    return fdt.to_dtb()
+
+def inject_timeback(uboot_fit, timeback):
+    fdt = get_fdt(uboot_fit)
+    try:
+        fdt.get_rootnode().remove('timeback')
+    except ValueError:
+        # timeback not present
+        pass
+    new_prop = pyfdt.FdtPropertyWords('timeback', [timeback])
+    fdt.get_rootnode().subdata.insert(0, new_prop)
+    return fdt
+
+def main():
+    with open(args.filename, 'rb') as fh:
+        data = fh.read()
+        # Extract the FIT describing U-Boot
+        uboot_fit = data[args.offset:args.offset + args.size]
+        rom = data[0:args.rom_size]
+
+    if args.test_remove_timestamp:
+        fdt = get_fdt(uboot_fit)
+        fdt.get_rootnode().remove('timestamp')
+        write_test_fdt(data, fdt)
+        return 0
+
+    if args.test_change_timestamp:
+        fdt = get_fdt(uboot_fit)
+        timestamp = fdt.resolve_path('/timestamp')
+        timestamp.words = [time.time()]
+        write_test_fdt(data, fdt)
+        return 0
+
+    if args.time_back:
+        fdt = inject_timeback(uboot_fit, args.time_back)
+        write_test_fdt(data, fdt)
+        print("Setting timeback signing, next you need to sign it...")
+        print("Wrote unsigned timeback firmware: %s" % (args.output))
+        return 0
+
+    rom_fit = None
+    rom_fit_offset = 0
+    rom_fit_space = args.rom_fit_size
+    for i in range(int(args.rom_size / 4)):
+        if data[i * 4:(i * 4) + 4] == b"\xd0\x0d\xfe\xed":
+            rom_fit_offset = i * 4
+            rom_fit_space = min(rom_fit_space, args.rom_size - rom_fit_offset)
+            rom_fit = rom[rom_fit_offset : rom_fit_offset + rom_fit_space]
+            try:
+                rom_fdt = get_fdt(rom_fit)
+                break
+            except:
+                print("false positve fdt magic at 0x%X" % rom_fit_offset)
+                rom_fit = None
+                pass
+    if rom_fit is None:
+        print("Cannot find FIT region within ROM")
+        sys.exit(1)
+
+    rom_content_pre = data[0:rom_fit_offset]
+    if args.lock:
+        # Do the lock
+        rom_fit = inject_lock(rom_fit)
+    else:
+        rom_fit = inject_kek(rom_fit, args.kek)
+
+    if len(rom_fit) > rom_fit_space:
+        print("KEK cannot fit within ROM FIT")
+        sys.exit(1)
+
+    rom_fit += b'\x00' * (rom_fit_space - len(rom_fit))
+    rom_content_post = data[rom_fit_offset + rom_fit_space : args.rom_size]
+    data = rom_content_pre + rom_fit + rom_content_post + data[args.rom_size:]
+
+    if args.lock:
+        write_content(0x0, data)
+        update_spl_checksum("Locked")
+        print("Setting HW enforce lock bit, next you need to sign it...")
+        print("Wrote unsigned firmware: %s" % (args.output))
+        return 0
+
+    if args.signed_subordinate is not None:
+        updated_fit = inject_subordinate(uboot_fit, args.signed_subordinate)
+        uboot_fit = updated_fit
+
+    fdt = get_fdt(uboot_fit)
+
+    # Timestamp's existance will cause FDT_ERR_NOSPACE errors
+    try:
+        fdt.get_rootnode().remove('timestamp')
+    except ValueError:
+        # Timestamp may not be present
+        pass
+
+    # The FIT should contain /images/firmware@1
+    firmware = fdt.resolve_path('/images/firmware@1')
+    if firmware is None:
+        print("Firmware does not contain a FIT with /images/firmware@1")
+        sys.exit(1)
+
+    # The content of U-Boot is stored external to the FIT.
+    offset = fdt.resolve_path('/images/firmware@1/data-position')
+    position = int(offset[0])
+    offset = fdt.resolve_path('/images/firmware@1/data-size')
+
+    # Assure size is mod(4).
+    size = int(offset[0])
+    size = size + (4 - (size % 4))
+    offset.words[0] = size
+
+    if position <= 0 or size <= 0:
+        print("Firmware U-Boot position is unknown /images/firmware@1")
+        sys.exit(1)
+
+    # Extract the firmware content and attach, for signing.
+    uboot = data[args.offset + position:args.offset + position + size]
+    new_prop = pyfdt.FdtPropertyWords.init_raw('data', uboot)
+    firmware.subdata.insert(0, new_prop)
+
+    set_algorithms(fdt, '/configurations/conf@1')
+    set_hint(fdt, '/configurations/conf@1')
+    set_sign(fdt, '/configurations/conf@1', ['firmware'])
+
+    try:
+        os.remove(args.output)
+    except OSError:
+        pass
+    write_content(0x0, data[0:args.offset])
+    ret = sign_firmware(fdt.to_dts())
+    if ret == 1:
+        return 1
+
+    if args.sign_os:
+        print("Signing OS kernel and rootfs")
+        os_fit = data[args.os:]
+        fdt = get_fdt(os_fit)
+
+        # Again, this node will cause FDT_ERR_NOSPACE errors
+        fdt.get_rootnode().remove('timestamp')
+
+        config = fdt.resolve_path('/configurations/conf@1')
+        if config is None:
+            print("OS FIT does not contain a configuration")
+            return 1
+
+        set_algorithms(fdt, '/configurations/conf@1')
+        set_hint(fdt, '/configurations/conf@1')
+
+        ret = sign_os(fdt.to_dts())
+        if ret == 1:
+            return 1
+    else:
+        write_content(args.os, data[args.os:])
+
+    update_spl_checksum("Signed")
+
+    print("Wrote signed firmware: %s" % (args.output))
+    return 0
+
+def load_image_meta():
+    print("Try loading image meta from image %s" % args.filename)
+    len_remain = FBOBMC_IMAGE_META_SIZE
+    with open(args.filename, "rb") as fh:
+        fh.seek(FBOBMC_IMAGE_META_LOCATION)
+        meta_data = fh.readline(len_remain)
+        meta_data_md5 = hashlib.md5(meta_data.strip()).hexdigest()
+        len_remain -= len(meta_data)
+        meta_data_chksum = fh.readline(len_remain)
+        meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
+        if meta_data_md5 == meta_md5:
+            meta_info = json.loads(meta_data.strip())
+            assert FBOBMC_PART_INFO_KEY in meta_info, (
+                "meta_info does not cotain %s" % FBOBMC_PART_INFO_KEY
+            )
+            meta_info[FBOBMC_PART_INFO_KEY] = tuple(meta_info[FBOBMC_PART_INFO_KEY])
+
+            return meta_info
+
+def override_defaut_args_with_image_meta():
+    rom_part_info = None
+    for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
+        if "rom" == part_info["type"] :
+            rom_part_info = part_info
+            print("override args.rom_size: 0x%x => 0x%x" % (args.rom_size, part_info["size"]))
+            args.rom_size = part_info["size"]
+        elif "fit" == part_info["type"] and "u-boot-fit" == part_info["name"]:
+            print("override args.offset: 0x%x => 0x%x" % (args.offset, part_info["offset"]))
+            args.offset = part_info["offset"]
+            print("override args.max_size: 0x%x => 0x%x" % (args.max_size, part_info["size"]))
+            args.max_size = part_info["size"]
+        elif "fit" == part_info["type"] and "os-fit" == part_info["name"]:
+            print("override args.os: 0x%x => 0x%x" % (args.os, part_info["offset"]))
+            args.os = part_info["offset"]
+
+    return rom_part_info
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Example sign')
+    parser.add_argument('filename', help="Input firmware")
+    parser.add_argument('output', help="Output firmware")
+    parser.add_argument('--kek', default=None, metavar="PATH",
+        help="Location to ROM kek certificate store DTS")
+    parser.add_argument('--rom-size', default=84 * 1024, type=int,
+        help="Size of ROM region")
+    parser.add_argument('--rom-fit-size', default=5120, type=int,
+        help="Size of the ROM FIT region")
+    parser.add_argument('--offset', default=0x080000, type=int,
+        help="Location within filename to find firmware FIT DTB")
+    parser.add_argument('--size', default=0x4000, type=int,
+        help="Size of FIT (DTB)")
+    parser.add_argument('--max_size', default=0x60000, type=int,
+        help="Max size of FIT and data content")
+    parser.add_argument('--os', default=0xe0000, type=int,
+        help="Location within filename to find OS (kernel,rootfs) FIT DTB")
+    parser.add_argument("--sign-os", default=False, action="store_true",
+        help="Sign kernel and rootfs")
+    parser.add_argument('--signed-subordinate', default=None, metavar="PATH",
+        help="Optional path to signed subordinate certificate store (to add)")
+    parser.add_argument('--mkimage', metavar="PATH",
+        help="Required path to mkimage")
+    parser.add_argument('--test-remove-timestamp', default=False,
+        action='store_true',
+        help='For testing, remove the timestamp node')
+    parser.add_argument('--test-change-timestamp', default=False,
+        action='store_true',
+        help='For testing, alter the timestamp node')
+    parser.add_argument('--token-hint', metavar="HINT")
+    parser.add_argument('--platform', metavar="PLATFORM",
+        help="specify the PLATFORM to sign")
+    parser.add_argument('--hsm-algo', metavar="HSMALGO",
+        help="specify hsm signing algorithm as HSMALGO")
+    parser.add_argument('--force', default=False,
+        action='store_true',
+        help='skip the signing key and image sanity check, if know what you are doing')
+
+    # specify signing key: exclusive
+    # --keydir: the key in local directory
+    # --keyname: use FB HSM key
+    # --token: use the token key
+    # --lock: no key needed
+    pkey = parser.add_mutually_exclusive_group(required=True)
+    pkey.add_argument('--keyname', metavar="HSMKEYNAME",
+        help="Use HSMKEYNAME hsm based key to sign")
+    pkey.add_argument('--keydir', metavar="DIR",
+        help="Path to directory containing '.key' private key")
+    pkey.add_argument('--token', metavar="SERIAL",
+        help="Hardware token serial identifier")
+    pkey.add_argument('--lock', default=False, action='store_true',
+        help='Make a (unsigned) flash set the HW enforce bit')
+    pkey.add_argument('--time-back', default=0, type=int,
+        help="sign with the timestamp specified here")
+
+    args = parser.parse_args()
+
+    if args.keyname is not None:
+        # set keydir with pathname in hsm key name
+        args.keydir = os.path.dirname(args.keyname)
+    elif args.keydir is not None:
+        # Using a keydir to sign a flash.
+        pkcs11.clear_environment()
+        if not os.path.isdir(args.keydir):
+            print("The --keydir must be a directory containing a '.key' key.")
+            sys.exit(1)
+        keyfile = os.path.join(args.keydir,
+            os.path.basename(args.keydir) + ".key")
+        if not os.path.exists(keyfile):
+            print("Cannot find private key: %s" % (keyfile))
+            sys.exit(1)
+    elif not (args.lock or args.time_back):
+        # Not using a keydir and not locking HW enforcment.
+        pkcs11.enforce_environment()
+        args.keydir = pkcs11.get_url(args.token)
+        if args.token_hint is None:
+            print("Please include a --token-hint when using a token")
+            sys.exit(1)
+
+    if not ( args.lock or args.time_back ) and (args.mkimage is None or args.kek is None):
+        print("Error: argument --mkimage and --kek are required")
+        sys.exit(1)
+
+    image_meta = None
+    rom_part_info = None
+    try:
+        image_meta = load_image_meta()
+        rom_part_info = override_defaut_args_with_image_meta()
+    except Exception as e:
+        print("No image meta found: %s" % repr(e))
+        print("Signing legacy image")
+
+    if not ( args.lock or args.time_back or args.force ):
+        if args.keyname is None and image_meta is not None:
+            print("Please use HSM key (--keyname <hsm/key/name>) to sign new image")
+            print("Or (--force) to sign without using HSM key")
+            sys.exit(2)
+        if args.keyname is not None and image_meta is None:
+            print("Please don't use HSM key to sign legacy image")
+            print("Or (--force) to sign using HSM key")
+            sys.exit(3)
+
+    sys.exit(main())

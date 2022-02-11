@@ -1,0 +1,9 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+
+# Machine Selection
+MACHINE ??= "wedge"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb"

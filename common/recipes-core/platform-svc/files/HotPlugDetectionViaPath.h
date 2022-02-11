@@ -1,0 +1,60 @@
+/*
+ * HotPlugDetectionViaPath.h
+ *
+ * Copyright 2017-present Facebook. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#pragma once
+#include <fstream>
+#include <glog/logging.h>
+#include "HotPlugDetectionMechanism.h"
+
+namespace openbmc {
+namespace qin {
+
+class HotPlugDetectionViaPath : public HotPlugDetectionMechanism {
+  private:
+    std::string path_;                // Path of the file from which
+                                      // status of FRU can be detected
+
+  public:
+    /*
+     * Constructor
+     */
+    HotPlugDetectionViaPath(const std::string & path) : path_(path) {}
+
+    /*
+     * Detects availability of FRU by reading file at path_ and
+     * returns whether fru is available
+     */
+    bool detectAvailability() {
+      bool available = false;
+      std::ifstream file(path_);
+      if (file.is_open())
+      {
+        //Read FRU availability
+        file >> available;
+        file.close();
+      }
+      else {
+        LOG(ERROR) << "Could not open file " << path_;
+      }
+      return available;
+    }
+};
+} // namespace qin
+} // namespace openbmc

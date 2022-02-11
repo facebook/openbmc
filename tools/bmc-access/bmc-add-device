@@ -1,0 +1,65 @@
+#!/bin/sh
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+DEV_FILE=~/.bmc_devices
+
+if [ "$1" == '-b' ]; then
+  . bmc-lib $*
+else
+  ARGUMENTS=($*)
+fi
+
+NUM_ARGS=${#ARGUMENTS[@]}
+
+if [ $NUM_ARGS -lt 2 ]; then
+  echo "USAGE: $0 [-b clone-bmc] <alias> <bmc ip> [<bmc password> <proxy ip> <proxy-password>]"
+  echo "$NUM_ARGS arguments provided"
+  exit -1
+fi
+
+ALIAS=${ARGUMENTS[0]}
+BMC_IP=${ARGUMENTS[1]}
+
+if [ $NUM_ARGS -ge 3 ]; then
+  BMC_PASSWORD=${ARGUMENTS[2]}
+elif [ "$BMC_PASSWORD" == "" ]; then
+  echo "ERROR: We either need to clone a BMC or need to provide at least the password"
+  exit -1
+fi
+
+if [ $NUM_ARGS -ge 4 ]; then
+  PROXY=${ARGUMENTS[3]}
+fi
+if [ $NUM_ARGS -ge 5 ]; then
+  PROXY_PASSWORD=${ARGUMENTS[4]}
+fi
+
+DEVICE="$ALIAS##$BMC_IP##$BMC_PASSWORD"
+if [ "$PROXY" != "" ]; then
+  if [ "$PROXY_PASSWORD" == "" ]; then
+    echo "Proxy provided, but no password!"
+    exit -1
+  fi
+  DEVICE="$DEVICE##$PROXY##$PROXY_PASSWORD"
+fi
+if [[ -e $DEV_FILE ]] && [[ $(grep $DEVICE $DEV_FILE | wc -l) != "0" ]]; then
+  echo "$ALIAS ($BMC_IP) already exists in device list"
+  exit -1
+else
+  echo $DEVICE >> $DEV_FILE
+fi

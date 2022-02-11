@@ -1,0 +1,23 @@
+max_ssd_temp = max([
+     pdpb:ssd_0_temp,
+     pdpb:ssd_1_temp,
+     pdpb:ssd_2_temp,
+     pdpb:ssd_3_temp,
+     pdpb:ssd_4_temp,
+     pdpb:ssd_5_temp,
+     pdpb:ssd_6_temp,
+     pdpb:ssd_7_temp,
+     pdpb:ssd_8_temp,
+     pdpb:ssd_9_temp,
+     pdpb:ssd_10_temp,
+     pdpb:ssd_11_temp,
+     pdpb:ssd_12_temp,
+     pdpb:ssd_13_temp,
+     pdpb:ssd_14_temp]);
+ambient_temp = peb:sys_inlet_temp;
+pcie_sw_temp = peb:pcie_sw_temp;
+max([
+  linear_ssd(max_ssd_temp) + pid_ssd(max_ssd_temp),
+  linear_ambient(ambient_temp),
+  linear_pcie_sw(pcie_sw_temp)+ pid_pcie_sw(max_ssd_temp)
+])

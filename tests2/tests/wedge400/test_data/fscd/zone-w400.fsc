@@ -1,0 +1,5 @@
+max([
+  linear_inlet(wedge400:inlet_temp),
+  linear_switch(wedge400:switch_temp),
+  linear_userver(wedge400:userver_temp)
+])

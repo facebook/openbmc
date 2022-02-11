@@ -1,0 +1,5 @@
+Changeset from the original jdi_22.exe
+
+1. removed all files in 'exe/'
+2. renamed all files in 'code' to lower case
+3. converted all files in 'code' from DOS style to UNIX style

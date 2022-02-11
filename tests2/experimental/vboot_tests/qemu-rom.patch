@@ -1,0 +1,41 @@
+diff --git a/arch/arm/dts/aspeed-g5-tpm.dts b/arch/arm/dts/aspeed-g5-tpm.dts
+index be5f2af97ed..99e03a33c8d 100644
+--- a/arch/arm/dts/aspeed-g5-tpm.dts
++++ b/arch/arm/dts/aspeed-g5-tpm.dts
+@@ -13,7 +13,7 @@
+ 				i2c7: i2c-bus@1c0 {
+ 					tpm@20 {
+ 						/* Emulators should use atmel,at97sc3204t. */
+-						compatible = "infineon,slb9645tt";
++						compatible = "atmel,at97sc3204t";
+ 						reg = <0x20>;
+ 						u-boot,dm-pre-reloc;
+ 					};
+diff --git a/config.mk b/config.mk
+index b77d58903c8..22909c2106e 100644
+--- a/config.mk
++++ b/config.mk
+@@ -13,7 +13,7 @@
+ #  That's the reason why this file must be included from spl/Makefile too.
+ #  If we did not have Tegra SoCs, build system would be much simpler...)
+ PLATFORM_RELFLAGS :=
+-PLATFORM_CPPFLAGS :=
++PLATFORM_CPPFLAGS := -DCONFIG_DEBUG_QEMU -DCONFIG_QEMU_DEBUG
+ PLATFORM_LDFLAGS :=
+ LDFLAGS :=
+ LDFLAGS_FINAL :=
+diff --git a/configs/fbtp_defconfig b/configs/fbtp_defconfig
+index 46943041662..9adfaa94cff 100644
+--- a/configs/fbtp_defconfig
++++ b/configs/fbtp_defconfig
+@@ -29,8 +29,8 @@ CONFIG_SPL_OF_TRANSLATE=y
+ CONFIG_SPL_FIT_SIGNATURE=y
+ 
+ # Emulators should use CONFIG_TPM_ATMEL_TWI
+-# CONFIG_TPM_ATMEL_TWI=y
+-CONFIG_TPM_TIS_INFINEON=y
++CONFIG_TPM_ATMEL_TWI=y
++# CONFIG_TPM_TIS_INFINEON=y
+ CONFIG_ASPEED_TPM=y
+ 
+ # Leave this commented (build-step feature)

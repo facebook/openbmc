@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# Copyright 2020-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+BAUDRATE_115200=115200
+TTYS_SCC_EXP_SDB=2
+TTYS_SCC_IOC_SMART=3
+TTYS_IOCM_IOC_SMART=8
+
+usage() {
+  echo "Usage: sol-util { server | bic | scc_exp_smart | scc_exp_sdb | scc_ioc_smart | iocm_ioc_smart }  [--history]"
+  exit 1
+}
+
+show_history(){
+  OPTION_NAME=$1
+  CHECK=$2
+  case "$CHECK" in
+    "--history")
+      LOGFILE="/var/log/mTerm_$OPTION_NAME.log"
+      echo "$LOGFILE"
+      cat "$LOGFILE" 2>/dev/null
+      exit 0
+    ;;
+    *) usage
+  esac
+}
+
+case "$1" in
+  "server");;
+  "bic");;
+  "scc_exp_smart");;
+  "iocm_ioc_smart")
+    /bin/stty -F /dev/ttyS$TTYS_IOCM_IOC_SMART $BAUDRATE_115200 >/dev/null 2>&1
+  ;;
+  "scc_exp_sdb")
+    /bin/stty -F /dev/ttyS$TTYS_SCC_EXP_SDB $BAUDRATE_115200 >/dev/null 2>&1
+  ;;
+  "scc_ioc_smart")
+    /bin/stty -F /dev/ttyS$TTYS_SCC_IOC_SMART $BAUDRATE_115200 >/dev/null 2>&1
+  ;;
+  *) usage
+esac
+
+if [ $# -gt 1 ]; then
+  show_history "$1" "$2"
+fi
+
+exec /usr/local/bin/mTerm_client "$1"
+
+echo
+echo
+echo "-----------------------"
+echo "Exit from SOL session."

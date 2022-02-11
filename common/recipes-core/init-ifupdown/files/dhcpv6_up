@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+# We initially noticed that, sometimes, "dhclient -6" disappeared.
+# To fix that, we put 'dhclient -6' under sv.
+#
+# Now, with 'dhclient -6' always there, if the interface link status
+# flaps, the 'dhclient -6' process started before the interface was up
+# does not do DHCPv6 request anymore.
+#
+# The approach here is to restart 'dhclient -6' when the interface is up.
+sv status dhc6 &>/dev/null &&\
+sv restart dhc6
+
+exit 0

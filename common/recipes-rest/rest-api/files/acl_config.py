@@ -1,0 +1,2 @@
+RULES = {}
+RULES_REGEXP = {}

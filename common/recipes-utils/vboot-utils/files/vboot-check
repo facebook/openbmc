@@ -1,0 +1,572 @@
+#!/usr/bin/env python3
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+import argparse
+import binascii
+import datetime
+import hashlib
+import json
+import sys
+import traceback
+
+VBOOT_CHECK_VERSION = "6"
+# Define the exit code
+EC_SUCCESS = 0
+EC_SPLROM_BAD = 1
+EC_UBOOT_BAD = 2
+EC_KERNEL_BAD = 3
+EC_ROOTFS_BAD = 4
+EC_MD5SUM_BAD = 5
+EC_UNKNOWN = 254
+EC_EXCEPTION = 255
+
+FBOBMC_IMAGE_META_LOCATION = 0xF0000
+FBOBMC_IMAGE_META_SIZE = 64 * 1024
+FBOBMC_PART_INFO_KEY = "part_infos"
+
+
+class VbootParserException(Exception):
+    def __init__(self, message, code):
+        super().__init__(message)
+        self.code = code
+
+
+if sys.version_info[0] == 3:
+    import io
+else:
+    import StringIO
+from pyfdt import pyfdt
+
+
+def get_fdt_from_file(infile):
+    dtb = pyfdt.FdtBlobParse(infile, blob_limit=0x2000)
+    fdt = dtb.to_fdt()
+    return fdt
+
+
+def get_fdt(content):
+    # Represent the FIT as an IO resource.
+    if sys.version_info[0] == 3:
+        fit_io = io.BytesIO(content)
+    else:
+        fit_io = StringIO.StringIO(content)
+    dtb = pyfdt.FdtBlobParse(fit_io)
+    fdt = dtb.to_fdt()
+    return fdt
+
+
+def validate_and_parse_keys(fdt, error):
+    retval = []
+
+    fdt_json = json.loads(fdt.to_json())
+    if "signature" not in fdt_json:
+        print(error, file=sys.stderr)
+        raise VbootParserException(code=EC_SPLROM_BAD)
+
+    for key in fdt_json["signature"]:
+        retval.append(
+            {
+                "key": key,
+                "algo": fdt_json["signature"][key]["algo"][1],
+                "required": fdt_json["signature"][key]["required"][1],
+            }
+        )
+
+    return retval
+
+
+def get_date(fdt):
+    # returns a tuple of parsed date, timestamp
+    timestamp = fdt.resolve_path("/timestamp")[0]
+    return (
+        datetime.datetime.utcfromtimestamp(
+            timestamp,
+        ).strftime("%a %b %d %H:%M:%S UTC %Y")
+        + " (0x%x)" % (timestamp)
+    ), timestamp
+
+
+def get_fdt_hash(fdt, path):
+    return binascii.hexlify(
+        fdt.resolve_path("%s/hash@1/value" % (path)).to_raw()
+    ).decode("utf-8")
+
+
+def get_fdt_signer(fdt, path):
+    return fdt.resolve_path("%s/signature@1/key-name-hint" % (path))[0]
+
+
+def get_fdt_algo(fdt, path):
+    return fdt.resolve_path("%s/hash@1/algo" % (path))[0]
+
+
+def get_hash(content):
+    return hashlib.sha256(content).hexdigest()
+
+
+def get_hash_from_file(fh, data_pos, data_size):
+    BLKSIZE = 0x1000  # 4K
+    hashobj = hashlib.sha256()
+    remain = data_size
+    fh.seek(data_pos)
+    while remain > BLKSIZE:
+        blk = fh.read(BLKSIZE)
+        remain -= BLKSIZE
+        hashobj.update(blk)
+    if remain > 0:
+        blk = fh.read(remain)
+        remain = 0
+        hashobj.update(blk)
+    return hashobj.hexdigest()
+
+
+def decode_flash(fh, data):
+    retval = {}
+
+    # Detect KEK from ROM region
+    rom_fit = None
+    rom_fit_offset = 0
+    for i in range(args.rom_size // 4):
+        if data[i * 4 : (i * 4) + 4] == b"\xd0\x0d\xfe\xed":
+            rom_fit = data[i * 4 : (i * 4) + args.rom_fit_size]
+            rom_fit_offset = i * 4
+            try:
+                rom_fit = get_fdt(rom_fit)
+                break
+            except:
+                pass
+
+    if rom_fit is None:
+        print("Cannot find SPL FIT region", file=sys.stderr)
+        raise VbootParserException(code=EC_SPLROM_BAD)
+
+    # Print SPL information
+    try:
+        _idx = rom_fit.rootnode.index("hwlock")
+        retval["lockbit"] = str(rom_fit.rootnode[_idx].words)
+    except:
+        retval["lockbit"] = "not set"
+
+    retval["spl_fit_offset"] = rom_fit_offset
+    retval["spl_keys"] = validate_and_parse_keys(
+        rom_fit, "SPL does not contain KEK keys"
+    )
+
+    # Read the U-Boot FIT, the U-Boot data area (max)
+    fh.seek(args.uboot_fit_offset)
+    uboot_fit = fh.read(args.subkeystore_size)
+    uboot = fh.read(args.uboot_fit_size - args.subkeystore_size)
+    uboot_fit = get_fdt(uboot_fit)
+
+    # Print subordinate keys information
+    keys_path = uboot_fit.resolve_path("/keys/fdt@1/data")
+    if keys_path is None:
+        print("U-Boot FIT does not contain subordinate keys", file=sys.stderr)
+        raise VbootParserException(code=EC_SPLROM_BAD)
+
+    keys = get_fdt(keys_path.to_raw())
+    keys_date, keys_timestamp = get_date(keys)
+    retval["subordinate_date"] = keys_date
+    retval["subordinate_timestamp"] = keys_timestamp
+
+    keys_sig = uboot_fit.resolve_path("/keys/fdt@1/signature@1")
+    if keys_sig is None:
+        print("Subordinate keys are not signed", file=sys.stderr)
+        raise VbootParserException(code=EC_SPLROM_BAD)
+
+    keys_hash = get_fdt_hash(uboot_fit, "/keys/fdt@1")
+    keys_valid = hashlib.sha256(keys_path.to_raw()).hexdigest() == keys_hash
+
+    retval["subordinate_keys_signing_key"] = get_fdt_signer(uboot_fit, "/keys/fdt@1")
+    retval["subordinate_keys_hash_algo"] = get_fdt_algo(uboot_fit, "/keys/fdt@1")
+    retval["subordinate_keys_hash"] = keys_hash
+    retval["subordinate_key_hash_status"] = "OK" if keys_valid else "BAD"
+
+    if not keys_valid:
+        raise VbootParseException(code=EC_SPLROM_BAD)
+
+    retval["subordinate_keys"] = validate_and_parse_keys(
+        keys, "Subordinate FIT does not contain keys"
+    )
+
+    # Print U-Boot information
+    uboot_date, uboot_timestamp = get_date(uboot_fit)
+    retval["uboot_date"] = uboot_date
+    retval["uboot_timestamp"] = uboot_timestamp
+
+    uboot_sig = uboot_fit.resolve_path("/configurations/conf@1/signature@1")
+    if uboot_sig is None:
+        print("U-Boot FIT configuration not signed", file=sys.stderr)
+        raise VbootParseException(code=EC_UBOOT_BAD)
+
+    uboot_size = uboot_fit.resolve_path("/images/firmware@1/data-size")[0]
+    uboot_hash = get_fdt_hash(uboot_fit, "/images/firmware@1")
+    uboot = uboot[0:uboot_size]
+    uboot_valid = hashlib.sha256(uboot).hexdigest() == uboot_hash
+
+    retval["uboot_configuration_signing_key"] = get_fdt_signer(
+        uboot_fit, "/configurations/conf@1"
+    )
+    retval["uboot_hash_algo"] = get_fdt_algo(uboot_fit, "/images/firmware@1")
+    retval["uboot_hash"] = uboot_hash
+    retval["uboot_hash_status"] = "OK" if uboot_valid else "BAD"
+
+    if not uboot_valid:
+        raise VbootParseException(code=EC_UBOOT_BAD)
+
+    return retval
+
+
+def decode_os(fh):
+    retval = {}
+    # os = fh.read()
+    # os = get_fdt(os)
+    os = get_fdt_from_file(fh)
+
+    # Print Kernel/Ramdisk (OS) information
+    os_date, os_timestamp = get_date(os)
+    retval["os_date"] = os_date
+    retval["os_timestamp"] = os_timestamp
+
+    os_sig = os.resolve_path("/configurations/conf@1/signature@1")
+    if os_sig is None:
+        print("Kernel/ramdisk FIT configuration not signed", file=sys.stderr)
+        raise VbootParserException(code=1)
+
+    retval["os_configuration_signing_key"] = get_fdt_signer(
+        os, "/configurations/conf@1"
+    )
+
+    kernel_hash = get_fdt_hash(os, "/images/kernel@1")
+    # kernel_valid = get_hash(os.resolve_path('/images/kernel@1/data').to_raw()) == kernel_hash
+    kernel_data = os.resolve_path("/images/kernel@1/data")
+    if kernel_data.blob_info:
+        kernel_img_hash = get_hash_from_file(
+            fh, kernel_data.blob_info[0], kernel_data.blob_info[1]
+        )
+    else:
+        kernel_img_hash = get_hash(kernel_data.to_raw())
+    kernel_valid = kernel_img_hash == kernel_hash
+
+    retval["kernel_hash_algo"] = get_fdt_algo(os, "/images/kernel@1")
+    retval["kernel_hash"] = kernel_hash
+    retval["kernel_hash_status"] = "OK" if kernel_valid else "BAD"
+
+    if not kernel_valid:
+        raise VbootParserException(code=EC_KERNEL_BAD)
+
+    ramdisk_hash = get_fdt_hash(os, "/images/ramdisk@1")
+    # ramdisk_valid = get_hash(os.resolve_path('/images/ramdisk@1/data').to_raw()) == ramdisk_hash
+    ramdisk_data = os.resolve_path("/images/ramdisk@1/data")
+    if ramdisk_data.blob_info:
+        ramdisk_img_hash = get_hash_from_file(
+            fh, ramdisk_data.blob_info[0], ramdisk_data.blob_info[1]
+        )
+    else:
+        ramdisk_img_hash = get_hash(ramdisk_data.to_raw())
+    ramdisk_valid = ramdisk_hash == ramdisk_img_hash
+
+    retval["ramdisk_hash_algo"] = get_fdt_algo(os, "/images/ramdisk@1")
+    retval["ramdisk_hash"] = ramdisk_hash
+    retval["ramdisk_hash_status"] = "OK" if ramdisk_valid else "BAD"
+
+    if not ramdisk_valid:
+        raise VbootParserException(code=EC_ROOTFS_BAD)
+
+    return retval
+
+
+def md5_check(fh, image_meta):
+    # define check result value
+    MD5SUM_UNCHECK = -1
+    MD5SUM_VALID = 0
+    MD5SUM_INVALID = 1
+
+    check_map = {}
+    check_map["spl"] = MD5SUM_UNCHECK
+    check_map["rec-u-boot"] = MD5SUM_UNCHECK
+    retval = {}
+
+    for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
+        if part_info["name"] in check_map.keys():
+            fh.seek(part_info["offset"])
+            pdata = fh.read(part_info["size"])
+            pmd5 = hashlib.md5(pdata).hexdigest()
+            retval[part_info["name"]] = {
+                "found": True,
+                "md5": pmd5,
+                "status": "OK" if pmd5 == part_info["md5"] else "BAD",
+            }
+            if pmd5 == part_info["md5"]:
+                check_map[part_info["name"]] = MD5SUM_VALID
+            else:
+                check_map[part_info["name"]] = MD5SUM_INVALID
+
+    # print out unchecked partition
+    for part in [key for key in check_map.keys() if check_map[key] == MD5SUM_UNCHECK]:
+        retval[part] = {"found": False, "status": "BAD"}
+
+    if not all(value == MD5SUM_VALID for value in check_map.values()):
+        raise VbootParserException(code=EC_MD5SUM_BAD)
+
+    return retval
+
+
+def main():
+    try:
+        ret = {}
+        # check md5sum if image_meta is not None
+        if image_meta is not None and not args.locked_bmc:
+            with open(args.filename, "rb") as fh:
+                checksums = md5_check(fh, image_meta)
+
+            if checksums:
+                ret["checksums"] = {}
+                for k, v in checksums.items():
+                    ret["checksums"][k] = v
+
+        with open(args.filename, "rb") as fh:
+            data = fh.read(args.rom_size)
+
+            data_size = len(data)
+            if data_size < 4:
+                print(
+                    "Not sure what this file contains: %s" % (args.filename),
+                    file=sys.stderr,
+                )
+                return EC_EXCEPTION
+            # sanity check the file first instrcution is
+            # a jump to <reset> vector instruction: <reset-vector>\x00\x00\xea
+            # the <reset-vector> location can be different
+            # SPL: \x0f for AST2500, \x1f for AST2600
+            # U-Boot: \xBE for AST2500, \xC0 for AST2600
+            if data[1:4] != b"\x00\x00\xea":
+                print("Non-flash file inputs are not supported", file=sys.stderr)
+                return EC_EXCEPTION
+
+            ret.update(decode_flash(fh, data))
+            ret.update(decode_os(fh))
+
+            if args.json:
+                print(json.dumps(ret))
+            else:
+                if "checksums" in ret:
+                    print("")
+                    for k, v in ret["checksums"].items():
+                        if v["found"]:
+                            print("{} md5sum: {}: {}".format(k, v["md5"], v["status"]))
+                        else:
+                            print("{} md5sum: not fount in meta: BAD".format(k))
+                    print("")
+                print("Lockbit: %s" % ret["lockbit"])
+                print("SPL FIT offset: %s" % ret["spl_fit_offset"])
+                for key in ret["spl_keys"]:
+                    print(
+                        "  SPL KEK: %s (%s) (signs %s)"
+                        % (
+                            key["key"],
+                            key["algo"],
+                            key["required"],
+                        ),
+                    )
+                print("")
+
+                print("Subordinate date: %s" % (ret["subordinate_date"],))
+                print("Subordinate timestamp: %s" % (ret["subordinate_timestamp"],))
+                print(
+                    "Subordinate keys signing key: %s"
+                    % (ret["subordinate_keys_signing_key"])
+                )
+                print(
+                    "Subordinate keys hash (%s): %s: %s"
+                    % (
+                        ret["subordinate_keys_hash_algo"],
+                        ret["subordinate_keys_hash"],
+                        ret["subordinate_key_hash_status"],
+                    )
+                )
+                for key in ret["subordinate_keys"]:
+                    print(
+                        "  Subordinate: %s (%s) (signs %s)"
+                        % (
+                            key["key"],
+                            key["algo"],
+                            key["required"],
+                        ),
+                    )
+                print("")
+
+                print("U-Boot date: %s" % (ret["uboot_date"]))
+                print("U-Boot timestamp: %s" % (ret["uboot_timestamp"]))
+                print(
+                    "U-Boot configuration signing key: %s"
+                    % (ret["uboot_configuration_signing_key"])
+                )
+                print(
+                    "U-Boot hash (%s): %s: %s"
+                    % (
+                        ret["uboot_hash_algo"],
+                        ret["uboot_hash"],
+                        ret["uboot_hash_status"],
+                    )
+                )
+                print("")
+
+                print("Kernel/ramdisk date: %s" % (ret["os_date"]))
+                print("Kernel/ramdisk timestamp: %s" % (ret["os_timestamp"]))
+                print(
+                    "Kernel/ramdisk configuration signing key: %s"
+                    % (ret["os_configuration_signing_key"])
+                )
+                print(
+                    "Kernel hash (%s): %s: %s"
+                    % (
+                        ret["kernel_hash_algo"],
+                        ret["kernel_hash"],
+                        ret["kernel_hash_status"],
+                    )
+                )
+                print(
+                    "Ramdisk hash (%s): %s: %s"
+                    % (
+                        ret["ramdisk_hash_algo"],
+                        ret["ramdisk_hash"],
+                        ret["ramdisk_hash_status"],
+                    )
+                )
+
+    except VbootParserException as e:
+        return e.code
+
+    return EC_SUCCESS
+
+
+def load_image_meta():
+    print("Try loading image meta from image %s" % args.filename, file=sys.stderr)
+    len_remain = FBOBMC_IMAGE_META_SIZE
+    with open(args.filename, "rb") as fh:
+        fh.seek(FBOBMC_IMAGE_META_LOCATION)
+        meta_data = fh.readline(len_remain)
+        meta_data_md5 = hashlib.md5(meta_data.strip()).hexdigest()
+        len_remain -= len(meta_data)
+        meta_data_chksum = fh.readline(len_remain)
+        meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
+        if meta_data_md5 == meta_md5:
+            meta_info = json.loads(meta_data.strip())
+            assert FBOBMC_PART_INFO_KEY in meta_info, (
+                "meta_info does not cotain %s" % FBOBMC_PART_INFO_KEY
+            )
+            meta_info[FBOBMC_PART_INFO_KEY] = tuple(meta_info[FBOBMC_PART_INFO_KEY])
+
+            return meta_info
+
+
+def override_default_args_with_image_meta():
+    rom_part_info = None
+    for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
+        if "rom" == part_info["type"]:
+            rom_part_info = part_info
+            print(
+                "override args.rom_size: 0x%x => 0x%x"
+                % (args.rom_size, part_info["size"]),
+                file=sys.stderr,
+            )
+            args.rom_size = part_info["size"]
+        elif "fit" == part_info["type"] and "u-boot-fit" == part_info["name"]:
+            print(
+                "override args.uboot_fit_offset: 0x%x => 0x%x"
+                % (args.uboot_fit_offset, part_info["offset"]),
+                file=sys.stderr,
+            )
+            args.uboot_fit_offset = part_info["offset"]
+            print(
+                "override args.uboot_fit_size: 0x%x => 0x%x"
+                % (args.uboot_fit_size, part_info["size"]),
+                file=sys.stderr,
+            )
+            args.uboot_fit_size = part_info["size"]
+
+    return rom_part_info
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Show vboot info")
+    parser.add_argument(
+        "--rom-size",
+        default=84 * 1024,
+        type=int,
+        help="Size of ROM region, default 84KB",
+    )
+    parser.add_argument(
+        "--rom-fit-size",
+        default=5120,
+        type=int,
+        help="Size of the ROM FIT region, default 5120",
+    )
+    parser.add_argument(
+        "--uboot-fit-offset",
+        default=0x80000,
+        type=int,
+        help="Location within filename to find firmware FIT DTB, default 0x80000",
+    )
+    parser.add_argument(
+        "--uboot-fit-size",
+        default=384 * 1024,
+        type=int,
+        help="U-Boot FIT partition size, default 384KB",
+    )
+    parser.add_argument(
+        "--subkeystore-size",
+        default=16 * 1024,
+        type=int,
+        help="Subordinate key store max size, default 16KB",
+    )
+    parser.add_argument(
+        "--locked-bmc",
+        action="store_true",
+        help="""checking the locked bmc (/dev/flash1), which will skip checking
+                SPL and Recovery-Uboot md5 checksum
+            """,
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output printed in JSON format",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s-v{}".format(VBOOT_CHECK_VERSION),
+    )
+    parser.add_argument("filename", help="Input firmware")
+
+    args = parser.parse_args()
+
+    image_meta = None
+    try:
+        image_meta = load_image_meta()
+        override_default_args_with_image_meta()
+    except Exception as e:
+        print("No image meta found: %s" % repr(e), file=sys.stderr)
+        print("verifying legacy image", file=sys.stderr)
+
+    try:
+        sys.exit(main())
+    except Exception as e:
+        print("Exception: %s" % (str(e)), file=sys.stderr)
+        traceback.print_exc()
+        sys.exit(EC_EXCEPTION)

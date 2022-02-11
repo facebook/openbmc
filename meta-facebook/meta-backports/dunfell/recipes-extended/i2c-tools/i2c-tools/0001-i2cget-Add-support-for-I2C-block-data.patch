@@ -1,0 +1,173 @@
+From 23d0449cbf0e8133fa26aa5c8f4f9651d5cc3693 Mon Sep 17 00:00:00 2001
+From: Crestez Dan Leonard <leonard.crestez@intel.com>
+Date: Tue, 13 Jul 2021 10:16:25 +0200
+Subject: [PATCH 1/3] i2cget: Add support for I2C block data
+
+This adds mode 'i' for I2C_SMBUS_I2C_BLOCK_DATA. This is the same mode
+letter from i2cdump.
+
+Length is optional and defaults to 32 (maximum).
+
+The intended use is debugging i2c devices with shell commands.
+
+[JD: Fix the build (wrong variable name)
+     Ensure PEC isn't used in I2C block mode
+     Don't print the length (doesn't add value and could be mistaken as
+       an offset
+     Various cleanups]
+
+Signed-off-by: Crestez Dan Leonard <leonard.crestez@intel.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Reviewed-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+Tested-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
+---
+ tools/i2cget.c | 66 ++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 56 insertions(+), 10 deletions(-)
+
+diff --git a/tools/i2cget.c b/tools/i2cget.c
+index d2ed56a..3f3352c 100644
+--- a/tools/i2cget.c
++++ b/tools/i2cget.c
+@@ -41,14 +41,17 @@ static void help(void) __attribute__ ((noreturn));
+ static void help(void)
+ {
+ 	fprintf(stderr,
+-		"Usage: i2cget [-f] [-y] [-a] I2CBUS CHIP-ADDRESS [DATA-ADDRESS [MODE]]\n"
++		"Usage: i2cget [-f] [-y] [-a] I2CBUS CHIP-ADDRESS [DATA-ADDRESS [MODE [LENGTH]]]\n"
+ 		"  I2CBUS is an integer or an I2C bus name\n"
+ 		"  ADDRESS is an integer (0x03 - 0x77, or 0x00 - 0x7f if -a is given)\n"
+ 		"  MODE is one of:\n"
+ 		"    b (read byte data, default)\n"
+ 		"    w (read word data)\n"
+ 		"    c (write byte/read byte)\n"
+-		"    Append p for SMBus PEC\n");
++		"    i (read I2C block data)\n"
++		"    Append p for SMBus PEC\n"
++		"  LENGTH is the I2C block data length (between 1 and %d, default %d)\n",
++		I2C_SMBUS_BLOCK_MAX, I2C_SMBUS_BLOCK_MAX);
+ 	exit(1);
+ }
+ 
+@@ -89,6 +92,13 @@ static int check_funcs(int file, int size, int daddress, int pec)
+ 			return -1;
+ 		}
+ 		break;
++
++	case I2C_SMBUS_I2C_BLOCK_DATA:
++		if (!(funcs & I2C_FUNC_SMBUS_READ_I2C_BLOCK)) {
++			fprintf(stderr, MISSING_FUNC_FMT, "I2C block read");
++			return -1;
++		}
++		break;
+ 	}
+ 
+ 	if (pec
+@@ -101,7 +111,7 @@ static int check_funcs(int file, int size, int daddress, int pec)
+ }
+ 
+ static int confirm(const char *filename, int address, int size, int daddress,
+-		   int pec)
++		   int length, int pec)
+ {
+ 	int dont = 0;
+ 
+@@ -132,11 +142,15 @@ static int confirm(const char *filename, int address, int size, int daddress,
+ 		fprintf(stderr, "current data\naddress");
+ 	else
+ 		fprintf(stderr, "data address\n0x%02x", daddress);
+-	fprintf(stderr, ", using %s.\n",
+-		size == I2C_SMBUS_BYTE ? (daddress < 0 ?
+-		"read byte" : "write byte/read byte") :
+-		size == I2C_SMBUS_BYTE_DATA ? "read byte data" :
+-		"read word data");
++	if (size == I2C_SMBUS_I2C_BLOCK_DATA)
++		fprintf(stderr, ", %d %s using read I2C block data.\n",
++			length, length > 1 ? "bytes" : "byte");
++	else
++		fprintf(stderr, ", using %s.\n",
++			size == I2C_SMBUS_BYTE ? (daddress < 0 ?
++			"read byte" : "write byte/read byte") :
++			size == I2C_SMBUS_BYTE_DATA ? "read byte data" :
++			"read word data");
+ 	if (pec)
+ 		fprintf(stderr, "PEC checking enabled.\n");
+ 
+@@ -159,6 +173,8 @@ int main(int argc, char *argv[])
+ 	int pec = 0;
+ 	int flags = 0;
+ 	int force = 0, yes = 0, version = 0, all_addrs = 0;
++	int length;
++	unsigned char block_data[I2C_SMBUS_BLOCK_MAX];
+ 
+ 	/* handle (optional) flags first */
+ 	while (1+flags < argc && argv[1+flags][0] == '-') {
+@@ -209,11 +225,30 @@ int main(int argc, char *argv[])
+ 		case 'b': size = I2C_SMBUS_BYTE_DATA; break;
+ 		case 'w': size = I2C_SMBUS_WORD_DATA; break;
+ 		case 'c': size = I2C_SMBUS_BYTE; break;
++		case 'i': size = I2C_SMBUS_I2C_BLOCK_DATA; break;
+ 		default:
+ 			fprintf(stderr, "Error: Invalid mode!\n");
+ 			help();
+ 		}
+ 		pec = argv[flags+4][1] == 'p';
++		if (size == I2C_SMBUS_I2C_BLOCK_DATA && pec) {
++			fprintf(stderr, "Error: PEC not supported for I2C block data!\n");
++			help();
++		}
++	}
++
++	if (argc > flags + 5) {
++		if (size != I2C_SMBUS_I2C_BLOCK_DATA) {
++			fprintf(stderr, "Error: Length only valid for I2C block data!\n");
++			help();
++		}
++		length = strtol(argv[flags+5], &end, 0);
++		if (*end || length < 1 || length > I2C_SMBUS_BLOCK_MAX) {
++			fprintf(stderr, "Error: Length invalid!\n");
++			help();
++		}
++	} else {
++		length = I2C_SMBUS_BLOCK_MAX;
+ 	}
+ 
+ 	file = open_i2c_dev(i2cbus, filename, sizeof(filename), 0);
+@@ -222,7 +257,7 @@ int main(int argc, char *argv[])
+ 	 || set_slave_addr(file, address, force))
+ 		exit(1);
+ 
+-	if (!yes && !confirm(filename, address, size, daddress, pec))
++	if (!yes && !confirm(filename, address, size, daddress, length, pec))
+ 		exit(0);
+ 
+ 	if (pec && ioctl(file, I2C_PEC, 1) < 0) {
+@@ -244,6 +279,9 @@ int main(int argc, char *argv[])
+ 	case I2C_SMBUS_WORD_DATA:
+ 		res = i2c_smbus_read_word_data(file, daddress);
+ 		break;
++	case I2C_SMBUS_I2C_BLOCK_DATA:
++		res = i2c_smbus_read_i2c_block_data(file, daddress, length, block_data);
++		break;
+ 	default: /* I2C_SMBUS_BYTE_DATA */
+ 		res = i2c_smbus_read_byte_data(file, daddress);
+ 	}
+@@ -254,7 +292,15 @@ int main(int argc, char *argv[])
+ 		exit(2);
+ 	}
+ 
+-	printf("0x%0*x\n", size == I2C_SMBUS_WORD_DATA ? 4 : 2, res);
++	if (size == I2C_SMBUS_I2C_BLOCK_DATA) {
++		int i;
++
++		for (i = 0; i < res - 1; ++i)
++			printf("0x%02hhx ", block_data[i]);
++		printf("0x%02hhx\n", block_data[res - 1]);
++	} else {
++		printf("0x%0*x\n", size == I2C_SMBUS_WORD_DATA ? 4 : 2, res);
++	}
+ 
+ 	exit(0);
+ }
+-- 
+2.32.0
+

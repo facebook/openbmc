@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Copyright 2019-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+. /usr/local/bin/openbmc-utils.sh
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+dump_eeprom() {
+    weutil /sys/bus/i2c/devices/${1}-00${2:2:3}/eeprom
+    return $?
+}
+
+is_i2cdev_exist() {
+    weutil /sys/bus/i2c/devices/${1}-00${2:2:3}/eeprom &> /dev/null
+    echo $?
+}
+
+bus=17
+addr=0x52
+scm_prsnt=`cat $SMBCPLD_SYSFS_DIR/scm_present_int_status | sed -n 1p`
+if [ $scm_prsnt = "0x0" ]; then
+    if [ $(is_i2cdev_exist $bus $addr) -eq 0 ];then
+        dump_eeprom $bus $addr
+        exit $?
+    else
+        echo "Cannot detect SCM eeprom"
+        exit 1
+    fi
+else
+    echo "SCM is not inserted"
+    exit 1
+fi

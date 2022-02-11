@@ -1,0 +1,41 @@
+# FBOSS required
+# serial baudrate 9600
+CONFIG_BAUDRATE=9600
+CONFIG_BOOTARGS="console=ttyS0,9600n8 root=/dev/ram rw vmalloc=640M"
+
+# Elbert specific
+CONFIG_PHY_FIXED=y
+CONFIG_SYS_PROMPT="ELBERT-vboot=>  "
+CONFIG_SYS_CONFIG_NAME="facebook_elbertvboot"
+CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-elbertvboot"
+
+CONFIG_ASPEED_TPM=y
+
+# logging facilities
+#    0 - emergency
+#    1 - alert
+#    2 - critical
+#    3 - error
+#    4 - warning
+#    5 - note
+#    6 - info
+#    7 - debug
+#    8 - debug content
+#    9 - debug hardware I/O
+
+# CONFIG_LOG=y
+# CONFIG_SPL_LOG=y
+
+# by default when LOG facility enable
+# dev_xxx and log_xxx
+# (SPL)_LOGLEVEL control console print level, default 4 (warning)
+# (SPL)_LOG_MAX_LEVEL control compile time, default 5 (note)
+# LOG_DEFAULT_LEVEL default log level before run 'log level' set it explictly
+
+# CONFIG_LOGLEVEL=7
+# CONFIG_LOG_MAX_LEVEL=7
+# CONFIG_SPL_LOG_MAX_LEVEL=7
+# CONFIG_LOG_DEFAULT_LEVEL=7
+
+# QEMU verified boot test
+# CONFIG_QEMU_VBOOT=y

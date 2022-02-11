@@ -1,0 +1,97 @@
+{
+  "objectName": "Chassis",
+  "objectType": "Generic",
+  "childObjects": [
+    {
+      "objectName": "CPU_1_temp_sensor",
+      "objectType": "SensorDevice",
+      "access": {
+        "api": "sysfs",
+        "path": "/sys/class/hwmon/hwmon1"
+      },
+      "childObjects":[
+        {
+          "objectName": "temp",
+          "objectType": "SensorTemp",
+          "attributes": [
+            {
+              "name": "CPU_temp",
+              "value": "",
+              "addr": "temp1_input",
+              "modes": "RO"
+            }, {
+              "name": "CPU_temp_max",
+              "value": "80000",
+              "addr": "temp1_max",
+              "modes": "RW"
+            }, {
+              "name": "CPU_temp_max_hyst",
+              "value": "60000",
+              "addr": "temp1_max_hyst",
+              "modes": "RW"
+            }
+          ]
+        }
+      ]
+    }, {
+      "objectName": "CPU_2_temp_sensor",
+      "objectType": "SensorDevice",
+      "access": {
+        "api": "sysfs",
+        "path": "/sys/class/hwmon/hwmon2"
+      },
+      "childObjects":[
+        {
+          "objectName": "temp",
+          "objectType": "SensorTemp",
+          "attributes": [
+            {
+              "name": "CPU_temp",
+              "value": "",
+              "addr": "temp1_input",
+              "modes": "RO"
+            }, {
+              "name": "CPU_temp_max",
+              "value": "80000",
+              "addr": "temp1_max",
+              "modes": "RW"
+            }, {
+              "name": "CPU_temp_max_hyst",
+              "value": "60000",
+              "addr": "temp1_max_hyst",
+              "modes": "RW"
+            }
+          ]
+        }
+      ]
+    }, {
+      "objectName": "CPU_2_power_sensor",
+      "objectType": "SensorDevice",
+      "access": {
+        "api": "sysfs",
+        "path": "/sys/class/hwmon/hwmon5"
+      },
+      "childObjects":[
+        {
+          "objectName": "power",
+          "objectType": "SensorPower",
+          "attributes": [
+            {
+              "name": "CPU_power",
+              "value": "",
+              "modes": "RO"
+            }, {
+              "name": "CPU_power_cap_max",
+              "value": "80000",
+              "modes": "RW"
+            }, {
+              "name": "CPU_power_cap_min",
+              "value": "60000",
+              "modes": "RW"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

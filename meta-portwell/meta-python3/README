@@ -1,0 +1,3 @@
+# This layer modifies base yocto recipes in order to exclude all python2
+dependencies in favour of python3.
+# Any dependency of python2 is considered a ~3.5MB image size regression.

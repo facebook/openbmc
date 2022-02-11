@@ -1,0 +1,35 @@
+swagger: "2.0"
+info:
+  description: Swagger doc for /api/sys/sensors
+  title: Swagger doc for /api/sys/sensors
+  version: 1.0.0
+paths:
+  /api/sys/sensors/smb:
+    get:
+      produces: [application/json]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: true
+                properties:
+                  Adapter:
+                    type: string
+                    pattern: "^smb$"
+                  name:
+                    type: string
+                  present:
+                    type: boolean
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

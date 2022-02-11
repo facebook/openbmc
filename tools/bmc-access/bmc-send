@@ -1,0 +1,46 @@
+#!/bin/sh
+# Copyright 2017-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+
+. bmc-lib $*
+
+usage() {
+  echo "USAGE: $0 [OPTIONS] SRC DEST"
+  echo "OPTIONS: "
+  generic_options
+}
+
+PROXY_TMP_DIR="/tmp/$USER"
+
+SRC=${ARGUMENTS[0]}
+DEST=${ARGUMENTS[1]}
+if [ "$SRC" == "" ] || [ "$DEST" == "" ]; then
+	usage
+	exit -1
+fi
+
+SRC_REAL=$(realpath $SRC)
+
+if [ "$PROXY" != "" ]; then
+  send_2hop $SRC $PROXY $PROXY_PASSWORD $PROXY_TMP_DIR root@$BMC_IP $BMC_PASSWORD $DEST
+else
+  send_1hop $SRC root@$BMC_IP $BMC_PASSWORD $DEST
+fi
+echo "Moved $SRC_REAL to $BMC_IP:$DEST" >> ~/.bmc_history
+exit 0
+
+

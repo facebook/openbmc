@@ -1,0 +1,5 @@
+The aspeed watchdog control library for applications running on kernel
+4.17 or later versions.
+
+Refer to "watchdog.h" for all the public APIs, and if you are interested
+in "/dev/watchdog" implementation, check drivers/watchdog/watchdog_dev.c.

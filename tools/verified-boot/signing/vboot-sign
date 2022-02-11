@@ -1,0 +1,174 @@
+#!/bin/bash
+
+#  Copyright (c) 2014-present, Facebook, Inc.
+#  All rights reserved.
+#
+#  This source code is licensed under the BSD-style license found in the
+#  LICENSE file in the root directory of this source tree. An additional grant
+#  of patent rights can be found in the PATENTS file in the same directory.
+
+# Default: POKY_BUILD is the pwd & keys is the place sign.sh is stored.
+POKY_BUILD=`pwd`
+KEYS=$(realpath $(dirname "$0"))
+SETUP=NO
+HELP=NO
+PLATFORM_TYPE=""
+
+PYTHON=/usr/local/bin/python3
+if [ ! -x $PYTHON ]; then
+  PYTHON=/usr/bin/python3
+fi
+
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -k|--keys)
+    KEYS="$2"
+    shift # past argument
+    ;;
+    -b|--build)
+    POKY_BUILD="$2"
+    shift # past argument
+    ;;
+    -i|--image)
+    IMAGE_PATH="$2"
+    shift
+    ;;
+    -p|--python)
+    PYTHON=$2
+    shift;
+    ;;
+    -s|--setup)
+    SETUP=YES
+    ;;
+    -S|--HSM)
+    PLATFORM_TYPE=${2}
+    shift
+    ;;
+    --help)
+    HELP=YES
+    ;;
+    --force)
+    FORCE=YES
+    ;;
+    *)
+            # unknown option
+    ;;
+esac
+shift # past argument or value
+done
+
+if [ "$HELP" == "YES" ]; then
+	echo "USAGE: $0 [OPTIONS]"
+	echo "OPTIONS: "
+  echo "--help"
+  echo "    Print this message"
+  echo "-k|--keys KEYS_DIR"
+  echo "    Set Keys directory to KEYS_DIR, else the path of this script will be used"
+  echo "-b|--build BUILD_DIR"
+  echo "    Set the build directory to BUILD_DIR. Else the current working directory will be used"
+  echo "-s|--setup"
+  echo "    Generate the keys in KEYS_DIR (See above for default path)"
+  echo "-S|--HSM {compute|storage|network|training}"
+  echo "    Use FB HSM keyname ncipher/simple/obmc-<platform_type>-sub-0 key to sign"
+  echo "--force"
+  echo "    Force signing with self-signed, non-HSM keys on new images"
+  exit 0
+fi
+
+POKY_DIR=$(dirname $POKY_BUILD)
+SIGN_SCRIPT_HOME=$POKY_DIR/tools/verified-boot/signing
+IMAGES_DIR=$POKY_BUILD/tmp/deploy/images
+
+if [ ! -d "$IMAGES_DIR" ]; then
+  echo "$POKY_BUILD is not a valid build directory!"
+  exit 255
+fi
+IMAGE_NAME=$(ls "$IMAGES_DIR")
+if [ "$IMAGE_NAME" == "" ]; then
+  echo "Could not find any images in $IMAGE_DIR"
+  exit 255
+fi
+if [ "$IMAGE_PATH" == "" ]; then
+  IMAGE_PATH=$POKY_BUILD/tmp/deploy/images/$IMAGE_NAME/flash-${IMAGE_NAME}
+else
+  IMAGE_PATH=$(realpath "$IMAGE_PATH")
+fi
+echo "POKY_BUILD=$POKY_BUILD"
+echo "POKY_DIR=$POKY_DIR"
+echo "KEYS_DIR=$KEYS"
+echo "IMAGE_NAME=$IMAGE_NAME"
+
+MKIMAGE=$POKY_BUILD/tmp/sysroots/x86_64-linux/usr/bin/mkimage
+# Location is different for rocko
+if [ ! -x "$MKIMAGE" ]; then
+  MKIMAGE=$POKY_BUILD/tmp/sysroots-components/x86_64/u-boot-mkimage-native/usr/bin/mkimage
+fi
+# Location is different for u-boot-tools
+if [ ! -x "$MKIMAGE" ]; then
+  echo "find mkimage in u-boot-tools-native"
+  MKIMAGE=$POKY_BUILD/tmp/sysroots-components/x86_64/u-boot-tools-native/usr/bin/mkimage
+fi
+
+if [ ! -x "$MKIMAGE" ]; then
+  echo "$MKIMAGE"
+  echo "mkimage could not be found in build directory!"
+  echo "Probably $POKY_BUILD is not a build directory?"
+  exit 255
+fi
+
+pushd "$SIGN_SCRIPT_HOME" || { echo "change PWD to $SIGN_SCRIPT_HOME fail"; exit 1; }
+
+if [ "$SETUP" == "YES" ]; then
+  mkdir -p "$KEYS"
+  mkdir -p "$KEYS/kek"
+  mkdir -p "$KEYS/subordinate"
+  if [ -n "$PLATFORM_TYPE" ]; then
+    echo "Setup signing content for HSM in $KEYS"
+    pushd "$KEYS" || { echo "switch CWD to $KEYS failed"; exit 1; }
+      secrets_tool get_from_group --out_file ks.zip SIGNING_CONTENT OPENBMC_VBOOT2_KS && unzip ks.zip && rm ks.zip \
+        && mv kek.* "$KEYS/kek/" && mv subordinate.* "$KEYS/subordinate/"
+    popd
+  else
+    echo "Setup signing content in $KEYS"
+    openssl genrsa -F4 -out "$KEYS/kek/kek.key" 4096
+    openssl rsa -in "$KEYS/kek/kek.key" -pubout > "$KEYS/kek/kek.pub"
+    openssl genrsa -F4 -out "$KEYS/subordinate/subordinate.key" 4096
+    openssl rsa -in "$KEYS/subordinate/subordinate.key" -pubout > "$KEYS/subordinate/subordinate.pub"
+    $PYTHON ./fit-cs --template ./store.dts.in "$KEYS/kek" "$KEYS/kek/kek.dtb"
+    $PYTHON ./fit-cs --template ./store.dts.in --subordinate --subtemplate ./sub.dts.in \
+      "$KEYS/subordinate" "$KEYS/subordinate/subordinate.dtb"
+    LD_LIBRARY_PATH=$POKY_BUILD/tmp/sysroots-components/x86_64/openssl-native/usr/lib:$LD_LIBRARY_PATH \
+    $PYTHON ./fit-signsub --keydir "$KEYS/kek" --mkimage "$MKIMAGE" \
+      "$KEYS/subordinate/subordinate.dtb" "$KEYS/subordinate/subordinate.dtb.signed"
+  fi
+
+  echo "Keys are generated in $KEYS"
+  exit 0
+fi
+
+if [ ! -d "$KEYS" ]; then
+  echo "keys directory $KEYS does not exist!"
+  exit 255
+fi
+
+if [ -n "$PLATFORM_TYPE" ]; then
+  SIGNKEY="--keyname ncipher/simple/obmc-${PLATFORM_TYPE}-sub-0"
+else
+  SIGNKEY="--keydir $KEYS/subordinate"
+fi
+
+LD_LIBRARY_PATH=$POKY_BUILD/tmp/sysroots-components/x86_64/openssl-native/usr/lib:$LD_LIBRARY_PATH \
+$PYTHON ./fit-sign $SIGNKEY \
+                  --mkimage "$MKIMAGE" \
+                  --kek "$KEYS/kek/kek.dtb${PLATFORM_TYPE:+.$PLATFORM_TYPE}" \
+                  --signed-subordinate "$KEYS/subordinate/subordinate.dtb.signed${PLATFORM_TYPE:+.$PLATFORM_TYPE}" \
+                  --sign-os \
+                  "$IMAGE_PATH" \
+                  "${IMAGE_PATH}.signed" \
+                  ${FORCE:+--force}
+
+# Go back
+popd

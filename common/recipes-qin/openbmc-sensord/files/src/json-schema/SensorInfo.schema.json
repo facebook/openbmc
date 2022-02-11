@@ -1,0 +1,11 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://org.openbmc/schemas/SensorInfo.schema.json#",
+  "title": "Sensor Info",
+  "description": "Sensor info for generating sensor object tree for openbmc-sensord",
+  "type": "object",
+  "anyOf": [
+    {"$ref": "Object.schema.json#/definitions/genericObject"},
+    {"$ref": "SensorDevice.schema.json#/definitions/sensorDevice"}
+  ]
+}

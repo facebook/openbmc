@@ -1,0 +1,17 @@
+usage: bios_tester.py [-h]
+                      [--boot_order {enable,disable,set,get} | --postcode {get} | --plat_info {get} | --pcie_port_config {enable,disable,get}]
+                      FRU
+
+Show bios-util usage
+
+positional arguments:
+  FRU                   FRU name
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --boot_order {enable,disable,set,get}
+                        Enable or disable or set or get BIOS boot order
+  --postcode {get}      Get POST code
+  --plat_info {get}     Get platform information
+  --pcie_port_config {enable,disable,get}
+                        Enable or disable or get PCIe port configuration

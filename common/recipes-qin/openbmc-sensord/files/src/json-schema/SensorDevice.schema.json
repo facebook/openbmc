@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "http://org.openbmc/schemas/SensorDevice.schema.json#",
+  "title": "SensorDevice",
+  "description": "information of sensor device in openbmc-sensord",
+  "definitions": {
+    "sensorDevice": {
+      "allOf": [
+        {"$ref": "SensorObject.schema.json#/definitions/genericSensorObject"},
+        {
+          "properties": {
+            "objectType": {"enum": ["SensorDevice"]},
+            "access": {
+              "type": "object",
+              "properties": {
+                "api": {"enum": ["sysfs", "i2c"]},
+                "path": {"type": "string"}
+              },
+              "required": ["api", "path"]
+            },
+            "childObjects": {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {"$ref": "#/definitions/sensorDevice"},
+                  {"$ref": "Object.schema.json#/definitions/genericObject"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorObject"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorTemp"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorPower"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorPwm"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorFan"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorCurrent"},
+                  {"$ref": "SensorObject.schema.json#/definitions/sensorVoltage"}
+                ]
+              }
+            }
+          },
+          "required": ["objectType", "access"]
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "allOf": [
+    {"$ref": "#/definitions/sensorDevice"}
+  ]
+}

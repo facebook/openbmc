@@ -1,0 +1,107 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/scm  
+  title: Swagger doc for /api/sys/sensors/scm  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/scm: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  VCCIN_VR_TEMP: 
+                    type: string
+                  SCM_INLET_TEMP: 
+                    type: string
+                  VCCIN_VR_CURR: 
+                    type: string
+                  MB_OUTLET_TEMP: 
+                    type: string
+                  SCM_OUTLET_TEMP: 
+                    type: string
+                  P3V3_MB_VOLT: 
+                    type: string
+                  VCCIN_VR_OUT_POWER: 
+                    type: string
+                  name: 
+                    type: string
+                  VDDR_VR_VOLT: 
+                    type: string
+                  SOC_DIMMA_TEMP: 
+                    type: string
+                  INA230_VOLT: 
+                    type: string
+                  SOC_TJMAX_TEMP: 
+                    type: string
+                  SOC_TEMP: 
+                    type: string
+                  PCH_TEMP: 
+                    type: string
+                  SOC_THERM_MARGIN_TEMP: 
+                    type: string
+                  SOC_DIMMB_TEMP: 
+                    type: string
+                  SCM_HSC_POWER: 
+                    type: string
+                  PV_BAT_VOLT: 
+                    type: string
+                  present: 
+                    type: boolean
+                  SCM_HSC_VOLT: 
+                    type: string
+                  P1V05_COMB_VOLT: 
+                    type: string
+                  INA230_POWER: 
+                    type: string
+                  P12V_MB_VOLT: 
+                    type: string
+                  VDDR_VR_OUT_POWER: 
+                    type: string
+                  1V05COMB_VR_TEMP: 
+                    type: string
+                  1V05COMB_VR_VOLT: 
+                    type: string
+                  P5V_STBY_MB_VOLT: 
+                    type: string
+                  PVDDR_VOLT: 
+                    type: string
+                  P1V05_PCH_VOLT: 
+                    type: string
+                  P3V3_STBY_MB_VOLT: 
+                    type: string
+                  1V05COMB_VR_CURR: 
+                    type: string
+                  SOC_PACKAGE_POWER: 
+                    type: string
+                  VDDR_VR_CURR: 
+                    type: string
+                  1V05COMB_VR_OUT_POWER: 
+                    type: string
+                  Adapter: 
+                    type: string
+                  VDDR_VR_TEMP: 
+                    type: string
+                  MB_INLET_TEMP: 
+                    type: string
+                  VCCIN_VR_VOLT: 
+                    type: string
+                  SCM_HSC_CURR: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

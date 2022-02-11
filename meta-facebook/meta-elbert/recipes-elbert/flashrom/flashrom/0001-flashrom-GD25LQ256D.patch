@@ -1,0 +1,46 @@
+--- a/flashchips.c
++++ b/flashchips.c
+@@ -5961,6 +5961,33 @@ const struct flashchip flashchips[] = {
+ 		.voltage	= {1695, 1950},
+ 	},
+ 
++	{
++		.vendor		= "GigaDevice",
++		.name		= "GD25LQ256D",
++		.bustype	= BUS_SPI,
++		.manufacture_id	= GIGADEVICE_ID,
++		.model_id	= GIGADEVICE_GD25LQ256D,
++		.total_size	= 32768,
++		.page_size	= 256,
++		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
++		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
++		.tested		= TEST_UNTESTED,
++		.probe		= probe_spi_rdid,
++		.probe_timing	= TIMING_ZERO,
++		.block_erasers	=
++		{
++			{
++				.eraseblocks = { {4 * 1024, 8192} },
++				.block_erase = spi_block_erase_20,
++			}
++		},
++		.printlock	= spi_prettyprint_status_register_bp4_srwd,
++		.unlock		= spi_disable_blockprotect_bp4_srwd, /* TODO: 2nd status reg (read with 0x35) */
++		.write		= spi_chip_write_256,
++		.read		= spi_chip_read, /* Fast read (0x0B) and multi I/O supported */
++		.voltage	= {1695, 1950},
++	},
++
+ 	{
+ 		.vendor		= "GigaDevice",
+ 		.name		= "GD25LQ16",
+--- a/flashchips.h
++++ b/flashchips.h
+@@ -384,6 +384,7 @@
+ #define GIGADEVICE_GD25LQ32	0x6016
+ #define GIGADEVICE_GD25LQ64	0x6017	/* Same as GD25LQ64B (which is faster) */
+ #define GIGADEVICE_GD25LQ128CD	0x6018
++#define GIGADEVICE_GD25LQ256D	0x6019
+ #define GIGADEVICE_GD29GL064CAB	0x7E0601
+ 
+ #define HYUNDAI_ID		0xAD	/* Hyundai */

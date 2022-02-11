@@ -1,0 +1,19 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/i2cflush  
+  title: Swagger doc for /api/sys/i2cflush  
+  version: 1.0.0
+paths: 
+  /api/sys/i2cflush: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              status: 
+                type: string
+            

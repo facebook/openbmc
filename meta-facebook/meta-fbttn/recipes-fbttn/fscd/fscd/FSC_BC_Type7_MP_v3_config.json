@@ -1,0 +1,161 @@
+{
+  "version": "fbttn-type7-mp-v3",
+  "pwm_transition_value": 55,
+  "pwm_boost_value": 50,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": false,
+    "sensor_fail": true,
+    "progressive": true
+  },
+  "fan_dead_boost": {
+    "data": [
+      [1,0],
+      [2,100]
+    ]
+  },
+  "sensor_valid_check": {
+    "SOC": {
+      "attribute": {
+        "type" : "power_BIC_status",
+        "fru" : "server",
+        "number" : "55"
+      }
+    }
+  },
+  "fail_sensor_type": {
+    "SSD_sensor_fail":false
+  },
+  "watchdog": false,
+  "chassis_intrusion": false,
+  "min_rpm": 400,
+  "profiles": {
+    "linear_soc_therm_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ -102, 10 ],
+        [ -12, 15 ],
+        [ -11, 20 ],
+        [ -10, 25 ],
+        [ -9, 30 ],
+        [ -8, 35 ],
+        [ -7, 40 ],
+        [ -6, 45 ],
+        [ -5, 50 ],
+        [ -4, 55 ]
+      ]
+     },
+    "linear_mezz_sensor_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 0, 10 ],
+        [ 93, 11 ],
+        [ 94, 12 ],
+        [ 95, 13 ],
+        [ 96, 14 ],
+        [ 97, 35 ],
+        [ 98, 55 ]
+      ]
+    },
+    "pid_soc_therm_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -10,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -8,
+      "ki": -0.05,
+      "kd": 0
+    },
+    "pid_mezz_sensor_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 95,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -8,
+      "ki": -0.05,
+      "kd": 0
+	  }
+	},
+  "fans": {
+    "0": {
+      "label" : "1 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 0"
+      }
+    },
+    "1": {
+      "label" : "1 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d 1"
+      }
+    },
+    "2": {
+      "label" : "2 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 2"
+      }
+    },
+    "3": {
+      "label" : "2 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 3"
+      }
+    },
+    "4": {
+      "label" : "3 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 4"
+      }
+    },
+    "5": {
+      "label" : "3 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 5"
+      }
+    },
+    "6": {
+      "label" : "4 Front",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 6"
+      }
+    },
+    "7": {
+      "label" : "4 Rear",
+      "read_source" : {
+        "util" : "/usr/local/bin/fan-util --get 7"
+      }
+    }
+  },
+  "zones": {
+    "zone_0": {
+      "pwm_output": [0],
+      "expr_file": "FSC_BC_Type7_MP_v1_zone0.fsc"
+    },
+    "zone_1": {
+      "pwm_output": [1],
+      "expr_file": "FSC_BC_Type7_MP_v1_zone1.fsc"
+    }
+  }
+}

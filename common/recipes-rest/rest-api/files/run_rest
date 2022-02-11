@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/local/bin/rest.py > /tmp/rest.log 2>/tmp/rest.log

@@ -1,0 +1,16 @@
+
+# RPM packages drop log rotation information into this directory
+include /etc/logrotate.d
+
+# no packages own wtmp and btmp -- we'll rotate them here
+/var/log/wtmp {
+    hourly
+    create 0664 root root
+    size 500K
+    rotate 3
+    compress
+    delaycompress
+    notifempty
+}
+
+

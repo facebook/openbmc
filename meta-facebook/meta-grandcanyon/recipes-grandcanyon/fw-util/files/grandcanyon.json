@@ -1,0 +1,35 @@
+{
+  "vboot-meta": {
+    "spl": {
+      "offset": 0,
+      "size":   256,
+      "type": "ignore"
+    },
+    "recovery": {
+      "offset": 256,
+      "size":   640,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 896,
+      "size":   64,
+      "type": "ignore"
+    },
+    "meta": {
+      "offset": 960,
+      "size":   64,
+      "type":  "ignore"
+    },
+    "u-boot": {
+      "offset": 1024,
+      "size":   640,
+      "type":  "fit"
+    },
+    "unified-fit": {
+      "offset": 1664,
+      "size":  31104,
+      "type": "fit",
+      "num-nodes": 3
+    }
+  }
+}

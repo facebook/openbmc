@@ -1,0 +1,50 @@
+{
+    "bios" : {
+        "priority" : 1,
+        "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename}"
+    },
+    "scm" : {
+        "upgrade_cmd" : "fpga_util.sh scm program {filename}",
+        "post_action" : "if [ $(head -n 1 /sys/bus/i2c/drivers/scmcpld/12-0043/dpe_image) != '0x1' ]; then  echo 'non dpe image detected. exiting...'; exit 1; fi",
+        "priority" : 2
+    },
+    "smb" : {
+        "get_version" : "fpga_ver.sh | grep SMB_FPGA | cut -f 2 -d ' '",
+        "upgrade_cmd" : "fpga_util.sh smb program {filename}",
+        "priority" : 3
+    },
+    "smb_cpld" : {
+        "get_version" : "fpga_ver.sh | grep SMB_CPLD | cut -f 2 -d ' '",
+        "upgrade_cmd" : "fpga_util.sh smb_cpld program {filename}",
+        "priority" : 4
+    },
+    "fan" : {
+        "get_version" : "fpga_ver.sh | grep FAN_FPGA | cut -f 2 -d ' '",
+        "upgrade_cmd" : "fpga_util.sh fan program {filename}",
+        "priority" : 5
+    },
+    "th4_qspi" : {
+        "get_version" : "th4_qspi_ver.sh | grep FIRMWARE_VERSION | cut -f 2 -d ' '",
+        "upgrade_cmd" : "fpga_util.sh th4_qspi program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh reset",
+        "priority" : 5
+    },
+    "pim_base" : {
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM_BASE: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim_base program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a",
+        "priority" : 5
+    },
+    "pim16q" : {
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM16Q: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim16q program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
+        "priority" : 6
+    },
+    "pim8ddm" : {
+        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM8DDM: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "fpga_util.sh pim8ddm program {filename}",
+        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
+        "priority" : 6
+    }
+}

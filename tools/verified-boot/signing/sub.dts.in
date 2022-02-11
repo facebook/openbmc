@@ -1,0 +1,27 @@
+/dts-v1/;
+
+/ {
+	description = "Subordinate key store";
+	images {
+{% for store in stores %}
+		fdt@{{store.i}} {
+			description = "Subordinate key store";
+			data = /incbin/("{{store.tempdata}}");
+			hash@1 {
+				algo = "sha256";
+			};
+			signature@1 {
+				algo = "sha256,rsa4096";
+				key-name-hint = "kek";
+			};
+		};
+{% endfor %}
+	};
+
+	configurations {
+		default = "conf@1";
+		conf@1 {
+			firmware = "fdt@1";
+		};
+	};
+};

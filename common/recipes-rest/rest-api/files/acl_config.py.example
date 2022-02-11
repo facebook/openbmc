@@ -1,0 +1,2 @@
+RULES = {"/api/sys/bmc": {"GET": ["admin", "test"]}}
+RULES_REGEXP = {r'^/redfish/v1/Systems/server\d+$': {'GET': ['admin','test']}}

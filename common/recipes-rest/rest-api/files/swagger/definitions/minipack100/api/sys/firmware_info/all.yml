@@ -1,0 +1,73 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info/all  
+  title: Swagger doc for /api/sys/firmware_info/all  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info/all: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  PIM6: 
+                    type: string
+                  PIM4_TYPE: 
+                    type: string
+                  Top FCMCPLD: 
+                    type: string
+                  PIM1_TYPE: 
+                    type: string
+                  PIM3: 
+                    type: string
+                  PIM2_TYPE: 
+                    type: string
+                  PIM1: 
+                    type: string
+                  SCMCPLD: 
+                    type: string
+                  PIM7: 
+                    type: string
+                  PIM8_TYPE: 
+                    type: string
+                  PIM5: 
+                    type: string
+                  PIM4: 
+                    type: string
+                  PIM8: 
+                    type: string
+                  Left PDBCPLD: 
+                    type: string
+                  SMBCPLD: 
+                    type: string
+                  Right PDBCPLD: 
+                    type: string
+                  PIM2: 
+                    type: string
+                  PIM3_TYPE: 
+                    type: string
+                  PIM7_TYPE: 
+                    type: string
+                  PIM6_TYPE: 
+                    type: string
+                  PIM5_TYPE: 
+                    type: string
+                  Bottom FCMCPLD: 
+                    type: string
+            

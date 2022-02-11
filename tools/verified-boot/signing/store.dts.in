@@ -1,0 +1,21 @@
+/dts-v1/;
+
+/ {
+	timestamp = <{{now}}>;
+	no-fallback;
+
+	signature {
+{% for key in keys %}
+		key-{{key.name}} {
+			required = "{{node}}";
+			algo = "{{algorithm}},rsa{{key.size}}";
+			rsa,r-squared = <{{key.rsquared}}>;
+			rsa,modulus = <{{key.modulus}}>;
+			rsa,exponent = <{{key.exponent}}>;
+			rsa,n0-inverse = <{{key.n0inverse}}>;
+			rsa,num-bits = <{{key.bits}}>;
+			key-name-hint = "{{key.name}}";
+		};
+{% endfor %}
+	};
+};

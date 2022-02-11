@@ -1,0 +1,20 @@
+{
+    "bcm5387_eeprom" : {
+        "filename"    : "bcm5387_eeprom.bin",
+        "version" : "NA",
+        "hash"    : "sha1sum",
+        "hash_value" : "b66dd9509e6810ef605d4358c181af68e47d17b8"
+    },
+    "fan_rackmon_cpld" : {
+        "filename"    : "FAN_RACKMON_CPLD.jbc",
+        "version" : "6.101",
+        "hash"    : "sha1sum",
+        "hash_value" : "765beafe1c652b61635e07ddf41482b62cdc37ea"
+    },
+    "sys_cpld" : {
+        "filename"    : "WEDGE100_SYSCPLD.jbc",
+        "version" : "6.101",
+        "hash"    : "sha1sum",
+        "hash_value": "f963fbac7a7788f6969a57036ca885409eaed412"
+    }
+}

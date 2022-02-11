@@ -1,0 +1,148 @@
+{
+  "vboot-meta": {
+    "spl": {
+      "offset": 0,
+      "size":   256,
+      "type": "ignore"
+    },
+    "recovery": {
+      "offset": 256,
+      "size":   640,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 896,
+      "size":   64,
+      "type": "ignore"
+    },
+    "meta": {
+      "offset": 960,
+      "size":   64,
+      "type":  "ignore"
+    },
+    "u-boot": {
+      "offset": 1024,
+      "size":   640,
+      "type":  "fit"
+    },
+    "unified-fit": {
+      "offset": 1664,
+      "size":  31104,
+      "type": "fit",
+      "num-nodes": 2
+    }
+  },
+  "fit-meta": {
+    "uboot": {
+      "offset": 0,
+      "size":   896,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 896,
+      "size":   64,
+      "type": "ignore"
+    },
+    "meta": {
+      "offset": 960,
+      "size":   64,
+      "type": "ignore"
+    },
+    "unified-fit": {
+      "offset": 1024,
+      "size":   31744,
+      "type": "fit",
+      "num-nodes": 2
+    }
+  },
+  "vboot": {
+    "spl": {
+      "offset": 0,
+      "size":   84,
+      "type": "ignore"
+    },
+    "recovery": {
+      "offset": 84,
+      "size":   300,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 384,
+      "size":   128,
+      "type": "ignore"
+    },
+    "uboot": {
+      "offset": 512,
+      "size":   384,
+      "type":  "fit"
+    },
+    "unified-fit": {
+      "offset": 896,
+      "size":   27776,
+      "type": "fit",
+      "num-nodes": 2
+    }
+  },
+  "fit": {
+    "uboot": {
+      "offset": 0,
+      "size":   384,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 384,
+      "size":   128,
+      "type": "ignore"
+    },
+    "unified-fit": {
+      "offset": 512,
+      "size":   27776,
+      "type": "fit",
+      "num-nodes": 2
+    }
+  },
+  "legacy": {
+    "uboot": {
+      "offset": 0,
+      "size":   384,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 384,
+      "size":   128,
+      "type": "ignore"
+    },
+    "kernel": {
+      "offset": 512,
+      "size":   4096,
+      "type": "legacy"
+    },
+    "rootfs": {
+      "offset": 4608,
+      "size":   24064,
+      "type": "legacy"
+    }
+  },
+  "legacy_fido": {
+    "uboot": {
+      "offset": 0,
+      "size":   384,
+      "type": "ignore"
+    },
+    "env": {
+      "offset": 384,
+      "size":   128,
+      "type": "ignore"
+    },
+    "kernel": {
+      "offset": 512,
+      "size":   2560,
+      "type": "legacy"
+    },
+    "rootfs": {
+      "offset": 3072,
+      "size":   12288,
+      "type": "legacy"
+    }
+  }
+}

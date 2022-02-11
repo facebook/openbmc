@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+### BEGIN INIT INFO
+# Provides:          passwd-util
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Password with persist feature
+### END INIT INFO
+
+# source function library
+. /etc/init.d/functions
+
+ACTION="$1"
+case "$ACTION" in
+  start)
+    if [ -e /mnt/data/etc/shadow ]; then
+      echo -n "Retrieving Password.."
+      cp /mnt/data/etc/shadow /etc/shadow
+      echo "done."
+    fi
+    ;;
+  *)
+    OIFS="$IFS"
+    IFS="" read -rsp "New password: " firstpw
+    IFS="$OIFS"
+    echo ""
+    OIFS="$IFS"
+    IFS="" read -rsp "Retype password: " secondpw
+    IFS="$OIFS"
+    echo ""
+    if [ ${#firstpw} -lt 1 ] || [ ${#secondpw} -lt 1 ]; then
+      echo "Password is empty!"
+      exit 1
+    fi
+    if [ "$firstpw" != "$secondpw" ]; then
+      echo "Passwords don't match"
+      exit 1
+    fi
+    echo "root:$firstpw" > /var/tmppw.$$
+    /usr/sbin/chpasswd < /var/tmppw.$$ >/dev/null
+    ret=$?
+    rm -f /var/tmppw.$$
+    if [ $ret -ne 0 ]; then
+      exit 1
+    fi
+    echo -n "Storing Password.."
+    cp /etc/shadow /mnt/data/etc/shadow
+    echo "done."
+    ;;
+esac
+
+exit 0

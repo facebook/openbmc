@@ -1,0 +1,130 @@
+--------------------------------------------------------------------------------
+FSCD Packing instructions:
+--------------------------------------------------------------------------------
+For distribution, python distutils can be used :
+  Example: python setup.py sdist
+  Will create an installation tarball
+
+--------------------------------------------------------------------------------
+FSCD config attribute help:
+--------------------------------------------------------------------------------
+Global config attributes:
+
+"pwm_transition_value":
+  The PWM value of transistional mode.
+
+"pwm_boost_value":
+  The PWM value of boost mode.
+
+"sample_interval_ms":
+  The interval value(in millisecond) between monitoring cycles.
+
+"fan_recovery_time":
+  The value(in second) to delay determinating fan status while accelerating from power loss.
+
+"boost":
+  List the boost type.
+  "fan_fail": true/false
+    This label is for determining whether to count, log, and act for fan fail.
+  "sensor_fail": true/false
+    This label is for specifing fail_sensor_type is used or not.
+    The detail of fail_sensor_type is shown below.
+  "progressive": true/false
+    This label is for specifing if fans should progressively change PWM.
+    fan_dead_boost is used here. The detail of fan_dead_boost is shown below.
+
+"fan_dead_boost":
+  if "progresssive" was enabled, "data" needs to provided in the form:
+    [N1,M1],
+    [N2,M2]
+    If the number of dead fans is between N(#-1) and N#,
+    the PWM will increase M%.
+    If the number of dead fans is more than the latest N#,
+    the PWM will be pwm_boost_value.
+  Otherwise, if all fans have failed for 'threshold' number of times then
+  perform 'action'
+
+"fail_sensor_type":
+  "SSD_sensor_fail": true/false
+    If SSD sensors are failed, FSCD will execute ssd_progressive_algorithm.
+    The detail of ssd_progressive_algorithm is shown below.
+    standby_sensor_fail must be true when using this label.
+  "server_sensor_fail": true/false
+    The server sensor is a sensor which works when the server power is on.
+    If server sensors are failed, the PWM will be pwm_boost_value.
+    standby_sensor_fail must be true when using this label.
+  "standby_sensor_fail": true/false
+    The standby sensor is a sensor which works when the standby power is on.
+    If standby sensor is failed, the PWM will be pwm_boost_value.
+
+"ssd_progressive_algorithm":
+  "offset_algorithm":
+    [N,M]
+    If the number of failed SSD sensors is less than N,
+
+"sensor_valid_check":
+  This config is to check specific sensor valid which can be every much platform specific.
+  Expample:
+    "SOC": {
+      "attribute": {
+        "type" : "power_status",
+        "fru" : "server"
+      }
+    }
+  "SOC" is the sensor name keyword(Ignore Case).
+  The data in "attribute" if again project-specific and here it is for checking the validity of the sensor  
+  with name that contains "SOC".
+  The data in "attribute" will be parsed in the platform layer function fsc_board.sensor_valid_check()
+  "attribute" can be used by the platform for any kind of validity check for sensor. 
+
+"ssd_progressive_algorithm":
+  "offset_algorithm":
+    [N,M]
+    If the number of failed SSD sensors is less than N,
+    the PWM will increase M%.
+    SSD_sensor_fail must be true when using this label.
+
+"watchdog": true/false
+  Kick watchdog by FSCD or not.
+
+"chassis_intrusion": true/false
+  If the chassis is intruded, the PWM will be pwm_boost_value.
+
+"min_rpm":
+  If a fan speed is less than min_rpm, it will be considered dead fan.
+
+Per Profile:
+
+  "read_limit":
+    Defines the valid range and invalid range.
+    'valid' : If temperature read is below "limit" that is considered valid , if
+    exceeded
+    Maximum acceptable temperature reading for the profile-sensor. If this limit
+    is reached FSC will perform protective actions.
+
+  "data [x,y]":
+    x = temperature
+    y = fan speed
+
+--------------------------------------------------------------------------------
+Unit Test Framework Usage:
+--------------------------------------------------------------------------------
+All the unit tests exists in the parent ..fscd/fscd_test/ folder.
+
+Steps to run tests:
+1) python fsc_tester.py
+
+Steps for tests cleanup:
+1) go into ..fscd/fscd_test/
+2) ./fsc_tester_cleanup.sh
+
+Steps to add new tests:
+1) Add new test cases to existing test suite based on the usecase into the
+appropriate class
+2) Add the test name starting with "test_XXX" into the test suite set of tests
+to be executed in fsc_tester.py
+
+--------------------------------------------------------------------------------
+Next Steps:
+--------------------------------------------------------------------------------
+rear fans

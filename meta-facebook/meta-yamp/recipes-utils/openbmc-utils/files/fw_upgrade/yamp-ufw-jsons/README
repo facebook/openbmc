@@ -1,0 +1,2 @@
+BIOS version needs firmware to be scp first on the box. This is specific
+to our linuxboot

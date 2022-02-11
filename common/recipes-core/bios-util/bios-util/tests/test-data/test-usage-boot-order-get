@@ -1,0 +1,11 @@
+usage: bios-util FRU --boot_order get [-h] [--boot_mode | --clear_CMOS | --force_boot_BIOS_setup | --boot_order]
+
+Show Get Boot Order usage
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --boot_mode           Get Boot mode setting
+  --clear_CMOS          Get CMOS clear setting
+  --force_boot_BIOS_setup
+                        Get Force Boot into BIOS Setup setting
+  --boot_order          Get BIOS Boot order

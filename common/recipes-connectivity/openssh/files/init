@@ -1,0 +1,160 @@
+#! /bin/sh
+set -e
+
+# source function library
+. /etc/init.d/functions
+
+# /etc/init.d/ssh: start and stop the OpenBSD "secure shell" daemon
+
+test -x /usr/sbin/sshd || exit 0
+( /usr/sbin/sshd -\? 2>&1 | grep -q OpenSSH ) 2>/dev/null || exit 0
+
+# /etc/default/ssh may set SYSCONFDIR and SSHD_OPTS
+if test -f /etc/default/ssh; then
+    . /etc/default/ssh
+fi
+
+[ -z "$SYSCONFDIR" ] && SYSCONFDIR=/etc/ssh
+mkdir -p $SYSCONFDIR
+
+HOST_KEY_RSA=$SYSCONFDIR/ssh_host_rsa_key
+HOST_KEY_DSA=$SYSCONFDIR/ssh_host_dsa_key
+HOST_KEY_ECDSA=$SYSCONFDIR/ssh_host_ecdsa_key
+HOST_KEY_ED25519=$SYSCONFDIR/ssh_host_ed25519_key
+
+check_for_no_start() {
+    # forget it if we're trying to start, and /etc/ssh/sshd_not_to_be_run exists
+    if [ -e $SYSCONFDIR/sshd_not_to_be_run ]; then
+	echo "OpenBSD Secure Shell server not in use ($SYSCONFDIR/sshd_not_to_be_run)"
+	exit 0
+    fi
+}
+
+check_privsep_dir() {
+    # Create the PrivSep empty dir if necessary
+    if [ ! -d /var/run/sshd ]; then
+	mkdir /var/run/sshd
+	chmod 0755 /var/run/sshd
+    fi
+}
+
+check_config() {
+	/usr/sbin/sshd -t || exit 1
+}
+
+KEYFILES_DIR="/mnt/data/etc/ssh"
+
+prepare_keyfiles_dir() {
+    if [ ! -d "$KEYFILES_DIR" ]; then
+        # remove it in case someone create a file with the same name
+        rm -rf "$KEYFILES_DIR" > /dev/null 2>&1
+        mkdir -p "$KEYFILES_DIR"
+    fi
+}
+
+get_keyfile() {
+    filename=$(basename $1)
+    if [ -f "$KEYFILES_DIR/$filename" ]; then
+        rm -rf $1 > /dev/null 2>&1
+        ln -s "$KEYFILES_DIR/$filename" $1
+    fi
+}
+
+save_keyfile() {
+    filename=$(basename $1)
+    if [ -d "$KEYFILES_DIR" ]; then
+        mv -f $1 "$KEYFILES_DIR/$filename" > /dev/null 2>&1
+        ln -s "$KEYFILES_DIR/$filename" $1
+    fi
+}
+
+check_keys() {
+	# prepare for the permanent storage
+	prepare_keyfiles_dir
+	# create keys if necessary
+	get_keyfile $HOST_KEY_RSA
+	get_keyfile $HOST_KEY_RSA.pub
+	if [ ! -f $HOST_KEY_RSA ]; then
+		echo "  generating ssh RSA key..."
+		ssh-keygen -q -f $HOST_KEY_RSA -N '' -t rsa
+		save_keyfile $HOST_KEY_RSA
+		save_keyfile $HOST_KEY_RSA.pub
+	fi
+
+	get_keyfile $HOST_KEY_ECDSA
+	get_keyfile $HOST_KEY_ECDSA.pub
+	if [ ! -f $HOST_KEY_ECDSA ]; then
+		echo "  generating ssh ECDSA key..."
+		ssh-keygen -q -f $HOST_KEY_ECDSA -N '' -t ecdsa
+		save_keyfile $HOST_KEY_ECDSA
+		save_keyfile $HOST_KEY_ECDSA.pub
+	fi
+
+	get_keyfile $HOST_KEY_DSA
+	get_keyfile $HOST_KEY_DSA.pub
+	if [ ! -f $HOST_KEY_DSA ]; then
+		echo "  generating ssh DSA key..."
+		ssh-keygen -q -f $HOST_KEY_DSA -N '' -t dsa
+		save_keyfile $HOST_KEY_DSA
+		save_keyfile $HOST_KEY_DSA.pub
+	fi
+
+	get_keyfile $HOST_KEY_ED25519
+	get_keyfile $HOST_KEY_ED25519.pub
+	if [ ! -f $HOST_KEY_ED25519 ]; then
+		echo "  generating ssh ED25519 key..."
+		ssh-keygen -q -f $HOST_KEY_ED25519 -N '' -t ed25519
+		save_keyfile $HOST_KEY_ED25519
+		save_keyfile $HOST_KEY_ED25519.pub
+	fi
+}
+
+export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
+
+case "$1" in
+  start)
+	check_for_no_start
+	echo "Starting OpenBSD Secure Shell server: sshd"
+	check_keys
+	check_privsep_dir
+	start-stop-daemon -S -x /usr/sbin/sshd -- $SSHD_OPTS
+        echo "done."
+	;;
+  stop)
+        echo -n "Stopping OpenBSD Secure Shell server: sshd"
+	start-stop-daemon -K -x /usr/sbin/sshd
+        echo "."
+	;;
+
+  reload|force-reload)
+	check_for_no_start
+	check_keys
+	check_config
+        echo -n "Reloading OpenBSD Secure Shell server's configuration"
+	start-stop-daemon -K -s 1 -x /usr/sbin/sshd
+	echo "."
+	;;
+
+  restart)
+  	check_keys
+	check_config
+        echo -n "Restarting OpenBSD Secure Shell server: sshd"
+	start-stop-daemon -K --oknodo -x /usr/sbin/sshd
+	check_for_no_start
+	check_privsep_dir
+	sleep 2
+	start-stop-daemon -S -x /usr/sbin/sshd -- $SSHD_OPTS
+	echo "."
+	;;
+
+  status)
+	status /usr/sbin/sshd
+	exit $?
+  ;;
+
+  *)
+	echo "Usage: /etc/init.d/ssh {start|stop|status|reload|force-reload|restart}"
+	exit 1
+esac
+
+exit 0

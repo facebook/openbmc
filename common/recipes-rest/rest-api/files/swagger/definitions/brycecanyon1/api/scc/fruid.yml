@@ -1,0 +1,63 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/scc/fruid  
+  title: Swagger doc for /api/scc/fruid  
+  version: 1.0.0
+paths: 
+  /api/scc/fruid: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Chassis Part Number: 
+                    type: string
+                  Product Version: 
+                    type: string
+                  Product FRU ID: 
+                    type: string
+                  Board Part Number: 
+                    type: string
+                  Product Part Number: 
+                    type: string
+                  Product Manufacturer: 
+                    type: string
+                  Chassis Type: 
+                    type: string
+                  Product Custom Data 1: 
+                    type: string
+                  Board Mfg: 
+                    type: string
+                  Board Product: 
+                    type: string
+                  Board Serial: 
+                    type: string
+                  Board Mfg Date: 
+                    type: string
+                  Product Serial: 
+                    type: string
+                  Chassis Serial Number: 
+                    type: string
+                  Product Asset Tag: 
+                    type: string
+                  Product Name: 
+                    type: string
+                  Board FRU ID: 
+                    type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

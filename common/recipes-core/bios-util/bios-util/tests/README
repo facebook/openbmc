@@ -1,0 +1,17 @@
+--------------------------------------------------------------------------------
+Unit Test Framework Usage:
+--------------------------------------------------------------------------------
+All the unit tests exists in the parent ..bios-util/bios-util_test/ folder.
+
+Steps to run tests:
+1) python bios_tester.py
+
+Steps for tests cleanup:
+1) go into ..bios-util/bios-util_test/
+2) ./bios_tester_cleanup.sh
+
+Steps to add new tests:
+1) Add new test cases to existing test suite based on the usecase into the
+appropriate class
+2) Add the test name starting with "test_XXX" into the test suite set of tests
+to be executed in bios_tester.py

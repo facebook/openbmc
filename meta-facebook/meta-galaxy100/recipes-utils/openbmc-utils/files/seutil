@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
+((val=$(i2cget -f -y 12 0x31 0x3 2> /dev/null | head -n 1)))
+((left=$(i2cget -f -y 12 0x31 0x5 2> /dev/null | head -n 1)))
+((card_val=$(i2cget -f -y 12 0x31 0x0 2> /dev/null | head -n 1)))
+card_val=$(($card_val % 16))
+if [ $val -lt 8  -a $left -eq 0 ] || [ $val -ge 8 ] || [ $card_val -ge 2 ]; then
+  # left BMC and FAB
+  weutil "$SCM_EEPROM"
+else
+  # right BMC
+  ((slot_id=$(cat "$SLOTID_SYSFS")))
+  slot_id=$(($slot_id - 1))
+  cat <<EOF > /tmp/seutil.py
+import os,json,sys
+for k,v in json.loads(sys.stdin.read())['Information'].items():
+    print "%s: %s" % (k, v)
+EOF
+  wget -qO- http://[fe80::${slot_id}:1%eth0.4088]:8080/api/sys/mb/seutil | python /tmp/seutil.py
+fi

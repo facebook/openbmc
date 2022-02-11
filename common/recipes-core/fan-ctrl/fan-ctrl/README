@@ -1,0 +1,5 @@
+The AST PWM/Tach driver is in the kernel sources at drivers/hwmon/ast_pwm_fan.c
+
+There are 7 PWM output pins.  Each PWM can be configured in one of 3 types (M,
+N, or O).  The clock settings for each type are configurable.  See init_pwm.sh
+for more comments about how we configure the settings.

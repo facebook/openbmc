@@ -1,0 +1,6 @@
+python_test(
+    name = "sample",
+    srcs = [
+        "sample.py",
+    ],
+)

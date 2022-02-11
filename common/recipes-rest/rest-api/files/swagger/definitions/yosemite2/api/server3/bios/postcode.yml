@@ -1,0 +1,31 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server3/bios/postcode  
+  title: Swagger doc for /api/server3/bios/postcode  
+  version: 1.0.0
+paths: 
+  /api/server3/bios/postcode: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  POST Code: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

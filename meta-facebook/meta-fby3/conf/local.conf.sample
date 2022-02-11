@@ -1,0 +1,14 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+
+# Machine Selection
+# VBoot w/ TPM2.0
+MACHINE ??= "fby3"
+
+# PFR
+# MACHINE ??= "fby3s"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb"
+

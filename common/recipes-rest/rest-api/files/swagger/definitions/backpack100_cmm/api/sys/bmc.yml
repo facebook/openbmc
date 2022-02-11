@@ -1,0 +1,102 @@
+swagger: "2.0"
+info:
+  description: Swagger doc for /api/sys/bmc
+  title: Swagger doc for /api/sys/bmc
+  version: 1.0.0
+paths:
+  /api/sys/bmc:
+    get:
+      produces: [application/json]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  TPM TCG version:
+                    type: string
+                  vboot:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      status_text:
+                        type: string
+                      status:
+                        type: string
+                  load-5:
+                    type: string
+                  load-15:
+                    type: string
+                  Uptime:
+                    type: string
+                  kernel version:
+                    type: string
+                  Description:
+                    type: string
+                  OpenBMC Version:
+                    type: string
+                  open-fds:
+                    type: string
+                  MAC Addr:
+                    type: string
+                  Reset Reason:
+                    type: string
+                  At-Scale-Debug Running:
+                    type: boolean
+                  uptime:
+                    type: string
+                  CPU Usage:
+                    type: string
+                  load-1:
+                    type: string
+                  SPI0 Vendor:
+                    type: string
+                  u-boot version:
+                    type: string
+                  SPI1 Vendor:
+                    type: string
+                  Memory Usage:
+                    type: string
+                  memory:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      Shmem:
+                        type: integer
+                        format: int32
+                      Cached:
+                        type: integer
+                        format: int32
+                      MemAvailable:
+                        type: integer
+                        format: int32
+                      MemFree:
+                        type: integer
+                        format: int32
+                      MemTotal:
+                        type: integer
+                        format: int32
+                      Buffers:
+                        type: integer
+                        format: int32
+                  TPM FW version:
+                    type: string
+                  MTD Parts:
+                    type: array
+                    items:
+                      type: string
+                  Secondary Boot Triggered:
+                    type: boolean
+              Actions:
+                type: array
+                items:
+                  type: string
+              Resources:
+                type: array
+                items:
+                  type: string

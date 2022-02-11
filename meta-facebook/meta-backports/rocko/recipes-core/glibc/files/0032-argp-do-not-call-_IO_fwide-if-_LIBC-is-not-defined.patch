@@ -1,0 +1,78 @@
+From 3a67e81d7527363a96af095a5af03b6201b82e9d Mon Sep 17 00:00:00 2001
+From: Charles-Antoine Couret <charles-antoine.couret@essensium.com>
+Date: Thu, 29 Nov 2018 17:56:55 +0000
+Subject: [PATCH] argp: do not call _IO_fwide() if _LIBC is not defined
+
+_IO_fwide() is defined in libio.h file. This file is included only
+when _LIBC is defined.
+
+So, in case of compilation of these files without _LIBC definition,
+the compilation failed due to this unknown function.
+
+Now this function is called when libio.h file is included.
+
+(Change merged from gnulib.  Tested on x86_64.)
+
+	* argp/argp-fmtstream.c (__argp_fmtstream_update): Use [_LIBC]
+	conditional on calls to _IO_fwide and putwc_unlocked.  (Merge from
+	gnulib.)
+	* argp/argp-help.c (__argp_failure): Likewise.
+	
+Upstream-Status: Backport [1]
+
+[1] https://sourceware.org/git/?p=glibc.git;a=commit;h=3a67e81d7527363a96af095a5af03b6201b82e9d
+
+Signed-off-by: Andreas Müller <schnitzeltony@gmail.com>
+---
+ ChangeLog             | 7 +++++++
+ argp/argp-fmtstream.c | 4 ++++
+ argp/argp-help.c      | 2 ++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/argp/argp-fmtstream.c b/argp/argp-fmtstream.c
+index e43a0c7cf1..e9e4c0e5cc 100644
+--- a/argp/argp-fmtstream.c
++++ b/argp/argp-fmtstream.c
+@@ -149,9 +149,11 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
+ 	      size_t i;
+ 	      for (i = 0; i < pad; i++)
+ 		{
++#ifdef _LIBC
+ 		  if (_IO_fwide (fs->stream, 0) > 0)
+ 		    putwc_unlocked (L' ', fs->stream);
+ 		  else
++#endif
+ 		    putc_unlocked (' ', fs->stream);
+ 		}
+ 	    }
+@@ -312,9 +314,11 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
+ 	      *nl++ = ' ';
+ 	  else
+ 	    for (i = 0; i < fs->wmargin; ++i)
++#ifdef _LIBC
+ 	      if (_IO_fwide (fs->stream, 0) > 0)
+ 		putwc_unlocked (L' ', fs->stream);
+ 	      else
++#endif
+ 		putc_unlocked (' ', fs->stream);
+ 
+ 	  /* Copy the tail of the original buffer into the current buffer
+diff --git a/argp/argp-help.c b/argp/argp-help.c
+index 2b6b0775d6..a17260378c 100644
+--- a/argp/argp-help.c
++++ b/argp/argp-help.c
+@@ -1873,9 +1873,11 @@ __argp_failure (const struct argp_state *state, int status, int errnum,
+ #endif
+ 	    }
+ 
++#ifdef _LIBC
+ 	  if (_IO_fwide (stream, 0) > 0)
+ 	    putwc_unlocked (L'\n', stream);
+ 	  else
++#endif
+ 	    putc_unlocked ('\n', stream);
+ 
+ #if _LIBC || (HAVE_FLOCKFILE && HAVE_FUNLOCKFILE)
+-- 
+2.21.0
+

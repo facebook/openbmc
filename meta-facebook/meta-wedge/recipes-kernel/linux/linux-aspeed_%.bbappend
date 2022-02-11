@@ -1,0 +1,3 @@
+LINUX_VERSION_EXTENSION = "-wedge"
+
+COMPATIBLE_MACHINE = "wedge"

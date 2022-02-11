@@ -1,0 +1,38 @@
+{
+    "bic" : {
+        "get_version" : "fw-util scm --version |grep Bri|grep -v Boot| cut -d ' ' -f 3",
+        "priority" : 6,
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bic {filename}"
+    },
+    "bios" : {
+        "get_version" : "fw-util scm --version |grep BIOS| cut -d ' ' -f 3",
+        "priority" : 7,
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bios {filename}"
+    },
+    "fcm" : {
+        "get_version" : "cpld_ver.sh |grep FCM|cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/fcmcpld_update.sh {filename}",
+        "priority": 1
+    },
+    "scm" : {
+        "get_version" : "cpld_ver.sh |grep SCM|cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/scmcpld_update.sh {filename}",
+        "priority": 2
+    },
+    "smb" : {
+        "get_version" : "cpld_ver.sh |grep SYSCPLD|cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/smbcpld_update.sh {filename}",
+        "priority": 3
+    },
+    "pwr" : {
+        "get_version" : "cpld_ver.sh |grep PWR|cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/pwrcpld_update.sh {filename}",
+        "priority": 4
+    },
+    "fpga" : {
+        "get_version" : "fpga_ver.sh |grep FPGA|head -1|cut -d ' ' -f 2",
+        "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_FLASH1 {filename}",
+        "priority": 5
+    }
+}
+

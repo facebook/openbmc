@@ -1,0 +1,75 @@
+{
+    "image-parts": [
+        {
+            "name": "u-boot",
+            "index": 0,
+            "offset": "0",
+            "size": "0x60000",
+            "prot_mask": 29,
+            "pfm": 1,
+            "hash": 1,
+            "compress": 1
+        },
+        {
+            "name": "env",
+            "index": 1,
+            "offset": "0x60000",
+            "size": "0x20000",
+            "prot_mask": 31,
+            "pfm": 1,
+            "hash": 0,
+            "compress": 1
+        },
+        {
+            "name": "fit",
+            "index": 2,
+            "offset": "0x80000",
+            "size": "0x1b80000",
+            "prot_mask": 29,
+            "pfm": 1,
+            "hash": 1,
+            "compress": 1
+        },
+        {
+            "name": "data0",
+            "index": 3,
+            "offset": "0x1c00000",
+            "size": "0xde0000",
+            "prot_mask": 30,
+            "pfm": 1,
+            "hash": 0,
+            "compress": 0
+        },
+        {
+            "name": "pfm",
+            "index": 4,
+            "offset": "0x29e0000",
+            "size": "0x20000",
+            "prot_mask": 0,
+            "pfm": 1,
+            "hash": 0,
+            "compress": 0
+        },
+        {
+            "name": "rc-image",
+            "index": 5,
+            "offset": "0x2a00000",
+            "size": "0x2000000",
+            "prot_mask": 0,
+            "pfm": 1,
+            "hash": 0,
+            "compress": 0
+        },
+        {
+            "name": "image-stg",
+            "index": 6,
+            "offset": "0x4a00000",
+            "size": "0x3600000",
+            "prot_mask": 3,
+            "pfm": 1,
+            "hash": 0,
+            "compress": 0
+        }
+    ],
+    "i2c-rules": []
+}

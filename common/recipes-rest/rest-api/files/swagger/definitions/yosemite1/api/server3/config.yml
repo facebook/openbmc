@@ -1,0 +1,43 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server3/config  
+  title: Swagger doc for /api/server3/config  
+  version: 1.0.0
+paths: 
+  /api/server3/config: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  slot3_sensor_health: 
+                    type: string
+                  slot3_sel_error: 
+                    type: string
+                  slot3_boot_order: 
+                    type: string
+                  pwr_server3_last_state: 
+                    type: string
+                  slot3_por_cfg: 
+                    type: string
+                  sysfw_ver_slot3: 
+                    type: string
+                  identify_slot3: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

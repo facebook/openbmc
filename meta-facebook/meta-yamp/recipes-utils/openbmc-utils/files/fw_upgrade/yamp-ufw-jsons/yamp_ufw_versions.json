@@ -1,0 +1,26 @@
+{
+    "bios" : {
+        "filename"    : "coreboot-glacier.rom",
+        "version" : "",
+        "hash"    : "sha1sum",
+        "hash_value" : "5bd65442ea3d7eb9b738e9bc7dceaea9fac5eb51"
+    },
+    "dawson" : {
+        "filename"    : "dawson.astp",
+        "version" : "3.9",
+        "hash"    : "sha1sum",
+        "hash_value" : "0150ddbd1b653796b0f82f2adfc6b8f74c65f012"
+    },
+    "livingston" : {
+        "filename"    : "livingston.astp",
+        "version" : "14.6",
+        "hash"    : "sha1sum",
+        "hash_value" : "c71e752c9e22a67dca91bfda4d10a574684a8454"
+    },
+    "sperry" : {
+        "filename"    : "sperry.axsvf",
+        "version" : "8.2",
+        "hash"    : "sha1sum",
+        "hash_value" : "943ad8da642b161adfc8d68261b04e8d8ecccb88"
+    }
+}

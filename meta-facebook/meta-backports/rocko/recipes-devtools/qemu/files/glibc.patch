@@ -1,0 +1,12 @@
+diff --git a/linux-user/syscall.c b/linux-user/syscall.c
+index efa3ec2837..7332be9b06 100644
+--- a/linux-user/syscall.c
++++ b/linux-user/syscall.c
+@@ -34,6 +34,7 @@
+ #include <sys/resource.h>
+ #include <sys/swap.h>
+ #include <linux/capability.h>
++#include <linux/sockios.h>
+ #include <sched.h>
+ #include <sys/timex.h>
+ #include <sys/socket.h>

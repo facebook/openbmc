@@ -1,0 +1,45 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/server/logs  
+  title: Swagger doc for /api/server/logs  
+  version: 1.0.0
+paths: 
+  /api/server/logs: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Logs: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        FRU_NAME: 
+                          type: string
+                        APP_NAME: 
+                          type: string
+                        MESSAGE: 
+                          type: string
+                        FRU#: 
+                          type: string
+                        TIME_STAMP: 
+                          type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+            

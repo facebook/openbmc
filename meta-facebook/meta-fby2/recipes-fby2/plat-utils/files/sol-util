@@ -1,0 +1,256 @@
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+
+. /usr/local/fbpackages/utils/ast-functions
+LOGFILE="/var/log/mTerm_$1.log"
+LOGFILE_B="/var/log/mTerm_$1_backup.log"
+
+function show_usage() {
+  echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] bic (only for GPv2)"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] pcie_sw (only for GPv2)"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [ device0 | device1 | ... device11 ] (baud rate)"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
+}
+
+function disable_gpv2_ur() {
+  SLOT_NUM=$1
+  # GPv2 disable uart1 or uart3
+  if [ $SLOT_NUM -eq 1 ]; then
+    # diable uart1
+    devmem_clear_bit $(scu_addr 84) 22
+    devmem_clear_bit $(scu_addr 84) 23
+    usleep 10000
+  elif [ $SLOT_NUM -eq 3 ]; then
+    # diable uart3
+    devmem_clear_bit $(scu_addr 80) 22
+    devmem_clear_bit $(scu_addr 80) 23
+    usleep 10000
+  fi
+}
+
+function enable_gpv2_ur() {
+  SLOT_NUM=$1
+  # GPv2 enable uart1 or uart3
+  if [ $SLOT_NUM -eq 1 ]; then
+    # enable uart1
+    devmem_set_bit $(scu_addr 84) 22
+    devmem_set_bit $(scu_addr 84) 23
+    usleep 10000
+  elif [ $SLOT_NUM -eq 3 ]; then
+    # enable uart3
+    devmem_set_bit $(scu_addr 80) 22
+    devmem_set_bit $(scu_addr 80) 23
+    usleep 10000
+  fi
+}
+
+if [ "$1" == "slot1" ] || [ "$1" == "slot2" ] || [ "$1" == "slot3" ] || [ "$1" == "slot4" ]
+then
+  SLOT=$1
+else
+  show_usage
+  exit -1
+fi
+
+case $SLOT in
+    slot1)
+      SLOT_NUM=1
+      ;;
+    slot2)
+      SLOT_NUM=2
+      ;;
+    slot3)
+      SLOT_NUM=3
+      ;;
+    slot4)
+      SLOT_NUM=4
+      ;;
+esac
+
+if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
+  # set UART clock source 24MHz
+  devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+elif [ $(get_slot_type $SLOT_NUM) == "1" ] || [ $(get_slot_type $SLOT_NUM) == "2" ]; then
+  echo "Should not execute sol-util since CF/GP is on $SLOT"
+  exit 1
+elif [ $(get_slot_type $SLOT_NUM) == "3" ]; then
+  echo "Should not execute sol-util since $SLOT is empty"
+  exit 1
+elif [ $(get_slot_type $SLOT_NUM) == "4" ]; then
+  # enable UART buffer via BIC GPIO
+  /usr/bin/bic-util $SLOT 0xe0 0x3b 0x15 0xa0 0x00 0x01 >/dev/null 2>&1
+fi
+
+if [ $# -gt 1 ]; then
+  if [[ "$2" == "--history" ]]; then
+    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    exit 0
+  fi
+
+  if [ $(get_slot_type $SLOT_NUM) != "4" ]; then
+    # not GPv2
+    show_usage
+    exit -1
+  fi
+
+  # handle GPV2 device / bic
+  if [ "${2:0:6}" == "device" ]; then
+    dev_num=${2:6}
+    if [ "$(echo $dev_num | awk '{print($1<0 || $1>11)?"1":"0"}')" != "0" ]; then
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 disable uart1 or uart3
+    disable_gpv2_ur $SLOT_NUM
+
+    # set UART clock source 24MHz
+    devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+
+    if [ $SLOT_NUM -eq 1 ]; then
+      devmem_set_bit  $(uart1_addr c)  7
+      /sbin/devmem $(uart1_addr 0) 32 0x0000001A
+      /sbin/devmem $(uart1_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart1_addr c)  7
+    elif [ $SLOT_NUM -eq 3 ]; then
+      devmem_set_bit  $(uart3_addr c)  7
+      /sbin/devmem $(uart3_addr 0) 32 0x0000001A
+      /sbin/devmem $(uart3_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart3_addr c)  7
+    else
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 enable uart1 or uart3
+    enable_gpv2_ur $SLOT_NUM
+
+    # Set back to default 57600
+    /bin/stty -F /dev/ttyS$SLOT_NUM 57600 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      show_usage
+      exit -1
+    fi
+
+    if [ $# -eq 3 ]; then
+      baud=$3
+      /bin/stty -F /dev/ttyS$SLOT_NUM $baud >/dev/null 2>&1
+      if [ $? -ne 0 ]; then
+        show_usage
+        exit -1
+      fi
+    elif [ $# -gt 3 ]; then
+      show_usage
+      exit -1
+    fi
+
+    /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 $dev_num >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      /bin/stty -F /dev/ttyS$SLOT_NUM 57600 >/dev/null 2>&1
+      show_usage
+      exit -1
+    fi
+  elif [[ "$2" == "bic" ]]; then
+
+    if [ $# -gt 2 ]; then
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 disable uart1 or uart3
+    disable_gpv2_ur $SLOT_NUM
+
+    # set UART clock source 192MHz (8 * 24MHz)
+    devmem_set_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+
+    if [ $SLOT_NUM -eq 1 ]; then
+      devmem_set_bit  $(uart1_addr c)  7
+      /sbin/devmem $(uart1_addr 0) 32 0x0000000D
+      /sbin/devmem $(uart1_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart1_addr c)  7
+    elif [ $SLOT_NUM -eq 3 ]; then
+      devmem_set_bit  $(uart3_addr c)  7
+      /sbin/devmem $(uart3_addr 0) 32 0x0000000D
+      /sbin/devmem $(uart3_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart3_addr c)  7
+    else
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 enable uart1 or uart3
+    enable_gpv2_ur $SLOT_NUM
+
+    /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 12 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      show_usage
+      exit -1
+    fi
+
+  elif [[ "$2" == "pcie_sw" ]]; then
+
+    if [ $# -gt 2 ]; then
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 disable uart1 or uart3
+    disable_gpv2_ur $SLOT_NUM
+
+    # set UART clock source 192MHz (8 * 24MHz)
+    devmem_set_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+
+    if [ $SLOT_NUM -eq 1 ]; then
+      devmem_set_bit  $(uart1_addr c)  7
+      /sbin/devmem $(uart1_addr 0) 32 0x00000034
+      /sbin/devmem $(uart1_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart1_addr c)  7
+    elif [ $SLOT_NUM -eq 3 ]; then
+      devmem_set_bit  $(uart3_addr c)  7
+      /sbin/devmem $(uart3_addr 0) 32 0x00000034
+      /sbin/devmem $(uart3_addr 4) 32 0x00000000
+      devmem_clear_bit  $(uart3_addr c)  7
+    else
+      show_usage
+      exit -1
+    fi
+
+    # GPv2 enable uart1 or uart3
+    enable_gpv2_ur $SLOT_NUM
+
+    /usr/bin/bic-util $SLOT 0xe0 0x3a 0x15 0xa0 0x00 0x00 14 >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+      show_usage
+      exit -1
+    fi
+
+  else
+    show_usage
+    exit -1
+  fi
+fi
+
+exec /usr/local/bin/mTerm_client $SLOT
+
+echo
+echo
+echo "-----------------------"
+echo "Exit from SOL session."

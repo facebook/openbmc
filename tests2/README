@@ -1,0 +1,144 @@
+CITv2 is based on Python unittest framework that can help standardize test decisions.
+
+--------------------------------------------------------------------------
+How to use it ?
+--------------------------------------------------------------------------
+1) Load BMC image on target that supports python unittest
+2) SCP the whole tests2 folder to target /usr/local/bin
+3) To invoke tests, use the runner:
+# python cit_runner.py --help
+usage: cit_runner.py [-h] [--list-tests] [--platform {wedge,wedge100}]
+                     [--run-test RUN_TEST] [--start-dir START_DIR]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --list-tests          List all available tests
+  --platform {wedge, wedge100}
+                        Run all tests in platform by platform name
+  --run-test RUN_TEST   Path to run a single test. Example:
+                        tests.wedge100.test_eeprom.EepromTest.test_odm_pcb
+  --start-dir START_DIR
+                        Path for where test discovery should start default:
+                        /usr/local/bin/tests2/tests/
+   -c, --cli-logging    To log all cli being called during the CIT run. The output
+                        will be stored at /tmp/cli.txt
+
+Example 1:
+python cit_runner.py --platform wedge100
+> Will execute all tests that are supported for the platform
+
+Example 2:
+python cit_runner.py --platform wedge100 --list-tests
+> Will only list all tests that are supported on a platform
+
+Example 3:
+python cit_runner.py --run-test <name>
+> Will only run the test defined in "name"
+> This option enables user to run a single test or even tests defined in a module.
+> Running tests in a module is powerful to validate a whole feature , example fscd
+
+Example 4:
+python cit_runner.py --list-tests --start-dir <name>
+> Useful to integrate the tool with external tools that only need to get the
+tests lists without access to target BMC
+
+--------------------------------------------------------------------------
+Code structure:
+--------------------------------------------------------------------------
+
+tests2---common (Contains the core part of tests and all base classes)
+|
+---------utils (Utilities used by tests , example shell etc)
+|
+---------tools (Tools used to generate data for tests from BMC example, GPIOS, i2c device tree)
+|
+---------tests
+          |
+          --------<platform> (Contains tests specific to a platform and data that drives base tests)
+          |
+          --------galaxy100
+          |
+          --------yamp
+          |
+          --------minipack
+
+--------------------------------------------------------------------------
+Types of Tests:
+--------------------------------------------------------------------------
+Tests are classified based on where they run and how they interact with BMC.
+Currently tool supports the following:
+1) Tests that directly run on BMC: This class of tests do not depend on
+interfacing with main CPU
+2) Tests that run outside BMC on like a external dev system: This class of tests
+can interact with both BMC and main CPU. These tests can interact with BMC to
+collect state example: power cycle tests, SoL tests etc
+3) Stress tests: Similar to 1) and 2). These tests are meant to take longer time to
+run, since they stress the SW module. Example: rest server
+4) Firmware upgrade tests: Similar to 1), but those test are specifically used with our
+UFW tools to test firmware upgrade.
+
+Following sections describe how to add new tests for the above types
+
+Adding a new test that can directly run on BMC:
+--------------------------------------------------------------------------
+Tests get autodiscovered by the cit_runner , as long as test file name is test_*.py
+To add new test
+
+tests2---common ---> add base_XXX_test.py (Define tests in the class as test_XXX methods)
+|
+---------tests
+          |
+          --------<platform> ---> add test_XXX.py (Define tests in the class as test_XXX methods)
+
+
+Adding a new test that run outside BMC like a external dev system:
+--------------------------------------------------------------------------
+Tests get autodiscovered by cit_runner , as long as test file name is test_*.py
+To add new test
+
+tests2---common ---> add base_XXX_test.py (Define tests in the class as test_external_XXX methods)
+|
+---------tests
+          |
+          --------<platform> ---> add external_test_XXX.py (Define tests in the class as test_external_XXX methods)
+
+--------------------------------------------------------------------------------
+How to use CIT for firmware upgrade test? The commands example assume user is in the
+root openBMC code repo.
+-------------------------------------------------------------------------------
+1- Flash the BMC image (must support python unittest) that you want to use for testing on the box.
+2- scp test2 folder to target /usr/local/bin
+   Ex: scp -r test2 <target-bmc-unit-IP>:/usr/local/bin/
+3- scp tools/fw_upgrade folder to target /tmp/
+   Ex: scp -r tools/fw_upgrade <target-bmc-unit-IP>:/tmp/fw_upgrade/
+4- scp all the firmware binaries to target /tmp/fw_upgrade/
+   Ex: scp -r <path-for-firmware-binaries-folder>  <target-bmc-unit-IP>:/tmp/
+5- scp manifest and firmware jsons to target /tmp/
+   Ex: scp -r
+   meta-facebook/meta-<platform-name>/recipes-utils/openbmc-utils/files/fw_upgrade/*
+   <target-bmc-unit-IP>:/tmp/fw_upgrade/
+6- Please make sure that the firmware name are identical to the names you have
+   in the json files. If they aren't the same, please rename them accordingly.
+
+---------------------------------------------------------------------------------
+Adding a firmware test
+--------------------------------------------------------------------------------
+Firmware tests are both in common and platform specific folder just like the
+previous test structure explained in this README. However, firmware test file
+must be named with the test_fw_ prefix such as test_fw_<name-of-specific-test>.
+
+-----------------------------------------------------------------------------
+Running firmware test on BMC box
+-----------------------------------------------------------------------------
+The steps are the same as the ones explained earlier in this README for running
+test, but for firmware the --fw option must be used. Below are some examples
+with the --fw option.
+1- To list all the test for a specific platform, run this::
+   python cit_runner.py --platform <name-of-the-platform> --fw --list-tests
+
+2- To run a specific test, run this:
+  python cit_runner.py --platform wedge400 --fw --run-test
+<name-of-specific-test
+
+3- To run a firmware dryrun command without upgrading any firmware, cd inside /tmp/fw_upgrade
+   folder on the bmc unit and then run this: python ufw_upgrader.py --dryrun

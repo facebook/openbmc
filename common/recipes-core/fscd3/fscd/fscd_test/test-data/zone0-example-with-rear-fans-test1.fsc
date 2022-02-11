@@ -1,0 +1,4 @@
+max([
+  linear_soc_temp(slot1:soc_temp),
+  linear_mezz_sensor_temp (nic:mezz_sensor_temp)
+])

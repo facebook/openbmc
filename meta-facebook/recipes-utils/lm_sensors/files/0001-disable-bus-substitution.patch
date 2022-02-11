@@ -1,0 +1,40 @@
+From 099a4bf5deebf506bc1817266a8d448f7640ea14 Mon Sep 17 00:00:00 2001
+From: Tian Fang <tfang@fb.com>
+Date: Sat, 6 Aug 2016 11:49:19 -0700
+Subject: [PATCH] disable bus substitution
+
+lmsensors provides the feature to substitute the bus number used in the
+configuration file. In this case, lmsensors uses the i2c adapter name to
+identify the acture adapter.
+
+However, Linux kernel does not gurantee i2c adapter name uniqueness. For
+example, if there are two MUX on the same i2c bus 1, the i2c adapters of
+channel 1 of both MUX share the same adapter name, "i2c-1-mux (chan_id
+1)". That makes one adapter masked by the other one.
+
+In order to fix it properly, need to change the i2c core logic to
+generate uniq adapter name. It cannot be done w/o adding a new parameter
+to i2c_add_mux_adapter().
+
+Before doing that through linux-i2c list, temperorily disable the bus
+substitution function in lmsensors now.
+---
+ lib/init.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/init.c b/lib/init.c
+index 594d6ba..affc438 100644
+--- a/lib/init.c
++++ b/lib/init.c
+@@ -113,7 +113,7 @@ static int parse_config(FILE *input, const char *name)
+ 		goto exit_cleanup;
+ 	}
+ 
+-	err = sensors_substitute_busses();
++	/* err = sensors_substitute_busses(); */
+ 
+ exit_cleanup:
+ 	free_config_busses();
+-- 
+2.8.0.rc2
+

@@ -1,0 +1,52 @@
+swagger: "2.0"
+info:
+  description: Swagger doc for /api/sys/pimstatus
+  title: Swagger doc for /api/sys/pimstatus
+  version: 1.0.0
+paths:
+  /api/sys/pimserial:
+    get:
+      produces: [application/json]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+            additionalProperties: false
+            properties:
+              Resources:
+                type: array
+                items:
+                  type: string
+              Actions:
+                type: array
+                items:
+                  type: string
+              Information:
+                type: object
+                additionalProperties: false
+                properties:
+                  PIM3:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM2:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM1:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM7:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM6:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM5:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM4:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"
+                  PIM8:
+                    type: string
+                    pattern: "^[A-Z0-9]+$"

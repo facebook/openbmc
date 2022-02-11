@@ -1,0 +1,16 @@
+# Configuration used by bmc-log script
+
+#Serial port connected to the micro-server
+US_TTY=""
+
+#IP version of the log collecting server
+LOG_SERVER_IP_VERSION=""
+
+#Host name of the log collecting server
+LOG_SERVER_NAME=""
+
+#Port number of the log collecting server
+LOG_SERVER_PORT=""
+
+#Baud rate to set for the US_TTY
+TTY_BAUD_RATE=""

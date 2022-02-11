@@ -1,0 +1,2 @@
+Common targets are:
+    fby35-image

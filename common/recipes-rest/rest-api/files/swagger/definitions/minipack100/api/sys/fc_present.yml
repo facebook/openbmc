@@ -1,0 +1,39 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/fc_present  
+  title: Swagger doc for /api/sys/fc_present  
+  version: 1.0.0
+paths: 
+  /api/sys/fc_present: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Status: 
+                    type: string
+                  Slotid: 
+                    type: integer
+                    format: int32
+                  Description: 
+                    type: string
+                  Monitored Slotid: 
+                    type: integer
+                    format: int32
+            

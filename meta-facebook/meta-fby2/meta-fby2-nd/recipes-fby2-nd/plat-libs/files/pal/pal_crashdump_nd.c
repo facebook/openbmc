@@ -1,0 +1,466 @@
+/*
+ *
+ * Copyright 2015-present Facebook. All Rights Reserved.
+ *
+ * This file contains code to support IPMI2.0 Specification available @
+ * http://www.intel.com/content/www/us/en/servers/ipmi/ipmi-specifications.html
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#include <stdio.h>
+#include <syslog.h>
+#include <sys/sysinfo.h>
+#include <pthread.h>
+
+#include "pal.h"
+#include "pal_crashdump_nd.h"
+
+static ndcrd_mca_recv_list_t g_recv_list[MAX_NODES] = {0};
+static ndcrd_wdt_addr_bank_t g_wdt_addr[MAX_NODES] = {0};
+static pthread_mutex_t g_ndcrd_state_lock[MAX_NODES] = {[0 ... (MAX_NODES-1)] = PTHREAD_MUTEX_INITIALIZER};
+static uint8_t g_ndcrd_state[MAX_NODES] = {[0 ... (MAX_NODES-1)] = NDCRD_CTRL_BMC_FREE};
+
+typedef struct crashdump_data {
+  uint8_t   sid;  // 0 based
+  pthread_t tid;
+} crashdump_data_t;
+static crashdump_data_t g_crashdump_data[MAX_NODES];
+
+static uint8_t ndcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_mca_bank_t* pbank);
+static uint8_t ndcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_t* pbank);
+static uint8_t ndcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_v2_t* pbank);
+static uint8_t ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cpu_wdt_bank_t* pbank);
+static uint8_t ndcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_addr_bank_t* pbank);
+static uint8_t ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_data_bank_t* pbank);
+static uint8_t ndcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len);
+static void* generate_dump(void* arg);
+
+enum {
+  NDCRD_SET_STATE_SUCCESS     = 0,
+  NDCRD_SET_STATE_FAIL        = -1,
+  NDCRD_SET_STATE_THREAD_ERR  = -2,
+  NDCRD_SET_STATE_UNKNOW_ERR  = -3,
+};
+
+static int ndcrd_set_state(const uint8_t idx, const uint8_t new_state) {
+  // ------------------------------------------
+  // state machine diagram
+  // ------------------------------------------
+  //
+  //               |-----|
+  //               |     V
+  // FREE  ---->  WAIT_DATA  ---->  PACK -|
+  //   ^                                  |
+  //   |----------------------------------
+  //
+
+  int ret = NDCRD_SET_STATE_SUCCESS;
+
+  pthread_mutex_lock(&g_ndcrd_state_lock[idx]);
+
+  switch (g_ndcrd_state[idx]) {
+    case NDCRD_CTRL_BMC_FREE:
+      if (new_state == NDCRD_CTRL_BMC_WAIT_DATA) {
+        ret = NDCRD_SET_STATE_SUCCESS;
+      } else {
+        ret = NDCRD_SET_STATE_FAIL;
+      }
+      break;
+
+    case NDCRD_CTRL_BMC_WAIT_DATA:
+      if (new_state == NDCRD_CTRL_BMC_WAIT_DATA) {
+        ret = NDCRD_SET_STATE_SUCCESS;
+      } else if (new_state == NDCRD_CTRL_BMC_PACK) {
+        // create a thread for packing
+        g_crashdump_data[idx].sid = idx;
+        if (pthread_create(&g_crashdump_data[idx].tid, NULL, generate_dump, (void*)&g_crashdump_data[idx])) {
+          syslog(LOG_ERR, "%s(): create generate_dump threrad failed for slot%d", __func__, (idx+1));
+          ret = NDCRD_SET_STATE_THREAD_ERR;
+        } else {
+          ret = NDCRD_SET_STATE_SUCCESS;
+        }
+      } else {
+        ret = NDCRD_SET_STATE_FAIL;
+      }
+      break;
+
+    case NDCRD_CTRL_BMC_PACK:
+      if (new_state == NDCRD_CTRL_BMC_FREE) {
+        ret = NDCRD_SET_STATE_SUCCESS;
+      } else {
+        ret = NDCRD_SET_STATE_FAIL;
+      }
+      break;
+
+    default:
+      ret = NDCRD_SET_STATE_UNKNOW_ERR;
+      break;
+  }
+
+  if (ret == NDCRD_SET_STATE_SUCCESS) {
+    g_ndcrd_state[idx] = new_state;
+  } else {
+    syslog(LOG_ERR, "%s(): set state failed for slot%d, current_state: %u, new_state: %u, err: %d",
+      __func__, (idx+1), g_ndcrd_state[idx], new_state, ret);
+  }
+
+  pthread_mutex_unlock(&g_ndcrd_state_lock[idx]);
+  return ret;
+}
+
+static void* generate_dump(void* arg) {
+  pthread_detach(pthread_self());
+  crashdump_data_t* data = (crashdump_data_t*)arg;
+  char cmd[128] = {0};
+
+  snprintf(cmd, 128, "%s slot%d", CRASHDUMP_ND_BIN, (data->sid + 1));
+  log_system(cmd);
+
+  if (ndcrd_set_state(data->sid, NDCRD_CTRL_BMC_FREE) != NDCRD_SET_STATE_SUCCESS) {
+    syslog(LOG_ERR, "%s(): Failed set state to free (slot%d)", __func__, (data->sid+1));
+  }
+
+  pthread_exit(NULL);
+}
+
+uint8_t crashdump_initial(uint8_t slot) {
+  char fname[128];
+
+  //check if crashdump is already running
+  if (pal_is_crashdump_ongoing(slot)) {
+    syslog(LOG_CRIT, "Another auto crashdump for slot%d is running.", slot);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  snprintf(fname, sizeof(fname), CRASHDUMP_PID_PATH, slot);
+  FILE *fp;
+  fp = fopen(fname,"w");
+  if (!fp) {
+    syslog(LOG_ERR, "%s(): file open failed, path: %s", __func__, fname);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  fclose(fp);
+
+  //Set crashdump timestamp
+  struct sysinfo info;
+  char value[64];
+  sysinfo(&info);
+  snprintf(value, sizeof(value), "%ld", (info.uptime+1200));
+  snprintf(fname, sizeof(fname), CRASHDUMP_TIMESTAMP_FILE, slot);
+  kv_set(fname, value, 0, 0);
+
+  return CC_SUCCESS;
+}
+
+uint8_t
+pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uint8_t* res_data, uint8_t* res_len) {
+
+  uint8_t completion_code;
+  FILE* fp;
+  char file_path[MAX_CRASHDUMP_FILE_NAME_LENGTH] = "";
+  ndcrd_hdr_t* phdr = (ndcrd_hdr_t*)req_data;
+  uint8_t* data_ptr = req_data + sizeof(ndcrd_hdr_t);
+
+  /* slot is 0 based, slot_id is 1 based */
+  snprintf(file_path, MAX_CRASHDUMP_FILE_NAME_LENGTH, MCA_DECODED_LOG_PATH, slot + 1);
+  fp = fopen(file_path, "a+");
+  if (!fp)
+    return CC_UNSPECIFIED_ERROR;
+
+  syslog(LOG_INFO, "%s(): slot: %u, cmd_ver: %u, type: %u, fmt_ver: %u, data_len: %u",
+    __func__, (slot+1), phdr->cmd_hdr.cmd_ver, phdr->bank_hdr.bank_type, phdr->bank_hdr.bank_fmt_ver, req_len);
+
+  switch (phdr->bank_hdr.bank_type) {
+    case TYPE_MCA_BANK:
+      completion_code = ndcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_mca_bank_t*)data_ptr);
+      break;
+
+    case TYPE_VIRTUAL_BANK:
+      if (phdr->bank_hdr.bank_fmt_ver == 1) {
+        completion_code = ndcrd_virtual_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_virtual_bank_t*)data_ptr);
+      } else if (phdr->bank_hdr.bank_fmt_ver == 2) {
+        completion_code = ndcrd_virtual_bank_v2_handler(fp, slot, &phdr->bank_hdr, (ndcrd_virtual_bank_v2_t*)data_ptr);
+      } else {
+        completion_code = CC_INVALID_PARAM;
+      }
+      break;
+
+    case TYPE_CPU_WDT_BANK:
+      completion_code = ndcrd_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_cpu_wdt_bank_t*)data_ptr);
+      break;
+
+    case TYPE_WDT_ADDR_BANK:
+      completion_code = ndcrd_wdt_addr_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_wdt_addr_bank_t*)data_ptr);
+      break;
+
+    case TYPE_WDT_DATA_BANK:
+      completion_code = ndcrd_wdt_data_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_wdt_data_bank_t*)data_ptr);
+      break;
+
+    case TYPE_CONTROL_PKT:
+      completion_code = ndcrd_ctrl_pkt_handler(fp, slot, &phdr->bank_hdr, (ndcrd_ctrl_pkt_t*)data_ptr, res_data, res_len);
+      break;
+
+    default:
+      completion_code = CC_INVALID_PARAM;
+      break;
+  }
+  fclose(fp);
+
+  pthread_mutex_lock(&g_ndcrd_state_lock[slot]);
+  syslog(LOG_INFO, "%s(): slot: %u, cc: 0x%02x, current state: 0x%02x", __func__, (slot+1), completion_code, g_ndcrd_state[slot]);
+  pthread_mutex_unlock(&g_ndcrd_state_lock[slot]);
+  return completion_code;
+}
+
+
+static uint8_t
+ndcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_mca_bank_t* pbank) {
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, " %s : 0x%02X, %s : 0x%02X \n",
+      "Bank ID", phdr->bank_id, "Core ID", phdr->core_id);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_CTRL", pbank->mca_ctrl_hf, pbank->mca_ctrl_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_STATUS", pbank->mca_status_hf, pbank->mca_status_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_ADDR", pbank->mca_addr_hf, pbank->mca_addr_lf);
+  fprintf(fp,  " %-15s : 0x%08X_%08X \n",
+      "MCA_MISC0", pbank->mca_misc0_hf, pbank->mca_misc0_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_CTRL_MASK", pbank->mca_ctrl_mask_hf, pbank->mca_ctrl_mask_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_CONFIG", pbank->mca_config_hf, pbank->mca_config_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_IPID", pbank->mca_ipid_hf, pbank->mca_ipid_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_SYND", pbank->mca_synd_hf, pbank->mca_synd_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_DESTAT", pbank->mca_destat_hf, pbank->mca_destat_lf);
+  fprintf(
+      fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_DEADDR", pbank->mca_deaddr_hf, pbank->mca_deaddr_lf);
+  fprintf(
+      fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_MISC1", pbank->mca_misc1_hf, pbank->mca_misc1_lf);
+  fprintf(fp, "\n");
+
+  if (g_recv_list[idx].count < MAX_VAILD_LIST_LENGTH) {
+    g_recv_list[idx].list[g_recv_list[idx].count].bank_id = phdr->bank_id;
+    g_recv_list[idx].list[g_recv_list[idx].count].core_id = phdr->core_id;
+    g_recv_list[idx].count++;
+  } else {
+    syslog(LOG_INFO, "%s(): mca recv count exceed %u", __func__, MAX_VAILD_LIST_LENGTH);
+  }
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_t* pbank) {
+  int ret;
+  size_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, " %s : \n", "Virtual Bank (ver 1)");
+  fprintf(fp, " %-15s : 0x%08X \n",
+      "S5_RESET_STATUS", pbank->bank_s5_reset_status);
+  fprintf(fp, " %-15s : 0x%08X \n", "BREAKEVENT", pbank->bank_breakevent);
+  fprintf(fp, " %-15s : ", "VAILD LIST");
+  for (i = 0; i < pbank->valid_mca_count; i++) {
+    fprintf(fp, "(0x%02x,0x%02x) ",
+        pbank->valid_mca_list[i].bank_id, pbank->valid_mca_list[i].core_id);
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, " %-15s : ", "RECEIVE LIST");
+  for (i = 0; i < g_recv_list[idx].count; i++) {
+    fprintf(fp, "(0x%02x,0x%02x) ",
+        g_recv_list[idx].list[i].bank_id, g_recv_list[idx].list[i].core_id);
+  }
+  fprintf(fp, "\n");
+  memset(&g_recv_list[idx], 0, sizeof(ndcrd_mca_recv_list_t));
+
+  ret = ndcrd_set_state(idx, NDCRD_CTRL_BMC_PACK);
+  if (ret == NDCRD_SET_STATE_THREAD_ERR) {
+    completion_code = CC_UNSPECIFIED_ERROR;
+  } else if (ret == NDCRD_SET_STATE_FAIL) {
+    // basically, this code should never be run
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+  }
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_v2_t* pbank) {
+  size_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, " %s : \n", "Virtual Bank (ver 2)");
+  fprintf(fp, " %-15s : 0x%08X \n",
+      "S5_RESET_STATUS", pbank->bank_s5_reset_status);
+  fprintf(fp, " %-15s : 0x%08X \n", "BREAKEVENT", pbank->bank_breakevent);
+
+  fprintf(fp, " %-15s : 0x%08X \n", "PROCESSOR NUMER", pbank->process_num);
+  fprintf(fp, " %-15s : 0x%08X \n", "APIC ID", pbank->apic_id);
+  fprintf(fp, " %-15s : 0x%08X \n", "EAX", pbank->eax);
+  fprintf(fp, " %-15s : 0x%08X \n", "EBX", pbank->ebx);
+  fprintf(fp, " %-15s : 0x%08X \n", "ECX", pbank->ecx);
+  fprintf(fp, " %-15s : 0x%08X \n", "EDX", pbank->edx);
+
+  fprintf(fp, " %-15s : ", "VAILD LIST");
+  for (i = 0; i < pbank->valid_mca_count; i++) {
+    fprintf(fp, "(0x%02x,0x%02x) ",
+        pbank->valid_mca_list[i].bank_id, pbank->valid_mca_list[i].core_id);
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, " %-15s : ", "RECEIVE LIST");
+  for (i = 0; i < g_recv_list[idx].count; i++) {
+    fprintf(fp, "(0x%02x,0x%02x) ",
+        g_recv_list[idx].list[i].bank_id, g_recv_list[idx].list[i].core_id);
+  }
+  fprintf(fp, "\n");
+  memset(&g_recv_list[idx], 0, sizeof(ndcrd_mca_recv_list_t));
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cpu_wdt_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, " %s : \n", "CPU/Data Fabric Watchdog Timer");
+  for (i = 0; i < CPU_WDT_CCM_NUM; i++) {
+    fprintf(fp, "  [CCM%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "RSPQWDTIoTransLogHi", pbank->rspq_wdt_io_trans_log_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "RSPQWDTIoTransLogLow", pbank->rspq_wdt_io_trans_log_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_addr_bank_t* pbank) {
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != 0) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  memcpy(&g_wdt_addr[idx], pbank, sizeof(ndcrd_wdt_addr_bank_t));
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_data_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, " %s : \n", "SMU/PSP/PTDMA Watchdog Timers data bank");
+  for (i = 0; i < WDT_NBIO_NUM; i++) {
+    fprintf(fp, "  [NBIO%u]\n", i);
+    fprintf(fp, "    %s\n", "ShubMp0WrTimeoutDetected");
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_ADDR : 0x%08X \n", g_wdt_addr[idx].addr[i][0]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA0: 0x%08X \n", pbank->data[i][0][0]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA1: 0x%08X \n", pbank->data[i][0][1]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA2: 0x%08X \n", pbank->data[i][0][2]);
+    fprintf(fp, "    %s\n", "ShubMp0RdTimeoutDetected");
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_ADDR : 0x%08X \n", g_wdt_addr[idx].addr[i][1]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA0: 0x%08X \n", pbank->data[i][1][0]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA1: 0x%08X \n", pbank->data[i][1][1]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA2: 0x%08X \n", pbank->data[i][1][2]);
+    fprintf(fp, "    %s\n", "ShubMp1WrTimeoutDetected");
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_ADDR : 0x%08X \n", g_wdt_addr[idx].addr[i][2]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA0: 0x%08X \n", pbank->data[i][2][0]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA1: 0x%08X \n", pbank->data[i][2][1]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA2: 0x%08X \n", pbank->data[i][2][2]);
+    fprintf(fp, "    %s\n", "ShubMp1RdTimeoutDetected");
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_ADDR : 0x%08X \n", g_wdt_addr[idx].addr[i][3]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA0: 0x%08X \n", pbank->data[i][3][0]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA1: 0x%08X \n", pbank->data[i][3][1]);
+    fprintf(fp, "      SHUB_MPX_LAST_XXREQ_LOG_DATA2: 0x%08X \n", pbank->data[i][3][2]);
+  }
+  fprintf(fp, "\n");
+  memset(&g_wdt_addr[idx], 0, sizeof(ndcrd_wdt_addr_bank_t));
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len) {
+  int ret;
+  uint8_t completion_code = CC_SUCCESS;
+
+  switch (ppkt->cmd) {
+    case NDCRD_CTRL_GET_STATE:
+      pthread_mutex_lock(&g_ndcrd_state_lock[idx]);
+      res_data[0] = g_ndcrd_state[idx];
+      *res_len = 1;
+      pthread_mutex_unlock(&g_ndcrd_state_lock[idx]);
+      break;
+
+    case NDCRD_CTRL_DUMP_FINIDHED:
+      ret = ndcrd_set_state(idx, NDCRD_CTRL_BMC_PACK);
+      if (ret == NDCRD_SET_STATE_THREAD_ERR) {
+        completion_code = CC_UNSPECIFIED_ERROR;
+      } else if (ret == NDCRD_SET_STATE_FAIL) {
+        completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+      }
+      break;
+
+    default:
+      return CC_INVALID_PARAM;
+  }
+  return completion_code;
+}

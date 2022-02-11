@@ -1,0 +1,75 @@
+{
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "watchdog": true,
+  "fanpower": false,
+  "min_rpm": 800,
+  "profiles": {
+    "linear_inlet": {
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 25, 18 ],
+        [ 27, 19 ],
+        [ 29, 20 ],
+        [ 31, 21 ],
+        [ 33, 22 ],
+        [ 35, 23 ],
+        [ 37, 24 ],
+        [ 39, 25 ],
+        [ 41, 26 ],
+        [ 43, 27 ],
+        [ 45, 28 ]
+      ]
+    },
+    "linear_margin": {
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [-36, 9],
+        [-34, 10],
+        [-32, 11],
+        [-30, 12],
+        [-27, 13],
+        [-26, 14],
+        [-25, 15],
+        [-24, 16],
+        [-7, 30],
+        [-5, 40],
+        [-3, 50],
+        [-1, 100]
+      ]
+    },
+    "pid_margin": {
+      "type": "pid",
+      "setpoint": -20,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 2,
+      "kp": -1,
+      "ki": -0.05,
+      "kd": -0.5
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0, 1],
+      "inputs": [
+        {
+          "profile": "linear_inlet",
+          "sensor": { "id": 129, "board": "spb" }
+        },
+        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot1" } },
+        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot2" } },
+        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot3" } },
+        { "profile": "linear_margin", "sensor": {"id": 9, "board": "slot4" } }
+      ]
+    }
+  }
+}

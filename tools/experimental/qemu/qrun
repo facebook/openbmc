@@ -1,100 +1,189 @@
-#!/bin/env python3
+#!/usr/bin/env python3
 
+import argparse
 import hashlib
-import sys
 import os
+import multiprocessing
+import shutil
 import subprocess
+import sys
 
-TMPF = "/tmp/flash"
-FLASH_SIZE = 32 * 1024 * 1024
+GOLDEN_IMAGE = "/tmp/a.mtd"
+PRIMARY_IMAGE = "/tmp/b.mtd"
+# We can always give QEMU a file that's larger than necessary, but not one
+# that's too small.
+FLASH_SIZE = 128 * 1024 * 1024
+# We pretend to have a Mellanox NIC for every machine type for extra NCSI
+# emulation with the libslirp backend.
+MFR_ID = 0x8119
+NCSI_MAC = "aa:bb:cc:dd:ee:ff"
 
-def get_file_digest(bin_file, hash_size=None):
-    with open(bin_file, "rb") as f:
-        m = hashlib.md5()
-        if hash_size:
-            m.update(f.read(hash_size))
-        else:
-            m.update(f.read())
-        return m.hexdigest()
-
-
-def generate_mtd(bin_file):
+def generate_mtd(bin_file: str, out_file: str):
     zero_size = FLASH_SIZE - os.path.getsize(bin_file)
-    with open(TMPF, "wb") as outf, open(bin_file, "rb") as inf:
+    with open(out_file, "wb") as outf, open(bin_file, "rb") as inf:
         outf.write(inf.read())
         outf.write(b"\0" * zero_size)
 
+def qemu_path() -> str:
+    home_dir = os.environ["HOME"]
+    local_dir = os.path.join(home_dir, "local")
+    if not os.path.isdir(local_dir):
+        local_dir = home_dir
+    qemu_dir = os.path.join(local_dir, "openbmc-qemu")
+    qemu_exe = os.path.join(qemu_dir, "build/qemu-system-arm")
 
-def qemu_path():
-    def exe_path(path):
-        return path + "/build/arm-softmmu/qemu-system-arm"
+    if not os.path.isdir(qemu_dir):
+        subprocess.check_call(['git', 'clone', 'https://github.com/facebook/openbmc-qemu', qemu_dir])
 
-    def is_exe(path):
-        return os.path.isfile(path) and os.access(path, os.X_OK)
-
-    def get_local():
-        user = subprocess.check_output(['whoami']).decode().strip()
-        return "/home/" + user + "/local"
-
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    if is_exe(exe_path(script_dir)):
-        return exe_path(script_dir)
-
-    qemu_dir = get_local() + '/qemu'
-    if (not os.path.isdir(qemu_dir)):
-        subprocess.check_call(['git', 'clone', 'https://github.com/openbmc/qemu'], cwd=get_local())
-        subprocess.check_call(['git', 'submodule', 'update', '--init', 'dtc'], cwd=qemu_dir)
-    qemu_exe = exe_path(qemu_dir)
-    if (not is_exe(qemu_exe)):
-        subprocess.check_call(['mkdir', 'build'], cwd=qemu_dir)
-        subprocess.check_call(['../configure', '--target-list=arm-softmmu'], cwd=qemu_dir + "/build")
-        subprocess.check_call(['make'], cwd=qemu_dir + '/build')
-        if not is_exe(qemu_exe):
+    if not os.path.exists(qemu_exe):
+        subprocess.check_call([
+            './configure',
+            '--target-list=arm-softmmu',
+            '--disable-vnc',
+            '--disable-sdl',
+            '--disable-curses',
+        ], cwd=qemu_dir)
+        cpu_count = multiprocessing.cpu_count()
+        subprocess.check_call(['make', '-j', str(cpu_count)], cwd=qemu_dir)
+        if not os.path.exists(qemu_exe):
             print("Waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             raise ValueError("QEMU Build failed!")
-    return (qemu_exe, qemu_dir + "/build/qemu-bridge-helper")
 
+    return qemu_exe
 
-if len(sys.argv) > 1:
-    inf = sys.argv[1]
-    print(f"Using file: {inf}")
-    if not os.path.exists(inf):
-        print(f"{inf} does not exist!")
-        sys.exit(-1)
-    in_dig = get_file_digest(inf)
-    print(f"MD5 of input: {in_dig}")
-    if os.path.exists(TMPF):
-        out_dig = get_file_digest(TMPF, os.path.getsize(inf))
-        print(f"MD5 of output: {out_dig}")
-        if out_dig != in_dig:
-            print("Mismatch, generating a new MTD")
-            generate_mtd(inf)
-        else:
-            print("Using existing image!")
-    else:
-        print("Generating a new MTD")
-        generate_mtd(inf)
-elif os.path.exists(TMPF):
-    print("Reusing generated flash from old run")
-else:
-    print(f"USAGE: {sys.argv[0]} [IMAGE FILE]")
-    print("IMAGE FILE is optional if this is the second run")
+def list_machines(args: argparse.Namespace):
+    qemu_exe = qemu_path()
 
-exe,brhelper = qemu_path()
+    output = subprocess.check_output([qemu_exe, "-machine", "help"]).decode("utf-8")
+    for line in output.splitlines():
+        if "Facebook" in line:
+            print(line)
 
-cmd = [
-    exe,
-    "-nographic",
-    "-M",
-#    "facebook-tiogapass",
-    "ast2500-evb",
-    "-m",
-    "512M",
-    "-netdev",
-    "tap,id=tap0,script=no,ifname=tap0",
-    "-net", "nic,netdev=tap0,macaddr=00:11:22:33:44:55,model=ftgmac100",
-    "-drive",
-    f"if=mtd,format=raw,file={TMPF}",
-]
-print(" ".join(cmd))
-subprocess.check_call(cmd)
+TAP_SETUP = """\
+set -e
+sudo ip link add dev bmc-br0 type bridge
+sudo ip link set dev bmc-br0 up
+sudo ip tuntap add tap0 mode tap
+sudo ip link set tap0 up
+if hash brctl 2>/dev/null; then
+  sudo brctl addif bmc-br0 tap0
+else
+  sudo ip link set tap0 master bmc-br0
+fi
+"""
+
+def tap_setup(args: argparse.Namespace):
+    subprocess.check_call(TAP_SETUP, shell=True)
+
+TAP_TEARDOWN = """\
+set -e
+if hash brctl 2>/dev/null; then
+  sudo brctl delif bmc-br0 tap0
+else
+  sudo ip link set eth0 nomaster
+fi
+sudo ip link set tap0 down
+sudo ip tuntap del tap0 mode tap
+sudo ip link set dev bmc-br0 down
+sudo ip link del dev bmc-br0 type bridge
+"""
+
+def tap_teardown(args: argparse.Namespace):
+    subprocess.check_call(TAP_TEARDOWN, shell=True)
+
+def start_qemu(args: argparse.Namespace):
+    qemu_exe = qemu_path()
+
+    generate_mtd(args.image, PRIMARY_IMAGE)
+    shutil.copyfile(PRIMARY_IMAGE, GOLDEN_IMAGE)
+
+    cmd = [
+        qemu_exe,
+        "-machine",
+        args.machine,
+        "-drive",
+        f"file={GOLDEN_IMAGE},format=raw,if=mtd",
+        "-drive",
+        f"file={PRIMARY_IMAGE},format=raw,if=mtd",
+        "-serial",
+        "stdio",
+        "-display",
+        "none",
+    ]
+
+    if args.slirp_net:
+        cmd.append("-netdev")
+        netdev = f"user,id=netdev0,mfr-id={MFR_ID},ncsi-mac={NCSI_MAC},"
+        netdev += ",".join(f"hostfwd=:{arg}" for arg in args.hostfwd)
+        cmd.append(netdev)
+        cmd.append("-net")
+        cmd.append("nic,model=ftgmac100,netdev=netdev0")
+
+    if args.tap_net:
+        cmd.append("-netdev")
+        cmd.append(f"tap,id=netdev0,script=no,ifname={args.tap_intf}")
+        cmd.append("-net")
+        cmd.append("nic,netdev=netdev0,model=ftgmac100")
+
+    cmd.extend(args.extra)
+
+    print(" ".join(cmd))
+    subprocess.check_call(cmd)
+
+def main():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest='subcommand', required=True)
+
+    subcommand = subparsers.add_parser("list-machines", help="List Facebook OpenBMC machines")
+    subcommand.set_defaults(func=list_machines)
+
+    tap = subparsers.add_parser("tap", help="Setup and teardown for TUN/TAP network")
+    tap_subparsers = tap.add_subparsers(dest="tap_subcommand", required=True)
+    subcommand = tap_subparsers.add_parser("setup", help="Setup TUN/TAP network")
+    subcommand.set_defaults(func=tap_setup)
+    subcommand = tap_subparsers.add_parser("teardown", help="Teardown TUN/TAP network")
+    subcommand.set_defaults(func=tap_teardown)
+
+    subcommand = subparsers.add_parser("start", help="Start a QEMU instance")
+    subcommand.add_argument(
+        "machine",
+        help="QEMU machine type to use (fby35-bmc, etc)"
+    )
+    subcommand.add_argument(
+        "image",
+        help="OpenBMC firmware image (flash-fby35, fby35.mtd, etc)"
+    )
+    subcommand.add_argument(
+        "--slirp-net",
+        help="Enable port-forwarding with libslirp",
+        action="store_true"
+    )
+    subcommand.add_argument(
+        "--hostfwd",
+        nargs="*",
+        help="With --slirp-net, add port-forwarding " \
+             "for hostip:hostport-guestip:guestport. " \
+             "For example, ':2222-:22'",
+        default=[":2222-:22"],
+    )
+    subcommand.add_argument(
+        "--tap-net",
+        help="Setup networking using a TAP interface",
+        action="store_true",
+    )
+    subcommand.add_argument(
+        "--tap-intf",
+        help="TAP interface to use with --tap-net",
+        default="tap0",
+    )
+    subcommand.add_argument("extra", nargs="*", help="Any extra arguments to pass to QEMU")
+    subcommand.set_defaults(func=start_qemu)
+
+    args = parser.parse_args()
+    try:
+        args.func(args)
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.returncode)
+
+if __name__ == "__main__":
+    main()

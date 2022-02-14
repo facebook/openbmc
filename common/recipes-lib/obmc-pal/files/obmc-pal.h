@@ -400,6 +400,7 @@ int pal_get_dev_name(uint8_t fru, uint8_t dev, char *name);
 int pal_get_fruid_path(uint8_t fru, char *path);
 int pal_get_dev_fruid_path(uint8_t fru, uint8_t dev_id, char *path);
 int pal_get_fruid_eeprom_path(uint8_t fru, char *path);
+int pal_get_dev_fruid_eeprom_path(uint8_t fru, uint8_t dev_id, char *path, uint8_t path_len);
 int pal_get_fruid_name(uint8_t fru, char *name);
 int pal_get_dev_fruid_name(uint8_t fru, uint8_t dev, char *name);
 int pal_slotid_to_fruid(int slotid);

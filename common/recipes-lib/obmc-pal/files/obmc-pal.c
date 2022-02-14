@@ -848,6 +848,12 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path)
 }
 
 int __attribute__((weak))
+pal_get_dev_fruid_eeprom_path(uint8_t fru, uint8_t dev_id, char *path, uint8_t path_len)
+{
+  return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
 pal_get_fruid_name(uint8_t fru, char *name)
 {
   return PAL_ENOTSUP;

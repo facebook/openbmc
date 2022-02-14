@@ -995,6 +995,9 @@ int do_action(int argc, char * argv[], unsigned char action_flag) {
       fru_size = (fru_size > FRUID_SIZE)?FRUID_SIZE:fru_size;
 
       ret = pal_get_fruid_eeprom_path(fru, eeprom_path);
+      if ((dev_id != DEV_NONE) && (ret < 0)) {
+         ret = pal_get_dev_fruid_eeprom_path(fru, dev_id, eeprom_path, sizeof(eeprom_path));
+      }
       if (ret < 0) {
         //Can not handle in common, so call pal libray for update
         if (num_devs) {

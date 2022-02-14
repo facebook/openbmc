@@ -35,6 +35,7 @@
 #include <openbmc/pal.h>
 #include <facebook/fby35_common.h>
 #include <facebook/fby35_fruid.h>
+#include <facebook/bic.h>
 #include "fruid.h"
 
 #define FRUID_SIZE        512
@@ -65,6 +66,8 @@ fruid_to_devid mapping[] = {
   { FRU_ID_2OU_DEV11    ,DEV_ID11_2OU },
   { FRU_ID_2OU_DEV12    ,DEV_ID12_2OU },
   { FRU_ID_2OU_DEV13    ,DEV_ID13_2OU },
+  { FRU_ID_2OU_X8       ,BOARD_2OU_X8 },
+  { FRU_ID_2OU_X16      ,BOARD_2OU_X16},
 };
 
 /*
@@ -132,7 +135,11 @@ fruid_init_local_fru() {
   uint8_t fru_bus = 0;
   uint8_t fru_addr = 0;
   char *fru_path = NULL;
+  char dev_path[MAX_FRU_PATH_LEN] = {0};
   uint8_t bmc_location = 0;
+  uint8_t i = 0;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+  int config_status = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -175,6 +182,28 @@ fruid_init_local_fru() {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, fru_path);
     goto error_exit;
   }
+
+  //DPV2 X8 furid
+  for(i = FRU_SLOT1; i <= FRU_SLOT4; i++) {
+    config_status = bic_is_m2_exp_prsnt(i);
+    if (config_status < 0) {
+      continue;
+    }
+    if ((config_status & PRESENT_2OU) == PRESENT_2OU) {
+      if ( fby35_common_get_2ou_board_type(i, &type_2ou) < 0 ) {
+        continue;
+      } else {
+        if ((type_2ou & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
+          snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(i), DPV2_FRU_ADDR);
+          snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, i, BOARD_2OU_X8);
+          if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
+            syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, dev_path);
+            continue;
+          }
+        }
+      }
+    }
+  }  
 
   ret = 0;
 

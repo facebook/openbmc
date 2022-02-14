@@ -62,7 +62,7 @@ const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
-                            "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
+                            "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13, 2U-X8, 2U-X16";
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
@@ -631,7 +631,7 @@ pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
   if (dev >= DEV_ID0_1OU && dev <= DEV_ID13_2OU) {
     *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
       (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
-  } else if (dev >= BOARD_1OU && dev <= BOARD_2OU) {
+  } else if (dev >= BOARD_1OU && dev <= BOARD_2OU_X16) {
     *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
   } else {
     *caps = 0;
@@ -881,6 +881,25 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
 }
 
 int
+pal_get_dev_fruid_eeprom_path(uint8_t fru, uint8_t dev_id, char *path, uint8_t path_len) {
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (dev_id == BOARD_2OU_X8) {
+        snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(fru), DPV2_FRU_ADDR);
+      } else {
+        return PAL_ENOTSUP;
+      }
+      break;
+    default:
+      return PAL_ENOTSUP;
+  }
+  return PAL_EOK;
+}
+
+int
 pal_get_fruid_path(uint8_t fru, char *path) {
   char fname[16] = {0};
   int ret = 0;
@@ -968,7 +987,7 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
     if ( fby35_common_get_2ou_board_type(fru, &type_2ou) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
-    } else if ( dev_id == BOARD_2OU && type_2ou == DPV2_BOARD ) {
+    } else if ( dev_id == BOARD_2OU_X16 && ((type_2ou & DPV2_X16_BOARD) == DPV2_X16_BOARD)) {
       return bic_write_fruid(fru, 1, path, NONE_INTF);
     } else if ( dev_id == BOARD_2OU ) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);

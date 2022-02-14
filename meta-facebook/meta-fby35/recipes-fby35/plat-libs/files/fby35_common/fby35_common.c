@@ -318,6 +318,10 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
     *dev = BOARD_1OU;
   } else if (!strcmp(str, "2U")) {
     *dev = BOARD_2OU;
+  } else if (!strcmp(str, "2U-X8")) {
+    *dev = BOARD_2OU_X8;
+  } else if (!strcmp(str, "2U-X16")) {
+    *dev = BOARD_2OU_X16; 
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");
@@ -373,6 +377,10 @@ fby35_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "1U");
   } else if (dev == BOARD_2OU) {
     strcpy(str, "2U");
+  } else if (dev == BOARD_2OU_X8) {
+    strcpy(str, "2U-X8");
+  } else if (dev == BOARD_2OU_X16) {
+    strcpy(str, "2U-X16");
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");

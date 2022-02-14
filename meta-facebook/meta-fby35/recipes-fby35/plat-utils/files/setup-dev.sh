@@ -68,6 +68,28 @@ function init_class2_dev(){
   create_new_dev "24c128" 0x54 10
 }
 
+function init_exp_dev(){
+  for i in {1..4}; do
+    m2_prsnt=$(get_m2_prsnt_sts slot$i)
+    if [ $m2_prsnt -eq 255 ]; then
+      continue
+    fi
+    # check 2OU present
+    prsnt_2ou=$(($m2_prsnt & 0x4))
+    if [ "$prsnt_2ou" -eq "4" ]; then
+      cpld_bus=$(get_cpld_bus $i)
+      type_2ou=$(get_2ou_board_type $cpld_bus)
+      # check DPv2 x8 present
+      prsnt_x8=$(($type_2ou & 0x7))
+      if [ "$prsnt_x8" -eq "7" ]; then
+        create_new_dev "24c128" 0x51 $cpld_bus
+        # copy eeprom data to cached
+        sv restart ipmid > /dev/null 2>&1 &
+      fi
+    fi
+  done
+}
+
 #create the device of mezz card
 create_new_dev "tmp421" 0x1f 8
 create_new_dev "24c32" 0x50 8
@@ -84,5 +106,7 @@ elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
 else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi
+
+init_exp_dev
 
 echo "Done."

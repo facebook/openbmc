@@ -1059,7 +1059,7 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
   tbuf[0] = 0x03; //bus id
   tbuf[1] = 0x42; //slave addr
   tbuf[2] = 0x01; //read 1 byte
-  tbuf[3] = 0x0D; //register offset
+  tbuf[3] = 0x05; //register offset
 
   while (retry++ < 3) {
     ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);

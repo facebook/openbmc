@@ -44,6 +44,8 @@
 #define MAX_RETRY 6           // 180 secs = 1500 * 6
 #define MAX_RETRY_CNT 1500    // A senond can run about 50 times, 30 secs = 30 * 50
 
+#define FRUID_RISER 1
+
 int
 remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
   int ret=0;
@@ -69,8 +71,8 @@ remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
     sprintf(fruid_path, FRU_BB_BIN);
   }
 
-  if (intf == NONE_INTF && fru_id == 1) {
-    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU);
+  if (intf == NONE_INTF && fru_id == FRUID_RISER) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU_X16);
   }
 
   rename(fruid_temp_path, fruid_path);
@@ -120,9 +122,9 @@ fruid_cache_init(uint8_t slot_id) {
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
         syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
       }
-      if (type_2ou == DPV2_BOARD) {
+      if ((type_2ou & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
         // read riser board fru form sb_bic, fruid = 1
-        remote_r_ret = remote_fruid_cache_init(slot_id, 1, NONE_INTF);
+        remote_r_ret = remote_fruid_cache_init(slot_id, FRUID_RISER, NONE_INTF);
       } else {
         remote_r_ret = remote_fruid_cache_init(slot_id, 0, REXP_BIC_INTF);
       }

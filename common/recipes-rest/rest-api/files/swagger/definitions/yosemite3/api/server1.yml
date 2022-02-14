@@ -20,6 +20,9 @@ paths:
                 properties: 
                   Power status: 
                     type: string
+                  BIC_ok: 
+                    type: number
+                    format: int32
               Actions: 
                 type: array
                 items: 

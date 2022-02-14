@@ -18,29 +18,29 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  pwr_server1_last_state: 
+                  slot1_trigger_hpr: 
                     type: string
                   slot1_boot_order: 
                     type: string
-                  slot1_sensor_health: 
-                    type: string
-                  slot1_cpu_ppin: 
+                  slot1_sel_error: 
                     type: string
                   sysfw_ver_slot1: 
                     type: string
-                  slot1_trigger_hpr: 
+                  pwr_server1_last_state: 
                     type: string
-                  slot1_sel_error: 
+                  slot1_cpu_ppin: 
                     type: string
                   identify_slot1: 
                     type: string
+                  slot1_sensor_health: 
+                    type: string
                   slot1_por_cfg: 
                     type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

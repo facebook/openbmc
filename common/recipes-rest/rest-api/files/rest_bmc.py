@@ -18,10 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-
-import re
-from subprocess import PIPE, Popen
-
 from node_bmc import get_node_bmc
 
 

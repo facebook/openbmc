@@ -42,8 +42,6 @@ const uint8_t intf_size = 4;
 static const char *option_list[] = {
   "--get_gpio",
   "--set_gpio [gpio_num] [value]",
-  "--get_gpio_config",
-  "--set_gpio_config $gpio_num $value",
   "--check_status",
   "--get_dev_id",
   "--reset",
@@ -276,63 +274,6 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
 }
 
 static int
-util_get_gpio_config(uint8_t slot_id) {
-  int ret = 0;
-  uint8_t i;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size();
-  char gpio_pin_name[32] = "\0";
-  bic_gpio_config_t gpio_config = {0}; 
-
-  // Print the gpio index, name and value
-  for (i = 0; i < gpio_pin_cnt; i++) {
-    y35_get_gpio_name(slot_id, i, gpio_pin_name);
-    //printf("%d %s: %d\n",i , gpio_pin_name, BIT_VALUE(gpio, i));
-    ret = bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config);
-    if ( ret < 0 ) {
-      printf("Failed to get %s config\n\n", gpio_pin_name);
-      continue;
-    }
-
-    printf("gpio_config for pin#%d (%s):\n", i, gpio_pin_name);
-    printf("Direction: %s", gpio_config.dir > 0?"Output,":"Input, ");
-    printf(" Interrupt: %s", gpio_config.ie > 0?"Enabled, ":"Disabled,");
-    printf(" Trigger: %s", gpio_config.edge?"Level ":"Edge ");
-    if (gpio_config.trig == 0x0) {
-      printf("Trigger,  Edge: %s\n", "Falling Edge");
-    } else if (gpio_config.trig == 0x1) {
-      printf("Trigger,  Edge: %s\n", "Rising Edge");
-    } else if (gpio_config.trig == 0x2) {
-      printf("Trigger,  Edge: %s\n", "Both Edges");
-    } else  {
-      printf("Trigger, Edge: %s\n", "Reserved");
-    }
-  }
-
-  return 0;
-}
-
-static int
-util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val) {
-  int ret = 0;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size();
-  char gpio_pin_name[32] = "\0";
-
-  if ( gpio_num > gpio_pin_cnt ) {
-    printf("slot %d: Invalid GPIO pin number %d\n", slot_id, gpio_num);
-    return ret;
-  }
-
-  y35_get_gpio_name(slot_id, gpio_num, gpio_pin_name);
-  printf("slot %d: setting GPIO [%d]%s config to 0x%02x\n", slot_id, gpio_num, gpio_pin_name, config_val);
-  ret = bic_set_gpio_config(slot_id, gpio_num, config_val);
-  if (ret < 0) {
-    printf("%s() bic_set_gpio_config returns %d\n", __func__, ret);
-  }
-
-  return 0;
-}
-
-static int
 util_perf_test(uint8_t slot_id, int loopCount) {
 #define NUM_SLOTS FRU_SLOT4
   enum cmd_profile_type {
@@ -415,7 +356,7 @@ static int
 util_read_sensor(uint8_t slot_id) {
   int ret = 0;
   int i = 0;
-  ipmi_sensor_reading_t sensor = {0};
+  snr_reading_ret sensor = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
@@ -450,9 +391,13 @@ util_read_sensor(uint8_t slot_id) {
       if (ret < 0 ) {
         continue;
       }
-
-      printf("sensor num: 0x%02X: value: 0x%02X, flags: 0x%02X, status: 0x%02X, ext_status: 0x%02X\n",
-              i, sensor.value, sensor.flags, sensor.status, sensor.ext_status);
+      if (sensor.read_type == STANDARD_CMD) {
+        printf("sensor num: 0x%02X: value: 0x%02X, flags: 0x%02X, status: 0x%02X, ext_status: 0x%02X\n",
+                i, sensor.value, sensor.flags, sensor.status, sensor.ext_status);
+      } else {
+        printf("sensor num: 0x%02X: value: 0x%04X, flags: 0x%02X\n", i, sensor.value, sensor.flags);
+      }
+      
     }
     printf("\n");
   }
@@ -867,15 +812,6 @@ main(int argc, char **argv) {
       gpio_val = atoi(argv[4]);
       if ( gpio_num > 0xff || gpio_val > 1 ) goto err_exit;
       return util_set_gpio(slot_id, gpio_num, gpio_val);
-    } else if ( strcmp(argv[2], "--get_gpio_config") == 0 ) {
-      return util_get_gpio_config(slot_id);
-    } else if ( strcmp(argv[2], "--set_gpio_config") == 0 ) {
-      if ( argc != 5 ) goto err_exit;
-
-      gpio_num = atoi(argv[3]);
-      gpio_val = (uint8_t)strtol(argv[4], NULL, 0);
-      if ( gpio_num > 0xff ) goto err_exit;
-      else return util_set_gpio_config(slot_id, gpio_num, gpio_val);
     } else if ( strcmp(argv[2], "--check_status") == 0 ) {
       return util_check_status(slot_id);
     } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {

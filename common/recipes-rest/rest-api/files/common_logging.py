@@ -31,7 +31,8 @@ class OpenBMCJSONFormatter(json_log_formatter.JSONFormatter):
     def json_record(
         self, message: str, extra: Dict[str, Any], record: logging.LogRecord
     ) -> Dict[str, Any]:
-        # for access logs discard message,all information is already included in extra
+        # for access logs discard the message field
+        # all information is already included in extra
         if record.name != "aiohttp.access":
             extra["message"] = message
         else:
@@ -57,8 +58,8 @@ class OpenBMCJSONFormatter(json_log_formatter.JSONFormatter):
 
 
 class JsonSyslogFormatter(OpenBMCJSONFormatter):
-    def format(self, record):
-        return "rest-api: %s" % (super(JsonSyslogFormatter, self).format(record),)
+    def format(self, record) -> str:
+        return "rest-api: %s" % (super(JsonSyslogFormatter, self).format(record))
 
 
 ACCESS_LOG_FORMAT = (

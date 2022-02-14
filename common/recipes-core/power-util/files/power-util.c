@@ -58,10 +58,6 @@ const char *pwr_option_list = PWR_OPTION_LIST;
 const char *force_pwr_option_list = "on, 12V-on";
 #endif
 
-#ifdef CONFIG_FBY3_CWC
-static uint8_t expFru = 0;  //id of cwc and gpv3
-#endif
-
 enum {
   PWR_STATUS = 1,
   PWR_GRACEFUL_SHUTDOWN,
@@ -92,30 +88,23 @@ static const char *option_list[] = {
 
 static void
 print_usage() {
-  printf("Usage: power-util [ %s ] [ %s ]\nUsage: power-util sled-cycle\n",
-      pal_server_list, pwr_option_list);
-#ifdef CONFIG_FBY3_CWC
-  if (pal_is_cwc() == PAL_EOK) {
-    printf("Usage: power-util [ %s ] [ 2U-cwc, 2U-top, 2U-bot ] [ status, 12V-on, 12V-off, 12V-cycle ]\n", pal_server_list);
+  const char *fru_list = pal_server_list;
+  if (pal_get_print_fru_name(&fru_list) != PAL_EOK) {
+    fru_list = pal_server_list;
   }
-#endif
+  printf("Usage: power-util [ %s ] [ %s ]\nUsage: power-util sled-cycle\n",
+      fru_list, pwr_option_list);
 
   if (pal_dev_list_power != NULL && dev_pwr_option_list != NULL) {
     if (!strncmp(pal_dev_list_power, "all, ", strlen("all, "))) {
       pal_dev_list_power = pal_dev_list_power + strlen("all, ");
     }
     printf("Usage: power-util [ %s ] [ %s ] [ %s ]\n",
-      pal_server_list, pal_dev_list_power, dev_pwr_option_list);
-#ifdef CONFIG_FBY3_CWC
-    if (pal_is_cwc() == PAL_EOK) {
-      printf("Usage: power-util [ %s ] [ 2U-top, 2U-bot ] [ %s ] [ %s ]\n",
-        pal_server_list, pal_dev_list_power, dev_pwr_option_list);
-    }
-#endif
+      fru_list, pal_dev_list_power, dev_pwr_option_list);
   }
   #ifdef ENABLE_FORCE_POWER_CMD
     printf("Usage: power-util [ %s ] --force [ %s ]\n",
-      pal_server_list, force_pwr_option_list);
+      fru_list, force_pwr_option_list);
   #endif
 }
 
@@ -223,9 +212,10 @@ dev_power_util(uint8_t fru, char *dev_name, uint8_t dev_id ,uint8_t opt) {
   int ret = 0;
   uint8_t status, type;
   int retries;
+  uint8_t root = 0;
 
   if (opt != PWR_STATUS) {
-    if (!pal_can_change_power(fru)) {
+    if (!pal_can_change_power(pal_get_root_fru(fru, &root) == PAL_EOK ? root : fru)) {
       return -1;
     }
   }
@@ -313,15 +303,16 @@ power_util(uint8_t fru, uint8_t opt, bool force) {
   uint8_t status;
   int retries;
   char pwr_state[MAX_VALUE_LEN] = {0};
+  uint8_t root = 0;
 
   if (opt == PWR_SLED_CYCLE) {
     for(fru = 1; fru <= MAX_NUM_FRUS; fru++) {
-      if (!pal_can_change_power(fru)) {
+      if (!pal_can_change_power(pal_get_root_fru(fru, &root) == PAL_EOK ? root : fru)) {
         return -1;
       }
     }
   } else if (opt != PWR_STATUS) {
-    if (!pal_can_change_power(fru)) {
+    if (!pal_can_change_power(pal_get_root_fru(fru, &root) == PAL_EOK ? root : fru)) {
       return -1;
     }
   }
@@ -559,7 +550,7 @@ power_util(uint8_t fru, uint8_t opt, bool force) {
       syslog(LOG_CRIT, "SLED_CYCLE starting...");
       pal_update_ts_sled();
       sync();
-      sleep(1);
+      sleep(2);
       ret = pal_sled_cycle();
       break;
 
@@ -570,79 +561,6 @@ power_util(uint8_t fru, uint8_t opt, bool force) {
 
   return ret;
 }
-
-#ifdef CONFIG_FBY3_CWC
-static int
-exp_power_util(uint8_t fru, uint8_t opt, bool force) {
-  int ret = 0;
-  uint8_t status = 0;
-  uint8_t cmd = 0;
-
-  switch (opt) {
-    case PWR_STATUS:
-      ret = pal_get_exp_power(fru, &status);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_get_server_power failed for fru %u\n", fru);
-        return ret;
-      }
-      printf("Power status for fru %u : ", fru);
-      switch(status) {
-        case SERVER_12V_OFF:
-          printf("OFF (12V-OFF)\n");
-          break;
-        case SERVER_12V_ON:
-          printf("ON (12V-ON)\n");
-          break;
-      }
-      break;
-    case PWR_12V_OFF:
-      printf("12V Powering fru %u to OFF state...\n", fru);
-      cmd = SERVER_12V_OFF;
-      ret = pal_set_exp_power(fru, cmd);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
-          " fru %u", fru);
-        return ret;
-      } else if (ret == 1) {
-        printf("fru %u is already powered 12V-OFF...\n", fru);
-        return 0;
-      } else {
-        syslog(LOG_CRIT, "SERVER_12V_OFF successful for FRU: %d", fru);
-      }
-      break;
-    case PWR_12V_ON:
-      printf("12V Powering fru %u to ON state...\n", fru);
-      cmd = SERVER_12V_ON;
-      ret = pal_set_exp_power(fru, cmd);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
-          " fru %u", fru);
-        return ret;
-      } else if (ret == 1) {
-        printf("fru %u is already powered 12V-ON...\n", fru);
-        return 0;
-      } else {
-        syslog(LOG_CRIT, "SERVER_12V_ON successful for FRU: %d", fru);
-      }
-      break;
-    case PWR_12V_CYCLE:
-      printf("12V Power cycling fru %u...\n", fru);
-      cmd = SERVER_12V_CYCLE;
-      ret = pal_set_exp_power(fru, cmd);
-      if (ret < 0) {
-        syslog(LOG_WARNING, "power_util: pal_set_server_power failed for"
-          " fru %u", fru);
-      } else {
-        syslog(LOG_CRIT, "SERVER_12V_CYCLE successful for FRU: %d", fru);
-      }
-      break;
-    default:
-      syslog(LOG_WARNING, "power_util: wrong option");
-      return -1;
-  }
-  return ret;
-}
-#endif
 
 static int
 add_process_running_flag(uint8_t slot_id, uint8_t opt) {
@@ -708,19 +626,7 @@ main(int argc, char **argv) {
   bool force;
   uint8_t num_devs = 0;
   uint8_t dev_id = DEV_NONE;
-
-#ifdef CONFIG_FBY3_CWC
-  int i = 0;
-  if ( pal_is_cwc() == PAL_EOK && argc >= 4 ) {
-    if ( pal_get_cwc_id(argv[2], &expFru) == PAL_EOK ) {
-      for (i = 2; i < argc - 1; ++i ) {
-        argv[i] = argv[i+1];  //remove additional cwc option to remain the order of options
-      }
-
-      argc--;
-    }
-  }
-#endif
+  uint8_t root = 0;
 
   if (parse_args(argc, argv, &force)) {
     print_usage();
@@ -785,40 +691,24 @@ main(int argc, char **argv) {
   }
 
   // Check if another instance is running
-  if (add_process_running_flag(fru, opt) < 0) {
+  if (add_process_running_flag(pal_get_root_fru(fru, &root) == PAL_EOK ? root : fru, opt) < 0) {
     printf("power_util: another instance is running for FRU:%d...\n",fru);
     //Make power-util exit code to "-2" when another instance is running
     exit(-2);
   }
 
   if (dev_id == DEV_NONE) {
-#ifdef CONFIG_FBY3_CWC
-    if (expFru != 0) {
-      ret = exp_power_util(expFru, opt, force);
-    } else {
-#endif
     ret = power_util(fru, opt, force);
-#ifdef CONFIG_FBY3_CWC
-    }
-#endif
     if (ret < 0) {
       printf("ERROR: power-util fru[%d] [%s] failed\n", fru, option_list[opt]);
     }
   } else if (dev_id != DEV_ALL) {
-#ifdef CONFIG_FBY3_CWC
-    if (expFru != 0) {
-      ret = dev_power_util(expFru, argv[optind+1], dev_id, opt);
-    } else {
-#endif
     ret = dev_power_util(fru, argv[optind+1], dev_id, opt);
-#ifdef CONFIG_FBY3_CWC
-    }
-#endif
     if (ret < 0) {
       printf("ERROR: power-util fru[%d] dev %s [%s] failed\n", fru, argv[optind+1], option_list[opt]);
     }
   }
 
-  rm_process_running_flag(fru, opt);
+  rm_process_running_flag(pal_get_root_fru(fru, &root) == PAL_EOK ? root : fru, opt);
   return ret;
 }

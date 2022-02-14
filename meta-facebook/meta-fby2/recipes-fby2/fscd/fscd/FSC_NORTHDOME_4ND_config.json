@@ -1,16 +1,33 @@
 {
-  "version": "northdome-fscd-20211005",
+  "version": "northdome-fscd-20211206",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
+  "fan_limit_upper_pwm": 95,
   "sample_interval_ms": 3000,
   "sensor_filter_all": true,
+  "sensor_fail_ignore": true,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true
   },
   "sensor_valid_check": {
     "(.*)soc": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)mb": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)pvdd": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)host_boot": {
       "attribute": {
         "type" : "power_status"
       }
@@ -104,6 +121,17 @@
       "kp": -3,
       "ki": -0.015,
       "kd": 0
+    },
+    "linear_ucr_trigger": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
     }
   },
   "fans": {

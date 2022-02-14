@@ -31,6 +31,7 @@ SRC_URI = "file://sol-util \
            file://check_eth0_ipv4.sh \
            file://sync_date.sh \
            file://check_bmc_ready.sh \
+           file://check_2nd_source.sh \
           "
 
 pkgdir = "utils"
@@ -38,7 +39,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh "
+binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh check_2nd_source.sh "
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 gpiocli "

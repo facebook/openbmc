@@ -21,7 +21,7 @@ import functools
 import json
 import re
 from contextlib import suppress
-from typing import List
+from typing import List, Optional
 
 import acl_config
 import common_auth
@@ -62,7 +62,7 @@ async def jsonerrorhandler(app, handler):
     return middleware_handler
 
 
-async def auth_enforcer(app, handler):
+async def auth_enforcer(app, handler):  # noqa: C901
     class RuleRegexp:
         def __init__(self, path_regexp: str, acls: List[str]):
             self.path_regexp = re.compile(path_regexp)
@@ -81,7 +81,7 @@ async def auth_enforcer(app, handler):
             self.rules_regexp = rules_regexp
 
         @functools.lru_cache(maxsize=1024)
-        def get(self, method: str, path: str) -> List[str]:
+        def get(self, method: str, path: str) -> Optional[List[str]]:
             with suppress(KeyError):
                 return self.rules_plain[path][method]
             with suppress(KeyError):
@@ -104,7 +104,10 @@ async def auth_enforcer(app, handler):
         # Anything else will be forbidden.
         if acls is None and request.method != "GET":
             server_logger.info(
-                "AUTH:Missing acl config for non-get[%s] endpoint %s. Blocking access"
+                (
+                    "AUTH:Missing acl config for non-get[%s] endpoint %s."
+                    " Blocking access"
+                )
                 % (request.method, request.path)
             )
             raise HTTPForbidden()

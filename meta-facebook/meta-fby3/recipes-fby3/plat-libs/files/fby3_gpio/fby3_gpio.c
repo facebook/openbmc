@@ -102,6 +102,9 @@ const char *gpio_pin_name_sb[] = {
   "FM_BIOS_POST_CMPLT_BMC_N",
   "RST_BMC_R_N",
   "BMC_READY",
+  "HSC_DETECT0",
+  "HSC_DETECT1",
+  "HSC_DETECT2",
 };
 
 const char *gpio_pin_name_2ou[] = {
@@ -198,11 +201,12 @@ const char *gpio_pin_name_2ou[] = {
   "SMB_SSD0_INA233_ALRT_N",		// 90
   "SMB_SSD1_INA233_ALRT_N",
   "TMP75_ALERT_N",
-  "USB_HUB1_3_RESET_N",
+  "USB_HUB1_JTAG_N",
   "USB_HUB2_RESET_N",
   "UART_MUX_BIC_RESET_R_N",
   "BIC_REMOTE_DEBUG_SELECT_N",
   "PWRGD_P5V_STBY_R",
+  "USB_HUB3_RESET_N",
 };
 
 const char *cwc_gpio_pins[] = {

@@ -1,0 +1,31 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/ntp  
+  title: Swagger doc for /api/sys/ntp  
+  version: 1.0.0
+paths: 
+  /api/sys/ntp: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  reason: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

@@ -74,15 +74,19 @@ static void
 print_usage_help(void) {
   int i;
 
+  if (riser_board == UNKNOWN_BOARD) {
+    pal_get_2ou_board_type(FRU_SLOT1, &riser_board);
+  }
+
   printf("Usage: bic-util <%s> <[0..n]data_bytes_to_send>\n", slot_usage);
   if ( riser_board  == CWC_MCHP_BOARD ) {
-    printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <[0..n]data_bytes_to_send>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U-exp|slot1-2U-top|slot1-2U-bot> <[0..n]data_bytes_to_send>\n");
   }
   printf("Usage: bic-util <%s> <option>\n", slot_usage);
   if ( riser_board == CWC_MCHP_BOARD ) {
-    printf("Usage: bic-util <%s> <2U-cwc|2U-top|2U-bot> <option>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U-exp|slot1-2U-top|slot1-2U-bot> <--reset|--get_gpio|--set_gpio|--get_dev_id|--set_usb_hub|--get_usb_hub>\n");
   } else {
-    printf("Usage: bic-util <%s> <2ou> <--reset|--get_gpio|--set_gpio|--get_dev_id>\n", slot_usage);
+    printf("Usage: bic-util <slot1-2U|slot3-2U> <--reset|--get_gpio|--set_gpio|--get_gpio_config|--set_gpio_config|--get_dev_id>\n");
   }
   printf("       option:\n");
   for (i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
@@ -334,13 +338,13 @@ util_get_gpio(uint8_t slot_id, uint8_t intf) {
     return ret;
   }
 
-  if (expFru != 0xff) {
+  if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    if (expFru != 0xff) {
+    if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
       fby3_get_exp_gpio_name(expFru, i, gpio_pin_name);
     } else {
       fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
@@ -357,7 +361,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
   char gpio_pin_name[32] = "\0";
   int ret = -1;
 
-  if (expFru != 0xff) {
+  if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
@@ -366,7 +370,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
     return ret;
   }
 
-  if (expFru != 0xff) {
+  if (expFru == FRU_CWC || expFru == FRU_2U_TOP || expFru == FRU_2U_BOT) {
     fby3_get_exp_gpio_name(expFru, gpio_num, gpio_pin_name);
   } else {
     fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
@@ -382,18 +386,22 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
 }
 
 static int
-util_get_gpio_config(uint8_t slot_id) {
+util_get_gpio_config(uint8_t slot_id, uint8_t intf) {
   int ret = 0;
   uint8_t i;
-  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(NONE_INTF);
+  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(intf);
   char gpio_pin_name[32] = "\0";
   bic_gpio_config_t gpio_config = {0}; 
 
   // Print the gpio index, name and value
   for (i = 0; i < gpio_pin_cnt; i++) {
-    fby3_get_gpio_name(slot_id, i, gpio_pin_name, NONE_INTF);
+    fby3_get_gpio_name(slot_id, i, gpio_pin_name, intf);
     //printf("%d %s: %d\n",i , gpio_pin_name, BIT_VALUE(gpio, i));
-    ret = bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config);
+    if ( intf != NONE_INTF ) {
+      ret = remote_bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config,intf);
+    } else {
+      ret = bic_get_gpio_config(slot_id, i, (uint8_t *)&gpio_config);
+    }
     if ( ret < 0 ) {
       printf("Failed to get %s config\n\n", gpio_pin_name);
       continue;
@@ -418,9 +426,9 @@ util_get_gpio_config(uint8_t slot_id) {
 }
 
 static int
-util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val) {
+util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val, uint8_t intf) {
   int ret = 0;
-  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(NONE_INTF);
+  uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(intf);
   char gpio_pin_name[32] = "\0";
 
   if ( gpio_num > gpio_pin_cnt ) {
@@ -428,9 +436,13 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val) {
     return ret;
   }
 
-  fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, NONE_INTF);
+  fby3_get_gpio_name(slot_id, gpio_num, gpio_pin_name, intf);
   printf("slot %d: setting GPIO [%d]%s config to 0x%02x\n", slot_id, gpio_num, gpio_pin_name, config_val);
-  ret = bic_set_gpio_config(slot_id, gpio_num, config_val);
+  if ( intf != NONE_INTF ) {
+    ret = remote_bic_set_gpio_config(slot_id, gpio_num, config_val,intf);
+  } else {
+    ret = bic_set_gpio_config(slot_id, gpio_num, config_val);
+  }
   if (ret < 0) {
     printf("%s() bic_set_gpio_config returns %d\n", __func__, ret);
   }
@@ -1115,12 +1127,16 @@ print_usb_hub_status(bic_gpio_t gpio, const uint8_t *gpio_nb, uint8_t gpio_len, 
     if (gpio.gpio[offset] & mask) {
       if (gpio_nb[i] == mux) {
         printf("USB HUB is switched to usb c\n");
+      } else if (gpio_len == 1) {
+        printf("USB HUB is on\n");
       } else {
         printf("USB HUB%d is on\n", i);
       }
     } else {
       if (gpio_nb[i] == mux) {
         printf("USB HUB is switched to bmc\n");
+      } else if (gpio_len == 1) {
+        printf("USB HUB is off\n");
       } else {
         printf("USB HUB%d is off\n", i);
       }
@@ -1265,6 +1281,10 @@ main(int argc, char **argv) {
   int i = 0;
   uint8_t hub = 0, ctl = 0;
 
+  if (argc < 3) {
+    goto err_exit;
+  }
+
   // because the usage of bic-util is displayed based on the platform
   // we should get the information first
   ret = fby3_common_get_bmc_location(&bmc_location);
@@ -1283,24 +1303,61 @@ main(int argc, char **argv) {
 
     // check if the exp presence
     if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
-      ret = fby3_common_get_2ou_board_type(FRU_SLOT1, &is_fru_present);
+      ret = fby3_common_get_2ou_board_type(FRU_SLOT1, &riser_board);
       if ( ret < 0 ) {
         printf("Failed to run fby3_common_get_2ou_board_type()\n");
         return -1;
       }
+    }
 
-      // get the board type
-      riser_board = is_fru_present;
+    ret = fby3_common_get_slot_id(argv[1], &slot_id);
+    if ( ret < 0 ) {
+      if ( (riser_board == CWC_MCHP_BOARD || riser_board == GPV3_MCHP_BOARD || riser_board == GPV3_BRCM_BOARD) && 
+          pal_get_fru_id(argv[1], &expFru) ) {
+        printf("%s is invalid!\n", argv[1]);
+        goto err_exit;
+      }
+    }
+
+  } else {
+    ret = fby3_common_get_slot_id(argv[1], &slot_id);
+    if ( ret < 0 ) {
+      char exp_slot[16] = {0};
+      char *str;
+      strncpy(exp_slot, argv[1], sizeof(exp_slot)-1);
+      str = strtok(exp_slot,"-");
+      ret = fby3_common_get_slot_id(str, &slot_id);
+      if ( ret < 0 ) {
+        printf("%s is invalid!\n", str);
+        goto err_exit;
+      }
+
+      // Check Config D GPv3
+      ret = bic_is_m2_exp_prsnt(slot_id);
+      if ( ret < 0 ) {
+        printf("Failed to run bic_is_m2_exp_prsnt()\n");
+        return -1;
+      }
+
+      // check if the exp presence
+      if ( (ret & PRESENT_2OU) == PRESENT_2OU ) {
+        ret = fby3_common_get_2ou_board_type(slot_id, &riser_board);
+        if ( ret < 0 ) {
+          printf("Failed to run fby3_common_get_2ou_board_type()\n");
+          return -1;
+        }
+      }
+
+      if ( (riser_board == GPV3_MCHP_BOARD || riser_board == GPV3_BRCM_BOARD) &&
+          pal_get_fru_id(argv[1], &expFru) ) {
+        printf("%s is invalid!\n", argv[1]);
+        goto err_exit;
+      }
     }
   }
 
-  if (argc < 3) {
-    goto err_exit;
-  }
-
-  ret = fby3_common_get_slot_id(argv[1], &slot_id);
-  if ( ret < 0 ) {
-    printf("%s is invalid!\n", argv[1]);
+  if (expFru != 0xff && pal_get_fru_slot(expFru, &slot_id)) {
+    printf("Fail to get fru:%d slot id!\n", expFru);
     goto err_exit;
   }
 
@@ -1317,22 +1374,6 @@ main(int argc, char **argv) {
     }
   }
 
-  if ( riser_board == CWC_MCHP_BOARD && argc >= 4 ) {
-    if ( !fby3_common_get_exp_id(argv[2], &expFru) ||
-         (strncmp(argv[2], "all", 3) == 0 && 
-          (strcmp(argv[3], "--set_usb_hub") == 0 || strcmp(argv[3], "--get_usb_hub") == 0)) ) {
-      if (strncmp(argv[2], "all", 3) == 0) {
-        expFru = FRU_ALL;
-      }
-
-      for (i = 2; i < argc - 1; ++i ) {
-        argv[i] = argv[i+1];  //remove additional cwc option to remain the order of options
-      }
-
-      argc--;
-    }
-  }
-
   if ( riser_board == CWC_MCHP_BOARD ) {
     switch (expFru) {
       case FRU_CWC:
@@ -1346,16 +1387,18 @@ main(int argc, char **argv) {
         break;
     }
 
-    if (expFru != FRU_ALL && expFru != 0xff) {
+    if ( intf != NONE_INTF ) {
       ret = pal_is_fru_prsnt(expFru, &is_fru_present);
       if ( ret < 0 || is_fru_present == 0 ) {
-        printf("fru:%d is not present!\n", expFru);
+        printf("exp:%d is not present!\n", expFru);
         return -1;
       }
     }
   } else {
     // get the argv_idx and intf
-    if ( strncmp(argv[2], "2ou", 3) == 0 ) intf = REXP_BIC_INTF;
+    if (expFru == FRU_2U || expFru == FRU_2U_SLOT3) {
+      intf = REXP_BIC_INTF;
+    }
 
     // check if 1/2OU present
     if ( intf != NONE_INTF ) {
@@ -1377,10 +1420,6 @@ main(int argc, char **argv) {
           return BIC_STATUS_FAILURE;
         }
       }
-
-      // adjust the content since we dont want to modify the logic below
-      memmove(&argv[2], &argv[3], sizeof(char*) * (argc - 3));
-      argc--;
     }
   }
 
@@ -1395,14 +1434,14 @@ main(int argc, char **argv) {
       if ( gpio_num > 0xff || gpio_val > 1 ) goto err_exit;
       return util_set_gpio(slot_id, gpio_num, gpio_val, intf);
     } else if ( strcmp(argv[2], "--get_gpio_config") == 0 ) {
-      return util_get_gpio_config(slot_id);
+      return util_get_gpio_config(slot_id, intf);
     } else if ( strcmp(argv[2], "--set_gpio_config") == 0 ) {
       if ( argc != 5 ) goto err_exit;
 
       gpio_num = atoi(argv[3]);
       gpio_val = (uint8_t)strtol(argv[4], NULL, 0);
       if ( gpio_num > 0xff ) goto err_exit;
-      else return util_set_gpio_config(slot_id, gpio_num, gpio_val);
+      else return util_set_gpio_config(slot_id, gpio_num, gpio_val, intf);
     } else if ( strcmp(argv[2], "--check_status") == 0 ) {
       return util_check_status(slot_id);
     } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {

@@ -59,42 +59,43 @@ def _packet_peutil_date(cmd):
     data = data.split("\r\n")
     return {"Information": _parse_peutil_data(data), "Actions": [], "Resources": []}
 
-
+# The new peutil numbering scheme requires
+# the pim number to start from 2 (previously 1)
 def get_peutil_pim1_data():
-    cmd = ["/usr/local/bin/peutil", "1"]
-    return _packet_peutil_date(cmd)
-
-
-def get_peutil_pim2_data():
     cmd = ["/usr/local/bin/peutil", "2"]
     return _packet_peutil_date(cmd)
 
 
-def get_peutil_pim3_data():
+def get_peutil_pim2_data():
     cmd = ["/usr/local/bin/peutil", "3"]
     return _packet_peutil_date(cmd)
 
 
-def get_peutil_pim4_data():
+def get_peutil_pim3_data():
     cmd = ["/usr/local/bin/peutil", "4"]
     return _packet_peutil_date(cmd)
 
 
-def get_peutil_pim5_data():
+def get_peutil_pim4_data():
     cmd = ["/usr/local/bin/peutil", "5"]
     return _packet_peutil_date(cmd)
 
 
-def get_peutil_pim6_data():
+def get_peutil_pim5_data():
     cmd = ["/usr/local/bin/peutil", "6"]
     return _packet_peutil_date(cmd)
 
 
-def get_peutil_pim7_data():
+def get_peutil_pim6_data():
     cmd = ["/usr/local/bin/peutil", "7"]
     return _packet_peutil_date(cmd)
 
 
-def get_peutil_pim8_data():
+def get_peutil_pim7_data():
     cmd = ["/usr/local/bin/peutil", "8"]
+    return _packet_peutil_date(cmd)
+
+
+def get_peutil_pim8_data():
+    cmd = ["/usr/local/bin/peutil", "9"]
     return _packet_peutil_date(cmd)

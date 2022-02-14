@@ -161,7 +161,7 @@ do_install_board() {
 }
 
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 

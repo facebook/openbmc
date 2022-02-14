@@ -46,6 +46,12 @@
 #define VR_2OU_BUS 0x1
 #define VR_CWC_BUS 0x3
 
+/*Infineon vr */
+#define VR_CONF_REG 0x1A
+#define VR_CLR_FAULT 0x03
+#define REG1_STS_CHECK 0x1
+#define REG2_STS_CHECK 0xA
+
 typedef struct {
   uint8_t command;
   uint8_t data_len;
@@ -699,11 +705,64 @@ error_exit:
 }
 
 static int
+vr_IFX_polling_status(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t intf) {
+  int ret = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00; //read cnt
+  tbuf[3] = VR_PAGE;
+  tbuf[4] = VR_PAGE60;
+  tlen = 5;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  tbuf[2] = 0x01; //read cnt
+  tbuf[3] = 0x01; //sts reg1
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  if ( (rbuf[0] & REG1_STS_CHECK) != 0 ) {
+    ret = -1;
+    printf("Failed to upload data. rbuf[0]=%02X from reg1\n", rbuf[0]);
+    goto error_exit;
+  }
+
+  tbuf[3] = 0x02; //sts reg2
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
+    goto error_exit;
+  }
+
+  if ( (rbuf[0] & REG2_STS_CHECK) != 0 ) {
+    ret = -1;
+    printf("Failed to upload data. rbuf[0]=%02X from reg2\n", rbuf[0]);
+    printf("a defective bit is held or the mem space is full!\n");
+    goto error_exit;
+  }
+  //bit1 is held to 1, it means the action is successful.
+  ret = 1;
+
+error_exit:
+
+  return ret;
+}
+
+static int
 vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
-#define VR_CONF_REG 0x1A
-#define VR_CLR_FAULT 0x03
-#define REG1_STS_CHECK 0x1
-#define REG2_STS_CHECK 0xA
   int i = 0;
   int ret = 0, rc = 0;
   int fd = 0;
@@ -1090,7 +1149,12 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
 
   // get remaining_writes
   if ( FW_2OU_PESW_VR == comp || FW_CWC_PESW_VR == comp || FW_GPV3_TOP_PESW_VR == comp || FW_GPV3_BOT_PESW_VR == comp ) {
-    ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
+    if ( sel_vendor == VR_IFX) {
+      ret = bic_get_ifx_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
+    }
+    else {
+      ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
+    }
   } else {
     ret = bic_get_vishay_vr_remaining_writes(slot_id, vy_vr_idx, &remaining_writes, dev->intf);
   }
@@ -1163,11 +1227,20 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     if ( i + 1 == len ) pkt->dummy = USB_LAST_DATA_FLAG|usb_idx;
     else pkt->dummy  = usb_idx; // component
 
-    pkt->offset = 0x0;         // dummy
-    pkt->length = list[i].data_len + 2; // read bytes
-    file_buf[0] = list[i].data_len; // data length
-    file_buf[1] = list[i].command;  // command code
-    memcpy(&file_buf[2], list[i].data, list[i].data_len); // data
+    if ( sel_vendor == VR_IFX ) {
+      pkt->offset = 0x0;         // dummy
+      pkt->length = list[i].data_len + 3; // read bytes
+      file_buf[0] = list[i].data_len + 1; // data length = offset 1 + data 2
+      file_buf[1] = list[i].command;  // next page 
+      memcpy(&file_buf[2], list[i].data, list[i].data_len + 1); // offset and data
+    }
+    else {
+      pkt->offset = 0x0;         // dummy
+      pkt->length = list[i].data_len + 2; // read bytes
+      file_buf[0] = list[i].data_len; // data length
+      file_buf[1] = list[i].command;  // command code
+      memcpy(&file_buf[2], list[i].data, list[i].data_len); // data
+    }
     ret = send_bic_usb_packet(udev, pkt);
     if (ret < 0) {
       printf("Failed to write data to the device\n");
@@ -1186,11 +1259,21 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
         int retry = MAX_RETRY;
         sleep(1);
         do {
-          if ( vr_ISL_polling_status(slot_id, dev->bus, dev->addr, dev->intf) > 0 ) {
-            break;
-          } else {
-            retry--;
-            sleep(2);
+          if ( sel_vendor == VR_IFX ) {
+            if ( vr_IFX_polling_status(slot_id, dev->bus, dev->addr, dev->intf) > 0 ) {
+              break;
+            } else {
+              retry--;
+              sleep(2);
+            }
+          }
+          else {
+            if ( vr_ISL_polling_status(slot_id, dev->bus, dev->addr, dev->intf) > 0 ) {
+              break;
+            } else {
+              retry--;
+              sleep(2);
+            }
           }
         } while ( retry > 0 );
         if ( retry == 0 ) ret = BIC_STATUS_FAILURE;
@@ -1310,8 +1393,7 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
   if ( rlen == IFX_DEVID_LEN ) {
     *sel_vendor = VR_IFX;
     // the length of IFX and VY is the same, check it further
-    if ( (intf == REXP_BIC_INTF && dev_list[i].comp != FW_2OU_PESW_VR) ||
-         (intf == REXP_BIC_INTF && dev_list[i].comp != FW_CWC_PESW_VR) ||
+    if ( (intf == REXP_BIC_INTF && (dev_list[i].comp != FW_2OU_PESW_VR && dev_list[i].comp != FW_CWC_PESW_VR))  ||
          (intf == RREXP_BIC_INTF1 && dev_list[i].comp != FW_GPV3_TOP_PESW_VR) ||
          (intf == RREXP_BIC_INTF2 && dev_list[i].comp != FW_GPV3_BOT_PESW_VR) ) {
       *sel_vendor = VR_VY;

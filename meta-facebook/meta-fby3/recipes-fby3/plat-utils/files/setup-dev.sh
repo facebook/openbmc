@@ -19,6 +19,11 @@
 #
 . /usr/local/fbpackages/utils/ast-functions
 
+HSC_DET_ADM1278=0
+HSC_DET_LTC4282=1
+HSC_DET_MP5990=2
+HSC_DET_ADM1276=3
+
 function create_new_dev() {
   local dev_name=$1
   local addr=$2
@@ -28,8 +33,16 @@ function create_new_dev() {
 }
 
 function init_class1_dev(){
-  #enable the register of the temperature of hsc
-  /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
+  hsc_detect=$(get_hsc_bb_detect)
+  if [ $hsc_detect -eq $HSC_DET_ADM1278 ]; then
+    #enable the register of the temperature of hsc
+    /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
+  elif [ $hsc_detect -eq $HSC_DET_LTC4282 ]; then
+    create_new_dev "ltc4282" 0x40 11
+    create_new_dev "tmp401" 0x4c 12
+  elif [ $hsc_detect -eq $HSC_DET_ADM1276 ]; then
+    create_new_dev "tmp401" 0x4c 12
+  fi
 
   #create the device of the inlet/outlet temp.
   create_new_dev "lm75" 0x4e 12

@@ -3298,7 +3298,15 @@ pal_sled_cycle(void) {
 #endif
 
   // Send command to HSC power cycle
-  log_system("i2cset -y 10 0x40 0xd9 c");
+  int spb_hsc_type = fby2_common_get_spb_hsc_type();
+  if (spb_hsc_type == SPB_HSC_ADM1278) {
+    log_system("i2cset -y 10 0x40 0xd9 c");
+  } else if (spb_hsc_type == SPB_HSC_LTC4282){
+    log_system("i2cset -y 10 0x41 0x1d 0x80");
+  } else {
+    syslog(LOG_ERR, "pal_sled_cycle: unknown spb_hsc_type %d",spb_hsc_type);
+    return -1;  // unknow HSC type
+  }
 
   return 0;
 }
@@ -4424,19 +4432,23 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     // On successful sensor read
     if (fru == FRU_SPB) {
       int spb_type = 0;
+      int spb_hsc_type = 0;
 
       spb_type = fby2_common_get_spb_type();
       fby2_common_get_gpio_val("MB_HSC_RSENSE_SRC", &src);
+      spb_hsc_type = fby2_common_get_spb_hsc_type();
 
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
         // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
-        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH) ||
+            !(fby2_common_get_spb_type() == TYPE_SPB_YV2ND2 && spb_hsc_type == SPB_HSC_LTC4282)) {
           power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
         }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
         // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
-        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)||
+            !(fby2_common_get_spb_type() == TYPE_SPB_YV2ND2 && spb_hsc_type == SPB_HSC_LTC4282)) {
           power_value_adjust(get_power_cali_table(spb_type), (float *)value);
         }
       }
@@ -10830,6 +10842,30 @@ pal_get_tpm_timeout(uint8_t slot) {
   return atoi(cvalue);
 }
 
+int
+pal_set_last_postcode(uint8_t slot, uint32_t postcode) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_last_postcode", slot);
+  snprintf(str,MAX_VALUE_LEN, "%08X", postcode);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_last_postcode(uint8_t slot, char* postcode) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  sprintf(key, "slot%u_last_postcode", slot);
+
+  ret = kv_get(key, postcode,NULL,0);
+  if (ret) {
+    syslog(LOG_WARNING,"pal_get_last_postcode failed");
+    return -1;
+  }
+  return 0;
+}
+
 void *
 pal_check_start_TPMTimer(void* arg) { //called by daemon threads
   int slot_id = (int) arg;
@@ -11147,6 +11183,9 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
   uint8_t prsnt, pos;
   int ret;
 
+  // update current post code to debug card's SYS Info page
+  pal_set_last_postcode(slot, postcode_dw);
+
   // Check for debug card presence
   ret = pal_is_debug_card_prsnt(&prsnt);
   if (ret) {
@@ -11342,6 +11381,16 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
     sprintf(str, "NA");
   }
 
+  return PAL_EOK;
+}
+
+int
+pal_handle_oem_1s_update_sdr(uint8_t slot) {
+  char cmd[128] = {0};
+  // do not get sdr during sdr update
+  bic_set_sdr_threshold_update_flag(slot, 0);
+  snprintf(cmd, 128, "(/usr/local/bin/bic-cached %d; /usr/bin/kv set slot%d_sdr_thresh_update 1) &", slot, slot);   //retrieve SDR data after BIC FW update
+  log_system(cmd);
   return PAL_EOK;
 }
 #endif

@@ -24,6 +24,6 @@ do_install() {
   install -m 0644 mcu.h ${D}${includedir}/openbmc/mcu.h
 }
 
-FILES_${PN} = "${libdir}/libmcu.so"
-FILES_${PN}-dev = "${includedir}/openbmc/mcu.h"
-RDEPENDS_${PN} = "libipmb libipmi libobmc-i2c libpal libkv"
+FILES:${PN} = "${libdir}/libmcu.so"
+FILES:${PN}-dev = "${includedir}/openbmc/mcu.h"
+RDEPENDS:${PN} = "libipmb libipmi libobmc-i2c libpal libkv"

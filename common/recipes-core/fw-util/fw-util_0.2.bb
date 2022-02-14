@@ -66,10 +66,10 @@ do_install_ptest() {
   install -D -m 755 fw-util-test ${D}${libdir}/fw-util/ptest/fw-util-test
 }
 
-LDFLAGS =+ " -lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv -lobmc-i2c"
-DEPENDS += " nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
-RDEPENDS:${PN} += " libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c"
-RDEPENDS:${PN}-ptest += "${RDEPENDS_fw-util}"
+LDFLAGS += "-lpthread -lfdt -lcrypto -lz -lpal -lvbs -ldl -lgpio-ctrl -lkv -lobmc-i2c -lmisc-utils"
+DEPENDS += "nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c libmisc-utils"
+RDEPENDS:${PN} += "libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c libmisc-utils"
+RDEPENDS:${PN}-ptest += "${RDEPENDS:${PN}}"
 
 CXXFLAGS += "\
   -Wno-psabi \

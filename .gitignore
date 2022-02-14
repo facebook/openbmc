@@ -1,0 +1,117 @@
+# (yocto) Build directories
+/build*/
+
+# (yocto) Local shared state cache
+/.sstate/
+
+# id-utils files
+ID
+
+# Python Byte-compiled / optimized / DLL files
+#   Note: gitignore.io has a python template but it has too much in it
+#         and we end up filtering valid files out of kernel trees such as
+#         the 'lib/' directories.  Reduce the set to the bytecode files.
+__pycache__/
+*.py[cod]
+
+# Created by https://www.gitignore.io/api/vim,buck,emacs
+# Edit at https://www.gitignore.io/?templates=vim,buck,emacs
+
+### Buck ###
+buck-out/
+.buckconfig.local
+.buckd/
+.buckversion
+.fakebuckversion
+.lsp-buck-out/
+.lsp.buckd/
+
+### Emacs ###
+# -*- mode: gitignore; -*-
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# reftex files
+*.rel
+
+# AUCTeX auto folder
+/auto/
+
+# cask packages
+.cask/
+dist/
+
+# Flycheck
+flycheck_*.el
+
+# server auth directory
+/server/
+
+# projectiles files
+.projectile
+
+# directory configuration
+.dir-locals.el
+
+# network security
+/network-security.data
+
+
+### Vim ###
+# Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+
+# Auto-generated tag files
+tags
+
+# Persistent undo
+[._]*.un~
+
+# Coc configuration directory
+.vim
+
+# End of https://www.gitignore.io/api/vim,buck,emacs
+# Created by https://www.toptal.com/developers/gitignore/api/vscode
+# Edit at https://www.toptal.com/developers/gitignore?templates=vscode
+
+### vscode ###
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# End of https://www.toptal.com/developers/gitignore/api/vscode
+bitbake-cookerdaemon.log

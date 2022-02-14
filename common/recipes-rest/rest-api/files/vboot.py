@@ -37,8 +37,8 @@ interested_keys = {
 }
 
 
-async def get_vboot_status():
-    info = dict()
+async def get_vboot_status():  # noqa: C901
+    info = {}
     info["status"] = "-1"
     info["status_text"] = "Unsupported"
     vboot_util = "/usr/local/bin/vboot-util"
@@ -54,19 +54,19 @@ async def get_vboot_status():
         m = re.match("Status CRC: (0[xX][0-9a-fA-F]+)", data[-4].strip())
         if m:
             info["status_crc"] = m.group(1)
-        m = re.match("Status type \((\d+)\) code \((\d+)\)", data[-2].strip())
+        m = re.match(r"Status type \((\d+)\) code \((\d+)\)", data[-2].strip())
         if m:
             info["status"] = "{}.{}".format(m.group(1), m.group(2))
-        m = re.match("TPM.? status  \((\d+)\)", data[-3].strip())
+        m = re.match(r"TPM.? status  \((\d+)\)", data[-3].strip())
         if m:
             info["tpm_status"] = m.group(1)
-        for l in data:
-            a = l.split(": ")
+        for line in data:
+            a = line.split(": ")
             if len(a) == 2:
                 key = a[0].strip()
                 value = a[1].strip()
                 if key in interested_keys:
                     info[interested_keys[key]] = value
-    except (OSError, subprocess.CalledProcessError) as e:
+    except (OSError, subprocess.CalledProcessError):
         pass
     return info

@@ -74,6 +74,8 @@
  * Aspeed gpio controller's device name in sysfs tree.
  */
 #define GPIO_SYSFS_ASPEED_DEVICE	"1e780000.gpio"
+#define SGPIO_SYSFS_ASPEED_DEVICE	"1e780500.sgpiom"
+#define GPIO1V8_SYSFS_ASPEED_DEVICE     "1e780800.gpio"
 
 static char* gsysfs_value_abspath(char *buf, size_t size, int pin_num)
 {
@@ -518,6 +520,12 @@ static void chip_desc_init(gpiochip_desc_t *gcdesc,
 		strncpy(gcdesc->chip_type, GPIO_CHIP_ASPEED_SOC,
 			sizeof(gcdesc->chip_type) - 1);
 		gcdesc->ops = &aspeed_gpiochip_ops;
+	} else if (strcmp(dev_name, SGPIO_SYSFS_ASPEED_DEVICE) == 0) {
+		strncpy(gcdesc->chip_type, SGPIO_CHIP_ASPEED_SOC,
+			sizeof(gcdesc->chip_type) - 1);
+	} else if (strcmp(dev_name, GPIO1V8_SYSFS_ASPEED_DEVICE) == 0) {
+		strncpy(gcdesc->chip_type, GPIO1V8_CHIP_ASPEED_SOC,
+			sizeof(gcdesc->chip_type) - 1);	
 	} else if (i2c_sysfs_is_valid_suid(dev_name)) {
 		strncpy(gcdesc->chip_type, GPIO_CHIP_I2C_EXPANDER,
 			sizeof(gcdesc->chip_type) - 1);

@@ -24,21 +24,21 @@ paths:
                       type: object
                       additionalProperties: false
                       properties: 
-                        APP_NAME: 
+                        MESSAGE: 
+                          type: string
+                        FRU#: 
                           type: string
                         FRU_NAME: 
                           type: string
                         TIME_STAMP: 
                           type: string
-                        FRU#: 
+                        APP_NAME: 
                           type: string
-                        MESSAGE: 
-                          type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

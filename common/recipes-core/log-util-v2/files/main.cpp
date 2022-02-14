@@ -76,6 +76,16 @@ int main(int argc, char* argv[]) {
       return -1;
     }
     action_fru_set.insert(fru_id);
+
+    uint8_t expList[MAX_NUM_FRUS] = {0}, expList_len = 0, expList_root = 0;
+    if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(expList, &expList_len) == PAL_EOK) {
+      for (uint8_t i = 0; i < expList_len; i++) {
+        if (pal_get_root_fru(expList[i], &expList_root) == PAL_EOK && expList_root == fru_id) {
+          action_fru_set.insert(expList[i]);
+        }
+      }
+    }
+
     uint8_t pair_fru_id = SELFormat::FRU_ALL;
     bool pair_flag = pal_get_pair_fru(fru_id, &pair_fru_id);
     if (pair_flag && pair_fru_id != SELFormat::FRU_ALL) {

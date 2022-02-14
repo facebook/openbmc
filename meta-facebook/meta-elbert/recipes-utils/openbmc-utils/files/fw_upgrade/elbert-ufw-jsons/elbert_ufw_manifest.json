@@ -5,7 +5,7 @@
     },
     "scm" : {
         "upgrade_cmd" : "fpga_util.sh scm program {filename}",
-        "post_action" : "if [ $(head -n 1 /sys/bus/i2c/drivers/scmcpld/12-0043/dpe_image) != '0x1' ]; then  echo 'non dpe image detected. exiting...'; exit 1; fi",
+        "post_action" : "dpeCheck.sh dpe",
         "priority" : 2
     },
     "smb" : {

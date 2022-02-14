@@ -17,21 +17,35 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import os
+import re
+import struct
+import time
 from ctypes import CDLL, c_uint8, byref
 from re import search
 from subprocess import PIPE, Popen
-from kv import FPERSIST, kv_get
 
-from fsc_util import Logger
-
-import re
-import os
-import time
 import kv
-import struct
+from fsc_util import Logger
+from kv import FPERSIST, kv_get
 
 fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
+sled_system_conf = "Type_NA"
+try:
+    sled_system_conf = kv_get("sled_system_conf", FPERSIST)
+    Logger.warn("sled_system_conf: %s" % (sled_system_conf))
+
+    # Add sensor fail scenario for DP case
+    if search(r"Type_DP", sled_system_conf) is not None:
+        Logger.warn("Add sensor fail scenario for DP case")
+        get_fan_mode_scenario_list = [
+            "one_fan_failure",
+            "sensor_hit_UCR",
+            "sensor_fail",
+        ]
+except kv.KeyNotFoundFailure:
+    Logger.warn("KeyNotFoundFailure from sled_system_conf")
 
 lpal_hndl = CDLL("libpal.so.0")
 
@@ -128,7 +142,7 @@ def set_all_pwm(boost):
 
 def is_valid_dp_pcie(pcie_info_key):
     try:
-        pcie_info_raw = kv.kv_get(pcie_info_key, flags=kv.FPERSIST, binary=True)
+        pcie_info_raw = kv_get(pcie_info_key, flags=kv.FPERSIST, binary=True)
         pcie_info_data = struct.unpack_from("<HH", pcie_info_raw, 2)
         if pcie_info_data in valid_dp_pcie_list:
             return 1
@@ -180,13 +194,15 @@ def sensor_valid_check(board, sname, check_name, attribute):
             ):
                 return 1
 
-            file = "/tmp/cache_store/" + host_ready_map[board]
-            if not os.path.exists(file):
-                return 0
-            with open(file, "r") as f:
-                flag_status = f.read()
-            if flag_status != "1":
-                return 0
+            # If sensor fail, dp will boost without checking host ready
+            if search(r"Type_DP", sled_system_conf) is None:
+                try:
+                    flag_status = kv_get(host_ready_map[board])
+                except kv.KeyOperationFailure:
+                    return 0
+
+                if flag_status != "1":
+                    return 0
 
             if status.value == 1:  # power on
                 if search(r"soc_cpu|soc_therm", sname) is not None:
@@ -217,7 +233,13 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     dev_status = c_uint8(0)
                     dev_type = c_uint8(0)
                     dev_id = int(sdata[3]) + 1
-                    response = lpal_hndl.pal_get_dev_info(int(fru_map[board]["slot_num"]), dev_id, byref(nvme_ready) ,byref(dev_status), byref(dev_type))
+                    response = lpal_hndl.pal_get_dev_info(
+                        int(fru_map[board]["slot_num"]),
+                        dev_id,
+                        byref(nvme_ready),
+                        byref(dev_status),
+                        byref(dev_type),
+                    )
                     if response == 0:  # bic can get device power status
                         if dev_status.value == 1:  # device power on
                             return 1
@@ -231,7 +253,13 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     dev_status = c_uint8(0)
                     dev_type = c_uint8(0)
                     dev_id = int(sname[7]) + 13
-                    response = lpal_hndl.pal_get_dev_info(int(fru_map[board]["slot_num"]), dev_id, byref(nvme_ready) ,byref(dev_status), byref(dev_type))
+                    response = lpal_hndl.pal_get_dev_info(
+                        int(fru_map[board]["slot_num"]),
+                        dev_id,
+                        byref(nvme_ready),
+                        byref(dev_status),
+                        byref(dev_type),
+                    )
                     if response == 0:  # bic can get device power status
                         if dev_status.value == 1:  # device power on
                             return 1
@@ -262,12 +290,16 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     int(fru_map[board]["slot_num"]), byref(status)
                 )
                 if status.value == 1:  # power on
-                    file = "/tmp/cache_store/" + host_ready_map[board]
-                    if not os.path.exists(file):
-                        return 0
-                    with open(file, "r") as f:
-                        flag_status = f.read()
-                    if flag_status == "1":
+                    if search(r"Type_DP", sled_system_conf) is None:
+                        try:
+                            flag_status = kv_get(host_ready_map[board])
+                        except kv.KeyOperationFailure:
+                            return 0
+
+                        if flag_status == "1":
+                            return 1
+                    else:
+                        # Type DP or DPB
                         return 1
                 else:
                     return 0
@@ -283,7 +315,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 def get_fan_mode(scenario="None"):
     if "one_fan_failure" in scenario:
-        sled_system_conf="Type_NA"
+        sled_system_conf = "Type_NA"
         try:
             sled_system_conf = kv_get("sled_system_conf", FPERSIST)
         except kv.KeyNotFoundFailure:
@@ -300,5 +332,7 @@ def get_fan_mode(scenario="None"):
     elif "sensor_hit_UCR" in scenario:
         pwm = 100
         return fan_mode["boost_mode"], pwm
-
+    elif "sensor_fail" in scenario:
+        pwm = 100
+        return fan_mode["boost_mode"], pwm
     pass

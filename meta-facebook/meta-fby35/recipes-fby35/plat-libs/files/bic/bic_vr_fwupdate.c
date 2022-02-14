@@ -37,7 +37,7 @@
 //#define DEBUG
 
 /****************************/
-/*       VR fw update       */                            
+/*       VR fw update       */
 /****************************/
 #define WARNING_REMAINING_WRITES 3
 #define MAX_RETRY 3
@@ -65,10 +65,22 @@ static int vr_cnt = 0;
 //4 VRs are on the server board
 static vr vr_list[4] = {0};
 
+static struct {
+  uint8_t slot_id;
+  uint8_t intf;
+} dis_bic_vr = {0, NONE_INTF};
+
+__attribute__((destructor))
+static void en_bic_vr_monitor(void) {
+  if ( dis_bic_vr.slot_id ) {
+    bic_disable_sensor_monitor(dis_bic_vr.slot_id, 0, dis_bic_vr.intf);
+  }
+}
+
 static uint8_t
 cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len)
 {
-  uint8_t const crc8_table[] = 
+  uint8_t const crc8_table[] =
   { 0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
     0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65, 0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D,
     0xE0, 0xE7, 0xEE, 0xE9, 0xFC, 0xFB, 0xF2, 0xF5, 0xD8, 0xDF, 0xD6, 0xD1, 0xC4, 0xC3, 0xCA, 0xCD,
@@ -99,10 +111,10 @@ cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len)
     crc = crc8_table[crc ^ *data++];
   }
 
-  return crc;  
+  return crc;
 }
 
-static uint8_t 
+static uint8_t
 char_to_hex(char c) {
   if (c >= 'A')
     return c - 'A' + 10;
@@ -110,7 +122,7 @@ char_to_hex(char c) {
     return c - '0';
 }
 
-static uint8_t 
+static uint8_t
 string_to_byte(char *c) {
   return char_to_hex(c[0]) * 16 + char_to_hex(c[1]);
 }
@@ -131,13 +143,15 @@ start_with(const char *str, const char *c) {
 }
 
 static int
-split(char **dst, char *src, char *delim) {
+split(char **dst, char *src, char *delim, int maxsz) {
   char *s = strtok(src, delim);
   int size = 0;
 
   while ( NULL != s ) {
     *dst++ = s;
-    size++;
+    if ( (++size) >= maxsz ) {
+      break;
+    }
     s = strtok(NULL, delim);
   }
 
@@ -282,7 +296,7 @@ error_exit:
   return ret;
 }
 
-static int 
+static int
 vr_ISL_hex_parser(char *image) {
   int ret = 0;
   FILE *fp = NULL;
@@ -296,13 +310,13 @@ vr_ISL_hex_parser(char *image) {
   uint8_t crc8_check = 0;
   uint8_t data[16] = {0};
   uint8_t data_end = 0;
-  
+
   if ( (fp = fopen(image, "r") ) == NULL ) {
     printf("Invalid file: %s\n", image);
     ret = -1;
     goto error_exit;
   }
- 
+
   while( NULL != fgets(tmp_buf, tmp_len, fp) ) {
     /*search for 0xAD command*/
     if ( start_with(tmp_buf, "49") ) {
@@ -317,7 +331,7 @@ vr_ISL_hex_parser(char *image) {
 #ifdef DEBUG
         printf("[Get] ID ");
         for ( i = 0; i < vr_list[vr_cnt].devid_len; i++ ) {
-          printf("%x ", vr_list[vr_cnt].devid[i]); 
+          printf("%x ", vr_list[vr_cnt].devid[i]);
         }
         printf(",Addr %x\n", vr_list[vr_cnt].addr);
 #endif
@@ -366,7 +380,7 @@ vr_ISL_hex_parser(char *image) {
       printf("\n");
 #endif
       vr_list[vr_cnt].data_cnt++;
-    } 
+    }
   }
 
 #ifdef DEBUG
@@ -411,7 +425,7 @@ unsigned int CRC16_LUT[256] = {
   0x0208, 0x820d, 0x8207, 0x0202
 };
 
-static int 
+static int
 cal_TI_crc16(vr *dev) {
   uint8_t data[254] = {0};
   uint8_t data_index = 0;
@@ -488,8 +502,8 @@ vr_TI_csv_parser(char *image) {
       int data_len = vr_list[vr_cnt].pdata[data_cnt].data_len;
       for (i = 0, data_index = 15; i < data_len; data_index+=2, i++) {
         vr_list[vr_cnt].pdata[data_cnt].data[i] = string_to_byte(&token[data_index]);
-      } 
-      vr_list[vr_cnt].data_cnt++;  
+      }
+      vr_list[vr_cnt].data_cnt++;
       data_cnt++;
     }
   }
@@ -617,292 +631,352 @@ error_exit:
   return ret;
 }
 
+static uint32_t
+cal_IFX_crc32(vr_data *list, int len) {
+  uint32_t crc = 0xFFFFFFFF;
+  int i, j, b;
+
+  for (i = 0; i < len; i++) {
+    for (j = 0; j < 4; j++) {
+      crc ^= list[i].data[j];
+      for (b = 0; b < 8; b++) {
+        if (crc & 0x01) {
+          crc = (crc >> 1) ^ 0xEDB88320;  // polynomial 0xEDB88320 (lsb-first)
+        } else {
+          crc >>= 1;
+        }
+      }
+    }
+  }
+
+  return ~crc;
+}
+
 static int
-vr_IFX_xsf_parser(char *image) {
+vr_IFX_mic_parser(char *image) {
+#define ADDRESS_FIELD  "PMBus Address :"
 #define CHECKSUM_FIELD "Checksum :"
-#define ADDR_FIELD "i2c Address :"
-#define DATA_START_TAG "[Config Data]"
-#define DATA_END_TAG   "4000"
-#define DATA_LEN_IN_LINE 0x11
-  const uint16_t DEV_ID = 0x0279;
-  int ret = 0;
+#define DATA_START_TAG "[Configuration Data]"
+#define DATA_END_TAG   "[End Configuration Data]"
+#define DATA_COMMENT   "//"
+#define DATA_XV        "XV"
+#define DATA_LEN_IN_LINE 5
+#define SEC_TRIM       0x02
+  const size_t len_start = strlen(DATA_START_TAG);
+  const size_t len_end = strlen(DATA_END_TAG);
+  const size_t len_comment = strlen(DATA_COMMENT);
+  const size_t len_xv = strlen(DATA_XV);
+  const uint16_t ifx_devid = 0x8A03;
   FILE *fp = NULL;
   char *token = NULL;
   char tmp_buf[128] = "\0";
   int tmp_len = sizeof(tmp_buf);
-  int data_cnt = 0;
-  int i = 0;
+  int data_cnt = 0, start_idx = 0;
+  int i, ret = 0;
+  uint8_t sec_type = 0x0;
+  uint16_t offset, sec_size = 0x0;
+  uint32_t sum = 0, sum_exp = 0;
+  uint32_t dword, crc;
   bool is_data = false;
 
   if ( (fp = fopen(image, "r") ) == NULL ) {
     printf("Invalid file: %s\n", image);
-    ret = -1;
-    goto error_exit;
+    return BIC_STATUS_FAILURE;
   }
 
   while ( NULL != fgets(tmp_buf, tmp_len, fp) ) {
-    if ( (token = strstr(tmp_buf, CHECKSUM_FIELD)) != NULL ) { //get the checksum
-      //set DEVID manually
-      memcpy(vr_list[vr_cnt].devid, (uint8_t *)&DEV_ID, 2);
-      vr_list[vr_cnt].devid_len = 2;
-    } else if ( (token = strstr(tmp_buf, ADDR_FIELD)) != NULL ) {
-      token = strstr(tmp_buf, "0x");
-      vr_list[vr_cnt].addr = string_to_byte(&token[2]);
-    } else if ( (token = strstr(tmp_buf, DATA_START_TAG)) != NULL ) {
-      is_data = true;
+    if ( !strncmp(tmp_buf, DATA_COMMENT, len_comment) ) {
+      token = tmp_buf + len_comment;
+      if ( !strncmp(token, DATA_XV, len_xv) ) {  // find "//XV..."
+        printf("Parsing %s", token);
+      }
       continue;
-    } else if ( start_with(tmp_buf, DATA_END_TAG) > 0 ) {
+    } else if ( !strncmp(tmp_buf, DATA_END_TAG, len_end) ) {
+      // dummy data (end of data)
+      vr_list[vr_cnt].pdata[data_cnt].command = 0xFF;
+      vr_list[vr_cnt].pdata[data_cnt].data_len = 0;
+      data_cnt++;
       break;
     } else if ( is_data == true ) {
-      char *token_list[32] = {NULL};
-      int token_size = split(token_list, tmp_buf, " "); //it should be 17 only
-      uint8_t page_addr = 0x0;
-      uint8_t index_addr = 0x0;
+      char *token_list[8] = {0};
+      int token_size = split(token_list, tmp_buf, " ", DATA_LEN_IN_LINE);
 
-      if ( token_size != DATA_LEN_IN_LINE ) {
-        printf("the len of token is not expected!\n");
-        ret = -1;
-        break;
+      if ( token_size < 1 ) {  // unexpected data line
+        continue;
+      }
+      offset = (uint16_t)strtol(token_list[0], NULL, 16);
+      if ( sec_type == SEC_TRIM && offset != 0x0 ) {  // skip Trim
+        continue;
       }
 
-      page_addr = string_to_byte(&token_list[0][0]);
-      index_addr = string_to_byte(&token_list[0][2]);
+      for ( i = 1; i < token_size; i++ ) {  // DWORD0 ~ DWORD3
+        dword = (uint32_t)strtoul(token_list[i], NULL, 16);
+        if ( offset == 0x0 ) {
+          switch (i) {
+            case 1:  // start of section header
+              start_idx = data_cnt;
+              sec_type = (uint8_t)dword;  // section type
+              break;
+            case 2:  // section size
+              sec_size = (uint16_t)dword;
+              break;
+            case 3:  // section header CRC
+              // check CRC of section header
+              crc = cal_IFX_crc32(&vr_list[vr_cnt].pdata[start_idx], data_cnt - start_idx);
+              if ( dword != crc ) {
+                syslog(LOG_WARNING, "CRC mismatched! Expected: %08X, Actual: %08X", dword, crc);
+                ret = BIC_STATUS_FAILURE;
+                break;
+              }
 
-      for (i = 1; i < DATA_LEN_IN_LINE; i++) {
-        if ( start_with(token_list[i], "----") > 0 ) {
-          continue;
+              sum += dword;
+              start_idx = data_cnt + 1;  // start of section data
+              break;
+          }
+          if ( sec_type == SEC_TRIM ) {
+            break;
+          }
+        } else if ( (offset + i*4) == sec_size ) {  // section data CRC
+          // check CRC of section data
+          crc = cal_IFX_crc32(&vr_list[vr_cnt].pdata[start_idx], data_cnt - start_idx);
+          if ( dword != crc ) {
+            syslog(LOG_WARNING, "CRC mismatched! Expected: %08X, Actual: %08X", dword, crc);
+            ret = BIC_STATUS_FAILURE;
+            break;
+          }
+          sum += dword;
         }
-        vr_list[vr_cnt].pdata[data_cnt].command = page_addr;
-        vr_list[vr_cnt].pdata[data_cnt].data_len = 2;//write word
-        vr_list[vr_cnt].pdata[data_cnt].data[0] = index_addr + i - 1; //put register offset to data[0]
-        vr_list[vr_cnt].pdata[data_cnt].data[1] = string_to_byte(&token_list[i][2]);
-        vr_list[vr_cnt].pdata[data_cnt].data[2] = string_to_byte(&token_list[i][0]);
+        if ( ret != 0 ) {
+          break;
+        }
+
+        vr_list[vr_cnt].pdata[data_cnt].command = sec_type;
+        vr_list[vr_cnt].pdata[data_cnt].data_len = 4;
+        memcpy(vr_list[vr_cnt].pdata[data_cnt].data, &dword, sizeof(dword));
         data_cnt++;
+      }
+      if ( ret != 0 ) {
+        break;
+      }
+    } else {
+      if ( (token = strstr(tmp_buf, ADDRESS_FIELD)) != NULL ) {
+        if ( (token = strstr(token, "0x")) != NULL ) {
+          vr_list[vr_cnt].addr = (uint8_t)(strtoul(token, NULL, 16) << 1);
+        }
+      } else if ( (token = strstr(tmp_buf, CHECKSUM_FIELD)) != NULL ) {
+        if ( (token = strstr(token, "0x")) != NULL ) {
+          sum_exp = (uint32_t)strtoul(token, NULL, 16);
+          printf("Configuration Checksum: %08X\n", sum_exp);
+        }
+        // set DEVID manually
+        vr_list[vr_cnt].devid_len = 2;
+        memcpy(vr_list[vr_cnt].devid, (uint8_t *)&ifx_devid, vr_list[vr_cnt].devid_len);
+      } else if ( !strncmp(tmp_buf, DATA_START_TAG, len_start) ) {
+        is_data = true;
+        continue;
       }
     }
   }
-  vr_list[vr_cnt].data_cnt += data_cnt;
+  fclose(fp);
 
-error_exit:
-  if ( fp != NULL ) fclose(fp);
+  if ( ret == 0 ) {
+    vr_list[vr_cnt].data_cnt = data_cnt;
+    if ( sum_exp != sum ) {
+      syslog(LOG_WARNING, "Checksum mismatched! Expected: %08X, Actual: %08X", sum_exp, sum);
+      ret = BIC_STATUS_FAILURE;
+    }
+  }
 
   return ret;
 }
 
 static int
 vr_IFX_program(uint8_t slot_id, vr *dev, uint8_t force) {
-#define VR_CONF_REG 0x1A
-#define VR_CLR_FAULT 0x03
-#define REG1_STS_CHECK 0x1
-#define REG2_STS_CHECK 0xA
-  int i = 0;
-  int ret = 0, rc = 0;
-  int fd = 0;
-  char path[128];
-  uint8_t tbuf[64] = {0};
-  uint8_t rbuf[64] = {0};
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
-  uint8_t current_page = 0xff;
-  uint8_t remaining_writes = 0x00;
+  uint8_t curr_sec = 0xFF;
+  uint8_t remaining_writes = 0;
   uint8_t addr = dev->addr;
   uint8_t bus = dev->bus;
   uint8_t intf = dev->intf;
-  int len = dev->data_cnt;
+  int ret = BIC_STATUS_FAILURE;
+  int i, j, len = dev->data_cnt;
+  int size, start_idx = 0;
   vr_data *list = dev->pdata;
-  
-  //Infineon
-  //to avoid sensord changing the page of VRs, so use the LOCK file
-  //to stop monitoring sensors of VRs
-  sprintf(path, SLOT_SENSOR_LOCK, slot_id);
-  fd = open(path, O_CREAT | O_RDWR, 0666);
-  rc = flock(fd, LOCK_EX | LOCK_NB);
-  if(rc) {
-    if(EWOULDBLOCK == errno) {
-      return -1;
-    }
-  }
 
   // get the remaining writes of the VR
-  ret = bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf);
-  if ( ret < 0 ) {
-    goto error_exit;
+  if ( bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get vr remaining writes", __func__);
+    return BIC_STATUS_FAILURE;
   }
 
-  // check it
-  ret = vr_remaining_writes_check(remaining_writes, force);
-  if ( ret < 0 ) {
-    goto error_exit;
+  // check remaining writes
+  if ( vr_remaining_writes_check(remaining_writes, force) < 0 ) {
+    return BIC_STATUS_FAILURE;
   }
 
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = addr;
-  //step 1 - write data to data register
-  for (i = 0; i < len; i++ ) {
-    if ( list[i].command != current_page ) {
-      //set page
-      tbuf[2] = 0x00; //read cnt
-      tbuf[3] = VR_PAGE;
-      tbuf[4] = list[i].command;
+  // to stop bic polling VR sensors
+  if ( bic_disable_sensor_monitor(slot_id, 1, intf) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to disable vr monitor", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+  dis_bic_vr.slot_id = slot_id;
+  sleep(2);
+
+  for ( i = 0; i < len; i++ ) {
+    if ( curr_sec != list[i].command ) {  // start of section
+      if ( curr_sec != 0xFF ) {  // when it's not the 1st
+        // check scratchpad data (read and compare to list data)
+        tbuf[0] = (bus << 1) + 1;
+        tbuf[1] = addr;
+        tbuf[2] = 0;    // read count
+        tbuf[3] = IFX_MFR_AHB_ADDR;
+        tbuf[4] = 4;
+        tbuf[5] = 0x00;
+        tbuf[6] = 0xe0;
+        tbuf[7] = 0x05;
+        tbuf[8] = 0x20;
+        tlen = 9;
+        ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to set scratchpad addr", __func__);
+          break;
+        }
+        msleep(10);
+
+        tbuf[2] = 6;    // read count
+        tbuf[3] = IFX_MFR_REG_READ;
+        tlen = 4;
+        for ( j = start_idx; j < i; j++ ) {
+          ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+          if ( ret < 0 ) {
+            syslog(LOG_WARNING, "%s() Failed to read data %d", __func__, j);
+            break;
+          }
+          if ( memcmp(&rbuf[1], list[j].data, 4) != 0 ) {
+            syslog(LOG_WARNING, "%s() Scratchpad(%d) mismatched!", __func__, j);
+            ret = BIC_STATUS_FAILURE;
+            break;
+          }
+        }
+        if ( ret < 0 ) {
+          break;  // TBD (enhancement): re-program the section
+        }
+
+        // upload scratchpad to OTP
+        size = (i - start_idx) * 4;
+        memcpy(tbuf, &size, 2);
+        tbuf[2] = 0x00;
+        tbuf[3] = 0x00;
+        ret = bic_ifx_vr_mfr_fw(slot_id, bus, addr, OTP_CONF_STO, tbuf, NULL, intf);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to upload data to OTP %02X", __func__, curr_sec);
+          break;
+        }
+
+        // wait for programming soak (2ms/byte, at least 200ms)
+        // ex: Config (604 bytes): (604 / 50) + 2 = 14 (1400 ms)
+        size = (size / 50) + 2;
+        for ( j = 0; j < size; j++ ) {
+          msleep(100);
+        }
+
+        tbuf[0] = (bus << 1) + 1;
+        tbuf[1] = addr;
+        tbuf[2] = 1;    // read count
+        tbuf[3] = PMBUS_STS_CML;
+        tlen = 4;
+        ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to read PMBUS_STS_CML", __func__);
+          break;
+        }
+
+        if ( rbuf[0] & 0x01 ) {
+          syslog(LOG_WARNING, "%s() CML Other Memory Fault: %02X (%d)", __func__, rbuf[0], start_idx);
+          ret = BIC_STATUS_FAILURE;
+          break;
+        }
+
+        // dummy data (end of data)
+        if ( list[i].data_len == 0 ) {
+          break;
+        }
+      }
+
+      // clear bit0 of PMBUS_STS_CML
+      tbuf[0] = (bus << 1) + 1;
+      tbuf[1] = addr;
+      tbuf[2] = 0;    // read count
+      tbuf[3] = PMBUS_STS_CML;
+      tbuf[4] = 0x01;
       tlen = 5;
       ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
       if ( ret < 0 ) {
-        syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, list[i].command);
-        goto error_exit;
+        syslog(LOG_WARNING, "%s() Failed to write PMBUS_STS_CML", __func__);
+        break;
       }
-      current_page = list[i].command;
-      msleep(10);//sleep 10ms and carry on to write the data
+
+      // invalidate existing data
+      tbuf[0] = list[i].command;  // section type
+      tbuf[1] = 0x00;             // xv0
+      tbuf[2] = 0x00;
+      tbuf[3] = 0x00;
+      ret = bic_ifx_vr_mfr_fw(slot_id, bus, addr, OTP_FILE_INVD, tbuf, NULL, intf);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to invalidate %02X", __func__, list[i].command);
+        break;
+      }
+      msleep(10);
+
+      // set scratchpad addr
+      tbuf[0] = (bus << 1) + 1;
+      tbuf[1] = addr;
+      tbuf[2] = 0;    // read count
+      tbuf[3] = IFX_MFR_AHB_ADDR;
+      tbuf[4] = 4;
+      tbuf[5] = 0x00;
+      tbuf[6] = 0xe0;
+      tbuf[7] = 0x05;
+      tbuf[8] = 0x20;
+      tlen = 9;
+      ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+      if ( ret < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to set scratchpad addr", __func__);
+        break;
+      }
+      msleep(10);
+
+      start_idx = i;  // start of the section
+      curr_sec = list[i].command;
     }
 
-    //write data
-    memcpy(&tbuf[3], list[i].data, 3);
-    tlen = 6;
+    // program data into scratch
+    tbuf[3] = IFX_MFR_REG_WRITE;
+    tbuf[4] = 4;
+    memcpy(&tbuf[5], list[i].data, 4);
+    tlen = 9;
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Couldn't write data to page %02X and offset %02X", __func__, list[i].command, list[i].data[0]);
-      goto error_exit;
+      syslog(LOG_WARNING, "%s() Failed to write data %08X (%d)", __func__, *(uint32_t *)list[i].data, i);
+      break;
     }
-    msleep(100);
+    msleep(10);
+
     show_progress(slot_id, i, len);
   }
   printf("\n");
-
-  //step 2 - upload data to config
-  tbuf[3] = VR_PAGE;
-  tbuf[4] = VR_PAGE32;
-  tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
-    goto error_exit;
+    ret = BIC_STATUS_FAILURE;
   }
 
-  tbuf[3] = VR_CONF_REG;
-  tbuf[4] = 0xa1;
-  tbuf[5] = 0x08;
-  tlen = 6;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't write data to VR_CONF_REG", __func__);
-    goto error_exit;
+  if ( bic_disable_sensor_monitor(slot_id, 0, intf) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to enable vr monitor", __func__);
   }
+  dis_bic_vr.slot_id = 0;
 
-  tbuf[3] = VR_CLR_FAULT;
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't sent CLR FAULT", __func__);
-    goto error_exit;
-  }
-
-  tbuf[3] = 0x1d;
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't sent 0x1d", __func__);
-    goto error_exit;
-  }
-
-  tbuf[3] = 0x24;
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't sent 0x24", __func__);
-    goto error_exit;
-  }
-
-  sleep(1); //wait for uploadprocess complete
-
-  tbuf[3] = VR_CONF_REG;
-  tbuf[4] = 0x00;
-  tbuf[5] = 0x00;
-  tlen = 6;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't write data to VR_CONF_REG", __func__);
-    goto error_exit;
-  }
-
-  // step 3 - checking for a successful upload
-  tbuf[3] = VR_PAGE;
-  tbuf[4] = VR_PAGE60;
-  tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
-    goto error_exit;
-  }
-
-  tbuf[2] = 0x01; //read cnt
-  tbuf[3] = 0x01; //sts reg1
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
-    goto error_exit;
-  }
-
-  if ( (rbuf[0] & REG1_STS_CHECK) != 0 ) {
-    ret = -1;
-    printf("Failed to upload data. rbuf[0]=%02X from reg1\n", rbuf[0]);
-    goto error_exit;
-  }
-
-  tbuf[3] = 0x02; //sts reg2
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
-    goto error_exit;
-  }
-
-  if ( (rbuf[0] & REG2_STS_CHECK) != 0 ) {
-    ret = -1;
-    printf("Failed to upload data. rbuf[0]=%02X from reg2\n", rbuf[0]);
-    printf("a defective bit is held or the mem space is full!\n");
-    goto error_exit;
-  }
-
-#if 0
-  //need to do sled-cycle to make the config reload
-  //step 4 - read crc from the dev
-  tbuf[2] = 0x00; //read cnt
-  tbuf[3] = VR_PAGE;
-  tbuf[4] = VR_PAGE62;
-  tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't set page to 0x%02X", __func__, tbuf[4]);
-    goto error_exit;
-  }
-
-  tbuf[2] = 0x02; //read 2 bytes
-  tbuf[3] = 0x42;
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't read crc1 from %02X", __func__, tbuf[3]);
-    goto error_exit;
-  }
-
-  tbuf[3] = 0x43;
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, NONE_INTF);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Couldn't read crc2 from %02X", __func__, tbuf[3]);
-    goto error_exit;
-  }
-#endif
-
-error_exit:
-  rc = flock(fd, LOCK_UN);
-  if (rc == -1) {
-    syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, path);
-    close(fd);
-    return rc;
-  }
-  close(fd);
-  remove(path);
   return ret;
 }
 
@@ -1103,9 +1177,9 @@ struct dev_table {
   char *dev_name;
   uint8_t comp;
 } dev_list[] = {
-  {NONE_INTF,     VR_SB_BUS,  VCCIN_ADDR,        "VCCIN/VCCFA_EHV_FIVRA", FW_VR},
-  {NONE_INTF,     VR_SB_BUS,  VCCD_ADDR,         "VCCD",                  FW_VR},
-  {NONE_INTF,     VR_SB_BUS,  VCCINFAON_ADDR,    "VCCINFAON/VCCFA_EHV",   FW_VR},
+  {NONE_INTF,     VR_SB_BUS,  VCCIN_ADDR,        "VCCIN/VCCFA_EHV_FIVRA", FW_VR_VCCIN},
+  {NONE_INTF,     VR_SB_BUS,  VCCD_ADDR,         "VCCD",                  FW_VR_VCCD},
+  {NONE_INTF,     VR_SB_BUS,  VCCINFAON_ADDR,    "VCCINFAON/VCCFA_EHV",   FW_VR_VCCINFAON},
   {REXP_BIC_INTF, VR_2OU_BUS, VR_PESW_ADDR,      "VR_P0V84/P0V9", FW_2OU_PESW_VR},
   {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY1, "VR_P3V3_STBY1", FW_2OU_3V3_VR1},
   {REXP_BIC_INTF, VR_2OU_BUS, VR_2OU_P3V3_STBY2, "VR_P3V3_STBY2", FW_2OU_3V3_VR2},
@@ -1116,47 +1190,47 @@ struct dev_table {
 int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
 
 static struct tool {
-  uint8_t vendor;
   int (*parser)(char *);
   int (*program)(uint8_t, vr *, uint8_t);
 } vr_tool[] = {
-  {VR_ISL, vr_ISL_hex_parser, vr_ISL_program},
-  {VR_TI , vr_TI_csv_parser , vr_TI_program},
-  {VR_IFX, vr_IFX_xsf_parser, vr_IFX_program},
-  {VR_VY,  vr_VY_txt_parser,  vr_VY_program},
+  [VR_ISL] = {vr_ISL_hex_parser, vr_ISL_program},
+  [VR_TI]  = {vr_TI_csv_parser , vr_TI_program},
+  [VR_IFX] = {vr_IFX_mic_parser, vr_IFX_program},
+  [VR_VY]  = {vr_VY_txt_parser,  vr_VY_program},
 };
 
 static char*
 get_vr_name(uint8_t intf, uint8_t bus, uint8_t addr, uint8_t comp) {
   int i;
-  for ( i = 0; i< dev_table_size; i++ ) {
-          //check addr first, if it's false, check comp further
-    if ( addr == dev_list[i].addr && comp == dev_list[i].comp && \
-          bus == dev_list[i].bus && intf == dev_list[i].intf) {
+
+  for ( i = 0; i < dev_table_size; i++ ) {
+    // check comp first, if it's false, check addr further
+    if ( comp == dev_list[i].comp && addr == dev_list[i].addr &&
+         bus == dev_list[i].bus && intf == dev_list[i].intf ) {
       return dev_list[i].dev_name;
     }
   }
+
   return NULL;
 }
 
 static int
-_lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uint8_t *sel_vendor, uint8_t *vr_bus) {
-  int i = 0;
-  int ret = 0;
-  uint8_t rlen = 0;
+_lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf,
+                 uint8_t *sel_vendor, uint8_t *vr_bus, uint8_t *vr_addr) {
+  int i, ret = 0;
+  uint8_t rlen = TI_DEVID_LEN;
 
-  while ( i < dev_table_size ) {
+  for ( i = 0; i < dev_table_size; i++ ) {
     if ( dev_list[i].intf == intf && dev_list[i].comp == comp ) {
       printf("Find: ");
-      ret = bic_get_vr_device_id(slot_id, 0/*unused*/, rbuf, &rlen, dev_list[i].bus, dev_list[i].addr, intf);
-      if ( ret == BIC_STATUS_SUCCESS && rlen <= TI_DEVID_LEN/*the longest length of dev id*/) {
+      ret = bic_get_vr_device_id(slot_id, rbuf, &rlen, dev_list[i].bus, dev_list[i].addr, intf);
+      if ( ret == BIC_STATUS_SUCCESS && rlen <= TI_DEVID_LEN/*the longest length of dev id*/ ) {
         *vr_bus = dev_list[i].bus;
+        *vr_addr = dev_list[i].addr;
         break;
       }
     }
-    i++;
   }
-
   if ( i == dev_table_size ) {
     printf("Couldn't get the devid from VRs\n");
     return BIC_STATUS_FAILURE;
@@ -1174,36 +1248,41 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
     *sel_vendor = VR_ISL;
   }
 
-  printf("VR vendor=%s(%x.%x) \n", (*sel_vendor == VR_IFX)?"IFX": \
-                                   (*sel_vendor == VR_TI)?"TI": \
-                                   (*sel_vendor == VR_ISL)?"ISL":"VY", rlen, *sel_vendor);
+  printf("VR vendor=%s(%x.%x)\n", (*sel_vendor == VR_IFX)?"IFX": \
+                                  (*sel_vendor == VR_TI)?"TI": \
+                                  (*sel_vendor == VR_ISL)?"ISL":"VY", rlen, *sel_vendor);
   return BIC_STATUS_SUCCESS;
 }
 
 int
 update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool usb_update) {
-  int ret = 0;
-  int i = 0;
-  uint8_t devid[6] = {0};
+  int i, ret = 0;
+  uint8_t devid[TI_DEVID_LEN] = {0};
   uint8_t sel_vendor = 0;
-  uint8_t vr_bus = 0x0;
+  uint8_t vr_bus = 0x0, vr_addr = 0x0;
 
-  ret = _lookup_vr_devid(slot_id, comp, intf, devid, &sel_vendor, &vr_bus);
-  if ( ret < 0 ) goto error_exit;
+  ret = _lookup_vr_devid(slot_id, comp, intf, devid, &sel_vendor, &vr_bus, &vr_addr);
+  if ( ret < 0 ) {
+    return ret;
+  }
 
   ret = vr_tool[sel_vendor].parser(image);
   if ( ret < 0 ) {
     printf("Cannot parse the file!\n");
-    goto error_exit;
+    return ret;
+  }
+
+  // slave address is unspecified in IFX mic file
+  if ( sel_vendor == VR_IFX && !vr_list[0].addr ) {
+    vr_list[0].addr = vr_addr;
   }
 
   //step 2.5 - check if data is existed.
   //data_cnt, addr, and devid_len cannot be 0.
-  for ( i = 0; i < vr_cnt + 1; i++ ) {
+  for ( i = 0; i <= vr_cnt; i++ ) {
     if ( vr_list[i].data_cnt == 0 || vr_list[i].addr == 0 || vr_list[i].devid_len == 0 ) {
       printf("data, addr, or devid_len is not caught!\n");
-      ret = BIC_STATUS_FAILURE;
-      goto error_exit;
+      return BIC_STATUS_FAILURE;
     }
   }
 
@@ -1216,8 +1295,14 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
     printf(" Actual ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", devid[i]);
     printf("\n");
-    ret = -1;
-    goto error_exit;
+    return BIC_STATUS_FAILURE;
+  }
+
+  if ( vr_list[0].addr != vr_addr ) {
+    printf("Device slave address mismatched!\n");
+    if ( !force ) {
+      return BIC_STATUS_FAILURE;
+    }
   }
 
   // bus/intf info is not included in the fw file.
@@ -1229,7 +1314,6 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
   printf("Update %s...", get_vr_name(intf, vr_bus, vr_list[0].addr, comp));
   ret = (usb_update == true)?vr_usb_program(slot_id, sel_vendor, comp, &vr_list[0], force): \
                              vr_tool[sel_vendor].program(slot_id, &vr_list[0], force);
-error_exit:
 
   return ret;
 }

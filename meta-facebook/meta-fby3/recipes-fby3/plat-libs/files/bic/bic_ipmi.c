@@ -337,6 +337,7 @@ bic_is_crit_act_ongoing(uint8_t fruid) {
   return (strncmp(value, "1", 1) == 0)?true:false;
 }
 
+#define FW_UPDATING_STR "fru%d_fwupd"
 bool
 bic_is_fw_update_ongoing(uint8_t fruid) {
   char key[MAX_KEY_LEN] = {0};
@@ -344,7 +345,7 @@ bic_is_fw_update_ongoing(uint8_t fruid) {
   int ret = BIC_STATUS_SUCCESS;
   struct timespec ts;
 
-  sprintf(key, "fru%d_fwupd", fruid);
+  sprintf(key, FW_UPDATING_STR, fruid);
   ret = kv_get(key, value, NULL, 0);
   if (ret < 0) {
      return false;
@@ -355,6 +356,25 @@ bic_is_fw_update_ongoing(uint8_t fruid) {
      return true;
 
   return false;
+}
+
+int
+_set_fw_update_ongoing(uint8_t slot_id, uint16_t tmout) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  sprintf(key, FW_UPDATING_STR, slot_id);
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  ts.tv_sec += tmout;
+  sprintf(value, "%ld", ts.tv_sec);
+
+  if (kv_set(key, value, 0, 0) < 0) {
+     return -1;
+  }
+
+  return 0;
 }
 
 int
@@ -804,6 +824,110 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       break;
   }
 
+  return ret;
+}
+
+// OEM - Get Firmware Version
+// Netfn: 0x38, Cmd: 0x0B
+static int
+_bic_get_vr_vendor_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf, uint8_t *rlen) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, fw_comp}; //IANA ID + FW_COMP
+  uint8_t rbuf[16] = {0x00};
+  int ret = BIC_STATUS_FAILURE;
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 4, rbuf, rlen, intf);
+  if ( ret < 0 || *rlen < 4 ) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, *rlen, slot_id, intf);
+  } else {
+    //Ignore IANA ID
+    *rlen = *rlen - 3;
+    memcpy(ver, &rbuf[3], *rlen);
+    ret = BIC_STATUS_SUCCESS;
+  }
+  return ret;
+}
+
+int
+bic_get_vr_vendor_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t *rlen) {
+  uint8_t fw_comp = 0x0;
+  uint8_t intf = 0x0;
+  int ret = BIC_STATUS_FAILURE;
+
+  //get the component
+  switch(comp) {
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+      fw_comp = FW_2OU_PESW_VR;
+      break;
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_BOT_3V3_VR1:
+      fw_comp = FW_2OU_3V3_VR1;
+      break;
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_BOT_3V3_VR2:
+      fw_comp = FW_2OU_3V3_VR2;
+      break;
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_BOT_3V3_VR3:
+      fw_comp = FW_2OU_3V3_VR3;
+      break;
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_1V8_VR:
+      fw_comp = FW_2OU_1V8_VR;
+      break;
+    default:
+      fw_comp = comp;
+      break;
+  }
+
+  // get the intf
+  switch (comp) {
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+    case FW_2OU_PESW_VR:
+    case FW_CWC_PESW_VR:
+      intf = REXP_BIC_INTF;
+      break;
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
+      intf = RREXP_BIC_INTF2;
+      break;
+  }
+
+  // run cmd
+  switch (comp) {
+    case FW_2OU_3V3_VR1:
+    case FW_2OU_3V3_VR2:
+    case FW_2OU_3V3_VR3:
+    case FW_2OU_1V8_VR:
+    case FW_2OU_PESW_VR:
+    case FW_CWC_PESW_VR:
+    case FW_GPV3_TOP_PESW_VR:
+    case FW_GPV3_BOT_PESW_VR:
+    case FW_2U_TOP_3V3_VR1:
+    case FW_2U_TOP_3V3_VR2:
+    case FW_2U_TOP_3V3_VR3:
+    case FW_2U_TOP_1V8_VR:
+    case FW_2U_BOT_3V3_VR1:
+    case FW_2U_BOT_3V3_VR2:
+    case FW_2U_BOT_3V3_VR3:
+    case FW_2U_BOT_1V8_VR:
+      ret = _bic_get_vr_vendor_fw_ver(slot_id, fw_comp, ver, intf, rlen);
+      break;
+  }
   return ret;
 }
 
@@ -1696,7 +1820,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
 
 int
 remote_bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data, uint8_t intf) {
-  uint8_t tbuf[13] = {0x00};
+  uint8_t tbuf[16] = {0x00};
   uint8_t rbuf[6] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = sizeof(tbuf);
@@ -1719,7 +1843,7 @@ remote_bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data, uint8_t
 
 int
 bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
-  uint8_t tbuf[14] = {0x00};
+  uint8_t tbuf[15] = {0x00};
   uint8_t rbuf[6] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = sizeof(tbuf);
@@ -1734,7 +1858,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
   index = (gpio / 8) + 3; //3 is the size of IANA ID
   pin = 1 << (gpio % 8);
   tbuf[index] = pin;
-  tbuf[13] = data & 0x1f;
+  tbuf[14] = data & 0x1f;
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen);
   return ret;
@@ -1742,7 +1866,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
 
 int
 remote_bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data, uint8_t intf) {
-  uint8_t tbuf[14] = {0x00};
+  uint8_t tbuf[17] = {0x00};
   uint8_t rbuf[6] = {0x00};
   uint8_t rlen = 0;
   uint8_t tlen = sizeof(tbuf);
@@ -1757,7 +1881,7 @@ remote_bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data, uint8_t 
   index = (gpio / 8) + 3; //3 is the size of IANA ID
   pin = 1 << (gpio % 8);
   tbuf[index] = pin;
-  tbuf[13] = data & 0x1f;
+  tbuf[16] = data & 0x1f;
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_GPIO_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
   return ret;
@@ -2266,7 +2390,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     bus_num = fby3_common_get_bus_id(slot_id) + 4;
 
     //set the present status of M.2
-    fd = i2c_open(bus_num, SB_CPLD_ADDR);
+    fd = i2c_open(bus_num, CPLD_ADDRESS >> 1);
     if ( fd < 0 ) {
       printf("Cannot open /dev/i2c-%d\n", bus_num);
       ret = BIC_STATUS_FAILURE;
@@ -2276,7 +2400,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     tbuf[0] = (intf == REXP_BIC_INTF )?M2_REG_2OU:M2_REG_1OU;
     tlen = 1;
     rlen = 1;
-    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, ret", __func__, tlen);
       goto error_exit;
@@ -2298,7 +2422,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
 
     tlen = 2;
     rlen = 0;
-    ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
       goto error_exit;

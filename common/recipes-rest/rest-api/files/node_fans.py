@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from typing import Any, Dict, Optional
 
 from common_utils import async_exec
 from node import node
@@ -17,7 +18,9 @@ class fansNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(  # noqa: C901
+        self, param: Optional[Dict[Any, Any]] = None
+    ):
         result = []
         skip_flag = False
         cmd = "/usr/local/bin/fan-util --get"

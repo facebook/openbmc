@@ -1897,7 +1897,8 @@ ubifs_health_monitor() {
       fclose(fp);
       break;
     }
-    fclose(fp);
+    if (fp != NULL)
+      fclose(fp);
     sleep(uhm_config.monitor_interval);
   }
 

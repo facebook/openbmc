@@ -215,6 +215,8 @@ int8_t pal_init_dev_jtag_gpio(uint8_t fru, uint8_t dev);
 int8_t pal_is_dev_com_sel_en (uint8_t fru);
 int8_t pal_dev_jtag_gpio_to_bus(uint8_t fru);
 bool pal_is_all_fan_fail();
+int pal_set_last_postcode(uint8_t slot, uint32_t postcode);
+int pal_get_last_postcode(uint8_t slot, char* postcode);
 
 #ifdef __cplusplus
 } // extern "C"

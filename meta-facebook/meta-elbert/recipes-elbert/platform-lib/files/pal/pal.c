@@ -1033,9 +1033,12 @@ pal_get_pim_type(uint8_t fru, int retry) {
     return -1;
   }
 
-  if (strstr(eeprom.fbw_product_number, "88-16CD")) {
+  // Elbert uses product_asset instead of product_number for SKU field
+  if (strstr(eeprom.fbw_product_asset, "88-16CD2")) {
+    ret = PIM_TYPE_16Q2;
+  } else if (strstr(eeprom.fbw_product_asset, "88-16CD")) {
     ret = PIM_TYPE_16Q;
-  } else if (strstr(eeprom.fbw_product_number, "88-8D")) {
+  } else if (strstr(eeprom.fbw_product_asset, "88-8D")) {
     ret = PIM_TYPE_8DDM;
   } else {
     return -1;
@@ -1068,7 +1071,9 @@ pal_get_pim_type_from_file(uint8_t fru) {
     return -1;
   }
 
-  if (!strncmp(type, "16q", sizeof("16q"))) {
+  if (!strncmp(type, "16q2", sizeof("16q2"))) {
+    return PIM_TYPE_16Q2;
+  } else if (!strncmp(type, "16q", sizeof("16q"))) {
     return PIM_TYPE_16Q;
   } else if (!strncmp(type, "8ddm", sizeof("8ddm"))) {
     return PIM_TYPE_8DDM;

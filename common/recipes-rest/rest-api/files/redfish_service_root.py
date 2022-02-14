@@ -4,14 +4,21 @@ from common_utils import dumps_bytestr
 from redfish_base import validate_keys
 
 
-async def get_redfish(request: str) -> web.Response:
+async def get_redfish(request: web.Request) -> web.Response:
     body = {"v1": "/redfish/v1/"}
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_service_root(request: str) -> web.Response:
+async def get_service_root(request: web.Request) -> web.Response:
     product_name = str(rest_pal_legacy.pal_get_platform_name())
     uuid_data = str(rest_pal_legacy.pal_get_uuid())
+    odata_ver = 4.0
+    headers = {
+        "Link": "</redfish/v1/schemas/ServiceRoot.v1_9_0.json>; rel=describedby",
+        "Allow": "GET",
+        "CACHE-CONTROL": "max-age=1800",
+        "OData-Version": str(odata_ver),
+    }
     body = {
         "@odata.context": "/redfish/v1/$metadata#ServiceRoot.ServiceRoot",
         "@odata.id": "/redfish/v1/",
@@ -28,11 +35,17 @@ async def get_service_root(request: str) -> web.Response:
         "AccountService": {"@odata.id": "/redfish/v1/AccountService"},
         "Links": {"Sessions": {"@odata.id": "/redfish/v1/SessionService/Sessions"}},
     }
+    if request.method == "HEAD":
+        return web.json_response(headers=headers)
+    if "OData-Version" in request.headers:
+        if float(request.headers["OData-Version"]) > odata_ver:
+            return web.json_response(status=412)
+
     await validate_keys(body)
-    return web.json_response(body, dumps=dumps_bytestr)
+    return web.json_response(body, headers=headers, dumps=dumps_bytestr)
 
 
-async def get_odata(request: str) -> web.Response:
+async def get_odata(request: web.Request) -> web.Response:
     body = {
         "@odata.context": "/redfish/v1/$metadata",
         "@odata.id": "/redfish/v1/odata",
@@ -40,13 +53,25 @@ async def get_odata(request: str) -> web.Response:
         "value": [
             {"name": "Service", "kind": "Singleton", "url": "/redfish/v1/"},
             {"name": "Chassis", "kind": "Singleton", "url": "/redfish/v1/Chassis"},
+            {"name": "Systems", "kind": "Singleton", "url": "/redfish/v1/Systems"},
+            {"name": "Managers", "kind": "Singleton", "url": "/redfish/v1/Managers"},
+            {
+                "name": "AccountService",
+                "kind": "Singleton",
+                "url": "/redfish/v1/AccountService",
+            },
+            {
+                "name": "SessionService",
+                "kind": "Singleton",
+                "url": "/redfish/v1/SessionService",
+            },
         ],
     }
     await validate_keys(body)
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def get_metadata(request: str) -> web.Response:
+async def get_metadata(request: web.Request) -> web.Response:
     body = """
 <?xml version="1.0" encoding="UTF-8"?>
 <edmx:Edmx xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx" Version="4.0">
@@ -2483,6 +2508,14 @@ async def get_metadata(request: str) -> web.Response:
     <edmx:Reference Uri="/redfish/v1/schema/VLanNetworkInterfaceCollection_v1.xml">
         <edmx:Include Namespace="VLanNetworkInterfaceCollection"/>
     </edmx:Reference>
+    <edmx:Reference Uri="/redfish/v1/schema/FirmwareDumps_v1.xml">
+        <edmx:Include Namespace="FirmwareDumps"/>
+        <edmx:Include Namespace="FirmwareDumps.v1_0_0"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="/redfish/v1/schema/BiosFirmwareDump_v1.xml">
+        <edmx:Include Namespace="BiosFirmwareDump"/>
+        <edmx:Include Namespace="BiosFirmwareDump.v1_0_0"/>
+    </edmx:Reference>
     <edmx:DataServices>
         <Schema xmlns="http://docs.oasis-open.org/odata/ns/edm" Namespace="Service">
             <EntityContainer Name="Service" Extends="ServiceRoot.v1_0_0.ServiceContainer"/>
@@ -2490,4 +2523,4 @@ async def get_metadata(request: str) -> web.Response:
     </edmx:DataServices>
 </edmx:Edmx>
 """
-    return web.Response(text=body, content_type="application/xml")
+    return web.Response(text=body.strip(), content_type="application/xml")

@@ -28,14 +28,12 @@ import os.path
 import ssl
 import sys
 
-from aiohttp import web
 from aiohttp.log import access_logger
 from async_ratelimiter import AsyncRateLimiter
 from common_logging import ACCESS_LOG_FORMAT, get_logger_config
 from common_webapp import WebApp
 from rest_config import load_acl_provider, parse_config
 from setup_plat_routes import setup_plat_routes
-
 
 configpath = "/etc/rest.cfg"
 

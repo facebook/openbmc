@@ -79,6 +79,8 @@
 #define RX_BUF_SIZE 20
 #define fillcnt_sem_path  "/fillsem"
 
+#define NCSI_CMD_RETRY 3
+#define NCSI_RETRY_DELAY 100  //ms
 
 typedef struct _nl_usr_sk_t {
   int fd;
@@ -160,6 +162,26 @@ static int   (*send_registration_msg)(nl_usr_sk_t *sk);
 // ring buffer API for libnl
 int rx_buffer_add(NCSI_NL_RSP_T *pdata);
 int rx_buffer_get(NCSI_NL_RSP_T *dest);
+
+static int 
+send_cmd_and_get_resp_retry(nl_usr_sk_t *sk, uint8_t ncsi_cmd,
+                      uint16_t payload_len, unsigned char *payload,
+                      NCSI_NL_RSP_T *resp_buf, int32_t retry)
+{
+  int ret = -1;
+
+  for (; retry > 0; --retry) {
+    ret = send_cmd_and_get_resp(sk, ncsi_cmd, payload_len, payload, resp_buf);
+
+    if (ret == 0) {
+      break;
+    } else {
+      msleep(NCSI_RETRY_DELAY);
+    }
+  }
+
+  return ret;
+}
 
 static int
 prepare_ncsi_req_msg_libnl(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
@@ -684,9 +706,9 @@ do_pldm_sensor_thresh_init(nl_usr_sk_t *sfd, pldm_cmd_req *pldmReq, NCSI_NL_RSP_
   for ( sensor = 0; sensor < NUM_PLDM_SENSORS; ++sensor ) {
     if (pldm_sensors[sensor].sensor_type == PLDM_SENSOR_TYPE_NUMERIC) {
       pldmCreateGetSensorThreshCmd(pldmReq, pldm_sensors[sensor].pldm_sensor_id);
-      ret = send_cmd_and_get_resp(sfd, NCSI_PLDM_REQUEST,
+      ret = send_cmd_and_get_resp_retry(sfd, NCSI_PLDM_REQUEST,
               (PLDM_COMMON_REQ_LEN + sizeof(PLDM_Get_Sensor_Thresh_t)),
-              (unsigned char *)&(pldmReq->common), resp_buf);
+              (unsigned char *)&(pldmReq->common), resp_buf, NCSI_CMD_RETRY);
       if (ret < 0) {
         syslog(LOG_ERR, "%s: failed get sensor (%d) thresh", __FUNCTION__, sensor);
       }
@@ -726,8 +748,8 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
   int i = 0;
 
   pldmCreateGetPldmTypesCmd(&pldmReq);
-  ret = send_cmd_and_get_resp(sfd, NCSI_PLDM_REQUEST,  PLDM_COMMON_REQ_LEN,
-                              (unsigned char *)&(pldmReq.common), resp_buf);
+  ret = send_cmd_and_get_resp_retry(sfd, NCSI_PLDM_REQUEST,  PLDM_COMMON_REQ_LEN,
+                              (unsigned char *)&(pldmReq.common), resp_buf, NCSI_CMD_RETRY);
   if (ret < 0) {
     syslog(LOG_ERR, "do_pldm_discovery: failed PLDM Discovery");
     return ret;
@@ -750,9 +772,9 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
     }
 
     pldmCreateGetVersionCmd(i, &pldmReq);
-    ret = send_cmd_and_get_resp(sfd, NCSI_PLDM_REQUEST,
+    ret = send_cmd_and_get_resp_retry(sfd, NCSI_PLDM_REQUEST,
             (PLDM_COMMON_REQ_LEN + sizeof(PLDM_GetPldmVersion_t)),
-            (unsigned char *)&(pldmReq.common), resp_buf);
+            (unsigned char *)&(pldmReq.common), resp_buf, NCSI_CMD_RETRY);
     if (ret < 0) {
       syslog(LOG_ERR, "do_pldm_discovery: failed get PLDM (%d) version", i);
       continue;
@@ -804,8 +826,8 @@ init_nic_config(nl_usr_sk_t *sfd)
   }
 
   // get NIC CAPABILITY
-  ret = send_cmd_and_get_resp(sfd, NCSI_GET_CAPABILITIES, 0, NULL, resp_buf);
-  if (ret < 0) {
+  ret = send_cmd_and_get_resp_retry(sfd, NCSI_GET_CAPABILITIES, 0, NULL, resp_buf, NCSI_CMD_RETRY);
+  if (ret < 0) { 
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_CAPABILITIES);
     ret = -1;
@@ -816,7 +838,7 @@ init_nic_config(nl_usr_sk_t *sfd)
 
 
   // get NIC Manufacturer and firmware version
-  ret = send_cmd_and_get_resp(sfd, NCSI_GET_VERSION_ID,  0, NULL, resp_buf);
+  ret = send_cmd_and_get_resp_retry(sfd, NCSI_GET_VERSION_ID,  0, NULL, resp_buf, NCSI_CMD_RETRY);
   if (ret < 0) {
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_VERSION_ID);
@@ -1006,7 +1028,7 @@ enable_aens(nl_usr_sk_t *sfd, uint32_t aen_enable_mask) {
 
   memcpy(&(payload[4]), &aen_enable_mask, sizeof(uint32_t));
 
-  ret = send_cmd_and_get_resp(sfd, NCSI_AEN_ENABLE, PAYLOAD_SIZE, payload, NULL);
+  ret = send_cmd_and_get_resp_retry(sfd, NCSI_AEN_ENABLE, PAYLOAD_SIZE, payload, NULL, NCSI_CMD_RETRY);
   if (ret < 0) {
     syslog(LOG_ERR, "enable_aens: failed to enable AEN");
   }

@@ -54,7 +54,7 @@ class BaseFscdTest(object):
         if running_systemd():
             run_shell_cmd("/bin/systemctl restart fscd")
         else:
-            run_shell_cmd("sv restart fscd")
+            run_shell_cmd("sv -w 20 restart fscd")
 
         time.sleep(20)
 

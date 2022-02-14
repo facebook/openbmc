@@ -739,3 +739,12 @@ fby2_common_get_gpio_val(char *shadow, int *val) {
 
   return ret;
 }
+
+int
+fby2_common_get_spb_hsc_type(void) {
+  int gpio_val;
+  if (fby2_common_get_gpio_from_cache(GPIO_HSC_SELECT, &gpio_val)) {
+    return -1;
+  }
+  return gpio_val;
+}

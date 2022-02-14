@@ -18,18 +18,37 @@ using namespace std;
 int VrExtComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   char ver[32] = {0};
   uint8_t rbuf[6] = {0};
+  uint8_t rlen = 0;
   int ret = 0;
   bool expVr = alt_fw_comp == FW_2OU_PESW_VR || alt_fw_comp == FW_CWC_PESW_VR ||
             alt_fw_comp == FW_GPV3_TOP_PESW_VR || alt_fw_comp == FW_GPV3_BOT_PESW_VR;
-  ret = bic_get_fw_ver(slot_id, alt_fw_comp, rbuf);
 
-  if ( expVr ) {
-    snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+  ret = bic_get_vr_vendor_fw_ver(slot_id, alt_fw_comp, rbuf, &rlen);
+
+  if (rlen >= 6) {
+    switch(rbuf[5]) {
+      case VR_ISL: //Renesas vr vendor ID
+        snprintf(ver, sizeof(ver), "Renesas %02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+        break;
+      case VR_IFX: //Infineon vr vendor ID
+        snprintf(ver, sizeof(ver), "Infineon %02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+        break;
+      case VR_VY: //Vishay vr vendor ID
+        snprintf(ver, sizeof(ver), "Vishay %02X%02X", rbuf[0], rbuf[1]);
+        break;
+      default:
+        snprintf(ver, sizeof(ver), "Unknown Vendor");
+        break;
+    }
+    s = string(ver) + ", Remaining Writes: " + to_string(rbuf[4]);
   } else {
-    snprintf(ver, sizeof(ver), "%02X%02X", rbuf[0], rbuf[1]);
+    if ( expVr ) {
+      snprintf(ver, sizeof(ver), "%02X%02X%02X%02X", rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+    } else {
+      snprintf(ver, sizeof(ver), "%02X%02X", rbuf[0], rbuf[1]);
+    }
+    s = string(ver) + ", Remaining Writes: " + to_string(expVr ? rbuf[4] : rbuf[2]);
   }
-
-  s = string(ver) + ", Remaining Writes: " + to_string(expVr ? rbuf[4] : rbuf[2]);
 
   return ret;
 }

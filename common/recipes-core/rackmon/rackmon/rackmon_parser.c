@@ -128,6 +128,7 @@ int rackmon_print_info(write_buf_t *wb, psu_datastore_t *data, uint16_t num_inte
       PRINTDESC(0x12E,"Configurable BBU backup time(90s-1200s)");
       PRINTDESC(0x12F,"Configurable PLS timing(1s-300s)");
       PRINTDESC(0x130,"Forced discharge timeout");
+      PRINTDESC(0x131,"SOH Timestamp");
       default:
         buf_printf(wb, "  <0x%04X>  ---        UNDEFINED        --- : ", reg_addr);
       break;

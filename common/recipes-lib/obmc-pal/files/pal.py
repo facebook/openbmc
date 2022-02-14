@@ -274,3 +274,13 @@ def sensor_read_history(fru_id: int, snr_num: int, start_time: int) -> SensorHis
         raise LibPalError("sensor_read_history() returned " + str(ret))
 
     return SensorHistory(min_val.value, max_val.value, avg_val.value)
+
+
+def pal_get_pwm_cnt() -> int:
+    """get pwm count"""
+    return libpal.pal_get_pwm_cnt()
+
+
+def pal_get_tach_cnt() -> int:
+    """get fan tach count"""
+    return libpal.pal_get_tach_cnt()

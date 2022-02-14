@@ -24,11 +24,11 @@ paths:
                     properties: 
                       value: 
                         type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

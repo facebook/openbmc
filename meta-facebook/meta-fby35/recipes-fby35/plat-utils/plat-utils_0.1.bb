@@ -85,7 +85,7 @@ do_install() {
 
   # install check_bmc_ready.sh
   install -m 755 check_bmc_ready.sh ${D}${sysconfdir}/init.d/check_bmc_ready.sh
-  update-rc.d -r ${D} check_bmc_ready.sh start 100 5 .
+  update-rc.d -r ${D} check_bmc_ready.sh start 99 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

@@ -1,4 +1,4 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
     file://0001-i2cget-Add-support-for-I2C-block-data.patch \

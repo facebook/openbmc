@@ -17,14 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
-import os
-import subprocess
 from asyncio import TimeoutError
+from typing import Any, Dict, Optional
 
 from common_utils import async_exec
 from node import node
-from rest_pal_legacy import pal_set_key_value
 
 
 class configNode(node):
@@ -39,7 +36,7 @@ class configNode(node):
             self.altname = name.replace("server", "slot")
         self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         result = {}
         cmd = ["/usr/local/bin/cfg-util", "dump-all"]
         try:
@@ -59,35 +56,7 @@ class configNode(node):
             result = {"status": "unsupported"}
         return result
 
-    async def doAction(self, data, param={}):
-        res = "failure"
-        if "update" not in data:
-            return {"result": "parameter-error"}
-
-        # Get the list of parameters to be updated
-        params = data["update"]
-        for key in list(params.keys()):
-            # update only if the key starts with the name
-            if key.find(self.name) != -1 or key.find(self.altname) != -1:
-                try:
-                    await pal_set_key_value(key, params[key])
-                    res = "success"
-                    continue
-                except TimeoutError as e:
-                    res = e.output.strip()
-                    break
-                except ValueError as e:
-                    res = str(e).strip()
-                    break
-            else:
-                res = "refused: %s" % key
-                break
-        if res == "":
-            res = "failure"
-        result = {"result": res}
-        return result
-
 
 def get_node_config(name):
-    actions = ["update"]
+    actions = []
     return configNode(name=name, actions=actions)

@@ -1662,7 +1662,7 @@ read_nvme_temp(uint8_t sensor_num, float *value) {
 error_exit:
   close(fd);
 
-  return PAL_EOK;
+  return ret;
 }
 
 static int sensors_read_vr(uint8_t sensor_num, float *value)

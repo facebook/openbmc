@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-SUMMARY = "GPIO Sensor Monitoring Daemon" 
+SUMMARY = "GPIO Sensor Monitoring Daemon"
 DESCRIPTION = "Daemon for monitoring the gpio sensors"
 SECTION = "base"
 PR = "r1"
@@ -63,7 +63,3 @@ do_install() {
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/gpiod ${prefix}/local/bin ${sysconfdir} "
-
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

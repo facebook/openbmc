@@ -46,6 +46,3 @@ RDEPENDS:${PN} += "libfby35-common libpal libkv"
 
 
 # Inhibit complaints about .debug directories:
-
-INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
-INHIBIT_PACKAGE_STRIP = "1"

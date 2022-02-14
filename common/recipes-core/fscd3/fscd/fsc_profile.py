@@ -32,6 +32,7 @@ class Sensor(object):
         self.fru = None
         self.offset = None
         self.offset_table = None
+        self.source = None
         try:
             self.fru = pTable.get("fru", None)
             if "read_source" in pTable:

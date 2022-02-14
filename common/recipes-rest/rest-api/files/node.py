@@ -18,6 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
+from typing import Any, Dict, Optional
+
 # Class Definition for Resource
 
 
@@ -33,11 +35,15 @@ class node:
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(
+        self, param: Optional[Dict[Any, Any]] = None
+    ):  # noqa: B006
         return self.info
 
     def getActions(self):
         return self.actions
 
-    async def doAction(self, action, param={}):
-        result = {"result": "failure", "reason": "not supported"}
+    async def doAction(
+        self, action, param: Optional[Dict[Any, Any]] = None
+    ):  # noqa: B006
+        return {"result": "failure", "reason": "not supported"}

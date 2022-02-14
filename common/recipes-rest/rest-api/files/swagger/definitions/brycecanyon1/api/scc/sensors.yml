@@ -24,19 +24,7 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  P1V8_C_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SCC_HSC_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V5_E_SENSE: 
+                  P1V8_E_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -48,31 +36,13 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  P1V5_C_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P0V975_SENSE: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   P0V9_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-                  EXPANDER_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V8_E_SENSE: 
+                  P1V8_C_SENSE: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -84,17 +54,47 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  P0V975_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SCC_HSC_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V5_C_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SCC_HSC_POWER: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-              Resources: 
+                  EXPANDER_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  P1V5_E_SENSE: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

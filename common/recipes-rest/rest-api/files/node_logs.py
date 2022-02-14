@@ -18,9 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 import json
-import re
 from shlex import quote
-from subprocess import *
+from typing import Any, Dict, Optional
 
 from common_utils import async_exec
 from node import node
@@ -39,13 +38,12 @@ class logsNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
-        linfo = []
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         cmd = "/usr/local/bin/log-util " + quote(self.name) + " --print --json"
         _, stdout, _ = await async_exec(cmd, shell=True)
         return json.loads(stdout)
 
-    async def doAction(self, data, param={}):
+    async def doAction(self, data, param: Optional[Dict[Any, Any]] = None):
         if data["action"] != "clear":
             res = "failure"
         else:

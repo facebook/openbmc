@@ -14,14 +14,13 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties:  
               Resources: 
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                format: nullable
               Actions: 
                 type: array
                 items: 

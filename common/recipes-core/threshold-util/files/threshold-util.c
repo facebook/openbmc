@@ -38,20 +38,14 @@ enum {
   LNR,
 };
 
-#ifdef CONFIG_FBY3_CWC
-  uint8_t exp_fru = 0;
-#endif
-
 static void
 print_usage_help(void) {
   printf("Usage: threshold-util [fru] <--set> <snr_num> [thresh_type] <threshold_value>\n");
   printf("       threshold-util [fru] <--clear>\n");
-#ifdef CONFIG_FBY3_CWC
-  if (pal_is_cwc() == PAL_EOK) {
-    printf("Usage: threshold-util slot1 [2U-top|2U-bot] <--set> <snr_num> [thresh_type] <threshold_value>\n");
-    printf("       threshold-util slot1 [2U-top|2U-bot] <--clear>\n");
+  if (pal_is_exp() == PAL_EOK) {
+    printf("Usage: threshold-util [slot1-2U-top|slot1-2U-bot] <--set> <snr_num> [thresh_type] <threshold_value>\n");
+    printf("       threshold-util [slot1-2U-top|slot1-2U-bot] <--clear>\n");
   }
-#endif
   printf("       [fru]           : %s\n", pal_fru_list);
   printf("       <snr_num>    : 0xXX\n");
   printf("       [thresh_type]   : UCR, UNC, UNR, LCR, LNC, LNR\n");
@@ -128,22 +122,11 @@ main(int argc, char **argv) {
   uint8_t fru;
   uint8_t snr_num = 0;
   uint8_t thresh_type = 0;
+  uint8_t list[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
+  unsigned int caps = 0;
   float threshold_value;
   int ret = -1;
   char *end = NULL;
-
-#ifdef CONFIG_FBY3_CWC
-  int i = 0;
-  if (pal_is_cwc() == PAL_EOK &&
-      pal_get_cwc_id(argv[2], &exp_fru) == 0) {
-    for (i = 2; i < argc - 1; ++i) {
-      argv[i] = argv[i+1];
-    }
-    if (argc > 3) {
-      argc--;
-    }
-  }
-#endif
 
   // Check for border conditions
   if ((argc != 3) && (argc != 6)) {
@@ -156,12 +139,6 @@ main(int argc, char **argv) {
     print_usage_help();
     return ret;
   }
-
-#ifdef CONFIG_FBY3_CWC
-  if (pal_is_cwc() == PAL_EOK && exp_fru > 0) {
-    fru = exp_fru;
-  }
-#endif
 
   ret = is_fru_valid(fru);
   if (ret < 0) {
@@ -213,6 +190,23 @@ main(int argc, char **argv) {
         if (ret < 0)
           printf("Fail to set sensor 0x%x threshold for fru%d\n", snr_num, fru);
       }
+
+      if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(list, &len) == PAL_EOK) {
+        for (i = 0; i < len; ++i) {
+          if (pal_get_fru_capability(list[i], &caps) == PAL_EOK &&
+              (caps & FRU_CAPABILITY_HAS_DEVICE)) {
+            if (!pal_is_sensor_existing(list[i], snr_num)) {
+              printf("Could not find sensor 0x%x for fru%d\n", snr_num, list[i]);
+              continue;
+            }
+
+            ret = pal_sensor_thresh_modify(list[i], snr_num, thresh_type, threshold_value);
+            if (ret < 0) {
+              printf("Fail to set sensor 0x%x threshold for fru%d\n", snr_num, list[i]);
+            }
+          }
+        }
+      }
     } else {
       if (!pal_is_sensor_existing(fru, snr_num)) {
         printf("Could not find sensor 0x%x for fru%d\n", snr_num, fru);
@@ -229,6 +223,18 @@ main(int argc, char **argv) {
         ret |= clear_thresh_value_setting(fru);
         if (ret < 0) {
           printf("Fail to clear threshold for fru%d\n", fru);
+        }
+      }
+
+      if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(list, &len) == PAL_EOK) {
+        for (i = 0; i < len; ++i) {
+          if (pal_get_fru_capability(list[i], &caps) == PAL_EOK &&
+              (caps & FRU_CAPABILITY_HAS_DEVICE)) {
+            ret |= clear_thresh_value_setting(list[i]);
+            if (ret < 0) {
+              printf("Fail to clear threshold for fru%d\n", list[i]);
+            }
+          }
         }
       }
     } else {

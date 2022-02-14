@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 import json
-import unittest
 
 import async_ratelimiter
 import common_middlewares

@@ -32,6 +32,18 @@
 #define DEFAULT_TTY "/dev/ttyS3"
 #endif
 
+#ifndef DEFAULT_TTY1
+#define DEFAULT_TTY1 "/dev/ttyUSB1"
+#endif
+
+#ifndef DEFAULT_TTY2
+#define DEFAULT_TTY2 "/dev/ttyUSB2"
+#endif
+
+#ifndef DEFAULT_TTY3
+#define DEFAULT_TTY3 "/dev/ttyUSB3"
+#endif
+
 // Modbus retry count
 #define MAX_RETRY   5
 

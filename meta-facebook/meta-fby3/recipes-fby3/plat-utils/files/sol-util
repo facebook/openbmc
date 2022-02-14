@@ -35,24 +35,9 @@ SLOT_NUM=
 I2C_NUM=
 
 function show_usage() {
-  if [ -z $EXP_BOARD_TYPE ]; then
-    val=$(get_m2_prsnt_sts "slot1")
-    if [ $val = 0 ] || [ $val = 4 ]; then
-      EXP_BOARD_TYPE=$(get_2ou_board_type 4)
-    fi
-  fi
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
-  if [ -n "$EXP_BOARD_TYPE" ] && [ $EXP_BOARD_TYPE == "0x04" ]; then
-    echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, 1ou, 2ou, 2U-cwc, 2U-top, 2U-bot] bic"
-  else
-    echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, 1ou, 2ou] bic"
-  fi
-
-  if [ -n "$EXP_BOARD_TYPE" ] && [ $EXP_BOARD_TYPE == "0x04" ]; then
-    echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou, 2U-cwc, 2U-top, 2U-bot] [dev0|dev1|...|devN|pesw] (baudrate)"
-  else
-    echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN|pesw] (baudrate)"
-  fi
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [bic|pesw]"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [dev0|dev1|...|devN] (baudrate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
 
@@ -477,6 +462,22 @@ function get_bot_usb_dev() {
 # Only support slot[1|2|3|4]
 if [[ "$1" =~ ^(slot[1-4]{1})$ ]]; then
   SLOT=$1
+
+  if [ "$2" == "bic" ]; then
+    COMP="sb"
+  fi
+elif [ "$1" == "slot1-1U" ] || [ "$1" == "slot2-1U" ] || [ "$1" == "slot3-1U" ] || [ "$1" == "slot4-1U" ]; then
+  SLOT=${1:0:5}
+  COMP="1ou"
+elif [ "$1" == "slot1-2U" ] || [ "$1" == "slot3-2U" ]; then 
+  SLOT=${1:0:5}
+  COMP="2ou"
+elif [ "$1" == "slot1-2U-exp" ]; then 
+  SLOT=${1:0:5}
+  COMP="2U-cwc"
+elif [ "$1" == "slot1-2U-top" ] || [ "$1" == "slot1-2U-bot" ]; then 
+  SLOT=${1:0:5}
+  COMP=${1:6:6}
 else
   show_usage
   exit -1;
@@ -498,9 +499,9 @@ SLOT_NUM=$(get_slot_num $SLOT)
 I2C_NUM=$(get_bus_num $SLOT)
 SLED_TYPE=$(cat $SLED_TYPE)
 EXP_BOARD_TYPE=
-COMP=$2
-DEV=$3
-BAUDRATE=$4
+#COMP=$2
+DEV=$2
+BAUDRATE=$3
 CPLD_ADDR=
 EXP_CPLD_ADDR=
 CWC_CPLD_ADDR=
@@ -532,7 +533,7 @@ fi
 # check COMP and DEV
 if [ -n "$COMP" ]; then
   # block invalid command, e.g. sol-util 2ou bic xxx
-  if [ $# -gt 4 ]; then
+  if [ $# -gt 3 ]; then
     show_usage
     exit -1;
   fi
@@ -597,6 +598,12 @@ if [ -n "$COMP" ]; then
       echo "$DEV is not supported!"
       exit -1;
     elif [ "$COMP" == "2ou" ]; then
+
+      if [ "$DEV" == "pesw" ] && [ $# -ne 2 ]; then # not support baudrate option
+        show_usage
+        exit -1;
+      fi
+
       if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
         #check enable RST_USB_HUB_N gpio or not
         VAL=$(/usr/bin/bic-util $SLOT --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
@@ -657,7 +664,7 @@ if [ -n "$COMP" ]; then
     fi
   elif [ "$DEV" == "bic" ]; then
 
-    if [ $# -ne 3 ]; then # not support baudrate option
+    if [ $# -ne 2 ]; then # not support baudrate option
       show_usage
       exit -1;
     fi

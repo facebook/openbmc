@@ -1,8 +1,9 @@
 #!/bin/sh
 
-. /usr/local/fbpackages/utils/ast-functions
-
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
+. /usr/local/fbpackages/utils/ast-functions
 
 MAX_RETRY=600         # wait 10 mins before give up
 NOT_READY_DAEMON=""
@@ -24,7 +25,7 @@ ipmbd_9_list="flag_ipmbd_rx_9 flag_ipmbd_res_9 flag_ipmbd_req_9"
 
 check_daemon_flag() {
   flag_list=$1
-  
+
   for flag_name in $flag_list
   do
     result="$($KV_CMD get "$flag_name")"
@@ -39,20 +40,20 @@ check_daemon_status() {
   daemon_name=$1
 
   #check slot present & BIC ready
-  if [ "$daemon" = "ipmbd_0" ]; then
-    if [ $(is_sb_bic_ready 1) != "1" ]; then
+  if [ "$daemon_name" = "ipmbd_0" ]; then
+    if [ "$(is_sb_bic_ready 1)" != "1" ]; then
       return
     fi
-  elif [ "$daemon" = "ipmbd_1" ]; then
-    if [ $(is_sb_bic_ready 2) != "1" ]; then
+  elif [ "$daemon_name" = "ipmbd_1" ]; then
+    if [ "$(is_sb_bic_ready 2)" != "1" ]; then
       return
     fi
-  elif [ "$daemon" = "ipmbd_2" ]; then
-    if [ $(is_sb_bic_ready 3) != "1" ]; then
+  elif [ "$daemon_name" = "ipmbd_2" ]; then
+    if [ "$(is_sb_bic_ready 3)" != "1" ]; then
       return
     fi
-  elif [ "$daemon" = "ipmbd_3" ]; then
-    if [ $(is_sb_bic_ready 4) != "1" ]; then
+  elif [ "$daemon_name" = "ipmbd_3" ]; then
+    if [ "$(is_sb_bic_ready 4)" != "1" ]; then
       return
     fi
   fi
@@ -64,28 +65,30 @@ check_daemon_status() {
     # check ready flag of each thread
     if [ "$daemon_name" = "sensord" ]; then
       not_ready="$(check_daemon_flag "$sensord_list" "$daemon_name")"
-    elif [ "$daemon" = "ipmid" ]; then
+    elif [ "$daemon_name" = "ipmid" ]; then
       not_ready="$(check_daemon_flag "$ipmid_list" "$daemon_name")"
-    elif [ "$daemon" = "front-paneld" ]; then
+    elif [ "$daemon_name" = "front-paneld" ]; then
       not_ready="$(check_daemon_flag "$front_paneld_list" "$daemon_name")"
-    elif [ "$daemon" = "gpiod" ]; then
+    elif [ "$daemon_name" = "gpiod" ]; then
       not_ready="$(check_daemon_flag "$gpiod_list" "$daemon_name")"
-    elif [ "$daemon" = "gpiointrd" ]; then
+    elif [ "$daemon_name" = "gpiointrd" ]; then
       not_ready="$(check_daemon_flag "$gpiointrd_list" "$daemon_name")"
-    elif [ "$daemon" = "ncsid" ]; then
+    elif [ "$daemon_name" = "ncsid" ]; then
       not_ready="$(check_daemon_flag "$ncsid_list" "$daemon_name")"
-    elif [ "$daemon" = "healthd" ]; then
+    elif [ "$daemon_name" = "healthd" ]; then
       not_ready="$(check_daemon_flag "$healthd_list" "$daemon_name")"
-    elif [ "$daemon" = "ipmbd_0" ]; then
+    elif [ "$daemon_name" = "ipmbd_0" ]; then
       not_ready="$(check_daemon_flag "$ipmbd_0_list" "$daemon_name")"
-    elif [ "$daemon" = "ipmbd_1" ]; then
+    elif [ "$daemon_name" = "ipmbd_1" ]; then
       not_ready="$(check_daemon_flag "$ipmbd_1_list" "$daemon_name")"
-    elif [ "$daemon" = "ipmbd_2" ]; then
+    elif [ "$daemon_name" = "ipmbd_2" ]; then
       not_ready="$(check_daemon_flag "$ipmbd_2_list" "$daemon_name")"
-    elif [ "$daemon" = "ipmbd_3" ]; then
+    elif [ "$daemon_name" = "ipmbd_3" ]; then
       not_ready="$(check_daemon_flag "$ipmbd_3_list" "$daemon_name")"
-    elif [ "$daemon" = "ipmbd_9" ]; then
+    elif [ "$daemon_name" = "ipmbd_9" ]; then
       not_ready="$(check_daemon_flag "$ipmbd_9_list" "$daemon_name")"
+    else
+      return
     fi
     echo "$not_ready"
   fi
@@ -93,14 +96,14 @@ check_daemon_status() {
 
 check_bmc_ready() {
   retry=0
-    
+
   while [ "$retry" -lt "$MAX_RETRY" ]
   do
-  
+
     for daemon in $total_daemon
     do
       result="$(check_daemon_status "$daemon")"
-      
+
       # daemon not ready
       if [ "$result" = "$daemon" ]; then
         NOT_READY_DAEMON=$daemon
@@ -109,9 +112,11 @@ check_bmc_ready() {
         NOT_READY_DAEMON=$daemon
         NOT_READY_FLAG=$result
         break
+      else
+        NOT_READY_DAEMON=
       fi
     done
-    
+
     # all daemons are ready
     if [ "$NOT_READY_DAEMON" = "" ]; then
       break
@@ -120,9 +125,9 @@ check_bmc_ready() {
       retry=$((retry+1))
     fi
   done
-  
+
   if [ "$NOT_READY_DAEMON" = "" ]; then
-    "$KV_CMD" set "bmc_ready_flag" "$STR_VALUE_1"
+    "$KV_CMD" set bmc_ready_flag 1
     logger -s -p user.info -t ready-flag "BMC is ready"
   else
     logger -s -p user.info -t ready-flag "daemon: $NOT_READY_DAEMON ($NOT_READY_FLAG) is not ready"

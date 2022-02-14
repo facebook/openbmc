@@ -19,16 +19,16 @@ paths:
                 additionalProperties: false
                 properties: 
                   stratum: 
-                    type: integer
+                    type: number
                     format: int32
                   when: 
-                    type: integer
+                    type: number
                     format: int32
                   poll: 
-                    type: integer
+                    type: number
                     format: int32
                   reach: 
-                    type: integer
+                    type: number
                     format: int32
                   delay: 
                     type: number

@@ -10,6 +10,7 @@ dep_libs = [
     cc.find_library('pal'),
     cc.find_library('exp'),
     dependency('threads'),
+    dependency('libkv'),
 ]
 
 executable('exp-cached', 'exp-cached.c', dependencies : dep_libs, install: true)

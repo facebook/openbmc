@@ -49,6 +49,30 @@ enum {
   VENDOR_SPH = 0x8086,
 };
 
+enum {
+  STANDARD_CMD = 0,
+  ACCURATE_CMD = 1,
+  UNKNOWN_CMD = 2,
+};
+
+typedef struct
+{
+  uint8_t iana_id[3];
+  uint8_t val_msb;
+  uint8_t val_lsb;
+  uint8_t flags;
+} ipmi_accurate_sensor_reading_t;
+
+typedef struct
+{
+  uint16_t value;
+  uint8_t flags;
+  uint8_t status;
+  uint8_t ext_status;
+  uint8_t read_type;
+} snr_reading_ret;
+
+
 #define MAX_READ_RETRY 5
 
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
@@ -63,11 +87,11 @@ int bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type);
 int bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status);
 int bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
 int bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
-int bic_get_vr_device_id(uint8_t slot_id, uint8_t comp, uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr, uint8_t intf);
+int bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str);
 int bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *ver_str);
 int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
-int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_sensor_reading_t *sensor, uint8_t intf);
+int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor, uint8_t intf);
 int bic_is_m2_exp_prsnt(uint8_t slot_id);
 int me_recovery(uint8_t slot_id, uint8_t command);
 int me_reset(uint8_t slot_id);
@@ -90,10 +114,11 @@ int bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8
 int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
                              uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf);
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);
+int bic_ifx_vr_mfr_fw(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t *resp, uint8_t intf);
 int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
 int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
+int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf);
 int bic_reset(uint8_t slot_id);
-int bic_clear_cmos(uint8_t slot_id);
 int bic_inform_sled_cycle(void);
 int bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf);
 uint8_t get_gpv3_bus_number(uint8_t dev_id);

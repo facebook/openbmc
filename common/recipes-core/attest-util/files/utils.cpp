@@ -131,3 +131,19 @@ void printHexValues(uint8_t *values, int size) {
 
   std::cout << std::endl;
 }
+
+vector<string> splitMessage(string message, string delimiter) {
+    int end;
+    vector<string> messages;
+    
+    while((end = message.find(delimiter)) != string::npos) {
+        messages.push_back(message.substr(0, end));
+        message.erase(0, end + delimiter.length());
+    }
+
+    // Don't forget last message, assuming they didn't end with a delimiter.
+    if(message.length() > 0)
+        messages.push_back(message);
+
+    return messages;
+}

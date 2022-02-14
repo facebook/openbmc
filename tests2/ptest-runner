@@ -68,6 +68,23 @@ def update_conf_only(recipes, build_path):
     subprocess.check_call(cmd)
 
 
+# TODO This is a workaround the issue where pseudo aborts
+# due to modified source outside the pseudo env (After someone
+# modifies the source in openbmc/). Very easy to run into this
+# when the dev machine runs btrfs, run ptest-runner, then change
+# some code and run it again (recompile). While we figure that one
+# out this is a temporary relief to clean the recipes instead
+# of having to delete everything and retry from scratch.
+def clean_steps(build_path):
+    clean_paths = glob.glob(build_path + "/tmp/work/core2*/*")
+    clean_paths += glob.glob(build_path + "/tmp/work/qemux86*/*")
+    clean_recipes = [os.path.basename(d)+":do_clean" for d in clean_paths if "defaultpkgname" not in os.path.basename(d)]
+    recipes_str = " ".join(clean_recipes).strip()
+    if recipes_str == "":
+      return []
+    return [f"bitbake -q {recipes_str} > /dev/null"]
+
+
 def bmc_build(recipes, build_path, verbose):
     openbmc = openbmc_path()
     build_option = "-q"
@@ -87,11 +104,18 @@ def bmc_build(recipes, build_path, verbose):
         "export LANG=en_US.UTF-8",
         "export LANGUAGE=en_US.UTF-8",
         "export MACHINE=qemux86",
-        f"bitbake {build_option} qemux86-image",
     ]
+    build_steps += clean_steps(build_path)
+    build_steps += [f"bitbake {build_option} qemux86-image"]
+
     build_cmd = "; ".join(build_steps)
     cmd = ["env", "-i", f"HOME={os.environ['HOME']}", "bash", "-l", "-c", build_cmd]
-    subprocess.check_call(cmd)
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError:
+      print("TEST FAILED")
+      sys.exit(1)
+
 
 
 def main(args):
@@ -128,12 +152,13 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
+    subprocess.check_call(["mkdir", "-p", rootfs+"/dev/shm", rootfs+"/tmp"]) #fake shm,tmp for flake8
     if not os.path.exists("/.dockerenv"):
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
     else:
         base_cmd = ["sudo","chroot",rootfs]
     if args.shell:
-        subprocess.check_call(base_cmd)
+        subprocess.check_call(base_cmd + ["bash"])
     elif not args.skip_tests:
         cmd = base_cmd + ["ptest-runner"]
         exit_error = False;

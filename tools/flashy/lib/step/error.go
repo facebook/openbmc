@@ -56,6 +56,10 @@ type ExitBadFlashChip struct {
 	Err error
 }
 
+type ExitMustReboot struct {
+	Err error
+}
+
 type ExitUnknownError struct {
 	Err error
 }
@@ -94,6 +98,20 @@ func (e ExitBadFlashChip) GetExitCode() int {
 
 func (e ExitBadFlashChip) GetType() string {
 	return "ExitBadFlashChip"
+}
+
+func (e ExitMustReboot) GetError() string {
+	return e.Err.Error()
+}
+
+func (e ExitMustReboot) GetExitCode() int {
+	// Equivalent to ExitSafeToReboot, but without checking for valid
+	// flash devices (the reboot may be necessary to make them visible).
+	return FLASHY_ERROR_SAFE_TO_REBOOT
+}
+
+func (e ExitMustReboot) GetType() string {
+	return "ExitMustReboot"
 }
 
 func (e ExitUnknownError) GetError() string {
@@ -138,7 +156,8 @@ func HandleStepError(err StepExitError) {
 
 	case ExitUnsafeToReboot,
 		ExitUnknownError,
-		ExitBadFlashChip:
+		ExitBadFlashChip,
+		ExitMustReboot:
 
 		encodeExitError(err)
 		exit(err.GetExitCode())

@@ -1,0 +1,215 @@
+name: lint_pr 
+on: pull_request
+jobs:
+  run-cppcheck:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Get PR File List 
+        shell: bash
+        run: |
+          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+          curl -s -X GET -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" $URL | jq -r '.[] | .filename' > git_diff.log
+          cat git_diff.log 
+  
+      - name: Check for C/CPP Sources
+        shell: bash
+        run : |
+          CPP_FILE_LIST="/tmp/cppcheck_file_list.log"
+          
+          # Only keep the source files to check or CPPCheck gets confused.
+          sed '/\(c$\|cpp$\|c$\|cc$\|cu$\|cxx$\|h$\|hh$\|hpp$\|hxx$\|tcc$\)/!d' git_diff.log > $CPP_FILE_LIST
+
+          if [ -s $CPP_FILE_LIST ]; then
+            echo "C/C++ source files kept:"
+            cat $CPP_FILE_LIST
+          fi
+          
+          if [ -s $CPP_FILE_LIST ]; then
+            echo "contains_c_source=true" >> $GITHUB_ENV
+          else
+            echo "contains_c_source=false" >> $GITHUB_ENV
+          fi
+
+      - uses: actions/checkout@v2
+        name: Checkout Repo
+        if: env.contains_c_source == 'true'
+        
+      - uses: actions/setup-python@v2
+        name: Setup Python
+        if: env.contains_c_source == 'true'
+
+      - name: Install CPPCheck
+        if: env.contains_c_source == 'true'
+        run: sudo apt-get install -y cppcheck
+
+      - name: Run CPPCheck on Modified Source Files
+        if: env.contains_c_source == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          # These files specify the config for cppcheck and a list of errors to suppress
+          CPPCHECK_CONFIG=.circleci/lint/cppcheck/cppcheck.cfg
+          CPPCHECK_SUPPRESSED=.circleci/lint/cppcheck/cppcheck-suppressions.txt
+
+          echo "Files to check:"
+          cat /tmp/cppcheck_file_list.log
+
+          options=( "-j2"
+            "--inconclusive"
+            "--enable=performance,style,portability,information"
+            "--library=./tools/circle-ci/lint-config/cppcheck.cfg"
+            "--suppressions-list=./tools/circle-ci/lint-config/cppcheck-suppressions.txt"
+            "--file-list=/tmp/cppcheck_file_list.log"
+            "--template={file}:{line}:{column}:{message}"
+            "--output-file=/tmp/cppcheck.log"
+            "--report-progress")
+  
+          cppcheck "${options[@]}"
+
+          echo "Errors Found:"
+          cat /tmp/cppcheck.log
+
+      - uses: actions/upload-artifact@master
+        name: Upload CPPCheck error log
+        if: env.contains_c_source == 'true'
+        with:
+          name: cppcheck-output
+          path: /tmp/cppcheck.log
+
+      - name: Check for cppcheck output
+        if: env.contains_c_source == 'true'
+        run : |
+          if [ -s /tmp/cppcheck_file_list.log ]; then
+            exit 1
+          fi
+
+  run-shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+        
+        # Unfortunately some shell files don't have an extension.
+        # This means we need to checkout the entire repo just to see if we need
+        # to lint anything...
+      - uses: actions/checkout@v2
+        name: Checkout Repo
+
+      - name: Get PR File List 
+        shell: bash
+        run: |
+          URL="https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${{ github.event.pull_request.number }}/files"
+          curl -s -X GET -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" $URL | jq -r '.[] | .filename' > git_diff.log
+          cat git_diff.log 
+  
+      - name: Check for shell files 
+        shell: bash
+        run : |
+          SHELL_FILE_LIST="/tmp/shellcheck_file_list.log"
+
+          # Get all the shell files.
+          FILE_PATHS=$(cat git_diff.log)
+          for FILE_PATH in $FILE_PATHS
+          do
+            # First check if file has shell extension
+            if [ "$FILE_PATH" == "*.sh" ] || [ "$FILE_PATH" == "*.bash" ]; then
+              echo "$FILE_PATH" >> $SHELL_FILE_LIST
+            # Some file names don't have a shell extension.
+            elif IFS= read -r line < "$FILE_PATH"; then
+              case $line in
+                ("#!/bin/bash"*) echo "$FILE_PATH" >> $SHELL_FILE_LIST
+              esac
+            fi
+          done
+
+          if [ -s $SHELL_FILE_LIST ]; then
+            echo "Shell files kept:"
+            cat $SHELL_FILE_LIST
+          fi
+
+          if [ -s $SHELL_FILE_LIST ]; then
+            echo "contains_shell_files=true" >> "$GITHUB_ENV"
+          else
+            echo "contains_shell_files=false" >> "$GITHUB_ENV"
+          fi 
+
+      - name: Install shellcheck
+        if: env.contains_shell_files == 'true'
+        run: sudo apt-get install -y shellcheck 
+
+      - name: Run shellcheck on Modified Source Files
+        if: env.contains_shell_files == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          echo "Files to check:"
+          cat /tmp/shellcheck_file_list.log
+
+          FILE_PATHS=$(cat /tmp/shellcheck_file_list.log)
+          for FILE_PATH in $FILE_PATHS
+          do
+            
+            options=( 
+              "--format=gcc"
+              "--exclude=SC1091")
+            
+            shellcheck "${options[@]}" $FILE_PATH >> /tmp/shellcheck.log
+          
+          done
+          
+          echo "Errors Found:"
+          cat /tmp/shellcheck.log
+
+      - uses: actions/upload-artifact@master
+        name: Upload shellcheck error log
+        if: env.contains_shell_files == 'true'
+        with:
+          name: shellcheck-output
+          path: /tmp/shellcheck.log
+
+      - name: Check for shellcheck output
+        if: env.contains_shell_files == 'true'
+        run : |
+          if [ -s /tmp/shellcheck.log ]; then
+            exit 1
+          fi
+
+  Aggregate-Lint-Output:
+    needs: [run-cppcheck, run-shellcheck]
+    if: |
+        always() && 
+        (needs.run-cppcheck.result == 'failure' || 
+         needs.run-shellcheck.result == 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      
+      - uses: actions/checkout@v2
+        name: Checkout Repo
+       
+      - uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: latest 
+
+      - name: Download all artifacts 
+        uses: actions/download-artifact@v2
+        with:
+          path: /tmp/artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: /tmp/artifacts
+
+      - name: Run reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CPP_FILE=/tmp/artifacts/cppcheck-output/cppcheck.log
+          if test -f "$CPP_FILE"; then
+            cat "$CPP_FILE" | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check
+          fi
+
+          SHELL_FILE=/tmp/artifacts/shellcheck-output/shellcheck.log
+          if test -f "$SHELL_FILE"; then
+            cat "$SHELL_FILE" | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check
+          fi
+
+

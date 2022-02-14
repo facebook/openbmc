@@ -1,0 +1,11 @@
+[parser]
+  polyglot_parsing_enabled = true
+  default_build_file_syntax = SKYLARK
+
+[project]
+  ignore = build-**
+
+[python#py2]
+   interpreter = /usr/bin/python2
+[python#py3]
+   interpreter = /usr/bin/python3

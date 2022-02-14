@@ -65,7 +65,7 @@ function init_4u_gpv3_bic() {
     retry=3
 
     while [ $retry -gt 0 ]; do
-      res=$(/usr/bin/bic-util slot1 2U-top 0xe0 0x70 0x9c 0x9c 0x0 0x1 0x0)
+      res=$(/usr/bin/bic-util slot1-2U-top 0xe0 0x70 0x9c 0x9c 0x0 0x1 0x0)
 
       if [[ ${res:0:8} == "9C 9C 00" ]]; then
         logger "Init top gpv3 position"
@@ -85,7 +85,7 @@ function init_4u_gpv3_bic() {
     retry=3
 
     while [ $retry -gt 0 ]; do
-      res=$(/usr/bin/bic-util slot1 2U-bot 0xe0 0x70 0x9c 0x9c 0x0 0x1 0x1)
+      res=$(/usr/bin/bic-util slot1-2U-bot 0xe0 0x70 0x9c 0x9c 0x0 0x1 0x1)
 
       if [[ ${res:0:8} == "9C 9C 00" ]]; then
         logger "Init bot gpv3 position"

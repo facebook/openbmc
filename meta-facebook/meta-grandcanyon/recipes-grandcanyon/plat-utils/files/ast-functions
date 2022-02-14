@@ -5,6 +5,7 @@ POWERUTIL_CMD=/usr/local/bin/power-util
 IPMBUTIL_CMD=/usr/local/bin/ipmb-util
 EXPANDERUTIL_CMD=/usr/bin/expander-util
 CFGUTIL_CMD=/usr/local/bin/cfg-util
+FRUIDUTIL_CMD=/usr/local/bin/fruid-util
 KV_CMD=/usr/bin/kv
 ME_CMD=/usr/bin/me-util
 NTP_CMD=/usr/sbin/ntpq
@@ -40,6 +41,8 @@ CMD_GET_SEL_TIME="0x48"
 
 UIC_LOCATION_A="1"
 UIC_LOCATION_B="2"
+UIC_LOCATION_A_STR="01 "
+UIC_LOCATION_B_STR="02 "
 UIC_LOCATION_SIZE=2
 UIC_LOCATION_MASK=0x3
 
@@ -67,6 +70,11 @@ STAGE_DVT=2
 STAGE_PVT=3
 STAGE_MP=4
 
+<<<<<<< HEAD
+=======
+FAN_FRU_CNT=4
+
+>>>>>>> facebook/helium
 gpio_set() {
   local shadow val
   shadow=$1
@@ -207,3 +215,49 @@ is_sb_bic_ready() {
 
   echo $ready
 }
+<<<<<<< HEAD
+=======
+
+get_uic_location_by_gpio()
+{
+  if [ "$(gpio_get BMC_UIC_LOCATION_IN)" = "$GPIO_VALUE_LOW" ]; then
+    return "$UIC_LOCATION_A"
+  else
+    return "$UIC_LOCATION_B"
+  fi
+}
+
+get_uic_location_by_exp()
+{
+  RETRY=20
+  source_name=$0
+
+  while [ $RETRY -gt 0 ]
+  do
+    # * UIC_ID: 1=UIC_A; 2=UIC_B
+
+    uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
+
+    if [ "$uic_id" = "$UIC_LOCATION_A_STR" ] || [ "$uic_id" = "$UIC_LOCATION_B_STR" ]; then
+      return "$uic_id"
+    fi
+
+    logger -s -p user.warn -t ${source_name%%.*} "Retrying get uic location"
+    RETRY=$((RETRY-1))
+    sleep 1
+  done
+  logger -s -p user.warn -t ${source_name%%.*} "Get uic location - failed"
+
+  return 0
+}
+
+get_uic_location()
+{
+  stage=$(get_system_stage)
+  if [ "$stage" -lt "$STAGE_DVT" ]; then
+    get_uic_location_by_exp
+  else
+    get_uic_location_by_gpio
+  fi
+}
+>>>>>>> facebook/helium

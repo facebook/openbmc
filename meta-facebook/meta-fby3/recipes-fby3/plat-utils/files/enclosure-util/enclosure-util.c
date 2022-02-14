@@ -335,7 +335,7 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
       ssd.vendor = (rbuf[offset_base + 1] << 8) | rbuf[offset_base + 2];
       memcpy(ssd.serial_num, &rbuf[offset_base + 3], MAX_SERIAL_NUM);
 
-      if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+      if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) {
         tbuf[2] = 55; //read back
         tbuf[3] = 0x20;  // offset 32
         ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);

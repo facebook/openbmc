@@ -10,6 +10,9 @@ fi
 
 declare -a PLAT_DISTRO_OVERRIDES
 # Add overrides here on a per-platform basis.
+
+# Please keep in alphabetical order
+
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
@@ -25,26 +28,26 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbsp:lf-dunfell
   meta-fby2-nd:lf-dunfell
   meta-fby3:lf-dunfell
+  meta-fby35:lf-dunfell
   meta-fuji:lf-dunfell
   meta-grandcanyon:lf-dunfell
   meta-minipack:lf-dunfell
   meta-qemux86:lf-dunfell
   meta-wedge400:lf-dunfell
   meta-agc032a:lf-dunfell
-# zeus platforms (pending upgrade)
-  meta-fby35:zeus
+  meta-grandteton:lf-dunfell
 # Legacy platforms pending kernel upgrade
-  meta-fby2-gpv2:rocko
-  meta-fby2:rocko
-  meta-yosemite:rocko
   meta-fbtp:rocko
   meta-fbttn:rocko
-  meta-wedge:rocko
-  meta-minilaketb:rocko
-  meta-yamp:rocko
-  meta-lightning:rocko
-  meta-wedge100:rocko
+  meta-fby2:rocko
+  meta-fby2-gpv2:rocko
   meta-galaxy100:rocko
+  meta-lightning:rocko
+  meta-minilaketb:rocko
+  meta-wedge:rocko
+  meta-wedge100:rocko
+  meta-yamp:rocko
+  meta-yosemite:rocko
 )
 
 platform="$1"

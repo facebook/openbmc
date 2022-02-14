@@ -86,6 +86,15 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
         cout << "Failed to get stage of UIC" << endl;
         goto end;
       }
+
+      // Align UIC board ID to system stage
+      if ((board_rev_id == UIC_STAGE_DVT) || (board_rev_id == UIC_STAGE_DVT3)) {
+        board_rev_id = STAGE_DVT;
+      } else if ((board_rev_id == UIC_STAGE_PVT) || (board_rev_id == UIC_STAGE_PVT3)) {
+        board_rev_id = STAGE_PVT;
+      } else if (board_rev_id == UIC_STAGE_MP) {
+        board_rev_id = STAGE_MP;
+      }
       break;
     case BS_FPGA_LOCATION:
       if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
@@ -223,7 +232,7 @@ int BmcFpgaComponent::update_fpga(string image, string update_image)
     ret = FW_STATUS_FAILURE;
   } else {
     ret = cpld_program((char *)update_image.c_str(), key, false);
-    cpld_intf_close(INTF_I2C);
+    cpld_intf_close();
     if ( ret < 0 ) {
       cout << "Error Occur at updating FPGA FW!" << endl;
     }
@@ -259,4 +268,3 @@ int BmcFpgaComponent::fupdate(string image)
 {
   return update_wrapper(image, true);
 }
-

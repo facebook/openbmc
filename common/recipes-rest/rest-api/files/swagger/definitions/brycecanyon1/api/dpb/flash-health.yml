@@ -22,11 +22,11 @@ paths:
                     type: string
                   flash-1: 
                     type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

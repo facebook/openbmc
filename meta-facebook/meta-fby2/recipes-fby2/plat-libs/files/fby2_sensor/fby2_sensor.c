@@ -83,12 +83,15 @@
 #define DC_INA230_DEFAULT_CALIBRATION 0x000A
 
 #define I2C_DEV_HSC "/dev/i2c-10"
-#define I2C_HSC_ADDR 0x80  // 8-bit
+#define I2C_HSC_ADM1278_ADDR 0x80  // 8-bit
+#define I2C_HSC_LTC4282_ADDR 0x82  // 8-bit
 #define EIN_ROLLOVER_CNT 0x10000
 #define EIN_SAMPLE_CNT 0x1000000
 #define EIN_ENERGY_CNT 0x800000
+#define EIN_LTC4282_ENERGY_MAX 0xFFFFFFFFFFFF
 #define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
 #define ADM1278_R_SENSE 0.3
+#define LTC4282_R_SENSE 0.1875 * 0.001
 
 #define I2C_DEV_NIC "/dev/i2c-11"
 #define I2C_NIC_ADDR 0x3e  // 8-bit
@@ -696,33 +699,65 @@ sensor_thresh_array_init() {
     }
   }
   //spb_sensor_threshold[SP_SENSOR_AIR_FLOW][UCR_THRESH] =  {75.0, 0, 0, 0, 0, 0, 0, 0};
-  spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;
-  spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.5;
-  spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.63;
-  spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.97;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.63;
-  spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.97;
-  spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.265;
-  spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][LCR_THRESH] = 1.035;
-  spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][UCR_THRESH] = 1.32;
-  spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][LCR_THRESH] = 1.08;
-  spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][UCR_THRESH] = 2.75;
-  spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][LCR_THRESH] = 2.25;
-  spb_sensor_threshold[SP_P1V8_STBY][UCR_THRESH] = 1.98;
-  spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.62;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.75;
-  spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.25;
-  spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
+
+  if (spb_type == TYPE_SPB_YV2ND2) {
+    spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.25;
+    spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.75;
+    spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.47;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 3.13;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.47;
+    spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 3.13;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.22;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][LCR_THRESH] = 1.08;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][UCR_THRESH] = 1.27;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][LCR_THRESH] = 1.13;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][UCR_THRESH] = 2.63;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][LCR_THRESH] = 2.37;
+    spb_sensor_threshold[SP_P1V8_STBY][UCR_THRESH] = 1.9;
+    spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.7;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.2;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.4;
+    spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 100;
+  } else {
+    spb_sensor_threshold[SP_SENSOR_P5V][UCR_THRESH] = 5.5;
+    spb_sensor_threshold[SP_SENSOR_P5V][LCR_THRESH] = 4.5;
+    spb_sensor_threshold[SP_SENSOR_P12V][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][UCR_THRESH] = 3.63;
+    spb_sensor_threshold[SP_SENSOR_P3V3_STBY][LCR_THRESH] = 2.97;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT1][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT2][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT3][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_P12V_SLOT4][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_P3V3][UCR_THRESH] = 3.63;
+    spb_sensor_threshold[SP_SENSOR_P3V3][LCR_THRESH] = 2.97;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][UCR_THRESH] = 1.265;
+    spb_sensor_threshold[SP_SENSOR_P1V15_BMC_STBY][LCR_THRESH] = 1.035;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][UCR_THRESH] = 1.32;
+    spb_sensor_threshold[SP_SENSOR_P1V2_BMC_STBY][LCR_THRESH] = 1.08;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][UCR_THRESH] = 2.75;
+    spb_sensor_threshold[SP_SENSOR_P2V5_BMC_STBY][LCR_THRESH] = 2.25;
+    spb_sensor_threshold[SP_P1V8_STBY][UCR_THRESH] = 1.98;
+    spb_sensor_threshold[SP_P1V8_STBY][LCR_THRESH] = 1.62;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][UCR_THRESH] = 13.75;
+    spb_sensor_threshold[SP_SENSOR_HSC_IN_VOLT][LCR_THRESH] = 11.25;
+    spb_sensor_threshold[SP_SENSOR_HSC_TEMP][UCR_THRESH] = 120;
+  }
+
   if (spb_type == TYPE_SPB_YV2ND || spb_type == TYPE_SPB_YV2ND2) {
     if ((fby2_get_slot_type(FRU_SLOT1)==SLOT_TYPE_GPV2) || (fby2_get_slot_type(FRU_SLOT3) == SLOT_TYPE_GPV2)) { // For GPv2 case
       spb_sensor_threshold[SP_SENSOR_HSC_OUT_CURR][UCR_THRESH] = 63;
@@ -1409,7 +1444,7 @@ read_adc_value(const int pin, const char *device, float *value) {
 #endif
 
 static int
-read_hsc_reg(uint8_t reg, uint8_t *rbuf, uint8_t len) {
+read_hsc_reg(uint8_t addr, uint8_t reg, uint8_t *rbuf, uint8_t len) {
   int dev, ret, retry = 2;
   uint8_t wbuf[4] = {0};
 
@@ -1420,7 +1455,7 @@ read_hsc_reg(uint8_t reg, uint8_t *rbuf, uint8_t len) {
 
   while ((--retry) >= 0) {
     wbuf[0] = reg;
-    ret = i2c_rdwr_msg_transfer(dev, I2C_HSC_ADDR, wbuf, 1, rbuf, len);
+    ret = i2c_rdwr_msg_transfer(dev, addr, wbuf, 1, rbuf, len);
     if (!ret)
       break;
     if (retry)
@@ -1443,10 +1478,10 @@ direct2real(uint16_t direct, float m, int b, int R) {
 }
 
 static int
-read_hsc_value(uint8_t reg, float m, int b, int R, float *value) {
+read_hsc_adm1278_value(uint8_t reg, float m, int b, int R, float *value) {
   uint16_t data;
 
-  if (read_hsc_reg(reg, (uint8_t *)&data, 2)) {
+  if (read_hsc_reg(I2C_HSC_ADM1278_ADDR, reg, (uint8_t *)&data, 2)) {
     return -1;
   }
 
@@ -1455,7 +1490,96 @@ read_hsc_value(uint8_t reg, float m, int b, int R, float *value) {
 }
 
 static int
-read_hsc_ein(float r_sense, float *value) {
+read_hsc_ltc4282_value(uint8_t reg, float *value) {
+  uint16_t data, raw_data;
+  static float voltage = 1;
+
+  if (read_hsc_reg(I2C_HSC_LTC4282_ADDR, reg, (uint8_t *)&raw_data, 2)) {
+    return -1;
+  }
+
+  data = ((raw_data & 0xFF00) >> 8) + ((raw_data & 0x00FF) << 8);
+
+  if (reg == 0x3a) {
+    // V = (Y * 16.64) / 65535
+    *value = (((float)data * 16.64) / 65535);
+  } else if (reg == 0x40 || reg == 0x44) {
+    // I = (Y * 0.04 * V) / (65535 * RSENSE)
+    *value = (((float)data * 0.04 * voltage) / ((float)65535 * LTC4282_R_SENSE));
+  } else if (reg == 0x46 || reg == 0x4A) {
+    // P = (Y * 0.04 * V * VFS * 2^16) / (65535^2 * RSENSE)
+    *value = (((float)data * 0.04 * voltage * 16.64 * 65536) / ((float)65535 * 65535 * LTC4282_R_SENSE));
+  } else if (reg == 0x34) {
+    if (data != 0) { // LTC2997
+      // GPIO_V = (Y * 1.28) / 65535
+      *value = (((float)data * 1.28) / 65535);
+      // LTC2997
+      // K = V / 4mV
+      // C = K - 273.15
+      *value = (((*value) * 1.332 / 0.004 ) - 273.15);
+    } else { // TMP75 bus 10 add 0x94
+      return sensors_read("tmp75-i2c-9-4a", "HSC_TEMP", value);
+    }
+  } else {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+read_hsc_ltc4282_ein( float *value) {
+  uint8_t rbuf[10] = {0};
+  uint32_t sample, pre_sample, sample_diff;
+  double energy_diff, raw_energy_diff;
+  uint64_t energy, pre_energy;
+  static uint32_t last_sample;
+  static uint64_t last_energy;
+  static uint8_t pre_ein = 0;
+
+  if (read_hsc_reg(I2C_HSC_LTC4282_ADDR, 0x12, rbuf, 10)) {
+    return -1;
+  }
+
+  pre_energy = last_energy;
+  pre_sample = last_sample;
+
+  energy = (rbuf[0]*(1LL<<40)) |(rbuf[1]*(1LL<<32)) |(rbuf[2]<<24) |(rbuf[3]<<16) | (rbuf[4]<<8) | rbuf[5];
+
+  last_energy = energy;
+  last_sample = sample =  (rbuf[6]<<24) | (rbuf[7]<<16) | (rbuf[8]<<8) | rbuf[9];
+
+  if (!pre_ein) {
+    pre_ein = 1;
+    return -1;
+  }
+
+  if (energy < pre_energy) {
+    raw_energy_diff= EIN_LTC4282_ENERGY_MAX + energy -pre_energy;
+    syslog(LOG_INFO, "read_hsc_ltc4282_ein overflow: energy_diff=%lf", raw_energy_diff);
+  } else {
+    raw_energy_diff= energy -pre_energy;
+  }
+
+  sample_diff = sample - pre_sample;
+
+  if (energy == 0 || raw_energy_diff == 0 || sample_diff == 0){ // reset energy accumulator after overflow
+    syslog(LOG_INFO, "read_hsc_ltc4282_ein:  raw_energy_diff=%lf sample_diff=%d", raw_energy_diff, sample_diff);
+    log_system("i2cset -y 10 0x41 0x1d 0x60"); // B[6] METER_RESET B[5] METER_HALT
+    msleep(100);
+    log_system("i2cset -y 10 0x41 0x1d 0x00");
+    pre_ein = 0;
+    return -1;
+  }
+
+  energy_diff = ((raw_energy_diff * 0.04 * 16.64 * 0.065535 * 256) / ((double)65535 * 65535 * LTC4282_R_SENSE));
+  *value = (float)(energy_diff/sample_diff/0.065535);
+
+  return 0;
+}
+
+static int
+read_hsc_adm1278_ein(float r_sense, float *value) {
   int ret;
   uint8_t rbuf[12] = {0};
   uint32_t energy, rollover, sample;
@@ -1466,7 +1590,7 @@ read_hsc_ein(float r_sense, float *value) {
   static uint8_t pre_ein = 0;
 
   // read READ_EIN_EXT
-  ret = read_hsc_reg(0xdc, rbuf, 9);
+  ret = read_hsc_reg(I2C_HSC_ADM1278_ADDR, 0xdc, rbuf, 9);
   if (ret || (rbuf[0] != 8)) {  // length = 8 bytes
     return -1;
   }
@@ -2214,6 +2338,7 @@ int
 fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
   int retry = 0;
+  uint8_t server_type = 0xFF;
 
   switch(fru) {
     case FRU_SLOT1:
@@ -2241,7 +2366,12 @@ fby2_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
                  retry++;
                  sleep(1);
               } else {
-                host_sensors_sdr_init(fru, sinfo);
+                if (fby2_get_server_type(fru, &server_type)) {
+                  syslog(LOG_ERR, "%s, Get server type %d failed", __func__,server_type);
+                }
+                if (server_type != SERVER_TYPE_ND) { // ND handle host boot temp by BIC
+                  host_sensors_sdr_init(fru, sinfo);
+                }
 #ifdef CONFIG_FBY2_GPV2
                 gpv2_sensors_sdr_init(fru, sinfo);
 #endif
@@ -2926,6 +3056,65 @@ check_gp_m2_monior(uint8_t slot_id) {
   return false;
 }
 
+static int
+read_hsc_adm1278(uint8_t snr_id, float *value) {
+  int ret = -1;
+  switch(snr_id) {
+  case SP_SENSOR_HSC_IN_VOLT:
+    ret = read_hsc_adm1278_value(0x88, 19599, 0, -2, value);
+    break;
+  case SP_SENSOR_HSC_OUT_CURR:
+    ret = read_hsc_adm1278_value(0x8c, (800*hsc_r_sense), 20475, -1, value);
+    break;
+  case SP_SENSOR_HSC_TEMP:
+    ret = read_hsc_adm1278_value(0x8d, 42, 31880, -1, value);
+    break;
+  case SP_SENSOR_HSC_IN_POWER:
+    ret = read_hsc_adm1278_value(0x97, (6123*hsc_r_sense), 0, -2, value);
+    break;
+  case SP_SENSOR_HSC_IN_POWERAVG:
+    ret = read_hsc_adm1278_ein(hsc_r_sense, value);
+  case SP_SENSOR_HSC_PEAK_IOUT:
+    ret = read_hsc_adm1278_value(0xd0, (800*hsc_r_sense), 20475, -1, value);
+    break;
+  case SP_SENSOR_HSC_PEAK_PIN:
+    ret = read_hsc_adm1278_value(0xda, (6123*hsc_r_sense), 0, -2, value);
+    break;
+  }
+  return ret;
+}
+
+static int
+read_hsc_ltc4282(uint8_t snr_id, float *value) {
+  int ret = -1;
+  switch(snr_id) {
+  case SP_SENSOR_HSC_IN_VOLT:
+    ret = read_hsc_ltc4282_value(0x3A, value);
+    break;
+  case SP_SENSOR_HSC_OUT_CURR:
+    ret = read_hsc_ltc4282_value(0x40, value);
+    break;
+  case SP_SENSOR_HSC_TEMP:
+    ret = read_hsc_ltc4282_value(0x34, value);
+    break;
+  case SP_SENSOR_HSC_IN_POWER:
+    ret = read_hsc_ltc4282_value(0x46, value);
+    break;
+  case SP_SENSOR_HSC_IN_POWERAVG:
+    ret = read_hsc_ltc4282_ein(value);
+    break;
+  case SP_SENSOR_HSC_PEAK_IOUT:
+    ret = read_hsc_ltc4282_value(0x44, value);
+    break;
+  case SP_SENSOR_HSC_PEAK_PIN:
+    ret = read_hsc_ltc4282_value(0x4A, value);
+    break;
+  }
+  return ret;
+}
+
+
+
 int
 fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 
@@ -2935,6 +3124,7 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
   char path[LARGEST_DEVICE_NAME];
   int spb_type;
   int fan_type;
+  int spb_hsc_type;
 
   switch (fru) {
     case FRU_SLOT1:
@@ -3166,21 +3356,21 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
           return read_adc_value(ADC_PIN11, ADC_VALUE, (float*) value);
 #endif
 
-        // Hot Swap Controller
         case SP_SENSOR_HSC_IN_VOLT:
-          return read_hsc_value(0x88, 19599, 0, -2, (float *)value);
         case SP_SENSOR_HSC_OUT_CURR:
-          return read_hsc_value(0x8c, (800*hsc_r_sense), 20475, -1, (float *)value);
         case SP_SENSOR_HSC_TEMP:
-          return read_hsc_value(0x8d, 42, 31880, -1, (float *)value);
         case SP_SENSOR_HSC_IN_POWER:
-          return read_hsc_value(0x97, (6123*hsc_r_sense), 0, -2, (float *)value);
         case SP_SENSOR_HSC_IN_POWERAVG:
-          return read_hsc_ein(hsc_r_sense, (float *)value);
         case SP_SENSOR_HSC_PEAK_IOUT:
-          return read_hsc_value(0xd0, (800*hsc_r_sense), 20475, -1, (float *)value);
         case SP_SENSOR_HSC_PEAK_PIN:
-          return read_hsc_value(0xda, (6123*hsc_r_sense), 0, -2, (float *)value);
+        spb_hsc_type = fby2_common_get_spb_hsc_type();
+          if (spb_hsc_type == SPB_HSC_ADM1278) {
+            return read_hsc_adm1278(sensor_num, (float *)value);
+          } else if (spb_hsc_type == SPB_HSC_LTC4282){
+            return read_hsc_ltc4282(sensor_num, (float *)value);
+          } else {
+            return -1;  // unknow HSC type
+          }
         case SP_SENSOR_BMC_HSC_PIN:
           return 0;
       }
@@ -3198,11 +3388,11 @@ fby2_sensor_read(uint8_t fru, uint8_t sensor_num, void *value) {
 }
 
 static int
-check_hsc_status(uint8_t reg, uint8_t len, uint16_t mask) {
+check_hsc_adm1278_status(uint8_t reg, uint8_t len, uint16_t mask) {
   uint8_t rbuf[4] = {0};
   uint16_t sts;
 
-  if (read_hsc_reg(reg, rbuf, len)) {
+  if (read_hsc_reg(I2C_HSC_ADM1278_ADDR, reg, rbuf, len)) {
     return -1;
   }
 
@@ -3215,30 +3405,65 @@ check_hsc_status(uint8_t reg, uint8_t len, uint16_t mask) {
 }
 
 static int
-clear_hsc_fault(void) {
-  return read_hsc_reg(0x03, NULL, 0);  // CLEAR_FAULTS
+check_hsc_ltc4282_status(uint8_t reg, uint8_t len, uint16_t mask) {
+  uint8_t rbuf[4] = {0};
+  uint16_t sts;
+
+  if (read_hsc_reg(I2C_HSC_LTC4282_ADDR, reg, rbuf, len)) {
+    return -1;
+  }
+
+  sts = (len == 1) ? rbuf[0] : (rbuf[1] << 8)|rbuf[0];
+  if ((sts & mask) != 0) {
+    return 1;
+  }
+
+  return 0;
+}
+
+static int
+clear_hsc_adm1278_fault(void) {
+  return read_hsc_reg(I2C_HSC_ADM1278_ADDR, 0x03, NULL, 0);  // CLEAR_FAULTS
+}
+
+static void
+clear_hsc_ltc4282_fault(void) {
+  log_system("i2cset -y 10 0x41 0x1c 0x00");  // CLEAR ALRRT pin
+  log_system("i2cset -y 10 0x41 0x05 0x00");  // CLEAR ADC_ALRRT_LOG
 }
 
 int
-fby2_check_hsc_sts_iout(uint8_t mask) {
-  return check_hsc_status(0x7b, 1, mask);  // STATUS_IOUT
+fby2_check_hsc_sts_iout() {
+  int spb_hsc_type = fby2_common_get_spb_hsc_type();
+  if (spb_hsc_type == SPB_HSC_LTC4282){
+    return check_hsc_ltc4282_status(0x05, 1, 0x20);  // VSENSE_ALRT_HIGH
+  } else {
+    return check_hsc_adm1278_status(0x7b, 1, 0x20);  // STATUS_IOUT
+  }
 }
 
 int
 fby2_check_hsc_fault(void) {
-  if (check_hsc_status(0x79, 2, 0xBFFE))  // STATUS_WORD
-    return -1;
-  if (check_hsc_status(0x7a, 1, 0xFF))    // STATUS_VOUT
-    return -1;
-  if (check_hsc_status(0x7b, 1, 0xDF))    // STATUS_IOUT
-    return -1;
-  if (check_hsc_status(0x7c, 1, 0xFF))    // STATUS_INPUT
-    return -1;
-  if (check_hsc_status(0x7d, 1, 0xFF))    // STATUS_TEMPERATURE
-    return -1;
-  if (check_hsc_status(0x80, 1, 0xFF))    // STATUS_MFR_SPECIFIC
-    return -1;
+  int spb_hsc_type = fby2_common_get_spb_hsc_type();
+  if (spb_hsc_type == SPB_HSC_LTC4282){
+    if (check_hsc_ltc4282_status(0x05, 1, 0xFF))    // ADC_ALERT_LOG
+      return -1;
+    clear_hsc_ltc4282_fault();
+  } else {
+    if (check_hsc_adm1278_status(0x79, 2, 0xBFFE))  // STATUS_WORD
+      return -1;
+    if (check_hsc_adm1278_status(0x7a, 1, 0xFF))    // STATUS_VOUT
+      return -1;
+    if (check_hsc_adm1278_status(0x7b, 1, 0xDF))    // STATUS_IOUT
+      return -1;
+    if (check_hsc_adm1278_status(0x7c, 1, 0xFF))    // STATUS_INPUT
+      return -1;
+    if (check_hsc_adm1278_status(0x7d, 1, 0xFF))    // STATUS_TEMPERATURE
+      return -1;
+    if (check_hsc_adm1278_status(0x80, 1, 0xFF))    // STATUS_MFR_SPECIFIC
+      return -1;
+    clear_hsc_adm1278_fault();
+  }
 
-  clear_hsc_fault();
   return 0;
 }

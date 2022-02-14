@@ -36,7 +36,7 @@ class CpldComponent : public Component {
 
         if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
           ret = cpld_get_ver((uint32_t *)ver);
-          cpld_intf_close(INTF_JTAG);
+          cpld_intf_close();
         }
 
         if (ret) {
@@ -60,7 +60,7 @@ class CpldComponent : public Component {
       if (!cpld_intf_open(LCMXO2_7000HC, INTF_JTAG, NULL)) {
         syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
         ret = cpld_program((char *)image.c_str(), NULL, false);
-        cpld_intf_close(INTF_JTAG);
+        cpld_intf_close();
         if (ret < 0) {
           printf("Error Occur at updating CPLD FW!\n");
         } else {
@@ -91,7 +91,7 @@ int DumbCpldComponent::print_version() {
 
   if (!cpld_intf_open(pld_type, INTF_I2C, &attr)) {
     ret = cpld_get_ver((uint32_t *)ver);
-    cpld_intf_close(INTF_I2C);
+    cpld_intf_close();
   }
 
   if (ret) {

@@ -14,18 +14,18 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Description: 
-                    type: string
-                  version: 
-                    type: string
               Resources: 
                 type: array
                 items: 
                   type: string
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  version: 
+                    type: string
+                  Description: 
+                    type: string
               Actions: 
                 type: array
                 items: 

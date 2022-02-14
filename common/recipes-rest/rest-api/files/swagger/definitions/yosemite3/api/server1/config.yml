@@ -28,6 +28,10 @@ paths:
                     type: string
                   slot1_cpu_ppin: 
                     type: string
+                  slot1_sensor_health: 
+                    type: string
+                  slot1_sel_error: 
+                    type: string
               Actions: 
                 type: array
                 items: 

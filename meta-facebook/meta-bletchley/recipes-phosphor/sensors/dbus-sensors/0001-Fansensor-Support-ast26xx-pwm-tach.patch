@@ -1,0 +1,170 @@
+From 8a61c5e201037ce77a1278b8bdad8a7907d1a9f6 Mon Sep 17 00:00:00 2001
+From: Howard Chiu <howard.chiu@quantatw.com>
+Date: Thu, 2 Dec 2021 15:14:44 +0800
+Subject: [PATCH] Fansensor: Support ast26xx pwm/tach
+
+Add new fantype for ast26xx tach driver.
+Use pwm-fan driver to setup ast26xx pwm driver for easier usage.
+User must define pwm-fan node in dts as below
+
+pwm-fanX {
+	compatible = "pwm-fan";
+	.......
+};
+refer Documentation/devicetree/bindings/hwmon/pwm-fan.txt for details
+
+and Connector in EM configuration
+"Connector": {
+    "Pwm": X,
+    ......
+}
+
+where X is integer
+
+Tested: On Facebook Bletchley Platform with 1 fan
+
+root@bletchley:/sys/class/leds# busctl set-property xyz.openbmc_project.FanSensor /xyz/openbmc_project/sensors/fan_pwm/Pwm_1 xyz.openbmc_project.Sensor.Value Value d 20
+root@bletchley:/sys/class/leds# busctl introspect xyz.openbmc_project.FanSensor /xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL xyz.openbmc_project.Sensor.Value
+NAME                             TYPE      SIGNATURE RESULT/VALUE                             FLAGS
+.MaxValue                        property  d         25000                                    emits-change
+.MinValue                        property  d         0                                        emits-change
+.Unit                            property  s         "xyz.openbmc_project.Sensor.Value.Uni... emits-change
+.Value                           property  d         3189                                     emits-change writable
+root@bletchley:/sys/class/leds# busctl introspect xyz.openbmc_project.FanSensor /xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL xyz.openbmc_project.Sensor.Value
+NAME                             TYPE      SIGNATURE RESULT/VALUE                             FLAGS
+.MaxValue                        property  d         25000                                    emits-change
+.MinValue                        property  d         0                                        emits-change
+.Unit                            property  s         "xyz.openbmc_project.Sensor.Value.Uni... emits-change
+.Value                           property  d         3006                                     emits-change writable
+
+Signed-off-by: Howard Chiu <howard.chiu@quantatw.com>
+Change-Id: Ifda89310590c9d914fa0a302df412fead807daa8
+---
+ src/FanMain.cpp | 69 ++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 59 insertions(+), 10 deletions(-)
+
+diff --git a/src/FanMain.cpp b/src/FanMain.cpp
+index 786498cb09..0156de73cf 100644
+--- a/src/FanMain.cpp
++++ b/src/FanMain.cpp
+@@ -44,12 +44,14 @@ namespace fs = std::filesystem;
+ // The following two structures need to be consistent
+ static auto sensorTypes{std::to_array<const char*>(
+     {"xyz.openbmc_project.Configuration.AspeedFan",
++     "xyz.openbmc_project.Configuration.AspeedPWMFan",
+      "xyz.openbmc_project.Configuration.I2CFan",
+      "xyz.openbmc_project.Configuration.NuvotonFan"})};
+ 
+ enum FanTypes
+ {
+-    aspeed = 0,
++    ast25xx = 0,
++    ast26xx,
+     i2c,
+     nuvoton,
+     max,
+@@ -72,7 +74,11 @@ FanTypes getFanType(const fs::path& parentPath)
+     if (boost::ends_with(canonical, "1e786000.pwm-tacho-controller") ||
+         boost::ends_with(canonical, "1e610000.pwm-tacho-controller"))
+     {
+-        return FanTypes::aspeed;
++        return FanTypes::ast25xx;
++    }
++    if (boost::ends_with(canonical, "1e610000.pwm_tach:tach"))
++    {
++        return FanTypes::ast26xx;
+     }
+     if (boost::ends_with(canonical, "f0103000.pwm-fan-controller"))
+     {
+@@ -97,6 +103,33 @@ void enablePwm(const fs::path& filePath)
+         enableFile << 1;
+     }
+ }
++fs::path getPwmfanPath(unsigned int configPwmfanIndex)
++{
++    /* Search PWM since pwm-fan had separated
++     * PWM from tach directory and 1 channel only*/
++    std::vector<fs::path> pwmfanPaths;
++    fs::path pwmPath;
++
++    findFiles(fs::path("/sys/class/hwmon"), R"(pwm1)", pwmfanPaths);
++    for (const auto& pwmfanPath : pwmfanPaths)
++    {
++        fs::path pwmfanLinkPath = pwmfanPath.parent_path() / "device";
++        std::string link = fs::read_symlink(pwmfanLinkPath);
++        size_t findPattern = link.find("pwm-fan");
++        if (findPattern == std::string::npos || link.size() <= findPattern + 1)
++        {
++            continue;
++        }
++        auto pwmfanIndex =
++            std::stoul(link.substr(findPattern + 7), nullptr, 10);
++        if (configPwmfanIndex != pwmfanIndex)
++        {
++            continue;
++        }
++        pwmPath = pwmfanPath;
++    }
++    return pwmPath;
++}
+ void createRedundancySensor(
+     const boost::container::flat_map<std::string, std::unique_ptr<TachSensor>>&
+         sensors,
+@@ -221,7 +254,8 @@ void createSensors(
+                     {
+                         continue;
+                     }
+-                    if (fanType == FanTypes::aspeed ||
++                    if (fanType == FanTypes::ast25xx ||
++                        fanType == FanTypes::ast26xx ||
+                         fanType == FanTypes::nuvoton)
+                     {
+                         // there will be only 1 aspeed or nuvoton sensor object
+@@ -350,7 +384,7 @@ void createSensors(
+                     }
+                 }
+                 std::optional<RedundancySensor>* redundancy = nullptr;
+-                if (fanType == FanTypes::aspeed)
++                if (fanType == FanTypes::ast25xx)
+                 {
+                     redundancy = &systemRedundancy;
+                 }
+@@ -386,14 +420,29 @@ void createSensors(
+                     auto findPwm = connector->second.find("Pwm");
+                     if (findPwm != connector->second.end())
+                     {
+-                        fs::path pwmEnableFile =
+-                            "pwm" + std::to_string(index + 1) + "_enable";
+-                        fs::path enablePath =
+-                            path.parent_path() / pwmEnableFile;
+-                        enablePwm(enablePath);
+                         size_t pwm = std::visit(VariantToUnsignedIntVisitor(),
+                                                 findPwm->second);
+-                        pwmPath = directory / ("pwm" + std::to_string(pwm + 1));
++                        if (fanType == FanTypes::ast26xx)
++                        {
++                            pwmPath = getPwmfanPath(pwm);
++                            if (pwmPath.empty())
++                            {
++                                std::cerr << "Connector for " << sensorName
++                                          << " no pwm channel found!\n";
++                                continue;
++                            }
++                        }
++                        else
++                        {
++                            fs::path pwmEnableFile =
++                                "pwm" + std::to_string(index + 1) + "_enable";
++                            fs::path enablePath =
++                                path.parent_path() / pwmEnableFile;
++                            enablePwm(enablePath);
++                            pwmPath =
++                                directory / ("pwm" + std::to_string(pwm + 1));
++                        }
++
+                         /* use pwm name override if found in configuration else
+                          * use default */
+                         auto findOverride = connector->second.find("PwmName");
+-- 
+2.32.0
+

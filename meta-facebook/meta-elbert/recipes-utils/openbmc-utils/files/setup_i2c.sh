@@ -141,15 +141,20 @@ do
         i2c_device_add "$bus_id" 0x50 24c512  # EEPROM
         # Only allow writes to certain registers for
         # power controllers UCD9090/TPS546D24
-        retry_command 3 enable_power_security_mode "$bus_id" 0x4e "UCD9090B"
         retry_command 3 enable_tps546d24_wp "$bus_id" 0x16
         retry_command 3 enable_tps546d24_wp "$bus_id" 0x18
         i2c_device_add "$bus_id" 0x16 pmbus   # TPS546D24
         i2c_device_add "$bus_id" 0x18 pmbus   # TPS546D24
-        i2c_device_add "$bus_id" 0x4a lm73    # Temp sensor
-        i2c_device_add "$bus_id" 0x4e ucd9090 # UCD9090
 
         fru="$(peutil "$pim" 2>&1)"
+        if echo "$fru" | grep -q '88-16CD2'; then
+            echo "PIM$pim has no UCD9090/LM73"
+        else
+            retry_command 3 enable_power_security_mode "$bus_id" 0x4e "UCD9090B"
+            i2c_device_add "$bus_id" 0x4a lm73    # Temp sensor
+            i2c_device_add "$bus_id" 0x4e ucd9090 # UCD9090
+        fi
+
         if echo "$fru" | grep -q '88-8D'; then
             i2c_device_add "$bus_id" 0x40 pmbus # MP5023
             i2c_device_add "$bus_id" 0x54 isl68224 # ISL68224

@@ -181,6 +181,67 @@ const uint8_t smb_sensor_list[] = {
   PIM_F104,
 };
 
+// List of PIM16Q2 sensors that need to be monitored
+const uint8_t pim16q2_sensor_list[MAX_PIM][PIM16Q2_SENSOR_COUNT] = {
+  {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  }, {
+    PIM_POS_3V3_U_VOUT,
+    PIM_POS_3V3_U_TEMP,
+    PIM_POS_3V3_U_CURR,
+    PIM_POS_3V3_L_VOUT,
+    PIM_POS_3V3_L_TEMP,
+    PIM_POS_3V3_L_CURR,
+  },
+};
+
 // List of PIM16Q sensors that need to be monitored
 const uint8_t pim16q_sensor_list[MAX_PIM][PIM16Q_SENSOR_COUNT] = {
   {
@@ -750,7 +811,32 @@ pim_thresh_array_init(uint8_t fru) {
     case FRU_PIM9:
       i = fru - FRU_PIM2;
       type = pal_get_pim_type_from_file(fru);
-      if (type == PIM_TYPE_16Q) {
+      if (type == PIM_TYPE_16Q2) {
+        pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][UCR_THRESH] = 3.63;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][LCR_THRESH] = 2.98;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][UCR_THRESH] = 150;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = 0;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][UCR_THRESH] = 3.63;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][LCR_THRESH] = 2.98;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][UCR_THRESH] = 150;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = 0;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UNC_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LNC_THRESH] = 0; // unset
+      } else if (type == PIM_TYPE_16Q) {
         pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][UCR_THRESH] = 3.63;
         pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][LCR_THRESH] = 2.98;
         pim_sensor_threshold[i][PIM_POS_3V3_U_VOUT][UNC_THRESH] = 0; // unset
@@ -1073,7 +1159,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     case FRU_PIM9:
       pim_id = fru - FRU_PIM2;
       pim_type = pal_get_pim_type_from_file(fru);
-      if (pim_type == PIM_TYPE_16Q) {
+      if (pim_type == PIM_TYPE_16Q2) {
+        *sensor_list = (uint8_t *) pim16q2_sensor_list[pim_id];
+        *cnt = sizeof(pim16q2_sensor_list[pim_id]) / sizeof(uint8_t);
+      } else if (pim_type == PIM_TYPE_16Q) {
         *sensor_list = (uint8_t *) pim16q_sensor_list[pim_id];
         *cnt = sizeof(pim16q_sensor_list[pim_id]) / sizeof(uint8_t);
       } else if (pim_type == PIM_TYPE_8DDM) {
@@ -1898,7 +1987,7 @@ fan_sys_airflow_cfg_check(void) {
 
   for (fru = FRU_PIM2; fru <= FRU_PIM9; fru++) {
     pim_type = pal_get_pim_type_from_file(fru);
-    if (pim_type == PIM_TYPE_16Q) {
+    if (pim_type == PIM_TYPE_16Q || pim_type == PIM_TYPE_16Q2) {
       num_pim16q++;
     } else if (pim_type == PIM_TYPE_8DDM) {
       num_pim8ddm++;
@@ -3558,7 +3647,9 @@ pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_PIM9:
       pim_id = fru - FRU_PIM2;
       pim_type = pal_get_pim_type_from_file(fru);
-      if (pim_type == PIM_TYPE_16Q) {
+      if (pim_type == PIM_TYPE_16Q2) {
+        cnt = sizeof(pim16q2_sensor_list[pim_id]) / sizeof(uint8_t);
+      } else if (pim_type == PIM_TYPE_16Q) {
         cnt = sizeof(pim16q_sensor_list[pim_id]) / sizeof(uint8_t);
       } else if (pim_type == PIM_TYPE_8DDM) {
         cnt = sizeof(pim8ddm_sensor_list[pim_id]) / sizeof(uint8_t);

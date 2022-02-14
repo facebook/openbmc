@@ -800,6 +800,9 @@ int plat_get_syscfg_text(uint8_t slot, char *text)
 int plat_get_extra_sysinfo(uint8_t slot, char *info)
 {
   char tmp_info[64] = {0};
+  char post_code_info[32] = {0};
+  uint8_t server_type = 0xFF;
+  char postcode[8] = {0};
   char tstr[16];
   uint8_t i, st_12v = 0;
   int ret;
@@ -819,6 +822,19 @@ int plat_get_extra_sysinfo(uint8_t slot, char *info)
         sprintf(info, "%s"ESC_ALT"HSVC: START"ESC_RST, tmp_info);
     } else {
       sprintf(info, "%s", tmp_info);
+    }
+
+    if (fby2_get_slot_type(slot) == SLOT_TYPE_SERVER ) {
+      if (bic_get_server_type(slot, &server_type)) {
+        syslog(LOG_WARNING, "plat_get_extra_sysinfo: fail to get server type");
+      } else if (server_type == SERVER_TYPE_ND) {
+        if (pal_get_last_postcode(slot, postcode)) {
+          sprintf(post_code_info, "\nPOST: NA\n");
+        } else {
+          sprintf(post_code_info, "\nPOST: %s\n", postcode);
+        }
+        strcat(info, post_code_info);
+      }
     }
   }
 

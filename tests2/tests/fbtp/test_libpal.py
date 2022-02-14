@@ -16,10 +16,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 import unittest
 
 import common.base_libpal_test
+from utils.test_utils import qemu_check
 
 
 class LibPalTest(common.base_libpal_test.LibPalTest):
@@ -32,3 +32,11 @@ class LibPalTest(common.base_libpal_test.LibPalTest):
     @unittest.skip("disable due to T92189295")
     def test_sensor_read(self):
         pass
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_pal_is_fru_prsnt(self):
+        super().test_pal_is_fru_prsnt()
+
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_sensor_read_fru_not_present(self):
+        super().test_sensor_read_fru_not_present()

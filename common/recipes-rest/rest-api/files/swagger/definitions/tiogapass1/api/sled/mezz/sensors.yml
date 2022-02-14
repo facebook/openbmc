@@ -14,6 +14,10 @@ paths:
             type: object
             additionalProperties: false
             properties: 
+              Resources: 
+                type: array
+                items: 
+                  type: string
               Information: 
                 type: object
                 additionalProperties: false
@@ -24,10 +28,6 @@ paths:
                     properties: 
                       value: 
                         type: string
-              Resources: 
-                type: array
-                items: 
-                  type: string
               Actions: 
                 type: array
                 items: 

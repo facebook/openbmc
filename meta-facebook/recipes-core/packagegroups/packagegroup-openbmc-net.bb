@@ -16,7 +16,7 @@ RDEPENDS:${PN} += " \
 
 def openbmc_net_dhcpclient(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in [ 'rocko', 'zeus', 'dunfell' ]:
+    if distro in [ 'rocko', 'dunfell' ]:
         return "dhcp-client"
     return "dhcpcd"
 

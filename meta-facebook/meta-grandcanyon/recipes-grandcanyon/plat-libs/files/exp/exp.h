@@ -30,11 +30,14 @@ extern "C" {
 #endif
 
 #define EXP_VERSION_RES_LEN   20
+#define EXP_FAN_FRU_READY     0
 
 // NetFn: OEM (0x30)
 enum NETFN_OEM_30 {
   CMD_OEM_EXP_ERROR_CODE             = 0x11,
+  CMD_OEM_EXP_GET_SENSOR_THRESHOLD   = 0x13,
   CMD_OEM_EXP_GET_SENSOR_READING     = 0x2D,
+  CMD_OEM_EXP_GET_FAN_FRU_STATUS     = 0x44,
   CMD_OEM_EXP_GET_IOC_WWID           = 0x51,
   CMD_OEM_EXP_GET_HDD_STATUS         = 0xC0,
 };

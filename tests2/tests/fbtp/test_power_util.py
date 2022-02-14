@@ -20,10 +20,12 @@
 import unittest
 
 from common.base_power_util_test import BasePowerUtilTest
+from utils.test_utils import qemu_check
 
 slots = ["mb"]
 
 
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class PowerUtilTest(BasePowerUtilTest):
     def set_slots(self):
         self.slots = slots

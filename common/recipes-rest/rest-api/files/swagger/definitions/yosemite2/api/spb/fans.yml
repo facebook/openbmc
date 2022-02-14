@@ -15,18 +15,14 @@ paths:
             additionalProperties: false
             properties: 
               Information: 
-                type: object
-                additionalProperties: false
-                properties: 
-                  Fan 1 Speed: 
-                    type: string
-                  Fan 0 Speed: 
-                    type: string
-              Actions: 
                 type: array
                 items: 
                   type: string
               Resources: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
                 type: array
                 items: 
                   type: string

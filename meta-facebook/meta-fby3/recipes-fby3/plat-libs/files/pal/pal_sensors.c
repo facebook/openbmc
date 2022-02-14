@@ -33,6 +33,10 @@
 #define DUAL_FAN_UCR  13500
 #define DUAL_FAN_UNC  10200
 
+#define MAX_SENSORD_FRU MAX_NUM_FRUS+MAX_NUM_EXPS
+#define NB_TO_IDX(x) (x-FRU_EXP_BASE+MAX_NUM_FRUS)
+#define IDX_TO_NB(f) (f-MAX_NUM_FRUS+FRU_EXP_BASE)
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -43,6 +47,12 @@ enum {
   DUAL_FAN_CNT = 0x08,
   SINGLE_FAN_CNT = 0x04,
   UNKNOWN_FAN_CNT = 0x00,
+};
+
+enum {
+  BB_REV_PVT = 4,
+  BB_REV_MP = 5,
+  BB_REV_2ND_HSC = 7,
 };
 
 enum {
@@ -66,6 +76,15 @@ struct pcie_info {
   uint8_t   rated_width;
   uint8_t   rated_speed;
 }__attribute__ ((__packed__));
+
+struct hsc_ein {
+  const uint32_t wrap_energy;
+  const uint32_t wrap_rollover;
+  const uint32_t wrap_sample;
+  uint32_t energy;
+  uint32_t rollover;
+  uint32_t sample;
+};
 
 static int read_adc_val(uint8_t adc_id, float *value);
 static int read_temp(uint8_t snr_id, float *value);
@@ -96,6 +115,8 @@ size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
 const char pal_fan_opt_list[] = "enable, disable, status";
+
+static thresh_sensor_t m_snr_desc[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
 
 const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_FAN0_TACH,
@@ -683,6 +704,9 @@ const uint8_t bic_cwc_skip_sensor_list[] = {
 
 const uint8_t bic_dp_sensor_list[] = {
   BIC_SENSOR_DP_MARVELL_HSM_TEMP,
+  BIC_SENSOR_DP_NC_HSM_TEMP,
+  BIC_SENSOR_DP_NC_HSM_FAN,
+  BIC_SENSOR_DP_NC_HSM_BAT,
 };
 
 const uint8_t nic_sensor_list[] = {
@@ -691,14 +715,6 @@ const uint8_t nic_sensor_list[] = {
 
 // List of MB discrete sensors to be monitored
 const uint8_t bmc_discrete_sensor_list[] = {
-};
-
-//ADM1278
-PAL_ATTR_INFO adm1278_info_list[] = {
-  {HSC_VOLTAGE, 19599, 0, 100},
-  {HSC_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
-  {HSC_POWER, 6123 * ADM1278_RSENSE, 0, 100},
-  {HSC_TEMP, 42, 31880, 10},
 };
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNR, LNC, Pos, Neg}
@@ -915,10 +931,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ID0, read_hsc_peak_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC8
-  {"BMC_SENSOR_HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC9
+  {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ADM1278, read_hsc_peak_iout, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xC8
+  {"BMC_SENSOR_HSC_PEAK_PIN", HSC_ADM1278, read_hsc_peak_pin, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xC9
   {"BMC_SENSOR_FAN_PWR", 0xCA, read_cached_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCA
-  {"BMC_SENSOR_HSC_EIN", HSC_ID0, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
+  {"BMC_SENSOR_HSC_EIN", HSC_ADM1278, read_hsc_ein, true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xCB
   {"BMC_SENSOR_PDB_DL_VDELTA", 0xCC, read_pdb_dl_vdelta, true, {0.9, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE", 0xCD, read_curr_leakage, true, {0, 0, 0, 0, 0, 0, 0, 0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_BB_VDELTA", 0xCE, read_cached_val, true, {0.8, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xCE
@@ -963,10 +979,10 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P1V2_STBY", ADC4, read_adc_val, true, {1.314, 0, 0, 1.086, 0, 0, 0, 0}, VOLT}, //0xF4
   {"BMC_SENSOR_P2V5_STBY", ADC5, read_adc_val, true, {2.743, 0, 0, 2.262, 0, 0, 0, 0}, VOLT}, //0xF5
   {"BMC_SENSOR_MEDUSA_VOUT", 0xF6, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xF6
-  {"BMC_SENSOR_HSC_VIN", HSC_ID0, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
-  {"BMC_SENSOR_HSC_TEMP", HSC_ID0, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
-  {"BMC_SENSOR_HSC_PIN" , HSC_ID0, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
-  {"BMC_SENSOR_HSC_IOUT", HSC_ID0, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
+  {"BMC_SENSOR_HSC_VIN", HSC_ADM1278, read_hsc_vin, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF7
+  {"BMC_SENSOR_HSC_TEMP", HSC_ADM1278, read_hsc_temp, true, {55, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xF8
+  {"BMC_SENSOR_HSC_PIN" , HSC_ADM1278, read_hsc_pin , true, {362, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xF9
+  {"BMC_SENSOR_HSC_IOUT", HSC_ADM1278, read_hsc_iout, true, {27.4, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFA
   {"BMC_SENSOR_FAN_IOUT", ADC8, read_adc_val, 0, {25.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT", ADC9, read_adc_val, 0, {6.6, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0xFC
   {"BMC_SENSOR_MEDUSA_VIN", 0xFD, read_medusa_val, true, {13.23, 0, 0, 11.277, 0, 0, 0, 0}, VOLT}, //0xFD
@@ -974,9 +990,65 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
+//ADM1278
+PAL_ATTR_INFO adm1278_info_list[] = {
+  {HSC_VOLTAGE, 19599, 0, 100},
+  {HSC_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
+  {HSC_POWER, 6123 * ADM1278_RSENSE, 0, 100},
+  {HSC_TEMP, 42, 31880, 10},
+};
+
+//MP5990
+PAL_ATTR_INFO mp5990_info_list[] = {
+  {HSC_VOLTAGE, 32, 0, 1},
+  {HSC_CURRENT, 16, 0, 1},
+  {HSC_POWER, 1, 0, 1},
+  {HSC_TEMP, 1, 0, 1},
+};
+
+//ADM1276
+PAL_ATTR_INFO adm1276_info_list[] = {
+  // 0 V to 20 V range
+  {HSC_VOLTAGE, 19199, 0, 100},
+  {HSC_CURRENT, 807 * ADM1276_RSENSE, 20475, 10},
+  {HSC_POWER, 6043 * ADM1276_RSENSE, 0, 100},
+};
+
 //HSC
 PAL_HSC_INFO hsc_info_list[] = {
-  {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_ADM1278, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_LTC4282, 0, NULL},
+  {HSC_MP5990, MP5990_SLAVE_ADDR,  mp5990_info_list},
+  {HSC_ADM1276, ADM1276_SLAVE_ADDR, adm1276_info_list}
+};
+
+struct power_coeff {
+  float val;
+  float coeff;
+};
+
+static const struct power_coeff mp5990_curr_cali_table[] = {
+  { 5,  1.02731 },
+  { 8,  1.01257 },
+  { 10, 1.01270 },
+  { 13, 1.01343 },
+  { 15, 1.01394 },
+  { 18, 1.00540 },
+  { 20, 1.00673 },
+  { 23, 1.00569 },
+  { 0.0,   0.0 }
+};
+
+static const struct power_coeff mp5990_pwr_cali_table[] = {
+  { 60,  1.060262 },
+  { 97,  1.024449 },
+  { 121, 1.018210 },
+  { 156, 1.022174 },
+  { 180, 1.017156 },
+  { 215, 1.014175 },
+  { 239, 1.013756 },
+  { 274, 1.011664 },
+  { 0.0,   0.0 }
 };
 
 #define IS_DUAL_M2_PWR_SNR(sn) (sn == BIC_GPV3_DUAL_M2_PWR_0_1 || \
@@ -1096,6 +1168,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret = 0, config_status = 0;
   uint8_t board_type = 0;
   uint8_t current_cnt = 0;
+  char sys_conf[MAX_VALUE_LEN] = {0};
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -1152,11 +1225,18 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
         current_cnt += bic_2ou_gpv3_sensor_cnt;
         if ( bmc_location == NIC_BMC ) {
           memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_dual_m2_sensor_list, bic_2ou_gpv3_dual_m2_sensor_cnt);
-          current_cnt += bic_bb_sensor_cnt;
+          current_cnt += bic_2ou_gpv3_dual_m2_sensor_cnt;
         }
       } else if (board_type == DP_RISER_BOARD) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dp_sensor_list, bic_dp_sensor_cnt);
-        current_cnt += bic_dp_sensor_cnt;
+        if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+          return -1;
+        }
+
+        if ( strcmp(sys_conf, "Type_DP") == 0 ) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dp_sensor_list, bic_dp_sensor_cnt);
+          current_cnt += bic_dp_sensor_cnt;
+        }
       } else if (board_type == CWC_MCHP_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_cwc_sensor_list, cwc_sensor_cnt);
         current_cnt += cwc_sensor_cnt;
@@ -1187,7 +1267,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     current_cnt = bic_2ou_gpv3_sensor_cnt;
     if ( bmc_location == NIC_BMC ) {
       memcpy(&bic_dynamic_gpv3_cwc_sensor_list[current_cnt], bic_2ou_gpv3_dual_m2_sensor_list, bic_2ou_gpv3_dual_m2_sensor_cnt);
-      current_cnt += bic_bb_sensor_cnt;
+      current_cnt += bic_2ou_gpv3_dual_m2_sensor_cnt;
     }
     *sensor_list = (uint8_t *) bic_dynamic_gpv3_cwc_sensor_list;
     *cnt = current_cnt;
@@ -1554,7 +1634,12 @@ apply_frontIO_correction(uint8_t fru, uint8_t snr_num, float *value, uint8_t bmc
     avg_pwm = avg_pwm / (float)cnt;
     if ( inited == false ) {
       inited = true;
-      sensor_correction_init("/etc/sensor-frontIO-correction.json");
+
+      if (pal_is_cwc() == PAL_EOK) {
+        sensor_correction_init("/etc/sensor-frontIO-correction_cwc.json");
+      } else {
+        sensor_correction_init("/etc/sensor-frontIO-correction.json");
+      }
     }
     sensor_correction_apply(fru, snr_num, avg_pwm, value);
   } else {
@@ -1821,6 +1906,8 @@ read_temp(uint8_t id, float *value) {
     {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP"},
     {"tmp421-i2c-8-1f", "NIC_SENSOR_TEMP"},
     {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
+    {"tmp401-i2c-12-4c",  "BMC_OUTLET_TEMP"},
+    {"tmp401-i2c-12-4c",  "BMC_SENSOR_HSC_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -1918,22 +2005,34 @@ read_adc_val(uint8_t adc_id, float *value) {
 
 static int
 get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t *raw_data) {
-  const uint8_t adm1278_bus = 11;
+  const uint8_t bus = 11;
   uint8_t addr = hsc_info_list[hsc_id].slv_addr;
+  uint8_t rbuf[12] = {0};
+  uint8_t rlen = 0;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
   static int fd = -1;
 
   if ( fd < 0 ) {
-    fd = i2c_cdev_slave_open(adm1278_bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
     if ( fd < 0 ) {
-      syslog(LOG_WARNING, "Failed to open bus %d", adm1278_bus);
+      syslog(LOG_WARNING, "Failed to open bus %u", bus);
       return READING_NA;
     }
   }
 
-  uint8_t rbuf[9] = {0x00};
-  uint8_t rlen = ( cmd != ADM1278_EIN_EXT )?2:9;
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
+  switch (cmd) {
+    case ADM1278_EIN_EXT:
+      rlen = 9;
+      break;
+    case PMBUS_READ_EIN:
+      rlen = 7;
+      break;
+    default:
+      rlen = 2;
+      break;
+  }
+
   while ( ret < 0 && retry-- > 0 ) {
     ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, 1, rbuf, rlen);
   }
@@ -1946,67 +2045,86 @@ get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t
     return READING_NA;
   }
 
-  if ( cmd == ADM1278_EIN_EXT ) {
-    if ( raw_data != NULL ) memcpy(raw_data, rbuf, rlen);
+  if ( raw_data != NULL ) {
+    memcpy(raw_data, rbuf, rlen);
   } else {
     float m = hsc_info_list[hsc_id].info[type].m;
     float b = hsc_info_list[hsc_id].info[type].b;
     float r = hsc_info_list[hsc_id].info[type].r;
     *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
   }
+
   return PAL_EOK;
 }
 
 static int
-read_hsc_ein(uint8_t hsc_id, float *value) {
-#define EIN_ROLLOVER_CNT 0x10000
-#define EIN_SAMPLE_CNT 0x1000000
-#define EIN_ENERGY_CNT 0x800000
-#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
-  uint8_t raw_data[9] = {0x00};
-
-  if ( get_hsc_reading(hsc_id, -1, ADM1278_EIN_EXT, value, raw_data) < 0 ) return READING_NA;
-  if ( raw_data[0] != 8 ) return READING_NA; //first byte is the num. of bytes. It should be 8.
-
-  uint32_t energy = 0, rollover = 0, sample = 0;
-  uint32_t pre_energy = 0, pre_rollover = 0, pre_sample = 0;
-  uint32_t sample_diff = 0;
-  double energy_diff = 0;
+calculate_ein(struct hsc_ein *st_ein, float *value) {
+  int ret = READING_NA;
+  uint32_t energy, rollover, sample;
+  uint32_t sample_diff;
+  double energy_diff;
   static uint32_t last_energy = 0, last_rollover = 0, last_sample = 0;
   static bool pre_ein = false;
 
-  //record the previous data
-  pre_energy   = last_energy;
-  pre_rollover = last_rollover;
-  pre_sample   = last_sample;
+  do {
+    if (pre_ein == false) {  // data isn't enough
+      pre_ein = true;
+      break;
+    }
 
-  //record the current data
-  last_energy   = energy   = (raw_data[3]<<16) | (raw_data[2]<<8) | raw_data[1];
-  last_rollover = rollover = (raw_data[5]<<8) | raw_data[4];
-  last_sample   = sample   = (raw_data[8]<<16) | (raw_data[7]<<8) | raw_data[6];
+    energy   = st_ein->energy;
+    rollover = st_ein->rollover;
+    sample   = st_ein->sample;
+    if ((last_rollover > rollover) || ((last_rollover == rollover) && (last_energy > energy))) {
+      rollover += st_ein->wrap_rollover;
+    }
+    if (last_sample > sample) {
+      sample += st_ein->wrap_sample;
+    }
 
-  //return since data isn't enough
-  if ( pre_ein == false ) {
-    pre_ein = true;
+    energy_diff = (double)((rollover - last_rollover)*st_ein->wrap_energy + energy - last_energy);
+    if (energy_diff < 0) {
+      break;
+    }
+    sample_diff = sample - last_sample;
+    if (sample_diff == 0) {
+      break;
+    }
+
+    *value = (float)(energy_diff/sample_diff);
+    ret = PAL_EOK;
+  } while (0);
+
+  last_energy   = st_ein->energy;
+  last_rollover = st_ein->rollover;
+  last_sample   = st_ein->sample;
+
+  return ret;
+}
+
+static int
+read_hsc_ein(uint8_t hsc_id, float *value) {
+#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
+  uint8_t buf[12] = {0};
+  static struct hsc_ein st_ein = {
+    .wrap_energy = 0x800000,
+    .wrap_rollover = 0x10000,
+    .wrap_sample = 0x1000000,
+  };
+
+  if ( get_hsc_reading(hsc_id, -1, ADM1278_EIN_EXT, value, buf) ||
+       buf[0] != 8 ) {
     return READING_NA;
   }
 
-  if ((pre_rollover > rollover) || ((pre_rollover == rollover) && (pre_energy > energy))) {
-    rollover += EIN_ROLLOVER_CNT;
+  st_ein.energy   = (buf[3]<<16) | (buf[2]<<8) | buf[1];
+  st_ein.rollover = (buf[5]<<8) | buf[4];
+  st_ein.sample   = (buf[8]<<16) | (buf[7]<<8) | buf[6];
+  if ( calculate_ein(&st_ein, value) ) {
+    return READING_NA;
   }
-  if (pre_sample > sample) {
-    sample += EIN_SAMPLE_CNT;
-  }
+  *value = *value/256 * PIN_COEF/ADM1278_RSENSE;
 
-  energy_diff = (double)(rollover-pre_rollover)*EIN_ENERGY_CNT + (double)energy - (double)pre_energy;
-  if (energy_diff < 0) {
-    return READING_NA;
-  }
-  sample_diff = sample - pre_sample;
-  if (sample_diff == 0) {
-    return READING_NA;
-  }
-  *value = (float)((energy_diff/sample_diff/256) * PIN_COEF/ADM1278_RSENSE);
   return PAL_EOK;
 }
 
@@ -2049,6 +2167,117 @@ read_hsc_peak_iout(uint8_t hsc_id, float *value) {
 static int
 read_hsc_peak_pin(uint8_t hsc_id, float *value) {
   if ( get_hsc_reading(hsc_id, HSC_POWER, ADM1278_PEAK_PIN, value, NULL) < 0 ) return READING_NA;
+  return PAL_EOK;
+}
+
+static int
+read_mp5990_ein(uint8_t hsc_id, float *value) {
+  uint8_t buf[12] = {0};
+  static struct hsc_ein st_ein = {
+    .wrap_energy = 0x8000,
+    .wrap_rollover = 0x100,
+    .wrap_sample = 0x1000000,
+  };
+
+  if ( get_hsc_reading(hsc_id, -1, PMBUS_READ_EIN, value, buf) ||
+       buf[0] != 6 ) {
+    return READING_NA;
+  }
+
+  st_ein.energy   = (buf[2]<<8) | buf[1];
+  st_ein.rollover = buf[3];
+  st_ein.sample   = (buf[6]<<16) | (buf[5]<<8) | buf[4];
+  if ( calculate_ein(&st_ein, value) ) {
+    return READING_NA;
+  }
+
+  return PAL_EOK;
+}
+
+
+
+/* curr/power calibration */
+static void
+value_adjust(const struct power_coeff *table, float *value) {
+  float x0, x1, y0, y1, x;
+  int i;
+
+  x = *value;
+  x0 = table[0].val;
+  y0 = table[0].coeff;
+  if (x0 >= *value) {
+    *value = x * y0;
+    return;
+  }
+
+  for (i = 1; table[i].val > 0.0; i++) {
+    if (*value < table[i].val)
+      break;
+
+    x0 = table[i].val;
+    y0 = table[i].coeff;
+  }
+  if (table[i].val <= 0.0) {
+    *value = x * y0;
+    return;
+  }
+
+  // if value is bwtween x0 and x1, use linear interpolation method.
+  x1 = table[i].val;
+  y1 = table[i].coeff;
+  *value = (y0 + (((y1 - y0)/(x1 - x0)) * (x - x0))) * x;
+  return;
+}
+
+static int
+read_mp5990_pin(uint8_t hsc_id, float *value) {
+  if ( get_hsc_reading(hsc_id, HSC_POWER, PMBUS_READ_PIN, value, NULL) ) {
+    return READING_NA;
+  }
+  value_adjust(mp5990_pwr_cali_table, value);
+  return PAL_EOK;
+}
+
+static int
+read_mp5990_iout(uint8_t hsc_id, float *value) {
+  if ( get_hsc_reading(hsc_id, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) ) {
+    return READING_NA;
+  }
+  value_adjust(mp5990_curr_cali_table, value);
+  return PAL_EOK;
+}
+
+static int
+read_mp5990_peak_iout(uint8_t hsc_id, float *value) {
+  static float peak = 0;
+
+  if ( get_hsc_reading(hsc_id, HSC_CURRENT, MP5990_PEAK_IOUT, value, NULL) ) {
+    return READING_NA;
+  }
+
+  // it's "read-clear" data, so need to be cached
+  if (peak > *value) {
+    *value = peak;
+  } else {
+    peak = *value;
+  }
+  return PAL_EOK;
+}
+
+static int
+read_mp5990_peak_pin(uint8_t hsc_id, float *value) {
+  static float peak = 0;
+
+  if ( get_hsc_reading(hsc_id, HSC_POWER, MP5990_PEAK_PIN, value, NULL) ) {
+    return READING_NA;
+  }
+
+  // it's "read-clear" data, so need to be cached
+  if (peak > *value) {
+    *value = peak;
+  } else {
+    peak = *value;
+  }
   return PAL_EOK;
 }
 
@@ -2153,7 +2382,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
 }
 
 static int
-pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status){
+pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t bmc_location, const uint8_t config_status, const uint8_t type_2ou){
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
   uint8_t power_status = 0;
@@ -2233,13 +2462,15 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
         ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, FEXP_BIC_INTF);
+    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU &&
+                (type_2ou == DP_RISER_BOARD) ) { // DP Riser
+      // Basically, DP only has SB_BIC
+      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
                 (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
                 ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
                                                                   //So, we take 0x49 ~ 0x4D here
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-    } else if ( sensor_num == 0x43 && (config_status & PRESENT_2OU) == PRESENT_2OU ) { // DP Riser
-      ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
       if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return READING_NA;
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
@@ -2335,6 +2566,218 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   return ret;
 }
 
+static int
+sensors_read_hsc(uint8_t sensor_num, float *value) {
+#define HSC_LTC4282_CHIP "ltc4282-i2c-11-40"
+  int ret = 0;
+
+  switch (sensor_num) {
+    case BMC_SENSOR_HSC_PEAK_IOUT:
+      ret = sensors_read(HSC_LTC4282_CHIP, "curr1_max", value);
+      break;
+    case BMC_SENSOR_HSC_PEAK_PIN:
+      ret = sensors_read(HSC_LTC4282_CHIP, "power1_input_highest", value);
+      break;
+    case BMC_SENSOR_HSC_VIN:
+      ret = sensors_read(HSC_LTC4282_CHIP, "HSC_VIN", value);
+      break;
+    case BMC_SENSOR_HSC_PIN:
+      ret = sensors_read(HSC_LTC4282_CHIP, "HSC_PIN", value);
+      break;
+    case BMC_SENSOR_HSC_IOUT:
+      ret = sensors_read(HSC_LTC4282_CHIP, "HSC_IOUT", value);
+      break;
+    default:
+      syslog(LOG_ERR, "%s Invalid sensor number: %u", __func__, sensor_num);
+      ret = READING_NA;
+      break;
+  }
+
+  return ret;
+}
+
+static int
+i2c_rdwr_msg_transfer_retry(int fd, uint8_t addr, uint8_t *tbuf,
+			  uint8_t tcount, uint8_t *rbuf, uint8_t rcount) {
+  int ret = -1;
+  int retry = MAX_RETRY;
+
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tcount, rbuf, rcount);
+  }
+
+  return ret;
+}
+
+enum {
+  SET_BIT = 0,
+  CLEAR_BIT,
+};
+
+static int
+set_clear_bit(int fd, uint8_t addr, uint8_t reg, uint8_t bit, uint8_t op) {
+  int ret = 0;
+  uint8_t tbuf[2] = {reg};
+  uint8_t rbuf[1] = {0};
+
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 1, rbuf, 1);
+  if (ret < 0) return ret;
+
+  tbuf[1] = rbuf[0];
+
+  if (op == SET_BIT) {
+    tbuf[1] = SETBIT(tbuf[1], bit);
+  } else if (op == CLEAR_BIT) {
+    tbuf[1] = CLEARBIT(tbuf[1], bit);
+  } else {
+    return -1;
+  }
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 2, rbuf, 0);
+
+  return ret;
+}
+
+static int
+read_ltc4282_ein(uint8_t hsc_id, float *value) {
+#define LTC4282_ENERGY_REG   0x12
+#define LTC4282_CONTROL_REG  0x1D
+#define LTC4282_STATUS_REG   0x1f
+#define LTC4282_METER_HALT_BIT 5
+#define LTC4282_METER_RESET_BIT 6
+
+  const uint8_t bus = 11;
+  uint8_t addr = LTC4282_SLAVE_ADDR;
+  int fd = 0;
+  int ret = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint64_t energy = 0;
+  uint32_t counter = 0;
+  bool ticker_overflow = false;
+  bool meter_overflow = false;
+  static uint64_t last_energy = 0;
+  static uint32_t last_counter = 0;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s Failed to open bus %u", __func__, bus);
+    return READING_NA;
+  }
+
+// halt
+  ret = set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_HALT_BIT, SET_BIT);
+  if (ret < 0) {
+    goto exit;
+  }
+
+// get readings (energy, time counter)
+  tbuf[0] = LTC4282_ENERGY_REG;
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 1, rbuf, 10);
+  if (ret < 0) {
+    goto exit;
+  }
+
+  energy = ((uint64_t)rbuf[0]<<(uint64_t)40) |
+           ((uint64_t)rbuf[1]<<(uint64_t)32) |
+           ((uint64_t)rbuf[2]<<(uint64_t)24) |
+           ((uint64_t)rbuf[3]<<(uint64_t)16) |
+           ((uint64_t)rbuf[4]<<(uint64_t)8)  |
+           ((uint64_t)rbuf[5]);
+  counter = ((uint32_t)rbuf[6]<<(uint32_t)24) |
+            ((uint32_t)rbuf[7]<<(uint32_t)16) |
+            ((uint32_t)rbuf[8]<<(uint32_t)8) |
+            ((uint32_t)rbuf[9]);
+
+// get overflow flag
+  tbuf[0] = LTC4282_STATUS_REG;
+  ret = i2c_rdwr_msg_transfer_retry(fd, addr, tbuf, 1, rbuf, 1);
+  if (ret < 0) {
+    goto exit;
+  }
+  meter_overflow = BIT(rbuf[0], 0);
+  ticker_overflow = BIT(rbuf[0], 1);
+
+// overflow
+  if (meter_overflow || ticker_overflow) {
+    // reset meter, counter and status reg
+    set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_RESET_BIT, SET_BIT);
+    set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_RESET_BIT, CLEAR_BIT);
+    ret = READING_NA;
+    goto exit;
+  }
+// calculate ein
+  if ((counter - last_counter) == 0) goto exit;
+  *value = (float)(((energy - last_energy)/(counter - last_counter)));
+  *value = (*value)*0x04*16.64*256/0.0005/65535/65535/100;
+
+  last_energy = energy;
+  last_counter = counter;
+
+exit:
+// continue
+  set_clear_bit(fd, addr, LTC4282_CONTROL_REG, LTC4282_METER_HALT_BIT, CLEAR_BIT);
+
+  if (ret < 0) ret = READING_NA;
+  close(fd);
+
+  return ret;
+}
+
+static void
+update_hsc_sensor_map(uint8_t hsc_det) {
+  switch(hsc_det) {
+    case HSC_DET_LTC4282:
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = BMC_SENSOR_HSC_PEAK_IOUT;
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = BMC_SENSOR_HSC_PEAK_PIN;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_EIN].id = BMC_SENSOR_HSC_EIN;
+      sensor_map[BMC_SENSOR_HSC_EIN].read_sensor = read_ltc4282_ein;
+      sensor_map[BMC_SENSOR_HSC_VIN].id = BMC_SENSOR_HSC_VIN;
+      sensor_map[BMC_SENSOR_HSC_VIN].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
+      sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
+      sensor_map[BMC_SENSOR_HSC_PIN].id = BMC_SENSOR_HSC_PIN;
+      sensor_map[BMC_SENSOR_HSC_PIN].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_HSC_IOUT].id = BMC_SENSOR_HSC_IOUT;
+      sensor_map[BMC_SENSOR_HSC_IOUT].read_sensor = sensors_read_hsc;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+      break;
+    case HSC_DET_MP5990:
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].read_sensor = read_mp5990_peak_iout;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].read_sensor = read_mp5990_peak_pin;
+      sensor_map[BMC_SENSOR_HSC_EIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_EIN].read_sensor = read_mp5990_ein;
+      sensor_map[BMC_SENSOR_HSC_VIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_TEMP].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PIN].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_PIN].read_sensor = read_mp5990_pin;
+      sensor_map[BMC_SENSOR_HSC_IOUT].id = HSC_MP5990;
+      sensor_map[BMC_SENSOR_HSC_IOUT].read_sensor = read_mp5990_iout;
+      break;
+    case HSC_DET_ADM1276: 
+      sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_EIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_VIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
+      sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
+      sensor_map[BMC_SENSOR_HSC_PIN].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_HSC_IOUT].id = HSC_ADM1276;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
+      sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+     break;
+    default:
+      syslog(LOG_ERR, "HSC detection: Unknown source: %u, using main source configuration", hsc_det);
+      break;
+  }
+
+  return;
+}
+
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
@@ -2342,9 +2785,12 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char fru_name[32];
   int ret=0;
   uint8_t id=0;
+  uint8_t hsc_det;
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
+  static uint8_t type_2ou[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   static uint8_t exp_status = 0;
+  static uint8_t hsc_init = 0;
 
   if ( bmc_location == 0 ) {
     if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -2358,9 +2804,25 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         sensor_map[BMC_SENSOR_PWM1].id |= PWM_PLAT_SET;
         sensor_map[BMC_SENSOR_PWM2].id |= PWM_PLAT_SET;
         sensor_map[BMC_SENSOR_PWM3].id |= PWM_PLAT_SET;
+
+        // unnecessary to init for 2nd source HSC
+        hsc_init = 1;
       }
     }
   }
+
+  do {  // initialization for 2nd source HSC
+    if ( hsc_init || fru != FRU_BMC ) {
+      break;
+    }
+    if ( fby3_common_get_hsc_bb_detect(&hsc_det) ) {
+      break;
+    }
+    if ( hsc_det != HSC_DET_ADM1278 ) {
+      update_hsc_sensor_map(hsc_det);
+    }
+    hsc_init = 1;
+  } while (0);
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -2379,12 +2841,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         } else config_status[fru-1] = (uint8_t)ret;
         syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
       }
+      if ((type_2ou[fru-1] == UNKNOWN_BOARD) &&
+          (config_status[fru-1] != CONFIG_UNKNOWN) &&
+          (config_status[fru-1] & PRESENT_2OU) == PRESENT_2OU) {
+        if (fby3_common_get_2ou_board_type(FRU_SLOT1, &type_2ou[fru-1]) < 0) {
+          syslog(LOG_WARNING, "%s() Failed to get 2ou board type", __func__);
+        }
+      }
 
       //if we can't get the config status of the blade, return READING_NA.
-      if ( pal_is_fw_update_ongoing(fru) == false && \
-           config_status[fru-1] != CONFIG_UNKNOWN ) {
+      if ( config_status[fru-1] != CONFIG_UNKNOWN ) {
         if ( pal_sdr_init(fru) == ERR_NOT_READY ) ret = READING_NA;
-        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1]);
+        else ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[fru-1], type_2ou[fru-1]);
       } else ret = READING_NA;
       break;
     case FRU_BMC:
@@ -2423,7 +2891,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if ( pal_sdr_init(fru) == ERR_NOT_READY ) {
         ret = READING_NA;
       } else {
-        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1]);
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1], type_2ou[fru-1]);
       }
       break;
 
@@ -2717,6 +3185,100 @@ pal_set_sdr_init(uint8_t fru, bool set) {
   sdr_init_done[fru - 1] = set;
 }
 
+static void
+host_sensors_sdr_init(uint8_t fru, sensor_info_t *sinfo)
+{
+  sdr_full_t *sdr;
+  int retry = 3;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  while (retry > 0) {
+    if (fby3_common_get_2ou_board_type(fru, &type_2ou) == 0) {
+      break;
+    }
+    syslog(LOG_ERR, "%s() failed to get 2ou board type", __func__);
+    sleep(1);
+    retry--;
+  }
+
+  if (type_2ou == DP_RISER_BOARD) {
+    /* BIC_SENSOR_DP_NC_HSM_TEMP */
+    sinfo[BIC_SENSOR_DP_NC_HSM_TEMP].valid = true;
+    sdr = &sinfo[BIC_SENSOR_DP_NC_HSM_TEMP].sdr;
+    memset(sdr, 0, sizeof(*sdr));
+    strcpy(sdr->str, "DP_NC_HSM_TEMP");
+    sdr->str_type_len = strlen(sdr->str) + 1;
+    sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+    sdr->sensor_units1 = 0; // No modifiers.
+    sdr->sensor_units2 = TEMP; // C
+    sdr->sensor_num = BIC_SENSOR_DP_NC_HSM_TEMP;
+
+    sdr->m_val = 1;
+    sdr->m_tolerance = 0;
+    sdr->b_val = 0;
+    sdr->b_accuracy = 0;
+    sdr->rb_exp = 0;
+    sdr->uc_thresh = 90;
+    sdr->unc_thresh = 0;
+    sdr->unr_thresh = 0;
+    sdr->lc_thresh = 0;
+    sdr->lnc_thresh = 0;
+    sdr->lnr_thresh = 0;
+    sdr->pos_hyst = 0;
+    sdr->neg_hyst = 0;
+
+    /* BIC_SENSOR_DP_NC_HSM_FAN */
+    sinfo[BIC_SENSOR_DP_NC_HSM_FAN].valid = true;
+    sdr = &sinfo[BIC_SENSOR_DP_NC_HSM_FAN].sdr;
+    memset(sdr, 0, sizeof(*sdr));
+    strcpy(sdr->str, "DP_NC_HSM_FAN");
+    sdr->str_type_len = strlen(sdr->str) + 1;
+    sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+    sdr->sensor_units1 = 0; // No modifiers.
+    sdr->sensor_units2 = FAN; // RPM
+    sdr->sensor_num = BIC_SENSOR_DP_NC_HSM_FAN;
+
+    sdr->m_val = 1;
+    sdr->m_tolerance = 0;
+    sdr->b_val = 0;
+    sdr->b_accuracy = 0;
+    sdr->rb_exp = 0x20;
+    sdr->uc_thresh = 0;
+    sdr->unc_thresh = 0;
+    sdr->unr_thresh = 0;
+    sdr->lc_thresh = 0;
+    sdr->lnc_thresh = 0;
+    sdr->lnr_thresh = 0;
+    sdr->pos_hyst = 0;
+    sdr->neg_hyst = 0;
+
+    /* BIC_SENSOR_DP_NC_HSM_BAT */
+    sinfo[BIC_SENSOR_DP_NC_HSM_BAT].valid = true;
+    sdr = &sinfo[BIC_SENSOR_DP_NC_HSM_BAT].sdr;
+    memset(sdr, 0, sizeof(*sdr));
+    strcpy(sdr->str, "DP_NC_HSM_BAT");
+    sdr->str_type_len = strlen(sdr->str) + 1;
+    sdr->str_type_len |= (TYPE_ASCII_8BIT << 6);
+    sdr->sensor_units1 = 0; // No modifiers.
+    sdr->sensor_units2 = VOLT; // Volt
+    sdr->sensor_num = BIC_SENSOR_DP_NC_HSM_BAT;
+
+    sdr->m_val = 16;
+    sdr->m_tolerance = 0;
+    sdr->b_val = 0;
+    sdr->b_accuracy = 0;
+    sdr->rb_exp = 0xD0;
+    sdr->uc_thresh = 0;
+    sdr->unc_thresh = 0;
+    sdr->unr_thresh = 0;
+    sdr->lc_thresh = 157;
+    sdr->lnc_thresh = 175;
+    sdr->lnr_thresh = 0;
+    sdr->pos_hyst = 0;
+    sdr->neg_hyst = 0;
+  }
+}
+
 int
 pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   char path[64] = {0};
@@ -2826,6 +3388,16 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
     }
   }
 
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() Failed to run _sdr_init\n", __func__);
+    goto error_exit;
+  }
+
+  // update SDR for host source sensor
+  if (fru >= FRU_SLOT1 && fru <= FRU_SLOT4) {
+    host_sensors_sdr_init(fru, g_sinfo[fru-1]);
+  }
+
 error_exit:
   return ret;
 }
@@ -2850,6 +3422,29 @@ pal_sdr_init(uint8_t fru) {
   }
 
   return 0;
+}
+
+int
+pal_correct_sensor_reading_from_cache(uint8_t fru, uint8_t sensor_id, float *value)
+{
+  int raw_value = (int) *value;
+  int ret = 0;
+  sdr_full_t *sdr;
+  if ( pal_sdr_init(fru) == ERR_NOT_READY ){
+    ret = -1;
+    syslog(LOG_WARNING, "%s() fru%d sensor number 0x%02x sdr not ready", __func__, fru, sensor_id);
+  } else {
+    if (g_sinfo[fru-1][sensor_id].valid) {
+      // syslog(LOG_WARNING, "%s() fru%d sensor number 0x%02x sdr is valid", __func__, fru, sensor_id);
+      sdr = &g_sinfo[fru-1][sensor_id].sdr;
+      pal_convert_sensor_reading(sdr, raw_value, value);
+    } else {
+      syslog(LOG_WARNING, "%s() fru%d sensor number 0x%02x sdr not valid", __func__, fru, sensor_id);
+      ret = -1;
+    }
+  }
+
+  return ret;
 }
 
 int
@@ -2933,4 +3528,490 @@ pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
   }
 
   return false;
+}
+
+static thresh_sensor_t *
+get_sensor_desc(uint8_t fru, uint8_t snr_num) {
+  switch(fru) {
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      fru = NB_TO_IDX(fru);
+      break;
+    default:
+      break;
+  }
+  return &m_snr_desc[fru-1][snr_num];
+}
+
+int
+pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr) {
+
+  thresh_sensor_t *psnr = (thresh_sensor_t *)snr;
+  thresh_sensor_t *snr_desc;
+
+  snr_desc = get_sensor_desc(fru, snr_num);
+  strncpy(snr_desc->name, psnr->name, sizeof(snr_desc->name));
+  snr_desc->name[sizeof(snr_desc->name)-1] = 0;
+  return 0;
+}
+
+void
+pal_sensor_assert_handle_gpv3(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128];
+  thresh_sensor_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_GPV3_ADC_P12V_STBY_VOL:
+    case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+    case BIC_GPV3_ADC_P1V8_VOL:
+    case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+    case BIC_GPV3_VR_P1V8_VOLTAGE:
+    case BIC_GPV3_VR_P0V84_VOLTAGE:
+    case BIC_GPV3_E1S_1_12V_VOLTAGE:
+    case BIC_GPV3_E1S_2_12V_VOLTAGE:
+    case BIC_GPV3_INA233_VOL_DEV0:
+    case BIC_GPV3_INA233_VOL_DEV1:
+    case BIC_GPV3_INA233_VOL_DEV2:
+    case BIC_GPV3_INA233_VOL_DEV3:
+    case BIC_GPV3_INA233_VOL_DEV4:
+    case BIC_GPV3_INA233_VOL_DEV5:
+    case BIC_GPV3_INA233_VOL_DEV6:
+    case BIC_GPV3_INA233_VOL_DEV7:
+    case BIC_GPV3_INA233_VOL_DEV8:
+    case BIC_GPV3_INA233_VOL_DEV9:
+    case BIC_GPV3_INA233_VOL_DEV10:
+    case BIC_GPV3_INA233_VOL_DEV11:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Assert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_assert_handle_cwc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128];
+  char fru_name[32] = {0};
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  switch(fru) {
+    case FRU_SLOT1:
+      switch(snr_num) {
+        case BIC_CWC_SENSOR_NUM_V_12:
+        case BIC_CWC_SENSOR_NUM_V_3_3_S:
+        case BIC_CWC_SENSOR_NUM_V_1_8:
+        case BIC_CWC_SENSOR_NUM_V_5:
+        case BIC_CWC_SENSOR_NUM_V_P1V8_VR:
+        case BIC_CWC_SENSOR_NUM_V_P0V84_VR:
+        case BIC_CWC_SENSOR_NUM_V_3V3_AUX:
+        case BIC_CWC_SENSOR_NUM_V_HSC_CWC:
+        case BIC_CWC_SENSOR_NUM_V_HSC_BOT:
+        case BIC_CWC_SENSOR_NUM_V_HSC_TOP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %.2f %s - Assert", snr_desc->name, val, thresh_name);
+          break;
+        default:
+         return;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      ret = pal_get_fruid_name(fru, fru_name);
+      if ( ret < 0) {
+        return;
+      }
+      switch(snr_num) {
+        case BIC_GPV3_ADC_P12V_STBY_VOL:
+        case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+        case BIC_GPV3_ADC_P1V8_VOL:
+        case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+        case BIC_GPV3_VR_P1V8_VOLTAGE:
+        case BIC_GPV3_VR_P0V84_VOLTAGE:
+        case BIC_GPV3_E1S_1_12V_VOLTAGE:
+        case BIC_GPV3_E1S_2_12V_VOLTAGE:
+        case BIC_GPV3_INA233_VOL_DEV0:
+        case BIC_GPV3_INA233_VOL_DEV1:
+        case BIC_GPV3_INA233_VOL_DEV2:
+        case BIC_GPV3_INA233_VOL_DEV3:
+        case BIC_GPV3_INA233_VOL_DEV4:
+        case BIC_GPV3_INA233_VOL_DEV5:
+        case BIC_GPV3_INA233_VOL_DEV6:
+        case BIC_GPV3_INA233_VOL_DEV7:
+        case BIC_GPV3_INA233_VOL_DEV8:
+        case BIC_GPV3_INA233_VOL_DEV9:
+        case BIC_GPV3_INA233_VOL_DEV10:
+        case BIC_GPV3_INA233_VOL_DEV11:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %s %.2f%s - Assert", fru_name, snr_desc->name, val, thresh_name);
+          break;
+        default:
+          return;
+      }
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cri_sel [128];
+  char thresh_name[10];
+  static uint8_t board_type = UNKNOWN_BOARD;
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  fru = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+
+  switch (thresh) {
+    case UNR_THRESH:
+      sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+      sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+      sprintf(thresh_name, "UNC");
+      break;
+    case LNR_THRESH:
+      sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+      sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+      sprintf(thresh_name, "LNC");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() Wrong thresh enum value\n", __func__);
+      return;
+  }
+
+  if (fru != FRU_BMC && fru != FRU_NIC) {
+    ret = pal_get_2ou_board_type(fru, &board_type);
+    if (ret < 0) {
+      return;
+    }
+  }
+
+  switch (board_type) {
+    case GPV3_MCHP_BOARD:
+    case GPV3_BRCM_BOARD:
+      pal_sensor_assert_handle_gpv3(fru, snr_num, val, thresh_name);
+      break;
+    case CWC_MCHP_BOARD:
+      pal_sensor_assert_handle_cwc(fru, snr_num, val, thresh_name);
+      break;
+    default:
+      break;
+  }
+
+  switch(snr_num) {
+    case BMC_SENSOR_FAN0_TACH:
+    case BMC_SENSOR_FAN1_TACH:
+    case BMC_SENSOR_FAN2_TACH:
+    case BMC_SENSOR_FAN3_TACH:
+    case BMC_SENSOR_FAN4_TACH:
+    case BMC_SENSOR_FAN5_TACH:
+    case BMC_SENSOR_FAN6_TACH:
+    case BMC_SENSOR_FAN7_TACH:
+    case BIC_SENSOR_CPU_TEMP:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.0f %s - Assert", snr_desc->name, val, thresh_name);
+      break;
+    case BMC_SENSOR_P5V:
+    case BMC_SENSOR_P12V:
+    case BMC_SENSOR_P3V3_STBY:
+    case BMC_SENSOR_P1V15_BMC_STBY:
+    case BMC_SENSOR_P1V2_BMC_STBY:
+    case BMC_SENSOR_P2V5_BMC_STBY:
+    case BMC_SENSOR_MEDUSA_VOUT:
+    case BMC_SENSOR_HSC_VIN:
+    case BMC_SENSOR_MEDUSA_VIN:
+    case BMC_SENSOR_MEDUSA_VDELTA:
+    case BMC_SENSOR_PDB_DL_VDELTA:
+    case BMC_SENSOR_PDB_BB_VDELTA:
+    case BMC_SENSOR_NIC_P12V:
+    case BIC_SENSOR_P12V_STBY_VOL:
+    case BIC_SENSOR_P3V_BAT_VOL:
+    case BIC_SENSOR_P3V3_STBY_VOL:
+    case BIC_SENSOR_P1V05_PCH_STBY_VOL:
+    case BIC_SENSOR_PVNN_PCH_STBY_VOL:
+    case BIC_SENSOR_HSC_INPUT_VOL:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_P3V3_STBY_VR_VOL:
+    case BIC_PVDDQ_ABC_VR_VOL:
+    case BIC_PVDDQ_DEF_VR_VOL:
+    case BIC_BB_SENSOR_MEDUSA_VOUT:
+    case BIC_BB_SENSOR_HSC_VIN:
+    case BIC_BB_SENSOR_P5V:
+    case BIC_BB_SENSOR_P12V:
+    case BIC_BB_SENSOR_P3V3_STBY:
+    case BIC_BB_SENSOR_P1V2_BMC_STBY:
+    case BIC_BB_SENSOR_P2V5_BMC_STBY:
+    case BIC_BB_SENSOR_MEDUSA_VIN:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Assert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle_gpv3(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128];
+  thresh_sensor_t *snr_desc;
+
+  switch (snr_num) {
+    case BIC_GPV3_ADC_P12V_STBY_VOL:
+    case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+    case BIC_GPV3_ADC_P1V8_VOL:
+    case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+    case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+    case BIC_GPV3_VR_P1V8_VOLTAGE:
+    case BIC_GPV3_VR_P0V84_VOLTAGE:
+    case BIC_GPV3_E1S_1_12V_VOLTAGE:
+    case BIC_GPV3_E1S_2_12V_VOLTAGE:
+    case BIC_GPV3_INA233_VOL_DEV0:
+    case BIC_GPV3_INA233_VOL_DEV1:
+    case BIC_GPV3_INA233_VOL_DEV2:
+    case BIC_GPV3_INA233_VOL_DEV3:
+    case BIC_GPV3_INA233_VOL_DEV4:
+    case BIC_GPV3_INA233_VOL_DEV5:
+    case BIC_GPV3_INA233_VOL_DEV6:
+    case BIC_GPV3_INA233_VOL_DEV7:
+    case BIC_GPV3_INA233_VOL_DEV8:
+    case BIC_GPV3_INA233_VOL_DEV9:
+    case BIC_GPV3_INA233_VOL_DEV10:
+    case BIC_GPV3_INA233_VOL_DEV11:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Deassert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle_cwc(uint8_t fru, uint8_t snr_num, float val, char* thresh_name) {
+  char cri_sel[128] = {0};
+  char fru_name[32] = {0};
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  switch(fru) {
+    case FRU_SLOT1:
+      switch(snr_num) {
+        case BIC_CWC_SENSOR_NUM_V_12:
+        case BIC_CWC_SENSOR_NUM_V_3_3_S:
+        case BIC_CWC_SENSOR_NUM_V_1_8:
+        case BIC_CWC_SENSOR_NUM_V_5:
+        case BIC_CWC_SENSOR_NUM_V_P1V8_VR:
+        case BIC_CWC_SENSOR_NUM_V_P0V84_VR:
+        case BIC_CWC_SENSOR_NUM_V_3V3_AUX:
+        case BIC_CWC_SENSOR_NUM_V_HSC_CWC:
+        case BIC_CWC_SENSOR_NUM_V_HSC_BOT:
+        case BIC_CWC_SENSOR_NUM_V_HSC_TOP:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %.2f %s - Deassert", snr_desc->name, val, thresh_name);
+          break;
+        default:
+          return;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      ret = pal_get_fruid_name(fru, fru_name);
+      if ( ret < 0) {
+        return;
+      }
+      switch(snr_num) {
+        case BIC_GPV3_ADC_P12V_STBY_VOL:
+        case BIC_GPV3_ADC_P3V3_STBY_AUX_VOL:
+        case BIC_GPV3_ADC_P1V8_VOL:
+        case BIC_GPV3_P3V3_STBY1_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY2_VOLTAGE:
+        case BIC_GPV3_P3V3_STBY3_VOLTAGE:
+        case BIC_GPV3_VR_P1V8_VOLTAGE:
+        case BIC_GPV3_VR_P0V84_VOLTAGE:
+        case BIC_GPV3_E1S_1_12V_VOLTAGE:
+        case BIC_GPV3_E1S_2_12V_VOLTAGE:
+        case BIC_GPV3_INA233_VOL_DEV0:
+        case BIC_GPV3_INA233_VOL_DEV1:
+        case BIC_GPV3_INA233_VOL_DEV2:
+        case BIC_GPV3_INA233_VOL_DEV3:
+        case BIC_GPV3_INA233_VOL_DEV4:
+        case BIC_GPV3_INA233_VOL_DEV5:
+        case BIC_GPV3_INA233_VOL_DEV6:
+        case BIC_GPV3_INA233_VOL_DEV7:
+        case BIC_GPV3_INA233_VOL_DEV8:
+        case BIC_GPV3_INA233_VOL_DEV9:
+        case BIC_GPV3_INA233_VOL_DEV10:
+        case BIC_GPV3_INA233_VOL_DEV11:
+          snr_desc = get_sensor_desc(fru, snr_num);
+          sprintf(cri_sel, "%s %s %.2f%s - Deassert", fru_name, snr_desc->name, val, thresh_name);
+          break;
+        default:
+          return;
+      }
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+void
+pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
+  char cri_sel [128];
+  char thresh_name[10];
+  static uint8_t board_type = UNKNOWN_BOARD;
+  int ret = 0;
+  thresh_sensor_t *snr_desc;
+
+  fru = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
+
+  switch (thresh) {
+    case UNR_THRESH:
+      sprintf(thresh_name, "UNR");
+      break;
+    case UCR_THRESH:
+      sprintf(thresh_name, "UCR");
+      break;
+    case UNC_THRESH:
+      sprintf(thresh_name, "UNC");
+      break;
+    case LNR_THRESH:
+      sprintf(thresh_name, "LNR");
+      break;
+    case LCR_THRESH:
+      sprintf(thresh_name, "LCR");
+      break;
+    case LNC_THRESH:
+      sprintf(thresh_name, "LNC");
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() Wrong thresh enum value\n", __func__);
+      return;
+  }
+
+  if (fru != FRU_BMC && fru != FRU_NIC) {
+    ret = pal_get_2ou_board_type(fru, &board_type);
+    if (ret < 0) {
+      return;
+    }
+  }
+
+  switch (board_type) {
+    case GPV3_MCHP_BOARD:
+    case GPV3_BRCM_BOARD:
+      pal_sensor_deassert_handle_gpv3(fru, snr_num, val, thresh_name);
+      break;
+    case CWC_MCHP_BOARD:
+      pal_sensor_deassert_handle_cwc(fru, snr_num, val, thresh_name);
+      break;
+    default:
+      break;
+  }
+
+  switch(snr_num) {
+    case BMC_SENSOR_FAN0_TACH:
+    case BMC_SENSOR_FAN1_TACH:
+    case BMC_SENSOR_FAN2_TACH:
+    case BMC_SENSOR_FAN3_TACH:
+    case BMC_SENSOR_FAN4_TACH:
+    case BMC_SENSOR_FAN5_TACH:
+    case BMC_SENSOR_FAN6_TACH:
+    case BMC_SENSOR_FAN7_TACH:
+    case BIC_SENSOR_CPU_TEMP:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.0f %s - Deassert", snr_desc->name, val, thresh_name);
+      break;
+    case BMC_SENSOR_P5V:
+    case BMC_SENSOR_P12V:
+    case BMC_SENSOR_P3V3_STBY:
+    case BMC_SENSOR_P1V15_BMC_STBY:
+    case BMC_SENSOR_P1V2_BMC_STBY:
+    case BMC_SENSOR_P2V5_BMC_STBY:
+    case BMC_SENSOR_MEDUSA_VOUT:
+    case BMC_SENSOR_HSC_VIN:
+    case BMC_SENSOR_MEDUSA_VIN:
+    case BMC_SENSOR_MEDUSA_VDELTA:
+    case BMC_SENSOR_PDB_DL_VDELTA:
+    case BMC_SENSOR_PDB_BB_VDELTA:
+    case BMC_SENSOR_NIC_P12V:
+    case BIC_SENSOR_P12V_STBY_VOL:
+    case BIC_SENSOR_P3V_BAT_VOL:
+    case BIC_SENSOR_P3V3_STBY_VOL:
+    case BIC_SENSOR_P1V05_PCH_STBY_VOL:
+    case BIC_SENSOR_PVNN_PCH_STBY_VOL:
+    case BIC_SENSOR_HSC_INPUT_VOL:
+    case BIC_SENSOR_VCCIN_VR_VOL:
+    case BIC_SENSOR_VCCSA_VR_VOL:
+    case BIC_SENSOR_VCCIO_VR_VOL:
+    case BIC_SENSOR_P3V3_STBY_VR_VOL:
+    case BIC_PVDDQ_ABC_VR_VOL:
+    case BIC_PVDDQ_DEF_VR_VOL:
+    case BIC_BB_SENSOR_MEDUSA_VOUT:
+    case BIC_BB_SENSOR_HSC_VIN:
+    case BIC_BB_SENSOR_P5V:
+    case BIC_BB_SENSOR_P12V:
+    case BIC_BB_SENSOR_P3V3_STBY:
+    case BIC_BB_SENSOR_P1V2_BMC_STBY:
+    case BIC_BB_SENSOR_P2V5_BMC_STBY:
+    case BIC_BB_SENSOR_MEDUSA_VIN:
+      snr_desc = get_sensor_desc(fru, snr_num);
+      sprintf(cri_sel, "%s %.2f %s - Deassert", snr_desc->name, val, thresh_name);
+      break;
+    default:
+      return;
+  }
+  pal_add_cri_sel(cri_sel);
+  return;
+}
+
+bool
+pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id) {
+  bool ret = false;
+  uint8_t type_2ou = UNKNOWN_BOARD;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      if (sensor_id == BIC_SENSOR_DP_NC_HSM_TEMP ||
+          sensor_id == BIC_SENSOR_DP_NC_HSM_FAN ||
+          sensor_id == BIC_SENSOR_DP_NC_HSM_BAT) {
+
+        if (fby3_common_get_2ou_board_type(fru, &type_2ou) < 0) {
+          syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+        } else if (type_2ou == DP_RISER_BOARD) {
+          ret = true;
+        }
+      }
+      break;
+    default:
+      break;
+  }
+  return ret;
 }

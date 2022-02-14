@@ -318,7 +318,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     pal_update_ts_sled();
     syslog(LOG_CRIT, "DEASSERT: %s threshold - settled - FRU: %d, num: 0x%X "
         "curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s",thresh_name,
-        fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
+        fruNb, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
     pal_sensor_deassert_handle(fru, snr_num, *curr_val, thresh);
   }
@@ -432,7 +432,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
     pal_update_ts_sled();
     syslog(LOG_CRIT, "ASSERT: %s threshold - raised - FRU: %d, num: 0x%X"
         " curr_val: %.2f %s, thresh_val: %.2f %s, snr: %-16s", thresh_name,
-        fru, snr_num, *curr_val, snr[snr_num].units, thresh_val,
+        fruNb, snr_num, *curr_val, snr[snr_num].units, thresh_val,
         snr[snr_num].units, snr[snr_num].name);
     pal_sensor_assert_handle(fru, snr_num, *curr_val, thresh);
   }
@@ -627,6 +627,47 @@ snr_monitor(void *arg) {
   } /* while loop*/
 } /* function definition */
 
+#ifdef CONFIG_FBY3_CWC
+static uint8_t
+get_exp_sensor_state() {
+  int num = 0;
+  uint8_t topExp = MAX_NUM_FRUS + 2, botExp = MAX_NUM_FRUS + 3;
+  uint8_t value = 0;
+  thresh_sensor_t *snr = get_struct_thresh_sensor(topExp);
+
+  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
+    value |= snr[num].curr_state;
+  }
+  
+  snr = get_struct_thresh_sensor(botExp);
+  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
+    value |= snr[num].curr_state;
+  }
+
+  return value;
+}
+#endif
+
+#ifdef CONFIG_FBY3_CWC
+static uint8_t
+clear_exp_sensor_state() {
+  int num = 0;
+  uint8_t topExp = MAX_NUM_FRUS + 2, botExp = MAX_NUM_FRUS + 3;
+  thresh_sensor_t *snr = get_struct_thresh_sensor(topExp);
+
+  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
+    snr[num].curr_state = 0;
+  }
+
+  snr = get_struct_thresh_sensor(botExp);
+  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
+    snr[num].curr_state = 0;
+  }
+
+  return 0;
+}
+#endif
+
 static void *
 snr_health_monitor() {
 
@@ -671,6 +712,12 @@ snr_health_monitor() {
         value |= snr[num].curr_state;
       }
 
+#ifdef CONFIG_FBY3_CWC
+      if (fru == FRU_SLOT1 && pal_is_cwc() == PAL_EOK) {
+        value |= get_exp_sensor_state();
+      }
+#endif
+
       value = (value > 0) ? FRU_STATUS_BAD: FRU_STATUS_GOOD;
 
       // If log-util clear the fru, cleaning sensor status (After doing it, sensord will regenerate assert)
@@ -678,6 +725,11 @@ snr_health_monitor() {
         for (num = 0; num <= MAX_SENSOR_NUM; num++) {
            snr[num].curr_state = 0;
         }
+#ifdef CONFIG_FBY3_CWC
+        if (fru == FRU_SLOT1 && pal_is_cwc() == PAL_EOK) {
+          clear_exp_sensor_state();
+        }
+#endif
       }
 
       // keep last status

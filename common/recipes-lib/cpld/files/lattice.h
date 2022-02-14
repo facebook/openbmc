@@ -5,7 +5,6 @@
 
 //lattice's cmd
 #define ISC_ADDRESS_SHIFT		0x01
-#define	ISC_ERASE			0x03
 #define DATA_SHIFT			0x02
 
 #define	DISCHARGE			0x14
@@ -40,17 +39,43 @@
 #define LCMXO2_ISC_DISABLE         0x26
 #define BYPASS                     0xFF
 
-/*************************************************************************************/
-#if 0
-/* LC LCMXO2-2000HC */
-int lcmxo2_2000hc_cpld_ver(unsigned int *ver);
-int lcmxo2_2000hc_cpld_flash_enable(void);
-int lcmxo2_2000hc_cpld_flash_disable(void);
-int lcmxo2_2000hc_cpld_erase(void);
-int lcmxo2_2000hc_cpld_program(FILE *jed_fd);
-int lcmxo2_2000hc_cpld_verify(FILE *jed_fd);
-#endif
+/*XO2, XO3, NX common*/
+#define ISC_ENABLE_X                  0x74
+#define LSC_CHECK_BUSY                0xF0
+#define LSC_READ_STATUS               0x3C
+#define LSC_READ_STATUS1              0x3D
+#define LSC_INIT_ADDRESS              0x46
+#define LSC_INIT_ADDR_UFM             0x47
+#define LSC_PROG_INCR_NV              0x70
+#define LSC_READ_INCR_NV              0x73
+#define ISC_PROGRAM_DONE              0x5E
+#define	ISC_ERASE                     0x0E
+#define IDCODE_PUB                    0xE0
+#define USERCODE                      0xC0
+#define ISC_DISABLE                   0x26
+#define ISC_PROGRAM_USERCODE          0xC2
 
-/*************************************************************************************/
-extern struct cpld_dev_info lattice_dev_list[3];
+
+typedef struct
+{
+  unsigned long int QF;
+  unsigned int *CF;
+  unsigned int CF_Line;
+  unsigned int *UFM;
+  unsigned int UFM_Line;
+  unsigned int Version;
+  unsigned int CheckSum;
+  unsigned int FEARBits;
+  unsigned int FeatureRow;
+} CPLDInfo;
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+#define LATTICE_COL_SIZE 128
+
+int LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size);
+int LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int ufm_size);
+int NX_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int ufm_size);
+int NX_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size);
+
+extern struct cpld_dev_info lattice_dev_list[8];
 #endif

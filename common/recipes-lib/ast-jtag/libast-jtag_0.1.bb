@@ -18,6 +18,6 @@ SRC_URI = "file://ast-jtag.c \
 S = "${WORKDIR}"
 
 DEPENDS += "libmisc-utils"
-RDEPENDS_${PN} += "libmisc-utils"
+RDEPENDS:${PN} += "libmisc-utils"
 
 inherit meson

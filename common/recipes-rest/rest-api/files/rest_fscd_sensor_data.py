@@ -35,8 +35,8 @@ async def post_fscd_sensor_data(request: aiohttp.web.Request) -> aiohttp.web.Res
     return aiohttp.web.json_response({"status": "OK"})
 
 
-## Utils
-def _validate_payload(payload, schema, path="") -> bool:
+# Utils
+def _validate_payload(payload, schema, path="") -> None:
     if not _schema_match(payload, schema):
         raise ValueError(
             "Schema mismatch in {path}: expected value ({x}) to match schema {y}".format(  # noqa: B950
@@ -49,7 +49,7 @@ def _validate_payload(payload, schema, path="") -> bool:
             _validate_payload(payload=value, schema=schema[key], path=path + "." + key)
 
 
-def _schema_match(payload, schema):
+def _schema_match(payload, schema) -> bool:
     if type(payload) == type(schema) == dict:
         return schema.keys() == payload.keys()
 

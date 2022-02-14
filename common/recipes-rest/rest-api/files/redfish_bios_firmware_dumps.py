@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 from contextlib import suppress
+from functools import wraps
 from typing import (
     Any,
     Dict,
@@ -15,6 +16,7 @@ from common_utils import dumps_bytestr
 from redfish_base import (
     RedfishError,
 )
+from redfish_computer_system import get_compute_system_names
 
 try:
     import psutil
@@ -24,46 +26,69 @@ except ImportError:
     has_psutil = False
 
 
-class InvalidDumpID(AssertionError):
-    pass
-
-
-class InvalidServerName(AssertionError):
-    pass
-
-
 _dump_id_validator = re.compile(r"[A-Za-z0-9\-._]{,100}")
 _server_name_validator = re.compile(r"[A-Za-z0-9\-._]{,100}")
 
 
-def _assert_valid_dump_id(dump_id: str):
+def _check_dump_id(dump_id):
     if not _dump_id_validator.match(dump_id):
-        raise InvalidDumpID("dump_id is not valid")
+        return "dump_id is invalid"
+    return None
 
 
-def _assert_valid_server_name(server_name: str):
-    if not _server_name_validator.match(server_name):
-        raise InvalidServerName("server_name is not valid")
+def _webassert_valid_dump_id(method):
+    @wraps(method)
+    def _impl(self, request: web.Request) -> web.Response:
+        dump_id = request.match_info["DumpID"]
+        dump_id_error = _check_dump_id(dump_id)
+        if dump_id_error is not None:
+            return RedfishError(
+                status=400,
+                message=dump_id_error,
+            ).web_response()
+        return method(self, request)
+
+    return _impl
 
 
-def _assert_valid_server_name_and_dump_id(server_name: str, dump_id: str):
-    _assert_valid_server_name(server_name)
-    _assert_valid_dump_id(dump_id)
+def _webassert_valid_server_name(method):
+    @wraps(method)
+    def _impl(self, request: web.Request):
+        server_name = request.match_info["server_name"]
+        if server_name == "":
+            return RedfishError(
+                status=400,
+                message="server_name is empty",
+            ).web_response()
+        if not _server_name_validator.match(server_name):
+            return RedfishError(
+                status=400,
+                message="server_name is not valid",
+            ).web_response()
+        if server_name not in self.valid_server_names:
+            return RedfishError(
+                status=404,
+                message="server_name is not known",
+            ).web_response()
+        return method(self, request)
+
+    return _impl
 
 
-def _get_dump_header(server_name: str, dump_id: str) -> Optional[Dict[str, Any]]:
-    _assert_valid_server_name_and_dump_id(server_name, dump_id)
+def _get_dump_header(server_name: str, dump_id: str) -> Dict[str, Any]:
     return {
         "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}".format(
             server_name, dump_id
         ),
+        "@odata.type": "#BIOSFirmwareDump.v1_0_0.BIOSFirmwareDump",
         "Id": dump_id,
         "Name": "BIOS firmware dump",
         "Actions": {
             "#BIOSFirmwareDump.ReadContent": {
-                "target": "/redfish/v1/Systems/{}/Bios/FirmwareDumps/{}/Actions/BIOSFirmwareDump.ReadContent".format(
-                    server_name, dump_id
-                )
+                "target": (
+                    "/redfish/v1/Systems/{}/Bios/FirmwareDumps/"
+                    "{}/Actions/BIOSFirmwareDump.ReadContent"
+                ).format(server_name, dump_id)
             },
         },
     }
@@ -74,9 +99,13 @@ class RedfishBIOSFirmwareDumps:
         self,
         images_dir="/tmp/restapi-bios_images",
         image_count_limit=1,
+        valid_server_names=None,
     ):
         self.images_dir = images_dir
         self.image_count_limit = image_count_limit
+        self.valid_server_names = valid_server_names
+        if self.valid_server_names is None:
+            self.valid_server_names = get_compute_system_names()
 
         with suppress(FileExistsError):
             os.mkdir(self.images_dir, mode=0o775)
@@ -92,8 +121,7 @@ class RedfishBIOSFirmwareDumps:
 
     async def _dump_collection_of_server(
         self, server_name: str
-    ) -> List[Dict[str, Any]]:
-        _assert_valid_server_name(server_name)
+    ) -> List[Optional[Dict[str, Any]]]:
         server_dirpath = os.path.join(self.images_dir, server_name)
         dumps = []
         if os.path.exists(server_dirpath):
@@ -101,23 +129,25 @@ class RedfishBIOSFirmwareDumps:
                 dumps.append(await self._get_dump(server_name, dump_id))
         return dumps
 
-    async def get_collection_descriptor(
-        self, server_name: str, request: web.Request
-    ) -> web.Response:
-        _assert_valid_server_name(server_name)
+    @_webassert_valid_server_name
+    async def get_collection_descriptor(self, request: web.Request) -> web.Response:
+        server_name = request.match_info["server_name"]
         dumps = await self._dump_collection_of_server(server_name)
         body = {
             "@odata.id": "/redfish/v1/Systems/{}/Bios/FirmwareDumps".format(
                 server_name
             ),
+            "@odata.type": "#FirmwareDumps.v1_0_0.FirmwareDumps",
+            "Id": "{} BIOS dumps".format(server_name),
             "Name": "{} BIOS dumps".format(server_name),
             "Members@odata.count": len(dumps),
             "Members": dumps,
         }
         return web.json_response(body, dumps=dumps_bytestr)
 
-    async def create_dump(self, server_name: str, request: web.Request) -> web.Response:
-        _assert_valid_server_name(server_name)
+    @_webassert_valid_server_name
+    async def create_dump(self, request: web.Request) -> web.Response:
+        server_name = request.match_info["server_name"]
         server_dirpath = os.path.join(self.images_dir, server_name)
         with suppress(FileExistsError):
             os.mkdir(server_dirpath)
@@ -131,11 +161,16 @@ class RedfishBIOSFirmwareDumps:
                 message=message,
             ).web_response()
 
-        if "DumpID" in request.match_info:
+        if "DumpID" in request.match_info and request.match_info["DumpID"] != "":
             dump_id = request.match_info["DumpID"]
         else:
             dump_id = uuid.uuid4().hex
-        _assert_valid_dump_id(dump_id)
+        dump_id_error = _check_dump_id(dump_id)
+        if dump_id_error is not None:
+            return RedfishError(
+                status=400,
+                message=dump_id_error,
+            ).web_response()
         output_path = os.path.join(server_dirpath, dump_id)
         try:
             os.mkdir(output_path)
@@ -171,19 +206,21 @@ class RedfishBIOSFirmwareDumps:
         dump_info = await self._get_dump(server_name, dump_id)
         return web.json_response(dump_info, dumps=dumps_bytestr)
 
-    async def get_dump_descriptor(
-        self, server_name: str, request: web.Request
-    ) -> web.Response:
+    @_webassert_valid_server_name
+    @_webassert_valid_dump_id
+    async def get_dump_descriptor(self, request: web.Request) -> web.Response:
+        server_name = request.match_info["server_name"]
         dump_id = request.match_info["DumpID"]
-        _assert_valid_server_name_and_dump_id(server_name, dump_id)
         dump_info = await self._get_dump(server_name, dump_id)
+        if dump_info is None:
+            return web.json_response(status=404)
         return web.json_response(dump_info, dumps=dumps_bytestr)
 
-    async def read_dump_content(
-        self, server_name: str, request: web.Request
-    ) -> web.Response:
+    @_webassert_valid_server_name
+    @_webassert_valid_dump_id
+    async def read_dump_content(self, request: web.Request) -> web.Response:
+        server_name = request.match_info["server_name"]
         dump_id = request.match_info["DumpID"]
-        _assert_valid_server_name_and_dump_id(server_name, dump_id)
         dump_dirpath = os.path.join(self.images_dir, server_name, dump_id)
         if not os.path.exists(dump_dirpath):
             return web.Response(status=404)
@@ -209,7 +246,6 @@ class RedfishBIOSFirmwareDumps:
             return web.Response(status=204)
 
     async def _get_dump(self, server_name, dump_id) -> Optional[Dict[str, Any]]:
-        _assert_valid_server_name_and_dump_id(server_name, dump_id)
         dump_dirpath = os.path.join(self.images_dir, server_name, dump_id)
         if not os.path.exists(dump_dirpath):
             return None
@@ -262,24 +298,28 @@ class RedfishBIOSFirmwareDumps:
         def _fwutil_proc(
             self, server_name: str, dump_id: str
         ) -> Optional[psutil.Process]:
-            _assert_valid_server_name_and_dump_id(server_name, dump_id)
             dump_dirpath = os.path.join(self.images_dir, server_name, dump_id)
             with suppress(FileNotFoundError):
                 with open(os.path.join(dump_dirpath, "fwutil-pid"), "r") as file:
-                    fwutil_pid = int(file.read())
-                    with suppress(psutil.NoSuchProcess):
+                    try:
+                        fwutil_pid = int(file.read())
+                    except ValueError:
+                        return None
+                    try:
                         proc = psutil.Process(pid=fwutil_pid)
-                        for child in proc.children(recursive=True):
-                            server_logger.debug(
-                                "child.name() is '{}'".format(child.name())
-                            )
-                            if child.name() == "fw-util":
-                                return child
+                    except psutil.NoSuchProcess:
+                        return None
+                    for child in proc.children(recursive=True):
+                        server_logger.debug("child.name() is '{}'".format(child.name()))
+                        if child.name() == "fw-util":
+                            return child
             return None
 
-    async def delete_dump(self, server_name: str, request: web.Request) -> web.Response:
+    @_webassert_valid_server_name
+    @_webassert_valid_dump_id
+    async def delete_dump(self, request: web.Request) -> web.Response:
+        server_name = request.match_info["server_name"]
         dump_id = request.match_info["DumpID"]
-        _assert_valid_server_name_and_dump_id(server_name, dump_id)
         dump_info = await self._get_dump(server_name, dump_id)
         if dump_info is None:
             return web.Response(status=404)
@@ -297,10 +337,13 @@ class RedfishBIOSFirmwareDumps:
                     ).web_response()
         else:
             # ensure fw-util has already ended:
-            if not os.path.exists(os.path.join(dump_dirpath, "fwutil-pid")):
+            if not os.path.exists(os.path.join(dump_dirpath, "exitcode")):
                 return RedfishError(
                     status=400,
-                    message="unable to delete the dump, while it is in process of dumping",
+                    message=(
+                        "unable to delete the dump,"
+                        " while it is in process of dumping"
+                    ),
                 ).web_response()
         # delete all files
         for file_name in ["image", "exitcode", "err", "log", "fwutil-pid"]:
@@ -310,27 +353,3 @@ class RedfishBIOSFirmwareDumps:
         with suppress(FileNotFoundError):
             os.rmdir(dump_dirpath)
         return web.json_response(dump_info, dumps=dumps_bytestr)
-
-    def get_server(self, server_name: str) -> "RedfishBIOSFirmwareServerDumps":
-        return RedfishBIOSFirmwareServerDumps(self, server_name=server_name)
-
-
-class RedfishBIOSFirmwareServerDumps:
-    def __init__(self, handler: RedfishBIOSFirmwareDumps, server_name: str):
-        self.handler = handler
-        self.server_name = server_name
-
-    async def get_collection_descriptor(self, request: web.Request):
-        return await self.handler.get_collection_descriptor(self.server_name, request)
-
-    async def get_dump_descriptor(self, request: web.Request):
-        return await self.handler.get_dump_descriptor(self.server_name, request)
-
-    async def create_dump(self, request: web.Request):
-        return await self.handler.create_dump(self.server_name, request)
-
-    async def delete_dump(self, request: web.Request):
-        return await self.handler.delete_dump(self.server_name, request)
-
-    async def read_dump_content(self, request: web.Request):
-        return await self.handler.read_dump_content(self.server_name, request)

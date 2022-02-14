@@ -1,0 +1,58 @@
+[flake8]
+select = B,C,E,F,P,W,B9
+max-line-length = 80
+### DEFAULT IGNORES FOR 4-space INDENTED PROJECTS ###
+# E127, E128 are hard to silence in certain nested formatting situations.
+# E203 doesn't work for slicing
+# E265, E266 talk about comment formatting which is too opinionated.
+# E402 warns on imports coming after statements. There are important use cases
+# like demandimport (https://fburl.com/demandimport) that require statements
+# before imports.
+# E501 is not flexible enough, we're using B950 instead.
+# E722 is a duplicate of B001.
+# P207 is a duplicate of B003.
+# P208 is a duplicate of C403.
+# W503 talks about operator formatting which is too opinionated.
+ignore = E127, E128, E203, E265, E266, E402, E501, E722, P207, P208, W503
+### DEFAULT IGNORES FOR 2-space INDENTED PROJECTS (uncomment) ###
+# ignore = E111, E114, E121, E127, E128, E265, E266, E402, E501, P207, P208, W503
+exclude =
+  .git,
+  .hg,
+  __pycache__,
+  _bin/*,
+  _build/*,
+  _ig_fbcode_wheel/*,
+  buck-out/*,
+  third-party-buck/*,
+  third-party2/*
+
+# Calculate max-complexity by changing the value below to 1, then surveying fbcode
+# to see the distribution of complexity:
+#   find ./[a-z0-9]* -name 'buck-*' -prune -o -name 'third*party*' -prune -o \
+#     -name '*.py' -print |\
+#   parallel flake8 --config ./.flake8 |\
+#   perl -ne 'if (/C901/) { s/.*\((\d+)\)/$1/; print; }' | stats
+# NOTE: This will take a while to run (near an hour IME) so you probably want a
+# second working dir to run it in.
+# Pick a reasonable point from there (e.g. p95 or "95%")
+# As of 2016-05-18 the rough distribution is:
+#
+# count:    134807
+# min:      2
+# max:      206
+# avg:      4.361
+# median:   3
+# sum:      587882
+# stddev:   4.317
+# variance: 18.635
+#
+# percentiles:
+#     75%: 5
+#     90%: 8
+#     95%: 11
+#     99%: 20
+#   99.9%: 48
+#  99.99%: 107
+# 99.999%: 160
+max-complexity = 12

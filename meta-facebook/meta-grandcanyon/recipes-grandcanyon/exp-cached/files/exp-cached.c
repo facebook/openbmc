@@ -31,20 +31,29 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/pal.h>
+#include <openbmc/kv.h>
 #include <facebook/exp.h>
 
 #define MAX_FRU_PATH 64
+#define FW_VERSION_LENS 4
 
-uint8_t expander_fruid_list[] = {FRU_SCC, FRU_DPB, FRU_FAN0, FRU_FAN1, FRU_FAN2, FRU_FAN3};
+uint8_t expander_fruid_list[] = {FRU_SCC, FRU_DPB};
+uint8_t expander_fan_fruid_list[] = {FRU_FAN0, FRU_FAN1, FRU_FAN2, FRU_FAN3};
 
 static void
-exp_read_fruid_wrapper(uint8_t fru) {
+exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
   int ret = 0;
   char fruid_temp_path[MAX_FRU_PATH] = {0};
   char fruid_path[MAX_FRU_PATH] = {0};
   char fru_name[MAX_FRU_CMD_STR] = {0};
+  char cmd[MAX_SYS_CMD_REQ_LEN + MAX_FRU_PATH] = {0};
   int retry = 0;
   uint8_t present_status = 0;
+
+  if (fru_path == NULL) {
+    syslog(LOG_WARNING, "%s() Fail to get fru%d due to parameter fru_path is NULL\n", __func__, fru);
+    return;
+  }
 
   if (pal_get_fru_name(fru, fru_name) < 0) {
     syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, fru);
@@ -61,8 +70,8 @@ exp_read_fruid_wrapper(uint8_t fru) {
     return;
   }
 
-  snprintf(fruid_temp_path, sizeof(fruid_temp_path), "/tmp/tfruid_%s.bin", fru_name);
-  snprintf(fruid_path, sizeof(fruid_path), "/tmp/fruid_%s.bin", fru_name);
+  snprintf(fruid_temp_path, sizeof(fruid_temp_path), COMMON_TMP_FRU_PATH, fru_name);
+  snprintf(fruid_path, sizeof(fruid_path), fru_path, fru_name);
 
   while(retry < MAX_RETRY) {
     ret = exp_read_fruid(fruid_temp_path, fru);
@@ -80,7 +89,10 @@ exp_read_fruid_wrapper(uint8_t fru) {
     syslog(LOG_INFO, "FRU: %s initial is done.\n", fru_name);
   }
 
-  rename(fruid_temp_path, fruid_path);
+  if (rename(fruid_temp_path, fruid_path) < 0) {
+    snprintf(cmd, sizeof(cmd), "mv %s %s", fruid_temp_path, fruid_path);
+    run_command(cmd);
+  }
 
   if(pal_check_fru_is_valid(fruid_path) < 0) {
     syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, fruid_path);
@@ -89,10 +101,37 @@ exp_read_fruid_wrapper(uint8_t fru) {
 
 void
 fruid_cache_init(void) {
-  int i = 0;
+  int i = 0, ret = 0, retry = 0;
+  uint8_t ver[FW_VERSION_LENS] = {0};
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rlen = 0 , tlen = 0;
+  char key[MAX_KEY_LEN] = {0};
+
+  // Auto dump SCC and DPB
   for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
-    exp_read_fruid_wrapper(expander_fruid_list[i]);
+    exp_read_fruid_wrapper(expander_fruid_list[i], COMMON_FRU_PATH);
   }
+
+  // If use new EXP f/w, version > 17 (0x11)
+  // Ask EXP about FAN FRU state before dump
+  ret = expander_get_fw_ver(ver, sizeof(ver));
+  if ((ret == 0) && (ver[3] >= 0x11)) {
+    // If FAN FRU is ready, EXP will send SEL include FAN checksum
+    ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_FAN_FRU_STATUS, tbuf, tlen, rbuf, &rlen);
+    if ((ret < 0) || (rbuf[0] != EXP_FAN_FRU_READY)) {
+      syslog(LOG_WARNING, "%s(): Checking of FAN FRU is pending until EXP FAN FRU cache is ready.\n", __func__);
+    }
+  
+  } else {
+    for (i = 0; i < ARRAY_SIZE(expander_fan_fruid_list); i++) {
+      exp_read_fruid_wrapper(expander_fan_fruid_list[i], COMMON_FAN_FRU_PATH);
+      memset(key, 0, sizeof(key));
+      snprintf(key, sizeof(key), "fan%d_dumped", i);
+      kv_set(key, STR_VALUE_1, 0, 0);
+    }
+  }
+
   return;
 }
 
@@ -116,10 +155,56 @@ sensor_timestamp_init(void) {
   }
 }
 
+void
+sensor_threshold_init(void) {
+  int i = 0, ret = 0;
+  uint8_t ver[FW_VERSION_LENS] = {0};
+
+  // Support to get SCC/DPB threshold with expander f/w version 18
+  ret = expander_get_fw_ver(ver, sizeof(ver));
+  if ((ret == 0) && (ver[3] >= 0x12)) {
+    // Get sensors' threshold of SCC and DPB
+    for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
+      ret = pal_exp_sensor_threshold_init(expander_fruid_list[i]);
+      if (ret < 0) {
+        syslog(LOG_CRIT, "%s() failed to initialize sensors' threshold of FRU:%d \n", __func__, expander_fruid_list[i]);
+      }
+    }
+  } else {
+    syslog(LOG_CRIT, "%s() Not support to get SCC/DPB sensors' threshold from expander\n", __func__);
+  }
+
+  return;
+}
+
 int
 main (int argc, char * const argv[])
 {
-  fruid_cache_init();
-  sensor_timestamp_init();
+  uint8_t fru_id = -1;
+
+  if ((argc < 2) || (argc > 3)) {
+    return -1;
+  }
+
+  if (strcmp(argv[1], "--booting") == 0) {
+    sensor_timestamp_init();
+    fruid_cache_init();
+    sensor_threshold_init();
+
+  } else if (strcmp(argv[1], "--update_fan") == 0) {
+    if (strcmp(argv[2], "fan0") == 0) {
+      fru_id = FRU_FAN0;
+    } else if (strcmp(argv[2], "fan1") == 0) {
+      fru_id = FRU_FAN1;
+    } else if (strcmp(argv[2], "fan2") == 0) {
+      fru_id = FRU_FAN2;
+    } else if (strcmp(argv[2], "fan3") == 0) {
+      fru_id = FRU_FAN3;
+    } else {
+      return -1;
+    }
+    exp_read_fruid_wrapper(fru_id, COMMON_FAN_FRU_PATH);
+  }
+  
   return 0;
 }

@@ -36,12 +36,18 @@ pim_dpm_addr='0x4e'
 
 for i in "${pim_index[@]}"
 do
+    pim=$((i+2))
     # PIM numbered 2-9
     pim=$((i+2))
     if wedge_is_pim_present "$pim"; then
-        # PIM 2-9, SMBUS 16-23
-        bus_id="${pim_bus[$i]}"
-        show_dpm_ver "PIM${pim}.:" "$bus_id" "$pim_dpm_addr"
+        pim_type=$(wedge_pim_type "$pim")
+        if [[ "$pim_type" == "16q2" ]]; then
+            echo "PIM${pim} has no DPM..."
+        else
+            # PIM 2-9, SMBUS 16-23
+            bus_id="${pim_bus[$i]}"
+            show_dpm_ver "PIM${pim}.:" "$bus_id" "$pim_dpm_addr"
+        fi
     else
         echo "PIM${pim} not present... skipping."
     fi
@@ -73,6 +79,8 @@ do
     if [[ "$pim_type" == "8ddm" ]]; then
         bus_id="${pim_bus[$i]}"
         show_isl_ver "PIM${pim} ISL68224" "$bus_id" "$pim_isl_addr"
+    elif [[ "$pim_type" == "16q2" ]]; then
+        echo "PIM${pim} has no ISL... skipping."
     elif [[ "$pim_type" == "16q" ]]; then
         echo "PIM${pim} has no ISL... skipping."
     elif [[ "$pim_type" == "unplug" ]]; then

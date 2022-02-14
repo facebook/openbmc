@@ -24,15 +24,15 @@ paths:
                       type: object
                       additionalProperties: false
                       properties: 
-                        APP_NAME: 
+                        MESSAGE: 
                           type: string
                         FRU#: 
                           type: string
                         FRU_NAME: 
                           type: string
-                        MESSAGE: 
-                          type: string
                         TIME_STAMP: 
+                          type: string
+                        APP_NAME: 
                           type: string
               Actions: 
                 type: array

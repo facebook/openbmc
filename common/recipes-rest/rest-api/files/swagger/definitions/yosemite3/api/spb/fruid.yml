@@ -38,7 +38,15 @@ paths:
                     type: string
                   Product Name: 
                     type: string
+                  Product Part Number: 
+                    type: string
                   Product Version: 
+                    type: string
+                  Product Serial: 
+                    type: string
+                  Product Asset Tag: 
+                    type: string
+                  Product Custom Data 1: 
                     type: string
               Actions: 
                 type: array

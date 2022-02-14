@@ -18,31 +18,7 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  SP_P5V: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P3V3_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_OUTLET_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P3V3: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_SENSOR_P1V2_BMC_STBY: 
+                  SP_SENSOR_P1V15_BMC_STBY: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -60,55 +36,7 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SP_HSC_IN_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_FAN1_TACH: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_HSC_PEAK_IOUT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P12V: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_HSC_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P12V_SLOT2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P12V_SLOT3: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P12V_SLOT1: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P12V_SLOT4: 
+                  SP_HSC_PEAK_PIN: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -120,7 +48,37 @@ paths:
                     properties: 
                       value: 
                         type: string
+                  SP_P12V_SLOT1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P5V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
                   SP_HSC_OUT_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN0_PWM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P3V3_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_TEMP: 
                     type: object
                     additionalProperties: false
                     properties: 
@@ -132,29 +90,89 @@ paths:
                     properties: 
                       value: 
                         type: string
-                  SP_HSC_PEAK_PIN: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_SENSOR_P1V15_BMC_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   SP_SENSOR_P2V5_BMC_STBY: 
                     type: object
                     additionalProperties: false
                     properties: 
                       value: 
                         type: string
-              Actions: 
+                  SP_HSC_PEAK_IOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P3V3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN1_PWM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_IN_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_IN_POWERAVG: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_OUTLET_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT4: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_SENSOR_P1V2_BMC_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN1_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

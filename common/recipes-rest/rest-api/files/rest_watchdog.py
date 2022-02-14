@@ -11,9 +11,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from rest_config import RestConfig
+from rest_config import parse_config
 
-
+RestConfig = parse_config("/etc/rest.cfg")
 listen_ssl = RestConfig.getboolean("listen", "ssl")
 port = RestConfig.getint("listen", "port")
 

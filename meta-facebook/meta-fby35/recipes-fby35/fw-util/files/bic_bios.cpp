@@ -16,6 +16,7 @@ using namespace std;
 
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
+  int ret_recovery = 0, ret_reset = 0;
   uint8_t status;
   int retry_count = 0;
 
@@ -52,7 +53,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
 
   if (!force) {
     cerr << "Putting ME into recovery mode..." << endl;
-    me_recovery(slot_id, RECOVERY_MODE);
+    ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
   }
   // cerr << "Enabling USB..." << endl;
   // bic_set_gpio(slot_id, RST_USB_HUB_N_R, GPIO_HIGH);
@@ -76,11 +77,18 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   sleep(3);
   if (!force) {
     cerr << "Doing ME Reset..." << endl;
-    me_reset(slot_id);
+    ret_reset = me_reset(slot_id);
     sleep(5);
   }
   cerr << "Power-cycling the server..." << endl;
-  pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+  if (ret_reset || ret_recovery) {
+    syslog(LOG_CRIT, "Server 12V cycle due to %s failed when BIOS update", 
+            ret_recovery ? "putting ME into recovery mode" : "ME reset");
+    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+  } else {
+    pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+  }
+  
   return ret;
 }
 

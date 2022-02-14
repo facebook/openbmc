@@ -18,29 +18,29 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  pwr_server4_last_state: 
-                    type: string
-                  slot4_sel_error: 
-                    type: string
-                  sysfw_ver_slot4: 
+                  slot4_sensor_health: 
                     type: string
                   slot4_trigger_hpr: 
                     type: string
                   slot4_cpu_ppin: 
                     type: string
-                  slot4_por_cfg: 
-                    type: string
-                  identify_slot4: 
+                  sysfw_ver_slot4: 
                     type: string
                   slot4_boot_order: 
                     type: string
-                  slot4_sensor_health: 
+                  slot4_por_cfg: 
                     type: string
-              Actions: 
+                  pwr_server4_last_state: 
+                    type: string
+                  slot4_sel_error: 
+                    type: string
+                  identify_slot4: 
+                    type: string
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

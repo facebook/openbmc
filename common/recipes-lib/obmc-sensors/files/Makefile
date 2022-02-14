@@ -20,7 +20,7 @@ lib: libobmc-sensors.so
 C_SRCS := $(wildcard *.cpp)
 C_OBJS := ${C_SRCS:.cpp=.o}
 
-CXXFLAGS += -Wall -Werror -fPIC
+CXXFLAGS += -std=c++17 -Wall -Werror -fPIC
 
 libobmc-sensors.so: $(C_OBJS)
 	$(CXX) -shared -o libobmc-sensors.so $^ -lc $(LDFLAGS)

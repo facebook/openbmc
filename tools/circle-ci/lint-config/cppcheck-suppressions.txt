@@ -27,3 +27,6 @@ unreadVariable
 
 // We have some scanf macros that cppcheck won't expand correctly.
 wrongPrintfScanfArgNum
+
+// This output confuses CI, get rid of it.
+unmatchedSuppression

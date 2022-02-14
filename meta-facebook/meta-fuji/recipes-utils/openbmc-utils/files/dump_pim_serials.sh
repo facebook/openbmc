@@ -27,10 +27,10 @@ do
     pim_prsnt=$(cat "$pim_path" 2> /dev/null | head -n 1)
     
     #pimserial cache file doesn't exist, but pim is present
-    if [ ! -f /tmp/pim$((index-1))_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
-        /usr/local/bin/peutil $((index-1)) |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim$((index-1))_serial.txt
+    if [ ! -f /tmp/pim$((index))_serial.txt ] && [ "${pim_prsnt}" == 0x0 ]; then
+        /usr/local/bin/peutil $((index)) |grep Product|grep Serial|cut -d ' ' -f 4 > /tmp/pim$((index))_serial.txt
     fi
-    serial=$(cat /tmp/pim$((index-1))_serial.txt)
+    serial=$(cat /tmp/pim$((index))_serial.txt)
     echo PIM${index} : "${serial}"
 done
 

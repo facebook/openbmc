@@ -21,12 +21,24 @@ paths:
                   Logs: 
                     type: array
                     items: 
-                      type: string
-              Resources: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        FRU#: 
+                          type: string
+                        MESSAGE: 
+                          type: string
+                        APP_NAME: 
+                          type: string
+                        TIME_STAMP: 
+                          type: string
+                        FRU_NAME: 
+                          type: string
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

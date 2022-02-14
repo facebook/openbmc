@@ -18,15 +18,15 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  version: 
-                    type: string
                   Description: 
                     type: string
-              Actions: 
+                  version: 
+                    type: string
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

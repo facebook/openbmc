@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-from subprocess import *
+from typing import Any, Dict, Optional
 
 from common_utils import async_exec
 from node import node
@@ -37,7 +37,7 @@ class fruidNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         result = {}
         cmd = "/usr/local/bin/fruid-util " + self.name
         _, stdout, _ = await async_exec(cmd, shell=True)

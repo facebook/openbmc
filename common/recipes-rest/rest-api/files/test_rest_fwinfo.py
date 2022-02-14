@@ -103,10 +103,10 @@ class TestRestFwinfo(AioHTTPTestCase):
                         "vendor": "NIC Manufacturer",
                     },
                     "nicexp": {
-                        "model": None,
-                        "part_number": None,
-                        "serial_number": None,
-                        "vendor": None,
+                        "model": "",
+                        "part_number": "",
+                        "serial_number": "",
+                        "vendor": "",
                     },
                     "slot1": {
                         "model": "Twin Lakes Passive MP",

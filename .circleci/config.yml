@@ -1,0 +1,241 @@
+version: 2.1
+jobs:
+    lint:
+        docker:
+            - image: ubuntu:focal
+        resource_class: small
+        steps:
+            - run:
+                name: Install Ubuntu dependencies.
+                command: |
+                    apt-get update
+                    apt-get install -y \
+                        git \
+                        python3-pip \
+                        shellcheck \
+                        cppcheck
+            - run:
+                name: Install 'black'.
+                command: |
+                    python3 -m pip install "black==21.4b2"
+            - checkout
+            - run:
+                name: Run lint.
+                command: |
+                    ./tools/circle-ci/do-lint
+    setup:
+        docker:
+            - image: crops/poky:latest
+              user: root
+        resource_class: small
+        working_directory: /tmp/job/project
+        steps:
+            - run:
+                name: Install ca-certificates pkg
+                command: |
+                    apt-get update
+                    apt-get install -y ca-certificates
+            - run:
+                name: Set up git config for testing user.
+                command: |
+                    git config --global user.email "openbmc-circleci@fb.com"
+                    git config --global user.name "CircleCI Testing"
+            - checkout
+            - run:
+                name: Sync Yocto repositories.
+                command: |
+                    ./sync_yocto.sh
+            - persist_to_workspace:
+                root: /tmp/job
+                paths:
+                    - project
+    unit-test:
+        docker:
+            - image: crops/poky:latest
+              environment:
+                  MACHINE: qemux86
+                  CACHE_DIR: /tmp/job/sstate-cache
+                  CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
+              user: root
+        resource_class: 2xlarge
+        working_directory: /tmp/job/project
+        steps:
+            - attach_workspace:
+                at: /tmp/job
+            - run:
+                name: Set up git config for testing user.
+                command: |
+                    git config --global user.email "openbmc-circleci@fb.com"
+                    git config --global user.name "CircleCI Testing"
+            - run:
+                name: Adding usersetup to sudoer
+                command: |
+                    sed -e '/usersetup/ s/^#*/#/' -i /etc/sudoers.usersetup
+                    echo "usersetup ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.usersetup
+            - run:
+                name: Update working folder ownership
+                command: |
+                    chown -R usersetup:usersetup /tmp/job
+            - run:
+                name: Check build required. Halt the CI if not needed.
+                command: |
+                    if ! runuser -m usersetup -c './tools/circle-ci/check-build-required ptest'; then
+                        circleci-agent step halt
+                    fi
+            - run:
+                name: Download sstate cache.
+                command: |
+                    runuser -m usersetup -c './tools/circle-ci/download-sstate-cache'
+            - run:
+                name: Build qemux86 and run package-test within
+                command: |
+                    runuser -m usersetup -c 'python3 tests2/ptest-runner -b build --force-rebuild --verbose'
+    qemu-cit:
+        parameters:
+            machine:
+                type: string
+        docker:
+            - image: ubuntu:focal
+              environment:
+                  QEMU_URI: https://github.com/facebook/openbmc-qemu/releases/latest/download
+              user: root
+        resource_class: 2xlarge
+        working_directory: /tmp/job/project
+        steps:
+            - attach_workspace:
+                at: /tmp/job
+            - run:
+                name: Check if CIT required based on flash presence
+                command: |
+                    if ! [[ -f /tmp/job/project/build/tmp/deploy/images/<< parameters.machine >>/flash-<< parameters.machine >> ]]; then
+                        echo "flash-<< parameters.machine >> not found, skip CIT"
+                        circleci-agent step halt
+                    else
+                        echo "BMC flash found, continue to CIT test"
+                    fi
+            - run:
+                name: Install Ubuntu dependencies.
+                command: |
+                    apt-get update
+                    apt-get install -y \
+                        git \
+                        python3-pip \
+                        shellcheck \
+                        cppcheck \
+                        net-tools \
+                        libaio1 \
+                        libpixman-1-dev \
+                        wget \
+                        vim
+                    DEBIAN_FRONTEND="noninteractive" apt-get -y install libglib2.0-dev
+            - run:
+                name: Install python liberaries
+                command: |
+                    pip3 install paramiko pexpect scp
+            - run:
+                name: Download qemu-system-arm
+                command: |
+                    wget "${QEMU_URI}/qemu-system-arm"
+                    chmod +x qemu-system-arm
+            - run:
+                name: execute CIT tests
+                no_output_timeout: 15m
+                command: |
+                    python3 tools/circle-ci/cit_test_wrapper.py << parameters.machine >>
+    build:
+        parameters:
+            machine:
+                type: string
+        docker:
+            - image: crops/poky:latest
+              environment:
+                  MACHINE: << parameters.machine >>
+                  CACHE_DIR: /tmp/job/sstate-cache
+                  CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
+        resource_class: 2xlarge
+        working_directory: /tmp/job/project
+        steps:
+            - attach_workspace:
+                at: /tmp/job
+            - run:
+                name: Set up git config for testing user.
+                command: |
+                    git config --global user.email "openbmc-circleci@fb.com"
+                    git config --global user.name "CircleCI Testing"
+            - run:
+                name: Check build required.
+                command: |
+                    if ! ./tools/circle-ci/check-build-required; then
+                        circleci-agent step halt
+                    fi
+            - run:
+                name: Download sstate cache.
+                command: |
+                    ./tools/circle-ci/download-sstate-cache
+            - run:
+                name: Do build.
+                command: |
+                    ./tools/circle-ci/do-build
+            - persist_to_workspace:
+                root: /tmp/job
+                paths:
+                  - project/build/tmp/deploy/images/<< parameters.machine >>/flash-<< parameters.machine >>*
+workflows:
+    version: 2
+    everything:
+        jobs:
+            - lint
+            - setup
+            - unit-test:
+                requires:
+                    - setup
+            - build:
+                name: build-<< matrix.machine >>
+                requires:
+                    - setup
+                matrix:
+                    parameters:
+                        machine: [
+                            angelslanding,
+                            clearcreek,
+                            cloudripper,
+                            cmm,
+                            elbert,
+                            emeraldpools,
+                            fbgp2,
+                            fbtp,
+                            fbttn,
+                            fby2,
+                            fby3,
+                            fuji,
+                            galaxy100,
+                            grandcanyon,
+                            lightning,
+                            minipack,
+                            northdome,
+                            sonorapass,
+                            wedge,
+                            wedge100,
+                            wedge400,
+                            yamp,
+                            yosemite,
+                            ]
+            - qemu-cit:
+                name: qemu-cit-<< matrix.machine >>
+                requires:
+                    - build-<< matrix.machine >>
+                matrix:
+                    parameters:
+                        machine: [
+                            cloudripper,
+                            cmm,
+                            elbert,
+                            fby2,
+                            fby3,
+                            fuji,
+                            minipack,
+                            wedge400,
+                            yamp,
+                            fbttn,
+                            fbtp,
+                            ]

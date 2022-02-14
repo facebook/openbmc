@@ -18,9 +18,7 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  pwr_server3_last_state: 
-                    type: string
-                  slot3_cpu_ppin: 
+                  slot3_boot_order: 
                     type: string
                   slot3_sel_error: 
                     type: string
@@ -28,19 +26,21 @@ paths:
                     type: string
                   slot3_sensor_health: 
                     type: string
-                  slot3_por_cfg: 
-                    type: string
                   slot3_trigger_hpr: 
                     type: string
-                  slot3_boot_order: 
+                  pwr_server3_last_state: 
                     type: string
                   identify_slot3: 
                     type: string
-              Actions: 
+                  slot3_cpu_ppin: 
+                    type: string
+                  slot3_por_cfg: 
+                    type: string
+              Resources: 
                 type: array
                 items: 
                   type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string

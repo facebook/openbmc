@@ -60,11 +60,11 @@
 #define MAX_SNR_NAME  32
 #define MAX_EVENT_STR 256
 
-#define HWMON_PWM_PATH "/sys/devices/platform/pwm-fan0/hwmon/hwmon*"
-#define PWM1           "pwm1"
 #define KV_KEY_BIC_HEARTBEAT  "bic_hb_status"
 
 #define NIC_CARD_PERST_CTRL 0x09
+
+#define PWM_ZONE            0
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
@@ -609,51 +609,28 @@ pal_get_fru_name(uint8_t fru, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
-  char str[MAX_VALUE_LEN] = {0};
-  char full_dir_name[MAX_PATH_LEN * 2] = {0};
-  char dir_name[MAX_PATH_LEN] = {0};
-  int value = 0;
 
   if (fan_id >= pal_pwm_cnt) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
 
-  value = (int)(pwm) * 255 / 100;
-  snprintf(str, sizeof(str), "%d", value);
-
-  if (get_current_dir(HWMON_PWM_PATH, dir_name) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, HWMON_PWM_PATH);
-    return -1;
-  }
-
-  snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, PWM1);
-
-  return write_device(full_dir_name, str);
+  return sensors_write_pwmfan(PWM_ZONE, (float)pwm);
 }
 
 int
 pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
-  int value = 0;
+  float value = 0;
   int ret = 0;
-  char full_dir_name[MAX_PATH_LEN * 2] = {0};
-  char dir_name[MAX_PATH_LEN] = {0};
 
   if (fan_id >= pal_get_tach_cnt()) {
     syslog(LOG_WARNING, "%s: Invalid fan index: %d", __func__, fan_id);
     return -1;
   }
 
-  if (get_current_dir(HWMON_PWM_PATH, dir_name) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get dir: %s\n", __func__, HWMON_PWM_PATH);
-    return -1;
-  }
-
-  snprintf(full_dir_name, sizeof(full_dir_name), "%s/%s", dir_name, PWM1);
-
-  ret = read_device(full_dir_name, &value);
+  ret = sensors_read_pwmfan(PWM_ZONE, &value);
   if (ret == 0) {
-    *pwm = (uint8_t)ceil((float)value * 100.0 / 255.0);
+    *pwm = (uint8_t)value;
   }
 
   return ret;
@@ -1035,6 +1012,38 @@ pal_is_slot_server(uint8_t fru) {
 }
 
 int
+pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver) {
+  int ret = 0;
+  uint8_t bios_post_cmplt = 0;
+  bic_gpio_t gpio = {0};
+
+  // Check BIOS is completed via BIC
+  if (bic_get_gpio(&gpio) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);
+    return -1;
+  }
+  bios_post_cmplt = ((((uint8_t*)&gpio)[BIOS_POST_CMPLT/8]) >> (BIOS_POST_CMPLT % 8)) & 0x1;
+  if (bios_post_cmplt != GPIO_VALUE_LOW) {
+    syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
+    return -1;
+  }
+
+  // Get BIOS firmware version from BIC if key: sysfw_ver_server is not set
+  if (bic_get_sys_fw_ver(ver) < 0) {
+    syslog(LOG_WARNING, "%s() failed to get system firmware version from BIC", __func__);
+    return -1;
+  }
+
+  // Set BIOS firmware version to key: sysfw_ver_server
+  if (pal_set_sysfw_ver(slot, ver) < 0) {
+    syslog(LOG_WARNING, "%s() failed to set key value of system firmware version", __func__);
+    return -1;
+  }
+
+  return ret;
+}
+
+int
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i = 0, ret = 0;
   int tmp_len = 0;
@@ -1080,9 +1089,10 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
 
   snprintf(key, sizeof(key), "sysfw_ver_server");
   ret = pal_get_key_value(key, str);
-  if (ret != 0) {
-    syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
-    return PAL_ENOTSUP;
+
+  // Get BIOS f/w version from BIC if get key value failed or if key value was not set.
+  if ((ret != 0) || (strcmp(str, "0") == 0)) {
+    return pal_get_sysfw_ver_from_bic(slot, ver);
   }
 
   for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
@@ -1213,7 +1223,7 @@ i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8
     return -1;
   }
 
-  snprintf(cmd, sizeof(cmd), "%d-00%d", bus, addr);
+  snprintf(cmd, sizeof(cmd), "%d-00%02x", bus, addr);
   if (fwrite(cmd, sizeof(char), strlen(cmd), fp) != strlen(cmd)) {
     syslog(LOG_ERR, "%s Failed to write file: %s. %s", __func__, path, strerror(errno));
     ret = -1;
@@ -1225,13 +1235,20 @@ i2c_device_binding_operation(uint8_t bus, uint8_t addr, char *driver_name, uint8
 }
 
 int
-pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
-  return i2c_device_binding_operation(bus, addr, driver_name, BIND);
+pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
+  if (bind_dir != NULL && access(bind_dir, F_OK) != 0) {
+    return i2c_device_binding_operation(bus, addr, driver_name, BIND);
+  }
+  return 0;
 }
 
 int
-pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name) {
-  return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
+pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir) {
+  if (bind_dir != NULL && access(bind_dir, F_OK) == 0) {
+    return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
+  }
+  return 0;
+>>>>>>> facebook/helium
 }
 
 // To get the platform sku
@@ -3256,8 +3273,8 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
 int
 pal_bic_self_test(void) {
-  uint8_t result = 0;
-  return bic_get_self_test_result(&result);
+  uint8_t result[SIZE_SELF_TEST_RESULT] = {0};
+  return bic_get_self_test_result(result);
 }
 
 int
@@ -3565,6 +3582,9 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
     if (is_e1s_iocm_present(T5_E1S0_T7_IOC_AVENGER) == false) {
       return false;
     }
+    if (is_e1s_iocm_i2c_enabled(T5_E1S0_T7_IOC_AVENGER) == false) {
+      return false;
+    }
   } else {
     syslog(LOG_WARNING, "%s() Failed to check IOC is ready due to unknown i2c bus: %d", __func__, i2c_bus);
     return false;
@@ -3824,7 +3844,7 @@ pal_set_fpga_ver_cache(uint8_t bus, uint8_t addr) {
         msleep(100);
       }
     }
-    
+
     if (retry == MAX_RETRY) {
       syslog(LOG_ERR, "Fail to set FPGA version cache value due to i2c_rdwr_msg_transfer failed. bus: %d addr: %02Xh ret: %d", bus, addr, ret);
     }
@@ -4143,6 +4163,156 @@ pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
   // Only SCC IOC temperature is monitoring by BMC
   if ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP)) {
     return 1;
+  }
+
+  return 0;
+}
+
+int
+pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len) {
+  char path[MAX_PATH_LEN] = {0};
+  int fruid_len = 0, bytes_rd = 0;
+  uint8_t serial_addr = 0, produce_start_addr = 0;
+  FILE *fruid_fd;
+  uint8_t *eeprom;
+  int ret = 0;
+
+  if (serial_num == NULL) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to parameter is NULL.", __func__, fan_id);
+    return ret;
+  }
+
+  ret = pal_get_fruid_path(FRU_FAN0 + fan_id, path);
+  if (ret < 0) {
+    return -1;
+  }
+
+  ret = -1;
+  fruid_fd = fopen(path, "rb");
+  if (fruid_fd == NULL) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to unable to open the file %s", __func__, fan_id, path);
+    return ret;
+  }
+
+  fseek(fruid_fd, 0, SEEK_END);
+  fruid_len = (uint32_t) ftell(fruid_fd);
+  if (fruid_len == 0) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to file %s is empty", __func__, fan_id, path);
+    goto exit;
+  }
+
+  fseek(fruid_fd, 0, SEEK_SET);
+
+  eeprom = (uint8_t *) malloc(fruid_len);
+  if (eeprom == NULL) {
+    syslog(LOG_ERR, "%s: FAN%d FRU malloc: memory allocation failed", __func__, fan_id);
+    goto exit;
+  }
+
+  bytes_rd = fread(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
+  if (bytes_rd != fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file size is wrong: %d, expected: %d",
+      __func__, fan_id, bytes_rd, fruid_len);
+    goto exit;
+  }
+
+  // Read Produce Serial Number
+  if (FRUID_HEADER_OFFSET_PRODUCT_INFO >= fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
+      __func__, fan_id, fruid_len, FRUID_HEADER_OFFSET_PRODUCT_INFO);
+    goto exit;
+  }
+  produce_start_addr = eeprom[FRUID_HEADER_OFFSET_PRODUCT_INFO]*FRUID_OFFSET_MULTIPLIER;
+
+  if (produce_start_addr >= fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
+      __func__, fan_id, fruid_len, produce_start_addr);
+    goto exit;
+  }
+  serial_addr = produce_start_addr + FRUID_PRODUCT_OFFSET_SERIAL;
+
+  if (serial_addr >= fruid_len) {
+    syslog(LOG_ERR, "%s: Failed to read FAN%d FRU due to the file is incomplete: %d, expected: %d",
+      __func__, fan_id, fruid_len, serial_addr);
+    goto exit;
+  }
+  memcpy(serial_num, &eeprom[serial_addr], serial_len);
+
+  ret = 0;
+
+exit:
+  if (fruid_fd != NULL) {
+    fclose(fruid_fd);
+  }
+
+  if (eeprom != NULL) {
+    free(eeprom);
+  }
+
+  return ret;
+}
+
+int
+pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
+  uint8_t *fanfru_check_sel;
+  uint8_t *fanfru_check_bin;
+  char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char *temp_str;
+  int i = 0, j = 0, ret = 0;
+  uint8_t check_len = 0, check_index = 1;
+
+  if (log == NULL) {
+    syslog(LOG_WARNING, "%s: Failed to handle fan fru certified SEL due to parameters is NULL.", __func__);
+    return -1;
+  }
+
+  // if SEL doesn't contain FANFRU certified data
+  // don't handle
+  if (strstr(log, "FANFRU:") == NULL) {
+    return -1;
+  }
+
+  temp_str = strtok(log, ":");
+  temp_str = strtok(NULL, ":");
+  for (i = 0; i < SINGLE_FAN_CNT; i++) { // 4 fans
+    memset(key, 0, sizeof(key));
+    snprintf(key, sizeof(key), "fan%d_dumped", i);
+
+    // Get certified data length from SEL
+    check_len = temp_str[check_index];
+    check_index = check_index + 1;
+
+    // if fanN check len equal to 0
+    // indicate Expander could not get the correct SN of fanN
+    // SEL will not bring value of fanN
+    // Skip the fanN update
+    if (check_len == 0) {
+      continue;
+    }
+
+    // Get certified data from SEL
+    fanfru_check_sel = (uint8_t *) malloc(check_len);
+    for (j = 0; j < check_len; j++) {
+      fanfru_check_sel[j] = temp_str[check_index + j];
+    }
+    check_index = check_index + check_len;
+
+    // Get certified data from bin file
+    fanfru_check_bin = (uint8_t *) malloc(check_len);
+    ret = pal_get_fanfru_serial_num(i, fanfru_check_bin, check_len);
+
+    // If get data failed or is different
+    // run exp-cache to udpate FAN FRU binary data
+    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0)) {
+      snprintf(cmd, sizeof(cmd), "/usr/bin/exp-cached --update_fan fan%d> /dev/null 2>&1 &", i);
+      run_command(cmd);
+    }
+
+    free(fanfru_check_sel);
+    free(fanfru_check_bin);
+
+    kv_set(key, STR_VALUE_1, 0, 0);
   }
 
   return 0;

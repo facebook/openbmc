@@ -62,6 +62,12 @@ get_bmc_board_id() {
   echo $val
 }
 
+# Get HSC BB detect
+get_hsc_bb_detect() {
+  val=$(( $(gpio_get HSC_BB_BMC_DETECT0) + ($(gpio_get HSC_BB_BMC_DETECT1)<<1) + ($(gpio_get HSC_BB_BMC_DETECT2)<<2) ))
+  echo $val
+}
+
 # Store and Clear POR bit
 store_clear_por()
 {

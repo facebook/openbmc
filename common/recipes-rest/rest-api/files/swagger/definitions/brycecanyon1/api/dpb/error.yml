@@ -18,17 +18,13 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Error Code f7: 
-                    type: string
                   Error Counter: 
                     type: string
-                  Error Code e0: 
-                    type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

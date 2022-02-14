@@ -34,7 +34,8 @@ extern "C" {
 #define PRESENT_2OU 2
 #define RETRY_3_TIME 3
 #define RETRY_TIME 10
-#define IPMB_RETRY_DELAY_TIME 500
+#define IPMB_RETRY_TIME 3
+#define IPMB_RETRY_DELAY 100
 
 #define MAX_CHECK_DEVICE_TIME 8
 #define GPIO_RST_USB_HUB 0x10
@@ -44,18 +45,23 @@ extern "C" {
 
 #define MAX_VER_STR_LEN 80
 
-/*IFX VR pages*/
-#define VR_PAGE   0x00
-#define VR_PAGE32 0x32
-#define VR_PAGE50 0x50
-#define VR_PAGE60 0x60
-#define VR_PAGE62 0x62
+/* IFX VR */
+enum {
+  PMBUS_STS_CML       = 0x7E,
+  IFX_MFR_AHB_ADDR    = 0xCE,
+  IFX_MFR_REG_WRITE   = 0xDE,
+  IFX_MFR_REG_READ    = 0xDF,
+  IFX_MFR_FW_CMD_DATA = 0xFD,
+  IFX_MFR_FW_CMD      = 0xFE,
+
+  OTP_PTN_RMNG  = 0x10,
+  OTP_CONF_STO  = 0x11,
+  OTP_FILE_INVD = 0x12,
+  GET_CRC       = 0x2D,
+};
 
 #define BIT_VALUE(list, index) \
-           ((((uint8_t*)&list)[index/8]) >> (7 - (index % 8))) & 0x1\
-
-#define REVISION_ID(x) ((x >> 4) & 0x0f)
-#define COMPONENT_ID(x) (x & 0x0f)
+           ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\
 
 #define NIC_CPLD_BUS 9
 #define BB_CPLD_BUS 12
@@ -96,46 +102,6 @@ typedef struct
   uint8_t path[8];
 } usb_dev;
 
-enum {
-  FW_CPLD = 1,
-  FW_BIC,
-  FW_ME,
-  FW_BIC_RCVY,
-  FW_VR,               // 5
-  FW_BIOS,
-  FW_1OU_BIC,
-  FW_1OU_CPLD,
-  FW_2OU_BIC,
-  FW_2OU_CPLD,         // 10
-  FW_BB_BIC,
-  FW_BB_CPLD,
-  FW_2OU_3V3_VR1,
-  FW_2OU_3V3_VR2,
-  FW_2OU_3V3_VR3,      // 15
-  FW_2OU_1V8_VR,
-  FW_2OU_PESW_VR,
-  FW_2OU_PESW_CFG_VER,
-  FW_2OU_PESW_FW_VER,
-  FW_2OU_PESW_BL0_VER, // 20
-  FW_2OU_PESW_BL1_VER,
-  FW_2OU_PESW_PART_MAP0_VER,
-  FW_2OU_PESW_PART_MAP1_VER,
-  FW_2OU_PESW,
-  FW_2OU_M2_DEV0,      // 25
-  FW_2OU_M2_DEV1,
-  FW_2OU_M2_DEV2,
-  FW_2OU_M2_DEV3,
-  FW_2OU_M2_DEV4,
-  FW_2OU_M2_DEV5,      // 30
-  FW_2OU_M2_DEV6,
-  FW_2OU_M2_DEV7,
-  FW_2OU_M2_DEV8,
-  FW_2OU_M2_DEV9,
-  FW_2OU_M2_DEV10,     // 35
-  FW_2OU_M2_DEV11,
-  // last id
-  FW_COMPONENT_LAST_ID
-};
 
 enum {
   VR_ISL = 0x0,
@@ -150,7 +116,6 @@ enum {
   VCCIN_ADDR = 0xC0,
   VCCD_ADDR = 0xC4,
   VCCINFAON_ADDR = 0xEC,
-  VDDQ_DEF_ADDR = 0xCC,
   VR_PESW_ADDR = 0xC8,
   VR_2OU_P3V3_STBY1 = 0x28,
   VR_2OU_P3V3_STBY2 = 0x2E,
@@ -175,13 +140,13 @@ enum {
 
 enum {
   //BIC to BMC
-  USB_INPUT_PORT = 0x2,
-  USB_OUTPUT_PORT = 0x81,
+  USB_INPUT_PORT = 0x3,
+  USB_OUTPUT_PORT = 0x82,
 };
 
 /* Generic GPIO configuration */
 typedef struct _bic_gpio_t {
-  uint32_t gpio[3]; 
+  uint32_t gpio[3];
 } bic_gpio_t;
 
 typedef struct _bic_gpio_config_t {

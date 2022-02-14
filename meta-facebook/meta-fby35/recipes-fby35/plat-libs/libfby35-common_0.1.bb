@@ -12,8 +12,8 @@ SRC_URI = "file://fby35_common \
 
 CFLAGS += " -Wall -Werror -fPIC "
 LDFLAGS = "-lobmc-i2c -lgpio-ctrl -lkv"
-DEPENDS += "libobmc-i2c libgpio-ctrl libkv"
-RDEPENDS:${PN} += "libobmc-i2c libgpio-ctrl libkv"
+DEPENDS += "libobmc-i2c libgpio-ctrl libkv openssl"
+RDEPENDS:${PN} += "libobmc-i2c libgpio-ctrl libkv openssl"
 
 S = "${WORKDIR}/fby35_common"
 

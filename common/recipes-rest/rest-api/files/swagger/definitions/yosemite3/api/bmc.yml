@@ -35,22 +35,22 @@ paths:
                     additionalProperties: false
                     properties: 
                       MemTotal: 
-                        type: integer
+                        type: number
                         format: int32
                       MemFree: 
-                        type: integer
+                        type: number
                         format: int32
                       MemAvailable: 
-                        type: integer
+                        type: number
                         format: int32
                       Buffers: 
-                        type: integer
+                        type: number
                         format: int32
                       Cached: 
-                        type: integer
+                        type: number
                         format: int32
                       Shmem: 
-                        type: integer
+                        type: number
                         format: int32
                   CPU Usage: 
                     type: string
@@ -69,6 +69,8 @@ paths:
                   SPI1 Vendor: 
                     type: string
                   At-Scale-Debug Running: 
+                    type: boolean
+                  Secondary Boot Triggered: 
                     type: boolean
                   vboot: 
                     type: object
@@ -108,6 +110,13 @@ paths:
                     type: string
                   open-fds: 
                     type: string
+                  MTD Parts: 
+                    type: array
+                    items: 
+                      type: string
+                  mmc-info: 
+                    type: object
+                    format: nullable
               Actions: 
                 type: array
                 items: 

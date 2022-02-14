@@ -67,13 +67,13 @@ pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER};
 #define SET_BIT(list, index, bit) \
            if ( bit == 0 ) {      \
-             (((uint8_t*)&list)[index/8]) &= ~(0x1 << (7-(index % 8))); \
+             (((uint8_t*)&list)[index/8]) &= ~(0x1 << (index % 8)); \
            } else {                                                     \
-             (((uint8_t*)&list)[index/8]) |= 0x1 << (7-(index % 8));    \
+             (((uint8_t*)&list)[index/8]) |= 0x1 << (index % 8);    \
            }
 
 #define GET_BIT(list, index) \
-           (((((uint8_t*)&list)[index/8]) >> (7-(index % 8))) & 0x1)
+           (((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1)
 
 bic_gpio_t gpio_ass_val = {
   {0, 0, 0}, // gpio[0], gpio[1], gpio[2]
@@ -820,7 +820,7 @@ host_pwr_mon() {
     if ( host_off_flag == SLOTS_MASK ) {
       //Need to make sure the hosts are off instead of power cycle
       //delay to change the power mode of NIC
-      if ( is_util_run_flag > 0 || access(SET_NIC_PWR_MODE_LOCK, F_OK) == 0) {
+      if ( is_util_run_flag > 0 ) {
         retry = 0;
         usleep(DELAY_GPIOD_READ);
         continue;
@@ -839,6 +839,8 @@ host_pwr_mon() {
       if ( pal_server_set_nic_power(SERVER_POWER_OFF) == 0 ) {
         syslog(LOG_CRIT, "NIC Power is set to VAUX");
         nic_pwr_set_off = true;
+      } else {
+        retry = 0;
       }
     } else if ( retry < MAX_NIC_PWR_RETRY && nic_pwr_set_off == true) {
       syslog(LOG_CRIT, "NIC Power is set to VMAIN");

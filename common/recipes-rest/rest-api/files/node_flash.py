@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from typing import Any, Dict, Optional
 
 from kv import kv_get
 from node import node
@@ -18,7 +19,7 @@ class flashNode(node):
         else:
             self.actions = actions
 
-    async def getInformation(self, param={}):
+    async def getInformation(self, param: Optional[Dict[Any, Any]] = None):
         # Get vendor name
         vendor_name = " "
         data = kv_get("ssd_vendor")

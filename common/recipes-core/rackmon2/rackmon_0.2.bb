@@ -17,6 +17,7 @@
 inherit systemd
 inherit meson
 inherit ptest-meson
+inherit python3native
 
 SUMMARY = "Rackmon Functionality"
 DESCRIPTION = "Rackmon Functionality"
@@ -27,7 +28,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 DEPENDS:append = " update-rc.d-native"
 
-DEPENDS += "liblog libmisc-utils nlohmann-json cli11"
+DEPENDS += "liblog libmisc-utils nlohmann-json cli11 python3-jsonschema-native"
 RDEPENDS:${PN} = "liblog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):
@@ -67,8 +68,21 @@ SRC_URI = "file://meson.build \
            file://RackmonCliUnix.cpp \
           "
 # Configuration files
-SRC_URI += "file://rackmon.conf \
-            file://rackmon.d/orv2_psu.json \
+SRC_URI += "file://configs/interface/rackmon.conf \
+            file://configs/register_map/orv2_psu.json \
+           "
+
+# Schemas
+SRC_URI += "file://schemas/RegisterMapConfigSchema.json \
+            file://schemas/InterfaceConfigSchema.json \
+            file://schemas/interface/interface.json \
+            file://schemas/registermap/float_constraints.json \
+            file://schemas/registermap/flags_constraints.json \
+            file://schemas/registermap/integer_constraints.json \
+            file://schemas/registermap/register.json \
+           "
+#scripts
+SRC_URI += "file://scripts/schema_validator.py \
            "
 
 # Test sources
@@ -117,11 +131,6 @@ do_install:append() {
     else
         install_sysv
     fi
-    install -d ${D}${sysconfdir}/rackmon.d
-    install -m 644 ${S}/rackmon.conf ${D}${sysconfdir}/rackmon.conf
-    for f in ${S}/rackmon.d/*; do
-      install ${f} ${D}${sysconfdir}/rackmon.d/
-    done
     bin="${D}/usr/local/bin"
     install_wrapper "/usr/local/bin/rackmoncli list" ${bin}/rackmonstatus
     install_wrapper "/usr/local/bin/rackmoncli data --json" ${bin}/rackmondata

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["begin", "length", "name"],
+    "properties": {
+      "begin": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "length": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "name": {
+        "type": "string"
+      },
+      "keep": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "changes_only": {
+        "type": "boolean"
+      },
+      "format": {
+        "type": "string",
+        "enum": ["hex", "string", "integer", "float", "flags"]
+      },
+      "endian": {
+        "type": "string",
+        "enum": ["L", "B"]
+      },
+      "precision": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 31
+      },
+      "flags": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 256,
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": [
+            {"type": "integer", "minimum": 0, "maximum": 255},
+            {"type": "string"}
+          ]
+        }
+      }
+    },
+    "allOf": [
+      {
+        "$ref": "float_constraints.json#/definitions"
+      },
+      {
+        "$ref": "integer_constraints.json#/definitions"
+      },
+      {
+        "$ref": "flags_constraints.json#/definitions"
+      }
+    ]
+  }
+}

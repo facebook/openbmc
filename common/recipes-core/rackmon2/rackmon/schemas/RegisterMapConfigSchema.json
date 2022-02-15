@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "regmap",
+  "title": "Rackmon Register Map Configuration",
+  "description": "Schema to test the Register Map JSON configuration",
+  "type": "object",
+  "required": ["name", "address_range", "probe_register", "default_baudrate", "registers"],
+  "additionalProperties": false,
+  
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "address_range": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      }
+    },
+    "probe_register": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255
+    },
+    "default_baudrate": {
+      "type": "integer",
+      "minimum": 19200,
+      "maximum": 115200
+    },
+    "preferred_baudrate": {
+      "type": "integer",
+      "minimum": 19200,
+      "maximum": 115200
+    },
+    "registers": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 65536,
+      "items": {
+        "$ref": "registermap/register.json#/definitions"
+      }
+    }
+  }
+}

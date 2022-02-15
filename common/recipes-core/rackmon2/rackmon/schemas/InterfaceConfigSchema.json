@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "intrface",
+  "title": "Rackmon Interface Configuration",
+  "description": "Schema to test the interface JSON configuration",
+  "type": "object",
+  "required": ["interfaces"],
+  "additionalProperties": false,
+  "properties": {
+    "interfaces": {
+      "description": "List of interfaces to monitor",
+      "type": "array",
+      "items": {
+        "$ref": "interface/interface.json#/definitions"
+      }
+    }
+  }
+}

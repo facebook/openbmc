@@ -101,7 +101,7 @@ extern const char *slot_usage;
 
 #define MD5_READ_BYTES     (1024)
 
-#define REVISION_ID(x, board_id)  (((x >> 4) & 0x07) + ((board_id == 1) ? 0 : 1))
+#define REVISION_ID(x)  ((x >> 4) & 0x07)
 #define BOARD_ID(x)     (x & 0x0f)
 #define COMPONENT_ID(x) (x >> 7)
 
@@ -242,6 +242,25 @@ enum fw_rev {
   FW_REV_DVT,
   FW_REV_PVT,
   FW_REV_MP ,
+};
+
+enum brd_rev {
+  BB_REV_POC1 = 0,
+  BB_REV_POC2 = 1,
+  BB_REV_EVT1 = 2,
+  BB_REV_EVT2 = 3,
+  BB_REV_EVT3 = 4,
+  BB_REV_DVT  = 5,
+  BB_REV_PVT  = 6,
+  BB_REV_MP   = 7,
+
+  SB_REV_POC  = 0,
+  SB_REV_EVT  = 1,
+  SB_REV_EVT2 = 2,
+  SB_REV_EVT3 = 3,
+  SB_REV_DVT  = 5,
+  SB_REV_PVT  = 7,
+  SB_REV_MP   = 9,
 };
 
 enum board_id {

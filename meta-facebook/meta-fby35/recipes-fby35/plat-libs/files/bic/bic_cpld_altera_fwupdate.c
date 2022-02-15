@@ -37,7 +37,7 @@
 //#define DEBUG
 
 /****************************/
-/*      CPLD fw update      */                            
+/*      CPLD fw update      */
 /****************************/
 #define MAX_RETRY 3
 #define CPLD_UPDATE_ADDR 0x80
@@ -66,7 +66,7 @@ const char *board_stage[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
 
 #define GET_VALUE(buf) (buf[0] << 0) | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24)
 
-static int 
+static int
 set_register_via_bypass(uint8_t slot_id, int reg, int val, uint8_t intf) {
   int ret;
   int retries = MAX_RETRY;
@@ -104,7 +104,7 @@ set_register_via_bypass(uint8_t slot_id, int reg, int val, uint8_t intf) {
   return ret;
 }
 
-static int 
+static int
 get_register_via_bypass(uint8_t slot_id, int reg, int *val, uint8_t intf) {
   int ret;
   int retries = MAX_RETRY;
@@ -195,7 +195,7 @@ write_register(uint8_t slot_id, int address, int data, uint8_t intf) {
   return set_register_via_bypass(slot_id, address, data, intf);
 }
 
-static int 
+static int
 Max10_get_status(uint8_t slot_id, uint8_t intf) {
   return read_register(slot_id, ON_CHIP_FLASH_IP_CSR_STATUS_REG, intf);
 }
@@ -305,7 +305,7 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
 #ifdef DEBUG
   printf("%s() r 0x%x\n", __func__, read_register(slot_id, ON_CHIP_FLASH_IP_CSR_CTRL_REG, intf));
 #endif
- 
+
   while ( done == 0 ) {
     value = read_register(slot_id, ON_CHIP_FLASH_IP_CSR_STATUS_REG, intf);
 #ifdef DEBUG
@@ -333,7 +333,6 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
 static int
 is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
   int ret = -1;
-  int i2cfd = 0;
   uint8_t tbuf[4] = {0};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 0;
@@ -370,13 +369,12 @@ is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
           board_type_index = 0;
         }
 
-        // PVT & MP firmware could be used in common
-        if (board_type_index < CPLD_BOARD_PVT_REV) {
-          if (REVISION_ID(signed_byte, BOARD_ID_BB) != board_type_index) {
+        if (board_type_index <= BB_REV_POC2) {
+          if (REVISION_ID(signed_byte) != FW_REV_POC) {
             board_rev_is_invalid = true;
           }
         } else {
-          if (REVISION_ID(signed_byte, BOARD_ID_BB) < CPLD_BOARD_PVT_REV) {
+          if (REVISION_ID(signed_byte) < FW_REV_EVT) {
             board_rev_is_invalid = true;
           }
         }
@@ -388,51 +386,6 @@ is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
         }
 
         return ((COMPONENT_ID(signed_byte) == BICBB) && !board_rev_is_invalid)?0:-1;
-      break;
-    case NONE_INTF:
-        // Read Board Revision from SB CPLD
-        i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-        if ( i2cfd < 0 ) {
-          syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-          goto error_exit;
-        }
-
-        tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
-        tlen = 1;
-        rlen = 1;
-        retry = 0;
-        while (retry < RETRY_TIME) {
-          ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-          if ( ret < 0 ) {
-            retry++;
-            msleep(100);
-          } else {
-            break;
-          }
-        }
-        if (retry == RETRY_TIME) {
-          syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-          goto error_exit;
-        }
-
-        // PVT & MP firmware could be used in common
-        if (board_type_index < CPLD_BOARD_PVT_REV) {
-          if (REVISION_ID(signed_byte, BOARD_ID_SB) != board_type_index) {
-            board_rev_is_invalid = true;
-          }
-        } else {
-          if (REVISION_ID(signed_byte, BOARD_ID_SB) < CPLD_BOARD_PVT_REV) {
-            board_rev_is_invalid = true;
-          }
-        }
-
-        if (board_rev_is_invalid) {
-          printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
-                  slot_id, board_stage[board_type_index], board_stage[board_type_index]);
-          printf("To force the update, please use the --force option.\n");
-        }
-
-        return ((COMPONENT_ID(signed_byte) == BICDL) && !board_rev_is_invalid)?0:-1;
       break;
   }
 
@@ -478,12 +431,12 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   return ret;
 }
 
-int 
+int
 update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
 #define MAX10_RPD_SIZE 0x5C000
   uint8_t *rpd_file = NULL;
   uint8_t buf[256] = {0};
-  const uint8_t target = UPDATE_CPLD; 
+  const uint8_t target = UPDATE_CPLD;
   const uint16_t read_count = 128;
   uint32_t offset = 0, last_offset = 0, dsize = 0;
   struct stat finfo;
@@ -542,7 +495,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
         if ( ret < 0 ) {
           printf("The image is not the valid CPLD image for this component.\n");
         } else {
-          ret = BIC_STATUS_SUCCESS; 
+          ret = BIC_STATUS_SUCCESS;
         }
       } else {
         printf("The size of image is not expected!\n");
@@ -573,7 +526,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     printf("Failed to erase the sector.\n");
     goto error_exit;
   }
- 
+
   //step 3 - Set Erase to `None`
   ret = Max10_erase_sector(slot_id, Sector_NotSet, intf);
   if ( ret < 0 ) {
@@ -586,7 +539,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   while (1) {
     // Read from file
     memcpy(buf, &rpd_file[offset], read_count);
-     
+
     // Send data to Bridge-IC
     ret = _update_fw(slot_id, target, offset, read_count, buf, intf);
     if ( ret < 0 ) {

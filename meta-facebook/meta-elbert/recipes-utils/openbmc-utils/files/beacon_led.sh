@@ -29,14 +29,9 @@ BEACON_MODE_NETSTATE=1
 BEACON_MODE_DRAINED=2
 BEACON_MODE_AUDIT=3
 
-beacon_led_on() {
-     mode_str=$1
-
-     if [ -z "$mode_str" ]; then
-          mode_str="locator"
-     fi
-
+beacon_stoi() {
      # Translate mode to int for file storage.
+     mode_str=$1
      mode_int="$BEACON_MODE_OFF"
      case "$mode_str" in
           locator)
@@ -56,6 +51,17 @@ beacon_led_on() {
                ;;
      esac
 
+     echo "$mode_int"
+}
+
+beacon_led_on() {
+     mode_str=$1
+
+     if [ -z "$mode_str" ]; then
+          mode_str="locator"
+     fi
+
+     mode_int=$(beacon_stoi "$mode_str")
      if [ -f "$BEACON_FILE" ]; then
           curr_mode=$(<"$BEACON_FILE")
           if [[ "$mode_int" == "$curr_mode" ]]; then
@@ -78,10 +84,27 @@ beacon_led_off() {
      echo "Beacon LED: now OFF"
 }
 
+beacon_led_status() {
+     # Print beacon status for every mode.
+     curr_mode="$BEACON_MODE_OFF"
+     if [ -f "$BEACON_FILE" ]; then
+          curr_mode=$(<"$BEACON_FILE")
+     fi
+
+     for mode_str in locator netstate drained audit; do
+          mode_int=$(beacon_stoi "$mode_str")
+          if [[ "$mode_int" == "$curr_mode" ]]; then
+             echo "$mode_str: ON"
+          else
+             echo "$mode_str: OFF"
+          fi
+     done
+}
+
 usage() {
      program=$(basename "$0")
      echo "Usage:"
-     echo "$program <on|off> [locator | netstate | drained | audit]"
+     echo "$program <on|off|status> [locator | netstate | drained | audit]"
      exit 1
 }
 
@@ -94,6 +117,9 @@ case "$command" in
           ;;
      off)
           beacon_led_off
+          ;;
+     status)
+          beacon_led_status
           ;;
      *)
           usage

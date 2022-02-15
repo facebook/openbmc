@@ -752,11 +752,11 @@ static void ecc_threshold_assert_check(const char *target, int value,
     thres->asserted = true;
     if (thres->log) {
       if (ecc_addr_log) {
-        syslog(LOG_CRIT, "%s occurred (over %d%%) "
+        syslog(thres->log_level, "%s occurred (over %d%%) "
             "Counter = %d Address of last recoverable ECC error = 0x%x",
             target, (int)thres->value, value, (ecc_err_addr >> 4) & 0xFFFFFFFF);
       } else {
-        syslog(LOG_CRIT, "ECC occurred (over %d%%): %s Counter = %d",
+        syslog(thres->log_level, "ECC occurred (over %d%%): %s Counter = %d",
             (int)thres->value, target, value);
       }
     }

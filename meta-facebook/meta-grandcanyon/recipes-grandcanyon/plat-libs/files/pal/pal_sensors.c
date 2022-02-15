@@ -1186,7 +1186,9 @@ read_device(const char *device, int *value) {
   }
 
   if (fscanf(fp, "%d", value) != 1) {
+#ifdef DEBUG
     syslog(LOG_INFO, "%s failed to read device %s error: %s", __func__, device, strerror(errno));
+#endif
     fclose(fp);
     return -1;
   }
@@ -1237,9 +1239,9 @@ read_ads1015(uint8_t id, float *value) {
   snprintf(full_dir_name, sizeof(full_dir_name), IOCM_VOLTAGE_SENSOR_PATH, dir_name, id);
 
   if (read_device(full_dir_name, &read_value) < 0) {
-#ifdef DEBUG
-     syslog(LOG_WARNING, "%s() Failed to read device: %s\n", __func__, full_dir_name);
-#endif
+     if (is_iocm_power_good() == true) {
+       syslog(LOG_WARNING, "%s() Failed to read device: %s\n", __func__, full_dir_name);
+     }
      return ERR_SENSOR_NA;
   }
   // output V = input mV * reference mV / default mV / 1000

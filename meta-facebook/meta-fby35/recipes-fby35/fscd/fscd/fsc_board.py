@@ -148,7 +148,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
             file = "/var/run/power-util_%d.lock" % int(fru_map[board]["slot_num"])
             if os.path.exists(file):
                 return 0
-
+            if board.find("slot") != -1:
+                if lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"])) == True:
+                    return 0
             status = c_uint8(0)
             ret = lpal_hndl.pal_get_server_power(
                 int(fru_map[board]["slot_num"]), byref(status)

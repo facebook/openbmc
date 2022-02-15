@@ -71,7 +71,7 @@ for f in $MODIFIED_FILES; do
     first=$(head -1 "$f")
     if [[ "$first" =~ \#!/.*/sh  || "$first" =~ \#!/.*/bash ]]; then
       do_lint_sh "$f"
-    elif [[ "$first" =~ \#!/.*/python  || "$first" =~ \#!/.*/python3 ]]; then
+    elif [[ "$first" =~ \#!/.*python  || "$first" =~ \#!/.*python3 ]]; then
       do_lint_py "$f"
     else
       echo "IGNORE: $f"

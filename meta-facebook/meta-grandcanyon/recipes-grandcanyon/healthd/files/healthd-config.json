@@ -47,7 +47,11 @@
     "recov_threshold": [
       {
         "value": 0.0,
-        "action": ["log-critical", "bmc-error-trigger"]
+        "action": ["log-warning", "bmc-error-trigger"]
+      },
+      {
+        "value": 2.0,
+        "action": ["log-critical"]
       },
       {
         "value": 50.0,

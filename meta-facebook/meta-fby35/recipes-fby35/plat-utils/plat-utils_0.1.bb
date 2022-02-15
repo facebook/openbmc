@@ -65,7 +65,7 @@ do_install() {
 
   # install setup-dev.sh
   install -m 755 setup-dev.sh ${D}${sysconfdir}/init.d/setup-dev.sh
-  update-rc.d -r ${D} setup-dev.sh start 60 5 .
+  update-rc.d -r ${D} setup-dev.sh start 69 5 .
 
   # install setup-gpio.sh
   # install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh

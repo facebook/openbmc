@@ -58,8 +58,10 @@ extern "C" {
 #define BB_FRU_ADDR  0x51
 #define NICEXP_FRU_ADDR 0x51
 #define NIC_FRU_ADDR 0x50
+#define DPV2_FRU_ADDR 0x51
 #define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
+#define MAX_FRU_PATH_LEN 128
 
 #define CPLD_BOARD_OFFSET  0x0D
 
@@ -103,7 +105,8 @@ extern const char *slot_usage;
 #define BOARD_ID(x)     (x & 0x0f)
 #define COMPONENT_ID(x) (x >> 7)
 
->>>>>>> facebook/helium
+#define FRU_DPV2_X8_BUS(fru) ((fru) + 3)
+
 enum {
   FRU_ALL       = 0,
   FRU_SLOT1     = 1,
@@ -138,6 +141,8 @@ enum {
   DEV_ID13_2OU = 0x12,
   BOARD_1OU,
   BOARD_2OU,
+  BOARD_2OU_X8,
+  BOARD_2OU_X16,
 
   MAX_NUM_DEVS,
 };
@@ -168,6 +173,8 @@ enum {
   FRU_ID_2OU_DEV11  = 22,
   FRU_ID_2OU_DEV12  = 23,
   FRU_ID_2OU_DEV13  = 24,
+  FRU_ID_2OU_X8     = 25,
+  FRU_ID_2OU_X16    = 26,
 };
 
 enum {
@@ -208,7 +215,9 @@ enum {
   E1S_BOARD = 0x02,
   GPV3_MCHP_BOARD = 0x03,
   GPV3_BRCM_BOARD = 0x00,
-  DPV2_BOARD = 0x07,
+  DPV2_X8_BOARD = 0x07,
+  DPV2_X16_BOARD = 0x70,
+  DPV2_BOARD = 0x77,
   UNKNOWN_BOARD = 0xff,
 };
 

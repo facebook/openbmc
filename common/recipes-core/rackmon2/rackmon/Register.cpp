@@ -338,7 +338,7 @@ void from_json(const json& j, RegisterDescriptor& i) {
     j.at("flags").get_to(i.flags);
     for (const auto& [pos, name] : i.flags) {
       if ((pos / 16) >= i.length) {
-        throw std::out_of_range("Flag bit position would overflow");
+        throw std::out_of_range(name + " flag bit position would overflow");
       }
     }
   }

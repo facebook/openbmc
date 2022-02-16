@@ -3,9 +3,9 @@
 #include <atomic>
 #include <shared_mutex>
 #include <thread>
-#include "Modbus.hpp"
-#include "ModbusDevice.hpp"
-#include "PollThread.hpp"
+#include "Modbus.h"
+#include "ModbusDevice.h"
+#include "PollThread.h"
 
 namespace rackmon {
 

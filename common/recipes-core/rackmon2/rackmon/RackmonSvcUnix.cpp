@@ -4,9 +4,9 @@
 #include <unistd.h>
 #include <csignal>
 #include <iostream>
-#include "Log.hpp"
-#include "Rackmon.hpp"
-#include "RackmonSvcUnix.hpp"
+#include "Log.h"
+#include "Rackmon.h"
+#include "RackmonSvcUnix.h"
 
 using nlohmann::json;
 using namespace rackmonsvc;

@@ -47,7 +47,7 @@ V2 addresses all these changes:
 
 # Device/Interface Abstraction
 
-The `Device` class provided by `dev.hpp` abstracts the OS from the rest of
+The `Device` class provided by `Device.h` abstracts the OS from the rest of
 the code. Since modbus requires exact read, the `read()` method reads
 exact number of bytes rather than faithfully abstract the OS `read` call
 which returns the number of bytes read. The methods may throw a `TimeoutException`
@@ -55,12 +55,12 @@ exception whenever something times-out. Otherwise, on errors it throws
 either `std::system_error` or `std::runtime_error`. The caller is expected
 to catch these.
 
-Inheriting from `Device` we have `UARTDevice` in `uart.hpp` which implements all the
+Inheriting from `Device` we have `UARTDevice` in `UARTDevice.h` which implements all the
 UART specific methods. In particular it has the concept of baudrate,
 enabling/disabling read. It also overrides `wait_write` method to actually
 poll the device on write completion.
 
-Also in `uart.hpp` we have `AspeedRS485Device` which inherits from `UARTDevice`.
+Also in `UARTDevice.h` we have `AspeedRS485Device` which inherits from `UARTDevice`.
 This is the abstraction for the native RS485 Device on the ASPEED Chip. With
 special IOCTL needed at device open (Used by wedge100. Wedge400 canuses the FDTI
 USB device and hence needs the default UARTDevice).
@@ -77,7 +77,7 @@ and allow us to mock any layer.
 
 # Modbus interface
 
-`modbus.hpp` implements the `Modbus` interface providing a request/response
+`Modbus.h` implements the `Modbus` interface providing a request/response
 type pattern over the UART path.
 Since we have potentially multiple inheritance sources (`UARTDevice` or
 `AspeedRS485Device` or more in the future), we are using composition instead
@@ -122,7 +122,7 @@ is discussed next.
 
 # Messaging
 
-`msg.hpp` provides a native `Msg` structure which allows us to create packs/unpacks
+`Msg.h` provides a native `Msg` structure which allows us to create packs/unpacks
 very easily. It provides `<<` operator to allow one to encode fields and
 `>>` operator to decode fields.
 Currently only byte and nibble is supported since most of the work revolves
@@ -140,7 +140,7 @@ and `validate()` which checks the CRC16 checksum at the end of the message
 The `Modbus` class is expected to call the `encode()` method just before
 writing a request and the `decode()` method right after receiving the response.
 
-`Msg` is further specialized in `modbus_cmds.hpp` to create `ReadHoldingRegistersReq`
+`Msg` is further specialized in `ModbusCmds.h` to create `ReadHoldingRegistersReq`
 and `ReadHoldingRegistersResp`. Users can use this to read registers on
 the modbus devices.
 
@@ -149,7 +149,7 @@ WriteHoldingRegister(req, resp) - Needed by baudrate negotiation.
 WriteHoldingRegisters(req, resp) - Needed to update PSU timestamp.
 
 # Register Maps
-regmap.hpp defines a register map which can be used to define the
+Register.h defines a register map which can be used to define the
 registers supported by a modbus device of a given address range.
 NOTE: This is roughly equivalent to what was previously done by
 `rackmon-configure.py`.
@@ -251,7 +251,7 @@ of the register map. That allows us to use different maps for
 each of the device type.
 
 # Modbus device interface
-`modbus_device.hpp` defines a Modbus device. You construct it with
+`ModbusDevice.h` defines a Modbus device. You construct it with
 a Modbus interface it was discovered on, its address and finally its
 register map described above.
 
@@ -266,7 +266,7 @@ monitored data and `is_flaky` and `last_active` to the monitor agent
 to determine/remediate flaky devices.
 
 # Monitoring
-rackmon.hpp defines the monitor. The meat of the daemon. This pretty
+Rackmon.h defines the monitor. The meat of the daemon. This pretty
 much ties everything defined till now together.
 It has a `load()` method which takes in the path to the interface
 configuration file and the directory path where the register map
@@ -288,7 +288,7 @@ Since one of the users is rest-api, the V1 interface is kept behind
 as a temporary measure while it migrates to the JSON API.
 
 `rackmon_sock.cpp` defines all the common socket abstractions declared
-in `rackmon_svc_unix.hpp` defines all the common interfaces between
+in `RackmonSvcUnix.h` defines all the common interfaces between
 the client and the service. `rackmon_svc_unix.cpp` implements the
 service `main()`.
 
@@ -303,13 +303,13 @@ We can for the time being, provide shell abstractions to maintain the
 # Not a fan of UNIX Sockets+JSON?
 Everything related to the UNIX sockets are well contained in 4 sources:
 ```
-rackmon_svc_unix.cpp
-rackmon_svc_unix.hpp
-rackmon_cli_unix.cpp
-rackmon_sock.cpp
+RackmonSvcUnix.cpp
+RackmonSvcUnix.h
+RackmonCliUnix.cpp
+RackmonSock.cpp
 ```
 Just replace these with your own fancy one (thrift, protobuf, etc.) since
-all the data should be coming from Rackmon class in `rackmon.hpp`.
+all the data should be coming from Rackmon class in `Rackmon.h`.
 The additional work should solely be only for the interface to the external
 world and the CLI.
 

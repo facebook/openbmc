@@ -2,9 +2,9 @@
 #include <nlohmann/json.hpp>
 #include <ctime>
 #include <iostream>
-#include "Modbus.hpp"
-#include "ModbusCmds.hpp"
-#include "Register.hpp"
+#include "Modbus.h"
+#include "ModbusCmds.h"
+#include "Register.h"
 
 namespace rackmon {
 

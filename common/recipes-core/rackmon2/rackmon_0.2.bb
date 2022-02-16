@@ -44,26 +44,26 @@ SRC_URI = "file://meson.build \
            file://rackmond.service \
            file://run-rackmond.sh \
            file://setup-rackmond.sh \
-           file://Log.hpp \
+           file://Log.h \
            file://Device.cpp \
-           file://Device.hpp \
+           file://Device.h \
            file://ModbusCmds.cpp \
-           file://ModbusCmds.hpp \
+           file://ModbusCmds.h \
            file://Modbus.cpp \
-           file://Modbus.hpp \
+           file://Modbus.h \
            file://Msg.cpp \
-           file://Msg.hpp \
+           file://Msg.h \
            file://UARTDevice.cpp \
-           file://UARTDevice.hpp \
+           file://UARTDevice.h \
            file://Register.cpp \
-           file://Register.hpp \
+           file://Register.h \
            file://ModbusDevice.cpp \
-           file://ModbusDevice.hpp \
+           file://ModbusDevice.h \
            file://Rackmon.cpp \
-           file://Rackmon.hpp \
-           file://PollThread.hpp \
+           file://Rackmon.h \
+           file://PollThread.h \
            file://RackmonSock.cpp \
-           file://RackmonSvcUnix.hpp \
+           file://RackmonSvcUnix.h \
            file://RackmonSvcUnix.cpp \
            file://RackmonCliUnix.cpp \
           "
@@ -97,7 +97,7 @@ SRC_URI += "file://tests/MsgTest.cpp \
             file://tests/ModbusDeviceTest.cpp \
             file://tests/PollThreadTest.cpp \
             file://tests/RackmonTest.cpp \
-            file://tests/TempDir.hpp \
+            file://tests/TempDir.h \
            "
 
 S = "${WORKDIR}"

@@ -2,7 +2,7 @@
 #pragma once
 
 #include <optional>
-#include "Msg.hpp"
+#include "Msg.h"
 
 namespace rackmon {
 
@@ -95,7 +95,7 @@ struct WriteSingleRegisterResp : public Msg {
 // Users are expected to use the << operator to
 // push in the register contents, helps them
 // take advantage of any endian-conversions privided
-// by msg.hpp
+// by Msg.h
 struct WriteMultipleRegistersReq : public Msg {
  private:
   static constexpr uint8_t kExpectedFunction = 0x10;

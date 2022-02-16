@@ -5,9 +5,9 @@
 #include <unistd.h>
 #include <cstring>
 #include <iostream>
-#include "Log.hpp"
+#include "Log.h"
 
-#include "Device.hpp"
+#include "Device.h"
 
 using namespace rackmon;
 

@@ -11,6 +11,8 @@ project('rackmon', 'cpp',
     meson_version: '>=0.40',
 )
 
+add_project_arguments('-Wno-psabi', language: 'c++')
+
 common = files(
     'Device.cpp',
     'ModbusCmds.cpp',

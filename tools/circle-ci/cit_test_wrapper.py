@@ -207,7 +207,8 @@ if __name__ == "__main__":
     if not args.test:
         status, out, err = testWrapper.run_cmd_on_oob(
             "python3 /usr/local/bin/tests2/cit_runner.py"
-            + f" --platform {platform} --list-tests"
+            f" --platform {platform} --list-tests"
+            f" --denylist /usr/local/bin/tests2/qemu_denylist.txt"
         )
         if status != 0:
             sys.exit(1)
@@ -222,6 +223,7 @@ if __name__ == "__main__":
     for test in testWrapper.tests:
         status, out, err = testWrapper.run_cmd_on_oob(
             f"python3 /usr/local/bin/tests2/cit_runner.py --run-test {test}"
+            f" --denylist /usr/local/bin/tests2/qemu_denylist.txt"
         )
         if status != 0:
             fail_count += 1

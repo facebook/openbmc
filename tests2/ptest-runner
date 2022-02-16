@@ -153,7 +153,7 @@ def main(args):
     deploy = args.build + "/tmp/deploy/images/qemux86"
     rootfs_zip = deploy + "/qemux86-image-qemux86.tar.bz2"
     rootfs_zip = os.path.abspath(rootfs_zip)
-    rootfs = deploy + "/rootfs"
+    rootfs = "./rootfs"
     if os.path.isdir(rootfs):
         shutil.rmtree(rootfs)
     os.makedirs(rootfs)
@@ -164,17 +164,26 @@ def main(args):
     )  # fake shm,tmp for flake8
     if not os.path.exists("/.dockerenv"):
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
+        init_steps = ["mount -t tmpfs -o size=512m tmpfs /dev/shm"]
     else:
+        # It's not necessary to mount /dev/shm as tmpfs in CircleCI because we
+        # unpack the rootfs within /mnt/ramdisk, which is already a tmpfs.
         base_cmd = ["sudo", "chroot", rootfs]
+        init_steps = []
+
     if args.shell:
-        subprocess.check_call(base_cmd + ["bash"])
+        init_file = "/init-file.sh"
+        with open(rootfs + init_file, "w") as f:
+            f.write("\n".join(init_steps))
+        subprocess.check_call(base_cmd + ["bash", "--init-file", init_file])
     elif not args.skip_tests:
-        cmd = base_cmd + ["ptest-runner"]
         exit_error = False
         if args.recipes is None or len(args.recipes) == 0:
-            cmd += all_recipes
+            recipes = all_recipes
         else:
-            cmd += args.recipes
+            recipes = args.recipes
+        ptest_cmd = " ".join(["ptest-runner"] + recipes)
+        cmd = base_cmd + ["bash", "-c", " && ".join(init_steps + [ptest_cmd])]
         try:
             out = subprocess.check_output(cmd).decode()
             print(out)

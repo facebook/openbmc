@@ -54,42 +54,16 @@ jobs:
             - image: crops/poky:latest
               environment:
                   MACHINE: qemux86
-                  CACHE_DIR: /tmp/job/sstate-cache
-                  CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
               user: root
         resource_class: 2xlarge
-        working_directory: /tmp/job/project
+        working_directory: /mnt/ramdisk
         steps:
             - attach_workspace:
                 at: /tmp/job
             - run:
-                name: Set up git config for testing user.
-                command: |
-                    git config --global user.email "openbmc-circleci@fb.com"
-                    git config --global user.name "CircleCI Testing"
-            - run:
-                name: Adding usersetup to sudoer
-                command: |
-                    sed -e '/usersetup/ s/^#*/#/' -i /etc/sudoers.usersetup
-                    echo "usersetup ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.usersetup
-            - run:
-                name: Update working folder ownership
-                command: |
-                    chown -R usersetup:usersetup /tmp/job
-            - run:
-                name: Check build required. Halt the CI if not needed.
-                command: |
-                    if ! runuser -m usersetup -c './tools/circle-ci/check-build-required ptest'; then
-                        circleci-agent step halt
-                    fi
-            - run:
-                name: Download sstate cache.
-                command: |
-                    runuser -m usersetup -c './tools/circle-ci/download-sstate-cache'
-            - run:
                 name: Build qemux86 and run package-test within
                 command: |
-                    runuser -m usersetup -c 'python3 tests2/ptest-runner -b build --force-rebuild --verbose'
+                    python3 /tmp/job/project/tests2/ptest-runner -b /tmp/job/project/build --verbose
     qemu-cit:
         parameters:
             machine:
@@ -180,15 +154,13 @@ jobs:
                 root: /tmp/job
                 paths:
                   - project/build/tmp/deploy/images/<< parameters.machine >>/flash-<< parameters.machine >>*
+                  - project/build/tmp/deploy/images/<< parameters.machine >>/*.tar.bz2
 workflows:
     version: 2
     everything:
         jobs:
             - lint
             - setup
-            - unit-test:
-                requires:
-                    - setup
             - build:
                 name: build-<< matrix.machine >>
                 requires:
@@ -219,7 +191,11 @@ workflows:
                             wedge400,
                             yamp,
                             yosemite,
+                            qemux86,
                             ]
+            - unit-test:
+                requires:
+                    - build-qemux86
             - qemu-cit:
                 name: qemu-cit-<< matrix.machine >>
                 requires:

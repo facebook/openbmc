@@ -16,7 +16,8 @@ namespace filesystem = experimental::filesystem;
 
 using nlohmann::json;
 using namespace std::literals;
-using namespace rackmon;
+
+namespace rackmon {
 
 void Rackmon::loadInterface(const nlohmann::json& config) {
   if (threads_.size() > 0) {
@@ -319,3 +320,5 @@ std::string Rackmon::getProfileData() {
   profileStore_.swap(ss);
   return ss.str();
 }
+
+} // namespace rackmon

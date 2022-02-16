@@ -5,7 +5,8 @@
 #include "Log.h"
 
 using nlohmann::json;
-using namespace rackmon;
+
+namespace rackmon {
 
 void ModbusDeviceInfo::incErrors(uint32_t& counter) {
   counter++;
@@ -223,8 +224,6 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
   lastHandleTime_ = std::time(nullptr);
   handled_ = true;
 }
-
-namespace rackmon {
 
 NLOHMANN_JSON_SERIALIZE_ENUM(
     ModbusDeviceMode,

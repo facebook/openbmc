@@ -13,7 +13,8 @@
 #include "UARTDevice.h"
 
 using namespace std::literals;
-using namespace rackmon;
+
+namespace rackmon {
 
 namespace {
 const std::unordered_map<int, speed_t> kSpeedMap = {
@@ -101,3 +102,5 @@ void UARTDevice::write(const uint8_t* buf, size_t len) {
   readEnable();
   pthread_setschedparam(pthread_self(), SCHED_OTHER, &sp);
 }
+
+} // namespace rackmon

@@ -1,7 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "RackmonSvcUnix.h"
 
-using namespace rackmonsvc;
+namespace rackmonsvc {
 
 std::tuple<struct sockaddr_un, size_t> RackmonSock::getServiceAddr() {
   struct sockaddr_un ret {};
@@ -116,4 +116,6 @@ void RackmonSock::recv(std::vector<char>& resp) {
   // iterate over it. recvchunk will resize resp as needed.
   while (recvChunk(resp) == true)
     ;
+}
+
 }

@@ -2,7 +2,7 @@
 #include "ModbusCmds.h"
 #include <algorithm>
 
-using namespace rackmon;
+namespace rackmon {
 
 static void
 check_value(const std::string& what, uint32_t value, uint32_t expected_value) {
@@ -200,3 +200,5 @@ void ReadFileRecordResp::decode() {
   check_value("deviceAddr", deviceAddr, deviceAddr_);
   check_value("length", len, 0);
 }
+
+} // namespace rackmon

@@ -6,7 +6,8 @@
 #include <sstream>
 
 using nlohmann::json;
-using namespace rackmon;
+
+namespace rackmon {
 
 namespace {
 static void streamHex(std::ostream& os, size_t num, size_t ndigits) {
@@ -295,10 +296,6 @@ void RegisterMapDatabase::print(std::ostream& os) {
       [](const auto& ptr) { return *ptr; });
   os << j.dump(4);
 }
-
-// JSON ADL Serializers need to be defined in the same
-// namespace as the objects.
-namespace rackmon {
 
 void from_json(const json& j, AddrRange& a) {
   a.range = j;

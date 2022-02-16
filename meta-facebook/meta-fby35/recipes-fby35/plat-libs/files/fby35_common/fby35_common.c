@@ -84,7 +84,7 @@ fby35_common_get_slot_id(char *str, uint8_t *fru) {
   return 0;
 }
 
-int 
+int
 fby35_common_check_slot_id(uint8_t fru) {
   uint8_t bmc_location = 0;
 
@@ -120,7 +120,7 @@ fby35_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
   //0: the fru isn't present
   //1: the fru is present
   *val = (gpio_value == GPIO_VALUE_HIGH)?0:1;
-  return 0; 
+  return 0;
 }
 
 int
@@ -142,7 +142,7 @@ fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
     }
     *val = (uint8_t)gpio_value;
   } else {
-    //1: a server is always existed on class2 
+    //1: a server is always existed on class2
     *val = 1;
   }
 
@@ -209,7 +209,7 @@ fby35_common_get_bus_id(uint8_t slot_id) {
       bus_id = -1;
     break;
   }
-  return bus_id; 
+  return bus_id;
 }
 
 int
@@ -264,7 +264,7 @@ fby35_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
   } else {
     snprintf(cmd, cmd_len, "%s slot%d &", CRASHDUMP_BIN, fru);
   }
-  
+
   if ( system(cmd) != 0 ) {
     syslog(LOG_INFO, "%s() Crashdump for FRU: %d is failed to be generated.", __func__, fru);
   } else {
@@ -488,7 +488,7 @@ fby35_common_fscd_ctrl (uint8_t mode) {
         syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
         ret = -1;
         goto exit;
-      } 
+      }
       memset(buf, 0, sizeof(buf));
       if (fgets(buf, sizeof(buf), fp2) == NULL) {
         syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
@@ -661,19 +661,19 @@ fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp) {
   }
 
 exit:
-  if (fd >= 0) 
+  if (fd >= 0)
     close(fd);
-  
+
   return ret;
 }
 
 bool
 fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id) {
-  const char* board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
+  const char *rev_bb[] = {"POC1", "POC2", "EVT1", "EVT2", "EVT3", "DVT", "PVT", "MP"};
+  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
+  const char **board_type = rev_sb;
   uint8_t signed_byte = 0x0;
-  uint8_t bmc_location = 0;
-  uint8_t board_id = 0;
-  uint8_t stage_idx = 0;
+  uint8_t board_id = 0, exp_fw_rev = 0;
   struct stat file_info;
 
   if (stat(img_path, &file_info) < 0) {
@@ -691,64 +691,48 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
 
   signed_byte = img_info->err_proof;
 
-  switch(comp) {
+  switch (comp) {
     case FW_CPLD:
     case FW_BIC:
     case FW_BIOS:
       board_id = BOARD_ID_SB;
-      break;
-    case FW_BB_CPLD:
-      if (bmc_location == NIC_BMC) {
-        board_id = BOARD_ID_NIC_EXP;
-      } else {
-        board_id = BOARD_ID_BB;
+      exp_fw_rev = (rev_id == SB_REV_POC) ? FW_REV_POC : FW_REV_EVT;
+      if (rev_id >= ARRAY_SIZE(rev_sb)) {
+        rev_id = ARRAY_SIZE(rev_sb) - 1;
       }
       break;
     case FW_BB_BIC:
-       board_id = BOARD_ID_BB;
-       break;
-    default:
+    case FW_BB_CPLD:
+      board_id = BOARD_ID_BB;
+      board_type = rev_bb;
+      exp_fw_rev = (rev_id <= BB_REV_POC2) ? FW_REV_POC : FW_REV_EVT;
+      if (rev_id >= ARRAY_SIZE(rev_bb)) {
+        rev_id = ARRAY_SIZE(rev_bb) - 1;
+      }
       break;
   }
   if (BOARD_ID(signed_byte) != board_id) {
     printf("Wrong firmware image component.\n");
     return false;
   }
-  stage_idx = (board_id == BOARD_ID_SB) ? (rev_id + 1) : rev_id;
 
-  switch (rev_id) {
+  switch (exp_fw_rev) {
     case FW_REV_POC:
-      if (REVISION_ID(signed_byte, board_id) != FW_REV_POC) {
+      if (REVISION_ID(signed_byte) != FW_REV_POC) {
         printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");
         return false;
       }
       break;
-    case FW_REV_PVT:
-    case FW_REV_MP:
-      // PVT & MP firmware could be used in common
-      if (REVISION_ID(signed_byte, board_id) < FW_REV_PVT) {
-        printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
-              board_type[stage_idx]);
+    default:
+      if (REVISION_ID(signed_byte) < FW_REV_EVT) {
+        printf("Please use firmware after EVT on %s system\nTo force the update, please use the --force option.\n",
+               board_type[rev_id]);
         return false;
       }
       break;
-    default:
-      if (REVISION_ID(signed_byte, board_id) != rev_id) {
-        printf("Please use %s firmware on %s system\n To force the update, please use the --force option.\n",
-              board_type[stage_idx], board_type[stage_idx]);
-        return false;
-      }
-  }
-  
- 
-  if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
-    printf("Can not get the BMC location\n");
-    return false;
   }
 
-
-
-  switch(comp) {    
+  switch (comp) {
     case FW_CPLD:
     case FW_1OU_CPLD:
     case FW_2OU_CPLD:
@@ -767,8 +751,6 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
         return false;
       }
       break;
-    default:
-      return true;
   }
 
   return true;

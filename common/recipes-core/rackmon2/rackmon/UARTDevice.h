@@ -3,7 +3,7 @@
 
 #include <mutex>
 #include <vector>
-#include "Device.hpp"
+#include "Device.h"
 
 namespace rackmon {
 

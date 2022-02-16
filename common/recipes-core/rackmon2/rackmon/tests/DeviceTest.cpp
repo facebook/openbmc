@@ -1,11 +1,11 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
-#include "Device.hpp"
+#include "Device.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <chrono>
 #include <fstream>
 #include <thread>
-#include "TempDir.hpp"
+#include "TempDir.h"
 
 using namespace std::literals;
 using namespace rackmon;

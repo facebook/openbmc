@@ -1,8 +1,8 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
-#include "Modbus.hpp"
+#include "Modbus.h"
 #include <fstream>
 #include <thread>
-#include "Log.hpp"
+#include "Log.h"
 
 using nlohmann::json;
 using namespace rackmon;

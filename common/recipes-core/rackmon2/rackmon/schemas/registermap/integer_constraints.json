@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "if": {
+      "properties": {
+        "format": {
+          "const": "integer"
+        }
+      },
+      "required": ["format"]
+    },
+    "then": {
+    },
+    "else": {
+      "not": {
+        "required": ["endian"]
+      }
+    }
+  }
+}

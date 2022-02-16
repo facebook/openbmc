@@ -11,6 +11,8 @@ project('rackmon', 'cpp',
     meson_version: '>=0.40',
 )
 
+add_project_arguments('-Wno-psabi', language: 'c++')
+
 common = files(
     'Device.cpp',
     'ModbusCmds.cpp',
@@ -76,6 +78,56 @@ rackmon_cli_exe = executable(
   dependencies: deps,
   install: true,
   install_dir: 'local/bin'
+)
+
+
+interface_configs = [
+  'rackmon.conf',
+]
+register_maps = [
+  'orv2_psu.json',
+]
+filepaths_interface = []
+filepaths_regmap = []
+foreach c : interface_configs
+  file = join_paths('configs', 'interface', c)
+  install_data(file, install_dir: '/etc')
+  filepaths_interface += [file]
+endforeach
+foreach c : register_maps
+  file = join_paths('configs', 'register_map', c)
+  install_data(file, install_dir: '/etc/rackmon.d')
+  filepaths_regmap += [file]
+endforeach
+
+config_validator = files('scripts/schema_validator.py')
+confchecker_iface = custom_target(
+  'check_syntax_iface',
+  command: [
+    'python3',
+    config_validator,
+    files('schemas/InterfaceConfigSchema.json'),
+    '@INPUT@',
+  ],
+  input: files(filepaths_interface),
+  depend_files: files(filepaths_interface),
+  build_by_default: true,
+  capture: true,
+  output: 'validate_configs_inteface.log',
+)
+confchecker_regmap = custom_target(
+  'check_syntax_regmap',
+  command: [
+    'python3',
+    config_validator,
+    files('schemas/RegisterMapConfigSchema.json'),
+    '@INPUT@',
+  ],
+  input: files(filepaths_regmap),
+  depend_files: files(filepaths_regmap),
+  build_by_default: true,
+  capture: true,
+  output: 'validate_configs_regmap.log',
 )
 
 rackmond_test = executable('test-rackmond', test_srcs,

@@ -1,6 +1,10 @@
 #!/bin/bash
 set -ex
 
-source "$(dirname "${BASH_SOURCE[0]}")/../../openbmc-init-build-env" \
-    "$MACHINE" build
+MACHINE="${MACHINE:?}"
+
+source openbmc-init-build-env "$MACHINE" build
+if [ "$MACHINE" == "qemux86" ]; then
+  python3 ../tests2/ptest-runner -b . -u
+fi
 bitbake "$MACHINE-image"

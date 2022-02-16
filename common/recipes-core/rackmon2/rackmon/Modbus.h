@@ -6,8 +6,8 @@
 #include <mutex>
 #include <set>
 #include <sstream>
-#include "Msg.hpp"
-#include "UARTDevice.hpp"
+#include "Msg.h"
+#include "UARTDevice.h"
 
 namespace rackmon {
 

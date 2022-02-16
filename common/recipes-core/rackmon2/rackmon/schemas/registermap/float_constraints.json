@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "if": {
+      "properties": {
+        "format": {
+          "const": "float"
+        }
+      },
+      "required": ["format"]
+    },
+    "then": {
+      "required": ["precision"]
+    },
+    "else": {
+      "not": {
+        "required": ["precision"]
+      }
+    }
+  }
+}

@@ -8,9 +8,9 @@
 #include <cstring>
 #include <iostream>
 #include <unordered_map>
-#include "Log.hpp"
+#include "Log.h"
 
-#include "UARTDevice.hpp"
+#include "UARTDevice.h"
 
 using namespace std::literals;
 using namespace rackmon;

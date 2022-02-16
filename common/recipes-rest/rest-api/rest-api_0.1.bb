@@ -244,7 +244,6 @@ cat <<EOF > ${WORKDIR}/run-ptest
   coverage erase
   coverage run -m unittest discover /usr/local/fbpackages/rest-api
   coverage report -m --omit="*/test*"
-  mount -t tmpfs -o size=512m tmpfs /dev/shm
   echo "[Flake8]"
   flake8  --config /usr/local/fbpackages/rest-api/.flake8 /usr/local/fbpackages/rest-api/*.py
   echo "[MYPY]"

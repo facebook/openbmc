@@ -1,9 +1,9 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
-#include "Rackmon.hpp"
+#include "Rackmon.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
-#include "Log.hpp"
+#include "Log.h"
 
 #if (__GNUC__ < 8)
 #include <experimental/filesystem>

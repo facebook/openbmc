@@ -112,7 +112,7 @@ install_wrapper() {
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
 
-    install -m 0644 rackmond.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${S}/rackmond.service ${D}${systemd_system_unitdir}
 }
 
 install_sysv() {

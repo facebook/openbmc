@@ -136,8 +136,6 @@ fru_remove_event(int fru_id, uint8_t *e1s_iocm_present_status) {
       syslog(LOG_ERR, "%s(): Failed to deal with remove event because the parameter: *e1s_iocm_present_status is NULL\n", __func__);
       return;
     }
-    e1s_iocm_remove_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
-    e1s_iocm_remove_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status, e1s_iocm_gpio_power_good_pin);
     e1s_iocm_remove_event(T5_E1S0_T7_IOC_AVENGER, e1s_iocm_present_status);
     e1s_iocm_remove_event(T5_E1S1_T7_IOCM_VOLT, e1s_iocm_present_status);
     

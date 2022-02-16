@@ -81,6 +81,7 @@ jobs:
         if: env.contains_c_source == 'true'
         run : |
           if [ -s /tmp/cppcheck_file_list.log ]; then
+            cat /tmp/cppcheck.log | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check
             exit 1
           fi
 
@@ -170,46 +171,6 @@ jobs:
         if: env.contains_shell_files == 'true'
         run : |
           if [ -s /tmp/shellcheck.log ]; then
+            cat /tmp/shellcheck.log | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check
             exit 1
           fi
-
-  Aggregate-Lint-Output:
-    needs: [run-cppcheck, run-shellcheck]
-    if: |
-        always() && 
-        (needs.run-cppcheck.result == 'failure' || 
-         needs.run-shellcheck.result == 'failure')
-    runs-on: ubuntu-latest
-    steps:
-      
-      - uses: actions/checkout@v2
-        name: Checkout Repo
-       
-      - uses: reviewdog/action-setup@v1
-        with:
-          reviewdog_version: latest 
-
-      - name: Download all artifacts 
-        uses: actions/download-artifact@v2
-        with:
-          path: /tmp/artifacts
-
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: /tmp/artifacts
-
-      - name: Run reviewdog
-        env:
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          CPP_FILE=/tmp/artifacts/cppcheck-output/cppcheck.log
-          if test -f "$CPP_FILE"; then
-            cat "$CPP_FILE" | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check
-          fi
-
-          SHELL_FILE=/tmp/artifacts/shellcheck-output/shellcheck.log
-          if test -f "$SHELL_FILE"; then
-            cat "$SHELL_FILE" | reviewdog -efm="%f:%l:%c:%m" -filter-mode=nofilter -reporter=github-pr-check
-          fi
-
-

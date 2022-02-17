@@ -20,7 +20,7 @@ def get_chassis():
     return node(body)
 
 
-def get_chassis_members(fru_name):
+def get_chassis_member(fru_name):
     body = {}
     result = {}
     try:

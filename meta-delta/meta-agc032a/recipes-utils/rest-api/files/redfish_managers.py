@@ -269,7 +269,7 @@ def get_manager_network():
     return node(body)
 
 # /redfish/v1/Managers/1/LogService
-def get_manager_logservice(list):
+def get_manager_log_services(list):
     body = {}
     mem_list = []
 

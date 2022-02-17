@@ -33,7 +33,7 @@ case $SLOT_NAME in
     *)
       N=${0##*/}
       N=${N#[SK]??}
-      if [ $BOARD_ID -eq 9 ]; then
+      if [ "$BOARD_ID" -eq 9 ]; then
         echo "Usage: $N {slot1}"
       else
         echo "Usage: $N {slot1|slot2|slot3|slot4}"
@@ -43,7 +43,7 @@ case $SLOT_NAME in
 esac
 
 
-if [ $BOARD_ID -eq 9 ] && [ $SLOT_NAME != "slot1" ]; then
+if [ "$BOARD_ID" -eq 9 ] && [ "$SLOT_NAME" != "slot1" ]; then
   # class2 checking
   echo "$SLOT_NAME not supported"
   exit 1
@@ -64,7 +64,7 @@ echo $PID > $PID_FILE
 if [ ! -z "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null) ; then
   # Check if 2nd dump is running
   if [ ! -z "$(ps | grep '{autodump.sh}' | grep "${SLOT_NAME}" | grep "second\|dwr")" ]; then
-    echo $OLDPID > $PID_FILE
+    echo "$OLDPID" > $PID_FILE
     echo "2nd DUMP or Demoted Warm Reset DUMP is running. exit."
     exit 1
   fi
@@ -76,10 +76,16 @@ if [ ! -z "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null) ; 
   rm -rf $LOG_FILE && \
 
   echo "kill pid $OLDPID..."
-  kill -s 9 $OLDPID
+  kill -s 9 "$OLDPID"
   ps | grep 'crashdump' | grep "$SLOT_NAME" | awk '{print $1}'| xargs kill -s 9 &> /dev/null
 fi
 unset OLDPID
+
+# Set crashdump timestamp
+# pal_is_crashdump_ongoing() need the crashdump timestamp
+sys_runtime=$(awk '{print $1}' /proc/uptime)
+sys_runtime=$(printf "%0.f" "$sys_runtime")
+/usr/bin/kv set fru${SLOT_NUM}_crashdump $((sys_runtime+1200))
 
 CRASHDUMP_FILE="/tmp/crashdump/"
 CRASHDUMP_LOG_ARCHIVE="/mnt/data/acd_crashdump_$SLOT_NAME.tar.gz"

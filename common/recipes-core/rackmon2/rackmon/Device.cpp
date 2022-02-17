@@ -9,7 +9,7 @@
 
 #include "Device.h"
 
-using namespace rackmon;
+namespace rackmon {
 
 namespace {
 static std::error_code sys_error(int err) {
@@ -105,3 +105,4 @@ void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
     buf += iterReadBytes;
   } while (remBytes > 0);
 }
+} // namespace rackmon

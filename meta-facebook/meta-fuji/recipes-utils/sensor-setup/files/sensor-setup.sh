@@ -1,4 +1,6 @@
-# Copyright 2019-present Facebook. All rights reserved.
+#!/bin/sh
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,20 +16,20 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-from openbmc_gpio_table import BoardGPIO
+### BEGIN INIT INFO
+# Provides:          sensor-setup
+# Required-Start:    power-on
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Power on micro-server
+### END INIT INFO
 
+. /usr/local/bin/openbmc-utils.sh
 
-# The following table is generated using:
-# python openbmc_gpio_parser.py data/wedge400-bmc-gpio-evta.csv
-# DO NOT MODIFY THE TABLE!!!
-# Manual modification will be overridden!!!
-
-board_gpio_rev_table = [
-    BoardGPIO("GPIOG4", "BMC_CPLD_BOARD_REV_ID0"),
-    BoardGPIO("GPIOG5", "BMC_CPLD_BOARD_REV_ID1"),
-    BoardGPIO("GPIOG6", "BMC_CPLD_BOARD_TYPE_0"),
-    BoardGPIO("GPIOG7", "BMC_CPLD_BOARD_REV_ID2"),
-    BoardGPIO("GPION6", "BMC_CPLD_BOARD_TYPE_1"),
-    BoardGPIO("GPION7", "BMC_CPLD_BOARD_TYPE_2"),
-]
+#
+# Main entry starts here
+#
+/usr/local/bin/setup_avs.sh

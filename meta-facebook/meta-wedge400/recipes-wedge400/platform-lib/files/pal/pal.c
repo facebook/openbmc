@@ -103,17 +103,64 @@ const uint8_t bic_neg_reading_sensor_support_list[] = {
 };
 
 /* List of SCM sensors to be monitored */
-const uint8_t scm_sensor_list[] = {
+/* for EVT DVT MP Hardware revision */
+const uint8_t scm_evt_dvt_mp_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
   SCM_SENSOR_HSC_VOLT,
   SCM_SENSOR_HSC_CURR,
 };
 
+/* for MP respin or newer Hardware revision */
+const uint8_t scm_mp_respin_sensor_list[] = {
+  SCM_SENSOR_OUTLET_TEMP,
+  SCM_SENSOR_HSC_VOLT,
+  SCM_SENSOR_HSC_CURR,
+};
+
 /* List of SCM and BIC sensors to be monitored */
-const uint8_t scm_all_sensor_list[] = {
+/* for EVT DVT MP Hardware revision */
+const uint8_t scm_evt_dvt_mp_all_sensor_list[] = {
   SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_INLET_TEMP,
+  SCM_SENSOR_HSC_VOLT,
+  SCM_SENSOR_HSC_CURR,
+  BIC_SENSOR_MB_OUTLET_TEMP,
+  BIC_SENSOR_MB_INLET_TEMP,
+  BIC_SENSOR_PCH_TEMP,
+  BIC_SENSOR_VCCIN_VR_TEMP,
+  BIC_SENSOR_1V05COMB_VR_TEMP,
+  BIC_SENSOR_SOC_TEMP,
+  BIC_SENSOR_SOC_THERM_MARGIN,
+  BIC_SENSOR_VDDR_VR_TEMP,
+  BIC_SENSOR_SOC_DIMMA_TEMP,
+  BIC_SENSOR_SOC_DIMMB_TEMP,
+  BIC_SENSOR_SOC_PACKAGE_PWR,
+  BIC_SENSOR_VCCIN_VR_POUT,
+  BIC_SENSOR_VDDR_VR_POUT,
+  BIC_SENSOR_SOC_TJMAX,
+  BIC_SENSOR_P3V3_MB,
+  BIC_SENSOR_P12V_MB,
+  BIC_SENSOR_P1V05_PCH,
+  BIC_SENSOR_P3V3_STBY_MB,
+  BIC_SENSOR_P5V_STBY_MB,
+  BIC_SENSOR_PV_BAT,
+  BIC_SENSOR_PVDDR,
+  BIC_SENSOR_P1V05_COMB,
+  BIC_SENSOR_1V05COMB_VR_CURR,
+  BIC_SENSOR_VDDR_VR_CURR,
+  BIC_SENSOR_VCCIN_VR_CURR,
+  BIC_SENSOR_VCCIN_VR_VOL,
+  BIC_SENSOR_VDDR_VR_VOL,
+  BIC_SENSOR_P1V05COMB_VR_VOL,
+  BIC_SENSOR_P1V05COMB_VR_POUT,
+  BIC_SENSOR_INA230_POWER,
+  BIC_SENSOR_INA230_VOL,
+};
+
+/* for MP respin or newer Hardware revision */
+const uint8_t scm_mp_respin_all_sensor_list[] = {
+  SCM_SENSOR_OUTLET_TEMP,
   SCM_SENSOR_HSC_VOLT,
   SCM_SENSOR_HSC_CURR,
   BIC_SENSOR_MB_OUTLET_TEMP,
@@ -231,6 +278,84 @@ const uint8_t w400_smb_sensor_list[] = {
   SMB_BMC_ADC3_VSEN,
   SMB_BMC_ADC4_VSEN,
 
+};
+
+const uint8_t w400_mp_respin_smb_sensor_list[] = {
+  SMB_SENSOR_1220_VMON1,
+  SMB_SENSOR_1220_VMON2,
+  SMB_SENSOR_1220_VMON3,
+  SMB_SENSOR_1220_VMON4,
+  SMB_SENSOR_1220_VMON5,
+  SMB_SENSOR_1220_VMON6,
+  SMB_SENSOR_1220_VMON7,
+  SMB_SENSOR_1220_VMON8,
+  SMB_SENSOR_1220_VMON9,
+  SMB_SENSOR_1220_VMON10,
+  SMB_SENSOR_1220_VMON11,
+  SMB_SENSOR_1220_VCCA,
+  SMB_SENSOR_1220_VCCINP,
+  SMB_SENSOR_SW_SERDES_PVDD_IN_VOLT,
+  SMB_SENSOR_SW_SERDES_PVDD_IN_CURR,
+  SMB_SENSOR_SW_SERDES_PVDD_IN_POWER,
+  SMB_SENSOR_SW_SERDES_PVDD_OUT_VOLT,
+  SMB_SENSOR_SW_SERDES_PVDD_OUT_CURR,
+  SMB_SENSOR_SW_SERDES_PVDD_OUT_POWER,
+  SMB_SENSOR_SW_SERDES_PVDD_TEMP1,
+  SMB_SENSOR_SW_SERDES_TRVDD_IN_VOLT,
+  SMB_SENSOR_SW_SERDES_TRVDD_IN_CURR,
+  SMB_SENSOR_SW_SERDES_TRVDD_IN_POWER,
+  SMB_SENSOR_SW_SERDES_TRVDD_OUT_VOLT,
+  SMB_SENSOR_SW_SERDES_TRVDD_OUT_CURR,
+  SMB_SENSOR_SW_SERDES_TRVDD_OUT_POWER,
+  SMB_SENSOR_SW_SERDES_TRVDD_TEMP1,
+  SMB_SENSOR_IR3R3V_LEFT_IN_VOLT,
+  SMB_SENSOR_IR3R3V_LEFT_IN_CURR,
+  SMB_SENSOR_IR3R3V_LEFT_IN_POWER,
+  SMB_SENSOR_IR3R3V_LEFT_OUT_VOLT,
+  SMB_SENSOR_IR3R3V_LEFT_OUT_CURR,
+  SMB_SENSOR_IR3R3V_LEFT_OUT_POWER,
+  SMB_SENSOR_IR3R3V_LEFT_TEMP,
+  SMB_SENSOR_IR3R3V_RIGHT_IN_VOLT,
+  SMB_SENSOR_IR3R3V_RIGHT_IN_CURR,
+  SMB_SENSOR_IR3R3V_RIGHT_IN_POWER,
+  SMB_SENSOR_IR3R3V_RIGHT_OUT_VOLT,
+  SMB_SENSOR_IR3R3V_RIGHT_OUT_CURR,
+  SMB_SENSOR_IR3R3V_RIGHT_OUT_POWER,
+  SMB_SENSOR_IR3R3V_RIGHT_TEMP,
+  SMB_SENSOR_SW_CORE_VOLT,
+  SMB_SENSOR_SW_CORE_CURR,
+  SMB_SENSOR_SW_CORE_POWER,
+  SMB_SENSOR_SW_CORE_TEMP1,
+  SMB_SENSOR_LM75B_U28_TEMP,
+  SMB_SENSOR_LM75B_U55_TEMP,
+  SMB_SENSOR_TMP421_U62_TEMP,
+  SMB_SENSOR_TMP421_Q9_TEMP,
+  SMB_SENSOR_TMP421_U63_TEMP,
+  SMB_SENSOR_TMP421_Q10_TEMP,
+  SMB_SENSOR_SW_DIE_TEMP1,
+  SMB_SENSOR_SW_DIE_TEMP2,
+  SMB_DOM1_MAX_TEMP,
+  SMB_DOM2_MAX_TEMP,
+  /* Sensors on FCM */
+  SMB_SENSOR_FCM_LM75B_U1_TEMP,
+  SMB_SENSOR_FCM_LM75B_U2_TEMP,
+  SMB_SENSOR_FCM_HSC_VOLT,
+  SMB_SENSOR_FCM_HSC_CURR,
+  /* Sensors FAN Speed */
+  SMB_SENSOR_FAN1_FRONT_TACH,
+  SMB_SENSOR_FAN1_REAR_TACH,
+  SMB_SENSOR_FAN2_FRONT_TACH,
+  SMB_SENSOR_FAN2_REAR_TACH,
+  SMB_SENSOR_FAN3_FRONT_TACH,
+  SMB_SENSOR_FAN3_REAR_TACH,
+  SMB_SENSOR_FAN4_FRONT_TACH,
+  SMB_SENSOR_FAN4_REAR_TACH,
+  /* BMC ADC Sensors  */
+  SMB_BMC_ADC0_VSEN,
+  SMB_BMC_ADC1_VSEN,
+  SMB_BMC_ADC2_VSEN,
+  SMB_BMC_ADC3_VSEN,
+  SMB_BMC_ADC4_VSEN,
 };
 
 const uint8_t w400c_evt1_smb_sensor_list[] = {
@@ -591,9 +716,12 @@ float pem_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 float psu_sensor_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {0};
 
 size_t bic_discrete_cnt = sizeof(bic_discrete_list)/sizeof(uint8_t);
-size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
-size_t scm_all_sensor_cnt = sizeof(scm_all_sensor_list)/sizeof(uint8_t);
+size_t scm_evt_dvt_mp_sensor_cnt = sizeof(scm_evt_dvt_mp_sensor_list)/sizeof(uint8_t);
+size_t scm_mp_respin_sensor_cnt = sizeof(scm_mp_respin_sensor_list)/sizeof(uint8_t);
+size_t scm_evt_dvt_mp_all_sensor_cnt = sizeof(scm_evt_dvt_mp_all_sensor_list)/sizeof(uint8_t);
+size_t scm_mp_respin_all_sensor_cnt = sizeof(scm_mp_respin_all_sensor_list)/sizeof(uint8_t);
 size_t w400_smb_sensor_cnt = sizeof(w400_smb_sensor_list)/sizeof(uint8_t);
+size_t w400_mp_respin_smb_sensor_cnt = sizeof(w400_mp_respin_smb_sensor_list)/sizeof(uint8_t);
 size_t w400c_evt1_smb_sensor_cnt = sizeof(w400c_evt1_smb_sensor_list)/sizeof(uint8_t);
 size_t w400c_evt2_smb_sensor_cnt = sizeof(w400c_evt2_smb_sensor_list)/sizeof(uint8_t);
 size_t pem1_sensor_cnt = sizeof(pem1_sensor_list)/sizeof(uint8_t);
@@ -1004,11 +1132,20 @@ pal_get_sensor_util_timeout(uint8_t fru) {
   pal_get_board_type_rev(&brd_type_rev);
   switch(fru) {
     case FRU_SCM:
-      cnt = scm_all_sensor_cnt;
+      if ( brd_type == BRD_TYPE_WEDGE400
+        && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+        cnt = scm_mp_respin_all_sensor_cnt;
+      } else {
+        cnt = scm_evt_dvt_mp_all_sensor_cnt;
+      }
       break;
     case FRU_SMB:
       if(brd_type == BRD_TYPE_WEDGE400){
-        cnt = w400_smb_sensor_cnt;
+        if(brd_type_rev >= BOARD_WEDGE400_MP_RESPIN){
+          cnt = w400_mp_respin_smb_sensor_cnt;
+        }else{
+          cnt = w400_smb_sensor_cnt;
+        }
       }else if(brd_type == BRD_TYPE_WEDGE400C){
         if(brd_type_rev == BOARD_WEDGE400C_EVT){
           cnt = w400c_evt1_smb_sensor_cnt;
@@ -1055,13 +1192,24 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   pal_get_board_type_rev(&brd_type_rev);
   switch(fru) {
   case FRU_SCM:
-    *sensor_list = (uint8_t *) scm_all_sensor_list;
-    *cnt = scm_all_sensor_cnt;
+    if ( brd_type == BRD_TYPE_WEDGE400 
+      && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN) {
+      *sensor_list = (uint8_t *) scm_mp_respin_all_sensor_list;
+      *cnt = scm_mp_respin_all_sensor_cnt;
+    } else {
+      *sensor_list = (uint8_t *) scm_evt_dvt_mp_all_sensor_list;
+      *cnt = scm_evt_dvt_mp_all_sensor_cnt;
+    }
     break;
   case FRU_SMB:
     if(brd_type == BRD_TYPE_WEDGE400){
-      *sensor_list = (uint8_t *) w400_smb_sensor_list;
-      *cnt = w400_smb_sensor_cnt;
+      if(brd_type_rev >= BOARD_WEDGE400_MP_RESPIN){
+        *sensor_list = (uint8_t *) w400_mp_respin_smb_sensor_list;
+        *cnt = w400_mp_respin_smb_sensor_cnt;
+      }else{
+        *sensor_list = (uint8_t *) w400_smb_sensor_list;
+        *cnt = w400_smb_sensor_cnt;
+      }
     }else if(brd_type == BRD_TYPE_WEDGE400C){
       if(brd_type_rev == BOARD_WEDGE400C_EVT){
         *sensor_list = (uint8_t *) w400c_evt1_smb_sensor_list;
@@ -1581,7 +1729,7 @@ pal_get_board_type(uint8_t *brd_type){
   char path[LARGEST_DEVICE_NAME + 1];
   int val;
 
-  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TPYE, "value");
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_0, "value");
   if (device_read(path, &val)) {
     return CC_UNSPECIFIED_ERROR;
   }
@@ -1598,32 +1746,77 @@ pal_get_board_type(uint8_t *brd_type){
 }
 
 int
+pal_get_full_board_type(uint8_t *full_brd_type) {
+  char path[LARGEST_DEVICE_NAME + 1];
+  int val_id_0, val_id_1, val_id_2;
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_0, "value");
+  if (device_read(path, &val_id_0)) {
+    return -1;
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_1, "value");
+  if (device_read(path, &val_id_1)) {
+    return -1;
+  }
+
+  snprintf(path, LARGEST_DEVICE_NAME, GPIO_BMC_BRD_TYPE_2, "value");
+  if (device_read(path, &val_id_2)) {
+    return -1;
+  }
+
+  *full_brd_type = val_id_0 | (val_id_1 << 1) | (val_id_2 << 2);
+
+  return 0;
+}
+
+int
 pal_get_board_type_rev(uint8_t *brd_type_rev){
   int brd_rev;
   uint8_t brd_type;
+  uint8_t full_brd_type;
   if( pal_get_board_rev(&brd_rev) != 0 ||
-      pal_get_board_type(&brd_type) != 0 ){
+      pal_get_board_type(&brd_type) != 0 ||
+      pal_get_full_board_type(&full_brd_type) != 0 ){
         return -1;
   } else if ( brd_type == BRD_TYPE_WEDGE400 ){
-    switch ( brd_rev ) {
-      case 0x00: *brd_type_rev = BOARD_WEDGE400_EVT_EVT3; break;
-      case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
-      case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
-      case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
-      case 0x05: *brd_type_rev = BOARD_WEDGE400_MP; break;
-      default:
-        *brd_type_rev = BOARD_UNDEFINED;
-        return -1;
+    if ( full_brd_type & 0x02 ) {  // Indicates MP RESPIN type.
+      switch ( brd_rev ) {
+        case 0x06: *brd_type_rev = BOARD_WEDGE400_MP_RESPIN; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
+    } else {
+      switch ( brd_rev ) {
+        case 0x00: *brd_type_rev = BOARD_WEDGE400_EVT_EVT3; break;
+        case 0x02: *brd_type_rev = BOARD_WEDGE400_DVT; break;
+        case 0x03: *brd_type_rev = BOARD_WEDGE400_DVT2_PVT_PVT2; break;
+        case 0x04: *brd_type_rev = BOARD_WEDGE400_PVT3; break;
+        case 0x05: *brd_type_rev = BOARD_WEDGE400_MP; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
     }
   } else if ( brd_type == BRD_TYPE_WEDGE400C ){
-    switch ( brd_rev ) {
-      case 0x00: *brd_type_rev = BOARD_WEDGE400C_EVT; break;
-      case 0x01: *brd_type_rev = BOARD_WEDGE400C_EVT2; break;
-      case 0x02: *brd_type_rev = BOARD_WEDGE400C_DVT; break;
-      case 0x03: *brd_type_rev = BOARD_WEDGE400C_DVT2; break;
-      default:
-        *brd_type_rev = BOARD_UNDEFINED;
-        return -1;
+    if ( full_brd_type & 0x02 ) { // Indicates MP RESPIN type.
+      switch ( brd_rev ) {
+        case 0x06: *brd_type_rev = BOARD_WEDGE400C_MP_RESPIN; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
+    } else {
+      switch ( brd_rev ) {
+        case 0x00: *brd_type_rev = BOARD_WEDGE400C_EVT; break;
+        case 0x01: *brd_type_rev = BOARD_WEDGE400C_EVT2; break;
+        case 0x02: *brd_type_rev = BOARD_WEDGE400C_DVT; break;
+        case 0x03: *brd_type_rev = BOARD_WEDGE400C_DVT2; break;
+        default:
+          *brd_type_rev = BOARD_UNDEFINED;
+          return -1;
+      }
     }
   } else {
     *brd_type_rev = BOARD_UNDEFINED;
@@ -2562,6 +2755,25 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
   int j = 0;
   bool discrete = false;
   bool scm_sensor = false;
+  int scm_sensor_cnt = 0;
+  uint8_t *scm_sensor_list;
+  uint8_t brd_type;
+  uint8_t brd_type_rev;
+  if(pal_get_board_type(&brd_type)){
+    return -1;
+  }
+  if(pal_get_board_type_rev(&brd_type_rev)){
+    return -1;
+  }
+
+  if ( brd_type == BRD_TYPE_WEDGE400 &&
+           brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+    scm_sensor_cnt = scm_mp_respin_sensor_cnt;
+    scm_sensor_list = (uint8_t *) scm_mp_respin_sensor_list;
+  } else {
+    scm_sensor_cnt = scm_evt_dvt_mp_sensor_cnt;
+    scm_sensor_list = (uint8_t *) scm_evt_dvt_mp_sensor_list;
+  }
 
   while (i < scm_sensor_cnt) {
     if (sensor_num == scm_sensor_list[i++]) {
@@ -2578,10 +2790,24 @@ scm_sensor_read(uint8_t sensor_num, float *value) {
         ret = read_attr(SCM_INLET_TEMP_DEVICE, TEMP(1), value);
         break;
       case SCM_SENSOR_HSC_VOLT:
-        ret = read_hsc_volt(SCM_HSC_DEVICE, 1, value);
+        if (!check_dir_exist(SCM_HSC_ADM1278_DIR)) {
+          ret = read_hsc_volt(SCM_HSC_ADM1278_DEVICE, 1, value);
+        } else if (!check_dir_exist(SCM_HSC_LM25066_DIR)) {
+          ret = read_hsc_volt(SCM_HSC_LM25066_DEVICE, 1, value);
+        } else {
+          ret = READING_NA;
+          break;
+        }
         break;
       case SCM_SENSOR_HSC_CURR:
-        ret = read_hsc_curr(SCM_HSC_DEVICE, SCM_RSENSE, value);
+        if (!check_dir_exist(SCM_HSC_ADM1278_DIR)) {
+          ret = read_hsc_curr(SCM_HSC_ADM1278_DEVICE, SCM_RSENSE, value);
+        } else if (!check_dir_exist(SCM_HSC_LM25066_DIR)) {
+          ret = read_hsc_curr(SCM_HSC_LM25066_DEVICE, SCM_RSENSE, value);
+        } else {
+          ret = READING_NA;
+          break;
+        }
         *value = *value * 1.0036 - 0.1189;
         if (*value < 0)
           *value = 0;
@@ -2701,16 +2927,60 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       ret = read_attr(SMB_LM75B_U55_DEVICE, TEMP(1), value);
       break;
     case SMB_SENSOR_TMP421_U62_TEMP:
-      ret = read_attr(SMB_TMP421_U62_DEVICE, TEMP(1), value);
+      if ( brd_type == BRD_TYPE_WEDGE400 &&
+           brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+        if ( !check_dir_exist(SMB_TMP421_1_DIR) ) {
+          ret = read_attr(SMB_TMP421_1_DEVICE, TEMP(1), value);
+        } else if( !check_dir_exist(SMB_ADM1032_1_DIR) ) {
+          ret = read_attr(SMB_ADM1032_1_DEVICE, TEMP(1), value);
+        } else {
+          ret = READING_NA;
+        }
+      } else {
+        ret = read_attr(SMB_TMP421_U62_DEVICE, TEMP(1), value);
+      }
       break;
     case SMB_SENSOR_TMP421_Q9_TEMP:
-      ret = read_attr(SMB_TMP421_U62_DEVICE, TEMP(2), value);
+      if ( brd_type == BRD_TYPE_WEDGE400 &&
+           brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+        if ( !check_dir_exist(SMB_TMP421_1_DIR) ) {
+          ret = read_attr(SMB_TMP421_1_DEVICE, TEMP(2), value);
+        } else if( !check_dir_exist(SMB_ADM1032_1_DIR) ) {
+          ret = read_attr(SMB_ADM1032_1_DEVICE, TEMP(2), value);
+        } else {
+          ret = READING_NA;
+        }
+      } else {
+        ret = read_attr(SMB_TMP421_U62_DEVICE, TEMP(2), value);
+      }
       break;
     case SMB_SENSOR_TMP421_U63_TEMP:
-      ret = read_attr(SMB_TMP421_U63_DEVICE, TEMP(1), value);
+      if ( brd_type == BRD_TYPE_WEDGE400 &&
+           brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+        if ( !check_dir_exist(SMB_TMP421_2_DIR) ) {
+          ret = read_attr(SMB_TMP421_2_DEVICE, TEMP(1), value);
+        } else if( !check_dir_exist(SMB_ADM1032_2_DIR) ) {
+          ret = read_attr(SMB_ADM1032_2_DEVICE, TEMP(1), value);
+        } else {
+          ret = READING_NA;
+        }
+      } else {
+        ret = read_attr(SMB_TMP421_U63_DEVICE, TEMP(1), value);
+      }
       break;
     case SMB_SENSOR_TMP421_Q10_TEMP:
-      ret = read_attr(SMB_TMP421_U63_DEVICE, TEMP(2), value);
+      if ( brd_type == BRD_TYPE_WEDGE400 &&
+           brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+        if( !check_dir_exist(SMB_TMP421_2_DIR) ) {
+          ret = read_attr(SMB_TMP421_2_DEVICE, TEMP(2), value);
+        } else if( !check_dir_exist(SMB_ADM1032_2_DIR) ) {
+          ret = read_attr(SMB_ADM1032_2_DEVICE, TEMP(2), value);
+        } else {
+          ret = READING_NA;
+        }
+      } else {
+        ret = read_attr(SMB_TMP421_U63_DEVICE, TEMP(2), value);
+      }
       break;
     case SMB_SENSOR_TMP422_U20_TEMP:
       if( brd_type == BRD_TYPE_WEDGE400 ){
@@ -2721,7 +2991,17 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_DIE_TEMP1:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(2), value);
+        if ( brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+          if( !check_dir_exist(SMB_TMP421_3_DIR) ) {
+            ret = read_attr(SMB_TMP421_3_DEVICE, TEMP(2), value);
+          } else if( !check_dir_exist(SMB_ADM1032_3_DIR) ) {
+            ret = read_attr(SMB_ADM1032_3_DEVICE, TEMP(2), value);
+          } else {
+            ret = READING_NA;
+          }
+        } else {
+          ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(2), value);
+        }
       }
       if( brd_type == BRD_TYPE_WEDGE400C ){ // Get Highest
         char path[32];
@@ -2748,7 +3028,17 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_SW_DIE_TEMP2:
       if( brd_type == BRD_TYPE_WEDGE400 ){
-        ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(3), value);
+        if ( brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+          if( !check_dir_exist(SMB_TMP421_4_DIR) ) {
+            ret = read_attr(SMB_TMP421_4_DEVICE, TEMP(2), value);
+          } else if( !check_dir_exist(SMB_ADM1032_4_DIR) ) {
+            ret = read_attr(SMB_ADM1032_4_DEVICE, TEMP(2), value);
+          } else {
+            ret = READING_NA;
+          }
+        } else {
+          ret = read_attr(SMB_SW_TEMP_DEVICE, TEMP(3), value);
+        }
       }
       if( brd_type == BRD_TYPE_WEDGE400C ){ // Average
         int num = 0;
@@ -2921,7 +3211,13 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       }
       break;
     case SMB_SENSOR_FCM_HSC_VOLT:
-      ret = read_hsc_volt(SMB_FCM_HSC_DEVICE, 1, value);
+      if (!check_dir_exist(SMB_FCM_HSC_ADM1278_DIR)) {
+        ret = read_hsc_volt(SMB_FCM_HSC_ADM1278_DEVICE, 1, value);
+      } else if (!check_dir_exist(SMB_FCM_HSC_LM25066_DIR)) {
+        ret = read_hsc_volt(SMB_FCM_HSC_LM25066_DEVICE, 1, value);
+      } else {
+        ret = READING_NA;
+      }
       break;
     case SMB_SENSOR_SW_SERDES_PVDD_IN_CURR:
       ret = read_attr(SMB_SW_SERDES_PVDD_DEVICE, CURR(2), value);
@@ -2957,7 +3253,13 @@ smb_sensor_read(uint8_t sensor_num, float *value) {
       break;
     case SMB_SENSOR_FCM_HSC_CURR:
       hsc_rsense_init(HSC_FCM, FCM_SYSFS);
-      ret = read_hsc_curr(SMB_FCM_HSC_DEVICE, hsc_rsense[HSC_FCM], value);
+      if (!check_dir_exist(SMB_FCM_HSC_ADM1278_DIR)) {
+        ret = read_hsc_curr(SMB_FCM_HSC_ADM1278_DEVICE, hsc_rsense[HSC_FCM], value);
+      } else if (!check_dir_exist(SMB_FCM_HSC_LM25066_DIR)) {
+        ret = read_hsc_curr(SMB_FCM_HSC_LM25066_DEVICE, hsc_rsense[HSC_FCM], value);
+      } else {
+        ret = READING_NA;
+      }
       *value = *value * 4.4254 - 0.2048;
       if (*value < 0)
         *value = 0;
@@ -5057,6 +5359,9 @@ sensor_thresh_array_init(uint8_t fru) {
   float fvalue;
   uint8_t brd_type;
   uint8_t brd_type_rev;
+  int scm_sensor_cnt;
+  int scm_all_sensor_cnt;
+  uint8_t *scm_sensor_list;
   if(pal_get_board_type(&brd_type)){
     return;
   }
@@ -5073,11 +5378,23 @@ sensor_thresh_array_init(uint8_t fru) {
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][UCR_THRESH] = 14.13;
       scm_sensor_threshold[SCM_SENSOR_HSC_VOLT][LCR_THRESH] = 7.5;
       scm_sensor_threshold[SCM_SENSOR_HSC_CURR][UCR_THRESH] = 24.7;
+      
+      if ( brd_type == BRD_TYPE_WEDGE400 
+        && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN ) {
+        scm_sensor_cnt = scm_mp_respin_sensor_cnt;
+        scm_all_sensor_cnt = scm_mp_respin_all_sensor_cnt;
+        scm_sensor_list = (uint8_t *) scm_mp_respin_all_sensor_list;
+      } else {
+        scm_sensor_cnt = scm_evt_dvt_mp_sensor_cnt;
+        scm_all_sensor_cnt= scm_evt_dvt_mp_all_sensor_cnt;
+        scm_sensor_list = (uint8_t *) scm_evt_dvt_mp_all_sensor_list;
+      }
+
       for (int sensor_index = scm_sensor_cnt; sensor_index < scm_all_sensor_cnt; sensor_index++) {
         for (int threshold_type = 1; threshold_type <= MAX_SENSOR_THRESHOLD; threshold_type++) {
-          if (!bic_get_sdr_thresh_val(fru, scm_all_sensor_list[sensor_index], threshold_type, &fvalue)) {
-            scm_sensor_threshold[scm_all_sensor_list[sensor_index]][threshold_type] = fvalue;
-          }
+            if (!bic_get_sdr_thresh_val(fru, scm_sensor_list[sensor_index], threshold_type, &fvalue)) {
+              scm_sensor_threshold[scm_sensor_list[sensor_index]][threshold_type] = fvalue;
+            }        
         }
       }
       break;
@@ -5303,12 +5620,17 @@ sensor_thresh_array_init(uint8_t fru) {
       smb_sensor_threshold[SMB_SENSOR_TMP421_Q10_TEMP][UCR_THRESH] = 80;
       smb_sensor_threshold[SMB_SENSOR_TMP422_U20_TEMP][UCR_THRESH] = 80;
       if(brd_type == BRD_TYPE_WEDGE400){
-        smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UNR_THRESH] = 110;
-        smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UCR_THRESH] = 103;
-        smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UNC_THRESH] = 100;
-        smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UNR_THRESH] = 110;
-        smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UCR_THRESH] = 103;
-        smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UNC_THRESH] = 100;
+        if (brd_type_rev >= BOARD_WEDGE400_MP_RESPIN) {
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UCR_THRESH] = 125;
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UCR_THRESH] = 125;
+        } else {
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UNR_THRESH] = 110;
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UCR_THRESH] = 103;
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UNC_THRESH] = 100;
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UNR_THRESH] = 110;
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UCR_THRESH] = 103;
+          smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UNC_THRESH] = 100;
+        }
       }else if(brd_type == BRD_TYPE_WEDGE400C){
         smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP1][UCR_THRESH] = 105;
         smb_sensor_threshold[SMB_SENSOR_SW_DIE_TEMP2][UCR_THRESH] = 105;

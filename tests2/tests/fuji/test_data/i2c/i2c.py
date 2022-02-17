@@ -137,3 +137,9 @@ plat_i2c_tree = {
     "142-0034": {"name": "ucd90160", "driver": "ucd9000"},
     "142-006b": {"name": "mp2975", "driver": "mp2975"},
 }
+
+
+device_lm75={
+    "lm75" : {"name":"lm75", "driver":"lm75"},
+    "tmp75" : {"name":"tmp75", "driver":"lm75"},
+}

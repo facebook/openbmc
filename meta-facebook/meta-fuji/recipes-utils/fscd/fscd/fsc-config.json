@@ -2,7 +2,7 @@
   "pwm_transition_value": 50,
   "pwm_boost_value": 70,
   "fan_limit_upper_pwm":70,
-  "fan_limit_lower_pwm":40,
+  "fan_limit_lower_pwm":30,
   "ramp_rate":100,
   "sample_interval_ms": 3000,
   "boost": {
@@ -26,37 +26,42 @@
       },
       "read_limit": {
         "alarm_major": {
-          "limit": 42
+          "limit": 45
         },
         "alarm_minor": {
-          "limit": 37,
-          "soak_time_s": 300
+          "limit": 40,
+          "soak_time_s": 300,
+          "hysteresis": 2
         }
       },
       "type": "linear_4curve",
       "data_normal_up": [
-        [27, 40],
-        [28, 45],
-        [29, 50],
-        [30, 55]
+        [24, 30],
+        [25, 35],
+        [28, 40],
+        [31, 45],
+        [35, 55]
       ],
       "data_normal_down":[
-        [25, 40],
-        [26, 45],
-        [27, 50],
-        [28, 55]
+        [22, 30],
+        [23, 35],
+        [26, 40],
+        [29, 45],
+        [33, 55]
       ],
       "data_onefail_up":[
-        [27, 45],
-        [28, 50],
-        [29, 55],
-        [30, 60]
+        [24, 35],
+        [25, 40],
+        [28, 45],
+        [31, 50],
+        [35, 60]
       ],
       "data_onefail_down":[
-        [25, 45],
-        [26, 50],
-        [27, 55],
-        [28, 60]
+        [22, 35],
+        [23, 40],
+        [26, 45],
+        [29, 50],
+        [33, 60]
       ]
     },
     "SMB_SENSOR_TH4_HIGH": {

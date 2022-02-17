@@ -56,7 +56,7 @@ def wedge400_board_rev(soc_gpio_table, board_gpio_rev_table):
 
 
 def wedge400_board_type():
-    val = v0 = openbmc_gpio.gpio_get_value("BMC_CPLD_BOARD_TYPE")
+    val = openbmc_gpio.gpio_get_value("BMC_CPLD_BOARD_TYPE_0")
 
     if val == 1:
         return 0

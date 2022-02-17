@@ -5,7 +5,8 @@
 #include "Log.h"
 
 using nlohmann::json;
-using namespace rackmon;
+
+namespace rackmon {
 
 void Modbus::command(
     Msg& req,
@@ -65,3 +66,5 @@ void Modbus::initialize(const json& j) {
 void from_json(const json& j, Modbus& m) {
   m.initialize(j);
 }
+
+} // namespace rackmon

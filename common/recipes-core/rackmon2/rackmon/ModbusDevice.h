@@ -1,4 +1,5 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
+#pragma once
 #include <nlohmann/json.hpp>
 #include <ctime>
 #include <iostream>

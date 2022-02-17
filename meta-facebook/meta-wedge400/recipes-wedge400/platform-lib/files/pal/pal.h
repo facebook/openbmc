@@ -91,11 +91,18 @@ extern "C" {
 #define LAST_KEY "last_key"
 
 // SCM Sensor Devices
-#define SCM_HSC_DEVICE         I2C_DEV_DIR(16, 10)HW_MON_DIR
+#define SCM_HSC_ADM1278_DIR           I2C_DRIVER_DIR(adm1275, 16, 10)
+#define SCM_HSC_LM25066_DIR           I2C_DRIVER_DIR(lm25066, 16, 44)
+
+#define SCM_HSC_ADM1278_DEVICE        I2C_DEV_DIR(16, 10)HW_MON_DIR
+#define SCM_HSC_LM25066_DEVICE        I2C_DEV_DIR(16, 44)HW_MON_DIR
 #define SCM_OUTLET_TEMP_DEVICE I2C_DEV_DIR(17, 4d)HW_MON_DIR
 #define SCM_INLET_TEMP_DEVICE  I2C_DEV_DIR(17, 4c)HW_MON_DIR
 
 // SMB Sensor Devices
+#define SMB_FCM_HSC_ADM1278_DIR       I2C_DRIVER_DIR(adm1275, 35, 10)
+#define SMB_FCM_HSC_LM25066_DIR       I2C_DRIVER_DIR(lm25066, 35, 44)
+
 #define SMB_PXE1211_DEVICE            I2C_DEV_DIR(1, 0e)HW_MON_DIR
 #define SMB_SW_SERDES_PVDD_DEVICE     I2C_DEV_DIR(1, 4d)HW_MON_DIR
 #define SMB_SW_SERDES_TRVDD_DEVICE    I2C_DEV_DIR(1, 47)HW_MON_DIR
@@ -116,7 +123,8 @@ extern "C" {
 #define SMB_FCM_TACH_DEVICE           I2C_DEV_DIR(32, 3e)
 #define SMB_FCM_LM75B_U1_DEVICE       I2C_DEV_DIR(34, 48)HW_MON_DIR
 #define SMB_FCM_LM75B_U2_DEVICE       I2C_DEV_DIR(34, 49)HW_MON_DIR
-#define SMB_FCM_HSC_DEVICE            I2C_DEV_DIR(35, 10)HW_MON_DIR
+#define SMB_FCM_HSC_ADM1278_DEVICE    I2C_DEV_DIR(35, 10)HW_MON_DIR
+#define SMB_FCM_HSC_LM25066_DEVICE    I2C_DEV_DIR(35, 44)HW_MON_DIR
 
 //BMC Sensor Devices
 #define AST_ADC_DEVICE         SYS_PLATFROM_DIR("ast-adc-hwmon")HW_MON_DIR
@@ -137,6 +145,23 @@ extern "C" {
 #define PEM1_DEVICE_EXT        I2C_DEV_DIR(24, 18)HW_MON_DIR
 #define PEM2_DEVICE_EXT        I2C_DEV_DIR(25, 18)HW_MON_DIR
 
+#define SMB_TMP421_1_DEVICE    I2C_DEV_DIR(30, 4d)HW_MON_DIR
+#define SMB_TMP421_2_DEVICE    I2C_DEV_DIR(28, 4d)HW_MON_DIR
+#define SMB_TMP421_3_DEVICE    I2C_DEV_DIR(27, 4d)HW_MON_DIR
+#define SMB_TMP421_4_DEVICE    I2C_DEV_DIR(26, 4d)HW_MON_DIR
+#define SMB_TMP421_1_DIR       I2C_DRIVER_DIR(tmp421, 30, 4d)
+#define SMB_TMP421_2_DIR       I2C_DRIVER_DIR(tmp421, 28, 4d)
+#define SMB_TMP421_3_DIR       I2C_DRIVER_DIR(tmp421, 27, 4d)
+#define SMB_TMP421_4_DIR       I2C_DRIVER_DIR(tmp421, 26, 4d)
+#define SMB_ADM1032_1_DEVICE   I2C_DEV_DIR(30, 4c)HW_MON_DIR
+#define SMB_ADM1032_2_DEVICE   I2C_DEV_DIR(28, 4c)HW_MON_DIR
+#define SMB_ADM1032_3_DEVICE   I2C_DEV_DIR(27, 4c)HW_MON_DIR
+#define SMB_ADM1032_4_DEVICE   I2C_DEV_DIR(26, 4c)HW_MON_DIR
+#define SMB_ADM1032_1_DIR      I2C_DRIVER_DIR(lm90, 30, 4c)
+#define SMB_ADM1032_2_DIR      I2C_DRIVER_DIR(lm90, 28, 4c)
+#define SMB_ADM1032_3_DIR      I2C_DRIVER_DIR(lm90, 27, 4c)
+#define SMB_ADM1032_4_DIR      I2C_DRIVER_DIR(lm90, 26, 4c)
+
 #define TEMP(x)                "temp"#x"_input"
 #define VOLT(x)                "in"#x"_input"
 #define VOLT_SET(x)            "vo"#x"_input"
@@ -146,7 +171,9 @@ extern "C" {
 #define GPIO_SMB_REV_ID_0   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID0/%s"
 #define GPIO_SMB_REV_ID_1   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID1/%s"
 #define GPIO_SMB_REV_ID_2   "/tmp/gpionames/BMC_CPLD_BOARD_REV_ID2/%s"
-#define GPIO_BMC_BRD_TPYE   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE/%s"
+#define GPIO_BMC_BRD_TYPE_0   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE_0/%s"
+#define GPIO_BMC_BRD_TYPE_1   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE_1/%s"
+#define GPIO_BMC_BRD_TYPE_2   "/tmp/gpionames/BMC_CPLD_BOARD_TYPE_2/%s"
 #define GPIO_POSTCODE_0     "/tmp/gpionames/GPIO_H0/%s"
 #define GPIO_POSTCODE_1     "/tmp/gpionames/GPIO_H1/%s"
 #define GPIO_POSTCODE_2     "/tmp/gpionames/GPIO_H2/%s"
@@ -215,10 +242,12 @@ enum {
   BOARD_WEDGE400_DVT2_PVT_PVT2  = 0x03,
   BOARD_WEDGE400_PVT3           = 0x04,
   BOARD_WEDGE400_MP             = 0x05,
+  BOARD_WEDGE400_MP_RESPIN      = 0x06,
   BOARD_WEDGE400C_EVT           = 0x10,
   BOARD_WEDGE400C_EVT2          = 0x11,
   BOARD_WEDGE400C_DVT           = 0x12,
   BOARD_WEDGE400C_DVT2          = 0x13,
+  BOARD_WEDGE400C_MP_RESPIN     = 0x14,
   BOARD_UNDEFINED               = 0xFF,
 };
 
@@ -616,6 +645,7 @@ int pal_set_th3_power(int option);
 int pal_get_cpld_fpga_fw_ver(uint8_t fru, const char *device, uint8_t* ver);
 int pal_get_board_rev(int *rev);
 int pal_get_board_type(uint8_t *brd_type);
+int pal_get_full_board_type(uint8_t *full_brd_type);
 int pal_get_board_type_rev(uint8_t *brd_type_rev);
 int pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_sensor_discrete_read_raw(uint8_t fru, uint8_t sensor_num, void *value);

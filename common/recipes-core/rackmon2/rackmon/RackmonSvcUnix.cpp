@@ -9,8 +9,9 @@
 #include "RackmonSvcUnix.h"
 
 using nlohmann::json;
-using namespace rackmonsvc;
 using namespace rackmon;
+
+namespace rackmonsvc {
 
 class RackmonUNIXSocketService {
   // The configuration file paths.
@@ -342,6 +343,10 @@ void RackmonUNIXSocketService::doLoop() {
     }
   }
 }
+
+} // namespace rackmonsvc
+
+using namespace rackmonsvc;
 
 int main(int argc, char* argv[]) {
   RackmonUNIXSocketService::svc.initialize(argc, argv);

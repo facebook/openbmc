@@ -1,7 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "Msg.h"
 
-using namespace rackmon;
+namespace rackmon {
 
 namespace {
 /* From libmodbus, https://github.com/stephane/libmodbus
@@ -139,3 +139,5 @@ Msg& Msg::operator>>(uint32_t& d) {
   d = upper << 16 | lower;
   return *this;
 }
+
+} // namespace rackmon

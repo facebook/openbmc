@@ -62,19 +62,9 @@ class BusyBoxSyntaxTest(TestCase):
             )
         ]
 
-    @classmethod
-    def _gen_parameterised_tests(cls, known_usage_strings):
-        # _test_usage_string_template -> test_usage_string_{cmd}
-        for cmd, expected_strings in known_usage_strings.items():
-            setattr(
-                cls,
-                "test_usage_string_{cmd}".format(cmd=cmd),
-                functools.partialmethod(
-                    cls._test_usage_string_template,
-                    cmd=cmd,
-                    expected_strings=expected_strings,
-                ),
-            )
+    def test_busybox_usage_strings(self):
+        for cmd, expected_strings in KNOWN_USAGE_STRINGS.items():
+            self._test_usage_string_template(cmd, expected_strings)
 
 
 # Initial set generated using:
@@ -336,22 +326,3 @@ KNOWN_USAGE_STRINGS = {
     "yes": ["yes [STRING]"],
     "zcat": ["zcat [FILE]..."],
 }
-
-if sys.version_info.major == 2:
-    # XXX cit uses python2 to retrieve the test list, but the
-    # actual tests in the BMC run in python3.
-    # https://fburl.com/diffusion/ka08q9wg
-    # This is a temporary workaround until it gets migrated to
-    # python3
-
-    # Generating dummy methods just so they get listed
-    for cmd in KNOWN_USAGE_STRINGS:
-        setattr(
-            BusyBoxSyntaxTest,
-            "test_usage_string_{cmd}".format(cmd=cmd),
-            lambda self: None,
-        )
-
-else:
-    # We're using python3
-    BusyBoxSyntaxTest._gen_parameterised_tests(known_usage_strings=KNOWN_USAGE_STRINGS)

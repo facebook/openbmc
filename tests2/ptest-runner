@@ -153,7 +153,8 @@ def main(args):
     deploy = args.build + "/tmp/deploy/images/qemux86"
     rootfs_zip = deploy + "/qemux86-image-qemux86.tar.bz2"
     rootfs_zip = os.path.abspath(rootfs_zip)
-    rootfs = "./rootfs"
+    rootfs = args.tmpfs if args.tmpfs else deploy
+    rootfs += "/rootfs"
     if os.path.isdir(rootfs):
         shutil.rmtree(rootfs)
     os.makedirs(rootfs)
@@ -162,12 +163,12 @@ def main(args):
     subprocess.check_call(
         ["mkdir", "-p", rootfs + "/dev/shm", rootfs + "/tmp"]
     )  # fake shm,tmp for flake8
-    if not os.path.exists("/.dockerenv"):
+    if not args.tmpfs:
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
         init_steps = ["mount -t tmpfs -o size=512m tmpfs /dev/shm"]
     else:
-        # It's not necessary to mount /dev/shm as tmpfs in CircleCI because we
-        # unpack the rootfs within /mnt/ramdisk, which is already a tmpfs.
+        # If we unpacked the rootfs within an existing tmpfs, then we don't have
+        # to mount /dev/shm as a tmpfs.
         base_cmd = ["sudo", "chroot", rootfs]
         init_steps = []
 
@@ -206,6 +207,10 @@ parser.add_argument(
     help="Use an existing build directory instead of building one (For debugging)",
     dest="build",
     default=None,
+)
+parser.add_argument(
+    "--tmpfs",
+    help="Unpack the rootfs in an existing tmpfs instead of trying to mount ones",
 )
 parser.add_argument(
     "--force-rebuild",

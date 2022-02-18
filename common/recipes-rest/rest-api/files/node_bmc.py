@@ -413,9 +413,11 @@ class bmcNode(node):
         # ASD status - check if ASD daemon/asd-test is currently running
         asd_status = False
         for proc in psutil.process_iter():
-            if re.match("[a]sd", proc.name().lower()) or re.match(
-                "[y]aapd", proc.name().lower()
-            ):
+            try:
+                proc_name = proc.name().lower()
+            except Exception:
+                continue
+            if re.match("[a]sd", proc_name) or re.match("[y]aapd", proc_name):
                 asd_status = True
                 break
         boot_from_secondary = is_boot_from_secondary()

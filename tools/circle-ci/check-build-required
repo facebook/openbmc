@@ -1,13 +1,13 @@
 #!/bin/bash
 set -e
 
-if [ "$MACHINE" == "qemux86" ]; then
-  exit 0
-fi
-
 # Source openbmc setup script.
 source "$(dirname "${BASH_SOURCE[0]}")/../../openbmc-init-build-env" \
     "$MACHINE" build
+
+if [ "$MACHINE" == "qemux86" ]; then
+  exit 0
+fi
 
 # List of subdirectories that might contain machine-specific code.
 MACHINE_METAS="\

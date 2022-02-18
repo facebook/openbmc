@@ -4,10 +4,7 @@ import os
 import sys
 import unittest
 
-from utils.test_utils import qemu_check
-
 BMC_START_DIR = "/usr/local/bin/tests2/tests/"
-QEMU_DENYLIST_PATH = "/usr/local/bin/tests2/qemu_denylist.txt"
 
 
 class RunTest:
@@ -48,12 +45,13 @@ class Tests:
         ],  # So elbert can import minipack tests and run them only one time
     }
 
-    def __init__(self, platform, start_dir=BMC_START_DIR, pattern="test*.py"):
+    def __init__(self, platform, start_dir, pattern, denylist):
         self.platform = platform
         self.tests_set = []
         self.formatted_tests_set = []
         self.start_dir = start_dir + args.platform + "/"
         self.pattern = pattern
+        self.denylist = denylist
 
     def discover_tests(self):
         loader = unittest.defaultTestLoader
@@ -106,15 +104,15 @@ class Tests:
                 prefix + self.format_into_test_path(testitem)
             )
 
-        if qemu_check():
+        if self.denylist:
             try:
-                with open(QEMU_DENYLIST_PATH, "r") as f:
-                    qemu_denylist = f.read().splitlines()
+                with open(self.denylist, "r") as f:
+                    denylist = f.read().splitlines()
             except FileNotFoundError:
-                qemu_denylist = []
+                denylist = []
 
             self.formatted_tests_set = [
-                t for t in self.formatted_tests_set if t not in qemu_denylist
+                t for t in self.formatted_tests_set if t not in denylist
             ]
 
         return self.formatted_tests_set
@@ -142,12 +140,6 @@ def set_fw_args(args):
     Optional arguments for firmware upgrade test
     """
     os.environ["TEST_FW_OPT_ARGS"] = args.firmware_opt_args
-
-
-def get_tests(platform, start_dir, pattern=None):
-    if pattern:
-        return Tests(platform, start_dir, pattern).get_all_platform_tests()
-    return Tests(platform, start_dir).get_all_platform_tests()
 
 
 def clean_on_exit(returncode):
@@ -289,6 +281,7 @@ def arg_parser():
     )
 
     parser.add_argument("--repeat", help="Used to repeat tests many times")
+    parser.add_argument("--denylist", help="File specifying tests to ignored")
 
     return parser.parse_args()
 
@@ -315,7 +308,7 @@ def repeat_test(test, num_iter, single=False):
 
 if __name__ == "__main__":
     args = arg_parser()
-    pattern = None
+    pattern = "test*.py"
 
     if args.platform == "wedge400c":
         args.platform = "wedge400"
@@ -349,7 +342,8 @@ if __name__ == "__main__":
         print("Platform needed to run tests, pass --platform arg. Exiting..")
         clean_on_exit(1)
 
-    test_paths = get_tests(args.platform, args.start_dir, pattern=pattern)
+    tests = Tests(args.platform, args.start_dir, pattern, args.denylist)
+    test_paths = tests.get_all_platform_tests()
     if args.list_tests:
         for item in test_paths:
             print(item)

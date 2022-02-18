@@ -34,6 +34,7 @@
 LOG="/tmp/setup-sic.log"
 FEXP_INTF="0x05"
 REXP_INTF="0x15"
+IS_INIT_NEED=true
 
 function run_cmd() {
   echo "bic-util $*" >> $LOG
@@ -89,9 +90,11 @@ function check_class1_config() {
   i2c_num=$(get_cpld_bus "${slot:4:1}")
   type_2ou=$(get_2ou_board_type "$i2c_num")
 
-  if [[ $((val & 0x08)) -eq 0 && $type_2ou == "0x07" ]]; then
-    # waive 2OU present if 2OU type is dp riser card (0x06)
+  if [[ $((val & 0x08)) -eq 0 && 
+    ($((type_2ou & 0x07)) -eq 0x07 || $((type_2ou & 0x70)) -eq 0x70) ]]; then
+    # waive 2OU present if 2OU type is dpv2 riser card X8 (0x07) / X16 (0x70)
     val=$((val | 0x08))
+    IS_INIT_NEED=false
   fi
 
   if [ $val -eq 0 ]; then
@@ -171,4 +174,8 @@ else
   exit 255
 fi
 
-echo "Done."
+if [[ $IS_INIT_NEED == true ]]; then
+  echo "init done."
+else
+  echo "init not needed."
+fi

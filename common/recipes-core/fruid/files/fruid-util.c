@@ -493,8 +493,7 @@ int get_fruid_info(uint8_t fru, char *path, char* name, unsigned char print_form
 
 static void
 print_usage() {
-  if ((pal_dev_list_print_t != NULL && strlen(pal_dev_list_print_t) != 0) ||
-      (pal_dev_list_rw_t != NULL && strlen(pal_dev_list_rw_t) != 0)) {
+  if ((strlen(pal_dev_list_print_t) != 0) || (strlen(pal_dev_list_rw_t) != 0)) {
     // dev_list is not empty
     printf("Usage: fruid-util [ %s ] [ %s ] [--json]\n"
       "Usage: fruid-util [ %s ] [ %s ] [--dump | --write ] <file>\n",
@@ -596,7 +595,7 @@ int check_dump_arg(int argc, char * argv[]) {
     return -1;
   }
   if (argc == 5) {
-    if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
+    if (strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
     if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
@@ -622,7 +621,7 @@ int check_write_arg(int argc, char * argv[])
     return -1;
   }
   if (argc == 5) {
-    if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
+    if (strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
     if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
@@ -652,7 +651,7 @@ int check_modify_arg(int argc, char * argv[])
       return -1;
   }
   if (argc == 7) {
-    if (pal_dev_list_rw_t == NULL || strlen(pal_dev_list_rw_t) == 0) {
+    if (strlen(pal_dev_list_rw_t) == 0) {
       return -1;
     }
     if (!is_in_list(pal_dev_list_rw_t, argv[2])) {
@@ -680,7 +679,7 @@ int check_print_arg(int argc, char * argv[])
     return -1;
   }
   if (argv[optind+1] != NULL) {
-    if (pal_dev_list_print_t == NULL || strlen(pal_dev_list_print_t) == 0) {
+    if (strlen(pal_dev_list_print_t) == 0) {
       return -1;
     }
     if (!is_in_list(pal_dev_list_print_t, argv[optind+1])) {
@@ -766,7 +765,7 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
   ret = get_fruid_info(fru, path, name, print_format,fru_array);
 
   if (num_devs && dev_id == DEV_ALL) {
-    for (uint8_t i=1;i<=num_devs;i++) {
+    for (i = 1;i <= num_devs; i++) {
       pal_get_dev_fruid_name(fru,i,name);
       ret = pal_get_dev_fruid_path(fru, i, path);
       if (ret < 0) {
@@ -839,6 +838,18 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
         continue;
       }
       ret |= print_fru(fru, device, true, print_format,fru_array);
+    }
+
+    if (pal_is_exp() == PAL_EOK && device == NULL) {
+      uint8_t list[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
+      pal_get_exp_fru_list(list, &len);
+      for (i = 0; i < len; ++i) {
+        unsigned int caps = 0;
+        if (pal_get_fru_capability(list[i], &caps) || !(caps & FRU_CAPABILITY_FRUID_READ)) {
+          continue;
+        }
+        ret |= print_fru(list[i], device, true, print_format, fru_array);
+      }
     }
   }
 

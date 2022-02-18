@@ -56,14 +56,14 @@ jobs:
                   MACHINE: qemux86
               user: root
         resource_class: 2xlarge
-        working_directory: /mnt/ramdisk
+        working_directory: /tmp/job/project
         steps:
             - attach_workspace:
                 at: /tmp/job
             - run:
                 name: Build qemux86 and run package-test within
                 command: |
-                    python3 /tmp/job/project/tests2/ptest-runner -b /tmp/job/project/build --verbose
+                    python3 tests2/ptest-runner -b build --tmpfs /mnt/ramdisk --verbose
     qemu-cit:
         parameters:
             machine:

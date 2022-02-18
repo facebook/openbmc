@@ -98,16 +98,17 @@ class TestWrapper(object):
                 continue
 
     def init_ssh(self) -> None:
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         count = 10
         while count != 0:
             try:
-                self.ssh = paramiko.SSHClient()
-                self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 self.ssh.connect(
                     HOST,
                     HOST_SSH_FORWARD_PORT,
                     DEFAULT_BMC_USER,
                     DEFAULT_OPENBMC_PASSWORD,
+                    banner_timeout=200,
                 )
                 break
             except paramiko.ssh_exception.SSHException:

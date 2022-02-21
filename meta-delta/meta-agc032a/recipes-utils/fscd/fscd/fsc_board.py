@@ -137,4 +137,3 @@ def host_shutdown():
     Logger.info("host_shutdown() executing {}".format(cmd))
     response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
     return response
-# fmt: on

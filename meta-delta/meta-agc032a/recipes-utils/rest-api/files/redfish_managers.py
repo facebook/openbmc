@@ -1,3 +1,4 @@
+# fmt: off
 import os
 import uuid
 from uuid import getnode as get_mac

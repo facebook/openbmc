@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# fmt: off
 #
 # Copyright 2019-present Facebook. All rights reserved.
 #

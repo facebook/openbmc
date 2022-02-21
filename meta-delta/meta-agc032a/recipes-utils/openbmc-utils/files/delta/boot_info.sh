@@ -97,15 +97,15 @@ bmc_boot_from() {
 }
 
 bios_boot_info() {
-    # master_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n") ))
-    # slave_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n") ))
-    # boot_source="master"
-    # if [ $master_disable -eq 0 ]; then
-    #     boot_source="master"
-    # elif [ $slave_disable -eq 0 ]; then
-    #     boot_source="slave"
-    # fi
-    # echo $boot_source
+    ## master_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n") ))
+    ## slave_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n") ))
+    ## boot_source="master"
+    ## if [ $master_disable -eq 0 ]; then
+    ##     boot_source="master"
+    ## elif [ $slave_disable -eq 0 ]; then
+    ##     boot_source="slave"
+    ## fi
+    ## echo $boot_source
 }
 
 bios_boot_from() {

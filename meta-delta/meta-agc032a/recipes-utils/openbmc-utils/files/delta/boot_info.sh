@@ -96,19 +96,19 @@ bmc_boot_from() {
     devmem 0x1e78502c 32 $boot_source
 }
 
-bios_boot_info() {
-    ## master_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n") ))
-    ## slave_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n") ))
-    ## boot_source="master"
-    ## if [ $master_disable -eq 0 ]; then
-    ##     boot_source="master"
-    ## elif [ $slave_disable -eq 0 ]; then
-    ##     boot_source="slave"
-    ## fi
-    ## echo $boot_source
-}
+#bios_boot_info() {
+    # master_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis0_n") ))
+    # slave_disable=$(( $(head -n 1 < "${SCMCPLD_SYSFS_DIR}/iso_buff_brg_com_bios_dis1_n") ))
+    # boot_source="master"
+    # if [ $master_disable -eq 0 ]; then
+    #     boot_source="master"
+    # elif [ $slave_disable -eq 0 ]; then
+    #     boot_source="slave"
+    # fi
+    # echo $boot_source
+#}
 
-bios_boot_from() {
+#bios_boot_from() {
     # boot_source=$(bios_boot_info)
     # if [ "$1" = "master" ]; then
     #     if [ "$boot_source" = "master" ]; then
@@ -128,7 +128,7 @@ bios_boot_from() {
     # wedge_power.sh off
     # sleep 1
     # wedge_power.sh on
-}
+#}
 
 if [ $# -lt 1 ]; then
     usage

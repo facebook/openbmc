@@ -13,7 +13,7 @@
 *:*/common/recipes-core/asd_1.4.3/*
 *:*/recipes-utils/jam/*
 // For delta
-*:*/meta_delta/*
+*:*/meta-delta/*
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

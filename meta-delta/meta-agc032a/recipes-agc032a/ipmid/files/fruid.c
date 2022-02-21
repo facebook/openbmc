@@ -208,7 +208,6 @@ static void populate_fruid(unsigned char id)
     struct wedge_eeprom_st eeprom;
     // Will keep data to buffer in IPMI FRU format
     fruid_common_hdr_t *chdr = (fruid_common_hdr_t *)frumem;
-    // cppcheck-suppress memsetValueOutOfRange
     memset(&fruid, AGC032A_FRUID_SIZE, zero_val);
 
     chdr->ver = COMMON_HDR_VER;

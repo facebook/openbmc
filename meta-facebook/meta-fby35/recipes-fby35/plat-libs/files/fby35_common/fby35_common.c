@@ -321,7 +321,7 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
   } else if (!strcmp(str, "2U-X8")) {
     *dev = BOARD_2OU_X8;
   } else if (!strcmp(str, "2U-X16")) {
-    *dev = BOARD_2OU_X16; 
+    *dev = BOARD_2OU_X16;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");
@@ -526,57 +526,89 @@ exit:
 }
 
 int
-fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data) {
+fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first) {
   int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
   char read_buf[MD5_READ_BYTES] = {0};
   char md5_digest[MD5_DIGEST_LENGTH] = {0};
   MD5_CTX context;
 
   if (image_path == NULL) {
-    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to NULL parameters.", __func__);
+    if(is_first)
+      syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to NULL parameters.", __func__);
+    else
+      syslog(LOG_WARNING, "%s(): failed to calculate MD5-2 due to NULL parameters.", __func__);
     return -1;
   }
 
   if (cal_size <= 0) {
-    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to wrong calculate size: %d.", __func__, cal_size);
+    if(is_first)
+      syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to wrong calculate size: %d.", __func__, cal_size);
+    else
+      syslog(LOG_WARNING, "%s(): failed to calculate MD5-2 due to wrong calculate size: %d.", __func__, cal_size);
     return -1;
   }
 
   fd = open(image_path, O_RDONLY);
 
   if (fd < 0) {
-    syslog(LOG_WARNING, "%s(): failed to open %s to calculate MD5.", __func__, image_path);
+    if(is_first)
+      syslog(LOG_WARNING, "%s(): failed to open %s to calculate MD5.", __func__, image_path);
+    else
+      syslog(LOG_WARNING, "%s(): failed to open %s to calculate MD5-2.", __func__, image_path);
     return -1;
   }
 
-  lseek(fd, 0, SEEK_SET);
+  if(is_first)
+    lseek(fd, 0, SEEK_SET);
+  else
+    lseek(fd, cal_size, SEEK_SET);
 
   ret = MD5_Init(&context);
   if (ret == 0) {
-    syslog(LOG_WARNING, "%s(): failed to initialize MD5 context.", __func__);
+    if(is_first)
+      syslog(LOG_WARNING, "%s(): failed to initialize MD5 context.", __func__);
+    else
+      syslog(LOG_WARNING, "%s(): failed to initialize MD5-2 context.", __func__);
     ret = -1;
     goto exit;
   }
 
-  while (sum < cal_size) {
-    read_bytes = MD5_READ_BYTES;
-    if ((sum + MD5_READ_BYTES) > cal_size) {
-      read_bytes = cal_size - sum;
+
+  if(is_first){
+    while (sum < cal_size) {
+      read_bytes = MD5_READ_BYTES;
+      if ((sum + MD5_READ_BYTES) > cal_size) {
+        read_bytes = cal_size - sum;
+      }
+
+      byte_num = read(fd, read_buf, read_bytes);
+      ret = MD5_Update(&context, read_buf, byte_num);
+      if (ret == 0) {
+        syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
+        ret = -1;
+        goto exit;
+      }
+      sum += byte_num;
     }
+  }
+  else{
+    read_bytes = ((IMG_POSTFIX_SIZE) - (MD5_SIZE));
 
     byte_num = read(fd, read_buf, read_bytes);
     ret = MD5_Update(&context, read_buf, byte_num);
     if (ret == 0) {
-      syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
+      syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5-2 of %s.", __func__, image_path);
       ret = -1;
       goto exit;
     }
-    sum += byte_num;
   }
 
   ret = MD5_Final((uint8_t*)md5_digest, &context);
   if (ret == 0) {
-    syslog(LOG_WARNING, "%s(): failed to calculate MD5 of %s.", __func__, image_path);
+    if(is_first)
+      syslog(LOG_WARNING, "%s(): failed to calculate MD5 of %s.", __func__, image_path);
+    else
+      syslog(LOG_WARNING, "%s(): failed to calculate MD5-2 of %s.", __func__, image_path);
     ret = -1;
     goto exit;
   }
@@ -595,7 +627,10 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
 #endif
 
   if (strncmp(md5_digest, (char*)data, sizeof(md5_digest)) != 0) {
-    printf("Checksum incorrect. This image is corrupted or unsigned\n");
+    if(is_first)
+      printf("MD5-1 checksum incorrect. This image is corrupted or unsigned\n");
+    else
+      printf("MD5-2 Checksum incorrect. This image sign information is corrupted or unsigned\n");
     ret = -1;
   }
 
@@ -609,7 +644,7 @@ fby35_common_check_image_signature(uint8_t* data) {
   int ret = 0;
 
   if (strncmp(platform_signature, (char*)data, PLAT_SIG_SIZE) != 0) {
-    printf("This image is not for Yv3.5 platform\n");
+    printf("This image is not for Yv3.5 platform or is not signed md5-2.\n");
     ret = -1;
   }
   return ret;
@@ -669,12 +704,13 @@ exit:
 
 bool
 fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id) {
-  const char *rev_bb[] = {"POC1", "POC2", "EVT1", "EVT2", "EVT3", "DVT", "PVT", "MP"};
-  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
+  const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "PVT", "MP"};
+  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "DVT", "DVT2", "PVT", "PVT2", "MP", "MP2"};
   const char **board_type = rev_sb;
   uint8_t signed_byte = 0x0;
   uint8_t board_id = 0, exp_fw_rev = 0;
   struct stat file_info;
+  bool is_first = true;
 
   if (stat(img_path, &file_info) < 0) {
     syslog(LOG_WARNING, "%s(): failed to open %s to check file infomation.", __func__, img_path);
@@ -685,7 +721,11 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, file_info.st_size - IMG_POSTFIX_SIZE, img_info->md5_sum) < 0) {
+  if (fby35_common_check_image_md5(img_path, file_info.st_size - IMG_POSTFIX_SIZE, img_info->md5_sum, is_first) < 0) {
+    return false;
+  }
+
+  if (fby35_common_check_image_md5(img_path, file_info.st_size - IMG_POSTFIX_SIZE, img_info->md5_sum_second, !is_first) < 0) {
     return false;
   }
 
@@ -696,7 +736,6 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     case FW_BIC:
     case FW_BIOS:
       board_id = BOARD_ID_SB;
-      exp_fw_rev = (rev_id == SB_REV_POC) ? FW_REV_POC : FW_REV_EVT;
       if (rev_id >= ARRAY_SIZE(rev_sb)) {
         rev_id = ARRAY_SIZE(rev_sb) - 1;
       }
@@ -705,7 +744,6 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     case FW_BB_CPLD:
       board_id = BOARD_ID_BB;
       board_type = rev_bb;
-      exp_fw_rev = (rev_id <= BB_REV_POC2) ? FW_REV_POC : FW_REV_EVT;
       if (rev_id >= ARRAY_SIZE(rev_bb)) {
         rev_id = ARRAY_SIZE(rev_bb) - 1;
       }
@@ -716,6 +754,31 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     return false;
   }
 
+  if(board_type == rev_sb){
+    if(SB_REV_EVT <= rev_id && rev_id <= SB_REV_EVT4)
+      exp_fw_rev = 1;
+    else if(SB_REV_DVT <= rev_id && rev_id <= SB_REV_DVT2)
+      exp_fw_rev = 2;
+    else if(SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT2)
+      exp_fw_rev = 3;
+    else if(SB_REV_MP <= rev_id && rev_id <= SB_REV_MP2)
+      exp_fw_rev = 4;
+    else
+      exp_fw_rev = 0;
+  }
+  else{
+    if(BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
+      exp_fw_rev = 1;
+    else if(rev_id == BB_REV_DVT)
+      exp_fw_rev = 2;
+    else if(rev_id == BB_REV_PVT)
+      exp_fw_rev = 3;
+    else if(rev_id == BB_REV_MP)
+      exp_fw_rev = 4;
+    else
+      exp_fw_rev = 0;
+  }
+
   switch (exp_fw_rev) {
     case FW_REV_POC:
       if (REVISION_ID(signed_byte) != FW_REV_POC) {
@@ -723,12 +786,32 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
         return false;
       }
       break;
-    default:
-      if (REVISION_ID(signed_byte) < FW_REV_EVT) {
-        printf("Please use firmware after EVT on %s system\nTo force the update, please use the --force option.\n",
+    case FW_REV_EVT:
+      if (REVISION_ID(signed_byte) != FW_REV_EVT) {
+        printf("Please use EVT firmware on %s system\nTo force the update, please use the --force option.\n",
                board_type[rev_id]);
         return false;
       }
+      break;
+    case FW_REV_DVT:
+      if (REVISION_ID(signed_byte) != FW_REV_DVT) {
+        printf("Please use DVT firmware on %s system\nTo force the update, please use the --force option.\n",
+               board_type[rev_id]);
+        return false;
+      }
+      break;
+    case FW_REV_PVT:
+    case FW_REV_MP:
+      if (REVISION_ID(signed_byte) != FW_REV_PVT) {
+        printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
+               board_type[rev_id]);
+        return false;
+      }
+      break;
+    default:
+      printf("Can't recognize the firmware's stage, please use the --force option\n");
+      return false;
+
       break;
   }
 

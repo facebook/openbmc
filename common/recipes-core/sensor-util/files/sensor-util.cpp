@@ -52,11 +52,6 @@
 #define UNKNOWN_STATE "Unknown"
 
 #define SENSOR_ALL             -1
-#ifdef CUSTOM_FRU_LIST
-  static const char * pal_fru_list_sensor_history_t =  pal_fru_list_sensor_history;
-#else
-  static const char * pal_fru_list_sensor_history_t =  pal_fru_list;
-#endif /* CUSTOM_FRU_LIST */
 
 static pthread_mutex_t timer = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t done = PTHREAD_COND_INITIALIZER;
@@ -108,10 +103,12 @@ const char *sensor_status[] = {
 
 static void
 print_usage() {
-  const char *fru_list = pal_fru_list;
-  if (pal_get_print_sensor_name(&fru_list) != PAL_EOK) {
-    fru_list = pal_fru_list;
-  }
+
+  char fru_list[256] = {0};
+  char pal_fru_list_sensor_history_t[256] = {0};
+  pal_get_fru_list(fru_list);
+  //default to standard FRU list
+  pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_HISTORY, pal_fru_list_sensor_history_t, 256);
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
   printf("       sensor-util [fru] <option> ..\n\n");
   printf("       [fru]           : %s\n", fru_list);
@@ -964,17 +961,23 @@ main(int argc, char **argv) {
       print_usage();
       return ret;
     }
-    if (history_clear || history) {
-      //Check if the input FRU is exist in sensor history list
-      if (NULL == strstr(pal_fru_list_sensor_history_t, fruname)) {
-        print_usage();
-        exit(-1);
-      }
+  }
+  if (history_clear || history) {
+    //Check if the input FRU supports sensor history
+    unsigned int caps;
+    ret = pal_get_fru_capability(fru, &caps);
+    if (ret < 0) {
+      print_usage();
+      return ret;
+    }
+    if (!(FRU_CAPABILITY_SENSOR_HISTORY & caps)) {
+      print_usage();
+      exit(-1);
     }
   }
 
   if (fru == 0) {
-    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+    for (fru = 1; fru <= pal_get_fru_count(); fru++) {
       ret |= print_sensor(fru, num, true, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     }
     ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, true, history, threshold, false, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);

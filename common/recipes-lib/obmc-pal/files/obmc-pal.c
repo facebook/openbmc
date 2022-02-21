@@ -2861,3 +2861,79 @@ int __attribute__((weak))
 pal_handle_oem_1s_update_sdr(uint8_t slot) {
   return PAL_ENOTSUP;
 }
+
+static int append_list(char *dest, char *src, size_t size)
+{
+  if (dest[0] == '\0') {
+    if (strlen(src) >= size) {
+      return PAL_ENOTREADY;
+    }
+    strncpy(dest, src, size);
+  } else {
+    if ((strlen(dest) + strlen(src) + 2) >= size) {
+      return PAL_ENOTREADY;
+    }
+    strncat(dest, ", ", 2);
+    strncat(dest, src, size);
+  }
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size){
+  int num_frus = pal_get_fru_count();
+  unsigned int fru_caps;
+  list = "/0";
+
+  for (int fru = 1; fru <= num_frus; fru++) {
+    char name[64] = {0};
+    if (pal_get_fru_name(fru, name)) {
+      printf("Cannot get FRU Name for %d\n", fru);
+      continue;
+    }
+    if (pal_get_fru_capability(fru, &fru_caps)) {
+      printf("%s: Cannot get FRU capability!\n", name);
+      continue;
+    }
+    if ((caps & fru_caps) == caps) {
+      int ret = append_list(list, name, size);
+      if (ret) {
+        return ret;
+      }
+    }
+  }
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t size){
+  uint8_t num_devs, dev;
+  unsigned int dev_caps;
+  char fru_name[64] = {0};
+  if (pal_get_num_devs(fru, &num_devs)) {
+    printf("%s: Cannot get number of devs\n", fru_name);
+    return PAL_ENOTREADY;
+  }
+  if (pal_get_fru_name(fru, fru_name)) {
+      printf("Cannot get FRU Name for %d\n", fru);
+      return PAL_ENOTREADY;
+  }
+  for (dev = 1; dev <= num_devs; dev++) {
+    char name[128];
+    if (pal_get_dev_name(fru, dev, name)) {
+      printf("%s: Cannot get name for device: %u\n", fru_name, dev);
+      continue;
+    }
+    if (pal_get_dev_capability(fru, dev, &dev_caps)) {
+      printf("%s:%s cannot get device capability\n", fru_name, name);
+      continue;
+    }
+    if ((caps & dev_caps) == caps) {
+      int ret = append_list(list, name, size);
+      if (ret) {
+        return ret;
+      }
+    }
+  }
+  return PAL_EOK;
+}

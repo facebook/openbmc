@@ -97,7 +97,9 @@ extern const char *slot_usage;
 #define IMG_SIGNATURE_OFFSET  ((IMG_MD5_OFFSET) + MD5_SIZE)
 #define IMG_FW_VER_OFFSET     ((IMG_SIGNATURE_OFFSET) + PLAT_SIG_SIZE)
 #define IMG_IDENTIFY_OFFSET   ((IMG_FW_VER_OFFSET) + FW_VER_SIZE)
-#define IMG_POSTFIX_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + 1)
+#define IMG_MD5_SECOND_OFFSET ((IMG_IDENTIFY_OFFSET) + 1)
+#define IMG_POSTFIX_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + 1 + MD5_SIZE)
+
 
 #define MD5_READ_BYTES     (1024)
 
@@ -247,7 +249,7 @@ enum fw_rev {
 enum brd_rev {
   BB_REV_POC1 = 0,
   BB_REV_POC2 = 1,
-  BB_REV_EVT1 = 2,
+  BB_REV_EVT  = 2,
   BB_REV_EVT2 = 3,
   BB_REV_EVT3 = 4,
   BB_REV_DVT  = 5,
@@ -258,9 +260,13 @@ enum brd_rev {
   SB_REV_EVT  = 1,
   SB_REV_EVT2 = 2,
   SB_REV_EVT3 = 3,
+  SB_REV_EVT4 = 4,
   SB_REV_DVT  = 5,
+  SB_REV_DVT2 = 6,
   SB_REV_PVT  = 7,
+  SB_REV_PVT2 = 8,
   SB_REV_MP   = 9,
+  SB_REV_MP2  = 10,
 };
 
 enum board_id {
@@ -386,6 +392,7 @@ typedef struct {
   uint8_t plat_sig[PLAT_SIG_SIZE];
   uint8_t version[FW_VER_SIZE];
   uint8_t err_proof;
+  uint8_t md5_sum_second[MD5_SIZE];
 } FW_IMG_INFO;
 
 int fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
@@ -405,7 +412,7 @@ int fby35_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
 int fby35_common_fscd_ctrl (uint8_t mode);
 int fby35_common_check_image_signature(uint8_t* data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
-int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data);
+int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first);
 bool fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id);
 
 #ifdef __cplusplus

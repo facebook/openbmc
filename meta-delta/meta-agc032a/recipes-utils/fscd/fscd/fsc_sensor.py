@@ -345,3 +345,4 @@ class FscSensorSourceJson(FscSensorBase):
                 )
             )
             return None
+# fmt: on

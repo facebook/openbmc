@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+# shellcheck disable=SC2086,SC2034
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it

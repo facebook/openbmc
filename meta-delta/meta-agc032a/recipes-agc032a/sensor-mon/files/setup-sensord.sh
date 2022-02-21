@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
+# shellcheck disable=SC2039
 ### BEGIN INIT INFO
 # Provides:          setup-sensord
 # Required-Start:

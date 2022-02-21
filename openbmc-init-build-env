@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# shellcheck disable=SC2128
 if [ -n "$DISTRO_OVERRIDE" ]; then
   echo "WARNING: distro is set to ${DISTRO_OVERRIDE} based on DISTRO_OVERRIDE env variable"
 elif [ -z "$DISTRO_DEFAULT" ]; then

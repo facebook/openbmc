@@ -1,5 +1,5 @@
 #!/bin/sh
-
+# shellcheck disable=SC2181
 usage()
 {
   echo "usage :"

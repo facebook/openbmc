@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# shellcheck disable=SC2086,SC1091
 BIC_UTIL="/usr/bin/bic-util"
 SENSOR_HISTORY=180
 

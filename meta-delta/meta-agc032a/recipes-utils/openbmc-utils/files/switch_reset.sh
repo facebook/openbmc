@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+# shellcheck disable=SC1091,SC2086
 # Copyright 2020-present Delta Eletronics, Inc. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it

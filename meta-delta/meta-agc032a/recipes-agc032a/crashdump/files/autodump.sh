@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# shellcheck disable=SC2086,SC2129,SC2046,SC2006
 SLOT_NAME=$1
 
 case $SLOT_NAME in

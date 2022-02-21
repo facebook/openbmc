@@ -1,5 +1,5 @@
 #!/bin/sh
-#
+# shellcheck disable=SC1009,SC1055,SC1072,SC1073
 # Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it

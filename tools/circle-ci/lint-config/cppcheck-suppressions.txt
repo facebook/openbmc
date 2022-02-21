@@ -13,7 +13,7 @@
 *:*/common/recipes-core/asd_1.4.3/*
 *:*/recipes-utils/jam/*
 // For delta
-*:*/meta-delta/*
+*:*/meta-delta/meta-agc032a/recipes-agc032a/ipmid/*
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

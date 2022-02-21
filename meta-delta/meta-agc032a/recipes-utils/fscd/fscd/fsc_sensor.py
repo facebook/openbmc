@@ -1,3 +1,5 @@
+# fmt: off
+#
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it

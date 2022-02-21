@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck disable=SC2036,SC2004
+# shellcheck disable=SC2036,SC2004,SC2039
 EMMC_MOUNT_POINT="/mnt/data1"
 LOG_DIR="$EMMC_MOUNT_POINT/cri_sel"
 LOG_CNT="$LOG_DIR/cri_sel_cnt"

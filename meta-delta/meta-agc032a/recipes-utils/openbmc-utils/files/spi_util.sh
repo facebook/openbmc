@@ -1,6 +1,7 @@
 #!/bin/sh
 # shellcheck disable=SC1073,SC1072
 # shellcheck disable=SC1091,SC2086
+# shellcheck disable=SC2034,SC2181
 #
 # Copyright 2019-present Facebook. All Rights Reserved.
 #

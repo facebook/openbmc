@@ -21,9 +21,14 @@ nullPointerRedundantCheck:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/p
 unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3731
 unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3752
 unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3774
+knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3431
+knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3914
+knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4784
+unsignedPositive:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:1895
+funcArgNamesDifferent:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:2931
 redundantAssignment:meta-facebook/meta-fby35/recipes-fby35/plat-libs/files/pal/pal_power.c:590
 redundantAssignment:meta-facebook/meta-grandcanyon/recipes-grandcanyon/plat-libs/files/pal/pal.c:4277
-
+funcArgNamesDifferent:meta-facebook/meta-grandcanyon/recipes-grandcanyon/plat-libs/files/pal/pal.c:841
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

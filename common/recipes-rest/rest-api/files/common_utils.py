@@ -18,12 +18,10 @@ def common_force_async(func):
     # board-specific REST handler, so that any problem in
     # common REST handlers will not interfere with board-specific
     # REST handler, and vice versa
-    async def func_wrapper(self, *args, **kwargs):
+    async def func_wrapper(*args, **kwargs):
         # Convert the possibly blocking helper function into async
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(
-            common_executor, func, self, *args, **kwargs
-        )
+        result = await loop.run_in_executor(common_executor, func, *args, **kwargs)
         return result
 
     return func_wrapper

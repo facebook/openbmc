@@ -40,9 +40,6 @@ IMAGE_INSTALL += " \
   weutil-dhcp-id \
   libpsu \
   psu-util \
-  libpem \
-  pem-util \
-  pemd \
   mdio-util \
   usb-fpga-util \
   "

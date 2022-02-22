@@ -12,8 +12,21 @@
 *:*/common/recipes-core/asd/*
 *:*/common/recipes-core/asd_1.4.3/*
 *:*/recipes-utils/jam/*
+
 // For delta
-*:*/meta-delta/meta-agc032a/recipes-agc032a/ipmid/*
+memsetValueOutOfRange:meta-delta/meta-agc032a/recipes-agc032a/ipmid/files/fruid.c:211
+multiCondition:meta-delta/meta-agc032a/recipes-agc032a/platform-lib/files/agc032a_psu/agc032a-psu.c:308
+arrayIndexOutOfBounds:meta-delta/meta-agc032a/recipes-agc032a/platform-lib/files/pal/pal.c:2891
+memleakOnRealloc:meta-delta/meta-agc032a/recipes-agc032a/platform-lib/files/pal/pal.c:2762
+
+//Not help for delta
+knownConditionTrueFalse
+invalidPrintfArgType_sint
+unknownEvaluationOrder
+funcArgNamesDifferent
+unusedVariable
+unsignedPositive
+invalidScanfArgType_int
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

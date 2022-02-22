@@ -125,6 +125,136 @@ char * def_val_list[] = {
 
 sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
+struct dev_addr_driver PIM_UCD_addr_list[] = {
+  { PIM_UCD90160_MP_ADDR, UCD90160_DRIVER,  "ucd90160_MP"},
+  { PIM_UCD90160_ADDR,    UCD90160_DRIVER,  "ucd90160_respin"},
+  { PIM_UCD90160A_ADDR,   UCD90160A_DRIVER, "ucd90160A_respin"},
+  { PIM_UCD90124A_ADDR,   UCD90124A_DRIVER, "ucd90124A"},
+  { PIM_ADM1266_ADDR,     ADM1266_DRIVER,   "adm1266"},
+};
+
+struct dev_addr_driver PIM_HSC_addr_list[] = {
+  { PIM_HSC_ADM1278_ADDR, ADM1278_DRIVER, "adm1278"},
+  { PIM_HSC_LM25066_ADDR, LM25066_DRIVER, "lm25066"},
+};
+
+struct dev_addr_driver SCM_HSC_addr_list[] = {
+  { SCM_HSC_ADM1278_ADDR, ADM1278_DRIVER, "adm1278" },
+  { SCM_HSC_LM25066_ADDR, LM25066_DRIVER, "lm25066" },
+};
+int
+pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force) {
+  int fd = -1, rc = -1;
+  char fn[32];
+  uint32_t funcs;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd == -1) {
+    syslog(LOG_WARNING, "Failed to open i2c device %s", fn);
+    return I2C_BUS_ERROR;
+  }
+
+  if (ioctl(fd, I2C_FUNCS, &funcs) < 0) {
+    syslog(LOG_WARNING, "Failed to get %s functionality matrix", fn);
+    close(fd);
+    return I2C_FUNC_ERROR;
+  }
+
+  if (force) {
+    if (ioctl(fd, I2C_SLAVE_FORCE, addr)) {
+      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
+      close(fd);
+      return I2C_DEVICE_ERROR;
+    }
+  } else {
+    if (ioctl(fd, I2C_SLAVE, addr) < 0) {
+      syslog(LOG_WARNING, "Failed to open slave @ address 0x%x", addr);
+      close(fd);
+      return I2c_DRIVER_EXIST;
+    }
+  }
+
+  /* Probe this address */
+  switch (mode) {
+    case MODE_QUICK:
+      /* This is known to corrupt the Atmel AT24RF08 EEPROM */
+      rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
+      break;
+    case MODE_READ:
+      /* This is known to lock SMBus on various
+         write-only chips (mainly clock chips) */
+      rc = i2c_smbus_read_byte(fd);
+      break;
+    default:
+      if ((addr >= 0x30 && addr <= 0x37) || (addr >= 0x50 && addr <= 0x5F))
+        rc = i2c_smbus_read_byte(fd);
+      else
+        rc = i2c_smbus_write_quick(fd, I2C_SMBUS_WRITE);
+  }
+  close(fd);
+
+  if (rc < 0) {
+    return I2C_DEVICE_ERROR;
+  } else {
+    return 0;
+  }
+}
+
+static int
+i2c_detect_sensor(int bus, uint16_t addr) {
+	int fd = -1, rc = -1;
+
+	fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
+	if (fd == -1)
+		return -1;
+
+	rc = i2c_smbus_read_byte_data(fd, 1);
+	i2c_cdev_slave_close(fd);
+
+	if (rc < 0)
+		return -1;
+
+	return 0;
+}
+
+int
+pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name) {
+
+  int ret = -1;
+  char cmd[64];
+
+  snprintf(cmd, sizeof(cmd),
+            "echo %s %d > /sys/bus/i2c/devices/i2c-%d/new_device",
+              device_name, addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
+int
+pal_del_i2c_device(uint8_t bus, uint8_t addr) {
+
+  int ret = -1;
+  char cmd[64];
+
+  sprintf(cmd, "echo %d > /sys/bus/i2c/devices/i2c-%d/delete_device",
+           addr, bus);
+
+#if DEBUG
+  syslog(LOG_WARNING, "[%s] Cmd: %s", __func__, cmd);
+#endif
+
+  ret = run_command(cmd);
+
+  return ret;
+}
+
 int
 pal_get_pim_type(uint8_t fru, int retry) {
   int ret = -1, val;
@@ -193,6 +323,81 @@ pal_get_pim_type_from_file(uint8_t fru) {
   } else {
     return PIM_TYPE_NONE;
   }
+}
+
+struct dev_addr_driver*
+pal_get_scm_hsc() {
+  uint8_t bus = SCM_HSC_DEVICE_CH;
+  for (int i=0;i<sizeof(SCM_HSC_addr_list)/sizeof(struct dev_addr_driver);i++){
+    if (i2c_detect_sensor(bus, SCM_HSC_addr_list[i].addr) != -1) {
+#if DEBUG
+      syslog(LOG_WARNING, "[%s] SCM_HSC_addr: 0x%x", __func__, SCM_HSC_addr_list[i].addr);
+#endif
+      return &(SCM_HSC_addr_list[i]);
+    }
+  }
+  return NULL;
+}
+
+struct dev_addr_driver*
+pal_get_pim_ucd( uint8_t fru ) {
+  uint8_t bus = ((fru - FRU_PIM1) * 8) + 80 + PIM_PWRSEQ_DEVICE_CH;
+  for (int i=0;i<sizeof(PIM_UCD_addr_list)/sizeof(struct dev_addr_driver);i++){
+    if (i2c_detect_sensor(bus, PIM_UCD_addr_list[i].addr) != -1) {
+#if DEBUG
+      syslog(LOG_WARNING, "[%s] PIM%d_UCD_addr: 0x%x", __func__, fru - FRU_PIM1 + 1, PIM_UCD_addr_list[i].addr);
+#endif
+      return &(PIM_UCD_addr_list[i]);
+    }
+  }
+  return NULL;
+}
+
+struct dev_addr_driver*
+pal_get_pim_hsc( uint8_t fru ) {
+  uint8_t bus = ((fru - FRU_PIM1) * 8) + 80 + PIM_HSC_DEVICE_CH;
+  for (int i=0;i<sizeof(PIM_HSC_addr_list)/sizeof(struct dev_addr_driver);i++){
+    if (i2c_detect_sensor(bus, PIM_HSC_addr_list[i].addr) != -1) {
+#if DEBUG
+      syslog(LOG_WARNING, "[%s] PIM%d_HSC_addr: 0x%x", __func__,fru - FRU_PIM1 + 1 , PIM_HSC_addr_list[i].addr);
+#endif
+      return &(PIM_HSC_addr_list[i]);
+    }
+  }
+
+  return NULL;
+}
+
+int
+pal_set_dev_addr_to_file(uint8_t fru, char const *dev, uint8_t addr) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+  char addr_value[8];
+
+  pal_get_fru_name(fru, fru_name);
+  sprintf(key, dev, fru_name);
+  sprintf(addr_value, "0x%02X", addr);
+
+  return kv_set(key, addr_value, 0, 0);
+}
+
+int
+pal_get_dev_addr_from_file(uint8_t fru, char const *dev) {
+  char fru_name[16];
+  char key[MAX_KEY_LEN];
+  char addr[12] = {0};
+
+  pal_get_fru_name(fru, fru_name);
+  sprintf(key, dev, fru_name);
+
+  if(kv_get(key, addr, NULL, 0)) {
+#ifdef DEBUG
+    syslog(LOG_WARNING,
+            "pal_get_dev_addr_from_file: %s get %s addr fail", fru_name, key);
+#endif
+    return -1;
+  }
+  return strtoul(addr, NULL, 16);
 }
 
 int pal_get_pim_pedigree(uint8_t fru, int retry){

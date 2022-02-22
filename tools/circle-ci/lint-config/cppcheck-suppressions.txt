@@ -14,19 +14,16 @@
 *:*/recipes-utils/jam/*
 
 // For delta
-memsetValueOutOfRange:meta-delta/meta-agc032a/recipes-agc032a/ipmid/files/fruid.c:211
-multiCondition:meta-delta/meta-agc032a/recipes-agc032a/platform-lib/files/agc032a_psu/agc032a-psu.c:308
-arrayIndexOutOfBounds:meta-delta/meta-agc032a/recipes-agc032a/platform-lib/files/pal/pal.c:2891
-memleakOnRealloc:meta-delta/meta-agc032a/recipes-agc032a/platform-lib/files/pal/pal.c:2762
+*:meta-delta/meta-agc032a/*
 
-//Not help for delta
-knownConditionTrueFalse
-invalidPrintfArgType_sint
-unknownEvaluationOrder
-funcArgNamesDifferent
-unusedVariable
-unsignedPositive
-invalidScanfArgType_int
+//For meta-facebook
+nullPointerRedundantCheck:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4742
+unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3731
+unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3752
+unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3774
+redundantAssignment:meta-facebook/meta-fby35/recipes-fby35/plat-libs/files/pal/pal_power.c:590
+redundantAssignment:meta-facebook/meta-grandcanyon/recipes-grandcanyon/plat-libs/files/pal/pal.c:4277
+
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

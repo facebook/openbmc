@@ -17,6 +17,8 @@
 *:meta-delta/meta-agc032a/*
 
 //For meta-facebook
+unsignedPositive:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:1895
+
 knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3467
 knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3950
 knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4820

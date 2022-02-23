@@ -17,6 +17,4 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
 SRC_URI += "file://plat_tree.py \
             file://board_setup_routes.py \
-            file://redfish_chassis.py \
-            file://redfish_managers.py \
           "

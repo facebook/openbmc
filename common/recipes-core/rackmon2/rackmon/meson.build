@@ -28,6 +28,7 @@ srcs = common + files(
     'RackmonSvcUnix.cpp',
 )
 test_srcs = common + files(
+    'tests/Main.cpp',
     'tests/MsgTest.cpp',
     'tests/DeviceTest.cpp',
     'tests/ModbusCmdsTest.cpp',
@@ -44,11 +45,11 @@ test_srcs = common + files(
 cc = meson.get_compiler('cpp')
 deps = [
   dependency('threads'),
+  cc.find_library('glog'),
 ]
 
 if get_option('syslog') == true
     add_global_arguments('-DRACKMON_SYSLOG=1', language : 'cpp')
-    deps += [ cc.find_library('log') ]
 endif
 
 if get_option('profiling') == true
@@ -62,7 +63,6 @@ endif
 test_deps = deps + [
   cc.find_library('gtest'),
   cc.find_library('gmock'),
-  cc.find_library('gtest_main'),
 ]
 
 rackmond_exe = executable(

@@ -2600,6 +2600,7 @@ pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     CYCLE_12V = 0x00,
     ON_12V = 0x01,
     OFF_12V = 0x02,
+    HOST_RESET = 0x03,
   };
 
   switch (event_data[0]) {
@@ -2617,6 +2618,9 @@ pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
           break;
         case OFF_12V:
           strcat(error_log, "12V OFF by BB BIC");
+          break;
+        case HOST_RESET:
+          strcat(error_log, "HOST RESET by LCD DEBUG CARD");
           break;
         default:
           strcat(error_log, "Undefined Baseboard BIC event");
@@ -3145,6 +3149,12 @@ static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
   bool is_cri_sel = false;
+  enum {  //event_data[3]
+    SLOT = 0x01,
+  };
+  enum {  //event_data[4]
+    HOST_RESET = 0x03,
+  };
 
   switch (snr_num) {
     case CATERR_B:
@@ -3175,6 +3185,32 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           syslog(LOG_WARNING, "%s() can not reload setup-fan.sh", __func__);
           return -1;
         }
+      }
+      break;
+    case BB_BIC_SENSOR_POWER_DETECT:
+      switch(event_data[3]) {
+        case SLOT:
+          switch(event_data[4]) {
+            case HOST_RESET: //host reset from LCD debug card
+              if (pal_can_change_power(FRU_SLOT1)) {
+                ret = pal_set_server_power(FRU_SLOT1, SERVER_POWER_RESET);
+                if (ret < 0) {
+                  syslog(LOG_WARNING, "power_util: pal_set_rst_btn failed for"
+                    " fru %u", FRU_SLOT1);
+                } else {
+                  syslog(LOG_CRIT, "SERVER_POWER_RESET successful for FRU: %d", FRU_SLOT1);
+                  pal_set_restart_cause(FRU_SLOT1, RESTART_CAUSE_RESET_PUSH_BUTTON);
+                }
+              } else {
+                syslog(LOG_WARNING, "Server power can not be reset for FRU: %d", FRU_SLOT1);
+              }
+              break;
+            default:
+              break;
+          }
+          break;
+        default:
+          break;
       }
       break;
   }

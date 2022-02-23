@@ -349,6 +349,7 @@ void RackmonUNIXSocketService::doLoop() {
 using namespace rackmonsvc;
 
 int main(int argc, char* argv[]) {
+  ::google::InitGoogleLogging(argv[0]);
   RackmonUNIXSocketService::svc.initialize(argc, argv);
   RackmonUNIXSocketService::svc.doLoop();
   RackmonUNIXSocketService::svc.deinitialize();

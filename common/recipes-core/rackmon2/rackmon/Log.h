@@ -1,24 +1,21 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #pragma once
+#include <glog/logging.h>
 #include <iostream>
-#ifdef RACKMON_SYSLOG
-#include <openbmc/syslog.hpp>
-#endif
 
-namespace rackmon {
-#ifdef RACKMON_SYSLOG
-[[maybe_unused]] static thread_local std::ostream& logError =
-    openbmc::syslog_error;
-[[maybe_unused]] static thread_local std::ostream& logEarn =
-    openbmc::syslog_warn;
-[[maybe_unused]] static thread_local std::ostream& logInfo =
-    openbmc::syslog_notice;
+#if defined(__TEST__)
+#define logError LOG(ERROR)
+#define logWarn LOG(WARNING)
+#define logInfo LOG(INFO)
+#elif defined(RACKMON_SYSLOG)
+#define logError SYSLOG(ERROR)
+#define logWarn SYSLOG(WARNING)
+#define logInfo SYSLOG(INFO)
 #else
-[[maybe_unused]] static thread_local std::ostream& logError = std::cerr;
-[[maybe_unused]] static thread_local std::ostream& logInfo = std::cout;
-[[maybe_unused]] static thread_local std::ostream& logEarn = std::cout;
+#define logError LOG(ERROR)
+#define logWarn LOG(WARNING)
+#define logInfo LOG(INFO)
 #endif
-} // namespace rackmon
 
 #ifdef PROFILING
 #include <openbmc/profile.hpp>

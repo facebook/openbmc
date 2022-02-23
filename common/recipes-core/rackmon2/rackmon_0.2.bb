@@ -28,8 +28,8 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 DEPENDS:append = " update-rc.d-native"
 
-DEPENDS += "liblog libmisc-utils nlohmann-json cli11 python3-jsonschema-native"
-RDEPENDS:${PN} = "liblog libmisc-utils python3-core bash"
+DEPENDS += "glog libmisc-utils nlohmann-json cli11 python3-jsonschema-native"
+RDEPENDS:${PN} = "glog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):
   prof_enabled = d.getVar("RACKMON_PROFILING", False)
@@ -86,7 +86,8 @@ SRC_URI += "file://scripts/schema_validator.py \
            "
 
 # Test sources
-SRC_URI += "file://tests/MsgTest.cpp \
+SRC_URI += "file://tests/Main.cpp \
+            file://tests/MsgTest.cpp \
             file://tests/DeviceTest.cpp \
             file://tests/ModbusCmdsTest.cpp \
             file://tests/ModbusTest.cpp \

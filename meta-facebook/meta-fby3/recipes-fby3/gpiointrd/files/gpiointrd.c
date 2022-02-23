@@ -104,9 +104,35 @@ log_slot_present(uint8_t slot_id, gpio_value_t value)
 static void
 slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   uint32_t slot_id;
+  int config_status = 0;
+  uint8_t board_type = 0;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gpdesc);
   assert(cfg);
   sscanf(cfg->shadow, "PRSNT_MB_BMC_SLOT%u_BB_N", &slot_id);
+
+  config_status = bic_is_m2_exp_prsnt(1);
+  if (config_status < 0) config_status = 0;
+  if ((config_status & PRESENT_2OU) == PRESENT_2OU) {
+    fby3_common_get_2ou_board_type(1, &board_type);
+    if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
+      // GPV3 config only have slot1 & 3
+      if (slot_id == 2 || slot_id == 4) return;
+    } else if (board_type == DP_RISER_BOARD) {
+      // DP config only have slot1
+      if (slot_id == 2 || slot_id == 3 || slot_id == 4) return;
+    }
+  }
+
+  config_status = bic_is_m2_exp_prsnt(3);
+  if (config_status < 0) config_status = 0;
+  if ((config_status & PRESENT_2OU) == PRESENT_2OU) {
+    fby3_common_get_2ou_board_type(1, &board_type);
+    if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
+      // GPV3 config only have slot1 & 3
+      if (slot_id == 4) return;
+    }
+  }
+
   log_gpio_change(gpdesc, value, 0);
   log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);

@@ -29,7 +29,7 @@ ModbusDevice::ModbusDevice(
   }
 
   for (const auto& sp : registerMap.specialHandlers) {
-    ModbusSpecialHandler hdl{};
+    ModbusSpecialHandler hdl(deviceAddress);
     hdl.SpecialHandlerInfo::operator=(sp);
     specialHandlers_.push_back(hdl);
   }
@@ -186,7 +186,7 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
     return;
   }
   std::string strValue{};
-  WriteMultipleRegistersReq req(dev.info_.deviceAddress, reg);
+  WriteMultipleRegistersReq req(deviceAddress_, reg);
   if (info.shell) {
     // The command is from the JSON configuration.
     // TODO, we currently only have need to set the
@@ -215,7 +215,7 @@ void ModbusSpecialHandler::handle(ModbusDevice& dev) {
       req << uint8_t(c);
     }
   }
-  WriteMultipleRegistersResp resp(dev.info_.deviceAddress, reg, len);
+  WriteMultipleRegistersResp resp(deviceAddress_, reg, len);
   try {
     dev.command(req, resp);
   } catch (std::exception& e) {

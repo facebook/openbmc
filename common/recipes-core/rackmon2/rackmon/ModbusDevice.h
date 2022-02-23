@@ -14,6 +14,7 @@ enum class ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 class ModbusDevice;
 
 class ModbusSpecialHandler : public SpecialHandlerInfo {
+  uint8_t deviceAddress_;
   time_t lastHandleTime_ = 0;
   bool handled_ = false;
   bool canHandle() {
@@ -24,6 +25,7 @@ class ModbusSpecialHandler : public SpecialHandlerInfo {
   }
 
  public:
+  ModbusSpecialHandler(uint8_t deviceAddress) : deviceAddress_(deviceAddress) {}
   void handle(ModbusDevice& dev);
 };
 
@@ -132,9 +134,6 @@ class ModbusDevice {
 
   // Returns value formatted register data monitored for this device.
   ModbusDeviceValueData getValueData();
-
-  // Allow special handler access into the device.
-  friend ModbusSpecialHandler;
 };
 
 } // namespace rackmon

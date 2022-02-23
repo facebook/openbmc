@@ -1425,6 +1425,7 @@ main(int argc, char **argv) {
 
   if ( strncmp(argv[2], "--", 2) == 0 ) {
     if ( strcmp(argv[2], "--get_gpio") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_get_gpio(slot_id, intf);
     } else if ( strcmp(argv[2], "--set_gpio") == 0 ) {
       if ( argc != 5 ) goto err_exit;
@@ -1434,6 +1435,7 @@ main(int argc, char **argv) {
       if ( gpio_num > 0xff || gpio_val > 1 ) goto err_exit;
       return util_set_gpio(slot_id, gpio_num, gpio_val, intf);
     } else if ( strcmp(argv[2], "--get_gpio_config") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_get_gpio_config(slot_id, intf);
     } else if ( strcmp(argv[2], "--set_gpio_config") == 0 ) {
       if ( argc != 5 ) goto err_exit;
@@ -1443,16 +1445,22 @@ main(int argc, char **argv) {
       if ( gpio_num > 0xff ) goto err_exit;
       else return util_set_gpio_config(slot_id, gpio_num, gpio_val, intf);
     } else if ( strcmp(argv[2], "--check_status") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_check_status(slot_id);
     } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_get_device_id(slot_id, intf);
     } else if ( strcmp(argv[2], "--get_sdr") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_get_sdr(slot_id);
     } else if ( strcmp(argv[2], "--read_sensor") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_read_sensor(slot_id);
     } else if ( strcmp(argv[2], "--reset") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_bic_reset(slot_id, intf);
     } else if ( strcmp(argv[2], "--get_post_code") == 0 ) {
+      if ( argc != 3 ) goto err_exit;
       return util_get_postcode(slot_id);
     } else if ( strcmp(argv[2], "--perf_test") == 0 ) {
       if ( argc != 4 ) goto err_exit;

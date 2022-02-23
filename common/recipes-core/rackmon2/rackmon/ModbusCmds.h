@@ -22,15 +22,14 @@ struct ReadHoldingRegistersReq : public Msg {
   uint16_t registerOffset_ = 0;
   uint16_t registerCount_ = 0;
 
+  void encode() override;
+
  public:
   ReadHoldingRegistersReq(
       uint8_t deviceAddr,
       uint16_t registerOffset,
       uint16_t registerCount);
   ReadHoldingRegistersReq() {}
-
- protected:
-  void encode() override;
 };
 
 struct ReadHoldingRegistersResp : public Msg {
@@ -39,13 +38,12 @@ struct ReadHoldingRegistersResp : public Msg {
   uint8_t expectedDeviceAddr_ = 0;
   std::vector<uint16_t>& regs_;
 
+  void decode() override;
+
  public:
   explicit ReadHoldingRegistersResp(
       uint8_t deviceAddr,
       std::vector<uint16_t>& regs);
-
- protected:
-  void decode() override;
 };
 
 //----------- Write Single Register -------
@@ -56,15 +54,14 @@ struct WriteSingleRegisterReq : public Msg {
   uint16_t registerOffset_ = 0;
   uint16_t value_ = 0;
 
+  void encode() override;
+
  public:
   WriteSingleRegisterReq(
       uint8_t deviceAddr,
       uint16_t registerOffset,
       uint16_t value);
   WriteSingleRegisterReq() {}
-
- protected:
-  void encode() override;
 };
 
 struct WriteSingleRegisterResp : public Msg {
@@ -74,6 +71,8 @@ struct WriteSingleRegisterResp : public Msg {
   uint16_t expectedRegisterOffset_ = 0;
   uint16_t value_ = 0;
   std::optional<uint16_t> expectedValue_{};
+
+  void decode() override;
 
  public:
   WriteSingleRegisterResp(uint8_t deviceAddr, uint16_t registerOffset);
@@ -85,9 +84,6 @@ struct WriteSingleRegisterResp : public Msg {
   uint16_t writtenValue() const {
     return value_;
   }
-
- protected:
-  void decode() override;
 };
 
 //----------- Write Multiple Registers ------
@@ -102,12 +98,11 @@ struct WriteMultipleRegistersReq : public Msg {
   uint8_t deviceAddr_ = 0;
   uint16_t registerOffset_ = 0;
 
+  void encode() override;
+
  public:
   WriteMultipleRegistersReq(uint8_t deviceAddr, uint16_t registerOffset);
   WriteMultipleRegistersReq() {}
-
- protected:
-  void encode() override;
 };
 
 struct WriteMultipleRegistersResp : public Msg {
@@ -117,15 +112,14 @@ struct WriteMultipleRegistersResp : public Msg {
   uint16_t expectedRegisterOffset_ = 0;
   uint16_t expectedRegisterCount_ = 0;
 
+  void decode() override;
+
  public:
   WriteMultipleRegistersResp(
       uint8_t deviceAddr,
       uint16_t registerOffset,
       uint16_t registerCount);
   WriteMultipleRegistersResp() {}
-
- protected:
-  void decode() override;
 };
 
 //---------- Read File Record ----------------
@@ -146,11 +140,10 @@ struct ReadFileRecordReq : public Msg {
   uint8_t deviceAddr_ = 0;
   const std::vector<FileRecord>& records_;
 
+  void encode() override;
+
  public:
   ReadFileRecordReq(uint8_t deviceAddr, const std::vector<FileRecord>& records);
-
- protected:
-  void encode() override;
 };
 
 struct ReadFileRecordResp : public Msg {
@@ -160,11 +153,10 @@ struct ReadFileRecordResp : public Msg {
   uint8_t deviceAddr_ = 0;
   std::vector<FileRecord>& records_;
 
+  void decode() override;
+
  public:
   ReadFileRecordResp(uint8_t deviceAddr, std::vector<FileRecord>& records);
-
- protected:
-  void decode() override;
 };
 
 } // namespace rackmon

@@ -9,7 +9,7 @@
 
 namespace rackmon {
 
-enum ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
+enum class ModbusDeviceMode { ACTIVE = 0, DORMANT = 1 };
 
 class ModbusDevice;
 

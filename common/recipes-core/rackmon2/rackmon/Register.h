@@ -10,12 +10,12 @@ namespace rackmon {
 
 // Describes how we intend on interpreting the value stored
 // in a register.
-enum RegisterValueType {
-  HEX,
-  STRING,
-  INTEGER,
-  FLOAT,
-  FLAGS,
+enum class RegisterValueType {
+  INTEGER = 0,
+  STRING = 1,
+  FLOAT = 2,
+  FLAGS = 3,
+  HEX = 4,
 };
 
 enum RegisterEndian { BIG, LITTLE };

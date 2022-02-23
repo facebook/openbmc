@@ -318,7 +318,6 @@ enum {
   FW_COMPONENT_LAST_ID
 };
 
->>>>>>> facebook/helium
 const static char *gpio_server_prsnt[] =
 {
   "",

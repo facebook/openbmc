@@ -70,11 +70,8 @@ STAGE_DVT=2
 STAGE_PVT=3
 STAGE_MP=4
 
-<<<<<<< HEAD
-=======
 FAN_FRU_CNT=4
 
->>>>>>> facebook/helium
 gpio_set() {
   local shadow val
   shadow=$1
@@ -215,8 +212,6 @@ is_sb_bic_ready() {
 
   echo $ready
 }
-<<<<<<< HEAD
-=======
 
 get_uic_location_by_gpio()
 {
@@ -260,4 +255,3 @@ get_uic_location()
     get_uic_location_by_gpio
   fi
 }
->>>>>>> facebook/helium

@@ -6,7 +6,7 @@ import pal
 import redfish_chassis_helper
 import rest_pal_legacy
 from aiohttp import web
-from common_utils import dumps_bytestr
+from common_utils import dumps_bytestr, common_force_async
 from redfish_base import validate_keys
 
 try:
@@ -31,9 +31,7 @@ async def get_redfish_sensors_handler(request):
             dumps=dumps_bytestr,
             status=400,
         )
-    members_json = await _get_sensor_members(
-        parent_resource=server_name, fru_names=fru_names, expand=expand_members
-    )
+    members_json = await _get_sensor_members(server_name, fru_names, expand_members)
     body = {
         "@odata.type": "#SensorCollection.SensorCollection",
         "Name": "Chassis sensors",
@@ -57,7 +55,10 @@ async def get_redfish_sensor_handler(request):
     else:
         target_fru_name = "BMC"
         sensor_id = request.match_info["sensor_id"]
-    sensor = await _get_sensor(fru_name=target_fru_name, sensor_id=sensor_id)
+    # This call could block the event loop too, but the risk of that is really low.
+    # This call takes ~0.2 seconds to run on average
+    # also this endpoint is not exercised in prod, as we use Sensors?$expand=1
+    sensor = _get_sensor(target_fru_name, sensor_id)
     if sensor:
         body = _render_sensor_body(server_name, sensor)
     else:
@@ -74,15 +75,14 @@ async def get_redfish_sensor_handler(request):
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-async def _get_sensor_members(
-    parent_resource: str, fru_names: t.List[str], expand: bool
-):
+@common_force_async
+def _get_sensor_members(parent_resource: str, fru_names: t.List[str], expand: bool):
     members_json = []
     for fru in fru_names:
         if redfish_chassis_helper.is_libpal_supported():
             fru_id = fru_name_map[fru]
             for sensor_id in pal.pal_get_fru_sensor_list(fru_id):
-                sensor = await _get_sensor(fru_name=fru, sensor_id=sensor_id)
+                sensor = _get_sensor(fru_name=fru, sensor_id=sensor_id)
                 if sensor:
                     child = _render_sensor(parent_resource, sensor, expand)
                     members_json.append(child)
@@ -95,14 +95,14 @@ async def _get_sensor_members(
             # we expose aggregate sensors under the Chassis, so only do this
             # if parent_resource is 1
             for sensor_id in range(aggregate_sensor.aggregate_sensor_count()):
-                sensor = await _get_sensor("aggregate", sensor_id)
+                sensor = _get_sensor("aggregate", sensor_id)
                 if sensor:
                     child = _render_sensor(parent_resource, sensor, expand)
                     members_json.append(child)
     return members_json
 
 
-async def _get_sensor(
+def _get_sensor(
     fru_name: str, sensor_id: t.Union[int, str]
 ) -> t.Optional[redfish_chassis_helper.SensorDetails]:
     if fru_name == "aggregate":

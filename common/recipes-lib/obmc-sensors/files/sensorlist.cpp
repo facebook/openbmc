@@ -19,6 +19,7 @@
 //#include <iostream>
 #include <syslog.h>
 #include <string.h>
+#include <mutex>
 #include "sensorlist.hpp"
 
 using namespace std;

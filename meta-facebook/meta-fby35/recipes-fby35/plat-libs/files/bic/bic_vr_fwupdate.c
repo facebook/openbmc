@@ -540,7 +540,6 @@ static int
 vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force) {
 #define TI_USER_NVM_INDEX   0xF5
 #define TI_USER_NVM_EXECUTE 0xF6
-#define TI_NVM_CHECKSUM     0xF0
 #define TI_NVM_INDEX_00     0x00
   int i = 0;
   int ret = 0;
@@ -552,6 +551,7 @@ vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force) {
   uint8_t addr = dev->addr;
   uint8_t bus = dev->bus;
   uint8_t intf = dev->intf;
+  uint8_t skip_offs = 0;
   int len = dev->data_cnt;
   vr_data *list = dev->pdata;
 
@@ -571,6 +571,7 @@ vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force) {
   }
 
   //step 2 - program a VR
+  printf("programming to NVM\n");
   for ( i=0; i<len; i++ ) {
     //prepare data
     tbuf[3] = list[i].command ;//command code
@@ -615,13 +616,18 @@ vr_TI_program(uint8_t slot_id, vr *dev, uint8_t force) {
         goto error_exit;
       }
 
-      ret = memcmp(rbuf, list[i].data, list[i].data_len);
+      // The first 9 bytes are all 0xFF in VR file, so skip the comparison
+      // byte 0~5: IC_DEVICE_ID; byte 6~7: IC_DEVICE_REV; byte 8: current slave address
+      skip_offs = (i == 0) ? 9 : 0;
+      ret = memcmp(rbuf + skip_offs, list[i].data + skip_offs, list[i].data_len - skip_offs);
       if ( ret == 0 ) {
         check_cnt++;
       }
     }
     msleep(50);
+    show_progress(slot_id, i, len);
   }
+  printf("\n");
 
   if ( check_cnt != len ) {
     ret = -1;

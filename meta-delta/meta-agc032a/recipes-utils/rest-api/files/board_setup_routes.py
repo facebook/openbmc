@@ -22,27 +22,23 @@ import os
 
 from aiohttp.web import Application
 from compute_rest_shim import RestShim
-from node_bios import (
-    get_node_bios,
-    get_node_bios_boot_order_trunk,
-    get_node_bios_postcode_trunk,
-    get_node_bios_plat_info_trunk,
-    get_node_bios_boot_mode,
-    get_node_bios_clear_cmos,
-    get_node_bios_force_boot_setup,
-    get_node_bios_boot_order,
-)
-from node_bmc import get_node_bmc
-from node_config import get_node_config
-from node_fans import get_node_fans
 from node_fruid import get_node_fruid
 from node_logs import get_node_logs
-from node_mezz import get_node_mezz
 from node_sensors import get_node_sensors
-from node_server import get_node_server
-from node_spb import get_node_spb
 from rest_pal_legacy import pal_is_fru_prsnt, pal_get_num_slots
 
 # Initialize Platform specific Resource Tree
 def setup_board_routes(app: Application, write_enabled: bool):
+
+        ## /api/sensors end point
+       ## sensors_shim = RestShim(get_node_sensors("smb"), "/api/sensors")
+       ## app.router.add_get(sensors_shim.path, sensors_shim.get_handler)
+       ## app.router.add_post(sensors_shim.path, sensors_shim.post_handler)
+
+       ## Add /api/spb/fruid end point
+       ## fruid_shim = RestShim(get_node_fruid("all"), "/api/fruid")
+      ##  app.router.add_get(fruid_shim.path, fruid_shim.get_handler)
+
+
+
     pass

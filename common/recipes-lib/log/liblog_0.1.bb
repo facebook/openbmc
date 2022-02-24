@@ -26,7 +26,6 @@ BBCLASSEXTEND = "native"
 S = "${WORKDIR}"
 SRC_URI += "file://log.h \
             file://log.c \
-            file://syslog.hpp \
             file://meson.build \
            "
 

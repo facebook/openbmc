@@ -535,7 +535,7 @@ TEST(ModbusSpecialHandler, BasicHandlingStringValuePeriodic) {
           _,
           _))
       .Times(Between(2, 3));
-  ModbusSpecialHandler special;
+  ModbusSpecialHandler special(0x32);
   SpecialHandlerInfo& info = special;
   info = R"({
     "reg": 10,
@@ -591,7 +591,7 @@ TEST(ModbusSpecialHandler, BasicHandlingIntegerOneShot) {
           _,
           _))
       .Times(1);
-  ModbusSpecialHandler special;
+  ModbusSpecialHandler special(0x32);
   SpecialHandlerInfo& info = special;
   info = R"({
     "reg": 10,

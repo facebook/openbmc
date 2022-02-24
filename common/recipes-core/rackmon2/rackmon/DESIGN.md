@@ -1,4 +1,14 @@
 # Introduction
+## What is Rackmon
+
+"rackmon" is a set of services and tools to monitor PSUs (Power Supply
+Units) and BBUs (Battery Backup Units) and other special power related components
+on Racks, and the services are usually deployed on RSWs such as Wedge40, Wedge100 and Wedge400
+or a dedicated rack monitoring controller.
+
+"rackmon" talks to discovered PSUs/BBUs using Modbus protocol over RS485. "rackmon"
+sends commands to devices over one or more UARTs connected to the host controller.
+
 ## Why Rackmon V2?
 Open Rack V3 brings with it a few changes to the design:
 1. There can be more than 1 UART/RS485 connection each having 1 or more modbus devices.

@@ -222,8 +222,6 @@ RegisterValue::operator std::string() {
         os << std::hex << std::setw(2) << std::setfill('0') << int(byte);
       }
       break;
-    default:
-      throw std::runtime_error("Unknown format type: " + std::to_string(type));
   }
   return os.str();
 }

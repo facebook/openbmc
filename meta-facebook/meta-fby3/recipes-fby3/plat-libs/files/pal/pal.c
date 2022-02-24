@@ -1783,6 +1783,7 @@ pal_get_m2_config(uint8_t fru, uint8_t *config)
   int ret = -1;
 
   switch (fru) {
+    case FRU_2U:
     case FRU_CWC:
       intf = REXP_BIC_INTF;
       break;
@@ -2396,6 +2397,64 @@ pal_get_pesw_config_str_name(uint8_t board_id, uint8_t pesw_config, char *error_
   return;
 }
 
+static void
+pal_get_tlp_timeout_str_name(uint8_t board_id, uint8_t pesw_port_id, char *error_log) {
+  const char *single_gpv3_pesw_port_list_str[16] = {"GPv3 USP0", "Dev0", "Dev1", "Dev2", "Dev3", "Dev4", "Dev5", "Dev6", "Dev7", \
+                                              "E1.S 0", "GPv3 USP1", "Dev8", "Dev9", "Dev10", "Dev11", "E1.S 1"};
+  const char *dual_gpv3_pesw_port_list_str[10] = {"GPv3 USP0", "Dev0_1", "Dev2_3", "Dev4_5", "Dev6_7", "E1.S 0", "GPv3 USP1", "Dev8_9", \
+                                              "Dev10_11", "E1.S 1"};
+  const char *cwc_pesw_port_list_str[6] = {"CWC USP0", "TOP GPv3 USP0", "BOT GPv3 USP0", "CWC USP1", "TOP GPv3 USP1", "BOT GPv3 USP1"};
+  const uint8_t single_gpv3_pesw_port_list_size = ARRAY_SIZE(single_gpv3_pesw_port_list_str);
+  const uint8_t dual_gpv3_pesw_port_list_size = ARRAY_SIZE(dual_gpv3_pesw_port_list_str);
+  const uint8_t cwc_pesw_port_list_size = ARRAY_SIZE(cwc_pesw_port_list_str);
+  enum {
+    GPv3 = 0x04,
+    CWC = 0x05,
+    TOP_GPv3 = 0x06,
+    BOT_GPv3 = 0x07,
+  };
+  uint8_t pcie_config = 0xff;
+
+  switch(board_id) {
+    case GPv3:
+      if (pal_get_m2_config(FRU_2U, &pcie_config) != 0) {
+        return;
+      }
+      break;
+    case TOP_GPv3:
+      if (pal_get_m2_config(FRU_2U_TOP, &pcie_config) != 0) {
+        return;
+      }
+      break;
+    case BOT_GPv3:
+      if (pal_get_m2_config(FRU_2U_BOT, &pcie_config) != 0) {
+        return;
+      }
+      break;
+    case CWC:
+      snprintf(error_log, MAX_ERR_LOG_SIZE, "%s/%s ", pal_get_board_name(board_id), \
+          (pesw_port_id < cwc_pesw_port_list_size)?cwc_pesw_port_list_str[pesw_port_id]:"Undefined");
+      return;
+    default:
+      syslog(LOG_WARNING, "%s() Undefined board id:%u",__func__, board_id);
+      return;
+  }
+
+  switch(pcie_config) {
+    case CONFIG_C_CWC_SINGLE:
+      snprintf(error_log, MAX_ERR_LOG_SIZE, "%s/%s ", pal_get_board_name(board_id), \
+          (pesw_port_id < single_gpv3_pesw_port_list_size)?single_gpv3_pesw_port_list_str[pesw_port_id]:"Undefined");
+      return;
+    case CONFIG_C_CWC_DUAL:
+      snprintf(error_log, MAX_ERR_LOG_SIZE, "%s/%s ", pal_get_board_name(board_id), \
+          (pesw_port_id < dual_gpv3_pesw_port_list_size)?dual_gpv3_pesw_port_list_str[pesw_port_id]:"Undefined");
+      return;
+    default:
+      return;
+  }
+  return;
+}
+
 static int
 pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
@@ -2424,6 +2483,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
     SYS_DP_X8_PWR_FAULT   = 0x16,
     SYS_DP_X16_PWR_FAULT  = 0x17,
     SYS_PESW_CONFIG       = 0x18,
+    SYS_TLP_TIMEOUT       = 0x19,
     E1S_1OU_M2_PRESENT    = 0x80,
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
@@ -2535,6 +2595,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
     case SYS_PESW_CONFIG:
       pal_get_pesw_config_str_name(event_data[1], event_data[2], error_log);
       strcat(error_log, "PESW Config Setting");
+      break;
+    case SYS_TLP_TIMEOUT:
+      pal_get_tlp_timeout_str_name(event_data[1], event_data[2], error_log);
+      strcat(error_log, "TLP Credit Time Out");
       break;
     case E1S_1OU_HSC_PWR_ALERT:
       strcat(error_log, "E1S 1OU HSC Power");

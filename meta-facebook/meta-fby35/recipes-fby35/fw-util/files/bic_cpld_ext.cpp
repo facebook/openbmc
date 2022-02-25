@@ -9,8 +9,6 @@
 
 using namespace std;
 
-#define CPLD_NEW_VER_KEY "%s_%s_new_ver"
-
 img_info CpldExtComponent::check_image(string image, bool force) {
 const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   string flash_image = image;
@@ -120,7 +118,7 @@ int CpldExtComponent::update_cpld(string image, bool force) {
   //use the new path
   image = image_sts.new_path;
   ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
-  snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str(), component().c_str());
+  snprintf(ver_key, sizeof(ver_key), FRU_STR_COMPONENT_NEW_VER_KEY, fru().c_str(), component().c_str());
   if (fby35_common_get_img_ver(image_tmp.c_str(), ver, fw_comp) < 0) {
      kv_set(ver_key, "Unknown", 0, 0);
   } else {
@@ -211,7 +209,7 @@ int CpldExtComponent::print_version() {
       throw "Error in getting the version of " + board_name;
     }
     cout << board_name << " CPLD Version: " << ver << endl;
-    snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str(), component().c_str());
+    snprintf(ver_key, sizeof(ver_key), FRU_STR_COMPONENT_NEW_VER_KEY, fru().c_str(), component().c_str());
     ret = kv_get(ver_key, value, NULL, 0);
     if ((ret < 0) && (errno == ENOENT)) { // no update before
       cout << board_name << " CPLD Version After activation: " << ver << endl;
@@ -240,4 +238,3 @@ void CpldExtComponent::get_version(json& j) {
   }
 }
 #endif
-

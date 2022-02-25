@@ -49,6 +49,11 @@ extern "C" {
 #define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
 #define FRU_DEV_PATH   "/tmp/fruid_slot%d_dev%d.bin"
 
+#define NEW_VER_KEY "_new_ver"
+#define FRU_STR_COMPONENT_NEW_VER_KEY "%s_%s" NEW_VER_KEY
+#define FRU_STR_CPLD_NEW_VER_KEY "%s_cpld" NEW_VER_KEY
+#define FRU_ID_CPLD_NEW_VER_KEY "slot%d_cpld" NEW_VER_KEY
+
 #define SB_CPLD_ADDR 0x0f
 
 #define NIC_FRU_BUS     8

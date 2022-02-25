@@ -17,14 +17,13 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://mTerm1/run \
-            file://mTerm2/run \
-            file://mTerm3/run \
-            file://mTerm4/run \
-            file://mTerm-service-setup.sh \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://mTerm1/run \
+    file://mTerm2/run \
+    file://mTerm3/run \
+    file://mTerm4/run \
+    file://mTerm-service-setup.sh \
+    "
 
 # launch 4 mTerm services, 1 for each server
 MTERM_SERVICES = "mTerm1 \

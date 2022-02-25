@@ -13,13 +13,12 @@ RDEPENDS:${PN} += "libpal"
 
 inherit meson
 
-SRC_URI = "file://meson.build \
-           file://setup-front-paneld.sh \
-           file://front-paneld.c \
-           file://run-front-paneld.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://setup-front-paneld.sh \
+    file://front-paneld.c \
+    file://run-front-paneld.sh \
+    "
 
 binfiles = "front-paneld"
 

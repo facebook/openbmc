@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://rest_feutil.py \
     file://rest_seutil.py \
     file://rest_peutil.py \

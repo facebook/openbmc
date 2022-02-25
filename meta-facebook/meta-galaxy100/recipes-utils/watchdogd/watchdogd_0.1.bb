@@ -23,9 +23,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://watchdogd.sh;beginline=4;endline=16;md5=c5df8524e560f89f6fe75bb131d6e14d"
 
-SRC_URI = "file://watchdogd.sh \
-           file://setup-watchdogd.sh \
-          "
+LOCAL_URI = " \
+    file://watchdogd.sh \
+    file://setup-watchdogd.sh \
+    "
 
 RDEPENDS:${PN} += " python3 bash"
 DEPENDS:append += " update-rc.d-native"
@@ -45,7 +46,6 @@ DEPENDS:append += " update-rc.d-native"
 #
 # Read the codes and you will see where it is expecting python dependency to be part of the recipe file and why, and this will make more sense to you. 
 #
-S = "${WORKDIR}"
 
 do_install() {
   install -d ${D}${bindir}

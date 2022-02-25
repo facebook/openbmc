@@ -1,13 +1,14 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_13.sh \
-             file://run-ipmbd_0.sh \
-             file://run-ipmbd_1.sh \
-             file://run-ipmbd_2.sh \
-             file://run-ipmbd_3.sh \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_13.sh \
+    file://run-ipmbd_0.sh \
+    file://run-ipmbd_1.sh \
+    file://run-ipmbd_2.sh \
+    file://run-ipmbd_3.sh \
+    "
 DEPENDS:append = " plat-utils update-rc.d-native"
 
 do_install() {

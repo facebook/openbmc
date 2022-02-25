@@ -12,12 +12,11 @@ inherit meson
 DEPENDS:append = " libbic libpal update-rc.d-native "
 RDEPENDS:${PN} += " libbic libpal "
 
-SRC_URI = "file://meson.build \
-           file://setup-bic-cached.sh \
-           file://bic-cached.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://setup-bic-cached.sh \
+    file://bic-cached.c \
+    "
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

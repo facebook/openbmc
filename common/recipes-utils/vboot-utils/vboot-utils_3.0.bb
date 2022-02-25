@@ -4,7 +4,7 @@ SECTION = "base"
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://COPYING;md5=c110423312df5eaf34c8925fc0995bd4"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://COPYING \
     file://pyfdt/__init__.py \
     file://pyfdt/pkcs11.py \
@@ -15,9 +15,7 @@ SRC_URI += " \
     file://vboot_common.py \
     file://image_meta.py \
     file://measure.py \
-  "
-
-S = "${WORKDIR}"
+    "
 
 PR = "r0"
 

@@ -2,11 +2,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI =+ "file://setup-sensor-svcd.sh \
-            file://run-sensor-svcd.sh \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI =+ " \
+    file://setup-sensor-svcd.sh \
+    file://run-sensor-svcd.sh \
+    "
 
 LDFLAGS =+ "-lgpio -lsensor-svc-pal -lkv -lipmb -lgpio -lobmc-pal"
 DEPENDS =+ "update-rc.d-native libgpio libsensor-svc-pal"

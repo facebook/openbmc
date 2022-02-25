@@ -16,8 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:append := "${THISDIR}/files:"
-SRC_URI += "file://pal_peci-util.c \
-           "
+LOCAL_URI += "file://pal_peci-util.c"
 DEPENDS += "libgpio-ctrl"
 RDEPENDS:${PN} += "libgpio-ctrl"
 LDFLAGS += "-lgpio-ctrl"

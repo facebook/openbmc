@@ -21,23 +21,24 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
 
-SRC_URI = "file://Makefile \
-           file://main.cpp \
-           file://selformat.hpp \
-           file://selformat.cpp \
-           file://selstream.hpp \
-           file://selstream.cpp \
-           file://selexception.hpp \
-           file://log-util.hpp \
-           file://log-util.cpp \
-           file://rsyslogd.hpp \
-           file://rsyslogd.cpp \
-           file://exclusion.hpp \
-           file://tests/test_rsyslogd.cpp \
-           file://tests/test_selformat.cpp \
-           file://tests/test_selstream.cpp \
-           file://tests/test_logutil.cpp \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://main.cpp \
+    file://selformat.hpp \
+    file://selformat.cpp \
+    file://selstream.hpp \
+    file://selstream.cpp \
+    file://selexception.hpp \
+    file://log-util.hpp \
+    file://log-util.cpp \
+    file://rsyslogd.hpp \
+    file://rsyslogd.cpp \
+    file://exclusion.hpp \
+    file://tests/test_rsyslogd.cpp \
+    file://tests/test_selformat.cpp \
+    file://tests/test_selstream.cpp \
+    file://tests/test_logutil.cpp \
+    "
 
 PROVIDES += "log-util-v2"
 RPROVIDES:${PN} += "log-util-v2"
@@ -59,7 +60,6 @@ do_install() {
   install -D -m 755 log-util ${D}${prefix}/local/bin/log-util
 }
 
-S = "${WORKDIR}"
 DEPENDS += "libpal cli11 nlohmann-json gtest gmock"
 RDEPENDS:${PN} += "libpal"
 RDEPENDS:${PN}-ptest += "libpal"

@@ -22,13 +22,12 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://gpiod.c;beginline=4;endline=16;md5=2c7615be077486d8c6df561c1459af0f"
 
-SRC_URI = "file://Makefile \
-           file://gpiod.c \
-           file://setup-gpiod.sh \
-           file://run-gpiod.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://gpiod.c \
+    file://setup-gpiod.sh \
+    file://run-gpiod.sh \
+    "
 
 binfiles = "gpiod \
            "

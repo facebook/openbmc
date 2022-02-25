@@ -6,20 +6,20 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-SRC_URI = "file://fancontrol \
-           file://sensors.conf \
-"
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://fancontrol \
+    file://sensors.conf \
+    "
 
 RDEPENDS:${PN}-dev = ""
 
 do_install() {
     # Install fancontrol configuration file
     install -d ${D}${sysconfdir}/sysconfig
-    install -m 0644 ${WORKDIR}/fancontrol ${D}${sysconfdir}
+    install -m 0644 ${S}/fancontrol ${D}${sysconfdir}
     # Install libsensors configuration file
     install -d ${D}${sysconfdir}/sensors.d
-    install -m 0644 ${WORKDIR}/sensors.conf ${D}${sysconfdir}/sensors.d
+    install -m 0644 ${S}/sensors.conf ${D}${sysconfdir}/sensors.d
 }
 
 # libsensors configuration

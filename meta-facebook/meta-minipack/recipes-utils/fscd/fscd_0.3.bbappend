@@ -17,14 +17,15 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://setup-fan.sh \
-            file://get_fan_speed.sh \
-            file://set_fan_speed.sh \
-            file://fsc_board.py \
-            file://FSC-PWM-32-config.json \
-            file://FSC-PWM-64-config.json \
-            file://zone1.fsc \
-           "
+LOCAL_URI += " \
+    file://setup-fan.sh \
+    file://get_fan_speed.sh \
+    file://set_fan_speed.sh \
+    file://fsc_board.py \
+    file://FSC-PWM-32-config.json \
+    file://FSC-PWM-64-config.json \
+    file://zone1.fsc \
+    "
 
 FSC_BIN_FILES += "get_fan_speed.sh \
                   set_fan_speed.sh "

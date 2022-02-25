@@ -25,19 +25,18 @@ LIC_FILES_CHKSUM = "file://gpio.c;beginline=4;endline=16;md5=da35978751a9d71b736
 inherit meson python3-dir
 inherit ptest-meson
 
-SRC_URI = "file://meson.build \
-           file://gpio.c \
-           file://gpio_int.h \
-           file://gpio_sysfs.c \
-           file://gpiochip.c \
-           file://gpiochip_aspeed.c \
-           file://libgpio.h \
-           file://libgpio.hpp \
-           file://libgpio.py \
-           file://gpio_test.cpp \
-         "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://gpio.c \
+    file://gpio_int.h \
+    file://gpio_sysfs.c \
+    file://gpiochip.c \
+    file://gpiochip_aspeed.c \
+    file://libgpio.h \
+    file://libgpio.hpp \
+    file://libgpio.py \
+    file://gpio_test.cpp \
+    "
 
 DEPENDS += "libmisc-utils libobmc-i2c gtest gmock"
 RDEPENDS:${PN} += " libmisc-utils libobmc-i2c python3-core"

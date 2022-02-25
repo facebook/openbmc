@@ -23,18 +23,17 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://obmc-sensors.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://sensor.cpp \
-           file://sensor.hpp \
-           file://sensorchip.cpp \
-           file://sensorchip.hpp \
-           file://sensorlist.cpp \
-           file://sensorlist.hpp \
-           file://obmc-sensors.cpp \
-           file://obmc-sensors.h \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://sensor.cpp \
+    file://sensor.hpp \
+    file://sensorchip.cpp \
+    file://sensorchip.hpp \
+    file://sensorlist.cpp \
+    file://sensorlist.hpp \
+    file://obmc-sensors.cpp \
+    file://obmc-sensors.h \
+    "
 
 LDFLAGS += "-lsensors"
 DEPENDS += "lmsensors"

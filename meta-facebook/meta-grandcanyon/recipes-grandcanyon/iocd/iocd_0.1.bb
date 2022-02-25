@@ -9,15 +9,14 @@ LIC_FILES_CHKSUM = "file://iocd.c;beginline=5;endline=17;md5=da35978751a9d71b736
 
 inherit meson
 
-SRC_URI = "file://meson.build \
-           file://iocd.c \
-           file://iocd.h \
-           file://setup-iocd.sh \
-           file://run-iocd_11.sh \
-           file://run-iocd_12.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://iocd.c \
+    file://iocd.h \
+    file://setup-iocd.sh \
+    file://run-iocd_11.sh \
+    file://run-iocd_12.sh \
+    "
 
 LDFLAGS += "-lpal -lobmc-i2c -lkv"
 DEPENDS += " libpal update-rc.d-native libfbgc-common libobmc-i2c libipc libkv "

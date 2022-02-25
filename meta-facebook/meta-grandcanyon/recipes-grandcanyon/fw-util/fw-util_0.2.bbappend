@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "\
+LOCAL_URI += "\
         file://nic_ext.cpp \
         file://nic_ext.h \
         file://bmc_fpga.cpp \

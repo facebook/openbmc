@@ -17,6 +17,4 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://aggregate-sensor-conf.json \
-           "
-
+LOCAL_URI += "file://aggregate-sensor-conf.json "

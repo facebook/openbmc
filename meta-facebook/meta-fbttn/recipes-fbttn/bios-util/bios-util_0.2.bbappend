@@ -17,12 +17,13 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/bios-util:"
 
-SRC_URI += "file://bios_plat_info.py \
-            file://bios_pcie_port_config.py \
-            file://BIOS_UTIL_BCT5_v2.json \
-            file://BIOS_UTIL_BCT7_v2.json \
-            file://setup_bios_util.sh \
-          "
+LOCAL_URI += " \
+    file://bios_plat_info.py \
+    file://bios_pcie_port_config.py \
+    file://BIOS_UTIL_BCT5_v2.json \
+    file://BIOS_UTIL_BCT7_v2.json \
+    file://setup_bios_util.sh \
+    "
 
 binfiles += "bios_plat_info.py bios_pcie_port_config.py"
 

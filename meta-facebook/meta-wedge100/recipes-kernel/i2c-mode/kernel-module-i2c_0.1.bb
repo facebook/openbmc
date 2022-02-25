@@ -19,13 +19,12 @@ inherit module kernel_extra_headers_export
 PR = "r0"
 PV = "0.1"
 
-SRC_URI = "file://Makefile \
-           file://pwr1014a.c \
-           file://ltc4281.c \
-           file://COPYING \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://pwr1014a.c \
+    file://ltc4281.c \
+    file://COPYING \
+    "
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 

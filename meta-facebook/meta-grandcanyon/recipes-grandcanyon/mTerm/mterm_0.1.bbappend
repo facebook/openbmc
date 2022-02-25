@@ -17,16 +17,15 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://mTerm-scc_exp_smart/run \
-            file://mTerm-scc_exp_sdb/run \
-            file://mTerm-scc_ioc_smart/run \
-            file://mTerm-server/run \
-            file://mTerm-bic/run \
-            file://mTerm-iocm_ioc_smart/run \
-            file://mTerm-service-setup.sh \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://mTerm-scc_exp_smart/run \
+    file://mTerm-scc_exp_sdb/run \
+    file://mTerm-scc_ioc_smart/run \
+    file://mTerm-server/run \
+    file://mTerm-bic/run \
+    file://mTerm-iocm_ioc_smart/run \
+    file://mTerm-service-setup.sh \
+    "
 
 # launch 6 mTerm services, 1 for each server
 MTERM_SERVICES = "mTerm-scc_exp_smart \

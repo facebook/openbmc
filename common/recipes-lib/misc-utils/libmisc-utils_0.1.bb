@@ -26,27 +26,24 @@ BBCLASSEXTEND = "native"
 
 inherit ptest
 
-SRC_URI = "file://Makefile \
-           file://device-utils.c \
-           file://file-utils.c \
-           file://path-utils.c \
-           file://plat-utils.c \
-           file://str-utils.c \
-           file://misc-utils.h \
-           file://biview.hpp \
-           file://profile.hpp \
-           "
-
-# Add Test sources
-SRC_URI += "file://test/main.c \
-           file://test/test-defs.h \
-           file://test/test-file.c \
-           file://test/test-path.c \
-           file://test/test-str.c \
-           file://test/test-biview.cpp \
-           file://test/test-profile.cpp \
-           "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://device-utils.c \
+    file://file-utils.c \
+    file://path-utils.c \
+    file://plat-utils.c \
+    file://str-utils.c \
+    file://misc-utils.h \
+    file://biview.hpp \
+    file://profile.hpp \
+    file://test/main.c \
+    file://test/test-defs.h \
+    file://test/test-file.c \
+    file://test/test-path.c \
+    file://test/test-str.c \
+    file://test/test-biview.cpp \
+    file://test/test-profile.cpp \
+    "
 
 DEPENDS += "gtest"
 

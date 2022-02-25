@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "\
+LOCAL_URI += "\
         file://bios.cpp \
         file://bios.h \
         file://cpld.cpp \

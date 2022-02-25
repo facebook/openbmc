@@ -21,21 +21,21 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://sol-util \
-           file://power_led.sh \
-           file://setup-gpio.sh \
-           file://power-on.sh \
-           file://eth0_mac_fixup.sh \
-           file://sync_date.sh \
-           file://setup-snoopdma.sh \
-           file://setup-por.sh \
-           file://COPYING \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://sol-util \
+    file://power_led.sh \
+    file://setup-gpio.sh \
+    file://power-on.sh \
+    file://eth0_mac_fixup.sh \
+    file://sync_date.sh \
+    file://setup-snoopdma.sh \
+    file://setup-por.sh \
+    file://COPYING \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 binfiles = "power_led.sh sync_date.sh sol-util \
   "

@@ -8,15 +8,14 @@ inherit systemd
 
 LICENSE = "GPLv2"
 
-SRC_URI = "file://10-eth0.network \
-        file://30-usb0.network \
-        file://20-eth0.4088.network \
-        file://20-eth0.4088.netdev \
-        file://eth0_mac_fixup.service \
-        file://configure-eth0.service \
-"
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://10-eth0.network \
+    file://30-usb0.network \
+    file://20-eth0.4088.network \
+    file://20-eth0.4088.netdev \
+    file://eth0_mac_fixup.service \
+    file://configure-eth0.service \
+    "
 
 do_install() {
     install -d ${D}${sysconfdir}/systemd/network

@@ -19,19 +19,20 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 PACKAGECONFIG += "disable-watchdog"
 
-SRC_URI += "file://enable_watchdog_ext_signal.sh \
-            file://ec_version.sh \
-            file://board-utils.sh \
-            file://setup_board.sh \
-            file://cpld_rev.sh \
-            file://cpld_upgrade.sh \
-            file://cp2112_i2c_flush.sh \
-            file://reset_qsfp_mux.sh \
-            file://setup_i2c.sh \
-            file://btools.py \
-            file://rest_mntr.sh \
-            file://mav_tty_switch_delay.sh \
-           "
+LOCAL_URI += " \
+    file://enable_watchdog_ext_signal.sh \
+    file://ec_version.sh \
+    file://board-utils.sh \
+    file://setup_board.sh \
+    file://cpld_rev.sh \
+    file://cpld_upgrade.sh \
+    file://cp2112_i2c_flush.sh \
+    file://reset_qsfp_mux.sh \
+    file://setup_i2c.sh \
+    file://btools.py \
+    file://rest_mntr.sh \
+    file://mav_tty_switch_delay.sh \
+    "
 
 OPENBMC_UTILS_FILES += " \
     enable_watchdog_ext_signal.sh \

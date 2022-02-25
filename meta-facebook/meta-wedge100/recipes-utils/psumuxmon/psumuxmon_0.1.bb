@@ -25,11 +25,11 @@ DEPENDS:append = " update-rc.d-native"
 
 inherit systemd
 
-SRC_URI = "file://psumuxmon.py \
-           file://psumuxmon_service \
-           file://psumuxmon.service \
-           "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://psumuxmon.py \
+    file://psumuxmon_service \
+    file://psumuxmon.service \
+    "
 
 do_install() {
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then

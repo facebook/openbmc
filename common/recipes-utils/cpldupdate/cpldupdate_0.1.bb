@@ -19,15 +19,14 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ispvm_ui.c \
-		file://ivm_core.c \
-		file://hardware.c \
-		file://vmopcode.h \
-		file://Makefile \
-		file://COPYING \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://ispvm_ui.c \
+    file://ivm_core.c \
+    file://hardware.c \
+    file://vmopcode.h \
+    file://Makefile \
+    file://COPYING \
+    "
 
 do_install() {
 	install -d ${D}${bindir}

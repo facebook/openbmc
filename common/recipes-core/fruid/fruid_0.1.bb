@@ -26,11 +26,10 @@ LDFLAGS = " -lfruid -lpal -ljansson"
 DEPENDS = "libfruid libpal jansson"
 RDEPENDS:${PN} = "libfruid libpal jansson"
 
-SRC_URI = "file://Makefile \
-           file://fruid-util.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://fruid-util.c \
+    "
 
 binfiles = "fruid-util \
            "

@@ -62,76 +62,76 @@ RDEPENDS:${PN} += " \
     python3-psutil\
 "
 
-SRC_URI = "file://setup-rest-api.sh \
-           file://rest.py \
-           file://common_utils.py \
-           file://common_webapp.py \
-           file://common_middlewares.py \
-           file://common_logging.py \
-           file://common_auth.py \
-           file://async_ratelimiter.py \
-           file://acl_config.py \
-           file://acl_providers/__init__.py \
-           file://acl_providers/cached_acl_provider.py \
-           file://acl_providers/common_acl_provider_base.py \
-           file://rest_config.py \
-           file://rest_pal_legacy.py \
-           file://node.py \
-           file://node_bmc.py \
-           file://vboot.py \
-           file://run_rest \
-           file://rest.cfg \
-           file://rest_ntpstatus.py \
-           file://rest_utils.py \
-           file://rest_fscd_sensor_data.py \
-           file://rest_fwinfo.py \
-           file://rest_modbus_cmd.py \
-           file://rest_mmc.py \
-           file://test_rest_mmc.py \
-           file://test_rest_modbus_cmd.py \
-           file://test_async_ratelimiter.py \
-           file://test_auth_enforcer.py \
-           file://test_cached_acl_provider.py \
-           file://test_common_logging.py \
-           file://test_rest_config.py \
-           file://test_rest_fscd_sensor_data.py \
-           file://test_common_auth.py \
-           file://test_common_acl_provider_base.py \
-           file://common_setup_routes.py \
-           file://setup_plat_routes.py \
-           file://boot_source.py \
-           file://restapi.service \
-           file://board_setup_routes.py \
-           file://redfish_bios_firmware_dumps.py \
-           file://redfish_common_routes.py \
-           file://redfish_service_root.py \
-           file://redfish_account_service.py \
-           file://redfish_chassis.py \
-           file://redfish_chassis_helper.py \
-           file://redfish_computer_system.py \
-           file://redfish_log_service.py \
-           file://redfish_managers.py \
-           file://redfish_session_service.py \
-           file://redfish_powercycle.py \
-           file://test_redfish_common_routes.py \
-           file://test_redfish_powercycle.py \
-           file://redfish_base.py \
-           file://redfish_sensors.py \
-           file://test_mock_modules.py \
-           file://test_redfish_root_controller.py \
-           file://test_redfish_account_controller.py \
-           file://test_redfish_bios_firmware_dumps.py \
-           file://test_redfish_managers_controller.py \
-           file://test_redfish_chassis_controller.py \
-           file://test_redfish_computer_system.py \
-           file://test_redfish_computer_system_patches.py \
-           file://test_rest_fwinfo.py \
-           file://test_redfish_sensors.py \
-           file://test_redfish_log_service.py \
-           file://.flake8 \
-        "
+LOCAL_URI = " \
+    file://setup-rest-api.sh \
+    file://rest.py \
+    file://common_utils.py \
+    file://common_webapp.py \
+    file://common_middlewares.py \
+    file://common_logging.py \
+    file://common_auth.py \
+    file://async_ratelimiter.py \
+    file://acl_config.py \
+    file://acl_providers/__init__.py \
+    file://acl_providers/cached_acl_provider.py \
+    file://acl_providers/common_acl_provider_base.py \
+    file://rest_config.py \
+    file://rest_pal_legacy.py \
+    file://node.py \
+    file://node_bmc.py \
+    file://vboot.py \
+    file://run_rest \
+    file://rest.cfg \
+    file://rest_ntpstatus.py \
+    file://rest_utils.py \
+    file://rest_fscd_sensor_data.py \
+    file://rest_fwinfo.py \
+    file://rest_modbus_cmd.py \
+    file://rest_mmc.py \
+    file://test_rest_mmc.py \
+    file://test_rest_modbus_cmd.py \
+    file://test_async_ratelimiter.py \
+    file://test_auth_enforcer.py \
+    file://test_cached_acl_provider.py \
+    file://test_common_logging.py \
+    file://test_rest_config.py \
+    file://test_rest_fscd_sensor_data.py \
+    file://test_common_auth.py \
+    file://test_common_acl_provider_base.py \
+    file://common_setup_routes.py \
+    file://setup_plat_routes.py \
+    file://boot_source.py \
+    file://restapi.service \
+    file://board_setup_routes.py \
+    file://redfish_bios_firmware_dumps.py \
+    file://redfish_common_routes.py \
+    file://redfish_service_root.py \
+    file://redfish_account_service.py \
+    file://redfish_chassis.py \
+    file://redfish_chassis_helper.py \
+    file://redfish_computer_system.py \
+    file://redfish_log_service.py \
+    file://redfish_managers.py \
+    file://redfish_session_service.py \
+    file://redfish_powercycle.py \
+    file://test_redfish_common_routes.py \
+    file://test_redfish_powercycle.py \
+    file://redfish_base.py \
+    file://redfish_sensors.py \
+    file://test_mock_modules.py \
+    file://test_redfish_root_controller.py \
+    file://test_redfish_account_controller.py \
+    file://test_redfish_bios_firmware_dumps.py \
+    file://test_redfish_managers_controller.py \
+    file://test_redfish_chassis_controller.py \
+    file://test_redfish_computer_system.py \
+    file://test_redfish_computer_system_patches.py \
+    file://test_rest_fwinfo.py \
+    file://test_redfish_sensors.py \
+    file://test_redfish_log_service.py \
+    file://.flake8 \
+    "
 
-S = "${WORKDIR}"
 
 
 aclfiles = "__init__.py \
@@ -139,7 +139,8 @@ aclfiles = "__init__.py \
             common_acl_provider_base.py \
 "
 
-SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
+LOCAL_URI += " \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
            'file://compute_rest_shim.py \
             file://rest_crawler.py \
             file://node_attestation.py \
@@ -184,25 +185,26 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
             file://rest_helper.py \
             file://test_common_middlewares.py \
             file://test_rest_gpios.py \
-            file://boardroutes.py\
-            ', d)}"
+            file://boardroutes.py \
+            ', d)} \
+    "
 
 pkgdir = "rest-api"
 
 
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${WORKDIR}/restapi.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${S}/restapi.service ${D}${systemd_system_unitdir}
 }
 
 
 install_sysv() {
     install -d ${D}${sysconfdir}/sv
     install -d ${D}${sysconfdir}/sv/restapi
-    install -m 755 ${WORKDIR}/run_rest ${D}${sysconfdir}/sv/restapi/run
+    install -m 755 ${S}/run_rest ${D}${sysconfdir}/sv/restapi/run
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
-    install -m 755 ${WORKDIR}/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
+    install -m 755 ${S}/setup-rest-api.sh ${D}${sysconfdir}/init.d/setup-rest-api.sh
     update-rc.d -r ${D} setup-rest-api.sh start 95 2 3 4 5  .
 }
 
@@ -231,8 +233,8 @@ do_install:class-target() {
       install_sysv
   fi
 
-  install -m 644 ${WORKDIR}/rest.cfg ${D}${sysconfdir}/rest.cfg
-  install -m 644 ${WORKDIR}/.flake8 ${dst}/.flake8
+  install -m 644 ${S}/rest.cfg ${D}${sysconfdir}/rest.cfg
+  install -m 644 ${S}/.flake8 ${dst}/.flake8
 
 }
 

@@ -6,19 +6,17 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ncsi.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
-SRC_URI = "file://Makefile \
-           file://ncsi.c \
-           file://ncsi.h \
-           file://aen.c \
-           file://aen.h \
-           file://ncsi-brcm.c \
-           file://ncsi-brcm.h \
-           file://ncsi-nvidia.c \
-           file://ncsi-nvidia.h \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://ncsi.c \
+    file://ncsi.h \
+    file://aen.c \
+    file://aen.h \
+    file://ncsi-brcm.c \
+    file://ncsi-brcm.h \
+    file://ncsi-nvidia.c \
+    file://ncsi-nvidia.h \
+    "
 
 DEPENDS =+ " libkv"
 CFLAGS += "  -lkv"

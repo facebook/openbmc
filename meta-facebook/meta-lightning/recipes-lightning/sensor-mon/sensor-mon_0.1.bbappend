@@ -17,7 +17,6 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://init_sensor.sh \
-           "
+LOCAL_URI += "file://init_sensor.sh"
 binfiles += "init_sensor.sh \
             "

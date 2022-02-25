@@ -7,39 +7,38 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://SensorSvcd.cpp;beginline=4;endline=16;md5=5f8ba3cd0f216026550dbcc0186d5599"
 
-SRC_URI =+ "file://Makefile \
-           file://org.openbmc.SensorService.conf \
-           file://Sensor.h \
-           file://SensorAccessMechanism.h \
-           file://SensorAccessVR.h \
-           file://SensorAccessVR.cpp \
-           file://DBusSensorInterface.cpp \
-           file://SensorAccessAVA.h \
-           file://Sensor.cpp \
-           file://SensorObjectTree.cpp \
-           file://DBusSensorInterface.h \
-           file://SensorAccessINA230.h \
-           file://SensorAccessINA230.cpp \
-           file://SensorObjectTree.h \
-           file://DBusSensorTreeInterface.cpp \
-           file://SensorAccessViaPath.cpp \
-           file://SensorJsonParser.cpp \
-           file://SensorService.h \
-           file://DBusSensorTreeInterface.h \
-           file://SensorAccessNVME.h \
-           file://SensorAccessNVME.cpp \
-           file://SensorAccessViaPath.h \
-           file://SensorJsonParser.h \
-           file://SensorSvcd.cpp \
-           file://FRU.h \
-           file://SensorAccessMechanism.cpp \
-           file://SensorAccessAVA.cpp \
-           file://FRU.cpp \
-           file://DBusSensorServiceInterface.cpp \
-           file://DBusSensorServiceInterface.h \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI =+ " \
+    file://Makefile \
+    file://org.openbmc.SensorService.conf \
+    file://Sensor.h \
+    file://SensorAccessMechanism.h \
+    file://SensorAccessVR.h \
+    file://SensorAccessVR.cpp \
+    file://DBusSensorInterface.cpp \
+    file://SensorAccessAVA.h \
+    file://Sensor.cpp \
+    file://SensorObjectTree.cpp \
+    file://DBusSensorInterface.h \
+    file://SensorAccessINA230.h \
+    file://SensorAccessINA230.cpp \
+    file://SensorObjectTree.h \
+    file://DBusSensorTreeInterface.cpp \
+    file://SensorAccessViaPath.cpp \
+    file://SensorJsonParser.cpp \
+    file://SensorService.h \
+    file://DBusSensorTreeInterface.h \
+    file://SensorAccessNVME.h \
+    file://SensorAccessNVME.cpp \
+    file://SensorAccessViaPath.h \
+    file://SensorJsonParser.h \
+    file://SensorSvcd.cpp \
+    file://FRU.h \
+    file://SensorAccessMechanism.cpp \
+    file://SensorAccessAVA.cpp \
+    file://FRU.cpp \
+    file://DBusSensorServiceInterface.cpp \
+    file://DBusSensorServiceInterface.h \
+    "
 
 LDFLAGS =+ " -lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils -lobmc-i2c"
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags libobmc-i2c"

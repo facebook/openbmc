@@ -20,40 +20,41 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += "boot-info"
 
-SRC_URI += "file://board-utils.sh \
-            file://bios_util.sh \
-            file://fpga_util.sh \
-            file://fpga_ver.sh \
-            file://dump_pim_serials.sh \
-            file://dump_gpios.sh \
-            file://eth0_mac_fixup.sh \
-            file://hclk_fixup.sh \
-            file://oob-eeprom-util.sh \
-            file://oob-mdio-util.sh \
-            file://power-on.sh \
-            file://setup_board.sh \
-            file://wedge_power.sh \
-            file://wedge_us_mac.sh \
-            file://setup-gpio.sh \
-            file://setup_i2c.sh \
-            file://seutil \
-            file://dpm_dump.sh \
-            file://dpm_utils.sh \
-            file://dpm_ver.sh \
-            file://pim_dpm_dump.sh \
-            file://show_tech.py \
-            file://psu_show_tech.py \
-            file://pim_enable.sh \
-            file://pim_types.sh \
-            file://elbert_pim.layout \
-            file://peutil \
-            file://spi_pim_ver.sh \
-            file://meta_info.sh \
-            file://beacon_led.sh \
-            file://setup_bcm53134.sh \
-            file://th4_qspi_ver.sh \
-            file://dpeCheck.sh \
-           "
+LOCAL_URI += "\
+    file://board-utils.sh \
+    file://bios_util.sh \
+    file://fpga_util.sh \
+    file://fpga_ver.sh \
+    file://dump_pim_serials.sh \
+    file://dump_gpios.sh \
+    file://eth0_mac_fixup.sh \
+    file://hclk_fixup.sh \
+    file://oob-eeprom-util.sh \
+    file://oob-mdio-util.sh \
+    file://power-on.sh \
+    file://setup_board.sh \
+    file://wedge_power.sh \
+    file://wedge_us_mac.sh \
+    file://setup-gpio.sh \
+    file://setup_i2c.sh \
+    file://seutil \
+    file://dpm_dump.sh \
+    file://dpm_utils.sh \
+    file://dpm_ver.sh \
+    file://pim_dpm_dump.sh \
+    file://show_tech.py \
+    file://psu_show_tech.py \
+    file://pim_enable.sh \
+    file://pim_types.sh \
+    file://elbert_pim.layout \
+    file://peutil \
+    file://spi_pim_ver.sh \
+    file://meta_info.sh \
+    file://beacon_led.sh \
+    file://setup_bcm53134.sh \
+    file://th4_qspi_ver.sh \
+    file://dpeCheck.sh \
+    "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
@@ -96,9 +97,9 @@ do_install_board() {
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
     # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
     install -m 755 dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
@@ -135,10 +136,10 @@ do_install_board() {
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/elbert_pim.layout ${D}${sysconfdir}/elbert_pim.layout
+    install -m 0755 ${S}/elbert_pim.layout ${D}${sysconfdir}/elbert_pim.layout
 }
 
 do_install:append() {

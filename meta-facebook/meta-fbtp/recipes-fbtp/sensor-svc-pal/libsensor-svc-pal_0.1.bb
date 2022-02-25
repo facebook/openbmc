@@ -6,15 +6,14 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://sensorsvcpal.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-
-SRC_URI = "file://sensorsvcpal.c \
-           file://sensorsvcpal.h \
-           file://CMakeLists.txt \
-          "
+LOCAL_URI = " \
+    file://sensorsvcpal.c \
+    file://sensorsvcpal.h \
+    file://CMakeLists.txt \
+    "
 
 DEPENDS += "libkv plat-utils libipmi libipmb obmc-pal libme libvr libobmc-i2c"
 
-S = "${WORKDIR}"
 
 RDEPENDS:${PN} += " libkv libme libipmb libvr libobmc-i2c"
 

@@ -17,25 +17,26 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://board-utils.sh \
-           file://us_console.sh \
-           file://sol.sh \
-           file://power_led.sh \
-           file://post_led.sh \
-           file://reset_usb.sh \
-           file://reset_cp2112.sh \
-           file://setup-gpio.sh \
-           file://setup_rov.sh \
-           file://wedge_power.sh \
-           file://reset_brcm.sh \
-           file://power-on.sh \
-           file://wedge_us_mac.sh \
-           file://setup_switch.py \
-           file://create_vlan_intf \
-           file://setup_i2c.sh \
-           file://start_us_monitor.sh \
-           file://us_monitor.sh \
-          "
+LOCAL_URI += " \
+    file://board-utils.sh \
+    file://us_console.sh \
+    file://sol.sh \
+    file://power_led.sh \
+    file://post_led.sh \
+    file://reset_usb.sh \
+    file://reset_cp2112.sh \
+    file://setup-gpio.sh \
+    file://setup_rov.sh \
+    file://wedge_power.sh \
+    file://reset_brcm.sh \
+    file://power-on.sh \
+    file://wedge_us_mac.sh \
+    file://setup_switch.py \
+    file://create_vlan_intf \
+    file://setup_i2c.sh \
+    file://start_us_monitor.sh \
+    file://us_monitor.sh \
+    "
 
 OPENBMC_UTILS_FILES += " \
   board-utils.sh us_console.sh sol.sh power_led.sh post_led.sh \

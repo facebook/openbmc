@@ -7,17 +7,17 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://setup-bic-cached.sh \
-           file://bic-cached.c \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://setup-bic-cached.sh \
+    file://bic-cached.c \
+    "
 
 CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lfby3_common -lbic -lpal"
 DEPENDS = "libipmi libipmb libfby3-common libbic libpal update-rc.d-native"
 RDEPENDS:${PN} = "libipmi libipmb libfby3-common libbic libpal"
 
-S = "${WORKDIR}"
 
 binfiles = "bic-cached"
 

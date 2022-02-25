@@ -17,12 +17,13 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://init_pwm.sh \
-            file://setup-fan.sh \
-            file://FSC_MINILAKETB_DVT.json \
-            file://FSC_MINILAKETB_DVT.fsc \
-            file://fsc_board.py \
-           "
+LOCAL_URI += " \
+    file://init_pwm.sh \
+    file://setup-fan.sh \
+    file://FSC_MINILAKETB_DVT.json \
+    file://FSC_MINILAKETB_DVT.fsc \
+    file://fsc_board.py \
+    "
 
 FSC_BIN_FILES += "init_pwm.sh"
 

@@ -19,7 +19,7 @@ SUMMARY = "Utilities for AT93Cx6 EEPROM"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = " \
+LOCAL_URI = " \
     file://COPYING \
     file://at93cx6.py \
     file://at93cx6_util.py \
@@ -30,7 +30,6 @@ SCRIPTS = " \
     at93cx6_util.py \
     "
 
-S = "${WORKDIR}"
 
 do_install() {
     pkgdir="/usr/local/packages/utils"

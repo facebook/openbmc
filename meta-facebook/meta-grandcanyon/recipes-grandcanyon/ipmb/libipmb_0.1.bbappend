@@ -1,3 +1,3 @@
-SRC_URI += "\
+LOCAL_URI += " \
     file://meson.build \
     "

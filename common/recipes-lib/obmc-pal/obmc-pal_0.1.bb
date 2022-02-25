@@ -20,15 +20,15 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-SRC_URI = "file://obmc-pal.h \
-           file://obmc_pal_sensors.h \
-          "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://obmc-pal.h \
+    file://obmc_pal_sensors.h \
+    "
+
 # Dummy compile step. We just install the headers in this recipe.
 do_compile() {
   true
 }
-#S = "${WORKDIR}"
 do_install() {
   install -d ${D}${includedir}/openbmc
   cp obmc-pal.h ${D}${includedir}/openbmc/obmc-pal.h

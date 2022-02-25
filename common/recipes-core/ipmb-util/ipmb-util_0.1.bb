@@ -6,11 +6,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ipmb-util.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://ipmb-util.c \
-           file://Makefile \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://ipmb-util.c \
+    file://Makefile \
+    "
 
 binfiles = "ipmb-util \
            "

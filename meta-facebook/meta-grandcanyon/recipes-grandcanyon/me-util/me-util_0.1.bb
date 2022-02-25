@@ -10,11 +10,10 @@ inherit meson
 inherit legacy-packages
 
 pkgdir = "me-util"
-SRC_URI = "file://me-util.c \
-           file://meson.build \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://me-util.c \
+    file://meson.build \
+    "
 
 DEPENDS = "libbic libpal libipmi libipmb libfbgc-common"
 RDEPENDS:${PN} += "libbic libpal libipmi libipmb libfbgc-common"

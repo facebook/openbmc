@@ -21,10 +21,9 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://crashdump_amd.sh;beginline=5;endline=17;md5=9d28bbe221522c21c36c389af8c94a4c"
 
-SRC_URI = "file://crashdump_amd.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://crashdump_amd.sh \
+    "
 
 binfiles += "crashdump_amd.sh \
             "

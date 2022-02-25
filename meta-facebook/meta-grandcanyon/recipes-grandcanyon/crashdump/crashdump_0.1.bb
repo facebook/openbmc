@@ -23,15 +23,14 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 inherit meson
 
-S = "${WORKDIR}"
-
 RDEPENDS:${PN} += "bash"
 
-SRC_URI = "file://dump.sh \
-           file://crashdump_coreid \
-           file://crashdump_msr \
-           file://crashdump_pcie \
-           file://autodump.sh \
-           file://COPYING \
-           file://meson.build \
-           "
+LOCAL_URI = " \
+    file://dump.sh \
+    file://crashdump_coreid \
+    file://crashdump_msr \
+    file://crashdump_pcie \
+    file://autodump.sh \
+    file://COPYING \
+    file://meson.build \
+    "

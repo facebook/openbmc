@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://rest_feutil.py \
     file://rest_firmware_info.py \
     file://rest_fscd_sensor_data.py \

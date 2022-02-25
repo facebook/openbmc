@@ -29,14 +29,13 @@ inherit meson
 RDEPENDS:${PN} += "liblog libmisc-utils"
 DEPENDS:append = " update-rc.d-native liblog libmisc-utils"
 
-SRC_URI = "file://emmcd.c \
-           file://meson.build \
-           file://run-emmcd.sh \
-           file://setup-emmcd.sh \
-           file://emmcd.service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://emmcd.c \
+    file://meson.build \
+    file://run-emmcd.sh \
+    file://setup-emmcd.sh \
+    file://emmcd.service \
+    "
 
 pkgdir = "emmcd"
 inherit legacy-packages

@@ -16,16 +16,16 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=0636e73ff0215e8d672dc4c32c317bb3"
 
-SRC_URI = "file://memtester.c \
-          file://tests.c \
-          file://memtester.h \
-          file://types.h \
-          file://sizes.h \
-          file://tests.h \
-          file://Makefile \
-          file://COPYING"
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://memtester.c \
+    file://tests.c \
+    file://memtester.h \
+    file://types.h \
+    file://sizes.h \
+    file://tests.h \
+    file://Makefile \
+    file://COPYING \
+    "
 
 do_install() {
 	install -d ${D}${bindir}

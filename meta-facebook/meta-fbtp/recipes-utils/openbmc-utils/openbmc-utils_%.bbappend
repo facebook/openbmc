@@ -17,8 +17,9 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup_adc.sh \
-           "
+LOCAL_URI += " \
+    file://setup_adc.sh \
+    "
 
 DEPENDS:append = " update-rc.d-native"
 

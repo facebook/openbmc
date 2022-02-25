@@ -16,15 +16,16 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:append := "${THISDIR}/files:"
-SRC_URI += "file://pal_peci-util.c \
-            file://crashdump_p0_coreid \
-            file://crashdump_p0_msr \
-            file://crashdump_p1_coreid \
-            file://crashdump_p1_msr \
-            file://crashdump_pcie \
-            file://crashdump_pcie_bus \
-            file://autodump.sh \
-           "
+LOCAL_URI += " \
+    file://pal_peci-util.c \
+    file://crashdump_p0_coreid \
+    file://crashdump_p0_msr \
+    file://crashdump_p1_coreid \
+    file://crashdump_p1_msr \
+    file://crashdump_pcie \
+    file://crashdump_pcie_bus \
+    file://autodump.sh \
+    "
 
 binfiles += "autodump.sh \
             "

@@ -28,20 +28,20 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://Makefile;beginline=4;endline=17;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-SRC_URI = "file://Makefile \
-           file://cmd-bitbang.c \
-           file://cmd-control.c \
-           file://cmd-common.c \
-           file://cmd-common.h \
-           file://ftdi-bitbang.c \
-           file://ftdi-bitbang.h \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://cmd-bitbang.c \
+    file://cmd-control.c \
+    file://cmd-common.c \
+    file://cmd-common.h \
+    file://ftdi-bitbang.c \
+    file://ftdi-bitbang.h \
+    "
 
 RDEPENDS:${PN} += "libusb1 libftdi"
 DEPENDS:append = "libusb1 libftdi"
 LDFLAGS += "-L . -l usb-1.0 -l ftdi1 "
 
-S = "${WORKDIR}"
 
 binfiles = "ftdi_bitbang ftdi_control"
 

@@ -17,15 +17,16 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://setup-fan.sh \
-            file://fsc-config2s.json \
-            file://fsc-config4s_M.json\
-            file://fsc-config_Slave.json\
-            file://zone1_2s.fsc \
-            file://zone1_4s_M.fsc \
-            file://zone1_Slave.fsc \
-            file://fsc_board.py \
-           "
+LOCAL_URI += " \
+    file://setup-fan.sh \
+    file://fsc-config2s.json \
+    file://fsc-config4s_M.json \
+    file://fsc-config_Slave.json \
+    file://zone1_2s.fsc \
+    file://zone1_4s_M.fsc \
+    file://zone1_Slave.fsc \
+    file://fsc_board.py \
+    "
 
 FSC_CONFIG += "fsc-config2s.json \
                fsc-config4s_M.json \

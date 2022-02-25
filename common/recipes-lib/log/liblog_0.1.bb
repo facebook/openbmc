@@ -23,10 +23,11 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://log.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 BBCLASSEXTEND = "native"
-S = "${WORKDIR}"
-SRC_URI += "file://log.h \
-            file://log.c \
-            file://meson.build \
-           "
+
+LOCAL_URI += " \
+    file://log.h \
+    file://log.c \
+    file://meson.build \
+    "
 
 inherit meson

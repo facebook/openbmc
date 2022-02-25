@@ -19,5 +19,6 @@ DEPENDS += " libwedge-eeprom libipmi libfruid libsdr libbic update-rc.d-native"
 RDEPENDS:${PN} += "libipmi libkv libwedge-eeprom libbic"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://fruid.c \
-           "
+LOCAL_URI += " \
+    file://fruid.c \
+    "

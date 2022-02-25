@@ -21,34 +21,34 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://sol-util \
-           file://power_led.sh \
-           file://power_util.py \
-           file://post_led.sh \
-           file://reset_usb.sh \
-           file://setup-sysconfig.sh \
-           file://mdio.py \
-           file://eth0_mac_fixup.sh \
-           file://fby2_power.sh \
-           file://power-on.sh \
-           file://src \
-           file://COPYING \
-           file://check_ocp_nic.sh \
-           file://check_slot_type.sh \
-           file://setup-platform.sh \
-           file://hotservice-reinit.sh \
-           file://check_server_type.sh \
-           file://setup-server-type.sh \
-           file://setup-por.sh \
-           file://sync_date.sh \
-           file://time-sync.sh \
-           file://slot-removal-precheck.sh \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://sol-util \
+    file://power_led.sh \
+    file://power_util.py \
+    file://post_led.sh \
+    file://reset_usb.sh \
+    file://setup-sysconfig.sh \
+    file://mdio.py \
+    file://eth0_mac_fixup.sh \
+    file://fby2_power.sh \
+    file://power-on.sh \
+    file://src \
+    file://COPYING \
+    file://check_ocp_nic.sh \
+    file://check_slot_type.sh \
+    file://setup-platform.sh \
+    file://hotservice-reinit.sh \
+    file://check_server_type.sh \
+    file://setup-server-type.sh \
+    file://setup-por.sh \
+    file://sync_date.sh \
+    file://time-sync.sh \
+    file://slot-removal-precheck.sh \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh post_led.sh \
   reset_usb.sh mdio.py fby2_power.sh power_util.py \

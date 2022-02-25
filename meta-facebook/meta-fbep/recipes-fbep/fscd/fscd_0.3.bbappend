@@ -17,13 +17,14 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://setup-fan.sh \
-            file://fsc-config_AMD.json \
-            file://fsc-config_NVIDIA.json \
-            file://zone1_AMD.fsc \
-            file://zone1_NVIDIA.fsc \
-            file://fsc_board.py \
-           "
+LOCAL_URI += " \
+    file://setup-fan.sh \
+    file://fsc-config_AMD.json \
+    file://fsc-config_NVIDIA.json \
+    file://zone1_AMD.fsc \
+    file://zone1_NVIDIA.fsc \
+    file://fsc_board.py \
+    "
 
 FSC_CONFIG += "fsc-config_AMD.json \
                fsc-config_NVIDIA.json \

@@ -17,28 +17,29 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://setup-fan.sh \
-            file://FSC_CLASS2_EVT_config.json \
-            file://FSC_CLASS2_EVT_zone1.fsc \
-            file://FSC_CLASS1_PVT_type1.json \
-            file://FSC_CLASS1_EVT_type10.json \
-            file://FSC_CLASS1_EVT_type10_zone1.fsc \
-            file://FSC_CLASS1_EVT_type1_zone1.fsc \
-            file://FSC_CLASS1_type15.json \
-            file://FSC_CLASS1_type15_zone1.fsc \
-            file://FSC_CLASS1_DVT_EDSFF_1U.json \
-            file://FSC_CLASS1_DVT_EDSFF_1U.fsc \
-            file://FSC_CLASS2_PVT_SPE_config.json \
-            file://FSC_CLASS2_DVT_SPE_zone1.fsc \
-            file://FSC_CLASS1_EVT_CONFIG_D_GPV3.json \
-            file://FSC_CLASS1_EVT_CONFIG_D_GPV3.fsc \
-            file://FSC_CLASS1_EVT_DP.json \
-            file://FSC_CLASS1_EVT_DP.fsc \
-            file://FSC_CLASS1_DVT_DP_HBA.json \
-            file://FSC_CLASS1_DVT_DP_HBA.fsc \
-            file://FSC_CLASS2_DVT_CWC.json \
-            file://FSC_CLASS2_DVT_CWC.fsc \
-           "
+LOCAL_URI += "\
+    file://setup-fan.sh \
+    file://FSC_CLASS2_EVT_config.json \
+    file://FSC_CLASS2_EVT_zone1.fsc \
+    file://FSC_CLASS1_PVT_type1.json \
+    file://FSC_CLASS1_EVT_type10.json \
+    file://FSC_CLASS1_EVT_type10_zone1.fsc \
+    file://FSC_CLASS1_EVT_type1_zone1.fsc \
+    file://FSC_CLASS1_type15.json \
+    file://FSC_CLASS1_type15_zone1.fsc \
+    file://FSC_CLASS1_DVT_EDSFF_1U.json \
+    file://FSC_CLASS1_DVT_EDSFF_1U.fsc \
+    file://FSC_CLASS2_PVT_SPE_config.json \
+    file://FSC_CLASS2_DVT_SPE_zone1.fsc \
+    file://FSC_CLASS1_EVT_CONFIG_D_GPV3.json \
+    file://FSC_CLASS1_EVT_CONFIG_D_GPV3.fsc \
+    file://FSC_CLASS1_EVT_DP.json \
+    file://FSC_CLASS1_EVT_DP.fsc \
+    file://FSC_CLASS1_DVT_DP_HBA.json \
+    file://FSC_CLASS1_DVT_DP_HBA.fsc \
+    file://FSC_CLASS2_DVT_CWC.json \
+    file://FSC_CLASS2_DVT_CWC.fsc \
+    "
 
 FSC_CONFIG += "FSC_CLASS1_PVT_type1.json \
                FSC_CLASS1_EVT_type10.json \

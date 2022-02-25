@@ -23,14 +23,13 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bmc-log.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://bmc-log.c \
-	   file://bmc-log.h \
-	   file://Makefile \
-	   file://bmc-log-config \
-	   file://bmc-log.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://bmc-log.c \
+	file://bmc-log.h \
+	file://Makefile \
+	file://bmc-log-config \
+	file://bmc-log.sh \
+    "
 
 do_install() {
 	install -d ${D}${sbindir}

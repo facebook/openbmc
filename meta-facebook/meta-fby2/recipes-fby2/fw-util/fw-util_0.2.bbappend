@@ -17,20 +17,21 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://vr.cpp \
-            file://bic_bios_ext.cpp \
-            file://platform.cpp \
-            file://mcu_fw.h \
-            file://mcu_fw.cpp \
-            file://usbdbg.h \
-            file://usbdbg.cpp \
-            file://bic_cpld_ext.cpp \
-            file://bic_me_ext.cpp \
-            file://pcie_switch.cpp \
-            file://m2_dev.cpp \
-            file://nic_ext.cpp \
-            file://nic_ext.h \
-           "
+LOCAL_URI += " \
+    file://vr.cpp \
+    file://bic_bios_ext.cpp \
+    file://platform.cpp \
+    file://mcu_fw.h \
+    file://mcu_fw.cpp \
+    file://usbdbg.h \
+    file://usbdbg.cpp \
+    file://bic_cpld_ext.cpp \
+    file://bic_me_ext.cpp \
+    file://pcie_switch.cpp \
+    file://m2_dev.cpp \
+    file://nic_ext.cpp \
+    file://nic_ext.h \
+    "
 
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libmcu libfby2-sensor libfby2-common libnl-wrapper "

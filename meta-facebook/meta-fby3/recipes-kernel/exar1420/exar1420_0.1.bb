@@ -24,16 +24,15 @@ inherit module kernel_extra_headers_export
 PR = "r0"
 PV = "0.1"
 
-SRC_URI = "file://Makefile \
-           file://xr_usb_serial_common.c \
-           file://xr_usb_serial_common.h \
-           file://xr_usb_serial_hal.c \
-           file://xr_usb_serial_ioctl.h \
-           file://LICENSE.txt \
-           file://README.txt \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://xr_usb_serial_common.c \
+    file://xr_usb_serial_common.h \
+    file://xr_usb_serial_hal.c \
+    file://xr_usb_serial_ioctl.h \
+    file://LICENSE.txt \
+    file://README.txt \
+    "
 
 KERNEL_MODULE_AUTOLOAD += "  \
  xr_usb_serial_common        \

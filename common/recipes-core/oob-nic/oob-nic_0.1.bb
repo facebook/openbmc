@@ -22,25 +22,23 @@ PR = "r2"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://main.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = " \
-           file://etc/oob-nic.sh \
-           file://hlist.h \
-           file://i2craw.c \
-           file://intf.c \
-           file://intf.h \
-           file://libnetlink.c \
-           file://libnetlink.h \
-           file://ll_map.c \
-           file://ll_map.h \
-           file://mac_platform.c \
-           file://main.c \
-           file://Makefile \
-           file://nic.c \
-           file://nic_defs.h \
-           file://nic.h \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://etc/oob-nic.sh \
+    file://hlist.h \
+    file://i2craw.c \
+    file://intf.c \
+    file://intf.h \
+    file://libnetlink.c \
+    file://libnetlink.h \
+    file://ll_map.c \
+    file://ll_map.h \
+    file://mac_platform.c \
+    file://main.c \
+    file://Makefile \
+    file://nic.c \
+    file://nic_defs.h \
+    file://nic.h \
+    "
 
 LDFLAGS += "-llog -lobmc-i2c"
 DEPENDS += "openbmc-utils liblog libobmc-i2c"

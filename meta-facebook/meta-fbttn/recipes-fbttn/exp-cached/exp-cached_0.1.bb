@@ -7,16 +7,14 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://exp-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
 DEPENDS:append = "libpal libexp update-rc.d-native"
 RDEPENDS:${PN} += "libpal libexp"
 
-SRC_URI = "file://Makefile \
-           file://setup-exp-cached.sh \
-           file://exp-cached.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://setup-exp-cached.sh \
+    file://exp-cached.c \
+    "
 
 binfiles = "exp-cached"
 

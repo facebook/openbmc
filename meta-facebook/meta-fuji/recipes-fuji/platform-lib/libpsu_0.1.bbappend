@@ -17,9 +17,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/psu:"
 
-SRC_URI += "file://psu-platform.h \
-            file://psu-platform.c \
-          "
+LOCAL_URI += " \
+    file://psu-platform.h \
+    file://psu-platform.c \
+    "
 
 do_install:append() {
   install -d ${D}${includedir}/facebook

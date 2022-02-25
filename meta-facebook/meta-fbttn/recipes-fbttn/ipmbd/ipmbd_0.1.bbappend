@@ -1,11 +1,12 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_3.sh \
-             file://run-ipmbd_9.sh \
-             file://run-ipmbd_11.sh \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_3.sh \
+    file://run-ipmbd_9.sh \
+    file://run-ipmbd_11.sh \
+    "
 DEPENDS:append = " fbutils "
 
 CFLAGS:prepend = " -DCONFIG_FBTTN"

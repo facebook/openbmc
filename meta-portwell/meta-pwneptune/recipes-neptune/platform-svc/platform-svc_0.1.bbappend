@@ -2,12 +2,11 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI =+ "file://setup-platform-svcd.sh \
-            file://run-platform-svcd.sh \
-            file://platform-svcd-config.json \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI =+ " \
+    file://setup-platform-svcd.sh \
+    file://run-platform-svcd.sh \
+    file://platform-svcd-config.json \
+    "
 
 DEPENDS =+ "update-rc.d-native"
 

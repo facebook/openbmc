@@ -21,22 +21,22 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://sol-util \
-           file://COPYING \
-           file://ast-functions \
-           file://power-on.sh \
-           file://run_power_on.sh \
-           file://check_pal_sku.sh \
-           file://setup-platform.sh \
-           file://check_eth0_ipv4.sh \
-           file://sync_date.sh \
-           file://check_bmc_ready.sh \
-           file://check_2nd_source.sh \
-          "
+LOCAL_URI = " \
+    file://sol-util \
+    file://COPYING \
+    file://ast-functions \
+    file://power-on.sh \
+    file://run_power_on.sh \
+    file://check_pal_sku.sh \
+    file://setup-platform.sh \
+    file://check_eth0_ipv4.sh \
+    file://sync_date.sh \
+    file://check_bmc_ready.sh \
+    file://check_2nd_source.sh \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
 binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh check_2nd_source.sh "

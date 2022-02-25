@@ -22,13 +22,12 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://pemd.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://pemd.c \
-           file://platform_pemd.c \
-           file://platform_pemd.h \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://pemd.c \
+    file://platform_pemd.c \
+    file://platform_pemd.h \
+    "
 
 binfiles = "pemd \
            "

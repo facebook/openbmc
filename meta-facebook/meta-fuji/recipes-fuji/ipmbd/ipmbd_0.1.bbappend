@@ -20,11 +20,12 @@
 inherit systemd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_0.sh \
-             file://run-ipmbd_4.sh \
-             file://ipmbd.service \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_0.sh \
+    file://run-ipmbd_4.sh \
+    file://ipmbd.service \
+    "
 
 RDEPENDS:${PN} += "bash"
 

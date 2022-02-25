@@ -16,5 +16,4 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://platform.c \
-          "
+LOCAL_URI += "file://platform.c "

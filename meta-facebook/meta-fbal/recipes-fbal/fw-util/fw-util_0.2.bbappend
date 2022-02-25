@@ -17,23 +17,24 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://mcu_fw.h \
-            file://mcu_fw.cpp \
-            file://usbdbg.h \
-            file://usbdbg.cpp \
-            file://cm.cpp \
-            file://bios.h \
-            file://bios.cpp \
-            file://platform.cpp \
-            file://cpld.cpp \
-            file://me.cpp \
-            file://vr_fw.cpp \
-            file://vr_fw.h \
-            file://nic_ext.h \
-            file://nic_ext.cpp \
-           "
+LOCAL_URI += " \
+    file://mcu_fw.h \
+    file://mcu_fw.cpp \
+    file://usbdbg.h \
+    file://usbdbg.cpp \
+    file://cm.cpp \
+    file://bios.h \
+    file://bios.cpp \
+    file://platform.cpp \
+    file://cpld.cpp \
+    file://me.cpp \
+    file://vr_fw.cpp \
+    file://vr_fw.h \
+    file://nic_ext.h \
+    file://nic_ext.cpp \
+    "
 
-SRC_URI:remove = "file://fscd.cpp"
+LOCAL_URI:remove = "file://fscd.cpp"
 
 DEPENDS += "libmcu libnm libpal libfpga libast-jtag libvr libncsi libnl-wrapper libkv libobmc-i2c"
 RDEPENDS:${PN} += "libmcu libnm libpal libfpga libast-jtag libvr libnl-wrapper libkv libobmc-i2c"

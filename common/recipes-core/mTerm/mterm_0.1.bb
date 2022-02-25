@@ -24,21 +24,19 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://mTerm_server.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit systemd
-
-SRC_URI = "file://mTerm_server.c \
-           file://mTerm_client.c \
-           file://mTerm_helper.c \
-           file://mTerm_helper.h \
-           file://tty_helper.c \
-           file://tty_helper.h \
-           file://Makefile \
-           file://mTerm/run \
-           file://mTerm-service-setup.sh \
-          "
-
-SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'file://mTerm_server.service', '', d)}"
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://mTerm_server.c \
+    file://mTerm_client.c \
+    file://mTerm_helper.c \
+    file://mTerm_helper.h \
+    file://tty_helper.c \
+    file://tty_helper.h \
+    file://Makefile \
+    file://mTerm/run \
+    file://mTerm-service-setup.sh \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
+                         'file://mTerm_server.service', '', d)} \
+    "
 
 CONS_BIN_FILES = "mTerm_server \
                   mTerm_client \

@@ -7,29 +7,28 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://PlatformSvcd.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
-SRC_URI =+ "file://Makefile \
-           file://org.openbmc.PlatformService.conf \
-           file://Sensor.h \
-           file://PlatformObjectTree.cpp \
-           file://PlatformObjectTree.h \
-           file://PlatformJsonParser.cpp \
-           file://PlatformService.h \
-           file://PlatformJsonParser.h \
-           file://PlatformSvcd.cpp \
-           file://FRU.h \
-           file://SensorService.h \
-           file://SensorService.cpp \
-           file://DBusPlatformSvcInterface.cpp \
-           file://DBusPlatformSvcInterface.h \
-           file://FruService.h \
-           file://FruService.cpp \
-           file://HotPlugDetectionMechanism.h \
-           file://HotPlugDetectionViaPath.h \
-           file://DBusHPExtDectectionFruInterface.h \
-           file://DBusHPExtDectectionFruInterface.cpp \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI =+ " \
+    file://Makefile \
+    file://org.openbmc.PlatformService.conf \
+    file://Sensor.h \
+    file://PlatformObjectTree.cpp \
+    file://PlatformObjectTree.h \
+    file://PlatformJsonParser.cpp \
+    file://PlatformService.h \
+    file://PlatformJsonParser.h \
+    file://PlatformSvcd.cpp \
+    file://FRU.h \
+    file://SensorService.h \
+    file://SensorService.cpp \
+    file://DBusPlatformSvcInterface.cpp \
+    file://DBusPlatformSvcInterface.h \
+    file://FruService.h \
+    file://FruService.cpp \
+    file://HotPlugDetectionMechanism.h \
+    file://HotPlugDetectionViaPath.h \
+    file://DBusHPExtDectectionFruInterface.h \
+    file://DBusHPExtDectectionFruInterface.cpp \
+    "
 
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils glog gflags"
 RDEPENDS:${PN} += "dbus"

@@ -21,12 +21,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://obmc-dump.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-
-SRC_URI = "file://obmc-dump.py \
-           file://plat_dump.py \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://obmc-dump.py \
+    file://plat_dump.py \
+    "
 
 binfiles = "obmc-dump.py plat_dump.py"
 

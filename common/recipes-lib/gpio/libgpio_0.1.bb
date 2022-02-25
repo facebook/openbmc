@@ -25,12 +25,12 @@ LIC_FILES_CHKSUM = "file://gpio.c;beginline=4;endline=16;md5=da35978751a9d71b736
 
 inherit meson pkgconfig
 
-SRC_URI = "file://gpio.c \
-           file://gpio.h \
-           file://gpio_name.c \
-           file://meson.build \
-          "
+LOCAL_URI = " \
+    file://gpio.c \
+    file://gpio.h \
+    file://gpio_name.c \
+    file://meson.build \
+    "
 
 DEPENDS += "liblog"
 
-S = "${WORKDIR}"

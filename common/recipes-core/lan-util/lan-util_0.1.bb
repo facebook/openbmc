@@ -6,18 +6,17 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://lan-util.c;beginline=4;endline=16;md5=68b001f6d78951b122f3e673f833a332"
 
-SRC_URI = "file://Makefile \
-           file://if_parser.c \
-           file://if_parser.h \
-           file://net_lib.c \
-           file://net_lib.h \
-           file://strlib.c \
-           file://strlib.h \
-           file://lan-util.c \
-           file://setup-init_net_interface.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://if_parser.c \
+    file://if_parser.h \
+    file://net_lib.c \
+    file://net_lib.h \
+    file://strlib.c \
+    file://strlib.h \
+    file://lan-util.c \
+    file://setup-init_net_interface.sh \
+    "
 
 binfiles = "lan-util"
 

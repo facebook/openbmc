@@ -17,11 +17,12 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bios_plat_info.py \
-            file://BIOS_UTIL_FBY2.json \
-            file://setup_bios_util.sh \
-            file://bios_tpm_physical_presence.py \
-           "
+LOCAL_URI += " \
+    file://bios_plat_info.py \
+    file://BIOS_UTIL_FBY2.json \
+    file://setup_bios_util.sh \
+    file://bios_tpm_physical_presence.py \
+    "
 DEPENDS += "libpal"
 
 binfiles += "bios_plat_info.py bios_tpm_physical_presence.py"

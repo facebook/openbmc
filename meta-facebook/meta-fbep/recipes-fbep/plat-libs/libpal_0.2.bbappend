@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://pal_calibration.h \
     file://pal_health.c \
     file://pal_health.h \

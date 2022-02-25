@@ -8,11 +8,11 @@ LIC_FILES_CHKSUM = "file://usb2jtag-util.c;beginline=4;endline=16;md5=302e73da84
 
 inherit meson
 
-SRC_URI = "file://usb2jtag-util.c \
-           file://meson.build \
-          "
+LOCAL_URI = " \
+    file://usb2jtag-util.c \
+    file://meson.build \
+    "
 
 DEPENDS += " libobmc-i2c libusb1 libftdi libmpsse "
 RDEPENDS:${PN} += " libobmc-i2c libftdi libmpsse "
 
-S = "${WORKDIR}"

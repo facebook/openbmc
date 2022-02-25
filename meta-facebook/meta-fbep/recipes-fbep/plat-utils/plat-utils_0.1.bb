@@ -21,23 +21,23 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://setup-gpio.sh \
-           file://setup-switch.sh \
-           file://check-i2c-pwr.sh \
-           file://setup-i2c.sh \
-           file://setup-usbnet.sh \
-           file://setup-por.sh \
-           file://sol-util \
-           file://sync-rtc.sh \
-           file://run-sync-rtc.sh \
-           file://COPYING \
-           file://workaround.sh \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://setup-gpio.sh \
+    file://setup-switch.sh \
+    file://check-i2c-pwr.sh \
+    file://setup-i2c.sh \
+    file://setup-usbnet.sh \
+    file://setup-por.sh \
+    file://sol-util \
+    file://sync-rtc.sh \
+    file://run-sync-rtc.sh \
+    file://COPYING \
+    file://workaround.sh \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 binfiles = "sol-util \
            "

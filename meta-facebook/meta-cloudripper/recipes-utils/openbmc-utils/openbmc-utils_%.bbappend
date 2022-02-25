@@ -20,32 +20,33 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += "boot-info"
 
-SRC_URI += "file://beutil \
-            file://board-utils.sh \
-            file://cpld_update.sh \
-            file://cpld_ver.sh \
-            file://feutil \
-            file://fpga_ver.sh \
-            file://power-on.sh \
-            file://presence_util.sh \
-            file://read_sled.sh \
-            file://set_sled.sh \
-            file://set_vdd.sh \
-            file://setup_bic.sh \
-            file://setup_board.sh \
-            file://setup_i2c.sh \
-            file://setup_mgmt.sh \
-            file://setup-gpio.sh \
-            file://seutil \
-            file://sol.sh \
-            file://spi_util.sh \
-            file://switch_reset.sh \
-            file://wedge_power.sh \
-            file://wedge_us_mac.sh \
-            file://xdpe12284-hack.sh \
-            file://mount_data1.service \
-            file://setup_gpio.service \
-           "
+LOCAL_URI += " \
+    file://beutil \
+    file://board-utils.sh \
+    file://cpld_update.sh \
+    file://cpld_ver.sh \
+    file://feutil \
+    file://fpga_ver.sh \
+    file://power-on.sh \
+    file://presence_util.sh \
+    file://read_sled.sh \
+    file://set_sled.sh \
+    file://set_vdd.sh \
+    file://setup_bic.sh \
+    file://setup_board.sh \
+    file://setup_i2c.sh \
+    file://setup_mgmt.sh \
+    file://setup-gpio.sh \
+    file://seutil \
+    file://sol.sh \
+    file://spi_util.sh \
+    file://switch_reset.sh \
+    file://wedge_power.sh \
+    file://wedge_us_mac.sh \
+    file://xdpe12284-hack.sh \
+    file://mount_data1.service \
+    file://setup_gpio.service \
+    "
 
 OPENBMC_UTILS_FILES += " \
     beutil \
@@ -74,14 +75,14 @@ inherit systemd
 
 do_work_sysv() {
   # the script to mount /mnt/data
-  install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+  install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
   update-rc.d -r ${D} mount_data0.sh start 03 S .
 
-  install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+  install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
   update-rc.d -r ${D} rc.early start 04 S .
 
   # mount secondary storage (emmc) to /mnt/data1
-  install -m 0755 ${WORKDIR}/mount_data1.sh ${D}${sysconfdir}/init.d/mount_data1.sh
+  install -m 0755 ${S}/mount_data1.sh ${D}${sysconfdir}/init.d/mount_data1.sh
   update-rc.d -r ${D} mount_data1.sh start 05 S .
 
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
@@ -105,7 +106,7 @@ do_work_sysv() {
   install -d ${D}/${sysconfdir}/network/if-up.d
   install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
-  install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+  install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
   update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 
@@ -115,7 +116,7 @@ do_work_systemd() {
   install -d ${D}${systemd_system_unitdir}
 
   # mount secondary storage (emmc) to /mnt/data1
-  install -m 755 ${WORKDIR}/mount_data1.sh ${D}/usr/local/bin/mount_data1.sh
+  install -m 755 ${S}/mount_data1.sh ${D}/usr/local/bin/mount_data1.sh
 
   install -m 755 setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
 

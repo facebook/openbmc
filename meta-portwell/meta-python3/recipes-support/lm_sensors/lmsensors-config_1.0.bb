@@ -6,10 +6,10 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/COPYING.MIT;md5=3da9cfbcb788c80a0384
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-SRC_URI = "file://fancontrol \
-           file://sensors.conf \
-"
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://fancontrol \
+    file://sensors.conf \
+    "
 
 RDEPENDS:${PN}-dev = ""
 

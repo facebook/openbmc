@@ -13,12 +13,11 @@ RDEPENDS:${PN} += "libpal libexp"
 
 inherit meson
 
-SRC_URI = "file://meson.build \
-           file://setup-exp-cached.sh \
-           file://exp-cached.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://setup-exp-cached.sh \
+    file://exp-cached.c \
+    "
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

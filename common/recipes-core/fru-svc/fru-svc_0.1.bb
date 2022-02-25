@@ -7,26 +7,25 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://FruSvcd.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
-SRC_URI =+ "file://Makefile \
-           file://org.openbmc.FruService.conf \
-           file://DBusFruInterface.cpp \
-           file://DBusFruInterface.h \
-           file://FruObjectTree.cpp \
-           file://FruObjectTree.h \
-           file://FruJsonParser.h \
-           file://FruService.h \
-           file://FruSvcd.cpp \
-           file://FRU.h \
-           file://DBusFruServiceInterface.cpp \
-           file://DBusFruServiceInterface.h \
-           file://FruIdAccessMechanism.h \
-           file://FruIdAccessI2CEEPROM.h \
-           file://FruIdAccessI2CEEPROM.cpp \
-           file://setup-fru-svcd.sh \
-           file://run-fru-svcd.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI =+ " \
+    file://Makefile \
+    file://org.openbmc.FruService.conf \
+    file://DBusFruInterface.cpp \
+    file://DBusFruInterface.h \
+    file://FruObjectTree.cpp \
+    file://FruObjectTree.h \
+    file://FruJsonParser.h \
+    file://FruService.h \
+    file://FruSvcd.cpp \
+    file://FRU.h \
+    file://DBusFruServiceInterface.cpp \
+    file://DBusFruServiceInterface.h \
+    file://FruIdAccessMechanism.h \
+    file://FruIdAccessI2CEEPROM.h \
+    file://FruIdAccessI2CEEPROM.cpp \
+    file://setup-fru-svcd.sh \
+    file://run-fru-svcd.sh \
+    "
 
 LDFLAGS =+ "-lpthread -lgobject-2.0 -lobject-tree -lgflags -lgtest -lglog -lgio-2.0 -lglib-2.0 -ldbus-utils -lfruid"
 DEPENDS =+ "nlohmann-json libipc object-tree dbus-utils gtest glog gflags libfruid update-rc.d-native"

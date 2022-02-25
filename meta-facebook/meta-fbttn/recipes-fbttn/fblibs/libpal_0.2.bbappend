@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += "file://plat/meson.build"
+LOCAL_URI += "file://plat/meson.build"
 
 DEPENDS += " \
     libbic \

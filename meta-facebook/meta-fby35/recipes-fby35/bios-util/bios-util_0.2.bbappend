@@ -17,9 +17,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bios_plat_info.py \
-            file://BIOS_UTIL_FBY35.json \
-           "
+LOCAL_URI += " \
+    file://bios_plat_info.py \
+    file://BIOS_UTIL_FBY35.json \
+    "
 
 binfiles += "bios_plat_info.py"
 

@@ -21,11 +21,10 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
 inherit module kernel_extra_headers_export
 
-SRC_URI = "file://Makefile \
-           file://fb_panther_plus.c \
-           file://COPYING \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://fb_panther_plus.c \
+    file://COPYING \
+    "
 
 KERNEL_MODULE_AUTOLOAD += "fb_panther_plus"

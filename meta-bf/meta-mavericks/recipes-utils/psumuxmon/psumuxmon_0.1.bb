@@ -23,11 +23,10 @@ LIC_FILES_CHKSUM = "file://psumuxmon.py;beginline=5;endline=18;md5=0b1ee7d6f844d
 
 DEPENDS:append = " update-rc.d-native"
 
-SRC_URI = "file://psumuxmon.py \
-           file://psumuxmon_service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://psumuxmon.py \
+    file://psumuxmon_service \
+    "
 
 do_install() {
   install -d ${D}${sysconfdir}/init.d

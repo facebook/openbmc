@@ -37,36 +37,34 @@ def get_profile_flag(d):
 
 CFLAGS += "${@get_profile_flag(d)}"
 
-
-SRC_URI = "file://Makefile \
-           file://modbuscmd.c \
-           file://modbussim.c \
-           file://modbus.c \
-           file://modbus.h \
-           file://gpiowatch.c \
-           file://rackmond.c \
-           file://rackmond.h \
-           file://rackmonctl.c \
-           file://rackmon_platform.c \
-           file://rackmon_platform.h \
-           file://rackmon_parser.c \
-           file://rackmon_parser.h \
-           file://setup-rackmond.sh \
-           file://run-rackmond.sh \
-           file://rackmon-config.py \
-           file://rackmon-stress.py \
-           file://rackmond.py \
-           file://psu-update-delta.py \
-           file://psu-update-bel.py \
-           file://psu-update-artesyn.py \
-           file://pyrmd.py \
-           file://srec.py \
-           file://hexfile.py \
-           file://rackmond.service \
-           file://configure-rackmond.service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://modbuscmd.c \
+    file://modbussim.c \
+    file://modbus.c \
+    file://modbus.h \
+    file://gpiowatch.c \
+    file://rackmond.c \
+    file://rackmond.h \
+    file://rackmonctl.c \
+    file://rackmon_platform.c \
+    file://rackmon_platform.h \
+    file://rackmon_parser.c \
+    file://rackmon_parser.h \
+    file://setup-rackmond.sh \
+    file://run-rackmond.sh \
+    file://rackmon-config.py \
+    file://rackmon-stress.py \
+    file://rackmond.py \
+    file://psu-update-delta.py \
+    file://psu-update-bel.py \
+    file://psu-update-artesyn.py \
+    file://pyrmd.py \
+    file://srec.py \
+    file://hexfile.py \
+    file://rackmond.service \
+    file://configure-rackmond.service \
+    "
 
 binfiles = "modbuscmd \
             modbussim \

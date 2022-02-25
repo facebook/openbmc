@@ -17,13 +17,15 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bic_bios.cpp \
-            file://cpld_fpga.cpp \
-            file://nic.cpp \
-            file://server.cpp \
-            file://vr.cpp \
-            file://platform.cpp \
-           "
+LOCAL_URI += " \
+    file://bic_bios.cpp \
+    file://cpld_fpga.cpp \
+    file://nic.cpp \
+    file://server.cpp \
+    file://vr.cpp \
+    file://platform.cpp \
+    "
+
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libpal"
 RDEPENDS:${PN} += "libipmi libipmb libbic libpal"

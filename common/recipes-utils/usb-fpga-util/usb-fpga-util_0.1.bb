@@ -22,9 +22,9 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://fpga-mem.cpp;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}"
-SRC_URI = "file://fpga-mem.cpp \
-           file://CMakeLists.txt \
-          "
+LOCAL_URI = " \
+    file://fpga-mem.cpp \
+    file://CMakeLists.txt \
+    "
 
 inherit cmake

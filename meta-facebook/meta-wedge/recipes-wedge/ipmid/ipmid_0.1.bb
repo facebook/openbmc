@@ -29,23 +29,22 @@ RDEPENDS:${PN} += "libwedge-eeprom liblog"
 
 inherit systemd
 
-SRC_URI = "file://Makefile \
-           file://setup-ipmid.sh \
-           file://ipmid.c \
-           file://platform/timestamp.c \
-           file://platform/timestamp.h \
-           file://platform/sel.c \
-           file://platform/sel.h \
-           file://platform/sdr.c \
-           file://platform/sdr.h \
-           file://platform/sensor.h \
-           file://platform/fruid.h \
-           file://platform/wedge/sensor.c \
-           file://platform/wedge/fruid.c \
-           file://ipmid.service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://setup-ipmid.sh \
+    file://ipmid.c \
+    file://platform/timestamp.c \
+    file://platform/timestamp.h \
+    file://platform/sel.c \
+    file://platform/sel.h \
+    file://platform/sdr.c \
+    file://platform/sdr.h \
+    file://platform/sensor.h \
+    file://platform/fruid.h \
+    file://platform/wedge/sensor.c \
+    file://platform/wedge/fruid.c \
+    file://ipmid.service \
+    "
 
 binfiles = "ipmid"
 

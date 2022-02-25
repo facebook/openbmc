@@ -22,13 +22,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://cpldupdate-i2c.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
 
-
-SRC_URI = "file://cpldupdate-i2c.c \
-           file://Makefile \
-          "
-
-S = "${WORKDIR}"
-
+LOCAL_URI = " \
+    file://cpldupdate-i2c.c \
+    file://Makefile \
+    "
 
 do_install() {
   install -d ${D}${bindir}

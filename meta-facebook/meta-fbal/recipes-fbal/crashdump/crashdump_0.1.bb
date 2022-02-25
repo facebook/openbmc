@@ -21,21 +21,21 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI += "file://crashdump_p0_coreid \
-            file://crashdump_p0_msr \
-            file://crashdump_p1_coreid \
-            file://crashdump_p1_msr \
-            file://crashdump_p2_coreid \
-            file://crashdump_p2_msr \
-            file://crashdump_p3_coreid \
-            file://crashdump_p3_msr \
-            file://crashdump_pcie \
-            file://crashdump_pcie_bus \
-            file://autodump.sh \
-            file://dump.sh \
-            file://COPYING \
-           "
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://crashdump_p0_coreid \
+    file://crashdump_p0_msr \
+    file://crashdump_p1_coreid \
+    file://crashdump_p1_msr \
+    file://crashdump_p2_coreid \
+    file://crashdump_p2_msr \
+    file://crashdump_p3_coreid \
+    file://crashdump_p3_msr \
+    file://crashdump_pcie \
+    file://crashdump_pcie_bus \
+    file://autodump.sh \
+    file://dump.sh \
+    file://COPYING \
+    "
 pkgdir = "crashdump"
 binfiles = "autodump.sh dump.sh"
 

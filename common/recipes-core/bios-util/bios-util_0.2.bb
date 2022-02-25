@@ -7,20 +7,19 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bios-head.py;beginline=1;endline=1;md5=28b35612b145c34c676817ce69fbfeb6"
 
-SRC_URI = "file://bios-head.py \
-           file://bios_board.py \
-           file://bios_boot_order.py \
-           file://bios_ipmi_util.py \
-           file://bios_postcode.py \
-           file://bios_plat_info.py \
-           file://bios_pcie_port_config.py \
-           file://bios_default_support.json \
-           file://bios_tpm_physical_presence.py \
-           file://bios_force_clear_cmos.py \
-           file://tests \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://bios-head.py \
+    file://bios_board.py \
+    file://bios_boot_order.py \
+    file://bios_ipmi_util.py \
+    file://bios_postcode.py \
+    file://bios_plat_info.py \
+    file://bios_pcie_port_config.py \
+    file://bios_default_support.json \
+    file://bios_tpm_physical_presence.py \
+    file://bios_force_clear_cmos.py \
+    file://tests \
+    "
 
 inherit ptest
 
@@ -47,7 +46,7 @@ EOF
 do_install_ptest() {
   install -d ${D}${libdir}/bios-util
   install -d ${D}${libdir}/bios-util/ptest
-  cp -r ${WORKDIR}/tests/* ${D}${libdir}/bios-util/ptest/
+  cp -r ${S}/tests/* ${D}${libdir}/bios-util/ptest/
 }
 
 do_install() {

@@ -28,7 +28,7 @@ PACKAGECONFIG[disable-watchdog] = ""
 # boot_info.sh script is not installed by default
 PACKAGECONFIG[boot-info] = ""
 
-SRC_URI = " \
+LOCAL_URI = " \
     file://COPYING \
     file://mount_data0.sh \
     file://mount_data0.service \
@@ -60,13 +60,11 @@ SRC_URI = " \
                          'file://disable_watchdog.service', '', d)} \
     ${@bb.utils.contains('PACKAGECONFIG', 'boot-info', \
                          'file://boot_info.sh', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
+                         'file://eth0_mac_fixup.sh', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
+                         'file://data0_resize_ubifs.sh', '', d)} \
     "
-
-SRC_URI += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
-                                 'file://eth0_mac_fixup.sh', '', d)}"
-
-SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
-                                 'file://data0_resize_ubifs.sh', '', d)}"
 
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
@@ -88,7 +86,6 @@ OPENBMC_PYTHON_LIBS = " \
     cpu_monitor.py \
   "
 
-S = "${WORKDIR}"
 
 inherit systemd
 inherit python3-dir
@@ -111,32 +108,32 @@ install_sysv() {
     install -d ${D}${sysconfdir}/rcS.d
 
     # the script to process dhcp options
-    install -m 0755 ${WORKDIR}/dhclient-exit-hooks ${D}${sysconfdir}/dhclient-exit-hooks
+    install -m 0755 ${S}/dhclient-exit-hooks ${D}${sysconfdir}/dhclient-exit-hooks
 
     # the script to mount /mnt/data, after udev (level 4) is started
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 05 S .
 
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 06 S .
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/rm_poweroff_cmd.sh ${D}${sysconfdir}/init.d/rm_poweroff_cmd.sh
+    install -m 0755 ${S}/rm_poweroff_cmd.sh ${D}${sysconfdir}/init.d/rm_poweroff_cmd.sh
     update-rc.d -r ${D} rm_poweroff_cmd.sh start 99 S .
 
-    install -m 755 ${WORKDIR}/setup-reboot.sh ${D}${sysconfdir}/init.d/setup-reboot.sh
+    install -m 755 ${S}/setup-reboot.sh ${D}${sysconfdir}/init.d/setup-reboot.sh
     update-rc.d -r ${D} setup-reboot.sh start 89 6 .
 
-    install -m 755 ${WORKDIR}/setup-reboot-ongoing.sh ${D}${sysconfdir}/init.d/setup-reboot-ongoing.sh
+    install -m 755 ${S}/setup-reboot-ongoing.sh ${D}${sysconfdir}/init.d/setup-reboot-ongoing.sh
     update-rc.d -r ${D} setup-reboot-ongoing.sh stop 01 6 .
 
     if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
         if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" = "x0" ]; then
             # auto-mount emmc to /mnt/data1
-            install -m 0755 ${WORKDIR}/mount_data1.sh \
-                    ${D}${sysconfdir}/init.d/mount_data1.sh
+            install -m 0755 ${S}/mount_data1.sh \
+                ${D}${sysconfdir}/init.d/mount_data1.sh
             update-rc.d -r ${D} mount_data1.sh start 05 S .
         fi
     fi
@@ -157,21 +154,21 @@ install_sysv() {
 
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 644 ${WORKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin
-    install -m 755 ${WORKDIR}/setup-reboot.sh ${D}/usr/local/bin
-    install -m 755 ${WORKDIR}/rc.local ${D}/usr/local/bin
-    install -m 755 ${WORKDIR}/rc.early ${D}/usr/local/bin
-    install -m 644 ${WORKDIR}/early.service ${D}${systemd_system_unitdir}
-    install -m 644 ${WORKDIR}/rm_poweroff_cmd.service ${D}${systemd_system_unitdir}
+    install -m 644 ${S}/eth0_mac_fixup.sh ${D}/usr/local/bin
+    install -m 755 ${S}/setup-reboot.sh ${D}/usr/local/bin
+    install -m 755 ${S}/rc.local ${D}/usr/local/bin
+    install -m 755 ${S}/rc.early ${D}/usr/local/bin
+    install -m 644 ${S}/early.service ${D}${systemd_system_unitdir}
+    install -m 644 ${S}/rm_poweroff_cmd.service ${D}${systemd_system_unitdir}
     # No rm_poweroff_cmd.sh under systemd
-    install -m 644 ${WORKDIR}/setup-reboot.service ${D}${systemd_system_unitdir}
-    install -m 644 ${WORKDIR}/mount_data0.service ${D}${systemd_system_unitdir}
+    install -m 644 ${S}/setup-reboot.service ${D}${systemd_system_unitdir}
+    install -m 644 ${S}/mount_data0.service ${D}${systemd_system_unitdir}
     # data1 will be mounted via fstab in a different recipe
 
     if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
         if [ "x${OPENBMC_UTILS_CUSTOM_EMMC_MOUNT}" = "x0" ]; then
              # auto-mount emmc to /mnt/data1
-            install -m 0755 ${WORKDIR}/mount_data1.sh \
+            install -m 0755 ${S}/mount_data1.sh \
                     ${D}/usr/local/bin/mount_data1.sh
         fi
     fi
@@ -206,8 +203,8 @@ do_install() {
     # If mtd-ubifs feature is enabled, we want ubifs on top of the mtd
     # data0 partition. Update the "mount_data0.sh" to reflect this.
     if ! echo ${MACHINE_FEATURES} | awk "/mtd-ubifs/ {exit 1}"; then
-        sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${WORKDIR}/mount_data0.sh
-        install -m 0755 ${WORKDIR}/data0_resize_ubifs.sh \
+        sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${S}/mount_data0.sh
+        install -m 0755 ${S}/data0_resize_ubifs.sh \
                         ${localbindir}/data0_resize_ubifs.sh
     fi
 

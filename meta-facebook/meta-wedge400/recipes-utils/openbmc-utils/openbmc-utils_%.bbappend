@@ -20,36 +20,37 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += " boot-info"
 
-SRC_URI += "file://board-utils.sh \
-            file://bsm-eutil \
-            file://cpld_ver.sh \
-            file://fcmcpld_update.sh \
-            file://feutil \
-            file://fpga_ver.sh \
-            file://power-on.sh \
-            file://presence_util.sh \
-            file://pwrcpld_update.sh \
-            file://rebind-driver.sh \
-            file://reset_brcm.sh \
-            file://reutil \
-            file://scmcpld_update.sh \
-            file://set_sled.sh \
-            file://set_vdd.sh \
-            file://setup_avs.sh \
-            file://setup_bic.sh \
-            file://setup_board.sh \
-            file://setup_default_gpio.sh \
-            file://setup_i2c.sh \
-            file://setup_mgmt.sh \
-            file://seutil \
-            file://smbcpld_update.sh \
-            file://sol.sh \
-            file://spi_util.sh \
-            file://switch_reset.sh \
-            file://us_console.sh \
-            file://wedge_power.sh \
-            file://wedge_us_mac.sh \
-           "
+LOCAL_URI += " \
+    file://board-utils.sh \
+    file://bsm-eutil \
+    file://cpld_ver.sh \
+    file://fcmcpld_update.sh \
+    file://feutil \
+    file://fpga_ver.sh \
+    file://power-on.sh \
+    file://presence_util.sh \
+    file://pwrcpld_update.sh \
+    file://rebind-driver.sh \
+    file://reset_brcm.sh \
+    file://reutil \
+    file://scmcpld_update.sh \
+    file://set_sled.sh \
+    file://set_vdd.sh \
+    file://setup_avs.sh \
+    file://setup_bic.sh \
+    file://setup_board.sh \
+    file://setup_default_gpio.sh \
+    file://setup_i2c.sh \
+    file://setup_mgmt.sh \
+    file://seutil \
+    file://smbcpld_update.sh \
+    file://sol.sh \
+    file://spi_util.sh \
+    file://switch_reset.sh \
+    file://us_console.sh \
+    file://wedge_power.sh \
+    file://wedge_us_mac.sh \
+    "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
@@ -116,7 +117,7 @@ do_install_board() {
     install -d ${D}/${sysconfdir}/network/if-up.d
     install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 

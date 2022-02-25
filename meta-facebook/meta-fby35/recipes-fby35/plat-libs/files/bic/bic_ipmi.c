@@ -935,7 +935,7 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
     tbuf[0] = (bus << 1) + 1;
     tbuf[1] = addr;
     tbuf[2] = 0x02; //read cnt
-    tbuf[3] = 0xF0; //command code
+    tbuf[3] = 0xF4; //command code, NVM_CHECKSUM
     tlen = 4;
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
     if ( ret < 0 ) {

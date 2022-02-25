@@ -21,6 +21,9 @@
 #define REG_CWC_CPLD_CARD_PWROK 0x0C
 #define DELAY_POWER_CYCLE 5 //sec
 #define MAX_POWER_CYCLE_DWELL 20  //sec
+#define DELAY_EXP_POWER 2 //sec
+#define MAX_EXP_POWER_DELAY 6  //sec
+#define MAX_PWR_RETRY 3
 
 enum {
   POWER_STATUS_ALREADY_OK = 1,
@@ -1385,6 +1388,24 @@ pal_set_vr_interrupt(uint8_t fru, uint8_t enable) {
 }
 
 int
+pal_wait_exp_pwr(uint8_t fru, uint8_t pwr_status) {
+  int res = MAX_EXP_POWER_DELAY;
+  uint8_t status = 0;
+  while (res > 0) {
+    sleep(DELAY_EXP_POWER);
+    res -= DELAY_EXP_POWER;
+
+    if (pal_get_exp_power(fru, &status) < 0) {
+      continue;
+    }
+    if (status == pwr_status) {
+      return 0;
+    }
+  }
+  return POWER_STATUS_ERR;
+}
+
+int
 pal_set_exp_12v_on(uint8_t fru, bool pwr_on) {
   int i2cfd = BIC_STATUS_FAILURE;
   int ret = BIC_STATUS_FAILURE;
@@ -1485,39 +1506,27 @@ error_exit:
 }
 
 int
-pal_set_exp_12v_cycle(uint8_t fru) {
-  uint8_t status = SERVER_12V_ON;
-  int res = MAX_POWER_CYCLE_DWELL;
-
-  if (pal_set_exp_12v_on(fru, false)) {
-    syslog(LOG_WARNING, "%s() Failed to power off fru : %d", __func__, fru);
-    return POWER_STATUS_ERR;
-  }
-
-  while (res > 0) {
-    if (pal_get_exp_power(fru, &status) < 0) {
+pal_set_exp_12v_check(uint8_t fru, bool pwr_on) {
+  uint8_t retry = MAX_PWR_RETRY;
+  for (; retry > 0; --retry) { 
+    if (pal_set_exp_12v_on(fru, pwr_on)) {
+      syslog(LOG_WARNING, "%s() Failed to power %s fru : %d", __func__, pwr_on ? "on" : "off", fru);
       return POWER_STATUS_ERR;
     }
-
-    sleep(DELAY_POWER_CYCLE);
-    res -= DELAY_POWER_CYCLE;
-
-    if (status == SERVER_12V_OFF) {
+    if (pal_wait_exp_pwr(fru, pwr_on ? SERVER_12V_ON : SERVER_12V_OFF) == 0) {
       break;
     }
   }
+  return retry == 0 ? POWER_STATUS_ERR : 0;
+}
 
-  if (status == SERVER_12V_ON) {
-    syslog(LOG_WARNING, "%s() Time out to power off fru : %d", __func__, fru);
+int
+pal_set_exp_12v_cycle(uint8_t fru) {
+  if (pal_set_exp_12v_check(fru, false)) {
     return POWER_STATUS_ERR;
   }
 
-  if (pal_set_exp_12v_on(fru, true)) {
-    syslog(LOG_WARNING, "%s() Failed to power on fru : %d", __func__, fru);
-    return POWER_STATUS_ERR;
-  }
-
-  return 0;
+  return pal_set_exp_12v_check(fru, true);
 }
 
 int
@@ -1538,8 +1547,7 @@ pal_set_exp_power(uint8_t fru, uint8_t cmd) {
   switch (cmd) {
     case SERVER_12V_OFF:
       if (status == SERVER_12V_ON) {
-        if (pal_set_exp_12v_on(fru, false)) {
-          syslog(LOG_WARNING, "%s() Failed to set power:%d", __func__, cmd);
+        if (pal_set_exp_12v_check(fru, false)) {
           return POWER_STATUS_ERR;
         }
       } else {
@@ -1548,8 +1556,7 @@ pal_set_exp_power(uint8_t fru, uint8_t cmd) {
       break;
     case SERVER_12V_ON:
       if (status == SERVER_12V_OFF) {
-        if (pal_set_exp_12v_on(fru, true)) {
-          syslog(LOG_WARNING, "%s() Failed to set power:%d", __func__, cmd);
+        if (pal_set_exp_12v_check(fru, true)) {
           return POWER_STATUS_ERR;
         }
       } else {
@@ -1559,12 +1566,10 @@ pal_set_exp_power(uint8_t fru, uint8_t cmd) {
     case SERVER_12V_CYCLE:
       if (status == SERVER_12V_ON) {
         if (pal_set_exp_12v_cycle(fru)) {
-          syslog(LOG_WARNING, "%s() Failed to set power:%d", __func__, cmd);
           return POWER_STATUS_ERR;
         }
       } else {
-        if (pal_set_exp_12v_on(fru, true)) {
-          syslog(LOG_WARNING, "%s() Failed to set power:%d", __func__, cmd);
+        if (pal_set_exp_12v_check(fru, true)) {
           return POWER_STATUS_ERR;
         }
       }

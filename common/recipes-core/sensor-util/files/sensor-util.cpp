@@ -102,6 +102,22 @@ const char *sensor_status[] = {
 };
 
 static void
+append_exp_fru(char fru_list[], size_t size) {
+  uint8_t exp_fru[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
+  pal_get_exp_fru_list(exp_fru, &len);
+
+  for (i = 0; i < len; ++i) {
+    char name[64] = {0};
+    if (pal_get_exp_arg_name(exp_fru[i], name) == PAL_EOK &&
+        strlen(name)+2 < size) {
+      strncat(fru_list, ", ", 2);
+      strncat(fru_list, name, size);
+      size -= (strlen(name) + 2);
+    }
+  }
+}
+
+static void
 print_usage() {
 
   char fru_list[256] = {0};
@@ -109,6 +125,9 @@ print_usage() {
   pal_get_fru_list(fru_list);
   //default to standard FRU list
   pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_HISTORY, pal_fru_list_sensor_history_t, 256);
+  if (pal_is_exp() == PAL_EOK && strlen(fru_list) < sizeof(fru_list)) {
+    append_exp_fru(fru_list, sizeof(fru_list)-strlen(fru_list));
+  }
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
   printf("       sensor-util [fru] <option> ..\n\n");
   printf("       [fru]           : %s\n", fru_list);

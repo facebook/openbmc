@@ -2853,11 +2853,6 @@ pal_get_root_fru(uint8_t fru, uint8_t *root) {
 }
 
 int __attribute__((weak))
-pal_get_print_sensor_name(const char **list) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
 pal_handle_oem_1s_update_sdr(uint8_t slot) {
   return PAL_ENOTSUP;
 }
@@ -2883,7 +2878,7 @@ int __attribute__((weak))
 pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size){
   int num_frus = pal_get_fru_count();
   unsigned int fru_caps;
-  list = "/0";
+  list[0] = '\0';
 
   for (int fru = 1; fru <= num_frus; fru++) {
     char name[64] = {0};

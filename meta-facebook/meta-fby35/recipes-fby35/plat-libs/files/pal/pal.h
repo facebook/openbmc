@@ -94,17 +94,16 @@ enum {
 };
 
 enum {
-  CONFIG_A = 0x01,
-  CONFIG_B = 0x02,
-  CONFIG_C = 0x03,
-  CONFIG_D = 0x04,
-  CONFIG_B_E1S = 0x05,
-  CONFIG_C_GPV3 = 0x06,
-  CONFIG_D_GPV3 = 0x07,
+  CONFIG_A          = 0x01,
+  CONFIG_B          = 0x02,
+  CONFIG_C          = 0x03,
+  CONFIG_D          = 0x04,
   CONFIG_B_DPV2_X16 = 0x08,
-  CONFIG_B_DPV2_X8 = 0x09,
-  CONFIG_B_DPV2_X4 = 0x0a,
-  CONFIG_UNKNOWN = 0xff,
+  CONFIG_B_DPV2_X8  = 0x09,
+  CONFIG_B_DPV2_X4  = 0x0a,
+  CONFIG_C_WF       = 0x0b,
+  CONFIG_MFG        = 0xfe,
+  CONFIG_UNKNOWN    = 0xff,
 };
 
 enum {

@@ -3,6 +3,7 @@
 
 #include <optional>
 #include "Msg.h"
+#include "ModbusError.h"
 
 namespace rackmon {
 
@@ -13,9 +14,21 @@ struct BadResponseError : public std::runtime_error {
             std::to_string(exp) + " Got: " + std::to_string(val)) {}
 };
 
+// ---- Generic Request/Response --------
+struct Request : public Msg {
+  uint8_t& reqFunction = raw[1];
+};
+
+struct Response : public Msg {
+  uint8_t& respFunction = raw[1];
+  protected:
+  void checkValue(const std::string& what, uint32_t value, uint32_t expectedValue);
+  void decode() override;
+};
+
 //---------- Read Holding Registers -------
 
-struct ReadHoldingRegistersReq : public Msg {
+struct ReadHoldingRegistersReq : public Request {
  private:
   static constexpr uint8_t kExpectedFunction = 0x3;
   uint8_t deviceAddr_ = 0;
@@ -32,7 +45,7 @@ struct ReadHoldingRegistersReq : public Msg {
   ReadHoldingRegistersReq() {}
 };
 
-struct ReadHoldingRegistersResp : public Msg {
+struct ReadHoldingRegistersResp : public Response {
  private:
   static constexpr uint8_t kExpectedFunction = 0x3;
   uint8_t expectedDeviceAddr_ = 0;
@@ -47,7 +60,7 @@ struct ReadHoldingRegistersResp : public Msg {
 };
 
 //----------- Write Single Register -------
-struct WriteSingleRegisterReq : public Msg {
+struct WriteSingleRegisterReq : public Request {
  private:
   static constexpr uint8_t kExpectedFunction = 0x6;
   uint8_t deviceAddr_ = 0;
@@ -64,7 +77,7 @@ struct WriteSingleRegisterReq : public Msg {
   WriteSingleRegisterReq() {}
 };
 
-struct WriteSingleRegisterResp : public Msg {
+struct WriteSingleRegisterResp : public Response {
  private:
   static constexpr uint8_t kExpectedFunction = 0x6;
   uint8_t expectedDeviceAddr_ = 0;
@@ -92,7 +105,7 @@ struct WriteSingleRegisterResp : public Msg {
 // push in the register contents, helps them
 // take advantage of any endian-conversions privided
 // by Msg.h
-struct WriteMultipleRegistersReq : public Msg {
+struct WriteMultipleRegistersReq : public Request {
  private:
   static constexpr uint8_t kExpectedFunction = 0x10;
   uint8_t deviceAddr_ = 0;
@@ -105,7 +118,7 @@ struct WriteMultipleRegistersReq : public Msg {
   WriteMultipleRegistersReq() {}
 };
 
-struct WriteMultipleRegistersResp : public Msg {
+struct WriteMultipleRegistersResp : public Response {
  private:
   static constexpr uint8_t kExpectedFunction = 0x10;
   uint8_t expectedDeviceAddr_ = 0;
@@ -133,7 +146,7 @@ struct FileRecord {
       : fileNum(file), recordNum(record), data(num) {}
 };
 
-struct ReadFileRecordReq : public Msg {
+struct ReadFileRecordReq : public Request {
  private:
   static constexpr uint8_t kExpectedFunction = 0x14;
   static constexpr uint8_t kReferenceType = 0x6;
@@ -146,7 +159,7 @@ struct ReadFileRecordReq : public Msg {
   ReadFileRecordReq(uint8_t deviceAddr, const std::vector<FileRecord>& records);
 };
 
-struct ReadFileRecordResp : public Msg {
+struct ReadFileRecordResp : public Response {
  private:
   static constexpr uint8_t kExpectedFunction = 0x14;
   static constexpr uint8_t kReferenceType = 0x6;

@@ -125,6 +125,11 @@ void ModbusDevice::monitor() {
           nextRegister != registerStore.back()) {
         ++registerStore;
       }
+    } catch (ModbusError& e) {
+      logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
+              << " ReadReg 0x" << std::hex << registerOffset << ' '
+              << registerStore.name() << " caught: " << e.what() << std::endl;
+      continue;
     } catch (std::exception& e) {
       logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
               << " ReadReg 0x" << std::hex << registerOffset << ' '

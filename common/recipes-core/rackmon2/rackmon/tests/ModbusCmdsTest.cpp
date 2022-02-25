@@ -7,6 +7,12 @@ using namespace std;
 using namespace testing;
 using namespace rackmon;
 
+TEST(Response, ErrorResponse) {
+  Response msg;
+  msg.Msg::operator=(0x018303_EM);
+  EXPECT_THROW(Encoder::decode(msg), ModbusError);
+}
+
 TEST(ReadHoldingRegisters, Req) {
   ReadHoldingRegistersReq msg(0x1, 0x1234, 0x20);
   Encoder::encode(msg);

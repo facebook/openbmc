@@ -47,6 +47,7 @@ SRC_URI = "file://meson.build \
            file://Log.h \
            file://Device.cpp \
            file://Device.h \
+           file://ModbusError.h \
            file://ModbusCmds.cpp \
            file://ModbusCmds.h \
            file://Modbus.cpp \

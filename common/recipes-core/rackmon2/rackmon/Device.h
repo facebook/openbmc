@@ -13,6 +13,7 @@ class Device {
  protected:
   const std::string device_;
   int deviceFd_ = -1;
+  int waitTimePerByteMs = -1;
 
   // Wait for read for provided timeoutMs, returns
   // remaining time in ms.
@@ -26,6 +27,6 @@ class Device {
   virtual void close();
   virtual void write(const uint8_t* buf, size_t len);
   virtual void ioctl(unsigned long cmd, void* data);
-  virtual void read(uint8_t* buf, size_t exactLen, int timeoutMs);
+  virtual size_t read(uint8_t* buf, size_t exactLen, int timeoutMs);
 };
 } // namespace rackmon

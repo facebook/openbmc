@@ -76,6 +76,9 @@ function init_class2_fsc(){
   if [ "$exp_board" == "0x02" ]; then # E1.S board
     ln -s /etc/FSC_CLASS2_PVT_SPE_config.json ${default_fsc_config_path}
     echo -n "Type_8" > /mnt/data/kv_store/sled_system_conf
+  elif [ "$exp_board" == "0x04" ]; then #CWC board
+    ln -s /etc/FSC_CLASS2_DVT_CWC.json ${default_fsc_config_path}
+    echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf
   else
     ln -s /etc/FSC_CLASS2_EVT_config.json ${default_fsc_config_path}
     echo -n "Type_17" > /mnt/data/kv_store/sled_system_conf

@@ -604,7 +604,7 @@ static int default_ncsi_util_handler(int argc, char **argv,
             argflag = getopt(argc, (char **)argv, "b:");
             if (argflag == 'b') {
               bufSize = (int)strtoul(optarg, NULL, 0);
-              if (bufSize < 0) {
+              if (bufSize <= 0) {
                 printf("bufSize %d is out of range.\n", bufSize);
                 goto free_err_exit;
               } else {

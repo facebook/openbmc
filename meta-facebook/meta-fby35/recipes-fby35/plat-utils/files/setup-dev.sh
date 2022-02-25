@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
 function create_new_dev() {
@@ -24,16 +26,16 @@ function create_new_dev() {
   local addr=$2
   local bus=$3
 
-  echo $dev_name $addr > /sys/class/i2c-dev/i2c-${bus}/device/new_device
+  echo "$dev_name $addr" > /sys/class/i2c-dev/i2c-"${bus}"/device/new_device
 }
 
-function init_class1_dev(){
+function init_class1_dev() {
   #create the device of the inlet/outlet temp.
   create_new_dev "lm75" 0x4e 12
   create_new_dev "lm75" 0x4f 12
 
   #create the device of bmc/bb fru.
-  create_new_dev "24c128" 0x51 11 
+  create_new_dev "24c128" 0x51 11
   create_new_dev "24c128" 0x54 11
 
   local VENDOR_MPS="0x4d5053"
@@ -59,8 +61,8 @@ function init_class1_dev(){
   set_nic_power
 }
 
-function init_class2_dev(){
-  #create the device of the outlet temp. 
+function init_class2_dev() {
+  #create the device of the outlet temp.
   create_new_dev "lm75" 0x4f 2
 
   #create the device of bmc/nic fru.
@@ -68,41 +70,36 @@ function init_class2_dev(){
   create_new_dev "24c128" 0x54 10
 }
 
-function init_exp_dev(){
-  for i in {1..4}; do
-    m2_prsnt=$(get_m2_prsnt_sts slot$i)
-    if [ $m2_prsnt -eq 255 ]; then
+function init_exp_dev() {
+  for i in {1..3..2}; do
+    if [ "$(is_server_prsnt $i)" == "0" ]; then
       continue
     fi
-    # check 2OU present
-    prsnt_2ou=$(($m2_prsnt & 0x4))
-    if [ "$prsnt_2ou" -eq "4" ]; then
-      cpld_bus=$(get_cpld_bus $i)
-      type_2ou=$(get_2ou_board_type $cpld_bus)
-      # check DPv2 x8 present
-      prsnt_x8=$(($type_2ou & 0x7))
-      if [ "$prsnt_x8" -eq "7" ]; then
-        create_new_dev "24c128" 0x51 $cpld_bus
-        # copy eeprom data to cached
-        sv restart ipmid > /dev/null 2>&1 &
-      fi
+
+    enable_server_i2c_bus $i
+    cpld_bus=$(get_cpld_bus $i)
+    type_2ou=$(get_2ou_board_type "$cpld_bus")
+    # check DPv2 x8 present
+    prsnt_x8=$((type_2ou & 0x7))
+    if [ "$prsnt_x8" -eq "7" ]; then
+      create_new_dev "24c128" 0x51 "$cpld_bus"
     fi
   done
 }
+
+echo "Setup devs for fby35..."
 
 #create the device of mezz card
 create_new_dev "tmp421" 0x1f 8
 create_new_dev "24c32" 0x50 8
 
-echo -n "Setup devs for fby35..."
-
 bmc_location=$(get_bmc_board_id)
-if [ $bmc_location -eq 9 ]; then
-  #The BMC of class2
-  init_class2_dev
-elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
+if [ "$bmc_location" -eq 7 ]; then
   #The BMC of class1
   init_class1_dev
+elif [ "$bmc_location" -eq 9 ]; then
+  #The BMC of class2
+  init_class2_dev
 else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi

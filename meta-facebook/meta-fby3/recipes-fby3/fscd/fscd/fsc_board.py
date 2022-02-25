@@ -54,6 +54,22 @@ fru_map = {
     "slot2": {"name": "fru2", "slot_num": 2},
     "slot3": {"name": "fru3", "slot_num": 3},
     "slot4": {"name": "fru4", "slot_num": 4},
+    "slot1_2U_exp": {"name": "fru1", "slot_num": 1},
+    "slot1_2U_top": {"name": "fru1", "slot_num": 1},
+    "slot1_2U_bot": {"name": "fru1", "slot_num": 1},
+}
+
+cwc_fru_map = {
+    "slot1_2U_exp": {"fru": 31},
+    "slot1_2U_top": {"fru": 32},
+    "slot1_2U_bot": {"fru": 33},
+}
+
+# PESW_FW id which is defined in bic.h
+pesw_target_map = {
+    "slot1_2U_exp": {"target_id": 47},
+    "slot1_2U_top": {"target_id": 51},
+    "slot1_2U_bot": {"target_id": 55},
 }
 
 dimm_location_name_map = {
@@ -78,6 +94,14 @@ host_ready_map = {
     "slot2": "fru2_host_ready",
     "slot3": "fru3_host_ready",
     "slot4": "fru4_host_ready",
+    "slot1_2U_exp": "fru1_host_ready",
+    "slot1_2U_top": "fru1_host_ready",
+    "slot1_2U_bot": "fru1_host_ready",
+}
+
+#boot drive sensor number which is defined in pal_sensors.h
+boot_drive_map = {
+    "slot1":{"sensor_num": 0xE},
 }
 
 valid_dp_pcie_list = [
@@ -232,34 +256,63 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     nvme_ready = c_uint8(0)
                     dev_status = c_uint8(0)
                     dev_type = c_uint8(0)
-                    dev_id = int(sdata[3]) + 1
-                    response = lpal_hndl.pal_get_dev_info(
-                        int(fru_map[board]["slot_num"]),
-                        dev_id,
-                        byref(nvme_ready),
-                        byref(dev_status),
-                        byref(dev_type),
-                    )
-                    if response == 0:  # bic can get device power status
-                        if dev_status.value == 1:  # device power on
-                            return 1
+                    if board == "slot1_2U_top" or board == "slot1_2U_bot":
+                        if sname[8] != "_":
+                            dev_id = int(sname[7]) * 10 + int(sname[8]) + 1 # gp3_m2_10_temp
+                        else:
+                            dev_id = int(sname[7]) + 1 #gp3_m2_0_temp
+                        response = lpal_hndl.pal_get_dev_info(
+                            int(cwc_fru_map[board]["fru"]),
+                            dev_id,
+                            byref(nvme_ready),
+                            byref(dev_status),
+                            byref(dev_type),
+                        )
+                        if response == 0: # bic can get device power status
+                            if dev_status.value == 1 and nvme_ready.value == 1: # nvme is ready
+                                return 1
+                            else:
+                                return 0
                         else:
                             return 0
                     else:
-                        return 0
+                        dev_id = int(sdata[3]) + 1
+                        response = lpal_hndl.pal_get_dev_info(
+                            int(fru_map[board]["slot_num"]),
+                            dev_id,
+                            byref(nvme_ready),
+                            byref(dev_status),
+                            byref(dev_type),
+                        )
+                        if response == 0:  # bic can get device power status
+                            if dev_status.value == 1:  # device power on
+                                return 1
+                            else:
+                                return 0
+                        else:
+                            return 0
                 elif search(r"gp3_e1s", sname) is not None:
                     # get GPv3 E1.S device status
                     nvme_ready = c_uint8(0)
                     dev_status = c_uint8(0)
                     dev_type = c_uint8(0)
                     dev_id = int(sname[7]) + 13
-                    response = lpal_hndl.pal_get_dev_info(
-                        int(fru_map[board]["slot_num"]),
-                        dev_id,
-                        byref(nvme_ready),
-                        byref(dev_status),
-                        byref(dev_type),
-                    )
+                    if board == "slot1_2U_top" or board == "slot1_2U_bot":
+                        response = lpal_hndl.pal_get_dev_info(
+                            int(cwc_fru_map[board]["fru"]),
+                            dev_id,
+                            byref(nvme_ready),
+                            byref(dev_status),
+                            byref(dev_type),
+                        )
+                    else:
+                        response = lpal_hndl.pal_get_dev_info(
+                            int(fru_map[board]["slot_num"]),
+                            dev_id,
+                            byref(nvme_ready),
+                            byref(dev_status),
+                            byref(dev_type),
+                        )
                     if response == 0:  # bic can get device power status
                         if dev_status.value == 1:  # device power on
                             return 1
@@ -267,6 +320,28 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             return 0
                     else:
                         return 0
+                elif search(r"(.*)pesw_temp", sname) is not None: #get CWC or GPv3 PESW fw info
+                    pesw_res = c_uint8(0)
+                    pesw_res_len = c_uint8(0)
+                    response = lpal_hndl.pal_get_fw_info(
+                        int(fru_map[board]["slot_num"]),
+                        int(pesw_target_map[board]["target_id"]),
+                        byref(pesw_res),
+                        byref(pesw_res_len),
+                    )
+                    if response == -1: # can not get fw info
+                        return 0
+                    else:
+                        return 1
+                elif search(r"ssd", sname) is not None: # check if boot driver supports sensor reading
+                    response = lpal_hndl.pal_is_sensor_valid(
+                        int(fru_map[board]["slot_num"]),
+                        boot_drive_map[board]["sensor_num"],
+                    )
+                    if response == 1: # boot drive unsupports sensor reading
+                        return 0
+                    else:
+                        return 1
                 else:
                     suffix = ""
                     if search(r"1ou_m2", sname) is not None:
@@ -336,3 +411,13 @@ def get_fan_mode(scenario="None"):
         pwm = 100
         return fan_mode["boost_mode"], pwm
     pass
+
+def fru_format_transform(fru):
+    if fru == "slot1_2U_top":
+        return "slot1-2U-top"
+    elif fru == "slot1_2U_bot":
+        return "slot1-2U-bot"
+    elif fru == "slot1_2U_exp":
+        return "slot1-2U-exp"
+    else:
+        return fru

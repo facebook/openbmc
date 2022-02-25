@@ -585,7 +585,6 @@ int pal_get_exp_arg_name(uint8_t fru, char *name);
 int pal_get_fru_slot(uint8_t fru, uint8_t *slot);
 int pal_get_print_fru_name(const char **list);
 int pal_get_root_fru(uint8_t fru, uint8_t *slot);
-int pal_get_print_sensor_name(const char **list);
 int pal_handle_oem_1s_update_sdr(uint8_t slot);
 int pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size);
 int pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t size);

@@ -1,0 +1,96 @@
+max([
+  linear_cpu_margin(slot1:soc_therm_margin) + pid_cpu_margin(slot1:soc_therm_margin),
+  linear_frontIO_inlet(slot1:front_io_temp),
+  linear_dimm(
+    max([
+      slot1:soc_dimma_temp,
+      slot1:soc_dimmb_temp,
+      slot1:soc_dimmc_temp,
+      slot1:soc_dimmd_temp,
+      slot1:soc_dimme_temp,
+      slot1:soc_dimmf_temp])) +
+  pid_dimm(
+    max([
+      slot1:soc_dimma_temp,
+      slot1:soc_dimmb_temp,
+      slot1:soc_dimmc_temp,
+      slot1:soc_dimmd_temp,
+      slot1:soc_dimme_temp,
+      slot1:soc_dimmf_temp])),
+  linear_nic(nic:nic_sensor_temp) + pid_nic(nic:nic_sensor_temp),
+  linear_e1s(
+    max([
+      slot1_2U_top:gp3_e1s0_temp,
+      slot1_2U_top:gp3_e1s1_temp,
+      slot1_2U_bot:gp3_e1s0_temp,
+      slot1_2U_bot:gp3_e1s1_temp])) +
+  pid_e1s(
+    max([
+      slot1_2U_top:gp3_e1s0_temp,
+      slot1_2U_top:gp3_e1s1_temp,
+      slot1_2U_bot:gp3_e1s0_temp,
+      slot1_2U_bot:gp3_e1s1_temp])),
+  linear_gp3_m2(
+    max([
+      slot1_2U_top:gp3_m2_0_temp,
+      slot1_2U_top:gp3_m2_1_temp,
+      slot1_2U_top:gp3_m2_2_temp,
+      slot1_2U_top:gp3_m2_3_temp,
+      slot1_2U_top:gp3_m2_4_temp,
+      slot1_2U_top:gp3_m2_5_temp,
+      slot1_2U_top:gp3_m2_6_temp,
+      slot1_2U_top:gp3_m2_7_temp,
+      slot1_2U_top:gp3_m2_8_temp,
+      slot1_2U_top:gp3_m2_9_temp,
+      slot1_2U_top:gp3_m2_10_temp,
+      slot1_2U_top:gp3_m2_11_temp,
+      slot1_2U_bot:gp3_m2_0_temp,
+      slot1_2U_bot:gp3_m2_1_temp,
+      slot1_2U_bot:gp3_m2_2_temp,
+      slot1_2U_bot:gp3_m2_3_temp,
+      slot1_2U_bot:gp3_m2_4_temp,
+      slot1_2U_bot:gp3_m2_5_temp,
+      slot1_2U_bot:gp3_m2_6_temp,
+      slot1_2U_bot:gp3_m2_7_temp,
+      slot1_2U_bot:gp3_m2_8_temp,
+      slot1_2U_bot:gp3_m2_9_temp,
+      slot1_2U_bot:gp3_m2_10_temp,
+      slot1_2U_bot:gp3_m2_11_temp])) +
+  pid_gp3_m2(
+    max([
+      slot1_2U_top:gp3_m2_0_temp,
+      slot1_2U_top:gp3_m2_1_temp,
+      slot1_2U_top:gp3_m2_2_temp,
+      slot1_2U_top:gp3_m2_3_temp,
+      slot1_2U_top:gp3_m2_4_temp,
+      slot1_2U_top:gp3_m2_5_temp,
+      slot1_2U_top:gp3_m2_6_temp,
+      slot1_2U_top:gp3_m2_7_temp,
+      slot1_2U_top:gp3_m2_8_temp,
+      slot1_2U_top:gp3_m2_9_temp,
+      slot1_2U_top:gp3_m2_10_temp,
+      slot1_2U_top:gp3_m2_11_temp,
+      slot1_2U_bot:gp3_m2_0_temp,
+      slot1_2U_bot:gp3_m2_1_temp,
+      slot1_2U_bot:gp3_m2_2_temp,
+      slot1_2U_bot:gp3_m2_3_temp,
+      slot1_2U_bot:gp3_m2_4_temp,
+      slot1_2U_bot:gp3_m2_5_temp,
+      slot1_2U_bot:gp3_m2_6_temp,
+      slot1_2U_bot:gp3_m2_7_temp,
+      slot1_2U_bot:gp3_m2_8_temp,
+      slot1_2U_bot:gp3_m2_9_temp,
+      slot1_2U_bot:gp3_m2_10_temp,
+      slot1_2U_bot:gp3_m2_11_temp])),
+  pid_boot_drive(slot1:ssd0_temp),
+  linear_pesw(
+    max([
+      slot1_2U_exp:cwc_pesw_temp,
+      slot1_2U_top:gp3_pesw_temp,
+      slot1_2U_bot:gp3_pesw_temp])) +
+  pid_pesw(
+    max([
+      slot1_2U_exp:cwc_pesw_temp,
+      slot1_2U_top:gp3_pesw_temp,
+      slot1_2U_bot:gp3_pesw_temp]))
+])

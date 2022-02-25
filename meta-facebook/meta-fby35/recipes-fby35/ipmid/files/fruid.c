@@ -35,7 +35,6 @@
 #include <openbmc/pal.h>
 #include <facebook/fby35_common.h>
 #include <facebook/fby35_fruid.h>
-#include <facebook/bic.h>
 #include "fruid.h"
 
 #define FRUID_SIZE        512
@@ -139,12 +138,11 @@ fruid_init_local_fru() {
   uint8_t bmc_location = 0;
   uint8_t i = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
-  int config_status = 0;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;;
+    return ret;
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
@@ -157,7 +155,7 @@ fruid_init_local_fru() {
     fru_path = FRU_NICEXP_BIN;
   }
 
-  //reinitialize ret 
+  //reinitialize ret
   ret = -1;
 
   //create the fru binary in /tmp/
@@ -177,33 +175,27 @@ fruid_init_local_fru() {
 
   snprintf(path, path_len, EEPROM_PATH, fru_bus, fru_addr);
 
-  //fruid_nicexp.bin or fruid_bb.bin 
+  //fruid_nicexp.bin or fruid_bb.bin
   if ( copy_eeprom_to_bin(path, fru_path) < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, fru_path);
     goto error_exit;
   }
 
   //DPV2 X8 furid
-  for(i = FRU_SLOT1; i <= FRU_SLOT4; i++) {
-    config_status = bic_is_m2_exp_prsnt(i);
-    if (config_status < 0) {
+  for (i = FRU_SLOT1; i <= FRU_SLOT3; i += 2) {
+    if ( fby35_common_get_2ou_board_type(i, &type_2ou) < 0 ) {
       continue;
-    }
-    if ((config_status & PRESENT_2OU) == PRESENT_2OU) {
-      if ( fby35_common_get_2ou_board_type(i, &type_2ou) < 0 ) {
-        continue;
-      } else {
-        if ((type_2ou & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
-          snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(i), DPV2_FRU_ADDR);
-          snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, i, BOARD_2OU_X8);
-          if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
-            syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, dev_path);
-            continue;
-          }
+    } else {
+      if ( (type_2ou & DPV2_X8_BOARD) == DPV2_X8_BOARD ) {
+        snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(i), DPV2_FRU_ADDR);
+        snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, i, BOARD_2OU_X8);
+        if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, dev_path);
+          continue;
         }
       }
     }
-  }  
+  }
 
   ret = 0;
 
@@ -216,11 +208,11 @@ int plat_fruid_init(void) {
   int ret;
 
   //export FRU that is connected to BMC directly.
-  ret = fruid_init_local_fru();  
+  ret = fruid_init_local_fru();
   if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() somethings went wrong in fruid_init_local_fru()", __func__); 
-  } 
- 
+    syslog(LOG_WARNING, "%s() somethings went wrong in fruid_init_local_fru()", __func__);
+  }
+
   return ret;
 }
 

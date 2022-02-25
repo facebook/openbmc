@@ -30,6 +30,8 @@ RISER_EXP_CPLD_ADDR="0x5c"
 BOARD_ID=$(get_bmc_board_id)
 CWC_EXP_CPLD_ADDR="0x50"
 
+readonly EXIT_ERROR=255
+
 SLOT=
 SLOT_NUM=
 I2C_NUM=
@@ -194,7 +196,7 @@ function get_usb_dev() {
 
   if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
       echo "The $usb_path is invalid"
-      exit -1;
+      exit $EXIT_ERROR;
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -298,12 +300,12 @@ function get_usb_dev_by_slot() {
       esac
   else
       echo "The $SLOT is invalid"
-      exit -1;
+      exit $EXIT_ERROR;
   fi
 
   if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
       echo "The $usb_path is invalid"
-      exit -1;
+      exit $EXIT_ERROR;
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -325,13 +327,13 @@ function get_cwc_usb_dev() {
   ;;
     *)
     echo "dev:$1 not supported"
-    exit -1
+    exit $EXIT_ERROR
   ;;
   esac
 
   if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
       echo "The $usb_path is invalid"
-      exit -1;
+      exit $EXIT_ERROR;
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -392,7 +394,7 @@ function get_top_usb_dev() {
 
   if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
       echo "The $usb_path is invalid"
-      exit -1;
+      exit $EXIT_ERROR;
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -453,7 +455,7 @@ function get_bot_usb_dev() {
 
   if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
       echo "The $usb_path is invalid"
-      exit -1;
+      exit $EXIT_ERROR;
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -480,7 +482,7 @@ elif [ "$1" == "slot1-2U-top" ] || [ "$1" == "slot1-2U-bot" ]; then
   COMP=${1:6:6}
 else
   show_usage
-  exit -1;
+  exit $EXIT_ERROR;
 fi
 
 # If users want to read a history, there is no need to run the rest
@@ -491,7 +493,7 @@ if [[ "$2" == "--history" ]]; then
     exit 0;
   else
     show_usage
-    exit -1;
+    exit $EXIT_ERROR;
   fi
 fi
 
@@ -512,7 +514,7 @@ GPV3_PRESENT=
 if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
   if ! [ "$SLOT" == "slot1" ]; then
     echo "$SLOT is empty"
-    exit -1;
+    exit $EXIT_ERROR;
   else
     # notify CPLD to set the uart src to class 2
     set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
@@ -520,10 +522,10 @@ if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
 else
   if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
     echo "The $SLOT is empty"
-    exit -1;
+    exit $EXIT_ERROR;
   elif [ $(is_slot_12v_on ${SLOT_NUM}) == "0" ]; then
     echo "The $SLOT is 12V-off"
-    exit -1;
+    exit $EXIT_ERROR;
   else
     # notify CPLD to set the uart src to class 1
     set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
@@ -535,14 +537,18 @@ if [ -n "$COMP" ]; then
   # block invalid command, e.g. sol-util 2ou bic xxx
   if [ $# -gt 3 ]; then
     show_usage
-    exit -1;
+    exit $EXIT_ERROR;
   fi
 
   # check BAUDRATE is a number
   if [ -n "$BAUDRATE" ]; then
+    if [ "$DEV" = "pesw" ] || [ "$DEV" = "bic" ]; then # not support baudrate option
+      show_usage
+      exit $EXIT_ERROR;
+    fi
     if ! [[ $BAUDRATE =~ ^[0-9]+$ ]]; then
       echo "$BAUDRATE should be a number"
-      exit -1;
+      exit $EXIT_ERROR;
     fi
   fi
 
@@ -565,7 +571,7 @@ if [ -n "$COMP" ]; then
       CWC_CPLD_ADDR=${CWC_EXP_CPLD_ADDR}
     else
       echo "component:$COMP not present"
-      exit -1
+      exit $EXIT_ERROR
     fi
   elif [ "$COMP" == "2U-top" ] || [ "$COMP" == "2U-bot" ]; then
     EXP_BOARD_TYPE=$(get_2ou_board_type $I2C_NUM)
@@ -580,15 +586,15 @@ if [ -n "$COMP" ]; then
         EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
       else
         echo "component:$COMP not present"
-        exit -1
+        exit $EXIT_ERROR
       fi
     else
       echo "component:$COMP not present"
-      exit -1
+      exit $EXIT_ERROR
     fi
   else
     echo "$COMP is not supported!"
-    exit -1;
+    exit $EXIT_ERROR;
   fi
 
   # check DEV
@@ -596,12 +602,12 @@ if [ -n "$COMP" ]; then
     DEV_NUM=${3:3:4}
     if [ "$COMP" == "1ou" ] && [[ "$DEV" =~ ^(dev([4-9]|1[0-1]))$ ]]; then
       echo "$DEV is not supported!"
-      exit -1;
+      exit $EXIT_ERROR;
     elif [ "$COMP" == "2ou" ]; then
 
       if [ "$DEV" == "pesw" ] && [ $# -ne 2 ]; then # not support baudrate option
         show_usage
-        exit -1;
+        exit $EXIT_ERROR;
       fi
 
       if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
@@ -666,7 +672,7 @@ if [ -n "$COMP" ]; then
 
     if [ $# -ne 2 ]; then # not support baudrate option
       show_usage
-      exit -1;
+      exit $EXIT_ERROR;
     fi
 
     if [ -n "$CPLD_ADDR" ]; then
@@ -689,7 +695,7 @@ if [ -n "$COMP" ]; then
     fi
   else
     echo "$DEV is not supported!"
-    exit -1;
+    exit $EXIT_ERROR;
   fi
 
   if [ -n "$CPLD_ADDR" ]; then

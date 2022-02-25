@@ -2107,9 +2107,9 @@ pal_bmc_err_enable(const char *error_item) {
     pal_set_error_code(ERR_CODE_CPU_UTILIZA, ERR_CODE_ENABLE);
   } else if (strcasestr(error_item, "Memory") != 0ULL) {
     pal_set_error_code(ERR_CODE_MEM_UTILIZA, ERR_CODE_ENABLE);
-  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
-    pal_set_error_code(ERR_CODE_ECC_RECOVERABLE, ERR_CODE_ENABLE);
   } else if (strcasestr(error_item, "ECC Recoverable") != 0ULL) {
+    pal_set_error_code(ERR_CODE_ECC_RECOVERABLE, ERR_CODE_ENABLE);
+  } else if (strcasestr(error_item, "ECC Unrecoverable") != 0ULL) {
     pal_set_error_code(ERR_CODE_ECC_UNRECOVERABLE, ERR_CODE_ENABLE);
   } else {
     syslog(LOG_WARNING, "%s: invalid bmc health item: %s", __func__, error_item);

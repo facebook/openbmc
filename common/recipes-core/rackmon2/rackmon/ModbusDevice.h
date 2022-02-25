@@ -116,9 +116,9 @@ class ModbusDevice {
   bool isActive() const {
     return info_.mode == ModbusDeviceMode::ACTIVE;
   }
-  void setActive() {
-    info_.numConsecutiveFailures = 0;
-  }
+
+  void setActive();
+
   time_t lastActive() const {
     return info_.lastActive;
   }

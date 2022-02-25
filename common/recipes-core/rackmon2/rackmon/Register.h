@@ -153,12 +153,17 @@ struct RegisterStore {
   // write.
   std::vector<Register> history_;
   int32_t idx_ = 0;
+  bool enabled_ = true;
 
  public:
   explicit RegisterStore(const RegisterDescriptor& desc)
       : desc_(desc),
         regAddr_(desc.begin),
         history_(desc.keep, Register(desc)) {}
+
+  bool isEnabled() { return enabled_; }
+  void disable() { enabled_ = false; }
+  void enable() { enabled_ = true; }
 
   // Returns a reference to the last written value (Back of the list)
   Register& back() {

@@ -28,7 +28,7 @@ SRC_URI = "file://agc032a_psu \
 LDFLAGS = "-lfruid -lpal"
 
 DEPENDS += "libfruid libpal"
-RDEPENDS_${PN} += "libfruid libpal"
+RDEPENDS:${PN} += "libfruid libpal"
 
 S = "${WORKDIR}/agc032a_psu"
 
@@ -40,5 +40,5 @@ do_install() {
     install -m 0644 agc032a-psu.h ${D}${includedir}/facebook/agc032a-psu.h
 }
 
-FILES_${PN} = "${libdir}/libagc032a-psu.so"
-FILES_${PN}-dev = "${includedir}/facebook/agc032a-psu.h"
+FILES:${PN} = "${libdir}/libagc032a-psu.so"
+FILES:${PN}-dev = "${includedir}/facebook/agc032a-psu.h"

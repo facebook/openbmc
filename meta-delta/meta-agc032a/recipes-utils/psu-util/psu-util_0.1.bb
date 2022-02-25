@@ -31,11 +31,11 @@ S = "${WORKDIR}/utils"
 LDFLAGS = "-lfruid -lpal -lagc032a-psu "
 
 DEPENDS += "libagc032a-psu libpal"
-RDEPENDS_${PN} += "libagc032a-psu libpal"
+RDEPENDS:${PN} += "libagc032a-psu libpal"
 
 do_install() {
   install -d ${D}${bindir}
   install -m 755 psu-util ${D}${bindir}/psu-util
 }
 
-FILES_${PN} = "${bindir}"
+FILES:${PN} = "${bindir}"

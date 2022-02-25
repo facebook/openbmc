@@ -44,8 +44,8 @@ do_install() {
 
 LDFLAGS += " -lobmc-i2c"
 DEPENDS += "libobmc-i2c"
-RDEPENDS_${PN} += " libobmc-i2c"
+RDEPENDS:${PN} += " libobmc-i2c"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES_${PN} = "${FBPACKAGEDIR}/gbi2ctool ${prefix}/local/bin ${sysconfdir} "
+FILES:${PN} = "${FBPACKAGEDIR}/gbi2ctool ${prefix}/local/bin ${sysconfdir} "
 

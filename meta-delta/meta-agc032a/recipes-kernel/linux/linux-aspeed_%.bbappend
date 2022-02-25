@@ -2,7 +2,7 @@ LINUX_VERSION_EXTENSION = "-agc032a"
 
 COMPATIBLE_MACHINE = "agc032a"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://agc032a.cfg \
             file://aspeed-bmc-delta-agc032a.dts \
             file://Makefile \

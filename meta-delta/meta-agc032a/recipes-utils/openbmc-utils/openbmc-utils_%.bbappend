@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/delta:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/delta:"
 
 SRC_URI += "file://board-utils.sh \
             file://boot_info.sh \
@@ -54,7 +54,7 @@ OPENBMC_UTILS_FILES += " \
     us_console.sh \
     "
 
-DEPENDS_append = " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 do_install_board() {
     # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
@@ -99,8 +99,8 @@ do_install_board() {
 
 }
 
-do_install_append() {
+do_install:append() {
   do_install_board
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

@@ -17,24 +17,19 @@
 *:meta-delta/meta-agc032a/*
 
 //For meta-facebook
-unsignedPositive:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:1895
+unsignedPositive:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:1896
 
-knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3467
-knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3950
-knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4820
+knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4884
+knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3531
+knownConditionTrueFalse:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4014
 
-nullPointerRedundantCheck:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4778
+nullPointerRedundantCheck:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:4842
 
-unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3767
-unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3788
-unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3810
+unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3831
+unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3852
+unsignedLessThanZero:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:3874
 
-funcArgNamesDifferent:meta-facebook/meta-fby3/recipes-fby3/plat-libs/files/pal/pal.c:2935
-
-redundantAssignment:meta-facebook/meta-fby35/recipes-fby35/plat-libs/files/pal/pal_power.c:590
-
-redundantAssignment:meta-facebook/meta-grandcanyon/recipes-grandcanyon/plat-libs/files/pal/pal.c:4277
-funcArgNamesDifferent:meta-facebook/meta-grandcanyon/recipes-grandcanyon/plat-libs/files/pal/pal.c:841
+funcArgNamesDifferent:meta-facebook/meta-grandcanyon/recipes-grandcanyon/plat-libs/files/pal/pal.c:2999
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

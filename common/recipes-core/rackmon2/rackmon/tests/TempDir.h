@@ -1,7 +1,8 @@
 // Copyright 2022-present Facebook. All Rights Reserved.
 #include <sys/stat.h>
 #include <sstream>
-#if (__GNUC__ < 8)
+#if (defined(__llvm__) && (__clang_major__ < 9)) || \
+    (!defined(__llvm__) && (__GNUC__ < 8))
 #include <experimental/filesystem>
 namespace std {
 namespace filesystem = experimental::filesystem;

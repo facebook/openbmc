@@ -877,35 +877,14 @@ error_exit:
 }
 
 static int
-_update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry) {
+_update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry, uint8_t board_type) {
   struct timeval start, end;
   int ret = BIC_STATUS_FAILURE;
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
-  uint8_t bmc_location = 0, board_type = 0;
-
-  ret = fby3_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-    goto error_exit;
-  }
-
-  if (bmc_location == NIC_BMC) { 
-    ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Fails to get 2ou board type", __func__);
-      goto error_exit;
-    }
-  }
 
   // start
   gettimeofday(&start, NULL);
-
-  // should it run into rcvry?
-  ret = _enter_pesw_rcvry_mode(slot_id, intf, is_rcvry, board_type);
-  if ( ret < 0 ) {
-    goto error_exit;
-  }
 
   // enable USB port
   if ( is_usb == true ) {
@@ -954,12 +933,35 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
   uint8_t type = 0;
   uint8_t file_s_info = 0;
   uint8_t sys_conf = 0;
+  uint8_t bmc_location = 0, board_type = UNKNOWN_BOARD;
 
   // check files - image path, image type, image secure information
   ret = _is_valid_files(image, &type, &file_s_info);
   if ( ret < 0 ) {
     printf("Invalid inputs: %s\n", image);
     goto error_exit;
+  }
+
+  ret = fby3_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    goto error_exit;
+  }
+
+  if (bmc_location == NIC_BMC) {
+    ret = fby3_common_get_2ou_board_type(slot_id, &board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Fails to get 2ou board type", __func__);
+      goto error_exit;
+    }
+  }
+
+  //enter recovery mode first before query pesw info
+  if (type == PESW_MASK_S_RCVRY || type == PESW_MASK_RCVRY) {
+    ret = _enter_pesw_rcvry_mode(slot_id, intf, true, board_type);
+    if ( ret < 0 ) {
+      goto error_exit;
+    }
   }
 
   if ( force == false ) {
@@ -1005,7 +1007,7 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
   }
 
   // start updating PESW
-  ret = _update_mchp(slot_id, type, intf, is_usb, is_rcvry);
+  ret = _update_mchp(slot_id, type, intf, is_usb, is_rcvry, board_type);
 
 error_exit:
   return ret;

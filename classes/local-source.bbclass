@@ -26,3 +26,22 @@ def local_files_to_sourcedir(d):
     return ""
 
 SRC_URI:append = "${@local_files_to_sourcedir(d)}"
+
+# Check any package that we end up installing to see if it is set to have
+# `S == WORKDIR` and is using C/C++ source, which ends up in the debug package.
+# If so, raise a warning.
+python do_package:append() {
+    # If S != WORKDIR, we don't have any potential issues.
+    if d.getVar('S') != d.getVar('WORKDIR'):
+        return
+
+    if d.getVar('INHIBIT_PACKAGE_DEBUG_SPLIT') == "1":
+        return
+
+    uris = d.getVar('SRC_URI') or ""
+    for u in uris.split():
+        if u.endswith(".c") or u.endswith(".cpp") or \
+           u.endswith(".h") or u.endswith(".hpp"):
+            bb.warn("SRC_URI contains source files but S == WORKDIR; this has " +
+                    "likely pseudo-abort issues: " + u)
+}

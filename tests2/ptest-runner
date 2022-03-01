@@ -72,27 +72,6 @@ def update_conf_only(recipes, build_path):
     subprocess.check_call(cmd)
 
 
-# TODO This is a workaround the issue where pseudo aborts
-# due to modified source outside the pseudo env (After someone
-# modifies the source in openbmc/). Very easy to run into this
-# when the dev machine runs btrfs, run ptest-runner, then change
-# some code and run it again (recompile). While we figure that one
-# out this is a temporary relief to clean the recipes instead
-# of having to delete everything and retry from scratch.
-def clean_steps(build_path):
-    clean_paths = glob.glob(build_path + "/tmp/work/core2*/*")
-    clean_paths += glob.glob(build_path + "/tmp/work/qemux86*/*")
-    clean_recipes = [
-        os.path.basename(d) + ":do_clean"
-        for d in clean_paths
-        if "defaultpkgname" not in os.path.basename(d)
-    ]
-    recipes_str = " ".join(clean_recipes).strip()
-    if recipes_str == "":
-        return []
-    return [f"bitbake -q {recipes_str} > /dev/null"]
-
-
 def bmc_build(recipes, build_path, verbose):
     openbmc = openbmc_path()
     build_option = "-q"
@@ -113,7 +92,6 @@ def bmc_build(recipes, build_path, verbose):
         "export LANGUAGE=en_US.UTF-8",
         "export MACHINE=qemux86",
     ]
-    build_steps += clean_steps(build_path)
     build_steps += [f"bitbake {build_option} qemux86-image"]
 
     build_cmd = "; ".join(build_steps)

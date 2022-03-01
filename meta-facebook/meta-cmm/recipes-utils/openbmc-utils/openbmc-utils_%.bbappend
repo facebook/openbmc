@@ -20,7 +20,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += " boot-info"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://board-utils.sh \
     file://cmmcpld_update.sh \
     file://create_vlan_intf \
@@ -62,7 +62,7 @@ OPENBMC_UTILS_CUSTOM_EMMC_MOUNT = "1"
 
 do_install:append() {
     # the script to mount emmc to /var/log
-    install -m 0755 ${WORKDIR}/setup_persist_log.sh ${D}${sysconfdir}/init.d/setup_persist_log.sh
+    install -m 0755 ${S}/setup_persist_log.sh ${D}${sysconfdir}/init.d/setup_persist_log.sh
     update-rc.d -r ${D} setup_persist_log.sh start 05 S .
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh

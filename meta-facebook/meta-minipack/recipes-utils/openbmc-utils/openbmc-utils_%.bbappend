@@ -20,38 +20,39 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += " boot-info"
 
-SRC_URI += "file://board-utils.sh \
-            file://cpld_ver.sh \
-            file://fcmcpld_update.sh \
-            file://fpga_ver.sh \
-            file://feutil \
-            file://pdbcpld_update.sh \
-            file://peutil \
-            file://pimcpld_update.sh \
-            file://power-on.sh \
-            file://presence_util.sh \
-            file://reset_brcm.sh \
-            file://scmcpld_update.sh \
-            file://set_pim_sensor.sh \
-            file://dump_pim_serials.sh \
-            file://set_sled.sh \
-            file://setup_board.sh \
-            file://setup_i2c.sh \
-            file://setup_mgmt.sh \
-            file://setup_pcie_repeater.sh \
-            file://setup_qsfp.sh \
-            file://setup_sensors_conf.sh \
-            file://seutil \
-            file://smbcpld_update.sh \
-            file://sol.sh \
-            file://spi_util.sh \
-            file://us_console.sh \
-            file://read_sled.sh \
-            file://reset_cp2112.sh \
-            file://wedge_power.sh \
-            file://wedge_us_mac.sh \
-            file://create_vlan_intf \
-           "
+LOCAL_URI += " \
+    file://board-utils.sh \
+    file://cpld_ver.sh \
+    file://fcmcpld_update.sh \
+    file://fpga_ver.sh \
+    file://feutil \
+    file://pdbcpld_update.sh \
+    file://peutil \
+    file://pimcpld_update.sh \
+    file://power-on.sh \
+    file://presence_util.sh \
+    file://reset_brcm.sh \
+    file://scmcpld_update.sh \
+    file://set_pim_sensor.sh \
+    file://dump_pim_serials.sh \
+    file://set_sled.sh \
+    file://setup_board.sh \
+    file://setup_i2c.sh \
+    file://setup_mgmt.sh \
+    file://setup_pcie_repeater.sh \
+    file://setup_qsfp.sh \
+    file://setup_sensors_conf.sh \
+    file://seutil \
+    file://smbcpld_update.sh \
+    file://sol.sh \
+    file://spi_util.sh \
+    file://us_console.sh \
+    file://read_sled.sh \
+    file://reset_cp2112.sh \
+    file://wedge_power.sh \
+    file://wedge_us_mac.sh \
+    file://create_vlan_intf \
+    "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
@@ -115,7 +116,7 @@ do_install_board() {
     install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
 }

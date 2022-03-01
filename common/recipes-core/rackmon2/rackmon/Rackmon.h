@@ -97,7 +97,7 @@ class Rackmon {
   }
 
   // Executes the Raw command. Throws an exception on error.
-  void rawCmd(Msg& req, Msg& resp, ModbusTime timeout);
+  void rawCmd(Request& req, Response& resp, ModbusTime timeout);
 
   // Read registers
   void readHoldingRegisters(

@@ -9,11 +9,10 @@ LIC_FILES_CHKSUM = "file://sensor-util.cpp;beginline=4;endline=16;md5=b395943ba8
 inherit meson
 inherit ptest-meson
 
-SRC_URI = "file://meson.build \
-           file://sensor-util.cpp \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://sensor-util.cpp \
+    "
 
 pkgdir = "sensor-util"
 

@@ -16,7 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 
-#S = "${WORKDIR}"
 
 #CFLAGS:prepend = " -DCONFIG_YOSEMITE"
 #LDFLAGS:append = " -lyosemite_fruid"

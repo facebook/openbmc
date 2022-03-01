@@ -18,7 +18,7 @@
 cmake_do_configure:append() {
     # Fuji use AST2620 Jtag Controller master 2
     JTAG_SYSFS_DIR="/sys/devices/platform/ahb/ahb:apb/1e6e4100.jtag/"
-    echo >> ${WORKDIR}/CMakeLists.txt
-    echo "add_compile_definitions(JTAG_SYSFS_DIR=\"${JTAG_SYSFS_DIR}\")" >> ${WORKDIR}/CMakeLists.txt
-    echo >> ${WORKDIR}/CMakeLists.txt
+    echo >> ${S}/CMakeLists.txt
+    echo "add_compile_definitions(JTAG_SYSFS_DIR=\"${JTAG_SYSFS_DIR}\")" >> ${S}/CMakeLists.txt
+    echo >> ${S}/CMakeLists.txt
 }

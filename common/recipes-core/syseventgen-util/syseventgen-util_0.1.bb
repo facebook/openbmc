@@ -8,12 +8,12 @@ LIC_FILES_CHKSUM = "file://syseventgen-util.cpp;beginline=4;endline=16;md5=b3959
 
 inherit meson
 
-SRC_URI =  "file://meson.build \
-            file://syseventgen-util.cpp \
-            file://syseventgen-util.h \
-            "
+LOCAL_URI = " \
+    file://meson.build \
+    file://syseventgen-util.cpp \
+    file://syseventgen-util.h \
+    "
 
-S = "${WORKDIR}"
 DEPENDS += "nlohmann-json libpal cli11 libsdr libipmi"
 RDEPENDS:${PN} += "libpal libsdr libipmi"
 

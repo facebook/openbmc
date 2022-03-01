@@ -17,11 +17,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://mTerm/run \
-            file://sol.sh \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://mTerm/run \
+    file://sol.sh \
+    "
 
 # Go with default names of mTerm for MTERM_SERVICES
 # since we have just one console.

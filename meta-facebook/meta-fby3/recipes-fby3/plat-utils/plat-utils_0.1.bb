@@ -21,21 +21,21 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://setup-gpio.sh \
-           file://power-on.sh \
-           file://sync_date.sh \
-           file://COPYING \
-           file://setup-dev.sh \
-           file://sol-util \
-           file://setup-sic.sh \
-           file://check_eth0_ipv4.sh \
-           file://usb-util.sh \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://setup-gpio.sh \
+    file://power-on.sh \
+    file://sync_date.sh \
+    file://COPYING \
+    file://setup-dev.sh \
+    file://sol-util \
+    file://setup-sic.sh \
+    file://check_eth0_ipv4.sh \
+    file://usb-util.sh \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
 binfiles = " sync_date.sh sol-util usb-util.sh "

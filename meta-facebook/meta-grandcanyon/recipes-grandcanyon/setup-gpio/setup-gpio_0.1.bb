@@ -7,12 +7,11 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://setup-gpio.c;beginline=8;endline=20;md5=8e8a5829be6e215cdbf65cac2aa6ddc4"
 
 inherit meson
-
-SRC_URI = "file://setup-gpio.c \
-           file://meson.build \
-           file://setup-gpio.sh \
-          "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://setup-gpio.c \
+    file://meson.build \
+    file://setup-gpio.sh \
+    "
 
 binfiles = "setup-gpio \
            "

@@ -20,7 +20,8 @@ RDEPENDS:${PN} += "libipmi libfruid libipmb "
 LDFLAGS += "-lfruid -lipmb"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://fruid.c \
-           file://BBV.c \
-           file://usb-dbg-conf.c \
-          "
+LOCAL_URI += " \
+    file://fruid.c \
+    file://BBV.c \
+    file://usb-dbg-conf.c \
+    "

@@ -9,13 +9,12 @@ LIC_FILES_CHKSUM = "file://gpiod.c;beginline=4;endline=16;md5=b66b777f082370423b
 
 inherit meson
 
-SRC_URI = "file://meson.build \
-           file://gpiod.c \
-           file://setup-gpiod.sh \
-           file://run-gpiod.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://meson.build \
+    file://gpiod.c \
+    file://setup-gpiod.sh \
+    file://run-gpiod.sh \
+    "
 
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio "
 RDEPENDS:${PN} += " libpal libgpio-ctrl libfbgc-common libfbgc-gpio "

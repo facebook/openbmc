@@ -1376,53 +1376,58 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   uint8_t bmc_location = 0;
   uint8_t type_1ou = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
+
   ret = fby35_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
+  if ( ret < 0 ) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
     return -1;
   }
 
   config_status = bic_is_m2_exp_prsnt(slot);
-  if (config_status < 0) {
+  if ( config_status < 0 ) {
     syslog(LOG_ERR, "%s() Cannot get the status of 1OU/2OU", __func__);
     config_status = 0;
   }
   if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    //check if GPv3 is installed
     if ( fby35_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
+      syslog(LOG_WARNING, "%s() Failed to get 2OU board type", __func__);
     }
   }
 
   if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
-    if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-      pcie_conf = CONFIG_D_GPV3;
-    } else if (type_2ou == DPV2_BOARD) {
-      if (pal_get_dpv2_pcie_config(slot, &pcie_conf)) {
-        // Unable to get correct DP PCIE configuration
-        pcie_conf = CONFIG_UNKNOWN;
-      }
-      syslog(LOG_INFO, "%s() pcie_conf = %u\n", __func__, pcie_conf);
-    } else if (config_status == 0) {
-      pcie_conf = CONFIG_A;
-    } else if (config_status == 1) {
-      bic_get_1ou_type(slot, &type_1ou);
-      if (type_1ou == EDSFF_1U) {
-        pcie_conf = CONFIG_B_E1S;
-      } else {
+    switch (config_status & (PRESENT_2OU|PRESENT_1OU)) {
+      case 0:
+        pcie_conf = CONFIG_A;
+        break;
+      case PRESENT_1OU:
+        if ( bic_get_1ou_type(slot, &type_1ou) != 0 ) {
+          pcie_conf = CONFIG_C;
+          break;
+        }
+        switch (type_1ou) {
+          case EDSFF_1U:
+          case M2_1U:
+            pcie_conf = CONFIG_MFG;
+            break;
+          default:
+            pcie_conf = CONFIG_C;
+            break;
+        }
+        break;
+      case PRESENT_2OU:
         pcie_conf = CONFIG_B;
-      }
-    } else if (config_status == 3) {
-      pcie_conf = CONFIG_D;
-    } else {
-      pcie_conf = CONFIG_B;
+        if ( type_2ou == DPV2_BOARD ) {
+          // To be defined on fby35
+          pal_get_dpv2_pcie_config(slot, &pcie_conf);
+        }
+        break;
+      case (PRESENT_2OU|PRESENT_1OU):
+        // MFG Test: 1OU=M2, 2OU=DPV2
+        pcie_conf = CONFIG_MFG;
+        break;
     }
   } else {
-    if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-      pcie_conf = CONFIG_C_GPV3;
-    } else {
-      pcie_conf = CONFIG_C;
-    }
+    pcie_conf = CONFIG_D;
   }
 
   *data++ = pcie_conf;

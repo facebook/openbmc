@@ -6,14 +6,14 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://dimm-util.cpp;beginline=4;endline=16;md5=417473877b7959f386857ca3ecd515a0"
 
-SRC_URI = "file://Makefile \
-           file://dimm-util.cpp \
-           file://dimm-util.h \
-           file://dimm-vendor.cpp \
-           file://dimm-capacity.cpp \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://dimm-util.cpp \
+    file://dimm-util.h \
+    file://dimm-vendor.cpp \
+    file://dimm-capacity.cpp \
+    "
 
-S = "${WORKDIR}"
 binfiles = "dimm-util"
 
 CXXFLAGS += " -lpal -lkv"

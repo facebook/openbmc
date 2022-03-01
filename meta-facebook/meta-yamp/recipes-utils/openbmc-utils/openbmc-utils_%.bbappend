@@ -17,30 +17,31 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bios_util.sh \
-            file://board-utils.sh \
-            file://eth0_mac_fixup.sh \
-            file://fpga_util.sh \
-            file://fpga_ver.sh \
-            file://power-on.sh \
-            file://reset_brcm.sh \
-            file://setup_board.sh \
-            file://setup_i2c.sh \
-            file://wedge_power.sh \
-            file://wedge_us_mac.sh \
-            file://pim_enable.sh \
-            file://dpm_ver.sh \
-            file://dump_pim_serials.sh \
-            file://yamp_bios.layout \
-            file://showtech.sh \
-            file://seutil \
-            file://peutil \
-            file://scdinfo \
-            file://psu_show_tech.py \
-            file://show_tech.py \
-            file://sup_eeprom.sh \
-            file://dpm_dump.sh \
-           "
+LOCAL_URI += " \
+    file://bios_util.sh \
+    file://board-utils.sh \
+    file://eth0_mac_fixup.sh \
+    file://fpga_util.sh \
+    file://fpga_ver.sh \
+    file://power-on.sh \
+    file://reset_brcm.sh \
+    file://setup_board.sh \
+    file://setup_i2c.sh \
+    file://wedge_power.sh \
+    file://wedge_us_mac.sh \
+    file://pim_enable.sh \
+    file://dpm_ver.sh \
+    file://dump_pim_serials.sh \
+    file://yamp_bios.layout \
+    file://showtech.sh \
+    file://seutil \
+    file://peutil \
+    file://scdinfo \
+    file://psu_show_tech.py \
+    file://show_tech.py \
+    file://sup_eeprom.sh \
+    file://dpm_dump.sh \
+    "
 
 OPENBMC_UTILS_FILES += " \
     bios_util.sh \
@@ -74,9 +75,9 @@ do_install_board() {
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
     # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
     install -m 755 dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
@@ -101,10 +102,10 @@ do_install_board() {
     install -m 755 sup_eeprom.sh ${D}${sysconfdir}/init.d/sup_eeprom.sh
     update-rc.d -r ${D} sup_eeprom.sh start 90 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/yamp_bios.layout ${D}${sysconfdir}/yamp_bios.layout
+    install -m 0755 ${S}/yamp_bios.layout ${D}${sysconfdir}/yamp_bios.layout
 }
 
 do_install:append() {

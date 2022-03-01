@@ -26,16 +26,15 @@ BBCLASSEXTEND = "native"
 
 inherit meson
 
-S = "${WORKDIR}"
-
-SRC_URI = "file://lsmmc.c \
-           file://mmc.h \
-           file://mmc_int.h \
-           file://obmc-mmc.c \
-           file://obmc-mmc.h \
-           file://meson.build \
-           file://obmc_mmc.py \
-          "
+LOCAL_URI = " \
+    file://lsmmc.c \
+    file://mmc.h \
+    file://mmc_int.h \
+    file://obmc-mmc.c \
+    file://obmc-mmc.h \
+    file://meson.build \
+    file://obmc_mmc.py \
+    "
 
 inherit python3-dir
 

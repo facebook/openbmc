@@ -17,7 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
         file://nic_ext.cpp \
         file://nic_ext.h \
         file://bmc_cpld.cpp \
@@ -42,7 +42,7 @@ SRC_URI += " \
         file://bic_m2_dev.h \
         "
 
-SRC_URI:remove = " \
+LOCAL_URI:remove = " \
         file://bic_cpld.cpp \
         file://bic_cpld.h \
         file://bic_fw.cpp \

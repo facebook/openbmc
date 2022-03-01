@@ -17,11 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup-consoled.sh \
-           "
-
-S = "${WORKDIR}"
-
+LOCAL_URI += "file://setup-consoled.sh"
 
 pkgdir = "consoled"
 

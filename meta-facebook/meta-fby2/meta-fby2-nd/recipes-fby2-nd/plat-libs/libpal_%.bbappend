@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://plat/meson.build \
     file://pal_crashdump_nd.h \
     file://pal_crashdump_nd.c \

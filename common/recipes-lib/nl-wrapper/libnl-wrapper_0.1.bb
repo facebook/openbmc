@@ -6,12 +6,11 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://nl-wrapper.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://nl-wrapper.c \
-           file://nl-wrapper.h \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://nl-wrapper.c \
+    file://nl-wrapper.h \
+    "
 
 CFLAGS += "-I${STAGING_INCDIR}/libnl3"
 LDFLAGS += "-lnl-3 -lnl-cli-3 -lnl-genl-3 -lnl-nf-3"

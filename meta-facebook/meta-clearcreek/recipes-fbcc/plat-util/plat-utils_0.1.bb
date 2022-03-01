@@ -21,23 +21,23 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://setup-gpio.sh \
-           file://setup-usbnet.sh \
-           file://setup-usbhub.sh \
-           file://setup-m2carrier.sh \
-           file://setup-pon-driver.sh \
-           file://sync-rtc.sh \
-           file://run-sync-rtc.sh \
-           file://setup-i2c.sh \
-           file://setup-por.sh \
-           file://setup-nicfru.sh \
-           file://COPYING \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://setup-gpio.sh \
+    file://setup-usbnet.sh \
+    file://setup-usbhub.sh \
+    file://setup-m2carrier.sh \
+    file://setup-pon-driver.sh \
+    file://sync-rtc.sh \
+    file://run-sync-rtc.sh \
+    file://setup-i2c.sh \
+    file://setup-por.sh \
+    file://setup-nicfru.sh \
+    file://COPYING \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 RDEPENDS:${PN} += "gpiocli"
 DEPENDS:append = "update-rc.d-native"

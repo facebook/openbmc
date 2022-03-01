@@ -1,9 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += "file://pal.c \
-            file://pal.h \
-            file://machine_config.c \
-            "
+LOCAL_URI += " \
+    file://pal.c \
+    file://pal.h \
+    file://machine_config.c \
+    "
 
 SOURCES += "machine_config.c"
 

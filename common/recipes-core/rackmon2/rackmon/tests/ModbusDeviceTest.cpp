@@ -286,6 +286,32 @@ TEST_F(ModbusDeviceTest, DeviceStatus) {
   EXPECT_EQ(j["baudrate"], 19200);
 }
 
+TEST_F(ModbusDeviceTest, MonitorInvalidRegOnce) {
+  EXPECT_CALL(
+      get_modbus(),
+      command(
+          // addr(1) = 0x32,
+          // func(1) = 0x03,
+          // reg_off(2) = 0x0000,
+          // reg_cnt(2) = 0x0002
+          encodeMsgContentEqual(0x320300000002_EM),
+          _,
+          19200,
+          ModbusTime::zero(),
+          ModbusTime::zero()))
+      .Times(1)
+      // addr(1) = 0x32,
+      // func(1) = 0x83,
+      // data(1) = 0x02
+      .WillOnce(SetMsgDecode<1>(0x328302_EM));
+
+  ModbusDevice dev(get_modbus(), 0x32, get_regmap());
+  // This should see the illegal address error
+  dev.monitor();
+  // This should be a no-op.
+  dev.monitor();
+}
+
 TEST_F(ModbusDeviceTest, MonitorDataValue) {
   EXPECT_CALL(
       get_modbus(),

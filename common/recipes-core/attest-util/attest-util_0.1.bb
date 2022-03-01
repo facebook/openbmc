@@ -9,8 +9,7 @@ LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=17;md5=da35978751a9d71b7
 
 inherit meson
 inherit ptest-meson
-
-SRC_URI = "\
+LOCAL_URI = " \
     file://main.cpp \
     file://meson.build \
     file://message_types/spdm.cpp \
@@ -19,8 +18,6 @@ SRC_URI = "\
     file://utils.cpp \
     file://utils.hpp \
     "
-
-S = "${WORKDIR}"
 
 DEPENDS += " cli11  nlohmann-json gtest libpal libobmc-mctp "
 RDEPENDS:${PN} += " libpal libobmc-mctp "

@@ -22,14 +22,13 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://gpiointrd.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
-SRC_URI = "file://Makefile \
-           file://gpiointrd.c \
-           file://setup-gpiointrd.sh \
-           file://run-gpiointrd.sh \
-           file://server-init.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://gpiointrd.c \
+    file://setup-gpiointrd.sh \
+    file://run-gpiointrd.sh \
+    file://server-init.sh \
+    "
 
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfby35-common libipmi libfby35-gpio libobmc-i2c libkv libbic libpal "
 RDEPENDS:${PN} += " libpal libgpio-ctrl libfby35-common libipmi libfby35-gpio libobmc-i2c libkv libbic libpal "

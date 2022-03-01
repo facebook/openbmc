@@ -49,6 +49,11 @@ extern "C" {
 #define FRU_SLOT_BIN   "/tmp/fruid_slot%d.bin"
 #define FRU_DEV_PATH   "/tmp/fruid_slot%d_dev%d.bin"
 
+#define NEW_VER_KEY "_new_ver"
+#define FRU_STR_COMPONENT_NEW_VER_KEY "%s_%s" NEW_VER_KEY
+#define FRU_STR_CPLD_NEW_VER_KEY "%s_cpld" NEW_VER_KEY
+#define FRU_ID_CPLD_NEW_VER_KEY "slot%d_cpld" NEW_VER_KEY
+
 #define SB_CPLD_ADDR 0x0f
 
 #define NIC_FRU_BUS     8
@@ -187,11 +192,29 @@ enum {
 };
 
 enum {
-  // BOARD_ID [0:3]
-  NIC_BMC = 0x09, // 1001
-  BB_BMC  = 0x0E, // 1110
-  DVT_BB_BMC  = 0x07, // 0111
-  EDSFF_1U = 0x07,  // 0111
+  // BOARD_ID [3:0]
+  NIC_BMC    = 0x09,
+  BB_BMC     = 0x0E,
+  DVT_BB_BMC = 0x07,
+};
+
+// 1OU Board ID
+enum {
+  EDSFF_1U = 0x07,
+  CXL_1U   = 0x0A,
+  M2_1U    = 0x0B,
+};
+
+// 2OU Board type
+enum {
+  M2_BOARD = 0x01,
+  E1S_BOARD = 0x02,
+  GPV3_MCHP_BOARD = 0x03,
+  GPV3_BRCM_BOARD = 0x00,
+  DPV2_X8_BOARD = 0x07,
+  DPV2_X16_BOARD = 0x70,
+  DPV2_BOARD = 0x77,
+  UNKNOWN_BOARD = 0xFF,
 };
 
 // Server type
@@ -209,18 +232,6 @@ enum {
   STATUS_PRSNT = 0,
   STATUS_NOT_PRSNT,
   STATUS_ABNORMAL,
-};
-
-// 2OU Board type
-enum {
-  M2_BOARD = 0x01,
-  E1S_BOARD = 0x02,
-  GPV3_MCHP_BOARD = 0x03,
-  GPV3_BRCM_BOARD = 0x00,
-  DPV2_X8_BOARD = 0x07,
-  DPV2_X16_BOARD = 0x70,
-  DPV2_BOARD = 0x77,
-  UNKNOWN_BOARD = 0xff,
 };
 
 enum fan_mode {

@@ -7,15 +7,13 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
 DEPENDS:append = "libbic update-rc.d-native"
 
-SRC_URI = "file://Makefile \
-           file://setup-bic-cached.sh \
-           file://bic-cached.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://setup-bic-cached.sh \
+    file://bic-cached.c \
+    "
 
 binfiles = "bic-cached"
 

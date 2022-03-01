@@ -1,10 +1,11 @@
 # Copyright 2018-present Facebook. All Rights Reserved.
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_0.sh \
-             file://run-ipmbd_4.sh \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_0.sh \
+    file://run-ipmbd_4.sh \
+    "
 RDEPENDS:${PN} += " libbic jansson libipmb"
 
 CFLAGS:prepend = " -DCONFIG_MINIPACK "

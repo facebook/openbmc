@@ -22,19 +22,19 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://psu.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://psu.c \
-           file://psu.h \
-           file://psu-platform.c \
-           file://psu-platform.h \
-           file://Makefile \
-          "
+LOCAL_URI = " \
+    file://psu.c \
+    file://psu.h \
+    file://psu-platform.c \
+    file://psu-platform.h \
+    file://Makefile \
+    "
 
 LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog -lwedge_eeprom"
 
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
 RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
 
-S = "${WORKDIR}"
 
 do_install() {
     install -d ${D}${libdir}

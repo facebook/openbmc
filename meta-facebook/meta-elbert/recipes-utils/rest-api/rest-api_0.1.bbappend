@@ -18,7 +18,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://rest_fruid_pim.py \
     file://rest_fruid_scm.py \
     file://rest_seutil.py \

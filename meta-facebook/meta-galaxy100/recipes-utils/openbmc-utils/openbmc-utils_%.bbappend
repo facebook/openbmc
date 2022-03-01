@@ -12,33 +12,34 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://board-utils.sh \
-      file://power-on.sh \
-      file://wedge_power.sh \
-      file://us_monitor.sh \
-      file://us_refresh.sh \
-      file://us_console.sh \
-      file://bios_flash.sh \
-      file://bcm5389.sh \
-      file://at93cx6_util.sh \
-      file://galaxy100_bmc.py \
-      file://lsb_release \
-      file://seutil \
-      file://sensors_config_fix.sh \
-      file://fix_fru_eeprom.py \
-      file://qsfp_cpld_ver.sh \
-      file://ceutil.py \
-      file://version_dump \
-      file://cpldupgrade \
-      file://repeater_verify.sh \
-      file://setup_i2c.sh \
-      file://scm_cpld_rev.sh \
-      file://ec_version.sh \
-      file://create_vlan_intf \
-      file://us_monitor.service \
-      file://fix_fru_eeprom.service \
-      file://sensors_config_fix.service \
-      "
+LOCAL_URI += " \
+    file://board-utils.sh \
+    file://power-on.sh \
+    file://wedge_power.sh \
+    file://us_monitor.sh \
+    file://us_refresh.sh \
+    file://us_console.sh \
+    file://bios_flash.sh \
+    file://bcm5389.sh \
+    file://at93cx6_util.sh \
+    file://galaxy100_bmc.py \
+    file://lsb_release \
+    file://seutil \
+    file://sensors_config_fix.sh \
+    file://fix_fru_eeprom.py \
+    file://qsfp_cpld_ver.sh \
+    file://ceutil.py \
+    file://version_dump \
+    file://cpldupgrade \
+    file://repeater_verify.sh \
+    file://setup_i2c.sh \
+    file://scm_cpld_rev.sh \
+    file://ec_version.sh \
+    file://create_vlan_intf \
+    file://us_monitor.service \
+    file://fix_fru_eeprom.service \
+    file://sensors_config_fix.service \
+    "
 
 RDEPENDS:${PN} += " python3 bash"
 DEPENDS:append += " update-rc.d-native"
@@ -57,10 +58,10 @@ install_board_sysv() {
     # rc.S
 
     # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
 
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
@@ -82,7 +83,7 @@ install_board_sysv() {
 
     # rc.[2345]
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
     install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh

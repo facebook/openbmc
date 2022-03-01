@@ -26,7 +26,7 @@ void Modbus::command(
   std::lock_guard<std::mutex> lck(deviceMutex_);
   device_->setBaudrate(baudrate);
   device_->write(req.raw.data(), req.len);
-  device_->read(resp.raw.data(), resp.len, timeout.count());
+  resp.len = device_->read(resp.raw.data(), resp.len, timeout.count());
   resp.decode();
   if (settleTime != ModbusTime::zero()) {
     // If the bus needs to be idle after each transaction for

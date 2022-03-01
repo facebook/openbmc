@@ -20,11 +20,10 @@ DESCRIPTION = "UDEV rules to unify device names across all platforms"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
-SRC_URI = "file://persistent_devices.rules \
-           file://COPYING \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://persistent_devices.rules \
+    file://COPYING \
+    "
 
 do_install() {
     dst=${D}${sysconfdir}/udev/

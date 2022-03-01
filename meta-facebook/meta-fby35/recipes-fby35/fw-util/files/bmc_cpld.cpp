@@ -11,7 +11,6 @@
 using namespace std;
 #define JBC_FILE_NAME ".jbc"
 #define MAX10_RPD_SIZE 0x23000
-#define CPLD_NEW_VER_KEY "%s_cpld_new_ver"
 
 image_info BmcCpldComponent::check_image(const string& image, bool force) {
   string fru_name = fru();
@@ -121,7 +120,7 @@ int BmcCpldComponent::print_version()
       throw "Error in getting the version of " + fru_name;
     }
     cout << fru_name << " CPLD Version: " << ver << endl;
-    snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str());
+    snprintf(ver_key, sizeof(ver_key), FRU_STR_CPLD_NEW_VER_KEY, fru().c_str());
     ret = kv_get(ver_key, value, NULL, 0);
     if ((ret < 0) && (errno == ENOENT)) { // no update before
       cout << fru_name << " CPLD Version After activation: " << ver << endl;
@@ -248,7 +247,7 @@ int BmcCpldComponent::update_cpld(const string& image, bool force)
     remove(image_sts.new_path.c_str());
   }
 
-  snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str());
+  snprintf(ver_key, sizeof(ver_key), FRU_STR_CPLD_NEW_VER_KEY, fru().c_str());
   if (fby35_common_get_img_ver(image.c_str(), ver, FW_BB_CPLD) < 0) {
      kv_set(ver_key, "Unknown", 0, 0);
   } else {

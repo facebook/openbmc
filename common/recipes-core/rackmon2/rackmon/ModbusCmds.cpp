@@ -4,10 +4,21 @@
 
 namespace rackmon {
 
-static void
-check_value(const std::string& what, uint32_t value, uint32_t expected_value) {
-  if (value != expected_value) {
-    throw BadResponseError(what, expected_value, value);
+void Response::checkValue(const std::string& what, uint32_t value, uint32_t expectedValue) {
+  if (value != expectedValue) {
+    throw BadResponseError(what, expectedValue, value);
+  }
+}
+
+void Response::decode() {
+  validate();
+  // Error response is structured as:
+  // addr(1), errorFunc(1), errorCode(1)
+  // Where errorFunc is the response function with
+  // the last bit set to 1 (Hence mask: 0x80).
+  bool isError = len == 3 && (respFunction & 0x80) != 0;
+  if (isError) {
+    throw ModbusError(raw[2]);
   }
 }
 
@@ -40,12 +51,12 @@ ReadHoldingRegistersResp::ReadHoldingRegistersResp(
 
 void ReadHoldingRegistersResp::decode() {
   // addr(1), func(1), count(1), <2 * count regs>, crc(2)
-  validate();
+  Response::decode();
   uint8_t byteCount, function, deviceAddr;
   *this >> regs_ >> byteCount >> function >> deviceAddr;
-  check_value("deviceAddr", deviceAddr, expectedDeviceAddr_);
-  check_value("function", function, kExpectedFunction);
-  check_value("byteCount", byteCount, regs_.size() * 2);
+  checkValue("deviceAddr", deviceAddr, expectedDeviceAddr_);
+  checkValue("function", function, kExpectedFunction);
+  checkValue("byteCount", byteCount, regs_.size() * 2);
 }
 
 WriteSingleRegisterReq::WriteSingleRegisterReq(
@@ -81,15 +92,15 @@ WriteSingleRegisterResp::WriteSingleRegisterResp(
 }
 
 void WriteSingleRegisterResp::decode() {
-  validate();
+  Response::decode();
   uint16_t registerOffset;
   uint8_t function, deviceAddr;
   *this >> value_ >> registerOffset >> function >> deviceAddr;
-  check_value("function", function, kExpectedFunction);
-  check_value("deviceAddr", deviceAddr, expectedDeviceAddr_);
-  check_value("registerOffset", registerOffset, expectedRegisterOffset_);
+  checkValue("function", function, kExpectedFunction);
+  checkValue("deviceAddr", deviceAddr, expectedDeviceAddr_);
+  checkValue("registerOffset", registerOffset, expectedRegisterOffset_);
   if (expectedValue_) {
-    check_value("value", value_, expectedValue_.value());
+    checkValue("value", value_, expectedValue_.value());
   }
 }
 
@@ -139,15 +150,15 @@ WriteMultipleRegistersResp::WriteMultipleRegistersResp(
 
 void WriteMultipleRegistersResp::decode() {
   // addr(1), func(1), off(2), count(2), crc(2)
-  validate();
+  Response::decode();
   uint16_t registerCount, registerOffset;
   uint8_t function, deviceAddr;
   // Pop fields from behind
   *this >> registerCount >> registerOffset >> function >> deviceAddr;
-  check_value("deviceAddr_", deviceAddr, expectedDeviceAddr_);
-  check_value("function", function, kExpectedFunction);
-  check_value("registerOffset", registerOffset, expectedRegisterOffset_);
-  check_value("registerCount", registerCount, expectedRegisterCount_);
+  checkValue("deviceAddr_", deviceAddr, expectedDeviceAddr_);
+  checkValue("function", function, kExpectedFunction);
+  checkValue("registerOffset", registerOffset, expectedRegisterOffset_);
+  checkValue("registerCount", registerCount, expectedRegisterCount_);
 }
 
 ReadFileRecordReq::ReadFileRecordReq(
@@ -181,7 +192,7 @@ ReadFileRecordResp::ReadFileRecordResp(
 }
 
 void ReadFileRecordResp::decode() {
-  validate();
+  Response::decode();
   // len includes addr,func,data_len, so get the expected
   // data_len by subtracting 3 from the length after chopping
   // off the CRC.
@@ -190,15 +201,15 @@ void ReadFileRecordResp::decode() {
     uint8_t referenceType, fieldSize;
     FileRecord& rec = *it;
     *this >> rec.data >> referenceType >> fieldSize;
-    check_value("referenceType", referenceType, kReferenceType);
-    check_value("fieldSize", fieldSize, 1 + (rec.data.size() * 2));
+    checkValue("referenceType", referenceType, kReferenceType);
+    checkValue("fieldSize", fieldSize, 1 + (rec.data.size() * 2));
   }
   uint8_t dataLen, deviceAddr, function;
   *this >> dataLen >> function >> deviceAddr;
-  check_value("dataLen", dataLen, bytesExp);
-  check_value("function", function, kExpectedFunction);
-  check_value("deviceAddr", deviceAddr, deviceAddr_);
-  check_value("length", len, 0);
+  checkValue("dataLen", dataLen, bytesExp);
+  checkValue("function", function, kExpectedFunction);
+  checkValue("deviceAddr", deviceAddr, deviceAddr_);
+  checkValue("length", len, 0);
 }
 
 } // namespace rackmon

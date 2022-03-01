@@ -16,8 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://usb-dbg-conf.c \
-           "
+LOCAL_URI += "file://usb-dbg-conf.c"
 
 DEPENDS:append += "libgpio"
 LDFLAGS:append += "-lgpio"

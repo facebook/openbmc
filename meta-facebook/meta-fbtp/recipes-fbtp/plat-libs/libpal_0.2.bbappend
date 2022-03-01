@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://machine_config.c \
     file://plat/meson.build \
     "

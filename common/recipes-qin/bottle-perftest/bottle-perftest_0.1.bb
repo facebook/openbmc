@@ -22,10 +22,9 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://src/ipc.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-SRC_URI = "file://src \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://src \
+    "
 
 do_install() {
   dst="${D}/usr/bin"

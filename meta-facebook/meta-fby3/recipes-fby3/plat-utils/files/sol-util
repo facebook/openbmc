@@ -36,7 +36,7 @@ SLOT=
 SLOT_NUM=
 I2C_NUM=
 
-function show_usage() {
+show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [bic|pesw]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 | slot1-1U | slot2-1U | slot3-1U | slot4-1U | slot1-2U | slot3-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [dev0|dev1|...|devN] (baudrate)"
@@ -51,17 +51,17 @@ select_expansion_uart() {
   local curr_sts=0
 
   if [ -n "$board_type" ] &&
-     ([ $board_type == "0x00" ] || [ $board_type == "0x03" ] || [ $board_type == "0x04" ]); then
+    { [ "$board_type" = "0x00" ] || [ "$board_type" = "0x03" ] || [ "$board_type" = "0x04" ]; }; then
     curr_sts=$data
   else
-    curr_sts=$(/usr/sbin/i2cget -y $bus $addr 0)
+    curr_sts=$(/usr/sbin/i2cget -y "$bus" "$addr" 0)
     curr_sts=$((curr_sts & 0x0f))
     curr_sts=$((curr_sts | data << 4))
   fi
-  /usr/sbin/i2cset -y $bus $addr 0 $curr_sts
+  /usr/sbin/i2cset -y "$bus" "$addr" 0 $curr_sts
 }
 
-function get_slot_num() {
+get_slot_num() {
   local slot_num=0
   case $1 in
     slot1)
@@ -81,7 +81,7 @@ function get_slot_num() {
   echo $slot_num
 }
 
-function get_bus_num() {
+get_bus_num() {
   local bus=0
   case $1 in
     slot1)
@@ -101,30 +101,30 @@ function get_bus_num() {
   echo $bus
 }
 
-function set_uart_src() {
+set_uart_src() {
   local bus=$1
   local addr=$2
   local data=$3
-  $I2CSET $bus $addr $data
+  $I2CSET "$bus" "$addr" "$data"
 }
 
-function is_gpv3_board() {
+is_gpv3_board() {
   local board_type=$1
   local result=0
   if [ -n "$board_type" ] &&
-      ([ "$board_type" == "0x00" ] || [ "$board_type" == "0x03" ]); then
+    { [ "$board_type" = "0x00" ] || [ "$board_type" = "0x03" ]; }; then
     result=1
   fi
   echo $result
 }
 
-function check_file_exist() {
+check_file_exist() {
   local path=$1
   local retry=$2
   local result=0
-  for i in $(seq 0 $retry)
+  for i in $(seq 0 "$retry")
   do
-    if [ -e $path ]; then
+    if [ -e "$path" ]; then
       # if usb path exist
       result=1
       break
@@ -134,14 +134,14 @@ function check_file_exist() {
   echo $result
 }
 
-function show_microcom_usage() {
+show_microcom_usage() {
   echo "------------------TERMINAL MULTIPLEXER---------------------"
   echo "CTRL + x : Terminate the connection."
   echo "Run in single mode"
   echo "-----------------------------------------------------------"
 }
 
-function get_usb_dev() {
+get_usb_dev() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="57600"
@@ -154,7 +154,7 @@ function get_usb_dev() {
   case $1 in
     pesw)
     usb_path="platform-1e6b0000.usb-usb-0:1.3.4.2.4:1.1-port0"
-    [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+    [ "$vendor" = "0x00" ] && baudrate="115200" || baudrate="230400"
   ;;
     dev0) # a
     usb_path="platform-1e6b0000.usb-usb-0:1.3.2.4:1.2-port0"
@@ -194,7 +194,7 @@ function get_usb_dev() {
   ;;
   esac
 
-  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
+  if [ "$(check_file_exist ${prefix}${usb_path} ${retry})" = 0 ]; then
       echo "The $usb_path is invalid"
       exit $EXIT_ERROR;
   fi
@@ -202,7 +202,7 @@ function get_usb_dev() {
   echo "-s ${baudrate} ${prefix}${usb_path}"
 }
 
-function get_usb_dev_by_slot() {
+get_usb_dev_by_slot() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="57600"
@@ -212,11 +212,11 @@ function get_usb_dev_by_slot() {
 
   [ -n "$4" ] && baudrate="$4"
 
-  if [ "$SLOT" == "slot1" ]; then
+  if [ "$SLOT" = "slot1" ]; then
       case $2 in
         pesw)
         usb_path="platform-1e6b0000.usb-usb-0:1.1.3.4.2.4:1.1-port0"
-        [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+        [ "$vendor" = "0x00" ] && baudrate="115200" || baudrate="230400"
       ;;
         dev0) # a
         usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.2-port0" #15
@@ -255,11 +255,11 @@ function get_usb_dev_by_slot() {
         usb_path="platform-1e6b0000.usb-usb-0:1.1.3.2.4:1.1-port0" # 16
       ;;
       esac
-   elif [ "$SLOT" == "slot3" ]; then
+   elif [ "$SLOT" = "slot3" ]; then
       case $2 in
         pesw)
         usb_path="platform-1e6b0000.usb-usb-0:1.3.3.4.2.4:1.1-port0"
-        [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+        [ "$vendor" = "0x00" ] && baudrate="115200" || baudrate="230400"
       ;;
         dev0) # a
         usb_path="platform-1e6b0000.usb-usb-0:1.3.3.2.4:1.2-port0"
@@ -303,7 +303,7 @@ function get_usb_dev_by_slot() {
       exit $EXIT_ERROR;
   fi
 
-  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
+  if [ "$(check_file_exist ${prefix}${usb_path} ${retry})" = 0 ]; then
       echo "The $usb_path is invalid"
       exit $EXIT_ERROR;
   fi
@@ -311,13 +311,14 @@ function get_usb_dev_by_slot() {
   echo "-s ${baudrate} ${prefix}${usb_path}"
 }
 
-function get_cwc_usb_dev() {
+get_cwc_usb_dev() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="230400"
   local prefix="/dev/serial/by-path/"
   local vendor="$2"
   local retry=5 # timeout = 5 * 2 = 10 seconds
+  pesw_usb_path="/sys/bus/usb/devices/1-1.3.2.2:1.0/"
 
   [ -n "$3" ] && baudrate="$3"
 
@@ -331,15 +332,31 @@ function get_cwc_usb_dev() {
   ;;
   esac
 
-  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
-      echo "The $usb_path is invalid"
-      exit $EXIT_ERROR;
+  if [ "$(check_file_exist ${pesw_usb_path} ${retry})" = 0 ]; then
+    echo "The $pesw_usb_path is invalid"
+    exit $EXIT_ERROR;
   fi
 
-  echo "-s ${baudrate} ${prefix}${usb_path}"
+  exar_path=$(find "$pesw_usb_path" -name "ttyXRUSB*")
+  echo "$exar_path" | grep "^ttyXRUSB" > /dev/null
+
+  if [ "$?" = "0" ]; then
+    tty_exar=${exar_path##*/}
+    if [ "$(check_file_exist /dev/"${tty_exar}" ${retry})" = 0 ]; then
+      echo "The /dev/${tty_exar} is invalid"
+      exit $EXIT_ERROR;
+    fi
+    echo "-s ${baudrate} /dev/${tty_exar}"
+  else
+    if [ "$(check_file_exist ${prefix}${usb_path} ${retry})" = 0 ]; then
+      echo "The $usb_path is invalid"
+      exit $EXIT_ERROR;
+    fi
+    echo "-s ${baudrate} ${prefix}${usb_path}"
+  fi
 }
 
-function get_top_usb_dev() {
+get_top_usb_dev() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="57600"
@@ -352,7 +369,7 @@ function get_top_usb_dev() {
   case $1 in
     pesw)
     usb_path="platform-1e6b0000.usb-usb-0:1.3.1.4.2.4:1.1-port0"
-    [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+    [ "$vendor" = "0x00" ] && baudrate="115200" || baudrate="230400"
   ;;
     dev0) # a
     usb_path="platform-1e6b0000.usb-usb-0:1.3.1.2.4:1.2-port0"
@@ -392,7 +409,7 @@ function get_top_usb_dev() {
   ;;
   esac
 
-  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
+  if [ "$(check_file_exist ${prefix}${usb_path} ${retry})" = 0 ]; then
       echo "The $usb_path is invalid"
       exit $EXIT_ERROR;
   fi
@@ -400,7 +417,7 @@ function get_top_usb_dev() {
   echo "-s ${baudrate} ${prefix}${usb_path}"
 }
 
-function get_bot_usb_dev() {
+get_bot_usb_dev() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="57600"
@@ -413,7 +430,7 @@ function get_bot_usb_dev() {
   case $1 in
     pesw)
     usb_path="platform-1e6b0000.usb-usb-0:1.3.4.4.2.4:1.1-port0"
-    [ "$vendor" == "0x00" ] && baudrate="115200" || baudrate="230400"
+    [ "$vendor" = "0x00" ] && baudrate="115200" || baudrate="230400"
   ;;
     dev0) # a
     usb_path="platform-1e6b0000.usb-usb-0:1.3.4.2.4:1.2-port0"
@@ -453,7 +470,7 @@ function get_bot_usb_dev() {
   ;;
   esac
 
-  if [ $(check_file_exist ${prefix}${usb_path} ${retry}) == 0 ]; then
+  if [ "$(check_file_exist ${prefix}${usb_path} ${retry})" = 0 ]; then
       echo "The $usb_path is invalid"
       exit $EXIT_ERROR;
   fi
@@ -465,19 +482,19 @@ function get_bot_usb_dev() {
 if [[ "$1" =~ ^(slot[1-4]{1})$ ]]; then
   SLOT=$1
 
-  if [ "$2" == "bic" ]; then
+  if [ "$2" = "bic" ]; then
     COMP="sb"
   fi
-elif [ "$1" == "slot1-1U" ] || [ "$1" == "slot2-1U" ] || [ "$1" == "slot3-1U" ] || [ "$1" == "slot4-1U" ]; then
+elif [ "$1" = "slot1-1U" ] || [ "$1" = "slot2-1U" ] || [ "$1" = "slot3-1U" ] || [ "$1" = "slot4-1U" ]; then
   SLOT=${1:0:5}
   COMP="1ou"
-elif [ "$1" == "slot1-2U" ] || [ "$1" == "slot3-2U" ]; then 
+elif [ "$1" = "slot1-2U" ] || [ "$1" = "slot3-2U" ]; then 
   SLOT=${1:0:5}
   COMP="2ou"
-elif [ "$1" == "slot1-2U-exp" ]; then 
+elif [ "$1" = "slot1-2U-exp" ]; then 
   SLOT=${1:0:5}
   COMP="2U-cwc"
-elif [ "$1" == "slot1-2U-top" ] || [ "$1" == "slot1-2U-bot" ]; then 
+elif [ "$1" = "slot1-2U-top" ] || [ "$1" = "slot1-2U-bot" ]; then 
   SLOT=${1:0:5}
   COMP=${1:6:6}
 else
@@ -489,7 +506,7 @@ fi
 
 if [[ "$2" == "--history" ]]; then
   if [ $# -eq 2 ]; then
-    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
     exit 0;
   else
     show_usage
@@ -497,8 +514,8 @@ if [[ "$2" == "--history" ]]; then
   fi
 fi
 
-SLOT_NUM=$(get_slot_num $SLOT)
-I2C_NUM=$(get_bus_num $SLOT)
+SLOT_NUM=$(get_slot_num "$SLOT")
+I2C_NUM=$(get_bus_num "$SLOT")
 SLED_TYPE=$(cat $SLED_TYPE)
 EXP_BOARD_TYPE=
 #COMP=$2
@@ -512,23 +529,23 @@ CWC_UART_SEL=
 GPV3_PRESENT=
 
 if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
-  if ! [ "$SLOT" == "slot1" ]; then
+  if ! [ "$SLOT" = "slot1" ]; then
     echo "$SLOT is empty"
     exit $EXIT_ERROR;
   else
     # notify CPLD to set the uart src to class 2
-    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
+    set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x00 0x02"
   fi
 else
-  if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
+  if [ "$(is_server_prsnt "${SLOT_NUM}")" = "0" ]; then
     echo "The $SLOT is empty"
     exit $EXIT_ERROR;
-  elif [ $(is_slot_12v_on ${SLOT_NUM}) == "0" ]; then
+  elif [ "$(is_slot_12v_on "${SLOT_NUM}")" = "0" ]; then
     echo "The $SLOT is 12V-off"
     exit $EXIT_ERROR;
   else
     # notify CPLD to set the uart src to class 1
-    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
+    set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x00 0x01"
   fi
 fi
 
@@ -553,36 +570,36 @@ if [ -n "$COMP" ]; then
   fi
 
   # check COMP first
-  if [ "$COMP" == "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17|8))$ ]]; then
+  if [ "$COMP" = "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17|8))$ ]]; then
     EXP_CPLD_ADDR=${FRONT_EXP_CPLD_ADDR}
-  elif [ "$COMP" == "2ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|10))$ ]]; then
-    EXP_BOARD_TYPE=$(get_2ou_board_type $I2C_NUM)
-    if [ $EXP_BOARD_TYPE == "0x02" ]; then     #E1.S board
+  elif [ "$COMP" = "2ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|10))$ ]]; then
+    EXP_BOARD_TYPE=$(get_2ou_board_type "$I2C_NUM")
+    if [ "$EXP_BOARD_TYPE" = "0x02" ]; then     #E1.S board
         EXP_CPLD_ADDR=""
     else
         EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
     fi
-  elif [ "$COMP" == "sb" ]; then
+  elif [ "$COMP" = "sb" ]; then
     CPLD_ADDR=${SB_CPLD_ADDR}
-  elif [ "$COMP" == "2U-cwc" ]; then
-    EXP_BOARD_TYPE=$(get_2ou_board_type $I2C_NUM)
+  elif [ "$COMP" = "2U-cwc" ]; then
+    EXP_BOARD_TYPE=$(get_2ou_board_type "$I2C_NUM")
 
-    if [ $EXP_BOARD_TYPE == "0x04" ]; then
+    if [ "$EXP_BOARD_TYPE" = "0x04" ]; then
       CWC_CPLD_ADDR=${CWC_EXP_CPLD_ADDR}
     else
       echo "component:$COMP not present"
       exit $EXIT_ERROR
     fi
-  elif [ "$COMP" == "2U-top" ] || [ "$COMP" == "2U-bot" ]; then
-    EXP_BOARD_TYPE=$(get_2ou_board_type $I2C_NUM)
+  elif [ "$COMP" = "2U-top" ] || [ "$COMP" = "2U-bot" ]; then
+    EXP_BOARD_TYPE=$(get_2ou_board_type "$I2C_NUM")
 
-    if [ $EXP_BOARD_TYPE == "0x04" ]; then
-      GPV3_PRESENT=$(/usr/sbin/i2cget -y $I2C_NUM $CWC_EXP_CPLD_ADDR 0x04)
+    if [ "$EXP_BOARD_TYPE" = "0x04" ]; then
+      GPV3_PRESENT=$(/usr/sbin/i2cget -y "$I2C_NUM" $CWC_EXP_CPLD_ADDR 0x04)
       CWC_CPLD_ADDR=${CWC_EXP_CPLD_ADDR}
 
-      if [ "$COMP" == "2U-top" ] && [ $((GPV3_PRESENT & 0x03)) -eq 0 ]; then
+      if [ "$COMP" = "2U-top" ] && [ $((GPV3_PRESENT & 0x03)) -eq 0 ]; then
         EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
-      elif [ "$COMP" == "2U-bot" ] && [ $((GPV3_PRESENT & 0x0C)) -eq 0 ]; then
+      elif [ "$COMP" = "2U-bot" ] && [ $((GPV3_PRESENT & 0x0C)) -eq 0 ]; then
         EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
       else
         echo "component:$COMP not present"
@@ -598,56 +615,56 @@ if [ -n "$COMP" ]; then
   fi
 
   # check DEV
-  if [[ "$DEV" =~ ^(dev([0-9]|1[0-1]))$ ]] || [ "$DEV" == "pesw" ] ; then
+  if [[ "$DEV" =~ ^(dev([0-9]|1[0-1]))$ ]] || [ "$DEV" = "pesw" ] ; then
     DEV_NUM=${3:3:4}
-    if [ "$COMP" == "1ou" ] && [[ "$DEV" =~ ^(dev([4-9]|1[0-1]))$ ]]; then
+    if [ "$COMP" = "1ou" ] && [[ "$DEV" =~ ^(dev([4-9]|1[0-1]))$ ]]; then
       echo "$DEV is not supported!"
       exit $EXIT_ERROR;
-    elif [ "$COMP" == "2ou" ]; then
+    elif [ "$COMP" = "2ou" ]; then
 
-      if [ "$DEV" == "pesw" ] && [ $# -ne 2 ]; then # not support baudrate option
+      if [ "$DEV" = "pesw" ] && [ $# -ne 2 ]; then # not support baudrate option
         show_usage
         exit $EXIT_ERROR;
       fi
 
-      if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
+      if [[ $(is_gpv3_board "$EXP_BOARD_TYPE") ]]; then
         #check enable RST_USB_HUB_N gpio or not
-        VAL=$(/usr/bin/bic-util $SLOT --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
+        VAL=$(/usr/bin/bic-util "$SLOT" --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
 
-        if [ $VAL -eq 0 ]; then
-          /usr/bin/bic-util $SLOT --set_gpio 16 1 > /dev/null 2>&1
+        if [ "$VAL" -eq 0 ]; then
+          /usr/bin/bic-util "$SLOT" --set_gpio 16 1 > /dev/null 2>&1
           echo -n "Initializing USB devs..."
         fi
 
-        if [ $BOARD_ID -eq 9 ]; then
+        if [ "$BOARD_ID" -eq 9 ]; then
           USB_PATH=$(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
         else
           USB_PATH=$(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
         fi
 
-        if [ $VAL -eq 0 ]; then
+        if [ "$VAL" -eq 0 ]; then
           echo "Done"
         fi
 
         show_microcom_usage
-        /usr/bin/microcom $USB_PATH
+        /usr/bin/microcom "$USB_PATH"
         RET=$?
         #after enabling USB hub, make it permanently open
         exit $RET;
       fi
-    elif [ "$COMP" == "2U-cwc" ] || [ "$COMP" == "2U-top" ] || [ "$COMP" == "2U-bot" ]; then
+    elif [ "$COMP" = "2U-cwc" ] || [ "$COMP" = "2U-top" ] || [ "$COMP" = "2U-bot" ]; then
       #check enable RST_USB_HUB_N gpio or not
-      VAL=$(/usr/bin/bic-util $SLOT --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
+      VAL=$(/usr/bin/bic-util "$SLOT" --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
 
-      if [ $VAL -eq 0 ]; then
-        /usr/bin/bic-util $SLOT --set_gpio 16 1 > /dev/null 2>&1
+      if [ "$VAL" -eq 0 ]; then
+        /usr/bin/bic-util "$SLOT" --set_gpio 16 1 > /dev/null 2>&1
         echo -n "Initializing USB devs..."
         sleep 10
       fi
 
-      if [ "$COMP" == "2U-bot" ]; then
+      if [ "$COMP" = "2U-bot" ]; then
         USB_PATH=$(get_bot_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
-      elif [ "$COMP" == "2U-top" ]; then
+      elif [ "$COMP" = "2U-top" ]; then
         USB_PATH=$(get_top_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
       else
         USB_PATH=$(get_cwc_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
@@ -658,17 +675,17 @@ if [ -n "$COMP" ]; then
         exit $?
       fi
 
-      if [ $VAL -eq 0 ]; then
+      if [ "$VAL" -eq 0 ]; then
         echo "Done"
       fi
 
       show_microcom_usage
-      /usr/bin/microcom $USB_PATH
+      /usr/bin/microcom "$USB_PATH"
       RET=$?
       #after enabling USB hub, make it permanently open
       exit $RET;
     fi
-  elif [ "$DEV" == "bic" ]; then
+  elif [ "$DEV" = "bic" ]; then
 
     if [ $# -ne 2 ]; then # not support baudrate option
       show_usage
@@ -679,16 +696,16 @@ if [ -n "$COMP" ]; then
       [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] && DEV_NUM="0x2" || DEV_NUM="0x4"
     else
       DEV_NUM="0x6"
-      [[ "$(is_gpv3_board $EXP_BOARD_TYPE)" == "1" ]] && DEV_NUM="0xC"
+      [[ "$(is_gpv3_board "$EXP_BOARD_TYPE")" == "1" ]] && DEV_NUM="0xC"
 
-      if [ "$COMP" == "2U-cwc" ]; then
+      if [ "$COMP" = "2U-cwc" ]; then
         CWC_UART_SEL="0x00"
       fi
-      if [ "$COMP" == "2U-top" ]; then
+      if [ "$COMP" = "2U-top" ]; then
         CWC_UART_SEL="0x03"
         DEV_NUM="0xC"
       fi
-      if [ "$COMP" == "2U-bot" ]; then
+      if [ "$COMP" = "2U-bot" ]; then
         CWC_UART_SEL="0x04"
         DEV_NUM="0xC"
       fi
@@ -699,39 +716,39 @@ if [ -n "$COMP" ]; then
   fi
 
   if [ -n "$CPLD_ADDR" ]; then
-    set_uart_src $I2C_NUM $CPLD_ADDR "0x01 $DEV_NUM"
+    set_uart_src "$I2C_NUM" $CPLD_ADDR "0x01 $DEV_NUM"
   else
     # redirect the uart src to an expansion board
-    if [ "$COMP" == "1ou" ]; then
-      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"
+    if [ "$COMP" = "1ou" ]; then
+      set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x01 0x01"
     else
       [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] &&
-        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01" ||
-        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
+        set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x01 0x01" ||
+        set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x01 0x02"
     fi
     if [ -n "$CWC_CPLD_ADDR" ]; then
-      set_uart_src $I2C_NUM $CWC_CPLD_ADDR "0x07 ${CWC_UART_SEL}"
+      set_uart_src "$I2C_NUM" $CWC_CPLD_ADDR "0x07 ${CWC_UART_SEL}"
 
-      if [ "$COMP" == "2U-top" ]; then
-        $I2CSET $I2C_NUM $CWC_CPLD_ADDR 0x00 0x00
-      elif [ "$COMP" == "2U-bot" ]; then
-        $I2CSET $I2C_NUM $CWC_CPLD_ADDR 0x00 0x01
+      if [ "$COMP" = "2U-top" ]; then
+        $I2CSET "$I2C_NUM" $CWC_CPLD_ADDR 0x00 0x00
+      elif [ "$COMP" = "2U-bot" ]; then
+        $I2CSET "$I2C_NUM" $CWC_CPLD_ADDR 0x00 0x01
       fi
     fi
     if [ -n "$EXP_CPLD_ADDR" ]; then
-      select_expansion_uart $I2C_NUM $EXP_CPLD_ADDR $DEV_NUM $EXP_BOARD_TYPE
+      select_expansion_uart "$I2C_NUM" $EXP_CPLD_ADDR $DEV_NUM "$EXP_BOARD_TYPE"
     fi
   fi
 else
-  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
+  set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x01 0x03"
 fi
 
-if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
+if [ "$(get_slot_type "$SLOT_NUM")" = "0" ]; then
   # set UART clock source 24MHz
-  devmem_clear_bit $(scu_addr 4c) $((SLOT_NUM + 23))
+  devmem_clear_bit "$(scu_addr 4c)" $((SLOT_NUM + 23))
 fi
 
-exec /usr/local/bin/mTerm_client $SLOT
+exec /usr/local/bin/mTerm_client "$SLOT"
 
 echo
 echo

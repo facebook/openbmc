@@ -23,11 +23,10 @@ LIC_FILES_CHKSUM = "file://dhcp-id;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 RDEPENDS:${PN} += " bash wedge-eeprom "
 
-SRC_URI = "file://dhcp-id \
-           file://enterprise-num \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://dhcp-id \
+    file://enterprise-num \
+    "
 
 do_install() {
   localbindir="${D}/usr/local/bin"

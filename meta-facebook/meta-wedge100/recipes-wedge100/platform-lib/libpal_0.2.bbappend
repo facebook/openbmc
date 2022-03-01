@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://plat/meson.build \
     "
 

@@ -23,12 +23,11 @@ LIC_FILES_CHKSUM = "file://usbcons.sh;beginline=5;endline=18;md5=0b1ee7d6f844d47
 
 DEPENDS:append = " update-rc.d-native"
 
-SRC_URI = "file://usbcons.sh \
-           file://usbmon.sh \
-           file://usbcons.service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://usbcons.sh \
+    file://usbmon.sh \
+    file://usbcons.service \
+    "
 
 inherit systemd
 

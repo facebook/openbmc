@@ -19,12 +19,13 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += "file://plat/meson.build \
-            file://pal_sensors.c \
-            file://pal_sensors.h \
-            file://pal.c \
-            file://pal.h \
-            "
+LOCAL_URI += " \
+    file://plat/meson.build \
+    file://pal_sensors.c \
+    file://pal_sensors.h \
+    file://pal.c \
+    file://pal.h \
+    "
 
 DEPENDS += "libgpio-ctrl \
             liblog \

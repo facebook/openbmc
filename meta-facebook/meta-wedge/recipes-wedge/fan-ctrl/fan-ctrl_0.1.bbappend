@@ -19,15 +19,15 @@ DEPENDS:append = "libwedge-eeprom update-rc.d-native libwatchdog libgpio-ctrl li
 RDEPENDS:${PN} += "libwedge-eeprom libwatchdog libgpio-ctrl libmisc-utils libobmc-i2c"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
-SRC_URI += "file://get_fan_speed.sh \
-            file://init_pwm.sh \
-            file://pwm_common.sh \
-            file://set_fan_speed.sh \
-            file://setup-fan.sh \
-            file://fand.cpp \
-           "
 
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://get_fan_speed.sh \
+    file://init_pwm.sh \
+    file://pwm_common.sh \
+    file://set_fan_speed.sh \
+    file://setup-fan.sh \
+    file://fand.cpp \
+    "
 
 binfiles += "get_fan_speed.sh \
             init_pwm.sh \

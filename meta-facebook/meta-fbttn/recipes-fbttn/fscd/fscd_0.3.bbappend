@@ -16,18 +16,19 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
-SRC_URI += "file://init_pwm.sh \
-            file://setup-fan.sh \
-            file://FSC_BC_Type5_MP_v3_config.json \
-            file://FSC_BC_Type5_MP_v2_zone0.fsc \
-            file://FSC_BC_Type5_MP_v2_zone1.fsc \
-            file://FSC_BC_Type7_MP_v3_config.json \
-            file://FSC_BC_Type7_MP_v1_zone0.fsc \
-            file://FSC_BC_Type7_MP_v1_zone1.fsc \
-            file://fsc_board.py \
-            file://setup_fscd_sensor.sh \
-            file://check_M2_nvme.sh \
-           "
+LOCAL_URI += " \
+    file://init_pwm.sh \
+    file://setup-fan.sh \
+    file://FSC_BC_Type5_MP_v3_config.json \
+    file://FSC_BC_Type5_MP_v2_zone0.fsc \
+    file://FSC_BC_Type5_MP_v2_zone1.fsc \
+    file://FSC_BC_Type7_MP_v3_config.json \
+    file://FSC_BC_Type7_MP_v1_zone0.fsc \
+    file://FSC_BC_Type7_MP_v1_zone1.fsc \
+    file://fsc_board.py \
+    file://setup_fscd_sensor.sh \
+    file://check_M2_nvme.sh \
+    "
 
 FSC_BIN_FILES += "init_pwm.sh"
 

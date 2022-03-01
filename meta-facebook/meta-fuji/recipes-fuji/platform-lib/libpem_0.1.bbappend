@@ -17,9 +17,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pem:"
 
-SRC_URI += "file://pem-platform.h \
-            file://pem-platform.c \
-          "
+LOCAL_URI += " \
+    file://pem-platform.h \
+    file://pem-platform.c \
+    "
 
 do_install:append() {
   install -d ${D}${includedir}/facebook

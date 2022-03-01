@@ -7,14 +7,14 @@ PR = "r2"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ncsid.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://ncsid.c \
-           file://setup-ncsid.sh \
-           file://enable-aen.sh \
-           file://run-ncsid.sh \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://ncsid.c \
+    file://setup-ncsid.sh \
+    file://enable-aen.sh \
+    file://run-ncsid.sh \
+    "
 
-S = "${WORKDIR}"
 DEPENDS =+ " update-rc.d-native libpal libncsi libpldm libkv"
 
 binfiles = "ncsid"

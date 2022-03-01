@@ -19,13 +19,14 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 RDEPENDS:${PN} += "bash"
 
-SRC_URI += "file://get_fan_speed.sh \
-            file://set_fan_speed.sh \
-            file://fsc_board.py \
-            file://fsc-config.json \
-            file://zone.fsc \
-            file://setup-fan.sh \
-           "
+LOCAL_URI += " \
+    file://get_fan_speed.sh \
+    file://set_fan_speed.sh \
+    file://fsc_board.py \
+    file://fsc-config.json \
+    file://zone.fsc \
+    file://setup-fan.sh \
+    "
 
 FSC_BIN_FILES += "get_fan_speed.sh \
                   set_fan_speed.sh "

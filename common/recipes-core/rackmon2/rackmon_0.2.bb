@@ -38,70 +38,73 @@ def get_profile_flag(d):
   return "false"
 EXTRA_OEMESON += "-Dprofiling=${@get_profile_flag(d)}"
 
-
-SRC_URI = "file://meson.build \
-           file://meson_options.txt \
-           file://rackmond.service \
-           file://run-rackmond.sh \
-           file://setup-rackmond.sh \
-           file://Log.h \
-           file://Device.cpp \
-           file://Device.h \
-           file://ModbusCmds.cpp \
-           file://ModbusCmds.h \
-           file://Modbus.cpp \
-           file://Modbus.h \
-           file://Msg.cpp \
-           file://Msg.h \
-           file://UARTDevice.cpp \
-           file://UARTDevice.h \
-           file://Register.cpp \
-           file://Register.h \
-           file://ModbusDevice.cpp \
-           file://ModbusDevice.h \
-           file://Rackmon.cpp \
-           file://Rackmon.h \
-           file://PollThread.h \
-           file://RackmonSock.cpp \
-           file://RackmonSvcUnix.h \
-           file://RackmonSvcUnix.cpp \
-           file://RackmonCliUnix.cpp \
-          "
+LOCAL_URI = " \
+    file://meson.build \
+    file://meson_options.txt \
+    file://rackmond.service \
+    file://run-rackmond.sh \
+    file://setup-rackmond.sh \
+    file://Log.h \
+    file://Device.cpp \
+    file://Device.h \
+    file://ModbusError.h \
+    file://ModbusCmds.cpp \
+    file://ModbusCmds.h \
+    file://Modbus.cpp \
+    file://Modbus.h \
+    file://Msg.cpp \
+    file://Msg.h \
+    file://UARTDevice.cpp \
+    file://UARTDevice.h \
+    file://Register.cpp \
+    file://Register.h \
+    file://ModbusDevice.cpp \
+    file://ModbusDevice.h \
+    file://Rackmon.cpp \
+    file://Rackmon.h \
+    file://PollThread.h \
+    file://RackmonSock.cpp \
+    file://RackmonSvcUnix.h \
+    file://RackmonSvcUnix.cpp \
+    file://RackmonCliUnix.cpp \
+    "
 # Configuration files
-SRC_URI += "file://configs/interface/rackmon.conf \
-            file://configs/register_map/orv2_psu.json \
-           "
+LOCAL_URI += " \
+    file://configs/interface/rackmon.conf \
+    file://configs/register_map/orv2_psu.json \
+    "
 
 # Schemas
-SRC_URI += "file://schemas/RegisterMapConfigSchema.json \
-            file://schemas/InterfaceConfigSchema.json \
-            file://schemas/interface/interface.json \
-            file://schemas/registermap/float_constraints.json \
-            file://schemas/registermap/flags_constraints.json \
-            file://schemas/registermap/integer_constraints.json \
-            file://schemas/registermap/register.json \
-           "
+LOCAL_URI += " \
+    file://schemas/RegisterMapConfigSchema.json \
+    file://schemas/InterfaceConfigSchema.json \
+    file://schemas/interface/interface.json \
+    file://schemas/registermap/float_constraints.json \
+    file://schemas/registermap/flags_constraints.json \
+    file://schemas/registermap/integer_constraints.json \
+    file://schemas/registermap/register.json \
+    "
 #scripts
-SRC_URI += "file://scripts/schema_validator.py \
-           "
+LOCAL_URI += " \
+    file://scripts/schema_validator.py \
+    "
 
 # Test sources
-SRC_URI += "file://tests/Main.cpp \
-            file://tests/MsgTest.cpp \
-            file://tests/DeviceTest.cpp \
-            file://tests/ModbusCmdsTest.cpp \
-            file://tests/ModbusTest.cpp \
-            file://tests/RegisterDescriptorTest.cpp \
-            file://tests/RegisterValueTest.cpp \
-            file://tests/RegisterTest.cpp \
-            file://tests/RegisterMapTest.cpp \
-            file://tests/ModbusDeviceTest.cpp \
-            file://tests/PollThreadTest.cpp \
-            file://tests/RackmonTest.cpp \
-            file://tests/TempDir.h \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://tests/Main.cpp \
+    file://tests/MsgTest.cpp \
+    file://tests/DeviceTest.cpp \
+    file://tests/ModbusCmdsTest.cpp \
+    file://tests/ModbusTest.cpp \
+    file://tests/RegisterDescriptorTest.cpp \
+    file://tests/RegisterValueTest.cpp \
+    file://tests/RegisterTest.cpp \
+    file://tests/RegisterMapTest.cpp \
+    file://tests/ModbusDeviceTest.cpp \
+    file://tests/PollThreadTest.cpp \
+    file://tests/RackmonTest.cpp \
+    file://tests/TempDir.h \
+    "
 
 install_wrapper() {
   echo "#!/bin/bash" > $2

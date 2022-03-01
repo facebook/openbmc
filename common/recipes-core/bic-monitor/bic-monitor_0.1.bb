@@ -24,14 +24,13 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bic-monitor.c;beginline=4;endline=16;md5=5d75ad6348d98a3f7ee7e2be8db29e00"
 
-SRC_URI = "file://Makefile \
-           file://bic-monitor.c \
-           file://setup-bic-monitor.sh \
-           file://run-bic-monitor.sh \
-           file://bicmond.service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://bic-monitor.c \
+    file://setup-bic-monitor.sh \
+    file://run-bic-monitor.sh \
+    file://bicmond.service \
+    "
 
 binfiles = "bicmond \
            "

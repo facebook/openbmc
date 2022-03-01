@@ -6,12 +6,11 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://mcu.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://Makefile \
-           file://mcu.c \
-           file://mcu.h \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://mcu.c \
+    file://mcu.h \
+    "
 
 LDFLAGS += "-lipmb -lobmc-i2c -lpal -lkv"
 DEPENDS = " libipmb libipmi libobmc-i2c libpal libkv"

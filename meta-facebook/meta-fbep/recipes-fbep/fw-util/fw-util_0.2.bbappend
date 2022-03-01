@@ -17,20 +17,21 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://nic.cpp \
-            file://cpld.cpp \
-            file://vr_fw.cpp \
-            file://vr_fw.h \
-            file://switch.cpp \
-            file://usbdbg.h \
-            file://usbdbg.cpp \
-            file://mcu_fw.h \
-            file://mcu_fw.cpp \
-            file://platform.cpp \
-            file://tpm2.h \
-            file://tpm2.cpp \
-            file://asic.cpp \
-           "
+LOCAL_URI += " \
+    file://nic.cpp \
+    file://cpld.cpp \
+    file://vr_fw.cpp \
+    file://vr_fw.h \
+    file://switch.cpp \
+    file://usbdbg.h \
+    file://usbdbg.cpp \
+    file://mcu_fw.h \
+    file://mcu_fw.cpp \
+    file://platform.cpp \
+    file://tpm2.h \
+    file://tpm2.cpp \
+    file://asic.cpp \
+    "
 
 DEPENDS += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic"
 RDEPENDS:${PN} += "libmcu libfpga libast-jtag libvr libkv libobmc-i2c libasic "

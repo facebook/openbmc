@@ -18,13 +18,12 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup-pemd.sh \
-            file://run-pemd.sh \
-            file://platform_pemd.h \
-            file://platform_pemd.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://setup-pemd.sh \
+    file://run-pemd.sh \
+    file://platform_pemd.h \
+    file://platform_pemd.c \
+    "
 
 binfiles = "pemd \
            "

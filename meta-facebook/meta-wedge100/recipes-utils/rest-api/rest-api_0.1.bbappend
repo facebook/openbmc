@@ -19,17 +19,18 @@ inherit systemd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://rest_i2cflush.py \
-            file://board_endpoint.py \
-            file://boardroutes.py \
-            file://board_setup_routes.py \
-            file://rest_fw_ver.py \
-            file://fake_kv.py \
-            file://test_rest_fw_ver.py \
-            file://restapi.service \
-            file://rest_fw_ver.py \
-            file://rest_presence.py \
-           "
+LOCAL_URI += " \
+    file://rest_i2cflush.py \
+    file://board_endpoint.py \
+    file://boardroutes.py \
+    file://board_setup_routes.py \
+    file://rest_fw_ver.py \
+    file://fake_kv.py \
+    file://test_rest_fw_ver.py \
+    file://restapi.service \
+    file://rest_fw_ver.py \
+    file://rest_presence.py \
+    "
 
 binfiles1 += "rest_i2cflush.py \
              rest_fw_ver.py \

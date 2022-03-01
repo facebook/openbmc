@@ -186,6 +186,10 @@ server_power_12v_off(uint8_t fru) {
       syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
   }
 
+  memset(cmd, 0, 64);
+  snprintf(cmd, 64, FRU_ID_CPLD_NEW_VER_KEY, fru);
+  kv_del(cmd, 0);
+
   ret = fby35_common_set_fru_i2c_isolated(fru, GPIO_VALUE_LOW);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to disable the i2c of fru%d", __func__, fru);

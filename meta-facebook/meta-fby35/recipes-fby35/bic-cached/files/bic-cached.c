@@ -126,7 +126,9 @@ fruid_cache_init(uint8_t slot_id) {
         // read riser board fru form sb_bic, fruid = 1
         remote_r_ret = remote_fruid_cache_init(slot_id, FRUID_RISER, NONE_INTF);
       } else {
-        remote_r_ret = remote_fruid_cache_init(slot_id, 0, REXP_BIC_INTF);
+        if ((type_2ou & DPV2_X8_BOARD) != DPV2_X8_BOARD) {
+          remote_r_ret = remote_fruid_cache_init(slot_id, 0, REXP_BIC_INTF);
+        }
       }
     }
     return (remote_f_ret + remote_r_ret);
@@ -340,7 +342,8 @@ sdr_cache_init(uint8_t slot_id) {
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {
           syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
       }
-      if (type_2ou != DPV2_BOARD) {
+      if (((type_2ou & DPV2_X8_BOARD) != DPV2_X8_BOARD) &&
+          ((type_2ou & DPV2_X16_BOARD) != DPV2_X16_BOARD)) {
         remote_r_ret = remote_sdr_cache_init(slot_id, REXP_BIC_INTF);
       }
     }
@@ -461,7 +464,7 @@ main (int argc, char * const argv[])
   if ( sdr_dump == true ) {
     if ( remote_dump == true ) {
       ret = remote_sdr_cache_init(slot_id, intf);
-    } else { 
+    } else {
       ret = sdr_cache_init(slot_id);
     }
 

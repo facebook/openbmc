@@ -23,14 +23,14 @@ LIC_FILES_CHKSUM = "file://ipmi.c;beginline=8;endline=20;md5=da35978751a9d71b736
 
 BBCLASSEXTEND = "native"
 
-SRC_URI = "file://meson.build \
-           file://ipmi.c \
-           file://ipmi.h \
-          "
+LOCAL_URI = " \
+    file://meson.build \
+    file://ipmi.c \
+    file://ipmi.h \
+    "
 
 DEPENDS += "libipc"
 RDEPENDS:${PN} += "libipc"
 
-S = "${WORKDIR}"
 
 inherit meson

@@ -22,27 +22,22 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-SRC_URI = "\
-          file://fscd.py\
-          file://fsc_bmcmachine.py \
-          file://fsc_board.py \
-          file://fsc_control.py\
-          file://fsc_expr.py\
-          file://fsc_parser.py\
-          file://fsc_profile.py\
-          file://fsc_sensor.py\
-          file://fsc_util.py\
-          file://fsc_zone.py\
-          file://setup.py\
-          file://run-fscd.sh\
-          file://fscd.service\
-          "
-
-SRC_URI += "\
-          file://fscd_test\
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://fscd.py \
+    file://fsc_bmcmachine.py \
+    file://fsc_board.py \
+    file://fsc_control.py \
+    file://fsc_expr.py \
+    file://fsc_parser.py \
+    file://fsc_profile.py \
+    file://fsc_sensor.py \
+    file://fsc_util.py \
+    file://fsc_zone.py \
+    file://setup.py \
+    file://run-fscd.sh \
+    file://fscd.service \
+    file://fscd_test \
+    "
 
 inherit distutils3
 inherit systemd
@@ -118,7 +113,7 @@ EOF
 do_install_ptest() {
   install -d ${D}${libdir}/fscd
   install -d ${D}${libdir}/fscd/ptest
-  cp -r ${WORKDIR}/fscd_test/* ${D}${libdir}/fscd/ptest/
+  cp -r ${S}/fscd_test/* ${D}${libdir}/fscd/ptest/
 }
 
 

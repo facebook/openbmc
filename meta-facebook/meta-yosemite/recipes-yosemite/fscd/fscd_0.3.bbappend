@@ -17,12 +17,13 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://init_pwm.sh \
-            file://setup-fan.sh \
-            file://fsc-config.json \
-            file://zone1.fsc \
-            file://fsc_board.py \
-           "
+LOCAL_URI += " \
+    file://init_pwm.sh \
+    file://setup-fan.sh \
+    file://fsc-config.json \
+    file://zone1.fsc \
+    file://fsc_board.py \
+    "
 
 FSC_BIN_FILES += "init_pwm.sh"
 

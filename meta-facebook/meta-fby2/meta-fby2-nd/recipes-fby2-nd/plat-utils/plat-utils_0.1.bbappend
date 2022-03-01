@@ -15,5 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://power-on.sh \
-           "
+LOCAL_URI += "file://power-on.sh"

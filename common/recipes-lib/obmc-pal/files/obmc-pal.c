@@ -1444,6 +1444,11 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         /* Also try logging to Critial log file, if available */
         sprintf(temp_log, "MCERR,FRU:%u", fru);
         pal_add_cri_sel(temp_log);
+      } else if (ed[0] == 0xD){
+        strcat(error_log, "RMCA");
+        /* Also try logging to Critial log file, if available */
+        sprintf(temp_log, "RMCA,FRU:%u", fru);
+        pal_add_cri_sel(temp_log);
       }
       else
         strcat(error_log, "Unknown");

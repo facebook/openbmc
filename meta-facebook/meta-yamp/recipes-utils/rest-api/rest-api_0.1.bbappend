@@ -18,7 +18,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://rest_piminfo.py \
     file://rest_pimserial.py \
     file://rest_pimstatus.py \

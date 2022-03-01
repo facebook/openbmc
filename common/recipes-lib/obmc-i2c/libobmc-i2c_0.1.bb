@@ -26,21 +26,20 @@ BBCLASSEXTEND = "native"
 
 inherit meson
 
-SRC_URI = "file://obmc-i2c.h \
-           file://i2c_cdev.c \
-           file://i2c_cdev.h \
-           file://i2c_core.h \
-           file://i2c_device.c \
-           file://i2c_device.h \
-           file://i2c_mslave.c \
-           file://i2c_mslave.h \
-           file://i2c_sysfs.c \
-           file://i2c_sysfs.h \
-           file://smbus.h \
-           file://meson.build \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://obmc-i2c.h \
+    file://i2c_cdev.c \
+    file://i2c_cdev.h \
+    file://i2c_core.h \
+    file://i2c_device.c \
+    file://i2c_device.h \
+    file://i2c_mslave.c \
+    file://i2c_mslave.h \
+    file://i2c_sysfs.c \
+    file://i2c_sysfs.h \
+    file://smbus.h \
+    file://meson.build \
+    "
 
 DEPENDS += "libmisc-utils liblog"
 RDEPENDS:${PN} += "libmisc-utils"

@@ -220,7 +220,8 @@ TEST_F(RackmonTest, BasicScanFoundNone) {
   std::vector<ModbusDeviceInfo> devs = mon.listDevices();
   EXPECT_EQ(devs.size(), 0);
   mon.stop();
-  Msg req, resp;
+  Request req;
+  Response resp;
   req.raw[0] = 100; // Some unknown address, this should throw
   req.raw[1] = 0x3;
   req.len = 2;
@@ -244,7 +245,8 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   EXPECT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
   mon.stop();
 
-  Msg rreq, rresp;
+  Request rreq;
+  Response rresp;
   rreq.raw[0] = 100; // Some unknown address, this should throw
   rreq.raw[1] = 0x3;
   rreq.len = 2;

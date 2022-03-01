@@ -27,19 +27,19 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://partition.py;beginline=3;endline=16;\
 md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-SRC_URI = "file://check_image.py \
-           file://improve_system.py \
-           file://partition.py \
-           file://setup.py \
-           file://system.py \
-           file://test_improve_system.py \
-           file://test_partition.py \
-           file://test_system.py \
-           file://test_virtualcat.py \
-           file://virtualcat.py \
-           file://bmc_pusher"
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://check_image.py \
+    file://improve_system.py \
+    file://partition.py \
+    file://setup.py \
+    file://system.py \
+    file://test_improve_system.py \
+    file://test_partition.py \
+    file://test_system.py \
+    file://test_virtualcat.py \
+    file://virtualcat.py \
+    file://bmc_pusher \
+    "
 
 do_lint() {
   flake8 *.py

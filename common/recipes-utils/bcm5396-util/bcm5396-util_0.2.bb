@@ -19,7 +19,7 @@ SUMMARY = "Utilities for BCM5396"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = " \
+LOCAL_URI = " \
     file://COPYING \
     file://bcm5396.py \
     file://bcm5396_util.py \
@@ -30,7 +30,6 @@ SCRIPTS = " \
     bcm5396_util.py \
     "
 
-S = "${WORKDIR}"
 
 do_install() {
     pkgdir="/usr/local/packages/utils"

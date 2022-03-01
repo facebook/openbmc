@@ -60,8 +60,11 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   gpio_set FM_BMC_SLOT${slot_num}_ISOLATED_EN_R 0
   rm -f /tmp/*fruid_slot${slot_num}*
   rm -f /tmp/*sdr_slot${slot_num}*
-  rm -f /tmp/cache_store/slot${slot_num}_vr*
-  rm -f /tmp/cache_store/fru${slot_num}_2ou_board_type
+  kv del /tmp/cache_store/slot${slot_num}_vr_c0h_crc
+  kv del /tmp/cache_store/slot${slot_num}_vr_c4h_crc
+  kv del /tmp/cache_store/slot${slot_num}_vr_ech_crc
+  kv del /tmp/cache_store/slot${slot_num}_cpld_new_ver
+  kv del /tmp/cache_store/fru${slot_num}_2ou_board_type
   set_nic_power
 else
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1

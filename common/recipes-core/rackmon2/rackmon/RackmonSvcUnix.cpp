@@ -69,7 +69,8 @@ void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
   std::string cmd;
   req.at("type").get_to(cmd);
   if (cmd == "raw") {
-    Msg req_m, resp_m;
+    Request req_m;
+    Response resp_m;
     for (auto& b : req["cmd"])
       req_m << uint8_t(b);
     resp_m.len = req["response_length"];
@@ -170,14 +171,14 @@ void RackmonUNIXSocketService::handleLegacyCommand(
     throw std::logic_error("request needs at least 1 byte");
   if (req_hdr->length + sizeof(req_hdr) != req_buf.size())
     throw std::overflow_error("body");
-  Msg req_msg;
+  Request req_msg;
   std::copy(
       req_buf.begin() + sizeof(struct req_hdr),
       req_buf.end(),
       req_msg.raw.begin());
   req_msg.len = req_hdr->length;
 
-  Msg resp_msg;
+  Response resp_msg;
   resp_msg.len = req_hdr->expected_resp_length;
   ModbusTime timeout(req_hdr->custom_timeout);
   rackmond_.rawCmd(req_msg, resp_msg, timeout);

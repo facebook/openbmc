@@ -22,6 +22,7 @@ CFLAGS += "-DCONFIG_FBY35"
 LDFLAGS += " -lipmb -lbic -lncsi -lfby35_fruid -lfby35_common"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://fruid.c \
-            file://usb-dbg-conf.c \
-           "
+LOCAL_URI += " \
+    file://fruid.c \
+    file://usb-dbg-conf.c \
+    "

@@ -37,7 +37,7 @@ LIC_FILES_CHKSUM = "\
 inherit meson python3-dir
 inherit ptest-meson
 
-SRC_URI = "\
+LOCAL_URI = " \
     file://fileops.cpp \
     file://fileops.hpp \
     file://kv-util.cpp \
@@ -49,8 +49,6 @@ SRC_URI = "\
     file://meson.build \
     file://test-kv.cpp \
     "
-
-S = "${WORKDIR}"
 
 DEPENDS += "python3-setuptools"
 RDEPENDS:${PN} += "python3-core bash"

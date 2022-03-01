@@ -20,7 +20,7 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-SRC_URI = "\
+LOCAL_URI = " \
     file://meson.build \
     file://plat/meson.build \
     file://meson_options.txt \
@@ -44,7 +44,6 @@ DEPENDS += " \
 
 EXTRA_OEMESON:append = "-Dmachine=\"${MACHINE}\""
 
-S = "${WORKDIR}"
 
 inherit python3-dir
 

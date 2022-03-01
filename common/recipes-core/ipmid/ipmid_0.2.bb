@@ -29,31 +29,30 @@ CFLAGS += "-Wall -Werror "
 IPMI_FEATURE_FLAGS ?= "-DSENSOR_DISCRETE_US_STATUS -DSENSOR_DISCRETE_SEL_STATUS -DSENSOR_DISCRETE_WDT -DSENSOR_DISCRETE_PWR_STATUS -DSENSOR_DISCRETE_DIMM_HOT -DSENSOR_DISCRETE_PMBUS_STATUS"
 CFLAGS += "${IPMI_FEATURE_FLAGS}"
 
-SRC_URI = "file://Makefile \
-           file://ipmid.c \
-           file://lan.c \
-           file://sensor.c \
-           file://timestamp.c \
-           file://timestamp.h \
-           file://sel.c \
-           file://sel.h \
-           file://sdr.c \
-           file://sdr.h \
-           file://sensor.h \
-           file://fruid.h \
-           file://fruid.c \
-           file://usb-dbg.c \
-           file://usb-dbg.h \
-           file://usb-dbg-conf.c \
-           file://usb-dbg-conf.h \
-           file://BBV.c \
-           file://BBV.h \
-           file://run-ipmid.sh \
-           file://setup-ipmid.sh \
-           file://ipmid.service \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://ipmid.c \
+    file://lan.c \
+    file://sensor.c \
+    file://timestamp.c \
+    file://timestamp.h \
+    file://sel.c \
+    file://sel.h \
+    file://sdr.c \
+    file://sdr.h \
+    file://sensor.h \
+    file://fruid.h \
+    file://fruid.c \
+    file://usb-dbg.c \
+    file://usb-dbg.h \
+    file://usb-dbg-conf.c \
+    file://usb-dbg-conf.h \
+    file://BBV.c \
+    file://BBV.h \
+    file://run-ipmid.sh \
+    file://setup-ipmid.sh \
+    file://ipmid.service \
+    "
 
 install_sysv() {
     install -d ${D}${sysconfdir}/init.d

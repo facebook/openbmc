@@ -20,11 +20,11 @@ LIC_FILES_CHKSUM = "\
 
 RDEPENDS:${PN} += "python3-core openbmc-utils"
 
-SRC_URI = "file://Makefile \
-           file://thread-benchmark.c \
-           file://thread-benchmark-run.py \
-          "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://thread-benchmark.c \
+    file://thread-benchmark-run.py \
+    "
 
 binfiles = "thread-benchmark"
 

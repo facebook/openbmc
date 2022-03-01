@@ -17,30 +17,31 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://init_pwm.sh \
-            file://setup-fan.sh \
-            file://check_fan_config.sh \
-            file://FSC_FBY2_MP_4TL_config.json \
-            file://FSC_FBY2_MP_4TL_zone1.fsc \
-            file://FSC_FBY2_PVT_2GP_2TL_config.json \
-            file://FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
-            file://FSC_FBY2_PVT_2CF_2TL_config.json \
-            file://FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
-            file://FSC_FBGPV2_DVT_config.json \
-            file://FSC_FBGPV2_10KFAN_DVT_config.json \
-            file://FSC_FBGPV2_VSI_DVT_config.json \
-            file://FSC_FBGPV2_VSI_10KFAN_DVT_config.json \
-            file://FSC_FBGPV2_BRCM_PVT_config.json \
-            file://FSC_FBGPV2_BRCM_10KFAN_PVT_config.json \
-            file://FSC_FBGPV2_DVT_zone1.fsc \
-            file://FSC_FBYV250_10KFAN_DVT_config.json \
-            file://FSC_FBYV250_15KFAN_DVT_config.json \
-            file://FSC_FBYV250_DVT_zone1.fsc \
-            file://FSC_NORTHDOME_4ND_config.json \
-            file://FSC_NORTHDOME_4ND_zone1.fsc \
-            file://fsc_board.py \
-            file://fscd_end.sh \
-           "
+LOCAL_URI += " \
+    file://init_pwm.sh \
+    file://setup-fan.sh \
+    file://check_fan_config.sh \
+    file://FSC_FBY2_MP_4TL_config.json \
+    file://FSC_FBY2_MP_4TL_zone1.fsc \
+    file://FSC_FBY2_PVT_2GP_2TL_config.json \
+    file://FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
+    file://FSC_FBY2_PVT_2CF_2TL_config.json \
+    file://FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
+    file://FSC_FBGPV2_DVT_config.json \
+    file://FSC_FBGPV2_10KFAN_DVT_config.json \
+    file://FSC_FBGPV2_VSI_DVT_config.json \
+    file://FSC_FBGPV2_VSI_10KFAN_DVT_config.json \
+    file://FSC_FBGPV2_BRCM_PVT_config.json \
+    file://FSC_FBGPV2_BRCM_10KFAN_PVT_config.json \
+    file://FSC_FBGPV2_DVT_zone1.fsc \
+    file://FSC_FBYV250_10KFAN_DVT_config.json \
+    file://FSC_FBYV250_15KFAN_DVT_config.json \
+    file://FSC_FBYV250_DVT_zone1.fsc \
+    file://FSC_NORTHDOME_4ND_config.json \
+    file://FSC_NORTHDOME_4ND_zone1.fsc \
+    file://fsc_board.py \
+    file://fscd_end.sh \
+    "
 
 FSC_BIN_FILES += "init_pwm.sh \
                   check_fan_config.sh \

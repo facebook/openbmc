@@ -17,14 +17,15 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://vr.cpp \
-            file://bic_bios_ext.cpp \
-            file://platform.cpp \
-            file://mcu_fw.h \
-            file://mcu_fw.cpp \
-            file://usbdbg.h \
-            file://usbdbg.cpp \
-           "
+LOCAL_URI += " \
+    file://vr.cpp \
+    file://bic_bios_ext.cpp \
+    file://platform.cpp \
+    file://mcu_fw.h \
+    file://mcu_fw.cpp \
+    file://usbdbg.h \
+    file://usbdbg.cpp \
+    "
 CXXFLAGS += " -DBIC_SUPPORT "
 DEPENDS += "libipmi libipmb libbic libmcu libminilaketb-sensor"
 RDEPENDS:${PN} += "libipmi libipmb libbic libmcu libminilaketb-sensor"

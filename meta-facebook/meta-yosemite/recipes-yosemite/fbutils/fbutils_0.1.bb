@@ -21,19 +21,19 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://sol-util \
-           file://power_led.sh \
-           file://power_util.py \
-           file://setup-gpio.sh \
-           file://power-on.sh \
-           file://fw_env_config.sh \
-           file://COPYING \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://sol-util \
+    file://power_led.sh \
+    file://power_util.py \
+    file://setup-gpio.sh \
+    file://power-on.sh \
+    file://fw_env_config.sh \
+    file://COPYING \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 binfiles = "sol-util power_led.sh power_util.py"
 
@@ -53,7 +53,7 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 0755 ${WORKDIR}/fw_env_config.sh ${D}${sysconfdir}/init.d/fw_env_config.sh
+  install -m 0755 ${S}/fw_env_config.sh ${D}${sysconfdir}/init.d/fw_env_config.sh
   update-rc.d -r ${D} fw_env_config.sh start 05 S .
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .

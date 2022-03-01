@@ -17,8 +17,4 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://mTerm/run \
-           "
-
-S = "${WORKDIR}"
-
+LOCAL_URI += "file://mTerm/run"

@@ -21,21 +21,21 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://ast-functions \
-           file://power_led.sh \
-           file://post_led.sh \
-           file://pcie_switch.sh \
-           file://ssd_sku.sh \
-           file://ssd_vid.sh \
-           file://setup_adc.sh \
-           file://disable_wdt2.sh\
-           file://src \
-           file://COPYING \
-          "
+LOCAL_URI = " \
+    file://ast-functions \
+    file://power_led.sh \
+    file://post_led.sh \
+    file://pcie_switch.sh \
+    file://ssd_sku.sh \
+    file://ssd_vid.sh \
+    file://setup_adc.sh \
+    file://disable_wdt2.sh \
+    file://src \
+    file://COPYING \
+    "
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
 
 binfiles = "power_led.sh post_led.sh"
 

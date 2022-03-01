@@ -5,7 +5,8 @@
 #include <iomanip>
 #include "Log.h"
 
-#if (__GNUC__ < 8)
+#if (defined(__llvm__) && (__clang_major__ < 9)) || \
+    (!defined(__llvm__) && (__GNUC__ < 8))
 #include <experimental/filesystem>
 namespace std {
 namespace filesystem = experimental::filesystem;
@@ -198,7 +199,7 @@ void Rackmon::stop() {
   }
 }
 
-void Rackmon::rawCmd(Msg& req, Msg& resp, ModbusTime timeout) {
+void Rackmon::rawCmd(Request& req, Response& resp, ModbusTime timeout) {
   uint8_t addr = req.addr;
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "rawcmd::" + std::to_string(int(req.addr)), profileStore_);

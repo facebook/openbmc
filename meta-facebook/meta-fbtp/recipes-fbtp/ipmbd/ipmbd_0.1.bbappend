@@ -1,11 +1,12 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_1.sh \
-             file://run-ipmbd_4.sh \
-             file://run-ipmbd_9.sh \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_1.sh \
+    file://run-ipmbd_4.sh \
+    file://run-ipmbd_9.sh \
+    "
 DEPENDS:append = " plat-utils update-rc.d-native"
 
 CFLAGS:prepend = " -DCONFIG_FBTP"

@@ -12,7 +12,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://eeprom_utils.py \
     file://rest_fruid_scm.py \
     file://rest_seutil.py \

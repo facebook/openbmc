@@ -17,17 +17,18 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://vr.cpp \
-            file://platform.cpp \
-            file://cpld.cpp \
-            file://bios.h \
-            file://bios.cpp \
-            file://mcu_fw.h \
-            file://mcu_fw.cpp \
-            file://usbdbg.cpp \
-            file://usbdbg.h \
-            file://me.cpp \
-           "
+LOCAL_URI += " \
+    file://vr.cpp \
+    file://platform.cpp \
+    file://cpld.cpp \
+    file://bios.h \
+    file://bios.cpp \
+    file://mcu_fw.h \
+    file://mcu_fw.cpp \
+    file://usbdbg.cpp \
+    file://usbdbg.h \
+    file://me.cpp \
+    "
 
 DEPENDS += "libgpio libme libfpga libmcu libvr libmisc-utils"
 RDEPENDS:${PN} += "libgpio libme libfpga libmcu libvr libmisc-utils"

@@ -23,11 +23,9 @@ SECTION = "base"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://adjust_bootargs.sh;beginline=4;endline=17;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S = "${WORKDIR}"
-
-SRC_URI = "\
-        file://adjust_bootargs.sh \
-        file://reflash_primary_chip.sh \
+LOCAL_URI = "\
+    file://adjust_bootargs.sh \
+    file://reflash_primary_chip.sh \
 "
 
 do_install() {

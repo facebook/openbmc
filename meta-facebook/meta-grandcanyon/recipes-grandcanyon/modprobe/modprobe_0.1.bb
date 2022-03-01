@@ -23,8 +23,7 @@ LIC_FILES_CHKSUM = "file://modprobe.conf;md5=1aaac5ad33755459b190a062ba1b9f4b"
 
 inherit meson
 
-S = "${WORKDIR}"
-
-SRC_URI = "file://modprobe.conf \
-           file://meson.build \
-           "
+LOCAL_URI = " \
+    file://modprobe.conf \
+    file://meson.build \
+    "

@@ -24,14 +24,13 @@ LIC_FILES_CHKSUM = "file://sensord.c;beginline=4;endline=16;md5=b395943ba8a0717a
 
 inherit systemd
 
-SRC_URI = "file://Makefile \
-           file://sensord.c \
-           file://sensord.service \
-           file://setup-sensord.sh \
-           file://run-sensord.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://sensord.c \
+    file://sensord.service \
+    file://setup-sensord.sh \
+    file://run-sensord.sh \
+    "
 
 SENSORD_MONITORED_FRUS ?= ""
 

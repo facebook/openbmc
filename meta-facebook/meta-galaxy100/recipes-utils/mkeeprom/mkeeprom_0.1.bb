@@ -19,12 +19,12 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://mkeeprom.c;beginline=4;endline=13;md5=03e4e5ed5d6d17edb790a6bcab2eaf6a"
 
-SRC_URI = "file://mkeeprom.c \
-		file://mkeeprom.h \
-		file://fbsettings.txt \
-		file://Makefile \
-          "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://mkeeprom.c \
+	file://mkeeprom.h \
+	file://fbsettings.txt \
+	file://Makefile \
+    "
 
 do_install() {
 	install -d ${D}${bindir}

@@ -7,16 +7,14 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
 DEPENDS:append = "libpal libkv update-rc.d-native"
 RDEPENDS:${PN} += "libpal"
 
-SRC_URI = "file://Makefile \
-           file://setup-front-paneld.sh \
-           file://front-paneld.c \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://setup-front-paneld.sh \
+    file://front-paneld.c \
+    "
 
 binfiles = "front-paneld"
 

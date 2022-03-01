@@ -72,16 +72,26 @@ int Device::waitRead(int timeoutMs) {
         sys_error(), "select returned error for " + device_);
   }
   if (rc == 0) {
-    throw TimeoutException();
+    return 0;
   }
   return timeoutMs > 0 ? timeout.tv_usec / 1000 : -1;
 }
 
-void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
+size_t Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
   size_t remBytes = exactLen;
   do {
     try {
       timeoutMs = waitRead(timeoutMs);
+      if (timeoutMs == 0) {
+        // If we did not receive even a single byte,
+        // throw a timeout exception. Else return
+        // the best effort received bytes to the upper
+        // layer
+        if (remBytes == exactLen) {
+          throw TimeoutException();
+        }
+        return exactLen - remBytes;
+      }
     } catch (std::system_error& e) {
       // Print error and ignore/retry
       logError << e.what() << std::endl;
@@ -93,10 +103,6 @@ void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
       }
       throw std::system_error(sys_error(), "read response failure");
     }
-    if (iterReadBytes != (int)exactLen) {
-      logInfo << "Read " << iterReadBytes << " out of " << exactLen
-              << std::endl;
-    }
     if (iterReadBytes > (int)remBytes) {
       throw std::system_error(
           sys_error(E2BIG), "Read more than requested bytes");
@@ -104,5 +110,6 @@ void Device::read(uint8_t* buf, size_t exactLen, int timeoutMs) {
     remBytes -= iterReadBytes;
     buf += iterReadBytes;
   } while (remBytes > 0);
+  return exactLen;
 }
 } // namespace rackmon

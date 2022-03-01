@@ -21,11 +21,11 @@ SECTION = "base"
 PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://Makefile;md5=1b3b4c5b1c1f50c5f0d53f9972cbc936"
-SRC_URI = "file://Makefile \
-           file://mdio-util.c \
-          "
 
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://mdio-util.c \
+    "
 
 pkgdir = "mdio-util"
 binfiles = "mdio-util \

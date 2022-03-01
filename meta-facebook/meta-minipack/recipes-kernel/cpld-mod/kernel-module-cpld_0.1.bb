@@ -24,17 +24,16 @@ inherit module kernel_extra_headers_export
 PR = "r0"
 PV = "0.1"
 
-SRC_URI = "file://Makefile \
-           file://domfpga.c \
-           file://fcmcpld.c \
-           file://iobfpga.c \
-           file://pdbcpld.c \
-           file://scmcpld.c \
-           file://smbcpld.c \
-           file://COPYING \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://domfpga.c \
+    file://fcmcpld.c \
+    file://iobfpga.c \
+    file://pdbcpld.c \
+    file://scmcpld.c \
+    file://smbcpld.c \
+    file://COPYING \
+    "
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 

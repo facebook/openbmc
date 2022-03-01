@@ -114,6 +114,9 @@ void ModbusDevice::monitor() {
   for (auto& registerStore : info_.registerList) {
     uint16_t registerOffset = registerStore.regAddr();
     auto& nextRegister = registerStore.front();
+    if (!registerStore.isEnabled()) {
+      continue;
+    }
     try {
       readHoldingRegisters(registerOffset, nextRegister.value);
       nextRegister.timestamp = timestamp;
@@ -125,6 +128,22 @@ void ModbusDevice::monitor() {
           nextRegister != registerStore.back()) {
         ++registerStore;
       }
+    } catch (ModbusError& e) {
+      logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
+              << " ReadReg 0x" << std::hex << registerOffset << ' '
+              << registerStore.name() << " caught: " << e.what() << std::endl;
+      if (e.errorCode == ModbusErrorCode::ILLEGAL_DATA_ADDRESS) {
+        logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
+                << " ReadReg 0x" << std::hex << registerOffset << ' '
+                << registerStore.name()
+                <<" unsupported. Disabled from monitoring" << std::endl;
+        registerStore.disable();
+      } else {
+        logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
+                << " ReadReg 0x" << std::hex << registerOffset << ' '
+                << registerStore.name() << " caught: " << e.what() << std::endl;
+      }
+      continue;
     } catch (std::exception& e) {
       logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
               << " ReadReg 0x" << std::hex << registerOffset << ' '
@@ -132,6 +151,19 @@ void ModbusDevice::monitor() {
       continue;
     }
   }
+}
+
+void ModbusDevice::setActive() {
+  std::unique_lock lk(registerListMutex_);
+  // Enable any disabled registers. Assumption is
+  // that the device might be unplugged and replugged
+  // with a newer version. Thus, prepare for the
+  // newer register set.
+  for (auto& registerStore : info_.registerList) {
+    registerStore.enable();
+  }
+  // Clear the num failures so we consider it active.
+  info_.numConsecutiveFailures = 0;
 }
 
 ModbusDeviceRawData ModbusDevice::getRawData() {

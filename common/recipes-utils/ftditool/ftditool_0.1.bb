@@ -22,16 +22,16 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ftditool.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
 
-SRC_URI = "file://ftditool.c \
-           file://Makefile \
-           file://ftdi-eeprom.h \
-          "
+LOCAL_URI = " \
+    file://ftditool.c \
+    file://Makefile \
+    file://ftdi-eeprom.h \
+    "
 
 RDEPENDS:${PN} += "libusb1"
 DEPENDS:append = "libusb1"
 LDFLAGS += "-L . -l usb-1.0 "
 
-S = "${WORKDIR}"
 
 binfiles = "ftditool"
 

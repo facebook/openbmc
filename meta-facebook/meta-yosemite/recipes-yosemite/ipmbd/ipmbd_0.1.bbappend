@@ -1,12 +1,13 @@
 # Copyright 2015-present Facebook. All Rights Reserved.
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_1.sh \
-             file://run-ipmbd_3.sh \
-             file://run-ipmbd_5.sh \
-             file://run-ipmbd_7.sh \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_1.sh \
+    file://run-ipmbd_3.sh \
+    file://run-ipmbd_5.sh \
+    file://run-ipmbd_7.sh \
+    "
 DEPENDS:append = " fbutils "
 
 CFLAGS:prepend = " -DCONFIG_YOSEMITE"

@@ -19,9 +19,7 @@ SECTION = "libs"
 inherit python3native
 inherit native
 
-SRC_URI = "file://ptest-meson-crosstarget"
-
-S = "${WORKDIR}"
+LOCAL_URI = "file://ptest-meson-crosstarget"
 
 do_install() {
     install -d ${D}${bindir}

@@ -17,10 +17,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://mTerm/run \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += "file://mTerm/run"
 
 # Go with default names of mTerm for MTERM_SERVICES
 # since we have just one console.

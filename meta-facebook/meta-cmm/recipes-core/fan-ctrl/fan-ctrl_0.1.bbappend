@@ -19,9 +19,10 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 LIC_FILES_CHKSUM = "file://fand.cpp;beginline=4;endline=16;md5=77b71fafe1f586d89f0450eb5585d656"
 
-SRC_URI += "file://setup-fan.sh \
-            file://fand.cpp \
-           "
+LOCAL_URI += " \
+    file://setup-fan.sh \
+    file://fand.cpp \
+    "
 
 LDFLAGS += " -lwatchdog -lmisc-utils -lobmc-i2c -lobmc-pmbus"
 RDEPENDS:${PN} += " libwatchdog libmisc-utils libobmc-i2c libobmc-pmbus"

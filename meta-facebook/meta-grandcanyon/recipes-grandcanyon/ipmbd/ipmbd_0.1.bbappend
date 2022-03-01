@@ -1,11 +1,12 @@
 # Copyright 2020-present Facebook. All Rights Reserved.
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += " file://setup-ipmbd.sh \
-             file://run-ipmbd_2.sh \
-             file://run-ipmbd_7.sh \
-             file://run-ipmbd_10.sh \
-           "
+LOCAL_URI += " \
+    file://setup-ipmbd.sh \
+    file://run-ipmbd_2.sh \
+    file://run-ipmbd_7.sh \
+    file://run-ipmbd_10.sh \
+    "
 #DEPENDS:append = " plat-utils "
 CFLAGS:prepend = " -DTIMEOUT_IPMB=3 "
 

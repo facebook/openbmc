@@ -6,16 +6,16 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://ncsi-util.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
-SRC_URI = "file://Makefile \
-           file://ncsi-util.c \
-           file://ncsi-util.h \
-           file://brcm-ncsi-util.c \
-           file://brcm-ncsi-util.h \
-           file://nvidia-ncsi-util.c \
-           file://nvidia-ncsi-util.h \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://ncsi-util.c \
+    file://ncsi-util.h \
+    file://brcm-ncsi-util.c \
+    file://brcm-ncsi-util.h \
+    file://nvidia-ncsi-util.c \
+    file://nvidia-ncsi-util.h \
+    "
 
-S = "${WORKDIR}"
 binfiles = "ncsi-util"
 
 LDFLAGS += "-lpal -lncsi -lpldm -lnl-wrapper -lkv -lz"

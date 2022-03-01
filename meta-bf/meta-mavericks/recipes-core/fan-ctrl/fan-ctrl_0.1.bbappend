@@ -18,12 +18,11 @@
 DEPENDS:append = " update-rc.d-native"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
-SRC_URI += "file://get_fan_speed.sh \
-            file://set_fan_speed.sh \
-            file://setup-fan.sh \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://get_fan_speed.sh \
+    file://set_fan_speed.sh \
+    file://setup-fan.sh \
+    "
 
 binfiles = "                                    \
     get_fan_speed.sh                            \

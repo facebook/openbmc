@@ -17,10 +17,11 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://bios_plat_info.py \
-            file://BIOS_UTIL_MINILAKETB.json \
-            file://setup_bios_util.sh \
-           "
+LOCAL_URI += " \
+    file://bios_plat_info.py \
+    file://BIOS_UTIL_MINILAKETB.json \
+    file://setup_bios_util.sh \
+    "
 
 binfiles += "bios_plat_info.py"
 

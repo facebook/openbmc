@@ -17,7 +17,8 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://sensor-correction-conf.json \
-           "
+LOCAL_URI += " \
+    file://sensor-correction-conf.json \
+    "
 SENSOR_CORR_CONFIG = "sensor-correction-conf.json \
                      "

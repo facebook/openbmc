@@ -22,16 +22,15 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://DBusServer.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://CMakeLists.txt \
-           file://DBusServer.c \
-           file://dbus-cputest.sh \
-           file://DBusLatencyTest.c \
-           file://dbus-latencytest.sh \
-           file://DBusServerMemtest.c \
-           file://dbus-memtest.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://CMakeLists.txt \
+    file://DBusServer.c \
+    file://dbus-cputest.sh \
+    file://DBusLatencyTest.c \
+    file://dbus-latencytest.sh \
+    file://DBusServerMemtest.c \
+    file://dbus-memtest.sh \
+    "
 
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"

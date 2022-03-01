@@ -25,13 +25,12 @@ inherit module kernel_extra_headers
 PR = "r0"
 PV = "0.1"
 
-SRC_URI = "file://Makefile \
-           file://i2c_dev_sysfs.c \
-           file://i2c_dev_sysfs.h \
-           file://COPYING \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://i2c_dev_sysfs.c \
+    file://i2c_dev_sysfs.h \
+    file://COPYING \
+    "
 
 LINUX_EXTRA_HEADERS = "i2c_dev_sysfs.h"
 

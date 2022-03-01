@@ -23,11 +23,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://me-util.c;beginline=4;endline=16;md5=2c7615be077486d8c6df561c1459af0f"
 
-SRC_URI = "file://me-util.c \
-           file://Makefile \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://me-util.c \
+    file://Makefile \
+    "
 
 binfiles = "me-util \
            "

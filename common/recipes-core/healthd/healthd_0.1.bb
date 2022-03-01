@@ -6,15 +6,15 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://healthd.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
-SRC_URI = "file://Makefile \
-           file://healthd.c \
-           file://pfr_monitor.c \
-           file://setup-healthd.sh \
-           file://run-healthd.sh \
-           file://healthd-config.json \
-           file://healthd.service \
-          "
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://healthd.c \
+    file://pfr_monitor.c \
+    file://setup-healthd.sh \
+    file://run-healthd.sh \
+    file://healthd-config.json \
+    file://healthd.service \
+    "
 
 inherit systemd
 

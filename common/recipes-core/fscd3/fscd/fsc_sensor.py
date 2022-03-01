@@ -18,6 +18,7 @@
 import abc
 import os
 import re
+import fsc_board
 from kv import kv_get, kv_set
 from subprocess import PIPE, Popen
 
@@ -61,6 +62,10 @@ class FscSensorBase(object):
         self.hwmon_source = None
         self.last_error_time = 0
         self.last_error_level = None
+        if "fru_format_transform" in dir(fsc_board):
+          self.fru_format_transform = True
+        else:
+          self.fru_format_transform = False
 
     @abc.abstractmethod
     def read(self, **kwargs):
@@ -198,7 +203,11 @@ class FscSensorSourceUtil(FscSensorBase):
                 for num in kwargs["num"]:
                     cmd += self.read_source + " " + kwargs["fru"] + " " + num + ";"
             else:
-                cmd = cmd + " " + kwargs["fru"]
+                if self.fru_format_transform:
+                    fru = fsc_board.fru_format_transform(kwargs["fru"])
+                    cmd = cmd + " " + fru
+                else:
+                    cmd = cmd + " " + kwargs["fru"]
         Logger.debug("Reading data with cmd=%s" % cmd)
         data = ""
         try:

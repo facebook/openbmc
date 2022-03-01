@@ -6,16 +6,16 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://obmc-mctp.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-SRC_URI = "file://obmc-mctp.c \
-           file://obmc-mctp.h \
-           file://Makefile \
-          "
+LOCAL_URI = " \
+    file://obmc-mctp.c \
+    file://obmc-mctp.h \
+    file://Makefile \
+    "
 
 DEPENDS += "libncsi libpldm libmctp-intel"
 RDEPENDS:${PN} += "libncsi libpldm libmctp-intel"
 LDFLAGS += "-lpldm -lmctp_intel"
 
-S = "${WORKDIR}"
 
 do_install() {
     install -d ${D}${libdir}

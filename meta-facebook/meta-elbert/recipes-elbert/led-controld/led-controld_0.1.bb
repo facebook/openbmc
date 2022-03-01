@@ -7,17 +7,15 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://led-controld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
 DEPENDS:append = "libpal update-rc.d-native"
 
-SRC_URI = "file://Makefile \
-           file://setup-led-controld.sh \
-           file://led-controld.c \
-           file://led-controld.h \
-           file://run-led-controld.sh \
-          "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://Makefile \
+    file://setup-led-controld.sh \
+    file://led-controld.c \
+    file://led-controld.h \
+    file://run-led-controld.sh \
+    "
 
 binfiles = "led-controld"
 

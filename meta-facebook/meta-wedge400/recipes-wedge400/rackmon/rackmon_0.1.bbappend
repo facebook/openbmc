@@ -17,10 +17,11 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://rackmon_platform.c \
-            file://run-rackmond.sh \
-            file://setup-rackmond.sh \
-           "
+LOCAL_URI += " \
+    file://rackmon_platform.c \
+    file://run-rackmond.sh \
+    file://setup-rackmond.sh \
+    "
 
 CFLAGS += "-DDEFAULT_TTY=\\"/dev/ttyUSB0\\" "
 CFLAGS += "-DDEFAULT_TTY1=\\"/dev/ttyUSB1\\" "

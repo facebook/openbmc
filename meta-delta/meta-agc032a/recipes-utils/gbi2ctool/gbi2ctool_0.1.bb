@@ -22,11 +22,10 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://gbi2ctool.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
 
-SRC_URI = "file://gbi2ctool.c \
-           file://Makefile \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI = " \
+    file://gbi2ctool.c \
+    file://Makefile \
+    "
 
 binfiles = "gbi2ctool"
 

@@ -17,11 +17,10 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://setup-sensord.sh \
-            file://run-sensord.sh \
-           "
-
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://setup-sensord.sh \
+    file://run-sensord.sh \
+    "
 
 DEPENDS:append = " update-rc.d-native"
 

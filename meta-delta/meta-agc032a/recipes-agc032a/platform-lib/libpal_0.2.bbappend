@@ -19,7 +19,7 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/pal:"
 
-SRC_URI += " \
+LOCAL_URI += " \
     file://plat/meson.build \
     "
 

@@ -28,11 +28,11 @@ DEPENDS:append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog up
 RDEPENDS:${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio bash"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-SRC_URI += "file://fruid.c \
-            file://setup-ipmid.sh \
-            file://run-ipmid.sh \
-           "
-S = "${WORKDIR}"
+LOCAL_URI += " \
+    file://fruid.c \
+    file://setup-ipmid.sh \
+    file://run-ipmid.sh \
+    "
 
 binfiles = "ipmid"
 

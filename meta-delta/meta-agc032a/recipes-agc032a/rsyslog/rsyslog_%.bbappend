@@ -1,9 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-SRC_URI += "file://rotate_logfile \
-            file://rotate_cri_sel \
-            file://rotate_console_log \
-"
+LOCAL_URI += " \
+    file://rotate_logfile \
+    file://rotate_cri_sel \
+    file://rotate_console_log \
+    "
 
 MTERM_LOG_FILES := "mTerm_wedge"
 

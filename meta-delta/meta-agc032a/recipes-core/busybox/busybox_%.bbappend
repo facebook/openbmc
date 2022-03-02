@@ -1,5 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://busybox.cfg \
-           "
-
+LOCAL_URI += " \
+    file://busybox.cfg \
+    "

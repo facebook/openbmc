@@ -17,25 +17,26 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/delta:"
 
-SRC_URI += "file://board-utils.sh \
-            file://boot_info.sh \
-            file://cpld_ver.sh \
-            file://disable_watchdog.sh \
-            file://eth0_mac_fixup.sh \
-            file://feutil \
-            file://presence_util.sh \
-            file://reset_brcm.sh \
-            file://set_vdd.sh \
-            file://setup_avs.sh \
-            file://setup_board.sh \
-            file://setup_default_gpio.sh \
-            file://setup_i2c.sh \
-            file://setup_mgmt.sh \
-            file://smbcpld_update.sh \
-            file://spi_util.sh \
-            file://switch_reset.sh \
-            file://us_console.sh \
-           "
+LOCAL_URI += " \
+    file://board-utils.sh \
+    file://boot_info.sh \
+    file://cpld_ver.sh \
+    file://disable_watchdog.sh \
+    file://eth0_mac_fixup.sh \
+    file://feutil \
+    file://presence_util.sh \
+    file://reset_brcm.sh \
+    file://set_vdd.sh \
+    file://setup_avs.sh \
+    file://setup_board.sh \
+    file://setup_default_gpio.sh \
+    file://setup_i2c.sh \
+    file://setup_mgmt.sh \
+    file://smbcpld_update.sh \
+    file://spi_util.sh \
+    file://switch_reset.sh \
+    file://us_console.sh \
+    "
 
 OPENBMC_UTILS_FILES += " \
     board-utils.sh \
@@ -66,9 +67,9 @@ do_install_board() {
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
     # the script to mount /mnt/data
-    install -m 0755 ${WORKDIR}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
+    install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
     update-rc.d -r ${D} mount_data0.sh start 03 S .
-    install -m 0755 ${WORKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
+    install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
     # install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
@@ -91,10 +92,10 @@ do_install_board() {
     install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
-    install -m 0755 ${WORKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
+    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 0755 ${WORKDIR}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
+    install -m 0755 ${S}/disable_watchdog.sh ${D}${sysconfdir}/init.d/disable_watchdog.sh
     update-rc.d -r ${D} disable_watchdog.sh start 99 2 3 4 5 .
 
 }

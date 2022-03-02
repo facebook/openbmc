@@ -19,13 +19,13 @@ inherit module kernel_extra_headers_export
 PR = "r0"
 PV = "0.1"
 
-SRC_URI = "file://Makefile \
-           file://delta_dps_driver.c \
-           file://emc2305.c \
-           file://COPYING \
-          "
+LOCAL_URI = " \
+    file://Makefile \
+    file://delta_dps_driver.c \
+    file://emc2305.c \
+    file://COPYING \
+    "
 
-S = "${WORKDIR}"
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 

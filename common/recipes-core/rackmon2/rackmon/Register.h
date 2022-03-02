@@ -161,9 +161,15 @@ struct RegisterStore {
         regAddr_(desc.begin),
         history_(desc.keep, Register(desc)) {}
 
-  bool isEnabled() { return enabled_; }
-  void disable() { enabled_ = false; }
-  void enable() { enabled_ = true; }
+  bool isEnabled() {
+    return enabled_;
+  }
+  void disable() {
+    enabled_ = false;
+  }
+  void enable() {
+    enabled_ = true;
+  }
 
   // Returns a reference to the last written value (Back of the list)
   Register& back() {

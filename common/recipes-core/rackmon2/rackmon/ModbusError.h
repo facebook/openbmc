@@ -1,3 +1,4 @@
+// Copyright 2021-present Facebook. All Rights Reserved.
 #pragma once
 
 namespace rackmon {
@@ -63,9 +64,9 @@ enum class ModbusErrorCode {
 struct ModbusError : public std::runtime_error {
   uint8_t errorData;
   ModbusErrorCode errorCode;
-  ModbusError(uint8_t error) :
-    std::runtime_error("Modbus Error: " + std::to_string(int(error))),
-    errorData(error) {
+  ModbusError(uint8_t error)
+      : std::runtime_error("Modbus Error: " + std::to_string(int(error))),
+        errorData(error) {
     if (error <= static_cast<uint8_t>(ModbusErrorCode::LAST_DEFINED_ERROR)) {
       errorCode = static_cast<ModbusErrorCode>(error);
     } else {

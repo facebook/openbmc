@@ -136,7 +136,7 @@ void ModbusDevice::monitor() {
         logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)
                 << " ReadReg 0x" << std::hex << registerOffset << ' '
                 << registerStore.name()
-                <<" unsupported. Disabled from monitoring" << std::endl;
+                << " unsupported. Disabled from monitoring" << std::endl;
         registerStore.disable();
       } else {
         logInfo << "DEV:0x" << std::hex << int(info_.deviceAddress)

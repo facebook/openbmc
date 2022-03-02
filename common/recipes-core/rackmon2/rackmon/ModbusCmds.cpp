@@ -4,7 +4,10 @@
 
 namespace rackmon {
 
-void Response::checkValue(const std::string& what, uint32_t value, uint32_t expectedValue) {
+void Response::checkValue(
+    const std::string& what,
+    uint32_t value,
+    uint32_t expectedValue) {
   if (value != expectedValue) {
     throw BadResponseError(what, expectedValue, value);
   }

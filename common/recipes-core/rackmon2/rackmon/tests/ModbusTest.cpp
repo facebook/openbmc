@@ -83,7 +83,9 @@ class ModbusTest : public ::testing::Test {
     // Another tricky, set the out read_bytes to the one we want to "mock".
     EXPECT_CALL(*ptr, read(_, read_bytes_size, _))
         .Times(1)
-        .WillOnce(DoAll(SetBufArgNPointeeTo<0>(read_bytes, read_bytes_size), Return(read_bytes_size)));
+        .WillOnce(DoAll(
+            SetBufArgNPointeeTo<0>(read_bytes, read_bytes_size),
+            Return(read_bytes_size)));
     EXPECT_CALL(*ptr, close()).Times(1);
 
     std::unique_ptr<UARTDevice> ptr2 = std::move(ptr);

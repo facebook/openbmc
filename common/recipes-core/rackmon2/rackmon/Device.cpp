@@ -4,7 +4,6 @@
 #include <sys/select.h>
 #include <unistd.h>
 #include <cstring>
-#include <iostream>
 #include "Log.h"
 
 #include "Device.h"

@@ -1,18 +1,16 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
-#include "RackmonSvcUnix.h"
+#include "UnixSock.h"
 
 using nlohmann::json;
 using namespace std::literals::string_literals;
 using namespace rackmonsvc;
 
-static int send_recv(const char* str, size_t len, std::vector<char>& resp) {
-  RackmonClient cli;
-  cli.send(str, len);
-  cli.recv(resp);
-  return 0;
-}
+class RackmonClient : public UnixClient {
+ public:
+  RackmonClient() : UnixClient("/var/run/rackmond.sock") {}
+};
 
 static void print_json(json& j) {
   std::string status;
@@ -139,9 +137,8 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
   req["response_length"] = resp_len;
   if (timeout != 0)
     req["timeout"] = timeout;
-  std::vector<char> resp;
-  std::string req_js = req.dump();
-  send_recv(req_js.c_str(), req_js.length(), resp);
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt)
     print_json(resp_j);
@@ -152,9 +149,8 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
 static void do_cmd(const std::string& type, bool json_fmt) {
   json req;
   req["type"] = type;
-  std::string req_s = req.dump();
-  std::vector<char> resp;
-  send_recv(req_s.c_str(), req_s.length(), resp);
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   if (json_fmt)
     print_json(resp_j);

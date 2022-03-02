@@ -46,6 +46,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     PIM_STATUS_ENDPOINT = "/api/sys/pimstatus"
     SMB_INFO_ENDPOINT = "/api/sys/smbinfo"
     BEACON_ENDPOINT = "/api/sys/beacon"
+    BMC_BOARD_REV_ENDPOINT = "/api/sys/bmc_board_rev"
 
     # "/api/sys"
     def test_endpoint_api_sys(self):
@@ -190,4 +191,13 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         ]
         self.verify_endpoint_attributes(
             RestEndpointTest.BEACON_ENDPOINT, endpoint_beacon
+        )
+
+    # "/api/sys/bmc_board_rev"
+    def test_endpoint_bmc_board_rev(self):
+        endpoint_bmc_board_rev = [
+            "BMC Board Revision",
+        ]
+        self.verify_endpoint_attributes(
+            RestEndpointTest.BMC_BOARD_REV_ENDPOINT, endpoint_bmc_board_rev
         )

@@ -55,4 +55,5 @@ board_routes = [
     "/api/sys/beacon/audit",
     "/api/sys/beacon/off",
     "/api/sys/beacon/status",
+    "/api/sys/bmc_board_rev",
 ]

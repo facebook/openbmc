@@ -54,6 +54,7 @@ LOCAL_URI += "\
     file://setup_bcm53134.sh \
     file://th4_qspi_ver.sh \
     file://dpeCheck.sh \
+    file://bmc_board_rev.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -83,6 +84,7 @@ OPENBMC_UTILS_FILES += " \
     beacon_led.sh \
     th4_qspi_ver.sh \
     dpeCheck.sh \
+    bmc_board_rev.sh \
     "
 
 DEPENDS:append = " update-rc.d-native"

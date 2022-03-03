@@ -19,9 +19,8 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-LOCAL_URI += " \
-    file://agc032a.conf \
-    "
+SRC_URI += "file://agc032a.conf \
+           "
 
 DEPENDS:append = " update-rc.d-native"
 
@@ -29,5 +28,5 @@ do_install_:append() {
 
     install -d ${D}${sysconfdir}/sensors.d
     install -d ${D}${sysconfdir}/sensors.d/custom
-    install -m 644 ${S}/agc032a.conf ${D}${sysconfdir}/sensors.d/custom/agc032a.conf
+    install -m 644 ${WORKDIR}/agc032a.conf ${D}${sysconfdir}/sensors.d/custom/agc032a.conf
 }

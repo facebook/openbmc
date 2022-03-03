@@ -228,21 +228,9 @@ program_page(cpld_type type, uint8_t *data) {
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 20;
   uint8_t rlen = 0;
-  int idx;
 
-  if (type == XO2_XO3) {
-    for (idx = 4; idx <= 16; idx += 4) {
-      tbuf[idx + 0] = data[idx - 1];
-      tbuf[idx + 1] = data[idx - 2];
-      tbuf[idx + 2] = data[idx - 3];
-      tbuf[idx + 3] = data[idx - 4];
-    }
-  } else if (type == NX) {
-    for (idx = 0; idx < 16; idx++) {
-      tbuf[idx + 4] = bit_swap(data[idx]);
-    }
-  } else {
-    return -1;
+  for (int index = 0; index < 16; index++) {
+    tbuf[index + 4] = bit_swap(data[index]);
   }
 
   ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
@@ -330,21 +318,9 @@ verify_page(cpld_type type, uint8_t *data) {
   uint8_t rbuf[16] = {0};
   uint8_t cmp_data[16] = {0};
   uint8_t rlen = 16;
-  int idx;
 
-  if (type == XO2_XO3) {
-    for (idx = 0; idx <= 12; idx += 4) {
-      cmp_data[idx + 0] = data[idx + 3];
-      cmp_data[idx + 1] = data[idx + 2];
-      cmp_data[idx + 2] = data[idx + 1];
-      cmp_data[idx + 3] = data[idx + 0];
-    }
-  } else if (type == NX) {
-    for (int index = 0; index < 16; index++) {
-      cmp_data[index] = bit_swap(data[index]);
-    }
-  } else {
-    return -1;
+  for (int index = 0; index < 16; index++) {
+    cmp_data[index] = bit_swap(data[index]);
   }
 
   ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);

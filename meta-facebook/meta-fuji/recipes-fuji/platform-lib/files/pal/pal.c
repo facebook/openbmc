@@ -651,6 +651,11 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 }
 
 int
+pal_get_fru_count() {
+  return MAX_NUM_FRUS;
+}
+
+int
 pal_get_fru_id(char *str, uint8_t *fru) {
   if (!strcmp(str, "all")) {
     *fru = FRU_ALL;

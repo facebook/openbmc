@@ -386,8 +386,8 @@ i2c_add_device() {
 
 # Check to see if BMC time synced
 is_date_synced() {
-  if [ -f /tmp/sync_date ]; then
-    /bin/cat /tmp/sync_date
+  if [ "$(kv get date_sync)" == "1" ]; then
+    echo 1
   else
     echo 0
   fi

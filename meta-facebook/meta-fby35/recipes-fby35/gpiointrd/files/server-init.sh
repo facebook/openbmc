@@ -40,18 +40,18 @@ PID_FILE="/var/run/server-init.${slot_num}.pid"
 bus=$((slot_num-1))
 
 # check if the script is running
-[ -r $PID_FILE ] && OLDPID=`cat $PID_FILE` || OLDPID=''
+[ -r "$PID_FILE" ] && OLDPID=$(cat "$PID_FILE") || OLDPID=''
 
 # Set the current pid
-echo $PID > $PID_FILE
+echo "$PID" > "$PID_FILE"
 
 # kill the previous running script if it is existed
-if [ ! -z "$OLDPID" ] && (grep "server-init" /proc/$OLDPID/cmdline &> /dev/null) ; then
+if [ -n "$OLDPID" ] && (grep "server-init" /proc/$OLDPID/cmdline 1> /dev/null 2>&1) ; then
   echo "kill pid $OLDPID..."
-  kill -s 9 $OLDPID
-  ps | grep 'bic-cached' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 &> /dev/null
-  ps | grep 'power-util' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 &> /dev/null
-  ps | grep 'setup-fan' | awk '{print $1}'| xargs kill -s 9 &> /dev/null
+  kill -s 9 "$OLDPID"
+  ps | grep 'bic-cached' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 1> /dev/null 2>&1
+  ps | grep 'power-util' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 1> /dev/null 2>&1
+  ps | grep 'setup-fan' | awk '{print $1}'| xargs kill -s 9 1> /dev/null 2>&1
 fi
 unset OLDPID
 
@@ -60,11 +60,11 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   gpio_set FM_BMC_SLOT${slot_num}_ISOLATED_EN_R 0
   rm -f /tmp/*fruid_slot${slot_num}*
   rm -f /tmp/*sdr_slot${slot_num}*
-  kv del /tmp/cache_store/slot${slot_num}_vr_c0h_crc
-  kv del /tmp/cache_store/slot${slot_num}_vr_c4h_crc
-  kv del /tmp/cache_store/slot${slot_num}_vr_ech_crc
-  kv del /tmp/cache_store/slot${slot_num}_cpld_new_ver
-  kv del /tmp/cache_store/fru${slot_num}_2ou_board_type
+  kv del slot${slot_num}_vr_c0h_crc
+  kv del slot${slot_num}_vr_c4h_crc
+  kv del slot${slot_num}_vr_ech_crc
+  kv del slot${slot_num}_cpld_new_ver
+  kv del fru${slot_num}_2ou_board_type
   set_nic_power
 else
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1

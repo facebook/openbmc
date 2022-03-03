@@ -22,7 +22,7 @@ common = files(
     'ModbusDevice.cpp',
     'Register.cpp',
     'Rackmon.cpp',
-    'RackmonSock.cpp',
+    'UnixSock.cpp',
 )
 srcs = common + files(
     'RackmonSvcUnix.cpp',
@@ -40,6 +40,7 @@ test_srcs = common + files(
     'tests/ModbusDeviceTest.cpp',
     'tests/PollThreadTest.cpp',
     'tests/RackmonTest.cpp',
+    'tests/UnixSockTest.cpp',
 )
 
 cc = meson.get_compiler('cpp')
@@ -74,7 +75,7 @@ rackmond_exe = executable(
 )
 rackmon_cli_exe = executable(
   'rackmoncli',
-  files('RackmonCliUnix.cpp', 'RackmonSock.cpp'),
+  files('RackmonCliUnix.cpp', 'UnixSock.cpp'),
   dependencies: deps,
   install: true,
   install_dir: 'local/bin'

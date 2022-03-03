@@ -105,7 +105,7 @@ set_uart_src() {
   local bus=$1
   local addr=$2
   local data=$3
-  $I2CSET "$bus" "$addr" "$data"
+  $I2CSET "$bus" "$addr" $data
 }
 
 is_gpv3_board() {
@@ -647,7 +647,7 @@ if [ -n "$COMP" ]; then
         fi
 
         show_microcom_usage
-        /usr/bin/microcom "$USB_PATH"
+        /usr/bin/microcom $USB_PATH
         RET=$?
         #after enabling USB hub, make it permanently open
         exit $RET;
@@ -680,7 +680,7 @@ if [ -n "$COMP" ]; then
       fi
 
       show_microcom_usage
-      /usr/bin/microcom "$USB_PATH"
+      /usr/bin/microcom $USB_PATH
       RET=$?
       #after enabling USB hub, make it permanently open
       exit $RET;

@@ -63,8 +63,8 @@ LOCAL_URI = " \
     file://Rackmon.cpp \
     file://Rackmon.h \
     file://PollThread.h \
-    file://RackmonSock.cpp \
-    file://RackmonSvcUnix.h \
+    file://UnixSock.cpp \
+    file://UnixSock.h \
     file://RackmonSvcUnix.cpp \
     file://RackmonCliUnix.cpp \
     "
@@ -103,6 +103,7 @@ LOCAL_URI += " \
     file://tests/ModbusDeviceTest.cpp \
     file://tests/PollThreadTest.cpp \
     file://tests/RackmonTest.cpp \
+    file://tests/UnixSockTest.cpp \
     file://tests/TempDir.h \
     "
 

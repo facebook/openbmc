@@ -2,8 +2,8 @@
 #pragma once
 
 #include <optional>
-#include "Msg.h"
 #include "ModbusError.h"
+#include "Msg.h"
 
 namespace rackmon {
 
@@ -21,8 +21,10 @@ struct Request : public Msg {
 
 struct Response : public Msg {
   uint8_t& respFunction = raw[1];
-  protected:
-  void checkValue(const std::string& what, uint32_t value, uint32_t expectedValue);
+
+ protected:
+  void
+  checkValue(const std::string& what, uint32_t value, uint32_t expectedValue);
   void decode() override;
 };
 

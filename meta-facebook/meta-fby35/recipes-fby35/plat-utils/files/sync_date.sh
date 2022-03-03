@@ -26,15 +26,15 @@ function get_sel_time_from_server {
   local output=""
   local snum=0
 
-  if [ $BOARD_ID -eq 9 ]; then
+  if [ "$BOARD_ID" -eq "9" ]; then
     output="$(/usr/local/bin/me-util slot1 0x28 0x48)"
     [ ${#output} == 12 ] && snum=1
   else
     for i in $(seq 1 4)
     do
-      if [[ $(is_server_prsnt $i) == "1" ]] ; then
+      if [[ $(is_server_prsnt "$i") == "1" ]] ; then
         # Use standard IPMI command 'get-sel-time' to read RTC time
-        output=$(/usr/local/bin/me-util slot$i 0x28 0x48)
+        output=$(/usr/local/bin/me-util "slot$i" 0x28 0x48)
         if [ ${#output} == 12 ]; then
           snum=$i
           break
@@ -44,24 +44,24 @@ function get_sel_time_from_server {
   fi
 
   # return IPMI "Get sel time" command output, or return empty string if command failed
-  [ ${#output} == 12 ] && echo $output || echo ""
+  [ ${#output} == 12 ] && echo "$output" || echo ""
 
-  return $snum
+  return "$snum"
 }
 
 function do_sync {
   local sel_time=$1
   date -s @$((16#$(echo "$sel_time" | awk '{print $4$3$2$1}')))
   test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
-  echo 1 > /tmp/sync_date
+  kv set date_sync 1
 }
 
 # Sync BMC's date with one of the four servers
 function sync_date {
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    if [ -f /tmp/cache_store/time_sync ] ; then
-      # ND Server Time Sync by IPMI command
-      output=$(cat /tmp/cache_store/time_sync)
+    output="$(/usr/bin/kv get time_sync)"
+    if [ -n "${output}" ] ; then
+      # Server Time Sync by IPMI command
       if [ ${#output} == 11 ] ; then
         echo Syncing up BMC time with server...
         do_sync "$output"
@@ -76,7 +76,7 @@ function sync_date {
     fi
   else
     test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
-    echo 1 > /tmp/sync_date
+    kv set date_sync 1
   fi
 }
 

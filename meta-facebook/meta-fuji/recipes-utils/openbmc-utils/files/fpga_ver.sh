@@ -52,7 +52,10 @@ for num in $(seq 8); do
     echo "PIM $num:"
 
     pim_type=$(head -n1 "${pim_fpga_dir}/board_ver" 2> /dev/null)
-    if [ "$((pim_type & 0x80))" == 0 ]; then
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        echo "DOMFPGA is not detected or PIM $num is not inserted"
+    elif [ "$((pim_type & 0x80))" == 0 ]; then
         dump_fpga_version "${pim_fpga_dir}" "16Q DOMFPGA"
     elif [ "$((pim_type & 0x80))" == "$((0x80))" ]; then
         dump_fpga_version "${pim_fpga_dir}" "16O DOMFPGA"

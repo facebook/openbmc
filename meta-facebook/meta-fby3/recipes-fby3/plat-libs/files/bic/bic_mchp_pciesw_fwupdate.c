@@ -476,7 +476,11 @@ _init_usb_intf(uint8_t slot_id, uint8_t board_type, uint8_t intf, usb_dev* udev)
   udev->epaddr = 0x1;
 
   // enable USB HUB
-  bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+  if (board_type == CWC_MCHP_BOARD) {
+    bic_open_cwc_usb(slot_id);
+  } else {
+    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+  }
 
   // check board type
   if ( board_type == CWC_MCHP_BOARD ) {
@@ -566,7 +570,7 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
 
     int rc = _send_bic_usb_packet(udev, pkt); // send data
     if ( rc < 0 ) {
-      printf("%s() failed to write %d bytes @ %d: %d\n", __func__, read_bytes, write_offset, rc);
+      printf("%s() failed to write %zd bytes @ %zu: %d\n", __func__, read_bytes, write_offset, rc);
       break;
     }
 

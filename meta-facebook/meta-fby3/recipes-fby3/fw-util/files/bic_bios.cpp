@@ -25,7 +25,7 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   try {
     cerr << "Checking if the server is ready..." << endl;
     server.ready();
-  } catch(string err) {
+  } catch(string &err) {
     cerr << "Server is not ready." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
@@ -56,8 +56,13 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
   cerr << "Putting ME into recovery mode..." << endl;
   me_recovery(slot_id, RECOVERY_MODE);
   cerr << "Enabling USB..." << endl;
-  bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_HIGH);
-  sleep(1);
+  if (pal_is_exp() == PAL_EOK) {
+    bic_open_cwc_usb(slot_id);
+  } else {
+    bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_HIGH);
+    sleep(1);
+  }
+
   cerr << "Switching BIOS SPI MUX for update..." << endl;
   bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_CPLD);
   sleep(1);
@@ -67,11 +72,17 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
     ret = bic_update_fw_fd(slot_id, fw_comp, fd, FORCE_UPDATE_UNSET);
   }
   cerr << "Disabling USB..." << endl;
-  bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
+  if (pal_is_exp() == PAL_EOK) {
+    bic_close_cwc_usb(slot_id);
+  } else {
+    bic_set_gpio(slot_id, RST_USB_HUB_N, GPIO_LOW);
+    sleep(1);
+  }
+
   if (ret != 0) {
     return -1;
   }
-  sleep(1);
+  
   cerr << "Switching BIOS SPI MUX for default value..." << endl;
   bic_switch_mux_for_bios_spi(slot_id, MUX_SWITCH_PCH);
   sleep(3);

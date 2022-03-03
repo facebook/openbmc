@@ -46,6 +46,8 @@ extern "C" {
 
 #define MAX_CHECK_DEVICE_TIME 8
 
+#define SW_USB_HUB_DELAY 5 //seconds
+
 /*GPIO USB HUB reset pin*/
 enum {
   EXP_GPIO_RST_USB_HUB   = 9,

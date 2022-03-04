@@ -60,10 +60,6 @@ void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
     rackmond_.stop();
   } else if (cmd == "resume") {
     rackmond_.start();
-  } else if (cmd == "print_data") {
-    std::vector<ModbusDeviceFmtData> ret;
-    rackmond_.getFmtData(ret);
-    resp["data"] = ret;
   } else if (cmd == "value_data") {
     std::vector<ModbusDeviceValueData> ret;
     rackmond_.getValueData(ret);

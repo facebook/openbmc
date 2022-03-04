@@ -763,11 +763,11 @@ get_eeprom_info(uint8_t num, const char *tpye) {
       return -1;
     }
   }
-  pal_add_i2c_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
+  //pal_add_i2c_device(psu[num].bus, psu[num].eeprom_addr, eeprom);
 
   ret = fruid_parse(psu[num].eeprom_file, &fruid);
 
-  pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
+  //pal_del_i2c_device(psu[num].bus, psu[num].eeprom_addr);
 
   if (ret) {
     printf("Failed print EEPROM info!\n");
@@ -816,8 +816,6 @@ get_psu_info(uint8_t num) {
       case MFR_ID:
       case MFR_MODEL:
       case MFR_REVISION:
-      case MFR_DATE:
-      case MFR_SERIAL:
         memset(block, 0, sizeof(block));
         rc = i2c_smbus_read_block_data(psu[num].fd, pmbus[i].reg, block);
         if (rc < 0) {
@@ -825,7 +823,9 @@ get_psu_info(uint8_t num) {
           return -1;
         }
         printf("\n%-18s (0x%X) : %s", pmbus[i].item, pmbus[i].reg, block);
-        break;
+        break;  
+      case MFR_DATE:
+      case MFR_SERIAL:
       case PRI_FW_VER:
       case SEC_FW_VER:
         word = i2c_smbus_read_word_data(psu[num].fd, pmbus[i].reg);

@@ -44,11 +44,11 @@ extern "C" {
 #define msleep(n) usleep(n*1000)
 #define POW2(x) (1 << (x))
 
-#define PSU1_EEPROM  "/sys/bus/i2c/devices/22-0050/eeprom"
-#define PSU2_EEPROM  "/sys/bus/i2c/devices/23-0050/eeprom"
+#define PSU1_EEPROM  "/sys/bus/i2c/devices/0-0050/eeprom"
+#define PSU2_EEPROM  "/sys/bus/i2c/devices/1-0050/eeprom"
 
 /* define for DELTA PSU */
-#define DELTA_MODEL         "ECD55020006"
+#define DELTA_MODEL         "DPS-1600AB-29 B"
 #define DELTA_HDR_LENGTH    32
 #define UNLOCK_UPGRADE      0xf0
 #define BOOT_FLAG           0xf1

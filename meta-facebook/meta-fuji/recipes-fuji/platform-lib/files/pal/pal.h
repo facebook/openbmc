@@ -89,6 +89,12 @@ extern "C" {
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define KV_PATH "/mnt/data/kv_store/%s"
+#define KEY_PWRSEQ1_ADDR  "%s_pwrseq_1_addr"
+#define KEY_PWRSEQ2_ADDR  "%s_pwrseq_2_addr"
+#define KEY_PWRSEQ_ADDR   "%s_pwrseq_addr"
+#define KEY_HSC_ADDR      "%s_hsc_addr"
+#define KEY_FCMT_HSC_ADDR "%s_fcm_t_hsc_addr"
+#define KEY_FCMB_HSC_ADDR "%s_fcm_b_hsc_addr"
 
 #define FUJI_FRU_PATH "/tmp/fruid_%s.bin"
 
@@ -282,7 +288,24 @@ enum {
   BOARD_FUJI_DVT1       = 0x43,
 };
 
+#define PIM_I2C_DEVICE_NUMBER 11
+#define SCM_I2C_DEVICE_NUMBER 8
+
+struct dev_bus_addr {
+  uint8_t bus_id;
+  uint8_t device_address;
+};
+
+struct dev_addr_driver {
+  uint8_t addr;
+  const char driver[32];
+  const char chip_name[32];
+};
+
 extern sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1];
+extern struct dev_addr_driver PIM_UCD_addr_list[5];
+extern struct dev_addr_driver PIM_HSC_addr_list[2];
+extern struct dev_addr_driver SCM_HSC_addr_list[2];
 
 int pal_post_enable(uint8_t slot);
 int pal_post_disable(uint8_t slot);
@@ -300,6 +323,14 @@ int pal_get_pim_phy_type(uint8_t fru, int retry);
 int pal_set_pim_phy_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_phy_type_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
+
+struct dev_addr_driver* pal_get_pim_ucd(uint8_t fru);
+struct dev_addr_driver* pal_get_pim_hsc(uint8_t fru);
+struct dev_addr_driver* pal_get_scm_hsc();
+
+int pal_set_dev_addr_to_file(uint8_t fru, char const *dev, uint8_t addr);
+int pal_get_dev_addr_from_file(uint8_t fru, char const *dev);
+
 int pal_clear_thresh_value(uint8_t fru);
 void *generate_dump(void *arg);
 int set_sled(int brd_rev, uint8_t color, uint8_t led_name);

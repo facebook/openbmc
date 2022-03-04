@@ -187,7 +187,7 @@ const uint8_t smb_sensor_list_evt[] = {
   SMB_VDD_PCIE,
   SMB_XP0R84V_DCSU,
   SMB_XP0R84V_CSU,
-  SMB_XP1R84V_CSU,
+  SMB_XP1R8V_CSU,
   SMB_XP3R3V_TCXO,
   SMB_OUTPUT_VOLTAGE_XP0R75V_1,
   SMB_OUTPUT_CURRENT_XP0R75V_1,
@@ -268,7 +268,7 @@ const uint8_t smb_sensor_list_dvt[] = {
   SMB_VDD_PCIE,
   SMB_XP0R84V_DCSU,
   SMB_XP0R84V_CSU,
-  SMB_XP1R84V_CSU,
+  SMB_XP1R8V_CSU,
   SMB_XP3R3V_TCXO,
   SMB_OUTPUT_VOLTAGE_XP0R75V_1,
   SMB_OUTPUT_CURRENT_XP0R75V_1,
@@ -328,388 +328,89 @@ const uint8_t smb_sensor_list_dvt[] = {
   SMB_SENSOR_TH4_HIGH,
 };
 
-const uint8_t pim16q_sensor_list[8][PIM_SENSOR_CNT+1] = {
-  {
-    PIM1_LM75_TEMP_4A,
-    PIM1_LM75_TEMP_4B,
-    PIM1_LM75_TEMP_48,
-    PIM1_SENSOR_QSFP_TEMP,
-    PIM1_SENSOR_HSC_VOLT,
-    PIM1_POWER_VOLTAGE,
-    PIM1_SENSOR_HSC_CURR,
-    PIM1_SENSOR_HSC_POWER,
-    PIM1_UCD90160_VOLT1,
-    PIM1_UCD90160_VOLT2,
-    PIM1_UCD90160_VOLT3,
-    PIM1_UCD90160_VOLT4,
-    PIM1_UCD90160_VOLT5,
-    PIM1_UCD90160_VOLT6,
-    PIM1_UCD90160_VOLT7,
-    PIM1_UCD90160_VOLT8,
-    PIM1_UCD90160_VOLT9,
-    PIM1_UCD90160_VOLT10,
-    PIM1_UCD90160_VOLT11,
-    PIM1_UCD90160_VOLT12,
-    PIM1_UCD90160_VOLT13,
-    PIM1_MP2975_INPUT_VOLTAGE,
-    PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM1_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM1_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM2_LM75_TEMP_4A,
-    PIM2_LM75_TEMP_4B,
-    PIM2_LM75_TEMP_48,
-    PIM2_SENSOR_QSFP_TEMP,
-    PIM2_SENSOR_HSC_VOLT,
-    PIM2_POWER_VOLTAGE,
-    PIM2_SENSOR_HSC_CURR,
-    PIM2_SENSOR_HSC_POWER,
-    PIM2_UCD90160_VOLT1,
-    PIM2_UCD90160_VOLT2,
-    PIM2_UCD90160_VOLT3,
-    PIM2_UCD90160_VOLT4,
-    PIM2_UCD90160_VOLT5,
-    PIM2_UCD90160_VOLT6,
-    PIM2_UCD90160_VOLT7,
-    PIM2_UCD90160_VOLT8,
-    PIM2_UCD90160_VOLT9,
-    PIM2_UCD90160_VOLT10,
-    PIM2_UCD90160_VOLT11,
-    PIM2_UCD90160_VOLT12,
-    PIM2_UCD90160_VOLT13,
-    PIM2_MP2975_INPUT_VOLTAGE,
-    PIM2_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM2_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM2_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM2_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM3_LM75_TEMP_4A,
-    PIM3_LM75_TEMP_4B,
-    PIM3_LM75_TEMP_48,
-    PIM3_SENSOR_QSFP_TEMP,
-    PIM3_SENSOR_HSC_VOLT,
-    PIM3_POWER_VOLTAGE,
-    PIM3_SENSOR_HSC_CURR,
-    PIM3_SENSOR_HSC_POWER,
-    PIM3_UCD90160_VOLT1,
-    PIM3_UCD90160_VOLT2,
-    PIM3_UCD90160_VOLT3,
-    PIM3_UCD90160_VOLT4,
-    PIM3_UCD90160_VOLT5,
-    PIM3_UCD90160_VOLT6,
-    PIM3_UCD90160_VOLT7,
-    PIM3_UCD90160_VOLT8,
-    PIM3_UCD90160_VOLT9,
-    PIM3_UCD90160_VOLT10,
-    PIM3_UCD90160_VOLT11,
-    PIM3_UCD90160_VOLT12,
-    PIM3_UCD90160_VOLT13,
-    PIM3_MP2975_INPUT_VOLTAGE,
-    PIM3_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM3_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM3_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM3_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM4_LM75_TEMP_4A,
-    PIM4_LM75_TEMP_4B,
-    PIM4_LM75_TEMP_48,
-    PIM4_SENSOR_QSFP_TEMP,
-    PIM4_SENSOR_HSC_VOLT,
-    PIM4_POWER_VOLTAGE,
-    PIM4_SENSOR_HSC_CURR,
-    PIM4_SENSOR_HSC_POWER,
-    PIM4_UCD90160_VOLT1,
-    PIM4_UCD90160_VOLT2,
-    PIM4_UCD90160_VOLT3,
-    PIM4_UCD90160_VOLT4,
-    PIM4_UCD90160_VOLT5,
-    PIM4_UCD90160_VOLT6,
-    PIM4_UCD90160_VOLT7,
-    PIM4_UCD90160_VOLT8,
-    PIM4_UCD90160_VOLT9,
-    PIM4_UCD90160_VOLT10,
-    PIM4_UCD90160_VOLT11,
-    PIM4_UCD90160_VOLT12,
-    PIM4_UCD90160_VOLT13,
-    PIM4_MP2975_INPUT_VOLTAGE,
-    PIM4_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM4_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM4_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM4_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM5_LM75_TEMP_4A,
-    PIM5_LM75_TEMP_4B,
-    PIM5_LM75_TEMP_48,
-    PIM5_SENSOR_QSFP_TEMP,
-    PIM5_SENSOR_HSC_VOLT,
-    PIM5_POWER_VOLTAGE,
-    PIM5_SENSOR_HSC_CURR,
-    PIM5_SENSOR_HSC_POWER,
-    PIM5_UCD90160_VOLT1,
-    PIM5_UCD90160_VOLT2,
-    PIM5_UCD90160_VOLT3,
-    PIM5_UCD90160_VOLT4,
-    PIM5_UCD90160_VOLT5,
-    PIM5_UCD90160_VOLT6,
-    PIM5_UCD90160_VOLT7,
-    PIM5_UCD90160_VOLT8,
-    PIM5_UCD90160_VOLT9,
-    PIM5_UCD90160_VOLT10,
-    PIM5_UCD90160_VOLT11,
-    PIM5_UCD90160_VOLT12,
-    PIM5_UCD90160_VOLT13,
-    PIM5_MP2975_INPUT_VOLTAGE,
-    PIM5_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM5_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM5_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM5_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM6_LM75_TEMP_4A,
-    PIM6_LM75_TEMP_4B,
-    PIM6_LM75_TEMP_48,
-    PIM6_SENSOR_QSFP_TEMP,
-    PIM6_SENSOR_HSC_VOLT,
-    PIM6_POWER_VOLTAGE,
-    PIM6_SENSOR_HSC_CURR,
-    PIM6_SENSOR_HSC_POWER,
-    PIM6_UCD90160_VOLT1,
-    PIM6_UCD90160_VOLT2,
-    PIM6_UCD90160_VOLT3,
-    PIM6_UCD90160_VOLT4,
-    PIM6_UCD90160_VOLT5,
-    PIM6_UCD90160_VOLT6,
-    PIM6_UCD90160_VOLT7,
-    PIM6_UCD90160_VOLT8,
-    PIM6_UCD90160_VOLT9,
-    PIM6_UCD90160_VOLT10,
-    PIM6_UCD90160_VOLT11,
-    PIM6_UCD90160_VOLT12,
-    PIM6_UCD90160_VOLT13,
-    PIM6_MP2975_INPUT_VOLTAGE,
-    PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM6_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM6_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM7_LM75_TEMP_4A,
-    PIM7_LM75_TEMP_4B,
-    PIM7_LM75_TEMP_48,
-    PIM7_SENSOR_QSFP_TEMP,
-    PIM7_SENSOR_HSC_VOLT,
-    PIM7_POWER_VOLTAGE,
-    PIM7_SENSOR_HSC_CURR,
-    PIM7_SENSOR_HSC_POWER,
-    PIM7_UCD90160_VOLT1,
-    PIM7_UCD90160_VOLT2,
-    PIM7_UCD90160_VOLT3,
-    PIM7_UCD90160_VOLT4,
-    PIM7_UCD90160_VOLT5,
-    PIM7_UCD90160_VOLT6,
-    PIM7_UCD90160_VOLT7,
-    PIM7_UCD90160_VOLT8,
-    PIM7_UCD90160_VOLT9,
-    PIM7_UCD90160_VOLT10,
-    PIM7_UCD90160_VOLT11,
-    PIM7_UCD90160_VOLT12,
-    PIM7_UCD90160_VOLT13,
-    PIM7_MP2975_INPUT_VOLTAGE,
-    PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM7_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM7_MP2975_OUTPUT_CURRENT_XP3R3V
-  },{
-    PIM8_LM75_TEMP_4A,
-    PIM8_LM75_TEMP_4B,
-    PIM8_LM75_TEMP_48,
-    PIM8_SENSOR_QSFP_TEMP,
-    PIM8_SENSOR_HSC_VOLT,
-    PIM8_POWER_VOLTAGE,
-    PIM8_SENSOR_HSC_CURR,
-    PIM8_SENSOR_HSC_POWER,
-    PIM8_UCD90160_VOLT1,
-    PIM8_UCD90160_VOLT2,
-    PIM8_UCD90160_VOLT3,
-    PIM8_UCD90160_VOLT4,
-    PIM8_UCD90160_VOLT5,
-    PIM8_UCD90160_VOLT6,
-    PIM8_UCD90160_VOLT7,
-    PIM8_UCD90160_VOLT8,
-    PIM8_UCD90160_VOLT9,
-    PIM8_UCD90160_VOLT10,
-    PIM8_UCD90160_VOLT11,
-    PIM8_UCD90160_VOLT12,
-    PIM8_UCD90160_VOLT13,
-    PIM8_MP2975_INPUT_VOLTAGE,
-    PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V,
-    PIM8_MP2975_OUTPUT_CURRENT_XP0R8V,
-    PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V,
-    PIM8_MP2975_OUTPUT_CURRENT_XP3R3V
-  },
+uint8_t pim_sensor_list[8][PIM_SENSOR_CNT];
+
+const uint8_t pim16q_sensor_list[] =
+{
+  PIM1_LM75_TEMP_4A,
+  PIM1_LM75_TEMP_4B,
+  PIM1_LM75_TEMP_48,
+  PIM1_SENSOR_QSFP_TEMP,
+  PIM1_SENSOR_HSC_VOLT,
+  PIM1_POWER_VOLTAGE,
+  PIM1_SENSOR_HSC_CURR,
+  PIM1_SENSOR_HSC_POWER,
+  PIM1_UCD90160_VOLT1,
+  PIM1_UCD90160_VOLT2,
+  PIM1_UCD90160_VOLT3,
+  PIM1_UCD90160_VOLT4,
+  PIM1_UCD90160_VOLT5,
+  PIM1_UCD90160_VOLT6,
+  PIM1_UCD90160_VOLT7,
+  PIM1_UCD90160_VOLT8,
+  PIM1_UCD90160_VOLT9,
+  PIM1_UCD90160_VOLT10,
+  PIM1_UCD90160_VOLT11,
+  PIM1_UCD90160_VOLT12,
+  PIM1_UCD90160_VOLT13,
+  PIM1_MP2975_INPUT_VOLTAGE,
+  PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM1_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM1_MP2975_OUTPUT_CURRENT_XP3R3V
 };
 
-const uint8_t pim16o_sensor_list[8][19] = {
-  {
-    PIM1_LM75_TEMP_4B,
-    PIM1_LM75_TEMP_48,
-    PIM1_SENSOR_QSFP_TEMP,
-    PIM1_SENSOR_HSC_VOLT,
-    PIM1_POWER_VOLTAGE,
-    PIM1_SENSOR_HSC_CURR,
-    PIM1_SENSOR_HSC_POWER,
-    PIM1_UCD90160_VOLT1,
-    PIM1_UCD90160_VOLT2,
-    PIM1_UCD90160_VOLT3,
-    PIM1_UCD90160_VOLT4,
-    PIM1_UCD90160_VOLT5,
-    PIM1_UCD90160_VOLT6,
-    PIM1_UCD90160_VOLT7,
-    PIM1_UCD90160_VOLT8,
-    PIM1_UCD90160_VOLT9,
-    PIM1_UCD90160_VOLT10,
-    PIM1_UCD90160_VOLT11,
-    PIM1_UCD90160_VOLT12,
-  },{
-    PIM2_LM75_TEMP_4B,
-    PIM2_LM75_TEMP_48,
-    PIM2_SENSOR_QSFP_TEMP,
-    PIM2_SENSOR_HSC_VOLT,
-    PIM2_POWER_VOLTAGE,
-    PIM2_SENSOR_HSC_CURR,
-    PIM2_SENSOR_HSC_POWER,
-    PIM2_UCD90160_VOLT1,
-    PIM2_UCD90160_VOLT2,
-    PIM2_UCD90160_VOLT3,
-    PIM2_UCD90160_VOLT4,
-    PIM2_UCD90160_VOLT5,
-    PIM2_UCD90160_VOLT6,
-    PIM2_UCD90160_VOLT7,
-    PIM2_UCD90160_VOLT8,
-    PIM2_UCD90160_VOLT9,
-    PIM2_UCD90160_VOLT10,
-    PIM2_UCD90160_VOLT11,
-    PIM2_UCD90160_VOLT12,
-  },{
-    PIM3_LM75_TEMP_4B,
-    PIM3_LM75_TEMP_48,
-    PIM3_SENSOR_QSFP_TEMP,
-    PIM3_SENSOR_HSC_VOLT,
-    PIM3_POWER_VOLTAGE,
-    PIM3_SENSOR_HSC_CURR,
-    PIM3_SENSOR_HSC_POWER,
-    PIM3_UCD90160_VOLT1,
-    PIM3_UCD90160_VOLT2,
-    PIM3_UCD90160_VOLT3,
-    PIM3_UCD90160_VOLT4,
-    PIM3_UCD90160_VOLT5,
-    PIM3_UCD90160_VOLT6,
-    PIM3_UCD90160_VOLT7,
-    PIM3_UCD90160_VOLT8,
-    PIM3_UCD90160_VOLT9,
-    PIM3_UCD90160_VOLT10,
-    PIM3_UCD90160_VOLT11,
-    PIM3_UCD90160_VOLT12,
-  },{
-    PIM4_LM75_TEMP_4B,
-    PIM4_LM75_TEMP_48,
-    PIM4_SENSOR_QSFP_TEMP,
-    PIM4_SENSOR_HSC_VOLT,
-    PIM4_POWER_VOLTAGE,
-    PIM4_SENSOR_HSC_CURR,
-    PIM4_SENSOR_HSC_POWER,
-    PIM4_UCD90160_VOLT1,
-    PIM4_UCD90160_VOLT2,
-    PIM4_UCD90160_VOLT3,
-    PIM4_UCD90160_VOLT4,
-    PIM4_UCD90160_VOLT5,
-    PIM4_UCD90160_VOLT6,
-    PIM4_UCD90160_VOLT7,
-    PIM4_UCD90160_VOLT8,
-    PIM4_UCD90160_VOLT9,
-    PIM4_UCD90160_VOLT10,
-    PIM4_UCD90160_VOLT11,
-    PIM4_UCD90160_VOLT12,
-  },{
-    PIM5_LM75_TEMP_4B,
-    PIM5_LM75_TEMP_48,
-    PIM5_SENSOR_QSFP_TEMP,
-    PIM5_SENSOR_HSC_VOLT,
-    PIM5_POWER_VOLTAGE,
-    PIM5_SENSOR_HSC_CURR,
-    PIM5_SENSOR_HSC_POWER,
-    PIM5_UCD90160_VOLT1,
-    PIM5_UCD90160_VOLT2,
-    PIM5_UCD90160_VOLT3,
-    PIM5_UCD90160_VOLT4,
-    PIM5_UCD90160_VOLT5,
-    PIM5_UCD90160_VOLT6,
-    PIM5_UCD90160_VOLT7,
-    PIM5_UCD90160_VOLT8,
-    PIM5_UCD90160_VOLT9,
-    PIM5_UCD90160_VOLT10,
-    PIM5_UCD90160_VOLT11,
-    PIM5_UCD90160_VOLT12,
-  },{
-    PIM6_LM75_TEMP_4B,
-    PIM6_LM75_TEMP_48,
-    PIM6_SENSOR_QSFP_TEMP,
-    PIM6_SENSOR_HSC_VOLT,
-    PIM6_POWER_VOLTAGE,
-    PIM6_SENSOR_HSC_CURR,
-    PIM6_SENSOR_HSC_POWER,
-    PIM6_UCD90160_VOLT1,
-    PIM6_UCD90160_VOLT2,
-    PIM6_UCD90160_VOLT3,
-    PIM6_UCD90160_VOLT4,
-    PIM6_UCD90160_VOLT5,
-    PIM6_UCD90160_VOLT6,
-    PIM6_UCD90160_VOLT7,
-    PIM6_UCD90160_VOLT8,
-    PIM6_UCD90160_VOLT9,
-    PIM6_UCD90160_VOLT10,
-    PIM6_UCD90160_VOLT11,
-    PIM6_UCD90160_VOLT12,
-  },{
-    PIM7_LM75_TEMP_4B,
-    PIM7_LM75_TEMP_48,
-    PIM7_SENSOR_QSFP_TEMP,
-    PIM7_SENSOR_HSC_VOLT,
-    PIM7_POWER_VOLTAGE,
-    PIM7_SENSOR_HSC_CURR,
-    PIM7_SENSOR_HSC_POWER,
-    PIM7_UCD90160_VOLT1,
-    PIM7_UCD90160_VOLT2,
-    PIM7_UCD90160_VOLT3,
-    PIM7_UCD90160_VOLT4,
-    PIM7_UCD90160_VOLT5,
-    PIM7_UCD90160_VOLT6,
-    PIM7_UCD90160_VOLT7,
-    PIM7_UCD90160_VOLT8,
-    PIM7_UCD90160_VOLT9,
-    PIM7_UCD90160_VOLT10,
-    PIM7_UCD90160_VOLT11,
-    PIM7_UCD90160_VOLT12,
-  },{
-    PIM8_LM75_TEMP_4B,
-    PIM8_LM75_TEMP_48,
-    PIM8_SENSOR_QSFP_TEMP,
-    PIM8_SENSOR_HSC_VOLT,
-    PIM8_POWER_VOLTAGE,
-    PIM8_SENSOR_HSC_CURR,
-    PIM8_SENSOR_HSC_POWER,
-    PIM8_UCD90160_VOLT1,
-    PIM8_UCD90160_VOLT2,
-    PIM8_UCD90160_VOLT3,
-    PIM8_UCD90160_VOLT4,
-    PIM8_UCD90160_VOLT5,
-    PIM8_UCD90160_VOLT6,
-    PIM8_UCD90160_VOLT7,
-    PIM8_UCD90160_VOLT8,
-    PIM8_UCD90160_VOLT9,
-    PIM8_UCD90160_VOLT10,
-    PIM8_UCD90160_VOLT11,
-    PIM8_UCD90160_VOLT12,
-  },
+// PIM16Q with UCD90124 will be remove XP3R3V_EARLY aka PIM1_UCD90160_VOLT2
+const uint8_t pim16q_ucd90124_sensor_list[] =
+{
+  PIM1_LM75_TEMP_4A,
+  PIM1_LM75_TEMP_4B,
+  PIM1_LM75_TEMP_48,
+  PIM1_SENSOR_QSFP_TEMP,
+  PIM1_SENSOR_HSC_VOLT,
+  PIM1_POWER_VOLTAGE,
+  PIM1_SENSOR_HSC_CURR,
+  PIM1_SENSOR_HSC_POWER,
+  PIM1_UCD90160_VOLT1,
+  PIM1_UCD90160_VOLT3,
+  PIM1_UCD90160_VOLT4,
+  PIM1_UCD90160_VOLT5,
+  PIM1_UCD90160_VOLT6,
+  PIM1_UCD90160_VOLT7,
+  PIM1_UCD90160_VOLT8,
+  PIM1_UCD90160_VOLT9,
+  PIM1_UCD90160_VOLT10,
+  PIM1_UCD90160_VOLT11,
+  PIM1_UCD90160_VOLT12,
+  PIM1_UCD90160_VOLT13,
+  PIM1_MP2975_INPUT_VOLTAGE,
+  PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V,
+  PIM1_MP2975_OUTPUT_CURRENT_XP0R8V,
+  PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V,
+  PIM1_MP2975_OUTPUT_CURRENT_XP3R3V
+};
+
+const uint8_t pim16o_sensor_list[] =
+{
+  PIM1_LM75_TEMP_4B,
+  PIM1_LM75_TEMP_48,
+  PIM1_SENSOR_QSFP_TEMP,
+  PIM1_SENSOR_HSC_VOLT,
+  PIM1_POWER_VOLTAGE,
+  PIM1_SENSOR_HSC_CURR,
+  PIM1_SENSOR_HSC_POWER,
+  PIM1_UCD90160_VOLT1,
+  PIM1_UCD90160_VOLT2,
+  PIM1_UCD90160_VOLT3,
+  PIM1_UCD90160_VOLT4,
+  PIM1_UCD90160_VOLT5,
+  PIM1_UCD90160_VOLT6,
+  PIM1_UCD90160_VOLT7,
+  PIM1_UCD90160_VOLT8,
+  PIM1_UCD90160_VOLT9,
+  PIM1_UCD90160_VOLT10,
+  PIM1_UCD90160_VOLT11,
+  PIM1_UCD90160_VOLT12,
 };
 
 const uint8_t pem1_sensor_list[] = {
@@ -1014,6 +715,9 @@ size_t psu4_sensor_cnt = sizeof(psu4_sensor_list)/sizeof(uint8_t);
 
 static int hsc_power_div = 1;
 
+struct dev_bus_addr PIM_I2C_DEVICE_CHANGE_LIST[MAX_PIM][PIM_I2C_DEVICE_NUMBER];
+struct dev_bus_addr SCM_I2C_DEVICE_CHANGE_LIST[SCM_I2C_DEVICE_NUMBER];
+
 bool is_psu48(void);
 
 int
@@ -1053,7 +757,7 @@ pim_thresh_array_init(uint8_t fru) {
       type = pal_get_pim_type_from_file(fru);
       if (type == PIM_TYPE_16Q) {
         pim_phy_type = pal_get_pim_phy_type_from_file(fru);
-        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 58;
+        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 58;
         pim_sensor_threshold[PIM1_LM75_TEMP_4A+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 80;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 85;
         pim_sensor_threshold[PIM1_LM75_TEMP_48+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 85;
@@ -1173,7 +877,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 44.95;
       }else if (type == PIM_TYPE_16O) {
         pedigree = pal_get_pim_pedigree_from_file(fru);
-        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+i][UCR_THRESH] = 60;
+        pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 60;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 65;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 10;
         pim_sensor_threshold[PIM1_LM75_TEMP_48+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 65;
@@ -1390,7 +1094,7 @@ pal_clear_thresh_value(uint8_t fru) {
 
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
-  uint8_t pim_type, pim_id;
+  uint8_t pim_type, pim_id, PIM_PWRSEQ_addr;
   int brd_type_rev;
   pal_get_board_rev(&brd_type_rev);
 
@@ -1420,15 +1124,25 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_PIM8:
     pim_id = fru - FRU_PIM1;
     pim_type = pal_get_pim_type_from_file(fru);
+    PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
+    *sensor_list = (uint8_t *) pim_sensor_list[pim_id];
     if ( pim_type == PIM_TYPE_16Q) {
-      *sensor_list = (uint8_t *) pim16q_sensor_list[pim_id];
-      *cnt = sizeof(pim16q_sensor_list[pim_id]) / sizeof(uint8_t);
+      if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        *cnt = sizeof(pim16q_ucd90124_sensor_list) / sizeof(uint8_t);
+        memcpy(*sensor_list,pim16q_ucd90124_sensor_list,*cnt);
+      } else {
+        *cnt = sizeof(pim16q_sensor_list) / sizeof(uint8_t);
+        memcpy(*sensor_list,pim16q_sensor_list,*cnt);
+      }
     } else if ( pim_type == PIM_TYPE_16O) {
-      *sensor_list = (uint8_t *) pim16o_sensor_list[pim_id];
-      *cnt = sizeof(pim16o_sensor_list[pim_id]) / sizeof(uint8_t);
+      *cnt = sizeof(pim16o_sensor_list) / sizeof(uint8_t);
+      memcpy(*sensor_list,pim16o_sensor_list,*cnt);
     } else {
       *sensor_list = NULL;
       *cnt = 0;
+    }
+    for ( int i=0;i<*cnt;i++ ) {
+      (*sensor_list)[i] = (*sensor_list)[i] + (pim_id)*PIM_SENSOR_CNT;
     }
     break;
   case FRU_PSU1:
@@ -1828,6 +1542,16 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int j = 0;
   bool discrete = false;
   bool scm_sensor = false;
+  char HSC_MON_dir[LARGEST_DEVICE_NAME + 1];
+
+  #define dir_scm_sensor_hwmon(str_buffer,i2c_bus,addr) \
+      sprintf(str_buffer, \
+              I2C_SYSFS_DEVICES"/%d-00%02x/hwmon/hwmon*/", \
+              i2c_bus, \
+              addr)
+
+  uint8_t SCM_HSC_ADDR = pal_get_dev_addr_from_file(fru, KEY_HSC_ADDR);
+  dir_scm_sensor_hwmon(HSC_MON_dir, SCM_HSC_DEVICE_CH, SCM_HSC_ADDR);
 
   while (i < scm_sensor_cnt) {
     if (sensor_num == scm_sensor_list[i++]) {
@@ -1847,16 +1571,16 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = read_attr(fru, sensor_num, SCM_INLET_TEMP_DEVICE, TEMP(1), value);
         break;
       case SCM_SENSOR_HSC_VOLT:
-        ret = read_hsc_volt(fru, sensor_num, SCM_HSC_DEVICE, 1, value);
+        ret = read_hsc_volt(fru, sensor_num, HSC_MON_dir, 1, value);
         break;
       case SCM_SENSOR_POWER_VOLT:
-        ret = read_hsc_power_volt(fru, sensor_num, SCM_HSC_DEVICE, 1, value);
+        ret = read_hsc_power_volt(fru, sensor_num, HSC_MON_dir, 1, value);
         break;
       case SCM_SENSOR_HSC_CURR:
-        ret = read_hsc_curr(fru, sensor_num, SCM_HSC_DEVICE, SCM_RSENSE, value);
+        ret = read_hsc_curr(fru, sensor_num, HSC_MON_dir, SCM_RSENSE, value);
         break;
       case SCM_SENSOR_HSC_POWER:
-        ret = read_hsc_power(fru, sensor_num, SCM_HSC_DEVICE, SCM_RSENSE, value);
+        ret = read_hsc_power(fru, sensor_num, HSC_MON_dir, SCM_RSENSE, value);
         break;
       default:
         ret = READING_NA;
@@ -1895,6 +1619,49 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
+  char SMB_PWRSEQ_1_MON_dir[LARGEST_DEVICE_NAME + 1];
+  char SMB_PWRSEQ_2_MON_dir[LARGEST_DEVICE_NAME + 1];
+  char FCM_B_HSC_MON_dir[LARGEST_DEVICE_NAME + 1];
+  char FCM_T_HSC_MON_dir[LARGEST_DEVICE_NAME + 1];
+
+  #define dir_smb_sensor_hwmon(str_buffer,i2c_bus,addr) \
+    sprintf(str_buffer, \
+            I2C_SYSFS_DEVICES"/%d-00%02x/hwmon/hwmon*/", \
+            i2c_bus, \
+            addr)
+
+  uint8_t SMB_PWRSEQ_1_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ1_ADDR);
+  uint8_t SMB_PWRSEQ_2_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ2_ADDR);
+  uint8_t FCM_B_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMB_HSC_ADDR);
+  uint8_t FCM_T_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMT_HSC_ADDR);
+
+  if(SMB_PWRSEQ_1_addr == -1){
+    SMB_PWRSEQ_1_addr = 0x35;
+    syslog(LOG_WARNING, "smb_sensor_read: FAIL get SMB bus5 dev1 addr,"
+                        " set to 0x%x", SMB_PWRSEQ_1_addr);
+  }
+  dir_smb_sensor_hwmon(SMB_PWRSEQ_1_MON_dir, 5, SMB_PWRSEQ_1_addr);
+
+  if(SMB_PWRSEQ_2_addr == -1){
+    SMB_PWRSEQ_2_addr = 0x36;
+    syslog(LOG_WARNING, "smb_sensor_read: FAIL get SMB bus5 dev2 addr,"
+                        " set to 0x%x", SMB_PWRSEQ_2_addr);
+  }
+  dir_smb_sensor_hwmon(SMB_PWRSEQ_2_MON_dir, 5, SMB_PWRSEQ_2_addr);
+
+  if(FCM_B_HSC_addr == -1){
+    FCM_B_HSC_addr = 0x10;
+    syslog(LOG_WARNING, "smb_sensor_read: FAIL get FCM bus75 dev addr,"
+                        " set to 0x%x", FCM_B_HSC_addr);
+  }
+  dir_smb_sensor_hwmon(FCM_B_HSC_MON_dir, 75, FCM_B_HSC_addr);
+
+  if(FCM_T_HSC_addr == -1){
+    FCM_T_HSC_addr = 0x10;
+    syslog(LOG_WARNING, "smb_sensor_read: FAIL get FCM bus67 dev addr,"
+                        " set to 0x%x", FCM_T_HSC_addr);
+  }
+  dir_smb_sensor_hwmon(FCM_T_HSC_MON_dir, 67, FCM_T_HSC_addr);
 
   switch(sensor_num) {
     case SMB_TMP422_U20_1_TEMP:
@@ -1966,73 +1733,280 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       ret = read_attr(fru, sensor_num, SMB_FCM_B_TEMP2_DEVICE, TEMP(1), value);
       break;
     case SMB_XP3R3V_BMC:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(1), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(1), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(1), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(1), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(11), value);
+      }
       break;
     case SMB_XP2R5V_BMC:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(2), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(2), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(2), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(2), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(10), value);
+      }
       break;
     case SMB_XP1R8V_BMC:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(3), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(3), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(3), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(3), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(9), value);
+      }
       break;
     case SMB_XP1R2V_BMC:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(4), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(4), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(4), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(4), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(8), value);
+      }
       break;
     case SMB_XP1R0V_FPGA:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(5), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(5), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(13), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(12), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(15), value);
+      }
       break;
     case SMB_XP3R3V_USB:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(6), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(6), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(6), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(6), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(6), value);
+      }
       break;
     case SMB_XP5R0V:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(7), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(7), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(8), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(7), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(17), value);
+      }
       break;
     case SMB_XP3R3V_EARLY:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(8), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(8), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(9), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(8), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(14), value);
+      }
       break;
     case SMB_LM57_VTEMP:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_1_DEVICE, VOLT(16), value);
+      if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(16), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(5), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(5), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(7), value);
+      }
       break;
     case SMB_XP1R8:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(1), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(1), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(1), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(1), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(11), value);
+      }
       break;
     case SMB_XP1R2:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(2), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(2), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(2), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(2), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(10), value);
+      }
       break;
     case SMB_VDDC_SW:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(3), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(3), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(3), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(3), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(9), value);
+      }
       break;
     case SMB_XP3R3V:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(4), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(4), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(4), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(4), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(8), value);
+      }
       break;
     case SMB_XP1R8V_AVDD:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(5), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(5), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(5), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(5), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(7), value);
+      }
       break;
     case SMB_XP1R2V_TVDD:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(6), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(6), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(6), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(6), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(6), value);
+      }
       break;
     case SMB_XP0R75V_1_PVDD:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(7), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(7), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(11), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(10), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(5), value);
+      }
       break;
     case SMB_XP0R75V_2_PVDD:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(8), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(8), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(12), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(11), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(16), value);
+      }
       break;
     case SMB_XP0R75V_3_PVDD:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(9), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(9), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(13), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(12), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(15), value);
+      }
       break;
     case SMB_VDD_PCIE:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(10), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(10), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(12), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(11), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(16), value);
+      }
       break;
     case SMB_XP0R84V_DCSU:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(11), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(11), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(8), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(7), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(17), value);
+      }
       break;
     case SMB_XP0R84V_CSU:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(12), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(12), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(9), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(8), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(14), value);
+      }
       break;
-    case SMB_XP1R84V_CSU:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(13), value);
+    case SMB_XP1R8V_CSU:
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(13), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_ADDR ||
+                 SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(10), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(9), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(13), value);
+      }
       break;
     case SMB_XP3R3V_TCXO:
-      ret = read_attr(fru, sensor_num, SMB_UCD9012_2_DEVICE, VOLT(14), value);
+      if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(14), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160_ADDR ||
+                 SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(7), value);
+      } else if (SMB_PWRSEQ_2_addr == SMB_PWRSEQ2_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_2_MON_dir, VOLT(10), value);
+      } else if (SMB_PWRSEQ_1_addr == SMB_PWRSEQ1_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, SMB_PWRSEQ_1_MON_dir, VOLT(12), value);
+      }
       break;
     case SMB_OUTPUT_VOLTAGE_XP0R75V_1:
       ret = read_attr(fru, sensor_num, SMB_MP2978_1_DEVICE, VOLT(2), value);
@@ -2059,22 +2033,22 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       ret = read_attr(fru, sensor_num, SMB_MP2978_2_DEVICE, VOLT(1), value);
       break;
     case SMB_SENSOR_FCM_T_HSC_VOLT:
-      ret = read_hsc_volt(fru, sensor_num, SMB_FCM_T_HSC_DEVICE, 1, value);
+      ret = read_hsc_volt(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FCM_B_HSC_VOLT:
-      ret = read_hsc_volt(fru, sensor_num, SMB_FCM_B_HSC_DEVICE, 1, value);
+      ret = read_hsc_volt(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
-      ret = read_hsc_curr(fru, sensor_num, SMB_FCM_T_HSC_DEVICE, 1, value);
+      ret = read_hsc_curr(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FCM_B_HSC_CURR:
-      ret = read_hsc_curr(fru, sensor_num, SMB_FCM_B_HSC_DEVICE, 1, value);
+      ret = read_hsc_curr(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
-      ret = read_hsc_power_volt(fru, sensor_num, SMB_FCM_T_HSC_DEVICE, 1, value);
+      ret = read_hsc_power_volt(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FCM_B_HSC_POWER_VOLT:
-      ret = read_hsc_power_volt(fru, sensor_num, SMB_FCM_B_HSC_DEVICE, 1, value);
+      ret = read_hsc_power_volt(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FAN1_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 1, value);
@@ -2141,6 +2115,8 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t type = pal_get_pim_type_from_file(fru);
   uint8_t pimid = fru-FRU_PIM1 + 1;
   uint8_t i2cbus = PIM1_I2CBUS + (pimid - 1) * 8;
+  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
+  uint8_t PIM_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_HSC_ADDR);
 
 #define dir_pim_sensor(str_buffer,i2c_bus,i2c_offset,addr) \
       sprintf(str_buffer, \
@@ -2163,7 +2139,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_LM75_TEMP_4A:
     case PIM7_LM75_TEMP_4A:
     case PIM8_LM75_TEMP_4A:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM75_TEMP_4A_DEVICE_CH, PIM_LM75_TEMP_4A_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM75_TEMP_4A_DEVICE_CH, PIM_LM75_TEMP_4A_ADDR);
       ret = read_attr(fru, sensor_num, full_name, TEMP(1), value);
       break;
     case PIM1_LM75_TEMP_4B:
@@ -2174,7 +2150,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_LM75_TEMP_4B:
     case PIM7_LM75_TEMP_4B:
     case PIM8_LM75_TEMP_4B:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM75_TEMP_4B_DEVICE_CH, PIM_LM75_TEMP_4B_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM75_TEMP_4B_DEVICE_CH, PIM_LM75_TEMP_4B_ADDR);
       ret = read_attr(fru, sensor_num, full_name , TEMP(1), value);
       break;
     case PIM1_LM75_TEMP_48:
@@ -2185,7 +2161,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_LM75_TEMP_48:
     case PIM7_LM75_TEMP_48:
     case PIM8_LM75_TEMP_48:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM75_TEMP_48_DEVICE_CH, PIM_LM75_TEMP_48_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM75_TEMP_48_DEVICE_CH, PIM_LM75_TEMP_48_ADDR);
       ret = read_attr(fru, sensor_num, full_name , TEMP(1), value);
       break;
     case PIM1_SENSOR_QSFP_TEMP:
@@ -2196,7 +2172,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_SENSOR_QSFP_TEMP:
     case PIM7_SENSOR_QSFP_TEMP:
     case PIM8_SENSOR_QSFP_TEMP:
-      dir_pim_sensor(full_name, i2cbus, PIM_DOM_DEVICE_CH, PIM_DOM_DEVICE_ADDR);
+      dir_pim_sensor(full_name, i2cbus, PIM_DOM_DEVICE_CH, PIM_DOM_FPGA_ADDR);
       ret = read_attr(fru, sensor_num, full_name , TEMP(1), value);
       break;
     case PIM1_SENSOR_HSC_VOLT:
@@ -2207,7 +2183,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_SENSOR_HSC_VOLT:
     case PIM7_SENSOR_HSC_VOLT:
     case PIM8_SENSOR_HSC_VOLT:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_addr);
       ret = read_hsc_volt(fru, sensor_num, full_name , 1, value);
       break;
     case PIM1_POWER_VOLTAGE:
@@ -2218,7 +2194,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_POWER_VOLTAGE:
     case PIM7_POWER_VOLTAGE:
     case PIM8_POWER_VOLTAGE:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_addr);
       ret = read_hsc_power_volt(fru, sensor_num, full_name , 1, value);
       break;
     case PIM1_SENSOR_HSC_CURR:
@@ -2229,7 +2205,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_SENSOR_HSC_CURR:
     case PIM7_SENSOR_HSC_CURR:
     case PIM8_SENSOR_HSC_CURR:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_addr);
       if (type == PIM_TYPE_16O) {
         ret = read_hsc_curr(fru, sensor_num, full_name, PIM16O_RSENSE, value);
       } else {
@@ -2247,7 +2223,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_SENSOR_HSC_POWER:
     case PIM7_SENSOR_HSC_POWER:
     case PIM8_SENSOR_HSC_POWER:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_DEVICE_ADDR);
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_addr);
       if (type == PIM_TYPE_16O) {
         ret = read_hsc_power(fru, sensor_num, full_name, PIM16O_RSENSE, value);
       } else {
@@ -2264,9 +2240,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT1:
     case PIM6_UCD90160_VOLT1:
     case PIM7_UCD90160_VOLT1:
-    case PIM8_UCD90160_VOLT1:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
+    case PIM8_UCD90160_VOLT1: // XP3R3V
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+      }
       break;
     case PIM1_UCD90160_VOLT2:
     case PIM2_UCD90160_VOLT2:
@@ -2275,9 +2260,20 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT2:
     case PIM6_UCD90160_VOLT2:
     case PIM7_UCD90160_VOLT2:
-    case PIM8_UCD90160_VOLT2:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+    case PIM8_UCD90160_VOLT2: // XP3R3V_EARLY
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        syslog(LOG_CRIT, "pim_sensor_read: PIM_PWRSEQ_addr == %d"
+          "(PIM_UCD90120A_ADDR) shouldn't have PIM_UCD90160_VOLT2 sensor",
+          PIM_UCD90120A_ADDR);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+      }
       break;
     case PIM1_UCD90160_VOLT3:
     case PIM2_UCD90160_VOLT3:
@@ -2286,9 +2282,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT3:
     case PIM6_UCD90160_VOLT3:
     case PIM7_UCD90160_VOLT3:
-    case PIM8_UCD90160_VOLT3:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
+    case PIM8_UCD90160_VOLT3: // XP2R5V_EARLY
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+      }
       break;
     case PIM1_UCD90160_VOLT4:
     case PIM2_UCD90160_VOLT4:
@@ -2297,9 +2302,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT4:
     case PIM6_UCD90160_VOLT4:
     case PIM7_UCD90160_VOLT4:
-    case PIM8_UCD90160_VOLT4:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+    case PIM8_UCD90160_VOLT4: // TXDRV_PHY
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+      }
       break;
     case PIM1_UCD90160_VOLT5:
     case PIM2_UCD90160_VOLT5:
@@ -2308,9 +2322,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT5:
     case PIM6_UCD90160_VOLT5:
     case PIM7_UCD90160_VOLT5:
-    case PIM8_UCD90160_VOLT5:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+    case PIM8_UCD90160_VOLT5: // XP0R8V_PHY
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+      }
       break;
     case PIM1_UCD90160_VOLT6:
     case PIM2_UCD90160_VOLT6:
@@ -2319,9 +2342,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT6:
     case PIM6_UCD90160_VOLT6:
     case PIM7_UCD90160_VOLT6:
-    case PIM8_UCD90160_VOLT6:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
+    case PIM8_UCD90160_VOLT6: // XP1R1V_EARLY
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
+      }
       break;
     case PIM1_UCD90160_VOLT7:
     case PIM2_UCD90160_VOLT7:
@@ -2330,9 +2362,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT7:
     case PIM6_UCD90160_VOLT7:
     case PIM7_UCD90160_VOLT7:
-    case PIM8_UCD90160_VOLT7:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+    case PIM8_UCD90160_VOLT7: // DVDD_PHY4
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(17), value);
+      }
       break;
     case PIM1_UCD90160_VOLT8:
     case PIM2_UCD90160_VOLT8:
@@ -2341,9 +2382,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT8:
     case PIM6_UCD90160_VOLT8:
     case PIM7_UCD90160_VOLT8:
-    case PIM8_UCD90160_VOLT8:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+    case PIM8_UCD90160_VOLT8: // DVDD_PHY3
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(14), value);
+      }
       break;
     case PIM1_UCD90160_VOLT9:
     case PIM2_UCD90160_VOLT9:
@@ -2352,9 +2402,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT9:
     case PIM6_UCD90160_VOLT9:
     case PIM7_UCD90160_VOLT9:
-    case PIM8_UCD90160_VOLT9:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+    case PIM8_UCD90160_VOLT9: // DVDD_PHY2
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+      }
       break;
     case PIM1_UCD90160_VOLT10:
     case PIM2_UCD90160_VOLT10:
@@ -2363,9 +2422,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT10:
     case PIM6_UCD90160_VOLT10:
     case PIM7_UCD90160_VOLT10:
-    case PIM8_UCD90160_VOLT10:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+    case PIM8_UCD90160_VOLT10: // DVDD_PHY1
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+      }
       break;
     case PIM1_UCD90160_VOLT11:
     case PIM2_UCD90160_VOLT11:
@@ -2374,9 +2442,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT11:
     case PIM6_UCD90160_VOLT11:
     case PIM7_UCD90160_VOLT11:
-    case PIM8_UCD90160_VOLT11:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+    case PIM8_UCD90160_VOLT11: // XP1R8V_EARLY
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(16), value);
+      }
       break;
     case PIM1_UCD90160_VOLT12:
     case PIM2_UCD90160_VOLT12:
@@ -2385,9 +2462,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT12:
     case PIM6_UCD90160_VOLT12:
     case PIM7_UCD90160_VOLT12:
-    case PIM8_UCD90160_VOLT12:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+    case PIM8_UCD90160_VOLT12: // XP1R8V_PHYIO
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(15), value);
+      }
       break;
     case PIM1_UCD90160_VOLT13:
     case PIM2_UCD90160_VOLT13:
@@ -2396,9 +2482,18 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT13:
     case PIM6_UCD90160_VOLT13:
     case PIM7_UCD90160_VOLT13:
-    case PIM8_UCD90160_VOLT13:
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_UCD90160_DEVICE_CH, PIM_UCD90160_DEVICE_ADDR);
-      ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+    case PIM8_UCD90160_VOLT13: // XP1R8V_PHYAVDD
+      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+      }
       break;
     case PIM1_MP2975_INPUT_VOLTAGE:
     case PIM2_MP2975_INPUT_VOLTAGE:
@@ -2408,7 +2503,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_MP2975_INPUT_VOLTAGE:
     case PIM7_MP2975_INPUT_VOLTAGE:
     case PIM8_MP2975_INPUT_VOLTAGE:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_DEVICE_ADDR);
+       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
        break;
     case PIM1_MP2975_OUTPUT_VOLTAGE_XP0R8V:
@@ -2419,7 +2514,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_MP2975_OUTPUT_VOLTAGE_XP0R8V:
     case PIM7_MP2975_OUTPUT_VOLTAGE_XP0R8V:
     case PIM8_MP2975_OUTPUT_VOLTAGE_XP0R8V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_DEVICE_ADDR);
+       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
        break;
     case PIM1_MP2975_OUTPUT_CURRENT_XP0R8V:
@@ -2430,7 +2525,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_MP2975_OUTPUT_CURRENT_XP0R8V:
     case PIM7_MP2975_OUTPUT_CURRENT_XP0R8V:
     case PIM8_MP2975_OUTPUT_CURRENT_XP0R8V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_DEVICE_ADDR);
+       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
        ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
        break;
     case PIM1_MP2975_OUTPUT_VOLTAGE_XP3R3V:
@@ -2441,7 +2536,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_MP2975_OUTPUT_VOLTAGE_XP3R3V:
     case PIM7_MP2975_OUTPUT_VOLTAGE_XP3R3V:
     case PIM8_MP2975_OUTPUT_VOLTAGE_XP3R3V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_DEVICE_ADDR);
+       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
 	   *value = *value * 3;
        break;
@@ -2453,7 +2548,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_MP2975_OUTPUT_CURRENT_XP3R3V:
     case PIM7_MP2975_OUTPUT_CURRENT_XP3R3V:
     case PIM8_MP2975_OUTPUT_CURRENT_XP3R3V:
-       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_DEVICE_ADDR);
+       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_MP2975_DEVICE_CH, PIM_MP2975_ADDR);
        ret = read_attr(fru, sensor_num, full_name, CURR(3), value);
        break;
     default:
@@ -3296,8 +3391,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     case FRU_PIM7:
     case FRU_PIM8:
       ret = pim_sensor_read(fru, sensor_num, value);
-      if (sensor_num >= PIM1_SENSOR_QSFP_TEMP &&
-          sensor_num <= PIM8_SENSOR_QSFP_TEMP) {
+      if (sensor_num == 
+        (PIM1_SENSOR_QSFP_TEMP+((fru-FRU_PIM1)*PIM_SENSOR_CNT))
+      ) {
         delay = 100;
       }
       break;
@@ -3653,8 +3749,8 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
     case SMB_XP0R84V_CSU:
       sprintf(name, "SMB_XP0R84V_CSU");
       break;
-    case SMB_XP1R84V_CSU:
-      sprintf(name, "SMB_XP1R84V_CSU");
+    case SMB_XP1R8V_CSU:
+      sprintf(name, "SMB_XP1R8V_CSU");
       break;
     case SMB_XP3R3V_TCXO:
       sprintf(name, "SMB_XP3R3V_TCXO");
@@ -3761,6 +3857,7 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
 static int
 get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
   uint8_t type = pal_get_pim_type_from_file(fru);
+  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
   uint8_t pimid = fru-FRU_PIM1+1;
   switch(sensor_num) {
     case PIM1_LM75_TEMP_4A:
@@ -3810,7 +3907,7 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
     case PIM6_SENSOR_QSFP_TEMP:
     case PIM7_SENSOR_QSFP_TEMP:
     case PIM8_SENSOR_QSFP_TEMP:
-      sprintf(name, "PIM%d_QSFP_TEMP",sensor_num-PIM1_SENSOR_QSFP_TEMP+1);
+      sprintf(name, "PIM%d_QSFP_TEMP",pimid);
       break;
     case PIM1_SENSOR_HSC_VOLT:
     case PIM2_SENSOR_HSC_VOLT:
@@ -3870,9 +3967,13 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
     case PIM6_UCD90160_VOLT2:
     case PIM7_UCD90160_VOLT2:
     case PIM8_UCD90160_VOLT2:
-      if (type==PIM_TYPE_16Q)
-        sprintf(name, "PIM%d_XP3R3V_EARLY",pimid);
-      else if (type==PIM_TYPE_16O)
+      if (type==PIM_TYPE_16Q) {
+        if(PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR)
+          syslog(LOG_CRIT, "get_pim_sensor_name: pim%d(%d) "
+            "shouldn't have UCD90160_VOLT2 sensor", pimid, PIM_UCD90120A_ADDR);
+        else
+          sprintf(name, "PIM%d_XP3R3V_EARLY",pimid);
+      } else if (type==PIM_TYPE_16O)
         sprintf(name, "PIM%d_XP2R5V",pimid);
       break;
     case PIM1_UCD90160_VOLT3:
@@ -4930,7 +5031,7 @@ get_smb_sensor_units(uint8_t sensor_num, char *units) {
     case SMB_VDD_PCIE:
     case SMB_XP0R84V_DCSU:
     case SMB_XP0R84V_CSU:
-    case SMB_XP1R84V_CSU:
+    case SMB_XP1R8V_CSU:
     case SMB_XP3R3V_TCXO:
     case SMB_SENSOR_FCM_T_HSC_VOLT:
     case SMB_SENSOR_FCM_B_HSC_VOLT:
@@ -5490,10 +5591,10 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_XP0R84V_CSU][UNC_THRESH] = 0.924;
       smb_sensor_threshold[SMB_XP0R84V_CSU][LNC_THRESH] = 0.819;
       smb_sensor_threshold[SMB_XP0R84V_CSU][LCR_THRESH] = 0.714;
-      smb_sensor_threshold[SMB_XP1R84V_CSU][UCR_THRESH] = 2.07;
-      smb_sensor_threshold[SMB_XP1R84V_CSU][UNC_THRESH] = 1.845;
-      smb_sensor_threshold[SMB_XP1R84V_CSU][LNC_THRESH] = 1.755;
-      smb_sensor_threshold[SMB_XP1R84V_CSU][LCR_THRESH] = 1.53;
+      smb_sensor_threshold[SMB_XP1R8V_CSU][UCR_THRESH] = 2.07;
+      smb_sensor_threshold[SMB_XP1R8V_CSU][UNC_THRESH] = 1.845;
+      smb_sensor_threshold[SMB_XP1R8V_CSU][LNC_THRESH] = 1.755;
+      smb_sensor_threshold[SMB_XP1R8V_CSU][LCR_THRESH] = 1.53;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][UCR_THRESH] = 3.8;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][UNC_THRESH] = 3.465;
       smb_sensor_threshold[SMB_XP3R3V_TCXO][LNC_THRESH] = 3.165;
@@ -7000,9 +7101,10 @@ int bic_sensor_sdr_path(uint8_t fru, char *path) {
 }
 
 int pal_get_sensor_util_timeout(uint8_t fru) {
-  uint8_t pim_id = 0, pim_type = 0;
+  uint8_t pim_id = 0, pim_type = 0 ,PIM_PWRSEQ_addr;
   size_t cnt = 0;
   int brd_type_rev = 0;
+  uint8_t *sensor_list;
 
   pal_get_board_rev(&brd_type_rev);
   switch(fru) {
@@ -7028,10 +7130,15 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_PIM8:
       pim_id = fru - FRU_PIM1;
       pim_type = pal_get_pim_type_from_file(fru);
+      PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
       if (pim_type == PIM_TYPE_16Q) {
-        cnt = sizeof(pim16q_sensor_list[pim_id]) / sizeof(uint8_t);
+        if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          cnt = sizeof(pim16q_ucd90124_sensor_list) / sizeof(uint8_t);
+        } else {
+          cnt = sizeof(pim16q_sensor_list) / sizeof(uint8_t);
+        }
       } else if (pim_type == PIM_TYPE_16O) {
-        cnt = sizeof(pim16o_sensor_list[pim_id]) / sizeof(uint8_t);
+        cnt = sizeof(pim16o_sensor_list) / sizeof(uint8_t);
       }
       break;
     case FRU_PSU1:

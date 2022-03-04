@@ -139,7 +139,7 @@ do_install:append() {
     bin="${D}/usr/local/bin"
     install_wrapper "/usr/local/bin/rackmoncli list" ${bin}/rackmonstatus
     install_wrapper "/usr/local/bin/rackmoncli data --json" ${bin}/rackmondata
-    install_wrapper "/usr/local/bin/rackmoncli data --format" ${bin}/rackmoninfo
+    install_wrapper "/usr/local/bin/rackmoncli data --format value" ${bin}/rackmoninfo
     install_wrapper "/usr/local/bin/rackmoncli raw \$@" ${bin}/modbuscmd
     install_wrapper "/usr/local/bin/rackmoncli \$@" ${bin}/rackmonctl
 }

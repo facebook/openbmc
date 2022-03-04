@@ -34,6 +34,36 @@ static std::string to_string(const json& v) {
   return v.dump();
 }
 
+static void print_value_data(const json& j) {
+  for (const auto& device : j) {
+    std::cout << "Device Address: 0x" << std::hex << std::setw(2)
+              << std::setfill('0') << int(device["deviceAddress"]) << '\n';
+    std::cout << "Device Type: " << std::string(device["deviceType"]) << '\n';
+    std::cout << "CRC Errors: " << std::dec << device["crcErrors"] << '\n';
+    std::cout << "timeouts: " << std::dec << device["timeouts"] << '\n';
+    std::cout << "Misc Errors: " << std::dec << device["miscErrors"] << '\n';
+    std::cout << "Baudrate: " << std::dec << device["baudrate"] << '\n';
+    std::cout << "Mode: " << std::string(device["mode"]) << '\n';
+    for (const auto& reg : device["registers"]) {
+      std::cout << "  " << std::string(reg["name"]) << "<0x" << std::hex
+                << std::setw(4) << std::setfill('0') << int(reg["regAddress"])
+                << "> :";
+      for (const auto& value : reg["readings"]) {
+        if (value["type"] == "flags") {
+          for (const auto& flag : value["value"]) {
+            std::cout << "\n    [" << int(flag[0]) << "] "
+                      << std::string(flag[1]) << " <" << int(flag[2]) << ">";
+          }
+          std::cout << '\n';
+        } else {
+          std::cout << ' ' << value["value"];
+        }
+      }
+      std::cout << '\n';
+    }
+  }
+}
+
 static void print_table(const json& j) {
   const int col_width = 12;
   const std::string col_sep = " | ";
@@ -111,8 +141,9 @@ static void print_text(const std::string& req_s, json& j) {
   std::string status;
   j.at("status").get_to(status);
   if (status == "SUCCESS") {
-    if (req_s == "raw_data" || req_s == "print_data" || req_s == "value_data" ||
-        req_s == "profile")
+    if (req_s == "value_data")
+      print_value_data(j["data"]);
+    else if (req_s == "raw_data" || req_s == "profile")
       print_nested(j["data"]);
     else if (req_s == "list")
       print_table(j["data"]);
@@ -193,8 +224,7 @@ int main(int argc, char* argv[]) {
   std::string format = "raw";
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
   data->callback([&]() { do_cmd(format + "_data", json_fmt); });
-  data->add_set(
-      "-f,--format", format, {"raw", "print", "value"}, "Format the data");
+  data->add_set("-f,--format", format, {"raw", "value"}, "Format the data");
 
   // Profile
   app.add_subcommand("profile", "Print profiling data collected from last read")

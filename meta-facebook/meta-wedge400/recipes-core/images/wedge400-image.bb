@@ -5,6 +5,8 @@ require wedge400-image-layout.inc
 
 require recipes-core/images/fb-openbmc-image.bb
 
+PROVIDES += "wedge400orv3-image"
+
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \

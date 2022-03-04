@@ -131,6 +131,8 @@ int bb_fw_update_prepare(uint8_t slot_id);
 int bb_fw_update_finish(uint8_t slot_id);
 int bic_get_oem_sensor_reading(uint8_t slot_id, uint8_t index, ipmi_sensor_reading_t *sensor, uint8_t mul, uint8_t intf);
 int bic_get_m2_config(uint8_t *config, uint8_t slot, uint8_t intf);
+void bic_open_cwc_usb(uint8_t slot);
+void bic_close_cwc_usb(uint8_t slot);
 
 #ifdef __cplusplus
 } // extern "C"

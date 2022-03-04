@@ -473,13 +473,13 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     case UNIFIED_IIO_ERR:
     {
       uint8_t stack = sel[9];
-      uint8_t error_type = sel[13];
-      uint8_t error_severity = sel[14];
-      uint8_t error_id = sel[15];
+      uint8_t sel_error_type = sel[13];
+      uint8_t sel_error_severity = sel[14];
+      uint8_t sel_error_id = sel[15];
 
       sprintf(error_log, "GeneralInfo: IIOErr(0x%02X), IIO Port Location: Sled %02d/Socket %02d, Stack 0x%02X, Error Type: 0x%02X, Error Severity: 0x%02X, Error ID: 0x%02X",
-              general_info, dimm_info.sled, dimm_info.socket, stack, error_type, error_severity, error_id);
-      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, error_id);
+              general_info, dimm_info.sled, dimm_info.socket, stack, sel_error_type, sel_error_severity, sel_error_id);
+      sprintf(temp_log, "IIO_ERR CPU%d. Error ID(%02X)",dimm_info.socket, sel_error_id);
       pal_add_cri_sel(temp_log);
       break;
     }
@@ -764,10 +764,10 @@ pal_get_dev_list(uint8_t fru, char *list)
 }
 
 int __attribute__((weak))
-pal_get_fru_id(char *str, uint8_t *fru)
+pal_get_fru_id(char *fru_str, uint8_t *fru)
 {
   unsigned int _fru;
-  if (sscanf(str, "fru%u", &_fru) == 1) {
+  if (sscanf(fru_str, "fru%u", &_fru) == 1) {
     *fru = (uint8_t)_fru;
     return PAL_EOK;
   }
@@ -775,10 +775,10 @@ pal_get_fru_id(char *str, uint8_t *fru)
 }
 
 int __attribute__((weak))
-pal_get_dev_id(char *str, uint8_t *fru)
+pal_get_dev_id(char *fru_str, uint8_t *fru)
 {
   unsigned int _fru;
-  if (sscanf(str, "fru%u", &_fru) == 1) {
+  if (sscanf(fru_str, "fru%u", &_fru) == 1) {
     *fru = (uint8_t)_fru;
     return PAL_EOK;
   }
@@ -1445,7 +1445,7 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         sprintf(temp_log, "MCERR,FRU:%u", fru);
         pal_add_cri_sel(temp_log);
       } else if (ed[0] == 0xD){
-        strcat(error_log, "RMCA");
+        strcat(error_log, "MCERR/RMCA");
         /* Also try logging to Critial log file, if available */
         sprintf(temp_log, "RMCA,FRU:%u", fru);
         pal_add_cri_sel(temp_log);
@@ -2802,7 +2802,7 @@ pal_is_cwc(void) {
 }
 
 int __attribute__((weak))
-pal_get_cwc_id(char *str, uint8_t *id) {
+pal_get_cwc_id(char *str, uint8_t *fru_id) {
   return PAL_ENOTSUP;
 }
 

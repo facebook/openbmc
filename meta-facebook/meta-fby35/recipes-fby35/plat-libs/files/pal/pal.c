@@ -1854,7 +1854,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_SMI_STUCK_LOW  = 0x0E,
     SYS_OV_DETECT      = 0x0F,
     SYS_FM_THROTTLE    = 0x10,
-    SYS_SLOT_PRSNT     = 0x11,
+    SYS_CPU_MEM_THERM_TRIP     = 0x11,
     SYS_PESW_ERR       = 0x12,
     SYS_2OU_VR_FAULT   = 0x13,
     SYS_FAN_SERVICE    = 0x14,
@@ -1862,20 +1862,19 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     E1S_1OU_HSC_PWR_ALERT = 0x82,
   };
   uint8_t event = event_data[0];
-  char prsnt_str[32] = {0};
   char log_msg[MAX_ERR_LOG_SIZE] = {0};
   char fan_mode_str[FAN_MODE_STR_LEN] = {0};
   char component_str[MAX_COMPONENT_LEN] = {0};
 
   switch (event) {
     case SYS_SOC_THERM_TRIP:
-      strcat(error_log, "SOC Thermal trip");
+      strcat(error_log, "SOC thermal trip");
       break;
     case SYS_THROTTLE:
       strcat(error_log, "SYS_Throttle throttle");
       break;
     case SYS_PCH_THERM_TRIP:
-      strcat(error_log, "PCH Thermal trip");
+      strcat(error_log, "PCH thermal trip");
       break;
     case SYS_FM_THROTTLE:
       strcat(error_log, "FM_Throttle throttle");
@@ -1884,7 +1883,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "HSC_Throttle throttle");
       break;
     case SYS_OC_DETECT:
-      strcat(error_log, "HSC_OC Warning");
+      strcat(error_log, "HSC_OC warning");
       break;
     case SYS_MB_THROTTLE:
       strcat(error_log, "MB_Throttle throttle");
@@ -1897,11 +1896,11 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_M2_VPP:
       pal_get_m2vpp_str_name(fru, event_data[1], event_data[2], error_log);
-      strcat(error_log, "VPP Power Control");
+      strcat(error_log, "VPP power control");
       break;
     case SYS_M2_PGOOD:
       pal_get_m2_str_name(event_data[1], event_data[2], error_log);
-      strcat(error_log, "Power Good Fault");
+      strcat(error_log, "Power Good fault");
       break;
     case SYS_VCCIO_FAULT:
       strcat(error_log, "VCCIO fault");
@@ -1910,11 +1909,10 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, "SMI stuck low over 90s");
       break;
     case SYS_OV_DETECT:
-      strcat(error_log, "VCCIO Over Voltage Fault");
+      strcat(error_log, "VCCIO over voltage fault");
       break;
-    case SYS_SLOT_PRSNT:
-      snprintf(prsnt_str, sizeof(prsnt_str), "Slot%d present", event_data[1]);
-      strcat(error_log, prsnt_str);
+    case SYS_CPU_MEM_THERM_TRIP:
+      strcat(error_log, "CPU/Memory thermal trip");
       break;
     case SYS_PESW_ERR:
       strcat(error_log, "2OU PESW error");
@@ -1949,7 +1947,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       strcat(error_log, log_msg);
       break;
     case E1S_1OU_HSC_PWR_ALERT:
-      strcat(error_log, "E1S 1OU HSC Power");
+      strcat(error_log, "E1S 1OU HSC power alert");
       break;
     default:
       strcat(error_log, "Undefined system event");
@@ -2064,7 +2062,6 @@ pal_parse_button_detect_event(uint8_t fru, uint8_t *event_data, char *error_log)
 
   return PAL_EOK;
 }
-
 
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {

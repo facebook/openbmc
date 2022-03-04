@@ -31,6 +31,7 @@ LOCAL_URI += " \
     file://rest_fw_ver.py \
     file://rest_sensors.py \
     file://rest_beacon.py \
+    file://rest_bmc_board_rev.py \
 "
 
 binfiles1 += " \
@@ -46,4 +47,5 @@ binfiles1 += " \
     rest_fw_ver.py \
     rest_sensors.py \
     rest_beacon.py \
+    rest_bmc_board_rev.py \
 "

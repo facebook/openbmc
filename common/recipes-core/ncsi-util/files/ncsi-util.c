@@ -304,7 +304,7 @@ static NCSI_NL_RSP_T * send_nl_msg_retry(NCSI_NL_MSG_T *nl_msg)
 
 static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
 {
-#define SLEEP_TIME_MS               200  // wait time per loop in ms
+#define SLEEP_TIME_MS               20  // wait time per loop in ms
   NCSI_NL_MSG_T *nl_msg = NULL;
   NCSI_NL_RSP_T *nl_resp = NULL;
   pldm_fw_pkg_hdr_t *pkgHdr;

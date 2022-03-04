@@ -636,7 +636,7 @@ NX_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int ufm_size)
         else
         {
 #ifdef CPLD_DEBUG
-          printf("[%s]CF Line: %d\n", __func__, (int)idev_info->CF_Line);
+          printf("[%s]CF Line: %d\n", __func__, (int)dev_info->CF_Line);
 #endif
           CFStart = 0;
         }
@@ -826,6 +826,16 @@ struct cpld_dev_info lattice_dev_list[] = {
     .cpld_dev_id = common_cpld_Get_id_i2c,
   },
   [7] = {
+    .name = "LCMXO3-4300C",
+    .dev_id = 0x612BC043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  [8] = {
     .name = "LFMNX-50",
     .dev_id = 0x412E3043,
     .intf = INTF_I2C,

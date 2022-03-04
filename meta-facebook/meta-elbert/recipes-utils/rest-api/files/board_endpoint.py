@@ -21,6 +21,7 @@
 import re
 
 import rest_beacon
+import rest_bmc_board_rev
 import rest_fruid_scm
 import rest_fw_ver
 import rest_peutil
@@ -168,3 +169,7 @@ class boardApp_Handler:
     # Handler for sys/beacon/status resource endpoint
     async def rest_beacon_status_hdl(self, request):
         return web.json_response(rest_beacon.beacon_status(), dumps=dumps_bytestr)
+
+    # Handler for sys/bmc_board_rev endpoint
+    async def rest_bmc_board_rev_hdl(self, request):
+        return web.json_response(rest_bmc_board_rev.get_bmc_board_rev(), dumps=dumps_bytestr)

@@ -27,7 +27,7 @@ import subprocess
 import time
 
 
-VERSION = "0.8"
+VERSION = "0.9"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -273,6 +273,11 @@ def showtech(verboseLevel=0):
     print(
         "##### BMC version #####\nbuilt: {}{}".format(
             runCmd("cat /etc/version"), runCmd("cat /etc/issue")
+        )
+    )
+    print(
+        "##### BMC Board Revision #####\n{}".format(
+            runCmd("/usr/local/bin/bmc_board_rev.sh")
         )
     )
     print("##### BMC UPTIME #####\n{}".format(runCmd("uptime")))

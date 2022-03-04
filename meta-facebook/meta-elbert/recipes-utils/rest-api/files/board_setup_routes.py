@@ -63,3 +63,4 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[36], bhandler.rest_beacon_audit_hdl)
     app.router.add_get(board_routes[37], bhandler.rest_beacon_off_hdl)
     app.router.add_get(board_routes[38], bhandler.rest_beacon_status_hdl)
+    app.router.add_get(board_routes[39], bhandler.rest_bmc_board_rev_hdl)

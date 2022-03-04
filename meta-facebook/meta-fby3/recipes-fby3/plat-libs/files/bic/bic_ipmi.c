@@ -521,7 +521,7 @@ int
 bic_write_fruid(uint8_t slot_id, uint8_t fru_id, const char *path, uint8_t intf) {
   int ret = -1;
   uint32_t offset;
-  uint8_t count;
+  int8_t count;
   uint8_t buf[64] = {0};
   int fd;
 
@@ -1078,7 +1078,7 @@ bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
     return -1;
 
   val = atoi(tmp_str);
-  if (val < 0 && val > 255)
+  if (val < 0 || val > 255)
     return -1;
 
   *type = val;
@@ -2291,7 +2291,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
 
   if (intf == FEXP_BIC_INTF) {
     table = 1;
-    bic_get_1ou_type(slot_id, &board_type);
+    ret = bic_get_1ou_type(slot_id, &board_type);
     if (ret < 0) {
       syslog(LOG_ERR, "%s() Cannot get 1ou board_type", __func__);
       board_type = M2_BOARD;
@@ -2509,7 +2509,7 @@ bic_usb_hub_reset(uint8_t slot_id, uint8_t board_type, uint8_t intf) {
     for ( size_t j = st_idx; j < end_idx; j++ ) {
       ret = remote_bic_set_gpio(slot_id, rst_list[j], i, intf);
       if ( ret < 0 ) {
-        printf("Failed to reset USB HUB, pin#:%02X, val:%02X, intf:%02X, board_type:%02X\n", rst_list[i], i, intf, board_type);
+        printf("Failed to reset USB HUB, pin#:%02zX, val:%02zuX, intf:%02X, board_type:%02X\n", rst_list[i], i, intf, board_type);
         break;
       }
       if ( i == VALUE_HIGH ) msleep(500);
@@ -2785,4 +2785,61 @@ bic_get_m2_config(uint8_t *config, uint8_t slot, uint8_t intf) {
   }
 
   return ret;
+}
+
+void
+bic_open_cwc_usb(uint8_t slot) {
+  bic_gpio_t gpio = {0};
+  printf("Opening USB hubs...\n");
+  if (bic_get_gpio(slot, &gpio, NONE_INTF) == 0 &&
+      (gpio.gpio[0] & (1 << RST_USB_HUB_N)) == GPIO_LOW) { //not to open all hubs at once
+    remote_bic_set_gpio(slot, CWC_GPIO_RST_USB_HUB, GPIO_LOW, REXP_BIC_INTF);
+    remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_LOW, RREXP_BIC_INTF1);
+    remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_LOW, RREXP_BIC_INTF1);
+    remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_LOW, RREXP_BIC_INTF1);
+    remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_LOW, RREXP_BIC_INTF2);
+    remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_LOW, RREXP_BIC_INTF2);
+    remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_LOW, RREXP_BIC_INTF2);
+  }
+
+  bic_set_gpio(slot, RST_USB_HUB_N, GPIO_HIGH);
+  sleep(SW_USB_HUB_DELAY);
+  remote_bic_set_gpio(slot, CWC_GPIO_RST_USB_HUB, GPIO_HIGH, REXP_BIC_INTF);
+  sleep(SW_USB_HUB_DELAY);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_HIGH, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_HIGH, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_HIGH, RREXP_BIC_INTF1);
+  sleep(SW_USB_HUB_DELAY);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_HIGH, RREXP_BIC_INTF2);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_HIGH, RREXP_BIC_INTF2);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_HIGH, RREXP_BIC_INTF2);
+  sleep(SW_USB_HUB_DELAY);
+  return;
+}
+
+void
+bic_close_cwc_usb(uint8_t slot) {
+  printf("Closing USB hubs...\n");
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_LOW, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_LOW, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_LOW, RREXP_BIC_INTF1);
+  sleep(SW_USB_HUB_DELAY);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_LOW, RREXP_BIC_INTF2);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_LOW, RREXP_BIC_INTF2);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_LOW, RREXP_BIC_INTF2);
+  sleep(SW_USB_HUB_DELAY);
+  remote_bic_set_gpio(slot, CWC_GPIO_RST_USB_HUB, GPIO_LOW, REXP_BIC_INTF);
+  sleep(SW_USB_HUB_DELAY);
+  bic_set_gpio(slot, RST_USB_HUB_N, GPIO_LOW);
+  sleep(SW_USB_HUB_DELAY);
+  //wait for usb devices to be released
+
+  remote_bic_set_gpio(slot, CWC_GPIO_RST_USB_HUB, GPIO_HIGH, REXP_BIC_INTF);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_HIGH, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_HIGH, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_HIGH, RREXP_BIC_INTF1);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB1, GPIO_HIGH, RREXP_BIC_INTF2);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB2, GPIO_HIGH, RREXP_BIC_INTF2);
+  remote_bic_set_gpio(slot, GPV3_GPIO_RST_USB_HUB3, GPIO_HIGH, RREXP_BIC_INTF2);
+  return;
 }

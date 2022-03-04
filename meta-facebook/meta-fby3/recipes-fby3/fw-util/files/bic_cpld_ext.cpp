@@ -34,10 +34,14 @@ int CpldExtComponent::update_internal(string& image, bool force) {
         }
       }
     }
-    if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD ) {
+    if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != CWC_MCHP_BOARD ) {
       remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_HIGH, intf);
     }
-    bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+    if (pal_is_exp() == PAL_EOK) {
+      bic_open_cwc_usb(slot_id);
+    } else {
+      bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
+    }
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), (force ? FORCE_UPDATE_SET : FORCE_UPDATE_UNSET));
   } catch (string& err) {
     syslog(LOG_WARNING, "%s(): %s", __func__, err.c_str());

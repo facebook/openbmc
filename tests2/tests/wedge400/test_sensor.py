@@ -35,6 +35,10 @@ from tests.wedge400.test_data.sensors.sensors import (
     SMB_SENSORS_W400,
     SMB_SENSORS_W400CEVT,
     SMB_SENSORS_W400CEVT2,
+    FAN1_SENSORS,
+    FAN2_SENSORS,
+    FAN3_SENSORS,
+    FAN4_SENSORS,
 )
 from utils.test_utils import qemu_check
 
@@ -234,3 +238,69 @@ class Psu2SensorTest(PsuSensorTest, unittest.TestCase):
 
     def test_psu2_sensor_keys(self):
         super().base_test_psu_sensor_keys()
+
+
+class FanSensorTest(SensorUtilTest, unittest.TestCase):
+    @abstractmethod
+    def get_fan_sensors(self):
+        self._fan_id = 0
+        pass
+
+    def base_test_fan_sensor_keys(self):
+        self.set_sensors_cmd()
+        result = self.get_parsed_result()
+        for key in self.get_fan_sensors():
+            with self.subTest(key=key):
+                self.assertIn(
+                    key,
+                    result.keys(),
+                    "Missing key {} in fan{} sensor data".format(key, self._fan_id),
+                )
+
+
+class Fan1SensorTest(FanSensorTest, unittest.TestCase):
+    def set_sensors_cmd(self):
+        self.sensors_cmd = ["/usr/local/bin/sensor-util fan1"]
+        self._fan_id = 1
+
+    def get_fan_sensors(self):
+        return FAN1_SENSORS
+
+    def test_fan1_sensor_keys(self):
+        super().base_test_fan_sensor_keys()
+
+
+class Fan2SensorTest(FanSensorTest, unittest.TestCase):
+    def set_sensors_cmd(self):
+        self.sensors_cmd = ["/usr/local/bin/sensor-util fan2"]
+        self._fan_id = 2
+
+    def get_fan_sensors(self):
+        return FAN2_SENSORS
+
+    def test_fan2_sensor_keys(self):
+        super().base_test_fan_sensor_keys()
+
+
+class Fan3SensorTest(FanSensorTest, unittest.TestCase):
+    def set_sensors_cmd(self):
+        self.sensors_cmd = ["/usr/local/bin/sensor-util fan3"]
+        self._fan_id = 3
+
+    def get_fan_sensors(self):
+        return FAN3_SENSORS
+
+    def test_fan3_sensor_keys(self):
+        super().base_test_fan_sensor_keys()
+
+
+class Fan4SensorTest(FanSensorTest, unittest.TestCase):
+    def set_sensors_cmd(self):
+        self.sensors_cmd = ["/usr/local/bin/sensor-util fan4"]
+        self._fan_id = 4
+
+    def get_fan_sensors(self):
+        return FAN4_SENSORS
+
+    def test_fan4_sensor_keys(self):
+        super().base_test_fan_sensor_keys()

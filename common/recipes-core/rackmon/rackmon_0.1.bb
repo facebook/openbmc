@@ -27,7 +27,7 @@ DEPENDS:append = " update-rc.d-native"
 
 LDFLAGS += "-llog -lmisc-utils"
 DEPENDS += "libgpio liblog libmisc-utils"
-RDEPENDS:${PN} = "libgpio liblog libmisc-utils python3-core bash"
+RDEPENDS:${PN} = "libgpio liblog libmisc-utils python3-core bash psu-update"
 
 def get_profile_flag(d):
   prof_enabled = d.getVar("RACKMON_PROFILING", False)
@@ -56,12 +56,6 @@ LOCAL_URI = " \
     file://rackmon-config.py \
     file://rackmon-stress.py \
     file://rackmond.py \
-    file://psu-update-delta.py \
-    file://psu-update-bel.py \
-    file://psu-update-artesyn.py \
-    file://pyrmd.py \
-    file://srec.py \
-    file://hexfile.py \
     file://rackmond.service \
     file://configure-rackmond.service \
     "
@@ -71,13 +65,7 @@ binfiles = "modbuscmd \
             gpiowatch \
             rackmond \
             rackmonctl \
-            psu-update-delta.py \
-            psu-update-bel.py \
-            psu-update-artesyn.py \
             rackmon-stress.py \
-            hexfile.py \
-            pyrmd.py \
-            srec.py \
            "
 
 #otherfiles = "README"

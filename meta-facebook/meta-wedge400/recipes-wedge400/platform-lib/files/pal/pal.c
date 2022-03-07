@@ -332,15 +332,6 @@ const uint8_t w400_mp_respin_smb_sensor_list[] = {
   SMB_SENSOR_FCM_LM75B_U2_TEMP,
   SMB_SENSOR_FCM_HSC_VOLT,
   SMB_SENSOR_FCM_HSC_CURR,
-  /* Sensors FAN Speed */
-  SMB_SENSOR_FAN1_FRONT_TACH,
-  SMB_SENSOR_FAN1_REAR_TACH,
-  SMB_SENSOR_FAN2_FRONT_TACH,
-  SMB_SENSOR_FAN2_REAR_TACH,
-  SMB_SENSOR_FAN3_FRONT_TACH,
-  SMB_SENSOR_FAN3_REAR_TACH,
-  SMB_SENSOR_FAN4_FRONT_TACH,
-  SMB_SENSOR_FAN4_REAR_TACH,
   /* BMC ADC Sensors  */
   SMB_BMC_ADC0_VSEN,
   SMB_BMC_ADC1_VSEN,
@@ -920,6 +911,11 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     return -1;
   }
   return 0;
+}
+
+int
+pal_get_fru_count() {
+  return MAX_NUM_FRUS;
 }
 
 int

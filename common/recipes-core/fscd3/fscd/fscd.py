@@ -445,7 +445,6 @@ class Fscd(object):
         ret = 0
         for fru in self.machine.frus:
             for sensor, tuple in list(sensors_tuples[fru].items()):
-                Logger.debug("sensor: %s, %d DegC" % (tuple.name, tuple.value))
                 if tuple.value is None:  # Skip sensor if the reading fail
                     continue
                 if tuple.name in self.fsc_config["profiles"]:

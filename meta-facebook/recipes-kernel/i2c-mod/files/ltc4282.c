@@ -549,7 +549,6 @@ static ssize_t ltc4282_show_fet_as_voltage(struct device *dev,
 
 static ssize_t ltc4282_do_reboot(struct device *dev, struct device_attribute *dev_attr,
                                  const char *buf, size_t count){
-    struct sensor_device_attribute *attr = to_sensor_dev_attr(dev_attr);
     struct ltc4282_data *data = dev_get_drvdata(dev);
     struct i2c_client *client = data->client;
     long val;

@@ -20,8 +20,13 @@ class Modbus {
   uint32_t defaultBaudrate_ = 0;
   ModbusTime defaultTimeout_ = ModbusTime::zero();
   ModbusTime minDelay_ = ModbusTime::zero();
+  std::chrono::seconds interfaceRetryTime_ = std::chrono::seconds(600);
+  bool deviceValid_ = false;
+  size_t openTries_ = 0;
+  const size_t maxOpenTries_ = 12;
   std::ostream& profileStore_;
 
+  void probePresence();
  public:
   explicit Modbus(std::ostream& prof) : profileStore_(prof) {}
   virtual ~Modbus() {
@@ -50,6 +55,10 @@ class Modbus {
       uint32_t baudrate = 0,
       ModbusTime timeout = ModbusTime::zero(),
       ModbusTime settleTime = ModbusTime::zero());
+
+  virtual bool isPresent() {
+    return deviceValid_;
+  }
 };
 
 void from_json(const nlohmann::json& j, Modbus& m);

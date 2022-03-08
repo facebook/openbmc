@@ -83,8 +83,11 @@ rackmon_cli_exe = executable(
 
 
 interface_configs = [
-  'rackmon.conf',
+  'aspeed_uart.conf',
+  'usb_ft232.conf',
+  'usb_ft4232.conf',
 ]
+
 register_maps = [
   'orv2_psu.json',
 ]

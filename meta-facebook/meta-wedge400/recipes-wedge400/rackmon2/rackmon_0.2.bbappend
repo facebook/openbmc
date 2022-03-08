@@ -1,4 +1,4 @@
-# Copyright 2014-present Facebook. All Rights Reserved.
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +14,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
-[Unit]
-Description=Start rackmond
-After=setup_i2c.service openbmc_gpio_setup.service
-Wants=openbmc_gpio_setup.service setup_board.service
 
-[Service]
-ExecStart=/usr/local/bin/rackmond
-ExecStartPre=ln -s /etc/aspeed_uart.conf /etc/rackmon.conf
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-[Install]
-WantedBy=multi-user.target
+LOCAL_URI += " \
+    file://run-rackmond.sh \
+    file://setup-rackmond.sh \
+    "

@@ -70,7 +70,9 @@ LOCAL_URI = " \
     "
 # Configuration files
 LOCAL_URI += " \
-    file://configs/interface/rackmon.conf \
+    file://configs/interface/aspeed_uart.conf \
+    file://configs/interface/usb_ft232.conf \
+    file://configs/interface/usb_ft4232.conf \
     file://configs/register_map/orv2_psu.json \
     "
 

@@ -1,5 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include <nlohmann/json.hpp>
+#include <sys/file.h>
+#include <unistd.h>
 #include "Log.h"
 #include "Rackmon.h"
 #include "UnixSock.h"
@@ -213,6 +215,16 @@ using namespace rackmonsvc;
 
 int main(int argc, char* argv[]) {
   ::google::InitGoogleLogging(argv[0]);
+  int fd = open("/var/run/rackmond.lock", O_CREAT | O_RDWR, 0666);
+  if (fd < 0) {
+    logError << "Cannot create/open /var/run/rackmond.lock" << std::endl;
+    return fd;
+  }
+  if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
+    close(fd);
+    logError << "Another instance of rackmond is running" << std::endl;
+    return -1;
+  }
   rackmonsvc::RackmonUNIXSocketService svc;
   svc.initialize(argc, argv);
   svc.doLoop();

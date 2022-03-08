@@ -109,7 +109,7 @@ The interfaces to be used is provided by `rackmond.json` of the format:
     {
       "baudrate": 19200,
       "device_path": "/dev/ttyS4",
-      "device_type": "aspeed_rs485",
+      "device_type": "AspeedRS485",
       "default_timeout": 300,
       "ignored_addrs": [32,33],
       "min_delay": 1,
@@ -121,7 +121,11 @@ Mandatory:
   "baudrate": This is the default baudrate on this bus.
   "device_path": The UART Device path.
 Optional:
-  "device_type": "default" or "aspeed_rs485", to pick the type of UART device.
+  "device_type": {"default","AspeedRS485","LocalEcho"}, to pick the type of UART device.
+      default: UART Device using an IOCTL to flush TX.
+      AspeedRS485: The Aspeed RS485 subsystem.
+      LocalEcho: UART Device with the TX tied to the RX for local echo (Transmitted bytes
+      are available as RX to verify transmitted bytes)
   "default_timeout": default to use when use does not specify a timeout.
   "min_delay": Minimum delay to add after each command. 0 by default.
   "ignored_addrs": Do not scan for these addresses (Useful in debugging).

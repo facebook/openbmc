@@ -89,12 +89,54 @@ class Mock3Modbus : public Modbus {
   FakeModbus fake_;
 };
 
+class MockPollThread : public PollThread<Rackmon> {
+  std::atomic<bool> tick_{false};
+  std::condition_variable ack_{};
+
+ public:
+  MockPollThread(
+      std::function<void(Rackmon*)> func,
+      Rackmon* obj,
+      const PollThreadTime& pollInterval)
+      : PollThread<Rackmon>(func, obj, pollInterval) {}
+  void workerLoop() override {
+    std::unique_lock lk(eventMutex_);
+    while (started_.load()) {
+      func_(obj_);
+      if (tick_.load()) {
+        tick_ = false;
+        ack_.notify_all();
+      }
+      eventCV_.wait(lk, [this]() { return !started_.load() || tick_.load(); });
+    }
+  }
+  void tick() {
+    std::unique_lock lk(eventMutex_);
+    tick_ = true;
+    eventCV_.notify_all();
+    ack_.wait(lk, [this]() { return !tick_.load(); });
+  }
+};
+
 class MockRackmon : public Rackmon {
  public:
   MockRackmon() : Rackmon() {}
   MOCK_METHOD0(makeInterface, std::unique_ptr<Modbus>());
   const RegisterMapDatabase& getMap() {
     return getRegisterMapDatabase();
+  }
+  std::unique_ptr<PollThread<Rackmon>> makeThread(
+      std::function<void(Rackmon*)> func,
+      PollThreadTime interval) {
+    auto t1 = std::make_unique<MockPollThread>(func, this, interval);
+    std::unique_ptr<PollThread<Rackmon>> t2 = std::move(t1);
+    return t2;
+  }
+  void scanTick() {
+    dynamic_cast<MockPollThread&>(getScanThread()).tick();
+  }
+  void monitorTick() {
+    dynamic_cast<MockPollThread&>(getMonitorThread()).tick();
   }
 };
 
@@ -242,7 +284,9 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
       .WillOnce(Return(ByMove(make_modbus(161, 4))));
   mon.load(r_conf, r_test_dir);
   mon.start();
-  std::this_thread::sleep_for(1s);
+
+  // Fake elapsed time of one interval.
+  mon.scanTick();
   std::vector<ModbusDeviceInfo> devs = mon.listDevices();
   EXPECT_EQ(devs.size(), 1);
   EXPECT_EQ(devs[0].deviceAddress, 161);
@@ -288,12 +332,16 @@ TEST_F(RackmonTest, BasicScanFoundOneMon) {
       .WillOnce(Return(ByMove(make_modbus(161, 4))));
   mon.load(r_conf, r_test_dir);
   mon.start(1s);
-  std::this_thread::sleep_for(1s);
+
+  // Fake that a tick has elapsed on scan's pollthread.
+  mon.scanTick();
   std::vector<ModbusDeviceInfo> devs = mon.listDevices();
   EXPECT_EQ(devs.size(), 1);
   EXPECT_EQ(devs[0].deviceAddress, 161);
   EXPECT_EQ(devs[0].mode, ModbusDeviceMode::ACTIVE);
-  std::this_thread::sleep_for(1s);
+
+  // Fake that a tick has elapsed on monitor's pollthread.
+  mon.monitorTick();
   mon.stop();
   std::vector<ModbusDeviceValueData> data;
   mon.getValueData(data);

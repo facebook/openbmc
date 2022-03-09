@@ -256,7 +256,7 @@ class bmcNode(node):
             for cmd in cmd_list:
                 try:
                     stdout = subprocess.check_output(cmd, shell=True)  # noqa: P204
-                    out_str = stdout.splitlines()[2].rstrip().split('"')[1]
+                    out_str = stdout.splitlines()[2].rstrip().decode().split('"')[1]
                     break
                 except Exception:
                     pass
@@ -282,7 +282,7 @@ class bmcNode(node):
             for cmd in cmd_list:
                 try:
                     stdout = subprocess.check_output(cmd, shell=True)  # noqa: P204
-                    value = int(stdout.rstrip().split(":")[1], 16)
+                    value = int(stdout.rstrip().decode().split(":")[1], 16)
                     out_str = "%d.%d" % (value >> 16, value & 0xFFFF)
                     break
                 except Exception:

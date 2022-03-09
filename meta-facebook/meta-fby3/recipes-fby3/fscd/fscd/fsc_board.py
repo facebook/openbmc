@@ -399,7 +399,7 @@ def get_fan_mode(scenario="None"):
             pwm = 80
         elif sled_system_conf == "Type_15":
             # config D GPv3
-            pwm = 100
+            pwm = 80
             return fan_mode["boost_mode"], pwm
         else:
             pwm = 60

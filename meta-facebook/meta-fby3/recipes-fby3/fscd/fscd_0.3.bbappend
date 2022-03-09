@@ -31,8 +31,8 @@ LOCAL_URI += "\
     file://FSC_CLASS1_DVT_EDSFF_1U.fsc \
     file://FSC_CLASS2_PVT_SPE_config.json \
     file://FSC_CLASS2_DVT_SPE_zone1.fsc \
-    file://FSC_CLASS1_EVT_CONFIG_D_GPV3.json \
-    file://FSC_CLASS1_EVT_CONFIG_D_GPV3.fsc \
+    file://FSC_CLASS1_CONFIG_D_GPV3.json \
+    file://FSC_CLASS1_CONFIG_D_GPV3.fsc \
     file://FSC_CLASS1_EVT_DP.json \
     file://FSC_CLASS1_EVT_DP.fsc \
     file://FSC_CLASS1_DVT_DP_HBA.json \
@@ -47,7 +47,7 @@ FSC_CONFIG += "FSC_CLASS1_PVT_type1.json \
                FSC_CLASS2_EVT_config.json \
                FSC_CLASS1_DVT_EDSFF_1U.json \
                FSC_CLASS2_PVT_SPE_config.json \
-               FSC_CLASS1_EVT_CONFIG_D_GPV3.json \
+               FSC_CLASS1_CONFIG_D_GPV3.json \
                FSC_CLASS1_EVT_DP.json \
                FSC_CLASS1_DVT_DP_HBA.json \
                FSC_CLASS2_DVT_CWC.json \
@@ -59,7 +59,7 @@ FSC_ZONE_CONFIG += " FSC_CLASS2_EVT_zone1.fsc \
                      FSC_CLASS1_EVT_type1_zone1.fsc \
                      FSC_CLASS1_DVT_EDSFF_1U.fsc \
                      FSC_CLASS2_DVT_SPE_zone1.fsc \
-                     FSC_CLASS1_EVT_CONFIG_D_GPV3.fsc \
+                     FSC_CLASS1_CONFIG_D_GPV3.fsc \
                      FSC_CLASS1_EVT_DP.fsc \
                      FSC_CLASS1_DVT_DP_HBA.fsc \
                      FSC_CLASS2_DVT_CWC.fsc \

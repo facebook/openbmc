@@ -1984,7 +1984,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
 #define BIC_SENSOR_READ_NA 0x20
   int ret = 0;
   uint8_t power_status = 0;
-  snr_reading_ret sensor = {0};
+  ipmi_extend_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   char path[128];
   sprintf(path, SLOT_SENSOR_LOCK, fru);
@@ -2046,6 +2046,23 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if (sensor.flags & BIC_SENSOR_READ_NA) {
     //syslog(LOG_WARNING, "%s() sensor@0x%x flags is NA", __func__, sensor_num);
     return READING_NA;
+  }
+
+  if(sensor.read_type == ACCURATE_CMD_4BYTE) {
+    *value = ((int16_t)((sensor.value & 0xFFFF0000) >> 16)) * 0.001 + ((int16_t)(sensor.value & 0x0000FFFF)) ;
+
+    switch (sensor_num) {
+      case BIC_SENSOR_FIO_TEMP:
+        apply_frontIO_correction(fru, sensor_num, value, bmc_location);
+        break;
+      case BIC_SENSOR_CPU_THERM_MARGIN:
+        if ( *value > 0 ) *value = -(*value);
+        break;
+    }
+    return 0;
+  } else if ( sensor.read_type == ACCURATE_CMD) {
+    uint32_t val = ((sensor.value & 0xff) << 8) + ((sensor.value & 0xff00) >> 8);
+    sensor.value = val;
   }
 
   sdr = &g_sinfo[fru-1][sensor_num].sdr;

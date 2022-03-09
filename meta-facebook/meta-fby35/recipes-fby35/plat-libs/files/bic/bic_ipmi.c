@@ -93,7 +93,7 @@ uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, 
 static int snr_read_support[4] = {UNKNOWN_CMD, UNKNOWN_CMD, UNKNOWN_CMD, UNKNOWN_CMD};
 
 int
-bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor, uint8_t intf) {
+bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
   uint8_t rlen = 0;
   int ret = 0;
   ipmi_sensor_reading_t std_sensor = {0};
@@ -113,20 +113,38 @@ bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor,
 }
 
 int
-bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor, uint8_t intf) {
+bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
   uint8_t rlen = 0;
   int ret = 0;
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x0, sensor_num, SNR_READ_CACHE};
-  ipmi_accurate_sensor_reading_t acur_sensor = {0};
+  uint8_t rbuf[16] = {0};
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 5, (uint8_t *)&acur_sensor, &rlen, intf);
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 5, rbuf, &rlen, intf);
   if (ret != 0) {
     return ret;
   }
-  sensor->value = (acur_sensor.val_msb << 8) + acur_sensor.val_lsb;
-  sensor->flags = acur_sensor.flags;
-  sensor->read_type = ACCURATE_CMD;
-  snr_read_support[slot_id-1] = ACCURATE_CMD;
+  memcpy(sensor->iana_id, rbuf, 3);
+
+  if (rlen == 6) {
+    // Byte 1 - 3 : IANA
+    // Byte 4 - 5 : sensor raw data
+    // Byte 6 : flags
+    memcpy((uint8_t *)&sensor->value, rbuf+3, 2);
+    sensor->flags = rbuf[5];
+    sensor->read_type = ACCURATE_CMD;
+    snr_read_support[slot_id-1] = ACCURATE_CMD;
+
+  } else if (rlen == 8) {
+    // Byte 1 - 3 : IANA
+    // Byte 4 - 7 : sensor raw data
+    // Byte 8 : flags
+    memcpy((uint8_t *)&sensor->value, rbuf+3, 4);
+    sensor->flags = rbuf[7];
+    sensor->read_type = ACCURATE_CMD_4BYTE;
+    snr_read_support[slot_id-1] = ACCURATE_CMD_4BYTE;
+  } else {
+    return BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
+  }
 
   return ret;
 }
@@ -137,12 +155,12 @@ bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *senso
 // S/E - Get Accuracy Sensor reading
 // Netfn: 0x38, Cmd: 0x23
 int
-bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor, uint8_t intf) {
+bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
   int ret = 0;
 
   if (snr_read_support[slot_id-1] == STANDARD_CMD) {
     ret = bic_get_std_sensor(slot_id, sensor_num, sensor, intf);
-  } else if (snr_read_support[slot_id-1] == ACCURATE_CMD) {
+  } else if (snr_read_support[slot_id-1] == ACCURATE_CMD || snr_read_support[slot_id-1] == ACCURATE_CMD_4BYTE) {
     ret = bic_get_accur_sensor(slot_id, sensor_num, sensor, intf);
   } else { // first read, try accurate command
     if (bic_get_accur_sensor(slot_id, sensor_num, sensor, intf) == BIC_STATUS_NOT_SUPP_IN_CURR_STATE) {

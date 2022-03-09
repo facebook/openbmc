@@ -5581,6 +5581,8 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
 #if defined(CONFIG_FBY2_ND)
       int ret;
       uint8_t server_type = 0xFF;
+      uint8_t *ed = &event_data[3];
+
       ret = fby2_get_server_type(fru, &server_type);
       if (ret) {
         syslog(LOG_ERR, "%s, Get server type failed for slot%u", __func__, fru);
@@ -5591,6 +5593,9 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
           switch(snr_num) {
             case 0x00:  // don't care sensor number 00h
               return 0;
+            case PSB_ERR:
+              if (ed[1] == 0x00)  // 00h:PSB Pass
+                return 0;
             case CATERR_B:
               if (event_data[3] == 0x00 ||  // 00h:IERR
                   event_data[3] == 0x0B)    // 0Bh:MCERR

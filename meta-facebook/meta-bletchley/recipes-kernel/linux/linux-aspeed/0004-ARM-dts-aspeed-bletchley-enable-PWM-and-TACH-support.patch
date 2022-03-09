@@ -1,0 +1,116 @@
+From 6a5931b4bc8894acd21fa4e40dc5504af3f6ad1d Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Thu, 10 Feb 2022 15:20:41 +0800
+Subject: [PATCH 4/7] ARM: dts: aspeed: bletchley: enable PWM and TACH support
+
+Enable pwm and tach support, add pwm-fan for fan controlling
+
+This commit depends on the patch below:
+[1] https://lore.kernel.org/all/20211130055933.32708-1-billy_tsai@aspeedtech.com/
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+Internal patch for now.
+This patch rely on the ASPEED PWM TACH patchs (listed below)
+[1] https://lore.kernel.org/all/20211130055933.32708-1-billy_tsai@aspeedtech.com/
+---
+ .../dts/aspeed-bmc-facebook-bletchley.dts     | 79 +++++++++++++++++++
+ 1 file changed, 79 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+index eaf1bc261ee3..69c4f033d100 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+@@ -210,6 +210,26 @@
+ 			gpios = <&sled6_leds 1 GPIO_ACTIVE_LOW>;
+ 		};
+ 	};
++
++	pwm-fan0 {
++		compatible = "pwm-fan";
++		pwms = <&pwm 0 40000 0>;        /* Target freq:25 kHz */
++	};
++
++	pwm-fan1 {
++		compatible = "pwm-fan";
++		pwms = <&pwm 1 40000 0>;        /* Target freq:25 kHz */
++	};
++
++	pwm-fan2 {
++		compatible = "pwm-fan";
++		pwms = <&pwm 2 40000 0>;        /* Target freq:25 kHz */
++	};
++
++	pwm-fan3 {
++		compatible = "pwm-fan";
++		pwms = <&pwm 3 40000 0>;        /* Target freq:25 kHz */
++	};
+ };
+ 
+ &mac2 {
+@@ -838,3 +858,62 @@
+ 	status = "okay";
+ 	/* TODO: Add Marvell 88X3310 */
+ };
++
++&pwm {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pwm0_default &pinctrl_pwm1_default
++		&pinctrl_pwm2_default &pinctrl_pwm3_default
++		&pinctrl_pwm8g0_default &pinctrl_pwm9g0_default
++		&pinctrl_pwm10g0_default &pinctrl_pwm11g0_default
++		&pinctrl_pwm12g0_default &pinctrl_pwm13g0_default>;
++};
++
++&tach {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_tach0_default &pinctrl_tach1_default
++		&pinctrl_tach2_default &pinctrl_tach3_default
++		&pinctrl_tach4_default &pinctrl_tach5_default
++		&pinctrl_tach6_default &pinctrl_tach7_default>;
++
++	tach0-I@0 {
++		reg = <0x00>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach0-O@1 {
++		reg = <0x01>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach1-I@2 {
++		reg = <0x02>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach1-O@3 {
++		reg = <0x03>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach2-I@4 {
++		reg = <0x04>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach2-O@5 {
++		reg = <0x05>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach3-I@6 {
++		reg = <0x06>;
++		aspeed,pulse-pr = <2>;
++	};
++
++	tach3-O@7 {
++		reg = <0x07>;
++		aspeed,pulse-pr = <2>;
++	};
++};
+-- 
+2.17.1
+

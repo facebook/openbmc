@@ -3766,6 +3766,17 @@ oem_set_pcie_info (unsigned char *request, unsigned char req_len,
 }
 
 static void
+oem_bios_extra_setup(unsigned char *request, unsigned char req_len,
+                   unsigned char *response, unsigned char *res_len)
+{
+  ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
+  ipmi_res_t *res = (ipmi_res_t *) response;
+
+  res->cc = pal_oem_bios_extra_setup(req->payload_id, req->data, req_len, res->data, res_len);
+}
+
+
+static void
 ipmi_handle_oem (unsigned char *request, unsigned char req_len,
      unsigned char *response, unsigned char *res_len)
 {
@@ -3919,6 +3930,9 @@ ipmi_handle_oem (unsigned char *request, unsigned char req_len,
       break;
     case CMD_OEM_SET_PCIE_INFO:
       oem_set_pcie_info(request, req_len, response, res_len);
+      break;
+    case CMD_OEM_BIOS_EXTRA_SETUP:
+      oem_bios_extra_setup(request, req_len, response, res_len);
       break;
     default:
       res->cc = CC_INVALID_CMD;

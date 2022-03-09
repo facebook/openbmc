@@ -327,6 +327,10 @@ typedef enum {
   SLOT2_TRIGGER_HPR,
   SLOT3_TRIGGER_HPR,
   SLOT4_TRIGGER_HPR,
+  SLOT1_ENABLE_PXE_SEL,
+  SLOT2_ENABLE_PXE_SEL,
+  SLOT3_ENABLE_PXE_SEL,
+  SLOT4_ENABLE_PXE_SEL,
   NTP_SERVER,
   LAST_ID=255
 } key_cfg_id;
@@ -382,6 +386,10 @@ struct pal_key_cfg {
   { SLOT2_TRIGGER_HPR,"slot2_trigger_hpr", "on", NULL},
   { SLOT3_TRIGGER_HPR,"slot3_trigger_hpr", "on", NULL},
   { SLOT4_TRIGGER_HPR,"slot4_trigger_hpr", "on", NULL},
+  { SLOT1_ENABLE_PXE_SEL,"slot1_enable_pxe_sel", "0", NULL},
+  { SLOT2_ENABLE_PXE_SEL,"slot2_enable_pxe_sel", "0", NULL},
+  { SLOT3_ENABLE_PXE_SEL,"slot3_enable_pxe_sel", "0", NULL},
+  { SLOT4_ENABLE_PXE_SEL,"slot4_enable_pxe_sel", "0", NULL},
   { NTP_SERVER,"ntp_server", "", NULL},
   /* Add more Keys here */
   { LAST_ID,"", "", NULL} /* This is the last id of the list */
@@ -11392,5 +11400,74 @@ pal_handle_oem_1s_update_sdr(uint8_t slot) {
   snprintf(cmd, 128, "(/usr/local/bin/bic-cached %d; /usr/bin/kv set slot%d_sdr_thresh_update 1) &", slot, slot);   //retrieve SDR data after BIC FW update
   log_system(cmd);
   return PAL_EOK;
+}
+
+int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  uint8_t slot_type = 0xFF;
+  int ret;
+  uint8_t fun, cmd;
+  uint8_t value;
+
+  if (req_len < 5) { // at least byte[0] function byte[1] cmommand
+    syslog(LOG_WARNING, "%s: slot%d req_len:%d < 5", __func__, slot,req_len);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  // syslog(LOG_WARNING, "%s: slot%d req_len:%d fun:%d cmd:%d", __func__, slot,req_len,req_data[0],req_data[1]);
+
+  fun = req_data[0];
+
+  if (fun == 0x1) { // PXE SEL ENABLE/DISABLE
+    slot_type = fby2_get_slot_type(slot);
+    if(slot_type == SLOT_TYPE_SERVER) {
+      switch(slot) {
+        case FRU_SLOT1:
+        case FRU_SLOT2:
+        case FRU_SLOT3:
+        case FRU_SLOT4:
+          sprintf(key, "slot%d_enable_pxe_sel", slot);
+          break;
+
+        default:
+          syslog(LOG_WARNING, "%s: invalid slot id %d", __func__, slot);
+          return CC_PARAM_OUT_OF_RANGE;
+      }
+
+      cmd = req_data[1];
+      if (cmd == 0x1) { // GET
+        *res_len = 1;
+        ret = pal_get_key_value(key, cvalue);
+        if (ret) {
+          syslog(LOG_WARNING, "%s: slot%d get %s failed", __func__, slot,key);
+          return CC_UNSPECIFIED_ERROR;
+        }
+        res_data[0] = strtol(cvalue,NULL,10);
+        syslog(LOG_WARNING, "%s: slot%d GET PXE SEL ENABLE/DISABLE %d", __func__, slot, res_data[0]);
+      } else if (cmd == 0x2) { // SET
+        if (req_len < 6) {
+          syslog(LOG_WARNING, "%s: slot%d SET no value to PXE SEL ENABLE/DISABLE", __func__, slot);
+        }
+        *res_len = 0;
+        value = req_data[2];
+        syslog(LOG_WARNING, "%s: slot%d SET %d to PXE SEL ENABLE/DISABLE", __func__, slot,value);
+        sprintf(cvalue, (value > 0) ? "1": "0");
+        ret = pal_set_key_value(key, cvalue);
+        if (ret) {
+          syslog(LOG_WARNING, "%s: slot%d set %s failed", __func__, slot,key);
+          return CC_UNSPECIFIED_ERROR;
+        }
+      } else {
+        syslog(LOG_WARNING, "%s: slot%d wrong command:%d", __func__, slot,cmd);
+      }
+      return CC_SUCCESS;
+    } else {
+      syslog(LOG_WARNING, "%s: slot%d type:%d", __func__, slot,slot_type);
+      return CC_UNSPECIFIED_ERROR;
+    }
+  } else {
+    syslog(LOG_WARNING, "%s: slot%d wrong function:%d", __func__, slot,fun);
+    return CC_UNSPECIFIED_ERROR;
+  }
 }
 #endif

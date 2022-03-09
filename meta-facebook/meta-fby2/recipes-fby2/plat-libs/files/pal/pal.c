@@ -6126,6 +6126,9 @@ pal_parse_sel_nd(uint8_t fru, uint8_t *sel, char *error_log)
         case 0x07:
           strcat(error_log, "Platform_Reset");
           break;
+        case 0x08:
+          strcat(error_log, "Alert_L MCE fatal error");
+          break;
         default:
           strcat(error_log, "Unknown");
           break;

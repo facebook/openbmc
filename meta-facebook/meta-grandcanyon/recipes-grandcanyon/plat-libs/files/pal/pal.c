@@ -4257,6 +4257,7 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
   uint8_t *fanfru_check_bin;
   char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
   char key[MAX_KEY_LEN] = {0};
+  char path[MAX_PATH_LEN] = {0};
   char *temp_str;
   int i = 0, j = 0, ret = 0;
   uint8_t check_len = 0, check_index = 1;
@@ -4276,7 +4277,14 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
   temp_str = strtok(NULL, ":");
   for (i = 0; i < SINGLE_FAN_CNT; i++) { // 4 fans
     memset(key, 0, sizeof(key));
+    memset(path, 0, sizeof(path));
     snprintf(key, sizeof(key), "fan%d_dumped", i);
+
+    ret = pal_get_fruid_path(FRU_FAN0 + i, path);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get fan%d fru path.", __func__, i);
+      continue;
+    }
 
     // Get certified data length from SEL
     check_len = temp_str[check_index];
@@ -4301,9 +4309,9 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
     fanfru_check_bin = (uint8_t *) malloc(check_len);
     ret = pal_get_fanfru_serial_num(i, fanfru_check_bin, check_len);
 
-    // If get data failed or is different
+    // Update fan fru if get serial number failed, serial number is different, or local fan fru checksum is wrong.
     // run exp-cache to udpate FAN FRU binary data
-    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0)) {
+    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0) || (pal_check_fru_is_valid(path) < 0)) {
       snprintf(cmd, sizeof(cmd), "/usr/bin/exp-cached --update_fan fan%d> /dev/null 2>&1 &", i);
       run_command(cmd);
     }

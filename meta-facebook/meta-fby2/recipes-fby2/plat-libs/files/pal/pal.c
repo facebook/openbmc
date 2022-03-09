@@ -511,6 +511,32 @@ static const struct power_coeff nd2_curr_cali_table[] = {
   { 0.0,    0.0 }
 };
 
+static const struct power_coeff nd2_ltc4282_curr_cali_table[] = {
+  { 4.900,  1.1616 },
+  { 7.900,  1.0829 },
+  { 9.900,  1.0710 },
+  { 12.900,  1.0577 },
+  { 14.900,  1.0500 },
+  { 17.900,  1.0422 },
+  { 19.900,  1.0394 },
+  { 22.900,  1.0361 },
+  { 24.900,  1.0325 },
+  { 27.900,  1.0286 },
+  { 29.900,  1.0270 },
+  { 32.900,  1.0247 },
+  { 34.900,  1.0230 },
+  { 37.900,  1.0209 },
+  { 39.900,  1.0215 },
+  { 42.900,  1.0194 },
+  { 44.900,  1.0178 },
+  { 47.900,  1.0176 },
+  { 49.900,  1.0173 },
+  { 54.900,  1.0183 },
+  { 59.900,  1.0153 },
+  { 64.900,  1.0143 },
+  { 0.0,    0.0 }
+};
+
 /* YV2ND2 Baseboard, power calibration table */
 static const struct power_coeff nd2_pwr_cali_table[] = {
   { 56.022,   0.984220 },
@@ -535,6 +561,32 @@ static const struct power_coeff nd2_pwr_cali_table[] = {
   { 590.358,  1.000876 },
   { 643.458,  1.001705 },
   { 692.356,  1.000408 },
+  { 0.0,      0.0 }
+};
+
+static const struct power_coeff nd2_ltc4282_pwr_cali_table[] = {
+  { 59.406,   1.1668 },
+  { 94.916,   1.0866 },
+  { 118.483,   1.0730 },
+  { 153.734,   1.0579 },
+  { 177.153,   1.0522 },
+  { 212.174,   1.0448 },
+  { 235.501,   1.0412 },
+  { 270.303,   1.0336 },
+  { 293.432,   1.0331 },
+  { 328.103,   1.0300 },
+  { 351.133,   1.0283 },
+  { 385.539,   1.0260 },
+  { 408.587,   1.0233 },
+  { 442.662,   1.0229 },
+  { 465.465,   1.0220 },
+  { 499.516,   1.0199 },
+  { 522.193,   1.0188 },
+  { 556.047,   1.0178 },
+  { 578.663,   1.0176 },
+  { 634.669,   1.0155 },
+  { 690.456,   1.0153 },
+  { 746.063,   1.0143 },
   { 0.0,      0.0 }
 };
 
@@ -687,10 +739,15 @@ static int fsc_monitor_gp_m2_list_size = sizeof(fsc_monitor_gp_m2_list) / sizeof
 /* get curr calibration table by spb type */
 static const struct power_coeff *
 get_curr_cali_table(int spb_type) {
+  int spb_hsc_type = fby2_common_get_spb_hsc_type();
   if (spb_type == TYPE_SPB_YV2ND) {
     return nd_curr_cali_table;
   } else if (spb_type == TYPE_SPB_YV2ND2) {
-    return nd2_curr_cali_table;
+    if (spb_hsc_type == SPB_HSC_LTC4282) {
+      return nd2_ltc4282_curr_cali_table;
+    } else {
+      return nd2_curr_cali_table;
+    }
   }
   return curr_cali_table;
 }
@@ -698,10 +755,15 @@ get_curr_cali_table(int spb_type) {
 /* get power calibration table by spb type*/
 static const struct power_coeff *
 get_power_cali_table(int spb_type) {
+  int spb_hsc_type = fby2_common_get_spb_hsc_type();
   if (spb_type == TYPE_SPB_YV2ND) {
     return nd_pwr_cali_table;
   } else if (spb_type == TYPE_SPB_YV2ND2) {
-    return nd2_pwr_cali_table;
+    if (spb_hsc_type == SPB_HSC_LTC4282) {
+      return nd2_ltc4282_pwr_cali_table;
+    } else {
+      return nd2_pwr_cali_table;
+    }
   }
   return pwr_cali_table;
 }
@@ -4440,23 +4502,19 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     // On successful sensor read
     if (fru == FRU_SPB) {
       int spb_type = 0;
-      int spb_hsc_type = 0;
 
       spb_type = fby2_common_get_spb_type();
       fby2_common_get_gpio_val("MB_HSC_RSENSE_SRC", &src);
-      spb_hsc_type = fby2_common_get_spb_hsc_type();
 
       if (sensor_num == SP_SENSOR_HSC_OUT_CURR || sensor_num == SP_SENSOR_HSC_PEAK_IOUT) {
         // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
-        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH) ||
-            !(fby2_common_get_spb_type() == TYPE_SPB_YV2ND2 && spb_hsc_type == SPB_HSC_LTC4282)) {
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
           power_value_adjust(get_curr_cali_table(spb_type), (float *)value);
         }
       }
       if (sensor_num == SP_SENSOR_HSC_IN_POWER || sensor_num == SP_SENSOR_HSC_PEAK_PIN || sensor_num == SP_SENSOR_HSC_IN_POWERAVG) {
         // 2nd source adm1278 Rsense on Yv2.50 doesn't need to correct the power reading
-        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)||
-            !(fby2_common_get_spb_type() == TYPE_SPB_YV2ND2 && spb_hsc_type == SPB_HSC_LTC4282)) {
+        if (!(fby2_common_get_spb_type() == TYPE_SPB_YV250 && src == GPIO_VALUE_HIGH)) {
           power_value_adjust(get_power_cali_table(spb_type), (float *)value);
         }
       }

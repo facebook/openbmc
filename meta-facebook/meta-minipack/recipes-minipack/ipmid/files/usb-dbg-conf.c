@@ -362,7 +362,7 @@ static post_phase_desc_t post_phase_desc[] = {
   {2, pdesc_phase2, ARRAY_SIZE(pdesc_phase2)},
 };
 
-static gpio_desc_t gdesc[] = {
+static dbg_gpio_desc_t gdesc[] = {
   { 0x10, 0, 2, "DBG_RST_BTN_N" },
   { 0x11, 0, 1, "PWR_BTN_N" },
   { 0x12, 0, 0, "FM_UART_SWITCH_N" },
@@ -409,7 +409,7 @@ plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_count)
 }
 
 int
-plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
+plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count)
 {
   if (!desc || !desc_count) {
     return -1;

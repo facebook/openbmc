@@ -569,7 +569,7 @@ int
 plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
                             uint8_t *count, uint8_t *buffer) {
   int i = 0;
-  gpio_desc_t *gdesc = NULL;
+  dbg_gpio_desc_t *gdesc = NULL;
   size_t gdesc_count = 0;
   uint8_t pos = plat_get_fru_sel();
 

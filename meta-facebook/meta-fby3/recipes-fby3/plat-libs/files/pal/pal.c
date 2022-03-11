@@ -2585,6 +2585,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
         strcat(error_log, "GPv3 Board Power Fault");
       } else if (type_2ou == DP_RISER_BOARD) {
         strcat(error_log, "DP x8 Riser Power Fault");
+      } else if (type_2ou == CWC_MCHP_BOARD) {
+        strcat(error_log, "CWC Board Power Fault");
       } else {
         strcat(error_log, "Unknown 2OU Board Power Fault");
       }

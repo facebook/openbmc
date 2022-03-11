@@ -20,6 +20,7 @@ import re
 import sys
 
 import fsc_board
+from fsc_common_var import fan_mode
 from fsc_sensor import FscSensorSourceSysfs, FscSensorSourceUtil, FscSensorSourceKv
 from fsc_util import Logger, clamp
 
@@ -27,7 +28,6 @@ from fsc_util import Logger, clamp
 verbose = "-v" in sys.argv
 RECORD_DIR = "/tmp/cache_store/"
 SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
-fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
 
 
 class SensorAssertCheck(object):
@@ -301,7 +301,10 @@ class Zone:
                             % (sensor.name, sensor.status)
                         )
                         if self.board_fan_mode.is_scenario_supported("sensor_hit_UCR"):
-                            set_fan_mode, set_fan_pwm = self.board_fan_mode.get_board_fan_mode("sensor_hit_UCR")
+                            (
+                                set_fan_mode,
+                                set_fan_pwm,
+                            ) = self.board_fan_mode.get_board_fan_mode("sensor_hit_UCR")
                             outmin = max(outmin, set_fan_pwm)
                             if outmin == set_fan_pwm:
                                 mode = set_fan_mode
@@ -327,8 +330,15 @@ class Zone:
                                     M2AssertCheck,
                                 ):
                                     fail_ssd_count = fail_ssd_count + 1
-                                elif self.board_fan_mode.is_scenario_supported("sensor_fail"):
-                                    set_fan_mode, set_fan_pwm = self.board_fan_mode.get_board_fan_mode("sensor_fail")
+                                elif self.board_fan_mode.is_scenario_supported(
+                                    "sensor_fail"
+                                ):
+                                    (
+                                        set_fan_mode,
+                                        set_fan_pwm,
+                                    ) = self.board_fan_mode.get_board_fan_mode(
+                                        "sensor_fail"
+                                    )
                                     outmin = max(outmin, set_fan_pwm)
                                     mode = set_fan_mode
                                     cause_boost_count += 1

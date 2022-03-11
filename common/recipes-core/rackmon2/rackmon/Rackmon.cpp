@@ -21,7 +21,7 @@ using namespace std::literals;
 namespace rackmon {
 
 void Rackmon::loadInterface(const nlohmann::json& config) {
-  if (threads_.size() > 0) {
+  if (scanThread_ != nullptr || monitorThread_ != nullptr) {
     throw std::runtime_error("Cannot load configuration when started");
   }
   if (interfaces_.size() > 0) {
@@ -34,7 +34,7 @@ void Rackmon::loadInterface(const nlohmann::json& config) {
 }
 
 void Rackmon::loadRegisterMap(const nlohmann::json& config) {
-  if (threads_.size() > 0) {
+  if (scanThread_ != nullptr || monitorThread_ != nullptr) {
     throw std::runtime_error("Cannot load configuration when started");
   }
   registerMapDB_.load(config);
@@ -71,6 +71,9 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
 }
 
 bool Rackmon::probe(Modbus& interface, uint8_t addr) {
+  if (!interface.isPresent()) {
+    return false;
+  }
   const RegisterMap& rmap = registerMapDB_.at(addr);
   std::vector<uint16_t> v(1);
   try {
@@ -152,7 +155,11 @@ void Rackmon::fullScan() {
     if (isDeviceKnown(addr)) {
       continue;
     }
-    probe(addr);
+    for (int i = 0; i < kScanNumRetry; i++) {
+      if (probe(addr)) {
+        break;
+      }
+    }
   }
 }
 
@@ -177,25 +184,32 @@ void Rackmon::scan() {
   }
 }
 
+std::unique_ptr<PollThread<Rackmon>> Rackmon::makeThread(
+    std::function<void(Rackmon*)> func,
+    PollThreadTime interval) {
+  return std::make_unique<PollThread<Rackmon>>(func, this, interval);
+}
+
 void Rackmon::start(PollThreadTime interval) {
-  auto start_thread = [this](auto func, auto intr) {
-    auto t = std::make_unique<PollThread<Rackmon>>(func, this, intr);
-    t->start();
-    threads_.emplace_back(std::move(t));
-  };
-  if (threads_.size() != 0) {
+  if (scanThread_ != nullptr || monitorThread_ != nullptr) {
     throw std::runtime_error("Already running");
   }
-  start_thread(&Rackmon::scan, interval);
-  start_thread(&Rackmon::monitor, interval);
+  scanThread_ = makeThread(&Rackmon::scan, interval);
+  scanThread_->start();
+  monitorThread_ = makeThread(&Rackmon::monitor, interval);
+  monitorThread_->start();
 }
 
 void Rackmon::stop() {
   // TODO We probably need a timer to ensure we
   // are not waiting here forever.
-  while (threads_.size() > 0) {
-    threads_.back()->stop();
-    threads_.pop_back();
+  if (monitorThread_ != nullptr) {
+    monitorThread_->stop();
+    monitorThread_ = nullptr;
+  }
+  if (scanThread_ != nullptr) {
+    scanThread_->stop();
+    scanThread_ = nullptr;
   }
 }
 

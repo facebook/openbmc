@@ -1,4 +1,4 @@
-From 281d478c5ec293e2f99f6c136692ace01b1f0566 Mon Sep 17 00:00:00 2001
+From 3b3e2807b390ece3224ff91f4c5e87d7e88d660f Mon Sep 17 00:00:00 2001
 From: Howard Chiu <howard10703049@gmail.com>
 Date: Thu, 2 Dec 2021 10:26:23 +0800
 Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
@@ -6,7 +6,10 @@ Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
 Aspeed did not commit tach driver to upstream for ast2600 series yet.
 To support ast26xx on OpenBMC, we need this driver and update the g6 device tree as well.
 
+Change-Id: I1714abf4fd08edead789439e5723b183d1b0d175
 Signed-off-by: Howard Chiu <howard.chiu@quantatw.com>
+---
+LINK: https://patchwork.ozlabs.org/project/openbmc/patch/20211202022623.182903-1-howard.chiu@quantatw.com/
 ---
  arch/arm/boot/dts/aspeed-g6.dtsi    |  22 ++
  drivers/hwmon/Kconfig               |   8 +
@@ -49,7 +52,7 @@ index c32e87fad4dc..1d109dd6a9f9 100644
  				compatible = "aspeed,ast2600-scu", "syscon", "simple-mfd";
  				reg = <0x1e6e2000 0x1000>;
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index c4578e8f34bb..4920cc7a59c2 100644
+index ccdaeafed0bb..b7733a68921f 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -397,6 +397,14 @@ config SENSORS_ASPEED

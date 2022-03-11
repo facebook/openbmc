@@ -53,7 +53,7 @@ function init_class1_fsc(){
     config_type="15"
     if ([ $type_2ou == "0x00" ] || [ $type_2ou == "0x03" ]); then
       echo "use Config D GPv3 fan table"
-      target_fsc_config="/etc/FSC_CLASS1_EVT_CONFIG_D_GPV3.json"
+      target_fsc_config="/etc/FSC_CLASS1_CONFIG_D_GPV3.json"
     elif [ "$type_2ou" == "0x06" ]; then
       echo "use DP fan table"
       config_type="DP"

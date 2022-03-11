@@ -79,7 +79,22 @@ exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
       retry++;
       msleep(20);
     } else {
-      break;
+      // rename() can only handle src and dst path both within same mounted file system
+      // Use light weight rename() to handle where the fruid_temp_path and fruid_path
+      // within same mounted file system. If both path are on the different mounted filesystem
+      // i.e. one is tempfs and one on persistent storage /mnt/data0 we have to use "mv" command.
+      if (rename(fruid_temp_path, fruid_path) < 0) {
+        snprintf(cmd, sizeof(cmd), "mv %s %s", fruid_temp_path, fruid_path);
+        run_command(cmd);
+      }
+
+      // Check checksum of FRU after dump from expander.
+      if (pal_check_fru_is_valid(fruid_path) < 0) {
+        retry++;
+        msleep(20);
+      } else {
+        break;
+      }
     }
   }
 
@@ -89,14 +104,7 @@ exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
     syslog(LOG_INFO, "FRU: %s initial is done.\n", fru_name);
   }
 
-  if (rename(fruid_temp_path, fruid_path) < 0) {
-    snprintf(cmd, sizeof(cmd), "mv %s %s", fruid_temp_path, fruid_path);
-    run_command(cmd);
-  }
 
-  if(pal_check_fru_is_valid(fruid_path) < 0) {
-    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, fruid_path);
-  }
 }
 
 void
@@ -122,7 +130,7 @@ fruid_cache_init(void) {
     if ((ret < 0) || (rbuf[0] != EXP_FAN_FRU_READY)) {
       syslog(LOG_WARNING, "%s(): Checking of FAN FRU is pending until EXP FAN FRU cache is ready.\n", __func__);
     }
-  
+
   } else {
     for (i = 0; i < ARRAY_SIZE(expander_fan_fruid_list); i++) {
       exp_read_fruid_wrapper(expander_fan_fruid_list[i], COMMON_FAN_FRU_PATH);
@@ -205,6 +213,6 @@ main (int argc, char * const argv[])
     }
     exp_read_fruid_wrapper(fru_id, COMMON_FAN_FRU_PATH);
   }
-  
+
   return 0;
 }

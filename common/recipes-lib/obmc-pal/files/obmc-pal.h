@@ -588,6 +588,7 @@ int pal_get_root_fru(uint8_t fru, uint8_t *root);
 int pal_handle_oem_1s_update_sdr(uint8_t slot);
 int pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size);
 int pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t size);
+int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 
 #ifdef __cplusplus
 }

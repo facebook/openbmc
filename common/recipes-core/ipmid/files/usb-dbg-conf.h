@@ -24,7 +24,7 @@ typedef struct _gpio_desc {
   uint8_t level;
   uint8_t def;
   char    desc[32];
-} gpio_desc_t;
+} dbg_gpio_desc_t;
 
 typedef struct _sensor_desc {
   char    name[32];
@@ -40,7 +40,7 @@ bool plat_supported(void);
 int plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_count);
 
 /* Return the GPIO descriptor table for the given FRU */
-int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count);
+int plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count);
 
 /* Return the sensor descriptor table for the given FRU */
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count);

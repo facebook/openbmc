@@ -461,6 +461,7 @@ enum
   CMD_OEM_GET_DEV_CARD_SENSOR = 0xA0,
   CMD_OEM_GET_USB_CDC_STATUS = 0xB0,
   CMD_OEM_CTRL_USB_CDC = 0xB1,
+  CMD_OEM_BIOS_EXTRA_SETUP = 0x56,
 };
 
 // OEM Command Codes for Storage (netfn = 0x32/0x33)

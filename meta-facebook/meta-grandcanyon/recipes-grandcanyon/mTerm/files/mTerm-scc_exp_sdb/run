@@ -17,4 +17,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-exec /usr/local/bin/mTerm_server scc_exp_sdb /dev/ttyS2
+exec /usr/local/bin/mTerm_server scc_exp_sdb /dev/ttyS2 115200

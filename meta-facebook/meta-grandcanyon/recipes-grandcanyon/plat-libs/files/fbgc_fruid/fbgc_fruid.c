@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <openbmc/fruid.h>
 #include <facebook/fbgc_common.h>
 #include "fbgc_fruid.h"
 #include <facebook/bic.h>
@@ -184,6 +185,7 @@ fbgc_check_fru_is_valid(const char * bin_file)
   uint8_t head_buf[FRUID_HEADER_SIZE] = {0};
   bool all_zero_flag = true;
   ssize_t bytes_rd = 0;
+  fruid_info_t fruid = {0};
 
   if (bin_file == NULL) {
     syslog(LOG_ERR, "%s: Falied to check FRU is valid or not due to NULL parameter ", __func__);
@@ -230,6 +232,12 @@ fbgc_check_fru_is_valid(const char * bin_file)
       syslog(LOG_CRIT, "New FRU data %s checksum is invalid", bin_file);
     }
     return -1;
+  } else if (fruid_parse(bin_file, &fruid) != 0) {
+    // Check zero checksum of all area.
+    syslog(LOG_CRIT, "FRU data %s is wrong", bin_file);
+    return -1;
+  } else {
+    free_fruid_info(&fruid);
   }
 
   return 0;

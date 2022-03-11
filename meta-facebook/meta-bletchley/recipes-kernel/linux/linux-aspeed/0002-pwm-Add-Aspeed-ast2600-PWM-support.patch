@@ -1,4 +1,4 @@
-From ed28dd87526e2f76557d7b83d2c971b9b9cc2a03 Mon Sep 17 00:00:00 2001
+From b5e600a4883f7b2c658e6679db4a8578cface25e Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:33 +0800
 Subject: [PATCH 2/7] pwm: Add Aspeed ast2600 PWM support
@@ -12,6 +12,8 @@ of multi-function device "pwm-tach controller".
 
 Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 Reviewed-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+LORE LINK: https://lore.kernel.org/all/20211130055933.32708-3-billy_tsai@aspeedtech.com/
 ---
  drivers/pwm/Kconfig              |  10 +
  drivers/pwm/Makefile             |   1 +

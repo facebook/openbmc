@@ -14,6 +14,9 @@ void Modbus::command(
     uint32_t baudrate,
     ModbusTime timeout,
     ModbusTime settleTime) {
+  if (!deviceValid_) {
+    throw std::runtime_error("Uninitialized");
+  }
   RACKMON_PROFILE_SCOPE(
       modbusCommand, "modbus::" + std::to_string(int(req.addr)), profileStore_);
   if (timeout == ModbusTime::zero()) {
@@ -43,12 +46,36 @@ std::unique_ptr<UARTDevice> Modbus::makeDevice(
   std::unique_ptr<UARTDevice> ret;
   if (deviceType == "default") {
     ret = std::make_unique<UARTDevice>(devicePath, baudrate);
-  } else if (deviceType == "aspeed_rs485") {
+  } else if (deviceType == "AspeedRS485") {
     ret = std::make_unique<AspeedRS485Device>(devicePath, baudrate);
+  } else if (deviceType == "LocalEcho") {
+    ret = std::make_unique<LocalEchoUARTDevice>(devicePath, baudrate);
   } else {
     throw std::runtime_error("Unknown device type: " + deviceType);
   }
   return ret;
+}
+
+void Modbus::probePresence() {
+  if (!deviceValid_) {
+    if (openTries_ > 0) {
+      std::this_thread::sleep_for(std::chrono::seconds(interfaceRetryTime_));
+    }
+    try {
+      openTries_++;
+      device_->open();
+      deviceValid_ = true;
+    } catch (std::exception& ex) {
+      // Log only once.
+      if (openTries_ == 1) {
+        logError << "Interface open failed: " << ex.what() << std::endl;
+      }
+      if (openTries_ < maxOpenTries_) {
+        auto tid = std::thread(&Modbus::probePresence, this);
+        tid.detach();
+      }
+    }
+  }
 }
 
 void Modbus::initialize(const json& j) {
@@ -60,7 +87,7 @@ void Modbus::initialize(const json& j) {
   minDelay_ = ModbusTime(j.value("min_delay", 0));
   ignoredAddrs_ = j.value("ignored_addrs", std::set<uint8_t>{});
   device_ = makeDevice(deviceType, devicePath_, defaultBaudrate_);
-  device_->open();
+  probePresence();
 }
 
 void from_json(const json& j, Modbus& m) {

@@ -356,7 +356,7 @@ static int
 util_read_sensor(uint8_t slot_id) {
   int ret = 0;
   int i = 0;
-  snr_reading_ret sensor = {0};
+  ipmi_extend_sensor_reading_t sensor = {0};
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;

@@ -18,27 +18,27 @@ interface (not command line CLIs) and testing should be done using the upstream
 * P4 - Optional
 
 ## Infrastructure
-- [ ] P0 **U-boot Porting**
+- [X] P0 **U-boot Porting**
     - Port platform specific u-boot changes.
-- [ ] P0 **Kernel Porting**
+- [X] P0 **Kernel Porting**
     - Port platform specific Kernel changes.
-- [ ] P0 **I2C device tree**
+- [X] P0 **I2C device tree**
     - Create device tree entries for i2c devices (and enable associated
       drivers).
-- [ ] P0 **GPIO device tree**
+- [X] P0 **GPIO device tree**
     - Create device tree entries for gpio pins.
 - [ ] P0 **PWM/Tach device tree**
     - Create device tree entries for PWM/Tach devices.
-- [ ] P0 **ADC device tree**
+- [X] P0 **ADC device tree**
     - Create device tree entries for ADC devices.
-- [ ] P0 **SPI device tree**
+- [X] P0 **SPI device tree**
     - Create device tree entries for all SPI devices.
 - [ ] P1 **Qemu**
     - Create Qemu machine config for BMC.  Should boot OpenBMC without any
       service failures.
 
 ## User Interface
-- [ ] P0 **OOB/SSH**
+- [X] P0 **OOB/SSH**
     - Provide interface for Host user to interact from a remote machine via
       Network.
 - [ ] P1 **Redfish**
@@ -49,14 +49,14 @@ interface (not command line CLIs) and testing should be done using the upstream
     - Enable mTLS authentication for Redfish.
 
 ## Network
-- [ ] P0 **DHCPv6**
+- [X] P0 **DHCPv6**
     - BMC shall be able to get IPv6 address using standard DHCPv6 protocol
       including retries and timeouts.
 
 ## Power Control
-- [ ] P0 **on**
+- [X] P0 **on**
     - Power ON the Host(s).
-- [ ] P0 **off**
+- [X] P0 **off**
     - Power OFF the Host(s).
 - [ ] P0 **cycle**
     - Power cycle the Host(s).
@@ -77,16 +77,16 @@ interface (not command line CLIs) and testing should be done using the upstream
       signals and/or CPLD registers.
 
 ## FRU Information
-- [ ] P0 **Entity Manager**
+- [X] P0 **Entity Manager**
     - Add entity manager configuration for system.
-- [ ] P0 **FRUID read**
+- [X] P0 **FRUID read**
     - Read and print FRUID (FRUID EEPROM for Motherboard supported on each BMC
       to read its local MB's fruid).
-- [ ] P0 **FRUID update**
+- [X] P0 **FRUID update**
     - Update FRUID with user given file assuming IPMI FRUID Format.
 
 ## Sensor Information
-- [ ] P0 **sensor read**
+- [X] P0 **sensor read**
     - Read the current status of all sensors of a given FRU.
         - sensors on motherboard, Mezzanine card, etc.
 - [ ] P1 **Display threshold value**
@@ -101,7 +101,7 @@ interface (not command line CLIs) and testing should be done using the upstream
       detected.
 
 ## Thermal Management
-- [ ] P0 **Fan control (Manual)**
+- [X] P0 **Fan control (Manual)**
     - Implement fan utility to set fan-speed.
 - [ ] P0 **Fan Speed Control (Automatic)**
     - Implement FSC algorithm with user given JSON configuration file with
@@ -125,7 +125,7 @@ interface (not command line CLIs) and testing should be done using the upstream
 ## Firmware Versions
 Support reading firmware versions of attached components including self.
 
-- [ ] P0 **OpenBMC**
+- [X] P0 **OpenBMC**
     - Read f/w versions for all the components.
 - [ ] P0 **VR**
     - TODO: facebookexternal/openbmc.quanta#2619.
@@ -136,7 +136,7 @@ Support reading firmware versions of attached components including self.
     - Display USB3 Bridge firmware version.
 
 ## Firmware Update
-- [ ] P0 **OpenBMC**
+- [X] P0 **OpenBMC**
     - Upgrade BMC Image from within the BMC.
 - [ ] P1 **Flashy**
     - _Facebook_ to develop.
@@ -157,7 +157,7 @@ Support reading firmware versions of attached components including self.
     - Upgrade USB3 Bridge using production (dbus+Redfish) methods.
 
 ## Time Sync
-- [ ] P0 **RTC**
+- [X] P0 **RTC**
     - Enable local RTC device and ensure synchronization on BMC reboot.
 - [ ] P2 **NTP Sync**
     - Sync up BMC RTC with NTP server.
@@ -170,7 +170,7 @@ Support reading firmware versions of attached components including self.
       ON, and Always OFF with default as 'Last Power State'.
 
 ## BMC Reset/Recovery
-- [ ] P0 **Remote Reset - SSH**
+- [X] P0 **Remote Reset - SSH**
     - Reset any BMC from remote system using the `reboot` command.
 - [ ] P1 **Remote Reset - Redfish**
     - Reset any BMC from remote system using Redfish APIs.
@@ -207,7 +207,7 @@ Support reading firmware versions of attached components including self.
     - Do not allow modification of recovery image in hardware.
 - [ ] P2 **Verified Boot (Image signing service)**
     - Setup a service for BMC image signing.
-- [ ] P1 **TPM 2.0 Test**
+- [X] P1 **TPM 2.0 Test**
     - Test TPM access via SPI.
 - [ ] P2 **TPM 2.0 Boot Measurements**
     - Use TPM for storing secret keys and measurement info.

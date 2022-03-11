@@ -10,6 +10,7 @@ namespace rackmon {
 using PollThreadTime = std::chrono::seconds;
 template <class T>
 class PollThread {
+ protected:
   std::mutex eventMutex_{};
   std::condition_variable eventCV_{};
   std::thread threadID_{};
@@ -19,13 +20,18 @@ class PollThread {
   T* obj_ = nullptr;
   PollThreadTime sleepTime_{5};
 
-  void worker() {
+  virtual void workerLoop() {
     std::unique_lock lk(eventMutex_);
     while (started_.load()) {
       func_(obj_);
       eventCV_.wait_for(lk, sleepTime_, [this]() { return !started_.load(); });
     }
   }
+
+  void worker() {
+    workerLoop();
+  }
+
   void notifyStop() {
     std::unique_lock lk(eventMutex_);
     started_ = false;
@@ -33,12 +39,9 @@ class PollThread {
   }
 
  public:
-  PollThread(
-      std::function<void(T*)> func,
-      T* obj,
-      const PollThreadTime& pollInterval)
+  PollThread(std::function<void(T*)> func, T* obj, PollThreadTime pollInterval)
       : func_(func), obj_(obj), sleepTime_(pollInterval) {}
-  ~PollThread() {
+  virtual ~PollThread() {
     stop();
   }
   void start() {

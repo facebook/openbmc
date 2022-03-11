@@ -11,6 +11,7 @@ cc = meson.get_compiler('c')
 fbgc_fruid_deps = [
     cc.find_library('fbgc_common'),
     cc.find_library('bic'),
+    cc.find_library('fruid'),
 ]
 
 # FBGC fruid library.

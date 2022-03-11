@@ -51,27 +51,20 @@ enum {
 
 enum {
   STANDARD_CMD = 0,
-  ACCURATE_CMD = 1,
+  ACCURATE_CMD = 1, // legacy BIC definition, 2 byte value
+  ACCURATE_CMD_4BYTE = 3, // lattest BIC definition, 4 byte value
   UNKNOWN_CMD = 2,
 };
 
 typedef struct
 {
   uint8_t iana_id[3];
-  uint8_t val_msb;
-  uint8_t val_lsb;
-  uint8_t flags;
-} ipmi_accurate_sensor_reading_t;
-
-typedef struct
-{
-  uint16_t value;
+  uint32_t value;
   uint8_t flags;
   uint8_t status;
   uint8_t ext_status;
   uint8_t read_type;
-} snr_reading_ret;
-
+} ipmi_extend_sensor_reading_t;
 
 #define MAX_READ_RETRY 5
 
@@ -91,7 +84,7 @@ int bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8
 int bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str);
 int bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *ver_str);
 int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
-int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, snr_reading_ret *sensor, uint8_t intf);
+int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf);
 int bic_is_m2_exp_prsnt(uint8_t slot_id);
 int me_recovery(uint8_t slot_id, uint8_t command);
 int me_reset(uint8_t slot_id);

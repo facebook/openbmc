@@ -245,6 +245,9 @@ elif [ $spb_type == "3" ]; then
       i2cset -y -f 10 0x41 0x03 0x20 b
       i2cset -y -f 10 0x41 0x0d 0x4B b
 
+      # FET_BAD_FAULT_TIME set to 80
+      i2cset -y -f 10 0x41 0x06 0x50 b
+
       # Clear PEAK_PIN & PEAK_IOUT register
       i2cset -y -f 10 0x41 0x44 0x0000 w
       i2cset -y -f 10 0x41 0x4A 0x0000 w

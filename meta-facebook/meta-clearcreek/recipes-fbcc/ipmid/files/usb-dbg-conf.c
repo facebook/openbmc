@@ -7,7 +7,7 @@
 
 #include "usb-dbg-conf.h"
 
-static gpio_desc_t gdesc[] = {
+static dbg_gpio_desc_t gdesc[] = {
   { 0x10, 0, 2, "FM_DBG_RST_BTN" },
   { 0x11, 0, 1, "FM_PWR_BTN" },
   { 0x12, 0, 0, "SYS_PWROK" },
@@ -50,7 +50,7 @@ int plat_get_post_phase(uint8_t fru, post_phase_desc_t **desc, size_t *desc_coun
   return -1;
 }
 
-int plat_get_gdesc(uint8_t fru, gpio_desc_t **desc, size_t *desc_count)
+int plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count)
 {
   if (!desc || !desc_count) {
     return -1;

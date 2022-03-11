@@ -18,7 +18,6 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   string bmc_str = "bmc";
   size_t slot_found = fru_name.find(slot_str);
   size_t bmc_found = fru_name.find(bmc_str);
-  size_t img_size = 0;
   uint8_t slot_id = 0;
   uint8_t board_type_index = 0;
   struct stat file_info;
@@ -28,7 +27,7 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   if (stat(image.c_str(), &file_info) < 0) {
     cerr << "Cannot check " << image << " file information" << endl;
     return image_sts;
-  }  
+  }
   if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
     cerr << "Cannot open " << image << " for reading" << endl;
   }
@@ -67,7 +66,7 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
 
   if ( force == false ) {
     // Read Board Revision from CPLD
-    if ( ((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
+    if (((bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC)) && (bmc_found != string::npos)) {
       if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
         cerr << "Failed to get board revision ID" << endl;
         goto err_exit;
@@ -79,12 +78,12 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
         goto err_exit;
       }
     }
-    img_size = file_info.st_size - IMG_POSTFIX_SIZE;
-    if (fby35_common_is_valid_img(image.c_str(), (FW_IMG_INFO*)(memblock + img_size), fw_comp, board_type_index) == false) {
+
+    if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_type_index) == false) {
       goto err_exit;
     } else {
       image_sts.result = true;
-    }  
+    }
   } else {
     image_sts.result = true;
   }
@@ -113,7 +112,7 @@ int CpldExtComponent::update_cpld(string image, bool force) {
   if ( image_sts.result == false ) {
     remove(image_sts.new_path.c_str());
     return FW_STATUS_FAILURE;
-  } 
+  }
 
   //use the new path
   image = image_sts.new_path;
@@ -131,15 +130,15 @@ int CpldExtComponent::update_cpld(string image, bool force) {
     }
   }
   remove(image_sts.new_path.c_str());
-  
+
   return ret;
 }
 
-int CpldExtComponent::update(string image) {
+int CpldExtComponent::update(const string image) {
   int ret = 0;
   int intf = FEXP_BIC_INTF;
   string comp = component();
-  
+
   try {
     server.ready();
     expansion.ready();
@@ -151,7 +150,7 @@ int CpldExtComponent::update(string image) {
     remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_HIGH, intf);
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_HIGH);
     ret = update_cpld(image, FORCE_UPDATE_UNSET);
-    
+
     bic_set_gpio(slot_id, GPIO_RST_USB_HUB, VALUE_LOW);
     remote_bic_set_gpio(slot_id, EXP_GPIO_RST_USB_HUB, VALUE_LOW, intf);
   } catch (string& err) {
@@ -162,7 +161,7 @@ int CpldExtComponent::update(string image) {
   return ret;
 }
 
-int CpldExtComponent::fupdate(string image) {
+int CpldExtComponent::fupdate(const string image) {
   int ret = 0;
 
   try {

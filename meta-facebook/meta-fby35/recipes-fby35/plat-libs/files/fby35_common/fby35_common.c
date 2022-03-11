@@ -703,13 +703,16 @@ exit:
 }
 
 bool
-fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id) {
+fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "PVT", "MP"};
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "DVT", "DVT2", "PVT", "PVT2", "MP", "MP2"};
   const char **board_type = rev_sb;
   uint8_t signed_byte = 0x0;
   uint8_t board_id = 0, exp_fw_rev = 0;
+  int fd;
+  off_t info_offs;
   struct stat file_info;
+  FW_IMG_INFO img_info;
   bool is_first = true;
 
   if (stat(img_path, &file_info) < 0) {
@@ -717,19 +720,43 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     return false;
   }
 
-  if (fby35_common_check_image_signature(img_info->plat_sig) < 0) {
+  if (file_info.st_size < IMG_POSTFIX_SIZE) {
+    return false;
+  }
+  info_offs = file_info.st_size - IMG_POSTFIX_SIZE;
+
+  fd = open(img_path, O_RDONLY);
+  if (fd < 0) {
+    printf("Cannot open %s for reading\n", img_path);
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, file_info.st_size - IMG_POSTFIX_SIZE, img_info->md5_sum, is_first) < 0) {
+  if (lseek(fd, info_offs, SEEK_SET) != info_offs) {
+    close(fd);
+    printf("Cannot seek %s\n", img_path);
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, file_info.st_size - IMG_POSTFIX_SIZE, img_info->md5_sum_second, !is_first) < 0) {
+  if (read(fd, &img_info, IMG_POSTFIX_SIZE) != IMG_POSTFIX_SIZE) {
+    close(fd);
+    printf("Cannot read %s\n", img_path);
+    return false;
+  }
+  close(fd);
+
+  if (fby35_common_check_image_signature(img_info.plat_sig) < 0) {
     return false;
   }
 
-  signed_byte = img_info->err_proof;
+  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum, is_first) < 0) {
+    return false;
+  }
+
+  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, !is_first) < 0) {
+    return false;
+  }
+
+  signed_byte = img_info.err_proof;
 
   switch (comp) {
     case FW_CPLD:
@@ -754,27 +781,27 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     return false;
   }
 
-  if(board_type == rev_sb){
-    if(SB_REV_EVT <= rev_id && rev_id <= SB_REV_EVT4)
-      exp_fw_rev = 1;
-    else if(SB_REV_DVT <= rev_id && rev_id <= SB_REV_DVT2)
-      exp_fw_rev = 2;
-    else if(SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT2)
-      exp_fw_rev = 3;
-    else if(SB_REV_MP <= rev_id && rev_id <= SB_REV_MP2)
-      exp_fw_rev = 4;
+  if (board_type == rev_sb) {
+    if (SB_REV_EVT <= rev_id && rev_id <= SB_REV_EVT4)
+      exp_fw_rev = FW_REV_EVT;
+    else if (SB_REV_DVT <= rev_id && rev_id <= SB_REV_DVT2)
+      exp_fw_rev = FW_REV_DVT;
+    else if (SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT2)
+      exp_fw_rev = FW_REV_PVT;
+    else if (SB_REV_MP <= rev_id && rev_id <= SB_REV_MP2)
+      exp_fw_rev = FW_REV_MP;
     else
       exp_fw_rev = 0;
   }
   else{
-    if(BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
-      exp_fw_rev = 1;
-    else if(rev_id == BB_REV_DVT)
-      exp_fw_rev = 2;
-    else if(rev_id == BB_REV_PVT)
-      exp_fw_rev = 3;
-    else if(rev_id == BB_REV_MP)
-      exp_fw_rev = 4;
+    if (BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
+      exp_fw_rev = FW_REV_EVT;
+    else if (rev_id == BB_REV_DVT)
+      exp_fw_rev = FW_REV_DVT;
+    else if (rev_id == BB_REV_PVT)
+      exp_fw_rev = FW_REV_PVT;
+    else if (rev_id == BB_REV_MP)
+      exp_fw_rev = FW_REV_MP;
     else
       exp_fw_rev = 0;
   }
@@ -811,8 +838,6 @@ fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t c
     default:
       printf("Can't recognize the firmware's stage, please use the --force option\n");
       return false;
-
-      break;
   }
 
   switch (comp) {

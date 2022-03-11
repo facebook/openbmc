@@ -423,7 +423,7 @@ int fby35_common_fscd_ctrl (uint8_t mode);
 int fby35_common_check_image_signature(uint8_t* data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
 int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first);
-bool fby35_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t comp, uint8_t rev_id);
+bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id);
 
 #ifdef __cplusplus
 } // extern "C"

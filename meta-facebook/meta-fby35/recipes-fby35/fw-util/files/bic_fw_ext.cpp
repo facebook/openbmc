@@ -17,7 +17,6 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   string fru_name = fru();
   string slot_str = "slot";
   string bmc_str = "bmc";
-  size_t img_size = 0;
   uint8_t slot_id = 0;
   uint8_t board_type_index = 0;
   struct stat file_info;
@@ -27,7 +26,7 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   if (stat(image.c_str(), &file_info) < 0) {
     cerr << "Cannot check " << image << " file information" << endl;
     return image_sts;
-  }  
+  }
   if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
     cerr << "Cannot open " << image << " for reading" << endl;
   }
@@ -58,7 +57,7 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
     tmp_size = BIC_IMG_SIZE;
   } else {
     tmp_size = r_b;
-  }  
+  }
   w_b = write(fd_w, memblock, tmp_size);
   //check size
   if ( tmp_size != w_b ) {
@@ -73,7 +72,7 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
       goto err_exit;
     }
     // Read Board Revision from CPLD
-    if ( fw_comp == FW_BB_BIC) {
+    if (fw_comp == FW_BB_BIC) {
       if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
         cerr << "Failed to get board revision ID" << endl;
         goto err_exit;
@@ -85,12 +84,12 @@ const string board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
         goto err_exit;
       }
     }
-    img_size = file_info.st_size - IMG_POSTFIX_SIZE;
-    if (fby35_common_is_valid_img(image.c_str(), (FW_IMG_INFO*)(memblock + img_size), fw_comp, board_type_index) == false) {
+
+    if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_type_index) == false) {
       goto err_exit;
     } else {
       image_sts.result = true;
-    }  
+    }
   } else {
     image_sts.result = true;
   }
@@ -104,7 +103,7 @@ err_exit:
   delete[] memblock;
 
   if (image_sts.result == false) {
-     syslog(LOG_CRIT, "Update %s %s Fail. File: %s is not a valid image", 
+     syslog(LOG_CRIT, "Update %s %s Fail. File: %s is not a valid image",
             fru().c_str(), get_component_name(fw_comp), image.c_str());
   }
   return image_sts;
@@ -148,11 +147,11 @@ int BicFwExtComponent::update_internal(const string& image, bool force) {
   return ret;
 }
 
-int BicFwExtComponent::update(string image) {
+int BicFwExtComponent::update(const string image) {
   return update_internal(image, false);
 }
 
-int BicFwExtComponent::fupdate(string image) {
+int BicFwExtComponent::fupdate(const string image) {
   return update_internal(image, true);
 }
 

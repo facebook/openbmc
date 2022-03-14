@@ -169,6 +169,7 @@ workflows:
                     parameters:
                         machine: [
                             angelslanding,
+                            bletchley,
                             clearcreek,
                             cloudripper,
                             cmm,

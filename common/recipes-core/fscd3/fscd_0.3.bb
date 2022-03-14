@@ -26,6 +26,7 @@ LOCAL_URI = " \
     file://fscd.py \
     file://fsc_bmcmachine.py \
     file://fsc_board.py \
+    file://fsc_common_var.py \
     file://fsc_control.py \
     file://fsc_expr.py \
     file://fsc_parser.py \

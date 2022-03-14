@@ -56,23 +56,7 @@ image_info BmcCpldComponent::check_image(const string& image, bool force) {
       fw_comp = FW_CPLD;
     }
 
-    int fd_r = open(image.c_str(), O_RDONLY);
-    if (fd_r < 0) {
-      cerr << "Cannot open " << image << " for reading" << endl;
-      return image_sts;
-    }
-    if (lseek(fd_r, MAX10_RPD_SIZE, SEEK_SET) != (off_t)MAX10_RPD_SIZE) {
-      close(fd_r);
-      cerr << "Cannot seek " << image << endl;
-      return image_sts;
-    }
-    uint8_t buf[IMG_POSTFIX_SIZE];
-    if (read(fd_r, buf, IMG_POSTFIX_SIZE) != IMG_POSTFIX_SIZE) {
-      close(fd_r);
-      cerr << "Cannot read " << image << endl;
-    }
-    close(fd_r);
-    if (fby35_common_is_valid_img(image.c_str(), (FW_IMG_INFO *)buf, fw_comp, board_type_index) == false) {
+    if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_type_index) == false) {
       return image_sts;
     }
     image_sts.result = true;
@@ -264,12 +248,12 @@ int BmcCpldComponent::update_cpld(const string& image, bool force)
   return ret;
 }
 
-int BmcCpldComponent::update(string image)
+int BmcCpldComponent::update(const string image)
 {
   return update_cpld(image, false);
 }
 
-int BmcCpldComponent::fupdate(string image)
+int BmcCpldComponent::fupdate(const string image)
 {
   return update_cpld(image, true);
 }

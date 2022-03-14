@@ -26,16 +26,17 @@ import sys
 import threading
 import time
 import traceback
-import kv
 from contextlib import contextmanager
 
 import fsc_expr
+import kv
 from fsc_bmcmachine import BMCMachine
 from fsc_board import board_callout, board_fan_actions, board_host_actions
+from fsc_common_var import fan_mode
 from fsc_profile import Sensor, profile_constructor
 from fsc_sensor import FscSensorSourceUtil, FscSensorSourceJson
 from fsc_util import Logger, clamp
-from fsc_zone import Fan, Zone, fan_mode, BoardFanMode
+from fsc_zone import Fan, Zone, BoardFanMode
 
 try:
     libwatchdog = ctypes.CDLL("libwatchdog.so")
@@ -206,7 +207,9 @@ class Fscd(object):
             self.sensor_fail = self.fsc_config["boost"]["sensor_fail"]
             if self.sensor_fail:
                 if "pwm_sensor_boost_value" in self.fsc_config:
-                    self.pwm_sensor_boost_value = self.fsc_config["pwm_sensor_boost_value"]
+                    self.pwm_sensor_boost_value = self.fsc_config[
+                        "pwm_sensor_boost_value"
+                    ]
                 if "fail_sensor_type" in self.fsc_config:
                     self.fail_sensor_type = self.fsc_config["fail_sensor_type"]
                 if "ssd_progressive_algorithm" in self.fsc_config:
@@ -335,7 +338,9 @@ class Fscd(object):
                             valid_read_action = valid_table["action"]
                             valid_read_th = valid_table["threshold"]
                             # Use dict.get(key, None) avoid exception when no configuration
-                            valid_fault_tolerant = valid_table.get("fault_tolerant", None)
+                            valid_fault_tolerant = valid_table.get(
+                                "fault_tolerant", None
+                            )
                             if isinstance(
                                 self.sensors[tuple.name].source, FscSensorSourceUtil
                             ):
@@ -435,12 +440,12 @@ class Fscd(object):
 
     def fsc_sensor_check(self, sensors_tuples):
         """
-            Monitor sensor temperature value
-            This function checks whether any thermal sensor temp is over limit or not
-            if it over limit it will boost the fan to full speed
+        Monitor sensor temperature value
+        This function checks whether any thermal sensor temp is over limit or not
+        if it over limit it will boost the fan to full speed
 
-            return 0 is normal
-                   1 is sensor(s) valus is violate
+        return 0 is normal
+               1 is sensor(s) valus is violate
         """
         ret = 0
         for fru in self.machine.frus:
@@ -543,22 +548,37 @@ class Fscd(object):
                                     ret = 1
                                 else:
                                     if "hysteresis" in valid_table:
-                                        valid_hysteresis = abs(valid_table["hysteresis"])
-                                        if tuple.value > (valid_read_limit - valid_hysteresis):
+                                        valid_hysteresis = abs(
+                                            valid_table["hysteresis"]
+                                        )
+                                        if tuple.value > (
+                                            valid_read_limit - valid_hysteresis
+                                        ):
                                             reason = (
                                                 sensor
                                                 + "(alarm_minor current v="
                                                 + str(tuple.value)
                                                 + ") target(t="
-                                                + str(valid_read_limit - valid_hysteresis)
+                                                + str(
+                                                    valid_read_limit - valid_hysteresis
+                                                )
                                                 + ") soak_count (n="
-                                                + str(self.sensors[tuple.name].source.soak_repeat_counter + 1)
+                                                + str(
+                                                    self.sensors[
+                                                        tuple.name
+                                                    ].source.soak_repeat_counter
+                                                    + 1
+                                                )
                                                 + ") repeating"
                                             )
-                                            self.sensors[tuple.name].source.last_error_time = int(
+                                            self.sensors[
+                                                tuple.name
+                                            ].source.last_error_time = int(
                                                 datetime.datetime.now().strftime("%s")
                                             )
-                                            self.sensors[tuple.name].source.soak_repeat_counter += 1
+                                            self.sensors[
+                                                tuple.name
+                                            ].source.soak_repeat_counter += 1
                                             Logger.warn(reason)
                                             ret = 1
                                         else:
@@ -599,9 +619,9 @@ class Fscd(object):
                 dead_fans.discard(fan)
 
         recovered_fans = last_dead_fans - dead_fans
-        newly_dead_fans = dead_fans - last_dead_fans        
-        
-        if len(newly_dead_fans) > 0 or (self.need_rearm and len(dead_fans) > 0):            
+        newly_dead_fans = dead_fans - last_dead_fans
+
+        if len(newly_dead_fans) > 0 or (self.need_rearm and len(dead_fans) > 0):
             if self.fanpower:
                 Logger.warn("%d fans failed" % (len(dead_fans),))
             else:
@@ -618,7 +638,9 @@ class Fscd(object):
                         fan_fail_record = open(fan_fail_record_path, "w")
                         fan_fail_record.close()
                     except FileNotFoundError:
-                        Logger.warn("Cannot create failure record for %s" % (dead_fan.label))
+                        Logger.warn(
+                            "Cannot create failure record for %s" % (dead_fan.label)
+                        )
         for fan in recovered_fans:
             if self.fanpower:
                 Logger.warn("%s has recovered" % (fan.label,))
@@ -633,31 +655,31 @@ class Fscd(object):
 
     def update_zones(self, dead_fans, time_difference):
         """
-            TODO: Need to change logic here.
+        TODO: Need to change logic here.
 
-            # Platforms with chassis_intrusion mode enabled
-            if chassis_intrusion:
-                set the chassis_intrusion_boost_flag to 0
-                and then do necessary checks to set flag to 1
-                if chassis_intrusion_boost_flag:
-                    run boost mode
-                else:
-                    run normal mode
-            else
-                # Platforms WITHOUT chassis_intrusion mode
+        # Platforms with chassis_intrusion mode enabled
+        if chassis_intrusion:
+            set the chassis_intrusion_boost_flag to 0
+            and then do necessary checks to set flag to 1
+            if chassis_intrusion_boost_flag:
+                run boost mode
+            else:
                 run normal mode
+        else
+            # Platforms WITHOUT chassis_intrusion mode
+            run normal mode
 
-            # Platforms with enable_fsc_sensor_check mode enabled
-            if enable_fsc_sensor_check:
-                set the sensor_violated_flag to 0
-                and then do necessary checks to set flag to 1
-                if sensor_violated_flag:
-                    run boost mode
-                else:
-                    run normal mode
-            else
-                # Platforms WITHOUT enable_fsc_sensor_check mode
+        # Platforms with enable_fsc_sensor_check mode enabled
+        if enable_fsc_sensor_check:
+            set the sensor_violated_flag to 0
+            and then do necessary checks to set flag to 1
+            if sensor_violated_flag:
+                run boost mode
+            else:
                 run normal mode
+        else
+            # Platforms WITHOUT enable_fsc_sensor_check mode
+            run normal mode
 
         """
         self.need_rearm = self.check_fan_rearm()
@@ -667,8 +689,10 @@ class Fscd(object):
             self.fsc_safe_guards(sensors_tuples)
         for zone in self.zones:
             if self.need_rearm:
-                zone.transitional_assert_flag = False;
-                zone.missing_sensor_assert_flag = [False] * len(zone.expr_meta["ext_vars"])
+                zone.transitional_assert_flag = False
+                zone.missing_sensor_assert_flag = [False] * len(
+                    zone.expr_meta["ext_vars"]
+                )
             if self.sensor_filter_all:
                 sensors_tuples = self.machine.read_sensors(self.sensors, zone.expr_meta)
                 self.fsc_safe_guards(sensors_tuples)
@@ -699,8 +723,10 @@ class Fscd(object):
                 )
                 mode = zone.get_set_fan_mode(mode, action="read")
                 # if we set pwm_sensor_boost_value option, assign it to pwmval
-                if self.pwm_sensor_boost_value != None and \
-                    int(mode) == fan_mode["boost_mode"]:
+                if (
+                    self.pwm_sensor_boost_value != None
+                    and int(mode) == fan_mode["boost_mode"]
+                ):
                     if pwmval == self.boost:
                         pwmval = self.pwm_sensor_boost_value
             else:
@@ -741,19 +767,21 @@ class Fscd(object):
 
                         if self.board_fan_mode.is_scenario_supported("one_fan_failure"):
                             # user define
-                            set_fan_mode, set_fan_pwm = self.board_fan_mode.get_board_fan_mode("one_fan_failure")
+                            (
+                                set_fan_mode,
+                                set_fan_pwm,
+                            ) = self.board_fan_mode.get_board_fan_mode(
+                                "one_fan_failure"
+                            )
                             # choose the higher PWM
                             pwmval = max(set_fan_pwm, pwmval)
                             if int(pwmval) == int(set_fan_pwm):
                                 mode = set_fan_mode
                             else:
                                 pwmval = zone.run(
-                                    sensors=sensors_tuples,
-                                    ctx=ctx, ignore_mode=False
+                                    sensors=sensors_tuples, ctx=ctx, ignore_mode=False
                                 )
-                                mode = zone.get_set_fan_mode(
-                                    mode, action="read"
-                                )
+                                mode = zone.get_set_fan_mode(mode, action="read")
                         else:
                             # choose the higher PWM
                             if self.output_max_boost_pwm:

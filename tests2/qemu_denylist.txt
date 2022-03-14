@@ -16,6 +16,11 @@ tests.fby2.test_libpal.LibPalTest.test_pal_get_platform_name
 tests.fuji.test_fw_env.TestFwEnv.test_fw_setenv
 tests.fuji.test_interface.InterfaceTest.test_usb0_v6_interface
 tests.fuji.test_process_running.ProcessRunningTest.test_installed_processes
+tests.fuji.test_sensor.SmbSensorTest.test_smb_sensor_keys
+tests.wedge400.test_sensor.Fan1SensorTest.test_fan1_sensor_keys
+tests.wedge400.test_sensor.Fan2SensorTest.test_fan2_sensor_keys
+tests.wedge400.test_sensor.Fan3SensorTest.test_fan3_sensor_keys
+tests.wedge400.test_sensor.Fan4SensorTest.test_fan4_sensor_keys
 tests.yamp.test_eeprom.PIM1EepromTest.test_extended_mac_base
 tests.yamp.test_eeprom.PIM1EepromTest.test_product_name
 tests.yamp.test_eeprom.PIM1EepromTest.test_product_part_number

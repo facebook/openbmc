@@ -84,21 +84,6 @@ class SCMEepromTest(EepromTest, unittest.TestCase):
         self.location_on_fabric = ["SCM"]
 
 
-class PIM1EepromTest(EepromTest, unittest.TestCase):
-    """
-    Test for peutil 1
-    """
-
-    def set_eeprom_cmd(self):
-        self.eeprom_cmd = ["/usr/local/bin/peutil 1"]
-
-    def set_product_name(self):
-        self.product_name = ["MINIPACK2_PIM_16QDD"]
-
-    def set_location_on_fabric(self):
-        self.location_on_fabric = ["PIM16Q"]
-
-
 class PIM2EepromTest(EepromTest, unittest.TestCase):
     """
     Test for peutil 2
@@ -196,6 +181,21 @@ class PIM8EepromTest(EepromTest, unittest.TestCase):
 
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/local/bin/peutil 8"]
+
+    def set_product_name(self):
+        self.product_name = ["MINIPACK2_PIM_16QDD"]
+
+    def set_location_on_fabric(self):
+        self.location_on_fabric = ["PIM16Q"]
+
+
+class PIM9EepromTest(EepromTest, unittest.TestCase):
+    """
+    Test for peutil 9
+    """
+
+    def set_eeprom_cmd(self):
+        self.eeprom_cmd = ["/usr/local/bin/peutil 9"]
 
     def set_product_name(self):
         self.product_name = ["MINIPACK2_PIM_16QDD"]

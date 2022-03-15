@@ -70,7 +70,7 @@ extern "C" {
 
 extern const char *slot_usage;
 
-#define MAX_NUM_FRUS 8
+#define MAX_NUM_FRUS 13
 #define MAX_NUM_EXPS 4
 
 #define MAX_SYS_REQ_LEN  128  //include the string terminal
@@ -97,10 +97,10 @@ extern const char *slot_usage;
 #define UNKNOWN_SLOT 0xFF
 #define DUAL_DEV_BIC_ID0 15
 
-#define DEV_NAME_2U_TOP "2U-top"
-#define DEV_NAME_2U_BOT "2U-bot"
-#define DEV_NAME_2U_CWC "2U-cwc"
-#define DEV_NAME_2U "2U"
+#define DEV_NAME_2U_TOP "slot1-2U-top"
+#define DEV_NAME_2U_BOT "slot1-2U-bot"
+#define DEV_NAME_2U_CWC "slot1-2U-cwc"
+#define DEV_NAME_2U "slot1-2U"
 
 enum {
   FRU_ALL       = 0,
@@ -112,12 +112,12 @@ enum {
   FRU_NIC       = 6,
   FRU_BMC       = 7,
   FRU_NICEXP    = 8, //the fru is used when bmc is located on class 2
-  FRU_EXP_BASE  = 30,
-  FRU_2U        = 30,
-  FRU_CWC       ,
-  FRU_2U_TOP    ,
-  FRU_2U_BOT    ,
-  FRU_2U_SLOT3  ,
+  FRU_EXP_BASE  = 9,
+  FRU_2U        = 9,
+  FRU_CWC       = 10,
+  FRU_2U_TOP    = 11,
+  FRU_2U_BOT    = 12,
+  FRU_2U_SLOT3  = 13,
   FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 

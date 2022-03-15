@@ -121,7 +121,7 @@ struct threadinfo {
   uint8_t fru;
   pthread_t pt;
 };
-static struct threadinfo t_fru_cache[MAX_NUM_FRUS+MAX_NUM_EXPS] = {0, };
+static struct threadinfo t_fru_cache[MAX_NUM_FRUS] = {0, };
 static uint8_t dev_fru_complete[MAX_NODES + MAX_NUM_EXPS + 1][MAX_NUM_GPV3_DEVS + 1] = {DEV_FRU_NOT_COMPLETE};
 
 static int
@@ -206,11 +206,9 @@ fru_cache_dump(void *arg) {
     if (fru == FRU_2U_TOP) {
       ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF1);
       flagIdx = MAX_NODES + FRU_2U_TOP - FRU_EXP_BASE;
-      fruIdx = fru - FRU_EXP_BASE + MAX_NUM_FRUS - 1;
     } else if (fru == FRU_2U_BOT) {
       ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF2);
       flagIdx = MAX_NODES + FRU_2U_BOT - FRU_EXP_BASE;
-      fruIdx = fru - FRU_EXP_BASE + MAX_NUM_FRUS - 1;
     } else {
       ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result, REXP_BIC_INTF);
     }
@@ -437,11 +435,7 @@ fru_cahe_init(uint8_t fru) {
     }
   }
 fru_cache_starts:
-  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
-    idx = fru - FRU_EXP_BASE + MAX_NUM_FRUS - 1;
-  } else {
-    idx = fru - 1;
-  }
+  idx = fru - 1;
 
   // If yes, kill that thread and start a new one
   if (t_fru_cache[idx].is_running) {
@@ -900,7 +894,7 @@ host_pwr_mon() {
 
 static void
 print_usage() {
-  printf("Usage: gpiod [ %s ]\n", pal_server_list);
+  printf("Usage: gpiod [ slot1, slot2, slot3, slot4 ]\n");
 }
 
 /* Spawns a pthread for each fru to monitor all the sensors on it */

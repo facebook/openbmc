@@ -33,9 +33,7 @@
 #define DUAL_FAN_UCR  13500
 #define DUAL_FAN_UNC  10200
 
-#define MAX_SENSORD_FRU MAX_NUM_FRUS+MAX_NUM_EXPS
-#define NB_TO_IDX(x) (x-FRU_EXP_BASE+MAX_NUM_FRUS)
-#define IDX_TO_NB(f) (f-MAX_NUM_FRUS+FRU_EXP_BASE)
+#define MAX_SENSORD_FRU MAX_NUM_FRUS
 
 enum {
   /* Fan Type */
@@ -103,11 +101,11 @@ static int read_curr_leakage(uint8_t snr_number, float *value);
 static int read_pdb_dl_vdelta(uint8_t snr_number, float *value);
 
 static int pal_sdr_init(uint8_t fru);
-static sensor_info_t g_sinfo[MAX_NUM_FRUS+MAX_NUM_EXPS][MAX_SENSOR_NUM + 1] = {0};
-static bool sdr_init_done[MAX_NUM_FRUS+MAX_NUM_EXPS] = {false};
+static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
+static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 static uint8_t bic_dynamic_gpv3_cwc_sensor_list[MAX_SENSOR_NUM + 1] = {0};
-static uint8_t bic_dynamic_skip_sensor_list[4+MAX_NUM_EXPS][MAX_SENSOR_NUM + 1] = {0};
+static uint8_t bic_dynamic_skip_sensor_list[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 
 int pwr_off_flag[MAX_NODES+MAX_NUM_EXPS] = {0};
 int temp_cnt = 0;
@@ -1114,8 +1112,6 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
   uint8_t type_2ou = UNKNOWN_BOARD;
   uint8_t fruNb = fru;
   static uint8_t current_cnt = 0;
-  fru = (fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? (fru-FRU_EXP_BASE+4) : fru;
-
   if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
 
     memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
@@ -2425,11 +2421,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_SKIP;
   }
 
-  if (fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
-    sdr = &g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE][sensor_num].sdr;
-  } else {
-    sdr = &g_sinfo[fru-1][sensor_num].sdr;
-  }
+  sdr = &g_sinfo[fru-1][sensor_num].sdr;
 
   if (fru == FRU_2U_TOP) {
     if (IS_DUAL_M2_PWR_SNR(sensor_num)) {
@@ -3290,11 +3282,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   //syslog(LOG_WARNING, "%s() pal_is_sdr_init  bool %d, fru %d, snr_num: %x\n", __func__, pal_is_sdr_init(fru), fru, g_sinfo[fru-1][1].sdr.sensor_num);
   if ( true == pal_is_sdr_init(fru) ) {
-    if (fru > MAX_NUM_FRUS) {
-      memcpy(sinfo, g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
-    } else {
-      memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
-    }
+    memcpy(sinfo, g_sinfo[fru-1], sizeof(sensor_info_t) * MAX_SENSOR_NUM);
     goto error_exit;
   }
 
@@ -3378,11 +3366,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
       sleep(1);
       continue;
     } else {
-      if (fru > MAX_NUM_FRUS) {
-        memcpy(g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE], sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
-      } else {
-        memcpy(g_sinfo[fru-1], sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
-      }
+      memcpy(g_sinfo[fru-1], sinfo, sizeof(sensor_info_t) * MAX_SENSOR_NUM);
       pal_set_sdr_init(fru, true);
       break;
     }
@@ -3407,11 +3391,7 @@ pal_sdr_init(uint8_t fru) {
 
   if ( false == pal_is_sdr_init(fru) ) {
     sensor_info_t *sinfo = NULL;
-    if (fru > MAX_NUM_FRUS) {
-      sinfo = g_sinfo[MAX_NUM_FRUS+fru-FRU_EXP_BASE];
-    } else {
-      sinfo = g_sinfo[fru-1];
-    }
+    sinfo = g_sinfo[fru-1];
 
     if (pal_sensor_sdr_init(fru, sinfo) < 0) {
       //syslog(LOG_WARNING, "%s() Failed to run pal_sensor_sdr_init fru%d\n", __func__, fru);
@@ -3532,14 +3512,6 @@ pal_is_host_snr_available(uint8_t fru, uint8_t snr_num) {
 
 static thresh_sensor_t *
 get_sensor_desc(uint8_t fru, uint8_t snr_num) {
-  switch(fru) {
-    case FRU_2U_TOP:
-    case FRU_2U_BOT:
-      fru = NB_TO_IDX(fru);
-      break;
-    default:
-      break;
-  }
   return &m_snr_desc[fru-1][snr_num];
 }
 
@@ -3670,8 +3642,6 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   static uint8_t board_type = UNKNOWN_BOARD;
   int ret = 0;
   thresh_sensor_t *snr_desc;
-
-  fru = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
 
   switch (thresh) {
     case UNR_THRESH:
@@ -3887,8 +3857,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   static uint8_t board_type = UNKNOWN_BOARD;
   int ret = 0;
   thresh_sensor_t *snr_desc;
-
-  fru = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
 
   switch (thresh) {
     case UNR_THRESH:

@@ -36,7 +36,7 @@
 #include "fby3_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
-const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
+const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp", "slot1-2U", "slot1-2U-exp", "slot1-2U-top", "slot1-2U-bot", "slot3-2U"};
 const char *exp_list[] = {"2U", "2U-cwc", "2U-top", "2U-bot"};
 const uint8_t exp_id_list[] = {FRU_2U, FRU_CWC, FRU_2U_TOP, FRU_2U_BOT};
 const uint8_t slot3_exp_id_list[] = {FRU_2U_SLOT3};
@@ -53,34 +53,14 @@ fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
 int
 fby3_common_get_fru_id(char *str, uint8_t *fru) {
   int fru_id = 0;
-  bool found_id = false;
 
   for (fru_id = FRU_ALL; fru_id <= MAX_NUM_FRUS; fru_id++) {
     if ( strcmp(str, slot_list[fru_id]) == 0 ) {
       *fru = fru_id;
-      found_id = true;
-      break;
+      return 0;
     }
   }
-
-  for (fru_id = 0; found_id == false && fru_id < slot1_exp_size; fru_id++) {
-    if ( strcmp(str, slot1_exp_list[fru_id]) == 0 ) {
-      *fru = exp_id_list[fru_id];
-      found_id = true;
-    }
-  }
-  for (fru_id = 0; found_id == false && fru_id < slot3_exp_size; fru_id++) {
-    if ( strcmp(str, slot3_exp_list[fru_id]) == 0 ) {
-      *fru = slot3_exp_id_list[fru_id];
-      found_id = true;
-    }
-  }
-
-  if ( found_id == false ) {
-    return -1;
-  }
-
-  return 0;
+  return -1;
 }
 
 int

@@ -72,7 +72,7 @@ init_class2_sensord() {
 
   board=$(get_2ou_board_type 4)
   if [ "$board" = "0x04" ]; then
-    SLOTS="$SLOTS 2U-top 2U-bot"
+    SLOTS="$SLOTS slot1-2U-top slot1-2U-bot"
   fi
 }
 

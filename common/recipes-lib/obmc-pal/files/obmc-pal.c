@@ -2797,26 +2797,6 @@ pal_get_server_12v_power(uint8_t fru_id, uint8_t *status) {
 }
 
 int __attribute__((weak))
-pal_is_cwc(void) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
-pal_get_cwc_id(char *str, uint8_t *fru_id) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
-pal_get_exp_power(uint8_t fru, uint8_t *status) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
-pal_set_exp_power(uint8_t fru, uint8_t cmd) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
 pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   return CC_NOT_SUPP_IN_CURR_STATE;
 }
@@ -2824,21 +2804,6 @@ pal_handle_oem_1s_dev_power(uint8_t slot, uint8_t *req_data, uint8_t req_len, ui
 int __attribute__((weak))
 pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len)
 {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
-pal_is_exp(void) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
-pal_get_exp_fru_list(uint8_t *list, uint8_t *len) {
-  return PAL_ENOTSUP;
-}
-
-int __attribute__((weak))
-pal_get_exp_arg_name(uint8_t fru, char *name) {
   return PAL_ENOTSUP;
 }
 
@@ -2888,11 +2853,9 @@ pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size){
   for (int fru = 1; fru <= num_frus; fru++) {
     char name[64] = {0};
     if (pal_get_fru_name(fru, name)) {
-      printf("Cannot get FRU Name for %d\n", fru);
       continue;
     }
     if (pal_get_fru_capability(fru, &fru_caps)) {
-      printf("%s: Cannot get FRU capability!\n", name);
       continue;
     }
     if ((caps & fru_caps) == caps) {
@@ -2911,21 +2874,17 @@ pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t size
   unsigned int dev_caps;
   char fru_name[64] = {0};
   if (pal_get_num_devs(fru, &num_devs)) {
-    printf("%s: Cannot get number of devs\n", fru_name);
     return PAL_ENOTREADY;
   }
   if (pal_get_fru_name(fru, fru_name)) {
-      printf("Cannot get FRU Name for %d\n", fru);
       return PAL_ENOTREADY;
   }
   for (dev = 1; dev <= num_devs; dev++) {
     char name[128];
     if (pal_get_dev_name(fru, dev, name)) {
-      printf("%s: Cannot get name for device: %u\n", fru_name, dev);
       continue;
     }
     if (pal_get_dev_capability(fru, dev, &dev_caps)) {
-      printf("%s:%s cannot get device capability\n", fru_name, name);
       continue;
     }
     if ((caps & dev_caps) == caps) {

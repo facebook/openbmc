@@ -64,26 +64,6 @@ fby3_common_get_fru_id(char *str, uint8_t *fru) {
 }
 
 int
-fby3_common_get_exp_id(char *str, uint8_t *fru) {
-  int fru_id = 0;
-  bool found_id = false;
-
-  for (fru_id = 0; fru_id < MAX_NUM_EXPS; fru_id++) {
-    if ( strcmp(str, exp_list[fru_id]) == 0 ) {
-      *fru = exp_id_list[fru_id];
-      found_id = true;
-      break;
-    }
-  }
-
-  if ( found_id == false ) {
-    return -1;
-  }
-
-  return 0;
-}
-
-int
 fby3_common_get_slot_id(char *str, uint8_t *fru) {
   int fru_id = 0;
   bool found_id = false;

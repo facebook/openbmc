@@ -5026,10 +5026,6 @@ int pal_is_cwc(void) {
   return board_type == CWC_MCHP_BOARD ? PAL_EOK : PAL_ENOTSUP;
 }
 
-int pal_get_cwc_id(char *str, uint8_t *fru) {
-  return fby3_common_get_exp_id(str, fru) == 0 ? PAL_EOK : PAL_ENOTSUP;
-}
-
 int pal_get_asd_sw_status(uint8_t fru) {
   int intf = 0, slot = 0;
   bic_gpio_t gpio = {0};
@@ -5073,35 +5069,6 @@ int pal_get_fru_slot(uint8_t fru, uint8_t *slot) {
     default:
       *slot = fru;
       break;
-  }
-  return PAL_EOK;
-}
-
-int pal_get_exp_fru_list(uint8_t *list, uint8_t *len) {
-  if (pal_is_cwc() == PAL_EOK) {
-    list[0] = FRU_CWC;
-    list[1] = FRU_2U_TOP;
-    list[2] = FRU_2U_BOT;
-    *len = 3;
-  } else {
-    *len = 0;
-  }
-  return PAL_EOK;
-}
-
-int pal_get_exp_arg_name(uint8_t fru, char *name) {
-  switch (fru) {
-    case FRU_CWC:
-      sprintf(name, "slot1-2U-exp");
-      break;
-    case FRU_2U_TOP:
-      sprintf(name, "slot1-2U-top");
-      break;
-    case FRU_2U_BOT:
-      sprintf(name, "slot1-2U-bot");
-      break;
-    default:
-      return PAL_ENOTSUP;
   }
   return PAL_EOK;
 }

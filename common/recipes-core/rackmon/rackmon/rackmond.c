@@ -739,10 +739,10 @@ int set_psu_timestamp(psu_datastore_t *psu, uint32_t unixtime)
 {
   uint16_t values[2];
   int rack=0,shelf=0,psu_no=0;
-  if (psu_location(psu->addr,&rack,&shelf,&psu_no)) {
+  if (psu == NULL) {
     return -1;
   }
-  if (psu == NULL) {
+  if (psu_location(psu->addr,&rack,&shelf,&psu_no)) {
     return -1;
   }
   if (unixtime == 0) {
@@ -776,15 +776,15 @@ static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
   uint16_t written_value;
   psu_datastore_t *mdata;
   int rack=0,shelf=0,psu_no=0;
-  if (psu_location(psu->addr,&rack,&shelf,&psu_no)) {
-    return -1;
-  }
-
   if (psu == NULL) {
     OBMC_WARN("check_psu_baudrate received a null PSU argument, assuming default baudrate");
     *baudrate_out = DEFAULT_BAUDRATE;
     return 0;
   }
+  if (psu_location(psu->addr,&rack,&shelf,&psu_no)) {
+    return -1;
+  }
+
 
   // only attempt to raise the baudrate if it doesn't already match the desired baudrate
   if (psu->baudrate == rackmond_config.desired_baudrate) {

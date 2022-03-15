@@ -186,39 +186,6 @@ create_dev_lists(const char *fru_name, uint8_t fru)
 }
 
 static void
-create_exp_fru_lists()
-{
-  uint8_t fru = 0, i = 0;
-  uint8_t list[MAX_NUM_FRUS] = {0}, len = 0;
-  unsigned int caps;
-
-  if (pal_get_exp_fru_list(list, &len) != PAL_EOK) {
-    return;
-  }
-  for (i = 0; i < len; i++) {
-    char arg[64] = {0};
-    fru = list[i];
-    if (pal_get_exp_arg_name(fru, arg) != PAL_EOK) {
-      printf("Cannot get FRU argument for %d\n", fru);
-      continue;
-    }
-    if (pal_get_fru_capability(fru, &caps)) {
-      printf("%s: Cannot get FRU capability!\n", arg);
-      continue;
-    }
-    if ((caps & FRU_CAPABILITY_HAS_DEVICE)) {
-      create_dev_lists(arg, fru);
-    }
-    if ((caps & FRU_CAPABILITY_FRUID_READ)) {
-      append_list(pal_fru_list_print_t, arg);
-    }
-    if ((caps & FRU_CAPABILITY_FRUID_WRITE)) {
-      append_list(pal_fru_list_rw_t, arg);
-    }
-  }
-}
-
-static void
 create_fru_lists(void)
 {
   uint8_t fru;
@@ -242,9 +209,6 @@ create_fru_lists(void)
     if ((caps & FRU_CAPABILITY_FRUID_WRITE)) {
       append_list(pal_fru_list_rw_t, name);
     }
-  }
-  if (pal_is_exp() == PAL_EOK) {
-    create_exp_fru_lists();
   }
   prepend_all(pal_fru_list_print_t, 1024);
   if (pal_dev_list_print_t[0] != '\0') {
@@ -703,7 +667,7 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
   uint8_t status;
   uint8_t num_devs = 0;
   uint8_t dev_id = DEV_NONE;
-  uint8_t exp = 0, slot = 0, list[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
+  uint8_t i;
   json_t *fru_object = json_object();
 
   ret = pal_get_fruid_name(fru, name);
@@ -778,20 +742,6 @@ int print_fru(int fru, char * device, bool allow_absent, unsigned char print_for
         ret = get_fruid_info(fru, path, name, print_format,fru_array);
       }
     }
-
-    if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(list, &len) == PAL_EOK) {
-      for (i = 0; i < len; ++i) {
-        exp = list[i];
-        unsigned int caps = 0;
-        if (pal_get_fru_slot(exp, &slot) != PAL_EOK || fru != slot) {
-          continue; //exp not belongs to this fru
-        }
-        if (pal_get_fru_capability(exp, &caps) || !(caps & FRU_CAPABILITY_FRUID_READ)) {
-          continue;
-        }
-        ret |= print_fru(exp, device, true, print_format,fru_array);
-      }
-    }
   }
 
   return ret;
@@ -838,18 +788,6 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
         continue;
       }
       ret |= print_fru(fru, device, true, print_format,fru_array);
-    }
-
-    if (pal_is_exp() == PAL_EOK && device == NULL) {
-      uint8_t list[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
-      pal_get_exp_fru_list(list, &len);
-      for (i = 0; i < len; ++i) {
-        unsigned int caps = 0;
-        if (pal_get_fru_capability(list[i], &caps) || !(caps & FRU_CAPABILITY_FRUID_READ)) {
-          continue;
-        }
-        ret |= print_fru(list[i], device, true, print_format, fru_array);
-      }
     }
   }
 

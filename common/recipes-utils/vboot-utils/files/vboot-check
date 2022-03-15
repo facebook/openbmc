@@ -150,19 +150,21 @@ def decode_flash(fh, data):
 
     if rom_fit is None:
         print("Cannot find SPL FIT region", file=sys.stderr)
-        raise VbootParserException(code=EC_SPLROM_BAD)
+        retval["lockbit"] = None
+        retval["spl_fit_offset"] = None
+        retval["spl_keys"] = []
+    else:
+        # Record SPL information
+        try:
+            _idx = rom_fit.rootnode.index("hwlock")
+            retval["lockbit"] = str(rom_fit.rootnode[_idx].words)
+        except:
+            retval["lockbit"] = "not set"
 
-    # Print SPL information
-    try:
-        _idx = rom_fit.rootnode.index("hwlock")
-        retval["lockbit"] = str(rom_fit.rootnode[_idx].words)
-    except:
-        retval["lockbit"] = "not set"
-
-    retval["spl_fit_offset"] = rom_fit_offset
-    retval["spl_keys"] = validate_and_parse_keys(
-        rom_fit, "SPL does not contain KEK keys"
-    )
+        retval["spl_fit_offset"] = rom_fit_offset
+        retval["spl_keys"] = validate_and_parse_keys(
+            rom_fit, "SPL does not contain KEK keys"
+        )
 
     # Read the U-Boot FIT, the U-Boot data area (max)
     fh.seek(args.uboot_fit_offset)

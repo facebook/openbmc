@@ -41,13 +41,7 @@
 #define STOP_PERIOD 10
 #define MAX_SENSOR_CHECK_RETRY 3
 #define MAX_ASSERT_CHECK_RETRY 1
-#ifdef CONFIG_FBY3_CWC
-#define MAX_SENSORD_FRU MAX_NUM_FRUS+MAX_NUM_EXPS
-#define IDX_TO_NB(f) (f-MAX_NUM_FRUS+FRU_EXP_BASE)
-#define NB_TO_IDX(x) (x-FRU_EXP_BASE+MAX_NUM_FRUS)
-#else
 #define MAX_SENSORD_FRU MAX_NUM_FRUS
-#endif
 
 static thresh_sensor_t g_snr[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
 static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1] = {0};
@@ -112,11 +106,7 @@ init_fru_snr_thresh(uint8_t fru) {
   int sensor_cnt;
   uint8_t *sensor_list;
   thresh_sensor_t *snr;
-#ifdef CONFIG_FBY3_CWC
-  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
-#else
   uint8_t fruNb = fru;
-#endif
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
@@ -231,11 +221,7 @@ check_thresh_deassert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
   thresh_sensor_t *snr;
   uint8_t retry = 0;
   int ret;
-#ifdef CONFIG_FBY3_CWC
-  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
-#else
   uint8_t fruNb = fru;
-#endif
 
   snr = get_struct_thresh_sensor(fru);
 
@@ -340,11 +326,7 @@ check_thresh_assert(uint8_t fru, uint8_t snr_num, uint8_t thresh,
   thresh_sensor_t *snr;
   uint8_t retry = 0;
   int ret;
-#ifdef CONFIG_FBY3_CWC
-  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
-#else
   uint8_t fruNb = fru;
-#endif
 
   snr = get_struct_thresh_sensor(fru);
 
@@ -444,11 +426,7 @@ static int
 reinit_snr_threshold(uint8_t fru, int mode) {
   int ret = 0;
   thresh_sensor_t *snr;
-#ifdef CONFIG_FBY3_CWC
-  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
-#else
   uint8_t fruNb = fru;
-#endif
 
   snr = get_struct_thresh_sensor(fru);
   if (snr == NULL) {
@@ -471,11 +449,7 @@ thresh_reinit_chk(uint8_t fru) {
   char fpath[64] = {0};
   char initpath[64] = {0};
   char fru_name[32];
-#ifdef CONFIG_FBY3_CWC
-  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
-#else
   uint8_t fruNb = fru;
-#endif
 
   ret = pal_get_fru_name(fruNb, fru_name);
   if (ret < 0) {
@@ -515,13 +489,8 @@ snr_monitor(void *arg) {
   thresh_sensor_t *snr;
   uint32_t snr_poll_interval[MAX_SENSOR_NUM + 1] = {0};
   uint8_t snr_read_fail[MAX_SENSOR_NUM + 1] = {0};
-#ifdef CONFIG_FBY3_CWC
-  uint8_t fruNb = fru >= MAX_NUM_FRUS ? IDX_TO_NB(fru) : fru;
-  uint8_t slot = fru >= MAX_NUM_FRUS ? FRU_SLOT1 : fru;
-#else
   uint8_t fruNb = fru;
   uint8_t slot = fru;
-#endif
 
   ret = pal_get_fru_sensor_list(fruNb, &sensor_list, &sensor_cnt);
   if (ret < 0) {
@@ -627,46 +596,6 @@ snr_monitor(void *arg) {
   } /* while loop*/
 } /* function definition */
 
-#ifdef CONFIG_FBY3_CWC
-static uint8_t
-get_exp_sensor_state() {
-  int num = 0;
-  uint8_t topExp = MAX_NUM_FRUS + 2, botExp = MAX_NUM_FRUS + 3;
-  uint8_t value = 0;
-  thresh_sensor_t *snr = get_struct_thresh_sensor(topExp);
-
-  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
-    value |= snr[num].curr_state;
-  }
-  
-  snr = get_struct_thresh_sensor(botExp);
-  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
-    value |= snr[num].curr_state;
-  }
-
-  return value;
-}
-#endif
-
-#ifdef CONFIG_FBY3_CWC
-static uint8_t
-clear_exp_sensor_state() {
-  int num = 0;
-  uint8_t topExp = MAX_NUM_FRUS + 2, botExp = MAX_NUM_FRUS + 3;
-  thresh_sensor_t *snr = get_struct_thresh_sensor(topExp);
-
-  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
-    snr[num].curr_state = 0;
-  }
-
-  snr = get_struct_thresh_sensor(botExp);
-  for (num = 0; snr != NULL && num <= MAX_SENSOR_NUM; num++) {
-    snr[num].curr_state = 0;
-  }
-
-  return 0;
-}
-#endif
 
 static void *
 snr_health_monitor() {
@@ -712,12 +641,6 @@ snr_health_monitor() {
         value |= snr[num].curr_state;
       }
 
-#ifdef CONFIG_FBY3_CWC
-      if (fru == FRU_SLOT1 && pal_is_cwc() == PAL_EOK) {
-        value |= get_exp_sensor_state();
-      }
-#endif
-
       value = (value > 0) ? FRU_STATUS_BAD: FRU_STATUS_GOOD;
 
       // If log-util clear the fru, cleaning sensor status (After doing it, sensord will regenerate assert)
@@ -725,11 +648,6 @@ snr_health_monitor() {
         for (num = 0; num <= MAX_SENSOR_NUM; num++) {
            snr[num].curr_state = 0;
         }
-#ifdef CONFIG_FBY3_CWC
-        if (fru == FRU_SLOT1 && pal_is_cwc() == PAL_EOK) {
-          clear_exp_sensor_state();
-        }
-#endif
       }
 
       // keep last status
@@ -819,16 +737,7 @@ run_sensord(int argc, char **argv) {
 
     ret = pal_get_fru_id(argv[arg], &fru);
     if (ret < 0) {
-#ifdef CONFIG_FBY3_CWC
-      uint8_t expFru = 0;
-      if (pal_is_cwc() == PAL_EOK && pal_get_cwc_id(argv[arg], &expFru) == 0) {
-        fru = NB_TO_IDX(expFru);  //expansions starts from the end of fru
-      } else {
-#endif
       return ret;
-#ifdef CONFIG_FBY3_CWC
-      }
-#endif
     }
 
     fru_flag = SETBIT(fru_flag, fru);

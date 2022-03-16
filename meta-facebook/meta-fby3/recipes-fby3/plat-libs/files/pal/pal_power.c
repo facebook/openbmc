@@ -371,9 +371,11 @@ int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret;
 
-  if (pal_is_cwc() == PAL_EOK &&
-      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
-    return pal_get_exp_power(fru, status);
+  if (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    if (pal_is_cwc() == PAL_EOK)
+      return pal_get_exp_power(fru, status);
+    else
+      return POWER_STATUS_FRU_ERR;
   }
 
   ret = fby3_common_check_slot_id(fru);
@@ -402,9 +404,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
   int ret = 0;
   uint8_t bmc_location = 0;
 
-  if (pal_is_cwc() == PAL_EOK &&
-      (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT)) {
-    return pal_set_exp_power(fru, cmd);
+  if (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT) {
+    if (pal_is_cwc() == PAL_EOK)
+      return pal_set_exp_power(fru, cmd);
+    else
+      return POWER_STATUS_FRU_ERR;
   }
 
   ret = fby3_common_check_slot_id(fru);

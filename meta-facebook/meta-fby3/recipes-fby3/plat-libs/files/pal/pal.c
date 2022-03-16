@@ -60,12 +60,7 @@
 
 #define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
 
-const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
-const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
-const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc nic";
-const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic";
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
-const char pal_server_list[] = "slot1, slot2, slot3, slot4";
 const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
@@ -76,8 +71,7 @@ const char pal_m2_dual_list[] = "";
 
 static char sel_error_record[NUM_SERVER_FRU] = {0};
 
-const char pal_exp_server_list[] = "slot1, slot2, slot3, slot4, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
-const char pal_exp_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
+const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
 
 #define SYSFW_VER "sysfw_ver_slot"
 #define SYSFW_VER_STR SYSFW_VER "%d"
@@ -897,17 +891,20 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_SENSOR_SLAVE;
+        *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
+          FRU_CAPABILITY_SENSOR_SLAVE | FRU_CAPABILITY_POWER_ALL;
       } else {
-        ret = -1;
+        *caps = 0;
       }
       break;
     case FRU_2U_TOP:
     case FRU_2U_BOT:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_HAS_DEVICE;
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_HAS_DEVICE |
+          FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
+          FRU_CAPABILITY_POWER_ALL;
       } else {
-        ret = -1;
+        *caps = 0;
       }
       break;
     default:
@@ -1085,6 +1082,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
         *status = 0;
       }
       break;
+    case FRU_2U_SLOT3:
+      *status = 0;
+      break;
     default:
       *status = 0;
       syslog(LOG_WARNING, "%s() wrong fru id 0x%02x", __func__, fru);
@@ -1149,16 +1149,19 @@ pal_get_fru_name(uint8_t fru, char *name) {
       sprintf(name, "nicexp");
       break;
     case FRU_2U:
-      sprintf(name, DEV_NAME_2U);
+      sprintf(name, "slot1-2U");
       break;
     case FRU_CWC:
-      sprintf(name, DEV_NAME_2U_CWC);
+      sprintf(name, "slot1-2U-exp");
       break;
     case FRU_2U_TOP:
-      sprintf(name, DEV_NAME_2U_TOP);
+      sprintf(name, "slot1-2U-top");
       break;
     case FRU_2U_BOT:
-      sprintf(name, DEV_NAME_2U_BOT);
+      sprintf(name, "slot1-2U-bot");
+      break;
+    case FRU_2U_SLOT3:
+      sprintf(name, "slot3-2U");
       break;
     case FRU_AGGREGATE:
       ret = PAL_EOK; //it's the virtual FRU.
@@ -5023,10 +5026,6 @@ int pal_is_cwc(void) {
   return board_type == CWC_MCHP_BOARD ? PAL_EOK : PAL_ENOTSUP;
 }
 
-int pal_get_cwc_id(char *str, uint8_t *fru) {
-  return fby3_common_get_exp_id(str, fru) == 0 ? PAL_EOK : PAL_ENOTSUP;
-}
-
 int pal_get_asd_sw_status(uint8_t fru) {
   int intf = 0, slot = 0;
   bic_gpio_t gpio = {0};
@@ -5074,55 +5073,8 @@ int pal_get_fru_slot(uint8_t fru, uint8_t *slot) {
   return PAL_EOK;
 }
 
-int pal_get_exp_fru_list(uint8_t *list, uint8_t *len) {
-  if (pal_is_cwc() == PAL_EOK) {
-    list[0] = FRU_CWC;
-    list[1] = FRU_2U_TOP;
-    list[2] = FRU_2U_BOT;
-    *len = 3;
-  } else {
-    *len = 0;
-  }
-  return PAL_EOK;
-}
-
-int pal_get_exp_arg_name(uint8_t fru, char *name) {
-  switch (fru) {
-    case FRU_CWC:
-      sprintf(name, "slot1-2U-exp");
-      break;
-    case FRU_2U_TOP:
-      sprintf(name, "slot1-2U-top");
-      break;
-    case FRU_2U_BOT:
-      sprintf(name, "slot1-2U-bot");
-      break;
-    default:
-      return PAL_ENOTSUP;
-  }
-  return PAL_EOK;
-}
-
-int pal_get_print_fru_name(const char **list) {
-  if (pal_is_cwc() == PAL_EOK) {
-    *list = pal_exp_server_list;
-  } else {
-    return PAL_ENOTSUP;
-  }
-  return PAL_EOK;
-}
-
 int pal_get_root_fru(uint8_t fru, uint8_t *root) {
   return pal_get_fru_slot(fru, root);
-}
-
-int pal_get_print_sensor_name(const char **list) {
-  if (pal_is_cwc() == PAL_EOK) {
-    *list = pal_exp_fru_list;
-  } else {
-    return PAL_ENOTSUP;
-  }
-  return PAL_EOK;
 }
 
 int pal_get_2ou_board_type(uint8_t fru, uint8_t *type_2ou) {

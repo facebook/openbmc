@@ -372,6 +372,7 @@ static ssize_t show_temp(struct device *dev,
         case FAN1_START_TEMP:
         case FAN2_START_TEMP:
             temp = data->fan_start_temp[GET_CHANNEL(attr->index)] * 1000;
+            break;
         default:
             return PTR_ERR(data);
     }
@@ -454,6 +455,7 @@ static ssize_t show_pwm(struct device *dev,
             break;
         case PWM1_STEP:
             pwm = (data->pwm_step & 0xF0) >> 4;
+            break;
         case PWM2_STEP:
             pwm = data->pwm_step & 0x0F;
             break;

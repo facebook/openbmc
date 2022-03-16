@@ -102,32 +102,14 @@ const char *sensor_status[] = {
 };
 
 static void
-append_exp_fru(char fru_list[], size_t size) {
-  uint8_t exp_fru[MAX_NUM_FRUS] = {0}, len = 0, i = 0;
-  pal_get_exp_fru_list(exp_fru, &len);
-
-  for (i = 0; i < len; ++i) {
-    char name[64] = {0};
-    if (pal_get_exp_arg_name(exp_fru[i], name) == PAL_EOK &&
-        strlen(name)+2 < size) {
-      strncat(fru_list, ", ", 2);
-      strncat(fru_list, name, size);
-      size -= (strlen(name) + 2);
-    }
-  }
-}
-
-static void
 print_usage() {
 
   char fru_list[256] = {0};
   char pal_fru_list_sensor_history_t[256] = {0};
   pal_get_fru_list(fru_list);
+  pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_READ, fru_list, 256);
   //default to standard FRU list
   pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_HISTORY, pal_fru_list_sensor_history_t, 256);
-  if (pal_is_exp() == PAL_EOK && strlen(fru_list) < sizeof(fru_list)) {
-    append_exp_fru(fru_list, sizeof(fru_list)-strlen(fru_list));
-  }
   printf("Usage: sensor-util [fru] <sensor num> <option> ..\n");
   printf("       sensor-util [fru] <option> ..\n\n");
   printf("       [fru]           : %s\n", fru_list);
@@ -700,15 +682,14 @@ void get_sensor_reading_timer(struct timespec *timeout, get_sensor_reading_struc
 
 static int
 print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool threshold, bool force, bool json, bool history_clear, bool filter, char** filter_list, int filter_len,long period, json_t *fru_sensor_obj) {
-  int ret;
+  int ret = 0;
   uint8_t status;
   int sensor_cnt;
   uint8_t *sensor_list;
   char fruname[16] = {0};
   struct timespec timeout;
   get_sensor_reading_struct data;
-  char fru_list[256] = {0};
-  uint8_t expList[MAX_NUM_FRUS] = {0}, len = 0, i = 0, root = 0;
+  uint8_t root = 0;
   unsigned int caps = 0;
 
   //Setup timeout for each fru get_sensor_reading
@@ -735,19 +716,6 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
   } else {
     if (get_fru_name(fru, fruname)) {
       sprintf(fruname, "fru%d", fru);
-    }
-
-    // Check if platform supports the FRU
-    if (pal_get_fru_list(fru_list) == 0) {
-      if ( strstr(fru_list, fruname) == NULL ) {
-        if (pal_is_exp() == PAL_EOK) {
-          if (pal_get_exp_arg_name(fru, fruname) != PAL_EOK) {
-            return 0;
-          }
-        } else {
-          return 0;
-        }
-      }
     }
 
     ret = pal_is_fru_prsnt(fru, &status);
@@ -830,24 +798,6 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     if (json == 0)
       printf("\n");
   }
-
-  ret = 0;
-  if (pal_is_exp() == PAL_EOK && pal_get_exp_fru_list(expList, &len) == PAL_EOK) {
-    for (i = 0; i < len; ++i) {
-      char name[16] = {0};
-      if (pal_get_fru_capability(expList[i], &caps) == PAL_EOK &&
-          (caps & FRU_CAPABILITY_SENSOR_SLAVE)) {
-        continue;
-      }
-      if (pal_get_root_fru(expList[i], &root) == PAL_EOK && root == fru) {
-        if (pal_get_exp_arg_name(expList[i], name) == PAL_EOK) {
-          printf("%s:\n", name);
-        }
-        ret |= print_sensor(expList[i], sensor_num, allow_absent, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
-      }
-    }
-  }
-
   return ret;
 }
 

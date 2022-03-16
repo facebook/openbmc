@@ -324,7 +324,7 @@ const uint8_t bic_1ou_edsff_sensor_list[] = {
 
 const uint8_t bic_2ou_gpv3_sensor_list[] = {
   // temperature
-  BIC_GPV3_INLET_TEMP,
+  BIC_GPV3_OUTLET_TEMP,
   BIC_GPV3_PCIE_SW_TEMP,
 
   // adc voltage
@@ -504,6 +504,7 @@ const uint8_t bic_cwc_sensor_list[] = {
   BIC_CWC_SENSOR_NUM_V_HSC_TOP,
   BIC_CWC_SENSOR_NUM_C_HSC_TOP,
   BIC_CWC_SENSOR_NUM_T_HSC_TOP,
+  BIC_CWC_SENSOR_NUM_P_PESW,
 };
 
 const uint8_t bic_skip_sensor_list[] = {
@@ -698,6 +699,7 @@ const uint8_t bic_cwc_skip_sensor_list[] = {
   BIC_CWC_SENSOR_NUM_V_P0V84_VR,
   BIC_CWC_SENSOR_NUM_C_P0V84_VR,
   BIC_CWC_SENSOR_NUM_T_P0V84_VR,
+  BIC_CWC_SENSOR_NUM_P_PESW,
 };
 
 const uint8_t bic_dp_sensor_list[] = {

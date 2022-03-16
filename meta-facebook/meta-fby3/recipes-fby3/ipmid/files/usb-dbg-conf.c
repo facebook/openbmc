@@ -824,8 +824,8 @@ static sensor_desc_t cri_sensor_1ou_edsff[] =
 static sensor_desc_t cri_sensor_gpv3[] =
 {
 // GPv3 sensors
-  {"GP3 INLET TEMP:"       , BIC_GPV3_INLET_TEMP           , "C"    , FRU_ALL, 0},
-  {"GP3 PESW TEMP:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_ALL, 0},
+  {"GP3 Outlet Temp:"      , BIC_GPV3_OUTLET_TEMP          , "C"    , FRU_ALL, 0},
+  {"GP3 PESW Temp:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_ALL, 0},
   {"GP3 3V3S1 Temp:"       , BIC_GPV3_P3V3_STBY1_TEMP      , "C"    , FRU_ALL, 0},
   {"GP3 3V3S2 Temp:"       , BIC_GPV3_P3V3_STBY2_TEMP      , "C"    , FRU_ALL, 0},
   {"GP3 3V3S3 Temp:"       , BIC_GPV3_P3V3_STBY3_TEMP      , "C"    , FRU_ALL, 0},
@@ -950,13 +950,14 @@ static sensor_desc_t cri_sensor_cwc[] =
   {"CWC HSC TOP Vol:"      , BIC_CWC_SENSOR_NUM_V_HSC_TOP  , "V"    , FRU_ALL, 2},
   {"CWC HSC TOP Cur:"      , BIC_CWC_SENSOR_NUM_C_HSC_TOP  , "Amps" , FRU_ALL, 2},
   {"CWC HSC TOP Temp:"     , BIC_CWC_SENSOR_NUM_T_HSC_TOP  , "C"    , FRU_ALL, 2},
+  {"CWC PESW Pwr:"         , BIC_CWC_SENSOR_NUM_P_PESW     , "W"    , FRU_ALL, 2},
 };
 
 static sensor_desc_t cri_sensor_cwc_top_gpv3[] =
 {
 // GPv3 sensors
-  {"TOP GP3 INLET TEMP:"       , BIC_GPV3_INLET_TEMP           , "C"    , FRU_2U_TOP, 2},
-  {"TOP GP3 PESW TEMP:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_2U_TOP, 2},
+  {"TOP GP3 Outlet Temp:"      , BIC_GPV3_OUTLET_TEMP          , "C"    , FRU_2U_TOP, 2},
+  {"TOP GP3 PESW Temp:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_2U_TOP, 2},
   {"TOP GP3 3V3S1 Temp:"       , BIC_GPV3_P3V3_STBY1_TEMP      , "C"    , FRU_2U_TOP, 2},
   {"TOP GP3 3V3S2 Temp:"       , BIC_GPV3_P3V3_STBY2_TEMP      , "C"    , FRU_2U_TOP, 2},
   {"TOP GP3 3V3S3 Temp:"       , BIC_GPV3_P3V3_STBY3_TEMP      , "C"    , FRU_2U_TOP, 2},
@@ -983,8 +984,8 @@ static sensor_desc_t cri_sensor_cwc_top_gpv3[] =
 static sensor_desc_t cri_sensor_cwc_bot_gpv3[] =
 {
 // GPv3 sensors
-  {"BOT GP3 INLET TEMP:"       , BIC_GPV3_INLET_TEMP           , "C"    , FRU_2U_BOT, 2},
-  {"BOT GP3 PESW TEMP:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_2U_BOT, 2},
+  {"BOT GP3 Outlet Temp:"      , BIC_GPV3_OUTLET_TEMP          , "C"    , FRU_2U_BOT, 2},
+  {"BOT GP3 PESW Temp:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_2U_BOT, 2},
   {"BOT GP3 3V3S1 Temp:"       , BIC_GPV3_P3V3_STBY1_TEMP      , "C"    , FRU_2U_BOT, 2},
   {"BOT GP3 3V3S2 Temp:"       , BIC_GPV3_P3V3_STBY2_TEMP      , "C"    , FRU_2U_BOT, 2},
   {"BOT GP3 3V3S3 Temp:"       , BIC_GPV3_P3V3_STBY3_TEMP      , "C"    , FRU_2U_BOT, 2},

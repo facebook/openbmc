@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #include <openbmc/pal.h>
 #include <openbmc/fruid.h>
+#include <facebook/fby3_common.h>
 #include <facebook/fby3_gpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
@@ -547,6 +548,7 @@ gpio_monitor_poll(void *ptr) {
   uint8_t chassis_sts_len;
   uint8_t power_policy = POWER_CFG_UKNOWN;
   char pwr_state[256] = {0};
+  char sys_conf[16] = {0};
 
   /* Check for initial Asserts */
   gpios = get_struct_gpio_pin(fru);
@@ -612,6 +614,12 @@ gpio_monitor_poll(void *ptr) {
         if (!dp_hsm_check) {
           pal_dp_hba_fan_table_check();
           dp_hsm_check = true;
+        }
+
+        if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) == 0 ) {
+          if ( strcmp(sys_conf, "Type_DPB") == 0 ) {
+            fby3_common_fscd_ctrl(FAN_AUTO_MODE);
+          }
         }
       }
       retry_sec[fru-1]++;

@@ -340,6 +340,7 @@ int fby3_common_exp_dev_name(uint8_t dev, char *str);
 int fby3_common_get_bb_board_rev(uint8_t *rev);
 int fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev);
 int fby3_common_get_hsc_bb_detect(uint8_t *id);
+int fby3_common_fscd_ctrl(uint8_t mode);
 
 #ifdef __cplusplus
 } // extern "C"

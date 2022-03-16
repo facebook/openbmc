@@ -945,7 +945,7 @@ main(int argc, char **argv) {
     }
   }
 
-  if (fru == 0) {
+  if (fru == FRU_ALL) {
     for (fru = 1; fru <= pal_get_fru_count(); fru++) {
       ret |= print_sensor(fru, num, true, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     }

@@ -1290,6 +1290,105 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
           sprintf(entry,"2OU_PESW_CFG_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
           strcat(fw_text, entry);
         }
+      } else if ( type_2ou == CWC_MCHP_BOARD ) {
+
+        // CWC BIC
+        if (bic_get_fw_ver(slot_id, FW_CWC_BIC, ver)) {
+          strcat(fw_text,"2U_BIC_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2U_BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // CWC BICBL
+        if (bic_get_fw_ver(slot_id, FW_CWC_BIC_BL, ver)) {
+          strcat(fw_text,"2U_BICbl_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2U_BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // CWC CPLD
+        if (bic_get_fw_ver(slot_id, FW_CWC_CPLD, ver)) {
+          strcat(fw_text,"2U_CPLD_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2U_CPLD_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+
+        // CWC PESW
+        if (bic_get_fw_ver(slot_id, FW_2OU_PESW_CFG_VER, ver)) {
+          strcat(fw_text,"2U_PESW_CFG_ver:\nNA\n");
+        } else {
+          sprintf(entry,"2U_PESW_CFG_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+
+        // TOP GPv3 BIC, BICBL, CPLD PESW version
+        // TOP BIC
+        if (bic_get_fw_ver(slot_id, FW_GPV3_TOP_BIC, ver)) {
+          strcat(fw_text,"TOP_BIC_ver:\nNA\n");
+        } else {
+          sprintf(entry,"TOP_BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // TOP BICBL
+        if (bic_get_fw_ver(slot_id, FW_GPV3_TOP_BIC_BL, ver)) {
+          strcat(fw_text,"TOP_BICbl_ver:\nNA\n");
+        } else {
+          sprintf(entry,"TOP_BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // TOP CPLD
+        if (bic_get_fw_ver(slot_id, FW_GPV3_TOP_CPLD, ver)) {
+          strcat(fw_text,"TOP_CPLD_ver:\nNA\n");
+        } else {
+          sprintf(entry,"TOP_CPLD_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+
+        // TOP PESW
+        if (bic_get_fw_ver(slot_id, FW_2U_TOP_PESW_CFG_VER, ver)) {
+          strcat(fw_text,"TOP_PESW_CFG_ver:\nNA\n");
+        } else {
+          sprintf(entry,"TOP_PESW_CFG_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+
+        // BOT GPv3 BIC, BICBL, CPLD PESW version
+        // BOT BIC
+        if (bic_get_fw_ver(slot_id, FW_GPV3_BOT_BIC, ver)) {
+          strcat(fw_text,"BOT_BIC_ver:\nNA\n");
+        } else {
+          sprintf(entry,"BOT_BIC_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // BOT BICBL
+        if (bic_get_fw_ver(slot_id, FW_GPV3_BOT_BIC_BL, ver)) {
+          strcat(fw_text,"BOT_BICbl_ver:\nNA\n");
+        } else {
+          sprintf(entry,"BOT_BICbl_ver:\nv%x.%02x\n", ver[0], ver[1]);
+          strcat(fw_text, entry);
+        }
+
+        // BOT CPLD
+        if (bic_get_fw_ver(slot_id, FW_GPV3_BOT_CPLD, ver)) {
+          strcat(fw_text,"BOT_CPLD_ver:\nNA\n");
+        } else {
+          sprintf(entry,"BOT_CPLD_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
+
+        // BOT PESW
+        if (bic_get_fw_ver(slot_id, FW_2U_BOT_PESW_CFG_VER, ver)) {
+          strcat(fw_text,"BOT_PESW_CFG_ver:\nNA\n");
+        } else {
+          sprintf(entry,"BOT_PESW_CFG_ver:\n%02X%02X%02X%02X\n", ver[0], ver[1], ver[2], ver[3]);
+          strcat(fw_text, entry);
+        }
       }
     }
   }

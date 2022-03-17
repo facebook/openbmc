@@ -135,15 +135,20 @@ const uint8_t nicexp_sensor_list[] = {
   BMC_SENSOR_PWM1,
   BMC_SENSOR_PWM2,
   BMC_SENSOR_PWM3,
-  BMC_SENSOR_OUTLET_TEMP,
   BMC_SENSOR_P12V,
   BMC_SENSOR_P3V3_STBY,
   BMC_SENSOR_P1V8_STBY,
   BMC_SENSOR_P1V2_BMC_STBY,
   BMC_SENSOR_P2V5_BMC_STBY,
+  BMC_SENSOR_P1V0_STBY,
+  BMC_SENSOR_P0V6_STBY,
+  BMC_SENSOR_P3V3_RGM_STBY,
+  BMC_SENSOR_P3V3_NIC,
   BMC_SENSOR_NIC_P12V,
   BMC_SENSOR_NIC_IOUT,
   BMC_SENSOR_NIC_PWR,
+  NIC_SENSOR_TEMP,
+  BMC_SENSOR_NICEXP_TEMP
 };
 
 const uint8_t bic_sensor_list[] = {
@@ -385,22 +390,31 @@ const uint8_t bic_2ou_gpv3_sensor_list[] = {
 
 //BIC BaseBoard Sensors
 const uint8_t bic_bb_sensor_list[] = {
-  BIC_BB_SENSOR_INLET_TEMP,
-  BIC_BB_SENSOR_OUTLET_TEMP,
-  BIC_BB_SENSOR_HSC_TEMP,
-  BIC_BB_SENSOR_HSC_VIN,
-  BIC_BB_SENSOR_HSC_PIN,
-  BIC_BB_SENSOR_HSC_IOUT,
-  BIC_BB_SENSOR_P12V_MEDUSA_CUR,
-  BIC_BB_SENSOR_P5V,
-  BIC_BB_SENSOR_P12V,
-  BIC_BB_SENSOR_P3V3_STBY,
-  BIC_BB_SENSOR_P1V2_BMC_STBY,
-  BIC_BB_SENSOR_P2V5_BMC_STBY,
-  BIC_BB_SENSOR_MEDUSA_VOUT,
-  BIC_BB_SENSOR_MEDUSA_VIN,
-  BIC_BB_SENSOR_MEDUSA_PIN,
-  BIC_BB_SENSOR_MEDUSA_IOUT
+  BB_INLET_TEMP,
+  BB_OUTLET_TEMP,
+  BB_HSC_TEMP,
+  BB_P5V,
+  BB_P12V,
+  BB_P3V3_STBY,
+  BB_P5V_USB,
+  BB_P1V2_STBY,
+  BB_P1V0_STBY,
+  BB_MEDUSA_VIN,
+  BB_MEDUSA_VOUT,
+  BB_HSC_VIN,
+  BB_MEDUSA_CUR,
+  BB_HSC_IOUT,
+  BB_FAN_IOUT,
+  BB_MEDUSA_PWR,
+  BB_HSC_PIN,
+  BB_HSC_EIN,
+  BB_HSC_PEAK_IOUT,
+  BB_HSC_PEAK_PIN,
+  BB_MEDUSA_VDELTA,
+  BB_PDB_DL_VDELTA,
+  BB_PDB_BB_VDELTA,
+  BB_CURR_LEAKAGE,
+  BB_FAN_PWR
 };
 
 //BIC Sierra Point Expansion Board Sensors
@@ -903,7 +917,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_FAN_IOUT"   ,       ADC10, read_adc_val   ,    0, { 14.52,     0,   39.2,      0,      0,      0, 0, 0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT"   ,       ADC11, read_adc_val   ,    0, {   6.6,     0,   8.15,      0,      0,      0, 0, 0}, CURR}, //0xFC
   {"BMC_SENSOR_MEDUSA_VIN" ,        0xFD, read_medusa_val, true, {13.875, 13.75,   13.9, 11.125,   9.25,  11.25, 0, 0}, VOLT}, //0xFD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
+  {"BMC_SENSOR_NICEXP_TEMP",TEMP_NICEXP , read_temp      , true, {    50,     0,    150,      0,      0,      0, 0, 0}, TEMP}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
@@ -1653,16 +1667,17 @@ read_medusa_val(uint8_t snr_number, float *value) {
 
 static int
 read_temp(uint8_t snr_id, float *value) {
-  struct {
-    const char *chip;
-    const char *label;
-  } devs[] = {
-    {"lm75-i2c-12-4e",  "BMC_INLET_TEMP"},
-    {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP"},
-    {"tmp421-i2c-8-1f", "NIC_SENSOR_TEMP"},
-    {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
-  };
-  if (snr_id >= ARRAY_SIZE(devs)) {
+  struct {                                                          //******************************
+    const char *chip;                                               //Corresponds to GENERIC I2C Sensors define in pal_sensor.h
+    const char *label;                                              //Because of Class1 & Class2, we have to define two duplicate devs for TEMP_OUTLET and TEMP_NICEXP
+  } devs[] = {                                                      //enum {
+    {"lm75-i2c-12-4e",  "BMC_INLET_TEMP"},                          //  TEMP_INLET = 0,
+    {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP/BMC_SENSOR_NICEXP_TEMP"},  //  TEMP_OUTLET,
+    {"tmp421-i2c-8-1f", "NIC_SENSOR_TEMP"},                         //  TEMP_NIC,
+    {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},                          //  TEMP_NICEXP_OUTLET,
+    {"lm75-i2c-12-4f",  "BMC_OUTLET_TEMP/BMC_SENSOR_NICEXP_TEMP"}   //  TEMP_NICEXP
+  };                                                                //};
+  if (snr_id >= ARRAY_SIZE(devs)) {                                 //******************************
     return -1;
   }
 
@@ -2126,7 +2141,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
               ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
                                                                  //So, we take 0x49 ~ 0x4D here
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
-  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
+  } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xF1) ) { //BB
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
   } else {
     return READING_NA;
@@ -2291,7 +2306,6 @@ skip_hsc_init:
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
   id = sensor_map[sensor_num].id;
-
   switch(fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -2526,26 +2540,6 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
     sdr = (sdr_full_t *) buf;
     snr_num = sdr->sensor_num;
     sinfo[snr_num].valid = true;
-    // If it is a system of class 2, change m_val and UCR of HSC.
-    if (snr_num == BIC_SENSOR_HSC_OUTPUT_CUR) {
-      if (bmc_location == NIC_BMC) {
-        sdr->uc_thresh = HSC_OUTPUT_CUR_UC_THRESHOLD;
-        sdr->m_val = 0x04;
-      }
-    } else if (snr_num == BIC_SENSOR_HSC_INPUT_PWR || snr_num == BIC_SENSOR_HSC_INPUT_AVGPWR) {
-      if (bmc_location == NIC_BMC) {
-        sdr->uc_thresh = HSC_INPUT_PWR_UC_THRESHOLD;
-        sdr->m_val = 0x04;
-      }
-    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU && (board_type == GPV3_BRCM_BOARD) \
-                                       && (snr_num == BIC_GPV3_VR_P1V8_CURRENT || \
-                                           snr_num == BIC_GPV3_VR_P1V8_POWER) ) {
-      sdr->uc_thresh = 0x00; //NA
-    } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU && (board_type == GPV3_BRCM_BOARD) \
-                                       && (snr_num == BIC_GPV3_VR_P0V84_VOLTAGE) ) {
-      sdr->uc_thresh = 0xB8;
-      sdr->lc_thresh = 0xB0;
-    }
 
     memcpy(&sinfo[snr_num].sdr, sdr, sizeof(sdr_full_t));
     //syslog(LOG_WARNING, "%s() copy num: 0x%x:%s success", __func__, snr_num, sdr->str);

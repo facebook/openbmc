@@ -20,6 +20,12 @@ image_info BmcCpldComponent::check_image(const string& image, bool force) {
   struct stat file_info;
   uint8_t fw_comp = 0;
   image_info image_sts = {"", false, false};
+  uint8_t bmc_location = 0;
+
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    printf("Failed to get BMC location\n");
+    return image_sts;
+  }
 
   if (image.find(JBC_FILE_NAME) != string::npos) {
     image_sts.result = true;
@@ -42,9 +48,16 @@ image_info BmcCpldComponent::check_image(const string& image, bool force) {
 
     // Read Board Revision from CPLD
     if (bmc_found != string::npos) {
-      if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
-        cerr << "Failed to get board revision ID" << endl;
-        return image_sts;
+      if(bmc_location == NIC_BMC){
+        if (get_board_rev(0, BOARD_ID_NIC_EXP, &board_type_index) < 0) {
+          cerr << "Failed to get board revision ID" << endl;
+          return image_sts;
+        }
+      } else{
+        if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
+          cerr << "Failed to get board revision ID" << endl;
+          return image_sts;
+        }
       }
       fw_comp = FW_BB_CPLD;
     } else {

@@ -58,7 +58,7 @@ extern "C" {
 
 #define NIC_FRU_BUS     8
 #define CLASS1_FRU_BUS 11
-#define CLASS2_FRU_BUS 10
+#define CLASS2_FRU_BUS 11
 #define BMC_FRU_ADDR 0x54
 #define BB_FRU_ADDR  0x51
 #define NICEXP_FRU_ADDR 0x51
@@ -115,6 +115,8 @@ extern const char *slot_usage;
 #define FRU_DPV2_X8_BUS(fru) ((fru) + 3)
 
 #define KEY_BB_HSC_TYPE "bb_hsc_type"
+
+#define IANA_ID_SIZE 3
 
 enum {
   FRU_ALL       = 0,
@@ -195,8 +197,8 @@ enum {
 
 enum {
   // BOARD_ID [3:0]
-  NIC_BMC    = 0x09,
-  BB_BMC     = 0x0E,
+  NIC_BMC    = 0x06,
+  BB_BMC     = 0x07,
   DVT_BB_BMC = 0x07,
 };
 
@@ -336,6 +338,11 @@ enum {
   HSC_LTC4286,
   HSC_MP5990,
   HSC_UNKNOWN,
+};
+
+enum {  
+  PRESENT = 0,
+  NOT_PRESENT = 1,
 };
 
 const static char *gpio_server_prsnt[] =

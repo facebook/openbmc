@@ -573,7 +573,6 @@ pal_sled_cycle(void) {
     if ( bic_inform_sled_cycle() < 0 ) {
       syslog(LOG_WARNING, "Inform another BMC for sled cycle failed.\n");
     }
-    pal_set_bic_power_off(FRU_SLOT1);
     // Provide the time for inform another BMC
     sleep(2);
     int retries = 3;

@@ -104,6 +104,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define MAX_COMPONENT_LEN 32 //include the string terminal
 
 #define BMC_CPLD_BUS     (12)
+#define NIC_EXP_CPLD_BUS (9)
 #define CPLD_FW_VER_ADDR (0x80)
 #define BMC_CPLD_VER_REG (0x28002000)
 #define SB_CPLD_VER_REG  (0x000000c0)
@@ -2978,6 +2979,13 @@ pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
   uint32_t ver_reg = BMC_CPLD_VER_REG;
   char value[MAX_VALUE_LEN] = {0};
 
+  uint8_t bmc_location = 0;
+
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    printf("Failed to get BMC location\n");
+    return -1;
+  }
+
   switch (fru) {
     case FRU_SLOT1:
     case FRU_SLOT2:
@@ -2987,6 +2995,9 @@ pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
       ver_reg = SB_CPLD_VER_REG;
       break;
     case FRU_BMC:
+      if(bmc_location == NIC_BMC) {
+        i2c_bus = NIC_EXP_CPLD_BUS;
+      }
       if (!kv_get(KEY_BMC_CPLD_VER, value, NULL, 0)) {
         *(uint32_t *)rbuf = strtol(value, NULL, 16);
         memcpy(ver, rbuf, sizeof(rbuf));
@@ -3014,6 +3025,7 @@ pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
     snprintf(value, sizeof(value), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
     kv_set(KEY_BMC_CPLD_VER, value, 0, 0);
   }
+  
   memcpy(ver, rbuf, sizeof(rbuf));
 
   return 0;

@@ -16,9 +16,9 @@ LOCAL_URI = " \
 
 binfiles = "setup-gpio \
            "
-DEPENDS += "libgpio-ctrl libfby35-gpio libphymem libkv"
+DEPENDS += "libgpio-ctrl libfby35-gpio libphymem libkv libfby35-common"
 DEPENDS += " update-rc.d-native "
-RDEPENDS:${PN} += "libgpio-ctrl libfby35-gpio libphymem libkv"
+RDEPENDS:${PN} += "libgpio-ctrl libfby35-gpio libphymem libkv libfby35-common"
 
 pkgdir = "setup-gpio"
 

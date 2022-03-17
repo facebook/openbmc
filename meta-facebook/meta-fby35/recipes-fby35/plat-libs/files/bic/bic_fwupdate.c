@@ -85,33 +85,47 @@ enum {
   I2C_1M
 };
 
+
 // Update firmware for various components
 static int
-_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
+_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
   uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
+  uint8_t cmd = 0x0;
   int ret;
   int retries = 3;
+  int index = 3;
+  int offset_size = sizeof(offset) / sizeof(tbuf[0]);
+
+  if (intf != NONE_INTF) {
+    // Need bridge command to 2nd BIC
+    tbuf[index++] = intf;
+    tbuf[index++] = NETFN_OEM_1S_REQ << 2;
+    tbuf[index++] = CMD_OEM_1S_UPDATE_FW;
+    memcpy(&tbuf[index], (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+    index += IANA_ID_SIZE;
+    cmd = CMD_OEM_1S_MSG_OUT;
+  } else {
+    cmd = CMD_OEM_1S_UPDATE_FW;
+  }
 
   // Fill the component for which firmware is requested
-  tbuf[3] = target;
+  tbuf[index++] = target;
 
-  tbuf[4] = (offset) & 0xFF;
-  tbuf[5] = (offset >> 8) & 0xFF;
-  tbuf[6] = (offset >> 16) & 0xFF;
-  tbuf[7] = (offset >> 24) & 0xFF;
+  memcpy(&tbuf[index], (uint8_t *)&offset, offset_size);
+  index += offset_size;
 
-  tbuf[8] = len & 0xFF;
-  tbuf[9] = (len >> 8) & 0xFF;
+  tbuf[index++] = len & 0xFF;
+  tbuf[index++] = (len >> 8) & 0xFF;
 
-  memcpy(&tbuf[10], buf, len);
+  memcpy(&tbuf[index], buf, len);
 
-  tlen = len + 10;
+  tlen = len + index;
 
 bic_send:
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen);
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, cmd, tbuf, tlen, rbuf, &rlen);
   if ((ret) && (retries--)) {
     sleep(1);
     printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\
@@ -134,392 +148,31 @@ static void print_data(const char *name, uint8_t netfn, uint8_t cmd, uint8_t *bu
 }
 #endif
 
-static uint8_t
-get_checksum(uint8_t *buf, uint8_t len) {
-  int i;
-  uint8_t result = 0;
-  for ( i = 0; i < len; i++ ) {
-    result += buf[i];
-  }
-
-  return result;
-}
-
 static int
-enable_bic_update_with_param(uint8_t slot_id, uint8_t intf) {
-  uint8_t tbuf[10] = {0x00};
-  uint8_t rbuf[10] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t netfn = 0;
-  uint8_t cmd   = 0;
-  int ret = -1;
-
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-
-  switch (intf) {
-    case FEXP_BIC_INTF:
-    case BB_BIC_INTF:
-    case REXP_BIC_INTF:
-      netfn  = NETFN_OEM_1S_REQ;
-      cmd    = CMD_OEM_1S_MSG_OUT;
-      tbuf[3] = intf;
-      tbuf[4] = NETFN_OEM_1S_REQ << 2;
-      tbuf[5] = CMD_OEM_1S_ENABLE_BIC_UPDATE;
-      memcpy(&tbuf[6], (uint8_t *)&IANA_ID, 3);
-      tbuf[9] = 0x01; //Update bic via i2c
-      tlen = 10;
-      break;
-
-    case NONE_INTF:
-      netfn = NETFN_OEM_1S_REQ;
-      cmd   = CMD_OEM_1S_ENABLE_BIC_UPDATE;
-      tbuf[3] = 0x1; //Update bic via i2c
-      tlen = 4;
-      break;
-  }
-
-#ifdef DEBUG
-  print_data(__func__, netfn, cmd, tbuf, tlen);
-#endif
-
-  ret = bic_ipmb_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, &rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot enable bic fw update, slot id:%d, intf: 0x%X", __func__, slot_id, intf);
-    return ret;
-  }
-
-#ifdef DEBUG
-  print_data(__func__, netfn, cmd, rbuf, rlen);
-#endif
-
-  if ( (intf != NONE_INTF) && (rbuf[6] != CC_SUCCESS)) {
-    syslog(LOG_WARNING, "%s() Cannot enable bic fw update, slot id:%d, intf: 0x%X, cc: 0x%X", __func__, slot_id, intf, rbuf[6]);
-    return -1;
-  }
-
-  return ret;
-}
-
-static int
-enable_remote_bic_update(uint8_t slot_id, uint8_t intf) {
-  return enable_bic_update_with_param(slot_id, intf);
-}
-
-static int
-setup_remote_bic_i2c_speed(uint8_t slot_id, uint8_t speed, uint8_t intf) {
-  uint8_t tbuf[6]  = {0x00};
-  uint8_t rbuf[16] = {0x00};
-  uint8_t rlen = 0;
-  int ret = -1;
-
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-  tbuf[3] = intf;
-  tbuf[4] = speed;
-
-#ifdef DEBUG
-  print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, sizeof(tbuf));
-#endif
-
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, sizeof(tbuf), rbuf, &rlen);
-
-#ifdef DEBUG
-  print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, rbuf, rlen);
-#endif
-
-  return ret;
-}
-
-static int
-send_start_bic_update(uint8_t slot_id, int i2cfd, int size, uint8_t intf) {
-  uint8_t data[11] = { BIC_CMD_DOWNLOAD_SIZE,
-                       BIC_CMD_DOWNLOAD_SIZE,
-                            BIC_CMD_DOWNLOAD,
-                      (BIC_FLASH_START >> 24) & 0xff,
-                      (BIC_FLASH_START >> 16) & 0xff,
-                      (BIC_FLASH_START >>  8) & 0xff,
-                      (BIC_FLASH_START) & 0xff,
-                      (size >> 24) & 0xff,
-                      (size >> 16) & 0xff,
-                      (size >>  8) & 0xff,
-                      (size) & 0xff};
-  uint8_t tbuf[32] = {0x00};
-  uint8_t rbuf[32] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-
-  if ( intf == NONE_INTF ) {
-    memcpy(tbuf, data, sizeof(data));
-    tbuf[1] = get_checksum(&tbuf[2], BIC_CMD_DOWNLOAD_SIZE);
-    tlen = BIC_CMD_DOWNLOAD_SIZE;
-    ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-  } else {
-    memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-    tbuf[3] = intf;
-    memcpy(&tbuf[4], data, sizeof(data));
-    tbuf[5] = get_checksum(&tbuf[6], BIC_CMD_DOWNLOAD_SIZE);
-    tlen = 15;
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen);
-#endif
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, rbuf, rlen);
-#endif
-  }
-
-  return ret;
-}
-
-static int
-read_bic_update_ack_status(uint8_t slot_id, int i2cfd, uint8_t intf) {
-  uint8_t tbuf[32] = {0x00};
-  uint8_t rbuf[32] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-
-  if ( intf == NONE_INTF ) {
-    uint8_t exp_data[2] = {0x00, 0xCC};
-    tlen = 0;
-    rlen = 2;
-    msleep(10);
-    ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-    if ( ret || (memcmp(rbuf, exp_data, sizeof(exp_data)) != 0) ) {
-      printf("%s() response %x:%x, ret=%d\n", __func__, rbuf[0], rbuf[1], ret);
-      ret = -1;
-    }
-  } else {
-    memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-    tbuf[3] = intf;
-    tlen = 6;
-    rlen = 0;
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen);
-#endif
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-    if ( rlen == 0 ) {
-      printf("%s() invalid lenth %d", __func__, rlen);
-      ret = -1;
-    }
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, rbuf, rlen);
-#endif
-  }
-
-  return ret;
-}
-
-static int
-send_complete_signal(uint8_t slot_id, int i2cfd, uint8_t intf) {
-  uint8_t data[7] = { BIC_CMD_RUN_SIZE,
-                      BIC_CMD_RUN_SIZE,
-                      BIC_CMD_RUN,
-                      (BIC_FLASH_START >> 24) & 0xff,
-                      (BIC_FLASH_START >> 16) & 0xff,
-                      (BIC_FLASH_START >>  8) & 0xff,
-                      (BIC_FLASH_START) & 0xff};
-  uint8_t tbuf[32] = {0x00};
-  uint8_t rbuf[32] = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-
-  if ( intf == NONE_INTF ) {
-    memcpy(tbuf, data, sizeof(data));
-    tbuf[1] = get_checksum(&tbuf[2], BIC_CMD_DOWNLOAD_SIZE);
-    tlen = BIC_CMD_RUN_SIZE;
-    rlen = 0;
-    ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-  } else {
-    memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-    tbuf[3] = intf;
-    memcpy(&tbuf[4], data, sizeof(data));
-
-    //calculate the checksum
-    tbuf[5] = get_checksum(&tbuf[6], BIC_CMD_DOWNLOAD_SIZE);
-    tlen = BIC_CMD_RUN_SIZE + 4;
-    rlen = 0;
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen);
-#endif
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, rbuf, rlen);
-#endif
-  }
-
-  if ( ret < 0 ) {
-    printf("Failed to run the new image\n");
-  }
-
-  return ret;
-}
-
-static int
-read_bic_update_status(int i2cfd) {
-  const uint8_t exp_data[5] = {0x00, 0xCC, 0x03, 0x40, 0x40};
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-
-  tbuf[0] = BIC_CMD_STS_SIZE;
-  tbuf[1] = BIC_CMD_STS;
-  tbuf[2] = BIC_CMD_STS;
-  tlen = BIC_CMD_STS_SIZE;
-  rlen = 0;
-  ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    printf("%s() failed to get status\n", __func__);
-    goto exit;
-  }
-
-  tlen = 0;
-  rlen = 5;
-  ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    printf("%s() failed to get status ack\n", __func__);
-    goto exit;
-  }
-
-  if ( memcmp(rbuf, exp_data, sizeof(exp_data)) != 0 ) {
-    printf("%s() status: %x:%x:%x:%x:%x\n", __func__, rbuf[0], rbuf[1], rbuf[2], rbuf[3], rbuf[4]);
-    goto exit;
-  }
-
-  tbuf[0] = 0xCC;
-  tlen = 1;
-  rlen = 0;
-  ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0) {
-    printf("%s() failed to send an ack\n", __func__);
-    goto exit;
-  }
-
-exit:
-  return ret;
-}
-
-static int
-send_bic_image_data(uint8_t slot_id, int i2cfd, uint16_t len, uint8_t *buf, uint8_t intf) {
-  uint8_t data[3] = {0x00};
-  uint8_t tbuf[256] = {0x00};
-  uint8_t rbuf[16]  = {0x00};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = -1;
-
-  data[0] = len + 3;
-  data[1] = get_checksum(buf, len) + BIC_CMD_DATA;
-  data[2] = BIC_CMD_DATA;
-
-  if ( intf == NONE_INTF ) {
-    memcpy(tbuf, data, sizeof(data));
-    memcpy(&tbuf[3], buf, len);
-    tlen = data[0];
-    rlen = 0;
-    ret = i2c_io(i2cfd, tbuf, tlen, rbuf, rlen);
-  } else {
-    memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
-    tbuf[3] = intf;
-    memcpy(&tbuf[4], data, sizeof(data));
-    memcpy(&tbuf[7], buf, len);
-    tlen = data[0] + 4; //IANA_ID + intf
-    rlen = 0;
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen);
-#endif
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-    if ( rbuf[4] == 0x0 ) {
-      syslog(LOG_WARNING, "%s() unexpected rbuf[4]=0x%x", __func__, rbuf[4]);
-      ret = -1;
-    }
-#ifdef DEBUG
-    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, rbuf, rlen);
-#endif
-
-  }
-
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot send data of the image, slot id:%d, update intf: 0x%X", __func__, slot_id, intf);
-  }
-
-  return ret;
-}
-
-static int
-send_bic_runtime_image_data(uint8_t slot_id, int fd, int i2cfd, int file_size, const uint8_t bytes_per_read, uint8_t intf) {
-  uint8_t buf[256] = {0};
-  int ret = -1;
-  int dsize = 0;
-  int last_offset = 0;
-  int offset = 0;
-  ssize_t read_bytes;
-
-  dsize = file_size / 20;
-
-  //reinit the fd to the beginning
-  if ( lseek(fd, 0, SEEK_SET) != 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot reinit the fd to the beginning. errstr=%s", __func__, strerror(errno));
-    return -1;
-  }
-
-  while (1) {
-    memset(buf, 0, sizeof(buf));
-    read_bytes = read(fd, buf, bytes_per_read);
-    if ( read_bytes <= 0 ) {
-      //no more bytes can be read
-      break;
-    }
-
-    offset += read_bytes;
-    if ( (last_offset + dsize) <= offset) {
-      printf("updated bic: %d %%\n", (offset/dsize)*5);
-      fflush(stdout);
-      last_offset += dsize;
-    }
-
-    if ( intf != NONE_INTF ) {
-      ret = send_bic_image_data(slot_id, i2cfd, read_bytes, buf, intf);
-      if ( ret < 0 ) {
-        return ret;
-      }
-    } else {
-
-      ret = read_bic_update_status(i2cfd);
-      if ( ret < 0 ) {
-        return ret;
-      }
-
-      ret = send_bic_image_data(slot_id, i2cfd, read_bytes, buf, NONE_INTF);
-      if ( ret < 0 ) {
-        return ret;
-      }
-
-      ret = read_bic_update_ack_status(slot_id, i2cfd, NONE_INTF);
-      if ( ret < 0 ) {
-        return ret;
-      }
-    }
-  }
-
-  return ret;
-}
-
-static int
-update_bic(uint8_t slot_id, int fd, int file_size) {
+update_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
   struct timeval start, end;
-  int ret = -1, rc;
+  int update_rc = -1, cmd_rc = 0;
   uint32_t dsize, last_offset;
   uint32_t offset, boundary;
   volatile uint16_t read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
+  uint8_t bmc_location = 0;
   ssize_t count;
 
+  if (fby35_common_get_bmc_location(&bmc_location) != 0) {
+    printf("Cannot get the location of BMC");
+    return -1;
+  }
+  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
+    if (bic_check_bb_fw_update_ongoing() != 0) {
+      return -1;
+    }
+    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_ASSERT) != 0) {
+      printf("Failed to set firmware update ongoing\n");
+      return -1;
+    }
+  }
   printf("updating fw on slot %d:\n", slot_id);
 
   // Write chunks of binary data in a loop
@@ -550,8 +203,8 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
       target |= 0x80;
     }
     // Send data to Bridge-IC
-    rc = _update_fw(slot_id, target, offset, count, buf);
-    if (rc) {
+    cmd_rc = _update_fw(slot_id, target, offset, count, buf, intf);
+    if (cmd_rc) {
       goto error_exit;
     }
 
@@ -572,129 +225,12 @@ update_bic(uint8_t slot_id, int fd, int file_size) {
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
   if (offset >= file_size) {
-    ret = 0;
+    update_rc = 0;
   }
 
 error_exit:
+
   printf("\n");
-
-  return ret;
-}
-
-static int
-update_remote_bic(uint8_t slot_id, uint8_t intf, int fd, int file_size) {
-  int ret = 0;
-  uint8_t is_fail = 0;
-  const uint8_t bytes_per_read = 244;
-  uint8_t bic_read   = 0xff;
-  uint8_t bic_write  = 0xff;
-  uint8_t bic_update = 0xff;
-  uint8_t bic_i2c    = 0xff;
-  uint8_t bmc_location = 0;
-
-  if (fby35_common_get_bmc_location(&bmc_location) != 0) {
-    printf("Cannot get the location of BMC");
-    return -1;
-  }
-  if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
-    if (bic_check_bb_fw_update_ongoing() != 0) {
-      return -1;
-    }
-    if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_ASSERT) != 0) {
-      printf("Failed to set firmware update ongoing\n");
-      return -1;
-    }
-  }
-
-  switch (intf) {
-    case FEXP_BIC_INTF:
-      bic_read   = FEXP_BIC_I2C_READ;
-      bic_write  = FEXP_BIC_I2C_WRITE;
-      bic_update = FEXP_BIC_I2C_UPDATE;
-      bic_i2c    = FEXP_BIC_IPMI_I2C_SW;
-      break;
-    case BB_BIC_INTF:
-      bic_read   = BB_BIC_I2C_READ;
-      bic_write  = BB_BIC_I2C_WRITE;
-      bic_update = BB_BIC_I2C_UPDATE;
-      bic_i2c    = BB_BIC_IPMI_I2C_SW;
-      break;
-    case REXP_BIC_INTF:
-      bic_read   = REXP_BIC_I2C_READ;
-      bic_write  = REXP_BIC_I2C_WRITE;
-      bic_update = REXP_BIC_I2C_UPDATE;
-      bic_i2c    = REXP_BIC_IPMI_I2C_SW;
-      break;
-    default:
-      syslog(LOG_WARNING, "%s() unknown information, slot id:%d, intf: 0x%X", __func__, slot_id, intf);
-      return -1;
-  }
-
-  printf("bytes/per read = %d\n", bytes_per_read);
-
-  //step1 - make the remote bic enter bootloader
-  ret = enable_remote_bic_update(slot_id, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Enable the remote bic update, Fail, ret = %d\n", ret);
-    // goto exit;
-  }
-
-  //step2 - adjust the bus of i2c speed of bridge BIC
-  ret = setup_remote_bic_i2c_speed(slot_id, I2C_100K, bic_i2c);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Set the speed of the remote bic to 100K, Fail, ret = %d\n", ret);
-    goto exit;
-  }
-
-  //wait for it ready
-  sleep(5);
-
-  //step3 - send a signal to notice it that starts the update process
-  ret = send_start_bic_update(slot_id, 0, file_size, bic_write);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Send start remote bic update, Fail, ret = %d\n", ret);
-    goto exit;
-  }
-
-  //wait for it ready
-  msleep(500);
-
-  //step4 - check the response of the signal
-  ret = read_bic_update_ack_status(slot_id, 0, bic_read);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Check remote bic update status, Fail, ret = %d\n", ret);
-    goto exit;
-  }
-
-  //step5 - send the pieces data of the image till the end
-  ret = send_bic_runtime_image_data(slot_id, fd, 0, file_size, bytes_per_read, bic_update);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Send image data, Fail, ret = %d\n", ret);
-    goto exit;
-  }
-
-  //step6 - send a signal to complete it
-  ret = send_complete_signal(slot_id, 0, bic_write);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Send complete signal, Fail, ret = %d\n", ret);
-    goto exit;
-  }
-
-  //step7 - check the response of the signal
-  ret = read_bic_update_ack_status(slot_id, 0, bic_read);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Get the bic status, Fail, ret = %d\n", ret);
-  }
-
-exit:
-  //record the value
-  is_fail = ret;
-
-  //step8 - recover the bus of the i2c speed
-  ret = setup_remote_bic_i2c_speed(slot_id, I2C_1M, bic_i2c);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "Set the speed of the remote bic to 1M, Fail, ret = %d\n", ret);
-  }
 
   if ((intf == BB_BIC_INTF) && (bmc_location == NIC_BMC)) {
     if (bic_set_bb_fw_update_ongoing(FW_BB_BIC, SEL_DEASSERT) != 0) {
@@ -702,9 +238,10 @@ exit:
     }
   }
 
-  if ( ret == 0 ) ret = is_fail;
-
-  return ret;
+  if ( update_rc == 0 ) {
+    update_rc = cmd_rc;
+  }
+  return update_rc;
 }
 
 static int
@@ -745,16 +282,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
 
   //run into the different function based on the interface
-  switch (intf) {
-    case FEXP_BIC_INTF:
-    case BB_BIC_INTF:
-    case REXP_BIC_INTF:
-      ret = update_remote_bic(slot_id, intf, fd, file_size);
-      break;
-    case NONE_INTF:
-      ret = update_bic(slot_id, fd, file_size);
-      break;
-  }
+  ret = update_bic(slot_id, fd, file_size, intf);
 
 exit:
 
@@ -1259,108 +787,66 @@ bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
 }
 
 int
-get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
-  uint8_t bmc_location = 0;
+get_cpld_revid(uint8_t cpld_bus, uint8_t reg_addr, uint8_t* rev_id){
   int i2cfd = 0;
   uint8_t rbuf[2] = {0};
   uint8_t rlen = sizeof(rbuf);
   uint8_t tbuf[4] = {0};
   uint8_t tlen = 0;
-  int ret_val = 0 , retry = 0;
+  int retry = 0;
   int ret = 0;
 
-  if (fby35_common_get_bmc_location(&bmc_location) != 0) {
-    printf("Cannot get the location of BMC");
-    return -1;
+  i2cfd = i2c_cdev_slave_open(cpld_bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
+    goto error_exit;
   }
-  switch (board_id) {
-    case BOARD_ID_BB:
-      if (bmc_location == NIC_BMC) {
-        // Read Board Revision from BB CPLD
-        tbuf[0] = CPLD_BB_BUS;
-        tbuf[1] = CPLD_FLAG_REG_ADDR;
-        tbuf[2] = 0x01;
-        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
-        tlen = 4;
-        retry = 0;
-        while (retry < RETRY_TIME) {
-          ret_val = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-          if ( ret_val < 0 ) {
-            retry++;
-            msleep(100);
-          } else {
-            break;
-          }
-        }
-        if (retry == RETRY_TIME) {
-          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
-          return -1;
-        }
-        *rev_id = rbuf[0];
-        break;
-      } else {
-        i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-        if ( i2cfd < 0 ) {
-          printf("Failed to open CPLD 0x%x\n", CPLD_ADDRESS);
-          return -1;
-        }
 
-        tbuf[0] = BB_CPLD_BOARD_REV_ID_REGISTER;
-        tlen = 1;
-        rlen = 1;
-        retry = 0;
-        while (retry < RETRY_TIME) {
-          ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-          if ( ret < 0 ) {
-            retry++;
-            msleep(100);
-          } else {
-            break;
-          }
-        }
-        if (retry == RETRY_TIME) {
-          printf("Failed to do i2c_rdwr_msg_transfer\n");
-          ret = -1;
-          goto error_exit;
-        }
-        *rev_id = rbuf[0];
-      }
+  tbuf[0] = reg_addr;
+  tlen = 1;
+  rlen = 1;
+  retry = 0;
+  while (retry < RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+    if ( ret < 0 ) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  if (retry == RETRY_TIME) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    ret = -1;
+    goto error_exit;
+  }
+  *rev_id = rbuf[0];
+
+  error_exit:
+  if (i2cfd >= 0)
+    close(i2cfd);
+
+  return ret;
+}
+
+int
+get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
+  int ret = 0;
+
+  switch (board_id) {
+    case BOARD_ID_NIC_EXP:
+      ret = get_cpld_revid(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+      break;
+    case BOARD_ID_BB:
+      ret = get_cpld_revid(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
       break;
     case BOARD_ID_SB:
-      // Read Board Revision from SB CPLD
-      i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-      if ( i2cfd < 0 ) {
-        syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-        goto error_exit;
-      }
-      tbuf[0] = SB_CPLD_BOARD_REV_ID_REGISTER;
-      tlen = 1;
-      rlen = 1;
-      retry = 0;
-      while (retry < RETRY_TIME) {
-        ret_val = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-        if ( ret_val < 0 ) {
-          retry++;
-          msleep(100);
-        } else {
-          break;
-        }
-      }
-      if (retry == RETRY_TIME) {
-        syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-        ret = -1;
-        goto error_exit;
-      }
-      *rev_id = rbuf[0];
+      ret = get_cpld_revid(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
       break;
     default:
       syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
       return -1;
   }
-
-error_exit:
-  if (i2cfd >= 0)
-    close(i2cfd);
 
   return ret;
 }

@@ -83,6 +83,11 @@ enum {
   SNR_READ_FORCE = 1,
 };
 
+enum {
+  BB_BIC_SLOT3_PRSNT_PIN = 3,
+  BB_BIC_SLOT1_PRSNT_PIN = 15,
+};
+
 uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
                                    {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
 uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1, M2_ROOT_PORT0},
@@ -1412,14 +1417,15 @@ bic_set_sys_guid(uint8_t slot_id, uint8_t *guid) {
 
 int
 bic_do_sled_cycle(uint8_t slot_id) {
-  uint8_t tbuf[4] = {0};
-  uint8_t tlen = 4;
+  uint8_t tbuf[5] = {0};
+  uint8_t tlen = 5;
 
   tbuf[0] = 0x03; //bus id
-  tbuf[1] = 0x80; //slave addr
+  tbuf[1] = 0x1E; //slave addr
   tbuf[2] = 0x00; //read 0 byte
-  tbuf[3] = 0xd9; //register offset
-  tlen = 4;
+  tbuf[3] = 0x2B; //register offset
+  tbuf[4] = 0x01; //excecute sled cycle
+  tlen = 5;
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, NULL, 0, BB_BIC_INTF);
 }
 
@@ -1553,16 +1559,44 @@ bic_get_fan_pwm(uint8_t fan_id, float *value) {
 
 // Only For Class 2
 int
+bic_get_mb_prsnt(uint8_t slot, uint8_t *prsnt) {
+  uint8_t rlen = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[3] = 0x0; // get gpio
+  tbuf[4] = (slot == FRU_SLOT1) ? BB_BIC_SLOT1_PRSNT_PIN : BB_BIC_SLOT3_PRSNT_PIN;
+  if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, 5, rbuf, &rlen, BB_BIC_INTF) < 0) {
+    syslog(LOG_WARNING, "%s(): fail to get MB present status", __func__);
+    return -1;
+  }
+  *prsnt = rbuf[4];
+
+  return 0;
+}
+
+// Only For Class 2
+int
 bic_notify_fan_mode(int mode) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t slot1_prsnt = 0, slot3_prsnt = 0;
   char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
   BYPASS_MSG req;
   IPMI_SEL_MSG sel;
   GET_MB_INDEX_RESP resp;
   FAN_SERVICE_EVENT fan_event;
+
+
+  bic_get_mb_prsnt(FRU_SLOT1, &slot1_prsnt);
+  bic_get_mb_prsnt(FRU_SLOT3, &slot3_prsnt);
+  //when one of slot not present, no need to notify another BMC
+  if ((slot1_prsnt | slot3_prsnt) == NOT_PRESENT) {
+    return 0;
+  }
 
   memset(&req, 0, sizeof(req));
   memset(&sel, 0, sizeof(sel));
@@ -1940,12 +1974,20 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t slot1_prsnt = 0, slot3_prsnt = 0;
   char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
   BYPASS_MSG req = {0};
 
   if (data == NULL) {
     syslog(LOG_WARNING, "%s(): NULL bypass data", __func__);
     return -1;
+  }
+
+  bic_get_mb_prsnt(FRU_SLOT1, &slot1_prsnt);
+  bic_get_mb_prsnt(FRU_SLOT3, &slot3_prsnt);
+  //when one of slot not present, no need to notify another BMC
+  if ((slot1_prsnt | slot3_prsnt) == NOT_PRESENT) {
+    return 0;
   }
 
   memset(&req, 0, sizeof(req));

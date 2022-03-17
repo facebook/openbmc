@@ -26,7 +26,7 @@ function get_sel_time_from_server {
   local output=""
   local snum=0
 
-  if [ "$BOARD_ID" -eq "9" ]; then
+  if [ "$BOARD_ID" -eq "$BMC_ID_CLASS2" ]; then
     output="$(/usr/local/bin/me-util slot1 0x28 0x48)"
     [ ${#output} == 12 ] && snum=1
   else

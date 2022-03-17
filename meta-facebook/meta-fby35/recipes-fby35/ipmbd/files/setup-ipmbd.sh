@@ -31,21 +31,21 @@
 
 . /usr/local/fbpackages/utils/ast-functions
 
-function init_class1_ipmb(){
+init_class1_ipmb(){
   for slot_num in $(seq 1 4); do
     bus=$((slot_num-1))
     echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-${bus}/new_device
     runsv /etc/sv/ipmbd_${bus} > /dev/null 2>&1 &
-    if [ $slot_num -eq 1 ] || [ $slot_num -eq 3 ]; then
-      slot_present=$(gpio_get PRSNT_MB_BMC_SLOT${slot_num}_BB_N)
+    if [ "$slot_num" -eq 1 ] || [ "$slot_num" -eq 3 ]; then
+      slot_present=$(gpio_get "PRSNT_MB_BMC_SLOT${slot_num}_BB_N")
     else
-      slot_present=$(gpio_get PRSNT_MB_SLOT${slot_num}_BB_N)
+      slot_present=$(gpio_get "PRSNT_MB_SLOT${slot_num}_BB_N")
     fi
-    if [[ "$slot_present" == "1" ]]; then
+    if [ "$slot_present" = "1" ]; then
       sv stop ipmbd_${bus}
-      disable_server_12V_power ${slot_num}
+      disable_server_12V_power "${slot_num}"
     else
-      enable_server_i2c_bus ${slot_num}
+      enable_server_i2c_bus "${slot_num}"
     fi
   done
 
@@ -56,7 +56,7 @@ function init_class1_ipmb(){
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
 }
 
-function init_class2_ipmb(){
+init_class2_ipmb(){
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device
   runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
 
@@ -69,10 +69,10 @@ sleep 10
 ulimit -q 1024000
 
 bmc_location=$(get_bmc_board_id)
-if [ $bmc_location -eq 9 ]; then
+if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
   #The BMC of class2
   init_class2_ipmb
-elif [ $bmc_location -eq 14 ] || [ $bmc_location -eq 7 ]; then
+elif [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
   #The BMC of class1
   init_class1_ipmb
 else

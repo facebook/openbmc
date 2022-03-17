@@ -114,6 +114,8 @@ extern const char *slot_usage;
 
 #define FRU_DPV2_X8_BUS(fru) ((fru) + 3)
 
+#define KEY_BB_HSC_TYPE "bb_hsc_type"
+
 enum {
   FRU_ALL       = 0,
   FRU_SLOT1     = 1,
@@ -329,6 +331,13 @@ enum {
   FW_COMPONENT_LAST_ID
 };
 
+enum {
+  HSC_ADM1278 = 0,
+  HSC_LTC4286,
+  HSC_MP5990,
+  HSC_UNKNOWN,
+};
+
 const static char *gpio_server_prsnt[] =
 {
   "",
@@ -424,6 +433,7 @@ int fby35_common_check_image_signature(uint8_t* data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
 int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id);
+int fby35_common_get_bb_hsc_type(uint8_t* type);
 
 #ifdef __cplusplus
 } // extern "C"

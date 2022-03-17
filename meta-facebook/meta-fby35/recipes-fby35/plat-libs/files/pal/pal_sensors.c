@@ -31,6 +31,8 @@
 #define DUAL_FAN_UCR 13500
 #define DUAL_FAN_UNC 10200
 
+#define BB_HSC_SENSOR_CNT 7
+
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
@@ -623,6 +625,14 @@ PAL_ATTR_INFO adm1278_info_list[] = {
   {HSC_TEMP, 42, 31880, 10},
 };
 
+//MP5990
+PAL_ATTR_INFO mp5990_info_list[] = {
+  {HSC_VOLTAGE, 32, 0, 1},
+  {HSC_CURRENT, 16, 0, 1},
+  {HSC_POWER, 1, 0, 1},
+  {HSC_TEMP, 1, 0, 1},
+};
+
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNR, LNC, Pos, Neg}
 PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
@@ -899,7 +909,9 @@ PAL_SENSOR_MAP sensor_map[] = {
 
 //HSC
 PAL_HSC_INFO hsc_info_list[] = {
-  {HSC_ID0, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_ADM1278, ADM1278_SLAVE_ADDR, adm1278_info_list},
+  {HSC_LTC4286, LTC4286_SLAVE_ADDR, NULL}, // TBD
+  {HSC_MP5990,  MP5990_SLAVE_ADDR,  mp5990_info_list},
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
@@ -1747,22 +1759,33 @@ read_adc_val(uint8_t adc_id, float *value) {
 
 static int
 get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t *raw_data) {
-  const uint8_t adm1278_bus = 11;
+  const uint8_t hsc_bus = 11;
   uint8_t addr = hsc_info_list[hsc_id].slv_addr;
   static int fd = -1;
+  uint8_t rbuf[9] = {0x00};
+  uint8_t rlen = 0;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
 
   if ( fd < 0 ) {
-    fd = i2c_cdev_slave_open(adm1278_bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    fd = i2c_cdev_slave_open(hsc_bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
     if ( fd < 0 ) {
-      syslog(LOG_WARNING, "Failed to open bus %d", adm1278_bus);
+      syslog(LOG_WARNING, "Failed to open bus %d", hsc_bus);
       return READING_NA;
     }
   }
 
-  uint8_t rbuf[9] = {0x00};
-  uint8_t rlen = ( cmd != ADM1278_EIN_EXT )?2:9;
-  int retry = MAX_RETRY;
-  int ret = ERR_NOT_READY;
+  switch (cmd) {
+    case ADM1278_EIN_EXT:
+      rlen = 9;
+      break;
+    case PMBUS_READ_EIN:
+      rlen = 7;
+      break;
+    default:
+      rlen = 2;
+      break;
+  }
   while ( ret < 0 && retry-- > 0 ) {
     ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, 1, rbuf, rlen);
   }
@@ -1775,7 +1798,7 @@ get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t
     return READING_NA;
   }
 
-  if ( cmd == ADM1278_EIN_EXT ) {
+  if ( rlen != 2 ) {
     if ( raw_data != NULL ) memcpy(raw_data, rbuf, rlen);
   } else {
     float m = hsc_info_list[hsc_id].info[type].m;
@@ -1783,59 +1806,93 @@ get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t
     float r = hsc_info_list[hsc_id].info[type].r;
     *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
   }
+
   return PAL_EOK;
 }
 
 static int
-read_hsc_ein(uint8_t hsc_id, float *value) {
-#define EIN_ROLLOVER_CNT 0x10000
-#define EIN_SAMPLE_CNT 0x1000000
-#define EIN_ENERGY_CNT 0x800000
-#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
-  uint8_t raw_data[9] = {0x00};
-
-  if ( get_hsc_reading(hsc_id, -1, ADM1278_EIN_EXT, value, raw_data) < 0 ) return READING_NA;
-  if ( raw_data[0] != 8 ) return READING_NA; //first byte is the num. of bytes. It should be 8.
-
+calculate_ein(struct hsc_ein *st_ein, float *value) {
+  int ret = READING_NA;
   uint32_t energy = 0, rollover = 0, sample = 0;
-  uint32_t pre_energy = 0, pre_rollover = 0, pre_sample = 0;
   uint32_t sample_diff = 0;
   double energy_diff = 0;
   static uint32_t last_energy = 0, last_rollover = 0, last_sample = 0;
   static bool pre_ein = false;
 
-  //record the previous data
-  pre_energy   = last_energy;
-  pre_rollover = last_rollover;
-  pre_sample   = last_sample;
-
-  //record the current data
-  last_energy   = energy   = (raw_data[3]<<16) | (raw_data[2]<<8) | raw_data[1];
-  last_rollover = rollover = (raw_data[5]<<8) | raw_data[4];
-  last_sample   = sample   = (raw_data[8]<<16) | (raw_data[7]<<8) | raw_data[6];
-
-  //return since data isn't enough
-  if ( pre_ein == false ) {
+  if (pre_ein == false) {  // data isn't enough
     pre_ein = true;
-    return READING_NA;
+    goto calculate_done;
   }
 
-  if ((pre_rollover > rollover) || ((pre_rollover == rollover) && (pre_energy > energy))) {
-    rollover += EIN_ROLLOVER_CNT;
+  energy   = st_ein->energy;
+  rollover = st_ein->rollover;
+  sample   = st_ein->sample;
+  if ((last_rollover > rollover) || ((last_rollover == rollover) && (last_energy > energy))) {
+    rollover += st_ein->wrap_rollover;
   }
-  if (pre_sample > sample) {
-    sample += EIN_SAMPLE_CNT;
+  if (last_sample > sample) {
+    sample += st_ein->wrap_sample;
   }
 
-  energy_diff = (double)(rollover-pre_rollover)*EIN_ENERGY_CNT + (double)energy - (double)pre_energy;
+  energy_diff = (double)((rollover - last_rollover)*st_ein->wrap_energy + energy - last_energy);
   if (energy_diff < 0) {
-    return READING_NA;
+    goto calculate_done;
   }
-  sample_diff = sample - pre_sample;
+  sample_diff = sample - last_sample;
   if (sample_diff == 0) {
-    return READING_NA;
+    goto calculate_done;
   }
-  *value = (float)((energy_diff/sample_diff/256) * PIN_COEF/ADM1278_RSENSE);
+  *value = (float)(energy_diff/sample_diff);
+  ret = PAL_EOK;
+
+calculate_done:
+  last_energy   = st_ein->energy;
+  last_rollover = st_ein->rollover;
+  last_sample   = st_ein->sample;
+
+  return ret;
+}
+
+static int
+read_hsc_ein(uint8_t hsc_id, float *value) {
+#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
+  uint8_t buf[12] = {0};
+  static struct hsc_ein adm1278_st_ein = {
+    .wrap_energy = 0x800000,
+    .wrap_rollover = 0x10000,
+    .wrap_sample = 0x1000000,
+  };
+  static struct hsc_ein mp5990_st_ein = {
+    .wrap_energy = 0x8000,
+    .wrap_rollover = 0x100,
+    .wrap_sample = 0x1000000,
+  };
+
+  if (hsc_id == HSC_MP5990) {
+    if ( get_hsc_reading(hsc_id, -1, PMBUS_READ_EIN, value, buf) ||
+       buf[0] != PMBUS_EIN_RESP_LEN ) {
+      return READING_NA;
+    }
+    mp5990_st_ein.energy   = (buf[2]<<8) | buf[1];
+    mp5990_st_ein.rollover = buf[3];
+    mp5990_st_ein.sample   = (buf[6]<<16) | (buf[5]<<8) | buf[4];
+    if ( calculate_ein(&mp5990_st_ein, value) ) {
+      return READING_NA;
+    }
+  } else {
+    if ( get_hsc_reading(hsc_id, -1, ADM1278_EIN_EXT, value, buf) ||
+       buf[0] != ADM1278_EIN_RESP_LEN ) {
+       return READING_NA;
+    }
+    adm1278_st_ein.energy   = (buf[3]<<16) | (buf[2]<<8) | buf[1];
+    adm1278_st_ein.rollover = (buf[5]<<8) | buf[4];
+    adm1278_st_ein.sample   = (buf[8]<<16) | (buf[7]<<8) | buf[6];
+    if ( calculate_ein(&adm1278_st_ein, value) ) {
+      return READING_NA;
+    }
+    *value = *value/256 * PIN_COEF/ADM1278_RSENSE;
+  }
+ 
   return PAL_EOK;
 }
 
@@ -1871,13 +1928,50 @@ read_hsc_vin(uint8_t hsc_id, float *value) {
 
 static int
 read_hsc_peak_iout(uint8_t hsc_id, float *value) {
-  if ( get_hsc_reading(hsc_id, HSC_CURRENT, ADM1278_PEAK_IOUT, value, NULL) < 0 ) return READING_NA;
+  uint8_t cmd = 0;
+  static float peak = 0;
+
+  if (hsc_id == HSC_MP5990) {
+    cmd = MP5990_PEAK_IOUT;
+  } else {
+    cmd = ADM1278_PEAK_IOUT;
+  }
+  if ( get_hsc_reading(hsc_id, HSC_CURRENT, cmd, value, NULL) < 0 ) 
+    return READING_NA;
+
+  if (hsc_id == HSC_MP5990) {
+    // it's "read-clear" data, so need to be cached
+    if (peak > *value) {
+      *value = peak;
+    } else {
+      peak = *value;
+    }
+  }
+
   return PAL_EOK;
 }
 
 static int
 read_hsc_peak_pin(uint8_t hsc_id, float *value) {
-  if ( get_hsc_reading(hsc_id, HSC_POWER, ADM1278_PEAK_PIN, value, NULL) < 0 ) return READING_NA;
+  uint8_t cmd = 0;
+  static float peak = 0;
+
+  if (hsc_id == HSC_MP5990) {
+    cmd = MP5990_PEAK_PIN;
+  } else {
+    cmd = ADM1278_PEAK_PIN;
+  }
+
+  if ( get_hsc_reading(hsc_id, HSC_POWER, cmd, value, NULL) < 0 ) 
+    return READING_NA;
+
+  // it's "read-clear" data, so need to be cached
+  if (peak > *value) {
+    *value = peak;
+  } else {
+    peak = *value;
+  }
+
   return PAL_EOK;
 }
 
@@ -2143,10 +2237,22 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char key[MAX_KEY_LEN] = {0};
   char str[MAX_VALUE_LEN] = {0};
   char fru_name[32];
-  int ret=0;
+  int ret = 0, i = 0;
   uint8_t id=0;
+  uint8_t hsc_sesnor_num = 0x0;
+  static uint8_t hsc_type = HSC_ADM1278; // set main source as default type
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
+  static bool is_hsc_init = false;
+  static uint8_t hsc_sesnors[BB_HSC_SENSOR_CNT] = {
+    BMC_SENSOR_HSC_PEAK_IOUT,
+    BMC_SENSOR_HSC_PEAK_PIN,
+    BMC_SENSOR_HSC_EIN,
+    BMC_SENSOR_HSC_VIN,
+    BMC_SENSOR_HSC_TEMP,
+    BMC_SENSOR_HSC_PIN,
+    BMC_SENSOR_HSC_IOUT
+  };
 
   if ( bmc_location == 0 ) {
     if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -2160,10 +2266,28 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
         sensor_map[BMC_SENSOR_PWM1].id |= PWM_PLAT_SET;
         sensor_map[BMC_SENSOR_PWM2].id |= PWM_PLAT_SET;
         sensor_map[BMC_SENSOR_PWM3].id |= PWM_PLAT_SET;
+        // unnecessary to init for 2nd source HSC
+        is_hsc_init = true;
       }
     }
   }
 
+  // initialization for 2nd source HSC
+  if ((is_hsc_init == true) || (fru != FRU_BMC)) {
+    goto skip_hsc_init;
+  }
+
+  if (fby35_common_get_bb_hsc_type(&hsc_type) != 0) {
+    goto skip_hsc_init;
+  }
+
+  for (i = 0; i < BB_HSC_SENSOR_CNT; i++) {
+    hsc_sesnor_num = hsc_sesnors[i];
+    sensor_map[hsc_sesnor_num].id = hsc_type;
+  }
+  is_hsc_init = true;
+
+skip_hsc_init:
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
   id = sensor_map[sensor_num].id;

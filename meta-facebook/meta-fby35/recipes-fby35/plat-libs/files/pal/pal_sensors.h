@@ -13,6 +13,15 @@
 #define ADM1278_EIN_EXT    (0xDC)
 #define ADM1278_PEAK_IOUT  (0xD0)
 #define ADM1278_PEAK_PIN   (0xDA)
+#define ADM1278_EIN_RESP_LEN (8)
+
+//LTC4286 CMD INFO
+#define LTC4286_SLAVE_ADDR (0x80)
+
+//MP5990 CMD INFO
+#define MP5990_SLAVE_ADDR  (0x80)
+#define MP5990_PEAK_IOUT   (0xA6)
+#define MP5990_PEAK_PIN    (0xA3)
 
 //PMBus
 #define PMBUS_PAGE         (0x00)
@@ -20,12 +29,14 @@
 #define PMBUS_VOUT_COMMAND (0x21)
 #define PMBUS_READ_VIN     (0x88)
 #define PMBUS_READ_IIN     (0x89)
+#define PMBUS_READ_EIN     (0x86)
 #define PMBUS_READ_VOUT    (0x8B)
 #define PMBUS_READ_IOUT    (0x8C)
 #define PMBUS_READ_TEMP1   (0x8D)
 #define PMBUS_READ_TEMP2   (0x8E)
 #define PMBUS_READ_POUT    (0x96)
 #define PMBUS_READ_PIN     (0x97)
+#define PMBUS_EIN_RESP_LEN (6)
 
 #define PREFIX_1OU_M2A 0x60
 #define PREFIX_1OU_M2B 0x68
@@ -64,6 +75,15 @@ typedef struct {
   PAL_SENSOR_THRESHOLD snr_thresh;
   uint8_t units;
 } PAL_SENSOR_MAP;
+
+struct hsc_ein {
+  const uint32_t wrap_energy;
+  const uint32_t wrap_rollover;
+  const uint32_t wrap_sample;
+  uint32_t energy;
+  uint32_t rollover;
+  uint32_t sample;
+};
 
 enum {
   UNSET_UNIT = 0,

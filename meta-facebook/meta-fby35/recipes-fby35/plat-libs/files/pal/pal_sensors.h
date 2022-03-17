@@ -57,12 +57,12 @@
 #define HSC_INPUT_PWR_UC_THRESHOLD 0xD2
 
 typedef struct {
-  float ucr_thresh;
-  float unc_thresh;
-  float unr_thresh;
+  float lnr_thresh;
   float lcr_thresh;
   float lnc_thresh;
-  float lnr_thresh;
+  float unc_thresh;
+  float ucr_thresh;
+  float unr_thresh;
   float pos_hyst;
   float neg_hyst;
 } PAL_SENSOR_THRESHOLD;

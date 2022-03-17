@@ -44,7 +44,7 @@ print_usage_help(void) {
   pal_get_fru_list_by_caps(FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE, fru_list, 256);
   printf("Usage: threshold-util [fru] <--set> <snr_num> [thresh_type] <threshold_value>\n");
   printf("       threshold-util [fru] <--clear>\n");
-  printf("       [fru]           : %s\n", pal_fru_list);
+  printf("       [fru]           : %s\n", fru_list);
   printf("       <snr_num>    : 0xXX\n");
   printf("       [thresh_type]   : UCR, UNC, UNR, LCR, LNC, LNR\n");
 }
@@ -123,6 +123,8 @@ main(int argc, char **argv) {
   float threshold_value;
   int ret = -1;
   char *end = NULL;
+  unsigned int fru_caps = 0;
+  char fruname[16] = {0};
 
   // Check for border conditions
   if ((argc != 3) && (argc != 6)) {
@@ -136,10 +138,20 @@ main(int argc, char **argv) {
     return ret;
   }
 
-  ret = is_fru_valid(fru);
+  ret = pal_get_fru_name(fru, fruname);
   if (ret < 0) {
-    print_usage_help();
+    printf("%s: Fail to get fru%d name\n", __func__,fru);
     return ret;
+  }
+
+  ret = pal_get_fru_capability(fru, &fru_caps);
+  if (ret < 0) {
+    printf("Fail to get fru%d(%s) capability \n", fru, fruname);
+    return ret;
+  }
+  if ((fru_caps & FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE) == 0) {
+    print_usage_help();
+    return -1;
   }
 
   if (!(strcmp(argv[2], "--set"))) {
@@ -177,37 +189,97 @@ main(int argc, char **argv) {
 
     if (FRU_ALL == fru) { // For FRU ALL
       for (fru = FRU_ALL+1; fru <= MAX_NUM_FRUS; fru++) {
+        ret = pal_get_fru_name(fru, fruname);
+        if (ret < 0) {
+          printf("%s: Fail to get fru%d name \n", __func__, fru);
+          return ret;
+        }
+
+        ret = pal_get_fru_capability(fru, &fru_caps);
+        if (ret < 0) {
+          printf("Fail to get fru%d(%s) capability \n", fru, fruname);
+          continue;
+        }
+        if ((fru_caps & FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE) == 0) {
+          printf("fru%d(%s) no threshold update capability \n", fru, fruname);
+          continue;
+        }
+
+        if (is_fru_valid(fru)) {
+          continue;
+        }
+
         if (!pal_is_sensor_existing(fru, snr_num)) {
-          printf("Could not find sensor 0x%x for fru%d\n", snr_num, fru);
+          printf("Could not find sensor 0x%x for fru%d(%s) \n", snr_num, fru, fruname);
           continue;
         }
 
         ret = pal_sensor_thresh_modify(fru, snr_num, thresh_type, threshold_value);
-        if (ret < 0)
-          printf("Fail to set sensor 0x%x threshold for fru%d\n", snr_num, fru);
+        if (ret < 0) {
+          printf("Fail to set sensor 0x%x threshold for fru%d(%s) \n", snr_num, fru, fruname);
+        } else {
+          printf("Successfully set sensor 0x%x threshold for fru%d(%s) \n", snr_num, fru, fruname);
+        }
       }
     } else {
+      ret = is_fru_valid(fru);
+      if (ret < 0) {
+        print_usage_help();
+        return ret;
+      }
       if (!pal_is_sensor_existing(fru, snr_num)) {
-        printf("Could not find sensor 0x%x for fru%d\n", snr_num, fru);
+        printf("Could not find sensor 0x%x for fru%d(%s) \n", snr_num, fru, fruname);
         return 0;
       }
       ret = pal_sensor_thresh_modify(fru, snr_num, thresh_type, threshold_value);
-      if (ret < 0)
-        printf("Fail to set sensor 0x%x threshold for fru%d\n", snr_num, fru);
+      if (ret < 0) {
+        printf("Fail to set sensor 0x%x threshold for fru%d(%s) \n", snr_num, fru, fruname);
+      } else {
+        printf("Successfully set sensor 0x%x threshold for fru%d(%s) \n", snr_num, fru, fruname);
+      }
     }
   } else if (!(strcmp(argv[2], "--clear"))) {
     if (FRU_ALL == fru) { // For FRU ALL
       ret = 0;
       for (fru = FRU_ALL+1; fru <= MAX_NUM_FRUS; fru++) {
-        ret |= clear_thresh_value_setting(fru);
+        ret = pal_get_fru_name(fru, fruname);
         if (ret < 0) {
-          printf("Fail to clear threshold for fru%d\n", fru);
+          printf("%s: Fail to get fru%d name \n", __func__, fru);
+          return ret;
+        }
+
+        ret = pal_get_fru_capability(fru, &fru_caps);
+        if (ret < 0) {
+          printf("Fail to get fru%d(%s) capability \n", fru, fruname);
+          continue;
+        }
+        if ((fru_caps & FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE) == 0) {
+          printf("fru%d(%s) no threshold update capability \n", fru, fruname);
+          continue;
+        }
+
+        if (is_fru_valid(fru)) {
+          continue;
+        }
+
+        ret = clear_thresh_value_setting(fru);
+        if (ret < 0) {
+          printf("Fail to clear threshold for fru%d(%s) \n", fru, fruname);
+        } else {
+          printf("Successfully clear threshold for fru%d(%s) \n", fru, fruname);
         }
       }
     } else {
+      ret = is_fru_valid(fru);
+      if (ret < 0) {
+        print_usage_help();
+        return ret;
+      }
       ret = clear_thresh_value_setting(fru);
       if (ret < 0) {
-        printf("Fail to clear threshold for fru%d\n", fru);
+        printf("Fail to clear threshold for fru%d(%s) \n", fru, fruname);
+      } else {
+        printf("Successfully clear threshold for fru%d(%s) \n", fru, fruname);
       }
     }
   } else {

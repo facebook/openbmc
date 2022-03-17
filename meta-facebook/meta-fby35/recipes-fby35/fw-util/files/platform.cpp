@@ -25,9 +25,10 @@ BicFwExtComponent bic_rcvy_fw1("slot1", "bic_rcvy", FRU_SLOT1, "sb", FW_BIC_RCVY
 CpldExtComponent  cpld_fw1("slot1", "cpld", FRU_SLOT1, "sb", FW_CPLD);
 BiosComponent     bios_fw1("slot1", "bios", FRU_SLOT1, FW_BIOS);
 MeComponent       me_fw1("slot1", "me", FRU_SLOT1);
-VrComponent       vr_vccin_fw1("slot1", "vr_vccin", FRU_SLOT1, FW_VR_VCCIN);
-VrComponent       vr_vccd_fw1("slot1", "vr_vccd", FRU_SLOT1, FW_VR_VCCD);
-VrComponent       vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FRU_SLOT1, FW_VR_VCCINFAON);
+VrComponent       vr_fw1("slot1", "vr", FW_VR);
+VrComponent       vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
+VrComponent       vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
+VrComponent       vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
 
 class ClassConfig {
   public:
@@ -86,9 +87,10 @@ class ClassConfig {
         static CpldExtComponent  cpld_fw2("slot2", "cpld", FRU_SLOT2, "sb", FW_CPLD);
         static BiosComponent     bios_fw2("slot2", "bios", FRU_SLOT2, FW_BIOS);
         static MeComponent       me_fw2("slot2", "me", FRU_SLOT2);
-        static VrComponent       vr_vccin_fw2("slot2", "vr_vccin", FRU_SLOT2, FW_VR_VCCIN);
-        static VrComponent       vr_vccd_fw2("slot2", "vr_vccd", FRU_SLOT2, FW_VR_VCCD);
-        static VrComponent       vr_vccinfaon_fw2("slot2", "vr_vccinfaon", FRU_SLOT2, FW_VR_VCCINFAON);
+        static VrComponent       vr_fw2("slot2", "vr", FW_VR);
+        static VrComponent       vr_vccin_fw2("slot2", "vr_vccin", FW_VR_VCCIN);
+        static VrComponent       vr_vccd_fw2("slot2", "vr_vccd", FW_VR_VCCD);
+        static VrComponent       vr_vccinfaon_fw2("slot2", "vr_vccinfaon", FW_VR_VCCINFAON);
 
         //slot2 1ou bic/cpld
         static BicFwExtComponent bic_1ou_fw2("slot2", "1ou_bic", FRU_SLOT2, "1ou", FW_1OU_BIC);
@@ -104,9 +106,10 @@ class ClassConfig {
         static CpldExtComponent  cpld_fw3("slot3", "cpld", FRU_SLOT3, "sb", FW_CPLD);
         static BiosComponent     bios_fw3("slot3", "bios", FRU_SLOT3, FW_BIOS);
         static MeComponent       me_fw3("slot3", "me", FRU_SLOT3);
-        static VrComponent       vr_vccin_fw3("slot3", "vr_vccin", FRU_SLOT3, FW_VR_VCCIN);
-        static VrComponent       vr_vccd_fw3("slot3", "vr_vccd", FRU_SLOT3, FW_VR_VCCD);
-        static VrComponent       vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FRU_SLOT3, FW_VR_VCCINFAON);
+        static VrComponent       vr_fw3("slot3", "vr", FW_VR);
+        static VrComponent       vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
+        static VrComponent       vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
+        static VrComponent       vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
 
         //slot3 1ou bic/cpld
         static BicFwExtComponent bic_1ou_fw3("slot3", "1ou_bic", FRU_SLOT3, "1ou", FW_1OU_BIC);
@@ -122,9 +125,10 @@ class ClassConfig {
         static CpldExtComponent  cpld_fw4("slot4", "cpld", FRU_SLOT4, "sb", FW_CPLD);
         static BiosComponent     bios_fw4("slot4", "bios", FRU_SLOT4, FW_BIOS);
         static MeComponent       me_fw4("slot4", "me", FRU_SLOT4);
-        static VrComponent       vr_vccin_fw4("slot4", "vr_vccin", FRU_SLOT4, FW_VR_VCCIN);
-        static VrComponent       vr_vccd_fw4("slot4", "vr_vccd", FRU_SLOT4, FW_VR_VCCD);
-        static VrComponent       vr_vccinfaon_fw4("slot4", "vr_vccinfaon", FRU_SLOT4, FW_VR_VCCINFAON);
+        static VrComponent       vr_fw4("slot4", "vr", FW_VR);
+        static VrComponent       vr_vccin_fw4("slot4", "vr_vccin", FW_VR_VCCIN);
+        static VrComponent       vr_vccd_fw4("slot4", "vr_vccd", FW_VR_VCCD);
+        static VrComponent       vr_vccinfaon_fw4("slot4", "vr_vccinfaon", FW_VR_VCCINFAON);
 
         //slot4 1ou bic/cpld
         static BicFwExtComponent bic_1ou_fw4("slot4", "1ou_bic", FRU_SLOT4, "1ou", FW_1OU_BIC);

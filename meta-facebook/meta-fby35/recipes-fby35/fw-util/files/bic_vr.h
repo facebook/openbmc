@@ -3,18 +3,22 @@
 #include "fw-util.h"
 #include "server.h"
 #include "expansion.h"
+#include <string>
+
+using std::string;
 
 class VrComponent : public Component {
-  uint8_t slot_id = 0;
-  uint8_t fw_comp = 0;
+  static bool vr_printed;
+  uint8_t slot_id;
+  uint8_t fw_comp;
   Server server;
   private:
-    int get_ver_str(uint8_t& addr, std::string& s);
+    int get_ver_str(uint8_t addr,string& s);
   public:
-    VrComponent(const std::string& fru, const std::string& comp, uint8_t _slot_id, uint8_t _fw_comp)
-      : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), server(_slot_id, fru){}
-    int print_version();
+    VrComponent(const string& fru, const string& comp, uint8_t comp_id)
+      : Component(fru, comp), slot_id(fru.at(4) - '0'), fw_comp(comp_id), server(slot_id, fru) {}
     int update(std::string image);
+    int print_version();
     void get_version(json& j);
 };
 
@@ -25,9 +29,9 @@ class VrExtComponent : public Component {
   Server server;
   ExpansionBoard expansion;
   private:
-    int get_ver_str(std::string& s, const uint8_t alt_fw_comp);
+    int get_ver_str(string& s, const uint8_t alt_fw_comp);
   public:
-    VrExtComponent(const std::string& fru, const std::string& comp, uint8_t _slot_id, const std::string& _name, int8_t _fw_comp)
+    VrExtComponent(const string& fru, const string& comp, uint8_t _slot_id, const string& _name, int8_t _fw_comp)
       : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), name(_name), server(_slot_id, fru), expansion(_slot_id, fru, _name, _fw_comp) {}
     int print_version();
     int update(std::string image);

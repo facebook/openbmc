@@ -134,6 +134,39 @@
             ]
         },
         {
+            "alias": "openbmc-buildci-bletchley-determinator",
+            "args": {
+                "name": "openbmc-buildci-bletchley-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-bletchley-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform bletchley"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-bletchley/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-buildci-clearcreek-determinator",
             "args": {
                 "name": "openbmc-buildci-clearcreek-determinator",
@@ -962,6 +995,39 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-fbal/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-bletchley-determinator",
+            "args": {
+                "name": "openbmc-cit-bletchley-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-bletchley-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform bletchley"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-bletchley/.*"
                     ]
                 }
             ],

@@ -27,8 +27,6 @@ LOCAL_URI += " \
         file://bic_fw_ext.cpp \
         file://expansion.h \
         file://expansion.cpp \
-        file://bic_cpld_ext.cpp \
-        file://bic_cpld_ext.h \
         file://bic_vr.h \
         file://bic_vr.cpp \
         file://bic_pcie_sw.cpp \
@@ -43,8 +41,6 @@ LOCAL_URI += " \
         "
 
 LOCAL_URI:remove = " \
-        file://bic_cpld.cpp \
-        file://bic_cpld.h \
         file://bic_fw.cpp \
         file://bic_fw.h \
         "

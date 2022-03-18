@@ -30,6 +30,8 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openbmc/kv.h>
+#include <facebook/fby3_common.h>
 #include "bic_power.h"
 
 //The value of power button to CPLD
@@ -75,6 +77,7 @@ bic_server_power_on(uint8_t slot_id) {
   int sts_cnt = sizeof(pwr_seq);
   int ret;
   int i;
+  char sys_conf[16] = {0};
   
   for (i = 0; i < sts_cnt; i++) {
     ret = bic_server_power_control(slot_id, pwr_seq[i]);
@@ -84,6 +87,12 @@ bic_server_power_on(uint8_t slot_id) {
     }
 
     if ( POWER_BTN_LOW == pwr_seq[i] ) sleep(1);    
+  }
+  
+  if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) == 0 ) {
+    if ( strcmp(sys_conf, "Type_DPB") == 0 ) {
+      ret = fby3_common_fscd_ctrl(FAN_MANUAL_MODE);
+    }
   }
 
   return ret;

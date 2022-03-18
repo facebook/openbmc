@@ -33,7 +33,7 @@
 echo "Get MB FW version... "
 
 bmc_location=$(get_bmc_board_id)
-if ! [ $bmc_location -eq 9 ]; then
+if ! [ $bmc_location -eq $BMC_ID_CLASS2 ]; then
   if [[ $(is_sb_bic_ready 1) == "1" ]]; then
     /usr/bin/fw-util slot1 --version > /dev/null
   fi

@@ -670,3 +670,84 @@ fby3_common_get_hsc_bb_detect(uint8_t *id) {
   *id = (uint8_t)cached_id;
   return 0;
 }
+
+int
+fby3_common_fscd_ctrl(uint8_t mode) {
+  int ret = 0;
+  char cmd[MAX_SYS_REQ_LEN] = {0};
+  char buf[MAX_SYS_RESP_LEN] = {0};
+  bool is_fscd_run = false;
+  FILE* fp = NULL;
+  FILE* fp2 = NULL;
+
+  // check fscd status
+  snprintf(cmd, sizeof(cmd), "sv status fscd");
+  if ((fp = popen(cmd, "r")) == NULL) {
+    syslog(LOG_WARNING, "%s() failed to get fscd status", __func__);
+    return -1;
+  }
+  memset(buf, 0, sizeof(buf));
+  if (fgets(buf, sizeof(buf), fp) == NULL) {
+    syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
+    ret = -1;
+    goto exit;
+  }
+
+  if (strstr(buf, "run") != NULL) {
+    is_fscd_run = true;
+  } else {
+    is_fscd_run = false;
+  }
+
+  if (mode == FAN_MANUAL_MODE) {
+    if (is_fscd_run == false) {
+      // fscd already stopped
+      goto exit;
+    }
+    snprintf(cmd, sizeof(cmd), "sv force-stop fscd > /dev/null 2>&1");
+    if (system(cmd) != 0) {
+      // Although sv force-stop sends kill (-9) signal after timeout,
+      // it still returns an error code.
+      // we will check status here to ensure that fscd has stopped completely.
+      syslog(LOG_WARNING, "%s() fscd force-stop timeout", __func__);
+      snprintf(cmd, sizeof(cmd), "sv status fscd");
+      if ((fp2 = popen(cmd, "r")) == NULL) {
+        syslog(LOG_WARNING, "%s() popen failed, cmd: %s", __func__, cmd);
+        ret = -1;
+        goto exit;
+      } 
+      memset(buf, 0, sizeof(buf));
+      if (fgets(buf, sizeof(buf), fp2) == NULL) {
+        syslog(LOG_WARNING, "%s() read popen failed, cmd: %s", __func__, cmd);
+        ret = -1;
+        goto exit;
+      }
+      if (strstr(buf, "down") == NULL) {
+        syslog(LOG_WARNING, "%s() failed to terminate fscd", __func__);
+        ret = -1;
+      }
+    }
+  } else if (mode == FAN_AUTO_MODE) {
+    if (is_fscd_run == true) {
+      // fscd already running
+      goto exit;
+    }
+    snprintf(cmd, sizeof(cmd), "sv start fscd > /dev/null 2>&1");
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() start fscd failed", __func__);
+    }
+  } else {
+    syslog(LOG_ERR, "%s(), fan mode %d not supported", __func__, mode);
+    ret = -1;
+  }
+
+exit:
+  if (fp != NULL) {
+    pclose(fp);
+  }
+  if (fp2 != NULL) {
+    pclose(fp2);
+  }
+
+  return ret;
+}

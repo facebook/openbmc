@@ -58,7 +58,7 @@ extern "C" {
 
 #define NIC_FRU_BUS     8
 #define CLASS1_FRU_BUS 11
-#define CLASS2_FRU_BUS 10
+#define CLASS2_FRU_BUS 11
 #define BMC_FRU_ADDR 0x54
 #define BB_FRU_ADDR  0x51
 #define NICEXP_FRU_ADDR 0x51
@@ -113,6 +113,10 @@ extern const char *slot_usage;
 #define COMPONENT_ID(x) (x >> 7)
 
 #define FRU_DPV2_X8_BUS(fru) ((fru) + 3)
+
+#define KEY_BB_HSC_TYPE "bb_hsc_type"
+
+#define IANA_ID_SIZE 3
 
 enum {
   FRU_ALL       = 0,
@@ -193,8 +197,8 @@ enum {
 
 enum {
   // BOARD_ID [3:0]
-  NIC_BMC    = 0x09,
-  BB_BMC     = 0x0E,
+  NIC_BMC    = 0x06,
+  BB_BMC     = 0x07,
   DVT_BB_BMC = 0x07,
 };
 
@@ -294,39 +298,52 @@ enum {
   FW_VR_VCCIN,         // 5
   FW_VR_VCCD,
   FW_VR_VCCINFAON,
+  FW_VR,
   FW_BIOS,
-  FW_1OU_BIC,
-  FW_1OU_CPLD,         // 10
+  FW_1OU_BIC,          // 10
+  FW_1OU_CPLD,
   FW_2OU_BIC,
   FW_2OU_CPLD,
   FW_BB_BIC,
-  FW_BB_CPLD,
-  FW_2OU_3V3_VR1,      // 15
+  FW_BB_CPLD,          // 15
+  FW_2OU_3V3_VR1,
   FW_2OU_3V3_VR2,
   FW_2OU_3V3_VR3,
   FW_2OU_1V8_VR,
-  FW_2OU_PESW_VR,
-  FW_2OU_PESW_CFG_VER, // 20
+  FW_2OU_PESW_VR,      // 20
+  FW_2OU_PESW_CFG_VER,
   FW_2OU_PESW_FW_VER,
   FW_2OU_PESW_BL0_VER,
   FW_2OU_PESW_BL1_VER,
-  FW_2OU_PESW_PART_MAP0_VER,
-  FW_2OU_PESW_PART_MAP1_VER,  // 25
+  FW_2OU_PESW_PART_MAP0_VER,  // 25
+  FW_2OU_PESW_PART_MAP1_VER,
   FW_2OU_PESW,
   FW_2OU_M2_DEV0,
   FW_2OU_M2_DEV1,
-  FW_2OU_M2_DEV2,
-  FW_2OU_M2_DEV3,      // 30
+  FW_2OU_M2_DEV2,      // 30
+  FW_2OU_M2_DEV3,
   FW_2OU_M2_DEV4,
   FW_2OU_M2_DEV5,
   FW_2OU_M2_DEV6,
-  FW_2OU_M2_DEV7,
-  FW_2OU_M2_DEV8,      // 35
+  FW_2OU_M2_DEV7,      // 35
+  FW_2OU_M2_DEV8,
   FW_2OU_M2_DEV9,
   FW_2OU_M2_DEV10,
   FW_2OU_M2_DEV11,
   // last id
   FW_COMPONENT_LAST_ID
+};
+
+enum {
+  HSC_ADM1278 = 0,
+  HSC_LTC4286,
+  HSC_MP5990,
+  HSC_UNKNOWN,
+};
+
+enum {  
+  PRESENT = 0,
+  NOT_PRESENT = 1,
 };
 
 const static char *gpio_server_prsnt[] =
@@ -424,6 +441,7 @@ int fby35_common_check_image_signature(uint8_t* data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
 int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id);
+int fby35_common_get_bb_hsc_type(uint8_t* type);
 
 #ifdef __cplusplus
 } // extern "C"

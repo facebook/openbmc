@@ -5,7 +5,7 @@ ASPEEDCHIP="aspeed-gpio"
 KV_CMD=/usr/bin/kv
 
 readonly BMC_ID_CLASS1=7
-readonly BMC_ID_CLASS2=9
+readonly BMC_ID_CLASS2=6
 
 devmem_set_bit() {
     local addr

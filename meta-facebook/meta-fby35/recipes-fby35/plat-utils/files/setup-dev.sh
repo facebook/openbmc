@@ -64,19 +64,22 @@ function init_class1_dev() {
 function init_class2_dev() {
   #create the device of the outlet temp.
   create_new_dev "lm75" 0x4f 2
+  create_new_dev "lm75" 0x4f 12
 
   #create the device of bmc/nic fru.
-  create_new_dev "24c128" 0x51 10
-  create_new_dev "24c128" 0x54 10
+  create_new_dev "24c128" 0x51 11
+  create_new_dev "24c128" 0x54 11
 }
 
 function init_exp_dev() {
   for i in {1..3..2}; do
-    if [ "$(is_server_prsnt $i)" == "0" ]; then
-      continue
-    fi
-
-    enable_server_i2c_bus $i
+    bmc_location=$(get_bmc_board_id)
+    if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then 
+      if [ "$(is_server_prsnt $i)" == "0" ]; then
+        continue
+      fi
+      enable_server_i2c_bus $i
+    fi    
     cpld_bus=$(get_cpld_bus $i)
     type_2ou=$(get_2ou_board_type "$cpld_bus")
     # check DPv2 x8 present
@@ -94,10 +97,10 @@ create_new_dev "tmp421" 0x1f 8
 create_new_dev "24c32" 0x50 8
 
 bmc_location=$(get_bmc_board_id)
-if [ "$bmc_location" -eq 7 ]; then
+if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
   #The BMC of class1
   init_class1_dev
-elif [ "$bmc_location" -eq 9 ]; then
+elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
   #The BMC of class2
   init_class2_dev
 else

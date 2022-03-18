@@ -462,7 +462,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     }
   }
 
-  SectorType_t secType = Sector_CFM0;
+  SectorType_t secType = Sector_CFM1;
 
   printf("OnChip Flash Status = 0x%X., slot_id 0x%x, sectype 0x%x, intf: 0x%x, ", Max10_get_status(slot_id, intf), slot_id, secType, intf);
 

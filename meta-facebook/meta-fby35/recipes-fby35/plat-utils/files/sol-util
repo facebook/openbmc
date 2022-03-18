@@ -33,7 +33,7 @@ SLOT=
 SLOT_NUM=
 I2C_NUM=
 
-function show_usage() {
+show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, 1ou, 2ou] bic"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN|pesw] (baudrate)"
@@ -48,17 +48,17 @@ select_expansion_uart() {
   local curr_sts=0
 
   if [ -n "$board_type" ] &&
-     ([ $board_type == "0x00" ] || [ $board_type == "0x03" ]); then
+     ([ "$board_type" = "0x00" ] || [ "$board_type" = "0x03" ]); then
     curr_sts=$data
   else
     curr_sts=$(/usr/sbin/i2cget -y $bus $addr 0)
     curr_sts=$((curr_sts & 0x0f))
     curr_sts=$((curr_sts | data << 4))
   fi
-  /usr/sbin/i2cset -y $bus $addr 0 $curr_sts
+  /usr/sbin/i2cset -y "$bus" "$addr" 0 "$curr_sts"
 }
 
-function get_slot_num() {
+get_slot_num() {
   local slot_num=0
   case $1 in
     slot1)
@@ -78,7 +78,7 @@ function get_slot_num() {
   echo $slot_num
 }
 
-function get_bus_num() {
+get_bus_num() {
   local bus=0
   case $1 in
     slot1)
@@ -98,14 +98,14 @@ function get_bus_num() {
   echo $bus
 }
 
-function set_uart_src() {
+set_uart_src() {
   local bus=$1
   local addr=$2
   local data=$3
   $I2CSET $bus $addr $data
 }
 
-function is_gpv3_board() {
+is_gpv3_board() {
   local board_type=$1
   local result=0
   if [ -n "$board_type" ] &&
@@ -115,7 +115,7 @@ function is_gpv3_board() {
   echo $result
 }
 
-function enable_usb_hub() {
+enable_usb_hub() {
   local fru=$1
   local val=$2
   cnt=$(ls /var/lock | grep -i "LCK..platform-1e6b0000.usb-usb-0" | wc -l)
@@ -133,7 +133,7 @@ function enable_usb_hub() {
       else
         echo "Fail"
         echo "16 USB devs should be detected but BMC only found $cnt"
-        exit -1;
+        exit 255
       fi
     fi
   else
@@ -143,14 +143,14 @@ function enable_usb_hub() {
   fi
 }
 
-function show_microcom_usage() {
+show_microcom_usage() {
   echo "------------------TERMINAL MULTIPLEXER---------------------"
   echo "CTRL + x : Terminate the connection."
   echo "Run in single mode"
   echo "-----------------------------------------------------------"
 }
 
-function get_usb_dev() {
+get_usb_dev() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="57600"
@@ -204,7 +204,7 @@ function get_usb_dev() {
   echo "-s ${baudrate} ${prefix}${usb_path}"
 }
 
-function get_usb_dev_by_slot() {
+get_usb_dev_by_slot() {
 #The dev position should be fixed
   local usb_path=""
   local baudrate="57600"
@@ -301,7 +301,7 @@ function get_usb_dev_by_slot() {
       esac
   else
       echo "The $SLOT is invalid"
-      exit -1;
+      exit 255
   fi
 
   echo "-s ${baudrate} ${prefix}${usb_path}"
@@ -312,7 +312,7 @@ if [[ "$1" =~ ^(slot[1-4]{1})$ ]]; then
   SLOT=$1
 else
   show_usage
-  exit -1;
+  exit 255
 fi
 
 # If users want to read a history, there is no need to run the rest
@@ -323,7 +323,7 @@ if [[ "$2" == "--history" ]]; then
     exit 0;
   else
     show_usage
-    exit -1;
+    exit 255
   fi
 fi
 
@@ -341,7 +341,7 @@ DEV_NUM=
 if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
   if ! [ "$SLOT" == "slot1" ]; then
     echo "$SLOT is empty"
-    exit -1;
+    exit 255
   else
     # notify CPLD to set the uart src to class 2
     set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
@@ -349,10 +349,10 @@ if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
 else
   if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
     echo "The $SLOT is empty"
-    exit -1;
+    exit 255
   elif [ $(is_slot_12v_on ${SLOT_NUM}) == "0" ]; then
     echo "The $SLOT is 12V-off"
-    exit -1;
+    exit 255
   else
     # notify CPLD to set the uart src to class 1
     set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
@@ -364,14 +364,14 @@ if [ -n "$COMP" ]; then
   # block invalid command, e.g. sol-util 2ou bic xxx
   if [ $# -gt 4 ]; then
     show_usage
-    exit -1;
+    exit 255
   fi
 
   # check BAUDRATE is a number
   if [ -n "$BAUDRATE" ]; then
     if ! [[ $BAUDRATE =~ ^[0-9]+$ ]]; then
       echo "$BAUDRATE should be a number"
-      exit -1;
+      exit 255
     fi
   fi
 
@@ -389,7 +389,7 @@ if [ -n "$COMP" ]; then
     CPLD_ADDR=${SB_CPLD_ADDR}
   else
     echo "$COMP is not supported!"
-    exit -1;
+    exit 255
   fi
 
   # check DEV
@@ -397,13 +397,13 @@ if [ -n "$COMP" ]; then
     DEV_NUM=${3:3:4}
     if [ "$COMP" == "1ou" ] && [[ "$DEV" =~ ^(dev([4-9]|1[0-1]))$ ]]; then
       echo "$DEV is not supported!"
-      exit -1;
+      exit 255
     elif [ "$COMP" == "2ou" ]; then
       if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
         enable_usb_hub $SLOT 1
         show_microcom_usage
 
-        if [ $BOARD_ID -eq 9 ]; then
+        if [ "$BOARD_ID" -eq "$BMC_ID_CLASS2" ]; then
           /usr/bin/microcom $(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
         else
           /usr/bin/microcom $(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
@@ -423,7 +423,7 @@ if [ -n "$COMP" ]; then
     fi
   else
     echo "$DEV is not supported!"
-    exit -1;
+    exit 255
   fi
 
   if [ -n "$CPLD_ADDR" ]; then

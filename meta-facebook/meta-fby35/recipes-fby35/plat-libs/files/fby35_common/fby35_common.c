@@ -863,3 +863,27 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
 
   return true;
 }
+
+int
+fby35_common_get_bb_hsc_type(uint8_t* type) {
+  char value[MAX_VALUE_LEN] = {0};
+  const char *shadows[] = {
+    "HSC_BB_BMC_DETECT0",
+    "HSC_BB_BMC_DETECT1",
+  };
+
+  if (kv_get(KEY_BB_HSC_TYPE, value, NULL, 0) == 0) {
+    *type = (uint8_t)atoi(value);
+    return 0;
+  } else {
+    if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), (unsigned int*) type)) {
+      syslog(LOG_WARNING,"%s: failed to detect HSC type", __func__);
+      return -1;
+    }
+    snprintf(value, sizeof(value), "%x", *type); 
+    if (kv_set(KEY_BB_HSC_TYPE, (const char *)value, 1, KV_FCREATE)) {
+      syslog(LOG_WARNING,"%s: kv_set failed, key: %s", __func__, KEY_BB_HSC_TYPE);
+    }
+  }
+  return 0;
+}

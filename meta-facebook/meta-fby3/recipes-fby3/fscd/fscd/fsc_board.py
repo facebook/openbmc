@@ -29,7 +29,11 @@ import kv
 from fsc_util import Logger
 from kv import FPERSIST, kv_get
 
-fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
+fan_mode = {
+    "normal_mode": 0,
+    "trans_mode": 1,
+    "boost_mode": 2,
+    "progressive_mode": 3}
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 sled_system_conf = "Type_NA"
 try:
@@ -99,9 +103,9 @@ host_ready_map = {
     "slot1_2U_bot": "fru1_host_ready",
 }
 
-#boot drive sensor number which is defined in pal_sensors.h
+# boot drive sensor number which is defined in pal_sensors.h
 boot_drive_map = {
-    "slot1":{"sensor_num": 0xE},
+    "slot1": {"sensor_num": 0xE},
 }
 
 valid_dp_pcie_list = [
@@ -173,7 +177,7 @@ def is_valid_dp_pcie(pcie_info_key):
         else:
             return 0
     except kv.KeyOperationFailure:
-        Logger.warn("Exception KeyOperationFailure, key=%s" % (snr_key))
+        Logger.warn("Exception KeyOperationFailure, key=%s" % (pcie_info_key))
         # return not valid if pcie_info file is not ready
         return 0
 
@@ -219,7 +223,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 return 1
 
             # If sensor fail, dp will boost without checking host ready
-            if search(r"Type_DP", sled_system_conf) is None:
+            if (search(r"Type_DP", sled_system_conf) is None) or (
+                search(r"Type_DPB", sled_system_conf) is not None
+            ):
                 try:
                     flag_status = kv_get(host_ready_map[board])
                 except kv.KeyOperationFailure:
@@ -234,7 +240,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 elif search(r"spe_ssd", sname) is not None:
                     # get SSD present status
                     cmd = "/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x34 0x9c 0x9c 0x0 0x0 0x3"
-                    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+                    response = Popen(
+                        cmd, shell=True, stdout=PIPE).stdout.read()
                     response = response.decode()
                     # check the completion code
                     if response.split(" ")[6] != "00":
@@ -248,8 +255,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         return 0
                 elif search(r"dp_marvell_hsm_t", sname) is not None:
                     pcie_info_key = (
-                        "sys_config/" + fru_map[board]["name"] + "_pcie_i04_s40_info"
-                    )
+                        "sys_config/" +
+                        fru_map[board]["name"] +
+                        "_pcie_i04_s40_info")
                     return is_valid_dp_pcie(pcie_info_key)
                 elif search(r"gp3_m2", sname) is not None:
                     # get GPv3 M.2 device status
@@ -258,9 +266,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     dev_type = c_uint8(0)
                     if board == "slot1_2U_top" or board == "slot1_2U_bot":
                         if sname[8] != "_":
-                            dev_id = int(sname[7]) * 10 + int(sname[8]) + 1 # gp3_m2_10_temp
+                            # gp3_m2_10_temp
+                            dev_id = int(sname[7]) * 10 + int(sname[8]) + 1
                         else:
-                            dev_id = int(sname[7]) + 1 #gp3_m2_0_temp
+                            dev_id = int(sname[7]) + 1  # gp3_m2_0_temp
                         response = lpal_hndl.pal_get_dev_info(
                             int(cwc_fru_map[board]["fru"]),
                             dev_id,
@@ -268,8 +277,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             byref(dev_status),
                             byref(dev_type),
                         )
-                        if response == 0: # bic can get device power status
-                            if dev_status.value == 1 and nvme_ready.value == 1: # nvme is ready
+                        if response == 0:  # bic can get device power status
+                            if dev_status.value == 1 and nvme_ready.value == 1:  # nvme is ready
                                 return 1
                             else:
                                 return 0
@@ -320,7 +329,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             return 0
                     else:
                         return 0
-                elif search(r"(.*)pesw_temp", sname) is not None: #get CWC or GPv3 PESW fw info
+                elif search(r"(.*)pesw_temp", sname) is not None:  # get CWC or GPv3 PESW fw info
                     pesw_res = c_uint8(0)
                     pesw_res_len = c_uint8(0)
                     response = lpal_hndl.pal_get_fw_info(
@@ -329,16 +338,17 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         byref(pesw_res),
                         byref(pesw_res_len),
                     )
-                    if response == -1: # can not get fw info
+                    if response == -1:  # can not get fw info
                         return 0
                     else:
                         return 1
-                elif search(r"ssd", sname) is not None: # check if boot driver supports sensor reading
+                # check if boot driver supports sensor reading
+                elif search(r"ssd", sname) is not None:
                     response = lpal_hndl.pal_is_sensor_valid(
                         int(fru_map[board]["slot_num"]),
                         boot_drive_map[board]["sensor_num"],
                     )
-                    if response == 1: # boot drive unsupports sensor reading
+                    if response == 1:  # boot drive unsupports sensor reading
                         return 0
                     else:
                         return 1
@@ -365,7 +375,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     int(fru_map[board]["slot_num"]), byref(status)
                 )
                 if status.value == 1:  # power on
-                    if search(r"Type_DP", sled_system_conf) is None:
+                    if (search(r"Type_DP", sled_system_conf) is None) or (
+                        search(r"Type_DPB", sled_system_conf) is not None
+                    ):
                         try:
                             flag_status = kv_get(host_ready_map[board])
                         except kv.KeyOperationFailure:
@@ -411,6 +423,7 @@ def get_fan_mode(scenario="None"):
         pwm = 100
         return fan_mode["boost_mode"], pwm
     pass
+
 
 def fru_format_transform(fru):
     if fru == "slot1_2U_top":

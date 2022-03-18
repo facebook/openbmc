@@ -2850,7 +2850,7 @@ pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size){
   unsigned int fru_caps;
   list[0] = '\0';
 
-  for (int fru = 1; fru <= num_frus; fru++) {
+  for (int fru = 0; fru <= num_frus; fru++) {
     char name[64] = {0};
     if (pal_get_fru_name(fru, name)) {
       continue;

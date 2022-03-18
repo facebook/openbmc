@@ -163,10 +163,10 @@ fi
 
 echo -n "Setup VishayIC for fby35..."
 bmc_location=$(get_bmc_board_id)
-if [ "$bmc_location" -eq 7 ]; then
+if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
   #The BMC of class1
   init_class1_sic
-elif [ "$bmc_location" -eq 9 ]; then
+elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
   #The BMC of class2
   init_class2_sic
 else

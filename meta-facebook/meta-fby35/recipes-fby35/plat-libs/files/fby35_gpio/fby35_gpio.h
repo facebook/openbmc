@@ -29,11 +29,15 @@ extern "C" {
 
 #include <facebook/bic.h>
 
+#define SYS_CFG_CLASS1 (1 << 0)
+#define SYS_CFG_CLASS2 (1 << 1)
+
 typedef struct gpio_info {
   char *shadow_name;
   char *pin_name;
   gpio_direction_t direction;
   gpio_value_t value;
+  uint8_t sys_cfg;
 } gpio_cfg;
 
 // GPIO Expander GPIO pins
@@ -60,6 +64,7 @@ enum {
   GPIO_FM_RESBTN_SLOT3_BMC_N,
   GPIO_FM_RESBTN_SLOT4_N,
   GPIO_SMB_TEMP_ALERT_BMC_N_R,
+  GPIO_FM_DEBUG_UART_MUX_BMC_R,
   GPIO_SMB_HOTSWAP_BMC_ALERT_N_R,
   GPIO_EMMC_PRESENT_N,
   GPIO_SMB_BMC_SLOT1_ALT_R_N,
@@ -109,6 +114,7 @@ enum {
   GPIO_FM_BMC_SLOT2_ISOLATED_EN_R,
   GPIO_FM_BMC_SLOT3_ISOLATED_EN_R,
   GPIO_FM_BMC_SLOT4_ISOLATED_EN_R,
+  GPIO_FM_SMB_ISOLATED_EN_R,
   GPIO_AC_ON_OFF_BTN_BMC_SLOT1_N_R,
   GPIO_AC_ON_OFF_BTN_SLOT2_N,
   GPIO_AC_ON_OFF_BTN_BMC_SLOT3_N_R,
@@ -117,11 +123,13 @@ enum {
   GPIO_BOARD_ID1,
   GPIO_BOARD_ID2,
   GPIO_BOARD_ID3,
+  GPIO_HSC_BB_BMC_DETECT0,
   //GPIO_RST_BMC_WDRST1_R,
   GPIO_RST_BMC_WDRST2_R,
   GPIO_SPI_LOCK_REQ_BMC_N,
   GPIO_EMMC_RST_N_R,
   GPIO_BMC_READY_R,
+  GPIO_HSC_BB_BMC_DETECT1,
   MAX_BMC_GPIO_PINS,
 };
 

@@ -26,6 +26,7 @@
 #include <openbmc/phymem.h>
 #include <openbmc/libgpio.h>
 #include <facebook/fby35_gpio.h>
+#include <facebook/fby35_common.h>
 
 #define GPIO_BASE    	0x1E780000
 #define REG_GPIO0FC   	0x0FC
@@ -73,12 +74,22 @@ int setup_gpio_with_value(const char *chip_name, const char *shadow_name, const 
 
 void setup_gpios_by_table(const char *chip_name, gpio_cfg *gpio_config) {
 	int ret = 0, offset = 0;
+	uint8_t bmc_location = 0;
 
 	if (strncmp(chip_name, GPIO_CHIP_ASPEED, GPIO_CHIP_MAX) == 0) {
 		offset = MAX_GPIO_EXPANDER_GPIO_PINS; // BMC GPIO table index start after Expander GPIO table
 	}
+	if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+  	  syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+  	}
 
 	while (gpio_config[offset].shadow_name != NULL) {
+		if (((bmc_location == BB_BMC) && ((gpio_config[offset].sys_cfg & SYS_CFG_CLASS1) == 0)) ||
+			((bmc_location == NIC_BMC) && ((gpio_config[offset].sys_cfg & SYS_CFG_CLASS2) == 0))) {
+			// this pin not exist on corresponding config
+			offset += 1;
+  			continue;
+  		}
 		ret = setup_gpio_with_value(chip_name,
 			gpio_config[offset].shadow_name,
 			gpio_config[offset].pin_name,
@@ -94,7 +105,7 @@ void setup_gpios_by_table(const char *chip_name, gpio_cfg *gpio_config) {
 	}
 }
 
-static int setup_board_id(void) {
+static int setup_board_id(gpio_cfg *gpio_config) {
 	const char *shadows[] = {
 		"BOARD_ID0",
 		"BOARD_ID1",
@@ -104,7 +115,20 @@ static int setup_board_id(void) {
 	char value[8] = {0};
 	unsigned int brd_id = 0;
 	int ret = -1;
+	int i = 0, offset = 0;
 
+	for (i = GPIO_BOARD_ID0; i <= GPIO_BOARD_ID3; i++) {
+		offset = MAX_GPIO_EXPANDER_GPIO_PINS + i;
+		ret = setup_gpio_with_value(GPIO_CHIP_ASPEED,
+			gpio_config[offset].shadow_name,
+			gpio_config[offset].pin_name,
+			offset,
+			gpio_config[offset].direction,
+			gpio_config[offset].value);
+		if (ret != 0) {
+			return ret;
+		}
+	}
 	if (!gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &brd_id)) {
 		snprintf(value, sizeof(value), "%u", brd_id);
 		kv_set("board_id", value, 0, 0);
@@ -119,6 +143,10 @@ main(int argc, char **argv) {
 	uint32_t reg_value = 0;
 
 	printf("Set up BMC GPIO pins...\n");
+
+	// Cache for BOARD_ID
+	setup_board_id(bmc_gpio_table);
+
 	setup_gpios_by_table(GPIO_CHIP_ASPEED, bmc_gpio_table);
 
 	// # Disable GPION4-BMC_READY pin reset tolerant
@@ -134,8 +162,6 @@ main(int argc, char **argv) {
 	reg_value = reg_value | 0x00040000;
 	phymem_set_dword(SCU_BASE, REG_SCU630, reg_value);
 
-	// Cache for BOARD_ID
-	setup_board_id();
 
 	printf("done.\n");
 

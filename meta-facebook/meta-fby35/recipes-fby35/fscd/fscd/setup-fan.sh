@@ -58,10 +58,10 @@ init_class2_fsc() {
 
 start_sled_fsc() {
   bmc_location=$(get_bmc_board_id)
-  if [ "$bmc_location" -eq 7 ]; then
+  if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
     #The BMC of class1
     init_class1_fsc
-  elif [ "$bmc_location" -eq 9 ]; then
+  elif [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
     #The BMC of class2
     init_class2_fsc
   else
@@ -83,10 +83,10 @@ start_sled_fsc() {
 
 reload_sled_fsc() {
   bmc_location=$(get_bmc_board_id)
-  if [ "$bmc_location" -eq 9 ]; then
+  if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
     #The BMC of class2 need to check the present status from BB BIC
-    slot1_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 27 | awk '{print $12}')
-    slot3_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 28 | awk '{print $12}')
+    slot1_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 15 | awk '{print $12}')
+    slot3_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 3 | awk '{print $12}')
     if [ "$slot1_prsnt" = "01" ] || [ "$slot3_prsnt" = "01" ]; then
       run_fscd=false
     else

@@ -2277,22 +2277,34 @@ pal_search_pcie_dev(MAPTOSTRING *tbl, int size, uint8_t bmc_location, uint8_t de
 
 static void
 pal_get_pcie_err_string(uint8_t fru, uint8_t *pdata, char **sil, char **location, char **err1_str, char **err2_str) {
+  enum {
+    DMI_DEV = 0x00,
+    DMI_BUS = 0x00,
+    DMI_FUN = 0x00,
+  };
   uint8_t bmc_location = 0;
   uint8_t dev = pdata[0] >> 3;
+  uint8_t fun = pdata[0] & 0x7;
   uint8_t bus = pdata[1];
   uint8_t err1_id = pdata[5];
   uint8_t err2_id = pdata[4];
   uint8_t size = 0;
   MAPTOSTRING *mapping_table = NULL;
 
-  // get the table first
-  pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &size);
+  // DMI case bus = 0, dev = 0, fun = 0
+  if ( dev == DMI_DEV && bus == DMI_BUS && fun == DMI_FUN ) {
+    *location = "SB";
+    *sil = "DMI";
+  } else {
+    // get the table first
+    pal_sel_root_port_mapping_tbl(fru, &bmc_location, &mapping_table, &size);
 
-  // search for the device table first
-  if ( pal_search_pcie_dev(mapping_table, size, bmc_location, dev, bus, sil, location) == false ) {
-    // if dev is not found in the device table, search for the common table
-    size = sizeof(root_port_common_mapping)/sizeof(MAPTOSTRING);
-    pal_search_pcie_dev(root_port_common_mapping, size, bmc_location, dev, bus, sil, location);
+    // search for the device table first
+    if ( pal_search_pcie_dev(mapping_table, size, bmc_location, dev, bus, sil, location) == false ) {
+      // if dev is not found in the device table, search for the common table
+      size = sizeof(root_port_common_mapping)/sizeof(MAPTOSTRING);
+      pal_search_pcie_dev(root_port_common_mapping, size, bmc_location, dev, bus, sil, location);
+    }
   }
 
   // parse err

@@ -777,7 +777,7 @@ struct cpld_dev_info lattice_dev_list[] = {
   },
   [2] = {
     .name = "LCMXO2-4000HC",
-    .dev_id = 0x012BB043,
+    .dev_id = 0x012BC043,
     .intf = INTF_JTAG,
     .cpld_open = cpld_dev_open_jtag,
     .cpld_close = cpld_dev_close_jtag,
@@ -787,7 +787,7 @@ struct cpld_dev_info lattice_dev_list[] = {
   },
   [3] = {
     .name = "LCMXO2-4000HC",
-    .dev_id = 0x012BB043,
+    .dev_id = 0x012BC043,
     .intf = INTF_I2C,
     .cpld_open = cpld_dev_open_i2c,
     .cpld_close = cpld_dev_close_i2c,
@@ -797,7 +797,7 @@ struct cpld_dev_info lattice_dev_list[] = {
   },
   [4] = {
     .name = "LCMXO2-7000HC",
-    .dev_id = 0x012BB043,
+    .dev_id = 0x012BD043,
     .intf = INTF_JTAG,
     .cpld_open = cpld_dev_open_jtag,
     .cpld_close = cpld_dev_close_jtag,
@@ -807,7 +807,7 @@ struct cpld_dev_info lattice_dev_list[] = {
   },
   [5] = {
     .name = "LCMXO2-7000HC",
-    .dev_id = 0x012BB043,
+    .dev_id = 0x012BD043,
     .intf = INTF_I2C,
     .cpld_open = cpld_dev_open_i2c,
     .cpld_close = cpld_dev_close_i2c,

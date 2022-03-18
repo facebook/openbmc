@@ -13,6 +13,15 @@
 #define ADM1278_EIN_EXT    (0xDC)
 #define ADM1278_PEAK_IOUT  (0xD0)
 #define ADM1278_PEAK_PIN   (0xDA)
+#define ADM1278_EIN_RESP_LEN (8)
+
+//LTC4286 CMD INFO
+#define LTC4286_SLAVE_ADDR (0x80)
+
+//MP5990 CMD INFO
+#define MP5990_SLAVE_ADDR  (0x80)
+#define MP5990_PEAK_IOUT   (0xA6)
+#define MP5990_PEAK_PIN    (0xA3)
 
 //PMBus
 #define PMBUS_PAGE         (0x00)
@@ -20,12 +29,14 @@
 #define PMBUS_VOUT_COMMAND (0x21)
 #define PMBUS_READ_VIN     (0x88)
 #define PMBUS_READ_IIN     (0x89)
+#define PMBUS_READ_EIN     (0x86)
 #define PMBUS_READ_VOUT    (0x8B)
 #define PMBUS_READ_IOUT    (0x8C)
 #define PMBUS_READ_TEMP1   (0x8D)
 #define PMBUS_READ_TEMP2   (0x8E)
 #define PMBUS_READ_POUT    (0x96)
 #define PMBUS_READ_PIN     (0x97)
+#define PMBUS_EIN_RESP_LEN (6)
 
 #define PREFIX_1OU_M2A 0x60
 #define PREFIX_1OU_M2B 0x68
@@ -46,12 +57,12 @@
 #define HSC_INPUT_PWR_UC_THRESHOLD 0xD2
 
 typedef struct {
-  float ucr_thresh;
-  float unc_thresh;
-  float unr_thresh;
+  float lnr_thresh;
   float lcr_thresh;
   float lnc_thresh;
-  float lnr_thresh;
+  float unc_thresh;
+  float ucr_thresh;
+  float unr_thresh;
   float pos_hyst;
   float neg_hyst;
 } PAL_SENSOR_THRESHOLD;
@@ -64,6 +75,15 @@ typedef struct {
   PAL_SENSOR_THRESHOLD snr_thresh;
   uint8_t units;
 } PAL_SENSOR_MAP;
+
+struct hsc_ein {
+  const uint32_t wrap_energy;
+  const uint32_t wrap_rollover;
+  const uint32_t wrap_sample;
+  uint32_t energy;
+  uint32_t rollover;
+  uint32_t sample;
+};
 
 enum {
   UNSET_UNIT = 0,
@@ -303,23 +323,36 @@ enum {
   BIC_SPE_SENSOR_SSD5_CUR = 0x9C,
   BIC_SPE_SENSOR_12V_MAIN_CUR = 0x9D,
 
-  //BIC BaseBoard Sensors
-  BIC_BB_SENSOR_INLET_TEMP = 0xD1,
-  BIC_BB_SENSOR_OUTLET_TEMP = 0xD2,
-  BIC_BB_SENSOR_HSC_TEMP = 0xD3,
-  BIC_BB_SENSOR_MEDUSA_VOUT = 0xD7,
-  BIC_BB_SENSOR_HSC_VIN = 0xDC,
-  BIC_BB_SENSOR_HSC_PIN = 0xDD,
-  BIC_BB_SENSOR_HSC_IOUT = 0xDE,
-  BIC_BB_SENSOR_P12V_MEDUSA_CUR = 0xDF,
-  BIC_BB_SENSOR_P5V = 0xD4,
-  BIC_BB_SENSOR_P12V = 0xD5,
-  BIC_BB_SENSOR_P3V3_STBY = 0xD6,
-  BIC_BB_SENSOR_MEDUSA_PIN = 0xD8,
-  BIC_BB_SENSOR_P1V2_BMC_STBY = 0xD9,
-  BIC_BB_SENSOR_P2V5_BMC_STBY = 0xDA,
-  BIC_BB_SENSOR_MEDUSA_VIN = 0xDB,
-  BIC_BB_SENSOR_MEDUSA_IOUT = 0xE0,
+  //BIC BaseBoard Temperture Sensors
+  BB_INLET_TEMP = 0xD1,
+  BB_OUTLET_TEMP = 0xD2,
+  BB_HSC_TEMP = 0xD3,
+  //BIC BasBoard Voltage Sensors
+  BB_P5V = 0xD4,
+  BB_P12V = 0xD5,
+  BB_P3V3_STBY = 0xD6,
+  BB_P5V_USB = 0xE9,
+  BB_P1V2_STBY = 0xD9,
+  BB_P1V0_STBY = 0xDA,
+  BB_MEDUSA_VIN = 0xDB,
+  BB_MEDUSA_VOUT = 0xD7,
+  BB_HSC_VIN = 0xDC,
+  //BIC BasBoard Current Sensors
+  BB_MEDUSA_CUR = 0xDF,
+  BB_HSC_IOUT = 0xDE,
+  BB_FAN_IOUT = 0xE8,
+  //BIC BasBoard Power Consumption Sensors
+  BB_MEDUSA_PWR = 0xD8,
+  BB_HSC_PIN = 0xDD,
+  //BIC BasBoard Others Sensors
+  BB_HSC_EIN = 0xEA,
+  BB_HSC_PEAK_IOUT = 0xEB,
+  BB_HSC_PEAK_PIN = 0xEC,
+  BB_MEDUSA_VDELTA = 0xED,
+  BB_PDB_DL_VDELTA = 0xEE,
+  BB_PDB_BB_VDELTA = 0xEF,
+  BB_CURR_LEAKAGE = 0xF0,
+  BB_FAN_PWR = 0xF1,
 
   //BMC - sensors
   BMC_SENSOR_INLET_TEMP = 0xED,
@@ -368,6 +401,7 @@ enum {
   BMC_SENSOR_FAN_IOUT = 0xFB,
   BMC_SENSOR_NIC_IOUT = 0xFC,
   BMC_SENSOR_MEDUSA_VIN = 0xFD,
+  BMC_SENSOR_NICEXP_TEMP = 0xFE
 };
 
 //Serverboard Discrete/SEL Sensors
@@ -411,6 +445,7 @@ enum {
   TEMP_OUTLET,
   TEMP_NIC,
   TEMP_NICEXP_OUTLET,
+  TEMP_NICEXP
 };
 
 //ADM1278 INFO

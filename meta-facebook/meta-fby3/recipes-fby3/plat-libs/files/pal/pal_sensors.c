@@ -1259,6 +1259,11 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *cnt = cwc_sensor_cnt;
     break;
   case FRU_2U:
+    if (bmc_location != NIC_BMC) { // Config D GPv3 slot1 already show slot1 GPv3 (2U) sensor
+      *sensor_list = NULL;
+      *cnt = 0;
+      break;
+    }
   case FRU_2U_TOP:
   case FRU_2U_BOT:
     memcpy(&bic_dynamic_gpv3_cwc_sensor_list[current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);

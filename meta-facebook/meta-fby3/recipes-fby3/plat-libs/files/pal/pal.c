@@ -889,6 +889,10 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_BB:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
       break;
+    case FRU_2U:
+    case FRU_2U_SLOT3:
+      *caps = 0;
+      break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
         *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
@@ -1418,6 +1422,12 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_CWC:
     case FRU_2U_TOP:
     case FRU_2U_BOT:
+    case FRU_2U_SLOT3:
+      if (fru == FRU_2U ) {
+        fru = FRU_SLOT1;
+      } else if (fru == FRU_2U_SLOT3) {
+        fru = FRU_SLOT3;
+      }
       ret = pal_get_server_12v_power(fru, &status_12v);
       if(ret < 0 || status_12v == SERVER_12V_OFF) {
         *status = 0;

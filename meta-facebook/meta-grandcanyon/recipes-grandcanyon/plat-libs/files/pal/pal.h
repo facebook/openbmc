@@ -274,6 +274,12 @@ enum {
   ASPEED_A3 = 0x3
 };
 
+// BIC mode
+enum {
+  BIC_MODE_NORMAL = 0x01,
+  BIC_MODE_UPDATE = 0x0F,
+};
+
 typedef struct {
 	uint8_t pcie_cfg;
 	uint8_t completion_code;

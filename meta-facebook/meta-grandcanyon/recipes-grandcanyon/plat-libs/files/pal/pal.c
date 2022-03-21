@@ -4324,3 +4324,21 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
 
   return 0;
 }
+
+void
+pal_inform_bic_mode(uint8_t fru, uint8_t mode) {
+
+  switch(mode) {
+    case BIC_MODE_NORMAL:
+      // Bridge IC entered normal mode
+      syslog(LOG_CRIT, "%s(): BIC has been reset.", __func__);
+      break;
+    case BIC_MODE_UPDATE:
+      // Bridge IC entered update mode
+      break;
+    default:
+      break;
+  }
+
+  return;
+}

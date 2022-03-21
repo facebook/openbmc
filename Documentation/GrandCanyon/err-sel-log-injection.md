@@ -13,7 +13,9 @@
     gpiocli -c aspeed-gpio -s BIC_READY_IN set-value 0
     ```
 * SEL injection
-    * None
+    ```
+    root@bmc-oob:~# logger -s -p user.crit -t healthd "FRU 1 BIC reset by BIC health monitor due to health check failed in following order: BIC ready, BIC ready, BIC ready"
+    ```
 * Example SEL
     ```
     root@bmc-oob:~# log-util all --print
@@ -35,7 +37,9 @@
     root@bmc-oob:~# devmem 0x1e6e00B0 32 0x80
     ```
 * SEL injection
-    * None
+    ```
+    root@bmc-oob:~# logger -s -p user.warn -t healthd "ECC Recoverable Error occurred (over 0%) Counter = 2 Address of last recoverable ECC error = 0x9093a8"
+    ```
 * Example SEL
     ```
     root@bmc-oob:~# cat /var/log/messages | grep ECC
@@ -78,7 +82,14 @@
      cmd > wwint mock cs set 1 disable
     ```
 * SEL injection
-    * None
+    ```
+    # assert
+     root@bmc-oob:~# logger -s -p user.crit -t ipmid "ASSERT: Upper Critical threshold - raised - FRU: 4, num: 0xdb curr_val: 80000 mA, thresh_val: 70000 mA, snr: DPB_HSC_Current"
+
+    # deassert
+     root@bmc-oob:~# logger -s -p user.crit -t ipmid "DEASSERT: Upper Critical threshold - raised - FRU: 4, num: 0xdb curr_val: 16250 mA, thresh_val: 70000 mA, snr: DPB_HSC_Current"
+
+    ```
 * Example SEL
     ```
     # assert

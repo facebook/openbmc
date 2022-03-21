@@ -32,17 +32,10 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
+#include <openbmc/ras.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
 #define POC1_BOARD_ID 0x0
-
-static void 
-log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
-{
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-  assert(cfg);
-  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
-}
 
 static void
 log_slot_present(uint8_t slot_id, gpio_value_t value)
@@ -64,7 +57,7 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   assert(cfg);
   sscanf(cfg->description, "GPIOH%u", &slot_id);
   slot_id -= 3;
-  log_gpio_change(gpdesc, value, 0);
+  log_gpio_change(gpdesc, value, 0, true);
   log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) {
     pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
@@ -93,7 +86,7 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   sscanf(cfg->description, "GPIOH%u", &slot_id);
   slot_id -= 3;
   slot_hotplug_setup(slot_id);
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
   log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) {
     pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
@@ -138,7 +131,7 @@ slot_ocp_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   // because we don't have consistent shadow name here, we use description instead
   sscanf(cfg->description, "GPION%u", &slot_id);
   slot_id += 1;
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
   issue_slot_ocp_fault_sel(slot_id);
 }
 
@@ -161,7 +154,7 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   slot_id += 1;
   sprintf(pwr_cmd, "slot%u reset", slot_id);
   if ( curr == GPIO_VALUE_LOW ) slot_power_control(pwr_cmd);
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
 }
 
 static void
@@ -187,7 +180,7 @@ usb_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
 
   assert(cfg);
   sscanf(cfg->description, "GPIOS2");
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
 
   if (curr == GPIO_VALUE_LOW) {
     i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -239,6 +232,7 @@ static struct gpiopoll_config g_class1_gpios[] = {
   {"HSC_FAULT_SLOT4_N",        "GPION3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
   {"OCP_NIC_PRSNT_BMC_N",      "GPIOC5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
   {"P5V_USB_PG_BMC",           "GPIOS2",   GPIO_EDGE_BOTH,     usb_hotplug_hndlr,        NULL},
+  {"FAST_PROCHOT_BMC_N_R",     "GPIOM4",   GPIO_EDGE_BOTH,     fast_prochot_hndlr,       fast_prochot_init},
 };
 
 // GPIO table of the class 2

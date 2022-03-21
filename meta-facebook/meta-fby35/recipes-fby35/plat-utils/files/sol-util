@@ -55,7 +55,7 @@ select_expansion_uart() {
     curr_sts=$((curr_sts & 0x0f))
     curr_sts=$((curr_sts | data << 4))
   fi
-  /usr/sbin/i2cset -y "$bus" "$addr" 0 "$curr_sts"
+  /usr/sbin/i2cset -y $bus $addr 0 $curr_sts
 }
 
 get_slot_num() {

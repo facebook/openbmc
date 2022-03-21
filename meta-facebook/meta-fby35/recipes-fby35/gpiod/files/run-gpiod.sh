@@ -36,4 +36,4 @@ else
   echo -n "Is board id correct(id=$bmc_location)?..."
 fi
 
-exec /usr/local/bin/gpiod "$SLOTS"
+exec /usr/local/bin/gpiod $SLOTS

@@ -2411,7 +2411,7 @@ pal_get_gpv3_not_present_str_name(uint8_t comp, uint8_t gpv3_name, char *error_l
 
 static void
 pal_get_pesw_config_str_name(uint8_t board_id, uint8_t pesw_config, char *error_log) {
-  const char *pesw_config_list_str[7] = {"2U GPv3 SINGLE M.2", "2U GPv3 DUAL M.2", "4U CWC", "4U TOP GPv3 DUAL M.2", "4U BOT GPv3 DUAL M.2", "4U TOP GPv3 SINGLE M.2", "4U BOT GPv3 SINGLE M.2"};
+  const char *pesw_config_list_str[8] = {"2U GPv3 SINGLE M.2", "2U GPv3 DUAL M.2", "4U CWC", "4U TOP GPv3 DUAL M.2", "4U BOT GPv3 DUAL M.2", "4U TOP GPv3 SINGLE M.2", "4U BOT GPv3 SINGLE M.2","GPv3_HALF_BW_M.2"};
   const uint8_t pesw_config_list_size = ARRAY_SIZE(pesw_config_list_str);
 
   if (pesw_config == BIC_READ_EEPROM_FAILED ) {

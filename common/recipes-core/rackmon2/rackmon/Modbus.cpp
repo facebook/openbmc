@@ -14,6 +14,7 @@ void Modbus::command(
     uint32_t baudrate,
     ModbusTime timeout,
     ModbusTime settleTime) {
+  std::unique_lock lck(deviceMutex_);
   if (!deviceValid_) {
     throw std::runtime_error("Uninitialized");
   }
@@ -26,7 +27,6 @@ void Modbus::command(
     baudrate = defaultBaudrate_;
   }
   req.encode();
-  std::lock_guard<std::mutex> lck(deviceMutex_);
   device_->setBaudrate(baudrate);
   device_->write(req.raw.data(), req.len);
   resp.len = device_->read(resp.raw.data(), resp.len, timeout.count());
@@ -56,29 +56,36 @@ std::unique_ptr<UARTDevice> Modbus::makeDevice(
   return ret;
 }
 
-void Modbus::probePresence() {
-  if (!deviceValid_) {
-    if (openTries_ > 0) {
-      std::this_thread::sleep_for(std::chrono::seconds(interfaceRetryTime_));
+bool Modbus::openDevice() {
+  try {
+    device_->open();
+    deviceValid_ = true;
+    return true;
+  } catch (std::exception& ex) {
+    return false;
+  }
+}
+
+void Modbus::closeDevice() {
+  device_->close();
+  deviceValid_ = false;
+}
+
+void Modbus::healthCheck() {
+  std::unique_lock lck(deviceMutex_);
+  if (!isPresent()) {
+    if (openDevice()) {
+      logInfo << devicePath_ << " recovered successfully" << std::endl;
     }
-    try {
-      openTries_++;
-      device_->open();
-      deviceValid_ = true;
-    } catch (std::exception& ex) {
-      // Log only once.
-      if (openTries_ == 1) {
-        logError << "Interface open failed: " << ex.what() << std::endl;
-      }
-      if (openTries_ < maxOpenTries_) {
-        auto tid = std::thread(&Modbus::probePresence, this);
-        tid.detach();
-      }
-    }
+  } else if (!device_->exists()) {
+    logError << devicePath_ << " no longer exists starting recovery"
+             << std::endl;
+    closeDevice();
   }
 }
 
 void Modbus::initialize(const json& j) {
+  std::unique_lock lck(deviceMutex_);
   j.at("device_path").get_to(devicePath_);
   j.at("baudrate").get_to(defaultBaudrate_);
   std::string deviceType = j.value("device_type", "default");
@@ -87,11 +94,12 @@ void Modbus::initialize(const json& j) {
   minDelay_ = ModbusTime(j.value("min_delay", 0));
   ignoredAddrs_ = j.value("ignored_addrs", std::set<uint8_t>{});
   device_ = makeDevice(deviceType, devicePath_, defaultBaudrate_);
-  probePresence();
-}
-
-void from_json(const json& j, Modbus& m) {
-  m.initialize(j);
+  if (!openDevice()) {
+    logError << devicePath_ << " open failed. starting recovery" << std::endl;
+  }
+  healthCheckThread_ = std::make_unique<PollThread<Modbus>>(
+      &Modbus::healthCheck, this, healthCheckInterval_);
+  healthCheckThread_->start();
 }
 
 } // namespace rackmon

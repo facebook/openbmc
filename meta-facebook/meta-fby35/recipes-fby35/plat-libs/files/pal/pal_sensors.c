@@ -918,7 +918,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_FAN_IOUT"   ,       ADC10, read_adc_val   ,    0, {      0,      0,      0,     0, 14.52,   39.2,   0,   0}, CURR}, //0xFB
   {"BMC_SENSOR_NIC_IOUT"   ,       ADC11, read_adc_val   ,    0, {      0,      0,      0,     0,   6.6,   8.15,   0,   0}, CURR}, //0xFC
   {"BMC_SENSOR_MEDUSA_VIN" ,        0xFD, read_medusa_val, true, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xFD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
+  {"BMC_SENSOR_NICEXP_TEMP",TEMP_NICEXP , read_temp      , true, {      0,      0,      0,     0,    50,    150,   0,   0}, TEMP}, //0xFE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 

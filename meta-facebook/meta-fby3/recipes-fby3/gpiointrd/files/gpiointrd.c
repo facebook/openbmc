@@ -36,6 +36,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <facebook/fby3_gpio.h>
+#include <openbmc/ras.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
 
@@ -79,14 +80,6 @@ err_t platform_state[] = {
   {0x46, "PLATFORM_STATE_PIT_L2_PCH_HASH_MISMATCH_LOCKDOWN"},
   {0x47, "PLATFORM_STATE_PIT_L2_BMC_HASH_MISMATCH_LOCKDOWN"},
 };
-
-static void 
-log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay)
-{
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
-  assert(cfg);
-  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
-}
 
 static void
 log_slot_present(uint8_t slot_id, gpio_value_t value)
@@ -133,7 +126,8 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
     }
   }
 
-  log_gpio_change(gpdesc, value, 0);
+  log_gpio_change(gpdesc, value, 0, true);
+
   log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
   pal_check_slot_cpu_present(slot_id);
@@ -158,7 +152,7 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   assert(cfg);
   sscanf(cfg->shadow, "PRSNT_MB_BMC_SLOT%u_BB_N", &slot_id);
   slot_hotplug_setup(slot_id);
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
   log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) {
     pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
@@ -352,13 +346,13 @@ slot_hsc_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   }
 
   if ( curr == GPIO_VALUE_LOW ) {
-    log_gpio_change(gp, curr, 0);
+    log_gpio_change(gp, curr, 0, true);
     issue_slot_ocp_fault_sel(slot_id);
   } else {
     if (init[slot_id - 1] == 0 ) {
       init[slot_id - 1]++;
     } else {
-      log_gpio_change(gp, curr, 0);
+      log_gpio_change(gp, curr, 0, true);
     }
 
     if (pthread_create(&tid_hsc[slot_id - 1], NULL, hsc_log_handler, (void *)slot_id) == 0) {
@@ -413,7 +407,7 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   sscanf(cfg->shadow, "FM_RESBTN_SLOT%u_BMC_N", &slot_id);
   sprintf(pwr_cmd, "slot%u reset", slot_id);
   if ( curr == GPIO_VALUE_LOW ) slot_power_control(pwr_cmd);
-  log_gpio_change(gp, curr, 0);
+  log_gpio_change(gp, curr, 0, true);
 }
 
 static void
@@ -446,6 +440,7 @@ static struct gpiopoll_config g_class1_gpios[] = {
   {"HSC_FAULT_SLOT3_N",       "GPIOM2",   GPIO_EDGE_BOTH,     slot_hsc_fault_hndlr,     slot_hsc_fault_init},
   {"HSC_FAULT_BMC_SLOT4_N_R", "GPIOM3",   GPIO_EDGE_BOTH,     slot_hsc_fault_hndlr,     slot_hsc_fault_init},
   {"OCP_NIC_PRSNT_BMC_N",     "GPIOM5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
+  {"FAST_PROCHOT_BMC_N_R",    "GPIOL4",   GPIO_EDGE_BOTH,     fast_prochot_hndlr,       fast_prochot_init},
 };
 
 // GPIO table of the class 2

@@ -149,26 +149,36 @@ enable_server_i2c_bus() {
 # Check to see if server is present in given slot or not
 is_server_prsnt() {
   local prsnt
+  PRESENT="0"
+  NOT_PRESENT="1"
 
-  case $1 in
-    1)
-      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT1_BB_N)
-      ;;
-    2)
-      prsnt=$(gpio_get PRSNT_MB_SLOT2_BB_N)
-      ;;
-    3)
-      prsnt=$(gpio_get PRSNT_MB_BMC_SLOT3_BB_N)
-      ;;
-    4)
-      prsnt=$(gpio_get PRSNT_MB_SLOT4_BB_N)
-      ;;
-    *)
-      prsnt="1"
-      ;;
-  esac
-
-  if [ $prsnt == "0" ]; then
+  if [ "$(get_bmc_board_id)" -eq "$BMC_ID_CLASS2" ]; then
+    if [ $1 -eq 1 ]; then
+      # class 2 slot1 is always present
+      prsnt=$PRESENT
+    else
+      prsnt=$NOT_PRESENT
+    fi
+  else
+    case $1 in
+      1)
+        prsnt=$(gpio_get PRSNT_MB_BMC_SLOT1_BB_N)
+        ;;
+      2)
+        prsnt=$(gpio_get PRSNT_MB_SLOT2_BB_N)
+        ;;
+      3)
+        prsnt=$(gpio_get PRSNT_MB_BMC_SLOT3_BB_N)
+        ;;
+      4)
+        prsnt=$(gpio_get PRSNT_MB_SLOT4_BB_N)
+        ;;
+      *)
+        prsnt=$NOT_PRESENT
+        ;;
+    esac
+  fi
+  if [ $prsnt == $PRESENT ]; then
     echo 1
   else
     echo 0

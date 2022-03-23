@@ -89,35 +89,6 @@ class Mock3Modbus : public Modbus {
   FakeModbus fake_;
 };
 
-class MockPollThread : public PollThread<Rackmon> {
-  std::atomic<bool> tick_{false};
-  std::condition_variable ack_{};
-
- public:
-  MockPollThread(
-      std::function<void(Rackmon*)> func,
-      Rackmon* obj,
-      const PollThreadTime& pollInterval)
-      : PollThread<Rackmon>(func, obj, pollInterval) {}
-  void workerLoop() override {
-    std::unique_lock lk(eventMutex_);
-    while (started_.load()) {
-      func_(obj_);
-      if (tick_.load()) {
-        tick_ = false;
-        ack_.notify_all();
-      }
-      eventCV_.wait(lk, [this]() { return !started_.load() || tick_.load(); });
-    }
-  }
-  void tick() {
-    std::unique_lock lk(eventMutex_);
-    tick_ = true;
-    eventCV_.notify_all();
-    ack_.wait(lk, [this]() { return !tick_.load(); });
-  }
-};
-
 class MockRackmon : public Rackmon {
  public:
   MockRackmon() : Rackmon() {}
@@ -125,18 +96,11 @@ class MockRackmon : public Rackmon {
   const RegisterMapDatabase& getMap() {
     return getRegisterMapDatabase();
   }
-  std::unique_ptr<PollThread<Rackmon>> makeThread(
-      std::function<void(Rackmon*)> func,
-      PollThreadTime interval) {
-    auto t1 = std::make_unique<MockPollThread>(func, this, interval);
-    std::unique_ptr<PollThread<Rackmon>> t2 = std::move(t1);
-    return t2;
-  }
   void scanTick() {
-    dynamic_cast<MockPollThread&>(getScanThread()).tick();
+    getScanThread().tick();
   }
   void monitorTick() {
-    dynamic_cast<MockPollThread&>(getMonitorThread()).tick();
+    getMonitorThread().tick();
   }
 };
 
@@ -200,8 +164,8 @@ class RackmonTest : public ::testing::Test {
     EXPECT_CALL(*ptr, initialize(exp)).Times(1);
     if (num_cmd_calls > 0) {
       EXPECT_CALL(*ptr, isPresent())
-        .Times(AtLeast(3))
-        .WillRepeatedly(Return(true));
+          .Times(AtLeast(3))
+          .WillRepeatedly(Return(true));
       EXPECT_CALL(*ptr, command(_, _, _, _, _)).Times(AtLeast(num_cmd_calls));
     }
     std::unique_ptr<Modbus> ptr2 = std::move(ptr);

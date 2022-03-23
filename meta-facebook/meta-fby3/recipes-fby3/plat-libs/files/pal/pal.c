@@ -889,6 +889,10 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_BB:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
       break;
+    case FRU_2U:
+    case FRU_2U_SLOT3:
+      *caps = 0;
+      break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
         *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
@@ -1418,6 +1422,12 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_CWC:
     case FRU_2U_TOP:
     case FRU_2U_BOT:
+    case FRU_2U_SLOT3:
+      if (fru == FRU_2U ) {
+        fru = FRU_SLOT1;
+      } else if (fru == FRU_2U_SLOT3) {
+        fru = FRU_SLOT3;
+      }
       ret = pal_get_server_12v_power(fru, &status_12v);
       if(ret < 0 || status_12v == SERVER_12V_OFF) {
         *status = 0;
@@ -2401,7 +2411,7 @@ pal_get_gpv3_not_present_str_name(uint8_t comp, uint8_t gpv3_name, char *error_l
 
 static void
 pal_get_pesw_config_str_name(uint8_t board_id, uint8_t pesw_config, char *error_log) {
-  const char *pesw_config_list_str[7] = {"2U GPv3 SINGLE M.2", "2U GPv3 DUAL M.2", "4U CWC", "4U TOP GPv3 DUAL M.2", "4U BOT GPv3 DUAL M.2", "4U TOP GPv3 SINGLE M.2", "4U BOT GPv3 SINGLE M.2"};
+  const char *pesw_config_list_str[8] = {"2U GPv3 SINGLE M.2", "2U GPv3 DUAL M.2", "4U CWC", "4U TOP GPv3 DUAL M.2", "4U BOT GPv3 DUAL M.2", "4U TOP GPv3 SINGLE M.2", "4U BOT GPv3 SINGLE M.2","GPv3_HALF_BW_M.2"};
   const uint8_t pesw_config_list_size = ARRAY_SIZE(pesw_config_list_str);
 
   if (pesw_config == BIC_READ_EEPROM_FAILED ) {

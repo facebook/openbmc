@@ -11,7 +11,12 @@ using namespace std;
 #define MAX10_RPD_SIZE 0x23000
 
 image_info BmcCpldComponent::check_image(const string& image, bool force) {
-  uint8_t board_rev = 0;
+  string fru_name = fru();
+  size_t bmc_found = fru_name.find("bmc");
+  uint8_t slot_id = 0;
+  uint8_t board_type_index = 0;
+  struct stat file_info;
+  uint8_t fw_comp = 0;
   image_info image_sts = {"", false, false};
   uint8_t bmc_location = 0;
 
@@ -25,18 +30,49 @@ image_info BmcCpldComponent::check_image(const string& image, bool force) {
     return image_sts;
   }
 
-  if (force == true) {
-    image_sts.result = true;
-  }
-
-  if (get_board_rev(0, BOARD_ID_BB, &board_rev) < 0) {
-    cerr << "Failed to get board revision ID" << endl;
+  if (stat(image.c_str(), &file_info) < 0) {
+    cerr << "Cannot check " << image << " file information" << endl;
     return image_sts;
   }
 
-  if (fby35_common_is_valid_img(image.c_str(), FW_BB_CPLD, board_rev) == true) {
-    image_sts.result = true;
+  if (file_info.st_size == MAX10_RPD_SIZE + IMG_POSTFIX_SIZE)
     image_sts.sign = true;
+
+  if (force == false) {
+    if (image_sts.sign != true) {
+      cerr << "Image " << image << " is not a signed image, please use --force option" << endl;
+      return image_sts;
+    }
+
+    // Read Board Revision from CPLD
+    if (bmc_found != string::npos) {
+      if(bmc_location == NIC_BMC){
+        if (get_board_rev(0, BOARD_ID_NIC_EXP, &board_type_index) < 0) {
+          cerr << "Failed to get board revision ID" << endl;
+          return image_sts;
+        }
+      } else{
+        if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
+          cerr << "Failed to get board revision ID" << endl;
+          return image_sts;
+        }
+      }
+      fw_comp = FW_BB_CPLD;
+    } else {
+      slot_id = fru_name.at(4) - '0';
+      if (get_board_rev(slot_id, BOARD_ID_SB, &board_type_index) < 0) {
+        cerr << "Failed to get board revision ID" << endl;
+        return image_sts;
+      }
+      fw_comp = FW_CPLD;
+    }
+
+    if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_type_index) == false) {
+      return image_sts;
+    }
+    image_sts.result = true;
+  } else {
+    image_sts.result = true;
   }
 
   return image_sts;

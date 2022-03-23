@@ -3146,41 +3146,11 @@ error_exit:
 
 static bool
 pal_is_sdr_init(uint8_t fru) {
- switch (fru) {
-   case FRU_2U:
-    fru = MAX_NUM_FRUS;
-    break;
-  case FRU_CWC:
-    fru = MAX_NUM_FRUS+1;
-    break;
-  case FRU_2U_TOP:
-    fru = MAX_NUM_FRUS+2;
-    break;
-  case FRU_2U_BOT:
-    fru = MAX_NUM_FRUS+3;
-    break;
-  }
-
   return sdr_init_done[fru - 1];
 }
 
 static void
 pal_set_sdr_init(uint8_t fru, bool set) {
-  switch (fru) {
-   case FRU_2U:
-    fru = MAX_NUM_FRUS;
-    break;
-  case FRU_CWC:
-    fru = MAX_NUM_FRUS+1;
-    break;
-  case FRU_2U_TOP:
-    fru = MAX_NUM_FRUS+2;
-    break;
-  case FRU_2U_BOT:
-    fru = MAX_NUM_FRUS+3;
-    break;
-  }
-
   sdr_init_done[fru - 1] = set;
 }
 

@@ -193,6 +193,7 @@ workflows:
                             yamp,
                             yosemite,
                             qemux86,
+                            agc032a,
                             ]
             - unit-test:
                 requires:
@@ -215,4 +216,5 @@ workflows:
                             yamp,
                             fbttn,
                             fbtp,
+                            agc032a,
                             ]

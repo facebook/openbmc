@@ -19,6 +19,7 @@
 #
 import os
 import unittest
+import pal
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
 from tests.fuji.test_data.sensors.sensor import (
@@ -149,6 +150,13 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/sensors"
     def set_endpoint_sensors_attributes(self):
+        psu_list = [1, 2, 3, 4]
+        psu_sensor_list = {
+            1: PSU1_SENSORS,
+            2: PSU2_SENSORS,
+            3: PSU3_SENSORS,
+            4: PSU4_SENSORS,
+        }
         pim_list = [0, 1, 2, 3, 4, 5, 6, 7]
         pim_16q_sensor_list = {
             0: PIM1_SENSORS_16Q,
@@ -173,11 +181,13 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
         self.endpoint_sensors_attrb = (
             SCM_SENSORS
             + SMB_SENSORS
-            + PSU1_SENSORS
-            + PSU2_SENSORS
-            + PSU3_SENSORS
-            + PSU4_SENSORS
         )
+        for psu in psu_list:
+            if pal.pal_is_fru_prsnt(pal.pal_get_fru_id("psu{}".format(psu))):
+                self.endpoint_sensors_attrb += psu_sensor_list[psu]
+            else:
+                Logger.info("/api/sys/sensors: get psu{} not present".format(psu))
+
         for pim in pim_list:
             name = self.get_pim_sensor_type(pim)
             if name == "PIM_TYPE_16Q":

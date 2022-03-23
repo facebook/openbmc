@@ -217,7 +217,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "zone1_AMD.fsc"
+      "expr_file": "zone1_AMD_vicor.fsc"
     }
   }
 }

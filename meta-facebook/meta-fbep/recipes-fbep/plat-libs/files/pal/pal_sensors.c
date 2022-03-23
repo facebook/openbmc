@@ -63,6 +63,7 @@ static int read_gpu_temp(uint8_t, float*);
 static int read_asic_board_temp(uint8_t, float*);
 static int read_asic_mem_temp(uint8_t, float*);
 static int read_gpu_pwcs(uint8_t, float*);
+static int sensors_read_infineon(uint8_t, float*);
 
 /*
  * List of sensors to be monitored
@@ -139,7 +140,7 @@ const uint8_t mb_sensor_list[] = {
   MB_VR_P1V0_AVD3_TEMP
 };
 
-const uint8_t pdb_sensor_list[] = {
+const uint8_t pdb_vicor_sensor_list[] = {
   PDB_HSC_P12V_1_VIN,
   PDB_HSC_P12V_1_VOUT,
   PDB_HSC_P12V_1_CURR,
@@ -173,6 +174,40 @@ const uint8_t pdb_sensor_list[] = {
   PDB_ADC_2_VICOR1_TEMP,
   PDB_ADC_2_VICOR2_TEMP,
   PDB_ADC_2_VICOR3_TEMP,
+  PDB_SENSOR_OUTLET,
+  PDB_SENSOR_OUTLET_REMOTE
+};
+
+const uint8_t pdb_infineon_sensor_list[] = {
+  PDB_HSC_P12V_1_VIN,
+  PDB_HSC_P12V_1_VOUT,
+  PDB_HSC_P12V_1_CURR,
+  PDB_HSC_P12V_1_PWR,
+  PDB_HSC_P12V_1_PWR_PEAK,
+  PDB_HSC_P12V_2_VIN,
+  PDB_HSC_P12V_2_VOUT,
+  PDB_HSC_P12V_2_CURR,
+  PDB_HSC_P12V_2_PWR,
+  PDB_HSC_P12V_2_PWR_PEAK,
+  PDB_HSC_P12V_AUX_VIN,
+  PDB_HSC_P12V_AUX_VOUT,
+  PDB_HSC_P12V_AUX_CURR,
+  PDB_HSC_P12V_AUX_PWR,
+  PDB_HSC_P12V_AUX_PWR_PEAK,
+  PDB_HSC_P48V_1_VIN,
+  PDB_HSC_P48V_1_VOUT,
+  PDB_HSC_P48V_1_CURR,
+  PDB_HSC_P48V_1_PWR,
+  PDB_HSC_P48V_1_PWR_PEAK,
+  PDB_HSC_P48V_2_VIN,
+  PDB_HSC_P48V_2_VOUT,
+  PDB_HSC_P48V_2_CURR,
+  PDB_HSC_P48V_2_PWR,
+  PDB_HSC_P48V_2_PWR_PEAK,
+  PDB_NTC_1_INFINEON0_TEMP,
+  PDB_NTC_1_INFINEON1_TEMP,
+  PDB_NTC_2_INFINEON0_TEMP,
+  PDB_NTC_2_INFINEON1_TEMP,
   PDB_SENSOR_OUTLET,
   PDB_SENSOR_OUTLET_REMOTE
 };
@@ -496,7 +531,15 @@ float sensors_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {
   [PDB_SENSOR_OUTLET] =
   {0,	75.0,	0,	0,	10.0,	0,	0,	0,	0},
   [PDB_SENSOR_OUTLET_REMOTE] =
-  {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0}
+  {0,	70.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_NTC_1_INFINEON0_TEMP] =
+  {0,	105.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_NTC_1_INFINEON1_TEMP] =
+  {0,	105.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_NTC_2_INFINEON0_TEMP] =
+  {0,	105.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [PDB_NTC_2_INFINEON1_TEMP] =
+  {0,	105.0,	0,	0,	10.0,	0,	0,	0,	0},
 };
 
 struct sensor_map {
@@ -776,6 +819,14 @@ struct sensor_map {
   {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET", SNR_TEMP},
   [PDB_SENSOR_OUTLET_REMOTE] =
   {sensors_read_common_therm, "EP_PDB_SENSOR_OUTLET_REMOTE", SNR_TEMP},
+  [PDB_NTC_1_INFINEON0_TEMP] =
+  {sensors_read_infineon, "EP_PDB_NTC_1_INFINEON0_TEMP", SNR_TEMP},
+  [PDB_NTC_1_INFINEON1_TEMP] =
+  {sensors_read_infineon, "EP_PDB_NTC_1_INFINEON1_TEMP", SNR_TEMP},
+  [PDB_NTC_2_INFINEON0_TEMP] =
+  {sensors_read_infineon, "EP_PDB_NTC_2_INFINEON0_TEMP", SNR_TEMP},
+  [PDB_NTC_2_INFINEON1_TEMP] =
+  {sensors_read_infineon, "EP_PDB_NTC_2_INFINEON1_TEMP", SNR_TEMP},
 };
 
 static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
@@ -850,7 +901,8 @@ static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
 };
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
-size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
+size_t pdb_vicor_sensor_cnt = sizeof(pdb_vicor_sensor_list)/sizeof(uint8_t);
+size_t pdb_infineon_sensor_cnt = sizeof(pdb_infineon_sensor_list)/sizeof(uint8_t);
 size_t asic0_sensor_cnt = sizeof(asic0_sensor_list)/sizeof(uint8_t);
 size_t asic1_sensor_cnt = sizeof(asic1_sensor_list)/sizeof(uint8_t);
 size_t asic2_sensor_cnt = sizeof(asic2_sensor_list)/sizeof(uint8_t);
@@ -939,6 +991,53 @@ static int sensors_read_vicor(uint8_t sensor_num, float *value)
     return ERR_SENSOR_NA;
 
   return 0;
+}
+
+static int sensors_read_infineon(uint8_t sensor_num, float *value)
+{
+  int fd;
+  char dev[64] = {0};
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t addr, bus;
+
+  switch (sensor_num) {
+    case PDB_NTC_1_INFINEON0_TEMP:
+      bus = 17;
+      addr = 0x8a;
+      tbuf[0] = 0x8d;
+    break;
+    case PDB_NTC_1_INFINEON1_TEMP:
+      bus = 17;
+      addr = 0x8a;
+      tbuf[0] = 0x8e;
+    break;
+    case PDB_NTC_2_INFINEON0_TEMP:
+      bus = 18;
+      addr = 0x8c;
+      tbuf[0] = 0x8d;
+    break;
+    case PDB_NTC_2_INFINEON1_TEMP:
+      bus = 18;
+      addr = 0x8c;
+      tbuf[0] = 0x8e;
+    break;
+
+    default:
+      goto exit;
+  }
+
+  snprintf(dev, sizeof(dev), "/dev/i2c-%d", bus);
+  fd = open(dev, O_RDWR);
+  if (fd < 0)
+    goto exit;
+
+  i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+
+  *value = rbuf[0];
+  
+exit:
+  close(fd);  
 }
 
 int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
@@ -1111,6 +1210,20 @@ static int sensors_read_fan_speed(uint8_t sensor_num, float *value)
   return 0;
 }
 
+int pal_check_pdb_vr_config(void)
+{
+  char vr_vendor[16] = {0};
+  int vr_config;
+  pal_get_key_value("VR_IC", vr_vendor);
+  if (!strcmp(vr_vendor, "VI")) {
+    vr_config = 1;
+  } else {
+    vr_config = 0;
+  }
+
+  return vr_config;
+}
+
 static int sensors_read_fan_health(uint8_t sensor_num, float *value)
 {
   int ret, index;
@@ -1125,25 +1238,45 @@ static int sensors_read_fan_health(uint8_t sensor_num, float *value)
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_VOLT", (float *)value);
       break;
     case MB_FAN0_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
+      if(pal_check_pdb_vr_config()) {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
+      } else {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN0_CURR", (float *)value);
+        hsc_value_adjust(mps_efuse_current_table, value);
+      }
       break;
     case MB_FAN1_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_VOLT", (float *)value);
       break;
     case MB_FAN1_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
+      if(pal_check_pdb_vr_config()) {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
+      } else {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN1_CURR", (float *)value);
+        hsc_value_adjust(mps_efuse_current_table, value);
+      }
       break;
     case MB_FAN2_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_VOLT", (float *)value);
       break;
     case MB_FAN2_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
+      if(pal_check_pdb_vr_config()) {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
+      } else {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN2_CURR", (float *)value);
+        hsc_value_adjust(mps_efuse_current_table, value);
+      }
       break;
     case MB_FAN3_VOLT:
       ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_VOLT", (float *)value);
       break;
     case MB_FAN3_CURR:
-      ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
+      if(pal_check_pdb_vr_config()) {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
+      } else {
+        ret = sensors_read("adc128d818-i2c-18-1d", "FAN3_CURR", (float *)value);
+        hsc_value_adjust(mps_efuse_current_table, value);
+      }
       break;
     default:
       return ERR_SENSOR_NA;
@@ -1698,8 +1831,13 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
       *cnt = mb_sensor_cnt;
       break;
     case FRU_PDB:
-      *sensor_list = (uint8_t *) pdb_sensor_list;
-      *cnt = pdb_sensor_cnt;
+      if (pal_check_pdb_vr_config()) {
+        *sensor_list = (uint8_t *) pdb_vicor_sensor_list;
+        *cnt = pdb_vicor_sensor_cnt;
+      } else {
+        *sensor_list = (uint8_t *) pdb_infineon_sensor_list;
+        *cnt = pdb_infineon_sensor_cnt;
+      }
       break;
     case FRU_BSM:
       *sensor_list = NULL;

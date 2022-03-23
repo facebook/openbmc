@@ -25,7 +25,7 @@
         "type" : "power_status"
       }
     },
-    "(.*)vicor": {
+    "(.*)infineon": {
       "attribute": {
         "type" : "power_status"
       }
@@ -124,7 +124,7 @@
       "ki": -0.035,
       "kd": 0.0
     },
-    "linear_vicor": {
+    "linear_infineon": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -133,9 +133,8 @@
       "negative_hysteresis": 0,
       "data": [
         [70, 15],
-        [75, 20],
-        [80, 25],
-        [90, 60]
+        [80, 30],
+        [90, 80]
       ]
     }
   },
@@ -216,7 +215,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "zone1_NVIDIA.fsc"
+      "expr_file": "zone1_NVIDIA_infineon.fsc"
     }
   }
 }

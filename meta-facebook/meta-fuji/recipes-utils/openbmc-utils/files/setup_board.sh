@@ -64,6 +64,21 @@ echo "$brd_type" > /tmp/cache_store/board_type
 
 cp /etc/sensors.d/custom/fuji.conf /etc/sensors.d/fuji.conf
 
+kv set smb_update_flag 1
+kv set scm_update_flag 1
+kv set pim1_update_flag 1
+kv set pim2_update_flag 1
+kv set pim3_update_flag 1
+kv set pim4_update_flag 1
+kv set pim5_update_flag 1
+kv set pim6_update_flag 1
+kv set pim7_update_flag 1
+kv set pim8_update_flag 1
+kv set psu1_update_flag 1
+kv set psu2_update_flag 1
+kv set psu3_update_flag 1
+kv set psu4_update_flag 1
+
 # export_gpio_pin for PCA9534 54-0021
 gpiocli export -c 54-0021 -o 0 --shadow PDB_L_JTAG_TDO
 gpiocli export -c 54-0021 -o 1 --shadow PDB_L_JTAG_TDI

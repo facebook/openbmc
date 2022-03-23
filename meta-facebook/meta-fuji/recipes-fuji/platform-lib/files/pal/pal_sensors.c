@@ -6875,13 +6875,31 @@ sdr_init(char *path, sensor_info_t *sinfo) {
 }
 
 int pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
-  sdr_fru_update_flag[slot] = update;
+  char key[MAX_KEY_LEN];
+  char value[12] = {0};
+  char fruname[16] = {0};
+
   init_threshold_done[slot] = false;
-  return 0;
+  pal_get_fru_name(slot, fruname);
+  sprintf(key, "%s_update_flag", fruname);
+  sprintf(value, "%d", update);
+
+  return kv_set(key, value, 0, 0);
 }
 
 int pal_get_sdr_update_flag(uint8_t slot) {
-  return sdr_fru_update_flag[slot];
+  char key[MAX_KEY_LEN];
+  char value[12] = {0};
+  char fruname[16] = {0};
+
+  pal_get_fru_name(slot, fruname);
+  sprintf(key, "%s_update_flag", fruname);
+
+  if (kv_get(key, value, NULL, 0)) {
+    syslog(LOG_ERR, "%s: pal_get_sdr_update_flag(%d) fail!", __func__, slot);
+    return 0;
+  }
+  return (int)strtoul(value, NULL, 0);
 }
 
 

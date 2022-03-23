@@ -21,6 +21,29 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 #shellcheck disable=SC1091
 source /usr/local/bin/openbmc-utils.sh
 
+i2c_detect_address() {
+   bus="$1"
+   addr="$2"
+   if [ -n "$3" ]; then
+      retries="$3"
+   else
+      retries=5
+   fi
+
+   retry=0
+
+   while [ "$retry" -lt "$retries" ]; do
+      if i2cget -y -f "$bus" "$addr" &> /dev/null; then
+         return 0
+      fi
+      usleep 50000
+      retry=$((retry + 1))
+   done
+   
+   echo "setup-i2c : i2c_detect not found $bus - $addr" > /dev/kmsg
+   return 1
+}
+
 # Board Version EVT2 0x41, EVT3 0x42, DVT1 0x43
 BOARD_VER=$(i2cget -f -y 13 0x35 0x3 | awk '{printf "%d", $1}') #Get board version
 
@@ -42,19 +65,6 @@ i2c_device_add 4 0x27 smb_debugcardcpld  # SMB DEBUGCARD CPLD
 # # Bus 13
 i2c_device_add 13 0x35 iobfpga #IOB FPGA
 
-# # i2c-mux 2, channel 2
-i2c_device_add 17 0x4c lm75   #SCM temp. sensor
-i2c_device_add 17 0x4d lm75   #SCM temp. sensor
-
-# # i2c-mux 2, channel 3
-i2c_device_add 19 0x52 24c64   #EEPROM
-
-# # i2c-mux 2, channel 4
-i2c_device_add 20 0x50 24c02   #BMC54616S EEPROM
-
-# # i2c-mux 2, channel 6
-i2c_device_add 22 0x52 24c02   #BMC54616S EEPROM
-
 # # Bus 3
 i2c_device_add 3 0x48 lm75     #LM75B_1# Thermal sensor
 i2c_device_add 3 0x49 lm75     #LM75B_2# Thermal sensor
@@ -62,15 +72,66 @@ i2c_device_add 3 0x4a lm75     #LM75B_3# Thermal sensor
 i2c_device_add 3 0x4c tmp422   #TMP422# Thermal sensor(TH4)
 
 # # Bus 5
-i2c_device_add 5 0x35 ucd90160		  # Power Sequence
-i2c_device_add 5 0x36 ucd90160		  # Power Sequence
+# # # SMB Power Sequence 1
+# # # for MP
+# # #   UCD90160    0x35
+# # # for Respin
+# # #   UCD90160A   0x66
+# # #   UCD90160    0x68
+# # #   UCD90124A   0x43
+# # #   ADM1266     0x44
+if i2c_detect_address 5 0x35; then
+   i2c_device_add 5 0x35 ucd90160
+   kv set smb_pwrseq_1_addr 0x35
+elif i2c_detect_address 5 0x66; then
+   i2c_device_add 5 0x66 ucd90160
+   kv set smb_pwrseq_1_addr 0x66
+elif i2c_detect_address 5 0x68; then
+   i2c_device_add 5 0x68 ucd90160
+   kv set smb_pwrseq_1_addr 0x68
+elif i2c_detect_address 5 0x43; then
+   i2c_device_add 5 0x43 ucd90124
+   kv set smb_pwrseq_1_addr 0x43
+elif i2c_detect_address 5 0x44; then
+   i2c_device_add 5 0x44 adm1266
+   kv set smb_pwrseq_1_addr 0x44
+else
+   echo "setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266" > /dev/kmsg
+fi
+
+# # # SMB Power Sequence 2
+# # # for MP
+# # #   UCD90160    0x36
+# # # for Respin
+# # #   UCD90160A   0x67
+# # #   UCD90160    0x69
+# # #   UCD90124A   0x46
+# # #   ADM1266     0x47
+if i2c_detect_address 5 0x36; then
+   i2c_device_add 5 0x36 ucd90160
+   kv set smb_pwrseq_2_addr 0x36
+elif i2c_detect_address 5 0x67; then
+   i2c_device_add 5 0x67 ucd90160
+   kv set smb_pwrseq_2_addr 0x67
+elif i2c_detect_address 5 0x69; then
+   i2c_device_add 5 0x69 ucd90160
+   kv set smb_pwrseq_2_addr 0x69
+elif i2c_detect_address 5 0x46; then
+   i2c_device_add 5 0x46 ucd90124
+   kv set smb_pwrseq_2_addr 0x46
+elif i2c_detect_address 5 0x47; then
+   i2c_device_add 5 0x47 adm1266
+   kv set smb_pwrseq_2_addr 0x47
+else
+   echo "setup-i2c : not detect UCD90160 UCD9016A UCD90120 UCD90120A UCD90124 UCD90124A ADM1266" > /dev/kmsg
+fi
 
 # Bus 8
 i2c_device_add 8 0x51 24c64
 i2c_device_add 8 0x4a lm75
 
 # net_brcm driver only support DVT1 and later
-if [ "$BOARD_VER" -gt 66 ];then
+if [ "$BOARD_VER" -gt 66 ]; then
     i2c_device_add 29 0x47 net_brcm
 fi
 
@@ -82,7 +143,7 @@ i2c_device_add 50 0x52 24c64 	#SIM
 i2c_device_add 51 0x48 tmp75
 i2c_device_add 52 0x49 tmp75
 i2c_device_add 54 0x21 pca9534	#PCA9534
-if i2cget -y -f 55 0x60 > /dev/null;then
+if i2c_detect_address 55 0x60; then
     i2c_device_add 55 0x60 smb_pwrcpld 	#PDB-L
 else
     i2c_device_add 53 0x60 smb_pwrcpld 	#PDB-L
@@ -95,15 +156,15 @@ i2c_device_add 57 0x5a psu_driver 	#PSU3
 i2c_device_add 59 0x48 tmp75
 i2c_device_add 60 0x49 tmp75
 i2c_device_add 62 0x21 pca9534
-if i2cget -y -f 63 0x60 > /dev/null;then
+if i2c_detect_address 63 0x60; then
     i2c_device_add 63 0x60 smb_pwrcpld 	#PDB-R
 else
     i2c_device_add 61 0x60 smb_pwrcpld  #PDB-R
 fi
 
 # # i2c-mux PCA9548 0x70, channel 3, mux PCA9548 0x76
-i2c_device_add 64 0x33	fcbcpld #CPLD
-i2c_device_add 65 0x53	24c64
+i2c_device_add 64 0x33 fcbcpld #FCM CPLD
+i2c_device_add 65 0x53 24c64
 i2c_device_add 66 0x49 tmp75
 i2c_device_add 66 0x48 tmp75
 i2c_device_add 68 0x52 24c64    #fan 7 eeprom
@@ -111,122 +172,44 @@ i2c_device_add 69 0x52 24c64    #fan 5 eeprom
 i2c_device_add 70 0x52 24c64    #fan 3 eeprom
 i2c_device_add 71 0x52 24c64    #fan 1 eeprom
 
+# # # FCM-T HSC
+# # #    ADM1278  0x10
+# # #    LM25066  0x44
+if i2c_detect_address 67 0x10; then
+   i2c_device_add 67 0x10 adm1278    # FCM ADM1278
+   kv set smb_fcm_t_hsc_addr 0x10
+elif i2c_detect_address 67 0x44; then
+   i2c_device_add 67 0x10 lm25066    # FCM LM25066
+   kv set smb_fcm_t_hsc_addr 0x44
+else
+   echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus67" > /dev/kmsg
+fi
+
 # # i2c-mux PCA9548 0x70, channel 4, mux PCA9548 0x76
-i2c_device_add 72 0x33	fcbcpld #FCM CPLD
-i2c_device_add 73 0x53	24c64
+i2c_device_add 72 0x33 fcbcpld #FCM CPLD
+i2c_device_add 73 0x53 24c64
 i2c_device_add 74 0x49 tmp75
 i2c_device_add 74 0x48 tmp75
 i2c_device_add 76 0x52 24c64    #fan 8 eeprom
 i2c_device_add 77 0x52 24c64    #fan 6 eeprom
 i2c_device_add 78 0x52 24c64    #fan 4 eeprom
 i2c_device_add 79 0x52 24c64    #fan 2 eeprom
+
+# # # FCM-B HSC
+# # #    ADM1278  0x10
+# # #    LM25066  0x44
+if i2c_detect_address 75 0x10; then
+   i2c_device_add 75 0x10 adm1278    # FCM ADM1278
+   kv set smb_fcm_b_hsc_addr 0x10
+elif i2c_detect_address 75 0x44; then
+   i2c_device_add 75 0x44 lm25066    # FCM LM25066
+   kv set smb_fcm_b_hsc_addr 0x44
+else
+   echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus75" > /dev/kmsg
+fi
+
 # # i2c-mux PCA9548 0x70, channel 5
 i2c_device_add 28 0x50 24c02    #BMC54616S EEPROM
-
-#
-# 11-0077 (channel #1) -> 40-0076: 8 channels (i2c-80 -> i2c87) connecting
-# to PIM #1.
-#
-i2c_device_add 80 0x60 domfpga  # DOM FPGA
-i2c_device_add 81 0x56 24c64
-i2c_device_add 82 0x48 tmp75
-i2c_device_add 83 0x4b tmp75
-i2c_device_add 84 0x4a tmp75
-i2c_device_add 84 0x10 adm1278
-i2c_device_add 86 0x34 ucd90160
-i2c_device_add 86 0x6b mp2975
-
-#
-# 11-0077 (channel #2) -> 41-0076: 8 channels (i2c-88 -> i2c-95) connecting
-# to PIM #2.
-#
-i2c_device_add 88 0x60 domfpga 	# DOM FPGA
-i2c_device_add 89 0x56 24c64
-i2c_device_add 90 0x48 tmp75
-i2c_device_add 91 0x4b tmp75
-i2c_device_add 92 0x4a tmp75
-i2c_device_add 92 0x10 adm1278
-i2c_device_add 94 0x34 ucd90160
-i2c_device_add 94 0x6b mp2975
-
-#
-# 11-0077 (channel #3) -> 42-0076: 8 channels (i2c-96 -> i2c-103) connecting
-# to PIM #3.
-#
-i2c_device_add 96 0x60 domfpga 	    # DOM FPGA
-i2c_device_add 97 0x56 24c64
-i2c_device_add 98 0x48 tmp75
-i2c_device_add 99 0x4b tmp75
-i2c_device_add 100 0x4a tmp75
-i2c_device_add 100 0x10 adm1278
-i2c_device_add 102 0x34 ucd90160
-i2c_device_add 102 0x6b mp2975
-
-#
-# 11-0077 (channel #4) -> 43-0076: 8 channels (i2c-104 -> i2c-111) connecting
-# to PIM #4.
-#
-i2c_device_add 104 0x60 domfpga 	# DOM FPGA
-i2c_device_add 105 0x56 24c64
-i2c_device_add 106 0x48 tmp75
-i2c_device_add 107 0x4b tmp75
-i2c_device_add 108 0x4a tmp75
-i2c_device_add 108 0x10 adm1278
-i2c_device_add 110 0x34 ucd90160
-i2c_device_add 110 0x6b mp2975
-
-#
-# 11-0077 (channel #5) -> 44-0076: 8 channels (i2c-112 -> i2c-119) connecting
-# to PIM #5.
-#
-i2c_device_add 112 0x60 domfpga 	# DOM FPGA
-i2c_device_add 113 0x56 24c64
-i2c_device_add 114 0x48 tmp75
-i2c_device_add 115 0x4b tmp75
-i2c_device_add 116 0x4a tmp75
-i2c_device_add 116 0x10 adm1278
-i2c_device_add 118 0x34 ucd90160
-i2c_device_add 118 0x6b mp2975
-
-#
-# 11-0077 (channel #6) -> 45-0076: 8 channels (i2c-120 -> i2c-127) connecting
-# to PIM #6.
-#
-i2c_device_add 120 0x60 domfpga 	# DOM FPGA
-i2c_device_add 121 0x56 24c64
-i2c_device_add 122 0x48 tmp75
-i2c_device_add 123 0x4b tmp75
-i2c_device_add 124 0x4a tmp75
-i2c_device_add 124 0x10 adm1278
-i2c_device_add 126 0x34 ucd90160
-i2c_device_add 126 0x6b mp2975
-
-#
-# 11-0077 (channel #7) -> 46-0076: 8 channels (i2c-128 -> i2c-135) connecting
-# to PIM #7.
-#
-i2c_device_add 128 0x60 domfpga 	# DOM FPGA
-i2c_device_add 129 0x56 24c64
-i2c_device_add 130 0x48 tmp75
-i2c_device_add 131 0x4b tmp75
-i2c_device_add 132 0x4a tmp75
-i2c_device_add 132 0x10 adm1278
-i2c_device_add 134 0x34 ucd90160
-i2c_device_add 134 0x6b mp2975
-
-#
-# 11-0077 (channel #8) -> 47-0076: 8 channels (i2c-136 -> i2c-143) connecting
-# to PIM #8.
-#
-i2c_device_add 136 0x60 domfpga 	# DOM FPGA
-i2c_device_add 137 0x56 24c64
-i2c_device_add 138 0x48 tmp75
-i2c_device_add 139 0x4b tmp75
-i2c_device_add 140 0x4a tmp75
-i2c_device_add 140 0x10 adm1278
-i2c_device_add 142 0x34 ucd90160
-i2c_device_add 142 0x6b mp2975
-
 
 # # Bus 12
 i2c_device_add 12 0x3e smb_syscpld     # SYSTEM CPLD

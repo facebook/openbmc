@@ -1763,7 +1763,7 @@ read_adc_val(uint8_t adc_id, float *value) {
       //BMC will show 0.00 amps. make it show 0.01 at least.
       if ( *value < 0.01 ) *value = 0.01;
     } else if ( ADC11 == adc_id ) {
-      *value = *value/0.22/1.2;
+      *value = (*value/0.22/1.2) * 1.005 + 0.04;
 
       //it's not support to show the negative value, make it show 0.01 at least.
       if ( *value <= 0 ) *value = 0.01;

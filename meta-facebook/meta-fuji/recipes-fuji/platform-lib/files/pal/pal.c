@@ -142,6 +142,88 @@ struct dev_addr_driver SCM_HSC_addr_list[] = {
   { SCM_HSC_ADM1278_ADDR, ADM1278_DRIVER, "adm1278" },
   { SCM_HSC_LM25066_ADDR, LM25066_DRIVER, "lm25066" },
 };
+
+#define PCA9548_DRIVER "pca954x"
+#define SCM_PCA9548_BUS 2
+#define SCM_PCA9548_ADDR 0x70
+bool is_scm_i2c_mux_binded(){
+  char path[LARGEST_DEVICE_NAME];
+  snprintf(path, LARGEST_DEVICE_NAME,
+    "/sys/bus/i2c/drivers/%s/%d-%04x",
+    PCA9548_DRIVER, SCM_PCA9548_BUS, SCM_PCA9548_ADDR);
+  if(path_exists(path)){
+    return true;
+  } else{
+    return false;
+  }
+}
+
+int scm_i2c_mux_bind(){
+  int ret = -1;
+  char cmd[64];
+  if (!is_scm_i2c_mux_binded()) {
+    snprintf(cmd, sizeof(cmd),
+      "echo %d-%04x > /sys/bus/i2c/drivers/%s/bind",
+      SCM_PCA9548_BUS, SCM_PCA9548_ADDR, PCA9548_DRIVER);
+    ret = run_command(cmd);
+    return ret;
+  }
+  return -1;
+}
+
+int scm_i2c_mux_unbind(){
+  int ret = -1;
+  char cmd[64];
+  if (!is_scm_i2c_mux_binded()) {
+    snprintf(cmd, sizeof(cmd),
+      "echo %d-%04x > /sys/bus/i2c/drivers/%s/unbind",
+      SCM_PCA9548_BUS, SCM_PCA9548_ADDR, PCA9548_DRIVER);
+    ret = run_command(cmd);
+    return ret;
+  }
+  return -1;
+}
+
+#define PIM_PCA9548_BUS(pim) (40 + pim - 1)
+#define PIM_PCA9548_ADDR 0x76
+bool is_pim_i2c_mux_binded(int pim){
+  char path[LARGEST_DEVICE_NAME];
+  snprintf(path, LARGEST_DEVICE_NAME,
+    "/sys/bus/i2c/drivers/%s/%d-%04x",
+    PCA9548_DRIVER, PIM_PCA9548_BUS(pim), PIM_PCA9548_ADDR);
+  if(path_exists(path)){
+    return true;
+  } else{
+    return false;
+  }
+}
+
+int pim_i2c_mux_bind(int pim){
+  int ret = -1;
+  char cmd[64];
+  if (!is_pim_i2c_mux_binded(pim)) {
+    snprintf(cmd, sizeof(cmd),
+      "echo %d-%04x > /sys/bus/i2c/drivers/%s/bind",
+      PIM_PCA9548_BUS(pim), PIM_PCA9548_ADDR, PCA9548_DRIVER);
+    ret = run_command(cmd);
+    return ret;
+  }
+  return -1;
+}
+
+int pim_i2c_mux_unbind(int pim){
+  int ret = -1;
+  char cmd[64];
+  if (!is_pim_i2c_mux_binded(pim)) {
+    snprintf(cmd, sizeof(cmd),
+      "echo %d-%04x > /sys/bus/i2c/drivers/%s/unbind",
+      PIM_PCA9548_BUS(pim), PIM_PCA9548_ADDR, PCA9548_DRIVER);
+    ret = run_command(cmd);
+    return ret;
+  }
+  return -1;
+}
+
 int
 pal_detect_i2c_device(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t force) {
   int fd = -1, rc = -1;
@@ -368,27 +450,57 @@ pal_get_pim_hsc( uint8_t fru ) {
   return NULL;
 }
 
+static int get_key_dev_string(uint8_t dev,char *string){
+  switch (dev) {
+    case KEY_PWRSEQ:
+      strcpy(string,KEY_PWRSEQ_ADDR);
+      break;
+    case KEY_PWRSEQ1:
+      strcpy(string,KEY_PWRSEQ1_ADDR);
+      break;
+    case KEY_PWRSEQ2:
+      strcpy(string,KEY_PWRSEQ2_ADDR);
+      break;
+    case KEY_HSC:
+      strcpy(string,KEY_HSC_ADDR);
+      break;
+    case KEY_FCMT_HSC:
+      strcpy(string,KEY_FCMT_HSC_ADDR);
+      break;
+    case KEY_FCMB_HSC:
+      strcpy(string,KEY_FCMB_HSC_ADDR);
+      break;
+    default:
+      return -1;
+  }
+  return 0;
+}
+
 int
-pal_set_dev_addr_to_file(uint8_t fru, char const *dev, uint8_t addr) {
+pal_set_dev_addr_to_file(uint8_t fru, uint8_t dev, uint8_t addr) {
   char fru_name[16];
+  char dev_string[16];
   char key[MAX_KEY_LEN];
   char addr_value[8];
 
   pal_get_fru_name(fru, fru_name);
-  sprintf(key, dev, fru_name);
+  get_key_dev_string(dev, dev_string);
+  sprintf(key, "%s_%s", fru_name, dev_string);
   sprintf(addr_value, "0x%02X", addr);
 
   return kv_set(key, addr_value, 0, 0);
 }
 
 int
-pal_get_dev_addr_from_file(uint8_t fru, char const *dev) {
+pal_get_dev_addr_from_file(uint8_t fru, uint8_t dev) {
   char fru_name[16];
+  char dev_string[16];
   char key[MAX_KEY_LEN];
   char addr[12] = {0};
 
   pal_get_fru_name(fru, fru_name);
-  sprintf(key, dev, fru_name);
+  get_key_dev_string(dev, dev_string);
+  sprintf(key, "%s_%s", fru_name, dev_string);
 
   if(kv_get(key, addr, NULL, 0)) {
 #ifdef DEBUG
@@ -1273,7 +1385,7 @@ init_led(void)
 }
 
 int
-set_sled(int brd_rev, uint8_t color, uint8_t name)
+set_sled(int brd_rev, uint8_t color, uint8_t led_name)
 {
   char led_path[64];
   struct {
@@ -1294,14 +1406,14 @@ set_sled(int brd_rev, uint8_t color, uint8_t name)
     "smb"  // SLED_NAME_SMB
   };
 
-  if ((color >= SLED_COLOR_MAX) || (name >= SLED_NAME_MAX)) {
-    syslog(LOG_WARNING, "set_sled: error color %d or error name %d", color, name);
+  if ((color >= SLED_COLOR_MAX) || (led_name >= SLED_NAME_MAX)) {
+    syslog(LOG_WARNING, "set_sled: error color %d or error name %d", color, led_name);
     return -1;
   }
   
-  sprintf(led_path,"/sys/class/leds/%s/multi_intensity", led_names[name]);
+  sprintf(led_path,"/sys/class/leds/%s/multi_intensity", led_names[led_name]);
   device_write_buff(led_path, led_colors[color].color);
-  sprintf(led_path,"/sys/class/leds/%s/brightness", led_names[name]);
+  sprintf(led_path,"/sys/class/leds/%s/brightness", led_names[led_name]);
   device_write_buff(led_path, led_colors[color].brightness);
 
   return 0;
@@ -1345,61 +1457,63 @@ bool pal_is_fw_update_ongoing(uint8_t fru){
 int
 pal_mon_fw_upgrade(int brd_rev, uint8_t *status)
 {
-  char cmd[5];
   FILE *fp;
   int ret=-1;
-  char *buf_ptr;
-  int buf_size = 1000;
-  int str_size = 200;
+  #define INIT_BUFFER_SIZE 1000
+  #define STR_BLOCK_SIZE 200
+  int buf_size = INIT_BUFFER_SIZE;
+  char *buf_ptr, *buf_ptr_new;
+  char str[STR_BLOCK_SIZE];
   int tmp_size;
-  char str[200];
-  snprintf(cmd, sizeof(cmd), "ps w");
-  fp = popen(cmd, "r");
+  fp = popen("ps w", "r");
   if(NULL == fp)
     return -1;
-
-  buf_ptr = (char *)malloc(buf_size * sizeof(char) + sizeof(char));
+  buf_ptr = (char *)malloc(INIT_BUFFER_SIZE * sizeof(char) + sizeof(char));
   if (buf_ptr == NULL)
-    return -1;
+    goto close_fp;
   memset(buf_ptr, 0, sizeof(char));
-  tmp_size = str_size;
-  while(fgets(str, str_size, fp) != NULL) {
-    tmp_size = tmp_size + str_size;
-    if(tmp_size + str_size >= buf_size) {
-      buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
+  tmp_size = STR_BLOCK_SIZE;
+  while(fgets(str, STR_BLOCK_SIZE, fp) != NULL) {
+    tmp_size = tmp_size + STR_BLOCK_SIZE;
+    if(tmp_size + STR_BLOCK_SIZE >= buf_size) {
+      buf_ptr_new = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
       buf_size *= 2;
+      if(buf_ptr_new == NULL) {
+        syslog(LOG_ERR,
+              "%s realloc() fail, please check memory remaining", __func__);
+        goto free_buf;
+      } else {
+        buf_ptr = buf_ptr_new;
+      }
     }
-    if(!buf_ptr) {
-      syslog(LOG_ERR,
-             "%s realloc() fail, please check memory remaining", __func__);
-      goto close_fp;
-    }
-    strncat(buf_ptr, str, str_size);
+    strncat(buf_ptr, str, STR_BLOCK_SIZE);
   }
 
   //check whether sys led need to blink
   *status = strstr(buf_ptr, "spi_util.sh") != NULL ? 1 : 0;
-  if(*status) goto close_fp;
+  if(*status) goto free_buf;
 
   *status = (strstr(buf_ptr, "cpld_update.sh") != NULL) ? 1 : 0;
-  if(*status) goto close_fp;
+  if(*status) goto free_buf;
 
   *status = (strstr(buf_ptr, "fw-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*status) goto close_fp;
+  if(*status) goto free_buf;
 
   *status = (strstr(buf_ptr, "psu-util") != NULL) ?
           ((strstr(buf_ptr, "--update") != NULL) ? 1 : 0) : 0;
-  if(*status) goto close_fp;
+  if(*status) goto free_buf;
 
   *status = (strstr(buf_ptr, "flashcp") != NULL) ? 1 : 0;
-  if(*status) goto close_fp;
+  if(*status) goto free_buf;
 
+free_buf:
+  if(buf_ptr)
+    free(buf_ptr);
 close_fp:
   ret = pclose(fp);
   if(-1 == ret)
     syslog(LOG_ERR, "%s pclose() fail ", __func__);
-  free(buf_ptr);
 
   return 0;
 }

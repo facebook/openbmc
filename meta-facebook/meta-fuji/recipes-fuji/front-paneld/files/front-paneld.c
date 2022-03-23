@@ -43,13 +43,11 @@
 #include <openbmc/log.h>
 
 #define FRONTPANELD_NAME                    "front-paneld"
+#define BICMOND_NAME                        "bicmond"
+#define BICMOND_DEAMON                      "/usr/local/bin/bicmond -D"
 //Debug card presence check interval.
 #define DBG_CARD_CHECK_INTERVAL             500
 #define BTN_POWER_OFF                       40
-
-#define ADM1278_NAME  "adm1278"
-#define ADM1278_ADDR 0x10
-#define SCM_ADM1278_BUS 16
 
 #define INTERVAL_MAX  5
 #define PIM_RETRY     10
@@ -57,27 +55,8 @@
 #define LED_CHECK_INTERVAL_S 5
 #define LED_SETLED_INTERVAL 100
 
-static int
-i2c_detect_sensor(int bus, uint16_t addr) {
-	int fd = -1, rc = -1;
-
-	fd = i2c_cdev_slave_open(bus, addr, I2C_SLAVE_FORCE_CLAIM);
-	if (fd == -1)
-		return -1;
-
-    /*
-     * In order to avoid the impaction on the later accessing the i2c sensor,
-     * use mode i2c_smbus_read_byte_data to detect the sensor
-     */
-	rc = i2c_smbus_read_byte_data(fd, 1);
-
-	i2c_cdev_slave_close(fd);
-
-	if (rc < 0)
-		return -1;
-
-	return 0;
-}
+struct dev_bus_addr PIM_I2C_DEVICE_CHANGE_LIST[MAX_PIM][PIM_I2C_DEVICE_NUMBER];
+struct dev_bus_addr SCM_I2C_DEVICE_CHANGE_LIST[SCM_I2C_DEVICE_NUMBER];
 
 /* Dynamic change lmsensors config for different PIM card type */
 static void
@@ -142,103 +121,250 @@ write_adm1278_conf(uint8_t bus, uint8_t addr, uint8_t cmd, uint16_t data) {
   return 0;
 }
 
-static void
-pim_device_detect_log(uint8_t num, uint8_t bus, uint8_t addr,
-                      char* device, int state) {
-  switch (state) {
-    case I2C_BUS_ERROR:
-    case I2C_FUNC_ERROR:
-      syslog(LOG_CRIT, "PIM %d Bus:%d get fail", num, bus);
-      break;
-    case I2C_DEVICE_ERROR:
-      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s get fail",
-             num, bus, addr, device);
-      break;
-    case I2c_DRIVER_EXIST:
-      syslog(LOG_WARNING, "PIM %d Bus:%d Addr:0x%x Device:%s driver exist",
-             num, bus, addr, device);
-      break;
+/* checking process is running by name */
+static bool
+is_process_run(const char* pname) {
+  FILE *fp;
+  bool ret=false;
+  char *buf_ptr, *buf_ptr_new;
+  #define INIT_BUFFER_SIZE 1000
+  int buf_size = INIT_BUFFER_SIZE;
+  int str_size = 200;
+  int tmp_size;
+  char str[200];
+
+  fp = popen("ps w", "r");
+  if(NULL == fp)
+    return false;
+
+  buf_ptr = (char *)malloc(INIT_BUFFER_SIZE * sizeof(char) + sizeof(char));
+  if (buf_ptr == NULL)
+    goto close_fp;
+  memset(buf_ptr, 0, sizeof(char));
+  tmp_size = str_size;
+  while(fgets(str, str_size, fp) != NULL) {
+    tmp_size = tmp_size + str_size;
+    if(tmp_size + str_size >= buf_size) {
+      buf_ptr_new = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
+      buf_size *= 2;
+      if(buf_ptr_new == NULL) {
+        syslog(LOG_ERR,
+              "%s realloc() fail, please check memory remaining", __func__);
+        goto free_buf;
+      } else {
+        buf_ptr = buf_ptr_new;
+      }
+    }
+    strncat(buf_ptr, str, str_size);
   }
+
+  if (strstr(buf_ptr, pname) != NULL) {
+    ret = true;
+  } else {
+    ret = false;
+  }
+
+free_buf:
+  if(buf_ptr)
+    free(buf_ptr);
+close_fp:
+  if(pclose(fp) == -1)
+    syslog(LOG_ERR, "%s pclose() fail ", __func__);
+
+  return ret;
 }
 
+/* load the driver of respin chip on pim board */
 static void
-pim_driver_add(uint8_t num, uint8_t pim_type) {
+pim_driver_add(uint8_t num) {
 /*         PIM16Q      PIM16O
- * CH1     DOMFPGA     DOMFPGA
- * CH2     EEPROM      EEPROM
+ * CH0     DOMFPGA     DOMFPGA
+ * CH1     EEPROM      EEPROM
+ * CH2     LM75        LM75
  * CH3     LM75        LM75
- * CH4     LM75        LM75
- * CH5     ADM1278     ADM1278
-           LM75         -----
- * CH6     DOMFPGA     DOMFPGA
- * CH7     UCD90160    UCD90160
- * CH8      -----      SI5391B
+ * CH4   [ ADM1278 or  ADM1278
+           LM25066 ]
+           LM75
+ * CH5     DOMFPGA     DOMFPGA
+ * CH6   [ UCD90160 or
+ *         UCD90160A or
+ *         UCD90124A or
+ *         ADM1266 ]
+ * CH7                 SI5391B
 */
-  int state;
   uint8_t bus = ((num - 1) * 8) + 80;
+  uint8_t bus_id;
+  uint8_t fru = num - 1 + FRU_PIM1;
+  uint8_t i = 0;
+  struct dev_bus_addr *pim_device = PIM_I2C_DEVICE_CHANGE_LIST[num - 1];
+  uint8_t pim_type;
+  pim_i2c_mux_bind(num);
+  sleep(2);
+
+  struct dev_addr_driver *pim_hsc = pal_get_pim_hsc(fru);
+  struct dev_addr_driver *pim_ucd = pal_get_pim_ucd(fru);
+  /* 0 channel of paca9548 */
+  /* need to add DOM FPGA before getting PIM Type*/
+  bus_id = bus + PIM_DOM_DEVICE_CH  ;
+  if (pal_add_i2c_device(bus_id, PIM_DOM_FPGA_ADDR, DOM_FPGA_DRIVER)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus_id, PIM_DOM_FPGA_ADDR, DOM_FPGA_DRIVER);
+  } else {
+    pim_device[i].bus_id = bus_id;
+    pim_device[i++].device_address = PIM_DOM_FPGA_ADDR;
+  }
+
+  pim_type = pal_get_pim_type(fru, PIM_RETRY);
   add_pim_lmsensor_conf(num, bus, pim_type);
-
-  state = i2c_detect_sensor(bus + 4, ADM1278_ADDR);
-  if (state) {
-    pim_device_detect_log(num, bus + 4, ADM1278_ADDR, ADM1278_NAME, state);
+  /* 1 channel of paca9548 */
+  bus_id = bus + PIM_EEPROM_DEVICE_CH  ;
+  if (pal_add_i2c_device(bus_id, PIM_EEPROM_ADDR, EEPROM_24C64_DRIVER)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus_id, PIM_EEPROM_ADDR, EEPROM_24C64_DRIVER);
+  } else {
+    pim_device[i].bus_id = bus_id;
+    pim_device[i++].device_address = PIM_EEPROM_ADDR;
   }
 
-  /* Config ADM1278 power monitor averaging */
-  if (write_adm1278_conf(bus + 4, ADM1278_ADDR, 0xD4, 0x3F1E)) {
-    syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
-                     "can't config register",
-                      num, bus + 4, ADM1278_ADDR, ADM1278_NAME);
+  /* channel 2 of paca9548 */
+  bus_id = bus + PIM_LM75_TEMP_48_DEVICE_CH  ;
+  if (pal_add_i2c_device(bus_id, PIM_LM75_TEMP_48_ADDR, LM75_DRIVER)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus_id, PIM_LM75_TEMP_48_ADDR, LM75_DRIVER);
+  } else {
+    pim_device[i].bus_id = bus_id;
+    pim_device[i++].device_address = PIM_LM75_TEMP_48_ADDR;
   }
 
-  sleep(1);
+  /* channel 3 of paca9548 */
+  bus_id = bus + PIM_LM75_TEMP_4B_DEVICE_CH  ;
+  if (pal_add_i2c_device(bus_id, PIM_LM75_TEMP_4B_ADDR, LM75_DRIVER)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus_id, PIM_LM75_TEMP_4B_ADDR, LM75_DRIVER);
+  } else {
+    pim_device[i].bus_id = bus_id;
+    pim_device[i++].device_address = PIM_LM75_TEMP_4B_ADDR;
+  }
+
+  /* channel 4 of paca9548 */
+  bus_id = bus + PIM_LM75_TEMP_4A_DEVICE_CH  ;
+  if (pal_add_i2c_device(bus_id, PIM_LM75_TEMP_4A_ADDR, LM75_DRIVER)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus_id, PIM_LM75_TEMP_4A_ADDR, LM75_DRIVER);
+  } else {
+    pim_device[i].bus_id = bus_id;
+    pim_device[i++].device_address = PIM_LM75_TEMP_4A_ADDR;
+  }
+
+  /* detect channel 4 of paca9548
+   *   Hot-swap chip designed for dual-footprint
+   *    ADM1278  0x10
+   *    LM25066  0x44
+   */
+  bus_id = bus + PIM_HSC_DEVICE_CH  ;
+  if ( pim_hsc == NULL ){
+    syslog(LOG_CRIT, "Cannot find device:   %s:0x%02x %s:0x%02x on PIM %d Bus:%d",
+                    ADM1278_DRIVER, PIM_HSC_ADM1278_ADDR,
+                    LM25066_DRIVER, PIM_HSC_LM25066_ADDR,
+                    num, bus_id);
+  } else {
+    /* Config ADM1278 power monitor averaging */
+    if (pim_hsc->addr == PIM_HSC_ADM1278_ADDR){
+      if (write_adm1278_conf(bus_id, PIM_HSC_ADM1278_ADDR, 0xD4, 0x3F1E)) {
+        syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                          "can't config register",
+                          num, bus_id, PIM_HSC_ADM1278_ADDR, ADM1278_DRIVER);
+      }
+    }
+
+    if (pal_add_i2c_device(bus_id, pim_hsc->addr, (char *)pim_hsc->chip_name)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                      "driver cannot add.",
+                      num, bus_id,  pim_hsc->addr, pim_hsc->chip_name);
+    } else {
+      pal_set_dev_addr_to_file(fru, KEY_HSC, pim_hsc->addr);
+      syslog(LOG_CRIT, "Load driver: PIM %d Bus:%d Addr:0x%x Chip:%s ",
+                      num, bus_id, pim_hsc->addr, pim_hsc->chip_name);
+      pim_device[i].bus_id = bus_id;
+      pim_device[i++].device_address = pim_hsc->addr;
+    }
+  }
+
+  /* channel 6 of paca9548 */
+  bus_id = bus + PIM_MP2975_DEVICE_CH  ;
+  if (pal_add_i2c_device(bus_id, PIM_MP2975_ADDR, MP2975_DRIVER)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                       num, bus_id, PIM_MP2975_ADDR, MP2975_DRIVER);
+  } else {
+    pim_device[i].bus_id = bus_id;
+    pim_device[i++].device_address = PIM_MP2975_ADDR;
+  }
+
+  /* detect channel 6 of paca9548
+   * MP     UCD90160    0x34
+   * Respin UCD90160    0x64
+   *        UCD90160A   0x65
+   *        UCD90124A   0x40
+   *        ADM1266     0x44
+   */
+  bus_id = bus + PIM_PWRSEQ_DEVICE_CH;
+  if ( pim_ucd == NULL ) {
+    syslog(LOG_CRIT, "Cannot find device:  %s:0x%02x %s:0x%02x %s:0x%02x "
+                      "%s:0x%02x %s:0x%02x on PIM %d Bus:%d",
+                      UCD90160A_DRIVER,  PIM_UCD90160_MP_ADDR,
+                      UCD90160A_DRIVER,  PIM_UCD90160A_ADDR,
+                      UCD90160_DRIVER,   PIM_UCD90160_ADDR,
+                      UCD90124A_DRIVER,  PIM_UCD90124A_ADDR,
+                      ADM1266_DRIVER,    PIM_ADM1266_ADDR,
+                      num, bus_id);
+  } else {
+    if (pal_add_i2c_device(bus_id, pim_ucd->addr, (char*)pim_ucd->driver)) {
+      syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x Device:%s Chip:%s"
+                        "driver cannot add.",
+                        num, bus_id, pim_ucd->addr, 
+                        pim_ucd->driver, pim_ucd->chip_name);
+    } else {
+      pal_set_dev_addr_to_file(fru, KEY_PWRSEQ, pim_ucd->addr);
+      syslog(LOG_CRIT, "Load driver: PIM %d Bus:%d Addr:0x%x "
+                        "Driver:%s Chip:%s",
+                        num, bus_id, pim_ucd->addr, 
+                        pim_ucd->driver, pim_ucd->chip_name);
+      pim_device[i].bus_id = bus_id;
+      pim_device[i++].device_address = pim_ucd->addr;
+    }
+  }
+
+  run_command(". openbmc-utils.sh && i2c_check_driver_binding fix-binding");
 }
 
 static void
 pim_driver_del(uint8_t num, uint8_t pim_type) {
-  remove_pim_lmsensor_conf(num);
-}
+  int i;
+  int state = -1;
+  struct dev_bus_addr *pim_device = PIM_I2C_DEVICE_CHANGE_LIST[num - 1];
 
-static int
-pim_thresh_init_file_check(uint8_t fru) {
-  char fru_name[32];
-  char fpath[64];
-
-  pal_get_fru_name(fru, fru_name);
-  snprintf(fpath, sizeof(fpath), INIT_THRESHOLD_BIN, fru_name);
-
-  return access(fpath, F_OK);
-}
-
-int
-pim_thresh_init(uint8_t fru) {
-  int i, sensor_cnt;
-  uint8_t snr_num;
-  uint8_t *sensor_list;
-  thresh_sensor_t snr[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
-
-  pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
-  for (i = 0; i < sensor_cnt; i++) {
-    snr_num = sensor_list[i];
-    if (sdr_get_snr_thresh(fru, snr_num, &snr[fru - 1][snr_num]) < 0) {
-#ifdef DEBUG
-      syslog(LOG_WARNING, "pim_thresh_init: sdr_get_snr_thresh for FRU: %d",
-             fru);
-#endif
-      continue;
+  for (i = 0; i < PIM_I2C_DEVICE_NUMBER; i++) {
+    /* i2c slave address should not be  0 */
+    if (pim_device[i].device_address != 0){
+      state = pal_del_i2c_device(pim_device[i].bus_id, pim_device[i].device_address);
+      if ( state != 0) {
+        syslog(LOG_CRIT, "PIM %d Bus:%d Addr:0x%x "
+                "driver cannot delete.",
+                num, pim_device[i].bus_id, pim_device[i].device_address);
+        continue;
+      }
+      pim_device[i].bus_id = 0;
+      pim_device[i].device_address = 0;
     }
   }
-
-  if (access(THRESHOLD_PATH, F_OK) == -1) {
-    mkdir(THRESHOLD_PATH, 0777);
-  }
-
-  if (pal_copy_all_thresh_to_file(fru, snr[fru - 1]) < 0) {
-    syslog(LOG_WARNING, "%s: Fail to copy thresh to file for FRU: %d",
-           __func__, fru);
-    return -1;
-  }
-
-  return 0;
+  pim_i2c_mux_unbind(num);
+  remove_pim_lmsensor_conf(num);
 }
 
 //clear the pimserial cache in /tmp
@@ -259,6 +385,135 @@ clear_pimserial_cache(int pim){
   }
 }
 
+static void
+scm_driver_add() {
+/*         SCM
+ * CH1     ADM1278
+ * CH2     EEPROM
+ * CH3     LM75
+ * CH4     LM75
+ * CH5     ADM1278
+           LM75
+           LM25066
+ * CH6     DOMFPGA
+ * CH7     UCD90160
+ * CH8     SI5391B
+*/
+  uint8_t i = 0;
+  uint8_t bus_id;
+  scm_i2c_mux_bind();
+  struct dev_addr_driver* scm_hsc = pal_get_scm_hsc();
+  memset(SCM_I2C_DEVICE_CHANGE_LIST, 0, sizeof(SCM_I2C_DEVICE_CHANGE_LIST));
+  syslog(LOG_INFO, "scm_driver_add");
+  /* detect 0 channel of paca9548 */
+  bus_id = 16;
+  if ( scm_hsc == NULL ) {
+    syslog(LOG_CRIT, "Cannot find device:   %s:0x%02x %s:0x%02x on SCM Bus:%d",
+                      ADM1278_DRIVER, SCM_HSC_ADM1278_ADDR,
+                      LM25066_DRIVER, SCM_HSC_LM25066_ADDR,
+                      bus_id);
+  } else {
+    /* Config ADM1278 power monitor averaging */
+    if ( scm_hsc->addr == SCM_HSC_ADM1278_ADDR ){
+      if (write_adm1278_conf(bus_id, scm_hsc->addr, 0xD4, 0x3F1E)) {
+        syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                          "can't config register",
+                          bus_id, SCM_HSC_ADM1278_ADDR, ADM1278_DRIVER);
+      }
+    }
+
+    if (pal_add_i2c_device(bus_id, scm_hsc->addr, (char*)scm_hsc->chip_name)) {
+      syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                        "driver cannot add.",
+                        bus_id, scm_hsc->addr, scm_hsc->chip_name);
+    } else {
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
+      SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = scm_hsc->addr;
+    }
+    pal_set_dev_addr_to_file(FRU_SCM, KEY_HSC, scm_hsc->addr);
+  }
+
+  /* channel 2 of paca9548 */
+  bus_id = 17 ;
+  if (pal_add_i2c_device(bus_id, SCM_LM75_4C_ADDR, LM75_DRIVER)) {
+      syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                        bus_id, SCM_LM75_4C_ADDR, LM75_DRIVER);
+  } else {
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
+      SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = SCM_LM75_4C_ADDR;
+  }
+
+  if (pal_add_i2c_device(bus_id, SCM_LM75_4D_ADDR, LM75_DRIVER)) {
+      syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                        bus_id, SCM_LM75_4D_ADDR, LM75_DRIVER);
+  } else {
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
+      SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = SCM_LM75_4D_ADDR;
+  }
+
+  /* channel 3 of paca9548 */
+  bus_id = 19 ;
+  if (pal_add_i2c_device(bus_id, SCM_EEPROM_52_ADDR, EEPROM_24C64_DRIVER)) {
+      syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                        bus_id, SCM_EEPROM_52_ADDR, EEPROM_24C64_DRIVER);
+  } else {
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
+      SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = SCM_EEPROM_52_ADDR;
+  }
+
+  /* channel 4 of paca9548 */
+  bus_id = 20 ;
+  if (pal_add_i2c_device(bus_id, SCM_EEPROM_50_ADDR, EEPROM_24C02_DRIVER)) {
+      syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                        bus_id, SCM_EEPROM_50_ADDR, EEPROM_24C02_DRIVER);
+  } else {
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
+      SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = SCM_EEPROM_50_ADDR;
+  }
+
+  /* channel 8 of paca9548 */
+  bus_id = 22 ;
+  if (pal_add_i2c_device(bus_id, SCM_EEPROM_52_ADDR, EEPROM_24C02_DRIVER)) {
+      syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
+                       "driver cannot add.",
+                        bus_id, SCM_EEPROM_52_ADDR, EEPROM_24C02_DRIVER);
+  } else {
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = bus_id;
+      SCM_I2C_DEVICE_CHANGE_LIST[i++].device_address = SCM_EEPROM_52_ADDR;
+  }
+  sleep(1);
+  run_command(". openbmc-utils.sh && i2c_check_driver_binding fix-binding");
+}
+
+static void
+scm_driver_del() {
+  int i;
+  int state = -1;
+
+  for (i = 0; i < SCM_I2C_DEVICE_NUMBER; i++) {
+    /* i2c slave address should not be  0 */
+    if (SCM_I2C_DEVICE_CHANGE_LIST[i].device_address != 0){
+      state = pal_del_i2c_device(
+                SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id,
+                SCM_I2C_DEVICE_CHANGE_LIST[i].device_address);
+      if (state != 0) {
+        syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x driver cannot delete.",
+                  SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id,
+                  SCM_I2C_DEVICE_CHANGE_LIST[i].device_address);
+        continue;
+      }
+      SCM_I2C_DEVICE_CHANGE_LIST[i].bus_id = 0;
+      SCM_I2C_DEVICE_CHANGE_LIST[i].device_address = 0;
+    }
+  }
+  scm_i2c_mux_unbind();
+}
+
+
 // Thread for monitoring pim plug
 static void *
 pim_monitor_handler(void *unused) {
@@ -274,15 +529,14 @@ pim_monitor_handler(void *unused) {
   char *pim_phy_type_str = NULL;
   uint8_t pim_type_old[10] = {PIM_TYPE_UNPLUG};
   uint8_t interval[10];
-  bool thresh_first[10];
 
   memset(interval, INTERVAL_MAX, sizeof(interval));
-  memset(thresh_first, true, sizeof(thresh_first));
+  memset(PIM_I2C_DEVICE_CHANGE_LIST, 0, sizeof(PIM_I2C_DEVICE_CHANGE_LIST));
   while (1) {
     for (fru = FRU_PIM1; fru <= FRU_PIM8; fru++) {
       ret = pal_is_fru_prsnt(fru, &prsnt);
       if (ret) {
-        goto pim_mon_out;
+        continue;
       }
       /* Get original prsnt state PIM1 @bit0, PIM2 @bit1, ..., PIM8 @bit7 */
       num = fru - FRU_PIM1 + 1;
@@ -291,8 +545,8 @@ pim_monitor_handler(void *unused) {
       if (prsnt != prsnt_ori) {
         if (prsnt) {
           syslog(LOG_WARNING, "PIM %d is plugged in.", num);
+          pim_driver_add(num);
           pim_type = pal_get_pim_type(fru, PIM_RETRY);
-          pim_driver_add(num, pim_type);
 
           if (pim_type != pim_type_old[num]) {
             if (pim_type == PIM_TYPE_16Q) {
@@ -383,19 +637,11 @@ pim_monitor_handler(void *unused) {
                 }
             }
             pal_set_sdr_update_flag(fru,1);
-            if (thresh_first[num] == true) {
-              thresh_first[num] = false;
-            } else {
-              if (pim_thresh_init_file_check(fru)) {
-                pim_thresh_init(fru);
-              } else {
-                pal_set_pim_thresh(fru);
-              }
-            }
           }
         } else {
           syslog(LOG_WARNING, "PIM %d is unplugged.", num);
           clear_pimserial_cache(num);
+          pal_clear_sensor_cache_value(fru);
           pal_clear_thresh_value(fru);
           pal_set_sdr_update_flag(fru,1);
           pim_driver_del(num, pim_type_old[num]);
@@ -424,7 +670,6 @@ pim_monitor_handler(void *unused) {
         }
       }
     }
-pim_mon_out:
     sleep(1);
   }
   return NULL;
@@ -439,6 +684,7 @@ scm_monitor_handler(void *unused) {
   uint8_t prsnt = 0;
   uint8_t power;
 
+  memset(SCM_I2C_DEVICE_CHANGE_LIST, 0, sizeof(SCM_I2C_DEVICE_CHANGE_LIST));
   while (1) {
     ret = pal_is_fru_prsnt(FRU_SCM, &prsnt);
     if (ret) {
@@ -449,7 +695,7 @@ scm_monitor_handler(void *unused) {
       if (curr) {
         // SCM was inserted
         syslog(LOG_WARNING, "SCM Insertion\n");
-
+        sleep(1);
         ret = pal_get_server_power(FRU_SCM, &power);
         if (ret) {
           goto scm_mon_out;
@@ -460,17 +706,24 @@ scm_monitor_handler(void *unused) {
           pal_set_server_power(FRU_SCM, SERVER_POWER_ON);
           /* Setup management port LED */
           run_command("/usr/local/bin/setup_mgmt.sh led");
-          /* Config ADM1278 power monitor averaging */
-          if (write_adm1278_conf(SCM_ADM1278_BUS, ADM1278_ADDR, 0xD4, 0x3F1E)) {
-            syslog(LOG_CRIT, "SCM Bus:%d Addr:0x%x Device:%s "
-                             "can't config register",
-                             SCM_ADM1278_BUS, ADM1278_ADDR, ADM1278_NAME);
+          sleep(5);
+        }
+        // add scm driver after SCM power on
+        scm_driver_add();
+
+        if ( ! is_process_run(BICMOND_NAME) ) {
+          syslog(LOG_WARNING, "BICMOND didn't run yet, Start BICMOND\n");
+          if ( system(BICMOND_DEAMON) < 0 ) {
+            syslog(LOG_CRIT, "failed to Start BICMOND\n");
           }
-          goto scm_mon_out;
+          if ( system("systemctl restart setup_bic_cache.service") < 0) {
+            syslog(LOG_CRIT, "failed to restart setup_bic_cache\n");
+          }
         }
       } else {
         // SCM was removed
         syslog(LOG_WARNING, "SCM Extraction\n");
+        scm_driver_del();
       }
     }
 scm_mon_out:

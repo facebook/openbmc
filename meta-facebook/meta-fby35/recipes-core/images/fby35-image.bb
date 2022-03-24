@@ -55,7 +55,6 @@ IMAGE_INSTALL += " \
   lldp-util \
   ipmi-util \
   vboot-utils \
-  obmc-libpldm \
   slot-util \
   enclosure-util \
   name-util \

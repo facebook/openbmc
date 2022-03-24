@@ -54,7 +54,6 @@ IMAGE_INSTALL += " \
   libncsi \
   ncsi-util \
   ncsid-v2 \
-  obmc-libpldm \
   obmc-sensors-test \
   dimm-util \
   setup-gpio \

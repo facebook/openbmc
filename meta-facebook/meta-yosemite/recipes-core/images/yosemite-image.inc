@@ -41,7 +41,6 @@ IMAGE_INSTALL += " \
   libncsi \
   ncsi-util \
   ncsid \
-  obmc-libpldm \
   slot-util \
   snapshot-util \
   name-util \

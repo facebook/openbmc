@@ -1,4 +1,4 @@
-project('libpldm', 'c',
+project('libobmc-pldm', 'c',
     version: '0.1',
     license: 'GPL2',
     default_options: ['werror=true'],
@@ -22,7 +22,7 @@ srcs = files(
 )
 
 # PLDM library.
-pldm_lib = shared_library('pldm', srcs,
+pldm_lib = shared_library('obmc-pldm', srcs,
     dependencies: libs,
     version: meson.project_version(),
     install: true)

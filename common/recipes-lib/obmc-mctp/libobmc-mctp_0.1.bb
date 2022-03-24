@@ -14,7 +14,7 @@ LOCAL_URI = " \
 
 DEPENDS += "libncsi obmc-libpldm libmctp-intel"
 RDEPENDS:${PN} += "libncsi obmc-libpldm libmctp-intel"
-LDFLAGS += "-lpldm -lmctp_intel"
+LDFLAGS += "-lobmc-pldm -lmctp_intel"
 
 
 do_install() {

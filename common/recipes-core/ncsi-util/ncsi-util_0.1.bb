@@ -18,7 +18,7 @@ LOCAL_URI = " \
 
 binfiles = "ncsi-util"
 
-LDFLAGS += "-lpal -lncsi -lpldm -lnl-wrapper -lkv -lz"
+LDFLAGS += "-lpal -lncsi -lobmc-pldm -lnl-wrapper -lkv -lz"
 
 pkgdir = "ncsi-util"
 

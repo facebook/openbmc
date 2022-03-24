@@ -19,7 +19,7 @@ DEPENDS =+ " update-rc.d-native libpal libncsi obmc-libpldm libkv "
 
 binfiles = "ncsid"
 
-CFLAGS += " -lncsi -lpldm -lkv -lnl-wrapper"
+CFLAGS += " -lncsi -lobmc-pldm -lkv -lnl-wrapper"
 
 pkgdir = "ncsid"
 

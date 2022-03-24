@@ -177,7 +177,6 @@ int pal_get_pair_slot_type(uint8_t fru);
 int pal_system_config_check(uint8_t slot_id);
 int pal_read_nic_fruid(const char *path, int size);
 void pal_notify_nic(uint8_t slot);
-void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_fan_latch(uint8_t *status);
 int pal_get_fru_post(uint8_t fru, uint8_t *value);
 uint8_t pal_is_post_ongoing();

@@ -6099,26 +6099,9 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
 }
 
 void
-pal_post_end_chk(uint8_t *post_end_chk) {
-  static uint8_t post_end = 1;
-
-  if (*post_end_chk == 1) {
-    post_end = 1;
-  } else if (*post_end_chk == 0) {
-    *post_end_chk = post_end;
-    post_end = 0;
-  }
-}
-
-void
 pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
-  uint8_t post_end = 1;
-
   *res_len = 0;
-
-  //Set post end chk flag to update LCD info page
-  pal_post_end_chk(&post_end);
 
   // log the post end event
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);

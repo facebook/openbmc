@@ -299,7 +299,6 @@ int pal_get_board_rev_id(uint8_t *id);
 int pal_get_mb_slot_id(uint8_t *id);
 int pal_get_slot_cfg_id(uint8_t *id);
 int pal_get_plat_sku_id(void);
-void pal_post_end_chk(uint8_t *post_end_chk);
 uint8_t pal_get_status(void);
 void pal_sensor_sts_check(uint8_t snr_num, float val, uint8_t *thresh);
 int pal_get_syscfg_text(char *text);

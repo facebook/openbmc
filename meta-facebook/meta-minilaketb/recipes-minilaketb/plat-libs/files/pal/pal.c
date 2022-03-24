@@ -3818,10 +3818,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   return;
 }
 
-void pal_post_end_chk(uint8_t *post_end_chk) {
-  return;
-}
-
 int
 pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len)
 {

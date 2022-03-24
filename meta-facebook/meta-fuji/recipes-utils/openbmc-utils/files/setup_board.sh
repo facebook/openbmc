@@ -52,7 +52,7 @@ echo 0 > "${SMBCPLD_SYSFS_DIR}/cpld_usb_mux_sel_1"
 
 # Force COMe's UART connect to BMC UART-5 and FB USB debug
 # UART connect to BMC UART-2
-echo 0x3 > "$SMBCPLD_SYSFS_DIR/uart_selection"
+echo 0x0 > "$SMBCPLD_SYSFS_DIR/uart_selection"
 
 # Read board type from SMB CPLD and keep in cache store
 brd_type=$(head -n 1 "$SMBCPLD_SYSFS_DIR/board_type")

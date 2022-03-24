@@ -57,7 +57,7 @@ start_sol_session() {
 
 # if mTerm server is running use mTerm_client to connect to userver
 # otherwise fallback to the old method
-echo 0x0 > $SMBCPLD_SYSFS_DIR/uart_selection
+
 if mTerm_server_running; then
   exec /usr/local/bin/mTerm_client wedge
 else

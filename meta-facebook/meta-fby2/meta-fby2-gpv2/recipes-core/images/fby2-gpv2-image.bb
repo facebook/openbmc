@@ -51,7 +51,7 @@ IMAGE_INSTALL += " \
   vboot-utils \
   enclosure-util \
   libncsi \
-  libpldm \
+  obmc-libpldm \
   nvme-util \
   slot-util \
   snapshot-util \

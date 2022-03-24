@@ -55,7 +55,7 @@ IMAGE_INSTALL += " \
   vboot-utils \
   sensordump \
   enclosure-util \
-  libpldm \
+  obmc-libpldm \
   nvme-util \
   snapshot-util \
   slot-util \

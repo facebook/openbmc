@@ -12,8 +12,8 @@ LOCAL_URI = " \
     file://Makefile \
     "
 
-DEPENDS += "libncsi libpldm libmctp-intel"
-RDEPENDS:${PN} += "libncsi libpldm libmctp-intel"
+DEPENDS += "libncsi obmc-libpldm libmctp-intel"
+RDEPENDS:${PN} += "libncsi obmc-libpldm libmctp-intel"
 LDFLAGS += "-lpldm -lmctp_intel"
 
 

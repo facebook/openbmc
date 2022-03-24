@@ -15,7 +15,7 @@ LOCAL_URI = " \
     file://run-ncsid.sh \
     "
 
-DEPENDS =+ " update-rc.d-native libpal libncsi libpldm libkv "
+DEPENDS =+ " update-rc.d-native libpal libncsi obmc-libpldm libkv "
 
 binfiles = "ncsid"
 
@@ -42,9 +42,9 @@ do_install() {
   update-rc.d -r ${D} setup-ncsid.sh start 91 5 .
 }
 
-DEPENDS += "libpal libncsi libpldm libkv libnl-wrapper"
+DEPENDS += "libpal libncsi obmc-libpldm libkv libnl-wrapper"
 DEPENDS += "update-rc.d-native"
-RDEPENDS:${PN} = "libpal libncsi libpldm libkv libnl-wrapper"
+RDEPENDS:${PN} = "libpal libncsi obmc-libpldm libkv libnl-wrapper"
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
 

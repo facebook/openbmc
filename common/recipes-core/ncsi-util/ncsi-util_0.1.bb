@@ -31,8 +31,8 @@ do_install() {
   ln -snf ../fbpackages/${pkgdir}/ncsi-util ${bin}/ncsi-util
 }
 
-DEPENDS += "libpal libncsi libpldm libnl-wrapper libkv zlib"
-RDEPENDS:${PN} += "libpal libncsi libpldm libnl-wrapper libkv zlib"
+DEPENDS += "libpal libncsi obmc-libpldm libnl-wrapper libkv zlib"
+RDEPENDS:${PN} += "libpal libncsi obmc-libpldm libnl-wrapper libkv zlib"
 
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

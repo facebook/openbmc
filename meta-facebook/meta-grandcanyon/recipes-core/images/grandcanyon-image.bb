@@ -53,7 +53,7 @@ IMAGE_INSTALL += " \
   snapshot-util \
   enclosure-util \
   vboot-utils \
-  libpldm \
+  obmc-libpldm \
   asd \
   asd-test \
   bic-util \

@@ -486,6 +486,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   int ret = 0;
   uint8_t chassis_type = 0;
   switch (fru) {
+    case FRU_ALL:
+      *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
+      break;
     case FRU_SERVER:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL | FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_SERVER;
       break;
@@ -499,10 +502,10 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
       break;
     case FRU_DPB:
-      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
     case FRU_SCC:
-      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
     case FRU_E1S_IOCM:
       *caps = FRU_CAPABILITY_SENSOR_ALL;
@@ -515,7 +518,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_FAN1:
     case FRU_FAN2:
     case FRU_FAN3:
-      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      *caps = FRU_CAPABILITY_FRUID_READ;
       break;
     default:
       ret = -1;
@@ -563,6 +566,9 @@ int
 pal_get_fru_name(uint8_t fru, char *name) {
 
   switch(fru) {
+    case FRU_ALL:
+      snprintf(name, MAX_FRU_CMD_STR, "all");
+      break;
     case FRU_SERVER:
       snprintf(name, MAX_FRU_CMD_STR, "server");
       break;

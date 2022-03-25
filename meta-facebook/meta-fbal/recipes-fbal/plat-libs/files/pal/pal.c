@@ -2074,27 +2074,3 @@ int pal_i2c_write_read (uint8_t bus, uint8_t addr,
   i2c_cdev_slave_close(fd);
   return retCode;
 }
-
-int 
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
-{
-  // Share command with fby, slot in fbal will be ignored.
-  uint8_t fruid;
-  uint16_t timeout;
-  *res_len = 0;
-  
-  // req[0] = fru id
-  // req[1] = timeout value (9 ~ 16 bits)
-  // req[2] = timeout value (1 ~  8 bits)
-  if (req_len != 3) {
-    return CC_INVALID_LENGTH;
-  }
-  fruid = req_data[0];
-  timeout = req_data[1]<<8 | req_data[2];
-
-  if (pal_set_fw_update_ongoing(fruid, timeout)) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
-}

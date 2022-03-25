@@ -2222,12 +2222,6 @@ pal_can_change_power(uint8_t fru)
 }
 
 int __attribute__((weak))
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
-{
-  return PAL_EOK;
-}
-
-int __attribute__((weak))
 run_command(const char* cmd) {
   int status = system(cmd);
   if (status == -1) { // system error or environment error

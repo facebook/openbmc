@@ -4064,28 +4064,6 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 }
 
 int
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  int ret = 0;
-
-  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
-    syslog(LOG_ERR, "%s(): Failed to set fw update status due to parameters are NULL.", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  if (req_len != 2) {
-    return CC_INVALID_LENGTH;
-  }
-
-  ret = pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]));
-  if (ret < 0) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-  *res_len = 0;
-
-  return CC_SUCCESS;
-}
-
-int
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
   // Only SCC IOC temperature is monitoring by BMC
   if ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP)) {

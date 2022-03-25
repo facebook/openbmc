@@ -3115,10 +3115,19 @@ oem_set_fw_update_state(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-
-  res->cc = pal_set_fw_update_state(req->payload_id, req->data, (req_len - 3), res->data, res_len);
-
-  return;
+  int ret = -1;
+  *res_len = 0;
+  if (req_len == 5) {
+    // Implicit FRU_ID
+    ret = pal_set_fw_update_ongoing(req->payload_id, (req->data[1]<<8 | req->data[0]));
+  } else if (req_len == 6) {
+    // Explicit FRU_ID
+    ret = pal_set_fw_update_ongoing(req->data[0], (req->data[1]<<8 | req->data[2]));
+  } else {
+    res->cc = CC_INVALID_LENGTH;
+    return;
+  }
+  res->cc = ret == 0 ? CC_SUCCESS : CC_UNSPECIFIED_ERROR;
 }
 
 static void

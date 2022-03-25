@@ -1,0 +1,42 @@
+diff --git a/libmctp-smbus.h b/libmctp-smbus.h
+index 5e3a7d2..7df6cd1 100644
+--- a/libmctp-smbus.h
++++ b/libmctp-smbus.h
+@@ -59,6 +59,7 @@ void mctp_smbus_set_in_fd(struct mctp_binding_smbus *smbus, int fd);
+ void mctp_smbus_set_out_fd(struct mctp_binding_smbus *smbus, int fd);
+ void mctp_smbus_set_src_slave_addr(struct mctp_binding_smbus *smbus,
+ 				   uint8_t slave_addr);
++void mctp_smbus_set_pkt_size(size_t pkt_size);
+ #ifdef __cplusplus
+ }
+ #endif
+diff --git a/smbus.c b/smbus.c
+index 77d858c..82975fe 100644
+--- a/smbus.c
++++ b/smbus.c
+@@ -38,6 +38,8 @@
+ #define SMBUS_LENGTH_FIELD_SIZE 1
+ #define SMBUS_ADDR_OFFSET_SLAVE 0x1000
+ 
++size_t g_pkt_size = MCTP_PACKET_SIZE(MCTP_BTU);
++
+ #ifdef I2C_M_HOLD
+ static struct mctp_smbus_pkt_private active_mux_info = { .fd = -1,
+ 							 .mux_hold_timeout = 0,
+@@ -472,6 +474,7 @@ struct mctp_binding_smbus *mctp_smbus_init(void)
+ 	smbus->binding.name = "smbus";
+ 	smbus->binding.version = 1;
+ 	smbus->binding.pkt_size = MCTP_PACKET_SIZE(MCTP_BTU);
++	smbus->binding.pkt_size = g_pkt_size;
+ 	smbus->binding.pkt_pad = SMBUS_HEADER_SIZE;
+ 	smbus->binding.pkt_priv_size = sizeof(struct mctp_smbus_pkt_private);
+ 
+@@ -500,3 +503,8 @@ void mctp_smbus_set_src_slave_addr(struct mctp_binding_smbus *smbus,
+ {
+ 	smbus->src_slave_addr = slave_addr;
+ }
++
++void mctp_smbus_set_pkt_size(size_t pkt_size)
++{
++	g_pkt_size = pkt_size;
++}

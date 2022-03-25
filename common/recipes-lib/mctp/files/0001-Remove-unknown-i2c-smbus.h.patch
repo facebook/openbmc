@@ -1,17 +1,8 @@
-From dd64eb446b9327477162b1b4e459d338c0c22e06 Mon Sep 17 00:00:00 2001
-From: Howard Chiu <howard.chiu@quantatw.com>
-Date: Wed, 18 Nov 2020 17:27:26 +0800
-Subject: [PATCH 1/2] Remove unknown i2c/smbus.h
-
----
- smbus.c | 1 -
- 1 file changed, 1 deletion(-)
-
 diff --git a/smbus.c b/smbus.c
-index 70bea4e..0388d61 100644
+index 431a6cb..77d858c 100644
 --- a/smbus.c
 +++ b/smbus.c
-@@ -13,7 +13,6 @@
+@@ -14,7 +14,6 @@
  
  #define pr_fmt(x) "smbus: " x
  
@@ -19,6 +10,15 @@ index 70bea4e..0388d61 100644
  #include <linux/i2c-dev.h>
  #include <linux/i2c.h>
  #include <sys/ioctl.h>
--- 
-2.7.4
-
+diff --git a/tests/test_smbus.c b/tests/test_smbus.c
+index e57b2b4..dd6e4f9 100644
+--- a/tests/test_smbus.c
++++ b/tests/test_smbus.c
+@@ -6,7 +6,6 @@
+ #include "config.h"
+ #endif
+ 
+-#include <i2c/smbus.h>
+ #include <linux/i2c-dev.h>
+ #include <linux/i2c.h>
+ #include "libmctp-alloc.h"

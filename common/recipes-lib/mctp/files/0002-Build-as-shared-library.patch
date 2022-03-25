@@ -1,17 +1,8 @@
-From 310d6024137c8e9519fc464215ad126b3615ad29 Mon Sep 17 00:00:00 2001
-From: Howard Chiu <howard.chiu@quantatw.com>
-Date: Wed, 18 Nov 2020 17:28:13 +0800
-Subject: [PATCH 2/2] Build as shared library
-
----
- CMakeLists.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 84de245..2c00086 100644
+index b27da63..91c1e24 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -7,7 +7,7 @@ add_definitions (-DMCTP_HAVE_FILEIO)
+@@ -26,7 +26,7 @@ add_definitions (-DMCTP_HAVE_FILEIO)
  add_definitions (-DMCTP_HAVE_STDIO)
  add_definitions (-DMCTP_DEFAULT_ALLOC)
  
@@ -20,6 +11,3 @@ index 84de245..2c00086 100644
  
  target_include_directories (mctp_intel PUBLIC
                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
--- 
-2.7.4
-

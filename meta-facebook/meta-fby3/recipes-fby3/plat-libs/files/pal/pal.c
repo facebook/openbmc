@@ -739,7 +739,11 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   if ( tmout > 0 ) {
     // when fw_update_ongoing is set, need to wait for a while
     // make sure all daemons pending by pal_is_fw_update_ongoing
-    sleep(5);
+    if (pal_is_cwc() == PAL_EOK) {
+      sleep(15);
+    } else {
+      sleep(5);
+    }
   }
 
   // set pwr_lock_flag to prevent unexpected power control
@@ -5056,4 +5060,64 @@ int pal_is_sensor_num_exceed(uint8_t sensor_num) {
     return PAL_EOK;
   }
   return PAL_EOK;
+}
+
+int pal_is_pesw_power_on(uint8_t fru, uint8_t *status) {
+  enum {
+    GP3_GPIO_PWRGD_P0V84 = 43,
+    GP3_GPIO_PWRGD_P1V8  = 46,
+    CWC_GPIO_PWRGD_P0V84 = 47,
+    CWC_GPIO_PWRGD_P1V8  = 48,
+  };
+  int ret = 0;
+  uint8_t slot = 0;
+  uint8_t intf = 0;
+  bic_gpio_t gpio = {0};
+
+  ret = pal_get_fru_slot(fru, &slot);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get slot of fru\n",__func__);
+    return ret;
+  }
+
+  switch (fru) {
+    case FRU_CWC:
+      intf = REXP_BIC_INTF;
+      break;
+    case FRU_2U_TOP:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FRU_2U_BOT:
+      intf = RREXP_BIC_INTF2;
+      break;
+    default:
+      return -1;
+  }
+
+  ret = bic_get_gpio(slot, &gpio, intf);
+  if ( ret < 0 ) {
+    printf("%s() bic_get_gpio returns %d\n", __func__, ret);
+    return ret;
+  }
+
+  switch (fru) {
+    case FRU_CWC:
+      if (BIT_VALUE(gpio, CWC_GPIO_PWRGD_P0V84) == VALUE_HIGH && BIT_VALUE(gpio, CWC_GPIO_PWRGD_P1V8) == VALUE_HIGH) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (BIT_VALUE(gpio, GP3_GPIO_PWRGD_P0V84) == VALUE_HIGH && BIT_VALUE(gpio, GP3_GPIO_PWRGD_P1V8) == VALUE_HIGH) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    default:
+      return -1;
+  }
+  return ret;
 }

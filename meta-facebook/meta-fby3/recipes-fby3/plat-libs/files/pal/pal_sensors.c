@@ -2881,8 +2881,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       }
 
       if ((fru == FRU_2U_TOP && (exp_status & PRESENT_2U_TOP) == 0) || 
-          (fru == FRU_2U_BOT && (exp_status & PRESENT_2U_BOT) == 0) ||
-          pal_is_fw_update_ongoing(FRU_SLOT1)) {
+          (fru == FRU_2U_BOT && (exp_status & PRESENT_2U_BOT) == 0)) {
         ret = READING_NA;
         break;
       }

@@ -191,7 +191,9 @@ get_fru_name(uint8_t fru, char *name)
 static int
 is_pldm_sensor(uint8_t snr_num, uint8_t fru)
 {
-  if (fru == pal_get_nic_fru_id() &&
+  unsigned int caps;
+  if (pal_get_fru_capability(fru, &caps) == 0 && 
+      (caps & FRU_CAPABILITY_NETWORK_CARD) != 0 &&
       (snr_num >= PLDM_SENSOR_START && snr_num <= PLDM_SENSOR_END)) {
     return 1;
   }
@@ -201,7 +203,9 @@ is_pldm_sensor(uint8_t snr_num, uint8_t fru)
 static int
 is_pldm_state_sensor(uint8_t snr_num, uint8_t fru)
 {
-  if (fru == pal_get_nic_fru_id() &&
+  unsigned int caps;
+  if (pal_get_fru_capability(fru, &caps) == 0 && 
+      (caps & FRU_CAPABILITY_NETWORK_CARD) != 0 &&
       (snr_num >= PLDM_STATE_SENSOR_START && snr_num <= PLDM_SENSOR_END)) {
     return 1;
   }

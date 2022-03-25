@@ -2632,12 +2632,6 @@ pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
 }
 
 int __attribute__((weak))
-pal_get_nic_fru_id(void)
-{
-  return -1;
-}
-
-int __attribute__((weak))
 pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
 {
   *slave_addr = BMC_SLAVE_ADDR;

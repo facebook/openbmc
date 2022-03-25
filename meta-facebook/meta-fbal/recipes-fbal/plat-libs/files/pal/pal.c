@@ -1895,12 +1895,6 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC0;
-}
-
-int
 pal_get_target_bmc_addr(uint8_t *tar_bmc_addr) {
   uint16_t m_bmc_addr;
 

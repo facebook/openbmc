@@ -11114,12 +11114,6 @@ pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
-int
 pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
   return bic_set_sdr_threshold_update_flag(slot,update);
 }

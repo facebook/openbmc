@@ -3895,12 +3895,6 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
-int
 pal_check_pfr_mailbox(uint8_t fru) {
   int ret = 0, i2cfd = 0, retry=0, index = 0;
   uint8_t tbuf[1] = {0}, rbuf[1] = {0};

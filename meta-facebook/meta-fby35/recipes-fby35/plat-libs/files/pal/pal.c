@@ -2758,12 +2758,6 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
-int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t mfg_id[] = {0x9c, 0x9c, 0x00};

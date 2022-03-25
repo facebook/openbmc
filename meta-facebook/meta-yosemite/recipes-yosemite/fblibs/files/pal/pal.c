@@ -2849,13 +2849,6 @@ pal_force_update_bic_fw(uint8_t slot_id, uint8_t comp, char *path) {
   return bic_update_firmware(slot_id, comp, path, 1);
 }
 
-
-int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
 // OEM Command "CMD_OEM_BYPASS_CMD" 0x34
 int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
   int ret;

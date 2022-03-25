@@ -4492,9 +4492,3 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 
     return completion_code;
 }
-
-int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}

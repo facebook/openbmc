@@ -7173,9 +7173,3 @@ pal_sensor_is_source_host(uint8_t fru, uint8_t sensor_id)
   }
   return false;
 }
-
-int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}

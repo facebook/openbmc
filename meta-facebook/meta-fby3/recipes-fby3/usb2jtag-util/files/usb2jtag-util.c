@@ -32,8 +32,6 @@
 #include <facebook/mpsse.h>
 #include <openbmc/pal.h>
 
-#define FRU_2U_TOP 32
-#define FRU_2U_BOT 33
 static int top_gpv3_usb_depth = 5;
 static int bot_gpv3_usb_depth = 5;
 static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 1};

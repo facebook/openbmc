@@ -99,12 +99,16 @@ enum {
 #define ON_CHIP_FLASH_USER_VER           (0x00200028)
 #define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
 
-// Dual-boot IP
+// MAX10 10M25 Dual-boot IP
 #define DUAL_BOOT_IP_BASE                (0x00200000)
-#define CFM1_START_ADDR                  (0x00064000)
-#define CFM1_END_ADDR                    (0x000BFFFF)
-#define CFM2_START_ADDR                  (0x00008000)
-#define CFM2_END_ADDR                    (0x00063FFF)
+#define MAX10M25_CFM1_START_ADDR         (0x00064000)
+#define MAX10M25_CFM1_END_ADDR           (0x000BFFFF)
+#define MAX10M25_CFM2_START_ADDR         (0x00008000)
+#define MAX10M25_CFM2_END_ADDR           (0x00063FFF)
+
+// MAX10 10M08 Dual-boot IP
+#define MAX10M08_CFM1_START_ADDR         (0x0002B000)
+#define MAX10M08_CFM1_END_ADDR           (0x0004DFFF)
 
 extern const char *board_stage[];
 

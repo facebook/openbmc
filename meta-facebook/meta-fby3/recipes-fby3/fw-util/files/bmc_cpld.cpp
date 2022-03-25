@@ -17,7 +17,6 @@ using namespace std;
 
 image_info BmcCpldComponent::check_image(string image, bool force) {
 const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
-#define MAX10_RPD_SIZE 0x5C000
   string flash_image = image;
   uint8_t bmc_location = 0;
   string fru_name = fru();
@@ -58,16 +57,16 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
     return image_sts;
   }
 
-  uint8_t *memblock = new uint8_t [MAX10_RPD_SIZE + 1];//data_size + signed byte
+  uint8_t *memblock = new uint8_t [image_size + 1];//data_size + signed byte
   uint8_t signed_byte = 0;
-  size_t r_b = read(fd_r, memblock, MAX10_RPD_SIZE + 1);
+  size_t r_b = read(fd_r, memblock, image_size + 1);
   size_t w_b = 0;
 
   //it's an old image
-  if ( r_b == MAX10_RPD_SIZE ) {
+  if ( r_b == image_size ) {
     signed_byte = 0x0;
-  } else if ( r_b == (MAX10_RPD_SIZE + 1) ) {
-    signed_byte = memblock[MAX10_RPD_SIZE] & 0xff;
+  } else if ( r_b == (image_size + 1) ) {
+    signed_byte = memblock[image_size] & 0xff;
     r_b = r_b - 1;  //only write data to tmp file
   }
 
@@ -315,10 +314,30 @@ int BmcCpldComponent::update_cpld(string image)
   return ret;
 }
 
+void BmcCpldComponent::check_module() {
+  string ver("");
+
+  if (get_ver_str(ver) < 0 || ver.length() < VER_STR_LEN) {
+    cout << "Fail to get current CPLD module: use default settings" << endl;
+    return;
+  }
+
+  if (ver[4] == MAX10M08_VER_CHAR) {
+    attr.start_addr = MAX10M08_CFM1_START_ADDR;
+    attr.end_addr = MAX10M08_CFM1_END_ADDR;
+    image_size = MAX10M08_CFM1_END_ADDR - MAX10M08_CFM1_START_ADDR + 1;
+  }
+
+  return;
+}
+
 int BmcCpldComponent::update(string image)
 {
   int ret = 0;
-  image_info image_sts = check_image(image, false);
+  image_info image_sts;
+
+  check_module();
+  image_sts = check_image(image, false);
 
   if ( image_sts.result == false ) {
     remove(image_sts.new_path.c_str());
@@ -338,7 +357,10 @@ int BmcCpldComponent::update(string image)
 int BmcCpldComponent::fupdate(string image) 
 {
   int ret = 0;
-  image_info image_sts = check_image(image, true);
+  image_info image_sts;
+
+  check_module();
+  image_sts = check_image(image, true);
 
   image = image_sts.new_path;
 

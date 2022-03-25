@@ -52,6 +52,9 @@ extern "C" {
 #define DEV_ALL         0x0
 #define DEV_NONE        0xff
 
+// GUID
+#define GUID_SIZE 16
+
 /* To hold the sensor info and calculated threshold values from the SDR */
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
@@ -459,6 +462,7 @@ int pal_is_slot_server(uint8_t fru);
 int pal_is_slot_support_update(uint8_t fru);
 int pal_self_tray_location(uint8_t *value);
 void pal_log_clear(char *fru);
+void pal_populate_guid(char *guid, char *str);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_set_dev_guid(uint8_t fru, char *guid);
 int pal_get_plat_sku_id(void);

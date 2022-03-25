@@ -49,7 +49,6 @@ extern "C" {
 
 #define PLATFORM_NAME "cloudripper"
 
-#define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
 
 #define SCM_BRD_ID "6-0021"

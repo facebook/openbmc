@@ -68,8 +68,6 @@
 
 #define RISER_BUS_ID 0x1
 
-#define GUID_SIZE 16
-
 #define READING_NA -2
 #define READING_SKIP 1
 

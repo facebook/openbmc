@@ -78,7 +78,6 @@ extern "C" {
 #define MAX_INTF_SIZE 10
 #define ELBERT_INTF "eth0.4088"
 
-#define GUID_SIZE 16
 #define LARGEST_DEVICE_NAME 128
 #define READ_UNIT_SENSOR_TIMEOUT 5
 #define ELBERT_SMB_P1_BOARD_PATH "/tmp/.smb_p1_board"

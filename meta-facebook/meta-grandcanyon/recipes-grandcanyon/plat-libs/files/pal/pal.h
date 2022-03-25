@@ -47,7 +47,6 @@ extern "C" {
 
 #define MAX_FRU_CMD_STR   16
 
-#define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 

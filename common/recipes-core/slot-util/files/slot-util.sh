@@ -41,6 +41,9 @@ sku_type=0
 
 if grep -q "yosemite" /etc/issue; then
     sku_type=0
+elif grep -q "fby35" /etc/issue; then
+    sku_type=fffe
+    ocp3nic=1
 elif grep -q "fby3" /etc/issue; then
     sku_type=ffff
     ocp3nic=1
@@ -96,6 +99,13 @@ case "$sku_type" in
         slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
         slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
       fi
+   ;;
+   "fffe")
+      echo "Yosemite V3.5, OCP3 NIC"
+      slot1_mac=$(printf "%012x\\n" $((bmc_mac_dec-1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot2_mac=$(printf "%012x\\n" $((bmc_mac_dec+1)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot3_mac=$(printf "%012x\\n" $((bmc_mac_dec+3)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
+      slot4_mac=$(printf "%012x\\n" $((bmc_mac_dec+5)) | sed -e 's/[0-9A-Fa-f]\{2\}/&:/g' -e 's/:$//')
    ;;
    "ffff")
       echo "Yosemite V3, OCP3 NIC"

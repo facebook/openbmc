@@ -62,9 +62,8 @@ LOCAL_URI = " \
                          'file://boot_info.sh', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
                          'file://eth0_mac_fixup.sh', '', d)} \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
-                         'file://data0_resize_ubifs.sh', '', d)} \
     "
+LOCAL_URI:append:mf-mtd-ubifs = " file://data0_resize_ubifs.sh"
 
 OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
@@ -94,9 +93,8 @@ DEPENDS = "update-rc.d-native python3-setuptools"
 RDEPENDS:${PN} += "\
     bash \
     python3-core \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', \
-                         'mtd-utils-ubifs', '', d)} \
     "
+RDEPENDS:${PN}:append:mf-mtd-ubifs = " mtd-utils-ubifs"
 
 OPENBMC_UTILS_CUSTOM_EMMC_MOUNT ?= "0"
 
@@ -199,14 +197,18 @@ do_install() {
     if ! echo ${PACKAGECONFIG} | awk "/boot-info/ {exit 1}"; then
         install -m 0755 ${S}/boot_info.sh ${D}/usr/local/bin
     fi
+}
 
-    # If mtd-ubifs feature is enabled, we want ubifs on top of the mtd
-    # data0 partition. Update the "mount_data0.sh" to reflect this.
-    if ! echo ${MACHINE_FEATURES} | awk "/mtd-ubifs/ {exit 1}"; then
-        sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${S}/mount_data0.sh
-        install -m 0755 ${S}/data0_resize_ubifs.sh \
-                        ${localbindir}/data0_resize_ubifs.sh
-    fi
+# If mtd-ubifs feature is enabled, we want ubifs on top of the mtd
+# data0 partition. Update the "mount_data0.sh" to reflect this.
+do_install:append:mf-mtd-ubifs() {
+
+    sed -i 's/FLASH_FS_TYPE=jffs2/FLASH_FS_TYPE=ubifs/' ${S}/mount_data0.sh
+    install -m 0755 ${S}/data0_resize_ubifs.sh \
+                    ${localbindir}/data0_resize_ubifs.sh
+}
+
+do_install:append() {
 
     for f in ${OPENBMC_UTILS_FILES}; do
         install -m 755 $f ${dstdir}/${f}

@@ -15,11 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-do_configure:prepend() {
+do_configure:prepend:mf-mtd-ubifs() {
     #
     # append "ubi.mtd=data0" to bootargs if "mtd-ubifs" is enabled.
     #
-    if ${@bb.utils.contains('MACHINE_FEATURES', 'mtd-ubifs', 'true','false', d)}; then
-        sed -i '/CONFIG_BOOTARGS/ s/"\s*$/ ubi.mtd=data0"/' ${S}/include/configs/fbwedge400.h
-    fi
+    sed -i '/CONFIG_BOOTARGS/ s/"\s*$/ ubi.mtd=data0"/' ${S}/include/configs/fbwedge400.h
 }

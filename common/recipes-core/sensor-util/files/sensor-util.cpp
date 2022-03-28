@@ -758,6 +758,8 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     return 0;
   }
 
+  printf("%s:\n", fruname);
+
   if (pal_get_fru_capability(fru, &caps) == PAL_EOK) {
     if (caps & FRU_CAPABILITY_SENSOR_SLAVE) {
       pal_get_root_fru(fru, &root);

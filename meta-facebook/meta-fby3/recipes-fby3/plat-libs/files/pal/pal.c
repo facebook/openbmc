@@ -870,6 +870,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   int ret = 0;
 
   switch (fru) {
+    case FRU_ALL:
+      *caps = FRU_CAPABILITY_SENSOR_HISTORY | FRU_CAPABILITY_SENSOR_READ;
+      break;
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
@@ -1131,6 +1134,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
   }
 
   switch(fru) {
+    case FRU_ALL:
+      sprintf(name, "all");
+      break;
     case FRU_SLOT1:
       sprintf(name, "slot1");
       break;

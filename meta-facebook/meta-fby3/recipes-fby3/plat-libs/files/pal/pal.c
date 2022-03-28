@@ -1268,7 +1268,7 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     sprintf(fname, "nicexp");
     break;
   case FRU_CWC:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU);
+    sprintf(fname, "2U-cwc");
     break;
   case FRU_2U_TOP:
     sprintf(fname, "2U-top");
@@ -1296,6 +1296,8 @@ pal_fruid_write(uint8_t fru, char *path)
     return PAL_ENOTSUP;
   } else if (fru == FRU_BB) {
     return bic_write_fruid(FRU_SLOT1, 0, path, BB_BIC_INTF);
+  } else if (fru == FRU_CWC) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, REXP_BIC_INTF);
   } else if (fru == FRU_2U_TOP) {
     return bic_write_fruid(FRU_SLOT1, 0, path, RREXP_BIC_INTF1);
   } else if (fru == FRU_2U_BOT) {
@@ -1333,23 +1335,15 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
     if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
     }
-    if (type_2ou == CWC_MCHP_BOARD) {
-      if (fru == FRU_SLOT1 && dev_id == BOARD_2OU) {
-        return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
-      }
 
-      /**
-       * Do not write vendor fru
-       */
-      printf("Fru write to this device is not supported\n");
-    } else if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
+    if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
       return bic_write_fruid(fru, 1, path, NONE_INTF);
-    } else if ( dev_id == BOARD_2OU ) {
+    } else if ( dev_id == BOARD_2OU && type_2ou != CWC_MCHP_BOARD ) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
     } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
       // BMC shouldn't have the access to write the FRU that belongs to the vendor since we don't know the writing rules
       // We only have the read access
-      if ( type_2ou != GPV3_MCHP_BOARD ) {
+      if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != CWC_MCHP_BOARD ) {
         return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
       }
       printf("The device doesn't support the function\n");

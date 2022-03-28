@@ -54,8 +54,10 @@ remote_fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t intf) {
   sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
   if (intf == FEXP_BIC_INTF) {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_1OU);
-  } else if (intf == REXP_BIC_INTF) {
+  } else if (intf == REXP_BIC_INTF && pal_is_cwc() != PAL_EOK) {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, BOARD_2OU);
+  } else if (intf == REXP_BIC_INTF && pal_is_cwc() == PAL_EOK) {
+    sprintf(fruid_path, "/tmp/fruid_2U-cwc.bin");
   } else if (intf == RREXP_BIC_INTF1) {
     sprintf(fruid_path, "/tmp/fruid_2U-top.bin");
   } else if (intf == RREXP_BIC_INTF2) {

@@ -34,6 +34,66 @@ paths:
                             type: string
                           part_number: 
                             type: string
+                      slot2:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          vendor:
+                            type: string
+                          model:
+                            type: string
+                          serial_number:
+                            type: string
+                          part_number:
+                            type: string
+                      slot3:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          vendor:
+                            type: string
+                          model:
+                            type: string
+                          serial_number:
+                            type: string
+                          part_number:
+                            type: string
+                      slot4:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          vendor:
+                            type: string
+                          model:
+                            type: string
+                          serial_number:
+                            type: string
+                          part_number:
+                            type: string
+                      bb:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          vendor:
+                            type: string
+                          model:
+                            type: string
+                          serial_number:
+                            type: string
+                          part_number:
+                            type: string
+                      bmc:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          vendor:
+                            type: string
+                          model:
+                            type: string
+                          serial_number:
+                            type: string
+                          part_number:
+                            type: string
                       nic: 
                         type: object
                         additionalProperties: false
@@ -62,12 +122,38 @@ paths:
                     type: object
                     additionalProperties: false
                     properties: 
-                      bmc_ver: 
-                        type: string
-                      bmc_cpld_ver: 
-                        type: string
-                      bic_version: 
-                        type: string
+                      bmc:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          bmc_cpld_ver:
+                            type: string
+                          bmc_ver:
+                            type: string
+                      slot1:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          bic_version:
+                            type: string
+                      slot2:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          bic_version:
+                            type: string
+                      slot3:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          bic_version:
+                            type: string
+                      slot4:
+                        type: object
+                        additionalProperties: false
+                        properties:
+                          bic_version:
+                            type: string
               Actions: 
                 type: array
                 items: 

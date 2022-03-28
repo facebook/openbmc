@@ -24,28 +24,27 @@ from collections import namedtuple
 import common_utils
 from aiohttp import web
 
+from board_setup_var import fruid_map, fw_map
+
 FruidUtilInfo = namedtuple(
     "FruidUtilInfo", ["vendor", "model", "serial_number", "part_number"]
 )
-FwUtilInfo = namedtuple("FwUtilInfo", ["bmc_ver", "bmc_cpld_ver", "bic_version"])
 
 FWINFO_RESPONSE_CACHE = ""
-
 
 async def get_fwinfo_response():
     global FWINFO_RESPONSE_CACHE
     if not FWINFO_RESPONSE_CACHE:
-        fw_info_slot1 = await _get_fruid_util_for_target("slot1")
-        fw_info_nic = await _get_fruid_util_for_target("nic")
-        fw_info_nicexp = await _get_fruid_util_for_target("nicexp")
-        fw_util_info = await _get_fwutil_info_all()
+        fruid_util_info = {}
+        for board in fruid_map:
+            fruid_tmp_info = await _get_fruid_util_for_target(board)
+            fruid_util_info[board] = fruid_tmp_info._asdict()
+        fw_util_info = {}
+        for board in fw_map:
+            fw_util_info[board] = await _get_fwutil_info_for_target(board)
         response_body = {
-            "fruid_info": {
-                "slot1": fw_info_slot1._asdict(),
-                "nic": fw_info_nic._asdict(),
-                "nicexp": fw_info_nicexp._asdict(),
-            },
-            "fw_info": fw_util_info._asdict(),
+            "fruid_info": fruid_util_info,
+            "fw_info": fw_util_info
         }
         FWINFO_RESPONSE_CACHE = response_body
     else:
@@ -90,19 +89,22 @@ async def _get_fruid_util_for_target(target: str) -> FruidUtilInfo:
         )
     return fruid_util_response
 
+def _filter_target(board: str,target: str):
+    for item in fw_map[board]:
+        if item == target:
+            return fw_map[board][item]
+    return None
 
-async def _get_fwutil_info_all() -> FwUtilInfo:
-    fwutil_response = FwUtilInfo(bmc_ver="", bmc_cpld_ver="", bic_version="")
+async def _get_fwutil_info_for_target(target: str):
+    fwutil_response = {}
     cmd = "/usr/bin/fw-util"
     retcode, process_stdout, _ = await common_utils.async_exec(
-        [cmd, "all", "--version"]
+        [cmd, target, "--version"]
     )
     for stdout_line in process_stdout.splitlines():
         identifier, version = stdout_line.split(":", 1)
-        if identifier == "BMC Version":
-            fwutil_response = fwutil_response._replace(bmc_ver=version.strip())
-        if identifier == "BMC CPLD Version":
-            fwutil_response = fwutil_response._replace(bmc_cpld_ver=version.strip())
-        if identifier == "2OU Bridge-IC Version":
-            fwutil_response = fwutil_response._replace(bic_version=version.strip())
+        name = _filter_target(target,identifier)
+        if name is not None:
+            fwutil_response[name] = version
+
     return fwutil_response

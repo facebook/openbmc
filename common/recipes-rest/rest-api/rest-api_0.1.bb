@@ -103,6 +103,7 @@ LOCAL_URI = " \
     file://boot_source.py \
     file://restapi.service \
     file://board_setup_routes.py \
+    file://board_setup_var.py \
     file://redfish_bios_firmware_dumps.py \
     file://redfish_common_routes.py \
     file://redfish_service_root.py \

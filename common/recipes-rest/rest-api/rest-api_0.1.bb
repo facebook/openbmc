@@ -51,7 +51,6 @@ def aiohttp_dep(d):
 DEPENDS:append = " update-rc.d-native"
 RDEPENDS:${PN} += " \
     ${@aiohttp_dep(d)} \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', '', 'sensors-py', d)} \
     json-log-formatter \
     libaggregate-sensor \
     libgpio-ctrl \
@@ -61,6 +60,7 @@ RDEPENDS:${PN} += " \
     python3-core \
     python3-psutil\
 "
+RDEPENDS:${PN}:append:mf-fb-compute = " sensors-py"
 
 LOCAL_URI = " \
     file://setup-rest-api.sh \
@@ -139,55 +139,58 @@ aclfiles = "__init__.py \
             common_acl_provider_base.py \
 "
 
-LOCAL_URI += " \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'compute-rest', \
-           'file://compute_rest_shim.py \
-            file://rest_crawler.py \
-            file://node_attestation.py \
-            file://node_api.py \
-            file://node_dpb.py \
-            file://node_flash.py \
-            file://node_iom.py \
-            file://node_peb.py \
-            file://node_server.py \
-            file://node_bios.py \
-            file://node_enclosure.py \
-            file://node_fruid.py \
-            file://node_logs.py \
-            file://node_scc.py \
-            file://node_sled.py \
-            file://node_fans.py \
-            file://node_health.py \
-            file://node_mezz.py \
-            file://node_sensors.py \
-            file://node_spb.py \
-            file://node_config.py \
-            file://node_fcb.py \
-            file://node_identify.py \
-            file://node_pdpb.py \
-            file://node_e1s_iocm.py \
-            file://node_uic.py \
-            file://test_node_sensors.py \
-            ', \
-            'file://common_endpoint.py \
-            file://board_endpoint.py \
-            file://rest_watchdog.py \
-            file://rest_bmc.py \
-            file://rest_fruid.py \
-            file://rest_fruid_pim.py \
-            file://rest_piminfo.py \
-            file://rest_gpios.py \
-            file://rest_server.py \
-            file://rest_sensors.py \
-            file://rest_psu_update.py \
-            file://eeprom_utils.py \
-            file://rest_fcpresent.py \
-            file://rest_helper.py \
-            file://test_common_middlewares.py \
-            file://test_rest_gpios.py \
-            file://boardroutes.py \
-            ', d)} \
-    "
+EXTRA_APIS_COMPUTE = " \
+    file://compute_rest_shim.py \
+    file://rest_crawler.py \
+    file://node_attestation.py \
+    file://node_api.py \
+    file://node_dpb.py \
+    file://node_flash.py \
+    file://node_iom.py \
+    file://node_peb.py \
+    file://node_server.py \
+    file://node_bios.py \
+    file://node_enclosure.py \
+    file://node_fruid.py \
+    file://node_logs.py \
+    file://node_scc.py \
+    file://node_sled.py \
+    file://node_fans.py \
+    file://node_health.py \
+    file://node_mezz.py \
+    file://node_sensors.py \
+    file://node_spb.py \
+    file://node_config.py \
+    file://node_fcb.py \
+    file://node_identify.py \
+    file://node_pdpb.py \
+    file://node_e1s_iocm.py \
+    file://node_uic.py \
+    file://test_node_sensors.py \
+"
+EXTRA_APIS_NETWORK = " \
+    file://common_endpoint.py \
+    file://board_endpoint.py \
+    file://rest_watchdog.py \
+    file://rest_bmc.py \
+    file://rest_fruid.py \
+    file://rest_fruid_pim.py \
+    file://rest_piminfo.py \
+    file://rest_gpios.py \
+    file://rest_server.py \
+    file://rest_sensors.py \
+    file://rest_psu_update.py \
+    file://eeprom_utils.py \
+    file://rest_fcpresent.py \
+    file://rest_helper.py \
+    file://test_common_middlewares.py \
+    file://test_rest_gpios.py \
+    file://boardroutes.py \
+"
+
+LOCAL_URI:append = " ${EXTRA_APIS_NETWORK}"
+LOCAL_URI:remove:mf-fb-compute = "${EXTRA_APIS_NETWORK}"
+LOCAL_URI:append:mf-fb-compute = " ${EXTRA_APIS_COMPUTE}"
 
 pkgdir = "rest-api"
 

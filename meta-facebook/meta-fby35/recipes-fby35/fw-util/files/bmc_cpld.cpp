@@ -6,73 +6,38 @@
 #include <facebook/bic.h>
 #include "bmc_cpld.h"
 
-using namespace std;
+using std::string;
 #define JBC_FILE_NAME ".jbc"
 #define MAX10_RPD_SIZE 0x23000
 
 image_info BmcCpldComponent::check_image(const string& image, bool force) {
-  string fru_name = fru();
-  size_t bmc_found = fru_name.find("bmc");
-  uint8_t slot_id = 0;
-  uint8_t board_type_index = 0;
-  struct stat file_info;
-  uint8_t fw_comp = 0;
-  image_info image_sts = {"", false, false};
   uint8_t bmc_location = 0;
-
-  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
-    printf("Failed to get BMC location\n");
-    return image_sts;
-  }
+  uint8_t board_id = 0, board_rev = 0;
+  image_info image_sts = {"", false, false};
 
   if (image.find(JBC_FILE_NAME) != string::npos) {
     image_sts.result = true;
     return image_sts;
   }
 
-  if (stat(image.c_str(), &file_info) < 0) {
-    cerr << "Cannot check " << image << " file information" << endl;
+  if (force == true) {
+    image_sts.result = true;
+  }
+
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    printf("Failed to get BMC location\n");
     return image_sts;
   }
 
-  if (file_info.st_size == MAX10_RPD_SIZE + IMG_POSTFIX_SIZE)
+  board_id = (bmc_location == NIC_BMC) ? BOARD_ID_NIC_EXP : BOARD_ID_BB;
+  if (get_board_rev(0, board_id, &board_rev) < 0) {
+    cerr << "Failed to get board revision ID" << endl;
+    return image_sts;
+  }
+
+  if (fby35_common_is_valid_img(image.c_str(), FW_BB_CPLD, board_rev) == true) {
+    image_sts.result = true;
     image_sts.sign = true;
-
-  if (force == false) {
-    if (image_sts.sign != true) {
-      cerr << "Image " << image << " is not a signed image, please use --force option" << endl;
-      return image_sts;
-    }
-
-    // Read Board Revision from CPLD
-    if (bmc_found != string::npos) {
-      if(bmc_location == NIC_BMC){
-        if (get_board_rev(0, BOARD_ID_NIC_EXP, &board_type_index) < 0) {
-          cerr << "Failed to get board revision ID" << endl;
-          return image_sts;
-        }
-      } else{
-        if (get_board_rev(0, BOARD_ID_BB, &board_type_index) < 0) {
-          cerr << "Failed to get board revision ID" << endl;
-          return image_sts;
-        }
-      }
-      fw_comp = FW_BB_CPLD;
-    } else {
-      slot_id = fru_name.at(4) - '0';
-      if (get_board_rev(slot_id, BOARD_ID_SB, &board_type_index) < 0) {
-        cerr << "Failed to get board revision ID" << endl;
-        return image_sts;
-      }
-      fw_comp = FW_CPLD;
-    }
-
-    if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_type_index) == false) {
-      return image_sts;
-    }
-    image_sts.result = true;
-  } else {
-    image_sts.result = true;
   }
 
   return image_sts;
@@ -176,6 +141,9 @@ int BmcCpldComponent::update_cpld(const string& image, bool force) {
     remove(image_sts.new_path.c_str());
   }
 
+  syslog(LOG_CRIT, "Updated CPLD on %s. File: %s. Result: %s", bmc_location_str.c_str(),
+         image.c_str(), (ret)?"Fail":"Success");
+
   snprintf(ver_key, sizeof(ver_key), FRU_STR_CPLD_NEW_VER_KEY, fru().c_str());
   if (ret == 0) {
     if (image_sts.sign == true) {
@@ -191,7 +159,6 @@ int BmcCpldComponent::update_cpld(const string& image, bool force) {
     kv_set(ver_key, "NA", 0, 0);
   }
 
-  syslog(LOG_CRIT, "Updated CPLD on %s. File: %s. Result: %s", bmc_location_str.c_str(), image.c_str(), (ret)?"Fail":"Success");
   return ret;
 }
 
@@ -250,7 +217,6 @@ void BmcCpldComponent::get_version(json& j) {
   string ver("");
   string board_name = fru();
 
-  transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
     if (get_ver_str(ver) < 0) {
       throw "Error in getting the version of " + board_name;

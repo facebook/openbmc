@@ -18,18 +18,11 @@ pkgdir = "pfr-util"
 DEPENDS = "openssl libpal libobmc-i2c libfpga"
 RDEPENDS:${PN} = "openssl libpal libobmc-i2c libfpga"
 LDFLAGS += "-lcrypto -lpal -lobmc-i2c -lfpga"
-CFLAGS += "\
-  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', '-DCONFIG_BIC', '', d)} \
-"
-LDFLAGS += "\
-  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', '-lbic', '', d)} \
-"
-DEPENDS += "\
-  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', 'libbic', '', d)} \
-"
-RDEPENDS:${PN} += "\
-  ${@bb.utils.contains('MACHINE_FEATURES', 'bic', 'libbic', '', d)} \
-"
+
+CFLAGS:append:mf-fb-bic = " -DCONFIG_BIC"
+LDFLAGS:append:mf-fb-bic = " -lbic"
+DEPENDS:append:mf-fb-bic = " libbic"
+RDEPENDS:${PN}:append:mf-fb-bic = " libbic"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

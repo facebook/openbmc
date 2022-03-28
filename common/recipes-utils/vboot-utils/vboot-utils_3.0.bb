@@ -19,8 +19,8 @@ LOCAL_URI += " \
 
 PR = "r0"
 
-CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm2", "-DCONFIG_TPM_V2", "", d)}'
-CFLAGS += '${@bb.utils.contains("MACHINE_FEATURES", "tpm1", "-DCONFIG_TPM_V1", "", d)}'
+CFLAGS:append:mf-tpm1 = " -DCONFIG_TPM_V1"
+CFLAGS:append:mf-tpm2 = " -DCONFIG_TPM_V2"
 
 LDFLAGS += " -lfdt"
 DEPENDS = "python3 libvbs libkv dtc"

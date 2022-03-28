@@ -1,14 +1,13 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://fby2_ext.h \
+            file://fby2_defconfig.append \
            "
+SRC_URI:remove:mf-tpm2 = "file://fby2_defconfig.append"
+SRC_URI:append:mf-tpm2 = " file://fby2_vboot_defconfig.append"
 
-SRC_URI += '${@bb.utils.contains("MACHINE_FEATURES", "tpm2", "file://fby2_vboot_defconfig.append ", "file://fby2_defconfig.append ", d)}'
-
-do_configure:prepend() {
-  if ! echo ${MACHINE_FEATURES} | awk "/tpm2/ {exit 1}"; then
+do_configure:prepend:mf-tpm2() {
     cp -v ${WORKDIR}/fby2_vboot_defconfig.append ${WORKDIR}/fby2_defconfig.append
-  fi
 }
 
 do_copyfile () {

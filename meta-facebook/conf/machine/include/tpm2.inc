@@ -1,0 +1,2 @@
+MACHINE_FEATURES += "tpm2"
+MACHINEOVERRIDES:append = ":mf-tpm2"

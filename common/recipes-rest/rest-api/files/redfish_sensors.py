@@ -217,6 +217,7 @@ def _get_phy_context(sensor_name: str) -> str:
 
 @lru_cache()
 def _get_fru_names(server_name: str) -> t.List[str]:
+    fru_names = []
     if server_name == "1":  # Chassis/1 represents the Chassis on all platforms
         if redfish_chassis_helper.is_libpal_supported():
             return redfish_chassis_helper.get_single_sled_frus()
@@ -224,13 +225,19 @@ def _get_fru_names(server_name: str) -> t.List[str]:
             return ["BMC"]
     elif "server" in server_name:
         if rest_pal_legacy.pal_get_num_slots() > 1:
-            fru_names = [
-                server_name.replace("server", "slot")
-            ]  # we expose slot1-4 as server 1-4 in our routes.
+            slot_name = server_name.replace("server", "slot")
+            fru_names = [slot_name]  # we expose slot1-4 as server 1-4 in our routes.
+            for fru_name in fru_name_map.keys():
+                if slot_name in fru_name and "-exp" in fru_name:
+                    fru_names.append(fru_name)
         else:
             raise ValueError(
                 "{server_name} server_name is invalid for slingle slot servers".format(
                     server_name=server_name
                 )
             )
+    elif "accelerator" in server_name:
+        asic_idx = int(server_name.replace("accelerator", ""))
+        accelerators = redfish_chassis_helper._get_accelerator_list()
+        return [accelerators[asic_idx]]
     return fru_names

@@ -314,8 +314,12 @@ def is_we_util_available() -> bool:
 def get_single_sled_frus() -> t.List[str]:
     fru_name_map = pal.pal_fru_name_map()
     fru_list = []
-    for fru_name in fru_name_map:
-        if "slot" not in fru_name:
+    for fru_name, fruid in fru_name_map.items():
+        if (
+            pal.FruCapability.FRU_CAPABILITY_HAS_DEVICE
+            not in pal.pal_get_fru_capability(fruid)
+            and "exp" not in fru_name
+        ):
             fru_list.append(fru_name)
     return fru_list
 
@@ -323,13 +327,31 @@ def get_single_sled_frus() -> t.List[str]:
 def get_chassis_members_json() -> t.List[t.Dict[str, t.Any]]:
     if is_libpal_supported() and "slot4" in pal.pal_fru_name_map():
         # return chassis members for a multisled platform
-        return [
+        fru_name_map = pal.pal_fru_name_map()
+        chassis_members = [
             {"@odata.id": "/redfish/v1/Chassis/1"},
-            {"@odata.id": "/redfish/v1/Chassis/server1"},
-            {"@odata.id": "/redfish/v1/Chassis/server2"},
-            {"@odata.id": "/redfish/v1/Chassis/server3"},
-            {"@odata.id": "/redfish/v1/Chassis/server4"},
         ]
+        asics = 0
+        for fru_name, fruid in fru_name_map.items():
+            if pal.pal_is_fru_prsnt(fruid):
+                child_name = None
+                fru_capabilities = pal.pal_get_fru_capability(fruid)
+                if (
+                    pal.FruCapability.FRU_CAPABILITY_SERVER in fru_capabilities
+                    and "slot" in fru_name
+                ):
+                    child_name = fru_name.replace("slot", "server")
+                if (
+                    pal.FruCapability.FRU_CAPABILITY_HAS_DEVICE in fru_capabilities
+                    and pal.FruCapability.FRU_CAPABILITY_SERVER not in fru_capabilities
+                ):
+                    child_name = "accelerator" + str(asics)
+                    asics += 1
+                if child_name:
+                    chassis_members.append(
+                        {"@odata.id": "/redfish/v1/Chassis/" + child_name}
+                    )
+        return chassis_members
     else:
         # return chassis members for a single sled platform
         return [{"@odata.id": "/redfish/v1/Chassis/1"}]
@@ -339,3 +361,16 @@ def is_libpal_supported() -> bool:
     """platforms that don't support libpal for sensor related data"""
     UNSUPPORTED_PLATFORM_BUILDNAMES = ["yamp", "wedge", "wedge100"]
     return pal.pal_get_platform_name() not in UNSUPPORTED_PLATFORM_BUILDNAMES
+
+
+def _get_accelerator_list() -> t.List[str]:
+    accelerators = []
+    fru_name_map = pal.pal_fru_name_map()
+    for fru_name, fruid in fru_name_map.items():
+        fru_capabilities = pal.pal_get_fru_capability(fruid)
+        if (
+            pal.FruCapability.FRU_CAPABILITY_HAS_DEVICE in fru_capabilities
+            and pal.FruCapability.FRU_CAPABILITY_SERVER not in fru_capabilities
+        ):
+            accelerators.append(fru_name)
+    return accelerators

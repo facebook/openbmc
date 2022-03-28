@@ -60,9 +60,9 @@ def get_endpoints(path: str):
             rest_route_path = string[string.index("  ") :]
             if rest_route_path.endswith(">"):
                 rest_route_path = rest_route_path[:-1]
-            rest_route_path = rest_route_path.split("/")
-            if len(rest_route_path) > position and path in string:
-                endpoints.add(rest_route_path[position])
+            rest_route_path_slices = rest_route_path.split("/")
+            if len(rest_route_path_slices) > position and path in string:
+                endpoints.add(rest_route_path_slices[position])
         endpoints = sorted(endpoints)  # type: ignore
         ENDPOINT_CHILDREN[path] = endpoints
     return endpoints

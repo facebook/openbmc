@@ -26,7 +26,14 @@ class TestChassisService(AioHTTPTestCase):
             unittest.mock.patch(
                 "pal.pal_fru_name_map",
                 create=True,
-                return_value={"slot1": 1, "slot2": 2, "slot3": 3, "slot4": 4, "spb": 5},
+                return_value={
+                    "slot1": 1,
+                    "slot2": 2,
+                    "slot3": 3,
+                    "slot4": 4,
+                    "spb": 5,
+                    "bmc": 6,
+                },
             ),
             unittest.mock.patch(
                 "pal.pal_is_fru_prsnt",
@@ -42,6 +49,11 @@ class TestChassisService(AioHTTPTestCase):
                 "redfish_chassis_helper.get_fru_info",
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
+            ),
+            unittest.mock.patch(
+                "redfish_chassis_helper.get_single_sled_frus",
+                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+                return_value=["bmc", "spb"],
             ),
         ]
         for p in self.patches:
@@ -91,13 +103,17 @@ class TestChassisService(AioHTTPTestCase):
                         fru_name, "Wiwynn", "WTL19121DSMA1", "Yosemite V2 MP"
                     )
                 )
+                if server_name == "1":
+                    expected_name = "Computer System Chassis"
+                else:
+                    expected_name = fru_name
 
                 expected_resp = {
                     "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
                     "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
                     "@odata.type": "#Chassis.v1_15_0.Chassis",
                     "Id": "1",
-                    "Name": "Computer System Chassis",
+                    "Name": expected_name,
                     "ChassisType": "RackMount",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",

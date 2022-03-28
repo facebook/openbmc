@@ -14,8 +14,13 @@ def _get_fru_name_from_server_id(server_name: str) -> t.Optional[str]:
     # get_fru_info_helper handles None as all non slot_ frus
     if server_name != "1":
         if rest_pal_legacy.pal_get_num_slots() > 1:
-            #  replace server with slot
-            slot_name = server_name.replace("server", "slot")
+            if server_name.startswith("accelerator"):
+                accel_index = int(server_name.replace("accelerator", ""))
+                accelerators = redfish_chassis_helper._get_accelerator_list()
+                return accelerators[accel_index]
+            else:
+                #  replace server with slot
+                slot_name = server_name.replace("server", "slot")
         else:
             raise ValueError(
                 "{server_name} server_name is invalid for slingle slot servers".format(
@@ -47,12 +52,14 @@ async def get_chassis_member(request: web.Request) -> web.Response:
         return web.json_response(status=404)
     frus_info_list = await redfish_chassis_helper.get_fru_info_helper(fru_name)
     fru = frus_info_list[0]
+    if fru_name is None:
+        fru_name = "Computer System Chassis"
     body = {
         "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
         "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
         "@odata.type": "#Chassis.v1_15_0.Chassis",
         "Id": "1",
-        "Name": "Computer System Chassis",
+        "Name": fru_name,
         "ChassisType": "RackMount",
         "PowerState": "On",
         "Manufacturer": fru.manufacturer,

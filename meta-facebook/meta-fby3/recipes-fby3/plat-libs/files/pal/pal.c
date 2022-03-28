@@ -898,8 +898,8 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
-          FRU_CAPABILITY_SENSOR_SLAVE | FRU_CAPABILITY_POWER_ALL;
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+          FRU_CAPABILITY_POWER_ALL;
       } else {
         *caps = 0;
       }

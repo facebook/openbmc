@@ -1236,8 +1236,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
           current_cnt += bic_dp_sensor_cnt;
         }
       } else if (board_type == CWC_MCHP_BOARD) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_cwc_sensor_list, cwc_sensor_cnt);
-        current_cnt += cwc_sensor_cnt;
+          //Bypass cwc sensor in slot1 because cwc has a fru to show sensor
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
         current_cnt += bic_2ou_sensor_cnt;
@@ -1258,12 +1257,6 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) bic_cwc_sensor_list;
     *cnt = cwc_sensor_cnt;
     break;
-  case FRU_2U:
-    if (bmc_location != NIC_BMC) { // Config D GPv3 slot1 already show slot1 GPv3 (2U) sensor
-      *sensor_list = NULL;
-      *cnt = 0;
-      break;
-    }
   case FRU_2U_TOP:
   case FRU_2U_BOT:
     memcpy(&bic_dynamic_gpv3_cwc_sensor_list[current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
@@ -2370,6 +2363,7 @@ skip_bic_sensor_list(uint8_t fru, uint8_t sensor_num, const uint8_t bmc_location
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+    case FRU_CWC:
     case FRU_2U_TOP:
     case FRU_2U_BOT:
 
@@ -2392,8 +2386,8 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   char path[128];
-  uint8_t slot = (fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? FRU_SLOT1 : fru;
-  uint8_t node = (fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? (fru-FRU_EXP_BASE+MAX_NODES) : fru;
+  uint8_t slot = (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? FRU_SLOT1 : fru;
+  uint8_t node = (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? (fru-FRU_EXP_BASE+MAX_NODES) : fru;
   sprintf(path, SLOT_SENSOR_LOCK, slot);
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
@@ -2454,6 +2448,8 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     } else {
       ret = bic_get_sensor_reading(slot, sensor_num, &sensor, RREXP_BIC_INTF2);
     }
+  } else if (fru == FRU_CWC) {
+      ret = bic_get_sensor_reading(slot, sensor_num, &sensor, REXP_BIC_INTF);
   } else {
     //check snr number first. If it not holds, it will move on
     if ( (sensor_num >= 0x0) && (sensor_num <= 0x42) ) { //server board
@@ -2467,7 +2463,8 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
     } else if ( ((sensor_num >= 0x80 && sensor_num <= 0xCE) ||     //2OU
                 (sensor_num >= 0x49 && sensor_num <= 0x4D)) &&    //Many sensors are defined in GPv3.
-                ((config_status & PRESENT_2OU) == PRESENT_2OU) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
+                ((config_status & PRESENT_2OU) == PRESENT_2OU) &&
+                (type_2ou != CWC_MCHP_BOARD) ) { //The range from 0x80 to 0xCE is not enough for adding new sensors.
                                                                   //So, we take 0x49 ~ 0x4D here
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, REXP_BIC_INTF);
     } else if ( (sensor_num >= 0xD1 && sensor_num <= 0xEC) ) { //BB
@@ -2863,6 +2860,23 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       pal_nic_otp_check((float*)value, sensor_map[sensor_num].snr_thresh.unr_thresh, sensor_map[sensor_num].snr_thresh.ucr_thresh);
       break;
 
+    case FRU_CWC:
+      if ( config_status[FRU_SLOT1-1] == CONFIG_UNKNOWN ) {
+        ret = bic_is_m2_exp_prsnt(FRU_SLOT1);
+        if ( ret < 0 ) {
+          syslog(LOG_WARNING, "%s() Failed to run bic_is_m2_exp_prsnt", __func__);
+        } else {
+          config_status[FRU_SLOT1-1] = (uint8_t)ret;
+        }
+        syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, FRU_SLOT1, config_status[FRU_SLOT1-1]);
+      }
+
+      if ( pal_sdr_init(fru) == ERR_NOT_READY ) {
+        ret = READING_NA;
+      } else {
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1], type_2ou[FRU_SLOT1-1]);
+      }
+      break;
     case FRU_2U_TOP:
     case FRU_2U_BOT:
       if ( config_status[FRU_SLOT1-1] == CONFIG_UNKNOWN ) {
@@ -2889,14 +2903,14 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if ( pal_sdr_init(fru) == ERR_NOT_READY ) {
         ret = READING_NA;
       } else {
-        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1], type_2ou[fru-1]);
+        ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value, bmc_location, config_status[FRU_SLOT1-1], type_2ou[FRU_SLOT1-1]);
       }
       break;
 
     default:
       return -1;
   }
-
+  
   if (ret) {
     if (ret == READING_NA || ret == -1) {
       strcpy(str, "NA");
@@ -3549,7 +3563,7 @@ pal_sensor_assert_handle_cwc(uint8_t fru, uint8_t snr_num, float val, char* thre
   thresh_sensor_t *snr_desc;
 
   switch(fru) {
-    case FRU_SLOT1:
+    case FRU_CWC:
       switch(snr_num) {
         case BIC_CWC_SENSOR_NUM_V_12:
         case BIC_CWC_SENSOR_NUM_V_3_3_S:
@@ -3764,7 +3778,7 @@ pal_sensor_deassert_handle_cwc(uint8_t fru, uint8_t snr_num, float val, char* th
   thresh_sensor_t *snr_desc;
 
   switch(fru) {
-    case FRU_SLOT1:
+    case FRU_CWC:
       switch(snr_num) {
         case BIC_CWC_SENSOR_NUM_V_12:
         case BIC_CWC_SENSOR_NUM_V_3_3_S:

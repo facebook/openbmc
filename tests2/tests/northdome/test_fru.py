@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -19,11 +19,12 @@
 #
 import unittest
 
-from common.base_fw_util_test import CommonFwUtilTest
+from common.base_fru_test import CommonFruTest
+from utils.test_utils import qemu_check
 
-PLATFORM = "grandcanyon"
 
-
-class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
-    def set_platform(self):
-        self.platform = PLATFORM
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+class FruSpbTest(CommonFruTest, unittest.TestCase):
+    def setUp(self):
+        self.fru_cmd = ["/usr/local/bin/fruid-util", "spb"]
+        self.fru_fields = {"product": 2, "board": 1, "chassis": 0}

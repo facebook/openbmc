@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,13 +17,11 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
+from common.base_slot_util_test import BaseSlotUtilTest
 
-from common.base_fw_util_test import CommonFwUtilTest
-
-PLATFORM = "grandcanyon"
+slot_nums = [1, 2, 3, 4]
 
 
-class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
-    def set_platform(self):
-        self.platform = PLATFORM
+class SlotUtilTest(BaseSlotUtilTest):
+    def set_slot_nums(self):
+        self.slot_nums = slot_nums

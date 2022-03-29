@@ -192,6 +192,7 @@ def arg_parser():
             "minipack",
             "fbtp",
             "fby2",
+            "northdome",
             "fuji",
             "yosemite",
             "lightning",

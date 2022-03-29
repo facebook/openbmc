@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -19,11 +19,11 @@
 #
 import unittest
 
-from common.base_fw_util_test import CommonFwUtilTest
+from common.base_vboot_test import BaseVBootTest
+from utils.cit_logger import Logger
 
-PLATFORM = "grandcanyon"
 
-
-class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
-    def set_platform(self):
-        self.platform = PLATFORM
+class VBootCheckTest(BaseVBootTest, unittest.TestCase):
+    def set_vboot_type(self):
+        self.isLegacy = False
+        Logger.info("Is legacy image: {}".format(self.isLegacy))

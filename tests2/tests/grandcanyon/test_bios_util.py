@@ -17,11 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import unittest
+
 from common.base_bios_util_test import BaseBiosUtilTest
 
 FRU_LIST = ["server"]
 
 
+@unittest.skip("currently unsupported on north dome")
 class BiosUtilTest(BaseBiosUtilTest):
     def set_fru_list(self):
         self.fru_list = FRU_LIST

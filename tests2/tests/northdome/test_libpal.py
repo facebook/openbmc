@@ -1,5 +1,5 @@
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -19,6 +19,7 @@
 import unittest
 
 import common.base_libpal_test
+from utils.test_utils import qemu_check
 
 try:
     import pal
@@ -39,20 +40,17 @@ class LibPalTest(common.base_libpal_test.LibPalTest):
     def test_sensor_read(self):
         pass
 
-    @unittest.skip(
-        "disable due to the platform name 'Grand Canyon' didn't match Regex."
-    )
-    def test_pal_get_platform_name(self):
-        pass
-
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    @unittest.skip("disable for now")
     def test_pal_get_sensor_name(self):
-        fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
+        super().test_pal_get_sensor_name()
 
-        for fru_id in fru_ids:
-            # Not support to get server and BMC sensor name
-            if fru_id == 1 or fru_id == 2:
-                continue
-            for snr_num in pal.pal_get_fru_sensor_list(fru_id):
-                sensor_name = pal.pal_get_sensor_name(fru_id, snr_num)
+    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    def test_pal_get_fru_sensor_list(self):
+        super().test_pal_get_fru_sensor_list()
 
-                self.assertRegex(sensor_name, r"^[^ ]+$")
+    # Re-implemented here because of a case issue (Northdome != northdome)
+    def test_pal_get_platform_name(self):
+        plat_name = pal.pal_get_platform_name().lower()
+
+        self.assertEqual(plat_name, self.PLATFORM_NAME)

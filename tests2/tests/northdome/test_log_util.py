@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -19,11 +19,40 @@
 #
 import unittest
 
-from common.base_fw_util_test import CommonFwUtilTest
-
-PLATFORM = "grandcanyon"
+from common.base_log_util_test import BaseLogUtilTest
 
 
-class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
-    def set_platform(self):
-        self.platform = PLATFORM
+class AllLogUtilTest(BaseLogUtilTest, unittest.TestCase):
+    FRU = "all"
+
+    @unittest.skip("not available")
+    def test_log_clear(self):
+        pass
+
+
+class SpbLogUtilTest(AllLogUtilTest):
+    FRU = "spb"
+
+
+class NicLogUtilTest(AllLogUtilTest):
+    FRU = "nic"
+
+
+class Slot1LogUtilTest(AllLogUtilTest):
+    FRU = "slot1"
+
+
+class Slot2LogUtilTest(AllLogUtilTest):
+    FRU = "slot2"
+
+
+class Slot3LogUtilTest(AllLogUtilTest):
+    FRU = "slot3"
+
+
+class Slot4LogUtilTest(AllLogUtilTest):
+    FRU = "slot4"
+
+
+class SysLogUtilTest(BaseLogUtilTest, unittest.TestCase):
+    FRU = "sys"

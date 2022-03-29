@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright 2018-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -19,11 +19,17 @@
 #
 import unittest
 
-from common.base_fw_util_test import CommonFwUtilTest
+from common.base_bios_util_test import BaseBiosUtilTest
+from utils.test_utils import qemu_check
 
-PLATFORM = "grandcanyon"
+
+FRU_LIST = ["slot1", "slot2", "slot3", "slot4"]
 
 
-class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
-    def set_platform(self):
-        self.platform = PLATFORM
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+class BiosUtilTest(BaseBiosUtilTest):
+    def set_fru_list(self):
+        self.fru_list = FRU_LIST
+
+    def test_postcode_get(self):
+        pass

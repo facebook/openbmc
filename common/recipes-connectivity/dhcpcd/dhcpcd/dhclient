@@ -1,0 +1,57 @@
+#!/bin/bash
+
+final_args=( "-4" )
+pid_file=""
+interface=""
+
+while [ $# -gt 0 ]; do
+    case $1 in
+        -4|-6)
+            final_args[0]="$1"
+            shift
+            ;;
+        -pf)
+            pid_file="$2"
+            shift; shift
+            ;;
+        -d)
+            final_args+=( "-b" )
+            shift
+            ;;
+        -D)
+            shift
+            if [ "LL" == "$1" ]; then
+                final_args+=( "--duid=ll" )
+                shift
+            elif [ "LLT" == "$1" ]; then
+                final_args+=( "--duid=llt" )
+                shift
+            fi
+            ;;
+        --address-prefix-len)
+            # dhcpcd defaults to 64 and doesn't seem to have an arg.
+            shift ; shift
+            ;;
+        -*)
+            logger -p user.crit "dhclient: unknown arg: $1"
+            shift
+            ;;
+        *)
+            interface="$1"
+            shift
+            ;;
+    esac
+done
+
+if [ -n "$interface" ]; then
+    final_args+=( "$interface" )
+fi
+
+# dhcpcd has no way to override the pid-file, so instead create a symlink
+# to make our initscripts happy.
+if [ -n "$pid_file" ]; then
+    mkdir -p "$(dirname "$pid_file")"
+    ln -s $(dhcpcd --printpidfile "${final_args[@]}") "$pid_file"
+fi
+
+exec dhcpcd "${final_args[@]}"

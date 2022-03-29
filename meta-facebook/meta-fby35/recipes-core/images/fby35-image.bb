@@ -61,4 +61,5 @@ IMAGE_INSTALL += " \
   lrzsz \
   mctp-util \
   jbi \
+  dimm-util \
   "

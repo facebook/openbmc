@@ -15,6 +15,7 @@ LOCAL_URI += " \
     file://vboot_common.py \
     file://image_meta.py \
     file://measure.py \
+    file://measure_func.py \
     "
 
 PR = "r0"
@@ -46,6 +47,7 @@ do_install() {
   done
   install -m 644 ${S}/vboot_common.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 644 ${S}/image_meta.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 644 ${S}/measure_func.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 0755 ${S}/measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 
   install -d ${D}/usr/local/bin

@@ -173,7 +173,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0, 2, 4, 6],
-      "expr_file": "FSC_CLASS2_EVT_zone1.fsc"
+      "expr_file": "FSC_CLASS2_zone1.fsc"
     }
   }
 }

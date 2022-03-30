@@ -180,7 +180,7 @@ static pthread_mutex_t m_oem_usb_dbg;
 static pthread_mutex_t m_oem_q;
 static pthread_mutex_t m_oem_zion;
 
-extern int plat_udbg_get_frame_info(uint8_t *num);
+extern int plat_udbg_get_frame_info();
 extern int plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer);
 extern int plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase,  uint8_t *end, uint8_t *length, uint8_t *buffer);
 extern int plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
@@ -3510,7 +3510,7 @@ oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
   }
 
   syslog(LOG_CRIT, "%s", string_log);
-  
+
   if (!pal_handle_string_sel(string_log, string_log_len))
     res->cc = CC_SUCCESS;
   else
@@ -4271,13 +4271,14 @@ oem_usb_dbg_get_frame_info(unsigned char *request, unsigned char req_len,
   uint8_t num_frames;
   int ret;
 
-  ret = plat_udbg_get_frame_info(&num_frames);
-  if (ret) {
+  ret = plat_udbg_get_frame_info();
+  if (ret < 0) {
     memcpy(res->data, req->data, 3); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
     *res_len = SIZE_IANA_ID;
     return;
   }
+  num_frames = (uint8_t) ret;
 
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
   res->data[3] = num_frames;

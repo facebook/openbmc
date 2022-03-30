@@ -391,6 +391,7 @@ struct frame NAME = {\
 static FRAME_DECLARE(frame_info);
 static FRAME_DECLARE(frame_sel);
 static FRAME_DECLARE(frame_snr);
+static FRAME_DECLARE(frame_postcode);
 
 enum ENUM_PANEL {
   PANEL_MAIN = 1,
@@ -451,7 +452,7 @@ chk_cri_sel_update(uint8_t *cri_sel_up) {
 
   fp = fopen("/mnt/data/cri_sel", "r");
   if (fp) {
-    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && 
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) &&
         (file_stat.st_mtime != frame_sel.mtime || pre_pos != pos)) {
       *cri_sel_up = 1;
     } else {
@@ -470,19 +471,19 @@ chk_cri_sel_update(uint8_t *cri_sel_up) {
 }
 
 int
-plat_udbg_get_frame_info(uint8_t *num)
+plat_udbg_get_frame_info()
 {
   if (!plat_supported()) {
     return -1;
   }
 
-  *num = 3;
-  return 0;
+  return pal_udbg_get_frame_total_num();
 }
 
 int
 plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
   uint8_t cri_sel_up = 0;
+  uint8_t num = 0;
 
   if (!plat_supported()) {
     return -1;
@@ -505,6 +506,17 @@ plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer) {
   buffer[*count] = 3;
   *count += 1;
 
+  int rc = pal_udbg_get_frame_total_num();
+  if (rc < 0) {
+      return -1;
+  }
+  num = (uint8_t) rc;
+
+  if (num >= 4) {
+    buffer[*count] = 4;
+    *count += 1;
+  }
+
   return 0;
 }
 
@@ -517,7 +529,7 @@ plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase,  uint8_t *e
   post_desc_t *next_phase = NULL;
   uint8_t pos = plat_get_fru_sel();
 
-  if (!plat_supported() || 
+  if (!plat_supported() ||
       plat_get_post_phase(pos, &post_phase, &post_phase_desc_cnt)) {
     return -1;
   }
@@ -625,12 +637,12 @@ udbg_get_cri_sel(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uin
   uint8_t pos = plat_get_fru_sel();
   static uint8_t pre_pos = FRU_ALL;
   bool pos_changed = pre_pos != pos;
- 
+
   pre_pos = pos;
 
   fp = fopen("/mnt/data/cri_sel", "r");
   if (fp) {
-    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) && 
+    if ((stat("/mnt/data/cri_sel", &file_stat) == 0) &&
 				(file_stat.st_mtime != frame_sel.mtime || pos_changed)) {
       // initialize and clear frame
       frame_sel.init(&frame_sel, FRAME_BUFF_SIZE);
@@ -944,6 +956,61 @@ udbg_get_info_page (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, 
   return 0;
 }
 
+int __attribute__((weak))
+plat_dword_postcode_buf(uint8_t fru, char *status) {
+  return -1;
+}
+
+static int
+udbg_get_postcode (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+  int ret;
+  char line_buff[2048] = {0}, *pres_dev = line_buff, *delim = "\n";
+
+  if ((count == NULL) || (buffer == NULL)) {
+    return -1;
+  }
+
+  uint8_t pos = plat_get_fru_sel();
+
+  if (page == 1) {
+    // Only update frame data while getting page 1
+
+    // initialize and clear frame
+    frame_postcode.init(&frame_postcode, FRAME_BUFF_SIZE);
+    frame_postcode.max_page = 10;
+    snprintf(frame_postcode.title, 32, "POST CODE");
+
+    pres_dev = line_buff;
+    if (pos != FRU_ALL && plat_dword_postcode_buf(pos, line_buff) == 0) {
+      pres_dev = strtok(pres_dev, delim);
+      if (pres_dev) {
+        do {
+          frame_postcode.append(&frame_postcode, pres_dev, 0);
+        } while ((pres_dev = strtok(NULL, delim)) != NULL);
+      }
+    }
+
+  } // End of update frame
+
+  if (page > frame_postcode.pages) {
+    return -1;
+  }
+
+  ret = frame_postcode.getPage(&frame_postcode, page, (char *)buffer, FRAME_PAGE_BUF_SIZE);
+  if (ret < 0) {
+    *count = 0;
+    return -1;
+  }
+  *count = (uint8_t)ret;
+
+  if (page < frame_postcode.pages)
+    *next = page + 1;
+  else
+    *next = 0xFF; // Set the value of next to 0xFF to indicate this is the last page
+
+  return 0;
+}
+
 int
 plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer)
 {
@@ -957,6 +1024,8 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
       return udbg_get_cri_sel(frame, page, next, count, buffer);
     case 3: //critical Sensor
       return udbg_get_cri_sensor(frame, page, next, count, buffer);
+    case 4:
+      return udbg_get_postcode(frame, page, next, count, buffer);
     default:
       return -1;
   }

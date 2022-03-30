@@ -1056,7 +1056,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if (config_status < 0) config_status = 0;
 
     // 1OU
-    if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
+    if ( (bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
       ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_get_1ou_type(fru, &type):bic_get_1ou_type_cache(fru, &type);
       if (type == EDSFF_1U) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
@@ -1131,7 +1131,7 @@ pal_get_fan_type(uint8_t *bmc_location, uint8_t *type) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
   }
 
-  if ( (BB_BMC == *bmc_location) || (DVT_BB_BMC == *bmc_location) ) {
+  if ( BB_BMC == *bmc_location ) {
     if ( is_cached == false ) {
       const char *shadows[] = {
         "DUAL_FAN0_DETECT_BMC_N_R",
@@ -1200,7 +1200,7 @@ int pal_set_fan_speed(uint8_t fan, uint8_t pwm)
     return ret;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     if (pwm_num > pal_pwm_cnt ||
       snprintf(label, sizeof(label), "pwm%d", pwm_num) > sizeof(label)) {
       return -1;
@@ -1249,7 +1249,7 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     fan_type = UNKNOWN_TYPE;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     //8 fans are included in bmc_sensor_list. sensord will monitor all fans anyway.
     //in order to avoid accessing invalid fans, we add a condition to filter them out.
     if ( fan_type == SINGLE_TYPE ) {
@@ -1537,8 +1537,7 @@ read_fan_pwm(uint8_t pwm_id, float *value) {
   int ret = 0;
 
   if ( bmc_location == 0 ) {
-    if ( (pwm_id & PWM_PLAT_SET) == PWM_PLAT_SET ) bmc_location = NIC_BMC;
-    else bmc_location = DVT_BB_BMC;
+    bmc_location = ( (pwm_id & PWM_PLAT_SET) == PWM_PLAT_SET ) ? NIC_BMC : BB_BMC;
   }
 
   ret = _pal_get_pwm_value((pwm_id&PWM_MASK), &pwm, bmc_location);

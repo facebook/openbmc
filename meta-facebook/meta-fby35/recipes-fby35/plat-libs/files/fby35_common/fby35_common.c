@@ -135,7 +135,7 @@ fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
     return ret;
   }
 
-  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
+  if ( bmc_location == BB_BMC ) {
     gpio_value = gpio_get_value_by_shadow(gpio_server_stby_pwr_sts[fru]);
     if ( gpio_value == GPIO_VALUE_INVALID ) {
       return -1;

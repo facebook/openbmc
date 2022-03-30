@@ -1113,7 +1113,7 @@ bic_init_exp_usb_dev(uint8_t slot_id, uint8_t intf, usb_dev* udev)
           goto error_exit;
         }
 
-        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+        if ( bmc_location == BB_BMC ) {
           if ( udev->path[1] != slot_id) {
             continue;
           }

@@ -61,7 +61,7 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   log_slot_present(slot_id, value);
   if ( value == GPIO_VALUE_LOW ) {
     // TODO: Need to check management cable for Yv3.5 system
-    //pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+    //pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, BB_BMC);
     
     pal_check_slot_cpu_present(slot_id);
     pal_check_slot_fru(slot_id);
@@ -92,7 +92,7 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   log_slot_present(slot_id, curr);
   if ( curr == GPIO_VALUE_LOW ) {
     // TODO: Need to check management cable for Yv3.5 system
-    //pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, DVT_BB_BMC);
+    //pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, BB_BMC);
 
     // Wait for IPMB ready
     sleep(6);
@@ -404,7 +404,7 @@ main(int argc, char **argv) {
       exit(-1);
     }
 
-    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    if ( bmc_location == BB_BMC ) {
       gpiop = g_class1_gpios;
       gpio_cnt = sizeof(g_class1_gpios)/sizeof(g_class1_gpios[0]);
       init_class1_threads();

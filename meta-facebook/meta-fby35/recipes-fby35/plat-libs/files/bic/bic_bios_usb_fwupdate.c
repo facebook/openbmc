@@ -229,7 +229,7 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, cons
           goto error_exit;
         }
 
-        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+        if ( bmc_location == BB_BMC ) {
           if ( udev->path[1] != slot_id) {
             continue;
           }

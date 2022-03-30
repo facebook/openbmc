@@ -197,9 +197,8 @@ enum {
 
 enum {
   // BOARD_ID [3:0]
-  NIC_BMC    = 0x06,
-  BB_BMC     = 0x07,
-  DVT_BB_BMC = 0x07,
+  NIC_BMC = 0x06,
+  BB_BMC  = 0x07,
 };
 
 // 1OU Board ID

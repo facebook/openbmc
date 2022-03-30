@@ -478,7 +478,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       break;
 
     case SERVER_12V_CYCLE:
-      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+      if ( bmc_location == BB_BMC ) {
         if ( pal_get_server_12v_power(fru, &status) < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -531,7 +531,7 @@ pal_sled_cycle(void) {
     printf("Fail to stop sensord\n");
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     for (i = 1; i <= 4; i++) {
       ret = pal_is_fru_prsnt(i, &is_fru_present);
       if (ret < 0 || is_fru_present == 0) {

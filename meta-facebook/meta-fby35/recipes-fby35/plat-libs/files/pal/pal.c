@@ -658,7 +658,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
   *data++ = bmc_location;
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     int dev, retry = 3;
     uint8_t tbuf[4] = {0};
     uint8_t rbuf[4] = {0};
@@ -745,7 +745,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+      if ( bmc_location == BB_BMC ) {
         ret = fby35_common_is_fru_prsnt(fru, status);
       } else {
         if ( fru == FRU_SLOT1 ) {
@@ -857,7 +857,7 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
   switch(fru) {
   case FRU_BMC:
-    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    if ( bmc_location == BB_BMC ) {
       fru_bus = CLASS1_FRU_BUS;
     } else {
       fru_bus = CLASS2_FRU_BUS;
@@ -1114,7 +1114,7 @@ pal_get_guid(uint16_t offset, char *guid) {
     return -1;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     fru_bus = CLASS1_FRU_BUS;
   } else {
     fru_bus = CLASS2_FRU_BUS;
@@ -1163,7 +1163,7 @@ pal_set_guid(uint16_t offset, char *guid) {
     return -1;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     fru_bus = CLASS1_FRU_BUS;
   } else {
     fru_bus = CLASS2_FRU_BUS;
@@ -1313,7 +1313,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     }
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     switch (config_status & (PRESENT_2OU|PRESENT_1OU)) {
       case 0:
         pcie_conf = CONFIG_A;
@@ -2793,11 +2793,6 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   uint8_t slot_id_tmp = slot_id;
 
   if ( bmc_location == BB_BMC ) {
-    // EVT BB_BMC HW not support cable management
-    // just return present to skip checking
-    cbl_val[0] = STATUS_PRSNT;
-    return 0;
-  } else if ( bmc_location == DVT_BB_BMC ) {
     //read GPIO vals
     for ( i = 0; i < num_of_mgmt_pins; i++ ) {
       snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
@@ -2853,7 +2848,7 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
     }
   }
 
-  bool vals_match = (bmc_location == DVT_BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
+  bool vals_match = (bmc_location == BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
   if (vals_match == false) {
     for ( i = 0; i < (sizeof(mapping_tbl)/sizeof(uint8_t)); i++ ) {
       if(mapping_tbl[i] == gpio_vals) {
@@ -2972,7 +2967,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
         goto error_exit;
       }
       config_status = ret;
-      if (!((bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
+      if (!((bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
         goto not_support;
       }
       break;
@@ -3075,7 +3070,7 @@ pal_set_nic_perst(uint8_t fru, uint8_t val) {
     goto error_exit;
   }
 
-  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
+  if ( bmc_location == BB_BMC ) {
     return 0;
   }
 
@@ -3534,7 +3529,7 @@ pal_clear_cmos(uint8_t slot_id) {
     return ret;
   }
 
-  if ( (bmc_location != BB_BMC) && (bmc_location != DVT_BB_BMC) ) {
+  if ( bmc_location != BB_BMC ) {
     // TODO: Class 2
     printf("Not supported");
     return -1;

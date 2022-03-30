@@ -230,7 +230,7 @@ main(int argc, char **argv) {
     return UTIL_EXECUTION_FAIL;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     total_fru = FRU_SLOT4;
     sys_info.type = CLASS1;
   } else {

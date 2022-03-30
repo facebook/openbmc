@@ -7,7 +7,7 @@ PV = "1.0+git${SRCPV}"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=0d30807bb7a4f16d36e96b78f9ed8fae"
 
-SRC_URI = "git://github.com/Intel-BMC/libmctp.git;protocol=git;branch=master \
+SRC_URI = "git://github.com/Intel-BMC/libmctp.git;protocol=https;branch=master \
            file://0001-Remove-unknown-i2c-smbus.h.patch \
            file://0002-Build-as-shared-library.patch \
            file://0003-Customize-buffer-size.patch \

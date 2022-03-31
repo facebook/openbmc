@@ -16,6 +16,7 @@ LOCAL_URI += " \
     file://image_meta.py \
     file://measure.py \
     file://measure_func.py \
+    file://memdump.py \
     "
 
 PR = "r0"
@@ -49,6 +50,7 @@ do_install() {
   install -m 644 ${S}/image_meta.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 644 ${S}/measure_func.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 0755 ${S}/measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 0755 ${S}/memdump.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 
   install -d ${D}/usr/local/bin
   install -m 0755 ${S}/vboot-util ${D}/usr/local/bin/vboot-util
@@ -56,6 +58,7 @@ do_install() {
 
   install -d ${D}/usr/bin
   ln -snf ${PYTHON_SITEPACKAGES_DIR}/measure.py ${D}/usr/bin/mboot-check
+  ln -snf ${PYTHON_SITEPACKAGES_DIR}/memdump.py ${D}/usr/bin/phymemdump
   ln -snf /usr/local/bin/vboot-util ${D}/usr/bin/vboot-util
   ln -snf /usr/local/bin/vboot-check ${D}/usr/bin/vboot-check
 

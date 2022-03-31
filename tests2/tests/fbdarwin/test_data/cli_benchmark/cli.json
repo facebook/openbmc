@@ -1,0 +1,6 @@
+{
+    "cli_list":[
+        "/usr/bin/weutil BMC",
+        "/usr/local/bin/show_tech.py"
+    ]
+}

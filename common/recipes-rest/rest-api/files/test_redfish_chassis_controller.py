@@ -3,6 +3,7 @@ import unittest
 
 import aiohttp.web
 import redfish_chassis_helper
+import redfish_sensors
 import test_mock_modules  # noqa: F401
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
@@ -54,6 +55,11 @@ class TestChassisService(AioHTTPTestCase):
                 "redfish_chassis_helper.get_single_sled_frus",
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=["bmc", "spb"],
+            ),
+            unittest.mock.patch(
+                "redfish_sensors.get_redfish_sensors_for_server_name",
+                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+                return_value=asyncio.Future(),
             ),
         ]
         for p in self.patches:
@@ -144,6 +150,231 @@ class TestChassisService(AioHTTPTestCase):
         ):
             req = await self.client.request("GET", "/redfish/v1/Chassis/server4")
             self.assertEqual(req.status, 404)
+
+    @unittest_run_loop
+    async def test_get_chassis_expand_expands_children(self):
+        redfish_chassis_helper.get_fru_info.return_value = asyncio.Future()
+        redfish_chassis_helper.get_fru_info.return_value.set_result(
+            redfish_chassis_helper.FruInfo(
+                "x", "Wiwynn", "WTL19121DSMA1", "Yosemite V2 MP"
+            )
+        )
+        expected_resp = {
+            "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+            "@odata.id": "/redfish/v1/Chassis",
+            "@odata.type": "#ChassisCollection.ChassisCollection",
+            "Name": "Chassis Collection",
+            "Members@odata.count": 5,
+            "Members": [
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/1",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "Computer System Chassis",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/1/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server1",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot1",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server1/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server2",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot2",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server2/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server3",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot3",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server3/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server4",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot4",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server4/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+            ],
+        }
+        req = await self.client.request("GET", "/redfish/v1/Chassis?$expand=1")
+        resp = await req.json()
+        self.maxDiff = None
+        self.assertEqual(resp, expected_resp)
+        self.assertEqual(req.status, 200)
+        req = await self.client.request(
+            "GET", "/redfish/v1/Chassis?$expand=.($levels=1)"
+        )
+        resp = await req.json()
+        self.maxDiff = None
+        self.assertEqual(resp, expected_resp)
+        self.assertEqual(req.status, 200)
+
+    @unittest_run_loop
+    async def test_get_chassis_expand_invalid_param_returns_400(self):
+        req = await self.client.request("GET", "/redfish/v1/Chassis?$expand=DERP")
+        resp = await req.json()
+        self.assertEqual(resp, {"reason": "Invalid expand level supplied: DERP"})
+        self.assertEqual(req.status, 400)
+
+    @unittest_run_loop
+    async def test_get_chassis_expand_asterisk_expands_all_children(self):
+        redfish_chassis_helper.get_fru_info.return_value = asyncio.Future()
+        redfish_chassis_helper.get_fru_info.return_value.set_result(
+            redfish_chassis_helper.FruInfo(
+                "x", "Wiwynn", "WTL19121DSMA1", "Yosemite V2 MP"
+            )
+        )
+        sensor_resp = {
+            "@odata.type": "#SensorCollection.SensorCollection",
+            "Name": "Chassis sensors",
+            "Members@odata.count": 41,
+            "Members": [
+                {"@odata.id": "/redfish/v1/Chassis/1/Sensors/bmc_224"},
+            ],
+            "@odata.id": "/redfish/v1/Chassis/1/Sensors",
+        }
+        redfish_sensors.get_redfish_sensors_for_server_name.return_value = (
+            asyncio.Future()
+        )
+        redfish_sensors.get_redfish_sensors_for_server_name.return_value.set_result(
+            sensor_resp
+        )
+        expected_resp = {
+            "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+            "@odata.id": "/redfish/v1/Chassis",
+            "@odata.type": "#ChassisCollection.ChassisCollection",
+            "Name": "Chassis Collection",
+            "Members@odata.count": 5,
+            "Members": [
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/1",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "Computer System Chassis",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": sensor_resp,
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server1",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot1",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": sensor_resp,
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server2",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot2",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": sensor_resp,
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server3",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot3",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": sensor_resp,
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server4",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot4",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": sensor_resp,
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+            ],
+        }
+        req = await self.client.request("GET", "/redfish/v1/Chassis?$expand=*")
+        resp = await req.json()
+        self.maxDiff = None
+        self.assertEqual(resp, expected_resp)
+        self.assertEqual(req.status, 200)
 
     async def get_application(self):
         webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])

@@ -1,6 +1,8 @@
 import asyncio
 import json
+import re
 import os
+from aiohttp import web
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional, Set, Tuple, Union
 
@@ -117,3 +119,30 @@ async def async_exec(
 
     await proc.wait()
     return proc.returncode, data, err
+
+
+def parse_expand_level(request: web.Request) -> int:
+    # Redfish supports the $expand query parameter
+    # Spec: http://redfish.dmtf.org/schemas/DSP0266_1.7.0.html#use-of-the-expand-query-parameter-a-id-expand-parameter-a-
+    params = request.rel_url.query
+    expand_level = params.get("$expand", None)
+    if not expand_level:
+        return 0
+    if expand_level == "*":
+        return 999  # expands levels are handled downstream as int-s. Return 999 so we surely expand every child node
+    matches = re.match(r"\.\(\$levels=(\d)\)", expand_level)
+    if matches:
+        return int(matches.group(1))
+    try:
+        return int(expand_level)
+    except ValueError:
+        raise web.HTTPBadRequest(
+            body=json.dumps(
+                {
+                    "reason": "Invalid expand level supplied: {expand_level}".format(
+                        expand_level=expand_level
+                    )
+                }
+            ),
+            content_type="application/json",
+        )

@@ -98,6 +98,11 @@ class BaseFruTest(object):
             return True
         if field in self.fru_data_in_json.keys() and not self.fru_data_in_json[field]:
             return True
+        if (
+            field in self.fru_data_in_json.keys()
+            and self.fru_data_in_json[field] == "N/A"
+        ):
+            return True
         return False
 
 
@@ -135,6 +140,6 @@ class CommonFruTest(BaseFruTest):
                                 )
                             )
                             if self.checkFruFieldInJson(fru_field):
-                                self.assertTrue(True, "{} is empty, test passed")
+                                self.assertTrue(True, "{} is empty or N/A, test passed")
                             else:
                                 self.assertIn(fru_field, fru_info)

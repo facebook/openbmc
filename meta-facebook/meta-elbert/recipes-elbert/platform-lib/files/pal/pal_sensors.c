@@ -845,8 +845,8 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = -32;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][UCR_THRESH] = 3.63;
@@ -857,8 +857,8 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 0; //unset
-        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = -32;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_LM73_TEMP][UNC_THRESH] = 90;
@@ -902,8 +902,8 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UCR_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = -32;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][UCR_THRESH] = 3.63;
@@ -914,8 +914,8 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = -32;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_LM73_TEMP][UNC_THRESH] = 90;
@@ -1623,6 +1623,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM_POS_3V3_U_CURR:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_UPPER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
+      *value = *value + 2;
       break;
     case PIM_POS_3V3_L_VOUT:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_LOWER_DEVICE_ADDR);
@@ -1635,6 +1636,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM_POS_3V3_L_CURR:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_TPS546D24_LOWER_DEVICE_ADDR);
       ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
+      *value = *value + 2;
       break;
     case PIM_LM73_TEMP:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_LM73_DEVICE_ADDR);

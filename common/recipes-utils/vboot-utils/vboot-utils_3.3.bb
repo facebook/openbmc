@@ -17,6 +17,7 @@ LOCAL_URI += " \
     file://measure.py \
     file://measure_func.py \
     file://memdump.py \
+    file://tpm_event_log.py \
     "
 
 PR = "r0"
@@ -49,6 +50,7 @@ do_install() {
   install -m 644 ${S}/vboot_common.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 644 ${S}/image_meta.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 644 ${S}/measure_func.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+  install -m 644 ${S}/tpm_event_log.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 0755 ${S}/measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 0755 ${S}/memdump.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 

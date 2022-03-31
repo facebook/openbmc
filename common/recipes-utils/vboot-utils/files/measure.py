@@ -36,16 +36,23 @@ from measure_func import (
     measure_vbs,
     measure_os,
 )
+from tpm_event_log import (
+    TPMEventLog,
+    InvalidTPMEventLog,
+    MalformedTPMEventLog,
+    print_tpm_event_log_debug_suggestion,
+)
 from vboot_common import (
     EC_EXCEPTION,
     EC_SUCCESS,
     EC_MEASURE_FAIL_BASE,
+    EC_TPM_EVENT_LOG_BAD,
     VBS_ERROR_TYPE_OFFSET,
     VBS_ERROR_CODE_OFFSET,
     read_vbs,
 )
 
-MBOOT_CHECK_VERSION = "5"
+MBOOT_CHECK_VERSION = "6"
 
 
 def read_tpm2_pcr(algo, pcr_id):
@@ -376,10 +383,24 @@ def main():
         # we will catch the error later when we need measure it
         pass
 
+    # Only get the raw hash of components
     if args.components:
         return gen_attest_allowlists(flash0_meta, flash1_meta)
 
-    mboot_measures = get_need_checked_measures(flash0_meta, flash1_meta)
+    # load TPM event log
+    tpm_event_log = None
+    if args.event_log != "none":
+        try:
+            tpm_event_log = TPMEventLog(flash0_meta, flash1_meta, args.ef)
+        except Exception as e:
+            if args.event_log in ["sram", "file"]:
+                # fail for explicit loading
+                raise e
+
+    if tpm_event_log:
+        mboot_measures = tpm_event_log.replay_measure(args.ce, args.recal)
+    else:
+        mboot_measures = get_need_checked_measures(flash0_meta, flash1_meta)
 
     if args.tpm:
         for measure in mboot_measures:
@@ -400,11 +421,21 @@ def main():
             if measure["measure"] != measure["expect"]:
                 ret = EC_MEASURE_FAIL_BASE + measure["pcr_id"]
 
+    # Print the event log
+    if args.pe:
+        if tpm_event_log:
+            tpm_event_log.print_events(args.json)
+        elif not args.json:
+            print("=== TPM event log is not used ===")
+
     return ret
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Measurement and compare with PCRs")
+    parser = argparse.ArgumentParser(
+        description="Measurement and compare with PCRs",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
     parser.add_argument(
         "-a",
         "--algo",
@@ -430,10 +461,10 @@ if __name__ == "__main__":
         "-r",
         "--recal",
         help="""recalculate hash, this is normally used on dev-server.
-                be very careful to do this on BMC, it will took more than 30 mins
-                to recaludate hash for each measures.
-                If you really would like to try. Please BE PATIENT!!!
-                Take a coffee and check back after 30 mins.
+        Be very careful to do this on BMC, it will took more than 30 mins
+        to recaludate hash for each measures.
+        If you really would like to try. Please BE PATIENT!!!
+        Take a coffee and check back after 30 mins.
             """,
         action="store_true",
     )
@@ -444,10 +475,48 @@ if __name__ == "__main__":
         nargs="*",
         choices=["ALL"] + ATTEST_COMPONENTS,
     )
+    parser.add_argument(
+        "-e",
+        "--event-log",
+        nargs="?",
+        choices=["sram", "file", "none", "auto"],
+        default="auto",
+        help="""Specify TPM event log loading mode, default [auto]:
+        sram - Load TPM event log from sram at well-known SRAM location
+               AST2500: 0x1E728800, AST2600: 0x10015000
+        file - Load from event log binary file specified with --ef <event-file>
+        auto - Load from sram if well-formed event log exists
+        none - Don't load TPM event log
+        """,
+    )
+    parser.add_argument(
+        "--ef",
+        help="When -e file, specify the event log file,  ignored otherwise",
+    )
+    parser.add_argument(
+        "--pe",
+        action="store_true",
+        help="Print the loaded TPM event log also",
+    )
+    parser.add_argument(
+        "--ce",
+        help="Check TPM event log against image when print or use it",
+        action="store_true",
+    )
+
     args = parser.parse_args()
+
+    if args.event_log == "file" and args.ef is None:
+        parser.error("--event-log=file, please provide event file with --ef")
+    else:
+        args.ef = None if args.event_log != "file" else args.ef
 
     try:
         sys.exit(main())
+    except (InvalidTPMEventLog, MalformedTPMEventLog) as e:
+        print(e)
+        print_tpm_event_log_debug_suggestion()
+        sys.exit(EC_TPM_EVENT_LOG_BAD)
     except Exception as e:
         print("Exception: %s" % (str(e)))
         traceback.print_exc()

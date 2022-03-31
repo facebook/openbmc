@@ -25,6 +25,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-cmm:lf-dunfell
   meta-elbert:lf-dunfell
   meta-fbal:lf-dunfell
+  meta-fbdarwin:lf-dunfell
   meta-fbep:lf-dunfell
   meta-fbsp:lf-dunfell
   meta-fby2-nd:lf-dunfell

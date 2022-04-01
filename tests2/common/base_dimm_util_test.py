@@ -205,9 +205,9 @@ class BaseDimmUtilTest(object):
             r"$|" + r"^DIMM [A-Z]{1}[0-9]{1}$|" + r"^[a-f0-9]{3}:( [0-9a-f]{2}){16}$"
         )
         if self.FRU == "all":
-            pattern = r"^Fru: [a-z0-9]+" + pattern
+            pattern = r"^[Ff][Rr][Uu]: [a-z0-9]+" + pattern
         else:
-            pattern = r"^Fru: " + self.FRU + pattern
+            pattern = r"^[Ff][Rr][Uu]: " + self.FRU + pattern
         if out:
             for output in [line for line in out.split("\n") if len(line) > 0]:
                 self.assertRegex(

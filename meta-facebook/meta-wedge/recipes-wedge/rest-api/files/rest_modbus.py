@@ -29,4 +29,9 @@ async def get_modbus_registers():
     )
     out, err = await p.communicate()
     out = out.decode()
-    return out
+    if p.returncode != 0:
+        raise subprocess.CalledProcessError(
+            p.returncode, cmd="/usr/local/bin/rackmondata", output=out, stderr=err
+        )
+    else:
+        return out

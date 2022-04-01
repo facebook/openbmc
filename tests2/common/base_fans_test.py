@@ -244,8 +244,11 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
                     "Accepted printed attributes",
                 )
                 if attrs[0] == "Sensor Fail" and attrs[1] != "None":
-                    Logger.info("[T110707010]full output: {}".format(info))
-                    self.assertEqual(attrs[1], "None", "Sensor failure")
+                    self.assertEqual(
+                        attrs[1],
+                        "None",
+                        "Sensor failure, fan-util output: {}".format(info),
+                    )
                 continue
             fan_name = m.group(1)
             self.assertIn(fan_name, self.names, "Unknown Fan")

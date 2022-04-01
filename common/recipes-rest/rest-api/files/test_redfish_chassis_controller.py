@@ -1,4 +1,5 @@
 import asyncio
+import enum
 import unittest
 
 import aiohttp.web
@@ -7,6 +8,11 @@ import redfish_sensors
 import test_mock_modules  # noqa: F401
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
+
+
+class FakeFruCapability(enum.Enum):
+    FRU_CAPABILITY_SERVER = 1
+    FRU_CAPABILITY_HAS_DEVICE = 2
 
 
 class TestChassisService(AioHTTPTestCase):
@@ -40,6 +46,14 @@ class TestChassisService(AioHTTPTestCase):
                 "pal.pal_is_fru_prsnt",
                 create=True,
                 return_value=True,
+            ),
+            unittest.mock.patch(
+                "pal.pal_get_fru_capability",
+                new_callable=unittest.mock.MagicMock,
+                return_value=[FakeFruCapability.FRU_CAPABILITY_SERVER],
+            ),
+            unittest.mock.patch(
+                "pal.FruCapability", create=True, new=FakeFruCapability
             ),
             unittest.mock.patch(
                 "pal.LibPalError",
@@ -89,6 +103,45 @@ class TestChassisService(AioHTTPTestCase):
                 {"@odata.id": "/redfish/v1/Chassis/server2"},
                 {"@odata.id": "/redfish/v1/Chassis/server3"},
                 {"@odata.id": "/redfish/v1/Chassis/server4"},
+            ],
+        }
+        req = await self.client.request("GET", "/redfish/v1/Chassis")
+        resp = await req.json()
+        self.maxDiff = None
+        self.assertEqual(resp, expected_resp)
+        self.assertEqual(req.status, 200)
+
+    @unittest_run_loop
+    async def test_get_chassis_with_accelerators(self):
+        import pal
+
+        pal.pal_fru_name_map.return_value = {
+            "slot1": 1,
+            "slot2": 2,
+            "slot3": 3,
+            "slot4": 4,
+            "slot1-2U-exp": 5,
+            "slot1-2U-top": 6,
+            "slot1-2U-bot": 7,
+        }
+        pal.pal_get_fru_capability.side_effect = [
+            [FakeFruCapability.FRU_CAPABILITY_SERVER],
+            [],
+            [FakeFruCapability.FRU_CAPABILITY_HAS_DEVICE],
+            [FakeFruCapability.FRU_CAPABILITY_HAS_DEVICE],
+        ]
+        pal.pal_is_fru_prsnt.side_effect = [True, False, False, False, True, True, True]
+        expected_resp = {
+            "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",  # noqa: B950
+            "@odata.id": "/redfish/v1/Chassis",
+            "@odata.type": "#ChassisCollection.ChassisCollection",
+            "Name": "Chassis Collection",
+            "Members@odata.count": 4,
+            "Members": [
+                {"@odata.id": "/redfish/v1/Chassis/1"},
+                {"@odata.id": "/redfish/v1/Chassis/server1"},
+                {"@odata.id": "/redfish/v1/Chassis/accelerator0"},
+                {"@odata.id": "/redfish/v1/Chassis/accelerator1"},
             ],
         }
         req = await self.client.request("GET", "/redfish/v1/Chassis")

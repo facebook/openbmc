@@ -66,11 +66,12 @@ async def _get_chassis_child_for_server_name(
 
 async def get_chassis_members_json(expand_level: int) -> t.List[t.Dict[str, t.Any]]:
     chassis_members = [await _get_chassis_child_for_server_name("1", expand_level)]
+    # if libpal is supported, and slot4 is in the fru_name_map we are multi-slot
     if (
         redfish_chassis_helper.is_libpal_supported()
         and "slot4" in pal.pal_fru_name_map()
     ):
-        # return chassis members for a multisled platform
+        # return chassis members for a multislot platform
         fru_name_map = pal.pal_fru_name_map()
         asics = 0
         for fru_name, fruid in fru_name_map.items():
@@ -82,7 +83,7 @@ async def get_chassis_members_json(expand_level: int) -> t.List[t.Dict[str, t.An
                     and "slot" in fru_name
                 ):
                     child_name = fru_name.replace("slot", "server")
-                if (
+                elif (
                     pal.FruCapability.FRU_CAPABILITY_HAS_DEVICE in fru_capabilities
                     and pal.FruCapability.FRU_CAPABILITY_SERVER not in fru_capabilities
                 ):

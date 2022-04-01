@@ -1,11 +1,11 @@
 import asyncio
 import json
-import re
 import os
-from aiohttp import web
+import re
 from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, List, Optional, Set, Tuple, Union
 
+from aiohttp import web
 from common_webapp import WebApp
 
 common_executor = ThreadPoolExecutor(5)

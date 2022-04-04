@@ -71,7 +71,10 @@ for (( i=0; i<${#SLOT[@]}; i++ )); do
           server_type=4
           RES=$(/usr/bin/bic-util slot$slot_id 0xE0 0x2A 0x15 0xA0 0x00 0x01)
           postcode=$(echo $RES| awk '{print $7$6$5$4;}')
-          /usr/bin/kv set slot${slot_id}_last_postcode $postcode
+          # Since server may not power on, skip if post code empty
+          if [ -n "$postcode" ]; then
+            /usr/bin/kv set "slot${slot_id}_last_postcode" "$postcode" 2> /dev/null
+          fi
         else
           #unknown
           server_type=3

@@ -389,8 +389,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   const char *dedup_env = getenv("FW_UTIL_DEDUP");
   const char *verify_env = getenv("FW_UTIL_VERIFY");
   bool dedup = (dedup_env != NULL ? (*dedup_env == '1' || *dedup_env == '2') : true);
-  bool verify = (verify_env != NULL ? (*verify_env == '1') : true);
-  verify = false;
+  bool verify = (verify_env != NULL ? (*verify_env == '1') : false);
 
   buf = malloc(USB_PKT_HDR_SIZE + BIOS_UPDATE_BLK_SIZE);
   if (buf == NULL) {
@@ -519,7 +518,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
         continue;
       }
       if (memcmp(cs, fcs, cs_len) != 0) {
-        fprintf(stderr, "Data checksum mismatch @ %zu (cs_len %d, 0x%016llx vs 0x%016llx)\n",
+        fprintf(stderr, "Data checksum mismatch @ %zu (cs_len %d, 0x%016"PRIx64" vs 0x%016"PRIx64")\n",
             write_offset, cs_len, *((uint64_t *) cs), *((uint64_t *) fcs));
         attempts--;
         continue;

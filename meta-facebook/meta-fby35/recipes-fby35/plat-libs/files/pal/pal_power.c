@@ -590,8 +590,7 @@ pal_sled_cycle(void) {
     }
   }
 
-  ret = system("sv start sensord > /dev/null 2>&1 &");
-  if ( ret < 0 ) {
+  if ( system("sv start sensord > /dev/null 2>&1 &") < 0 ) {
     printf("Fail to start sensord\n");
   }
 

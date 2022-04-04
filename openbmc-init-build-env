@@ -19,6 +19,7 @@ PLAT_DISTRO_OVERRIDES=(
 # hardknott platforms (latest)
 #   -- none --
 # dunfell platforms (pending upgrade)
+  meta-churchillmono:lf-dunfell
   meta-clearcreek:lf-dunfell
   meta-cloudripper:lf-dunfell
   meta-cmm:lf-dunfell

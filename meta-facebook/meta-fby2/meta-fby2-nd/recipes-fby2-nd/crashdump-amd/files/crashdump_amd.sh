@@ -179,7 +179,7 @@ echo "Crash Dump generated at $(date)" > "$CRASHDUMP_FILE"
   dump_sensor_threshold "$SLOT_NAME"
 
   # MCA dumps
-  echo "MCA(x) Dump:"
+  echo "Crashdump v1.0:"
   cat "$CRASHDUMP_DECODED_FILE"
   echo "================="
 

@@ -1107,6 +1107,12 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel)
   return PAL_EOK;
 }
 
+bool __attribute__((weak))
+pal_parse_cpu_dimm_hot_sel_helper(uint8_t *sel, char *error_log)
+{
+  return false;
+}
+
 /*
  * A Function to parse common SEL message, a helper funciton
  * for pal_parse_sel.
@@ -1466,10 +1472,12 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case CPU_DIMM_HOT:
-      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
-        strcat(error_log, "SOC MEMHOT");
-      else
-        strcat(error_log, "Unknown");
+      if (!pal_parse_cpu_dimm_hot_sel_helper(sel, error_log)) {
+        if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
+          strcat(error_log, "SOC MEMHOT");
+        else
+          strcat(error_log, "Unknown");
+      }
       sprintf(temp_log, "CPU_DIMM_HOT %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;

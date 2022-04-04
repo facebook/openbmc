@@ -6331,6 +6331,45 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 
 }
 
+bool
+pal_parse_cpu_dimm_hot_sel_helper(uint8_t *sel, char *error_log)
+{
+  #if defined(CONFIG_FBY2_ND)
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  if (ed[0] == 0x1) {
+    strcat(error_log, "SOC MEMHOT ");
+    switch (ed[1]){
+      case 0x00:
+        strcat(error_log, "DIMM A");
+        break;
+      case 0x02:
+        strcat(error_log, "DIMM C");
+        break;
+      case 0x03:
+        strcat(error_log, "DIMM D");
+        break;
+      case 0x04:
+        strcat(error_log, "DIMM E");
+        break;
+      case 0x06:
+        strcat(error_log, "DIMM G");
+        break;
+      case 0x07:
+        strcat(error_log, "DIMM H");
+        break;
+      default:
+        break;
+    }
+  } else {
+    strcat(error_log, "Unknown");
+  }
+  return true;
+  #else
+  return false;
+  #endif
+}
+
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {

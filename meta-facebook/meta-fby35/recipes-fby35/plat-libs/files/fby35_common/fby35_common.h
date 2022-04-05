@@ -206,6 +206,7 @@ enum {
   EDSFF_1U = 0x07,
   CXL_1U   = 0x0A,
   M2_1U    = 0x0B,
+  WF_1U    = 0x0C,
 };
 
 // 2OU Board type

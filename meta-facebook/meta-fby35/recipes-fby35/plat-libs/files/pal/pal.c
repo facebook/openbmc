@@ -1328,6 +1328,9 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
           case M2_1U:
             pcie_conf = CONFIG_MFG;
             break;
+          case WF_1U:
+            pcie_conf = CONFIG_C_WF;
+            break;
           default:
             pcie_conf = CONFIG_C;
             break;

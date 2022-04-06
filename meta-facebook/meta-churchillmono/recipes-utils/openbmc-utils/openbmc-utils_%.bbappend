@@ -24,10 +24,17 @@ PACKAGECONFIG += "boot-info"
 LOCAL_URI += "file://setup_i2c.sh \
             file://mount_data1.service \
             file://eth0_mac_fixup.sh \
-            "
+            file://power-on.sh \
+            file://sol.sh \
+            file://wedge_power.sh \
+            file://board-utils.sh \
+	    "
 
 OPENBMC_UTILS_FILES += " \
     eth0_mac_fixup.sh \
+    sol.sh \
+    wedge_power.sh \
+    board-utils.sh \
     "
 
 inherit systemd
@@ -47,6 +54,9 @@ do_work_systemd() {
 
   # fix mac address in eth0 and u-boot env by reading from IDPROM
   install -m 755 ${S}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+
+  # power-on script that will be used by power-on service
+  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
 }
 
 do_install_board() {

@@ -18,24 +18,19 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-# shellcheck disable=SC1091
+### BEGIN INIT INFO
+# Provides:          power-on
+# Required-Start:    85
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Power on micro-server
+### END INIT INFO
+
+#shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
-. /usr/local/bin/board-utils.sh
 
-#BMC Temp sensor
-i2c_device_add 8 0x4A lm75
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
-#BMC IDPROM
-i2c_device_add 8 0x54 24c64
-
-#Chassis IDPROM
-i2c_device_add 8 0x56 24c64
-
-#enable access to GE switch EEPROM
-oob_switch_eeprom_select
-
-#GE switch EEPROM
-i2c_device_add 8 0x50 24c04
-
-#disable access to GE switch EEPROM
-oob_switch_eeprom_deselect
+# Power on if not already powered on
+wedge_power.sh on

@@ -1,0 +1,24 @@
+diff -ur a/Source/TPMFactoryUpd/makefile b/Source/TPMFactoryUpd/makefile
+--- a/Source/TPMFactoryUpd/makefile	2022-03-24 17:54:29.000000000 +0800
++++ b/Source.TPMFactoryUpd/makefile	2022-03-24 17:55:03.000000000 +0800
+@@ -13,9 +13,9 @@
+ #
+ # The makefile uses the gcc compiler.
+ #
+-CC=$(CROSS_COMPILE)gcc
+-STRIP=$(CROSS_COMPILE)strip
+-AR=$(CROSS_COMPILE)ar
++# CC=$(CROSS_COMPILE)gcc
++# STRIP=$(CROSS_COMPILE)strip
++# AR=$(CROSS_COMPILE)ar
+ #FPACK+= -fpack-struct # Don't pack structs globally. This would crash OpenSSL decrypt operation
+ 
+ # Basic compiler options
+@@ -31,7 +31,6 @@
+ 	-Wunreachable-code \
+ 	-Wno-implicit-fallthrough \
+ 	-DLINUX \
+-	-D_FORTIFY_SOURCE=1 \
+ 	-fstack-protector-all
+ 
+ STRIPFLAGS+= --strip-unneeded $@  # Don't strip if you want to debug

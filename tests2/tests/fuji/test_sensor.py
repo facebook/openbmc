@@ -19,10 +19,10 @@
 #
 import os
 import unittest
-import pal
 from abc import abstractmethod
 
 from common.base_sensor_test import SensorUtilTest
+from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
 from tests.fuji.test_data.sensors.sensor import (
     PIM1_SENSORS_16Q,
     PIM1_SENSORS_16O,
@@ -109,7 +109,7 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
 
     def base_test_pim_sensor_keys(self):
         self.set_sensors_cmd()
-        if not pal.pal_is_fru_prsnt(pal.pal_get_fru_id("pim{}".format(self._pim_id))):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim{}".format(self._pim_id))):
             self.skipTest("pim{} is not present".format(self._pim_id))
         result = self.get_parsed_result()
         for key in self.get_pim_sensors():
@@ -122,7 +122,7 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
 
     def base_test_pim_temp_sensor_range(self):
         self.set_sensors_cmd()
-        if not pal.pal_is_fru_prsnt(pal.pal_get_fru_id("pim{}".format(self._pim_id))):
+        if not pal_is_fru_prsnt(pal_get_fru_id("pim{}".format(self._pim_id))):
             self.skipTest("pim{} is not present".format(self._pim_id))
         result = self.get_parsed_result()
         PIM_TEMP_KEYS = self.get_pim_temp_keys()
@@ -141,7 +141,7 @@ class PimSensorTest(SensorUtilTest, unittest.TestCase):
     def get_pim_name(self, ver):
         """ """
         pim_name = None
-        ver = int(ver,16)
+        ver = int(ver, 16)
         if ver & 0x80 == 0x0:
             pim_name = "PIM_TYPE_16Q"
         elif ver & 0x80 == 0x80:
@@ -347,7 +347,7 @@ class PsuSensorTest(SensorUtilTest, unittest.TestCase):
 
     def base_test_psu_sensor_keys(self):
         self.set_sensors_cmd()
-        if not pal.pal_is_fru_prsnt(pal.pal_get_fru_id("psu{}".format(self._psu_id))):
+        if not pal_is_fru_prsnt(pal_get_fru_id("psu{}".format(self._psu_id))):
             self.skipTest("psu{} is not present".format(self._psu_id))
         result = self.get_parsed_result()
         for key in self.get_psu_sensors():

@@ -19,9 +19,9 @@
 #
 import os
 import unittest
-import pal
 
 from common.base_rest_endpoint_test import FbossRestEndpointTest
+from tests.fuji.helper.libpal import pal_is_fru_prsnt, pal_get_fru_id
 from tests.fuji.test_data.sensors.sensor import (
     PIM1_SENSORS_16Q,
     PIM1_SENSORS_16O,
@@ -178,12 +178,9 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             6: PIM7_SENSORS_16O,
             7: PIM8_SENSORS_16O,
         }
-        self.endpoint_sensors_attrb = (
-            SCM_SENSORS
-            + SMB_SENSORS
-        )
+        self.endpoint_sensors_attrb = SCM_SENSORS + SMB_SENSORS
         for psu in psu_list:
-            if pal.pal_is_fru_prsnt(pal.pal_get_fru_id("psu{}".format(psu))):
+            if pal_is_fru_prsnt(pal_get_fru_id("psu{}".format(psu))):
                 self.endpoint_sensors_attrb += psu_sensor_list[psu]
             else:
                 Logger.info("/api/sys/sensors: get psu{} not present".format(psu))

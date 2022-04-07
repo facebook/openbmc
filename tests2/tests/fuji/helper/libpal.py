@@ -18,7 +18,7 @@
 # Boston, MA 02110-1301 USA
 #
 
-from ctypes import CDLL, byref, c_uint8
+from ctypes import CDLL, byref, c_uint8, pointer, c_char_p
 
 # When tests are discovered out of BMC there is no libpal
 # catch the import failure
@@ -29,7 +29,7 @@ except Exception:
 
 
 class BoardRevision:
-    """ Board revision """
+    """Board revision"""
 
     BOARD_FUJI_EVT1 = 0x40
     BOARD_FUJI_EVT2 = 0x41
@@ -49,10 +49,33 @@ class BoardRevision:
 
 
 def pal_get_board_rev():
-    """ get board revision """
+    """get board revision"""
     brd_rev = c_uint8()
     ret = lpal_hndl.pal_get_board_rev(byref(brd_rev))
     if ret:
         return None
     else:
         return BoardRevision.board_rev.get(brd_rev.value, None)
+
+
+def pal_is_fru_prsnt(fru_id: int) -> bool:
+    """Returns whether a fru is present"""
+    c_status = c_uint8()
+
+    ret = lpal_hndl.pal_is_fru_prsnt(fru_id, pointer(c_status))
+    if ret != 0:
+        raise ValueError("pal_is_fru_prsnt() returned " + str(ret))
+
+    return bool(c_status.value)
+
+
+def pal_get_fru_id(fru_name: str) -> int:
+    """Given a FRU name, return the corresponding fru id"""
+    c_fru_name = c_char_p(fru_name.encode("utf-8"))  # noqa
+    c_fru_id = c_uint8(0)
+
+    ret = lpal_hndl.pal_get_fru_id(c_fru_name, pointer(c_fru_id))
+    if ret != 0:
+        raise ValueError("Invalid FRU name: " + repr(fru_name))
+
+    return c_fru_id.value

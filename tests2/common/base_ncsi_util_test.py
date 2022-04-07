@@ -18,14 +18,13 @@
 # Boston, MA 02110-1301 USA
 #
 import re
-
-# from enum import Enum, unique
+from enum import Enum, unique
 
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 
 
-""" @unique
+@unique
 class Comparison(Enum):
     LESS_THAN = 1
     LESS_THAN_OR_EQUAL = 2
@@ -48,66 +47,69 @@ class Requirement:
         if self.field not in result_dict:
             return (False, "Field " + self.field + "not found")
         if self.comparison == Comparison.LESS_THAN:
-            if not (self.value < result_dict[self.field]):
+            if not (result_dict[self.field] < self.value):
                 return (
                     False,
                     "Field "
                     + self.field
                     + " read value "
-                    + result_dict[self.field]
+                    + str(result_dict[self.field])
                     + ", expected less than "
-                    + self.value,
+                    + str(self.value),
                 )
         if self.comparison == Comparison.LESS_THAN_OR_EQUAL:
-            if not (self.value <= result_dict[self.field]):
+            if not (result_dict[self.field] <= self.value):
                 return (
                     False,
                     "Field "
                     + self.field
                     + " read value "
-                    + result_dict[self.field]
+                    + str(result_dict[self.field])
                     + ", expected less than or equal to  "
-                    + self.value,
+                    + str(self.value),
                 )
         if self.comparison == Comparison.EQUAL:
-            if not (self.value == result_dict[self.field]):
+            if not (result_dict[self.field] == self.value):
                 return (
                     False,
                     "Field "
                     + self.field
                     + " read value "
-                    + result_dict[self.field]
+                    + str(result_dict[self.field])
                     + ", expected equal to "
-                    + self.value,
+                    + str(self.value),
                 )
         if self.comparison == Comparison.GREATER_THAN_OR_EQUAL:
-            if not (self.value >= result_dict[self.field]):
+            if not (result_dict[self.field] >= self.value):
                 return (
                     False,
                     "Field "
                     + self.field
                     + " read value "
-                    + result_dict[self.field]
+                    + str(result_dict[self.field]_
                     + ", expected greater than or equal to "
-                    + self.value,
+                    + str(self.value),
                 )
         if self.comparison == Comparison.GREATER_THAN:
-            if not (self.value > result_dict[self.field]):
+            if not (result_dict[self.field] > self.value):
                 return (
                     False,
                     "Field "
                     + self.field
                     + " read value "
-                    + result_dict[self.field]
+                    + str(result_dict[self.field])
                     + ", expected greater than "
-                    + self.value,
+                    + str(self.value),
                 )
 
-        return (True, "Field " + self.field + " passed") """
+        return (True, "Field " + self.field + " passed")
 
 
 class BaseNcsiUtilTest(object):
+    adapter_fields = None
+
     def setUp(self):
+        print("in BaseNcsiUtilTest setUp")
         Logger.start(name=self._testMethodName)
         self.link_status = None
         self.adapter_status = None
@@ -119,7 +121,8 @@ class BaseNcsiUtilTest(object):
 
         # Expected response and fields for adapter status fields
         self.adapter_response = None
-        self.adapter_fields = []  # THIS MUST BE A LIST OF Requirement OBJECTS
+        if self.adapter_fields is None:
+            self.adapter_fields = []  # THIS MUST BE A LIST OF Requirement OBJECTS
         self.adapter_field_results = {}
 
 
@@ -238,10 +241,10 @@ class CommonNcsiUtilTest(BaseNcsiUtilTest):
     def verify_adapter_status(self):
         self.get_adapter_status()
         self.verify_command_reponse(self.adapter_status, self.adapter_response)
-        # self.create_adapter_fields(self.adapter_response)
-        # for field in self.adapter_fields:
-        #    ret = field.check(self.adapter_field_results)
-        #    self.assertTrue(ret[0], ret[1])
+        self.create_adapter_fields(self.adapter_response)
+        for field in self.adapter_fields:
+            ret = field.check(self.adapter_field_results)
+            self.assertTrue(ret[0], ret[1])
 
     # get broadcom core dump:
     # /usr/local/bin/ncsi-util -n eth0 -m brcm -d coredump -o <output file>

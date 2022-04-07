@@ -19,7 +19,7 @@
 #
 import unittest
 
-from common.base_ncsi_util_test import CommonNcsiUtilTest
+from common.base_ncsi_util_test import CommonNcsiUtilTest, Requirement, Comparison
 from utils.test_utils import qemu_check
 
 # should we check for specific FRUs here or anything?
@@ -29,4 +29,14 @@ from utils.test_utils import qemu_check
 class NcsiUtilTest(CommonNcsiUtilTest, unittest.TestCase):
     def test_ncsi_util(self):
         # Here is where we should set Requirements once those are defined for Yv3.
+
+        print("in test_ncsi_util for fby3")
+
+        self.adapter_fields = [
+            Requirement("Total Bytes Received", 0, Comparison.GREATER_THAN),
+            Requirement("Total Bytes Transmitted", 0, Comparison.GREATER_THAN),
+            Requirement("FCS Receive Errors", 1, Comparison.LESS_THAN_OR_EQUAL),
+            Requirement("Alignment Errors", 1, Comparison.LESS_THAN_OR_EQUAL),
+        ]
+
         super().test_ncsi_util()

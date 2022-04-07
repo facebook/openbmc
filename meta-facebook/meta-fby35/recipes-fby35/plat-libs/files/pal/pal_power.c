@@ -43,9 +43,7 @@ server_power_off(uint8_t fru) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;
   }
-  if ( bmc_location == NIC_BMC ) {
-    if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
-  }
+
   return bic_server_power_off(fru);
 }
 
@@ -60,9 +58,7 @@ server_power_on(uint8_t fru) {
     syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
     return POWER_STATUS_ERR;
   }
-  if ( bmc_location == NIC_BMC ) {
-    if ( pal_set_nic_perst(fru, NIC_PE_RST_HIGH) < 0 ) return POWER_STATUS_ERR;
-  }
+
   return bic_server_power_on(fru);
 }
 
@@ -496,7 +492,6 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           }
         }
       } else {
-        if ( pal_set_nic_perst(fru, NIC_PE_RST_LOW) < 0 ) return POWER_STATUS_ERR;
         if ( bic_do_12V_cycle(fru) < 0 ) {
           return POWER_STATUS_ERR;
         }
@@ -567,9 +562,6 @@ pal_sled_cycle(void) {
       syslog(LOG_WARNING, "%s() Failed to do sled cycle, max retry: %d", __func__, retry);
     }
   } else {
-    if ( pal_set_nic_perst(1, NIC_PE_RST_LOW) < 0 ) {
-      syslog(LOG_CRIT, "Set NIC PERST failed.\n");
-    }
     if ( bic_inform_sled_cycle() < 0 ) {
       syslog(LOG_WARNING, "Inform another BMC for sled cycle failed.\n");
     }

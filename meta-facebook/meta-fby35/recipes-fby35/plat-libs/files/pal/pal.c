@@ -1932,7 +1932,6 @@ pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 
   switch (event_data[0]) {
     case SLED_CYCLE:
-      pal_set_nic_perst(fru, NIC_PE_RST_LOW);
       strcat(error_log, "SLED_CYCLE by BB BIC");
       break;
     case SLOT:

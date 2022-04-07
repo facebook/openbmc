@@ -60,4 +60,5 @@ IMAGE_INSTALL += " \
   otp \
   mctp-util \
   modprobe \
+  tpm-factory-upd \
   "

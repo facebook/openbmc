@@ -18,6 +18,7 @@ inherit systemd
 inherit meson
 inherit ptest-meson
 inherit python3native
+inherit python3-dir
 
 SUMMARY = "Rackmon Functionality"
 DESCRIPTION = "Rackmon Functionality"
@@ -29,7 +30,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 DEPENDS:append = " update-rc.d-native"
 
 DEPENDS += "glog libmisc-utils nlohmann-json cli11 python3-jsonschema-native"
-RDEPENDS:${PN} = "glog libmisc-utils python3-core bash psu-update"
+RDEPENDS:${PN} = "glog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):
   prof_enabled = d.getVar("RACKMON_PROFILING", False)
@@ -89,6 +90,7 @@ LOCAL_URI += " \
 #scripts
 LOCAL_URI += " \
     file://scripts/schema_validator.py \
+    file://scripts/pyrmd.py \
     "
 
 # Test sources
@@ -144,11 +146,15 @@ do_install:append() {
     install_wrapper "/usr/local/bin/rackmoncli data --format value" ${bin}/rackmoninfo
     install_wrapper "/usr/local/bin/rackmoncli raw \$@" ${bin}/modbuscmd
     install_wrapper "/usr/local/bin/rackmoncli \$@" ${bin}/rackmonctl
+
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    install -m 644 ${S}/scripts/pyrmd.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
 
 FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "
 
 FILES:${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/pyrmd.py"
 
 SYSTEMD_SERVICE:${PN} = "rackmond.service"

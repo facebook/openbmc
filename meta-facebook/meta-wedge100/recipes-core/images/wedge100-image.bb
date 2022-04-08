@@ -19,6 +19,7 @@ IMAGE_INSTALL += " \
   ast-mdio \
   openbmc-gpio \
   rackmon \
+  psu-update \
   sensor-setup \
   usb-console \
   lldp-util \

@@ -3,13 +3,14 @@
 import argparse
 import json
 import os
-import socket
 import struct
 import sys
 import time
 import traceback
 from binascii import hexlify, unhexlify
 from collections import namedtuple
+
+import pyrmd
 
 
 def bh(bs):
@@ -89,87 +90,6 @@ def status_state(state):
 BelCommand = namedtuple("BelCommand", ["type", "data"])
 
 
-class ModbusTimeout(Exception):
-    pass
-
-
-class ModbusCRCFail(Exception):
-    pass
-
-
-class ModbusUnknownError(Exception):
-    pass
-
-
-class BadMEIResponse(Exception):
-    pass
-
-
-def rackmon_command(cmd):
-    srvpath = "/var/run/rackmond.sock"
-    replydata = []
-    if os.path.exists(srvpath):
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        client.connect(srvpath)
-        cmdlen = struct.pack("@H", len(cmd))
-        client.send(cmdlen)
-        client.send(cmd)
-        while True:
-            data = client.recv(1024)
-            if not data:
-                break
-            replydata.append(data)
-        client.close()
-    return b"".join(replydata)
-
-
-def pause_monitoring():
-    COMMAND_TYPE_PAUSE_MONITORING = 0x04
-    command = struct.pack("@Hxx", COMMAND_TYPE_PAUSE_MONITORING)
-    result = rackmon_command(command)
-    (res_n,) = struct.unpack("@B", result)
-    if res_n == 1:
-        bprint("Monitoring was already paused when tried to pause")
-    elif res_n == 0:
-        bprint("Monitoring paused")
-    else:
-        bprint("Unknown response pausing monitoring: %d" % res_n)
-
-
-def resume_monitoring():
-    COMMAND_TYPE_START_MONITORING = 0x05
-    command = struct.pack("@Hxx", COMMAND_TYPE_START_MONITORING)
-    result = rackmon_command(command)
-    (res_n,) = struct.unpack("@B", result)
-    if res_n == 1:
-        bprint("Monitoring was already running when tried to resume")
-    elif res_n == 0:
-        bprint("Monitoring resumed")
-    else:
-        bprint("Unknown response resuming monitoring: %d" % res_n)
-
-
-def modbuscmd(raw_cmd, expected=0, timeout=0):
-    COMMAND_TYPE_RAW_MODBUS = 1
-    send_command = (
-        struct.pack("@HxxHHL", COMMAND_TYPE_RAW_MODBUS, len(raw_cmd), expected, timeout)
-        + raw_cmd
-    )
-    result = rackmon_command(send_command)
-    if len(result) == 0:
-        raise ModbusUnknownError()
-    (resp_len,) = struct.unpack("@H", result[:2])
-    if resp_len == 0:
-        (error,) = struct.unpack("@H", result[2:4])
-        if error == 4:
-            raise ModbusTimeout()
-        if error == 5:
-            raise ModbusCRCFail()
-        bprint("Unknown modbus error: " + str(error))
-        raise ModbusUnknownError()
-    return result[2:resp_len]
-
-
 last_rx = ""
 address = ""
 rx_failed = False
@@ -207,8 +127,6 @@ WriteCommand = namedtuple("WriteCommand", ["tx", "rx", "timeout"])
 
 def read_wcmd(cmd):
     (txsz, rxsz) = struct.unpack("<BB", cmd.data[:2])
-    txsz = txsz
-    rxsz = rxsz
     txdata = cmd.data[3:][:txsz]
     rxdata = cmd.data[txsz + 3 :][:rxsz]
     # these include sent/received CRCs, which we want to remove
@@ -223,7 +141,6 @@ def read_wcmd(cmd):
 def do_write(cmd):
     global last_rx
     global delay
-    txsz = len(cmd.data.tx)
     rxsz = len(cmd.data.rx)
     txdata = cmd.data.tx
     rxdata = cmd.data.rx
@@ -250,10 +167,10 @@ def do_write(cmd):
         try:
             t1 = time.clock()
             # remove incoming address byte
-            last_rx = modbuscmd(mcmd, expected=expected, timeout=timeout)[1:]
+            last_rx = pyrmd.modbuscmd_sync(mcmd, expected=expected, timeout=timeout)[1:]
             t2 = time.clock()
             spent = t2 - t1
-        except ModbusTimeout:
+        except pyrmd.ModbusTimeout:
             last_rx = b""
             bprint("No response from cmd: " + bh(mcmd))
     left = spent - (delay / 1000.0)
@@ -358,17 +275,17 @@ def main():
                 cmd = BelCommand("W", WriteCommand(tx, rx, timeout))
             script.append(cmd)
         bprint("Reduced by %d cmds." % (olen - len(script)))
-        pause_monitoring()
+        pyrmd.pause_monitoring_sync()
         for cmd in script:
             belcmd(cmd)
-    except Exception as e:
+    except Exception:
         bprint("Update failed")
-        resume_monitoring()
+        pyrmd.resume_monitoring_sync()
         status["exception"] = traceback.format_exc()
         status_state("failed")
         traceback.print_exc()
         sys.exit(1)
-    resume_monitoring()
+    pyrmd.resume_monitoring_sync()
     status_state("done")
     if args.rmfwfile:
         os.remove(args.file)

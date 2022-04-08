@@ -10,7 +10,6 @@ import os
 import pickle
 import struct
 import subprocess
-import sys
 from contextlib import contextmanager
 
 import pyrmd

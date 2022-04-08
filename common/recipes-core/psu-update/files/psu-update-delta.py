@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 
 import argparse
-import fcntl
 import json
 import os
 import os.path
-import socket
 import struct
 import sys
 import time
 import traceback
 from binascii import hexlify
 from contextlib import ExitStack
-from tempfile import mkstemp
 
 import hexfile
+import pyrmd
 
 
 transcript_file = None
@@ -65,94 +63,13 @@ def status_state(state):
     write_status()
 
 
-class ModbusTimeout(Exception):
-    pass
-
-
-class ModbusCRCFail(Exception):
-    pass
-
-
-class ModbusUnknownError(Exception):
-    pass
-
-
-class BadMEIResponse(Exception):
-    pass
-
-
-def rackmon_command(cmd):
-    srvpath = "/var/run/rackmond.sock"
-    replydata = []
-    if os.path.exists(srvpath):
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        client.connect(srvpath)
-        cmdlen = struct.pack("@H", len(cmd))
-        client.send(cmdlen)
-        client.send(cmd)
-        while True:
-            data = client.recv(1024)
-            if not data:
-                break
-            replydata.append(data)
-        client.close()
-    return b"".join(replydata)
-
-
-def pause_monitoring():
-    COMMAND_TYPE_PAUSE_MONITORING = 0x04
-    command = struct.pack("@Hxx", COMMAND_TYPE_PAUSE_MONITORING)
-    result = rackmon_command(command)
-    (res_n,) = struct.unpack("@B", result)
-    if res_n == 1:
-        print("Monitoring was already paused when tried to pause")
-    elif res_n == 0:
-        print("Monitoring paused")
-    else:
-        print("Unknown response pausing monitoring: %d" % res_n)
-
-
-def resume_monitoring():
-    COMMAND_TYPE_START_MONITORING = 0x05
-    command = struct.pack("@Hxx", COMMAND_TYPE_START_MONITORING)
-    result = rackmon_command(command)
-    (res_n,) = struct.unpack("@B", result)
-    if res_n == 1:
-        print("Monitoring was already running when tried to resume")
-    elif res_n == 0:
-        print("Monitoring resumed")
-    else:
-        print("Unknown response resuming monitoring: %d" % res_n)
+class BadMEIResponse(pyrmd.ModbusException):
+    ...
 
 
 def tprint(s):
     if transcript_file:
         print(s, file=transcript_file)
-
-
-def modbuscmd(raw_cmd, expected=0, timeout=0):
-    tprint("-> {}".format(bh(raw_cmd)))
-    COMMAND_TYPE_RAW_MODBUS = 1
-    send_command = (
-        struct.pack("@HxxHHL", COMMAND_TYPE_RAW_MODBUS, len(raw_cmd), expected, timeout)
-        + raw_cmd
-    )
-    result = rackmon_command(send_command)
-    if len(result) == 0:
-        raise ModbusUnknownError()
-    (resp_len,) = struct.unpack("@H", result[:2])
-    if resp_len == 0:
-        (error,) = struct.unpack("@H", result[2:4])
-        if error == 4:
-            tprint("<- timeout")
-            raise ModbusTimeout()
-        if error == 5:
-            tprint("<- crc check failure")
-            raise ModbusCRCFail()
-        print("Unknown modbus error: " + str(error))
-        raise ModbusUnknownError()
-    tprint("<- {}".format(bh(result[2:])))
-    return result[2:resp_len]
 
 
 def mei_command(addr, func_code, mei_type=0x64, data=None, timeout=0):
@@ -163,14 +80,14 @@ def mei_command(addr, func_code, mei_type=0x64, data=None, timeout=0):
         i_data = i_data + (b"\xFF" * (7 - len(i_data)))
     assert len(i_data) == 7
     command = struct.pack("BBBB", addr, 0x2B, mei_type, func_code) + i_data
-    return modbuscmd(command, expected=13, timeout=timeout)
+    return pyrmd.modbuscmd_sync(command, expected=13, timeout=timeout)
 
 
 def enter_bootloader(addr):
     try:
         print("Entering bootloader...")
         mei_command(addr, 0xFB, timeout=4000)
-    except ModbusTimeout:
+    except pyrmd.ModbusTimeout:
         print("Enter bootloader timed out (expected.)")
         pass
 
@@ -239,8 +156,8 @@ def write_data(addr, data):
     assert len(data) == 8
     command = struct.pack(">BBB", addr, 0x2B, 0x65) + data
     try:
-        response = modbuscmd(command, expected=13, timeout=3000)
-    except ModbusCRCFail:
+        response = pyrmd.modbuscmd_sync(command, expected=13, timeout=3000)
+    except pyrmd.ModbusCRCError:
         # This is not ideal, but upgrades in some Delta racks never complete
         # without it.
         # Suspicion is that we occasionally get replies from more than one unit
@@ -294,7 +211,7 @@ def reset_psu(addr):
     print("Resetting PSU...")
     try:
         response = mei_command(addr, 0x72, timeout=10000)
-    except ModbusTimeout:
+    except pyrmd.ModbusTimeout:
         print("No reply from PSU reset (expected.)")
         return
     expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xB2) + (b"\xFF" * 7)
@@ -315,7 +232,7 @@ def erase_flash(addr):
 
 def update_psu(addr, filename):
     status_state("pausing_monitoring")
-    pause_monitoring()
+    pyrmd.pause_monitoring_sync()
     status_state("parsing_fw_file")
     fwimg = hexfile.load(filename)
     status_state("pre_handshake_reset")
@@ -351,16 +268,16 @@ def main():
         try:
             update_psu(args.addr, args.file)
         except Exception as e:
-            print("Firmware update failed")
+            print("Firmware update failed %s" % str(e))
             traceback.print_exc()
             global status
             status["exception"] = traceback.format_exc()
             status_state("failed")
-            resume_monitoring()
+            pyrmd.resume_monitoring_sync()
             if args.rmfwfile:
                 os.remove(args.file)
             sys.exit(1)
-        resume_monitoring()
+        pyrmd.resume_monitoring_sync()
         if args.rmfwfile:
             os.remove(args.file)
         sys.exit(0)

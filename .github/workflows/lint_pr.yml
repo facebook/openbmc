@@ -18,7 +18,7 @@ jobs:
           CPP_FILE_LIST="/tmp/cppcheck_file_list.log"
           
           # Only keep the source files to check or CPPCheck gets confused.
-          sed '/\(c$\|cpp$\|c$\|cc$\|cu$\|cxx$\|h$\|hh$\|hpp$\|hxx$\|tcc$\)/!d' git_diff.log > $CPP_FILE_LIST
+          sed '/\(\.c$\|\.cpp$\|\.c$\|\.cc$\|\.cu$\|\.cxx$\|\.h$\|\.hh$\|\.hpp$\|\.hxx$\|\.tcc$\)/!d' git_diff.log > $CPP_FILE_LIST
 
           if [ -s $CPP_FILE_LIST ]; then
             echo "C/C++ source files kept:"
@@ -110,14 +110,11 @@ jobs:
           FILE_PATHS=$(cat git_diff.log)
           for FILE_PATH in $FILE_PATHS
           do
-            # First check if file has shell extension
-            if [ "$FILE_PATH" == "*.sh" ] || [ "$FILE_PATH" == "*.bash" ]; then
+            file_type="$(file -b $FILE_PATH)"
+            echo $file_type
+            sub_str='shell'
+            if [[ "$file_type" == *"$sub_str"* ]]; then
               echo "$FILE_PATH" >> $SHELL_FILE_LIST
-            # Some file names don't have a shell extension.
-            elif IFS= read -r line < "$FILE_PATH"; then
-              case $line in
-                ("#!/bin/bash"*) echo "$FILE_PATH" >> $SHELL_FILE_LIST
-              esac
             fi
           done
 
@@ -151,8 +148,9 @@ jobs:
             options=( 
               "--format=gcc"
               "--exclude=SC1091")
-            
-            shellcheck "${options[@]}" $FILE_PATH >> /tmp/shellcheck.log
+
+            # Shellcheck will throw an error if a file fails, github actions don't like that... 
+            shellcheck "${options[@]}" $FILE_PATH >> /tmp/shellcheck.log || true
           
           done
           

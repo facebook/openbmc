@@ -131,7 +131,7 @@ Optional:
   "ignored_addrs": Do not scan for these addresses (Useful in debugging).
 
 Once created, users primarily interact with the interface using the
-`command(req,resp,baud,timeout,settle_time)` method. The message structure
+`command(req,resp,baud,timeout)` method. The message structure
 is discussed next.
 
 # Messaging

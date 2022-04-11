@@ -271,7 +271,7 @@ register map described above.
 
 It defines a `command()` method very similar to the `Modbus` class
 
-To help with monitoring it defines a `monitor()` method which will
+To help with monitoring it defines a `reloadRegisters()` method which will
 read all registers defined in the register map and store it in the 
 local member of type `ModbusDeviceRawData`.
 

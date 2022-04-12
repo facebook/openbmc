@@ -202,7 +202,7 @@ class BaseDimmUtilTest(object):
         cmd = ["dimm-util", self.FRU, "--raw", "--dimm", self.dimm_info["dimm_num"]]
         out = run_cmd(cmd)
         pattern = (
-            r"$|" + r"^DIMM [A-Z]{1}[0-9]{1}$|" + r"^[a-f0-9]{3}:( [0-9a-f]{2}){16}$"
+            r"$|" + r"^DIMM [A-Z]{1}[0-9]{1}.*$|" + r"^[a-f0-9]{3}:( [0-9a-f]{2}){16}$"
         )
         if self.FRU == "all":
             pattern = r"^[Ff][Rr][Uu]: [a-z0-9]+" + pattern

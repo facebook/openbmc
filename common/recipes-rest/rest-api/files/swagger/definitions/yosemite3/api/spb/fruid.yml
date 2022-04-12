@@ -16,7 +16,7 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
+                additionalProperties: true
                 properties: 
                   Board Mfg Date: 
                     type: string

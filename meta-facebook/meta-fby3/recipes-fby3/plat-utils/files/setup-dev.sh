@@ -35,8 +35,15 @@ function create_new_dev() {
 function init_class1_dev(){
   hsc_detect=$(get_hsc_bb_detect)
   if [ $hsc_detect -eq $HSC_DET_ADM1278 ]; then
-    #enable the register of the temperature of hsc
-    /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i
+    for i in $(seq 1 5)
+    do
+      #enable the register of the temperature of hsc
+      /usr/sbin/i2cset -y 11 0x40 0xd4 0x1c 0x3f i 2> /dev/null
+      RET=$?
+      if [ "$RET" = 0 ]; then
+        break
+      fi
+    done
   elif [ $hsc_detect -eq $HSC_DET_LTC4282 ]; then
     create_new_dev "ltc4282" 0x40 11
     create_new_dev "tmp401" 0x4c 12

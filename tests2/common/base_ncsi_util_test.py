@@ -86,7 +86,7 @@ class Requirement:
                     "Field "
                     + self.field
                     + " read value "
-                    + str(result_dict[self.field]_
+                    + str(result_dict[self.field])
                     + ", expected greater than or equal to "
                     + str(self.value),
                 )

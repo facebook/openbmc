@@ -465,7 +465,7 @@ _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
     ret = BIC_STATUS_SUCCESS;
   }
   switch (fw_comp) {
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:
@@ -491,7 +491,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:
-      fw_comp = FW_BIC;
+      fw_comp = FW_SB_BIC;
       break;
     default:
       fw_comp = comp;
@@ -502,7 +502,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   switch (comp) {
     case FW_CPLD:
     case FW_ME:
-    case FW_BIC:
+    case FW_SB_BIC:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
@@ -534,7 +534,7 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   switch (comp) {
     case FW_CPLD:
     case FW_ME:
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_2OU_3V3_VR1:

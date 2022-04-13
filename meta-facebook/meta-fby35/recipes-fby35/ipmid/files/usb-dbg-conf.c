@@ -582,7 +582,7 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
     }
   } else {
     //Bridge-IC Version
-    if (bic_get_fw_ver(slot_id, FW_BIC, ver)) {
+    if (bic_get_fw_ver(slot_id, FW_SB_BIC, ver)) {
       strcat(fw_text,"BIC_ver:\nNA\n");
     } else {
       if (strlen((char*)ver) == 2) { // old version format

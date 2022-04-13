@@ -439,7 +439,7 @@ get_component_name(uint8_t comp) {
   switch (comp) {
     case FW_CPLD:
       return "SB CPLD";
-    case FW_BIC:
+    case FW_SB_BIC:
       return "SB BIC";
     case FW_VR_VCCIN:
       return "VCCIN/VCCFA_EHV_FIVRA";
@@ -572,7 +572,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   switch (comp) {
     case FW_CPLD:
     case FW_ME:
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_BIC_RCVY:
     case FW_VR_VCCIN:
     case FW_VR_VCCD:
@@ -656,7 +656,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
 
   //run cmd
   switch (comp) {
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:

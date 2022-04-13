@@ -3024,7 +3024,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   case FW_ME:
     *res_len = 5;
     break;
-  case FW_BIC:
+  case FW_SB_BIC:
     *res_len = strlen((char*)res);
     if (*res_len == 2) { // old version format
 

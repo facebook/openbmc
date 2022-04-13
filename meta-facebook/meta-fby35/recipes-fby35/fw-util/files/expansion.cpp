@@ -15,7 +15,7 @@ void ExpansionBoard::ready()
 
   switch(fw_comp) {
     case FW_CPLD:
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_BB_BIC:
     case FW_BB_CPLD:
       return;

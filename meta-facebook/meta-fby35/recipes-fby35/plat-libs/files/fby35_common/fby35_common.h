@@ -292,7 +292,7 @@ enum board_id {
 
 enum {
   FW_CPLD = 1,
-  FW_BIC,
+  FW_SB_BIC,
   FW_ME,
   FW_BIC_RCVY,
   FW_VR_VCCIN,         // 5

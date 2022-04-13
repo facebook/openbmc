@@ -684,7 +684,7 @@ fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp) {
     case FW_BB_CPLD:
       snprintf(ver, 16, "%02X%02X%02X%02X", buf[3], buf[2], buf[1], buf[0]);
       break;
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:
@@ -760,7 +760,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
 
   switch (comp) {
     case FW_CPLD:
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_BIOS:
       board_id = BOARD_ID_SB;
       if (rev_id >= ARRAY_SIZE(rev_sb)) {
@@ -850,7 +850,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
         return false;
       }
       break;
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:

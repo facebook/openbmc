@@ -1,0 +1,71 @@
+on:
+  workflow_dispatch:
+    inputs:
+      machine:
+        description: 'Machine codename'
+        required: True
+      tag:
+        description: 'Tag'
+        required: True
+name: Create release
+jobs:
+  create_release:
+    name: Create release
+    runs-on: ubuntu-20.04
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          release_name: ${{ github.event.inputs.tag }}
+          draft: false
+          prerelease: false
+  build_image:
+    name: Build image
+    runs-on: ubuntu-20.04
+    container:
+      image: crops/poky
+    env:
+      CACHE_DIR: /tmp/job/sstate-cache
+      CACHE_URI: https://fb-openbmc-sstate.s3.us-east-2.amazonaws.com
+      MACHINE: ${{ github.event.inputs.machine }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Git config
+        run: |
+          git config --global user.email "openbmc@fb.com"
+          git config --global user.name "Github Actions"
+      - name: Download sstate cache
+        run: ./tools/circle-ci/download-sstate-cache
+      - name: Do build
+        run: ./tools/circle-ci/do-build
+      - name: Upload image
+        uses: actions/upload-artifact@v3
+        with:
+          name: flash-${{ github.event.inputs.machine }}
+          path: build/tmp/deploy/images/${{ github.event.inputs.machine }}/flash-${{ github.event.inputs.machine }}
+  upload_release_asset:
+    name: Upload image to release assets
+    needs: [create_release, build_image]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Get artifact from build step
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          name: flash-${{ github.event.inputs.machine }}
+      - name: Upload image to release assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.download.outputs.download-path }}/flash-${{ github.event.inputs.machine }}
+          asset_name: flash-${{ github.event.inputs.machine }}
+          asset_content_type: application/octet-stream

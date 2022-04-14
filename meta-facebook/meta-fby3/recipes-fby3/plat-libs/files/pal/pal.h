@@ -67,6 +67,7 @@ extern "C" {
 #define MAX_SNR_NAME 32
 
 #define DP_HBA_FAN_TBL_PATH "/etc/FSC_CLASS1_DVT_DP_HBA.json"
+#define DP_FAVA_FAN_TBL_PATH "/etc/FSC_CLASS1_DP_FAVA.json"
 #define DEFAULT_FSC_CFG_PATH "/etc/fsc-config.json"
 
 
@@ -214,6 +215,8 @@ enum {
   HBA_B_VID = 0x10DF, // BRCM QLogic Corp.
   HBA_M_DID = 0x2071, // ISP2714-based 16/32Gb Fibre Channel to PCIe Adapter
   HBA_B_DID = 0xF400, // ISP2714-based 16/32Gb Fibre Channel to PCIe Adapter
+  FAVA_PM9A3_VID = 0x144D,
+  FAVA_PM9A3_DID = 0xA80A,
 };
 
 typedef struct {
@@ -239,7 +242,7 @@ int pal_is_debug_card_prsnt(uint8_t *status);
 int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
 int pal_check_slot_cpu_present(uint8_t slot_id);
 int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
-int pal_dp_hba_fan_table_check(void);
+int pal_dp_fan_table_check(void);
 int pal_get_bb_fw_info(unsigned char target, char* ver_str);
 int pal_is_cwc(void);
 int pal_get_asd_sw_status(uint8_t fru);

@@ -1667,7 +1667,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
     else if ( strcmp(sys_conf, "Type_10") == 0 ) config = CONFIG_B;
     else if ( strcmp(sys_conf, "Type_15") == 0 ) config = CONFIG_D;
-    else if ( (strcmp(sys_conf, "Type_DP") == 0) || (strcmp(sys_conf, "Type_DPB") == 0) ) {
+    else if ( (strcmp(sys_conf, "Type_DP") == 0) || (strcmp(sys_conf, "Type_DPB") == 0) || (strcmp(sys_conf, "Type_DPF") == 0)) {
       config = CONFIG_D;
       is_config_dp = true;
     } else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);

@@ -4872,7 +4872,41 @@ pal_is_aggregate_snr_valid(uint8_t snr_num) {
   return true;
 }
 
-int pal_dp_hba_fan_table_check(void) {
+bool pal_check_fava_ssd_exist(uint8_t ssd_num) {
+  uint8_t slot = FRU_SLOT1;
+  uint8_t tbuf[16] = {0xb8, 0x40, 0x57, 0x01 ,0x00 ,0x30 ,0x06 ,0x05 ,0x61 ,0x00 ,0x00 ,0x00 ,0x80 ,0x01};
+  uint8_t rbuf[10] = {0x00};
+  uint8_t tlen = 14;
+  uint8_t rlen = 10;
+  uint16_t read_vid = 0x0, read_did = 0x0;
+  int ret = 0;
+  if (ssd_num == 1) {
+    tbuf[12] = 0x80; //Bus 0x18
+    tbuf[13] = 0x01;
+  } else if (ssd_num == 2) {
+    tbuf[12] = 0x90; //Bus 0x19
+    tbuf[13] = 0x01;
+  } else {
+    return false;
+  }
+  memset(rbuf,0,rlen);
+  ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+  if (ret == 0) {
+    read_vid = rbuf[6] << 8 | rbuf[5];
+    read_did = rbuf[8] << 8 | rbuf[7];
+    if ((read_vid == FAVA_PM9A3_VID) && (read_did == FAVA_PM9A3_DID)) {
+      syslog(LOG_WARNING, "%s() FAVA SSD%u PM9A3 vid:0x%X did:0x%X", __func__,ssd_num,read_vid,read_did);
+      return true;
+    } else {
+      syslog(LOG_WARNING, "%s() FAVA SSD%u vid:0x%X did:0x%X", __func__,ssd_num,read_vid,read_did);
+    }
+  } else {
+    syslog(LOG_WARNING, "%s() FAVA SSD%u no response", __func__,ssd_num);
+  }
+  return false;
+}
+
+int pal_dp_fan_table_check(void) {
   //DP only slot1
   uint8_t slot = FRU_SLOT1;
   int ret = 0, config_status = 0;
@@ -4884,6 +4918,8 @@ int pal_dp_hba_fan_table_check(void) {
   uint8_t rlen = 10;
   uint16_t read_vid = 0x0, read_did = 0x0;
   char cmd[64] = {0};
+  bool fava_ssd1 = false, fava_ssd2 = false;
+  uint8_t ssd_num = 1;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -4929,6 +4965,39 @@ int pal_dp_hba_fan_table_check(void) {
             syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
             return ret;
           }
+        }
+      }
+
+      ssd_num = 1;
+      fava_ssd1 = pal_check_fava_ssd_exist (ssd_num);
+
+      ssd_num = 2;
+      fava_ssd2 = pal_check_fava_ssd_exist (ssd_num);
+
+      if (fava_ssd1 || fava_ssd2) { // If one of FAVA SSD exists
+        syslog(LOG_WARNING, "%s() start to import DP-FAVA fan table", __func__);
+        snprintf(cmd, sizeof(cmd), "ln -sf %s %s", DP_FAVA_FAN_TBL_PATH, DEFAULT_FSC_CFG_PATH);
+        ret = system(cmd);
+        if (ret != 0) {
+          syslog(LOG_WARNING, "%s() can not import DP-FAVA fan table", __func__);
+          return ret;
+        }
+
+        ret = kv_set("sled_system_conf", "Type_DPF", 0, KV_FPERSIST);
+        if (ret < 0)  {
+          syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
+        }
+
+        ret = system("/usr/bin/sv restart fscd");
+        if (ret != 0) {
+          syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
+          return ret;
+        }
+
+        ret = system("/usr/bin/sv restart sensord");
+        if (ret != 0) {
+          syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
+          return ret;
         }
       }
     }

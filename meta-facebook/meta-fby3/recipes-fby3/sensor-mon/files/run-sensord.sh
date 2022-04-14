@@ -49,6 +49,8 @@ read_system_conf() {
       dp_type=$(/usr/bin/kv get "sled_system_conf" persistent)
       if [ "$dp_type" = "Type_DPB" ]; then
         system_type=${system_type}DPB
+      elif [ "$dp_type" = "Type_DPF" ]; then
+        system_type=${system_type}DPF
       else
         system_type=${system_type}DP
       fi

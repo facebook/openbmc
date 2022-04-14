@@ -41,7 +41,8 @@ try:
     Logger.warn("sled_system_conf: %s" % (sled_system_conf))
 
     # Add sensor fail scenario for DP case
-    if search(r"Type_DP", sled_system_conf) is not None:
+    if (search(r"Type_DP", sled_system_conf) is not None) or (
+       search(r"Type_DPF", sled_system_conf) is not None):
         Logger.warn("Add sensor fail scenario for DP case")
         get_fan_mode_scenario_list = [
             "one_fan_failure",
@@ -221,7 +222,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
             # If sensor fail, dp will boost without checking host ready
             if (search(r"Type_DP", sled_system_conf) is None) or (
-                search(r"Type_DPB", sled_system_conf) is not None
+                search(r"Type_DPB", sled_system_conf) is not None) or (
+                search(r"Type_DPF", sled_system_conf) is None
             ):
                 try:
                     flag_status = kv_get(host_ready_map[board])
@@ -379,7 +381,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 )
                 if status.value == 1:  # power on
                     if (search(r"Type_DP", sled_system_conf) is None) or (
-                        search(r"Type_DPB", sled_system_conf) is not None
+                        search(r"Type_DPB", sled_system_conf) is not None) or (
+                        search(r"Type_DPF", sled_system_conf) is None
                     ):
                         try:
                             flag_status = kv_get(host_ready_map[board])
@@ -415,6 +418,10 @@ def get_fan_mode(scenario="None"):
         elif sled_system_conf == "Type_15":
             # config D GPv3
             pwm = 80
+            return fan_mode["boost_mode"], pwm
+        elif sled_system_conf == "Type_DPF":
+            # FAVA DP
+            pwm = 70
             return fan_mode["boost_mode"], pwm
         else:
             pwm = 60

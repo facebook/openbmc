@@ -1,0 +1,15 @@
+max([
+  linear_cpu_margin(all:slot1_soc_therm_margin) + pid_cpu_margin(all:slot1_soc_therm_margin),
+  linear_frontIO_inlet(
+    max([
+      all:slot1_front_io_temp])),
+  linear_dimm(
+    max([
+      all:slot1_soc_dimma_temp,
+      all:slot1_soc_dimmb_temp,
+      all:slot1_soc_dimmc_temp,
+      all:slot1_soc_dimmd_temp,
+      all:slot1_soc_dimme_temp,
+      all:slot1_soc_dimmf_temp])),
+  linear_nic(all:nic_nic_sensor_temp)
+])

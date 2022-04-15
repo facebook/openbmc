@@ -2192,7 +2192,7 @@ pal_is_fw_update_ongoing_system(void) {
 
 bool __attribute__((weak))
 pal_sled_cycle_prepare(void) {
-  char key[MAX_KEY_LEN] = "blk_fwupd";
+  char key[MAX_KEY_LEN] = "to_blk_sled_cycle";
   char value[MAX_VALUE_LEN] = {0};
   int ret;
 

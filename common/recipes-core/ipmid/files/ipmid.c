@@ -2116,7 +2116,7 @@ oem_q_sled_cycle_prepare_request (unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  char key[32] = "blk_fwupd";
+  char key[32] = "to_blk_sled_cycle";
   char value[8] = {0};
 
   if (pal_is_fw_update_ongoing_system()) {
@@ -2148,7 +2148,7 @@ oem_q_sled_cycle_prepare_status (unsigned char *request, unsigned char req_len, 
       unsigned char *res_len)
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
-  char key[32] = "blk_fwupd";
+  char key[32] = "to_blk_sled_cycle";
   char value[8] = {0};
 
   if ( req_len != 3 ) {

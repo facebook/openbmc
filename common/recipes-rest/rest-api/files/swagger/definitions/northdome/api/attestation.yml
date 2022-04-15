@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/server1/bios/boot-order/boot_order  
-  title: Swagger doc for /api/server1/bios/boot-order/boot_order  
+  description: Swagger doc for /api/attestation  
+  title: Swagger doc for /api/attestation  
   version: 1.0.0
 paths: 
-  /api/server1/bios/boot-order/boot_order: 
+  /api/attestation: 
     get: 
       produces: [application/json]
       responses: 
@@ -16,14 +16,7 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
-                properties: 
-                  Boot Order: 
-                    type: string
-                  Note #1: Actions Format:: 
-                    type: string
-                  Note #2: Boot Order No.: 
-                    type: string
+                format: nullable
               Actions: 
                 type: array
                 items: 

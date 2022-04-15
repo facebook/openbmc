@@ -16,9 +16,17 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
+                additionalProperties: true
                 properties: 
-                  load-1: 
+                  Description: 
+                    type: string
+                  MAC Addr: 
+                    type: string
+                  Reset Reason: 
+                    type: string
+                  Uptime: 
+                    type: string
+                  uptime: 
                     type: string
                   Memory Usage: 
                     type: string
@@ -26,93 +34,94 @@ paths:
                     type: object
                     additionalProperties: false
                     properties: 
-                      Shmem: 
-                        type: integer
-                        format: int32
-                      Cached: 
-                        type: integer
-                        format: int32
-                      MemAvailable: 
-                        type: integer
+                      MemTotal: 
+                        type: number
                         format: int32
                       MemFree: 
-                        type: integer
+                        type: number
                         format: int32
-                      MemTotal: 
-                        type: integer
+                      MemAvailable: 
+                        type: number
                         format: int32
                       Buffers: 
-                        type: integer
+                        type: number
                         format: int32
-                  u-boot version: 
-                    type: string
-                  SPI0 Vendor: 
-                    type: string
-                  TPM FW version: 
-                    type: string
-                  open-fds: 
-                    type: string
-                  At-Scale-Debug Running: 
-                    type: boolean
-                  SPI1 Vendor: 
-                    type: string
-                  TPM TCG version: 
-                    type: string
-                  load-5: 
-                    type: string
-                  Reset Reason: 
-                    type: string
-                  Description: 
-                    type: string
-                  kernel version: 
-                    type: string
-                  load-15: 
+                      Cached: 
+                        type: number
+                        format: int32
+                      Shmem: 
+                        type: number
+                        format: int32
+                  CPU Usage: 
                     type: string
                   OpenBMC Version: 
                     type: string
-                  Uptime: 
+                  u-boot version: 
                     type: string
-                  CPU Usage: 
+                  kernel version: 
                     type: string
-                  uptime: 
+                  TPM TCG version: 
                     type: string
+                  TPM FW version: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  SPI1 Vendor: 
+                    type: string
+                  At-Scale-Debug Running: 
+                    type: boolean
+                  Secondary Boot Triggered: 
+                    type: boolean
                   vboot: 
                     type: object
                     additionalProperties: false
                     properties: 
-                      tpm_status: 
+                      status: 
                         type: string
                       status_text: 
                         type: string
-                      recovery_boot: 
+                      status_crc: 
                         type: string
-                      software_enforce: 
+                      tpm_status: 
                         type: string
-                      recovery_retried: 
+                      cert_fallback_time: 
                         type: string
                       cert_time: 
                         type: string
-                      hardware_enforce: 
-                        type: string
                       uboot_fallback_time: 
-                        type: string
-                      status_crc: 
-                        type: string
-                      status: 
-                        type: string
-                      cert_fallback_time: 
                         type: string
                       uboot_time: 
                         type: string
                       force_recovery: 
                         type: string
-                  MAC Addr: 
+                      hardware_enforce: 
+                        type: string
+                      software_enforce: 
+                        type: string
+                      recovery_boot: 
+                        type: string
+                      recovery_retried: 
+                        type: string
+                  load-1: 
                     type: string
-              Resources: 
+                  load-5: 
+                    type: string
+                  load-15: 
+                    type: string
+                  open-fds: 
+                    type: string
+                  MTD Parts: 
+                    type: array
+                    items: 
+                      type: string
+                  mmc-info: 
+                    type: object
+                    format: nullable
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

@@ -18,17 +18,17 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Note #2: Boot Mode No.: 
-                    type: string
                   Boot Mode: 
                     type: string
                   Note #1: Actions Format:: 
                     type: string
-              Resources: 
+                  Note #2: Boot Mode No.: 
+                    type: string
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

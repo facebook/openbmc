@@ -1,124 +1,128 @@
 swagger: "2.0"
-info:
-  description: Swagger doc for /api/bmc
-  title: Swagger doc for /api/bmc
+info: 
+  description: Swagger doc for /api/bmc  
+  title: Swagger doc for /api/bmc  
   version: 1.0.0
-paths:
-  /api/bmc:
-    get:
+paths: 
+  /api/bmc: 
+    get: 
       produces: [application/json]
-      responses:
-        200:
+      responses: 
+        200: 
           description: ok
-          schema:
+          schema: 
             type: object
             additionalProperties: false
-            properties:
-              Information:
+            properties: 
+              Information: 
                 type: object
-                additionalProperties: false
-                properties:
-                  load-1:
+                additionalProperties: true
+                properties: 
+                  Description: 
                     type: string
-                  Memory Usage:
+                  MAC Addr: 
                     type: string
-                  memory:
+                  Reset Reason: 
+                    type: string
+                  Uptime: 
+                    type: string
+                  uptime: 
+                    type: string
+                  Memory Usage: 
+                    type: string
+                  memory: 
                     type: object
                     additionalProperties: false
-                    properties:
-                      Shmem:
-                        type: integer
+                    properties: 
+                      MemTotal: 
+                        type: number
                         format: int32
-                      Cached:
-                        type: integer
+                      MemFree: 
+                        type: number
                         format: int32
-                      MemAvailable:
-                        type: integer
+                      MemAvailable: 
+                        type: number
                         format: int32
-                      MemFree:
-                        type: integer
+                      Buffers: 
+                        type: number
                         format: int32
-                      MemTotal:
-                        type: integer
+                      Cached: 
+                        type: number
                         format: int32
-                      Buffers:
-                        type: integer
+                      Shmem: 
+                        type: number
                         format: int32
-                  u-boot version:
+                  CPU Usage: 
                     type: string
-                  SPI0 Vendor:
+                  OpenBMC Version: 
                     type: string
-                  TPM FW version:
+                  u-boot version: 
                     type: string
-                  open-fds:
+                  kernel version: 
                     type: string
-                  At-Scale-Debug Running:
+                  TPM TCG version: 
+                    type: string
+                  TPM FW version: 
+                    type: string
+                  SPI0 Vendor: 
+                    type: string
+                  SPI1 Vendor: 
+                    type: string
+                  At-Scale-Debug Running: 
                     type: boolean
-                  SPI1 Vendor:
-                    type: string
-                  TPM TCG version:
-                    type: string
-                  load-5:
-                    type: string
-                  Reset Reason:
-                    type: string
-                  Description:
-                    type: string
-                  kernel version:
-                    type: string
-                  load-15:
-                    type: string
-                  OpenBMC Version:
-                    type: string
-                  Uptime:
-                    type: string
-                  CPU Usage:
-                    type: string
-                  uptime:
-                    type: string
-                  vboot:
+                  Secondary Boot Triggered: 
+                    type: boolean
+                  vboot: 
                     type: object
                     additionalProperties: false
-                    properties:
-                      tpm_status:
+                    properties: 
+                      status: 
                         type: string
-                      status_text:
+                      status_text: 
                         type: string
-                      recovery_boot:
+                      status_crc: 
                         type: string
-                      software_enforce:
+                      tpm_status: 
                         type: string
-                      recovery_retried:
+                      cert_fallback_time: 
                         type: string
-                      cert_time:
+                      cert_time: 
                         type: string
-                      hardware_enforce:
+                      uboot_fallback_time: 
                         type: string
-                      uboot_fallback_time:
+                      uboot_time: 
                         type: string
-                      status_crc:
+                      force_recovery: 
                         type: string
-                      status:
+                      hardware_enforce: 
                         type: string
-                      cert_fallback_time:
+                      software_enforce: 
                         type: string
-                      uboot_time:
+                      recovery_boot: 
                         type: string
-                      force_recovery:
+                      recovery_retried: 
                         type: string
-                  MAC Addr:
+                  load-1: 
                     type: string
-                  MTD Parts:
+                  load-5: 
+                    type: string
+                  load-15: 
+                    type: string
+                  open-fds: 
+                    type: string
+                  MTD Parts: 
                     type: array
-                    items:
+                    items: 
                       type: string
-                  Secondary Boot Triggered:
-                    type: boolean
-              Resources:
+                  mmc-info: 
+                    type: object
+                    format: nullable
+              Actions: 
                 type: array
-                items:
+                items: 
                   type: string
-              Actions:
+              Resources: 
                 type: array
-                items:
+                items: 
                   type: string
+            

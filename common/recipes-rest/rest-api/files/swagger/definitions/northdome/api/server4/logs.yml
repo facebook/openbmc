@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/mezz/logs  
-  title: Swagger doc for /api/mezz/logs  
+  description: Swagger doc for /api/server4/logs  
+  title: Swagger doc for /api/server4/logs  
   version: 1.0.0
 paths: 
-  /api/mezz/logs: 
+  /api/server4/logs: 
     get: 
       produces: [application/json]
       responses: 
@@ -21,7 +21,19 @@ paths:
                   Logs: 
                     type: array
                     items: 
-                      type: string
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        APP_NAME: 
+                          type: string
+                        FRU#: 
+                          type: string
+                        FRU_NAME: 
+                          type: string
+                        MESSAGE: 
+                          type: string
+                        TIME_STAMP: 
+                          type: string
               Actions: 
                 type: array
                 items: 

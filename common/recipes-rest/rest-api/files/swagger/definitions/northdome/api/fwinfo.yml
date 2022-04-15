@@ -14,68 +14,14 @@ paths:
             type: object
             additionalProperties: false
             properties: 
-              Resources: 
-                type: array
-                items: 
-                  type: string
-              Actions: 
-                type: array
-                items: 
-                  type: string
               Information: 
                 type: object
                 additionalProperties: false
                 properties: 
-                  fw_info: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      bmc:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          bmc_ver:
-                            type: string
-                      slot1:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          bic_version:
-                            type: string
-                      slot2:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          bic_version:
-                            type: string
-                      slot3:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          bic_version:
-                            type: string
-                      slot4:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          bic_version:
-                            type: string
                   fruid_info: 
                     type: object
                     additionalProperties: false
                     properties: 
-                      nic: 
-                        type: object
-                        additionalProperties: false
-                        properties: 
-                          vendor: 
-                            type: string
-                          model: 
-                            type: string
-                          serial_number: 
-                            type: string
-                          part_number: 
-                            type: string
                       slot1: 
                         type: object
                         additionalProperties: false
@@ -88,43 +34,7 @@ paths:
                             type: string
                           part_number: 
                             type: string
-                      slot2:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          vendor:
-                            type: string
-                          model:
-                            type: string
-                          serial_number:
-                            type: string
-                          part_number:
-                            type: string
-                      slot3:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          vendor:
-                            type: string
-                          model:
-                            type: string
-                          serial_number:
-                            type: string
-                          part_number:
-                            type: string
-                      slot4:
-                        type: object
-                        additionalProperties: false
-                        properties:
-                          vendor:
-                            type: string
-                          model:
-                            type: string
-                          serial_number:
-                            type: string
-                          part_number:
-                            type: string
-                      spb:
+                      nic: 
                         type: object
                         additionalProperties: false
                         properties: 
@@ -136,3 +46,40 @@ paths:
                             type: string
                           part_number: 
                             type: string
+                      nicexp: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          vendor: 
+                            type: object
+                            format: nullable
+                          model: 
+                            type: object
+                            format: nullable
+                          serial_number: 
+                            type: object
+                            format: nullable
+                          part_number: 
+                            type: object
+                            format: nullable
+                  fw_info: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      bmc_ver: 
+                        type: string
+                      bmc_cpld_ver: 
+                        type: object
+                        format: nullable
+                      bic_version: 
+                        type: object
+                        format: nullable
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

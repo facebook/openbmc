@@ -16,36 +16,8 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
+                additionalProperties: true
                 properties: 
-                  INA230 Power: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_FAN1_PWM: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_SENSOR_P2V5_BMC_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  INA230 Voltage: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
                   MB Outlet Temp_T: 
                     type: array
                     items: 
@@ -54,72 +26,6 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  SP_HSC_PEAK_PIN: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  MB Inlet Temp: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  PV_BAT: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  PVDDCR_SOC VR P: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  PVPP_ABCD: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  P3V3_MB: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SYSTEM_AIRFLOW: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDCR_SOC VR T: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_HSC_PEAK_IOUT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
                   MB Outlet Temp_B: 
                     type: array
                     items: 
@@ -128,25 +34,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  SP_P12V: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_FAN1_TACH: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_SENSOR_P1V15_BMC_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMD Temp: 
+                  MB Inlet Temp: 
                     type: array
                     items: 
                       type: object
@@ -154,127 +42,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  SP_HSC_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMG Temp: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  PVDDCR_SOC VR I: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SOC DIMMH Temp: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  PVDDIO_ABCD VR I: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SOC Package Pwr: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_P3V3: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P5V: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P3V3_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDCR_SOC VR V: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_P12V_SLOT4: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC DIMMC Temp: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  NVMe1 CTemp: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_P12V_SLOT1: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDIO_EFGH VR T: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_P12V_SLOT3: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P12V_SLOT2: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDIO_ABCD_VR V: 
+                  PVDDCR_CPU VR T: 
                     type: array
                     items: 
                       type: object
@@ -290,7 +58,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  PVDDCR_CPU VR I: 
+                  PVDDIO_EFGH VR T: 
                     type: array
                     items: 
                       type: object
@@ -298,7 +66,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  PVPP_EFGH: 
+                  PVDDCR_SOC VR T: 
                     type: array
                     items: 
                       type: object
@@ -306,7 +74,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  PVDDCR_CPU VR V: 
+                  SOC Temp: 
                     type: array
                     items: 
                       type: object
@@ -314,13 +82,63 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  SP_INLET_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDCR_CPU VR T: 
+                  SOC DIMMA0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMC0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMD0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMME0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMG0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC DIMMH0 Temp: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SOC Package Pwr: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDCR_CPU VR P: 
                     type: array
                     items: 
                       type: object
@@ -336,96 +154,6 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  SP_SENSOR_P1V2_BMC_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  PVDDCR_CPU VR P: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_OUTLET_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  HOST_BOOT_TEMP: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_HSC_IN_POWER: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_HSC_IN_VOLT: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P12V_STBY_MB: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  SP_FAN0_TACH: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SOC CPU0 Temp: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  PVDDIO_EFGH VR I: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
-                  MEZZ_SENSOR_TEMP: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_P1V8_STBY: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  P1V8_BIC: 
-                    type: array
-                    items: 
-                      type: object
-                      additionalProperties: false
-                      properties: 
-                        value: 
-                          type: string
                   PVDDIO_EFGH VR P: 
                     type: array
                     items: 
@@ -434,7 +162,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  P1V8_STBY_BIC: 
+                  PVDDCR_SOC VR P: 
                     type: array
                     items: 
                       type: object
@@ -442,7 +170,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  PVDDIO_EFGH_VR V: 
+                  P3V3_MB: 
                     type: array
                     items: 
                       type: object
@@ -450,19 +178,15 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  SP_HSC_OUT_CURR: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  SP_FAN0_PWM: 
-                    type: object
-                    additionalProperties: false
-                    properties: 
-                      value: 
-                        type: string
-                  INA260 Voltage: 
+                  P12V_STBY_MB: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P1V8_BIC: 
                     type: array
                     items: 
                       type: object
@@ -478,7 +202,7 @@ paths:
                       properties: 
                         value: 
                           type: string
-                  INA260 Power: 
+                  PV_BAT: 
                     type: array
                     items: 
                       type: object
@@ -486,11 +210,285 @@ paths:
                       properties: 
                         value: 
                           type: string
-              Resources: 
+                  PVPP_ABCD: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVPP_EFGH: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  P1V8_STBY_BIC: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDCR_CPU VR I: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDIO_ABCD VR I: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDIO_EFGH VR I: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDCR_SOC VR I: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDCR_CPU VR V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDIO_ABCD VR V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDIO_EFGH VR V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  PVDDCR_SOC VR V: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  INA230 Power: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  INA230 Voltage: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  HOST_BOOT_TEMP: 
+                    type: array
+                    items: 
+                      type: object
+                      additionalProperties: false
+                      properties: 
+                        value: 
+                          type: string
+                  SP_INLET_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_OUTLET_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN0_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN0_PWM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN1_TACH: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_FAN1_PWM: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P5V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P3V3_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT1: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT2: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P12V_SLOT4: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P3V3: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_SENSOR_P1V15_BMC_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_SENSOR_P1V2_BMC_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_SENSOR_P2V5_BMC_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_P1V8_STBY: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_IN_VOLT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_OUT_CURR: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_IN_POWER: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_IN_POWERAVG: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_PEAK_IOUT: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SP_HSC_PEAK_PIN: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  MEZZ_SENSOR_TEMP: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+                  SYSTEM_AIRFLOW: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      value: 
+                        type: string
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

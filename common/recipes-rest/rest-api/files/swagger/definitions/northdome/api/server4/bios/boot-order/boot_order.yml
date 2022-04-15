@@ -20,15 +20,15 @@ paths:
                 properties: 
                   Boot Order: 
                     type: string
-                  Note #2: Boot Order No.: 
-                    type: string
                   Note #1: Actions Format:: 
                     type: string
-              Resources: 
+                  Note #2: Boot Order No.: 
+                    type: string
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

@@ -14,9 +14,14 @@
 #define ADM1278_PEAK_IOUT  (0xD0)
 #define ADM1278_PEAK_PIN   (0xDA)
 #define ADM1278_EIN_RESP_LEN (8)
+#define ADM1278_PIN_COEF (7837)   //256 * 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)/ADM1278_RSENSE
 
 //LTC4286 CMD INFO
 #define LTC4286_SLAVE_ADDR (0x80)
+#define CMD_NOT_SUPPORT (0xFE)
+#define LTC4286_MFR_READ_EIN (0xFA)
+#define LTC4286_EIN_RESP_LEN (12)
+#define LTC4286_EIN_COEF (163840) //655360000 *  LTC4286_RSENSE
 
 //MP5990 CMD INFO
 #define MP5990_SLAVE_ADDR  (0x80)
@@ -37,6 +42,8 @@
 #define PMBUS_READ_POUT    (0x96)
 #define PMBUS_READ_PIN     (0x97)
 #define PMBUS_EIN_RESP_LEN (6)
+#define PMBUS_CMD_LEN_MAX (2)
+#define PMBUS_RESP_LEN_MAX (255)
 
 #define PREFIX_1OU_M2A 0x60
 #define PREFIX_1OU_M2B 0x68
@@ -76,14 +83,22 @@ typedef struct {
   uint8_t units;
 } PAL_SENSOR_MAP;
 
-struct hsc_ein {
-  const uint32_t wrap_energy;
-  const uint32_t wrap_rollover;
-  const uint32_t wrap_sample;
-  uint32_t energy;
-  uint32_t rollover;
-  uint32_t sample;
+struct EIN_INFO {
+  uint64_t energy;
+  uint64_t rollover;
+  uint64_t sample;
 };
+
+typedef struct {
+  uint8_t cmd;
+  uint8_t ein_resp_len;
+  const struct EIN_INFO wrap_info;
+  uint8_t energy_offset_start;
+  uint8_t rollover_offset_start;
+  uint8_t sample_offset_start;
+  struct EIN_INFO ein_info;
+  float ein_coefficient;
+} HSC_EIN_MAP;
 
 enum {
   UNSET_UNIT = 0,
@@ -465,7 +480,6 @@ enum {
 };
 
 typedef struct {
-  uint8_t type;
   float m;
   float b;
   float r;
@@ -477,9 +491,17 @@ enum {
   HSC_ID1,
 };
 
+//I2C type
+enum {
+  I2C_BYTE = 0,
+  I2C_WORD,
+  I2C_BLOCK,
+};
+
 typedef struct {
-  uint8_t id;
   uint8_t slv_addr;
+  uint8_t cmd_peak_iout;
+  uint8_t cmd_peak_pin;
   PAL_ATTR_INFO* info;
 } PAL_HSC_INFO;
 

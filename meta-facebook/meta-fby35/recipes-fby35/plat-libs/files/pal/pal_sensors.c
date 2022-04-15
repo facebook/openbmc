@@ -631,21 +631,34 @@ const uint8_t nic_sensor_list[] = {
 const uint8_t bmc_discrete_sensor_list[] = {
 };
 
-//ADM1278
-PAL_ATTR_INFO adm1278_info_list[] = {
-  {HSC_VOLTAGE, 19599, 0, 100},
-  {HSC_CURRENT, 800 * ADM1278_RSENSE, 20475, 10},
-  {HSC_POWER, 6123 * ADM1278_RSENSE, 0, 100},
-  {HSC_TEMP, 42, 31880, 10},
+/*  PAL_ATTR_INFO:
+ *  For the PMBus direct format conversion
+ *  X = 1/m × (Y × 10^-R − b)
+ *  
+ *  {m, b, R} coefficient
+ */
+//LTC4286
+PAL_ATTR_INFO ltc4286_info_list[] = {
+  [HSC_VOLTAGE] = {320, 0, 1},
+  [HSC_CURRENT] = {256, 0, 1},
+  [HSC_POWER] = {25, 0, 10},
+  [HSC_TEMP] = {1, 273, 1},
 };
 
+//ADM1278
+PAL_ATTR_INFO adm1278_info_list[] = {
+  [HSC_VOLTAGE] = {19599, 0, 100},
+  [HSC_CURRENT] = {800 * ADM1278_RSENSE, 20475, 10},
+  [HSC_POWER] = {6123 * ADM1278_RSENSE, 0, 100},
+  [HSC_TEMP] = {42, 31880, 10},
+};
 
 //MP5990
 PAL_ATTR_INFO mp5990_info_list[] = {
-  {HSC_VOLTAGE, 32, 0, 1},
-  {HSC_CURRENT, 16, 0, 1},
-  {HSC_POWER, 1, 0, 1},
-  {HSC_TEMP, 1, 0, 1},
+  [HSC_VOLTAGE] = {32, 0, 1},
+  [HSC_CURRENT] = {16, 0, 1},
+  [HSC_POWER] = {1, 0, 1},
+  [HSC_TEMP] = {1, 0, 1},
 };
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {LNR, LCR, LNC, UNC, UCR, UNR, Pos, Neg}
@@ -922,11 +935,20 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFF
 };
 
-//HSC
+/*PAL_HSC_INFO = {SLAVE_ADDR, PEAK_IOUT_command_code, PEAK_PIN_command_code, "M B R" coefficent info}
+*/
 PAL_HSC_INFO hsc_info_list[] = {
-  {HSC_ADM1278, ADM1278_SLAVE_ADDR, adm1278_info_list},
-  {HSC_LTC4286, LTC4286_SLAVE_ADDR, NULL}, // TBD
-  {HSC_MP5990,  MP5990_SLAVE_ADDR,  mp5990_info_list},
+  [HSC_ADM1278] = {ADM1278_SLAVE_ADDR, ADM1278_PEAK_IOUT, ADM1278_PEAK_PIN, adm1278_info_list},
+  [HSC_LTC4286] = {LTC4286_SLAVE_ADDR, CMD_NOT_SUPPORT, CMD_NOT_SUPPORT, ltc4286_info_list}, 
+  [HSC_MP5990] =  {MP5990_SLAVE_ADDR, MP5990_PEAK_IOUT, MP5990_PEAK_PIN, mp5990_info_list}
+};
+
+/* HSC_EIN_MAP = {command code, Read Block size, {wrap_info}, energy_offset_start, rollover_offset_start, sample_offset_start, {ein_info}, ein_coefficient}
+*/
+HSC_EIN_MAP hsc_ein_list[] = {
+  [HSC_ADM1278] = {ADM1278_EIN_EXT, ADM1278_EIN_RESP_LEN, {0x800000, 0x10000, 0x1000000}, 1, 4, 6, {0, 0, 0}, ADM1278_PIN_COEF},
+  [HSC_LTC4286] = {LTC4286_MFR_READ_EIN, LTC4286_EIN_RESP_LEN, {0x0, 0x0, 0x0}, 1, 9, 9, {0, 0, 0}, LTC4286_EIN_COEF},
+  [HSC_MP5990] = {PMBUS_READ_EIN, PMBUS_EIN_RESP_LEN, {0x8000, 0x100, 0x1000000}, 1, 3, 4, {0, 0, 0}, 1}
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
@@ -1773,14 +1795,19 @@ read_adc_val(uint8_t adc_id, float *value) {
 }
 
 static int
-get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t *raw_data) {
+get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd, float *value, uint8_t *raw_data) {
   const uint8_t hsc_bus = 11;
   uint8_t addr = hsc_info_list[hsc_id].slv_addr;
   static int fd = -1;
-  uint8_t rbuf[9] = {0x00};
+  uint8_t rbuf[PMBUS_RESP_LEN_MAX] = {0x00};
   uint8_t rlen = 0;
+  uint8_t tlen = 1;
   int retry = MAX_RETRY;
   int ret = ERR_NOT_READY;
+
+  if (value == NULL) {
+    return READING_NA;
+  }
 
   if ( fd < 0 ) {
     fd = i2c_cdev_slave_open(hsc_bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -1790,48 +1817,80 @@ get_hsc_reading(uint8_t hsc_id, uint8_t type, uint8_t cmd, float *value, uint8_t
     }
   }
 
-  switch (cmd) {
-    case ADM1278_EIN_EXT:
-      rlen = 9;
+  switch(reading_type) {
+    case I2C_BYTE:
+      rlen = 1;
       break;
-    case PMBUS_READ_EIN:
-      rlen = 7;
-      break;
-    default:
+    case I2C_WORD:
       rlen = 2;
       break;
-  }
-  while ( ret < 0 && retry-- > 0 ) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, 1, rbuf, rlen);
+    case I2C_BLOCK:
+      for (retry = MAX_RETRY; retry > 0; retry--) {
+        ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, tlen, rbuf, 1);
+        if (ret == 0) {
+          break;
+        }
+      }
+      if ( ret < 0 ) {
+        ret = READING_NA;
+        goto exit;
+      }
+      rlen = rbuf[0] + 1;
+      break;
+    default:
+      rlen = 1;
   }
 
-  if ( ret < 0 ) {
-    if ( fd >= 0 ) {
-      close(fd);
-      fd = -1;
+  if(rlen > PMBUS_RESP_LEN_MAX) {
+    syslog(LOG_WARNING, "Failed to transfer message with i2c, because of the Block Read overflow!");
+    ret = READING_NA;
+    goto exit;
+  }
+
+  for (retry = MAX_RETRY; retry > 0; retry--) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, tlen, rbuf, rlen);
+    if (ret == 0) {
+      break;
     }
-    return READING_NA;
+  }
+  if ( ret < 0 ) {
+    ret = READING_NA;
+    goto exit;
   }
 
-  if ( rlen != 2 ) {
-    if ( raw_data != NULL ) memcpy(raw_data, rbuf, rlen);
-  } else {
+  if (reading_type != I2C_BLOCK) {
     float m = hsc_info_list[hsc_id].info[type].m;
     float b = hsc_info_list[hsc_id].info[type].b;
     float r = hsc_info_list[hsc_id].info[type].r;
-    *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
+    
+    *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m; 
   }
+  else {
+    if (raw_data == NULL){
+      ret = READING_NA;
+      goto exit;
+    }
+    memcpy(raw_data, rbuf, rlen);
+  }
+  
+  ret = PAL_EOK;
 
-  return PAL_EOK;
+exit:
+  if ( fd >= 0 ) {
+    close(fd);
+    fd = -1;
+  }
+  return ret;
+
 }
 
 static int
-calculate_ein(struct hsc_ein *st_ein, float *value) {
+calculate_ein(uint8_t hsc_id, float *value) {
   int ret = READING_NA;
-  uint32_t energy = 0, rollover = 0, sample = 0;
-  uint32_t sample_diff = 0;
+  uint64_t energy = 0, rollover = 0, sample = 0;
+  uint64_t sample_diff = 0;
   double energy_diff = 0;
-  static uint32_t last_energy = 0, last_rollover = 0, last_sample = 0;
+  static uint64_t last_energy = 0, last_rollover = 0, last_sample = 0;
   static bool pre_ein = false;
 
   if (pre_ein == false) {  // data isn't enough
@@ -1839,17 +1898,16 @@ calculate_ein(struct hsc_ein *st_ein, float *value) {
     goto calculate_done;
   }
 
-  energy   = st_ein->energy;
-  rollover = st_ein->rollover;
-  sample   = st_ein->sample;
+  energy   = hsc_ein_list[hsc_id].ein_info.energy;
+  rollover = hsc_ein_list[hsc_id].ein_info.rollover;
+  sample   = hsc_ein_list[hsc_id].ein_info.sample;
   if ((last_rollover > rollover) || ((last_rollover == rollover) && (last_energy > energy))) {
-    rollover += st_ein->wrap_rollover;
+    rollover += hsc_ein_list[hsc_id].wrap_info.rollover;
   }
   if (last_sample > sample) {
-    sample += st_ein->wrap_sample;
+    sample += hsc_ein_list[hsc_id].wrap_info.sample;
   }
-
-  energy_diff = (double)((rollover - last_rollover)*st_ein->wrap_energy + energy - last_energy);
+  energy_diff = (double)((rollover - last_rollover) * hsc_ein_list[hsc_id].wrap_info.energy + energy - last_energy);
   if (energy_diff < 0) {
     goto calculate_done;
   }
@@ -1861,124 +1919,112 @@ calculate_ein(struct hsc_ein *st_ein, float *value) {
   ret = PAL_EOK;
 
 calculate_done:
-  last_energy   = st_ein->energy;
-  last_rollover = st_ein->rollover;
-  last_sample   = st_ein->sample;
-
+  last_energy   = hsc_ein_list[hsc_id].ein_info.energy;
+  last_rollover = hsc_ein_list[hsc_id].ein_info.rollover;
+  last_sample   = hsc_ein_list[hsc_id].ein_info.sample;
   return ret;
 }
 
 static int
 read_hsc_ein(uint8_t hsc_id, float *value) {
-#define PIN_COEF (0.0163318634656214)  // X = 1/m * (Y * 10^(-R) - b) = 1/6123 * (Y * 100)
-  uint8_t buf[12] = {0};
-  static struct hsc_ein adm1278_st_ein = {
-    .wrap_energy = 0x800000,
-    .wrap_rollover = 0x10000,
-    .wrap_sample = 0x1000000,
-  };
-  static struct hsc_ein mp5990_st_ein = {
-    .wrap_energy = 0x8000,
-    .wrap_rollover = 0x100,
-    .wrap_sample = 0x1000000,
-  };
+  uint8_t buf[PMBUS_RESP_LEN_MAX] = {0};
 
-  if (hsc_id == HSC_MP5990) {
-    if ( get_hsc_reading(hsc_id, -1, PMBUS_READ_EIN, value, buf) ||
-       buf[0] != PMBUS_EIN_RESP_LEN ) {
-      return READING_NA;
-    }
-    mp5990_st_ein.energy   = (buf[2]<<8) | buf[1];
-    mp5990_st_ein.rollover = buf[3];
-    mp5990_st_ein.sample   = (buf[6]<<16) | (buf[5]<<8) | buf[4];
-    if ( calculate_ein(&mp5990_st_ein, value) ) {
-      return READING_NA;
-    }
-  } else {
-    if ( get_hsc_reading(hsc_id, -1, ADM1278_EIN_EXT, value, buf) ||
-       buf[0] != ADM1278_EIN_RESP_LEN ) {
-       return READING_NA;
-    }
-    adm1278_st_ein.energy   = (buf[3]<<16) | (buf[2]<<8) | buf[1];
-    adm1278_st_ein.rollover = (buf[5]<<8) | buf[4];
-    adm1278_st_ein.sample   = (buf[8]<<16) | (buf[7]<<8) | buf[6];
-    if ( calculate_ein(&adm1278_st_ein, value) ) {
-      return READING_NA;
-    }
-    *value = *value/256 * PIN_COEF/ADM1278_RSENSE;
+  if ( get_hsc_reading(hsc_id, I2C_BLOCK, -1, hsc_ein_list[hsc_id].cmd, value, buf ) ||
+     buf[0] != (hsc_ein_list[hsc_id].ein_resp_len)){
+    return READING_NA;
   }
+
+  hsc_ein_list[hsc_id].ein_info.energy = 0;
+  hsc_ein_list[hsc_id].ein_info.rollover = 0;
+  hsc_ein_list[hsc_id].ein_info.sample = 0;
+
+  for( int i = hsc_ein_list[hsc_id].energy_offset_start; i < hsc_ein_list[hsc_id].rollover_offset_start; i++ ) {
+    hsc_ein_list[hsc_id].ein_info.energy |= ((uint64_t)buf[i] << ((i - hsc_ein_list[hsc_id].energy_offset_start) * 8));
+  }
+  for( int i = hsc_ein_list[hsc_id].rollover_offset_start; i < hsc_ein_list[hsc_id].sample_offset_start; i++ ) {
+    hsc_ein_list[hsc_id].ein_info.rollover |= ((uint64_t)buf[i] << ((i - hsc_ein_list[hsc_id].rollover_offset_start) * 8));
+  }
+  for( int i = hsc_ein_list[hsc_id].sample_offset_start; i <= hsc_ein_list[hsc_id].ein_resp_len; i++ ) {
+    hsc_ein_list[hsc_id].ein_info.sample |= ((uint64_t)buf[i] << ((i - hsc_ein_list[hsc_id].sample_offset_start) * 8));
+  }
+  if ( calculate_ein( hsc_id, value) ) {
+    return READING_NA;
+  }
+  *value = *value/hsc_ein_list[hsc_id].ein_coefficient;
 
   return PAL_EOK;
 }
 
 static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
-
-  if ( get_hsc_reading(hsc_id, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) return READING_NA;
-  *value *= 0.96; //improve the accuracy of PIN to +-2%
+  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) {
+    return READING_NA;
+  }
+  if(hsc_id == HSC_ADM1278) {
+    *value *= 0.96; //improve the accuracy of PIN to +-2%
+  }
   return PAL_EOK;
 }
 
 static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
-
-  if ( get_hsc_reading(hsc_id, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) < 0 ) return READING_NA;
-  *value *= 0.96; //improve the accuracy of IOUT to +-2%
+  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) < 0 ) {
+    return READING_NA;
+  }
+  if(hsc_id == HSC_ADM1278) {
+    *value *= 0.96; //improve the accuracy of IOUT to +-2%
+  }
   return PAL_EOK;
 }
 
 static int
 read_hsc_temp(uint8_t hsc_id, float *value) {
-
-  if ( get_hsc_reading(hsc_id, HSC_TEMP, PMBUS_READ_TEMP1, value, NULL) < 0 ) return READING_NA;
+  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_TEMP, PMBUS_READ_TEMP1, value, NULL) < 0 ) {
+    return READING_NA;
+  }
   return PAL_EOK;
 }
 
 static int
 read_hsc_vin(uint8_t hsc_id, float *value) {
-
-  if ( get_hsc_reading(hsc_id, HSC_VOLTAGE, PMBUS_READ_VIN, value, NULL) < 0 ) return READING_NA;
+  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_VOLTAGE, PMBUS_READ_VIN, value, NULL) < 0 ) {
+    return READING_NA;
+  }
   return PAL_EOK;
 }
 
 static int
 read_hsc_peak_iout(uint8_t hsc_id, float *value) {
-  uint8_t cmd = 0;
   static float peak = 0;
 
-  if (hsc_id == HSC_MP5990) {
-    cmd = MP5990_PEAK_IOUT;
-  } else {
-    cmd = ADM1278_PEAK_IOUT;
-  }
-  if ( get_hsc_reading(hsc_id, HSC_CURRENT, cmd, value, NULL) < 0 )
+  if ( hsc_info_list[hsc_id].cmd_peak_iout == CMD_NOT_SUPPORT ) {
     return READING_NA;
-
-  if (hsc_id == HSC_MP5990) {
-    // it's "read-clear" data, so need to be cached
-    if (peak > *value) {
-      *value = peak;
-    } else {
-      peak = *value;
-    }
   }
+  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_CURRENT, hsc_info_list[hsc_id].cmd_peak_iout, value, NULL) < 0 ) {
+    return READING_NA;
+  }
+  
+  // it's "read-clear" data, so need to be cached
+  if (peak > *value) {
+    *value = peak;
+  } else {
+    peak = *value;
+  }
+  
 
   return PAL_EOK;
 }
 
 static int
 read_hsc_peak_pin(uint8_t hsc_id, float *value) {
-  uint8_t cmd = 0;
   static float peak = 0;
 
-  if (hsc_id == HSC_MP5990) {
-    cmd = MP5990_PEAK_PIN;
-  } else {
-    cmd = ADM1278_PEAK_PIN;
-  }
-
-  if ( get_hsc_reading(hsc_id, HSC_POWER, cmd, value, NULL) < 0 )
+  if ( hsc_info_list[hsc_id].cmd_peak_iout == CMD_NOT_SUPPORT ) {
     return READING_NA;
+  }
+  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, hsc_info_list[hsc_id].cmd_peak_pin, value, NULL) < 0 ) {
+    return READING_NA;
+  }
 
   // it's "read-clear" data, so need to be cached
   if (peak > *value) {

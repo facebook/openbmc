@@ -1,8 +1,9 @@
 {
-  "version": "fbttn-type5-mp-v3",
+  "version": "fbttn-type5-mp-v4",
   "pwm_transition_value": 55,
   "pwm_boost_value": 50,
   "sample_interval_ms": 3000,
+  "fan_limit_lower_pwm": 15,
   "boost": {
     "fan_fail": false,
     "sensor_fail": true,

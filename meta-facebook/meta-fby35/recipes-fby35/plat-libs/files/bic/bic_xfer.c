@@ -177,13 +177,6 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
   int retry = 0;
   uint8_t status_12v = 0;
 
-#if 0
-  //TODO: implement the is_bic_ready funcitons
-  if (!is_bic_ready(slot_id)) {
-    return -1;
-  }
-#endif
-
   ret = fby35_common_get_bus_id(slot_id);
   if (ret < 0) {
     syslog(LOG_ERR, "%s: Wrong Slot ID %d\n", __func__, slot_id);
@@ -217,7 +210,11 @@ int bic_ipmb_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
     if ( ret < 0 || status_12v == 0) {
       return BIC_STATUS_FAILURE;
     }
-
+    if (is_bic_ready(slot_id, NONE_INTF) != BIC_STATUS_SUCCESS) {
+      msleep(IPMB_RETRY_DELAY);
+      retry++;
+      continue;
+    }
     // Invoke IPMB library handler
     lib_ipmb_handle(bus_id, tbuf, tlen, rbuf, &rlen);
 

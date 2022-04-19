@@ -42,4 +42,9 @@ def patches():
             create=True,
             new_callable=lambda: _pal_get_fru_capability,
         ),
+        unittest.mock.patch(
+            "aggregate_sensor.aggregate_sensor_init",
+            create=True,
+            return_value=None,
+        ),
     ]

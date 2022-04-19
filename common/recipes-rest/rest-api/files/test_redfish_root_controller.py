@@ -21,6 +21,11 @@ class TestRootService(AioHTTPTestCase):
                 new_callable=unittest.mock.MagicMock,
                 return_value="bd7e0200-8227-3a1c-30c0-286261016903",
             ),
+            unittest.mock.patch(
+                "aggregate_sensor.aggregate_sensor_init",
+                create=True,
+                return_value=None,
+            ),
         ]
 
         for p in self.patches:

@@ -200,6 +200,7 @@ def get_aggregate_sensors() -> t.List[SensorDetails]:
 
 
 def get_aggregate_sensor(sensor_id: int) -> t.Optional[SensorDetails]:
+    libag.aggregate_sensor_init()
     try:
         sensor_name = libag.aggregate_sensor_name(sensor_id)
     except libag.LibAggregateError:
@@ -213,7 +214,7 @@ def get_aggregate_sensor(sensor_id: int) -> t.Optional[SensorDetails]:
     sensor_details = SensorDetails(
         sensor_name="Chassis/Chassis/" + sensor_name,
         sensor_number=sensor_id,  # set default to 0
-        fru_name="Chassis",
+        fru_name="aggregate",
         reading=reading,
         sensor_thresh=None,  # set to default
         sensor_unit=None,  # set to default

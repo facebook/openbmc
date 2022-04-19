@@ -1,4 +1,5 @@
 import aiohttp.web
+import unittest
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
 
@@ -25,9 +26,14 @@ class TestAccountService(AioHTTPTestCase):
         self.assertEqual(req.status, 200)
 
     async def get_application(self):
-        webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])
-        from redfish_common_routes import Redfish
+        with unittest.mock.patch(
+            "aggregate_sensor.aggregate_sensor_init",
+            create=True,
+            return_value=None,
+        ):
+            webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])
+            from redfish_common_routes import Redfish
 
-        redfish = Redfish()
-        redfish.setup_redfish_common_routes(webapp)
-        return webapp
+            redfish = Redfish()
+            redfish.setup_redfish_common_routes(webapp)
+            return webapp

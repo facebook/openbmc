@@ -4,13 +4,17 @@ import types
 import typing as t
 import unittest
 
-sys.modules["aggregate_sensor"] = types.ModuleType("aggregate_sensor")
 import aiohttp.web
 import pal
 import redfish_chassis_helper
 import sdr
+import test_mock_modules  # noqa: F401
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
+
+
+class FakeAggregateError(Exception):
+    pass
 
 
 # mocking a tuple instead of sdr.ThreshSensor bc sdr lib isn't available here
@@ -123,13 +127,29 @@ class TestRedfishSensors(AioHTTPTestCase):
                 return_value=asyncio.Future(),
             ),
             unittest.mock.patch(
-                "redfish_chassis_helper.get_aggregate_sensors",
-                return_value=[],
-            ),
-            unittest.mock.patch(
                 "aggregate_sensor.aggregate_sensor_count",
                 create=True,
-                return_value=0,
+                return_value=1,
+            ),
+            unittest.mock.patch(
+                "aggregate_sensor.aggregate_sensor_init",
+                create=True,
+                return_value=None,
+            ),
+            unittest.mock.patch(
+                "aggregate_sensor.aggregate_sensor_read",
+                create=True,
+                return_value=123,
+            ),
+            unittest.mock.patch(
+                "aggregate_sensor.aggregate_sensor_name",
+                create=True,
+                return_value="aggregate_sensor",
+            ),
+            unittest.mock.patch(
+                "aggregate_sensor.LibAggregateError",
+                create=True,
+                new=FakeAggregateError,
             ),
             unittest.mock.patch(
                 "redfish_sensors._get_fru_names",
@@ -201,6 +221,11 @@ class TestRedfishSensors(AioHTTPTestCase):
                     "Members@odata.count": 1,
                     "Name": "Chassis sensors",
                 }
+                if server_name == "1":
+                    expected_resp["Members"].append(
+                        {"@odata.id": "/redfish/v1/Chassis/1/Sensors/aggregate_0"}
+                    )
+                    expected_resp["Members@odata.count"] = 2
                 req = await self.client.request(
                     "GET", "/redfish/v1/Chassis/{}/Sensors".format(server_name)
                 )
@@ -266,6 +291,24 @@ class TestRedfishSensors(AioHTTPTestCase):
                     "Members@odata.count": 1,
                     "Name": "Chassis sensors",
                 }
+                if server_name == "1":
+                    expected_resp["Members"].append(
+                        {
+                            "@odata.id": "/redfish/v1/Chassis/1/Sensors/aggregate_0",
+                            "@odata.type": "#Sensor.v1_2_0.Sensor",
+                            "Id": "0",
+                            "Name": "Chassis/Chassis/aggregate_sensor",
+                            "Oem": {},
+                            "PhysicalContext": "Chassis",
+                            "Reading": 123,
+                            "ReadingRangeMax": 99999,
+                            "ReadingRangeMin": -99999,
+                            "ReadingUnits": None,
+                            "Status": {"Health": "OK", "State": "Enabled"},
+                            "Thresholds": {},
+                        }
+                    )
+                    expected_resp["Members@odata.count"] = 2
                 req = await self.client.request(
                     "GET",
                     "/redfish/v1/Chassis/{}/Sensors?$expand=1".format(server_name),
@@ -340,8 +383,13 @@ class TestRedfishSensors(AioHTTPTestCase):
             expected_resp = {
                 "@odata.id": "/redfish/v1/Chassis/1/Sensors",
                 "@odata.type": "#SensorCollection.SensorCollection",
-                "Members": [{"@odata.id": "/redfish/v1/Chassis/1/Sensors/dummy_snr"}],
-                "Members@odata.count": 1,
+                "Members": [
+                    {"@odata.id": "/redfish/v1/Chassis/1/Sensors/dummy_snr"},
+                    {
+                        "@odata.id": "/redfish/v1/Chassis/1/Sensors/Chassis_Chassis_aggregate_sensor"
+                    },
+                ],
+                "Members@odata.count": 2,
                 "Name": "Chassis sensors",
             }
             req = await self.client.request("GET", "/redfish/v1/Chassis/1/Sensors")
@@ -373,9 +421,23 @@ class TestRedfishSensors(AioHTTPTestCase):
                         "ReadingUnits": "Volts",
                         "Status": {"Health": "OK", "State": "Enabled"},
                         "Thresholds": {},
-                    }
+                    },
+                    {
+                        "@odata.id": "/redfish/v1/Chassis/1/Sensors/Chassis_Chassis_aggregate_sensor",
+                        "@odata.type": "#Sensor.v1_2_0.Sensor",
+                        "Id": "0",
+                        "Name": "Chassis/Chassis/aggregate_sensor",
+                        "Oem": {},
+                        "PhysicalContext": "Chassis",
+                        "Reading": 123,
+                        "ReadingRangeMax": 99999,
+                        "ReadingRangeMin": -99999,
+                        "ReadingUnits": None,
+                        "Status": {"Health": "OK", "State": "Enabled"},
+                        "Thresholds": {},
+                    },
                 ],
-                "Members@odata.count": 1,
+                "Members@odata.count": 2,
                 "Name": "Chassis sensors",
             }
             req = await self.client.request(

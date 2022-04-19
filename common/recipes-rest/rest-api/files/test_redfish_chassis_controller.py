@@ -3,8 +3,6 @@ import enum
 import unittest
 
 import aiohttp.web
-import redfish_chassis_helper
-import redfish_sensors
 import test_mock_modules  # noqa: F401
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
@@ -51,6 +49,7 @@ class TestChassisService(AioHTTPTestCase):
                 "pal.pal_get_fru_capability",
                 new_callable=unittest.mock.MagicMock,
                 return_value=[FakeFruCapability.FRU_CAPABILITY_SERVER],
+                create=True,
             ),
             unittest.mock.patch(
                 "pal.FruCapability", create=True, new=FakeFruCapability
@@ -74,6 +73,11 @@ class TestChassisService(AioHTTPTestCase):
                 "redfish_sensors.get_redfish_sensors_for_server_name",
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
+            ),
+            unittest.mock.patch(
+                "aggregate_sensor.aggregate_sensor_init",
+                create=True,
+                return_value=None,
             ),
         ]
         for p in self.patches:
@@ -152,6 +156,8 @@ class TestChassisService(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_get_chassis_members(self):
+        import redfish_chassis_helper
+
         "Testing chassis members for both single sled frus and multisled frus"
         for server_name in ["1", "server1", "server2", "server3", "server4"]:
             fru_name = self.get_fru_name(server_name)
@@ -206,6 +212,8 @@ class TestChassisService(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_get_chassis_expand_expands_children(self):
+        import redfish_chassis_helper
+
         redfish_chassis_helper.get_fru_info.return_value = asyncio.Future()
         redfish_chassis_helper.get_fru_info.return_value.set_result(
             redfish_chassis_helper.FruInfo(
@@ -318,6 +326,9 @@ class TestChassisService(AioHTTPTestCase):
 
     @unittest_run_loop
     async def test_get_chassis_expand_asterisk_expands_all_children(self):
+        import redfish_chassis_helper
+        import redfish_sensors
+
         redfish_chassis_helper.get_fru_info.return_value = asyncio.Future()
         redfish_chassis_helper.get_fru_info.return_value.set_result(
             redfish_chassis_helper.FruInfo(
@@ -333,6 +344,7 @@ class TestChassisService(AioHTTPTestCase):
             ],
             "@odata.id": "/redfish/v1/Chassis/1/Sensors",
         }
+
         redfish_sensors.get_redfish_sensors_for_server_name.return_value = (
             asyncio.Future()
         )

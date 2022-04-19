@@ -62,6 +62,11 @@ class TestManagerService(AioHTTPTestCase):
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
             ),
+            unittest.mock.patch(
+                "aggregate_sensor.aggregate_sensor_init",
+                create=True,
+                return_value=None,
+            ),
         ]
 
         for p in self.patches:

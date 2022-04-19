@@ -14,6 +14,8 @@ try:
 except Exception:
     fru_name_map = {}
 
+aggregate_sensor.aggregate_sensor_init()
+
 
 # controller for /redfish/v1/Chassis/{fru}/Sensors
 async def get_redfish_sensors_handler(request: web.Request) -> web.Response:
@@ -98,14 +100,14 @@ def _get_sensor_members(parent_resource: str, fru_names: t.List[str], expand: bo
             for sensor in sensors:
                 child = _render_sensor(parent_resource, sensor, expand)
                 members_json.append(child)
-        if parent_resource == "1":
-            # we expose aggregate sensors under the Chassis, so only do this
-            # if parent_resource is 1
-            for sensor_id in range(aggregate_sensor.aggregate_sensor_count()):
-                sensor = _get_sensor("aggregate", sensor_id)
-                if sensor:
-                    child = _render_sensor(parent_resource, sensor, expand)
-                    members_json.append(child)
+    if parent_resource == "1":
+        # we expose aggregate sensors under the Chassis, so only do this
+        # if parent_resource is 1
+        for sensor_id in range(aggregate_sensor.aggregate_sensor_count()):
+            sensor = _get_sensor("aggregate", sensor_id)
+            if sensor:
+                child = _render_sensor(parent_resource, sensor, expand)
+                members_json.append(child)
     return members_json
 
 

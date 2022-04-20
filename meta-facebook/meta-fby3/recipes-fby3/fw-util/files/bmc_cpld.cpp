@@ -12,6 +12,7 @@
 #include "server.h"
 #include "bmc_cpld.h"
 #include <facebook/fby3_common.h>
+#include <filesystem>
 
 using namespace std;
 
@@ -31,12 +32,25 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
   
   int board_type_index = 0;
   bool board_rev_is_invalid = false;
+  size_t image_size = 0;
 
   image_info image_sts = {"", false};
 
   if ( fby3_common_get_bmc_location(&bmc_location) < 0 ) {
     printf("Failed to initialize the fw-util\n");
     exit(EXIT_FAILURE);
+  }
+
+  try {
+    image_size = filesystem::file_size(image.c_str());
+  } catch (filesystem::filesystem_error& e) {
+    cerr << e.what() << endl;
+    return image_sts;
+  }
+
+  if (((image_size == flash_size) || (image_size == flash_size + 1)) == false) {
+    cerr << "Invalid image size: " << image_size << " flash size: " << flash_size << endl;
+    return image_sts;
   }
 
   //create a new tmp file
@@ -57,17 +71,19 @@ const string board_type[] = {"Unknown", "EVT", "DVT", "PVT", "MP"};
     return image_sts;
   }
 
-  uint8_t *memblock = new uint8_t [image_size + 1];//data_size + signed byte
+  uint8_t *memblock = new uint8_t [image_size];
   uint8_t signed_byte = 0;
-  size_t r_b = read(fd_r, memblock, image_size + 1);
+  size_t r_b = read(fd_r, memblock, image_size);
   size_t w_b = 0;
 
-  //it's an old image
-  if ( r_b == image_size ) {
+  if ( r_b == flash_size ) { // unsigned image
     signed_byte = 0x0;
-  } else if ( r_b == (image_size + 1) ) {
-    signed_byte = memblock[image_size] & 0xff;
+  } else if ( r_b == (flash_size + 1) ) { // signed image
+    signed_byte = memblock[image_size-1] & 0xff;
     r_b = r_b - 1;  //only write data to tmp file
+  } else {
+    cerr << "Read file error, read: " << r_b << endl;
+    image_sts.result = false;
   }
 
   w_b = write(fd_w, memblock, r_b);
@@ -325,7 +341,7 @@ void BmcCpldComponent::check_module() {
   if (ver[4] == MAX10M08_VER_CHAR) {
     attr.start_addr = MAX10M08_CFM1_START_ADDR;
     attr.end_addr = MAX10M08_CFM1_END_ADDR;
-    image_size = MAX10M08_CFM1_END_ADDR - MAX10M08_CFM1_START_ADDR + 1;
+    flash_size = MAX10M08_CFM1_END_ADDR - MAX10M08_CFM1_START_ADDR + 1;
   }
 
   return;

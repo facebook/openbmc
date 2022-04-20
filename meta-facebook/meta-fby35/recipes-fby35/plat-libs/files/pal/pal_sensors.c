@@ -640,8 +640,8 @@ const uint8_t bmc_discrete_sensor_list[] = {
 //LTC4286
 PAL_ATTR_INFO ltc4286_info_list[] = {
   [HSC_VOLTAGE] = {320, 0, 1},
-  [HSC_CURRENT] = {256, 0, 1},
-  [HSC_POWER] = {25, 0, 10},
+  [HSC_CURRENT] = {1024, 0, 1},
+  [HSC_POWER] = {100, 0, 10},
   [HSC_TEMP] = {1, 273, 1},
 };
 
@@ -1927,7 +1927,24 @@ calculate_done:
 
 static int
 read_hsc_ein(uint8_t hsc_id, float *value) {
+  float rsense = 0;
   uint8_t buf[PMBUS_RESP_LEN_MAX] = {0};
+  uint8_t bb_board_revision = 0;
+  static bool is_ltc4268_init = false;
+
+  if (get_board_rev(0, BOARD_ID_BB, &bb_board_revision) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
+  }
+
+  if((is_ltc4268_init == false) && (hsc_id == HSC_LTC4286)) {
+    if(bb_board_revision <= BB_REV_EVT3) {
+      rsense = 0.5;
+    } else {
+      rsense = 0.3;
+    }
+    hsc_ein_list[hsc_id].ein_coefficient *= rsense;
+    is_ltc4268_init = true;
+  }
 
   if ( get_hsc_reading(hsc_id, I2C_BLOCK, -1, hsc_ein_list[hsc_id].cmd, value, buf ) ||
      buf[0] != (hsc_ein_list[hsc_id].ein_resp_len)){
@@ -1957,23 +1974,80 @@ read_hsc_ein(uint8_t hsc_id, float *value) {
 
 static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
+  float rsense = 0;
+  uint8_t bb_board_revision = 0;
+  static bool is_ltc4268_init = false;
+
+  if (get_board_rev(0, BOARD_ID_BB, &bb_board_revision) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
+  }
+
+  if((is_ltc4268_init == false) && (hsc_id == HSC_LTC4286)) {
+    if(bb_board_revision <= BB_REV_EVT3) {
+      rsense = 0.5;
+    } else {
+      rsense = 0.3;
+    }
+    hsc_info_list[hsc_id].info[HSC_POWER].m *= rsense;
+    is_ltc4268_init = true;
+  }
+
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) {
     return READING_NA;
   }
-  if(hsc_id == HSC_ADM1278) {
-    *value *= 0.96; //improve the accuracy of PIN to +-2%
+  switch (hsc_id) {
+    case HSC_ADM1278:
+      *value *= 0.96; //improve the accuracy of PIN to +-2%
+      break;
+    case HSC_MP5990:
+      *value = ((*value + 0.05) * 1.02) + 0.2;
+      break;
+    case HSC_LTC4286:
+      break;
+    default:
+      return READING_NA;
   }
+
   return PAL_EOK;
 }
 
 static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
+  float rsense = 0;
+  uint8_t bb_board_revision = 0;
+  static bool is_ltc4268_init = false;
+
+  if (get_board_rev(0, BOARD_ID_BB, &bb_board_revision) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
+  }
+
+  if((is_ltc4268_init == false) && (hsc_id == HSC_LTC4286)) {
+    if(bb_board_revision <= BB_REV_EVT3) {
+      rsense = 0.5;
+    } else {
+      rsense = 0.3;
+    }
+    hsc_info_list[hsc_id].info[HSC_CURRENT].m *= rsense;
+    is_ltc4268_init = true;
+  }
+
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) < 0 ) {
     return READING_NA;
   }
-  if(hsc_id == HSC_ADM1278) {
-    *value *= 0.96; //improve the accuracy of IOUT to +-2%
+
+  switch (hsc_id) {
+    case HSC_ADM1278:
+      *value *= 0.96; //improve the accuracy of PIN to +-2%
+      break;
+    case HSC_MP5990:
+      *value = ((*value - 0.05) * 0.99) + 0.16;
+      break;
+    case HSC_LTC4286:
+      break;
+    default:
+      return READING_NA;
   }
+
   return PAL_EOK;
 }
 

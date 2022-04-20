@@ -173,6 +173,14 @@ def write_data(addr, data):
         print("CRC check failure reading reply, continuing anyway...")
         time.sleep(1.0)
         return
+    except pyrmd.ModbusTimeout:
+        # Again, not ideal, we sometimes see timeouts. At this point
+        # we hope that the PSU received the packet and we just did not
+        # read the packet in time. So we can ignore the error.
+        # We will catch a real issue during the verify phase.
+        print("Timeout detected. Continuing anyway...")
+        time.sleep(1.0)
+        return
     expected = struct.pack(">B", addr) + b"\x2b\x73\xf0\xaa\xff\xff\xff\xff\xff\xff"
     if response != expected:
         print("Bad response to writing data: " + bh(response))
@@ -245,12 +253,17 @@ def update_psu(addr, filename):
     start_programming(addr)
     challenge = get_challenge(addr)
     send_key(addr, delta_seccalckey(challenge))
-    status_state("erase_flash")
-    erase_flash(addr)
-    status_state("flashing")
-    send_image(addr, fwimg)
-    status_state("verifying")
-    verify_flash(addr)
+    for _ in range(5):
+        try:
+            status_state("erase_flash")
+            erase_flash(addr)
+            status_state("flashing")
+            send_image(addr, fwimg)
+            status_state("verifying")
+            verify_flash(addr)
+            break
+        except Exception:
+            print("Problems detected in programming. Retrying from erase")
     status_state("resetting")
     reset_psu(addr)
     status_state("done")

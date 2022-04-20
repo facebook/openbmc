@@ -37,7 +37,7 @@ int VrComponent::update(string image) {
 
 int VrComponent::get_ver_str(uint8_t addr, string& s) {
   int ret = 0;
-  uint8_t bus = 0x5;
+  uint8_t bus = 0x4;
   char ver[MAX_VER_STR_LEN] = {0};
 
   ret = bic_get_vr_ver_cache(slot_id, NONE_INTF, bus, addr, ver);

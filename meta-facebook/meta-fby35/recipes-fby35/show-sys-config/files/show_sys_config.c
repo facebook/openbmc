@@ -61,7 +61,7 @@ static int
 get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   int ret = UTIL_EXECUTION_FAIL;
   int retry = MAX_RETRY;
-  uint8_t tbuf[4] = {0x03, 0x42, 0x01, 0x05};
+  uint8_t tbuf[4] = {0x01, 0x42, 0x01, 0x05};
   uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 4;
   uint8_t rlen = 0;

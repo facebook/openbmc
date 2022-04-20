@@ -54,7 +54,7 @@ bic_server_power_control(uint8_t slot_id, uint8_t val) {
   uint8_t rlen = 0;
   int ret;
 
-  tbuf[0] = 0x03; //bus id
+  tbuf[0] = 0x01; //bus id
   tbuf[1] = 0x42; //slave addr
   tbuf[2] = 0x01; //read 1 byte 
   tbuf[3] = 0x00; //register offset

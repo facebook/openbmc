@@ -72,7 +72,7 @@ enum {
 #define CPLD_BOARD_PVT_REV 3
 #define CPLD_FLAG_REG_ADDR 0x1F
 #define CPLD_BB_BUS 0x01
-#define CPLD_SB_BUS 0x05
+#define CPLD_SB_BUS 0x01
 #define SB_CPLD_ADDRESS_UPDATE 0x40
 #define SB_USB_VENDOR_ID  0x1D6B
 #define SB_USB_PRODUCT_ID 0x0104

@@ -1104,7 +1104,7 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
     return val;
   }
 
-  tbuf[0] = 0x03; //bus id
+  tbuf[0] = 0x01; //bus id
   tbuf[1] = 0x42; //slave addr
   tbuf[2] = 0x01; //read 1 byte
   tbuf[3] = 0x05; //register offset
@@ -1256,7 +1256,7 @@ bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux) {
   uint8_t rlen = 0;
   int ret = 0;
 
-  tbuf[0] = 0x03; //bus id
+  tbuf[0] = 0x01; //bus id
   tbuf[1] = 0x42; //slave addr
   tbuf[2] = 0x01; //read 1 byte
   tbuf[3] = 0x00; //register offset
@@ -1445,7 +1445,7 @@ bic_do_sled_cycle(uint8_t slot_id) {
   uint8_t tbuf[5] = {0};
   uint8_t tlen = 5;
 
-  tbuf[0] = 0x03; //bus id
+  tbuf[0] = 0x01; //bus id
   tbuf[1] = 0x1E; //slave addr
   tbuf[2] = 0x00; //read 0 byte
   tbuf[3] = 0x2B; //register offset

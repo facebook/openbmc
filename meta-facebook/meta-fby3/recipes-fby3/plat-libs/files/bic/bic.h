@@ -238,6 +238,7 @@ enum {
   VR_TI  = 0x1,
   VR_IFX = 0x2, // Infineon vr vendor ID
   VR_VY  = 0x3, // Vishay vr vendor ID
+  VR_ON  = 0x4, // Onsemi vr vendor ID
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,

@@ -36,6 +36,9 @@ int VrExtComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
       case VR_VY: //Vishay vr vendor ID
         snprintf(ver, sizeof(ver), "Vishay %02X%02X", rbuf[0], rbuf[1]);
         break;
+      case VR_ON:
+        snprintf(ver, sizeof(ver), "Onsemi %02X%02X", rbuf[0], rbuf[1]);
+        break;
       default:
         snprintf(ver, sizeof(ver), "Unknown Vendor");
         break;

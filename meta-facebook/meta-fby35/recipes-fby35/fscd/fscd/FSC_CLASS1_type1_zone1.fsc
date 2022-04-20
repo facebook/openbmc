@@ -61,5 +61,18 @@ max([
       slot4:dimme_temp,
       slot4:dimmg_temp,
       slot4:dimmh_temp])),
-  linear_nic(nic:nic_sensor_temp) + pid_nic(nic:nic_sensor_temp)
+  linear_nic(nic:nic_sensor_temp) + pid_nic(nic:nic_sensor_temp),
+  linear_boot_drive(
+    max([
+      slot1:ssd0_temp,
+      slot2:ssd0_temp,
+      slot3:ssd0_temp,
+      slot4:ssd0_temp])) +
+   pid_boot_drive(
+    max([
+      slot1:ssd0_temp,
+      slot2:ssd0_temp,
+      slot3:ssd0_temp,
+      slot4:ssd0_temp]))
 ])
+

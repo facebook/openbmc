@@ -62,6 +62,9 @@ typedef struct _sdr_rec_hdr_t {
 
 #define BB_FW_UPDATE_STAT_FILE "/tmp/cache_store/bb_fw_update"
 
+#define MAX_SLOT_NUM    4
+#define MAX_SENSOR_NUM  0xFF
+
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -95,7 +98,7 @@ uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3
 uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT1, M2_ROOT_PORT0},
                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
 
-static int snr_read_support[4] = {UNKNOWN_CMD, UNKNOWN_CMD, UNKNOWN_CMD, UNKNOWN_CMD};
+static uint8_t snr_read_support[MAX_SLOT_NUM][MAX_SENSOR_NUM];
 
 int
 bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
@@ -112,7 +115,6 @@ bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_readi
   sensor->status = std_sensor.status;
   sensor->ext_status = std_sensor.ext_status;
   sensor->read_type = STANDARD_CMD;
-  snr_read_support[slot_id-1] = STANDARD_CMD;
 
   return ret;
 }
@@ -137,8 +139,6 @@ bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_rea
     memcpy((uint8_t *)&sensor->value, rbuf+3, 2);
     sensor->flags = rbuf[5];
     sensor->read_type = ACCURATE_CMD;
-    snr_read_support[slot_id-1] = ACCURATE_CMD;
-
   } else if (rlen == 8) {
     // Byte 1 - 3 : IANA
     // Byte 4 - 7 : sensor raw data
@@ -146,7 +146,6 @@ bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_rea
     memcpy((uint8_t *)&sensor->value, rbuf+3, 4);
     sensor->flags = rbuf[7];
     sensor->read_type = ACCURATE_CMD_4BYTE;
-    snr_read_support[slot_id-1] = ACCURATE_CMD_4BYTE;
   } else {
     return BIC_STATUS_NOT_SUPP_IN_CURR_STATE;
   }
@@ -161,17 +160,43 @@ bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_rea
 // Netfn: 0x38, Cmd: 0x23
 int
 bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
-  int ret = 0;
+  static bool is_inited = false;
+  int ret;
 
-  if (snr_read_support[slot_id-1] == STANDARD_CMD) {
+  if (!is_inited) {
+    memset(snr_read_support, UNKNOWN_CMD, sizeof(snr_read_support));
+    is_inited = true;
+  }
+
+  switch(snr_read_support[slot_id-1][sensor_num])
+  {
+  case STANDARD_CMD:
+    return bic_get_std_sensor(slot_id, sensor_num, sensor, intf);
+  case ACCURATE_CMD:
+  case ACCURATE_CMD_4BYTE:
+    return bic_get_accur_sensor(slot_id, sensor_num, sensor, intf);
+  default:
+    // UNKNOWN_CMD
+    break;
+  }
+
+  // snr_read_support is UNKNOWN_CMD
+  // try accurate command first
+  ret = bic_get_accur_sensor(slot_id, sensor_num, sensor, intf);
+
+  if (ret == BIC_STATUS_SUCCESS) {
+    snr_read_support[slot_id-1][sensor_num] = sensor->read_type;
+  } else if (ret == BIC_STATUS_NOT_SUPP_IN_CURR_STATE) {
+    // BIC reply not support accurate method, force to use standard method
+    snr_read_support[slot_id-1][sensor_num] = STANDARD_CMD;
     ret = bic_get_std_sensor(slot_id, sensor_num, sensor, intf);
-  } else if (snr_read_support[slot_id-1] == ACCURATE_CMD || snr_read_support[slot_id-1] == ACCURATE_CMD_4BYTE) {
-    ret = bic_get_accur_sensor(slot_id, sensor_num, sensor, intf);
-  } else { // first read, try accurate command
-    if (bic_get_accur_sensor(slot_id, sensor_num, sensor, intf) == BIC_STATUS_NOT_SUPP_IN_CURR_STATE) {
-      // not support accurate reading, switch to standard command
-      ret = bic_get_std_sensor(slot_id, sensor_num, sensor, intf);
-    }
+  } else {
+    // For some legacy BIC firmware, it just not response when command not supported.
+    // BMC will not know this failure is just one time fail or not support with legacy BIC.
+    //
+    // Try standard command for one time, so that we can still get reading if it is legacy BIC.
+    // Keep snr_read_support remain UNKNOWN_CMD, so BMC can retry accurate command next time.
+    ret = bic_get_std_sensor(slot_id, sensor_num, sensor, intf);
   }
 
   return ret;

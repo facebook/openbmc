@@ -922,6 +922,7 @@ main(int argc, char **argv) {
   int filter_len = argc - 3;
   char ** filter_list = argv + 3;
   json_t *fru_sensor_obj = json_object();
+  unsigned int caps = 0;
 
   if (parse_args(argc, argv, fruname,
         &history_clear, &history,
@@ -955,6 +956,11 @@ main(int argc, char **argv) {
 
   if (fru == FRU_ALL) {
     for (fru = 1; fru <= pal_get_fru_count(); fru++) {
+      caps = 0;
+      // Do not display fru's sensor if fru's FRU_CAPABILITY_SENSOR_READ not enable
+      if (pal_get_fru_capability(fru, &caps) || !(caps & FRU_CAPABILITY_SENSOR_READ)) {
+        continue;
+      }
       ret |= print_sensor(fru, num, true, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     }
     ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, true, history, threshold, false, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);

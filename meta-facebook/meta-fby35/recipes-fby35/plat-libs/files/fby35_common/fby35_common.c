@@ -245,7 +245,7 @@ fby35_common_get_slot_type(uint8_t fru) {
   return SERVER_TYPE_DL;
 }
 
-#define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
+#define CRASHDUMP_BIN       "/usr/bin/autodump.sh"
 
 int
 fby35_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {

@@ -24,14 +24,16 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 LOCAL_URI = " \
     file://COPYING \
     file://ast-functions \
-    file://setup-gpio.sh \ 
+    file://setup-gpio.sh \
+    file://sol-util \
+    file://setup-i2c-dev.sh \
     "
 
 pkgdir = "utils"
 
 
 # the tools for BMC will be installed in the image
-#binfiles = " sol-util"
+binfiles = " sol-util"
 
 DEPENDS_append = "update-rc.d-native"
 RDEPENDS_${PN} += "bash python3 gpiocli "
@@ -47,16 +49,21 @@ do_install() {
   # create linkages to those binaries
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
-#  for f in ${binfiles}; do
-#      install -m 755 $f ${dst}/${f}
-#      ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
-#  done
+  for f in ${binfiles}; do
+      install -m 755 $f ${dst}/${f}
+      ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
+  done
 
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+# setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+# setup-i2c-dev.sh
+  install -m 755 setup-i2c-dev.sh ${D}${sysconfdir}/init.d/setup-i2c-dev.sh
+  update-rc.d -r ${D} setup-i2c-dev.sh start 60 5 .
+
 
 # install check_eth0_ipv4.sh
 #  install -m 755 ifup.sh ${D}${sysconfdir}/init.d/ifup.sh

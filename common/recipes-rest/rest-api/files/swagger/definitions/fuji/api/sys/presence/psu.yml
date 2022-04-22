@@ -1,0 +1,37 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/presence/psu  
+  title: Swagger doc for /api/sys/presence/psu  
+  version: 1.0.0
+paths: 
+  /api/sys/presence/psu: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  psu1 : 
+                    type: string
+                  psu2 : 
+                    type: string
+                  psu3 : 
+                    type: string
+                  psu4 : 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

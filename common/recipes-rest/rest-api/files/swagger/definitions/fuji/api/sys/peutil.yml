@@ -1,0 +1,29 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/peutil  
+  title: Swagger doc for /api/sys/peutil  
+  version: 1.0.0
+paths: 
+  /api/sys/peutil: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: array
+                items: 
+                  type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

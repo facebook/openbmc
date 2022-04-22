@@ -1,0 +1,87 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info/all  
+  title: Swagger doc for /api/sys/firmware_info/all  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info/all: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  ALTBMC Version: 
+                    type: string
+                  ALTBMC Version After Activated: 
+                    type: string
+                  BMC Version: 
+                    type: string
+                  BMC Version After Activated: 
+                    type: string
+                  Fan Speed Controller Version: 
+                    type: string
+                  TPM Version: 
+                    type: string
+                  FCMCPLD B: 
+                    type: string
+                  FCMCPLD T: 
+                    type: string
+                  PWRCPLD L: 
+                    type: string
+                  PWRCPLD R: 
+                    type: string
+                  SCMCPLD: 
+                    type: string
+                  SMBCPLD: 
+                    type: string
+                  IOB FPGA: 
+                    type: string
+                  PIM1 DOMFPGA: 
+                    type: string
+                  PIM2 DOMFPGA: 
+                    type: string
+                  PIM3 DOMFPGA: 
+                    type: string
+                  PIM4 DOMFPGA: 
+                    type: string
+                  PIM5 DOMFPGA: 
+                    type: string
+                  PIM6 DOMFPGA: 
+                    type: string
+                  PIM7 DOMFPGA: 
+                    type: string
+                  PIM8 DOMFPGA: 
+                    type: string
+                  Bridge-IC Version: 
+                    type: string
+                  Bridge-IC Bootloader Version: 
+                    type: string
+                  BIOS Version: 
+                    type: string
+                  CPLD Version: 
+                    type: string
+                  ME Version: 
+                    type: string
+                  PVCCIN VR Version: 
+                    type: string
+                  DDRAB VR Version: 
+                    type: string
+                  P1V05 VR Version: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

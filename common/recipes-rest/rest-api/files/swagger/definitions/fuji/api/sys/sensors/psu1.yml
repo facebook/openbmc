@@ -1,0 +1,61 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/psu1  
+  title: Swagger doc for /api/sys/sensors/psu1  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/psu1: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  name: 
+                    type: string
+                  Adapter: 
+                    type: string
+                  present: 
+                    type: boolean
+                  PSU1_IN_VOLT: 
+                    type: string
+                  PSU1_12V_VOLT: 
+                    type: string
+                  PSU1_STBY_VOLT: 
+                    type: string
+                  PSU1_IN_CURR: 
+                    type: string
+                  PSU1_12V_CURR: 
+                    type: string
+                  PSU1_STBY_CURR: 
+                    type: string
+                  PSU1_IN_POWER: 
+                    type: string
+                  PSU1_12V_POWER: 
+                    type: string
+                  PSU1_STBY_POWER: 
+                    type: string
+                  PSU1_FAN_SPEED: 
+                    type: string
+                  PSU1_TEMP1: 
+                    type: string
+                  PSU1_TEMP2: 
+                    type: string
+                  PSU1_TEMP3: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

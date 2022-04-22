@@ -1,0 +1,77 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/peutil/pim5  
+  title: Swagger doc for /api/sys/peutil/pim5  
+  version: 1.0.0
+paths: 
+  /api/sys/peutil/pim5: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  Wedge EEPROM /sys/bus/i2c/devices/113-0056/eeprom: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      Version: 
+                        type: string
+                      Product Name: 
+                        type: string
+                      Product Part Number: 
+                        type: string
+                      System Assembly Part Number: 
+                        type: string
+                      Facebook PCBA Part Number: 
+                        type: string
+                      Facebook PCB Part Number: 
+                        type: string
+                      ODM PCBA Part Number: 
+                        type: string
+                      ODM PCBA Serial Number: 
+                        type: string
+                      Product Production State: 
+                        type: string
+                      Product Version: 
+                        type: string
+                      Product Sub-Version: 
+                        type: string
+                      Product Serial Number: 
+                        type: string
+                      Product Asset Tag: 
+                        type: string
+                      System Manufacturer: 
+                        type: string
+                      System Manufacturing Date: 
+                        type: string
+                      PCB Manufacturer: 
+                        type: string
+                      Assembled At: 
+                        type: string
+                      Local MAC: 
+                        type: string
+                      Extended MAC Base: 
+                        type: string
+                      Extended MAC Address Size: 
+                        type: string
+                      Location on Fabric: 
+                        type: string
+                      CRC8: 
+                        type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

@@ -718,55 +718,55 @@ const uint8_t pim8ddm_sensor_list[MAX_PIM][PIM8DDM_SENSOR_COUNT] = {
 
 // List of PSU sensors that need to be monitored
 const uint8_t psu1_sensor_list[] = {
-  PSU_VIN,
-  PSU_VOUT,
-  PSU_FAN,
-  PSU_TEMP1,
-  PSU_TEMP2,
-  PSU_TEMP3,
-  PSU_PIN,
-  PSU_POUT,
-  PSU_IIN,
-  PSU_IOUT,
+  PSU1_VIN,
+  PSU1_VOUT,
+  PSU1_FAN,
+  PSU1_TEMP1,
+  PSU1_TEMP2,
+  PSU1_TEMP3,
+  PSU1_PIN,
+  PSU1_POUT,
+  PSU1_IIN,
+  PSU1_IOUT,
 };
 
 const uint8_t psu2_sensor_list[] = {
-  PSU_VIN,
-  PSU_VOUT,
-  PSU_FAN,
-  PSU_TEMP1,
-  PSU_TEMP2,
-  PSU_TEMP3,
-  PSU_PIN,
-  PSU_POUT,
-  PSU_IIN,
-  PSU_IOUT,
+  PSU2_VIN,
+  PSU2_VOUT,
+  PSU2_FAN,
+  PSU2_TEMP1,
+  PSU2_TEMP2,
+  PSU2_TEMP3,
+  PSU2_PIN,
+  PSU2_POUT,
+  PSU2_IIN,
+  PSU2_IOUT,
 };
 
 const uint8_t psu3_sensor_list[] = {
-  PSU_VIN,
-  PSU_VOUT,
-  PSU_FAN,
-  PSU_TEMP1,
-  PSU_TEMP2,
-  PSU_TEMP3,
-  PSU_PIN,
-  PSU_POUT,
-  PSU_IIN,
-  PSU_IOUT,
+  PSU3_VIN,
+  PSU3_VOUT,
+  PSU3_FAN,
+  PSU3_TEMP1,
+  PSU3_TEMP2,
+  PSU3_TEMP3,
+  PSU3_PIN,
+  PSU3_POUT,
+  PSU3_IIN,
+  PSU3_IOUT,
 };
 
 const uint8_t psu4_sensor_list[] = {
-  PSU_VIN,
-  PSU_VOUT,
-  PSU_FAN,
-  PSU_TEMP1,
-  PSU_TEMP2,
-  PSU_TEMP3,
-  PSU_PIN,
-  PSU_POUT,
-  PSU_IIN,
-  PSU_IOUT,
+  PSU4_VIN,
+  PSU4_VOUT,
+  PSU4_FAN,
+  PSU4_TEMP1,
+  PSU4_TEMP2,
+  PSU4_TEMP3,
+  PSU4_PIN,
+  PSU4_POUT,
+  PSU4_IIN,
+  PSU4_IOUT,
 };
 
 // List of Fan Card sensors that need to be monitored
@@ -1885,34 +1885,64 @@ psu_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
           PSU_DEVICE_ADDR);
 
   switch(sensor_num) {
-    case PSU_VIN:
+    case PSU1_VIN:
+    case PSU2_VIN:
+    case PSU3_VIN:
+    case PSU4_VIN:
       ret = read_attr(fru, sensor_num, full_name, VOLT(0), value);
       break;
-    case PSU_VOUT:
+    case PSU1_VOUT:
+    case PSU2_VOUT:
+    case PSU3_VOUT:
+    case PSU4_VOUT:
       ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
       break;
-    case PSU_FAN:
+    case PSU1_FAN:
+    case PSU2_FAN:
+    case PSU3_FAN:
+    case PSU4_FAN:
       ret = read_attr(fru, sensor_num, full_name, FAN(1), value);
       break;
-    case PSU_TEMP1:
+    case PSU1_TEMP1:
+    case PSU2_TEMP1:
+    case PSU3_TEMP1:
+    case PSU4_TEMP1:
       ret = read_attr(fru, sensor_num, full_name, TEMP(1), value);
       break;
-    case PSU_TEMP2:
+    case PSU1_TEMP2:
+    case PSU2_TEMP2:
+    case PSU3_TEMP2:
+    case PSU4_TEMP2:
       ret = read_attr(fru, sensor_num, full_name, TEMP(2), value);
       break;
-    case PSU_TEMP3:
+    case PSU1_TEMP3:
+    case PSU2_TEMP3:
+    case PSU3_TEMP3:
+    case PSU4_TEMP3:
       ret = read_attr(fru, sensor_num, full_name, TEMP(3), value);
       break;
-    case PSU_PIN:
+    case PSU1_PIN:
+    case PSU2_PIN:
+    case PSU3_PIN:
+    case PSU4_PIN:
       ret = read_attr(fru, sensor_num, full_name, POWER(1), value);
       break;
-    case PSU_POUT:
+    case PSU1_POUT:
+    case PSU2_POUT:
+    case PSU3_POUT:
+    case PSU4_POUT:
       ret = read_attr(fru, sensor_num, full_name, POWER(2), value);
       break;
-    case PSU_IIN:
+    case PSU1_IIN:
+    case PSU2_IIN:
+    case PSU3_IIN:
+    case PSU4_IIN:
       ret = read_attr(fru, sensor_num, full_name, CURR(1), value);
       break;
-    case PSU_IOUT:
+    case PSU1_IOUT:
+    case PSU2_IOUT:
+    case PSU3_IOUT:
+    case PSU4_IOUT:
       ret = read_attr(fru, sensor_num, full_name, CURR(2), value);
       break;
     default:
@@ -2597,34 +2627,64 @@ get_psu_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
   uint8_t psuid = fru - FRU_PSU1 + 1;
 
   switch (sensor_num) {
-    case PSU_VIN:
+    case PSU1_VIN:
+    case PSU2_VIN:
+    case PSU3_VIN:
+    case PSU4_VIN:
       sprintf(name, "PSU%d_VIN", psuid);
       break;
-    case PSU_VOUT:
+    case PSU1_VOUT:
+    case PSU2_VOUT:
+    case PSU3_VOUT:
+    case PSU4_VOUT:
       sprintf(name, "PSU%d_VOUT", psuid);
       break;
-    case PSU_FAN:
+    case PSU1_FAN:
+    case PSU2_FAN:
+    case PSU3_FAN:
+    case PSU4_FAN:
       sprintf(name, "PSU%d_FAN", psuid);
       break;
-    case PSU_TEMP1:
+    case PSU1_TEMP1:
+    case PSU2_TEMP1:
+    case PSU3_TEMP1:
+    case PSU4_TEMP1:
       sprintf(name, "PSU%d_TEMP1", psuid);
       break;
-    case PSU_TEMP2:
+    case PSU1_TEMP2:
+    case PSU2_TEMP2:
+    case PSU3_TEMP2:
+    case PSU4_TEMP2:
       sprintf(name, "PSU%d_TEMP2", psuid);
       break;
-    case PSU_TEMP3:
+    case PSU1_TEMP3:
+    case PSU2_TEMP3:
+    case PSU3_TEMP3:
+    case PSU4_TEMP3:
       sprintf(name, "PSU%d_TEMP3", psuid);
       break;
-    case PSU_PIN:
+    case PSU1_PIN:
+    case PSU2_PIN:
+    case PSU3_PIN:
+    case PSU4_PIN:
       sprintf(name, "PSU%d_PIN", psuid);
       break;
-    case PSU_POUT:
+    case PSU1_POUT:
+    case PSU2_POUT:
+    case PSU3_POUT:
+    case PSU4_POUT:
       sprintf(name, "PSU%d_POUT", psuid);
       break;
-    case PSU_IIN:
+    case PSU1_IIN:
+    case PSU2_IIN:
+    case PSU3_IIN:
+    case PSU4_IIN:
       sprintf(name, "PSU%d_IIN", psuid);
       break;
-    case PSU_IOUT:
+    case PSU1_IOUT:
+    case PSU2_IOUT:
+    case PSU3_IOUT:
+    case PSU4_IOUT:
       sprintf(name, "PSU%d_IOUT", psuid);
       break;
     default:
@@ -2878,24 +2938,54 @@ get_pim_sensor_units(uint8_t sensor_num, char *units) {
 static int
 get_psu_sensor_units(uint8_t sensor_num, char *units) {
   switch(sensor_num) {
-    case PSU_VIN:
-    case PSU_VOUT:
+    case PSU1_VIN:
+    case PSU2_VIN:
+    case PSU3_VIN:
+    case PSU4_VIN:
+    case PSU1_VOUT:
+    case PSU2_VOUT:
+    case PSU3_VOUT:
+    case PSU4_VOUT:
       sprintf(units, VOLT_UNIT);
       break;
-    case PSU_FAN:
+    case PSU1_FAN:
+    case PSU2_FAN:
+    case PSU3_FAN:
+    case PSU4_FAN:
       sprintf(units, FAN_UNIT);
       break;
-    case PSU_TEMP1:
-    case PSU_TEMP2:
-    case PSU_TEMP3:
+    case PSU1_TEMP1:
+    case PSU2_TEMP1:
+    case PSU3_TEMP1:
+    case PSU4_TEMP1:
+    case PSU1_TEMP2:
+    case PSU2_TEMP2:
+    case PSU3_TEMP2:
+    case PSU4_TEMP2:
+    case PSU1_TEMP3:
+    case PSU2_TEMP3:
+    case PSU3_TEMP3:
+    case PSU4_TEMP3:
       sprintf(units, TEMP_UNIT);
       break;
-    case PSU_PIN:
-    case PSU_POUT:
+    case PSU1_PIN:
+    case PSU2_PIN:
+    case PSU3_PIN:
+    case PSU4_PIN:
+    case PSU1_POUT:
+    case PSU2_POUT:
+    case PSU3_POUT:
+    case PSU4_POUT:
       sprintf(units, POWER_UNIT);
       break;
-    case PSU_IIN:
-    case PSU_IOUT:
+    case PSU1_IIN:
+    case PSU2_IIN:
+    case PSU3_IIN:
+    case PSU4_IIN:
+    case PSU1_IOUT:
+    case PSU2_IOUT:
+    case PSU3_IOUT:
+    case PSU4_IOUT:
       sprintf(units, CURR_UNIT);
       break;
     default:
@@ -3293,46 +3383,46 @@ sensor_thresh_array_init(uint8_t fru) {
     case FRU_PSU3:
     case FRU_PSU4:
       i = fru - FRU_PSU1;
-      psu_sensor_threshold[PSU_VIN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 305;
-      psu_sensor_threshold[PSU_VIN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 90;
-      psu_sensor_threshold[PSU_VIN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_VIN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_VOUT + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 13;
-      psu_sensor_threshold[PSU_VOUT + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_VOUT + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_VOUT + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_FAN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_FAN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_FAN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_FAN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_TEMP1 + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 95;
-      psu_sensor_threshold[PSU_TEMP1 + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 100;
-      psu_sensor_threshold[PSU_TEMP1 + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_TEMP1 + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_TEMP2 + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 95;
-      psu_sensor_threshold[PSU_TEMP2 + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 100;
-      psu_sensor_threshold[PSU_TEMP2 + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_TEMP2 + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_TEMP3 + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 95;
-      psu_sensor_threshold[PSU_TEMP3 + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 100;
-      psu_sensor_threshold[PSU_TEMP3 + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_TEMP3 + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_PIN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_PIN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_PIN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_PIN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_POUT + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 2400;
-      psu_sensor_threshold[PSU_POUT + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_POUT + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_POUT + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_IIN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 14;
-      psu_sensor_threshold[PSU_IIN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_IIN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_IIN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_IOUT + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 200;
-      psu_sensor_threshold[PSU_IOUT + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_IOUT + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
-      psu_sensor_threshold[PSU_IOUT + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_VIN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 305;
+      psu_sensor_threshold[PSU1_VIN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 90;
+      psu_sensor_threshold[PSU1_VIN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_VIN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_VOUT + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 13;
+      psu_sensor_threshold[PSU1_VOUT + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_VOUT + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_VOUT + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_FAN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_FAN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_FAN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_FAN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_TEMP1 + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 95;
+      psu_sensor_threshold[PSU1_TEMP1 + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 100;
+      psu_sensor_threshold[PSU1_TEMP1 + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_TEMP1 + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_TEMP2 + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 95;
+      psu_sensor_threshold[PSU1_TEMP2 + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 100;
+      psu_sensor_threshold[PSU1_TEMP2 + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_TEMP2 + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_TEMP3 + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 95;
+      psu_sensor_threshold[PSU1_TEMP3 + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 100;
+      psu_sensor_threshold[PSU1_TEMP3 + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_TEMP3 + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_PIN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_PIN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_PIN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_PIN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_POUT + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 2400;
+      psu_sensor_threshold[PSU1_POUT + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_POUT + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_POUT + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_IIN + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 14;
+      psu_sensor_threshold[PSU1_IIN + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_IIN + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_IIN + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_IOUT + (i * PSU_SENSOR_COUNT)][UCR_THRESH] = 200;
+      psu_sensor_threshold[PSU1_IOUT + (i * PSU_SENSOR_COUNT)][LCR_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_IOUT + (i * PSU_SENSOR_COUNT)][UNC_THRESH] = 0; // unset
+      psu_sensor_threshold[PSU1_IOUT + (i * PSU_SENSOR_COUNT)][LNC_THRESH] = 0; // unset
       break;
     case FRU_FAN:
       fan_sensor_threshold[FAN1_RPM][LCR_THRESH] = 3000;

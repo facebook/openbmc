@@ -346,6 +346,11 @@ enum {
   NOT_PRESENT = 1,
 };
 
+enum {
+  KEY_CLEAR = 0,
+  KEY_SET,
+};
+
 const static char *gpio_server_prsnt[] =
 {
   "",

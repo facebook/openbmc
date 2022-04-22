@@ -33,9 +33,12 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/pal.h>
 #include <openbmc/ras.h>
+#include <facebook/fby35_common.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
 #define POC1_BOARD_ID 0x0
+#define MAX_BLOCK_TIMEOUT 100
+#define MAX_SLED_CYCLE_RETRY 3
 
 static void
 log_slot_present(uint8_t slot_id, gpio_value_t value)
@@ -163,10 +166,110 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
 
 static void
 ocp_nic_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
-  if (curr == GPIO_VALUE_LOW)
+  int ret = 0;
+  uint8_t fru = 0;
+  uint8_t bmc_location = 0;
+  char key[MAX_KEY_LEN] = "to_blk_sled_cycle";
+  char value[MAX_VALUE_LEN] = {0};
+  bool is_log_asserted[MAX_NUM_FRUS + 1] = {false};
+  bool is_fru_prsnt[MAX_NUM_FRUS + 1] = {false};
+  int timeout = 0;
+  int retry = MAX_SLED_CYCLE_RETRY;
+  uint8_t num_of_safe_fru = 0;
+
+  //AC-cycle after OCP NIC Inserted.
+  if (curr == GPIO_VALUE_LOW) {
     syslog(LOG_CRIT, "OCP NIC Inserted");
-  else
+    snprintf(value, sizeof(value), "%d", KEY_SET);
+    if (kv_set(key, value, 0, 0) < 0) {
+      syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+      return;
+    }
+  } else if (curr == GPIO_VALUE_HIGH) {
     syslog(LOG_CRIT, "OCP NIC Removed");
+    return;
+  } else {
+    syslog(LOG_CRIT, "OCP NIC present GPIO invalid value = %d", curr);
+    return;
+  }
+
+  for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+    pal_is_fru_prsnt(fru, (uint8_t*)&is_fru_prsnt[fru]);
+  }
+
+  timeout = 0;
+  do {
+
+    num_of_safe_fru = 0;
+    for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {
+      if ((is_fru_prsnt[fru] == true) && (pal_can_change_power(fru) == false)) {
+        if(is_log_asserted[fru] == false) {
+          syslog(LOG_CRIT, "%s() Postpone to do AC-cycle, FRU: %d is working", __func__, fru);
+          is_log_asserted[fru] = true;
+        }
+      } else {
+        num_of_safe_fru++;
+      }
+    }
+
+    if (num_of_safe_fru == MAX_NUM_FRUS) {
+      break;
+    }
+
+    sleep(3);
+    timeout ++;
+
+  } while (timeout < MAX_BLOCK_TIMEOUT);
+
+  
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    goto exit;
+  }
+
+  switch(bmc_location) {
+    case BB_BMC:
+      syslog(LOG_CRIT, "SLED_CYCLE is starting due to NIC re-insertion.");
+      pal_update_ts_sled();
+      sync();
+      sleep(2);
+      for (retry = MAX_SLED_CYCLE_RETRY; retry > 0; retry--) {
+        ret = pal_sled_cycle();
+        if (ret == 0) {
+          break;
+        }
+      }
+      if (ret < 0) {
+        syslog(LOG_WARNING, "SLED_CYCLE failed...");
+        goto exit;
+      } 
+      break;
+    case NIC_BMC:
+      syslog(LOG_CRIT, "12V_CYCLE is starting due to NIC re-insertion.");
+      for (retry = MAX_SLED_CYCLE_RETRY; retry > 0; retry--) {
+        ret = pal_set_server_power(FRU_SLOT1, SERVER_12V_CYCLE); //class2 only have slot1
+        if (ret == 0) {
+          break;
+        }
+      }
+      if (ret < 0) {
+        syslog(LOG_WARNING, "12V_CYCLE failed...");
+        goto exit;
+      } 
+      break;
+    default:
+      syslog(LOG_WARNING, "%s() Unknown location of BMC, location = %d", __func__, bmc_location);
+      break;
+  }
+   
+exit:
+  snprintf(value, sizeof(value), "%d", KEY_CLEAR); 
+  if (kv_set(key, value, 0, 0) < 0) {
+    syslog(LOG_WARNING, "%s() Fail to clear the key \"%s\"", __func__, key);
+    return;
+  }
+  return;
 }
 
 static void
@@ -234,7 +337,7 @@ static struct gpiopoll_config g_class1_gpios[] = {
   {"HSC_FAULT_SLOT2_N",        "GPION1",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
   {"HSC_FAULT_BMC_SLOT3_N_R",  "GPION2",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
   {"HSC_FAULT_SLOT4_N",        "GPION3",   GPIO_EDGE_BOTH,     slot_ocp_fault_hndlr,     NULL},
-  {"OCP_NIC_PRSNT_BMC_N",      "GPIOC5",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
+  {"OCP_NIC_PRSNT_BMC_N",      "GPIOC0",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init},
   {"P5V_USB_PG_BMC",           "GPIOS2",   GPIO_EDGE_BOTH,     usb_hotplug_hndlr,        NULL},
   {"FAST_PROCHOT_BMC_N_R",     "GPIOM4",   GPIO_EDGE_BOTH,     fast_prochot_hndlr,       fast_prochot_init},
 };
@@ -242,6 +345,7 @@ static struct gpiopoll_config g_class1_gpios[] = {
 // GPIO table of the class 2
 static struct gpiopoll_config g_class2_gpios[] = {
   // shadow, description, edge, handler, oneshot
+  {"OCP_NIC_PRSNT_BMC_N",      "GPIOC0",   GPIO_EDGE_BOTH,     ocp_nic_hotplug_hndlr,    ocp_nic_init}
 };
 
 static void

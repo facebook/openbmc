@@ -16,12 +16,4 @@
 echo -n "Setup gpiointrd for fby35..."
 runsv /etc/sv/gpiointrd > /dev/null 2>&1 &
 
-bmc_location=$(get_bmc_board_id)
-if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
-  #The BMC of class2
-  #gpiointrd only supports the hot service and the hot service is not supported on class 2.
-  #stop it
-  sv stop gpiointrd
-fi
-
 echo "done."

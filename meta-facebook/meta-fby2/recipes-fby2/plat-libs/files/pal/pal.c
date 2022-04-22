@@ -3961,6 +3961,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
   int ret = 0;
   switch (fru) {
+    case FRU_ALL:
+      *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
+      break;
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
@@ -3970,11 +3973,13 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
         FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
       break;
     case FRU_SPB:
-    case FRU_BMC:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
       break;
     case FRU_NIC:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_BMC: // Yv2 does not have 'bmc' sensor and fru, please check 'spb' sensor and fru
+      *caps = 0;
       break;
     default:
       ret = -1;

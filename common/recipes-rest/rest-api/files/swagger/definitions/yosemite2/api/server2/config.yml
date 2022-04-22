@@ -16,7 +16,7 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
+                additionalProperties: true
                 properties: 
                   slot2_por_cfg: 
                     type: string

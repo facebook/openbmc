@@ -16,7 +16,7 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
+                additionalProperties: true
                 properties: 
                   slot3_boot_order: 
                     type: string

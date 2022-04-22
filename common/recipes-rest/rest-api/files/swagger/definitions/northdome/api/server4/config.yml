@@ -16,7 +16,7 @@ paths:
             properties: 
               Information: 
                 type: object
-                additionalProperties: false
+                additionalProperties: true
                 properties: 
                   pwr_server4_last_state: 
                     type: string

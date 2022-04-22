@@ -32,19 +32,14 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [15, 46],
-        [18, 49],
-        [20, 50],
-        [23, 52],
-        [25, 54],
-        [27, 57],
-        [29, 59],
-        [31, 60],
-        [33, 61],
-        [34, 63],
-        [35, 65],
-        [36, 67],
-        [37, 80],
+        [19, 60],
+        [21, 63],
+        [23, 65],
+        [25, 68],
+        [29, 70],
+        [31, 72],
+        [32, 75],
+        [35, 80],
         [38, 100]
       ]
     },
@@ -68,7 +63,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [5, 46],
+        [5, 60],
         [95, 70],
         [105, 100]
       ]
@@ -93,7 +88,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [5, 46],
+        [5, 60],
         [95, 70],
         [105, 100]
       ]
@@ -118,8 +113,8 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 1,
       "data": [
-        [5, 46],
-        [110, 100]
+        [5, 60],
+        [100, 100]
       ]
     },
     "PIM_QSFP200": {
@@ -142,7 +137,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [5, 46],
+        [5, 60],
         [65, 100]
       ]
     },
@@ -166,7 +161,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [5, 46],
+        [5, 60],
         [70, 100]
       ]
     }

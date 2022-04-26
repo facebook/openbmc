@@ -276,7 +276,8 @@ program_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
       return ret;
     }
     if ( (record_offset + fsize) <= i ) {
-      printf("updated cpld: %d %%\n", (int) (i/fsize)*5);
+      printf("\rupdated cpld: %d %%", (int) (i/fsize)*5);
+      fflush(stdout);
       record_offset += fsize;
     }
   }
@@ -368,7 +369,8 @@ verify_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
     }
 
     if ( (record_offset + fsize) <= i ) {
-      printf("verify cpld: %d %%\n", (int) (i/fsize)*5);
+      printf("\rverify cpld: %d %%", (int) (i/fsize)*5);
+      fflush(stdout);
       record_offset += fsize;
     }
   }
@@ -602,7 +604,10 @@ int common_cpld_Check_ID()
   // support XO2, XO3, NXFamily
   int ret = 0;
   int i = 0;
+  int dev_cnts=0;
   unsigned int device_id = 0;
+  struct cpld_dev_info* dev_list;
+
 
   ret = common_cpld_Get_id_i2c(&device_id);
   if (ret == 0) {
@@ -611,15 +616,16 @@ int common_cpld_Check_ID()
     return ret;
   }
 
-  for (i = 0; i < ARRAY_SIZE(lattice_dev_list); i++)
-  {
-    if (device_id == lattice_dev_list[i].dev_id)
-    {
+
+  dev_cnts += get_lattice_dev_list(&dev_list);
+
+  for (i = 0; i < dev_cnts; i++) {
+    if (device_id == dev_list[i].dev_id) {
       break;
     }
   }
 
-  if (i == ARRAY_SIZE(lattice_dev_list)) {
+  if (i == dev_cnts) {
     printf("device ID is not in lattice_dev_list\n");
     return -1;
   } else {

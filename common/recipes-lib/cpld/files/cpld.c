@@ -40,6 +40,7 @@ const char *cpld_list[] = {
   "LCMXO2-4000HC",
   "LCMXO2-7000HC",
   "LCMXO3-2100C",
+  "LCMXO3-9400C",
   "LFMNX-50",
   "MAX10-10M16",
   "MAX10-10M25",
@@ -76,15 +77,20 @@ static int cpld_malloc_list()
 {
   int i, j = 0;
   int dev_cnts = 0;
+  int lcnts = 0;
+  int acnts = 0;
+  struct cpld_dev_info* lattice_list;
 
-  dev_cnts += ARRAY_SIZE(lattice_dev_list);
-  dev_cnts += ARRAY_SIZE(altera_dev_list);
+  lcnts = get_lattice_dev_list(&lattice_list);
+  acnts += ARRAY_SIZE(altera_dev_list);
+
+  dev_cnts = lcnts + acnts;
 
   cpld_dev_list = (struct cpld_dev_info **)malloc(sizeof(struct cpld_dev_info *) * dev_cnts);
 
-  for (i = 0; i < ARRAY_SIZE(lattice_dev_list); i++, j++)
-    cpld_dev_list[j] = &lattice_dev_list[i];
-  for (i = 0; i < ARRAY_SIZE(altera_dev_list); i++, j++)
+  for (i = 0; i < lcnts; i++, j++)
+    cpld_dev_list[j] = &lattice_list[i];
+  for (i = 0; i < acnts; i++, j++)
     cpld_dev_list[j] = &altera_dev_list[i];
 
   return dev_cnts;

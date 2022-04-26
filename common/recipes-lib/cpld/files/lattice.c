@@ -10,6 +10,98 @@
 
 //#define CPLD_DEBUG //enable debug message
 //#define VERBOSE_DEBUG //enable detail debug message
+struct cpld_dev_info lattice_dev_list[] = {
+  {
+    .name = "LCMXO2-2000HC",
+    .dev_id = 0x012BB043,
+    .intf = INTF_JTAG,
+    .cpld_open = cpld_dev_open_jtag,
+    .cpld_close = cpld_dev_close_jtag,
+    .cpld_ver = common_cpld_Get_Ver_jtag,
+    .cpld_program = LCMXO2Family_cpld_update_jtag,
+    .cpld_dev_id = common_cpld_Get_id_jtag,
+  },
+  {
+    .name = "LCMXO2-2000HC",
+    .dev_id = 0x012BB043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  {
+    .name = "LCMXO2-4000HC",
+    .dev_id = 0x012BB043,
+    .intf = INTF_JTAG,
+    .cpld_open = cpld_dev_open_jtag,
+    .cpld_close = cpld_dev_close_jtag,
+    .cpld_ver = common_cpld_Get_Ver_jtag,
+    .cpld_program = LCMXO2Family_cpld_update_jtag,
+    .cpld_dev_id = common_cpld_Get_id_jtag,
+  },
+  {
+    .name = "LCMXO2-4000HC",
+    .dev_id = 0x012BB043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  {
+    .name = "LCMXO2-7000HC",
+    .dev_id = 0x012BB043,
+    .intf = INTF_JTAG,
+    .cpld_open = cpld_dev_open_jtag,
+    .cpld_close = cpld_dev_close_jtag,
+    .cpld_ver = common_cpld_Get_Ver_jtag,
+    .cpld_program = LCMXO2Family_cpld_update_jtag,
+    .cpld_dev_id = common_cpld_Get_id_jtag,
+  },
+  {
+    .name = "LCMXO2-7000HC",
+    .dev_id = 0x012BB043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  {
+    .name = "LCMXO3-2100C",
+    .dev_id = 0x612BD043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  {
+    .name = "LCMXO3-9400C",
+    .dev_id = 0x612BE043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = XO2XO3Family_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  },
+  {
+    .name = "LFMNX-50",
+    .dev_id = 0x412E3043,
+    .intf = INTF_I2C,
+    .cpld_open = cpld_dev_open_i2c,
+    .cpld_close = cpld_dev_close_i2c,
+    .cpld_ver = common_cpld_Get_Ver_i2c,
+    .cpld_program = NXFamily_cpld_update_i2c,
+    .cpld_dev_id = common_cpld_Get_id_i2c,
+  }
+};
 
 
 /*search the index of char in string*/
@@ -754,95 +846,11 @@ printf("[UserCode]%x\n",dev_info->Version);
   return ret;
 }
 
-struct cpld_dev_info lattice_dev_list[] = {
-  [0] = {
-    .name = "LCMXO2-2000HC",
-    .dev_id = 0x012BB043,
-    .intf = INTF_JTAG,
-    .cpld_open = cpld_dev_open_jtag,
-    .cpld_close = cpld_dev_close_jtag,
-    .cpld_ver = common_cpld_Get_Ver_jtag,
-    .cpld_program = LCMXO2Family_cpld_update_jtag,
-    .cpld_dev_id = common_cpld_Get_id_jtag,
-  },
-  [1] = {
-    .name = "LCMXO2-2000HC",
-    .dev_id = 0x012BB043,
-    .intf = INTF_I2C,
-    .cpld_open = cpld_dev_open_i2c,
-    .cpld_close = cpld_dev_close_i2c,
-    .cpld_ver = common_cpld_Get_Ver_i2c,
-    .cpld_program = XO2XO3Family_cpld_update_i2c,
-    .cpld_dev_id = common_cpld_Get_id_i2c,
-  },
-  [2] = {
-    .name = "LCMXO2-4000HC",
-    .dev_id = 0x012BC043,
-    .intf = INTF_JTAG,
-    .cpld_open = cpld_dev_open_jtag,
-    .cpld_close = cpld_dev_close_jtag,
-    .cpld_ver = common_cpld_Get_Ver_jtag,
-    .cpld_program = LCMXO2Family_cpld_update_jtag,
-    .cpld_dev_id = common_cpld_Get_id_jtag,
-  },
-  [3] = {
-    .name = "LCMXO2-4000HC",
-    .dev_id = 0x012BC043,
-    .intf = INTF_I2C,
-    .cpld_open = cpld_dev_open_i2c,
-    .cpld_close = cpld_dev_close_i2c,
-    .cpld_ver = common_cpld_Get_Ver_i2c,
-    .cpld_program = XO2XO3Family_cpld_update_i2c,
-    .cpld_dev_id = common_cpld_Get_id_i2c,
-  },
-  [4] = {
-    .name = "LCMXO2-7000HC",
-    .dev_id = 0x012BD043,
-    .intf = INTF_JTAG,
-    .cpld_open = cpld_dev_open_jtag,
-    .cpld_close = cpld_dev_close_jtag,
-    .cpld_ver = common_cpld_Get_Ver_jtag,
-    .cpld_program = LCMXO2Family_cpld_update_jtag,
-    .cpld_dev_id = common_cpld_Get_id_jtag,
-  },
-  [5] = {
-    .name = "LCMXO2-7000HC",
-    .dev_id = 0x012BD043,
-    .intf = INTF_I2C,
-    .cpld_open = cpld_dev_open_i2c,
-    .cpld_close = cpld_dev_close_i2c,
-    .cpld_ver = common_cpld_Get_Ver_i2c,
-    .cpld_program = XO2XO3Family_cpld_update_i2c,
-    .cpld_dev_id = common_cpld_Get_id_i2c,
-  },
-  [6] = {
-    .name = "LCMXO3-2100C",
-    .dev_id = 0x612BD043,
-    .intf = INTF_I2C,
-    .cpld_open = cpld_dev_open_i2c,
-    .cpld_close = cpld_dev_close_i2c,
-    .cpld_ver = common_cpld_Get_Ver_i2c,
-    .cpld_program = XO2XO3Family_cpld_update_i2c,
-    .cpld_dev_id = common_cpld_Get_id_i2c,
-  },
-  [7] = {
-    .name = "LCMXO3-4300C",
-    .dev_id = 0x612BC043,
-    .intf = INTF_I2C,
-    .cpld_open = cpld_dev_open_i2c,
-    .cpld_close = cpld_dev_close_i2c,
-    .cpld_ver = common_cpld_Get_Ver_i2c,
-    .cpld_program = XO2XO3Family_cpld_update_i2c,
-    .cpld_dev_id = common_cpld_Get_id_i2c,
-  },
-  [8] = {
-    .name = "LFMNX-50",
-    .dev_id = 0x412E3043,
-    .intf = INTF_I2C,
-    .cpld_open = cpld_dev_open_i2c,
-    .cpld_close = cpld_dev_close_i2c,
-    .cpld_ver = common_cpld_Get_Ver_i2c,
-    .cpld_program = NXFamily_cpld_update_i2c,
-    .cpld_dev_id = common_cpld_Get_id_i2c,
-  }
-};
+int get_lattice_dev_list(struct cpld_dev_info** list )
+{
+  int size = sizeof(lattice_dev_list)/ sizeof(lattice_dev_list[0]);
+  *list = lattice_dev_list;
+  return size;
+}
+
+

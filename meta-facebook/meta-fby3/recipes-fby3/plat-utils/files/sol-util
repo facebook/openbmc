@@ -338,7 +338,7 @@ get_cwc_usb_dev() {
   fi
 
   exar_path=$(find "$pesw_usb_path" -name "ttyXRUSB*")
-  echo "$exar_path" | grep "^ttyXRUSB" > /dev/null
+  echo "$exar_path" | grep "ttyXRUSB" > /dev/null
 
   if [ "$?" = "0" ]; then
     tty_exar=${exar_path##*/}

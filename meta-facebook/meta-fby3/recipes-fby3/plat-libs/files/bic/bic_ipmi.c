@@ -2211,7 +2211,7 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   int ret = 0;
   uint8_t retry = MAX_READ_RETRY;
   uint16_t vendor_id = 0, reversed_vender_sph = 0;
-  uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
+  uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0,additional_ver = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
   if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
@@ -2237,12 +2237,12 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
     while (retry) {
       if (slot_id == FRU_2U_TOP) {
         ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, nvme_ready, status, &ffi, &meff, 
-                                      &vendor_id, &major_ver,&minor_ver, RREXP_BIC_INTF1);
+                                      &vendor_id, &major_ver,&minor_ver,&additional_ver, RREXP_BIC_INTF1);
       } else if (slot_id == FRU_2U_BOT) {
         ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, nvme_ready, status, &ffi, &meff, 
-                                      &vendor_id, &major_ver,&minor_ver, RREXP_BIC_INTF2);
+                                      &vendor_id, &major_ver,&minor_ver,&additional_ver, RREXP_BIC_INTF2);
       } else {
-        ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver, REXP_BIC_INTF);
+        ret = bic_get_dev_power_status(slot_id, dev_id, nvme_ready, status, &ffi, &meff, &vendor_id, &major_ver,&minor_ver,&additional_ver, REXP_BIC_INTF);
       }
       if (!ret)
         break;
@@ -2281,9 +2281,9 @@ err_out:
 
 int
 bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
-                         uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf) {
+                         uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver,uint8_t *additional_ver, uint8_t intf) {
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
-  uint8_t rbuf[11] = {0x00};
+  uint8_t rbuf[12] = {0x00};
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
@@ -2345,6 +2345,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
     if ( vendor_id != NULL ) *vendor_id = (rbuf[7] << 8 ) | rbuf[8]; // PCIe Vendor ID
     if ( major_ver != NULL ) *major_ver = rbuf[9];  //FW version Major Revision
     if ( minor_ver != NULL ) *minor_ver = rbuf[10]; //FW version Minor Revision
+    if ( additional_ver != NULL ) *additional_ver = rbuf[11]; //Additional FW version
   }
 
   return ret;

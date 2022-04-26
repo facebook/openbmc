@@ -163,6 +163,13 @@ struct pal_key_cfg {
   {"slot3_sel_error", "1", NULL},
   {"slot4_sel_error", "1", NULL},
   {"ntp_server", "", NULL},
+  // cwc fru health
+  {"cwc_fru10_sensor_health", "1", NULL},
+  {"cwc_fru11_sensor_health", "1", NULL},
+  {"cwc_fru12_sensor_health", "1", NULL},
+  {"cwc_fru10_sel_error", "1", NULL},
+  {"cwc_fru11_sel_error", "1", NULL},
+  {"cwc_fru12_sel_error", "1", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -2775,10 +2782,31 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
 void
 pal_log_clear(char *fru) {
   char key[MAX_KEY_LEN] = {0};
+  uint8_t fru_id = 0;
   uint8_t fru_cnt = 0;
+  int ret = 0;
   int i = 0;
 
-  if ( strncmp(fru, "slot", 4) == 0 ) {
+  if (pal_is_cwc() == PAL_EOK) {
+    if ( strcmp(fru, "all") == 0 ) {
+      for (fru_id = FRU_CWC; fru_id <= FRU_2U_BOT; fru_id ++) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru_id);
+        pal_set_key_value(key, "1");
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru_id);
+        pal_set_key_value(key, "1");
+      }
+    } else if (strcmp(fru, FRU_NAME_2U_CWC) == 0 || strcmp(fru, FRU_NAME_2U_TOP) == 0 || strcmp(fru, FRU_NAME_2U_BOT) == 0 ) {
+      ret = pal_get_fru_id(fru, &fru_id);
+      if ( ret == 0 ) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru_id);
+        pal_set_key_value(key, "1");
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru_id);
+        pal_set_key_value(key, "1");
+      }
+    }
+  }
+
+  if ( strncmp(fru, "slot", 4) == 0 && strlen(fru) == 5 ) {
     fru_cnt = fru[4] - 0x30;
     i = fru_cnt;
   } else if ( strcmp(fru, "all") == 0 ) {

@@ -97,6 +97,10 @@ extern const char *slot_usage;
 #define UNKNOWN_SLOT 0xFF
 #define DUAL_DEV_BIC_ID0 15
 
+#define FRU_NAME_2U_CWC "slot1-2U-exp"
+#define FRU_NAME_2U_TOP "slot1-2U-top"
+#define FRU_NAME_2U_BOT "slot1-2U-bot"
+
 #define DEV_NAME_2U_TOP "slot1-2U-top"
 #define DEV_NAME_2U_BOT "slot1-2U-bot"
 #define DEV_NAME_2U_CWC "slot1-2U-cwc"

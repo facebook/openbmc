@@ -15,6 +15,36 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+LOCAL_URI += "\
+    file://board-utils.sh \
+    file://dump_gpios.sh \
+    file://eth0_mac_fixup.sh \
+    file://find_serfmon.sh \
+    file://meta_info.sh \
+    file://oob-eeprom-util.sh \
+    file://oob-mdio-util.sh \
+    file://oob-status.sh \
+    file://setup-gpio.sh \
+    file://setup_bcm53134.sh \
+    file://setup_board.sh \
+    file://show_tech.py \
+    file://wedge_power.sh \
+    "
+
+OPENBMC_UTILS_FILES += " \
+    board-utils.sh \
+    dump_gpios.sh \
+    find_serfmon.sh \
+    meta_info.sh \
+    oob-eeprom-util.sh \
+    oob-mdio-util.sh \
+    oob-status.sh \
+    show_tech.py \
+    wedge_power.sh \
+    "
+
 PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += "boot-info"
 
@@ -31,6 +61,19 @@ do_install_board() {
 
     install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
+
+    # Install find_serfmon to print it early in case of cached cases
+    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    update-rc.d -r ${D} setup_board.sh start 10 S .
+
+    # Export GPIO pins and set initial directions/values.
+    install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
+    update-rc.d -r ${D} setup-gpio.sh start 59 S .
+
+    # networking is done after rcS, any start level within rcS for
+    # mac fixup should work
+    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d

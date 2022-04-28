@@ -1,0 +1,217 @@
+CISCO SYSTEMS, INC. LIMITED SOFTWARE LICENSE AGREEMENT
+Limited Software License Agreement BSP (2021v1)
+
+CISCO CONFIDENTIAL
+
+This Limited Software License Agreement (“Agreement”) grants access to
+the Cisco Systems, Inc. (“Cisco”) software identified in Exhibit A
+attached hereto, as such software may be delivered by Cisco in source
+code, object code or binaries and include libraries and related
+documentation (“Licensed Material(s)”). The software selection and
+method of code delivery is at Cisco’s sole discretion. Use of these
+Licensed Materials is conditioned upon agreement to, and Licensee
+expressly accepts, the following terms and conditions:
+
+1. License. Cisco hereby grants to Licensee, under Cisco’s
+   intellectual property rights in the Licensed Material(s), a
+   non-transferable, non-exclusive, revocable, royalty free, limited
+   license (without right of sublicense) solely to internally view and
+   internally use the necessary portions of the Licensed Material(s) (as
+   furnished by Cisco in source or binary code form) on a secure
+   Licensee development computer solely for the purpose of compiling the
+   necessary portions of the source code of the Licensed Materials into
+   object code and installing and testing the object code of the
+   Licensed Materials on the Cisco Hardware in a secure environment.
+   This license is subject to the terms and conditions of this
+   Agreement, including the restrictions set forth in License
+   Restrictions below. “Cisco Hardware” means a Cisco 8100 series router
+   purchased by Licensee from Cisco or a Cisco authorized reseller.
+2. License Restrictions. Licensee shall not: (a) copy (except as
+   permitted under the “License” section of this Agreement in order to
+   compile, install and test the object code of the Licensed Materials
+   with the Cisco Hardware), modify, adapt, alter, or translate the
+   Licensed Material(s), or create copyrightable, patented or trade
+   secret materials (“Derivative Technology”) improving, recasting,
+   adding integrated features or functions, or transforming the Licensed
+   Material(s); (b) sell, assign, sublicense, distribute, publicly
+   display, lease, rent, loan, transfer, encumber or suffer to exist any
+   lien or security interest (other than those of Cisco) or otherwise
+   permit third parties to access, use, copy, disclose, or otherwise
+   transfer the Licensed Material(s); (c) create or attempt to create by
+   reverse engineering, reverse assembly, reverse compiling, decrypting,
+   disassembling or otherwise all or part of the source code from any
+   Licensed Material(s) or permit a third party to do so; (d) remove,
+   alter, obscure, or destroy any copyright notices, proprietary
+   markings or confidential legends placed upon or contained within the
+   Licensed Material(s) or any copies thereof (e) take any action or
+   inaction that would result in Entanglement of any of the Licensed
+   Material(s) or Documentation. “Entanglement” means that proprietary
+   technology has become subject to the terms of an open source license
+   under which downstream recipients or other third parties may claim
+   the right to (a) copy, create derivative works of, or redistribute
+   the proprietary technology, or (b) receive source code to the
+   proprietary technology. Except for the express and limited purpose
+   license granted herein, no other licenses are granted by implication,
+   estoppel or otherwise, nor are any licenses granted by any other
+   means other than in this agreement.
+3. Ownership. Cisco retains all right, title and interest in and to
+   the Licensed Material(s) and shall own any Derivative Technology
+   thereof created by or for Licensee. Licensee hereby conveys and
+   assigns to Cisco, its successors and assigns, all of Licensee’s
+   right, title and interest in and to any such Derivative Technology of
+   the Licensed Material(s) and made by or for Licensee under this
+   Agreement, including all copyrights, patents, trade secrets, and
+   other intellectual property rights therein (including renewals
+   thereof). Licensee shall execute and deliver such instruments and
+   take such other action as may be required and requested by Cisco to
+   perfect the assignments and prosecute such patent and copyright
+   applications.
+4. Termination. Either party may terminate this Agreement, or any
+   license granted under this Agreement, at any time.
+5. Effect of Termination or Expiration. Within five (5) days after
+   the date of termination or expiration of this Agreement or any
+   license granted under this Agreement, Licensee shall furnish to Cisco
+   written certification by an authorized representative of Licensee
+   that the original and all copies, including partial copies, of the
+   corresponding Licensed Material(s), and any material received from
+   Cisco or made in connection with such license have been returned to
+   Cisco. Only the section titled “License” shall terminate or expire,
+   all other provisions shall survive expiration
+   or termination of this Agreement.
+6. Warranty Disclaimer. THE LICENSED MATERIAL(S) ARE PROVIDED “AS IS”
+   AND CISCO MAKES NO WARRANTY, EXPRESS OR IMPLIED, AND
+   DISCLAIMS ANY REPRESENTATIONS AND WARRANTIES WITH RESPECT TO THE
+   LICENSED MATERIAL(S), OR ANY MODIFICATIONS THERETO, IN WHOLE OR IN
+   PART, INCLUDING, WITHOUT LIMITATION, ANY IMPLIED WARRANTY OF TITLE,
+   FITNESS FOR A PARTICULAR PURPOSE, MERCHANTABILITY, OR
+   NONINFRINGEMENT. IN NO EVENT SHALL CISCO BE LIABLE FOR THE ACCURACY
+   OR COMPLETENESS OF THE LICENSED MATERIAL(S).
+7. Limitation of Liability. NEITHER CISCO NOR ANY OF ITS LICENSORS
+   SHALL HAVE ANY LIABILITY UNDER THIS AGREEMENT, REGARDLESS OF WHETHER
+   CISCO HAS BEEN ADVISED OF THE POSSIBILITY OF ANY DAMAGES OR OF ANY
+   REMEDY SET FORTH HEREIN FAILING OF ITS ESSENTIAL PURPOSE OR
+   OTHERWISE. NEITHER CISCO NOR ANY OF ITS LICENSORS SHALL BE LIABLE FOR
+   COSTS OF PROCUREMENT OF SUBSTITUTE GOODS, LOSS OF PROFITS,
+   INTERRUPTION OF BUSINESS, OR FOR ANY OTHER SPECIAL, INDIRECT,
+   CONSEQUENTIAL OR INCIDENTAL DAMAGES, HOWEVER CAUSED, WHETHER FOR
+   BREACH OF WARRANTY, CONTRACT, TORT, NEGLIGENCE, STRICT LIABILITY OR
+   OTHERWISE. LICENSEE ACKNOWLEDGES THAT THE BENEFIT AFFORDED TO IT
+   UNDER THIS AGREEMENT IS A FULL AND ADEQUATE BENEFIT OF THE BARGAIN
+   SUPPORTING LICENSEE’S ACCEPTANCE OF THIS ALLOCATION OF RISK TO IT.
+8. No Maintenance, Installation and Training. Cisco has no obligation
+   under this Agreement to provide any maintenance, upgrades, updates,
+   support, installation or training. Any assistance provided by Cisco
+   hereunder shall be at Cisco’s discretion and without liability or
+   risk to Cisco.
+9. Third Party Materials. Notwithstanding anything to the contrary
+   herein, Licensee acknowledges that any third-party materials
+   delivered under this Agreement are licensed and not sold
+   (“Third-Party Materials”) and that title to and ownership of the
+   Third-Party Materials or any portion thereof remain with its
+   licensors. Any open source software not owned by Cisco is subject to
+   its own separate license terms. NOTWITHSTANDING ANY OTHER PROVISION
+   OF THIS AGREEMENT, CISCO OFFERS NO WARRANTIES (WHETHER EXPRESS OR
+   IMPLIED) OR SUPPORT OF ANY KIND WITH RESPECT TO THE THIRD-PARTY
+   MATERIALS.
+10. Confidential Information. The Licensed Material(s), whether in
+   whole or in part, are the confidential and proprietary property of
+   Cisco and/or its licensors. Handling of such Confidential Information
+   is covered by the terms of the parties’ Non-Disclosure Agreement,
+   incorporated herein. Notwithstanding anything to the contrary in the
+   parties’ Non-Disclosure Agreement, (a) in no instance may the source
+   code be shared by Licensee with any third party without the express
+   written permission of Cisco and (b) the confidentiality obligations
+   and restrictions under the Non-Disclosure Agreement shall be
+   perpetual with respect to any source code under this Agreement.
+11. No Assignment. Licensee may not assign its rights or delegate its
+   obligations hereunder, either in whole or in part, whether by
+   operation of law or otherwise, without the prior written consent of
+   Cisco.
+12. Security. Licensee will implement and maintain an information
+   security program that is appropriate to the nature and scope of
+   Licensee’s activities. The security program will be designed,
+   maintained, updated, as necessary, and documented to reasonably
+   address known risks and unauthorized access to Licensed Materials.
+   Licensee shall diligently address any security vulnerability in the
+   Licensed Materials and immediately bring any security vulnerability
+   to the attention of Cisco’s Product Security Incident Response Team
+   (PSIRT) by emailing psirt@cisco.com.
+13. Import/Export. Cisco’s software, cloud services, products,
+   technology and services, including the Licensed Material(s),
+   (collectively the “Cisco Products”) are subject to U.S. and local
+   export control and sanctions laws. Licensee acknowledges and agrees
+   to the applicability of and Licensee’s compliance with those laws,
+   and Licensee shall not receive, use, transfer, export or re-export
+   any Cisco Products in a way that would cause Cisco to violate those
+   laws. Licensee also agrees to obtain any required licenses or
+   authorizations.
+14. Notices. Any notice required or permitted to be given by either
+   party under this Agreement shall be in writing and shall be
+   personally delivered or sent by a reputable overnight mail service or
+   by first class mail (certified or registered). Notices to Cisco
+   should be sent to Cisco Systems, Office of General Counsel, 170
+   Tasman Drive, San Jose, CA 95134.
+15. Governing Law and Venue. This Agreement, and any disputes arising
+   from it, will be governed exclusively by the laws of the State of
+   California, United States of America and without regard to conflicts
+   of laws rules or the United Nations Convention on the International
+   Sale of Goods. The Superior Court of California, County of Santa
+   Clara and the Federal Courts of the Northern District of California
+   will have exclusive jurisdiction to adjudicate any dispute arising
+   out of or relating to this Agreement or its formation, interpretation
+   or enforcement. Each party hereby consents and submits to the
+   exclusive jurisdiction of such courts. Notwithstanding the foregoing,
+   either party may seek interim injunctive relief in any court of
+   appropriate jurisdiction with respect to any alleged breach of a
+   party’s intellectual property or proprietary rights.
+16. Publicity. Licensee shall not refer to Cisco, or any of Cisco’s
+   trademarks, in any manner including to its customers, suppliers or
+   partners or in any of its promotional or advertising material,
+   written or oral, without obtaining Cisco’s prior written consent.
+   This restriction includes the disclosure in any media releases,
+   public announcements and other public disclosures by Licensee, its
+   employees or agents relating to or referring to this Agreement or its
+   subject matter.
+17. Verification. Licensee will take reasonable steps to maintain
+   complete and accurate records of Licensee’s use of the Licensed
+   Material(s) sufficient to verify compliance with this Agreement
+   (“Verification Records”). Upon reasonable advance notice, and no more
+   than once per 12 month period, Licensee will, within 30 days from
+   Cisco’s notice, allow Cisco and its auditors access to the
+   Verification Records and any applicable books, systems (including
+   Cisco product(s) or other equipment), and accounts during Licensee’s
+   normal business hours.
+18. Severability. If for any reason any provision of this Agreement
+   is held to be unenforceable, that provision of the Agreement will be
+   enforced to the maximum extent permissible so as to effect the intent
+   of the parties, and the remainder of this Agreement will continue in
+   full force and effect.
+19. Waiver. Failure by either party to enforce any right under this
+   Agreement will not waive that right.
+20. Entire Agreement. This Agreement is the complete agreement
+   between the parties with respect to the subject matter of this
+   Agreement and supersedes and replaces all prior or contemporaneous
+   communications, understandings or agreements (whether written or
+   oral).
+
+
+Exhibit A: Licensed Material(s) Description
+
+Board Support Package with hardware component drivers to enable hardware
+to work with operating system.  This is comprised of multiple
+repositories generally organized by function.  This list will grow as
+functionality grows.
+
+    cisco-wb-pkg:       Super-project and installer
+    cisco-wb-build:     Build related utilities
+    cisco-wb-acpi:      ACPI/GPIO related code
+    cisco-wb-bsp-api:   C/C++ libraries and utilities
+    cisco-wb-fpd:       FPD upgrade utilities
+    cisco-wb-pid:       PID specific configuration and utilties
+    xr_sysctl:          An abstraction to get/set information
+    cisco-wb-optics:    Optics related code
+    cisco-wb-kmod:      Kernel drivers
+    cisco-wb-dimm-kmod: Kernel drivers
+    cisco-wb-tam-kmod:  Kernel drivers
+
+

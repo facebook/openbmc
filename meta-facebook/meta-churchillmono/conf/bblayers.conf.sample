@@ -16,6 +16,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-security \
   ##OEROOT##/meta-security/meta-tpm \
   ##OEROOT##/../../meta-aspeed \
+  ##OEROOT##/../../meta-cisco \
   ##OEROOT##/../../meta-facebook \
   ##OEROOT##/../../meta-facebook/meta-churchillmono \
   ##OEROOT##/../../meta-facebook/meta-python3 \

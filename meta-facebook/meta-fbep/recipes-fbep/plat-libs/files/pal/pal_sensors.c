@@ -1214,8 +1214,10 @@ int pal_check_pdb_vr_config(void)
 {
   char vr_vendor[16] = {0};
   int vr_config;
-  pal_get_key_value("VR_IC", vr_vendor);
-  if (!strcmp(vr_vendor, "VI")) {
+  int ret = 0;
+
+  ret = kv_get("VR_IC", vr_vendor, NULL, 0);
+  if (ret < 0 || !strcmp(vr_vendor, "VI")) {
     vr_config = 1;
   } else {
     vr_config = 0;

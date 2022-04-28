@@ -1325,6 +1325,8 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
         }
         switch (type_1ou) {
           case EDSFF_1U:
+            pcie_conf = CONFIG_C_VF;
+            break;
           case M2_1U:
             pcie_conf = CONFIG_MFG;
             break;

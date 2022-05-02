@@ -52,6 +52,9 @@
 #define REG1_STS_CHECK 0x1
 #define REG2_STS_CHECK 0xA
 
+/*vr parser string*/
+#define IC_DEVICE_ID "IC_DEVICE_ID"
+
 typedef struct {
   uint8_t command;
   uint8_t data_len;
@@ -461,7 +464,6 @@ cal_TI_crc16(vr *dev) {
 
 static int
 vr_TI_csv_parser(char *image) {
-#define IC_DEVICE_ID "IC_DEVICE_ID"
 #define BLOCK_READ "BlockRead"
 #define BLOCK_WRITE "BlockWrite"
   int ret = 0;
@@ -991,25 +993,29 @@ vr_VY_txt_parser(char *image) {
   FILE *fp = NULL;
   char tmp_buf[64] = "\0";
   int tmp_len = sizeof(tmp_buf);
-  int i = 0, j = 0;
-  uint8_t char_cnt = 0;
+  int i = 0, j = 0, last_data_end = -1;
   int data_cnt = 0;
   bool is_cmd = true;
 
-  if ( (fp = fopen(image, "r") ) == NULL ) {
+  fp = fopen(image, "r");
+  if ( fp == NULL ) {
     printf("Invalid file: %s\n", image);
     goto error_exit;
   }
 
   while( NULL != fgets(tmp_buf, tmp_len, fp) ) {
-    if (  is_valid_data(tmp_buf[0]) == false ) continue;
-
-    //check line in char
-    for ( i = 0, j = 0, is_cmd = true; tmp_buf[i] != '\n'; i++ ) {
-      //is valid char
-      if ( is_valid_data(tmp_buf[i]) == true ) {
+    if ( start_with(tmp_buf, IC_DEVICE_ID) > 0 ) {
+      printf("Invalid file: %s\n", image);
+      goto error_exit;
+    }
+    
+    if ( is_valid_data(tmp_buf[0]) == false ) { 
+      continue;
+    } else {
+      //check line in char
+      for ( i = 0, j = 0, is_cmd = true, last_data_end = -1; tmp_buf[i] != '\n'; i++ ) {
         //is data end in the next?
-        if ( is_valid_data(tmp_buf[i+1]) == false ) {
+        if ( (is_valid_data(tmp_buf[i]) == true) && (is_valid_data(tmp_buf[i+1]) == false) ) {
           //cmd
           if ( is_cmd == true ) {
             //store cmd
@@ -1017,24 +1023,31 @@ vr_VY_txt_parser(char *image) {
             is_cmd = false;
           } else {
             //store data
-            if ( char_cnt == 0 ) vr_list[vr_cnt].pdata[data_cnt].data[j] = char_to_hex(tmp_buf[i]);
-            else vr_list[vr_cnt].pdata[data_cnt].data[j] = string_to_byte(&tmp_buf[i-1]);
+            if ( (i - last_data_end) < 2 ) { 
+              vr_list[vr_cnt].pdata[data_cnt].data[j] = char_to_hex(tmp_buf[i]);
+            } else {
+              vr_list[vr_cnt].pdata[data_cnt].data[j] = string_to_byte(&tmp_buf[i-1]);
+            }
             j++;
           }
-          char_cnt = 0;
-        } else char_cnt++;
+          last_data_end = i + 1;
+        }
       }
     }
+
     vr_list[vr_cnt].pdata[data_cnt].data_len = j;
     data_cnt++;
   }
+
   vr_list[vr_cnt].data_cnt = data_cnt;
   vr_list[vr_cnt].addr = 0xff;   //set it manually
   vr_list[vr_cnt].devid_len = 1;
   vr_list[vr_cnt].devid[0] = 0x0;
   ret = BIC_STATUS_SUCCESS;
 error_exit:
-  if ( fp != NULL ) fclose(fp);
+  if ( fp != NULL ) {
+    fclose(fp);
+  }
 
   return ret;
 }
@@ -1047,7 +1060,7 @@ vr_VY_program(uint8_t slot_id, vr *dev, uint8_t force) {
 
 // For class 2 GPv3 system, BMC should get/set Vishay VR IC count from EEPROM
 int
-bic_set_vishay_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t cnt, uint8_t intf) {
+bic_set_vishay_onsemi_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t cnt, uint8_t intf) {
   uint8_t tbuf[6] = {0x9c, 0x9c, 0x00, 0x01, comp, cnt};
   uint8_t rbuf[6] = {0x00};
   uint8_t tlen = 6;
@@ -1056,8 +1069,80 @@ bic_set_vishay_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t cnt, u
   return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_VY_VR_CNT, tbuf, tlen, rbuf, &rlen, intf);
 }
 
+static int
+vr_ON_txt_parser(char *image) {
+  int ret = BIC_STATUS_FAILURE;
+  FILE *fp = NULL;
+  char tmp_buf[64] = "\0";
+  int tmp_len = sizeof(tmp_buf);
+  int i = 0, j = 0, last_data_end = -1;
+  int data_cnt = 0;
+  bool is_cmd = true;
+
+  fp = fopen(image, "r");
+  if ( fp == NULL ) {
+    printf("Invalid file: %s\n", image);
+    goto error_exit;
+  }
+
+  while( NULL != fgets(tmp_buf, tmp_len, fp) ) {
+    //store deviec id
+    if ( start_with(tmp_buf, IC_DEVICE_ID) > 0 ) {
+      char *token_list[32] = {NULL};
+      split(token_list, tmp_buf, " ");
+      vr_list[vr_cnt].devid_len = 1;
+      vr_list[vr_cnt].devid[0] = string_to_byte(&token_list[1][0]);
+    }
+
+    if ( is_valid_data(tmp_buf[0]) == false ) { 
+      continue;
+    } else {
+      //check line in char
+      for ( i = 0, j = 0, is_cmd = true, last_data_end = -1; tmp_buf[i] != '\n'; i++ ) {
+        //is data end in the next?
+        if ( (is_valid_data(tmp_buf[i]) == true) && (is_valid_data(tmp_buf[i+1]) == false) ) {
+          //cmd
+          if ( is_cmd == true ) {
+            //store cmd
+            vr_list[vr_cnt].pdata[data_cnt].command  = string_to_byte(&tmp_buf[i-1]);
+            is_cmd = false;
+          } else {
+            //store data
+            if ( (i - last_data_end) < 2 ) { 
+              vr_list[vr_cnt].pdata[data_cnt].data[j] = char_to_hex(tmp_buf[i]);
+            } else {
+              vr_list[vr_cnt].pdata[data_cnt].data[j] = string_to_byte(&tmp_buf[i-1]);
+            }
+            j++;
+          }
+          last_data_end = i + 1;
+        }
+      }
+    }
+
+    vr_list[vr_cnt].pdata[data_cnt].data_len = j;
+    data_cnt++;
+  }
+  vr_list[vr_cnt].data_cnt = data_cnt;
+  vr_list[vr_cnt].addr = 0xff;   //set it manually
+  ret = BIC_STATUS_SUCCESS;
+
+error_exit:
+  if ( fp != NULL ) {
+    fclose(fp);
+  }
+
+  return ret;
+}
+
+static int
+vr_ON_program(uint8_t slot_id, vr *dev, uint8_t force) {
+  /*not supported*/
+  return BIC_STATUS_FAILURE;
+}
+
 int
-bic_get_vishay_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t *cnt, uint8_t intf) {
+bic_get_vishay_onsemi_vr_remaining_writes(uint8_t slot_id, uint8_t comp, uint8_t *cnt, uint8_t intf) {
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00, 0x00, comp};
   uint8_t rbuf[5] = {0x00};
   uint8_t tlen = 5;
@@ -1155,7 +1240,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
       ret = bic_get_isl_vr_remaining_writes(slot_id, dev->bus, dev->addr, &remaining_writes, dev->intf);
     }
   } else {
-    ret = bic_get_vishay_vr_remaining_writes(slot_id, vy_vr_idx, &remaining_writes, dev->intf);
+    ret = bic_get_vishay_onsemi_vr_remaining_writes(slot_id, vy_vr_idx, &remaining_writes, dev->intf);
   }
 
   // check the result of execution
@@ -1289,7 +1374,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
     case FW_2U_BOT_3V3_VR2:
     case FW_2U_BOT_3V3_VR3:
     case FW_2U_BOT_1V8_VR:
-      ret = bic_set_vishay_vr_remaining_writes(slot_id, vy_vr_idx, (remaining_writes - 1), dev->intf);
+      ret = bic_set_vishay_onsemi_vr_remaining_writes(slot_id, vy_vr_idx, (remaining_writes - 1), dev->intf);
       if ( ret < 0 ) {
         printf("Failed to update remaining_writes for Vishay VR %02X\n", comp);
       }
@@ -1345,6 +1430,7 @@ static struct tool {
   {VR_TI , vr_TI_csv_parser , vr_TI_program},
   {VR_IFX, vr_IFX_xsf_parser, vr_IFX_program},
   {VR_VY,  vr_VY_txt_parser,  vr_VY_program},
+  {VR_ON,  vr_ON_txt_parser,  vr_ON_program},
 };
 
 static char*
@@ -1397,13 +1483,16 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf, uin
     }
   } else if (rlen == TI_DEVID_LEN ) {
     *sel_vendor = VR_TI;
+  } else if (rlen == ONS_DEVID_LEN ) {
+    *sel_vendor = VR_ON;
   } else {
     *sel_vendor = VR_ISL;
   }
 
   printf("Find the VR device, Vendor=%s(%x.%x) \n", (*sel_vendor == VR_IFX)?"IFX": \
                                    (*sel_vendor == VR_TI)?"TI": \
-                                   (*sel_vendor == VR_ISL)?"ISL":"VY", rlen, *sel_vendor);
+                                   (*sel_vendor == VR_ISL)?"ISL": \
+                                   (*sel_vendor == VR_ON)?"ON":"VY", rlen, *sel_vendor);
   return BIC_STATUS_SUCCESS;
 }
 

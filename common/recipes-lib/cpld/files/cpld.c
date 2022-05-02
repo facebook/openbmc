@@ -45,6 +45,7 @@ const char *cpld_list[] = {
   "MAX10-10M16",
   "MAX10-10M25",
   "MAX10-10M04",
+  "MAX10-10M08",
 };
 
 static int cpld_probe(void *attr)

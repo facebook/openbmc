@@ -780,4 +780,13 @@ struct cpld_dev_info altera_dev_list[] = {
     .cpld_program = max10_cpld_cfm_update,
     .cpld_dev_id = max10_cpld_get_id,
   },
+  [2] = {
+    .name = "MAX10-10M08",
+    .dev_id = 0x01234567,
+    .cpld_open = cpld_dev_open,
+    .cpld_close = cpld_dev_close,
+    .cpld_ver = max10_get_fw_ver,
+    .cpld_program = max10_cpld_cfm_update,
+    .cpld_dev_id = max10_cpld_get_id,
+  },
 };

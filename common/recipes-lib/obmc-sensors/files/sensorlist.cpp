@@ -41,7 +41,7 @@ unique_ptr<SensorChip> SensorList::make_chip(const sensors_chip_name *chip, cons
     return unique_ptr<LegacyFanSensorChip>(new LegacyFanSensorChip(chip, name));
   }
   if (name == "aspeed_pwm_tacho-isa-0000" || name == "aspeed_pwm_tachometer-isa-0000" || name == "aspeed_tach-isa-0000"
-      || strstr(name.c_str(), "pwmfan-isa-")) {
+      || strstr(name.c_str(), "pwmfan-isa-") || strstr(name.c_str(), "max31790-i2c-")) {
     return unique_ptr<FanSensorChip>(new FanSensorChip(chip, name));
   }
   return unique_ptr<SensorChip>(new SensorChip(chip, name));

@@ -31,10 +31,13 @@
 
 default_fsc_config_path="/etc/fsc-config.json"
 
+KV_CMD=/usr/bin/kv
+
 function init_class1_fsc(){
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
   target_fsc_config=""
   config_type=""
+  last_config_type=""
   if [ "$sys_config" = "A" ]; then
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_PVT_type1.json"
@@ -55,9 +58,23 @@ function init_class1_fsc(){
       echo "use Config D GPv3 fan table"
       target_fsc_config="/etc/FSC_CLASS1_CONFIG_D_GPV3.json"
     elif [ "$type_2ou" == "0x06" ]; then
-      echo "use DP fan table"
-      config_type="DP"
-      target_fsc_config="/etc/FSC_CLASS1_EVT_DP.json"
+      # boot with last fan table, check and reload it after recieve host post complete code
+      last_config_type="$($KV_CMD get sled_system_conf persistent)"
+      case "$last_config_type" in
+        "Type_DPB")
+          config_type="DPB"
+          target_fsc_config="/etc/FSC_CLASS1_DVT_DP_HBA.json"
+          ;;
+        "Type_DPF")
+          config_type="DPF"
+          target_fsc_config="/etc/FSC_CLASS1_DP_FAVA.json"
+          ;;
+        *)
+          config_type="DP"
+          target_fsc_config="/etc/FSC_CLASS1_EVT_DP.json"
+          ;;
+      esac
+      echo "use $config_type fan table"
     else
       target_fsc_config="/etc/FSC_CLASS1_type15.json"
     fi
@@ -67,7 +84,7 @@ function init_class1_fsc(){
   fi
 
   ln -s ${target_fsc_config} ${default_fsc_config_path}
-  echo -n "Type_${config_type}" > /mnt/data/kv_store/sled_system_conf
+  $KV_CMD set sled_system_conf "Type_${config_type}" persistent
 }
 
 function init_class2_fsc(){

@@ -66,6 +66,7 @@ extern "C" {
 
 #define MAX_SNR_NAME 32
 
+#define DP_FAN_TBL_PATH     "/etc/FSC_CLASS1_EVT_DP.json"
 #define DP_HBA_FAN_TBL_PATH "/etc/FSC_CLASS1_DVT_DP_HBA.json"
 #define DP_FAVA_FAN_TBL_PATH "/etc/FSC_CLASS1_DP_FAVA.json"
 #define DEFAULT_FSC_CFG_PATH "/etc/fsc-config.json"

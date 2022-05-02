@@ -59,6 +59,8 @@
 
 #define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
 
+#define MAX_CMD_LEN 64
+
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
@@ -4933,6 +4935,49 @@ bool pal_check_fava_ssd_exist(uint8_t ssd_num) {
   return false;
 }
 
+static int reload_fan_table(const char* sysconfig, const char* fan_table) {
+  int ret = -1;
+  char cmd[MAX_CMD_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (sysconfig == NULL || fan_table == NULL) {
+    syslog(LOG_WARNING, "%s() Invalid input parameter", __func__);
+    return ret;
+  }
+
+  ret = kv_get("sled_system_conf", value, NULL, KV_FPERSIST);
+  if (ret == 0 && (strncmp(value, sysconfig, sizeof(value)) == 0)) {
+    return 0;
+  }
+
+  syslog(LOG_WARNING, "%s() Reload fan table: %s", __func__, fan_table);
+
+  snprintf(cmd, sizeof(cmd), "ln -sf %s %s", fan_table, DEFAULT_FSC_CFG_PATH);
+  ret = system(cmd);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() can not import table: %s", __func__, fan_table);
+    return ret;
+  }
+
+  if (kv_set("sled_system_conf", sysconfig, 0, KV_FPERSIST) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
+  }
+
+  ret = system("/usr/bin/sv restart fscd");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
+    return ret;
+  }
+
+  ret = system("/usr/bin/sv restart sensord");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
+    return ret;
+  }
+
+  return ret;
+}
+
 int pal_dp_fan_table_check(void) {
   //DP only slot1
   uint8_t slot = FRU_SLOT1;
@@ -4944,7 +4989,6 @@ int pal_dp_fan_table_check(void) {
   uint8_t tlen = 14;
   uint8_t rlen = 10;
   uint16_t read_vid = 0x0, read_did = 0x0;
-  char cmd[64] = {0};
   bool fava_ssd1 = false, fava_ssd2 = false;
   uint8_t ssd_num = 1;
 
@@ -4967,29 +5011,13 @@ int pal_dp_fan_table_check(void) {
       ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
       if (ret == 0) {
         read_vid = rbuf[6] << 8 | rbuf[5];
-        read_did = rbuf[8] << 8 | rbuf[7];;
+        read_did = rbuf[8] << 8 | rbuf[7];
         if (((read_vid == HBA_M_VID) && (read_did == HBA_M_DID)) || ((read_vid == HBA_B_VID) && (read_did == HBA_B_DID))) {
-          snprintf(cmd, sizeof(cmd), "ln -sf %s %s", DP_HBA_FAN_TBL_PATH, DEFAULT_FSC_CFG_PATH);
-          ret = system(cmd);
-          if (ret != 0) {
-            syslog(LOG_WARNING, "%s() can not import DP-HBA fan table", __func__);
+          if ((ret = reload_fan_table("Type_DPB", DP_HBA_FAN_TBL_PATH)) != 0) {
             return ret;
           }
-
-          ret = system("/usr/bin/sv restart fscd");
-          if (ret != 0) {
-            syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
-            return ret;
-          }
-
-          ret = kv_set("sled_system_conf", "Type_DPB", 0, KV_FPERSIST);
-          if (ret < 0)  {
-            syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
-          }
-
-          ret = system("/usr/bin/sv restart sensord");
-          if (ret != 0) {
-            syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
+        } else {
+          if ((ret = reload_fan_table("Type_DP", DP_FAN_TBL_PATH)) != 0) {
             return ret;
           }
         }
@@ -5003,27 +5031,7 @@ int pal_dp_fan_table_check(void) {
 
       if (fava_ssd1 || fava_ssd2) { // If one of FAVA SSD exists
         syslog(LOG_WARNING, "%s() start to import DP-FAVA fan table", __func__);
-        snprintf(cmd, sizeof(cmd), "ln -sf %s %s", DP_FAVA_FAN_TBL_PATH, DEFAULT_FSC_CFG_PATH);
-        ret = system(cmd);
-        if (ret != 0) {
-          syslog(LOG_WARNING, "%s() can not import DP-FAVA fan table", __func__);
-          return ret;
-        }
-
-        ret = kv_set("sled_system_conf", "Type_DPF", 0, KV_FPERSIST);
-        if (ret < 0)  {
-          syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
-        }
-
-        ret = system("/usr/bin/sv restart fscd");
-        if (ret != 0) {
-          syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
-          return ret;
-        }
-
-        ret = system("/usr/bin/sv restart sensord");
-        if (ret != 0) {
-          syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
+        if ((ret = reload_fan_table("Type_DPF", DP_FAVA_FAN_TBL_PATH)) != 0) {
           return ret;
         }
       }

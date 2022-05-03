@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ -n "$BBPATH" ]; then
+  echo "WARNING: Environment already set up for $BBPATH"
+  return 1
+fi
+
 if [ -n "$DISTRO_OVERRIDE" ]; then
   echo "WARNING: distro is set to ${DISTRO_OVERRIDE} based on DISTRO_OVERRIDE env variable"
 elif [ -z "$DISTRO_DEFAULT" ]; then

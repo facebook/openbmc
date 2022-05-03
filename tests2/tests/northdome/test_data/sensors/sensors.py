@@ -28,7 +28,6 @@ SENSORS_SERVER = [
     "PVDDCR_SOC VR T",
     "SOC Temp",
     "SOC DIMMA0 Temp",
-    "SOC DIMMB0 Temp",
     "SOC DIMMC0 Temp",
     "SOC DIMMD0 Temp",
     "SOC DIMME0 Temp",

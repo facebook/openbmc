@@ -62,4 +62,5 @@ IMAGE_INSTALL += " \
   mctp-util \
   jbi \
   dimm-util \
+  attest-util \
   "

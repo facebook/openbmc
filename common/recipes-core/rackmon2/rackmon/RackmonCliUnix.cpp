@@ -2,6 +2,15 @@
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
 #include "UnixSock.h"
+#if (defined(__llvm__) && (__clang_major__ < 9)) || \
+    (!defined(__llvm__) && (__GNUC__ < 8))
+#include <experimental/filesystem>
+namespace std {
+namespace filesystem = experimental::filesystem;
+}
+#else
+#include <filesystem>
+#endif
 
 using nlohmann::json;
 using namespace std::literals::string_literals;
@@ -204,9 +213,19 @@ static void do_rackmonstatus() {
   }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, const char** argv) {
   CLI::App app("Rackmon CLI interface");
   app.failure_message(CLI::FailureMessage::help);
+  if (std::filesystem::path(argv[0]).filename() == "modbuscmd") {
+    const char** _argv = argv;
+    argv = new const char*[argc + 1];
+    argv[0] = _argv[0];
+    argv[1] = "raw";
+    for (int i = 1; i < argc; i++) {
+      argv[i + 1] = _argv[i];
+    }
+    argc++;
+  }
 
   bool json_fmt = false;
   // Allow flags/options to fallthrough from subcommands.

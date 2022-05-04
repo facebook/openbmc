@@ -144,8 +144,8 @@ do_install:append() {
     install_wrapper "/usr/local/bin/rackmoncli legacy_list" ${bin}/rackmonstatus
     install_wrapper "/usr/local/bin/rackmoncli data --json" ${bin}/rackmondata
     install_wrapper "/usr/local/bin/rackmoncli data --format value" ${bin}/rackmoninfo
-    install_wrapper "/usr/local/bin/rackmoncli raw \$@" ${bin}/modbuscmd
     install_wrapper "/usr/local/bin/rackmoncli \$@" ${bin}/rackmonctl
+    ln -snf ../bin/rackmoncli ${bin}/modbuscmd
 
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${S}/scripts/pyrmd.py ${D}${PYTHON_SITEPACKAGES_DIR}/

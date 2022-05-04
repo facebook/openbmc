@@ -1,0 +1,77 @@
+max([
+  linear_cpu_margin(slot1:soc_therm_margin) + pid_cpu_margin(slot1:soc_therm_margin),
+  linear_cpu_margin(slot2:soc_therm_margin) + pid_cpu_margin(slot2:soc_therm_margin),
+  linear_cpu_margin(slot3:soc_therm_margin) + pid_cpu_margin(slot3:soc_therm_margin),
+  linear_cpu_margin(slot4:soc_therm_margin) + pid_cpu_margin(slot4:soc_therm_margin),
+  linear_frontIO_inlet(
+    max([
+      slot1:fio_temp,
+      slot2:fio_temp,
+      slot3:fio_temp,
+      slot4:fio_temp])),
+  linear_dimm(
+    max([
+      slot1:dimma_temp,
+      slot1:dimmc_temp,
+      slot1:dimmd_temp,
+      slot1:dimme_temp,
+      slot1:dimmg_temp,
+      slot1:dimmh_temp,
+      slot2:dimma_temp,
+      slot2:dimmc_temp,
+      slot2:dimmd_temp,
+      slot2:dimme_temp,
+      slot2:dimmg_temp,
+      slot2:dimmh_temp,
+      slot3:dimma_temp,
+      slot3:dimmc_temp,
+      slot3:dimmd_temp,
+      slot3:dimme_temp,
+      slot3:dimmg_temp,
+      slot3:dimmh_temp,
+      slot4:dimma_temp,
+      slot4:dimmc_temp,
+      slot4:dimmd_temp,
+      slot4:dimme_temp,
+      slot4:dimmg_temp,
+      slot4:dimmh_temp])) +
+  pid_dimm(
+    max([
+      slot1:dimma_temp,
+      slot1:dimmc_temp,
+      slot1:dimmd_temp,
+      slot1:dimme_temp,
+      slot1:dimmg_temp,
+      slot1:dimmh_temp,
+      slot2:dimma_temp,
+      slot2:dimmc_temp,
+      slot2:dimmd_temp,
+      slot2:dimme_temp,
+      slot2:dimmg_temp,
+      slot2:dimmh_temp,
+      slot3:dimma_temp,
+      slot3:dimmc_temp,
+      slot3:dimmd_temp,
+      slot3:dimme_temp,
+      slot3:dimmg_temp,
+      slot3:dimmh_temp,
+      slot4:dimma_temp,
+      slot4:dimmc_temp,
+      slot4:dimmd_temp,
+      slot4:dimme_temp,
+      slot4:dimmg_temp,
+      slot4:dimmh_temp])),
+  linear_nic(nic:nic_sensor_temp) + pid_nic(nic:nic_sensor_temp),
+  linear_boot_drive(
+    max([
+      slot1:ssd0_temp,
+      slot2:ssd0_temp,
+      slot3:ssd0_temp,
+      slot4:ssd0_temp])) +
+   pid_boot_drive(
+    max([
+      slot1:ssd0_temp,
+      slot2:ssd0_temp,
+      slot3:ssd0_temp,
+      slot4:ssd0_temp]))
+])

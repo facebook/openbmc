@@ -419,3 +419,34 @@ function get_2ou_board_type() {
     echo $type
   fi
 }
+
+# Get 1OU board type
+# EDSFF_1U = 7 (0x07)
+# CXL_1U   = 10 (0x0A)
+# M2_1U    = 11 (0x0B)
+# WF_1U    = 12 (0x0C)
+get_1ou_board_type() {
+  local slot_str=$1
+  local type_1ou
+  local val
+
+  if type_1ou=$(/usr/bin/kv get "${slot_str}_get_1ou_type"); then
+    # find kv cache
+    echo "$type_1ou"
+  elif val=$(/usr/bin/bic-util "$slot_str" 0xe0 0x02 0x9c 0x9c 0x00 0x05 0xe0 0xa0 0x9c 0x9c 0x00); then
+    val=($(echo "$val" | tr ' '))
+    if [ "${val[6]}" = "00" ]; then
+      # 1ou board type from bic
+      type_1ou=$((16#${val[10]}))
+      echo "$type_1ou"
+    else
+      # bic reply non-completed cc code
+      return 1
+    fi
+  else
+    # bic-util command failed
+    return 1
+  fi
+
+  return 0
+}

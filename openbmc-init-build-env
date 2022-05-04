@@ -21,7 +21,8 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
-# hardknott platforms (latest)
+# honister platforms (latest)
+  meta-grandteton:lf-honister
 #   -- none --
 # dunfell platforms (pending upgrade)
   meta-churchillmono:lf-dunfell
@@ -41,7 +42,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-minipack:lf-dunfell
   meta-qemux86:lf-dunfell
   meta-wedge400:lf-dunfell
-  meta-grandteton:lf-dunfell
 # Legacy platforms pending kernel upgrade
   meta-fbtp:rocko
   meta-fbttn:rocko

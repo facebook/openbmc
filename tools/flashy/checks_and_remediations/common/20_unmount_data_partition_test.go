@@ -174,6 +174,7 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		// map from arg[0] of command to error
 		// if not present, nil assumed
 		cmdErrs  map[string]error
+    stderr string
 		mountErr error
 		wantCmds []string
 		want     error
@@ -181,11 +182,13 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		{
 			name:     "succeeded",
 			cmdErrs:  map[string]error{},
+			stderr: "",
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
 				"mkdir -p /tmp/mnt/data/etc",
 				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store",
 				"umount /mnt/data",
 			},
 			want: nil,
@@ -193,13 +196,15 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		{
 			name: "umount error",
 			cmdErrs: map[string]error{
-				"umount": errors.Errorf("umount failed"),
+				"umount /mnt/data": errors.Errorf("umount failed"),
 			},
+			stderr: "",
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
 				"mkdir -p /tmp/mnt/data/etc",
 				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store",
 				"umount /mnt/data",
 				"umount /mnt/data",
 				"umount /mnt/data",
@@ -214,10 +219,11 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			want: errors.Errorf("umount failed"),
 		},
 		{
-			name: "cp error",
+			name: "cp ssh error",
 			cmdErrs: map[string]error{
-				"cp": errors.Errorf("cp failed"),
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc": errors.Errorf("cp failed"),
 			},
+			stderr: "",
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
@@ -227,10 +233,42 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			want: errors.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: cp failed, stderr: "),
 		},
 		{
+			name: "cp kv_store error",
+			cmdErrs: map[string]error{
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": errors.Errorf("cp failed"),
+			},
+			stderr: "oops",
+			mountErr: nil,
+			wantCmds: []string{
+				"mkdir -p /tmp/mnt",
+				"mkdir -p /tmp/mnt/data/etc",
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store",
+			},
+			want: errors.Errorf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store failed: cp failed, stderr: oops"),
+		},
+		{
+			name: "cp kv_store allowable error",
+			cmdErrs: map[string]error{
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": errors.Errorf("cp failed"),
+			},
+      stderr: "Error: No such file or directory",
+			mountErr: nil,
+			wantCmds: []string{
+				"mkdir -p /tmp/mnt",
+				"mkdir -p /tmp/mnt/data/etc",
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store",
+				"umount /mnt/data",
+			},
+			want: nil,
+		},
+		{
 			name: "mkdir error",
 			cmdErrs: map[string]error{
-				"mkdir": errors.Errorf("mkdir failed"),
+				"mkdir -p /tmp/mnt": errors.Errorf("mkdir failed"),
 			},
+			stderr: "",
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
@@ -240,6 +278,7 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		{
 			name:     "mount error",
 			cmdErrs:  map[string]error{},
+			stderr: "",
 			mountErr: errors.Errorf("Bind mount failed"),
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
@@ -253,16 +292,17 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gotCmds := []string{}
 			var cmdHelper = func(cmdArr []string) (int, error, string, string) {
-				gotCmds = append(gotCmds, strings.Join(cmdArr, " "))
+        cmd := strings.Join(cmdArr, " ")
+				gotCmds = append(gotCmds, cmd)
 				var errRet error
-				if err, ok := tc.cmdErrs[cmdArr[0]]; ok {
+				if err, ok := tc.cmdErrs[cmd]; ok {
 					errRet = err
 				}
 				exitCode := 0
 				if errRet != nil {
 					exitCode = 1
 				}
-				return exitCode, errRet, "", ""
+				return exitCode, errRet, "", tc.stderr
 			}
 
 			utils.RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {

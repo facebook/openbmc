@@ -131,8 +131,8 @@ static void print_nested(json& j, int indent = 0) {
 static void print_hexstring(const json& j) {
   std::cout << "Response: ";
   for (const uint8_t& byte : j) {
-    std::cout << std::hex << std::setw(2) << std::setfill('0')
-              << int(byte) << " ";
+    std::cout << std::hex << std::setw(2) << std::setfill('0') << int(byte)
+              << " ";
   }
   std::cout << std::endl;
 }
@@ -196,7 +196,8 @@ static void do_rackmonstatus() {
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
   for (const auto& ent : resp_j["data"]) {
-    std::cout << "PSU addr " << std::hex << std::setw(2) << std::setfill('0') << int(ent["addr"]);
+    std::cout << "PSU addr " << std::hex << std::setw(2) << std::setfill('0')
+              << int(ent["addr"]);
     std::cout << " - crc errors: " << std::dec << ent["crc_fails"];
     std::cout << ", timeouts: " << std::dec << ent["timeouts"];
     std::cout << ", baud rate: " << std::dec << ent["baudrate"] << std::endl;
@@ -235,7 +236,10 @@ int main(int argc, char* argv[]) {
   });
 
   // Status command
-  app.add_subcommand("legacy_list", "Return list of Modbus devices (Legacy backwards compatibility)")->callback(do_rackmonstatus);
+  app.add_subcommand(
+         "legacy_list",
+         "Return list of Modbus devices (Legacy backwards compatibility)")
+      ->callback(do_rackmonstatus);
 
   // Data command (Get monitored data)
   std::string format = "raw";

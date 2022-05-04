@@ -20,7 +20,7 @@ paths:
                 properties: 
                   fruid_info: 
                     type: object
-                    additionalProperties: false
+                    additionalProperties: true
                     properties: 
                       slot1: 
                         type: object
@@ -64,7 +64,7 @@ paths:
                             format: nullable
                   fw_info: 
                     type: object
-                    additionalProperties: false
+                    additionalProperties: true
                     properties: 
                       bmc_ver: 
                         type: string

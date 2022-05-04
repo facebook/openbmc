@@ -7,6 +7,28 @@ import rest_fwinfo
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 from common_middlewares import jsonerrorhandler
 
+EXAMPLE_BMC_FRUID_OBJ = [
+    {
+        "FRU Information": "BMC",
+        "Board Mfg Date": "Wed Mar 31 05:23:00 2021",
+        "Board Mfg": "BMC manufacturer",
+        "Board Product": "BMC Storage Module",
+        "Board Serial": "BMCSerial",
+        "Board Part Number": "Part.number.42",
+        "Board FRU ID": "N/A",
+        "Board Custom Data 1": "01-1111111",
+        "Board Custom Data 2": "RANDOM DATA",
+        "Product Manufacturer": "BMC manufacturer",
+        "Product Name": "Discovery Point V1",
+        "Product Part Number": "This.is.BMC",
+        "Product Version": "EVT",
+        "Product Serial": "MYSERIAL",
+        "Product Asset Tag": "N/A",
+        "Product FRU ID": "N/A",
+        "Product Custom Data 1": "01-1111111",
+        "Product Custom Data 2": "RANDOM DATA",
+    }
+]
 EXAMPLE_SLOT1_FRUID_OBJ = [
     {
         "FRU Information": "Server Board 1",
@@ -57,9 +79,7 @@ EXAMPLE_NIC_FRUID_OBJ = [
     }
 ]
 
-EXAMPLE_FW_UTIL_STDOUT = """BMC Version: fby2-v2021.12.8
-BMC CPLD Version: CPLD_VERSION_42
-2OU Bridge-IC Version: BICBICBIC"""
+EXAMPLE_FW_UTIL_STDOUT = """BMC Version: fby2-v2021.12.8\nBMC CPLD Version: CPLD_VERSION_42\n2OU Bridge-IC Version: BICBICBIC"""
 
 
 class TestRestFwinfo(AioHTTPTestCase):
@@ -70,6 +90,8 @@ class TestRestFwinfo(AioHTTPTestCase):
         # Python >= 3.8 smartly uses AsyncMock automatically if the target
         # is a coroutine. However, this breaks compatibility with older python versions,
         # so forcing new_callable=MagicMock to preserve backwards compatibility
+        bmc_future = asyncio.Future()
+        bmc_future.set_result((0, json.dumps(EXAMPLE_BMC_FRUID_OBJ), ""))
         slot1_future = asyncio.Future()
         slot1_future.set_result((0, json.dumps(EXAMPLE_SLOT1_FRUID_OBJ), ""))
         nic_future = asyncio.Future()
@@ -79,7 +101,13 @@ class TestRestFwinfo(AioHTTPTestCase):
         fw_util_future = asyncio.Future()
         fw_util_future.set_result((0, EXAMPLE_FW_UTIL_STDOUT, ""))
         self.async_exec_mock = unittest.mock.MagicMock(
-            side_effect=[slot1_future, nic_future, nicexp_future, fw_util_future]
+            side_effect=[
+                bmc_future,
+                nic_future,
+                nicexp_future,
+                slot1_future,
+                fw_util_future,
+            ]
         )
 
         self.patches = [
@@ -96,6 +124,12 @@ class TestRestFwinfo(AioHTTPTestCase):
             "Actions": [],
             "Information": {
                 "fruid_info": {
+                    "bmc": {
+                        "model": "BMC Storage Module",
+                        "part_number": "This.is.BMC",
+                        "serial_number": "BMCSerial",
+                        "vendor": "BMC manufacturer",
+                    },
                     "nic": {
                         "model": "A very good nic",
                         "part_number": "PART_NUMBER_42",
@@ -116,9 +150,10 @@ class TestRestFwinfo(AioHTTPTestCase):
                     },
                 },
                 "fw_info": {
-                    "bic_version": "BICBICBIC",
-                    "bmc_cpld_ver": "CPLD_VERSION_42",
-                    "bmc_ver": "fby2-v2021.12.8",
+                    "bmc": {
+                        "bmc_cpld_ver": " CPLD_VERSION_42",
+                        "bmc_ver": " fby2-v2021.12.8",
+                    }
                 },
             },
             "Resources": [],
@@ -133,7 +168,7 @@ class TestRestFwinfo(AioHTTPTestCase):
     async def test_fruidutil_and_fwinfo_calls_are_cached(self):
         await self.client.request("GET", "/api/fwinfo")
         await self.client.request("GET", "/api/fwinfo")
-        self.assertEqual(self.async_exec_mock.call_count, 4)
+        self.assertEqual(self.async_exec_mock.call_count, 5)
 
     async def get_application(self):
         webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])

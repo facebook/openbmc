@@ -23,7 +23,6 @@ from collections import namedtuple
 
 import common_utils
 from aiohttp import web
-
 from board_setup_var import fruid_map, fw_map
 
 FruidUtilInfo = namedtuple(
@@ -31,6 +30,7 @@ FruidUtilInfo = namedtuple(
 )
 
 FWINFO_RESPONSE_CACHE = ""
+
 
 async def get_fwinfo_response():
     global FWINFO_RESPONSE_CACHE
@@ -42,10 +42,7 @@ async def get_fwinfo_response():
         fw_util_info = {}
         for board in fw_map:
             fw_util_info[board] = await _get_fwutil_info_for_target(board)
-        response_body = {
-            "fruid_info": fruid_util_info,
-            "fw_info": fw_util_info
-        }
+        response_body = {"fruid_info": fruid_util_info, "fw_info": fw_util_info}
         FWINFO_RESPONSE_CACHE = response_body
     else:
         response_body = FWINFO_RESPONSE_CACHE
@@ -89,11 +86,13 @@ async def _get_fruid_util_for_target(target: str) -> FruidUtilInfo:
         )
     return fruid_util_response
 
-def _filter_target(board: str,target: str):
+
+def _filter_target(board: str, target: str):
     for item in fw_map[board]:
         if item == target:
             return fw_map[board][item]
     return None
+
 
 async def _get_fwutil_info_for_target(target: str):
     fwutil_response = {}
@@ -103,7 +102,7 @@ async def _get_fwutil_info_for_target(target: str):
     )
     for stdout_line in process_stdout.splitlines():
         identifier, version = stdout_line.split(":", 1)
-        name = _filter_target(target,identifier)
+        name = _filter_target(target, identifier)
         if name is not None:
             fwutil_response[name] = version
 

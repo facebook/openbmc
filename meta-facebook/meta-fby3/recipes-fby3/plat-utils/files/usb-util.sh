@@ -25,10 +25,18 @@ dev=$3
 busid=
 exp=
 retry=10
+BOARD_ID=$(get_bmc_board_id)
 
 function show_usage() {
-  echo "Usage: usb-util.sh [ bind | unbind ] [ slot1-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [ pesw-uart, uart0, uart1, uart2, dev0, dev1, ..., dev11 ]"
-  echo "Usage: usb-util.sh bus-id [ slot1-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [ pesw-uart, uart0, uart1, uart2, dev0, dev1, ..., dev11 ]"
+  if [ "$BOARD_ID" -eq 9 ]; then
+    #The BMC of class2
+    echo "Usage: usb-util.sh [ bind | unbind ] [ slot1-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [ pesw-uart, uart0, uart1, uart2, dev0, dev1, ..., dev11 ]"
+    echo "Usage: usb-util.sh bus-id [ slot1-2U | slot1-2U-exp | slot1-2U-top | slot1-2U-bot ] [ pesw-uart, uart0, uart1, uart2, dev0, dev1, ..., dev11 ]"
+  else
+    #The BMC of class1
+    echo "Usage: usb-util.sh [ bind | unbind ] [ slot1-2U | slot3-2U ] [ dev0, dev1, ..., dev11 ]"
+    echo "Usage: usb-util.sh bus-id [ slot1-2U | slot3-2U  ] [ dev0, dev1, ..., dev11 ]"
+  fi
 }
 
 function check_file_exist() {
@@ -127,6 +135,106 @@ function get_2u_gpv3_bus_id() {
     ;;
     esac
 }
+
+function get_2u_gpv3_bus_id_by_fru() {
+    if [ $exp != "0x00" ] && [ $exp != "0x03" ]; then
+        echo "command not supported by this platform"
+        exit -1
+    fi
+
+    if [ "$fru" = "slot1-2U" ]; then
+      case $dev in
+        dev0) # a
+        busid="1-1.1.3.4.1"
+      ;;
+        dev1) # b
+        busid="1-1.1.3.3.1"
+      ;;
+        dev2) # c
+        busid="1-1.1.3.4.2.1"
+      ;;
+        dev3) # d
+        busid="1-1.1.3.3.2.1"
+      ;;
+        dev4) # e
+        busid="1-1.1.3.4.2.2"
+      ;;
+        dev5) # f
+        busid="1-1.1.3.3.2.2"
+      ;;
+        dev6) # g
+        busid="1-1.1.3.4.3"
+      ;;
+        dev7) # h
+        busid="1-1.1.3.3.3"
+      ;;
+        dev8) # i
+        busid="1-1.1.3.4.2.3"
+      ;;
+        dev9) # j
+        busid="1-1.1.3.3.2.3"
+      ;;
+        dev10) # k
+        busid="1-1.1.3.4.4"
+      ;;
+        dev11) # l
+        busid="1-1.1.3.3.2.4"
+      ;;
+        *)
+        echo "dev:$dev is not supported by $fru"
+        exit -1
+      ;;
+      esac
+    elif [ "$fru" = "slot3-2U" ]; then
+      case $dev in
+        dev0) # a
+        busid="1-1.3.3.4.1"
+      ;;
+        dev1) # b
+        busid="1-1.3.3.3.1"
+      ;;
+        dev2) # c
+        busid="1-1.3.3.4.2.1"
+      ;;
+        dev3) # d
+        busid="1-1.3.3.3.2.1"
+      ;;
+        dev4) # e
+        busid="1-1.3.3.4.2.2"
+      ;;
+        dev5) # f
+        busid="1-1.3.3.3.2.2"
+      ;;
+        dev6) # g
+        busid="1-1.3.3.4.3"
+      ;;
+        dev7) # h
+        busid="1-1.3.3.3.3"
+      ;;
+        dev8) # i
+        busid="1-1.3.3.4.2.3"
+      ;;
+        dev9) # j
+        busid="1-1.3.3.3.2.3"
+      ;;
+        dev10) # k
+        busid="1-1.3.3.4.4"
+      ;;
+        dev11) # l
+        busid="1-1.3.3.3.2.4"
+      ;;
+        *)
+        echo "dev:$dev is not supported by $fru"
+        exit -1
+      ;;
+      esac
+    else
+      echo "The $fru is invalid"
+      exit -1;
+    fi
+
+}
+
 
 function get_cwc_bus_id() {
     if [ $exp != "0x04" ]; then
@@ -308,11 +416,19 @@ function bind_usb() {
         exit -1
     fi
 
-    exp=$(get_2ou_board_type 4)
+    if [ "$fru" = "slot3-2U" ]; then
+        exp=$(get_2ou_board_type 6)
+    else
+        exp=$(get_2ou_board_type 4)
+    fi
 
     case $fru in
     slot1-2U)
-        get_2u_gpv3_bus_id
+        if [ "$BOARD_ID" -eq 9 ]; then
+            get_2u_gpv3_bus_id
+        else
+            get_2u_gpv3_bus_id_by_fru
+        fi
     ;;
 
     slot1-2U-exp)
@@ -327,6 +443,10 @@ function bind_usb() {
         get_bot_gpv3_bus_id
     ;;
 
+    slot3-2U)
+        get_2u_gpv3_bus_id_by_fru
+    ;;
+
     *)
         show_usage
         exit -1
@@ -336,13 +456,21 @@ function bind_usb() {
     if [ $cmd == "unbind" ] ; then
         usbip unbind --busid $busid
     else
-        hub=$(/usr/bin/bic-util slot1 --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
+        if [ "$fru" = "slot3-2U" ]; then
+            hub=$(/usr/bin/bic-util slot3 --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
+        else
+            hub=$(/usr/bin/bic-util slot1 --get_gpio | grep 16 | awk '{print $3;}') # get gpio value
+        fi
 
         if [ $hub -eq 0 ]; then
-            /usr/bin/bic-util slot1 --set_gpio 16 1 > /dev/null 2>&1
+            if [ "$fru" = "slot3-2U" ]; then
+                /usr/bin/bic-util slot3 --set_gpio 16 1 > /dev/null 2>&1
+            else
+                /usr/bin/bic-util slot1 --set_gpio 16 1 > /dev/null 2>&1
+            fi
             retry=15
             echo "Initializing USB devs..."
-            sleep 5
+            sleep 10
         fi
 
         check_file_exist
@@ -356,11 +484,19 @@ function bind_usb() {
 }
 
 function get_bus_id() {
-    exp=$(get_2ou_board_type 4)
+    if [ "$fru" = "slot3-2U" ]; then
+        exp=$(get_2ou_board_type 6)
+    else
+        exp=$(get_2ou_board_type 4)
+    fi
 
     case $fru in
     slot1-2U)
-        get_2u_gpv3_bus_id
+        if [ "$BOARD_ID" -eq 9 ]; then
+            get_2u_gpv3_bus_id
+        else
+            get_2u_gpv3_bus_id_by_fru
+        fi
     ;;
 
     slot1-2U-exp)
@@ -373,6 +509,10 @@ function get_bus_id() {
 
     slot1-2U-bot)
         get_bot_gpv3_bus_id
+    ;;
+
+    slot3-2U)
+        get_2u_gpv3_bus_id_by_fru
     ;;
 
     *)

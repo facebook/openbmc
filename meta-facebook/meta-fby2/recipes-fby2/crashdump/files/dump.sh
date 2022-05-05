@@ -15,7 +15,7 @@ function execute_via_me {
 
   # Adapt command to ME-UTIL format
   cat | \
-    sed 's/^0x/0xb8 0x40 0x57 0x01 0x00 0x/g' "$1" | \
+    sed 's/^0x/0xb8 0x40 0x57 0x01 0x00 0x/g' $1 | \
       "$ME_UTIL" "$SLOT" --file /dev/stdin | \
         sed 's/^57 01 00 //g'
 }

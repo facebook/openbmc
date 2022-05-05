@@ -37,7 +37,7 @@ const dropCachesFilePath = "/proc/sys/vm/drop_caches"
 // equivalent to `echo 3 > /proc/sys/vm/drop_caches`.
 func dropCaches(stepParams step.StepParams) step.StepExitError {
 	err := fileutils.WriteFileWithTimeout(
-		dropCachesFilePath, []byte("3"), 0644, 5*time.Second,
+		dropCachesFilePath, []byte("3"), 0644, 30*time.Second,
 	)
 	if err != nil {
 		errMsg := errors.Errorf("Failed to write to drop_caches file '%v': %v", dropCachesFilePath, err)

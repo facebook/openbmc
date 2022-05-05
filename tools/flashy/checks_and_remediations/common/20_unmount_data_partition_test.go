@@ -174,7 +174,7 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		// map from arg[0] of command to error
 		// if not present, nil assumed
 		cmdErrs  map[string]error
-    stderr string
+		stderr string
 		mountErr error
 		wantCmds []string
 		want     error
@@ -252,7 +252,7 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 			cmdErrs: map[string]error{
 				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": errors.Errorf("cp failed"),
 			},
-      stderr: "Error: No such file or directory",
+			stderr: "Error: No such file or directory",
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
@@ -292,7 +292,7 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			gotCmds := []string{}
 			var cmdHelper = func(cmdArr []string) (int, error, string, string) {
-        cmd := strings.Join(cmdArr, " ")
+				cmd := strings.Join(cmdArr, " ")
 				gotCmds = append(gotCmds, cmd)
 				var errRet error
 				if err, ok := tc.cmdErrs[cmd]; ok {

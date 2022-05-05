@@ -22,14 +22,19 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      /*it's supported*/
+      snprintf(key, MAX_KEY_LEN, "slot%d_sel_error", fru);
       break;
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru);
+      break;
+      /*it's supported*/
     default:
       return ERR_NOT_READY;
   }
 
   // get sel val
-  snprintf(key, MAX_KEY_LEN, "slot%d_sel_error", fru);
   ret = pal_get_key_value(key, val);
   if ( ret < 0 ) return ret;
 
@@ -39,8 +44,23 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   // reset
   memset(val, 0, MAX_VALUE_LEN);
 
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT2:
+    case FRU_SLOT3:
+    case FRU_SLOT4:
+      snprintf(key, MAX_KEY_LEN, "slot%d_sensor_health", fru);
+      break;
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru);
+      break;
+    default:
+      return ERR_NOT_READY;
+  }
+
   // get snr val
-  snprintf(key, MAX_KEY_LEN, "slot%d_sensor_health", fru);
   ret = pal_get_key_value(key, val);
   if ( ret < 0 ) return ret;
 
@@ -59,13 +79,18 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      /*it's supported*/
+      snprintf(key, MAX_KEY_LEN, "slot%d_sensor_health", fru);
       break;
+    case FRU_CWC:
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru);
+      break;
+      /*it's supported*/
     default:
       return ERR_NOT_READY;
   }
 
-  snprintf(key, MAX_KEY_LEN, "slot%d_sensor_health", fru);
   snprintf(val, MAX_VALUE_LEN, (value > 0) ? "1": "0");
 
   return pal_set_key_value(key, val);

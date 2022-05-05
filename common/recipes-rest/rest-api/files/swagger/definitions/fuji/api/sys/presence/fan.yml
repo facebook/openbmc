@@ -1,0 +1,45 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/presence/fan  
+  title: Swagger doc for /api/sys/presence/fan  
+  version: 1.0.0
+paths: 
+  /api/sys/presence/fan: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  fan1 : 
+                    type: string
+                  fan2 : 
+                    type: string
+                  fan3 : 
+                    type: string
+                  fan4 : 
+                    type: string
+                  fan5 : 
+                    type: string
+                  fan6 : 
+                    type: string
+                  fan7 : 
+                    type: string
+                  fan8 : 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

@@ -66,10 +66,11 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   } else {
     ret = bic_update_fw_fd(slot_id, fw_comp, fd, FORCE_UPDATE_UNSET);
   }
+
   // cerr << "Disabling USB..." << endl;
   // bic_set_gpio(slot_id, RST_USB_HUB_N_R, GPIO_LOW);
   if (ret != 0) {
-    return -1;
+    cerr << "BIOS update failed. ret = " << ret << endl;
   }
   sleep(1);
   cerr << "Switching BIOS SPI MUX for default value..." << endl;

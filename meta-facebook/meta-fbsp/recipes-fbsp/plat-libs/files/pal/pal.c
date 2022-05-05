@@ -49,7 +49,6 @@
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
 
-#define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
@@ -749,79 +748,6 @@ pal_set_guid(uint16_t offset, char *guid) {
 
   close(fd);
   return errno;
-}
-
-// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
-static void
-pal_populate_guid(char *guid, char *str) {
-  unsigned int secs;
-  unsigned int usecs;
-  struct timeval tv;
-  uint8_t count;
-  uint8_t lsb, msb;
-  int i, r;
-
-  // Populate time
-  gettimeofday(&tv, NULL);
-
-  secs = tv.tv_sec;
-  usecs = tv.tv_usec;
-  guid[0] = usecs & 0xFF;
-  guid[1] = (usecs >> 8) & 0xFF;
-  guid[2] = (usecs >> 16) & 0xFF;
-  guid[3] = (usecs >> 24) & 0xFF;
-  guid[4] = secs & 0xFF;
-  guid[5] = (secs >> 8) & 0xFF;
-  guid[6] = (secs >> 16) & 0xFF;
-  guid[7] = (secs >> 24) & 0x0F;
-
-  // Populate version
-  guid[7] |= 0x10;
-
-  // Populate clock seq with randmom number
-  srand(time(NULL));
-  r = rand();
-  guid[8] = r & 0xFF;
-  guid[9] = (r>>8) & 0xFF;
-
-  // Use string to populate 6 bytes unique
-  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
-  count = 0;
-  for (i = strlen(str)-1; i >= 0; i--) {
-    if (count == 6) {
-      break;
-    }
-
-    // If alphabet use the character as is
-    if (isalpha(str[i])) {
-      guid[15-count] = str[i];
-      count++;
-      continue;
-    }
-
-    // If it is 0-9, use two numbers as BCD
-    lsb = str[i] - '0';
-    if (i > 0) {
-      i--;
-      if (isalpha(str[i])) {
-        i++;
-        msb = 0;
-      } else {
-        msb = str[i] - '0';
-      }
-    } else {
-      msb = 0;
-    }
-    guid[15-count] = (msb << 4) | lsb;
-    count++;
-  }
-
-  // zero the remaining bytes, if any
-  if (count != 6) {
-    memset(&guid[10], 0, 6-count);
-  }
-
-  return;
 }
 
 int
@@ -1725,26 +1651,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 }
 
 void
-pal_post_end_chk(uint8_t *post_end_chk) {
-  static uint8_t post_end = 1;
-
-  if (*post_end_chk == 1) {
-    post_end = 1;
-  } else if (*post_end_chk == 0) {
-    *post_end_chk = post_end;
-    post_end = 0;
-  }
-}
-
-void
 pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len)
 {
-  uint8_t post_end = 1;
-
   *res_len = 0;
-
-  //Set post end chk flag to update LCD info page
-  pal_post_end_chk(&post_end);
 
   // log the post end event
   syslog (LOG_INFO, "POST End Event for Payload#%d\n", slot);

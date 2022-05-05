@@ -18,7 +18,7 @@
       "device_type": {
         "description": "The type of device",
         "type": "string",
-        "enum": ["default", "aspeed_rs485"]
+        "enum": ["default", "AspeedRS485"]
       },
       "min_delay": {
         "description": "The minimum idle time of the bus between transactions in milli-seconds",

@@ -30,7 +30,7 @@ int M2DevComponent::print_version()
   string board_name = name;
   string err_msg("");
   int ret = 0;
-  uint8_t nvme_ready = 0, status = 0, ffi = 0, meff = 0, major_ver = 0, minor_ver = 0;
+  uint8_t nvme_ready = 0, status = 0, ffi = 0, meff = 0, major_ver = 0, minor_ver = 0,additional_ver = 0;
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
   uint8_t intf = REXP_BIC_INTF;
   uint16_t vendor_id = 0;
@@ -51,7 +51,7 @@ int M2DevComponent::print_version()
     expansion.ready();
 
     ret = bic_get_dev_power_status(slot_id, idx, &nvme_ready, &status, \
-                                  &ffi, &meff, &vendor_id, &major_ver,&minor_ver, intf);
+                                  &ffi, &meff, &vendor_id, &major_ver,&minor_ver,&additional_ver, intf);
 
     if ( ret < 0 ) {
       throw string("Error in getting the version");
@@ -74,7 +74,7 @@ int M2DevComponent::print_version()
     }
     
     if ( is_dual_m2 == true ) printf("%s DEV%d/%d Version: v%d.%d\n", board_name.c_str(), idx - 1, idx, major_ver, minor_ver);
-    else printf("%s DEV%d Version: v%d.%d\n", board_name.c_str(), idx - 1, major_ver, minor_ver);
+    else printf("%s DEV%d Version: v%d.%d.%d\n", board_name.c_str(), idx - 1, major_ver, minor_ver,additional_ver);
   } catch(string& err) {
     printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx - 1, err.c_str());
   }

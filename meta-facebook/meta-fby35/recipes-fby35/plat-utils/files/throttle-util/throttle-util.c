@@ -42,34 +42,34 @@ static uint8_t bmc_location = 0xff;
 #define MAX_READ_RETRY 5
 
 /* Throttle Source control (Enable=1,Disable=0)
-Bit 7:IRQ_PVDDQ_ABC_VRHOT_LVT3_N
-Bit 6:IRQ_PVDDQ_DEF_VRHOT_LVT3_N
+Bit 7:IRQ_CPU0_VRHOT_N
+Bit 6:IRQ_PVCCD_CPU0_VRHOT_LVC3_N
 Bit 5:FM_HSC_TIMER
 Bit 4:IRQ_UV_DETECT_N
 Bit 3:FAST_PROCHOT_N
-Bit 2:IRQ_PVCCIN_CPU1_VRHOT_LVC3_N
-Bit 1:IRQ_PVCCIO_CPU_VRHOT_LVC3_N
+Bit 2:FM_PVCCIN_CPU0_PWR_IN_ALERT_N
+Bit 1:RSVD
 Bit 0:IRQ_SML1_PMBUS_ALERT_N, FM_THROTTLE_N */
 
-#define IRQ_PVDDQ_ABC_VRHOT_LVT3_N   7
-#define IRQ_PVDDQ_DEF_VRHOT_LVT3_N   6
-#define FM_HSC_TIMER                 5
-#define IRQ_UV_DETECT_N              4
-#define FAST_PROCHOT_N               3
-#define IRQ_PVCCIN_CPU1_VRHOT_LVC3_N 2
-#define IRQ_PVCCIO_CPU_VRHOT_LVC3_N  1
-#define FM_THROTTLE_N                0
+#define IRQ_CPU0_VRHOT_N              7
+#define IRQ_PVCCD_CPU0_VRHOT_LVC3_N   6
+#define FM_HSC_TIMER                  5
+#define IRQ_UV_DETECT_N               4
+#define FAST_PROCHOT_N                3
+#define FM_PVCCIN_CPU0_PWR_IN_ALERT_N 2
+#define IRQ_PVCCIO_CPU_VRHOT_LVC3_N   1
+#define FM_THROTTLE_N                 0
 
 static const char *option_list[] = {
-  "--IRQ_PVDDQ_ABC_VRHOT_LVT3_N",
-  "--IRQ_PVDDQ_DEF_VRHOT_LVT3_N",
+  "--IRQ_CPU0_VRHOT_N",
+  "--IRQ_PVCCD_CPU0_VRHOT_LVC3_N",
   "--FM_HSC_TIMER",
   "--IRQ_UV_DETECT_N",
   "--FAST_PROCHOT_N",
-  "--IRQ_PVCCIN_CPU1_VRHOT_LVC3_N",
-  "--IRQ_PVCCIO_CPU_VRHOT_LVC3_N",
-  "--FM_Throttle",
-  "--OC_Warning",
+  "--FM_PVCCIN_CPU0_PWR_IN_ALERT_N",
+  "--IRQ_SML1_PMBUS_ALERT_N",
+  "--FM_THROTTLE",
+  "--IRQ_SML1_PMBUS_ALERT_N",
 };
 
 static void
@@ -119,14 +119,13 @@ control_via_cpld(uint8_t slot_id, uint8_t ctrl_bit, uint8_t enable) {
 
   if (ctrl_bit == 0xFF) {
     printf("Throttle Source control (Enable=1,Disable=0) \n");
-    printf("IRQ_PVDDQ_ABC_VRHOT_LVT3_N             : %s\n", (rbuf[0] >> IRQ_PVDDQ_ABC_VRHOT_LVT3_N) & 0x1 ? "Enable":"Disable");
-    printf("IRQ_PVDDQ_DEF_VRHOT_LVT3_N             : %s\n", (rbuf[0] >> IRQ_PVDDQ_DEF_VRHOT_LVT3_N) & 0x1 ? "Enable":"Disable");
-    printf("FM_HSC_TIMER                           : %s\n", (rbuf[0] >> FM_HSC_TIMER) & 0x1 ? "Enable":"Disable");
-    printf("IRQ_UV_DETECT_N                        : %s\n", (rbuf[0] >> IRQ_UV_DETECT_N) & 0x1 ? "Enable":"Disable");
-    printf("FAST_PROCHOT_N                         : %s\n", (rbuf[0] >> FAST_PROCHOT_N) & 0x1 ? "Enable":"Disable");
-    printf("IRQ_PVCCIN_CPU1_VRHOT_LVC3_N           : %s\n", (rbuf[0] >> IRQ_PVCCIN_CPU1_VRHOT_LVC3_N) & 0x1 ? "Enable":"Disable");
-    printf("IRQ_PVCCIO_CPU_VRHOT_LVC3_N            : %s\n", (rbuf[0] >> IRQ_PVCCIO_CPU_VRHOT_LVC3_N) & 0x1 ? "Enable":"Disable");
-    printf("IRQ_SML1_PMBUS_ALERT_N / FM_THROTTLE_N : %s\n", (rbuf[0] >> FM_THROTTLE_N) & 0x1 ? "Enable":"Disable");
+    printf("IRQ_CPU0_VRHOT_N                      : %s\n", ((rbuf[0] >> IRQ_CPU0_VRHOT_N) & 0x1) ? "Enable":"Disable");
+    printf("IRQ_PVCCD_CPU0_VRHOT_LVC3_N           : %s\n", ((rbuf[0] >> IRQ_PVCCD_CPU0_VRHOT_LVC3_N) & 0x1) ? "Enable":"Disable");
+    printf("FM_HSC_TIMER                          : %s\n", ((rbuf[0] >> FM_HSC_TIMER) & 0x1) ? "Enable":"Disable");
+    printf("IRQ_UV_DETECT_N                       : %s\n", ((rbuf[0] >> IRQ_UV_DETECT_N) & 0x1) ? "Enable":"Disable");
+    printf("FAST_PROCHOT_N                        : %s\n", ((rbuf[0] >> FAST_PROCHOT_N) & 0x1) ? "Enable":"Disable");
+    printf("FM_PVCCIN_CPU0_PWR_IN_ALERT_N         : %s\n", ((rbuf[0] >> FM_PVCCIN_CPU0_PWR_IN_ALERT_N) & 0x1) ? "Enable":"Disable");
+    printf("IRQ_SML1_PMBUS_ALERT_N, FM_THROTTLE_N : %s\n", ((rbuf[0] >> FM_THROTTLE_N) & 0x1) ? "Enable":"Disable");
     if ( i2cfd > 0 ) close(i2cfd);
     return 0;
   }
@@ -207,17 +206,11 @@ main(int argc, char **argv) {
     goto err_exit;
   }
 
-  if ( strcmp(argv[2], "--OC_Warning") == 0 ) {
+  if ( (strcmp(argv[2], "--FM_THROTTLE") == 0) || (strcmp(argv[2], "--IRQ_SML1_PMBUS_ALERT_N") == 0) ) {
     return control_via_cpld(slot_id, FM_THROTTLE_N, enable);
 
-  } else if ( strcmp(argv[2], "--FM_Throttle") == 0 ) {
-    return control_via_cpld(slot_id, FM_THROTTLE_N, enable);
-
-  } else if ( strcmp(argv[2], "--IRQ_PVCCIO_CPU_VRHOT_LVC3_N") == 0 ) {
-    return control_via_cpld(slot_id, IRQ_PVCCIO_CPU_VRHOT_LVC3_N, enable);
-
-  } else if ( strcmp(argv[2], "--IRQ_PVCCIN_CPU1_VRHOT_LVC3_N") == 0 ) {
-    return control_via_cpld(slot_id, IRQ_PVCCIN_CPU1_VRHOT_LVC3_N, enable);
+  } else if ( strcmp(argv[2], "--FM_PVCCIN_CPU0_PWR_IN_ALERT_N") == 0 ) {
+    return control_via_cpld(slot_id, FM_PVCCIN_CPU0_PWR_IN_ALERT_N, enable);
 
   } else if ( strcmp(argv[2], "--FAST_PROCHOT_N") == 0 ) {
     return control_via_cpld(slot_id, FAST_PROCHOT_N, enable);
@@ -228,11 +221,11 @@ main(int argc, char **argv) {
   } else if ( strcmp(argv[2], "--FM_HSC_TIMER") == 0 ) {
     return control_via_cpld(slot_id, FM_HSC_TIMER, enable);
 
-  } else if ( strcmp(argv[2], "--IRQ_PVDDQ_DEF_VRHOT_LVT3_N") == 0 ) {
-    return control_via_cpld(slot_id, IRQ_PVDDQ_DEF_VRHOT_LVT3_N, enable);
+  } else if ( strcmp(argv[2], "--IRQ_PVCCD_CPU0_VRHOT_LVC3_N") == 0 ) {
+    return control_via_cpld(slot_id, IRQ_PVCCD_CPU0_VRHOT_LVC3_N, enable);
 
-  } else if ( strcmp(argv[2], "--IRQ_PVDDQ_ABC_VRHOT_LVT3_N") == 0 ) {
-    return control_via_cpld(slot_id, IRQ_PVDDQ_ABC_VRHOT_LVT3_N, enable);
+  } else if ( strcmp(argv[2], "--IRQ_CPU0_VRHOT_N") == 0 ) {
+    return control_via_cpld(slot_id, IRQ_CPU0_VRHOT_N, enable);
 
   } else {
     printf("Invalid option: %s\n", argv[2]);

@@ -52,7 +52,7 @@ echo 0 > "${SMBCPLD_SYSFS_DIR}/cpld_usb_mux_sel_1"
 
 # Force COMe's UART connect to BMC UART-5 and FB USB debug
 # UART connect to BMC UART-2
-echo 0x3 > "$SMBCPLD_SYSFS_DIR/uart_selection"
+echo 0x0 > "$SMBCPLD_SYSFS_DIR/uart_selection"
 
 # Read board type from SMB CPLD and keep in cache store
 brd_type=$(head -n 1 "$SMBCPLD_SYSFS_DIR/board_type")
@@ -63,6 +63,21 @@ echo "$brd_type" > /tmp/cache_store/board_type
 
 
 cp /etc/sensors.d/custom/fuji.conf /etc/sensors.d/fuji.conf
+
+kv set smb_update_flag 1
+kv set scm_update_flag 1
+kv set pim1_update_flag 1
+kv set pim2_update_flag 1
+kv set pim3_update_flag 1
+kv set pim4_update_flag 1
+kv set pim5_update_flag 1
+kv set pim6_update_flag 1
+kv set pim7_update_flag 1
+kv set pim8_update_flag 1
+kv set psu1_update_flag 1
+kv set psu2_update_flag 1
+kv set psu3_update_flag 1
+kv set psu4_update_flag 1
 
 # export_gpio_pin for PCA9534 54-0021
 gpiocli export -c 54-0021 -o 0 --shadow PDB_L_JTAG_TDO

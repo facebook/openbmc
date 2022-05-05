@@ -15,6 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 inherit systemd
+inherit python3-dir
 
 SUMMARY = "Rackmon Functionality"
 DESCRIPTION = "Rackmon Functionality"
@@ -27,7 +28,7 @@ DEPENDS:append = " update-rc.d-native"
 
 LDFLAGS += "-llog -lmisc-utils"
 DEPENDS += "libgpio liblog libmisc-utils"
-RDEPENDS:${PN} = "libgpio liblog libmisc-utils python3-core bash psu-update"
+RDEPENDS:${PN} = "libgpio liblog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):
   prof_enabled = d.getVar("RACKMON_PROFILING", False)
@@ -58,6 +59,7 @@ LOCAL_URI = " \
     file://rackmond.py \
     file://rackmond.service \
     file://configure-rackmond.service \
+    file://pyrmd.py \
     "
 
 binfiles = "modbuscmd \
@@ -111,6 +113,8 @@ do_install() {
     else
         install_sysv
     fi
+    install -d ${D}${PYTHON_SITEPACKAGES_DIR}
+    install -m 644 ${S}/pyrmd.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"
@@ -118,5 +122,6 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 FILES:${PN} = "${FBPACKAGEDIR}/rackmon ${prefix}/local/bin ${sysconfdir} "
 
 FILES:${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/pyrmd.py"
 
 SYSTEMD_SERVICE:${PN} = "rackmond.service configure-rackmond.service"

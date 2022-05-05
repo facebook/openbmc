@@ -132,13 +132,15 @@ def start_qemu(args: argparse.Namespace):
 
 def main():
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='subcommand', required=True)
+    subparsers = parser.add_subparsers(dest='subcommand')
+    subparsers.required = True
 
     subcommand = subparsers.add_parser("list-machines", help="List Facebook OpenBMC machines")
     subcommand.set_defaults(func=list_machines)
 
     tap = subparsers.add_parser("tap", help="Setup and teardown for TUN/TAP network")
-    tap_subparsers = tap.add_subparsers(dest="tap_subcommand", required=True)
+    tap_subparsers = tap.add_subparsers(dest="tap_subcommand")
+    tap_subparsers.required = True
     subcommand = tap_subparsers.add_parser("setup", help="Setup TUN/TAP network")
     subcommand.set_defaults(func=tap_setup)
     subcommand = tap_subparsers.add_parser("teardown", help="Teardown TUN/TAP network")

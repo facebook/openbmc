@@ -106,13 +106,15 @@ i2c_driver_map() {
     local device_name=$1
 
     case ${device_name} in
-        "24c64")
+        "24c64" | "24c32" | "24c16" | "24c08" | "24c04" | "24c02" | "24c01" | "24c00")
             echo "at24";;
         "adm1278")
             echo "adm1275";;
+        "adm1266")
+            echo "adm1266";;
         "tmp75" | "lm75" | "tmp1075")
             echo "lm75";;
-        "tmp421")
+        "tmp421" | "tmp422")
             echo "tmp421";;
         "pca9505" | "pca9534" | "pca9535")
             echo "pca953x";;
@@ -124,11 +126,11 @@ i2c_driver_map() {
             echo "fancpld";;
         "cmmcpld")
             echo "cmmcpld";;
-        "mp2975")
+        "mp2975" | "mp2978")
             echo "mp2975";;
-        "mp2978")
-            echo "mp2978";;
-        "ucd90160")
+        "lm25066")
+            echo "lm25066";;
+        "ucd90160" | "ucd90124")
             echo "ucd9000";;
         "xdpe132g5c")
             echo "xdpe132g5c";;

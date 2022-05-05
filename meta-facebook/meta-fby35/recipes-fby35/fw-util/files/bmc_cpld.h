@@ -2,7 +2,7 @@
 #define _BMC_CPLD_H_
 #include "fw-util.h"
 #include <openbmc/cpld.h>
-#include "bic_fw_ext.h"
+#include "bic_fw.h"
 
 using namespace std;
 

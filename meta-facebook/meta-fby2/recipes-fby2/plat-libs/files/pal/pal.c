@@ -92,7 +92,6 @@
 #define LARGEST_DEVICE_NAME 120
 #define PWM_DIR "/sys/devices/platform/ast_pwm_tacho.0"
 
-#define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
 #if defined(CONFIG_FBY2_KERNEL)
   #define FRU_EEPROM "/sys/bus/i2c/devices/i2c-8/8-0051/eeprom"
@@ -370,10 +369,10 @@ struct pal_key_cfg {
   { SLOT2_SEL_ERROR,"slot2_sel_error", "1", NULL},
   { SLOT3_SEL_ERROR,"slot3_sel_error", "1", NULL},
   { SLOT4_SEL_ERROR,"slot4_sel_error", "1", NULL},
-  { SLOT1_BOOT_ORDER,"slot1_boot_order", "0000000", NULL},
-  { SLOT2_BOOT_ORDER,"slot2_boot_order", "0000000", NULL},
-  { SLOT3_BOOT_ORDER,"slot3_boot_order", "0000000", NULL},
-  { SLOT4_BOOT_ORDER,"slot4_boot_order", "0000000", NULL},
+  { SLOT1_BOOT_ORDER,"slot1_boot_order", "0100090203ff", NULL},
+  { SLOT2_BOOT_ORDER,"slot2_boot_order", "0100090203ff", NULL},
+  { SLOT3_BOOT_ORDER,"slot3_boot_order", "0100090203ff", NULL},
+  { SLOT4_BOOT_ORDER,"slot4_boot_order", "0100090203ff", NULL},
   { SLOT1_CPU_PPIN,"slot1_cpu_ppin", "0", NULL},
   { SLOT2_CPU_PPIN,"slot2_cpu_ppin", "0", NULL},
   { SLOT3_CPU_PPIN,"slot3_cpu_ppin", "0", NULL},
@@ -3962,6 +3961,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
   int ret = 0;
   switch (fru) {
+    case FRU_ALL:
+      *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
+      break;
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
@@ -3971,11 +3973,13 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
         FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
       break;
     case FRU_SPB:
-    case FRU_BMC:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
       break;
     case FRU_NIC:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD;
+      break;
+    case FRU_BMC: // Yv2 does not have 'bmc' sensor and fru, please check 'spb' sensor and fru
+      *caps = 0;
       break;
     default:
       ret = -1;
@@ -5127,85 +5131,11 @@ err_exit:
   return errno;
 }
 
-// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
-static void
-pal_populate_guid(uint8_t *guid, char *str) {
-  unsigned int secs;
-  unsigned int usecs;
-  struct timeval tv;
-  uint8_t count;
-  uint8_t lsb, msb;
-  int i, r;
-
-  // Populate time
-  gettimeofday(&tv, NULL);
-
-  secs = tv.tv_sec;
-  usecs = tv.tv_usec;
-  guid[0] = usecs & 0xFF;
-  guid[1] = (usecs >> 8) & 0xFF;
-  guid[2] = (usecs >> 16) & 0xFF;
-  guid[3] = (usecs >> 24) & 0xFF;
-  guid[4] = secs & 0xFF;
-  guid[5] = (secs >> 8) & 0xFF;
-  guid[6] = (secs >> 16) & 0xFF;
-  guid[7] = (secs >> 24) & 0x0F;
-
-  // Populate version
-  guid[7] |= 0x10;
-
-  // Populate clock seq with randmom number
-  //getrandom(&guid[8], 2, 0);
-  srand(time(NULL));
-  //memcpy(&guid[8], rand(), 2);
-  r = rand();
-  guid[8] = r & 0xFF;
-  guid[9] = (r>>8) & 0xFF;
-
-  // Use string to populate 6 bytes unique
-  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
-  count = 0;
-  for (i = strlen(str)-1; i >= 0; i--) {
-    if (count == 6) {
-      break;
-    }
-
-    // If alphabet use the character as is
-    if (isalpha(str[i])) {
-      guid[15-count] = str[i];
-      count++;
-      continue;
-    }
-
-    // If it is 0-9, use two numbers as BCD
-    lsb = str[i] - '0';
-    if (i > 0) {
-      i--;
-      if (isalpha(str[i])) {
-        i++;
-        msb = 0;
-      } else {
-        msb = str[i] - '0';
-      }
-    } else {
-      msb = 0;
-    }
-    guid[15-count] = (msb << 4) | lsb;
-    count++;
-  }
-
-  // zero the remaining bytes, if any
-  if (count != 6) {
-    memset(&guid[10], 0, 6-count);
-  }
-
-}
-
 int
 pal_set_sys_guid(uint8_t slot, char *str) {
   uint8_t guid[GUID_SIZE] = {0x00};
 
-  pal_populate_guid(guid, str);
+  pal_populate_guid((char *)guid, str);
 
   return bic_set_sys_guid(slot, guid);
 }
@@ -6404,6 +6334,45 @@ pal_parse_sel_tl(uint8_t fru, uint8_t *sel, char *error_log)
 
   return 0;
 
+}
+
+bool
+pal_parse_cpu_dimm_hot_sel_helper(uint8_t *sel, char *error_log)
+{
+  #if defined(CONFIG_FBY2_ND)
+  uint8_t *event_data = &sel[10];
+  uint8_t *ed = &event_data[3];
+  if (ed[0] == 0x1) {
+    strcat(error_log, "SOC MEMHOT ");
+    switch (ed[1]){
+      case 0x00:
+        strcat(error_log, "DIMM A");
+        break;
+      case 0x02:
+        strcat(error_log, "DIMM C");
+        break;
+      case 0x03:
+        strcat(error_log, "DIMM D");
+        break;
+      case 0x04:
+        strcat(error_log, "DIMM E");
+        break;
+      case 0x06:
+        strcat(error_log, "DIMM G");
+        break;
+      case 0x07:
+        strcat(error_log, "DIMM H");
+        break;
+      default:
+        break;
+    }
+  } else {
+    strcat(error_log, "Unknown");
+  }
+  return true;
+  #else
+  return false;
+  #endif
 }
 
 int
@@ -7799,7 +7768,7 @@ pal_set_boot_order(uint8_t slot, uint8_t *boot, uint8_t *res_data, uint8_t *res_
 
 int
 pal_set_dev_guid(uint8_t slot, char *guid) {
-      pal_populate_guid(g_dev_guid, guid);
+      pal_populate_guid((char *)g_dev_guid, guid);
 
       return pal_set_guid(OFFSET_DEV_GUID, (char *)g_dev_guid);
 }
@@ -8744,10 +8713,6 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   }
 
   pal_add_cri_sel(crisel);
-  return;
-}
-
-void pal_post_end_chk(uint8_t *post_end_chk) {
   return;
 }
 
@@ -10781,20 +10746,6 @@ pal_add_imc_log(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_d
 }
 
 int
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  *res_len = 0;
-  if (req_len != 2) {
-    return CC_INVALID_LENGTH;
-  }
-
-  if (pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]))) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
-}
-
-int
 pal_get_dev_card_sensor(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret;
   uint8_t snr_num;
@@ -11193,12 +11144,6 @@ pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
-int
 pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
   return bic_set_sdr_threshold_update_flag(slot,update);
 }
@@ -11535,5 +11480,11 @@ int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     syslog(LOG_WARNING, "%s: slot%d wrong function:%d", __func__, slot,fun);
     return CC_UNSPECIFIED_ERROR;
   }
+}
+#endif
+
+#if defined CONFIG_FBY2_ND
+int pal_udbg_get_frame_total_num() {
+  return 4;
 }
 #endif

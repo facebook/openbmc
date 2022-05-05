@@ -53,7 +53,6 @@ IMAGE_INSTALL += " \
   snapshot-util \
   enclosure-util \
   vboot-utils \
-  libpldm \
   asd \
   asd-test \
   bic-util \
@@ -61,4 +60,5 @@ IMAGE_INSTALL += " \
   otp \
   mctp-util \
   modprobe \
+  tpm-factory-upd \
   "

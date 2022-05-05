@@ -12,4 +12,4 @@ sources = [
     'dump.sh',
 ]
 
-install_data(sources, install_dir : get_option('bindir') / 'crashdump', install_mode : 'rwxr-xr-x')
+install_data(sources, install_dir : get_option('bindir') , install_mode : 'rwxr-xr-x')

@@ -1,0 +1,187 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/smb  
+  title: Swagger doc for /api/sys/sensors/smb  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/smb: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  name: 
+                    type: string
+                  Adapter: 
+                    type: string
+                  present: 
+                    type: boolean
+                  SMB_XP3R3V_BMC: 
+                    type: string
+                  SMB_XP2R5V_BMC: 
+                    type: string
+                  SMB_XP1R8V_BMC: 
+                    type: string
+                  SMB_XP1R2V_BMC: 
+                    type: string
+                  SMB_XP1R0V_FPGA: 
+                    type: string
+                  SMB_XP3R3V_USB: 
+                    type: string
+                  SMB_XP5R0V: 
+                    type: string
+                  SMB_XP3R3V_EARLY: 
+                    type: string
+                  SMB_LM57_VTEMP: 
+                    type: string
+                  SMB_XP1R8: 
+                    type: string
+                  SMB_XP1R2: 
+                    type: string
+                  SMB_VDDC_SW: 
+                    type: string
+                  SMB_XP3R3V: 
+                    type: string
+                  SMB_XP1R8V_AVDD: 
+                    type: string
+                  SMB_XP1R2V_TVDD: 
+                    type: string
+                  SMB_XP0R75V_1_PVDD: 
+                    type: string
+                  SMB_XP0R75V_2_PVDD: 
+                    type: string
+                  SMB_XP0R75V_3_PVDD: 
+                    type: string
+                  SMB_VDD_PCIE: 
+                    type: string
+                  SMB_XP0R84V_DCSU: 
+                    type: string
+                  SMB_XP0R84V_CSU: 
+                    type: string
+                  SMB_XP1R8V_CSU: 
+                    type: string
+                  SMB_XP3R3V_TCXO: 
+                    type: string
+                  SMB_OUTPUT_VOLTAGE_XP0R75V_1: 
+                    type: string
+                  SMB_OUTPUT_CURRENT_XP0R75V_1: 
+                    type: string
+                  SMB_INPUT_VOLTAGE_1: 
+                    type: string
+                  SMB_OUTPUT_VOLTAGE_XP1R2V: 
+                    type: string
+                  SMB_OUTPUT_CURRENT_XP1R2V: 
+                    type: string
+                  SMB_OUTPUT_VOLTAGE_XP0R75V_2: 
+                    type: string
+                  SMB_OUTPUT_CURRENT_XP0R75V_2: 
+                    type: string
+                  SMB_INPUT_VOLTAGE_2: 
+                    type: string
+                  SMB_TMP422_U20_1_TEMP: 
+                    type: string
+                  SMB_TMP422_U20_2_TEMP: 
+                    type: string
+                  SMB_TMP422_U20_3_TEMP: 
+                    type: string
+                  SIM_LM75_U1_TEMP: 
+                    type: string
+                  SMB_LM75B_U51_1_TEMP: 
+                    type: string
+                  SMB_LM75B_U57_TEMP: 
+                    type: string
+                  SMB_LM75B_U39_TEMP: 
+                    type: string
+                  SMB_VDDC_SW_TEMP: 
+                    type: string
+                  SMB_XP12R0V_VDDC_SW_IN: 
+                    type: string
+                  SMB_VDDC_SW_IN_SENS: 
+                    type: string
+                  SMB_VDDC_SW_POWER_IN: 
+                    type: string
+                  SMB_VDDC_SW_POWER_OUT: 
+                    type: string
+                  SMB_VDDC_SW_CURR_IN: 
+                    type: string
+                  SMB_VDDC_SW_CURR_OUT: 
+                    type: string
+                  PDB_L_TMP75_U2_TEMP: 
+                    type: string
+                  PDB_L_TMP75_U3_TEMP: 
+                    type: string
+                  PDB_R_TMP75_U2_TEMP: 
+                    type: string
+                  PDB_R_TMP75_U3_TEMP: 
+                    type: string
+                  FCB_FCM1_TMP75_U1_TEMP: 
+                    type: string
+                  FCB_FCM1_TMP75_U2_TEMP: 
+                    type: string
+                  FCB_FCM2_TMP75_U1_TEMP: 
+                    type: string
+                  FCB_FCM2_TMP75_U2_TEMP: 
+                    type: string
+                  FCM-T_CHIP_INPUT_VOLTAGE: 
+                    type: string
+                  FCM-T_POWER_CURRENT: 
+                    type: string
+                  FCM-T_POWER_VOLTAGE: 
+                    type: string
+                  FCM-B_CHIP_INPUT_VOLTAGE: 
+                    type: string
+                  FCM-B_POWER_CURRENT: 
+                    type: string
+                  FCM-B_POWER_VOLTAGE: 
+                    type: string
+                  FAN1_FRONT_SPEED: 
+                    type: string
+                  FAN1_REAR_SPEED: 
+                    type: string
+                  FAN2_FRONT_SPEED: 
+                    type: string
+                  FAN2_REAR_SPEED: 
+                    type: string
+                  FAN3_FRONT_SPEED: 
+                    type: string
+                  FAN3_REAR_SPEED: 
+                    type: string
+                  FAN4_FRONT_SPEED: 
+                    type: string
+                  FAN4_REAR_SPEED: 
+                    type: string
+                  FAN5_FRONT_SPEED: 
+                    type: string
+                  FAN5_REAR_SPEED: 
+                    type: string
+                  FAN6_FRONT_SPEED: 
+                    type: string
+                  FAN6_REAR_SPEED: 
+                    type: string
+                  FAN7_FRONT_SPEED: 
+                    type: string
+                  FAN7_REAR_SPEED: 
+                    type: string
+                  FAN8_FRONT_SPEED: 
+                    type: string
+                  FAN8_REAR_SPEED: 
+                    type: string
+                  SMB_SENSOR_TH4_HIGH: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

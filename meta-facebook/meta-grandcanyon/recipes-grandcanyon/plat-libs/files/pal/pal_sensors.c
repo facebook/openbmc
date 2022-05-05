@@ -733,7 +733,7 @@ static inlet_corr_t server_ict[] = {
   { 296, 1.5 }, // airflow: 296-369
 };
 
-static inlet_corr_t uic_ict[] = {
+static inlet_corr_t uic_t5_ict[] = {
   //airflow, offset value
   { 0, 7.27 },   // airflow: 0-39
   { 40, 5.91 },  // airflow: 40-48
@@ -750,8 +750,26 @@ static inlet_corr_t uic_ict[] = {
   { 368, 1.3 },  // airflow: 368-
 };
 
+static inlet_corr_t uic_t7_ict[] = {
+  //airflow, offset value
+  { 0, 9.5 },    // airflow: 0-39
+  { 40, 7.41 },  // airflow: 40-48
+  { 49, 6.79 },  // airflow: 49-60
+  { 61, 5 },     // airflow: 61-72
+  { 73, 4 },     // airflow: 73-81
+  { 82, 3.03 },  // airflow: 82-93
+  { 94, 2.79 },  // airflow: 94-103
+  { 104, 2.67 }, // airflow: 104-127
+  { 128, 2.36 }, // airflow: 128-164
+  { 165, 2 },    // airflow: 165-204
+  { 205, 1.68 }, // airflow: 205-286
+  { 287, 1.33 }, // airflow: 287-367
+  { 368, 1.3 },  // airflow: 368-
+};
+
 static size_t server_ict_count = ARRAY_SIZE(server_ict);
-static size_t uic_ict_count = ARRAY_SIZE(uic_ict);
+static size_t uic_t5_ict_count = ARRAY_SIZE(uic_t5_ict);
+static size_t uic_t7_ict_count = ARRAY_SIZE(uic_t7_ict);
 
 size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
 size_t uic_sensor_cnt = ARRAY_SIZE(uic_sensor_list);
@@ -2305,9 +2323,17 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     id = uic_sensor_map[sensor_num].id;
     ret = uic_sensor_map[sensor_num].read_sensor(id, (float*) value);
 
-    // UIC Inlet temperature correction
     if (sensor_num == UIC_INLET_TEMP) {
-      apply_inlet_correction((float *)value, uic_ict, uic_ict_count);
+      if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to get chassis type, use Type 5 UIC Inlet temperature correction table\n", __func__);
+      }
+
+      // UIC Inlet temperature correction
+      if (chassis_type == CHASSIS_TYPE7) {
+        apply_inlet_correction((float *)value, uic_t7_ict, uic_t7_ict_count);
+      } else {
+        apply_inlet_correction((float *)value, uic_t5_ict, uic_t5_ict_count);
+      }
     }
     break;
   case FRU_DPB:

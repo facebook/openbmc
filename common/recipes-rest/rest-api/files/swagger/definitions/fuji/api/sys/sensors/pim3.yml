@@ -1,0 +1,87 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/sensors/pim3  
+  title: Swagger doc for /api/sys/sensors/pim3  
+  version: 1.0.0
+paths: 
+  /api/sys/sensors/pim3: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  name: 
+                    type: string
+                  Adapter: 
+                    type: string
+                  present: 
+                    type: boolean
+                  PIM3_LM75_U37_TEMP_BASE: 
+                    type: string
+                  PIM3_LM75_U26_TEMP: 
+                    type: string
+                  PIM3_LM75_U37_TEMP_MEZZ: 
+                    type: string
+                  PIM3_QSFP_TEMP: 
+                    type: string
+                  PIM3_INPUT_VOLTAGE: 
+                    type: string
+                  PIM3_POWER_VOLTAGE: 
+                    type: string
+                  PIM3_CURRENT: 
+                    type: string
+                  PIM3_POWER: 
+                    type: string
+                  PIM3_XP3R3V: 
+                    type: string
+                  PIM3_XP3R3V_EARLY: 
+                    type: string
+                  PIM3_XP2R5V_EARLY: 
+                    type: string
+                  PIM3_TXDRV_PHY: 
+                    type: string
+                  PIM3_XP0R8V_PHY: 
+                    type: string
+                  PIM3_XP1R1V_EARLY: 
+                    type: string
+                  PIM3_DVDD_PHY4: 
+                    type: string
+                  PIM3_DVDD_PHY3: 
+                    type: string
+                  PIM3_DVDD_PHY2: 
+                    type: string
+                  PIM3_DVDD_PHY1: 
+                    type: string
+                  PIM3_XP1R8V_EARLY: 
+                    type: string
+                  PIM3_XP1R8V_PHYIO: 
+                    type: string
+                  PIM3_XP1R8V_PHYAVDD: 
+                    type: string
+                  PIM3_MP2975_INPUT_VOLTAGE: 
+                    type: string
+                  PIM3_MP2975_OUTPUT_VOL_XP0R8V: 
+                    type: string
+                  PIM3_MP2975_OUTPUT_CURR_XP0R8V: 
+                    type: string
+                  PIM3_MP2975_OUTPUT_VOL_XP3R3V: 
+                    type: string
+                  PIM3_MP2975_OUTPUT_CURR_XP3R3V: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

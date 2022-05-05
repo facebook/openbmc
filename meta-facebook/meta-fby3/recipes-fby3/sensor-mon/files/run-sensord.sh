@@ -49,6 +49,8 @@ read_system_conf() {
       dp_type=$(/usr/bin/kv get "sled_system_conf" persistent)
       if [ "$dp_type" = "Type_DPB" ]; then
         system_type=${system_type}DPB
+      elif [ "$dp_type" = "Type_DPF" ]; then
+        system_type=${system_type}DPF
       else
         system_type=${system_type}DP
       fi
@@ -72,7 +74,7 @@ init_class2_sensord() {
 
   board=$(get_2ou_board_type 4)
   if [ "$board" = "0x04" ]; then
-    SLOTS="$SLOTS slot1-2U-top slot1-2U-bot"
+    SLOTS="$SLOTS slot1-2U-exp slot1-2U-top slot1-2U-bot"
   fi
 }
 

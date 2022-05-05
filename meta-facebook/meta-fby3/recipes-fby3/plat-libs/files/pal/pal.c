@@ -45,7 +45,6 @@
 #define PLATFORM_NAME "yosemitev3"
 #define LAST_KEY "last_key"
 
-#define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
@@ -59,6 +58,8 @@
 #define ERROR_ID_LOG_LEN 15
 
 #define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
+
+#define MAX_CMD_LEN 64
 
 const char pal_guid_fru_list[] = "slot1, slot2, slot3, slot4, bmc";
 const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
@@ -164,6 +165,13 @@ struct pal_key_cfg {
   {"slot3_sel_error", "1", NULL},
   {"slot4_sel_error", "1", NULL},
   {"ntp_server", "", NULL},
+  // cwc fru health
+  {"cwc_fru10_sensor_health", "1", NULL},
+  {"cwc_fru11_sensor_health", "1", NULL},
+  {"cwc_fru12_sensor_health", "1", NULL},
+  {"cwc_fru10_sel_error", "1", NULL},
+  {"cwc_fru11_sel_error", "1", NULL},
+  {"cwc_fru12_sel_error", "1", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -740,7 +748,11 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
   if ( tmout > 0 ) {
     // when fw_update_ongoing is set, need to wait for a while
     // make sure all daemons pending by pal_is_fw_update_ongoing
-    sleep(5);
+    if (pal_is_cwc() == PAL_EOK) {
+      sleep(15);
+    } else {
+      sleep(5);
+    }
   }
 
   // set pwr_lock_flag to prevent unexpected power control
@@ -867,6 +879,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   int ret = 0;
 
   switch (fru) {
+    case FRU_ALL:
+      *caps = FRU_CAPABILITY_SENSOR_HISTORY | FRU_CAPABILITY_SENSOR_READ;
+      break;
     case FRU_SLOT1:
     case FRU_SLOT2:
     case FRU_SLOT3:
@@ -895,8 +910,8 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       break;
     case FRU_CWC:
       if (pal_is_cwc() == PAL_EOK) {
-        *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
-          FRU_CAPABILITY_SENSOR_SLAVE | FRU_CAPABILITY_POWER_ALL;
+        *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
+          FRU_CAPABILITY_POWER_ALL;
       } else {
         *caps = 0;
       }
@@ -905,8 +920,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_2U_BOT:
       if (pal_is_cwc() == PAL_EOK) {
         *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_HAS_DEVICE |
-          FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_THRESHOLD_UPDATE |
-          FRU_CAPABILITY_POWER_ALL;
+          FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL;
       } else {
         *caps = 0;
       }
@@ -1128,6 +1142,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
   }
 
   switch(fru) {
+    case FRU_ALL:
+      sprintf(name, "all");
+      break;
     case FRU_SLOT1:
       sprintf(name, "slot1");
       break;
@@ -1259,7 +1276,7 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     sprintf(fname, "nicexp");
     break;
   case FRU_CWC:
-    sprintf(fname, "slot1_dev%d", BOARD_2OU);
+    sprintf(fname, "2U-cwc");
     break;
   case FRU_2U_TOP:
     sprintf(fname, "2U-top");
@@ -1287,6 +1304,8 @@ pal_fruid_write(uint8_t fru, char *path)
     return PAL_ENOTSUP;
   } else if (fru == FRU_BB) {
     return bic_write_fruid(FRU_SLOT1, 0, path, BB_BIC_INTF);
+  } else if (fru == FRU_CWC) {
+    return bic_write_fruid(FRU_SLOT1, 0, path, REXP_BIC_INTF);
   } else if (fru == FRU_2U_TOP) {
     return bic_write_fruid(FRU_SLOT1, 0, path, RREXP_BIC_INTF1);
   } else if (fru == FRU_2U_BOT) {
@@ -1324,23 +1343,15 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
     if ( fby3_common_get_2ou_board_type(slot, &type_2ou) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get 2OU board type\n", __func__);
     }
-    if (type_2ou == CWC_MCHP_BOARD) {
-      if (fru == FRU_SLOT1 && dev_id == BOARD_2OU) {
-        return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
-      }
 
-      /**
-       * Do not write vendor fru
-       */
-      printf("Fru write to this device is not supported\n");
-    } else if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
+    if ( dev_id == BOARD_2OU && type_2ou == DP_RISER_BOARD ) {
       return bic_write_fruid(fru, 1, path, NONE_INTF);
-    } else if ( dev_id == BOARD_2OU ) {
+    } else if ( dev_id == BOARD_2OU && type_2ou != CWC_MCHP_BOARD ) {
       return bic_write_fruid(fru, 0, path, REXP_BIC_INTF);
     } else if ( dev_id >= DEV_ID0_2OU && dev_id <= DEV_ID11_2OU ) {
       // BMC shouldn't have the access to write the FRU that belongs to the vendor since we don't know the writing rules
       // We only have the read access
-      if ( type_2ou != GPV3_MCHP_BOARD ) {
+      if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != CWC_MCHP_BOARD ) {
         return bic_write_fruid(fru, dev_id - DEV_ID0_2OU + 1, path, REXP_BIC_INTF);
       }
       printf("The device doesn't support the function\n");
@@ -1455,79 +1466,6 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   }
 
   return ret;
-}
-
-// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
-static void
-pal_populate_guid(char *guid, char *str) {
-  unsigned int secs;
-  unsigned int usecs;
-  struct timeval tv;
-  uint8_t count;
-  uint8_t lsb, msb;
-  int i, r;
-
-  // Populate time
-  gettimeofday(&tv, NULL);
-
-  secs = tv.tv_sec;
-  usecs = tv.tv_usec;
-  guid[0] = usecs & 0xFF;
-  guid[1] = (usecs >> 8) & 0xFF;
-  guid[2] = (usecs >> 16) & 0xFF;
-  guid[3] = (usecs >> 24) & 0xFF;
-  guid[4] = secs & 0xFF;
-  guid[5] = (secs >> 8) & 0xFF;
-  guid[6] = (secs >> 16) & 0xFF;
-  guid[7] = (secs >> 24) & 0x0F;
-
-  // Populate version
-  guid[7] |= 0x10;
-
-  // Populate clock seq with randmom number
-  srand(time(NULL));
-  r = rand();
-  guid[8] = r & 0xFF;
-  guid[9] = (r>>8) & 0xFF;
-
-  // Use string to populate 6 bytes unique
-  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
-  count = 0;
-  for (i = strlen(str)-1; i >= 0; i--) {
-    if (count == 6) {
-      break;
-    }
-
-    // If alphabet use the character as is
-    if (isalpha(str[i])) {
-      guid[15-count] = str[i];
-      count++;
-      continue;
-    }
-
-    // If it is 0-9, use two numbers as BCD
-    lsb = str[i] - '0';
-    if (i > 0) {
-      i--;
-      if (isalpha(str[i])) {
-        i++;
-        msb = 0;
-      } else {
-        msb = str[i] - '0';
-      }
-    } else {
-      msb = 0;
-    }
-    guid[15-count] = (msb << 4) | lsb;
-    count++;
-  }
-
-  // zero the remaining bytes, if any
-  if (count != 6) {
-    memset(&guid[10], 0, 6-count);
-  }
-
-  return;
 }
 
 // GUID for System and Device
@@ -1674,20 +1612,6 @@ pal_is_fw_update_ongoing_system(void) {
   }
 
   return false;
-}
-
-int
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  *res_len = 0;
-  if (req_len != 2) {
-    return CC_INVALID_LENGTH;
-  }
-
-  if (pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]))) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
 }
 
 /*
@@ -2860,10 +2784,31 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
 void
 pal_log_clear(char *fru) {
   char key[MAX_KEY_LEN] = {0};
+  uint8_t fru_id = 0;
   uint8_t fru_cnt = 0;
+  int ret = 0;
   int i = 0;
 
-  if ( strncmp(fru, "slot", 4) == 0 ) {
+  if (pal_is_cwc() == PAL_EOK) {
+    if ( strcmp(fru, "all") == 0 ) {
+      for (fru_id = FRU_CWC; fru_id <= FRU_2U_BOT; fru_id ++) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru_id);
+        pal_set_key_value(key, "1");
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru_id);
+        pal_set_key_value(key, "1");
+      }
+    } else if (strcmp(fru, FRU_NAME_2U_CWC) == 0 || strcmp(fru, FRU_NAME_2U_TOP) == 0 || strcmp(fru, FRU_NAME_2U_BOT) == 0 ) {
+      ret = pal_get_fru_id(fru, &fru_id);
+      if ( ret == 0 ) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru_id);
+        pal_set_key_value(key, "1");
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru_id);
+        pal_set_key_value(key, "1");
+      }
+    }
+  }
+
+  if ( strncmp(fru, "slot", 4) == 0 && strlen(fru) == 5 ) {
     fru_cnt = fru[4] - 0x30;
     i = fru_cnt;
   } else if ( strcmp(fru, "all") == 0 ) {
@@ -3969,12 +3914,6 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
-int
 pal_check_pfr_mailbox(uint8_t fru) {
   int ret = 0, i2cfd = 0, retry=0, index = 0;
   uint8_t tbuf[1] = {0}, rbuf[1] = {0};
@@ -4962,7 +4901,84 @@ pal_is_aggregate_snr_valid(uint8_t snr_num) {
   return true;
 }
 
-int pal_dp_hba_fan_table_check(void) {
+bool pal_check_fava_ssd_exist(uint8_t ssd_num) {
+  uint8_t slot = FRU_SLOT1;
+  uint8_t tbuf[16] = {0xb8, 0x40, 0x57, 0x01 ,0x00 ,0x30 ,0x06 ,0x05 ,0x61 ,0x00 ,0x00 ,0x00 ,0x80 ,0x01};
+  uint8_t rbuf[10] = {0x00};
+  uint8_t tlen = 14;
+  uint8_t rlen = 10;
+  uint16_t read_vid = 0x0, read_did = 0x0;
+  int ret = 0;
+  if (ssd_num == 1) {
+    tbuf[12] = 0x80; //Bus 0x18
+    tbuf[13] = 0x01;
+  } else if (ssd_num == 2) {
+    tbuf[12] = 0x90; //Bus 0x19
+    tbuf[13] = 0x01;
+  } else {
+    return false;
+  }
+  memset(rbuf,0,rlen);
+  ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
+  if (ret == 0) {
+    read_vid = rbuf[6] << 8 | rbuf[5];
+    read_did = rbuf[8] << 8 | rbuf[7];
+    if ((read_vid == FAVA_PM9A3_VID) && (read_did == FAVA_PM9A3_DID)) {
+      syslog(LOG_WARNING, "%s() FAVA SSD%u PM9A3 vid:0x%X did:0x%X", __func__,ssd_num,read_vid,read_did);
+      return true;
+    } else {
+      syslog(LOG_WARNING, "%s() FAVA SSD%u vid:0x%X did:0x%X", __func__,ssd_num,read_vid,read_did);
+    }
+  } else {
+    syslog(LOG_WARNING, "%s() FAVA SSD%u no response", __func__,ssd_num);
+  }
+  return false;
+}
+
+static int reload_fan_table(const char* sysconfig, const char* fan_table) {
+  int ret = -1;
+  char cmd[MAX_CMD_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if (sysconfig == NULL || fan_table == NULL) {
+    syslog(LOG_WARNING, "%s() Invalid input parameter", __func__);
+    return ret;
+  }
+
+  ret = kv_get("sled_system_conf", value, NULL, KV_FPERSIST);
+  if (ret == 0 && (strncmp(value, sysconfig, sizeof(value)) == 0)) {
+    return 0;
+  }
+
+  syslog(LOG_WARNING, "%s() Reload fan table: %s", __func__, fan_table);
+
+  snprintf(cmd, sizeof(cmd), "ln -sf %s %s", fan_table, DEFAULT_FSC_CFG_PATH);
+  ret = system(cmd);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() can not import table: %s", __func__, fan_table);
+    return ret;
+  }
+
+  if (kv_set("sled_system_conf", sysconfig, 0, KV_FPERSIST) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
+  }
+
+  ret = system("/usr/bin/sv restart fscd");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
+    return ret;
+  }
+
+  ret = system("/usr/bin/sv restart sensord");
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
+    return ret;
+  }
+
+  return ret;
+}
+
+int pal_dp_fan_table_check(void) {
   //DP only slot1
   uint8_t slot = FRU_SLOT1;
   int ret = 0, config_status = 0;
@@ -4973,7 +4989,8 @@ int pal_dp_hba_fan_table_check(void) {
   uint8_t tlen = 14;
   uint8_t rlen = 10;
   uint16_t read_vid = 0x0, read_did = 0x0;
-  char cmd[64] = {0};
+  bool fava_ssd1 = false, fava_ssd2 = false;
+  uint8_t ssd_num = 1;
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if (ret < 0) {
@@ -4994,31 +5011,28 @@ int pal_dp_hba_fan_table_check(void) {
       ret = bic_me_xmit(slot, tbuf, tlen, rbuf, &rlen);
       if (ret == 0) {
         read_vid = rbuf[6] << 8 | rbuf[5];
-        read_did = rbuf[8] << 8 | rbuf[7];;
+        read_did = rbuf[8] << 8 | rbuf[7];
         if (((read_vid == HBA_M_VID) && (read_did == HBA_M_DID)) || ((read_vid == HBA_B_VID) && (read_did == HBA_B_DID))) {
-          snprintf(cmd, sizeof(cmd), "ln -sf %s %s", DP_HBA_FAN_TBL_PATH, DEFAULT_FSC_CFG_PATH);
-          ret = system(cmd);
-          if (ret != 0) {
-            syslog(LOG_WARNING, "%s() can not import DP-HBA fan table", __func__);
+          if ((ret = reload_fan_table("Type_DPB", DP_HBA_FAN_TBL_PATH)) != 0) {
             return ret;
           }
-
-          ret = system("/usr/bin/sv restart fscd");
-          if (ret != 0) {
-            syslog(LOG_WARNING, "%s() can not restart fscd", __func__);
+        } else {
+          if ((ret = reload_fan_table("Type_DP", DP_FAN_TBL_PATH)) != 0) {
             return ret;
           }
+        }
+      }
 
-          ret = kv_set("sled_system_conf", "Type_DPB", 0, KV_FPERSIST);
-          if (ret < 0)  {
-            syslog(LOG_WARNING, "%s() Failed to set sled_system_conf\n", __func__);
-          }
+      ssd_num = 1;
+      fava_ssd1 = pal_check_fava_ssd_exist (ssd_num);
 
-          ret = system("/usr/bin/sv restart sensord");
-          if (ret != 0) {
-            syslog(LOG_WARNING, "%s() can not restart sensord", __func__);
-            return ret;
-          }
+      ssd_num = 2;
+      fava_ssd2 = pal_check_fava_ssd_exist (ssd_num);
+
+      if (fava_ssd1 || fava_ssd2) { // If one of FAVA SSD exists
+        syslog(LOG_WARNING, "%s() start to import DP-FAVA fan table", __func__);
+        if ((ret = reload_fan_table("Type_DPF", DP_FAVA_FAN_TBL_PATH)) != 0) {
+          return ret;
         }
       }
     }
@@ -5136,4 +5150,64 @@ int pal_is_sensor_num_exceed(uint8_t sensor_num) {
     return PAL_EOK;
   }
   return PAL_EOK;
+}
+
+int pal_is_pesw_power_on(uint8_t fru, uint8_t *status) {
+  enum {
+    GP3_GPIO_PWRGD_P0V84 = 43,
+    GP3_GPIO_PWRGD_P1V8  = 46,
+    CWC_GPIO_PWRGD_P0V84 = 47,
+    CWC_GPIO_PWRGD_P1V8  = 48,
+  };
+  int ret = 0;
+  uint8_t slot = 0;
+  uint8_t intf = 0;
+  bic_gpio_t gpio = {0};
+
+  ret = pal_get_fru_slot(fru, &slot);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get slot of fru\n",__func__);
+    return ret;
+  }
+
+  switch (fru) {
+    case FRU_CWC:
+      intf = REXP_BIC_INTF;
+      break;
+    case FRU_2U_TOP:
+      intf = RREXP_BIC_INTF1;
+      break;
+    case FRU_2U_BOT:
+      intf = RREXP_BIC_INTF2;
+      break;
+    default:
+      return -1;
+  }
+
+  ret = bic_get_gpio(slot, &gpio, intf);
+  if ( ret < 0 ) {
+    printf("%s() bic_get_gpio returns %d\n", __func__, ret);
+    return ret;
+  }
+
+  switch (fru) {
+    case FRU_CWC:
+      if (BIT_VALUE(gpio, CWC_GPIO_PWRGD_P0V84) == VALUE_HIGH && BIT_VALUE(gpio, CWC_GPIO_PWRGD_P1V8) == VALUE_HIGH) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    case FRU_2U_TOP:
+    case FRU_2U_BOT:
+      if (BIT_VALUE(gpio, GP3_GPIO_PWRGD_P0V84) == VALUE_HIGH && BIT_VALUE(gpio, GP3_GPIO_PWRGD_P1V8) == VALUE_HIGH) {
+        *status = 1;
+      } else {
+        *status = 0;
+      }
+      break;
+    default:
+      return -1;
+  }
+  return ret;
 }

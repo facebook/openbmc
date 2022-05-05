@@ -130,6 +130,17 @@ var runDataPartitionUnmountProcess = func() error {
 			"%v, stderr: %v", err, stderr)
 	}
 
+  // cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store
+  // expected failures: No such file or directory
+  // (this is allowable as not all platforms have kv_store)
+  log.Printf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store")
+	cmd = []string{"cp", "-r", "/mnt/data/kv_store", "/tmp/mnt/data/kv_store"}
+	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
+	if err != nil && !strings.Contains(stderr, "No such file or directory"){
+		return errors.Errorf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store failed: "+
+			"%v, stderr: %v", err, stderr)
+	}
+
 	// unmount /mnt/data
 	// expected failures: fuser -km might not work, race conditions
 	const tries = 10

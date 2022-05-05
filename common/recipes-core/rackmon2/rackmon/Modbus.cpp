@@ -12,8 +12,7 @@ void Modbus::command(
     Msg& req,
     Msg& resp,
     uint32_t baudrate,
-    ModbusTime timeout,
-    ModbusTime settleTime) {
+    ModbusTime timeout) {
   std::unique_lock lck(deviceMutex_);
   if (!deviceValid_) {
     throw std::runtime_error("Uninitialized");
@@ -31,11 +30,11 @@ void Modbus::command(
   device_->write(req.raw.data(), req.len);
   resp.len = device_->read(resp.raw.data(), resp.len, timeout.count());
   resp.decode();
-  if (settleTime != ModbusTime::zero()) {
+  if (minDelay_ != ModbusTime::zero()) {
     // If the bus needs to be idle after each transaction for
     // a given period of time, sleep here.
     // sleep override
-    std::this_thread::sleep_for(settleTime);
+    std::this_thread::sleep_for(minDelay_);
   }
 }
 
@@ -72,12 +71,13 @@ void Modbus::closeDevice() {
 }
 
 void Modbus::healthCheck() {
-  std::unique_lock lck(deviceMutex_);
   if (!isPresent()) {
+    std::unique_lock lck(deviceMutex_);
     if (openDevice()) {
       logInfo << devicePath_ << " recovered successfully" << std::endl;
     }
   } else if (!device_->exists()) {
+    std::unique_lock lck(deviceMutex_);
     logError << devicePath_ << " no longer exists starting recovery"
              << std::endl;
     closeDevice();

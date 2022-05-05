@@ -22,7 +22,7 @@ Wants=openbmc_gpio_setup.service setup_board.service
 
 [Service]
 ExecStart=/usr/local/bin/rackmond
-ExecStartPre=ln -s /etc/aspeed_uart.conf /etc/rackmon.conf
+ExecStartPre=/bin/ln -fs /etc/aspeed_uart.conf /etc/rackmon.conf
 
 [Install]
 WantedBy=multi-user.target

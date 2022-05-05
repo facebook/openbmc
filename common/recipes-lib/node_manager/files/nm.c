@@ -474,3 +474,37 @@ int ret;
 #endif
   return ret;
 }
+
+// Get ME Firmware Version
+int
+lib_get_me_fw_ver(NM_RW_INFO* info, uint8_t *ver) {
+  ipmi_dev_id_t dev_id;
+  int ret;
+  
+  if (info == NULL || ver == NULL) {
+    return -1;
+  }
+
+  ret = cmd_NM_get_dev_id(info, &dev_id);
+  if (ret != 0) {
+    return ret;
+  }
+  /*
+    Major version number: byte 4[6:0]
+    Minor version number: high 4 bits of byte 5
+    Milestone version number: low 4 bits of byte 5
+    Build version number: byte 14 and byte 15
+
+    dev_id.fw_rev1 = byte 4
+    dev_id.fw_rev2 = byte 5
+    dev_id.aux_fw_rev[1] = byte 14
+    dev_id.aux_fw_rev[2] = byte 15
+  */
+
+  ver[0] = dev_id.fw_rev1 & 0x7F;
+  ver[1] = dev_id.fw_rev2 >> 4;
+  ver[2] = dev_id.fw_rev2 & 0x0f;
+  ver[3] = dev_id.aux_fw_rev[1];
+  ver[4] = dev_id.aux_fw_rev[2] >> 4;
+  return ret;
+}

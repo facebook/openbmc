@@ -298,6 +298,8 @@ static int
 LCMXO2Family_cpld_Check_ID()
 {
   unsigned int dr_data[4] = {0};
+  int dev_cnts=0;
+  struct cpld_dev_info* dev_list;
   int ret = -1;
   int i;
 
@@ -317,10 +319,10 @@ LCMXO2Family_cpld_Check_ID()
   printf("[%s] ID Code: %x\n", __func__, dr_data[0]);
 #endif
 
-  for (i = 0; i < ARRAY_SIZE(lattice_dev_list); i++)
-  {
-    if (dr_data[0] == lattice_dev_list[i].dev_id)
-    {
+  dev_cnts += get_lattice_dev_list(&dev_list);
+
+  for (i = 0; i < dev_cnts; i++) {
+    if (dr_data[0] == dev_list[i].dev_id) {
       ret = 0;
       break;
     }

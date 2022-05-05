@@ -100,13 +100,13 @@ bool Rackmon::probe(uint8_t addr) {
 }
 
 std::vector<uint8_t> Rackmon::inspectDormant() {
-  time_t curr = std::time(nullptr);
   std::vector<uint8_t> ret{};
   std::shared_lock lock(devicesMutex_);
   for (const auto& it : devices_) {
     if (it.second->isActive()) {
       continue;
     }
+    time_t curr = getTime();
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
     if ((it.second->lastActive() + kDormantMinInactiveTime) < curr) {
@@ -139,7 +139,7 @@ void Rackmon::monitor(void) {
     if (!dev_it.second->isActive()) {
       continue;
     }
-    dev_it.second->monitor();
+    dev_it.second->reloadRegisters();
   }
   lastMonitorTime_ = std::time(nullptr);
 }
@@ -194,6 +194,9 @@ void Rackmon::start(PollThreadTime interval) {
   if (scanThread_ != nullptr || monitorThread_ != nullptr) {
     throw std::runtime_error("Already running");
   }
+  for (auto& dev_it : devices_) {
+    dev_it.second->disableExclusiveMode();
+  }
   scanThread_ = makeThread(&Rackmon::scan, interval);
   scanThread_->start();
   monitorThread_ = makeThread(&Rackmon::monitor, interval);
@@ -210,6 +213,9 @@ void Rackmon::stop() {
   if (scanThread_ != nullptr) {
     scanThread_->stop();
     scanThread_ = nullptr;
+  }
+  for (auto& dev_it : devices_) {
+    dev_it.second->enableExclusiveMode();
   }
 }
 

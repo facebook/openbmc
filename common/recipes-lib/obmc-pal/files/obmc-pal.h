@@ -52,6 +52,9 @@ extern "C" {
 #define DEV_ALL         0x0
 #define DEV_NONE        0xff
 
+// GUID
+#define GUID_SIZE 16
+
 /* To hold the sensor info and calculated threshold values from the SDR */
 /* To hold the sensor info and calculated threshold values from the SDR */
 typedef struct {
@@ -459,6 +462,7 @@ int pal_is_slot_server(uint8_t fru);
 int pal_is_slot_support_update(uint8_t fru);
 int pal_self_tray_location(uint8_t *value);
 void pal_log_clear(char *fru);
+void pal_populate_guid(char *guid, char *str);
 int pal_get_dev_guid(uint8_t fru, char *guid);
 int pal_set_dev_guid(uint8_t fru, char *guid);
 int pal_get_plat_sku_id(void);
@@ -483,7 +487,6 @@ bool pal_sled_cycle_prepare(void);
 bool pal_is_crashdump_ongoing_system(void);
 bool pal_is_cplddump_ongoing_system(void);
 bool pal_can_change_power(uint8_t fru);
-int pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int run_command(const char* cmd);
 int pal_get_restart_cause(uint8_t slot, uint8_t *restart_cause);
 int pal_set_restart_cause(uint8_t slot, uint8_t restart_cause);
@@ -527,7 +530,6 @@ int pal_get_tach_cnt(void);
 int pal_get_fan_opt_cnt(void);
 int pal_set_fan_ctrl(char *ctrl_opt);
 int pal_set_time_sync(uint8_t *req_data, uint8_t req_len);
-int pal_get_nic_fru_id(void);
 int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id);
 int pal_is_mcu_ready(uint8_t bus);
 int pal_wait_mcu_ready2update(uint8_t bus);
@@ -582,6 +584,7 @@ int pal_handle_oem_1s_update_sdr(uint8_t slot);
 int pal_get_fru_list_by_caps(unsigned int caps, char *list, size_t size);
 int pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t size);
 int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
+int pal_udbg_get_frame_total_num();
 
 #ifdef __cplusplus
 }

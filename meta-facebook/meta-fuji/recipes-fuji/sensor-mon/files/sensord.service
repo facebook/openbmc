@@ -1,0 +1,30 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=Sensor monitoring daemon
+Wants=setup_i2c.service
+After=setup_i2c.service
+
+[Service]
+Environment=SENSORD_HOTSWAP_SUPPORT=1
+ExecStart=/usr/local/bin/sensord SENSORD_LAUNCH_ARGS
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-success
+
+[Install]
+WantedBy=multi-user.target

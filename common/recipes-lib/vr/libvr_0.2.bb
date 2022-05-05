@@ -8,6 +8,7 @@ LIC_FILES_CHKSUM = "file://vr.c;beginline=6;endline=18;md5=da35978751a9d71b73679
 
 LOCAL_URI = " \
     file://meson.build \
+    file://plat/meson.build \
     file://mpq8645p.c \
     file://mpq8645p.h \
     file://platform.c \
@@ -19,6 +20,8 @@ LOCAL_URI = " \
     file://vr.h \
     file://xdpe12284c.c \
     file://xdpe12284c.h \
+    file://raa_gen3.c \
+    file://raa_gen3.h \
     "
 
 DEPENDS += "libobmc-pmbus libkv libpal libobmc-i2c "

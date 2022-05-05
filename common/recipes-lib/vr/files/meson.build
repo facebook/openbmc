@@ -23,7 +23,10 @@ srcs = files(
   'tps53688.c',
   'vr.c',
   'xdpe12284c.c',
+  'raa_gen3.c',
 )
+
+subdir('plat')
 
 # VR library.
 vr_lib = shared_library('vr', srcs,

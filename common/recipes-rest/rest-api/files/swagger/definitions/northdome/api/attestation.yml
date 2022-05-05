@@ -1,0 +1,28 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/attestation  
+  title: Swagger doc for /api/attestation  
+  version: 1.0.0
+paths: 
+  /api/attestation: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                format: nullable
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

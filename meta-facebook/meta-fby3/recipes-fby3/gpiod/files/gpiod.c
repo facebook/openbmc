@@ -612,7 +612,7 @@ gpio_monitor_poll(void *ptr) {
         retry_sec[fru-1] = 0;
         // Check if it is DP-HSM when first boot
         if (!dp_hsm_check) {
-          pal_dp_hba_fan_table_check();
+          pal_dp_fan_table_check();
           dp_hsm_check = true;
         }
 

@@ -1,0 +1,229 @@
+{
+  "version": "fby35-WF-v2022.04.26",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "non_fanfail_limited_boost_value": 100,
+  "sample_interval_ms": 3000,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "fan_dead_boost": {
+    "threshold": 2,
+    "action": "host_shutdown"
+  },
+  "sensor_valid_check": {
+    "fio_temp": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "cpu": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "soc_therm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "dimm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "min_rpm": 500,
+  "profiles": {
+    "linear_frontIO_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 21, 10 ],
+        [ 22, 11 ],
+        [ 23, 12 ],
+        [ 24, 13 ],
+        [ 25, 14 ],
+        [ 26, 15 ],
+        [ 27, 16 ],
+        [ 28, 17 ],
+        [ 29, 18 ],
+        [ 30, 19 ],
+        [ 31, 20 ],
+        [ 32, 21 ],
+        [ 33, 22 ],
+        [ 34, 23 ],
+        [ 35, 24 ],
+        [ 36, 24 ],
+        [ 37, 30 ],
+        [ 38, 40 ],
+        [ 39, 50 ]
+      ]
+    },
+    "linear_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [ -20, 10 ],
+        [ -19, 15 ],
+        [ -18, 20 ],
+        [ -17, 25 ],
+        [ -16, 30 ],
+        [ -15, 35 ],
+        [ -14, 40 ]
+      ]
+    },
+    "pid_cpu_margin": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": -11,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -2,
+      "ki": -0.01,
+      "kd": 0
+    },
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [63, 10],
+        [64, 12],
+        [65, 15],
+        [66, 18],
+        [67, 21],
+        [68, 24],
+        [69, 27]
+      ]
+    },
+    "pid_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 75,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 0,
+      "kp": -3,
+      "ki": -0.01,
+      "kd": 0
+    },
+    "linear_nic": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [80, 80],
+        [81, 80],
+        [82, 80],
+        [83, 80],
+        [84, 80],
+        [85, 80],
+        [86, 80],
+        [87, 80],
+        [88, 80],
+        [89, 80],
+        [90, 80]
+      ]
+    },
+    "pid_nic": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 95,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 0,
+      "kp": -1.25,
+      "ki": -0.01,
+      "kd": 0
+    },
+
+ "linear_boot_drive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 3,
+      "data": [
+        [50, 10],
+        [51, 11],
+        [52, 12],
+        [53, 13],
+        [54, 14]
+      ]
+    },
+    "pid_boot_drive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 70,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -1.25,
+      "ki": -0.01,
+      "kd": 0
+    }
+  },
+  "fans": {
+    "0": {
+      "read_source" : {
+        "kv" : "bmc_sensor224"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "1": {
+      "read_source" : {
+        "kv" : "bmc_sensor225"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "2": {
+      "read_source" : {
+        "kv" : "bmc_sensor226"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "3": {
+      "read_source" : {
+        "kv" : "bmc_sensor227"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0],
+      "expr_file": "FSC_CLASS1_WF_zone1.fsc"
+    }
+  }
+}

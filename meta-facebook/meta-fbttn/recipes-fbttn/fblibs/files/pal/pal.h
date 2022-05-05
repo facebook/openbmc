@@ -218,7 +218,6 @@ void pal_err_code_disable(unsigned char num);
 uint8_t pal_read_error_code_file(uint8_t *error_code_arrray);
 uint8_t pal_write_error_code_file(error_code *update);
 unsigned char pal_sum_error_code(void);
-void pal_post_end_chk(uint8_t *post_end_chk);
 int pal_get_error_code(uint8_t data[MAX_ERROR_CODES], uint8_t* error_count);
 int pal_post_get_buffer(uint8_t *buffer, uint8_t *buf_len);
 int pal_nic_otp(int fru, int snr_num, float thresh_val);

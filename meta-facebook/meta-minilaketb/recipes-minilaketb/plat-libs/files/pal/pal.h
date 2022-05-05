@@ -95,7 +95,6 @@ int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
 int pal_get_pair_slot_type(uint8_t fru);
 int pal_system_config_check(uint8_t slot_id);
 int pal_read_nic_fruid(const char *path, int size);
-void pal_post_end_chk(uint8_t *post_end_chk);
 uint8_t pal_get_status(void);
 int pal_get_fan_latch(uint8_t *status);
 

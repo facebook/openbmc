@@ -47,6 +47,7 @@ struct ModbusDeviceInfo {
   uint32_t deviceErrors = 0;
   time_t lastActive = 0;
   uint32_t numConsecutiveFailures = 0;
+  bool exclusiveMode_ = false;
 
   void incErrors(uint32_t& counter);
   void incTimeouts() {
@@ -90,11 +91,8 @@ class ModbusDevice {
       int numCommandRetries = 5);
   virtual ~ModbusDevice() {}
 
-  virtual void command(
-      Msg& req,
-      Msg& resp,
-      ModbusTime timeout = ModbusTime::zero(),
-      ModbusTime settleTime = ModbusTime::zero());
+  virtual void
+  command(Msg& req, Msg& resp, ModbusTime timeout = ModbusTime::zero());
 
   void readHoldingRegisters(
       uint16_t registerOffset,
@@ -115,7 +113,7 @@ class ModbusDevice {
       std::vector<FileRecord>& records,
       ModbusTime timeout = ModbusTime::zero());
 
-  void monitor();
+  void reloadRegisters();
 
   bool isActive() const {
     return info_.mode == ModbusDeviceMode::ACTIVE;
@@ -127,10 +125,17 @@ class ModbusDevice {
     return info_.lastActive;
   }
 
+  void enableExclusiveMode() {
+    info_.exclusiveMode_ = true;
+  }
+  void disableExclusiveMode() {
+    info_.exclusiveMode_ = false;
+  }
+
   // Return structured information of the device.
   ModbusDeviceInfo getInfo();
 
-  // Returns raw monitor register data monitored for this device.
+  // Returns raw register data monitored for this device.
   ModbusDeviceRawData getRawData();
 
   // Returns value formatted register data monitored for this device.

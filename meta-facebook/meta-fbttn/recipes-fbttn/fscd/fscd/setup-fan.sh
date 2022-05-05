@@ -32,8 +32,8 @@
 echo -n "Setup fscd config... "
 
 default_fsc_config_path="/etc/fsc-config.json"
-fsc_type5_config_path="/etc/FSC_BC_Type5_MP_v3_config.json"
-fsc_type7_config_path="/etc/FSC_BC_Type7_MP_v3_config.json"
+fsc_type5_config_path="/etc/FSC_BC_Type5_MP_v4_config.json"
+fsc_type7_config_path="/etc/FSC_BC_Type7_MP_v4_config.json"
 IOM_M2=1      # IOM type: M.2
 IOM_IOC=2     # IOM type: IOC
 

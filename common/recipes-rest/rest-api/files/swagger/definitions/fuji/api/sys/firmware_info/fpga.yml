@@ -1,0 +1,47 @@
+swagger: "2.0"
+info: 
+  description: Swagger doc for /api/sys/firmware_info/fpga  
+  title: Swagger doc for /api/sys/firmware_info/fpga  
+  version: 1.0.0
+paths: 
+  /api/sys/firmware_info/fpga: 
+    get: 
+      produces: [application/json]
+      responses: 
+        200: 
+          description: ok
+          schema: 
+            type: object
+            additionalProperties: false
+            properties: 
+              Information: 
+                type: object
+                additionalProperties: false
+                properties: 
+                  IOB FPGA: 
+                    type: string
+                  PIM1 DOMFPGA: 
+                    type: string
+                  PIM2 DOMFPGA: 
+                    type: string
+                  PIM3 DOMFPGA: 
+                    type: string
+                  PIM4 DOMFPGA: 
+                    type: string
+                  PIM5 DOMFPGA: 
+                    type: string
+                  PIM6 DOMFPGA: 
+                    type: string
+                  PIM7 DOMFPGA: 
+                    type: string
+                  PIM8 DOMFPGA: 
+                    type: string
+              Actions: 
+                type: array
+                items: 
+                  type: string
+              Resources: 
+                type: array
+                items: 
+                  type: string
+            

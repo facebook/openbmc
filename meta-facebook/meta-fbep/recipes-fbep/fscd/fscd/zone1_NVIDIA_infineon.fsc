@@ -1,0 +1,51 @@
+max([
+  linear_inlet(all:mb_ep_mb_sensor_inlet_remote),
+  linear_switch_remote(all:mb_ep_mb_sensor_pax0_therm),
+  linear_switch_remote(all:mb_ep_mb_sensor_pax1_therm),
+  linear_switch_remote(all:mb_ep_mb_sensor_pax2_therm),
+  linear_switch_remote(all:mb_ep_mb_sensor_pax3_therm),
+  linear_gpu_spot(
+    max([
+      all:asic0_ep_mb_nvidia_gpu0_temp,
+      all:asic1_ep_mb_nvidia_gpu1_temp,
+      all:asic2_ep_mb_nvidia_gpu2_temp,
+      all:asic3_ep_mb_nvidia_gpu3_temp,
+      all:asic4_ep_mb_nvidia_gpu4_temp,
+      all:asic5_ep_mb_nvidia_gpu5_temp,
+      all:asic6_ep_mb_nvidia_gpu6_temp,
+      all:asic7_ep_mb_nvidia_gpu7_temp])) +
+  pid_gpu_spot(
+    max([
+      all:asic0_ep_mb_nvidia_gpu0_temp,
+      all:asic1_ep_mb_nvidia_gpu1_temp,
+      all:asic2_ep_mb_nvidia_gpu2_temp,
+      all:asic3_ep_mb_nvidia_gpu3_temp,
+      all:asic4_ep_mb_nvidia_gpu4_temp,
+      all:asic5_ep_mb_nvidia_gpu5_temp,
+      all:asic6_ep_mb_nvidia_gpu6_temp,
+      all:asic7_ep_mb_nvidia_gpu7_temp])),
+  linear_gpu_mem(
+    max([
+      all:asic0_ep_mb_nvidia_hbm0_temp,
+      all:asic1_ep_mb_nvidia_hbm1_temp,
+      all:asic2_ep_mb_nvidia_hbm2_temp,
+      all:asic3_ep_mb_nvidia_hbm3_temp,
+      all:asic4_ep_mb_nvidia_hbm4_temp,
+      all:asic5_ep_mb_nvidia_hbm5_temp,
+      all:asic6_ep_mb_nvidia_hbm6_temp,
+      all:asic7_ep_mb_nvidia_hbm7_temp])) +
+  pid_gpu_mem(
+    max([
+      all:asic0_ep_mb_nvidia_hbm0_temp,
+      all:asic1_ep_mb_nvidia_hbm1_temp,
+      all:asic2_ep_mb_nvidia_hbm2_temp,
+      all:asic3_ep_mb_nvidia_hbm3_temp,
+      all:asic4_ep_mb_nvidia_hbm4_temp,
+      all:asic5_ep_mb_nvidia_hbm5_temp,
+      all:asic6_ep_mb_nvidia_hbm6_temp,
+      all:asic7_ep_mb_nvidia_hbm7_temp])),
+  linear_infineon(all:pdb_ep_pdb_ntc_1_infineon0_temp),
+  linear_infineon(all:pdb_ep_pdb_ntc_1_infineon1_temp),
+  linear_infineon(all:pdb_ep_pdb_ntc_2_infineon0_temp),
+  linear_infineon(all:pdb_ep_pdb_ntc_2_infineon1_temp)
+])

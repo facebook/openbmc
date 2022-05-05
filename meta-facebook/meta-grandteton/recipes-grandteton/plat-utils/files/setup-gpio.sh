@@ -60,47 +60,50 @@ gpio_export FM_ESPI_PLD_EN GPIOB6
 # IRQ_BMC_CPU_NMI
 #gpio_export IRQ_BMC_CPU_NMI GPIOB7
 
+# ==GPIOC==
+# RST_PLTRST_R_N
+gpio_export RST_PLTRST_R_N GPIOC0
+
+#FM_CPU_RMCA_CATERR_LVT3_R_N
+gpio_export FM_CPU_RMCA_CATERR_LVT3_R_N GPIOC1
+
+#RST_SGPIO_RESET_BMC_N
+gpio_export RST_SGPIO_RESET_BMC_N GPIOC3
+gpio_set RST_SGPIO_RESET_BMC_N 1
+
+#RST_ROT_CPU_R1_N
+gpio_export RST_ROT_CPU_R1_N GPIOC4
+
+#H_CPU_CATERR_LVC2_R2_N
+gpio_export H_CPU_CATERR_LVC2_R2_N GPIOC5
+
+#FM_JTAG_BMC_MUX_SEL
+gpio_export FM_JTAG_BMC_MUX_SEL GPIOC6
+gpio_set FM_JTAG_BMC_MUX_SEL 1;
+
+#IRQ_SGPIO_BMC_N
+gpio_export IRQ_SGPIO_BMC_N GPIOC7
+
+# ==GPIOD==
+gpio_export GPU_FPGA_RST_N GPIOD0
+gpio_set GPU_FPGA_RST_N 0
+
+gpio_export CLK_BUF1_GPU_FPGA_OE_N GPIOD1
+gpio_set CLK_BUF1_GPU_FPGA_OE_N 0
+
+# ==GPIOE==
+#FM_FLASH_LATCH_N_R1
+gpio_export FM_FLASH_LATCH_N_R1 GPIOE0
+
+#FLASH_WP_STATUS_R1
+gpio_export FLASH_WP_STATUS_R1 GPIOE1
+
+#FM_PLT_BMC_THERMTRIP_N_R
+gpio_export FM_PLT_BMC_THERMTRIP_N_R GPIOE3
+
 # ==GPIOF==
-# RST_PLTRST_N
-gpio_export RST_PLTRST_N GPIOF0
-
-# FM_CPU_RMCA_CATERR_LVT3_N
-gpio_export FM_CPU_RMCA_CATERR_LVT3_N GPIOF1
-
-# TCK_MUX_SEL
-gpio_export TCK_MUX_SEL GPIOF2
-gpio_set TCK_MUX_SEL 1
-
-# RST_SGPIO_REST_BMC_N
-gpio_export RST_SGPIO_REST_BMC_N GPIOF3
-gpio_set RST_SGPIO_REST_BMC_N 1
-
-# RST_ROT_CPU_N
-gpio_export RST_ROT_CPU_N GPIOF4
-
-# RST_PCA9548_N
-gpio_export RST_PCA9548_N GPIOF5
-
-# IRQ_SGPIO_BMC_N
-gpio_export IRQ_SGPIO_BMC_N GPIOF6
-
-# PWRGD_PSU_PWROK_BMC
-gpio_export PWRGD_PSU_PWROK_BMC GPIOF7
-
 
 # ==GPIOG==
-# FM_BIC_DEBUG_SW_N 
-gpio_export FM_BIC_DEBUG_SW_N GPIOG0
-
-# FM_BMC_CRASHLOG_TRIG_N 
-gpio_export FM_BMC_CRASHLOG_TRIG_N GPIOG1
-gpio_set FM_BMC_CRASHLOG_TRIG_N 1
-
-# FM_PLT_BMC_THERMTRIP_N 
-gpio_export FM_PLT_BMC_THERMTRIP_N GPIOG4
-
-# FM_DEBUG_PORT_PRSNT_N_IN 
-gpio_export FM_DEBUG_PORT_PRSNT_N_IN GPIOG5
 
 # SMB_BMC_ALERT15_N 
 gpio_export SMB_BMC_ALERT15_N GPIOG6
@@ -132,9 +135,9 @@ gpio_export IRQ_PCH_SCI_WHEA_N GPIOI7
 gpio_export FM_DBP_CPU_PREQ_GF_N GPIOL4
 gpio_set FM_DBP_CPU_PREQ_GF_N 1
 
-# FM_JTAG_TCK_MUX_BMC_SEL_R1
-gpio_export FM_JTAG_TCK_MUX_BMC_SEL_R1 GPIOL5
-gpio_set FM_JTAG_TCK_MUX_BMC_SEL_R1 0
+# FM_JTAG_TCK_MUX_BMC_SEL
+#gpio_export FM_JTAG_TCK_MUX_BMC_SEL GPIOL5
+#gpio_set FM_JTAG_TCK_MUX_BMC_SEL 0
 
 
 # ==GPIOM==
@@ -192,7 +195,10 @@ gpio_export FM_PMBUS_ALERT_EN GPIOO0
 gpio_export FM_PCEI_M2_SSD0_PRSNT_N GPIOO2
 
 # FM_JTAG_BMC_MUX_SEL
-gpio_export FM_JTAG_BMC_MUX_SEL GPIOO3
+#gpio_export FM_JTAG_BMC_MUX_SEL GPIOO3
+
+# FM_TPM_PRSNT_0_N
+gpio_export FM_TPM_PRSNT_0_N GPIOO5
 
 # FM_ADR_TRIGGER_N
 #gpio_export FM_ADR_TRIGGER_N GPIOO4
@@ -210,15 +216,18 @@ gpio_export SYS_BMC_PWRBTN_IN GPIOP0
 
 # SYS_BMC_PWRBTN_OUT
 gpio_export SYS_BMC_PWRBTN_OUT GPIOP1
+gpio_set SYS_BMC_PWRBTN_OUT 1
 
 # SYS_BMC_RSTBTN_IN
 gpio_export ID_RST_BTN_BMC_IN GPIOP2
 
 # SYS_BMC_RSTBTN_OUT
 gpio_export ID_RST_BTN_BMC_OUT GPIOP3
+gpio_set ID_RST_BTN_BMC_OUT 1
 
 # BMC_PWR_LED
 gpio_export BMC_PWR_LED GPIOP4
+gpio_set BMC_PWR_LED 0
 
 # H_CPU0_MEMTRIP_LVC1_N
 #gpio_export H_CPU0_MEMTRIP_LVC1_N GPIOP5
@@ -228,6 +237,32 @@ gpio_export BMC_PWR_LED GPIOP4
 
 
 # ==GPIOQ==
+# IRQ_PCH_TPM_SPI_N
+gpio_export IRQ_PCH_TPM_SPI_N GPIOQ0
+
+# USB_OC0_REAR_R_N
+gpio_export USB_OC0_REAR_R_N GPIOQ1
+
+# GPU_NVS_PWR_BRAKE_R_N
+gpio_export GPU_NVS_PWR_BRAKE_R_N GPIOQ2
+gpio_set GPU_NVS_PWR_BRAKE_R_N 1
+
+# GPU_WP_HW_CTRL_R_N
+gpio_export GPU_WP_HW_CTRL_R_N GPIOQ3
+gpio_set GPU_WP_HW_CTRL_R_N 1
+
+# FM_HDD_LED_N
+gpio_export FM_HDD_LED_N GPIOQ4
+gpio_set FM_HDD_LED_N 0
+
+# FM_P12V_HSC_ENABLE_R1
+gpio_export FM_P12V_HSC_ENABLE_R1 GPIOQ5
+gpio_set FM_P12V_HSC_ENABLE_R1 1
+
+# FM_PCH_BEEP_LED
+gpio_export FM_PCH_BEEP_LED GPIOQ6
+gpio_set FM_PCH_BEEP_LED 0
+
 # FM_SOL_UART_CH_SEL
 gpio_export FM_SOL_UART_CH_SEL GPIOQ7
 
@@ -262,8 +297,14 @@ gpio_export PWRGD_CPUPWRGD_LVC1 GPIOR6
 # IRQ_BMC_PCH_NMI_N
 #gpio_export IRQ_BMC_PCH_NMI_N GPIOS0
 
+# BMC_MONITER
+#gpio_export BMC_MONITER GPIOS1
+
 # FM_THERMTRIP_N
 gpio_export FM_THERMTRIP_N GPIOS2
+
+# FM_TPM_PRSNT_1_N
+gpio_export FM_TPM_PRSNT_1_N GPIOS3
 
 # FM_BMC_DEBUG_SW_N
 gpio_export FM_BMC_DEBUG_SW_N GPIOS4
@@ -282,6 +323,9 @@ gpio_export SMB_BMC_ALERT10_N GPIOU1
 # SMB_BMC_ALERT12_N
 gpio_export SMB_BMC_ALERT12_N GPIOU3
 
+# BSM_PRSNT_R_N
+gpio_export BSM_PRSNT_R_N GPIOU4
+
 # FM_BMC_EN_DET
 gpio_export FM_BMC_EN_DET GPIOU5
 
@@ -291,20 +335,46 @@ gpio_export FM_PCHHOT_N GPIOU6
 # SMB_BMC_ALERT16_N
 gpio_export SMB_BMC_ALERT16_N GPIOU7
 
-
 # ==GPIOV==
 # FM_SLPS3_GF_N
 gpio_export FM_SLPS3_GF_N GPIOV0
+
+# RST_RSMRST_R_N
+gpio_export RST_RSMRST_R_N GPIOV1
+
+gpio_export BMC_ID_BEEP_SEL_R1 GPIOV2
+#gpio_set BMC_ID_BEEP_SEL_R1 1
 
 # BATTERY_DETECT
 gpio_export BATTERY_DETECT GPIOV4
 gpio_set BATTERY_DETECT 0
 
+# IRQ_TPM_SPI_N
+gpio_export IRQ_TPM_SPI_N GPIOV7
+
+# ==GPIX==
+# PWRGD_DSW_PWROK_R1
+#gpio_export PWRGD_DSW_PWROK_R1 GPIOX1
+
+# IRQ_SMI_ACTIVE_BMC_N
+gpio_export IRQ_SMI_ACTIVE_BMC_N GPIOX2
+
+# ==GPIOY==
+gpio_export RST_WDTRST_PLD_R1_N GPIOY1
+
+#FM_BIOS_DEBUG_EN_R_N
+#gpio_export FM_BIOS_DEBUG_EN_R_N GPIOY2
+
+#FM BMC_EMMC_RST_R_N
+gpio_export BMC_EMMC_RST_R_N GPIOY3
 
 # ==GPIOZ==
 # BMC_READY_N
-gpio_export BMC_READY_N GPIOZ0
-gpio_set BMC_READY_N 0
+#gpio_export BMC_READY_N GPIOZ0
+#gpio_set BMC_READY_N 0
+
+#FM_DEBUG_PORT_PRSNT_R1_N
+gpio_export FM_DEBUG_PORT_PRSNT_R1_N GPIOZ6
 
 
 # ==GPIO18D==
@@ -403,7 +473,7 @@ sgpio_export FM_PS_EN_PLD_R 176
 sgpio_export HSC_D_OC_R1 178
 sgpio_export PWRGD_FAIL_CPU0_GH_R 180
 sgpio_export H_CPU_RMCA_LVC2_R2_N 182
-sgpio_export H_CPU_CATERR_LVC2_R2_N 184
+#sgpio_export H_CPU_CATERR_LVC2_R2_N 184
 sgpio_export H_CPU1_PROCHOT_LVC1_R_N 186
 sgpio_export IRQ_UV_DETECT_R_N 188
 sgpio_export PCIE_M2_SSD0_PRSNT_N 190
@@ -412,6 +482,21 @@ sgpio_export PRSNT_SWB_R_N 194
 sgpio_export IRQ_PSU_ALERT_R_N 196
 sgpio_export FM_THROTTLE_R_N 198
 sgpio_export RST_PLTRST_PLD_N 200
+sgpio_export H_CPU_PROCHOT_LVC1_N 202
+sgpio_export FM_PCH_BEEP_LED 204
+sgpio_export FM_HDD_LED_N 206
+sgpio_export FM_PFR_NO_SERVICE_ACT_N 208
+sgpio_export FM_PFR_UPDATE_N 210
+sgpio_export FM_BOARD_BMC_SKU_ID4 212
+sgpio_export FM_BOARD_BMC_SKU_ID3 214
+sgpio_export FM_BOARD_BMC_SKU_ID2 216
+sgpio_export FM_BOARD_BMC_SKU_ID1 218
+sgpio_export FM_BOARD_BMC_SKU_ID0 220
+sgpio_export FAB_BMC_REV_ID2 222
+sgpio_export FAB_BMC_REV_ID1 224
+sgpio_export FAB_BMC_REV_ID0 226
+
+
 
 
 # == SGPIO OUT ==
@@ -442,59 +527,83 @@ gpio_set FM_JTAG_BMC_MUX_SEL_R1 0
 sgpio_export FM_SPD_REMOTE_EN_R 17
 gpio_set FM_SPD_REMOTE_EN_R 0
 
-#sgpio_export FM_PWR_BTN
+#sgpio_export FM_PWR_BTN 19
 
-sgpio_export RST_BMC_RSTBTN_OUT_R_N 19
+sgpio_export RST_BMC_RSTBTN_OUT_R_N 21
 gpio_set RST_BMC_RSTBTN_OUT_R_N 1
 
-#sgpio_export FM_P12V_HSC_ENABLE_R1 21
+#sgpio_export FM_P12V_HSC_ENABLE_R1 23
 
-#sgpio_export RST_NCT7904D_R1_N 23
+#sgpio_export RST_NCT7904D_R1_N 25
 
-sgpio_export IRQ_BMC_PCH_NMI_N 25
+sgpio_export IRQ_BMC_PCH_NMI_N 27
 gpio_set IRQ_BMC_PCH_NMI_N 1
 
-#sgpio_export FM_RISER1_JTAG_SEL_R_N 27
+#sgpio_export FM_RISER1_JTAG_SEL_R_N 29
 
-#sgpio_export FM_RISER2_JTAG_SEL_R_N 29
+#sgpio_export FM_RISER2_JTAG_SEL_R_N 31
 
-#sgpio_export RST_RSMRST_R_N 31
+#sgpio_export RST_RSMRST_R_N 33
 
-sgpio_export FM_BMC_ONCTL_R_N 33
+sgpio_export FM_BMC_ONCTL_R_N 35
 gpio_set FM_BMC_ONCTL_R_N 1
 
-sgpio_export FM_BMC_READY_R_PLD_N 35
-gpio_set FM_BMC_READY_R_PLD_N 1
+#sgpio_export FM_BMC_SUSACK_R1_N 39
 
-#sgpio_export FM_BMC_SUSACK_R1_N 37
-
-sgpio_export FM_BIOS_DEBUG_EN_R_N 39
+sgpio_export FM_BIOS_DEBUG_EN_R_N 41
 gpio_set FM_BIOS_DEBUG_EN_R_N 1
 
-sgpio_export GPU_NVS_PWR_BRAKE_R_N 41
+sgpio_export GPU_NVS_PWR_BRAKE_R_N 43
 gpio_set GPU_NVS_PWR_BRAKE_R_N 1
 
-sgpio_export GPU_WP_HW_CTRL_R_N 43
+sgpio_export GPU_WP_HW_CTRL_R_N 45
 gpio_set GPU_WP_HW_CTRL_R_N 1
 
-sgpio_export CLK_GEN2_BMC_RC_OE_N 45
-gpio_set CLK_GEN2_BMC_RC_OE_N 1
+sgpio_export CLK_GEN2_BMC_RC_OE_N 47
+gpio_set CLK_GEN2_BMC_RC_OE_N 0
 
-sgpio_export IRQ_SML0_ALERT_R_N 47
+sgpio_export IRQ_SML0_ALERT_R_N 49
 gpio_set IRQ_SML0_ALERT_R_N 1
 
-sgpio_export BMC_MONITER 49
+sgpio_export BMC_MONITER 51
 gpio_set BMC_MONITER 0
 
-sgpio_export FM_PFR_DSW_PWROK_N 51
-gpio_set FM_PFR_DSW_PWROK_N 1
+sgpio_export FM_PFR_DSW_PWROK_N 53
+pio_set FM_PFR_DSW_PWROK_N 1
 
-sgpio_export FM_PFR_OVR_RTC_R 53
+sgpio_export FM_PFR_OVR_RTC_R 55
 gpio_set FM_PFR_OVR_RTC_R 0
 
+sgpio_export FM_TPM_PRSNT_0_N 57
+gpio_set FM_TPM_PRSNT_0_N 1
+
+sgpio_export FM_TPM_PRSNT_1_N 59
+gpio_set FM_TPM_PRSNT_1_N 1
+
+sgpio_export IRQ_PCH_TPM_SPI_N 61
+gpio_set IRQ_PCH_TPM_SPI_N 1
+
+sgpio_export USB_OC0_REAR_R_N 63
+gpio_set USB_OC0_REAR_R_N 1
+
+sgpio_export GPU_FPGA_RST_N 65
+gpio_set GPU_FPGA_RST_N 1
+
+sgpio_export FM_JTAG_TCK_MUX_BMC_SEL 67
+gpio_set FM_JTAG_TCK_MUX_BMC_SEL 0
+
+sgpio_export CLK_BUF1_GPU_FPGA_OE_R_N 69
+gpio_set CLK_BUF1_GPU_FPGA_OE_R_N 0
+
+sgpio_export FM_BMC_CPU_FBRK_OUT_N 71
+gpio_set FM_BMC_CPU_FBRK_OUT_N 1 
+
+#BMC Ready
+sgpio_export FM_BMC_READY_R_PLD_N 37
+gpio_set FM_BMC_READY_R_PLD_N 1
 
 #devmem_set_bit 0x1e6e24bc 24
 #devmem_set_bit 0x1e6e24bc 25
 
-#devmem_set_bit 0x1e7800e0 8
-#devmem_clear_bit 0x1e7000e4 8
+devmem_set_bit 0x1e7800e0 8
+devmem_clear_bit 0x1e7000e4 8

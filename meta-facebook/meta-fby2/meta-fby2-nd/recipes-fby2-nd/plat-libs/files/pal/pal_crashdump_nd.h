@@ -35,14 +35,28 @@
 #define CPU_WDT_CCM_NUM 8
 #define WDT_NBIO_NUM 4
 
+#define TCDX_NUM 12
+#define CAKE_NUM 6
+#define IOM_NUM 4
+#define CCIX_NUM 4
+#define CS_NUM 8
+
 enum NDCRD_DATA_TYPE{
   TYPE_MCA_BANK       = 0x01,
   TYPE_VIRTUAL_BANK   = 0x02,
   TYPE_CPU_WDT_BANK   = 0x03,
   TYPE_WDT_ADDR_BANK  = 0x04,
   TYPE_WDT_DATA_BANK  = 0x05,
+  TYPE_TCDX_BANK      = 0x06,
+  TYPE_CAKE_BANK      = 0x07,
+  TYPE_PIE0_BANK      = 0x08,
+  TYPE_IOM_BANK       = 0x09,
+  TYPE_CCIX_BANK      = 0x0A,
+  TYPE_CS_BANK        = 0x0B,
+  TYPE_PCIE_AER_BANK  = 0x0C,
 
   TYPE_CONTROL_PKT    = 0x80,
+  TYPE_HEADER_BANK    = 0x81,
 };
 
 enum NDCRD_CTRL_CMD {
@@ -162,6 +176,8 @@ typedef struct {
 } __attribute__((packed)) ndcrd_virtual_bank_v2_t;
 
 //==============================================================================
+
+//==============================================================================
 // Type 0x03: CPU/Data Fabric Watchdog Timer bank
 //==============================================================================
 typedef struct {
@@ -169,6 +185,8 @@ typedef struct {
   uint32_t hw_assert_sts_low[CPU_WDT_CCM_NUM];
   uint32_t rspq_wdt_io_trans_log_hi[CPU_WDT_CCM_NUM];
   uint32_t rspq_wdt_io_trans_log_low[CPU_WDT_CCM_NUM];
+  uint32_t hw_assert_msk_hi[CPU_WDT_CCM_NUM];
+  uint32_t hw_assert_msk_low[CPU_WDT_CCM_NUM];
 } __attribute__((packed)) ndcrd_cpu_wdt_bank_t;
 
 //==============================================================================
@@ -203,12 +221,112 @@ typedef struct {
 } __attribute__((packed)) ndcrd_wdt_data_bank_t;
 
 //==============================================================================
+// Type 0x06: TCDX bank
+//==============================================================================
+typedef struct {
+  uint32_t hw_assert_sts_hi[TCDX_NUM];
+  uint32_t hw_assert_sts_low[TCDX_NUM];
+  uint32_t hw_assert_msk_hi[TCDX_NUM];
+  uint32_t hw_assert_msk_low[TCDX_NUM];
+} __attribute__((packed)) ndcrd_tcdx_bank_t;
+
+//==============================================================================
+// Type 0x07: CAKE bank
+//==============================================================================
+typedef struct {
+  uint32_t hw_assert_sts_hi[CAKE_NUM];
+  uint32_t hw_assert_sts_low[CAKE_NUM];
+  uint32_t hw_assert_msk_hi[CAKE_NUM];
+  uint32_t hw_assert_msk_low[CAKE_NUM];
+} __attribute__((packed)) ndcrd_cake_bank_t;
+
+//==============================================================================
+// Type 0x08: PIE0 bank
+//==============================================================================
+typedef struct {
+  uint32_t hw_assert_sts_hi;
+  uint32_t hw_assert_sts_low;
+  uint32_t hw_assert_msk_hi;
+  uint32_t hw_assert_msk_low;
+} __attribute__((packed)) ndcrd_pie0_bank_t;
+
+//==============================================================================
+// Type 0x09: IOM bank
+//==============================================================================
+typedef struct {
+  uint32_t hw_assert_sts_hi[IOM_NUM];
+  uint32_t hw_assert_sts_low[IOM_NUM];
+  uint32_t hw_assert_msk_hi[IOM_NUM];
+  uint32_t hw_assert_msk_low[IOM_NUM];
+} __attribute__((packed)) ndcrd_iom_bank_t;
+
+//==============================================================================
+// Type 0x0A: CCIX bank
+//==============================================================================
+typedef struct {
+  uint32_t hw_assert_sts_hi[CCIX_NUM];
+  uint32_t hw_assert_sts_low[CCIX_NUM];
+  uint32_t hw_assert_msk_hi[CCIX_NUM];
+  uint32_t hw_assert_msk_low[CCIX_NUM];
+} __attribute__((packed)) ndcrd_ccix_bank_t;
+
+//==============================================================================
+// Type 0x0B: CS bank
+//==============================================================================
+typedef struct {
+  uint32_t hw_assert_sts_hi[CS_NUM];
+  uint32_t hw_assert_sts_low[CS_NUM];
+  uint32_t hw_assert_msk_hi[CS_NUM];
+  uint32_t hw_assert_msk_low[CS_NUM];
+} __attribute__((packed)) ndcrd_cs_bank_t;
+
+//==============================================================================
+// Type 0x0C: PCIe AER bank
+//==============================================================================
+typedef struct {
+  uint8_t bus;
+  uint8_t dev;
+  uint8_t fun;
+  uint16_t cmd;
+  uint16_t sts;
+  uint16_t slot;
+  uint8_t second_bus;
+  uint16_t vendor_id;
+  uint16_t dev_id;
+  uint16_t class_code_lower; // Class Code 3 byte
+  uint8_t class_code_upper;
+  uint16_t second_sts;
+  uint16_t ctrl;
+  uint32_t uncorrectable_err_sts;
+  uint32_t uncorrectable_err_msk;
+  uint32_t uncorrectable_err_severity;
+  uint32_t correctable_err_sts;
+  uint32_t correctable_err_msk;
+  uint32_t hdr_log_dw0;
+  uint32_t hdr_log_dw1;
+  uint32_t hdr_log_dw2;
+  uint32_t hdr_log_dw3;
+  uint32_t root_err_sts;
+  uint16_t correctable_err_src_id;
+  uint16_t err_src_id;
+  uint32_t lane_err_sts;
+} __attribute__((packed)) ndcrd_pcie_aer_bank_t;
+
+//==============================================================================
 // Type 0x80: Control Packet
 //==============================================================================
 typedef struct {
   uint8_t cmd;
 } __attribute__((packed)) ndcrd_ctrl_pkt_t;
 
+//==============================================================================
+// Type 0x81: Crashdump Header
+//==============================================================================
+typedef struct {
+  uint64_t cpu_ppin;
+  uint32_t ucode_ver;
+  uint32_t pmio;
+} __attribute__((packed)) ndcrd_header_bank_t;
 
 uint8_t crashdump_initial(uint8_t slot);
 uint8_t pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uint8_t* res_data, uint8_t* res_len);

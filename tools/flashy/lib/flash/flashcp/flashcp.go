@@ -361,7 +361,16 @@ var verifyFlash = func(
 	}
 
 	if !bytes.Equal(activeFlashData, activeImageData) {
-		errMsg := "Verification failed: flash and image data mismatch."
+		// slow scan to identify first differing byte
+		var off int
+		var v byte
+		for off, v = range activeFlashData {
+			if v != activeImageData[off] {
+				break
+			}
+		}
+		errMsg := fmt.Sprintf("Verification failed: flash and image data " +
+			"mismatch beginning at offset %v + roOffset %v.", off, roOffset)
 		log.Print(errMsg)
 		return errors.Errorf("%v", errMsg)
 	}

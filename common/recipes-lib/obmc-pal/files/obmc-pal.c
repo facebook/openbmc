@@ -21,12 +21,14 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/time.h>
 #include <sys/reboot.h>
 #include <sys/wait.h>
 #include <openbmc/kv.h>
@@ -1105,6 +1107,12 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel)
   return PAL_EOK;
 }
 
+bool __attribute__((weak))
+pal_parse_cpu_dimm_hot_sel_helper(uint8_t *sel, char *error_log)
+{
+  return false;
+}
+
 /*
  * A Function to parse common SEL message, a helper funciton
  * for pal_parse_sel.
@@ -1464,10 +1472,12 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       break;
 
     case CPU_DIMM_HOT:
-      if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
-        strcat(error_log, "SOC MEMHOT");
-      else
-        strcat(error_log, "Unknown");
+      if (!pal_parse_cpu_dimm_hot_sel_helper(sel, error_log)) {
+        if ((ed[0] << 16 | ed[1] << 8 | ed[2]) == 0x01FFFF)
+          strcat(error_log, "SOC MEMHOT");
+        else
+          strcat(error_log, "Unknown");
+      }
       sprintf(temp_log, "CPU_DIMM_HOT %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
       break;
@@ -1822,6 +1832,81 @@ pal_log_clear(char *fru)
   return;
 }
 
+// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
+void pal_populate_guid(char *guid, char *str) {
+  unsigned int secs;
+  unsigned int usecs;
+  struct timeval tv;
+  uint8_t count;
+  uint8_t lsb, msb;
+  int i, r;
+
+  // Populate time
+  gettimeofday(&tv, NULL);
+
+  secs = tv.tv_sec;
+  usecs = tv.tv_usec;
+  guid[0] = usecs & 0xFF;
+  guid[1] = (usecs >> 8) & 0xFF;
+  guid[2] = (usecs >> 16) & 0xFF;
+  guid[3] = (usecs >> 24) & 0xFF;
+  guid[4] = secs & 0xFF;
+  guid[5] = (secs >> 8) & 0xFF;
+  guid[6] = (secs >> 16) & 0xFF;
+  guid[7] = (secs >> 24) & 0x0F;
+
+  // Populate version
+  guid[7] |= 0x10;
+
+  // Populate clock seq with randmom number
+  //getrandom(&guid[8], 2, 0);
+  srand(time(NULL));
+  //memcpy(&guid[8], rand(), 2);
+  r = rand();
+  guid[8] = r & 0xFF;
+  guid[9] = (r>>8) & 0xFF;
+
+  // Use string to populate 6 bytes unique
+  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
+  count = 0;
+  for (i = strlen(str)-1; i >= 0; i--) {
+    if (count == 6) {
+      break;
+    }
+
+    // If alphabet use the character as is
+    if (isalpha(str[i])) {
+      guid[15-count] = str[i];
+      count++;
+      continue;
+    }
+
+    // If it is 0-9, use two numbers as BCD
+    lsb = str[i] - '0';
+    if (i > 0) {
+      i--;
+      if (isalpha(str[i])) {
+        i++;
+        msb = 0;
+      } else {
+        msb = str[i] - '0';
+      }
+    } else {
+      msb = 0;
+    }
+    guid[15-count] = (msb << 4) | lsb;
+    count++;
+  }
+
+  // zero the remaining bytes, if any
+  if (count != 6) {
+    memset(&guid[10], 0, 6-count);
+  }
+
+}
+
+
+
 int __attribute__((weak))
 pal_get_dev_guid(uint8_t fru, char *guid)
 {
@@ -2107,7 +2192,7 @@ pal_is_fw_update_ongoing_system(void) {
 
 bool __attribute__((weak))
 pal_sled_cycle_prepare(void) {
-  char key[MAX_KEY_LEN] = "blk_fwupd";
+  char key[MAX_KEY_LEN] = "to_blk_sled_cycle";
   char value[MAX_VALUE_LEN] = {0};
   int ret;
 
@@ -2142,12 +2227,6 @@ pal_can_change_power(uint8_t fru)
     return false;
   }
   return true;
-}
-
-int __attribute__((weak))
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
-{
-  return PAL_EOK;
 }
 
 int __attribute__((weak))
@@ -2555,12 +2634,6 @@ pal_set_time_sync(uint8_t *req_data, uint8_t req_len)
 }
 
 int __attribute__((weak))
-pal_get_nic_fru_id(void)
-{
-  return -1;
-}
-
-int __attribute__((weak))
 pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
 {
   *slave_addr = BMC_SLAVE_ADDR;
@@ -2900,4 +2973,9 @@ pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t size
 int __attribute__((weak))
 pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len){
   return CC_INVALID_CMD;
+}
+
+int __attribute__((weak))
+pal_udbg_get_frame_total_num() {
+  return 3;
 }

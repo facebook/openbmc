@@ -12,9 +12,9 @@ LOCAL_URI = " \
     file://Makefile \
     "
 
-DEPENDS += "libncsi libpldm libmctp-intel"
-RDEPENDS:${PN} += "libncsi libpldm libmctp-intel"
-LDFLAGS += "-lpldm -lmctp_intel"
+DEPENDS += "libncsi obmc-libpldm libmctp-intel"
+RDEPENDS:${PN} += "libncsi obmc-libpldm libmctp-intel"
+LDFLAGS += "-lobmc-pldm -lmctp_intel"
 
 
 do_install() {

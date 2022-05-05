@@ -45,6 +45,7 @@
 
 static thresh_sensor_t g_snr[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
 static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1] = {0};
+static bool hotswap_support = false;
 
 static void
 print_usage() {
@@ -504,7 +505,10 @@ snr_monitor(void *arg) {
     pthread_exit(NULL);
   }
 
-  if ((sensor_cnt == 0) && (discrete_cnt == 0)) {
+  /*
+    ignore check sensor_cnt when enable hotswap_support
+  */
+  if ((sensor_cnt == 0) && (discrete_cnt == 0) && !hotswap_support) {
     pthread_detach(pthread_self());
     pthread_exit(NULL);
   }
@@ -530,6 +534,21 @@ snr_monitor(void *arg) {
     }
 
     if (pal_get_sdr_update_flag(fru)) {
+      /*
+        If hotswap_support enabled
+        re-getting sensor list when sdr_update change
+      */
+      if (hotswap_support) {
+        ret = pal_get_fru_sensor_list(fruNb, &sensor_list, &sensor_cnt);
+        if (ret < 0) {
+          syslog(LOG_DEBUG, "%s : slot%u pal_get_fru_sensor_list fail", __func__, fru);
+        }
+        ret = pal_get_fru_discrete_list(fruNb, &discrete_list, &discrete_cnt);
+        if (ret < 0) {
+          syslog(LOG_DEBUG, "%s : slot%u pal_get_fru_discrete_list fail", __func__, fru);
+        }
+      }
+
       if (init_fru_snr_thresh(fru) < 0 || pal_update_sensor_reading_sdr(fru) < 0) {
         syslog(LOG_DEBUG, "%s : slot%u SDR update fail", __func__, fru);
         sleep(STOP_PERIOD);
@@ -795,6 +814,11 @@ main(int argc, char **argv) {
   if (argc < 2) {
     print_usage();
     exit(1);
+  }
+
+  if (getenv("SENSORD_HOTSWAP_SUPPORT") != NULL) {
+    hotswap_support = true;
+    syslog(LOG_INFO, "sensord: SENSORD_HOTSWAP_SUPPORT is set");
   }
 
   pid_file = open("/var/run/sensord.pid", O_CREAT | O_RDWR, 0666);

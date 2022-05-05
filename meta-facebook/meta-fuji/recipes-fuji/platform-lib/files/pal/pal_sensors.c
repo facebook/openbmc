@@ -1069,6 +1069,24 @@ pal_set_pim_thresh(uint8_t fru) {
 }
 
 int
+pal_clear_sensor_cache_value(uint8_t fru) { 
+  int ret;
+  char cmd[128];
+  char fruname[16] = {0};
+
+  ret = pal_get_fru_name(fru, fruname);
+  if (ret < 0) {
+    printf("%s: Fail to get fru%d name\n",__func__,fru);
+    return ret;
+  }
+
+  snprintf(cmd, sizeof(cmd), "rm /tmp/cache_store/%s_sensor*",fruname);
+  RUN_SHELL_CMD(cmd);
+
+  return 0;
+}
+
+int
 pal_clear_thresh_value(uint8_t fru) {
   int ret;
   char fpath[64];
@@ -1124,7 +1142,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_PIM8:
     pim_id = fru - FRU_PIM1;
     pim_type = pal_get_pim_type_from_file(fru);
-    PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
+    PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
     *sensor_list = (uint8_t *) pim_sensor_list[pim_id];
     if ( pim_type == PIM_TYPE_16Q) {
       if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
@@ -1550,7 +1568,7 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
               i2c_bus, \
               addr)
 
-  uint8_t SCM_HSC_ADDR = pal_get_dev_addr_from_file(fru, KEY_HSC_ADDR);
+  uint8_t SCM_HSC_ADDR = pal_get_dev_addr_from_file(fru, KEY_HSC);
   dir_scm_sensor_hwmon(HSC_MON_dir, SCM_HSC_DEVICE_CH, SCM_HSC_ADDR);
 
   while (i < scm_sensor_cnt) {
@@ -1586,7 +1604,7 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = READING_NA;
         break;
     }
-  } else if (!scm_sensor && is_server_on()) {
+  } else if (is_server_on()) {
     ret = bic_sdr_init(FRU_SCM, false);
     if (ret < 0) {
 #ifdef DEBUG
@@ -1630,10 +1648,10 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
             i2c_bus, \
             addr)
 
-  uint8_t SMB_PWRSEQ_1_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ1_ADDR);
-  uint8_t SMB_PWRSEQ_2_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ2_ADDR);
-  uint8_t FCM_B_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMB_HSC_ADDR);
-  uint8_t FCM_T_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMT_HSC_ADDR);
+  uint8_t SMB_PWRSEQ_1_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ1);
+  uint8_t SMB_PWRSEQ_2_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ2);
+  uint8_t FCM_B_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMB_HSC);
+  uint8_t FCM_T_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_FCMT_HSC);
 
   if(SMB_PWRSEQ_1_addr == -1){
     SMB_PWRSEQ_1_addr = 0x35;
@@ -2115,8 +2133,8 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t type = pal_get_pim_type_from_file(fru);
   uint8_t pimid = fru-FRU_PIM1 + 1;
   uint8_t i2cbus = PIM1_I2CBUS + (pimid - 1) * 8;
-  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
-  uint8_t PIM_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_HSC_ADDR);
+  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
+  uint8_t PIM_HSC_addr = pal_get_dev_addr_from_file(fru, KEY_HSC);
 
 #define dir_pim_sensor(str_buffer,i2c_bus,i2c_offset,addr) \
       sprintf(str_buffer, \
@@ -3857,7 +3875,7 @@ get_smb_sensor_name(uint8_t sensor_num, char *name) {
 static int
 get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
   uint8_t type = pal_get_pim_type_from_file(fru);
-  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
+  uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
   uint8_t pimid = fru-FRU_PIM1+1;
   switch(sensor_num) {
     case PIM1_LM75_TEMP_4A:
@@ -6857,13 +6875,31 @@ sdr_init(char *path, sensor_info_t *sinfo) {
 }
 
 int pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
-  sdr_fru_update_flag[slot] = update;
+  char key[MAX_KEY_LEN];
+  char value[12] = {0};
+  char fruname[16] = {0};
+
   init_threshold_done[slot] = false;
-  return 0;
+  pal_get_fru_name(slot, fruname);
+  sprintf(key, "%s_update_flag", fruname);
+  sprintf(value, "%d", update);
+
+  return kv_set(key, value, 0, 0);
 }
 
 int pal_get_sdr_update_flag(uint8_t slot) {
-  return sdr_fru_update_flag[slot];
+  char key[MAX_KEY_LEN];
+  char value[12] = {0};
+  char fruname[16] = {0};
+
+  pal_get_fru_name(slot, fruname);
+  sprintf(key, "%s_update_flag", fruname);
+
+  if (kv_get(key, value, NULL, 0)) {
+    syslog(LOG_ERR, "%s: pal_get_sdr_update_flag(%d) fail!", __func__, slot);
+    return 0;
+  }
+  return (int)strtoul(value, NULL, 0);
 }
 
 
@@ -6998,7 +7034,7 @@ int bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
 int bic_read_sensor_wrapper(uint8_t slot_id, uint8_t fru, uint8_t sensor_num, bool discrete,
     void *value) {
 
-  int ret, i;
+  int ret;
   ipmi_sensor_reading_t sensor;
   sdr_full_t *sdr;
 
@@ -7066,7 +7102,7 @@ int bic_read_sensor_wrapper(uint8_t slot_id, uint8_t fru, uint8_t sensor_num, bo
   }
 
   if (*(float *) value > MAX_POS_READING_MARGIN) {     //Negative reading handle
-    for(i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
+    for(int i=0;i<sizeof(bic_neg_reading_sensor_support_list)/sizeof(uint8_t);i++) {
       if (sensor_num == bic_neg_reading_sensor_support_list[i]) {
         * (float *) value -= (float) THERMAL_CONSTANT;
       }
@@ -7104,7 +7140,6 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
   uint8_t pim_id = 0, pim_type = 0 ,PIM_PWRSEQ_addr;
   size_t cnt = 0;
   int brd_type_rev = 0;
-  uint8_t *sensor_list;
 
   pal_get_board_rev(&brd_type_rev);
   switch(fru) {
@@ -7128,9 +7163,8 @@ int pal_get_sensor_util_timeout(uint8_t fru) {
     case FRU_PIM6:
     case FRU_PIM7:
     case FRU_PIM8:
-      pim_id = fru - FRU_PIM1;
       pim_type = pal_get_pim_type_from_file(fru);
-      PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ_ADDR);
+      PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
       if (pim_type == PIM_TYPE_16Q) {
         if ( PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
           cnt = sizeof(pim16q_ucd90124_sensor_list) / sizeof(uint8_t);

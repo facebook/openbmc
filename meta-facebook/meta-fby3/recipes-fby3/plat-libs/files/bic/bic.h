@@ -99,12 +99,16 @@ enum {
 #define ON_CHIP_FLASH_USER_VER           (0x00200028)
 #define ON_CHIP_FLASH_IP_DATA_REG        (0x00000000)
 
-// Dual-boot IP
+// MAX10 10M25 Dual-boot IP
 #define DUAL_BOOT_IP_BASE                (0x00200000)
-#define CFM1_START_ADDR                  (0x00064000)
-#define CFM1_END_ADDR                    (0x000BFFFF)
-#define CFM2_START_ADDR                  (0x00008000)
-#define CFM2_END_ADDR                    (0x00063FFF)
+#define MAX10M25_CFM1_START_ADDR         (0x00064000)
+#define MAX10M25_CFM1_END_ADDR           (0x000BFFFF)
+#define MAX10M25_CFM2_START_ADDR         (0x00008000)
+#define MAX10M25_CFM2_END_ADDR           (0x00063FFF)
+
+// MAX10 10M08 Dual-boot IP
+#define MAX10M08_CFM1_START_ADDR         (0x0002B000)
+#define MAX10M08_CFM1_END_ADDR           (0x0004DFFF)
 
 extern const char *board_stage[];
 
@@ -234,6 +238,8 @@ enum {
   VR_TI  = 0x1,
   VR_IFX = 0x2, // Infineon vr vendor ID
   VR_VY  = 0x3, // Vishay vr vendor ID
+  VR_ON  = 0x4, // Onsemi vr vendor ID
+  ONS_DEVID_LEN = 0x1,
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,

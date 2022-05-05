@@ -50,7 +50,6 @@
 #define GPIO_NIC0_PRSNT "HP_LVC3_OCP_V3_1_PRSNT2_N"
 #define GPIO_NIC1_PRSNT "HP_LVC3_OCP_V3_2_PRSNT2_N"
 
-#define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
@@ -1295,81 +1294,6 @@ pal_set_guid(uint16_t offset, char *guid) {
   return errno;
 }
 
-// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
-static void
-pal_populate_guid(char *guid, char *str) {
-  unsigned int secs;
-  unsigned int usecs;
-  struct timeval tv;
-  uint8_t count;
-  uint8_t lsb, msb;
-  int i, r;
-
-  // Populate time
-  gettimeofday(&tv, NULL);
-
-  secs = tv.tv_sec;
-  usecs = tv.tv_usec;
-  guid[0] = usecs & 0xFF;
-  guid[1] = (usecs >> 8) & 0xFF;
-  guid[2] = (usecs >> 16) & 0xFF;
-  guid[3] = (usecs >> 24) & 0xFF;
-  guid[4] = secs & 0xFF;
-  guid[5] = (secs >> 8) & 0xFF;
-  guid[6] = (secs >> 16) & 0xFF;
-  guid[7] = (secs >> 24) & 0x0F;
-
-  // Populate version
-  guid[7] |= 0x10;
-
-  // Populate clock seq with randmom number
-  //getrandom(&guid[8], 2, 0);
-  srand(time(NULL));
-  //memcpy(&guid[8], rand(), 2);
-  r = rand();
-  guid[8] = r & 0xFF;
-  guid[9] = (r>>8) & 0xFF;
-
-  // Use string to populate 6 bytes unique
-  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
-  count = 0;
-  for (i = strlen(str)-1; i >= 0; i--) {
-    if (count == 6) {
-      break;
-    }
-
-    // If alphabet use the character as is
-    if (isalpha(str[i])) {
-      guid[15-count] = str[i];
-      count++;
-      continue;
-    }
-
-    // If it is 0-9, use two numbers as BCD
-    lsb = str[i] - '0';
-    if (i > 0) {
-      i--;
-      if (isalpha(str[i])) {
-        i++;
-        msb = 0;
-      } else {
-        msb = str[i] - '0';
-      }
-    } else {
-      msb = 0;
-    }
-    guid[15-count] = (msb << 4) | lsb;
-    count++;
-  }
-
-  // zero the remaining bytes, if any
-  if (count != 6) {
-    memset(&guid[10], 0, 6-count);
-  }
-
-  return;
-}
-
 int
 pal_get_sys_guid(uint8_t fru, char *guid) {
   pal_get_guid(OFFSET_SYS_GUID, guid);
@@ -1971,12 +1895,6 @@ pal_set_post_end(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *re
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC0;
-}
-
-int
 pal_get_target_bmc_addr(uint8_t *tar_bmc_addr) {
   uint16_t m_bmc_addr;
 
@@ -2155,28 +2073,4 @@ int pal_i2c_write_read (uint8_t bus, uint8_t addr,
 
   i2c_cdev_slave_close(fd);
   return retCode;
-}
-
-int 
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len)
-{
-  // Share command with fby, slot in fbal will be ignored.
-  uint8_t fruid;
-  uint16_t timeout;
-  *res_len = 0;
-  
-  // req[0] = fru id
-  // req[1] = timeout value (9 ~ 16 bits)
-  // req[2] = timeout value (1 ~  8 bits)
-  if (req_len != 3) {
-    return CC_INVALID_LENGTH;
-  }
-  fruid = req_data[0];
-  timeout = req_data[1]<<8 | req_data[2];
-
-  if (pal_set_fw_update_ongoing(fruid, timeout)) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
 }

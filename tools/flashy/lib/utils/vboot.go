@@ -30,7 +30,8 @@ import (
 )
 
 // AST_SRAM_VBS_BASE is the location in SRAM used for verified boot content/flags.
-const AST_SRAM_VBS_BASE = 0x1E720200
+const AST_SRAM_VBS_BASE = 0x1E720200 // ast2400, ast2500
+const AST_SRAM_VBS_BASE_G6 = 0x10015800 // ast2600
 
 // AST_SRAM_VBS_SIZE is the size of verified boot content/flags.
 const AST_SRAM_VBS_SIZE = 56
@@ -128,16 +129,47 @@ var vbootPartitionExists = func() bool {
 	return err == nil
 }
 
+var getMachine = func() (string, error) {
+	var uts syscall.Utsname
+
+	err := syscall.Uname(&uts)
+	if err != nil {
+		return "unknown", err
+	}
+
+	machine := make([]byte, 0, len(uts.Machine))
+	for _, v := range uts.Machine {
+		if v == 0 {
+			break
+		}
+		machine = append(machine, byte(v))
+	}
+	return string(machine), nil
+}
+
 // GetVbs tries to get the Vbs struct by reading off /dev/mem.
 // This errors out if the vboot partition ("rom") does not exist.
 var GetVbs = func() (Vbs, error) {
 	var vbs Vbs
+	var baseaddr uint32
 
 	if !vbootPartitionExists() {
 		return vbs, errors.Errorf("Not a Vboot system: vboot partition (rom) does not exist.")
 	}
 
-	mmapOffset := fileutils.GetPageOffsettedBase(AST_SRAM_VBS_BASE)
+	machine, err := getMachine()
+	if err != nil {
+		return vbs, errors.Errorf("Unable to fetch utsinfo: %v", err)
+	}
+
+	if machine == "armv7l" {
+		baseaddr = AST_SRAM_VBS_BASE_G6
+	} else {
+		baseaddr = AST_SRAM_VBS_BASE
+	}
+	log.Printf("Machine type from utsinfo: %v, base address: 0x%x", machine, baseaddr)
+
+	mmapOffset := fileutils.GetPageOffsettedBase(baseaddr)
 	length := fileutils.Pagesize // surely larger than AST_SRAM_VBS_SIZE
 
 	pageData, err := fileutils.MmapFileRange("/dev/mem", int64(mmapOffset),
@@ -147,7 +179,7 @@ var GetVbs = func() (Vbs, error) {
 	}
 	defer fileutils.Munmap(pageData)
 
-	dataOffset := fileutils.GetPageOffsettedOffset(AST_SRAM_VBS_BASE)
+	dataOffset := fileutils.GetPageOffsettedOffset(baseaddr)
 	vbsEndOffset, err := AddU32(dataOffset, AST_SRAM_VBS_SIZE)
 	if err != nil {
 		return vbs, errors.Errorf("VBS end offset overflowed: %v", err)

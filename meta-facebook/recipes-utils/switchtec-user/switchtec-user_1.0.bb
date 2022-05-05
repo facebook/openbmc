@@ -6,7 +6,7 @@ LICENSE = "GPLv2"
 SRCBRANCH = "fb_dev"
 SRCREV = "e5cffc5bee689ea2560add51dc1123e771304298"
 
-SRC_URI = "git://github.com/Microsemi/switchtec-user.git;protocol=git;branch=${SRCBRANCH};rev=${SRCREV};downloadfilename=${PN}-${PV}.tar.gz"
+SRC_URI = "git://github.com/Microsemi/switchtec-user.git;protocol=https;branch=${SRCBRANCH};rev=${SRCREV};downloadfilename=${PN}-${PV}.tar.gz"
 
 # Add version file to hardcode the switchtec version
 SRC_URI += "file://0001-Add-version-file-to-hardcode-the-switchtec-version.patch \

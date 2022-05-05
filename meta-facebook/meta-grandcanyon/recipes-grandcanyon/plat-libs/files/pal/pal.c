@@ -486,6 +486,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   int ret = 0;
   uint8_t chassis_type = 0;
   switch (fru) {
+    case FRU_ALL:
+      *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
+      break;
     case FRU_SERVER:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL | FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_SERVER;
       break;
@@ -499,10 +502,10 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
       break;
     case FRU_DPB:
-      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
     case FRU_SCC:
-      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
     case FRU_E1S_IOCM:
       *caps = FRU_CAPABILITY_SENSOR_ALL;
@@ -515,7 +518,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_FAN1:
     case FRU_FAN2:
     case FRU_FAN3:
-      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ;
+      *caps = FRU_CAPABILITY_FRUID_READ;
       break;
     default:
       ret = -1;
@@ -563,6 +566,9 @@ int
 pal_get_fru_name(uint8_t fru, char *name) {
 
   switch(fru) {
+    case FRU_ALL:
+      snprintf(name, MAX_FRU_CMD_STR, "all");
+      break;
     case FRU_SERVER:
       snprintf(name, MAX_FRU_CMD_STR, "server");
       break;
@@ -634,79 +640,6 @@ pal_get_pwm_value(uint8_t fan_id, uint8_t *pwm) {
   }
 
   return ret;
-}
-
-// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
-static void
-pal_populate_guid(char *guid, char *str) {
-  unsigned int secs = 0;
-  unsigned int usecs = 0;
-  struct timeval tv;
-  uint8_t count = 0;
-  uint8_t lsb = 0, msb = 0;
-  int i = 0, clock_seq = 0;
-
-  // Populate time
-  gettimeofday(&tv, NULL);
-
-  secs = tv.tv_sec;
-  usecs = tv.tv_usec;
-  guid[0] = usecs & 0xFF;
-  guid[1] = (usecs >> 8) & 0xFF;
-  guid[2] = (usecs >> 16) & 0xFF;
-  guid[3] = (usecs >> 24) & 0xFF;
-  guid[4] = secs & 0xFF;
-  guid[5] = (secs >> 8) & 0xFF;
-  guid[6] = (secs >> 16) & 0xFF;
-  guid[7] = (secs >> 24) & 0x0F;
-
-  // Populate version
-  guid[7] |= 0x10;
-
-  // Populate clock seq with randmom number
-  srand(time(NULL));
-  clock_seq = rand();
-  guid[8] = clock_seq & 0xFF;
-  guid[9] = (clock_seq >> 8) & 0xFF;
-
-  // Use string to populate 6 bytes unique
-  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
-  count = 0;
-  for (i = strlen(str)-1; i >= 0; i--) {
-    if (count == 6) {
-      break;
-    }
-
-    // If alphabet use the character as is
-    if (isalpha(str[i])) {
-      guid[15-count] = str[i];
-      count++;
-      continue;
-    }
-
-    // If it is 0-9, use two numbers as BCD
-    lsb = str[i] - '0';
-    if (i > 0) {
-      i--;
-      if (isalpha(str[i])) {
-        i++;
-        msb = 0;
-      } else {
-        msb = str[i] - '0';
-      }
-    } else {
-      msb = 0;
-    }
-    guid[15-count] = (msb << 4) | lsb;
-    count++;
-  }
-
-  // zero the remaining bytes, if any
-  if (count != 6) {
-    memset(&guid[10], 0, 6-count);
-  }
-
-  return;
 }
 
 // GUID for System and Device
@@ -999,11 +932,6 @@ pal_is_fw_update_ongoing_system(void) {
   }
 
   return false;
-}
-
-int
-pal_get_nic_fru_id(void) {
-  return FRU_NIC;
 }
 
 int
@@ -4134,28 +4062,6 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   pal_parse_oem_unified_sel_common(fru, sel, error_log);
 
   return PAL_EOK;
-}
-
-int
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  int ret = 0;
-
-  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
-    syslog(LOG_ERR, "%s(): Failed to set fw update status due to parameters are NULL.", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  if (req_len != 2) {
-    return CC_INVALID_LENGTH;
-  }
-
-  ret = pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]));
-  if (ret < 0) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-  *res_len = 0;
-
-  return CC_SUCCESS;
 }
 
 int

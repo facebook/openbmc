@@ -131,7 +131,7 @@ Optional:
   "ignored_addrs": Do not scan for these addresses (Useful in debugging).
 
 Once created, users primarily interact with the interface using the
-`command(req,resp,baud,timeout,settle_time)` method. The message structure
+`command(req,resp,baud,timeout)` method. The message structure
 is discussed next.
 
 # Messaging
@@ -271,7 +271,7 @@ register map described above.
 
 It defines a `command()` method very similar to the `Modbus` class
 
-To help with monitoring it defines a `monitor()` method which will
+To help with monitoring it defines a `reloadRegisters()` method which will
 read all registers defined in the register map and store it in the 
 local member of type `ModbusDeviceRawData`.
 

@@ -55,11 +55,12 @@ IMAGE_INSTALL += " \
   lldp-util \
   ipmi-util \
   vboot-utils \
-  libpldm \
   slot-util \
   enclosure-util \
   name-util \
   lrzsz \
   mctp-util \
   jbi \
+  dimm-util \
+  attest-util \
   "

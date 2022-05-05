@@ -110,14 +110,19 @@ func TestGetVbs(t *testing.T) {
 	getPageOffsettedOffsetOrig := fileutils.GetPageOffsettedOffset
 	vbootPartitionExistsOrig := vbootPartitionExists
 	munmapOrig := fileutils.Munmap
+	getMachineOrig := getMachine
 	defer func() {
 		fileutils.MmapFileRange = mmapFileRangeOrig
 		fileutils.GetPageOffsettedOffset = getPageOffsettedOffsetOrig
 		vbootPartitionExists = vbootPartitionExistsOrig
 		fileutils.Munmap = munmapOrig
+		getMachine = getMachineOrig
 	}()
 	vbootPartitionExists = func() bool {
 		return true
+	}
+	getMachine = func() (string, error) {
+		return "armv6l", nil
 	}
 	wantVbs := Vbs{
 		671630160,
@@ -145,6 +150,9 @@ func TestGetVbs(t *testing.T) {
 	fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 		if filename != "/dev/mem" {
 			t.Errorf("filename: want '%v' got '%v'", "/dev/mem", filename)
+		}
+		if offset != AST_SRAM_VBS_BASE {
+			t.Errorf("offset: want '%v' got '%v'", AST_SRAM_VBS_BASE, offset)
 		}
 		return tests.ExampleVbsData, nil
 	}
@@ -176,11 +184,33 @@ func TestGetVbs(t *testing.T) {
 		if filename != "/dev/mem" {
 			t.Errorf("filename: want '%v' got '%v'", "/dev/mem", filename)
 		}
+		if offset != AST_SRAM_VBS_BASE {
+			t.Errorf("offset: want '%v' got '%v'", AST_SRAM_VBS_BASE, offset)
+		}
 		return tests.ExampleVbsData, errors.Errorf("failed")
 	}
 
 	got, err = GetVbs()
 	tests.CompareTestErrors(errors.Errorf("Unable to mmap /dev/mem: failed"), err, t)
+
+	// test AST2600 path
+	getMachine = func() (string, error) {
+		return "armv7l", nil
+	}
+	fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+		if filename != "/dev/mem" {
+			t.Errorf("filename: want '%v' got '%v'", "/dev/mem", filename)
+		}
+		if offset != AST_SRAM_VBS_BASE_G6 {
+			t.Errorf("offset: want '%v' got '%v'", AST_SRAM_VBS_BASE_G6, offset)
+		}
+		return tests.ExampleVbsData, nil
+	}
+
+	got, err = GetVbs()
+	if err != nil {
+		t.Error(err)
+	}
 
 	// vboot partition does not exist
 	vbootPartitionExists = func() bool {

@@ -191,7 +191,9 @@ get_fru_name(uint8_t fru, char *name)
 static int
 is_pldm_sensor(uint8_t snr_num, uint8_t fru)
 {
-  if (fru == pal_get_nic_fru_id() &&
+  unsigned int caps;
+  if (pal_get_fru_capability(fru, &caps) == 0 && 
+      (caps & FRU_CAPABILITY_NETWORK_CARD) != 0 &&
       (snr_num >= PLDM_SENSOR_START && snr_num <= PLDM_SENSOR_END)) {
     return 1;
   }
@@ -201,7 +203,9 @@ is_pldm_sensor(uint8_t snr_num, uint8_t fru)
 static int
 is_pldm_state_sensor(uint8_t snr_num, uint8_t fru)
 {
-  if (fru == pal_get_nic_fru_id() &&
+  unsigned int caps;
+  if (pal_get_fru_capability(fru, &caps) == 0 && 
+      (caps & FRU_CAPABILITY_NETWORK_CARD) != 0 &&
       (snr_num >= PLDM_STATE_SENSOR_START && snr_num <= PLDM_SENSOR_END)) {
     return 1;
   }
@@ -754,6 +758,10 @@ print_sensor(uint8_t fru, int sensor_num, bool allow_absent, bool history, bool 
     return 0;
   }
 
+  if (json == 0) {
+    printf("%s:\n", fruname);
+  }
+
   if (pal_get_fru_capability(fru, &caps) == PAL_EOK) {
     if (caps & FRU_CAPABILITY_SENSOR_SLAVE) {
       pal_get_root_fru(fru, &root);
@@ -914,6 +922,7 @@ main(int argc, char **argv) {
   int filter_len = argc - 3;
   char ** filter_list = argv + 3;
   json_t *fru_sensor_obj = json_object();
+  unsigned int caps = 0;
 
   if (parse_args(argc, argv, fruname,
         &history_clear, &history,
@@ -947,6 +956,11 @@ main(int argc, char **argv) {
 
   if (fru == FRU_ALL) {
     for (fru = 1; fru <= pal_get_fru_count(); fru++) {
+      caps = 0;
+      // Do not display fru's sensor if fru's FRU_CAPABILITY_SENSOR_READ not enable
+      if (pal_get_fru_capability(fru, &caps) || !(caps & FRU_CAPABILITY_SENSOR_READ)) {
+        continue;
+      }
       ret |= print_sensor(fru, num, true, history, threshold, force, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);
     }
     ret |= print_sensor(AGGREGATE_SENSOR_FRU_ID, num, true, history, threshold, false, json, history_clear, filter, filter_list, filter_len, period, fru_sensor_obj);

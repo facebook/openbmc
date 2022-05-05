@@ -204,7 +204,7 @@ extern "C" {
 #define UCD90160A_DRIVER      "ucd90160"
 #define UCD90124A_DRIVER      "ucd90124"
 #define ADM1266_DRIVER        "adm1266"
-#define ADM1278_DRIVER        "adm1278"
+#define ADM1278_DRIVER        "adm1275"
 #define LM25066_DRIVER        "lm25066"
 #define DOM_FPGA_DRIVER       "domfpga"
 #define LM75_DRIVER           "lm75"
@@ -914,6 +914,7 @@ void pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t
 int pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag);
 int pal_get_pim_type_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
+int pal_clear_sensor_cache_value(uint8_t fru);
 int pal_clear_thresh_value(uint8_t fru);
 int pal_init_sensor_check(uint8_t fru, uint8_t snr_num, void *snr);
 int fuji_sensor_name(uint8_t fru, uint8_t sensor_num, char *name);

@@ -46,7 +46,6 @@ IMAGE_INSTALL += " \
   threshold-util \
   libncsi \
   vboot-utils \
-  libpldm \
   plat-utils \
   i2craw \
   bic-util \

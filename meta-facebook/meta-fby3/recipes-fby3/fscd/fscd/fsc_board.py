@@ -41,7 +41,8 @@ try:
     Logger.warn("sled_system_conf: %s" % (sled_system_conf))
 
     # Add sensor fail scenario for DP case
-    if search(r"Type_DP", sled_system_conf) is not None:
+    if (search(r"Type_DP", sled_system_conf) is not None) or (
+       search(r"Type_DPF", sled_system_conf) is not None):
         Logger.warn("Add sensor fail scenario for DP case")
         get_fan_mode_scenario_list = [
             "one_fan_failure",
@@ -64,16 +65,9 @@ fru_map = {
 }
 
 cwc_fru_map = {
-    "slot1_2U_exp": {"fru": 31},
-    "slot1_2U_top": {"fru": 32},
-    "slot1_2U_bot": {"fru": 33},
-}
-
-# PESW_FW id which is defined in bic.h
-pesw_target_map = {
-    "slot1_2U_exp": {"target_id": 47},
-    "slot1_2U_top": {"target_id": 51},
-    "slot1_2U_bot": {"target_id": 55},
+    "slot1_2U_exp": {"fru": 10},
+    "slot1_2U_top": {"fru": 11},
+    "slot1_2U_bot": {"fru": 12},
 }
 
 dimm_location_name_map = {
@@ -217,6 +211,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if status.value == 6:  # 12V-off
                 return 0
 
+            # if it's cwc system and fw update is ongoing will not check sensor to avoid bic being busy
+            if lpal_hndl.pal_is_cwc() == 0 and lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"])) == 1:
+                return 0
+
             if (search(r"front_io_temp", sname) is not None) and (
                 status.value == 0 or status.value == 1
             ):
@@ -224,7 +222,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
             # If sensor fail, dp will boost without checking host ready
             if (search(r"Type_DP", sled_system_conf) is None) or (
-                search(r"Type_DPB", sled_system_conf) is not None
+                search(r"Type_DPB", sled_system_conf) is not None) or (
+                search(r"Type_DPF", sled_system_conf) is None
             ):
                 try:
                     flag_status = kv_get(host_ready_map[board])
@@ -329,16 +328,22 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             return 0
                     else:
                         return 0
-                elif search(r"(.*)pesw_temp", sname) is not None:  # get CWC or GPv3 PESW fw info
-                    pesw_res = c_uint8(0)
-                    pesw_res_len = c_uint8(0)
-                    response = lpal_hndl.pal_get_fw_info(
-                        int(fru_map[board]["slot_num"]),
-                        int(pesw_target_map[board]["target_id"]),
-                        byref(pesw_res),
-                        byref(pesw_res_len),
+                elif search(r"(.*)pesw_temp", sname) is not None:
+                    exp_board_prsnt = c_uint8(0)
+                    pesw_power = c_uint8(0)
+
+                    response = lpal_hndl.pal_is_fru_prsnt( #check if CWC board, top/bot GPv3 board is present
+                        int(cwc_fru_map[board]["fru"]),
+                        byref(exp_board_prsnt),
                     )
-                    if response == -1:  # can not get fw info
+                    if response < 0 or exp_board_prsnt.value == 0: # exp board not present
+                        return 0
+
+                    response = lpal_hndl.pal_is_pesw_power_on(
+                        int(cwc_fru_map[board]["fru"]),
+                        byref(pesw_power),
+                    )
+                    if response < 0 or pesw_power.value == 0: # PESW not power ready
                         return 0
                     else:
                         return 1
@@ -376,7 +381,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 )
                 if status.value == 1:  # power on
                     if (search(r"Type_DP", sled_system_conf) is None) or (
-                        search(r"Type_DPB", sled_system_conf) is not None
+                        search(r"Type_DPB", sled_system_conf) is not None) or (
+                        search(r"Type_DPF", sled_system_conf) is None
                     ):
                         try:
                             flag_status = kv_get(host_ready_map[board])
@@ -412,6 +418,10 @@ def get_fan_mode(scenario="None"):
         elif sled_system_conf == "Type_15":
             # config D GPv3
             pwm = 80
+            return fan_mode["boost_mode"], pwm
+        elif sled_system_conf == "Type_DPF":
+            # FAVA DP
+            pwm = 70
             return fan_mode["boost_mode"], pwm
         else:
             pwm = 60

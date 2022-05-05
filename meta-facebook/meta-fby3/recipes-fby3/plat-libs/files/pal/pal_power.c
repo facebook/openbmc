@@ -742,7 +742,7 @@ pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *
   }
 
   ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, &nvme_ready, status, \
-                                  NULL, NULL, NULL, NULL, NULL, intf);
+                                  NULL, NULL, NULL, NULL, NULL, NULL, intf);
   if (ret < 0) {
     return -1;
   }
@@ -816,7 +816,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
     dev_id = rsp[0];
     intf = rsp[1];
     ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, \
-                                   NULL, NULL, NULL, NULL, NULL, intf);
+                                   NULL, NULL, NULL, NULL, NULL, NULL, intf);
     if (ret < 0) {
       return -1;
     }

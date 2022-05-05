@@ -53,5 +53,6 @@ IMAGE_INSTALL += " \
   wedge-eeprom \
   weutil-dhcp-id \
   rackmon \
+  psu-update \
   ftdicmd \
   "

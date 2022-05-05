@@ -68,11 +68,10 @@ DEPENDS += "nlohmann-json libpal dtc zlib openssl libvbs libgpio-ctrl libkv libo
 RDEPENDS:${PN} += "libpal zlib openssl libvbs libgpio-ctrl libkv libobmc-i2c libmisc-utils"
 RDEPENDS:${PN}-ptest += "${RDEPENDS:${PN}}"
 
-CXXFLAGS += "\
-  -Wno-psabi \
-  ${@bb.utils.contains('MACHINE_FEATURES', 'tpm1', '-DCONFIG_TPM1', '', d)} \
-  ${@bb.utils.contains('MACHINE_FEATURES', 'tpm2', '-DCONFIG_TPM2', '', d)} \
-  "
+CXXFLAGS:append = " -Wno-psabi"
+CXXFLAGS:append:mf-tpm1 = " -DCONFIG_TPM1"
+CXXFLAGS:append:mf-tpm2 = " -DCONFIG_TPM2"
+
 do_install() {
   install -d ${D}${bindir}
   install -m 0755 fw-util ${D}${bindir}/fw-util

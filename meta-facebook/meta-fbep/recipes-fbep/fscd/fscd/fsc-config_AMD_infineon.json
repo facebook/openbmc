@@ -1,0 +1,220 @@
+{
+  "version": "fbep-AMD-20y1202",
+  "pwm_transition_value": 70,
+  "pwm_boost_value": 100,
+  "sample_interval_ms": 1000,
+  "fan_recovery_time": 1,
+  "sensor_filter_all": true,
+  "boost": {
+    "fan_fail": true,
+    "sensor_fail": true
+  },
+  "sensor_valid_check": {
+    "(.*)pax": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)gpu": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)hbm": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "(.*)infineon": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    }
+  },
+  "watchdog": false,
+  "fanpower": true,
+  "min_rpm": 1500,
+  "profiles": {
+    "linear_inlet": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 1,
+      "negative_hysteresis": 1,
+      "data": [
+        [23, 10],
+        [28, 15],
+        [32, 20],
+        [37, 25],
+        [39, 45],
+        [42, 65],
+        [45, 80]
+      ]
+    },
+    "linear_switch_remote": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [60, 10],
+        [65, 15],
+        [70, 20],
+        [75, 25],
+        [80, 30],
+        [90, 60]
+      ]
+    },
+    "linear_gpu_spot": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 2,
+      "data": [
+        [60, 10],
+        [65, 15],
+        [70, 20],
+        [75, 25],
+        [80, 30],
+        [85, 35]
+      ]
+    },
+    "pid_gpu_spot": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 90,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0.0
+    },
+    "linear_gpu_mem": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 2,
+      "data": [
+        [55, 10],
+        [60, 15],
+        [65, 20],
+        [70, 25],
+        [75, 30]
+      ]
+    },
+    "pid_gpu_mem": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 80,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0.0
+    },
+    "linear_infineon": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [70, 15],
+        [80, 30],
+        [90, 80]
+      ]
+    }
+  },
+  "fans": {
+    "0": {
+      "label" : "Fan 0 Inlet",
+      "read_source" : {
+        "kv" : "mb_sensor0"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "1": {
+      "label" : "Fan 0 Outlet",
+      "read_source" : {
+        "kv" : "mb_sensor1"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "2": {
+      "label" : "Fan 1 Inlet",
+      "read_source" : {
+        "kv" : "mb_sensor4"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "3": {
+      "label" : "Fan 1 Outlet",
+      "read_source" : {
+        "kv" : "mb_sensor5"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "4": {
+      "label" : "Fan 2 Inlet",
+      "read_source" : {
+        "kv" : "mb_sensor8"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "5": {
+      "label" : "Fan 2 Outlet",
+      "read_source" : {
+        "kv" : "mb_sensor9"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "6": {
+      "label" : "Fan 3 Inlet",
+      "read_source" : {
+        "kv" : "mb_sensor12"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    },
+    "7": {
+      "label" : "Fan 3 Outlet",
+      "read_source" : {
+        "kv" : "mb_sensor13"
+      },
+      "write_source" : {
+        "util" : "/usr/local/bin/fan-util --set %d"
+      }
+    }
+  },
+  "zones": {
+    "zone_1": {
+      "pwm_output": [0],
+      "expr_file": "zone1_AMD_infineon.fsc"
+    }
+  }
+}

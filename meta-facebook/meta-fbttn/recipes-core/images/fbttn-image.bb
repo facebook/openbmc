@@ -49,6 +49,5 @@ IMAGE_INSTALL += " \
   libncsi \
   ncsi-util \
   ncsid-v2 \
-  libpldm \
   name-util \
   "

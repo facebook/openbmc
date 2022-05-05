@@ -87,6 +87,7 @@ struct vr_info {
   bool force;
   struct vr_ops *ops;
   void *private_data;
+  int (*xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
 };
 
 extern void *plat_configs;

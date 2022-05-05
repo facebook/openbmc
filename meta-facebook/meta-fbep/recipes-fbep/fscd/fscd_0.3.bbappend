@@ -19,19 +19,27 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 LOCAL_URI += " \
     file://setup-fan.sh \
-    file://fsc-config_AMD.json \
-    file://fsc-config_NVIDIA.json \
-    file://zone1_AMD.fsc \
-    file://zone1_NVIDIA.fsc \
+    file://fsc-config_AMD_vicor.json \
+    file://fsc-config_AMD_infineon.json \
+    file://fsc-config_NVIDIA_vicor.json \
+    file://fsc-config_NVIDIA_infineon.json \
+    file://zone1_AMD_vicor.fsc \
+    file://zone1_AMD_infineon.fsc \
+    file://zone1_NVIDIA_vicor.fsc \
+    file://zone1_NVIDIA_infineon.fsc \
     file://fsc_board.py \
     "
 
-FSC_CONFIG += "fsc-config_AMD.json \
-               fsc-config_NVIDIA.json \
+FSC_CONFIG += "fsc-config_AMD_vicor.json \
+               fsc-config_AMD_infineon.json \
+               fsc-config_NVIDIA_vicor.json \
+               fsc-config_NVIDIA_infineon.json \
 	      "
 
-FSC_ZONE_CONFIG +="zone1_AMD.fsc \
-                   zone1_NVIDIA.fsc \
+FSC_ZONE_CONFIG +="zone1_AMD_vicor.fsc \
+                   zone1_AMD_infineon.fsc \
+                   zone1_NVIDIA_vicor.fsc \
+                   zone1_NVIDIA_infineon.fsc \
                   "
 
 FSC_INIT_FILE += "setup-fan.sh"

@@ -511,7 +511,6 @@ bic_comp_init_usb_dev(uint8_t slot_id, usb_dev* udev, char *comp)
   int index = 0;
   char found = 0;
   ssize_t cnt;
-  uint8_t bmc_location = 0;
   uint16_t vendor_id = SB_USB_VENDOR_ID;
   int recheck = MAX_CHECK_DEVICE_TIME;
 
@@ -561,12 +560,6 @@ bic_comp_init_usb_dev(uint8_t slot_id, usb_dev* udev, char *comp)
           goto error_exit;
         }
 
-        ret = fby35_common_get_bmc_location(&bmc_location);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-          goto error_exit;
-        }
-
         ret = libusb_get_port_numbers(udev->dev, udev->path, sizeof(udev->path));
         if (ret < 0) {
           printf("Error get port number\n");
@@ -574,7 +567,7 @@ bic_comp_init_usb_dev(uint8_t slot_id, usb_dev* udev, char *comp)
           goto error_exit;
         }
 
-        if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+        if ( bmc_location == BB_BMC ) {
           if ( udev->path[1] != slot_id) {
             continue;
           }

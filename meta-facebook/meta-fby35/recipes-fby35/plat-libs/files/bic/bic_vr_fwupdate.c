@@ -41,7 +41,7 @@
 /****************************/
 #define WARNING_REMAINING_WRITES 3
 #define MAX_RETRY 3
-#define VR_SB_BUS 0x5
+#define VR_SB_BUS 0x4
 #define VR_2OU_BUS 0x1
 
 typedef struct {

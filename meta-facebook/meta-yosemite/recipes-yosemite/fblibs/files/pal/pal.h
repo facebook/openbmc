@@ -87,7 +87,6 @@ int pal_get_rst_btn(uint8_t *status);
 int pal_set_id_led(uint8_t slot, uint8_t status);
 int pal_get_fru_sdr_path(uint8_t fru, char *path);
 int pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo);
-void pal_post_end_chk(uint8_t *post_end_chk);
 
 #ifdef __cplusplus
 } // extern "C"

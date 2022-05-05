@@ -115,6 +115,7 @@ int cmd_NM_get_dev_id(NM_RW_INFO* info, ipmi_dev_id_t *dev_id);
 int cmd_NM_get_self_test_result(NM_RW_INFO* info, uint8_t *rbuf, uint8_t *rlen);
 int cmd_NM_get_nm_statistics(NM_RW_INFO info, uint8_t mode, uint8_t domain, uint8_t policy, uint8_t *rbuf);
 int lib_dcmi_wrapper(NM_RW_INFO* info, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+int lib_get_me_fw_ver(NM_RW_INFO* info, uint8_t *ver);
 int cmd_NM_set_me_entry_recovery(NM_RW_INFO info, uint8_t *rbuf);
 
 static inline int cmd_NM_pmbus_read_word(NM_RW_INFO info, uint8_t dev_addr, uint8_t *rbuf)

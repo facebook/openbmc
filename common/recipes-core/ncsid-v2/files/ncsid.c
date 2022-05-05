@@ -94,6 +94,8 @@ typedef struct generic_msg_t {
 
 static nl_usr_sk_t gSock = { .fd = -1, .sock = 0 };
 
+static int nic_fru_id = -1;
+
 // libnl rx buffer struct
 static struct {
   pthread_mutex_t rx_mutex;
@@ -762,7 +764,7 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
     pldmType = pldmHandleGetPldmTypesResp((PLDM_GetPldmTypes_Response_t *)&(resp_buf->msg_payload[7]));
   }
   syslog(LOG_CRIT, "FRU: %d PLDM type supported = 0x%" PRIx64,
-            pal_get_nic_fru_id(), pldmType);
+            nic_fru_id, pldmType);
 
   // Query  version for each supported type
   for (i = 0; i < PLDM_RSV; ++i) {
@@ -784,7 +786,7 @@ do_pldm_discovery(nl_usr_sk_t *sfd, NCSI_NL_RSP_T *resp_buf)
       pldmHandleGetVersionResp((PLDM_GetPldmVersion_Response_t *)&(resp_buf->msg_payload[7]),
                                          &pldm_version[i]);
       syslog(LOG_CRIT, "    FRU: %d PLDM type %d version = %d.%d.%d.%d",
-               pal_get_nic_fru_id(), i,
+               nic_fru_id, i,
                pldm_version[i].major, pldm_version[i].minor, pldm_version[i].update,
                pldm_version[i].alpha);
 
@@ -850,7 +852,7 @@ init_nic_config(nl_usr_sk_t *sfd)
 
   aen_enable_mask &= gNicCapability.aen_control_support;
   syslog(LOG_CRIT, "FRU: %d NIC AEN Supported: 0x%x, AEN Enable Mask=0x%x",
-          pal_get_nic_fru_id(), gNicCapability.aen_control_support,
+          nic_fru_id, gNicCapability.aen_control_support,
           aen_enable_mask);
 
   // PLDM discovery
@@ -860,7 +862,7 @@ init_nic_config(nl_usr_sk_t *sfd)
 
   if (gEnablePldmMonitoring) {
     syslog(LOG_CRIT, "    FRU: %d PLDM sensor monitoring enabled",
-            pal_get_nic_fru_id());
+            nic_fru_id);
   }
 
 free_exit:
@@ -876,7 +878,6 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
   int pldm_iid = 0, pltf_id = 0, sensor_id = 0;
   float sensor_val = 0;
   unsigned char *pPldmResp = 0;
-  int nic_fru_id = -1;  // each platform has a different FRU ID defined for NIC
 
   // Since there are multiple numeric and state sensors being read,
   //   use PLDM cmd IID to look up which sensor this current response
@@ -913,7 +914,6 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
   }
 
   // Write the sensor reading to sensor cache
-  nic_fru_id = pal_get_nic_fru_id();
   if (nic_fru_id != -1) {
     // IF platform doesn't have a NIC FRU, or hasn't overwrite the obmc-pal lib
     //   don't save this information
@@ -1433,6 +1433,17 @@ errout:
 int
 main(int argc, char * const argv[]) {
   pthread_t tid_ncsi_aen_handler;
+
+  for (int i = 1; i <= pal_get_fru_count(); i++) {
+    unsigned int caps;
+    if (pal_get_fru_capability(i, &caps)) {
+      continue;
+    }
+    if ((caps & FRU_CAPABILITY_NETWORK_CARD) != 0) {
+      nic_fru_id = (int)i;
+      break;
+    }
+  }
 
   if (islibnl()) {
     if (setup_rx_buffer() != 0) {

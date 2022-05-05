@@ -29,7 +29,7 @@ except ModuleNotFoundError:
 
 
 class LibPalTest(common.base_libpal_test.LibPalTest):
-    PLATFORM_NAME = "grandcanyon"
+    PLATFORM_NAME = "northdome"
 
     @unittest.skip("disable due to T92189295")
     def test_sensor_raw_read(self):
@@ -39,10 +39,11 @@ class LibPalTest(common.base_libpal_test.LibPalTest):
     def test_sensor_read(self):
         pass
 
-    @unittest.skip("disable due to the platform name 'Grand Canyon' didn't match Regex.")
+    @unittest.skip(
+        "disable due to the platform name 'Grand Canyon' didn't match Regex."
+    )
     def test_pal_get_platform_name(self):
         pass
-
 
     def test_pal_get_sensor_name(self):
         fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
@@ -55,4 +56,3 @@ class LibPalTest(common.base_libpal_test.LibPalTest):
                 sensor_name = pal.pal_get_sensor_name(fru_id, snr_num)
 
                 self.assertRegex(sensor_name, r"^[^ ]+$")
-

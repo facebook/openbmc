@@ -18,49 +18,35 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Product Version: 
-                    type: string
-                  Board Serial: 
-                    type: string
-                  Product Custom Data 1: 
-                    type: string
-                  Board Product: 
-                    type: string
-                  Board Part Number: 
+                  Board Mfg Date: 
                     type: string
                   Board Mfg: 
                     type: string
-                  Product Serial: 
+                  Board Product: 
                     type: string
-                  Product Manufacturer: 
+                  Board Serial: 
                     type: string
-                  Product Custom Data 2: 
+                  Board Part Number: 
                     type: string
                   Board FRU ID: 
                     type: string
-                  Product Part Number: 
+                  Product Manufacturer: 
                     type: string
                   Product Name: 
                     type: string
-                  Board Custom Data 2: 
+                  Product Part Number: 
                     type: string
-                  Board Custom Data 3: 
+                  Product Version: 
+                    type: string
+                  Product Serial: 
                     type: string
                   Product Custom Data 3: 
                     type: string
-                  Product Asset Tag: 
-                    type: string
-                  Board Mfg Date: 
-                    type: string
-                  Product FRU ID: 
-                    type: string
-                  Board Custom Data 1: 
-                    type: string
-              Resources: 
+              Actions: 
                 type: array
                 items: 
                   type: string
-              Actions: 
+              Resources: 
                 type: array
                 items: 
                   type: string

@@ -11,7 +11,12 @@ namespace rackmon {
 void ModbusDeviceInfo::incErrors(uint32_t& counter) {
   counter++;
   if ((++numConsecutiveFailures) >= kMaxConsecutiveFailures) {
-    mode = ModbusDeviceMode::DORMANT;
+    // If we are in exclusive mode let it continue to
+    // fail. We will mark it as dormant when we exit
+    // exclusive mode.
+    if (!exclusiveMode_) {
+      mode = ModbusDeviceMode::DORMANT;
+    }
   }
 }
 
@@ -59,26 +64,27 @@ void ModbusDevice::handleCommandFailure(std::exception& baseException) {
   }
 }
 
-void ModbusDevice::command(
-    Msg& req,
-    Msg& resp,
-    ModbusTime timeout,
-    ModbusTime settleTime) {
+void ModbusDevice::command(Msg& req, Msg& resp, ModbusTime timeout) {
+  size_t reqLen = req.len;
+  size_t respLen = resp.len;
   // Try executing the command, if errors, catch the error
   // to maintain stats on types of errors and re-throw (on
   // the last retry) in case the user wants to handle them
   // in a special way.
-  for (int retries = 0; retries < numCommandRetries_; retries++) {
+  int numRetries = info_.exclusiveMode_ ? 1 : numCommandRetries_;
+  for (int retries = 0; retries < numRetries; retries++) {
     try {
-      interface_.command(req, resp, info_.baudrate, timeout, settleTime);
+      interface_.command(req, resp, info_.baudrate, timeout);
       info_.numConsecutiveFailures = 0;
       info_.lastActive = std::time(nullptr);
       break;
     } catch (std::exception& ex) {
       handleCommandFailure(ex);
-      if (retries == (numCommandRetries_ - 1)) {
+      if (retries == (numRetries - 1)) {
         throw;
       }
+      req.len = reqLen;
+      resp.len = respLen;
     }
   }
 }
@@ -122,7 +128,7 @@ void ModbusDevice::readFileRecord(
   command(req, resp, timeout);
 }
 
-void ModbusDevice::monitor() {
+void ModbusDevice::reloadRegisters() {
   // If the number of consecutive failures has exceeded
   // a threshold, mark the device as dormant.
   uint32_t timestamp = std::time(nullptr);
@@ -169,6 +175,8 @@ void ModbusDevice::monitor() {
               << registerStore.name() << " caught: " << e.what() << std::endl;
       continue;
     }
+    // Release thread to allow for higher priority tasks to execute.
+    std::this_thread::yield();
   }
 }
 
@@ -183,6 +191,7 @@ void ModbusDevice::setActive() {
   }
   // Clear the num failures so we consider it active.
   info_.numConsecutiveFailures = 0;
+  info_.mode = ModbusDeviceMode::ACTIVE;
 }
 
 ModbusDeviceRawData ModbusDevice::getRawData() {

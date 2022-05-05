@@ -27,17 +27,3 @@ PLATFORM = "grandcanyon"
 class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
     def set_platform(self):
         self.platform = PLATFORM
-
-    def test_version_header(self):
-        for fru, comps in self.fw_util_info.items():
-            for comp_name in comps.keys():
-                cmd = "/usr/bin/fw-util {} --version {}".format(fru, comp_name)
-                with self.subTest(comp_name):
-                    if "version header" in comps[comp_name]:
-                        self.verify_output(
-                            cmd,
-                            comps[comp_name]["version header"],
-                            msg="fw-util version not match, expect '{}' but not found".format(
-                                comps[comp_name]["version header"]
-                            ),
-                        )

@@ -52,8 +52,9 @@ enum {
 enum {
   STANDARD_CMD = 0,
   ACCURATE_CMD = 1, // legacy BIC definition, 2 byte value
-  ACCURATE_CMD_4BYTE = 3, // lattest BIC definition, 4 byte value
-  UNKNOWN_CMD = 2,
+  ACCURATE_CMD_4BYTE = 2, // lattest BIC definition, 4 byte value
+
+  UNKNOWN_CMD = 0xFF,
 };
 
 typedef struct

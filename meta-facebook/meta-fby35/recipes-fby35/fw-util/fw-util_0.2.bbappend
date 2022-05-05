@@ -23,8 +23,6 @@ LOCAL_URI += " \
         file://bmc_cpld.cpp \
         file://bmc_cpld.h \
         file://platform.cpp \
-        file://bic_fw_ext.h \
-        file://bic_fw_ext.cpp \
         file://expansion.h \
         file://expansion.cpp \
         file://bic_vr.h \
@@ -38,11 +36,6 @@ LOCAL_URI += " \
         file://mcu_fw.cpp \
         file://bic_m2_dev.cpp \
         file://bic_m2_dev.h \
-        "
-
-LOCAL_URI:remove = " \
-        file://bic_fw.cpp \
-        file://bic_fw.h \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"

@@ -6,7 +6,7 @@ import pal
 import redfish_chassis_helper
 import rest_pal_legacy
 from aiohttp import web
-from common_utils import dumps_bytestr, common_force_async
+from common_utils import dumps_bytestr, common_force_async, parse_expand_level
 from redfish_base import validate_keys
 
 try:
@@ -14,11 +14,20 @@ try:
 except Exception:
     fru_name_map = {}
 
+aggregate_sensor.aggregate_sensor_init()
+
 
 # controller for /redfish/v1/Chassis/{fru}/Sensors
-async def get_redfish_sensors_handler(request):
-    expand_members = "$expand" in request.query_string
+async def get_redfish_sensors_handler(request: web.Request) -> web.Response:
+    expand_level = parse_expand_level(request)
     server_name = request.match_info["fru_name"]
+    body = await get_redfish_sensors_for_server_name(server_name, expand_level)
+    return web.json_response(body, dumps=dumps_bytestr)
+
+
+async def get_redfish_sensors_for_server_name(
+    server_name: str, expand_level: int
+) -> t.Dict[str, t.Any]:
     try:
         fru_names = _get_fru_names(server_name)
     except ValueError:
@@ -31,7 +40,7 @@ async def get_redfish_sensors_handler(request):
             dumps=dumps_bytestr,
             status=400,
         )
-    members_json = await _get_sensor_members(server_name, fru_names, expand_members)
+    members_json = await _get_sensor_members(server_name, fru_names, expand_level > 0)
     body = {
         "@odata.type": "#SensorCollection.SensorCollection",
         "Name": "Chassis sensors",
@@ -42,11 +51,11 @@ async def get_redfish_sensors_handler(request):
         ),
     }
     await validate_keys(body)
-    return web.json_response(body, dumps=dumps_bytestr)
+    return body
 
 
 # controller for /redfish/v1/Chassis/{fru}/Sensors/{fru_name}_{sensor_id}
-async def get_redfish_sensor_handler(request):
+async def get_redfish_sensor_handler(request: web.Request) -> web.Response:
     server_name = request.match_info["fru_name"]
     if redfish_chassis_helper.is_libpal_supported():
         sensor_id_and_fru = request.match_info["sensor_id"]
@@ -91,14 +100,14 @@ def _get_sensor_members(parent_resource: str, fru_names: t.List[str], expand: bo
             for sensor in sensors:
                 child = _render_sensor(parent_resource, sensor, expand)
                 members_json.append(child)
-        if parent_resource == "1":
-            # we expose aggregate sensors under the Chassis, so only do this
-            # if parent_resource is 1
-            for sensor_id in range(aggregate_sensor.aggregate_sensor_count()):
-                sensor = _get_sensor("aggregate", sensor_id)
-                if sensor:
-                    child = _render_sensor(parent_resource, sensor, expand)
-                    members_json.append(child)
+    if parent_resource == "1":
+        # we expose aggregate sensors under the Chassis, so only do this
+        # if parent_resource is 1
+        for sensor_id in range(aggregate_sensor.aggregate_sensor_count()):
+            sensor = _get_sensor("aggregate", sensor_id)
+            if sensor:
+                child = _render_sensor(parent_resource, sensor, expand)
+                members_json.append(child)
     return members_json
 
 
@@ -217,6 +226,7 @@ def _get_phy_context(sensor_name: str) -> str:
 
 @lru_cache()
 def _get_fru_names(server_name: str) -> t.List[str]:
+    fru_names = []
     if server_name == "1":  # Chassis/1 represents the Chassis on all platforms
         if redfish_chassis_helper.is_libpal_supported():
             return redfish_chassis_helper.get_single_sled_frus()
@@ -224,13 +234,19 @@ def _get_fru_names(server_name: str) -> t.List[str]:
             return ["BMC"]
     elif "server" in server_name:
         if rest_pal_legacy.pal_get_num_slots() > 1:
-            fru_names = [
-                server_name.replace("server", "slot")
-            ]  # we expose slot1-4 as server 1-4 in our routes.
+            slot_name = server_name.replace("server", "slot")
+            fru_names = [slot_name]  # we expose slot1-4 as server 1-4 in our routes.
+            for fru_name in fru_name_map.keys():
+                if slot_name in fru_name and "-exp" in fru_name:
+                    fru_names.append(fru_name)
         else:
             raise ValueError(
                 "{server_name} server_name is invalid for slingle slot servers".format(
                     server_name=server_name
                 )
             )
+    elif "accelerator" in server_name:
+        asic_idx = int(server_name.replace("accelerator", ""))
+        accelerators = redfish_chassis_helper._get_accelerator_list()
+        return [accelerators[asic_idx]]
     return fru_names

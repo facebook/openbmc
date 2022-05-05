@@ -135,7 +135,7 @@ fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
     return ret;
   }
 
-  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
+  if ( bmc_location == BB_BMC ) {
     gpio_value = gpio_get_value_by_shadow(gpio_server_stby_pwr_sts[fru]);
     if ( gpio_value == GPIO_VALUE_INVALID ) {
       return -1;
@@ -245,7 +245,7 @@ fby35_common_get_slot_type(uint8_t fru) {
   return SERVER_TYPE_DL;
 }
 
-#define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
+#define CRASHDUMP_BIN       "/usr/bin/autodump.sh"
 
 int
 fby35_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
@@ -684,7 +684,7 @@ fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp) {
     case FW_BB_CPLD:
       snprintf(ver, 16, "%02X%02X%02X%02X", buf[3], buf[2], buf[1], buf[0]);
       break;
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:
@@ -760,7 +760,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
 
   switch (comp) {
     case FW_CPLD:
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_BIOS:
       board_id = BOARD_ID_SB;
       if (rev_id >= ARRAY_SIZE(rev_sb)) {
@@ -850,7 +850,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
         return false;
       }
       break;
-    case FW_BIC:
+    case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
     case FW_BB_BIC:

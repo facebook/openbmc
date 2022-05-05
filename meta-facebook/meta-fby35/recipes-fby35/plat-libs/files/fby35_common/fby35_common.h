@@ -197,9 +197,8 @@ enum {
 
 enum {
   // BOARD_ID [3:0]
-  NIC_BMC    = 0x06,
-  BB_BMC     = 0x07,
-  DVT_BB_BMC = 0x07,
+  NIC_BMC = 0x06,
+  BB_BMC  = 0x07,
 };
 
 // 1OU Board ID
@@ -207,6 +206,7 @@ enum {
   EDSFF_1U = 0x07,
   CXL_1U   = 0x0A,
   M2_1U    = 0x0B,
+  WF_1U    = 0x0C,
 };
 
 // 2OU Board type
@@ -292,7 +292,7 @@ enum board_id {
 
 enum {
   FW_CPLD = 1,
-  FW_BIC,
+  FW_SB_BIC,
   FW_ME,
   FW_BIC_RCVY,
   FW_VR_VCCIN,         // 5
@@ -344,6 +344,11 @@ enum {
 enum {  
   PRESENT = 0,
   NOT_PRESENT = 1,
+};
+
+enum {
+  KEY_CLEAR = 0,
+  KEY_SET,
 };
 
 const static char *gpio_server_prsnt[] =

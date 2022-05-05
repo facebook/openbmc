@@ -61,16 +61,25 @@ static long int retry_sec[MAX_NUM_SLOTS] = {0};
 static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
+bic_gpio_t o_pin_val;
+
+pthread_mutex_t pin_val_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
+                                                  PTHREAD_MUTEX_INITIALIZER,
+                                                  PTHREAD_MUTEX_INITIALIZER,
+                                                  PTHREAD_MUTEX_INITIALIZER};
+
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER};
 #define SET_BIT(list, index, bit) \
+           pthread_mutex_lock(&pin_val_mutex[fru-1]); \
            if ( bit == 0 ) {      \
              (((uint8_t*)&list)[index/8]) &= ~(0x1 << (index % 8)); \
            } else {                                                     \
              (((uint8_t*)&list)[index/8]) |= 0x1 << (index % 8);    \
-           }
+           }  \
+           pthread_mutex_unlock(&pin_val_mutex[fru-1]); \
 
 #define GET_BIT(list, index) \
            (((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1)
@@ -853,6 +862,27 @@ host_pwr_mon() {
   }
 }
 
+static void *
+stby_pwr_mon() {
+  pthread_detach(pthread_self());
+
+  while(1) {
+    int ret = 0;
+    uint8_t pwr_sts = 0;
+
+    for (int fru = 1; fru <= 4; fru++) {
+      ret = pal_get_server_12v_power(fru, &pwr_sts);
+      if (ret == PAL_EOK) {
+        if (pwr_sts == SERVER_12V_OFF) {
+          SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
+          SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
+        }
+      }
+    }
+    usleep(DELAY_GPIOD_READ);
+  }
+}
+
 static void
 print_usage() {
   printf("Usage: gpiod [ %s ]\n", pal_server_list);
@@ -866,6 +896,7 @@ run_gpiod(int argc, void **argv) {
   pthread_t tid_host_pwr_mon;
   pthread_t tid_gpio[MAX_NUM_SLOTS];
   pthread_t tid_cpld_io_mon;
+  pthread_t tid_stby_pwr_mon;
 
   /* Check for which fru do we need to monitor the gpio pins */
   fru_flag = 0;
@@ -897,6 +928,10 @@ run_gpiod(int argc, void **argv) {
 
   if (pthread_create(&tid_cpld_io_mon, NULL, cpld_io_mon, NULL) < 0) {
     syslog(LOG_WARNING, "pthread_create for cpld_io_mon fail\n");
+  }
+
+  if (pthread_create(&tid_stby_pwr_mon, NULL, stby_pwr_mon, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for stby_pwr_mon fail\n");
   }
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {

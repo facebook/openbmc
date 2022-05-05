@@ -79,7 +79,7 @@ static int linear_convert(int type, int value, int n)
     data_y = msb_y ? -1 * ((~value & 0x3ff) + 1)
                    : value & 0x3ff;
 
-    if (n != NULL) {
+    if (n != 0) {
       value_x = (n < 0) ? (data_y * 1000) / POW2(abs(n))
                         : (data_y * 1000) * POW2(n);
     } else {
@@ -94,7 +94,7 @@ static int linear_convert(int type, int value, int n)
       }
     }
   } else {
-    if (n != NULL) {
+    if (n != 0) {
       value_x = (n < 0) ? (value * 1000) / POW2(abs(n))
                         : (value * 1000) * POW2(n);
     }
@@ -119,7 +119,7 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
   ret = i2c_smbus_read_block_data(client, PMBUS_MFR_MODEL, block);
   msleep(PSU_DELAY);
 
-  if (ret < 0 || block[0] == NULL || block[0] == '\n') {
+  if (ret < 0 || block[0] == 0 || block[0] == '\n') {
     PSU_DEBUG("Failed to read Manufacturer Model\n");
   } else {
     while((value < 0 || value == 0xffff) && count--) {
@@ -160,7 +160,7 @@ static ssize_t psu_vin_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
       break;
@@ -183,7 +183,7 @@ static ssize_t psu_iin_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
       break;
@@ -229,7 +229,7 @@ static ssize_t psu_iout_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
       break;
@@ -252,7 +252,7 @@ static ssize_t psu_temp_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
       break;
@@ -275,7 +275,7 @@ static ssize_t psu_fan_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_11, result, NULL) / 1000;
+      result = linear_convert(LINEAR_11, result, 0) / 1000;
       break;
     default:
       break;
@@ -298,7 +298,7 @@ static ssize_t psu_power_show(struct device *dev,
   switch (model) {
     case DELTA_2400:
     case LITEON_2400:
-      result = linear_convert(LINEAR_11, result, NULL);
+      result = linear_convert(LINEAR_11, result, 0);
       break;
     default:
       break;

@@ -25,6 +25,8 @@
 #include <openbmc/obmc-pal.h>
 #include "vr.h"
 
+#define CFG_FREE(p) cfg_free((void**)&(p));
+
 struct vr_info *dev_list = NULL;
 int dev_list_count = 0;
 void *plat_configs = NULL;
@@ -51,6 +53,13 @@ void vr_remove()
 {
   plat_vr_exit();
   vr_device_unregister();
+}
+
+static void cfg_free(void **ptr) {
+  if (ptr && *ptr) {
+    free(*ptr);
+    *ptr = NULL;
+  }
 }
 
 int vr_fw_version(int index, const char *vr_name, char *ver_str)
@@ -143,6 +152,7 @@ int vr_fw_update(const char *vr_name, const char *path, bool force)
         break;
       }
 
+      CFG_FREE(plat_configs);
       return VR_STATUS_SUCCESS;
     }
   }
@@ -151,6 +161,7 @@ int vr_fw_update(const char *vr_name, const char *path, bool force)
     syslog(LOG_WARNING, "%s: device %s not found", __func__, vr_name);
   }
 
+  CFG_FREE(plat_configs);
   return VR_STATUS_FAILURE;
 }
 
@@ -178,6 +189,20 @@ int i2c_io(int fd, uint8_t addr, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uin
     msleep(1);  // delay between transactions
     break;
   }
+
+  return ret;
+}
+
+int vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tcnt,
+            uint8_t *rbuf, uint8_t rcnt) {
+  int ret, fd;
+
+  if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
+    return -1;
+  }
+
+  ret = i2c_io(fd, addr, tbuf, tcnt, rbuf, rcnt);
+  close(fd);
 
   return ret;
 }

@@ -4,7 +4,7 @@
 #include <openbmc/cpld.h>
 #include "server.h"
 #include "expansion.h"
-#include "bic_fw_ext.h"
+#include "bic_fw.h"
 
 using namespace std;
 

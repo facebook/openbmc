@@ -145,7 +145,7 @@ fruid_init_local_fru() {
     return ret;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     fru_bus = CLASS1_FRU_BUS;
     fru_addr = BB_FRU_ADDR;
     fru_path = FRU_BB_BIN;

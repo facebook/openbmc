@@ -68,7 +68,8 @@
            "Type_15": "T15",
            "Type_8" : "T8",
            "Type_DP": "DP",
-           "Type_DPB": "DP"
+           "Type_DPB": "DP",
+           "Type_DPF": "DP"
          }
        }
       }

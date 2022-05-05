@@ -76,6 +76,5 @@ int LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size)
 int LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int ufm_size);
 int NX_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info, int cf_size, int ufm_size);
 int NX_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size);
-
-extern struct cpld_dev_info lattice_dev_list[9];
+int get_lattice_dev_list(struct cpld_dev_info** list );
 #endif

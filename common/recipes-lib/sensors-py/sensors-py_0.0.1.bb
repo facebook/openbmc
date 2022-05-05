@@ -18,7 +18,7 @@ LIC_FILES_CHKSUM = "\
 DEPENDS = "python3 libobmc-sensors"
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches:"
 
-SRC_URI = "git://github.com/paroj/sensors.py;protocol=https \
+SRC_URI = "git://github.com/paroj/sensors.py;protocol=https;branch=master \
            file://001-load-so-fix.patch \
           "
 SRCREV = "4001b2c1ee00d9d7753827609f98920461a364b7"

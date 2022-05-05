@@ -16,6 +16,7 @@ IMAGE_INSTALL += " \
   ast-mdio \
   fan-ctrl \
   rackmon \
+  psu-update \
   sensor-setup \
   usb-console \
   oob-nic \

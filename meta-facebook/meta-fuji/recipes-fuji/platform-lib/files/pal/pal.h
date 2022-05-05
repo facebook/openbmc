@@ -89,12 +89,22 @@ extern "C" {
 #define SENSORD_FILE_SMB "/tmp/cache_store/smb_sensor%d"
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define KV_PATH "/mnt/data/kv_store/%s"
-#define KEY_PWRSEQ1_ADDR  "%s_pwrseq_1_addr"
-#define KEY_PWRSEQ2_ADDR  "%s_pwrseq_2_addr"
-#define KEY_PWRSEQ_ADDR   "%s_pwrseq_addr"
-#define KEY_HSC_ADDR      "%s_hsc_addr"
-#define KEY_FCMT_HSC_ADDR "%s_fcm_t_hsc_addr"
-#define KEY_FCMB_HSC_ADDR "%s_fcm_b_hsc_addr"
+
+enum {
+  KEY_PWRSEQ,
+  KEY_PWRSEQ1,
+  KEY_PWRSEQ2,
+  KEY_HSC,
+  KEY_FCMT_HSC,
+  KEY_FCMB_HSC,
+};
+
+#define KEY_PWRSEQ1_ADDR  "pwrseq_1_addr"
+#define KEY_PWRSEQ2_ADDR  "pwrseq_2_addr"
+#define KEY_PWRSEQ_ADDR   "pwrseq_addr"
+#define KEY_HSC_ADDR      "hsc_addr"
+#define KEY_FCMT_HSC_ADDR "fcm_t_hsc_addr"
+#define KEY_FCMB_HSC_ADDR "fcm_b_hsc_addr"
 
 #define FUJI_FRU_PATH "/tmp/fruid_%s.bin"
 
@@ -324,12 +334,21 @@ int pal_set_pim_phy_type_to_file(uint8_t fru, char *type);
 int pal_get_pim_phy_type_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
 
+bool is_scm_i2c_mux_binded();
+int scm_i2c_mux_bind();
+int scm_i2c_mux_unbind();
+bool is_pim_i2c_mux_binded(int pim);
+int pim_i2c_mux_bind(int pim);
+int pim_i2c_mux_unbind(int pim);
+int pal_add_i2c_device(uint8_t bus, uint8_t addr, char *device_name);
+int pal_del_i2c_device(uint8_t bus, uint8_t addr);
+
 struct dev_addr_driver* pal_get_pim_ucd(uint8_t fru);
 struct dev_addr_driver* pal_get_pim_hsc(uint8_t fru);
 struct dev_addr_driver* pal_get_scm_hsc();
 
-int pal_set_dev_addr_to_file(uint8_t fru, char const *dev, uint8_t addr);
-int pal_get_dev_addr_from_file(uint8_t fru, char const *dev);
+int pal_set_dev_addr_to_file(uint8_t fru, uint8_t dev, uint8_t addr);
+int pal_get_dev_addr_from_file(uint8_t fru, uint8_t dev);
 
 int pal_clear_thresh_value(uint8_t fru);
 void *generate_dump(void *arg);

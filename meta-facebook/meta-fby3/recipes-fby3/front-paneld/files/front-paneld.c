@@ -108,6 +108,11 @@ led_handler() {
   int ret, i2cfd = 0;
   uint8_t bus = 0;
 
+  // cwc fru health
+  uint8_t cwc_fru_hlth = FRU_STATUS_GOOD;
+  uint8_t top_fru_hlth = FRU_STATUS_GOOD;
+  uint8_t bot_fru_hlth = FRU_STATUS_GOOD;
+
   memcpy(tbuf, (uint8_t *)&ver_reg, tlen);
   reverse(tbuf, tlen);
 
@@ -167,10 +172,35 @@ led_handler() {
       }
 
       // get health status
+      if (pal_is_cwc() == PAL_EOK) {
+
+        if ( pal_get_fru_health(FRU_CWC, &cwc_fru_hlth) < 0 ) {
+          syslog(LOG_WARNING,"%s() failed to get the health status of cwc fru%d\n", __func__, FRU_CWC);
+          sleep(DELAY_PERIOD);
+          continue;
+        }
+
+        if ( pal_get_fru_health(FRU_2U_TOP, &top_fru_hlth) < 0 ) {
+          syslog(LOG_WARNING,"%s() failed to get the health status of top gpv3 fru%d\n", __func__, FRU_2U_TOP);
+          sleep(DELAY_PERIOD);
+          continue;
+        }
+
+        if ( pal_get_fru_health(FRU_2U_BOT, &bot_fru_hlth) < 0 ) {
+          syslog(LOG_WARNING,"%s() failed to get the health status of bot gpv3 fru%d\n", __func__, FRU_2U_BOT);
+          sleep(DELAY_PERIOD);
+          continue;
+        }
+      }
+
       if ( pal_get_fru_health(i, &slot_hlth) < 0 ) {
         syslog(LOG_WARNING,"%s() failed to get the health status of slot%d\n", __func__, i);
         sleep(DELAY_PERIOD);
         continue;
+      }
+
+      if ( pal_is_cwc() == PAL_EOK ) {
+        slot_hlth = slot_hlth & cwc_fru_hlth & top_fru_hlth & bot_fru_hlth;
       }
 
       // if it's FRU_STATUS_BAD, get the current power status

@@ -180,7 +180,7 @@ static pthread_mutex_t m_oem_usb_dbg;
 static pthread_mutex_t m_oem_q;
 static pthread_mutex_t m_oem_zion;
 
-extern int plat_udbg_get_frame_info(uint8_t *num);
+extern int plat_udbg_get_frame_info();
 extern int plat_udbg_get_updated_frames(uint8_t *count, uint8_t *buffer);
 extern int plat_udbg_get_post_desc(uint8_t index, uint8_t *next, uint8_t phase,  uint8_t *end, uint8_t *length, uint8_t *buffer);
 extern int plat_udbg_get_gpio_desc(uint8_t index, uint8_t *next, uint8_t *level, uint8_t *def,
@@ -2116,7 +2116,7 @@ oem_q_sled_cycle_prepare_request (unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-  char key[32] = "blk_fwupd";
+  char key[32] = "to_blk_sled_cycle";
   char value[8] = {0};
 
   if (pal_is_fw_update_ongoing_system()) {
@@ -2148,7 +2148,7 @@ oem_q_sled_cycle_prepare_status (unsigned char *request, unsigned char req_len, 
       unsigned char *res_len)
 {
   ipmi_res_t *res = (ipmi_res_t *) response;
-  char key[32] = "blk_fwupd";
+  char key[32] = "to_blk_sled_cycle";
   char value[8] = {0};
 
   if ( req_len != 3 ) {
@@ -3115,10 +3115,19 @@ oem_set_fw_update_state(unsigned char *request, unsigned char req_len,
 {
   ipmi_mn_req_t *req = (ipmi_mn_req_t *) request;
   ipmi_res_t *res = (ipmi_res_t *) response;
-
-  res->cc = pal_set_fw_update_state(req->payload_id, req->data, (req_len - 3), res->data, res_len);
-
-  return;
+  int ret = -1;
+  *res_len = 0;
+  if (req_len == 5) {
+    // Implicit FRU_ID
+    ret = pal_set_fw_update_ongoing(req->payload_id, (req->data[1]<<8 | req->data[0]));
+  } else if (req_len == 6) {
+    // Explicit FRU_ID
+    ret = pal_set_fw_update_ongoing(req->data[0], (req->data[1]<<8 | req->data[2]));
+  } else {
+    res->cc = CC_INVALID_LENGTH;
+    return;
+  }
+  res->cc = ret == 0 ? CC_SUCCESS : CC_UNSPECIFIED_ERROR;
 }
 
 static void
@@ -3501,7 +3510,7 @@ oem_stor_add_string_sel(unsigned char *request, unsigned char req_len,
   }
 
   syslog(LOG_CRIT, "%s", string_log);
-  
+
   if (!pal_handle_string_sel(string_log, string_log_len))
     res->cc = CC_SUCCESS;
   else
@@ -4262,13 +4271,14 @@ oem_usb_dbg_get_frame_info(unsigned char *request, unsigned char req_len,
   uint8_t num_frames;
   int ret;
 
-  ret = plat_udbg_get_frame_info(&num_frames);
-  if (ret) {
+  ret = plat_udbg_get_frame_info();
+  if (ret < 0) {
     memcpy(res->data, req->data, 3); // IANA ID
     res->cc = CC_UNSPECIFIED_ERROR;
     *res_len = SIZE_IANA_ID;
     return;
   }
+  num_frames = (uint8_t) ret;
 
   memcpy(res->data, req->data, SIZE_IANA_ID); // IANA ID
   res->data[3] = num_frames;

@@ -45,7 +45,6 @@
 #define PLATFORM_NAME "yosemitev35"
 #define LAST_KEY "last_key"
 
-#define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
 
@@ -659,7 +658,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
   *data++ = bmc_location;
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     int dev, retry = 3;
     uint8_t tbuf[4] = {0};
     uint8_t rbuf[4] = {0};
@@ -746,7 +745,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+      if ( bmc_location == BB_BMC ) {
         ret = fby35_common_is_fru_prsnt(fru, status);
       } else {
         if ( fru == FRU_SLOT1 ) {
@@ -858,7 +857,7 @@ pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
   switch(fru) {
   case FRU_BMC:
-    if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+    if ( bmc_location == BB_BMC ) {
       fru_bus = CLASS1_FRU_BUS;
     } else {
       fru_bus = CLASS2_FRU_BUS;
@@ -1099,79 +1098,6 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
   return ret;
 }
 
-// GUID based on RFC4122 format @ https://tools.ietf.org/html/rfc4122
-static void
-pal_populate_guid(char *guid, char *str) {
-  unsigned int secs;
-  unsigned int usecs;
-  struct timeval tv;
-  uint8_t count;
-  uint8_t lsb, msb;
-  int i, r;
-
-  // Populate time
-  gettimeofday(&tv, NULL);
-
-  secs = tv.tv_sec;
-  usecs = tv.tv_usec;
-  guid[0] = usecs & 0xFF;
-  guid[1] = (usecs >> 8) & 0xFF;
-  guid[2] = (usecs >> 16) & 0xFF;
-  guid[3] = (usecs >> 24) & 0xFF;
-  guid[4] = secs & 0xFF;
-  guid[5] = (secs >> 8) & 0xFF;
-  guid[6] = (secs >> 16) & 0xFF;
-  guid[7] = (secs >> 24) & 0x0F;
-
-  // Populate version
-  guid[7] |= 0x10;
-
-  // Populate clock seq with randmom number
-  srand(time(NULL));
-  r = rand();
-  guid[8] = r & 0xFF;
-  guid[9] = (r>>8) & 0xFF;
-
-  // Use string to populate 6 bytes unique
-  // e.g. LSP62100035 => 'S' 'P' 0x62 0x10 0x00 0x35
-  count = 0;
-  for (i = strlen(str)-1; i >= 0; i--) {
-    if (count == 6) {
-      break;
-    }
-
-    // If alphabet use the character as is
-    if (isalpha(str[i])) {
-      guid[15-count] = str[i];
-      count++;
-      continue;
-    }
-
-    // If it is 0-9, use two numbers as BCD
-    lsb = str[i] - '0';
-    if (i > 0) {
-      i--;
-      if (isalpha(str[i])) {
-        i++;
-        msb = 0;
-      } else {
-        msb = str[i] - '0';
-      }
-    } else {
-      msb = 0;
-    }
-    guid[15-count] = (msb << 4) | lsb;
-    count++;
-  }
-
-  // zero the remaining bytes, if any
-  if (count != 6) {
-    memset(&guid[10], 0, 6-count);
-  }
-
-  return;
-}
-
 // GUID for System and Device
 static int
 pal_get_guid(uint16_t offset, char *guid) {
@@ -1188,7 +1114,7 @@ pal_get_guid(uint16_t offset, char *guid) {
     return -1;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     fru_bus = CLASS1_FRU_BUS;
   } else {
     fru_bus = CLASS2_FRU_BUS;
@@ -1237,7 +1163,7 @@ pal_set_guid(uint16_t offset, char *guid) {
     return -1;
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     fru_bus = CLASS1_FRU_BUS;
   } else {
     fru_bus = CLASS2_FRU_BUS;
@@ -1318,20 +1244,6 @@ pal_is_fw_update_ongoing_system(void) {
   return false;
 }
 
-int
-pal_set_fw_update_state(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
-  *res_len = 0;
-  if (req_len != 2) {
-    return CC_INVALID_LENGTH;
-  }
-
-  if (pal_set_fw_update_ongoing(slot, (req_data[1]<<8 | req_data[0]))) {
-    return CC_UNSPECIFIED_ERROR;
-  }
-
-  return CC_SUCCESS;
-}
-
 /*
 DPV2 Riser bifurcation table
 -------------------------------------------------
@@ -1401,7 +1313,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     }
   }
 
-  if ( (bmc_location == BB_BMC) || (bmc_location == DVT_BB_BMC) ) {
+  if ( bmc_location == BB_BMC ) {
     switch (config_status & (PRESENT_2OU|PRESENT_1OU)) {
       case 0:
         pcie_conf = CONFIG_A;
@@ -1413,8 +1325,13 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
         }
         switch (type_1ou) {
           case EDSFF_1U:
+            pcie_conf = CONFIG_C_VF;
+            break;
           case M2_1U:
             pcie_conf = CONFIG_MFG;
+            break;
+          case WF_1U:
+            pcie_conf = CONFIG_C_WF;
             break;
           default:
             pcie_conf = CONFIG_C;
@@ -2017,7 +1934,6 @@ pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 
   switch (event_data[0]) {
     case SLED_CYCLE:
-      pal_set_nic_perst(fru, NIC_PE_RST_LOW);
       strcat(error_log, "SLED_CYCLE by BB BIC");
       break;
     case SLOT:
@@ -2832,12 +2748,6 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 }
 
 int
-pal_get_nic_fru_id(void)
-{
-  return FRU_NIC;
-}
-
-int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   uint8_t mfg_id[] = {0x9c, 0x9c, 0x00};
@@ -2887,11 +2797,6 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
   uint8_t slot_id_tmp = slot_id;
 
   if ( bmc_location == BB_BMC ) {
-    // EVT BB_BMC HW not support cable management
-    // just return present to skip checking
-    cbl_val[0] = STATUS_PRSNT;
-    return 0;
-  } else if ( bmc_location == DVT_BB_BMC ) {
     //read GPIO vals
     for ( i = 0; i < num_of_mgmt_pins; i++ ) {
       snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
@@ -2947,7 +2852,7 @@ pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uin
     }
   }
 
-  bool vals_match = (bmc_location == DVT_BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
+  bool vals_match = (bmc_location == BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
   if (vals_match == false) {
     for ( i = 0; i < (sizeof(mapping_tbl)/sizeof(uint8_t)); i++ ) {
       if(mapping_tbl[i] == gpio_vals) {
@@ -3066,7 +2971,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
         goto error_exit;
       }
       config_status = ret;
-      if (!((bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
+      if (!((bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU))) {
         goto not_support;
       }
       break;
@@ -3121,7 +3026,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
   case FW_ME:
     *res_len = 5;
     break;
-  case FW_BIC:
+  case FW_SB_BIC:
     *res_len = strlen((char*)res);
     if (*res_len == 2) { // old version format
 
@@ -3169,7 +3074,7 @@ pal_set_nic_perst(uint8_t fru, uint8_t val) {
     goto error_exit;
   }
 
-  if ( bmc_location == BB_BMC || bmc_location == DVT_BB_BMC ) {
+  if ( bmc_location == BB_BMC ) {
     return 0;
   }
 
@@ -3628,7 +3533,7 @@ pal_clear_cmos(uint8_t slot_id) {
     return ret;
   }
 
-  if ( (bmc_location != BB_BMC) && (bmc_location != DVT_BB_BMC) ) {
+  if ( bmc_location != BB_BMC ) {
     // TODO: Class 2
     printf("Not supported");
     return -1;

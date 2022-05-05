@@ -42,9 +42,17 @@ static crashdump_data_t g_crashdump_data[MAX_NODES];
 static uint8_t ndcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_mca_bank_t* pbank);
 static uint8_t ndcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_t* pbank);
 static uint8_t ndcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_virtual_bank_v2_t* pbank);
+static uint8_t ndcrd_header_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_header_bank_t* pbank);
 static uint8_t ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cpu_wdt_bank_t* pbank);
 static uint8_t ndcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_addr_bank_t* pbank);
 static uint8_t ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_wdt_data_bank_t* pbank);
+static uint8_t ndcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_tcdx_bank_t* pbank);
+static uint8_t ndcrd_cake_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cake_bank_t* pbank);
+static uint8_t ndcrd_pie0_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pie0_bank_t* pbank);
+static uint8_t ndcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_iom_bank_t* pbank);
+static uint8_t ndcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ccix_bank_t* pbank);
+static uint8_t ndcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cs_bank_t* pbank);
+static uint8_t ndcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pcie_aer_bank_t* pbank);
 static uint8_t ndcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len);
 static void* generate_dump(void* arg);
 
@@ -210,8 +218,40 @@ pal_ndcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, uin
       completion_code = ndcrd_wdt_data_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_wdt_data_bank_t*)data_ptr);
       break;
 
+    case TYPE_TCDX_BANK:
+      completion_code = ndcrd_tcdx_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_tcdx_bank_t*)data_ptr);
+      break;
+
+    case TYPE_CAKE_BANK:
+      completion_code = ndcrd_cake_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_cake_bank_t*)data_ptr);
+      break;
+
+    case TYPE_PIE0_BANK:
+      completion_code = ndcrd_pie0_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_pie0_bank_t*)data_ptr);
+      break;
+
+    case TYPE_IOM_BANK:
+      completion_code = ndcrd_iom_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_iom_bank_t*)data_ptr);
+      break;
+
+    case TYPE_CCIX_BANK:
+      completion_code = ndcrd_ccix_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_ccix_bank_t*)data_ptr);
+      break;
+
+    case TYPE_CS_BANK:
+      completion_code = ndcrd_cs_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_cs_bank_t*)data_ptr);
+      break;
+
+    case TYPE_PCIE_AER_BANK:
+      completion_code = ndcrd_pcie_aer_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_pcie_aer_bank_t*)data_ptr);
+      break;
+
     case TYPE_CONTROL_PKT:
       completion_code = ndcrd_ctrl_pkt_handler(fp, slot, &phdr->bank_hdr, (ndcrd_ctrl_pkt_t*)data_ptr, res_data, res_len);
+      break;
+
+    case TYPE_HEADER_BANK:
+      completion_code = ndcrd_header_bank_handler(fp, slot, &phdr->bank_hdr, (ndcrd_header_bank_t*)data_ptr);
       break;
 
     default:
@@ -358,6 +398,30 @@ out:
 }
 
 static uint8_t
+ndcrd_header_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_header_bank_t* pbank) {
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, " %s : \n", "Crashdump Header");
+  fprintf(fp, " %-15s : 0x%016llX \n", "CPU PPIN", pbank->cpu_ppin);
+  fprintf(fp, " %-15s : 0x%08X \n", "UCODE VERSION", pbank->ucode_ver);
+  fprintf(fp, " %-15s : 0x%08X \n", "PMIO 80h", pbank->pmio);
+  fprintf(fp, "    BIT0 - SMN Parity/SMN Timeouts PSP/SMU Parity and ECC/SMN On-Package Link Error : %d \n", (pbank->pmio & 0x1));
+  fprintf(fp, "    BIT2 - PSP Parity and ECC : %d \n", ((pbank->pmio & 0x4)>>2));
+  fprintf(fp, "    BIT3 - SMN Timeouts SMU : %d \n", ((pbank->pmio & 0x8)>>3));
+  fprintf(fp, "    BIT4 - SMN Off-Package Link Packet Error : %d \n", ((pbank->pmio & 0x10)>>4));
+  fprintf(fp, "\n");
+  memset(&g_recv_list[idx], 0, sizeof(ndcrd_mca_recv_list_t));
+
+out:
+  return completion_code;
+}
+
+static uint8_t
 ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cpu_wdt_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
@@ -367,13 +431,16 @@ ndcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t*
     goto out;
   }
 
-  fprintf(fp, " %s : \n", "CPU/Data Fabric Watchdog Timer");
   for (i = 0; i < CPU_WDT_CCM_NUM; i++) {
     fprintf(fp, "  [CCM%u]\n", i);
     fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
     fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
     fprintf(fp, "    %-20s : 0x%08X \n", "RSPQWDTIoTransLogHi", pbank->rspq_wdt_io_trans_log_hi[i]);
     fprintf(fp, "    %-20s : 0x%08X \n", "RSPQWDTIoTransLogLow", pbank->rspq_wdt_io_trans_log_low[i]);
+    if (phdr->bank_fmt_ver == 2) {
+      fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+      fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
+    }
   }
   fprintf(fp, "\n");
 
@@ -436,6 +503,180 @@ ndcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t
 out:
   return completion_code;
 }
+
+static uint8_t
+ndcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_tcdx_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < TCDX_NUM; i++) {
+    fprintf(fp, "  [TCDX%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_cake_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cake_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < CAKE_NUM; i++) {
+    fprintf(fp, "  [CAKE%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_pie0_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pie0_bank_t* pbank) {
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, "  [PIE0]\n");
+  fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi);
+  fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low);
+  fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi);
+  fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low);
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_iom_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_iom_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < IOM_NUM; i++) {
+    fprintf(fp, "  [IOM%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_ccix_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ccix_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < CCIX_NUM; i++) {
+    fprintf(fp, "  [CCIX%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_cs_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_cs_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < CS_NUM; i++) {
+    fprintf(fp, "  [CS%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+ndcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_pcie_aer_bank_t* pbank) {
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (ndcrd_set_state(idx, NDCRD_CTRL_BMC_WAIT_DATA) != NDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  fprintf(fp, "  [Bus%u Dev%u Fun%u]\n", pbank->bus, pbank->dev,pbank->fun);
+  fprintf(fp, "    Command                      : 0x%04X \n", pbank->cmd);
+  fprintf(fp, "    Status                       : 0x%04X \n", pbank->sts);
+  fprintf(fp, "    Slot                         : 0x%04X \n", pbank->slot);
+  fprintf(fp, "    Secondary Bus                : 0x%02X \n", pbank->second_bus);
+  fprintf(fp, "    Vendor ID                    : 0x%04X \n", pbank->vendor_id);
+  fprintf(fp, "    Device ID                    : 0x%04X \n", pbank->dev_id);
+  fprintf(fp, "    Class Code                   : 0x%02X%04X \n", pbank->class_code_upper,pbank->class_code_lower);
+  fprintf(fp, "    Bridge: Secondary Status     : 0x%04X \n", pbank->second_sts);
+  fprintf(fp, "    Bridge: Control              : 0x%04X \n", pbank->ctrl);
+  fprintf(fp, "    Uncorrectable Error Status   : 0x%08X \n", pbank->uncorrectable_err_sts);
+  fprintf(fp, "    Uncorrectable Error Mask     : 0x%08X \n", pbank->uncorrectable_err_msk);
+  fprintf(fp, "    Uncorrectable Error Severity : 0x%08X \n", pbank->uncorrectable_err_severity);
+  fprintf(fp, "    Correctable Error Status     : 0x%08X \n", pbank->correctable_err_sts);
+  fprintf(fp, "    Correctable Error Mask       : 0x%08X \n", pbank->correctable_err_msk);
+  fprintf(fp, "    Header Log DW0               : 0x%08X \n", pbank->hdr_log_dw0);
+  fprintf(fp, "    Header Log DW1               : 0x%08X \n", pbank->hdr_log_dw1);
+  fprintf(fp, "    Header Log DW2               : 0x%08X \n", pbank->hdr_log_dw2);
+  fprintf(fp, "    Header Log DW3               : 0x%08X \n", pbank->hdr_log_dw3);
+  fprintf(fp, "    Root Error Status            : 0x%08X \n", pbank->root_err_sts);
+  fprintf(fp, "    Correctable Error Source ID  : 0x%04X \n", pbank->correctable_err_src_id);
+  fprintf(fp, "    Error Source ID              : 0x%04X \n", pbank->err_src_id);
+  fprintf(fp, "    Lane Error Status            : 0x%08X \n", pbank->lane_err_sts);
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
 
 static uint8_t
 ndcrd_ctrl_pkt_handler (FILE* fp, const uint8_t idx, const ndcrd_bank_hdr_t* phdr, const ndcrd_ctrl_pkt_t* ppkt, uint8_t* res_data, uint8_t* res_len) {

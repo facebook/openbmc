@@ -69,4 +69,7 @@ int plat_udbg_get_uart_sel_num(uint8_t *uart_sel_num);
 /* Returns the debug card UART selection name by given UART selection number */
 int plat_udbg_get_uart_sel_name(uint8_t uart_sel_num, char *uart_sel_name);
 
+/* Returns the extra post code page info*/
+int plat_dword_postcode_buf(uint8_t fru, char *status);
+
 #endif

@@ -2,6 +2,15 @@
 #include <CLI/CLI.hpp>
 #include <nlohmann/json.hpp>
 #include "UnixSock.h"
+#if (defined(__llvm__) && (__clang_major__ < 9)) || \
+    (!defined(__llvm__) && (__GNUC__ < 8))
+#include <experimental/filesystem>
+namespace std {
+namespace filesystem = experimental::filesystem;
+}
+#else
+#include <filesystem>
+#endif
 
 using nlohmann::json;
 using namespace std::literals::string_literals;
@@ -131,8 +140,8 @@ static void print_nested(json& j, int indent = 0) {
 static void print_hexstring(const json& j) {
   std::cout << "Response: ";
   for (const uint8_t& byte : j) {
-    std::cout << std::left << std::setfill('0') << std::setw(2) << std::hex
-              << int(byte) << " ";
+    std::cout << std::hex << std::setw(2) << std::setfill('0') << int(byte)
+              << " ";
   }
   std::cout << std::endl;
 }
@@ -189,9 +198,34 @@ static void do_cmd(const std::string& type, bool json_fmt) {
     print_text(type, resp_j);
 }
 
-int main(int argc, char* argv[]) {
+static void do_rackmonstatus() {
+  json req;
+  req["type"] = "list";
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
+  json resp_j = json::parse(resp);
+  for (const auto& ent : resp_j["data"]) {
+    std::cout << "PSU addr " << std::hex << std::setw(2) << std::setfill('0')
+              << int(ent["addr"]);
+    std::cout << " - crc errors: " << std::dec << ent["crc_fails"];
+    std::cout << ", timeouts: " << std::dec << ent["timeouts"];
+    std::cout << ", baud rate: " << std::dec << ent["baudrate"] << std::endl;
+  }
+}
+
+int main(int argc, const char** argv) {
   CLI::App app("Rackmon CLI interface");
   app.failure_message(CLI::FailureMessage::help);
+  if (std::filesystem::path(argv[0]).filename() == "modbuscmd") {
+    const char** _argv = argv;
+    argv = new const char*[argc + 1];
+    argv[0] = _argv[0];
+    argv[1] = "raw";
+    for (int i = 1; i < argc; i++) {
+      argv[i + 1] = _argv[i];
+    }
+    argc++;
+  }
 
   bool json_fmt = false;
   // Allow flags/options to fallthrough from subcommands.
@@ -215,10 +249,16 @@ int main(int argc, char* argv[]) {
   raw_cmd->callback(
       [&]() { do_raw_cmd(req, raw_cmd_timeout, expected_len, json_fmt); });
 
-  // Status command
-  app.add_subcommand("list", "Return status of rackmon")->callback([&]() {
+  // List command
+  app.add_subcommand("list", "Return list of Modbus devices")->callback([&]() {
     do_cmd("list", json_fmt);
   });
+
+  // Status command
+  app.add_subcommand(
+         "legacy_list",
+         "Return list of Modbus devices (Legacy backwards compatibility)")
+      ->callback(do_rackmonstatus);
 
   // Data command (Get monitored data)
   std::string format = "raw";

@@ -694,7 +694,7 @@ func TestVerifyFlash(t *testing.T) {
 			deviceFileName: "/dev/mtd42",
 			deviceData:     []byte("foobrr"),
 			mmapErr:        nil,
-			want:           errors.Errorf("Verification failed: flash and image data mismatch."),
+			want:           errors.Errorf("Verification failed: flash and image data mismatch beginning at offset 4 + roOffset 0."),
 		},
 		{
 			name:           "nonzero roOffset matched",

@@ -122,8 +122,12 @@ bic_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
   uint8_t status_12v = 0;
 
   ret = fbgc_common_server_stby_pwr_sts(&status_12v);
-  if ( ret < 0 || status_12v == 0) {
-    return -1;
+  if (ret < 0) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (status_12v == STAT_12V_OFF) {
+    return BIC_STATUS_12V_OFF;
   }
 
   bus_id = I2C_BIC_BUS;

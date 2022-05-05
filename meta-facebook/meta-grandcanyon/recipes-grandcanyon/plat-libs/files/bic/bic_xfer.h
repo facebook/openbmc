@@ -52,6 +52,7 @@ enum {
   BIC_STATUS_SUCCESS                =  0,
   BIC_STATUS_FAILURE                = -1,
   BIC_STATUS_NOT_SUPP_IN_CURR_STATE = -2,
+  BIC_STATUS_12V_OFF                = -3,
 };
 
 // BIC GPIO action

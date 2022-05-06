@@ -134,15 +134,22 @@ fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t less_retry) {
   uint8_t offset = 0;
   struct stat st;
   uint8_t intf = 0;
+  uint8_t root = slot_id;
 
   fru_id += DEV_ID0_2OU - 1;
   offset = DEV_ID0_2OU - 1;
+
+  pal_get_root_fru(slot_id, &root);
 
   if (slot_id == FRU_2U_TOP || slot_id == FRU_2U_BOT) {
     intf = slot_id == FRU_2U_TOP ? RREXP_BIC_INTF1 : RREXP_BIC_INTF2;
     pal_get_dev_fruid_path(slot_id, fru_id, fruid_path);
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
     ret = bic_read_fruid(FRU_SLOT1, fru_id - offset , fruid_temp_path, &fru_size, intf, less_retry);
+  } else if (slot_id == FRU_2U) {
+    sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", root, fru_id);
+    sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", root, REXP_BIC_INTF);
+    ret = bic_read_fruid(root, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF, less_retry);
   } else {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", slot_id, fru_id);
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, REXP_BIC_INTF);
@@ -184,6 +191,8 @@ fru_cache_dump(void *arg) {
   int nvme_ready_count = 0;
   fruid_info_t fruid;
   struct timespec slp_time;
+  uint8_t m2_config = 0; // M.2 Config dual or single
+  bool m2_config_is_dual = false;
 
   pal_get_root_fru(fru, &root);
 
@@ -210,6 +219,8 @@ fru_cache_dump(void *arg) {
     } else if (fru == FRU_2U_BOT) {
       ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF2);
       flagIdx = MAX_NODES + FRU_2U_BOT - FRU_EXP_BASE;
+    } else if (fru == FRU_2U) {
+      ret = bic_get_self_test_result(root, (uint8_t *)&self_test_result, REXP_BIC_INTF);
     } else {
       ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result, REXP_BIC_INTF);
     }
@@ -223,10 +234,33 @@ fru_cache_dump(void *arg) {
 
   sleep(2); //wait for BIC poll at least one cycle
 
+  if ( fru == FRU_2U_TOP || fru == FRU_2U_BOT || fru == FRU_2U ) {
+    ret = pal_get_m2_config(fru, &m2_config);
+    if ( ret != 0 ) {
+      syslog(LOG_WARNING, "%s() fru = %d get m2 config failed", __func__, fru);
+    } else {
+      if ( m2_config == CONFIG_C_CWC_DUAL ) {
+        m2_config_is_dual = true;
+      }
+    }
+  }
+
   if (keepPoll) {
     for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+      if ( m2_config_is_dual ) {
+        // if it's dual m2 config, skip even slot
+        if ( dev_id % 2 != 0 ) {
+          continue;
+        }
+      }
+
       if (dev_fru_complete[flagIdx][dev_id] != DEV_FRU_NOT_COMPLETE) {
-        finish_count++;
+        // finish count shouold plus 2 since it's dual slot
+        if ( m2_config_is_dual ) {
+          finish_count+=2;
+        } else {
+          finish_count++;
+        }
       }
     }
   }
@@ -241,16 +275,29 @@ fru_cache_dump(void *arg) {
         continue;
       }
 
-      //check for power status
-      ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
+      if ( m2_config_is_dual ) {
+        if ( dev_id % 2 != 0 ) {
+          continue;
+        }
+      }
 
+      //check for power status
+      if ( fru == FRU_2U ) {
+        ret = pal_get_dev_info(root, dev_id, &nvme_ready ,&status[dev_id], &type);
+      } else {
+        ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
+      }
       //syslog(LOG_WARNING, "fru_cache_dump1: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
 
       if (dev_fru_complete[flagIdx][dev_id] != DEV_FRU_NOT_COMPLETE) {
         if (keepPoll) {
           sleep(1);
         } else {
-          finish_count++;
+          if ( m2_config_is_dual ) {
+            finish_count+=2;
+          } else {
+            finish_count++;
+          }
         }
         continue;
       }
@@ -260,7 +307,11 @@ fru_cache_dump(void *arg) {
           retry = 0;
           while (1) {
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-            ret = fruid_cache_init(fru, dev_id, keepPoll);
+            if ( fru == FRU_2U ) {
+              ret = fruid_cache_init(root, dev_id, keepPoll);
+            } else {
+              ret = fruid_cache_init(fru, dev_id, keepPoll);
+            }
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
             retry++;
 
@@ -273,7 +324,11 @@ fru_cache_dump(void *arg) {
           if (ret != 0) {
             syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
           } else {
-            pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+            if ( fru == FRU_2U ) {
+              pal_get_dev_fruid_path(root, dev_id + DEV_ID0_2OU - 1, buf);
+            } else {
+              pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+            }
             //check file's checksum
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
             ret = fruid_parse(buf, &fruid);
@@ -282,14 +337,22 @@ fru_cache_dump(void *arg) {
             } else { // Success
               free_fruid_info(&fruid);
               dev_fru_complete[flagIdx][dev_id] = DEV_FRU_COMPLETE;
-              finish_count++;
+              if ( m2_config_is_dual ) {
+                finish_count+=2;
+              } else {
+                finish_count++;
+              }
               syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
             }
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
           }
         } else { // DEVICE_POWER_OFF
           if (!keepPoll) {
-            finish_count++;
+            if ( m2_config_is_dual ) {
+              finish_count+=2;
+            } else {
+              finish_count++;
+            }
           }
         }
 
@@ -302,7 +365,11 @@ fru_cache_dump(void *arg) {
         // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
       } else { // Device Status Unknown
         if (!keepPoll) {
-          finish_count++;
+          if ( m2_config_is_dual ) {
+            finish_count+=2;
+          } else {
+            finish_count++;
+          }
         }
         syslog(LOG_WARNING, "fru_cache_dump: Fail to access Slot%u Dev%d power status", fru, dev_id-1);
       }
@@ -325,19 +392,38 @@ fru_cache_dump(void *arg) {
     }
 
     for (dev_id = 1; dev_id <= MAX_NUM_GPV3_DEVS; dev_id++) {
+
+      if ( m2_config_is_dual ) {
+        if ( dev_id % 2 != 0 ) {
+          continue;
+        }
+      }
+
       if (status[dev_id] == DEVICE_POWER_OFF) {// M.2 device is present or not
-        nvme_ready_count++;
+        if ( m2_config_is_dual ) {
+          nvme_ready_count+=2;
+        } else {
+          nvme_ready_count++;
+        }
         continue;
       }
 
       // check for device type
-      ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
-      //syslog(LOG_WARNING, "fru_cache_dump2: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
+      if ( fru == FRU_2U ) {
+        ret = pal_get_dev_info(root, dev_id, &nvme_ready, &status[dev_id], &type);
+      } else {
+        ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
+      }
+      syslog(LOG_WARNING, "fru_cache_dump2: Slot%u Dev%d power=%u nvme_ready=%u type=%u", fru, dev_id-1, status[dev_id], nvme_ready, type);
 
       if (ret || (!nvme_ready))
         continue;
 
-      nvme_ready_count++;
+      if ( m2_config_is_dual ) {
+        nvme_ready_count+=2;
+      } else {
+        nvme_ready_count++;
+      }
 
       if (dev_fru_complete[flagIdx][dev_id] == DEV_FRU_NOT_COMPLETE) { // try to get fru or not
         if (type == DEV_TYPE_BRCM_ACC) { // device type has FRU
@@ -357,7 +443,11 @@ fru_cache_dump(void *arg) {
           if (retry >= max_retry) {
             syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
           } else {
-            pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+            if ( fru == FRU_2U ) {
+              pal_get_dev_fruid_path(root, dev_id + DEV_ID0_2OU - 1, buf);
+            } else {
+              pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
+            }
             // check file's checksum
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
             ret = fruid_parse(buf, &fruid);
@@ -366,14 +456,22 @@ fru_cache_dump(void *arg) {
             } else { // Success
               free_fruid_info(&fruid);
               dev_fru_complete[flagIdx][dev_id] = DEV_FRU_COMPLETE;
-              finish_count++;
+              if ( m2_config_is_dual ) {
+                finish_count+=2;
+              } else {
+                finish_count++;
+              }
               syslog(LOG_WARNING, "fru_cache_dump: Finish getting Slot%u Dev%d FRU", fru, dev_id-1);
             }
             pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
           }
         } else {
           dev_fru_complete[flagIdx][dev_id] = DEV_FRU_IGNORE;
-          finish_count++;
+          if ( m2_config_is_dual ) {
+            finish_count+=2;
+          } else {
+            finish_count++;
+          }
           syslog(LOG_WARNING, "fru_cache_dump: Slot%u Dev%d ignore FRU", fru, dev_id-1);
         }
       }
@@ -434,6 +532,8 @@ fru_cahe_init(uint8_t fru) {
     if ((topbot & PRESENT_2U_TOP) == 0) {
       goto fru_cache_ends;
     }
+  } else if (type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD) {
+    fru = FRU_2U;
   }
 fru_cache_starts:
   idx = fru - 1;

@@ -1988,8 +1988,11 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
     }
   }
 
-  if (bic_get_sensor_reading(sensor_num, &sensor) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
+  ret = bic_get_sensor_reading(sensor_num, &sensor);
+  if (ret < 0) {
+    if (ret != BIC_STATUS_12V_OFF) {
+      syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
+    }
     return ERR_SENSOR_NA;
   }
 

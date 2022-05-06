@@ -352,6 +352,8 @@ int elbert_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
     if (field_type == ELBERT_EEPROM_FIELD_END)
       break;
     /* Otherwise, read the field */
+    /* Clear field_value from previous reads */
+    memset(field_value, 0, sizeof(field_value));
     memcpy(field_value, &buf[read_pointer], field_len);
     read_pointer += field_len;
 

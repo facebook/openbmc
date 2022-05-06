@@ -255,6 +255,7 @@ int pal_get_fru_slot(uint8_t fru, uint8_t *slot);
 int pal_get_root_fru(uint8_t fru, uint8_t *root);
 int pal_get_2ou_board_type(uint8_t fru, uint8_t *type_2ou);
 int pal_is_sensor_num_exceed(uint8_t sensor_num);
+int pal_get_m2_config(uint8_t fru, uint8_t *config);
 
 #ifdef __cplusplus
 } // extern "C"

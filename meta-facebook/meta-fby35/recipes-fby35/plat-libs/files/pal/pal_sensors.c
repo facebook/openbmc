@@ -1302,7 +1302,9 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
     else ret = bic_get_fan_speed(fan, &value);
   }
-
+  if (value <= 0) {
+    return -1;
+  }
   if (ret == PAL_EOK) {
     *rpm = (int)value;
   }
@@ -1589,7 +1591,7 @@ read_fan_speed(uint8_t snr_number, float *value) {
   int ret = 0;
   uint8_t fan = snr_number - BMC_SENSOR_FAN0_TACH;
   ret = pal_get_fan_speed(fan, &rpm);
-  if ( ret < 0 ) {
+  if ( ret < 0 || rpm <= 0) {
     ret = READING_NA;
   }
   *value = (float)rpm;

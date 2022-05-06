@@ -30,7 +30,52 @@
 # shellcheck disable=SC1091,SC2039
 . /usr/local/fbpackages/utils/ast-functions
 
+TYPE_DUAL_FAN=0
+TYPE_SINGEL_FAN=1
+GET_FAN_RPM="/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x52 0x9c 0x9c 0x0 " # for config D
 default_fsc_config_path="/etc/fsc-config.json"
+sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
+bmc_location=$(get_bmc_board_id)
+
+check_fan_type() {
+  if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
+    # check CC of from BIC, if there is single fan TACH 1, 3, 5, 7 will not turn CC "00"
+    if [[ "$($GET_FAN_RPM 1 | awk '{print $7;}')" = "00" && "$($GET_FAN_RPM 3 | awk '{print $7;}')" = "00" ]]; then
+      fan0_type=$TYPE_DUAL_FAN
+    else
+      fan0_type=$TYPE_SINGEL_FAN
+    fi
+    if [[ "$($GET_FAN_RPM 5 | awk '{print $7;}')" = "00" && "$($GET_FAN_RPM 7 | awk '{print $7;}')" = "00" ]]; then
+      fan1_type=$TYPE_DUAL_FAN
+    else
+      fan1_type=$TYPE_SINGEL_FAN
+    fi
+  else
+    if [[ "$(cat /sys/class/hwmon/hwmon*/fan2_input)" = "0" && "$(cat /sys/class/hwmon/hwmon*/fan4_input)" = "0" ]]; then
+      fan0_type=$TYPE_SINGEL_FAN
+    else
+      fan0_type=$TYPE_DUAL_FAN
+    fi
+    if [[ "$(cat /sys/class/hwmon/hwmon*/fan6_input)" = "0" && "$(cat /sys/class/hwmon/hwmon*/fan8_input)" = "0" ]]; then
+      fan1_type=$TYPE_SINGEL_FAN
+    else
+      fan1_type=$TYPE_DUAL_FAN
+    fi
+  fi
+  fan_type=("$fan0_type" "$fan1_type")
+  for ((i=0; i < ${#fan_type[@]}; i++))
+  do
+    if [ "${fan_type[$i]}" = "$TYPE_DUAL_FAN" ]; then
+      if [ "$sys_config" = "A" ]; then
+        logger -t "fan_check" -p daemon.crit "Fan slot $i is dual fan, please install single fan on 1U system"
+      fi
+    else
+      if [[ "$sys_config" = "B" || "$sys_config" = "D" ]]; then
+        logger -t "fan_check" -p daemon.crit "Fan slot $i is single fan, please install dual fan on 2U system"
+      fi
+    fi
+  done
+}
 
 init_class1_fsc() {
   sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
@@ -66,7 +111,6 @@ init_class2_fsc() {
 }
 
 start_sled_fsc() {
-  bmc_location=$(get_bmc_board_id)
   if [ "$bmc_location" -eq "$BMC_ID_CLASS1" ]; then
     #The BMC of class1
     init_class1_fsc
@@ -77,6 +121,7 @@ start_sled_fsc() {
     echo -n "Is board id correct(id=$bmc_location)?..."
     exit 255
   fi
+  check_fan_type
 
   echo "Setup fscd for fby35..."
   #Wait for sensord ready

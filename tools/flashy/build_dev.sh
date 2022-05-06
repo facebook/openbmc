@@ -22,4 +22,4 @@ set -e
 # Ensure we're in the project root
 cd "$(dirname "$0")"
 rm -rf build_dev
-go build -ldflags="-w -s" -gcflags=all="-l -B" -o build_dev/flashy
+go build -ldflags="-w -s" -gcflags=all="-l" -o build_dev/flashy

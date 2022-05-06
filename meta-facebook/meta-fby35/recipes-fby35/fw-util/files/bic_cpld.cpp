@@ -38,6 +38,36 @@ image_info CpldComponent::check_image(const string& image, bool force) {
   return image_sts;
 }
 
+// Refresh CPLD to activate new image in case CPLD can not do 12V cycle when fw is broken
+int CpldComponent::cpld_refresh(uint8_t bus_id, uint8_t addr) {
+  int retry = 3;
+  int i2cfd = -1;
+  int ret = 0;
+  uint8_t tbuf[3] = {0}, rbuf[1] = {0}; 
+  
+  i2cfd = i2c_cdev_slave_open(bus_id, addr, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus_id);
+    return -1;
+  }    
+  while (retry-- > 0) {
+    tbuf[0] = 0x79; // CPLD register
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr << 1, tbuf, 3, rbuf, 0);
+    if (ret == 0) {
+      break;
+    }
+    usleep(10 * 1000);
+  }
+  if (retry == 0) {
+    cerr << "Fail to refresh CPLD to activate image" << endl;
+  }
+
+  if (i2cfd >= 0) {
+    close(i2cfd);
+  }
+  return ret;
+}
+
 int CpldComponent::update_cpld(const string& image, bool force) {
   int ret = FW_STATUS_FAILURE;
   char ver_key[MAX_KEY_LEN] = {0};
@@ -73,7 +103,9 @@ int CpldComponent::update_cpld(const string& image, bool force) {
       printf("Cannot open i2c!\n");
       ret = FW_STATUS_FAILURE;
     }
-
+    if (force == true) {
+      cpld_refresh(attr.bus_id, attr.slv_addr);
+    }
     syslog(LOG_CRIT, "Updated %s on %s. File: %s. Result: %s", get_component_name(fw_comp),
            fru().c_str(), image.c_str(), (ret) ? "Fail" : "Success");
   } else {  // CPLD on BIC Baseboard (Class 2)

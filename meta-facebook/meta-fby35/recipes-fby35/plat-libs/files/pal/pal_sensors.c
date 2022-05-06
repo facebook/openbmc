@@ -207,6 +207,12 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_EHV_VR_POUT,
   BIC_SENSOR_VCCD_VR_POUT,
   BIC_SENSOR_FAON_VR_POUT,
+  BIC_SENSOR_DIMMA_PMIC_Pout,
+  BIC_SENSOR_DIMMC_PMIC_Pout,
+  BIC_SENSOR_DIMMD_PMIC_Pout,
+  BIC_SENSOR_DIMME_PMIC_Pout,
+  BIC_SENSOR_DIMMG_PMIC_Pout,
+  BIC_SENSOR_DIMMH_PMIC_Pout,
 };
 //BIC 1OU EXP Sensors
 const uint8_t bic_1ou_sensor_list[] = {
@@ -475,6 +481,12 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_EHV_VR_POUT,
   BIC_SENSOR_VCCD_VR_POUT,
   BIC_SENSOR_FAON_VR_POUT,
+  BIC_SENSOR_DIMMA_PMIC_Pout,
+  BIC_SENSOR_DIMMC_PMIC_Pout,
+  BIC_SENSOR_DIMMD_PMIC_Pout,
+  BIC_SENSOR_DIMME_PMIC_Pout,
+  BIC_SENSOR_DIMMG_PMIC_Pout,
+  BIC_SENSOR_DIMMH_PMIC_Pout,
 };
 
 const uint8_t bic_1ou_skip_sensor_list[] = {
@@ -2251,7 +2263,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   }
 
   //check snr number first. If it not holds, it will move on
-  if (sensor_num <= 0x42) { //server board
+  if (sensor_num <= 0x48) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
   } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
        ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {

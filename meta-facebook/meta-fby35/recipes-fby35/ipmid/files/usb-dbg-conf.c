@@ -425,6 +425,12 @@ static sensor_desc_t cri_sensor_sb[] =
   {"EHV VR Pout:"          , BIC_SENSOR_EHV_VR_POUT        , "W"    , FRU_ALL, 2},
   {"VCCD VR Pout"          , BIC_SENSOR_VCCD_VR_POUT       , "W"    , FRU_ALL, 2},
   {"FAON VR Pout:"         , BIC_SENSOR_FAON_VR_POUT       , "W"    , FRU_ALL, 2},
+  {"DIMMA PMIC_Pout:"      , BIC_SENSOR_DIMMA_PMIC_Pout    , "W"    , FRU_ALL, 2},
+  {"DIMMC PMIC_Pout:"      , BIC_SENSOR_DIMMC_PMIC_Pout    , "W"    , FRU_ALL, 2},
+  {"DIMMD PMIC_Pout:"      , BIC_SENSOR_DIMMD_PMIC_Pout    , "W"    , FRU_ALL, 2},
+  {"DIMME PMIC_Pout:"      , BIC_SENSOR_DIMME_PMIC_Pout    , "W"    , FRU_ALL, 2},
+  {"DIMMG PMIC_Pout:"      , BIC_SENSOR_DIMMG_PMIC_Pout    , "W"    , FRU_ALL, 2},
+  {"DIMMH PMIC_Pout:"      , BIC_SENSOR_DIMMH_PMIC_Pout    , "W"    , FRU_ALL, 2},
 };
 
 static sensor_desc_t cri_sensor_bmc[] =

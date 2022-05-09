@@ -3,6 +3,7 @@ branches=(
     lf-master
     lf-dunfell
     lf-honister
+    lf-kirkstone
 )
 
 rocko_repos=(
@@ -19,4 +20,7 @@ lf_dunfell_repos=(
 )
 lf_honister_repos=(
     lf-openbmc:a515de07d
+)
+lf_kirkstone_repos=(
+    lf-openbmc:e22d42c0b
 )

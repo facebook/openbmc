@@ -21,9 +21,10 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
-# honister platforms (latest)
-  meta-grandteton:lf-honister
+# kirkstone platforms (latest)
 #   -- none --
+# honister platforms (pending upgrade)
+  meta-grandteton:lf-honister
 # dunfell platforms (pending upgrade)
   meta-churchillmono:lf-dunfell
   meta-clearcreek:lf-dunfell

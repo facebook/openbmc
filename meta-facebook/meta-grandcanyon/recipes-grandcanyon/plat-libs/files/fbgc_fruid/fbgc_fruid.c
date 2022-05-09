@@ -178,7 +178,7 @@ fbgc_fruid_write(uint8_t fru, char *path) {
 }
 
 int
-fbgc_check_fru_is_valid(const char * bin_file)
+fbgc_check_fru_is_valid(const char * bin_file, int log_level)
 {
   int i = 0, bin = 0;
   uint8_t cal_chksum = 0, header_chksum = 0;
@@ -221,20 +221,20 @@ fbgc_check_fru_is_valid(const char * bin_file)
 
   if ((all_zero_flag == true) && (header_chksum == 0x00)) {
     // The header bytes are all zero.
-    syslog(LOG_CRIT, "FRU header %s is empty", bin_file);
+    syslog(log_level, "FRU header %s is empty", bin_file);
     return -1; 
   } else if (cal_chksum != header_chksum) {
     if ((header_chksum == 0xff) && (cal_chksum == FRUID_HEADER_EMPTY)) {
       // The header bytes are all 0xff.
-      syslog(LOG_CRIT, "FRU header %s is empty", bin_file);
+      syslog(log_level, "FRU header %s is empty", bin_file);
     } else {
       // The checksum is wrong
-      syslog(LOG_CRIT, "New FRU data %s checksum is invalid", bin_file);
+      syslog(log_level, "New FRU data %s checksum is invalid", bin_file);
     }
     return -1;
   } else if (fruid_parse(bin_file, &fruid) != 0) {
     // Check zero checksum of all area.
-    syslog(LOG_CRIT, "FRU data %s is wrong", bin_file);
+    syslog(log_level, "FRU data %s is wrong", bin_file);
     return -1;
   } else {
     free_fruid_info(&fruid);

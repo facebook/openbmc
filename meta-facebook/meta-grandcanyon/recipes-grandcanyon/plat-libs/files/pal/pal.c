@@ -3537,14 +3537,14 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
 }
 
 int
-pal_check_fru_is_valid(const char* fruid_path) {
+pal_check_fru_is_valid(const char* fruid_path, int log_level) {
 
   if (fruid_path == NULL) {
     syslog(LOG_ERR, "%s: Failed to check FRU header is valid or not because NULL parameter.", __func__);
     return -1;
   }
 
-  return fbgc_check_fru_is_valid(fruid_path);
+  return fbgc_check_fru_is_valid(fruid_path, log_level);
 }
 
 int
@@ -4217,7 +4217,7 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
 
     // Update fan fru if get serial number failed, serial number is different, or local fan fru checksum is wrong.
     // run exp-cache to udpate FAN FRU binary data
-    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0) || (pal_check_fru_is_valid(path) < 0)) {
+    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0) || (pal_check_fru_is_valid(path, LOG_WARNING) < 0)) {
       snprintf(cmd, sizeof(cmd), "/usr/bin/exp-cached --update_fan fan%d> /dev/null 2>&1 &", i);
       run_command(cmd);
     }

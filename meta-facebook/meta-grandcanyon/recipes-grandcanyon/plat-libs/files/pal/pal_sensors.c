@@ -2255,7 +2255,7 @@ read_iocm_fru() {
     if ((pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN)) < 0) {
       syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
     }
-    if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
+    if (pal_check_fru_is_valid(FRU_IOCM_BIN, LOG_CRIT) < 0) {
       syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
     }
   }

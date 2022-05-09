@@ -36,13 +36,14 @@
 
 #define MAX_FRU_PATH 64
 #define FW_VERSION_LENS 4
+#define MAX_RETRY_TO_GET_EXP_FRU 5
 
 uint8_t expander_fruid_list[] = {FRU_SCC, FRU_DPB};
 uint8_t expander_fan_fruid_list[] = {FRU_FAN0, FRU_FAN1, FRU_FAN2, FRU_FAN3};
 
 static void
 exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
-  int ret = 0;
+  int ret = 0, log_level = LOG_WARNING;
   char fruid_temp_path[MAX_FRU_PATH] = {0};
   char fruid_path[MAX_FRU_PATH] = {0};
   char fru_name[MAX_FRU_CMD_STR] = {0};
@@ -73,12 +74,15 @@ exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
   snprintf(fruid_temp_path, sizeof(fruid_temp_path), COMMON_TMP_FRU_PATH, fru_name);
   snprintf(fruid_path, sizeof(fruid_path), fru_path, fru_name);
 
-  while(retry < MAX_RETRY) {
+  while(retry < MAX_RETRY_TO_GET_EXP_FRU) {
     ret = exp_read_fruid(fruid_temp_path, fru);
     if (ret != 0) {
       retry++;
-      msleep(20);
+      sleep(1);
     } else {
+      if (retry == (MAX_RETRY_TO_GET_EXP_FRU - 1)) {
+        log_level = LOG_CRIT;
+      }
       // rename() can only handle src and dst path both within same mounted file system
       // Use light weight rename() to handle where the fruid_temp_path and fruid_path
       // within same mounted file system. If both path are on the different mounted filesystem
@@ -89,16 +93,17 @@ exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
       }
 
       // Check checksum of FRU after dump from expander.
-      if (pal_check_fru_is_valid(fruid_path) < 0) {
+      if (pal_check_fru_is_valid(fruid_path, log_level) < 0) {
         retry++;
-        msleep(20);
+        syslog(LOG_WARNING, "%s()  FRU: %s is invalid, retry: %d\n", __func__, fru_name, retry);
+        sleep(1);
       } else {
         break;
       }
     }
   }
 
-  if(retry == MAX_RETRY) {
+  if(retry == MAX_RETRY_TO_GET_EXP_FRU) {
     syslog(LOG_CRIT, "%s: exp_read_fruid failed with FRU: %s\n", __func__, fru_name);
   } else {
     syslog(LOG_INFO, "FRU: %s initial is done.\n", fru_name);

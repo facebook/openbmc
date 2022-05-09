@@ -477,7 +477,7 @@ int pal_handle_oem_1s_intr(uint8_t fru, uint8_t *data);
 int pal_handle_oem_1s_asd_msg_in(uint8_t fru, uint8_t *data, uint8_t data_len);
 int pal_set_nic_perst(uint8_t val);
 bool pal_is_ioc_ready(uint8_t i2c_bus);
-int pal_check_fru_is_valid(const char* fruid_path);
+int pal_check_fru_is_valid(const char* fruid_path, int log_level);
 int pal_get_cached_value(char *key, char *value);
 int pal_set_cached_value(char *key, char *value);
 int pal_get_fpga_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);

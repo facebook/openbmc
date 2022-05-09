@@ -40,7 +40,7 @@ int fbgc_get_fruid_name(uint8_t fru, char *name);
 int fbgc_get_fruid_path(uint8_t fru, char *path);
 int fbgc_get_fruid_eeprom_path(uint8_t fru, char *path);
 int fbgc_fruid_write(uint8_t fru, char *path);
-int fbgc_check_fru_is_valid(const char * bin_file);
+int fbgc_check_fru_is_valid(const char * bin_file, int log_level);
 
 #ifdef __cplusplus
 } // extern "C"

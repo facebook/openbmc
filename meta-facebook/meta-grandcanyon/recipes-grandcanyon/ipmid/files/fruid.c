@@ -86,7 +86,7 @@ plat_fruid_init() {
   if (pal_copy_eeprom_to_bin(path, FRU_BMC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_BMC_BIN);
   }
-  if (pal_check_fru_is_valid(FRU_BMC_BIN) < 0) {
+  if (pal_check_fru_is_valid(FRU_BMC_BIN, LOG_CRIT) < 0) {
     syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_BMC_BIN);
   }
 
@@ -95,7 +95,7 @@ plat_fruid_init() {
   if (pal_copy_eeprom_to_bin(path, FRU_UIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_UIC_BIN);
   }
-  if (pal_check_fru_is_valid(FRU_UIC_BIN) < 0) {
+  if (pal_check_fru_is_valid(FRU_UIC_BIN, LOG_CRIT) < 0) {
     syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_UIC_BIN);
   }
 
@@ -104,7 +104,7 @@ plat_fruid_init() {
   if (pal_copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
   }
-  if (pal_check_fru_is_valid(FRU_NIC_BIN) < 0) {
+  if (pal_check_fru_is_valid(FRU_NIC_BIN, LOG_CRIT) < 0) {
     syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_NIC_BIN);
   }
 
@@ -123,7 +123,7 @@ plat_fruid_init() {
       snprintf(path, path_len, EEPROM_PATH, I2C_T5E1S1_T7IOC_BUS, IOCM_FRU_ADDR);
       if (pal_copy_eeprom_to_bin(path, FRU_IOCM_BIN) < 0) {
         syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_IOCM_BIN);
-      } else if (pal_check_fru_is_valid(FRU_IOCM_BIN) < 0) {
+      } else if (pal_check_fru_is_valid(FRU_IOCM_BIN, LOG_CRIT) < 0) {
         syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_IOCM_BIN);
       }
     }

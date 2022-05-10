@@ -416,11 +416,6 @@ const uint8_t bic_bb_sensor_list[] = {
   BB_HSC_EIN,
   BB_HSC_PEAK_IOUT,
   BB_HSC_PEAK_PIN,
-  BB_MEDUSA_VDELTA,
-  BB_PDB_DL_VDELTA,
-  BB_PDB_BB_VDELTA,
-  BB_CURR_LEAKAGE,
-  BB_FAN_PWR
 };
 
 //BIC Sierra Point Expansion Board Sensors

@@ -65,6 +65,8 @@ typedef struct _sdr_rec_hdr_t {
 #define MAX_SLOT_NUM    4
 #define MAX_SENSOR_NUM  0xFF
 
+#define ISL_IC_DEVICE_REV_REGISTER 0xAE
+
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -830,6 +832,38 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t b
     memmove(devid, &rbuf[1], rlen);
   }
 
+  return ret;
+}
+
+// Custom Command for getting vr revision
+int
+bic_get_vr_device_revision(uint8_t slot_id, uint8_t *dev_rev, uint8_t bus, uint8_t addr, uint8_t intf) {
+  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = ISL_DEV_REV_LEN;
+  uint8_t revision_len;
+  int ret = 0;
+
+  if(dev_rev == NULL) {
+    return -1;
+  }
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = ISL_DEV_REV_LEN; // read back 5 bytes
+  tbuf[3] = ISL_IC_DEVICE_REV_REGISTER; // get device revision command
+  tlen = 4;
+  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+  if(ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get vr device revision, ret=%d", __func__, ret);
+    return ret;
+  }
+
+  revision_len = rbuf[0]; // first byte that return is the number of bytes represent the device revision
+
+  memcpy(dev_rev, &rbuf[1], revision_len);
+  
   return ret;
 }
 

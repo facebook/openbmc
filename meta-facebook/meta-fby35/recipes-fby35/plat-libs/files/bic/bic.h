@@ -111,6 +111,7 @@ enum {
   IFX_DEVID_LEN = 0x2,
   ISL_DEVID_LEN = 0x4,
   TI_DEVID_LEN  = 0x6,
+  ISL_DEV_REV_LEN = 0x5,
 
   /*----VR ADDR-----*/
   VCCIN_ADDR = 0xC0,

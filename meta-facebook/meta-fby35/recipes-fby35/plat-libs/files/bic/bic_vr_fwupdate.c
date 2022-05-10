@@ -43,6 +43,9 @@
 #define MAX_RETRY 3
 #define VR_SB_BUS 0x4
 #define VR_2OU_BUS 0x1
+#define REVD_MAX_REVISION_NUM 5
+#define REVISION_D 0
+#define REVISION_F 1
 
 typedef struct {
   uint8_t command;
@@ -56,6 +59,7 @@ typedef struct {
   uint8_t intf;
   uint8_t devid[6];
   uint8_t devid_len;
+  uint8_t dev_rev;
   int data_cnt;
   vr_data pdata[2048];
 } vr;
@@ -318,7 +322,7 @@ vr_ISL_hex_parser(char *image) {
   }
 
   while( NULL != fgets(tmp_buf, tmp_len, fp) ) {
-    /*search for 0xAD command*/
+    /*search for 0xAD and 0xAE command*/
     if ( start_with(tmp_buf, "49") ) {
       if ( string_to_byte(&tmp_buf[6]) == 0xad ) {
           if (vr_list[vr_cnt].addr != 0x0 ) vr_cnt++; //move on to the next addr if 4 VRs are included a file
@@ -333,6 +337,14 @@ vr_ISL_hex_parser(char *image) {
         for ( i = 0; i < vr_list[vr_cnt].devid_len; i++ ) {
           printf("%x ", vr_list[vr_cnt].devid[i]);
         }
+        printf(",Addr %x\n", vr_list[vr_cnt].addr);
+#endif
+      }
+      else if (string_to_byte(&tmp_buf[6]) == 0xae) {
+        vr_list[vr_cnt].dev_rev = (string_to_byte(&tmp_buf[8]) <= REVD_MAX_REVISION_NUM)? REVISION_D:REVISION_F; // <= 5 means revision D, >= 6 means revision F
+#ifdef DEBUG
+        printf("[Get] revision ");
+        printf("%s ", (vr_list[vr_cnt].dev_rev == REVISION_D)? "D":"F");
         printf(",Addr %x\n", vr_list[vr_cnt].addr);
 #endif
       }
@@ -1261,13 +1273,59 @@ _lookup_vr_devid(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *rbuf,
 }
 
 int
+get_vr_revision(uint8_t slot_id, uint8_t comp, uint8_t intf, uint8_t *dev_rev,
+                 uint8_t sel_vendor){
+  int i, ret = 0;
+  uint8_t rbuf[TI_DEVID_LEN] = {0};
+
+  //For now only ISL need to check FW&IC revision
+  if(sel_vendor == VR_ISL) {
+    for (i = 0; i < dev_table_size; i++) {
+      if (dev_list[i].intf == intf && dev_list[i].comp == comp) {
+        printf("Find: ");
+        ret = bic_get_vr_device_revision(slot_id, rbuf, dev_list[i].bus, dev_list[i].addr, intf);
+        if (ret == BIC_STATUS_SUCCESS) {
+          break;
+        }
+      }
+    }
+
+    if(i == dev_table_size) {
+      printf("Couldn't get the revision from VRs\n");
+      return BIC_STATUS_FAILURE;
+    }
+
+    if(dev_rev != NULL) {
+      if(rbuf[3] <= REVD_MAX_REVISION_NUM) { // <= 5 means revision D
+        *dev_rev = REVISION_D;
+      } else { // >= 6 means revision F
+        *dev_rev = REVISION_F;
+      }
+      return BIC_STATUS_SUCCESS;
+    }
+    else {
+      return BIC_STATUS_FAILURE;
+    }
+  }
+  else {
+    return BIC_STATUS_SUCCESS;
+  }
+}
+
+int
 update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool usb_update) {
   int i, ret = 0;
   uint8_t devid[TI_DEVID_LEN] = {0};
+  uint8_t dev_rev = 0;
   uint8_t sel_vendor = 0;
   uint8_t vr_bus = 0x0, vr_addr = 0x0;
 
   ret = _lookup_vr_devid(slot_id, comp, intf, devid, &sel_vendor, &vr_bus, &vr_addr);
+  if ( ret < 0 ) {
+    return ret;
+  }
+
+  ret = get_vr_revision(slot_id, comp, intf, &dev_rev, sel_vendor);
   if ( ret < 0 ) {
     return ret;
   }
@@ -1292,7 +1350,7 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
     }
   }
 
-  //step 3 - check DEVID
+  //step 3 - check DEVID and version
   if ( memcmp(vr_list[0].devid, devid, vr_list[0].devid_len) != 0 ) {
     printf("Device ID is not match!\n");
     printf(" Expected ID: ");
@@ -1301,6 +1359,16 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
     printf(" Actual ID: ");
     for ( i = 0 ; i < vr_list[0].devid_len; i++ ) printf("%02X ", devid[i]);
     printf("\n");
+    return BIC_STATUS_FAILURE;
+  }
+
+  // IC & FW revision should match, revD device can only update with revD firmware, same as revF.
+  if (dev_rev != vr_list[vr_cnt].dev_rev) {
+    printf("Device revision is not match!\n");
+    printf(" Expected revision: ");
+    printf("%s \n", (vr_list[vr_cnt].dev_rev == REVISION_D)? "D":"F");
+    printf(" Actual revision: ");
+    printf("%s \n", (dev_rev == REVISION_D)? "D":"F");
     return BIC_STATUS_FAILURE;
   }
 

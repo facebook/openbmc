@@ -50,5 +50,6 @@ def board_callout(callout="None", **kwargs):
 def all_slots_power_off():
     return False
 
-def sensor_fail_ignore_check(sname):
+
+def sensor_fail_ignore_check(board, sname):
     return False

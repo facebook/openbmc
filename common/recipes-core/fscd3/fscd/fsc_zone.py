@@ -321,7 +321,7 @@ class Zone:
                         ):
                             self.sensor_assert_check[sensor_index].assert_check()
                             if (self.sensor_fail_ignore) and (
-                                fsc_board.sensor_fail_ignore_check(sname)
+                                fsc_board.sensor_fail_ignore_check(board, sname)
                             ):
                                 Logger.info("Ignore %s Fail" % v)
                             elif self.sensor_assert_check[sensor_index].is_asserted():

@@ -29,6 +29,11 @@
         "type" : "power_status"
       }
     },
+   "ssd0_temp": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
     "dimm": {
       "attribute": {
         "type" : "power_status"
@@ -72,7 +77,7 @@
         [ 39, 50 ]
       ]
     },
-    "linear_cpu_margin": {
+    "linear_cpu": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -80,21 +85,21 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [ -20, 10 ],
-        [ -19, 15 ],
-        [ -18, 20 ],
-        [ -17, 25 ],
-        [ -16, 30 ],
-        [ -15, 35 ],
-        [ -14, 40 ]
+        [ 56, 10 ],
+        [ 57, 15 ],
+        [ 58, 20 ],
+        [ 59, 25 ],
+        [ 60, 30 ],
+        [ 61, 35 ],
+        [ 62, 40 ]
       ]
     },
-    "pid_cpu_margin": {
+    "pid_cpu": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -11,
+      "setpoint": 65,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
       "kp": -2,

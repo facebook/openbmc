@@ -29,6 +29,9 @@ fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mod
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 
 lpal_hndl = CDLL("libpal.so.0")
+lbic_hndl = CDLL("libbic.so")
+
+GPIO_FM_BIOS_POST_CMPLT_BMC_N = 1
 
 fru_map = {
     "slot1": {
@@ -194,3 +197,16 @@ def get_fan_mode(scenario="None"):
         return fan_mode["boost_mode"], pwm
 
     pass
+
+
+def sensor_fail_ignore_check(board, sname):
+    if "slot" not in board:
+        return False
+    else:
+        slot_id = fru_map[board]["slot_num"]
+        pin_val = c_uint8(0)
+        lbic_hndl.bic_get_one_gpio_status(slot_id, GPIO_FM_BIOS_POST_CMPLT_BMC_N, byref(pin_val))
+        if pin_val.value == 0: # post complete
+            return False
+        return True
+

@@ -15,7 +15,7 @@ while [ $# -gt 0 ]; do
             shift; shift
             ;;
         -d)
-            final_args+=( "-b" )
+            final_args+=( "-B" )
             shift
             ;;
         -D)

@@ -40,6 +40,7 @@ const char *cpld_list[] = {
   "LCMXO2-4000HC",
   "LCMXO2-7000HC",
   "LCMXO3-2100C",
+  "LCMXO3-4300C",
   "LCMXO3-9400C",
   "LFMNX-50",
   "MAX10-10M16",

@@ -25,4 +25,4 @@ do_install() {
 FILES:${PN} = "${libdir}/libfby2_sensor.so"
 FILES:${PN}-dev = "${includedir}/facebook/fby2_sensor.h"
 
-RDEPENDS:${PN} += " libnvme-mi fby2-sensors libobmc-i2c libobmc-sensors "
+RDEPENDS:${PN} += " libnvme-mi fby2-sensors libobmc-i2c libobmc-sensors libbic libfby2-common"

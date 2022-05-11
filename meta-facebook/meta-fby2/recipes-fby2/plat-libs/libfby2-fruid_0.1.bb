@@ -27,7 +27,7 @@ SRC_URI = "file://fby2_fruid \
           "
 
 DEPENDS += " libfby2-common libfby2-sensor "
-RDEPENDS:${PN} += "libpal"
+RDEPENDS:${PN} += "libpal libfby2-common libfby2-sensor"
 
 S = "${WORKDIR}/fby2_fruid"
 

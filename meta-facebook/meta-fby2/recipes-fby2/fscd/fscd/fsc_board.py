@@ -160,7 +160,7 @@ def all_slots_power_off():
     return all_power_off
 
 
-def sensor_fail_ignore_check(sname):
+def sensor_fail_ignore_check(board, sname):
     if re.match(r"(.*)host_boot_temp", sname) is not None:
         return True
     return False

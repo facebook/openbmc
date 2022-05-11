@@ -6,7 +6,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://bic.h;beginline=4;endline=16;md5=417473877b7959f386857ca3ecd515a0"
 
-inherit meson
+inherit meson pkgconfig
 
 SRC_URI = "file://bic \
           "

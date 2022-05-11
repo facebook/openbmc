@@ -11,7 +11,7 @@ LIC_FILES_CHKSUM = "file://exp-cached.c;beginline=5;endline=17;md5=da35978751a9d
 DEPENDS:append = "libpal libexp update-rc.d-native"
 RDEPENDS:${PN} += "libpal libexp"
 
-inherit meson
+inherit meson pkgconfig
 
 LOCAL_URI = " \
     file://meson.build \

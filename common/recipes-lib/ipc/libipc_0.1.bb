@@ -13,5 +13,5 @@ LOCAL_URI = "\
     file://ipc-test.c \
     "
 
-inherit meson
+inherit meson pkgconfig
 inherit ptest-meson

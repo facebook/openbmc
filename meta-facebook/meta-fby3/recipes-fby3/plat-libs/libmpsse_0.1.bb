@@ -6,7 +6,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://mpsse.c;beginline=4;endline=16;md5=ddec148a21e74d3e2d70c02da74399da"
 
-inherit meson
+inherit meson pkgconfig
 
 SRC_URI = " file://libmpsse \
           "

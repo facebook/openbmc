@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://bic-util.c;beginline=4;endline=16;md5=b66b777f0823704
 
 SRC_URI = "file://bic-util \
           "
-inherit meson
+inherit meson pkgconfig
 
 S = "${WORKDIR}/bic-util"
 

@@ -24,7 +24,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://emmcd.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-inherit meson
+inherit meson pkgconfig
 
 RDEPENDS:${PN} += "liblog libmisc-utils"
 DEPENDS:append = " update-rc.d-native liblog libmisc-utils"

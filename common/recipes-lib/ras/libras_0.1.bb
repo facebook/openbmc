@@ -17,4 +17,4 @@ LOCAL_URI = " \
 DEPENDS += " libgpio-ctrl "
 RDEPENDS:${PN} += " libgpio-ctrl "
 
-inherit meson
+inherit meson pkgconfig

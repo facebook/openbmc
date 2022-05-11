@@ -19,4 +19,4 @@ LOCAL_URI = " \
 DEPENDS += "libmisc-utils"
 RDEPENDS:${PN} += "libmisc-utils"
 
-inherit meson
+inherit meson pkgconfig

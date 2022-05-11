@@ -18,4 +18,4 @@ EXTRA_OEMESON = " \
         -Doem-ibm=disabled \
         -Dlibpldm-only=enabled \
         "
-inherit meson
+inherit meson pkgconfig

@@ -7,7 +7,7 @@ LICENSE = "GPLv2"
 
 LIC_FILES_CHKSUM = "file://otp.c;beginline=4;endline=16;md5=b66b777f082370423b0fa6f12a3dc4db"
 
-inherit meson
+inherit meson pkgconfig
 LOCAL_URI = " \
     file://aspeed-otp.h \
     file://meson.build \

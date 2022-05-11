@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 inherit systemd
-inherit meson
+inherit meson pkgconfig
 inherit ptest-meson
 inherit python3native
 inherit python3-dir

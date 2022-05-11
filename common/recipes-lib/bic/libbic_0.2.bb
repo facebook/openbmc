@@ -18,4 +18,4 @@ DEPENDS += "libmisc-utils libipmi libipmb libkv libobmc-i2c libgpio-ctrl"
 RDEPENDS:${PN} += " libmisc-utils libobmc-i2c "
 
 
-inherit meson
+inherit meson pkgconfig

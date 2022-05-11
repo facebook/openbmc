@@ -6,7 +6,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://fpc-util.c;beginline=4;endline=16;md5=302e73da84735a7814365fd8ab355e2d"
 
-inherit meson
+inherit meson pkgconfig
 
 SRC_URI = "file://fpc-util \
           "

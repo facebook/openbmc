@@ -28,4 +28,4 @@ LOCAL_URI = " \
     "
 
 
-inherit meson
+inherit meson pkgconfig

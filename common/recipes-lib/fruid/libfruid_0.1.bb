@@ -30,4 +30,4 @@ LOCAL_URI = " \
 
 DEPENDS += " libipmi "
 
-inherit meson
+inherit meson pkgconfig

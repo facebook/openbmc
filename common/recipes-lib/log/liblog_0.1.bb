@@ -30,4 +30,4 @@ LOCAL_URI += " \
     file://meson.build \
     "
 
-inherit meson
+inherit meson pkgconfig

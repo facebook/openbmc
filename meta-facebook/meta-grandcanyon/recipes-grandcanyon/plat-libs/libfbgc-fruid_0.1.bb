@@ -6,7 +6,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://fbgc_fruid.c;beginline=8;endline=20;md5=435eababecd3f367d90616c70e27bdd6"
 
-inherit meson
+inherit meson pkgconfig
 
 SRC_URI = "file://fbgc_fruid \
           "

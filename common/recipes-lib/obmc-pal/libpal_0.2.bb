@@ -54,4 +54,4 @@ do_install:append() {
 
 FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/pal.py"
 
-inherit meson
+inherit meson pkgconfig

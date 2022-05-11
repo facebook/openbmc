@@ -24,7 +24,7 @@ LIC_FILES_CHKSUM = "file://obmc-mmc.h;beginline=7;endline=19;md5=da35978751a9d71
 
 BBCLASSEXTEND = "native"
 
-inherit meson
+inherit meson pkgconfig
 
 LOCAL_URI = " \
     file://lsmmc.c \

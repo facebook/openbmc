@@ -30,4 +30,4 @@ DEPENDS += "libobmc-pmbus libkv libpal libobmc-i2c "
 RDEPENDS:${PN} += "libobmc-pmbus libkv libpal libobmc-i2c "
 
 
-inherit meson
+inherit meson pkgconfig

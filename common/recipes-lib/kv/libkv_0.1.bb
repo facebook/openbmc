@@ -34,7 +34,7 @@ LIC_FILES_CHKSUM = "\
     file://${COREBASE}/meta/files/common-licenses/${@lic_file_name(d)} \
     "
 
-inherit meson python3-dir
+inherit meson pkgconfig python3-dir
 inherit ptest-meson
 
 LOCAL_URI = " \

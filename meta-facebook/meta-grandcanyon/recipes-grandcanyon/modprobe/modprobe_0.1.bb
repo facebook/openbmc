@@ -21,7 +21,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://modprobe.conf;md5=1aaac5ad33755459b190a062ba1b9f4b"
 
-inherit meson
+inherit meson pkgconfig
 
 LOCAL_URI = " \
     file://modprobe.conf \

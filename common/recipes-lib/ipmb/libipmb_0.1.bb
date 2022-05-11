@@ -15,4 +15,4 @@ LOCAL_URI = " \
 DEPENDS += "libipmi libipc"
 RDEPENDS:${PN} += "libipmi libipc"
 
-inherit meson
+inherit meson pkgconfig

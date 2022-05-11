@@ -19,4 +19,4 @@ LOCAL_URI = " \
 DEPENDS =+ "libncsi"
 RDEPENDS:${PN} =+ "libncsi"
 
-inherit meson
+inherit meson pkgconfig

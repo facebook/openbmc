@@ -24,4 +24,4 @@ DEPENDS = "libast-jtag libpal libobmc-i2c"
 RDEPENDS:${PN} = "libast-jtag libpal libobmc-i2c"
 LDFLAGS += "-lobmc-i2c"
 
-inherit meson
+inherit meson pkgconfig

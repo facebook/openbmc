@@ -21,7 +21,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-inherit meson
+inherit meson pkgconfig
 
 RDEPENDS:${PN} += "bash"
 

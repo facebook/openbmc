@@ -15,4 +15,4 @@ LOCAL_URI = " \
 DEPENDS = " libipmb libipmi libobmc-i2c"
 RDEPENDS:${PN} = "libipmb libipmi libobmc-i2c"
 
-inherit meson
+inherit meson pkgconfig

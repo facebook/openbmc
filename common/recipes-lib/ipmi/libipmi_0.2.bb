@@ -33,4 +33,4 @@ DEPENDS += "libipc"
 RDEPENDS:${PN} += "libipc"
 
 
-inherit meson
+inherit meson pkgconfig

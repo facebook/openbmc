@@ -6,7 +6,7 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://setup-gpio.c;beginline=8;endline=20;md5=8e8a5829be6e215cdbf65cac2aa6ddc4"
 
-inherit meson
+inherit meson pkgconfig
 LOCAL_URI = " \
     file://setup-gpio.c \
     file://meson.build \

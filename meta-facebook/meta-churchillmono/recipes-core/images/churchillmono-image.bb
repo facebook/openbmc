@@ -13,5 +13,4 @@ IMAGE_INSTALL += " \
   dhcp-client \
   mterm \
   openbmc-utils \
-  cisco-wb-kmod \
   "

@@ -14,11 +14,42 @@ using namespace std;
 #define GPIO_HIGH 1
 #define GPIO_LOW 0
 
+image_info BiosComponent::check_image(const string& image, bool force) {
+  int ret = 0;
+  uint8_t board_rev = 0;
+  image_info image_sts = {"", false, false};
+
+  if (force == true) {
+    image_sts.result = true;
+  }
+
+  ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
+  if (ret < 0) {
+    cerr << "Failed to get board revision ID" << endl;
+    return image_sts;
+  }
+
+  if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_rev) == true) {
+    image_sts.result = true;
+    image_sts.sign = true;
+  }
+
+  return image_sts;
+}
+
+
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
   int ret;
   int ret_recovery = 0, ret_reset = 0;
   uint8_t status;
   int retry_count = 0;
+  image_info image_sts = check_image(image, force);
+
+  if (image_sts.result == false) {
+    syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
+           get_component_name(fw_comp), fru().c_str(), image.c_str());
+    return FW_STATUS_FAILURE;
+  }
 
   try {
     cerr << "Checking if the server is ready..." << endl;

@@ -37,7 +37,7 @@
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
-const char platform_signature[PLAT_SIG_SIZE] = "Yosemite V3.5   ";
+const char plat_sig[PLAT_SIG_SIZE] = "Yosemite V3.5   ";
 
 int
 fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
@@ -526,8 +526,9 @@ exit:
 }
 
 int
-fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first) {
+fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp) {
   int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
+  int clear_size = 0, padding = 0;
   char read_buf[MD5_READ_BYTES] = {0};
   char md5_digest[MD5_DIGEST_LENGTH] = {0};
   MD5_CTX context;
@@ -582,6 +583,26 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
       }
 
       byte_num = read(fd, read_buf, read_bytes);
+
+      if (comp == FW_BIOS) {
+        // BIOS signed information(64Bytes) is filled into BIOS_IMG_INFO_OFFSET (0x2FEF000).
+        // We need to clear these 64Bytes to 0xFF then calculate the BIOS MD5.
+        if (sum <= BIOS_IMG_INFO_OFFSET && (sum + byte_num) > BIOS_IMG_INFO_OFFSET) {
+          padding = BIOS_IMG_INFO_OFFSET - sum;
+          if ((byte_num - padding) > IMG_SIGNED_INFO_SIZE) {
+            clear_size = IMG_SIGNED_INFO_SIZE;
+          } else {
+            clear_size = byte_num - padding;
+          }
+          memset(read_buf + padding, 0xFF, clear_size);
+        } else if (sum > BIOS_IMG_INFO_OFFSET && sum < BIOS_IMG_INFO_OFFSET + IMG_SIGNED_INFO_SIZE ) {
+          clear_size = BIOS_IMG_INFO_OFFSET + IMG_SIGNED_INFO_SIZE - sum;
+          memset(read_buf, 0xFF, clear_size);
+        } else {
+          // in else case, read_buf does not need to be processed.
+        }
+      }
+
       ret = MD5_Update(&context, read_buf, byte_num);
       if (ret == 0) {
         syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
@@ -592,8 +613,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
     }
   }
   else{
-    read_bytes = ((IMG_POSTFIX_SIZE) - (MD5_SIZE));
-
+    read_bytes = ((IMG_SIGNED_INFO_SIZE) - (MD5_SIZE));
     byte_num = read(fd, read_buf, read_bytes);
     ret = MD5_Update(&context, read_buf, byte_num);
     if (ret == 0) {
@@ -615,11 +635,11 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
 
 #ifdef DEBUG
   int i = 0;
-  printf("calculated MD5:\n")
+  printf("calculated MD5:\n");
   for(i = 0; i < 16; i++) {
     printf("%02X ", ((uint8_t*)md5_digest)[i]);
   }
-  printf("\nImage MD5");
+  printf("\nImage MD5\n");
   for(i = 0; i < 16; i++) {
     printf("%02X ", data[i]);
   }
@@ -643,8 +663,9 @@ int
 fby35_common_check_image_signature(uint8_t* data) {
   int ret = 0;
 
-  if (strncmp(platform_signature, (char*)data, PLAT_SIG_SIZE) != 0) {
-    printf("This image is not for Yv3.5 platform or is not signed md5-2.\n");
+  if (strncmp(plat_sig, (char*)data, PLAT_SIG_SIZE) != 0) {
+    printf("This image is not for Yv3.5 platform \n");
+    printf("There is no valid platform signature in image. \n");
     ret = -1;
   }
   return ret;
@@ -663,7 +684,7 @@ fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp) {
     syslog(LOG_WARNING, "%s(): failed to open %s to check file infomation.", __func__, image_path);
     return false;
   }
-  offset = file_info.st_size - IMG_POSTFIX_SIZE + IMG_FW_VER_OFFSET;
+  offset = file_info.st_size - IMG_SIGNED_INFO_SIZE + IMG_FW_VER_OFFSET;
   fd = open(image_path, O_RDONLY);
   if (fd < 0 ) {
     syslog(LOG_WARNING, "%s(): failed to open %s to check version.", __func__, image_path);
@@ -707,8 +728,11 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "PVT", "MP"};
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "DVT", "DVT2", "PVT", "PVT2", "MP", "MP2"};
   const char **board_type = rev_sb;
-  uint8_t signed_byte = 0x0;
   uint8_t board_id = 0, exp_fw_rev = 0;
+  uint8_t err_proof_board_id = 0;
+  uint8_t err_proof_stage = 0;
+  uint8_t err_proof_component = 0;
+  int cal_size = 0;
   int fd;
   off_t info_offs;
   struct stat file_info;
@@ -720,15 +744,20 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
     return false;
   }
 
-  if (file_info.st_size < IMG_POSTFIX_SIZE) {
+  if (file_info.st_size < IMG_SIGNED_INFO_SIZE) {
     return false;
   }
-  info_offs = file_info.st_size - IMG_POSTFIX_SIZE;
 
   fd = open(img_path, O_RDONLY);
   if (fd < 0) {
     printf("Cannot open %s for reading\n", img_path);
     return false;
+  }
+
+  if (comp == FW_BIOS) {
+    info_offs = BIOS_IMG_INFO_OFFSET;
+  } else {
+    info_offs = file_info.st_size - IMG_SIGNED_INFO_SIZE;
   }
 
   if (lseek(fd, info_offs, SEEK_SET) != info_offs) {
@@ -737,7 +766,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
     return false;
   }
 
-  if (read(fd, &img_info, IMG_POSTFIX_SIZE) != IMG_POSTFIX_SIZE) {
+  if (read(fd, &img_info, IMG_SIGNED_INFO_SIZE) != IMG_SIGNED_INFO_SIZE) {
     close(fd);
     printf("Cannot read %s\n", img_path);
     return false;
@@ -748,15 +777,50 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum, is_first) < 0) {
+  if (comp == FW_BIOS) {
+    cal_size = BIOS_IMG_SIZE;
+  } else {
+    cal_size = info_offs;
+  }
+
+  if (fby35_common_check_image_md5(img_path, cal_size, img_info.md5_sum, is_first, comp) < 0) {
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, !is_first) < 0) {
+  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, !is_first, comp) < 0) {
     return false;
   }
 
-  signed_byte = img_info.err_proof;
+  err_proof_board_id = img_info.err_proof[0] & 0x1F;  //bit[4:0]
+  err_proof_stage = img_info.err_proof[0] >> 5;       //bit[7:5]
+  err_proof_component = img_info.err_proof[1] & 0x07; //bit[10:8]
+
+  switch (comp) {
+    case FW_CPLD:
+    case FW_1OU_CPLD:
+    case FW_2OU_CPLD:
+    case FW_BB_CPLD:
+      if (err_proof_component != COMP_CPLD) {
+        printf("Not a valid CPLD firmware image.\n");
+        return false;
+      }
+      break;
+    case FW_SB_BIC:
+    case FW_1OU_BIC:
+    case FW_2OU_BIC:
+    case FW_BB_BIC:
+      if (err_proof_component != COMP_BIC) {
+        printf("Not a valid BIC firmware image.\n");
+        return false;
+      }
+      break;
+    case FW_BIOS:
+      if (err_proof_component != COMP_BIOS) {
+        printf("Not a valid BIOS firmware image.\n");
+        return false;
+      }
+      break;
+  }
 
   switch (comp) {
     case FW_CPLD:
@@ -776,7 +840,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
       }
       break;
   }
-  if (BOARD_ID(signed_byte) != board_id) {
+  if (err_proof_board_id != board_id) {
     printf("Wrong firmware image component.\n");
     return false;
   }
@@ -793,7 +857,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
     else
       exp_fw_rev = 0;
   }
-  else{
+  else {
     if (BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
       exp_fw_rev = FW_REV_EVT;
     else if (rev_id == BB_REV_DVT)
@@ -808,20 +872,20 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
 
   switch (exp_fw_rev) {
     case FW_REV_POC:
-      if (REVISION_ID(signed_byte) != FW_REV_POC) {
+      if (err_proof_stage != FW_REV_POC) {
         printf("Please use POC firmware on POC system\nTo force the update, please use the --force option.\n");
         return false;
       }
       break;
     case FW_REV_EVT:
-      if (REVISION_ID(signed_byte) != FW_REV_EVT) {
+      if (err_proof_stage != FW_REV_EVT) {
         printf("Please use EVT firmware on %s system\nTo force the update, please use the --force option.\n",
                board_type[rev_id]);
         return false;
       }
       break;
     case FW_REV_DVT:
-      if (REVISION_ID(signed_byte) != FW_REV_DVT) {
+      if (err_proof_stage != FW_REV_DVT) {
         printf("Please use DVT firmware on %s system\nTo force the update, please use the --force option.\n",
                board_type[rev_id]);
         return false;
@@ -829,7 +893,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
       break;
     case FW_REV_PVT:
     case FW_REV_MP:
-      if (REVISION_ID(signed_byte) != FW_REV_PVT) {
+      if (err_proof_stage != FW_REV_PVT) {
         printf("Please use firmware after PVT on %s system\nTo force the update, please use the --force option.\n",
                board_type[rev_id]);
         return false;
@@ -838,27 +902,6 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
     default:
       printf("Can't recognize the firmware's stage, please use the --force option\n");
       return false;
-  }
-
-  switch (comp) {
-    case FW_CPLD:
-    case FW_1OU_CPLD:
-    case FW_2OU_CPLD:
-    case FW_BB_CPLD:
-      if (COMPONENT_ID(signed_byte) != COMP_CPLD) {
-        printf("Not a valid CPLD firmware image.\n");
-        return false;
-      }
-      break;
-    case FW_SB_BIC:
-    case FW_1OU_BIC:
-    case FW_2OU_BIC:
-    case FW_BB_BIC:
-      if (COMPONENT_ID(signed_byte) != COMP_BIC) {
-        printf("Not a valid BIC firmware image.\n");
-        return false;
-      }
-      break;
   }
 
   return true;

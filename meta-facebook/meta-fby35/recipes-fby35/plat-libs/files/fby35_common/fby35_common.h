@@ -95,16 +95,16 @@ extern const char *slot_usage;
 #define IANA_LEN 3
 #define UNKNOWN_SLOT 0xFF
 
-#define MD5_SIZE              (16)
+#define BIOS_IMG_SIZE             (0x4000000)         //64MB
+#define BIOS_IMG_INFO_OFFSET      (0x2FEF000)
+#define MD5_SIZE                  (16)
 #define PLAT_SIG_SIZE         (16)
-#define FW_VER_SIZE           (4)
-#define IMG_MD5_OFFSET        (0x0)
-#define IMG_SIGNATURE_OFFSET  ((IMG_MD5_OFFSET) + MD5_SIZE)
-#define IMG_FW_VER_OFFSET     ((IMG_SIGNATURE_OFFSET) + PLAT_SIG_SIZE)
-#define IMG_IDENTIFY_OFFSET   ((IMG_FW_VER_OFFSET) + FW_VER_SIZE)
-#define IMG_MD5_SECOND_OFFSET ((IMG_IDENTIFY_OFFSET) + 1)
-#define IMG_POSTFIX_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + 1 + MD5_SIZE)
-
+#define FW_VER_SIZE               (13)
+#define ERR_PROOF_SIZE            (3)
+#define IMG_MD5_OFFSET            (0x0)
+#define IMG_PROJECT_CODE_OFFSET   (IMG_MD5_OFFSET + MD5_SIZE)
+#define IMG_FW_VER_OFFSET         (IMG_PROJECT_CODE_OFFSET + PLAT_SIG_SIZE)
+#define IMG_SIGNED_INFO_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + ERR_PROOF_SIZE + MD5_SIZE)
 
 #define MD5_READ_BYTES     (1024)
 
@@ -249,8 +249,9 @@ enum sel_dir {
 };
 
 enum comp_id {
-  COMP_CPLD = 0,
-  COMP_BIC  = 1,
+  COMP_CPLD = 1,
+  COMP_BIC  = 2,
+  COMP_BIOS = 3,
 };
 
 enum fw_rev {
@@ -423,7 +424,7 @@ typedef struct {
   uint8_t md5_sum[MD5_SIZE];
   uint8_t plat_sig[PLAT_SIG_SIZE];
   uint8_t version[FW_VER_SIZE];
-  uint8_t err_proof;
+  uint8_t err_proof[ERR_PROOF_SIZE];
   uint8_t md5_sum_second[MD5_SIZE];
 } FW_IMG_INFO;
 
@@ -444,7 +445,7 @@ int fby35_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
 int fby35_common_fscd_ctrl (uint8_t mode);
 int fby35_common_check_image_signature(uint8_t* data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
-int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first);
+int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
 

@@ -2,12 +2,16 @@
 #define BIC_BIOS_H_
 #include "fw-util.h"
 #include "server.h"
+#include "bic_fw.h"
+
+using std::string;
 
 class BiosComponent : public Component {
   uint8_t slot_id = 0;
   uint8_t fw_comp = 0;
   Server server;
   private:
+    image_info check_image(const string& image, bool force);
     int get_ver_str(std::string& s);
     int update_internal(const std::string& image, int fd, bool force);
   public:

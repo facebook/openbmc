@@ -33,6 +33,7 @@ VERIFIED_BOOT_KEYNAME ??= "subordinate"
 # Emit the fitImage ITS header
 # $1 - FIT source file
 fitimage_emit_fit_header() {
+    mkdir -p $(dirname ${1})
     cat << EOF >> ${1}
 /dts-v1/;
 

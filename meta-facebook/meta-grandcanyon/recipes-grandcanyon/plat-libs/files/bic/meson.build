@@ -4,6 +4,11 @@ project('libbic', 'c',
     default_options: ['werror=true'],
     meson_version: '>=0.40')
 
+# OpenSSL3, which is present in Kirkstone and above, deprecates some
+# SHA hash functions we are using.  Turn off the warning until we can
+# port to OpenSSL3.
+add_project_arguments('-Wno-error=deprecated-declarations', language: 'c')
+
 cc = meson.get_compiler('c')
 
 bic_headers = [

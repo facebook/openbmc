@@ -20,6 +20,8 @@ LOCAL_URI = " \
     file://vr.h \
     file://xdpe12284c.c \
     file://xdpe12284c.h \
+    file://xdpe152xx.c \
+    file://xdpe152xx.h \
     file://raa_gen3.c \
     file://raa_gen3.h \
     "

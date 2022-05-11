@@ -23,6 +23,7 @@ srcs = files(
   'tps53688.c',
   'vr.c',
   'xdpe12284c.c',
+  'xdpe152xx.c',
   'raa_gen3.c',
 )
 

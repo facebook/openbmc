@@ -99,6 +99,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define IPMI_GET_VER_FRU_NUM  5
 #define IPMI_GET_VER_MAX_COMP 9
 #define MAX_FW_VER_LEN        32  //include the string terminal
+#define MAX_CMD_LEN           128
 
 #define MAX_COMPONENT_LEN 32 //include the string terminal
 
@@ -124,6 +125,14 @@ enum sel_event_data_index {
   DATA_INDEX_0 = 3,
   DATA_INDEX_1 = 4,
   DATA_INDEX_2 = 5,
+};
+
+enum get_fw_ver_board_type {
+  FW_VER_BMC = 0,
+  FW_VER_NIC,
+  FW_VER_BB,
+  FW_VER_SB,
+  FW_VER_2OU,
 };
 
 struct pal_key_cfg {
@@ -647,6 +656,10 @@ int
 pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
   int ret = CC_UNSPECIFIED_ERROR;
   uint8_t *data = res_data;
+  int dev = 0, retry = 3;
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[4] = {0};
+  uint8_t rlen = 0;
   uint8_t bmc_location = 0; //the value of bmc_location is board id.
   *res_len = 0;
 
@@ -659,10 +672,6 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
   *data++ = bmc_location;
 
   if ( bmc_location == BB_BMC ) {
-    int dev, retry = 3;
-    uint8_t tbuf[4] = {0};
-    uint8_t rbuf[4] = {0};
-
     dev = open("/dev/i2c-12", O_RDWR);
     if ( dev < 0 ) {
       return -1;
@@ -691,6 +700,27 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
   *data++ = slot; //slot id
   *data++ = 0x00; //slot type. server = 0x00
+  
+  // Get SB board ID
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+  tbuf[0] = 0x01; //cpld bus id
+  tbuf[1] = 0x42; //slave addr
+  tbuf[2] = 0x01; //read 1 byte
+  tbuf[3] = 0x05; //register offset
+
+  retry = 0;
+  while (retry++ < 3) {
+    ret = bic_ipmb_wrapper(slot, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, 4, rbuf, &rlen);
+    if (ret == 0) {
+      break;
+    }
+  }
+  if (ret < 0) {
+    *data++ = 0; // dummy data to match the response format
+  } else {
+    *data++ = rbuf[0] >> 4; // bit [7:4]: SB board ID
+  }
   *res_len = data - res_data;
   ret = CC_SUCCESS;
 
@@ -3330,11 +3360,12 @@ pal_get_sensor_util_timeout(uint8_t fru) {
 // command code: CMD_OEM_1S_GET_SYS_FW_VER (0x40)
 int
 pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
-  int ret = 0;
-  uint8_t type_2ou = 0;
   uint8_t fru = 0;
   uint8_t comp = 0;
+  int ret = 0;
+  uint8_t bmc_location = 0;
   FILE* fp = NULL;
+  char cmd[MAX_CMD_LEN] = {0};
   char buf[MAX_FW_VER_LEN] = {0};
   // To keep the format consistent with fw-util, get version from fw-util directly.
   static const char* cmd_table[IPMI_GET_VER_FRU_NUM][IPMI_GET_VER_MAX_COMP] = {
@@ -3364,9 +3395,9 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     },
     // Base board
     {
-      "/usr/bin/fw-util slot1 --version bb_bic | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version bb_bicbl | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version bb_cpld | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version bb_bic | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version bb_cpld | awk '{print $NF}'",
+      NULL,
       NULL,
       NULL,
       NULL,
@@ -3376,19 +3407,18 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     },
     // Server board
     {
-      "/usr/bin/fw-util slot1 --version bic | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version bicbl | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version bios | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version cpld | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version me | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version vr | grep 'VCCIN' | awk '{print $5}' | cut -c -8",
-      "/usr/bin/fw-util slot1 --version vr | grep 'VCCD' | awk '{print $5}' | cut -c -8",
-      "/usr/bin/fw-util slot1 --version vr | grep 'VCCINFAON' | awk '{print $5}' | cut -c -8"
+      "/usr/bin/fw-util slot%d --version bic | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version bios | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version cpld | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version me | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version vr_vccin | awk '{print $4}' | cut -c -8",
+      "/usr/bin/fw-util slot%d --version vr_vccd | awk '{print $4}' | cut -c -8",
+      "/usr/bin/fw-util slot%d --version vr_vccinfaon | awk '{print $4}' | cut -c -8"
     },
     // 2OU
     {
-      "/usr/bin/fw-util slot1 --version 2ou_bic | awk '{print $NF}'",
-      "/usr/bin/fw-util slot1 --version 2ou_bicbl | awk '{print $NF}'",
+      "/usr/bin/fw-util slot%d --version 2ou_bic | awk '{print $NF}'",
+      NULL,
       NULL,
       NULL,
       NULL,
@@ -3414,32 +3444,41 @@ pal_get_fw_ver(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8_t *res_
     return CC_INVALID_PARAM;
   }
 
-  ret = fby35_common_get_2ou_board_type(slot, &type_2ou);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s(): Not support CMD_OEM_1S_GET_SYS_FW_VER IPMI command due to get 2ou board type failed", __func__);
-    return CC_UNSPECIFIED_ERROR;
-  }
-  if (type_2ou != E1S_BOARD) {
-    syslog(LOG_ERR, "%s(): CMD_OEM_1S_GET_SYS_FW_VER IPMI command only support by Sierra Point system", __func__);
-    return CC_NOT_SUPP_IN_CURR_STATE;
-  }
-
   fru = ((GET_FW_VER_REQ*)req_data)->fru;
   comp = ((GET_FW_VER_REQ*)req_data)->component;
   if ((fru >= IPMI_GET_VER_FRU_NUM) || (comp >= IPMI_GET_VER_MAX_COMP) || (cmd_table[fru][comp] == NULL)) {
     syslog(LOG_ERR, "%s(): wrong FRU or component, fru = %x, comp = %x", __func__, fru, comp);
     return CC_PARAM_OUT_OF_RANGE;
   }
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+    return CC_UNSPECIFIED_ERROR;
+  }
+  if (bmc_location == BB_BMC) {
+    if (fru == FW_VER_BB) {
+      return CC_INVALID_PARAM;
+    }
+  }
 
-  if((fp = popen(cmd_table[fru][comp], "r")) == NULL) {
+  switch (fru) {
+    case FW_VER_BB:
+    case FW_VER_SB:
+    case FW_VER_2OU:
+       snprintf(cmd, sizeof(cmd), cmd_table[fru][comp], slot);
+       break;
+    default:
+       memcpy(cmd, cmd_table[fru][comp], sizeof(cmd));
+  }
+  if((fp = popen(cmd, "r")) == NULL) {
     syslog(LOG_ERR, "%s(): fail to send command: %s, errno: %s", __func__, cmd_table[fru][comp], strerror(errno));
     return CC_UNSPECIFIED_ERROR;
   }
 
   memset(buf, 0, sizeof(buf));
   if(fgets(buf, sizeof(buf), fp) != NULL) {
-    *res_len = strlen(buf);
-    strncpy((char*)res_data, buf, MAX_FW_VER_LEN);
+    *res_len = strlen(buf) - 1; //ignore "\n"
+    memcpy(res_data, buf, *res_len);
   }
   pclose(fp);
 

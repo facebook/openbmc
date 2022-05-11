@@ -1,65 +1,108 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <string.h>
-#include <unistd.h>
-#include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/kv.h>
 #include "tps53688.h"
 
-extern int i2c_io(int, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
+extern int vr_rdwr(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t);
+static int (*vr_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &vr_rdwr;
 
 static int
-get_tps_crc(int fd, uint8_t addr, uint16_t *crc) {
-  int ret = -1;
+get_tps_devid(uint8_t bus, uint8_t addr, uint64_t *devid) {
+  int i;
   uint8_t tbuf[16], rbuf[16];
 
-  tbuf[0] = VR_TPS_REG_CRC;
-  if ((ret = i2c_io(fd, addr, tbuf, 1, rbuf, 2))) {
-    syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
-    return ret;
-  }
-
-  memcpy(crc, rbuf, 2);
-  return ret;
-}
-
-static int
-cache_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum) {
-  int fd, ret = -1;
-  uint8_t buf[16];
-
-  if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
+  if (devid == NULL) {
     return -1;
   }
 
-  do {
-    if ((ret = get_tps_crc(fd, addr, (uint16_t *)buf))) {
-      break;
-    }
+  tbuf[0] = VR_TPS_REG_DEVID;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, VR_TPS_DEVID_LEN+1) < 0) {
+    syslog(LOG_WARNING, "%s: read IC_DEVICE_ID failed", __func__);
+    return -1;
+  }
 
-    snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %02X%02X", buf[1], buf[0]);
-    kv_set(key, checksum, 0, 0);
-  } while (0);
+  for (i = 0; i < VR_TPS_DEVID_LEN; i++) {
+    ((uint8_t *)devid)[i] = rbuf[VR_TPS_DEVID_LEN-i];
+  }
 
-  close(fd);
-  return ret;
+  return 0;
+}
+
+static int
+get_tps_crc(uint8_t bus, uint8_t addr, uint16_t *crc) {
+  uint64_t devid = 0x00;
+  uint8_t tbuf[16], rbuf[16];
+
+  if (crc == NULL) {
+    return -1;
+  }
+
+  if (get_tps_devid(bus, addr, &devid) < 0) {
+    return -1;
+  }
+
+  tbuf[0] = (devid == VR_TPS53689_DEVID) ? VR_TPS_REG_CRC2 : VR_TPS_REG_CRC;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, 2) < 0) {
+    syslog(LOG_WARNING, "%s: read register 0x%02X failed", __func__, tbuf[0]);
+    return -1;
+  }
+
+  memcpy(crc, rbuf, 2);
+  return 0;
+}
+
+static int
+cache_tps_crc(uint8_t bus, uint8_t addr, char *key, char *checksum, uint16_t *crc) {
+  uint16_t tmp_crc;
+  char tmp_str[MAX_VALUE_LEN] = {0};
+
+  if (key == NULL) {
+    return -1;
+  }
+
+  if (!crc) {
+    crc = &tmp_crc;
+  }
+  if (get_tps_crc(bus, addr, crc) < 0) {
+    return -1;
+  }
+
+  if (!checksum) {
+    checksum = tmp_str;
+  }
+  snprintf(checksum, MAX_VALUE_LEN, "Texas Instruments %04X", *crc);
+  kv_set(key, checksum, 0, 0);
+
+  return 0;
 }
 
 int
 get_tps_ver(struct vr_info *info, char *ver_str) {
   char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
 
-  snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
+  if (info == NULL || ver_str == NULL) {
+    return VR_STATUS_FAILURE;
+  }
+
+  if (info->private_data) {
+    snprintf(key, sizeof(key), "%s_vr_%02xh_crc", (char *)info->private_data, info->addr);
+  } else {
+    snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
+  }
   if (kv_get(key, tmp_str, NULL, 0)) {
-    if (cache_tps_crc(info->bus, info->addr, key, tmp_str))
-      return -1;
+    if (info->xfer) {
+      vr_xfer = info->xfer;
+    }
+    if (cache_tps_crc(info->bus, info->addr, key, tmp_str, NULL))
+      return VR_STATUS_FAILURE;
   }
 
   if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
-    return -1;
+    return VR_STATUS_FAILURE;
 
-  return 0;
+  return VR_STATUS_SUCCESS;
 }
 
 void *
@@ -69,6 +112,10 @@ tps_parse_file(struct vr_info *info, const char *path) {
   char *token, *str;
   int i, idx = 0;
   struct tps_config *config = NULL;
+
+  if (info == NULL || path == NULL) {
+    return NULL;
+  }
 
   fp = fopen(path, "r");
   if (!fp) {
@@ -139,6 +186,10 @@ cal_crc16(uint8_t *data, int len) {
   uint16_t crc = 0x0000;
   int i, b;
 
+  if (data == NULL) {
+    return 0;
+  }
+
   for (i = 0; i < len; i++) {
     for (b = 0; b < 8; b++) {
       if (((crc & 0x8000) >> 8) ^ ((data[i] << b) & 0x80)) {
@@ -157,6 +208,10 @@ check_tps_image(uint16_t crc_exp, uint8_t *data) {
   uint8_t raw[256];
   uint16_t crc;
   int i, idx = 0;
+
+  if (data == NULL) {
+    return -1;
+  }
 
   // the data to calculate CRC
   memcpy(&raw[idx], &data[VR_TPS_BLK_WR_LEN-VR_TPS_FIRST_BLK_LEN], VR_TPS_FIRST_BLK_LEN);
@@ -179,133 +234,122 @@ check_tps_image(uint16_t crc_exp, uint8_t *data) {
 
 static int
 program_tps(uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
-  int fd, i, ret = -1;
+  int i, ret = -1;
   uint64_t devid = 0x00;
   uint32_t offset = 0, dsize;
   uint16_t crc = 0;
   uint8_t tbuf[64], rbuf[64];
 
-  if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
+  if (config == NULL) {
     return -1;
   }
 
-  do {
-    // check device ID
-    tbuf[0] = VR_TPS_REG_DEVID;
-    if ((ret = i2c_io(fd, addr, tbuf, 1, rbuf, VR_TPS_DEVID_LEN+1))) {
-      syslog(LOG_WARNING, "%s: read IC_DEVICE_ID failed", __func__);
-      break;
-    }
-    for (i = 0; i < VR_TPS_DEVID_LEN; i++) {
-      ((uint8_t *)&devid)[i] = rbuf[VR_TPS_DEVID_LEN-i];
-    }
+  // check device ID
+  if (get_tps_devid(bus, addr, &devid) < 0) {
+    return -1;
+  }
 
-    if (memcmp(&config->devid_exp, &devid, VR_TPS_DEVID_LEN)) {
-      syslog(LOG_WARNING, "%s: IC_DEVICE_ID %llx mismatch, expect %llx", __func__, devid, config->devid_exp);
-      ret = -1;
-      break;
-    }
+  if (memcmp(&config->devid_exp, &devid, VR_TPS_DEVID_LEN)) {
+    syslog(LOG_WARNING, "%s: IC_DEVICE_ID %llx mismatch, expect %llx", __func__, devid, config->devid_exp);
+    return -1;
+  }
 
-    if ((ret = get_tps_crc(fd, addr, &crc))) {
-      break;
-    }
+  if (get_tps_crc(bus, addr, &crc) < 0) {
+    return -1;
+  }
 
-    if (!force && (crc == config->crc_exp)) {
-      printf("WARNING: the CRC is the same as used now %04X!\n", crc);
-      printf("Please use \"--force\" option to try again.\n");
-      syslog(LOG_WARNING, "%s: redundant programming", __func__);
-      ret = -1;
-      break;
-    }
+  if (!force && (crc == config->crc_exp)) {
+    printf("WARNING: the CRC is the same as used now %04X!\n", crc);
+    printf("Please use \"--force\" option to try again.\n");
+    syslog(LOG_WARNING, "%s: redundant programming", __func__);
+    return -1;
+  }
 
-    // set USER_NVM_INDEX to 0
-    tbuf[0] = VR_TPS_REG_NVM_IDX;
-    tbuf[1] = 0x00;
-    if ((ret = i2c_io(fd, addr, tbuf, 2, rbuf, 0))) {
-      syslog(LOG_WARNING, "%s: write NVM index failed", __func__);
-      break;
-    }
+  // set USER_NVM_INDEX to 0
+  tbuf[0] = VR_TPS_REG_NVM_IDX;
+  tbuf[1] = 0x00;
+  if (vr_xfer(bus, addr, tbuf, 2, rbuf, 0) < 0) {
+    syslog(LOG_WARNING, "%s: write NVM index failed", __func__);
+    return -1;
+  }
 
-    // write configuration data
-    dsize = VR_TPS_TOTAL_WR_SIZE/10;
-    for (i = 0; i < VR_TPS_NVM_IDX_NUM; i++) {
-      tbuf[0] = VR_TPS_REG_NVM_EXE;
-      memcpy(&tbuf[1], &config->data[offset], VR_TPS_BLK_WR_LEN);
-      if ((ret = i2c_io(fd, addr, tbuf, VR_TPS_BLK_WR_LEN+1, rbuf, 0))) {
-        break;
-      }
-
-      offset += VR_TPS_BLK_WR_LEN;
-      printf("\rupdated: %d %%  ", (offset/dsize)*10);
-      fflush(stdout);
-    }
-    printf("\n");
-    if (ret) {
+  // write configuration data
+  dsize = VR_TPS_TOTAL_WR_SIZE/10;
+  for (i = 0; i < VR_TPS_NVM_IDX_NUM; i++) {
+    tbuf[0] = VR_TPS_REG_NVM_EXE;
+    memcpy(&tbuf[1], &config->data[offset], VR_TPS_BLK_WR_LEN);
+    if ((ret = vr_xfer(bus, addr, tbuf, VR_TPS_BLK_WR_LEN+1, rbuf, 0)) < 0) {
       break;
     }
 
-    msleep(200);
-  } while (0);
+    offset += VR_TPS_BLK_WR_LEN;
+    printf("\rupdated: %d %%  ", (offset/dsize)*10);
+    fflush(stdout);
+  }
+  printf("\n");
+  if (ret) {
+    return -1;
+  }
+  msleep(200);
 
-  close(fd);
-  return ret;
+  return 0;
 }
 
 int
 tps_fw_update(struct vr_info *info, void *args) {
   struct tps_config *config = (struct tps_config *)args;
-  int ret;
+
+  if (info == NULL || config == NULL) {
+    return VR_STATUS_FAILURE;
+  }
 
   if (info->addr != config->addr) {
     return VR_STATUS_SKIP;
   }
 
-  do {
-    printf("Update VR: %s\n", info->dev_name);
-    ret = check_tps_image(config->crc_exp, config->data);
-    if (ret) {
-      break;
-    }
+  printf("Update VR: %s\n", info->dev_name);
+  if (check_tps_image(config->crc_exp, config->data)) {
+    return VR_STATUS_FAILURE;
+  }
 
-    ret = program_tps(info->bus, info->addr, config, info->force);
-    if (ret) {
-      break;
-    }
-  } while (0);
+  if (info->xfer) {
+    vr_xfer = info->xfer;
+  }
+  if (program_tps(info->bus, info->addr, config, info->force)) {
+    return VR_STATUS_FAILURE;
+  }
 
-  return ret;
+  return VR_STATUS_SUCCESS;
 }
 
 int
 tps_fw_verify(struct vr_info *info, void *args) {
   struct tps_config *config = (struct tps_config *)args;
-  int fd, ret;
+  char key[MAX_KEY_LEN];
   uint16_t crc = 0;
-  uint8_t buf[64];
+
+  if (info == NULL || config == NULL) {
+    return VR_STATUS_FAILURE;
+  }
 
   if (info->addr != config->addr) {
     return VR_STATUS_SKIP;
   }
 
-  if ((fd = i2c_cdev_slave_open(info->bus, (info->addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
-    return -1;
+  // update checksum
+  if (info->private_data) {
+    snprintf(key, sizeof(key), "%s_vr_%02xh_crc", (char *)info->private_data, info->addr);
+  } else {
+    snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   }
-
-  // check CRC
-  ret = get_tps_crc(fd, info->addr, &crc);
-  close(fd);
-  if (ret) {
-    syslog(LOG_WARNING, "%s: read CRC failed", __func__);
-    return ret;
+  if (cache_tps_crc(info->bus, info->addr, key, NULL, &crc)) {
+    return VR_STATUS_FAILURE;
   }
 
   if (crc != config->crc_exp) {
     printf("CRC %04X mismatch, expect %04X\n", crc, config->crc_exp);
-    ret = -1;
-  } else {
-    snprintf((char *)buf, sizeof(buf), "/tmp/cache_store/vr_%02xh_crc", info->addr);
-    unlink((char *)buf);
+    return VR_STATUS_FAILURE;
   }
 
-  return ret;
+  return VR_STATUS_SUCCESS;
 }

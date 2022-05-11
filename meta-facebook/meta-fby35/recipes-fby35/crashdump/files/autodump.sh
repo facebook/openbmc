@@ -48,8 +48,6 @@ PID_FILE="/var/run/autodump$SLOT_NUM.pid"
 # Set current pid
 echo $PID > $PID_FILE
 
-/usr/bin/kv set to_blk_sled_cycle 1
-
 # kill previous autodump if exist
 if [ -n "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null) ; then
   # Check if 2nd dump is running
@@ -77,9 +75,11 @@ fi
 unset OLDPID
 
 # Set crashdump timestamp
+# this timestamp is used by pal_is_crashdump_ongoing() and it can prevent the power control when crashdump is ongoing.
 sys_runtime=$(awk '{print $1}' /proc/uptime)
 sys_runtime=$(printf "%0.f" "$sys_runtime")
 kv set "fru${SLOT_NUM}_crashdump" "$((sys_runtime+1200))"
+
 DUMP_SCRIPT="/usr/local/bin/dump.sh"
 CRASHDUMP_FILE="/mnt/data/crashdump_$SLOT_NAME"
 CRASHDUMP_LOG_ARCHIVE="/mnt/data/crashdump_$SLOT_NAME.tar.gz"
@@ -149,8 +149,6 @@ echo "ACD Dump for $SLOT_NAME Completed"
 
 # Remove current pid file
 rm $PID_FILE
-
-/usr/bin/kv set to_blk_sled_cycle 1
 
 echo "${LOG_MSG_PREFIX}Auto Dump Stored in $CRASHDUMP_LOG_ARCHIVE"
 exit 0

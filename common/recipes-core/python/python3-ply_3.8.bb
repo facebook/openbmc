@@ -2,7 +2,7 @@ DESCRIPTION = "Python ply: PLY is yet another implementation of lex and yacc for
 HOMEPAGE = "https://pypi.python.org/pypi/ply"
 SECTION = "devel/python3"
 LIC_FILES_CHKSUM = "file://README.md;beginline=7;endline=30;md5=a4010c50f4f5fc4d30ee152c237c37d1"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 
 PR = "r0"
 SRCNAME = "ply"

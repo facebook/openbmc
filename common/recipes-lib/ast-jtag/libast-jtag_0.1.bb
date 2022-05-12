@@ -3,7 +3,7 @@ SUMMARY = "ASPEED JTAG Library"
 DESCRIPTION = "Library for communicating with ASPEED JTAG controller driver (kernel 5.0.3)"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://ast-jtag.c;beginline=8;endline=20;md5=435eababecd3f367d90616c70e27bdd6"
 
 LOCAL_URI = " \

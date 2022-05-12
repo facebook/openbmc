@@ -4,7 +4,7 @@ SUMMARY = "Platform Service for OpenBMC"
 DESCRIPTION = "This deamon takes input from Json file and builds platform tree. It pushes data to respective dbus services (for eg SensorService)"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://PlatformSvcd.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
 LOCAL_URI =+ " \

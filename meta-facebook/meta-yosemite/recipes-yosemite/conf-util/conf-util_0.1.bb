@@ -18,7 +18,7 @@ SUMMARY = "Tool to restore configure"
 DESCRIPTION = "restore configure files"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://setup-conf.sh;beginline=3;endline=18;md5=700bc730f27f8d9b05ac017220c137e5"
 
 DEPENDS:append = " update-rc.d-native"

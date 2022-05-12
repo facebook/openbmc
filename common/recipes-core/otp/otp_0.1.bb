@@ -3,7 +3,7 @@ SUMMARY = "One Time Programming Utility"
 DESCRIPTION = "Util to read and write OTP memory"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 
 LIC_FILES_CHKSUM = "file://otp.c;beginline=4;endline=16;md5=b66b777f082370423b0fa6f12a3dc4db"
 

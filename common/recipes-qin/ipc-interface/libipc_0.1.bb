@@ -19,7 +19,7 @@ SUMMARY = "Abstract Interface for IPC"
 DESCRIPTION = "This provides an abstract interface of ipc for implementation and calling."
 SECTION = "dev"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Ipc.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 LOCAL_URI += "file://Ipc.h"

@@ -3,7 +3,7 @@ SUMMARY = "JTAG Interface library"
 DESCRIPTION = "Library which helps interfacing with the JTAG hardware"
 SECTION = "base"
 PR = "r1"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://SoftwareJTAGHandler.c;beginline=5;endline=26;md5=4d3dd6a70786d475883b1542b0898219"
 
 SRC_URI = "file://interface/SoftwareJTAGHandler.c \

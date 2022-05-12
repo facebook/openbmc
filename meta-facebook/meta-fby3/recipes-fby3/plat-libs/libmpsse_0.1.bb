@@ -3,7 +3,7 @@ SUMMARY = "USB2JTAG Utility"
 DESCRIPTION = "USB2JTAG Utility"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://mpsse.c;beginline=4;endline=16;md5=ddec148a21e74d3e2d70c02da74399da"
 
 inherit meson pkgconfig

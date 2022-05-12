@@ -3,7 +3,7 @@ SUMMARY = "APML Utility"
 DESCRIPTION = "Util for communicating to SOC PSP"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://apml-util.c;beginline=4;endline=16;md5=bd1371ec5d5f1f2a71a5549cb6bcbf2e"
 
 LOCAL_URI = " \

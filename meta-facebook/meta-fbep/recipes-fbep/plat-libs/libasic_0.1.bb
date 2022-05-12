@@ -3,7 +3,7 @@ SUMMARY = "OCP Accelerator module Library"
 DESCRIPTION = "Library for communication with the ASIC"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://asic.c;beginline=8;endline=20;md5=df671c5f3a78585c16168736d9c3fc15"
 
 

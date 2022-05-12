@@ -11,7 +11,7 @@
 #
 
 SUMMARY = "Galaxy100 CPLD drivers"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 

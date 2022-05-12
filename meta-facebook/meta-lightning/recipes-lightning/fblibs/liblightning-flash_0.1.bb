@@ -19,7 +19,7 @@ SUMMARY = "Lightning Flash Management Library"
 DESCRIPTION = "library for information on the sideband of the flash"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lightning_flash.c;beginline=3;endline=15;md5=da35978751a9d71b73679307c4d296ec"
 
 

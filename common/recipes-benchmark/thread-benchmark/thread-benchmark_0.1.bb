@@ -3,7 +3,7 @@ SUMMARY = "Exec benchmark"
 DESCRIPTION = "Util for testing exec benchmark"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 
 # The license GPL-2.0 was removed in Hardknott.
 # Use GPL-2.0-only instead.

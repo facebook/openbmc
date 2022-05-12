@@ -18,7 +18,7 @@ SUMMARY = "Fan controller"
 DESCRIPTION = "The utilities to control fan."
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fand.cpp;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
 LOCAL_URI = " \

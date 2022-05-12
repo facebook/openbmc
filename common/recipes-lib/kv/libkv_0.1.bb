@@ -19,7 +19,7 @@ SUMMARY = "KV Store Library"
 DESCRIPTION = "library for get set of kv pairs"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-only"
 
 # The license GPL-2.0 was removed in Hardknott.
 # Use GPL-2.0-only instead.

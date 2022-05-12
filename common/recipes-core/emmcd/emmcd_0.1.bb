@@ -21,7 +21,7 @@ SUMMARY = "eMMC Daemon"
 DESCRIPTION = "Daemon to monitor eMMC status "
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://emmcd.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit meson pkgconfig

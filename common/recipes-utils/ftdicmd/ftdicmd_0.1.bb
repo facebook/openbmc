@@ -25,7 +25,7 @@ DESCRIPTION = " \
 "
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Makefile;beginline=4;endline=17;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 LOCAL_URI = " \

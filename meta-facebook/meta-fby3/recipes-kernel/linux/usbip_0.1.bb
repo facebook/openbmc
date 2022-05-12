@@ -1,6 +1,6 @@
 SUMMARY = "Linux kernel USBIP tools"
 SECTION = "kernel"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 
 inherit linux-kernel-base
 inherit module-base

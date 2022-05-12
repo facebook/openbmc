@@ -18,7 +18,7 @@ SUMMARY = "Wedge EEPROM Utilities"
 DESCRIPTION = "Util for wedge eeprom"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://weutil.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://utils \

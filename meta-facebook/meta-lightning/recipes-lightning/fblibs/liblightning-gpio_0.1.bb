@@ -3,7 +3,7 @@ SUMMARY = "Lightning GPIO Library"
 DESCRIPTION = "library for reading GPIO values"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lightning_gpio.c;beginline=8;endline=20;md5=8ad57a98e852734170b0b3b1dbf2ac85"
 
 

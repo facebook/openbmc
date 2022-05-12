@@ -17,7 +17,7 @@
 
 SUMMARY = "OpenBMC GPIO utilies"
 SECTION = "base"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = " \

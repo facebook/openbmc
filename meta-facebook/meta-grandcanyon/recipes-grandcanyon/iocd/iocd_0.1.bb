@@ -4,7 +4,7 @@ SUMMARY = "IOC temperature and firmware version monitoring daemon"
 DESCRIPTION = "Daemon for getting IOC temperature and firmware version"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://iocd.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit meson pkgconfig

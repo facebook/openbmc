@@ -3,7 +3,7 @@ SUMMARY = "LAN Utility"
 DESCRIPTION = "Util for communicating with LAN"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lan-util.c;beginline=4;endline=16;md5=68b001f6d78951b122f3e673f833a332"
 
 LOCAL_URI = " \

@@ -1,7 +1,7 @@
 SUMMARY = "Verified boot utilities"
 DESCRIPTION = "This includes the verified-boot status and update utilities"
 SECTION = "base"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://COPYING;md5=c110423312df5eaf34c8925fc0995bd4"
 
 LOCAL_URI += " \

@@ -3,7 +3,7 @@ SUMMARY = "Yosemite Common Library"
 DESCRIPTION = "library for common Yosemite information"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fbttn_common.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
 

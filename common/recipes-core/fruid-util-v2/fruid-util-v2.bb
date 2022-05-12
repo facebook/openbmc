@@ -3,7 +3,7 @@ SUMMARY = "fruid-util-v2"
 DESCRIPTION = "Utility for reading fruid information from fru-svc"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fruid-util-v2.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
 LOCAL_URI = " \

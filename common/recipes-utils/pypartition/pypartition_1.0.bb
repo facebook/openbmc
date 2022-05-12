@@ -23,7 +23,7 @@ environment, legacy) partitions within image files or Memory Technology \
 Devices."
 SECTION = "base"
 PR = "r3"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://partition.py;beginline=3;endline=16;\
 md5=0b1ee7d6f844d472fa306b2fee2167e0"
 

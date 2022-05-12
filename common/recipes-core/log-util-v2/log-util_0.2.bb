@@ -18,7 +18,7 @@ SUMMARY = "Log Utility"
 DESCRIPTION = "Utility to parse and display logs."
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
 
 LOCAL_URI = " \

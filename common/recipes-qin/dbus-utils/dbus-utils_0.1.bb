@@ -19,7 +19,7 @@ SUMMARY = "Utility classes for accessing DBus"
 DESCRIPTION = "This provides utiliy classes that allows getting connection to DBus, registering DBus objects, and handling DBus method calls."
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://DBus.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://src \

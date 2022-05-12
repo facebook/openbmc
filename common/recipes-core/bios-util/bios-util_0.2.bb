@@ -4,7 +4,7 @@ SUMMARY = "BIOS Utility"
 DESCRIPTION = "A BIOS Util for BIOS Related IPMI Command Setting"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://bios-head.py;beginline=1;endline=1;md5=28b35612b145c34c676817ce69fbfeb6"
 
 LOCAL_URI = " \

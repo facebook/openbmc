@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 SUMMARY = "YAMP CPLD drivers"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=03f05aa5b4ffe5d1c1439f76e36ac447"
 
 inherit module kernel_extra_headers_export

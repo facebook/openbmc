@@ -5,7 +5,7 @@ DESCRIPTION = "dbus-publisher publishes signals one_sec_timer, three_sec_timer a
               "dbus-subscriber subscribes to a signal and prints whenever signal is received"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://DBusPublisher.cpp;beginline=4;endline=18;md5=6d800d1c02e2ddf19e5ead261943b73b"
 
 LOCAL_URI = " \

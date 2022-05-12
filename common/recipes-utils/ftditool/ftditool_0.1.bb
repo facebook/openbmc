@@ -19,7 +19,7 @@ SUMMARY = "FDTI USB Tool"
 DESCRIPTION = "USB Utility to access with spacial protocol for FTDI232 chips"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://ftditool.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
 
 LOCAL_URI = " \

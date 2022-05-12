@@ -3,7 +3,7 @@ SUMMARY = "Library providing support for aggregated sensors"
 DESCRIPTION = "Library providing support for aggregated sensors"
 SECTION = "libs"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://aggregate-sensor.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit meson pkgconfig ptest-meson

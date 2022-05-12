@@ -4,7 +4,7 @@ SUMMARY = "SCC Expander Cache Daemon"
 DESCRIPTION = "Daemon to provide SCC Expander Cache information."
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://exp-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 

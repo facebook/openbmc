@@ -11,7 +11,7 @@
 #
 
 SUMMARY = "Elbert I2C module drivers"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=12f884d2ae1ff87c09e5b7ccc2c4ca7e"
 
 inherit module kernel_extra_headers_export

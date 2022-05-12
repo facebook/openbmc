@@ -4,7 +4,7 @@ SUMMARY = "Firmware Utility"
 DESCRIPTION = "Utility to upgrade firmware and to display firmware version of various components in the system"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fw-util.cpp;beginline=4;endline=16;md5=5f8ba3cd0f216026550dbcc0186d5599"
 
 LOCAL_URI =+ " \

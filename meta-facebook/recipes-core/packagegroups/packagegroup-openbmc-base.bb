@@ -1,6 +1,6 @@
 SUMMARY = "Facebook OpenBMC base packages"
 
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 PR = "r1"
 
 inherit packagegroup

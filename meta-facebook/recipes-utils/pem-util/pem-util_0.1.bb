@@ -19,7 +19,7 @@ SUMMARY = "PEM Utility"
 DESCRIPTION = "Utility to update PEM and get PEM EEPROM."
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://pem-util.c;beginline=5;endline=16;md5=69348da7e13c557a246cf7e5b163ea27"
 
 

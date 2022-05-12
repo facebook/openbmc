@@ -6,7 +6,7 @@ LIC_FILES_CHKSUM = "file://10-eth0.network;beginline=3;endline=16;md5=0b1ee7d6f8
 
 inherit systemd
 
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 
 LOCAL_URI = " \
     file://10-eth0.network \

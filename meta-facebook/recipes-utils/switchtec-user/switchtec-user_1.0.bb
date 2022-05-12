@@ -2,7 +2,7 @@ SUMMARY = "Switchtec Utility"
 DESCRIPTION = "Util for getting information from switch"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 SRCBRANCH = "fb_dev"
 SRCREV = "e5cffc5bee689ea2560add51dc1123e771304298"
 

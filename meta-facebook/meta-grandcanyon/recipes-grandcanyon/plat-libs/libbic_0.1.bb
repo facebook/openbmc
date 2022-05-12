@@ -3,7 +3,7 @@ SUMMARY = "FBGC Bridge IC Library"
 DESCRIPTION = "library for communicating with Bridge IC"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://bic.h;beginline=4;endline=16;md5=417473877b7959f386857ca3ecd515a0"
 
 inherit meson pkgconfig

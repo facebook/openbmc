@@ -18,7 +18,7 @@
 SUMMARY = "High-resolution nanosleep"
 DESCRIPTION = "High resolution nanosleep that spins on CPU if the time the sleep is too small"
 SECTION = "dev"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://hr_nanosleep.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 LOCAL_URI += " \

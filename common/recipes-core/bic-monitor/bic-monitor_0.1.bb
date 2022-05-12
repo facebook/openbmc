@@ -21,7 +21,7 @@ SUMMARY = "GPIO Sensor Monitoring Daemon"
 DESCRIPTION = "Daemon for monitoring the bic sensors"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://bic-monitor.c;beginline=4;endline=16;md5=5d75ad6348d98a3f7ee7e2be8db29e00"
 
 LOCAL_URI = " \

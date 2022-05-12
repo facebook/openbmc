@@ -1,6 +1,6 @@
 SUMMARY = "Python bindings for lm-sensors."
 DESCRIPTION = "sensors.py"
-LICENSE = "LGPLv2"
+LICENSE = "LGPL-2.1-only"
 
 # The license LGPL-2.1 was removed in Hardknott.
 # Use LGPL-2.1-only instead.

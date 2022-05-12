@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 SUMMARY = "Exar 1420 usb driver"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=4a180b5774e01911fd8903374abf1210"
 
 inherit module kernel_extra_headers_export

@@ -4,7 +4,7 @@ SUMMARY = "At Scale Debug daemon v1.4.3"
 DESCRIPTION = "The asd daemon to receive/transmit messages"
 SECTION = "base"
 PR = "r1"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;beginline=4;endline=25;md5=e98e000db2e37be52014b914cb36eb77"
 
 SRC_URI = " file://daemon/asd_main.c \

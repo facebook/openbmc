@@ -19,7 +19,7 @@ SUMMARY = "FBY35 Fruid Library"
 DESCRIPTION = "library for reading all fby35 fruids"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fby35_fruid.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
 

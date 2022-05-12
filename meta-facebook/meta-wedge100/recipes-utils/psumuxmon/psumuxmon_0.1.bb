@@ -18,7 +18,7 @@ SUMMARY = "Detect ltc4151 behind i2c mux"
 DESCRIPTION = "Detect ltc4151 behind i2c mux"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://psumuxmon.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 DEPENDS:append = " update-rc.d-native"

@@ -19,7 +19,7 @@ SUMMARY = "Sensord for OpenBMC"
 DESCRIPTION = "This is a sensor daemon utilizing dbus-utils for IPC and object-tree for resource management"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://OpenbmcSensord.cpp;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 SRC_URI = "file://src \

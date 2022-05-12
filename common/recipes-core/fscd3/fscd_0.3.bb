@@ -19,7 +19,7 @@ SUMMARY = "Configurable fan controller"
 DESCRIPTION = "Fan controller"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 LOCAL_URI = " \

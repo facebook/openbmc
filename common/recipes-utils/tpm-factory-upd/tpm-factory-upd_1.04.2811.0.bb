@@ -1,7 +1,7 @@
 DESCRIPTION="Infineon TPM firmware updater"
 SECTION = "base"
 PR = "r1"
-LICENSE = "BSD"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=429c5ef91a429a84d98af1c29d26216c"
 
 LOCAL_URI = "file://Source/TPMFactoryUpd \

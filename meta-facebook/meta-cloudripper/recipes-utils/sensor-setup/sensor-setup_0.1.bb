@@ -18,7 +18,7 @@ SUMMARY = "Configure the sensors"
 DESCRIPTION = "The script configure sensors"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://sensor-setup.sh;beginline=5;endline=18;md5=73f63c761681fe06236f60d3022cbf4d"
 
 inherit systemd

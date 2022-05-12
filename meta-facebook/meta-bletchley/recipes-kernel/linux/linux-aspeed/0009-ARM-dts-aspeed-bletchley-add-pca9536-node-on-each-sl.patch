@@ -1,0 +1,135 @@
+From eb4175dc94032b57952b21081ed99defed3ade17 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 30 Mar 2022 14:01:01 +0800
+Subject: [PATCH 09/11] ARM: dts: aspeed: bletchley: add pca9536 node on each
+ sled
+
+Add an ioexp node on each sled baseed on DVT schematic, address at 0x41.
+
+P0: SLEDX_SWD_MUX
+P1: SLEDX_XRES_SWD_N
+P2: SLEDX_CLKREQ_N
+P3: SLEDX_PCIE_PWR_EN
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+LINK: https://lore.kernel.org/all/20220509151118.4899-6-potin.lai.pt@gmail.com/
+---
+ .../dts/aspeed-bmc-facebook-bletchley.dts     | 66 +++++++++++++++++++
+ 1 file changed, 66 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+index 946be0abf311..a0e96113a600 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+@@ -273,6 +273,17 @@
+ 		reg = <0x4f>;
+ 	};
+ 
++	sled1_ioexp41: pca9536@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"SLED1_SWD_MUX", "SLED1_XRES_SWD_N",
++		"SLED1_CLKREQ_N", "SLED1_PCIE_PWR_EN";
++	};
++
+ 	sled1_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+@@ -343,6 +354,17 @@
+ 		reg = <0x4f>;
+ 	};
+ 
++	sled2_ioexp41: pca9536@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"SLED2_SWD_MUX", "SLED2_XRES_SWD_N",
++		"SLED2_CLKREQ_N", "SLED2_PCIE_PWR_EN";
++	};
++
+ 	sled2_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+@@ -413,6 +435,17 @@
+ 		reg = <0x4f>;
+ 	};
+ 
++	sled3_ioexp41: pca9536@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"SLED3_SWD_MUX", "SLED3_XRES_SWD_N",
++		"SLED3_CLKREQ_N", "SLED3_PCIE_PWR_EN";
++	};
++
+ 	sled3_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+@@ -483,6 +516,17 @@
+ 		reg = <0x4f>;
+ 	};
+ 
++	sled4_ioexp41: pca9536@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"SLED4_SWD_MUX", "SLED4_XRES_SWD_N",
++		"SLED4_CLKREQ_N", "SLED4_PCIE_PWR_EN";
++	};
++
+ 	sled4_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+@@ -553,6 +597,17 @@
+ 		reg = <0x4f>;
+ 	};
+ 
++	sled5_ioexp41: pca9536@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"SLED5_SWD_MUX", "SLED5_XRES_SWD_N",
++		"SLED5_CLKREQ_N", "SLED5_PCIE_PWR_EN";
++	};
++
+ 	sled5_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+@@ -623,6 +678,17 @@
+ 		reg = <0x4f>;
+ 	};
+ 
++	sled6_ioexp41: pca9536@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++
++		gpio-line-names =
++		"SLED6_SWD_MUX", "SLED6_XRES_SWD_N",
++		"SLED6_CLKREQ_N", "SLED6_PCIE_PWR_EN";
++	};
++
+ 	sled6_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-- 
+2.17.1
+

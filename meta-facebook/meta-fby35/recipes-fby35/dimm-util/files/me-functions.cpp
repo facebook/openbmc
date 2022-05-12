@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <facebook/bic_xfer.h>
+#include <facebook/bic_ipmi.h>
 #include "dimm-util.h"
 #include "dimm-util-plat.h"
 
@@ -169,3 +170,22 @@ util_check_me_status(uint8_t slot_id) {
 
   return -1;
 }
+
+bool 
+is_pmic_supported()
+{
+  return true;
+}
+
+int
+pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t* err_list, uint8_t* err_cnt)
+{ 
+  return me_pmic_err_list(fru_id, dimm, err_list, err_cnt);
+}
+
+int
+pmic_inject_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t option)
+{
+  return me_pmic_err_inj(fru_id, dimm, option);
+}
+

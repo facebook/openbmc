@@ -57,6 +57,39 @@ enum {
   UNKNOWN_CMD = 0xFF,
 };
 
+enum {
+  ERR_INJ_DISABLE = 0,
+  ERR_INJ_ENABLE,
+};
+
+enum {
+  RAIL_UNDEFINED = 0,
+  RAIL_SWA_OUT,
+  RAIL_SWB_OUT,
+  RAIL_SWC_OUT,
+  RAIL_SWD_OUT,
+  RAIL_VIN_BULK,
+  RAIL_VIN_MGMT,
+  RAIL_ALL,
+};
+
+enum {
+  VOLT_UNDEFINED = 0,
+  VOLT_OV = 0,
+  VOLT_UV,
+};
+
+enum {
+  TYPE_UNDEFINED = 0,
+  TYPE_SWITCH_OVER,
+  TYPE_CRIT_TEMP,
+  TYPE_HIGH_TEMP,
+  TYPE_PG_1V8_VOUT,
+  TYPE_HIGH_CURR,
+  TYPE_CAMP_INPUT,
+  TYPE_CURR_LIMIT,
+};
+
 typedef struct
 {
   uint8_t iana_id[3];
@@ -66,6 +99,67 @@ typedef struct
   uint8_t ext_status;
   uint8_t read_type;
 } ipmi_extend_sensor_reading_t;
+
+#define ME_NETFN_OEM       0x2E
+#define ME_CMD_SMBUS_READ  0x47
+#define ME_CMD_SMBUS_WRITE 0x48
+#define MAX_ME_SMBUS_WRITE_LEN 32
+#define MAX_ME_SMBUS_READ_LEN  32
+#define ME_SMBUS_WRITE_HEADER_LEN 14
+
+typedef struct {
+  uint8_t bus_id;
+  uint8_t addr;
+} smbus_info;
+
+typedef struct {
+  uint8_t net_fn;
+  uint8_t cmd;
+  uint8_t mfg_id[3];
+  uint8_t cpu_id;
+  uint8_t smbus_id;
+  uint8_t smbus_addr;
+  uint8_t addr_size;
+  uint8_t rlen;
+  uint8_t addr[4];
+} me_smb_read;
+
+typedef struct {
+  uint8_t net_fn;
+  uint8_t cmd;
+  uint8_t mfg_id[3];
+  uint8_t cpu_id;
+  uint8_t smbus_id;
+  uint8_t smbus_addr;
+  uint8_t addr_size;
+  uint8_t tlen;
+  uint8_t addr[4];
+  uint8_t data[MAX_ME_SMBUS_WRITE_LEN];
+} me_smb_write;
+
+typedef struct {
+  char* silk_screen;
+  smbus_info info;
+} dimm_info;
+
+// Refer PMIC error injection register R35
+typedef struct {
+  uint8_t err_type:3;
+  uint8_t uv_ov_select:1;
+  uint8_t rail:3;
+  uint8_t enable:1;
+} pmic_err_inject;
+
+// PMIC has 6 register to reflect the errors (R05, R06, R08, R09, R0A, R0B)
+#define ERR_PATTERN_LEN 6  
+typedef struct {
+  uint8_t pattern[ERR_PATTERN_LEN];
+  bool camp;
+  char* err_str;
+  pmic_err_inject err_inject;
+} pmic_err_info;
+
+#define PMIC_ERR_INJ_REG   0x35
 
 #define MAX_READ_RETRY 5
 
@@ -122,6 +216,10 @@ int bic_notify_fan_mode(int mode);
 int bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config);
 int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
 int bic_check_bb_fw_update_ongoing();
+int me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t rlen, uint8_t *data);
+int me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t tlen, uint8_t *data);
+int me_pmic_err_list(uint8_t slot_id, uint8_t dimm, uint8_t* err_list , uint8_t *err_cnt);
+int me_pmic_err_inj(uint8_t slot_id, uint8_t dimm, uint8_t err_type);
 #ifdef __cplusplus
 } // extern "C"
 #endif

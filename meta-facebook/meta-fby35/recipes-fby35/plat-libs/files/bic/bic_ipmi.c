@@ -93,6 +93,18 @@ enum {
   BB_BIC_SLOT1_PRSNT_PIN = 15,
 };
 
+enum {
+  DIMMA0 = 0,
+  DIMMA2,
+  DIMMA3,
+  DIMMA4,
+  DIMMA6,
+  DIMMA7,
+  MAX_DIMM_NUM,
+};
+
+const uint32_t INTEL_MFG_ID = 0x000157;
+
 uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
                                    {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1}};
 uint8_t mapping_e1s_prsnt[2][6] = { {M2_ROOT_PORT4, M2_ROOT_PORT5, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1, M2_ROOT_PORT0},
@@ -101,6 +113,31 @@ uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, 
                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
 
 static uint8_t snr_read_support[MAX_SLOT_NUM][MAX_SENSOR_NUM];
+
+dimm_info dimm_pmic[MAX_DIMM_NUM] = {{"A0", {0x0, 0x90}}, {"A2", {0x0, 0x9C}}, {"A3", {0x0, 0x98}},
+                                     {"A4", {0x1, 0x90}}, {"A6", {0x1, 0x9C}}, {"A7", {0x1, 0x98}}};
+static uint8_t pmic_err_pattern_idx[ERR_PATTERN_LEN] = {0x5, 0x6, 0x8, 0x9, 0xA, 0xB};
+static pmic_err_info pmic_err[] = {
+//{R05,  R06,  R08,  R09,  R0A,	 R0B},  CAMP, err_str,     {err_type, uv_ov_select, rail, enable}}
+{{0x42, 0x08, 0x00, 0x00, 0x00, 0x00},  true, "SWAout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
+{{0x22, 0x04, 0x00, 0x00, 0x00, 0x00},  true, "SWBout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
+{{0x12, 0x02, 0x00, 0x00, 0x00, 0x00},  true, "SWCout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
+{{0x0A, 0x01, 0x00, 0x00, 0x00, 0x00},  true, "SWDout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
+{{0x04, 0x00, 0x00, 0x00, 0x00, 0x00},  true, "Vin Bulk OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x02, 0x00, 0x02, 0x00}, false, "Vin Mgmt OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_VIN_MGMT, ERR_INJ_ENABLE}},
+{{0x42, 0x80, 0x00, 0x00, 0x00, 0x00},  true, "SWAout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
+{{0x22, 0x40, 0x00, 0x00, 0x00, 0x00},  true, "SWBout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
+{{0x12, 0x20, 0x00, 0x00, 0x00, 0x00},  true, "SWCout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
+{{0x0A, 0x10, 0x00, 0x00, 0x00, 0x00},  true, "SWDout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x80, 0x00, 0x00, 0x00},  true, "Vin Bulk UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x10, 0x02, 0x00}, false, "Vin Mgmt to Vin buck switchover", {TYPE_SWITCH_OVER, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x80, 0x02, 0x00}, false, "High temp warning", {TYPE_HIGH_TEMP, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x20, 0x02, 0x00}, false, "Vout 1v8 PG", {TYPE_PG_1V8_VOUT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x0F, 0x02, 0x00}, false, "High current warning", {TYPE_HIGH_CURR, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0}, false, "Current limit warninig", {TYPE_CURR_LIMIT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x40, 0x00, 0x00, 0x00},  true, "Current temp shutdown", {TYPE_CRIT_TEMP, VOLT_UNDEFINED, RAIL_UNDEFINED,      ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, false, NULL, {0, 0, 0}}
+};
 
 int
 bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
@@ -1252,6 +1289,125 @@ me_recovery(uint8_t slot_id, uint8_t command) {
     return -1;
   }
   return 0;
+}
+
+int
+me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t rlen, uint8_t *data){
+  int ret = 0, index = 0;
+  uint8_t len = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  me_smb_read req = {0};
+   
+  if (data == NULL) {
+    syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
+  }
+  req.net_fn = ME_NETFN_OEM << 2;
+  req.cmd = ME_CMD_SMBUS_READ;
+  memcpy(req.mfg_id, &INTEL_MFG_ID, sizeof(req.mfg_id));
+  req.cpu_id = 0;
+  req.smbus_id = info.bus_id;
+  req.smbus_addr = info.addr;
+  req.addr_size = addr_size;
+  
+  memcpy(req.addr, &addr, sizeof(req.addr));
+  req.rlen = (rlen > 0) ? (rlen - 1) : 0; // Number of bytes to read minus one. 
+  ret = bic_me_xmit(slot_id, (uint8_t*)&req, sizeof(req), rbuf, &len);
+  if (rbuf[0] != CC_SUCCESS) {
+    syslog(LOG_WARNING, "%s(): FRU: %d, fail to do ME SMBus read, CC: 0x%x", __func__, slot_id, rbuf[0]);
+    return -1;
+  }
+  if ((ret < 0) || (len != rlen + 4)) {
+    syslog(LOG_WARNING, "%s(): FRU: %d, fail to do ME SMBus read, rlen = %d, len = %d", __func__, slot_id, rlen, len);
+    return -1;
+  }
+  index = sizeof(INTEL_MFG_ID); 
+  memcpy(data, &rbuf[index], rlen);
+
+  return ret;
+}
+
+int
+me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t tlen, uint8_t *data){
+  int ret = 0;
+  uint8_t len = 0;
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  me_smb_write req = {0};
+
+  if (data == NULL) {
+    syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
+  }
+  req.net_fn = ME_NETFN_OEM << 2;
+  req.cmd = ME_CMD_SMBUS_WRITE;
+  memcpy(req.mfg_id, &INTEL_MFG_ID, sizeof(req.mfg_id));
+  req.cpu_id = 0;
+  req.smbus_id = info.bus_id;
+  req.smbus_addr = info.addr;
+  req.addr_size = addr_size;
+  memcpy(req.addr, &addr, sizeof(req.addr));
+  req.tlen = (tlen > 0) ? (tlen - 1) : 0; // Number of bytes to read minus one. 
+  memcpy(req.data, data, tlen);
+
+  ret = bic_me_xmit(slot_id, (uint8_t*)&req, ME_SMBUS_WRITE_HEADER_LEN + tlen, rbuf, &len);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): fail to do ME SMBus write", __func__);
+    return -1;
+  }
+
+  return ret;
+}
+
+/* List all error on PMIC
+   *error_list: return the list of error
+   *err_cnt: return number of errors found on PMIC
+*/
+int
+me_pmic_err_list(uint8_t slot_id, uint8_t dimm, uint8_t* err_list , uint8_t *err_cnt) {
+  uint8_t data[MAX_ME_SMBUS_READ_LEN] = {0};
+  int err_idx = 0, curr_idx = 0;
+  uint8_t pattern = 0x0, reg = 0;
+
+  if (err_list == NULL || err_cnt == NULL) {
+    syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
+  }
+  if (me_smbus_read(slot_id, dimm_pmic[dimm].info, 1, 0x0, sizeof(data), data) != 0) {
+    syslog(LOG_WARNING, "%s(): fail to read DIMM %s registers via ME", __func__, dimm_pmic[dimm].silk_screen);
+    return -1;
+  } else {
+    *err_cnt = 0;
+    // Check each PMIC error
+    while (pmic_err[err_idx].err_str) {
+      curr_idx = 0;
+      // Scan each byte of pattern
+      while (curr_idx < ERR_PATTERN_LEN) {
+         reg = pmic_err_pattern_idx[curr_idx];
+         pattern = pmic_err[err_idx].pattern[curr_idx];
+         if ((data[reg] & pattern) != pattern) { // pattern not match
+           break;
+         }
+         curr_idx++;
+      }
+      if (curr_idx == ERR_PATTERN_LEN) { // pattern match
+        err_list[(*err_cnt)++] = err_idx;
+      }
+      err_idx++;
+    }
+  }
+  return 0;
+}
+
+// Write PMIC register R35 to inject error
+int
+me_pmic_err_inj(uint8_t slot_id, uint8_t dimm, uint8_t err_type) {
+  int ret = 0;
+  uint8_t tbuf[MAX_ME_SMBUS_WRITE_LEN] = {0};
+
+  memcpy(tbuf, &(pmic_err[err_type].err_inject), sizeof(tbuf));
+  ret = me_smbus_write(slot_id, dimm_pmic[dimm].info, 1, PMIC_ERR_INJ_REG,
+                       sizeof(pmic_err[err_type].err_inject), tbuf);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): ME SMBus write failed.", __func__);
+  }
+  return ret;
 }
 
 int

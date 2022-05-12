@@ -1,0 +1,8 @@
+auto br0
+iface br0 inet manual
+  up [ -d /sys/class/net/br0 ] || brctl addbr br0
+  up brctl addif br0 eth0
+  up ip link set up br0
+  down ip link set down br0
+  down brctl delif br0 eth0
+

@@ -8,7 +8,20 @@ SRC_URI += "file://dhcp_vendor_info \
             file://run-dhc6_ncsi.sh \
             file://run-dhc6_prefix64.sh \
             file://run-dhc6_prefix64_ncsi.sh \
+            file://interfaces.d \
             "
+
+NETWORK_INTERFACES ?= "auto/lo auto/eth0 static/usb0"
+
+do_configure:append() {
+    if [ -n "${NETWORK_INTERFACES}" ]; then
+        echo -n > ${S}/interfaces
+        for intf in ${NETWORK_INTERFACES}; do
+            cat ${S}/interfaces.d/$intf >> ${S}/interfaces
+        done
+    fi
+}
+
 
 def dhc6_run(d):
   distro = d.getVar('DISTRO_CODENAME', True)

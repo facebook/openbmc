@@ -20,7 +20,7 @@ CpldComponent   cpld_2ou_fw1("slot1", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
 //slot1 sb bic/cpld/bios/me/vr
 BicFwComponent  bic_fw1("slot1", "bic", "sb", FW_SB_BIC);
 BicFwComponent  bic_rcvy_fw1("slot1", "bic_rcvy", "sb", FW_BIC_RCVY);
-CpldComponent   cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_2100C, 0x40);
+CpldComponent   cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
 BiosComponent   bios_fw1("slot1", "bios", FRU_SLOT1, FW_BIOS);
 MeComponent     me_fw1("slot1", "me", FRU_SLOT1);
 VrComponent     vr_fw1("slot1", "vr", FW_VR);
@@ -82,7 +82,7 @@ class ClassConfig {
         //slot2 sb bic/cpld/bios/me/vr
         static BicFwComponent    bic_fw2("slot2", "bic", "sb", FW_SB_BIC);
         static BicFwComponent    bic_rcvy_fw2("slot2", "bic_rcvy", "sb", FW_BIC_RCVY);
-        static CpldComponent     cpld_fw2("slot2", "cpld", "sb", FW_CPLD, LCMXO3_2100C, 0x40);
+        static CpldComponent     cpld_fw2("slot2", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         static BiosComponent     bios_fw2("slot2", "bios", FRU_SLOT2, FW_BIOS);
         static MeComponent       me_fw2("slot2", "me", FRU_SLOT2);
         static VrComponent       vr_fw2("slot2", "vr", FW_VR);
@@ -101,7 +101,7 @@ class ClassConfig {
         //slot3 sb bic/cpld/bios/me/vr
         static BicFwComponent    bic_fw3("slot3", "bic", "sb", FW_SB_BIC);
         static BicFwComponent    bic_rcvy_fw3("slot3", "bic_rcvy", "sb", FW_BIC_RCVY);
-        static CpldComponent     cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_2100C, 0x40);
+        static CpldComponent     cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         static BiosComponent     bios_fw3("slot3", "bios", FRU_SLOT3, FW_BIOS);
         static MeComponent       me_fw3("slot3", "me", FRU_SLOT3);
         static VrComponent       vr_fw3("slot3", "vr", FW_VR);
@@ -120,7 +120,7 @@ class ClassConfig {
         //slot4 sb bic/cpld/bios/me/vr
         static BicFwComponent    bic_fw4("slot4", "bic", "sb", FW_SB_BIC);
         static BicFwComponent    bic_rcvy_fw4("slot4", "bic_rcvy", "sb", FW_BIC_RCVY);
-        static CpldComponent     cpld_fw4("slot4", "cpld", "sb", FW_CPLD, LCMXO3_2100C, 0x40);
+        static CpldComponent     cpld_fw4("slot4", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         static BiosComponent     bios_fw4("slot4", "bios", FRU_SLOT4, FW_BIOS);
         static MeComponent       me_fw4("slot4", "me", FRU_SLOT4);
         static VrComponent       vr_fw4("slot4", "vr", FW_VR);

@@ -929,7 +929,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_P3V3_STBY"  ,        ADC2, read_adc_val   , true, {  2.739,  3.036,  3.069, 3.531, 3.564,  3.729,   0,   0}, VOLT}, //0xF2
   {"BMC_SENSOR_P1V8_STBY"  ,        ADC5, read_adc_val   , true, {      0,  1.656,  1.674, 1.926, 1.944,      0,   0,   0}, VOLT}, //0xF3
   {"BMC_SENSOR_P1V2_STBY"  ,        ADC6, read_adc_val   , true, {  0.996,  1.104,  1.116, 1.284, 1.296,  1.356,   0,   0}, VOLT}, //0xF4
-  {"BMC_SENSOR_P2V5_STBY"  ,        ADC3, read_adc_val   , true, {      0,    2.3,  2.235, 2.675,   2.7,      0,   0,   0}, VOLT}, //0xF5
+  {"BMC_SENSOR_P2V5_STBY"  ,        ADC3, read_adc_val   , true, {      0,    2.3,  2.325, 2.675,   2.7,      0,   0,   0}, VOLT}, //0xF5
   {"BMC_SENSOR_MEDUSA_VOUT",        0xF6, read_medusa_val, true, {   9.25, 11.125,  11.25, 13.75,13.875,   13.9,   0,   0}, VOLT}, //0xF6
   {"BMC_SENSOR_HSC_VIN"    ,     HSC_ID0, read_hsc_vin   , true, { 10.091,  10.68,   10.8, 13.20, 13.32, 14.333,   0,   0}, VOLT}, //0xF7
   {"BMC_SENSOR_HSC_TEMP"   ,     HSC_ID0, read_hsc_temp  , true, {      0,      0,      0,     0,    55,    125,   0,   0}, TEMP}, //0xF8

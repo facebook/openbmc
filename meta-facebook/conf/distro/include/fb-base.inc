@@ -1,3 +1,4 @@
+include conf/distro/openbmc-yocto-${DISTRO_CODENAME}.inc
 require conf/distro/include/fb/network.inc
 require conf/distro/include/fb/packaging.inc
 require conf/distro/include/fb/parallel.inc

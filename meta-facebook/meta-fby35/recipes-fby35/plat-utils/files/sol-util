@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2014-present Facebook. All Rights Reserved.
 #
@@ -35,7 +35,7 @@ I2C_NUM=
 
 show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
-  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, 1ou, 2ou] bic"
+  echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, bb, 1ou, 2ou] bic"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN|pesw] (baudrate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
@@ -47,15 +47,14 @@ select_expansion_uart() {
   local board_type=$4
   local curr_sts=0
 
-  if [ -n "$board_type" ] &&
-     ([ "$board_type" = "0x00" ] || [ "$board_type" = "0x03" ]); then
+  if [[ -n "$board_type" ]] && [[ "$board_type" = "0x00" ]] || [[ "$board_type" = "0x03" ]]; then
     curr_sts=$data
   else
-    curr_sts=$(/usr/sbin/i2cget -y $bus $addr 0)
+    curr_sts=$(/usr/sbin/i2cget -y "$bus" "$addr" 0)
     curr_sts=$((curr_sts & 0x0f))
     curr_sts=$((curr_sts | data << 4))
   fi
-  /usr/sbin/i2cset -y $bus $addr 0 $curr_sts
+  /usr/sbin/i2cset -y "$bus" "$addr" 0 "$curr_sts"
 }
 
 get_slot_num() {
@@ -102,14 +101,15 @@ set_uart_src() {
   local bus=$1
   local addr=$2
   local data=$3
-  $I2CSET $bus $addr $data
+  local data2=$4
+
+  $I2CSET "$bus" "$addr" "$data" "$data2"
 }
 
 is_gpv3_board() {
   local board_type=$1
   local result=0
-  if [ -n "$board_type" ] &&
-      ([ "$board_type" == "0x00" ] || [ "$board_type" == "0x03" ]); then
+  if [ -n "$board_type" ] && [[ "$board_type" == "0x00" ]] || [[ "$board_type" == "0x03" ]]; then
     result=1
   fi
   echo $result
@@ -118,17 +118,17 @@ is_gpv3_board() {
 enable_usb_hub() {
   local fru=$1
   local val=$2
-  cnt=$(ls /var/lock | grep -i "LCK..platform-1e6b0000.usb-usb-0" | wc -l)
+  cnt=$(find /var/lock/*LCK..platform-1e6b0000.usb-usb-0* | wc -l)
 
-  if [ $val = 1 ]; then
-    if [ $cnt = 0 ]; then
+  if [ "$val" = 1 ]; then
+    if [ "$cnt" = 0 ]; then
       # TODO: remove it since GPv3 BIC will initialize it to high by default
-      /usr/bin/bic-util $fru 0xe0 0x02 0x9c 0x9c 0x00 0x15 0xe0 0x41 0x9c 0x9c 0x00 1 96 1  > /dev/null 2>&1
-      /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
+      /usr/bin/bic-util "$fru" 0xe0 0x02 0x9c 0x9c 0x00 0x15 0xe0 0x41 0x9c 0x9c 0x00 1 96 1  > /dev/null 2>&1
+      /usr/bin/bic-util "$fru" --set_gpio 16 "$val" > /dev/null 2>&1
       echo -n "Initializing USB devs..."
       sleep 20 # BMC needs to spend about 20 sec to detect slot1 and slot3 all devs.
-      dev_cnt=$(ls /dev/serial/by-path/ | wc -l)
-      if [ $dev_cnt -ge 16 ]; then
+      dev_cnt=$(find /dev/serial/by-path/ | wc -l)
+      if [ "$dev_cnt" -ge 16 ]; then
         echo "Done"
       else
         echo "Fail"
@@ -137,8 +137,8 @@ enable_usb_hub() {
       fi
     fi
   else
-    if [ $cnt = 0 ]; then # Close USB hub when no device is found
-      /usr/bin/bic-util $fru --set_gpio 16 $val > /dev/null 2>&1
+    if [ "$cnt" = 0 ]; then # Close USB hub when no device is found
+      /usr/bin/bic-util "$fru" --set_gpio 16 "$val" > /dev/null 2>&1
     fi
   fi
 }
@@ -319,7 +319,7 @@ fi
 
 if [[ "$2" == "--history" ]]; then
   if [ $# -eq 2 ]; then
-    cat $LOGFILE_B $LOGFILE 2>/dev/null
+    cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
     exit 0;
   else
     show_usage
@@ -327,9 +327,9 @@ if [[ "$2" == "--history" ]]; then
   fi
 fi
 
-SLOT_NUM=$(get_slot_num $SLOT)
-I2C_NUM=$(get_bus_num $SLOT)
-SLED_TYPE=$(cat $SLED_TYPE)
+SLOT_NUM=$(get_slot_num "$SLOT")
+I2C_NUM=$(get_bus_num "$SLOT")
+SLED_TYPE=$(cat "$SLED_TYPE")
 EXP_BOARD_TYPE=
 COMP=$2
 DEV=$3
@@ -344,18 +344,19 @@ if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
     exit 255
   else
     # notify CPLD to set the uart src to class 2
-    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x02"
+    echo "347here"
+    set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x00 0x02
   fi
 else
-  if [ $(is_server_prsnt ${SLOT_NUM}) == "0" ]; then
+  if [ "$(is_server_prsnt "${SLOT_NUM}")" == "0" ]; then
     echo "The $SLOT is empty"
     exit 255
-  elif [ $(is_slot_12v_on ${SLOT_NUM}) == "0" ]; then
+  elif [ "$(is_slot_12v_on "${SLOT_NUM}")" == "0" ]; then
     echo "The $SLOT is 12V-off"
     exit 255
   else
     # notify CPLD to set the uart src to class 1
-    set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x00 0x01"
+    set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x00 0x01
   fi
 fi
 
@@ -369,7 +370,7 @@ if [ -n "$COMP" ]; then
 
   # check BAUDRATE is a number
   if [ -n "$BAUDRATE" ]; then
-    if ! [[ $BAUDRATE =~ ^[0-9]+$ ]]; then
+    if ! [[ "$BAUDRATE" =~ ^[0-9]+$ ]]; then
       echo "$BAUDRATE should be a number"
       exit 255
     fi
@@ -379,13 +380,13 @@ if [ -n "$COMP" ]; then
   if [ "$COMP" == "1ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|17|8))$ ]]; then
     EXP_CPLD_ADDR=${FRONT_EXP_CPLD_ADDR}
   elif [ "$COMP" == "2ou" ] && [[ ! "$SLED_TYPE" =~ ^(Type_(1|10))$ ]]; then
-    EXP_BOARD_TYPE=$(get_2ou_board_type $I2C_NUM)
-    if [ $EXP_BOARD_TYPE == "0x02" ]; then     #E1.S board
+    EXP_BOARD_TYPE=$(get_2ou_board_type "$I2C_NUM")
+    if [ "$EXP_BOARD_TYPE" == "0x02" ]; then     #E1.S board
         EXP_CPLD_ADDR=""
     else
         EXP_CPLD_ADDR=${RISER_EXP_CPLD_ADDR}
     fi
-  elif [ "$COMP" == "sb" ]; then
+  elif [[ "$COMP" == "sb" ]] || [[ "$COMP" == "bb" ]]; then
     CPLD_ADDR=${SB_CPLD_ADDR}
   else
     echo "$COMP is not supported!"
@@ -399,27 +400,35 @@ if [ -n "$COMP" ]; then
       echo "$DEV is not supported!"
       exit 255
     elif [ "$COMP" == "2ou" ]; then
-      if [[ $(is_gpv3_board $EXP_BOARD_TYPE) ]]; then
-        enable_usb_hub $SLOT 1
+      if [[ $(is_gpv3_board "$EXP_BOARD_TYPE") ]]; then
+        enable_usb_hub "$SLOT" 1
         show_microcom_usage
 
         if [ "$BOARD_ID" -eq "$BMC_ID_CLASS2" ]; then
-          /usr/bin/microcom $(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+          /usr/bin/microcom "$(get_usb_dev "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")"
         else
-          /usr/bin/microcom $(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")
+          /usr/bin/microcom "$(get_usb_dev_by_slot "$SLOT" "$DEV" "$EXP_BOARD_TYPE" "$BAUDRATE")"
         fi
 
         RET=$?
-        enable_usb_hub $SLOT 0
-        exit $RET;
+        enable_usb_hub "$SLOT" 0
+        exit "$RET";
       fi
     fi
   elif [ "$DEV" == "bic" ]; then
     if [ -n "$CPLD_ADDR" ]; then
-      [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] && DEV_NUM="0x2" || DEV_NUM="0x4"
+      if [ "$BOARD_ID" == "$BMC_ID_CLASS2" ] ; then #For sol-util BIC console, class2 uart sb bic: 0x2 bb bic: 0x4, class1 uart sb bic: 0x4
+        if [ "$COMP" == "sb" ]; then
+          DEV_NUM="0x2"
+        else
+          DEV_NUM="0x4"
+        fi
+      else
+        DEV_NUM="0x4"
+      fi
     else
       DEV_NUM="0x6"
-      [[ "$(is_gpv3_board $EXP_BOARD_TYPE)" == "1" ]] && DEV_NUM="0xC"
+      [[ "$(is_gpv3_board "$EXP_BOARD_TYPE")" == "1" ]] && DEV_NUM="0xC"
     fi
   else
     echo "$DEV is not supported!"
@@ -427,30 +436,42 @@ if [ -n "$COMP" ]; then
   fi
 
   if [ -n "$CPLD_ADDR" ]; then
-    set_uart_src $I2C_NUM $CPLD_ADDR "0x01 $DEV_NUM"
+    set_uart_src "$I2C_NUM" "$CPLD_ADDR" 0x01 $DEV_NUM
+    if [ "$BOARD_ID" == "$BMC_ID_CLASS2" ]; then
+      if [ "$COMP" == "sb" ]; then
+        set_uart_src "$I2C_NUM" 0x0e 0x29 0x0
+      else
+        SLOT_INDEX="$(/usr/bin/bic-util slot1 0xE0 0x02 0x9C 0x9C 0x00 0x10 0xC0 0xF0 | cut -d " " -f 8)"
+        if [ "$SLOT_INDEX" == "01" ]; then  #For Class2 BMC UART to BB BIC MUX slot1 0x1, slot3 0x2
+          set_uart_src "$I2C_NUM" 0x0e 0x29 0x01
+        else
+          set_uart_src "$I2C_NUM" 0x0e 0x29 0x02
+        fi
+      fi
+    fi
   else
     # redirect the uart src to an expansion board
     if [ "$COMP" == "1ou" ]; then
-      set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01"
+      set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x01
+    elif [[ "$SLED_TYPE" ==  "Type_8" ]] || [[ "$SLED_TYPE" ==  "Type_17" ]]; then
+      set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x01
     else
-      [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]] &&
-        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x01" ||
-        set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x02"
+      set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x02
     fi
     if [ -n "$EXP_CPLD_ADDR" ]; then
-      select_expansion_uart $I2C_NUM $EXP_CPLD_ADDR $DEV_NUM $EXP_BOARD_TYPE
+      select_expansion_uart "$I2C_NUM" "$EXP_CPLD_ADDR" "$DEV_NUM" "$EXP_BOARD_TYPE"
     fi
   fi
 else
-  set_uart_src $I2C_NUM $SB_CPLD_ADDR "0x01 0x03"
+  set_uart_src "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x03
 fi
 
-if [ $(get_slot_type $SLOT_NUM) == "0" ]; then
+if [ "$(get_slot_type "$SLOT_NUM")" == "0" ]; then
   # set UART clock source 24MHz
-  devmem_clear_bit $(scu_addr 310) $((SLOT_NUM - 1))
+  devmem_clear_bit "$(scu_addr 310)" "$((SLOT_NUM - 1))"
 fi
 
-exec /usr/local/bin/mTerm_client $SLOT
+exec /usr/local/bin/mTerm_client "$SLOT"
 
 echo
 echo

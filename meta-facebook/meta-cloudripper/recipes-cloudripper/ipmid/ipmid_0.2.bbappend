@@ -18,5 +18,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "file://usb-dbg-conf.c"
 
-DEPENDS:append += "libgpio"
-LDFLAGS:append += "-lgpio"
+DEPENDS:append = " libgpio"
+LDFLAGS:append = " -lgpio"

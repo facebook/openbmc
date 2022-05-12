@@ -29,7 +29,7 @@ LOCAL_URI = " \
     "
 
 RDEPENDS:${PN} += " python3 bash"
-DEPENDS:append += " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 # Why do rocko needs python3 and krogoth didn't?
 #

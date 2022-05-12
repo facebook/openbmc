@@ -42,7 +42,7 @@ LOCAL_URI += " \
     "
 
 RDEPENDS:${PN} += " python3 bash"
-DEPENDS:append += " update-rc.d-native"
+DEPENDS:append = " update-rc.d-native"
 
 inherit systemd
 
@@ -138,4 +138,4 @@ SYSTEMD_SERVICES:${PN} += "us_monitor.service \
                        fix_fru_eeprom.service \
                         sensors_config_fix.service"
 
-SYSTEMD_SERVICES:${PN}:remove += "setup_board.service"
+SYSTEMD_SERVICES:${PN}:remove = "setup_board.service"

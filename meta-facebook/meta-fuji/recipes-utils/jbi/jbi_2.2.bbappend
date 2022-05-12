@@ -15,4 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-CFLAGS:prepend += " -DJTAG_SYSFS_DIR=\\"/sys/devices/platform/ahb/ahb:apb/1e6e4100.jtag/\\" "
+CFLAGS:prepend = " -DJTAG_SYSFS_DIR=\\"/sys/devices/platform/ahb/ahb:apb/1e6e4100.jtag/\\" "

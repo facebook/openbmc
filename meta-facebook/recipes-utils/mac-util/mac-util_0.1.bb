@@ -11,7 +11,7 @@ LOCAL_URI += " \
     file://Makefile \
     file://${MACHINE}/eeprom.h \
     "
-CXXFLAGS:prepend:${MACHINE} += "-I${MACHINE}"
+CXXFLAGS:prepend:${MACHINE} = "-I${MACHINE} "
 LDFLAGS += "-lobmc-i2c"
 
 

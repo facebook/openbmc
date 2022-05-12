@@ -54,6 +54,9 @@
 
 #define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
 
+#define NUM_CABLES 4
+#define NUM_MANAGEMENT_PINS 2
+
 const char pal_fru_list_print[] = "all, slot1, slot2, slot3, slot4, bmc, nic, bb, nicexp";
 const char pal_fru_list_rw[] = "slot1, slot2, slot3, slot4, bmc, bb, nicexp";
 const char pal_fru_list_sensor_history[] = "all, slot1, slot2, slot3, slot4, bmc nic";
@@ -109,6 +112,9 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define BMC_CPLD_VER_REG (0x28002000)
 #define SB_CPLD_VER_REG  (0x000000c0)
 #define KEY_BMC_CPLD_VER "bmc_cpld_ver"
+#define CABLE_PRSNT_REG (0x30)
+
+#define MAX_RETRY 3
 
 #define ERROR_LOG_LEN 256
 #define ERR_DESC_LEN 64
@@ -133,6 +139,11 @@ enum get_fw_ver_board_type {
   FW_VER_BB,
   FW_VER_SB,
   FW_VER_2OU,
+};
+
+enum cable_connection_status {
+  CABLE_DISCONNECT = 0,
+  CABLE_CONNECT = 1,
 };
 
 struct pal_key_cfg {
@@ -700,7 +711,7 @@ pal_get_board_id(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_
 
   *data++ = slot; //slot id
   *data++ = 0x00; //slot type. server = 0x00
-  
+
   // Get SB board ID
   memset(tbuf, 0, sizeof(tbuf));
   memset(rbuf, 0, sizeof(rbuf));
@@ -1452,6 +1463,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BB_BIC_SENSOR_BUTTON_DETECT:
           sprintf(name, "BUTTON_DETECT");
           break;
+        case BB_BIC_SENSOR_SLOT_PRESENT:
+          sprintf(name, "SLOT_PRESENT");
+          break;
         default:
           sprintf(name, "Unknown");
           ret = PAL_ENOTSUP;
@@ -2016,6 +2030,56 @@ pal_parse_button_detect_event(uint8_t fru, uint8_t *event_data, char *error_log)
   return PAL_EOK;
 }
 
+static int
+pal_parse_slot_present_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  enum {
+    SLOT1_SYSTEM_PRESENT = 0x01,
+    SLOT3_SYSTEM_PRESENT = 0x03,
+    SLOT1_SYSTEM_ABSENT = 0x11,
+    SLOT3_SYSTEM_ABSENT = 0x13,
+    SLOT1_CABLE_ABSENT = 0x21,
+    SLOT3_CABLE_ABSENT = 0x23,
+    SLOT1_INSERT_SLOT3 = 0x31,
+    SLOT3_INSERT_SLOT1 = 0x33,
+  };
+  if ((event_data != NULL) && (error_log != NULL)) {
+    switch (event_data[0]) {
+      case SLOT1_SYSTEM_PRESENT:
+        strcat(error_log, "slot1(peer slot) present");
+        break;
+      case SLOT3_SYSTEM_PRESENT:
+        strcat(error_log, "slot3(peer slot) present");
+        break;
+      case SLOT1_SYSTEM_ABSENT:
+        strcat(error_log, "Abnormal - slot1(peer slot) not detected");
+        break;
+      case SLOT3_SYSTEM_ABSENT:
+        strcat(error_log, "Abnormal - slot3(peer slot) not detected");
+        break;
+      case SLOT1_CABLE_ABSENT:
+        strcat(error_log, "Slot1 cable is not connected to the baseboard");
+        break;
+      case SLOT3_CABLE_ABSENT:
+        strcat(error_log, "Slot3 cable is not connected to the baseboard");
+        break;
+      case SLOT1_INSERT_SLOT3:
+        strcat(error_log, "Abnormal - slot3 instead of slot1");
+        break;
+      case SLOT3_INSERT_SLOT1:
+        strcat(error_log, "Abnormal - slot1 instead of slot3");
+        break;
+      default:
+        strcat(error_log, "Undefined Baseboard BIC event");
+        break;
+    }
+  }
+  else {
+    return -1;
+  }
+
+  return PAL_EOK;
+}
+
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
@@ -2049,6 +2113,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BB_BIC_SENSOR_BUTTON_DETECT:
       pal_parse_button_detect_event(fru, event_data, error_log);
+      break;
+    case BB_BIC_SENSOR_SLOT_PRESENT:
+      pal_parse_slot_present_event(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;
@@ -2163,7 +2230,6 @@ pal_is_debug_card_prsnt(uint8_t *status) {
 int
 pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts) {
   const uint8_t UART_POS_BMC = 0x00;
-  const uint8_t MAX_RETRY = 3;
   int i2cfd = -1;
   int ret = PAL_EOK;
   int retry = MAX_RETRY;
@@ -2794,113 +2860,65 @@ pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 }
 
 int
-pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location) {
+pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, uint8_t bmc_location) {
   enum {
-    SLOT1_CBL = 0x03,
-    SLOT2_CBL = 0x02,
-    SLOT3_CBL = 0x01,
-    SLOT4_CBL = 0x00,
+    SLOT1_CABLE = 0x03,
+    SLOT2_CABLE = 0x02,
+    SLOT3_CABLE = 0x01,
+    SLOT4_CABLE = 0x00,
   };
-  enum {
-    SLOT1_ID0_DETECT_BMC_N = 33,
-    SLOT1_ID1_DETECT_BMC_N = 34,
-    SLOT3_ID0_DETECT_BMC_N = 37,
-    SLOT3_ID1_DETECT_BMC_N = 38,
-  };
-  const uint8_t mapping_tbl[4] = {SLOT1_CBL, SLOT2_CBL, SLOT3_CBL, SLOT4_CBL};
-  const char *gpio_mgmt_cbl_tbl[] = {"SLOT%d_ID0_DETECT_BMC_N", "SLOT%d_ID1_DETECT_BMC_N"};
-  const int num_of_mgmt_pins = ARRAY_SIZE(gpio_mgmt_cbl_tbl);
+
+  const uint8_t mapping_table[NUM_CABLES] = {SLOT1_CABLE, SLOT2_CABLE, SLOT3_CABLE, SLOT4_CABLE};
+  const char *gpio_management_cable_table[] = {"SLOT%d_ID0_DETECT_BMC_N", "SLOT%d_ID1_DETECT_BMC_N"};
   int i = 0;
   int ret = 0;
   char dev[32] = {0};
   uint8_t val = 0;
   gpio_value_t gval;
   uint8_t gpio_vals = 0;
-  bic_gpio_t gpio = {0};
-  int i2cfd = 0;
-  uint8_t bus = 0;
-  uint8_t tbuf[1] = {0x06};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 1;
-  uint8_t rlen = 1;
-  uint8_t cpld_slot_cbl_val = 0;
   uint8_t slot_id_tmp = slot_id;
+  bool vals_match = false;
 
-  if ( bmc_location == BB_BMC ) {
+  if(bmc_location == BB_BMC){
     //read GPIO vals
-    for ( i = 0; i < num_of_mgmt_pins; i++ ) {
-      snprintf(dev, sizeof(dev), gpio_mgmt_cbl_tbl[i], slot_id);
-      if ( (gval = gpio_get_value_by_shadow(dev)) == GPIO_VALUE_INVALID ) {
+    for(i = 0; i < NUM_MANAGEMENT_PINS; i++) {
+      snprintf(dev, sizeof(dev), gpio_management_cable_table[i], slot_id);
+      gval = gpio_get_value_by_shadow(dev);
+      if(gval == GPIO_VALUE_INVALID) {
+        ret = -1;
         syslog(LOG_WARNING, "%s() Failed to read %s", __func__, dev);
+        return ret;
       }
       val = (uint8_t)gval;
       gpio_vals |= (val << i);
     }
-  } else {
-    //NIC EXP
-    //a bus starts from 4
-    ret = fby35_common_get_bus_id(slot_id) + 4;
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, slot_id);
-      return -1;
-    }
 
-    bus = (uint8_t)ret;
-    i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-    if ( i2cfd < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
-      return -1;
-    }
-
-    //read 06h from SB CPLD
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
-    if ( i2cfd > 0 ) close(i2cfd);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-      return -1;
-    }
-
-    cpld_slot_cbl_val = rbuf[0];
-
-    //read GPIO from BB BIC
-    ret = bic_get_gpio(slot_id, &gpio, BB_BIC_INTF);
-    if ( ret < 0 ) {
-      printf("%s() bic_get_gpio returns %d\n", __func__, ret);
-      return ret;
-    }
-    if (cpld_slot_cbl_val == SLOT1_CBL) {
-      val = BIT_VALUE(gpio, SLOT1_ID1_DETECT_BMC_N);
-      gpio_vals |= (val << 0);
-      val = BIT_VALUE(gpio, SLOT1_ID0_DETECT_BMC_N);
-      gpio_vals |= (val << 1);
+    if(gpio_vals == mapping_table[slot_id-1]) {
+      vals_match = true;
     } else {
-      val = BIT_VALUE(gpio, SLOT3_ID1_DETECT_BMC_N);
-      gpio_vals |= (val << 0);
-      val = BIT_VALUE(gpio, SLOT3_ID0_DETECT_BMC_N);
-      gpio_vals |= (val << 1);
-      slot_id_tmp = 3;
+      vals_match = false;
     }
-  }
 
-  bool vals_match = (bmc_location == BB_BMC) ? (gpio_vals == mapping_tbl[slot_id-1]):(gpio_vals == cpld_slot_cbl_val);
-  if (vals_match == false) {
-    for ( i = 0; i < (sizeof(mapping_tbl)/sizeof(uint8_t)); i++ ) {
-      if(mapping_tbl[i] == gpio_vals) {
-        break;
+    if(vals_match == false) {
+      for(i = 0; i < NUM_CABLES; i++) {
+        if(mapping_table[i] == gpio_vals) {
+          break;
+        }
       }
-    }
-    if (log_evnt == true) {
       syslog(LOG_CRIT, "Abnormal - slot%d instead of slot%d", slot_id_tmp, (i+1));
     }
-  }
 
-  if ( cbl_val != NULL ) {
-    cbl_val[0] = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
-    if (cbl_val[0] == STATUS_ABNORMAL) {
-      cbl_val[1] = slot_id_tmp << 4 | (i+1);
-    } else {
-      cbl_val[1] = 0x00;
+    if ( cbl_val != NULL ) {
+      cbl_val[0] = (vals_match == false)?STATUS_ABNORMAL:STATUS_PRSNT;
+      if (cbl_val[0] == STATUS_ABNORMAL) {
+        cbl_val[1] = slot_id_tmp << 4 | (i+1);
+      } else {
+        cbl_val[1] = 0x00;
+      }
     }
+  }
+  else {
+    bic_check_cable_status();
   }
   return ret;
 }
@@ -2960,7 +2978,7 @@ pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
     snprintf(value, sizeof(value), "%02X%02X%02X%02X", rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
     kv_set(KEY_BMC_CPLD_VER, value, 0, 0);
   }
-  
+
   memcpy(ver, rbuf, sizeof(rbuf));
 
   return 0;
@@ -3620,6 +3638,65 @@ pal_clear_cmos(uint8_t slot_id) {
       printf("Failed to set server power on\n");
       return ret;
     }
+  }
+
+  return ret;
+}
+
+int
+pal_is_cable_connect_baseborad(uint8_t slot_id, uint16_t curr) {
+  uint8_t tbuf[1] = {CABLE_PRSNT_REG};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+  static uint8_t last_rbuf = 0;
+  int retry = MAX_RETRY;
+  uint8_t mask = 1;
+  int i2cfd = 0;
+  int ret = 0;
+
+  if(curr == GPIO_VALUE_LOW) {
+    mask = mask << (slot_id - 1);
+    last_rbuf = (last_rbuf & (~mask));
+    goto exit;
+  }
+
+  i2cfd = i2c_cdev_slave_open(BB_CPLD_BUS, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if(i2cfd < 0) {
+    syslog(LOG_WARNING, "Failed to open bus %d\n", BB_CPLD_BUS);
+    return i2cfd;
+  }
+
+  for(retry = MAX_RETRY; retry > 0; retry--) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
+    if((rbuf[0] ^ last_rbuf) != 0) {
+      last_rbuf = rbuf[0];
+      break;
+    }
+  }
+
+  if(ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, bus = %x tbuf=%d", __func__, CPLD_ADDRESS, tbuf[0]);
+    goto exit;
+  }
+
+  /*
+   *  rbuf[0] = 0x0~0xf
+   *  if slot1 is present, bit 1 is 0 else 1.
+   *  if slot2 is present, bit 2 is 0 else 1.
+   *  if slot3 is present, bit 3 is 0 else 1.
+   *  if slot4 is present, bit 4 is 0 else 1.
+   */
+  mask = mask << (slot_id - 1);
+  if ((rbuf[0] & mask) != 0){
+    syslog(LOG_CRIT, "Slot%u cable is not connected to the baseboard", slot_id);
+  } else {
+    syslog(LOG_CRIT, "Slot%u cable is not connected to the serverboard", slot_id);
+  }
+
+exit:
+  if ( i2cfd >= 0 ) {
+    close(i2cfd);
   }
 
   return ret;

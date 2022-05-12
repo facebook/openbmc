@@ -173,7 +173,7 @@ typedef struct {
 int pal_get_uart_select_from_cpld(uint8_t *uart_select);
 int pal_get_uart_select_from_kv(uint8_t *uart_select);
 int pal_get_cpld_ver(uint8_t fru, uint8_t *ver);
-int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, bool log_evnt, uint8_t bmc_location);
+int pal_check_sled_mgmt_cbl_id(uint8_t slot_id, uint8_t *cbl_val, uint8_t bmc_location);
 int pal_set_nic_perst(uint8_t fru, uint8_t val);
 int pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode);
 int pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts);
@@ -183,6 +183,8 @@ int pal_check_slot_cpu_present(uint8_t slot_id);
 int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
 int pal_check_slot_fru(uint8_t slot_id);
 int pal_clear_cmos(uint8_t slot_id);
+int pal_is_cable_connect_baseborad(uint8_t slot_id, uint16_t curr);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

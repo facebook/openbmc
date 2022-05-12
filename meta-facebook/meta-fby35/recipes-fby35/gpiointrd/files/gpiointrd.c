@@ -56,15 +56,22 @@ log_slot_present(uint8_t slot_id, gpio_value_t value)
 static void
 slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   uint32_t slot_id;
+  uint8_t bmc_location = 0;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gpdesc);
   assert(cfg);
   sscanf(cfg->description, "GPIOH%u", &slot_id);
   slot_id -= 3;
   log_gpio_change(gpdesc, value, 0, true);
   log_slot_present(slot_id, value);
-  if ( value == GPIO_VALUE_LOW ) {
-    // TODO: Need to check management cable for Yv3.5 system
-    //pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, BB_BMC);
+  pal_is_cable_connect_baseborad(slot_id, value);
+
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return;
+  }
+
+  if (value == GPIO_VALUE_LOW) {
+    pal_check_sled_mgmt_cbl_id(slot_id, NULL, bmc_location);
     
     pal_check_slot_cpu_present(slot_id);
     pal_check_slot_fru(slot_id);
@@ -86,6 +93,7 @@ slot_hotplug_setup(uint8_t slot_id) {
 static void 
 slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   uint32_t slot_id;
+  uint8_t bmc_location = 0;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
   assert(cfg);
   sscanf(cfg->description, "GPIOH%u", &slot_id);
@@ -93,9 +101,16 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   slot_hotplug_setup(slot_id);
   log_gpio_change(gp, curr, 0, true);
   log_slot_present(slot_id, curr);
-  if ( curr == GPIO_VALUE_LOW ) {
-    // TODO: Need to check management cable for Yv3.5 system
-    //pal_check_sled_mgmt_cbl_id(slot_id, NULL, true, BB_BMC);
+  sleep(1);
+  pal_is_cable_connect_baseborad(slot_id, curr);
+
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return;
+  }
+
+  if (curr == GPIO_VALUE_LOW) {
+    pal_check_sled_mgmt_cbl_id(slot_id, NULL, bmc_location);
 
     // Wait for IPMB ready
     sleep(6);

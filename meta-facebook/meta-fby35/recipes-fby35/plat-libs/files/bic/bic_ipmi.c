@@ -2287,3 +2287,28 @@ bic_check_bb_fw_update_ongoing() {
 
   return 0;
 }
+
+//Only For Class 2
+int
+bic_check_cable_status() {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  while (retry < IPMB_RETRY_TIME) {
+    ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_REQ, BIC_CMD_OEM_CABLE_STAT, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+    if (ret == 0) {
+      break;
+    }
+    retry++;
+  }
+
+  if (ret != 0) {
+    return -1;
+  }
+
+  return 0;
+}

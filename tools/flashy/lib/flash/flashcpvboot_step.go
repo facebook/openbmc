@@ -31,16 +31,17 @@ import (
 const vbootRomxSize = 84 * 1024
 
 var vbootRomxExists = func(flashDeviceSpecifier string) bool {
-	vbootEnforcement := utils.GetVbootEnforcement()
-
-	// VBOOT_HARDWARE_ENFORCE means there is active hardware enforcing RO,
-	// so we definitely need to skip it.
-	if vbootEnforcement == utils.VBOOT_HARDWARE_ENFORCE &&
-		flashDeviceSpecifier == "flash1" {
-		return true
-	}
-
-	return false
+	// VBOOT_HARDWARE_ENFORCE means that flash0 is locked in its
+	// entirety and also that the first 64kB of flash1 is locked.
+	// However there is a kernel/U-Boot bug that causes detection
+	// and flagging of locked chips/regions to fail sometimes.
+	//
+	// VBOOT_SOFTWARE_ENFORCE means that U-Boot on flash0 is verifying
+	// the signature of images loaded from flash1.  However if the BMC
+	// has booted in recovery mode this flag may be false.
+	//
+	// Therefore always assume that the start of flash1 is read-only.
+	return flashDeviceSpecifier == "flash1"
 }
 
 // FlashCpVboot is a step function that runs the flashcp procedure with extra vboot

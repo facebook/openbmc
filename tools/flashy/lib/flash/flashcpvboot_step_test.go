@@ -57,13 +57,19 @@ func TestVbootRomxExists(t *testing.T) {
 			name:                 "not hardware enforce",
 			flashDeviceSpecifier: "flash1",
 			vbootEnforcement:     utils.VBOOT_SOFTWARE_ENFORCE,
-			want:                 false,
+			want:                 true, // Ignoring vboot enforcement, see vbootRomxExists for details
 		},
 		{
 			name:                 "not flash1",
 			flashDeviceSpecifier: "flash1rw",
 			vbootEnforcement:     utils.VBOOT_HARDWARE_ENFORCE,
 			want:                 false,
+		},
+		{
+			name:                 "not enforce",
+			flashDeviceSpecifier: "flash1",
+			vbootEnforcement:     utils.VBOOT_NONE,
+			want:                 true, // Ignoring vboot enforcement, see vbootRomxExists for details
 		},
 	}
 

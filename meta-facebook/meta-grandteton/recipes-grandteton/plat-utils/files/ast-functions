@@ -81,18 +81,13 @@ gpio_get() {
 
 # Store and Clear POR bit
 store_clear_por() {
-  local sig val
-
   if [ -f /tmp/ast_por ]; then
     return
   fi
 
-  # Read Boot Magic
-  sig=$(devmem 0x10015c08 2>/dev/null)
-
-  # Read the Watch Dog Flag
+  # Read the SRST Rest Flag
   val=$(devmem 0x1e6e2074 2>/dev/null)
-  if [[ "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
+  if [[ "$((val & 0x1))" == "1" ]]; then
       # Power ON Reset
       echo 1 > /tmp/ast_por
   else
@@ -102,3 +97,10 @@ store_clear_por() {
   # Clear Power On Reset bit
   devmem 0x1e6e2074 32 0x1 2>/dev/null
 }
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  store_clear_por
+  /bin/cat /tmp/ast_por
+}
+

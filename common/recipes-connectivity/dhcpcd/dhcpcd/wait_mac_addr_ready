@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# NC-SI version (0x15) field 52 contains the IANA of the vendor.
+# If this is 00000000, then we are running in QEMU and there is no point
+# to wait.
+if [[ "$(ncsi-util 0x15 | grep 52:)" == *"0x00 0x00 0x00 0x00"* ]]; then
+    exit
+fi
+
+MAC_ASSIGN_FILE="/sys/class/net/$1/addr_assign_type"
+for _ in {1..30}; do
+    MAC_ASSIGN_TYPE=$(cat "$MAC_ASSIGN_FILE")
+    if [ "$MAC_ASSIGN_TYPE" = "3" ]; then
+        break;
+    fi
+    sleep 1
+done

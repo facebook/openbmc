@@ -54,4 +54,10 @@ if [ -n "$pid_file" ]; then
     ln -s $(dhcpcd --printpidfile "${final_args[@]}") "$pid_file"
 fi
 
+if [ -d /usr/libexec/dhclient/pre.d ]; then
+    for f in /usr/libexec/dhclient/pre.d/* ; do
+        "$f" "$interface"
+    done
+fi
+
 exec dhcpcd "${final_args[@]}"

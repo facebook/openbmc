@@ -9,6 +9,7 @@ SRC_URI += "file://dhcp_vendor_info \
             file://run-dhc6_prefix64.sh \
             file://run-dhc6_prefix64_ncsi.sh \
             file://interfaces.d \
+            file://if-down.d \
             "
 
 NETWORK_INTERFACES ?= "auto/lo auto/eth0 static/usb0"
@@ -18,6 +19,18 @@ do_configure:append() {
         echo -n > ${S}/interfaces
         for intf in ${NETWORK_INTERFACES}; do
             cat ${S}/interfaces.d/$intf >> ${S}/interfaces
+        done
+    fi
+}
+
+do_install_interfaces() {
+    if [ -n "${NETWORK_INTERFACES}" ]; then
+        for intf in ${NETWORK_INTERFACES}; do
+            if [ -e ${S}/if-down.d/${intf} ]; then
+                install -d ${D}${sysconfdir}/network/if-down.d
+                install -m 755 ${S}/if-down.d/${intf} \
+                    ${D}${sysconfdir}/network/if-down.d/$(basename ${intf})
+            fi
         done
     fi
 }
@@ -56,9 +69,9 @@ do_install_dhcp_vendor_info() {
 }
 
 do_install:append() {
-
   do_install_dhcp_vendor_info
   do_install_dhcp
+  do_install_interfaces
 }
 
 FILES:${PN} += "${sysconfdir}/network/if-up.d/dhcpv6_up \

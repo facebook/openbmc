@@ -1,0 +1,5 @@
+#!/bin/sh
+
+mv /mnt/data/cri_sel /mnt/data/cri_sel.0
+touch /mnt/data/cri_sel
+

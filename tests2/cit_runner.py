@@ -202,6 +202,7 @@ def arg_parser():
             "fby3",
             "grandcanyon",
             "fby35",
+            "agc032a",
         ],
     )
     parser.add_argument(

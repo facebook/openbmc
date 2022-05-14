@@ -1,0 +1,34 @@
+# /etc/logrotate.d/rsyslog
+
+/var/log/messages
+{
+        rotate 4
+        missingok
+        notifempty
+        size 5M
+        delaycompress
+        compress
+        postrotate
+		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+        endscript
+}
+
+/var/log/auth.log
+/var/log/daemon.log
+/var/log/dhclient.log
+/var/log/kern.log
+/var/log/user.log
+/var/log/cron.log
+/var/log/debug
+{
+        rotate 3
+        size 5M
+        missingok
+        notifempty
+        compress
+        delaycompress
+        sharedscripts
+        postrotate
+		/bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` 2> /dev/null || true
+        endscript
+}

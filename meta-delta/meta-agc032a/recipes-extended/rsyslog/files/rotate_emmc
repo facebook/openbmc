@@ -1,0 +1,26 @@
+/mnt/data1/log/messages {
+    daily
+    missingok
+    rotate 5
+    nocompress
+    nocreate
+
+    postrotate
+        /bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` \
+            2> /dev/null || true
+    endscript
+}
+
+/mnt/data1/log/mterm {
+    daily
+    missingok
+    rotate 5
+    nocompress
+    nocreate
+    notifempty
+
+    postrotate
+        /bin/kill -HUP `cat /var/run/rsyslogd.pid 2> /dev/null` \
+            2> /dev/null || true
+    endscript
+}

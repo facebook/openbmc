@@ -1,0 +1,10 @@
+{
+    "bmc": {
+        "bmc": {
+            "version header": "BMC Version"
+        },
+        "fscd": {
+            "version header": "Fan Speed Controller Version"
+        }
+    }
+}

@@ -1176,6 +1176,7 @@ pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_d
     return i2c_device_binding_operation(bus, addr, driver_name, UNBIND);
   }
   return 0;
+
 }
 
 // To get the platform sku

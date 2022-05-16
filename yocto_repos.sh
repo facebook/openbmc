@@ -22,5 +22,5 @@ lf_honister_repos=(
     lf-openbmc:a515de07d
 )
 lf_kirkstone_repos=(
-    lf-openbmc:e22d42c0b
+    lf-openbmc:322e9fc9c
 )

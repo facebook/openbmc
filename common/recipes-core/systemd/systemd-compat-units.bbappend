@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-LICENSE="GPLv2"
+LICENSE="GPL-2.0-only"
 LIC_FILES_CHKSUM="file://hostname.service;beginline=3;endline=16;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
@@ -36,4 +36,4 @@ do_install:append() {
 
 FILES:${PN} = "/usr/local/bin ${systemd_system_unitdir}"
 SYSTEMD_SERVICE:${PN} = "hostname.service"
-RDEPENDS:${PN} = "bash"
+RDEPENDS:${PN}:append = " bash"

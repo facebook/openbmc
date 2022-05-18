@@ -152,7 +152,7 @@ static void print_text(const std::string& req_s, json& j) {
   if (status == "SUCCESS") {
     if (req_s == "value_data")
       print_value_data(j["data"]);
-    else if (req_s == "raw_data" || req_s == "profile")
+    else if (req_s == "raw_data")
       print_nested(j["data"]);
     else if (req_s == "list")
       print_table(j["data"]);
@@ -265,10 +265,6 @@ int main(int argc, const char** argv) {
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
   data->callback([&]() { do_cmd(format + "_data", json_fmt); });
   data->add_set("-f,--format", format, {"raw", "value"}, "Format the data");
-
-  // Profile
-  app.add_subcommand("profile", "Print profiling data collected from last read")
-      ->callback([&]() { do_cmd("profile", json_fmt); });
 
   // Pause command
   app.add_subcommand("pause", "Pause monitoring")->callback([&]() {

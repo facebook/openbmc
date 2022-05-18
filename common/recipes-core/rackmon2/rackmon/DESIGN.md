@@ -341,20 +341,15 @@ the BMC and installing it:
 opkg install --force_reinstall ./rackmon_0.2-r1_armv6.ipk
 ```
 Then restarting it using the appropriate service manager (`sv restart rackmond` or `systemctl restart rackmond`).
-You can retrieve the profile data from rackmond using:
+You can retrieve the profile data from syslog:
 ```
-rackmoncli profile
-PROFILE modbus::182 : 46 ms
-PROFILE rawcmd::182 : 46 ms
-PROFILE modbus::165 : 46 ms
-PROFILE rawcmd::165 : 46 ms
-PROFILE modbus::165 : 42 ms
-PROFILE rawcmd::165 : 42 ms
-PROFILE modbus::164 : 39 ms
-<snip>
+ 2022 May 16 13:33:06 $HOST user.info $VERS: $SVC: PROFILE modbus::180 : 36 ms
+ 2022 May 16 13:33:06 $HOST user.info $VERS: $SVC: PROFILE rawcmd::180 : 36 ms
+ 2022 May 16 13:33:07 $HOST user.info $VERS: $SVC: PROFILE modbus::181 : 46 ms
+ 2022 May 16 13:33:07 $HOST user.info $VERS: $SVC: PROFILE rawcmd::181 : 46 ms
 ```
-this automatically clears the store. Note, if we do not retrieve the profile store, there
-is nothing clearing up the memory, there is no upper-limit. So, don't use on production :-)
+Note that syslog rotation might not be designed for this level of logging so there
+is a high chance that we might take up a lot of RAM. So, don't use on production :-)
 
 # Upcoming
 

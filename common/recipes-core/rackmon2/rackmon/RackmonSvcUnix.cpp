@@ -66,8 +66,6 @@ void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
     std::vector<ModbusDeviceValueData> ret;
     rackmond_.getValueData(ret);
     resp["data"] = ret;
-  } else if (cmd == "profile") {
-    resp["data"] = rackmond_.getProfileData();
   } else {
     throw std::logic_error("UNKNOWN_CMD: " + cmd);
   }

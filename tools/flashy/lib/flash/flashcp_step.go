@@ -72,16 +72,8 @@ var flashCpAndValidate = func(
 	err := flashcp.FlashCp(imageFilePath, flashDevice.GetFilePath(), roOffset)
 	if err != nil {
 		log.Printf("FlashCp failed: %v", err)
-		return err
+	} else {
+		log.Printf("Flashcp succeeded")
 	}
-	log.Printf("Flashcp succeeded")
-
-	log.Printf("Validating flash device")
-	err = flashDevice.Validate()
-	if err != nil {
-		log.Printf("Flash device validation failed: %v", err)
-		return err
-	}
-	log.Printf("Flash device validation passed")
-	return nil
+	return err
 }

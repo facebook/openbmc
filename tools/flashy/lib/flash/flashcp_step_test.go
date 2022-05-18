@@ -182,26 +182,17 @@ func TestFlashCpAndValidate(t *testing.T) {
 	cases := []struct {
 		name          string
 		flashCpErr    error
-		validationErr error
 		want          error
 	}{
 		{
 			name:          "succeeded",
 			flashCpErr:    nil,
-			validationErr: nil,
 			want:          nil,
 		},
 		{
 			name:          "flashCpErr error",
 			flashCpErr:    errors.Errorf("flashing failed"),
-			validationErr: nil,
 			want:          errors.Errorf("flashing failed"),
-		},
-		{
-			name:          "validation error",
-			flashCpErr:    nil,
-			validationErr: errors.Errorf("validation failed"),
-			want:          errors.Errorf("validation failed"),
 		},
 	}
 
@@ -223,7 +214,7 @@ func TestFlashCpAndValidate(t *testing.T) {
 				return tc.flashCpErr
 			}
 			flashDevice := &mockFlashDevice{
-				ValidationErr: tc.validationErr,
+				ValidationErr: nil,
 			}
 			got := flashCpAndValidate(flashDevice, exampleImageFilePath, 42)
 			tests.CompareTestErrors(tc.want, got, t)

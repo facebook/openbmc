@@ -126,6 +126,15 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}
 
+	// ignore healthd not running (seen on fby3-v2020.33.1)
+	code, err, _, _ := RunCommand([]string{supervisor, "status", "healthd"}, 60*time.Second)
+	if err != nil || code != 0 {
+		log.Printf("healthd doesn't seem to be running.  Wait for 30s to " +
+			"ensure watchdog is stable.")
+		Sleep(30 * time.Second)
+		return nil
+	}
+
 	// stop healthd, forcing it to close /dev/watchdog.  ignore errors.
 	RunCommand([]string{supervisor, "stop", "healthd"}, 60*time.Second)
 
@@ -133,7 +142,7 @@ var RestartHealthd = func(wait bool, supervisor string) error {
 	PetWatchdog()
 
 	// re-start healthd
-	_, err, _, _ := RunCommand([]string{supervisor, "start", "healthd"}, 60*time.Second)
+	_, err, _, _ = RunCommand([]string{supervisor, "start", "healthd"}, 60*time.Second)
 
 	// healthd is petting watchdog, if something goes wrong and it doesn't do so
 	// after restart it may hard-reboot the system - it's better to be safe

@@ -283,6 +283,7 @@ func TestRestartHealthd(t *testing.T) {
 		runCmdErr     error
 		want          error
 		wantSleepTime time.Duration
+		statusError   bool
 	}{
 		{
 			name:          "Normal restart operation with sv, wait",
@@ -292,6 +293,7 @@ func TestRestartHealthd(t *testing.T) {
 			runCmdErr:     nil,
 			want:          nil,
 			wantSleepTime: 30 * time.Second,
+			statusError:   false,
 		},
 		{
 			name:          "Normal restart operation, no wait",
@@ -301,6 +303,7 @@ func TestRestartHealthd(t *testing.T) {
 			runCmdErr:     nil,
 			want:          nil,
 			wantSleepTime: 0 * time.Second,
+			statusError:   false,
 		},
 		{
 			name:          "Normal restart operation with systemctl, wait",
@@ -310,6 +313,7 @@ func TestRestartHealthd(t *testing.T) {
 			runCmdErr:     nil,
 			want:          nil,
 			wantSleepTime: 30 * time.Second,
+			statusError:   false,
 		},
 		{
 			name:          "/etc/sv/healthd does not exist",
@@ -319,6 +323,7 @@ func TestRestartHealthd(t *testing.T) {
 			runCmdErr:     nil,
 			want:          errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist"),
 			wantSleepTime: 0 * time.Second,
+			statusError:   false,
 		},
 		{
 			name:          "Start command returned error",
@@ -328,6 +333,17 @@ func TestRestartHealthd(t *testing.T) {
 			runCmdErr:     errors.Errorf("RunCommand error"),
 			want:          errors.Errorf("RunCommand error"),
 			wantSleepTime: 30 * time.Second,
+			statusError:   false,
+		},
+		{
+			name:          "Status command returned error",
+			wait:          true,
+			supervisor:    "systemctl",
+			pathExists:    true,
+			runCmdErr:     nil,
+			want:          nil,
+			wantSleepTime: 30 * time.Second,
+			statusError:   true,
 		},
 	}
 
@@ -346,7 +362,15 @@ func TestRestartHealthd(t *testing.T) {
 			RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, string, string) {
 				wantCmd1 := fmt.Sprintf("%v stop healthd", tc.supervisor)
 				wantCmd2 := fmt.Sprintf("%v start healthd", tc.supervisor)
+				wantCmd3 := fmt.Sprintf("%v status healthd", tc.supervisor)
 				gotCmd := strings.Join(cmdArr, " ")
+				if wantCmd3 == gotCmd {
+					if tc.statusError {
+						return 1, errors.Errorf("RunCommand derp"), "", ""
+					} else {
+						return 0, nil, "", ""
+					}
+				}
 				if wantCmd1 != gotCmd && wantCmd2 != gotCmd {
 					t.Errorf("command: got unexpected command '%v'", gotCmd)
 				}

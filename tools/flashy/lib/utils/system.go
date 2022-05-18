@@ -58,14 +58,11 @@ const procMountsPath = "/proc/mounts"
 
 // other flashers + the "flashy" binary
 var otherFlasherBaseNames = []string{
-	"autodump.sh",
 	"cpld_upgrade.sh",
-	"dd",
 	"flash_eraseall",
 	"flashcp",
 	"flashrom",
 	"fw-util",
-	"fw_setenv",
 	"improve_system.py",
 	"jbi",
 	"psu-update-bel.py",

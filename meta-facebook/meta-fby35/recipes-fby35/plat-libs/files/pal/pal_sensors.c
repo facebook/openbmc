@@ -641,7 +641,7 @@ const uint8_t bmc_discrete_sensor_list[] = {
 /*  PAL_ATTR_INFO:
  *  For the PMBus direct format conversion
  *  X = 1/m × (Y × 10^-R − b)
- *  
+ *
  *  {m, b, R} coefficient
  */
 //LTC4286
@@ -946,7 +946,7 @@ PAL_SENSOR_MAP sensor_map[] = {
 */
 PAL_HSC_INFO hsc_info_list[] = {
   [HSC_ADM1278] = {ADM1278_SLAVE_ADDR, ADM1278_PEAK_IOUT, ADM1278_PEAK_PIN, adm1278_info_list},
-  [HSC_LTC4286] = {LTC4286_SLAVE_ADDR, CMD_NOT_SUPPORT, CMD_NOT_SUPPORT, ltc4286_info_list}, 
+  [HSC_LTC4286] = {LTC4286_SLAVE_ADDR, LTC4286_MFR_IOUT_MAX, LTC4286_MFR_PIN_MAX, ltc4286_info_list},
   [HSC_MP5990] =  {MP5990_SLAVE_ADDR, MP5990_PEAK_IOUT, MP5990_PEAK_PIN, mp5990_info_list}
 };
 
@@ -1804,11 +1804,11 @@ read_adc_val(uint8_t adc_id, float *value) {
 }
 
 static int
-get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd, float *value, uint8_t *raw_data) {
+get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint16_t cmd, float *value, uint8_t *raw_data) {
   const uint8_t hsc_bus = 11;
   uint8_t addr = hsc_info_list[hsc_id].slv_addr;
   static int fd = -1;
-  uint8_t rbuf[PMBUS_RESP_LEN_MAX] = {0x00};
+  uint8_t rbuf[PMBUS_RESP_LEN_MAX] = {0x00}, tbuf[8] = {cmd, 0x0};
   uint8_t rlen = 0;
   uint8_t tlen = 1;
   int retry = MAX_RETRY;
@@ -1826,6 +1826,12 @@ get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd,
     }
   }
 
+  if (cmd == LTC4286_MFR_IOUT_MAX || cmd == LTC4286_MFR_PIN_MAX) {
+    tbuf[0] = cmd >> 8;
+    tbuf[1] = cmd;
+    tlen = 2;
+  }
+
   switch(reading_type) {
     case I2C_BYTE:
       rlen = 1;
@@ -1835,7 +1841,7 @@ get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd,
       break;
     case I2C_BLOCK:
       for (retry = MAX_RETRY; retry > 0; retry--) {
-        ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, tlen, rbuf, 1);
+        ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, 1);
         if (ret == 0) {
           break;
         }
@@ -1857,7 +1863,7 @@ get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd,
   }
 
   for (retry = MAX_RETRY; retry > 0; retry--) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
     if (ret == 0) {
       break;
     }
@@ -1871,8 +1877,8 @@ get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd,
     float m = hsc_info_list[hsc_id].info[type].m;
     float b = hsc_info_list[hsc_id].info[type].b;
     float r = hsc_info_list[hsc_id].info[type].r;
-    
-    *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m; 
+
+    *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
   }
   else {
     if (raw_data == NULL){
@@ -1881,7 +1887,7 @@ get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd,
     }
     memcpy(raw_data, rbuf, rlen);
   }
-  
+
   ret = PAL_EOK;
 
 exit:
@@ -1936,27 +1942,10 @@ calculate_done:
 
 static int
 read_hsc_ein(uint8_t hsc_id, float *value) {
-  float rsense = 0;
   uint8_t buf[PMBUS_RESP_LEN_MAX] = {0};
-  uint8_t bb_board_revision = 0;
-  static bool is_ltc4268_init = false;
-
-  if (get_board_rev(0, BOARD_ID_BB, &bb_board_revision) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
-  }
-
-  if((is_ltc4268_init == false) && (hsc_id == HSC_LTC4286)) {
-    if(bb_board_revision <= BB_REV_EVT3) {
-      rsense = 0.5;
-    } else {
-      rsense = 0.3;
-    }
-    hsc_ein_list[hsc_id].ein_coefficient *= rsense;
-    is_ltc4268_init = true;
-  }
 
   if ( get_hsc_reading(hsc_id, I2C_BLOCK, -1, hsc_ein_list[hsc_id].cmd, value, buf ) ||
-     buf[0] != (hsc_ein_list[hsc_id].ein_resp_len)){
+    buf[0] != (hsc_ein_list[hsc_id].ein_resp_len)) {
     return READING_NA;
   }
 
@@ -1983,24 +1972,6 @@ read_hsc_ein(uint8_t hsc_id, float *value) {
 
 static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
-  float rsense = 0;
-  uint8_t bb_board_revision = 0;
-  static bool is_ltc4268_init = false;
-
-  if (get_board_rev(0, BOARD_ID_BB, &bb_board_revision) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
-  }
-
-  if((is_ltc4268_init == false) && (hsc_id == HSC_LTC4286)) {
-    if(bb_board_revision <= BB_REV_EVT3) {
-      rsense = 0.5;
-    } else {
-      rsense = 0.3;
-    }
-    hsc_info_list[hsc_id].info[HSC_POWER].m *= rsense;
-    is_ltc4268_init = true;
-  }
-
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) {
     return READING_NA;
   }
@@ -2022,24 +1993,6 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
 
 static int
 read_hsc_iout(uint8_t hsc_id, float *value) {
-  float rsense = 0;
-  uint8_t bb_board_revision = 0;
-  static bool is_ltc4268_init = false;
-
-  if (get_board_rev(0, BOARD_ID_BB, &bb_board_revision) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
-  }
-
-  if((is_ltc4268_init == false) && (hsc_id == HSC_LTC4286)) {
-    if(bb_board_revision <= BB_REV_EVT3) {
-      rsense = 0.5;
-    } else {
-      rsense = 0.3;
-    }
-    hsc_info_list[hsc_id].info[HSC_CURRENT].m *= rsense;
-    is_ltc4268_init = true;
-  }
-
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_CURRENT, PMBUS_READ_IOUT, value, NULL) < 0 ) {
     return READING_NA;
   }
@@ -2080,20 +2033,16 @@ static int
 read_hsc_peak_iout(uint8_t hsc_id, float *value) {
   static float peak = 0;
 
-  if ( hsc_info_list[hsc_id].cmd_peak_iout == CMD_NOT_SUPPORT ) {
-    return READING_NA;
-  }
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_CURRENT, hsc_info_list[hsc_id].cmd_peak_iout, value, NULL) < 0 ) {
     return READING_NA;
   }
-  
+
   // it's "read-clear" data, so need to be cached
   if (peak > *value) {
     *value = peak;
   } else {
     peak = *value;
   }
-  
 
   return PAL_EOK;
 }
@@ -2102,9 +2051,6 @@ static int
 read_hsc_peak_pin(uint8_t hsc_id, float *value) {
   static float peak = 0;
 
-  if ( hsc_info_list[hsc_id].cmd_peak_iout == CMD_NOT_SUPPORT ) {
-    return READING_NA;
-  }
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, hsc_info_list[hsc_id].cmd_peak_pin, value, NULL) < 0 ) {
     return READING_NA;
   }
@@ -2428,6 +2374,23 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   for (i = 0; i < BB_HSC_SENSOR_CNT; i++) {
     hsc_sesnor_num = hsc_sesnors[i];
     sensor_map[hsc_sesnor_num].id = hsc_type;
+  }
+
+  if (hsc_type == HSC_LTC4286) {
+    float rsense = 0.3;
+    uint8_t board_rev = 0;
+
+    if (get_board_rev(0, BOARD_ID_BB, &board_rev) < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
+      goto skip_hsc_init;
+    }
+    if (board_rev <= BB_REV_EVT3) {
+      rsense = 0.5;
+    }
+
+    hsc_info_list[hsc_type].info[HSC_CURRENT].m *= rsense;
+    hsc_info_list[hsc_type].info[HSC_POWER].m *= rsense;
+    hsc_ein_list[hsc_type].ein_coefficient *= rsense;
   }
   is_hsc_init = true;
 

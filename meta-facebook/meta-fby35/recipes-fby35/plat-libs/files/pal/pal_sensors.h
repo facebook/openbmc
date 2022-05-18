@@ -18,10 +18,11 @@
 
 //LTC4286 CMD INFO
 #define LTC4286_SLAVE_ADDR (0x80)
-#define CMD_NOT_SUPPORT (0xFE)
 #define LTC4286_MFR_READ_EIN (0xFA)
 #define LTC4286_EIN_RESP_LEN (12)
 #define LTC4286_EIN_COEF (655360) //655360000 *  LTC4286_RSENSE
+#define LTC4286_MFR_IOUT_MAX (0xFE03)
+#define LTC4286_MFR_PIN_MAX (0xFE0B)
 
 //MP5990 CMD INFO
 #define MP5990_SLAVE_ADDR  (0x80)
@@ -502,8 +503,8 @@ enum {
 
 typedef struct {
   uint8_t slv_addr;
-  uint8_t cmd_peak_iout;
-  uint8_t cmd_peak_pin;
+  uint16_t cmd_peak_iout;
+  uint16_t cmd_peak_pin;
   PAL_ATTR_INFO* info;
 } PAL_HSC_INFO;
 

@@ -81,7 +81,7 @@ sys_runtime=$(printf "%0.f" "$sys_runtime")
 kv set "fru${SLOT_NUM}_crashdump" "$((sys_runtime+1200))"
 
 DUMP_SCRIPT="/usr/local/bin/dump.sh"
-CRASHDUMP_FILE="/mnt/data/crashdump_$SLOT_NAME"
+CRASHDUMP_FILE="/tmp/crashdump/"
 CRASHDUMP_LOG_ARCHIVE="/mnt/data/crashdump_$SLOT_NAME.tar.gz"
 LOG_MSG_PREFIX=""
 
@@ -137,9 +137,6 @@ if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
     LOG_MSG_PREFIX="SECOND_DUMP "
   fi
 fi
-
-echo -n "ACD Dump End at " >> "$CRASHDUMP_FILE"
-date >> "$CRASHDUMP_FILE"
 
 tar zcf "$CRASHDUMP_LOG_ARCHIVE" -C "$(dirname "$CRASHDUMP_FILE")" "$(basename "$CRASHDUMP_FILE")" && \
 rm -rf "$CRASHDUMP_FILE" && \

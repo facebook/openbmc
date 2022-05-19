@@ -158,7 +158,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
             ret = lpal_hndl.pal_get_server_power(
                 int(fru_map[board]["slot_num"]), byref(status)
             )
-            if (ret != 0) or (status.value == 6):
+            if (ret != 0) or (status.value == 5): # SERVER_12V_OFF
                 return 0
 
             if search(r"fio_temp", sname) is not None:
@@ -209,4 +209,3 @@ def sensor_fail_ignore_check(board, sname):
         if pin_val.value == 0: # post complete
             return False
         return True
-

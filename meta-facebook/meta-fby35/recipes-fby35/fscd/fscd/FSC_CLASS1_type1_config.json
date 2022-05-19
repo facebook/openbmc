@@ -19,27 +19,17 @@
         "type" : "power_status"
       }
     },
-    "cpu": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "soc_therm": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-   "ssd0_temp": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "dimm": {
+    "soc_cpu_temp": {
       "attribute": {
         "type" : "power_status"
       }
     },
     "ssd0_temp": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
+    "dimm": {
       "attribute": {
         "type" : "power_status"
       }
@@ -239,4 +229,3 @@
     }
   }
 }
-

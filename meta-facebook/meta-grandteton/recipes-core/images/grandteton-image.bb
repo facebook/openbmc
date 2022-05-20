@@ -12,4 +12,25 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
   plat-utils \
-  "
+  openbmc-utils \
+  fruid \
+  ipmid \
+  ipmitool \
+  ipmi-util \
+  ipmbd \
+  ipmb-util \
+  kcsd \
+  sensor-util \
+  sensor-mon \
+  power-util \
+  peci-util-v2 \
+  pciutils \
+  me-util \
+  log-util-v2 \
+  guid-util \
+  mctp-util \
+  mterm \
+  healthd \
+  cfg-util \
+  fan-util \
+"

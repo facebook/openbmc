@@ -32,6 +32,8 @@ extern "C" {
 #include "pal_def.h"
 #include "pal_cfg.h"
 
+extern const char pal_fru_list[];
+
 int pal_set_id_led(uint8_t fru, uint8_t status);
 int pal_set_fault_led(uint8_t fru, uint8_t status);
 int pal_get_rst_btn(uint8_t *status);

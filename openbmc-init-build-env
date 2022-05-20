@@ -22,9 +22,7 @@ PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
 # kirkstone platforms (latest)
-#   -- none --
-# honister platforms (pending upgrade)
-  meta-grandteton:lf-honister
+  meta-grandteton:lf-kirkstone
 # dunfell platforms (pending upgrade)
   meta-churchillmono:lf-dunfell
   meta-clearcreek:lf-dunfell

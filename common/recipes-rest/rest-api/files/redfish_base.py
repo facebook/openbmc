@@ -88,6 +88,7 @@ VALID_KEYS = {
     "SyslogFilters",
     "LogFacilities",
     "LowestSeverity",
+    "UpdateService",
 }
 
 

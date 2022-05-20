@@ -43,7 +43,7 @@ function kill_rest() {
 }
 
 function upload_full_rest_to_bmc() {
-    scp -r $BBPATH/tmp/work/armv*-fb-linux-gnueabi/rest-api/0.1-r1/!(acl_config|test*).py $BBPATH/tmp/work/armv*-fb-linux-gnueabi/rest-api/0.1-r1/acl_providers root@$target_bmc:/usr/local/fbpackages/rest-api/ >/dev/null
+    scp -r $BBPATH/tmp/work/armv*-fb-linux-gnueabi/rest-api/0.1-r1/rest-api-0.1/!(acl_config|test*).py $BBPATH/tmp/work/armv*-fb-linux-gnueabi/rest-api/0.1-r1/rest-api-0.1/acl_providers root@$target_bmc:/usr/local/fbpackages/rest-api/ >/dev/null
 }
 
 function upload_single_file_to_bmc() {

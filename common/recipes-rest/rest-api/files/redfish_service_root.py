@@ -33,6 +33,7 @@ async def get_service_root(request: web.Request) -> web.Response:
         "Chassis": {"@odata.id": "/redfish/v1/Chassis"},
         "Managers": {"@odata.id": "/redfish/v1/Managers"},
         "AccountService": {"@odata.id": "/redfish/v1/AccountService"},
+        "UpdateService": {"@odata.id": "/redfish/v1/UpdateService"},
         "Links": {"Sessions": {"@odata.id": "/redfish/v1/SessionService/Sessions"}},
     }
     if request.method == "HEAD":
@@ -64,6 +65,11 @@ async def get_odata(request: web.Request) -> web.Response:
                 "name": "SessionService",
                 "kind": "Singleton",
                 "url": "/redfish/v1/SessionService",
+            },
+            {
+                "name": "UpdatetService",
+                "kind": "Singleton",
+                "url": "/redfish/v1/UpdateService",
             },
         ],
     }

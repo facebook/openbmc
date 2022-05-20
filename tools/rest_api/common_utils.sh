@@ -72,7 +72,7 @@ function get_platform_recipe_path(){
         echo "$meta_path/recipes-$plat"
         return 0
     fi
- 
+
     return 1
 }
 
@@ -100,7 +100,7 @@ function prepare_working_directory(){
         if [[ $# != 1 ]]; then echo "Usage: prepare_working_directory <plat_specific_src_dir>">&2; return 1; fi
         cd "$pardir" || exit 1
         plat_specific_src_dir=$1
-        outdir="$BBPATH/tmp/workarmv*-fb-linux-gnueabi/rest-api/0.1-r1/"
+        outdir="$BBPATH/tmp/workarmv*-fb-linux-gnueabi/rest-api/0.1-r1/rest-api-0.1"
         # Remove old symlinks
         if [[ -e "$outdir" ]]; then
             for file in $(find "$outdir" -type l -iname '*.py'); do

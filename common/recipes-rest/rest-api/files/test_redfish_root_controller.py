@@ -57,6 +57,7 @@ class TestRootService(AioHTTPTestCase):
             "Chassis": {"@odata.id": "/redfish/v1/Chassis"},
             "Managers": {"@odata.id": "/redfish/v1/Managers"},
             "AccountService": {"@odata.id": "/redfish/v1/AccountService"},
+            "UpdateService": {"@odata.id": "/redfish/v1/UpdateService"},
             "Links": {"Sessions": {"@odata.id": "/redfish/v1/SessionService/Sessions"}},
         }
         req = await self.client.request("GET", "/redfish/v1")

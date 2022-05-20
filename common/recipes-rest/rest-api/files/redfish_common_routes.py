@@ -5,18 +5,23 @@ from aiohttp.web import Application
 from redfish_account_service import get_account_service, get_accounts, get_roles
 from redfish_bios_firmware_dumps import RedfishBIOSFirmwareDumps
 from redfish_computer_system import RedfishComputerSystems
+from redfish_fwinfo import (
+    get_firmware_inventory_child,
+    get_firmware_inventory_root,
+    get_update_service_root,
+)
 from redfish_log_service import RedfishLogService
 from redfish_managers import (
+    get_ethernet_members,
+    get_manager_ethernet,
+    get_manager_log_services,
+    get_manager_network,
     get_managers,
     get_managers_members,
-    get_manager_ethernet,
-    get_manager_network,
-    get_ethernet_members,
-    get_manager_log_services,
 )
-from redfish_powercycle import powercycle_post_handler, oobcycle_post_handler
-from redfish_service_root import get_redfish, get_service_root, get_odata, get_metadata
-from redfish_session_service import get_session_service, get_session
+from redfish_powercycle import oobcycle_post_handler, powercycle_post_handler
+from redfish_service_root import get_metadata, get_odata, get_redfish, get_service_root
+from redfish_session_service import get_session, get_session_service
 
 
 class Redfish:
@@ -130,4 +135,12 @@ class Redfish:
         app.router.add_delete(
             "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
             self.bios_firmware_dumps.delete_dump,
+        )
+        app.router.add_get("/redfish/v1/UpdateService", get_update_service_root)
+        app.router.add_get(
+            "/redfish/v1/UpdateService/FirmwareInventory", get_firmware_inventory_root
+        )
+        app.router.add_get(
+            "/redfish/v1/UpdateService/FirmwareInventory/{fw_name}",
+            get_firmware_inventory_child,
         )

@@ -2643,7 +2643,7 @@ pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id)
 int __attribute__((weak))
 pal_is_mcu_ready(uint8_t bus)
 {
-  return PAL_ENOTSUP;
+  return 0;
 }
 
 int __attribute__((weak))

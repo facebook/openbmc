@@ -70,8 +70,7 @@ class BaseI2cTest(object):
         self.assertEqual(err_str, "", "%s: %s" % (i2c_path, err_str))
 
     def test_i2c_tree(self):
-        """check if i2c devices are created and drivers are binded properly.
-        """
+        """check if i2c devices are created and drivers are binded properly."""
         self.load_golden_i2c_tree()
         self.assertIsNot(self.i2c_tree, None, "golden I2C tree not set")
 

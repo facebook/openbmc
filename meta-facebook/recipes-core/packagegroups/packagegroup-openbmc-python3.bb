@@ -29,6 +29,7 @@ RDEPENDS:${PN} += " \
   python3-misc \
   python3-multiprocessing \
   python3-netserver \
+  python3-pexpect \
   python3-pickle \
   python3-shell \
   python3-syslog \

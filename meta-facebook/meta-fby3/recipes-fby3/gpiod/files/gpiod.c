@@ -146,7 +146,7 @@ fruid_cache_init(uint8_t slot_id, uint8_t fru_id, uint8_t less_retry) {
     pal_get_dev_fruid_path(slot_id, fru_id, fruid_path);
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", slot_id, intf);
     ret = bic_read_fruid(FRU_SLOT1, fru_id - offset , fruid_temp_path, &fru_size, intf, less_retry);
-  } else if (slot_id == FRU_2U) {
+  } else if (slot_id == FRU_2U || slot_id == FRU_2U_SLOT3) {
     sprintf(fruid_path, "/tmp/fruid_slot%d_dev%d.bin", root, fru_id);
     sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.%d.bin", root, REXP_BIC_INTF);
     ret = bic_read_fruid(root, fru_id - offset , fruid_temp_path, &fru_size, REXP_BIC_INTF, less_retry);
@@ -219,7 +219,7 @@ fru_cache_dump(void *arg) {
     } else if (fru == FRU_2U_BOT) {
       ret = bic_get_self_test_result(FRU_SLOT1, (uint8_t *)&self_test_result, RREXP_BIC_INTF2);
       flagIdx = MAX_NODES + FRU_2U_BOT - FRU_EXP_BASE;
-    } else if (fru == FRU_2U) {
+    } else if (fru == FRU_2U || fru == FRU_2U_SLOT3) {
       ret = bic_get_self_test_result(root, (uint8_t *)&self_test_result, REXP_BIC_INTF);
     } else {
       ret = bic_get_self_test_result(fru, (uint8_t *)&self_test_result, REXP_BIC_INTF);
@@ -282,7 +282,7 @@ fru_cache_dump(void *arg) {
       }
 
       //check for power status
-      if ( fru == FRU_2U ) {
+      if ( fru == FRU_2U || fru == FRU_2U_SLOT3) {
         ret = pal_get_dev_info(root, dev_id, &nvme_ready ,&status[dev_id], &type);
       } else {
         ret = pal_get_dev_info(fru, dev_id, &nvme_ready ,&status[dev_id], &type);
@@ -307,7 +307,7 @@ fru_cache_dump(void *arg) {
           retry = 0;
           while (1) {
             pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &oldstate);
-            if ( fru == FRU_2U ) {
+            if ( fru == FRU_2U || fru == FRU_2U_SLOT3) {
               ret = fruid_cache_init(root, dev_id, keepPoll);
             } else {
               ret = fruid_cache_init(fru, dev_id, keepPoll);
@@ -324,7 +324,7 @@ fru_cache_dump(void *arg) {
           if (ret != 0) {
             syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
           } else {
-            if ( fru == FRU_2U ) {
+            if ( fru == FRU_2U || fru == FRU_2U_SLOT3) {
               pal_get_dev_fruid_path(root, dev_id + DEV_ID0_2OU - 1, buf);
             } else {
               pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
@@ -409,7 +409,7 @@ fru_cache_dump(void *arg) {
       }
 
       // check for device type
-      if ( fru == FRU_2U ) {
+      if ( fru == FRU_2U || fru == FRU_2U_SLOT3) {
         ret = pal_get_dev_info(root, dev_id, &nvme_ready, &status[dev_id], &type);
       } else {
         ret = pal_get_dev_info(fru, dev_id, &nvme_ready, &status[dev_id], &type);
@@ -443,7 +443,7 @@ fru_cache_dump(void *arg) {
           if (retry >= max_retry) {
             syslog(LOG_WARNING, "fru_cache_dump: Fail on getting Slot%u Dev%d FRU", fru, dev_id-1);
           } else {
-            if ( fru == FRU_2U ) {
+            if ( fru == FRU_2U || fru == FRU_2U_SLOT3) {
               pal_get_dev_fruid_path(root, dev_id + DEV_ID0_2OU - 1, buf);
             } else {
               pal_get_dev_fruid_path(fru, dev_id + DEV_ID0_2OU - 1, buf);
@@ -533,7 +533,11 @@ fru_cahe_init(uint8_t fru) {
       goto fru_cache_ends;
     }
   } else if (type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD) {
-    fru = FRU_2U;
+    if (fru == FRU_SLOT3) {
+      fru = FRU_2U_SLOT3;
+    } else {
+      fru = FRU_2U;
+    }
   }
 fru_cache_starts:
   idx = fru - 1;

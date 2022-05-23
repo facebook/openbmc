@@ -31,10 +31,29 @@ raa_dma_rd(uint8_t bus, uint8_t addr, uint8_t *reg, uint8_t *resp) {
 }
 
 static int
-get_raa_remaining_wr(uint8_t bus, uint8_t addr, uint8_t *remain) {
+is_gen2_device(uint8_t bus, uint8_t addr) {
+  uint8_t tbuf[16], rbuf[16];
+
+  tbuf[0] = VR_RAA_REG_DEVID;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, VR_RAA_DEV_ID_LEN+1) < 0) {
+    syslog(LOG_WARNING, "%s: read IC_DEVICE_ID failed", __func__);
+    return -1;
+  }
+
+  if( rbuf[2] < 0x70 )
+    return true;
+
+  return 0;
+}
+
+static int
+get_raa_remaining_wr(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t *remain) {
   uint8_t tbuf[8], rbuf[8];
 
-  tbuf[0] = VR_RAA_REG_REMAIN_WR;
+  if(mode == RAA_GEN2)
+    tbuf[0] = VR_RAA_REG_GEN2_REMAIN_WR;
+  else
+    tbuf[0] = VR_RAA_REG_REMAIN_WR;
   tbuf[1] = 0x00;
   if (raa_dma_rd(bus, addr, tbuf, rbuf) < 0) {
     syslog(LOG_WARNING, "%s: read NVM counter failed", __func__);
@@ -48,14 +67,28 @@ get_raa_remaining_wr(uint8_t bus, uint8_t addr, uint8_t *remain) {
 static int
 get_raa_hex_mode(uint8_t bus, uint8_t addr, uint8_t *mode) {
   uint8_t tbuf[8], rbuf[8];
+  uint8_t raa_dev;
 
-  tbuf[0] = VR_RAA_REG_HEX_MODE_CFG0;
-  tbuf[1] = VR_RAA_REG_HEX_MODE_CFG1;
-  if (raa_dma_rd(bus, addr, tbuf, rbuf) < 0) {
-    syslog(LOG_WARNING, "%s: read HEX mode failed", __func__);
-    return -1;
+  raa_dev = is_gen2_device(bus, addr);
+
+  if ( raa_dev == true ) {
+    *mode = RAA_GEN2;
+  } else {
+    tbuf[0] = VR_RAA_REG_HEX_MODE_CFG0;
+    tbuf[1] = VR_RAA_REG_HEX_MODE_CFG1;
+    if (raa_dma_rd(bus, addr, tbuf, rbuf) < 0) {
+      syslog(LOG_WARNING, "%s: read HEX mode failed", __func__);
+      return -1;
+    }
+    *mode = (rbuf[0] == 0) ? RAA_GEN3_LEGACY : RAA_GEN3_PRODUCTION;
   }
-  *mode = (rbuf[0] == 0) ? RAA_LEGACY : RAA_PRODUCTION;
+
+#ifdef VR_RAA_DEBUG
+  if(mode == RAA_GEN2)
+    printf("Mode GEN2\n");
+  else
+    printf("Mode GEN3\n");
+#endif
 
   return 0;
 }
@@ -75,7 +108,7 @@ get_raa_devid(uint8_t bus, uint8_t addr, uint32_t *devid) {
 }
 
 static int
-get_raa_dev_rev(uint8_t bus, uint8_t addr, uint32_t *rev) {
+get_raa_dev_rev(uint8_t bus, uint8_t addr, uint32_t *rev, uint8_t mode) {
   uint8_t tbuf[16], rbuf[16];
 
   tbuf[0] = VR_RAA_REG_DEVREV;
@@ -83,19 +116,63 @@ get_raa_dev_rev(uint8_t bus, uint8_t addr, uint32_t *rev) {
     syslog(LOG_WARNING, "%s: read IC_DEVICE_REV failed", __func__);
     return -1;
   }
-  memcpy(rev, &rbuf[1], VR_RAA_DEV_REV_LEN);
 
+  if (mode == RAA_GEN3_LEGACY) {
+    memcpy(rev, &rbuf[1], VR_RAA_DEV_REV_LEN);
+  } else {
+    for(int i=0; i < VR_RAA_DEV_REV_LEN; i++) {
+      ((uint8_t *)rev)[i] = rbuf[VR_RAA_DEV_REV_LEN-i];
+    }
+  }
+  return 0;
+}
+
+uint32_t
+swap_uint32( uint32_t val ){
+    val = ((val << 8) & 0xFF00FF00 ) | ((val >> 8) & 0xFF00FF );
+    return (val << 16) | (val >> 16);
+}
+
+static int
+check_dev_rev(uint32_t rev, uint8_t mode) {
+  uint8_t sw_rev = rev & 0xFF;
+  uint8_t hw_rev = (rev >> 24) & 0xFF;
+
+  switch (mode) {
+    case RAA_GEN2:
+      if ( sw_rev < VR_RAA_GEN2_SW_REV_MIN ||
+           hw_rev < VR_RAA_GEN2_HW_REV_MIN ) {
+        syslog(LOG_WARNING, "%s: GEN2 unexpected IC_DEVICE_REV %08X", __func__, rev);
+        return -1;
+      }
+      break;
+    case RAA_GEN3_LEGACY:
+    case RAA_GEN3_PRODUCTION:
+      if ( sw_rev < VR_RAA_GEN3_SW_REV_MIN ) {
+        syslog(LOG_WARNING, "%s: GEN3 unexpected IC_DEVICE_REV %08X", __func__, rev);
+        return -1;
+      }
+    break;
+    default:
+      syslog(LOG_WARNING, "RAA Mode not support");
+      return -1;
+  }
   return 0;
 }
 
 static int
-get_raa_polling_status(uint8_t bus, uint8_t addr) {
+get_raa_polling_status(uint8_t bus, uint8_t addr, uint8_t mode) {
   uint8_t tbuf[8], rbuf[8];
   int retry = 3;
 
   do {
-    tbuf[0] = VR_RAA_REG_PROG_STATUS;
-    tbuf[1] = 0x00;
+    if (mode == RAA_GEN2) {
+      tbuf[0] = VR_RAA_REG_GEN2_PROG_STATUS;
+      tbuf[1] = VR_RAA_REG_GEN2_PROG_STATUS;
+    } else {
+      tbuf[0] = VR_RAA_REG_PROG_STATUS;
+      tbuf[1] = 0x00;
+    }
     if (raa_dma_rd(bus, addr, tbuf, rbuf) < 0) {
       syslog(LOG_WARNING, "%s: read polling status failed", __func__);
       return -1;
@@ -134,10 +211,13 @@ set_raa_restore_cfg(uint8_t bus, uint8_t addr, uint8_t cfg_id) {
 }
 
 static int
-get_raa_crc(uint8_t bus, uint8_t addr, uint32_t *crc) {
+get_raa_crc(uint8_t bus, uint8_t addr, uint8_t mode, uint32_t *crc) {
   uint8_t tbuf[8], rbuf[8];
 
-  tbuf[0] = VR_RAA_REG_CRC;
+  if(mode == RAA_GEN2)
+    tbuf[0] = VR_RAA_REG_GEN2_CRC;
+  else
+    tbuf[0] = VR_RAA_REG_CRC;
   tbuf[1] = 0x00;
   if (raa_dma_rd(bus, addr, tbuf, rbuf) < 0) {
     syslog(LOG_WARNING, "%s: read CRC failed", __func__);
@@ -151,17 +231,23 @@ get_raa_crc(uint8_t bus, uint8_t addr, uint32_t *crc) {
 static int
 cache_raa_crc(uint8_t bus, uint8_t addr, char *key, char *show_info, uint32_t *checksum) {
   uint8_t remain;
+  uint8_t mode;
   uint32_t tmp_sum;
   char tmp_str[MAX_VALUE_LEN] = {0};
 
-  if (get_raa_remaining_wr(bus, addr, &remain) < 0) {
+  if (get_raa_hex_mode(bus, addr, &mode)) {
+    return -1;
+  }
+
+  if (get_raa_remaining_wr(bus, addr, mode, &remain) < 0) {
     return -1;
   }
 
   if (!checksum) {
     checksum = &tmp_sum;
   }
-  if (get_raa_crc(bus, addr, checksum) < 0) {
+
+  if (get_raa_crc(bus, addr, mode, checksum) < 0) {
     return -1;
   }
 
@@ -213,6 +299,7 @@ get_raa_ver(struct vr_info *info, char *ver_str) {
   } else {
     snprintf(key, sizeof(key), "vr_%02xh_crc", info->addr);
   }
+
   if (kv_get(key, tmp_str, NULL, 0)) {
     if (info->xfer) {
       vr_xfer = info->xfer;
@@ -271,11 +358,13 @@ raa_parse_file(struct vr_info *info, const char *path) {
       for (i = 0; i < VR_RAA_DEV_REV_LEN; i++) {
         ((uint8_t *)&config->rev_exp)[i] = buf[4+i];
       }
-      if ((config->rev_exp & 0xFF) < VR_RAA_REV_MIN) {
-        config->mode = RAA_LEGACY;
+      if ((config->rev_exp & 0xFF) < VR_RAA_GEN3_SW_REV_MIN) {
+        config->mode = RAA_GEN3_LEGACY;
       } else {
-        config->mode = RAA_PRODUCTION;
+        config->mode = RAA_GEN3_PRODUCTION;
       }
+    } else if (buf[0] == 0x49 && buf[3] == 0x00){ //GEN2 HEX FILE REVERSION
+      config->mode = RAA_GEN2;
     } else if (buf[0] == 0x00) {
       if ((buf[1] + 2) >= sizeof(buf)) {
         dcnt = 0;
@@ -291,16 +380,22 @@ raa_parse_file(struct vr_info *info, const char *path) {
           // set Configuration ID
           config->cfg_id = buf[4] & 0x0F;
           break;
-        case VR_RAA_LEGACY_CRC:
-          if (config->mode == RAA_LEGACY) {
+        case VR_RAA_GEN3_LEGACY_CRC:
+          if (config->mode == RAA_GEN3_LEGACY) {
             memcpy(&config->crc_exp, &buf[4], VR_RAA_CHECKSUM_LEN);
-            printf("Configuration CRC (Legacy): %08X\n", config->crc_exp);
+            printf("Configuration GEN3 CRC (Legacy): %08X\n", config->crc_exp);
           }
           break;
-        case VR_RAA_PRODUCTION_CRC:
-          if (config->mode == RAA_PRODUCTION) {
+        case VR_RAA_GEN3_PRODUCTION_CRC:
+          if (config->mode == RAA_GEN3_PRODUCTION) {
             memcpy(&config->crc_exp, &buf[4], VR_RAA_CHECKSUM_LEN);
-            printf("Configuration CRC (Production): %08X\n", config->crc_exp);
+            printf("Configuration GEN3 CRC (Production): %08X\n", config->crc_exp);
+          }
+          break;
+        case VR_RAA_GEN2_CRC:
+          if (config->mode == RAA_GEN2) {
+            memcpy(&config->crc_exp, &buf[4], VR_RAA_CHECKSUM_LEN);
+            printf("Configuration GEN2 CRC: %08X\n", config->crc_exp);
           }
           break;
       }
@@ -371,7 +466,12 @@ program_raa(uint8_t bus, uint8_t addr, struct raa_config *config, bool force) {
   uint8_t remain = 0, mode = 0xff;
   uint32_t devid = 0, rev = 0, crc = 0;
 
-  if (get_raa_crc(bus, addr, &crc) < 0) {
+  // check mode
+  if (get_raa_hex_mode(bus, addr, &mode)) {
+    return -1;
+  }
+
+  if (get_raa_crc(bus, addr, mode, &crc) < 0) {
     return -1;
   }
 
@@ -383,7 +483,7 @@ program_raa(uint8_t bus, uint8_t addr, struct raa_config *config, bool force) {
   }
 
   // check remaining writes
-  if (get_raa_remaining_wr(bus, addr, &remain) < 0) {
+  if (get_raa_remaining_wr(bus, addr, mode, &remain) < 0) {
     return -1;
   }
 
@@ -413,20 +513,15 @@ program_raa(uint8_t bus, uint8_t addr, struct raa_config *config, bool force) {
   }
 
   // check device revision
-  if (get_raa_dev_rev(bus, addr, &rev) < 0) {
+  if (get_raa_dev_rev(bus, addr, &rev, mode) < 0) {
     return -1;
   }
 
-  if ((rev & 0xFF) < VR_RAA_REV_MIN) {
-    syslog(LOG_WARNING, "%s: unexpected IC_DEVICE_REV %08X", __func__, rev);
+  if (check_dev_rev(rev, mode) < 0) {
     return -1;
   }
 
   // check mode
-  if (get_raa_hex_mode(bus, addr, &mode) < 0) {
-    return -1;
-  }
-
   if (mode != config->mode) {
     syslog(LOG_WARNING, "%s: HEX mode %u mismatch, expect %u", __func__,
            mode, config->mode);
@@ -455,7 +550,7 @@ program_raa(uint8_t bus, uint8_t addr, struct raa_config *config, bool force) {
   }
 
   // check the status
-  if (get_raa_polling_status(bus, addr) < 0) {
+  if (get_raa_polling_status(bus, addr, mode) < 0) {
     return -1;
   }
 

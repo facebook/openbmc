@@ -1,7 +1,8 @@
 #ifndef __RAAGEN3_H__
 #define __RAAGEN3_H__
 
-// Support ISL69260, RAA228XXX, RAA229XXX
+// Support Gen3 ISL69260 RAA228XXX, RAA229XXX
+// Support Gen2 ISL69259
 
 #include "vr.h"
 
@@ -19,14 +20,27 @@
 #define VR_RAA_REG_HEX_MODE_CFG0        0x87
 #define VR_RAA_REG_HEX_MODE_CFG1        0xBD
 
-#define VR_RAA_REV_MIN                  0x06
+#define VR_RAA_GEN3_SW_REV_MIN          0x06
+#define VR_RAA_GEN3_HW_REV_MIN          0x00
+
+#define VR_RAA_GEN2_SW_REV_MIN          0x02
+#define VR_RAA_GEN2_HW_REV_MIN          0x03
+
 #define VR_RAA_DEV_ID_LEN               4
 #define VR_RAA_DEV_REV_LEN              4
 #define VR_RAA_CHECKSUM_LEN             4
 
 #define VR_RAA_CFG_ID                   (7)
-#define VR_RAA_LEGACY_CRC               (271)
-#define VR_RAA_PRODUCTION_CRC           (285)
+#define VR_RAA_GEN3_FILE_HEAD           (5)
+#define VR_RAA_GEN3_LEGACY_CRC          (276 - VR_RAA_GEN3_FILE_HEAD)
+#define VR_RAA_GEN3_PRODUCTION_CRC      (290 - VR_RAA_GEN3_FILE_HEAD)
+
+//RAA GEN2
+#define VR_RAA_GEN2_FILE_HEAD           (6)
+#define VR_RAA_GEN2_CRC                 (600-VR_RAA_GEN2_FILE_HEAD)
+#define VR_RAA_REG_GEN2_REMAIN_WR       (0xC2)
+#define VR_RAA_REG_GEN2_CRC             (0x3F)
+#define VR_RAA_REG_GEN2_PROG_STATUS     (0x07)
 
 struct raa_data {
   union {
@@ -49,12 +63,13 @@ struct raa_config {
   uint32_t devid_exp;
   uint32_t rev_exp;
   uint32_t crc_exp;
-  struct raa_data pdata[512];
+  struct raa_data pdata[720];
 };
 
 enum {
-  RAA_LEGACY,
-  RAA_PRODUCTION,
+  RAA_GEN2,
+  RAA_GEN3_LEGACY,
+  RAA_GEN3_PRODUCTION,
 };
 
 int get_raa_ver(struct vr_info*, char*);

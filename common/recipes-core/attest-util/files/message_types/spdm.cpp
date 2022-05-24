@@ -75,20 +75,20 @@ void benchmarkSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, ui
   std::clock_t cpuTimeSum = 0;
 
   pal_get_bmc_ipmb_slave_addr(&addr, bus);
-  
+
   std::cout << "Starting spdm round trip benchmark -- Running " << +runCount << " times..." << std::endl;
-  
-  for (int index = 0; index < runCount; ++index) { 
+
+  for (size_t index = 0; index < runCount; ++index) {
     auto wallStart = std::chrono::high_resolution_clock::now();
     std::clock_t cpuStart = std::clock();
 
     send_spdm_cmd(bus, addr, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
-    
+
     auto wallEnd = std::chrono::high_resolution_clock::now();
     std::clock_t cpuEnd = std::clock();
 
     auto wallClockInterval = std::chrono::duration_cast<std::chrono::milliseconds>(wallEnd - wallStart);
-    std::clock_t cpuClockInterval = cpuEnd - cpuStart; 
+    std::clock_t cpuClockInterval = cpuEnd - cpuStart;
     wallTimeSum += wallClockInterval;
     cpuTimeSum += cpuClockInterval;
 
@@ -129,7 +129,7 @@ vector<uint8_t> sendSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &messa
     printHexValues(rbuf, rlen);
   }
 
-  for(int index = 0; index < rlen; ++index)
+  for(decltype(rlen) index = 0; index < rlen; ++index)
     returnMessage.push_back(rbuf[index]);
 
   return returnMessage;
@@ -148,39 +148,39 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
     // Read in file. (Existence already checked)
     std::ifstream messageStream(opt.inputFileName);
     std::stringstream buffer;
-    
+
     buffer << messageStream.rdbuf();
     encodedMessage = buffer.str();
-  
+
   } else if (opt.inputString.length() != 0) {
     encodedMessage = opt.inputString;
   } else {
     throw CLI::CallForHelp();
   }
 
-  messages = splitMessage(encodedMessage, delimiter); 
- 
+  messages = splitMessage(encodedMessage, delimiter);
+
   vector<vector<uint8_t>> decodedMessages;
-  for (int index = 0; index < messages.size(); ++index) {
+  for (size_t index = 0; index < messages.size(); ++index) {
     // decode from base64.
     decodedMessages.push_back(decodeBase64(messages[index]));
   }
 
   if(opt.benchmarkCount > 0) {
-    if(decodedMessages.size() != 1) 
+    if(decodedMessages.size() != 1)
       throw CLI::ValidationError("Benchmark can only be run with a single spd message.");
-    
+
     benchmarkSpdmMessage(bus, opt.device, decodedMessages[0], opt.benchmarkCount);
     return;
   }
 
-  for (int index = 0; index < messages.size(); ++index) {
+  for (size_t index = 0; index < messages.size(); ++index) {
     string encodedResponse = "DUMMYRESPONSE";
     vector<uint8_t> message = decodedMessages[index];
 
     if (opt.debugOutput == true)
       std::cout << "Attempting to send SPDM message: " << index << std::endl;
-    
+
     if (opt.debugOutput == true) {
       std::cout << "Decoded message is:" << std::endl;
       printHexValues(&(message[0]), message.size());

@@ -116,8 +116,8 @@ string encodeBase64(vector<uint8_t>& bytes) {
 }
 
 
-void printHexValues(uint8_t *values, int size) {
-  for(int index = 0; index < size; ++index) {
+void printHexValues(uint8_t *values, size_t size) {
+  for(size_t index = 0; index < size; ++index) {
     if(index != 0 && index % 16 == 0)
       std::cout << std::endl;
 
@@ -133,9 +133,9 @@ void printHexValues(uint8_t *values, int size) {
 }
 
 vector<string> splitMessage(string message, string delimiter) {
-    int end;
+    auto end = string::npos;
     vector<string> messages;
-    
+
     while((end = message.find(delimiter)) != string::npos) {
         messages.push_back(message.substr(0, end));
         message.erase(0, end + delimiter.length());

@@ -251,7 +251,7 @@ TEST_F(UtilTest, Encode_Decode) {
   vector<uint8_t> decoded;
   std::string encoded;
 
-  for (int index = 0; index < 500; ++index)
+  for (size_t index = 0; index < 500; ++index)
     answer.push_back(index);
 
   encoded = encodeBase64(answer);

@@ -38,7 +38,7 @@ vector<uint8_t> decodeBase64(string& encodedString);
 string encodeBase64(std::vector<uint8_t>& bytes);
 
 /** Prints an array of bytes as 2-character hex values. */
-void printHexValues(uint8_t *values, int size);
+void printHexValues(uint8_t *values, size_t size);
 
 
 vector<string> splitMessage(string message, string delimiter);

@@ -21,6 +21,7 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
+  meta-halfdome:lf-master
 # kirkstone platforms (latest)
   meta-grandteton:lf-kirkstone
 # dunfell platforms (pending upgrade)

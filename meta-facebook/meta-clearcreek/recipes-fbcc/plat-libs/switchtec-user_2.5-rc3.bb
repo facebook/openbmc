@@ -22,7 +22,7 @@ do_configure() {
 do_install() {
   install -d ${D}${libdir}
   install libswitchtec.so ${D}${libdir}/libswitchtec.so
-  lnr ${D}${libdir}/libswitchtec.so ${D}${libdir}/libswitchtec.so.2
+  ln -rs ${D}${libdir}/libswitchtec.so ${D}${libdir}/libswitchtec.so.2
   install -d ${D}${includedir}/switchtec
   install -m 0644 inc/switchtec/*.h ${D}${includedir}/switchtec/
   install -d ${D}${bindir}

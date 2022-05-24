@@ -28,7 +28,7 @@ do_configure:append() {
 do_install:append() {
   install -d ${D}${libdir}
   install libmctp_intel.so ${D}${libdir}/libmctp_intel.so
-  lnr ${D}${libdir}/libmctp_intel.so ${D}${libdir}/libmctp_intel.so.0
+  ln -rs ${D}${libdir}/libmctp_intel.so ${D}${libdir}/libmctp_intel.so.0
   install -d ${D}${includedir}
   install -m 0644 ${S}/*.h ${D}${includedir}/
 }

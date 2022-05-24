@@ -22,7 +22,7 @@
 #define __FBY35_COMMON_H__
 
 #include <stdbool.h>
-#include <openssl/md5.h>
+#include <openssl/evp.h>
 #include <sys/stat.h>
 
 #ifdef __cplusplus
@@ -342,7 +342,7 @@ enum {
   HSC_UNKNOWN,
 };
 
-enum {  
+enum {
   PRESENT = 0,
   NOT_PRESENT = 1,
 };

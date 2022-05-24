@@ -530,8 +530,8 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
   int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
   int clear_size = 0, padding = 0;
   char read_buf[MD5_READ_BYTES] = {0};
-  char md5_digest[MD5_DIGEST_LENGTH] = {0};
-  MD5_CTX context;
+  uint8_t md5_digest[EVP_MAX_MD_SIZE] = {0};
+  EVP_MD_CTX* ctx = NULL;
 
   if (image_path == NULL) {
     if(is_first)
@@ -564,7 +564,10 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
   else
     lseek(fd, cal_size, SEEK_SET);
 
-  ret = MD5_Init(&context);
+  ctx = EVP_MD_CTX_create();
+  EVP_MD_CTX_init(ctx);
+
+  ret = EVP_DigestInit(ctx, EVP_md5());
   if (ret == 0) {
     if(is_first)
       syslog(LOG_WARNING, "%s(): failed to initialize MD5 context.", __func__);
@@ -603,7 +606,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
         }
       }
 
-      ret = MD5_Update(&context, read_buf, byte_num);
+      ret = EVP_DigestUpdate(ctx, read_buf, byte_num);
       if (ret == 0) {
         syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
         ret = -1;
@@ -615,7 +618,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
   else{
     read_bytes = ((IMG_SIGNED_INFO_SIZE) - (MD5_SIZE));
     byte_num = read(fd, read_buf, read_bytes);
-    ret = MD5_Update(&context, read_buf, byte_num);
+    ret = EVP_DigestUpdate(ctx, read_buf, byte_num);
     if (ret == 0) {
       syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5-2 of %s.", __func__, image_path);
       ret = -1;
@@ -623,7 +626,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
     }
   }
 
-  ret = MD5_Final((uint8_t*)md5_digest, &context);
+  ret = EVP_DigestFinal(ctx, md5_digest, NULL);
   if (ret == 0) {
     if(is_first)
       syslog(LOG_WARNING, "%s(): failed to calculate MD5 of %s.", __func__, image_path);
@@ -637,7 +640,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
   int i = 0;
   printf("calculated MD5:\n");
   for(i = 0; i < 16; i++) {
-    printf("%02X ", ((uint8_t*)md5_digest)[i]);
+    printf("%02X ", md5_digest[i]);
   }
   printf("\nImage MD5\n");
   for(i = 0; i < 16; i++) {
@@ -646,7 +649,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
   printf("\n");
 #endif
 
-  if (strncmp(md5_digest, (char*)data, sizeof(md5_digest)) != 0) {
+  if (strncmp((char*)md5_digest, (char*)data, sizeof(md5_digest)) != 0) {
     if(is_first)
       printf("MD5-1 checksum incorrect. This image is corrupted or unsigned\n");
     else
@@ -923,7 +926,7 @@ fby35_common_get_bb_hsc_type(uint8_t* type) {
       syslog(LOG_WARNING,"%s: failed to detect HSC type", __func__);
       return -1;
     }
-    snprintf(value, sizeof(value), "%x", *type); 
+    snprintf(value, sizeof(value), "%x", *type);
     if (kv_set(KEY_BB_HSC_TYPE, (const char *)value, 1, KV_FCREATE)) {
       syslog(LOG_WARNING,"%s: kv_set failed, key: %s", __func__, KEY_BB_HSC_TYPE);
     }

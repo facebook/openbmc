@@ -1,11 +1,14 @@
+import os
 import typing as t
+
+import common_utils
 
 import pal
 import redfish_chassis_helper
 import redfish_sensors
 import rest_pal_legacy
+
 from aiohttp import web
-from common_utils import dumps_bytestr, parse_expand_level
 from redfish_base import validate_keys
 
 
@@ -37,7 +40,7 @@ def _get_fru_name_from_server_id(server_name: str) -> t.Optional[str]:
 
 
 async def get_chassis(request: web.Request) -> web.Response:
-    expand_level = parse_expand_level(request)
+    expand_level = common_utils.parse_expand_level(request)
     members_json = await get_chassis_members_json(expand_level)
     body = {
         "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
@@ -48,7 +51,7 @@ async def get_chassis(request: web.Request) -> web.Response:
         "Members": members_json,
     }
     await validate_keys(body)
-    return web.json_response(body, dumps=dumps_bytestr)
+    return web.json_response(body, dumps=common_utils.dumps_bytestr)
 
 
 def get_chassis_url_for_server_name(server_name: str) -> t.Dict[str, str]:
@@ -100,10 +103,10 @@ async def get_chassis_members_json(expand_level: int) -> t.List[t.Dict[str, t.An
 
 async def get_chassis_member(request: web.Request) -> web.Response:
     server_name = request.match_info["fru_name"]
-    expand_level = parse_expand_level(request)
+    expand_level = common_utils.parse_expand_level(request)
     try:
         body = await get_chassis_member_for_fru(server_name, expand_level)
-        return web.json_response(body, dumps=dumps_bytestr)
+        return web.json_response(body, dumps=common_utils.dumps_bytestr)
     except FruNotFoundError:
         return web.json_response(status=404)
 
@@ -132,7 +135,7 @@ async def get_chassis_member_for_fru(
         "Id": "1",
         "Name": fru_name,
         "ChassisType": "RackMount",
-        "PowerState": "On",
+        "PowerState": await _get_chassis_power_state(fru_name),
         "Manufacturer": fru.manufacturer,
         "Model": fru.model,
         "SerialNumber": fru.serial_number,
@@ -142,3 +145,41 @@ async def get_chassis_member_for_fru(
     }
     await validate_keys(body)
     return body
+
+
+async def _get_chassis_power_state(fru_name: str) -> str:
+    if os.path.exists("/usr/local/bin/wedge_power.sh"):
+        return await _get_wedge_power_state()
+    if os.path.exists("/usr/local/bin/power-util"):
+        return await _get_compute_power_state(fru_name)
+    return "On"
+
+
+async def _get_wedge_power_state() -> str:
+    cmd = ["/usr/local/bin/wedge_power.sh", " status"]
+    _, stdout, _ = await common_utils.async_exec(cmd)
+    return "On" if "is on" in stdout else "Off"
+
+
+async def _get_compute_power_state(fru_name: str) -> str:
+    if rest_pal_legacy.pal_get_num_slots() == 1:
+        single_fru_name = get_single_fru_name()
+        if single_fru_name is None:
+            return ""
+        else:
+            fru_name = single_fru_name
+    elif fru_name == "Computer System Chassis":
+        return "On"
+    cmd = ["/usr/local/bin/power-util", fru_name, "status"]
+    _, stdout, _ = await common_utils.async_exec(cmd)
+    return "On" if "ON" in stdout else "Off"
+
+
+def get_single_fru_name() -> t.Optional[str]:
+    fru_name_map = pal.pal_fru_name_map()
+    for fru_name, fru_id in fru_name_map.items():
+        if pal.FruCapability.FRU_CAPABILITY_SERVER in pal.pal_get_fru_capability(
+            fru_id
+        ):
+            return fru_name
+    return None

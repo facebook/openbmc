@@ -16,7 +16,20 @@ class FakeFruCapability(enum.Enum):
 class TestChassisService(AioHTTPTestCase):
     def setUp(self):
         asyncio.set_event_loop(asyncio.new_event_loop())
-
+        power_util_fut1 = asyncio.Future()
+        power_util_fut1.set_result((0, "Power status for fru 1 : ON", ""))
+        power_util_fut2 = asyncio.Future()
+        power_util_fut2.set_result((0, "Power status for fru 1 : ON", ""))
+        power_util_fut3 = asyncio.Future()
+        power_util_fut3.set_result((0, "Power status for fru 1 : ON", ""))
+        power_util_fut4 = asyncio.Future()
+        power_util_fut4.set_result((0, "Power status for fru 1 : OFF", ""))
+        power_util_side_effects = [
+            power_util_fut1,
+            power_util_fut2,
+            power_util_fut3,
+            power_util_fut4,
+        ]
         self.patches = [
             unittest.mock.patch(
                 "rest_pal_legacy.pal_get_num_slots",
@@ -78,6 +91,27 @@ class TestChassisService(AioHTTPTestCase):
                 "aggregate_sensor.aggregate_sensor_init",
                 create=True,
                 return_value=None,
+            ),
+            unittest.mock.patch(
+                "common_utils.async_exec",
+                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+                side_effect=power_util_side_effects,
+            ),
+            unittest.mock.patch(
+                "os.path.exists",
+                new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+                side_effect=[
+                    False,
+                    True,
+                    False,
+                    True,
+                    False,
+                    True,
+                    False,
+                    True,
+                    False,
+                    True,
+                ],
             ),
         ]
         for p in self.patches:
@@ -168,10 +202,13 @@ class TestChassisService(AioHTTPTestCase):
                         fru_name, "Wiwynn", "WTL19121DSMA1", "Yosemite V2 MP"
                     )
                 )
+                expected_power = "On"
                 if server_name == "1":
                     expected_name = "Computer System Chassis"
                 else:
                     expected_name = fru_name
+                if server_name == "server4":
+                    expected_power = "Off"
 
                 expected_resp = {
                     "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
@@ -183,7 +220,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
-                    "PowerState": "On",
+                    "PowerState": expected_power,
                     "Sensors": {
                         "@odata.id": "/redfish/v1/Chassis/{}/Sensors".format(
                             server_name
@@ -294,7 +331,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Id": "1",
                     "Name": "slot4",
                     "ChassisType": "RackMount",
-                    "PowerState": "On",
+                    "PowerState": "Off",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -309,6 +346,101 @@ class TestChassisService(AioHTTPTestCase):
         self.maxDiff = None
         self.assertEqual(resp, expected_resp)
         self.assertEqual(req.status, 200)
+
+    @unittest_run_loop
+    async def test_get_chassis_expand__level_1_expands_children(self):
+        import redfish_chassis_helper
+
+        redfish_chassis_helper.get_fru_info.return_value = asyncio.Future()
+        redfish_chassis_helper.get_fru_info.return_value.set_result(
+            redfish_chassis_helper.FruInfo(
+                "x", "Wiwynn", "WTL19121DSMA1", "Yosemite V2 MP"
+            )
+        )
+        expected_resp = {
+            "@odata.context": "/redfish/v1/$metadata#ChassisCollection.ChassisCollection",
+            "@odata.id": "/redfish/v1/Chassis",
+            "@odata.type": "#ChassisCollection.ChassisCollection",
+            "Name": "Chassis Collection",
+            "Members@odata.count": 5,
+            "Members": [
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/1",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "Computer System Chassis",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/1/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server1",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot1",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server1/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server2",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot2",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server2/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server3",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot3",
+                    "ChassisType": "RackMount",
+                    "PowerState": "On",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server3/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+                {
+                    "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
+                    "@odata.id": "/redfish/v1/Chassis/server4",
+                    "@odata.type": "#Chassis.v1_15_0.Chassis",
+                    "Id": "1",
+                    "Name": "slot4",
+                    "ChassisType": "RackMount",
+                    "PowerState": "Off",
+                    "Manufacturer": "Wiwynn",
+                    "Model": "Yosemite V2 MP",
+                    "SerialNumber": "WTL19121DSMA1",
+                    "Status": {"State": "Enabled", "Health": "OK"},
+                    "Sensors": {"@odata.id": "/redfish/v1/Chassis/server4/Sensors"},
+                    "Links": {"ManagedBy": [{"@odata.id": "/redfish/v1/Managers/1"}]},
+                },
+            ],
+        }
         req = await self.client.request(
             "GET", "/redfish/v1/Chassis?$expand=.($levels=1)"
         )
@@ -425,7 +557,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Id": "1",
                     "Name": "slot4",
                     "ChassisType": "RackMount",
-                    "PowerState": "On",
+                    "PowerState": "Off",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",

@@ -1,7 +1,13 @@
 #include <cstdio>
-#include <facebook/bic_ipmi.h>
-#include <facebook/bic_xfer.h>
+#include <syslog.h>
+#include <openbmc/vr.h>
+#include <facebook/fby35_common.h>
+#include <facebook/bic.h>
 #include "bic_vr.h"
+
+extern "C" {
+extern void plat_vr_preinit(uint8_t slot, const char *name);
+}
 
 using namespace std;
 
@@ -13,7 +19,7 @@ static map<uint8_t, map<uint8_t, string>> list = {
 
 bool VrComponent::vr_printed = false;
 
-int VrComponent::update(string image) {
+int VrComponent::update_internal(const string& image, bool force) {
   int ret = 0;
 
   if (fw_comp == FW_VR) {
@@ -23,29 +29,58 @@ int VrComponent::update(string image) {
   try {
     server.ready();
   } catch (string& err) {
-    printf("%s\n", err.c_str());
+    cerr << err << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
-  if (ret < 0) {
+  plat_vr_preinit(slot_id, fru().c_str());
+  if (vr_probe() < 0) {
+    cout << "VR probe failed!" << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  syslog(LOG_CRIT, "Updating %s on %s. File: %s", get_component_name(fw_comp),
+         fru().c_str(), image.c_str());
+
+  auto vr = list.find(fw_comp)->second.begin();
+  ret = vr_fw_update(vr->second.c_str(), (char *)image.c_str(), force);
+  vr_remove();
+  syslog(LOG_CRIT, "Updated %s on %s. File: %s. Result: %s", get_component_name(fw_comp),
+         fru().c_str(), image.c_str(), (ret) ? "Fail" : "Success");
+  if (ret) {
+    cout << "ERROR: VR Firmware update failed!" << endl;
     return FW_STATUS_FAILURE;
   }
 
   return FW_STATUS_SUCCESS;
 }
 
-int VrComponent::get_ver_str(uint8_t addr, string& s) {
+int VrComponent::update(const string image) {
+  return update_internal(image, false);
+}
+
+int VrComponent::fupdate(const string image) {
+  return update_internal(image, true);
+}
+
+int VrComponent::get_ver_str(const string& name, string& s) {
   int ret = 0;
-  uint8_t bus = 0x4;
   char ver[MAX_VER_STR_LEN] = {0};
 
-  ret = bic_get_vr_ver_cache(slot_id, NONE_INTF, bus, addr, ver);
-  if (!ret) {
-    s = string(ver);
+  plat_vr_preinit(slot_id, fru().c_str());
+  if (vr_probe() < 0) {
+    cout << "VR probe failed!" << endl;
+    return -1;
   }
 
-  return ret;
+  ret = vr_fw_version(-1, name.c_str(), ver);
+  vr_remove();
+  if (ret) {
+    return -1;
+  }
+  s = string(ver);
+
+  return 0;
 }
 
 int VrComponent::print_version() {
@@ -67,7 +102,7 @@ int VrComponent::print_version() {
     auto vr = iter->second.begin();  // <addr, name>
     try {
       server.ready();
-      if (get_ver_str(vr->first, ver) < 0) {
+      if (get_ver_str(vr->second, ver) < 0) {
         throw "Error in getting the version of " + vr->second;
       }
       cout << vr->second << " Version: " << ver << endl;
@@ -91,7 +126,7 @@ void VrComponent::get_version(json& j) {
     auto vr = iter->second.begin();  // <addr, name>
     try {
       server.ready();
-      if (get_ver_str(vr->first, ver) < 0) {
+      if (get_ver_str(vr->second, ver) < 0) {
         throw "Error in getting the version of " + vr->second;
       }
       //For IFX and RNS, the str is $vendor $ver, Remaining Writes: $times

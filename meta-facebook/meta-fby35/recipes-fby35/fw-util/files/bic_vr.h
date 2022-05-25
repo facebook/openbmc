@@ -13,11 +13,13 @@ class VrComponent : public Component {
   uint8_t fw_comp;
   Server server;
   private:
-    int get_ver_str(uint8_t addr,string& s);
+    int update_internal(const string& image, bool force);
+    int get_ver_str(const string& name, string& s);
   public:
     VrComponent(const string& fru, const string& comp, uint8_t comp_id)
       : Component(fru, comp), slot_id(fru.at(4) - '0'), fw_comp(comp_id), server(slot_id, fru) {}
-    int update(std::string image);
+    int update(string image);
+    int fupdate(string image);
     int print_version();
     void get_version(json& j);
 };

@@ -39,6 +39,6 @@ LOCAL_URI += " \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"
-DEPENDS += "libbic libfpga libfby35-common libncsi libnl-wrapper libobmc-i2c libmcu libkv"
-RDEPENDS:${PN} += "libbic libfpga libfby35-common libnl-wrapper libobmc-i2c libmcu libkv"
-LDFLAGS += "-lbic -lfpga -lfby35_common -lnl-wrapper -lobmc-i2c -lmcu"
+DEPENDS += "libbic libfpga libvr libfby35-common libncsi libnl-wrapper libobmc-i2c libmcu libkv"
+RDEPENDS:${PN} += "libbic libvr libfpga libfby35-common libnl-wrapper libobmc-i2c libmcu libkv"
+LDFLAGS += "-lbic -lfpga -lvr -lfby35_common -lnl-wrapper -lobmc-i2c -lmcu"

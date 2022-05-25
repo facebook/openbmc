@@ -360,6 +360,7 @@ util_read_sensor(uint8_t slot_id) {
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ret = bic_is_m2_exp_prsnt(slot_id);
   if ( ret < 0 ) {
@@ -371,7 +372,14 @@ util_read_sensor(uint8_t slot_id) {
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    intf_list[2] = REXP_BIC_INTF;
+    if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) == 0 ) {
+      if ( ((type_2ou & DPV2_X8_BOARD) != DPV2_X8_BOARD) &&
+           ((type_2ou & DPV2_X16_BOARD) != DPV2_X16_BOARD) ) {
+        intf_list[2] = REXP_BIC_INTF;
+      }
+    } else {
+      printf("%s() Failed to get 2OU board type\n", __func__);
+    }
   }
 
   if ( bmc_location == NIC_BMC ) {
@@ -397,7 +405,6 @@ util_read_sensor(uint8_t slot_id) {
       } else {
         printf("sensor num: 0x%02X: value: 0x%04X, flags: 0x%02X\n", i, sensor.value, sensor.flags);
       }
-      
     }
     printf("\n");
   }
@@ -414,6 +421,7 @@ util_get_sdr(uint8_t slot_id) {
   uint8_t intf_list[4] = {NONE_INTF};
   uint8_t intf_index = 0;
   uint8_t config_status = 0xff;
+  uint8_t type_2ou = UNKNOWN_BOARD;
 
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
@@ -428,7 +436,14 @@ util_get_sdr(uint8_t slot_id) {
   if ( (config_status & PRESENT_1OU) == PRESENT_1OU && (bmc_location != NIC_BMC) ) {
     intf_list[1] = FEXP_BIC_INTF;
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU ) {
-    intf_list[2] = REXP_BIC_INTF;
+    if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) == 0 ) {
+      if ( ((type_2ou & DPV2_X8_BOARD) != DPV2_X8_BOARD) &&
+           ((type_2ou & DPV2_X16_BOARD) != DPV2_X16_BOARD) ) {
+        intf_list[2] = REXP_BIC_INTF;
+      }
+    } else {
+      printf("%s() Failed to get 2OU board type\n", __func__);
+    }
   }
 
   if ( bmc_location == NIC_BMC ) {
@@ -797,34 +812,63 @@ main(int argc, char **argv) {
 
   if ( strncmp(argv[2], "--", 2) == 0 ) {
     if ( strcmp(argv[2], "--get_gpio") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_get_gpio(slot_id);
     } else if ( strcmp(argv[2], "--set_gpio") == 0 ) {
-      if ( argc != 5 ) goto err_exit;
+      if ( argc != 5 ) {
+        goto err_exit;
+      }
 
       gpio_num = atoi(argv[3]);
       gpio_val = atoi(argv[4]);
       if ( gpio_num > 0xff || gpio_val > 1 ) goto err_exit;
       return util_set_gpio(slot_id, gpio_num, gpio_val);
     } else if ( strcmp(argv[2], "--check_status") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_check_status(slot_id);
     } else if ( strcmp(argv[2], "--get_dev_id") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_get_device_id(slot_id);
     } else if ( strcmp(argv[2], "--get_sdr") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_get_sdr(slot_id);
     } else if ( strcmp(argv[2], "--read_sensor") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_read_sensor(slot_id);
     } else if ( strcmp(argv[2], "--reset") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_bic_reset(slot_id);
     } else if ( strcmp(argv[2], "--get_post_code") == 0 ) {
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_get_postcode(slot_id);
     } else if ( strcmp(argv[2], "--perf_test") == 0 ) {
-      if ( argc != 4 ) goto err_exit;
+      if ( argc != 4 ) {
+        goto err_exit;
+      }
       else return util_perf_test(slot_id, atoi(argv[3]));
     } else if (!strcmp(argv[2], "--clear_cmos")) {
-      if (argc != 3) goto err_exit;
+      if ( argc != 3 ) {
+        goto err_exit;
+      }
       return util_bic_clear_cmos(slot_id);
     } else if ( strcmp(argv[2], "--file") == 0 ) {
-      if ( argc != 4 ) goto err_exit;
+      if ( argc != 4 ) {
+        goto err_exit;
+      }
       if ( slot_id == FRU_ALL ) {
         if ( bmc_location != NIC_BMC ) {
           for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
@@ -837,8 +881,10 @@ main(int argc, char **argv) {
         return 0;
       } else return process_file(slot_id, argv[3]);
     } else if ( strcmp(argv[2], "--check_usb_port") == 0 ) {
-      if ( argc != 4 ) goto err_exit;
-      if ( (strcmp("sb", argv[3]) != 0) && (strcmp("1ou", argv[3]) != 0) && (strcmp("2ou", argv[3]) != 0) ){
+      if ( argc != 4 ) {
+        goto err_exit;
+      }
+      if ( (strcmp("sb", argv[3]) != 0) && (strcmp("1ou", argv[3]) != 0) && (strcmp("2ou", argv[3]) != 0) ) {
         printf("Invalid component: %s\n", argv[3]);
         goto err_exit;
       }

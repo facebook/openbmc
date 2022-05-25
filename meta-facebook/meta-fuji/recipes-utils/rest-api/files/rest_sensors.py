@@ -159,6 +159,7 @@ def get_all_sensors():
         "pim6",
         "pim7",
         "pim8",
+        "aggregate",
     ]
 
     for fru in frus:

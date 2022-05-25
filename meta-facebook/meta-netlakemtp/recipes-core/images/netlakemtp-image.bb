@@ -15,4 +15,6 @@ IMAGE_INSTALL += " \
   setup-gpio \
   sensor-util \
   sensor-mon \
+  healthd \
+  cfg-util \
   "

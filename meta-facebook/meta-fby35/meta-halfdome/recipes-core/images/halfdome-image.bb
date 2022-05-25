@@ -2,6 +2,7 @@
 
 require recipes-core/images/fbobmc-image-meta.inc
 require halfdome-image-layout.inc
+require recipes-core/images/fb-zstd-rootfs.inc
 
 require recipes-core/images/fb-openbmc-image.bb
 

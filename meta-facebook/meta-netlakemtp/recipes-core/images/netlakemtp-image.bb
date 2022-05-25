@@ -17,4 +17,6 @@ IMAGE_INSTALL += " \
   sensor-mon \
   healthd \
   cfg-util \
+  ipmid \
+  fruid \
   "

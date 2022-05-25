@@ -22,4 +22,5 @@ IMAGE_INSTALL += " \
   front-paneld \
   fw-util \
   jbi \
+  log-util \
   "

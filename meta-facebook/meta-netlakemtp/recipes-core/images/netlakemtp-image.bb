@@ -19,4 +19,5 @@ IMAGE_INSTALL += " \
   cfg-util \
   ipmid \
   fruid \
+  front-paneld \
   "

@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable EXT4 for eMMC"
+define KFEATURE_COMPATIBILITY all
+
+kconf non-hardware emmc-ext4.cfg

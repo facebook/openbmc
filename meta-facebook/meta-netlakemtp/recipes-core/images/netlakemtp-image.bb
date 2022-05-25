@@ -13,4 +13,6 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-rest3 \
   gpiod \
   setup-gpio \
+  sensor-util \
+  sensor-mon \
   "

@@ -1,0 +1,63 @@
+From c9643fad399ebdee027c6af88881f1756e5126d1 Mon Sep 17 00:00:00 2001
+From: Eric Chen <Eric_LC_Chen@wiwynn.com>
+Date: Thu, 13 Jan 2022 10:55:57 +0800
+Subject: [PATCH] Revise sensor minimum poll interval for sensord.
+
+---
+ sensord.c | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/sensord.c b/sensord.c
+index e0e0e87..f076f5a 100644
+--- a/sensord.c
++++ b/sensord.c
+@@ -37,6 +37,7 @@
+ #include <openbmc/aggregate-sensor.h>
+ #include <openbmc/kv.h>
+ 
++#define MIN_POLL_INTERVAL_SNR_MON_MSEC 500
+ #define MIN_POLL_INTERVAL 2
+ #define STOP_PERIOD 10
+ #define MAX_SENSOR_CHECK_RETRY 3
+@@ -47,6 +48,18 @@ static thresh_sensor_t g_snr[MAX_SENSORD_FRU][MAX_SENSOR_NUM + 1] = {0};
+ static thresh_sensor_t g_aggregate_snr[MAX_SENSOR_NUM + 1] = {0};
+ static bool hotswap_support = false;
+ 
++// Sleep for the requested number of milliseconds.
++static void msleep_snr_monitor(int msec) {
++  struct timespec req_ts;
++
++   req_ts.tv_sec = msec / 1000;
++   req_ts.tv_nsec = (msec % 1000) * 1000000;
++
++  while(nanosleep(&req_ts, &req_ts) == -1 && errno == EINTR) {
++    continue;
++  }
++}
++
+ static void
+ print_usage() {
+     printf("Usage: sensord <options>\n");
+@@ -568,8 +581,8 @@ snr_monitor(void *arg) {
+       curr_val = 0;
+       if (snr[snr_num].flag) {
+         // granular the sensor via assigning the poll_interval
+-        if (snr_poll_interval[snr_num] > MIN_POLL_INTERVAL) {
+-          snr_poll_interval[snr_num] -= MIN_POLL_INTERVAL;
++        if (snr_poll_interval[snr_num] > MIN_POLL_INTERVAL_SNR_MON_MSEC) {
++          snr_poll_interval[snr_num] -= MIN_POLL_INTERVAL_SNR_MON_MSEC;
+           continue;
+         }
+         snr_poll_interval[snr_num] = snr[snr_num].poll_interval;
+@@ -611,7 +624,7 @@ snr_monitor(void *arg) {
+     }
+ #endif
+ 
+-    sleep(MIN_POLL_INTERVAL);
++    msleep_snr_monitor(MIN_POLL_INTERVAL_SNR_MON_MSEC);
+   } /* while loop*/
+ } /* function definition */
+ 
+-- 
+2.35.1
+

@@ -214,11 +214,11 @@ class Zone:
                 board = sname.split("_")[0]
                 sname = "_".join(sname.split("_")[1:])
 
-            if (re.match(r"ssd", sname) != None) or (
-                re.match(r".*temp_dev", sname) != None
+            if (re.match(r"ssd", sname) is not None) or (
+                re.match(r".*temp_dev", sname) is not None
             ):
                 self.sensor_assert_check.append(M2AssertCheck(full_name))
-            elif re.match(r"front_io_temp", sname) != None:
+            elif re.match(r"front_io_temp", sname) is not None:
                 self.sensor_assert_check.append(FrontIOTempAssertCheck(full_name))
             else:
                 self.sensor_assert_check.append(SensorAssertCheck(full_name))
@@ -262,7 +262,7 @@ class Zone:
             sdata = v.split(":")
             board = sdata[0]
             sname = sdata[1]
-            if self.sensor_valid_check != None:
+            if self.sensor_valid_check is not None:
                 for check_name in self.sensor_valid_check:
                     if re.match(check_name, sname, re.IGNORECASE) != None:
                         self.sensor_valid_cur[
@@ -293,7 +293,7 @@ class Zone:
 
                     sensor = sensors[board][sname]
                     ctx[v] = sensor.value
-                    if re.match(r".*temp_dev", sname) != None:
+                    if re.match(r".*temp_dev", sname) is not None:
                         valid_m2_count = valid_m2_count + 1
                     if sensor.status in ["ucr"]:
                         Logger.warn(
@@ -328,7 +328,7 @@ class Zone:
                                 if isinstance(
                                     self.sensor_assert_check[sensor_index],
                                     M2AssertCheck,
-                                ):
+                                ) and (self.fail_sensor_type is not None):
                                     fail_ssd_count = fail_ssd_count + 1
                                 elif self.board_fan_mode.is_scenario_supported(
                                     "sensor_fail"
@@ -403,7 +403,7 @@ class Zone:
                 )
             self.transitional_assert_flag = False
 
-        if self.fail_sensor_type != None:
+        if self.fail_sensor_type is not None:
             progressive_mode = True
             if ("M2_sensor_fail" in list(self.fail_sensor_type.keys())) and (
                 "M2_sensor_count" in list(self.fail_sensor_type.keys())
@@ -448,7 +448,7 @@ class Zone:
             ):
                 if self.fail_sensor_type["SSD_sensor_fail"] == True:
                     if fail_ssd_count != 0:
-                        if self.ssd_progressive_algorithm != None:
+                        if self.ssd_progressive_algorithm is not None:
                             if "offset_algorithm" in list(
                                 self.ssd_progressive_algorithm.keys()
                             ):

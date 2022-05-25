@@ -1,10 +1,8 @@
 
 # Copyright 2018-present Facebook. All Rights Reserved.
 
+require recipes-core/images/fb-zstd-rootfs.inc
 inherit kernel_fitimage
-
-IMAGE_FSTYPES:remove = "cpio.lzma.u-boot"
-IMAGE_FSTYPES += "cpio.zst.u-boot"
 
 require recipes-core/images/fb-openbmc-image.bb
 

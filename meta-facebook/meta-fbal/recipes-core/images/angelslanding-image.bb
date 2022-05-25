@@ -2,11 +2,9 @@
 
 require recipes-core/images/fbobmc-image-meta.inc
 require fbal-image-layout.inc
+require recipes-core/images/fb-zstd-rootfs.inc
 
 inherit kernel_fitimage
-
-IMAGE_FSTYPES:remove = "cpio.lzma.u-boot"
-IMAGE_FSTYPES += "cpio.zst.u-boot"
 
 require recipes-core/images/fb-openbmc-image.bb
 

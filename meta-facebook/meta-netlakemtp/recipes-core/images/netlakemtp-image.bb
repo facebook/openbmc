@@ -12,4 +12,5 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
   gpiod \
+  setup-gpio \
   "

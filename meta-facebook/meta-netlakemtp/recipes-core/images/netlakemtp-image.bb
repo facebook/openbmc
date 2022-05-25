@@ -20,4 +20,6 @@ IMAGE_INSTALL += " \
   ipmid \
   fruid \
   front-paneld \
+  fw-util \
+  jbi \
   "

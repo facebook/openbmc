@@ -92,7 +92,10 @@ if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
 
 app["acl_provider"] = load_acl_provider(config)
 
-srv = loop.run_until_complete(asyncio.gather(*servers, loop=loop))
+if sys.version_info >= (3, 10):
+    srv = loop.run_until_complete(asyncio.gather(*servers))
+else:
+    srv = loop.run_until_complete(asyncio.gather(*servers, loop=loop))
 try:
     loop.run_forever()
 except KeyboardInterrupt:
@@ -102,7 +105,10 @@ finally:
     for s in srv:
         s.close()
         server_closures.append(s.wait_closed())
-    loop.run_until_complete(asyncio.gather(*server_closures, loop=loop))
+    if sys.version_info >= (3, 10):
+        loop.run_until_complete(asyncio.gather(*server_closures))
+    else:
+        loop.run_until_complete(asyncio.gather(*server_closures, loop=loop))
     loop.run_until_complete(app.shutdown())
     loop.run_until_complete(handler.shutdown(60.0))
     loop.run_until_complete(app.cleanup())

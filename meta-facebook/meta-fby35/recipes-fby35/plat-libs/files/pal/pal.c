@@ -3701,3 +3701,42 @@ exit:
 
   return ret;
 }
+
+bool
+pal_can_change_power(uint8_t fru) {
+  char fruname[32] = {0};
+  uint8_t bmc_location = 0;
+  int ret = 0;
+
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return false;
+  }
+
+  //For class1 and class2, BMC will check the corresponding fru that power changing may affect
+  if (pal_get_fru_name(fru, fruname)) {
+    sprintf(fruname, "fru%d", fru);
+  }
+  if (pal_is_fw_update_ongoing(fru)) {
+    printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+  if (pal_is_crashdump_ongoing(fru)) {
+    printf("Crashdump for %s is ongoing, block the power controlling.\n", fruname);
+    return false;
+  }
+
+  // For class2, doing 12V-cycle on slot will also affect NIC expansion, so we need to additionally check the fru of NIC expansion
+  if ((bmc_location == NIC_BMC) && (fru == FRU_SLOT1)) {
+    if (pal_get_fru_name(FRU_BMC, fruname)) {
+      sprintf(fruname, "fru%d", FRU_BMC);
+    }
+    if (pal_is_fw_update_ongoing(FRU_BMC)) {
+      printf("FW update for %s is ongoing, block the power controlling.\n", fruname);
+      return false;
+    }
+  }
+
+  return true;
+}

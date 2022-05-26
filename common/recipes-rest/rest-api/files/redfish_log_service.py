@@ -4,10 +4,9 @@ from typing import Dict, List, Sequence
 
 import common_utils
 import pal
+import rest_pal_legacy
 from aiohttp import web
-from redfish_base import (
-    validate_keys,
-)
+from redfish_base import validate_keys
 
 LOG_UTIL_PATH = "/usr/local/bin/log-util"
 
@@ -48,11 +47,13 @@ class RedfishLogService:
         self, fru_name: str
     ) -> Sequence[Dict[str, str]]:
         log_service_id = "SEL"
-        server_name = self.get_server_name(fru_name)
+        if fru_name == "1" and rest_pal_legacy.pal_get_num_slots() == 1:
+            server_name = "all"
+        else:
+            server_name = self.get_server_name(fru_name)
 
         cmd = [LOG_UTIL_PATH, server_name, "--print", "--json"]
         ret, sel_entries, stderr = await common_utils.async_exec(cmd)
-
         if ret != 0:
             raise InvalidLogUtilResponse(stderr)
 
@@ -72,12 +73,35 @@ class RedfishLogService:
                 ] = "/redfish/v1/Systems/{}/LogServices/{}/Entries/{}".format(
                     fru_name, log_service_id, index
                 )
+                redfish_sel_entry["@odata.type"] = "#LogEntry.v1_10_0.LogEntry"
                 redfish_sel_entry["EventTimestamp"] = entry["TIME_STAMP"]
-                redfish_sel_entry["EntryType"] = "SEL"
+                redfish_sel_entry["EntryType"] = entry["APP_NAME"]
                 redfish_sel_entry["Message"] = entry["MESSAGE"].rstrip()
+                redfish_sel_entry["Name"] = "{}:{}".format(
+                    entry["FRU_NAME"], str(index)
+                )
                 redfish_sel_entries.append(redfish_sel_entry)
                 index = index + 1
         return redfish_sel_entries
+
+    async def get_logservices_root(self, request: web.Request) -> web.Response:
+        members = []
+        fru_name = request.match_info["fru_name"]
+        if self.is_log_util_available:
+            members.append(
+                {"@odata.id": "/redfish/v1/Systems/{}/LogServices/SEL".format(fru_name)}
+            )
+        body = {
+            "@odata.type": "#LogServiceCollection.LogServiceCollection",
+            "Name": "Log Service Collection",
+            "Description": "Collection of Logs for this System",
+            "Members@odata.count": len(members),
+            "Members": members,
+            "Oem": {},
+            "@odata.id": "/redfish/v1/Systems/{}/LogServices".format(fru_name),
+        }
+
+        return web.json_response(body)
 
     async def get_log_service(self, request: web.Request) -> web.Response:
         log_service_id = request.match_info["LogServiceID"]
@@ -147,14 +171,11 @@ class RedfishLogService:
         else:
             # We only support SEL right now
             return web.Response(status=404)
-
-        body = {
-            "@odata.id": "/redfish/v1/Systems/{}/LogServices/{}/Entries".format(
-                fru_name, log_service_id
-            ),
-            "@odata.type": "#LogEntry.LogEntry",
-            "Members": entries[int(entry_id) - 1],  # Index by 1 via schema
-        }
+        try:
+            body = entries[int(entry_id) - 1]  # Index by 1 via schema
+        except IndexError:
+            return web.Response(status=404)
+        print(body)
         await validate_keys(body)
         return web.json_response(body)
 
@@ -162,6 +183,9 @@ class RedfishLogService:
 class RedfishLogServiceController:
     def __init__(self, handler: RedfishLogService):
         self.handler = handler
+
+    async def get_log_services_root(self, request: web.Request) -> web.Response:
+        return await self.handler.get_logservices_root(request)
 
     async def get_log_service(self, request: web.Request):
         return await self.handler.get_log_service(request)

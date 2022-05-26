@@ -51,6 +51,7 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}",
             "/redfish/v1/Systems/{server_name}/Bios/FirmwareDumps/{DumpID}/Actions/BIOSFirmwareDump.ReadContent",
             "/redfish/v1/Systems/{server_name}/Bios/FirmwareInventory",
+            "/redfish/v1/Systems/{fru_name}/LogServices",
             "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}",
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Entries",

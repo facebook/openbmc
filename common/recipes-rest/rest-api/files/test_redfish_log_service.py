@@ -68,6 +68,26 @@ class TestGetLogService(AioHTTPTestCase):
         super().setUp()
 
     @unittest_run_loop
+    async def test_systems_get_log_services_root(self):
+        req = await self.client.request(
+            "GET",
+            "/redfish/v1/Systems/{}".format(FRU_NAME) + "/LogServices",
+        )
+        expected = {
+            "@odata.type": "#LogServiceCollection.LogServiceCollection",
+            "Name": "Log Service Collection",
+            "Description": "Collection of Logs for this System",
+            "Members@odata.count": 1,
+            "Members": [{"@odata.id": "/redfish/v1/Systems/server1/LogServices/SEL"}],
+            "Oem": {},
+            "@odata.id": "/redfish/v1/Systems/{}/LogServices".format(FRU_NAME),
+        }
+        response = await req.json()
+        self.maxDiff = None
+        self.assertEqual(response, expected)
+        self.assertEqual(200, req.status)
+
+    @unittest_run_loop
     async def test_systems_get_log_service_sel(self):
         req = await self.client.request(
             "GET", "/redfish/v1/Systems/{}".format(FRU_NAME) + "/LogServices/SEL"
@@ -104,8 +124,10 @@ class TestGetLogService(AioHTTPTestCase):
                 {
                     "@odata.id": "/redfish/v1/Systems/{}".format(FRU_NAME)
                     + "/LogServices/SEL/Entries/1",
+                    "@odata.type": "#LogEntry.v1_10_0.LogEntry",
                     "EventTimestamp": "2021-11-10 02:43:41",
-                    "EntryType": "SEL",
+                    "EntryType": "ipmid",
+                    "Name": "slot1:1",
                     "Message": "SEL Entry: FRU: 1, "
                     + "Record: Standard (0x02), "
                     + "Time: 2021-11-10 02:43:41, "
@@ -128,19 +150,16 @@ class TestGetLogService(AioHTTPTestCase):
         )
         expected = {
             "@odata.id": "/redfish/v1/Systems/{}".format(FRU_NAME)
-            + "/LogServices/SEL/Entries",
-            "@odata.type": "#LogEntry.LogEntry",
-            "Members": {
-                "@odata.id": "/redfish/v1/Systems/{}".format(FRU_NAME)
-                + "/LogServices/SEL/Entries/1",
-                "EventTimestamp": "2021-11-10 02:43:41",
-                "EntryType": "SEL",
-                "Message": "SEL Entry: FRU: 1, "
-                + "Record: Standard (0x02), "
-                + "Time: 2021-11-10 02:43:41, "
-                + "Sensor: SYSTEM_STATUS (0x10), "
-                + "Event Data: (07FFFF) Platform_Reset Deassertion",
-            },
+            + "/LogServices/SEL/Entries/1",
+            "@odata.type": "#LogEntry.v1_10_0.LogEntry",
+            "EventTimestamp": "2021-11-10 02:43:41",
+            "EntryType": "ipmid",
+            "Name": "slot1:1",
+            "Message": "SEL Entry: FRU: 1, "
+            + "Record: Standard (0x02), "
+            + "Time: 2021-11-10 02:43:41, "
+            + "Sensor: SYSTEM_STATUS (0x10), "
+            + "Event Data: (07FFFF) Platform_Reset Deassertion",
         }
         response = await req.json()
         self.maxDiff = None
@@ -167,6 +186,10 @@ class TestGetLogService(AioHTTPTestCase):
         log_service = RedfishLogService().get_log_service_controller()
         webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])
 
+        webapp.router.add_get(
+            "/redfish/v1/Systems/{fru_name}/LogServices",
+            log_service.get_log_services_root,
+        )
         webapp.router.add_get(
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}",
             log_service.get_log_service,

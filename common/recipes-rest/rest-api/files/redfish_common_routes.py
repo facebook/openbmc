@@ -85,6 +85,10 @@ class Redfish:
             powercycle_post_handler,
         )
         app.router.add_get(
+            "/redfish/v1/Systems/{fru_name}/LogServices",
+            redfish_log_service.get_log_services_root,
+        )
+        app.router.add_get(
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}",
             redfish_log_service.get_log_service,
         )

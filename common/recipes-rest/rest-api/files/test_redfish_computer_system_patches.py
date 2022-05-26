@@ -47,4 +47,5 @@ def patches():
             create=True,
             return_value=None,
         ),
+        unittest.mock.patch("os.path.exists", return_value=True),
     ]

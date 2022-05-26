@@ -1,6 +1,8 @@
+import os
 from typing import List
 
 import pal
+import rest_pal_legacy
 from aiohttp import web
 from common_utils import dumps_bytestr
 from redfish_base import validate_keys
@@ -13,8 +15,13 @@ def pal_supported() -> bool:
     return pal.pal_get_platform_name() not in UNSUPPORTED_PLATFORM_BUILDNAMES
 
 
+def sel_supported() -> bool:
+    LOG_UTIL_PATH = "/usr/local/bin/log-util"
+    return os.path.exists(LOG_UTIL_PATH)
+
+
 def get_compute_system_names() -> List[str]:
-    if not pal_supported():
+    if not pal_supported() or rest_pal_legacy.pal_get_num_slots() == 1:
         return ["1"]
 
     if not hasattr(pal, "pal_fru_name_map"):
@@ -105,6 +112,10 @@ class RedfishComputerSystems:
         if pal_supported():
             body["Bios"] = {
                 "@odata.id": "/redfish/v1/Systems/{}/Bios".format(server_name),
+            }
+        if sel_supported():
+            body["LogServices"] = {
+                "@odata.id": "/redfish/v1/Systems/{}/LogServices".format(server_name)
             }
         await validate_keys(body)
         return web.json_response(body, dumps=dumps_bytestr)

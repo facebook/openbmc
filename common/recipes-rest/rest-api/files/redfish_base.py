@@ -89,6 +89,9 @@ VALID_KEYS = {
     "LogFacilities",
     "LowestSeverity",
     "UpdateService",
+    "EventTimestamp",
+    "EntryType",
+    "Message",
 }
 
 

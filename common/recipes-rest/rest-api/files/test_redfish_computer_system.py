@@ -67,6 +67,7 @@ class TestComputerSystems(AioHTTPTestCase):
             "Bios": {
                 "@odata.id": "/redfish/v1/Systems/server1/Bios",
             },
+            "LogServices": {"@odata.id": "/redfish/v1/Systems/server1/LogServices"},
         }
         req = await self.client.request("GET", "/redfish/v1/Systems/server1")
         self.assertEqual(req.status, 200)

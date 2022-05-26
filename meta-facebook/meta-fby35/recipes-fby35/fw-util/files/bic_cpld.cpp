@@ -80,12 +80,14 @@ int CpldComponent::update_cpld(const string& image, bool force) {
     return FW_STATUS_FAILURE;
   }
 
-  try {
-    server.ready();
-    expansion.ready();
-  } catch (string& err) {
-    printf("%s\n", err.c_str());
-    return FW_STATUS_NOT_SUPPORTED;
+  if (force == false) {
+    try {
+      server.ready();
+      expansion.ready();
+    } catch (string& err) {
+      printf("%s\n", err.c_str());
+      return FW_STATUS_NOT_SUPPORTED;
+    }
   }
 
   if (fw_comp == FW_CPLD) {

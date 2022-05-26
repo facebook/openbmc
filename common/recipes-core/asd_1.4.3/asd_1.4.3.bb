@@ -55,7 +55,7 @@ RDEPENDS:${PN} = "openssl  \
 
 S = "${WORKDIR}/daemon"
 
-inherit cmake
+inherit cmake pkgconfig
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

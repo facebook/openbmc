@@ -1,0 +1,7 @@
+{
+    "oob_switch" : {
+        "get_version" : "/usr/local/bin/oob_switch_utils.sh eeprom_version | cut -d ' ' -f 3",
+        "priority" : 6,
+        "upgrade_cmd" : "/usr/local/bin/oob_switch_utils.sh upgrade {filename}"
+    }
+}

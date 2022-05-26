@@ -28,6 +28,7 @@ LOCAL_URI += "file://setup_i2c.sh \
             file://sol.sh \
             file://wedge_power.sh \
             file://board-utils.sh \
+            file://oob_switch_utils.sh \
 	    "
 
 OPENBMC_UTILS_FILES += " \
@@ -35,6 +36,7 @@ OPENBMC_UTILS_FILES += " \
     sol.sh \
     wedge_power.sh \
     board-utils.sh \
+    oob_switch_utils.sh \
     "
 
 inherit systemd
@@ -57,6 +59,7 @@ do_work_systemd() {
 
   # power-on script that will be used by power-on service
   install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+
 }
 
 do_install_board() {

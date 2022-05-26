@@ -1,0 +1,8 @@
+{
+    "oob_switch" : {
+        "filename"    : "oob_switch.bin",
+        "version" : "00.04",
+        "hash"    : "sha1sum",
+        "hash_value" : "1640a2292819feaaa2b65a15791ac3fece14cda6"
+    },
+}

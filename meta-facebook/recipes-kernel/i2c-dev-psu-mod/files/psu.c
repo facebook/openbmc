@@ -617,6 +617,13 @@ static const i2c_dev_attr_st psu_attr_table[] = {
     NULL,
     0xd2, 0, 8,
   },
+  {
+    "vbus0_input",
+    NULL,
+    psu_vin_show,
+    NULL,
+    0xe4, 0, 8,
+  },
 };
 
 static i2c_dev_data_st psu_data;

@@ -834,7 +834,7 @@ pim_thresh_array_init(uint8_t fru) {
         if (pim_phy_type == PIM_16Q_PHY_7NM) {
           pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.5;
           pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.45;
-        } else if(pim_phy_type == PIM_16Q_PHY_16NM) {
+        } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
           pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0.72;
           pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.68;
         }
@@ -875,7 +875,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP0R8V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 44.95;
         pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 49.46;
         pim_sensor_threshold[PIM1_MP2975_OUTPUT_CURRENT_XP3R3V+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 44.95;
-      }else if (type == PIM_TYPE_16O) {
+      } else if (type == PIM_TYPE_16O) {
         pedigree = pal_get_pim_pedigree_from_file(fru);
         pim_sensor_threshold[PIM1_SENSOR_QSFP_TEMP+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 60;
         pim_sensor_threshold[PIM1_LM75_TEMP_4B+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 65;
@@ -920,30 +920,36 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT5+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.102;
         // CHANNEL 6  PIMx_XP8R0V_OBO
-        if(pedigree==PIM_16O_SIMULATE){ // 3.3V
+        if (pedigree == PIM_16O_SIMULATE) { // 3.3V
           pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.498;
           pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.102;
-        }else if(pedigree==PIM_16O_ALPHA1 || pedigree==PIM_16O_ALPHA2){ // 8V
+        } else if (pedigree == PIM_16O_ALPHA1 || pedigree == PIM_16O_ALPHA2) { // 8V
           pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 8.48;
           pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 7.52;
+        } else if (pedigree == PIM_16O_ALPHA3) { // 8.6V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 9.46;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 7.74;
+        } else if (pedigree >= PIM_16O_ALPHA4 && pedigree <= PIM_16O_BETA) { // 8.5V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 9.35;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 7.65;
         }
         pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT6+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
         // CHANNEL 7 PIMx_XP0R65V_OBO
-        if(pedigree==PIM_16O_SIMULATE){ // 0.75V
+        if (pedigree == PIM_16O_SIMULATE) { // 0.75V
           pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.776;
           pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.724;
-        }else if(pedigree==PIM_16O_ALPHA1 || pedigree==PIM_16O_ALPHA2){ // 0.65V
+        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 0.65V
           pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.67275;
           pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.62725;
         }
         pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT7+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
         // CHANNEL 8 PIMx_XP0R94V_OBO
-        if(pedigree==PIM_16O_SIMULATE){ // 1.1V
+        if (pedigree == PIM_16O_SIMULATE) { // 1.1V
           pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.139;
           pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.062;
-        }else if(pedigree==PIM_16O_ALPHA1 || pedigree==PIM_16O_ALPHA2){ // 0.946V
+        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 0.946V
           pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 0.97911;
           pim_sensor_threshold[PIM1_UCD90160_VOLT8+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 0.91289;
         }
@@ -954,26 +960,39 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT9+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.1;
-        // CHANNEL 10  PIMx_XP1R8V_OBO   1.8V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.863;
+        // CHANNEL 10  PIMx_XP1R8V_OBO
+        if (pedigree == PIM_16O_SIMULATE) { // 1.8V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 1.863;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.737;
+        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 2.2V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.42;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.98;
+        }
         pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT10+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.737;
-        // CHANNEL 11  PIMx_XP2R0V_OBO   2.0V
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.07;
+        // CHANNEL 11  PIMx_XP2R0V_OBO
+        if (pedigree == PIM_16O_SIMULATE) { // 2.0V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.07;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.93;
+        } else if (pedigree >= PIM_16O_ALPHA1 && pedigree <= PIM_16O_BETA) { // 1.85V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 2.035;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.665;
+        }
         pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[PIM1_UCD90160_VOLT11+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 1.93;
         // CHANNEL 12  PIMx_XP4R0V_OBO
-        if(pedigree==PIM_16O_SIMULATE){ // 3.6V
+        if (pedigree == PIM_16O_SIMULATE) { // 3.6V
           pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.816;
           pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.384;
-        }else if(pedigree==PIM_16O_ALPHA1){ // 4.0V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 4.24;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.76;
-        }else if(pedigree==PIM_16O_ALPHA2){ // 3.0V
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.18;
-          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.82;
+        } else if (pedigree == PIM_16O_ALPHA1 || pedigree == PIM_16O_ALPHA6) { // 3.0V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.3;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 2.7;
+        } else if (pedigree == PIM_16O_ALPHA2 || pedigree == PIM_16O_ALPHA4 || pedigree == PIM_16O_BETA ) { // 4.0V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 4.4;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.6;
+        } else if (pedigree == PIM_16O_ALPHA3 || pedigree == PIM_16O_ALPHA5) { // 3.5V
+          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UCR_THRESH] = 3.85;
+          pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LCR_THRESH] = 3.15;
         }
         pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[PIM1_UCD90160_VOLT12+(i*PIM_SENSOR_CNT)][LNC_THRESH] = 0; // unset
@@ -2131,6 +2150,7 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
   char full_name[LARGEST_DEVICE_NAME + 1];
   int ret = -1;
   uint8_t type = pal_get_pim_type_from_file(fru);
+  uint8_t pedigree = pal_get_pim_pedigree_from_file(fru);
   uint8_t pimid = fru-FRU_PIM1 + 1;
   uint8_t i2cbus = PIM1_I2CBUS + (pimid - 1) * 8;
   uint8_t PIM_PWRSEQ_addr = pal_get_dev_addr_from_file(fru, KEY_PWRSEQ);
@@ -2259,16 +2279,19 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM6_UCD90160_VOLT1:
     case PIM7_UCD90160_VOLT1:
     case PIM8_UCD90160_VOLT1: // XP3R3V
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      dir_pim_sensor_hwmon(
+          full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (type == PIM_TYPE_16Q) {
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+        }
+      } else if (type == PIM_TYPE_16O) {
         ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(1), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
       }
       break;
     case PIM1_UCD90160_VOLT2:
@@ -2278,19 +2301,26 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT2:
     case PIM6_UCD90160_VOLT2:
     case PIM7_UCD90160_VOLT2:
-    case PIM8_UCD90160_VOLT2: // XP3R3V_EARLY
+    case PIM8_UCD90160_VOLT2:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if (type == PIM_TYPE_16Q) { // XP3R3V_EARLY
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+        } else if (
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
+          syslog(
+              LOG_CRIT,
+              "pim_sensor_read: PIM_PWRSEQ_addr == %d"
+              "(PIM_UCD90120A_ADDR) shouldn't have PIM_UCD90160_VOLT2 sensor",
+              PIM_UCD90120A_ADDR);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+        }
+      } else if (type == PIM_TYPE_16O) { // XP2R5V
         ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        syslog(LOG_CRIT, "pim_sensor_read: PIM_PWRSEQ_addr == %d"
-          "(PIM_UCD90120A_ADDR) shouldn't have PIM_UCD90160_VOLT2 sensor",
-          PIM_UCD90120A_ADDR);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
       }
       break;
     case PIM1_UCD90160_VOLT3:
@@ -2300,17 +2330,19 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT3:
     case PIM6_UCD90160_VOLT3:
     case PIM7_UCD90160_VOLT3:
-    case PIM8_UCD90160_VOLT3: // XP2R5V_EARLY
+    case PIM8_UCD90160_VOLT3:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // XP2R5V_EARLY
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+        }
+      } else if ( type == PIM_TYPE_16O ) { // XP1R1V
         ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(3), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
       }
       break;
     case PIM1_UCD90160_VOLT4:
@@ -2320,17 +2352,23 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT4:
     case PIM6_UCD90160_VOLT4:
     case PIM7_UCD90160_VOLT4:
-    case PIM8_UCD90160_VOLT4: // TXDRV_PHY
-      dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+    case PIM8_UCD90160_VOLT4:
+      dir_pim_sensor_hwmon(
+          full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
+      if (type == PIM_TYPE_16Q) { // TXDRV_PHY
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+        } else if (
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+        }
+      } else if (type == PIM_TYPE_16O) { // XP1R8V
         ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(4), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
       }
       break;
     case PIM1_UCD90160_VOLT5:
@@ -2340,17 +2378,19 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT5:
     case PIM6_UCD90160_VOLT5:
     case PIM7_UCD90160_VOLT5:
-    case PIM8_UCD90160_VOLT5: // XP0R8V_PHY
+    case PIM8_UCD90160_VOLT5:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // XP0R8V_PHY
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR ) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+        }
+      } else if ( type == PIM_TYPE_16O ) { // XP3R3V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
       }
       break;
     case PIM1_UCD90160_VOLT6:
@@ -2360,16 +2400,11 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT6:
     case PIM6_UCD90160_VOLT6:
     case PIM7_UCD90160_VOLT6:
-    case PIM8_UCD90160_VOLT6: // XP1R1V_EARLY
+    case PIM8_UCD90160_VOLT6:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // XP1R1V_EARLY
+          ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
+      } else if ( type == PIM_TYPE_16O ) { // XP8R0V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(6), value);
       }
       break;
@@ -2380,17 +2415,21 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT7:
     case PIM6_UCD90160_VOLT7:
     case PIM7_UCD90160_VOLT7:
-    case PIM8_UCD90160_VOLT7: // DVDD_PHY4
+    case PIM8_UCD90160_VOLT7:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // DVDD_PHY4
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(17), value);
+        }
+      } else if ( type == PIM_TYPE_16O ) { // XP0R65V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(7), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(17), value);
       }
       break;
     case PIM1_UCD90160_VOLT8:
@@ -2400,17 +2439,21 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT8:
     case PIM6_UCD90160_VOLT8:
     case PIM7_UCD90160_VOLT8:
-    case PIM8_UCD90160_VOLT8: // DVDD_PHY3
+    case PIM8_UCD90160_VOLT8:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // DVDD_PHY3
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(14), value);
+        }
+      } else if ( type == PIM_TYPE_16O ) { // XP0R94V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(8), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(14), value);
       }
       break;
     case PIM1_UCD90160_VOLT9:
@@ -2420,17 +2463,22 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT9:
     case PIM6_UCD90160_VOLT9:
     case PIM7_UCD90160_VOLT9:
-    case PIM8_UCD90160_VOLT9: // DVDD_PHY2
+    case PIM8_UCD90160_VOLT9:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if (type == PIM_TYPE_16Q) { // DVDD_PHY2
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+        } else if (
+            PIM_PWRSEQ_addr == PIM_UCD90160_ADDR ||
+            PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR) {
+          ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+        }
+      } else if (type == PIM_TYPE_16O) { // XP1R15V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(9), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
       }
       break;
     case PIM1_UCD90160_VOLT10:
@@ -2440,17 +2488,21 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT10:
     case PIM6_UCD90160_VOLT10:
     case PIM7_UCD90160_VOLT10:
-    case PIM8_UCD90160_VOLT10: // DVDD_PHY1
+    case PIM8_UCD90160_VOLT10:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // DVDD_PHY1
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
+        } 
+      } else if ( type == PIM_TYPE_16O ) { // XP1R8V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(5), value);
       }
       break;
     case PIM1_UCD90160_VOLT11:
@@ -2460,17 +2512,21 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT11:
     case PIM6_UCD90160_VOLT11:
     case PIM7_UCD90160_VOLT11:
-    case PIM8_UCD90160_VOLT11: // XP1R8V_EARLY
+    case PIM8_UCD90160_VOLT11:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // XP1R8V_EARLY
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(16), value);
+        }
+      } else if ( type == PIM_TYPE_16O ) { // XP2R0V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(11), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(16), value);
       }
       break;
     case PIM1_UCD90160_VOLT12:
@@ -2480,17 +2536,21 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM5_UCD90160_VOLT12:
     case PIM6_UCD90160_VOLT12:
     case PIM7_UCD90160_VOLT12:
-    case PIM8_UCD90160_VOLT12: // XP1R8V_PHYIO
+    case PIM8_UCD90160_VOLT12:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+      if ( type == PIM_TYPE_16Q ) { // XP1R8V_PHYIO
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(15), value);
+        }
+      } else if ( type == PIM_TYPE_16O ) { // XP4R0V_OBO
         ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(12), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(15), value);
       }
       break;
     case PIM1_UCD90160_VOLT13:
@@ -2502,15 +2562,17 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM7_UCD90160_VOLT13:
     case PIM8_UCD90160_VOLT13: // XP1R8V_PHYAVDD
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_PWRSEQ_DEVICE_CH, PIM_PWRSEQ_addr);
-      if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
-                 PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-      } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
-      } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
-        ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+      if ( type == PIM_TYPE_16Q ) {
+        if (PIM_PWRSEQ_addr == PIM_UCD90160_MP_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(13), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90160_ADDR || 
+                  PIM_PWRSEQ_addr == PIM_UCD90160A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+        } else if (PIM_PWRSEQ_addr == PIM_UCD90124A_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(2), value);
+        } else if (PIM_PWRSEQ_addr == PIM_ADM1266_ADDR){
+          ret = read_attr(fru, sensor_num, full_name, VOLT(10), value);
+        }
       }
       break;
     case PIM1_MP2975_INPUT_VOLTAGE:
@@ -4122,7 +4184,7 @@ get_pim_sensor_name(uint8_t sensor_num, uint8_t fru, char *name) {
       if (type==PIM_TYPE_16Q)
         sprintf(name, "PIM%d_XP1R8V_PHYIO",pimid);
       else if (type==PIM_TYPE_16O)
-        sprintf(name, "PIM%d_XP3R6V_OBO",pimid);
+        sprintf(name, "PIM%d_XP4R0V_OBO",pimid);
       break;
     case PIM1_UCD90160_VOLT13:
     case PIM2_UCD90160_VOLT13:

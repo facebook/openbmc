@@ -257,14 +257,18 @@ enum {
   PIM_TYPE_UNPLUG = 0,
   PIM_TYPE_16Q = 1,
   PIM_TYPE_16O = 2,
-  PIM_TYPE_4DD = 3,
   PIM_TYPE_NONE = 4
 };
 
 enum {
   PIM_16O_SIMULATE = 0,
   PIM_16O_ALPHA1 = 1,
-  PIM_16O_ALPHA2 = 2,
+  PIM_16O_ALPHA2 = 2,  
+  PIM_16O_ALPHA3 = 3,
+  PIM_16O_ALPHA4 = 4,
+  PIM_16O_ALPHA5 = 5,
+  PIM_16O_ALPHA6 = 6,
+  PIM_16O_BETA = 8,
   PIM_16O_NONE_VERSION = -1,
 };
 
@@ -324,13 +328,13 @@ int pal_set_com_pwr_btn_n(char *status);
 int pal_get_board_rev(int *rev);
 int pal_mon_fw_upgrade(int brd_rev, uint8_t *status);
 int pal_get_pim_type(uint8_t fru, int retry);
-int pal_set_pim_type_to_file(uint8_t fru, char *type);
+int pal_set_pim_type_to_file(uint8_t fru, uint8_t type);
 int pal_get_pim_type_from_file(uint8_t fru);
 int pal_get_pim_pedigree(uint8_t fru, int retry);
-int pal_set_pim_pedigree_to_file(uint8_t fru, char *type);
+int pal_set_pim_pedigree_to_file(uint8_t fru, uint8_t type);
 int pal_get_pim_pedigree_from_file(uint8_t fru);
 int pal_get_pim_phy_type(uint8_t fru, int retry);
-int pal_set_pim_phy_type_to_file(uint8_t fru, char *type);
+int pal_set_pim_phy_type_to_file(uint8_t fru, uint8_t type);
 int pal_get_pim_phy_type_from_file(uint8_t fru);
 int pal_set_pim_thresh(uint8_t fru);
 

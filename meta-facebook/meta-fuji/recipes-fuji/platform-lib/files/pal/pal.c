@@ -373,14 +373,28 @@ pal_get_pim_type(uint8_t fru, int retry) {
 }
 
 int
-pal_set_pim_type_to_file(uint8_t fru, char *type) {
+pal_set_pim_type_to_file(uint8_t fru, uint8_t type) {
   char fru_name[16];
+  char type_name[16];
   char key[MAX_KEY_LEN];
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_type", fru_name);
-
-  return kv_set(key, type, 0, 0);
+  switch (type) {
+    case PIM_TYPE_16Q:
+      sprintf(type_name, "pim16q");
+      break;
+    case PIM_TYPE_16O:
+      sprintf(type_name, "pim16o");
+      break;
+    case PIM_TYPE_UNPLUG:
+      sprintf(type_name, "unplug");
+      break;
+    default:
+      sprintf(type_name, "none");
+      break;
+  }
+  return kv_set(key, type_name, 0, 0);
 }
 
 int
@@ -396,9 +410,9 @@ pal_get_pim_type_from_file(uint8_t fru) {
     return -1;
   }
 
-  if (!strncmp(type, "16q", sizeof("16q"))) {
+  if (!strncmp(type, "pim16q", sizeof("pim16q"))) {
     return PIM_TYPE_16Q;
-  } else if (!strncmp(type, "16o", sizeof("16o"))) {
+  } else if (!strncmp(type, "pim16o", sizeof("pim16o"))) {
     return PIM_TYPE_16O;
   } else if (!strncmp(type, "unplug", sizeof("unplug"))) {
     return PIM_TYPE_UNPLUG;
@@ -539,6 +553,18 @@ int pal_get_pim_pedigree(uint8_t fru, int retry){
     ret = PIM_16O_SIMULATE;
   } else if (val == 0xF1) {
     ret = PIM_16O_ALPHA1;
+  } else if (val == 0xF2) {
+    ret = PIM_16O_ALPHA2;
+  } else if (val == 0xF3) {
+    ret = PIM_16O_ALPHA3;
+  } else if (val == 0xF4) {
+    ret = PIM_16O_ALPHA4;
+  } else if (val == 0xF5) {
+    ret = PIM_16O_ALPHA5;
+  } else if (val == 0xF6) {
+    ret = PIM_16O_ALPHA6;
+  } else if (val == 0xF8) {
+    ret = PIM_16O_BETA;
   } else {
     ret = PIM_16O_NONE_VERSION;
   }
@@ -549,14 +575,44 @@ int pal_get_pim_pedigree(uint8_t fru, int retry){
 
 
 int
-pal_set_pim_pedigree_to_file(uint8_t fru, char *type) {
+pal_set_pim_pedigree_to_file(uint8_t fru, uint8_t type) {
   char fru_name[16];
   char key[MAX_KEY_LEN];
+  char type_name[32];
 
   pal_get_fru_name(fru, fru_name);
   snprintf(key, sizeof(key), "%s_pedigree", fru_name);
-
-  return kv_set(key, type, 0, 0);
+  switch (type) {
+    case PIM_16O_SIMULATE:
+      sprintf(type_name, "simulate");
+      break;
+    case PIM_16O_ALPHA1:
+      sprintf(type_name, "alpha1");
+      break;
+    case PIM_16O_ALPHA2:
+      sprintf(type_name, "alpha2");
+      break;
+    case PIM_16O_ALPHA3:
+      sprintf(type_name, "alpha3");
+      break;
+    case PIM_16O_ALPHA4:
+      sprintf(type_name, "alpha4");
+      break;
+    case PIM_16O_ALPHA5:
+      sprintf(type_name, "alpha5");
+      break;
+    case PIM_16O_ALPHA6:
+      sprintf(type_name, "alpha6");
+      break;
+    case PIM_16O_BETA:
+      sprintf(type_name, "beta");
+      break;
+    default:
+      sprintf(type_name, "none");
+      break;
+  }
+  syslog(LOG_INFO, "%s pedigree version = %s", fru_name, type_name);
+  return kv_set(key, type_name, 0, 0);
 }
 
 int
@@ -582,6 +638,16 @@ pal_get_pim_pedigree_from_file(uint8_t fru) {
     return PIM_16O_ALPHA1;
   } else if (!strncmp(type, "alpha2", sizeof("alpha2"))) {
     return PIM_16O_ALPHA2;
+  } else if (!strncmp(type, "alpha3", sizeof("alpha3"))) {
+    return PIM_16O_ALPHA3;
+  } else if (!strncmp(type, "alpha4", sizeof("alpha4"))) {
+    return PIM_16O_ALPHA4;
+  } else if (!strncmp(type, "alpha5", sizeof("alpha5"))) {
+    return PIM_16O_ALPHA5;
+  } else if (!strncmp(type, "alpha6", sizeof("alpha6"))) {
+    return PIM_16O_ALPHA6;
+  } else if (!strncmp(type, "beta", sizeof("beta"))) {
+    return PIM_16O_BETA;
   } else {
     return PIM_TYPE_NONE;
   }
@@ -625,14 +691,30 @@ pal_get_pim_phy_type(uint8_t fru, int retry) {
 }
 
 int
-pal_set_pim_phy_type_to_file(uint8_t fru, char *type) {
+pal_set_pim_phy_type_to_file(uint8_t fru, uint8_t type) {
   char fru_name[16];
+  char type_name[16];
   char key[MAX_KEY_LEN];
 
   pal_get_fru_name(fru, fru_name);
   snprintf(key, sizeof(key), "%s_phy_type", fru_name);
 
-  return kv_set(key, type, 0, 0);
+  switch (type) {
+    case PIM_16Q_PHY_16NM:
+      sprintf(type_name, "16nm");
+      break;
+    case PIM_16Q_PHY_7NM:
+      sprintf(type_name, "7nm");
+      break;
+    case PIM_16Q_PHY_UNKNOWN:
+    default :
+      sprintf(type_name, "unknown");
+      break;
+  }
+
+  syslog(LOG_INFO, "pal_set_pim_phy_type_to_file: PIM %d set phy type %s", 
+         fru - FRU_PIM1 + 1, type_name);
+  return kv_set(key, type_name, 0, 0);
 }
 
 int

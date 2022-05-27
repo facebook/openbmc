@@ -550,14 +550,14 @@ pim_monitor_handler(void *unused) {
 
           if (pim_type != pim_type_old[num]) {
             if (pim_type == PIM_TYPE_16Q) {
-              if (!pal_set_pim_type_to_file(fru, "16q")) {
+              if (!pal_set_pim_type_to_file(fru, PIM_TYPE_16Q)) {
                 syslog(LOG_INFO, "PIM %d type is 16Q", num);
                 pim_type_old[num] = PIM_TYPE_16Q;
               } else {
                 syslog(LOG_WARNING,
                        "pal_set_pim_type_to_file: PIM %d set 16Q failed", num);
               }
-              if (!pal_set_pim_pedigree_to_file(fru, "none")) {
+              if (!pal_set_pim_pedigree_to_file(fru, PIM_16O_NONE_VERSION)) {
                 syslog(LOG_WARNING,
                       "pal_set_pim_pedigree_to_file: PIM %d For PIM16Q set pedigree to none", num);
               } else {
@@ -566,22 +566,12 @@ pim_monitor_handler(void *unused) {
               }
 
               pim_phy_type = pal_get_pim_phy_type(fru, PIM_RETRY);
-              if (pim_phy_type == PIM_16Q_PHY_7NM) {
-                pim_phy_type_str = "7nm";
-              } else if (pim_phy_type == PIM_16Q_PHY_16NM) {
-                pim_phy_type_str = "16nm";
-              } else {
-                pim_phy_type_str = "unknown";
-              }
-              if (!pal_set_pim_phy_type_to_file(fru, pim_phy_type_str)) {
-                syslog(LOG_INFO,
-                      "pal_set_pim_phy_type_to_file: PIM %d set phy type %s", num, pim_phy_type_str);
-              } else {
+              if (pal_set_pim_phy_type_to_file(fru, pim_phy_type)) {
                 syslog(LOG_WARNING,
                       "pal_set_pim_phy_type_to_file: PIM %d fail to set phy type", num);
               }
             } else if (pim_type == PIM_TYPE_16O) {
-              if (!pal_set_pim_type_to_file(fru, "16o")) {
+              if (!pal_set_pim_type_to_file(fru, PIM_TYPE_16O)) {
                 syslog(LOG_INFO, "PIM %d type is 16O", num);
                 pim_type_old[num] = PIM_TYPE_16O;
               } else {
@@ -589,38 +579,13 @@ pim_monitor_handler(void *unused) {
                        "pal_set_pim_type_to_file: PIM %d set 16O failed", num);
               }
               pim_pedigree = pal_get_pim_pedigree(fru, PIM_RETRY);
-              if(pim_pedigree == PIM_16O_SIMULATE){
-                if (!pal_set_pim_pedigree_to_file(fru, "simulate")) {
-                  syslog(LOG_INFO, "PIM %d pedigree is simulate version", num);
-                }else{
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d set simulate version failed", num);
-                }
-              }else if(pim_pedigree == PIM_16O_ALPHA1){
-                if (!pal_set_pim_pedigree_to_file(fru, "alpha1")) {
-                  syslog(LOG_INFO, "PIM %d pedigree is alpha1 version", num);
-                }else{
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d set alpha1 version failed", num);
-                }
-              }else if(pim_pedigree == PIM_16O_ALPHA2){
-                if (!pal_set_pim_pedigree_to_file(fru, "alpha2")) {
-                  syslog(LOG_INFO, "PIM %d pedigree is alpha2 version", num);
-                }else{
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d set alpha2 version failed", num);
-                }
-              }else{
-                if (!pal_set_pim_pedigree_to_file(fru, "none")) {
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d set pedigree none", num);
-                }else{
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d fail to set pedigree", num);
-                }
+              if (pal_set_pim_pedigree_to_file(fru, pim_pedigree)) {
+                syslog(LOG_WARNING,
+                      "pal_set_pim_pedigree_to_file: PIM %d set version failed",
+                       num);
               }
             } else {
-              if (!pal_set_pim_type_to_file(fru, "none")) {
+              if (!pal_set_pim_type_to_file(fru, PIM_TYPE_NONE)) {
                 syslog(LOG_CRIT,
                         "PIM %d type cannot detect, DOMFPGA get fail", num);
                 pim_type_old[num] = PIM_TYPE_NONE;
@@ -628,13 +593,11 @@ pim_monitor_handler(void *unused) {
                 syslog(LOG_WARNING,
                       "pal_set_pim_type_to_file: PIM %d set none failed", num);
               }
-              if (!pal_set_pim_pedigree_to_file(fru, "none")) {
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d set pedigree none", num);
-                }else{
-                  syslog(LOG_WARNING,
-                       "pal_set_pim_pedigree_to_file: PIM %d set none failed", num);
-                }
+              if (pal_set_pim_pedigree_to_file(fru, PIM_16O_NONE_VERSION)) {
+                syslog(LOG_WARNING,
+                       "pal_set_pim_pedigree_to_file: PIM %d set none failed",
+                       num);
+              }
             }
             pal_set_sdr_update_flag(fru,1);
           }
@@ -646,11 +609,11 @@ pim_monitor_handler(void *unused) {
           pal_set_sdr_update_flag(fru,1);
           pim_driver_del(num, pim_type_old[num]);
           pim_type_old[num] = PIM_TYPE_UNPLUG;
-          if (pal_set_pim_type_to_file(fru, "unplug")) {
+          if (pal_set_pim_type_to_file(fru, PIM_TYPE_UNPLUG)) {
             syslog(LOG_WARNING,
                   "pal_set_pim_type_to_file: PIM %d set unplug failed", num);
           }
-          if (pal_set_pim_pedigree_to_file(fru, "none")) {
+          if (pal_set_pim_pedigree_to_file(fru, PIM_16O_NONE_VERSION)) {
             syslog(LOG_WARNING,
                   "pal_get_pim_pedigree: PIM %d set pedigree failed", num);
           }

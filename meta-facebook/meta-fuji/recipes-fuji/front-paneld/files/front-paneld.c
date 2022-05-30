@@ -526,7 +526,6 @@ pim_monitor_handler(void *unused) {
   uint8_t pim_type;
   uint8_t pim_pedigree;
   uint8_t pim_phy_type;
-  char *pim_phy_type_str = NULL;
   uint8_t pim_type_old[10] = {PIM_TYPE_UNPLUG};
   uint8_t interval[10];
 

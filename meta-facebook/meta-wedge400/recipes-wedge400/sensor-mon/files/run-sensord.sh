@@ -19,4 +19,5 @@
 #
 
 ARGS="scm smb pem1 pem2 psu1 psu2 fan1 fan2 fan3 fan4"
-exec /usr/local/bin/sensord "$ARGS"
+#shellcheck disable=SC2086
+exec /usr/local/bin/sensord $ARGS

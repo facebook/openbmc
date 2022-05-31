@@ -44,6 +44,7 @@
 
 #define PLATFORM_NAME "yosemitev3"
 #define LAST_KEY "last_key"
+#define CWC_LAST_KEY "cwc_last_key"
 
 #define OFFSET_SYS_GUID 0x17F0
 #define OFFSET_DEV_GUID 0x1800
@@ -165,15 +166,16 @@ struct pal_key_cfg {
   {"slot3_sel_error", "1", NULL},
   {"slot4_sel_error", "1", NULL},
   {"ntp_server", "", NULL},
-  // cwc fru health
+  /* Add more Keys here */
+  {LAST_KEY, LAST_KEY, NULL}, /* This is the last key of the yv3 list */
+  // cwc fru_health
   {"cwc_fru10_sensor_health", "1", NULL},
   {"cwc_fru11_sensor_health", "1", NULL},
   {"cwc_fru12_sensor_health", "1", NULL},
   {"cwc_fru10_sel_error", "1", NULL},
   {"cwc_fru11_sel_error", "1", NULL},
   {"cwc_fru12_sel_error", "1", NULL},
-  /* Add more Keys here */
-  {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
+  {CWC_LAST_KEY, CWC_LAST_KEY, NULL} /* This is the last key of the cwc list */
 };
 
 MAPTOSTRING root_port_common_mapping[] = {
@@ -469,7 +471,15 @@ pal_key_index(char *key) {
   int i;
 
   i = 0;
-  while(strcmp(key_cfg[i].name, LAST_KEY)) {
+  char last_key[MAX_KEY_LEN] = {0};
+
+  if (pal_is_cwc() == PAL_EOK) {
+    strcpy(last_key, CWC_LAST_KEY);
+  } else {
+    strcpy(last_key, LAST_KEY);
+  }
+
+  while(strcmp(key_cfg[i].name, last_key)) {
 
     // If Key is valid, return success
     if (!strcmp(key, key_cfg[i].name))
@@ -536,8 +546,21 @@ pal_dump_key_value(void) {
   int ret;
   int i = 0;
   char value[MAX_VALUE_LEN] = {0x0};
+  char last_key[MAX_KEY_LEN] = {0};
 
-  while (strcmp(key_cfg[i].name, LAST_KEY)) {
+  if ( pal_is_cwc() == PAL_EOK ) {
+    strcpy(last_key, CWC_LAST_KEY);
+  } else {
+    strcpy(last_key, LAST_KEY);
+  }
+
+  while (strcmp(key_cfg[i].name, last_key)) {
+    if ( pal_is_cwc() == PAL_EOK ) {
+      if (!strcmp(key_cfg[i].name, LAST_KEY)) {
+        i++;
+        continue;
+      }
+    }
     printf("%s:", key_cfg[i].name);
     if ((ret = kv_get(key_cfg[i].name, value, NULL, KV_FPERSIST)) < 0) {
     printf("\n");
@@ -552,9 +575,23 @@ pal_dump_key_value(void) {
 int
 pal_set_def_key_value() {
   int i;
+  char last_key[MAX_KEY_LEN] = {0};
   //char key[MAX_KEY_LEN] = {0};
 
-  for(i = 0; strcmp(key_cfg[i].name, LAST_KEY) != 0; i++) {
+  if ( pal_is_cwc() == PAL_EOK ) {
+    strcpy(last_key, CWC_LAST_KEY);
+  } else {
+    strcpy(last_key, LAST_KEY);
+  }
+
+  for(i = 0; strcmp(key_cfg[i].name, last_key) != 0; i++) {
+
+    if ( pal_is_cwc() == PAL_EOK ) {
+      if (!strcmp(key_cfg[i].name, LAST_KEY)) {
+        continue;
+      }
+    }
+
     if (kv_set(key_cfg[i].name, key_cfg[i].def_val, 0, KV_FCREATE | KV_FPERSIST)) {
 #ifdef DEBUG
       syslog(LOG_WARNING, "pal_set_def_key_value: kv_set failed.");

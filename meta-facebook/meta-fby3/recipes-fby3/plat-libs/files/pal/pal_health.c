@@ -27,7 +27,11 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_CWC:
     case FRU_2U_TOP:
     case FRU_2U_BOT:
-      snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru);
+      if ( pal_is_cwc() == PAL_EOK ) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sel_error", fru);
+      } else {
+        return ERR_NOT_READY;
+      }
       break;
       /*it's supported*/
     default:
@@ -54,7 +58,11 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_CWC:
     case FRU_2U_TOP:
     case FRU_2U_BOT:
-      snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru);
+      if ( pal_is_cwc() == PAL_EOK ) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru);
+      } else {
+         return ERR_NOT_READY;
+      }
       break;
     default:
       return ERR_NOT_READY;
@@ -84,7 +92,11 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
     case FRU_CWC:
     case FRU_2U_TOP:
     case FRU_2U_BOT:
-      snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru);
+      if ( pal_is_cwc() == PAL_EOK ) {
+        snprintf(key, MAX_KEY_LEN, "cwc_fru%d_sensor_health", fru);
+      } else {
+        return ERR_NOT_READY;
+      }
       break;
       /*it's supported*/
     default:

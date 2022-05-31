@@ -175,7 +175,6 @@ class RedfishLogService:
             body = entries[int(entry_id) - 1]  # Index by 1 via schema
         except IndexError:
             return web.Response(status=404)
-        print(body)
         await validate_keys(body)
         return web.json_response(body)
 

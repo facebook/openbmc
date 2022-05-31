@@ -92,6 +92,7 @@ VALID_KEYS = {
     "EventTimestamp",
     "EntryType",
     "Message",
+    "IndicatorLED",
 }
 
 

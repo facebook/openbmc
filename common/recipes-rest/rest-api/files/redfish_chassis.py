@@ -1,19 +1,72 @@
+import functools
 import os
 import typing as t
 
 import common_utils
 
+import kv
 import pal
 import redfish_chassis_helper
 import redfish_sensors
 import rest_pal_legacy
 
 from aiohttp import web
+from aiohttp.log import server_logger
 from redfish_base import validate_keys
 
 
 class FruNotFoundError(Exception):
     pass
+
+
+KV_IDENTIFY_PLAT_KEY_MAP_SINGLE_SLOT_SPECIAL = {
+    "fbttn": "identify_slot1",
+    "grandcanyon": "system_identify_server",
+}
+KV_IDENTIFY_SINGLES_LOT_DEFAULT = "identify_sled"
+
+
+@functools.lru_cache(maxsize=1)
+def _get_platform_name() -> str:
+    machine = ""
+    with open("/etc/issue") as f:
+        line = f.read().strip()
+        if line.startswith("OpenBMC Release "):
+            tmp = line.split(" ")
+            vers = tmp[2]
+            tmp2 = vers.split("-")
+            machine = tmp2[0]
+        return machine
+
+
+def _get_slot_led_state(slot: str) -> str:
+    if not os.path.exists("/usr/bin/fpc-util"):
+        # TODO : Figure out how front panel LED status is stored on WEDGE if at all.
+        return "Unknown"
+    if rest_pal_legacy.pal_get_num_slots() > 1:
+        if slot == "Computer System Chassis":
+            slot_led_state_key = KV_IDENTIFY_SINGLES_LOT_DEFAULT
+        else:
+            slot_led_state_key = "identify_{}".format(slot)
+    else:
+        plat_name = _get_platform_name()
+        slot_led_state_key = KV_IDENTIFY_PLAT_KEY_MAP_SINGLE_SLOT_SPECIAL.get(
+            plat_name, KV_IDENTIFY_SINGLES_LOT_DEFAULT
+        )
+    slot_led_state = _get_kv_persistent(slot_led_state_key)
+    if slot_led_state == "on":
+        return "Lit"
+    elif slot_led_state == "off":
+        return "Off"
+    else:
+        return "Unknown"
+
+
+def _get_kv_persistent(key: str) -> str:
+    try:
+        return kv.kv_get(key, kv.FPERSIST)
+    except kv.KeyOperationFailure:
+        return ""
 
 
 def _get_fru_name_from_server_id(server_name: str) -> t.Optional[str]:
@@ -136,6 +189,7 @@ async def get_chassis_member_for_fru(
         "Name": fru_name,
         "ChassisType": "RackMount",
         "PowerState": await _get_chassis_power_state(fru_name),
+        "IndicatorLED": _get_slot_led_state(fru_name),
         "Manufacturer": fru.manufacturer,
         "Model": fru.model,
         "SerialNumber": fru.serial_number,
@@ -145,6 +199,62 @@ async def get_chassis_member_for_fru(
     }
     await validate_keys(body)
     return body
+
+
+async def set_power_state(request: web.Request) -> web.Response:
+    server_name = request.match_info["fru_name"]
+    payload = await request.json()
+    led_desired_state = payload.get("IndicatorLED", "")
+    if led_desired_state not in ["Lit", "Off"]:
+        return web.json_response(
+            data={
+                "status": "Bad Request",
+                "reason": "{} is invalid IndicatorLED state, valid states are: Lit, Off".format(
+                    led_desired_state
+                ),
+            },
+            status=400,
+        )
+    try:
+        fru_name = _get_fru_name_from_server_id(server_name)
+    except ValueError:
+        raise FruNotFoundError()
+    if fru_name is None:
+        fru_name = "sled"
+    led_desired_state = "on" if led_desired_state == "Lit" else "off"
+    success = await _change_led_state_for_fru(fru_name, led_desired_state)
+    return web.json_response({"success": success})
+
+
+async def _change_led_state_for_fru(fru_name: str, target_state: str) -> bool:
+    if not os.path.exists("/usr/bin/fpc-util"):
+        raise NotImplementedError(
+            "Front panel status change is not implemented for Network platforms"
+        )
+    if rest_pal_legacy.pal_get_num_slots() > 1:
+        if _get_platform_name() == "fby3" and fru_name == "sled":
+            # FBY3 does not expose "sled" level LED via fpc-util
+            raise NotImplementedError("fby3 does not support sled level LED")
+        cmd = ["/usr/bin/fpc-util", fru_name, "--identify", target_state]
+    else:
+        if _get_platform_name() == "fbtp":
+            # Tiogapass is the only slingle slot compute system that needs the "sled" identifier in the args list
+            cmd = ["/usr/bin/fpc-util", "sled", "--identify", target_state]
+        else:
+            cmd = ["/usr/bin/fpc-util", "--identify", target_state]
+
+    exit_code, stdout, stderr = await common_utils.async_exec(cmd)
+    if exit_code != 0:
+        server_logger.error(
+            "Failed to change fpc LED status, cmd={}, stdout={}, stderr={}".format(
+                repr(cmd), repr(stdout), repr(stderr)
+            )
+        )
+    if exit_code == 0 and _get_platform_name() == "fby3":
+        # XXX: Yv3 FPC util does not set status in kv store, so we do it here.
+        kv.kv_set("identify_{}".format(fru_name), target_state, kv.FPERSIST)
+
+    return exit_code == 0
 
 
 async def _get_chassis_power_state(fru_name: str) -> str:

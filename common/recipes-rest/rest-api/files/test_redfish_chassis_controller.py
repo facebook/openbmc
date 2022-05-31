@@ -103,16 +103,22 @@ class TestChassisService(AioHTTPTestCase):
                 side_effect=[
                     False,
                     True,
-                    False,
                     True,
                     False,
                     True,
-                    False,
                     True,
                     False,
+                    True,
+                    True,
+                    False,
+                    True,
+                    True,
+                    False,
+                    True,
                     True,
                 ],
             ),
+            unittest.mock.patch("kv.kv_get", return_value="on"),
         ]
         for p in self.patches:
             p.start()
@@ -221,6 +227,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
                     "PowerState": expected_power,
+                    "IndicatorLED": "Lit",
                     "Sensors": {
                         "@odata.id": "/redfish/v1/Chassis/{}/Sensors".format(
                             server_name
@@ -272,6 +279,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -285,6 +293,7 @@ class TestChassisService(AioHTTPTestCase):
                     "@odata.type": "#Chassis.v1_15_0.Chassis",
                     "Id": "1",
                     "Name": "slot1",
+                    "IndicatorLED": "Lit",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
                     "Manufacturer": "Wiwynn",
@@ -300,6 +309,7 @@ class TestChassisService(AioHTTPTestCase):
                     "@odata.type": "#Chassis.v1_15_0.Chassis",
                     "Id": "1",
                     "Name": "slot2",
+                    "IndicatorLED": "Lit",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
                     "Manufacturer": "Wiwynn",
@@ -315,6 +325,7 @@ class TestChassisService(AioHTTPTestCase):
                     "@odata.type": "#Chassis.v1_15_0.Chassis",
                     "Id": "1",
                     "Name": "slot3",
+                    "IndicatorLED": "Lit",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
                     "Manufacturer": "Wiwynn",
@@ -330,6 +341,7 @@ class TestChassisService(AioHTTPTestCase):
                     "@odata.type": "#Chassis.v1_15_0.Chassis",
                     "Id": "1",
                     "Name": "slot4",
+                    "IndicatorLED": "Lit",
                     "ChassisType": "RackMount",
                     "PowerState": "Off",
                     "Manufacturer": "Wiwynn",
@@ -372,6 +384,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -387,6 +400,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot1",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -402,6 +416,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot2",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -417,6 +432,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot3",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -432,6 +448,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot4",
                     "ChassisType": "RackMount",
                     "PowerState": "Off",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -498,6 +515,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -513,6 +531,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot1",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -528,6 +547,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot2",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -543,6 +563,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot3",
                     "ChassisType": "RackMount",
                     "PowerState": "On",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -558,6 +579,7 @@ class TestChassisService(AioHTTPTestCase):
                     "Name": "slot4",
                     "ChassisType": "RackMount",
                     "PowerState": "Off",
+                    "IndicatorLED": "Lit",
                     "Manufacturer": "Wiwynn",
                     "Model": "Yosemite V2 MP",
                     "SerialNumber": "WTL19121DSMA1",
@@ -572,6 +594,51 @@ class TestChassisService(AioHTTPTestCase):
         self.maxDiff = None
         self.assertEqual(resp, expected_resp)
         self.assertEqual(req.status, 200)
+
+    @unittest_run_loop
+    async def test_redfish_change_fpc_led_state_returns_400_on_invalid_desired_state(
+        self,
+    ):
+        req = await self.client.request(
+            "PATCH", "/redfish/v1/Chassis/server1", json={"IndicatorLED": "Derp"}
+        )
+        resp = await req.json()
+        self.maxDiff = None
+        self.assertEqual(
+            resp,
+            {
+                "reason": "Derp is invalid IndicatorLED state, valid states are: Lit, Off",
+                "status": "Bad Request",
+            },
+        )
+        self.assertEqual(req.status, 400)
+
+    @unittest_run_loop
+    async def test_redfish_change_fpc_led_state_returns_200_on_successful_led_status_change(
+        self,
+    ):
+        async_exec_fut = asyncio.Future()
+        async_exec_fut.set_result((0, "", ""))
+        with unittest.mock.patch(
+            "os.path.exists", return_value=True
+        ), unittest.mock.patch(
+            "common_utils.async_exec", return_value=async_exec_fut
+        ) as ae_mock:
+            req = await self.client.request(
+                "PATCH", "/redfish/v1/Chassis/server1", json={"IndicatorLED": "Lit"}
+            )
+            resp = await req.json()
+            self.maxDiff = None
+            self.assertEqual(
+                resp,
+                {
+                    "success": True,
+                },
+            )
+            self.assertEqual(req.status, 200)
+            ae_mock.assert_called_once_with(
+                ["/usr/bin/fpc-util", "slot1", "--identify", "on"]
+            )
 
     async def get_application(self):
         webapp = aiohttp.web.Application(middlewares=[jsonerrorhandler])

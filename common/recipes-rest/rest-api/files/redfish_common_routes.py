@@ -50,7 +50,9 @@ class Redfish:
         app.router.add_get(
             "/redfish/v1/Chassis/{fru_name}", redfish_chassis.get_chassis_member
         )
-
+        app.router.add_patch(
+            "/redfish/v1/Chassis/{fru_name}", redfish_chassis.set_power_state
+        )
         app.router.add_get(
             "/redfish/v1/Systems", self.computer_systems.get_collection_descriptor
         )

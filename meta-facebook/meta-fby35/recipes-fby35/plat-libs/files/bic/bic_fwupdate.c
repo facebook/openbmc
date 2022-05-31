@@ -43,6 +43,14 @@
 
 //#define DEBUG
 
+#define log_system(cmd)                                                     \
+do {                                                                        \
+  int sysret = system(cmd);                                                 \
+  if (sysret)                                                               \
+    syslog(LOG_WARNING, "%s: system command failed, cmd: \"%s\",  ret: %d", \
+            __func__, cmd, sysret);                                         \
+} while(0)
+
 /****************************/
 /*      BIC fw update       */
 /****************************/
@@ -261,6 +269,10 @@ is_valid_intf(uint8_t intf) {
 
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
+  #define MAX_CMD_LEN 100
+  #define MAX_RETRY 10
+  char cmd[MAX_CMD_LEN] = {0};
+  uint8_t self_test_result[2] = {0};
   int ret = -1;
   int fd = -1;
   int file_size;
@@ -283,6 +295,26 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
 
   //run into the different function based on the interface
   ret = update_bic(slot_id, fd, file_size, intf);
+
+  if ( (ret == 0) && (comp == FW_SB_BIC) ) {
+    sleep(5);
+    // Check BIC self-test results to prevent bic-cached from getting stuck forever
+    for (int i = 0; i < MAX_RETRY; i++) {
+      ret = bic_get_self_test_result(slot_id, (uint8_t *)&self_test_result, NONE_INTF);
+      if (ret == 0) {
+        syslog(LOG_INFO, "bic_get_self_test_result of slot%u: %X %X", slot_id, self_test_result[0], self_test_result[1]);
+        break;
+      }
+      sleep(1);
+    }
+
+    if (ret == 0) {
+      printf("get new SDR cache from BIC \n");
+      memset(cmd, 0, sizeof(cmd));
+      snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1", slot_id, slot_id);   //retrieve SDR data after BIC FW update
+      log_system(cmd);
+    }
+  }
 
 exit:
 

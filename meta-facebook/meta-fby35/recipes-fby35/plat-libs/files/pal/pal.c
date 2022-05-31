@@ -3702,6 +3702,31 @@ exit:
   return ret;
 }
 
+
+int
+pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_sdr_thresh_update", slot);
+  snprintf(str,MAX_VALUE_LEN, "%u", update);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_sdr_update_flag(uint8_t slot) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  sprintf(key, "slot%u_sdr_thresh_update", slot);
+
+  ret = kv_get(key, cvalue, NULL, 0);
+  if (ret) {
+    return 0;
+  }
+  return atoi(cvalue);
+}
+
 bool
 pal_can_change_power(uint8_t fru) {
   char fruname[32] = {0};

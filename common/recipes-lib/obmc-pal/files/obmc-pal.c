@@ -2979,3 +2979,8 @@ int __attribute__((weak))
 pal_udbg_get_frame_total_num() {
   return 3;
 }
+
+bool __attribute__((weak))
+pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num) {
+  return true;
+}

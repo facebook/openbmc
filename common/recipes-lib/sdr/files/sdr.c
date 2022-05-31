@@ -587,7 +587,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
     ret = pal_sensor_sdr_init(fru, sinfo);
   }
 
-  if (ret < 0) {
+  if ((ret < 0) || (pal_is_sdr_from_file(fru, snr_num) == false)) {
     sdr = NULL;
   } else {
     sdr = &sinfo[snr_num].sdr;
@@ -603,7 +603,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
     printf("%s: Fail to get fru%d name\n", __func__, fru);
     return -1;
   }
-  
+
   sprintf(initpath, INIT_THRESHOLD_BIN, fru_name);
   if (0 == access(initpath, F_OK)) { // init done
     sprintf(fpath, THRESHOLD_BIN, fru_name);

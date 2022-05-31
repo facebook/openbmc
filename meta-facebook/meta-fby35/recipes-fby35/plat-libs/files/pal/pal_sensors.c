@@ -21,6 +21,7 @@
 
 #define MAX_RETRY 3
 #define MAX_SDR_LEN 64
+#define MAX_SNR_NAME_LEN 32
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
 #define PWM_PLAT_SET 0x80
@@ -60,7 +61,7 @@ static int read_fan_speed(uint8_t snr_number, float *value);
 static int read_fan_pwm(uint8_t pwm_id, float *value);
 static int read_curr_leakage(uint8_t snr_number, float *value);
 static int read_pdb_cl_vdelta(uint8_t snr_number, float *value);
-
+static int read_dpv2_efuse(uint8_t info, float *value);
 static int pal_sdr_init(uint8_t fru);
 static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
@@ -441,6 +442,22 @@ const uint8_t bic_spe_sensor_list[] = {
   BIC_SPE_SENSOR_12V_MAIN_CUR,
 };
 
+const uint8_t bmc_dpv2_x8_sensor_list[] = {
+  BMC_DPV2_SENSOR_DPV2_1_12V_VIN,
+  BMC_DPV2_SENSOR_DPV2_1_12V_VOUT,
+  BMC_DPV2_SENSOR_DPV2_1_12V_IOUT,
+  BMC_DPV2_SENSOR_DPV2_1_EFUSE_TEMP,
+  BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR,
+};
+
+const uint8_t bic_dpv2_x16_sensor_list[] = {
+  BIC_DPV2_SENSOR_DPV2_2_12V_VIN,
+  BIC_DPV2_SENSOR_DPV2_2_12V_VOUT,
+  BIC_DPV2_SENSOR_DPV2_2_12V_IOUT,
+  BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP,
+  BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR,
+};
+
 const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_PCH_TEMP,
   BIC_SENSOR_CPU_TEMP,
@@ -482,6 +499,12 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_DIMME_PMIC_Pout,
   BIC_SENSOR_DIMMG_PMIC_Pout,
   BIC_SENSOR_DIMMH_PMIC_Pout,
+  //BIC - DPv2 x16 sensors
+  BIC_DPV2_SENSOR_DPV2_2_12V_VIN,
+  BIC_DPV2_SENSOR_DPV2_2_12V_VOUT,
+  BIC_DPV2_SENSOR_DPV2_2_12V_IOUT,
+  BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP,
+  BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR,
 };
 
 const uint8_t bic_1ou_skip_sensor_list[] = {
@@ -668,7 +691,16 @@ PAL_ATTR_INFO mp5990_info_list[] = {
   [HSC_TEMP] = {1, 0, 1},
 };
 
-//{SensorName, ID, FUNCTION, PWR_STATUS, {LNR, LCR, LNC, UNC, UCR, UNR, Pos, Neg}
+PAL_PMBUS_INFO dpv2_efuse_info_list[] = {
+  //(offset, m, b, r}
+  [DPV2_EFUSE_VIN]  = {0x88,                     7578,     0, -2},
+  [DPV2_EFUSE_VOUT] = {0x8B,                     7578,     0, -2},
+  [DPV2_EFUSE_IOUT] = {0x8C, 3.824 * DPV2_EFUSE_RLOAD, -4300, -3},
+  [DPV2_EFUSE_TEMP] = {0x8D,                      199,  7046, -2},
+  [DPV2_EFUSE_PIN]  = {0x97, 0.895 * DPV2_EFUSE_RLOAD, -9100, -2},
+};
+
+//{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNR, LNC, Pos, Neg}
 PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x00
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x01
@@ -818,12 +850,13 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8B
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8C
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
-
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x90
+  //{      SensorName,              ID, FUNCTION, PWR_STATUS, {LNR, LCR, LNC,   UNC,   UCR,   UNR, Pos, Neg}, Unit}
+  {"DPV2_1_12V_VIN"  , DPV2_EFUSE_VIN , read_dpv2_efuse, 0, {10, 10.8, 11.04, 12.96,  13.2,    14, 0, 0}, VOLT}, //0x8C
+  {"DPV2_1_12V_VOUT" , DPV2_EFUSE_VOUT, read_dpv2_efuse, 0, {10, 10.8, 11.04, 12.96,  13.2,    14, 0, 0}, VOLT}, //0x8D
+  {"DPV2_1_12V_IOUT" , DPV2_EFUSE_IOUT, read_dpv2_efuse, 0, { 0,    0,     0, 15.17, 15.47,  18.9, 0, 0}, CURR}, //0x8E
+  {"DPV2_1_EFUSETemp", DPV2_EFUSE_TEMP, read_dpv2_efuse, 0, { 0,    0,     0,     0,   100,   150, 0, 0}, TEMP}, //0x8F
+ 
+  {"DPV2_1_EFUSEPWR" , DPV2_EFUSE_PIN , read_dpv2_efuse, 0, { 0,    0,     0,     0,   186, 226.8, 0, 0}, POWER}, //0x90
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x91
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x92
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x93
@@ -973,6 +1006,8 @@ size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t
 size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_skip_sensor_cnt = sizeof(bic_2ou_gpv3_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_skip_sensor_cnt = sizeof(bic_1ou_edsff_skip_sensor_list)/sizeof(uint8_t);
+size_t bmc_dpv2_x8_sensor_cnt = sizeof(bmc_dpv2_x8_sensor_list)/sizeof(uint8_t);
+size_t bic_dpv2_x16_sensor_cnt = sizeof(bic_dpv2_x16_sensor_list)/sizeof(uint8_t);
 
 static int compare(const void *arg1, const void *arg2) {
   return(*(int *)arg2 - *(int *)arg1);
@@ -1108,8 +1143,12 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
         current_cnt += bic_2ou_gpv3_sensor_cnt;
-      } else if (board_type == DPV2_BOARD) {
-        current_cnt += 0;
+      } else if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bmc_dpv2_x8_sensor_list, bmc_dpv2_x8_sensor_cnt);
+        current_cnt += bmc_dpv2_x8_sensor_cnt;
+      } else if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dpv2_x16_sensor_list, bic_dpv2_x16_sensor_cnt);
+        current_cnt += bic_dpv2_x16_sensor_cnt;
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
         current_cnt += bic_2ou_sensor_cnt;
@@ -2065,6 +2104,58 @@ read_hsc_peak_pin(uint8_t hsc_id, float *value) {
   return PAL_EOK;
 }
 
+static int
+read_dpv2_efuse(uint8_t info, float *value) {
+  uint8_t offset = 0x0;
+  static int fd = -1;
+  uint8_t rbuf[9] = {0x00};
+  uint8_t rlen = 2;
+  int retry = MAX_RETRY;
+  int ret = ERR_NOT_READY;
+  float m = 0, b = 0, r = 0;
+  int raw_val = 0;
+  int fru = 0, type = 0;
+  PAL_SNR_INFO* snr_info = (PAL_SNR_INFO*)&info;
+
+  if (value == NULL) {
+    syslog(LOG_WARNING, "Invalid parameter");
+    return READING_NA;
+  }
+  fru = snr_info->fru;
+  type = snr_info->type;
+  offset = dpv2_efuse_info_list[type].offset;
+  if (fd < 0) { // open first time
+    fd = i2c_cdev_slave_open(FRU_DPV2_X8_BUS(fru), DPV2_EFUSE_SLAVE_ADDR, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_WARNING, "Failed to open bus %d", FRU_DPV2_X8_BUS(fru));
+      return READING_NA;
+    }
+  }
+
+  while ( ret < 0 && retry-- > 0 ) {
+    ret = i2c_rdwr_msg_transfer(fd, DPV2_EFUSE_SLAVE_ADDR << 1, &offset, 1, rbuf, rlen);
+  }
+  if ( ret < 0 ) {
+    if ( fd >= 0 ) {
+      close(fd);
+      fd = -1;
+    }
+    return READING_NA;
+  }
+  raw_val = (rbuf[1] << 8) | rbuf[0];
+  // 2's complement
+  if ((rbuf[1] >> 7) == 1) {
+    raw_val = (~raw_val + 1);
+    raw_val = -raw_val;
+  }
+  m = dpv2_efuse_info_list[type].m;
+  b = dpv2_efuse_info_list[type].b;
+  r = dpv2_efuse_info_list[type].r;
+  *value = ((float)raw_val * pow(10, -r) - b) / m;
+
+  return PAL_EOK;
+}
+
 static void
 pal_all_slot_power_ctrl(uint8_t opt, char *sel_desc) {
   int i = 0;
@@ -2175,6 +2266,7 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
   uint8_t reading_msb = 0;
+  static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
 
   ret = bic_get_server_power_status(fru, &power_status);
@@ -2204,9 +2296,16 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if (ret == 0) {
     return READING_SKIP;
   }
+  if (((config_status & PRESENT_2OU) == PRESENT_2OU) && (board_type[fru-1] == UNKNOWN_BOARD)) {
+    ret = fby35_common_get_2ou_board_type(fru, &board_type[fru-1]);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    }
+  }
 
   //check snr number first. If it not holds, it will move on
-  if (sensor_num <= 0x48) { //server board
+  if (sensor_num <= 0x48 || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
+      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, &sensor, NONE_INTF);
   } else if ( (sensor_num >= 0x50 && sensor_num <= 0x7F) && (bmc_location != NIC_BMC) && //1OU
        ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
@@ -2330,6 +2429,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   int ret = 0, i = 0;
   uint8_t id=0;
   uint8_t hsc_sesnor_num = 0x0;
+  uint8_t info = 0;
+  PAL_SNR_INFO* dpv2_snr_info = (PAL_SNR_INFO*) &info;
   static uint8_t hsc_type = HSC_ADM1278; // set main source as default type
   static uint8_t bmc_location = 0;
   static uint8_t config_status[MAX_NODES] = {CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN, CONFIG_UNKNOWN};
@@ -2343,6 +2444,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     BMC_SENSOR_HSC_PIN,
     BMC_SENSOR_HSC_IOUT
   };
+  static uint8_t board_type[MAX_NODES] = {UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD, UNKNOWN_BOARD};
 
   if ( bmc_location == 0 ) {
     if ( fby35_common_get_bmc_location(&bmc_location) < 0 ) {
@@ -2411,6 +2513,22 @@ skip_hsc_init:
         } else config_status[fru-1] = (uint8_t)ret;
         syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
       }
+      // DPv2 X8 sensors
+      if (((config_status[fru-1] & PRESENT_2OU) == PRESENT_2OU)) {
+        if (board_type[fru-1] == UNKNOWN_BOARD) {
+          ret = fby35_common_get_2ou_board_type(fru, &board_type[fru-1]);
+          if (ret < 0) {
+            syslog(LOG_WARNING, "%s() Failed to get 2OU board type", __func__);
+          }
+        } 
+        if (((board_type[fru-1] & DPV2_X8_BOARD) == DPV2_X8_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) && \
+          (sensor_num >= BMC_DPV2_SENSOR_DPV2_1_12V_VIN && sensor_num <= BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR)) {
+          dpv2_snr_info->fru = fru;
+          dpv2_snr_info->type = id;
+          ret = sensor_map[sensor_num].read_sensor(info, (float*) value);
+          break;
+        }
+      }
 
       //if we can't get the config status of the blade, return READING_NA.
       if ( pal_is_fw_update_ongoing(fru) == false && \
@@ -2453,10 +2571,28 @@ skip_hsc_init:
 
 int
 pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
+  uint8_t config_status = 0, board_type = 0;
+  int ret = 0;
+
   switch(fru) {
     case FRU_BMC:
     case FRU_NIC:
       sprintf(name, "%s", sensor_map[sensor_num].snr_name);
+      break;
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      if ((sensor_num >= BMC_DPV2_SENSOR_DPV2_1_12V_VIN) && (sensor_num <= BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR)) {
+        config_status = bic_is_m2_exp_prsnt(fru);
+        if ((config_status & PRESENT_2OU) == PRESENT_2OU ) {
+          ret = fby35_common_get_2ou_board_type(fru, &board_type);
+          if (ret < 0) {
+            return -1;
+          }
+          if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
+              snprintf(name, MAX_SNR_NAME_LEN, "%s", sensor_map[sensor_num].snr_name);
+          }
+        }
+      }
       break;
     default:
       return -1;
@@ -2521,6 +2657,14 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   switch (fru) {
     case FRU_BMC:
     case FRU_NIC:
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      // Only DPv2 X8 sensor threshold is got from sensor_map in slot1 & 3
+      if (((fru == FRU_SLOT1) || (fru == FRU_SLOT3)) && 
+        (sensor_num < BMC_DPV2_SENSOR_DPV2_1_12V_VIN || sensor_num > BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR)) {
+        return -1;
+      }
+
       switch(thresh) {
         case UCR_THRESH:
           *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
@@ -2592,6 +2736,33 @@ pal_sensor_sdr_path(uint8_t fru, char *path) {
   }
 
   return PAL_EOK;
+}
+
+bool
+pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num) {
+  uint8_t config_status = 0, board_type = 0;
+  int ret = 0;
+
+  switch(fru) {
+    case FRU_SLOT1:
+    case FRU_SLOT3:
+      if ((snr_num >= BMC_DPV2_SENSOR_DPV2_1_12V_VIN) && (snr_num <= BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR)) {
+        config_status = bic_is_m2_exp_prsnt(fru);
+        if ((config_status & PRESENT_2OU) == PRESENT_2OU ) {
+          ret = fby35_common_get_2ou_board_type(fru, &board_type);
+          if (ret < 0) {
+            return true;
+          }
+          if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
+              return false;
+          }
+        }
+      }
+      break;
+    default:
+      return true;
+  }
+  return true;
 }
 
 static int

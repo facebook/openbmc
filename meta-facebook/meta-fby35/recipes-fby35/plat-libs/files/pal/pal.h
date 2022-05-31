@@ -184,6 +184,7 @@ int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);
 int pal_check_slot_fru(uint8_t slot_id);
 int pal_clear_cmos(uint8_t slot_id);
 int pal_is_cable_connect_baseborad(uint8_t slot_id, uint16_t curr);
+bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 
 #ifdef __cplusplus
 } // extern "C"

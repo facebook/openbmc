@@ -64,6 +64,9 @@
 #define HSC_OUTPUT_CUR_UC_THRESHOLD 0xA7
 #define HSC_INPUT_PWR_UC_THRESHOLD 0xD2
 
+#define DPV2_EFUSE_RLOAD      14000
+#define DPV2_EFUSE_SLAVE_ADDR 0x50
+
 typedef struct {
   float lnr_thresh;
   float lcr_thresh;
@@ -371,6 +374,20 @@ enum {
   BB_HSC_PEAK_IOUT = 0xEB,
   BB_HSC_PEAK_PIN = 0xEC,
 
+  // BMC - DPv2 X8 sensors
+  BMC_DPV2_SENSOR_DPV2_1_12V_VIN    = 0x8C,
+  BMC_DPV2_SENSOR_DPV2_1_12V_VOUT   = 0x8D,
+  BMC_DPV2_SENSOR_DPV2_1_12V_IOUT   = 0x8E,
+  BMC_DPV2_SENSOR_DPV2_1_EFUSE_TEMP = 0x8F,
+  BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR  = 0x90,
+
+  // BIC - DPv2 X16 sensors
+  BIC_DPV2_SENSOR_DPV2_2_12V_VIN    = 0x91,
+  BIC_DPV2_SENSOR_DPV2_2_12V_VOUT   = 0x92,
+  BIC_DPV2_SENSOR_DPV2_2_12V_IOUT   = 0x93,
+  BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP = 0x94,
+  BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR  = 0x95,
+
   //BMC - sensors
   BMC_SENSOR_INLET_TEMP = 0xED,
   BMC_SENSOR_OUTLET_TEMP = 0xEE,
@@ -482,6 +499,14 @@ enum {
   HSC_TEMP,
 };
 
+enum {
+  DPV2_EFUSE_VIN = 0,
+  DPV2_EFUSE_VOUT,
+  DPV2_EFUSE_IOUT,
+  DPV2_EFUSE_TEMP,
+  DPV2_EFUSE_PIN,
+};
+
 typedef struct {
   float m;
   float b;
@@ -518,5 +543,17 @@ typedef struct {
   int integer :10;
   uint8_t fract :6;
 } PAL_S10_6_FORMAT;
+
+typedef struct {
+  uint8_t offset;
+  float m;
+  float b;
+  float r;
+} PAL_PMBUS_INFO;
+
+typedef struct {
+  uint8_t fru: 4;
+  uint8_t type: 4;
+} PAL_SNR_INFO;
 
 #endif

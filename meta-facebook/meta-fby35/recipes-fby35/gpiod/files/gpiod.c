@@ -626,7 +626,7 @@ gpio_monitor_poll(void *ptr) {
     cpld_io_sts[fru] = (GET_BIT(n_pin_val, PWRGD_SYS_PWROK)  << 0x0) | \
                        (GET_BIT(n_pin_val, RST_PLTRST_BUF_N) << 0x1) | \
                        (GET_BIT(n_pin_val, RST_RSMRST_BMC_N) << 0x2) | \
-                       (GET_BIT(n_pin_val, FM_CPU_RMCA_CATERR_LVT3_N ) << 0x3) | \
+                       (GET_BIT(n_pin_val, FM_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_PLD_N) << 0x4);
     if (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0) {
       if (retry_sec[fru-1] == (MAX_READ_RETRY*12)) {

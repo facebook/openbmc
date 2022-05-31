@@ -28,7 +28,7 @@ extern "C" {
 #include <libusb-1.0/libusb.h>
 #include "bic_fwupdate.h"
 
-#define MAX_GPIO_PINS 67
+#define MAX_GPIO_PINS 73
 
 #define PRESENT_1OU 1
 #define PRESENT_2OU 2
@@ -187,7 +187,7 @@ enum {
   H_BMC_PRDY_BUF_N,
   BMC_READY,
   BIC_READY,
-  FM_SOL_UART_CH_SEL_R,
+  FM_RMCA_LVT3_N,
   HSC_MUX_SWITCH_R,               //30
   FM_FORCE_ADR_N_R,
   PWRGD_CPU_LVC3,
@@ -195,7 +195,7 @@ enum {
   FM_THROTTLE_R_N,
   IRQ_HSC_ALERT2_N,
   SMB_SENSOR_LVC3_ALERT_N,
-  FM_CPU_RMCA_CATERR_LVT3_N,
+  FM_CATERR_LVT3_N,
   SYS_PWRBTN_N,
   RST_PLTRST_BUF_N,
   IRQ_BMC_PCH_NMI_R,              //40
@@ -218,11 +218,17 @@ enum {
   FM_MP_PS_FAIL_N,
   H_CPU_MEMTRIP_LVC3_N,
   FM_CPU_BIC_PROCHOT_LVT3_N,
-  IRQ_PVCCD_CPU0_VRHOT_LVC3_N,    //60
+  BOARD_ID2,                      //60
+  IRQ_PVCCD_CPU0_VRHOT_LVC3_N,
   FM_PVCCIN_CPU0_PWR_IN_ALERT_N,
+  BOARD_ID0,
+  BOARD_ID1,
+  BOARD_ID3,
   FM_THROTTLE_IN_N,
+  AUTH_COMPLETE,
+  AUTH_PRSNT_N,
   SGPIO_BMC_CLK_R,
-  SGPIO_BMC_LD_R_N,
+  SGPIO_BMC_LD_R_N,               //70
   SGPIO_BMC_DOUT_R,
   SGPIO_BMC_DIN,
 };

@@ -17,7 +17,7 @@
 #
 [Unit]
 Description=Setup GPIOs in OpenBMC
-Wants=setup_i2c.service systemd-modules-load.service
+Wants=systemd-modules-load.service
 Before=setup_i2c.service basic.target
 After=systemd-modules-load.service
 DefaultDependencies=no

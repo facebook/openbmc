@@ -19,7 +19,7 @@
 Description=Setup board configurations
 After=setup_i2c.service
 Before=basic.target
-Wants=openbmc_gpio_setup.service setup_i2c.service
+Wants=openbmc_gpio_setup.service
 DefaultDependencies=no
 
 [Service]

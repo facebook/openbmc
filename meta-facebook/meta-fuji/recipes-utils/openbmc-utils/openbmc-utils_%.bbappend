@@ -171,6 +171,7 @@ do_install:append() {
 FILES:${PN} += "${sysconfdir}"
 
 SYSTEMD_SERVICE:${PN} += "mount_data1.service setup_gpio.service"
+SYSTEMD_SERVICE:${PN} += "setup_i2c.service"
 
 #Not needed for fuji
 SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"

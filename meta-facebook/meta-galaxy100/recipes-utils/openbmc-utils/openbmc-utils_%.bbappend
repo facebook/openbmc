@@ -136,6 +136,7 @@ FILES:${PN} += "${sysconfdir}"
 
 SYSTEMD_SERVICES:${PN} += "us_monitor.service \
                        fix_fru_eeprom.service \
-                        sensors_config_fix.service"
+                        sensors_config_fix.service \
+                        setup_i2c.service"
 
 SYSTEMD_SERVICES:${PN}:remove = "setup_board.service"

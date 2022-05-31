@@ -22,7 +22,6 @@
 [Unit]
 Description=Wedge MAC setter
 Before=systemd-networkd.service
-Wants=setup_i2c.service
 After=setup_i2c.service
 
 [Service]

@@ -122,3 +122,5 @@ do_install_board() {
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE:${PN} += "setup_i2c.service"

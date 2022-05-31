@@ -79,6 +79,7 @@ do_install:append() {
 FILES:${PN} += "${sysconfdir} ${datadir}"
 
 SYSTEMD_SERVICE:${PN} += "mount_data1.service"
+SYSTEMD_SERVICE:${PN} += "setup_i2c.service"
 
 # Feature not required (error if enabled)
 SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"

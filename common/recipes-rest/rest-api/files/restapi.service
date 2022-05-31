@@ -17,7 +17,7 @@
 #
 [Unit]
 Description=OpenBMC REST API
-Wants=setup_i2c.service openbmc_gpio_setup.service fscd.service
+Wants=openbmc_gpio_setup.service fscd.service
 After=fscd.service openbmc_gpio_setup.service setup_i2c.service
 
 [Service]

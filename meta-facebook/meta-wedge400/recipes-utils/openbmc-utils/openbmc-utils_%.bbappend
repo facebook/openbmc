@@ -126,3 +126,5 @@ do_install:append() {
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE:${PN} += "setup_i2c.service"

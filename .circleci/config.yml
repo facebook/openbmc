@@ -71,7 +71,7 @@ jobs:
         docker:
             - image: ubuntu:focal
               environment:
-                  QEMU_URI: https://github.com/facebook/openbmc-qemu/releases/download/0.1.1
+                  QEMU_URI: https://github.com/facebook/openbmc-qemu/releases/download/0.2.0
               user: root
         resource_class: 2xlarge
         working_directory: /tmp/job/project
@@ -109,8 +109,9 @@ jobs:
             - run:
                 name: Download qemu-system-arm
                 command: |
-                    wget "${QEMU_URI}/qemu-system-arm"
-                    chmod +x qemu-system-arm
+                    wget "${QEMU_URI}/qemu-system-arm.ubuntu"
+                    chmod +x qemu-system-arm.ubuntu
+                    mv qemu-system-arm.ubuntu qemu-system-arm
             - run:
                 name: execute CIT tests
                 no_output_timeout: 15m

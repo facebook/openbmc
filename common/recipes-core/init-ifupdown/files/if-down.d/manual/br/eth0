@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+if [ "$IFACE" != "eth0" ]; then
+    exit 0
+fi
+
+if [ "$METHOD" != "manual" ]; then
+    exit 0
+fi
+
+if [ -x "$(command -v dhcpcd)" ]; then
+    dhcpcd -k -4 eth0 > /dev/null 2>&1
+else
+    kill -9 "$(cat /var/run/dhclient.eth0.pid)" > /dev/null 2>&1
+fi
+
+usleep 100000
+ip addr flush dev br0
+ip link set eth0 down
+
+exit 0

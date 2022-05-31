@@ -1,0 +1,5 @@
+auto eth0
+iface eth0 inet manual
+  up ip link set eth0 up
+  up dhclient -d -pf /var/run/dhclient.eth0.pid br0 > /dev/null 2>&1 &
+

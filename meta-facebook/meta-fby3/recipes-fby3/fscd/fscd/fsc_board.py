@@ -332,21 +332,24 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     exp_board_prsnt = c_uint8(0)
                     pesw_power = c_uint8(0)
 
-                    response = lpal_hndl.pal_is_fru_prsnt( #check if CWC board, top/bot GPv3 board is present
-                        int(cwc_fru_map[board]["fru"]),
-                        byref(exp_board_prsnt),
-                    )
-                    if response < 0 or exp_board_prsnt.value == 0: # exp board not present
-                        return 0
+                    if board == "slot1_2U_exp" or board == "slot1_2U_top" or board == "slot1_2U_bot":
+                        response = lpal_hndl.pal_is_fru_prsnt( #check if CWC board, top/bot GPv3 board is present
+                            int(cwc_fru_map[board]["fru"]),
+                            byref(exp_board_prsnt),
+                        )
+                        if response < 0 or exp_board_prsnt.value == 0: # exp board not present
+                            return 0
 
-                    response = lpal_hndl.pal_is_pesw_power_on(
-                        int(cwc_fru_map[board]["fru"]),
-                        byref(pesw_power),
-                    )
-                    if response < 0 or pesw_power.value == 0: # PESW not power ready
-                        return 0
+                        response = lpal_hndl.pal_is_pesw_power_on(
+                            int(cwc_fru_map[board]["fru"]),
+                            byref(pesw_power),
+                        )
+                        if response < 0 or pesw_power.value == 0: # PESW not power ready
+                            return 0
+                        else:
+                            return 1
                     else:
-                        return 1
+                        return 1 #  non-CWC GPV3 PESW is present while power on
                 # check if boot driver supports sensor reading
                 elif search(r"ssd", sname) is not None:
                     response = lpal_hndl.pal_is_sensor_valid(

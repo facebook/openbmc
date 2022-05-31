@@ -97,5 +97,13 @@ max([
     all:slot1_gp3_e1s1_temp,
     all:slot3_gp3_e1s0_temp,
     all:slot3_gp3_e1s1_temp])),
+  linear_gp_pesw(
+    max([
+    all:slot1_gp3_pesw_temp,
+    all:slot3_gp3_pesw_temp]))+
+  pid_gp_pesw(
+    max([
+    all:slot1_gp3_pesw_temp,
+    all:slot3_gp3_pesw_temp])),
   linear_nic(all:nic_nic_sensor_temp) + pid_nic(all:nic_nic_sensor_temp)
 ])

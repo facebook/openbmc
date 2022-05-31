@@ -1,5 +1,5 @@
 {
-  "version": "fby3-gpv3-config-d-v2022.02.24",
+  "version": "fby3-gpv3-config-d-v2022.05.24",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -46,9 +46,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 24, 16 ],
-        [ 29, 18 ],
-        [ 34, 20 ],
+        [ 24, 22 ],
+        [ 29, 26 ],
+        [ 34, 30 ],
         [ 38, 40 ],
         [ 40, 70 ]
       ]
@@ -61,8 +61,8 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ -14, 15 ],
-        [ -12, 30 ]
+        [ -15, 22 ],
+        [ -12, 28 ]
       ]
     },
     "pid_cpu_margin": {
@@ -85,9 +85,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [62, 14],
-        [66, 16],
-        [70, 18]
+        [62, 18],
+        [66, 20],
+        [70, 22]
       ]
     },
     "pid_dimm": {
@@ -110,8 +110,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [70, 14],
-        [72, 16]
+        [64, 22],
+        [68, 30],
+        [72, 42]
       ]
     },
     "pid_gp_m2": {
@@ -122,7 +123,7 @@
       "setpoint": 75,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
-      "kp": -1.5,
+      "kp": -3,
       "ki": -0.02,
       "kd": 0
     },
@@ -134,8 +135,8 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [50, 14],
-        [54, 16]
+        [50, 20],
+        [54, 22]
       ]
     },
     "pid_e1s_temp": {
@@ -169,6 +170,30 @@
       },
       "type": "pid",
       "setpoint": 90,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -3,
+      "ki": -0.01,
+      "kd": 0
+    },
+    "linear_gp_pesw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [70, 22],
+        [75, 30]
+      ]
+    },
+    "pid_gp_pesw": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 85,
       "negative_hysteresis": 2,
       "positive_hysteresis": 1,
       "kp": -3,

@@ -296,6 +296,48 @@ const uint8_t bic_1ou_edsff_sensor_list[] = {
   BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
+const uint8_t bic_1ou_wf_sensor_list[] = {
+  BIC_1OU_WF_SENSOR_TEMP,
+  BIC_1OU_WF_SENSOR_CXL_EMC1412_TEMP,
+  BIC_1OU_WF_SENSOR_SSD0_TEMP,
+  BIC_1OU_WF_SENSOR_SSD1_TEMP,
+  BIC_1OU_WF_SENSOR_SSD2_TEMP,
+  BIC_1OU_WF_SENSOR_P0V9ASICD_TEMP,
+  BIC_1OU_WF_SENSOR_P0V9ASICA1_TEMP,
+  BIC_1OU_WF_SENSOR_P0V9ASICA2_TEMP,
+  BIC_1OU_WF_SENSOR_PVDDQAB_TEMP,
+  BIC_1OU_WF_SENSOR_CXL_ON_DIE_TEMP,
+  BIC_1OU_WF_SENSOR_DIMMA_TEMP,
+  BIC_1OU_WF_SENSOR_DIMMB_TEMP,
+  BIC_1OU_WF_SENSOR_12V_STBY_VOL,
+  BIC_1OU_WF_SENSOR_3V3_STBY_VOL,
+  BIC_1OU_WF_SENSOR_12V_E1S_VOL,
+  BIC_1OU_WF_SENSOR_VDD_1V2_VOL,
+  BIC_1OU_WF_SENSOR_VDD_1V8_VOL,
+  BIC_1OU_WF_SENSOR_3V3_E1S_VOL,
+  BIC_1OU_WF_SENSOR_PVPP2V5AB_VOL,
+  BIC_1OU_WF_SENSOR_PVTT0V6AB_VOL,
+  BIC_1OU_WF_SENSOR_5V_STBY_VOL,
+  BIC_1OU_WF_SENSOR_12V_E1S_INA230_VOL,
+  BIC_1OU_WF_SENSOR_PVPPAB_INA230_VOL,
+  BIC_1OU_WF_SENSOR_P0V9ASICD_VOL,
+  BIC_1OU_WF_SENSOR_P0V9ASICA1_VOL,
+  BIC_1OU_WF_SENSOR_P0V9ASICA2_VOL,
+  BIC_1OU_WF_SENSOR_PVDDQAB_VOL,
+  BIC_1OU_WF_SENSOR_E1S_12V_INA230_CUR,
+  BIC_1OU_WF_SENSOR_PVPPAB_INA230_CUR,
+  BIC_1OU_WF_SENSOR_P0V9ASICD_CUR,
+  BIC_1OU_WF_SENSOR_P0V9ASICA1_CUR,
+  BIC_1OU_WF_SENSOR_P0V9ASICA2_CUR,
+  BIC_1OU_WF_SENSOR_PVDDQAB_CUR,
+  BIC_1OU_WF_SENSOR_E1S_12V_INA230_PWR,
+  BIC_1OU_WF_SENSOR_PVPPAB_INA230_PWR,
+  BIC_1OU_WF_SENSOR_P0V9ASICD_PWR,
+  BIC_1OU_WF_SENSOR_P0V9ASICA1_PWR,
+  BIC_1OU_WF_SENSOR_P0V9ASICA2_PWR,
+  BIC_1OU_WF_SENSOR_PVDDQAB_PWR,
+};
+
 const uint8_t bic_2ou_gpv3_sensor_list[] = {
   // temperature
   BIC_GPV3_INLET_TEMP,
@@ -999,6 +1041,7 @@ size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_wf_sensor_cnt = sizeof(bic_1ou_wf_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t);
 size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
@@ -1125,6 +1168,9 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       if (type == EDSFF_1U) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
         current_cnt += bic_1ou_edsff_sensor_cnt;
+      } else if (type == WF_1U) {
+        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_wf_sensor_list, bic_1ou_wf_sensor_cnt);
+        current_cnt += bic_1ou_wf_sensor_cnt;
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
         current_cnt += bic_1ou_sensor_cnt;

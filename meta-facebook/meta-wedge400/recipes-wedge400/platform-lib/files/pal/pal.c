@@ -6221,6 +6221,7 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value) {
     case FRU_FAN3:
     case FRU_FAN4:
       fan_sensor_poll_interval(sensor_num, value);
+      break;
     case FRU_SMB:
       smb_sensor_poll_interval(sensor_num, value);
       break;

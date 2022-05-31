@@ -5403,6 +5403,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     case FRU_FAN3:
     case FRU_FAN4:
       ret = get_fan_sensor_units(sensor_num, units);
+      break;
     case FRU_SMB:
       ret = get_smb_sensor_units(sensor_num, units);
       break;
@@ -6682,13 +6683,13 @@ void set_fan_led(int brd_rev)
     }
   }
   for(i = 0; i < fan_num; i++) {
-    if(smb_sensor_read(sensor_num[i],&value)) {
+    if(fan_sensor_read(sensor_num[i],&value)) {
       OBMC_WARN("%s: can't access %s\n",__func__,path);
       goto cleanup;
     }
 
-    pal_get_sensor_threshold(FRU_SMB, sensor_num[i], UCR_THRESH, &unc);
-    pal_get_sensor_threshold(FRU_SMB, sensor_num[i], LCR_THRESH, &lcr);
+    pal_get_sensor_threshold(FRU_FAN1, sensor_num[i], UCR_THRESH, &unc);
+    pal_get_sensor_threshold(FRU_FAN1, sensor_num[i], LCR_THRESH, &lcr);
 #ifdef DEBUG
     OBMC_INFO("fan %d\n",i);
     OBMC_INFO(" val %d\n",value);
@@ -6700,13 +6701,13 @@ void set_fan_led(int brd_rev)
       goto cleanup;
     }
     else if(value > unc){
-      pal_get_sensor_name(FRU_SMB,sensor_num[i],sensor_name);
+      pal_get_sensor_name(FRU_FAN1,sensor_num[i],sensor_name);
       OBMC_WARN("%s: %s value is over than UNC ( %.2f > %.2f )\n",
       __func__,sensor_name,value,unc);
       goto cleanup;
     }
     else if(value < lcr){
-      pal_get_sensor_name(FRU_SMB,sensor_num[i],sensor_name);
+      pal_get_sensor_name(FRU_FAN1,sensor_num[i],sensor_name);
       OBMC_WARN("%s: %s value is under than LCR ( %.2f < %.2f )\n",
       __func__,sensor_name,value,lcr);
       goto cleanup;

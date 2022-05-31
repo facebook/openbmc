@@ -131,7 +131,8 @@ async def _execute_fpga_ver() -> t.Dict[str, t.Any]:
     for row in stdout.split("\n"):
         if "--" not in row:
             pieces = row.split(":")
-            results[pieces[0].replace(" ", "_")] = pieces[1]
+            if len(pieces) > 1:
+                results[pieces[0].replace(" ", "_")] = pieces[1]
     return results
 
 

@@ -40,7 +40,9 @@ PIM 5: 7.4
 PIM 6: 7.4
 PIM 7: 7.4
 PIM 8: 7.4
-PIM 9: 7.4"""
+PIM 9: 7.4
+
+"""
 FPGA_VER_RESULT = (0, FPGA_VER_RESP, None)
 
 

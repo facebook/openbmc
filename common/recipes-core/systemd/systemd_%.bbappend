@@ -27,6 +27,7 @@ SRC_URI += " \
         file://coredump.conf \
         file://journald-maxlevel.conf \
         file://lastlog.conf \
+        file://lock.conf \
 "
 
 do_install:append() {
@@ -38,6 +39,9 @@ do_install:append() {
 
     # Create /var/log/{wtmp,lastlog} at boot
     install -m 644 -D ${WORKDIR}/lastlog.conf ${D}${sysconfdir}/tmpfiles.d/lastlog.conf
+
+    # Create /run/lock at boot
+    install -m 644 -D ${WORKDIR}/lock.conf ${D}${sysconfdir}/tmpfiles.d/lock.conf
 
     # systemd 234 (rocko) does not support RequiredForOnline=no.
     sed -i 's@ExecStart.*@\0 --ignore=eth0.4088@' ${D}${systemd_unitdir}/system/systemd-networkd-wait-online.service

@@ -28,6 +28,7 @@ LOCAL_URI = " \
     file://sol-util \
     file://setup-i2c-dev.sh \
     file://setup-por.sh \
+    file://sync_date.sh \
     "
 
 pkgdir = "utils"
@@ -66,7 +67,9 @@ do_install() {
 # setup-i2c-dev.sh
   install -m 755 setup-i2c-dev.sh ${D}${sysconfdir}/init.d/setup-i2c-dev.sh
   update-rc.d -r ${D} setup-i2c-dev.sh start 60 5 .
-
+# sync_date.sh
+  install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
+  update-rc.d -r ${D} sync_date.sh start 66 5 .
 
 # install check_eth0_ipv4.sh
 #  install -m 755 ifup.sh ${D}${sysconfdir}/init.d/ifup.sh

@@ -5,6 +5,7 @@
 #include "bic_bios.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
+#include <openbmc/pal.h>
 
 using namespace std;
 
@@ -82,10 +83,16 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     return -1;
   }
 
-  if (!force) {
-    cerr << "Putting ME into recovery mode..." << endl;
-    ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
+  cerr << "Putting ME into recovery mode..." << endl;
+  ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
+
+  //If you are doing force update, it will keep executing whether it has successfully entered recovery mode
+  if ((ret_recovery < 0) && (force == false)) {
+    cerr << "Failed to put ME into recovery mode. Stopping the update!" << endl;
+    pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+    return ret_recovery;
   }
+
   // cerr << "Enabling USB..." << endl;
   // bic_set_gpio(slot_id, RST_USB_HUB_N_R, GPIO_HIGH);
   sleep(1);
@@ -107,13 +114,16 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   cerr << "Switching BIOS SPI MUX for default value..." << endl;
   bic_set_gpio(slot_id, FM_SPI_PCH_MASTER_SEL_R, GPIO_LOW);
   sleep(3);
-  if (!force) {
-    cerr << "Doing ME Reset..." << endl;
-    ret_reset = me_reset(slot_id);
-    sleep(5);
-  }
+
+  // Have to do ME reset, because we have put ME into recovery mode.
+  cerr << "Doing ME Reset..." << endl;
+  ret_reset = me_reset(slot_id);
+  sleep(5);
+
   cerr << "Power-cycling the server..." << endl;
-  if (ret_reset || ret_recovery) {
+
+  //If doing recovery (force), 12V-cycle is necessary for concerning BIOS/ME crash case
+  if (force || ret_reset || ret_recovery) {
     syslog(LOG_CRIT, "Server 12V cycle due to %s failed when BIOS update", 
             ret_recovery ? "putting ME into recovery mode" : "ME reset");
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);

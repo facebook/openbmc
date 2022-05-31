@@ -36,7 +36,7 @@ if [[ $# -lt 1 || $# -gt 2 ]]
 then
   usage
 else
-  if [[ "$2" -eq "--history" ]]; then
+  if [[ "$2" == "--history" ]]; then
     cat "$LOGFILE_B" "$LOGFILE" 2>/dev/null
     exit 0
   fi

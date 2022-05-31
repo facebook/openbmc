@@ -30,7 +30,7 @@ SLOT_NUM=
 I2C_NUM=
 
 show_usage() {
-  echo "Usage: recovery-bic-util [ slot1 | slot2 | slot3 | slot4 ] [-f] [ sb | bb ] <uart image path> <ipmb image path>"
+  echo "Usage: recovery-bic-util [ slot1 | slot2 | slot3 | slot4 ] [-f] [ sb | bb | 1ou ] <uart image path> <ipmb image path>"
   echo "-f : forced update"
   echo "Recovery update for BIC"
   echo ""
@@ -89,31 +89,32 @@ fi
 
 if [ "$2" = "-f" ] ; then
   force=true
-  if [ "$3" = "bb" ] ; then
-    component="bb_bic"
-  elif [ "$3" = "sb" ] ; then
-    component="bic"
-  else
-    echo "Component $component not supported"
-    show_usage
-    exit 255
-  fi
+  input_component="$3"
   uart_image="$4"
   i2c_image="$5"
 else
   force=flase
-  if [ "$2" = "bb" ] ; then
-    component="bb_bic"
-  elif [ "$2" = "sb" ] ; then
-    component="bic"
-  else
-    echo "Component $component not supported"
-    show_usage
-    exit 255
-  fi
+  input_component="$2"
   uart_image="$3"
   i2c_image="$4"
 fi
+
+case $input_component in
+  bb)
+    component="bb_bic"
+    ;;
+  sb)
+    component="bic"
+    ;;
+  1ou)
+    component="1ou_bic"
+    ;;
+  *)
+    echo "Component $component not supported"
+    show_usage
+    exit 255
+    ;;
+esac
 
 if [ -z "$uart_image" ]; then
   echo "Please provide UART image"
@@ -136,6 +137,30 @@ fi
 SLOT_NUM=$(get_slot_num "$SLOT")
 I2C_NUM=$(get_bus_num "$SLOT")
 SLED_TYPE=$(cat "$SLED_TYPE")
+
+TARGET_CPLD_ADDR=
+SB_UART_MUX_SWITCH_REG="0x01"
+SB_UART_MUX_SWITCH_VAL=
+BIC_BOOT_STRAP_REG=
+BIC_BOOT_STRAP_UART_VAL="0x01"
+BIC_BOOT_STRAP_SPI_VAL="0x00"
+
+if [ "$component" = "bb_bic" ]; then
+  TARGET_CPLD_ADDR="$BB_CPLD_ADDR"
+  SB_UART_MUX_SWITCH_VAL="0x04"
+  BIC_BOOT_STRAP_REG="0x28"
+elif [ "$component" = "bic" ]; then
+  TARGET_CPLD_ADDR="$SB_CPLD_ADDR"
+  SB_UART_MUX_SWITCH_VAL="0x03"
+  BIC_BOOT_STRAP_REG="0x10"
+elif [ "$component" = "1ou_bic" ]; then
+  TARGET_CPLD_ADDR="$SB_CPLD_ADDR"
+  SB_UART_MUX_SWITCH_VAL="0x01"
+  BIC_BOOT_STRAP_REG="0x22"
+else
+  show_usage
+  exit 255
+fi
 
 # Set slot UART to SB BIC
 echo "Setting slot UART to SB BIC"
@@ -161,11 +186,7 @@ else
 fi
 
 # Switch UART to corresponding BIC
-if [ "$component" = "bb_bic" ]; then
-  set_cpld_reg "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x04
-else
-  set_cpld_reg "$I2C_NUM" "$SB_CPLD_ADDR" 0x01 0x03
-fi
+set_cpld_reg "$I2C_NUM" "$SB_CPLD_ADDR" "$SB_UART_MUX_SWITCH_REG" "$SB_UART_MUX_SWITCH_VAL"
 
 if [ "$component" = "bb_bic" ]; then
   mb_index=$(/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xc0 0xf0 | awk '{print $NF}')
@@ -189,11 +210,7 @@ fi
 
 # Set BIC boot from UART
 echo "Setting BIC boot from UART"
-if [ "$component" = "bb_bic" ]; then
-  set_cpld_reg "$I2C_NUM" "$BB_CPLD_ADDR" 0x28 0x01
-else
-  set_cpld_reg "$I2C_NUM" "$SB_CPLD_ADDR" 0x10 0x01
-fi
+set_cpld_reg "$I2C_NUM" "$TARGET_CPLD_ADDR" "$BIC_BOOT_STRAP_REG" "$BIC_BOOT_STRAP_UART_VAL"
 
 # set UART to 115200
 /bin/stty -F "/dev/ttyS$SLOT_NUM" 115200
@@ -214,11 +231,7 @@ else
 fi
 
 # Set BIC boot from spi
-if [ "$component" = "bb_bic" ]; then
-  set_cpld_reg "$I2C_NUM" "$BB_CPLD_ADDR" 0x28 0x00
-else
-  set_cpld_reg "$I2C_NUM" "$SB_CPLD_ADDR" 0x10 0x00
-fi
+set_cpld_reg "$I2C_NUM" "$TARGET_CPLD_ADDR" "$BIC_BOOT_STRAP_REG" "$BIC_BOOT_STRAP_SPI_VAL"
 
 echo "Power-cycling the server..."
 if [ "$component" = "bb_bic" ]; then

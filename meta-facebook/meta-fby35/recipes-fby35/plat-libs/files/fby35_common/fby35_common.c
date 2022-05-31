@@ -649,7 +649,7 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
   printf("\n");
 #endif
 
-  if (strncmp((char*)md5_digest, (char*)data, sizeof(md5_digest)) != 0) {
+  if (strncmp((char*)md5_digest, (char*)data, MD5_SIZE) != 0) {
     if(is_first)
       printf("MD5-1 checksum incorrect. This image is corrupted or unsigned\n");
     else

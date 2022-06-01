@@ -25,7 +25,7 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
       ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
       break;
     case FW_BB_BIC:
-      ret = get_board_rev(0, BOARD_ID_BB, &board_rev);
+      ret = get_board_rev(slot_id, BOARD_ID_BB, &board_rev);
       break;
   }
   if (ret < 0) {

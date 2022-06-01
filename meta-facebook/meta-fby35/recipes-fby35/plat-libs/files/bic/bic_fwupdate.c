@@ -819,7 +819,7 @@ bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force) {
 }
 
 int
-get_cpld_revid(uint8_t cpld_bus, uint8_t reg_addr, uint8_t* rev_id){
+get_board_revid_from_cpld(uint8_t cpld_bus, uint8_t reg_addr, uint8_t* rev_id){
   int i2cfd = 0;
   uint8_t rbuf[2] = {0};
   uint8_t rlen = sizeof(rbuf);
@@ -862,22 +862,69 @@ get_cpld_revid(uint8_t cpld_bus, uint8_t reg_addr, uint8_t* rev_id){
 }
 
 int
+get_board_revid_from_bbbic(uint8_t slot_id, uint8_t* rev_id) {
+  uint8_t tbuf[4] = {0x01, 0x1E, 0x01, 0x08}; // 0x01=bus, 0x1E=cpld address, 0x01=read count, 0x08=CPLD offset to get board rev
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 0;
+
+  if (rev_id == NULL) {
+    syslog(LOG_WARNING, "%s: fail to get board revision ID due to getting NULL input *rev_id  \n", __func__);
+    return -1;
+  }
+
+  int ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to get board revision ID because IPMB command fail. Ret: %d\n", __func__, ret);
+    return ret;
+  }
+  *rev_id = rbuf[0];
+  return ret;
+}
+
+int
 get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
+  uint8_t bmc_location = 0;
   int ret = 0;
 
-  switch (board_id) {
-    case BOARD_ID_NIC_EXP:
-      ret = get_cpld_revid(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-      break;
-    case BOARD_ID_BB:
-      ret = get_cpld_revid(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-      break;
-    case BOARD_ID_SB:
-      ret = get_cpld_revid(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-      break;
-    default:
-      syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
-      return -1;
+  if ( rev_id == NULL ) {
+    syslog(LOG_WARNING, "%s: fail to get board revision ID due to getting NULL input *rev_id \n", __func__);
+    return -1;
+  }
+
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
+
+  if ( bmc_location == BB_BMC ) { // class 1
+    switch (board_id) {
+      case BOARD_ID_BB:
+        ret = get_board_revid_from_cpld(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        break;
+      case BOARD_ID_SB:
+        ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        break;
+      default:
+        syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
+        return -1;
+    }
+  } else { // class 2
+    switch (board_id) {
+      case BOARD_ID_NIC_EXP:
+        ret = get_board_revid_from_cpld(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        break;
+      case BOARD_ID_BB:
+        ret = get_board_revid_from_bbbic(FRU_SLOT1, rev_id);
+        break;
+      case BOARD_ID_SB:
+        ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        break;
+      default:
+        syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
+        return -1;
+    }
   }
 
   return ret;

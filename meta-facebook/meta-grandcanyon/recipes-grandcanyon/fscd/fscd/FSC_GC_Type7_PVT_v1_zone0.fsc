@@ -2,6 +2,7 @@ max([
   linear_soc_therm_margin(server:bs_therm_margin) + pid_soc_therm_margin(server:bs_therm_margin),
   linear_nic_sensor_temp(nic:nic_sensor_temp) + pid_nic_sensor_temp(nic:nic_sensor_temp),
   linear_scc_ioc_temp(scc:scc_ioc_temp) + pid_scc_ioc_temp(scc:scc_ioc_temp),
+  linear_iocm_ioc_temp(e1s_iocm:iocm_ioc_temp) + pid_iocm_ioc_temp(e1s_iocm:iocm_ioc_temp),
   linear_boot_drv_temp(server:bs_boot_drv_temp) + pid_boot_drv_temp(server:bs_boot_drv_temp),
   linear_uic_inlet_temp(uic:uic_inlet_temp)
 ]) 

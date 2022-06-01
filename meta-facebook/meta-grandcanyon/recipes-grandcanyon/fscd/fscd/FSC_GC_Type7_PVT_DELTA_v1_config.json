@@ -135,6 +135,40 @@
       "ki": -0.1,
       "kd": 0
     },
+    "linear_iocm_ioc_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [ 0, 15 ],
+        [ 84, 15 ],
+        [ 85, 17 ],
+        [ 86, 20 ],
+        [ 87, 23 ],
+        [ 88, 26 ],
+        [ 89, 30 ],
+        [ 90, 35 ],
+        [ 91, 40 ],
+        [ 92, 45 ],
+        [ 93, 50 ],
+        [ 94, 55 ]
+      ]
+    },
+    "pid_iocm_ioc_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 88,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -1.5,
+      "ki": -0.1,
+      "kd": 0
+    },
     "linear_boot_drv_temp": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"

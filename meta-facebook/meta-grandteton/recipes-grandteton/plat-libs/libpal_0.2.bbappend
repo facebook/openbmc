@@ -10,6 +10,8 @@ LOCAL_URI += "\
     file://pal_common.c \
     file://pal_common.h \
     file://pal_def.h \
+    file://pal_sensors.c \
+    file://pal_sensors.h \
     file://plat/meson.build \
     "
 
@@ -22,6 +24,7 @@ DEPENDS += " \
     libobmc-pmbus \
     libobmc-sensors \
     libpeci \
+    libpeci-sensors \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -35,4 +38,5 @@ RDEPENDS:${PN} += " \
     libobmc-pmbus \
     libobmc-sensors \
     libpeci \
+    libpeci-sensors \
     "

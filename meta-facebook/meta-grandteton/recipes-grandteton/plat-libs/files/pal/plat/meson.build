@@ -4,6 +4,7 @@ pal_headers += [
     'pal_cfg.h',
     'pal_common.h',
     'pal_def.h',
+    'pal_sensors.h',
     ]
 
 pal_sources += [
@@ -11,6 +12,7 @@ pal_sources += [
     'pal_power.c',
     'pal_cfg.c',
     'pal_common.c',
+    'pal_sensors.c',
     ]
 
 pal_deps += [
@@ -22,4 +24,5 @@ pal_deps += [
     cc.find_library('obmc-pmbus'),
     cc.find_library('obmc-sensors'),
     cc.find_library('peci'),
+    cc.find_library('peci_sensors'),
     ]

@@ -198,7 +198,7 @@ int set_me_entry_into_recovery(void) {
 
 //Systm AC Cycle
 int pal_sled_cycle(void) {
-  return system("i2cset -f -y 36 0x10 0xd9 c &> /dev/null");	
+  return system("i2cset -f -y 38 0x10 0xd9 c &> /dev/null");	
 }
 
 // Return the front panel's Reset Button status
@@ -229,7 +229,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
     return -1;
   }
 
-  gdesc = gpio_open_by_shadow(RST_BMC_RSTBTN_OUT_N);
+  gdesc = gpio_open_by_shadow(GPIO_RESET_BTN_OUT);
   if (gdesc == NULL)
     return -1;
 

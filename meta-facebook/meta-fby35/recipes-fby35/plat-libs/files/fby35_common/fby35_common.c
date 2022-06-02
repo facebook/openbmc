@@ -639,17 +639,17 @@ fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data
 #ifdef DEBUG
   int i = 0;
   printf("calculated MD5:\n");
-  for(i = 0; i < 16; i++) {
+  for(i = 0; i < MD5_SIZE; i++) {
     printf("%02X ", md5_digest[i]);
   }
   printf("\nImage MD5\n");
-  for(i = 0; i < 16; i++) {
+  for(i = 0; i < MD5_SIZE; i++) {
     printf("%02X ", data[i]);
   }
   printf("\n");
 #endif
 
-  if (strncmp((char*)md5_digest, (char*)data, MD5_SIZE) != 0) {
+  if (memcmp(md5_digest, data, MD5_SIZE) != 0) {
     if(is_first)
       printf("MD5-1 checksum incorrect. This image is corrupted or unsigned\n");
     else

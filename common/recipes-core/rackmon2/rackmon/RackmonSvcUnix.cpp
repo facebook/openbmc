@@ -18,15 +18,19 @@ class RackmonUNIXSocketService : public UnixService {
   Rackmon rackmond_{};
 
   // Handle commands with the JSON format.
-  void handleJSONCommand(const json& req, json& resp);
-  void handleJSONCommand(const json& req, UnixSock& cli);
+  void executeJSONCommand(const json& req, json& resp);
+  void handleJSONCommand(
+      std::unique_ptr<json> reqPtr,
+      std::unique_ptr<UnixSock> cli);
   // Handle commands with the legacy byte format.
   void handleLegacyCommand(
       const std::vector<char>& req_buf,
       std::vector<char>& resp_buf);
   void handleLegacyCommand(const std::vector<char>& req_buf, UnixSock& cli);
 
-  void handleRequest(const std::vector<char>& buf, UnixSock& sock) override;
+  void handleRequest(
+      const std::vector<char>& buf,
+      std::unique_ptr<UnixSock> sock) override;
 
  public:
   RackmonUNIXSocketService() : UnixService("/var/run/rackmond.sock") {}
@@ -37,7 +41,7 @@ class RackmonUNIXSocketService : public UnixService {
   void deinitialize() override;
 };
 
-void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
+void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
   std::string cmd;
   req.at("type").get_to(cmd);
   if (cmd == "raw") {
@@ -73,8 +77,9 @@ void RackmonUNIXSocketService::handleJSONCommand(const json& req, json& resp) {
 }
 
 void RackmonUNIXSocketService::handleJSONCommand(
-    const json& req,
-    UnixSock& cli) {
+    std::unique_ptr<json> reqPtr,
+    std::unique_ptr<UnixSock> cli) {
+  const json& req = *reqPtr;
   auto print_msg = [&req](std::exception& e) {
     logError << "ERROR Executing: " << req["type"] << e.what() << std::endl;
   };
@@ -86,7 +91,7 @@ void RackmonUNIXSocketService::handleJSONCommand(
   // each exception to an error code.
   // TODO: Work with rest-api to correctly define these.
   try {
-    handleJSONCommand(req, resp);
+    executeJSONCommand(req, resp);
   } catch (CRCError& e) {
     resp["status"] = "CRC_ERROR";
     print_msg(e);
@@ -112,7 +117,7 @@ void RackmonUNIXSocketService::handleJSONCommand(
 
   std::string resp_s = resp.dump();
   try {
-    cli.send(resp_s.c_str(), resp_s.length());
+    cli->send(resp_s.c_str(), resp_s.length());
   } catch (std::exception& e) {
     logError << "Unable to send response: " << e.what() << std::endl;
   }
@@ -192,19 +197,29 @@ void RackmonUNIXSocketService::deinitialize() {
 
 void RackmonUNIXSocketService::handleRequest(
     const std::vector<char>& buf,
-    UnixSock& sock) {
+    std::unique_ptr<UnixSock> sock) {
   bool is_json = true;
-  json req;
+  std::unique_ptr<json> req = std::make_unique<json>();
   try {
-    req = json::parse(buf);
+    *req = json::parse(buf);
   } catch (...) {
     is_json = false;
   }
 
-  if (is_json)
-    handleJSONCommand(req, sock);
-  else
-    handleLegacyCommand(buf, sock);
+  if (is_json) {
+    if ((*req)["type"] == "raw") {
+      handleJSONCommand(std::move(req), std::move(sock));
+    } else {
+      auto tid = std::thread(
+          &RackmonUNIXSocketService::handleJSONCommand,
+          this,
+          std::move(req),
+          std::move(sock));
+      tid.detach();
+    }
+  } else {
+    handleLegacyCommand(buf, *sock);
+  }
 }
 
 } // namespace rackmonsvc

@@ -10,10 +10,10 @@ using namespace rackmonsvc;
 class TestService : public UnixService {
   public:
   TestService() : UnixService("./test.sock") {}
-  void handleRequest(const std::vector<char>& req, UnixSock& cli) override {
+  void handleRequest(const std::vector<char>& req, std::unique_ptr<UnixSock> cli) override {
     std::vector<char> resp(req);
     std::reverse(resp.begin(), resp.end());
-    cli.send(resp);
+    cli->send(resp);
   }
 };
 

@@ -70,7 +70,9 @@ class UnixService {
 
   void handleConnection(std::unique_ptr<UnixSock> sock);
 
-  virtual void handleRequest(const std::vector<char>& req, UnixSock& cli) = 0;
+  virtual void handleRequest(
+      const std::vector<char>& req,
+      std::unique_ptr<UnixSock> cli) = 0;
 
  public:
   UnixService(const std::string& sockPath) : sockPath_(sockPath) {}

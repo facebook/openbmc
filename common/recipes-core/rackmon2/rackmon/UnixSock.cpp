@@ -71,7 +71,7 @@ void UnixSock::sendChunk(const char* buf, uint16_t bufLen) {
     retries++;
     if (retries == maxRetries) {
       throw std::system_error(
-        std::error_code(errno, std::generic_category()), "send header");
+          std::error_code(errno, std::generic_category()), "send header");
     }
   }
   if (bufLen == 0)
@@ -83,7 +83,7 @@ void UnixSock::sendChunk(const char* buf, uint16_t bufLen) {
     if (chunkSize < 0) {
       if (retries == maxRetries) {
         throw std::system_error(
-          std::error_code(errno, std::generic_category()), "send body");
+            std::error_code(errno, std::generic_category()), "send body");
       }
       continue;
     }
@@ -113,7 +113,7 @@ bool UnixSock::recvChunk(std::vector<char>& resp) {
     retries++;
     if (retries == maxRetries) {
       throw std::system_error(
-        std::error_code(errno, std::generic_category()), "recv header");
+          std::error_code(errno, std::generic_category()), "recv header");
     }
   }
   // Received dummy, that was our last chunk!
@@ -130,7 +130,7 @@ bool UnixSock::recvChunk(std::vector<char>& resp) {
       retries++;
       if (retries == maxRetries) {
         throw std::system_error(
-          std::error_code(errno, std::generic_category()), "recv body");
+            std::error_code(errno, std::generic_category()), "recv body");
       }
       continue;
     }
@@ -247,7 +247,7 @@ void UnixService::handleConnection(std::unique_ptr<UnixSock> sock) {
     logError << "Failed to receive message" << std::endl;
     return;
   }
-  handleRequest(buf, *sock);
+  handleRequest(buf, std::move(sock));
 }
 
 void UnixService::doLoop() {
@@ -289,9 +289,7 @@ void UnixService::doLoop() {
         continue;
       }
       auto clisock = std::make_unique<UnixSock>(clifd);
-      auto tid =
-          std::thread(&UnixService::handleConnection, this, std::move(clisock));
-      tid.detach();
+      handleConnection(std::move(clisock));
     }
   }
 }

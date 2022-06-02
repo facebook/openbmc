@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
 #include "bic_fwupdate.h"
 #include "bic_ipmi.h"
@@ -886,6 +887,7 @@ int
 get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
   uint8_t bmc_location = 0;
   int ret = 0;
+  char value[MAX_VALUE_LEN] = {0};
 
   if ( rev_id == NULL ) {
     syslog(LOG_WARNING, "%s: fail to get board revision ID due to getting NULL input *rev_id \n", __func__);
@@ -901,7 +903,18 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
   if ( bmc_location == BB_BMC ) { // class 1
     switch (board_id) {
       case BOARD_ID_BB:
-        ret = get_board_revid_from_cpld(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        if ( kv_get("board_rev_id", value, NULL, 0) == 0 ) {
+          *rev_id = strtol(value, NULL, 10); // convert string to number
+        } else {
+          ret = get_board_revid_from_cpld(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+          if (ret >= 0) {
+            snprintf(value, sizeof(value), "%x", *rev_id);
+            if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
+              syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
+              return -1;
+            }
+          }
+        }
         break;
       case BOARD_ID_SB:
         ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
@@ -916,7 +929,18 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
         ret = get_board_revid_from_cpld(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
         break;
       case BOARD_ID_BB:
-        ret = get_board_revid_from_bbbic(FRU_SLOT1, rev_id);
+        if ( kv_get("board_rev_id", value, NULL, 0) == 0 ) {
+          *rev_id = strtol(value, NULL, 10); // convert string to number
+        } else {
+          ret = get_board_revid_from_bbbic(FRU_SLOT1, rev_id);
+          if (ret >= 0) {
+            snprintf(value, sizeof(value), "%x", *rev_id);
+            if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
+              syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
+              return -1;
+            }
+          }
+        }
         break;
       case BOARD_ID_SB:
         ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);

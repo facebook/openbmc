@@ -32,6 +32,10 @@
 #define DUAL_FAN_UCR 13500
 #define DUAL_FAN_UNC 10200
 
+#define FAN_15K_LCR  1500
+#define FAN_15K_UNC  13000
+#define FAN_15K_UCR  17000
+
 #define BB_HSC_SENSOR_CNT 7
 
 enum {
@@ -44,6 +48,12 @@ enum {
   DUAL_FAN_CNT = 0x08,
   SINGLE_FAN_CNT = 0x04,
   UNKNOWN_FAN_CNT = 0x00,
+
+  /* Solution */
+  MAXIM_SOLUTION = 0x00,
+  MPS_SOLUTION = 0x01,
+
+  IS_15K_FAN = 0x01,
 };
 
 static int read_adc_val(uint8_t adc_id, float *value);
@@ -67,6 +77,7 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
+uint8_t rev_id = 0;
 
 int pwr_off_flag[MAX_NODES] = {0};
 int temp_cnt = 0;
@@ -1810,6 +1821,8 @@ read_adc_val(uint8_t adc_id, float *value) {
   uint8_t bmc_location = 0;
   float arr[120] = {0};
   int ignore_sample = 0;
+  static uint8_t gval = 0;
+
   const char *adc_label[] = {
     "BMC_SENSOR_P5V",
     "BMC_SENSOR_P12V",
@@ -1870,21 +1883,58 @@ read_adc_val(uint8_t adc_id, float *value) {
     ret = sensors_read_adc(adc_label[adc_id], value);
   }
 
-  //TODO: if devices are not installed, maybe we need to show NA instead of 0.01
-  if ( ret == PAL_EOK ) {
-    if ( ADC10 == adc_id ) {
-      *value = *value/0.22/0.665; // EVT: /0.22/0.237/4
-      //when pwm is kept low, the current is very small or close to 0
-      //BMC will show 0.00 amps. make it show 0.01 at least.
-      if ( *value < 0.01 ) *value = 0.01;
-    } else if ( ADC11 == adc_id ) {
-      *value = (*value/0.22/1.2) * 1.005 + 0.04;
-
-      //it's not support to show the negative value, make it show 0.01 at least.
-      if ( *value <= 0 ) *value = 0.01;
-    }
+  if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);
+    return -1;
   }
 
+  if ( ret == PAL_EOK ) {
+
+    if ( rev_id >= BB_REV_DVT ) {
+      gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
+
+      if ( gval == GPIO_VALUE_INVALID ) {
+        syslog(LOG_WARNING, "%s() Failed to read P12V_EFUSE_DETECT_N", __func__);
+        return -1;
+      }
+
+      if ( ADC10 == adc_id ) { // 0xFB, BMC_SENSOR_FAN_IOUT
+        if ( gval == MAXIM_SOLUTION ) {
+          *value = *value/0.157/0.33;
+        } else if ( gval == MPS_SOLUTION ) {
+          *value = *value/0.01/5.11;
+        } else {
+          syslog(LOG_WARNING, "%s() Fan current solution not support, gval = %d", __func__, gval);
+          return -1;
+        }
+      }
+      else if ( ADC11 == adc_id ) { // 0xFC, BMC_SENSOR_NIC_IOUT
+        if ( gval == MAXIM_SOLUTION ) {
+          *value = (*value/0.22/1.2) * 1.005 + 0.04;
+        } else if ( gval == MPS_SOLUTION ) {
+          *value = *value/0.01/30;
+        } else {
+          syslog(LOG_WARNING, "%s() Fan current solution not support, gval = %d", __func__, gval);
+          return -1;
+        }
+      }
+      // Other ADC channels do not need any value correction, just keep original value
+    }
+    else { // EVT
+      if ( ADC10 == adc_id ) {
+        *value = *value/0.22/0.665; // EVT: /0.22/0.237/4
+        //when pwm is kept low, the current is very small or close to 0
+        //BMC will show 0.00 amps. make it show 0.01 at least.
+      } else if ( ADC11 == adc_id ) {
+        *value = (*value/0.22/1.2) * 1.005 + 0.04;
+        //it's not support to show the negative value, make it show 0.01 at least.
+      }
+      // Other ADC channels do not need any value correction, just keep original value
+    }
+    if ( *value <= 0 ) {
+      *value = 0.01;
+    }
+  }
   return ret;
 }
 
@@ -2526,13 +2576,15 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   if (hsc_type == HSC_LTC4286) {
     float rsense = 0.3;
-    uint8_t board_rev = 0;
 
-    if (get_board_rev(0, BOARD_ID_BB, &board_rev) < 0) {
+    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
       goto skip_hsc_init;
     }
-    if (board_rev <= BB_REV_EVT3) {
+
+    if (rev_id >= BB_REV_DVT ) {
+      rsense = 0.3;
+    } else { // EVT3 and previous revision
       rsense = 0.5;
     }
 
@@ -2650,6 +2702,7 @@ static int
 pal_bmc_fan_threshold_init() {
   uint8_t fan_type = UNKNOWN_TYPE;
   uint8_t bmc_location = 0;
+  uint8_t gval = 0;
 
   if (fby35_common_get_bmc_location(&bmc_location) < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
@@ -2658,6 +2711,35 @@ pal_bmc_fan_threshold_init() {
     syslog(LOG_ERR, "%s() Cannot get the type of fan, fvaule=%d", __func__, fan_type);
     return -1;
   } else {
+
+    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get revision id", __func__);
+      return -1;
+    }
+
+    if (rev_id >= BB_REV_DVT && fan_type == SINGLE_TYPE) {
+      gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
+      if (gval == GPIO_VALUE_INVALID) {
+        syslog(LOG_WARNING, "%s() Failed to read P12V_EFUSE_DETECT_N", __func__);
+        return -1;
+      }
+
+      if (gval == IS_15K_FAN) {
+        /*
+          BMC_SENSOR_FAN0_TACH,
+          BMC_SENSOR_FAN1_TACH,
+          BMC_SENSOR_FAN2_TACH,
+          BMC_SENSOR_FAN3_TACH,
+          sensor threshold change
+        */
+        for (int fan_num = BMC_SENSOR_FAN0_TACH; fan_num <= BMC_SENSOR_FAN3_TACH; fan_num++) {
+          sensor_map[fan_num].snr_thresh.lcr_thresh = FAN_15K_LCR;
+          sensor_map[fan_num].snr_thresh.unc_thresh = FAN_15K_UNC;
+          sensor_map[fan_num].snr_thresh.ucr_thresh = FAN_15K_UCR;
+        }
+      }
+    }
+
     if (fan_type != SINGLE_TYPE) {
       // set fan tach UCR to 13800 if it's not single type
       sensor_map[BMC_SENSOR_FAN0_TACH].snr_thresh.ucr_thresh = DUAL_FAN_UCR;
@@ -2700,6 +2782,11 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     }
   }
 
+  if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);
+    return -1;
+  }
+
   switch (fru) {
     case FRU_BMC:
     case FRU_NIC:
@@ -2713,12 +2800,28 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
 
       switch(thresh) {
         case UCR_THRESH:
+          if ( fru == FRU_BMC && rev_id >= BB_REV_DVT ) {
+            if ( sensor_num == BMC_SENSOR_HSC_IOUT ) {
+              *val = 36;
+              break;
+            }
+            if (sensor_num == BMC_SENSOR_FAN_IOUT ) {
+              *val = 28.6;
+              break;
+            }
+          }
           *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
           break;
         case UNC_THRESH:
           *val = sensor_map[sensor_num].snr_thresh.unc_thresh;
           break;
         case UNR_THRESH:
+          if ( fru == FRU_BMC && rev_id >= BB_REV_DVT ) {
+            if ( sensor_num == BMC_SENSOR_HSC_IOUT ) {
+              *val = 45;
+              break;
+            }
+          }
           *val = sensor_map[sensor_num].snr_thresh.unr_thresh;
           break;
         case LCR_THRESH:

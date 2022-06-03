@@ -20,14 +20,29 @@
 import unittest
 
 from common.base_usb_host_test import BaseUSBHostTest
+from tests.wedge400.helper.libpal import (
+    pal_get_board_type_rev,
+    BoardRevision,
+)
 from utils.test_utils import qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class USBHostDeviceTest(BaseUSBHostTest, unittest.TestCase):
     def set_usb_devices(self):
-        self.usb_devices = [
-            "1d6b:0001",  # USB 1.1 Root Hub
-            "1d6b:0002",  # USB 2.0 Root Hub
-            "0403:6001",  # FT232 Serial (UART) IC
-        ]
+        platform_type_rev = pal_get_board_type_rev()
+        if (
+            platform_type_rev == "Wedge400-MP-Respin"
+            or platform_type_rev == "Wedge400C-MP-Respin"
+        ):
+            self.usb_devices = [
+                "1d6b:0001",  # USB 1.1 Root Hub
+                "1d6b:0002",  # USB 2.0 Root Hub
+                "0403:6011",  # FT4232 Serial (UART) IC
+            ]
+        else:
+            self.usb_devices = [
+                "1d6b:0001",  # USB 1.1 Root Hub
+                "1d6b:0002",  # USB 2.0 Root Hub
+                "0403:6001",  # FT232 Serial (UART) IC
+            ]

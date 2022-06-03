@@ -31,10 +31,13 @@ from tests.wedge400.test_data.sensors.sensors import (
     PEM2_SENSORS,
     PSU1_SENSORS,
     PSU2_SENSORS,
-    SCM_SENSORS,
+    SCM_SENSORS_ORIGINAL,
+    SCM_SENSORS_RESPIN,
     SMB_SENSORS_W400,
+    SMB_SENSORS_W400RESPIN,
     SMB_SENSORS_W400CEVT,
     SMB_SENSORS_W400CEVT2,
+    SMB_SENSORS_W400CRESPIN,
     FAN1_SENSORS,
     FAN2_SENSORS,
     FAN3_SENSORS,
@@ -49,6 +52,17 @@ class ScmSensorTest(SensorUtilTest, unittest.TestCase):
         self.sensors_cmd = ["/usr/local/bin/sensor-util scm"]
 
     def test_scm_sensor_keys(self):
+        SCM_SENSORS = []
+        platform_type_rev = pal_get_board_type_rev()
+        if (
+            platform_type_rev == "Wedge400-MP-Respin"
+            or platform_type_rev == "Wedge400C-MP-Respin"
+        ):
+            SCM_SENSORS = SCM_SENSORS_RESPIN
+        else:
+            SCM_SENSORS = SCM_SENSORS_ORIGINAL
+
+        
         result = self.get_parsed_result()
         if not result["present"]:
             self.skipTest("scm is not present")
@@ -116,6 +130,8 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
             or platform_type_rev == "Wedge400-MP"
         ):
             SMB_SENSORS = SMB_SENSORS_W400
+        elif platform_type_rev == "Wedge400-MP-Respin":
+            SMB_SENSORS = SMB_SENSORS_W400RESPIN
         elif platform_type_rev == "Wedge400C-EVT":
             SMB_SENSORS = SMB_SENSORS_W400CEVT
         elif (
@@ -124,6 +140,8 @@ class SmbSensorTest(SensorUtilTest, unittest.TestCase):
             or platform_type_rev == "Wedge400C-DVT2"
         ):
             SMB_SENSORS = SMB_SENSORS_W400CEVT2
+        elif platform_type_rev == "Wedge400C-MP-Respin":
+            SMB_SENSORS = SMB_SENSORS_W400CRESPIN
         else:
             self.skipTest("Skip test on {} board".format(platform_type_rev))
         result = self.get_parsed_result()

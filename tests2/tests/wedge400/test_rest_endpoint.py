@@ -33,10 +33,13 @@ from tests.wedge400.test_data.sensors.sensors import (
     PEM2_SENSORS,
     PSU1_SENSORS,
     PSU2_SENSORS,
-    SCM_SENSORS,
+    SCM_SENSORS_ORIGINAL,
+    SCM_SENSORS_RESPIN,
     SMB_SENSORS_W400,
+    SMB_SENSORS_W400RESPIN,
     SMB_SENSORS_W400CEVT,
     SMB_SENSORS_W400CEVT2,
+    SMB_SENSORS_W400CRESPIN,
 )
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
@@ -112,6 +115,8 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             or platform_type_rev == "Wedge400-MP"
         ):
             self.endpoint_sensors_attrb += SMB_SENSORS_W400
+        elif platform_type_rev == "Wedge400-MP-Respin":
+            self.endpoint_sensors_attrb += SMB_SENSORS_W400RESPIN
         elif platform_type_rev == "Wedge400C-EVT":
             self.endpoint_sensors_attrb += SMB_SENSORS_W400CEVT
         elif (
@@ -120,10 +125,19 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             or platform_type_rev == "Wedge400C-DVT2"
         ):
             self.endpoint_sensors_attrb += SMB_SENSORS_W400CEVT2
+        elif platform_type_rev == "Wedge400C-MP-Respin":
+            self.endpoint_sensors_attrb += SMB_SENSORS_W400CRESPIN
         else:
             self.skipTest("Skip test on {} board".format(platform_type_rev))
 
-        self.endpoint_sensors_attrb += SCM_SENSORS
+        if (
+            platform_type_rev == "Wedge400-MP-Respin"
+            or platform_type_rev == "Wedge400C-MP-Respin"
+        ):
+            self.endpoint_sensors_attrb += SCM_SENSORS_RESPIN
+        else:
+            self.endpoint_sensors_attrb += SCM_SENSORS_ORIGINAL
+
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1":
             self.endpoint_sensors_attrb += PEM1_SENSORS
         if pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2) == "pem2":

@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_eeprom_test import CommonEepromTest
+from tests.wedge400.helper.libpal import pal_get_board_type_rev
 from utils.test_utils import qemu_check
 
 
@@ -127,3 +128,56 @@ class FAN4EepromTest(EepromTest, unittest.TestCase):
 
     def set_location_on_fabric(self):
         self.location_on_fabric = ["FAN"]
+
+class BSMEepromTest(EepromTest, unittest.TestCase):
+    """
+    Test for bsm-eutil BSM Board
+    """
+
+    def setUp(self):
+        platform_type_rev = pal_get_board_type_rev()
+        if (
+            platform_type_rev == "Wedge400-MP-Respin"
+            or platform_type_rev == "Wedge400C-DVT"
+            or platform_type_rev == "Wedge400C-DVT2"
+            or platform_type_rev == "Wedge400C-MP-Respin"
+        ):
+            pass
+        else:
+            self.skipTest("Skipping because BSM EEPROM not available on {} ".format(platform_type_rev))
+        super().setUp()
+
+    def set_eeprom_cmd(self):
+        self.eeprom_cmd = ["/usr/local/bin/bsm-eutil"]
+
+    def set_product_name(self):
+        self.product_name = ["WEDGE400-BSM","WEDGE400C-BSM"]
+
+    def set_location_on_fabric(self):
+        self.location_on_fabric = ["BSM"]
+
+class RACKMONEepromTest(EepromTest, unittest.TestCase):
+    """
+    Test for reutil Rackmon
+    """
+
+    def setUp(self):
+        platform_type_rev = pal_get_board_type_rev()
+        if (
+           platform_type_rev == "Wedge400-MP-Respin"
+            or platform_type_rev == "Wedge400C-MP-Respin"
+        ):
+            pass
+        else:
+            self.skipTest("Skipping because Rackmon EEPROM not available on {} ".format(platform_type_rev))
+        super().setUp()
+
+
+    def set_eeprom_cmd(self):
+        self.eeprom_cmd = ["/usr/local/bin/reutil"]
+
+    def set_product_name(self):
+        self.product_name = ["WEDGE400-RACKMON"]
+
+    def set_location_on_fabric(self):
+        self.location_on_fabric = ["RACKMON"]

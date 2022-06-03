@@ -49,8 +49,8 @@ enable_jtag_chain(){
     gpio_set BMC_JTAG_MUX_IN  1
     gpio_set PWR_CPLD_JTAG_EN_N  1
     gpio_set SYS_CPLD_JTAG_EN_N  1
-    gpio_set SCM_CPLD_JTAG_EN_N  1
-    gpio_set FCM_CPLD_JTAG_EN_N  0
+    gpio_set SCM_CPLD_JTAG_EN_N  0
+    gpio_set FCM_CPLD_JTAG_EN_N  1
     gpio_set PWR_CPLD_HITLESS  0
     gpio_set FCM_CPLD_HITLESS  0
     gpio_set SCM_CPLD_HITLESS  1

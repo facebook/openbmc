@@ -18,7 +18,11 @@
 # Boston, MA 02110-1301 USA
 
 from board_gpio_rev_table import board_gpio_rev_table
-from board_gpio_table_v1 import board_gpio_table_v1_th3, board_gpio_table_v1_gb
+from board_gpio_table_v1 import (
+    board_gpio_table_v1_th3,
+    board_gpio_table_v1_gb,
+    board_gpio_table_v1_gb_respin
+)
 from soc_gpio_table import soc_gpio_table
 from openbmc_gpio_table import setup_board_gpio
 from soc_gpio import soc_get_register
@@ -81,7 +85,10 @@ def main():
         setup_board_gpio(soc_gpio_table, board_gpio_table_v1_th3)
     elif brd_type == 1:
         print("Using GPIO Wedge400-C table ", end="")
-        setup_board_gpio(soc_gpio_table, board_gpio_table_v1_gb)
+        if version >= 4:
+            setup_board_gpio(soc_gpio_table, board_gpio_table_v1_gb_respin)
+        else:
+            setup_board_gpio(soc_gpio_table, board_gpio_table_v1_gb)
     else:
         print("Unexpected board version %s. Using GPIO DVT table. " % version, end="")
         setup_board_gpio(soc_gpio_table, board_gpio_table_v1_gb)

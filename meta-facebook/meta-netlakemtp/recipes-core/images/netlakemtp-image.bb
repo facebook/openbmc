@@ -24,4 +24,5 @@ IMAGE_INSTALL += " \
   jbi \
   log-util \
   guid-util \
+  ipmi-util \
   "

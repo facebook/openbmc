@@ -35,8 +35,8 @@ extern "C" {
 #define FRUID_SIZE      512
 #define CUSTOM_FRU_LIST 1
 #define FRU_DEVICE_LIST 1
-#define FAN_CTL_BUS     16
-#define FAN_CTL_ADDR    40
+#define FAN_CTL_BUS     21
+#define FAN_CTL_ADDR    21
 
 #define MAX_FRU_CMD_STR   16
 

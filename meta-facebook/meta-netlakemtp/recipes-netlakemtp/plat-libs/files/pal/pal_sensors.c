@@ -142,21 +142,13 @@ const char *adc_label[] = {
 
 PAL_SENSOR_MAP pdb_sensor_map[] = {
   [FAN0_TACH] =
-  {"FAN0_TACH", FAN0, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN0_TACH", FAN0, read_rpm, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
   [FAN1_TACH] =
-  {"FAN1_TACH", FAN1, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN1_TACH", FAN1, read_rpm, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
   [FAN2_TACH] =
-  {"FAN2_TACH", FAN2, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN2_TACH", FAN2, read_rpm, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
   [FAN3_TACH] =
-  {"FAN3_TACH", FAN3, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
-  [FAN4_TACH] =
-  {"FAN4_TACH", FAN4, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
-  [FAN5_TACH] =
-  {"FAN5_TACH", FAN5, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
-  [FAN6_TACH] =
-  {"FAN6_TACH", FAN6, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
-  [FAN7_TACH] =
-  {"FAN7_TACH", FAN7, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN3_TACH", FAN3, read_rpm, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
 };
 
 const uint8_t server_sensor_list[] = {
@@ -216,10 +208,6 @@ const uint8_t pdb_sensor_list[] = {
   FAN1_TACH,
   FAN2_TACH,
   FAN3_TACH,
-  FAN4_TACH,
-  FAN5_TACH,
-  FAN6_TACH,
-  FAN7_TACH,
 };
 
 const uint8_t fio_sensor_list[] = {

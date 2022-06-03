@@ -51,9 +51,9 @@ const char pal_fru_list_sensor_history[] = "all, server, bmc, pdb, fio";
 const char *fru_str_list[] = {"all", "server", "bmc", "pdb", "fio"};
 
 size_t pal_pwm_cnt = 1;
-size_t pal_tach_cnt = 8;
-const int fan_map[] = {1, 2, 3, 4, 5, 6, 7, 8};
-const int fanIdToPwmIdMapping[] = {0, 0, 0, 0, 0, 0, 0, 0};
+size_t pal_tach_cnt = 4;
+const int fan_map[] = {1, 3, 5, 7};
+const int fanIdToPwmIdMapping[] = {0, 0, 0, 0};
 
 enum key_event {
   KEY_BEFORE_SET,

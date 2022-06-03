@@ -31,4 +31,6 @@ IMAGE_INSTALL += " \
   ncsi-util \
   me-util \
   kcsd \
+  fan-util \
+  fscd \
   "

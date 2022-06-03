@@ -1,4 +1,4 @@
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2019-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,22 +16,6 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
 LOCAL_URI += " \
-    file://usbdbg.h \
-    file://usbdbg.cpp \
-    file://mcu_fw.h \
-    file://mcu_fw.cpp \
-    file://bios.h \
-    file://bios.cpp \
-    file://platform.cpp \
-    file://cpld.cpp \
-    file://me.cpp \
-    file://nic_ext.h \
-    file://nic_ext.cpp \
-    file://vr_fw.h \
-    file://vr_fw.cpp \ 
+    file://platform.c \
     "
-DEPENDS += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm"
-RDEPENDS:${PN} += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm"
-LDFLAGS += "-lmcu -lpal -lfpga -lvr -lnl-wrapper -lkv -lobmc-i2c -lnm"

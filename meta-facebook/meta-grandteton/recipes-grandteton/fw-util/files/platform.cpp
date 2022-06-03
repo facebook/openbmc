@@ -10,7 +10,7 @@
 #include "usbdbg.h"
 #include "nic_ext.h"
 #include "bios.h"
-//#include "vr_fw.h"
+#include "vr_fw.h"
 //#include "bic_fwupdate.h"
 
 class palBiosComponent : public BiosComponent {
@@ -41,9 +41,9 @@ UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of 
 palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc", 
                       "1e631000.spi", "FM_BMC_MUX_CS_SPI_SEL_0", true, "(F0T_)(.*)");
 
-//VrComponent vr_cpu0_vccin("vr", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA");
-//VrComponent vr_cpu0_faon("vr", "cpu0_faon", "VR_CPU0_VCCFAEHV/FAON");
-//VrComponent vr_cpu0_vccd("vr", "cpu0_vccd", "VR_CPU0_VCCD");
-//VrComponent vr_cpu1_vccin("vr", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIRVA");
-//VrComponent vr_cpu1_faon("vr", "cpu1_faon", "VR_CPU1_VCCFAEHV/FAON");
-//VrComponent vr_cpu1_vccd("vr", "cpu1_vccd", "VR_CPU1_VCCD");
+VrComponent vr_cpu0_vccin("mb", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA");
+VrComponent vr_cpu0_faon("mb", "cpu0_faon", "VR_CPU0_VCCFAEHV/FAON");
+VrComponent vr_cpu0_vccd("mb", "cpu0_vccd", "VR_CPU0_VCCD");
+VrComponent vr_cpu1_vccin("mb", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIRVA");
+VrComponent vr_cpu1_faon("mb", "cpu1_faon", "VR_CPU1_VCCFAEHV/FAON");
+VrComponent vr_cpu1_vccd("mb", "cpu1_vccd", "VR_CPU1_VCCD");

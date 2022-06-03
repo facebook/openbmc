@@ -1,0 +1,7 @@
+CONFIG_SYS_PROMPT="netlakemtp# "
+CONFIG_SYS_CONFIG_NAME="facebook_netlakemtp"
+CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-netlakemtp"
+
+CONFIG_ASPEED_TPM=y
+CONFIG_BOOTARGS="console=ttyS0,57600n8 root=/dev/ram rw vmalloc=640M"
+

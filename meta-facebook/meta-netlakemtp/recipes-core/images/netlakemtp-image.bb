@@ -26,4 +26,7 @@ IMAGE_INSTALL += " \
   guid-util \
   ipmi-util \
   power-util \
+  libncsi \
+  ncsid-v2 \
+  ncsi-util \
   "

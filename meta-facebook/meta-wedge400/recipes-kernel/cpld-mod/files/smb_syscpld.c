@@ -2310,13 +2310,6 @@ static const i2c_dev_attr_st smb_syscpld_attr_table_gb[] = {
     0x40, 1, 1,
   },
   {
-    "oob_6321_eeprom_wp_n",
-    enable_help_str,
-    I2C_DEV_ATTR_SHOW_DEFAULT,
-    I2C_DEV_ATTR_STORE_DEFAULT,
-    0x40, 1, 1,
-  },
-  {
     "scm_spi_wp_n",
     enable_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
@@ -2353,6 +2346,13 @@ static const i2c_dev_attr_st smb_syscpld_attr_table_gb[] = {
   },
   {
     "cpld_56980_qspi_wp_n",
+    enable_help_str,
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x40, 7, 1,
+  },
+  {
+    "oob_6321_eeprom_wp_n",
     enable_help_str,
     I2C_DEV_ATTR_SHOW_DEFAULT,
     I2C_DEV_ATTR_STORE_DEFAULT,

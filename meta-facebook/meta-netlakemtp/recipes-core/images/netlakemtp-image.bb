@@ -33,4 +33,5 @@ IMAGE_INSTALL += " \
   kcsd \
   fan-util \
   fscd \
+  ipmbd \
   "

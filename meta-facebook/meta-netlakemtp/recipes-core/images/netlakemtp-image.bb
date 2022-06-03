@@ -23,4 +23,5 @@ IMAGE_INSTALL += " \
   fw-util \
   jbi \
   log-util \
+  guid-util \
   "

@@ -86,6 +86,9 @@ gpio_cfg bmc_gpio_table[] = {
   // GPIOP5 , power button by BMC control
   [PWR_BTN_COME_R_N] =
   {"PWR_BTN_COME_R_N", "GPIOP5", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // GPIOP0, rename from FM_BMC_READY_R_N to BMC_READY_N for common kcsd use
+  [BMC_READY_N] =
+  {"BMC_READY_N", "GPIOP0", GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
   // GPIOQ6
   [SPI_MUX_SEL_R] =
   {"SPI_MUX_SEL_R", "GPIOQ6", GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},

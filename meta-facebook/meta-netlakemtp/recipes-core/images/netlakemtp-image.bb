@@ -30,4 +30,5 @@ IMAGE_INSTALL += " \
   ncsid-v2 \
   ncsi-util \
   me-util \
+  kcsd \
   "

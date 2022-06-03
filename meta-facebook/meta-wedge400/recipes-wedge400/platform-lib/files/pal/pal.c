@@ -6680,7 +6680,10 @@ set_sled(int brd_rev, uint8_t color, int led_name)
   pal_get_board_type_rev(&brd_type_rev);
 
   // in Wedge400 MP Respin LED position are swaped
-  if(brd_type == BRD_TYPE_WEDGE400 && brd_type_rev == BOARD_WEDGE400_MP_RESPIN){
+  if(
+    (brd_type == BRD_TYPE_WEDGE400 && brd_type_rev >= BOARD_WEDGE400_MP_RESPIN) ||
+    (brd_type == BRD_TYPE_WEDGE400C && brd_type_rev >= BOARD_WEDGE400C_MP_RESPIN)
+  ){
     switch (led_name) {
       case SLED_SYS: led_id = SLED_2; break;
       case SLED_FAN: led_id = SLED_4; break;

@@ -34,11 +34,17 @@ typedef struct {
   char* snr_name;
   uint8_t id;
   int (*read_sensor) (uint8_t id, float *value);
-  uint8_t stby_read;
+  uint8_t reading_available;
   PAL_SENSOR_THRESHOLD snr_thresh;
   uint8_t units;
   uint32_t poll_invernal;
 } PAL_SENSOR_MAP;
+
+enum {
+  STBY_READING = 0,
+  POWER_ON_READING,
+  POST_COMPLT_READING,
+};
 
 enum {
   UNSET_UNIT = 0,

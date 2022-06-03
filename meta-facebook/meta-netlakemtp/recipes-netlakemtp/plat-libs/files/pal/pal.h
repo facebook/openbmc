@@ -53,6 +53,9 @@ extern "C" {
 
 #define PATH_POWER_ON_RESET "/tmp/ast_power_on_reset"
 
+// Define SENSOR_NA to distinguish whether sensor reading fail or not
+#define SENSOR_NA    (-4)
+
 // System Control Unit (ADC Register
 #define ADC_BASE         0x1E6E9000
 #define REG_ADC0C        0x0c

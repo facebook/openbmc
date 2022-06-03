@@ -172,6 +172,16 @@ reset_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
   }
 }
 
+static void
+power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  kv_set(PWR_GOOD_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+}
+
+static void
+post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  kv_set(POST_CMPLT_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+}
+
 // GPIO table
 static struct
 gpiopoll_config g_gpios[] = {
@@ -180,11 +190,50 @@ gpiopoll_config g_gpios[] = {
   {"UART_CH_SELECT",                  "GPIOG0",   GPIO_EDGE_FALLING,  uart_button_handler,       NULL},
   {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},
   {"PWR_BTN_N",                       "GPIOP4",   GPIO_EDGE_BOTH,     power_button_handler,      NULL},
+  {"PWRGD_PCH_R_PWROK",               "GPIOF4",   GPIO_EDGE_BOTH,     power_good_status_handler, NULL},
+  {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, NULL},
+  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
+  {"H_MEMHOT_OUT_FET_R_N",            "GPIOY2",   GPIO_EDGE_BOTH,     dimm_hot_handler,          NULL},
   {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
   {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
   {"FM_CPU_PROCHOT_LATCH_LVT3_R_N",   "GPIOV3",   GPIO_EDGE_BOTH,     cpu_throttle_handler,      NULL},
   {"H_MEMHOT_OUT_FET_R_N",            "GPIOY2",   GPIO_EDGE_BOTH,     dimm_hot_handler,          NULL},
 };
+
+int
+init_kv_value(char* key, char* shadow_name) {
+  int ret = -1;
+  gpio_desc_t *gpio;
+  gpio_value_t val;
+
+  if (key == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: key is NULL", __func__);
+    return -1;
+  }
+
+  if (shadow_name == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: shadow_name is NULL", __func__);
+    return -1;
+  }
+
+  kv_set(key, "NA", 0, 0);
+
+  gpio = gpio_open_by_shadow(shadow_name);
+  if (!gpio) {
+    syslog(LOG_WARNING, "%s() gpio_open_by_shadow fail!\n", __func__);
+    return -1;
+  }
+
+  if (gpio_get_value(gpio, &val) == 0)  {
+    ret = 0;
+    kv_set(key, (val == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+  } else {
+    syslog(LOG_WARNING, "%s() gpio_get_value fail\n", __func__);
+  }
+
+  gpio_close(gpio);
+  return ret;
+}
 
 int
 main(int argc, char **argv) {
@@ -208,6 +257,13 @@ main(int argc, char **argv) {
     //Create thread for server power monitor check
     if (pthread_create(&tid_server_power_monitor, NULL, server_power_monitor, NULL) < 0) {
       syslog(LOG_WARNING, "pthread_create for platform_reset_filter_handler\n");
+    }
+
+    if (init_kv_value(PWR_GOOD_KV_KEY, "PWRGD_PCH_R_PWROK") < 0) {
+        syslog(LOG_WARNING, "%s set up kv power good failed!\n", __func__);
+    }
+    if (init_kv_value(POST_CMPLT_KV_KEY, "FM_BIOS_POST_CMPLT_R_N") < 0) {
+        syslog(LOG_WARNING, "%s set up kv post complete failed!\n", __func__);
     }
   }
 

@@ -93,6 +93,11 @@ extern "C" {
 
 #define REVISION_ID(x)  (((x >> 4) & 0x07) + 1)
 
+#define HIGH_STR            "1"
+#define LOW_STR             "0"
+#define PWR_GOOD_KV_KEY     "power_good_status"
+#define POST_CMPLT_KV_KEY   "post_complete_status"
+
 enum {
   FRU_ALL = 0,
   FRU_SERVER,

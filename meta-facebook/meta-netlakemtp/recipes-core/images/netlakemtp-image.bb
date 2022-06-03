@@ -25,4 +25,5 @@ IMAGE_INSTALL += " \
   log-util \
   guid-util \
   ipmi-util \
+  power-util \
   "

@@ -124,15 +124,32 @@ uart_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
 }
 
 static void
-rst_btn_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+power_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   gpio_desc_t *gpio;
+
+  gpio = gpio_open_by_shadow("PWR_BTN_COME_R_N");
+  if (gpio == NULL) {
+     syslog(LOG_WARNING, "%s() Open GPIO PWR_BTN_COME_R_N failed\n", __func__);
+  }
+  else {
+    if (gpio_set_value(gpio, curr) != 0) {
+      syslog(LOG_WARNING, "%s() gpio_set_value failed\n", __func__);
+      gpio_close(gpio);
+      return;
+    }
+  }
+}
+
+static void
+reset_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  gpio_desc_t *uart_mux_gpio, *reset_button_gpio;
   gpio_value_t val;
 
-  gpio = gpio_open_by_shadow("UART_BMC_MUX_CTRL");
-  if (gpio == NULL) {
+  uart_mux_gpio = gpio_open_by_shadow("UART_BMC_MUX_CTRL");
+  if (uart_mux_gpio == NULL) {
     syslog(LOG_WARNING, "%s() Open GPIO UART_BMC_MUX_CTRL failed\n", __func__);
   } else {
-    if (gpio_get_value(gpio, &val) != 0) {
+    if (gpio_get_value(uart_mux_gpio, &val) != 0) {
       syslog(LOG_WARNING, "%s() gpio_get_value_by_shadow failed\n", __func__);
     } else {
       if (val == GPIO_LOW) {
@@ -140,12 +157,18 @@ rst_btn_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
           syslog(LOG_ERR, "%s() Failed to do bmc power reset\n", __func__);
         }
       } else {
-        if (pal_set_server_power(FRU_SERVER, SERVER_POWER_RESET) < 0) {
-          syslog(LOG_ERR, "%s() Failed to do host power reset\n", __func__);
+        reset_button_gpio = gpio_open_by_shadow("RST_BTN_COME_R_N");
+        if (reset_button_gpio == NULL) {
+           syslog(LOG_WARNING, "%s() Open GPIO RST_BTN_COME_R_N failed\n", __func__);
+        } else {
+          if (gpio_set_value(reset_button_gpio, curr) != 0) {
+            syslog(LOG_WARNING, "%s() gpio_set_value failed\n", __func__);
+          }
+          gpio_close(reset_button_gpio);
         }
       }
     }
-    gpio_close(gpio);
+    gpio_close(uart_mux_gpio);
   }
 }
 
@@ -154,12 +177,13 @@ static struct
 gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"FM_THERMTRIP_R_N",                "GPIOF3",   GPIO_EDGE_BOTH,     cpu_thermal_trip_handler,  NULL},
-  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
-  {"H_MEMHOT_OUT_FET_R_N",            "GPIOY2",   GPIO_EDGE_BOTH,     dimm_hot_handler,          NULL},
-  {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
-  {"FM_CPU_PROCHOT_LATCH_LVT3_R_N",   "GPIOV3",   GPIO_EDGE_BOTH,     cpu_throttle_handler,      NULL},
   {"UART_CH_SELECT",                  "GPIOG0",   GPIO_EDGE_FALLING,  uart_button_handler,       NULL},
-  {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_FALLING,  rst_btn_handler,           NULL},
+  {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},
+  {"PWR_BTN_N",                       "GPIOP4",   GPIO_EDGE_BOTH,     power_button_handler,      NULL},
+  {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
+  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
+  {"FM_CPU_PROCHOT_LATCH_LVT3_R_N",   "GPIOV3",   GPIO_EDGE_BOTH,     cpu_throttle_handler,      NULL},
+  {"H_MEMHOT_OUT_FET_R_N",            "GPIOY2",   GPIO_EDGE_BOTH,     dimm_hot_handler,          NULL},
 };
 
 int

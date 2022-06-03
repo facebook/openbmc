@@ -110,13 +110,13 @@ gpio_cfg bmc_gpio_table[] = {
   // GPIOY3
   [BMC_EMMC_RST_N] =
   {"BMC_EMMC_RST_N", "GPIOY3", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
-  // GPIOP2, power reset
+  // GPIOP2, power reset button
   [RST_BTN_N] =
   {"RST_BTN_N", "GPIOP2", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
   // GPIOP3, power reset
   [RST_BTN_COME_R_N] =
   {"RST_BTN_COME_R_N", "GPIOP3", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
-  // GPIOP4, power reset
+  // GPIOP4, power reset button
   [PWR_BTN_N] =
   {"PWR_BTN_N", "GPIOP4", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
   // GPIOP5 , power button

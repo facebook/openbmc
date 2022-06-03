@@ -61,6 +61,31 @@ devmem_set_bit "$(scu_addr 88)" 31
 
 if [ "$1" = "led" ]; then
     echo -n "Wait a few seconds to setup management port LED..."
+
+    # Because the addresses of the PHY and OOB switch are different, so not need to differentiate 
+    # the platform 
+
+    # configure the platform with Marvell PHY and OOB swich:
+
+    # Setup Port 3 MGMT
+    mdio-util -m 1 -p 0x12 -w 0x1 -d 0x8088    # Write Config LED mode Data into Reg 0x01
+    mdio-util -m 1 -p 0x12 -w 0x0 -d 0x9676    #  Read Port3.Reg 0x16
+    mdio-util -m 1 -p 0x12 -w 0x0 -d 0x9a76    # Config Reg 0x01 value into Port3.Reg 0x16
+    mdio-util -m 1 -p 0x12 -r 0x1    # Read Reg 0x01
+
+    # Setup Port4 Rackmon port
+    mdio-util -m 1 -p 0x12 -w 0x1 -d 0x8088
+    mdio-util -m 1 -p 0x12 -w 0x0 -d 0x9696
+    mdio-util -m 1 -p 0x12 -w 0x0 -d 0x9a96
+    mdio-util -m 1 -p 0x12 -r 0x1
+
+    # Setup Copper Mode for SCM Management Port
+    mdio-util -m 1 -p 0x1 -w 0x16 -d 0x12
+    mdio-util -m 1 -p 0x1 -w 0x14 -d 0x8001
+    mdio-util -m 1 -p 0x1 -w 0x16 -d 0x0
+
+    #  configure the platform with Broadcom OOB swich:
+
     # refer to BCM54616S Section 5, register 1C access
     # Register 1C (Shadow 00010): Spare Control 1
     # Bit0: 1: Enable link LED mode.

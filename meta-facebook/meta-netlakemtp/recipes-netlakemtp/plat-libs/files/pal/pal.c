@@ -38,9 +38,10 @@
 
 #define GUID_SIZE 16
 #define OFFSET_DEV_GUID 0x1800
-#define MAX_FAN_NAME_LEN     32
-#define MAX_FAN_CONTROLLER_LEN    32
+#define MAX_FAN_NAME_LEN 32
+#define MAX_FAN_CONTROLLER_LEN 32
 #define KEY_SERVER_CPLD_VER "server_cpld_ver"
+#define MAX_NUM_GPIO_LED_POSTCODE 8
 
 const char pal_fru_list[] = "all, server, bmc, pdb, fio";
 
@@ -57,6 +58,17 @@ const int fanIdToPwmIdMapping[] = {0, 0, 0, 0, 0, 0, 0, 0};
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
+};
+
+char* GPIO_LED_POSTCODE_TABLE[MAX_NUM_GPIO_LED_POSTCODE] = {
+  "LED_POSTCODE_0",
+  "LED_POSTCODE_1",
+  "LED_POSTCODE_2",
+  "LED_POSTCODE_3",
+  "LED_POSTCODE_4",
+  "LED_POSTCODE_5",
+  "LED_POSTCODE_6",
+  "LED_POSTCODE_7",
 };
 
 struct pal_key_cfg {
@@ -1336,3 +1348,24 @@ pal_sensor_monitor_initial(void) {
   return 0;
 }
 
+int
+pal_post_display(uint8_t status) {
+  int ret = 0, i = 0;
+  gpio_value_t value = GPIO_VALUE_INVALID;
+
+  for (i = 0; i < MAX_NUM_GPIO_LED_POSTCODE; i++) {
+    if (BIT(status, i) != 0) {
+      value = GPIO_VALUE_HIGH;
+    } else {
+      value = GPIO_VALUE_LOW;
+    }
+    ret = gpio_set_value_by_shadow(GPIO_LED_POSTCODE_TABLE[i], value);
+
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s Failed GPIO: LED_POSTCODE_%d, ret: %d\n", __func__, i, ret);
+      break;
+    }
+  }
+
+  return ret;
+}

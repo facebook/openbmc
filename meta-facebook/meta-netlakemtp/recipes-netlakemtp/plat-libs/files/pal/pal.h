@@ -82,6 +82,7 @@ int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
 int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_check_fru_is_valid(const char* fruid_path);
 int pal_get_cpld_ver(uint8_t fru, char *rbuf);
+int pal_post_display(uint8_t status);
 
 int pal_set_id_led(uint8_t fru, enum LED_HIGH_ACTIVE value);
 int pal_set_fault_led(uint8_t fru, enum LED_HIGH_ACTIVE value);

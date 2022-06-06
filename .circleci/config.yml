@@ -180,19 +180,22 @@ workflows:
                             fbttn,
                             fby2,
                             fby3,
+                            fby35,
                             fuji,
                             galaxy100,
                             grandcanyon,
+                            grandteton,
+                            halfdome,
                             lightning,
                             minipack,
                             northdome,
+                            qemux86,
                             sonorapass,
                             wedge,
                             wedge100,
                             wedge400,
                             yamp,
                             yosemite,
-                            qemux86,
                             ]
             - unit-test:
                 requires:

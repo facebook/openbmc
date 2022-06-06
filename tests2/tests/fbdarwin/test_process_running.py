@@ -29,5 +29,4 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "mTerm_server",
             "rsyslogd",
-            "usbmon.sh",
         ]

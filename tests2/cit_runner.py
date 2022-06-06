@@ -43,6 +43,10 @@ class Tests:
             "common",
             "minipack",
         ],  # So elbert can import minipack tests and run them only one time
+        "fbdarwin:": [
+            "common",
+            "minipack",
+        ], # So fbdarwin can import minipack tests and run them only one time
     }
 
     def __init__(self, platform, start_dir, pattern, denylist):
@@ -199,6 +203,7 @@ def arg_parser():
             "fbttn",
             "yamp",
             "elbert",
+            "fbdarwin",
             "fby3",
             "grandcanyon",
             "fby35",

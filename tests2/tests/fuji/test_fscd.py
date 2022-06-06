@@ -19,9 +19,10 @@
 #
 import time
 import unittest
+import re
 
 from common.base_fscd_test import BaseFscdTest
-from tests.fuji.helper.libpal import pal_get_board_rev
+from tests.fuji.helper.libpal import pal_get_board_rev, BoardRevision
 from utils.cit_logger import Logger
 from utils.shell_util import run_shell_cmd
 from utils.test_utils import qemu_check
@@ -131,19 +132,23 @@ class FscdTestPwmFuji(FscdTest):
     def setUp(self):
         self.brd_rev = pal_get_board_rev()
         if self.brd_rev is None:
-            self.fail("Get board rev failed!")
-        elif self.brd_rev == "Fuji-DVT1" or self.brd_rev == "Fuji-PVT":
+            self.brd_rev = "Undefined" # This problem should be fixed in libpal after figuring out all the board revisions and their corresponding platforms.
+            Logger.info(
+                "[FSCD Testing] got undefined platform. Running test anyway."
+            )
+        if re.search(r'EVT[1-3]', self.brd_rev):
+            Logger.info(
+                "[FSCD Testing] skip fscd test on {} platform".format(self.brd_rev)
+            )
+            self.skipTest("skip fscd test on {} platform".format(self.brd_rev))
+        else:
             config_file = "fsc-config.json"
             Logger.info(
                 "[FSCD Testing] test fscd on {} platform with config file {}".format(
                     self.brd_rev, config_file
                 )
             )
-        else:
-            Logger.info(
-                "[FSCD Testing] skip fscd test on {} platform".format(self.brd_rev)
-            )
-            self.skipTest("skip fscd test on {} platform".format(self.brd_rev))
+
 
         # Backup original config
         run_shell_cmd("cp /etc/fsc/zone.fsc /etc/fsc/zone.fsc.orig")

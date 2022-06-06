@@ -54,6 +54,7 @@ class TestCommonRoutes(unittest.TestCase):
             "/redfish/v1/Systems/{fru_name}/LogServices",
             "/redfish/v1/Systems/{fru_name}/Actions/ComputerSystem.Reset",
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}",
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Actions/LogService.ClearLog",
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Entries",
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}"
             + "/Entries/{EntryID}",

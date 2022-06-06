@@ -98,6 +98,10 @@ class Redfish:
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Entries",
             redfish_log_service.get_log_service_entries,
         )
+        app.router.add_post(
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Actions/LogService.ClearLog",
+            redfish_log_service.clear_log_service_entries,
+        )
         app.router.add_get(
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}"
             + "/Entries/{EntryID}",

@@ -43,6 +43,18 @@ class RedfishLogService:
     def is_log_util_available(self) -> bool:
         return which(LOG_UTIL_PATH) is not None
 
+    async def _clear_log_entries_for_fru(self, fru_name: str) -> bool:
+        if fru_name == "1" and rest_pal_legacy.pal_get_num_slots() == 1:
+            server_name = "all"
+        else:
+            server_name = self.get_server_name(fru_name)
+
+        cmd = [LOG_UTIL_PATH, server_name, "--clear"]
+        ret, sel_entries, stderr = await common_utils.async_exec(cmd)
+        if ret != 0:
+            raise InvalidLogUtilResponse(stderr)
+        return True
+
     async def _get_log_service_entries_sel(
         self, fru_name: str
     ) -> Sequence[Dict[str, str]]:
@@ -108,7 +120,7 @@ class RedfishLogService:
         fru_name = request.match_info["fru_name"]
 
         # We only support log-util capable machines for now
-        if not self.is_log_util_available:
+        if not self.is_log_util_available():
             return web.Response(status=404)
 
         # We only support SEL right now
@@ -127,6 +139,14 @@ class RedfishLogService:
                     fru_name, log_service_id
                 ),
             },
+            "Actions": {
+                "#LogService.ClearLog": {
+                    "target": "/redfish/v1/Systems/{}/LogServices/{}/Actions/LogService.ClearLog".format(
+                        fru_name, log_service_id
+                    ),
+                },
+                "Oem": {},
+            },
         }
         await validate_keys(body)
         return web.json_response(body)
@@ -136,7 +156,7 @@ class RedfishLogService:
         fru_name = request.match_info["fru_name"]
 
         # We only support log-util capable machines for now
-        if not self.is_log_util_available:
+        if not self.is_log_util_available():
             return web.Response(status=404)
 
         if log_service_id.lower() == "sel":
@@ -156,6 +176,34 @@ class RedfishLogService:
         }
         await validate_keys(body)
         return web.json_response(body)
+
+    async def clear_log_service_entries(self, request: web.Request) -> web.Response:
+        log_service_id = request.match_info["LogServiceID"]
+        fru_name = request.match_info["fru_name"]
+
+        # We only support log-util capable machines for now
+        if not self.is_log_util_available():
+            return web.json_response(
+                data={
+                    "status": "Not implemented",
+                    "reason": "Log util is not available",
+                },
+                status=501,
+            )
+
+        if log_service_id.lower() != "sel":
+            return web.json_response(
+                data={
+                    "status": "Not implemented",
+                    "reason": "{} is invalid log_service_id, only SEL is supported".format(
+                        log_service_id
+                    ),
+                },
+                status=501,
+            )
+        else:
+            success = await self._clear_log_entries_for_fru(fru_name)
+            return web.json_response({"success": success})
 
     async def get_log_service_entry(self, request: web.Request) -> web.Response:
         log_service_id = request.match_info["LogServiceID"]
@@ -194,3 +242,6 @@ class RedfishLogServiceController:
 
     async def get_log_service_entry(self, request: web.Request):
         return await self.handler.get_log_service_entry(request)
+
+    async def clear_log_service_entries(self, request: web.Request) -> web.Response:
+        return await self.handler.clear_log_service_entries(request)

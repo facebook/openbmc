@@ -55,7 +55,7 @@ class TestGetLogService(AioHTTPTestCase):
                 return_value={"slot1": 1, "slot2": 2, "slot3": 3, "slot4": 4, "spb": 5},
             ),
             unittest.mock.patch(
-                "redfish_log_service.is_log_util_available",
+                "redfish_log_service.RedfishLogService.is_log_util_available",
                 create=True,
                 return_value=True,
             ),
@@ -101,6 +101,14 @@ class TestGetLogService(AioHTTPTestCase):
             "Entries": {
                 "@odata.id": "/redfish/v1/Systems/{}".format(FRU_NAME)
                 + "/LogServices/SEL/Entries",
+            },
+            "Actions": {
+                "#LogService.ClearLog": {
+                    "target": "/redfish/v1/Systems/{}/LogServices/SEL/Actions/LogService.ClearLog".format(
+                        FRU_NAME
+                    ),
+                },
+                "Oem": {},
             },
         }
 
@@ -167,6 +175,67 @@ class TestGetLogService(AioHTTPTestCase):
         self.assertEqual(200, req.status)
 
     @unittest_run_loop
+    async def test_clear_logs_for_logservice(self):
+        ae_fut = asyncio.Future()
+        ae_fut.set_result((0, "", ""))
+        with unittest.mock.patch(
+            "common_utils.async_exec",
+            new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
+            return_value=ae_fut,
+        ) as ae_mock:
+            req = await self.client.request(
+                "POST",
+                "/redfish/v1/Systems/{}".format(FRU_NAME)
+                + "/LogServices/SEL/Actions/LogService.ClearLog",
+                json={},
+            )
+            response = await req.json()
+            self.assertEqual(response, {"success": True})
+            self.assertEqual(200, req.status)
+            ae_mock.assert_called_once_with(
+                ["/usr/local/bin/log-util", "slot1", "--clear"]
+            )
+
+    @unittest_run_loop
+    async def test_clear_logs_invalid_logservice_returns_501(self):
+        req = await self.client.request(
+            "POST",
+            "/redfish/v1/Systems/{}".format(FRU_NAME)
+            + "/LogServices/DERP/Actions/LogService.ClearLog",
+            json={},
+        )
+        response = await req.json()
+        expected_resp = {
+            "reason": "DERP is invalid log_service_id, only SEL is supported",
+            "status": "Not implemented",
+        }
+        self.assertEqual(response, expected_resp)
+        self.assertEqual(501, req.status)
+
+    @unittest_run_loop
+    async def test_clear_logs_logutil_unavailable_returns_501(self):
+        with unittest.mock.patch(
+            "redfish_log_service.RedfishLogService.is_log_util_available",
+            create=True,
+            return_value=False,
+        ):
+            ae_fut = asyncio.Future()
+            ae_fut.set_result((0, "", ""))
+            req = await self.client.request(
+                "POST",
+                "/redfish/v1/Systems/{}".format(FRU_NAME)
+                + "/LogServices/SEL/Actions/LogService.ClearLog",
+                json={},
+            )
+            response = await req.json()
+            expected_resp = {
+                "reason": "Log util is not available",
+                "status": "Not implemented",
+            }
+            self.assertEqual(response, expected_resp)
+            self.assertEqual(501, req.status)
+
+    @unittest_run_loop
     async def test_systems_get_log_service_bad_logservice_id(self):
         req = await self.client.request(
             "GET",
@@ -197,6 +266,10 @@ class TestGetLogService(AioHTTPTestCase):
         webapp.router.add_get(
             "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Entries",
             log_service.get_log_service_entries,
+        )
+        webapp.router.add_post(
+            "/redfish/v1/Systems/{fru_name}/LogServices/{LogServiceID}/Actions/LogService.ClearLog",
+            log_service.clear_log_service_entries,
         )
         webapp.router.add_get(
             "/redfish/v1/Systems/{fru_name}/LogServices"

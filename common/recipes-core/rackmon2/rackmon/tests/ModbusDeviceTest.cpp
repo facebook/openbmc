@@ -166,7 +166,7 @@ TEST_F(ModbusDeviceTest, TimeoutInExclusiveMode) {
       .Times(1)
       .WillOnce(Throw(TimeoutException()));
   ModbusDevice dev(get_modbus(), 0x32, get_regmap(), 3);
-  dev.enableExclusiveMode();
+  dev.setExclusiveMode(true);
   Msg req, resp;
   req.raw = {0x32, 2};
   req.len = 2;

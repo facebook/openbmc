@@ -195,7 +195,7 @@ void Rackmon::start(PollThreadTime interval) {
     throw std::runtime_error("Already running");
   }
   for (auto& dev_it : devices_) {
-    dev_it.second->disableExclusiveMode();
+    dev_it.second->setExclusiveMode(false);
   }
   scanThread_ = makeThread(&Rackmon::scan, interval);
   scanThread_->start();
@@ -215,7 +215,7 @@ void Rackmon::stop() {
     scanThread_ = nullptr;
   }
   for (auto& dev_it : devices_) {
-    dev_it.second->enableExclusiveMode();
+    dev_it.second->setExclusiveMode(true);
   }
 }
 

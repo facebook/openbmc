@@ -125,11 +125,8 @@ class ModbusDevice {
     return info_.lastActive;
   }
 
-  void enableExclusiveMode() {
-    info_.exclusiveMode_ = true;
-  }
-  void disableExclusiveMode() {
-    info_.exclusiveMode_ = false;
+  void setExclusiveMode(bool enable) {
+    info_.exclusiveMode_ = enable;
   }
 
   // Return structured information of the device.

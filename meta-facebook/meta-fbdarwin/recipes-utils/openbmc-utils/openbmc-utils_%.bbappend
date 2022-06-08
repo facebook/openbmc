@@ -26,6 +26,7 @@ LOCAL_URI += "\
     file://oob-eeprom-util.sh \
     file://oob-mdio-util.sh \
     file://oob-status.sh \
+    file://setup_gpio.service \
     file://setup-gpio.sh \
     file://setup_bcm53134.sh \
     file://setup_board.sh \
@@ -50,7 +51,7 @@ PACKAGECONFIG += "boot-info"
 
 DEPENDS:append = " update-rc.d-native"
 
-do_install_board() {
+do_work_sysv() {
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
@@ -83,8 +84,35 @@ do_install_board() {
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 
+do_work_systemd() {
+    install -d ${D}/usr/local/bin
+    install -d ${D}${systemd_system_unitdir}
+
+    # networking is done after rcS, any start level within rcS
+    # for mac fixup should work
+    install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+
+    install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+
+    install -m 755 setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
+    install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}
+}
+
+do_install_board() {
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+      do_work_systemd
+    else
+      do_work_sysv
+    fi
+}
+
 do_install:append() {
-  do_install_board
+    do_install_board
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+SYSTEMD_SERVICE:${PN} += "setup_gpio.service"
+
+# Not needed for fbdarwin
+SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service setup_i2c.service power-on.service"

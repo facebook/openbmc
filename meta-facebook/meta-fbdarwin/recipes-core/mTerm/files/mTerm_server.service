@@ -1,4 +1,5 @@
-# Copyright 2015-present Facebook. All Rights Reserved.
+#
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,24 +15,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=mTerm server monitoring
+After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
+Wants=setup_board.service
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Service]
+ExecStart=/usr/local/bin/mTerm_server wedge /dev/ttyS1 9600
 
-SRC_URI += "file://mTerm_server.service \
-            file://mTerm/run \
-            file://sol.sh \
-           "
-
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
-
-S = "${WORKDIR}"
-
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
-
-do_install:append() {
-    install -d ${D}/usr/local/bin
-    install -m 755 sol.sh ${D}/usr/local/bin/sol.sh
-}
-
-FILES:${PN} += "/usr/local/bin"
+[Install]
+WantedBy=multi-user.target

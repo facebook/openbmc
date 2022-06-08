@@ -34,4 +34,5 @@ IMAGE_INSTALL += " \
   healthd \
   cfg-util \
   fan-util \
+  hgxmgr \
 "

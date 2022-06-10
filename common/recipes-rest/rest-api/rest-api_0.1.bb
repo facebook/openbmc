@@ -59,8 +59,8 @@ RDEPENDS:${PN} += " \
     libsdr \
     python3-core \
     python3-psutil\
+    sensors-py \
 "
-RDEPENDS:${PN}:append:mf-fb-compute = " sensors-py"
 
 LOCAL_URI = " \
     file://setup-rest-api.sh \

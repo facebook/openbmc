@@ -70,12 +70,6 @@ if [ $((brd_type)) -eq 0 ]; then
   fi;
 elif  [ $((brd_type)) -eq 1 ]; then
   cp /etc/sensors.d/custom/wedge400c.conf /etc/sensors.d/wedge400c.conf
-  # Check board revision
-  if [ $((brd_rev)) -ge 4 ]; then # for respin or newer
-    cp /etc/sensors.d/custom/wedge400c-respin.conf /etc/sensors.d/wedge400c-respin.conf
-  else
-    cp /etc/sensors.d/custom/wedge400c-evt-dvt2.conf /etc/sensors.d/wedge400c-evt-dvt2.conf
-  fi;
 fi
 
 # For the time being, we set GB VDD Core to 825mv, to take care of

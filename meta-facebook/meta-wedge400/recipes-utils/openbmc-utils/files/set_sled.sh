@@ -42,12 +42,9 @@ usage(){
     echo "     <color>: off/red/blue/yellow/green"
 }
 
-brd_type=$(wedge_board_type)
-brd_rev=$(wedge_board_rev)
-# In Wedge400 MP Respin and Wedge400C Respin
-# the led location are swaped
-if [ $((brd_type)) -eq 0 ] && [ $((brd_rev)) -ge 6 ] || 
-   [ $((brd_type)) -eq 1 ] && [ $((brd_rev)) -ge 4 ]; then
+brd_type_rev=$(wedge_board_type_rev)
+# In wedge400 MP respin the led location are swaped
+if [ "$brd_type_rev" = "WEDGE400_MP_RESPIN" ]; then
   case $name in
     "sts")
       led_id=2

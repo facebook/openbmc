@@ -228,10 +228,7 @@ def _get_phy_context(sensor_name: str) -> str:
 def _get_fru_names(server_name: str) -> t.List[str]:
     fru_names = []
     if server_name == "1":  # Chassis/1 represents the Chassis on all platforms
-        if redfish_chassis_helper.is_libpal_supported():
-            return redfish_chassis_helper.get_single_sled_frus()
-        else:
-            return ["BMC"]
+        return redfish_chassis_helper.get_single_sled_frus()
     elif "server" in server_name:
         if rest_pal_legacy.pal_get_num_slots() > 1:
             slot_name = server_name.replace("server", "slot")

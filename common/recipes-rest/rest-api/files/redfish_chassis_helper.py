@@ -240,17 +240,13 @@ __CACHE_FRU_INFO = {}  # type: t.Dict[str, FruInfo]
 
 async def get_fru_info_helper(fru_name: t.Optional[str] = None) -> t.List[FruInfo]:
     frus_info_list = []
-    if is_libpal_supported():  # for compute and new fboss platforms
-        if fru_name is None:  # for single sled platforms
-            fru_name_list = get_single_sled_frus()
-            for fru in fru_name_list:
-                fru_info = await get_fru_info(fru)
-                frus_info_list.append(fru_info)
-        else:  # for multisled platforms
-            fru_info = await get_fru_info(fru_name)
+    if fru_name is None:  # for single sled platforms
+        fru_name_list = get_single_sled_frus()
+        for fru in fru_name_list:
+            fru_info = await get_fru_info(fru)
             frus_info_list.append(fru_info)
-    else:  # for older fboss platforms
-        fru_info = await get_fru_info("BMC")
+    else:  # for multisled platforms
+        fru_info = await get_fru_info(fru_name)
         frus_info_list.append(fru_info)
 
     return frus_info_list
@@ -313,15 +309,19 @@ def is_we_util_available() -> bool:
 
 
 def get_single_sled_frus() -> t.List[str]:
-    fru_name_map = pal.pal_fru_name_map()
     fru_list = []
-    for fru_name, fruid in fru_name_map.items():
-        if (
-            pal.FruCapability.FRU_CAPABILITY_HAS_DEVICE
-            not in pal.pal_get_fru_capability(fruid)
-            and "exp" not in fru_name
-        ):
-            fru_list.append(fru_name)
+    if is_libpal_supported():  # for compute and new fboss platforms
+        fru_name_map = pal.pal_fru_name_map()
+        for fru_name, fruid in fru_name_map.items():
+            if (
+                pal.FruCapability.FRU_CAPABILITY_HAS_DEVICE
+                not in pal.pal_get_fru_capability(fruid)
+                and "exp" not in fru_name
+            ):
+                fru_list.append(fru_name)
+    # for FBOSS platforms without libpal or that don't report a server FRU.
+    if len(fru_list) == 0:
+        fru_list = ["BMC"]
     return fru_list
 
 

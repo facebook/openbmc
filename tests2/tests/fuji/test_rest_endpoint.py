@@ -120,13 +120,11 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
     def get_pim_name(self, ver):
         """ """
         pim_name = None
-        ver = int(ver)
+        ver = int(ver, 16)
         if ver & 0x80 == 0x0:
             pim_name = "PIM_TYPE_16Q"
-        elif ver & 0x80 == 0x80:
-            pim_name = "PIM_TYPE_16O"
         else:
-            pim_name = None
+            pim_name = "PIM_TYPE_16O"
         return pim_name
 
     def get_pim_sensor_type(self, pim_num):

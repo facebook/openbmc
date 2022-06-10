@@ -1210,6 +1210,7 @@ int get_pem_info(uint8_t num) {
     printf("\n%-32s: %d", "Product Version", fruid.fbw_product_version);
     printf("\n%-32s: %d", "Product Sub-Version", fruid.fbw_product_subversion);
     printf("\n%-32s: %s", "Product Serial Number", fruid.fbw_product_serial);
+    printf("\n%-32s: %d", "Product Production State", fruid.fbw_production_state);
     printf("\n%-32s: %s", "System Manufacturer", fruid.fbw_system_manufacturer);
     printf("\n%-32s: %s", "System Manufacturing Date",
            fruid.fbw_system_manufacturing_date);

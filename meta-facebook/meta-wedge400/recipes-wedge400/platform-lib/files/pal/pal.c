@@ -1921,7 +1921,7 @@ pal_get_board_type_rev(uint8_t *brd_type_rev){
   } else if ( brd_type == BRD_TYPE_WEDGE400C ){
     if ( full_brd_type & 0x02 ) { // Indicates MP RESPIN type.
       switch ( brd_rev ) {
-        case 0x06: *brd_type_rev = BOARD_WEDGE400C_MP_RESPIN; break;
+        case 0x04: *brd_type_rev = BOARD_WEDGE400C_MP_RESPIN; break;
         default:
           *brd_type_rev = BOARD_UNDEFINED;
           return -1;

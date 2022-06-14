@@ -1,0 +1,37 @@
+From 197fb58e40863ad07cc571c7a38e6581f74ee09f Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Mon, 13 Jun 2022 17:12:03 -0500
+Subject: [PATCH] test: astlpc: fix compile warning
+
+With the GCC found in openbmc/openbmc master, we are observing the
+following:
+
+```
+    | build-halfdome/tmp/work/armv7at2hf-vfp-fb-linux-gnueabi/libmctp-intel/1.0+gitAUTOINC+d530c2271e-r1/git/tests/test_astlpc.c:98:26: error: array subscript 2 is above array bounds of 'uint8_t[2]' {aka 'unsigned char[2]'} [-Werror=array-bounds]
+    |    98 |                 mmio->kcs[reg] = val;
+    |       |                 ~~~~~~~~~^~~~~
+    | build-halfdome/tmp/work/armv7at2hf-vfp-fb-linux-gnueabi/libmctp-intel/1.0+gitAUTOINC+d530c2271e-r1/git/tests/test_astlpc.c:63:17: note: while referencing 'kcs'
+    |    63 |         uint8_t kcs[2];
+```
+
+Fix this by being explicit about the register access (enum to int map).
+---
+ tests/test_astlpc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tests/test_astlpc.c b/tests/test_astlpc.c
+index 0e0dcca..9ecd787 100644
+--- a/tests/test_astlpc.c
++++ b/tests/test_astlpc.c
+@@ -94,7 +94,7 @@ int mctp_astlpc_mmio_kcs_write(void *data, enum mctp_binding_astlpc_kcs_reg reg,
+ 
+ 	if (reg == MCTP_ASTLPC_KCS_REG_STATUS)
+ 		mmio->kcs[reg] = val & ~0xaU;
+-	else
++	else if (reg == MCTP_ASTLPC_KCS_REG_DATA)
+ 		mmio->kcs[reg] = val;
+ 
+ 	mctp_prdebug("%s: 0x%hhx to %s", __func__, val,
+-- 
+2.31.1
+

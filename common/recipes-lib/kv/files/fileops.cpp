@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later
  * Copyright 2020-present Facebook. All Rights Reserved.
  */
+#include <dirent.h>
+#include <unistd.h>
+#include <array>
 #include <iostream>
 #include <limits>
-#include <unistd.h>
 #include <regex>
-#include <dirent.h>
 
 #include "fileops.hpp"
 #include "kv.hpp"

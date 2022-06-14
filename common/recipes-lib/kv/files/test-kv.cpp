@@ -2,9 +2,9 @@
  * Copyright 2015-present Facebook. All Rights Reserved.
  */
 
+#include <unistd.h>
 #include <array>
 #include <cassert>
-#include <unistd.h>
 #include "kv.hpp"
 
 int main(int argc, char *argv[])

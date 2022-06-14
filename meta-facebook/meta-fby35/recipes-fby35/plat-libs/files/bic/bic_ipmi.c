@@ -900,7 +900,7 @@ bic_get_vr_device_revision(uint8_t slot_id, uint8_t *dev_rev, uint8_t bus, uint8
   revision_len = rbuf[0]; // first byte that return is the number of bytes represent the device revision
 
   memcpy(dev_rev, &rbuf[1], revision_len);
-  
+
   return ret;
 }
 
@@ -1164,7 +1164,7 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
   uint8_t rbuf[8] = {0};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
-  int ret, val = 0;
+  int ret = 0, val = 0;
   int retry = 0;
   char key[MAX_KEY_LEN] = {0};
   char tmp_str[MAX_VALUE_LEN] = {0};
@@ -1297,7 +1297,7 @@ me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr
   uint8_t len = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   me_smb_read req = {0};
-   
+
   if (data == NULL) {
     syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
   }
@@ -1308,9 +1308,9 @@ me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr
   req.smbus_id = info.bus_id;
   req.smbus_addr = info.addr;
   req.addr_size = addr_size;
-  
+
   memcpy(req.addr, &addr, sizeof(req.addr));
-  req.rlen = (rlen > 0) ? (rlen - 1) : 0; // Number of bytes to read minus one. 
+  req.rlen = (rlen > 0) ? (rlen - 1) : 0; // Number of bytes to read minus one.
   ret = bic_me_xmit(slot_id, (uint8_t*)&req, sizeof(req), rbuf, &len);
   if (rbuf[0] != CC_SUCCESS) {
     syslog(LOG_WARNING, "%s(): FRU: %d, fail to do ME SMBus read, CC: 0x%x", __func__, slot_id, rbuf[0]);
@@ -1320,7 +1320,7 @@ me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr
     syslog(LOG_WARNING, "%s(): FRU: %d, fail to do ME SMBus read, rlen = %d, len = %d", __func__, slot_id, rlen, len);
     return -1;
   }
-  index = sizeof(INTEL_MFG_ID); 
+  index = sizeof(INTEL_MFG_ID);
   memcpy(data, &rbuf[index], rlen);
 
   return ret;
@@ -1344,7 +1344,7 @@ me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t add
   req.smbus_addr = info.addr;
   req.addr_size = addr_size;
   memcpy(req.addr, &addr, sizeof(req.addr));
-  req.tlen = (tlen > 0) ? (tlen - 1) : 0; // Number of bytes to read minus one. 
+  req.tlen = (tlen > 0) ? (tlen - 1) : 0; // Number of bytes to read minus one.
   memcpy(req.data, data, tlen);
 
   ret = bic_me_xmit(slot_id, (uint8_t*)&req, ME_SMBUS_WRITE_HEADER_LEN + tlen, rbuf, &len);

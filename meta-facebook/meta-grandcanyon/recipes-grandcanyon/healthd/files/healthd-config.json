@@ -90,11 +90,12 @@
   },
   "bic_health": {
     "enabled": true,
-    "fru": 1
+    "fru": 1,
+    "monitor_interval": 60
   },
   "nm_monitor": {
     "enabled": true,
-    "retry_threshold": 1,
+    "retry_threshold": 2,
     "nm_transmission_via_bic": true
   }
 }

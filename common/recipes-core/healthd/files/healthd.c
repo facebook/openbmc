@@ -234,6 +234,7 @@ extern void * pfr_monitor();
 /* BIC health monitor */
 static bool bic_health_enabled = false;
 static uint8_t bic_fru = 0;
+static int bic_monitor_interval = BIC_HEALTH_INTERVAL;
 
 /* healthd log rearm monitor */
 static bool log_rearm_enabled = false;
@@ -603,6 +604,15 @@ static void initialize_bic_health_config(json_t *obj) {
     return;
   }
   bic_fru = json_integer_value(tmp);
+
+  tmp = json_object_get(obj, "monitor_interval");
+  if (tmp && json_is_number(tmp)) {
+    bic_monitor_interval = json_integer_value(tmp);
+    syslog(LOG_WARNING, "bic monitor interval: %d", bic_monitor_interval);
+    if (bic_monitor_interval <= 0) {
+      bic_monitor_interval = BIC_HEALTH_INTERVAL;
+    }
+  }
 }
 
 static void initialize_ubifs_health_config(json_t *obj) {
@@ -1768,6 +1778,7 @@ bic_health_monitor() {
   kv_set("flag_healthd_bic_health", "1", 0, 0);
 
   while (1) {
+    syslog(LOG_WARNING, "FRU %d BIC monitoring", bic_fru);
     if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {
       goto next_run;
     }
@@ -1775,7 +1786,7 @@ bic_health_monitor() {
     // Check if bic is updating
     if (pal_is_fw_update_ongoing(bic_fru) == true) {
       err_cnt = 0;
-      sleep(BIC_HEALTH_INTERVAL);
+      sleep(bic_monitor_interval);
       continue;
     }
 
@@ -1822,7 +1833,7 @@ next_run:
         is_already_reset = true;
       }
     }
-    sleep(BIC_HEALTH_INTERVAL);
+    sleep(bic_monitor_interval);
   }
 
   return NULL;

@@ -362,6 +362,9 @@ pal_parse_oem_unified_sel_common(uint8_t fru, uint8_t *sel, char *error_log)
     "System PXE boot fail",
     "CMOS/NVRAM configuration cleared",
     "TPM Self-Test Fail",
+    "Boot Drive failure",
+    "Data Drive failure",
+    "Received invalid boot order request from BMC",
     "Reserved"
   };
   char *pcie_event[] = {

@@ -447,8 +447,8 @@ reinit_snr_threshold(uint8_t fru, int mode) {
 static int
 thresh_reinit_chk(uint8_t fru) {
   int ret;
-  char fpath[64] = {0};
-  char initpath[64] = {0};
+  char fpath[128] = {0};
+  char initpath[128] = {0};
   char fru_name[32];
   uint8_t fruNb = fru;
 
@@ -458,8 +458,8 @@ thresh_reinit_chk(uint8_t fru) {
     return -1;
   }
 
-  sprintf(fpath, THRESHOLD_BIN, fru_name);
-  sprintf(initpath, THRESHOLD_RE_FLAG, fru_name);
+  snprintf(fpath, sizeof(fpath), THRESHOLD_BIN, fru_name);
+  snprintf(initpath, sizeof(initpath), THRESHOLD_RE_FLAG, fru_name);
   if (0 != access(fpath, F_OK)) {
     // If there is no THRESHOLD_BIN file but INIT_FLAG exist, it means threshold-util --clear is triggered.
     // And snr info should be loaded default.

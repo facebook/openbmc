@@ -6,6 +6,7 @@
 #include <memory>
 #include <regex>
 #include <string>
+#include <cstring>
 
 void rsyslogd::runcmd(const std::string& cmd, std::string& output) {
   // 128char lines.

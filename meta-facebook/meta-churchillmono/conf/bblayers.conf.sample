@@ -22,11 +22,12 @@ BBLAYERS ?= " \
   ##OEROOT##/../../meta-facebook/meta-backports \
   "
 
-# To build with the proprietary tree, uncomment these lines.
-#BBLAYERS:append = " \
-#  ##OEROOT##/../../proprietary/cisco/meta-cisco \
-#  ##OEROOT##/../../proprietary/cisco/meta-churchillmono \
-#"
+# To build with the proprietary tree, comment these lines
+# for OSS build
+BBLAYERS:append = " \
+  ##OEROOT##/../../proprietary/cisco/meta-cisco \
+  ##OEROOT##/../../proprietary/cisco/meta-churchillmono \
+"
 
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \

@@ -272,8 +272,7 @@ enum {
   FRU_ALL  = 0,
   FRU_SCM,
   FRU_SMB,
-  //To avoid CIT test failure caused by index mismatch
-  FRU_PEM1 = 4,
+  FRU_PEM1,
   FRU_PEM2,
   FRU_PSU1,
   FRU_PSU2,

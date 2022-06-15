@@ -30,21 +30,6 @@ raa_dma_rd(uint8_t bus, uint8_t addr, uint8_t *reg, uint8_t *resp) {
   return 0;
 }
 
-static int
-is_gen2_device(uint8_t bus, uint8_t addr) {
-  uint8_t tbuf[16], rbuf[16];
-
-  tbuf[0] = VR_RAA_REG_DEVID;
-  if (vr_xfer(bus, addr, tbuf, 1, rbuf, VR_RAA_DEV_ID_LEN+1) < 0) {
-    syslog(LOG_WARNING, "%s: read IC_DEVICE_ID failed", __func__);
-    return -1;
-  }
-
-  if( rbuf[2] < 0x70 )
-    return true;
-
-  return 0;
-}
 
 static int
 get_raa_remaining_wr(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t *remain) {
@@ -67,11 +52,20 @@ get_raa_remaining_wr(uint8_t bus, uint8_t addr, uint8_t mode, uint8_t *remain) {
 static int
 get_raa_hex_mode(uint8_t bus, uint8_t addr, uint8_t *mode) {
   uint8_t tbuf[8], rbuf[8];
-  uint8_t raa_dev;
 
-  raa_dev = is_gen2_device(bus, addr);
+  tbuf[0] = VR_RAA_REG_DEVID;
+  if (vr_xfer(bus, addr, tbuf, 1, rbuf, VR_RAA_DEV_ID_LEN+1) < 0) {
+    syslog(LOG_WARNING, "%s: read IC_DEVICE_ID failed", __func__);
+    return -1;
+  }
 
-  if ( raa_dev == true ) {
+#ifdef VR_RAA_DEBUG
+  for(int i=0; i<5; i++) {
+    printf("%s rbuf[%d]=%x\n", __func__, i, rbuf[i]);
+  }
+#endif
+
+  if( rbuf[2] < 0x70 ) {
     *mode = RAA_GEN2;
   } else {
     tbuf[0] = VR_RAA_REG_HEX_MODE_CFG0;
@@ -84,7 +78,7 @@ get_raa_hex_mode(uint8_t bus, uint8_t addr, uint8_t *mode) {
   }
 
 #ifdef VR_RAA_DEBUG
-  if(mode == RAA_GEN2)
+  if(*mode == RAA_GEN2)
     printf("Mode GEN2\n");
   else
     printf("Mode GEN3\n");

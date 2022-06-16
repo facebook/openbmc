@@ -511,6 +511,45 @@ const uint8_t bic_dpv2_x16_sensor_list[] = {
   BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR,
 };
 
+// BIC Rainbow Falls Sensors
+const uint8_t bic_1ou_rf_sensor_list[] = {
+  BIC_1OU_RF_INLET_TEMP,
+  BIC_1OU_RF_CXL_CNTR_TEMP,
+  BIC_1OU_RF_P0V9A_SPS_TEMP,
+  BIC_1OU_RF_P0V8A_SPS_TEMP,
+  BIC_1OU_RF_P0V8D_SPS_TEMP,
+  BIC_1OU_RF_PVDDQ_AB_SPS_TEMP,
+  BIC_1OU_RF_PVDDQ_CD_SPS_TEMP,
+  BIC_1OU_RF_P12V_STBY_VOL,
+  BIC_1OU_RF_P3V3_STBY_VOL,
+  BIC_1OU_RF_P5V_STBY_VOL,
+  BIC_1OU_RF_P1V2_STBY_VOL,
+  BIC_1OU_RF_P1V8_ASIC_VOL,
+  BIC_1OU_RF_P0V9_ASIC_A_VOL,
+  BIC_1OU_RF_P0V8_ASIC_A_VOL,
+  BIC_1OU_RF_P0V8_ASIC_D_VOL,
+  BIC_1OU_RF_PVDDQ_AB_VOL,
+  BIC_1OU_RF_PVDDQ_CD_VOL,
+  BIC_1OU_RF_PVPP_AB_VOL,
+  BIC_1OU_RF_PVPP_CD_VOL,
+  BIC_1OU_RF_PVTT_AB_VOL,
+  BIC_1OU_RF_PVTT_CD_VOL,
+  BIC_1OU_RF_P12V_STBY_CUR,
+  BIC_1OU_RF_P3V3_STBY_CUR,
+  BIC_1OU_RF_P0V9A_VR_CUR,
+  BIC_1OU_RF_P0V8A_VR_CUR,
+  BIC_1OU_RF_P0V8D_VR_CUR,
+  BIC_1OU_RF_PVDDQ_VR_CUR,
+  BIC_1OU_RF_PVDDQV_VR_CUR,
+  BIC_1OU_RF_P12V_STBY_PWR,
+  BIC_1OU_RF_P3V3_STBY_PWR,
+  BIC_1OU_RF_P0V9A_SPS_PWR,
+  BIC_1OU_RF_P0V8A_SPS_PWR,
+  BIC_1OU_RF_P0V8D_SPS_PWR,
+  BIC_1OU_RF_PVDDQ_AB_SPS_PWR,
+  BIC_1OU_RF_PVDDQ_CD_SPS_PWR,
+};
+
 const uint8_t bic_skip_sensor_list[] = {
   BIC_SENSOR_PCH_TEMP,
   BIC_SENSOR_CPU_TEMP,
@@ -1055,6 +1094,7 @@ size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8
 size_t bic_1ou_wf_sensor_cnt = sizeof(bic_1ou_wf_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t);
 size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
+size_t bic_1ou_rf_sensor_cnt = sizeof(bic_1ou_rf_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_skip_sensor_cnt = sizeof(bic_1ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
@@ -1117,9 +1157,6 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
     if (type == EDSFF_1U) {
       memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
       current_cnt += bic_1ou_edsff_skip_sensor_cnt;
-    } else {
-      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
-      current_cnt += bic_1ou_skip_sensor_cnt;
     }
 
     if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
@@ -1176,15 +1213,43 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     // 1OU
     if ( (bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
       ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_get_1ou_type(fru, &type):bic_get_1ou_type_cache(fru, &type);
-      if (type == EDSFF_1U) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
-        current_cnt += bic_1ou_edsff_sensor_cnt;
-      } else if (type == WF_1U) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_wf_sensor_list, bic_1ou_wf_sensor_cnt);
-        current_cnt += bic_1ou_wf_sensor_cnt;
-      } else {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
-        current_cnt += bic_1ou_sensor_cnt;
+      if (ret < 0) { // If BMC fail to get board id from 1OU BIC, then it will detect 1OU card type.
+        ret = bic_get_card_type(fru, CARD_TYPE_1OU, &type);
+        if (ret < 0) {
+          syslog(LOG_ERR, "%s() Cannot get board_type and card_type", __func__);
+        }
+        else {
+          switch(type) {
+            case TYPE_1OU_WAIMANO_FALLS:
+              memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_wf_sensor_list, bic_1ou_wf_sensor_cnt);
+              current_cnt += bic_1ou_wf_sensor_cnt;
+              break;
+            case TYPE_1OU_RAINBOW_FALLS:
+              memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_rf_sensor_list, bic_1ou_rf_sensor_cnt);
+              current_cnt += bic_1ou_rf_sensor_cnt;
+              break;
+            default:
+              syslog(LOG_ERR, "%s() Cannot identify the 1OU card type or 1OU card is not present", __func__);
+          }
+        }
+      }
+      else {
+        switch(type) {
+          case EDSFF_1U:
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
+            current_cnt += bic_1ou_edsff_sensor_cnt;
+            break;
+          case WF_1U:
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_wf_sensor_list, bic_1ou_wf_sensor_cnt);
+            current_cnt += bic_1ou_wf_sensor_cnt;
+            break;
+          case CXL_1U:
+            memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_rf_sensor_list, bic_1ou_rf_sensor_cnt);
+            current_cnt += bic_1ou_rf_sensor_cnt;
+            break;
+          default:
+            syslog(LOG_ERR, "%s() Cannot identify the 1OU board type or 1OU board is not present", __func__);
+        }
       }
     }
 

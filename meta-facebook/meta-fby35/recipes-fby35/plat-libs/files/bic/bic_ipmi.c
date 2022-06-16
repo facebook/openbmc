@@ -2365,3 +2365,37 @@ bic_check_cable_status() {
 
   return 0;
 }
+
+int
+bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tlen = IANA_ID_SIZE;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retry = 0;
+
+  if (type == NULL) {
+    return -1;
+  }
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[tlen++] = card_config;
+
+  while (retry < IPMB_RETRY_TIME) {
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_CARD_TYPE, tbuf, tlen, rbuf, &rlen);
+    if (ret == 0) {
+      break;
+    }
+    retry++;
+  }
+  if (ret != 0) {
+    syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
+    return -1;
+  }
+
+  *type = rbuf[4]; //Byte 4 represents card type.
+
+  return ret;
+
+}

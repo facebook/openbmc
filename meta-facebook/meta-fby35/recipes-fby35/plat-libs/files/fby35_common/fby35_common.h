@@ -206,6 +206,7 @@ enum {
   CXL_1U   = 0x0A,
   M2_1U    = 0x0B,
   WF_1U    = 0x0C,
+  VF_1U    = 0x0E,
 };
 
 // 2OU Board type
@@ -218,6 +219,29 @@ enum {
   DPV2_X16_BOARD = 0x70,
   DPV2_BOARD = 0x77,
   UNKNOWN_BOARD = 0xFF,
+};
+
+// 1OU card type
+enum {
+  TYPE_1OU_SI_TEST_CARD = 0x0,
+  TYPE_1OU_EXP_WITH_6_M2,
+  TYPE_1OU_RAINBOW_FALLS,
+  TYPE_1OU_VERNAL_FALLS_WITH_TI, // TI BIC
+  TYPE_1OU_VERNAL_FALLS_WITH_AST, // AST1030 BIC
+  TYPE_1OU_KAHUNA_FALLS,
+  TYPE_1OU_WAIMANO_FALLS,
+  TYPE_1OU_EXP_WITH_NIC,
+  TYPE_1OU_ABSENT = 0xFE,
+  TYPE_1OU_UNKNOWN = 0xFF,
+};
+
+// 2OU card type
+enum {
+  TYPE_2OU_DPV2_8 = 0x07, // DPV2x8
+  TYPE_2OU_DPV2_16 = 0x70, // DPV2x16
+  TYPE_2OU_DPV2_8_16 = 0x77, // DPV2x8 + DPV2x16
+  TYPE_2OU_ABSENT = 0xFE,
+  TYPE_2OU_UNKNOWN = 0xFF,
 };
 
 // Server type
@@ -349,6 +373,11 @@ enum {
 enum {
   KEY_CLEAR = 0,
   KEY_SET,
+};
+
+enum {
+  CARD_TYPE_1OU = 0x0,
+  CARD_TYPE_2OU,
 };
 
 const static char *gpio_server_prsnt[] =

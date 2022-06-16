@@ -50,6 +50,7 @@ enum {
   BIC_CMD_OEM_SET_FAN_DUTY      = 0xF1,
   BIC_CMD_OEM_FAN_CTRL_STAT     = 0xF2,
   BIC_CMD_OEM_CABLE_STAT        = 0xCB,
+  BIC_CMD_OEM_CARD_TYPE         = 0xA1,
 };
 
 enum {

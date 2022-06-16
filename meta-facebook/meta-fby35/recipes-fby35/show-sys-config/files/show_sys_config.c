@@ -55,6 +55,7 @@ static const char *prsnt_sts[] = {"Present", "Not Present", "Abnormal state"};
 
 static bool verbosed = false;
 static bool output_json = false;
+static bool record_slot_mapping = false;
 
 static int
 get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
@@ -80,8 +81,10 @@ get_server_config(uint8_t slot_id, uint8_t *data, uint8_t bmc_location) {
   }
 
   data[0] = rbuf[0];
-  
-  ret = pal_check_sled_mgmt_cbl_id(slot_id, tbuf, bmc_location);
+
+  if (record_slot_mapping) {
+    ret = pal_check_sled_managment_cable_id(slot_id, tbuf, bmc_location);
+  }
   if ( ret < 0 ) {
     return UTIL_EXECUTION_FAIL;
   }
@@ -212,6 +215,8 @@ main(int argc, char **argv) {
   for ( i = 1; i < argc; i++ ) {
     if ( strcmp("-v", argv[i]) == 0 ) {
       verbosed = true;
+    } else if ( strcmp("-r", argv[i]) == 0 ) {  //Execute this command with argument '-r', it will record the slot mapping.
+      record_slot_mapping = true;
     } else if ( strcmp("-json", argv[i]) == 0 ) {
       output_json = true;
     }

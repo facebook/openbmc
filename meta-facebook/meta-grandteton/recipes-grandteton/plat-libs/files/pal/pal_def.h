@@ -34,6 +34,60 @@
 #define NM_IPMB_BUS_ID             (I2C_BUS_6)
 #define NM_SLAVE_ADDR              (0x2C)
 
+//SWB Device Info
+#define SWB_UART_ID (5)
+
+enum {
+  VR0_COMP,
+  VR1_COMP,
+  BIC_COMP,
+  PEX0_COMP,
+  PEX1_COMP,
+  PEX2_COMP,
+  PEX3_COMP,
+  CPLD_COMP,
+  NIC0_COMP,
+  NIC1_COMP,
+  NIC2_COMP,
+  NIC3_COMP,
+  NIC4_COMP,
+  NIC5_COMP,
+  NIC6_COMP,
+  NIC7_COMP,
+};
+
+#define FP_RST_BTN_N             "ID_RST_BTN_BMC_IN"
+#define FP_PWR_BTN_N             "SYS_BMC_PWRBTN_IN"
+#define FM_UARTSW_LSB_N          "FM_UARTSW_LSB_N"
+#define FM_UARTSW_MSB_N          "FM_UARTSW_MSB_N"
+#define FM_POST_CARD_PRES_N      "FM_DEBUG_PORT_PRSNT_N_IN"
+#define RST_PLTRST_N             "RST_PLTRST_PLD_N"
+#define IRQ_UV_DETECT_N          "IRQ_UV_DETECT_N"
+#define IRQ_OC_DETECT_N          "IRQ_OC_DETECT_N"
+#define IRQ_HSC_FAULT_N          "IRQ_HSC_FAULT_N"
+#define IRQ_HSC_ALERT_N          "IRQ_SML1_PMBUS_PLD_ALERT_N"
+#define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"
+#define FM_CPU0_PROCHOT_N        "H_CPU0_PROCHOT_LVC1_N"
+#define FM_CPU1_PROCHOT_N        "H_CPU1_PROCHOT_LVC1_N"
+#define FM_CPU0_THERMTRIP_N      "H_CPU0_THERMTRIP_LVC1_N"
+#define FM_CPU1_THERMTRIP_N      "H_CPU1_THERMTRIP_LVC1_N"
+#define FM_CPU_ERR0_N            "H_CPU_ERR0_LVC2_N"
+#define FM_CPU_ERR1_N            "H_CPU_ERR1_LVC2_N"
+#define FM_CPU_ERR2_N            "H_CPU_ERR2_LVC2_N"
+#define FM_CPU0_MEM_HOT_N        "H_CPU0_MEMHOT_OUT_LVC1_N"
+#define FM_CPU1_MEM_HOT_N        "H_CPU1_MEMHOT_OUT_LVC1_N"
+#define FM_CPU0_MEM_THERMTRIP_N  "H_CPU0_MEMTRIP_LVC1_N"
+#define FM_CPU1_MEM_THERMTRIP_N  "H_CPU1_MEMTRIP_LVC1_N"
+#define FM_PCH_THERMTRIP_N       "FM_PCH_BMC_THERMTRIP_N"
+#define FM_SYS_THROTTLE          "FM_THROTTLE_R_N"
+#define FM_CPU0_VCCIN_VR_HOT     "IRQ_CPU0_VRHOT_N"
+#define FM_CPU1_VCCIN_VR_HOT     "IRQ_CPU1_VRHOT_N"
+#define FM_CPU0_VCCD_VR_HOT      "IRQ_PVCCD_CPU0_VRHOT_LVC3_N"
+#define FM_CPU1_VCCD_VR_HOT      "IRQ_PVCCD_CPU0_VRHOT_LVC3_N"
+#define FM_CPU0_PWRGD            "PWRGD_CPUPWRGD_LVC2_R1"
+#define FM_CPU0_SKTOCC           "FM_CPU0_SKTOCC_LVT3_PLD_N"
+#define FM_CPU1_SKTOCC           "FM_CPU1_SKTOCC_LVT3_PLD_N"
+
 enum {
   FRU_ALL = 0,
   FRU_MB,

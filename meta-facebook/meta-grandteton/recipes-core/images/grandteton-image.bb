@@ -35,4 +35,5 @@ IMAGE_INSTALL += " \
   cfg-util \
   fan-util \
   hgxmgr \
+  gpiod \
 "

@@ -110,7 +110,8 @@ async def _execute_cpld_ver() -> t.Dict[str, t.Any]:
     retcode, stdout, err = await common_utils.async_exec(cmd, shell=False)
     for row in stdout.split("\n"):
         pieces = row.split(":")
-        results[pieces[0]] = pieces[1]
+        if len(pieces) > 1:
+            results[pieces[0]] = pieces[1]
     return results
 
 

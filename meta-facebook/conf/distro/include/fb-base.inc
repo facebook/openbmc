@@ -12,7 +12,7 @@ PATCHRESOLVE = "noop"
 
 def yocto_halt_taskname(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in [ 'rocko', 'dunfell', 'honister' ]:
+    if distro in [ 'rocko', 'dunfell' ]:
         return "ABORT"
     return "HALT"
 

@@ -23,6 +23,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-bletchley:lf-master
   meta-halfdome:lf-master
 # kirkstone platforms (latest)
+  meta-fby35:lf-kirkstone
   meta-grandteton:lf-kirkstone
 # dunfell platforms (pending upgrade)
   meta-churchillmono:lf-dunfell
@@ -36,7 +37,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbsp:lf-dunfell
   meta-fby2-nd:lf-dunfell
   meta-fby3:lf-dunfell
-  meta-fby35:lf-dunfell
   meta-fuji:lf-dunfell
   meta-grandcanyon:lf-dunfell
   meta-minipack:lf-dunfell

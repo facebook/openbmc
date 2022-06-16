@@ -1487,9 +1487,6 @@ get_dc_psu_eeprom_info(i2c_info_t *psu_info,uint8_t num) {
     }
   }
 
-  if(strncmp(fruid_pem.fbw_location, "PEM", 3)){
-    return -1;
-  }
   print_dc_psu_fru_eeprom(psu_info, fruid_pem, num);
 
   return 0;

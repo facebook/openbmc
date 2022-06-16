@@ -60,26 +60,19 @@ static long int pwr_on_sec[MAX_NUM_SLOTS] = {0};
 static long int retry_sec[MAX_NUM_SLOTS] = {0};
 static bool bios_post_cmplt[MAX_NUM_SLOTS] = {false, false, false, false};
 static bool is_pwrgd_cpu_chagned[MAX_NUM_SLOTS] = {false, false, false, false};
+static bool is_12v_off[MAX_NUM_SLOTS] = {false, false, false, false};
 static uint8_t SLOTS_MASK = 0x0;
-bic_gpio_t o_pin_val;
-
-pthread_mutex_t pin_val_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
-                                                  PTHREAD_MUTEX_INITIALIZER,
-                                                  PTHREAD_MUTEX_INITIALIZER,
-                                                  PTHREAD_MUTEX_INITIALIZER};
 
 pthread_mutex_t pwrgd_cpu_mutex[MAX_NUM_SLOTS] = {PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER,
                                                   PTHREAD_MUTEX_INITIALIZER};
 #define SET_BIT(list, index, bit) \
-           pthread_mutex_lock(&pin_val_mutex[fru-1]); \
            if ( bit == 0 ) {      \
              (((uint8_t*)&list)[index/8]) &= ~(0x1 << (index % 8)); \
            } else {                                                     \
              (((uint8_t*)&list)[index/8]) |= 0x1 << (index % 8);    \
-           }  \
-           pthread_mutex_unlock(&pin_val_mutex[fru-1]); \
+           }
 
 #define GET_BIT(list, index) \
            (((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1)
@@ -117,6 +110,14 @@ static inline void set_pwrgd_cpu_flag(uint8_t fru, bool val) {
 
 static inline bool get_pwrgd_cpu_flag(uint8_t fru) {
   return is_pwrgd_cpu_chagned[fru-1];
+}
+
+static inline void set_12v_off_flag(uint8_t fru, bool val) {
+  is_12v_off[fru-1] = val;
+}
+
+static inline bool get_12v_off_flag(uint8_t fru) {
+  return is_12v_off[fru-1];
 }
 
 static inline long int get_timer_tick(uint8_t fru) {
@@ -427,7 +428,6 @@ get_struct_gpio_pin(uint8_t fru) {
   return gpios;
 }
 
-
 static void
 populate_gpio_pins(uint8_t fru) {
 
@@ -510,7 +510,6 @@ check_bic_pch_pwr_fault(uint8_t fru) {
   if ( i2cfd > 0 ) close(i2cfd);
 }
 
-
 void
 check_cpu_pwr_fault(uint8_t fru) {
   int ret = 0, i2cfd = 0, retry=0, index = 0;
@@ -557,7 +556,6 @@ check_cpu_pwr_fault(uint8_t fru) {
   if ( i2cfd > 0 ) close(i2cfd);
 }
 
-
 /* Monitor the gpio pins */
 static void *
 gpio_monitor_poll(void *ptr) {
@@ -575,7 +573,7 @@ gpio_monitor_poll(void *ptr) {
     syslog(LOG_WARNING, "gpio_monitor_poll: get_struct_gpio_pin failed for fru %u", fru);
     pthread_exit(NULL);
   }
- 
+
   ret = bic_get_gpio(fru, &o_pin_val, NONE_INTF);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "gpio_monitor_poll: bic_get_gpio failed for fru %u", fru);
@@ -600,6 +598,7 @@ gpio_monitor_poll(void *ptr) {
           check_bic_pch_pwr_fault(fru);
           chk_bic_pch_pwr_flag = false;
         } else if (pwr_sts == SERVER_12V_OFF) {
+          set_12v_off_flag(fru, false);
           SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
           SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
         }
@@ -612,6 +611,14 @@ gpio_monitor_poll(void *ptr) {
 
       usleep(DELAY_GPIOD_READ);
       continue;
+    }
+
+    // When bic_get_gpio() and 12V-cycle at the same time, bic_get_gpio()
+    // may return success because of the IPMB retry
+    if (get_12v_off_flag(fru) == true) {
+      set_12v_off_flag(fru, false);
+      SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
+      SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
     }
 
     // Inform BIOS that BMC is ready
@@ -645,7 +652,7 @@ gpio_monitor_poll(void *ptr) {
     }
 
     //check PWRGD_CPU_LVC3 is changed
-    if ( (get_pwrgd_cpu_flag(fru) == false) && 
+    if ( (get_pwrgd_cpu_flag(fru) == false) &&
          (GET_BIT(n_pin_val, PWRGD_CPU_LVC3) != GET_BIT(o_pin_val, PWRGD_CPU_LVC3))) {
       rst_timer(fru);
       set_pwrgd_cpu_flag(fru, true);
@@ -672,10 +679,10 @@ gpio_monitor_poll(void *ptr) {
     for (i = 0; i < MAX_GPIO_PINS; i++) {
       if (GET_BIT(revised_pins, i) && (gpios[i].flag == 1)) {
         gpios[i].status = GET_BIT(n_pin_val, i);
-    
+
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
-    
+
           if (i == RST_PLTRST_BUF_N) {
             rst_timer(fru);
           } else if (i == FM_BMC_DEBUG_ENABLE_N) {
@@ -694,7 +701,7 @@ gpio_monitor_poll(void *ptr) {
     }
 
     memcpy(&o_pin_val, &n_pin_val, sizeof(o_pin_val));
-    
+
     usleep(DELAY_GPIOD_READ);
   } /* while loop */
 } /* function definition*/
@@ -755,6 +762,7 @@ host_pwr_mon() {
   uint8_t fru = 0;
   uint8_t bmc_location = 0;
   bool nic_pwr_set_off = false;
+  bool pwrgd_changed = false;
   int i = 0;
   int retry = 0;
   long int tick = 0;
@@ -775,6 +783,7 @@ host_pwr_mon() {
       if ( ((SLOTS_MASK >> i) & 0x1) != 0x1) continue; // skip since fru${i} is not present
 
       fru = i + 1;
+      pwrgd_changed = get_pwrgd_cpu_flag(fru);
       tick = get_timer_tick(fru);
       sprintf(path, PWR_UTL_LOCK, fru);
       if (access(path, F_OK) == 0) {
@@ -785,26 +794,28 @@ host_pwr_mon() {
 
       //record which slot is off
       if ( tick <= power_off_delay ) {
-        if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == power_off_delay) ) {
+        if ( pwrgd_changed == true ) {
           sprintf(path, PWR_UTL_LOCK, fru);
           if (access(path, F_OK) != 0) {
             pal_set_last_pwr_state(fru, "off");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered OFF", fru);
+          set_pwrgd_cpu_flag(fru, false);
           check_cpu_pwr_fault(fru);
         }
         host_off_flag |= 0x1 << i;
       } else if ( tick >= POWER_ON_DELAY ) {
-        if ( (get_pwrgd_cpu_flag(fru) == true) && (tick == POWER_ON_DELAY) ) {
+        if ( pwrgd_changed == true ) {
           sprintf(path, PWR_UTL_LOCK, fru);
           if (access(path, F_OK) != 0) {
             pal_set_last_pwr_state(fru, "on");
           }
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
+          set_pwrgd_cpu_flag(fru, false);
           // update fru if GPv3 dev fru flag (dev_fru_complete) does not set to complete
           // If dc on after ac/dc cycle, only get the fru which did not get last time
           // In the future, it will also update GPv3 device NVMe is ready or not for some implementations
-          fru_cahe_init(fru); 
+          fru_cahe_init(fru);
         }
         host_off_flag &= ~(0x1 << i);
         if ( tick == HOST_READY ) {
@@ -814,10 +825,6 @@ host_pwr_mon() {
         if ( tick < POWER_ON_DELAY ) {
           kv_set(host_key[fru-1], "0", 0, 0);
         }
-      }
-
-      if ( (tick == power_off_delay) || (tick == POWER_ON_DELAY) ) {
-        set_pwrgd_cpu_flag(fru, false); //recover the flag
       }
     }
 
@@ -864,18 +871,28 @@ host_pwr_mon() {
 
 static void *
 stby_pwr_mon() {
+  int ret;
+  uint8_t i, fru, pwr_sts;
+  uint8_t pre_pwr_sts[MAX_NUM_SLOTS] = {0xff, 0xff, 0xff, 0xff};
+
   pthread_detach(pthread_self());
 
-  while(1) {
-    int ret = 0;
-    uint8_t pwr_sts = 0;
+  while (1) {
+    for (i = 0; i < MAX_NUM_SLOTS; i++) {
+      if (((SLOTS_MASK >> i) & 0x1) != 0x1) {
+        continue;
+      }
 
-    for (int fru = 1; fru <= 4; fru++) {
+      fru = i + 1;
       ret = pal_get_server_12v_power(fru, &pwr_sts);
-      if (ret == PAL_EOK) {
+      if (ret != PAL_EOK) {
+        continue;
+      }
+
+      if (pre_pwr_sts[i] != pwr_sts) {
+        pre_pwr_sts[i] = pwr_sts;
         if (pwr_sts == SERVER_12V_OFF) {
-          SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
-          SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
+          set_12v_off_flag(fru, true);
         }
       }
     }

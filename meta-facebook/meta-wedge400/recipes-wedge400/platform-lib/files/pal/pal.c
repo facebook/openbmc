@@ -5978,7 +5978,7 @@ sensor_thresh_array_init(uint8_t fru) {
         psu_sensor_threshold[PSU1_SENSOR_STBY_POWER + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 9.9;
         psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 32450;
         psu_sensor_threshold[PSU1_SENSOR_FAN_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
-        psu_sensor_threshold[PSU1_SENSOR_FAN2_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 21950;
+        psu_sensor_threshold[PSU1_SENSOR_FAN2_TACH + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 29700; // Used to be 21950, change to 27000 * 110% = 29700.
         psu_sensor_threshold[PSU1_SENSOR_FAN2_TACH + (fru_offset * PSU1_SENSOR_CNT)][LCR_THRESH] = 1000;
       } else {
         psu_sensor_threshold[PSU1_SENSOR_IN_VOLT + (fru_offset * PSU1_SENSOR_CNT)][UCR_THRESH] = 305;

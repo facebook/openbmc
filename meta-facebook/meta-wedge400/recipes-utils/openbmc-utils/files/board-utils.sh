@@ -106,7 +106,7 @@ wedge_board_type_rev(){
     elif [ $((board_type)) -eq 1 ]; then
         if [ $(( full_board_type&2 )) -ne 0 ]; then
             case $rev in
-                6)
+                4)
                     echo "WEDGE400-C_MP_RESPIN"
                     ;;
                 *)

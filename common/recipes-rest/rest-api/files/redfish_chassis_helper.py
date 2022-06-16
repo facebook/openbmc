@@ -37,6 +37,7 @@ LIB_SENSOR_FAN = 1
 LIB_SENSOR_TEMPERATURE = 2
 LIB_SENSOR_POWER = 3
 LIB_SENSOR_CURR = 5
+LIB_SENSOR_PWM = 7
 
 sensor_unit_dict = {
     LIB_SENSOR_FAN: "RPM",
@@ -44,6 +45,7 @@ sensor_unit_dict = {
     LIB_SENSOR_POWER: "Watts",
     LIB_SENSOR_IN: "Amps",
     LIB_SENSOR_CURR: "Volts",
+    LIB_SENSOR_PWM: "%"
 }
 SAD_SENSOR = -99999  # default reading for values not found.
 
@@ -163,12 +165,15 @@ def get_older_fboss_sensor_details(fru_name: str) -> t.List[SensorDetails]:
 
             for key, val in zip(sf_keys, sf_vals):
                 subfeatures_dict[key] = val
-
+            if reading_key in subfeatures_dict:
+                reading = subfeatures_dict[reading_key]
+            else:
+                reading = subfeatures_dict[sensor_tag]
             sensor_details = SensorDetails(
                 sensor_name=sensor_name,
                 sensor_number=0,  # default bc sensors.py doesn't provide sensor id
                 fru_name=fru_name,
-                reading=subfeatures_dict[reading_key],
+                reading=reading,
                 sensor_thresh=sdr.ThreshSensor(
                     ucr_thresh=subfeatures_dict[ucr_key],
                     unc_thresh=0,

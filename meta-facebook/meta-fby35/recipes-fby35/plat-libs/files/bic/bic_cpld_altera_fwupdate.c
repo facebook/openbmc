@@ -331,69 +331,6 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
 }
 
 static int
-is_valid_cpld_image(uint8_t slot_id, uint8_t signed_byte, uint8_t intf) {
-  int ret = -1;
-  uint8_t tbuf[4] = {0};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int retry= 0;
-  int board_type_index = 0;
-  bool board_rev_is_invalid = false;
-
-  switch (intf) {
-    case BB_BIC_INTF:
-        // Read Board Revision from BB CPLD
-        tbuf[0] = CPLD_BB_BUS;
-        tbuf[1] = CPLD_FLAG_REG_ADDR;
-        tbuf[2] = 0x01;
-        tbuf[3] = BB_CPLD_BOARD_REV_ID_REGISTER;
-        tlen = 4;
-        retry = 0;
-        while (retry < RETRY_TIME) {
-          ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
-          if ( ret < 0 ) {
-            retry++;
-            msleep(100);
-          } else {
-            break;
-          }
-        }
-        if (retry == RETRY_TIME) {
-          syslog(LOG_WARNING, "%s() Failed to get board revision via BB CPLD, tlen=%d", __func__, tlen);
-          goto error_exit;
-        }
-
-        board_type_index = rbuf[0] - 1;
-        if (board_type_index < 0) {
-          board_type_index = 0;
-        }
-
-        if (board_type_index <= BB_REV_POC2) {
-          if (REVISION_ID(signed_byte) != FW_REV_POC) {
-            board_rev_is_invalid = true;
-          }
-        } else {
-          if (REVISION_ID(signed_byte) < FW_REV_EVT) {
-            board_rev_is_invalid = true;
-          }
-        }
-
-        if (board_rev_is_invalid) {
-          printf("To prevent this update on slot%d , please use the f/w of %s on the %s system\n",
-                  slot_id, board_stage[board_type_index], board_stage[board_type_index]);
-          printf("To force the update, please use the --force option.\n");
-        }
-
-        return ((COMPONENT_ID(signed_byte) == BICBB) && !board_rev_is_invalid)?0:-1;
-      break;
-  }
-
-error_exit:
-  return ret;
-}
-
-static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[16] = {0x00};
@@ -433,7 +370,6 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
 
 int
 update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force) {
-#define MAX10_RPD_SIZE 0x5C000
   uint8_t *rpd_file = NULL;
   uint8_t buf[256] = {0};
   const uint8_t target = UPDATE_CPLD;
@@ -485,33 +421,6 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   read_bytes = read(fd, rpd_file, rpd_filesize);
   printf("read %d bytes.\n", read_bytes);
 
-  switch (force) {
-    case FORCE_UPDATE_UNSET:
-      ret = BIC_STATUS_FAILURE;
-      if ( rpd_filesize == MAX10_RPD_SIZE ) {
-        printf("The image is the unsigned CPLD image!\n");
-      } else if ( (MAX10_RPD_SIZE + 1) == rpd_filesize ) {
-        ret = is_valid_cpld_image(slot_id, rpd_file[MAX10_RPD_SIZE] & 0xff, intf);
-        if ( ret < 0 ) {
-          printf("The image is not the valid CPLD image for this component.\n");
-        } else {
-          ret = BIC_STATUS_SUCCESS;
-        }
-      } else {
-        printf("The size of image is not expected!\n");
-      }
-    case FORCE_UPDATE_SET:
-      /*fall through*/
-    default:
-      //adjust the size since one byte is the signature of the CPLD image.
-      if ( read_bytes == (MAX10_RPD_SIZE + 1) ) read_bytes -= 1;
-      break;
-  }
-
-  //something went wrong. exit.
-  if ( ret == BIC_STATUS_FAILURE ) {
-    goto error_exit;
-  }
 
   //step 1 - UnprotectSector
   ret = Max10_unprotect_sector(slot_id, secType, intf);

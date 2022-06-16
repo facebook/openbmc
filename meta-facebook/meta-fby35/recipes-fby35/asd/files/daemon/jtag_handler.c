@@ -339,11 +339,14 @@ STATUS jtag_bic_shift_wrapper(uint8_t slot_id, uint32_t write_bit_length,
                               uint8_t* write_data, uint32_t read_bit_length,
                               uint8_t* read_data, uint32_t last_transaction)
 {
-    uint8_t tbuf[256] = {0x9c, 0x9c, 0x00};
+    uint8_t tbuf[256] = {0x00};
     uint8_t rbuf[256] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 0;
     STATUS ret = ST_ERR;
+
+    // Fill the IANA ID
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
     // round up to next byte boundary
     uint8_t  write_len_bytes = ((write_bit_length+7) >> 3);
@@ -468,10 +471,13 @@ STATUS generateTMSbits(enum jtag_states src, enum jtag_states dst, uint8_t *leng
 static
 STATUS JTAG_clock_cycle(uint8_t slot_id, int number_of_cycles)
 {
-    uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[5] = {0x00}; // IANA ID
     uint8_t rbuf[4] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
+
+    // Fill the IANA ID
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
     if (number_of_cycles > 256) {
         ASD_log(ASD_LogLevel_Error, stream, option,
@@ -647,12 +653,15 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, enum jtag_states tap_state)
     if (state == NULL)
         return ST_ERR;
 
-    uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[5] = {0x00}; // IANA ID
     uint8_t rbuf[5] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
     uint8_t slot_id = state->fru;
     STATUS ret = ST_ERR;
+
+    // Fill the IANA ID
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
     // Jtag state is tap_state already.
     if (tap_state != jtag_tlr && state->active_chain->tap_state == tap_state) {

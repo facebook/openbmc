@@ -98,7 +98,7 @@ enum {
 // Update firmware for various components
 static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
-  uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[16] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
@@ -107,6 +107,9 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   int retries = 3;
   int index = 3;
   int offset_size = sizeof(offset) / sizeof(tbuf[0]);
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   if (intf != NONE_INTF) {
     // Need bridge command to 2nd BIC

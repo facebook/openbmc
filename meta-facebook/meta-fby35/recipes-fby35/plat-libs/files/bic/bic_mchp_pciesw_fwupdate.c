@@ -159,10 +159,16 @@ error_exit:
 static int
 _switch_pesw_to_recovery(uint8_t slot_id, uint8_t intf, bool is_low) {
   int ret = BIC_STATUS_FAILURE;
-  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00, 1, 19, (is_low == true)?0:1};
+  uint8_t tbuf[6] = {0x00};
   uint8_t rbuf[16] = {0};
-  uint8_t tlen = 6;
+  uint8_t tlen = IANA_ID_SIZE;
   uint8_t rlen = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[tlen++] = 1;
+  tbuf[tlen++] = 19;
+  tbuf[tlen++] = (is_low == true)?0:1;
 
   printf("Pulling %s FM_BIC_PESW_RECOVERY_0...\n", (is_low == true)?"donw":"high");
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen, intf);
@@ -184,10 +190,13 @@ _switch_i2c_mux_to_pesw(uint8_t slot_id, uint8_t intf) {
 static int
 _check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvry, char *expected_sts) {
   int ret = BIC_STATUS_SUCCESS;
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x0, };
+  uint8_t tbuf[4] = {0x0};
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   switch(sel_sts) {
     case PESW_BOOTLOADER_RCVRY:
@@ -249,9 +258,17 @@ error_exit:
 
 static int
 _toggle_pesw(uint8_t slot_id, uint8_t intf, uint8_t type, bool is_rcvry) {
-  uint8_t tbuf[7] = {0x9c, 0x9c, 0x00, (is_rcvry == true)?0x06:0x03, 0x00, 0x00, 0x00};
+  uint8_t tbuf[7] = {0x00};
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0;
+  uint8_t tlen = IANA_ID_SIZE;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[tlen++] = (is_rcvry == true)?0x06:0x03;
+  tbuf[tlen++] = 0x00;
+  tbuf[tlen++] = 0x00;
+  tbuf[tlen++] = 0x00;
 
   if ( (type >> PESW_MAIN) & 0x1 ) tbuf[4] = 0x1;
   if ( (type >> PESW_CFG)  & 0x1 ) tbuf[5] = 0x1;
@@ -260,16 +277,20 @@ _toggle_pesw(uint8_t slot_id, uint8_t intf, uint8_t type, bool is_rcvry) {
   printf("Send the toggle command ");
   for (int i = 0; i < 7; i++) printf("%02X ", tbuf[i]);
   printf("\n");
-  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, 7, rbuf, &rlen, intf);
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x38, tbuf, tlen, rbuf, &rlen, intf);
 }
 
 static int
 _get_pcie_sw_update_status(uint8_t slot_id, uint8_t *status) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, 0x01};  // IANA ID + data
+  uint8_t tbuf[4] = {0x00};  // IANA ID + data
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret = 0;
   int retries = 3;
+
+  // Fill the IANA ID + data
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[IANA_ID_SIZE] = 0x01;
 
   do {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_SWITCH_STATUS, tbuf, 4, rbuf, &rlen, REXP_BIC_INTF);
@@ -634,7 +655,7 @@ _enter_pesw_rcvry_mode(uint8_t slot_id, uint8_t intf, bool is_rcvry) {
   }
 
   printf("Checking PESW status...\n");
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x09;
   tlen = 4;
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, 0x60, tbuf, tlen, rbuf, &rlen, intf);

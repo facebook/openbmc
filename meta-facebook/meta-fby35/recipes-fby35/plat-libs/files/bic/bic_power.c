@@ -207,10 +207,13 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
 //Only for class 2
 int
 bic_do_12V_cycle(uint8_t slot_id) {
-  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[3] = {0x00};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 3;
   uint8_t rlen = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_12V_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
 }

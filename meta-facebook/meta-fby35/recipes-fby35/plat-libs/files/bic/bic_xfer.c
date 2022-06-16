@@ -34,7 +34,7 @@
 #include <openbmc/obmc-i2c.h>
 #include "bic_xfer.h"
 
-const uint32_t IANA_ID = 0x009C9C;
+const uint32_t IANA_ID = 0x00A015;
 
 void msleep(int msec) {
   struct timespec req;
@@ -278,7 +278,7 @@ int bic_me_xmit(uint8_t slot_id, uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, 
   int ret;
 
   // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   // Fill the interface number as ME
   tbuf[3] = BIC_INTF_ME;
@@ -336,7 +336,7 @@ send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t of
   int ret = -1;
   int retries = 3;
 
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = comp;
   tbuf[4] = (offset) & 0xFF;
   tbuf[5] = (offset >>  8) & 0xFF;

@@ -50,12 +50,15 @@ static const ASD_LogOption option = ASD_LogOption_None;
 STATUS passthrough_jtag_message(ASD_MSG* state, struct asd_message* s_message) {
     /* Not ready */
     uint8_t fru;
-    uint8_t tbuf[MAX_IPMB_RES_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_RES_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[8] = {0x00};
     uint8_t rlen = 0;
     uint16_t tlen = 3;
     bool seg_transfer = false;
     int size;
+
+    // Fill the IANA ID
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
     if (state == NULL || s_message == NULL) {
         return ST_ERR;

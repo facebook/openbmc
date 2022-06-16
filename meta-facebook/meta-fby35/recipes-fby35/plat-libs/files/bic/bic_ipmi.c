@@ -162,14 +162,20 @@ int
 bic_get_accur_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
   uint8_t rlen = 0;
   int ret = 0;
-  uint8_t tbuf[5] = {0x9c, 0x9c, 0x0, sensor_num, SNR_READ_CACHE};
+  uint8_t tbuf[5] = {0x0};
   uint8_t rbuf[16] = {0};
+  uint8_t tlen = IANA_ID_SIZE;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[tlen++] = sensor_num;
+  tbuf[tlen++] = SNR_READ_CACHE;
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ACCURACY_SENSOR_READING, tbuf, 5, rbuf, &rlen, intf);
   if (ret != 0) {
     return ret;
   }
-  memcpy(sensor->iana_id, rbuf, 3);
+  memcpy(sensor->iana_id, rbuf, IANA_ID_SIZE);
 
   if (rlen == 6) {
     // Byte 1 - 3 : IANA
@@ -514,10 +520,15 @@ error_exit:
 // Netfn: 0x38, Cmd: 0x0B
 static int
 _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, fw_comp}; //IANA ID + FW_COMP
+  uint8_t tbuf[4] = {0x00}; //IANA ID + FW_COMP
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
+  uint8_t tlen = IANA_ID_SIZE;
   int ret = BIC_STATUS_FAILURE;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[tlen++] = fw_comp;
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 4, rbuf, &rlen, intf);
   // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
@@ -722,16 +733,21 @@ get_gpv3_channel_number(uint8_t dev_id) {
 
 int
 bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, ( enable == true )?0x1:0x0};
-  uint8_t tlen = 4;
+  uint8_t tbuf[4] = {0x00};
+  uint8_t tlen = IANA_ID_SIZE;
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  tbuf[tlen++] = ( enable == true )?0x1:0x0;
+
   return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIC_SNR_MONITOR, tbuf, tlen, rbuf, &rlen, intf);
 }
 
 int
 bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
-  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[3] = {0x00};
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0;
   int ret = 0;
@@ -739,6 +755,9 @@ bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
   char key[MAX_KEY_LEN] = {0};
   char tmp_str[MAX_VALUE_LEN] = {0};
   int val = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
 
@@ -781,11 +800,14 @@ bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
 
 int
 bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
-  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00, 0x00, 0x00};
+  uint8_t tbuf[5] = {0x00};
   uint8_t rbuf[2] = {0};
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = dev_id; // 0'base
   tbuf[4] = status; // 0->off, 1->on
@@ -811,7 +833,7 @@ bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t int
   uint8_t tlen = sizeof(tbuf);
 
   // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, tbuf, tlen, rbuf, rlen, intf);
   if ( ret < 0 ) {
@@ -1468,7 +1490,7 @@ bic_asd_init(uint8_t slot_id, uint8_t cmd) {
   uint8_t tlen = 4;
   uint8_t rlen = 0;
 
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = cmd;
   return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, tlen, rbuf, &rlen);
 }
@@ -1484,7 +1506,7 @@ bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data) {
   int ret = 0;
 
   // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   //get the buffer index
   index = (gpio / 8) + 3; //3 is the size of IANA ID
@@ -1507,7 +1529,7 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
   int ret = 0;
 
   // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   //get the buffer index
   index = (gpio / 8) + 3; //3 is the size of IANA ID
@@ -1521,11 +1543,14 @@ bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data) {
 
 int
 bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
-  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[6] = {0x00};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 6;
   uint8_t rlen = 0;
   int ret = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = 0x01;
   tbuf[4] = gpio_num;
@@ -1542,11 +1567,14 @@ bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value) {
 
 int
 remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value, uint8_t intf) {
-  uint8_t tbuf[6] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[6] = {0x00};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 6;
   uint8_t rlen = 0;
   int ret = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = 0x01;
   tbuf[4] = gpio_num;
@@ -1564,10 +1592,13 @@ remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t value, uint8_t in
 // Get all GPIO pin status
 int
 bic_get_gpio(uint8_t slot_id, bic_gpio_t *gpio, uint8_t intf) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[4] = {0x00}; // IANA ID
   uint8_t rbuf[13] = {0x00};
   uint8_t rlen = 0;
   int ret;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   memset(gpio, 0, sizeof(*gpio));
 
@@ -1595,7 +1626,7 @@ bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value){
   int ret = 0;
 
   // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[3] = 0x00;
   tbuf[4] = gpio_num;
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
@@ -1673,12 +1704,15 @@ bic_set_fan_auto_mode(uint8_t crtl, uint8_t *status) {
 // Only For Class 2
 int
 bic_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
-  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[5] = {0x00};
   uint8_t rbuf[1] = {0};
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = fan_id;
   tbuf[4] = pwm;
@@ -1723,12 +1757,15 @@ bic_manual_set_fan_speed(uint8_t fan_id, uint8_t pwm) {
 // Only For Class 2
 int
 bic_get_fan_speed(uint8_t fan_id, float *value) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[4] = {0x00};
   uint8_t rbuf[5] = {0};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = fan_id;
 
@@ -1749,12 +1786,15 @@ bic_get_fan_speed(uint8_t fan_id, float *value) {
 // Only For Class 2
 int
 bic_get_fan_pwm(uint8_t fan_id, float *value) {
-  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[4] = {0x00};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 4;
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = fan_id;
 
@@ -1799,7 +1839,6 @@ bic_notify_fan_mode(int mode) {
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t slot1_prsnt = 0, slot3_prsnt = 0;
-  char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
   BYPASS_MSG req;
   IPMI_SEL_MSG sel;
   GET_MB_INDEX_RESP resp;
@@ -1839,14 +1878,14 @@ bic_notify_fan_mode(int mode) {
     syslog(LOG_WARNING, "%s(): wrong response while getting MB index", __func__);
   }
 
-  memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
+  memcpy(req.iana_id, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   req.bypass_intf = BMC_INTF;
   fan_event.mode = mode;
 
   memcpy(sel.event_data, (uint8_t*) &fan_event, MIN(sizeof(sel.event_data), sizeof(fan_event)));
   memcpy(req.bypass_data, (uint8_t*) &sel, MIN(sizeof(req.bypass_data), sizeof(sel)));
 
-  tlen = sizeof(iana_id) + 1 + sizeof(sel); // IANA ID + interface + add SEL command
+  tlen = IANA_ID_SIZE + 1 + sizeof(sel); // IANA ID + interface + add SEL command
   if (bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, (uint8_t*) &req, tlen, rbuf, &rlen, BB_BIC_INTF) < 0) {
     syslog(LOG_WARNING, "%s(): fail to notify another BMC fan mode changed", __func__);
     return -1;
@@ -1917,12 +1956,15 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
 int
 bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
                          uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf) {
-  uint8_t tbuf[5] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[5] = {0x00}; // IANA ID
   uint8_t rbuf[11] = {0x00};
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
   uint8_t table = 0, board_type = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   if (intf == FEXP_BIC_INTF) {
     table = 1;
@@ -1943,7 +1985,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   }
 
   //Send the command
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   if (board_type == EDSFF_1U) {
     // case 1OU E1S
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
@@ -2047,7 +2089,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   } while(0);
 
   //Send the command
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   if (board_type == EDSFF_1U) {
     // case 1OU E1S
@@ -2072,9 +2114,12 @@ error_exit:
 
 int
 bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf) {
-  uint8_t tbuf[8] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[8] = {0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = sizeof(rbuf);
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   tbuf[3] = dis;  // 1: disable sensor monitor; 0: enable sensor monitor
   return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_DISABLE_SEN_MON, tbuf, 4, rbuf, &rlen, intf);
@@ -2100,10 +2145,13 @@ bic_master_write_read(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *wbuf,
 
 int
 bic_reset(uint8_t slot_id) {
-  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[3] = {0x00}; // IANA ID
   uint8_t rbuf[8] = {0x00};
   uint8_t rlen = 0;
   int ret;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_COLD_RESET, tbuf, 0, rbuf, &rlen);
 
@@ -2113,12 +2161,15 @@ bic_reset(uint8_t slot_id) {
 // Only For Class 2
 int
 bic_inform_sled_cycle(void) {
-  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[3] = {0x00};
   uint8_t rbuf[1] = {0x00};
   uint8_t tlen = 3;
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   while (retry < 3) {
     ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, BIC_CMD_OEM_INFORM_SLED_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
@@ -2135,12 +2186,15 @@ bic_inform_sled_cycle(void) {
 // For Discovery Point, get pcie config
 int
 bic_get_dp_pcie_config(uint8_t slot_id, uint8_t *pcie_config) {
-  uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[3] = {0x00};
   uint8_t rbuf[4] = {0x00};
   uint8_t tlen = 3;
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   while (retry < 3) {
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_PCIE_CONFIG, tbuf, tlen, rbuf, &rlen);
@@ -2190,7 +2244,6 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
   uint8_t rlen = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t slot1_prsnt = 0, slot3_prsnt = 0;
-  char iana_id[IANA_LEN] = {0x9c, 0x9c, 0x0};
   BYPASS_MSG req = {0};
 
   if (data == NULL) {
@@ -2208,7 +2261,7 @@ bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
   memset(&req, 0, sizeof(req));
   memset(rbuf, 0, sizeof(rbuf));
 
-  memcpy(req.iana_id, iana_id, MIN(sizeof(req.iana_id), sizeof(iana_id)));
+  memcpy(req.iana_id, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   req.bypass_intf = BMC_INTF;
   memcpy(req.bypass_data, data, MIN(sizeof(req.bypass_data), len));
 

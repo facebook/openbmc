@@ -46,13 +46,15 @@
 // Update firmware for various components
 static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
-  uint8_t tbuf[256] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[256] = {0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   int ret;
   int retries = 3;
 
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   // Fill the component for which firmware is requested
   tbuf[3] = target;
 
@@ -138,12 +140,14 @@ check_bios_image(uint8_t slot_id, int fd, long size) {
 // Read checksum of various components
 int
 bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
-  uint8_t tbuf[12] = {0x9c, 0x9c, 0x00}; // IANA ID
+  uint8_t tbuf[12] = {0x00}; // IANA ID
   uint8_t rbuf[16] = {0x00};
   uint8_t rlen = 0;
   int ret;
   int retries = 3;
 
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   // Fill the component for which firmware is requested
   tbuf[3] = target;
 
@@ -196,11 +200,13 @@ int
 bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
   int ret;
   struct bic_get_fw_cksum_sha256_req req = {
-    .iana_id = {0x9c, 0x9c, 0x00},
+    .iana_id = {0x00},
     .target = target,
     .offset = offset,
     .length = len,
   };
+  // Fill the IANA ID
+  memcpy(req.iana_id, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   struct bic_get_fw_cksum_sha256_res res = {0};
   uint8_t rlen = sizeof(res);
 

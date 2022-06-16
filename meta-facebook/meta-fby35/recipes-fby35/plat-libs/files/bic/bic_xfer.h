@@ -32,6 +32,7 @@ extern "C" {
 
 //Netfn, Cmd, IANA data1,2,3, intf
 #define MIN_IPMB_BYPASS_LEN 6
+
 extern const uint32_t IANA_ID;
 
 enum {

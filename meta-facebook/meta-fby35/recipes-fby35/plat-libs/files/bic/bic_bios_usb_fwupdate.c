@@ -479,9 +479,8 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       bic_usb_packet *pkt = (bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
       pkt->netfn = NETFN_OEM_1S_REQ << 2;
       pkt->cmd = CMD_OEM_1S_UPDATE_FW;
-      pkt->iana[0] = 0x9c;
-      pkt->iana[1] = 0x9c;
-      pkt->iana[2] = 0x0;
+      // Fill the IANA ID
+      memcpy(pkt->iana, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
       pkt->target = UPDATE_BIOS;
       pkt->offset = write_offset + file_buf_pos;
       pkt->length = count;

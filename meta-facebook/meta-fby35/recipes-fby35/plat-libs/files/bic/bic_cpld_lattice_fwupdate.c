@@ -86,11 +86,20 @@ send_cpld_data(uint8_t slot_id, uint8_t intf, uint8_t addr, uint8_t *data, uint8
   int ret = 0;
   int retries = 3;
   int i2cfd = 0;
-  uint8_t txbuf[256] = {0x9c, 0x9c, 0x00, intf, NETFN_APP_REQ << 2, CMD_APP_MASTER_WRITE_READ, 0x01/*bus 1*/, addr, read_cnt/*read cnt*/};
-  uint8_t txlen = 9;//start from 9
+  uint8_t txbuf[256] = {0x00};
+  uint8_t txlen = IANA_ID_SIZE;//start from 9
   uint8_t rxbuf[256] = {0};
   uint8_t rxlen = 0;
   static uint8_t bus = 0xff;
+
+  // Fill the IANA ID
+  memcpy(txbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  txbuf[txlen++] = intf;
+  txbuf[txlen++] = (NETFN_APP_REQ << 2);
+  txbuf[txlen++] = CMD_APP_MASTER_WRITE_READ;
+  txbuf[txlen++] = 0x01;/*bus 1*/
+  txbuf[txlen++] = addr;
+  txbuf[txlen++] = read_cnt;/*read cnt*/
 
   if (intf != NONE_INTF) {
       if ( bus == 0xff ) {

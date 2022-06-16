@@ -7,6 +7,7 @@ KV_CMD=/usr/bin/kv
 readonly BMC_ID_CLASS1=7
 readonly BMC_ID_CLASS2=6
 readonly DVT_REVID=5
+readonly IANA_ID="0x15 0xa0 0x0"
 
 devmem_set_bit() {
     local addr

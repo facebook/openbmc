@@ -123,7 +123,7 @@ enable_usb_hub() {
   if [ "$val" = 1 ]; then
     if [ "$cnt" = 0 ]; then
       # TODO: remove it since GPv3 BIC will initialize it to high by default
-      /usr/bin/bic-util "$fru" 0xe0 0x02 0x9c 0x9c 0x00 0x15 0xe0 0x41 0x9c 0x9c 0x00 1 96 1  > /dev/null 2>&1
+      /usr/bin/bic-util "$fru" 0xe0 0x02 "$IANA_ID" 0x15 0xe0 0x41 "$IANA_ID" 1 96 1  > /dev/null 2>&1
       /usr/bin/bic-util "$fru" --set_gpio 16 "$val" > /dev/null 2>&1
       echo -n "Initializing USB devs..."
       sleep 20 # BMC needs to spend about 20 sec to detect slot1 and slot3 all devs.
@@ -441,7 +441,7 @@ if [ -n "$COMP" ]; then
       if [ "$COMP" == "sb" ]; then
         set_uart_src "$I2C_NUM" 0x0e 0x29 0x0
       else
-        SLOT_INDEX="$(/usr/bin/bic-util slot1 0xE0 0x02 0x9C 0x9C 0x00 0x10 0xC0 0xF0 | cut -d " " -f 8)"
+        SLOT_INDEX="$(/usr/bin/bic-util slot1 0xE0 0x02 "$IANA_ID" 0x10 0xC0 0xF0 | cut -d " " -f 8)"
         if [ "$SLOT_INDEX" == "01" ]; then  #For Class2 BMC UART to BB BIC MUX slot1 0x1, slot3 0x2
           set_uart_src "$I2C_NUM" 0x0e 0x29 0x01
         else

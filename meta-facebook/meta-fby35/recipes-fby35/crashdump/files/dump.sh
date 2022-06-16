@@ -26,9 +26,9 @@ function execute_via_peci {
     return
 
   cat | \
-    sed 's/^0x/0xe0 0x29 0x9c 0x9c 0x00 0x/g' $1 | \
+    sed 's/^0x/0xe0 0x29 '"$IANA_ID"' 0x/g' $1 | \
       $PECI_UTIL server --file /dev/stdin | \
-        sed 's/^9C 9C 00 //g'
+        sed 's/^'"$IANA_ID"' //g'
 }
 
 function execute_cmd {

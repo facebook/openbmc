@@ -403,7 +403,7 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
   int retries = MAX_RETRY;
 
   // File the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   // Fill the component for which firmware is requested
   tbuf[3] = target;

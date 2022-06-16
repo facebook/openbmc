@@ -92,7 +92,6 @@ extern const char *slot_usage;
 #define SYS_BB_FW_UPDATE     0x15
 
 #define MAX_BYPASS_DATA_LEN  256
-#define IANA_LEN 3
 #define UNKNOWN_SLOT 0xFF
 
 #define BIOS_IMG_SIZE             (0x4000000)         //64MB
@@ -380,13 +379,13 @@ const static char *gpio_server_i2c_isolated[] =
 };
 
 typedef struct {
-  uint8_t iana_id[IANA_LEN];
+  uint8_t iana_id[IANA_ID_SIZE];
   uint8_t bypass_intf;
   uint8_t bypass_data[MAX_BYPASS_DATA_LEN];
 } BYPASS_MSG;
 
 typedef struct {
-  uint8_t iana_id[IANA_LEN];
+  uint8_t iana_id[IANA_ID_SIZE];
   uint8_t bypass_intf;
 } BYPASS_MSG_HEADER;
 

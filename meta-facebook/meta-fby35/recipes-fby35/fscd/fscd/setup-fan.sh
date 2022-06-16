@@ -32,7 +32,7 @@
 
 TYPE_DUAL_FAN=0
 TYPE_SINGEL_FAN=1
-GET_FAN_RPM="/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x52 0x9c 0x9c 0x0 " # for config D
+GET_FAN_RPM="/usr/bin/bic-util slot1 0xe0 0x2 ""$IANA_ID"" 0x10 0xe0 0x52 ""$IANA_ID" # for config D
 default_fsc_config_path="/etc/fsc-config.json"
 sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
 bmc_location=$(get_bmc_board_id)
@@ -40,7 +40,7 @@ bmc_location=$(get_bmc_board_id)
 #For config A B C, we get the Baseboard revision from BB CPLD through i2cget. 
 CLASS1_GET_BOARD_REVID="/usr/sbin/i2cget -y 12 0x0f 0x08"
 #For config D, we get the Baseboard revision from BB BPLD. command: bic-util slot1 IPMI Send request message to BIC, IANA, BB bic, IPMI Master write read, CPLD i2cbus addr register 
-CLASS2_GET_BOARD_REVID="/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0x18 0x52 0x1 0x1e 0x1 0x8 "
+CLASS2_GET_BOARD_REVID="/usr/bin/bic-util slot1 0xe0 0x2 ""$IANA_ID"" 0x10 0x18 0x52 0x1 0x1e 0x1 0x8 "
 
 check_dvt_fan(){
   local fan_type=$1
@@ -172,8 +172,8 @@ reload_sled_fsc() {
   bmc_location=$(get_bmc_board_id)
   if [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
     #The BMC of class2 need to check the present status from BB BIC
-    slot1_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 15 | awk '{print $12}')
-    slot3_prsnt=$(bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xe0 0x41 0x9c 0x9c 0x0 0x0 3 | awk '{print $12}')
+    slot1_prsnt=$(bic-util slot1 0xe0 0x2 "$IANA_ID" 0x10 0xe0 0x41 "$IANA_ID" 0x0 15 | awk '{print $12}')
+    slot3_prsnt=$(bic-util slot1 0xe0 0x2 "$IANA_ID" 0x10 0xe0 0x41 "$IANA_ID" 0x0 3 | awk '{print $12}')
     if [ "$slot1_prsnt" = "01" ] || [ "$slot3_prsnt" = "01" ]; then
       run_fscd=false
     else

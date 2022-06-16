@@ -32,12 +32,14 @@ def main(name, args):
     if len(args) < 2:
         print("USAGE: {} SCHEMA JSON".format(name))
         sys.exit(1)
-
-    if validate_json_conf(args[0], args[1]):
-        print("SUCCESS: ", args[1])
-    else:
-        print("FAILURE: ", args[1], file=sys.stderr)
-        sys.exit(1)
+    schema = args[0]
+    files = args[1:]
+    for f in files:
+        if validate_json_conf(schema, f):
+            print("SUCCESS: ", f)
+        else:
+            print("FAILURE: ", f, file=sys.stderr)
+            sys.exit(1)
 
 
 if __name__ == "__main__":

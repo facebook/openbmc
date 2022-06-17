@@ -3,6 +3,7 @@
 Modbus/rackmond library + Standalone tool to view current power/current
 readings
 """
+import socket
 import asyncio
 import contextlib
 import json
@@ -65,6 +66,22 @@ async def rackmon_command(cmd):
     return json.loads(response[2:].decode())
 
 
+def rackmon_command_sync(cmd):
+    request = json.dumps(cmd).encode()
+    if not os.path.exists("/var/run/rackmond.sock"):
+        raise ModbusException()
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    client.connect("/var/run/rackmond.sock")
+    req_header = struct.pack("@H", len(request))
+    client.send(req_header + request)
+    response = client.recv(65535)
+    client.close()
+    (resp_len,) = struct.unpack("@H", response[:2])
+    if len(response[2:]) != resp_len:
+        print("WARNING: length mismatch: ", len(response[2:]), resp_len)
+    return json.loads(response[2:].decode())
+
+
 async def modbuscmd(raw_cmd, expected=0, timeout=0):
     # Convert to integer array.
     raw_cmd_ints = list(raw_cmd)
@@ -110,20 +127,44 @@ async def read_register(addr, register, length=1, timeout=0):
 
 
 def modbuscmd_sync(raw_cmd, expected=0, timeout=0):
-    return asyncio.get_event_loop().run_until_complete(
-        modbuscmd(raw_cmd, expected, timeout)
-    )
+    # Convert to integer array.
+    raw_cmd_ints = list(raw_cmd)
+    cmd = {
+        "type": "raw",
+        "cmd": raw_cmd_ints,
+        "response_length": expected,
+        "timeout": timeout,
+    }
+    result = rackmon_command_sync(cmd)
+    if result["status"] != "SUCCESS":
+        if result["status"] == "CRC_ERROR":
+            log("<- crc check failure")
+            raise ModbusCRCError()
+        elif result["status"] == "TIMEOUT_ERROR":
+            log("<- timeout")
+            raise ModbusTimeout()
+        else:
+            raise ModbusException()
+    log("<- {}".format(result))
+    # Return everything but the CRC
+    return bytes(bytearray(result["data"][:-2]))
 
 
 def pause_monitoring_sync():
-    return asyncio.get_event_loop().run_until_complete(pause_monitoring())
+    cmd = {"type": "pause"}
+    result = rackmon_command_sync(cmd)
+    if result["status"] != "SUCCESS":
+        print("Pause failed: %s" % (result["status"]))
 
 
 def resume_monitoring_sync():
-    return asyncio.get_event_loop().run_until_complete(resume_monitoring())
+    cmd = {"type": "resume"}
+    result = rackmon_command_sync(cmd)
+    if result["status"] != "SUCCESS":
+        print("Resume failed: %s" % (result["status"]))
 
 
 def read_register_sync(addr, register, length=1, timeout=0):
-    return asyncio.get_event_loop().run_until_complete(
-        read_register(addr, register, length, timeout)
-    )
+    cmd = struct.pack(">BBHH", addr, 0x3, register, length)
+    data = modbuscmd_sync(cmd, expected=5 + (2 * length), timeout=timeout)
+    return data[3:]

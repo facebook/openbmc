@@ -8,7 +8,7 @@ LIC_FILES_CHKSUM = "file://jtagtest.c;beginline=4;endline=25;md5=4d3dd6a70786d47
 
 SRC_URI = "file://test \
           "
-DEPENDS += " libasd-jtagintf "
+DEPENDS += " libasd-jtagintf libpal"
 
 S = "${WORKDIR}/test"
 

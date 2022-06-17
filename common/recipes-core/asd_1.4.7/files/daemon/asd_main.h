@@ -52,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DEFAULT_LOG_LEVEL ASD_LogLevel_Warning
 #define DEFAULT_LOG_STREAMS ASD_LogStream_All
 #define DEFAULT_XDP_FAIL_ENABLE true
+#define ASD_HW_JUMPER_POP 0
 
 typedef struct session_options
 {

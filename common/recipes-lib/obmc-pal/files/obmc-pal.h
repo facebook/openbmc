@@ -586,6 +586,7 @@ int pal_get_dev_list_by_caps(uint8_t fru, unsigned int caps, char *list, size_t 
 int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len);
 int pal_udbg_get_frame_total_num();
 bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
+int pal_is_jumper_enable(uint8_t fru, uint8_t *status);
 
 #ifdef __cplusplus
 }

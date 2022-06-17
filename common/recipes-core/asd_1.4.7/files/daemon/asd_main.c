@@ -58,6 +58,7 @@ int asd_main(int argc, char** argv)
 {
     STATUS result = ST_ERR;
     asd_state state = {};
+    uint8_t jumper_status = 0;
 
     ASD_initialize_log_settings(DEFAULT_LOG_LEVEL, DEFAULT_LOG_STREAMS, false,
                                 NULL, NULL);
@@ -66,8 +67,19 @@ int asd_main(int argc, char** argv)
     {
         ASD_log(ASD_LogLevel_Warning, ASD_LogStream_Daemon,
                 ASD_LogOption_None, "ASD is initializing...");
-        result = init_asd_state(&state);
 
+        result = pal_is_jumper_enable(state.args.fru, &jumper_status);
+        if (result == ST_OK) {
+           if (jumper_status == ASD_HW_JUMPER_POP) {
+              ASD_log(ASD_LogLevel_Warning, ASD_LogStream_Daemon,
+                ASD_LogOption_None, "Jumper popped, cannot do ASD.");
+
+              syslog(LOG_CRIT, "Jumper popped, cannot do ASD.");
+              return ST_ERR;
+           }
+        }
+
+        result = init_asd_state(&state);
         if (result == ST_OK)
         {
             ASD_log(ASD_LogLevel_Warning, ASD_LogStream_Daemon,

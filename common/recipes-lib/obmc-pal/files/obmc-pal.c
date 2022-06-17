@@ -2987,3 +2987,9 @@ bool __attribute__((weak))
 pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num) {
   return true;
 }
+
+int __attribute__((weak))
+pal_is_jumper_enable(uint8_t fru, uint8_t *status)
+{
+  return PAL_ENOTSUP;
+}

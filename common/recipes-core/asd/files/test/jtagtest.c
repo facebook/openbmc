@@ -37,7 +37,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <openbmc/pal.h>
 #include "asd/SoftwareJTAGHandler.h"
+
+#define ASD_HW_JUMPER_REMOVE   1
+#define ASD_HW_JUMPER_POP      0
 
 #ifndef timersub
 #define timersub(a, b, result)                           \
@@ -77,6 +81,7 @@ void showUsage(char **argv, unsigned int qFlag) {
     printQ(qFlag,"  -s <number>   Connect to fru <number> (default=1)\n");
     printQ(qFlag,"  -i <number>   Run [number] of iterations\n");
     printQ(qFlag,"  -r <number>   IR size (CPU=11, PCH=8, default 11)\n");
+    printQ(qFlag,"  -j            Get asd jumper status of the fru\n");
     printQ(qFlag,"\n");
 }
 
@@ -91,6 +96,25 @@ check_dup_process(uint8_t fru) {
     return -1;
   }
   return 0;
+}
+
+int
+get_jumper_status(uint8_t fru) {
+    uint8_t status = 0;
+    int ret = pal_is_jumper_enable(fru, &status);
+    if (ret < 0) {
+        printf("Fail to get Jumper status\n");
+        return -1;
+    }
+
+    if (status == ASD_HW_JUMPER_REMOVE) {
+        printf("HW jumper is nonpop\n");
+    } else if (status == ASD_HW_JUMPER_POP) {
+        printf("HW jumper is popped\n");
+    } else {
+        printf("get jumper status fail, get value = %x", status);
+    }
+    return 0;
 }
 
 int main (int argc, char **argv) {
@@ -109,6 +133,7 @@ int main (int argc, char **argv) {
     unsigned int fFlag = 0;
     unsigned int qFlag = 0;
     unsigned int mFlag = 0;
+    unsigned int jumperStatusFlag = 0;
     unsigned int numIterations = 0;
     unsigned int shift_size_in_bits = 0;
     unsigned int c = 0, i = 0, j = 0, loopCnt = 0, fru=1;
@@ -120,7 +145,7 @@ int main (int argc, char **argv) {
     signal(SIGINT, intHandler);  // catch ctrl-c
 
     opterr = 0;
-    while ((c = getopt (argc, argv, "qfmi:s:r:?")) != -1)
+    while ((c = getopt (argc, argv, "qfmji:s:r:?")) != -1)
         switch (c) {
             case 'q':
                 qFlag = 1;
@@ -141,10 +166,18 @@ int main (int argc, char **argv) {
             case 'r':
                 if ((irSize = atoi(optarg)) > 0)
                     break;
+            case 'j':
+                jumperStatusFlag = 1;
+                break;
             case '?':
                 showUsage(argv, qFlag);
             return -1;
         }
+
+
+    if (jumperStatusFlag) {
+        get_jumper_status(fru);
+    }
 
     // check that all the arguments have been processed and that the user didn't provide any we can't process
     if (optind < argc || argc == 1 || !numIterations) {

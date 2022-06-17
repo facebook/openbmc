@@ -91,6 +91,10 @@ enum {
   I2C_BUS_21 = 21,
   I2C_BUS_22,
   I2C_BUS_23,
+  I2C_BUS_24,
+  I2C_BUS_25,
+  I2C_BUS_26,
+  I2C_BUS_27,
 };
 
 #define MAX_NUM_FRUS (FRU_CNT-1)

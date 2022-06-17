@@ -21,6 +21,7 @@ size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0..3";
 const char pal_tach_list[] = "0..7";
+uint8_t g_board_id = 0xFF;
 
 static int sensors_read_fan_pwm(uint8_t sensor_num, float *value);
 static int read_inlet_sensor(uint8_t snr_id, float *value);
@@ -663,6 +664,10 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   static uint8_t retry[256] = {0};
   uint8_t id=0;
   bool server_off;
+
+  if (g_board_id == 0xFF) {
+    pal_get_platform_id(&g_board_id);
+  }
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -1330,6 +1335,11 @@ read_adc_value(uint8_t adc_id, float *value) {
     return -1;
   }
 
+  if((adc_id == ADC4) && ((g_board_id & 0x07) == 0x3)) {  //there is no MB_P3V3_PAX sensor for BRCM SKU
+    *value = 0;
+    return READING_NA;
+  }
+
   return sensors_read_adc(adc_label[adc_id], value);
 }
 
@@ -1539,7 +1549,14 @@ hsc_value_adjust(struct calibration_table *table, float *value) {
 
 static int
 read_pax_therm(uint8_t pax_id, float *value) {
-  int ret = 0;
+  int ret = 0, cmd_size = 7, fd;
+  uint8_t tbuf[8] = {0}, rbuf[8] = {0};
+  uint8_t addr = 0xB2;
+  char bus[32] = {0};
+
+  if (!is_device_ready())
+    return ERR_SENSOR_NA;
+
   struct {
     const char *chip;
     const char *label;
@@ -1550,10 +1567,46 @@ read_pax_therm(uint8_t pax_id, float *value) {
     {"tmp422-i2c-6-4e", "PAX3_THERM_REMOTE"},
   };
 
-  if (!is_device_ready())
-    return ERR_SENSOR_NA;
+  if ((g_board_id & 0x7) == 0x3) {
+    uint8_t read_brcm_temp[][16] = {
+      {0x03, 0x00, 0x3c, 0xb3, 0x00, 0x00, 0x00, 0x07}, // config as full address
+      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x04}, // 0xFFE78504 address
+      {0x03, 0x58, 0x3c, 0x41, 0x20, 0x06, 0x53, 0xe8}, // 0x200653e8 data
+      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x01}, // write
+      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x38}, // set 0xFFE78538 address
+      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x02}, // read
+      {0x04, 0x58, 0x3c, 0x41}, // read data
+    };
 
-  ret = sensors_read(devs[pax_id].chip, devs[pax_id].label, value);
+    snprintf(bus, sizeof(bus), "/dev/i2c-%d", I2C_BUS_24 + pax_id);
+    fd = open(bus, O_RDWR);
+    if (fd < 0)
+      return -1;
+
+    for(int i=0; i < cmd_size-1; i++) {
+      ret = i2c_rdwr_msg_transfer(fd, addr, read_brcm_temp[i], 8, NULL, 0);
+
+      if (ret) {
+        goto exit;
+      }
+    }
+
+    ret = i2c_rdwr_msg_transfer(fd, addr, read_brcm_temp[6], 4, rbuf, 4);
+
+    if (ret) {
+      goto exit;
+    }
+
+    *value = (double)((rbuf[2] << 8) | rbuf[3]) / 128;
+  }
+  else {
+    ret = sensors_read(devs[pax_id].chip, devs[pax_id].label, value);
+  }
+
+exit:
+  if (fd > 0) {
+    close(fd);
+  }
 
   return ret;
 }

@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <syslog.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include <switchtec/switchtec.h>
 #include <switchtec/gas.h>
 #include "pal.h"
@@ -62,7 +63,14 @@ static int pax_unlock(int fd)
 int pal_check_pax_fw_type(uint8_t comp, const char *fwimg)
 {
   int fd;
+  uint8_t board_id = 0xFF;
   struct switchtec_fw_image_info info;
+
+  pal_get_platform_id(&board_id);
+
+  if ((board_id & 0x7) == 0x3) {
+    return -1;
+  }
 
   fd = open(fwimg, O_RDONLY);
   if (fd < 0 || switchtec_fw_file_info(fd, &info) < 0)
@@ -239,14 +247,63 @@ static int get_pax_ver(uint8_t paxid, uint8_t type, char *ver)
   return ret;
 }
 
+int pal_get_brcm_pax_ver(uint8_t paxid, char *ver)
+{
+  int fd, lock, ret;
+  uint8_t tbuf[8] = {0x04, 0x00, 0x3C, 0x83};
+  uint8_t rbuf[8] = {0};
+  char dev[32] = {0};
+
+  lock = pax_lock();
+  if (lock < 0)
+    return -1;
+
+  snprintf(dev, sizeof(dev), "/dev/i2c-%d", I2C_BUS_24 + paxid);
+
+  fd = open(dev, O_RDWR);
+  if (fd < 0) {
+    return -1;
+  }
+
+  ret = i2c_rdwr_msg_transfer(fd, 0xB2, tbuf, 4, rbuf, 4);
+
+  snprintf(ver, MAX_VALUE_LEN, "0x%02X%02X%02X%02X",
+	     rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+
+  if(fd > 0) {
+    close(fd);
+  }
+
+  pax_unlock(lock);
+  return ret;
+}
+
 int pal_get_pax_bl2_ver(uint8_t paxid, char *ver)
 {
-  return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
+  uint8_t board_id = 0xFF;
+
+  pal_get_platform_id(&board_id);
+
+  if ((board_id & 0x7) == 0x3) {
+    return pal_get_brcm_pax_ver(paxid, ver);
+  }
+  else {
+    return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
+  }
 }
 
 int pal_get_pax_fw_ver(uint8_t paxid, char *ver)
 {
-  return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_IMG, ver);
+  uint8_t board_id = 0xFF;
+
+  pal_get_platform_id(&board_id);
+
+  if ((board_id & 0x7) == 0x3) {
+    return pal_get_brcm_pax_ver(paxid, ver);
+  }
+  else {
+    return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
+  }
 }
 
 int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
@@ -256,10 +313,18 @@ int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
   struct switchtec_dev *dev;
   size_t map_size;
   unsigned int x;
+  uint8_t board_id = 0xFF;
+
   gasptr_t map;
 
   if (pal_is_server_off())
     return -1;
+
+  pal_get_platform_id(&board_id);
+
+  if ((board_id & 0x7) == 0x3) {
+    return pal_get_brcm_pax_ver(paxid, ver);
+  }
 
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
 

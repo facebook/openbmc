@@ -83,8 +83,13 @@ int PAXComponent::update(string image)
       return -1;
 
     if (ret < 0) {
-      cout << image << " is not a valid file for " << comp << endl;
-      return -1;
+      if(ret == -2) {
+        cout << " Firmware update on " << comp << " is not supported  " << endl;
+        return -1;
+      } else {
+        cout << image << " is not a valid file for " << comp << endl;
+        return -1;
+      }
     }
     syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
     ret = pal_pax_fw_update(_paxid, image.c_str());

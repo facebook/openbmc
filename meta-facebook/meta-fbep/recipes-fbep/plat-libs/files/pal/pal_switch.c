@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <syslog.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/obmc-i2c.h>
 #include <switchtec/switchtec.h>
 #include <switchtec/gas.h>
 #include "pal.h"
@@ -63,6 +64,9 @@ int pal_check_pax_fw_type(uint8_t comp, const char *fwimg)
 {
   int fd;
   struct switchtec_fw_image_info info;
+
+  if (pal_check_swich_config())
+    return -2;
 
   fd = open(fwimg, O_RDONLY);
   if (fd < 0 || switchtec_fw_file_info(fd, &info) < 0)
@@ -192,53 +196,94 @@ static int get_pax_ver(uint8_t paxid, uint8_t type, char *ver)
   struct switchtec_dev *dev;
   struct switchtec_flash_info_gen4_Ex all_info;
   struct switchtec_flash_part_info_gen4 *info_0, *info_1;
+  uint8_t tbuf[4] = {0x04, 0x00, 0x3c, 0x83}; //Read CFG ver reg
+  uint8_t rbuf[4] = {0};
+  char device[64] = {0};
+  uint8_t addr = 0xb2;
+  uint8_t bus;
 
   if (pal_is_server_off())
     return -1;
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
+  if (pal_check_swich_config()) {
 
-  fd = pax_lock();
-  if (fd < 0)
-    return -1;
+    switch (paxid) {
+      case 0:
+        bus = 19;
+      break;
+      case 1:
+        bus = 20;
+      break;
+      case 2:
+        bus = 21;
+      break;
+      case 3:
+        bus = 22;
+      break;
 
-  dev = switchtec_open(device_name);
-  if (dev == NULL) {
-    syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
-    pax_unlock(fd);
-    return -1;
-  }
-
-  subcmd = MRPC_PART_INFO_GET_ALL_INFO_EX;
-  ret = switchtec_cmd(dev, MRPC_PART_INFO, &subcmd,
-                      sizeof(subcmd), &all_info, sizeof(all_info));
-
-  switchtec_close(dev);
-  pax_unlock(fd);
-
-  if (ret == 0) {
-    switch (type) {
-      case SWITCHTEC_FW_TYPE_BL2:
-	info_0 = &(all_info.bl20);
-	info_1 = &(all_info.bl21);
-	break;
-      case SWITCHTEC_FW_TYPE_IMG:
-	info_0 = &(all_info.img0);
-	info_1 = &(all_info.img1);
-	break;
       default:
-	return -1;
-    };
-    if (info_0->is_using)
-      p = (uint16_t*)&info_0->image_version;
-    else
-      p = (uint16_t*)&info_1->image_version;
+        return -1;
+    }
 
-    snprintf(ver, MAX_VALUE_LEN, "%X.%02X B%03X",
-	     p[1] >> 8, p[1] & 0xFF, p[0] & 0xFFF);
+    snprintf(device, sizeof(device), "/dev/i2c-%d", bus);
+    fd = open(device, O_RDWR);
+    if (fd < 0) {
+      close(fd);
+      return -1;
+    }
+
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 4, rbuf, 4);
+
+    snprintf(ver, MAX_VALUE_LEN, "0x%02X%02X%02X%02X",
+   	     rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+
+    close(fd);
   } else {
-    syslog(LOG_WARNING, "%s: switchtec get %s version failed", __func__, device_name);
+    snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
+   
+    fd = pax_lock();
+    if (fd < 0)
+      return -1;
+   
+    dev = switchtec_open(device_name);
+    if (dev == NULL) {
+      syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+      pax_unlock(fd);
+      return -1;
+    }
+   
+    subcmd = MRPC_PART_INFO_GET_ALL_INFO_EX;
+    ret = switchtec_cmd(dev, MRPC_PART_INFO, &subcmd,
+                        sizeof(subcmd), &all_info, sizeof(all_info));
+   
+    switchtec_close(dev);
+    pax_unlock(fd);
+   
+    if (ret == 0) {
+      switch (type) {
+        case SWITCHTEC_FW_TYPE_BL2:
+   	info_0 = &(all_info.bl20);
+   	info_1 = &(all_info.bl21);
+   	break;
+        case SWITCHTEC_FW_TYPE_IMG:
+   	info_0 = &(all_info.img0);
+   	info_1 = &(all_info.img1);
+   	break;
+        default:
+   	return -1;
+      };
+      if (info_0->is_using)
+        p = (uint16_t*)&info_0->image_version;
+      else
+        p = (uint16_t*)&info_1->image_version;
+   
+      snprintf(ver, MAX_VALUE_LEN, "%X.%02X B%03X",
+   	     p[1] >> 8, p[1] & 0xFF, p[0] & 0xFFF);
+    } else {
+      syslog(LOG_WARNING, "%s: switchtec get %s version failed", __func__, device_name);
+    }
   }
+
   return ret;
 }
 
@@ -264,32 +309,35 @@ int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
   if (pal_is_server_off())
     return -1;
 
-  snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
-
-  fd = pax_lock();
-  if (fd < 0)
-    return -1;
-
-  dev = switchtec_open(device_name);
-  if (dev == NULL) {
-    syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
-    pax_unlock(fd);
-    return -1;
-  }
-
-  map = switchtec_gas_map(dev, 0, &map_size);
-  if (map != SWITCHTEC_MAP_FAILED) {
-    ret = gas_read32(dev, (void __gas*)map + 0x2104, &x);
-    switchtec_gas_unmap(dev, map);
+  if (pal_check_swich_config()) {
+    return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_CFG, ver);
   } else {
-    ret = -1;
+    snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
+   
+    fd = pax_lock();
+    if (fd < 0)
+      return -1;
+   
+    dev = switchtec_open(device_name);
+    if (dev == NULL) {
+      syslog(LOG_WARNING, "%s: switchtec open %s failed", __func__, device_name);
+      pax_unlock(fd);
+      return -1;
+    }
+   
+    map = switchtec_gas_map(dev, 0, &map_size);
+    if (map != SWITCHTEC_MAP_FAILED) {
+      ret = gas_read32(dev, (void __gas*)map + 0x2104, &x);
+      switchtec_gas_unmap(dev, map);
+    } else {
+      ret = -1;
+    }
+   
+    switchtec_close(dev);
+    pax_unlock(fd);
+   
+    if (ret == 0)
+      snprintf(ver, MAX_VALUE_LEN, "%X", x);
   }
-
-  switchtec_close(dev);
-  pax_unlock(fd);
-
-  if (ret == 0)
-    snprintf(ver, MAX_VALUE_LEN, "%X", x);
-
   return ret < 0? -1: 0;
 }

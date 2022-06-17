@@ -68,7 +68,7 @@ static int sensors_read_infineon(uint8_t, float*);
 /*
  * List of sensors to be monitored
  */
-const uint8_t mb_sensor_list[] = {
+const uint8_t mb_micro_switch_sensor_list[] = {
   MB_FAN0_TACH_I,
   MB_FAN0_TACH_O,
   MB_FAN0_VOLT,
@@ -106,6 +106,72 @@ const uint8_t mb_sensor_list[] = {
   MB_SWITCH_PAX1_DIE_TEMP,
   MB_SWITCH_PAX2_DIE_TEMP,
   MB_SWITCH_PAX3_DIE_TEMP,
+  MB_VR_P0V8_VDD0_VIN,
+  MB_VR_P0V8_VDD0_VOUT,
+  MB_VR_P0V8_VDD0_CURR,
+  MB_VR_P0V8_VDD0_TEMP,
+  MB_VR_P0V8_VDD1_VIN,
+  MB_VR_P0V8_VDD1_VOUT,
+  MB_VR_P0V8_VDD1_CURR,
+  MB_VR_P0V8_VDD1_TEMP,
+  MB_VR_P0V8_VDD2_VIN,
+  MB_VR_P0V8_VDD2_VOUT,
+  MB_VR_P0V8_VDD2_CURR,
+  MB_VR_P0V8_VDD2_TEMP,
+  MB_VR_P0V8_VDD3_VIN,
+  MB_VR_P0V8_VDD3_VOUT,
+  MB_VR_P0V8_VDD3_CURR,
+  MB_VR_P0V8_VDD3_TEMP,
+  MB_VR_P1V0_AVD0_VIN,
+  MB_VR_P1V0_AVD0_VOUT,
+  MB_VR_P1V0_AVD0_CURR,
+  MB_VR_P1V0_AVD0_TEMP,
+  MB_VR_P1V0_AVD1_VIN,
+  MB_VR_P1V0_AVD1_VOUT,
+  MB_VR_P1V0_AVD1_CURR,
+  MB_VR_P1V0_AVD1_TEMP,
+  MB_VR_P1V0_AVD2_VIN,
+  MB_VR_P1V0_AVD2_VOUT,
+  MB_VR_P1V0_AVD2_CURR,
+  MB_VR_P1V0_AVD2_TEMP,
+  MB_VR_P1V0_AVD3_VIN,
+  MB_VR_P1V0_AVD3_VOUT,
+  MB_VR_P1V0_AVD3_CURR,
+  MB_VR_P1V0_AVD3_TEMP
+};
+
+const uint8_t mb_brcm_switch_sensor_list[] = {
+  MB_FAN0_TACH_I,
+  MB_FAN0_TACH_O,
+  MB_FAN0_VOLT,
+  MB_FAN0_CURR,
+  MB_FAN1_TACH_I,
+  MB_FAN1_TACH_O,
+  MB_FAN1_VOLT,
+  MB_FAN1_CURR,
+  MB_FAN2_TACH_I,
+  MB_FAN2_TACH_O,
+  MB_FAN2_VOLT,
+  MB_FAN2_CURR,
+  MB_FAN3_TACH_I,
+  MB_FAN3_TACH_O,
+  MB_FAN3_VOLT,
+  MB_FAN3_CURR,
+  MB_ADC_P12V_AUX,
+  MB_ADC_P3V3_STBY,
+  MB_ADC_P5V_STBY,
+  MB_ADC_P12V_1,
+  MB_ADC_P12V_2,
+  MB_ADC_P3V3,
+  MB_ADC_P3V_BAT,
+  MB_SENSOR_INLET,
+  MB_SENSOR_INLET_REMOTE,
+  MB_SENSOR_OUTLET,
+  MB_SENSOR_OUTLET_REMOTE,
+  MB_SENSOR_PAX0_THERM_REMOTE,
+  MB_SENSOR_PAX1_THERM_REMOTE,
+  MB_SENSOR_PAX2_THERM_REMOTE,
+  MB_SENSOR_PAX3_THERM_REMOTE,
   MB_VR_P0V8_VDD0_VIN,
   MB_VR_P0V8_VDD0_VOUT,
   MB_VR_P0V8_VDD0_CURR,
@@ -900,7 +966,8 @@ static const char* asic_sensor_name_by_mfr[MFR_MAX_NUM][32] = {
   }
 };
 
-size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
+size_t mb_micro_switch_sensor_cnt = sizeof(mb_micro_switch_sensor_list)/sizeof(uint8_t);
+size_t mb_brcm_switch_sensor_cnt = sizeof(mb_brcm_switch_sensor_list)/sizeof(uint8_t);
 size_t pdb_vicor_sensor_cnt = sizeof(pdb_vicor_sensor_list)/sizeof(uint8_t);
 size_t pdb_infineon_sensor_cnt = sizeof(pdb_infineon_sensor_list)/sizeof(uint8_t);
 size_t asic0_sensor_cnt = sizeof(asic0_sensor_list)/sizeof(uint8_t);
@@ -1077,6 +1144,22 @@ int pal_get_fan_name(uint8_t num, char *name)
   sprintf(name, "Fan %d %s", num/2, num%2==0? "In":"Out");
 
   return 0;
+}
+
+int pal_check_swich_config(void)
+{
+  char switch_vendor[16] = {0};
+  int switch_config;
+  int ret = 0;
+
+  ret = kv_get("switch_chip", switch_vendor, NULL, 0);
+  if (ret < 0 || !strcmp(switch_vendor, "MICRO")) {
+    switch_config = 0;
+  } else {
+    switch_config = 1;
+  }
+
+  return switch_config;
 }
 
 int pal_get_pwm_value(uint8_t fan, uint8_t *pwm)
@@ -1403,27 +1486,85 @@ static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
   if (!is_device_ready())
     return ERR_SENSOR_NA;
 
-  switch (sensor_num) {
-    case MB_SENSOR_PAX01_THERM:
-      ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM", value);
+  if (pal_check_swich_config()) {
+    int fd;
+    char dev[64] = {0};
+    uint8_t tbuf[][16] = {
+      {0x03, 0x00, 0x3c, 0xb3, 0x00, 0x00, 0x00, 0x07}, // Set full address
+      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x04}, // Set addr 0xffe78504
+      {0x03, 0x58, 0x3c, 0x41, 0x20, 0x06, 0x53, 0xe8}, // Set data 0x200653e8
+      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x01}, // Write data
+      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x38}, // Set addr 0xffe78538
+      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x02}, // Read data
+      {0x04, 0x58, 0x3c, 0x41},                         // Get response
+    };
+    uint8_t rbuf[8] = {0};
+    uint8_t addr = 0xb2;
+    uint8_t bus;
+    uint16_t temp128;
+
+
+    switch (sensor_num) {
+      case MB_SENSOR_PAX0_THERM_REMOTE:
+        bus = 19;
       break;
-    case MB_SENSOR_PAX0_THERM_REMOTE:
-      ret = sensors_read("tmp422-i2c-6-4d", "PAX0_THERM_REMOTE", value);
+      case MB_SENSOR_PAX1_THERM_REMOTE:
+        bus = 20;
       break;
-    case MB_SENSOR_PAX1_THERM_REMOTE:
-      ret = sensors_read("tmp422-i2c-6-4d", "PAX1_THERM_REMOTE", value);
+      case MB_SENSOR_PAX2_THERM_REMOTE:
+        bus = 21;
       break;
-    case MB_SENSOR_PAX23_THERM:
-      ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", value);
+      case MB_SENSOR_PAX3_THERM_REMOTE:
+        bus = 22;
       break;
-    case MB_SENSOR_PAX2_THERM_REMOTE:
-      ret = sensors_read("tmp422-i2c-6-4e", "PAX2_THERM_REMOTE", value);
-      break;
-    case MB_SENSOR_PAX3_THERM_REMOTE:
-      ret = sensors_read("tmp422-i2c-6-4e", "PAX3_THERM_REMOTE", value);
-      break;
-    default:
+
+      default:
+        return ERR_SENSOR_NA;
+    }
+
+    snprintf(dev, sizeof(dev), "/dev/i2c-%d", bus);
+    fd = open(dev, O_RDWR);
+    if (fd < 0) {
+      close(fd);
       return ERR_SENSOR_NA;
+    } 
+
+    //Send cmd to Axis reg
+    for (int i = 0; i < 6; i++) {
+      i2c_rdwr_msg_transfer(fd, addr, tbuf[i], 8, NULL, 0);
+    }
+
+    //Get response
+    i2c_rdwr_msg_transfer(fd, addr, tbuf[6], 4, rbuf, 4);
+
+    temp128 = (rbuf[2] << 8) | rbuf[3];
+
+    *value = (float)temp128/128;
+
+    close(fd);
+  } else {
+    switch (sensor_num) {
+      case MB_SENSOR_PAX01_THERM:
+        ret = sensors_read("tmp422-i2c-6-4d", "PAX01_THERM", value);
+        break;
+      case MB_SENSOR_PAX0_THERM_REMOTE:
+        ret = sensors_read("tmp422-i2c-6-4d", "PAX0_THERM_REMOTE", value);
+        break;
+      case MB_SENSOR_PAX1_THERM_REMOTE:
+        ret = sensors_read("tmp422-i2c-6-4d", "PAX1_THERM_REMOTE", value);
+        break;
+      case MB_SENSOR_PAX23_THERM:
+        ret = sensors_read("tmp422-i2c-6-4e", "PAX23_THERM", value);
+        break;
+      case MB_SENSOR_PAX2_THERM_REMOTE:
+        ret = sensors_read("tmp422-i2c-6-4e", "PAX2_THERM_REMOTE", value);
+        break;
+      case MB_SENSOR_PAX3_THERM_REMOTE:
+        ret = sensors_read("tmp422-i2c-6-4e", "PAX3_THERM_REMOTE", value);
+        break;
+      default:
+        return ERR_SENSOR_NA;
+    }
   }
 
   return ret < 0? ERR_SENSOR_NA: 0;
@@ -1829,8 +1970,13 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
   switch (fru) {
     case FRU_MB:
-      *sensor_list = (uint8_t *) mb_sensor_list;
-      *cnt = mb_sensor_cnt;
+      if (pal_check_swich_config()) {
+        *sensor_list = (uint8_t *) mb_brcm_switch_sensor_list;
+        *cnt = mb_brcm_switch_sensor_cnt;
+      } else {
+        *sensor_list = (uint8_t *) mb_micro_switch_sensor_list;
+        *cnt = mb_micro_switch_sensor_cnt;
+      }
       break;
     case FRU_PDB:
       if (pal_check_pdb_vr_config()) {

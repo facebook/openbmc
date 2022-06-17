@@ -95,6 +95,8 @@ bool is_device_ready(void);
 int pal_get_platform_id(uint8_t *id);
 int pal_set_id_led(uint8_t status);
 int pal_force_sled_cycle(void);
+int pal_check_swich_config(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

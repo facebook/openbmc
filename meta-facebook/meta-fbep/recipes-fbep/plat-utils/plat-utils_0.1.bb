@@ -35,6 +35,7 @@ LOCAL_URI = " \
     file://COPYING \
     file://workaround.sh \
     file://check-vr-ic.sh \
+    file://check-switch.sh \
     "
 
 pkgdir = "utils"
@@ -79,6 +80,8 @@ do_install() {
   update-rc.d -r ${D} workaround.sh start 71 S .
   install -m 755 check-vr-ic.sh ${D}${sysconfdir}/init.d/check-vr-ic.sh
   update-rc.d -r ${D} check-vr-ic.sh start 70 5 .
+  install -m 755 check-switch.sh ${D}${sysconfdir}/init.d/check-switch.sh
+  update-rc.d -r ${D} check-switch.sh start 69 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

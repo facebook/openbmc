@@ -3765,3 +3765,64 @@ pal_can_change_power(uint8_t fru) {
 
   return true;
 }
+
+/*
+ When hw jumper nonpop, jtag switch will pass jtag signal between BIC and CPU/PCH.
+*/
+int
+pal_is_jumper_enable(uint8_t slot_id, uint8_t *status) {
+  int i2cfd = 0;
+  uint8_t tbuf[1] = {SB_CPLD_BOARD_ASD_STATUS_REG};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+  uint8_t val = 0;
+  int ret = -1;
+
+  if (status == NULL) {
+    syslog(LOG_WARNING, "%s() fail to get jumper status due to getting NULL input *status.\n", __func__);
+    return -1;
+  }
+
+  if (bic_get_one_gpio_status(slot_id, BMC_JTAG_SEL_R, &val)) {
+    syslog(LOG_WARNING, "%s() get BMC_JTAG_SEL_R gpio value fail.\n", __func__);
+    return -1;
+  }
+
+  if (val == ASD_DISABLE) {
+    ret = bic_set_gpio(slot_id, BMC_JTAG_SEL_R, ASD_ENABLE);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() set bic_set_gpio to HIGH fail, returns %d\n", __func__, ret);
+      return ret;
+    }
+  }
+
+  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, (slot_id + SLOT_BUS_BASE), strerror(errno));
+    goto error_exit;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+  *status = rbuf[0];
+
+error_exit:
+  if ( i2cfd >= 0 ) {
+    close(i2cfd);
+  }
+
+  if (val == ASD_DISABLE) { // set back to the original value
+    ret = bic_set_gpio(slot_id, BMC_JTAG_SEL_R, ASD_DISABLE);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() set bic_set_gpio to LOW fail, returns %d\n", __func__, ret);
+      return ret;
+    }
+  }
+
+  return ret;
+}

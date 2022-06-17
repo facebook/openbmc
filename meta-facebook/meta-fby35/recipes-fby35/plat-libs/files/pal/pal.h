@@ -165,6 +165,11 @@ enum {
   DEV_FRU_IGNORE,
 };
 
+enum {
+  ASD_DISABLE = 0x00,
+  ASD_ENABLE  = 0x01,
+};
+
 typedef struct {
   uint8_t err_id;
   char *err_des;

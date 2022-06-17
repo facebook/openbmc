@@ -61,7 +61,8 @@ static void print_value_data(const json& j) {
         if (value["type"] == "flags") {
           for (const auto& flag : value["value"]) {
             std::cout << "\n    [" << int(flag[0]) << "] "
-                      << std::string(flag[1]) << " <" << int(flag[2]) << ">";
+                      << std::string(flag[1])
+                      << " <" << std::dec << int(flag[2]) << ">";
           }
           std::cout << '\n';
         } else {

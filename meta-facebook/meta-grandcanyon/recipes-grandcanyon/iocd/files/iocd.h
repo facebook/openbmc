@@ -86,6 +86,17 @@ typedef struct {
   pkt_payload_hdr_extra pkt_pl_hdr; 
 } ioc_command_info;
 
+typedef struct {
+  uint8_t build_num_2;
+  uint8_t build_num_1;
+  uint8_t cus_id_2;
+  uint8_t cus_id_1;
+  uint8_t phase_minor;
+  uint8_t phase_major;
+  uint8_t gen_minor;
+  uint8_t gen_major;
+} ioc_fw_ver;
+
 //{command name, {payload id, is need request, opcode, payload len[4], response len[4]}}
 ioc_command_info ioc_command_map[] = {
   [VDM_RESET] =

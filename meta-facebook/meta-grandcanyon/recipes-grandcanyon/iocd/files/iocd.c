@@ -718,7 +718,7 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
   bool is_failed = false;
   uint8_t tag = 0x01, read_len = 0;
   uint8_t read_buf[MCTP_MAX_READ_SIZE] = {0};
-  uint8_t ioc_fw_ver[IOC_FW_VER_SIZE] = {0};
+  ioc_fw_ver fw_ver = {0};
   char ioc_fw_ver_str[MAX_VALUE_LEN] = {0};
 
   if ((res_buf == NULL) || (res_len == NULL)) {
@@ -759,7 +759,7 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
     }
 
     if ((is_failed == false) && (read_len >= ioc_command_map[GET_IOC_FW].pkt_pl_hdr.response_len[0])) {
-      memcpy(ioc_fw_ver, &read_buf[RES_IOC_FW_VER_OFFSET], sizeof(ioc_fw_ver));
+      memcpy(&fw_ver, &read_buf[RES_IOC_FW_VER_OFFSET], sizeof(fw_ver));
     } else {
       syslog(LOG_WARNING, "%s(): failed to get the correct %s IOC firmware version.", __func__, iocd_config.fru_name);
       is_failed = true;
@@ -777,7 +777,8 @@ get_ioc_fw_ver(uint8_t slave_addr, uint8_t *res_buf, uint8_t *res_len) {
       return -1;
     }
 
-    snprintf(ioc_fw_ver_str, sizeof(ioc_fw_ver_str), "%d.%d%d%d.%02d-0000", ioc_fw_ver[7], ioc_fw_ver[6], ioc_fw_ver[5], ioc_fw_ver[4], ioc_fw_ver[0]);
+    snprintf(ioc_fw_ver_str, sizeof(ioc_fw_ver_str), "%d.%d.%d.%d-%05d-%05d",
+             fw_ver.gen_major, fw_ver.gen_minor, fw_ver.phase_major, fw_ver.phase_minor, (fw_ver.cus_id_1 << 8) + fw_ver.cus_id_2, (fw_ver.build_num_1 << 8) + fw_ver.build_num_2);
     if (pal_set_cached_value(iocd_config.ioc_ver_key, ioc_fw_ver_str) < 0) {
       return -1;
     }

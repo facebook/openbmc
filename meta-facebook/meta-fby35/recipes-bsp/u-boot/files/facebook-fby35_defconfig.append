@@ -3,6 +3,8 @@ CONFIG_SYS_CONFIG_NAME="facebook_fby35"
 CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-fby35"
 
 CONFIG_ASPEED_TPM=y
+CONFIG_GIU_HW_SUPPORT=y
+CONFIG_GIU_HW_OPEN=y
 
 # Debug and logging facilities
 # CONFIG_LOG=y

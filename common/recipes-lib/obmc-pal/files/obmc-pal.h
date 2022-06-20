@@ -267,6 +267,15 @@ enum {
   MEM_NO_DIMM = 0x7,
 };
 
+enum {
+  SYS_PWR_ON_FAIL = 0x1,
+  PCH_PWR_ON_FAIL,
+  _1OU_EXP_PWR_ON_FAIL,
+  _1OU_EXP_PWR_OFF_FAIL,
+  _2OU_EXP_PWR_ON_FAIL,
+  _2OU_EXP_PWR_OFF_FAIL,
+};
+
 // Enum for get the event sensor name in processing SEL
 enum {
   SYSTEM_EVENT = 0xE9,

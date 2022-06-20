@@ -34,4 +34,5 @@ IMAGE_INSTALL += " \
   fan-util \
   fscd \
   ipmbd \
+  bios-util \
   "

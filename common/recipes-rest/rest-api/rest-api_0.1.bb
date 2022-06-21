@@ -87,6 +87,7 @@ LOCAL_URI = " \
     file://rest_fscd_sensor_data.py \
     file://rest_fwinfo.py \
     file://rest_modbus_cmd.py \
+    file://rest_modbus.py \
     file://rest_mmc.py \
     file://test_rest_mmc.py \
     file://test_rest_modbus_cmd.py \

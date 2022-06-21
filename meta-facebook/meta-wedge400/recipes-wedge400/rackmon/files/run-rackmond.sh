@@ -1,4 +1,13 @@
 #!/bin/sh
+
+. /usr/local/bin/openbmc-utils.sh
+power_type=$(wedge_power_supply_type)
+if [ $power_type == "PSU48" ]; then
+    export RACKMOND_RACK_VERSION=3
+else
+    export RACKMOND_RACK_VERSION=2
+fi
+
 (sleep 5; PYTHONPATH=/etc python /etc/rackmon-config.py) &
 export RACKMOND_FOREGROUND=1
 # Give PSUs 2ms of grace time to let go of the bus after they respond to a
@@ -6,7 +15,6 @@ export RACKMOND_FOREGROUND=1
 export RACKMOND_MIN_DELAY=2000
 
 #shellcheck disable=SC1091
-. /usr/local/bin/openbmc-utils.sh
 brd_type=$(wedge_full_board_type)
 
 # Wedge400 MP Respin or newer, change to use FT4232 for rackmon uart

@@ -27,6 +27,7 @@
 #include "modbus.h"
 #include "rackmon_platform.h"
 #include "rackmon_parser.h"
+#include "modbus.h"
 
 #define DAEMON_NAME  "rackmond"
 
@@ -34,6 +35,8 @@
 #define MAX_RACKS        3
 #define MAX_SHELVES      2
 #define MAX_PSUS         3
+
+#define MAX_PSUS_V3      6
 
 /*
  * The PSUs understand baudrate as an integer.
@@ -61,6 +64,10 @@ const static speed_t BAUDRATE_VALUES[] = {
 #define REGISTER_PSU_STATUS 0x68
 #define REGISTER_PSU_BAUDRATE 0xA3
 #define REGISTER_PSU_TIMESTAMP 0x12A
+
+#define REGISTER_PSU_STATUS_V3 0x3C
+#define REGISTER_PSU_BAUDRATE_V3 0x5F
+#define REGISTER_PSU_TIMESTAMP_V3 0x62
 
 // This list overlaps with Modbus constants in modbus.h; ensure there are no duplicates
 #define READ_ERROR_RESPONSE -2
@@ -139,8 +146,8 @@ static struct {
   monitoring_config *config;
 
   uint8_t num_active_addrs;
-  bool first_scan_done[MAX_RACKS][MAX_SHELVES][MAX_PSUS];
-  bool ignored_psus[MAX_RACKS][MAX_SHELVES][MAX_PSUS];
+  bool first_scan_done[MAX_RACKS][MAX_SHELVES][MAX_PSUS_V3];
+  bool ignored_psus[MAX_RACKS][MAX_SHELVES][MAX_PSUS_V3];
   uint8_t active_addrs[MAX_ACTIVE_ADDRS];
   psu_datastore_t* stored_data[MAX_ACTIVE_ADDRS];
   FILE *status_log;
@@ -157,6 +164,8 @@ static struct {
   bool multi_port;
   // swap address for port2 and port3 in W400 MP Respin
   bool swap_addr;
+  //ORV2:version=2;ORV3:version=3
+  int rack_version;
 
   // the value we will auto-adjust to if possible
   speed_t desired_baudrate;
@@ -190,7 +199,8 @@ static int mutex_unlock_helper(pthread_mutex_t *lock, const char *name)
   return 0;
 }
 
-static int buf_open(write_buf_t* buf, int fd, size_t len) {
+static int buf_open(write_buf_t* buf, int fd, size_t len)
+{
   int error = 0;
   char* bufmem;
 
@@ -207,7 +217,8 @@ cleanup:
   return error;
 }
 
-static ssize_t buf_flush(write_buf_t* buf) {
+static ssize_t buf_flush(write_buf_t* buf)
+{
   int ret;
 
   ret = write(buf->fd, buf->buffer, buf->pos);
@@ -247,7 +258,8 @@ static ssize_t buf_write(write_buf_t* buf, void* from, size_t len) {
   }
 }
 
-int buf_printf(write_buf_t* buf, const char* format, ...) {
+int buf_printf(write_buf_t* buf, const char* format, ...)
+{
   char tmpbuf[512];
   int error = 0;
   int ret;
@@ -268,7 +280,8 @@ cleanup:
   return error;
 }
 
-static int buf_close(write_buf_t* buf) {
+static int buf_close(write_buf_t* buf)
+{
   int error = 0;
   int fret = buf_flush(buf);
   int cret = close(buf->fd);
@@ -282,7 +295,8 @@ cleanup:
   return error;
 }
 
-static speed_t int_to_baudrate(int val) {
+static speed_t int_to_baudrate(int val)
+{
   speed_t baudrate = DEFAULT_BAUDRATE;
   switch (val) {
     case 19200:
@@ -304,7 +318,8 @@ static speed_t int_to_baudrate(int val) {
   return baudrate;
 }
 
-static uint16_t baudrate_to_value(speed_t baudrate) {
+static uint16_t baudrate_to_value(speed_t baudrate)
+{
   uint16_t value = 0;
   switch (baudrate) {
     case B19200:
@@ -340,11 +355,12 @@ static int lookup_data_slot(uint8_t addr)
   return -1; /* No slot available. */
 }
 
-static char psu_address(int rack, int shelf, int psu) {
+static char psu_address(int rack, int shelf, int psu)
+{
   if (rackmond_config.swap_addr) {
-    if ( rack == 1){
+    if ( rack == 1) {
       rack = 2;
-    } else if ( rack == 2){
+    } else if ( rack == 2) {
       rack = 1;
     }
   }
@@ -355,25 +371,50 @@ static char psu_address(int rack, int shelf, int psu) {
   return 0xA0 | rack_a | shelf_a | psu_a;
 }
 
+/*
+ * PSU/BBU(2 bit)|shelf(1 bit)|rack(2 bit)|PSU(3 bit)
+ */
+static char psu_address_V3(int rack, int shelf, int psu)
+{
+  int type_a = ((3 & 3) << 6);
+  int shelf_a = ((shelf & 1) << 5);
+  int rack_a = ((rack & 3) <<3);
+  int psu_a = (psu & 7);
+
+  return type_a | shelf_a | rack_a | psu_a;
+}
+
 static int psu_location(int addr, int *rack, int *shelf, int *psu)
 {
   if ((addr & 0xA0)) {
     *psu = addr & 3;
     *shelf = (addr >> 2) & 1;
     *rack = (addr >> 3) & 3;
-    if (rackmond_config.swap_addr) {
-      if ( *rack == 1){
+	  if (rackmond_config.swap_addr) {
+      if ( *rack == 1) {
         *rack = 2;
-      } else if ( *rack == 2){
+      } else if ( *rack == 2) {
         *rack = 1;
       }
-    }
+	  }
     return 0;
   }
   return -1;
 }
 
-static int check_psu_comms(psu_datastore_t *psu) {
+static int psu_location_V3(int addr, int *rack, int *shelf, int *psu)
+{
+  if ((addr & 0xC0)) {
+    *psu = addr & 7;
+    *shelf = (addr >> 5) & 1;
+    *rack = (addr >> 3) & 3;
+    return 0;
+  }
+  return -1;
+}
+
+static int check_psu_comms(psu_datastore_t *psu)
+{
   if (psu == NULL) {
     return 0;
   }
@@ -404,7 +445,8 @@ static int check_psu_comms(psu_datastore_t *psu) {
   return 0;
 }
 
-static void update_psu_comms(psu_datastore_t *psu, bool success) {
+static void update_psu_comms(psu_datastore_t *psu, bool success)
+{
   if (psu == NULL) {
     return;
   }
@@ -428,6 +470,16 @@ static void update_psu_comms(psu_datastore_t *psu, bool success) {
 static int psu_retry_limit(psu_datastore_t *info, int addr)
 {
   int rack, shelf, psu;
+  int (*get_psu_location)(int, int*, int*, int*);
+
+  if (rackmond_config.rack_version==2) {
+    get_psu_location=psu_location;
+  } else if (rackmond_config.rack_version==3) {
+    get_psu_location=psu_location_V3;
+  } else {
+    OBMC_INFO("rackmon version error: current:%d, set by default vertion 2", rackmond_config.rack_version);
+    get_psu_location=psu_location;
+  }
 
   /* If we are communicating with a previously known PSU,
    * then go ahead and retry MAX_RETRY times on failure */
@@ -436,7 +488,7 @@ static int psu_retry_limit(psu_datastore_t *info, int addr)
   }
 
   /* Do not waste time retrying on invalid PSU addresses */
-  if (psu_location(addr, &rack, &shelf, &psu)) {
+  if (get_psu_location(addr, &rack, &shelf, &psu)) {
     return 1;
   }
 
@@ -483,7 +535,6 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
   req.timeout = timeout;
   req.expected_len = (exp_resp_len != 0 ? exp_resp_len : resp_size);
   req.scan = scanning;
-
 
   if (dev_lock(dev) != 0) {
     return -1;
@@ -548,7 +599,8 @@ static int modbus_command(rs485_dev_t* dev, int timeout, char* cmd_buf,
 
 static int read_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
                             uint16_t reg_start_addr, uint16_t reg_count,
-                            uint16_t *out, speed_t baudrate) {
+                            uint16_t *out, speed_t baudrate)
+{
   int error = 0;
   int dest_len;
   char command[MODBUS_FUN3_REQ_HDR_SIZE];
@@ -622,7 +674,8 @@ cleanup:
 
 static int write_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
                              uint16_t reg_start_addr, uint16_t reg_value,
-                             uint16_t *written_reg_value, speed_t baudrate) {
+                             uint16_t *written_reg_value, speed_t baudrate)
+{
   int dest_len;
   char command[MODBUS_FUN6_REQ_HDR_SIZE];
   char resp_buf[MODBUS_FUN6_RESP_PKT_SIZE];
@@ -682,7 +735,8 @@ static int write_holding_reg(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
 
 int write_holding_regs(rs485_dev_t *dev, int timeout, uint8_t slave_addr,
                              uint16_t reg_start_addr, uint16_t reg_count,
-                             uint16_t *reg_value, speed_t baudrate) {
+                             uint16_t *reg_value, speed_t baudrate)
+{
   int dest_len, i;
   size_t cmd_len = MODBUS_FUN16_REQ_HDR_SIZE(reg_count);
   char command[cmd_len];
@@ -739,7 +793,22 @@ int set_psu_timestamp(psu_datastore_t *psu, uint32_t unixtime)
 {
   uint16_t values[2];
   int rack=0,shelf=0,psu_no=0;
-  if (psu == NULL) {
+  int (*get_psu_location)(int, int*, int*, int*);
+  int psu_timestamp_register;
+
+  if (rackmond_config.rack_version==2) {
+    get_psu_location=psu_location;
+    psu_timestamp_register=REGISTER_PSU_TIMESTAMP;
+  } else if (rackmond_config.rack_version==3) {
+    get_psu_location=psu_location_V3;
+    psu_timestamp_register=REGISTER_PSU_TIMESTAMP_V3;
+  } else {
+    OBMC_INFO("rackmon version error: current:%d, set by default 2", rackmond_config.rack_version);
+    get_psu_location=psu_location;
+    psu_timestamp_register=REGISTER_PSU_TIMESTAMP;
+  }
+
+  if (get_psu_location(psu->addr,&rack,&shelf,&psu_no)) {
     return -1;
   }
   if (psu_location(psu->addr,&rack,&shelf,&psu_no)) {
@@ -751,16 +820,17 @@ int set_psu_timestamp(psu_datastore_t *psu, uint32_t unixtime)
   OBMC_INFO("Writing timestamp 0x%08x to PSU: 0x%02x", unixtime, psu->addr);
   values[0] = unixtime >> 16;
   values[1] = unixtime & 0xFFFF;
-  if (rackmond_config.multi_port){
+  if (rackmond_config.multi_port) {
     return write_holding_regs(&rackmond_config.rs485[rack], TIMESTAMP_CMD_TIMEOUT,
-        psu->addr, REGISTER_PSU_TIMESTAMP, 2, values, psu->baudrate);
+        psu->addr, psu_timestamp_register, 2, values, psu->baudrate);
   } else {
     return write_holding_regs(&rackmond_config.rs485[0], TIMESTAMP_CMD_TIMEOUT,
-        psu->addr, REGISTER_PSU_TIMESTAMP, 2, values, psu->baudrate);
+        psu->addr, psu_timestamp_register, 2, values, psu->baudrate);
   }
 }
 
-static int sub_uint8s(const void* a, const void* b) {
+static int sub_uint8s(const void* a, const void* b)
+{
   return (*(uint8_t*)a) - (*(uint8_t*)b);
 }
 
@@ -769,13 +839,34 @@ static int sub_uint8s(const void* a, const void* b) {
  * If a higher baudrate is desired, and all PSUs in the rack support it,
  * then raise the baudrate to the desired value for just this PSU.
  */
-static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
+static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out)
+{
   int pos, err;
   bool supported = true;
   uint16_t value;
   uint16_t written_value;
   psu_datastore_t *mdata;
   int rack=0,shelf=0,psu_no=0;
+  
+  int (*get_psu_location)(int, int*, int*, int*);
+  int psu_baudrate_register;
+
+  if (rackmond_config.rack_version==2) {
+    get_psu_location=psu_location;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE;
+  } else if (rackmond_config.rack_version==3) {
+    get_psu_location=psu_location_V3;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE_V3;
+  } else {
+    OBMC_INFO("rackmon version error: current:%d, set by default version 2", rackmond_config.rack_version);
+    get_psu_location=psu_location;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE;
+  }
+  
+  if (get_psu_location(psu->addr,&rack,&shelf,&psu_no)) {
+    return -1;
+  }
+
   if (psu == NULL) {
     OBMC_WARN("check_psu_baudrate received a null PSU argument, assuming default baudrate");
     *baudrate_out = DEFAULT_BAUDRATE;
@@ -812,11 +903,11 @@ static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
   value = baudrate_to_value(rackmond_config.desired_baudrate);
   if (rackmond_config.multi_port) {
     err = write_holding_reg(&rackmond_config.rs485[rack], BAUDRATE_CMD_TIMEOUT,
-                            psu->addr, REGISTER_PSU_BAUDRATE, value,
+                            psu->addr, psu_baudrate_register, value,
                             &written_value, psu->baudrate);
   } else {
     err = write_holding_reg(&rackmond_config.rs485[0], BAUDRATE_CMD_TIMEOUT,
-                            psu->addr, REGISTER_PSU_BAUDRATE, value,
+                            psu->addr, psu_baudrate_register, value,
                             &written_value, psu->baudrate);
   }
 
@@ -835,9 +926,28 @@ static int check_psu_baudrate(psu_datastore_t *psu, speed_t *baudrate_out) {
 /*
  * Scan connected PSUs. Executed in monitoring thread.
  */
-static int check_active_psus(void) {
+static int check_active_psus(void)
+{
   int num_psus;
   int rack, shelf, psu, offset;
+
+  char (*get_psu_address)(int, int, int);
+  int max_psu_num, psu_status_register;
+
+  if (rackmond_config.rack_version==2) {
+    get_psu_address=psu_address;
+    max_psu_num=MAX_PSUS;
+    psu_status_register=REGISTER_PSU_STATUS;
+  } else if (rackmond_config.rack_version==3) {
+    get_psu_address=psu_address_V3;
+    max_psu_num=MAX_PSUS_V3;
+    psu_status_register=REGISTER_PSU_STATUS_V3;
+  } else {
+    OBMC_INFO("rackmon version error: current:%d, set by default vertion 2", rackmond_config.rack_version);
+    get_psu_address=psu_address;
+    max_psu_num=MAX_PSUS;
+    psu_status_register=REGISTER_PSU_STATUS;
+  }
 
   if (global_lock() != 0) {
     return -1;
@@ -851,11 +961,11 @@ static int check_active_psus(void) {
   scanning = 1;
   for (rack = 0; rack < MAX_RACKS; rack++) {
     for (shelf = 0; shelf < MAX_SHELVES; shelf++) {
-      for (psu = 0; psu < MAX_PSUS; psu++) {
+      for (psu = 0; psu < max_psu_num; psu++) {
         int err, slot;
         uint16_t output = 0;
         speed_t baudrate;
-        char addr = psu_address(rack, shelf, psu);
+        char addr = get_psu_address(rack, shelf, psu);
 
         if (rackmond_config.ignored_psus[rack][shelf][psu]) {
           continue;
@@ -873,14 +983,14 @@ static int check_active_psus(void) {
           }
         }
 
-        if (rackmond_config.multi_port){
+        if (rackmond_config.multi_port) {
           err = read_holding_reg(&rackmond_config.rs485[rack],
                                 rackmond_config.modbus_timeout, addr,
-                                REGISTER_PSU_STATUS, 1, &output, baudrate);
+                                psu_status_register, 1, &output, baudrate);
         } else {
           err = read_holding_reg(&rackmond_config.rs485[0],
                                 rackmond_config.modbus_timeout, addr,
-                                REGISTER_PSU_STATUS, 1, &output, baudrate);
+                                psu_status_register, 1, &output, baudrate);
         }
         if (err != 0) {
           continue;
@@ -890,7 +1000,7 @@ static int check_active_psus(void) {
           continue;
         }
 
-        dbg("detected PSU at addr %#02x", addr);
+        OBMC_INFO("detected PSU at addr %#02x", addr);
         rackmond_config.active_addrs[offset++] = addr;
       }
     }
@@ -943,7 +1053,8 @@ static int check_active_psus(void) {
  * | reg_interval_M-1,keep#N-1|
  * |--------------------------|
  */
-static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
+static psu_datastore_t* alloc_monitoring_data(uint8_t addr)
+{
   void *mem;
   size_t size;
   psu_datastore_t *d;
@@ -991,7 +1102,8 @@ static psu_datastore_t* alloc_monitoring_data(uint8_t addr) {
   return d;
 }
 
-static int sub_storeptrs(const void* va, const void *vb) {
+static int sub_storeptrs(const void* va, const void *vb)
+{
   //more *s than i like :/
   psu_datastore_t* a = *(psu_datastore_t**)va;
   psu_datastore_t* b = *(psu_datastore_t**)vb;
@@ -1009,7 +1121,8 @@ static int sub_storeptrs(const void* va, const void *vb) {
   return (int)(a->addr - b->addr);
 }
 
-static int alloc_monitoring_datas(void) {
+static int alloc_monitoring_datas(void)
+{
   int i;
   int error = 0;
 
@@ -1113,7 +1226,7 @@ static void rs485_device_cleanup(rs485_dev_t *dev)
 static int rs485_device_init(const char* tty_dev, rs485_dev_t *dev) {
   int ret = 0;
 
-  dbg("Opening %s\n", tty_dev);
+  OBMC_INFO("Opening %s\n", tty_dev);
   strcpy(rackmon_io->dev_path,tty_dev);
   dev->tty_fd = rackmon_io->open(rackmon_io);
   if (dev->tty_fd < 0)
@@ -1136,14 +1249,31 @@ static int rs485_device_init(const char* tty_dev, rs485_dev_t *dev) {
 // gracefully
 volatile sig_atomic_t should_exit;
 
-static void trigger_graceful_exit(int sig) {
+static void trigger_graceful_exit(int sig)
+{
   should_exit = 1;
 }
 
-static int reset_psu_baudrate(void) {
+static int reset_psu_baudrate(void)
+{
   int pos, ret = 0, err;
   uint16_t value;
   psu_datastore_t *mdata;
+
+  int (*get_psu_location)(int, int*, int*, int*);
+  int psu_baudrate_register;
+
+  if (rackmond_config.rack_version==2) {
+    get_psu_location=psu_location;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE;
+  } else if (rackmond_config.rack_version==3) {
+    get_psu_location=psu_location_V3;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE_V3;
+  } else {
+    OBMC_INFO("rackmon version error: current:%d, set by default version 2", rackmond_config.rack_version);
+    get_psu_location=psu_location;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE;
+  }
 
   global_lock();
   rackmond_config.paused = 1;
@@ -1161,21 +1291,21 @@ static int reset_psu_baudrate(void) {
     if (mdata->baudrate <= 0) {
       continue;
     }
-    if (psu_location(mdata->addr,&rack,&shelf,&psu)) {
+    if (get_psu_location(mdata->addr,&rack,&shelf,&psu)) {
       continue;
     }
     if (mdata->baudrate != DEFAULT_BAUDRATE) {
       value = baudrate_to_value(DEFAULT_BAUDRATE);
       
-      if (rackmond_config.multi_port){
+      if (rackmond_config.multi_port) {
         err = write_holding_reg(&rackmond_config.rs485[rack],
                                 BAUDRATE_CMD_TIMEOUT, mdata->addr,
-                                REGISTER_PSU_BAUDRATE, value,
+                                psu_baudrate_register, value,
                                 NULL, mdata->baudrate);
       } else {
         err = write_holding_reg(&rackmond_config.rs485[0],
                                 BAUDRATE_CMD_TIMEOUT, mdata->addr,
-                                REGISTER_PSU_BAUDRATE, value,
+                                psu_baudrate_register, value,
                                 NULL, mdata->baudrate);
       }
       if (err != 0) {
@@ -1190,7 +1320,8 @@ static int reset_psu_baudrate(void) {
 }
 
 static void record_data(reg_range_data_t* rd, uint32_t time,
-                        uint16_t* regs) {
+                        uint16_t* regs) 
+{
   int n_regs = (rd->i->len);
   int pitch = REG_INT_DATA_SIZE(rd->i);
   int mem_size = pitch * rd->i->keep;
@@ -1208,7 +1339,23 @@ static int reload_psu_registers(psu_datastore_t *mdata)
   speed_t baudrate;
   uint8_t addr = mdata->addr;
   int rack=0,shelf=0,psu=0;
-  if (psu_location(addr,&rack,&shelf,&psu)) {
+  
+  int (*get_psu_location)(int, int*, int*, int*);
+  int psu_baudrate_register;
+
+  if (rackmond_config.rack_version==2) {
+    get_psu_location=psu_location;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE;
+  } else if (rackmond_config.rack_version==3){
+    get_psu_location=psu_location_V3;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE_V3;
+  } else {
+    OBMC_INFO("rackmon version error: current:%d, set by default version 2", rackmond_config.rack_version);
+    get_psu_location=psu_location;
+    psu_baudrate_register=REGISTER_PSU_BAUDRATE;
+  }
+
+  if (get_psu_location(addr,&rack,&shelf,&psu)) {
     return -1;
   }
 
@@ -1230,7 +1377,7 @@ static int reload_psu_registers(psu_datastore_t *mdata)
     monitor_interval* iv = rd->i;
     uint16_t regs[iv->len];
 
-    if (rackmond_config.multi_port){
+    if (rackmond_config.multi_port) {
       err = read_holding_reg(&rackmond_config.rs485[rack],
                             rackmond_config.modbus_timeout, addr,
                             iv->begin, iv->len, regs, baudrate);
@@ -1279,7 +1426,7 @@ static int reload_psu_registers(psu_datastore_t *mdata)
     }
 
     global_lock();
-    if (iv->begin == REGISTER_PSU_BAUDRATE) {
+    if (iv->begin == psu_baudrate_register) {
       uint16_t baudrate_value = regs[0] >> 8;
       mdata->supports_baudrate = (baudrate_value != 0);
       mdata->baudrate = BAUDRATE_VALUES[baudrate_value];
@@ -1292,7 +1439,8 @@ static int reload_psu_registers(psu_datastore_t *mdata)
   return 0;
 }
 
-static int fetch_monitored_data(void) {
+static int fetch_monitored_data(void)
+{
   int pos;
   psu_datastore_t *mdata;
 
@@ -1564,8 +1712,8 @@ static int run_cmd_dump_status(rackmond_command* cmd, write_buf_t *wb)
     buf_printf(wb, "Next scan in %d seconds.\n", search_at - now);
   }
 
- global_unlock();
- return 0;
+  global_unlock();
+  return 0;
 }
 
 static int run_cmd_force_scan(rackmond_command* cmd, write_buf_t *wb)
@@ -1654,7 +1802,8 @@ static int run_cmd_dump_json(rackmond_command* cmd, write_buf_t *wb)
   return 0;
 }
 
-static int run_cmd_dump_info(rackmond_command* cmd, write_buf_t *wb){
+static int run_cmd_dump_info(rackmond_command* cmd, write_buf_t *wb)
+{
   int data_pos = 0;
   if (global_lock() != 0) {
     return -1;
@@ -1745,7 +1894,8 @@ static struct {
   },
 };
 
-static int do_command(int sock, rackmond_command* cmd) {
+static int do_command(int sock, rackmond_command* cmd)
+{
   int error = 0;
   write_buf_t wb;
   uint16_t type = cmd->type;
@@ -1759,7 +1909,7 @@ static int do_command(int sock, rackmond_command* cmd) {
       rackmond_cmds[type].name == NULL) {
     BAIL("Unknown command type %u\n", type);
   }
-  dbg("processing command %s\n", rackmond_cmds[type].name);
+  OBMC_INFO("processing command %s\n", rackmond_cmds[type].name);
 
   assert(rackmond_cmds[type].handler != NULL);
   CHECK_LATENCY_START();
@@ -1768,7 +1918,7 @@ static int do_command(int sock, rackmond_command* cmd) {
   if (error != 0) {
     OBMC_WARN("error while processing command %s", rackmond_cmds[type].name);
   } else {
-    dbg("command %s was handled properly", rackmond_cmds[type].name);
+    OBMC_INFO("command %s was handled properly", rackmond_cmds[type].name);
   }
 
 cleanup:
@@ -1795,7 +1945,7 @@ static int recv_sock_message(int sock, void *buf, size_t size)
     if (ret < 0) {
       return -1;
     } else if (ret == 0) {
-      dbg("poll socket (%d) timed out", sock);
+      OBMC_INFO("poll socket (%d) timed out", sock);
       continue;
     } else if (pfd.revents & (POLLERR | POLLHUP)) {
       errno = EIO;
@@ -1808,13 +1958,14 @@ static int recv_sock_message(int sock, void *buf, size_t size)
   return ret;
 }
 
-static int handle_connection(int sock) {
+static int handle_connection(int sock)
+{
   int ret;
   int error = 0;
   char body_buf[1024];
   uint16_t body_len = 0;
 
-  dbg("new connection established, socket=%d\n", sock);
+  OBMC_INFO("new connection established, socket=%d\n", sock);
 
   ret = recv_sock_message(sock, &body_len, sizeof(body_len));
   if (ret < 0) {
@@ -1899,7 +2050,8 @@ static int user_socket_init(const char *sock_path)
   return sock;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   int error = 0;
   int sock = -1;
   pthread_t monitoring_tid;
@@ -1927,6 +2079,15 @@ int main(int argc, char** argv) {
   if (signal_handler_init() != 0)
     return -1;
 
+  if (getenv("RACKMOND_RACK_VERSION") !=NULL) {
+    rackmond_config.rack_version = atoll(getenv("RACKMOND_RACK_VERSION"));
+    OBMC_INFO("set RACKMON_RACK_VERSION to %d",
+              rackmond_config.rack_version);
+  } else {
+    rackmond_config.rack_version = 2;
+    OBMC_WARN("rackmon version error: no version, set to default:%d", rackmond_config.rack_version);
+  }
+
   if (getenv("RACKMOND_TIMEOUT") != NULL) {
     rackmond_config.modbus_timeout = atoll(getenv("RACKMOND_TIMEOUT"));
     OBMC_INFO("set timeout to RACKMOND_TIMEOUT (%dms)",
@@ -1939,24 +2100,20 @@ int main(int argc, char** argv) {
   }
   verbose = getenv("RACKMOND_VERBOSE") != NULL ? 1 : 0;
 
-  if (getenv("RACKMOND_MULTI_PORT") != NULL){
-    rackmond_config.multi_port = 1;
+  if (getenv("RACKMOND_MULTI_PORT") != NULL) {
+    rackmond_config.multi_port = atoll(getenv("RACKMOND_MULTI_PORT"));
     OBMC_INFO("set RACKMOND_MULTI_PORT to %d, for FT4232",
                 rackmond_config.multi_port);
   } else {
     rackmond_config.multi_port = 0;
-    OBMC_INFO("set RACKMOND_MULTI_PORT to %d, for FT232",
-                rackmond_config.multi_port);
   }
 
-    if (getenv("RACKMOND_SWAP_ADDR") != NULL){
-    rackmond_config.swap_addr = 1;
+  if (getenv("RACKMOND_SWAP_ADDR") != NULL) {
+    rackmond_config.swap_addr = atoll(getenv("RACKMOND_SWAP_ADDR"));
     OBMC_INFO("set RACKMOND_SWAP_ADDR to %d, for W400 MP Respin",
-                rackmond_config.multi_port);
+                rackmond_config.swap_addr);
   } else {
     rackmond_config.swap_addr = 0;
-    OBMC_INFO("set RACKMOND_SWAP_ADDR to %d.",
-                rackmond_config.multi_port);
   }
 
   if (getenv("RACKMOND_DESIRED_BAUDRATE") != NULL) {
@@ -1975,7 +2132,16 @@ int main(int argc, char** argv) {
           psu_str = strtok(NULL, ",")) {
         unsigned int psu_addr = strtoul(psu_str, 0, 16);
         int rack, shelf, psu;
-        if (!psu_location(psu_addr, &rack, &shelf, &psu)) {
+        int (*get_psu_location)(int, int*, int*, int*);
+        if (rackmond_config.rack_version==2) {
+          get_psu_location=psu_location;
+        } else if (rackmond_config.rack_version==3) {
+          get_psu_location=psu_location_V3;
+        } else {
+          OBMC_INFO("rackmon version error: current:%d, set by default version 2", rackmond_config.rack_version);
+          get_psu_location=psu_location;
+        }
+        if (!get_psu_location(psu_addr, &rack, &shelf, &psu)) {
           rackmond_config.ignored_psus[rack][shelf][psu] = true;
           OBMC_INFO("Ignoring PSU: 0x%x\n", psu_addr);
         } else {

@@ -1,8 +1,65 @@
 import fcntl
 import sys
+import os
 
 from rackmond import configure_rackmond
 
+
+reglist_V3 = [
+    {"begin": 0x00, "length": 8, "flags": 0x8000},  # PSU_FB part               # ascii
+    {"begin": 0x08, "length": 8, "flags": 0x8000},  # PSU_MFR_MODEL             # ascii
+    {"begin": 0x10, "length": 8, "flags": 0x8000},  # PSU_MFR_DATE              # ascii
+    {"begin": 0x18, "length": 16, "flags": 0x8000}, # PSU_MFR_SERIAL            # ascii
+    {"begin": 0x28, "length": 4, "flags": 0x8000},  # PSU_Workorder             # ascii
+    {"begin": 0x2C, "length": 4, "flags": 0x8000},  # PSU_HW Revision           # ascii
+    {"begin": 0x30, "length": 4, "flags": 0x8000},  # PSU_FW Revision           # ascii
+    {"begin": 0x34, "length": 2, "flags": 0x2000},  # TOTAL_UP_TIME             # unsign
+    {"begin": 0x36, "length": 2, "flags": 0x2000},  # TIME_SINCE_LAST_ON        # unsign
+    {"begin": 0x38, "length": 1, "flags": 0x2000},  # AC_Power_Cycle_Counter    # unsign
+    {"begin": 0x39, "length": 1, "flags": 0x2000},  # AC_Outage_Counter         # unsign
+    {"begin": 0x3A, "length": 2},  # reserve
+    {"begin": 0x3C, "length": 1, "flags": 0x1000, "keep": 10,},  # General Alarm Status Register         # bit map
+    {"begin": 0x3D, "length": 1, "flags": 0x1000, "keep": 10,},  # PFC Alarm Status Register             # bit map
+    {"begin": 0x3E, "length": 1, "flags": 0x1000, "keep": 10,},  # DCDC Alarm Status Register            # bit map
+    {"begin": 0x3F, "length": 1, "flags": 0x1000, "keep": 10,},  # Temperature Alarm Status Register     # bit map
+    {"begin": 0x40, "length": 1, "flags": 0x1000, "keep": 10,},  # Communication Alarm Status Register   # bit map
+    {"begin": 0x41, "length": 2},  # reserve
+    {"begin": 0x43, "length": 1, "flags": 0x2000},  # PSU RPM fan0              # unsign
+    {"begin": 0x44, "length": 1, "flags": 0x2000},  # PSU RPM fan1              # unsign
+    {"begin": 0x45, "length": 1, "flags": 0x4700, "keep": 10,},  # PSU_Temp0 - Inlet         # 2'comp N=7
+    {"begin": 0x46, "length": 1, "flags": 0x4700, "keep": 10,},  # PSU_Temp1 - Outlet        # 2'comp N=7
+    {"begin": 0x47, "length": 1, "flags": 0x4700},  # PSU_Max_Temp              # 2'comp N=7
+    {"begin": 0x48, "length": 1, "flags": 0x4700},  # PSU_Min_Temp              # 2'comp N=7
+    {"begin": 0x49, "length": 2, "flags": 0x4000},  # PSU_Position_number       # 2'comp N=0
+    {"begin": 0x4B, "length": 2, "flags": 0x2000},  # CRC_error_counter         # unsign 32bit
+    {"begin": 0x4D, "length": 2, "flags": 0x2000},  # Timeout_error_counter     # unsign 32bit
+    {"begin": 0x4F, "length": 1, "flags": 0x2000, "keep": 10,},  # PSU_Output Voltage        # unsign N=10
+    {"begin": 0x50, "length": 1, "flags": 0x4600, "keep": 10,},  # PSU_Output Current        # 2'comp N=6
+    {"begin": 0x51, "length": 1, "flags": 0x4600},  # I_share current value     # 2'comp N=6
+    {"begin": 0x52, "length": 1, "flags": 0x4300, "keep": 10,},  # PSU_Output Power          # 2'comp N=3
+    {"begin": 0x53, "length": 1, "flags": 0x4600},  # PSU_Bulk Cap Voltage      # 2'comp N=6
+    {"begin": 0x54, "length": 1, "flags": 0x4000},  # PSU input frequency AC    # 2'comp N=0
+    {"begin": 0x55, "length": 1, "flags": 0x4900},  # PSU iTHD                  # 2'comp N=9
+    {"begin": 0x56, "length": 1, "flags": 0x4900},  # PSU power factor          # 2'comp N=9
+    {"begin": 0x57, "length": 1, "flags": 0x4300},  # PSU_Input Power           # 2'comp N=3
+    {"begin": 0x58, "length": 1, "flags": 0x4600, "keep": 10,},  # PSU_Input Voltage AC      # 2'comp N=6
+    {"begin": 0x59, "length": 1, "flags": 0x4A00, "keep": 10,},  # PSU_Input Current AC      # 2'comp N=10
+    {"begin": 0x5a, "length": 4},  # reserve
+    {"begin": 0x5e, "length": 1, "flags": 0x1000},  # PSU setting register                  # bit map
+    {"begin": 0x5f, "length": 1, "flags": 0x2000},  # Communication baud rate   # unsign
+    {"begin": 0x60, "length": 1, "flags": 0x2000},  # Fan duty-cycle Override   # unsign
+    {"begin": 0x61, "length": 1, "flags": 0x1000},  # LED Override                          # bit map
+    {"begin": 0x62, "length": 2, "flags": 0x2000},  # Unix time                 # unsign
+    {"begin": 0x64, "length": 1, "flags": 0x2000},  # Configurable PLS timing   # unsign
+    {"begin": 0x65, "length": 1, "flags": 0x4600},  # Vin_Min                   # 2'comp N=6
+    {"begin": 0x66, "length": 1, "flags": 0x4600},  # Vin_Max                   # 2'comp N=6
+    {"begin": 0x67, "length": 1, "flags": 0x2000},  # Vout_setpoint_H           # unsign N=10
+    {"begin": 0x68, "length": 1, "flags": 0x2000},  # Vout_setpoint_L           # unsign N=10
+    {"begin": 0x69, "length": 1, "flags": 0x2000},  # Vout_change_timer         # unsign
+    {"begin": 0x6a, "length": 4, "flags": 0x8000},  # PSU_FBL_FW Revision       # ascii
+    {"begin": 0x6e, "length": 5},   # reserve
+    {"begin": 0x73, "length": 16},  # reserve
+]
 
 reglist = [
     {"begin": 0x0, "length": 8, "flags": 0x8000},  # MFR_MODEL     # ascii
@@ -237,7 +294,14 @@ def file_is_locked(pathname):
 
 
 def main():
-    configure_rackmond(reglist, verify_configure=True)
+    rack_version=os.getenv('RACKMOND_RACK_VERSION')
+    if rack_version == "3":
+        configure_rackmond(reglist_V3, verify_configure=True)
+    elif rack_version == "2":
+        configure_rackmond(reglist, verify_configure=True)
+    else:
+        print("[WARNING]:RACKMOND_RACK_VERSION unset, set to 2 by default")
+        configure_rackmond(reglist, verify_configure=True)
 
 
 if __name__ == "__main__":

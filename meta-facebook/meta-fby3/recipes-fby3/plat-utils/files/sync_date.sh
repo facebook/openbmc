@@ -56,27 +56,55 @@ function do_sync {
   echo 1 > /tmp/sync_date
 }
 
+function server_sync {
+  output="$(/usr/bin/kv get time_sync)"
+  if [ -n "${output}" ] ; then
+    if [ ${#output} == 11 ] ; then
+      echo Syncing up BMC time with server...
+      do_sync "$output"
+    else
+      echo Syncing up BMC time with IPMI command failed
+      logger -p user.info "Time sync with IPMI command failed"
+    fi
+  else
+    output=$(get_sel_time_from_server)
+    num=$?
+    if [ -n "$output" ]; then
+      echo Syncing up BMC time with server$num...
+      do_sync "$output"
+    else
+      echo Syncing up BMC time with server failed
+      logger -p user.info "Time sync with server failed"
+    fi
+  fi
+}
+
 # Sync BMC's date with one of the four servers
 function sync_date {
   if ! /usr/sbin/ntpq -p | grep '^\*' > /dev/null ; then
-    if [ -f /tmp/cache_store/time_sync ] ; then
-      # ND Server Time Sync by IPMI command
-      output=$(cat /tmp/cache_store/time_sync)
-      if [ ${#output} == 11 ] ; then
-        echo Syncing up BMC time with server...
-        do_sync "$output"
+    server_sync
+  else
+    if date | grep '2018' > /dev/null ; then
+      ntp_server=$(/usr/bin/kv get "ntp_server" persistent)
+      echo "NTP server sync failed ntp_server:$ntp_server"
+      logger -p user.info "NTP server sync failed ntp_server:$ntp_server"
+      /usr/sbin/ntpdate  -u $ntp_server
+      if date | grep '2018'  > /dev/null ; then
+        echo "NTP server sync failed again ntp_server:$ntp_server"
+        logger -p user.info "NTP server sync failed again ntp_server:$ntp_server"
+        server_sync
+      else
+        echo "NTP server sync success after try ntpdate"
+        logger -p user.info "NTP server sync success after try ntpdate"
+        test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
+        echo 1 > /tmp/sync_date
       fi
     else
-      output=$(get_sel_time_from_server)
-      num=$?
-      if [ -n "$output" ]; then
-        echo Syncing up BMC time with server$num...
-        do_sync "$output"
-      fi
+      ntp_server=$(/usr/bin/kv get "ntp_server" persistent)
+      # logger -p user.info "NTP server sync success ntp_server:$ntp_server"
+      test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
+      echo 1 > /tmp/sync_date
     fi
-  else
-    test -x /etc/init.d/hwclock.sh && /etc/init.d/hwclock.sh stop
-    echo 1 > /tmp/sync_date
   fi
 }
 

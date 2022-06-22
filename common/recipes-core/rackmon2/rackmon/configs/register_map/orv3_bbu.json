@@ -1,0 +1,836 @@
+{
+    "name": "orv3_bbu",
+    "address_range": [
+        64,
+        127
+    ],
+    "probe_register": 8,
+    "default_baudrate": 19200,
+    "preferred_baudrate": 19200,
+    "registers": [
+        {
+            "begin": 0,
+            "length": 8,
+            "format": "string",
+            "name": "Manufacture Name"
+        },
+        {
+            "begin": 8,
+            "length": 8,
+            "format": "string",
+            "name": "Manufacture Model"
+        },
+        {
+            "begin": 16,
+            "length": 8,
+            "format": "string",
+            "name": "Manufacture Date"
+        },
+        {
+            "begin": 24,
+            "length": 8,
+            "format": "string",
+            "name": "Facebook Part Number"
+        },
+        {
+            "begin": 48,
+            "length": 2,
+            "format": "string",
+            "name": "Build Revision"
+        },
+        {
+            "begin": 52,
+            "length": 4,
+            "format": "string",
+            "name": "HW Revision"
+        },
+        {
+            "begin": 56,
+            "length": 4,
+            "format": "string",
+            "name": "FW Revision"
+        },
+        {
+            "begin": 60,
+            "length": 4,
+            "format": "string",
+            "name": "Workorder #"
+        },
+        {
+            "begin": 64,
+            "length": 16,
+            "format": "string",
+            "name": "Manufacture Serial"
+        },
+        {
+            "begin": 80,
+            "length": 1,
+            "format": "integer",
+            "name": "Random Number of SoH Test"
+        },
+        {
+            "begin": 104,
+            "length": 1,
+            "keep": 10,
+            "changes_only": true,
+            "format": "flags",
+            "flags": [
+                [15, "Discharge Not Allowed"],
+                [14, "Charge Not Allowed"],
+                [13, "Temperature Failure"],
+                [12, "Pack Over Current"],
+                [11, "Cell Under Voltage"],
+                [10, "Pack Under Voltage"],
+                [9, "Cell Over Voltage"],
+                [8, "Pack Over Voltage"],
+                [7, "End Of Life"],
+                [6, "Fan Failure"],
+                [5, "Cell Balancing Failure"],
+                [4, "Micro Failure"],
+                [3, "AFE Failure"],
+                [2, "Discharge Fuse Failure"],
+                [1, "Charge Fuse Failure"],
+                [0, "Charge FET Failure"]
+            ],
+            "name": "BBU Status"
+        },
+        {
+            "begin": 105,
+            "length": 1,
+            "keep": 10,
+            "changes_only": true,
+            "format": "flags",
+            "flags": [
+                [11, "Other Permanent Faults"],
+                [10, "Charge Timeout"],
+                [9, "Micro Failure"],
+                [8, "Fuse Failure"],
+                [7, "Fan Failure"],
+                [6, "AFE Failure"],
+                [5, "Discharge FET Failure"],
+                [4, "Charge FET Failure"],
+                [3, "Cell Balancing Failure"],
+                [2, "Cell Over Temperature"],
+                [1, "Cell Under Voltage"],
+                [0, "Cell Over Voltage"]
+            ],
+            "name": "Permanent Failures"
+        },
+        {
+            "begin": 106,
+            "length": 1,
+            "format": "integer",
+            "name": "Manufacturer Access"
+        },
+        {
+            "begin": 107,
+            "length": 1,
+            "keep": 10,
+            "changes_only": true,
+            "format": "flags",
+            "flags": [
+                [15, "VO_SEL Pin Enable/Disable"],
+                [14, "EOL Threshold Override"],
+                [13, "System Control Enable"],
+                [12, "CC Charge Timeout Disable"],
+                [11, "PCH Threshold Override Enable"],
+                [10, "Variable Charger Manual Override"],
+                [9, "HW Reset Pin Enable/Disable"],
+                [8, "SoH Override"],
+                [7, "SoH Test Interval Override"],
+                [6, "SMBus Communication Failure"],
+                [5, "CANBUS Comunication Failure"],
+                [4, "SoH Test OCV Relaxation Time"],
+                [3, "SoH Test"],
+                [2, "Cell Balancing"],
+                [1, "Discharge"],
+                [0, "Charging"]
+            ],
+            "name": "BBU Mode"
+        },
+
+        {
+            "begin": 108,
+            "length": 1,
+            "keep": 10,
+            "changes_only": true,
+            "format": "flags",
+            "flags": [
+                [15, "Over Charge Alarm"],
+                [14, "Terminate Charge Alarm"],
+                [12, "Over Temperature Alarm"],
+                [11, "Terminate Discharge Alarm"],
+                [9, "Remaining Capacity Alarm"],
+                [8, "Remaining Time Alarm"],
+                [7, "Initialized"],
+                [6, "Discharging"],
+                [5, "Fully Charged"],
+                [4, "Fully Discharged"]
+            ],
+            "name": "Battery Status"
+        },
+        {
+            "begin": 109,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 1"
+        },
+        {
+            "begin": 110,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 2"
+        },
+        {
+            "begin": 111,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 3"
+        },
+        {
+            "begin": 112,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 4"
+        },
+        {
+            "begin": 113,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 5"
+        },
+        {
+            "begin": 114,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 6"
+        },
+        {
+            "begin": 115,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 7"
+        },
+        {
+            "begin": 116,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 8"
+        },
+        {
+            "begin": 117,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 9"
+        },
+        {
+            "begin": 118,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 10"
+        },
+        {
+            "begin": 119,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 11"
+        },
+        {
+            "begin": 120,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cell Voltage 12"
+        },
+        {
+            "begin": 121,
+            "length": 1,
+            "format": "integer",
+            "name": "SoH Count"
+        },
+        {
+            "begin": 122,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Temp1"
+        },
+        {
+            "begin": 123,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Temp2"
+        },
+        {
+            "begin": 124,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Temp3"
+        },
+        {
+            "begin": 125,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Temp4"
+        },
+        {
+            "begin": 126,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Relative State Of Charge"
+        },
+        {
+            "begin": 127,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Absolute State Of Charge"
+        },
+        {
+            "begin": 128,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Battery Voltage"
+        },
+        {
+            "begin": 129,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Battery Current"
+        },
+        {
+            "begin": 130,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Average Current"
+        },
+        {
+            "begin": 131,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Remaining Capacity"
+        },
+        {
+            "begin": 132,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Full Charge Capacity"
+        },
+        {
+            "begin": 133,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Run Time To Empty"
+        },
+        {
+            "begin": 134,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Average Time To Empty"
+        },
+        {
+            "begin": 135,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Cycle Count"
+        },
+        {
+            "begin": 136,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Design Capacity"
+        },
+        {
+            "begin": 137,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Design Voltage"
+        },
+        {
+            "begin": 138,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "At Rate"
+        },
+        {
+            "begin": 139,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "At Rate Time To Full"
+        },
+        {
+            "begin": 140,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "At Rate Time To Empty"
+        },
+        {
+            "begin": 141,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "At Rate OK"
+        },
+        {
+            "begin": 142,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "SOH"
+        },
+        {
+            "begin": 143,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Max Error"
+        },
+        {
+            "begin": 144,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Charging Current"
+        },
+        {
+            "begin": 145,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Charging Voltage"
+        },
+        {
+            "begin": 146,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Discharge Current"
+        },
+        {
+            "begin": 147,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Shelf Busbar Voltage"
+        },
+        {
+            "begin": 148,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Inlet Ambient Temperature"
+        },
+        {
+            "begin": 149,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Outlet Ambient Temperature"
+        },
+        {
+            "begin": 150,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Charge Buck Temperature"
+        },
+        {
+            "begin": 151,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Discharge Buck Temperature"
+        },
+        {
+            "begin": 152,
+            "length": 1,
+            "keep": 10,
+            "format": "integer",
+            "name": "Fan Speed"
+        },
+        {
+            "begin": 153,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [4, "Fan Fault"],
+                [3, "Charger Converter Fault"],
+                [2, "Buck Converter Fault"],
+                [1, "Power Boost Converter Fault"],
+                [0, "Temperature Fault"]
+            ],
+            "name": "BBU Status Word"
+        },
+        {
+            "begin": 154,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [4, "Power Boost UVP"],
+                [3, "Power Boost SCP2"],
+                [2, "Power Boost OVP"],
+                [1, "Power Boost OCP"],
+                [0, "Power Boost SCP1"]
+            ],
+            "name": "BBU Status - Power Boost"
+        },
+        {
+            "begin": 155,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [3, "Buck Output OVP"]
+            ],
+            "name": "BBU Status - Buck Converter"
+        },
+        {
+            "begin": 156,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [4, "Charger Timeout"],
+                [3, "Charger Output OCP"],
+                [2, "Charger Output OVP"],
+                [1, "Charger Input UVP"],
+                [0, "Charger Input OVP"]
+            ],
+            "name": "BBU Status - Charger"
+        },
+        {
+            "begin": 157,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [5, "Battery Pack OTP"],
+                [4, "Power Boost OTP"],
+                [3, "Buck Converter OTP"],
+                [2, "Charger OTP"],
+                [1, "Output Ambient OTP"],
+                [0, "Input Ambient OTP"]
+            ],
+            "name": "BBU Status - Temperature"
+        },
+        {
+            "begin": 158,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [0, "BBU EOL"]
+            ],
+            "name": "End Of Life Status"
+        },
+        {
+            "begin": 159,
+            "length": 1,
+            "format": "integer",
+            "name": "BBU Discharger Output Voltage (Inside ORing)"
+        },
+        {
+            "begin": 160,
+            "length": 1,
+            "format": "integer",
+            "name": "Variable Charge Calculated Current"
+        },
+        {
+            "begin": 161,
+            "length": 1,
+            "format": "integer",
+            "name": "BBU Total Service Time"
+        },
+        {
+            "begin": 162,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [15, "Discharge Power <500W"],
+                [14, "BBU Failure"],
+                [13, "BBU Not Installed"],
+                [12, "BBU EOL"],
+                [11, "BBU In Bootloader Mode"],
+                [10, "BBU Voltage < 3.9v/cell"],
+                [9, "CAN Failure"],
+                [8, "Other"]
+            ],
+            "name": "SOH Failure Reason"
+        },
+        {
+            "begin": 163,
+            "length": 1,
+            "format": "integer",
+            "name": "Number Of Installed BBUs"
+        },
+        {
+            "begin": 164,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [15, "Sync Stop L"],
+                [14, "PSKILL L"],
+                [13, "BBU Alert L"],
+                [12, "BBU Reset"],
+                [11, "SOH L"],
+                [10, "BKP Red L"],
+                [9, "VOUT SEL"],
+                [8, "PLS L"],
+                [7, "Sync Start L"],
+                [6, "A2"],
+                [5, "A1"],
+                [4, "A0"],
+                [3, "RS485 Address2"],
+                [2, "RS485 Address1"],
+                [1, "RS485 Address0"]
+            ],
+            "name": "BBU Module Hardware Signals"
+        },
+        {
+            "begin": 165,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [15, "SYS PRES"],
+                [14, "PF Flag"],
+                [13, "GG SMD"],
+                [12, "GG SMC"],
+                [11, "RTCSMD"],
+                [10, "RTCSMC"],
+                [7, "BMS Not Insert"],
+                [5, "PSU Fault L"],
+                [4, "BMS Fail"],
+                [2, "BMS SoH"],
+                [1, "BMS Charge Enable"],
+                [0, "BMS Stop Discharge"]
+            ],
+            "name": "Battery Pack Hardware Signals"
+        },
+        {
+            "begin": 166,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [7, "Fault/LOC LED Blink"],
+                [6, "Fault/LOC LED On"],
+                [5, "EOL LED Blink"],
+                [4, "EOL LED On"],
+                [3, "LOW V LED Blink"],
+                [2, "Low V LED On"],
+                [1, "Power Good LED Blink"],
+                [0, "Power Good LED On"]
+            ],
+            "name": "LED Status"
+        },
+        {
+            "begin": 167,
+            "length": 1,
+            "format": "integer",
+            "name": "Count Of Discharge Events"
+        },
+        {
+            "begin": 182,
+            "length": 1,
+            "format": "integer",
+            "name": "Battery Pack FW Revision"
+        },
+        {
+            "begin": 183,
+            "length": 1,
+            "format": "integer",
+            "name": "Specification Info"
+        },
+        {
+            "begin": 184,
+            "length": 1,
+            "format": "integer",
+            "name": "Manufacturer Date"
+        },
+        {
+            "begin": 185,
+            "length": 1,
+            "format": "integer",
+            "name": "Serial Number"
+        },
+        {
+            "begin": 186,
+            "length": 2,
+            "format": "string",
+            "name": "Device Chemistry"
+        },
+        {
+            "begin": 188,
+            "length": 4,
+            "format": "string",
+            "name": "Manufacturer Data"
+        },
+        {
+            "begin": 192,
+            "length": 16,
+            "format": "string",
+            "name": "Manufacturer Name"
+        },
+        {
+            "begin": 208,
+            "length": 16,
+            "format": "string",
+            "name": "Device Name"
+        },
+        {
+            "begin": 288,
+            "length": 1,
+            "format": "integer",
+            "name": "Variable Modbus Baudrate"
+        },
+        {
+            "begin": 289,
+            "length": 1,
+            "format": "integer",
+            "name": "Configurable BBU Maximum Discharge"
+        },
+        {
+            "begin": 290,
+            "length": 1,
+            "format": "integer",
+            "name": "Configurable Power Loss Siren Timing"
+        },
+        {
+            "begin": 291,
+            "length": 1,
+            "format": "integer",
+            "name": "Variable Charge Override Current"
+        },
+        {
+            "begin": 292,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [0, "Fault/LOC LED Blink"]
+            ],
+            "name": "LED Override"
+        },
+        {
+            "begin": 293,
+            "length": 1,
+            "format": "integer",
+            "name": "Fan Speed Override"
+        },
+        {
+            "begin": 294,
+            "length": 1,
+            "format": "integer",
+            "name": "PCM Recharge Threshold Override"
+        },
+        {
+            "begin": 295,
+            "length": 1,
+            "format": "integer",
+            "name": "Override Random Number of SoH Test"
+        },
+        {
+            "begin": 296,
+            "length": 1,
+            "format": "integer",
+            "name": "Override Interval Of ShH Test"
+        },
+        {
+            "begin": 298,
+            "length": 2,
+            "format": "integer",
+            "name": "SoH Timestamp"
+        },
+        {
+            "begin": 300,
+            "length": 2,
+            "format": "integer",
+            "name": "Variable Charge Override Timeout"
+        },
+        {
+            "begin": 302,
+            "length": 2,
+            "format": "integer",
+            "name": "Wall Clock Time"
+        },
+        {
+            "begin": 304,
+            "length": 1,
+            "format": "integer",
+            "name": "EOL Threshold Override"
+        },
+        {
+            "begin": 305,
+            "length": 1,
+            "format": "integer",
+            "name": "Forced Discharge Time"
+        },
+        {
+            "begin": 306,
+            "length": 1,
+            "format": "integer",
+            "name": "System Control Mode"
+        },
+        {
+            "begin": 307,
+            "length": 1,
+            "format": "integer",
+            "name": "BBU Shelf Configuration"
+        },
+        {
+            "begin": 308,
+            "length": 1,
+            "format": "integer",
+            "name": "Forced Detached Mode Timeout"
+        },
+        {
+            "begin": 310,
+            "length": 1,
+            "format": "integer",
+            "name": "PSU Shelf Output Power"
+        },
+        {
+            "begin": 311,
+            "length": 1,
+            "format": "integer",
+            "name": "PSU AC OK"
+        },
+        {
+            "begin": 312,
+            "length": 1,
+            "format": "integer",
+            "name": "Charge Delay Time"
+        },
+        {
+            "begin": 313,
+            "length": 1,
+            "format": "flags",
+            "flags": [
+                [0, "Clear BBU Faults And Latch"]
+            ],
+            "name": "BBU Clear Fault"
+        }
+    ]
+}

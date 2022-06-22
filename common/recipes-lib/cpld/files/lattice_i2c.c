@@ -281,6 +281,7 @@ program_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
       record_offset += fsize;
     }
   }
+  printf("\n");
 
   return ret;
 }
@@ -374,6 +375,8 @@ verify_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
       record_offset += fsize;
     }
   }
+  printf("\n");
+
   return ret;
 }
 

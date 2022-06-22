@@ -981,7 +981,7 @@ parse_arg_and_exec(int argc, char **argv, uint8_t fru_id,
         ret = pF(i, dimm, json, options);
       } else {
         printf("Error: ME status check failed for fru:%s\n", fru_name[i - 1]);
-        break;
+        continue;
       }
     } else {
       ret = pF(i, dimm, json, options);

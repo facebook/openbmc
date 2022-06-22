@@ -1022,7 +1022,7 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
     return ret;
   }
 
-  ret = bic_is_m2_exp_prsnt(fru);
+  ret = bic_is_exp_prsnt(fru);
   if ( ret < 0 ) {
     printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
     return ret;
@@ -1343,7 +1343,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
     return -1;
   }
 
-  config_status = bic_is_m2_exp_prsnt(slot);
+  config_status = bic_is_exp_prsnt(slot);
   if ( config_status < 0 ) {
     syslog(LOG_ERR, "%s() Cannot get the status of 1OU/2OU", __func__);
     config_status = 0;
@@ -1641,7 +1641,7 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
       break;
     }
 
-    ret = bic_is_m2_exp_prsnt(fru);
+    ret = bic_is_exp_prsnt(fru);
     if ( ret < 0 ) {
       syslog(LOG_WARNING, "%s() Cannot get the status of 1OU/2OU", __func__);
       break;
@@ -3013,7 +3013,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
     switch(target) {
     case FW_1OU_BIC:
     case FW_1OU_CPLD:
-      ret = bic_is_m2_exp_prsnt(fru);
+      ret = bic_is_exp_prsnt(fru);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU", __func__);
         goto error_exit;
@@ -3025,7 +3025,7 @@ pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned 
       break;
     case FW_2OU_BIC:
     case FW_2OU_CPLD:
-      ret = bic_is_m2_exp_prsnt(fru);
+      ret = bic_is_exp_prsnt(fru);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Couldn't get the status of 1OU/2OU", __func__);
         goto error_exit;

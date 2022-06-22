@@ -136,7 +136,7 @@ class ClassConfig {
         static BicFwComponent    bic_2ou_fw4("slot4", "2ou_bic", "2ou", FW_2OU_BIC);
         static CpldComponent     cpld_2ou_fw4("slot4", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
 
-        /*if ( (bic_is_m2_exp_prsnt(FRU_SLOT1) & PRESENT_2OU) == PRESENT_2OU ) {
+        /*if ( (bic_is_exp_prsnt(FRU_SLOT1) & PRESENT_2OU) == PRESENT_2OU ) {
           if ( fby35_common_get_2ou_board_type(FRU_SLOT1, &board_type) < 0) {
             syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
           } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {
@@ -160,7 +160,7 @@ class ClassConfig {
             static M2DevComponent  m2_2ou_dev11_fw1("slot1", "2ou_dev11", FRU_SLOT1, "2ou", FW_2OU_M2_DEV11);
           }
         }
-        if ( (bic_is_m2_exp_prsnt(FRU_SLOT3) & PRESENT_2OU) == PRESENT_2OU ) {
+        if ( (bic_is_exp_prsnt(FRU_SLOT3) & PRESENT_2OU) == PRESENT_2OU ) {
           if ( fby35_common_get_2ou_board_type(FRU_SLOT3, &board_type) < 0) {
             syslog(LOG_WARNING, "Failed to get slot3 2ou board type\n");
           } else if ( board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD ) {

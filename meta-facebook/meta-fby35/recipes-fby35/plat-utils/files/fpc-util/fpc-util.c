@@ -95,7 +95,7 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    ret = bic_is_m2_exp_prsnt(fru);
+    ret = bic_is_exp_prsnt(fru);
     if ( ret < 0 ) {
       printf("Couldn't get the status of 1OU/2OU\n");
       goto err_exit;

@@ -1181,7 +1181,7 @@ error_exit:
 }
 
 int
-bic_is_m2_exp_prsnt(uint8_t slot_id) {
+bic_is_exp_prsnt(uint8_t slot_id) {
   uint8_t tbuf[4] = {0};
   uint8_t rbuf[8] = {0};
   uint8_t tlen = 4;
@@ -1902,7 +1902,7 @@ bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *
   uint8_t ffi = 0 ,meff = 0 ,major_ver = 0, minor_ver = 0;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
-  ret = bic_is_m2_exp_prsnt(slot_id);
+  ret = bic_is_exp_prsnt(slot_id);
   if ((ret < 0) || ((ret & PRESENT_2OU) != PRESENT_2OU)) {
     syslog(LOG_WARNING,"%s() Cannot get 2ou board", __func__);
     *type = DEV_TYPE_UNKNOWN;

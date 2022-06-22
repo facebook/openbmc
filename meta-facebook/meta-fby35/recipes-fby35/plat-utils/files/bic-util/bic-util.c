@@ -362,7 +362,7 @@ util_read_sensor(uint8_t slot_id) {
   uint8_t config_status = 0xff;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
-  ret = bic_is_m2_exp_prsnt(slot_id);
+  ret = bic_is_exp_prsnt(slot_id);
   if ( ret < 0 ) {
     printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
     return -1;
@@ -426,7 +426,7 @@ util_get_sdr(uint8_t slot_id) {
   ipmi_sel_sdr_req_t req;
   ipmi_sel_sdr_res_t *res = (ipmi_sel_sdr_res_t *) rbuf;
 
-  ret = bic_is_m2_exp_prsnt(slot_id);
+  ret = bic_is_exp_prsnt(slot_id);
   if ( ret < 0 ) {
     printf("%s() Couldn't get the status of 1OU/2OU\n", __func__);
     return -1;

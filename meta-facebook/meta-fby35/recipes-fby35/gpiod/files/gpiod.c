@@ -363,7 +363,7 @@ fru_cahe_init(uint8_t fru) {
   if (fru != FRU_SLOT1 && fru != FRU_SLOT3) {
     return -1;
   }
-  ret = bic_is_m2_exp_prsnt(fru);
+  ret = bic_is_exp_prsnt(fru);
   if ((ret < 0) || ((ret & PRESENT_2OU) != PRESENT_2OU)) {
     return -1;
   }

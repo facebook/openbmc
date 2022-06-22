@@ -642,7 +642,7 @@ pal_is_valid_expansion_dev(uint8_t slot_id, uint8_t dev_id, uint8_t *rsp) {
     return POWER_STATUS_ERR;
   }
 
-  config_status = bic_is_m2_exp_prsnt(slot_id);
+  config_status = bic_is_exp_prsnt(slot_id);
   if (config_status < 0) {
     return POWER_STATUS_FRU_ERR;
   }

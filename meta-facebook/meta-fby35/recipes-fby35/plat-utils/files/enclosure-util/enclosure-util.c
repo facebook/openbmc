@@ -430,7 +430,7 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
   }
 
   // check 1/2OU present status
-  ret = bic_is_m2_exp_prsnt(sys_conf->slot_id);
+  ret = bic_is_exp_prsnt(sys_conf->slot_id);
   if ( ret < 0 ) {
     printf("%s() Cannot get the m2 prsnt status\n", __func__);
     return -1;

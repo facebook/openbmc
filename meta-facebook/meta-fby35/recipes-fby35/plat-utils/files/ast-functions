@@ -424,7 +424,7 @@ function get_2ou_board_type() {
 
 # Get 1OU board type
 # EDSFF_1U = 7 (0x07)
-# CXL_1U   = 10 (0x0A)
+# RF_1U   = 10 (0x0A)
 # M2_1U    = 11 (0x0B)
 # WF_1U    = 12 (0x0C)
 get_1ou_board_type() {

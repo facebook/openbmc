@@ -30,8 +30,6 @@ extern "C" {
 
 #define MAX_GPIO_PINS 73
 
-#define PRESENT_1OU 1
-#define PRESENT_2OU 2
 #define RETRY_3_TIME 3
 #define RETRY_TIME 10
 #define IPMB_RETRY_TIME 3
@@ -239,6 +237,12 @@ enum {
   DPV2_RETIMER_X8 = 0x02,
   DPV2_RETIMER_X16 = 0x08,
   DPV2_PCIE_UNKNOW = 0xff,
+};
+
+enum {
+  NO_EXPANSION_PRESENT = 0x0,
+  PRESENT_1OU = 0x01,
+  PRESENT_2OU = 0x02,
 };
 
 int active_config(struct libusb_device *dev,struct libusb_device_handle *handle);

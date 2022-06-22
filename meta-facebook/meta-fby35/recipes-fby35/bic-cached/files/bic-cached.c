@@ -100,7 +100,7 @@ fruid_cache_init(uint8_t slot_id) {
   rename(fruid_temp_path, fruid_path);
 
   // Get remote FRU
-  present = bic_is_m2_exp_prsnt(slot_id);
+  present = bic_is_exp_prsnt(slot_id);
   if (present < 0) {
     syslog(LOG_WARNING, "%s: Couldn't get the status of 1OU/2OU", __func__);
     return present;
@@ -323,7 +323,7 @@ sdr_cache_init(uint8_t slot_id) {
   rename(sdr_temp_path, sdr_path);
 
   // Get remote SDR
-  present = bic_is_m2_exp_prsnt(slot_id);
+  present = bic_is_exp_prsnt(slot_id);
   if (present < 0) {
     syslog(LOG_WARNING, "%s: Couldn't get the status of 1OU/2OU", __func__);
     return present;

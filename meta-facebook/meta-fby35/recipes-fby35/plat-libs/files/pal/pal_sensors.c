@@ -1207,7 +1207,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT4:
     memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
     current_cnt = bic_sensor_cnt;
-    config_status = bic_is_m2_exp_prsnt(fru);
+    config_status = bic_is_exp_prsnt(fru);
     if (config_status < 0) config_status = 0;
 
     // 1OU
@@ -1243,7 +1243,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_wf_sensor_list, bic_1ou_wf_sensor_cnt);
             current_cnt += bic_1ou_wf_sensor_cnt;
             break;
-          case CXL_1U:
+          case RF_1U:
             memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_rf_sensor_list, bic_1ou_rf_sensor_cnt);
             current_cnt += bic_1ou_rf_sensor_cnt;
             break;
@@ -2670,9 +2670,9 @@ skip_hsc_init:
     case FRU_SLOT4:
       //check a config status of a blade
       if ( config_status[fru-1] == CONFIG_UNKNOWN ) {
-        ret = bic_is_m2_exp_prsnt(fru);
+        ret = bic_is_exp_prsnt(fru);
         if ( ret < 0 ) {
-          syslog(LOG_WARNING, "%s() Failed to run bic_is_m2_exp_prsnt", __func__);
+          syslog(LOG_WARNING, "%s() Failed to run bic_is_exp_prsnt", __func__);
         } else config_status[fru-1] = (uint8_t)ret;
         syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
       }
@@ -2745,7 +2745,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     case FRU_SLOT1:
     case FRU_SLOT3:
       if ((sensor_num >= BMC_DPV2_SENSOR_DPV2_1_12V_VIN) && (sensor_num <= BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR)) {
-        config_status = bic_is_m2_exp_prsnt(fru);
+        config_status = bic_is_exp_prsnt(fru);
         if ((config_status & PRESENT_2OU) == PRESENT_2OU ) {
           ret = fby35_common_get_2ou_board_type(fru, &board_type);
           if (ret < 0) {
@@ -2961,7 +2961,7 @@ pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num) {
     case FRU_SLOT1:
     case FRU_SLOT3:
       if ((snr_num >= BMC_DPV2_SENSOR_DPV2_1_12V_VIN) && (snr_num <= BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR)) {
-        config_status = bic_is_m2_exp_prsnt(fru);
+        config_status = bic_is_exp_prsnt(fru);
         if ((config_status & PRESENT_2OU) == PRESENT_2OU ) {
           ret = fby35_common_get_2ou_board_type(fru, &board_type);
           if (ret < 0) {
@@ -3079,7 +3079,7 @@ pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
 
   while ( prsnt_retry-- > 0 ) {
     // get the status of m2 board
-    ret = bic_is_m2_exp_prsnt(fru);
+    ret = bic_is_exp_prsnt(fru);
     if ( ret < 0 ) {
       sleep(3);
       continue;

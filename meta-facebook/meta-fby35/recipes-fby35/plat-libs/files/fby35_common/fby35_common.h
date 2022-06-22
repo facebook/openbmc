@@ -314,6 +314,8 @@ enum brd_rev {
   SB_REV_PVT2 = 8,
   SB_REV_MP   = 9,
   SB_REV_MP2  = 10,
+
+  UNKNOWN_REV = 0xFF,
 };
 
 enum board_id {

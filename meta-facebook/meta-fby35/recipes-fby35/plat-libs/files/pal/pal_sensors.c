@@ -37,23 +37,27 @@
 #define FAN_15K_UCR  17000
 
 #define BB_HSC_SENSOR_CNT 7
+#define IS_15K_FAN   0x01
 
 enum {
   /* Fan Type */
   DUAL_TYPE    = 0x00,
   SINGLE_TYPE  = 0x03,
   UNKNOWN_TYPE = 0xff,
+};
 
+enum {
   /* Fan Cnt*/
   DUAL_FAN_CNT = 0x08,
   SINGLE_FAN_CNT = 0x04,
   UNKNOWN_FAN_CNT = 0x00,
+};
 
+enum {
   /* Solution */
   MAXIM_SOLUTION = 0x00,
   MPS_SOLUTION = 0x01,
-
-  IS_15K_FAN = 0x01,
+  UNKNOWN_SOLUTION = 0xff,
 };
 
 static int read_adc_val(uint8_t adc_id, float *value);
@@ -77,7 +81,7 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 static uint8_t bic_dynamic_skip_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
-uint8_t rev_id = 0;
+static uint8_t rev_id = UNKNOWN_REV;
 
 int pwr_off_flag[MAX_NODES] = {0};
 int temp_cnt = 0;
@@ -1886,7 +1890,7 @@ read_adc_val(uint8_t adc_id, float *value) {
   uint8_t bmc_location = 0;
   float arr[120] = {0};
   int ignore_sample = 0;
-  static uint8_t gval = 0;
+  static uint8_t gval = UNKNOWN_SOLUTION;
 
   const char *adc_label[] = {
     "BMC_SENSOR_P5V",
@@ -1948,15 +1952,20 @@ read_adc_val(uint8_t adc_id, float *value) {
     ret = sensors_read_adc(adc_label[adc_id], value);
   }
 
-  if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);
-    return -1;
+  if ( rev_id == UNKNOWN_REV ) {
+    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);
+      return -1;
+    }
   }
 
   if ( ret == PAL_EOK ) {
 
     if ( rev_id >= BB_REV_DVT ) {
-      gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
+
+      if ( gval == UNKNOWN_SOLUTION ) {
+        gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
+      }
 
       if ( gval == GPIO_VALUE_INVALID ) {
         syslog(LOG_WARNING, "%s() Failed to read P12V_EFUSE_DETECT_N", __func__);
@@ -2642,9 +2651,11 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   if (hsc_type == HSC_LTC4286) {
     float rsense = 0.3;
 
-    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
-      goto skip_hsc_init;
+    if ( rev_id == UNKNOWN_REV ) {
+      if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to get board revision ID", __func__);
+        goto skip_hsc_init;
+      }
     }
 
     if (rev_id >= BB_REV_DVT ) {
@@ -2767,7 +2778,7 @@ static int
 pal_bmc_fan_threshold_init() {
   uint8_t fan_type = UNKNOWN_TYPE;
   uint8_t bmc_location = 0;
-  uint8_t gval = 0;
+  static uint8_t gval = UNKNOWN_TYPE;
 
   if (fby35_common_get_bmc_location(&bmc_location) < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
@@ -2777,13 +2788,18 @@ pal_bmc_fan_threshold_init() {
     return -1;
   } else {
 
-    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to get revision id", __func__);
-      return -1;
+    if ( rev_id == UNKNOWN_REV ) {
+      if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to get revision id", __func__);
+        return -1;
+      }
     }
 
     if (rev_id >= BB_REV_DVT && fan_type == SINGLE_TYPE) {
-      gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
+      if ( gval == UNKNOWN_TYPE ) {
+        gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
+      }
+
       if (gval == GPIO_VALUE_INVALID) {
         syslog(LOG_WARNING, "%s() Failed to read P12V_EFUSE_DETECT_N", __func__);
         return -1;
@@ -2847,9 +2863,11 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     }
   }
 
-  if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);
-    return -1;
+  if ( rev_id == UNKNOWN_REV ) {
+    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);
+      return -1;
+    }
   }
 
   switch (fru) {

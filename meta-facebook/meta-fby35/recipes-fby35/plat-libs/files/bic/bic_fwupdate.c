@@ -910,7 +910,7 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
           *rev_id = strtol(value, NULL, 10); // convert string to number
         } else {
           ret = get_board_revid_from_cpld(BB_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-          if (ret >= 0) {
+          if (ret == 0) {
             snprintf(value, sizeof(value), "%x", *rev_id);
             if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
               syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
@@ -920,7 +920,18 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
         }
         break;
       case BOARD_ID_SB:
-        ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        if ( kv_get("sb_board_rev_id", value, NULL, 0) == 0 ) {
+          *rev_id = strtol(value, NULL, 10); // convert string to number
+        } else {
+          ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+          if (ret == 0) {
+            snprintf(value, sizeof(value), "%x", *rev_id);
+            if (kv_set("sb_board_rev_id", (char*)value, 1, KV_FCREATE)) {
+              syslog(LOG_WARNING,"%s: kv_set failed, key: sb_board_rev_id, val: %x", __func__, *rev_id);
+              return -1;
+            }
+          }
+        }
         break;
       default:
         syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
@@ -929,14 +940,25 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
   } else { // class 2
     switch (board_id) {
       case BOARD_ID_NIC_EXP:
-        ret = get_board_revid_from_cpld(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        if ( kv_get("nic_board_rev_id", value, NULL, 0) == 0 ) {
+          *rev_id = strtol(value, NULL, 10); // convert string to number
+        } else {
+          ret = get_board_revid_from_cpld(NIC_CPLD_BUS, BB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+          if (ret == 0) {
+            snprintf(value, sizeof(value), "%x", *rev_id);
+            if (kv_set("nic_board_rev_id", (char*)value, 1, KV_FCREATE)) {
+              syslog(LOG_WARNING,"%s: kv_set failed, key: nic_board_rev_id, val: %x", __func__, *rev_id);
+              return -1;
+            }
+          }
+        }
         break;
       case BOARD_ID_BB:
         if ( kv_get("board_rev_id", value, NULL, 0) == 0 ) {
           *rev_id = strtol(value, NULL, 10); // convert string to number
         } else {
           ret = get_board_revid_from_bbbic(FRU_SLOT1, rev_id);
-          if (ret >= 0) {
+          if (ret == 0) {
             snprintf(value, sizeof(value), "%x", *rev_id);
             if (kv_set("board_rev_id", (char*)value, 1, KV_FCREATE)) {
               syslog(LOG_WARNING,"%s: kv_set failed, key: board_rev_id, val: %x", __func__, *rev_id);
@@ -946,7 +968,18 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
         }
         break;
       case BOARD_ID_SB:
-        ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+        if ( kv_get("sb_board_rev_id", value, NULL, 0) == 0 ) {
+          *rev_id = strtol(value, NULL, 10); // convert string to number
+        } else {
+          ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
+          if (ret == 0) {
+            snprintf(value, sizeof(value), "%x", *rev_id);
+            if (kv_set("sb_board_rev_id", (char*)value, 1, KV_FCREATE)) {
+              syslog(LOG_WARNING,"%s: kv_set failed, key: sb_board_rev_id, val: %x", __func__, *rev_id);
+              return -1;
+            }
+          }
+        }
         break;
       default:
         syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);

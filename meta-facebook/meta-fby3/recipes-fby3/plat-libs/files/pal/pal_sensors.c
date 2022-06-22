@@ -659,6 +659,14 @@ const uint8_t bic_2ou_gpv3_skip_sensor_list[] = {
   BIC_GPV3_INA233_PWR_DEV11,
   BIC_GPV3_INA233_VOL_DEV11,
   BIC_GPV3_NVME_TEMP_DEV11,
+
+  //dual m2 power
+  BIC_GPV3_DUAL_M2_PWR_0_1,
+  BIC_GPV3_DUAL_M2_PWR_2_3,
+  BIC_GPV3_DUAL_M2_PWR_4_5,
+  BIC_GPV3_DUAL_M2_PWR_6_7,
+  BIC_GPV3_DUAL_M2_PWR_8_9,
+  BIC_GPV3_DUAL_M2_PWR_10_11,
 };
 
 const uint8_t bic_1ou_edsff_skip_sensor_list[] = {

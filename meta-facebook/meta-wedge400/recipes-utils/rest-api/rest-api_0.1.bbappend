@@ -45,5 +45,4 @@ binfiles1 += " \
     rest_seutil.py \
     rest_switch_reset.py \
     rest_vddcore.py \
-    rest_modbus.py \
 "

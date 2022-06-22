@@ -19,7 +19,7 @@
 #
 
 from board_endpoint import boardApp_Handler
-from boardroutes import *
+from boardroutes import board_routes
 
 from aiohttp.web import Application
 
@@ -55,5 +55,4 @@ def setup_board_routes(app: Application, write_enabed: bool):
     app.router.add_get(board_routes[26], bhandler.rest_switch_reset_cycle_reset_hdl)
     app.router.add_get(board_routes[27], bhandler.rest_switch_reset_only_reset_hdl)
     app.router.add_get(board_routes[28], bhandler.rest_get_gb_freq_hdl)
-    app.router.add_get(board_routes[29], bhandler.helper_modbus_registers_hdl)
-    app.router.add_get(board_routes[30], bhandler.rest_presence_pem_hdl)
+    app.router.add_get(board_routes[29], bhandler.rest_presence_pem_hdl)

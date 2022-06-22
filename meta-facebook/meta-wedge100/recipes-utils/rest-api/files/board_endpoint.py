@@ -21,7 +21,6 @@ import asyncio
 
 import rest_fw_ver
 import rest_i2cflush
-import rest_modbus
 import rest_presence
 import rest_usb2i2c_reset
 from aiohttp import web
@@ -37,12 +36,6 @@ class boardApp_Handler:
 
     async def rest_i2cflush_hdl(self, request):
         return web.json_response(rest_i2cflush.i2cflush(), dumps=dumps_bytestr)
-
-    # Handler for Modbus_registers resource endpoint
-    async def helper_modbus_registers_hdl(self, request):
-        return web.json_response(
-            await rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
-        )
 
     async def rest_firmware_info_all_hdl(self, request):
         versions = await asyncio.gather(

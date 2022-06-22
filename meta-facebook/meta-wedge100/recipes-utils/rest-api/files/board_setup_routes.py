@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 #
 from board_endpoint import boardApp_Handler
-from boardroutes import *
+from boardroutes import board_routes
 
 from aiohttp.web import Application
 
@@ -25,14 +25,13 @@ def setup_board_routes(app: Application, write_enabed: bool):
     bhandler = boardApp_Handler()
     # app.router.add_get(board_routes[0], bhandler.rest_usb2i2c_reset_hdl)
     app.router.add_get(board_routes[0], bhandler.rest_i2cflush_hdl)
-    app.router.add_get(board_routes[1], bhandler.helper_modbus_registers_hdl)
-    app.router.add_get(board_routes[2], bhandler.rest_firmware_info_hdl)
-    app.router.add_get(board_routes[3], bhandler.rest_firmware_info_all_hdl)
-    app.router.add_get(board_routes[4], bhandler.rest_firmware_info_fan_hdl)
-    app.router.add_get(board_routes[5], bhandler.rest_firmware_info_sys_hdl)
+    app.router.add_get(board_routes[1], bhandler.rest_firmware_info_hdl)
+    app.router.add_get(board_routes[2], bhandler.rest_firmware_info_all_hdl)
+    app.router.add_get(board_routes[3], bhandler.rest_firmware_info_fan_hdl)
+    app.router.add_get(board_routes[4], bhandler.rest_firmware_info_sys_hdl)
     app.router.add_get(
-        board_routes[6], bhandler.rest_firmware_info_internal_switch_config_hdl
+        board_routes[5], bhandler.rest_firmware_info_internal_switch_config_hdl
     )
-    app.router.add_get(board_routes[7], bhandler.rest_presence_hdl)
-    app.router.add_get(board_routes[8], bhandler.rest_presence_pem_hdl)
-    app.router.add_get(board_routes[9], bhandler.rest_presence_psu_hdl)
+    app.router.add_get(board_routes[6], bhandler.rest_presence_hdl)
+    app.router.add_get(board_routes[7], bhandler.rest_presence_pem_hdl)
+    app.router.add_get(board_routes[8], bhandler.rest_presence_psu_hdl)

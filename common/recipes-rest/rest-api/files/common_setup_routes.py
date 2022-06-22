@@ -90,6 +90,7 @@ def setup_common_routes(app: Application, write_enabled: bool):
         app.router.add_post(common_routes[10], chandler.rest_fscd_sensor_data_post)
         app.router.add_get(common_routes[11], chandler.rest_modbus_get)
         app.router.add_post(common_routes[12], chandler.rest_modbus_cmd_post)
+        app.router.add_get(common_routes[13], chandler.rest_modbus_registers_get)
     # common routes for all openbmc.
     server_logger.info("Adding common routes")
     app.router.add_get("/api/sys/ntp", rest_ntp_status_handler)

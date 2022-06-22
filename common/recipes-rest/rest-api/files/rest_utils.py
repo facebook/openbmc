@@ -36,6 +36,7 @@ common_routes = [
     "/api/sys/fscd_sensor_data",
     "/api/sys/modbus",
     "/api/sys/modbus/cmd",
+    "/api/sys/modbus_registers",
 ]
 
 

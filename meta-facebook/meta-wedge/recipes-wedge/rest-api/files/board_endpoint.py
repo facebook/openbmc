@@ -17,7 +17,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import rest_modbus
 import rest_usb2i2c_reset
 from aiohttp import web
 from common_utils import dumps_bytestr
@@ -29,9 +28,4 @@ class boardApp_Handler:
     # Handler to reset usb-to-i2c
     # async def rest_usb2i2c_reset_hdl(self,request):
     # return rest_usb2i2c_reset.set_usb2i2c()
-
-    # Handler for Modbus_registers resource endpoint
-    async def helper_modbus_registers_hdl(self, request):
-        return web.json_response(
-            await rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
-        )
+    pass

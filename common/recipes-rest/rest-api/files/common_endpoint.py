@@ -24,6 +24,7 @@ import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
 import rest_modbus_cmd
+import rest_modbus
 import rest_psu_update
 import rest_sensors
 import rest_server
@@ -190,3 +191,9 @@ class commonApp_Handler:
     @staticmethod
     async def rest_modbus_cmd_post(request: web.Request) -> web.Response:
         return await rest_modbus_cmd.post_modbus_cmd(request)
+
+    @staticmethod
+    async def rest_modbus_registers_get(request: web.Request) -> web.Response:
+        return web.json_response(
+            await rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
+        )

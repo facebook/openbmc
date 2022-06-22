@@ -1,4 +1,5 @@
 # Copyright 2021-present Facebook. All Rights Reserved.
 option('profiling', type : 'boolean', value : false)
 option('syslog', type : 'boolean', value : true)
+option('orv3', type: 'boolean', value: true)
 

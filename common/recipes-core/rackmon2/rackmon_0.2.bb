@@ -39,6 +39,13 @@ def get_profile_flag(d):
   return "false"
 EXTRA_OEMESON += "-Dprofiling=${@get_profile_flag(d)}"
 
+def get_orv3_support(d):
+  mc = d.getVar("MACHINE", "")
+  if mc == "wedge100":
+    return "false"
+  return "true"
+EXTRA_OEMESON += "-Dorv3=${@get_orv3_support(d)}"
+
 LOCAL_URI = " \
     file://meson.build \
     file://meson_options.txt \
@@ -75,6 +82,8 @@ LOCAL_URI += " \
     file://configs/interface/usb_ft232.conf \
     file://configs/interface/usb_ft4232.conf \
     file://configs/register_map/orv2_psu.json \
+    file://configs/register_map/orv3_psu.json \
+    file://configs/register_map/orv3_bbu.json \
     "
 
 # Schemas

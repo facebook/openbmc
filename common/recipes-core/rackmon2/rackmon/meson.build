@@ -91,6 +91,13 @@ interface_configs = [
 register_maps = [
   'orv2_psu.json',
 ]
+if get_option('orv3') == true
+  register_maps += [
+    'orv3_psu.json',
+    'orv3_bbu.json',
+  ]
+endif
+
 filepaths_interface = []
 filepaths_regmap = []
 foreach c : interface_configs

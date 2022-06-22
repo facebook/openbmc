@@ -124,10 +124,20 @@ init_class1_fsc() {
     board_id_1ou=$(get_1ou_board_type slot1)
     if [[ $board_id_1ou -eq 12 ]]; then
       config_type="WF"
-      target_fsc_config="/etc/FSC_CLASS1_WF_config.json"
+      target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
     else
-      config_type="1"
-      target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+      # if get board id fail, tried to get card type
+      card_type_1ou=$(get_1ou_card_type slot1)
+      if [[ $card_type_1ou -eq 5 ]]; then
+        config_type="KF"
+        target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
+      elif [[ $card_type_1ou -eq 6 ]]; then
+        config_type="WF"
+        target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
+      else
+        config_type="1"
+        target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
+      fi
     fi
   else
     config_type="1"
@@ -185,7 +195,7 @@ reload_sled_fsc() {
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
-    if [[ "$sys_config" =~ ^(Type_(1|10|WF))$ && "$cnt" -eq 4 ]]; then
+    if [[ "$sys_config" =~ ^(Type_(1|10|WF|KF))$ && "$cnt" -eq 4 ]]; then
       run_fscd=true
     elif [[ "$sys_config" = "Type_DPV2" && "$cnt" -eq 2 ]]; then
       run_fscd=true

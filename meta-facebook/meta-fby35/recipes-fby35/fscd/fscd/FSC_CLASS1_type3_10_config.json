@@ -1,5 +1,5 @@
 {
-  "version": "fby35-WF-v2022.04.26",
+  "version": "FSCV1.1",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -28,6 +28,11 @@
         "type" : "power_status"
       }
     },
+   "ssd0_temp": {
+      "attribute": {
+        "type" : "power_status"
+      }
+    },
     "dimm": {
       "attribute": {
         "type" : "power_status"
@@ -45,28 +50,28 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ 21, 10 ],
-        [ 22, 11 ],
-        [ 23, 12 ],
-        [ 24, 13 ],
-        [ 25, 14 ],
-        [ 26, 15 ],
-        [ 27, 16 ],
-        [ 28, 17 ],
-        [ 29, 18 ],
-        [ 30, 19 ],
-        [ 31, 20 ],
-        [ 32, 21 ],
-        [ 33, 22 ],
-        [ 34, 23 ],
-        [ 35, 24 ],
-        [ 36, 24 ],
-        [ 37, 30 ],
-        [ 38, 40 ],
-        [ 39, 50 ]
+        [ 21, 20 ],
+        [ 22, 21 ],
+        [ 23, 22 ],
+        [ 24, 23 ],
+        [ 25, 24 ],
+        [ 26, 25 ],
+        [ 27, 26 ],
+        [ 28, 27 ],
+        [ 29, 28 ],
+        [ 30, 29 ],
+        [ 31, 30 ],
+        [ 32, 31 ],
+        [ 33, 32 ],
+        [ 34, 33 ],
+        [ 35, 34 ],
+        [ 36, 34 ],
+        [ 37, 40 ],
+        [ 38, 50 ],
+        [ 39, 60 ]
       ]
     },
-    "linear_cpu_margin": {
+    "linear_cpu": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -74,21 +79,21 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [ -20, 10 ],
-        [ -19, 15 ],
-        [ -18, 20 ],
-        [ -17, 25 ],
-        [ -16, 30 ],
-        [ -15, 35 ],
-        [ -14, 40 ]
+        [ 56, 20 ],
+        [ 57, 25 ],
+        [ 58, 30 ],
+        [ 59, 35 ],
+        [ 60, 40 ],
+        [ 61, 45 ],
+        [ 62, 50 ]
       ]
     },
-    "pid_cpu_margin": {
+    "pid_cpu": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -11,
+      "setpoint": 65,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
       "kp": -2,
@@ -103,13 +108,13 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [63, 10],
-        [64, 12],
-        [65, 15],
-        [66, 18],
-        [67, 21],
-        [68, 24],
-        [69, 27]
+        [63, 20],
+        [64, 22],
+        [65, 25],
+        [66, 28],
+        [67, 31],
+        [68, 34],
+        [69, 37]
       ]
     },
     "pid_dimm": {
@@ -123,7 +128,8 @@
       "kp": -3,
       "ki": -0.01,
       "kd": 0
-    },
+    }, 
+
     "linear_nic": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -132,17 +138,17 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [80, 80],
-        [81, 80],
-        [82, 80],
-        [83, 80],
-        [84, 80],
-        [85, 80],
-        [86, 80],
-        [87, 80],
-        [88, 80],
-        [89, 80],
-        [90, 80]
+        [80, 20],
+        [81, 21],
+        [82, 23],
+        [83, 25],
+        [84, 27],
+        [85, 29],
+        [86, 31],
+        [87, 33],
+        [88, 35],
+        [89, 37],
+        [90, 38]
       ]
     },
     "pid_nic": {
@@ -166,11 +172,11 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [50, 10],
-        [51, 11],
-        [52, 12],
-        [53, 13],
-        [54, 14]
+        [50, 20],
+        [51, 21],
+        [52, 22],
+        [53, 23],
+        [54, 24]
       ]
     },
     "pid_boot_drive": {
@@ -184,7 +190,7 @@
       "kp": -1.25,
       "ki": -0.01,
       "kd": 0
-    }
+      }
   },
   "fans": {
     "0": {
@@ -223,7 +229,8 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "FSC_CLASS1_WF_zone1.fsc"
+      "expr_file": "FSC_CLASS1_type1_zone1.fsc"
     }
   }
 }
+

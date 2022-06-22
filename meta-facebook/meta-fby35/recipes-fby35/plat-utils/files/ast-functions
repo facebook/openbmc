@@ -435,7 +435,7 @@ get_1ou_board_type() {
   if type_1ou=$(/usr/bin/kv get "${slot_str}_get_1ou_type"); then
     # find kv cache
     echo "$type_1ou"
-  elif val=$(/usr/bin/bic-util "$slot_str" 0xe0 0x02 0x9c 0x9c 0x00 0x05 0xe0 0xa0 0x9c 0x9c 0x00); then
+  elif val=$(/usr/bin/bic-util "$slot_str" 0xe0 0x02 $IANA_ID 0x05 0xe0 0xa0 $IANA_ID); then
     val=($(echo "$val" | tr ' '))
     if [ "${val[6]}" = "00" ]; then
       # 1ou board type from bic
@@ -447,6 +447,40 @@ get_1ou_board_type() {
     fi
   else
     # bic-util command failed
+    return 1
+  fi
+
+  return 0
+}
+
+# Get 1OU card type
+# 00h - 1OU SI test card
+# 01h - Expansion with 6 M.2
+# 02h - Rainbow falls
+# 03h - Vernal falls (TI BIC)
+# 04h - Vernal falls (AST1030 BIC)
+# 05h - Kahuna Falls
+# 06h - Waimano falls
+# 07h - Expansion with NIC
+# FEh - no present card
+# FFh - No expected type
+get_1ou_card_type() {
+  local slot_str=$1
+  local card_type_1ou
+  local val
+
+  # only support in 1ou, #8 = 1ou is present
+  val=$(get_m2_prsnt_sts "$slot_str")
+  if [ $val -ne 8 ]; then
+    return 1
+  fi
+
+  if val=$(/usr/bin/bic-util "$slot_str" 0xe0 0xa1 $IANA_ID 0x0); then
+    val=($(echo "$val" | tr ' '))
+    card_type_1ou=$((16#${val[4]}))
+    echo "${card_type_1ou}"
+  else
+    # bic-util get card type command failed
     return 1
   fi
 

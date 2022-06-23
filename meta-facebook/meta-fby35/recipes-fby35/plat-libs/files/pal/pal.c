@@ -2846,7 +2846,7 @@ int pal_bypass_cmd(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *re
 int
 pal_parse_oem_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
-  uint8_t mfg_id[] = {0x9c, 0x9c, 0x00};
+  uint8_t mfg_id[] = {0x15, 0xa0, 0x00};
   char temp_log[MAX_ERR_LOG_SIZE];
 
   error_log[0] = '\0';

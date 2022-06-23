@@ -21,6 +21,7 @@
 . /usr/local/fbpackages/utils/ast-functions
 SLED_TYPE="/mnt/data/kv_store/sled_system_conf"
 I2CSET="/usr/sbin/i2cset -y "
+IANA_ARR=($(echo "$IANA_ID" | tr ' '))
 
 SB_CPLD_ADDR="0x0f"
 BB_CPLD_ADDR="0x0e"
@@ -189,7 +190,7 @@ fi
 set_cpld_reg "$I2C_NUM" "$SB_CPLD_ADDR" "$SB_UART_MUX_SWITCH_REG" "$SB_UART_MUX_SWITCH_VAL"
 
 if [ "$component" = "bb_bic" ]; then
-  mb_index=$(/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x10 0xc0 0xf0 | awk '{print $NF}')
+  mb_index=$(/usr/bin/bic-util slot1 0xe0 0x2 "${IANA_ARR[0]}" "${IANA_ARR[1]}" "${IANA_ARR[2]}" 0x10 0xc0 0xf0 | awk '{print $NF}')
   if [ "$mb_index" = "01" ]; then
     set_cpld_reg "$I2C_NUM" "$BB_CPLD_ADDR" 0x29 0x01 #slot1
   elif [ "$mb_index" = "03" ]; then

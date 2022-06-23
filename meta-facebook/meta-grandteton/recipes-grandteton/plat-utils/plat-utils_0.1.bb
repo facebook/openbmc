@@ -29,6 +29,7 @@ LOCAL_URI = " \
     file://setup-i2c-dev.sh \
     file://setup-por.sh \
     file://sync_date.sh \
+    file://setup-ex-gpio.sh \
     "
 
 pkgdir = "utils"
@@ -67,6 +68,11 @@ do_install() {
 # setup-i2c-dev.sh
   install -m 755 setup-i2c-dev.sh ${D}${sysconfdir}/init.d/setup-i2c-dev.sh
   update-rc.d -r ${D} setup-i2c-dev.sh start 60 5 .
+
+# setup-ex-gpio.sh
+  install -m 755 setup-ex-gpio.sh ${D}${sysconfdir}/init.d/setup-ex-gpio.sh
+  update-rc.d -r ${D} setup-ex-gpio.sh start 61 5 .
+
 # sync_date.sh
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .

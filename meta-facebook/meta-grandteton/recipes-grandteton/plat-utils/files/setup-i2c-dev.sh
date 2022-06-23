@@ -22,27 +22,30 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-echo "Probe MB MUX"
-i2c_device_add 1 0x70  pca9548
-i2c_device_add 5 0x70  pca9548
+rebind_i2c_dev() {
+  dev="$1-00$2"
+  dri=$3
 
-if /usr/sbin/i2cget -f -y 8 0x73;
-then
-  i2c_device_add 8 0x72  pca9543
-  i2c_device_add 8 0x73  pca9543
-else
-  i2c_device_add 8 0x72  pca9545
-fi
+  if [ ! -L "${SYSFS_I2C_DEVICES}/$dev/driver" ]; then
+    if i2c_bind_driver "$dri" "$dev" >/dev/null; then
+      echo "rebind $dev to driver $dri successfully"
+    fi
+  fi
+}
+
+echo "Probe MB MUX"
+rebind_i2c_dev 1 70 pca954x
+rebind_i2c_dev 5 70 pca954x
+rebind_i2c_dev 8 72 pca954x
 
 echo "Probe PDBH MUX"
-i2c_device_add 37 0x71 pca9543
+rebind_i2c_dev 37 71 pca954x
 
 echo "Probe BP Mux"
-i2c_device_add 40 0x70 pca9548
-i2c_device_add 41 0x70 pca9548
+rebind_i2c_dev 40 70 pca954x
+rebind_i2c_dev 41 70 pca954x
 
 echo "Probe TEMP Device"
-i2c_device_add 1 0x4E stlm75
 i2c_device_add 21 0x48 stlm75
 i2c_device_add 22 0x48 stlm75
 i2c_device_add 23 0x48 stlm75
@@ -57,6 +60,10 @@ i2c_device_add 20 0x72 isl69260
 i2c_device_add 20 0x74 isl69260
 i2c_device_add 20 0x76 isl69260
 
+echo Probe ADM128D
+i2cset -f -y 20 0x1d 0x0b 0x02
+i2c_device_add 20 0x1d adc128d818
+
 #FAN Max 31790
 i2cset -f -y 40 0x20 0x01 0xbb
 i2cset -f -y 40 0x20 0x02 0x08
@@ -65,12 +72,12 @@ i2cset -f -y 40 0x20 0x04 0x08
 i2cset -f -y 40 0x20 0x05 0x08
 i2cset -f -y 40 0x20 0x06 0x19
 i2cset -f -y 40 0x20 0x07 0x08
-i2cset -f -y 40 0x20 0x08 0x8C
-i2cset -f -y 40 0x20 0x09 0x8C
-i2cset -f -y 40 0x20 0x0A 0x8C
-i2cset -f -y 40 0x20 0x0B 0x8C
-i2cset -f -y 40 0x20 0x0C 0x8C
-i2cset -f -y 40 0x20 0x0D 0x8C
+i2cset -f -y 40 0x20 0x08 0x6C
+i2cset -f -y 40 0x20 0x09 0x6C
+i2cset -f -y 40 0x20 0x0A 0x6C
+i2cset -f -y 40 0x20 0x0B 0x6C
+i2cset -f -y 40 0x20 0x0C 0x6C
+i2cset -f -y 40 0x20 0x0D 0x6C
 
 i2cset -f -y 40 0x2f 0x01 0xbb
 i2cset -f -y 40 0x2f 0x02 0x08
@@ -79,12 +86,12 @@ i2cset -f -y 40 0x2f 0x04 0x08
 i2cset -f -y 40 0x2f 0x05 0x08
 i2cset -f -y 40 0x2f 0x06 0x19
 i2cset -f -y 40 0x2f 0x07 0x08
-i2cset -f -y 40 0x2f 0x08 0x8C
-i2cset -f -y 40 0x2f 0x09 0x8C
-i2cset -f -y 40 0x2f 0x0A 0x8C
-i2cset -f -y 40 0x2f 0x0B 0x8C
-i2cset -f -y 40 0x2f 0x0C 0x8C
-i2cset -f -y 40 0x2f 0x0D 0x8C
+i2cset -f -y 40 0x2f 0x08 0x6C
+i2cset -f -y 40 0x2f 0x09 0x6C
+i2cset -f -y 40 0x2f 0x0A 0x6C
+i2cset -f -y 40 0x2f 0x0B 0x6C
+i2cset -f -y 40 0x2f 0x0C 0x6C
+i2cset -f -y 40 0x2f 0x0D 0x6C
 
 i2cset -f -y 41 0x20 0x01 0xbb
 i2cset -f -y 41 0x20 0x02 0x08
@@ -93,12 +100,12 @@ i2cset -f -y 41 0x20 0x04 0x08
 i2cset -f -y 41 0x20 0x05 0x08
 i2cset -f -y 41 0x20 0x06 0x19
 i2cset -f -y 41 0x20 0x07 0x08
-i2cset -f -y 41 0x20 0x08 0x8C
-i2cset -f -y 41 0x20 0x09 0x8C
-i2cset -f -y 41 0x20 0x0A 0x8C
-i2cset -f -y 41 0x20 0x0B 0x8C
-i2cset -f -y 41 0x20 0x0C 0x8C
-i2cset -f -y 41 0x20 0x0D 0x8C
+i2cset -f -y 41 0x20 0x08 0x6C
+i2cset -f -y 41 0x20 0x09 0x6C
+i2cset -f -y 41 0x20 0x0A 0x6C
+i2cset -f -y 41 0x20 0x0B 0x6C
+i2cset -f -y 41 0x20 0x0C 0x6C
+i2cset -f -y 41 0x20 0x0D 0x6C
 
 i2cset -f -y 41 0x2f 0x01 0xbb
 i2cset -f -y 41 0x2f 0x02 0x08
@@ -107,12 +114,12 @@ i2cset -f -y 41 0x2f 0x04 0x08
 i2cset -f -y 41 0x2f 0x05 0x08
 i2cset -f -y 41 0x2f 0x06 0x19
 i2cset -f -y 41 0x2f 0x07 0x08
-i2cset -f -y 41 0x2f 0x08 0x8C
-i2cset -f -y 41 0x2f 0x09 0x8C
-i2cset -f -y 41 0x2f 0x0A 0x8C
-i2cset -f -y 41 0x2f 0x0B 0x8C
-i2cset -f -y 41 0x2f 0x0C 0x8C
-i2cset -f -y 41 0x2f 0x0D 0x8C
+i2cset -f -y 41 0x2f 0x08 0x6C
+i2cset -f -y 41 0x2f 0x09 0x6C
+i2cset -f -y 41 0x2f 0x0A 0x6C
+i2cset -f -y 41 0x2f 0x0B 0x6C
+i2cset -f -y 41 0x2f 0x0C 0x6C
+i2cset -f -y 41 0x2f 0x0D 0x6C
 
 
 echo "Probe FAN Device"
@@ -157,30 +164,18 @@ i2c_device_add 55 0x50 24c64 #FAN14 FRU
 i2c_device_add 56 0x50 24c64 #FAN15 FRU
 i2c_device_add 57 0x50 24c64 #FAN16 FRU
 
-echo "Probe Ex-GPIO device"
+echo Probe Ex-GPIO device
+i2c_device_add 29 0x74 pca9539 #MB Expender
+i2c_device_add 32 0x76 pca9539 #BIC Expender
 i2c_device_add 40 0x21 pca9555
 i2c_device_add 41 0x21 pca9555
 
-echo "Probe FAN LED Device"
-i2c_device_add 40 0x62 pca9552
-i2c_device_add 41 0x62 pca9552
+echo Probe FAN LED Device
+rebind_i2c_dev 40 62 leds-pca955x
+rebind_i2c_dev 41 62 leds-pca955x
 
+echo Probe PDBV Birck Device
+i2c_device_add 38 0x69 pmbus
+i2c_device_add 38 0x6a pmbus
+i2c_device_add 38 0x6b pmbus
 
-# I/O Expander PCA95552 0xEE
-gpio_export_ioexp 40-0021 BP0_FAN0_PRESENT 0
-gpio_export_ioexp 40-0021 BP0_FAN1_PRESENT 1
-gpio_export_ioexp 40-0021 BP0_FAN2_PRESENT 2
-gpio_export_ioexp 40-0021 BP0_FAN3_PRESENT 3
-gpio_export_ioexp 40-0021 BP0_FAN4_PRESENT 4
-gpio_export_ioexp 40-0021 BP0_FAN5_PRESENT 5
-gpio_export_ioexp 40-0021 BP0_FAN6_PRESENT 6
-gpio_export_ioexp 40-0021 BP0_FAN7_PRESENT 7
-
-gpio_export_ioexp 41-0021 BP1_FAN0_PRESENT 0
-gpio_export_ioexp 41-0021 BP1_FAN1_PRESENT 1
-gpio_export_ioexp 41-0021 BP1_FAN2_PRESENT 2
-gpio_export_ioexp 41-0021 BP1_FAN3_PRESENT 3
-gpio_export_ioexp 41-0021 BP1_FAN4_PRESENT 4
-gpio_export_ioexp 41-0021 BP1_FAN5_PRESENT 5
-gpio_export_ioexp 41-0021 BP1_FAN6_PRESENT 6
-gpio_export_ioexp 41-0021 BP1_FAN7_PRESENT 7

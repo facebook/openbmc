@@ -453,8 +453,7 @@ sgpio_export FM_BMC_CPU_FBRK_OUT_N 71
 gpio_set FM_BMC_CPU_FBRK_OUT_N 1
 
 #BMC Ready
-sgpio_export FM_BMC_READY_R_PLD_N 37
-gpio_set FM_BMC_READY_R_PLD_N 1
+sgpio_export BMC_READY_N 37
 
 #devmem_set_bit 0x1e6e24bc 24
 #devmem_set_bit 0x1e6e24bc 25

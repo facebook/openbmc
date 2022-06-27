@@ -28,12 +28,12 @@
 #include "bic_xfer.h"
 
 //The value of power button to CPLD
-#define POWER_BTN_HIGH 0x3
-#define POWER_BTN_LOW  0x2
+#define POWER_BTN_HIGH 0xFF
+#define POWER_BTN_LOW  0xFE
 
 //The value of reset button to CPLD
-#define RESET_BTN_HIGH 0x3
-#define RESET_BTN_LOW  0x1
+#define RESET_BTN_HIGH 0xFF
+#define RESET_BTN_LOW  0xFD
 
 //The delay of the value in S5 state
 #define DELAY_POWER_CYCLE 5

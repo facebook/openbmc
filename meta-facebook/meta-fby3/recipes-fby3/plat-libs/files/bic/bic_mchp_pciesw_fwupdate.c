@@ -36,6 +36,7 @@
 #include <limits.h>
 #include "bic_mchp_pciesw_fwupdate.h"
 #include <openbmc/kv.h>
+
 enum {
   // update flow
   PESW_BOOTLOADER_RCVRY = 0x00,
@@ -45,6 +46,7 @@ enum {
   PESW_CFG              = 0x04,
   PESW_MAIN             = 0x05,
   PESW_IMG_CNT          = 0x06,
+  PESW_BLOB             = 0x06,
   PESW_INIT_BL          = 0x07,
 
   // image signed offset 0x274
@@ -57,6 +59,14 @@ enum {
   PESW_TYPE_BOOTLOADER2 = 0x02,
   PESW_TYPE_CFG         = 0x03,
   PESW_TYPE_PSX         = 0x04,
+
+  // image start offset in blob image
+  PESW_BLOB_BL2_LOCATION_OFFSET = 0x1074,
+  PESW_BLOB_PSX_LOCATION_OFFSET = 0x10c4,
+  PESW_BLOB_CFG_LOCATION_OFFSET = 0x109c,
+
+  // pesw blob end offset
+  PESW_BLOB_END         = 0x00800000,
 
   // Mask
   PESW_MASK_RCVRY       = 0x3B, // recovery
@@ -74,6 +84,11 @@ enum {
   PESW_DEFAULT_STATE    = 0x00,
   PESW_INIT_UNSECURED   = 0x01,
   PESW_INIT_SECURED     = 0x02,
+
+  // pesw header and data length offset
+  PESW_HEADER_LEN_OFFSET= 0x10,
+  PESW_DATA_LEN_OFFSET  = 0x18,
+
 };
 
 static int cwc_usb_depth = 3;
@@ -83,10 +98,185 @@ static int bot_gpv3_usb_depth = 5;
 static uint8_t top_gpv3_usb_ports[] = {1, 3, 1, 2, 3};
 static uint8_t bot_gpv3_usb_ports[] = {1, 3, 4, 2, 3};
 
-char pesw_image_path[PESW_IMG_CNT][PATH_MAX+1] = {};
+// PESW_IMG_CNT + 1 is for the path of blob image
+char pesw_image_path[PESW_IMG_CNT+1][PATH_MAX+1] = {};
 
 static int
-_process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry);
+_process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry, bool is_blob_image, int *image_location_blob);
+
+// there are cfg, psx, and bl2 image in one blob file, need to calculate their own image size
+static int
+_calculate_image_size_blob(int fd, int header_len_offset, int data_len_offset, int *image_size) {
+
+  uint32_t header_len = 0;
+  uint32_t data_len = 0;
+
+  // needs 4 bytes for calcualting the image size
+  uint8_t temp_header_len[4] = {0};
+  uint8_t temp_data_len[4]  = {0};
+
+  if ( !image_size ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    return -1;
+  }
+
+  lseek(fd, header_len_offset, SEEK_SET);
+  if ( read(fd, temp_header_len, ARRAY_SIZE(temp_header_len)) != ARRAY_SIZE(temp_header_len) ) {
+    printf("%s() Couldn't read header length's offset\n", __func__);
+    return -1;
+  }
+
+  for ( int i = ARRAY_SIZE(temp_header_len)-1; i >= 0; i-- ) {
+    header_len |= (temp_header_len[i] << 8*i);
+  }
+
+  lseek(fd, data_len_offset, SEEK_SET);
+  if ( read(fd, temp_data_len, ARRAY_SIZE(temp_data_len)) != ARRAY_SIZE(temp_data_len) ) {
+    printf("%s() Couldn't read image length's offset\n", __func__);
+    return -1;
+  }
+
+  for ( int i = ARRAY_SIZE(temp_data_len)-1; i >= 0; i-- ) {
+    data_len |= (temp_data_len[i] << 8*i);
+  }
+
+  *image_size = header_len + data_len;
+
+  return 0;
+}
+
+static int
+_check_blob_image(char *image, uint8_t *type, uint8_t *file_s_info, bool *is_blob_image, int *image_location) {
+
+  int i = 0;
+  int fd = 0;
+  int file_size = 0;
+  int ret = BIC_STATUS_FAILURE;
+  uint8_t temp_offset[4] = {0};
+  uint8_t magic_offset[8] = {0};
+  uint8_t signed_flag = 0;
+
+  // magic byte from each fw, to determine this blob image is valid or not
+  const uint8_t MAGIC_BYTE[8] = {0x4D, 0x53, 0x43, 0x43, 0x5F, 0x4D, 0x44, 0x20};
+
+  if ( !image || !type || !file_s_info || !is_blob_image || !image_location ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    goto error_exit;
+  }
+
+  fd = open_and_get_size(image, &file_size);
+
+  // blob image got only one image size
+  if ( file_size != PESW_BLOB_END ) {
+    goto error_exit;
+  }
+
+  // read its type/signed/magic byte in flash blob image for bl2, cfg, main
+  for ( int file = PESW_BOOTLOADER2; file <= PESW_MAIN; file++ ) {
+
+    // Read Image's location first
+    switch(file) {
+      case PESW_BOOTLOADER2:
+        lseek(fd, PESW_BLOB_BL2_LOCATION_OFFSET, SEEK_SET);
+        break;
+      case PESW_CFG:
+        lseek(fd, PESW_BLOB_CFG_LOCATION_OFFSET, SEEK_SET);
+        break;
+      case PESW_MAIN:
+        lseek(fd, PESW_BLOB_PSX_LOCATION_OFFSET, SEEK_SET);
+        break;
+      default:
+        goto error_exit;
+    }
+
+    // read and calculate image start offset
+    if ( read(fd, temp_offset, ARRAY_SIZE(temp_offset)) != ARRAY_SIZE(temp_offset) ) {
+      printf("%s() Couldn't read image location's Img: %s\n", __func__, image);
+      goto error_exit;
+    }
+
+    for ( i = ARRAY_SIZE(temp_offset)-1; i >= 0; i-- ) {
+      image_location[file] |= (temp_offset[i] << 8*i);
+    }
+
+    // check magic byte
+    lseek(fd, image_location[file], SEEK_SET);
+    if ( read(fd, magic_offset, ARRAY_SIZE(magic_offset)) != ARRAY_SIZE(magic_offset) ) {
+      printf("%s() Couldn't read magic byte's. Img: %s\n", __func__, image);
+      goto error_exit;
+    }
+
+    if ( memcmp(magic_offset, MAGIC_BYTE, ARRAY_SIZE(MAGIC_BYTE)) != 0 ) {
+      printf("%s() Invalid file! Img: %s\n", __func__, image);
+      goto error_exit;
+    }
+
+    // check image type
+    lseek(fd, image_location[file] + PESW_TYPE_OFFSET, SEEK_SET);
+    if ( read(fd, &temp_offset[0], 1) != 1 ) {
+      printf("%s() Couldn't read its type! Img: %s\n", __func__, image);
+      goto error_exit;
+    }
+
+    // make sure the file image is same as it's type
+    switch(temp_offset[0]) {
+      case PESW_TYPE_BOOTLOADER2:
+        if ( file != PESW_BOOTLOADER2 ) {
+          goto error_exit;
+        }
+        break;
+      case PESW_TYPE_CFG:
+        if ( file != PESW_CFG )  {
+          goto error_exit;
+        }
+        break;
+      case PESW_TYPE_PSX:
+        if ( file != PESW_MAIN )  {
+          goto error_exit;
+        }
+        break;
+      default:
+        goto error_exit;
+    }
+
+    // check signed offset
+    lseek(fd, image_location[file] + PESW_SIGNED_OFFSET, SEEK_SET);
+    if ( read(fd, temp_offset, ARRAY_SIZE(temp_offset)) != ARRAY_SIZE(temp_offset) ) {
+      printf("%s() Couldn't read its signed data!\n", __func__);
+      goto error_exit;
+    }
+
+    // set the flag
+    *type |= 0x1 << file;
+
+    // it would not be zero if it's a signed image
+    for ( i = 1; i < ARRAY_SIZE(temp_offset); i++ ) {
+      temp_offset[0] += temp_offset[i];
+    }
+
+    if ( temp_offset[0] > 0 ) {
+      signed_flag += 1;
+      *file_s_info |= 0x1 << file;
+    }
+  }
+
+  if ( signed_flag != 0 && signed_flag != 3 ) {
+    printf("%s() Mixed signed and unsigned image in blob  img: %s\n", __func__, image);
+    goto error_exit;
+  }
+
+  // store file path and set its a flash image flag
+  strncpy(pesw_image_path[PESW_BLOB], image, PATH_MAX);
+  *is_blob_image = true;
+  ret = BIC_STATUS_SUCCESS;
+
+error_exit:
+  if ( fd > 0 ) {
+    close(fd);
+  }
+
+  return ret;
+}
 
 static int
 _check_image(char *image, uint8_t *type, uint8_t *file_s_info) {
@@ -95,7 +285,7 @@ _check_image(char *image, uint8_t *type, uint8_t *file_s_info) {
   size_t str_len = strlen(image);
 
   // xxxx.fwimg, str_len should be > 5
-  if ( str_len <= 5 || (strncmp(&image[str_len-5], "fwimg", 5) != 0) ) {
+  if ( str_len <= 5 || (strcmp(&image[str_len-5], "fwimg") != 0) ) {
     goto error_exit;
   }
 
@@ -138,7 +328,7 @@ _check_image(char *image, uint8_t *type, uint8_t *file_s_info) {
   *type |= 0x1 << index;
 
   // store path
-  strcpy(pesw_image_path[index], image);
+  strncpy(pesw_image_path[index], image, PATH_MAX);
 
   // check if it's singed image
   lseek(fd, PESW_SIGNED_OFFSET, SEEK_SET);
@@ -209,18 +399,29 @@ error_exit:
 }
 
 static int
-_is_valid_files(char *image, uint8_t *type, uint8_t *file_s_info) {
+_is_valid_files(char *image, uint8_t *type, uint8_t *file_s_info, bool *is_blob_image, int *image_location_blob) {
   int ret = BIC_STATUS_FAILURE;
 
-  for ( int i = 0; i < PESW_IMG_CNT; i++ ) {
+  if ( !image || !type || !file_s_info || !is_blob_image || !image_location_blob ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    goto error_exit;
+  }
+
+  for ( int i = 0; i < PESW_IMG_CNT+1; i++ ) {
     pesw_image_path[i][0] = '\n';
   }
 
   // set type according to files
   if ( _is_dir(image) == true ) {
-    if ( _check_dirs(image, type, file_s_info) < 0 ) goto error_exit;
+    if ( _check_dirs(image, type, file_s_info) < 0 ) {
+      goto error_exit;
+    }
   } else {
-    if ( _check_image(image, type, file_s_info) < 0 ) goto error_exit;
+    if ( _check_blob_image(image, type, file_s_info, is_blob_image, image_location_blob) < 0 ) {
+      if ( _check_image(image, type, file_s_info) < 0 ) {
+        goto error_exit;
+      }
+    }
   }
 
   ret = BIC_STATUS_SUCCESS;
@@ -523,16 +724,41 @@ _send_bic_usb_packet(usb_dev* udev, bic_usb_ext_packet *pkt) {
 }
 
 int
-bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name, uint8_t intf) {
+bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name, uint8_t intf, uint8_t comp_idx, bool is_blob_image, int *image_location_blob) {
   int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size = 0;
   uint8_t *buf = NULL;
 
+  if ( !image_file || !udev || !comp_name || !image_location_blob ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    goto error_exit;
+  }
+
   fd = open_and_get_size(image_file, &file_size);
   if ( fd < 0 ) {
     printf("%s() cannot open the file: %s, fd=%d", __func__, image_file, fd);
     goto error_exit;
+  }
+
+  // calculate image size and set start offset in BLOB image
+  if ( is_blob_image ) {
+    switch(comp_idx) {
+      case PESW_BOOTLOADER2:
+      case PESW_CFG:
+      case PESW_MAIN:
+        ret = _calculate_image_size_blob(fd, image_location_blob[comp_idx]+PESW_HEADER_LEN_OFFSET,\
+                                          image_location_blob[comp_idx]+PESW_DATA_LEN_OFFSET, &file_size);
+        if ( ret < 0 ) {
+          printf("%s() cannot calculate image size in blob file! Img:%s, Comp Id:%d", __func__, image_file, comp_idx);
+          goto error_exit;
+        }
+
+        lseek(fd, image_location_blob[comp_idx], SEEK_SET);
+        break;
+      default:
+        goto error_exit;
+    }
   }
 
   // allocate memory
@@ -546,11 +772,21 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
   size_t write_offset = 0;
   size_t last_offset = 0;
   size_t dsize = file_size / 20;
-
   ssize_t read_bytes = 0;
+
   while (1) {
-    // read MAX_FW_PCIE_SWITCH_BLOCK_SIZE
-    read_bytes = read(fd, file_buf, MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
+
+    if ( is_blob_image ) {
+      if ( file_size - write_offset < MAX_FW_PCIE_SWITCH_BLOCK_SIZE ) {
+        read_bytes = read(fd, file_buf, file_size - write_offset);
+      } else {
+        read_bytes = read(fd, file_buf, MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
+      }
+    } else {
+      // read MAX_FW_PCIE_SWITCH_BLOCK_SIZE
+      read_bytes = read(fd, file_buf, MAX_FW_PCIE_SWITCH_BLOCK_SIZE);
+    }
+
     if ( read_bytes < 0 ) {
       printf("%s() read error: %d\n", __func__, errno);
       break;
@@ -585,7 +821,9 @@ bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *c
       last_offset += dsize;
     }
 
-    if ( write_offset == file_size ) break;
+    if ( write_offset >= file_size ) {
+      break;
+    }
   }
 
 error_exit:
@@ -595,8 +833,13 @@ error_exit:
 }
 
 static int
-_quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bool is_rcvry, uint8_t board_type) {
+_quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bool is_rcvry, uint8_t board_type, int *image_location_blob) {
   int ret = _toggle_pesw(slot_id, intf, (type & PESW_MASK_N_UPD), is_rcvry);
+
+  if ( !udev || !image_location_blob ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    goto error_exit;
+  }
 
   if ( is_rcvry == false ) {
     return ret;
@@ -651,7 +894,7 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bo
   printf("Wait for the host ");
   while ( slp_cnt < slp_cnt_max ) {
     ret = kv_get(key, value, NULL, 0);
-    if ( ret == BIC_STATUS_SUCCESS && (strncmp(value, "1", 1) == 0) ) {
+    if ( ret == BIC_STATUS_SUCCESS && (strcmp(value, "1") == 0) ) {
       printf("READY\n");
       break;
     }
@@ -678,7 +921,7 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bo
   // update KEYM again if needed
   if ( (type >> PESW_KEYM) & 0x1 ) {
     printf("Updating the keym...\n");
-    ret = _process_mchp_images(slot_id, PESW_KEYM, intf, udev, true, false);
+    ret = _process_mchp_images(slot_id, PESW_KEYM, intf, udev, true, false, false, image_location_blob);
     if ( ret < 0 ) {
       printf("Failed to update it\n");
       if ( udev->handle != NULL ) bic_close_usb_dev(udev);
@@ -694,7 +937,7 @@ _quit_pesw_update(uint8_t slot_id, uint8_t type, usb_dev* udev, uint8_t intf, bo
   // update bl2
   printf("Updating the bootloader...\n");
   // usb cant be claimed twice
-  ret = _process_mchp_images(slot_id, PESW_BOOTLOADER2, intf, udev, true, false);
+  ret = _process_mchp_images(slot_id, PESW_BOOTLOADER2, intf, udev, true, false, false, image_location_blob);
   if ( ret < 0 ) {
     printf("Failed to update it\n");
     if ( udev->handle != NULL ) bic_close_usb_dev(udev);
@@ -819,18 +1062,32 @@ error_exit:
 }
 
 static int
-_process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry) {
+_process_mchp_images(uint8_t slot_id, uint8_t idx, uint8_t intf, usb_dev* udev, bool is_usb, bool is_rcvry, bool is_blob_image, int *image_location_blob) {
   int ret = BIC_STATUS_FAILURE;
   char comp_name[][15] = {{"RCVRY"}, {"PARTMAP"}, {"KEYM"},{"BOOTLOADER2"}, {"CFG"}, {"MAIN FW"}};
 
+  if ( !image_location_blob || !udev ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    goto error_exit;
+  }
+
   printf("******Start sending %s******\n", comp_name[idx]);
-  printf("File: %s\n", pesw_image_path[idx]);
+
+  if ( is_blob_image ) {
+    printf("File: %s\n", pesw_image_path[PESW_BLOB]);
+  } else {
+    printf("File: %s\n", pesw_image_path[idx]);
+  }
 
   if ( is_usb == false ) {
     //do nothing
     printf("Please update it via USB!\n");
   } else {
-    ret = bic_update_pesw_fw_usb(slot_id, pesw_image_path[idx], udev, comp_name[idx], intf);
+    if ( is_blob_image ) {
+      ret = bic_update_pesw_fw_usb(slot_id, pesw_image_path[PESW_BLOB], udev, comp_name[idx], intf, idx, is_blob_image, image_location_blob);
+    } else {
+      ret = bic_update_pesw_fw_usb(slot_id, pesw_image_path[idx], udev, comp_name[idx], intf, idx, is_blob_image, image_location_blob);
+    }
     if ( ret < 0 ) {
       printf("Failed to update %s\n", comp_name[idx]);
       goto error_exit;
@@ -881,11 +1138,16 @@ error_exit:
 }
 
 static int
-_update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry, uint8_t board_type) {
+_update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_rcvry, uint8_t board_type, bool is_blob_image, int *image_location_blob) {
   struct timeval start, end;
   int ret = BIC_STATUS_FAILURE;
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
+
+  if ( !image_location_blob ) {
+    printf("%s() pointer is NULL!\n",__func__);
+    goto error_exit;
+  }
 
   // start
   gettimeofday(&start, NULL);
@@ -902,7 +1164,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
   for (int i = PESW_BOOTLOADER_RCVRY; i < PESW_IMG_CNT; i++) {
     if ( ((type >> i) & 0x1) == 0 ) continue;
 
-    ret = _process_mchp_images(slot_id, i, intf, udev, is_usb, is_rcvry);
+    ret = _process_mchp_images(slot_id, i, intf, udev, is_usb, is_rcvry, is_blob_image, image_location_blob);
     if ( ret < 0 ) {
       // the USB HUB will lost during PESW recovery update
       // make sure udev can be released gracefully
@@ -919,7 +1181,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
 
   syslog(LOG_ERR, "%s() quit\n", __func__);
   // quit
-  ret = _quit_pesw_update(slot_id, type, udev, intf, is_rcvry, board_type);
+  ret = _quit_pesw_update(slot_id, type, udev, intf, is_rcvry, board_type, image_location_blob);
   if ( ret < 0 ) {
     goto error_exit;
   }
@@ -938,9 +1200,11 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
   uint8_t file_s_info = 0;
   uint8_t sys_conf = 0;
   uint8_t bmc_location = 0, board_type = UNKNOWN_BOARD;
+  bool is_blob_image = false;
+  int image_location_blob[PESW_IMG_CNT] = {0};
 
   // check files - image path, image type, image secure information
-  ret = _is_valid_files(image, &type, &file_s_info);
+  ret = _is_valid_files(image, &type, &file_s_info, &is_blob_image, image_location_blob);
   if ( ret < 0 ) {
     printf("Invalid inputs: %s\n", image);
     goto error_exit;
@@ -962,6 +1226,10 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
 
   //enter recovery mode first before query pesw info
   if (type == PESW_MASK_S_RCVRY || type == PESW_MASK_RCVRY) {
+    // blob image do not support rcvry function
+    if ( is_blob_image ) {
+      goto error_exit;
+    }
     ret = _enter_pesw_rcvry_mode(slot_id, intf, true, board_type);
     if ( ret < 0 ) {
       goto error_exit;
@@ -1011,7 +1279,7 @@ int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, ui
   }
 
   // start updating PESW
-  ret = _update_mchp(slot_id, type, intf, is_usb, is_rcvry, board_type);
+  ret = _update_mchp(slot_id, type, intf, is_usb, is_rcvry, board_type, is_blob_image, image_location_blob);
 
 error_exit:
   return ret;

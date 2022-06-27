@@ -33,14 +33,15 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, ui
 {
   int fd = 0, ret = -1;
   int offs, rcnt, end;
-  uint8_t *buf;
-  uint8_t magic_number[] = { 0xd0, 0x0d, 0xfe, 0xed}; // magic number
+  uint8_t *buf, *fdt_aligned_buf;
+  uint8_t magic_number[] = {0xd0, 0x0d, 0xfe, 0xed}; // magic number
 
   *img_lock = 0x00;
   *img_sig = 0x00;
 
   buf = (uint8_t *)malloc(mtd_region_size);
-  if (!buf) {
+  fdt_aligned_buf = (uint8_t *)aligned_alloc(8, mtd_region_size);
+  if (!buf || !fdt_aligned_buf) {
     syslog(LOG_WARNING,"%s: malloc failed", __func__);
     return -1;
   }
@@ -78,20 +79,24 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, ui
     end = mtd_region_size - sizeof(magic_number);
     // Scan through the region looking for the version signature.
     for (offs = 0; offs < end; offs++) {
-      if (!memcmp(buf+offs, magic_number, sizeof(magic_number))) {
-        const void *fdt = (const void *) (buf + offs);
+      const void *fdt = (const void *) (buf + offs);
+      if (!memcmp(fdt, magic_number, sizeof(magic_number)) &&
+          (fdt_totalsize(fdt) <= (mtd_region_size - offs)))
+      {
+        memset(fdt_aligned_buf, 0, mtd_region_size);
+        memcpy(fdt_aligned_buf, fdt, fdt_totalsize(fdt));
 
         // if fdt header is not valid, keep finding the next magic number
-        ret = fdt_check_header(fdt);
+        ret = fdt_check_header(fdt_aligned_buf);
         if (ret) {
           continue;
         }
 
-        if (fdt_subnode_offset(fdt, 0, FIT_SIG_NODENAME) >= 0) {
+        if (fdt_subnode_offset(fdt_aligned_buf, 0, FIT_SIG_NODENAME) >= 0) {
           *img_sig = 0x01;
         }
 
-        if (fdt_getprop_u32(fdt, 0, FIT_LOCK_NODENAME) == 1) {
+        if (fdt_getprop_u32(fdt_aligned_buf, 0, FIT_LOCK_NODENAME) == 1) {
           *img_lock = 0x01;
         }
 
@@ -103,6 +108,7 @@ int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, ui
   } while (0);
 
   free(buf);
+  free(fdt_aligned_buf);
   if (fd > 0) {
     close(fd);
   }

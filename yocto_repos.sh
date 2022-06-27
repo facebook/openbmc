@@ -12,7 +12,7 @@ rocko_repos=(
 )
 rocko_poky_patch="0001-rocko-backport-support-for-override.patch"
 lf_master_repos=(
-    lf-openbmc:6fe6c9124
+    lf-openbmc:c74033670
 )
 lf_dunfell_repos=(
     lf-openbmc:ab475af38

@@ -1029,6 +1029,8 @@ read_e1s_temp(uint8_t e1s_id, float *value) {
     if (ret != 0) {
       ret = ERR_SENSOR_NA;
     }
+  } else {
+    ret = ERR_SENSOR_NA;
   }
   close(fd);
 
@@ -1608,7 +1610,7 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
 
     //if expander doesn't respond, set all sensors value to NA and save to cache
     for(i = 0; i < sensor_cnt; i++) {
-      snprintf(key, sizeof(key), "%s_sensor%d", fru_name, tbuf[i + 1]);
+      snprintf(key, sizeof(key), "%s_sensor%d_tmp", fru_name, tbuf[i + 1]);
       snprintf(str, sizeof(str), "NA");
 
       if(kv_set(key, str, 0, 0) < 0) {
@@ -1627,8 +1629,10 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
         (p_sensor_data[i].sensor_status != EXP_SENSOR_STATUS_CRITICAL)) {
       //if sensor status byte is not 'OK' or 'Critical', means sensor reading is unavailable
       snprintf(str, sizeof(str), "NA");
-    }
-    else {
+    } else if ((p_sensor_data[i].raw_data_1 == 0xFF) && (p_sensor_data[i].raw_data_2 == 0xFF)) {
+      // Sensor value is not ready
+      snprintf(str, sizeof(str), "NA");
+    } else {
       // search the corresponding sensor table to fill up the raw data and status
       pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);
       if (strncmp(units, "C", sizeof(units)) == 0) {
@@ -1646,26 +1650,6 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
         } else if (tach_cnt == UNKNOWN_FAN_CNT) {
           continue;
         }
-        
-        // If SCC reset or power cycle, it may get wrong information from expander
-        // To avoid those case, retry to get RPM
-        retry = 0;
-        tbuf[0] = 1;
-        tbuf[1] = sensor_list[i + index];
-        while ((value == 0) && (retry++ < MAX_GET_RPM_RETRY)) {
-          syslog(LOG_WARNING, "%s(): %s_sensor%d get zero %d time\n", __func__ , fru_name, p_sensor_data[i].sensor_num, retry);
-          msleep(150);
-          
-          // get RPM again
-          retry_ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_SENSOR_READING, tbuf, 2, rbuf, &rlen);
-          if (retry_ret < 0) {
-            continue;
-          } else {
-            retry_data = (EXPANDER_SENSOR_DATA *)(&rbuf[1]);
-            value = (((retry_data[i].raw_data_1 << 8) + retry_data[i].raw_data_2));
-            value *= 10;
-          }
-        }
       }
       else if (strncmp(units, "Watts", sizeof(units)) == 0) {
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
@@ -1678,7 +1662,7 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
     }
 
     //cache sensor reading
-    snprintf(key, sizeof(key), "%s_sensor%d", fru_name, p_sensor_data[i].sensor_num);
+    snprintf(key, sizeof(key), "%s_sensor%d_tmp", fru_name, p_sensor_data[i].sensor_num);
     if (kv_set(key, str, 0, 0) < 0) {
       syslog(LOG_WARNING, "%s() cache_set key = %s, str = %s failed.\n", __func__ , key, str);
     }
@@ -1768,7 +1752,6 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
         ret = exp_read_sensor_wrapper(fru, sensor_list, read_cnt, index);
         if (ret < 0) {
           syslog(LOG_ERR, "%s() wrapper ret%d \n", __func__, ret);
-          break;
         }
         remain -= read_cnt;
         index += read_cnt;
@@ -1807,8 +1790,10 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
 }
 
 static int
-expander_sensor_read_cache(uint8_t fru, uint8_t sensor_num, char *key, void *value) {
+expander_sensor_read_cache(uint8_t fru, uint8_t sensor_num, void *value) {
   char cache_value[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char fru_name[32] = {0};
   int ret = 0;
   uint8_t chassis_type = 0;
 
@@ -1822,6 +1807,12 @@ expander_sensor_read_cache(uint8_t fru, uint8_t sensor_num, char *key, void *val
     return ERR_SENSOR_NA;
   }
 
+  if (pal_get_fru_name(fru, fru_name) != 0) {
+    syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, fru);
+    return ERR_SENSOR_NA;
+  }
+
+  snprintf(key, sizeof(key), "%s_sensor%d_tmp", fru_name, sensor_num);
   ret = kv_get(key, cache_value, NULL, 0);
   if (ret != 0) {
     syslog(LOG_ERR, "%s(), Failed to get key: %s, ret: %d\n", __func__, key, ret);
@@ -2295,19 +2286,9 @@ reload_iocm_sensors() {
 
 int
 pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  char fru_name[32] = {0};
   int ret = 0;
   uint8_t chassis_type = 0;
   uint8_t id = 0;
-
-  if (pal_get_fru_name(fru, fru_name)) {
-    syslog(LOG_WARNING, "%s() Fail to get fru%d name\n", __func__, fru);
-    return ERR_SENSOR_NA;
-  }
-
-  snprintf(key, sizeof(key), "%s_sensor%d", fru_name, sensor_num);
 
   switch(fru) {
   case FRU_SERVER:
@@ -2348,7 +2329,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       if (0 != (ret = expander_sensor_check(fru, sensor_num))) {
         break;
       }
-      ret = expander_sensor_read_cache(fru, sensor_num, key, value);
+      ret = expander_sensor_read_cache(fru, sensor_num, value);
     }
     break;
   case FRU_NIC:
@@ -2397,21 +2378,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       return ERR_UNKNOWN_FRU;
     }
   default:
-    return ERR_SENSOR_NA;
-  }
-
-  if (ret != 0) {
-    if (ret == ERR_SENSOR_NA || ret == -1) {
-      strncpy(str, "NA", sizeof(str));
-    } else {
-      return ret;
-    }
-  } else {
-    snprintf(str, sizeof(str), "%.2f",*((float*)value));
-  }
-
-  if (kv_set(key, str, 0, 0) < 0) {
-    syslog(LOG_WARNING, "%s() cache_set key = %s, str = %s failed.\n", __func__, key, str);
     return ERR_SENSOR_NA;
   }
 
@@ -2634,7 +2600,8 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
 bool
 pal_sensor_is_cached(uint8_t fru, uint8_t sensor_num) {
-  if (fru == FRU_DPB || fru == FRU_SCC) {
+  // Read DPB HSC power from expander directly
+  if ((fru == FRU_DPB) && (sensor_num == DPB_HSC_PWR)) {
     return false;
   }
   return true;
@@ -2656,11 +2623,10 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
     return -1;
   }
 
-  // Fan value have to be fetch real value from DPB, so have to use pal_sensor_read_raw to force updating cache value
   if (fan_cnt == SINGLE_FAN_CNT) {
-    ret = pal_sensor_read_raw(FRU_DPB, FAN_0_FRONT + (fan * 2), &value);
+    ret = sensor_cache_read(FRU_DPB, FAN_0_FRONT + (fan * 2), &value);
   } else if (fan_cnt == DUAL_FAN_CNT) {
-    ret = pal_sensor_read_raw(FRU_DPB, FAN_0_FRONT + fan, &value);
+    ret = sensor_cache_read(FRU_DPB, FAN_0_FRONT + fan, &value);
   } else {
     syslog(LOG_WARNING, "%s: Unknown fan count", __func__);
     return -1;
@@ -2686,7 +2652,7 @@ static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_c
   }
 
   // Get airflow value
-  ret = pal_sensor_read_raw(FRU_DPB, AIRFLOW, &airflow_value);
+  ret = sensor_cache_read(FRU_DPB, AIRFLOW, &airflow_value);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): fail to regulate inlet sensor because fail to get airflow", __func__);
     return;
@@ -2706,3 +2672,26 @@ static void apply_inlet_correction(float *value, inlet_corr_t *ict, size_t ict_c
   *(float*)value -= offset_value;
 }
 
+int pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
+  int sensor_cnt = 0, ret = 0, i = 0;
+  int tolerance_time = 0;
+  uint8_t *sensor_list = NULL;
+
+  if ((fru == FRU_DPB) || (fru == FRU_SCC)) {
+    tolerance_time = EXP_SNR_FAIL_TOLERANCE_TIME;
+  }
+
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Fail to get fru%d sensor list\n", __func__, fru);
+    return ret;
+  }
+
+  for (i = 0; i < sensor_cnt; i++) {
+    if (register_sensor_failure_tolerance_policy(fru, sensor_list[i], tolerance_time) < 0) {
+      syslog(LOG_WARNING, "%s: Fail to register failure tolerance policy for fru:%d sensor num:%x\n", __func__, fru, sensor_list[i]);
+    }
+  }
+
+  return 0;
+}

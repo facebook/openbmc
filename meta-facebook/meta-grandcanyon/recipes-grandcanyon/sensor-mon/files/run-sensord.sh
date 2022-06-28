@@ -5,6 +5,6 @@
 
 echo "Setup sensor monitoring for FBGC... "
 
-FRUS="server uic scc nic e1s_iocm"
+FRUS="dpb server uic scc nic e1s_iocm"
 
 exec /usr/local/bin/sensord $FRUS

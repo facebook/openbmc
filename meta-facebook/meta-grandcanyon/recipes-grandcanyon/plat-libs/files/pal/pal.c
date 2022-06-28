@@ -4065,8 +4065,9 @@ pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
 int
 pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
+  // The threshold of DPB's and SCC's sensors are monitoring by expander
   // Only SCC IOC temperature is monitoring by BMC
-  if ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP)) {
+  if ((fru == FRU_DPB) || ((fru == FRU_SCC) && (snr_num != SCC_IOC_TEMP))) {
     return 1;
   }
 

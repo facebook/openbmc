@@ -34,6 +34,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/snr-tolerance.h>
 #include <math.h>
 
 #define GPIO_VAL "/sys/class/gpio/gpio%d/value"
@@ -3003,4 +3004,24 @@ int __attribute__((weak))
 pal_is_jumper_enable(uint8_t fru, uint8_t *status)
 {
   return PAL_ENOTSUP;
+}
+
+int __attribute__((weak))
+pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
+  int sensor_cnt = 0, ret = 0, i = 0;
+  uint8_t *sensor_list = NULL;
+
+  ret = pal_get_fru_sensor_list(fru, &sensor_list, &sensor_cnt);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Fail to get fru%d sensor list\n", __func__, fru);
+    return ret;
+  }
+
+  for (i = 0; i < sensor_cnt; i++) {
+    if (register_sensor_failure_tolerance_policy(fru, sensor_list[i], 0) < 0) {
+      syslog(LOG_WARNING, "%s: Fail to register failure tolerance policy for fru:%d sensor num:%x\n", __func__, fru, sensor_list[i]);
+    }
+  }
+
+  return 0;
 }

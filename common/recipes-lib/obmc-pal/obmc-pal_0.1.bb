@@ -36,4 +36,4 @@ do_install() {
 }
 
 FILES:${PN}-dev += "${includedir}openbmc/obmc-pal.h ${includedir}openbmc/obmc_pal_sensors.h"
-DEPENDS += " libkv libipmi libipmb"
+DEPENDS += " libkv libipmi libipmb libsnr-tolerance"

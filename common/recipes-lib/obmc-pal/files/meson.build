@@ -32,6 +32,7 @@ pal_deps = [
     dependency('libipmi'),
     dependency('libkv'),
     dependency('threads'),
+    dependency('libsnr-tolerance'),
     ]
 
 # Import the plat-specific subdirectory for platform

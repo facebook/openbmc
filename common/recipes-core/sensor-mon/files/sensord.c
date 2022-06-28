@@ -151,26 +151,30 @@ init_fru_snr_thresh(uint8_t fru) {
 static int
 sensor_raw_read_helper(uint8_t fru, uint8_t snr_num, float *val)
 {
-  int ret = 0;
+  int ret = 0, cache_write_ret = 0;
 
   if (fru == AGGREGATE_SENSOR_FRU_ID) {
     ret = aggregate_sensor_read(snr_num, val);
     if (ret == 0) {
-      sensor_cache_write(fru, snr_num, true, *val);
+      cache_write_ret = sensor_cache_write(fru, snr_num, true, *val);
     } else {
-      sensor_cache_write(fru, snr_num, false, 0.0);
+      cache_write_ret = sensor_cache_write(fru, snr_num, false, 0.0);
     }
 
   } else if (pal_sensor_is_source_host(fru, snr_num)) {
     if (pal_is_host_snr_available(fru, snr_num) == true) {
       ret = sensor_cache_read(fru, snr_num, val);
+      return ret;
     } else {
-      sensor_cache_write(fru, snr_num, false, 0.0);
-      return ERR_SENSOR_NA;
+      cache_write_ret = sensor_cache_write(fru, snr_num, false, 0.0);
     }
   } else {
     ret = sensor_raw_read(fru, snr_num, val);
+    return ret;
   }
+
+  ret = cache_write_ret;
+
   return ret;
 }
 
@@ -506,6 +510,15 @@ snr_monitor(void *arg) {
   }
 
   /*
+    Register sensor failure tolerance policy
+  */
+  ret = pal_register_sensor_failure_tolerance_policy(fruNb);
+  if (ret < 0) {
+    pthread_detach(pthread_self());
+    pthread_exit(NULL);
+  }
+
+  /*
     ignore check sensor_cnt when enable hotswap_support
   */
   if ((sensor_cnt == 0) && (discrete_cnt == 0) && !hotswap_support) {
@@ -588,7 +601,7 @@ snr_monitor(void *arg) {
           check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
-        } else {
+        } else if (ret < 0) {
           sensor_fail_assert_check(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
         } /* pal_sensor_read return check */
       } /* flag check */
@@ -729,7 +742,7 @@ aggregate_snr_monitor(void *unused)
           check_thresh_deassert(fru, snr_num, LNR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LCR_THRESH, &curr_val);
           check_thresh_deassert(fru, snr_num, LNC_THRESH, &curr_val);
-        } else {
+        } else if (ret < 0) {
           sensor_fail_assert_check(&snr_read_fail[snr_num], fru, snr_num, snr[snr_num].name);
         } /* pal_sensor_read return check */
       } /* flag check */

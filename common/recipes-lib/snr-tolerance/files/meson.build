@@ -1,7 +1,9 @@
 project('libsnr-tolerance', 'cpp',
     version: '0.1',
     license: 'GPL2',
-    default_options: ['cpp_std=c++17', 'werror=true'],
+    # to make sure it can be used for pre-Dunfell platforms
+    # which use Meson 0.40, not recognize c++17
+    default_options: ['cpp_std=c++1z', 'werror=true'],
     meson_version: '>=0.40')
 
 install_headers(

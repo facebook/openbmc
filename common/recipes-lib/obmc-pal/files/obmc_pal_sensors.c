@@ -265,42 +265,65 @@ sensor_cache_write(uint8_t fru, uint8_t sensor_num, bool available, float value)
 {
   char key[MAX_KEY_LEN];
   char str[MAX_VALUE_LEN];
-  int ret;
+  int ret = 0, check_sensor_timestamp_ret = 0;
 
   if (sensor_key_get(fru, sensor_num, key))
     return ERR_UNKNOWN_FRU;
 
-  if (available)
-    sprintf(str, "%.2f", value);
-  else
-    strcpy(str, "NA");
+  check_sensor_timestamp_ret = update_sensor_poll_timestamp(fru, sensor_num, available, value);
 
-  ret = kv_set(key, str, 0, 0);
-  if (ret) {
-    DEBUG_STR("sensor_cache_write: cache_set %s failed.\n", key);
-    return ERR_FAILURE;
+  switch (check_sensor_timestamp_ret)
+  {
+    case SET_SENSOR_TO_CACHE:
+      if (available) {
+        sprintf(str, "%.2f", value);
+        ret = 0;
+      } else {
+        strcpy(str, "NA");
+        ret = ERR_SENSOR_NA;
+      }
+
+      if (kv_set(key, str, 0, 0) != 0) {
+        DEBUG_STR("sensor_cache_write: cache_set %s failed.\n", key);
+        return ERR_FAILURE;
+      }
+      if (available) {
+        cache_set_history(key, value);
+        if (sensor_coarse_key_get(fru, sensor_num, key) == 0) {
+          cache_set_coarse_history(key, value);
+        }
+      }
+      break;
+    case SKIP_SENSOR_FAILURE:
+      ret = SKIP_SENSOR_FAILURE;
+      break;
+    default:
+      ret = ERR_SENSOR_NA;
+      break;
   }
-  if (available) {
-    cache_set_history(key, value);
-    if (sensor_coarse_key_get(fru, sensor_num, key) == 0) {
-      cache_set_coarse_history(key, value);
-    }
-  }
-  return 0;
+
+  return ret;
 }
 
 int sensor_raw_read(uint8_t fru, uint8_t sensor_num, float *value)
 {
+  int cache_write_ret = 0;
 #ifdef DBUS_SENSOR_SVC
   int ret = sensor_svc_raw_read(fru, sensor_num, value);
 #else
   int ret = pal_sensor_read_raw(fru, sensor_num, value);
 #endif
 
-  if (!ret)
-    sensor_cache_write(fru, sensor_num, true, *value);
-  else if (ret == ERR_SENSOR_NA)
-    sensor_cache_write(fru, sensor_num, false, 0.0);
+  if (!ret) {
+    cache_write_ret = sensor_cache_write(fru, sensor_num, true, *value);
+  } else if (ret == ERR_SENSOR_NA) {
+    cache_write_ret = sensor_cache_write(fru, sensor_num, false, 0.0);
+  } else {
+    return ret;
+  }
+
+  ret = cache_write_ret;
+
   return ret;
 }
 

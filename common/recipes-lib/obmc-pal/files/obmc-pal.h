@@ -25,6 +25,7 @@
 #include <sys/file.h>
 #include <stdbool.h>
 #include <openbmc/ipmi.h>
+#include <openbmc/snr-tolerance.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -596,6 +597,7 @@ int pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 int pal_udbg_get_frame_total_num();
 bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 int pal_is_jumper_enable(uint8_t fru, uint8_t *status);
+int pal_register_sensor_failure_tolerance_policy(uint8_t fru);
 
 #ifdef __cplusplus
 }

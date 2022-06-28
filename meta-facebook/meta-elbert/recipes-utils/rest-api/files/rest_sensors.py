@@ -91,7 +91,7 @@ def get_smb_sensors():
 
 def get_psu1_sensors():
     return {
-        "Information": get_fru_sensor("psu1, removeNA=True"),
+        "Information": get_fru_sensor("psu1", removeNA=True),
         "Actions": [],
         "Resources": [],
     }
@@ -99,7 +99,7 @@ def get_psu1_sensors():
 
 def get_psu2_sensors():
     return {
-        "Information": get_fru_sensor("psu2, removeNA=True"),
+        "Information": get_fru_sensor("psu2", removeNA=True),
         "Actions": [],
         "Resources": [],
     }
@@ -107,7 +107,7 @@ def get_psu2_sensors():
 
 def get_psu3_sensors():
     return {
-        "Information": get_fru_sensor("psu3, removeNA=True"),
+        "Information": get_fru_sensor("psu3", removeNA=True),
         "Actions": [],
         "Resources": [],
     }
@@ -115,7 +115,7 @@ def get_psu3_sensors():
 
 def get_psu4_sensors():
     return {
-        "Information": get_fru_sensor("psu4, removeNA=True"),
+        "Information": get_fru_sensor("psu4", removeNA=True),
         "Actions": [],
         "Resources": [],
     }

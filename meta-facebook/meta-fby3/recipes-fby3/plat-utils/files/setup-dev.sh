@@ -34,6 +34,9 @@ function create_new_dev() {
 
 function init_class1_dev(){
   hsc_detect=$(get_hsc_bb_detect)
+  VENDOR_TI="0x55"
+  KEY_TEMP_VENDOR="tmp_vendor"
+
   if [ $hsc_detect -eq $HSC_DET_ADM1278 ]; then
     for i in $(seq 1 5)
     do
@@ -44,11 +47,20 @@ function init_class1_dev(){
         break
       fi
     done
-  elif [ $hsc_detect -eq $HSC_DET_LTC4282 ]; then
-    create_new_dev "ltc4282" 0x40 11
-    create_new_dev "tmp401" 0x4c 12
-  elif [ $hsc_detect -eq $HSC_DET_ADM1276 ]; then
-    create_new_dev "tmp401" 0x4c 12
+  elif [ $hsc_detect -eq $HSC_DET_LTC4282 ] || [ $hsc_detect -eq $HSC_DET_ADM1276 ]; then
+    if [ $hsc_detect -eq $HSC_DET_LTC4282 ]; then
+      create_new_dev "ltc4282" 0x40 11
+    fi
+    vendor=$(/usr/sbin/i2cget -f -y 12 0x4c 0xfe)
+    if [ "$vendor" = "$VENDOR_TI" ]; then
+      /usr/bin/kv set $KEY_TEMP_VENDOR "TI"
+      echo "$vendor"
+      create_new_dev "tmp401" 0x4c 12
+    else
+      echo "$vendor"
+      /usr/bin/kv set $KEY_TEMP_VENDOR "non-TI"
+      create_new_dev "lm90" 0x4c 12
+    fi
   fi
 
   #create the device of the inlet/outlet temp.

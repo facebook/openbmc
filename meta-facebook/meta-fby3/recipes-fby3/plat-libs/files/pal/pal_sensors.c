@@ -1912,6 +1912,8 @@ read_temp(uint8_t id, float *value) {
     {"lm75-i2c-2-4f",  "BMC_OUTLET_TEMP"},
     {"tmp401-i2c-12-4c",  "BMC_OUTLET_TEMP"},
     {"tmp401-i2c-12-4c",  "BMC_SENSOR_HSC_TEMP"},
+    {"lm90-i2c-12-4c",  "BMC_OUTLET_TEMP"},
+    {"lm90-i2c-12-4c",  "BMC_SENSOR_HSC_TEMP"},
   };
   if (id >= ARRAY_SIZE(devs)) {
     return -1;
@@ -2728,6 +2730,33 @@ exit:
 }
 
 static void
+update_tmp_sensor_map() {
+  char key[MAX_KEY_LEN] = {0};
+  char val[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), "tmp_vendor");
+  if (kv_get(key, val, NULL, 0) != 0) {
+    syslog(LOG_ERR, "%s Fail to identify current tmp sensor, using default sensor map", __func__);
+    goto end;
+  }
+
+  if (strcmp(val, "non-TI") == 0) {
+    sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_90_HSC;
+    sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
+    sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_90_OUTLET;
+    sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+    return;
+  }
+
+end:
+  // default
+  sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
+  sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
+  sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
+  sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+  return;
+}
+static void
 update_hsc_sensor_map(uint8_t hsc_det) {
   switch(hsc_det) {
     case HSC_DET_LTC4282:
@@ -2739,14 +2768,11 @@ update_hsc_sensor_map(uint8_t hsc_det) {
       sensor_map[BMC_SENSOR_HSC_EIN].read_sensor = read_ltc4282_ein;
       sensor_map[BMC_SENSOR_HSC_VIN].id = BMC_SENSOR_HSC_VIN;
       sensor_map[BMC_SENSOR_HSC_VIN].read_sensor = sensors_read_hsc;
-      sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
-      sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
       sensor_map[BMC_SENSOR_HSC_PIN].id = BMC_SENSOR_HSC_PIN;
       sensor_map[BMC_SENSOR_HSC_PIN].read_sensor = sensors_read_hsc;
       sensor_map[BMC_SENSOR_HSC_IOUT].id = BMC_SENSOR_HSC_IOUT;
       sensor_map[BMC_SENSOR_HSC_IOUT].read_sensor = sensors_read_hsc;
-      sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
-      sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+      update_tmp_sensor_map();
       break;
     case HSC_DET_MP5990:
       sensor_map[BMC_SENSOR_HSC_PEAK_IOUT].id = HSC_MP5990;
@@ -2767,12 +2793,9 @@ update_hsc_sensor_map(uint8_t hsc_det) {
       sensor_map[BMC_SENSOR_HSC_PEAK_PIN].id = HSC_ADM1276;
       sensor_map[BMC_SENSOR_HSC_EIN].id = HSC_ADM1276;
       sensor_map[BMC_SENSOR_HSC_VIN].id = HSC_ADM1276;
-      sensor_map[BMC_SENSOR_HSC_TEMP].id = TEMP_431_HSC;
-      sensor_map[BMC_SENSOR_HSC_TEMP].read_sensor = read_temp;
       sensor_map[BMC_SENSOR_HSC_PIN].id = HSC_ADM1276;
       sensor_map[BMC_SENSOR_HSC_IOUT].id = HSC_ADM1276;
-      sensor_map[BMC_SENSOR_OUTLET_TEMP].id = TEMP_431_OUTLET;
-      sensor_map[BMC_SENSOR_OUTLET_TEMP].read_sensor = read_temp;
+      update_tmp_sensor_map();
      break;
     default:
       syslog(LOG_ERR, "HSC detection: Unknown source: %u, using main source configuration", hsc_det);

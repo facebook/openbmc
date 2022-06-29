@@ -241,10 +241,10 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
     req_len = SIZE_CPU_PPIN*MAX_CPU_NUM;
 
   for (i = 0; i < req_len; i++) {
-    sprintf(&str[(i%MAX_CPU_NUM)*2], "%02x", req_data[i]);
+    sprintf(&str[(i%SIZE_CPU_PPIN)*2], "%02x", req_data[i]);
 
     if (!((i+1)%MAX_CPU_NUM)) {
-      sprintf(key, "cpu%d_ppin", i/MAX_CPU_NUM);
+      sprintf(key, "cpu%d_ppin", i/SIZE_CPU_PPIN);
       if (pal_set_key_value(key, str)) {
         comp_code = CC_UNSPECIFIED_ERROR;
         break;

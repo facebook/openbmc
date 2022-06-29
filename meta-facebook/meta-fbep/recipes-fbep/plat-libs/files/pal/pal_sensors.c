@@ -168,10 +168,10 @@ const uint8_t mb_brcm_switch_sensor_list[] = {
   MB_SENSOR_INLET_REMOTE,
   MB_SENSOR_OUTLET,
   MB_SENSOR_OUTLET_REMOTE,
-  MB_SENSOR_PAX0_THERM_REMOTE,
-  MB_SENSOR_PAX1_THERM_REMOTE,
-  MB_SENSOR_PAX2_THERM_REMOTE,
-  MB_SENSOR_PAX3_THERM_REMOTE,
+  MB_SENSOR_PEX0_THERM_REMOTE,
+  MB_SENSOR_PEX1_THERM_REMOTE,
+  MB_SENSOR_PEX2_THERM_REMOTE,
+  MB_SENSOR_PEX3_THERM_REMOTE,
   MB_VR_P0V8_VDD0_VIN,
   MB_VR_P0V8_VDD0_VOUT,
   MB_VR_P0V8_VDD0_CURR,
@@ -538,6 +538,14 @@ float sensors_threshold[MAX_SENSOR_NUM + 1][MAX_SENSOR_THRESHOLD + 1] = {
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
   [MB_VR_P1V0_AVD3_TEMP] =
   {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PEX0_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PEX1_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PEX2_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0},
+  [MB_SENSOR_PEX3_THERM_REMOTE] =
+  {0,	115.0,	0,	0,	10.0,	0,	0,	0,	0}, 
   [PDB_HSC_P12V_AUX_VIN] =
   {0,	13.2,	13,	0,	10.8,	0,	0,	0,	0},
   [PDB_HSC_P12V_1_VIN] =
@@ -815,6 +823,14 @@ struct sensor_map {
   {sensors_read_vr, "EP_MB_VR_P1V0_AVD2_TEMP", SNR_TEMP},
   [MB_VR_P1V0_AVD3_TEMP] =
   {sensors_read_vr, "EP_MB_VR_P1V0_AVD3_TEMP", SNR_TEMP},
+  [MB_SENSOR_PEX0_THERM_REMOTE] =
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PEX0_THERM", SNR_TEMP},
+  [MB_SENSOR_PEX1_THERM_REMOTE] =
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PEX1_THERM", SNR_TEMP},
+  [MB_SENSOR_PEX2_THERM_REMOTE] =
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PEX2_THERM", SNR_TEMP},
+  [MB_SENSOR_PEX3_THERM_REMOTE] =
+  {sensors_read_pax_therm, "EP_MB_SENSOR_PEX3_THERM", SNR_TEMP},  
   [PDB_HSC_P12V_AUX_VIN] =
   {sensors_read_12v_hsc, "EP_PDB_HSC_P12V_AUX_VIN", SNR_VOLT},
   [PDB_HSC_P12V_1_VIN] =
@@ -1146,7 +1162,7 @@ int pal_get_fan_name(uint8_t num, char *name)
   return 0;
 }
 
-int pal_check_swich_config(void)
+int pal_check_switch_config(void)
 {
   char switch_vendor[16] = {0};
   int switch_config;
@@ -1486,7 +1502,7 @@ static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
   if (!is_device_ready())
     return ERR_SENSOR_NA;
 
-  if (pal_check_swich_config()) {
+  if (pal_check_switch_config()) {
     int fd;
     char dev[64] = {0};
     uint8_t tbuf[][16] = {
@@ -1505,16 +1521,16 @@ static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
 
 
     switch (sensor_num) {
-      case MB_SENSOR_PAX0_THERM_REMOTE:
+      case MB_SENSOR_PEX0_THERM_REMOTE:
         bus = 19;
       break;
-      case MB_SENSOR_PAX1_THERM_REMOTE:
+      case MB_SENSOR_PEX1_THERM_REMOTE:
         bus = 20;
       break;
-      case MB_SENSOR_PAX2_THERM_REMOTE:
+      case MB_SENSOR_PEX2_THERM_REMOTE:
         bus = 21;
       break;
-      case MB_SENSOR_PAX3_THERM_REMOTE:
+      case MB_SENSOR_PEX3_THERM_REMOTE:
         bus = 22;
       break;
 
@@ -1970,7 +1986,7 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 {
   switch (fru) {
     case FRU_MB:
-      if (pal_check_swich_config()) {
+      if (pal_check_switch_config()) {
         *sensor_list = (uint8_t *) mb_brcm_switch_sensor_list;
         *cnt = mb_brcm_switch_sensor_cnt;
       } else {

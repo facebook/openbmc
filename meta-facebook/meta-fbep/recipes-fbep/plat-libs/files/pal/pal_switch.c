@@ -65,7 +65,7 @@ int pal_check_pax_fw_type(uint8_t comp, const char *fwimg)
   int fd;
   struct switchtec_fw_image_info info;
 
-  if (pal_check_swich_config())
+  if (pal_check_switch_config())
     return -2;
 
   fd = open(fwimg, O_RDONLY);
@@ -205,7 +205,7 @@ static int get_pax_ver(uint8_t paxid, uint8_t type, char *ver)
   if (pal_is_server_off())
     return -1;
 
-  if (pal_check_swich_config()) {
+  if (pal_check_switch_config()) {
 
     switch (paxid) {
       case 0:
@@ -309,7 +309,7 @@ int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
   if (pal_is_server_off())
     return -1;
 
-  if (pal_check_swich_config()) {
+  if (pal_check_switch_config()) {
     return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_CFG, ver);
   } else {
     snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);

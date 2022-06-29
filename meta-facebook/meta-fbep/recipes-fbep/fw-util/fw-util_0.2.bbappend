@@ -23,6 +23,7 @@ LOCAL_URI += " \
     file://vr_fw.cpp \
     file://vr_fw.h \
     file://switch.cpp \
+    file://switch.h \
     file://usbdbg.h \
     file://usbdbg.cpp \
     file://mcu_fw.h \

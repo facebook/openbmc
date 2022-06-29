@@ -24,6 +24,7 @@ LOCAL_URI += " \
         file://bios.h \
         file://bios.cpp \
         file://bmc_bios.cpp \
+        file://me.cpp \
         "
 
 LOCAL_URI:remove = " \

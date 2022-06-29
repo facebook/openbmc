@@ -42,6 +42,7 @@
 #include <string.h>
 #include <openbmc/obmc-i2c.h>
 #include "netlakemtp_common.h"
+#include <openbmc/ipmb.h>
 
 const char platform_signature[PLAT_SIG_SIZE] = "Netlake";
 
@@ -344,4 +345,83 @@ netlakemtp_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *valu
     *value_linear16 = ((float)raw * pow(2, exponent));
   }
   return 0;
+}
+
+int
+netlakemtp_common_me_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
+                  uint8_t *txbuf, uint8_t txlen,
+                  uint8_t *rxbuf, uint8_t *rxlen) {
+
+  if (rxlen == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to get rxlen from NULL pointer.", __func__);
+    return -1;
+  }
+
+  ipmb_req_t *req;
+  ipmb_res_t *res;
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  req = (ipmb_req_t*)tbuf;
+  req->res_slave_addr = 0x16 << 1;
+  req->netfn_lun = netfn << LUN_OFFSET;
+  req->hdr_cksum = req->res_slave_addr + req->netfn_lun;
+  req->hdr_cksum = ZERO_CKSUM_CONST - req->hdr_cksum;
+  req->req_slave_addr = BMC_SLAVE_ADDR << 1;
+  req->seq_lun = 0x00;
+  req->cmd = cmd;
+
+  //copy the data to be send
+  if (txlen) {
+    if (txbuf == NULL) {
+      syslog(LOG_WARNING, "%s(): failed to get txbuf from NULL pointer.", __func__);
+      return -1;
+    }
+    memcpy(req->data, txbuf, txlen);
+  }
+
+  tlen = IPMB_HDR_SIZE + IPMI_REQ_HDR_SIZE + txlen;
+
+  // Invoke IPMB library handler
+  lib_ipmb_handle(ME_BUS, tbuf, tlen, rbuf, &rlen);
+
+  if (rlen == 0) {
+    syslog(LOG_DEBUG, "me_ipmb_wrapper: Zero bytes received\n");
+    return -1;
+  }
+
+  // Handle IPMB response
+  res  = (ipmb_res_t*) rbuf;
+
+  if (res->cc) {
+    syslog(LOG_ERR, "me_ipmb_wrapper: Completion Code: 0x%X\n", res->cc);
+    return -1;
+  }
+
+  // copy the received data back to caller
+  *rxlen = rlen - IPMB_HDR_SIZE - IPMI_RESP_HDR_SIZE;
+  if ((*rxlen != 0) && (rxbuf == NULL)) {
+    syslog(LOG_WARNING, "%s(): failed to get rxbuf from NULL pointer.", __func__);
+    return -1;
+  }
+
+  memcpy(rxbuf, res->data, *rxlen);
+
+  return 0;
+}
+
+int
+netlakemtp_common_me_get_fw_ver(ipmi_dev_id_t *dev_id) {
+  int ret;
+  uint8_t rlen = 0;
+
+  if (dev_id == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to put device id to NULL pointer.", __func__);
+    return -1;
+  }
+
+  ret = netlakemtp_common_me_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_GET_DEVICE_ID, NULL, 0, (uint8_t *)dev_id, &rlen);
+  return ret;
 }

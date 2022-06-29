@@ -11,8 +11,8 @@ inherit meson
 SRC_URI = "file://netlakemtp_common \
           "
 
-DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libipmi openssl "
-RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv libipmi openssl "
+DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libipmi libipmb openssl "
+RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv libipmi libipmb openssl "
 
 S = "${WORKDIR}/netlakemtp_common"
 

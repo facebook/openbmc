@@ -14,6 +14,7 @@ netlakemtp_common_deps = [
     dependency('openssl'),
     dependency('libkv'),
     dependency('libobmc-i2c'),
+    dependency('libipmb'),
 ]
 
 # NETLAKEMTP common library.

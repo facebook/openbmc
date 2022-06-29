@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <openssl/md5.h>
 #include <sys/stat.h>
+#include <openbmc/ipmi.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -77,6 +78,8 @@ extern "C" {
 #define CPLD_ADC_REG_BUS 4
 #define CPLD_ADC_REG_ADDR 0x1E
 #define CPLD_GET_REV_RETRY_TIME 3
+
+#define ME_BUS 1
 
 #define MAX_PATH_LEN 128  // include the string terminal
 
@@ -139,6 +142,9 @@ int netlakemtp_common_get_img_ver(const char* image_path, char* ver);
 int netlakemtp_common_get_board_rev(uint8_t* rev_id);
 int netlakemtp_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakemtp_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
+int netlakemtp_common_me_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
+                                      uint8_t *rxbuf, uint8_t *rxlen);
+int netlakemtp_common_me_get_fw_ver(ipmi_dev_id_t *dev_id);
 
 #ifdef __cplusplus
 } // extern "C"

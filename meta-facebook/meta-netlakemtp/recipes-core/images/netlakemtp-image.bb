@@ -36,4 +36,5 @@ IMAGE_INSTALL += " \
   ipmbd \
   bios-util \
   mterm \
+  openbmc-utils \
   "

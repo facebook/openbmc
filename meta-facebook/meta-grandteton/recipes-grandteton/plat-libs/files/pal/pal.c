@@ -686,3 +686,27 @@ int pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
 {
   return -1;
 }
+
+int
+pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
+{
+  NM_RW_INFO info;
+  uint8_t rbuf[8];
+  uint8_t rlen;
+  int ret;
+
+  info.bus = NM_IPMB_BUS_ID;
+  info.nm_addr = NM_SLAVE_ADDR;
+  info.bmc_addr = BMC_DEF_SLAVE_ADDR;
+
+  ret = cmd_NM_get_self_test_result(&info, rbuf, &rlen);
+  if (ret != 0) {
+    return PAL_ENOTSUP;
+  }
+
+  memcpy(data, rbuf, rlen);
+#ifdef DEBUG
+  syslog(LOG_WARNING, "rbuf[0] =%x rbuf[1] =%x\n", rbuf[0], rbuf[1]);
+#endif
+  return ret;
+}

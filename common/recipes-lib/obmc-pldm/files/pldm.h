@@ -85,7 +85,7 @@ int oem_pldm_send_recv (uint8_t bus, int eid,
  * @param[out] resp_msg_len  - caller owned pointer that will be made point to
  *                             the size of the PLDM response msg.
  */
-int oem_pldm_send_recv_w_fd (int eid, int fd,
+int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
                         const uint8_t *pldm_req_msg, size_t req_msg_len, 
                         uint8_t **pldm_resp_msg, size_t *resp_msg_len);
 

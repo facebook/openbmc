@@ -168,15 +168,15 @@ int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
   }
 
   rc = pldm_send(eid, pldmd_fd, pldm_req_msg, req_msg_len);
-  if(rc) {
-      printf("%s return code = %d\n", __func__, PLDM_REQUESTER_SEND_FAIL);
-      return PLDM_REQUESTER_SEND_FAIL;
+  if (rc) {
+    printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_SEND_FAIL, -errno);
+    return PLDM_REQUESTER_SEND_FAIL;
   }
 
   rc = (pldm_requester_rc_t)oem_pldm_recv((int)eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
   if (rc) {
-      printf("%s return code = %d\n", __func__, PLDM_REQUESTER_RECV_FAIL);
-      return PLDM_REQUESTER_RECV_FAIL;
+    printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_RECV_FAIL, -errno);
+    return PLDM_REQUESTER_RECV_FAIL;
   }
   return PLDM_REQUESTER_SUCCESS;
 }
@@ -267,7 +267,8 @@ pldm_oem_ipmi_send_recv(uint8_t bus, uint8_t eid,
       rc = PLDM_REQUESTER_RECV_FAIL;
       break;
     }
-    memcpy(rxbuf, pldm_rbuf+PLDM_OEM_IPMI_DATA_OFFSET, *rxlen-PLDM_OEM_IPMI_DATA_OFFSET);
+    *rxlen -= PLDM_OEM_IPMI_DATA_OFFSET;
+    memcpy(rxbuf, pldm_rbuf+PLDM_OEM_IPMI_DATA_OFFSET, *rxlen);
   } while(0);
 
   if(pldm_rbuf != nullptr) {
@@ -315,7 +316,8 @@ pldm_norm_ipmi_send_recv(uint8_t bus, uint8_t eid,
       rc = PLDM_REQUESTER_RECV_FAIL;
       break;
     }
-    memcpy(rxbuf, pldm_rbuf+PLDM_IPMI_HEAD_LEN, *rxlen-PLDM_IPMI_HEAD_LEN);
+    *rxlen -= PLDM_IPMI_HEAD_LEN;
+    memcpy(rxbuf, pldm_rbuf+PLDM_IPMI_HEAD_LEN, *rxlen);
   } while(0);
 
   if(pldm_rbuf != nullptr) {

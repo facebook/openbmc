@@ -218,9 +218,9 @@ PAL_DEV_INFO temp_dev_list[] = {
   {"tmp75-i2c-4-48",  "MB_INLET_TEMP"},
   {"tmp75-i2c-4-4a",  "MB_OUTLET_TEMP"},
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
-  {"peci_cputemp.cpu0-isa-0000", "Die"},
-  {"peci_dimmtemp.cpu0-isa-0000", "DIMM A1"},
-  {"peci_dimmtemp.cpu0-isa-0000", "DIMM B1"},
+  {"peci_cputemp.cpu0-auxiliary-0000", "Die"},
+  {"peci_dimmtemp.cpu0-auxiliary-0000", "DIMM A1"},
+  {"peci_dimmtemp.cpu0-auxiliary-0000", "DIMM B1"},
 };
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {

@@ -35,4 +35,5 @@ IMAGE_INSTALL += " \
   fscd \
   ipmbd \
   bios-util \
+  mterm \
   "

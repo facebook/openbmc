@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-package remediations_wedge100
+package common
 
 import (
 	"bytes"
@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 func TestMmapLen(t *testing.T) {
@@ -64,8 +65,11 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 
 		ResetWDT2StatusRegOrig := ResetWDT2StatusReg
 		defer func() { ResetWDT2StatusReg = ResetWDT2StatusRegOrig }()
+                GetMachineOrig := utils.GetMachine
+		defer func() { utils.GetMachine = GetMachineOrig }()
 
 		ResetWDT2StatusReg = func(mem []byte) error { return errors.Errorf("Should not have been called") }
+		utils.GetMachine = func() (string, error) { return "armv6l", nil }
 
 		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
 
@@ -88,12 +92,15 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 
 		ResetWDT2StatusRegOrig := ResetWDT2StatusReg
 		defer func() { ResetWDT2StatusReg = ResetWDT2StatusRegOrig }()
+                GetMachineOrig := utils.GetMachine
+		defer func() { utils.GetMachine = GetMachineOrig }()
 
 		ResetWDT2StatusReg = func(mem []byte) error {
 			// Simulate clearing flag on ResetWDT2StatusReg() call
 			mem[0] = 0
 			return ResetWDT2StatusRegOrig(mem)
 		}
+		utils.GetMachine = func() (string, error) { return "armv6l", nil }
 
 		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
 
@@ -125,12 +132,15 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 
 		ResetWDT2StatusRegOrig := ResetWDT2StatusReg
 		defer func() { ResetWDT2StatusReg = ResetWDT2StatusRegOrig }()
+                GetMachineOrig := utils.GetMachine
+		defer func() { utils.GetMachine = GetMachineOrig }()
 
 		ResetWDT2StatusReg = func(mem []byte) error {
 			// Simulate flag not clearing on ResetWDT2StatusReg() call
 			mem[0] = 2
 			return ResetWDT2StatusRegOrig(mem)
 		}
+		utils.GetMachine = func() (string, error) { return "armv6l", nil }
 
 		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
 
@@ -141,6 +151,29 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 		re_expected_log_buffer := "" +
 			"^[^\n]+WDT2 second boot code flag @ 0x0 active [(]current value = 0x102[)], clearing flag...\n" +
 			"$"
+
+		if !regexp.MustCompile(re_expected_log_buffer).Match(buf.Bytes()) {
+			t.Errorf("Unexpected log buffer: %v", buf.String())
+		}
+
+	})
+
+	t.Run("Should bail out if not running on AST2400/AST2500", func(t *testing.T) {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+
+                GetMachineOrig := utils.GetMachine
+		defer func() { utils.GetMachine = GetMachineOrig }()
+		utils.GetMachine = func() (string, error) { return "lumpajunka", nil }
+
+		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
+
+		if res != nil {
+			t.Errorf("Expected ExposeRealFlash0OnSecondaryBoot() to return nil, got %v", res)
+		}
+
+		re_expected_log_buffer := "" +
+			"^[^\n]+Remediation handles only AST2400 and AST2500"
 
 		if !regexp.MustCompile(re_expected_log_buffer).Match(buf.Bytes()) {
 			t.Errorf("Unexpected log buffer: %v", buf.String())

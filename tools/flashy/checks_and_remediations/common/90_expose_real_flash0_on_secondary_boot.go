@@ -17,7 +17,7 @@
  * Boston, MA 02110-1301 USA
  */
 
-package remediations_wedge100
+package common
 
 import (
 	"encoding/binary"
@@ -26,6 +26,7 @@ import (
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/pkg/errors"
 )
 
@@ -48,6 +49,17 @@ func init() {
 // writing to flash0 at all)
 // This step detects whenever the flag is active and resets it
 func ExposeRealFlash0OnSecondaryBoot(stepParams step.StepParams) step.StepExitError {
+	machine, err := utils.GetMachine()
+	if err != nil {
+		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to fetch machine: %v", err)}
+	}
+
+	// Bail if not running on AST2400 (armv5tejl) nor AST2500 (armv6l)
+	if machine != "armv5tejl" && machine != "armv6l" {
+		log.Printf("Remediation handles only AST2400 and AST2500")
+		return nil
+	}
+
 	mem, err := MmapDevMemRw()
 	if err != nil {
 		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to mmap /dev/mem: %v", err)}
@@ -107,3 +119,4 @@ var MmapDevMemRw = func() ([]byte, error) {
 
 	return mem, nil
 }
+	

@@ -129,24 +129,6 @@ var vbootPartitionExists = func() bool {
 	return err == nil
 }
 
-var getMachine = func() (string, error) {
-	var uts syscall.Utsname
-
-	err := syscall.Uname(&uts)
-	if err != nil {
-		return "unknown", err
-	}
-
-	machine := make([]byte, 0, len(uts.Machine))
-	for _, v := range uts.Machine {
-		if v == 0 {
-			break
-		}
-		machine = append(machine, byte(v))
-	}
-	return string(machine), nil
-}
-
 // GetVbs tries to get the Vbs struct by reading off /dev/mem.
 // This errors out if the vboot partition ("rom") does not exist.
 var GetVbs = func() (Vbs, error) {
@@ -157,7 +139,7 @@ var GetVbs = func() (Vbs, error) {
 		return vbs, errors.Errorf("Not a Vboot system: vboot partition (rom) does not exist.")
 	}
 
-	machine, err := getMachine()
+	machine, err := GetMachine()
 	if err != nil {
 		return vbs, errors.Errorf("Unable to fetch utsinfo: %v", err)
 	}

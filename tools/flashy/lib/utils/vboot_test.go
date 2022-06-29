@@ -110,18 +110,18 @@ func TestGetVbs(t *testing.T) {
 	getPageOffsettedOffsetOrig := fileutils.GetPageOffsettedOffset
 	vbootPartitionExistsOrig := vbootPartitionExists
 	munmapOrig := fileutils.Munmap
-	getMachineOrig := getMachine
+	GetMachineOrig := GetMachine
 	defer func() {
 		fileutils.MmapFileRange = mmapFileRangeOrig
 		fileutils.GetPageOffsettedOffset = getPageOffsettedOffsetOrig
 		vbootPartitionExists = vbootPartitionExistsOrig
 		fileutils.Munmap = munmapOrig
-		getMachine = getMachineOrig
+		GetMachine = GetMachineOrig
 	}()
 	vbootPartitionExists = func() bool {
 		return true
 	}
-	getMachine = func() (string, error) {
+	GetMachine = func() (string, error) {
 		return "armv6l", nil
 	}
 	wantVbs := Vbs{
@@ -194,7 +194,7 @@ func TestGetVbs(t *testing.T) {
 	tests.CompareTestErrors(errors.Errorf("Unable to mmap /dev/mem: failed"), err, t)
 
 	// test AST2600 path
-	getMachine = func() (string, error) {
+	GetMachine = func() (string, error) {
 		return "armv7l", nil
 	}
 	fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {

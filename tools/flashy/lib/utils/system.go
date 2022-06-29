@@ -504,3 +504,21 @@ var PetWatchdog = func() {
 	}
 	log.Printf("Watchdog not petted; yielded CPU instead")
 }
+
+var GetMachine = func() (string, error) {
+	var uts syscall.Utsname
+
+	err := syscall.Uname(&uts)
+	if err != nil {
+		return "unknown", err
+	}
+
+	machine := make([]byte, 0, len(uts.Machine))
+	for _, v := range uts.Machine {
+		if v == 0 {
+			break
+		}
+		machine = append(machine, byte(v))
+	}
+	return string(machine), nil
+}

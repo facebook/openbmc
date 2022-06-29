@@ -37,4 +37,5 @@ IMAGE_INSTALL += " \
   bios-util \
   mterm \
   openbmc-utils \
+  threshold-util \
   "

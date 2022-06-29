@@ -80,7 +80,7 @@
 
 static int nv_open_slot(uint8_t slot)
 {
-  return i2c_cdev_slave_open((int)slot + 20, NV_GPU_ADDR, 0);
+  return i2c_cdev_slave_open((int)slot + 24, NV_GPU_ADDR, 0);
 }
 
 static int nv_msgbox_write_reg(int fd, uint8_t opcode, uint8_t arg1, uint8_t arg2)

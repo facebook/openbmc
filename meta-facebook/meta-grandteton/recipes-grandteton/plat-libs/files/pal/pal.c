@@ -223,7 +223,6 @@ pal_get_fruid_path(uint8_t fru, char *path) {
     return -1;
 
   sprintf(path, "/tmp/fruid_%s.bin", fru_dev_data[fru].name);
-  printf("%s\n", path);
   return 0;
 }
 

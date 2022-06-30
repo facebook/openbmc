@@ -48,6 +48,11 @@ jobs:
         with:
           name: flashy
           path: tools/flashy/build/flashy
+      - name: Prepare release folder
+        run: |
+          mkdir tools/flashy/release
+          cp tools/flashy/build/flashy tools/flashy/release/flashy
+          cp tools/flashy/scripts/run_flashy.sh tools/flashy/release
       - name: Get short SHA
         id: slug
         run: echo "::set-output name=sha7::$(echo ${GITHUB_SHA} | cut -c1-7)"
@@ -68,6 +73,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: tools/flashy/build/flashy
+          asset_path: tools/flashy/release
           asset_name: flashy
-          asset_content_type: application/octet-stream
+          asset_content_type: application/zip

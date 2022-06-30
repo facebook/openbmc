@@ -1,0 +1,73 @@
+name: flashy
+on:
+  push:
+    paths:
+      - "tools/flashy/**"
+  pull_request:
+    paths:
+      - "tools/flashy/**"
+
+jobs:
+  flashy-unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Run unit tests
+        run: tools/flashy/scripts/run_unit_tests.sh
+
+  flashy-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Build flashy
+        run: tools/flashy/build.sh
+      - name: Upload artifact
+        if: github.ref == 'refs/heads/helium'
+        uses: actions/upload-artifact@v2
+        with:
+          name: flashy
+          path: tools/flashy/build/flashy
+
+  flashy-release:
+    if: github.ref == 'refs/heads/helium'
+    runs-on: ubuntu-latest
+    needs:
+      - flashy-unit-test
+      - flashy-build
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Download flashy build
+        uses: actions/download-artifact@v2
+        with:
+          name: flashy
+          path: tools/flashy/build/flashy
+      - name: Get short SHA
+        id: slug
+        run: echo "::set-output name=sha7::$(echo ${GITHUB_SHA} | cut -c1-7)"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: flashy-${{ steps.slug.outputs.sha7 }}
+          release_name: flashy-${{ steps.slug.outputs.sha7 }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: tools/flashy/build/flashy
+          asset_name: flashy
+          asset_content_type: application/octet-stream

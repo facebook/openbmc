@@ -3,6 +3,9 @@ on:
   push:
     paths:
       - "tools/flashy/**"
+  pull_request:
+    paths:
+      - "tools/flashy/**"
 
 jobs:
   flashy-unit-test:

@@ -26,7 +26,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       - name: Build flashy
-        run: tools/flashy/scripts/build.sh
+        run: tools/flashy/build.sh
       - name: Upload artifact
         if: github.ref == 'refs/heads/helium'
         uses: actions/upload-artifact@v2

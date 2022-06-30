@@ -128,6 +128,7 @@ enum {
 #define KEY_NIC6_SNR_HEALTH "nic6_sensor_health"
 #define KEY_NIC7_SNR_HEALTH "nic7_sensor_health"
 
+int pal_get_platform_id(uint8_t *id);
 
 #ifdef __cplusplus
 } // extern "C"
@@ -137,7 +138,6 @@ int pal_get_rst_btn(uint8_t *status);
 int pal_control_mux_to_target_ch(uint8_t channel, uint8_t bus, uint8_t mux_addr);
 bool pal_is_server_off(void);
 bool is_device_ready(void);
-int pal_get_platform_id(uint8_t *id);
 int pal_check_carrier_type(int index);
 int pal_set_id_led(uint8_t status);
 int pal_set_amber_led(char *carrier, char* dev_num, char* value);

@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
     file://cpld.cpp \
     file://switch.cpp \
+    file://switch.h \
     file://mcu_fw.h \
     file://mcu_fw.cpp \
     file://usbdbg.h \

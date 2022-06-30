@@ -280,30 +280,12 @@ int pal_get_brcm_pax_ver(uint8_t paxid, char *ver)
 
 int pal_get_pax_bl2_ver(uint8_t paxid, char *ver)
 {
-  uint8_t board_id = 0xFF;
-
-  pal_get_platform_id(&board_id);
-
-  if ((board_id & 0x7) == 0x3) {
-    return pal_get_brcm_pax_ver(paxid, ver);
-  }
-  else {
-    return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
-  }
+  return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
 }
 
 int pal_get_pax_fw_ver(uint8_t paxid, char *ver)
 {
-  uint8_t board_id = 0xFF;
-
-  pal_get_platform_id(&board_id);
-
-  if ((board_id & 0x7) == 0x3) {
-    return pal_get_brcm_pax_ver(paxid, ver);
-  }
-  else {
-    return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
-  }
+  return get_pax_ver(paxid, SWITCHTEC_FW_TYPE_BL2, ver);
 }
 
 int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
@@ -313,18 +295,11 @@ int pal_get_pax_cfg_ver(uint8_t paxid, char *ver)
   struct switchtec_dev *dev;
   size_t map_size;
   unsigned int x;
-  uint8_t board_id = 0xFF;
 
   gasptr_t map;
 
   if (pal_is_server_off())
     return -1;
-
-  pal_get_platform_id(&board_id);
-
-  if ((board_id & 0x7) == 0x3) {
-    return pal_get_brcm_pax_ver(paxid, ver);
-  }
 
   snprintf(device_name, LARGEST_DEVICE_NAME, SWITCHTEC_DEV, SWITCH_BASE_ADDR + paxid);
 

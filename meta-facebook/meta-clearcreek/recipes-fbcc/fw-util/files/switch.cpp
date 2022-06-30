@@ -2,41 +2,41 @@
 #include "spiflash.h"
 #include <syslog.h>
 #include <openbmc/pal.h>
+#include <switch.h>
 
 using namespace std;
-
-class PAXComponent : public GPIOSwitchedSPIMTDComponent {
-  uint8_t _paxid;
-  public:
-    PAXComponent(string fru, string comp, uint8_t paxid, std::string shadow)
-      : GPIOSwitchedSPIMTDComponent(fru, comp, "switch0", "spi1.0", shadow, true), _paxid(paxid) {
-          spipath = "/sys/bus/spi/drivers/spi-nor";
-        }
-    int print_version() override;
-    int update(string image) override;
-};
 
 int PAXComponent::print_version()
 {
   int ret;
   char ver[MAX_VALUE_LEN] = {0};
   string comp = this->component();
+  uint8_t board_type = 0;
 
-  if (comp.find("flash") != string::npos)
-    return 0;
+  pal_get_platform_id(&board_type);
 
-  cout << "PAX" << (int)_paxid;
-  if (comp.find("bl2") != string::npos) {
-    cout << " BL2 Version: ";
-    ret = pal_get_pax_bl2_ver(_paxid, ver);
-  } else if (comp.find("img") != string::npos) {
-    cout << " IMG Version: ";
-    ret = pal_get_pax_fw_ver(_paxid, ver);
-  } else if (comp.find("cfg") != string::npos) {
-    cout << " CFG Version: ";
-    ret = pal_get_pax_cfg_ver(_paxid, ver);
-  } else {
+  if((board_type & 0x07) == 0x3) {
+    cout << "PEX" << (int)_paxid;
+    cout << " SBR UTP Version: ";
+    ret = pal_get_brcm_pax_ver(_paxid, ver);
+  }
+  else {
+    if (comp.find("flash") != string::npos)
+      return 0;
+
+    cout << "PAX" << (int)_paxid;
+    if (comp.find("bl2") != string::npos) {
+      cout << " BL2 Version: ";
+      ret = pal_get_pax_bl2_ver(_paxid, ver);
+    } else if (comp.find("img") != string::npos) {
+      cout << " IMG Version: ";
+      ret = pal_get_pax_fw_ver(_paxid, ver);
+    } else if (comp.find("cfg") != string::npos) {
+      cout << " CFG Version: ";
+      ret = pal_get_pax_cfg_ver(_paxid, ver);
+    } else {
     return -1;
+    }
   }
 
   if (ret < 0)
@@ -77,20 +77,3 @@ int PAXComponent::update(string image)
 
   return ret;
 }
-
-PAXComponent pax0_fw("mb", "pax0-bl2", 0, "");
-PAXComponent pax0_bl("mb", "pax0-img", 0, "");
-PAXComponent pax0_cfg("mb", "pax0-cfg", 0, "");
-PAXComponent pax0_flash("mb", "pax0-flash", 0, "SEL_FLASH_PAX0");
-PAXComponent pax1_fw("mb", "pax1-bl2", 1, "");
-PAXComponent pax1_bl("mb", "pax1-img", 1, "");
-PAXComponent pax1_cfg("mb", "pax1-cfg", 1, "");
-PAXComponent pax1_flash("mb", "pax1-flash", 1, "SEL_FLASH_PAX1");
-PAXComponent pax2_fw("mb", "pax2-bl2", 2, "");
-PAXComponent pax2_bl("mb", "pax2-img", 2, "");
-PAXComponent pax2_cfg("mb", "pax2-cfg", 2, "");
-PAXComponent pax2_flash("mb", "pax2-flash", 2, "SEL_FLASH_PAX2");
-PAXComponent pax3_fw("mb", "pax3-bl2", 3, "");
-PAXComponent pax3_bl("mb", "pax3-img", 3, "");
-PAXComponent pax3_cfg("mb", "pax3-cfg", 3, "");
-PAXComponent pax3_flash("mb", "pax3-flash", 3, "SEL_FLASH_PAX3");

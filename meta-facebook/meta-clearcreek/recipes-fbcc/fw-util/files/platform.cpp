@@ -1,6 +1,8 @@
 #include "usbdbg.h"
 #include "vr_fw.h"
 #include "nic_mctp.h"
+#include <openbmc/pal.h>
+#include "switch.h"
 
 UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0CE", 8, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 8, 0x60, 0x02);  // target ID of bootloader = 0x02
@@ -21,3 +23,37 @@ MCTPOverSMBusNicComponent nic4("nic", "nic4", "nic4_fw_ver", 0x0, 4);
 MCTPOverSMBusNicComponent nic5("nic", "nic5", "nic5_fw_ver", 0x0, 11);
 MCTPOverSMBusNicComponent nic6("nic", "nic6", "nic6_fw_ver", 0x0, 7);
 MCTPOverSMBusNicComponent nic7("nic", "nic7", "nic7_fw_ver", 0x0, 13);
+
+class ClassConfig {
+  public:
+    ClassConfig() {
+       uint8_t board_type = 0;
+       pal_get_platform_id(&board_type);
+
+        if((board_type & 0x07) == 0x3) {
+          static PAXComponent pex0_flash("mb", "pex0-flash", 0, "SEL_FLASH_PAX0");
+          static PAXComponent pex1_flash("mb", "pex1-flash", 1, "SEL_FLASH_PAX1");
+          static PAXComponent pex2_flash("mb", "pex2-flash", 2, "SEL_FLASH_PAX2");
+          static PAXComponent pex3_flash("mb", "pex3-flash", 3, "SEL_FLASH_PAX3");
+        } else {
+          static PAXComponent pax0_fw("mb", "pax0-bl2", 0, "");
+          static PAXComponent pax0_bl("mb", "pax0-img", 0, "");
+          static PAXComponent pax0_cfg("mb", "pax0-cfg", 0, "");
+          static PAXComponent pax0_flash("mb", "pax0-flash", 0, "SEL_FLASH_PAX0");
+          static PAXComponent pax1_fw("mb", "pax1-bl2", 1, "");
+          static PAXComponent pax1_bl("mb", "pax1-img", 1, "");
+          static PAXComponent pax1_cfg("mb", "pax1-cfg", 1, "");
+          static PAXComponent pax1_flash("mb", "pax1-flash", 1, "SEL_FLASH_PAX1");
+          static PAXComponent pax2_fw("mb", "pax2-bl2", 2, "");
+          static PAXComponent pax2_bl("mb", "pax2-img", 2, "");
+          static PAXComponent pax2_cfg("mb", "pax2-cfg", 2, "");
+          static PAXComponent pax2_flash("mb", "pax2-flash", 2, "SEL_FLASH_PAX2");
+          static PAXComponent pax3_fw("mb", "pax3-bl2", 3, "");
+          static PAXComponent pax3_bl("mb", "pax3-img", 3, "");
+          static PAXComponent pax3_cfg("mb", "pax3-cfg", 3, "");
+          static PAXComponent pax3_flash("mb", "pax3-flash", 3, "SEL_FLASH_PAX3");
+        }
+    }
+};
+
+ClassConfig platform_config;

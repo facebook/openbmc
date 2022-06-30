@@ -18,6 +18,7 @@ enum {
 
 int pal_get_pax_bl2_ver(uint8_t, char*);
 int pal_get_pax_fw_ver(uint8_t, char*);
+int pal_get_brcm_pax_ver(uint8_t, char*);
 int pal_get_pax_cfg_ver(uint8_t, char*);
 int pal_check_pax_fw_type(uint8_t, const char*);
 int pal_pax_fw_update(uint8_t, const char*);

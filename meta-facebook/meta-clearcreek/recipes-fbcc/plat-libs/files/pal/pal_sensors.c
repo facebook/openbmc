@@ -106,10 +106,70 @@ const uint8_t mb_sensor_list[] = {
   MB_P2V5_AUX,
   MB_P1V2_AUX,
   MB_P1V15_AUX,
-  MB_PAX_0_TEMP,
-  MB_PAX_1_TEMP,
-  MB_PAX_2_TEMP,
-  MB_PAX_3_TEMP,
+  MB_PEX_0_TEMP,
+  MB_PEX_1_TEMP,
+  MB_PEX_2_TEMP,
+  MB_PEX_3_TEMP,
+  SYSTEM_INLET_TEMP,
+  SYSTEM_INLET_REMOTE_TEMP,
+  MB_INLET_TEMP_L,
+  MB_INLET_REMOTE_TEMP_L,
+  MB_INLET_TEMP_R,
+  MB_INLET_REMOTE_TEMP_R,
+  BAY_0_VOL,
+  BAY_0_IOUT,
+  BAY_0_POUT,
+  BAY_1_VOL,
+  BAY_1_IOUT,
+  BAY_1_POUT,
+};
+
+const uint8_t mb_brcm_sensor_list[] = {
+  MB_VR_P0V8_VDD0_TEMP,
+  MB_VR_P0V8_VDD0_VOUT,
+  MB_VR_P0V8_VDD0_CURR,
+  MB_VR_P0V8_VDD0_POWER,
+  MB_VR_P1V0_AVD0_TEMP,
+  MB_VR_P1V0_AVD0_VOUT,
+  MB_VR_P1V0_AVD0_CURR,
+  MB_VR_P1V0_AVD0_POWER,
+  MB_VR_P0V8_VDD1_TEMP,
+  MB_VR_P0V8_VDD1_VOUT,
+  MB_VR_P0V8_VDD1_CURR,
+  MB_VR_P0V8_VDD1_POWER,
+  MB_VR_P1V0_AVD1_TEMP,
+  MB_VR_P1V0_AVD1_VOUT,
+  MB_VR_P1V0_AVD1_CURR,
+  MB_VR_P1V0_AVD1_POWER,
+  MB_VR_P0V8_VDD2_TEMP,
+  MB_VR_P0V8_VDD2_VOUT,
+  MB_VR_P0V8_VDD2_CURR,
+  MB_VR_P0V8_VDD2_POWER,
+  MB_VR_P1V0_AVD2_TEMP,
+
+  MB_VR_P1V0_AVD2_VOUT,
+  MB_VR_P1V0_AVD2_CURR,
+  MB_VR_P1V0_AVD2_POWER,
+  MB_VR_P0V8_VDD3_TEMP,
+  MB_VR_P0V8_VDD3_VOUT,
+  MB_VR_P0V8_VDD3_CURR,
+  MB_VR_P0V8_VDD3_POWER,
+  MB_VR_P1V0_AVD3_TEMP,
+  MB_VR_P1V0_AVD3_VOUT,
+  MB_VR_P1V0_AVD3_CURR,
+  MB_VR_P1V0_AVD3_POWER,
+  MB_P12V_AUX,
+  MB_P3V3_STBY,
+  MB_P5V_STBY,
+  MB_P3V3,
+  MB_P3V_BAT,
+  MB_P2V5_AUX,
+  MB_P1V2_AUX,
+  MB_P1V15_AUX,
+  MB_PEX_0_TEMP,
+  MB_PEX_1_TEMP,
+  MB_PEX_2_TEMP,
+  MB_PEX_3_TEMP,
   SYSTEM_INLET_TEMP,
   SYSTEM_INLET_REMOTE_TEMP,
   MB_INLET_TEMP_L,
@@ -438,7 +498,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_BB_P1V2_AUX" , ADC7, read_adc_value, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}    , VOLT}, //0x5B
   {"CC_BB_P1V15_AUX", ADC8, read_adc_value, true, {1.21, 0, 0, 1.09, 0, 0, 0, 0}, VOLT}, //0x5C
   {"CC_PDB_HSC_VOUT", HSC_ID0, read_hsc_vout, true, {13.4, 0, 0, 11.4, 0, 0, 0, 0}, VOLT}, //0x5D
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5E
+  {"CC_BB_PEX_3_TEMP", PAX_ID3, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x5E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5F
 
   {"CC_P0V8_VDD0_TEMP", MB_VR_P0V8_VDD0_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x60
@@ -521,9 +581,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_FAN_1_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xA9
   {"CC_FAN_2_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xAA
   {"CC_FAN_3_PWM", PDB_FAN0_PWM, sensors_read_fan_pwm, true, {0, 0, 0, 0, 0, 0, 0, 0}, PWM}, //0xAB
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAC
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAD
-  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
+  {"CC_BB_PEX_0_TEMP", PAX_ID0, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAC
+  {"CC_BB_PEX_1_TEMP", PAX_ID1, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAD
+  {"CC_BB_PEX_2_TEMP", PAX_ID2, read_pax_therm, 0, {95, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0xAE
   {"CC_E1S_1_NVME_7_PWR" , E1S_1_7_NVME_PWR , read_ina260_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xAF
 
   {"CC_M2_0_NVME_0_VOLT", NVME_ID0, read_bay0_ssd_volt, 0, {3.47, 0, 0, 3.13, 0, 0, 0, 0}, VOLT}, //0xB0
@@ -621,6 +681,7 @@ static int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
 }
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
+size_t mb_brcm_sensor_cnt = sizeof(mb_brcm_sensor_list)/sizeof(uint8_t);
 size_t pdb_sensor_cnt = sizeof(pdb_sensor_list)/sizeof(uint8_t);
 size_t m2_1_sensor_cnt = sizeof(m2_1_sensor_list)/sizeof(uint8_t);
 size_t m2_2_sensor_cnt = sizeof(m2_2_sensor_list)/sizeof(uint8_t);
@@ -938,8 +999,14 @@ int pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt)
 
   switch (fru) {
     case FRU_MB:
-      *sensor_list = (uint8_t *) mb_sensor_list;
-      *cnt = mb_sensor_cnt;
+      if((g_board_id & 0x07) == 0x3) {
+        *sensor_list = (uint8_t *) mb_brcm_sensor_list;
+        *cnt = mb_brcm_sensor_cnt;
+      }
+      else {
+        *sensor_list = (uint8_t *) mb_sensor_list;
+        *cnt = mb_sensor_cnt;
+      }
       break;
     case FRU_PDB:
       *sensor_list = (uint8_t *) pdb_sensor_list;
@@ -1333,11 +1400,6 @@ read_adc_value(uint8_t adc_id, float *value) {
   };
   if (adc_id >= ARRAY_SIZE(adc_label)) {
     return -1;
-  }
-
-  if((adc_id == ADC4) && ((g_board_id & 0x07) == 0x3)) {  //there is no MB_P3V3_PAX sensor for BRCM SKU
-    *value = 0;
-    return READING_NA;
   }
 
   return sensors_read_adc(adc_label[adc_id], value);

@@ -1,6 +1,6 @@
 name: flashy
 on:
-  pull-request:
+  pull_request:
     branches:
       - helium
   push:

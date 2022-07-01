@@ -385,7 +385,8 @@ gpio_set FM_SPD_REMOTE_EN_R 0
 sgpio_export RST_BMC_RSTBTN_OUT_R_N 21
 gpio_set RST_BMC_RSTBTN_OUT_R_N 1
 
-#sgpio_export FM_P12V_HSC_ENABLE_R1 23
+sgpio_export BMC_READY_N 23
+gpio_set BMC_READY_N 1
 
 sgpio_export TEST_SGPIO_EVENT_LOG 25
 gpio_set TEST_SGPIO_EVENT_LOG 0
@@ -452,8 +453,8 @@ gpio_set CLK_BUF1_GPU_FPGA_OE_R_N 0
 sgpio_export FM_BMC_CPU_FBRK_OUT_N 71
 gpio_set FM_BMC_CPU_FBRK_OUT_N 1
 
-#BMC Ready
-sgpio_export BMC_READY_N 37
+sgpio_export GPIO_READY 37
+gpio_set GPIO_READY 1
 
 #devmem_set_bit 0x1e6e24bc 24
 #devmem_set_bit 0x1e6e24bc 25

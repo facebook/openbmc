@@ -25,6 +25,7 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 echo "Waiting for power up"
 pwr_ctrl=$(gpio_get PWR_CTRL keepdirection)
 pwr_ready=$(gpio_get SYS_PWR_READY keepdirection)
+board_id=$(gpio_get BOARD_ID0 keepdirection)
 while [ "$pwr_ready" != "1" ]
 do
   if [[ "$pwr_ctrl" == "1" ]]; then
@@ -39,14 +40,25 @@ i2c_device_add 6 0x4d tmp422
 i2c_device_add 6 0x4e tmp422
 
 # Voltage regulators
-i2c_bind_driver mpq8645p 5-0030
-i2c_bind_driver mpq8645p 5-0031
-i2c_bind_driver mpq8645p 5-0032
-i2c_bind_driver mpq8645p 5-0033
-i2c_bind_driver mpq8645p 5-0034
-i2c_bind_driver mpq8645p 5-0035
-i2c_bind_driver mpq8645p 5-0036
-i2c_bind_driver mpq8645p 5-003b
+if [ $board_id -eq 1 ]; then
+  i2c_device_add 5 0x60 isl69260
+  i2c_device_add 5 0x61 isl69260
+  i2c_device_add 5 0x72 isl69260
+  i2c_device_add 5 0x75 isl69260
+  i2c_device_add 5 0x34 mpq8645p
+  i2c_device_add 5 0x35 mpq8645p
+  i2c_device_add 5 0x36 mpq8645p
+  i2c_device_add 5 0x3b mpq8645p
+else
+  i2c_device_add 5 0x30 mpq8645p
+  i2c_device_add 5 0x31 mpq8645p
+  i2c_device_add 5 0x32 mpq8645p
+  i2c_device_add 5 0x33 mpq8645p  
+  i2c_device_add 5 0x34 mpq8645p
+  i2c_device_add 5 0x35 mpq8645p
+  i2c_device_add 5 0x36 mpq8645p
+  i2c_device_add 5 0x3b mpq8645p
+fi
 
 # P48V HSCs
 i2c_bind_driver adm1275 16-0013

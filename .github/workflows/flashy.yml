@@ -47,7 +47,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: flashy
-          path: tools/flashy/build/flashy
+          path: tools/flashy/build
       - name: Prepare release folder
         run: |
           mkdir tools/flashy/release

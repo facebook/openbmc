@@ -50,9 +50,9 @@ jobs:
           path: tools/flashy/build
       - name: Prepare release folder
         run: |
-          mkdir tools/flashy/release
+          mkdir tools/flashy/release tools/flashy/release/scripts
           cp tools/flashy/build/flashy tools/flashy/release/flashy
-          cp tools/flashy/scripts/run_flashy.sh tools/flashy/release
+          cp tools/flashy/scripts/run_flashy*.sh tools/flashy/release/scripts
       - name: Get short SHA
         id: slug
         run: echo "::set-output name=sha7::$(echo ${GITHUB_SHA} | cut -c1-7)"

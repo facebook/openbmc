@@ -23,8 +23,10 @@ set -eo pipefail
 openbmc_image_path="/opt/upgrade/image"
 # Path to Flashy on OpenBMC
 openbmc_flashy_path="/opt/flashy/flashy"
-# Path to run_flashy upgrade script from project root
+# Path to run_flashy upgrade script from project root/release folder
 run_flashy_script_path="scripts/run_flashy.sh"
+# Path to flashy, empty means build from project root
+path_to_flashy=""
 # Dry run, skips running flashy
 dry_run="false"
 
@@ -35,14 +37,20 @@ sshcmd=("${sshpassCmd[@]}" ssh "${options[@]}")
 
 usage="Usage:
 $(basename "$0") \
---device DEVICE_ID --imagepath IMAGE_PATH --host OPENBMC_HOSTNAME (--dry-run)
+--device DEVICE_ID --imagepath IMAGE_PATH --host OPENBMC_HOSTNAME --path-to-flashy PATH_TO_FLASHY (--dry_run)
 
 Run this script to upgrade a remote OpenBMC.
 
 Example DEVICE_ID: \"mtd:flash0\"
 
-Supply --dry_run to only run the initialize step (does not actually run
-flashy on the device, but copies over required files.)
+Supply --dry_run to only run the initialize step (does not actually run flashy on the device,
+but copies over required files.)
+
+If --path-to-flashy is supplied, it is assumed that flashy is already built--this is true if you
+are using the prebuilt released flashy.
+
+Otherwise, please run this script in the repository checkout and let the script build
+flashy. Go >= 1.14 must be available on your system.
 "
 
 scpfile() {
@@ -60,14 +68,20 @@ scpfile() {
 }
 
 initialize() {
-    echo "Building flashy..." >&2
-    ./build.sh
+    if [[ -z "$path_to_flashy" ]]
+    then
+        echo "path-to-flashy not provided, building flashy..." >&2
+        ./build.sh
+        path_to_flashy="$(realpath "./build/flashy")"
+    else
+        printf "path-to-flashy provided: %s\n" "$path_to_flashy" >&2
+    fi
 
     echo "Making installation directories on OpenBMC..." >&2
     "${sshcmd[@]}" "mkdir -p /opt/flashy /opt/upgrade"
 
     echo "Copying flashy..." >&2
-    scpfile ./build/flashy "$openbmc_flashy_path"
+    scpfile "$path_to_flashy" "$openbmc_flashy_path"
 
     echo "Copying image..." >&2
     scpfile "$imagepath" "$openbmc_image_path"
@@ -148,6 +162,12 @@ case $key in
     shift
     shift
     ;;
+    --path-to-flashy)
+    check_second_argument_supplied "$@"
+    path_to_flashy="$(realpath "$2")"
+    shift
+    shift
+    ;;
     --dry-run)
     dry_run="true"
     shift
@@ -171,7 +191,7 @@ confirm_continue() {
     esac
 }
 
-# make sure we're in flashy's project root
+# make sure we're in flashy's project/release root
 cd "$(dirname "$0")" && cd ..
 
 if [[ "$dry_run" == "true" ]]

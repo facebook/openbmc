@@ -22,6 +22,9 @@ do_install:append() {
     echo "" >> ${D}${sysconfdir}/dhcpcd.conf
     echo "# Request a DHCPv6 Normal Address" >> ${D}${sysconfdir}/dhcpcd.conf
     echo "ia_na" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "# No IPv4LL address" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "noipv4ll" >> ${D}${sysconfdir}/dhcpcd.conf
 }
 
 do_install:append:mf-ncsi() {

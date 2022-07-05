@@ -1403,7 +1403,9 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
 int
 pal_is_slot_server(uint8_t fru)
 {
-  if ( SERVER_TYPE_DL == fby35_common_get_slot_type(fru) ) {
+  int ret = fby35_common_get_slot_type(fru);
+
+  if ((ret == SERVER_TYPE_CL) || (ret == SERVER_TYPE_HD)) {
     return 1;
   }
   return 0;

@@ -149,44 +149,48 @@ fby35_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val) {
   return ret;
 }
 
+static int
+fby35_read_sb_cpld(uint8_t fru, uint8_t offset, uint8_t *data) {
+  int ret, i2cfd;
+  uint8_t bus = 0;
+  uint8_t tbuf[8] = {0};
+  uint8_t rbuf[8] = {0};
+
+  ret = fby35_common_get_bus_id(fru);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
+    return -1;
+  }
+
+  bus = (uint8_t)(ret + 4);
+  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %u: %s", __func__, bus, strerror(errno));
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, 1, rbuf, 1);
+  close(i2cfd);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read CPLD, offset=%02X", __func__, offset);
+    return -1;
+  }
+  *data = rbuf[0];
+
+  return 0;
+}
+
 int
 fby35_common_is_bic_ready(uint8_t fru, uint8_t *val) {
-  int i2cfd = 0;
-  int ret = 0;
-  uint8_t bus = 0;
-  uint8_t tbuf[1] = {0x02};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 1;
-  uint8_t rlen = 1;
+  uint8_t rbuf[8] = {0};
 
-  // a bus starts from 4
-  ret = fby35_common_get_bus_id(fru) + 4;
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
-    goto error_exit;
+  if (fby35_read_sb_cpld(fru, CPLD_REG_BIC_READY, rbuf)) {
+    return -1;
   }
-
-  bus = (uint8_t)ret;
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, bus, strerror(errno));
-    goto error_exit;
-  }
-
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
-
   *val = (rbuf[0] & 0x2) >> 1;
 
-error_exit:
-  if ( i2cfd > 0 ) {
-    close(i2cfd);
-  }
-
-  return ret;
+  return 0;
 }
 
 int
@@ -234,15 +238,32 @@ fby35_common_get_bmc_location(uint8_t *id) {
 
 int
 fby35_common_get_slot_type(uint8_t fru) {
-  int ret = 0;
+  int ret = SERVER_TYPE_CL;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
 
-  ret = fby35_common_check_slot_id(fru);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Unknown fru: %d", __func__, fru);
+  snprintf(key, sizeof(key), "fru%u_sb_type", fru);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    ret = value[0];
+    return ret;
+  }
+
+  if (fby35_common_check_slot_id(fru)) {
+    syslog(LOG_WARNING, "%s: Unknown fru: %u", __func__, fru);
     return -1;
   }
 
-  return SERVER_TYPE_DL;
+  if (fby35_read_sb_cpld(fru, CPLD_REG_BOARD, (uint8_t *)value)) {
+    return -1;
+  }
+
+  ret = value[0];
+  if (kv_set(key, value, 1, KV_FCREATE)) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
+    return -1;
+  }
+
+  return ret;
 }
 
 #define CRASHDUMP_BIN       "/usr/bin/autodump.sh"
@@ -390,49 +411,18 @@ fby35_common_dev_name(uint8_t dev, char *str) {
   return 0;
 }
 
-static int
-_fby35_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
-  uint8_t bus_num = 0;
-  int fd = -1, ret = 0;
-  int tlen = 0, rlen = 0;
-  uint8_t tbuf[64], rbuf[64];
-
-  bus_num = fby35_common_get_bus_id(fru_id) + 4;
-  fd = i2c_cdev_slave_open(bus_num, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( fd < 0 ) {
-    syslog(LOG_ERR, "Failed to open bus %d: %s", bus_num, strerror(errno));
-    return -1;
-  }
-
-  tbuf[0] = CPLD_BOARD_OFFSET;
-  tlen = 1;
-  rlen = 1;
-  ret = i2c_rdwr_msg_transfer(fd, SB_CPLD_ADDR << 1, tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d, errno: %s", __func__, tlen, strerror(errno));
-    goto error_exit;
-  }
-  *board_type = rbuf[0];
-
-error_exit:
-  close(fd);
-
-  return ret;
-}
-
 int
-fby35_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type) {
-  char key[MAX_VALUE_LEN] = {0};
+fby35_common_get_2ou_board_type(uint8_t fru, uint8_t *board_type) {
+  char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
-  sprintf(key, "fru%u_2ou_board_type", fru_id);
-
+  snprintf(key, sizeof(key), "fru%u_2ou_board_type", fru);
   if (kv_get(key, value, NULL, 0) == 0) {
     *board_type = ((uint8_t*)value)[0];
     return 0;
   }
 
-  if (_fby35_common_get_2ou_board_type(fru_id, board_type) < 0) {
+  if (fby35_read_sb_cpld(fru, CPLD_REG_RISER, board_type)) {
     return -1;
   }
 

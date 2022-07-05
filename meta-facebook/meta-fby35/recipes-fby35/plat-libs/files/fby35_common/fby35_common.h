@@ -68,7 +68,9 @@ extern "C" {
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define MAX_FRU_PATH_LEN 128
 
-#define CPLD_BOARD_OFFSET  0x0D
+#define CPLD_REG_BIC_READY 0x02
+#define CPLD_REG_RISER     0x0D
+#define CPLD_REG_BOARD     0x11
 
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
@@ -97,7 +99,7 @@ extern const char *slot_usage;
 #define BIOS_IMG_SIZE             (0x4000000)         //64MB
 #define BIOS_IMG_INFO_OFFSET      (0x2FEF000)
 #define MD5_SIZE                  (16)
-#define PLAT_SIG_SIZE         (16)
+#define PLAT_SIG_SIZE             (16)
 #define FW_VER_SIZE               (13)
 #define ERR_PROOF_SIZE            (3)
 #define IMG_MD5_OFFSET            (0x0)
@@ -254,7 +256,8 @@ enum {
 
 // Server type
 enum {
-  SERVER_TYPE_DL = 0x0,
+  SERVER_TYPE_CL = 0x0,
+  SERVER_TYPE_HD = 0x2,
   SERVER_TYPE_NONE = 0xFF,
 };
 
@@ -479,7 +482,7 @@ int fby35_common_get_slot_type(uint8_t fru);
 int fby35_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby35_common_dev_id(char *str, uint8_t *dev);
 int fby35_common_dev_name(uint8_t dev, char *str);
-int fby35_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);
+int fby35_common_get_2ou_board_type(uint8_t fru, uint8_t *board_type);
 int fby35_common_fscd_ctrl (uint8_t mode);
 int fby35_common_check_image_signature(uint8_t* data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);

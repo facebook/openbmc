@@ -40,6 +40,7 @@ enum _dimm_prsnt {
 };
 
 #define MAX_EXTEND_OPTION 8
+#define OPTION_LIST_ERR 0xFF
 
 // dimm type decode table
 #define MIN_DDR5_TYPE 18  // note: dimm_type[18]
@@ -84,31 +85,6 @@ static char const *speed_type[] =
   "1600",
 };
 
-#define OPTION_LIST_ERR 0xFF
-#define MAX_ERR_TYPE 17
-// PMIC error injection type (PMIC R35 register)
-static char const *pmic_err_type[] =
-{
-  "SWAout_OV",
-  "SWBout_OV",
-  "SWCout_OV",
-  "SWDout_OV",
-  "VinB_OV",
-  "VinM_OV",
-  "SWAout_UV",
-  "SWBout_UV",
-  "SWCout_UV",
-  "SWDout_UV",
-  "VinB_UV",
-  "Vin_switchover",
-  "high_temp",
-  "Vout_1v8_PG",
-  "high_current",
-  "current_limit",
-  "critical_temp_shutdown",
-  NULL
-};
-
 // global variables on various platform specific attributes
 //  to be initialized by platform-specific plat_init() function
 int num_frus = 0;
@@ -120,6 +96,8 @@ int fru_id_all = 0;
 int fru_id_min = 0;
 int fru_id_max = 0;
 bool read_block = false;
+int max_retries = DEFAULT_RETRIES;
+int retry_intvl = DEFAULT_RETRY_INTVL_MSEC;
 
 static
 const char * dimm_type_string(uint8_t id)
@@ -192,19 +170,19 @@ get_dimm_cache_id(uint8_t cpu, uint8_t dimm)
 }
 
 bool __attribute__((weak))
-is_pmic_supported()
+is_pmic_supported(void)
 {
   return false;
 }
 
 int __attribute__((weak))
-pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t* err_list, uint8_t* err_cnt)
+util_read_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf)
 {
   return -1;
 }
 
 int __attribute__((weak))
-pmic_inject_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t option)
+util_write_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf)
 {
   return -1;
 }
@@ -232,25 +210,26 @@ util_read_spd_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t off
   *present = DIMM_EMPTY;
   for (j = 0; j < len;) {
     retry = 0;
-    while (retry < MAX_RETRY) {
+    for (retry = 0; retry <= max_retries; retry++) {
       if (read_block == true) {
-        rlen = ((len - j) < MAX_SPD_READ_LEN) ? (len - j) : MAX_SPD_READ_LEN;
+        rlen = ((len - j) < MAX_DIMM_SMB_XFER_LEN) ? (len - j) : MAX_DIMM_SMB_XFER_LEN;
         value = util_read_spd(fru_id, cpu, dimm, offset + j, rlen, &buf[j]);
       } else {
         value = util_read_spd_byte(fru_id, cpu, dimm, offset + j);
       }
-      if (value >= 0)
+      if ((value >= 0) || (retry == max_retries)) {
         break;
-      retry++;
+      }
+      usleep(retry_intvl * 1000);
     }
-    if (value >= 0) {
+    if ((read_block == true) && (value <= 0)) {
+      *present = DIMM_EMPTY;
+      return -1;
+    } else if (value >= 0) {
       if (read_block == false) {
         buf[j] = value;
       }
       *present = DIMM_PRESENT;
-    } else if (read_block == true) {
-      *present = DIMM_EMPTY;
-      return -1;
     } else {
       // only consider early exit if it's non-0
       if (early_exit_cnt) {
@@ -814,8 +793,8 @@ static int
 util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
   int ret = 0, i = 0;
   uint8_t err_cnt = 0;
-  uint8_t err_list[MAX_ERR_TYPE] = {0};
   uint8_t cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0, dimm_num = 0;
+  const char *err_list[MAX_PMIC_ERR_TYPE] = {0};
 
   if (options == NULL) {
     return ERR_INVALID_SYNTAX;
@@ -824,26 +803,22 @@ util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
   if (options[0] == OPTION_LIST_ERR) {
     for (cpu = startCPU; cpu < endCPU; cpu++) {
       for (dimm_num = startDimm; dimm_num < endDimm; dimm_num++) {
-        printf("DIMM%s error: ", get_dimm_label(cpu, dimm_num));
+        printf("DIMM %s PMIC Error: ", get_dimm_label(cpu, dimm_num));
         ret = pmic_list_err(fru_id, cpu, dimm_num, err_list, &err_cnt);
         if (ret < 0) {
-          printf("Fail to get error status from ME\n");
+          printf("NO DIMM\n");
           continue;
         }
         if (err_cnt == 0) {
-          printf("No error\n");
+          printf("No Error\n");
           continue;
         }
-        for (i = 0; i < err_cnt; i++) {        
-          if (i != err_cnt - 1) {
-            printf("%s, ", pmic_err_type[err_list[i]]);
-          } else {
-            printf("%s", pmic_err_type[err_list[i]]);
-          }
+        for (i = 0; i < err_cnt; i++) {
+          printf("%s%s", err_list[i], (i < (err_cnt - 1)) ? ", " : "");
         }
         printf("\n");
       }
-    }  
+    }
   } else {
     if (dimm >= total_dimms) {
       printf("Please specify the DIMM to inject error (option --dimm)\n");
@@ -878,7 +853,7 @@ static int parse_dimm_label(char *label, uint8_t *dimmNum)
 static int parse_cmdline_args(int argc, char **argv,
 			      uint8_t *dimm, bool *json, bool *force, uint8_t *options)
 {
-  int ret, opt_index = 0, i = 0;
+  int ret, opt_index, idx;
   char *endptr = NULL;
   static const char *optstring = "d:jfli";
   struct option long_opts[] = {
@@ -889,7 +864,6 @@ static int parse_cmdline_args(int argc, char **argv,
     {"err_inj" , required_argument, NULL, 'i'},
     {NULL, 0,	NULL,	0},
   };
-  bool err_match = false;
 
   *dimm = total_dimms;
   *json = false;
@@ -923,17 +897,12 @@ static int parse_cmdline_args(int argc, char **argv,
       options[0] = OPTION_LIST_ERR;
       break;
     case 'i':
-      while (pmic_err_type[i]) {
-        if (!strcmp(pmic_err_type[i], optarg)) {
-           options[0] = i;
-           err_match = true;
-        }
-        i++;
-      }
-      if (err_match == false) {
+      idx = pmic_err_index(optarg);
+      if (idx < 0) {
         printf("Invalid error type: %s\n", optarg);
         return ERR_INVALID_SYNTAX;
       }
+      options[0] = (uint8_t)idx;
       break;
     default:
       return ERR_INVALID_SYNTAX;
@@ -954,12 +923,9 @@ parse_arg_and_exec(int argc, char **argv, uint8_t fru_id,
   bool    json = false;
   bool    force = false;
   int ret = 0;
-  uint8_t options[MAX_EXTEND_OPTION] = {0}; // for extended parameters
+  uint8_t options[MAX_EXTEND_OPTION] = {OPTION_LIST_ERR,}; // for extended parameters
 
-  if (argc < 3) {
-    printf("Error: invalid number of arguments\n");
-    return ERR_INVALID_SYNTAX;
-  } else if (argc > 3) {
+  if (argc > 3) {
     // parse option fields,
     // skipping first 3 arguments, which will be "dimm-util fru cmd"
     if (parse_cmdline_args(argc - 2, &(argv[2]), &dimm, &json, &force, options) != 0)
@@ -1022,18 +988,18 @@ print_usage_help(void) {
         printf("%2s)\n", get_dimm_label(i, j));
       else
         printf("%2s, ", get_dimm_label(i, j));
-  printf("   --json    - output in JSON format\n");
-  printf("   --force   - skips ME status check\n");
+  printf("   --json     - output in JSON format\n");
+  printf("   --force    - skips ME status check\n");
   printf("   --err_list - show PMIC error\n");
-  printf("   --err_inj - the error to inject, option list:\n");
-  printf("               <SWAout_OV|SWBout_OV|SWCout_OV|SWDout_OV|VinB_OV|VinM_OV|\n");
-  printf("                SWAout_UV|SWBout_UV|SWCout_UV|SWDout_UV|VinB_UV|\n");
-  printf("                Vin_switchover|\n");
-  printf("                high_temp|\n");
-  printf("                Vout_1v8_PG|\n");
-  printf("                high_current|\n");
-  printf("                current_limit|\n");
-  printf("                critical_temp_shutdown>\n");
+  printf("   --err_inj  - the error to inject, option list:\n");
+  printf("                <SWAout_OV|SWBout_OV|SWCout_OV|SWDout_OV|VinB_OV|VinM_OV|\n");
+  printf("                 SWAout_UV|SWBout_UV|SWCout_UV|SWDout_UV|VinB_UV|\n");
+  printf("                 Vin_switchover|\n");
+  printf("                 high_temp|\n");
+  printf("                 Vout_1v8_PG|\n");
+  printf("                 high_current|\n");
+  printf("                 current_limit|\n");
+  printf("                 critical_temp_shutdown>\n");
 }
 
 static int
@@ -1092,7 +1058,7 @@ main(int argc, char **argv) {
     } else {
       printf("Platform does not support PMIC function\n");
       goto err_exit;
-    }    
+    }
   } else {
     goto err_exit;
   }

@@ -33,4 +33,8 @@
 #define DIMM1_SPD_ADDR 0xa8
 #define DIMM2_SPD_ADDR 0xac
 
+#define DIMM0_PMIC_ADDR 0x90
+#define DIMM1_PMIC_ADDR 0x98
+#define DIMM2_PMIC_ADDR 0x9c
+
 #endif

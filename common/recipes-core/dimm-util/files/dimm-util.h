@@ -45,9 +45,11 @@
 
 #define DEFAULT_DUMP_OFFSET 0
 #define DEFAULT_DUMP_LEN    0x100
-#define MAX_RETRY 3
+#define DEFAULT_RETRIES 5
+#define DEFAULT_RETRY_INTVL_MSEC 20
 #define MAX_FAIL_CNT LEN_SERIAL
-#define MAX_SPD_READ_LEN 32
+#define MAX_DIMM_SMB_XFER_LEN 32
+#define MAX_PMIC_ERR_TYPE 17
 
 #define ERR_INVALID_SYNTAX -2
 
@@ -68,10 +70,6 @@
 #define PKG_RANK(x) (x + 1)
 
 
-
-extern char *vendor_name[];
-extern const char * mfg_string(uint16_t id);
-
 extern int num_frus;
 extern int num_cpus;
 extern int num_dimms_per_cpu;
@@ -81,11 +79,14 @@ extern int fru_id_all;
 extern int fru_id_min;
 extern int fru_id_max;
 extern bool read_block;
+extern int max_retries;
+extern int retry_intvl;
 
 int get_die_capacity(uint8_t data);
 int get_bus_width_bits(uint8_t data);
 int get_device_width_bits(uint8_t data);
 
+const char * mfg_string(uint16_t id);
 int get_spd5_dimm_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
 int get_spd5_reg_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
 int get_spd5_pmic_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
@@ -95,13 +96,20 @@ int get_spd5_dimm_speed(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *speed_s
 int util_read_spd_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint16_t len,
                              uint16_t early_exit_cnt, uint8_t *buf, uint8_t *present);
 
+int pmic_err_index(const char *str);
+int pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, const char **err_list, uint8_t *err_cnt);
+int pmic_inject_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t option);
+
 // util functions to be provided by each platform
 int util_check_me_status(uint8_t fru_id);
 int util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num);
 int util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset);
 int util_read_spd(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf);
-int plat_init();
+int plat_init(void);
 const char * get_dimm_label(uint8_t cpu, uint8_t dimm);
 uint8_t get_dimm_cache_id(uint8_t cpu, uint8_t dimm);
+bool is_pmic_supported(void);
+int util_read_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf);
+int util_write_pmic(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf);
 
 #endif

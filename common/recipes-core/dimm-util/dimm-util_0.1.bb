@@ -12,6 +12,7 @@ LOCAL_URI = " \
     file://dimm-util.h \
     file://dimm-vendor.cpp \
     file://dimm-capacity.cpp \
+    file://dimm-pmic.cpp \
     "
 
 binfiles = "dimm-util"

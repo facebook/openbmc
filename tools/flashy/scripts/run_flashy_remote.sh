@@ -27,6 +27,8 @@ openbmc_image_path="/opt/upgrade/image"
 openbmc_flashy_path="/opt/flashy/flashy"
 # Path to run_flashy upgrade script from project root
 run_flashy_script_path="scripts/run_flashy.sh"
+# Dry run, skips running flashy
+dry_run="false"
 
 options=(-o "LogLevel=error" -o "StrictHostKeyChecking=no")
 options+=(-o "UserKnownHostsFile=/dev/null")
@@ -34,11 +36,15 @@ sshpassCmd=(sshpass -p0penBmc)
 sshcmd=("${sshpassCmd[@]}" ssh "${options[@]}")
 
 usage="Usage:
-$(basename "$0") --device DEVICE_ID --imagepath IMAGE_PATH --host OPENBMC_HOSTNAME
+$(basename "$0") \
+--device DEVICE_ID --imagepath IMAGE_PATH --host OPENBMC_HOSTNAME (--dry-run)
 
 Run this script to upgrade a remote OpenBMC.
 
 Example DEVICE_ID: \"mtd:flash0\"
+
+Supply --dry_run to only run the initialize step (does not actually run
+flashy on the device, but copies over required files.)
 "
 
 scpfile() {
@@ -107,6 +113,10 @@ exit_file_required() {
     exit_with_usage
 }
 
+check_second_argument_supplied() {
+    [ -n "$2" ] || exit_argument_required "$1"
+}
+
 # Flash device ID to flash (e.g. mtd:flash0)
 device_id=""
 # Path to OpenBMC image on local system
@@ -117,25 +127,31 @@ host=""
 while [[ $# -gt 0 ]]
 do
 key="$1"
-[ -n "$2" ] || exit_argument_required "$1"
 case $key in
     -h|-help|--help)
     echo -e "$usage"
     exit 0
     ;;
     --device)
+    check_second_argument_supplied "$@"
     device_id="$2"
     shift
     shift
     ;;
     --imagepath)
+    check_second_argument_supplied "$@"
     imagepath="$2"
     shift
     shift
     ;;
     --host)
+    check_second_argument_supplied "$@"
     host="$2"
     shift
+    shift
+    ;;
+    --dry-run)
+    dry_run="true"
     shift
     ;;
     *)
@@ -157,6 +173,11 @@ confirm_continue() {
     esac
 }
 
+if [[ "$dry_run" == "true" ]]
+then
+    echo "Running in dry-run mode" >&2
+fi
+
 [ -n "$device_id" ] || exit_argument_required "device"
 [ -n "$host" ] || exit_argument_required "host"
 [ -n "$imagepath" ] || exit_argument_required "imagepath"
@@ -171,5 +192,10 @@ then
 fi
 
 initialize
-run_upgrade
-reboot_and_check_upgrade
+if [[ "$dry_run" == "true" ]]
+then
+    echo "Finished dry run" >&2
+else
+    run_upgrade
+    reboot_and_check_upgrade
+fi

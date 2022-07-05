@@ -18,8 +18,6 @@
 
 # Run this script to upgrade a remote OpenBMC.
 set -eo pipefail
-# make sure we're in flashy's project root
-cd "$(dirname "$0")" && cd ..
 
 # Path to image on OpenBMC
 openbmc_image_path="/opt/upgrade/image"
@@ -140,7 +138,7 @@ case $key in
     ;;
     --imagepath)
     check_second_argument_supplied "$@"
-    imagepath="$2"
+    imagepath="$(realpath "$2")"
     shift
     shift
     ;;
@@ -172,6 +170,9 @@ confirm_continue() {
     ;;
     esac
 }
+
+# make sure we're in flashy's project root
+cd "$(dirname "$0")" && cd ..
 
 if [[ "$dry_run" == "true" ]]
 then

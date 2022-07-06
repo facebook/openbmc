@@ -7,14 +7,6 @@
 UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0CE", 8, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 8, 0x60, 0x02);  // target ID of bootloader = 0x02
 
-VrComponent vr_p0v8_vdd0("vr", "p0v8_vdd0", "P0V8_VDD0");
-VrComponent vr_p0v8_vdd1("vr", "p0v8_vdd1", "P0V8_VDD1");
-VrComponent vr_p0v8_vdd2("vr", "p0v8_vdd2", "P0V8_VDD2");
-VrComponent vr_p0v8_vdd3("vr", "p0v8_vdd3", "P0V8_VDD3");
-VrComponent vr_p0v8_avd0("vr", "p0v8_avd_pcie0", "P0V8_AVD_PCIE0");
-VrComponent vr_p0v8_avd1("vr", "p0v8_avd_pcie1", "P0V8_AVD_PCIE1");
-VrComponent vr_p0v8_avd2("vr", "p0v8_avd_pcie2", "P0V8_AVD_PCIE2");
-VrComponent vr_p0v8_avd3("vr", "p0v8_avd_pcie3", "P0V8_AVD_PCIE3");
 MCTPOverSMBusNicComponent nic0("nic", "nic0", "nic0_fw_ver", 0x0, 1);
 MCTPOverSMBusNicComponent nic1("nic", "nic1", "nic1_fw_ver", 0x0, 9);
 MCTPOverSMBusNicComponent nic2("nic", "nic2", "nic2_fw_ver", 0x0, 2);
@@ -31,11 +23,27 @@ class ClassConfig {
        pal_get_platform_id(&board_type);
 
         if((board_type & 0x07) == 0x3) {
+          static VrComponent vr_p0v9_vdd0("vr", "p0v9_vdd_pcie0", "VR_P0V9_VDD0");
+          static VrComponent vr_p0v9_vdd1("vr", "p0v9_vdd_pcie1", "VR_P0V9_VDD1");
+          static VrComponent vr_p0v9_vdd2("vr", "p0v9_vdd_pcie2", "VR_P0V9_VDD2");
+          static VrComponent vr_p0v9_vdd3("vr", "p0v9_vdd_pcie3", "VR_P0V9_VDD3");
+          static VrComponent vr_p1v8_avd0("vr", "p1v8_avd0_1", "VR_P1V8_AVD0_1");
+          static VrComponent vr_p1v8_avd1("vr", "p1v8_avd2_3", "VR_P1V8_AVD2_3");
+
           static PAXComponent pex0_flash("mb", "pex0-flash", 0, "SEL_FLASH_PAX0");
           static PAXComponent pex1_flash("mb", "pex1-flash", 1, "SEL_FLASH_PAX1");
           static PAXComponent pex2_flash("mb", "pex2-flash", 2, "SEL_FLASH_PAX2");
           static PAXComponent pex3_flash("mb", "pex3-flash", 3, "SEL_FLASH_PAX3");
         } else {
+          static VrComponent vr_p0v8_vdd0("vr", "p0v8_vdd0", "P0V8_VDD0");
+          static VrComponent vr_p0v8_vdd1("vr", "p0v8_vdd1", "P0V8_VDD1");
+          static VrComponent vr_p0v8_vdd2("vr", "p0v8_vdd2", "P0V8_VDD2");
+          static VrComponent vr_p0v8_vdd3("vr", "p0v8_vdd3", "P0V8_VDD3");
+          static VrComponent vr_p0v8_avd0("vr", "p0v8_avd_pcie0", "P0V8_AVD_PCIE0");
+          static VrComponent vr_p0v8_avd1("vr", "p0v8_avd_pcie1", "P0V8_AVD_PCIE1");
+          static VrComponent vr_p0v8_avd2("vr", "p0v8_avd_pcie2", "P0V8_AVD_PCIE2");
+          static VrComponent vr_p0v8_avd3("vr", "p0v8_avd_pcie3", "P0V8_AVD_PCIE3");
+
           static PAXComponent pax0_fw("mb", "pax0-bl2", 0, "");
           static PAXComponent pax0_bl("mb", "pax0-img", 0, "");
           static PAXComponent pax0_cfg("mb", "pax0-cfg", 0, "");

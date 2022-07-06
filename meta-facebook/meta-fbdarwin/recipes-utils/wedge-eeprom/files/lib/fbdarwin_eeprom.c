@@ -275,9 +275,6 @@ int fbdarwin_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   sprintf(eeprom->fbw_product_name, "FBDARWIN");
 
   rc = 0;
-  /* FBDarwin Chassis option just has PCA/SN and no other fields */
-  if (!strcmp(local_target, FBDARWIN_EEPROM_CHASSIS_OBJ))
-     goto out;
 
   /* Now go though EEPROM contents to fill out the fields */
   while ((rc == 0) && (read_pointer < FBDARWIN_EEPROM_SIZE)) {

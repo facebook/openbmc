@@ -32,6 +32,7 @@ LOCAL_URI += "\
     file://setup_board.sh \
     file://show_tech.py \
     file://wedge_power.sh \
+    file://wedge_us_mac.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -44,6 +45,7 @@ OPENBMC_UTILS_FILES += " \
     oob-status.sh \
     show_tech.py \
     wedge_power.sh \
+    wedge_us_mac.sh \
     "
 
 PACKAGECONFIG += "disable-watchdog"

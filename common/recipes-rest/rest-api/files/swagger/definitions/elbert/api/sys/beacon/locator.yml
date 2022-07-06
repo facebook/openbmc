@@ -1,10 +1,10 @@
 swagger: "2.0"
 info: 
-  description: Swagger doc for /api/sys/fc_present  
-  title: Swagger doc for /api/sys/fc_present  
+  description: Swagger doc for /api/sys/beacon/locator  
+  title: Swagger doc for /api/sys/beacon/locator  
   version: 1.0.0
 paths: 
-  /api/sys/fc_present: 
+  /api/sys/beacon/locator: 
     get: 
       produces: [application/json]
       responses: 
@@ -18,15 +18,9 @@ paths:
                 type: object
                 additionalProperties: false
                 properties: 
-                  Slotid: 
-                    type: number
-                    format: int32
-                  Monitored Slotid: 
-                    type: number
-                    format: int32
-                  Status: 
+                  state: 
                     type: string
-                  Description: 
+                  mode: 
                     type: string
               Actions: 
                 type: array

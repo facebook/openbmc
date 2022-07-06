@@ -21,7 +21,7 @@ paths:
                   status: 
                     type: string
                   BIC_ok: 
-                    type: integer
+                    type: number
                     format: int32
               Actions: 
                 type: array

@@ -35,22 +35,22 @@ paths:
                     additionalProperties: false
                     properties: 
                       MemTotal: 
-                        type: integer
+                        type: number
                         format: int32
                       MemFree: 
-                        type: integer
+                        type: number
                         format: int32
                       MemAvailable: 
-                        type: integer
+                        type: number
                         format: int32
                       Buffers: 
-                        type: integer
+                        type: number
                         format: int32
                       Cached: 
-                        type: integer
+                        type: number
                         format: int32
                       Shmem: 
-                        type: integer
+                        type: number
                         format: int32
                   CPU Usage: 
                     type: string
@@ -92,6 +92,34 @@ paths:
                     type: array
                     items: 
                       type: string
+                  mmc-info: 
+                    type: object
+                    additionalProperties: false
+                    properties: 
+                      /dev/mmcblk0: 
+                        type: object
+                        additionalProperties: false
+                        properties: 
+                          CID_MID: 
+                            type: number
+                            format: int32
+                          CID_PNM: 
+                            type: string
+                          CID_PRV_MAJOR: 
+                            type: number
+                            format: int32
+                          CID_PRV_MINOR: 
+                            type: number
+                            format: int32
+                          EXT_CSD_PRE_EOL_INFO: 
+                            type: number
+                            format: int32
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_A: 
+                            type: number
+                            format: int32
+                          EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B: 
+                            type: number
+                            format: int32
               Actions: 
                 type: array
                 items: 

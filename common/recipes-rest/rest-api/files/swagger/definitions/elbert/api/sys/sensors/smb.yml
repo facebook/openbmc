@@ -56,15 +56,9 @@ paths:
                     type: string
                   TH4_VRD1_VIN: 
                     type: string
-                  TH4_VRD1_VMON: 
-                    type: string
                   TH4_VRD1_VOUT_LOOP0: 
                     type: string
-                  TH4_VRD1_TEMP1: 
-                    type: string
-                  TH4_VRD1_TEMP2: 
-                    type: string
-                  TH4_VRD1_TEMP3: 
+                  TH4_VRD1_TEMP_LOOP0: 
                     type: string
                   TH4_VRD1_PIN: 
                     type: string
@@ -76,27 +70,19 @@ paths:
                     type: string
                   TH4_VRD2_VIN: 
                     type: string
-                  TH4_VRD2_VMON: 
-                    type: string
                   TH4_VRD2_VOUT_LOOP0: 
                     type: string
                   TH4_VRD2_VOUT_LOOP1: 
                     type: string
                   TH4_VRD2_VOUT_LOOP2: 
                     type: string
-                  TH4_VRD2_TEMP1: 
+                  TH4_VRD2_TEMP_LOOP0: 
                     type: string
-                  TH4_VRD2_TEMP2: 
+                  TH4_VRD2_TEMP_LOOP1: 
                     type: string
-                  TH4_VRD2_TEMP3: 
+                  TH4_VRD2_TEMP_LOOP2: 
                     type: string
-                  TH4_VRD2_TEMP4: 
-                    type: string
-                  TH4_VRD2_TEMP5: 
-                    type: string
-                  TH4_VRD2_TEMP6: 
-                    type: string
-                  TH4_VRD2_TEMP7: 
+                  TH4_VRD2_TEMP_INTERNAL: 
                     type: string
                   TH4_VRD2_PIN_LOOP0: 
                     type: string

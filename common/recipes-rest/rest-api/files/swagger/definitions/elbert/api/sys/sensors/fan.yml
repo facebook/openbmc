@@ -38,6 +38,8 @@ paths:
                     type: string
                   FAN_CARD_OUTLET_TEMP: 
                     type: string
+                  SYSTEM_AIRFLOW: 
+                    type: string
               Actions: 
                 type: array
                 items: 

@@ -72,6 +72,12 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 	cmd = []string{"fw_printenv", "bootargs"}
 	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
+		if strings.Contains(stderr, "Cannot access MTD device") {
+			errMsg := errors.Errorf(
+				"U-Boot environment is inaccessible: broken flash chip?" +
+				" Error code: %v, stderr: %v", err, stderr)
+			return step.ExitBadFlashChip{Err: errMsg}
+		}
 		log.Printf("fw_printenv doesn't work: %v, stderr: %v", err, stderr)
 		return nil
 	}

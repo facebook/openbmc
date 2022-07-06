@@ -86,14 +86,24 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			want:              step.ExitMustReboot{Err: errors.Errorf("Forcing reboot for new bootargs to take effect")},
 		},
 		{
-			name:              "fw_printenv broken",
+			name:              "fw_printenv broken because reasons",
 			vbootUtilExists:   false,
 			failGrep:          false,
 			failPrint:         true,
 			failSet:           false,
-			printOutput:       "lol",
-			grepOutput:        "mtd4: 02000000 00010000 \"flash0\"",
+			printOutput:       "",
+			grepOutput:        "",
 			want:              nil,
+		},
+		{
+			name:              "fw_printenv broken because missing flash",
+			vbootUtilExists:   false,
+			failGrep:          false,
+			failPrint:         true,
+			failSet:           false,
+			printOutput:       "Cannot access MTD device /dev/mtd1: No such file or directory",
+			grepOutput:        "",
+			want:              step.ExitBadFlashChip{Err: errors.Errorf("U-Boot environment is inaccessible: broken flash chip? Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
 		},
 		{
 			name:              "fw_setenv broken",
@@ -121,9 +131,9 @@ func TestEnsureFlashAvailable(t *testing.T) {
 					}
 				} else if (cmdArr[0] == "fw_printenv") {
 					if (tc.failPrint) {
-						return 0, errors.Errorf("err1"), "", "err1"
+						return 1, errors.Errorf("err1"), "", tc.printOutput
 					} else {
-						return 0, nil, tc.printOutput, ""
+						return 0, nil, "", tc.printOutput
 					}
 				} else if (cmdArr[0] == "fw_setenv") {
 					if (tc.failSet) {

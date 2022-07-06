@@ -85,6 +85,42 @@ enum {
   SKU_4S = 0x8
 };
 
+enum {
+  I2C_BUS_0 = 0,
+  I2C_BUS_1,
+  I2C_BUS_2,
+  I2C_BUS_3,
+  I2C_BUS_4,
+  I2C_BUS_5,
+  I2C_BUS_6,
+  I2C_BUS_7,
+  I2C_BUS_8,
+  I2C_BUS_9,
+  I2C_BUS_10,
+  I2C_BUS_11,
+  I2C_BUS_12,
+  I2C_BUS_13,
+  I2C_BUS_14,
+  I2C_BUS_15,
+  I2C_BUS_16,
+  I2C_BUS_17,
+  I2C_BUS_18,
+  I2C_BUS_19,
+  I2C_BUS_20,
+  I2C_BUS_21,
+  I2C_BUS_22,
+  I2C_BUS_23,
+  I2C_BUS_24,
+  I2C_BUS_25,
+  I2C_BUS_26,
+  I2C_BUS_27,
+  I2C_BUS_28,
+  I2C_BUS_29,
+  I2C_BUS_30,
+  I2C_BUS_31,
+  I2C_BUS_32,
+};
+
 #define MAX_NUM_FRUS 11
 #define MAX_NODES    1
 

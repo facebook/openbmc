@@ -1262,3 +1262,47 @@ int pal_devnum_to_fruid(int devnum)
   // 1 = server, 2 = BMC ifself
   return devnum == 0? 2: devnum;
 }
+
+int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+
+  if ((bus == I2C_BUS_13) && (((uint8_t *)buf)[0] == 0x20)) {  // OCP LCD debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 20;
+      sprintf(value, "%ld", ts.tv_sec);
+      if (kv_set("ocpdbg_lcd", value, 0, 0) < 0) {
+        return -1;
+      }
+    }
+  }
+  return 0;
+}
+
+int
+pal_is_mcu_ready(uint8_t bus) {
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  switch (bus) {
+    case I2C_BUS_13:
+      if (kv_get("ocpdbg_lcd", value, NULL, 0)) {
+        return false;
+      }
+
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (strtoul(value, NULL, 10) > ts.tv_sec) {
+         return true;
+      }
+      break;
+
+    case I2C_BUS_8:
+      return true;
+  }
+
+  return false;
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["reg", "len", "action", "info"],
+    "properties": {
+      "reg": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "len": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 127
+      },
+      "period": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "action": {
+        "type": "string",
+        "enum": ["write"]
+      },
+      "info": {
+        "type": "object",
+        "required": ["interpret"],
+        "maxProperties": 2,
+        "additionalProperties": false,
+        "properties": {
+          "interpret": {
+            "type": "string",
+            "enum": ["string", "integer"]
+          },
+          "shell": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

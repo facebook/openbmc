@@ -95,6 +95,7 @@ LOCAL_URI += " \
     file://schemas/registermap/flags_constraints.json \
     file://schemas/registermap/integer_constraints.json \
     file://schemas/registermap/register.json \
+    file://schemas/registermap/special_handlers.json \
     "
 #scripts
 LOCAL_URI += " \

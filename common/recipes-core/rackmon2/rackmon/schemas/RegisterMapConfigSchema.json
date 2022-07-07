@@ -43,6 +43,13 @@
       "items": {
         "$ref": "registermap/register.json#/definitions"
       }
+    },
+    "special_handlers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "registermap/special_handlers.json#/definitions"
+      }
     }
   }
 }

@@ -231,6 +231,52 @@ rackmon.d/orv3_bbu.json
 rackmon.d/orv3_rpu.json
 ```
 
+# Special Handling
+Sometimes we want to perform certain "special" operations on registers
+of all discovered modbus devices. For example, PSUs/BBUs do not have a
+synchronized clock. Thus, it is benefitial if the controller "feeds" the
+correct system time to the PSU, which would make blackbox/debug data
+retrieved from the PSU dependable (useless if the timestamp is inaccurate).
+
+This is accomplished using the "special_handlers" key in the register map.
+(This is not shown in the earlier section to maintain simplicity).
+
+```
+{
+  "name": "orv2_psu",
+  "address_range": [160, 191],
+  "probe_register": 104,
+  "default_baudrate": 19200,
+  "preferred_baudrate": 19200,
+  "special_handlers": [
+    {
+      "reg": 298,
+      "len": 2,
+      "period": 3600,
+      "action": "write",
+      "info": {
+        "interpret": "integer",
+        "shell": "date +%s"
+      }
+    }
+  ],
+  "registers": []
+}
+
+```
+reg - Register address on which the action is performed.
+len - The length of data we are performing the operation with.
+period - If provided, the action is periodic. If not provided,
+the action is performed once at start up.
+action - action to take. Currently only "write" is supported. This
+allows a particular value to be written to the register.
+info - This determines what value is written.
+   interpret - How do we interpet the output? This can be one of the
+   allowed types (integer, string etc).
+   One of the two options on how to get the value to write:
+      shell - Run a shell command and interpret its output (Example, date +%s)
+      value - Write the value provided.
+
 # ORv3 Register Address types
 This more describes either up-coming or existing Register map JSONs.
 We can formally interpret the address of a MODBUS device as:
@@ -354,7 +400,6 @@ is a high chance that we might take up a lot of RAM. So, don't use on production
 # Upcoming
 
 * Baudrate negotiation
-* Writing timestamp to the device.
 
 # References
 Protocol Specification: https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf

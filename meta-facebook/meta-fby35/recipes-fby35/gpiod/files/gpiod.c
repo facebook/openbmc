@@ -50,6 +50,18 @@ typedef struct {
   char name[32];
 } gpio_pin_t;
 
+struct gpio_offset_map {
+  uint8_t bmc_ready;
+  uint8_t bios_post_cmplt;
+  uint8_t pwrgd_cpu;
+  uint8_t rst_pltrst;
+  uint8_t bmc_debug_enable;
+} gpio_offset = { BMC_READY,
+                    FM_BIOS_POST_CMPLT_BMC_N,
+                    PWRGD_CPU_LVC3,
+                    RST_PLTRST_BUF_N,
+                    FM_BMC_DEBUG_ENABLE_N }; // default as Crater Lake 
+
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot3[MAX_GPIO_PINS] = {0};
@@ -441,8 +453,8 @@ populate_gpio_pins(uint8_t fru) {
   }
 
   // Only monitor RST_PLTRST_BUF_N & FM_BMC_DEBUG_ENABLE_N
-  gpios[RST_PLTRST_BUF_N].flag = 1; // Platform reset pin
-  gpios[FM_BMC_DEBUG_ENABLE_N].flag = 1; // Debug enable pin
+  gpios[gpio_offset.rst_pltrst].flag = 1; // Platform reset pin
+  gpios[gpio_offset.bmc_debug_enable].flag = 1; // Debug enable pin
   for (i = 0; i < MAX_GPIO_PINS; i++) {
     if (gpios[i].flag) {
       gpios[i].ass_val = GET_BIT(gpio_ass_val, i);
@@ -460,6 +472,27 @@ init_gpio_pins() {
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
     populate_gpio_pins(fru);
+  }
+
+}
+/*Wrapper function to to configure gpio offset to Crater Lake or Halfdome*/
+static void
+init_gpio_offset_map() {
+  int fru;
+  int fru_prsnt;
+
+  for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
+    pal_is_fru_prsnt(fru, &fru_prsnt);
+    if (fru_prsnt) {
+      if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+          gpio_offset.bmc_ready = HD_BMC_READY;
+          gpio_offset.bios_post_cmplt = HD_FM_BIOS_POST_CMPLT_BIC_N;
+          gpio_offset.pwrgd_cpu = HD_PWRGD_CPU_LVC3;
+          gpio_offset.rst_pltrst = HD_RST_PLTRST_BIC_N;
+          gpio_offset.bmc_debug_enable = HD_FM_BMC_DEBUG_ENABLE_N;
+      }
+      break;
+    }
   }
 
 }
@@ -599,8 +632,8 @@ gpio_monitor_poll(void *ptr) {
           chk_bic_pch_pwr_flag = false;
         } else if (pwr_sts == SERVER_12V_OFF) {
           set_12v_off_flag(fru, false);
-          SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
-          SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
+          SET_BIT(o_pin_val, gpio_offset.pwrgd_cpu, 0);
+          SET_BIT(o_pin_val, gpio_offset.rst_pltrst, 0);
         }
       }
 
@@ -617,14 +650,14 @@ gpio_monitor_poll(void *ptr) {
     // may return success because of the IPMB retry
     if (get_12v_off_flag(fru) == true) {
       set_12v_off_flag(fru, false);
-      SET_BIT(o_pin_val, PWRGD_CPU_LVC3, 0);
-      SET_BIT(o_pin_val, RST_PLTRST_BUF_N, 0);
+      SET_BIT(o_pin_val, gpio_offset.pwrgd_cpu, 0);
+      SET_BIT(o_pin_val, gpio_offset.rst_pltrst, 0);
     }
 
     // Inform BIOS that BMC is ready
     // handle case : BIC FW update & BIC resets unexpectedly
-    if (GET_BIT(n_pin_val, BMC_READY) == 0) {
-      bic_set_gpio(fru, BMC_READY, 1);
+    if (GET_BIT(n_pin_val, gpio_offset.bmc_ready) == 0) {
+      bic_set_gpio(fru, gpio_offset.bmc_ready, 1);
     }
 
     if (!chk_bic_pch_pwr_flag) chk_bic_pch_pwr_flag = true;
@@ -635,7 +668,7 @@ gpio_monitor_poll(void *ptr) {
                        (GET_BIT(n_pin_val, RST_RSMRST_BMC_N) << 0x2) | \
                        (GET_BIT(n_pin_val, FM_CATERR_LVT3_N ) << 0x3) | \
                        (GET_BIT(n_pin_val, FM_SLPS3_PLD_N) << 0x4);
-    if (GET_BIT(n_pin_val, FM_BIOS_POST_CMPLT_BMC_N) == 0x0) {
+    if (GET_BIT(n_pin_val, gpio_offset.bios_post_cmplt) == 0x0) {
       if (retry_sec[fru-1] == (MAX_READ_RETRY*12)) {
         kv_set(host_key[fru-1], "1", 0, 0);
         bios_post_cmplt[fru-1] = true;
@@ -653,15 +686,15 @@ gpio_monitor_poll(void *ptr) {
 
     //check PWRGD_CPU_LVC3 is changed
     if ( (get_pwrgd_cpu_flag(fru) == false) &&
-         (GET_BIT(n_pin_val, PWRGD_CPU_LVC3) != GET_BIT(o_pin_val, PWRGD_CPU_LVC3))) {
+         (GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu) != GET_BIT(o_pin_val, gpio_offset.pwrgd_cpu))) {
       rst_timer(fru);
       set_pwrgd_cpu_flag(fru, true);
       //update the value since the bit is not monitored
-      SET_BIT(o_pin_val, PWRGD_CPU_LVC3, GET_BIT(n_pin_val, PWRGD_CPU_LVC3));
+      SET_BIT(o_pin_val, gpio_offset.pwrgd_cpu, GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu));
     }
 
     //check the power status since the we need to set timer
-    if ( GET_BIT(n_pin_val, PWRGD_CPU_LVC3) != gpios[PWRGD_CPU_LVC3].ass_val ) {
+    if ( GET_BIT(n_pin_val, gpio_offset.pwrgd_cpu) != gpios[gpio_offset.pwrgd_cpu].ass_val ) {
       incr_timer(fru);
     } else {
       decr_timer(fru);
@@ -683,16 +716,16 @@ gpio_monitor_poll(void *ptr) {
         // Check if the new GPIO val is ASSERT
         if (gpios[i].status == gpios[i].ass_val) {
 
-          if (i == RST_PLTRST_BUF_N) {
+          if (i == gpio_offset.rst_pltrst) {
             rst_timer(fru);
-          } else if (i == FM_BMC_DEBUG_ENABLE_N) {
+          } else if (i == gpio_offset.bmc_debug_enable) {
             printf("FM_BMC_DEBUG_ENABLE_N is ASSERT !\n");
             syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is ASSERT: %d", fru, gpios[i].status);
           }
         } else {
-          if (i == RST_PLTRST_BUF_N) {
+          if (i ==  gpio_offset.rst_pltrst) {
             rst_timer(fru);
-          } else if (i == FM_BMC_DEBUG_ENABLE_N) {
+          } else if (i == gpio_offset.bmc_debug_enable) {
             printf("FM_BMC_DEBUG_ENABLE_N is DEASSERT !\n");
             syslog(LOG_CRIT, "FRU: %d, FM_BMC_DEBUG_ENABLE_N is DEASSERT: %d", fru, gpios[i].status);
           }
@@ -975,7 +1008,8 @@ main(int argc, void **argv) {
       exit(-1);
     }
   } else {
-
+    
+    init_gpio_offset_map();
     init_gpio_pins();
 
     openlog("gpiod", LOG_CONS, LOG_DAEMON);

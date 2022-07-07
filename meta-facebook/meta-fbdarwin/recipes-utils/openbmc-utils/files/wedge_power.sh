@@ -84,7 +84,9 @@ do_reset() {
         esac
     done
     if [ $system -eq 1 ]; then
+        logger "Power reset the whole system ..."
         do_sync
+        echo -n "Power reset the whole system ..."
         gpio_set_value BMC_SYS_PWR_CYC0 1
         sleep 8
         # The chassis shall be reset now... if not, we are in trouble
@@ -92,8 +94,16 @@ do_reset() {
         gpio_set_value BMC_SYS_PWR_CYC0 0
         return 254
     else
-        echo "FBDARWIN doesn't support SCM reset"
-        return 1
+        echo -n "Power off microserver ..."
+        retries=3
+        for _ in $(seq $retries); do
+            gpio_set_value BMC_SYS_PWR_CYC1 1
+            sleep 1
+            gpio_set_value BMC_SYS_PWR_CYC1 0
+            sleep 1
+        done
+        echo " Done"
+        return 0
     fi
 }
 

@@ -36,4 +36,8 @@ IMAGE_INSTALL += " \
   fan-util \
   hgxmgr \
   gpiod \
+  bios-util \
+  pldmd \
+  front-paneld \
+  mctpd \
 "

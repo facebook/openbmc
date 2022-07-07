@@ -232,7 +232,7 @@ static int
 util_get_gpio(uint8_t slot_id) {
   int ret = 0;
   uint8_t i;
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size();
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id);
   char gpio_pin_name[32] = "\0";
   bic_gpio_t gpio = {0};
 
@@ -253,7 +253,7 @@ util_get_gpio(uint8_t slot_id) {
 
 static int
 util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val) {
-  uint8_t gpio_pin_cnt = y35_get_gpio_list_size();
+  uint8_t gpio_pin_cnt = y35_get_gpio_list_size(slot_id);
   char gpio_pin_name[32] = "\0";
   int ret = -1;
 

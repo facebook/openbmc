@@ -19,6 +19,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include <facebook/fby35_common.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -193,13 +194,18 @@ bic_get_server_power_status(uint8_t slot_id, uint8_t *power_status)
   uint8_t rbuf[16] = {0};
   uint8_t tlen = 3;
   uint8_t rlen = 0;
+
   int ret;
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, tlen);
 
   ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_GPIO, tbuf, tlen, rbuf, &rlen);
-
-  *power_status = (rbuf[4] & 0x80) >> 7;
+  
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+    *power_status = BIT_VALUE(rbuf[3], HD_PWRGD_CPU_LVC3) ;
+  } else {
+    *power_status = BIT_VALUE(rbuf[3], PWRGD_SYS_PWROK) ;
+  }
 
   return ret;
 }

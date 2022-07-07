@@ -21,11 +21,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <syslog.h>
+#include <facebook/fby35_common.h>
 #include "fby35_gpio.h"
 
 
-//BIC GPIO 
-const char *gpio_pin_name[] = {
+//Crater lake BIC GPIO
+const char *cl_gpio_pin_name[] = {
   "FM_BMC_PCH_SCI_LPC_R_N",         //0
   "FM_BIOS_POST_CMPLT_BMC_N",
   "FM_SLPS3_PLD_N",
@@ -99,6 +100,64 @@ const char *gpio_pin_name[] = {
   "SGPIO_BMC_LD_R_N",               //70
   "SGPIO_BMC_DOUT_R",
   "SGPIO_BMC_DIN",
+};
+
+//Halfdome BIC GPIO
+const char *hd_gpio_pin_name[] = {
+  "HD_FM_BIOS_POST_CMPLT_BIC_N",    //0
+  "HD_FM_CPU_BIC_SLP_S3_N",
+  "HD_APML_CPU_ALERT_BIC_N",
+  "HD_IRQ_UV_DETECT_N",
+  "HD_PVDDCR_CPU0_BIC_OCP_N",
+  "HD_HSC_OCP_GPIO1_R",
+  "HD_PVDDCR_CPU1_BIC_OCP_N",
+  "HD_RST_USB_HUB_R_N",
+  "HD_P3V_BAT_SCALED_EN_R",
+  "HD_HDT_BIC_TRST_R_N",
+  "HD_FM_CPU_BIC_SLP_S5_N",      //10
+  "HD_PVDD11_S3_BIC_OCP_N",
+  "HD_FM_HSC_TIMER",
+  "HD_IRQ_SMB_IO_LVC3_STBY_ALRT_N",
+  "HD_PVDDCR_CPU1_PMALERT_N",
+  "HD_FM_CPU_BIC_THERMTRIP_N",
+  "HD_FM_PRSNT_CPU_BIC_N",
+  "HD_AUTH_PRSNT_BIC_N",
+  "HD_RST_CPU_RESET_BIC_N",
+  "HD_PWRBTN_R1_N",
+  "HD_RST_BMC_R_N",                    //20
+  "HD_HDT_BIC_DBREQ_R_N",
+  "HD_BMC_READY",
+  "HD_BIC_READY",
+  "HD_FM_SOL_UART_CH_SEL_R",
+  "HD_PWRGD_CPU_LVC3",
+  "HD_CPU_ERROR_BIC_LVC3_R_N",
+  "HD_PVDD11_S3_PMALERT_N",
+  "HD_IRQ_HSC_ALERT1_N",
+  "HD_SMB_SENSOR_LVC3_ALERT_N",
+  "HD_SYS_PWRBTN_BIC_N",        //30
+  "HD_RST_PLTRST_BIC_N",
+  "HD_CPU_SMERR_BIC_N",
+  "HD_IRQ_HSC_ALERT2_N",
+  "HD_FM_BMC_DEBUG_ENABLE_N",
+  "HD_FM_DBP_PRESENT_N",
+  "HD_FM_FAST_PROCHOT_EN_R_N",
+  "HD_FM_BIOS_MRC_DEBUG_MSG_DIS",
+  "HD_FAST_PROCHOT_N",
+  "HD_BIC_JTAG_SEL_R",
+  "HD_HSC_OCP_GPIO2_R",        //40
+  "HD_HSC_OCP_GPIO3_R",
+  "HD_RST_RSMRST_BMC_N",
+  "HD_FM_CPU_BIC_PROCHOT_LVT3_N",
+  "HD_BIC_JTAG_MUX_SEL",
+  "HD_BOARD_ID2",
+  "HD_PVDDCR_CPU0_PMALERT_N",
+  "HD_BOARD_ID0",
+  "HD_BOARD_ID1",
+  "HD_BOARD_ID3",
+  "HD_BOARD_ID5",                    //50
+  "HD_BOARD_ID4",
+  "HD_HSC_TYPE_0",
+  "HD_HSC_TYPE_1",
 };
 
 /* GPIO Expander gpio table */
@@ -216,15 +275,22 @@ gpio_cfg bmc_gpio_table[] = {
   {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID, SYS_CFG_CLASS1 | SYS_CFG_CLASS2}
 };
 
-const uint8_t gpio_pin_size = sizeof(gpio_pin_name)/sizeof(gpio_pin_name[0]);
+const uint8_t cl_gpio_pin_size = sizeof(cl_gpio_pin_name)/sizeof(cl_gpio_pin_name[0]);
+const uint8_t hd_gpio_pin_size = sizeof(hd_gpio_pin_name)/sizeof(hd_gpio_pin_name[0]);
 
 uint8_t
-y35_get_gpio_list_size(void) {
-  return gpio_pin_size;
+y35_get_gpio_list_size(uint8_t fru) {
+  
+  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    return  hd_gpio_pin_size;
+  }
+  return cl_gpio_pin_size;
 }
 
 int
 y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
+  uint8_t gpio_pin_size = cl_gpio_pin_size;
+  const char **gpio_pin_name = cl_gpio_pin_name;
 
   //TODO: Add support for BMC GPIO pins
   if (fru < 1 || fru > 4) {
@@ -234,7 +300,12 @@ y35_get_gpio_name(uint8_t fru, uint8_t gpio, char *name) {
     return -1;
   }
 
-  if (gpio < 0 || gpio > MAX_GPIO_PINS) {
+  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    gpio_pin_size = hd_gpio_pin_size;
+    gpio_pin_name = hd_gpio_pin_name;
+  }
+
+  if (gpio < 0 || gpio > gpio_pin_size) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "y35_get_gpio_name: Wrong gpio pin %u", gpio);
 #endif

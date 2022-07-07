@@ -43,6 +43,7 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   int ret;
   int ret_recovery = 0, ret_reset = 0;
   uint8_t status;
+  uint8_t server_type = 0;
   int retry_count = 0;
   image_info image_sts = check_image(image, force);
 
@@ -83,21 +84,19 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     return -1;
   }
 
-  cerr << "Putting ME into recovery mode..." << endl;
-  ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
+  server_type = fby35_common_get_slot_type(slot_id);
 
-  //If you are doing force update, it will keep executing whether it has successfully entered recovery mode
-  if ((ret_recovery < 0) && (force == false)) {
-    cerr << "Failed to put ME into recovery mode. Stopping the update!" << endl;
-    pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
-    return ret_recovery;
+  if ( SERVER_TYPE_HD != server_type) {
+    cerr << "Putting ME into recovery mode..." << endl;
+    ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
+
+    //If you are doing force update, it will keep executing whether it has successfully entered recovery mode
+    if ((ret_recovery < 0) && (force == false)) {
+      cerr << "Failed to put ME into recovery mode. Stopping the update!" << endl;
+      pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+      return ret_recovery;
+    }
   }
-
-  // cerr << "Enabling USB..." << endl;
-  // bic_set_gpio(slot_id, RST_USB_HUB_N_R, GPIO_HIGH);
-  sleep(1);
-  cerr << "Switching BIOS SPI MUX for update..." << endl;
-  bic_set_gpio(slot_id, FM_SPI_PCH_MASTER_SEL_R, GPIO_HIGH);
   sleep(1);
   if (!image.empty()) {
     ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
@@ -105,19 +104,16 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     ret = bic_update_fw_fd(slot_id, fw_comp, fd, FORCE_UPDATE_UNSET);
   }
 
-  // cerr << "Disabling USB..." << endl;
-  // bic_set_gpio(slot_id, RST_USB_HUB_N_R, GPIO_LOW);
   if (ret != 0) {
     cerr << "BIOS update failed. ret = " << ret << endl;
   }
   sleep(1);
-  cerr << "Switching BIOS SPI MUX for default value..." << endl;
-  bic_set_gpio(slot_id, FM_SPI_PCH_MASTER_SEL_R, GPIO_LOW);
-  sleep(3);
 
-  // Have to do ME reset, because we have put ME into recovery mode.
-  cerr << "Doing ME Reset..." << endl;
-  ret_reset = me_reset(slot_id);
+  if ( SERVER_TYPE_HD != server_type) {
+    // Have to do ME reset, because we have put ME into recovery mode.
+    cerr << "Doing ME Reset..." << endl;
+    ret_reset = me_reset(slot_id);
+  }
   sleep(5);
 
   cerr << "Power-cycling the server..." << endl;

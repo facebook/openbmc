@@ -230,6 +230,68 @@ const uint8_t bic_sensor_list[] = {
   BIC_SENSOR_DIMMG_PMIC_Pout,
   BIC_SENSOR_DIMMH_PMIC_Pout,
 };
+
+const uint8_t bic_hd_sensor_list[] = {
+  BIC_HD_SENSOR_MB_INLET_TEMP,
+  BIC_HD_SENSOR_MB_OUTLET_TEMP,
+  BIC_HD_SENSOR_FIO_TEMP,
+  BIC_HD_SENSOR_CPU_TEMP,
+  BIC_HD_SENSOR_DIMMA_TEMP,
+  BIC_HD_SENSOR_DIMMB_TEMP,
+  BIC_HD_SENSOR_DIMMC_TEMP,
+  BIC_HD_SENSOR_DIMME_TEMP,
+  BIC_HD_SENSOR_DIMMG_TEMP,
+  BIC_HD_SENSOR_DIMMH_TEMP,
+  BIC_HD_SENSOR_DIMMI_TEMP,
+  BIC_HD_SENSOR_DIMMK_TEMP,
+  BIC_HD_SENSOR_SSD_TEMP,
+  BIC_HD_SENSOR_HSC_TEMP,
+  BIC_HD_SENSOR_CPU0_VR_TEMP,
+  BIC_HD_SENSOR_SOC_VR_TEMP,
+  BIC_HD_SENSOR_CPU1_VR_TEMP,
+  BIC_HD_SENSOR_PVDDIO_VR_TEMP,
+  BIC_HD_SENSOR_PVDD11_VR_TEMP,
+  BIC_HD_SENSOR_P12V_STBY_VOL,
+  BIC_HD_SENSOR_PVDD18_S5_VOL,
+  BIC_HD_SENSOR_P3V3_STBY_VOL,
+  BIC_HD_SENSOR_PVDD11_S3_VOL,
+  BIC_HD_SENSOR_P3V_BAT_VOL,
+  BIC_HD_SENSOR_PVDD33_S5_VOL,
+  BIC_HD_SENSOR_P5V_STBY_VOL,
+  BIC_HD_SENSOR_P12V_MEM_1_VOL,
+  BIC_HD_SENSOR_P12V_MEM_0_VOL,
+  BIC_HD_SENSOR_P1V2_STBY_VOL,
+  BIC_HD_SENSOR_P3V3_M2_VOL,
+  BIC_HD_SENSOR_P1V8_STBY_VOL,
+  BIC_HD_SENSOR_HSC_INPUT_VOL,
+  BIC_HD_SENSOR_CPU0_VR_VOL,
+  BIC_HD_SENSOR_SOC_VR_VOL,
+  BIC_HD_SENSOR_CPU1_VR_VOL,
+  BIC_HD_SENSOR_PVDDIO_VR_VOL,
+  BIC_HD_SENSOR_PVDD11_VR_VOL,
+  BIC_HD_SENSOR_HSC_OUTPUT_CUR,
+  BIC_HD_SENSOR_CPU0_VR_CUR,
+  BIC_HD_SENSOR_SOC_VR_CUR,
+  BIC_HD_SENSOR_CPU1_VR_CUR,
+  BIC_HD_SENSOR_PVDDIO_VR_CUR,
+  BIC_HD_SENSOR_PVDD11_VR_CUR,
+  BIC_HD_SENSOR_HSC_INPUT_PWR,
+  BIC_HD_SENSOR_CPU0_VR_PWR,
+  BIC_HD_SENSOR_SOC_VR_PWR,
+  BIC_HD_SENSOR_CPU1_VR_PWR,
+  BIC_HD_SENSOR_PVDDIO_VR_PWR,
+  BIC_HD_SENSOR_PVDD11_VR_PWR,
+  BIC_HD_SENSOR_CPU_PWR,
+  BIC_HD_SENSOR_DIMMA_PWR,
+  BIC_HD_SENSOR_DIMMB_PWR,
+  BIC_HD_SENSOR_DIMMC_PWR,
+  BIC_HD_SENSOR_DIMME_PWR,
+  BIC_HD_SENSOR_DIMMG_PWR,
+  BIC_HD_SENSOR_DIMMH_PWR,
+  BIC_HD_SENSOR_DIMMI_PWR,
+  BIC_HD_SENSOR_DIMMK_PWR,
+};
+
 //BIC 1OU EXP Sensors
 const uint8_t bic_1ou_sensor_list[] = {
   BIC_1OU_EXP_SENSOR_OUTLET_TEMP,
@@ -1091,6 +1153,7 @@ size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
 size_t nicexp_sensor_cnt = sizeof(nicexp_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
 size_t bic_sensor_cnt = sizeof(bic_sensor_list)/sizeof(uint8_t);
+size_t bic_hd_sensor_cnt = sizeof(bic_hd_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
@@ -1209,8 +1272,13 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_SLOT2:
   case FRU_SLOT3:
   case FRU_SLOT4:
-    memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
-    current_cnt = bic_sensor_cnt;
+    if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+      memcpy(bic_dynamic_sensor_list[fru-1], bic_hd_sensor_list, bic_hd_sensor_cnt);
+      current_cnt = bic_hd_sensor_cnt;
+    } else {
+      memcpy(bic_dynamic_sensor_list[fru-1], bic_sensor_list, bic_sensor_cnt);
+      current_cnt = bic_sensor_cnt;
+    }
     config_status = bic_is_exp_prsnt(fru);
     if (config_status < 0) config_status = 0;
 
@@ -2504,13 +2572,16 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if(sensor.read_type == ACCURATE_CMD_4BYTE) {
     *value = ((int16_t)((sensor.value & 0xFFFF0000) >> 16)) * 0.001 + ((int16_t)(sensor.value & 0x0000FFFF)) ;
 
-    switch (sensor_num) {
-      case BIC_SENSOR_FIO_TEMP:
-        apply_frontIO_correction(fru, sensor_num, value, bmc_location);
-        break;
-      case BIC_SENSOR_CPU_THERM_MARGIN:
-        if ( *value > 0 ) *value = -(*value);
-        break;
+    //  Apply value correction for Crater Lake
+    if (fby35_common_get_slot_type(fru) == SERVER_TYPE_CL) {
+      switch (sensor_num) {
+        case BIC_SENSOR_FIO_TEMP:
+          apply_frontIO_correction(fru, sensor_num, value, bmc_location);
+          break;
+        case BIC_SENSOR_CPU_THERM_MARGIN:
+          if ( *value > 0 ) *value = -(*value);
+          break;
+      }
     }
     return 0;
   } else if ( sensor.read_type == ACCURATE_CMD) {
@@ -2570,14 +2641,17 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if (sensor.read_type == ACCURATE_CMD) {
     *value /= 256;
   }
-  //correct the value
-  switch (sensor_num) {
-    case BIC_SENSOR_FIO_TEMP:
-      apply_frontIO_correction(fru, sensor_num, value, bmc_location);
-      break;
-    case BIC_SENSOR_CPU_THERM_MARGIN:
-      if ( *value > 0 ) *value = -(*value);
-      break;
+
+  //  Apply value correction for Crater Lake
+  if (fby35_common_get_slot_type(fru) == SERVER_TYPE_CL) {
+    switch (sensor_num) {
+      case BIC_SENSOR_FIO_TEMP:
+        apply_frontIO_correction(fru, sensor_num, value, bmc_location);
+        break;
+      case BIC_SENSOR_CPU_THERM_MARGIN:
+        if ( *value > 0 ) *value = -(*value);
+        break;
+    }
   }
 
   if ( bic_get_server_power_status(fru, &power_status) < 0 || power_status != SERVER_POWER_ON) {

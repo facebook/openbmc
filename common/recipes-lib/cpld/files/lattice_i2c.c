@@ -5,6 +5,7 @@
 #include <syslog.h>
 
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
 #include "cpld.h"
 #include "lattice.h"
 #include "lattice_i2c.h"
@@ -24,10 +25,25 @@ typedef enum {
   NX,
 } cpld_type;
 
+int cpld_i2c_rdwr(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt);
+static int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &cpld_i2c_rdwr;
+uint8_t g_bus = 0;
+uint8_t g_addr = 0;
 
+int cpld_i2c_rdwr(uint8_t bus, uint8_t addr,
+                  uint8_t *tbuf, uint8_t tcnt,
+                  uint8_t *rbuf, uint8_t rcnt) {
+  int ret, fd;
 
-int g_i2c_fd = 0;
-uint8_t g_i2c_addr = 0;
+  if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
+    return -1;
+  }
+
+  ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, tcnt, rbuf, rcnt), 3, 10);
+  close(fd);
+
+  return ret;
+}
 
 static int
 read_cpld_busy_flag() {
@@ -38,7 +54,7 @@ read_cpld_busy_flag() {
   uint8_t tlen = 4;
   uint8_t rlen = 1;
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send read_cpld_busy_flag cmd\n");
     return ret;
@@ -57,7 +73,7 @@ read_cpld_status0_flag() {
   uint8_t tlen = 4;
   uint8_t rlen = 4;
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't read_cpld_status0_flag cmd\n");
     return ret;
@@ -75,7 +91,7 @@ read_cpld_status1_flag() {
   uint8_t tlen = 4;
   uint8_t rlen = 4;
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't read_cpld_status1_flag cmd\n");
     return ret;
@@ -94,7 +110,7 @@ enter_transparent_mode() {
   uint8_t tlen = 3;
   uint8_t rlen = 0;
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send enter_transparent_mode cmd\n");
     return ret;
@@ -139,7 +155,7 @@ erase_flash(cpld_type type, CPLDInfo *dev_info) {
 
   printf("erase command : %02X %02X %02X %02X\n",tbuf[0],tbuf[1],tbuf[2],tbuf[3]);
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send erase flash cmd\n");
     return ret;
@@ -201,7 +217,7 @@ reset_addr(cpld_type type, uint8_t sector) {
   }
 
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send reset memory addr cmd\n");
   }
@@ -233,7 +249,7 @@ program_page(cpld_type type, uint8_t *data) {
     tbuf[index + 4] = bit_swap(data[index]);
   }
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send program_page cmd\n");
     return ret;
@@ -275,12 +291,15 @@ program_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
       printf("send data but ret < 0 at line:%d. exit!\n",i);
       return ret;
     }
+
     if ( (record_offset + fsize) <= i ) {
       printf("\rupdated cpld: %d %%", (int) (i/fsize)*5);
       fflush(stdout);
       record_offset += fsize;
     }
   }
+
+  printf("\rupdated cpld: %d %%", 100);
   printf("\n");
 
   return ret;
@@ -325,7 +344,7 @@ verify_page(cpld_type type, uint8_t *data) {
     cmp_data[index] = bit_swap(data[index]);
   }
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send program_page cmd\n");
     return ret;
@@ -375,6 +394,8 @@ verify_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
       record_offset += fsize;
     }
   }
+
+  printf("\rverify cpld: %d %%", 100);
   printf("\n");
 
   return ret;
@@ -431,7 +452,7 @@ program_user_code(cpld_type type, uint8_t *user_data) {
   // }
   // printf("\n");
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send program_user_code cmd\n");
     return ret;
@@ -451,7 +472,7 @@ program_user_code(cpld_type type, uint8_t *user_data) {
 
   //read user code for check
   tbuf[0] = USERCODE;
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, 4, rbuf, 4);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, 4, rbuf, 4);
   if ( ret < 0 ) {
     printf("Couldn't send program_user_code cmd\n");
     return ret;
@@ -487,7 +508,7 @@ program_done(cpld_type type) {
   // }
   // printf("\n");
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send program_done cmd\n");
     return ret;
@@ -519,7 +540,7 @@ static int exit_program_mode() {
   // }
   // printf("\n");
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send program done cmd\n");
     return ret;
@@ -542,7 +563,7 @@ static int bypass_instruction() {
   // }
   // printf("\n");
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if ( ret < 0 ) {
     printf("Couldn't send bypass instruction cmd\n");
     return ret;
@@ -562,9 +583,9 @@ int common_cpld_Get_Ver_i2c(unsigned int *ver)
   uint8_t rlen = 4;
   unsigned int version = 0;
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if (ret < 0) {
-    printf("%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d \n", __func__, tlen);
+    printf("%s() Failed to do cpld_xfer, tlen=%d \n", __func__, tlen);
     return -1;
   } else {
     version = rbuf[0] << 0;
@@ -587,9 +608,9 @@ int common_cpld_Get_id_i2c(unsigned int *dev_id)
   uint8_t rlen = 4;
   unsigned int device_id = 0;
 
-  ret = i2c_rdwr_msg_transfer(g_i2c_fd, g_i2c_addr << 1, tbuf, tlen, rbuf, rlen);
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, rbuf, rlen);
   if (ret < 0) {
-    printf("%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d \n", __func__, tlen);
+    printf("%s() Failed to do cpld_xfer, tlen=%d \n", __func__, tlen);
     return -1;
   } else {
     device_id = rbuf[0] << 24;
@@ -839,22 +860,17 @@ error_exit:
 
 int cpld_dev_open_i2c(void *_attr) {
   i2c_attr_t *attr = (i2c_attr_t *)_attr;
-  int i2c_fd = 0;
 
-  syslog(LOG_INFO, "%s, bus_id = %02X, slv_addr = %02X \n", __FUNCTION__, attr->bus_id, attr->slv_addr);
-  i2c_fd = i2c_cdev_slave_open(attr->bus_id, attr->slv_addr, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2c_fd < 0 ) {
-    printf("%s() Failed to open bus %u addr %u . Err: %s", __func__, attr->bus_id, attr->slv_addr, strerror(errno));
-    return -1;
+  if (attr->xfer) {
+    cpld_xfer=attr->xfer;
   }
-  g_i2c_fd = i2c_fd;
-  g_i2c_addr = attr->slv_addr;
+
+  g_bus = attr->bus_id;
+  g_addr = (attr->slv_addr) << 1;
   return 0;
 }
 
 int cpld_dev_close_i2c(void) {
-  close(g_i2c_fd);
-  g_i2c_fd = 0;
-  g_i2c_addr = 0;
+  g_addr = 0;
   return 0;
 }

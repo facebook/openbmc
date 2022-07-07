@@ -541,6 +541,7 @@ enum
   CMD_OEM_1S_UPDATE_SDR = 0x44,
 
   CMD_OEM_1S_GET_PCIE_CONFIG = 0x67,
+  CMD_OEM_1S_BIC_BRIDGE = 0x74,
 };
 
 // OEM Command Codes for USB basded Debug Card

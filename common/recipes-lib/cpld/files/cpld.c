@@ -29,11 +29,10 @@ Please get the JEDEC file format before you read the code
 #include "cpld.h"
 #include "lattice.h"
 #include "altera.h"
+#include <openbmc/misc-utils.h>
 
 struct cpld_dev_info *cur_dev = NULL;
 struct cpld_dev_info **cpld_dev_list;
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 const char *cpld_list[] = {
   "LCMXO2-2000HC",

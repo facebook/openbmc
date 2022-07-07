@@ -69,7 +69,6 @@ typedef struct
   unsigned int FeatureRow;
 } CPLDInfo;
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #define LATTICE_COL_SIZE 128
 
 int LCMXO2Family_Get_Update_Data_Size(FILE *jed_fd, int *cf_size, int *ufm_size);

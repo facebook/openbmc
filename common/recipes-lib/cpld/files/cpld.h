@@ -35,6 +35,7 @@ typedef enum {
 typedef struct {
   uint8_t bus_id;
   uint8_t slv_addr;
+  int (*xfer)(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt);
 } i2c_attr_t;
 
 typedef struct {

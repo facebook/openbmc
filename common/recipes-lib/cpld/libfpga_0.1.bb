@@ -20,8 +20,8 @@ LOCAL_URI = " \
     file://meson.build \
     "
 
-DEPENDS = "libast-jtag libpal libobmc-i2c"
-RDEPENDS:${PN} = "libast-jtag libpal libobmc-i2c"
+DEPENDS = "libast-jtag libpal libobmc-i2c libmisc-utils"
+RDEPENDS:${PN} = "libast-jtag libpal libobmc-i2c libmisc-utils"
 LDFLAGS += "-lobmc-i2c"
 
 inherit meson pkgconfig

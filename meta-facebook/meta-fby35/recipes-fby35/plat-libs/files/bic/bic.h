@@ -121,6 +121,11 @@ enum {
   VR_2OU_P3V3_STBY2 = 0x2E,
   VR_2OU_P3V3_STBY3 = 0x30,
   VR_2OU_P1V8       = 0x36,
+
+  /*----halfdome VR ADDR-----*/
+  VDDCR_CPU0_ADDR = 0xC2,
+  VDDCR_CPU1_ADDR = 0xC4,
+  VDD11S3_ADDR = 0xC6,
 };
 
 // M2 info

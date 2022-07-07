@@ -85,6 +85,30 @@ struct vr_info fby35_vr_list[] = {
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
   },
+  {
+    .bus = SB_VR_BUS,
+    .addr = VDDCR_CPU0_ADDR,
+    .dev_name = "VDDCR_CPU0/VDDCR_SOC",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &fby35_vr_rdwr,
+  },
+  {
+    .bus = SB_VR_BUS,
+    .addr = VDDCR_CPU1_ADDR,
+    .dev_name = "VDDCR_CPU1/VDDIO",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &fby35_vr_rdwr,
+  },
+  {
+    .bus = SB_VR_BUS,
+    .addr = VDD11S3_ADDR,
+    .dev_name = "VDD11_S3",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &fby35_vr_rdwr,
+  },
 };
 
 void plat_vr_preinit(uint8_t slot, const char *name) {

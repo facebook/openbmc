@@ -877,18 +877,26 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t b
   uint8_t rlen = sizeof(rbuf);
   int ret = 0;
 
+  //Get first byte to check device id length
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
-  tbuf[2] = 0x07; // read back 7 bytes
+  tbuf[2] = 0x01; // read back 1 bytes
   tbuf[3] = 0xAD; // get device id command
   tlen = 4;
   ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
   if ( ret < 0 ) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
   } else {
-    rlen = (*id_len > rbuf[0]) ? rbuf[0] : *id_len;
-    *id_len = rbuf[0];
-    memmove(devid, &rbuf[1], rlen);
+    //Get full device id
+    tbuf[2] = 1 + rbuf[0] ; // read back length byte + device_id bytes
+    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+    } else {
+      rlen = (*id_len > rbuf[0]) ? rbuf[0] : *id_len;
+      *id_len = rbuf[0];
+      memmove(devid, &rbuf[1], rlen);
+    }
   }
 
   return ret;

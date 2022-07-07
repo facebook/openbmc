@@ -22,11 +22,7 @@ BicFwComponent  bic_fw1("slot1", "bic", "sb", FW_SB_BIC);
 BicFwComponent  bic_rcvy_fw1("slot1", "bic_rcvy", "sb", FW_BIC_RCVY);
 CpldComponent   cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
 BiosComponent   bios_fw1("slot1", "bios", FRU_SLOT1, FW_BIOS);
-MeComponent     me_fw1("slot1", "me", FRU_SLOT1);
 VrComponent     vr_fw1("slot1", "vr", FW_VR);
-VrComponent     vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
-VrComponent     vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
-VrComponent     vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
 
 class ClassConfig {
   public:
@@ -47,7 +43,6 @@ class ClassConfig {
         //slot1 bb bic/cpld
         static BicFwComponent    bic_bb_fw1("slot1", "bb_bic", "bb", FW_BB_BIC);
         static CpldComponent     cpld_bb_fw1("slot1", "bb_cpld", "bb", FW_BB_CPLD, 0, 0);
-
         if (board_type != E1S_BOARD) {
           static PCIESWComponent pciesw_2ou_fw1("slot1", "2ou_pciesw", FRU_SLOT1, "2ou", FW_2OU_PESW);
           static VrExtComponent  vr_2ou_vr_p3v3_1_fw1("slot1", "2ou_vr_stby1", FRU_SLOT1, "2ou", FW_2OU_3V3_VR1);
@@ -79,6 +74,18 @@ class ClassConfig {
         static BicFwComponent    bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);
         static CpldComponent     cpld_1ou_fw1("slot1", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
+        //slot1 vr/me
+        if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD) {
+            static VrComponent     vr_vddcpu0_fw1("slot1", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
+            static VrComponent     vr_vddcpu1_fw1("slot1", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
+            static VrComponent     vr_vdd11s3_fw1("slot1", "vr_vdd11s3", FW_VR_VDD11S3);
+        } else {
+            static MeComponent     me_fw1("slot1", "me", FRU_SLOT1);
+            static VrComponent     vr_vccin_fw1("slot1", "vr_vccin", FW_VR_VCCIN);
+            static VrComponent     vr_vccd_fw1("slot1", "vr_vccd", FW_VR_VCCD);
+            static VrComponent     vr_vccinfaon_fw1("slot1", "vr_vccinfaon", FW_VR_VCCINFAON);
+        }
+
         //slot2 sb bic/cpld/bios/me/vr
         static BicFwComponent    bic_fw2("slot2", "bic", "sb", FW_SB_BIC);
         static BicFwComponent    bic_rcvy_fw2("slot2", "bic_rcvy", "sb", FW_BIC_RCVY);
@@ -98,16 +105,24 @@ class ClassConfig {
         static BicFwComponent    bic_2ou_fw2("slot2", "2ou_bic", "2ou", FW_2OU_BIC);
         static CpldComponent     cpld_2ou_fw2("slot2", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
 
-        //slot3 sb bic/cpld/bios/me/vr
+        //slot3 sb bic/cpld/bios/vr
         static BicFwComponent    bic_fw3("slot3", "bic", "sb", FW_SB_BIC);
         static BicFwComponent    bic_rcvy_fw3("slot3", "bic_rcvy", "sb", FW_BIC_RCVY);
         static CpldComponent     cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
         static BiosComponent     bios_fw3("slot3", "bios", FRU_SLOT3, FW_BIOS);
-        static MeComponent       me_fw3("slot3", "me", FRU_SLOT3);
         static VrComponent       vr_fw3("slot3", "vr", FW_VR);
-        static VrComponent       vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
-        static VrComponent       vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
-        static VrComponent       vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+
+        //slot3 vr/me
+        if (fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
+            static VrComponent     vr_vddcpu0_fw3("slot3", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
+            static VrComponent     vr_vddcpu1_fw3("slot3", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
+            static VrComponent     vr_vdd11s3_fw3("slot3", "vr_vdd11s3", FW_VR_VDD11S3);
+        } else {
+            static MeComponent       me_fw3("slot3", "me", FRU_SLOT3);
+            static VrComponent       vr_vccin_fw3("slot3", "vr_vccin", FW_VR_VCCIN);
+            static VrComponent       vr_vccd_fw3("slot3", "vr_vccd", FW_VR_VCCD);
+            static VrComponent       vr_vccinfaon_fw3("slot3", "vr_vccinfaon", FW_VR_VCCINFAON);
+        }
 
         //slot3 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw3("slot3", "1ou_bic", "1ou", FW_1OU_BIC);

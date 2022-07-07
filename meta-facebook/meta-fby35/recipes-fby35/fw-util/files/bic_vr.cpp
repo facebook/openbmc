@@ -11,10 +11,16 @@ extern void plat_vr_preinit(uint8_t slot, const char *name);
 
 using namespace std;
 
-static map<uint8_t, map<uint8_t, string>> list = {
+static map<uint8_t, map<uint8_t, string>> crater_lake_vr_list = {
   {FW_VR_VCCIN,     {{VCCIN_ADDR, "VCCIN/VCCFA_EHV_FIVRA"}}},
   {FW_VR_VCCD,      {{VCCD_ADDR, "VCCD"}}},
   {FW_VR_VCCINFAON, {{VCCINFAON_ADDR, "VCCINFAON/VCCFA_EHV"}}}
+};
+
+static map<uint8_t, map<uint8_t, string>> halfdome_vr_list = {
+  {FW_VR_VDDCRCPU0, {{VDDCR_CPU0_ADDR, "VDDCR_CPU0/VDDCR_SOC"}}},
+  {FW_VR_VDDCRCPU1, {{VDDCR_CPU1_ADDR, "VDDCR_CPU1/VDDIO"}}},
+  {FW_VR_VDD11S3, {{VDD11S3_ADDR, "VDD11_S3"}}}
 };
 
 bool VrComponent::vr_printed = false;
@@ -42,6 +48,7 @@ int VrComponent::update_internal(const string& image, bool force) {
   syslog(LOG_CRIT, "Updating %s on %s. File: %s", get_component_name(fw_comp),
          fru().c_str(), image.c_str());
 
+  auto& list = get_vr_list();
   auto vr = list.find(fw_comp)->second.begin();
   ret = vr_fw_update(vr->second.c_str(), (char *)image.c_str(), force);
   vr_remove();
@@ -86,6 +93,7 @@ int VrComponent::get_ver_str(const string& name, string& s) {
 int VrComponent::print_version() {
   string ver("");
   map<uint8_t, map<uint8_t, string>>::iterator iter;
+  auto& list = get_vr_list();
 
   if (fw_comp == FW_VR) {
     vr_printed = true;
@@ -120,6 +128,7 @@ int VrComponent::print_version() {
 void VrComponent::get_version(json& j) {
   string ver("");
   map<uint8_t, map<uint8_t, string>>::iterator iter;
+  auto& list = get_vr_list();
 
   iter = (fw_comp == FW_VR) ? list.begin() : list.find(fw_comp);
   for (; iter != list.end(); ++iter) {
@@ -170,5 +179,13 @@ void VrComponent::get_version(json& j) {
     if (fw_comp != FW_VR) {
       break;
     }
+  }
+}
+
+map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+    return halfdome_vr_list;
+  } else {
+    return  crater_lake_vr_list;
   }
 }

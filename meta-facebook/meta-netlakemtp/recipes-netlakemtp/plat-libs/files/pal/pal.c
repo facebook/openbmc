@@ -720,7 +720,8 @@ pal_get_fan_speed(uint8_t fan_id, int *rpm) {
   }
 
   snprintf(fan_label, sizeof(fan_label), "fan%d", fan_map[fan_id]);
-  snprintf(fan_controller, sizeof(fan_controller), "%s%d-%d", "max31790-i2c-", FAN_CTL_BUS, FAN_CTL_ADDR);
+  snprintf(fan_controller, sizeof(fan_controller), "%s%d-%s", "max31790-i2c-",
+           FAN_CTL_BUS, FAN_CTL_ADDR_STR);
   ret = sensors_read(fan_controller, fan_label, &value);
   if (ret != 0 ) {
     syslog(LOG_WARNING, "%s: Fan sensor read fail: %s", __func__, fan_label);
@@ -1329,6 +1330,34 @@ pal_adc_clock_control(void) {
 }
 
 int
+pal_max31790_init(void) {
+  int fd, ret = 0;
+  uint8_t tlen = 2;
+  uint8_t bus = FAN_CTL_BUS;
+  uint8_t addr = FAN_CTL_ADDR;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "Failed to open i2c bus %u", bus);
+    return -1;
+  }
+
+  for (int i = 0; i < FAN_CHANNEL; i++) {
+    uint8_t tbuf[] = {MAX31790_REG_FAN_CONFIG(i), FAN_CONF_DATA};
+
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, NULL, 0);
+    if (ret < 0) {
+      syslog(LOG_WARNING,
+	           "%s() i2c_rdwr_msg_transfer to slave@0x%02X on bus %u failed",
+	           __func__, addr, bus);
+    }
+  }
+
+  close(fd);
+  return 0;
+}
+
+int
 pal_sensor_monitor_initial(void) {
   int ret = 0;
 
@@ -1344,6 +1373,7 @@ pal_sensor_monitor_initial(void) {
 
   pal_adc_clock_control();
   pal_hsc_reading_enable();
+  pal_max31790_init();
 
   return 0;
 }

@@ -36,7 +36,12 @@ extern "C" {
 #define CUSTOM_FRU_LIST 1
 #define FRU_DEVICE_LIST 1
 #define FAN_CTL_BUS     21
-#define FAN_CTL_ADDR    21
+#define FAN_CTL_ADDR    0x42
+#define FAN_CTL_ADDR_STR "21"
+// Follow max31790 spec to set fan tach monitor
+#define FAN_CONF_DATA   0x19
+#define FAN_CHANNEL     6
+#define MAX31790_REG_FAN_CONFIG(ch)  (0x02 + (ch))
 
 #define MAX_FRU_CMD_STR   16
 

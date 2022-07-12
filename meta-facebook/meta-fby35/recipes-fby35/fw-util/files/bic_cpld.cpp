@@ -72,7 +72,14 @@ int CpldComponent::update_cpld(const string& image, bool force) {
   int ret = FW_STATUS_FAILURE;
   char ver_key[MAX_KEY_LEN] = {0};
   char ver[16] = {0};
+  uint8_t bmc_location = 0;
   image_info image_sts = check_image(image, force);
+
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return ret;
+  }
 
   if (image_sts.result == false) {
     syslog(LOG_CRIT, "Update %s on %s Fail. File: %s is not a valid image",
@@ -105,7 +112,7 @@ int CpldComponent::update_cpld(const string& image, bool force) {
       printf("Cannot open i2c!\n");
       ret = FW_STATUS_FAILURE;
     }
-    if (force == true) {
+    if ((force == true) && (bmc_location == NIC_BMC)) {
       cpld_refresh(attr.bus_id, attr.slv_addr);
     }
     syslog(LOG_CRIT, "Updated %s on %s. File: %s. Result: %s", get_component_name(fw_comp),

@@ -205,6 +205,7 @@ class Zone:
         self.board_fan_mode = BoardFanMode()
         self.sensor_fail_ignore = sensor_fail_ignore
         self.sensor_assert_check = []
+        self.pre_mode = -1
 
         for full_name in self.expr_meta["ext_vars"]:
             sdata = full_name.split(":")
@@ -235,6 +236,11 @@ class Zone:
             else:
                 return fan_mode["normal_mode"]
         elif action in "write":
+            if int(mode) == int(self.pre_mode):
+                return
+            else:
+                self.pre_mode = mode
+
             if os.path.isfile(fan_mode_path):
                 with open(fan_mode_path, "r") as f:
                     mode_tmp = f.read(1)

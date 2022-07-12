@@ -839,13 +839,13 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   }
 
   if (board_type == rev_sb) {
-    if (SB_REV_EVT <= rev_id && rev_id <= SB_REV_EVT4)
+    if (SB_REV_EVT <= rev_id && rev_id <= SB_REV_EVT_MPS)
       exp_fw_rev = FW_REV_EVT;
-    else if (SB_REV_DVT <= rev_id && rev_id <= SB_REV_DVT2)
+    else if (SB_REV_DVT <= rev_id && rev_id <= SB_REV_DVT_MPS)
       exp_fw_rev = FW_REV_DVT;
-    else if (SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT2)
+    else if (SB_REV_PVT <= rev_id && rev_id <= SB_REV_PVT_MPS)
       exp_fw_rev = FW_REV_PVT;
-    else if (SB_REV_MP <= rev_id && rev_id <= SB_REV_MP2)
+    else if (SB_REV_MP <= rev_id && rev_id <= SB_REV_MP_MPS)
       exp_fw_rev = FW_REV_MP;
     else
       exp_fw_rev = 0;

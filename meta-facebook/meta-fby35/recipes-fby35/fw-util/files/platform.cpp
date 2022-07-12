@@ -9,7 +9,9 @@
 #include "bic_vr.h"
 #include "bic_pcie_sw.h"
 #include "bic_m2_dev.h"
+#include <facebook/bic_fwupdate.h>
 #include "usbdbg.h"
+#include "mp5990.h"
 
 NicExtComponent nic_fw("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
 
@@ -29,6 +31,9 @@ class ClassConfig {
     ClassConfig() {
       uint8_t bmc_location = 0;
       uint8_t board_type = 0;
+      uint8_t hsc_type = HSC_UNKNOWN;
+      uint8_t board_rev = UNKNOWN_REV;
+
       if (fby35_common_get_bmc_location(&bmc_location) < 0) {
         printf("Failed to initialize the fw-util\n");
         exit(EXIT_FAILURE);
@@ -69,6 +74,32 @@ class ClassConfig {
         static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 9, 0x60, 0x02);  // target ID of bootloader = 0x02
 
         static BmcCpldComponent  cpld_bmc("bmc", "cpld", MAX10_10M04, 12, 0x40);
+
+        if (fby35_common_get_bb_hsc_type(&hsc_type) == 0) {
+          if (hsc_type == HSC_MP5990) {
+            static MP5990Component  hsc_bb("bmc", "hsc", FRU_BMC, 11, 0x40);
+          }
+        }
+        if (get_board_rev(FRU_SLOT1, BOARD_ID_SB, &board_rev) == 0) {
+          if (IS_BOARD_REV_MPS(board_rev)) {
+            static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 1, 0x16);
+          }
+        }
+        if (get_board_rev(FRU_SLOT2, BOARD_ID_SB, &board_rev) == 0) {
+          if (IS_BOARD_REV_MPS(board_rev)) {
+            static MP5990Component hsc_fw2("slot2", "hsc", FRU_SLOT2, 1, 0x16);
+          }
+        }
+        if (get_board_rev(FRU_SLOT3, BOARD_ID_SB, &board_rev) == 0) {
+          if (IS_BOARD_REV_MPS(board_rev)) {
+            static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 1, 0x16);
+          }
+        }
+        if (get_board_rev(FRU_SLOT4, BOARD_ID_SB, &board_rev) == 0) {
+          if (IS_BOARD_REV_MPS(board_rev)) {
+            static MP5990Component hsc_fw4("slot4", "hsc", FRU_SLOT4, 1, 0x16);
+          }
+        }
 
         //slot1 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);

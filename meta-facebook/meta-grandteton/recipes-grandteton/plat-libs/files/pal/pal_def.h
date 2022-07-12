@@ -35,8 +35,9 @@
 #define NM_SLAVE_ADDR              (0x2C)
 
 //SWB Device Info
-#define SWB_BIC_EID       (0x0A)
-#define SWB_UART_ID       (5)
+#define SWB_BIC_EID    (0x0A)
+#define SWB_BUS_ID     (3)
+#define SWB_UART_ID    (5)
 
 enum {
   VR0_COMP,

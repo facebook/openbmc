@@ -1,0 +1,520 @@
+#include "fw-util.h"
+#include <facebook/bic.h>
+#include <openbmc/kv.h>
+#include <libpldm/base.h>
+#include <libpldm-oem/pldm.h>
+#include <openbmc/pal.h>
+#include <openbmc/libgpio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <string>
+#include <vector>
+#include <array>
+#include <syslog.h>
+#include <stdio.h>
+#include <termios.h>
+
+using namespace std;
+
+class SwbBicFwComponent : public Component {
+  protected:
+    uint8_t bus, eid, target;
+  public:
+    SwbBicFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
+        : Component(fru, comp), bus(bus), eid(eid), target(target) {}
+    int update(string image);
+    int fupdate(string image);
+    int print_version();
+};
+
+class SwbBicFwRecoveryComponent : public Component {
+  protected:
+    uint8_t bus, eid, target;
+
+  public:
+    SwbBicFwRecoveryComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target)
+        :Component(fru, comp), bus(bus), eid(eid), target(target) {}
+
+  int update(string image);
+  int fupdate(string image);
+};
+
+class SwbPexFwComponent : public SwbBicFwComponent {
+  private:
+    uint8_t id;
+  public:
+    SwbPexFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
+        :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
+    int print_version();
+};
+
+class SwbNicFwComponent : public SwbBicFwComponent {
+  private:
+    uint8_t id;
+  public:
+    SwbNicFwComponent(const string& fru, const string& comp, uint8_t bus, uint8_t eid, uint8_t target, uint8_t id)
+        :SwbBicFwComponent(fru, comp, bus, eid, target), id(id) {}
+    int print_version();
+};
+
+
+#define MD5_SIZE              (16)
+#define PLAT_SIG_SIZE         (16)
+#define FW_VER_SIZE           (4)
+#define IMG_POSTFIX_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + 1)
+#define BIC_IMG_SIZE          0x50000
+#define PKT_SIZE              (64*1024)
+#define HEAD_SIZE             (4)
+
+#define MAX_PLDM_IPMI_PAYLOAD (224)
+
+enum {
+  SWB_FW_UPDATE_SUCCESS                =  0,
+  SWB_FW_UPDATE_FAILED                 = -1,
+  SWB_FW_UPDATE_NOT_SUPP_IN_CURR_STATE = -2,
+};
+
+
+struct image_info {
+  struct stat stat;
+  string tmpfile;
+  bool result;
+  bool sign;
+};
+
+image_info wrapping_image (const string& image, bool force)
+{
+  struct image_info image_stat;
+  image_stat.tmpfile = "";
+  image_stat.result = false;
+  image_stat.sign = false;
+
+  if (stat(image.c_str(), &image_stat.stat) < 0) {
+    cerr << "Cannot check " << image << " file information" << endl;
+    return image_stat;
+  }
+
+  // create a new tmp file
+  image_stat.tmpfile = image + "-tmp";
+
+  // open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return image_stat;
+  }
+
+  // create a tmp file for writing.
+  int fd_w = open(image_stat.tmpfile.c_str(), O_WRONLY | O_CREAT, 0666);
+  if (fd_w < 0) {
+    cerr << "Cannot write to " << image_stat.tmpfile << endl;
+    close(fd_r);
+    return image_stat;
+  }
+
+  uint8_t *memblock = new uint8_t [image_stat.stat.st_size + HEAD_SIZE];
+  *memblock = image_stat.stat.st_size;
+  *(memblock+1) = image_stat.stat.st_size >> 8;
+  *(memblock+2) = image_stat.stat.st_size >> 16;
+  *(memblock+3) = image_stat.stat.st_size >> 24;
+
+  size_t r_size = read(fd_r, memblock+HEAD_SIZE, image_stat.stat.st_size);
+  r_size += HEAD_SIZE;
+  size_t w_size = write(fd_w, memblock, r_size);
+
+    //check size
+  if ( r_size != w_size ) {
+    cerr << "Cannot create the tmp file - " << image_stat.tmpfile << endl;
+    cerr << "Read: " << r_size << " Write: " << w_size << endl;
+    goto exit;
+  }
+
+  image_stat.result = true;
+
+exit:
+  close(fd_r);
+  close(fd_w);
+  delete[] memblock;
+  return image_stat;
+}
+
+int send_update_packet (int eid, int fd, uint8_t* buf, ssize_t bufsize,
+                        uint8_t target, uint32_t offset) {
+  uint8_t tbuf[255] = {0};
+  uint8_t IANA[] = {0x15, 0xA0, 0x00};
+  size_t payload_len = 0;
+
+  // get pldm header
+  get_pldm_ipmi_req_hdr_w_IANA(tbuf, IANA, sizeof(IANA));
+  payload_len += sizeof(IANA);
+
+  // ipmi netfn & cmd
+  auto pldmbuf = (pldm_msg *)tbuf;
+  pldmbuf->payload[payload_len++] = NETFN_OEM_1S_REQ << 2; // NetFn
+  pldmbuf->payload[payload_len++] = CMD_OEM_1S_UPDATE_FW;  // Cmd
+  // ipmi IANA
+  memcpy(pldmbuf->payload + payload_len, IANA, sizeof(IANA));
+  payload_len += sizeof(IANA);
+  // Fill the component for which firmware is requested
+  pldmbuf->payload[payload_len++] = target;
+  pldmbuf->payload[payload_len++] = (offset) & 0xFF;
+  pldmbuf->payload[payload_len++] = (offset >> 8 ) & 0xFF;
+  pldmbuf->payload[payload_len++] = (offset >> 16) & 0xFF;
+  pldmbuf->payload[payload_len++] = (offset >> 24) & 0xFF;
+  pldmbuf->payload[payload_len++] = (bufsize) & 0xFF;
+  pldmbuf->payload[payload_len++] = (bufsize >> 8) & 0xFF;
+  // ipmi payload
+  memcpy(pldmbuf->payload + payload_len, buf, bufsize);
+  payload_len += bufsize;
+
+  // 
+  uint8_t *rbuf = nullptr;
+  size_t rlen = 0;
+  size_t tlen = payload_len + PLDM_HEADER_SIZE;
+  int rc = oem_pldm_send_recv_w_fd(eid, fd, tbuf, tlen, &rbuf, &rlen);
+
+  if (rbuf != nullptr)
+    free(rbuf);
+  return rc;
+}
+
+int swb_fw_update (uint8_t bus, uint8_t eid, uint8_t target, uint8_t* file_data, uint32_t file_size)
+{
+  int ret = SWB_FW_UPDATE_FAILED;
+
+  int socket = oem_pldm_init_fd(bus);
+  if ( socket < 0 ) {
+    fprintf(stderr, "%s() cannot connect to pldmd\n", __func__);
+    return ret;
+  }
+
+  // start update
+  printf("updating fw on bus %d:\n", bus);
+  struct timeval start, end;
+  uint8_t buf[256] = {0};
+  uint32_t offset = 0;
+  uint32_t boundary = PKT_SIZE;
+  uint16_t read_count;
+  ssize_t count;
+  // Write chunks of binary data in a loop
+  uint32_t dsize = file_size/10;
+  uint32_t last_offset = 0;
+
+  gettimeofday(&start, NULL);
+
+  while (1)
+  {
+    // send packets in blocks of 64K
+    read_count = ((offset + MAX_PLDM_IPMI_PAYLOAD) < boundary) ?
+                  MAX_PLDM_IPMI_PAYLOAD : boundary - offset;
+
+    if(offset >= file_size)
+      break;
+
+
+    if (file_size - offset > read_count) {
+      count = read_count;
+    } else {
+      // last packet
+      count = file_size - offset;
+      target |= 0x80;
+    }
+//    if (offset + count >= file_size)
+
+    memcpy(buf, file_data+offset, count);
+    // Send data to Bridge-IC
+    if (send_update_packet(eid, socket, buf, count, target, offset))
+       goto exit;
+
+    // Update counter
+    offset += count;
+    if (offset >= boundary) {
+      boundary += PKT_SIZE;
+    }
+
+    if (last_offset + dsize <= offset) {
+      pal_set_fw_update_ongoing(FRU_SWB, 60);
+      printf("\rupdated: %d %%", offset/dsize*10);
+      fflush(stdout);
+      last_offset += dsize;
+    }
+  }
+
+  ret = SWB_FW_UPDATE_SUCCESS;
+  gettimeofday(&end, NULL);
+  printf("\n");
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+
+exit:
+  close(socket);
+  return ret;
+}
+
+static
+int fw_update_proc (const string& image, bool force,
+                    uint8_t bus, uint8_t eid,
+                    uint8_t target, const string& comp)
+{
+  struct stat st;
+
+  // open the binary
+  int fd_r = open(image.c_str(), O_RDONLY);
+  if (fd_r < 0) {
+    cerr << "Cannot open " << image << " for reading" << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  if (stat(image.c_str(), &st) < 0) {
+    cerr << "Cannot check " << image << " file information" << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  uint8_t *memblock = new uint8_t [st.st_size];
+  size_t r_size = read(fd_r, memblock, st.st_size);
+
+  //Check Signed image
+
+  try {
+    int ret = swb_fw_update(bus, eid, target, memblock, r_size);
+    delete[] memblock;
+    close(fd_r);
+    if (ret != SWB_FW_UPDATE_SUCCESS) {
+      switch(ret)
+      {
+        case SWB_FW_UPDATE_FAILED:
+          cerr << comp << ": update process failed" << endl;
+          break;
+        case SWB_FW_UPDATE_NOT_SUPP_IN_CURR_STATE:
+          cerr << comp << ": firmware update not supported in current state." << endl;
+          break;
+        default:
+          cerr << comp << ": unknow error (ret: " << ret << ")" << endl;
+          break;
+      }
+      return FW_STATUS_FAILURE;
+    }
+
+  } catch (string& err) {
+    printf("%s\n", err.c_str());
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+  return 0;
+}
+
+int SwbBicFwComponent::update(string image)
+{
+  return fw_update_proc(image, false, bus, eid, target, this->alias_component());
+}
+
+int SwbBicFwComponent::fupdate(string image)
+{
+  return fw_update_proc(image, true, bus, eid, target, this->alias_component());
+}
+
+int
+bic_recovery_init(string image, bool force) {
+
+  if (gpio_set_value_by_shadow("BIC_FWSPICK", GPIO_VALUE_HIGH)) {
+     syslog(LOG_WARNING, "[%s] Set BIC_FWSPICK High failed\n", __func__ );
+     return -1;
+  }
+
+  if (gpio_set_value_by_shadow("BIC_UART_BMC_SEL", GPIO_VALUE_LOW)) {
+     syslog(LOG_WARNING, "[%s] Set BIC_UART_BMC_SEL Low failed\n", __func__ );
+     return -1;
+  }
+
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_LOW)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N Low failed\n", __func__ );
+     return -1;
+  }
+  sleep(1);
+
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_HIGH)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N High failed\n", __func__);
+     return -1;
+  }
+  sleep(2);
+
+  char cmd[64] = {0};
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 115200", SWB_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  struct stat st;
+  if (stat(image.c_str(), &st) < 0) {
+    cerr << "Cannot check " << image << " file information" << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  uint8_t head[4];
+  head[0] = st.st_size;
+  head[1] = st.st_size >> 8;
+  head[2] = st.st_size >> 16;
+  head[3] = st.st_size >> 24;
+
+  snprintf(cmd, sizeof(cmd), "echo -n -e '\\x%x\\x%x\\x%x\\x%x' > /dev/ttyS%d",
+           head[0], head[1], head[2], head[3], SWB_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd), "cat %s > /dev/ttyS%d", image.c_str(), SWB_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 57600", SWB_UART_ID);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
+    return -1;
+  }
+  sleep(2);
+  return 0;
+}
+
+//Recovery BIC Image
+int SwbBicFwRecoveryComponent::update(string image)
+{
+  int ret;
+
+  ret = bic_recovery_init(image, false);
+  if (ret)
+    return ret;
+
+  ret = fw_update_proc(image, false, bus, eid, target, this->alias_component());
+
+  sleep (2);
+  if (gpio_set_value_by_shadow("BIC_FWSPICK", GPIO_VALUE_LOW)) {
+     syslog(LOG_WARNING, "[%s] Set BIC_FWSPICK Low failed\n", __func__ );
+     return -1;
+  }
+
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_LOW)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N Low failed\n", __func__ );
+     return -1;
+  }
+  sleep(1);
+
+  if (gpio_set_value_by_shadow("RST_SWB_BIC_N", GPIO_VALUE_HIGH)) {
+     syslog(LOG_WARNING, "[%s] Set RST_SWB_BIC_N High failed\n", __func__);
+     return -1;
+  }
+  return ret;
+}
+
+int SwbBicFwRecoveryComponent::fupdate(string image)
+{
+  int ret;
+
+  ret = bic_recovery_init(image, true);
+  if (ret)
+    return ret;
+
+  return fw_update_proc(image, false, bus, eid, target, this->alias_component());
+}
+
+//Print Version
+int get_swb_version (uint8_t bus, uint8_t eid, uint8_t target, vector<uint8_t> &data) {
+  uint8_t tbuf[255] = {0};
+  uint8_t rbuf[255] = {0};
+  uint8_t tlen=0;
+  size_t rlen = 0;
+  int rc;
+
+  tbuf[tlen++] = target;
+
+  rc = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
+                               NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER,
+                               tbuf, tlen,
+                               rbuf, &rlen);
+  if (rc == 0)
+    data = vector<uint8_t>(rbuf, rbuf + rlen);
+  return rc;
+}
+
+
+int SwbBicFwComponent::print_version() {
+  int ret = 0;
+  char ver_str[32];
+  vector<uint8_t> ver = {};
+
+  // Get Bridge-IC Version
+  ret = get_swb_version(bus, eid, target, ver);
+
+  if (ver.empty()) {
+    snprintf(ver_str, sizeof(ver_str), "NA");
+  } else if (ver[1] == 7){
+    snprintf(ver_str, sizeof(ver_str), "%02x%02x.%02x.%02x",
+            ver[2], ver[3], ver[4], ver[5]);
+  } else {
+    snprintf(ver_str, sizeof(ver_str), "Format not supported");
+  }
+
+  printf("SWB BIC Version: %s\n", ver_str);
+  return ret;
+}
+
+int SwbPexFwComponent::print_version() {
+  int ret = 0;
+  char ver_str[32];
+  vector<uint8_t> ver = {};
+
+// Get PEX Version
+  ret = get_swb_version(bus, eid, target, ver);
+
+  if (ver.empty()) {
+    snprintf(ver_str, sizeof(ver_str), "NA");
+  } else if (ver[1] == 4){
+    snprintf(ver_str, sizeof(ver_str), "%02x.%02x.%02x.%02x",
+            ver[5], ver[4], ver[3], ver[2]);
+  } else {
+    snprintf(ver_str, sizeof(ver_str), "Format not supported");
+  }
+
+  printf("SWB PEX%d Version: %s\n", id, ver_str);
+  return ret;
+}
+
+int SwbNicFwComponent::print_version() {
+  int ret = 0;
+  char ver_str[32];
+  vector<uint8_t> ver = {};
+
+// Get SWB NIC Version
+  ret = get_swb_version(bus, eid, target, ver);
+
+  if (ver.empty()) {
+    snprintf(ver_str, sizeof(ver_str), "NA");
+  } else {
+    string version(ver.begin()+2, ver.end());
+    snprintf(ver_str, sizeof(ver_str), "%s", version.c_str());
+  }
+
+  printf("SWB NIC%d Version: %s\n", id, ver_str);
+  return ret;
+}
+
+
+SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);
+SwbBicFwRecoveryComponent bic_recovery("swb", "bic_recovery", 3, 0x0A, BIC_COMP);
+
+SwbPexFwComponent swb_pex0("swb", "pex0", 3, 0x0A, PEX0_COMP, 0);
+SwbPexFwComponent swb_pex1("swb", "pex1", 3, 0x0A, PEX1_COMP, 1);
+SwbPexFwComponent swb_pex2("swb", "pex2", 3, 0x0A, PEX2_COMP, 2);
+SwbPexFwComponent swb_pex3("swb", "pex3", 3, 0x0A, PEX3_COMP, 3);
+
+SwbNicFwComponent swb_nic0("swb", "swb_nic0", 3, 0x0A, NIC0_COMP, 0);
+SwbNicFwComponent swb_nic1("swb", "swb_nic1", 3, 0x0A, NIC1_COMP, 1);
+SwbNicFwComponent swb_nic2("swb", "swb_nic2", 3, 0x0A, NIC2_COMP, 2);
+SwbNicFwComponent swb_nic3("swb", "swb_nic3", 3, 0x0A, NIC3_COMP, 3);
+SwbNicFwComponent swb_nic4("swb", "swb_nic4", 3, 0x0A, NIC4_COMP, 4);
+SwbNicFwComponent swb_nic5("swb", "swb_nic5", 3, 0x0A, NIC5_COMP, 5);
+SwbNicFwComponent swb_nic6("swb", "swb_nic6", 3, 0x0A, NIC6_COMP, 6);
+SwbNicFwComponent swb_nic7("swb", "swb_nic7", 3, 0x0A, NIC7_COMP, 7);

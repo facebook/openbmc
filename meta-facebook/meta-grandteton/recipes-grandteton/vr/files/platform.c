@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <openbmc/pal.h>
+#include <libpldm/pldm.h>
+#include <libpldm/platform.h>
+#include <libpldm-oem/pldm.h>
 #include "raa_gen3.h"
 
-#define VR_MB_BUS_ID 20
-#define VR_SWB_BUS_ID 3
+#define MB_VR_BUS_ID   (20)
+#define SWB_VR_BUS_ID  (3)
 
 enum {
   VR_MB_CPU0_VCCIN   = 0,
@@ -29,17 +32,59 @@ enum {
   ADDR_CPU1_VCCD   = 0xEC,
 };
 
+int swb_vr_map_id(uint8_t addr, uint8_t* id) {
+  switch (addr) {
+  case ADDR_SWB_VR_PXE0:
+    *id = VR0_COMP;
+    return 0;
+
+  case ADDR_SWB_VR_PXE1:
+    *id = VR1_COMP;
+    return 0;
+  }
+  return -1;
+}
+
+static int
+vr_pldm_wr(uint8_t bus, uint8_t addr,
+           uint8_t *txbuf, uint8_t txlen,
+           uint8_t *rxbuf, uint8_t rxlen) {
+  uint8_t tbuf[255] = {0};
+  uint8_t tlen=0;
+  uint8_t vr_id;
+  int rc;
+  int ret;
+
+  ret = swb_vr_map_id(addr, &vr_id);
+  if (ret)
+    return -1;
+
+  tbuf[0] = vr_id;
+  tbuf[1] = rxlen;
+  memcpy(tbuf+2, txbuf, txlen);
+  tlen = txlen + 2;
+
+  size_t rlen = 0;
+  rc = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
+                               NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
+                               tbuf, tlen,
+                               rxbuf, &rlen);
+  return rc;
+}
+
+
+
 struct vr_ops raa_gen2_3_ops = {
   .get_fw_ver = get_raa_ver,
   .parse_file = raa_parse_file,
   .validate_file = NULL,
   .fw_update = raa_fw_update,
-  .fw_verify = raa_fw_verify,
+  .fw_verify = NULL,
 };
 
 struct vr_info fbgt_vr_list[] = {
   [VR_MB_CPU0_VCCIN] = {
-    .bus = VR_MB_BUS_ID,
+    .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU0_VCCIN,
     .dev_name = "VR_CPU0_VCCIN/VCCFA_FIVRA",
     .ops = &raa_gen2_3_ops,
@@ -47,7 +92,7 @@ struct vr_info fbgt_vr_list[] = {
     .xfer = NULL,
   },
   [VR_MB_CPU0_VCCFA] = {
-    .bus = VR_MB_BUS_ID,
+    .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU0_VCCFA,
     .dev_name = "VR_CPU0_VCCFAEHV/FAON",
     .ops = &raa_gen2_3_ops,
@@ -55,7 +100,7 @@ struct vr_info fbgt_vr_list[] = {
     .xfer = NULL,
   },
   [VR_MB_CPU0_VCCD] = {
-    .bus = VR_MB_BUS_ID,
+    .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU0_VCCD,
     .dev_name = "VR_CPU0_VCCD",
     .ops = &raa_gen2_3_ops,
@@ -63,14 +108,15 @@ struct vr_info fbgt_vr_list[] = {
     .xfer = NULL,
   },
   [VR_MB_CPU1_VCCIN] = {
-    .bus = VR_MB_BUS_ID,
+    .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU1_VCCIN,
-    .dev_name = "VR_CPU1_VCCIN/VCCFA_FIRVA",
+    .dev_name = "VR_CPU1_VCCIN/VCCFA_FIVRA",
     .ops = &raa_gen2_3_ops,
+    .private_data = "mb",
     .xfer = NULL,
   },
   [VR_MB_CPU1_VCCFA] = {
-    .bus = VR_MB_BUS_ID,
+    .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU1_VCCFA,
     .dev_name = "VR_CPU1_VCCFAEHV/FAON",
     .ops = &raa_gen2_3_ops,
@@ -78,12 +124,28 @@ struct vr_info fbgt_vr_list[] = {
     .xfer = NULL,
   },
   [VR_MB_CPU1_VCCD] = {
-    .bus = VR_MB_BUS_ID,
+    .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU1_VCCD,
     .dev_name = "VR_CPU1_VCCD",
     .ops = &raa_gen2_3_ops,
     .private_data = "mb",
     .xfer = NULL,
+  },
+  [VR_SWB_PXE0_VCC] = {
+    .bus = SWB_VR_BUS_ID,
+    .addr = ADDR_SWB_VR_PXE0,
+    .dev_name = "VR_PEX0_VCC",
+    .ops = &raa_gen2_3_ops,
+    .private_data = "swb",
+    .xfer = vr_pldm_wr,
+  },
+  [VR_SWB_PXE1_VCC] = {
+    .bus = SWB_VR_BUS_ID,
+    .addr = ADDR_SWB_VR_PXE1,
+    .dev_name = "VR_PEX1_VCC",
+    .ops = &raa_gen2_3_ops,
+    .private_data = "swb",
+    .xfer = vr_pldm_wr,
   },
 };
 

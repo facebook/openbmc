@@ -19,3 +19,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
     file://platform.c \
     "
+
+DEPENDS += "libpldm-oem"
+RDEPENDS:${PN} += "libpldm-oem"
+LDFLAGS += "-lpldm -lpldm_oem"

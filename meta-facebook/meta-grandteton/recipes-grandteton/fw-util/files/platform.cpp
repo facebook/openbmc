@@ -9,9 +9,8 @@
 #include <syslog.h>
 #include "usbdbg.h"
 #include "nic_ext.h"
-#include "bios.h"
 #include "vr_fw.h"
-//#include "bic_fwupdate.h"
+#include "bios.h"
 
 class palBiosComponent : public BiosComponent {
   public:
@@ -44,6 +43,8 @@ palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-sm
 VrComponent vr_cpu0_vccin("mb", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA");
 VrComponent vr_cpu0_faon("mb", "cpu0_faon", "VR_CPU0_VCCFAEHV/FAON");
 VrComponent vr_cpu0_vccd("mb", "cpu0_vccd", "VR_CPU0_VCCD");
-VrComponent vr_cpu1_vccin("mb", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIRVA");
+VrComponent vr_cpu1_vccin("mb", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIVRA");
 VrComponent vr_cpu1_faon("mb", "cpu1_faon", "VR_CPU1_VCCFAEHV/FAON");
 VrComponent vr_cpu1_vccd("mb", "cpu1_vccd", "VR_CPU1_VCCD");
+VrComponent vr_pex0_vcc("swb", "pex0_vcc", "VR_PEX0_VCC");
+VrComponent vr_pex1_vcc("swb", "pex1_vcc", "VR_PEX1_VCC");

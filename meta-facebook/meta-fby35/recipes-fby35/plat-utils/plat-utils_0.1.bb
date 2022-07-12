@@ -28,7 +28,6 @@ LOCAL_URI = " \
     file://COPYING \
     file://setup-dev.sh \
     file://sol-util \
-    file://setup-sic.sh \
     file://check_eth0_ipv4.sh \
     file://recovery-bic-util \
     file://check_bmc_ready.sh \
@@ -77,10 +76,6 @@ do_install() {
   # install check_eth0_ipv4.sh
   install -m 755 check_eth0_ipv4.sh ${D}${sysconfdir}/init.d/check_eth0_ipv4.sh
   update-rc.d -r ${D} check_eth0_ipv4.sh start 71 5 .
-
-  # install setup-sic.sh
-  install -m 755 setup-sic.sh ${D}${sysconfdir}/init.d/setup-sic.sh
-  update-rc.d -r ${D} setup-sic.sh start 68 5 .
 
   # install check_bmc_ready.sh
   install -m 755 check_bmc_ready.sh ${D}${sysconfdir}/init.d/check_bmc_ready.sh

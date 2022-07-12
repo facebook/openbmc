@@ -99,7 +99,6 @@ server_power_12v_on(uint8_t fru) {
   int i2cfd = 0;
   uint8_t tbuf[4] = {0};
   uint8_t rbuf[4] = {0};
-  char cmd[64] = {0};
 
   i2cfd = i2c_cdev_slave_open(CPLD_PWR_CTRL_BUS, CPLD_PWR_CTRL_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
@@ -153,16 +152,6 @@ server_power_12v_on(uint8_t fru) {
   }
 
   sleep(1);
-
-  // SiC45X setting on 1/2ou was set in runtime
-  // it was lost when 12v_off was performed,
-  // need to reconfigure it again
-  snprintf(cmd, sizeof(cmd), "/etc/init.d/setup-sic.sh slot%d > /dev/null 2>&1", fru);
-  if (system(cmd) != 0) {
-    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-    ret = PAL_ENOTSUP;
-    return ret;
-  }
 
   pal_power_policy_control(fru, NULL);
 

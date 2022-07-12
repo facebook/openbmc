@@ -10,10 +10,7 @@
 using namespace std;
 
 #define MAX_RETRY 30
-#define MUX_SWITCH_CPLD 0x07
-#define MUX_SWITCH_PCH 0x03
-#define GPIO_HIGH 1
-#define GPIO_LOW 0
+#define DELAY_ME_RESET 5
 
 image_info BiosComponent::check_image(const string& image, bool force) {
   int ret = 0;
@@ -40,11 +37,10 @@ image_info BiosComponent::check_image(const string& image, bool force) {
 
 
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
-  int ret;
+  int ret, retry_count;
   int ret_recovery = 0, ret_reset = 0;
+  int server_type = 0;
   uint8_t status;
-  uint8_t server_type = 0;
-  int retry_count = 0;
   image_info image_sts = check_image(image, force);
 
   if (image_sts.result == false) {
@@ -64,18 +60,18 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     cerr << "File or fd is required." << endl;
     return FW_STATUS_NOT_SUPPORTED;
   }
-  while (retry_count < MAX_RETRY) {
+
+  for (retry_count = 0; retry_count < MAX_RETRY; retry_count++) {
     ret = pal_get_server_power(slot_id, &status);
     cerr << "Server power status: " << (int) status << endl;
-    if ( (ret == 0) && (status == SERVER_POWER_OFF) ){
+    if ((ret == 0) && (status == SERVER_POWER_OFF)) {
       break;
     } else {
       uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-      if (retry_count == 0) {
+      if ((retry_count == 0) || force) {
         cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
+        pal_set_server_power(slot_id, power_cmd);
       }
-      pal_set_server_power(slot_id, power_cmd);
-      retry_count++;
       sleep(2);
     }
   }
@@ -85,23 +81,27 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
 
   server_type = fby35_common_get_slot_type(slot_id);
-
-  if ( SERVER_TYPE_HD != server_type) {
+  if (SERVER_TYPE_HD != server_type) {
+    if (force) {
+      sleep(DELAY_ME_RESET);  // to wait for ME reset
+    }
     cerr << "Putting ME into recovery mode..." << endl;
     ret_recovery = me_recovery(slot_id, RECOVERY_MODE);
 
-    //If you are doing force update, it will keep executing whether it has successfully entered recovery mode
+    // If you are doing force update, it will keep executing
+    // whether it has successfully entered recovery mode
     if ((ret_recovery < 0) && (force == false)) {
       cerr << "Failed to put ME into recovery mode. Stopping the update!" << endl;
       pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
       return ret_recovery;
     }
+    sleep(1);
   }
-  sleep(1);
+
   if (!image.empty()) {
-    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), FORCE_UPDATE_UNSET);
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
   } else {
-    ret = bic_update_fw_fd(slot_id, fw_comp, fd, FORCE_UPDATE_UNSET);
+    ret = bic_update_fw_fd(slot_id, fw_comp, fd, force);
   }
 
   if (ret != 0) {
@@ -109,28 +109,28 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
   }
   sleep(1);
 
-  if ( SERVER_TYPE_HD != server_type) {
-    // Have to do ME reset, because we have put ME into recovery mode.
+  if (SERVER_TYPE_HD != server_type) {
+    // Have to do ME reset, because we have put ME into recovery mode
     cerr << "Doing ME Reset..." << endl;
     ret_reset = me_reset(slot_id);
+    sleep(DELAY_ME_RESET);
   }
-  sleep(5);
 
   cerr << "Power-cycling the server..." << endl;
 
-  //If doing recovery (force), 12V-cycle is necessary for concerning BIOS/ME crash case
-  if (force || ret_reset || ret_recovery) {
-    syslog(LOG_CRIT, "Server 12V cycle due to %s failed when BIOS update", 
-            ret_recovery ? "putting ME into recovery mode" : "ME reset");
+  // 12V-cycle is necessary for concerning BIOS/ME crash case
+  if (ret_reset || ret_recovery) {
+    syslog(LOG_CRIT, "Server 12V cycle due to %s failed when BIOS update",
+           ret_recovery ? "putting ME into recovery mode" : "ME reset");
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
   } else {
     pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
   }
-  
+
   return ret;
 }
 
-int BiosComponent::update(string image) {
+int BiosComponent::update(const string image) {
   return update_internal(image, -1, false /* force */);
 }
 
@@ -138,7 +138,7 @@ int BiosComponent::update(int fd, bool force) {
   return update_internal("", fd, force);
 }
 
-int BiosComponent::fupdate(string image) {
+int BiosComponent::fupdate(const string image) {
   return update_internal(image, -1, true /* force */);
 }
 

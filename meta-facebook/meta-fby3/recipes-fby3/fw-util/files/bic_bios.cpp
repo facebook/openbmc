@@ -53,6 +53,10 @@ int BiosComponent::update_internal(const std::string &image, int fd, bool force)
     cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
     return -1;
   }
+  if (force) {
+    // in force condition, ME will be reset. We need to wait enough time for ME ready
+    sleep(5);
+  }
   cerr << "Putting ME into recovery mode..." << endl;
   me_recovery(slot_id, RECOVERY_MODE);
   cerr << "Enabling USB..." << endl;

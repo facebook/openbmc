@@ -351,6 +351,16 @@ sgpio_export FAB_BMC_REV_ID2 222
 sgpio_export FAB_BMC_REV_ID1 224
 sgpio_export FAB_BMC_REV_ID0 226
 
+kv set mb_rev $(($(gpio_get FAB_BMC_REV_ID2)<<2 |
+        $(gpio_get FAB_BMC_REV_ID1)<<1 |
+        $(gpio_get FAB_BMC_REV_ID0)))
+
+kv set mb_sku $(($(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
+        $(gpio_get FM_BOARD_BMC_SKU_ID0)))
+
 
 # == SGPIO OUT ==
 sgpio_export FM_ESPI_PLD_R1_EN 1

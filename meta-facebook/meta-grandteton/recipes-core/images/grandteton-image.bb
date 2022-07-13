@@ -42,4 +42,5 @@ IMAGE_INSTALL += " \
   pldmd \
   front-paneld \
   mctpd \
+  ncsi-util \
 "

@@ -64,7 +64,6 @@ static int read_temp(uint8_t snr_id, float *value);
 static int read_hsc_vin(uint8_t hsc_id, float *value);
 static int read_hsc_temp(uint8_t hsc_id, float *value);
 static int read_hsc_pin(uint8_t hsc_id, float *value);
-static int read_hsc_ein(uint8_t hsc_id, float *value);
 static int read_hsc_iout(uint8_t hsc_id, float *value);
 static int read_hsc_peak_iout(uint8_t hsc_id, float *value);
 static int read_hsc_peak_pin(uint8_t hsc_id, float *value);
@@ -118,7 +117,6 @@ const uint8_t bmc_sensor_list[] = {
   BMC_SENSOR_HSC_TEMP,
   BMC_SENSOR_HSC_VIN,
   BMC_SENSOR_HSC_PIN,
-  BMC_SENSOR_HSC_EIN,
   BMC_SENSOR_HSC_IOUT,
   BMC_SENSOR_HSC_PEAK_IOUT,
   BMC_SENSOR_HSC_PEAK_PIN,
@@ -1076,7 +1074,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"BMC_SENSOR_HSC_PEAK_IOUT", HSC_ID0, read_hsc_peak_iout,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, CURR}, //0xC8
   {"BMC_SENSOR_HSC_PEAK_PIN" , HSC_ID0, read_hsc_peak_pin ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, POWER}, //0xC9
   {"BMC_SENSOR_FAN_PWR"      ,    0xCA, read_cached_val   , true, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
-  {"BMC_SENSOR_HSC_EIN"      , HSC_ID0, read_hsc_ein      , true, {     0,      0,     0,      0,  287.5,  398.75,    0,   0}, POWER}, //0xCB
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCB
   {"BMC_SENSOR_PDB_CL_VDELTA",    0xCC, read_pdb_cl_vdelta, true, {     0,      0,     0,      0,    0.9,       0,    0,   0}, VOLT}, //0xCC
   {"BMC_SENSOR_CURR_LEAKAGE" ,    0xCD, read_curr_leakage , true, {     0,      0,     0,      0,      0,       0,    0,   0}, PERCENT}, //0xCD
   {"BMC_SENSOR_PDB_BB_VDELTA",    0xCE, read_cached_val   , true, {     0,      0,     0,      0,    0.8,       0,    0,   0}, VOLT}, //0xCE
@@ -1138,14 +1136,6 @@ PAL_HSC_INFO hsc_info_list[] = {
   [HSC_ADM1278] = {ADM1278_SLAVE_ADDR, ADM1278_PEAK_IOUT, ADM1278_PEAK_PIN, adm1278_info_list},
   [HSC_LTC4286] = {LTC4286_SLAVE_ADDR, LTC4286_MFR_IOUT_MAX, LTC4286_MFR_PIN_MAX, ltc4286_info_list},
   [HSC_MP5990] =  {MP5990_SLAVE_ADDR, MP5990_PEAK_IOUT, MP5990_PEAK_PIN, mp5990_info_list}
-};
-
-/* HSC_EIN_MAP = {command code, Read Block size, {wrap_info}, energy_offset_start, rollover_offset_start, sample_offset_start, {ein_info}, ein_coefficient}
-*/
-HSC_EIN_MAP hsc_ein_list[] = {
-  [HSC_ADM1278] = {ADM1278_EIN_EXT, ADM1278_EIN_RESP_LEN, {0x800000, 0x10000, 0x1000000}, 1, 4, 6, {0, 0, 0}, ADM1278_PIN_COEF},
-  [HSC_LTC4286] = {LTC4286_MFR_READ_EIN, LTC4286_EIN_RESP_LEN, {0x0, 0x0, 0x0}, 1, 9, 9, {0, 0, 0}, LTC4286_EIN_COEF},
-  [HSC_MP5990] = {PMBUS_READ_EIN, PMBUS_EIN_RESP_LEN, {0x8000, 0x100, 0x1000000}, 1, 3, 4, {0, 0, 0}, 1}
 };
 
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
@@ -2176,77 +2166,6 @@ exit:
 }
 
 static int
-calculate_ein(uint8_t hsc_id, float *value) {
-  int ret = READING_NA;
-  uint64_t energy = 0, rollover = 0, sample = 0;
-  uint64_t sample_diff = 0;
-  double energy_diff = 0;
-  static uint64_t last_energy = 0, last_rollover = 0, last_sample = 0;
-  static bool pre_ein = false;
-
-  if (pre_ein == false) {  // data isn't enough
-    pre_ein = true;
-    goto calculate_done;
-  }
-
-  energy   = hsc_ein_list[hsc_id].ein_info.energy;
-  rollover = hsc_ein_list[hsc_id].ein_info.rollover;
-  sample   = hsc_ein_list[hsc_id].ein_info.sample;
-  if ((last_rollover > rollover) || ((last_rollover == rollover) && (last_energy > energy))) {
-    rollover += hsc_ein_list[hsc_id].wrap_info.rollover;
-  }
-  if (last_sample > sample) {
-    sample += hsc_ein_list[hsc_id].wrap_info.sample;
-  }
-  energy_diff = (double)((rollover - last_rollover) * hsc_ein_list[hsc_id].wrap_info.energy + energy - last_energy);
-  if (energy_diff < 0) {
-    goto calculate_done;
-  }
-  sample_diff = sample - last_sample;
-  if (sample_diff == 0) {
-    goto calculate_done;
-  }
-  *value = (float)(energy_diff/sample_diff);
-  ret = PAL_EOK;
-
-calculate_done:
-  last_energy   = hsc_ein_list[hsc_id].ein_info.energy;
-  last_rollover = hsc_ein_list[hsc_id].ein_info.rollover;
-  last_sample   = hsc_ein_list[hsc_id].ein_info.sample;
-  return ret;
-}
-
-static int
-read_hsc_ein(uint8_t hsc_id, float *value) {
-  uint8_t buf[PMBUS_RESP_LEN_MAX] = {0};
-
-  if ( get_hsc_reading(hsc_id, I2C_BLOCK, -1, hsc_ein_list[hsc_id].cmd, value, buf ) ||
-    buf[0] != (hsc_ein_list[hsc_id].ein_resp_len)) {
-    return READING_NA;
-  }
-
-  hsc_ein_list[hsc_id].ein_info.energy = 0;
-  hsc_ein_list[hsc_id].ein_info.rollover = 0;
-  hsc_ein_list[hsc_id].ein_info.sample = 0;
-
-  for( int i = hsc_ein_list[hsc_id].energy_offset_start; i < hsc_ein_list[hsc_id].rollover_offset_start; i++ ) {
-    hsc_ein_list[hsc_id].ein_info.energy |= ((uint64_t)buf[i] << ((i - hsc_ein_list[hsc_id].energy_offset_start) * 8));
-  }
-  for( int i = hsc_ein_list[hsc_id].rollover_offset_start; i < hsc_ein_list[hsc_id].sample_offset_start; i++ ) {
-    hsc_ein_list[hsc_id].ein_info.rollover |= ((uint64_t)buf[i] << ((i - hsc_ein_list[hsc_id].rollover_offset_start) * 8));
-  }
-  for( int i = hsc_ein_list[hsc_id].sample_offset_start; i <= hsc_ein_list[hsc_id].ein_resp_len; i++ ) {
-    hsc_ein_list[hsc_id].ein_info.sample |= ((uint64_t)buf[i] << ((i - hsc_ein_list[hsc_id].sample_offset_start) * 8));
-  }
-  if ( calculate_ein( hsc_id, value) ) {
-    return READING_NA;
-  }
-  *value = *value/hsc_ein_list[hsc_id].ein_coefficient;
-
-  return PAL_EOK;
-}
-
-static int
 read_hsc_pin(uint8_t hsc_id, float *value) {
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) {
     return READING_NA;
@@ -2681,7 +2600,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   static uint8_t hsc_sesnors[BB_HSC_SENSOR_CNT] = {
     BMC_SENSOR_HSC_PEAK_IOUT,
     BMC_SENSOR_HSC_PEAK_PIN,
-    BMC_SENSOR_HSC_EIN,
     BMC_SENSOR_HSC_VIN,
     BMC_SENSOR_HSC_TEMP,
     BMC_SENSOR_HSC_PIN,
@@ -2739,7 +2657,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
     hsc_info_list[hsc_type].info[HSC_CURRENT].m *= rsense;
     hsc_info_list[hsc_type].info[HSC_POWER].m *= rsense;
-    hsc_ein_list[hsc_type].ein_coefficient *= rsense;
   }
   is_hsc_init = true;
 
@@ -2953,6 +2870,14 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
               *val = 28.6;
               break;
             }
+            if ( sensor_num == BMC_SENSOR_FAN_PWR ) {
+              *val = 396.825;
+              break;
+            }
+            if ( sensor_num == BMC_SENSOR_HSC_PIN ) {
+              *val = 450;
+              break;
+            }
           }
           *val = sensor_map[sensor_num].snr_thresh.ucr_thresh;
           break;
@@ -2963,6 +2888,10 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
           if ( fru == FRU_BMC && rev_id >= BB_REV_DVT ) {
             if ( sensor_num == BMC_SENSOR_HSC_IOUT ) {
               *val = 45;
+              break;
+            }
+            if ( sensor_num == BMC_SENSOR_HSC_PIN ) {
+              *val = 562.5;
               break;
             }
           }

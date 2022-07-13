@@ -460,7 +460,6 @@ static sensor_desc_t critical_sensor_bmc[] =
   {"BMC_SENSOR_HSC_TEMP:"             , BMC_SENSOR_HSC_TEMP           , "C"    , FRU_BMC, 0},
   {"BMC_SENSOR_BMC_SENSOR_HSC_VIN:"   , BMC_SENSOR_HSC_VIN            , "V"    , FRU_BMC, 2},
   {"BMC_SENSOR_HSC_PIN:"              , BMC_SENSOR_HSC_PIN            , "W"    , FRU_BMC, 2},
-  {"BMC_SENSOR_HSC_EIN:"              , BMC_SENSOR_HSC_EIN            , "W"    , FRU_BMC, 2},
   {"BMC_SENSOR_HSC_IOUT:"             , BMC_SENSOR_HSC_IOUT           , "A"    , FRU_BMC, 2},
   {"BMC_SENSOR_HSC_PEAK_IOUT:"        , BMC_SENSOR_HSC_PEAK_IOUT      , "A"    , FRU_BMC, 2},
   {"BMC_SENSOR_HSC_PEAK_PIN:"         , BMC_SENSOR_HSC_PEAK_PIN       , "W"    , FRU_BMC, 2},

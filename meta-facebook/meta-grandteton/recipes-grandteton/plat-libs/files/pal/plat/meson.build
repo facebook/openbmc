@@ -16,6 +16,7 @@ pal_sources += [
     ]
 
 pal_deps += [
+    cc.find_library('hal_fruid'),
     cc.find_library('gpio-ctrl'),
     cc.find_library('ncsi'),
     cc.find_library('nl-wrapper'),
@@ -25,4 +26,5 @@ pal_deps += [
     cc.find_library('obmc-sensors'),
     cc.find_library('peci'),
     cc.find_library('peci_sensors'),
+    dependency('libpldm-oem'),
     ]

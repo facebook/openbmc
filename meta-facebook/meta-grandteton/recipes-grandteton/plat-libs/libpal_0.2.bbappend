@@ -16,6 +16,7 @@ LOCAL_URI += "\
     "
 
 DEPENDS += " \
+    libhal \
     libgpio-ctrl \
     libncsi \
     libnl-wrapper \
@@ -30,6 +31,7 @@ DEPENDS += " \
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
 RDEPENDS:${PN} += " \
+    libhal \
     libgpio-ctrl \
     libncsi \
     libnl-wrapper \

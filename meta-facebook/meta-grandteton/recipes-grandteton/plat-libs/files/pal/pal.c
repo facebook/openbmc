@@ -36,6 +36,9 @@
 #include <openbmc/nm.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/ipmb.h>
+#include <openbmc/ncsi.h>
+#include <openbmc/nl-wrapper.h>
+#include <openbmc/hal_fruid.h>
 #include "pal.h"
 
 #define GT_PLATFORM_NAME "grandteton"
@@ -70,11 +73,12 @@ const char pal_server_list[] = "mb";
 #define BMC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | \
                         FRU_CAPABILITY_MANAGEMENT_CONTROLLER
 
-#define SCM_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_MANAGEMENT_CONTROLLER
+#define SCM_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | \
+                        FRU_CAPABILITY_MANAGEMENT_CONTROLLER
 
 #define PDB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
-#define BP_CAPABILITY	FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
+#define BP_CAPABILITY   FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 #define FIO_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
@@ -250,10 +254,10 @@ pal_fruid_write(uint8_t fru, char *path) {
 
   switch (fru) {
     case FRU_SWB:
-   //  return gt_write_swb_fruid(0, path);
+     return hal_write_pldm_fruid(0, path);
 
     case FRU_FIO:
-   //  return gt_write_swb_fruid(1, path);
+     return hal_write_pldm_fruid(1, path);
 
     default:
     break;

@@ -37,7 +37,6 @@
 #define FAN_15K_UCR  17000
 
 #define BB_HSC_SENSOR_CNT 7
-#define IS_15K_FAN   0x01
 
 enum {
   /* Fan Type */
@@ -2852,7 +2851,6 @@ static int
 pal_bmc_fan_threshold_init() {
   uint8_t fan_type = UNKNOWN_TYPE;
   uint8_t bmc_location = 0;
-  static uint8_t gval = UNKNOWN_TYPE;
 
   if (fby35_common_get_bmc_location(&bmc_location) < 0) {
     syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
@@ -2870,29 +2868,18 @@ pal_bmc_fan_threshold_init() {
     }
 
     if (rev_id >= BB_REV_DVT && fan_type == SINGLE_TYPE) {
-      if ( gval == UNKNOWN_TYPE ) {
-        gval = gpio_get_value_by_shadow("P12V_EFUSE_DETECT_N");
-      }
-
-      if (gval == GPIO_VALUE_INVALID) {
-        syslog(LOG_WARNING, "%s() Failed to read P12V_EFUSE_DETECT_N", __func__);
-        return -1;
-      }
-
-      if (gval == IS_15K_FAN) {
         /*
           BMC_SENSOR_FAN0_TACH,
           BMC_SENSOR_FAN1_TACH,
           BMC_SENSOR_FAN2_TACH,
           BMC_SENSOR_FAN3_TACH,
-          sensor threshold change
+          sensor threshold change for 15k fan
         */
         for (int fan_num = BMC_SENSOR_FAN0_TACH; fan_num <= BMC_SENSOR_FAN3_TACH; fan_num++) {
           sensor_map[fan_num].snr_thresh.lcr_thresh = FAN_15K_LCR;
           sensor_map[fan_num].snr_thresh.unc_thresh = FAN_15K_UNC;
           sensor_map[fan_num].snr_thresh.ucr_thresh = FAN_15K_UCR;
         }
-      }
     }
 
     if (fan_type != SINGLE_TYPE) {

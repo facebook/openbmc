@@ -60,22 +60,21 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
-  update-rc.d -r ${D} setup-por.sh start 62 5 .
 # setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 59 5 .
 # setup-i2c-dev.sh
   install -m 755 setup-i2c-dev.sh ${D}${sysconfdir}/init.d/setup-i2c-dev.sh
   update-rc.d -r ${D} setup-i2c-dev.sh start 60 5 .
-
 # setup-ex-gpio.sh
   install -m 755 setup-ex-gpio.sh ${D}${sysconfdir}/init.d/setup-ex-gpio.sh
   update-rc.d -r ${D} setup-ex-gpio.sh start 61 5 .
-
 # sync_date.sh
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
+# setup-por.sh
+  install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
+  update-rc.d -r ${D} setup-por.sh start 67 5 .
 
 # install check_eth0_ipv4.sh
 #  install -m 755 ifup.sh ${D}${sysconfdir}/init.d/ifup.sh

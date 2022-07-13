@@ -20,30 +20,8 @@ HOST = "localhost"
 HOST_SSH_FORWARD_PORT = 2222
 QEMU_PARAMETER = "  -machine {} -nographic  -drive file={},format=raw,if=mtd \
     -drive file={},format=raw,if=mtd \
-    -netdev user,id=mlx,mfr-id=0x8119,ncsi-mac=aa:bb:cc:dd:ee:ff,hostfwd=:127.0.0.1:{}-:22,hostname=qemu \
+    -netdev user,id=mlx,mfr-id=0x8119,oob-eth-addr=aa:bb:cc:dd:ee:ff,hostfwd=:127.0.0.1:{}-:22,hostname=qemu \
     -net nic,model=ftgmac100,netdev=mlx"
-PLATFORM_2_MACHINE = {
-    "fby2": "yosemitev2-bmc",
-    "fbttn": "brycecanyon-bmc",
-    "fbtp": "tiogapass-bmc",
-    "wedge100": "wedge100-bmc",
-    "galaxy100": "galaxy100-bmc",
-    "cmm": "cmm-bmc",
-    "minipack": "minipack-bmc",
-    "yamp": "yamp-bmc",
-    "northdome": "northdome-bmc",
-    "wedge400": "wedge400-bmc",
-    "fby3": "yosemitev3-bmc",
-    "angelslanding": "angelslanding-bmc",
-    "emeraldpools": "emeraldpools-bmc",
-    "clearcreek": "clearcreek-bmc",
-    "sonorapass": "sonorapass-bmc",
-    "elbert": "elbert-bmc",
-    "fuji": "fuji-bmc",
-    "grandcanyon": "grandcanyon-bmc",
-    "cloudripper": "cloudripper-bmc",
-}
-
 
 class TestWrapper(object):
     def __init__(self):
@@ -63,7 +41,7 @@ class TestWrapper(object):
         """
         cmd = "/tmp/job/project/qemu-system-arm"
         cmd += QEMU_PARAMETER.format(
-            PLATFORM_2_MACHINE[platform],
+            platform + "-bmc",
             self._golden_image_file,
             self._primary_image_file,
             HOST_SSH_FORWARD_PORT,

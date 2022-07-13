@@ -19,7 +19,7 @@ DESCRIPTION = "library for Node Manager"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=27847d7d9f5479b7daedf10f19911e78"
+LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=da58bc07a669261cb7ccf2838db71124"
 
 LOCAL_URI = " \
     file://Makefile \

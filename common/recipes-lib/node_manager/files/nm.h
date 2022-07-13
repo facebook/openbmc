@@ -69,7 +69,7 @@ typedef struct {
 
 typedef struct __attribute__((__packed__)) {
   uint8_t psu_cmd;
-  uint8_t psu_addr; 
+  uint8_t psu_addr;
 } NM_PMBUS_STANDAR_DEV;
 
 typedef struct __attribute__((__packed__)) {
@@ -79,6 +79,14 @@ typedef struct __attribute__((__packed__)) {
   uint8_t mux_ch;
   uint8_t sensor_bus;
 } NM_PMBUS_EXTEND_DEV;
+
+typedef struct {
+  uint8_t  cpu;
+  uint8_t  bus_id;
+  uint8_t  addr;
+  uint8_t  offset_len;
+  uint32_t offset;
+} NM_DIMM_SMB_DEV;
 
 #if 0
 typedef struct __attribute__((__packed__)) {
@@ -109,6 +117,8 @@ int cmd_NM_pmbus_standard_read_word(NM_RW_INFO info, uint8_t* buf, uint8_t *rdat
 int cmd_NM_pmbus_standard_write_word(NM_RW_INFO info, uint8_t* buf, uint8_t *wdata);
 int cmd_NM_pmbus_extend_read_word(NM_RW_INFO info, uint8_t* buf, uint8_t *rdata);
 int cmd_NM_pmbus_extend_write_word(NM_RW_INFO info, uint8_t* buf, uint8_t *wdata);
+int cmd_NM_read_dimm_smbus(NM_RW_INFO *info, NM_DIMM_SMB_DEV *dev, uint8_t len, uint8_t *rxbuf);
+int cmd_NM_write_dimm_smbus(NM_RW_INFO *info, NM_DIMM_SMB_DEV *dev, uint8_t len, uint8_t *txbuf);
 int cmd_NM_sensor_reading(NM_RW_INFO info, uint8_t snr_num, uint8_t* rbuf, uint8_t* rlen);
 int cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr);
 int cmd_NM_get_dev_id(NM_RW_INFO* info, ipmi_dev_id_t *dev_id);

@@ -1,15 +1,32 @@
+/*
+ * Copyright 2022-present Facebook. All Rights Reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include <stdio.h>
-#include <math.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <syslog.h>
-#include <sys/mman.h>
 #include <string.h>
-#include <ctype.h>
+#include <syslog.h>
 #include <openbmc/ipmb.h>
 #include "nm.h"
+
+#define SIZE_MFG_ID 3
+
+const uint32_t INTEL_MFG_ID = 0x000157;
 
 static void
 set_NM_head(NM_RW_INFO* info, uint8_t netfn, ipmb_req_t *req, uint8_t ipmi_cmd) {
@@ -64,7 +81,7 @@ cmd_NM_get_self_test_result(NM_RW_INFO* info, uint8_t *rbuf, uint8_t *rlen) {
   int ret;
 
   ret = me_ipmb_process(info, ipmi_cmd, netfn, NULL, 0, rbuf, rlen);
-  if(ret !=0 || *rlen < 2) {
+  if (ret != 0 || *rlen < 2) {
     return -1;
   }
   return 0;
@@ -128,9 +145,7 @@ cmd_NM_pmbus_standard_read_word(NM_RW_INFO info, uint8_t* buf, uint8_t *rdata) {
   dev.psu_cmd = buf[0];
   dev.psu_addr = buf[1];
 
-  req->data[0] = 0x57;
-  req->data[1] = 0x01;
-  req->data[2] = 0x00;
+  memcpy(req->data, &INTEL_MFG_ID, SIZE_MFG_ID);
   req->data[3] = SMBUS_STANDARD_READ_WORD;
   req->data[4] = dev.psu_addr;
   req->data[5] = 0x00;
@@ -178,9 +193,7 @@ cmd_NM_pmbus_standard_write_word(NM_RW_INFO info, uint8_t* buf, uint8_t *wdata) 
   dev.psu_cmd = buf[0];
   dev.psu_addr = buf[1];
 
-  req->data[0] = 0x57;
-  req->data[1] = 0x01;
-  req->data[2] = 0x00;
+  memcpy(req->data, &INTEL_MFG_ID, SIZE_MFG_ID);
   req->data[3] = SMBUS_STANDARD_WRITE_WORD;
   req->data[4] = dev.psu_addr;
   req->data[5] = 0x00;
@@ -230,9 +243,7 @@ cmd_NM_pmbus_extend_read_word(NM_RW_INFO info, uint8_t* buf, uint8_t *rdata) {
   dev.mux_ch = buf[3];
   dev.sensor_bus = buf[4];
 
-  req->data[0] = 0x57;
-  req->data[1] = 0x01;
-  req->data[2] = 0x00;
+  memcpy(req->data, &INTEL_MFG_ID, SIZE_MFG_ID);
   req->data[3] = SMBUS_EXTENDED_READ_WORD;
   req->data[4] = dev.sensor_bus;
   req->data[5] = dev.psu_addr;
@@ -284,9 +295,7 @@ cmd_NM_pmbus_extend_write_word(NM_RW_INFO info, uint8_t* buf,  uint8_t *wdata) {
   dev.mux_ch = buf[3];
   dev.sensor_bus = buf[4];
 
-  req->data[0] = 0x57;
-  req->data[1] = 0x01;
-  req->data[2] = 0x00;
+  memcpy(req->data, &INTEL_MFG_ID, SIZE_MFG_ID);
   req->data[3] = SMBUS_EXTENDED_WRITE_WORD;
   req->data[4] = dev.sensor_bus;
   req->data[5] = dev.psu_addr;
@@ -315,6 +324,62 @@ cmd_NM_pmbus_extend_write_word(NM_RW_INFO info, uint8_t* buf,  uint8_t *wdata) {
   }
 
   return ret;
+}
+
+int
+cmd_NM_read_dimm_smbus(NM_RW_INFO *info, NM_DIMM_SMB_DEV *dev, uint8_t len, uint8_t *rxbuf) {
+  uint8_t tbuf[32] = {0x00};
+  uint8_t rbuf[64] = {0x00};
+  uint8_t rlen = len;
+
+  memcpy(tbuf, &INTEL_MFG_ID, SIZE_MFG_ID);
+  tbuf[3] = dev->cpu;
+  tbuf[4] = dev->bus_id;
+  tbuf[5] = dev->addr;
+  tbuf[6] = dev->offset_len;
+  tbuf[7] = (len > 0) ? len - 1 : 0;
+  memcpy(&tbuf[8], &dev->offset, sizeof(dev->offset));
+
+  if (me_ipmb_process(info, CMD_NM_READ_MEM_SM_BUS, NETFN_NM_REQ, tbuf, 12, rbuf, &rlen)) {
+    return -1;
+  }
+
+  if (rlen != (SIZE_MFG_ID + len)) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "return incomplete len=%d", rlen);
+#endif
+    return -1;
+  }
+  memcpy(rxbuf, &rbuf[SIZE_MFG_ID], len);
+
+  return 0;
+}
+
+int
+cmd_NM_write_dimm_smbus(NM_RW_INFO *info, NM_DIMM_SMB_DEV *dev, uint8_t len, uint8_t *txbuf) {
+  uint8_t tbuf[32] = {0x00};
+  uint8_t rbuf[64] = {0x00};
+  uint8_t rlen = len;
+  int ret;
+
+  memcpy(tbuf, &INTEL_MFG_ID, SIZE_MFG_ID);
+  tbuf[3] = dev->cpu;
+  tbuf[4] = dev->bus_id;
+  tbuf[5] = dev->addr;
+  tbuf[6] = dev->offset_len;
+  tbuf[7] = (len > 0) ? len - 1 : 0;
+  memcpy(&tbuf[8], &dev->offset, sizeof(dev->offset));
+  memcpy(&tbuf[12], txbuf, len);
+
+  for(int i=0; i<12+len; i++) {
+    printf("val[%d]=%x\n", i, tbuf[i]);
+  }
+
+  if ( (ret = me_ipmb_process(info, CMD_NM_WRITE_MEM_SM_BUS, NETFN_NM_REQ, tbuf, 12+len, rbuf, &rlen))) {
+    printf("ret =%x\n", ret);
+    return -1;
+  }
+  return 0;
 }
 
 int
@@ -370,9 +435,7 @@ cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr)
   res = (ipmb_res_t*)rbuf;
   set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_SEND_RAW_PECI);
 
-  req->data[0] = 0x57;
-  req->data[1] = 0x01;
-  req->data[2] = 0x00;
+  memcpy(req->data, &INTEL_MFG_ID, SIZE_MFG_ID);
   req->data[3] = 0x30;
   req->data[4] = 0x05;
   req->data[5] = 0x05;
@@ -394,7 +457,7 @@ cmd_NM_cpu_err_num_get(NM_RW_INFO info, bool is_caterr)
     syslog(LOG_DEBUG, "read NM sensor=%x: Zero bytes received\n", snr_num);
     return -1;
 #endif
-  } 
+  }
 
   if ( ( res->cc == 0 ) && ( res->data[3] == 0x40 ) ) {
     if( is_caterr ) {
@@ -432,9 +495,7 @@ cmd_NM_get_nm_statistics(NM_RW_INFO info, uint8_t mode, uint8_t domain,
   req = (ipmb_req_t*)tbuf;
   set_NM_head(&info, NETFN_NM_REQ, req, CMD_NM_GET_NODE_MANAGER_STATISTICS);
 
-  req->data[0] = 0x57;
-  req->data[1] = 0x01;
-  req->data[2] = 0x00;
+  memcpy(req->data, &INTEL_MFG_ID, SIZE_MFG_ID);
   req->data[3] = mode;
   req->data[4] = domain;
   req->data[5] = policy;
@@ -455,15 +516,13 @@ cmd_NM_get_nm_statistics(NM_RW_INFO info, uint8_t mode, uint8_t domain,
 
 int
 cmd_NM_set_me_entry_recovery(NM_RW_INFO info, uint8_t *rbuf) {
-uint8_t ipmi_cmd = CMD_NM_FORCE_ME_RECOVERY;
-uint8_t netfn = NETFN_NM_REQ;
-uint8_t tbuf[16] = {0};
-uint8_t rlen;
-int ret;
+  uint8_t ipmi_cmd = CMD_NM_FORCE_ME_RECOVERY;
+  uint8_t netfn = NETFN_NM_REQ;
+  uint8_t tbuf[16] = {0};
+  uint8_t rlen;
+  int ret;
 
-  tbuf[0] = 0x57;
-  tbuf[1] = 0x01;
-  tbuf[2] = 0x00;
+  memcpy(tbuf, &INTEL_MFG_ID, SIZE_MFG_ID);
   tbuf[3] = 0x01;
 
   ret = me_ipmb_process(&info, ipmi_cmd, netfn, tbuf, 4, rbuf, &rlen);
@@ -480,7 +539,7 @@ int
 lib_get_me_fw_ver(NM_RW_INFO* info, uint8_t *ver) {
   ipmi_dev_id_t dev_id;
   int ret;
-  
+
   if (info == NULL || ver == NULL) {
     return -1;
   }

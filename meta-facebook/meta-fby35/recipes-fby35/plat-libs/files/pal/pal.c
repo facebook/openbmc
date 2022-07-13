@@ -2205,6 +2205,47 @@ pal_log_clear(char *fru) {
 }
 
 int
+pal_ipmb_processing(int bus, void *buf, uint16_t size) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  struct timespec ts;
+  static time_t last_time = 0;
+
+  if ((bus == OCP_DBG_I2C_BUS) && (((uint8_t *)buf)[0] == (BMC_SLAVE_ADDR << 1))) {
+    // sent from OCP debug card
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (ts.tv_sec >= (last_time + 5)) {
+      last_time = ts.tv_sec;
+      ts.tv_sec += 20;
+
+      snprintf(key, sizeof(key), "ocpdbg_lcd");
+      snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+      kv_set(key, value, 0, 0);
+    }
+  }
+
+  return 0;
+}
+
+int
+pal_is_mcu_ready(uint8_t bus) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+
+  if (bus == OCP_DBG_I2C_BUS) {
+    snprintf(key, sizeof(key), "ocpdbg_lcd");
+    if (kv_get(key, value, NULL, 0) == 0) {
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      if (strtoul(value, NULL, 10) > ts.tv_sec)
+        return 1;
+    }
+  }
+
+  return 0;
+}
+
+int
 pal_is_debug_card_prsnt(uint8_t *status) {
   int ret = -1;
   gpio_value_t value;

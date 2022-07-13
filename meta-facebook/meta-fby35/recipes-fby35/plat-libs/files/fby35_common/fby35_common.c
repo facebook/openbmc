@@ -719,7 +719,7 @@ exit:
 bool
 fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "PVT", "MP"};
-  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "DVT", "DVT2", "PVT", "PVT2", "MP", "MP2"};
+  const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
   const char **board_type = rev_sb;
   uint8_t board_id = 0, exp_fw_rev = 0;
   uint8_t err_proof_board_id = 0;

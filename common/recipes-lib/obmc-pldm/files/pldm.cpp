@@ -125,15 +125,23 @@ static pldm_requester_rc_t mctp_recv (mctp_eid_t eid, int mctp_fd,
 }
 
 int oem_pldm_send (int eid, int pldmd_fd,
-                      const uint8_t *pldm_req_msg, size_t req_msg_len) {
+                      const uint8_t *pldm_req_msg, size_t req_msg_len) 
+{
+  int ret;
+  for (int retry = 0; retry < 2; retry++) {
+    ret = pldm_send(eid, pldmd_fd, pldm_req_msg, req_msg_len);
+    if (ret == 0 || errno != EAGAIN)
+      return ret;
+  }
+  printf("%s: resource still unavailable after retry 2 times.\n", __func__);
 
-  return (int) pldm_send (eid, pldmd_fd, pldm_req_msg, req_msg_len);
+  return ret;
 }
 
 int oem_pldm_recv (int eid, int pldmd_fd,
-                      uint8_t **pldm_resp_msg, size_t *resp_msg_len) {
-
-  return (int) mctp_recv (eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
+                      uint8_t **pldm_resp_msg, size_t *resp_msg_len) 
+{
+  return (int)mctp_recv(eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
 }
 
 int oem_pldm_send_recv (uint8_t bus, int eid, 
@@ -157,9 +165,10 @@ int oem_pldm_send_recv (uint8_t bus, int eid,
 
 int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
                       const uint8_t *pldm_req_msg, size_t req_msg_len,
-                      uint8_t **pldm_resp_msg, size_t *resp_msg_len) {
+                      uint8_t **pldm_resp_msg, size_t *resp_msg_len) 
+{
   struct pldm_msg_hdr *hdr = (struct pldm_msg_hdr *)pldm_req_msg;
-  pldm_requester_rc_t rc = PLDM_REQUESTER_SUCCESS;
+  int rc = PLDM_REQUESTER_SUCCESS;
 
   if ((hdr->request != PLDM_REQUEST) &&
     (hdr->request != PLDM_ASYNC_REQUEST_NOTIFY)) {
@@ -167,18 +176,24 @@ int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
     return PLDM_REQUESTER_NOT_REQ_MSG;
   }
 
-  rc = pldm_send(eid, pldmd_fd, pldm_req_msg, req_msg_len);
-  if (rc) {
-    printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_SEND_FAIL, -errno);
-    return PLDM_REQUESTER_SEND_FAIL;
-  }
+  for (int retry = 0; retry < 2; retry++) {
+    rc = oem_pldm_send(eid, pldmd_fd, pldm_req_msg, req_msg_len);
+    if (rc) {
+      printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_SEND_FAIL, -errno);
+      return PLDM_REQUESTER_SEND_FAIL;
+    }
 
-  rc = (pldm_requester_rc_t)oem_pldm_recv((int)eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
-  if (rc) {
-    printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_RECV_FAIL, -errno);
-    return PLDM_REQUESTER_RECV_FAIL;
+    rc = oem_pldm_recv((int)eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
+    if (rc) {
+      if (errno != EAGAIN) {
+        printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_RECV_FAIL, -errno);
+        return PLDM_REQUESTER_RECV_FAIL;
+      }
+    } else {
+      return PLDM_REQUESTER_SUCCESS;
+    }
   }
-  return PLDM_REQUESTER_SUCCESS;
+  return PLDM_REQUESTER_RECV_FAIL;
 }
 
 int oem_pldm_init_fd (uint8_t bus) {

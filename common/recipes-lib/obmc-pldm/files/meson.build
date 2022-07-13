@@ -6,6 +6,7 @@ project('libpldm-oem', 'cpp',
 
 install_headers(
     'pldm.h',
+    'fw_update.h',
     subdir: 'libpldm-oem')
 
 cc = meson.get_compiler('cpp')
@@ -18,6 +19,7 @@ srcs = files(
   'pldm.cpp',
   'base.cpp',
   'oem.cpp',
+  'fw_update.cpp'
 )
 
 # obmc-pldm-mw library.

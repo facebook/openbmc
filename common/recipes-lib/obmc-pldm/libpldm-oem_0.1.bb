@@ -16,10 +16,12 @@ LOCAL_URI = " \
     file://oem.hpp \
     file://oem.cpp \
     file://handler.hpp \
+    file://fw_update.cpp \
+    file://fw_update.h \
     "
 
-DEPENDS += " libpldm  libipmi "
-RDEPENDS:${PN} += " libpldm  libipmi "
-LDFLAGS += " -lpldm -lipmi "
+DEPENDS += "libpldm  libipmi obmc-libpldm"
+RDEPENDS:${PN} += "libpldm  libipmi obmc-libpldm"
+LDFLAGS += "-lpldm -lipmi -lobmc-pldm"
 
 inherit meson pkgconfig

@@ -27,7 +27,7 @@ import subprocess
 import time
 
 
-VERSION = "0.9"
+VERSION = "0.10"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -74,6 +74,14 @@ def dumpWeutil(target="CHASSIS", verbose=False):
         )
     )
 
+def dpeCheck():
+    print("######## BMC DPE STATUS ########")
+    cmdBase = "/usr/local/bin/dpeCheck.sh {}"
+    output = runCmd(cmdBase.format("dpe"), ignoreReturncode=True, verbose=True)
+    if len(output) == 0:
+        print("SCM CPLD Version: DPE\n")
+    else:
+        print("SCM CPLD Version: Non-DPE\n")
 
 def dumpEmmc():
     print("################################")
@@ -301,6 +309,9 @@ def showtech(verboseLevel=0):
             runCmd("/usr/local/bin/th4_qspi_ver.sh", verbose=True)
         )
     )
+
+    # DPE Status
+    dpeCheck()
 
     # Dump EEPROMS
     dumpWeutil("CHASSIS", verbose=verbose)

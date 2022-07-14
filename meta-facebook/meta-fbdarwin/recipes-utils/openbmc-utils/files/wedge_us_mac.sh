@@ -18,17 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-# Get output from bic-util
-bic_output=$(bic-util scm --read_mac)
-
-# Check if the read was successful and output matches with our format
-match=$(echo "$bic_output" | grep -c 'MAC address: [0-9a-f][0-9a-f]:')
-if [ "$match" = "1" ]; then
-    # Mac address: xx:xx:xx:xx:xx:xx
-    echo "$bic_output" | cut -d ' ' -f 3
-    exit 0
-else
-    echo "Cannot find out the microserver MAC" 1>&2
-    exit 1
-fi
-
+# FBDARWIN's SCM MAC address is the first address of the block
+# allocated from "Extended MAC Base" field in CHASSIS's EEPROM.
+weutil CHASSIS 2>&1 | grep "MAC Base" | cut -d ' ' -f 4

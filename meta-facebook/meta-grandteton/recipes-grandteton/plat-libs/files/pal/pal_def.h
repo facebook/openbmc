@@ -22,13 +22,14 @@
 #define READING_NA      (-2)
 
 //XDP Debug PIN
-#define RST_PLTRST_BMC_N "RST_PLTRST_PLD_N"
-#define IRQ_BMC_PRDY_N  "FM_DBP_BMC_PRDY_N"
-#define DBP_PRESENT_N "FM_BMC_DBP_PRESENT_R_N"
-#define FM_JTAG_TCK_MUX_SEL "FM_JTAG_TCK_MUX_BMC_SEL" //Choice Jtag to CPU or PCH
-#define FM_BMC_PREQ_N "FM_DBP_CPU_PREQ_GF_N"
-#define FM_JTAG_BMC_MUX_SEL "FM_JTAG_BMC_MUX_SEL" //Choice BMC to CPLD or BMC to CPU/PCH
+#define RST_PLTRST_BMC_N       "RST_PLTRST_PLD_N"
+#define IRQ_BMC_PRDY_N         "FM_DBP_BMC_PRDY_N"
+#define DBP_PRESENT_N          "FM_BMC_DBP_PRESENT_R_N"
+#define FM_JTAG_TCK_MUX_SEL    "FM_JTAG_TCK_MUX_BMC_SEL" //Choice Jtag to CPU or PCH
+#define FM_BMC_PREQ_N          "FM_DBP_CPU_PREQ_GF_N"
+#define FM_JTAG_BMC_MUX_SEL    "FM_JTAG_BMC_MUX_SEL" //Choice BMC to CPLD or BMC to CPU/PCH
 #define FM_BMC_CPU_PWR_DEBUG_N "FM_BMC_CPU_FBRK_OUT_N"
+#define PWRGD_SYS_PWROK        "PWRGD_SYS_PWROK_R"
 
 //NM Device Info
 #define NM_IPMB_BUS_ID             (I2C_BUS_6)

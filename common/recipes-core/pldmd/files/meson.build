@@ -12,15 +12,17 @@ project('pldmd', 'cpp',
 srcs = files(
     'pldmd.cpp',
     'instance_id.cpp',
+    'fd_handler.cpp',
+    'instance_id.cpp',
+    'pldm_fd_handler.cpp',
+
 )
 
-install_headers(
-    'instance_id.hpp',
-)
-
+cc = meson.get_compiler('cpp')
 deps = [
     dependency('libpldm'),
     dependency('libpldm-oem'),
+    cc.find_library('glog'),
 ]
 
 # pldmd executable.

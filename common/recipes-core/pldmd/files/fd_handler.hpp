@@ -40,7 +40,6 @@ class fd_handler
      *         .
      *   }
      */
-
     std::vector<int> tx_server_fds = {};
     std::vector<int> server_fds = {};
     std::vector<int> client_fds = {};

@@ -27,6 +27,12 @@ LOCAL_URI += " \
     file://platform.cpp \
     file://cpld.cpp \
     file://me.cpp \
+    file://nic_mctp.cpp \
+    file://nic_mctp.h \
+    file://nic.cpp \
+    file://nic.h \
+    file://mezz_nic.hpp \
+    file://mezz_nic.cpp \
     file://nic_ext.h \
     file://nic_ext.cpp \
     file://vr_fw.h \

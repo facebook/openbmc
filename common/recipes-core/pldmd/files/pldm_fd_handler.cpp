@@ -27,8 +27,10 @@ pldm_fd_handler::update_pollfds()
     else {
       close(client.fd);
       ids.markFree(client.instance_id);
-      if (client.client_type == UPDATE_CLIENT)
+      if (client.client_type == UPDATE_CLIENT) {
+        fw_update_client = 0;
         is_fw_update_active = false;
+      }
     }
   }
   clients_data = tmp_clients_data;
@@ -76,8 +78,10 @@ pldm_fd_handler::add_client(int fd, uint8_t type)
 
   add_element(clients_data, data);
   client_change = true;
-  if (type == UPDATE_CLIENT)
+  if (type == UPDATE_CLIENT) {
+    fw_update_client = fd;
     is_fw_update_active = true;
+  }
 
   std::string msg;
   if(type == NORMAL_CLIENT) msg = "NORMAL_CLIENT";
@@ -144,6 +148,12 @@ pldm_fd_handler::client_send_data(int index, uint8_t *buf, size_t size)
 }
 
 int 
+pldm_fd_handler::send_fw_client_data(uint8_t * buf, size_t size)
+{
+  return fd_handler::send_data(fw_update_client, buf, size);
+}
+
+int 
 pldm_fd_handler::recv_data(int fd, uint8_t** buf, size_t &size)
 {
   int returnCode = fd_handler::recv_data(fd, buf, size);
@@ -180,7 +190,7 @@ pldm_fd_handler::check_pldmd_socket()
 int
 pldm_fd_handler::check_pldmd_fwupdate_socket()
 {
-  int fd = check_pollfds(MCTP_FD);
+  int fd = check_pollfds(SERV_FWUP_FD);
   if (fd)
     LOG(INFO) << "Receive new fw-update client's connection.";
   return fd;

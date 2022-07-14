@@ -1,4 +1,5 @@
 #include "fw-util.h"
+#include "mezz_nic.hpp"
 #include <facebook/bic.h>
 #include <openbmc/kv.h>
 #include <libpldm/base.h>
@@ -482,26 +483,6 @@ int SwbPexFwComponent::print_version() {
   return ret;
 }
 
-int SwbNicFwComponent::print_version() {
-  int ret = 0;
-  char ver_str[32];
-  vector<uint8_t> ver = {};
-
-// Get SWB NIC Version
-  ret = get_swb_version(bus, eid, target, ver);
-
-  if (ver.empty()) {
-    snprintf(ver_str, sizeof(ver_str), "NA");
-  } else {
-    string version(ver.begin()+2, ver.end());
-    snprintf(ver_str, sizeof(ver_str), "%s", version.c_str());
-  }
-
-  printf("SWB NIC%d Version: %s\n", id, ver_str);
-  return ret;
-}
-
-
 SwbBicFwComponent bic("swb", "bic", 3, 0x0A, BIC_COMP);
 SwbBicFwRecoveryComponent bic_recovery("swb", "bic_recovery", 3, 0x0A, BIC_COMP);
 
@@ -510,11 +491,11 @@ SwbPexFwComponent swb_pex1("swb", "pex1", 3, 0x0A, PEX1_COMP, 1);
 SwbPexFwComponent swb_pex2("swb", "pex2", 3, 0x0A, PEX2_COMP, 2);
 SwbPexFwComponent swb_pex3("swb", "pex3", 3, 0x0A, PEX3_COMP, 3);
 
-SwbNicFwComponent swb_nic0("swb", "swb_nic0", 3, 0x0A, NIC0_COMP, 0);
-SwbNicFwComponent swb_nic1("swb", "swb_nic1", 3, 0x0A, NIC1_COMP, 1);
-SwbNicFwComponent swb_nic2("swb", "swb_nic2", 3, 0x0A, NIC2_COMP, 2);
-SwbNicFwComponent swb_nic3("swb", "swb_nic3", 3, 0x0A, NIC3_COMP, 3);
-SwbNicFwComponent swb_nic4("swb", "swb_nic4", 3, 0x0A, NIC4_COMP, 4);
-SwbNicFwComponent swb_nic5("swb", "swb_nic5", 3, 0x0A, NIC5_COMP, 5);
-SwbNicFwComponent swb_nic6("swb", "swb_nic6", 3, 0x0A, NIC6_COMP, 6);
-SwbNicFwComponent swb_nic7("swb", "swb_nic7", 3, 0x0A, NIC7_COMP, 7);
+PLDMNicComponent swb_nic0("swb", "swb_nic0", "SWB_NIC0", 0x10, 3);
+PLDMNicComponent swb_nic1("swb", "swb_nic1", "SWB_NIC1", 0x11, 3);
+PLDMNicComponent swb_nic2("swb", "swb_nic2", "SWB_NIC2", 0x12, 3);
+PLDMNicComponent swb_nic3("swb", "swb_nic3", "SWB_NIC3", 0x13, 3);
+PLDMNicComponent swb_nic4("swb", "swb_nic4", "SWB_NIC4", 0x14, 3);
+PLDMNicComponent swb_nic5("swb", "swb_nic5", "SWB_NIC5", 0x15, 3);
+PLDMNicComponent swb_nic6("swb", "swb_nic6", "SWB_NIC6", 0x16, 3);
+PLDMNicComponent swb_nic7("swb", "swb_nic7", "SWB_NIC7", 0x17, 3);

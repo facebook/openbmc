@@ -32,12 +32,13 @@ int palBiosComponent::reboot(uint8_t fruid) {
   return 0;
 }
 
-NicExtComponent nic0("nic", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);  // fru_name, component, kv, fru_id, eth_index, ch_id
+// fru_name, component, kv, fru_id, eth_index, ch_id
+NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0);
 
 UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
 UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
 
-palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc", 
+palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc",
                       "1e631000.spi", "FM_BMC_MUX_CS_SPI_SEL_0", true, "(F0T_)(.*)");
 
 VrComponent vr_cpu0_vccin("mb", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA");

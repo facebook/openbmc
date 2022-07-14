@@ -122,7 +122,7 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
     if (msg->hdr.type == PLDM_FWUP && (msg->hdr.request == PLDM_REQUEST ||
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY)) {
       LOG(INFO) << "Forward to fwupdate client.";
-      handler->send_data(handler->pldmd_fwupdate_fd, buf, size);
+      handler->send_fw_client_data(buf, size);
 
     // For request handle
     } else if (msg->hdr.request == PLDM_REQUEST ||

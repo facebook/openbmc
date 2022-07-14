@@ -59,6 +59,7 @@ class pldm_fd_handler : public fd_handler
 
     // send and recv
     int client_send_data(int index, uint8_t * buf, size_t size);
+    int send_fw_client_data(uint8_t * buf, size_t size);
     // int send_data(int fd, uint8_t * buf, size_t buf_size);
     int recv_data(int fd, uint8_t ** buf, size_t &size);
 
@@ -82,6 +83,7 @@ class pldm_fd_handler : public fd_handler
     std::vector<pldm_client> clients_data = {};
     // pldmd only support update one device at a time.
     bool is_fw_update_active = false;
+    int fw_update_client = 0;
     pldm::InstanceId ids;
     void do_init();
     void do_pop_client(int index);

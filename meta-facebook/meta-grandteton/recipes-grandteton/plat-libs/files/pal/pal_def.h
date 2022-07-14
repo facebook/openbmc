@@ -1,5 +1,7 @@
 #ifndef __PAL_COMMON_DEF_H__
 #define __PAL_COMMON_DEF_H__
+#include <openbmc/misc-utils.h>
+
 
 #define BMC_DEF_SLAVE_ADDR (0x10)
 
@@ -12,7 +14,6 @@
 #define LARGEST_DEVICE_NAME (120)
 #define UNIT_DIV            (1000)
 #define ERR_NOT_READY       (-2)
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #define PAGE_SIZE  0x1000
 #define PREPARE_FW_UPDATE_CLEAR (0x00)

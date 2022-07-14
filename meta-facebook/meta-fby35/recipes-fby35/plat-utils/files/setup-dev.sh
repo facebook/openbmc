@@ -21,6 +21,9 @@
 # shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
+LTC4282_ADDR="44"
+ADM1272_ADDR="1f"
+
 function create_new_dev() {
   local dev_name=$1
   local addr=$2
@@ -38,18 +41,24 @@ function init_class1_dev() {
   create_new_dev "24c128" 0x51 11
   create_new_dev "24c128" 0x54 11
 
-  local VENDOR_MPS="0x4d5053"
+  local medusa_addr=""
   local chip=""
+  local load_driver=false
 
-  #create the device of medusa board
-  vendor=$(/usr/sbin/i2cget -y 11 0x44 0x99 i 2> /dev/null | tail -n 1)
-  if [ "$vendor" == "$VENDOR_MPS" ]; then
-    chip="mp5920"
-  else
+  if [ "$(/usr/sbin/i2cdetect -y 11 | grep "$LTC4282_ADDR" -c)" -eq "1" ]; then
     chip="ltc4282"
+    medusa_addr=0x"$LTC4282_ADDR"
+    load_driver=true
+  elif [ "$(/usr/sbin/i2cdetect -y 11 | grep "$ADM1272_ADDR" -c)" -eq "1" ]; then
+    chip="adm1272"
+    medusa_addr=0x"$ADM1272_ADDR"
+    load_driver=true
+  else
+    chip="ltc4287"
   fi
-
-  create_new_dev $chip 0x44 11
+  if [ "$load_driver" = true ]; then
+    create_new_dev $chip $medusa_addr 11
+  fi
 
   # /mnt/data/kv_store checking, and create one if not exist
   if [ ! -d /mnt/data/kv_store ]; then

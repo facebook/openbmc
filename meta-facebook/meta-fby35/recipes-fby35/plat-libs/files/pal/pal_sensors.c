@@ -1138,6 +1138,11 @@ PAL_HSC_INFO hsc_info_list[] = {
   [HSC_MP5990] =  {MP5990_SLAVE_ADDR, MP5990_PEAK_IOUT, MP5990_PEAK_PIN, mp5990_info_list}
 };
 
+PAL_CHIP_INFO medusa_hsc_list[] = {
+  {"ltc4282", "ltc4282", MEDUSA_HSC_LTC4282_ADDR},
+  {"adm1272", "adm1272", MEDUSA_HSC_ADM1272_ADDR}
+};
+
 size_t bmc_sensor_cnt = sizeof(bmc_sensor_list)/sizeof(uint8_t);
 size_t nicexp_sensor_cnt = sizeof(nicexp_sensor_list)/sizeof(uint8_t);
 size_t nic_sensor_cnt = sizeof(nic_sensor_list)/sizeof(uint8_t);
@@ -1857,55 +1862,44 @@ read_cached_val(uint8_t snr_number, float *value) {
 static int
 read_medusa_val(uint8_t snr_number, float *value) {
   static bool is_cached = false;
-  static bool is_ltc4282 = true;
   static float medusa_vin = 0;
   static float medusa_vout = 0;
-  static char chip[20] = {0};
+  static char chip[32] = {0};
+  static char hsc_conf[16] = {0};
   int ret = READING_NA;
+  int i = 0;
 
   if ( is_cached == false) {
-    if ( kv_get("bb_hsc_conf", chip, NULL, KV_FPERSIST) < 0 ) {
+    if ( kv_get("bb_hsc_conf", hsc_conf, NULL, KV_FPERSIST) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to read bb_hsc_conf", __func__);
       return ret;
     }
 
     is_cached = true;
-    strcat(chip, "-i2c-11-44");
-    //MP5920 is 12-bit ADC. Use the flag to do the calibration of sensors of mp5920.
-    //Make the readings more reliable
-    if ( strstr(chip, "mp5920")  != NULL ) is_ltc4282 = false;
-    syslog(LOG_WARNING, "%s() Use '%s', flag:%d", __func__, chip, is_ltc4282);
+    for (i = 0; i < sizeof(medusa_hsc_list)/sizeof(medusa_hsc_list[0]); i++) {
+      if (strncmp(hsc_conf, medusa_hsc_list[i].chip_name, sizeof(hsc_conf)) == 0) {
+        snprintf(chip, sizeof(chip), "%s-i2c-11-%x", 
+          medusa_hsc_list[i].driver, medusa_hsc_list[i].target_addr);
+        break;
+      }
+    }
+    syslog(LOG_WARNING, "%s() Use '%s'", __func__, chip);
   }
 
   switch(snr_number) {
     case BMC_SENSOR_MEDUSA_VIN:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VIN", value);
-      if ( is_ltc4282 == false ) *value *= 0.99;
       medusa_vin = *value;
       break;
     case BMC_SENSOR_MEDUSA_VOUT:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_VOUT", value);
-      if ( is_ltc4282 == false ) *value *= 0.99;
       medusa_vout = *value;
       break;
     case BMC_SENSOR_MEDUSA_CURR:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_CURR", value);
-      if ( is_ltc4282 == false ) {
-        //The current in light load cannot be sensed. The value should be 0.
-        if ( (int)(*value) != 0 ) {
-          *value = (*value + 3) * 0.94;
-        }
-      }
       break;
     case BMC_SENSOR_MEDUSA_PWR:
       ret = sensors_read(chip, "BMC_SENSOR_MEDUSA_PWR", value);
-      if ( is_ltc4282 == false ) {
-        //The current is 0 amps when the system is in light load.
-        //So, the power is 0, too.
-        if ( (int)(*value) != 0 ) {
-          *value = (*value * 0.95) + 24;
-        }
-      }
       break;
     case BMC_SENSOR_MEDUSA_VDELTA:
       *value = medusa_vin - medusa_vout;
@@ -2559,7 +2553,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   if (sensor.read_type == ACCURATE_CMD) {
     *value /= 256;
   }
-
   //  Apply value correction for Crater Lake
   if (fby35_common_get_slot_type(fru) == SERVER_TYPE_CL) {
     switch (sensor_num) {
@@ -2659,7 +2652,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     hsc_info_list[hsc_type].info[HSC_POWER].m *= rsense;
   }
   is_hsc_init = true;
-
 skip_hsc_init:
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
@@ -2827,6 +2819,40 @@ pal_bmc_fan_threshold_init() {
   return 0;
 }
 
+static int
+pal_medusa_hsc_threshold_init() {
+  static bool is_inited = false;
+  bool is_48v_medusa = false;
+  char hsc_type[MAX_VALUE_LEN] = {0};
+  int i = 0, index = 0;
+  struct {
+    uint8_t sensor_num;
+    PAL_SENSOR_THRESHOLD thres;
+  } medusa_sensor[] = {
+    //           sensor_num, ( LNR,   LCR,  LNC,  UNC,  UCR, UNR)
+    {BMC_SENSOR_MEDUSA_VIN,  {41.1, 42.72, 43.2, 56.1, 56.61, 0}},
+    {BMC_SENSOR_MEDUSA_VOUT, {41.1, 42.72, 43.2, 56.1, 56.61, 0}},
+    {BMC_SENSOR_MEDUSA_CURR, {   0,     0,    0,   62,     0, 0}},
+  };
+  if (is_inited == true) {
+    return 0;
+  }
+  if (kv_get("bb_hsc_conf", hsc_type, NULL, KV_FPERSIST) < 0) {
+    return -1;
+  } else {
+    // 12V medusa: LTC4282
+    // 48V medusa: ADM1272, LTC4287
+    is_48v_medusa = strncmp(hsc_type, "ltc4282", sizeof(hsc_type)) ? true : false;
+  }
+  if (is_48v_medusa == true) {
+    for(i = 0; i < sizeof(medusa_sensor) / sizeof(medusa_sensor[1]); i++) {
+      index = medusa_sensor[i].sensor_num;
+      memcpy(&sensor_map[index].snr_thresh, &medusa_sensor[i].thres, sizeof(PAL_SENSOR_THRESHOLD));
+    }
+  }
+  is_inited = true;
+  return 0;
+}
 
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
@@ -2840,7 +2866,11 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
       is_fan_threshold_init = true;
     }
   }
-
+  if (fru == FRU_BMC) {
+    if (pal_medusa_hsc_threshold_init() < 0) {
+      return -1;
+    }
+  }
   if ( rev_id == UNKNOWN_REV ) {
     if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
       syslog(LOG_WARNING, "%s() Failed to get board revision", __func__);

@@ -23,6 +23,10 @@
 #define MP5990_PEAK_IOUT   (0xA6)
 #define MP5990_PEAK_PIN    (0xA3)
 
+//LTC4286 CMD INFO
+#define LTC4287_MFR_IOUT_MAX (0xFE03)
+#define LTC4287_MFR_PIN_MAX  (0xFE0B)
+
 //PMBus
 #define PMBUS_PAGE         (0x00)
 #define PMBUS_VOUT_MODE    (0x20)
@@ -58,6 +62,10 @@
 
 #define DPV2_EFUSE_RLOAD      14000
 #define DPV2_EFUSE_SLAVE_ADDR 0x50
+
+#define MEDUSA_HSC_LTC4282_ADDR 0x44
+#define MEDUSA_HSC_ADM1272_ADDR 0x1f
+#define MEDUSA_HSC_LTC4287_ADDR 0x11
 
 typedef struct {
   float lnr_thresh;
@@ -685,6 +693,12 @@ typedef struct {
   float b;
   float r;
 } PAL_PMBUS_INFO;
+
+typedef struct {
+  char chip_name[16];
+  char driver[16];
+  uint8_t target_addr;
+} PAL_CHIP_INFO;
 
 typedef struct {
   uint8_t fru: 4;

@@ -304,7 +304,7 @@ enum {
   A_P3V_BAT_SCALED_EN,
   PWRBTN_N,
   FM_MP_PS_FAIL_N,
-  RST_MCP2210_N,                          // 20
+  FM_PEHPCPU_INT,                          // 20
   FM_CPU_THERMTRIP_LATCH_LVT3_N,
   FM_BMC_PCHIE_N,
   FM_SLPS4_R_N,
@@ -314,7 +314,7 @@ enum {
   FM_BMC_DEBUG_ENABLE_N,
   DBP_PRESENT_R2_N,
   PVCCIO_CPU,
-  PECI_BMC_R,                              // 30
+  BIC_READY,                              // 30
   FM_FAST_PROCHOT_EN_N,
   FM_CPU_FIVR_FAULT_LVT3_N,
   BOARD_ID0,
@@ -360,9 +360,10 @@ enum {
   IRQ_BMC_PCH_SMI_LPC_R_N,
   FM_BIOS_POST_CMPLT_BMC_N,
   RST_BMC_R_N,
-  BMC_READY,      //76
-  BIC_READY,
-  FM_PEHPCPU_INT,
+  BMC_READY,
+  HSC_DETECT0,
+  HSC_DETECT1,
+  HSC_DETECT2,                        // 79
 };
 
 enum {

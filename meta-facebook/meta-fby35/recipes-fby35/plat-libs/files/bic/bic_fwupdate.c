@@ -273,7 +273,7 @@ is_valid_intf(uint8_t intf) {
 
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
-  #define MAX_CMD_LEN 100
+  #define MAX_CMD_LEN 120
   #define MAX_RETRY 10
   char cmd[MAX_CMD_LEN] = {0};
   uint8_t self_test_result[2] = {0};
@@ -315,7 +315,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
     if (ret == 0) {
       printf("get new SDR cache from BIC \n");
       memset(cmd, 0, sizeof(cmd));
-      snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1", slot_id, slot_id);   //retrieve SDR data after BIC FW update
+      snprintf(cmd, MAX_CMD_LEN, "/usr/local/bin/bic-cached -s slot%d; /usr/bin/kv set slot%d_sdr_thresh_update 1; /usr/bin/sv restart sensord;", slot_id, slot_id);   //retrieve SDR data after BIC FW update
       log_system(cmd);
     }
   }

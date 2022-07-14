@@ -45,4 +45,5 @@ IMAGE_INSTALL += " \
   front-paneld \
   mctpd \
   ncsi-util \
+  crashdump \
 "

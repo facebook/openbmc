@@ -16,6 +16,12 @@
 using namespace std;
 
 #define FFI_0_ACCELERATOR 0x01
+
+M2DevComponent::PowerInfo M2DevComponent::statusTable[MAX_DEVICE_NUM] = {0};
+bool M2DevComponent::isDual[MAX_NUM_SERVER_FRU] = {false};
+bool M2DevComponent::isScaned[MAX_NUM_SERVER_FRU] = {false};
+M2DevComponent::Dev_Main_Slot M2DevComponent::dev_main_slot = M2DevComponent::Dev_Main_Slot::ON_EVEN;
+
 int M2DevComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   return FW_STATUS_NOT_SUPPORTED;
 }
@@ -24,61 +30,139 @@ void M2DevComponent::get_version(json& j) {
   return;
 }
 
+void M2DevComponent::scan_all_devices(uint8_t intf) {
+  int ret = 0;
+  uint8_t retry = MAX_READ_RETRY;
+  uint16_t vendor_id = 0;
+  uint8_t nvme_ready = 0 ,status = 0 ,ffi = 0 ,meff = 0 ,major_ver = 0 ,minor_ver = 0 ,additional_ver = 0;
+
+  if (isScaned[slot_id] == true) {
+    return;
+  }
+
+  for (int idx = 0; idx < MAX_DEVICE_NUM; idx ++) {
+    while (retry) {
+      ret = bic_get_dev_power_status(slot_id, idx + 1, &nvme_ready, &status, \
+                                    &ffi, &meff, &vendor_id, &major_ver,&minor_ver, &additional_ver, intf);
+      if (!ret) {
+        break;
+      }
+      msleep(50);
+      retry--;
+    }
+    save_info(idx, ret, status, nvme_ready, ffi, major_ver, minor_ver, additional_ver);
+    if (isDual[slot_id] == false && meff == MEFF_DUAL_M2) {
+      isDual[slot_id] = true;
+      if (idx % 2 == 0) {
+        dev_main_slot = Dev_Main_Slot::ON_EVEN;
+      } else {
+        dev_main_slot = Dev_Main_Slot::ON_ODD;
+      }
+    }
+  }
+  isScaned[slot_id] = true;
+}
+
+void M2DevComponent::save_info(uint8_t idx, int ret, uint8_t status,
+ uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver, uint8_t additional_ver) {
+
+  if (idx >= MAX_DEVICE_NUM) {
+    return;
+  }
+
+  statusTable[idx].ret = ret;
+  statusTable[idx].status = status;
+  statusTable[idx].nvme_ready = nvme_ready;
+  statusTable[idx].ffi = ffi;
+  statusTable[idx].major_ver = major_ver;
+  statusTable[idx].minor_ver = minor_ver;
+  statusTable[idx].additional_ver = additional_ver;
+
+}
+
 int M2DevComponent::print_version()
 {
   string ver("");
   string board_name = name;
   string err_msg("");
-  int ret = 0;
-  uint8_t nvme_ready = 0, status = 0, ffi = 0, meff = 0, major_ver = 0, minor_ver = 0,additional_ver = 0;
-  uint8_t idx = (fw_comp - FW_2OU_M2_DEV0) + 1;
+  uint8_t idx = (fw_comp - FW_2OU_M2_DEV0);
   uint8_t intf = REXP_BIC_INTF;
-  uint16_t vendor_id = 0;
-  static bool is_dual_m2 = false;
   //static uint8_t cnt = 0;
 
   if ( fw_comp >= FW_TOP_M2_DEV0 && fw_comp <= FW_TOP_M2_DEV11 ) {
-    idx = (fw_comp - FW_TOP_M2_DEV0) + 1;
+    idx = (fw_comp - FW_TOP_M2_DEV0);
     intf = RREXP_BIC_INTF1;
   } else if ( fw_comp >= FW_BOT_M2_DEV0 && fw_comp <= FW_BOT_M2_DEV11 ) {
-    idx = (fw_comp - FW_BOT_M2_DEV0) + 1;
+    idx = (fw_comp - FW_BOT_M2_DEV0);
     intf = RREXP_BIC_INTF2;
   }
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
   try {
+
     server.ready();
     expansion.ready();
+    scan_all_devices(intf);
 
-    ret = bic_get_dev_power_status(slot_id, idx, &nvme_ready, &status, \
-                                  &ffi, &meff, &vendor_id, &major_ver,&minor_ver,&additional_ver, intf);
-
-    if ( ret < 0 ) {
-      throw string("Error in getting the version");
-    } else if ( idx % 2 > 0 ) {
-      is_dual_m2 = (meff == MEFF_DUAL_M2)?true:false;
+    if (isDual[slot_id] == true) {
+      print_dual(idx);
+    } else {
+      print_single(idx);
     }
-
-    //cnt++; //it's used to count how many devices have been checked.
-
-    // it's dual m2, then return since it's printed
-    if ( is_dual_m2 == true && (idx % 2) == 0 ) {
-      is_dual_m2 = false;
-      return FW_STATUS_SUCCESS;
-    } else if ( status == 0 ) {
-      throw string("Not Present");
-    } else if ( nvme_ready == 0 ) {
-      throw string("NVMe Not Ready");
-    } else if ( ffi != FFI_0_ACCELERATOR ) {
-      throw string("Not Accelerator");
-    }
-    
-    if ( is_dual_m2 == true ) printf("%s DEV%d/%d Version: v%d.%d\n", board_name.c_str(), idx - 1, idx, major_ver, minor_ver);
-    else printf("%s DEV%d Version: v%d.%d.%d\n", board_name.c_str(), idx - 1, major_ver, minor_ver,additional_ver);
   } catch(string& err) {
-    printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx - 1, err.c_str());
+    printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx, err.c_str());
   }
   return FW_STATUS_SUCCESS;
+}
+
+void M2DevComponent::print_dual(uint8_t idx) {
+  int first_dev, second_dev, main_dev;
+
+  if (idx % 2 == 0) {
+    first_dev = idx;
+    second_dev = idx + 1;
+    statusTable[first_dev].isPrinted = true;
+  } else {
+    first_dev = idx - 1;
+    second_dev = idx;
+    if (statusTable[first_dev].isPrinted == true) {
+      return;
+    }
+  }
+  if (dev_main_slot == Dev_Main_Slot::ON_EVEN) {
+    main_dev = first_dev;
+  }
+  else {
+    main_dev = second_dev;
+  }
+
+  printf("DEV%d/%d Version: ", first_dev, second_dev);
+  if (statusTable[main_dev].ret) {
+    printf("NA\n");
+  } else if (!statusTable[main_dev].status) {
+    printf("NA(Not Present)\n");
+  } else if (!statusTable[main_dev].nvme_ready) {
+    printf("NA(NVMe Not Ready)\n");
+  } else if (statusTable[main_dev].ffi != FFI_0_ACCELERATOR) {
+    printf("NA(Not Accelerator)\n");
+  } else {
+    printf("v%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver);
+  }
+}
+
+void M2DevComponent::print_single(uint8_t idx) {
+  printf("DEV%d Version: ", idx);
+  if (statusTable[idx].ret) {
+    printf("NA\n");
+  } else if (!statusTable[idx].status) {
+    printf("NA(Not Present)\n");
+  } else if (!statusTable[idx].nvme_ready) {
+    printf("NA(NVMe Not Ready)\n");
+  } else if (statusTable[idx].ffi != FFI_0_ACCELERATOR) {
+    printf("NA(Not Accelerator)\n");
+  } else {
+    printf("v%d.%d.%d\n", statusTable[idx].major_ver, statusTable[idx].minor_ver, statusTable[idx].additional_ver);
+  }
 }
 
 int M2DevComponent::update_internal(string image, bool force) {

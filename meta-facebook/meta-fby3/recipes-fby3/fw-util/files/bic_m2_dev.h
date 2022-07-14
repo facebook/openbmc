@@ -6,6 +6,9 @@
 #include <string>
 #include <facebook/fby3_common.h>
 
+#define MAX_DEVICE_NUM 12
+#define MAX_NUM_SERVER_FRU 4
+
 using namespace std;
 
 class M2DevComponent : public Component {
@@ -14,6 +17,34 @@ class M2DevComponent : public Component {
   string name;  
   Server server;
   ExpansionBoard expansion;
+
+  struct PowerInfo {
+    bool isPrinted;
+    int ret;
+    uint8_t status;
+    uint8_t nvme_ready;
+    uint8_t ffi;
+    uint8_t major_ver;
+    uint8_t minor_ver;
+    uint8_t additional_ver;
+  };
+
+  enum Dev_Main_Slot {
+    ON_EVEN = 0,
+    ON_ODD = 1
+  };
+
+  static PowerInfo statusTable[MAX_DEVICE_NUM];
+  static bool isDual[MAX_NUM_SERVER_FRU];
+  static bool isScaned[MAX_NUM_SERVER_FRU];
+  static Dev_Main_Slot dev_main_slot;
+
+  void scan_all_devices(uint8_t intf);
+  void save_info(uint8_t idx, int ret, uint8_t status, uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver, uint8_t additional_ver);
+  void print_single(uint8_t idx);
+  void print_dual(uint8_t idx);
+
+
   private:
     int get_ver_str(string& s, const uint8_t alt_fw_comp);
   public:

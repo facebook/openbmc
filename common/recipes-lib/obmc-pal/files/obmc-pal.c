@@ -739,6 +739,22 @@ pal_post_handle(uint8_t slot, uint8_t status)
 }
 
 int __attribute__((weak))
+pal_mrc_warning_detect(uint8_t slot, uint8_t status)
+{
+  return PAL_EOK;
+}
+
+bool __attribute__((weak))
+pal_is_mrc_warning_occur(uint8_t slot) {
+  return false;
+}
+
+int __attribute__((weak))
+pal_get_dimm_loop_pattern(uint8_t slot, DIMM_PATTERN *dimm_loop_pattern) {
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
 pal_set_rst_btn(uint8_t slot, uint8_t status)
 {
   return PAL_EOK;
@@ -3024,4 +3040,10 @@ pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
   }
 
   return 0;
+}
+
+int __attribute__((weak))
+pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
+{
+  return PAL_EOK;
 }

@@ -392,6 +392,7 @@ static FRAME_DECLARE(frame_info);
 static FRAME_DECLARE(frame_sel);
 static FRAME_DECLARE(frame_snr);
 static FRAME_DECLARE(frame_postcode);
+static FRAME_DECLARE(frame_mrc);
 
 enum ENUM_PANEL {
   PANEL_MAIN = 1,
@@ -1011,6 +1012,80 @@ udbg_get_postcode (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, u
   return 0;
 }
 
+static int
+udbg_get_memory_loop_pattern (uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer) {
+  char str[64] = "";
+  mrc_desc_t *mrc_warning_list = NULL;
+  size_t mrc_count = 0;
+  int ret = 0;
+  uint8_t pos = plat_get_fru_sel();
+  DIMM_PATTERN dimm_loop_pattern = {0, "", 0, 0};
+
+  if (!next) {
+    syslog(LOG_ERR, "%s() Variable: next NULL pointer ERROR", __func__);
+    return -1;
+  }
+
+  if (!count) {
+    syslog(LOG_ERR, "%s() Variable: count NULL pointer ERROR", __func__);
+    return -1;
+  }
+
+  if (!buffer) {
+    syslog(LOG_ERR, "%s() Variable: buffer NULL pointer ERROR", __func__);
+    return -1;
+  }
+
+  if (page == 1) {
+    // Only update frame data while getting page 1
+    // initialize and clear frame
+    frame_mrc.init(&frame_mrc, FRAME_BUFF_SIZE);
+    frame_mrc.max_page = 10;
+    snprintf(frame_mrc.title, 32, "DIMM loop");
+
+    if (pal_is_mrc_warning_occur(pos)) {
+      ret = pal_get_dimm_loop_pattern(pos, &dimm_loop_pattern);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Fail to get DIMM loop pattern", __func__);
+        return -1;
+      }
+
+      ret = pal_get_mrc_desc(pos, &mrc_warning_list, &mrc_count);
+      if (ret < 0) {
+        return -1;
+      }
+
+      for (int i = 0; i < mrc_count; i++) {
+        if ((mrc_warning_list[i].major_code == dimm_loop_pattern.major_code) && (mrc_warning_list[i].minor_code == dimm_loop_pattern.minor_code)) {
+          snprintf(str, sizeof(str), "DIMM %s", (dimm_loop_pattern.dimm_location));
+          frame_mrc.append(&frame_mrc, str, 0);
+          snprintf(str, sizeof(str), "%s", mrc_warning_list[i].desc);
+          frame_mrc.append(&frame_mrc, str, 1);
+          break;
+        }
+      }
+    }
+  }
+
+  if (page > frame_mrc.pages) {
+    return -1;
+  }
+
+  ret = frame_mrc.getPage(&frame_mrc, page, (char *)buffer, FRAME_PAGE_BUF_SIZE);
+  if (ret < 0) {
+    *count = 0;
+    return -1;
+  }
+  *count = (uint8_t)ret;
+
+  if (page < frame_mrc.pages)
+    *next = page + 1;
+  else
+    *next = 0xFF;  // Set the value of next to 0xFF to indicate this is the last page
+
+  return 0;
+}
+
 int
 plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *count, uint8_t *buffer)
 {
@@ -1020,11 +1095,13 @@ plat_udbg_get_frame_data(uint8_t frame, uint8_t page, uint8_t *next, uint8_t *co
   switch (frame) {
     case 1: //info_page
       return udbg_get_info_page(frame, page, next, count, buffer);
-    case 2: // critical SEL
+    case 2: //critical SEL
       return udbg_get_cri_sel(frame, page, next, count, buffer);
     case 3: //critical Sensor
       return udbg_get_cri_sensor(frame, page, next, count, buffer);
-    case 4:
+    case 4: //dimm loop pattern
+      return udbg_get_memory_loop_pattern(frame, page, next, count, buffer);
+    case 5:
       return udbg_get_postcode(frame, page, next, count, buffer);
     default:
       return -1;

@@ -843,6 +843,7 @@ host_pwr_mon() {
           if (access(path, F_OK) != 0) {
             pal_set_last_pwr_state(fru, "on");
           }
+          pal_clear_mrc_warning(fru);
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           set_pwrgd_cpu_flag(fru, false);
           // update fru if GPv3 dev fru flag (dev_fru_complete) does not set to complete

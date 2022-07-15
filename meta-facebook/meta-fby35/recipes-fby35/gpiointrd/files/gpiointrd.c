@@ -116,6 +116,7 @@ slot_hotplug_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
     sleep(6);
     pal_check_slot_cpu_present(slot_id);
     pal_check_slot_fru(slot_id);
+    pal_clear_mrc_warning(slot_id);
   }
 }
 

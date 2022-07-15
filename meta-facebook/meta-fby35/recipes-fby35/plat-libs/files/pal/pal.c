@@ -52,6 +52,8 @@
 #define NUM_NIC_FRU     1
 #define NUM_BMC_FRU     1
 
+#define MRC_CODE_MATCH 4
+
 #define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
 
 #define NUM_CABLES 4
@@ -121,6 +123,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
+
+static uint8_t memory_record_code[4][4] = {0};
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -282,6 +286,483 @@ PCIE_ERR_DECODE pcie_err_tab[] = {
     {0xA0, "PERR (non-AER)"},
     {0xA1, "SERR (non-AER)"},
     {0xFF, "None"}
+};
+
+static mrc_desc_t mrc_warning_code[] = {
+//MRC warning code
+  { "WARN_MEMORY_BOOT_HEALTH_CHECK", 0x8C, 0x0 },
+  { "WARN_MEMORY_BOOT_HEALTH_CHECK_MASK_FAIL", 0x8C, 0x01 },
+  { "WARN_RDIMM_ON_UDIMM", 0x01, 0x0 },
+  { "WARN_MINOR_CONFIG_NOT_SUPPORTED", 0x01, 0x01 },
+  { "WARN_UDIMM_ON_RDIMM", 0x02, 0x0 },
+  { "WARN_SODIMM_ON_RDIMM", 0x03, 0x0 },
+  { "WARN_4Gb_FUSE", 0x04, 0x0 },
+  { "WARN_8Gb_FUSE", 0x05, 0x0 },
+  { "WARN_IMC_DISABLED", 0x06, 0x0 },
+  { "WARN_DIMM_COMPAT", 0x07, 0x0 },
+  { "WARN_DIMM_COMPAT_MINOR_X16_C0MBO", 0x07, 0x01 },
+  { "WARN_DIMM_COMPAT_MINOR_MAX_RANKS", 0x07, 0x02 },
+  { "WARN_DIMM_COMPAT_MINOR_QR", 0x07, 0x03 },
+  { "WARN_DIMM_COMPAT_MINOR_NOT_SUPPORTED", 0x07, 0x04 },
+  { "WARN_RANK_NUM", 0x07, 0x05 },
+  { "WARN_TOO_SLOW", 0x07, 0x06 },
+  { "WARN_DIMM_COMPAT_MINOR_ROW_ADDR_ORDER", 0x07, 0x07 },
+  { "WARN_CHANNEL_CONFIG_NOT_SUPPORTED", 0x07, 0x08 },
+  { "WARN_CHANNEL_MIX_ECC_NONECC", 0x07, 0x09 },
+  { "WARN_DIMM_VOLTAGE_NOT_SUPPORTED", 0x07, 0x0A },
+  { "WARN_DIMM_COMPAT_TRP_NOT_SUPPORTED", 0x07, 0x0B },
+  { "WARN_DIMM_NONECC", 0x07, 0x0C },
+  { "WARN_DIMM_COMPAT_3DS_RDIMM_NOT_SUPPORTED", 0x07, 0x0D },
+  { "WARN_RANK_COUNT_MISMATCH", 0x07, 0x0E },
+  { "WARN_DIMM_SKU_MISMATCH", 0x07, 0x0F },
+  { "WARN_DIMM_3DS_NOT_SUPPORTED", 0x07, 0x10 },
+  { "WARN_DIMM_NVMDIMM_NOT_SUPPORTED", 0x07, 0x11 },
+  { "WARN_DIMM_16GB_SUPPORTED", 0x07, 0x12 },
+  { "WARN_CHANNEL_SKU_NOT_SUPPORTED", 0x07, 0x13 },
+  { "WARN_DIMM_SKU_NOT_SUPPORTED", 0x07, 0x14 },
+  { "WARN_CHANNEL_CONFIG_FREQ_NOT_SUPPORTED", 0x07, 0x15 },
+  { "WARN_DIMM_SPEED_NOT_SUP", 0x07, 0x16 },
+  { "WARN_NO_DDR4_ON_SOCKET", 0x07, 0x17 },
+  { "WARN_NO_DDR4_ON_S0C0D0", 0x07, 0x18 },
+  { "WARN_DIMM_NOT_IN_DDRT_POR_DDR_TABLE", 0x07, 0x19 },
+  { "WARN_SOCKET_CPU_DOES_NOT_SUPPORT_NVMDIMM", 0x07, 0x1A },
+  { "WARN_SOCKET_SKU_DOES_NOT_SUPPORT_NVMDIMM", 0x07, 0x1B },
+  { "WARN_DIMM_IN_DDRT_POR_DDR_TABLE_NOT_VALIDATED", 0x07, 0x1C },
+  { "WARN_DDRT_DIMM_NOT_SUPPORTED", 0x07, 0x1D },
+  { "WARN_CHANNEL_WIDTH_MIX_NOT_SUPPORTED", 0x07, 0x1E },
+  { "WARN_DIMM_24GB_SUPPORTED", 0x07, 0x1F },
+  { "WARN_DIMM_32GB_SUPPORTED", 0x07, 0x20 },
+  { "WARN_LRDIMM_NOT_SUPPORTED", 0x07, 0x21 },
+  { "WARN_LOCKSTEP_DISABLE", 0x09, 0x0 },
+  { "WARN_LOCKSTEP_DISABLE_MINOR_RAS_MODE", 0x09, 0x01 },
+  { "WARN_LOCKSTEP_DISABLE_MINOR_MISMATCHED", 0x09, 0x02 },
+  { "WARN_LOCKSTEP_DISABLE_MINOR_MEMTEST_FAILED", 0x09, 0x03 },
+  { "WARN_USER_DIMM_DISABLE", 0x0a, 0x0 },
+  { "WARN_USER_DIMM_DISABLE_QUAD_AND_3DPC", 0x0a, 0x01 },
+  { "WARN_USER_DIMM_DISABLE_MEMTEST", 0x0a, 0x02 },
+  { "WARN_USER_DIMM_DISABLE_RANK_DISABLED", 0x0a, 0x03 },
+  { "WARN_USER_DIMM_DISABLE_MAPPED_OUT", 0x0a, 0x04 },
+  { "WARN_MEMTEST_DIMM_DISABLE", 0x0b, 0x0 },
+  { "WARN_MIRROR_DISABLE", 0x0c, 0x0 },
+  { "WARN_MIRROR_DISABLE_MINOR_RAS_DISABLED", 0x0c, 0x01 },
+  { "WARN_MIRROR_DISABLE_MINOR_MISMATCH", 0x0c, 0x02 },
+  { "WARN_MIRROR_DISABLE_MINOR_MEMTEST", 0x0c, 0x03 },
+  { "WARN_PMIRROR_DISABLE", 0x0d, 0x0 },
+  { "WARN_PMIRROR_DISABLE_MINOR_RAS_DISABLED", 0x0d, 0x01 },
+  { "WARN_INTERLEAVE_FAILURE", 0x0e, 0x0 },
+  { "WARN_SAD_RULES_EXCEEDED", 0x0e, 0x01 },
+  { "WARN_TAD_RULES_EXCEEDED", 0x0e, 0x02 },
+  { "WARN_RIR_RULES_EXCEEDED", 0x0e, 0x03 },
+  { "WARN_TAD_OFFSET_NEGATIVE", 0x0e, 0x04 },
+  { "WARN_TAD_LIMIT_ERROR", 0x0e, 0x05 },
+  { "WARN_INTERLEAVE_3WAY", 0x0e, 0x06 },
+  { "WARN_A7_MODE_AND_3WAY_CH_INTRLV", 0x0e, 0x07 },
+  { "WARN_INTERLEAVE_EXCEEDED", 0x0e, 0x08 },
+  { "WARN_DIMM_CAPACITY_MISMATCH", 0x0e, 0x09 },
+  { "WARN_DIMM_POPULATION_MISMATCH", 0x0e, 0x0A },
+  { "WARN_NM_MAX_SIZE_EXCEEDED", 0x0e, 0x0B },
+  { "WARN_NM_SIZE_BELOW_MIN_LIMIT", 0x0e, 0x0C },
+  { "WARN_NM_SIZE_NOT_POWER_OF_TWO", 0x0e, 0x0D },
+  { "WARN_MAX_INTERLEAVE_SETS_EXCEEDED", 0x0e, 0x0E },
+  { "WARN_NGN_DIMM_COMM_FAILED", 0x0e, 0x0F },
+  { "WARN_DIMM_COMM_FAILED", 0x0F, 0x0 },
+  { "WARN_MINOR_DIMM_COMM_START_DOORBELL_TIMEOUT", 0x0F, 0x01 },
+  { "WARN_MINOR_DIMM_COMM_FAILED_STATUS", 0x0F, 0x02 },
+  { "WARN_MINOR_DIMM_MAILBOX_FAILED", 0x0F, 0x03 },
+  { "WARN_MINOR_DIMM_COMM_FINISH_DOORBELL_TIMEOUT", 0x0F, 0x04 },
+  { "WARN_MINOR_DIMM_COMM_FINISH_COMPLETE_TIMEOUT", 0x0F, 0x05 },
+  { "WARN_SPARE_DISABLE", 0x10, 0x0 },
+  { "WARN_SPARE_DISABLE_MINOR_RK_SPARE", 0x10, 0x01 },
+  { "WARN_PTRLSCRB_DISABLE", 0x11, 0x0 },
+  { "WARN_PTRLSCRB_MINOR_DISABLE", 0x11, 0x00 },
+  { "WARN_UNUSED_MEMORY", 0x12, 0x0 },
+  { "WARN_UNUSED_MEMORY_MINOR_MIRROR", 0x12, 0x01 },
+  { "WARN_UNUSED_MEMORY_MINOR_LOCKSTEP", 0x12, 0x02 },
+  { "WARN_RD_DQ_DQS", 0x13, 0x0 },
+  { "WARN_RD_RCVEN", 0x14, 0x0 },
+  { "WARN_ROUNDTRIP_EXCEEDED", 0x14, 0x01 },
+  { "WARN_RCVEN_PI_DELAY_EXCEEDED", 0x14, 0x02 },
+  { "WARN_WR_LEVEL", 0x15, 0x0 },
+  { "WARN_WR_FLYBY_CORR", 0x15, 0x00 },
+  { "WARN_WR_FLYBY_UNCORR", 0x15, 0x01 },
+  { "WARN_WR_FLYBY_DELAY", 0x15, 0x02 },
+  { "WARN_WR_DQ_DQS", 0x16, 0x0 },
+  { "WARN_DIMM_POP_RUL", 0x17, 0x0 },
+  { "WARN_DIMM_POP_RUL_MINOR_OUT_OF_ORDER", 0x17, 0x01 },
+  { "WARN_DIMM_POP_RUL_MINOR_INDEPENDENT_MODE", 0x17, 0x02 },
+  { "WARN_DIMM_POP_RUL_2_AEP_FOUND_ON_SAME_CH", 0x17, 0x03 },
+  { "WARN_DIMM_POP_RUL_MINOR_MIXED_RANKS_FOUND", 0x17, 0x04 },
+  { "WARN_DIMM_POP_RUL_NVMDIMM_OUT_OF_ORDER", 0x17, 0x05 },
+  { "WARN_DIMM_POP_RUL_UDIMM_POPULATION", 0x17, 0x10 },
+  { "WARN_DIMM_POP_RUL_RDIMM_POPULATION", 0x17, 0x20 },
+  { "WARN_DIMM_POP_RUL_LRDIMM_DUAL_DIE_POPULATION", 0x17, 0x40 },
+  { "WARN_DIMM_POP_RUL_MINOR_NO_DDRT_ON_MC0", 0x17, 0x06 },
+  { "WARN_DIMM_POP_RUL_MINOR_NO_DDRT_ON_SOCKET0", 0x17, 0x07 },
+  { "WARN_DIMM_POP_RUL_DDR4_CAP_NOT_POR_FOR_MEM_POP", 0x17, 0x08 },
+  { "WARN_DIMM_POP_RUL_DDR4_TYPE_NOT_POR_FOR_MM", 0x17, 0x09 },
+  { "WARN_DIMM_POP_RUL_MEM_TOPOLOGY_NOT_SYMMETRICAL", 0x17, 0x0a },
+  { "WARN_DIMM_POP_RUL_NM_FM_RATIO_VIOLATION", 0x17, 0x0b },
+  { "WARN_DIMM_POP_RUL_2LM_IMC_MEM_MISMATCH", 0x17, 0x0c },
+  { "WARN_DIMM_POP_RUL_DDRT_CAPACITY_MISMATCH", 0x17, 0x0d },
+  { "WARN_DIMM_POP_RUL_DDRT_PARTITION_MISMATCH", 0x17, 0x0e },
+  { "WARN_DIMM_POP_RUL_AEP_VDD_CHANGED", 0x17, 0x0f },
+  { "WARN_DIMM_POP_RUL_SOCKET_MODE_MISMATCH", 0x17, 0x10 },
+  { "WARN_DIMM_POP_RUL_DCPDIMM_MIXING", 0x17, 0x11 },
+  { "WARN_DIMM_POP_RUL_DDR_CAPACITY_MISMATCH", 0x17, 0x12 },
+  { "WARN_DIMM_POP_RUL_POPULATION_POR_MISMATCH", 0x17, 0x13 },
+  { "WARN_DIMM_POP_RUL_MEM_POP_POR_TBL_INVALID", 0x17, 0x14 },
+  { "WARN_DIMM_POP_RUL_2LM_FM_CH_NOT_PWR_OF_TWO", 0x17, 0x15 },
+  { "WARN_DIMM_POP_RUL_POPULATION_POR_NOT_FOUND", 0x17, 0x16 },
+  { "WARN_DIMM_POP_RUL_PMEM_X1_POPULATION_INVALID", 0x17, 0x17 },
+  { "WARN_DIMM_POP_RUL_NO_DIMM_ON_SOCKET", 0x17, 0x18 },
+  { "WARN_DIMM_POP_RUL_UMA_POR_COMPATABILITY", 0x17, 0x19 },
+  { "WARN_DIMM_POP_RUL_MCR_POP_INVALID", 0x17, 0x1A },
+  { "WARN_DIMM_POP_RUL_9X4_CONFIG_INVALID", 0x17, 0x1B },
+  { "WARN_DIMM_POP_RUL_EXTENDED", 0x3e, 0x0 },
+  { "WARN_DIMM_POP_RUL_LRDIMM_3DS_POPULATION", 0x3e, 0x1 },
+  { "WARN_DIMM_POP_RUL_RDIMM_3DS_POPULATION", 0x3e, 0x2 },
+  { "WARN_CLTT_DISABLE", 0x18, 0x0 },
+  { "WARN_CLTT_MINOR_NO_TEMP_SENSOR", 0x18, 0x01 },
+  { "WARN_CLTT_MINOR_CIRCUIT_TST_FAILED", 0x18, 0x02 },
+  { "WARN_THROT_INSUFFICIENT", 0x19, 0x0 },
+  { "WARN_2X_REFRESH_TEMPLO_DISABLED", 0x19, 0x01 },
+  { "WARN_CUSTOM_REFRESH_RATE_REVERTED", 0x19, 0x02 },
+  { "WARN_CLTT_DIMM_UNKNOWN", 0x1a, 0x0 },
+  { "WARN_DQS_TEST", 0x1b, 0x0 },
+  { "WARN_MEM_TEST", 0x1c, 0x0 },
+  { "WARN_CLOSED_PAGE_OVERRIDE", 0x1d, 0x0 },
+  { "WARN_DIMM_VREF_NOT_PRESENT", 0x1e, 0x0 },
+  { "WARN_EARLY_RID", 0x1f, 0x0 },
+  { "WARN_EARLY_RID_UNCORR", 0x1f, 0x01 },
+  { "WARN_EARLY_RID_CYCLE_FAIL", 0x1f, 0x02 },
+  { "WARN_LV_STD_DIMM_MIX", 0x20, 0x0 },
+  { "WARN_LV_2QR_DIMM", 0x21, 0x0 },
+  { "WARN_LV_3DPC", 0x22, 0x0 },
+  { "WARN_CMD_ADDR_PARITY_ERR", 0x23, 0x0 },
+  { "WARN_DQ_SWIZZLE_DISC", 0x24, 0x0 },
+  { "WARN_DQ_SWIZZLE_DISC_UNCORR", 0x24, 0x01 },
+  { "WARN_COD_HA_NOT_ACTIVE", 0x25, 0x0 },
+  { "WARN_CMD_CLK_TRAINING", 0x26, 0x0 },
+  { "WARN_CMD_PI_GROUP_SMALL_EYE", 0x26, 0x01 },
+  { "WARN_CMD_PI_GROUP_NO_EYE", 0x26, 0x02 },
+  { "WARN_INVALID_BUS", 0x27, 0x0 },
+  { "WARN_INVALID_FNV_SUBOPCODE", 0x28, 0x00 },
+  { "WARN_MEMORY_TRAINING", 0x29, 0x0 },
+  { "WARN_CTL_CLK_LOOPBACK_TRAINING", 0x29, 0x02 },
+  { "WARN_ODT_TIMING_OVERFLOW", 0x29, 0x03 },
+  { "WARN_CS_CLK_LOOPBACK_TRAINING", 0x29, 0x04 },
+  { "WARN_CA_CLK_LOOPBACK_TRAINING", 0x29, 0x05 },
+  { "WARN_REQ_CLK_TRAINING", 0x29, 0x06 },
+  { "WARN_NO_MEMORY", 0x2a, 0x0 },
+  { "WARN_NO_MEMORY_MINOR_NO_MEMORY", 0x2a, 0x01 },
+  { "WARN_NO_MEMORY_MINOR_ALL_CH_DISABLED", 0x2a, 0x02 },
+  { "WARN_NO_MEMORY_MINOR_ALL_CH_DISABLED_MIXED", 0x2a, 0x03 },
+  { "WARN_NO_MEMORY_MINOR_NO_DDR", 0x2a, 0x04 },
+  { "WARN_ROUNDTRIP_ERROR", 0x2b, 0x0 },
+  { "WARN_RCVNTAP_CMDDELAY_EXCEEDED", 0x2b, 0x01 },
+  { "WARN_MEMORY_MODEL_ERROR", 0x2c, 0x0 },
+  { "WARN_SNC24_MODEL_ERROR", 0x2c, 0x01 },
+  { "WARN_QUAD_HEMI_MODEL_ERROR", 0x2c, 0x02 },
+  { "WARN_SNC24_DIMM_POPULATION_MISMATCH", 0x2c, 0x03 },
+  { "WARN_SNC24_INCOMPATIBLE_DDR_CAPACITY", 0x2c, 0x04 },
+  { "WARN_SNC24_INCOMPATIBLE_MCDRAM_CAPACITY", 0x2c, 0x05 },
+  { "WARN_MCDRAM_CONFIG_NOT_SUPPORTED", 0x2c, 0x06 },
+  { "WARN_SNC24_TILE_POPULATION_MISMATCH", 0x2c, 0x07 },
+  { "WARN_OVERRIDE_MEMORY_MODE", 0x2d, 0x0 },
+  { "WARN_OVERRIDE_TO_FLAT_NOT_ENOUGH_NEAR_MEMORY", 0x2d, 0x01 },
+  { "WARN_OVERRIDE_TO_FLAT_NOT_ENOUGH_FAR_MEMORY", 0x2d, 0x02 },
+  { "WARN_OVERRIDE_TO_HYBRID_50_PERCENT", 0x2d, 0x03 },
+  { "WARN_MEM_INIT", 0x2e, 0x0 },
+  { "WARN_SENS_AMP_TRAINING", 0x2f, 0x0 },
+  { "WARN_SENS_AMP_CH_FAILIURE", 0x2f, 0x01 },
+  { "WARN_FPT_CORRECTABLE_ERROR", 0x30, 0x0 },
+  { "WARN_FPT_UNCORRECTABLE_ERROR", 0x31, 0x0 },
+  { "WARN_FPT_MINOR_RD_DQ_DQS", 0x31, 0x13 },
+  { "WARN_FPT_MINOR_RD_RCVEN", 0x31, 0x14 },
+  { "WARN_FPT_MINOR_WR_LEVEL", 0x31, 0x15 },
+  { "WARN_FPT_MINOR_WR_FLYBY", 0x31, 0x00 },
+  { "WARN_FPT_MINOR_WR_DQ_DQS", 0x31, 0x16 },
+  { "WARN_FPT_MINOR_DQS_TEST", 0x31, 0x1b },
+  { "WARN_FPT_MINOR_MEM_TEST", 0x31, 0x1c },
+  { "WARN_FPT_MINOR_LRDIMM_DWL_EXT_COARSE_TRAINING", 0x31, 0x20 },
+  { "WARN_FPT_MINOR_LRDIMM_DWL_EXT_FINE_TRAINING", 0x31, 0x21 },
+  { "WARN_FPT_MINOR_LRDIMM_DWL_INT_COARSE_TRAINING", 0x31, 0x22 },
+  { "WARN_FPT_MINOR_LRDIMM_DWL_INT_FINE_TRAINING", 0x31, 0x23 },
+  { "WARN_FPT_MINOR_LRDIMM_TRAINING", 0x31, 0x24 },
+  { "WARN_FPT_MINOR_VREF_TRAINING", 0x31, 0x25 },
+  { "WARN_FPT_MINOR_LRDIMM_RCVEN_PHASE_TRAINING", 0x31, 0x26 },
+  { "WARN_FPT_MINOR_LRDIMM_RCVEN_CYCLE_TRAINING", 0x31, 0x27 },
+  { "WARN_FPT_MINOR_LRDIMM_READ_DELAY_TRAINING", 0x31, 0x28 },
+  { "WARN_FPT_MINOR_LRDIMM_WL_TRAINING", 0x31, 0x29 },
+  { "WARN_FPT_MINOR_LRDIMM_COARSE_WL_TRAINING", 0x31, 0x2A },
+  { "WARN_FPT_MINOR_LRDIMM_WRITE_DELAY_TRAINING", 0x31, 0x2B },
+  { "WARN_QxCA_CLK_NO_EYE_FOUND", 0x31, 0x2C },
+  { "WARN_FPT_ROW_FAILURE", 0x31, 0x2D },
+  { "WARN_FPT_PPR_ROW_REPAIR", 0x31, 0x2E },
+  { "WARN_FPT_MINOR_WL_EXTERNAL_COARSE", 0x31, 0x30 },
+  { "WARN_FPT_MINOR_WL_EXTERNAL_FINE", 0x31, 0x31 },
+  { "WARN_FPT_MINOR_WL_INTERNAL_COARSE", 0x31, 0x32 },
+  { "WARN_FPT_MINOR_WL_INTERNAL_FINE", 0x31, 0x33 },
+  { "WARN_FPT_MINOR_WL_INTERNAL_OUT_OF_CYCLE", 0x31, 0x34 },
+  { "WARN_FPT_MINOR_RD_DQ_DQS_JITTER", 0x31, 0x35 },
+  { "WARN_CH_DISABLED", 0x32, 0x0 },
+  { "WARN_TWR_LIMIT_REACHED", 0x32, 0x01 },
+  { "WARN_TWR_LIMIT_ON_LOCKSTEP_CH", 0x32, 0x02 },
+  { "WARN_SPD_BLOCK_UNLOCKED", 0x32, 0x03 },
+  { "WARN_MEM_LIMIT", 0x33, 0x0 },
+  { "WARN_RT_DIFF_EXCEED", 0x34, 0x0 },
+  { "WARN_RT_DIFF_MINOR_EXCEED", 0x34, 0x01 },
+  { "WARN_PPR_FAILED", 0x35, 0x0 },
+  { "WARN_REGISTER_OVERFLOW", 0x36, 0x0 },
+  { "WARN_MINOR_REGISTER_OVERFLOW", 0x36, 0x01 },
+  { "WARN_MINOR_REGISTER_UNDERFLOW", 0x36, 0x02 },
+  { "WARN_SWIZZLE_DISCOVERY_TRAINING", 0x37, 0x0 },
+  { "WARN_SWIZZLE_PATTERN_MISMATCH", 0x37, 0x01 },
+  { "WARN_WRCRC_DISABLE", 0x38, 0x0 },
+  { "WARN_TRAIL_ODT_LIMIT_REACHED", 0x38, 0x01 },
+  { "WARN_FNV_BSR", 0x39, 0x0 },
+  { "WARN_DT_ERROR", 0x39, 0x01 },
+  { "WARN_MEDIA_READY_ERROR", 0x39, 0x02 },
+  { "WARN_POLLING_LOOP_TIMEOUT", 0x39, 0x03 },
+  { "WARN_OPCODE_INDEX_LOOKUP", 0x39, 0x04 },
+  { "WARN_DR_READY_ERROR", 0x05 },
+  { "WARN_FADR_ERROR", 0x39, 0x06 },
+  { "WARN_WDB_ERROR", 0x39, 0x07 },
+  { "WARN_ADDDC_DISABLE", 0x3a, 0x0 },
+  { "WARN_ADDDC_MINOR_DISABLE", 0x3a, 0x01 },
+  { "WARN_SDDC_DISABLE", 0x3b, 0x0 },
+  { "WARN_SDDC_MINOR_DISABLE", 0x3b, 0x02 },
+  { "WARN_FW_CLK_MOVEMENT", 0x3c, 0x00 },
+  { "WARN_FW_BCOM_MARGINING", 0x3c, 0x01 },
+  { "WARN_SMBUS_FAULT", 0x3d, 0x00 },
+  { "WARN_SMBUS_WRITE", 0x3d, 0x01 },
+  { "WARN_SMBUS_READ", 0x3d, 0x02 },
+  { "WARN_COMPLETION_DELAY_ERROR", 0x3f, 0x00 },
+  { "WARN_CMPL_DELAY_BELOW_MIN", 0x3f, 0x02 },
+  { "WARN_CMPL_DELAY_MAX_EXCEEDED", 0x3f, 0x03 },
+  { "WARN_MEM_CONFIG_CHANGED", 0x40, 0x00 },
+  { "WARN_MEM_OVERRIDE_DISABLED", 0x40, 0x01 },
+  { "WARN_DIMM_MEM_MODE", 0x41, 0x00 },
+  { "WARN_DIMM_MEM_MODE_NEW_DIMM_2LM_NOT_SUPPORTED", 0x41, 0x1 },
+  { "WARN_DIMM_MEM_MODE_2LM_NOT_SUPPORTED", 0x41, 0x2 },
+  { "WARN_DFE_TAP_MARGIN_STATUS", 0x42, 0x00 },
+  { "WARN_DFE_TAP_ZERO_MARGIN_ERROR", 0x42, 0x01 },
+  { "WARN_DFE_MARGIN_STATUS", 0x43, 0x00 },
+  { "WARN_DFE_ZERO_MARGIN_ERROR", 0x43, 0x01 },
+  { "WARN_FREQUENCY_POR_CHECK", 0x44, 0x00 },
+  { "WARN_PLATFORM_SEGMENT_NOT_FOUND", 0x44, 0x00 },
+  { "WARN_INVALID_NUMBER_OF_SOCKETS", 0x44, 0x01 },
+  { "WARN_UNKNOWN_PLATFORM_SEGMENT", 0x44, 0x02 },
+  { "WARN_INVALID_POR_SOCKET_CONFIG", 0x44, 0x03 },
+  { "WARN_BOUNDS_ERROR", 0x45, 0x00 },
+  { "WARN_INVALID_DIMM_INDEX", 0x45, 0x01 },
+  { "WARN_POWER_FAILURE", 0x46, 0x00 },
+  { "WARN_DDR5_POWER_FAILURE_PHASE_1", 0x46, 0x00 },
+  { "WARN_DDR5_POWER_FAILURE_PHASE_2", 0x46, 0x01 },
+  { "WARN_DDRT_POWER_FAILURE", 0x46, 0x02 },
+  { "WARN_DDRIO_POWER_FAILURE", 0x46, 0x03 },
+  { "WARN_TRAINING_RESULT_CHECK", 0x47, 0x00 },
+  { "WARN_TRAINING_RESULT_BEYOND_LIMIT", 0x47, 0x01 },
+  { "WARN_MEMTEST_ROW_FAIL_RANGE_ERROR", 0x48, 0x00 },
+  { "WARN_MEMTEST_DDR_ROW_FAIL_RANGE_LIST_FULL", 0x48, 0x01 },
+  { "WARN_MEMTEST_HBM_ROW_FAIL_RANGE_LIST_FULL", 0x48, 0x02 },
+  { "WARN_MCA_UNCORRECTABLE_ERROR", 0x50, 0x00 },
+  { "WARN_PREVIOUS_BOOT_MCA_MINOR_CODE", 0x50, 0x01 },
+  { "WARN_DM_TEST_ERROR_CODE", 0x60, 0x00 },
+  { "WARN_DM_TEST_PARSE_ERROR_MINOR_CODE", 0x60, 0x01 },
+  { "WARN_DM_TEST_CONFIGURATION_ERROR_MINOR_CODE", 0x60, 0x02 },
+  { "WARN_DM_TEST_EXECUTION_ERROR_MINOR_CODE", 0x60, 0x03 },
+  { "WARN_FPGA_NOT_DETECTED", 0x75, 0x00 },
+  //HBM Warning Codes
+  { "WARN_HBM_POR_LIMITATION", 0x79, 0x00 },
+  { "WARN_HBM_UNSUPPORTED_SOCKET_POPULATION", 0x79, 0x01 },
+  { "WARN_HBM_UNSUPPORTED_IO_STACK_POPULATION", 0x79, 0x02 },
+  { "WARN_FSM_ERROR_CODE", 0x80, 0x00 },
+  { "WARN_FSM_TIMEOUT_ERROR", 0x80, 0x01 },
+  { "WARN_IEEE_1500_ERROR_CODE", 0x81, 0x00 },
+  { "WARN_IEEE_1500_TIMEOUT_ERROR", 0x81, 0x01 },
+  { "WARN_HBM_CORRECTABLE_ERROR", 0x82, 0x00 },
+  { "WARN_HBM_UNCORRECTABLE_ERROR", 0x83, 0x00 },
+  { "WARN_HBM_TRAINING_FAILURE", 0x83, 0x01 },
+  { "WARN_HBM_MBIST_FAILURE", 0x83, 0x02 },
+  { "WARN_HBM_INVALID_PPR_ADDRESS", 0x83, 0x03 },
+  { "WARN_HBM_PPR_FAILURE", 0x83, 0x04 },
+  { "WARN_HBM_BASIC_MEMTEST_FAILURE", 0x83, 0x05 },
+  { "WARN_HBM_ADVANCED_MEMTEST_FAILURE", 0x83, 0x06 },
+  //NVDIMM Status Warning Codes
+  { "WARN_NVMCTRL_MEDIA_STATUS", 0x84, 0x00 },
+  { "WARN_NVMCTRL_MEDIA_NOTREADY", 0x84, 0x02 },
+  { "WARN_NVMCTRL_MEDIA_INERROR", 0x84, 0x03 },
+  { "WARN_NVMCTRL_MEDIA_RESERVED", 0x84, 0x04 },
+  { "WARN_NVMCTRL_MEDIA_DWR", 0x84, 0x05 },
+  { "WARN_NVMCTRL_MEDIA_AIT_NOTREADY", 0x84, 0x06 },
+  //Current Configuration Warning Codes
+  { "WARN_CFGCUR_STATUS", 0x85, 0x00 },
+  { "WARN_CFGCUR_SIGNATURE_MISMATCH", 0x85, 0x01 },
+  { "WARN_CFGCUR_CHECKSUM_MISMATCH", 0x85, 0x02 },
+  { "WARN_CFGCUR_REVISION_MISMATCH", 0x85, 0x03 },
+  { "WARN_CFGCUR_DATASIZE_EXCEEDED", 0x85, 0x04 },
+  { "WARN_CFGCUR_DATASIZE_OFFSET_EXCEEDED", 0x85, 0x05 },
+  //Input Configuration Warning Codes
+  { "WARN_CFGIN_STATUS", 0x86, 0x00 },
+  { "WARN_CFGIN_SIGNATURE_MISMATCH", 0x86, 0x01 },
+  { "WARN_CFGIN_CHECKSUM_MISMATCH", 0x86, 0x02 },
+  { "WARN_CFGIN_REVISION_MISMATCH", 0x86, 0x03 },
+  { "WARN_CFGIN_DATASIZE_EXCEEDED", 0x86, 0x04 },
+  //Output Configuration Warning Codes
+  { "WARN_CFGOUT_STATUS", 0x87, 0x00 },
+  { "WARN_CFGOUT_SIGNATURE_MISMATCH", 0x87, 0X01 },
+  { "WARN_CFGOUT_CHECKSUM_MISMATCH", 0x87, 0X02 },
+  { "WARN_CFGOUT_REVISION_MISMATCH", 0x87, 0X03 },
+  { "WARN_CFGOUT_DATASIZE_EXCEEDED", 0x87, 0x04 },
+  //BIOS Configuration Header Warning Codes
+  { "WARN_BIOS_CONFIG_HEADER_STATUS", 0x88, 0x00 },
+  { "WARN_BIOS_CONFIG_HEADER_CHECKSUM_MISMATCH", 0x88, 0x01 },
+  { "WARN_BIOS_CONFIG_HEADER_REVISION_MISMATCH", 0x88, 0x02 },
+  { "WARN_BIOS_CONFIG_HEADER_SIGNATURE_MISMATCH", 0x88, 0x03 },
+  //OS Configuration Header Warning Codes
+  { "WARN_OS_CONFIG_HEADER_STATUS", 0x89, 0x00 },
+  { "WARN_OS_CONFIG_HEADER_CHECKSUM_MISMATCH", 0x89, 0x01 },
+  { "WARN_OS_CONFIG_HEADER_REVISION_MISMATCH", 0x89, 0x02 },
+  { "WARN_OS_CONFIG_HEADER_LENGTH_MISMATCH", 0x89, 0x03 },
+  { "WARN_OS_CONFIG_HEADER_SIGNATURE_MISMATCH", 0x89, 0x04 },
+  //NVMDIMM Surprise Clock Warning codes
+  { "WARN_NVDIMM_SURPRISE_CLOCK_STOP", 0x8A, 0x00 },
+  { "WARN_POWER_CYCLE_POLICY_NOT_APPLY", 0x8A, 0x01 },
+  { "WARN_POWER_CYCLE_POLICY_APPLY", 0x8A, 0x02 },
+  //NVMDIMM FNV Access Codes
+  { "WARN_FNV_ACCESS", 0x8B, 0x00 },
+  { "WARN_INVALID_FNV_ACCESS_MODE", 0x8B, 0x01 },
+  //MEMORY Boot Health log Warnings
+  { "WARN_MEMORY_BOOT_HEALTH_CHECK", 0x8C, 0x00 },
+  { "WARN_MEMORY_BOOT_HEALTH_CHECK_MASK_FAIL", 0x8C, 0x01 },
+  { "WARN_MEMORY_BOOT_HEALTH_CHECK_CHANNEL_MAP_OUT", 0x8C, 0x02 },
+  //Memory Thermal Management Error
+  { "WARN_MEMORY_POWER_MANAGEMENT", 0x8D, 0x00 },
+  { "WARN_MEMORY_PM_THERMAL_PMON_VR_NOT_FOUND", 0x8D, 0x01 },
+  { "WARN_MEMORY_PM_THERMAL_TABLE_NOT_FOUND", 0x8D, 0x02 },
+  //Total Memory Encryption Error
+  { "WARN_TME_MKTME_FAILURE", 0xE0, 0x00 },
+  { "MINOR_ERR_SECURITY_POLICY_NOT_FOUND", 0xE0, 0x01 },
+  { "MINOR_ERR_PHYSICAL_ADDRESS_BITS_EXCEEDED_MAX", 0xE0, 0x02 },
+  //Silicon capability limitation warning
+  { "WARN_SILICON_CAPABILITY_LIMITATION", 0xE1, 0x00 },
+  { "WARN_TME_ENABLED_CRYSTAL_RIDGE_NOT_SUPPORTED", 0xE1, 0x01 },
+  { "WARN_SGX_ENABLED_CRYSTAL_RIDGE_NOT_SUPPORTED", 0xE1, 0x02 },
+  { "WARN_TME_INTEGRITY_ENABLED_CRYSTAL_RIDGE_NOT_SUPPORTED", 0xE1, 0x03 },
+  //Round trip calculation for DDRT exceeded valid range
+  { "WARN_ROUNDTRIP_CALCULATION_RANGE_ERROR", 0xE2, 0x00 },
+  { "WARN_DDRT_TO_DDR4_ROUNDTRIP_RANGE_ERROR", 0xE2, 0x01 },
+  { "WARN_DDR4_TO_DDRT_ROUNDTRIP_RANGE_ERROR", 0xE2, 0x02 },
+  { "WARN_MINOR_WILDCARD", 0xff, 0x0 },
+
+  //MRC fatal error cdes
+  { "ERR_SPD_DECODE", 0xE0, 0x0 },
+  { "ERR_STAGGERED_SYNC", 0xE1, 0x0 },
+  { "ERR_RC_INTERNAL2", 0xE2, 0x0 },
+  { "ERR_RC_DCA_DFE", 0xE6, 0x0 },
+  { "ERR_INVALID_SIGNAL", 0xE6, 0x01 },
+  { "ERR_RC_SWEEP_LIB_INTERNAL", 0xE7, 0x01 },
+  { "ERR_NO_MEMORY", 0xE8, 0x0 },
+  { "ERR_NO_MEMORY_MINOR_NO_MEMORY", 0xE8, 0x01 },
+  { "ERR_NO_MEMORY_MINOR_ALL_CH_DISABLED", 0xE8, 0x02 },
+  { "ERR_NO_MEMORY_MINOR_ALL_CH_DISABLED_MIXED", 0xE8, 0x03 },
+  { "ERR_LT_LOCK", 0xE9, 0x0 },
+  { "ERR_DDR_INIT", 0xEA, 0x0 },
+  { "ERR_RD_DQ_DQS", 0xEA, 0x01 },
+  { "ERR_RC_EN", 0xEA, 0x02 },
+  { "ERR_WR_LEVEL", 0xEA, 0x03 },
+  { "ERR_WR_DQ_DQS", 0xEA, 0x04 },
+  { "ERR_TX_RETRAIN_CAP", 0xEA, 0x05 },
+  { "ERR_MEM_TEST", 0xEB, 0x0 },
+  { "ERR_MEM_TEST_MINOR_SOFTWARE", 0xEB, 0x01 },
+  { "ERR_MEM_TEST_MINOR_HARDTWARE", 0xEB, 0x02 },
+  { "ERR_MEM_TEST_MINOR_LOCKSTEP_MODE", 0xEB, 0x03 },
+  { "ERR_VENDOR_SPECIFIC", 0xEC, 0x0 },
+  { "ERR_DIMM_PLL_LOCK_ERROR", 0xEC, 0x01 },
+  { "ERR_DIMM_COMPAT", 0xED, 0x0 },
+  { "ERR_MIXED_MEM_TYPE", 0xED, 0x01 },
+  { "ERR_INVALID_POP", 0xED, 0x02 },
+  { "ERR_INVALID_POP_MINOR_QR_AND_3RD_SLOT", 0xED, 0x03 },
+  { "ERR_INVALID_POP_MINOR_UDIMM_AND_ 3RD_SLOT", 0xED, 0x04 },
+  { "ERR_INVALID_POP_MINOR_UNSUPPORTED_VOLTAGE", 0xED, 0x05 },
+  { "ERR_DDR3_DDR4_MIXED", 0xED, 0x06 },
+  { "ERR_MIXED_SPD_TYPE", 0xED, 0x07 },
+  { "ERR_MISMATCH_DIMM_TYPE", 0xED, 0x08 },
+  { "ERR_INVALID_DDR5_SPD_CONTENT", 0xED, 0x09 },
+  { "ERR_SMBUS_READ_FAILURE", 0xED, 0x0A },
+  { "ERR_MIXED_MEM_AEP_AND_UDIMM", 0xED, 0x0B },
+  { "ERR_NVMDIMM_NOT_SUPPORTED", 0xED, 0x0C },
+  { "ERR_CPU_CAP_NVMDIMM_NOT_SUPPORTED", 0xED, 0x0D },
+  { "ERR_MRC_COMPATIBILITY", 0xEE, 0x0 },
+  { "ERR_MRC_DIRE_NONECC", 0xEE, 0x01 },
+  { "ERR_MRC_STRUCT", 0xEF, 0x0 },
+  { "ERR_INVALID_BOOT_MODE", 0xEF, 0x01 },
+  { "ERR_INVALID_SUB_BOOT_MODE", 0xEF, 0x02 },
+  { "ERR_INVALID_HOST_ADDR", 0xEF, 0x03 },
+  { "ERR_ARRAY_OUT_OF_BOUNDS", 0xEF, 0x04 },
+  { "ERR_IMC_NUMBER_EXCEEDED", 0xEF, 0x05 },
+  { "ERR_ODT_STRUCT", 0xEF, 0x06 },
+  { "ERR_SET_VDD", 0xF0, 0x0 },
+  { "ERR_UNKNOWN_VR_MODE", 0xF0, 0x01 },
+  { "ERR_BEYOND_MAX_VDD_OFFSET", 0xF0, 0x02 },
+  { "ERR_IOT_MEM_BUFFER", 0xF1, 0x0 },
+  { "ERR_RC_INTERNAL", 0xF2, 0x0 },
+  { "ERR_RC_INTERNAL_HMB", 0xF2, 0x01 },
+  { "ERR_INVALID_REG_ACCESS", 0xF3, 0x0 },
+  { "ERR_INVALID_WRITE_REG_BDF", 0xF3, 0x01 },
+  { "ERR_INVALID_WRITE_REG_OFFSET", 0xF3, 0x02 },
+  { "ERR_INVALID_READ_REG_BDF", 0xF3, 0x03 },
+  { "ERR_INVALID_READ_REG_OFFSET", 0xF3, 0x04 },
+  { "ERR_INVALID_WRITE_REG_SIZE", 0xF3, 0x05 },
+  { "ERR_INVALID_READ_REG_SIZE", 0xF3, 0x06 },
+  { "ERR_UNKNOWN_REG_TYPE", 0xF3, 0x07 },
+  { "ERR_INVALID_ACCESS_METHOD", 0xF3, 0x08 },
+  { "ERR_INVALID_BIT_ACCESS", 0xF3, 0x09 },
+  { "ERR_SET_MC_FREQ", 0xF4, 0x0 },
+  { "ERR_UNSUPPORTED_MC_FREQ", 0xF4, 0x01 },
+  { "ERR_UNSPECIFIED_MC_FREQ_SETTING_ERROR", 0xF4, 0x02 },
+  { "ERR_READ_MC_FREQ", 0xF5, 0x0 },
+  { "ERR_NOT_ABLE_READ_MC_FREQ", 0xF5, 0x01 },
+  { "ERR_DIMM_CHANNEL", 0x70, 0x0 },
+  { "ERR_BIST_CHECK", 0x74, 0x0 },
+  { "ERR_DDR_FREQ_NOT_FOUND", 0x75, 0x0 },
+  { "ERR_PIPE", 0x76, 0x0 },
+  { "ERR_SMBUS", 0xF6, 0x0 },
+  { "TSOD_POLLING_ENABLED_READ", 0xF6, 0x01 },
+  { "TSOD_POLLING_ENABLED_WRITE", 0xF6, 0x02 },
+  { "ERR_LRDIMM_SMBUS_READ_FAILURE", 0xF6, 0x03 },
+  { "ERR_PCU", 0xF7, 0x0 },
+  { "PCU_NOT_RESPONDING", 0xF7, 0x01 },
+  { "FUSE_ERROR", 0xF7, 0x02 },
+  { "ERR_PCU_COMMAND_NOT_SUPPORTED", 0xF7, 0x03 },
+  { "ERR_NGN", 0xF8, 0x0 },
+  { "NGN_DRIVER_NOT_RESPONSIBLE", 0xF8, 0x01 },
+  { "NGN_ARRAY_OUT_OF_BOUNDS", 0xF8, 0x02 },
+  { "NGN_PMEM_CONFIG_ERROR", 0xF8, 0x03 },
+  { "NGN_INTERLEAVE_EXCEEDED", 0xF8, 0x04 },
+  { "NGN_BYTES_MISMATCH", 0xF8, 0x05 },
+  { "NGN_SKU_MISMATCH", 0xF8, 0x06 },
+  { "ERR_INTERLEAVE_FAILURE", 0xF9, 0x0 },
+  { "ERR_RIR_RULES_EXCEEDED", 0xF9, 0x01 },
+  { "ERR_CPGC_TIMEOUTT", 0xFA, 0x0 },
+  { "ERR_CAR_LIMIT", 0xFB, 0x0 },
+  { "ERR_OUT_OF_CAR_RESOURCES", 0xFB, 0x01 },
+  { "PRINTF_OUTOF_SYNC_ERR_MAJOR", 0xCF, 0x0 },
+  { "PRINTF_OUTOF_SYNC_ERR_MINOR", 0xCF, 0x01 },
+  { "ERR_CMI_FAILURE", 0xFC, 0x0  },
+  { "ERR_CMI_INIT_FAILED", 0xFC, 0x01 },
+  { "ERR_VALUE_OUT_OF_RANGE", 0xFD, 0x0 },
+  { "ERR_VALUE_BELOW_MIN", 0xFD, 0x01 },
+  { "ERR_VALUE_ABOVE_MAX", 0xFD, 0x02 },
+  { "ERR_DDRIO_HWFSM", 0xFE, 0x0  },
+  { "ERR_XOVER_HWFSM_TIMEOUT", 0xFE, 0x01 },
+  { "ERR_XOVER_HWFSM_FAILURE", 0xFE, 0x02 },
+  { "ERR_SENSEAMP_HWFSM_TIMEOUT", 0xFE, 0x03 },
+  { "ERR_SENSEAMP_HWFSM_FAILURE", 0xFE, 0x04 },
+  { "ERR_SENSEAMP_HWFSM_SIGNAL_ERROR", 0xFE, 0x05 },
+  { "ERR_MRC_POINTER", 0xFF, 0x0 },
+  { "ERR_TEMP_THRESHOLD_INVALID", 0xFF, 0x02 },
 };
 
 static int
@@ -2408,6 +2889,103 @@ pal_post_display(uint8_t uart_select, uint8_t postcode) {
   return ret;
 }
 
+int
+pal_mrc_warning_detect(uint8_t slot, uint8_t postcode) {
+  static uint8_t mrc_position = 0;
+  static uint8_t post_match_count = 0;
+  static bool pattern_in_rule = false;
+  int ret = 0;
+  char key[MAX_KEY_LEN] = "";
+  char value[MAX_VALUE_LEN] = {0};
+  snprintf(key, sizeof(key), "slot%d_mrc_warning", slot);
+
+  if (mrc_position == 4) {
+    mrc_position = 0;
+    pattern_in_rule = false;
+  }
+
+// DIMM loop pattern format = 00 -> DIMM location -> major code -> minor code ...... repeat
+  if(((mrc_position == 0) && (postcode == 0)) || pattern_in_rule) { //MRC warning code always start with 00
+    pattern_in_rule = true;
+    if (memory_record_code[slot][mrc_position] == postcode) { //If the pattern is repeat, match_count++
+      memory_record_code[slot][mrc_position++] = postcode;
+      post_match_count++;
+    } else {
+      memory_record_code[slot][mrc_position] = postcode; //Else match count and position reset to zero
+      post_match_count = 0;
+      mrc_position = 0;
+      pattern_in_rule = false;
+    }
+  } else {
+    mrc_position = 0;
+    post_match_count = 0;
+  }
+
+  if (post_match_count > MRC_CODE_MATCH) { //Repeat 4 times means the post code is in the loop.
+    snprintf(value, sizeof(value), "%d", KEY_SET);
+    ret = kv_set(key, value, 0, 0);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+      return ret;
+    }
+    return ret;
+  }
+
+  return -1;
+}
+
+bool
+pal_is_mrc_warning_occur(uint8_t slot) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = "";
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t mrc_status = 0;
+  snprintf(key, sizeof(key), "slot%d_mrc_warning", slot);
+
+  ret = kv_get(key, value, NULL, 0);
+  if (ret == 0) {
+    mrc_status = (uint8_t)strtol(value, NULL, 10); // convert string to number
+    if (mrc_status == 1) { // if the key is set 1, no need to check the rest process.
+      return true;
+    }
+  }
+
+  return false;
+}
+
+int
+pal_clear_mrc_warning(uint8_t slot) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = "";
+  char value[MAX_VALUE_LEN] = {0};
+  snprintf(key, sizeof(key), "slot%d_mrc_warning", slot);
+
+  snprintf(value, sizeof(value), "%d", KEY_CLEAR);
+  ret = kv_set(key, value, 0, 0);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+    return ret;
+  }
+
+  return ret;
+}
+
+int
+pal_get_dimm_loop_pattern(uint8_t slot, DIMM_PATTERN *dimm_loop_pattern) {
+  int ret = 0;
+
+  if (!dimm_loop_pattern) {
+    return -1;
+  }
+
+  dimm_loop_pattern->start_code = memory_record_code[slot][0];
+  snprintf(dimm_loop_pattern->dimm_location, sizeof(dimm_loop_pattern->dimm_location), "A%d", memory_record_code[slot][1]);
+  dimm_loop_pattern->major_code = memory_record_code[slot][2];
+  dimm_loop_pattern->minor_code = memory_record_code[slot][3];
+
+  return ret;
+}
+
 // Handle the received post code, display it on debug card
 int
 pal_post_handle(uint8_t slot, uint8_t postcode) {
@@ -2435,6 +3013,10 @@ pal_post_handle(uint8_t slot, uint8_t postcode) {
   // If the give server is not selected, return
   if (uart_select != slot) {
     return 0;
+  }
+
+  if (pal_is_mrc_warning_occur(slot) == false) {
+    pal_mrc_warning_detect(slot, postcode);
   }
 
   // Display the post code in the debug card
@@ -3869,3 +4451,29 @@ error_exit:
 
   return ret;
 }
+
+
+int
+pal_udbg_get_frame_total_num() {
+  return 4;
+}
+
+int
+pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
+{
+  if (!desc) {
+    syslog(LOG_ERR, "%s() Variable: desc NULL pointer ERROR", __func__);
+    return -1;
+  }
+
+  if (!desc_count) {
+    syslog(LOG_ERR, "%s() Variable: desc_count NULL pointer ERROR", __func__);
+    return -1;
+  }
+
+  *desc = mrc_warning_code;
+  *desc_count = sizeof(mrc_warning_code) / sizeof(mrc_warning_code[0]);
+
+  return 0;
+}
+

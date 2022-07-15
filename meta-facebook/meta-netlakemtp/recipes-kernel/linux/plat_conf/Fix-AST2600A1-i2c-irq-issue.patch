@@ -1,0 +1,25 @@
+From 857b84576982d6edb6cb72f7d8b30ac53a075197 Mon Sep 17 00:00:00 2001
+From: Eli Huang <Eli_Huang@wiwynn.com>
+Date: Fri, 17 Jun 2022 17:00:33 +0800
+Subject: [PATCH]  Fix AST2600A1 i2c irq issue
+
+---
+ drivers/i2c/busses/i2c-aspeed.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
+index d5fc637e9..b32584812 100644
+--- a/drivers/i2c/busses/i2c-aspeed.c
++++ b/drivers/i2c/busses/i2c-aspeed.c
+@@ -75,7 +75,7 @@
+  * These share bit definitions, so use the same values for the enable &
+  * status bits.
+  */
+-#define ASPEED_I2CD_INTR_RECV_MASK			0xf000ffff
++#define ASPEED_I2CD_INTR_RECV_MASK			0xf000efff
+ #define ASPEED_I2CD_INTR_SLAVE_INACTIVE_TIMEOUT		BIT(15)
+ #define ASPEED_I2CD_INTR_SDA_DL_TIMEOUT			BIT(14)
+ #define ASPEED_I2CD_INTR_BUS_RECOVER_DONE		BIT(13)
+-- 
+2.36.1
+

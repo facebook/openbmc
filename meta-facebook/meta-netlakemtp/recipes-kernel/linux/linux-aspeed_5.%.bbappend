@@ -19,4 +19,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 
 SRC_URI += "file://netlakemtp.cfg \
             file://Add-PCA9641-driver.patch \
+            file://Fix-AST2600A1-i2c-irq-issue.patch \
 	"

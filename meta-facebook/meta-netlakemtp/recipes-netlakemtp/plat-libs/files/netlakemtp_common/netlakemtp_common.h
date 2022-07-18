@@ -80,6 +80,7 @@ extern "C" {
 #define CPLD_GET_REV_RETRY_TIME 3
 
 #define ME_BUS 1
+#define NM_GLOBAL_POWER_STATISTICS_LENGTH 20
 
 #define MAX_PATH_LEN 128  // include the string terminal
 

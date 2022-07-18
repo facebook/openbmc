@@ -13,6 +13,7 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/ipmb.h>
 #include "pal.h"
 #include "pal_sensors.h"
 
@@ -23,6 +24,7 @@ static int read_rpm(uint8_t id, float *value);
 static int read_pmbus(uint8_t id, float *value);
 static int read_hsc(uint8_t id, float *value);
 static int read_cpld_adc(uint8_t id, float *value);
+static int read_ina230_pwr(uint8_t id, float *value);
 
 //{SensorName, ID, FUNCTION, RAEDING AVAILABLE, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP server_sensor_map[] = {
@@ -82,6 +84,8 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   {"PVCCANCPU_CUR", VR_PVCCANCPU_CUR, read_pmbus, POWER_ON_READING, {1.545, 0, 1.56, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDQ_ABC_CPU_CUR] =
   {"PVDDQ_ABC_CPU_CUR", VR_PVDDQ_ABC_CPU_CUR, read_pmbus, POWER_ON_READING, {17.0671, 0, 17.2328, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
+  [SERVER_P12V_COME_PWR] =
+  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230_pwr, STBY_READING, {117.4645, 0, 119.7565, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P1V8_STBY_PWR] =
   {"P1V8_STBY_NETLAKE_PWR", VR_P1V8_STBY_PWR, read_pmbus, STBY_READING, {4.15056, 0, 4.23154, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P1V05_STBY_PWR] =
@@ -180,6 +184,7 @@ const uint8_t server_sensor_list[] = {
   SERVER_PVCCIN_CUR,
   SERVER_PVCCANCPU_CUR,
   SERVER_PVDDQ_ABC_CPU_CUR,
+  SERVER_P12V_COME_PWR,
   SERVER_P1V8_STBY_PWR,
   SERVER_P1V05_STBY_PWR,
   SERVER_PVNN_PCH_PWR,
@@ -659,6 +664,43 @@ read_cpld_adc(uint8_t id, float *value) {
   *value = ((float)sensor_read_raw / 4096) * 3.3 * cpld_adc_list[id].resistor_ratio;
 
   return ret;
+}
+
+static int
+read_ina230_pwr(uint8_t id, float *value) {
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
+    return -1;
+  }
+
+  int ret = 0;
+  /* byte 1-3: Intel Manufacturer ID, byte 4: Mode
+     byte 5: Domain ID, byte 6: Policy ID */
+  uint8_t tbuf[] = {0x57, 0x1, 0x0, 0x1, 0x0, 0x0};
+  uint8_t rbuf[NM_GLOBAL_POWER_STATISTICS_LENGTH];
+  uint8_t rlen = 0;
+  uint8_t retry;
+
+  for (retry = SENSOR_RETRY_TIME; retry > 0; retry--) {
+    ret = netlakemtp_common_me_ipmb_wrapper(NETFN_NM_REQ,
+                                        CMD_NM_GET_NODE_MANAGER_STATISTICS,
+                                        tbuf, sizeof(tbuf), rbuf, &rlen);
+    if (ret >= 0) {
+      break;
+    }
+
+    usleep(SENSOR_RETRY_INTERVAL_USEC);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to get ina230 reading from NM", __func__);
+    return -1;
+  } else {
+    //2 bytes for Power Statistics Current Value
+    *value = (float)(rbuf[4] << 8 | rbuf[3]);
+  }
+
+  return 0;
 }
 
 /**

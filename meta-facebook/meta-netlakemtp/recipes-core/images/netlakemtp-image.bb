@@ -38,4 +38,5 @@ IMAGE_INSTALL += " \
   mterm \
   openbmc-utils \
   threshold-util \
+  plat-utils \
   "

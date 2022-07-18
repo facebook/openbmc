@@ -214,20 +214,45 @@ post_code_led_handler() {
   }
 }
 
+static int8_t
+set_debug_present_routing(gpio_value_t value) {
+  int ret = 0;
+  if (value == GPIO_VALUE_HIGH) {
+      ret = pal_set_uart_routing(DEBUG_CARD_ABSENT);
+  }
+  else {
+      ret = pal_set_uart_routing(DEBUG_CARD_PRESENT);
+  }
+  if (ret < 0)
+  {
+    syslog(LOG_ERR, "%s() Failed to set debug present routing\n", __func__);
+  }
+  return 0;
+}
+
+static void
+debug_present_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  set_debug_present_routing(curr);
+}
+
+static void
+debug_present_init(gpiopoll_pin_t *gp, gpio_value_t value) {
+  set_debug_present_routing(value);
+}
+
 // GPIO table
 static struct
 gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"FM_THERMTRIP_R_N",                "GPIOF3",   GPIO_EDGE_BOTH,     cpu_thermal_trip_handler,  NULL},
-  {"UART_CH_SELECT",                  "GPIOG0",   GPIO_EDGE_FALLING,  uart_button_handler,       NULL},
-  {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},
-  {"PWR_BTN_N",                       "GPIOP4",   GPIO_EDGE_BOTH,     power_button_handler,      NULL},
   {"PWRGD_PCH_R_PWROK",               "GPIOF4",   GPIO_EDGE_BOTH,     power_good_status_handler, NULL},
+  {"UART_CH_SELECT",                  "GPIOG0",   GPIO_EDGE_FALLING,  uart_button_handler,       NULL},
+  {"OCP_DEBUG_PRSNT_N",               "GPIOG2",   GPIO_EDGE_BOTH,     debug_present_handler,     debug_present_init},
   {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, NULL},
-  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
-  {"H_MEMHOT_OUT_FET_R_N",            "GPIOY2",   GPIO_EDGE_BOTH,     dimm_hot_handler,          NULL},
   {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
   {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_BOTH,     cpu_fail_handler,          NULL},
+  {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},
+  {"PWR_BTN_N",                       "GPIOP4",   GPIO_EDGE_BOTH,     power_button_handler,      NULL},
   {"FM_CPU_PROCHOT_LATCH_LVT3_R_N",   "GPIOV3",   GPIO_EDGE_BOTH,     cpu_throttle_handler,      NULL},
   {"H_MEMHOT_OUT_FET_R_N",            "GPIOY2",   GPIO_EDGE_BOTH,     dimm_hot_handler,          NULL},
 };
@@ -269,10 +294,9 @@ init_kv_value(char* key, char* shadow_name) {
 
 int
 main(int argc, char **argv) {
-  int rc, pid_file, ret;
+  int rc, pid_file;
   pthread_t tid_server_power_monitor;
   pthread_t tid_post_code_led_handler;
-  void *retval;
   gpiopoll_desc_t *polldesc;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
@@ -297,6 +321,7 @@ main(int argc, char **argv) {
     }
     if (init_kv_value(POST_CMPLT_KV_KEY, "FM_BIOS_POST_CMPLT_R_N") < 0) {
         syslog(LOG_WARNING, "%s set up kv post complete failed!\n", __func__);
+    }
     if (pthread_create(&tid_post_code_led_handler, NULL, post_code_led_handler, NULL) < 0) {
       syslog(LOG_WARNING, "pthread_create for post_code_led_handler\n");
     }

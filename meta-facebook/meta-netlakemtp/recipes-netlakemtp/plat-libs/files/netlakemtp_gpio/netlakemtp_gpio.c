@@ -56,6 +56,9 @@ gpio_cfg bmc_gpio_table[] = {
   // GPIOG1
   [UART_BMC_MUX_CTRL] =
   {"UART_BMC_MUX_CTRL", "GPIOG1", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // GPIOG2
+  [OCP_DEBUG_PRSNT_N] =
+  {"OCP_DEBUG_PRSNT_N", "GPIOG2", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
   // GPIOG3
   [FM_BATTERY_SENSE_EN] =
   {"FM_BATTERY_SENSE_EN", "GPIOG3", GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
@@ -140,30 +143,6 @@ gpio_cfg bmc_gpio_table[] = {
   // GPIOX7
   [BMC_TPM_SPI_PIRQ_N] =
   {"BMC_TPM_SPI_PIRQ_N", "GPIOX7", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
-  // GPIOY3
-  [BMC_EMMC_RST_N] =
-  {"BMC_EMMC_RST_N", "GPIOY3", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
-  // GPIOP2, power reset button
-  [RST_BTN_N] =
-  {"RST_BTN_N", "GPIOP2", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
-  // GPIOP3, power reset
-  [RST_BTN_COME_R_N] =
-  {"RST_BTN_COME_R_N", "GPIOP3", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
-  // GPIOP4, power reset button
-  [PWR_BTN_N] =
-  {"PWR_BTN_N", "GPIOP4", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
-  // GPIOP5 , power button
-  [PWR_BTN_COME_R_N] =
-  {"PWR_BTN_COME_R_N", "GPIOP5", GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
-  // GPIOF4, power good
-  [PWRGD_PCH_R_PWROK] =
-  {"PWRGD_PCH_R_PWROK", "GPIOF4", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
-  // GPIOF3, CPU Thermal Trip
-  [FM_THERMTRIP_R_N] =
-  {"FM_THERMTRIP_R_N", "GPIOF3", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
-  // GPIOM3, CPU Fail
-  [FM_CPU_MSMI_CATERR_LVT3_R_N] =
-  {"FM_CPU_MSMI_CATERR_LVT3_R_N", "GPIOM3", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
   // GPIOY2, DIMM Hot
   [H_MEMHOT_OUT_FET_R_N] =
   {"H_MEMHOT_OUT_FET_R_N", "GPIOY2", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
@@ -176,9 +155,7 @@ gpio_cfg bmc_gpio_table[] = {
 
 const char *
 netlakemtp_get_gpio_name(uint8_t gpio) {
-  if (gpio < MAX_GPIO_EXPANDER_GPIO_PINS) {
-    return gpio_expander_gpio_table[gpio].shadow_name;
-  } else if (gpio < MAX_GPIO_PINS) {
+  if (gpio < MAX_GPIO_PINS) {
     return bmc_gpio_table[gpio].shadow_name;
   } else {
     syslog(LOG_WARNING, "%s() Invalid gpio number: %u\n", __func__, gpio);

@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/phymem.h>
 #include <openbmc/obmc-sensors.h>
@@ -1284,7 +1285,6 @@ pal_hsc_sensor_info_initial(void) {
 
   int sku = ADM1278;
   extern PAL_PMBUS_INFO hsc_dev_table[];
-  extern hsc_dev_info hsc_dev_list[];
   extern size_t hsc_dev_cnt;
 
   for (uint8_t i = 0; i < hsc_dev_cnt; i++) {
@@ -1296,7 +1296,7 @@ pal_hsc_sensor_info_initial(void) {
         snprintf(key_with_cmd, MAX_KEY_LEN, "hsc-sensor%02x%c", i, '\0');
         snprintf(val, MAX_VALUE_LEN, "%02x-%02x%c", type, j,'\0');
 
-        kv_set(key_with_cmd, val, 0, 0);
+        ret = kv_set(key_with_cmd, val, 0, 0);
         if (ret < 0) {
           syslog(LOG_ERR, "%s() Failed to set HSC info, errno=%d", __func__, errno);
           return -1;
@@ -1398,4 +1398,44 @@ pal_post_display(uint8_t status) {
   }
 
   return ret;
+}
+
+// Debug Card's and SOL port share UART port and need to enable only one
+int8_t
+pal_set_uart_routing(uint8_t routing) {
+  int lpc_fd;
+  uint32_t ctrl;
+  void *lpc_reg;
+  void *lpc_hicr;
+
+  lpc_fd = open("/dev/mem", O_RDWR | O_SYNC );
+  if (lpc_fd < 0) {
+    return -1;
+  }
+
+  lpc_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, lpc_fd,
+             AST_LPC_BASE);
+  lpc_hicr = (char*)lpc_reg + HICRA_OFFSET;
+
+  // Read HICRA register
+  ctrl = *(volatile uint32_t*) lpc_hicr;
+
+  // Clear bits for UART1 and UART3 routing
+  ctrl &= (~HICRA_MASK_UART1);
+  ctrl &= (~HICRA_MASK_UART3);
+
+  if (routing == DEBUG_CARD_ABSENT) {
+    // Route UART1 to UART3 for SoL purpose
+    ctrl |= (UART1_TO_UART3 << 22);
+
+    // Route UART3 to UART1 for SoL purpose
+    ctrl |= (UART3_TO_UART1 << 16);
+  }
+
+  *(volatile uint32_t*) lpc_hicr = ctrl;
+
+  munmap(lpc_reg, PAGE_SIZE);
+  close(lpc_fd);
+
+  return 0;
 }

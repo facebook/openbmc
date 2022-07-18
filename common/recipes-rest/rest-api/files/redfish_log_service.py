@@ -133,6 +133,7 @@ class RedfishLogService:
             ),
             "@odata.type": "#LogService.v1_1_2.LogService",
             "Id": log_service_id,
+            "Name": log_service_id,
             "LogEntryType": log_service_id,
             "Entries": {
                 "@odata.id": "/redfish/v1/Systems/{}/LogServices/{}/Entries".format(

@@ -97,6 +97,7 @@ class TestGetLogService(AioHTTPTestCase):
             "@odata.id": "/redfish/v1/Systems/{}".format(FRU_NAME) + "/LogServices/SEL",
             "@odata.type": "#LogService.v1_1_2.LogService",
             "Id": "SEL",
+            "Name": "SEL",
             "LogEntryType": "SEL",
             "Entries": {
                 "@odata.id": "/redfish/v1/Systems/{}".format(FRU_NAME)

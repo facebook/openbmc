@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -28,5 +28,5 @@
 ### END INIT INFO
 
 echo -n "Setup fan speed... "
-/usr/local/bin/fan-util --set 80
+/usr/local/bin/fan-util --set 100
 echo "Setup fan speed done."

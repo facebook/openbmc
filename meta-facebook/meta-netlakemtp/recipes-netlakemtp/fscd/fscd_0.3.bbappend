@@ -21,4 +21,6 @@ LOCAL_URI += " \
     file://setup-fan.sh \
     "
 
+RDEPENDS_${PN} += "bash"
+
 FSC_INIT_FILE += "setup-fan.sh"

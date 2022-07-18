@@ -93,7 +93,7 @@ server_power_off() {
   if (gpio_set_value(gpio, GPIO_VALUE_LOW)) {
     goto ERR_EXIST;
   }
-  sleep(4);
+  sleep(6);
   if (gpio_set_value(gpio, GPIO_VALUE_HIGH)) {
     goto ERR_EXIST;
   }
@@ -153,7 +153,6 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
-  uint8_t ret;
 
   if (pal_get_server_power(fru, &status) < 0) {
     return ERROR;
@@ -178,7 +177,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_ON) {
         if (server_power_off())
           return ERROR;
-        sleep(2);
+        sleep(6);
         return server_power_on();
 
       } else if (status == SERVER_POWER_OFF) {

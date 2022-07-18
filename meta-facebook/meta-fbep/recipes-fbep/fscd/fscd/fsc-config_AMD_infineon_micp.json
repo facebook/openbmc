@@ -214,7 +214,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "zone1_AMD_infineon.fsc"
+      "expr_file": "zone1_AMD_infineon_micp.fsc"
     }
   }
 }

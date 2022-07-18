@@ -1,5 +1,5 @@
 {
-  "version": "fbep-Nvidia-21y0120",
+  "version": "fbep-AMD-20y1202",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "sample_interval_ms": 1000,
@@ -43,10 +43,10 @@
       "positive_hysteresis": 1,
       "negative_hysteresis": 1,
       "data": [
-        [23, 15],
-        [28, 20],
-        [32, 25],
-        [37, 35],
+        [23, 10],
+        [28, 15],
+        [32, 20],
+        [37, 25],
         [39, 45],
         [42, 65],
         [45, 80]
@@ -60,9 +60,11 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [70, 15],
-        [75, 20],
-        [80, 25],
+        [60, 10],
+        [65, 15],
+        [70, 20],
+        [75, 25],
+        [80, 30],
         [90, 60]
       ]
     },
@@ -71,16 +73,15 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "linear",
-      "positive_hysteresis": 1,
-      "negative_hysteresis": 1,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 2,
       "data": [
-        [53, 15],
-        [58, 20],
-        [63, 25],
-        [68, 30],
-        [70, 37],
-        [72, 44],
-        [74, 50]
+        [60, 10],
+        [65, 15],
+        [70, 20],
+        [75, 25],
+        [80, 30],
+        [85, 35]
       ]
     },
     "pid_gpu_spot": {
@@ -88,10 +89,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 78,
-      "positive_hysteresis": 1,
-      "negative_hysteresis": 2,
-      "kp": -3.5,
+      "setpoint": 90,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 1,
+      "kp": -1.25,
       "ki": -0.035,
       "kd": 0.0
     },
@@ -100,16 +101,14 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "linear",
-      "positive_hysteresis": 1,
-      "negative_hysteresis": 1,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 2,
       "data": [
-        [63, 15],
-        [68, 20],
-        [73, 25],
-        [78, 30],
-        [80, 37],
-        [82, 44],
-        [84, 50]
+        [55, 10],
+        [60, 15],
+        [65, 20],
+        [70, 25],
+        [75, 30]
       ]
     },
     "pid_gpu_mem": {
@@ -117,10 +116,10 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 88,
-      "positive_hysteresis": 1,
-      "negative_hysteresis": 2,
-      "kp": -3.5,
+      "setpoint": 80,
+      "positive_hysteresis": 2,
+      "negative_hysteresis": 1,
+      "kp": -1.25,
       "ki": -0.035,
       "kd": 0.0
     },
@@ -215,7 +214,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "zone1_NVIDIA_infineon.fsc"
+      "expr_file": "zone1_AMD_infineon_brcm.fsc"
     }
   }
 }

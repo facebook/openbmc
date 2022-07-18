@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # execute <fscd.py> <min syslog level>
 # log_level = <debug, warning, info>
 # Default log level in fscd is set to warning, if any other level is needed
@@ -6,6 +6,8 @@
 . /usr/local/fbpackages/utils/ast-functions
 
 vr_ic=$(kv get VR_IC)
+# check the switch IC
+Result=$(gpio_get BOARD_ID0)
 
 default_fsc_config="/etc/fsc-config.json"
 if [[ -f ${default_fsc_config} ]]; then
@@ -13,16 +15,24 @@ if [[ -f ${default_fsc_config} ]]; then
 fi
 
 vendor=$(/usr/local/bin/cfg-util asic_mfr)
-if [[ "$vendor" == "AMD" && "$vr_ic" == "VI" ]]; then
-  ln -s /etc/fsc-config_AMD_vicor.json ${default_fsc_config}
-elif [[ "$vendor" == "AMD" && "$vr_ic" == "IF" ]]; then
-  ln -s /etc/fsc-config_AMD_infineon.json ${default_fsc_config}
-elif [[ "$vendor" == "NVIDIA" && "$vr_ic" == "VI" ]]; then
-  ln -s /etc/fsc-config_NVIDIA_vicor.json ${default_fsc_config}
-elif [[ "$vendor" == "NVIDIA" && "$vr_ic" == "IF" ]]; then
-  ln -s /etc/fsc-config_NVIDIA_infineon.json ${default_fsc_config}
+if [[ "$vendor" == "AMD" && "$vr_ic" == "VI" && "$Result" == "1" ]]; then
+  ln -s /etc/fsc-config_AMD_vicor_brcm.json ${default_fsc_config}
+elif [[ "$vendor" == "AMD" && "$vr_ic" == "VI" && "$Result" == "0" ]]; then
+  ln -s /etc/fsc-config_AMD_vicor_micp.json ${default_fsc_config}
+elif [[ "$vendor" == "AMD" && "$vr_ic" == "IF" && "$Result" == "1" ]]; then
+  ln -s /etc/fsc-config_AMD_infineon_brcm.json ${default_fsc_config}
+elif [[ "$vendor" == "AMD" && "$vr_ic" == "IF" && "$Result" == "0" ]]; then
+  ln -s /etc/fsc-config_AMD_infineon_micp.json ${default_fsc_config}
+elif [[ "$vendor" == "NVIDIA" && "$vr_ic" == "VI" && "$Result" == "1" ]]; then
+  ln -s /etc/fsc-config_NVIDIA_vicor_brcm.json ${default_fsc_config}
+elif [[ "$vendor" == "NVIDIA" && "$vr_ic" == "VI" && "$Result" == "0" ]]; then
+  ln -s /etc/fsc-config_NVIDIA_vicor_micp.json ${default_fsc_config}
+elif [[ "$vendor" == "NVIDIA" && "$vr_ic" == "IF" && "$Result" == "1" ]]; then
+  ln -s /etc/fsc-config_NVIDIA_infineon_brcm.json ${default_fsc_config}
+elif [[ "$vendor" == "NVIDIA" && "$vr_ic" == "IF" && "$Result" == "0" ]]; then
+  ln -s /etc/fsc-config_NVIDIA_infineon_micp.json ${default_fsc_config}
 else
-  ln -s /etc/fsc-config_NVIDIA_vicor.json ${default_fsc_config}
+  ln -s /etc/fsc-config_NVIDIA_vicor_micp.json ${default_fsc_config}
 fi
 
 exec /usr/bin/fscd.py 'warning'

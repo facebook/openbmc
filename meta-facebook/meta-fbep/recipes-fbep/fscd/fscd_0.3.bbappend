@@ -19,27 +19,45 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 LOCAL_URI += " \
     file://setup-fan.sh \
-    file://fsc-config_AMD_vicor.json \
-    file://fsc-config_AMD_infineon.json \
-    file://fsc-config_NVIDIA_vicor.json \
-    file://fsc-config_NVIDIA_infineon.json \
-    file://zone1_AMD_vicor.fsc \
-    file://zone1_AMD_infineon.fsc \
-    file://zone1_NVIDIA_vicor.fsc \
-    file://zone1_NVIDIA_infineon.fsc \
+    file://fsc-config_AMD_vicor_brcm.json \
+    file://fsc-config_AMD_vicor_micp.json \
+    file://fsc-config_AMD_infineon_brcm.json \
+    file://fsc-config_AMD_infineon_micp.json \
+    file://fsc-config_NVIDIA_vicor_brcm.json \
+    file://fsc-config_NVIDIA_vicor_micp.json \
+    file://fsc-config_NVIDIA_infineon_brcm.json \
+    file://fsc-config_NVIDIA_infineon_micp.json \
+    file://zone1_AMD_vicor_brcm.fsc \
+    file://zone1_AMD_vicor_micp.fsc \
+    file://zone1_AMD_infineon_brcm.fsc \
+    file://zone1_AMD_infineon_micp.fsc \
+    file://zone1_NVIDIA_vicor_brcm.fsc \
+    file://zone1_NVIDIA_vicor_micp.fsc \
+    file://zone1_NVIDIA_infineon_brcm.fsc \
+    file://zone1_NVIDIA_infineon_micp.fsc \
     file://fsc_board.py \
     "
 
-FSC_CONFIG += "fsc-config_AMD_vicor.json \
-               fsc-config_AMD_infineon.json \
-               fsc-config_NVIDIA_vicor.json \
-               fsc-config_NVIDIA_infineon.json \
+FSC_CONFIG += "fsc-config_AMD_vicor_brcm.json \
+               fsc-config_AMD_vicor_micp.json \ 
+               fsc-config_AMD_infineon_brcm.json \
+               fsc-config_AMD_infineon_micp.json \
+               fsc-config_NVIDIA_vicor_brcm.json \
+               fsc-config_NVIDIA_vicor_micp.json \
+               fsc-config_NVIDIA_infineon_brcm.json \
+               fsc-config_NVIDIA_infineon_micp.json \
 	      "
 
-FSC_ZONE_CONFIG +="zone1_AMD_vicor.fsc \
-                   zone1_AMD_infineon.fsc \
-                   zone1_NVIDIA_vicor.fsc \
-                   zone1_NVIDIA_infineon.fsc \
+FSC_ZONE_CONFIG +="zone1_AMD_vicor_brcm.fsc \
+                   zone1_AMD_vicor_micp.fsc \
+                   zone1_AMD_infineon_brcm.fsc \
+                   zone1_AMD_infineon_micp.fsc \
+                   zone1_NVIDIA_vicor_brcm.fsc \
+                   zone1_NVIDIA_vicor_micp.fsc \
+                   zone1_NVIDIA_infineon_brcm.fsc \
+                   zone1_NVIDIA_infineon_micp.fsc \
                   "
 
 FSC_INIT_FILE += "setup-fan.sh"
+
+RDEPENDS:${PN} += "bash"

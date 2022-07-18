@@ -22,10 +22,16 @@ LOCAL_URI += " \
     file://fsc-config.json \
     file://zone1.fsc \
     file://fsc_board.py \
+    file://fsc-config_BRCM.json \
+    file://zone1_BRCM.fsc \
     "
 
-FSC_CONFIG += "fsc-config.json"
+FSC_CONFIG += "fsc-config.json \
+               fsc-config_BRCM.json \
+              "
 
-FSC_ZONE_CONFIG +="zone1.fsc"
+FSC_ZONE_CONFIG +="zone1.fsc \
+                   zone1_BRCM.fsc \
+                  "
 
 FSC_INIT_FILE += "setup-fan.sh"

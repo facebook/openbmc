@@ -17,6 +17,7 @@ DEPENDS += " \
     libobmc-sensors \
     libasic \
     switchtec-user \
+    libpex \
     "
 RDEPENDS:${PN} += " \
     libgpio-ctrl \
@@ -24,4 +25,5 @@ RDEPENDS:${PN} += " \
     libobmc-sensors \
     libasic \
     switchtec-user \
+    libpex \
     "

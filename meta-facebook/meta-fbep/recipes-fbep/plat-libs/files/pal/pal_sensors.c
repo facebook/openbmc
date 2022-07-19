@@ -1612,61 +1612,7 @@ static int sensors_read_pax_therm(uint8_t sensor_num, float *value)
     return ERR_SENSOR_NA;
 
   if (pal_check_switch_config()) {
-    int fd;
-    char dev[64] = {0};
-    uint8_t tbuf[][16] = {
-      {0x03, 0x00, 0x3c, 0xb3, 0x00, 0x00, 0x00, 0x07}, // Set full address
-      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x04}, // Set addr 0xffe78504
-      {0x03, 0x58, 0x3c, 0x41, 0x20, 0x06, 0x53, 0xe8}, // Set data 0x200653e8
-      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x01}, // Write data
-      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x38}, // Set addr 0xffe78538
-      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x02}, // Read data
-      {0x04, 0x58, 0x3c, 0x41},                         // Get response
-    };
-    uint8_t rbuf[8] = {0};
-    uint8_t addr = 0xb2;
-    uint8_t bus;
-    uint16_t temp128;
-
-
-    switch (sensor_num) {
-      case MB_SENSOR_PEX0_THERM_REMOTE:
-        bus = 19;
-      break;
-      case MB_SENSOR_PEX1_THERM_REMOTE:
-        bus = 20;
-      break;
-      case MB_SENSOR_PEX2_THERM_REMOTE:
-        bus = 21;
-      break;
-      case MB_SENSOR_PEX3_THERM_REMOTE:
-        bus = 22;
-      break;
-
-      default:
-        return ERR_SENSOR_NA;
-    }
-
-    snprintf(dev, sizeof(dev), "/dev/i2c-%d", bus);
-    fd = open(dev, O_RDWR);
-    if (fd < 0) {
-      close(fd);
-      return ERR_SENSOR_NA;
-    } 
-
-    //Send cmd to Axis reg
-    for (int i = 0; i < 6; i++) {
-      i2c_rdwr_msg_transfer(fd, addr, tbuf[i], 8, NULL, 0);
-    }
-
-    //Get response
-    i2c_rdwr_msg_transfer(fd, addr, tbuf[6], 4, rbuf, 4);
-
-    temp128 = (rbuf[2] << 8) | rbuf[3];
-
-    *value = (float)temp128/128;
-
-    close(fd);
+    ret = pal_get_pex_therm(sensor_num, value);
   } else {
     switch (sensor_num) {
       case MB_SENSOR_PAX01_THERM:

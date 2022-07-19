@@ -10,13 +10,7 @@ int PAXComponent::print_version()
 
   if (comp.find("flash") != string::npos) {
     if(pal_check_switch_config()) {
-      cout << "PEX" << (int)_paxid;
-      cout << " SBR UTP Version: ";
-      ret = pal_get_pax_fw_ver(_paxid, ver);
-    if (ret < 0)
-      cout << "NA" << endl;
-    else
-      cout << string(ver) << endl;
+      pal_print_pex_ver(_paxid);
     }
     return 0;
   }

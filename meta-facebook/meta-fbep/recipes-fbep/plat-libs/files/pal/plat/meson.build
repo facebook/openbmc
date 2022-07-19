@@ -16,6 +16,7 @@ pal_deps += [
     cc.find_library('obmc-sensors'),
     cc.find_library('switchtec'),
     cc.find_library('asic'),
+    cc.find_library('libpex'),
     dependency('libcrypto'),
     dependency('libssl'),
     ]

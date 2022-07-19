@@ -132,6 +132,7 @@ int pal_get_platform_id(uint8_t *id);
 int pal_set_id_led(uint8_t status);
 int pal_force_sled_cycle(void);
 int pal_check_switch_config(void);
+int pal_print_pex_ver(uint8_t paxid);
 
 #ifdef __cplusplus
 } // extern "C"

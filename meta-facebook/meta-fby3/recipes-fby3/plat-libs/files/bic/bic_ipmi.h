@@ -62,6 +62,21 @@ enum {
 #define CONFIG_M2_SINGLE 0x08
 #define CONFIG_M2_DUAL 0x04
 
+enum {
+  GET_1OU = 0,
+  GET_2OU = 1,
+};
+
+enum {
+  SI_TEST_CARD = 0x00,
+  EXPANSION_WITH_6_M2 = 0x01,
+  RAINBOW_FALLS = 0x02,
+  VERNAL_FALLS_TI = 0x03,
+  VERNAL_FALLS_AST1030 = 0x04,
+  NO_PRESENT_CARD = 0xFE,
+  NO_EXPECTED_TYPE = 0xFF,
+};
+
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf);
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf);
@@ -133,6 +148,7 @@ int bic_get_oem_sensor_reading(uint8_t slot_id, uint8_t index, ipmi_sensor_readi
 int bic_get_m2_config(uint8_t *config, uint8_t slot, uint8_t intf);
 void bic_open_cwc_usb(uint8_t slot);
 void bic_close_cwc_usb(uint8_t slot);
+int bic_get_card_type(uint8_t slot_id, uint8_t select, uint8_t *type);
 
 #ifdef __cplusplus
 } // extern "C"

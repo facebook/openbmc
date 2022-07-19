@@ -63,6 +63,7 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
   rm -f /tmp/cache_store/slot${slot_num}_vr*
   rm -f /tmp/cache_store/fru${slot_num}_2ou_board_type
   rm -f /tmp/cache_store/slot${slot_num}_is_m2_exp_prsnt
+  rm -f /tmp/cache_store/slot${slot_num}_1ou_card_type
   for pcie_info_file in $(ls /mnt/data/kv_store/sys_config/fru${slot_num}_pcie_*)
   do
     /usr/bin/kv del ${pcie_info_file:19} persistent > /dev/null 2>&1

@@ -14,6 +14,7 @@
 #include "usbdbg.h"
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
+#include "ast_bic.h"
 
 NicExtComponent nic_fw("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
 MeComponent     me_fw1("slot1", "me", FRU_SLOT1);
@@ -124,13 +125,20 @@ class ClassConfig {
           static CpldExtComponent cpld_2ou_fw1("slot1", "2ou_cpld" , FRU_SLOT1, "2ou", FW_2OU_CPLD);
         }
       } else {
+        int ret = 0;
+        uint8_t type = NO_EXPECTED_TYPE;
         // Register USB Debug Card components
         static UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY3", 9, 0x60, false);
         static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 9, 0x60, 0x02);  // target ID of bootloader = 0x02
 
         //slot1 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw1("slot1", "1ou_bic"  , FRU_SLOT1, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw1("slot1", "1ou_bicbl", FRU_SLOT1, "1ou", FW_1OU_BIC_BOOTLOADER);
+        ret = bic_get_card_type(FRU_SLOT1, GET_1OU, &type);
+        if ((ret == 0) && (type == VERNAL_FALLS_AST1030)) {
+          static AstBicFwRecoveryComponent recovery_bic_1ou_fw1("slot1", "1ou_bic_recovery", FRU_SLOT1, "1ou", FW_1OU_BIC);
+        } else {
+          static BicFwExtBlComponent bicbl_1ou_fw1("slot1", "1ou_bicbl", FRU_SLOT1, "1ou", FW_1OU_BIC_BOOTLOADER);
+        }
         static CpldExtComponent     cpld_1ou_fw1("slot1", "1ou_cpld" , FRU_SLOT1, "1ou", FW_1OU_CPLD);
 
         //slot2 sb bic/bicbl/cpld/bios/vr
@@ -142,7 +150,12 @@ class ClassConfig {
 
         //slot2 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw2("slot2", "1ou_bic"  , FRU_SLOT2, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw2("slot2", "1ou_bicbl", FRU_SLOT2, "1ou", FW_1OU_BIC_BOOTLOADER);
+        ret = bic_get_card_type(FRU_SLOT2, GET_1OU, &type);
+        if ((ret == 0) && (type == VERNAL_FALLS_AST1030)) {
+          static AstBicFwRecoveryComponent recovery_bic_1ou_fw2("slot2", "1ou_bic_recovery", FRU_SLOT2, "1ou", FW_1OU_BIC);
+        } else {
+          static BicFwExtBlComponent bicbl_1ou_fw2("slot2", "1ou_bicbl", FRU_SLOT2, "1ou", FW_1OU_BIC_BOOTLOADER);
+        }
         static CpldExtComponent     cpld_1ou_fw2("slot2", "1ou_cpld" , FRU_SLOT2, "1ou", FW_1OU_CPLD);
         
         //slot2 2ou bic/bicbl/cpld
@@ -159,7 +172,12 @@ class ClassConfig {
 
         //slot3 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw3("slot3", "1ou_bic"  , FRU_SLOT3, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw3("slot3", "1ou_bicbl", FRU_SLOT3, "1ou", FW_1OU_BIC_BOOTLOADER);
+        ret = bic_get_card_type(FRU_SLOT3, GET_1OU, &type);
+        if ((ret == 0) && (type == VERNAL_FALLS_AST1030)) {
+          static AstBicFwRecoveryComponent     recovery_bic_1ou_fw3("slot3", "1ou_bic_recovery", FRU_SLOT3, "1ou", FW_1OU_BIC);
+        } else {
+          static BicFwExtBlComponent bicbl_1ou_fw3("slot3", "1ou_bicbl", FRU_SLOT3, "1ou", FW_1OU_BIC_BOOTLOADER);
+        }
         static CpldExtComponent     cpld_1ou_fw3("slot3", "1ou_cpld" , FRU_SLOT3, "1ou", FW_1OU_CPLD);
 
         //slot3 2ou bic/bicbl/cpld
@@ -176,7 +194,12 @@ class ClassConfig {
 
         //slot4 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw4("slot4", "1ou_bic"  , FRU_SLOT4, "1ou", FW_1OU_BIC);
-        static BicFwExtBlComponent bicbl_1ou_fw4("slot4", "1ou_bicbl", FRU_SLOT4, "1ou", FW_1OU_BIC_BOOTLOADER);
+        ret = bic_get_card_type(FRU_SLOT4, GET_1OU, &type);
+        if ((ret == 0) && (type == VERNAL_FALLS_AST1030)) {
+          static AstBicFwRecoveryComponent     recovery_bic_1ou_fw4("slot4", "1ou_bic_recovery", FRU_SLOT4, "1ou", FW_1OU_BIC);
+        } else {
+          static BicFwExtBlComponent bicbl_1ou_fw4("slot4", "1ou_bicbl", FRU_SLOT4, "1ou", FW_1OU_BIC_BOOTLOADER);
+        }
         static CpldExtComponent     cpld_1ou_fw4("slot4", "1ou_cpld" , FRU_SLOT4, "1ou", FW_1OU_CPLD);
 
         //slot4 2ou bic/bicbl/cpld

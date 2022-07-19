@@ -1071,10 +1071,127 @@ error_exit:
 }
 
 static int
+_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+  int retries = 5;
+
+  // File the IANA ID
+  memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+
+  // Fill the component for which firmware is requested
+  tbuf[3] = target;
+
+  tbuf[4] = (offset) & 0xFF;
+  tbuf[5] = (offset >> 8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+
+  memcpy(&tbuf[10], buf, len);
+
+  tlen = len + 10;
+
+  do {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if ( ret < 0 ) {
+      sleep(1);
+      printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\n", slot_id, target, offset, len);
+    } else break;
+  } while ( retries-- > 0 );
+
+  return ret;
+}
+
+static int
+update_ast_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
+#define PKT_SIZE (64*1024)
+#define AST_BIC_IPMB_WRITE_COUNT_MAX 224
+  struct timeval start, end;
+  int update_rc = -1, cmd_rc = 0;
+  uint32_t dsize, last_offset;
+  uint32_t offset, boundary;
+  volatile uint16_t read_count;
+  uint8_t buf[256] = {0};
+  uint8_t target;
+  ssize_t count;
+
+  printf("updating fw on slot %d:\n", slot_id);
+
+  // Write chunks of binary data in a loop
+  dsize = file_size/100;
+  last_offset = 0;
+  offset = 0;
+  boundary = PKT_SIZE;
+  target = 2;
+  gettimeofday(&start, NULL);
+  while (1) {
+    // send packets in blocks of 64K
+    if ((offset + AST_BIC_IPMB_WRITE_COUNT_MAX) < boundary) {
+      read_count = AST_BIC_IPMB_WRITE_COUNT_MAX;
+    } else {
+      read_count = boundary - offset;
+    }
+
+    // Read from file
+    count = read(fd, buf, read_count);
+    if ((count < 0) && (errno == EINTR)) {
+      continue;
+    }
+    if (count <= 0 || count > read_count) {
+      break;
+    }
+
+    if ((offset + count) >= file_size) {
+      target |= 0x80;
+    }
+    // Send data to Bridge-IC
+    cmd_rc = _update_fw(slot_id, target, offset, count, buf, intf);
+    if (cmd_rc) {
+      goto error_exit;
+    }
+
+    // Update counter
+    offset += count;
+    if (offset >= boundary) {
+      boundary += PKT_SIZE;
+    }
+    if ((last_offset + dsize) <= offset) {
+      _set_fw_update_ongoing(slot_id, 60);
+      printf("\rupdated bic: %u %%", offset/dsize);
+      fflush(stdout);
+      last_offset += dsize;
+    }
+  }
+  printf("\n");
+
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+  if (offset >= file_size) {
+    update_rc = 0;
+  }
+
+error_exit:
+
+  printf("\n");
+
+  if ( update_rc == 0 ) {
+    update_rc = cmd_rc;
+  }
+  return update_rc;
+}
+
+static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size;
+  uint8_t type = NO_EXPECTED_TYPE;
 
   //get fd and file size
   fd = open_and_get_size(path, &file_size);
@@ -1085,6 +1202,13 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
 
   printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
 
+  if (intf == FEXP_BIC_INTF) {
+    bic_get_card_type(slot_id, GET_1OU, &type);
+    if (type == VERNAL_FALLS_AST1030) {
+      force = 1;  //there is no signature in AST BIC IMAGE currently
+    }
+  }
+
   //check the content of the image
   if ( !force && ( is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
     printf("Invalid BIC file!\n");
@@ -1094,6 +1218,14 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   //run into the different function based on the interface
   switch (intf) {
     case FEXP_BIC_INTF:
+      if (type == VERNAL_FALLS_AST1030) {
+        syslog(LOG_WARNING, "%s() go AST 1OU BIC update", __func__);
+        ret = update_ast_bic(slot_id, fd, file_size, intf);
+      } else {
+        syslog(LOG_WARNING, "%s() go TI 1OU BIC update", __func__);
+        ret = update_remote_bic(slot_id, intf, fd, file_size);
+      }
+      break;
     case BB_BIC_INTF:
     case REXP_BIC_INTF:
     case RREXP_BIC_INTF1:

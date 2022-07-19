@@ -54,6 +54,7 @@ enum {
   BIC_CMD_OEM_INA233_ALERT_CTRL       = 0x71,
   BIC_CMD_OEM_PESW_ERR_MONITOR        = 0x72,
   BIC_CMD_OEM_GET_BOARD_ID            = 0xA0,
+  BIC_CMD_OEM_GET_CARD_TYPE           = 0xA1,
   BIC_CMD_OEM_GET_MB_INDEX            = 0xF0,
   BIC_CMD_OEM_SET_FAN_DUTY            = 0xF1,
   BIC_CMD_OEM_FAN_CTRL_STAT           = 0xF2,

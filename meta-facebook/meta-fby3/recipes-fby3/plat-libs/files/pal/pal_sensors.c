@@ -322,6 +322,34 @@ const uint8_t bic_1ou_edsff_sensor_list[] = {
   BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
 };
 
+const uint8_t ast_bic_1ou_edsff_sensor_list[] = {
+  //AST BIC 1OU EDSFF Sensors
+  BIC_1OU_EDSFF_SENSOR_NUM_T_MB_OUTLET_TEMP_T,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_12_AUX,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_12_EDGE,
+  BIC_1OU_EDSFF_SENSOR_NUM_V_3_3_AUX,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2A,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2B,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2C,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_PWR_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_INA231_VOL_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_NVME_TEMP_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_3V3_VOL_M2D,
+  BIC_1OU_EDSFF_SENSOR_NUM_ADC_12V_VOL_M2D,
+};
+
 const uint8_t bic_2ou_gpv3_sensor_list[] = {
   // temperature
   BIC_GPV3_OUTLET_TEMP,
@@ -1083,6 +1111,7 @@ size_t bic_1ou_sensor_cnt = sizeof(bic_1ou_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_sensor_cnt = sizeof(bic_2ou_sensor_list)/sizeof(uint8_t);
 size_t bic_bb_sensor_cnt = sizeof(bic_bb_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_edsff_sensor_cnt = sizeof(bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
+size_t ast_bic_1ou_edsff_sensor_cnt = sizeof(ast_bic_1ou_edsff_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_dual_m2_sensor_cnt = sizeof(bic_2ou_gpv3_dual_m2_sensor_list)/sizeof(uint8_t);
 size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
@@ -1209,8 +1238,15 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     if ( (bmc_location == BB_BMC || bmc_location == DVT_BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) ) {
       ret = (pal_is_fw_update_ongoing(fru) == false) ? bic_get_1ou_type(fru, &type):bic_get_1ou_type_cache(fru, &type);
       if (type == EDSFF_1U) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
-        current_cnt += bic_1ou_edsff_sensor_cnt;
+        type = NO_EXPECTED_TYPE;
+        ret = bic_get_card_type(fru, GET_1OU, &type);
+        if ((ret == 0) && (type == VERNAL_FALLS_AST1030)) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], ast_bic_1ou_edsff_sensor_list, ast_bic_1ou_edsff_sensor_cnt);
+          current_cnt += ast_bic_1ou_edsff_sensor_cnt;
+        } else {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_edsff_sensor_list, bic_1ou_edsff_sensor_cnt);
+          current_cnt += bic_1ou_edsff_sensor_cnt;
+        }
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_1ou_sensor_list, bic_1ou_sensor_cnt);
         current_cnt += bic_1ou_sensor_cnt;

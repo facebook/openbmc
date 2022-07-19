@@ -4,6 +4,7 @@
 #include "server.h"
 #include <openbmc/pal.h>
 #include "bic_fw_ext.h"
+#include <iomanip>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -46,14 +47,34 @@ int BicFwExtComponent::fupdate(string image) {
 }
 
 int BicFwExtComponent::get_ver_str(string& s) {
-  uint8_t ver[32] = {0};
+  uint8_t rbuf[32] = {0};
   char ver_str[32] = {0};
   int ret = 0;
   // Get Bridge-IC Version
-  ret = bic_get_fw_ver(slot_id, fw_comp, ver);
-  snprintf(ver_str, sizeof(ver_str), "v%x.%02x", ver[0], ver[1]);
+  ret = bic_get_fw_ver(slot_id, fw_comp, rbuf);
+  if (ret) {
+    return ret;
+  }
+  if (fw_comp == FW_1OU_BIC) {
+    uint8_t type = NO_EXPECTED_TYPE;
+    ret = bic_get_card_type(slot_id, GET_1OU, &type);
+    if ((ret == 0) && (type == VERNAL_FALLS_AST1030)) {
+      stringstream ver;
+      size_t len = strlen((char *)rbuf);
+      if (len >= 4) {         // new version format
+        ver << string((char *)(rbuf + 4)) << "-v" << hex << setfill('0')
+            << setw(2) << (int)rbuf[0] << setw(2) << (int)rbuf[1] << "."
+            << setw(2) << (int)rbuf[2] << "." << setw(2) << (int)rbuf[3];
+      } else {
+        ver << "Format not supported";
+      }
+      s = ver.str();
+      return 0;
+    }
+  }
+  snprintf(ver_str, sizeof(ver_str), "v%x.%02x", rbuf[0], rbuf[1]);
   s = string(ver_str);
-  return ret;
+  return 0;
 }
 
 int BicFwExtComponent::print_version() {
@@ -178,4 +199,3 @@ void BicFwExtBlComponent::get_version(json& j) {
   }
 }
 #endif
-

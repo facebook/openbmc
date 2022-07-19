@@ -62,6 +62,7 @@ typedef struct _sdr_rec_hdr_t {
 
 #define KV_SLOT_IS_M2_EXP_PRESENT "slot%x_is_m2_exp_prsnt"
 #define KV_SLOT_GET_1OU_TYPE      "slot%x_get_1ou_type"
+#define KV_SLOT_GET_1OU_CARD_TYPE      "slot%x_1ou_card_type"
 #define KV_MB_INDEX               "get_mb_index"
 
 #define KV_SLOT_IS_2U_TOPBOT_PRESENT "slot%x_is_2u_topbot_prsnt"
@@ -1086,6 +1087,44 @@ bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
 }
 
 int
+bic_get_card_type(uint8_t slot_id, uint8_t select, uint8_t *type) {
+  uint8_t tbuf[4] = {0x9c, 0x9c, 0x00, select};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rlen = 0;
+
+  int ret = 0;
+  int val = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char tmp_str[MAX_VALUE_LEN] = {0};
+
+  if (type == NULL) {
+    return -1;
+  }
+
+  if (select != GET_1OU) {
+    printf("[%s] only support get 1OU card type \n", __FUNCTION__);
+    return -1;
+  }
+
+  snprintf(key, sizeof(key), KV_SLOT_GET_1OU_CARD_TYPE, slot_id);
+  if (kv_get(key, tmp_str, NULL, 0) == 0) {
+    *type = atoi(tmp_str);
+    return 0;
+  } else {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_CARD_TYPE, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+    if (ret == 0) {
+      *type = rbuf[3];
+      val = *type;
+      snprintf(tmp_str, sizeof(tmp_str), "%d", val);
+      kv_set(key, tmp_str, 0, 0);
+    }
+  }
+
+  return ret;
+}
+
+int
 bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status) {
   uint8_t tbuf[5] = {0x9c, 0x9c, 0x00, 0x00, 0x00};
   uint8_t rbuf[2] = {0};
@@ -1525,7 +1564,7 @@ bic_is_m2_exp_prsnt(uint8_t slot_id) {
     present = rbuf[0] & 0xC;
 
     if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Failed to get expansion present status. ret=%d", __func__, ret);
+      syslog(LOG_WARNING, "%s() slot%d Failed to get expansion present status. ret=%d", __func__, slot_id, ret);
       return ret;
     } else {
       if ( present == 0) {

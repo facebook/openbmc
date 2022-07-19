@@ -45,6 +45,8 @@ LOCAL_URI += "\
     file://mcu_fw.cpp \
     file://bic_m2_dev.cpp \
     file://bic_m2_dev.h \
+    file://ast_bic.cpp \
+    file://ast_bic.h \
     "
 
 CXXFLAGS += " -DBIC_SUPPORT "

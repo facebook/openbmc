@@ -20,6 +20,7 @@
 static int read_adc_val(uint8_t id, float *value);
 static int read_battery_val(uint8_t id, float *value);
 static int read_temp(uint8_t id, float *value);
+static int read_peci(uint8_t id, float *value);
 static int read_rpm(uint8_t id, float *value);
 static int read_pmbus(uint8_t id, float *value);
 static int read_hsc(uint8_t id, float *value);
@@ -33,11 +34,11 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_OUTLET_TEMP] =
   {"NETLAKE_OUTLET_TEMP", MB_OUTLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_SOC_TEMP] =
-  {"SOC_TEMP", SOC_TEMP, read_temp, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"SOC_TEMP", SOC_TEMP, read_peci, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMA_TEMP] =
-  {"DIMMA_TEMP", DIMMA_TEMP, read_temp, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMA_TEMP", DIMMA_TEMP, read_peci, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMB_TEMP] =
-  {"DIMMB_TEMP", DIMMB_TEMP, read_temp, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMB_TEMP", DIMMB_TEMP, read_peci, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_A_P12V_STBY_NETLAKE_VOL] =
   {"A_P12V_STBY_NETLAKE_VOL", CPLD_ADC_P12V_STBY, read_cpld_adc, STBY_READING, {13.3488, 13.2192, 13.4784, 10.7088, 10.8192, 10.5984, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P3V3_STBY_NETLAKE_VOL] =
@@ -360,6 +361,28 @@ read_temp(uint8_t id, float *value) {
   }
 
   return sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+}
+
+static int
+read_peci(uint8_t id, float *value) {
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
+    return -1;
+  }
+
+  if (id >= ARRAY_SIZE(temp_dev_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  int ret = 0;
+  ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  if (ret < 0) {
+    sensors_reinit();
+    sleep(POWER_ON_SENSOR_RETRY_SEC);
+    ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  }
+
+  return ret;
 }
 
 static int

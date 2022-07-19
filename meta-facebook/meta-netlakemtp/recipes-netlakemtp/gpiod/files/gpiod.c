@@ -35,6 +35,11 @@
 
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
+#define NVME_BIND_PATH "/sys/bus/i2c/drivers/pca954x/bind"
+#define NVME_UNBIND_PATH "/sys/bus/i2c/drivers/pca954x/unbind"
+#define PECI_RESCAN_PATH "/sys/bus/peci/rescan"
+#define PCA_954X_BUS_ADDR "7-0071"
+#define PECI_RESCAN_VALUE "1"
 #define POLL_TIMEOUT        -1 /* Forever */
 
 // Thread for gpio timer
@@ -175,11 +180,56 @@ reset_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 static void
 power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   kv_set(PWR_GOOD_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+  FILE *fp;
+  int rc = 0;
+
+  if (curr == GPIO_VALUE_HIGH) {
+    fp = fopen((char*)NVME_BIND_PATH, "w");
+    if (fp == NULL) {
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_BIND_PATH, strerror(errno));
+      return;
+    }
+
+    rc = fputs((char*)PCA_954X_BUS_ADDR, fp);
+    fclose(fp);
+
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s() m2 bind failed\n", __func__);
+    }
+  } else {
+    fp = fopen((char*)NVME_UNBIND_PATH, "w");
+    if (fp == NULL) {
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_UNBIND_PATH, strerror(errno));
+      return;
+    }
+
+    rc = fputs((char*)PCA_954X_BUS_ADDR, fp);
+    fclose(fp);
+
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s() m2 unbind failed\n", __func__);
+    }
+  }
 }
 
 static void
 post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   kv_set(POST_CMPLT_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+  if (curr == GPIO_VALUE_LOW) {
+    FILE *fp = fopen((char*)PECI_RESCAN_PATH, "w");
+    if (fp == NULL) {
+      int err = errno;
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_RESCAN_PATH, strerror(errno));
+      return;
+    }
+
+    int rc = fputs((char*)PECI_RESCAN_VALUE, fp);
+    fclose(fp);
+
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s() peci driver rescan failed\n", __func__);
+    }
+  }
 }
 
 // thread for display post code led

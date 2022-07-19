@@ -19,6 +19,8 @@
 #define SENSOR_RETRY_TIME                   3
 #define SENSOR_RETRY_INTERVAL_USEC          100000
 
+#define POWER_ON_SENSOR_RETRY_SEC 1
+
 typedef struct {
   float ucr_thresh;
   float unc_thresh;

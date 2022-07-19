@@ -92,6 +92,15 @@ gpio_cfg bmc_gpio_table[] = {
   // GPIOP0, rename from FM_BMC_READY_R_N to BMC_READY_N for common kcsd use
   [BMC_READY_N] =
   {"BMC_READY_N", "GPIOP0", GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  // GPIOQ1
+  [MTP_BOARD_REV_ID0] =
+  {"MTP_BOARD_REV_ID0", "GPIOQ1", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+  // GPIOQ2
+  [MTP_BOARD_REV_ID1] =
+  {"MTP_BOARD_REV_ID1", "GPIOQ2", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+  // GPIOQ3
+  [MTP_BOARD_REV_ID2] =
+  {"MTP_BOARD_REV_ID2", "GPIOQ3", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
   // GPIOQ6
   [SPI_MUX_SEL_R] =
   {"SPI_MUX_SEL_R", "GPIOQ6", GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
@@ -162,4 +171,3 @@ netlakemtp_get_gpio_name(uint8_t gpio) {
     return "";
   }
 }
-

@@ -72,9 +72,13 @@ extern "C" {
 #define HICRA_OFFSET 0x9C
 #define HICRA_MASK_UART1 0x70000
 #define HICRA_MASK_UART3 0x1C00000
+#define HICRA_MASK_UART4 0xE000000
 
 #define UART1_TO_UART3 0x5
 #define UART3_TO_UART1 0x5
+
+#define UART3_TO_UART4 0x6
+#define UART4_TO_UART3 0x4
 
 extern const char pal_fru_list_sensor_history[];
 extern const char pal_fru_list[];
@@ -97,6 +101,15 @@ TODO: Temporary. Error code needs to modify later on
 enum {
   ERR_CODE_FRU_SERVER_HEALTH = 0x05,
   ERR_CODE_FRU_PDB_HEALTH = 0x09,
+};
+
+enum {
+  EVT = 0,
+  EVT2 = 1,
+  DVT = 2,
+  PVT = 3,
+  MP = 4,
+  POC = 7,
 };
 
 int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);

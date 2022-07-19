@@ -1407,6 +1407,8 @@ pal_set_uart_routing(uint8_t routing) {
   uint32_t ctrl;
   void *lpc_reg;
   void *lpc_hicr;
+  int raw_board_id[3] = {0};
+  int board_id = 0;
 
   lpc_fd = open("/dev/mem", O_RDWR | O_SYNC );
   if (lpc_fd < 0) {
@@ -1420,16 +1422,33 @@ pal_set_uart_routing(uint8_t routing) {
   // Read HICRA register
   ctrl = *(volatile uint32_t*) lpc_hicr;
 
-  // Clear bits for UART1 and UART3 routing
+  // Clear bits for UART1, UART3 and UART4 routing
   ctrl &= (~HICRA_MASK_UART1);
   ctrl &= (~HICRA_MASK_UART3);
+  ctrl &= (~HICRA_MASK_UART4);
 
   if (routing == DEBUG_CARD_ABSENT) {
-    // Route UART1 to UART3 for SoL purpose
-    ctrl |= (UART1_TO_UART3 << 22);
 
-    // Route UART3 to UART1 for SoL purpose
-    ctrl |= (UART3_TO_UART1 << 16);
+    raw_board_id[0] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID0") == GPIO_VALUE_LOW) ? 0 : 1);
+    raw_board_id[1] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID1") == GPIO_VALUE_LOW) ? 0 : 1);
+    raw_board_id[2] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID2") == GPIO_VALUE_LOW) ? 0 : 1);
+    board_id = ((raw_board_id[0] & 0x1) << 2) + ((raw_board_id[1] & 0x1) << 1) + ((raw_board_id[2] & 0x1));
+
+    if ((board_id == EVT) || (board_id == POC)) {
+      // Route UART1 to UART3 for SoL purpose
+      ctrl |= (UART1_TO_UART3 << 22);
+
+      // Route UART3 to UART1 for SoL purpose
+      ctrl |= (UART3_TO_UART1 << 16);
+    }
+    else {
+
+      // Route UART3 to UART4 for SoL purpose
+      ctrl |= (UART3_TO_UART4 << 25);
+
+      // Route UART4 to UART3 for SoL purpose
+      ctrl |= (UART4_TO_UART3 << 22);
+    }
   }
 
   *(volatile uint32_t*) lpc_hicr = ctrl;

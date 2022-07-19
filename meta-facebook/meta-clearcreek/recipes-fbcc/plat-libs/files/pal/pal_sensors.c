@@ -1599,10 +1599,7 @@ hsc_value_adjust(struct calibration_table *table, float *value) {
 
 static int
 read_pax_therm(uint8_t pax_id, float *value) {
-  int ret = 0, cmd_size = 7, fd;
-  uint8_t tbuf[8] = {0}, rbuf[8] = {0};
-  uint8_t addr = 0xB2;
-  char bus[32] = {0};
+  int ret = 0, fd;
 
   if (!is_device_ready())
     return ERR_SENSOR_NA;
@@ -1618,36 +1615,7 @@ read_pax_therm(uint8_t pax_id, float *value) {
   };
 
   if ((g_board_id & 0x7) == 0x3) {
-    uint8_t read_brcm_temp[][16] = {
-      {0x03, 0x00, 0x3c, 0xb3, 0x00, 0x00, 0x00, 0x07}, // config as full address
-      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x04}, // 0xFFE78504 address
-      {0x03, 0x58, 0x3c, 0x41, 0x20, 0x06, 0x53, 0xe8}, // 0x200653e8 data
-      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x01}, // write
-      {0x03, 0x58, 0x3c, 0x40, 0xff, 0xe7, 0x85, 0x38}, // set 0xFFE78538 address
-      {0x03, 0x58, 0x3c, 0x42, 0x00, 0x00, 0x00, 0x02}, // read
-      {0x04, 0x58, 0x3c, 0x41}, // read data
-    };
-
-    snprintf(bus, sizeof(bus), "/dev/i2c-%d", I2C_BUS_24 + pax_id);
-    fd = open(bus, O_RDWR);
-    if (fd < 0)
-      return -1;
-
-    for(int i=0; i < cmd_size-1; i++) {
-      ret = i2c_rdwr_msg_transfer(fd, addr, read_brcm_temp[i], 8, NULL, 0);
-
-      if (ret) {
-        goto exit;
-      }
-    }
-
-    ret = i2c_rdwr_msg_transfer(fd, addr, read_brcm_temp[6], 4, rbuf, 4);
-
-    if (ret) {
-      goto exit;
-    }
-
-    *value = (double)((rbuf[2] << 8) | rbuf[3]) / 128;
+    ret = pal_get_pex_therm(pax_id, value);
   }
   else {
     ret = sensors_read(devs[pax_id].chip, devs[pax_id].label, value);

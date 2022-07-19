@@ -18,10 +18,12 @@ DEPENDS += " \
     libgpio-ctrl \
     libobmc-i2c \
     switchtec-user \
+    libpex \
     "
 RDEPENDS:${PN} += " \
     libobmc-sensors \
     libgpio-ctrl \
     libobmc-i2c \
     switchtec-user \
+    libpex \
     "

@@ -16,9 +16,8 @@ int PAXComponent::print_version()
   pal_get_platform_id(&board_type);
 
   if((board_type & 0x07) == 0x3) {
-    cout << "PEX" << (int)_paxid;
-    cout << " SBR UTP Version: ";
-    ret = pal_get_brcm_pax_ver(_paxid, ver);
+    pal_print_pex_ver(_paxid);
+    return 0;
   }
   else {
     if (comp.find("flash") != string::npos)

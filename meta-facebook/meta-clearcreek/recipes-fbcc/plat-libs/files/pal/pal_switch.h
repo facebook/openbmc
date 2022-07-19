@@ -24,6 +24,7 @@ int pal_check_pax_fw_type(uint8_t, const char*);
 int pal_pax_fw_update(uint8_t, const char*);
 void pal_clear_pax_cache(uint8_t);
 int pal_read_pax_dietemp(uint8_t, float*);
+int pal_get_pex_therm(uint8_t , float *);
 
 #ifdef __cplusplus
 } // extern "C"

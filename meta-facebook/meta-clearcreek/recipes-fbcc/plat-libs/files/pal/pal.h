@@ -129,6 +129,7 @@ enum {
 #define KEY_NIC7_SNR_HEALTH "nic7_sensor_health"
 
 int pal_get_platform_id(uint8_t *id);
+int pal_print_pex_ver(uint8_t paxid);
 
 #ifdef __cplusplus
 } // extern "C"

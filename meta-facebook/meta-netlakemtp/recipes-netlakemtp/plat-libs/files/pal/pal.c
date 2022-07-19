@@ -84,7 +84,7 @@ struct pal_key_cfg {
   {"fio_sensor_health", "1", NULL},
   {"sysfw_ver_server", "0", NULL},
   {"system_identify_led", "off", NULL},
-  {"server_power_on_reset", "lps", NULL},
+  {"server_power_on_reset_cfg", "lps", NULL},
   {"server_last_power_state", "on", NULL},
   {"ntp_server", "", NULL},
   {"server_boot_order", "0100090203ff", NULL},

@@ -22,8 +22,10 @@ LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 SRC_URI = "file://COPYING \
+           file://ast-functions \
            file://sol-util \
            file://sync_date.sh \
+           file://power-on.sh \
           "
 
 pkgdir = "utils"
@@ -31,7 +33,7 @@ pkgdir = "utils"
 S = "${WORKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util sync_date.sh "
+binfiles = " sol-util sync_date.sh power-on.sh"
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 "
@@ -40,6 +42,9 @@ do_install() {
   # install the package dir
   dst="${D}/usr/local/fbpackages/${pkgdir}"
   install -d $dst
+
+  # install ast-functions
+  install -m 644 ast-functions ${dst}/ast-functions
 
   # create linkages to those binaries
   localbindir="${D}/usr/local/bin"
@@ -54,6 +59,9 @@ do_install() {
 
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
+
+  install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+  update-rc.d -r ${D} power-on.sh start 99 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

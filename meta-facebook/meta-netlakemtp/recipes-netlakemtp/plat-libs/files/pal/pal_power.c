@@ -235,7 +235,7 @@ pal_set_power_restore_policy(uint8_t slot, uint8_t *pwr_policy, uint8_t *res_dat
 
   policy = *pwr_policy & 0x07;  // Power restore policy
   memset(&key, 0, sizeof(key));
-  snprintf(key, MAX_KEY_LEN, "server_power_on_reset");
+  snprintf(key, MAX_KEY_LEN, "server_power_on_reset_cfg");
   switch (policy)
   {
     case POWER_CFG_OFF:
@@ -280,7 +280,7 @@ pal_get_chassis_status(uint8_t slot, uint8_t *req_data, uint8_t *res_data, uint8
   }
 
   memset(&buff, 0, sizeof(buff));
-  if (pal_get_key_value("server_power_on_reset", buff) == 0) {
+  if (pal_get_key_value("server_power_on_reset_cfg", buff) == 0) {
     if (!memcmp(buff, "off", strlen("off"))) {
       policy = POWER_CFG_OFF;
     } else if (!memcmp(buff, "lps", strlen("lps"))) {

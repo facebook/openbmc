@@ -356,7 +356,7 @@ class Image {
             continue;
           for (; *str == ' '; str++);
         }
-        if (istrncmp(str, machine.c_str(), machine.size()))
+        if (istrncmp(str, machine.c_str(), machine.size()) && *(str + machine.size()) == '-')
           return true;
       }
     }

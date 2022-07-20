@@ -2491,13 +2491,13 @@ pal_parse_pwr_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 static int
 pal_parse_button_detect_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   enum {
-    ADAPTER_BUTTON_BMC_CO_N_R = 0x01,
+    BB_BUTTON_BMC_BIC_N_R = 0x01,
     AC_ON_OFF_BTN_SLOT1_N = 0x02,
     AC_ON_OFF_BTN_SLOT3_N = 0x03,
   };
   switch (event_data[0]) {
-    case ADAPTER_BUTTON_BMC_CO_N_R:
-      strcat(error_log, "ADAPTER_BUTTON_BMC_CO_N_R");
+    case BB_BUTTON_BMC_BIC_N_R:
+      strcat(error_log, "BB_BUTTON_BMC_BIC_N_R");
       break;
     case AC_ON_OFF_BTN_SLOT1_N:
       strcat(error_log, "AC_ON_OFF_BTN_SLOT1_N");

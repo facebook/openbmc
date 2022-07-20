@@ -7,9 +7,6 @@
 #define MAX_SENSOR_NAME_SIZE         (32)
 #define MAX_PMBUS_SUP_CMD_CNT 16
 
-#define SENSOR_RETRY_TIME                   3
-#define SENSOR_RETRY_INTERVAL               100000
-
 #define HSC_NO_SET_PAGE              0
 #define ADM1278_RSENSE               0.5
 
@@ -20,6 +17,8 @@
 #define SENSOR_RETRY_INTERVAL_USEC          100000
 
 #define POWER_ON_SENSOR_RETRY_SEC 1
+
+#define READING_SKIP 1
 
 typedef struct {
   float ucr_thresh;
@@ -111,6 +110,10 @@ enum {
   BMC_P12V_NIC_MTP_CURR = 0x39,
   BMC_P3V3_NIC_MTP_CURR = 0x3A,
   BMC_HSC_INPUT_PWR = 0x3B,
+  BMC_M2_A_TEMP = 0x3C,
+  BMC_M2_B_TEMP = 0x3D,
+  BMC_M2_C_TEMP = 0x3E,
+  BMC_OCP_NIC_TEMP = 0x3F,
 };
 
 // Sensors under Power Distribution Board (PDB)
@@ -196,6 +199,18 @@ enum {
 // INA230 sensors
 enum {
   P12V_COME_PWR = 0,
+};
+
+// NVME
+enum {
+  NVME_A_TEMP = 0,
+  NVME_B_TEMP,
+  NVME_C_TEMP,
+};
+
+//OCP NIC
+enum {
+  OCP_NIC_TEMP = 0,
 };
 
 enum {

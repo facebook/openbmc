@@ -82,6 +82,21 @@ extern "C" {
 #define ME_BUS 1
 #define NM_GLOBAL_POWER_STATISTICS_LENGTH 20
 
+#define NVME_A_BUS 22
+#define NVME_B_BUS 23
+#define NVME_C_BUS 24
+#define NVME_ADDR 0xD4
+#define NVME_GET_STATUS_CMD 0x00
+#define NVME_GET_STATUS_LEN 8
+#define NVME_TEMP_REG 0x03
+
+#define NIC_BUS 8
+#define NIC_ADDR 0x3E
+#define NIC_INFO_TEMP_CMD 0x01
+#define NIC_TEMP_LEN 1
+#define NIC_TEMP_RETRY_TIME 5
+#define MAX_NIC_TEMPERATURE 130
+
 #define MAX_PATH_LEN 128  // include the string terminal
 
 #define MD5_SIZE              (16)

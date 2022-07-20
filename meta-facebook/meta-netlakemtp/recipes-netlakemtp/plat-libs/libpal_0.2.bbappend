@@ -16,6 +16,7 @@ DEPENDS += " \
     libobmc-sensors \
     libgpio-ctrl \
     libphymem \
+    libnvme-mi \
     "
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
@@ -26,4 +27,5 @@ RDEPENDS_${PN} += " \
     libobmc-sensors \
     libgpio-ctrl \
     libphymem \
+    libnvme-mi \
     "

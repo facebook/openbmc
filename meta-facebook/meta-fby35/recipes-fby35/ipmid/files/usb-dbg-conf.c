@@ -728,6 +728,11 @@ int plat_get_me_status(uint8_t fru, char *status)
   char rbuf[256];
   unsigned char rlen;
   int ret;
+
+  if(fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    return -1;
+  }
+
   tbuf[0] = NETFN_APP_REQ << 2;
   tbuf[1] = CMD_APP_GET_DEVICE_ID;
   ret = bic_me_xmit(fru, (uint8_t *)tbuf, 2, (uint8_t *)rbuf, &rlen);

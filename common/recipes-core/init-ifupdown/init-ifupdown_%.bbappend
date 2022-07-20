@@ -12,7 +12,7 @@ SRC_URI += "file://dhcp_vendor_info \
             file://if-down.d \
             "
 
-NETWORK_INTERFACES ?= "auto/lo auto/eth0 static/usb0 static/ipv4/usb0"
+NETWORK_INTERFACES ?= "auto/lo auto/eth0 static/usb0"
 
 do_configure:append() {
     if [ -n "${NETWORK_INTERFACES}" ]; then

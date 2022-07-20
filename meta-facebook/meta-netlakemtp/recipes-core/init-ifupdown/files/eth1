@@ -1,3 +1,4 @@
 auto eth1
-iface eth1 inet dhcp
-
+iface eth1 inet manual
+  pre-up ifconfig $IFACE down
+  post-down ifconfig $IFACE down

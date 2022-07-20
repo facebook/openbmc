@@ -39,4 +39,5 @@ IMAGE_INSTALL += " \
   openbmc-utils \
   threshold-util \
   plat-utils \
+  mac-util \
   "

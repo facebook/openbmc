@@ -26,6 +26,7 @@ SRC_URI = "file://COPYING \
            file://sol-util \
            file://sync_date.sh \
            file://power-on.sh \
+           file://setup-eth.sh \
           "
 
 pkgdir = "utils"
@@ -59,6 +60,9 @@ do_install() {
 
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
+
+  install -m 755 setup-eth.sh ${D}${sysconfdir}/init.d/setup-eth.sh
+  update-rc.d -r ${D} setup-eth.sh start 69 5 .
 
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 99 5 .

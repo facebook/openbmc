@@ -1,0 +1,80 @@
+From cef7c5c1b37b2a0a62cbefabe926a8f5f39bb9a4 Mon Sep 17 00:00:00 2001
+From: Eric Chen <Eric_LC_Chen@wiwynn.com>
+Date: Fri, 17 Jun 2022 09:30:22 +0800
+Subject: [PATCH] Common: lm-sensors: Support auxiliary bus type
+
+Summary:
+1. Support auxiliary bus type for rebased peci driver in kernel 5.10
+
+Test plan:
+root@bmc-oob:~# sensor-util server
+server:
+...
+SOC_TEMP                     (0x3) :   43.20 C     | (ok)
+DIMMA_TEMP                   (0x4) :   39.00 C     | (ok)
+DIMMB_TEMP                   (0x5) :   34.00 C     | (ok)
+...
+---
+ lib/access.c  | 2 ++
+ lib/data.c    | 3 +++
+ lib/sensors.h | 1 +
+ lib/sysfs.c   | 4 ++++
+ 4 files changed, 10 insertions(+)
+
+diff --git a/lib/access.c b/lib/access.c
+index 2adeed4..757ba7a 100644
+--- a/lib/access.c
++++ b/lib/access.c
+@@ -367,6 +367,8 @@ const char *sensors_get_adapter_name(const sensors_bus_id *bus)
+ 	   HID buses have a name nor where to find it. */
+ 	case SENSORS_BUS_TYPE_HID:
+ 		return "HID adapter";
++	case SENSORS_BUS_TYPE_AUXILIARY:
++		return "Auxiliary device";
+ 	}
+ 
+ 	/* bus types with several instances */
+diff --git a/lib/data.c b/lib/data.c
+index 69f8646..c61cae2 100644
+--- a/lib/data.c
++++ b/lib/data.c
+@@ -193,6 +193,9 @@ int sensors_snprintf_chip_name(char *str, size_t size,
+ 	case SENSORS_BUS_TYPE_HID:
+ 		return snprintf(str, size, "%s-hid-%hd-%x", chip->prefix,
+ 				chip->bus.nr, chip->addr);
++	case SENSORS_BUS_TYPE_AUXILIARY:
++		return snprintf(str, size, "%s-auxiliary-%04x", chip->prefix,
++				chip->addr);
+ 	}
+ 
+ 	return -SENSORS_ERR_CHIP_NAME;
+diff --git a/lib/sensors.h b/lib/sensors.h
+index a3bbee7..3b1d297 100644
+--- a/lib/sensors.h
++++ b/lib/sensors.h
+@@ -44,6 +44,7 @@
+ #define SENSORS_BUS_TYPE_VIRTUAL	4
+ #define SENSORS_BUS_TYPE_ACPI		5
+ #define SENSORS_BUS_TYPE_HID		6
++#define SENSORS_BUS_TYPE_AUXILIARY      7
+ #define SENSORS_BUS_NR_ANY		(-1)
+ #define SENSORS_BUS_NR_IGNORE		(-2)
+ 
+diff --git a/lib/sysfs.c b/lib/sysfs.c
+index bfa2396..46bdcfc 100644
+--- a/lib/sysfs.c
++++ b/lib/sysfs.c
+@@ -741,6 +741,10 @@ static int sensors_read_one_sysfs_chip(const char *dev_path,
+ 		/* As of kernel 2.6.32, the hid device names don't look good */
+ 		entry.chip.bus.nr = bus;
+ 		entry.chip.addr = id;
++	} else if (subsys && !strcmp(subsys, "auxiliary")) {
++		entry.chip.bus.type = SENSORS_BUS_TYPE_AUXILIARY;
++		entry.chip.bus.nr = 0;
++		entry.chip.addr = 0;
+ 	} else {
+ 		/* Ignore unknown device */
+ 		err = 0;
+-- 
+2.25.1
+

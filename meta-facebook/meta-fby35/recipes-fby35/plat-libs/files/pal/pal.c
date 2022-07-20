@@ -3967,6 +3967,8 @@ int
 pal_check_slot_cpu_present(uint8_t slot_id) {
   int ret = 0;
   bic_gpio_t gpio = {0};
+  //CPU Present pin default for Crater Lake
+  uint8_t cpu_prsnt_pin = FM_CPU_SKTOCC_LVT3_PLD_N;
 
   ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
   if ( ret < 0 ) {
@@ -3974,7 +3976,12 @@ pal_check_slot_cpu_present(uint8_t slot_id) {
     return ret;
   }
 
-  if (BIT_VALUE(gpio, FM_CPU_SKTOCC_LVT3_PLD_N)) {
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+    // CPU Present pin for Halfdome
+    cpu_prsnt_pin = HD_FM_PRSNT_CPU_BIC_N;
+  }
+
+  if (BIT_VALUE(gpio, cpu_prsnt_pin)) {
     syslog(LOG_CRIT, "FRU: %d, CPU absence", slot_id);
   } else {
     syslog(LOG_CRIT, "FRU: %d, CPU presence", slot_id);
@@ -4165,40 +4172,16 @@ pal_is_aggregate_snr_valid(uint8_t snr_num) {
 
 int
 pal_check_slot_fru(uint8_t slot_id) {
-  int ret = 0, i2cfd = 0 ,retry = 0;
-  uint8_t bus = slot_id + SLOT_BUS_BASE;
-  uint8_t tbuf[1] = {0x11};
-  uint8_t rbuf[1] = {0xff};
-  uint8_t tlen = 1;
-  uint8_t rlen = 1;
+  int slot_type = fby35_common_get_slot_type(slot_id);
 
-  i2cfd = i2c_cdev_slave_open(bus, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0) {
-    printf("%s(): Failed to open bus %d. Err: %s\n", __func__, bus, strerror(errno));
-    goto error_exit;
-  }
-
-  while ( retry < MAX_READ_RETRY ) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      sleep(1);
-    } else {
-      break;
-    }
-  }
-  if ( retry == MAX_READ_RETRY ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
-
-  if ( rbuf[0] != 0x0 ) {
+#ifdef CONFIG_HALFDOME
+  if ( slot_type != SERVER_TYPE_HD ) {
+#else
+  if ( slot_type != SERVER_TYPE_CL ) {
+#endif
     syslog(LOG_CRIT, "Slot%d plugged in a wrong FRU", slot_id);
   }
-
-error_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
-  return ret;
+  return 0;
 }
 
 int

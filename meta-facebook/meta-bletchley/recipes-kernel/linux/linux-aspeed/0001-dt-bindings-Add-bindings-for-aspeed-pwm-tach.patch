@@ -1,4 +1,4 @@
-From 2e3f7cb3d942383c1e5fcff4936f3814973db567 Mon Sep 17 00:00:00 2001
+From 38a49c324af8a95efba185d15cf3d5fc7258814d Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:32 +0800
 Subject: [PATCH 1/7] dt-bindings: Add bindings for aspeed pwm-tach.
@@ -21,7 +21,7 @@ LORE LINK: https://lore.kernel.org/all/20211130055933.32708-2-billy_tsai@aspeedt
 
 diff --git a/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml b/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml
 new file mode 100644
-index 000000000000..dded50a049fb
+index 0000000000000..dded50a049fb6
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml
 @@ -0,0 +1,68 @@

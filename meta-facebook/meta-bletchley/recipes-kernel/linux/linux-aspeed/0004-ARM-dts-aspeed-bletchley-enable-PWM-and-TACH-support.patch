@@ -1,4 +1,4 @@
-From 6a5931b4bc8894acd21fa4e40dc5504af3f6ad1d Mon Sep 17 00:00:00 2001
+From 193cf401bd113f56e9320a4d5262f0180307a785 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 10 Feb 2022 15:20:41 +0800
 Subject: [PATCH 4/7] ARM: dts: aspeed: bletchley: enable PWM and TACH support
@@ -18,12 +18,12 @@ This patch rely on the ASPEED PWM TACH patchs (listed below)
  1 file changed, 79 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
-index eaf1bc261ee3..69c4f033d100 100644
+index 9fdb3d17596b9..59f632b20803e 100644
 --- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
-@@ -210,6 +210,26 @@
- 			gpios = <&sled6_leds 1 GPIO_ACTIVE_LOW>;
- 		};
+@@ -279,6 +279,26 @@
+ 		gpio = <&sled6_ioexp 1 GPIO_ACTIVE_HIGH>;
+ 		enable-active-high;
  	};
 +
 +	pwm-fan0 {
@@ -48,9 +48,9 @@ index eaf1bc261ee3..69c4f033d100 100644
  };
  
  &mac2 {
-@@ -838,3 +858,62 @@
- 	status = "okay";
- 	/* TODO: Add Marvell 88X3310 */
+@@ -1049,3 +1069,62 @@
+ 		bias-disable;
+ 	};
  };
 +
 +&pwm {

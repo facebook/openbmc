@@ -1,4 +1,4 @@
-From 3b3e2807b390ece3224ff91f4c5e87d7e88d660f Mon Sep 17 00:00:00 2001
+From ba420ef0b5cfa989392c6416989b8f7446854b19 Mon Sep 17 00:00:00 2001
 From: Howard Chiu <howard10703049@gmail.com>
 Date: Thu, 2 Dec 2021 10:26:23 +0800
 Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
@@ -19,10 +19,10 @@ LINK: https://patchwork.ozlabs.org/project/openbmc/patch/20211202022623.182903-1
  create mode 100644 drivers/hwmon/tach-aspeed-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed-g6.dtsi
-index c32e87fad4dc..1d109dd6a9f9 100644
+index 8c0de3f27883b..35bcd949256a1 100644
 --- a/arch/arm/boot/dts/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed-g6.dtsi
-@@ -304,6 +304,28 @@
+@@ -323,6 +323,28 @@
  			#size-cells = <1>;
  			ranges;
  

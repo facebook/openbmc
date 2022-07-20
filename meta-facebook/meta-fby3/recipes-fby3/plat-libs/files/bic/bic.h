@@ -59,6 +59,10 @@ enum {
   GPV3_GPIO_RST_USB_HUB3 = 98,
 };
 
+enum {
+  BOARD_TYPE_AST1030 = 3,
+};
+
 #define VALUE_LOW 0
 #define VALUE_HIGH 1
 
@@ -68,6 +72,9 @@ enum {
 #define VR_PAGE50 0x50
 #define VR_PAGE60 0x60
 #define VR_PAGE62 0x62
+
+#define GET_GPIO_BIT_VALUE(list, index) \
+           (((list.gpio[index/32]) >> ((index % 32)) & 0x1))
 
 #define BIT_VALUE(list, index) \
            ((((uint8_t*)&list)[index/8]) >> (index % 8)) & 0x1\

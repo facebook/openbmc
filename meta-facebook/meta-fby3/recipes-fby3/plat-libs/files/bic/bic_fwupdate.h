@@ -43,6 +43,8 @@ int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force);
 // Update from existing file descriptor. May be a pipe or other stream, don't assume it's seekable.
 int bic_update_fw_fd(uint8_t slot_id, uint8_t comp, int fd, uint8_t force);
 
+int get_sb_bic_solution(uint8_t slot_id, bool *is_ast1030);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

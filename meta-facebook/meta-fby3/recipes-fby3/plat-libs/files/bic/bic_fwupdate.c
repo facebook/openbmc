@@ -336,7 +336,7 @@ read_bic_update_ack_status(uint8_t slot_id, int i2cfd, uint8_t intf) {
     rlen = 0;
 
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-    if ( rlen <= 0 ) {
+    if ( rlen == 0 ) {
       printf("%s() invalid lenth %d", __func__, rlen);
       ret = -1;
     }
@@ -349,7 +349,7 @@ read_bic_update_ack_status(uint8_t slot_id, int i2cfd, uint8_t intf) {
     print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen);
 #endif
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
-    if ( rlen <= 0 ) {
+    if ( rlen == 0 ) {
       printf("%s() invalid lenth %d", __func__, rlen);
       ret = -1;
     }
@@ -543,7 +543,7 @@ send_bic_image_data(uint8_t slot_id, int i2cfd, uint16_t len, uint8_t *buf, uint
 static int
 send_bic_runtime_image_data(uint8_t slot_id, int fd, int i2cfd, int file_size, uint8_t bytes_per_read, uint8_t intf) {
   uint8_t buf[256] = {0};
-  uint8_t read_bytes = 0;
+  ssize_t read_bytes = 0;
   int ret = -1;
   int dsize = 0;
   int last_offset = 0;
@@ -1017,9 +1017,9 @@ is_valid_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, int file
           syslog(LOG_WARNING, "%s() bic_get_gpio returns %d\n", __func__, ret);
           goto error_exit;
         }
-        hsc_det |= ((BIT_VALUE(gpio, 77)) << 0); // 77    HSC_DETECT0
-        hsc_det |= ((BIT_VALUE(gpio, 78)) << 1); // 78    HSC_DETECT1
-        hsc_det |= ((BIT_VALUE(gpio, 79)) << 2); // 79    HSC_DETECT2
+        hsc_det |= ((GET_GPIO_BIT_VALUE(gpio, 77)) << 0); // 77    HSC_DETECT0
+        hsc_det |= ((GET_GPIO_BIT_VALUE(gpio, 78)) << 1); // 78    HSC_DETECT1
+        hsc_det |= ((GET_GPIO_BIT_VALUE(gpio, 79)) << 2); // 79    HSC_DETECT2
         if ( hsc_det == HSC_DET_ADM1278 ) {
           // old board, BOARD_REV_ID3 is floating.
           board_revision_id &= 0x7;
@@ -1097,13 +1097,15 @@ _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8
 
   tlen = len + 10;
 
-  do {
+  for (int curr = 0; curr < retries; ++curr) {
     ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      sleep(1);
-      printf("_update_fw: slot: %d, target %d, offset: %d, len: %d retrying..\n", slot_id, target, offset, len);
-    } else break;
-  } while ( retries-- > 0 );
+    if (ret >= 0) {
+      return ret;
+    }
+    
+    sleep(1);
+    printf("_update_fw: slot: %u, target %u, offset: %u, len: %u retrying..\n", slot_id, target, offset, len);
+  }
 
   return ret;
 }
@@ -1186,12 +1188,52 @@ error_exit:
   return update_rc;
 }
 
+int
+get_sb_bic_solution(uint8_t slot_id, bool *is_ast1030) {
+  bic_gpio_t gpio = {0};
+  uint8_t hsc_det = 0;
+  uint8_t board_rev = 0;
+
+  if (is_ast1030 == NULL) {
+    syslog(LOG_ERR, "%s(): Error: null parameter", __func__);
+    return -1;
+  }
+
+  *is_ast1030 = false; //default
+
+  if (bic_get_gpio(slot_id, &gpio, NONE_INTF) < 0) {
+    syslog(LOG_ERR, "%s(): Failed to get slot%u bic gpio", __func__, slot_id);
+    return -1;
+  }
+
+  hsc_det |= ((GET_GPIO_BIT_VALUE(gpio, HSC_DETECT0)) << 0);
+  hsc_det |= ((GET_GPIO_BIT_VALUE(gpio, HSC_DETECT1)) << 1);
+  hsc_det |= ((GET_GPIO_BIT_VALUE(gpio, HSC_DETECT2)) << 2);
+
+  // old board BOARD_REV_ID3 is floating
+  // check server board revision on new re-spin board
+
+  if (hsc_det != HSC_DET_ADM1278) {
+    if (fby3_common_get_sb_board_rev(slot_id, &board_rev) < 0) {
+      syslog(LOG_ERR, "%s(): Failed to get slot%u board rev", __func__, slot_id);
+      return -1;
+    }
+
+    if (board_rev == BOARD_TYPE_AST1030) {
+      *is_ast1030 = true;
+    }
+  }
+
+  return 0;
+}
+
 static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   int ret = BIC_STATUS_FAILURE;
   int fd = 0;
   int file_size;
   uint8_t type = NO_EXPECTED_TYPE;
+  bool is_sb_ast1030 = false;
 
   //get fd and file size
   fd = open_and_get_size(path, &file_size);
@@ -1206,6 +1248,16 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
     bic_get_card_type(slot_id, GET_1OU, &type);
     if (type == VERNAL_FALLS_AST1030) {
       force = 1;  //there is no signature in AST BIC IMAGE currently
+    }
+  }
+
+  if (intf == NONE_INTF) {
+    if (get_sb_bic_solution(slot_id, &is_sb_ast1030) < 0) {
+      ret = BIC_STATUS_FAILURE;
+      goto exit;
+    }
+    if (is_sb_ast1030 == true) {
+      force = 1;
     }
   }
 
@@ -1233,7 +1285,11 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
       ret = update_remote_bic(slot_id, intf, fd, file_size);
       break;
     case NONE_INTF:
-      ret = update_bic(slot_id, fd, file_size);
+      if (is_sb_ast1030 == true) {
+        ret = update_ast_bic(slot_id, fd, file_size, intf);
+      } else {
+        ret = update_bic(slot_id, fd, file_size);
+      }
       break;
   }
 
@@ -1252,7 +1308,7 @@ update_fw_bic_bootloader(uint8_t slot_id, uint8_t comp, uint8_t intf, int fd, in
   uint8_t bytes_per_read = IPMB_MAX_SEND;
   uint8_t buf[256] = {0};
   uint16_t buf_size = sizeof(buf);
-  uint16_t read_bytes = 0;
+  ssize_t read_bytes = 0;
   uint32_t offset = 0;
   uint32_t last_offset = 0;
   uint32_t dsize = 0;

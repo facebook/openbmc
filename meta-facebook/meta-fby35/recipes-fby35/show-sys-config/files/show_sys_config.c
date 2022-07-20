@@ -267,6 +267,8 @@ main(int argc, char **argv) {
 
         if ( sys_info.type == CLASS2 ) {
           server_config = 0xD;
+        } else if (fby35_common_get_slot_type(i) == SERVER_TYPE_HD) {
+          server_config = 0xB;
         } else if ( riser_exp_bit == STATUS_PRSNT ) {
           server_config = 0xB;
         } else if ( front_exp_bit == STATUS_PRSNT && riser_exp_bit == STATUS_NOT_PRSNT ) {

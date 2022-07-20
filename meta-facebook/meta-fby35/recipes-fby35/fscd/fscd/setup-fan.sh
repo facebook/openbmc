@@ -118,8 +118,14 @@ init_class1_fsc() {
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
   elif [ "$sys_config" = "B" ]; then
-    config_type="DPV2"
-    target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
+    server_type=$(get_server_type 1)
+    if [[ $server_type -eq 2 ]]; then
+      config_type="HD"
+      target_fsc_config="/etc/FSC_CLASS1_HD_config.json"
+    else
+      config_type="DPV2"
+      target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
+    fi
   elif [ "$sys_config" = "C" ]; then
     board_id_1ou=$(get_1ou_board_type slot1)
     if [[ $board_id_1ou -eq 12 ]]; then
@@ -197,7 +203,7 @@ reload_sled_fsc() {
     sys_config="$($KV_CMD get sled_system_conf persistent)"
     if [[ "$sys_config" =~ ^(Type_(1|10|WF|KF))$ && "$cnt" -eq 4 ]]; then
       run_fscd=true
-    elif [[ "$sys_config" = "Type_DPV2" && "$cnt" -eq 2 ]]; then
+    elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true
     fi
   fi

@@ -225,11 +225,21 @@ get_slot_type() {
   echo $type
 }
 
-# Get server type. 0 = server
+# Get server type
+# Crater Lake: 0x00
+# Halfdome: 0x02
+# unknown type: 0xff
 get_server_type() {
-  #Return 0 since we only have a server
-  type=0
-  echo $type
+  #local bus=$1
+  local bus=$(get_cpld_bus "$1")
+  SB_CPLD_ADDR="0x0f"
+  type=$(/usr/sbin/i2cget -y $bus $SB_CPLD_ADDR 0x11)
+  if [ $? -ne 0 ]; then
+    # if get server type fail, return unknown server for retry or search other slot's server
+    echo "0xff"
+  else
+    echo $type
+  fi
 }
 
 # Check to see if Bridge-IC is ready

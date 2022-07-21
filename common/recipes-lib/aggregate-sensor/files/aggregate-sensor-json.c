@@ -503,23 +503,37 @@ int load_aggregate_conf(const char *file)
     DEBUG("Loading sensors failed!\n");
     goto bail;
   }
-  g_sensors_count = json_array_size(tmp);
-  if (!g_sensors_count) {
+
+  size_t offset = g_sensors_count;
+  size_t sensors_count = json_array_size(tmp);
+  size_t new_sensors_count = g_sensors_count + sensors_count;
+  if (!sensors_count) {
     DEBUG("No sensors available!\n");
     ret = 0;
     goto bail;
   }
-  g_sensors = calloc(g_sensors_count, sizeof(aggregate_sensor_t));
-  if (!g_sensors) {
-    g_sensors_count = 0;
+  // We can do shallow copy of the structs as long as they
+  // are a single copy.
+  aggregate_sensor_t *new_sensors = 
+    realloc(g_sensors, new_sensors_count * sizeof(aggregate_sensor_t));
+  if (!new_sensors) {
     DEBUG("Memory allocation failure!\n");
+    if (g_sensors) {
+      free(g_sensors);
+    }
+    g_sensors_count = 0;
+    g_sensors = NULL;
     goto bail;
   }
-  DEBUG("Loading %zu sensors\n", g_sensors_count);
-  for (i = 0; i < g_sensors_count; i++) {
-    g_sensors[i].idx = i;
-    DEBUG("Loading sensor: %zu\n", i);
-    ret = load_sensor_conf(&g_sensors[i], json_array_get(tmp, i));
+  g_sensors = new_sensors;
+  aggregate_sensor_t *sensors = g_sensors + offset;
+  memset(sensors, 0, sizeof(aggregate_sensor_t) * sensors_count);
+
+  DEBUG("Loading %zu sensors\n", sensors_count);
+  for (i = 0; i < sensors_count; i++) {
+    sensors[i].idx = g_sensors_count + i;
+    DEBUG("Loading sensor: %zu as %zu\n", i, sensors[i].idx);
+    ret = load_sensor_conf(&sensors[i], json_array_get(tmp, i));
     if (ret) {
       DEBUG("Loading configuration for sensor %zu failed!\n", i);
       free(g_sensors);
@@ -528,6 +542,7 @@ int load_aggregate_conf(const char *file)
       goto bail;
     }
   }
+  g_sensors_count = new_sensors_count;
   ret = 0;
 bail:
   json_decref(conf);

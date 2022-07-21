@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <dirent.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/pal_sensors.h>
 #include <openbmc/kv.h>
@@ -37,7 +38,7 @@
   } \
 } while(0)
 
-#define DEFAULT_CONF_FILE_PATH "/etc/aggregate-sensor-conf.json"
+#define DEFAULT_CONF_FILE_PATH "/etc/aggregate-sensors.d"
 
 size_t g_sensors_count = 0;
 aggregate_sensor_t *g_sensors = NULL;
@@ -161,7 +162,34 @@ aggregate_sensor_init(const char *conf_file_path)
   if (!conf_file_path) {
     conf_file_path = DEFAULT_CONF_FILE_PATH;
   }
-  return load_aggregate_conf(conf_file_path);
+  // Each count will clear previous loads.
+  if (g_sensors_count > 0) {
+    free(g_sensors);
+    g_sensors_count = 0;
+    g_sensors = NULL;
+  }
+  DIR *cdir = opendir(conf_file_path);
+  if (!cdir) {
+    // Assume this is a regular file.
+    return load_aggregate_conf(conf_file_path);
+  }
+  int ret = -1;
+  for (struct dirent *dp = readdir(cdir); dp != NULL; dp = readdir(cdir)) {
+    if (dp->d_type != DT_DIR) {
+      // Ignore subdirs and the . and .. directories as well
+      char fpath[sizeof(dp->d_name) * 2];
+      snprintf(fpath, sizeof(fpath), "%s/%s", conf_file_path, dp->d_name);
+      if (load_aggregate_conf(fpath)) {
+        DEBUG("Loading configuration %s failed\n", fpath);
+        ret = -1;
+        break;
+      }
+      // At least one configuration is loaded.
+      ret = 0;
+    }
+  }
+  closedir(cdir);
+  return ret;
 }
 
 void

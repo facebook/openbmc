@@ -37,8 +37,12 @@ do_install_ptest:append() {
 
 inherit python3-dir
 
+AGGREGATE_SENSORS_CONF ?= "aggregate-sensor-conf.json"
+
 do_install:append() {
-  install -D -m 644 ${S}/aggregate-sensor-conf.json ${D}${sysconfdir}/aggregate-sensor-conf.json
+  for conf in ${AGGREGATE_SENSORS_CONF}; do
+    install -D -m 644 ${S}/${conf} ${D}${sysconfdir}/aggregate-sensors.d/${conf}
+  done
   install -d ${D}${PYTHON_SITEPACKAGES_DIR}
   install -m 644 ${S}/aggregate_sensor.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
@@ -48,6 +52,6 @@ LDFLAGS= "-lm -lpal"
 DEPENDS =+ "libpal libsdr jansson libkv cmock"
 RDEPENDS:${PN} =+ "libpal libsdr libkv jansson "
 FILES:${PN}-ptest += "${libdir}/libaggregate-sensors/ptest"
-FILES:${PN} += "${sysconfdir}/aggregate-sensor-conf.json"
+FILES:${PN} += "${sysconfdir}/aggregate-sensors.d"
 FILES:${PN} += "${libdir}/libaggregate-sensor.so.0.1 \
                 ${PYTHON_SITEPACKAGES_DIR}/aggregate_sensor.py"

@@ -57,10 +57,19 @@ static void
 slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   uint32_t slot_id;
   uint8_t bmc_location = 0;
+  char sys_conf[16] = {0};
   const struct gpiopoll_config *cfg = gpio_poll_get_config(gpdesc);
   assert(cfg);
   sscanf(cfg->description, "GPIOH%u", &slot_id);
   slot_id -= 3;
+
+  if ( kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+  }
+  if ( strcmp(sys_conf, "Type_DPV2") == 0 || strcmp(sys_conf, "Type_HD") == 0 ){
+    if (slot_id == 2 || slot_id == 4) return;
+  }
+
   log_gpio_change(gpdesc, value, 0, true);
   log_slot_present(slot_id, value);
   pal_is_cable_connect_baseborad(slot_id, value);

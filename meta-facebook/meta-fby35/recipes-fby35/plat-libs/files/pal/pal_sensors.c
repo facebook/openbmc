@@ -1706,6 +1706,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
 
     if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
     else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
     else if ( strcmp(sys_conf, "Type_17") == 0 ) config = CONFIG_D;
     else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
 
@@ -1739,9 +1740,14 @@ static int
 read_pdb_cl_vdelta(uint8_t snr_number, float *value) {
   float medusa_vout = 0;
   float min_hsc_vin = 0;
+  uint8_t hsc_input_vol_num = BIC_SENSOR_HSC_INPUT_VOL; // Default Crater Lake sensor
+
+  if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD || fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
+    hsc_input_vol_num = BIC_HD_SENSOR_HSC_INPUT_VOL;
+  }
 
   if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_VOUT, &medusa_vout) < 0) return READING_NA;
-  if ( read_snr_from_all_slots(BIC_SENSOR_HSC_INPUT_VOL, GET_MIN_VAL, &min_hsc_vin) < 0) return READING_NA;
+  if ( read_snr_from_all_slots(hsc_input_vol_num, GET_MIN_VAL, &min_hsc_vin) < 0) return READING_NA;
 
   //Calculate the Vdrop between BMC_SENSOR_MEDUSA_VOUT and each individual HSC_Input_Vol
   //And return the max Vdrop. The UCR of Vdrop is 0.9V.
@@ -1759,10 +1765,15 @@ read_curr_leakage(uint8_t snr_number, float *value) {
   float medusa_curr = 0;
   float bb_hsc_curr = 0;
   float total_hsc_iout = 0;
+  uint8_t hsc_output_cur_num = BIC_SENSOR_HSC_OUTPUT_CUR; // Default Crater Lake sensor
+
+  if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_HD || fby35_common_get_slot_type(FRU_SLOT3) == SERVER_TYPE_HD) {
+    hsc_output_cur_num = BIC_HD_SENSOR_HSC_OUTPUT_CUR;
+  }
 
   if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_MEDUSA_CURR, &medusa_curr) < 0) return READING_NA;
   if ( sensor_cache_read(FRU_BMC, BMC_SENSOR_HSC_IOUT, &bb_hsc_curr) < 0) return READING_NA;
-  if ( read_snr_from_all_slots(BIC_SENSOR_HSC_OUTPUT_CUR, GET_TOTAL_VAL, &total_hsc_iout) < 0) return READING_NA;
+  if ( read_snr_from_all_slots(hsc_output_cur_num, GET_TOTAL_VAL, &total_hsc_iout) < 0) return READING_NA;
 
   *value = (medusa_curr - bb_hsc_curr - total_hsc_iout) / medusa_curr;
   *value *= 100;

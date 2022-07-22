@@ -105,11 +105,16 @@ def start_qemu(args: argparse.Namespace):
         f"file={GOLDEN_IMAGE},format=raw,if=mtd",
         "-drive",
         f"file={PRIMARY_IMAGE},format=raw,if=mtd",
-        "-serial",
-        "stdio",
-        "-display",
-        "none",
     ]
+    if args.stdout:
+        cmd += [
+            "-serial",
+            "stdio",
+            "-display",
+            "none",
+        ]
+    else:
+        cmd += ["-nographic"]
 
     if args.slirp_net:
         cmd.append("-netdev")
@@ -177,6 +182,12 @@ def main():
         "--tap-intf",
         help="TAP interface to use with --tap-net",
         default="tap0",
+    )
+    subcommand.add_argument(
+        "--stdout",
+        help="Use STDOUT as the serial output",
+        action="store_true",
+        default=False,
     )
     subcommand.add_argument("extra", nargs="*", help="Any extra arguments to pass to QEMU")
     subcommand.set_defaults(func=start_qemu)

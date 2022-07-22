@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import os
 import multiprocessing
+import re
 import shutil
 import subprocess
 import sys
@@ -23,6 +24,15 @@ def generate_mtd(bin_file: str, out_file: str):
     with open(out_file, "wb") as outf, open(bin_file, "rb") as inf:
         outf.write(inf.read())
         outf.write(b"\0" * zero_size)
+
+
+def detect_machine(image: str):
+  with open(image, 'rb') as f:
+    m = re.search(rb'U-Boot\s+\d\d\d\d\.\d\d\s+([^\-]+)-', f.read())
+    if not m:
+      raise ValueError("Could not detect machine")
+    machine = m.group(1).decode()
+    return f"{machine}-bmc"
 
 def qemu_path() -> str:
     home_dir = os.environ["HOME"]
@@ -97,6 +107,9 @@ def start_qemu(args: argparse.Namespace):
     generate_mtd(args.image, PRIMARY_IMAGE)
     shutil.copyfile(PRIMARY_IMAGE, GOLDEN_IMAGE)
 
+    if (args.machine is None):
+      args.machine = detect_machine(args.image)
+
     cmd = [
         qemu_exe,
         "-machine",
@@ -153,12 +166,13 @@ def main():
 
     subcommand = subparsers.add_parser("start", help="Start a QEMU instance")
     subcommand.add_argument(
-        "machine",
-        help="QEMU machine type to use (fby35-bmc, etc)"
-    )
-    subcommand.add_argument(
         "image",
         help="OpenBMC firmware image (flash-fby35, fby35.mtd, etc)"
+    )
+    subcommand.add_argument(
+        "--machine",
+        help="QEMU machine type to use (fby35-bmc, etc)",
+        default=None,
     )
     subcommand.add_argument(
         "--slirp-net",

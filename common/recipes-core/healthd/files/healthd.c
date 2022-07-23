@@ -608,7 +608,6 @@ static void initialize_bic_health_config(json_t *obj) {
   tmp = json_object_get(obj, "monitor_interval");
   if (tmp && json_is_number(tmp)) {
     bic_monitor_interval = json_integer_value(tmp);
-    syslog(LOG_WARNING, "bic monitor interval: %d", bic_monitor_interval);
     if (bic_monitor_interval <= 0) {
       bic_monitor_interval = BIC_HEALTH_INTERVAL;
     }
@@ -1778,7 +1777,6 @@ bic_health_monitor() {
   kv_set("flag_healthd_bic_health", "1", 0, 0);
 
   while (1) {
-    syslog(LOG_WARNING, "FRU %d BIC monitoring", bic_fru);
     if ((pal_get_server_12v_power(bic_fru, &status) < 0) || (status == SERVER_12V_OFF)) {
       goto next_run;
     }

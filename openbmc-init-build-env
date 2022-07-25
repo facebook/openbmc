@@ -27,6 +27,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby35:lf-kirkstone
   meta-grandteton:lf-kirkstone
   meta-inspirationpoint:lf-kirkstone
+  meta-waimeacanyon:lf-kirkstone
 # dunfell platforms (pending upgrade)
   meta-churchillmono:lf-dunfell
   meta-clearcreek:lf-dunfell

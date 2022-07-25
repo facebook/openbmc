@@ -37,9 +37,10 @@
 #define POWER_OFF_STR       "off"
 #define NVME_BIND_PATH "/sys/bus/i2c/drivers/pca954x/bind"
 #define NVME_UNBIND_PATH "/sys/bus/i2c/drivers/pca954x/unbind"
-#define PECI_RESCAN_PATH "/sys/bus/peci/rescan"
+#define PECI_BIND_PATH "/sys/bus/peci/drivers/intel_peci_client/bind"
+#define PECI_UNBIND_PATH "/sys/bus/peci/drivers/intel_peci_client/unbind"
 #define PCA_954X_BUS_ADDR "7-0071"
-#define PECI_RESCAN_VALUE "1"
+#define PECI_BUS_ADDR "0-30"
 #define POLL_TIMEOUT        -1 /* Forever */
 
 // Thread for gpio timer
@@ -215,19 +216,38 @@ power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t 
 static void
 post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   kv_set(POST_CMPLT_KV_KEY, (curr == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
+  FILE *fp;
+  int rc = 0;
+
   if (curr == GPIO_VALUE_LOW) {
-    FILE *fp = fopen((char*)PECI_RESCAN_PATH, "w");
+    fp = fopen((char*)PECI_BIND_PATH, "w");
+
     if (fp == NULL) {
       int err = errno;
-      syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_RESCAN_PATH, strerror(errno));
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_BIND_PATH, strerror(errno));
       return;
     }
 
-    int rc = fputs((char*)PECI_RESCAN_VALUE, fp);
+    rc = fputs((char*)PECI_BUS_ADDR, fp);
     fclose(fp);
 
     if (rc < 0) {
-      syslog(LOG_WARNING, "%s() peci driver rescan failed\n", __func__);
+      syslog(LOG_WARNING, "%s() peci driver bind failed\n", __func__);
+    }
+  } else {
+    fp = fopen((char*)PECI_UNBIND_PATH, "w");
+
+    if (fp == NULL) {
+      int err = errno;
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_UNBIND_PATH, strerror(errno));
+      return;
+    }
+
+    rc = fputs((char*)PECI_BUS_ADDR, fp);
+    fclose(fp);
+
+    if (rc < 0) {
+      syslog(LOG_WARNING, "%s() peci driver unbind failed\n", __func__);
     }
   }
 }

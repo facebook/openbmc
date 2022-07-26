@@ -34,6 +34,9 @@ LOCAL_URI = " \
     file://Makefile \
     file://mTerm/run \
     file://mTerm-service-setup.sh \
+    "
+
+LOCAL_URI:append:openbmc-fb = " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
                          'file://mTerm_server.service', '', d)} \
     "

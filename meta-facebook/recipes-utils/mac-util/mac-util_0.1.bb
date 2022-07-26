@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://mac-util.cpp;beginline=4;endline=16;md5=94a0865391a64
 LOCAL_URI += " \
     file://mac-util.cpp \
     file://Makefile \
-    file://${MACHINE}/eeprom.h \
+    file://eeprom.h \
     "
 CXXFLAGS:prepend:${MACHINE} = "-I${MACHINE} "
 LDFLAGS += "-lobmc-i2c"

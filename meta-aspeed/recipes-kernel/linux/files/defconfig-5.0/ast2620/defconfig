@@ -1,0 +1,2 @@
+# AST2620 doesn't work on kernel 5.0, but Yocto now requires all files in
+# SRC_URIs to be found.  Add an empty one just to make Yocto happy.

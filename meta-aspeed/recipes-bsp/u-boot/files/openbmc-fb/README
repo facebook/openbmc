@@ -1,0 +1,5 @@
+Yocto requires all files in SRC_URIs to be present, even if the recipe isn't
+explicitly used.  Inside the upstream meta/ layer there are often newer U-boot
+versions, which pick up our include files due to the same names, which causes
+them to look for `file://u-boot-${PN}` SRC_URIs.  Create empty directories
+of the correct versions to satisfy this requirement.

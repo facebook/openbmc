@@ -208,6 +208,7 @@ def arg_parser():
             "grandcanyon",
             "fby35",
             "churchillmono",
+            "grandteton",
         ],
     )
     parser.add_argument(

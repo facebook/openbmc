@@ -77,6 +77,8 @@ gpio_set BMC_READY_N 0
 # CPLD SMB ALERT
 gpio_export CPLD_SMB_ALERT_N_R GPIOE5
 
+gpio_export RST_PEX_I2C_SW_R_N GPIOA0
+
 # Reserved
 gpio_export BMC_GPIOA1 GPIOA1
 gpio_export BMC_GPIOA2 GPIOA2
@@ -99,6 +101,11 @@ gpio_export LED_POSTCODE_6 GPIOF6
 gpio_set LED_POSTCODE_6 0
 gpio_export LED_POSTCODE_7 GPIOF7
 gpio_set LED_POSTCODE_7 0
+
+gpio_export PEX0_SYS_ERR_BMC GPION4
+gpio_export PEX1_SYS_ERR_BMC GPIOG0
+gpio_export PEX2_SYS_ERR_BMC GPIOG3
+gpio_export PEX3_SYS_ERR_BMC GPIOG7
 
 # Board revision ID
 gpio_export REV_ID0 GPIOG4

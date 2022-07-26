@@ -38,11 +38,25 @@
 #define GETBIT(x, y)  ((x & (1ULL << y)) > y)
 #endif
 
-static void
-log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
-  const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+static void log_gpio_change(gpiopoll_pin_t *gp, gpio_value_t value, useconds_t log_delay, bool low_active)
+{
+  const struct gpiopoll_config *cfg = gpio_poll_get_config(gp);
   assert(cfg);
-  syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+  if (low_active)
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "DEASSERT": "ASSERT", cfg->description, cfg->shadow);
+  else
+    syslog(LOG_CRIT, "%s: %s - %s\n", value ? "ASSERT": "DEASSERT", cfg->description, cfg->shadow);
+}
+
+// Generic Event Handler for GPIO changes
+static void gpio_event_handle_low_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 0, true);
+}
+
+static void gpio_event_handle_high_active(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  log_gpio_change(gp, curr, 0, false);
 }
 
 static void
@@ -131,7 +145,7 @@ gpio_carrier_log_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
   gpio_get_value(tmp, &value);
 
   if (value == GPIO_VALUE_HIGH) {
-    log_gpio_change(desc, curr, 0);
+    log_gpio_change(desc, curr, 0, true);
   }
 
   gpio_close(tmp);
@@ -194,7 +208,7 @@ gpio_sys_pwr_ready_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t
     }
   }
 
-  log_gpio_change(desc, curr, 0);
+  log_gpio_change(desc, curr, 0, true);
 
   if (!tmp) {
     syslog(LOG_ERR, "RST_SMB_CARRIER_N open fail\n");
@@ -311,14 +325,9 @@ static void gpio_smb_alert_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpi
   power_fail_check();
 }
 
-static void gpio_event_log_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
-{
-  log_gpio_change(desc, curr, 0);
-}
-
 static void gpio_throttle_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  log_gpio_change(desc, curr, 0);
+  log_gpio_change(desc, curr, 0, true);
   read_throttle_err_cnt(desc, curr, 0);
   read_throttle_err_seq(desc, curr, 0);
 }
@@ -333,14 +342,14 @@ static void gpio_event_handle_power_state(gpiopoll_pin_t *gp, gpio_value_t last,
 
 static void gpio_event_handle_power_btn(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
-  log_gpio_change(desc, curr, 0);
+  log_gpio_change(desc, curr, 0, true);
 }
 
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
   {"CPLD_BMC_GPIO_R_01", "POWER STSTE MON", GPIO_EDGE_RISING, gpio_event_handle_power_state, NULL},
-  {"FM_SYS_THROTTLE_R", "GPIOP7", GPIO_EDGE_BOTH, gpio_event_log_handler, NULL},
+  {"FM_SYS_THROTTLE_R", "GPIOP7", GPIO_EDGE_BOTH, gpio_event_handle_low_active, NULL},
   {"HSC_TIMER_R_N", "GPIOP2", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"HSC_OC_R_N", "GPIOP3", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
   {"HSC_UV_R_N", "GPIOP4", GPIO_EDGE_FALLING, gpio_throttle_handler, NULL},
@@ -350,8 +359,12 @@ static struct gpiopoll_config g_gpios[] = {
   {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
   {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_sys_pwr_ready_handler, NULL},
   {"CPLD_SMB_ALERT_N_R", "GPIOE5", GPIO_EDGE_BOTH, gpio_smb_alert_handler, power_fail_check},
-  {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
-  {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_log_handler, NULL},
+  {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_handle_low_active, NULL},
+  {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_handle_low_active, NULL},
+  {"PEX0_SYS_ERR_BMC", "GPION4", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"PEX1_SYS_ERR_BMC", "GPIOG0", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"PEX2_SYS_ERR_BMC", "GPIOG3", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"PEX3_SYS_ERR_BMC", "GPIOG7", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
 };
 
 int main(int argc, char **argv)

@@ -71,7 +71,7 @@ jobs:
         docker:
             - image: ubuntu:focal
               environment:
-                  QEMU_URI: https://github.com/facebook/openbmc-qemu/releases/download/0.5.1
+                  QEMU_URI: https://github.com/facebook/openbmc-qemu/releases/download/0.6.0
               user: root
         resource_class: 2xlarge
         working_directory: /tmp/job/project

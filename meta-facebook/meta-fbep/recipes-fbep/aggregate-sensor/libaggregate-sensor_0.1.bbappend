@@ -17,4 +17,12 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-LOCAL_URI += "file://aggregate-sensor-conf.json "
+LOCAL_URI += " \
+    file://0002-fans.json \
+    file://0001-vrs.json \
+    "
+
+AGGREGATE_SENSORS_CONF += " \
+    0002-fans.json \
+    0001-vrs.json \
+    "

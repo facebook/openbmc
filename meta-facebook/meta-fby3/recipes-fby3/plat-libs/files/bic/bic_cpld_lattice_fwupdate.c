@@ -652,7 +652,11 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
   int ret = 0;
   int cf_size_used = 0; //(cf_size * LATTICE_COL_SIZE) / 8; // unit: bytes
 
-  LCMXO2Family_Get_Update_Data_Size(jed_fd, &cf_size_used);
+  ret = LCMXO2Family_Get_Update_Data_Size(jed_fd, &cf_size_used);
+
+  if ( ret < 0 ) {
+    return ret;
+  }
 
   //printf("Line cnt: %d\n", cf_size_used);
   cf_size_used = (cf_size_used * LATTICE_COL_SIZE) / 8;
@@ -661,6 +665,11 @@ LCMXO2Family_JED_File_Parser(FILE *jed_fd, CPLDInfo *dev_info) {
   fseek(jed_fd, 0, SEEK_SET);
 
   dev_info->CF = (unsigned int*)malloc( cf_size_used );
+
+  if (dev_info->CF == NULL) {
+    return -1;
+  }
+
   memset(dev_info->CF, 0, cf_size_used);
 
   dev_info->CF_Line=0;

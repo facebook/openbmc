@@ -4,6 +4,11 @@
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
   "sample_interval_ms": 3000,
+  "multi_fan_fail": {
+    "data": [
+      [2, 100]
+    ]
+  },
   "boost": {
     "fan_fail": true,
     "sensor_fail": true

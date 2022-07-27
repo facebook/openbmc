@@ -172,6 +172,7 @@ class Fscd(object):
         self.output_max_boost_pwm = False
         self.board_fan_mode = BoardFanMode()
         self.need_rearm = False
+        self.multi_fan_fail = None
 
     # TODO: Add checks for invalid config file path
     def get_fsc_config(self, fsc_config):
@@ -239,6 +240,8 @@ class Fscd(object):
         self.interval = self.fsc_config["sample_interval_ms"] / 1000.0
         if "fan_recovery_time" in self.fsc_config:
             self.fan_recovery_time = self.fsc_config["fan_recovery_time"]
+        if "multi_fan_fail" in self.fsc_config:
+            self.multi_fan_fail = self.fsc_config["multi_fan_fail"]
 
     def build_profiles(self):
         self.sensors = {}
@@ -759,13 +762,26 @@ class Fscd(object):
                             os.remove(boost_record_path)
                 else:
                     if dead_fans:
+                        dead = len(dead_fans)
                         # If not progressive ,when there is 1 fan failed, boost all fans
                         Logger.info(
                             "Failed fans: %s"
                             % (", ".join([str(i.label) for i in dead_fans]))
                         )
+                        if dead > 1 and self.multi_fan_fail:
+                            for fan_count, set_fan_pwm in self.multi_fan_fail["data"]:
+                                if dead >= fan_count:
+                                    #choose the higher PWM
+                                    pwmval = max(set_fan_pwm, pwmval)
+                                    if int(pwmval) == int(set_fan_pwm):
+                                        mode = fan_mode["boost_mode"]
+                                    else:
+                                        pwmval = zone.run(
+                                        sensors=sensors_tuples, ctx=ctx, ignore_mode=False
+                                        )
+                                        mode = zone.get_set_fan_mode(mode, action="read")
 
-                        if self.board_fan_mode.is_scenario_supported("one_fan_failure"):
+                        elif self.board_fan_mode.is_scenario_supported("one_fan_failure"):
                             # user define
                             (
                                 set_fan_mode,

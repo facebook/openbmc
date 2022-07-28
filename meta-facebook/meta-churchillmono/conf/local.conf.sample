@@ -6,4 +6,4 @@
 MACHINE ??= "churchillmono"
 
 # OpenBMC distro settings - Keeping as openbmc-fb to avoid incompatibilities
-DISTRO ?= "openbmc-fb"
+DISTRO ?= "openbmc-fb-2"

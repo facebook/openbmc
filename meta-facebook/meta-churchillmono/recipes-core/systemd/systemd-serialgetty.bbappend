@@ -1,6 +1,6 @@
 SERIAL_CONSOLES = "57600;ttyS1 9600;ttyS0"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI = "file://serial-getty@.service"
 
 do_install:append() {

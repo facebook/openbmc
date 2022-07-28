@@ -10,7 +10,6 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
-  dhcp-client \
   mterm \
   openbmc-utils \
   "

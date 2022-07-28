@@ -30,11 +30,9 @@ void M2DevComponent::get_version(json& j) {
   return;
 }
 
-void M2DevComponent::scan_all_devices(uint8_t intf) {
+void M2DevComponent::scan_all_devices(uint8_t intf, M2_DEV_INFO *m2_dev_info) {
   int ret = 0;
   uint8_t retry = MAX_READ_RETRY;
-  uint16_t vendor_id = 0;
-  uint8_t nvme_ready = 0 ,status = 0 ,ffi = 0 ,meff = 0 ,major_ver = 0 ,minor_ver = 0 ,additional_ver = 0;
 
   if (isScaned[slot_id] == true) {
     return;
@@ -42,16 +40,15 @@ void M2DevComponent::scan_all_devices(uint8_t intf) {
 
   for (int idx = 0; idx < MAX_DEVICE_NUM; idx ++) {
     while (retry) {
-      ret = bic_get_dev_power_status(slot_id, idx + 1, &nvme_ready, &status, \
-                                    &ffi, &meff, &vendor_id, &major_ver,&minor_ver, &additional_ver, intf);
+      ret = bic_get_dev_power_status(slot_id, idx + 1, m2_dev_info, intf);
       if (!ret) {
         break;
       }
       msleep(50);
       retry--;
     }
-    save_info(idx, ret, status, nvme_ready, ffi, major_ver, minor_ver, additional_ver);
-    if (isDual[slot_id] == false && meff == MEFF_DUAL_M2) {
+    save_info(idx, ret, m2_dev_info);
+    if (isDual[slot_id] == false && m2_dev_info->meff == MEFF_DUAL_M2) {
       isDual[slot_id] = true;
       if (idx % 2 == 0) {
         dev_main_slot = Dev_Main_Slot::ON_EVEN;
@@ -63,21 +60,22 @@ void M2DevComponent::scan_all_devices(uint8_t intf) {
   isScaned[slot_id] = true;
 }
 
-void M2DevComponent::save_info(uint8_t idx, int ret, uint8_t status,
- uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver, uint8_t additional_ver) {
+void M2DevComponent::save_info(uint8_t idx, int ret, M2_DEV_INFO *m2_dev_info) {
 
   if (idx >= MAX_DEVICE_NUM) {
     return;
   }
 
   statusTable[idx].ret = ret;
-  statusTable[idx].status = status;
-  statusTable[idx].nvme_ready = nvme_ready;
-  statusTable[idx].ffi = ffi;
-  statusTable[idx].major_ver = major_ver;
-  statusTable[idx].minor_ver = minor_ver;
-  statusTable[idx].additional_ver = additional_ver;
-
+  statusTable[idx].status = m2_dev_info->status;
+  statusTable[idx].nvme_ready = m2_dev_info->nvme_ready;
+  statusTable[idx].ffi = m2_dev_info->ffi;
+  statusTable[idx].major_ver = m2_dev_info->major_ver;
+  statusTable[idx].minor_ver = m2_dev_info->minor_ver;
+  statusTable[idx].additional_ver = m2_dev_info->additional_ver;
+  statusTable[idx].sec_major_ver = m2_dev_info->sec_major_ver;
+  statusTable[idx].sec_minor_ver = m2_dev_info->sec_minor_ver;
+  statusTable[idx].is_freya = m2_dev_info->is_freya;
 }
 
 int M2DevComponent::print_version()
@@ -87,6 +85,7 @@ int M2DevComponent::print_version()
   string err_msg("");
   uint8_t idx = (fw_comp - FW_2OU_M2_DEV0);
   uint8_t intf = REXP_BIC_INTF;
+  M2_DEV_INFO m2_dev_info = {};
   //static uint8_t cnt = 0;
 
   if ( fw_comp >= FW_TOP_M2_DEV0 && fw_comp <= FW_TOP_M2_DEV11 ) {
@@ -102,20 +101,23 @@ int M2DevComponent::print_version()
 
     server.ready();
     expansion.ready();
-    scan_all_devices(intf);
+    scan_all_devices(intf, &m2_dev_info);
 
     if (isDual[slot_id] == true) {
-      print_dual(idx);
+      print_dual(idx, m2_dev_info);
     } else {
       print_single(idx);
     }
   } catch(string& err) {
     printf("%s DEV%d Version: NA (%s)\n", board_name.c_str(), idx, err.c_str());
   }
+  if ( idx+1 == MAX_DEVICE_NUM ) {
+    isScaned[slot_id] = false;
+  }
   return FW_STATUS_SUCCESS;
 }
 
-void M2DevComponent::print_dual(uint8_t idx) {
+void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info) {
   int first_dev, second_dev, main_dev;
 
   if (idx % 2 == 0) {
@@ -146,7 +148,14 @@ void M2DevComponent::print_dual(uint8_t idx) {
   } else if (statusTable[main_dev].ffi != FFI_0_ACCELERATOR) {
     printf("NA(Not Accelerator)\n");
   } else {
-    printf("v%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver);
+    // Freya version format meaning: major, minor, PSOC major, PSOC minor, QSPI
+    if ( statusTable[main_dev].is_freya ) {
+      printf("v%d.%d.%d.%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver, \
+                                    statusTable[main_dev].additional_ver, statusTable[main_dev].sec_major_ver, \
+                                      statusTable[main_dev].sec_minor_ver);
+    } else {
+      printf("v%d.%d\n", statusTable[main_dev].major_ver, statusTable[main_dev].minor_ver);
+    }
   }
 }
 

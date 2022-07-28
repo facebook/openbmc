@@ -324,6 +324,20 @@ typedef struct {
   uint8_t component;
 } BB_FW_UPDATE_EVENT;
 
+typedef struct {
+    uint8_t nvme_ready; 
+    uint16_t vendor_id;
+    uint16_t status;
+    uint8_t ffi;
+    uint8_t meff;
+    uint8_t major_ver;
+    uint8_t minor_ver;
+    uint8_t additional_ver;
+    uint8_t sec_major_ver;
+    uint8_t sec_minor_ver;
+    bool    is_freya;
+} M2_DEV_INFO;
+
 int fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby3_common_is_bic_ready(uint8_t fru, uint8_t *val);
 int fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);

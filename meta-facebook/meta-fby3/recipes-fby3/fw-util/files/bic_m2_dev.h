@@ -27,6 +27,9 @@ class M2DevComponent : public Component {
     uint8_t major_ver;
     uint8_t minor_ver;
     uint8_t additional_ver;
+    uint8_t sec_major_ver;
+    uint8_t sec_minor_ver;
+    bool    is_freya;
   };
 
   enum Dev_Main_Slot {
@@ -39,10 +42,10 @@ class M2DevComponent : public Component {
   static bool isScaned[MAX_NUM_SERVER_FRU];
   static Dev_Main_Slot dev_main_slot;
 
-  void scan_all_devices(uint8_t intf);
-  void save_info(uint8_t idx, int ret, uint8_t status, uint8_t nvme_ready, uint8_t ffi, uint8_t major_ver, uint8_t minor_ver, uint8_t additional_ver);
+  void scan_all_devices(uint8_t intf, M2_DEV_INFO *m2_dev_info);
+  void save_info(uint8_t idx, int ret, M2_DEV_INFO *m2_dev_info);
   void print_single(uint8_t idx);
-  void print_dual(uint8_t idx);
+  void print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info);
 
 
   private:

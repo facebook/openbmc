@@ -700,8 +700,8 @@ int
 pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *type) {
   uint8_t sta = 0;
   int ret = 0;
-  uint8_t nvme_ready = 0;
   uint8_t intf = 0;
+  M2_DEV_INFO m2_dev_info = {};
 
   if (pal_get_exp_power(exp, &sta)) {
     return POWER_STATUS_ERR;
@@ -741,13 +741,14 @@ pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *
       return POWER_STATUS_FRU_ERR;
   }
 
-  ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, &nvme_ready, status, \
-                                  NULL, NULL, NULL, NULL, NULL, NULL, intf);
+  ret = bic_get_dev_power_status(FRU_SLOT1, dev_id, &m2_dev_info, intf);
   if (ret < 0) {
     return -1;
   }
 
-  if (nvme_ready) {
+  *status = m2_dev_info.status;
+
+  if (m2_dev_info.nvme_ready) {
     *type = DEV_TYPE_M2;
   } else {
     *type = DEV_TYPE_UNKNOWN;
@@ -774,9 +775,9 @@ pal_get_dual_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *ty
 int
 pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *type) {
   int ret = 0;
-  uint8_t nvme_ready = 0;
   uint8_t intf = 0;
   uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
+  M2_DEV_INFO m2_dev_info = {};
 
   if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
     uint8_t dual_sta[2] = {0};
@@ -815,13 +816,14 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
 
     dev_id = rsp[0];
     intf = rsp[1];
-    ret = bic_get_dev_power_status(slot_id, dev_id, &nvme_ready, status, \
-                                   NULL, NULL, NULL, NULL, NULL, NULL, intf);
+    ret = bic_get_dev_power_status(slot_id, dev_id, &m2_dev_info, intf);
     if (ret < 0) {
       return -1;
     }
 
-    if (nvme_ready) {
+    *status = m2_dev_info.status;
+
+    if (m2_dev_info.nvme_ready) {
       *type = DEV_TYPE_M2;
     } else {
       *type = DEV_TYPE_UNKNOWN;

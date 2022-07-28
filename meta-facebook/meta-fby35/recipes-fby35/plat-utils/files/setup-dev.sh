@@ -45,11 +45,12 @@ function init_class1_dev() {
   local chip=""
   local load_driver=false
 
-  if [ "$(/usr/sbin/i2cdetect -y 11 | grep "$LTC4282_ADDR" -c)" -eq "1" ]; then
+  # Get register from different address to determine HSC chip
+  if [ "$(/usr/sbin/i2cget -y 11 0x$LTC4282_ADDR 0x1 2> /dev/null | wc -l)" -eq "1" ]; then
     chip="ltc4282"
     medusa_addr=0x"$LTC4282_ADDR"
     load_driver=true
-  elif [ "$(/usr/sbin/i2cdetect -y 11 | grep "$ADM1272_ADDR" -c)" -eq "1" ]; then
+  elif [ "$(/usr/sbin/i2cget -y 11 0x"$ADM1272_ADDR" 0x1 2> /dev/null | wc -l)" -eq "1" ]; then
     chip="adm1272"
     medusa_addr=0x"$ADM1272_ADDR"
     load_driver=true

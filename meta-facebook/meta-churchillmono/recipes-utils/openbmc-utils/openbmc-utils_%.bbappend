@@ -29,6 +29,8 @@ LOCAL_URI += "file://setup_i2c.sh \
             file://wedge_power.sh \
             file://board-utils.sh \
             file://oob_switch_utils.sh \
+            file://mac_idprom.sh \
+            file://crc_16.py \
 	    "
 
 OPENBMC_UTILS_FILES += " \
@@ -37,6 +39,8 @@ OPENBMC_UTILS_FILES += " \
     wedge_power.sh \
     board-utils.sh \
     oob_switch_utils.sh \
+    mac_idprom.sh \
+    crc_16.py \
     "
 
 inherit systemd

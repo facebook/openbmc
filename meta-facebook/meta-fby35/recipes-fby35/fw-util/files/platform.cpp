@@ -237,7 +237,7 @@ class ClassConfig {
       }
   }
 
-  bool isRainbowFalls(uint8_t slot_id) {
+  static bool isRainbowFalls(uint8_t slot_id) {
     int ret;
     uint8_t card_type = 0;
     ret = bic_get_card_type(slot_id, CARD_TYPE_1OU, &card_type);

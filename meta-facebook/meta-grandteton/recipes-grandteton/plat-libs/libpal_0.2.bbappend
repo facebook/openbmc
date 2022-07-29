@@ -10,6 +10,7 @@ LOCAL_URI += "\
     file://pal_common.c \
     file://pal_common.h \
     file://pal_def.h \
+    file://pal_gpio.h \
     file://pal_sensors.c \
     file://pal_sensors.h \
     file://pal_swb_sensors.c \

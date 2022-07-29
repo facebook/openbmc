@@ -19,7 +19,7 @@ SUMMARY = "GPIO Monitoring Daemon"
 DESCRIPTION = "Daemon for monitoring the gpio signals"
 SECTION = "base"
 PR = "r1"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://gpiod.c;beginline=4;endline=16;md5=3598c23c3531e1f059568c83d4174cc0"
 
 LOCAL_URI = " \

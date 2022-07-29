@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <syslog.h>
 #include <sys/ioctl.h>
 #include <openbmc/libgpio.h>
-#include <openbmc/pal_def.h>
+#include <openbmc/pal_gpio.h>
 #include "SoftwareJTAGHandler.h"
 #include "mem_helper.h"
 

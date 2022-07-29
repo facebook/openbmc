@@ -25,6 +25,7 @@ LOCAL_URI = " \
     file://COPYING \
     file://ast-functions \
     file://setup-gpio.sh \
+    file://setup-sgpio.sh \
     file://sol-util \
     file://setup-i2c-dev.sh \
     file://setup-por.sh \
@@ -62,7 +63,9 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
 # setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 59 5 .
+  update-rc.d -r ${D} setup-gpio.sh start 58 5 .
+  install -m 755 setup-sgpio.sh ${D}${sysconfdir}/init.d/setup-sgpio.sh
+  update-rc.d -r ${D} setup-sgpio.sh start 59 5 .
 # setup-i2c-dev.sh
   install -m 755 setup-i2c-dev.sh ${D}${sysconfdir}/init.d/setup-i2c-dev.sh
   update-rc.d -r ${D} setup-i2c-dev.sh start 60 5 .

@@ -18,7 +18,6 @@ srcs_fruid = [
   'hal_fruid.c',
 ]
 
-# pal_furid library.
 hal_fruid_lib = shared_library('hal_fruid', srcs_fruid,
     dependencies: libs_fruid,
     version: meson.project_version(),

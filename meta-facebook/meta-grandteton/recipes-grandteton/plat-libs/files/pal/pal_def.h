@@ -22,16 +22,6 @@
 #define READING_SKIP    (1)
 #define READING_NA      (-2)
 
-//XDP Debug PIN
-#define RST_PLTRST_BMC_N       "RST_PLTRST_PLD_N"
-#define IRQ_BMC_PRDY_N         "FM_DBP_BMC_PRDY_N"
-#define DBP_PRESENT_N          "FM_BMC_DBP_PRESENT_R_N"
-#define FM_JTAG_TCK_MUX_SEL    "FM_JTAG_TCK_MUX_BMC_SEL" //Choice Jtag to CPU or PCH
-#define FM_BMC_PREQ_N          "FM_DBP_CPU_PREQ_GF_N"
-#define FM_JTAG_BMC_MUX_SEL    "FM_JTAG_BMC_MUX_SEL" //Choice BMC to CPLD or BMC to CPU/PCH
-#define FM_BMC_CPU_PWR_DEBUG_N "FM_BMC_CPU_FBRK_OUT_N"
-#define PWRGD_SYS_PWROK        "PWRGD_SYS_PWROK_R"
-
 //NM Device Info
 #define NM_IPMB_BUS_ID             (I2C_BUS_6)
 #define NM_SLAVE_ADDR              (0x2C)
@@ -59,38 +49,6 @@ enum {
   NIC6_COMP,
   NIC7_COMP,
 };
-
-#define FP_RST_BTN_N             "ID_RST_BTN_BMC_IN"
-#define FP_PWR_BTN_N             "SYS_BMC_PWRBTN_IN"
-#define FM_UARTSW_LSB_N          "FM_UARTSW_LSB_N"
-#define FM_UARTSW_MSB_N          "FM_UARTSW_MSB_N"
-#define FM_POST_CARD_PRES_N      "FM_DEBUG_PORT_PRSNT_N_IN"
-#define RST_PLTRST_N             "RST_PLTRST_PLD_N"
-#define IRQ_UV_DETECT_N          "IRQ_UV_DETECT_N"
-#define IRQ_OC_DETECT_N          "IRQ_OC_DETECT_N"
-#define IRQ_HSC_FAULT_N          "IRQ_HSC_FAULT_N"
-#define IRQ_HSC_ALERT_N          "IRQ_SML1_PMBUS_PLD_ALERT_N"
-#define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"
-#define FM_CPU0_PROCHOT_N        "H_CPU0_PROCHOT_LVC1_N"
-#define FM_CPU1_PROCHOT_N        "H_CPU1_PROCHOT_LVC1_N"
-#define FM_CPU0_THERMTRIP_N      "H_CPU0_THERMTRIP_LVC1_N"
-#define FM_CPU1_THERMTRIP_N      "H_CPU1_THERMTRIP_LVC1_N"
-#define FM_CPU_ERR0_N            "H_CPU_ERR0_LVC2_N"
-#define FM_CPU_ERR1_N            "H_CPU_ERR1_LVC2_N"
-#define FM_CPU_ERR2_N            "H_CPU_ERR2_LVC2_N"
-#define FM_CPU0_MEM_HOT_N        "H_CPU0_MEMHOT_OUT_LVC1_N"
-#define FM_CPU1_MEM_HOT_N        "H_CPU1_MEMHOT_OUT_LVC1_N"
-#define FM_CPU0_MEM_THERMTRIP_N  "H_CPU0_MEMTRIP_LVC1_N"
-#define FM_CPU1_MEM_THERMTRIP_N  "H_CPU1_MEMTRIP_LVC1_N"
-#define FM_PCH_THERMTRIP_N       "FM_PCH_BMC_THERMTRIP_N"
-#define FM_SYS_THROTTLE          "FM_THROTTLE_R_N"
-#define FM_CPU0_VCCIN_VR_HOT     "IRQ_CPU0_VRHOT_N"
-#define FM_CPU1_VCCIN_VR_HOT     "IRQ_CPU1_VRHOT_N"
-#define FM_CPU0_VCCD_VR_HOT      "IRQ_PVCCD_CPU0_VRHOT_LVC3_N"
-#define FM_CPU1_VCCD_VR_HOT      "IRQ_PVCCD_CPU0_VRHOT_LVC3_N"
-#define FM_CPU0_PWRGD            "PWRGD_CPUPWRGD_LVC2_R1"
-#define FM_CPU0_SKTOCC           "FM_CPU0_SKTOCC_LVT3_PLD_N"
-#define FM_CPU1_SKTOCC           "FM_CPU1_SKTOCC_LVT3_PLD_N"
 
 enum {
   FRU_ALL = 0,

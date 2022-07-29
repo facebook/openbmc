@@ -34,6 +34,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/misc-utils.h>
 #include <openbmc/peci_sensors.h>
+#include <openbmc/pal_gpio.h>
 
 #define POLL_TIMEOUT -1
 #define POWER_ON_STR        "on"
@@ -496,8 +497,8 @@ static void
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
-  {FP_RST_BTN_N,            "GPIOP2",   GPIO_EDGE_BOTH,    pwr_reset_handler,          NULL},
-  {FP_PWR_BTN_N,            "GPIOP0",   GPIO_EDGE_BOTH,    pwr_button_handler,         NULL},
+  {FP_RST_BTN_IN_N,         "GPIOP2",   GPIO_EDGE_BOTH,    pwr_reset_handler,          NULL},
+  {FP_PWR_BTN_IN_N,         "GPIOP0",   GPIO_EDGE_BOTH,    pwr_button_handler,         NULL},
   {FM_UARTSW_LSB_N,         "SGPIO106", GPIO_EDGE_BOTH,    uart_select_handle,         NULL},
   {FM_UARTSW_MSB_N,         "SGPIO108", GPIO_EDGE_BOTH,    uart_select_handle,         NULL},
   {FM_POST_CARD_PRES_N,     "GPIOZ6",   GPIO_EDGE_BOTH,    usb_dbg_card_handler,       NULL},
@@ -524,7 +525,7 @@ static struct gpiopoll_config g_gpios[] = {
   {FM_CPU0_VCCD_VR_HOT,     "SGPIO12",  GPIO_EDGE_BOTH,    cpu0_pvccd_handler,         cpu_vr_hot_init},
   {FM_CPU1_VCCD_VR_HOT,     "SGPIO18",  GPIO_EDGE_BOTH,    cpu1_pvccd_handler,         cpu_vr_hot_init},
   {RST_PLTRST_N,            "SGPIO200", GPIO_EDGE_BOTH,    platform_reset_handle,      platform_reset_init},
-  {FM_CPU0_PWRGD,           "SGPIO116", GPIO_EDGE_BOTH,    cpu_pwr_handler,            NULL},
+  {FM_LAST_PWRGD,           "SGPIO116", GPIO_EDGE_BOTH,    cpu_pwr_handler,            NULL},
   {FM_CPU0_SKTOCC,          "SGPIO112", GPIO_EDGE_BOTH,    gpio_event_handler,         cpu_skt_init},
   {FM_CPU1_SKTOCC,          "SGPIO114", GPIO_EDGE_BOTH,    gpio_event_handler,         cpu_skt_init},
 };

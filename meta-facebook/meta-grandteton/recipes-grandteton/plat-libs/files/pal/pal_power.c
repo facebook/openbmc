@@ -7,9 +7,11 @@
 #include <openbmc/obmc-pal.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/nm.h>
+#include "pal_gpio.h"
+#include "pal_def.h"
 #include "pal_common.h"
 #include "pal_power.h"
-#include "pal_def.h"
+
 
 #define DELAY_POWER_ON 1
 #define DELAY_POWER_OFF 6
@@ -36,7 +38,7 @@ power_btn_out_pulse(uint8_t secs) {
   int ret = 0;
   gpio_desc_t *gdesc;
 
-  gdesc = gpio_open_by_shadow(GPIO_POWER_BTN_OUT);
+  gdesc = gpio_open_by_shadow(FP_PWR_BTN_OUT_N);
   if (!gdesc)
     return -1;
 
@@ -84,7 +86,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   if (fru != FRU_MB)
     return -1;
 
-  gdesc = gpio_open_by_shadow(GPIO_CPU_POWER_GOOD);
+  gdesc = gpio_open_by_shadow(FM_LAST_PWRGD);
   if (gdesc == NULL)
     return -1;
 
@@ -206,7 +208,7 @@ int
 pal_get_rst_btn(uint8_t *status) {
   int ret = -1;
   gpio_value_t value;
-  gpio_desc_t *desc = gpio_open_by_shadow(GPIO_RESET_BTN_IN);
+  gpio_desc_t *desc = gpio_open_by_shadow(FP_RST_BTN_IN_N);
   if (!desc) {
     return -1;
   }
@@ -229,7 +231,7 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
     return -1;
   }
 
-  gdesc = gpio_open_by_shadow(GPIO_RESET_BTN_OUT);
+  gdesc = gpio_open_by_shadow(FP_RST_BTN_OUT_N);
   if (gdesc == NULL)
     return -1;
 

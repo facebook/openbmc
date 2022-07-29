@@ -2,7 +2,7 @@
 #include <safe_str_lib.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-pal.h>
-#include <openbmc/pal_def.h> 
+#include <openbmc/pal_gpio.h>
 #include "target_handler.h"
 #include "logging.h"
 
@@ -26,8 +26,8 @@ struct gpio_evt {
 
 static void gpio_handle(gpiopoll_pin_t *gpio, gpio_value_t last, gpio_value_t curr);
 static struct gpiopoll_config g_gpios[JTAG_EVENT_NUM] = {
-    {RST_PLTRST_BMC_N, "0", GPIO_EDGE_BOTH, gpio_handle, NULL},
-    {FM_CPU0_PWRGD, "1", GPIO_EDGE_BOTH, gpio_handle, NULL},
+    {RST_PLTRST_N, "0", GPIO_EDGE_BOTH, gpio_handle, NULL},
+    {FM_LAST_PWRGD, "1", GPIO_EDGE_BOTH, gpio_handle, NULL},
     {IRQ_BMC_PRDY_N, "2", GPIO_EDGE_FALLING, gpio_handle, NULL},
     {DBP_PRESENT_N, "3", GPIO_EDGE_BOTH, gpio_handle, NULL}
 };
@@ -356,12 +356,12 @@ STATUS platform_init(Target_Control_Handle* state)
     state->gpios[BMC_JTAG_SEL_N].active_low = true;
 
     strcpy_s(state->gpios[BMC_CPU_PWRGD].name,
-             sizeof(state->gpios[BMC_CPU_PWRGD].name), FM_CPU0_PWRGD);
+             sizeof(state->gpios[BMC_CPU_PWRGD].name), FM_LAST_PWRGD);
     state->gpios[BMC_CPU_PWRGD].number = 1;
     state->gpios[BMC_CPU_PWRGD].fd = BMC_CPU_PWRGD;
 
     strcpy_s(state->gpios[BMC_PLTRST_B].name,
-             sizeof(state->gpios[BMC_PLTRST_B].name), RST_PLTRST_BMC_N);
+             sizeof(state->gpios[BMC_PLTRST_B].name), RST_PLTRST_N);
     state->gpios[BMC_PLTRST_B].number = 1;
     state->gpios[BMC_PLTRST_B].fd = BMC_PLTRST_B;
     state->gpios[BMC_PLTRST_B].active_low = true;

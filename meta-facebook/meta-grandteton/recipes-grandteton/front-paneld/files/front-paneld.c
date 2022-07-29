@@ -27,6 +27,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/pal_gpio.h>
 
 #define BTN_MAX_SAMPLES   200
 #define FW_UPDATE_ONGOING 1
@@ -57,7 +58,7 @@ led_sync_handler() {
   gpio_desc_t *PCH_BEEP_OUT = gpio_open_by_shadow("FM_PCH_BEEP_LED_OUT");
   gpio_desc_t *HDD_LED_OUT = gpio_open_by_shadow("FM_HDD_LED_N_OUT");
   gpio_desc_t *ID_LED_OUT = gpio_open_by_shadow("FM_ID_LED_N");
-  gpio_desc_t *PWR_GD = gpio_open_by_shadow(GPIO_CPU_POWER_GOOD);	
+  gpio_desc_t *PWR_GD = gpio_open_by_shadow(FM_LAST_PWRGD);
   gpio_desc_t *PWR_LED_OUT = gpio_open_by_shadow("BMC_PWR_LED");
   gpio_value_t value;
   uint8_t id_on = 0xFF;
@@ -73,7 +74,7 @@ led_sync_handler() {
       gpio_set_value(PWR_LED_OUT, value);
       pwr_led_val = value;
     } else {
-      fprintf(stderr, "gpio_get_value fail (GPIO_CPU_POWER_GOOD)\n");
+      fprintf(stderr, "gpio_get_value fail (FM_LAST_PWRGD)\n");
     }
 
     // HDD_LED depands on sgpio

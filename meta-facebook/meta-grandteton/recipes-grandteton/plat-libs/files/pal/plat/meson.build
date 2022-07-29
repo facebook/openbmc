@@ -5,7 +5,8 @@ pal_headers += [
     'pal_common.h',
     'pal_def.h',
     'pal_sensors.h',
-    'pal_swb_sensors.h'
+    'pal_swb_sensors.h',
+    'pal_gpio.h'
     ]
 
 pal_sources += [

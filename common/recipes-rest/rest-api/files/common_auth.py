@@ -59,7 +59,6 @@ RE_IPV6_LINK_LOCAL_SUFFIX = re.compile("%[a-z0-9]+$")
 def auth_required(request) -> Identity:
     identity = _extract_identity(request)
     request["identity"] = identity
-    request.headers["identity"] = identity
     return identity
 
 

@@ -111,6 +111,7 @@ async def auth_enforcer(app, handler):  # noqa: C901
                 % (request.method, request.path)
             )
             raise HTTPForbidden()
+        identity = None
         if acls is not None:
             identity = common_auth.auth_required(request)  # type: common_auth.Identity
             common_auth.permissions_required(request, acls)
@@ -119,6 +120,8 @@ async def auth_enforcer(app, handler):  # noqa: C901
                 % (identity, request.method, request.path)
             )
         resp = await handler(request)
+        if identity:
+            resp.headers["identity"] = str(identity)
         return resp
 
     return middleware_handler

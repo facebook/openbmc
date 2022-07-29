@@ -505,6 +505,12 @@ get_component_name(uint8_t comp) {
       return "BB CPLD";
     case FW_2OU_PESW:
       return "2OU PCIe Switch";
+    case FW_1OU_VR_V9_ASICA:
+      return "1OU_VR_P0V9/P0V8_ASICA";
+    case FW_1OU_VR_VDDQAB:
+      return "1OU_VR_VDDQAB/D0V8";
+    case FW_1OU_VR_VDDQCD:
+      return "1OU_VR_VDDQCD";
     case FW_2OU_PESW_VR:
       return "2OU PCIe VR";
     case FW_2OU_3V3_VR1:

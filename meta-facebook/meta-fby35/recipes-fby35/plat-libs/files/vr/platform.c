@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <facebook/bic.h>
 #include <facebook/bic_ipmi.h>
 #include <facebook/bic_xfer.h>
 #include "raa_gen3.h"
@@ -10,13 +11,14 @@
 #include "tps53688.h"
 
 #define SB_VR_BUS 4
+#define RBF_BIC_VR_BUS 9
 
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
 
 static int
-fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
-              uint8_t *rxbuf, uint8_t rxlen) {
+_fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
+              uint8_t *rxbuf, uint8_t rxlen, uint8_t intf) {
   uint8_t tbuf[64] = {0};
 
   if (txbuf == NULL || rxbuf == NULL) {
@@ -33,8 +35,20 @@ fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
   tbuf[2] = rxlen;
   memcpy(&tbuf[3], txbuf, txlen);
   return bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
-                       tbuf, txlen+3, rxbuf, &rxlen, NONE_INTF);
+                       tbuf, txlen+3, rxbuf, &rxlen, intf);
 }
+
+static int
+fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
+              uint8_t *rxbuf, uint8_t rxlen) {
+  return _fby35_vr_rdwr(bus, addr, txbuf, txlen, rxbuf, rxlen, NONE_INTF);
+};
+
+static int
+rbf_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
+              uint8_t *rxbuf, uint8_t rxlen) {
+  return _fby35_vr_rdwr(bus, addr, txbuf, txlen, rxbuf, rxlen, FEXP_BIC_INTF);
+};
 
 struct vr_ops rns_ops = {
   .get_fw_ver = get_raa_ver,
@@ -109,6 +123,30 @@ struct vr_info fby35_vr_list[] = {
     .private_data = fru_name,
     .xfer = &fby35_vr_rdwr,
   },
+  {
+    .bus = RBF_BIC_VR_BUS,
+    .addr = VR_1OU_V9_ASICA_ADDR,
+    .dev_name = "1OU_VR_P0V9/P0V8_ASICA",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &rbf_vr_rdwr,
+  },
+  {
+    .bus = RBF_BIC_VR_BUS,
+    .addr = VR_1OU_VDDQAB_ADDR,
+    .dev_name = "1OU_VR_VDDQAB/D0V8",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &rbf_vr_rdwr,
+  },
+  {
+    .bus = RBF_BIC_VR_BUS,
+    .addr = VR_1OU_VDDQCD_ADDR,
+    .dev_name = "1OU_VR_VDDQCD",
+    .ops = &rns_ops,
+    .private_data = fru_name,
+    .xfer = &rbf_vr_rdwr,
+  }
 };
 
 void plat_vr_preinit(uint8_t slot, const char *name) {

@@ -23,6 +23,12 @@ static map<uint8_t, map<uint8_t, string>> halfdome_vr_list = {
   {FW_VR_VDD11S3, {{VDD11S3_ADDR, "VDD11_S3"}}}
 };
 
+static map<uint8_t, map<uint8_t, string>> rainbow_falls_vr_list = {
+  {FW_1OU_VR_V9_ASICA, {{VR_1OU_V9_ASICA_ADDR, "1OU_VR_P0V9/P0V8_ASICA"}}},
+  {FW_1OU_VR_VDDQAB, {{VR_1OU_VDDQAB_ADDR, "1OU_VR_VDDQAB/D0V8"}}},
+  {FW_1OU_VR_VDDQCD, {{VR_1OU_VDDQCD_ADDR, "1OU_VR_VDDQCD"}}}
+};
+
 bool VrComponent::vr_printed = false;
 
 int VrComponent::update_internal(const string& image, bool force) {
@@ -183,6 +189,11 @@ void VrComponent::get_version(json& j) {
 }
 
 map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {
+
+  if(rainbow_falls_vr_list.count(fw_comp) > 0) {
+      return rainbow_falls_vr_list;
+  }
+
   if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
     return halfdome_vr_list;
   } else {

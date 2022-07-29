@@ -126,6 +126,11 @@ enum {
   VDDCR_CPU0_ADDR = 0xC2,
   VDDCR_CPU1_ADDR = 0xC4,
   VDD11S3_ADDR = 0xC6,
+
+  /*----Rainbow Falls VR ADDR-----*/
+  VR_1OU_V9_ASICA_ADDR = 0xC8,
+  VR_1OU_VDDQAB_ADDR = 0xB0,
+  VR_1OU_VDDQCD_ADDR = 0xB4,
 };
 
 // M2 info

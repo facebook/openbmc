@@ -28,6 +28,7 @@ class FwUtilVersionTest(CommonFwUtilTest, unittest.TestCase):
     def set_platform(self):
         self.platform = PLATFORM
 
+    @unittest.skip("FIXME T127573953")
     def test_version_header(self):
         for fru, comps in self.fw_util_info.items():
             for comp_name in comps.keys():

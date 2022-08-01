@@ -61,8 +61,8 @@ static void print_value_data(const json& j) {
         if (value["type"] == "flags") {
           for (const auto& flag : value["value"]) {
             std::cout << "\n    [" << int(flag[0]) << "] "
-                      << std::string(flag[1])
-                      << " <" << std::dec << int(flag[2]) << ">";
+                      << std::string(flag[1]) << " <" << std::dec
+                      << int(flag[2]) << ">";
           }
           std::cout << '\n';
         } else {
@@ -199,6 +199,36 @@ static void do_cmd(const std::string& type, bool json_fmt) {
     print_text(type, resp_j);
 }
 
+static void do_data_cmd(
+    const std::string& type,
+    bool json_fmt,
+    std::vector<int>& deviceFilter,
+    std::vector<std::string>& deviceTypeFilter,
+    std::vector<int>& regFilter,
+    std::vector<std::string>& regNameFilter,
+    bool latestOnly) {
+  json req;
+  req["type"] = type;
+  if (deviceFilter.size()) {
+    req["deviceFilter"]["deviceAddress"] = deviceFilter;
+  } else if (deviceTypeFilter.size()) {
+    req["deviceFilter"]["deviceType"] = deviceTypeFilter;
+  }
+  if (regFilter.size()) {
+    req["registerFilter"]["registerAddress"] = regFilter;
+  } else if (regNameFilter.size()) {
+    req["registerFilter"]["registerName"] = regNameFilter;
+  }
+  req["latestValueOnly"] = latestOnly;
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
+  json resp_j = json::parse(resp);
+  if (json_fmt)
+    print_json(resp_j);
+  else
+    print_text(type, resp_j);
+}
+
 static void do_rackmonstatus() {
   json req;
   req["type"] = "list";
@@ -263,9 +293,43 @@ int main(int argc, const char** argv) {
 
   // Data command (Get monitored data)
   std::string format = "raw";
+  std::vector<int> regFilter{};
+  std::vector<int> deviceFilter{};
+  std::vector<std::string> deviceTypeFilter{};
+  std::vector<std::string> regNameFilter{};
+  bool latestOnly = false;
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
-  data->callback([&]() { do_cmd(format + "_data", json_fmt); });
+  data->callback([&]() {
+    do_data_cmd(
+        format + "_data",
+        json_fmt,
+        deviceFilter,
+        deviceTypeFilter,
+        regFilter,
+        regNameFilter,
+        latestOnly);
+  });
   data->add_set("-f,--format", format, {"raw", "value"}, "Format the data");
+  data->add_option(
+      "--reg-addr",
+      regFilter,
+      "Return values of provided registers only");
+  data->add_option(
+      "--dev-addr",
+      deviceFilter,
+      "Return values of provided device addresses only");
+  data->add_option(
+      "--dev-type",
+      deviceTypeFilter,
+      "Return values of provided devices of the given type only");
+  data->add_option(
+      "--reg-name",
+      regNameFilter,
+      "Return values of provided register names only");
+  data->add_flag(
+      "--latest",
+      latestOnly,
+      "Returns only the latest stored value for a given register");
 
   // Pause command
   app.add_subcommand("pause", "Pause monitoring")->callback([&]() {

@@ -152,7 +152,7 @@ do_install:append() {
     fi
     bin="${D}/usr/local/bin"
     install_wrapper "/usr/local/bin/rackmoncli legacy_list" ${bin}/rackmonstatus
-    install_wrapper "/usr/local/bin/rackmoncli data --json" ${bin}/rackmondata
+    install_wrapper "/usr/local/bin/rackmoncli data --format raw --json" ${bin}/rackmondata
     install_wrapper "/usr/local/bin/rackmoncli data --format value" ${bin}/rackmoninfo
     install_wrapper "/usr/local/bin/rackmoncli \$@" ${bin}/rackmonctl
     ln -snf ../bin/rackmoncli ${bin}/modbuscmd

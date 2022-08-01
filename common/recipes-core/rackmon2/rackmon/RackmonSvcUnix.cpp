@@ -56,9 +56,9 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
     for (size_t i = 0; i < resp_m.len; i++) {
       resp["data"].push_back(int(resp_m.raw[i]));
     }
-  } else if (cmd == "list") {
+  } else if (cmd == "listModbusDevices") {
     resp["data"] = rackmond_.listDevices();
-  } else if (cmd == "raw_data") {
+  } else if (cmd == "getMonitorDataRaw") {
     std::vector<ModbusDeviceRawData> ret;
     rackmond_.getRawData(ret);
     resp["data"] = ret;
@@ -66,7 +66,7 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
     rackmond_.stop();
   } else if (cmd == "resume") {
     rackmond_.start();
-  } else if (cmd == "value_data") {
+  } else if (cmd == "getMonitorData") {
     ModbusDeviceFilter devFilter{};
     ModbusRegisterFilter regFilter{};
     if (req.contains("deviceFilter")) {

@@ -151,11 +151,11 @@ static void print_text(const std::string& req_s, json& j) {
   std::string status;
   j.at("status").get_to(status);
   if (status == "SUCCESS") {
-    if (req_s == "value_data")
+    if (req_s == "getMonitorData")
       print_value_data(j["data"]);
-    else if (req_s == "raw_data")
+    else if (req_s == "getMonitorDataRaw")
       print_nested(j["data"]);
-    else if (req_s == "list")
+    else if (req_s == "listModbusDevices")
       print_table(j["data"]);
     else if (req_s == "raw")
       print_hexstring(j["data"]);
@@ -231,7 +231,7 @@ static void do_data_cmd(
 
 static void do_rackmonstatus() {
   json req;
-  req["type"] = "list";
+  req["type"] = "listModbusDevices";
   RackmonClient cli;
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
@@ -282,7 +282,7 @@ int main(int argc, const char** argv) {
 
   // List command
   app.add_subcommand("list", "Return list of Modbus devices")->callback([&]() {
-    do_cmd("list", json_fmt);
+    do_cmd("listModbusDevices", json_fmt);
   });
 
   // Status command
@@ -292,7 +292,7 @@ int main(int argc, const char** argv) {
       ->callback(do_rackmonstatus);
 
   // Data command (Get monitored data)
-  std::string format = "raw";
+  std::string format = "value";
   std::vector<int> regFilter{};
   std::vector<int> deviceFilter{};
   std::vector<std::string> deviceTypeFilter{};
@@ -301,7 +301,7 @@ int main(int argc, const char** argv) {
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
   data->callback([&]() {
     do_data_cmd(
-        format + "_data",
+        format == "raw" ? "getMonitorDataRaw" : "getMonitorData",
         json_fmt,
         deviceFilter,
         deviceTypeFilter,

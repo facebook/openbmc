@@ -223,6 +223,37 @@ static void do_read_cmd(
   }
 }
 
+static void do_write_cmd(
+    int devAddr,
+    int regAddr,
+    std::vector<int>& values,
+    int timeout,
+    bool json_fmt) {
+  json req;
+  if (values.size() == 1) {
+    req["type"] = "writeSingleRegister";
+    req["regValue"] = values[0];
+  } else {
+    req["type"] = "presetMultipleRegisters";
+    req["regValue"] = values;
+  }
+  req["devAddress"] = devAddr;
+  req["regAddress"] = regAddr;
+  if (timeout != 0) {
+    req["timeout"] = timeout;
+  }
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
+  json resp_j = json::parse(resp);
+  if (json_fmt) {
+    print_json(resp_j);
+    return;
+  }
+  std::string status;
+  resp_j.at("status").get_to(status);
+  std::cout << status << std::endl;
+}
+
 static void do_cmd(const std::string& type, bool json_fmt) {
   json req;
   req["type"] = type;
@@ -336,6 +367,30 @@ int main(int argc, const char** argv) {
       "--count", regCount, "The number of registers to read", true);
   read_cmd->callback([&]() {
     do_read_cmd(devAddress, regAddress, regCount, raw_cmd_timeout, json_fmt);
+  });
+
+  std::vector<int> values{};
+  auto write_cmd = app.add_subcommand(
+      "write", "Write Register(s) of a given device with values");
+  write_cmd->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
+  write_cmd
+      ->add_option(
+          "DeviceAddress", devAddress, "The device to which we want to write")
+      ->required();
+  write_cmd
+      ->add_option(
+          "RegisterAddress",
+          regAddress,
+          "The Register to which we want to write")
+      ->required();
+  write_cmd
+      ->add_option(
+          "Value",
+          values,
+          "The values we want to write (Each value is 16bit register)")
+      ->required();
+  write_cmd->callback([&]() {
+    do_write_cmd(devAddress, regAddress, values, raw_cmd_timeout, json_fmt);
   });
 
   // List command

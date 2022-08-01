@@ -58,6 +58,15 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
     }
   } else if (cmd == "listModbusDevices") {
     resp["data"] = rackmond_.listDevices();
+
+  } else if (cmd == "readHoldingRegisters") {
+    uint8_t devAddress = req["devAddress"];
+    uint16_t regAddress = req["regAddress"];
+    size_t numRegisters = req["numRegisters"];
+    ModbusTime timeout = ModbusTime(req.value("timeout", 0));
+    std::vector<uint16_t> value(numRegisters);
+    rackmond_.readHoldingRegisters(devAddress, regAddress, value, timeout);
+    resp["regValues"] = value;
   } else if (cmd == "getMonitorDataRaw") {
     std::vector<ModbusDeviceRawData> ret;
     rackmond_.getRawData(ret);

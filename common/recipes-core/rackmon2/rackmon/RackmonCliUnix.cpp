@@ -187,6 +187,42 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
     print_text("raw", resp_j);
 }
 
+static void do_read_cmd(
+    int devAddr,
+    int regAddr,
+    int regCount,
+    int timeout,
+    bool json_fmt) {
+  json req;
+  req["type"] = "readHoldingRegisters";
+  req["devAddress"] = devAddr;
+  req["regAddress"] = regAddr;
+  req["numRegisters"] = regCount;
+  if (timeout != 0) {
+    req["timeout"] = timeout;
+  }
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
+  json resp_j = json::parse(resp);
+  if (json_fmt) {
+    print_json(resp_j);
+    return;
+  }
+  std::string status;
+  resp_j.at("status").get_to(status);
+  if (status == "SUCCESS") {
+    std::vector<unsigned int> values;
+    resp_j.at("regValues").get_to(values);
+    for (auto value : values) {
+      std::cout << "0x" << std::hex << std::setw(4) << std::setfill('0')
+                << value << ' ';
+    }
+    std::cout << std::endl;
+  } else {
+    std::cout << status << std::endl;
+  }
+}
+
 static void do_cmd(const std::string& type, bool json_fmt) {
   json req;
   req["type"] = type;
@@ -279,6 +315,28 @@ int main(int argc, const char** argv) {
       ->required();
   raw_cmd->callback(
       [&]() { do_raw_cmd(req, raw_cmd_timeout, expected_len, json_fmt); });
+
+  int devAddress = 0;
+  int regAddress = 0;
+  int regCount = 1;
+  auto read_cmd =
+      app.add_subcommand("read", "Read Register(s) of a given device");
+  read_cmd->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
+  read_cmd
+      ->add_option(
+          "DeviceAddress", devAddress, "The device from which we want to read")
+      ->required();
+  read_cmd
+      ->add_option(
+          "RegisterAddress",
+          regAddress,
+          "The Register from which we want to read")
+      ->required();
+  read_cmd->add_option(
+      "--count", regCount, "The number of registers to read", true);
+  read_cmd->callback([&]() {
+    do_read_cmd(devAddress, regAddress, regCount, raw_cmd_timeout, json_fmt);
+  });
 
   // List command
   app.add_subcommand("list", "Return list of Modbus devices")->callback([&]() {

@@ -223,6 +223,47 @@ static void do_read_cmd(
   }
 }
 
+static void do_read_file_cmd(
+    int devAddr,
+    int fileNum,
+    int recordNum,
+    int dataSize,
+    int timeout,
+    bool json_fmt) {
+  json req;
+  req["type"] = "readFileRecord";
+  req["devAddress"] = devAddr;
+  if (timeout != 0) {
+    req["timeout"] = timeout;
+  }
+  req["records"] = json::array();
+  req["records"][0]["fileNum"] = fileNum;
+  req["records"][0]["recordNum"] = recordNum;
+  req["records"][0]["dataSize"] = dataSize;
+  RackmonClient cli;
+  std::string resp = cli.request(req.dump());
+  json resp_j = json::parse(resp);
+  if (json_fmt) {
+    print_json(resp_j);
+    return;
+  }
+  std::string status;
+  resp_j.at("status").get_to(status);
+  if (status == "SUCCESS") {
+    for (auto& rec : resp_j["data"]) {
+      std::cout << "FILE:0x" << std::hex << rec["fileNum"];
+      std::cout << " RECORD:0x" << std::hex << rec["recordNum"] << std::endl;
+      for (auto& data : rec["data"]) {
+        std::cout << std::hex << std::setw(4) << std::setfill('0') << int(data)
+                  << ' ';
+      }
+      std::cout << std::endl;
+    }
+  } else {
+    std::cout << status << std::endl;
+  }
+}
+
 static void do_write_cmd(
     int devAddr,
     int regAddr,
@@ -391,6 +432,30 @@ int main(int argc, const char** argv) {
       ->required();
   write_cmd->callback([&]() {
     do_write_cmd(devAddress, regAddress, values, raw_cmd_timeout, json_fmt);
+  });
+
+  int fileNum, recNum, dataSize;
+  auto read_file =
+      app.add_subcommand("read_file", "Read file record from the device");
+  read_file
+      ->add_option(
+          "DeviceAddress",
+          devAddress,
+          "The device from which we want to read the record")
+      ->required();
+  read_file->add_option("FileNum", fileNum, "The File we want to read")
+      ->required();
+  read_file
+      ->add_option(
+          "RecordNum", recNum, "The Record in the file we want to read")
+      ->required();
+  read_file
+      ->add_option("DataSize", dataSize, "The size in words we want to read")
+      ->required();
+  read_file->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
+  read_file->callback([&]() {
+    do_read_file_cmd(
+        devAddress, fileNum, recNum, dataSize, raw_cmd_timeout, json_fmt);
   });
 
   // List command

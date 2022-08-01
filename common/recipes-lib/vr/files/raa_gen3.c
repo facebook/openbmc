@@ -142,11 +142,14 @@ check_dev_rev(uint32_t rev, uint8_t mode) {
       break;
     case RAA_GEN3_LEGACY:
     case RAA_GEN3_PRODUCTION:
-      if ( sw_rev < VR_RAA_GEN3_SW_REV_MIN ) {
-        syslog(LOG_WARNING, "%s: GEN3 unexpected IC_DEVICE_REV %08X", __func__, rev);
-        return -1;
-      }
-    break;
+      // Confirmed with Renesas FAE,
+      // We can ignore the IC_DEVICE_REV check.
+      // But we need to make sure that legacy IC use legacy HEX and production IC use production HEX.
+      // if ( sw_rev < VR_RAA_GEN3_SW_REV_MIN ) {
+      //   syslog(LOG_WARNING, "%s: GEN3 unexpected IC_DEVICE_REV %08X", __func__, rev);
+      //   return -1;
+      // }
+      break;
     default:
       syslog(LOG_WARNING, "RAA Mode not support");
       return -1;

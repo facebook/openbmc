@@ -72,6 +72,9 @@ do {                                                                        \
 #define FW_UPDATE_FAN_PWM  70
 #define FAN_PWM_CNT        4
 
+#define SB_BIC_BOOT_STRAP_REG 0x10
+#define FORCE_BOOT_FROM_UART  0x01
+
 enum {
   FEXP_BIC_I2C_WRITE   = 0x20,
   FEXP_BIC_I2C_READ    = 0x21,
@@ -272,6 +275,41 @@ is_valid_intf(uint8_t intf) {
 }
 
 static int
+get_sb_bic_boot_strap(uint8_t slot_id, uint8_t *status) {
+  int i2cfd = 0;
+  uint8_t tbuf[1] = {SB_BIC_BOOT_STRAP_REG};
+  uint8_t rbuf[1] = {0};
+  uint8_t tlen = 1;
+  uint8_t rlen = 1;
+  int ret = -1;
+
+  if (status == NULL) {
+    syslog(LOG_WARNING, "%s() fail to get sb bic boot strap due to getting NULL input *status.\n", __func__);
+    return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if ( i2cfd < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, (slot_id + SLOT_BUS_BASE), strerror(errno));
+    goto error_exit;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
+    goto error_exit;
+  }
+
+  *status = rbuf[0];
+
+  error_exit:
+  if ( i2cfd >= 0 ) {
+    close(i2cfd);
+  }
+  return ret;
+}
+
+static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   #define MAX_CMD_LEN 120
   #define MAX_RETRY 10
@@ -280,6 +318,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   int ret = -1;
   int fd = -1;
   int file_size;
+  uint8_t status = 0;
 
   //check params
   ret = is_valid_intf(intf);
@@ -301,6 +340,12 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   ret = update_bic(slot_id, fd, file_size, intf);
 
   if ( (ret == 0) && (comp == FW_SB_BIC) ) {
+    ret = get_sb_bic_boot_strap(slot_id, &status);
+    if ( (ret == 0) && (status == FORCE_BOOT_FROM_UART) ) {
+      // For BIC recovery case, we can exit here to skip the following IPMB communication which is not accessible at that moment
+      goto exit;
+    }
+
     sleep(5);
     // Check BIC self-test results to prevent bic-cached from getting stuck forever
     for (int i = 0; i < MAX_RETRY; i++) {

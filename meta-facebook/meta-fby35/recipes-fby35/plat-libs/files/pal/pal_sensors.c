@@ -1521,9 +1521,12 @@ int pal_get_fan_speed(uint8_t fan, int *rpm)
     }
     ret = sensors_read_fan(label, &value);
   } else if ( bmc_location == NIC_BMC ) {
-    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
-    else ret = bic_get_fan_speed(fan, &value);
+    ret = bic_get_fan_speed(fan, &value);
+  } else {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return -1;
   }
+
   if (value <= 0) {
     return -1;
   }
@@ -1549,8 +1552,7 @@ int pal_get_fan_name(uint8_t num, char *name)
 static int
 _pal_get_pwm_value(uint8_t pwm, float *value, uint8_t bmc_location) {
   if ( bmc_location == NIC_BMC ) {
-    if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
-    else return bic_get_fan_pwm(pwm, value);
+    return bic_get_fan_pwm(pwm, value);
   }
   return sensors_read_pwmfan(pwm, value);
 }

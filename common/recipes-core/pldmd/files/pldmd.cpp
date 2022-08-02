@@ -26,6 +26,7 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/poll.h>
+#include <sys/stat.h>
 #include "CLI/CLI.hpp"
 #include <glog/logging.h>
 #include <libpldm/base.h>
@@ -231,7 +232,7 @@ class myFormatter : public CLI::Formatter
         std::map<std::string, std::string> cmd_table;
         cmd_table["--help"] = "";
         cmd_table["--bus"] = " <bus number>";
-//        cmd_table["--verbose"] = "";
+        cmd_table["--log"] = " <log level>";
         return cmd_table[str];
     }
 
@@ -260,16 +261,31 @@ int main (int argc, char** argv)
   // init <bus number> option
   int busNumber = -1;
   optionDescription = "Setting bus number. (required)";
-  auto busOption = app.add_option("-b, --bus", busNumber, optionDescription);
-  busOption->required();
-  busOption->check(CLI::Range(0, 32));
+  auto option = app.add_option("-b, --bus", busNumber, optionDescription);
+  option->required();
+  option->check(CLI::Range(0, 32));
 
-  // init <verbose> flag
-  ::google::InitGoogleLogging(argv[0]);
-  FLAGS_minloglevel = google::GLOG_WARNING;
+  // log level
+  int level = 1;
+  optionDescription = "Setting log level. (default = WARNING(1))";
+  option = app.add_option("-l, --log", level, optionDescription);
+  option->check(CLI::Range(0, 3));
 
   // parse and execute
   CLI11_PARSE(app, argc, argv);
+  
+  // init log
+  std::string log_path = "/tmp/glog";
+  if (mkdir(log_path.c_str(), 0777) == -1) {
+    if (errno == EEXIST) {
+      std::cerr << "Directory already exist." << std::endl;
+      errno = 0;
+    }
+  }
+  FLAGS_log_dir = log_path.c_str();
+  FLAGS_minloglevel = level;
+  ::google::InitGoogleLogging(argv[0]);
+
   LOG(INFO) << "Bus number = " << busNumber;
 
   // Connect to mctpd

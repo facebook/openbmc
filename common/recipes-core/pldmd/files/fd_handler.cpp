@@ -71,8 +71,16 @@ int fd_handler::recv_data (int fd, uint8_t **buf, size_t &size)
   ssize_t peekedLength = recv(fd, nullptr, 0, MSG_PEEK | MSG_TRUNC);
 
   if (peekedLength <= 0) {
-    LOG(ERROR) << "recv system call failed, RC = " << (int)peekedLength;
-    returnCode = -1;
+    // stream socket peer has performed an orderly shutdown.
+    if (peekedLength == 0 && errno == 0)
+      returnCode = -1;
+    else {
+      returnCode = -errno;
+      LOG(ERROR) << "recv system call failed, RC = " 
+                << (int)peekedLength
+                << ", -errno = "
+                << returnCode;
+    }
     return returnCode;
   }
 

@@ -442,7 +442,7 @@ bail:
   return ret;
 }
 
-int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+int send_spdm_cmd(uint8_t bus, uint16_t src_addr, uint16_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen)
 {
   int ret = -1;
@@ -451,7 +451,7 @@ int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
   struct mctp_binding_smbus *smbus;
 
 
-  mctp_binding = obmc_mctp_smbus_init(bus, addr, NIC_SLAVE_ADDR, src_eid, SPDM_MAX_PAYLOAD);
+  mctp_binding = obmc_mctp_smbus_init(bus, src_addr, dst_addr, src_eid, SPDM_MAX_PAYLOAD);
   if (mctp_binding == NULL) {
     syslog(LOG_ERR, "%s: Error: mctp binding failed", __func__);
     return -1;

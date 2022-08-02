@@ -177,7 +177,7 @@ int obmc_mctp_set_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,
 int send_mctp_cmd(uint8_t bus, uint16_t src_addr, uint8_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
 
-int send_spdm_cmd(uint8_t bus, uint16_t addr, uint8_t src_eid, uint8_t dst_eid,
+int send_spdm_cmd(uint8_t bus, uint16_t src_addr, uint16_t dst_addr, uint8_t src_eid, uint8_t dst_eid,
                   uint8_t *tbuf, int tlen, uint8_t *rbuf, int *rlen);
 
 int obmc_mctp_get_tid(struct obmc_mctp_binding *binding, uint8_t dst_eid,

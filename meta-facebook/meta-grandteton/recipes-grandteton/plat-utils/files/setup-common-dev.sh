@@ -51,15 +51,6 @@ i2c_device_add 22 0x48 stlm75
 i2c_device_add 23 0x48 stlm75
 i2c_device_add 24 0x48 stlm75
 
-echo "Probe VR Device"
-#CPU VR
-i2c_device_add 20 0x60 isl69260
-i2c_device_add 20 0x61 isl69260
-i2c_device_add 20 0x63 isl69260
-i2c_device_add 20 0x72 isl69260
-i2c_device_add 20 0x74 isl69260
-i2c_device_add 20 0x76 isl69260
-
 echo Probe ADM128D
 i2cset -f -y 20 0x1d 0x0b 0x02
 i2c_device_add 20 0x1d adc128d818

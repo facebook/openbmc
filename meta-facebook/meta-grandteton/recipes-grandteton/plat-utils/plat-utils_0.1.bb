@@ -27,7 +27,8 @@ LOCAL_URI = " \
     file://setup-gpio.sh \
     file://setup-sgpio.sh \
     file://sol-util \
-    file://setup-i2c-dev.sh \
+    file://setup-common-dev.sh \
+    file://setup-cover-dev.sh \
     file://setup-por.sh \
     file://sync_date.sh \
     file://setup-ex-gpio.sh \
@@ -63,12 +64,16 @@ do_install() {
   install -d ${D}${sysconfdir}/rcS.d
 # setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-  update-rc.d -r ${D} setup-gpio.sh start 58 5 .
+  update-rc.d -r ${D} setup-gpio.sh start 57 5 .
+# setup-sgpio.sh
   install -m 755 setup-sgpio.sh ${D}${sysconfdir}/init.d/setup-sgpio.sh
-  update-rc.d -r ${D} setup-sgpio.sh start 59 5 .
-# setup-i2c-dev.sh
-  install -m 755 setup-i2c-dev.sh ${D}${sysconfdir}/init.d/setup-i2c-dev.sh
-  update-rc.d -r ${D} setup-i2c-dev.sh start 60 5 .
+  update-rc.d -r ${D} setup-sgpio.sh start 58 5 .
+# setup-common-dev.sh
+  install -m 755 setup-common-dev.sh ${D}${sysconfdir}/init.d/setup-common-dev.sh
+  update-rc.d -r ${D} setup-common-dev.sh start 59 5 .
+# setup-cover-dev.sh
+  install -m 755 setup-cover-dev.sh ${D}${sysconfdir}/init.d/setup-cover-dev.sh
+  update-rc.d -r ${D} setup-cover-dev.sh start 60 5 .
 # setup-ex-gpio.sh
   install -m 755 setup-ex-gpio.sh ${D}${sysconfdir}/init.d/setup-ex-gpio.sh
   update-rc.d -r ${D} setup-ex-gpio.sh start 61 5 .

@@ -73,7 +73,7 @@ struct cpld_dev_info lattice_dev_list[] = {
   },
   {
     .name = "LCMXO3-2100C",
-    .dev_id = 0x612BD043,
+    .dev_id = 0x612BB043,
     .intf = INTF_I2C,
     .cpld_open = cpld_dev_open_i2c,
     .cpld_close = cpld_dev_close_i2c,
@@ -862,5 +862,3 @@ int get_lattice_dev_list(struct cpld_dev_info** list )
   *list = lattice_dev_list;
   return size;
 }
-
-

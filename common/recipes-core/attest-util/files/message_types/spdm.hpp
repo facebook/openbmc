@@ -12,6 +12,15 @@ class SpdmMessage {
   // These are the current input parameters for sending SPDM messages.
   struct SubcommandOptions {
     uint8_t device;
+
+    // The bus on which this device is.
+    // XXX this might be made required. The default of 8 is
+    // to keep some backward compatibility till then.
+    uint8_t bus = 8;
+    // The I2C slave address on which this device is.
+    // XXX this might be made required. The defult of 0x64 is
+    // to keep some backward compatibility till then.
+    uint16_t addr = 0x64;
     uint8_t benchmarkCount = 0;
     std::string inputFileName = "";
     std::string inputString = "";

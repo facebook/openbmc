@@ -31,6 +31,12 @@ CLI::App* SpdmMessage::setupSubcommand(
       "spdm",
       "Sends an spdm message to the designated device and returns the response.");
 
+  // Bus on which the device exists
+  sub->add_option("-b|--bus", opt->bus, "Bus ID");
+
+  // Slave address of device
+  sub->add_option("-a|--addr", opt->addr, "I2C Slave address of the device");
+
   // EID of the target device.
   sub->add_option("-e,--eid", opt->device, "Endpoint ID")->required();
 
@@ -66,7 +72,7 @@ static bool isPayloadValid(vector<uint8_t> payload) {
   return true;
 }
 
-void benchmarkSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, uint8_t runCount) {
+void benchmarkSpdmMessage(uint8_t bus, uint16_t slv_addr, uint8_t eid, vector<uint8_t> &message, uint8_t runCount) {
   uint8_t rbuf[MAX_PAYLOAD_SIZE] = {0};
   uint16_t addr = 0;
   int rlen = 0;
@@ -82,7 +88,7 @@ void benchmarkSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, ui
     auto wallStart = std::chrono::high_resolution_clock::now();
     std::clock_t cpuStart = std::clock();
 
-    send_spdm_cmd(bus, addr, NIC_SLAVE_ADDR, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
+    send_spdm_cmd(bus, addr, slv_addr, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
 
     auto wallEnd = std::chrono::high_resolution_clock::now();
     std::clock_t cpuEnd = std::clock();
@@ -107,7 +113,7 @@ void benchmarkSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, ui
   return;
 }
 
-vector<uint8_t> sendSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &message, bool debugOutput) {
+vector<uint8_t> sendSpdmMessage(uint8_t bus, uint16_t slv_addr, uint8_t eid, vector<uint8_t> &message, bool debugOutput) {
   uint8_t rbuf[MAX_PAYLOAD_SIZE] = {0};
   uint16_t addr = 0;
   vector<uint8_t> returnMessage;
@@ -121,7 +127,7 @@ vector<uint8_t> sendSpdmMessage(uint8_t bus, uint8_t eid, vector<uint8_t> &messa
               << std::endl;
 
   pal_get_bmc_ipmb_slave_addr(&addr, bus);
-  send_spdm_cmd(bus, addr, NIC_SLAVE_ADDR, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
+  send_spdm_cmd(bus, addr, slv_addr, DEFAULT_EID, eid, &message[0], message.size(), rbuf, &rlen);
 
   if (debugOutput == true) {
     std::cout << "Raw Response Length: " << std::dec << rlen << std::endl;
@@ -142,7 +148,6 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
   vector<uint8_t> returnMessage;
   vector<string> messages;
   const string delimiter = ",";
-  const uint8_t bus = 8;
 
   if (opt.inputFileName.length() != 0) {
     // Read in file. (Existence already checked)
@@ -170,7 +175,7 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
     if(decodedMessages.size() != 1)
       throw CLI::ValidationError("Benchmark can only be run with a single spd message.");
 
-    benchmarkSpdmMessage(bus, opt.device, decodedMessages[0], opt.benchmarkCount);
+    benchmarkSpdmMessage(opt.bus, opt.addr, opt.device, decodedMessages[0], opt.benchmarkCount);
     return;
   }
 
@@ -192,7 +197,7 @@ void SpdmMessage::sendMessage(SubcommandOptions const& opt) {
         std::cout << "Message is valid SPDM message!" << std::endl;
 
       // send message over MCTP
-      returnMessage = sendSpdmMessage(bus, opt.device, message, opt.debugOutput);
+      returnMessage = sendSpdmMessage(opt.bus, opt.addr, opt.device, message, opt.debugOutput);
 
       if(returnMessage.size() > 0) {
         // Remove the MCTP header.

@@ -13,8 +13,12 @@ LOCAL_URI += "\
     file://pal_gpio.h \
     file://pal_sensors.c \
     file://pal_sensors.h \
+    file://pal_mb_sensors.c \
+    file://pal_mb_sensors.h \
     file://pal_swb_sensors.c \
     file://pal_swb_sensors.h \
+    file://pal_bb_sensors.c \
+    file://pal_bb_sensors.h \
     file://plat/meson.build \
     "
 

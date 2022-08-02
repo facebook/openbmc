@@ -46,4 +46,5 @@ IMAGE_INSTALL += " \
   mctpd \
   ncsi-util \
   crashdump \
+  attest-util \
 "

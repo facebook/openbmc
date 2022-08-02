@@ -4,6 +4,9 @@ CONFIG_DEFAULT_DEVICE_TREE="aspeed-bmc-facebook-grandcanyon"
 
 CONFIG_ASPEED_TPM=y
 
+# Set DDR speed to 1333 to fix ECC error
+CONFIG_ASPEED_DDR4_1333=y
+
 # logging facilities
 #    0 - emergency
 #    1 - alert

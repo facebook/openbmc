@@ -3042,6 +3042,11 @@ pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
   return 0;
 }
 
+bool __attribute__((weak))
+pal_is_support_vr_delay_activate(void){
+  return false;
+}
+
 int __attribute__((weak))
 pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
 {

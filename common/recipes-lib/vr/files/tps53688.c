@@ -298,6 +298,8 @@ program_tps(uint8_t bus, uint8_t addr, struct tps_config *config, bool force) {
 int
 tps_fw_update(struct vr_info *info, void *args) {
   struct tps_config *config = (struct tps_config *)args;
+  char ver_key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   if (info == NULL || config == NULL) {
     return VR_STATUS_FAILURE;
@@ -317,6 +319,13 @@ tps_fw_update(struct vr_info *info, void *args) {
   }
   if (program_tps(info->bus, info->addr, config, info->force)) {
     return VR_STATUS_FAILURE;
+  }
+
+  if (pal_is_support_vr_delay_activate() && info->private_data) {
+    snprintf(ver_key, sizeof(ver_key), "%s_vr_%02xh_new_crc", (char *)info->private_data, info->addr);
+    snprintf(value, sizeof(value), "Texas Instruments %04X",
+           config->crc_exp);
+    kv_set(ver_key, value, 0, KV_FPERSIST);
   }
 
   return VR_STATUS_SUCCESS;

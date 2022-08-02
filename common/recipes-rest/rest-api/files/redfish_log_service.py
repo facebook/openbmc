@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from shutil import which
 from typing import Dict, List, Sequence
 
@@ -86,10 +87,13 @@ class RedfishLogService:
                     fru_name, log_service_id, index
                 )
                 redfish_sel_entry["@odata.type"] = "#LogEntry.v1_10_0.LogEntry"
-                redfish_sel_entry["EventTimestamp"] = entry["TIME_STAMP"]
-                redfish_sel_entry["EntryType"] = entry["APP_NAME"]
+                datetime_object = datetime.strptime(
+                    entry["TIME_STAMP"], "%Y-%m-%d %H:%M:%S"
+                )
+                redfish_sel_entry["EventTimestamp"] = datetime_object.isoformat() + "Z"
+                redfish_sel_entry["EntryType"] = "SEL"
                 redfish_sel_entry["Message"] = entry["MESSAGE"].rstrip()
-                redfish_sel_entry["Name"] = "{}:{}".format(
+                redfish_sel_entry["Name"] = redfish_sel_entry["Id"] = "{}:{}".format(
                     entry["FRU_NAME"], str(index)
                 )
                 redfish_sel_entries.append(redfish_sel_entry)
@@ -174,6 +178,7 @@ class RedfishLogService:
             "Description": "Collection of entries for this log service",
             "Members": entries,
             "Members@odata.count": len(entries),
+            "Name": "Log Entries",
         }
         await validate_keys(body)
         return web.json_response(body)

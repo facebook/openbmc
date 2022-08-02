@@ -51,6 +51,7 @@ enum {
   BIC_CMD_OEM_FAN_CTRL_STAT     = 0xF2,
   BIC_CMD_OEM_CABLE_STAT        = 0xCB,
   BIC_CMD_OEM_CARD_TYPE         = 0xA1,
+  BIC_CMD_OEM_NOTIFY_PMIC_ERR   = 0xB0,
 };
 
 enum {

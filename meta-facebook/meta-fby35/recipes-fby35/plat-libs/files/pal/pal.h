@@ -54,6 +54,8 @@ extern "C" {
 #define STR_VALUE_0  "0"
 #define STR_VALUE_1  "1"
 
+#define MAX_DIMM_NUM 6
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];

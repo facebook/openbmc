@@ -1926,6 +1926,9 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case ME_SENSOR_SMART_CLST:
           sprintf(name, "SmaRT&CLST");
           break;
+         case BIOS_SENSOR_PMIC_ERR:
+          snprintf(name, MAX_SNR_NAME, "PMIC_ERR");
+          break;
         case BIC_SENSOR_PROC_FAIL:
           sprintf(name, "PROC_FAIL");
           break;
@@ -2563,6 +2566,26 @@ pal_parse_slot_present_event(uint8_t fru, uint8_t *event_data, char *error_log) 
   return PAL_EOK;
 }
 
+static int
+pal_parse_pmic_err_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  static const char dimm_lable[MAX_DIMM_NUM][4] = {"A0", "A2", "A3", "A4", "A6", "A7"};
+  uint8_t dimm_num = 0, err_type = 0;
+  char tmp_log[128] = {0};
+  char err_str[32] = {0};
+
+  if ((event_data == NULL) || (error_log == NULL)) {
+    syslog(LOG_WARNING, "%s(): NULL error log", __func__);
+    return -1;
+  }
+  dimm_num = event_data[0];
+  err_type = event_data[1];
+  get_pmic_err_str(err_type, err_str, sizeof(err_str));
+  snprintf(tmp_log, sizeof(tmp_log), "DIMM %s %s", dimm_lable[dimm_num], err_str);
+  strcat(error_log, tmp_log);
+
+  return PAL_EOK;
+}
+
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   enum {
@@ -2599,6 +2622,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BB_BIC_SENSOR_SLOT_PRESENT:
       pal_parse_slot_present_event(fru, event_data, error_log);
+      break;
+    case BIOS_SENSOR_PMIC_ERR:
+      pal_parse_pmic_err_event(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;
@@ -3042,6 +3068,9 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
   int i = 0;
   bool is_cri_sel = false;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t rlen = 0, tlen = 0;
 
   switch (snr_num) {
     case CATERR_B:
@@ -3101,6 +3130,16 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         return PAL_EOK;
       }
       break;
+    case BIOS_SENSOR_PMIC_ERR:
+      memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+      memcpy(&tbuf[3], &event_data[3], 2); // dimm location, error type
+      tlen = IANA_ID_SIZE + 2;
+      if (bic_ipmb_wrapper(fru, NETFN_OEM_1S_REQ, BIC_CMD_OEM_NOTIFY_PMIC_ERR, tbuf, tlen, rbuf, &rlen) < 0) {
+        return -1;
+      }
+      break;
+    default:
+      return PAL_EOK;
   }
 
   if ( is_cri_sel == true ) {

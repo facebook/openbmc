@@ -134,7 +134,7 @@ static pmic_err_info pmic_err[] = {
 {{0x00, 0x00, 0x00, 0x80, 0x02, 0x00}, false, "High temp warning", {TYPE_HIGH_TEMP, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
 {{0x00, 0x00, 0x00, 0x20, 0x02, 0x00}, false, "Vout 1v8 PG", {TYPE_PG_1V8_VOUT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
 {{0x00, 0x00, 0x00, 0x0F, 0x02, 0x00}, false, "High current warning", {TYPE_HIGH_CURR, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0}, false, "Current limit warninig", {TYPE_CURR_LIMIT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
+{{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0}, false, "Current limit warning", {TYPE_CURR_LIMIT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
 {{0x00, 0x00, 0x40, 0x00, 0x00, 0x00},  true, "Current temp shutdown", {TYPE_CRIT_TEMP, VOLT_UNDEFINED, RAIL_UNDEFINED,      ERR_INJ_ENABLE}},
 {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, false, NULL, {0, 0, 0}}
 };
@@ -1438,6 +1438,14 @@ me_pmic_err_inj(uint8_t slot_id, uint8_t dimm, uint8_t err_type) {
     syslog(LOG_WARNING, "%s(): ME SMBus write failed.", __func__);
   }
   return ret;
+}
+
+void
+get_pmic_err_str(uint8_t err_type, char* str, uint8_t len) {
+  if (str == NULL) {
+    return;
+  }
+  memcpy(str, pmic_err[err_type].err_str, len);
 }
 
 int

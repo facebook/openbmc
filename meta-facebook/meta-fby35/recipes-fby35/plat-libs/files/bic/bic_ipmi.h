@@ -220,6 +220,7 @@ int me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t 
 int me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t tlen, uint8_t *data);
 int me_pmic_err_list(uint8_t slot_id, uint8_t dimm, uint8_t* err_list , uint8_t *err_cnt);
 int me_pmic_err_inj(uint8_t slot_id, uint8_t dimm, uint8_t err_type);
+void get_pmic_err_str(uint8_t err_type, char* str, uint8_t len);
 int bic_check_cable_status();
 int bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type);
 #ifdef __cplusplus

@@ -606,3 +606,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             RestEndpointTest.PIM_SERIAL_ENDPOINT,
             self.endpoint_piminfo_attrb,  # same keys as piminfo
         )
+
+    @unittest.skip("FIXME T127573953")
+    def test_endpoint_api_sys_bmc_secondary_boot(self):
+        pass

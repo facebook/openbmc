@@ -53,7 +53,7 @@
 #define NUM_BMC_FRU     1
 
 const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, bmc, scm, pdbv, pdbh, bp0, bp1, fio,\
+"all, mb, nic0, nic1, swb, hmc, bmc, scm, pdbv, pdbh, bp0, bp1, fio,\
  fan0, fan1, fan2, fan3, fan4, fan5, fan6, fan7, \
  fan8, fan9, fan10, fan11, fan12, fan13, fan14, fan15";
 
@@ -64,6 +64,8 @@ const char pal_server_list[] = "mb";
                         FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL
 
 #define SWB_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
+
+#define HMC_CAPABILITY  FRU_CAPABILITY_SENSOR_ALL
 
 #define NIC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | \
                         FRU_CAPABILITY_NETWORK_CARD
@@ -98,6 +100,7 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_ALL,   "all",    NULL,           0,  0, 0},
   {FRU_MB,    "mb",     "Mother Board", 33, 0x51, MB_CAPABILITY},
   {FRU_SWB,   "swb",    "Switch Board", 3,  0x20, SWB_CAPABILITY},
+  {FRU_HMC,   "hmc",    "HMC Board"  ,   0,    0, HMC_CAPABILITY},
   {FRU_NIC0,  "nic0",   "Mezz Card 0",  13, 0x50, NIC_CAPABILITY},
   {FRU_NIC1,  "nic1",   "Mezz Card 1",  4,  0x52, NIC_CAPABILITY},
   {FRU_DBG,   "ocpdbg", "Debug Board",  14, 0,    OCP_CAPABILITY},
@@ -144,6 +147,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   switch (fru) {
     case FRU_MB:
     case FRU_SWB:
+    case FRU_HMC:
     case FRU_NIC0:
     case FRU_NIC1:
     case FRU_DBG:
@@ -204,6 +208,7 @@ pal_get_fru_name(uint8_t fru, char *name) {
     return -1;
 
   strcpy(name, fru_dev_data[fru].name);
+
   return 0;
 }
 

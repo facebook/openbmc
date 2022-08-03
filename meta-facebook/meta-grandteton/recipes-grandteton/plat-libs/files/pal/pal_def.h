@@ -54,6 +54,7 @@ enum {
   FRU_ALL = 0,
   FRU_MB,
   FRU_SWB,
+  FRU_HMC,
   FRU_NIC0,
   FRU_NIC1,
   FRU_DBG,

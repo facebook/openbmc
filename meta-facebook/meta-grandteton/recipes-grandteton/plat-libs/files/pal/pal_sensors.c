@@ -116,7 +116,7 @@ int retry_err_handle(uint8_t retry_curr, uint8_t retry_max) {
   return READING_NA;
 }
 
-static int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
+int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max) {
 
   if( retry_curr <= retry_max) {
     return READING_SKIP;
@@ -150,13 +150,13 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
 
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
+
   server_off = is_server_off();
   if (fru == FRU_MB || fru == FRU_SCM ||
       fru == FRU_NIC0 || fru == FRU_NIC1 ||
       fru == FRU_PDBV || fru == FRU_PDBH ||
       fru == FRU_BP0 || fru == FRU_BP1 ||
-      fru == FRU_SWB) {
-
+      fru == FRU_SWB || fru == FRU_HMC) {
     if (server_off) {
       if (sensor_map[fru].map[sensor_num].stby_read == true) {
         ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
@@ -233,7 +233,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
       fru == FRU_NIC0 || fru == FRU_NIC1 ||
       fru == FRU_PDBV || fru == FRU_PDBH ||
       fru == FRU_BP0 || fru == FRU_BP1 ||
-      fru == FRU_SWB) {
+      fru == FRU_SWB || fru == FRU_HMC) {
 
     pal_get_fru_name(fru, fru_name);
     if (fru_name != NULL)
@@ -277,7 +277,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
       fru != FRU_NIC0 && fru != FRU_NIC1 &&
       fru != FRU_PDBV && fru != FRU_PDBH &&
       fru != FRU_BP0 && fru != FRU_BP1 &&
-      fru != FRU_SWB) {
+      fru != FRU_SWB && fru != FRU_HMC) {
     syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
     return -1;
   }
@@ -322,7 +322,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
       fru != FRU_NIC0 && fru != FRU_NIC1 &&
       fru != FRU_PDBV && fru != FRU_PDBH &&
       fru != FRU_BP0 && fru != FRU_BP1 &&
-      fru != FRU_SWB) {
+      fru != FRU_SWB && fru != FRU_HMC) {
     return -1;
   }
 

@@ -4,6 +4,7 @@
 #include <openbmc/obmc_pal_sensors.h>
 #include "pal_mb_sensors.h"
 #include "pal_swb_sensors.h"
+#include "pal_hmc_sensors.h"
 #include "pal_bb_sensors.h"
 
 //Platform Name
@@ -143,8 +144,10 @@ enum {
   VR_NUM_CNT,
 };
 
+int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);
 int pal_sensor_monitor_initial(void);
+
 extern const char pal_fru_list[];
 extern const char pal_server_list[];
 #endif

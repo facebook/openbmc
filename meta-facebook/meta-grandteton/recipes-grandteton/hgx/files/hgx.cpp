@@ -1,128 +1,146 @@
+#include <hgx.h>
+#include <nlohmann/json.hpp>
+#include <string.h>
+#include <chrono>
+#include <iostream>
+#include <thread>
 #include "restclient-cpp/connection.h"
 #include "restclient-cpp/restclient.h"
-#include <iostream>
-#include <string.h>
-#include <nlohmann/json.hpp>
-#include <hgx.h>
 
-//HTTP response status codes
+// HTTP response status codes
 enum {
   HTTP_OK = 200,
   HTTP_BAD_REQUEST = 400,
-  HTTP_NOT_FOUND   = 404,
+  HTTP_NOT_FOUND = 404,
 };
 
-constexpr auto HMC_USR            = "root";
-constexpr auto HMC_PWD            = "0penBmc";
+constexpr auto HMC_USR = "root";
+constexpr auto HMC_PWD = "0penBmc";
 
-const std::string HMC_URL            = "http://192.168.31.1/redfish/v1/";
+const std::string HMC_URL = "http://192.168.31.1/redfish/v1/";
 const auto HMC_UPDATE_SERVICE = HMC_URL + "UpdateService";
-const auto HMC_TASK_SERVICE   = HMC_URL + "TaskService/Tasks/";
-const auto HMC_FW_INVENTORY   = HMC_URL + "UpdateService/FirmwareInventory/";
+const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
+const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
 
 constexpr auto TIME_OUT = 2;
 
 using nlohmann::json;
 
+namespace hgx {
+
 class HGXMgr {
-  public:
-    HGXMgr() {
-      RestClient::init();
+ public:
+  HGXMgr() {
+    RestClient::init();
+  }
+  ~HGXMgr() {
+    RestClient::disable();
+  }
+  static std::string get(const std::string& url) {
+    RestClient::Response result;
+    RestClient::Connection conn(url);
+
+    conn.SetTimeout(TIME_OUT);
+    conn.SetBasicAuth(HMC_USR, HMC_PWD);
+
+    result = conn.get("");
+    if (result.code != HTTP_OK) {
+      throw HTTPException(result.code);
     }
-    ~HGXMgr() {
-      RestClient::disable();
+    return result.body;
+  }
+
+  static std::string post(const std::string& url, std::string&& args) {
+    RestClient::Response result;
+    RestClient::Connection conn(url);
+
+    conn.SetTimeout(TIME_OUT);
+    conn.SetBasicAuth(HMC_USR, HMC_PWD);
+
+    result = conn.post("", std::move(args));
+    if (result.code != HTTP_OK) {
+      throw HTTPException(result.code);
     }
-    static int get_request (const std::string& url, std::string &res) {
-      RestClient::Response result;
-      RestClient::Connection conn(url);
-
-      conn.SetTimeout(TIME_OUT);
-      conn.SetBasicAuth(HMC_USR, HMC_PWD);
-
-      result = conn.get("");
-
-      if (result.code !=  HTTP_OK) {
-        return result.code;
-      }
-      res = std::move(result.body);
-      return HTTP_OK;
-    }
-
-    static int post_request (const std::string& url, const std::string&& args, std::string &res) {
-      RestClient::Response result;
-      RestClient::Connection conn(url);
-
-      conn.SetTimeout(TIME_OUT);
-      conn.SetBasicAuth(HMC_USR, HMC_PWD);
-
-      result = conn.post("", args);
-      if (result.code !=  HTTP_OK) {
-        return result.code;
-      }
-      res = std::move(result.body);
-      return HTTP_OK;
-    }
+    return result.body;
+  }
 };
 
 static HGXMgr hgx;
 
-int get_version (const std::string& comp, std::string &res) {
-  int ret = HTTP_OK;
+std::string redfishGet(const std::string& subpath) {
+  return hgx.get(HMC_URL + subpath);
+}
+
+std::string redfishPost(const std::string& subpath, std::string&& args) {
+  return hgx.post(HMC_URL + subpath, std::move(args));
+}
+
+std::string version(const std::string& comp, bool returnJson) {
   std::string url = HMC_FW_INVENTORY + comp;
-
-  ret = hgx.get_request(url, res);
-
-  if (ret != HTTP_OK) {
-    return -1;
+  std::string respStr = hgx.get(url);
+  if (returnJson) {
+    return respStr;
   }
-
-  return 0;
+  json resp = json::parse(respStr);
+  return resp["Version"];
 }
 
-int update (const std::string& path, std::string &res) {
+std::string updateNonBlocking(const std::string& path, bool returnJson) {
   std::string url = HMC_UPDATE_SERVICE;
-  std::string fp;
-
-  fp = "{" + path + "}";
-  if (hgx.post_request(url, std::move(fp), res) != HTTP_OK) {
-    return -1;
+  std::string fp = "{" + path + "}";
+  std::string respStr = hgx.post(url, std::move(fp));
+  if (returnJson) {
+    return respStr;
   }
-
-  return 0;
+  json resp = json::parse(respStr);
+  return resp["Id"];
 }
 
-int get_taskid (const std::string& task_id, std::string &res) {
-  int ret = HTTP_OK;
-  std::string url = HMC_TASK_SERVICE + task_id;
-
-  ret = hgx.get_request(url, res);
-
-  if (ret != HTTP_OK) {
-    return -1;
-  }
-
-  return 0;
+TaskStatus getTaskStatus(const std::string& id) {
+  std::string url = HMC_TASK_SERVICE + id;
+  TaskStatus status;
+  status.resp = hgx.get(url);
+  json resp = json::parse(status.resp);
+  resp.at("TaskState").get_to(status.state);
+  resp.at("TaskStatus").get_to(status.status);
+  return status;
 }
 
-int get_hmc_sensor (const char* component , const char* snr_name, float* value) {
-  int ret = HTTP_OK;
-  const std::string comp(component);
-  const std::string name(snr_name);
+void update(const std::string& path) {
+  using namespace std::chrono_literals;
+  std::string taskID = updateNonBlocking(path);
+  for (int retry = 0; retry < 500; retry++) {
+    TaskStatus status = getTaskStatus(taskID);
+    if (status.state != "Running") {
+      std::cout << "Update completed with state: " << status.state
+                << " status: " << status.status << std::endl;
+      break;
+    }
+    std::this_thread::sleep_for(5s);
+  }
+}
+
+std::string sensorRaw(const std::string& component, const std::string& name) {
   constexpr auto fru = "Chassis";
-  const std::string url = HMC_URL + fru + "/" + comp + "/Sensors/" + name;
-  std::string res;
+  const std::string url = HMC_URL + fru + "/" + component + "/Sensors/" + name;
+  return hgx.get(url);
+}
 
-  ret = hgx.get_request(url, res);
-  if (ret != HTTP_OK) {
-    return -1;
-  }
+float sensor(const std::string& component, const std::string& name) {
+  std::string str = sensorRaw(component, name);
+  json resp = json::parse(str);
+  float val;
+  resp.at("Reading").get_to(val);
+  return val;
+}
 
+} // namespace hgx.
+
+int get_hmc_sensor(const char* component, const char* snr_name, float* value) {
   try {
-    json val = json::parse(res);
-    val.at("Reading").get_to(*value);
+    *value = hgx::sensor(component, snr_name);
   } catch (std::exception& e) {
     return -1;
   }
-  
   return 0;
 }

@@ -2038,7 +2038,7 @@ read_adc_val(uint8_t adc_id, float *value) {
 
       if ( ADC10 == adc_id ) { // 0xFB, BMC_SENSOR_FAN_IOUT
         if ( gval == MAXIM_SOLUTION ) {
-          *value = *value/0.157/0.33;
+          *value = (((*value/0.157/0.33) - 2.5) * 0.96) + 0.15;
         } else if ( gval == MPS_SOLUTION ) {
           *value = *value/0.01/5.11;
         } else {
@@ -2048,7 +2048,7 @@ read_adc_val(uint8_t adc_id, float *value) {
       }
       else if ( ADC11 == adc_id ) { // 0xFC, BMC_SENSOR_NIC_IOUT
         if ( gval == MAXIM_SOLUTION ) {
-          *value = (*value/0.22/1.2) * 1.005 + 0.04;
+          *value = *value/0.22/1.2;
         } else if ( gval == MPS_SOLUTION ) {
           *value = *value/0.01/30;
         } else {
@@ -2177,9 +2177,19 @@ read_hsc_pin(uint8_t hsc_id, float *value) {
   if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, PMBUS_READ_PIN, value, NULL) < 0 ) {
     return READING_NA;
   }
+
+  if ( rev_id == UNKNOWN_REV ) {
+    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get revision id", __func__);
+      return -1;
+    }
+  }
+
   switch (hsc_id) {
     case HSC_ADM1278:
-      *value *= 0.96; //improve the accuracy of PIN to +-2%
+      if (rev_id < BB_REV_DVT) {
+        *value *= 0.96; //improve the accuracy of PIN to +-2%
+      }
       break;
     case HSC_MP5990:
       *value = ((*value + 0.05) * 1.02) + 0.2;
@@ -2199,9 +2209,18 @@ read_hsc_iout(uint8_t hsc_id, float *value) {
     return READING_NA;
   }
 
+  if ( rev_id == UNKNOWN_REV ) {
+    if ( get_board_rev(FRU_BMC, BOARD_ID_BB, &rev_id) < 0 ) {
+      syslog(LOG_WARNING, "%s() Failed to get revision id", __func__);
+      return -1;
+    }
+  }
+
   switch (hsc_id) {
     case HSC_ADM1278:
-      *value *= 0.96; //improve the accuracy of PIN to +-2%
+      if (rev_id < BB_REV_DVT) {
+        *value *= 0.96; //improve the accuracy of PIN to +-2%
+      }
       break;
     case HSC_MP5990:
       *value = ((*value - 0.05) * 0.99) + 0.16;

@@ -67,6 +67,10 @@
 #define MEDUSA_HSC_ADM1272_ADDR 0x1f
 #define MEDUSA_HSC_LTC4287_ADDR 0x11
 
+#define DELTA_1_PDB_ADDR 0xC0
+#define DELTA_2_PDB_ADDR 0xC2
+#define RNS_PDB_ADDR 0xB4
+
 typedef struct {
   float lnr_thresh;
   float lcr_thresh;
@@ -578,7 +582,20 @@ enum {
   BMC_SENSOR_FAN_IOUT = 0xFB,
   BMC_SENSOR_NIC_IOUT = 0xFC,
   BMC_SENSOR_MEDUSA_VIN = 0xFD,
-  BMC_SENSOR_NICEXP_TEMP = 0xFE
+  BMC_SENSOR_NICEXP_TEMP = 0xFE,
+  BMC_SENSOR_VPDB_DELTA_1_TEMP = 0xB0,
+  BMC_SENSOR_VPDB_DELTA_2_TEMP = 0xB1,
+  BMC_SENSOR_VPDB_WW_TEMP = 0xB2,
+  BMC_SENSOR_PDB_48V_DELTA_1_VIN = 0xB3,
+  BMC_SENSOR_PDB_48V_DELTA_2_VIN = 0xB4,
+  BMC_SENSOR_PDB_48V_WW_VIN = 0xB5,
+  BMC_SENSOR_PDB_12V_DELTA_1_VOUT = 0xB6,
+  BMC_SENSOR_PDB_12V_DELTA_2_VOUT = 0xB7,
+  BMC_SENSOR_PDB_12V_WW_VOUT = 0xB8,
+  BMC_SENSOR_PDB_DELTA_1_IOUT = 0xB9,
+  BMC_SENSOR_PDB_DELTA_2_IOUT = 0xBA,
+  BMC_SENSOR_PDB_12V_WW_IOUT = 0xBB,
+  BMC_SENSOR_PDB_12V_WW_PWR = 0xBC,
 };
 
 //Serverboard Discrete/SEL Sensors
@@ -643,6 +660,22 @@ enum {
   HSC_TEMP,
 };
 
+//PDB COEFFICIENT INFO
+enum {
+  PDB_VOLTAGE_OUT = 0,
+  PDB_VOLTAGE_IN,
+  PDB_CURRENT,
+  PDB_TEMP,
+  PDB_POWER,
+};
+
+//PDB INFO
+enum {
+  PDB_DELTA_1 = 0,
+  PDB_DELTA_2,
+  PDB_RNS,
+};
+
 enum {
   DPV2_EFUSE_VIN = 0,
   DPV2_EFUSE_VOUT,
@@ -676,6 +709,15 @@ typedef struct {
   uint16_t cmd_peak_pin;
   PAL_ATTR_INFO* info;
 } PAL_HSC_INFO;
+
+typedef struct {
+  float data;
+} PAL_PDB_COEFFICIENT;
+
+typedef struct {
+  uint8_t target_addr;
+  PAL_PDB_COEFFICIENT* coefficient;
+} PAL_PDB_INFO;
 
 typedef struct {
   uint8_t id;

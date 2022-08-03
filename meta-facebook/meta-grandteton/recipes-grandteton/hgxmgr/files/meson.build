@@ -12,10 +12,11 @@ srcs = files(
     'main.cpp',
 )
 
-cc = meson.get_compiler('c')
+cc = meson.get_compiler('cpp')
 deps = [
   dependency('threads'),
   cc.find_library('restclient-cpp'),
+  dependency('libhgx'),
 ]
 
 hgxmgr_exe = executable(

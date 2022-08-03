@@ -7,12 +7,14 @@ PR = "r1"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
+inherit meson pkgconfig
+
 LOCAL_URI = " \
     file://meson.build \
     file://main.cpp \
     "
 
-DEPENDS += "restclient-cpp"
-RDEPENDS:${PN} += "restclient-cpp"
+DEPENDS += "libhgx cli11"
+RDEPENDS:${PN} += "libhgx"
 
 FILES:${PN} = "${prefix}/local/bin"

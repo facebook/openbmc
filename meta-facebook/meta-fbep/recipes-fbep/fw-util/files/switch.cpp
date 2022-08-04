@@ -39,7 +39,7 @@ int PAXComponent::print_version()
 
 int PAXComponent::update(string image)
 {
-  int ret;
+  int ret, rc;
   int i, max_retry = 3;
   bool use_gpio = false;
 
@@ -48,20 +48,20 @@ int PAXComponent::update(string image)
   if (comp.find("flash") != string::npos) {
     for (i = 1; i <= max_retry; i++) {
       if (i == max_retry) {
-        ret = system("modprobe -r spi_aspeed > /dev/null");
-        ret |= system("modprobe -r spi_gpio > /dev/null");
-        ret |= system("modprobe spi_gpio > /dev/null");
-	if (ret != 0) {
+        rc = system("modprobe -r spi_aspeed > /dev/null");
+        rc |= system("modprobe -r spi_gpio > /dev/null");
+        rc |= system("modprobe spi_gpio > /dev/null");
+	      if (rc != 0) {
           syslog(LOG_WARNING, "Failed to switch SPI drivers");
-	  goto bail;
-	}
+	        goto bail;
+	      }
 
         spidev = "spi3.0";
         use_gpio = true;
       }
       ret = GPIOSwitchedSPIMTDComponent::update(image);
       if (ret == 0)
-	break;
+	      break;
     }
   } else {
 
@@ -91,10 +91,11 @@ int PAXComponent::update(string image)
 
 bail:
   if (use_gpio) {
-    ret = system("modprobe -r spi_gpio > /dev/null");
-    ret |= system("modprobe spi_aspeed > /dev/null");
-    ret |= system("modprobe spi_gpio > /dev/null");
-    if (ret != 0)
+    // recover to SPI master driver
+    rc = system("modprobe -r spi_gpio > /dev/null");
+    rc |= system("modprobe -r spi_aspeed > /dev/null");
+    rc |= system("modprobe spi_aspeed > /dev/null");
+    if (rc != 0)
       syslog(LOG_WARNING, "Failed to reload SPI drivers");
   }
   return ret;

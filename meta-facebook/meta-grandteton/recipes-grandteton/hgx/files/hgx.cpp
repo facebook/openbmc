@@ -109,6 +109,7 @@ TaskStatus getTaskStatus(const std::string& id) {
 void update(const std::string& path) {
   using namespace std::chrono_literals;
   std::string taskID = updateNonBlocking(path);
+  std::cout << "Started update task: " << taskID << std::endl;
   for (int retry = 0; retry < 500; retry++) {
     TaskStatus status = getTaskStatus(taskID);
     if (status.state != "Running") {

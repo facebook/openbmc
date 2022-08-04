@@ -81,8 +81,8 @@ int main(int argc, char* argv[]) {
   std::string fru{};
   std::string sensorName{};
   auto sensor = app.add_subcommand("sensor", "Get sensor value");
-  sensor->add_option("FRU", "The FRU on which this sensor is")->required();
-  sensor->add_option("Sensor", "The sensor name")->required();
+  sensor->add_option("FRU", fru, "The FRU on which this sensor is")->required();
+  sensor->add_option("Sensor", sensorName, "The sensor name")->required();
   sensor->callback([&]() { do_sensor(fru, sensorName, json_fmt); });
 
   std::string subpath{};

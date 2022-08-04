@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import json
 import os
 import re
 import subprocess
@@ -50,6 +51,26 @@ def check_fru_availability(fru: str) -> bool:
     if re.search("FRU Information", out.decode("utf-8")):
         return True
     return False
+
+
+def check_board_product(fru: str = None, product: str = None) -> bool:
+    """[summary] check if "Board Product" equals to the give product
+
+    Args:
+        product (str): product name
+
+    Returns:
+        bool: [description]
+    """
+    cmd = ["/usr/local/bin/fruid-util", fru, "--json"]
+    f = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    out, _ = f.communicate()
+    out_dict = json.loads(out.decode("utf-8"))[0]
+    return out_dict["Board Product"] == product
 
 
 def qemu_check():

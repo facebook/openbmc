@@ -20,8 +20,7 @@
 import unittest
 
 from common.base_fru_test import CommonFruTest
-from utils.test_utils import check_fru_availability
-from utils.test_utils import qemu_check
+from utils.test_utils import check_board_product, check_fru_availability, qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
@@ -106,6 +105,18 @@ class FruRiserSlot3Test(FruRiserSlot2Test):
         self.fru = "riser_slot3"
         self.fru_cmd = ["/usr/local/bin/fruid-util", self.fru]
         self.fru_fields = {"product": 1, "board": 4}
+
+    def getProductFields(self, num_custom=1):
+        if check_board_product(fru="riser_slot3", product="PCIe Retimer Card"):
+            return {}
+        else:
+            product_fields = {
+                "Product Part Number",
+                "Product Serial",
+            }
+            for i in range(1, num_custom + 1):
+                product_fields.add("Product Custom Data {}".format(i))
+            return product_fields
 
 
 class FruRiserSlot4Test(FruRiserSlot2Test):

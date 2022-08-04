@@ -41,7 +41,7 @@ const uint8_t nic1_sensor_list[] = {
   NIC1_SNR_MEZZ1_P12V_POUT,
 };
 
-const uint8_t pdbv_sensor_list[] = {
+const uint8_t vpdb_sensor_list[] = {
   PDBV_SNR_HSC0_VIN,
   PDBV_SNR_HSC0_IOUT,
   PDBV_SNR_HSC0_PIN,
@@ -58,7 +58,7 @@ const uint8_t pdbv_sensor_list[] = {
   PDBV_SNR_ADC128_P3V3_AUX,
 };
 
-const uint8_t pdbh_sensor_list[] = {
+const uint8_t hpdb_sensor_list[] = {
   PDBH_SNR_HSC1_VIN,
   PDBH_SNR_HSC1_IOUT,
   PDBH_SNR_HSC1_PIN,
@@ -435,8 +435,8 @@ extern struct snr_map sensor_map[];
 
 size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
-size_t pdbv_sensor_cnt = sizeof(pdbv_sensor_list)/sizeof(uint8_t);
-size_t pdbh_sensor_cnt = sizeof(pdbh_sensor_list)/sizeof(uint8_t);
+size_t vpdb_sensor_cnt = sizeof(vpdb_sensor_list)/sizeof(uint8_t);
+size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
 size_t bp0_sensor_cnt = sizeof(bp0_sensor_list)/sizeof(uint8_t);
 size_t bp1_sensor_cnt = sizeof(bp1_sensor_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);

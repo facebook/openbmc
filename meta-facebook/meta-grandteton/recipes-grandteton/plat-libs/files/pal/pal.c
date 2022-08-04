@@ -53,7 +53,7 @@
 #define NUM_BMC_FRU     1
 
 const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, hmc, bmc, scm, pdbv, pdbh, bp0, bp1, fio,\
+"all, mb, nic0, nic1, swb, hmc, bmc, scm, vpdb, hpdb, bp0, bp1, fio,\
  fan0, fan1, fan2, fan3, fan4, fan5, fan6, fan7, \
  fan8, fan9, fan10, fan11, fan12, fan13, fan14, fan15";
 

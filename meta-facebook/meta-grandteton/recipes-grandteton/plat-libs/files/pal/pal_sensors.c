@@ -12,13 +12,40 @@
 #define SENSOR_SKIP_MAX (1)
 
 extern PAL_SENSOR_MAP mb_sensor_map[];
+extern PAL_SENSOR_MAP hmc_sensor_map[];
 extern PAL_SENSOR_MAP swb_sensor_map[];
 extern PAL_SENSOR_MAP bb_sensor_map[];
+
+extern const uint8_t mb_sensor_list[];
+extern const uint8_t swb_sensor_list[];
+extern const uint8_t hmc_sensor_list[];
+extern const uint8_t nic0_sensor_list[];
+extern const uint8_t nic1_sensor_list[];
+extern const uint8_t mb_discrete_sensor_list[];
+extern const uint8_t vpdb_sensor_list[];
+extern const uint8_t hpdb_sensor_list[];
+extern const uint8_t bp0_sensor_list[];
+extern const uint8_t bp1_sensor_list[];
+extern const uint8_t scm_sensor_list[];
+
+extern size_t mb_sensor_cnt;
+extern size_t swb_sensor_cnt;
+extern size_t hmc_sensor_cnt;
+extern size_t mb_discrete_sensor_cnt;
+extern size_t nic0_sensor_cnt;
+extern size_t nic1_sensor_cnt;
+extern size_t vpdb_sensor_cnt;
+extern size_t hpdb_sensor_cnt;
+extern size_t bp0_sensor_cnt;
+extern size_t bp1_sensor_cnt;
+extern size_t scm_sensor_cnt;
+
 
 struct snr_map sensor_map[] = {
   { FRU_ALL, NULL},
   { FRU_MB,   mb_sensor_map },
   { FRU_SWB,  swb_sensor_map },
+  { FRU_HMC,  hmc_sensor_map },
   { FRU_NIC0, bb_sensor_map },
   { FRU_NIC1, bb_sensor_map },
   { FRU_DBG,  NULL },
@@ -29,29 +56,6 @@ struct snr_map sensor_map[] = {
   { FRU_BP0,  bb_sensor_map },
   { FRU_BP1,  bb_sensor_map },
 };
-
-extern const uint8_t mb_sensor_list[];
-extern const uint8_t swb_sensor_list[];
-extern const uint8_t nic0_sensor_list[];
-extern const uint8_t nic1_sensor_list[];
-extern const uint8_t mb_discrete_sensor_list[];
-extern const uint8_t pdbv_sensor_list[];
-extern const uint8_t pdbh_sensor_list[];
-extern const uint8_t bp0_sensor_list[];
-extern const uint8_t bp1_sensor_list[];
-extern const uint8_t scm_sensor_list[];
-
-extern size_t mb_sensor_cnt;
-extern size_t swb_sensor_cnt;
-extern size_t mb_discrete_sensor_cnt;
-extern size_t nic0_sensor_cnt;
-extern size_t nic1_sensor_cnt;
-extern size_t pdbv_sensor_cnt;
-extern size_t pdbh_sensor_cnt;
-extern size_t bp0_sensor_cnt;
-extern size_t bp1_sensor_cnt;
-extern size_t scm_sensor_cnt;
-
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret=0;
@@ -65,12 +69,15 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   } else if (fru == FRU_NIC1) {
     *sensor_list = (uint8_t *) nic1_sensor_list;
     *cnt = nic1_sensor_cnt;
+  } else if (fru == FRU_HMC) {
+    *sensor_list = (uint8_t *) hmc_sensor_list;
+    *cnt = hmc_sensor_cnt;
   } else if (fru == FRU_PDBV) {
-    *sensor_list = (uint8_t *) pdbv_sensor_list;
-    *cnt = pdbv_sensor_cnt;
+    *sensor_list = (uint8_t *) vpdb_sensor_list;
+    *cnt = vpdb_sensor_cnt;
   } else if (fru == FRU_PDBH) {
-    *sensor_list = (uint8_t *) pdbh_sensor_list;
-    *cnt = pdbh_sensor_cnt;
+    *sensor_list = (uint8_t *) hpdb_sensor_list;
+    *cnt = hpdb_sensor_cnt;
   } else if (fru == FRU_BP0) {
     *sensor_list = (uint8_t *) bp0_sensor_list;
     *cnt = bp0_sensor_cnt;

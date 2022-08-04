@@ -17,6 +17,13 @@
 #define GPIO_NIC_PRSNT "OCP_V3_%d_PRSNTB_R_N"
 #define SENSOR_SKIP_MAX (1)
 
+#define IIO_DEV_DIR(device, bus, addr, index) \
+  "/sys/bus/i2c/drivers/"#device"/"#bus"-00"#addr"/iio:device"#index"/%s"
+#define IIO_AIN_NAME       "in_voltage%s_raw"
+
+#define NIC_MAX11615_DIR     IIO_DEV_DIR(max1363, 23, 33, 1)
+#define NIC_MAX11617_DIR     IIO_DEV_DIR(max1363, 23, 35, 2)
+
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0..3";
@@ -53,6 +60,7 @@ static int read_bay0_ssd_curr(uint8_t nic_id, float *value);
 static int read_bay1_ssd_volt(uint8_t nic_id, float *value);
 static int read_bay1_ssd_curr(uint8_t nic_id, float *value);
 static int read_ina260_sensor(uint8_t sensor_num, float *value);
+static int sensors_read_maxim(const char *dev, const char *channel, int *data);
 
 static float fan_volt[PAL_FAN_CNT];
 static float fan_curr[PAL_FAN_CNT];
@@ -447,9 +455,9 @@ PAL_SENSOR_MAP sensor_map[] = {
   {"CC_SSD_BAY_0_5_NVME_CTEMP", BAY_0_5_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x38
   {"CC_SSD_BAY_0_6_NVME_CTEMP", BAY_0_6_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x39
   {"CC_SSD_BAY_0_7_NVME_CTEMP", BAY_0_7_NVME_CTEMP, read_nvme_temp, 0, {69, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x3A
-  {"CC_MB_BAY_0_VOLT", BAY_1_VOL , read_nvme_sensor, 0, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, //0x3B
-  {"CC_MB_BAY_0_IOUT", BAY_1_IOUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x3C
-  {"CC_MB_BAY_0_POUT", BAY_1_POUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3D
+  {"CC_MB_BAY_0_VOLT", BAY_0_VOL , read_nvme_sensor, 0, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, //0x3B
+  {"CC_MB_BAY_0_IOUT", BAY_0_IOUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x3C
+  {"CC_MB_BAY_0_POUT", BAY_0_POUT, read_nvme_sensor, 0, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3D
   {"CC_MB_VR_P1V8_PEX2_3_TEMP" , VR_P1V8_PEX2_3_TEMP , sensors_read_vr, 0, {115, 0, 0, 10, 0, 0, 0, 0}, TEMP}, //0x3E
   {"CC_MB_VR_P1V8_PEX2_3_VOUT" , VR_P1V8_PEX2_3_VOUT , sensors_read_vr, 0, {1.89, 0, 0, 1.71, 0, 0, 0}, VOLT}, //0x3F
 
@@ -719,6 +727,8 @@ int pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value)
   pal_get_fru_name(fru, fru_name);
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
   id = sensor_map[sensor_num].id;
+
+  pal_get_platform_id(&g_board_id);
 
   switch(fru) {
     case FRU_MB:
@@ -1911,10 +1921,12 @@ static int sensors_read_vr(uint8_t sensor_num, float *value)
 
 static int
 read_nic_volt(uint8_t nic_id, float *value) {
-  struct {
+  struct devs{
     const char *chip;
     const char *label;
-  } devs[] = {
+  };
+
+  struct devs ti_adc[] = {
     {"adc128d818-i2c-23-1d", "NIC0_VOLT"},
     {"adc128d818-i2c-23-1d", "NIC1_VOLT"},
     {"adc128d818-i2c-23-1d", "NIC2_VOLT"},
@@ -1924,12 +1936,34 @@ read_nic_volt(uint8_t nic_id, float *value) {
     {"adc128d818-i2c-23-1f", "NIC6_VOLT"},
     {"adc128d818-i2c-23-1f", "NIC7_VOLT"},
   };
-  int ret = 0;
+
+  struct devs max_adc[] = {
+    {NIC_MAX11615_DIR, "7"},
+    {NIC_MAX11615_DIR, "6"},
+    {NIC_MAX11615_DIR, "5"},
+    {NIC_MAX11615_DIR, "4"},
+    {NIC_MAX11617_DIR, "7"},
+    {NIC_MAX11617_DIR, "6"},
+    {NIC_MAX11617_DIR, "5"},
+    {NIC_MAX11617_DIR, "4"},
+  };
+
+  int ret = 0, data = 0;
 
   if (is_nic_present(nic_id) == true) {
     return READING_NA;
   }
-  ret = sensors_read(devs[nic_id].chip, devs[nic_id].label, value);
+
+  if (GETBIT(g_board_id, 0)) {
+    ret = sensors_read_maxim(max_adc[nic_id].chip, max_adc[nic_id].label, &data);
+    if (!ret) {
+    //Convert MAXIM ADC, Volt = Read * 0.0005 * 9.08 / 1.21
+      *value = (float) data * 0.0005 * 17.8 / 2;
+    }
+  }
+  else {
+    ret = sensors_read(ti_adc[nic_id].chip, ti_adc[nic_id].label, value);
+  }
 
   nic_volt[nic_id] = *value;
   return ret;
@@ -1937,10 +1971,12 @@ read_nic_volt(uint8_t nic_id, float *value) {
 
 static int
 read_nic_curr(uint8_t nic_id, float *value) {
-  struct {
+  struct devs{
     const char *chip;
     const char *label;
-  } devs[] = {
+  };
+
+  struct devs ti_adc[] = {
     {"adc128d818-i2c-23-1d", "NIC0_CURR"},
     {"adc128d818-i2c-23-1d", "NIC1_CURR"},
     {"adc128d818-i2c-23-1d", "NIC2_CURR"},
@@ -1950,12 +1986,43 @@ read_nic_curr(uint8_t nic_id, float *value) {
     {"adc128d818-i2c-23-1f", "NIC6_CURR"},
     {"adc128d818-i2c-23-1f", "NIC7_CURR"},
   };
-  int ret = 0;
+
+  struct devs max_adc[] = {
+    {NIC_MAX11615_DIR, "0"},
+    {NIC_MAX11615_DIR, "1"},
+    {NIC_MAX11615_DIR, "2"},
+    {NIC_MAX11615_DIR, "3"},
+    {NIC_MAX11617_DIR, "8"},
+    {NIC_MAX11617_DIR, "9"},
+    {NIC_MAX11617_DIR, "10"},
+    {NIC_MAX11617_DIR, "11"},
+  };
+
+  int ret = 0, data = 0;
 
   if (is_nic_present(nic_id) == true) {
     return READING_NA;
   }
-  ret = sensors_read(devs[nic_id].chip, devs[nic_id].label, value);
+
+  if (GETBIT(g_board_id, 0)) {
+    ret = sensors_read_maxim(max_adc[nic_id].chip, max_adc[nic_id].label, &data);
+    if (ret) {
+      return ret;
+    }
+    //Convert MAXIM ADC, Current = Read / 0.185
+    *value = (float) data * 0.0005 / 0.185;
+  }
+  else if (GETBIT(g_board_id, 1)) {
+    ret = sensors_read(ti_adc[nic_id].chip, ti_adc[nic_id].label, value);
+    if (ret) {
+      return ret;
+    }
+    //Convert TI ADC + MPS efuse
+    *value = *value * 1.576;
+  }
+  else {
+    ret = sensors_read(ti_adc[nic_id].chip, ti_adc[nic_id].label, value);
+  }
 
   nic_curr[nic_id] = *value;
   return ret;
@@ -2298,3 +2365,52 @@ read_ina260_sensor(uint8_t sensor_num, float *value) {
   }
   return ret;
 }
+
+int
+read_device(const char *device, int *value) {
+  FILE *fp = NULL;
+
+  if (device == NULL || value == NULL) {
+    syslog(LOG_ERR, "%s: Invalid parameter", __func__);
+    return -1;
+  }
+
+  fp = fopen(device, "r");
+  if (fp == NULL) {
+    syslog(LOG_INFO, "%s failed to open device %s error: %s", __func__, device, strerror(errno));
+    return -1;
+  }
+
+  if (fscanf(fp, "%d", value) != 1) {
+    syslog(LOG_INFO, "%s failed to read device %s error: %s", __func__, device, strerror(errno));
+    fclose(fp);
+    return -1;
+  }
+  fclose(fp);
+
+  return 0;
+}
+
+static int sensors_read_maxim(const char *dev, const char *channel, int *data)
+{
+  int val = 0;
+  char ain_name[30] = {0};
+  char dev_dir[LARGEST_DEVICE_NAME] = {0};
+
+  sprintf(ain_name, IIO_AIN_NAME, channel);
+  sprintf(dev_dir, dev, ain_name);
+
+  if(access(dev_dir, F_OK)) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (read_device(dev_dir, &val) < 0) {
+    syslog(LOG_ERR, "%s: dev_dir: %s read fail", __func__, dev_dir);
+    return ERR_FAILURE;
+  }
+
+  *data = val;
+
+  return 0;
+}
+

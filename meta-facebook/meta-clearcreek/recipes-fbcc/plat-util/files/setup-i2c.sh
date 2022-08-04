@@ -29,6 +29,13 @@ i2cset -y -f 5 0x77 0x06 0x00
 i2cset -y -f 5 0x77 0x07 0x0f
 i2cset -y -f 5 0x77 0x02 0x0f
 
+#Setup BB MAXIM ADC
+gp_board_id0=$(gpio_get BOARD_ID0 GPION5)
+if [ $gp_board_id0 -eq 1 ]; then
+  i2c_device_add 23 0x33 max11615
+  i2c_device_add 23 0x35 max11617
+fi
+
 #Setup TMP75 for carrier board
 gp_carrier1_prsnt=$(gpio_get NVME_0_1_PRSNTB_R_N)
 if [ $gp_carrier1_prsnt -eq 0 ]; then

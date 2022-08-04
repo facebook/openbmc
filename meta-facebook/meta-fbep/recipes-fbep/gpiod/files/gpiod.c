@@ -293,6 +293,25 @@ exit:
   return ret;
 }
 
+void check_pax_alert(void)
+{
+  bool alert[4] = {false, false, false, false};
+  uint8_t error_item[4] = {ERR_PAX_0_ALERT, ERR_PAX_1_ALERT, ERR_PAX_2_ALERT, ERR_PAX_3_ALERT};
+  char shadow[16] = {0};
+
+  for (uint8_t i = 0; i < 4; i++) {
+
+    snprintf(shadow, sizeof(shadow), "PAX%d_ALERT", (int)i);
+    if (gpio_get(shadow) == GPIO_VALUE_LOW)
+      alert[i] = true;
+
+    if(alert[i]) {
+      syslog(LOG_CRIT, "ASSERT: PAX%d Alert - PAX%d_ALERT", (int)i, (int)i);
+      sync_dbg_led(error_item[i], true);
+    }
+  }
+}
+
 int check_pwr_brake()
 {
   const char* cpld_power_brake[] = {
@@ -489,6 +508,10 @@ static void gpio_event_handle_pwr_good(gpiopoll_pin_t *gp, gpio_value_t last, gp
     syslog(LOG_WARNING, "Failed to get power state from CPLD");
 
   gpio_event_handle_low_active(gp, last, curr);
+
+  // When Power ON need check pax alert pin.
+  if (curr == GPIO_VALUE_HIGH)
+    check_pax_alert();
 }
 
 // Specific Event Handlers

@@ -1,5 +1,5 @@
 SRCBRANCH = "dev-5.0"
-SRCREV = "AUTOINC"
+SRCREV = "f0f75fc33db7ac5b80fa0e6009f12ff7bd5995eb"
 
 SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
           "

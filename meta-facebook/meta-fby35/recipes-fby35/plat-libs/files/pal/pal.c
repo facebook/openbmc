@@ -42,7 +42,7 @@
 #include <sys/un.h>
 #include "pal.h"
 
-#define PLATFORM_NAME "yosemitev35"
+#define PLATFORM_NAME "yosemite35"
 #define LAST_KEY "last_key"
 
 #define OFFSET_SYS_GUID 0x17F0

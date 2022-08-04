@@ -145,22 +145,10 @@ int BiosComponent::update(std::string image, bool force) {
       return -1;
     }
 
-    retry = max_retry_me_recovery;
-    while (retry > 0) {
-      if (sys().runcmd("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
-        break;
-      }
-      if ((--retry) > 0) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
-    }
-    if (retry <= 0) {
-      sys().error << "ERROR: unable to put ME in recovery mode!" << endl;
-      syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
-      // If we are doing a forced update, ignore this error.
-      if (!force) {
-        return -1;
-      }
+    ret = setMeRecovery(max_retry_me_recovery);
+    // If we are doing a forced update, ignore this error.
+    if (!force && ret) {
+      return -1;
     }
 
     if (setDeepSleepWell(setLow))
@@ -206,6 +194,24 @@ int BiosComponent::reboot(uint8_t fruid) {
   pal_power_button_override(fruid);
   std::this_thread::sleep_for(std::chrono::seconds(10));
   return pal_set_server_power(fruid, SERVER_POWER_ON);
+}
+
+int BiosComponent::setMeRecovery(uint8_t retry) {
+
+  while (retry > 0) {
+    if (sys().runcmd("/usr/local/bin/me-util 0xB8 0xDF 0x57 0x01 0x00 0x01 > /dev/null") == 0) {
+      break;
+    }
+    if ((--retry) > 0) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+  }
+  if (retry == 0) {
+    sys().error << "ERROR: unable to put ME in recovery mode!" << endl;
+    syslog(LOG_ERR, "Unable to put ME in recovery mode!\n");
+    return -1;
+  }
+  return 0;
 }
 
 int BiosComponent::print_version() {

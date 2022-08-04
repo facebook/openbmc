@@ -7,8 +7,6 @@
 #include <openbmc/pal.h>
 #include <openbmc/obmc-i2c.h>
 #include <syslog.h>
-#include "usbdbg.h"
-#include "nic_ext.h"
 #include "vr_fw.h"
 #include "bios.h"
 
@@ -32,15 +30,8 @@ int palBiosComponent::reboot(uint8_t fruid) {
   return 0;
 }
 
-// fru_name, component, kv, fru_id, eth_index, ch_id
-NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0);
-
-UsbDbgComponent usbdbg("ocpdbg", "mcu", "F0T", 14, 0x60, false);
-UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 14, 0x60, 0x02);  // target ID of bootloader = 0x02
-
 palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc",
                       "1e631000.spi", "FM_BMC_MUX_CS_SPI_SEL_0", true, "(F0T_)(.*)");
-
 VrComponent vr_cpu0_vccin("mb", "cpu0_vccin", "VR_CPU0_VCCIN/VCCFA_FIVRA");
 VrComponent vr_cpu0_faon("mb", "cpu0_faon", "VR_CPU0_VCCFAEHV/FAON");
 VrComponent vr_cpu0_vccd("mb", "cpu0_vccd", "VR_CPU0_VCCD");

@@ -24,7 +24,8 @@ LOCAL_URI += " \
     file://mcu_fw.cpp \
     file://bios.h \
     file://bios.cpp \
-    file://platform.cpp \
+    file://plat_common.cpp \
+    file://plat_cover.cpp \
     file://cpld.cpp \
     file://me.cpp \
     file://nic_mctp.cpp \

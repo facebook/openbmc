@@ -4,6 +4,7 @@
 #include <facebook/fby35_common.h>
 #include <facebook/bic.h>
 #include "bic_vr.h"
+#include <openbmc/kv.h>
 
 extern "C" {
 extern void plat_vr_preinit(uint8_t slot, const char *name);
@@ -99,6 +100,8 @@ int VrComponent::get_ver_str(const string& name, string& s) {
 int VrComponent::print_version() {
   string ver("");
   map<uint8_t, map<uint8_t, string>>::iterator iter;
+  char ver_key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
   auto& list = get_vr_list();
 
   if (fw_comp == FW_VR) {
@@ -120,6 +123,13 @@ int VrComponent::print_version() {
         throw "Error in getting the version of " + vr->second;
       }
       cout << vr->second << " Version: " << ver << endl;
+      snprintf(ver_key, sizeof(ver_key), "slot%d_vr_%02xh_new_crc", slot_id, vr->first);
+      //The key will be set, if VR firmware updating is success.
+      if (kv_get(ver_key, value, NULL, KV_FPERSIST) == 0) {
+        cout << vr->second << " Version after activation: " << value << endl;
+      } else { // no update before
+        cout << vr->second << " Version after activation: " << ver << endl;
+      }
     } catch (string& err) {
       printf("%s Version : NA (%s)\n", vr->second.c_str(), err.c_str());
     }

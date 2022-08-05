@@ -70,6 +70,7 @@ const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
+const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech"};
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
 const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
@@ -86,6 +87,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SEL_ERROR_STR  "slot%d_sel_error"
 #define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
+#define VR_NEW_CRC_STR "slot%d_vr_%s_new_crc"
 
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
@@ -2830,6 +2832,49 @@ pal_get_uart_select_from_kv(uint8_t *uart_select) {
 }
 
 int
+pal_clear_vr_new_crc(uint8_t fru) {
+  char ver_key[MAX_KEY_LEN] = {0};
+  for (int j = 0; j < 3; j++) {
+    snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
+    kv_del(ver_key, KV_FPERSIST);
+  }
+  return 0;
+}
+
+int
+pal_move_vr_new_crc(uint8_t fru, uint8_t action) {
+  int ret = 0;
+  char ver_key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  for (int j = 0; j < 3; j++) {
+    if (action == PERSIST_TO_TEMP) {
+      snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
+      if (kv_get(ver_key, value, NULL, KV_FPERSIST) == 0) {
+        ret = kv_set(ver_key, value, 0, 0);
+        if (ret < 0) {
+          syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, ver_key);
+        }
+        kv_del(ver_key, KV_FPERSIST);
+      }
+    } else if (action == TEMP_TO_PERSIST) {
+      snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
+      if (kv_get(ver_key, value, NULL, 0) == 0) {
+        ret = kv_set(ver_key, value, 0, KV_FPERSIST);
+        if (ret < 0) {
+          syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, ver_key);
+        }
+        kv_del(ver_key, 0);
+      }
+    } else {
+      syslog(LOG_WARNING, "%s() moving action is not support", __func__);
+    }
+  }
+
+  return ret;
+}
+
+int
 pal_get_uart_select_from_cpld(uint8_t *uart_select) {
   int fd = 0;
   int retry = 3;
@@ -4468,10 +4513,14 @@ error_exit:
   return ret;
 }
 
-
 int
 pal_udbg_get_frame_total_num() {
   return 4;
+}
+
+bool
+pal_is_support_vr_delay_activate(void){
+  return true;
 }
 
 int

@@ -202,9 +202,9 @@ int BmcCpldComponent::print_version() {
     snprintf(ver_key, sizeof(ver_key), FRU_STR_CPLD_NEW_VER_KEY, fru().c_str());
     ret = kv_get(ver_key, value, NULL, 0);
     if (ret == 0) {
-      cout << board_name << " CPLD Version After activation: " << value << endl;
+      cout << board_name << " CPLD Version after activation: " << value << endl;
     } else {
-      cout << board_name << " CPLD Version After activation: " << ver << endl;
+      cout << board_name << " CPLD Version after activation: " << ver << endl;
     }
   } catch (string& err) {
     printf("%s CPLD Version: NA (%s)\n", board_name.c_str(), err.c_str());

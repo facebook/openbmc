@@ -71,34 +71,11 @@ ssd_monitor_enable(uint8_t slot_id, uint8_t intf, bool enable) {
 }
 
 //==============================================================================
-// WF_1U
+// VF_1U
 //==============================================================================
 static int
-wf_1u_nvme_get_bus_intf(uint8_t dev_id, uint8_t *bus, uint8_t *intf) {
-  const uint8_t bus_map_table[] = { 0, 4, 5, 6};
-
-  if (dev_id < DEV_ID0_1OU || dev_id > DEV_ID2_1OU) {
-    return -1;
-  }
-
-  *intf = FEXP_BIC_INTF;
-  *bus = bus_map_table[dev_id];
-  return 0;
-}
-
-const nvme_ops_t wf_1u_ops = {
-  .nvme_get_bus_intf = wf_1u_nvme_get_bus_intf,
-  .nvme_set_mux_select = NULL,
-  .board_pre_setup = NULL,
-  .board_post_setup = NULL,
-};
-
-//==============================================================================
-// EDSFF_1U
-//==============================================================================
-static int
-edsff_1u_nvme_get_bus_intf(uint8_t dev_id, uint8_t *bus, uint8_t *intf) {
-  const uint8_t bus_map_table[] = { 0, 6, 4, 3, 2};
+vf_1u_nvme_get_bus_intf(uint8_t dev_id, uint8_t *bus, uint8_t *intf) {
+  const uint8_t bus_map_table[] = {0, 5, 4, 3, 2};
 
   if (dev_id < DEV_ID0_1OU || dev_id > DEV_ID3_1OU) {
     return -1;
@@ -109,8 +86,8 @@ edsff_1u_nvme_get_bus_intf(uint8_t dev_id, uint8_t *bus, uint8_t *intf) {
   return 0;
 }
 
-const nvme_ops_t edsff_1u_ops = {
-  .nvme_get_bus_intf = edsff_1u_nvme_get_bus_intf,
+const nvme_ops_t vf_1u_ops = {
+  .nvme_get_bus_intf = vf_1u_nvme_get_bus_intf,
   .nvme_set_mux_select = NULL,
   .board_pre_setup = NULL,
   .board_post_setup = NULL,
@@ -245,7 +222,7 @@ print_drive_status(ssd_data *ssd) {
 
   nvme_temp_decode(ssd->temp, &temp_decoding);
   printf("%s: %s\n", temp_decoding.key, temp_decoding.value);
-  
+
   nvme_pdlu_decode(ssd->pdlu, &pdlu_decoding);
   printf("%s: %s\n", pdlu_decoding.key, pdlu_decoding.value);
 
@@ -268,7 +245,7 @@ drive_health(ssd_data *ssd, bool is_gpv3) {
     if ((ssd->warning & NVME_SMART_WARNING_MASK_BIT) != NVME_SMART_WARNING_MASK_BIT)
       return NVME_BAD_HEALTH;
   }
-  
+
   if ((ssd->sflgs & NVME_SFLGS_MASK_BIT) != NVME_SFLGS_MASK_BIT)
     return NVME_BAD_HEALTH;
 
@@ -340,7 +317,7 @@ read_nvme_health(uint8_t slot_id, uint8_t device_id, uint8_t bus, uint8_t intf, 
     syslog(LOG_ERR, "%s(): master_write_read failed, bus=%u, offset=%u read length=%u", __func__, bus, tbuf[3], rlen);
     return -1;
   }
-  
+
   ssd->sflgs = rbuf[1];
   ssd->warning = rbuf[2];
   return 0;
@@ -352,7 +329,7 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
   uint8_t bus = 0;
   uint8_t intf = 0;
   ssd_data ssd;
-  
+
   memset(&ssd, 0x00, sizeof(ssd_data));
 
   if (!sys_conf) {
@@ -383,7 +360,7 @@ read_nvme_data(uint8_t slot_id, uint8_t device_id, uint8_t cmd, sys_config_t* sy
       printf("\n");
     }
   } else if (cmd == CMD_DRIVE_HEALTH) {
-    if (read_nvme_health(slot_id, device_id, bus, intf, &ssd) < 0) { 
+    if (read_nvme_health(slot_id, device_id, bus, intf, &ssd) < 0) {
       printf("NA\n");
     } else {
       printf("%s\n", (drive_health(&ssd, (sys_conf->nvme_ops == &gpv3_ops)) == 0)?"Normal":"Abnormal");
@@ -423,7 +400,7 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
   sys_conf->slot_id = slot_id;
 
   // need to check slot present
-  ret = pal_is_fru_prsnt(slot_id, &val); 
+  ret = pal_is_fru_prsnt(slot_id, &val);
   if (ret < 0 || val == 0) {
     printf("slot%u is not present!\n", slot_id);
     return -1;
@@ -455,14 +432,10 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
   }
 
   // config setup
-  if (sys_conf->present == PRESENT_1OU && sys_conf->type_1ou == EDSFF_1U) {
+  if (sys_conf->present == PRESENT_1OU && sys_conf->type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID3_1OU;
-    sys_conf->nvme_ops = &edsff_1u_ops;
-  } else if (sys_conf->present == PRESENT_1OU && sys_conf->type_1ou == WF_1U) {
-    sys_conf->dev_start = DEV_ID0_1OU;
-    sys_conf->dev_end = DEV_ID2_1OU;
-    sys_conf->nvme_ops = &wf_1u_ops;
+    sys_conf->nvme_ops = &vf_1u_ops;
   } else if (sys_conf->present == PRESENT_2OU &&
       (sys_conf->type_2ou == GPV3_MCHP_BOARD ||
       sys_conf->type_2ou == GPV3_BRCM_BOARD)) {
@@ -566,7 +539,7 @@ main(int argc, char **argv) {
     print_usage_help();
     goto exit;
   }
-  
+
 exit:
   if (g_sys_conf.nvme_ops->board_post_setup) {
     if (g_sys_conf.nvme_ops->board_post_setup(g_sys_conf.slot_id, 0) < 0 ) {

@@ -191,14 +191,10 @@ class ClassConfig {
 
   static bool isRainbowFalls(uint8_t slot_id) {
     int ret;
-    uint8_t card_type = 0;
-    ret = bic_get_card_type(slot_id, CARD_TYPE_1OU, &card_type);
-    if( !ret && card_type == TYPE_1OU_RAINBOW_FALLS) {
-      return true;
-    }
+    uint8_t card_type = TYPE_1OU_UNKNOWN;
 
-    ret = (pal_is_fw_update_ongoing(slot_id) == false) ? bic_get_1ou_type(slot_id, &card_type):bic_get_1ou_type_cache(slot_id, &card_type);
-    if( !ret && card_type == RF_1U) {
+    ret = bic_get_1ou_type(slot_id, &card_type);
+    if (!ret && card_type == TYPE_1OU_RAINBOW_FALLS) {
       return true;
     }
     return false;

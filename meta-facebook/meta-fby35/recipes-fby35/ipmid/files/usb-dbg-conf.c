@@ -478,6 +478,34 @@ static sensor_desc_t critical_sensor_bmc[] =
   {"BMC_SENSOR_NIC_PWR:"              , BMC_SENSOR_NIC_PWR            , "W"    , FRU_BMC, 2},
 };
 
+static sensor_desc_t critical_sensor_1ou_vf[] =
+{
+  {"E1S Outlet Temp:"      , BIC_1OU_VF_SENSOR_NUM_T_MB_OUTLET_TEMP_T , "C" , FRU_ALL, 0},
+  {"E1S P12V_AUX:"         , BIC_1OU_VF_SENSOR_NUM_V_12_AUX           , "V" , FRU_ALL, 2},
+  {"E1S P12V_EDGE:"        , BIC_1OU_VF_SENSOR_NUM_V_12_EDGE          , "V" , FRU_ALL, 2},
+  {"E1S P3V3_AUX:"         , BIC_1OU_VF_SENSOR_NUM_V_3_3_AUX          , "V" , FRU_ALL, 2},
+  {"E1S DEV0 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2A     , "W" , FRU_ALL, 2},
+  {"E1S DEV0 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2A     , "V" , FRU_ALL, 2},
+  {"E1S DEV0 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2A      , "C" , FRU_ALL, 0},
+  {"E1S 3V3_ADC_DEV0:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2A    , "V" , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV0:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2A    , "V" , FRU_ALL, 2},
+  {"E1S DEV1 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2B     , "W" , FRU_ALL, 2},
+  {"E1S DEV1 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2B     , "V" , FRU_ALL, 2},
+  {"E1S DEV1 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2B      , "C" , FRU_ALL, 0},
+  {"E1S 3V3_ADC_DEV1:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2B    , "V" , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV1:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2B    , "V" , FRU_ALL, 2},
+  {"E1S DEV2 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2C     , "W" , FRU_ALL, 2},
+  {"E1S DEV2 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2C     , "V" , FRU_ALL, 2},
+  {"E1S DEV2 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2C      , "C" , FRU_ALL, 0},
+  {"E1S 3V3_ADC_DEV2:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2C    , "V" , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV2:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2C    , "V" , FRU_ALL, 2},
+  {"E1S DEV3 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2D     , "W" , FRU_ALL, 2},
+  {"E1S DEV3 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2D     , "V" , FRU_ALL, 2},
+  {"E1S DEV3 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2D      , "C" , FRU_ALL, 0},
+  {"E1S 3V3_ADC_DEV3:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2D    , "V" , FRU_ALL, 2},
+  {"E1S 12V_ADC_DEV3:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2D    , "V" , FRU_ALL, 2},
+};
+
 static sensor_desc_t critical_sensor_1ou_rf[] =
 {
   {"RF MB Inlet Temp:"     , BIC_1OU_RF_INLET_TEMP          , "C"   , FRU_ALL, 0},
@@ -517,49 +545,6 @@ static sensor_desc_t critical_sensor_1ou_rf[] =
   {"RF PVDDQ_CD_SPS_PWR:"  , BIC_1OU_RF_PVDDQ_CD_SPS_PWR    , "W"   , FRU_ALL, 2},
 };
 
-static sensor_desc_t critical_sensor_1ou_wf[] =
-{
-  {"WF Temp:"              , BIC_1OU_WF_SENSOR_TEMP                   , "C"   , FRU_ALL, 0},
-  {"WF CXL EMC1412 Temp:"  , BIC_1OU_WF_SENSOR_CXL_EMC1412_TEMP       , "C"   , FRU_ALL, 0},
-  {"WF SSD0 Temp:"         , BIC_1OU_WF_SENSOR_SSD0_TEMP              , "C"   , FRU_ALL, 0},
-  {"WF SSD1 Temp:"         , BIC_1OU_WF_SENSOR_SSD1_TEMP              , "C"   , FRU_ALL, 0},
-  {"WF SSD2 Temp:"         , BIC_1OU_WF_SENSOR_SSD2_TEMP              , "C"   , FRU_ALL, 0},
-  {"WF P0V9ASICD Temp:"    , BIC_1OU_WF_SENSOR_P0V9ASICD_TEMP         , "C"   , FRU_ALL, 0},
-  {"WF P0V9ASICA1 Temp:"   , BIC_1OU_WF_SENSOR_P0V9ASICA1_TEMP        , "C"   , FRU_ALL, 0},
-  {"WF P0V9ASICA2 Temp:"   , BIC_1OU_WF_SENSOR_P0V9ASICA2_TEMP        , "C"   , FRU_ALL, 0},
-  {"WF PVDDQAB Temp:"      , BIC_1OU_WF_SENSOR_PVDDQAB_TEMP           , "C"   , FRU_ALL, 0},
-  {"WF CXL ON DIE Temp:"   , BIC_1OU_WF_SENSOR_CXL_ON_DIE_TEMP        , "C"   , FRU_ALL, 0},
-  {"WF DIMMA Temp:"        , BIC_1OU_WF_SENSOR_DIMMA_TEMP             , "C"   , FRU_ALL, 0},
-  {"WF DIMMB Temp:"        , BIC_1OU_WF_SENSOR_DIMMB_TEMP             , "C"   , FRU_ALL, 0},
-  {"WF 12V STBY Vol:"      , BIC_1OU_WF_SENSOR_12V_STBY_VOL           , "V"   , FRU_ALL, 2},
-  {"WF 3V3 STBY Vol:"      , BIC_1OU_WF_SENSOR_3V3_STBY_VOL           , "V"   , FRU_ALL, 2},
-  {"WF 12V E1S Vol:"       , BIC_1OU_WF_SENSOR_12V_E1S_VOL            , "V"   , FRU_ALL, 2},
-  {"WF VDD 1V2 Vol:"       , BIC_1OU_WF_SENSOR_VDD_1V2_VOL            , "V"   , FRU_ALL, 2},
-  {"WF VDD 1V8 Vol:"       , BIC_1OU_WF_SENSOR_VDD_1V8_VOL            , "V"   , FRU_ALL, 2},
-  {"WF 3V3 E1S Vol:"       , BIC_1OU_WF_SENSOR_3V3_E1S_VOL            , "V"   , FRU_ALL, 2},
-  {"WF PVPP2V5AB Vol:"     , BIC_1OU_WF_SENSOR_PVPP2V5AB_VOL          , "V"   , FRU_ALL, 2},
-  {"WF PVTT0V6AB Vol:"     , BIC_1OU_WF_SENSOR_PVTT0V6AB_VOL          , "V"   , FRU_ALL, 2},
-  {"WF 5V STBY Vol:"       , BIC_1OU_WF_SENSOR_5V_STBY_VOL            , "V"   , FRU_ALL, 2},
-  {"WF 12V E1S INA230:"    , BIC_1OU_WF_SENSOR_12V_E1S_INA230_VOL     , "V"   , FRU_ALL, 2},
-  {"WF PVPPAB INA230:"     , BIC_1OU_WF_SENSOR_PVPPAB_INA230_VOL      , "V"   , FRU_ALL, 2},
-  {"WF P0V9ASICD Vol:"     , BIC_1OU_WF_SENSOR_P0V9ASICD_VOL          , "V"   , FRU_ALL, 2},
-  {"WF P0V9ASICA1 Vol:"    , BIC_1OU_WF_SENSOR_P0V9ASICA1_VOL         , "V"   , FRU_ALL, 2},
-  {"WF P0V9ASICA2 Vol:"    , BIC_1OU_WF_SENSOR_P0V9ASICA2_VOL         , "V"   , FRU_ALL, 2},
-  {"WF PVDDQAB Vol:"       , BIC_1OU_WF_SENSOR_PVDDQAB_VOL            , "V"   , FRU_ALL, 2},
-  {"WF E1S 12V INA230:"    , BIC_1OU_WF_SENSOR_E1S_12V_INA230_CUR     , "A"   , FRU_ALL, 2},
-  {"WF PVPPAB INA230:"     , BIC_1OU_WF_SENSOR_PVPPAB_INA230_CUR      , "A"   , FRU_ALL, 2},
-  {"WF P0V9ASICD Cur:"     , BIC_1OU_WF_SENSOR_P0V9ASICD_CUR          , "A"   , FRU_ALL, 2},
-  {"WF P0V9ASICA1 Cur:"    , BIC_1OU_WF_SENSOR_P0V9ASICA1_CUR         , "A"   , FRU_ALL, 2},
-  {"WF P0V9ASICA2 Cur:"    , BIC_1OU_WF_SENSOR_P0V9ASICA2_CUR         , "A"   , FRU_ALL, 2},
-  {"WF PVDDQAB Cur:"       , BIC_1OU_WF_SENSOR_PVDDQAB_CUR            , "A"   , FRU_ALL, 2},
-  {"WF E1S 12V INA230:"    , BIC_1OU_WF_SENSOR_E1S_12V_INA230_PWR     , "W"   , FRU_ALL, 2},
-  {"WF PVPPAB INA230:"     , BIC_1OU_WF_SENSOR_PVPPAB_INA230_PWR      , "W"   , FRU_ALL, 2},
-  {"WF P0V9ASICD Pwr:"     , BIC_1OU_WF_SENSOR_P0V9ASICD_PWR          , "W"   , FRU_ALL, 2},
-  {"WF P0V9ASICA1 Pwr:"    , BIC_1OU_WF_SENSOR_P0V9ASICA1_PWR         , "W"   , FRU_ALL, 2},
-  {"WF P0V9ASICA2 Pwr:"    , BIC_1OU_WF_SENSOR_P0V9ASICA2_PWR         , "W"   , FRU_ALL, 2},
-  {"WF PVDDQAB Pwr:"       , BIC_1OU_WF_SENSOR_PVDDQAB_PWR            , "W"   , FRU_ALL, 2},
-};
-
 static sensor_desc_t critical_sensor_dpv2_x8[] =
 {
 // dpv2_x8 sensors
@@ -582,7 +567,7 @@ static sensor_desc_t critical_sensor_dpv2_x16[] =
 
 size_t critical_sensor_bmc_cnt = sizeof(critical_sensor_bmc) / sizeof(sensor_desc_t);
 size_t critical_sensor_sb_cnt = sizeof(critical_sensor_sb)/sizeof(sensor_desc_t);
-size_t critical_sensor_1ou_wf_cnt = sizeof(critical_sensor_1ou_wf)/sizeof(sensor_desc_t);
+size_t critical_sensor_1ou_vf_cnt = sizeof(critical_sensor_1ou_vf)/sizeof(sensor_desc_t);
 size_t critical_sensor_1ou_rf_cnt = sizeof(critical_sensor_1ou_rf)/sizeof(sensor_desc_t);
 size_t critical_sensor_dpv2_x8_cnt = sizeof(critical_sensor_dpv2_x8)/sizeof(sensor_desc_t);
 size_t critical_sensor_dpv2_x16_cnt = sizeof(critical_sensor_dpv2_x16)/sizeof(sensor_desc_t);
@@ -615,8 +600,8 @@ int plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-  uint8_t bmc_location = 0, type = 0;
   int ret = 0, config_status = 0;
+  uint8_t bmc_location = 0, type_1ou = TYPE_1OU_UNKNOWN;
   uint8_t board_type = 0;
   uint8_t current_sensor_count = 0;
 
@@ -651,41 +636,23 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 
     // 1OU
     if ((bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU)) {
-      ret = bic_get_1ou_type_cache(fru, &type);
-      if (ret < 0) { // If BMC fail to get board id from 1OU BIC, then it will detect 1OU card type.
-        syslog(LOG_ERR, "%s() Cannot get board id", __func__);
-        ret = bic_get_card_type(fru, CARD_TYPE_1OU, &type);
-        if (ret < 0) {
-          syslog(LOG_ERR, "%s() Cannot get card type", __func__);
-        }
-        else {
-          switch(type) {
-            case TYPE_1OU_WAIMANO_FALLS:
-              memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_wf, sizeof(critical_sensor_1ou_wf));
-              current_sensor_count += critical_sensor_1ou_wf_cnt;
-              break;
-            case TYPE_1OU_RAINBOW_FALLS:
-              memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_rf, sizeof(critical_sensor_1ou_rf));
-              current_sensor_count += critical_sensor_1ou_rf_cnt;
-              break;
-            default:
-              syslog(LOG_ERR, "%s() Cannot identify the 1OU card type or 1OU card is not present", __func__);
-          }
-        }
-      }
-      else {
-        switch(type) {
-          case WF_1U:
-            memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_wf, sizeof(critical_sensor_1ou_wf));
-            current_sensor_count += critical_sensor_1ou_wf_cnt;
+      ret = bic_get_1ou_type(fru, &type_1ou);
+      if (ret == 0) {
+        switch (type_1ou) {
+          case TYPE_1OU_VERNAL_FALLS_WITH_AST:
+            memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_vf, sizeof(critical_sensor_1ou_vf));
+            current_sensor_count += critical_sensor_1ou_vf_cnt;
             break;
-          case RF_1U:
+          case TYPE_1OU_RAINBOW_FALLS:
             memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_rf, sizeof(critical_sensor_1ou_rf));
             current_sensor_count += critical_sensor_1ou_rf_cnt;
             break;
           default:
             syslog(LOG_ERR, "%s() Cannot identify the 1OU board type or 1OU board is not present", __func__);
+            break;
         }
+      } else {
+        syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
       }
     }
 

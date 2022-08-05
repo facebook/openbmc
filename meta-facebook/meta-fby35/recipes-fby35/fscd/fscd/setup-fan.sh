@@ -37,9 +37,9 @@ default_fsc_config_path="/etc/fsc-config.json"
 sys_config=$(/usr/local/bin/show_sys_config | grep -i "config:" | awk -F ": " '{print $3}')
 bmc_location=$(get_bmc_board_id)
 
-#For config A B C, we get the Baseboard revision from BB CPLD through i2cget. 
+#For config A B C, we get the Baseboard revision from BB CPLD through i2cget.
 CLASS1_GET_BOARD_REVID="/usr/sbin/i2cget -y 12 0x0f 0x08"
-#For config D, we get the Baseboard revision from BB BPLD. command: bic-util slot1 IPMI Send request message to BIC, IANA, BB bic, IPMI Master write read, CPLD i2cbus addr register 
+#For config D, we get the Baseboard revision from BB BPLD. command: bic-util slot1 IPMI Send request message to BIC, IANA, BB bic, IPMI Master write read, CPLD i2cbus addr register
 CLASS2_GET_BOARD_REVID="/usr/bin/bic-util slot1 0xe0 0x2 ""$IANA_ID"" 0x10 0x18 0x52 0x1 0x1e 0x1 0x8 "
 
 check_dvt_fan(){
@@ -127,24 +127,17 @@ init_class1_fsc() {
       target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
     fi
   elif [ "$sys_config" = "C" ]; then
-    board_id_1ou=$(get_1ou_board_type slot1)
-    if [[ $board_id_1ou -eq 12 ]]; then
-      config_type="WF"
-      target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
-    else
-      # if get board id fail, tried to get card type
-      card_type_1ou=$(get_1ou_card_type slot1)
-      if [[ $card_type_1ou -eq 5 ]]; then
-        config_type="KF"
+    board_type_1ou=$(get_1ou_board_type slot1)
+    case $board_type_1ou in
+      4)
+        config_type="VF"
         target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
-      elif [[ $card_type_1ou -eq 6 ]]; then
-        config_type="WF"
-        target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"
-      else
+        ;;
+      *)
         config_type="1"
         target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
-      fi
-    fi
+        ;;
+    esac
   else
     config_type="1"
     target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
@@ -201,7 +194,7 @@ reload_sled_fsc() {
 
     #Check number of slots
     sys_config="$($KV_CMD get sled_system_conf persistent)"
-    if [[ "$sys_config" =~ ^(Type_(1|10|WF|KF))$ && "$cnt" -eq 4 ]]; then
+    if [[ "$sys_config" =~ ^(Type_(1|10|VF))$ && "$cnt" -eq 4 ]]; then
       run_fscd=true
     elif [[ "$sys_config" =~ ^(Type_(DPV2|HD))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true

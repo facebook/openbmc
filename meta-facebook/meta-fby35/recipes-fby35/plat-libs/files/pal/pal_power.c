@@ -708,7 +708,7 @@ pal_get_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t *status, uint8_t *
 int
 pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   int ret;
-  uint8_t status, type, type_1ou = 0;
+  uint8_t status, type, type_1ou = TYPE_1OU_UNKNOWN;
   uint8_t intf = 0;
   uint8_t rsp[2] = {0}; //idx0 = dev id, idx1 = intf
 
@@ -756,9 +756,9 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
         }
 
         if (intf == FEXP_BIC_INTF) {
-          bic_get_1ou_type_cache(slot_id, &type_1ou);
+          bic_get_1ou_type(slot_id, &type_1ou);
         }
-        if (type_1ou == EDSFF_1U) {
+        if (type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
           sleep(6); // EDSFF timing requirement
         } else {
           sleep(3);

@@ -100,52 +100,42 @@ enum {
 
 // Update firmware for various components
 static int
-_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
+_update_fw(uint8_t slot_id, uint8_t target, uint8_t type, uint32_t offset,
+           uint16_t len, uint8_t *buf, uint8_t intf) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[16] = {0x00};
   uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  uint8_t cmd = 0x0;
-  int ret;
-  int retries = 3;
-  int index = 3;
-  int offset_size = sizeof(offset) / sizeof(tbuf[0]);
+  uint8_t rlen = sizeof(rbuf);
+  int ret = 0, retry;
+
+  if (buf == NULL) {
+    return -1;
+  }
 
   // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-
-  if (intf != NONE_INTF) {
-    // Need bridge command to 2nd BIC
-    tbuf[index++] = intf;
-    tbuf[index++] = NETFN_OEM_1S_REQ << 2;
-    tbuf[index++] = CMD_OEM_1S_UPDATE_FW;
-    memcpy(&tbuf[index], (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-    index += IANA_ID_SIZE;
-    cmd = CMD_OEM_1S_MSG_OUT;
+  if ((intf == FEXP_BIC_INTF) && (type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
+    memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
   } else {
-    cmd = CMD_OEM_1S_UPDATE_FW;
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   }
 
   // Fill the component for which firmware is requested
-  tbuf[index++] = target;
+  tbuf[3] = target;
+  memcpy(&tbuf[4], &offset, sizeof(offset));
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+  memcpy(&tbuf[10], buf, len);
 
-  memcpy(&tbuf[index], (uint8_t *)&offset, offset_size);
-  index += offset_size;
+  tlen = len + 10;
+  for (retry = 0; retry < 3; retry++) {
+    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if (ret == 0) {
+      return ret;
+    }
 
-  tbuf[index++] = len & 0xFF;
-  tbuf[index++] = (len >> 8) & 0xFF;
-
-  memcpy(&tbuf[index], buf, len);
-
-  tlen = len + index;
-
-bic_send:
-  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, cmd, tbuf, tlen, rbuf, &rlen);
-  if ((ret) && (retries--)) {
     sleep(1);
-    printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\
-           \n",    slot_id, target, offset, len);
-    goto bic_send;
+    printf("_update_fw: slot: %u, target %u, offset: %u, len: %u retrying..\n",
+           slot_id, target, offset, len);
   }
 
   return ret;
@@ -173,6 +163,7 @@ update_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
   uint8_t buf[256] = {0};
   uint8_t target;
   uint8_t bmc_location = 0;
+  uint8_t type = TYPE_1OU_UNKNOWN;
   ssize_t count;
 
   if (fby35_common_get_bmc_location(&bmc_location) != 0) {
@@ -187,6 +178,9 @@ update_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
       printf("Failed to set firmware update ongoing\n");
       return -1;
     }
+  }
+  if (intf == FEXP_BIC_INTF) {
+    bic_get_1ou_type(slot_id, &type);
   }
   printf("updating fw on slot %d:\n", slot_id);
 
@@ -218,7 +212,7 @@ update_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
       target |= 0x80;
     }
     // Send data to Bridge-IC
-    cmd_rc = _update_fw(slot_id, target, offset, count, buf, intf);
+    cmd_rc = _update_fw(slot_id, target, type, offset, count, buf, intf);
     if (cmd_rc) {
       goto error_exit;
     }

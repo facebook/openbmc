@@ -34,6 +34,7 @@ extern "C" {
 #define MIN_IPMB_BYPASS_LEN 6
 
 extern const uint32_t IANA_ID;
+extern const uint32_t VF_IANA_ID;
 
 enum {
   BIC_CMD_OEM_SET_AMBER_LED     = 0x39,

@@ -35,6 +35,7 @@
 #include "bic_xfer.h"
 
 const uint32_t IANA_ID = 0x00A015;
+const uint32_t VF_IANA_ID = 0x009C9C;
 
 void msleep(int msec) {
   struct timespec req;
@@ -151,7 +152,7 @@ bic_ipmb_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_
           ret = BIC_STATUS_FAILURE;
           break;
         }
-      } else { 
+      } else {
         //catch the data and ignore the packet of the bypass command.
         *rlen = rsp_len - 7;
         memmove(rbuf, &rsp_buf[7], *rlen);

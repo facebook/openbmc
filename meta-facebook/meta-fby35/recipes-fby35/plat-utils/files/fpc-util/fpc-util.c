@@ -61,7 +61,7 @@ main(int argc, char **argv) {
   if ( strcmp(argv[identify_idx], "--identify") != 0 ) {
     goto err_exit;
   }
-  
+
   if ( strcmp(argv[on_off_idx], "on") == 0 ) {
     is_led_on = true;
   } else if ( strcmp(argv[on_off_idx], "off") == 0 ) {
@@ -81,7 +81,7 @@ main(int argc, char **argv) {
   }
 
   if ( is_dev == true ) {
-    uint8_t type = 0;
+    uint8_t type = TYPE_1OU_UNKNOWN;
     uint8_t dev_id = DEV_NONE;
 
     // check the location
@@ -89,9 +89,9 @@ main(int argc, char **argv) {
       printf("Couldn't get the location of BMC\n");
       goto err_exit;
     }
-    
+
     if ( bmc_location == NIC_BMC ) {
-      printf("Config C is not supported!\n");
+      printf("Config D is not supported!\n");
       goto err_exit;
     }
 
@@ -107,8 +107,9 @@ main(int argc, char **argv) {
       goto err_exit;
     }
 
-    if ( bic_get_1ou_type(fru, &type) < 0 || type != EDSFF_1U ) {
-      printf("Device identification only support in E1S 1OU board, get %02X (Expected: %02X)\n", type, EDSFF_1U);
+    if ( bic_get_1ou_type(fru, &type) < 0 || type != TYPE_1OU_VERNAL_FALLS_WITH_AST ) {
+      printf("Device identification only support in E1S 1OU board, get %02X (Expected: %02X)\n",
+             type, TYPE_1OU_VERNAL_FALLS_WITH_AST);
       goto err_exit;
     }
 

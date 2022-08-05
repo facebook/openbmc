@@ -236,17 +236,16 @@ MAPTOSTRING root_port_mapping_gpv3[] = {
 };
 
 MAPTOSTRING root_port_mapping_e1s[] = {
-    // bus, device, port, silk screen, location
-    { 0xB2, 0, 0x3A, "Num 0", "1OU"},
-    { 0xB2, 1, 0x3B, "Num 1", "1OU"},
-    { 0xB2, 2, 0x3C, "Num 2", "1OU"},
-    { 0xB2, 3, 0x3D, "Num 3", "1OU"},
-    { 0x63, 0, 0x2A, "Num 0", "2OU"},
-    { 0x63, 1, 0x2B, "Num 1", "2OU"},
-    { 0x15, 3, 0x1D, "Num 2", "2OU"},
-    { 0x15, 2, 0x1C, "Num 3", "2OU"},
-    { 0x15, 1, 0x1B, "Num 4", "2OU"},
-    { 0x15, 0, 0x1A, "Num 5", "2OU"},
+    // XCC
+    { 0x7F, 1, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
+    { 0x7F, 3, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
+    { 0x7F, 5, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
+    { 0x7F, 7, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
+    // MCC
+    { 0x84, 1, 0x3A, "Num 0", "1OU" }, // root_port=0x3A, 1OU E1S
+    { 0x84, 3, 0x3C, "Num 1", "1OU" }, // root_port=0x3C, 1OU E1S
+    { 0x84, 5, 0x3E, "Num 2", "1OU" }, // root_port=0x3E, 1OU E1S
+    { 0x84, 7, 0x37, "Num 3", "1OU" }, // root_port=0x3G, 1OU E1S
 };
 
 PCIE_ERR_DECODE pcie_err_tab[] = {
@@ -1815,7 +1814,7 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
   uint8_t *data = res_data;
   int ret = 0, config_status = 0;
   uint8_t bmc_location = 0;
-  uint8_t type_1ou = 0;
+  uint8_t type_1ou = TYPE_1OU_UNKNOWN;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
   ret = fby35_common_get_bmc_location(&bmc_location);
@@ -1846,14 +1845,11 @@ int pal_get_poss_pcie_config(uint8_t slot, uint8_t *req_data, uint8_t req_len, u
           break;
         }
         switch (type_1ou) {
-          case EDSFF_1U:
+          case TYPE_1OU_VERNAL_FALLS_WITH_AST:
             pcie_conf = CONFIG_C_VF;
             break;
-          case M2_1U:
+          case TYPE_1OU_EXP_WITH_6_M2:
             pcie_conf = CONFIG_MFG;
-            break;
-          case WF_1U:
-            pcie_conf = CONFIG_C_WF;
             break;
           default:
             pcie_conf = CONFIG_C;
@@ -2115,8 +2111,8 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
 
 static void
 pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **tbl, uint8_t *cnt) {
-  uint8_t board_1u = M2_BOARD;
-  uint8_t board_2u = M2_BOARD;
+  uint8_t board_1u = TYPE_1OU_UNKNOWN;
+  uint8_t board_2u = UNKNOWN_BOARD;
   uint8_t config_status = CONFIG_UNKNOWN;
   int ret = 0;
 
@@ -2156,11 +2152,9 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
 
   if ( ret < 0 ) {
     syslog(LOG_ERR, "%s() Use the default root_port_mapping\n", __func__);
-    board_1u = M2_BOARD; //make sure the default is used
-    board_2u = M2_BOARD;
   }
 
-  if ( board_1u == EDSFF_1U || board_2u == E1S_BOARD ) {
+  if ( board_1u == TYPE_1OU_VERNAL_FALLS_WITH_AST || board_2u == E1S_BOARD ) {
     // case 1/2OU E1S
     *tbl = root_port_mapping_e1s;
     *cnt = sizeof(root_port_mapping_e1s)/sizeof(MAPTOSTRING);

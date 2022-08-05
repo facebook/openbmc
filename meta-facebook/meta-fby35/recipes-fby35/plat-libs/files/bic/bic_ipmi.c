@@ -520,17 +520,27 @@ error_exit:
 // Netfn: 0x38, Cmd: 0x0B
 static int
 _bic_get_fw_ver(uint8_t slot_id, uint8_t fw_comp, uint8_t *ver, uint8_t intf) {
-  uint8_t tbuf[4] = {0x00}; //IANA ID + FW_COMP
+  uint8_t tbuf[16] = {0x00};
   uint8_t rbuf[16] = {0x00};
-  uint8_t rlen = 0;
   uint8_t tlen = IANA_ID_SIZE;
+  uint8_t rlen = sizeof(rbuf);
+  uint8_t type = TYPE_1OU_UNKNOWN;
   int ret = BIC_STATUS_FAILURE;
 
+  if (ver == NULL) {
+    return -1;
+  }
+
   // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  if ((intf == FEXP_BIC_INTF) && (fw_comp == FW_SB_BIC) &&
+      !bic_get_1ou_type(slot_id, &type) && (type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
+    memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
+  } else {
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  }
   tbuf[tlen++] = fw_comp;
 
-  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, 4, rbuf, &rlen, intf);
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, tlen, rbuf, &rlen, intf);
   // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
   if ( ret < 0 || rlen < 4 ) {
     syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, rlen, slot_id, intf);
@@ -747,54 +757,59 @@ bic_enable_ssd_sensor_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
 
 int
 bic_get_1ou_type(uint8_t slot_id, uint8_t *type) {
-  uint8_t tbuf[3] = {0x00};
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
-  uint8_t rlen = 0;
-  int ret = 0;
-  int retry = 0;
-  char key[MAX_KEY_LEN] = {0};
-  char tmp_str[MAX_VALUE_LEN] = {0};
-  int val = 0;
+  uint8_t rlen = sizeof(rbuf);
+  int ret = 0, retry;
 
-  // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-
-  snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
-
-  while (retry < 3) {
-    ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
-    if (ret == 0) break;
-    retry++;
+  if (type == NULL) {
+    return -1;
   }
 
-  if (ret == 0) {
-    *type = rbuf[3];
-    val = *type;
-  } else {
+  snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    ret = atoi(value);
+    if (ret >= 0 && ret <= 255) {
+     *type = (uint8_t)ret;
+      return 0;
+    }
+  }
+
+  ret = bic_get_card_type(slot_id, CARD_TYPE_1OU, type);
+  if (ret) {
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);  // Fill the IANA ID
+    for (retry = 0; retry < 3; retry++) {
+      ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_BOARD_ID, tbuf, 3, rbuf, &rlen, FEXP_BIC_INTF);
+      if (ret) {
+        continue;
+      }
+
+      // Map board_id to card_type
+      switch (rbuf[3]) {
+        case VF_1U:
+          *type = TYPE_1OU_VERNAL_FALLS_WITH_AST;
+          break;
+        case RF_1U:
+          *type = TYPE_1OU_RAINBOW_FALLS;
+          break;
+        default:
+          *type = TYPE_1OU_UNKNOWN;
+          break;
+      }
+      break;
+    }
+  }
+
+  if (ret) {
     syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
-    val = ret;
+    return -1;
   }
 
-  snprintf(tmp_str, sizeof(tmp_str), "%d", val);
-  kv_set(key, tmp_str, 0, 0);
-  return ret;
-}
+  snprintf(value, sizeof(value), "%u", *type);
+  kv_set(key, value, 0, 0);
 
-int
-bic_get_1ou_type_cache(uint8_t slot_id, uint8_t *type) {
-  char key[MAX_KEY_LEN] = {0};
-  char tmp_str[MAX_VALUE_LEN] = {0};
-  int val = 0;
-
-  snprintf(key, sizeof(key), KV_SLOT_GET_1OU_TYPE, slot_id);
-  if (kv_get(key, tmp_str, NULL, 0))
-    return -1;
-
-  val = atoi(tmp_str);
-  if (val < 0 || val > 255)
-    return -1;
-
-  *type = val;
   return 0;
 }
 
@@ -1977,10 +1992,7 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
   uint8_t tlen = 5;
   uint8_t rlen = 0;
   int ret = 0;
-  uint8_t table = 0, board_type = 0;
-
-  // Fill the IANA ID
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  uint8_t table = 0, board_type = UNKNOWN_BOARD;
 
   if (intf == FEXP_BIC_INTF) {
     table = 1;
@@ -2000,17 +2012,20 @@ bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, u
     return -1;
   }
 
-  //Send the command
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-  if (board_type == EDSFF_1U) {
+  // Send the command
+  if ((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
     // case 1OU E1S
+    memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
-  } else if (board_type == E1S_BOARD) {
-    // case 2OU E1S
-    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
   } else {
-    // case 1/2OU M.2
-    tbuf[3] = dev_id;
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+    if ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD)) {
+      // case 2OU E1S
+      tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
+    } else {
+      // case 1/2OU M.2
+      tbuf[3] = dev_id;
+    }
   }
 
   tbuf[4] = 0x3;  //get power status
@@ -2035,7 +2050,7 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t bus_num = 0;
-  uint8_t table = 0, board_type = 0;
+  uint8_t table = 0, board_type = UNKNOWN_BOARD;
   uint8_t prsnt_bit = 0;
   int fd = 0;
   int ret = 0;
@@ -2081,7 +2096,8 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
       goto error_exit;
     }
 
-    if (board_type == EDSFF_1U || board_type == E1S_BOARD) {
+    if (((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) ||
+        ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD))) {
       // case 1/2OU E1S
       prsnt_bit = mapping_e1s_prsnt[table][dev_id - 1];
     } else {
@@ -2104,18 +2120,20 @@ bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_
     }
   } while(0);
 
-  //Send the command
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-
-  if (board_type == EDSFF_1U) {
+  // Send the command
+  if ((intf == FEXP_BIC_INTF) && (board_type == TYPE_1OU_VERNAL_FALLS_WITH_AST)) {
     // case 1OU E1S
+    memcpy(tbuf, (uint8_t *)&VF_IANA_ID, IANA_ID_SIZE);
     tbuf[3] = mapping_e1s_pwr[table][dev_id - 1];
-  } else if (board_type == E1S_BOARD) {
-    // case 2OU E1S
-    tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
   } else {
-    // case 1/2OU M.2
-    tbuf[3] = dev_id;
+    memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+    if ((intf == REXP_BIC_INTF) && (board_type == E1S_BOARD)) {
+      // case 2OU E1S
+      tbuf[3] = mapping_e1s_pwr[table][dev_id - 1] + 1; // device ID 1 based in power control
+    } else {
+      // case 1/2OU M.2
+      tbuf[3] = dev_id;
+    }
   }
 
   tbuf[4] = status;  //set power status
@@ -2384,34 +2402,31 @@ bic_check_cable_status() {
 
 int
 bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
-  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
   uint8_t tlen = IANA_ID_SIZE;
-  uint8_t rlen = 0;
-  int ret = 0;
-  int retry = 0;
+  uint8_t rlen = sizeof(rbuf);
+  int ret = 0, retry;
 
   if (type == NULL) {
     return -1;
   }
+
   // File the IANA ID
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   tbuf[tlen++] = card_config;
 
-  while (retry < IPMB_RETRY_TIME) {
+  for (retry = 0; retry < IPMB_RETRY_TIME; retry++) {
     ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_CARD_TYPE, tbuf, tlen, rbuf, &rlen);
     if (ret == 0) {
       break;
     }
-    retry++;
   }
   if (ret != 0) {
     syslog(LOG_WARNING, "[%s] fail at slot%d", __func__, slot_id);
     return -1;
   }
-
-  *type = rbuf[4]; //Byte 4 represents card type.
+  *type = rbuf[4];  // Byte 4 represents card type
 
   return ret;
-
 }

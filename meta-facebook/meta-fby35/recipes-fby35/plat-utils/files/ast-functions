@@ -433,10 +433,8 @@ function get_2ou_board_type() {
 }
 
 # Get 1OU board type
-# EDSFF_1U = 7 (0x07)
-# RF_1U   = 10 (0x0A)
-# M2_1U    = 11 (0x0B)
-# WF_1U    = 12 (0x0C)
+# VF_1U = 7 (0x07)
+# RF_1U = 10 (0x0A)
 get_1ou_board_type() {
   local slot_str=$1
   local type_1ou
@@ -445,11 +443,27 @@ get_1ou_board_type() {
   if type_1ou=$(/usr/bin/kv get "${slot_str}_get_1ou_type"); then
     # find kv cache
     echo "$type_1ou"
+    return 0
+  fi
+
+  if type_1ou=$(get_1ou_card_type "$slot_str"); then
+    echo "$type_1ou"
   elif val=$(/usr/bin/bic-util "$slot_str" 0xe0 0x02 $IANA_ID 0x05 0xe0 0xa0 $IANA_ID); then
     val=($(echo "$val" | tr ' '))
     if [ "${val[6]}" = "00" ]; then
-      # 1ou board type from bic
       type_1ou=$((16#${val[10]}))
+      # map board_id to card_type
+      case $type_1ou in
+        7)  # VF
+          type_1ou=4
+          ;;
+        10) # RF
+          type_1ou=2
+          ;;
+        *)  # Unknown
+          type_1ou=255
+          ;;
+      esac
       echo "$type_1ou"
     else
       # bic reply non-completed cc code
@@ -460,6 +474,7 @@ get_1ou_board_type() {
     return 1
   fi
 
+  /usr/bin/kv set "${slot_str}_get_1ou_type" "$type_1ou"
   return 0
 }
 
@@ -478,12 +493,6 @@ get_1ou_card_type() {
   local slot_str=$1
   local card_type_1ou
   local val
-
-  # only support in 1ou, #8 = 1ou is present
-  val=$(get_m2_prsnt_sts "$slot_str")
-  if [ $val -ne 8 ]; then
-    return 1
-  fi
 
   if val=$(/usr/bin/bic-util "$slot_str" 0xe0 0xa1 $IANA_ID 0x0); then
     val=($(echo "$val" | tr ' '))

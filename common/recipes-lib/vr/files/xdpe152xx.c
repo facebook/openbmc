@@ -150,26 +150,6 @@ cache_xdpe152xx_crc(uint8_t bus, uint8_t addr, char *key, char *sum_str, uint32_
   return 0;
 }
 
-static int
-split(char **dst, char *src, char *delim, int maxsz) {
-  if (dst == NULL || src == NULL || delim == NULL) {
-    return -1;
-  }
-
-  char *s = strtok(src, delim);
-  int size = 0;
-
-  while (s) {
-    *dst++ = s;
-    if ((++size) >= maxsz) {
-      break;
-    }
-    s = strtok(NULL, delim);
-  }
-
-  return size;
-}
-
 static uint32_t
 cal_crc32(uint32_t *data, int len) {
   uint32_t crc = 0xFFFFFFFF;
@@ -451,7 +431,7 @@ xdpe152xx_parse_file(struct vr_info *info, const char *path) {
       break;
     } else if (is_data == true) {
       char *token_list[8] = {0};
-      int token_size = split(token_list, line, " ", DATA_LEN_IN_LINE);
+      int token_size = pal_file_line_split(token_list, line, " ", DATA_LEN_IN_LINE);
       if (token_size < 1) {  // unexpected data line
         continue;
       }

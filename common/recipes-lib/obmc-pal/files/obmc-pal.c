@@ -3052,3 +3052,35 @@ pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
 {
   return PAL_EOK;
 }
+
+int
+pal_file_line_split(char **dst, char *src, char *delim, int maxsz) {
+  if ((dst == NULL) || (src == NULL) || (delim == NULL)) {
+    syslog(LOG_WARNING, "%s: invalid parameter pointer is NULL", __func__);
+    return -1;
+  }
+
+  char *s = strtok(src, delim);
+  int size = 0;
+
+  while (s) {
+    *dst++ = s;
+    if ((++size) >= maxsz) {
+      break;
+    }
+    s = strtok(NULL, delim);
+  }
+
+  return size;
+}
+
+int
+pal_bitcount(unsigned int val) {
+  int bitcount = 0;
+
+  while (val) {
+    bitcount++;
+    val &= (val - 1);
+  }
+  return bitcount;
+}

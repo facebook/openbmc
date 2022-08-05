@@ -616,6 +616,8 @@ int pal_is_jumper_enable(uint8_t fru, uint8_t *status);
 int pal_register_sensor_failure_tolerance_policy(uint8_t fru);
 bool pal_is_support_vr_delay_activate(void);
 int pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count);
+int pal_file_line_split(char **dst, char *src, char *delim, int maxsz);
+int pal_bitcount(unsigned int val);
 
 #ifdef __cplusplus
 }

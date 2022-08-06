@@ -62,7 +62,7 @@ def setup_attestation_endpoints(app: Application) -> None:
     app.router.add_post(tpm_shim.path, tpm_shim.post_handler)
 
     if DEVICE_ATTESTATION_AVAILABLE:
-        device_attestation_actions = ["measurement"]
+        device_attestation_actions = ["measurement", "device-info"]
         device_attestation_shim = RestShim(
             NodeDeviceAttestation(device_attestation_actions), "/api/attestation/device"
         )
@@ -147,6 +147,8 @@ class NodeDeviceAttestation(node):
         del data["action"]
         if action == "measurement":
             return device_attestation.measure.return_measure(**data)
+        if action == "device-info":
+            return await device_attestation.measure.return_device_info(**data)
         else:
             return {
                 "status": "1",

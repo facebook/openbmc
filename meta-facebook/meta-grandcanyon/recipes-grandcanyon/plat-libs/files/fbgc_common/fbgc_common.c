@@ -31,6 +31,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <time.h>
+#include <openssl/evp.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <facebook/fbgc_gpio.h>
@@ -280,9 +281,9 @@ fbgc_common_get_system_stage(uint8_t *stage) {
 int
 check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
   int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
-  char read_buf[MD5_READ_BYTES] = {0};
-  char md5_digest[MD5_DIGEST_LENGTH] = {0};
-  MD5_CTX context;
+  unsigned char read_buf[MD5_READ_BYTES] = {0};
+  unsigned char md5_digest[MD5_DIGEST_LENGTH] = {0};
+  EVP_MD_CTX *context = NULL;
 
   if (image_path == NULL) {
     syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to NULL parameters.", __func__);
@@ -308,8 +309,14 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
 
   lseek(fd, 0, SEEK_SET);
 
-  ret = MD5_Init(&context);
-  if (ret == 0) {
+  context = EVP_MD_CTX_create();
+  if (!context) {
+    syslog(LOG_WARNING, "%s(): failed to initialize message digest context.", __func__);
+    ret = -1;
+    goto exit;
+  }
+
+  if (!EVP_DigestInit_ex(context, EVP_md5(), NULL)) {
     syslog(LOG_WARNING, "%s(): failed to initialize MD5 context.", __func__);
     ret = -1;
     goto exit;
@@ -322,8 +329,7 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     }
 
     byte_num = read(fd, read_buf, read_bytes);
-    ret = MD5_Update(&context, read_buf, byte_num);
-    if (ret == 0) {
+    if (!EVP_DigestUpdate(context, read_buf, byte_num)) {
       syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
       ret = -1;
       goto exit;
@@ -331,8 +337,7 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     sum += byte_num;
   }
 
-  ret = MD5_Final((uint8_t*)md5_digest, &context);
-  if (ret == 0) {
+  if (!EVP_DigestFinal_ex(context, md5_digest, NULL)) {
     syslog(LOG_WARNING, "%s(): failed to calculate MD5 of %s.", __func__, image_path);
     ret = -1;
     goto exit;
@@ -348,11 +353,13 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     goto exit;
   }
 
-  if (strncmp(md5_digest, read_buf, sizeof(md5_digest)) != 0) {
+  if (memcmp(md5_digest, read_buf, MD5_DIGEST_LENGTH) != 0) {
     ret = -1;
+    goto exit;
   }
 
 exit:
+  EVP_MD_CTX_destroy(context);
   close(fd);
   return ret;
 }

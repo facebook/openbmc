@@ -16,9 +16,7 @@ using namespace std;
 
 image_info BmcCpldComponent::check_image(string image, bool force) {
   string flash_image = image;
-  size_t img_size = 0;
   size_t w_b = 0;
-  uint8_t board_type_index = 0;
   long int MAX10_RPD_SIZE = 0;
   struct stat file_info;
 
@@ -71,28 +69,12 @@ image_info BmcCpldComponent::check_image(string image, bool force) {
     cerr << "Cannot create the tmp file - " << image_sts.new_path << endl;
     cerr << "Read: " << MAX10_RPD_SIZE << " Write: " << w_b << endl;
     image_sts.result = false;
+  } else {
+    image_sts.result = true;
   }
+
   if (file_info.st_size == MAX10_RPD_SIZE + IMG_POSTFIX_SIZE)
     image_sts.sign = true;
-
-  if ( force == false ) {
-    if (file_info.st_size != MAX10_RPD_SIZE + IMG_POSTFIX_SIZE) {
-      cerr << "Image " << image << " is not a signed image, please use --force option" << endl;
-      goto err_exit;
-    }
-    // Read Board Revision from CPLD
-    if (netlakemtp_common_get_board_rev(&board_type_index) < 0) {
-      cerr << "Failed to get board revision ID" << endl;
-      goto err_exit;
-    }
-
-    img_size = file_info.st_size - IMG_POSTFIX_SIZE;
-    if (netlakemtp_common_is_valid_img(image.c_str(), (FW_IMG_INFO*)(memblock.get() + img_size), board_type_index) == false) {
-      goto err_exit;
-    } else {
-      image_sts.result = true;
-    }
-  }
 
 err_exit:
   //release the resource
@@ -121,8 +103,6 @@ int BmcCpldComponent::print_version()
 {
   string ver("");
   string fru_name = fru();
-  char ver_key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
   int ret = 0;
 
   try {
@@ -133,20 +113,11 @@ int BmcCpldComponent::print_version()
       throw "Error in getting the version of " + fru_name;
     } else {
       cout << fru_name << " CPLD Version: " << ver << endl;
-      snprintf(ver_key, sizeof(ver_key), CPLD_NEW_VER_KEY, fru().c_str());
-      ret = kv_get(ver_key, value, NULL, 0);
-      if ((ret < 0) && (errno == ENOENT)) { // no update before
-        cout << fru_name << " CPLD Version After activation: " << ver << endl;
-      } else if (ret == 0) {
-        cout << fru_name << " CPLD Version After activation: " << value << endl;
-      } else {
-        throw "Error in getting the version of " + fru_name;
-      }
     }
   } catch(string& err) {
     printf("%s CPLD Version: NA (%s)\n", fru_name.c_str(), err.c_str());
   }
-  return 0;
+  return ret;
 }
 
 void BmcCpldComponent::get_version(json& ver_json) {

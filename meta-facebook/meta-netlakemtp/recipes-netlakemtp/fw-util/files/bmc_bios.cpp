@@ -15,6 +15,7 @@ class BmcBiosComponent : public BiosComponent {
     int update(std::string image) override;
     int fupdate(std::string image) override;
     int unbindDevice();
+    int check_image(const char *path) override;
 };
 
 int BmcBiosComponent::unbindDevice() {
@@ -45,6 +46,10 @@ int BmcBiosComponent::fupdate(string image) {
     return -1;
   }
   return BiosComponent::update(image, true);
+}
+
+int BmcBiosComponent::check_image(const char *path){
+  return 0;
 }
 
 BmcBiosComponent bios("server", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc", "1e630000.spi", "SPI_MUX_SEL_R", true, "" /*TODO: Check image signature*/);

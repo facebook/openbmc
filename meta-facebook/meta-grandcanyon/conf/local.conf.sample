@@ -2,6 +2,8 @@
 # Local configuration file for building the OpenBMC image.
 #
 
+CONF_VERSION = "2"
+
 # Machine Selection
 MACHINE ??= "grandcanyon"
 

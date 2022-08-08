@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openssl/sha.h>
+#include <openssl/evp.h>
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 
@@ -471,22 +472,32 @@ calc_checksum_simple(const uint8_t *buf, size_t len, uint8_t *out) {
 
 static int
 calc_checksum_sha256(const void *buf, size_t len, uint8_t *out) {
+  EVP_MD_CTX *ctx = NULL;
+  int ret = -1;
+
   if ((buf == NULL) || (out == NULL)) {
     syslog(LOG_ERR, "%s(): NULL parameter", __func__);
-    return -1;
+    goto exit;
   }
-  SHA256_CTX ctx = {0};
   memset(out, 0, STRONG_DIGEST_LENGTH);
-  if (SHA256_Init(&ctx) != 1) {
-    return -1;
+
+  ctx = EVP_MD_CTX_create();
+  if (!ctx) {
+    goto exit;
   }
-  if (SHA256_Update(&ctx, buf, len) != 1) {
-    return -1;
+  if (!EVP_DigestInit_ex(ctx, EVP_sha256(), NULL)) {
+    goto exit;
   }
-  if (SHA256_Final(out, &ctx) != 1) {
-    return -1;
+  if (!EVP_DigestUpdate(ctx, buf, len)) {
+    goto exit;
   }
-  return 0;
+  if (!EVP_DigestFinal_ex(ctx, out, NULL)) {
+    goto exit;
+  }
+  ret = 0;
+exit:
+  EVP_MD_CTX_destroy(ctx);
+  return ret;
 }
 
 static bool

@@ -114,7 +114,7 @@ exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
 
 void
 fruid_cache_init(void) {
-  int i = 0, ret = 0, retry = 0;
+  int i = 0, ret = 0;
   uint8_t ver[FW_VERSION_LENS] = {0};
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};

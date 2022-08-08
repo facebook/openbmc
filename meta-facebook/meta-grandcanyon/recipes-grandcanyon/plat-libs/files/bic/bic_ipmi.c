@@ -1106,10 +1106,9 @@ bic_get_sel(ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen) {
 int
 bic_get_sys_fw_ver(uint8_t *ver) {
   int ret = 0;
-  int ver_len = 0, data_index = 0;
+  int data_index = 0;
   uint8_t tlen = 0, rlen = 0;
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
-  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
   bic_get_sys_fw_ver_resp sys_fw_resp;
 
   if (ver == NULL) {

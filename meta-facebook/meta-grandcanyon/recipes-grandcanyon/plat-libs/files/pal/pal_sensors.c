@@ -1518,8 +1518,7 @@ exp_get_sensor_thresh_from_file(uint8_t fru) {
 
 int
 pal_exp_sensor_threshold_init(uint8_t fru) {
-  int i = 0, ret = 0, remain = 0, sensor_cnt = 0, read_cnt = 0, index = 0;
-  uint8_t snr_num = 0;
+  int ret = 0, remain = 0, sensor_cnt = 0, read_cnt = 0, index = 0;
   uint8_t *sensor_list = NULL;
   char fru_name[MAX_FRU_CMD_STR] = {0};
   char fpath[MAX_PATH_LEN] = {0};
@@ -1588,8 +1587,6 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
   char units[64] = {0};
   float value = 0;
   EXPANDER_SENSOR_DATA *p_sensor_data = NULL;
-  int retry = 0, retry_ret = 0;
-  EXPANDER_SENSOR_DATA *retry_data = NULL;
   int tach_cnt = 0;
 
   if (pal_get_fru_name(fru, fru_name)) {
@@ -2095,6 +2092,7 @@ int pal_sensor_monitor_initial(void) {
   run_command("/usr/local/bin/check_2nd_source.sh dpb > /dev/NULL 2>&1");
   // reload sensor map
   sensors_reinit();
+  return 0;
 }
 
 static bool
@@ -2192,7 +2190,6 @@ set_e1s_adc_skip_times(uint8_t e1s_id) {
 static int
 check_server_dc_power(uint8_t sensor_num, uint8_t chassis_type) {
   uint8_t status = 0;
-  int i = 0;
 
   if (pal_get_server_power(FRU_SERVER, &status) < 0) {
     do_i2c_isolation(fbgc_get_gpio_name(GPIO_E1S_1_P3V3_PG_R), GPIO_VALUE_LOW);

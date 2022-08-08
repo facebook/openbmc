@@ -943,14 +943,17 @@ int
 pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver) {
   int ret = 0;
   uint8_t bios_post_cmplt = 0;
-  bic_gpio_t gpio = {0};
+  union {
+      uint8_t bytes[sizeof(bic_gpio_t)];
+      bic_gpio_t structured;
+  } gpio_status;
 
   // Check BIOS is completed via BIC
-  if (bic_get_gpio(&gpio) < 0) {
+  if (bic_get_gpio(&gpio_status.structured) < 0) {
     syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);
     return -1;
   }
-  bios_post_cmplt = ((((uint8_t*)&gpio)[BIOS_POST_CMPLT/8]) >> (BIOS_POST_CMPLT % 8)) & 0x1;
+  bios_post_cmplt = (gpio_status.bytes[BIOS_POST_CMPLT / 8] >> (BIOS_POST_CMPLT % 8)) & 1;
   if (bios_post_cmplt != GPIO_VALUE_LOW) {
     syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
     return -1;
@@ -3476,7 +3479,10 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
   uint8_t bios_post_cmplt = 0;
   uint8_t server_status = 0, fru_present_flag = 0;
   gpio_value_t scc_pwr_status = 0;
-  bic_gpio_t gpio = {0};
+  union {
+      uint8_t bytes[sizeof(bic_gpio_t)];
+      bic_gpio_t structured;
+  } gpio_status;
 
   // Check server power status
   if (pal_get_server_power(FRU_SERVER, &server_status) < 0){
@@ -3523,12 +3529,12 @@ pal_is_ioc_ready(uint8_t i2c_bus) {
   }
 
   // Check BIOS is completed via BIC
-  if (bic_get_gpio(&gpio) < 0) {
+  if (bic_get_gpio(&gpio_status.structured) < 0) {
     syslog(LOG_WARNING, "%s() Failed to get value of BIOS complete pin via BIC", __func__);
     return false;
   }
 
-  bios_post_cmplt = ((((uint8_t*)&gpio)[BIOS_POST_CMPLT/8]) >> (BIOS_POST_CMPLT % 8)) & 0x1;
+  bios_post_cmplt = (gpio_status.bytes[BIOS_POST_CMPLT / 8] >> (BIOS_POST_CMPLT % 8)) & 1;
   if (bios_post_cmplt != GPIO_VALUE_LOW) {
     return false;
   }
@@ -4080,7 +4086,7 @@ pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len) {
   int fruid_len = 0, bytes_rd = 0;
   uint8_t serial_addr = 0, produce_start_addr = 0;
   FILE *fruid_fd;
-  uint8_t *eeprom;
+  uint8_t *eeprom = NULL;
   int ret = 0;
 
   if (serial_num == NULL) {
@@ -4218,7 +4224,7 @@ pal_handle_fan_fru_checksum_sel(char *log, uint8_t log_len) {
 
     // Update fan fru if get serial number failed, serial number is different, or local fan fru checksum is wrong.
     // run exp-cache to udpate FAN FRU binary data
-    if ((ret < 0) || (strncmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0) || (pal_check_fru_is_valid(path, LOG_WARNING) < 0)) {
+    if ((ret < 0) || (memcmp(fanfru_check_sel, fanfru_check_bin, check_len) != 0) || (pal_check_fru_is_valid(path, LOG_WARNING) < 0)) {
       snprintf(cmd, sizeof(cmd), "/usr/bin/exp-cached --update_fan fan%d> /dev/null 2>&1 &", i);
       run_command(cmd);
     }

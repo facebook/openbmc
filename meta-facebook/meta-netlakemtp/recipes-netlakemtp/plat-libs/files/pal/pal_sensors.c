@@ -312,6 +312,15 @@ const uint8_t nvme_temp_list[] = {
   [NVME_C_TEMP] = NVME_C_BUS,
 };
 
+PAL_PMBUS_POWER_TABLE power_cal_list[] = {
+  [VR_P1V8_STBY_PWR] = {VR_P1V8_STBY_VOL, VR_P1V8_STBY_CUR},
+  [VR_P1V05_STBY_PWR] = {VR_P1V05_STBY_VOL, VR_P1V05_STBY_CUR},
+  [VR_PVNN_PCH_PWR] = {VR_PVNN_PCH_VOL, VR_PVNN_PCH_CUR},
+  [VR_PVCCIN_PWR] = {VR_PVCCIN_VOL, VR_PVCCIN_CUR},
+  [VR_PVCCANCPU_PWR] = {VR_PVCCANCPU_VOL, VR_PVCCANCPU_CUR},
+  [VR_PVDDQ_ABC_CPU_PWR] = {VR_PVDDQ_ABC_CPU_VOL, VR_PVDDQ_ABC_CPU_CUR},
+};
+
 size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
 size_t bmc_sensor_cnt = ARRAY_SIZE(bmc_sensor_list);
 size_t pdb_sensor_cnt = ARRAY_SIZE(pdb_sensor_list);
@@ -451,124 +460,145 @@ read_pmbus(uint8_t id, float *value) {
   }
 
   int fd = 0, ret = 0;
-  uint8_t retry = SENSOR_RETRY_TIME;
-  uint8_t bus = pmbus_dev_table[id].bus;
-  uint8_t addr = pmbus_dev_table[id].slv_addr;
   char key[MAX_KEY_LEN] = {0};
-  char val[MAX_VALUE_LEN] = {0};
-  //kvbuf[0]: pmbus page, kvbuf[1]: read byte, kvbuf[2]: read format
-  uint8_t kvbuf[3] = {0};
-  char* saveptr;
-  int bufcnt = 0;
 
-  snprintf(key, MAX_FRU_CMD_STR, "pmbus-sensor%02x%c", id, '\0');
-  ret = kv_get(key, val, NULL, 0);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Failed to get pmbus info, errno=%d", __func__, errno);
-    return -1;
-  }
+  if (pmbus_dev_table[id].offset == CMD_POUT) {
+    float voltage, current;
 
-  char *kv_value;
-  kv_value = strtok_r(val, "-", &saveptr);
-  while( kv_value != NULL )
-  {
-    kvbuf[bufcnt] = atoi(kv_value);
-    bufcnt++;
-    kv_value = strtok_r(NULL, "-", &saveptr);
-  }
-
-  pmbus_i2c_info pmbus_i2c_data;
-  memcpy(&pmbus_i2c_data, &kvbuf, sizeof(pmbus_i2c_data));
-
-  //Set pmbus page
-  uint8_t setpage_data[2];
-  setpage_data[0] = CMD_PAGE;
-  setpage_data[1] = pmbus_i2c_data.page;
-
-  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if (fd < 0) {
-    syslog(LOG_ERR, "%s() Failed to open I2C bus %d\n", __func__, bus);
-    return -1;
-  }
-
-  retry = SENSOR_RETRY_TIME;
-  do {
-    ret = i2c_rdwr_msg_transfer(fd, addr, setpage_data, sizeof(setpage_data),
-                                NULL, 0);
-    usleep(SENSOR_RETRY_INTERVAL_USEC);
-  } while ((ret < 0) && ((retry--) > 0));
-
-  if (ret < 0) {
-    close(fd);
-    syslog(LOG_ERR, "%s() Failed to set page %d-%d\n", __func__, bus, addr);
-    return -1;
-  }
-  
-  //Get pmbus reading
-  uint8_t getreading_data = pmbus_dev_table[id].offset;
-  uint8_t rlen_reading = pmbus_i2c_data.read_byte;
-  uint8_t rbuf_reading_raw[rlen_reading];
-  uint8_t vout_mode_data = VR_VOUT_MODE_REG;
-  uint8_t rlen_vout_mode = 1;
-  uint8_t rbuf_vout_mode;
-  float* rbuf_reading = 0;
-
-  retry = SENSOR_RETRY_TIME;
-  do {
-    ret = i2c_rdwr_msg_transfer(fd, addr, &getreading_data,
-                                sizeof(getreading_data),
-                                rbuf_reading_raw, rlen_reading);
-    usleep(SENSOR_RETRY_INTERVAL_USEC);
-  } while ((ret < 0) && ((retry--) > 0));
-
-  if (ret < 0) {
-    close(fd);
-    syslog(LOG_ERR, "%s() Failed to get reading %d-%d\n", __func__, bus, addr);
-    return -1;
-  }
-
-  uint8_t read_format = pmbus_i2c_data.read_type;
-  switch(read_format) {
-  case LINEAR11:
-    ret = netlakemtp_common_linear11_convert(rbuf_reading_raw, value);
+    ret = read_pmbus(power_cal_list[id].vol_sensor_id, &voltage);
     if (ret < 0) {
-        *value = 0;
-        syslog(LOG_ERR, "%s() Failed to get reading by linear-11 format %d-%d\n",
-             __func__, bus, addr);
-      }
-    break;
-  case VOUT_MODE:
-    ret = i2c_rdwr_msg_transfer(fd, addr, &vout_mode_data,
-                                sizeof(vout_mode_data), &rbuf_vout_mode, rlen_vout_mode);
-    if (ret < 0) {
-      close(fd);
-      syslog(LOG_ERR, "%s() Failed to get VOUT_MODE for device %d-%d\n",
-             __func__, bus, addr);
+      syslog(LOG_ERR, "%s() Failed to get voltage value to calculate power", __func__);
       return -1;
     }
-    // VOUT_MODE bit[7-5] is used for deciding VOUT format
-    if ((rbuf_vout_mode & 0xe0) == 0) {
-      ret = netlakemtp_common_linear16_convert(rbuf_reading_raw, rbuf_vout_mode, value);
-      if (ret < 0) {
-        *value = 0;
-        syslog(LOG_ERR, "%s() Failed to get reading by linear-16 format %d-%d\n",
-             __func__, bus, addr);
-      }
-    } else {
-      *value = 0;
-      syslog(LOG_ERR, "%s() VOUT_MODE is not supported for device %d-%d\n",
-             __func__, bus, addr);
-    }
-    break;
-  default:
-    *value = 0;
-    syslog(LOG_ERR, "%s() Now only support linear-11 and linear-16 format\n",
-           __func__);
-    break;
-  }
 
-  close(fd);
-  return 0;
+    ret = read_pmbus(power_cal_list[id].cur_sensor_id, &current);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to get current value to calculate power", __func__);
+      return -1;
+    }
+
+    *value = voltage * current;
+
+    return 0;
+  } else {
+    uint8_t retry = SENSOR_RETRY_TIME;
+    uint8_t bus = pmbus_dev_table[id].bus;
+    uint8_t addr = pmbus_dev_table[id].slv_addr;
+    char val[MAX_VALUE_LEN] = {0};
+    //kvbuf[0]: pmbus page, kvbuf[1]: read byte, kvbuf[2]: read format
+    uint8_t kvbuf[3] = {0};
+    char* saveptr;
+    int bufcnt = 0;
+
+    snprintf(key, MAX_FRU_CMD_STR, "pmbus-sensor%02x%c", id, '\0');
+    ret = kv_get(key, val, NULL, 0);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to get pmbus info, errno=%d", __func__, errno);
+      return -1;
+    }
+
+    char *kv_value;
+    kv_value = strtok_r(val, "-", &saveptr);
+    while( kv_value != NULL )
+    {
+      kvbuf[bufcnt] = atoi(kv_value);
+      bufcnt++;
+      kv_value = strtok_r(NULL, "-", &saveptr);
+    }
+
+    pmbus_i2c_info pmbus_i2c_data;
+    memcpy(&pmbus_i2c_data, &kvbuf, sizeof(pmbus_i2c_data));
+
+    //Set pmbus page
+    uint8_t setpage_data[2];
+    setpage_data[0] = CMD_PAGE;
+    setpage_data[1] = pmbus_i2c_data.page;
+
+    fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s() Failed to open I2C bus %d\n", __func__, bus);
+      return -1;
+    }
+
+    retry = SENSOR_RETRY_TIME;
+    do {
+      ret = i2c_rdwr_msg_transfer(fd, addr, setpage_data, sizeof(setpage_data),
+                                  NULL, 0);
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    } while ((ret < 0) && ((retry--) > 0));
+
+    if (ret < 0) {
+      close(fd);
+      syslog(LOG_ERR, "%s() Failed to set page %d-%d\n", __func__, bus, addr);
+      return -1;
+    }
+
+    //Get pmbus reading
+    uint8_t getreading_data = pmbus_dev_table[id].offset;
+    uint8_t rlen_reading = pmbus_i2c_data.read_byte;
+    uint8_t rbuf_reading_raw[rlen_reading];
+    uint8_t vout_mode_data = VR_VOUT_MODE_REG;
+    uint8_t rlen_vout_mode = 1;
+    uint8_t rbuf_vout_mode;
+    float* rbuf_reading = 0;
+
+    retry = SENSOR_RETRY_TIME;
+    do {
+      ret = i2c_rdwr_msg_transfer(fd, addr, &getreading_data,
+                                  sizeof(getreading_data),
+                                  rbuf_reading_raw, rlen_reading);
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    } while ((ret < 0) && ((retry--) > 0));
+
+    if (ret < 0) {
+      close(fd);
+      syslog(LOG_ERR, "%s() Failed to get reading %d-%d\n", __func__, bus, addr);
+      return -1;
+    }
+
+    uint8_t read_format = pmbus_i2c_data.read_type;
+    switch(read_format) {
+    case LINEAR11:
+      ret = netlakemtp_common_linear11_convert(rbuf_reading_raw, value);
+      if (ret < 0) {
+          *value = 0;
+          syslog(LOG_ERR, "%s() Failed to get reading by linear-11 format %d-%d\n",
+              __func__, bus, addr);
+        }
+      break;
+    case VOUT_MODE:
+      ret = i2c_rdwr_msg_transfer(fd, addr, &vout_mode_data,
+                                  sizeof(vout_mode_data), &rbuf_vout_mode, rlen_vout_mode);
+      if (ret < 0) {
+        close(fd);
+        syslog(LOG_ERR, "%s() Failed to get VOUT_MODE for device %d-%d\n",
+              __func__, bus, addr);
+        return -1;
+      }
+      // VOUT_MODE bit[7-5] is used for deciding VOUT format
+      if ((rbuf_vout_mode & 0xe0) == 0) {
+        ret = netlakemtp_common_linear16_convert(rbuf_reading_raw, rbuf_vout_mode, value);
+        if (ret < 0) {
+          *value = 0;
+          syslog(LOG_ERR, "%s() Failed to get reading by linear-16 format %d-%d\n",
+              __func__, bus, addr);
+        }
+      } else {
+        *value = 0;
+        syslog(LOG_ERR, "%s() VOUT_MODE is not supported for device %d-%d\n",
+              __func__, bus, addr);
+      }
+      break;
+    default:
+      *value = 0;
+      syslog(LOG_ERR, "%s() Now only support linear-11 and linear-16 format\n",
+            __func__);
+      break;
+    }
+
+    close(fd);
+    return 0;
+  }
 }
 
 static int

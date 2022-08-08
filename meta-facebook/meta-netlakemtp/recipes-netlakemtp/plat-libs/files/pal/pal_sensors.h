@@ -360,5 +360,10 @@ typedef struct {
   float resistor_ratio;
 } PAL_CPLD_ADC_INFO;
 
+typedef struct {
+  int vol_sensor_id;
+  int cur_sensor_id;
+} PAL_PMBUS_POWER_TABLE;
+
 #endif
 

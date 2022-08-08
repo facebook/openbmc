@@ -24,6 +24,7 @@ CFLAGS+= \
 	-Wextra \
 	-std=gnu1x -Wpedantic \
 	-Wno-missing-field-initializers \
+	-Wno-error=deprecated-declarations \
 	-Werror \
 	-Wshadow \
 	-Wcast-align \

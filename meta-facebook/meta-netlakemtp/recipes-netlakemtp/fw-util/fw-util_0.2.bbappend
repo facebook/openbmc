@@ -25,6 +25,8 @@ LOCAL_URI += " \
         file://bios.cpp \
         file://bmc_bios.cpp \
         file://me.cpp \
+        file://vr_fw.h \
+        file://vr_fw.cpp \
         "
 
 LOCAL_URI:remove = " \
@@ -38,6 +40,6 @@ LOCAL_URI:remove = " \
         file://bic_bios.h \
         "
 
-DEPENDS += "libfpga libnetlakemtp-common libobmc-i2c libkv"
-RDEPENDS:${PN} += "libfpga libnetlakemtp-common libobmc-i2c libkv"
-LDFLAGS += "-lfpga -lnetlakemtp_common -lobmc-i2c"
+DEPENDS += "libfpga libnetlakemtp-common libobmc-i2c libkv libvr"
+RDEPENDS:${PN} += "libfpga libnetlakemtp-common libobmc-i2c libkv libvr"
+LDFLAGS += "-lfpga -lnetlakemtp_common -lobmc-i2c -lvr"

@@ -1323,7 +1323,7 @@ vr_usb_program(uint8_t slot_id, uint8_t sel_vendor, uint8_t comp, vr *dev, uint8
       file_buf[1] = list[i].command;  // command code
       memcpy(&file_buf[2], list[i].data, list[i].data_len); // data
     }
-    ret = send_bic_usb_packet(udev, pkt);
+    ret = send_bic_usb_packet(udev, (void *)pkt, false);
     if (ret < 0) {
       printf("Failed to write data to the device\n");
       goto error_exit;

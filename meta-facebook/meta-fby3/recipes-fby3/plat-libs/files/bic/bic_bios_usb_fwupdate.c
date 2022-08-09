@@ -38,8 +38,10 @@
 
 #define USB_PKT_SIZE 0x200
 #define USB_DAT_SIZE (USB_PKT_SIZE - USB_PKT_HDR_SIZE)
+#define USB_AST_DAT_SIZE (USB_PKT_SIZE - USB_PKT_AST_HDR_SIZE)
 #define USB_PKT_SIZE_BIG 0x1000
 #define USB_DAT_SIZE_BIG (USB_PKT_SIZE_BIG - USB_PKT_HDR_SIZE)
+#define USB_AST_DAT_SIZE_BIG (USB_PKT_SIZE_BIG - USB_PKT_AST_HDR_SIZE)
 #define BIOS_PKT_SIZE (64 * 1024)
 #define SIZE_IANA_ID 3
 #define BIOS_VERIFY_PKT_SIZE (32*1024)
@@ -48,6 +50,7 @@
 #define BIOS_UPDATE_IMG_SIZE (32*1024*1024)
 #define SIMPLE_DIGEST_LENGTH 4
 #define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
+#define USB_TIMEOUT_MS 3000
 
 int interface_ref = 0;
 int alt_interface,interface_number;
@@ -123,17 +126,23 @@ int active_config(struct libusb_device *dev,struct libusb_device_handle *handle)
 }
 
 int
-send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
+send_bic_usb_packet(usb_dev* udev, void *pkt, bool is_ast_pkt)
 {
-  const int transferlen = pkt->length + USB_PKT_HDR_SIZE;
+  int transferlen = 0;
   int transferred = 0;
   int retries = 3;
   int ret;
 
+  if (is_ast_pkt) {
+    transferlen = ((ast_bic_usb_packet*)pkt)->length + USB_PKT_AST_HDR_SIZE;
+  } else {
+    transferlen = ((bic_usb_packet*)pkt)->length + USB_PKT_HDR_SIZE;
+  }
+
   // _debug_bic_usb_packet(pkt);
   while(true)
   {
-    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t*)pkt, transferlen, &transferred, 3000);
+    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t*)pkt, transferlen, &transferred, USB_TIMEOUT_MS);
     if(((ret != 0) || (transferlen != transferred))) {
       printf("Error in transferring data! err = %d and transferred = %d(expected data length %d)\n",ret ,transferred, transferlen);
       printf("Retry since  %s\n", libusb_error_name(ret));
@@ -146,6 +155,39 @@ send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
       break;
   }
   return 0;
+}
+
+int
+receive_bic_usb_packet(usb_dev* udev, ast_bic_usb_packet *pkt)
+{
+  const int receivelen = USB_PKT_SIZE;
+  int received = 0;
+  int retries = 3;
+  int ret = 0;
+  int i = 0;
+
+  if (udev == NULL || pkt == NULL) {
+    printf("%s Null parameter\n", __func__);
+    return -1;
+  }
+
+  // _debug_bic_usb_packet(pkt);
+  for (i = 0; i < retries; i++) {
+    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, (uint8_t*)pkt, receivelen, &received, USB_TIMEOUT_MS);
+    if (ret == 0) {
+      break;
+    } else {
+      printf("Error in receiving data! err = %d (%s)\n", ret, libusb_error_name(ret));
+      msleep(100);
+    }
+  }
+
+  if (ret) {
+    return -1;
+  }
+
+  // Return CC code
+  return pkt->iana[0];
 }
 
 int
@@ -382,12 +424,18 @@ get_block_checksum(uint8_t slot_id, size_t offset, int cs_len, uint8_t *out) {
 }
 
 int
-bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
+bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, bool is_sb_ast_1030)
 {
   int ret = -1, rc = 0;
   uint8_t *buf = NULL;
   uint8_t usb_package_buf[USB_PKT_SIZE_BIG] = {0};
   size_t write_offset = 0;
+  uint8_t usb_pkt_hdr_size = 0;
+
+  if (udev == NULL) {
+    fprintf(stderr, "%s Null parameter\n", __func__);
+    return -1;
+  }
 
   const char *what = NULL;
   if (comp == FW_BIOS) {
@@ -408,7 +456,13 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   bool dedup = (dedup_env != NULL ? (*dedup_env == '1') : true);
   bool verify = (verify_env != NULL ? (*verify_env == '1') : true);
 
-  buf = malloc(USB_PKT_HDR_SIZE + BIOS_UPDATE_BLK_SIZE);
+  if (is_sb_ast_1030 == true) {
+    usb_pkt_hdr_size = USB_PKT_AST_HDR_SIZE;
+  } else {
+    usb_pkt_hdr_size = USB_PKT_HDR_SIZE;
+  }
+
+  buf = malloc(usb_pkt_hdr_size + BIOS_UPDATE_BLK_SIZE);
   if (buf == NULL) {
     fprintf(stderr, "failed to allocate memory\n");
     goto out;
@@ -430,7 +484,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   int attempts = NUM_ATTEMPTS;
   size_t file_buf_num_bytes = 0;
   while (attempts > 0) {
-    uint8_t *file_buf = buf + USB_PKT_HDR_SIZE;
+    uint8_t *file_buf = buf + usb_pkt_hdr_size;
     size_t file_buf_pos = 0;
     bool send_packet_fail = false;
     fprintf(stderr, "\r%d blocks (%d written, %d skipped)...",
@@ -489,20 +543,51 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
     }
     while (file_buf_pos < file_buf_num_bytes) {
       size_t count = file_buf_num_bytes - file_buf_pos;
-      // 4K USB packets and SHA256 checksums were added together,
-      // so if we have SHA256 checksum, we can use big packets as well.
-      size_t limit = (cs_len == STRONG_DIGEST_LENGTH ? USB_DAT_SIZE_BIG : USB_DAT_SIZE);
-      if (count > limit) count = limit;
-      bic_usb_packet *pkt = (bic_usb_packet *) usb_package_buf;
-      pkt->dummy = CMD_OEM_1S_UPDATE_FW;
-      pkt->offset = write_offset + file_buf_pos;
-      pkt->length = count;
-      memcpy(&(pkt->data), file_buf + file_buf_pos, count);
-      int rc = send_bic_usb_packet(udev, pkt);
-      if (rc < 0) {
-        fprintf(stderr, "failed to write %d bytes @ %d: %d\n", count, write_offset, rc);
-        send_packet_fail = true;
-        break;  //prevent the endless while loop.
+
+      if (is_sb_ast_1030 == true) {
+	if (count > USB_AST_DAT_SIZE) {
+          count = USB_AST_DAT_SIZE;
+        }
+        ast_bic_usb_packet *ast_pkt = (ast_bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
+        ast_pkt->netfn = NETFN_OEM_1S_REQ << 2;
+        ast_pkt->cmd = CMD_OEM_1S_UPDATE_FW;
+        memcpy(&ast_pkt->iana[0], (uint8_t *)&IANA_ID, 3);
+        ast_pkt->target = UPDATE_BIOS;
+        ast_pkt->offset = write_offset + file_buf_pos;
+        ast_pkt->length = count;
+        udev->epaddr = USB_AST_INPUT_PORT;
+        rc = send_bic_usb_packet(udev, (void *)ast_pkt, true);
+        if (rc < 0) {
+          fprintf(stderr, "failed to write %zu bytes @ %zu: %d\n", count, write_offset, rc);
+          send_packet_fail = true;
+          break;  //prevent the endless while loop.
+        }
+
+        udev->epaddr = USB_OUTPUT_PORT;
+        rc = receive_bic_usb_packet(udev, ast_pkt);
+        if (rc < 0) {
+          fprintf(stderr, "Return code : %d\n", rc);
+          send_packet_fail = true;
+          break;  //prevent the endless while loop.
+        }
+      } else {
+       // 4K USB packets and SHA256 checksums were added together,
+       // so if we have SHA256 checksum, we can use big packets as well.
+       size_t limit = (cs_len == STRONG_DIGEST_LENGTH ? USB_DAT_SIZE_BIG : USB_DAT_SIZE);
+        if (count > limit) {
+          count = limit;
+        }
+        bic_usb_packet *pkt = (bic_usb_packet *) usb_package_buf;
+        pkt->dummy = CMD_OEM_1S_UPDATE_FW;
+        pkt->offset = write_offset + file_buf_pos;
+        pkt->length = count;
+        memcpy(&(pkt->data), file_buf + file_buf_pos, count);
+        rc = send_bic_usb_packet(udev, (void *)pkt, false);
+        if (rc < 0) {
+          fprintf(stderr, "failed to write %zu bytes @ %zu: %d\n", count, write_offset, rc);
+          send_packet_fail = true;
+          break;  //prevent the endless while loop.
+        }
       }
       file_buf_pos += count;
     }
@@ -516,12 +601,12 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
     if (verify) {
       rc = get_block_checksum(slot_id, write_offset, cs_len, cs);
       if (rc != 0) {
-        fprintf(stderr, "get_block_checksum @ %d failed (cs_len %d)\n", write_offset, cs_len);
+        fprintf(stderr, "get_block_checksum @ %zu failed (cs_len %d)\n", write_offset, cs_len);
         attempts--;
         continue;
       }
       if (memcmp(cs, fcs, cs_len) != 0) {
-        fprintf(stderr, "Data checksum mismatch @ %d (cs_len %d, 0x%016llx vs 0x%016llx)\n",
+        fprintf(stderr, "Data checksum mismatch @ %zu (cs_len %d, 0x%016llx vs 0x%016llx)\n",
             write_offset, cs_len, *((uint64_t *) cs), *((uint64_t *) fcs));
         attempts--;
         continue;
@@ -568,12 +653,23 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
   int ret = -1;
   usb_dev   bic_udev;
   usb_dev*  udev = &bic_udev;
+  bool is_sb_ast1030 = false;
 
   udev->ci = 1;
-  udev->epaddr = 0x1;
+
+  if (get_sb_bic_solution(slot_id, &is_sb_ast1030) < 0) {
+    fprintf(stderr, "Fail to get SB board type!\n");
+    goto error_exit;
+  }
 
   // init usb device
-  ret = bic_init_usb_dev(slot_id, udev, SB_TI_PRODUCT_ID, SB_TI_VENDOR_ID);
+  if (is_sb_ast1030) {
+    udev->epaddr = USB_AST_INPUT_PORT;
+    ret = bic_init_usb_dev(slot_id, udev, SB_AST_PRODUCT_ID, SB_AST_VENDOR_ID);
+  } else {
+    udev->epaddr = USB_TI_INPUT_PORT;
+    ret = bic_init_usb_dev(slot_id, udev, SB_TI_PRODUCT_ID, SB_TI_VENDOR_ID);
+  }
   if (ret < 0) {
     goto error_exit;
   }
@@ -581,7 +677,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
   gettimeofday(&start, NULL);
 
   // sending file
-  ret = bic_update_fw_usb(slot_id, comp, fd, udev);
+  ret = bic_update_fw_usb(slot_id, comp, fd, udev, is_sb_ast1030);
   if (ret < 0)
     goto error_exit;
 

@@ -225,6 +225,7 @@ get_mapping_parameter(uint8_t device_id, uint8_t type_1ou, uint8_t *bus, uint8_t
   // M.2 1OU device ->   3  2  1  0
   // E1S 1OU device ->   0  1  2  3
   const uint8_t BUS_EDSFF1U[] = { 0, 6, 4, 3, 2, 0, 0, 0, 0, 0, 0};
+  const uint8_t BUS_AST_VF[] = { 0, 5, 4, 3, 2, 0, 0, 0, 0, 0, 0};
   const uint8_t BUS_1OU_2OU[] = { 0, 2, 2, 4, 4, 2, 2, 4, 4, 6, 6};
   const uint8_t MUX_1OU_2OU[] = { 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
 
@@ -232,6 +233,8 @@ get_mapping_parameter(uint8_t device_id, uint8_t type_1ou, uint8_t *bus, uint8_t
   
   if (type_1ou == EDSFF_1U) {
     *bus = BUS_EDSFF1U[device_id];
+  } else if (type_1ou== VERNAL_FALLS_AST1030) {
+    *bus = BUS_AST_VF[device_id];
   } else {
     *bus = BUS_1OU_2OU[device_id];
     *mux = MUX_1OU_2OU[device_id];
@@ -258,10 +261,12 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
   ssd_data ssd;
   
   memset(&ssd, 0x00, sizeof(ssd_data));
-
   //prevent the invalid access
   if ( type_2ou != GPV3_MCHP_BOARD && type_2ou != GPV3_BRCM_BOARD && type_2ou != E1S_BOARD && type_2ou != CWC_MCHP_BOARD ) {
-    bic_get_1ou_type(slot_id, &type_1ou);
+    ret = bic_get_card_type(slot_id, GET_1OU, &type_1ou);
+    if ((ret != 0) || (type_1ou != VERNAL_FALLS_AST1030)) {
+      bic_get_1ou_type(slot_id, &type_1ou);
+    }
     get_mapping_parameter(device_id, type_1ou, &bus, &intf, &mux);
   }
 
@@ -289,7 +294,8 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
     } else if (fru_id == FRU_2U_BOT) {
       intf = RREXP_BIC_INTF2;
     }
-  } else if (type_1ou != EDSFF_1U) { // E1S no need but 1/2OU need to stop sensor monitor then switch mux
+  } else if (type_1ou != EDSFF_1U && type_1ou != VERNAL_FALLS_AST1030) {
+    // E1S no need but 1/2OU need to stop sensor monitor then switch mux
     tbuf[0] = (bus << 1) + 1;
     tbuf[1] = 0x02; // mux address
     tbuf[2] = 0;    // read back 8 bytes
@@ -302,7 +308,9 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
       syslog(LOG_DEBUG, "%s(): bic_ipmb_send offset=%d read length=%d failed", __func__,tbuf[3],rlen);
       return -1;
     }
-  }  
+  } else {
+    return -1;
+  }
 
   if (cmd == CMD_DRIVE_STATUS) {
     printf("slot%u-%s : ", slot_id, str);

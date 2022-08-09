@@ -28,7 +28,8 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            git://gitlab.com/qemu-project/berkeley-softfloat-3.git;destsuffix=git/tests/fp/berkeley-softfloat-3;nobranch=1;protocol=https;name=berkeley-softfloat-3;nobranch=1 \
            git://gitlab.com/qemu-project/berkeley-testfloat-3.git;destsuffix=git/tests/fp/berkeley-testfloat-3;nobranch=1;protocol=https;name=berkeley-testfloat-3;nobranch=1 \
            git://gitlab.com/qemu-project/keycodemapdb.git;destsuffix=git/ui/keycodemapdb;nobranch=1;protocol=https;name=keycodemapdb;nobranch=1 \
-          "
+           file://0001-aspeed-Zero-extend-flash-files-to-128MB.patch \
+           "
 PV = "7.0.90+git${SRCPV}"
 
 PACKAGECONFIG ??= "fdt "

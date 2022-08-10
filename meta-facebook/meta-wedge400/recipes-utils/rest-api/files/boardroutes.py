@@ -49,4 +49,8 @@ board_routes = [
     "/api/sys/switch_reset/only_reset",
     "/api/sys/gb_freq",
     "/api/sys/presence/pem",
+    "/api/sys/sensors/fan1",
+    "/api/sys/sensors/fan2",
+    "/api/sys/sensors/fan3",
+    "/api/sys/sensors/fan4",
 ]

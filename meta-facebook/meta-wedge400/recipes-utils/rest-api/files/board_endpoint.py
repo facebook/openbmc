@@ -155,6 +155,22 @@ class boardApp_Handler:
     async def rest_sensors_psu2_hdl(self, request):
         return web.json_response(rest_sensors.get_psu2_sensors(), dumps=dumps_bytestr)
 
+    # Handler for sys/sensors/fan1 resource endpoint
+    async def rest_sensors_fan1_hdl(self, request):
+        return web.json_response(rest_sensors.get_fan1_sensors(), dumps=dumps_bytestr)
+
+    # Handler for sys/sensors/fan2 resource endpoint
+    async def rest_sensors_fan2_hdl(self, request):
+        return web.json_response(rest_sensors.get_fan2_sensors(), dumps=dumps_bytestr)
+
+    # Handler for sys/sensors/fan3 resource endpoint
+    async def rest_sensors_fan3_hdl(self, request):
+        return web.json_response(rest_sensors.get_fan3_sensors(), dumps=dumps_bytestr)
+
+    # Handler for sys/sensors/fan4 resource endpoint
+    async def rest_sensors_fan4_hdl(self, request):
+        return web.json_response(rest_sensors.get_fan4_sensors(), dumps=dumps_bytestr)
+
     # Handler for sys/vddcore resource endpoint
     async def rest_vddcore_get_volt(self, request):
         return web.json_response(rest_vddcore.get_vdd_core(), dumps=dumps_bytestr)

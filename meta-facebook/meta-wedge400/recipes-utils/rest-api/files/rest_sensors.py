@@ -75,10 +75,37 @@ def get_psu2_sensors():
     return {"Information": get_fru_sensor("psu2"), "Actions": [], "Resources": []}
 
 
+def get_fan1_sensors():
+    return {"Information": get_fru_sensor("fan1"), "Actions": [], "Resources": []}
+
+
+def get_fan2_sensors():
+    return {"Information": get_fru_sensor("fan2"), "Actions": [], "Resources": []}
+
+
+def get_fan3_sensors():
+    return {"Information": get_fru_sensor("fan3"), "Actions": [], "Resources": []}
+
+
+def get_fan4_sensors():
+    return {"Information": get_fru_sensor("fan4"), "Actions": [], "Resources": []}
+
+
 def get_all_sensors():
     result = []
     # FRUs of /usr/local/bin/sensor-util commands
-    frus = ["scm", "smb", "psu1", "psu2", "pem1", "pem2"]
+    frus = [
+        "scm",
+        "smb",
+        "psu1",
+        "psu2",
+        "pem1",
+        "pem2",
+        "fan1",
+        "fan2",
+        "fan3",
+        "fan4",
+    ]
 
     for fru in frus:
         sresult = get_fru_sensor(fru)

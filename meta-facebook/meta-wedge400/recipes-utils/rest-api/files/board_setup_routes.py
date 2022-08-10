@@ -59,6 +59,10 @@ def setup_board_routes(app: Application, write_enabed: bool):
     app.router.add_get(board_routes[27], bhandler.rest_switch_reset_only_reset_hdl)
     app.router.add_get(board_routes[28], bhandler.rest_get_gb_freq_hdl)
     app.router.add_get(board_routes[29], bhandler.rest_presence_pem_hdl)
+    app.router.add_get(board_routes[30], bhandler.rest_sensors_fan1_hdl)
+    app.router.add_get(board_routes[31], bhandler.rest_sensors_fan2_hdl)
+    app.router.add_get(board_routes[32], bhandler.rest_sensors_fan3_hdl)
+    app.router.add_get(board_routes[33], bhandler.rest_sensors_fan4_hdl)
     # TOR endpoints
     app.router.add_get(common_routes[11], chandler.rest_modbus_get)
     app.router.add_post(common_routes[12], chandler.rest_modbus_cmd_post)

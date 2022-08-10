@@ -1,0 +1,11 @@
+name: Bletchley
+owner:
+- Patrick Williams <patrickw3@fb.com>
+tags:
+- bletchley
+- lf-openbmc
+- mac-mini
+sections:
+  - overview
+  - features
+  - sensors

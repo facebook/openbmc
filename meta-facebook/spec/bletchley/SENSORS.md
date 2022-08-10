@@ -1,8 +1,6 @@
-# Facebook OpenBMC Sensor List for Bletchley
+## Sensors {#sensors}
 
-This document of sensor lists for platform Bletchley.
-
-## Chassis Board
+### Chassis Board
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | ----------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
@@ -34,7 +32,7 @@ This document of sensor lists for platform Bletchley.
 | MB_U19_THERM_LOCAL    | | C | NA | NA | NA | NA | NA | NA |
 
 
-## Interposer Board (SLED)
+### Interposer Board (SLED)
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | ----------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
@@ -46,7 +44,7 @@ This document of sensor lists for platform Bletchley.
 | nvmeX                 | | C | NA | NA | NA | NA | NA | NA |
 
 
-## Front Panel Board
+### Front Panel Board
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | ----------- | ------- | ---- | --- | --- | --- | --- | --- | --- |

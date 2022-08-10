@@ -1,23 +1,17 @@
-# Facebook OpenBMC Features for Bletchley
+## Features
 
-This document tracks the features planned for platform Bletchley.
+### Overview
 
-Bletchley will be using the Linux Foundation OpenBMC codebase.  Features
-are expected to be developed and delivered upstream first and then integrated
-into the Facebook OpenBMC tree after they have been accepted upstream.
-
-Since LF-OpenBMC is being used, the Redfish APIs should be the primary user
-interface (not command line CLIs) and testing should be done using the upstream
-`openbmc-test-automation` tests.
-
-## Priority Legend
+#### Priority Legend
 * P0 - Before EVT Build (soft) to Mid EVT
 * P1 - Before DVT build
 * P2 - Before PVT Build
 * P3 - PVT exit gating
 * P4 - Optional
 
-## Infrastructure
+#### Infrastructure
+- [X] P0 **Yocto**
+    - Enable machine in meta-layer.
 - [X] P0 **U-boot Porting**
     - Port platform specific u-boot changes.
 - [X] P0 **Kernel Porting**
@@ -37,7 +31,7 @@ interface (not command line CLIs) and testing should be done using the upstream
     - Create Qemu machine config for BMC.  Should boot OpenBMC without any
       service failures.
 
-## User Interface
+#### User Interface
 - [X] P0 **OOB/SSH**
     - Provide interface for Host user to interact from a remote machine via
       Network.
@@ -48,12 +42,12 @@ interface (not command line CLIs) and testing should be done using the upstream
 - [ ] P2 **Redfish w/mTLS**
     - Enable mTLS authentication for Redfish.
 
-## Network
+#### Network
 - [X] P0 **DHCPv6**
     - BMC shall be able to get IPv6 address using standard DHCPv6 protocol
       including retries and timeouts.
 
-## Power Control
+#### Power Control
 - [X] P0 **on**
     - Power ON the Host(s).
 - [X] P0 **off**
@@ -65,18 +59,18 @@ interface (not command line CLIs) and testing should be done using the upstream
     - Reset the host(s).
 - [ ] P0 **recovery mode**
     - Put the host(s) into recovery mode.
-- [ ] P1 **phosphor-state-manager**
-    - Manage host(s) state using LF state management provided by
-      phosphor-state-manager.
 - [ ] P0 **sled-cycle**
     - TODO: facebookexternal/openbmc.quanta#2617.
     - Power cycle entire chassis.
+- [ ] P1 **phosphor-state-manager**
+    - Manage host(s) state using LF state management provided by
+      phosphor-state-manager.
 - [ ] P2 **Power Failure Detection**
     - TODO: facebookexternal/openbmc.quanta#2618.
     - Report host power failure reasoning using information from various GPIO
       signals and/or CPLD registers.
 
-## FRU Information
+#### FRU Information
 - [X] P0 **Entity Manager**
     - Add entity manager configuration for system.
 - [X] P0 **FRUID read**
@@ -85,7 +79,7 @@ interface (not command line CLIs) and testing should be done using the upstream
 - [X] P0 **FRUID update**
     - Update FRUID with user given file assuming IPMI FRUID Format.
 
-## Sensor Information
+#### Sensor Information
 - [X] P0 **sensor read**
     - Read the current status of all sensors of a given FRU.
         - sensors on motherboard, Mezzanine card, etc.
@@ -100,7 +94,7 @@ interface (not command line CLIs) and testing should be done using the upstream
     - Automatically store a copy of sensor history when catastrophic events are
       detected.
 
-## Thermal Management
+#### Thermal Management
 - [X] P0 **Fan control (Manual)**
     - Implement fan utility to set fan-speed.
 - [ ] P0 **Fan Speed Control (Automatic)**
@@ -122,7 +116,7 @@ interface (not command line CLIs) and testing should be done using the upstream
     - Calculate Airflow based on current configuration e.g. use BIOS OEM command
       to get information on number of DIMMs populated etc.
 
-## Firmware Versions
+#### Firmware Versions
 Support reading firmware versions of attached components including self.
 
 - [X] P0 **OpenBMC**
@@ -135,7 +129,7 @@ Support reading firmware versions of attached components including self.
 - [ ] P2 **USB3 Bridge**
     - Display USB3 Bridge firmware version.
 
-## Firmware Update
+#### Firmware Update
 - [X] P0 **OpenBMC**
     - Upgrade BMC Image from within the BMC.
 - [ ] P1 **Flashy**
@@ -156,7 +150,7 @@ Support reading firmware versions of attached components including self.
 - [ ] P2 **USB3 Bridge**
     - Upgrade USB3 Bridge using production (dbus+Redfish) methods.
 
-## Time Sync
+#### Time Sync
 - [X] P0 **RTC**
     - Enable local RTC device and ensure synchronization on BMC reboot.
 - [ ] P2 **NTP Sync**
@@ -164,18 +158,18 @@ Support reading firmware versions of attached components including self.
 - [ ] P3 **Time Zone**
     - Show PST/PDT time always.
 
-## Configuration
+#### Configuration
 - [ ] P0 **Set Power Policy**
     - Change the policy to one of the following state: Last Power State, Always
       ON, and Always OFF with default as 'Last Power State'.
 
-## BMC Reset/Recovery
+#### BMC Reset/Recovery
 - [X] P0 **Remote Reset - SSH**
     - Reset any BMC from remote system using the `reboot` command.
 - [ ] P1 **Remote Reset - Redfish**
     - Reset any BMC from remote system using Redfish APIs.
 
-## Front Panel Control
+#### Front Panel Control
 - [ ] P0 **Power Button**
     - Power ON/OFF the Host by using this button.
 - [ ] P0 **Reset Button**
@@ -191,7 +185,7 @@ Support reading firmware versions of attached components including self.
     - TODO: facebookexternal/openbmc.quanta#2623.
     - Allow configuration and use of heartbeat LED.
 
-## Security
+#### Security
 - [ ] P0 **Verified Boot (dual-flash)**
     - Support updating both flashes images and support read-only image to
       continue boot into RW flash.
@@ -212,11 +206,11 @@ Support reading firmware versions of attached components including self.
 - [ ] P2 **TPM 2.0 Boot Measurements**
     - Use TPM for storing secret keys and measurement info.
 
-## Host Sensor Information
+#### Host Sensor Information
 - [ ] P4 **Uptime**
     - Host to report uptime hourly to BMC.
 
-## LCD Debug Card
+#### LCD Debug Card
 - [ ] P2 **GPIO Description**
     - Need to create a look up table and respond with descriptions for various
       GPIO signals connected to USB-Debug card.
@@ -229,7 +223,7 @@ Support reading firmware versions of attached components including self.
 - [ ] P4 **User Settings**
     - Need to allow user to change some configuration from host.
 
-## BMC Health Monitoring
+#### BMC Health Monitoring
 - [ ] P0 **WDT**
     - This feature is useful to detect if BMC user space application is not
       running for some catastrophic reason. WDT Expire should trigger BMC reset.
@@ -241,20 +235,20 @@ Support reading firmware versions of attached components including self.
 - [ ] P1 **Healthd configuration**
     - Allow configuration on whether healthd should reboot the BMC upon issues.
 
-## Device Specific Features
-- [ ] P1 - **USB-PD Emulation**
+#### Device Specific Features
+- [ ] P1 **USB-PD Emulation**
     - Emulate USB-PD to allow software communication with managed host(s).
-- [ ] P2 - **Switch diagnostics**
+- [ ] P2 **Switch diagnostics**
     - TODO: facebookexternal/openbmc.quanta#2621.
     - Diagnostics, state, and sensors from BCM53158XU SPI2 interface.
-- [ ] P2 - **USB-C diagnostics**
+- [ ] P2 **USB-C diagnostics**
     - TODO: facebookexternal/openbmc.quanta#2620.
     - Diagnostics, state, and sensors from JHL7440 i2c interface.
-- [ ] P1 - **Automated Recovery**
+- [ ] P1 **Automated Recovery**
     - Initiate automated recovery of managed host(s) over USB.
 
 
-## Miscellaneous
+#### Miscellaneous
 - [ ] P4 **ODS/Scuba integration**
     - _Facebook_ to develop.
     - BMC to log various data in to ODS directly. Allow configuration of remote

@@ -1,0 +1,3 @@
+#!/bin/bash -e
+
+cat $1 | docker run --rm -i pandoc/latex -s -f markdown+header_attributes -t docx > $2

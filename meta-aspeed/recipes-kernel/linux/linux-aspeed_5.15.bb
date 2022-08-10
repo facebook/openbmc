@@ -1,7 +1,4 @@
-SRCBRANCH = "dev-5.15"
-SRCREV = "AUTOINC"
-
-SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "file://linux-aspeed-5.15 \
           "
 
 LINUX_VERSION ?= "5.15.27"
@@ -18,7 +15,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 do_kernel_configme[depends] += "virtual/${TARGET_PREFIX}gcc:do_populate_sysroot"
 KCONFIG_MODE="--alldefconfig"
 
-S = "${WORKDIR}/git"
+S = "${WORKDIR}/linux-aspeed-5.15"
 
 #
 # Note: below fixup is needed to bitbake linux kernel 5.2 or higher kernel

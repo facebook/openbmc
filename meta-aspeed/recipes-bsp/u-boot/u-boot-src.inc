@@ -1,0 +1,1 @@
+PV = "v${UBOOT_MAJOR}.${UBOOT_MINOR}+git${SRCPV}"

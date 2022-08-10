@@ -14,6 +14,9 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
 SRCREV = "AUTOINC"
 S = "${WORKDIR}/git"
 
+UBOOT_MAJOR = "${@d.getVar('SRCBRANCH').split('/')[2].split('.')[0]}"
+UBOOT_MINOR = "${@d.getVar('SRCBRANCH').split('/')[2].split('.')[1].split('+')[0]}"
+
 # u-boot v2020.01, which is used in Dunfell and above, has different settings
 # than earlier u-boot versions.  Set these variables so that we can use older
 # u-boot versions with newer Yocto versions.
@@ -129,3 +132,5 @@ do_deploy:append:bld-uboot() {
     ln -sf ${UBOOT_RECOVERY_IMAGE} ${UBOOT_RECOVERY_BINARYNAME}
   fi
 }
+
+require u-boot-src.inc

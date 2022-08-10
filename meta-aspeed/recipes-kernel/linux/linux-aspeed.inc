@@ -1,3 +1,8 @@
+LINUX_VERSION_MAJOR ?= "${@d.getVar('LINUX_VERSION').split('.')[0]}"
+LINUX_VERSION_MINOR ?= "${@d.getVar('LINUX_VERSION').split('.')[1]}"
+
+require linux-aspeed-src.inc
+
 DESCRIPTION = "Linux Kernel for Aspeed"
 SECTION = "kernel"
 LICENSE = "GPLv2"

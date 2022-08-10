@@ -1,7 +1,5 @@
-SRCBRANCH = "dev-4.1"
-SRCREV = "AUTOINC"
 
-SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "file://linux-aspeed-4.1 \
           "
 
 LINUX_VERSION ?= "4.1.51"
@@ -13,7 +11,7 @@ PV = "${LINUX_VERSION}"
 
 include linux-aspeed.inc
 
-S = "${WORKDIR}/git"
+S = "${WORKDIR}/linux-aspeed-4.1"
 
 do_configure:prepend() {
     # in kernel.bbclass::kernel_do_configure(), the code only copies defconfig to

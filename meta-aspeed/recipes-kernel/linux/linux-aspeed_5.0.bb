@@ -1,7 +1,4 @@
-SRCBRANCH = "dev-5.0"
-SRCREV = "AUTOINC"
-
-SRC_URI = "git://github.com/facebook/openbmc-linux.git;branch=${SRCBRANCH};protocol=https \
+SRC_URI = "file://linux-aspeed-5.0 \
           "
 
 LINUX_VERSION ?= "5.0.3"
@@ -18,4 +15,4 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
 do_kernel_configme[depends] += "virtual/${TARGET_PREFIX}gcc:do_populate_sysroot"
 KCONFIG_MODE="--alldefconfig"
 
-S = "${WORKDIR}/git"
+S = "${WORKDIR}/linux-aspeed-5.0"

@@ -731,6 +731,40 @@
             ]
         },
         {
+            "alias": "openbmc-buildci-inspirationpoint-determinator",
+            "args": {
+                "name": "openbmc-buildci-inspirationpoint-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-buildci-inspirationpoint-determinator",
+                        "shell": "facebook/sandcastle/job.py diff --platform inspirationpoint"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-grandteton/meta-inspirationpoint/.*",
+                        "^meta-facebook/meta-grandteton/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-buildci-lightning-determinator",
             "args": {
                 "name": "openbmc-buildci-lightning-determinator",
@@ -1694,6 +1728,40 @@
                     "value": [
                         "^meta-facebook/meta-fby35/meta-halfdome/.*",
                         "^meta-facebook/meta-fby35/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-inspirationpoint-determinator",
+            "args": {
+                "name": "openbmc-cit-inspirationpoint-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-inspirationpoint-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform inspirationpoint"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-grandteton/meta-inspirationpoint/.*",
+                        "^meta-facebook/meta-grandteton/recipes-.*"
                     ]
                 }
             ],

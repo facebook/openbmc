@@ -32,13 +32,14 @@ LOCAL_URI = " \
     file://setup-sic.sh \
     file://check_eth0_ipv4.sh \
     file://usb-util.sh \
+    file://recovery-bic-util \
     "
 
 pkgdir = "utils"
 
 
 # the tools for BMC will be installed in the image
-binfiles = " sync_date.sh sol-util usb-util.sh "
+binfiles = " sync_date.sh sol-util usb-util.sh recovery-bic-util "
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 "

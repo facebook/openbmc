@@ -60,7 +60,10 @@ class RestModbusCmdTest(TestCase):
         subprocess.run(
             "sv -w 30 stop rackmond || systemctl stop rackmond", shell=True, check=True
         )
-        os.remove(RACKMOND_SOCKET)
+        try:
+            os.remove(RACKMOND_SOCKET)
+        except FileNotFoundError:
+            pass
 
         # Spawn fake rackmond to listen to RACKMOND_SOCKET
         cls.mock_rackmond = MockRackmondServer()

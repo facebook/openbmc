@@ -239,7 +239,7 @@ fixup_wedge400_wedge400c_driver() {
         fi
     elif [ $((brd_type)) -eq 1 ]; then        # Only Wedge400-2(type=1)
         i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-2 GB core voltage/current monitor
-        i2c_device_add 3 0x2a net_asic        # GB temp. sensor
+        i2c_device_add 3 0x2a net_casic     # GB temp. sensor
         if [  $((brd_rev)) -eq 0 ]; then
             i2c_device_add 1 0x43 ir35215   # Wedge400-2 GB serdes voltage/current monitor
         else

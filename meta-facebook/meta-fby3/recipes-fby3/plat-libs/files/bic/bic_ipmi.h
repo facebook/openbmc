@@ -81,6 +81,13 @@ enum {
   NO_EXPECTED_TYPE = 0xFF,
 };
 
+typedef struct {
+  uint8_t iana[3];
+  uint8_t checksum[4];
+  uint8_t remaining_writes;
+  uint8_t vendor;
+} __attribute__((packed)) ast_vr_ver_resp;
+
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
 int bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t intf);
 int bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf);

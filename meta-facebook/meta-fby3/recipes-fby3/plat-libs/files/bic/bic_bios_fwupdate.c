@@ -39,7 +39,6 @@
 /*      BIOS fw update      */
 /****************************/
 #define MAX_RETRY 3
-#define SIZE_IANA_ID 3
 #define IPMB_WRITE_COUNT_MAX 224
 #define BIOS_ERASE_PKT_SIZE (64*1024)
 #define BIOS_VERIFY_PKT_SIZE (32*1024)

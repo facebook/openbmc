@@ -33,6 +33,8 @@ extern "C" {
 #include <errno.h>
 #include <libusb-1.0/libusb.h>
 
+#define SIZE_IANA_ID 3
+
 #define MAX_GPIO_PINS 96
 
 #define PRESENT_1OU 1
@@ -132,6 +134,20 @@ typedef struct
   uint8_t epaddr;
   uint8_t path[8];
 } usb_dev;
+
+enum DL_FIRMWARE_COMPONENT {
+  DL_COMPNT_BIOS = 0,
+  DL_COMPNT_CPLD,
+  DL_COMPNT_BIC,
+  DL_COMPNT_ME,
+  DL_COMPNT_BOOTLOADER,
+  DL_COMPNT_PVCCIN,
+  DL_COMPNT_PVCCSA,
+  DL_COMPNT_PVCCIO,
+  DL_COMPNT_P3V3_STBY,
+  DL_COMPNT_PVDDR_ABC,
+  DL_COMPNT_PVDDR_DEF
+};
 
 enum {
   // BIC to BMC

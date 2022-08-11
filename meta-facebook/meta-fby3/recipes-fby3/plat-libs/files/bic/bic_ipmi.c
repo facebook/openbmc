@@ -1349,6 +1349,68 @@ error_exit:
 }
 
 int
+ast_bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t addr, char *key, char *ver_str) {
+  uint8_t tbuf[SIZE_IANA_ID + 1]; //IANA ID + FW_COMP
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+  uint8_t component = 0;
+  ast_vr_ver_resp *vr_ver;
+  int ret = BIC_STATUS_FAILURE;
+
+  if (key == NULL || ver_str == NULL) {
+    syslog(LOG_ERR, "%s: Null parameter\n", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+
+  switch(addr) {
+  case VCCIN_ADDR:
+    component = DL_COMPNT_PVCCIN;
+    break;
+  case VCCIO_ADDR:
+    component = DL_COMPNT_PVCCIO;
+    break;
+  case VDDQ_ABC_ADDR:
+    component = DL_COMPNT_PVDDR_ABC;
+    break;
+  case VDDQ_DEF_ADDR:
+    component = DL_COMPNT_PVDDR_DEF;
+    break;
+  default:
+    syslog(LOG_ERR, "%s: unsupported component %x\n", __func__, addr);
+    return BIC_STATUS_FAILURE;
+  }
+
+  memcpy(&tbuf[0], (uint8_t *)&IANA_ID, SIZE_IANA_ID);
+  tbuf[SIZE_IANA_ID] = component;
+
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_FW_VER, tbuf, sizeof(tbuf), rbuf, &rlen, intf);
+  if ( ret < 0 || rlen < sizeof(ast_vr_ver_resp)) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d, slot_id:%x, intf:%x\n", __func__, ret, rlen, slot_id, intf);
+  } else {
+    vr_ver = (ast_vr_ver_resp*)rbuf;
+
+    switch (vr_ver->vendor) {
+    case VR_ISL:
+      snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d",
+        vr_ver->checksum[3], vr_ver->checksum[2], vr_ver->checksum[1], vr_ver->checksum[0], vr_ver->remaining_writes);
+      break;
+    case VR_IFX:
+      snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d",
+        vr_ver->checksum[3], vr_ver->checksum[2], vr_ver->checksum[1], vr_ver->checksum[0], vr_ver->remaining_writes);
+      break;
+    default:
+      syslog(LOG_ERR, "%s: unsupported vendor %x\n", __func__, vr_ver->vendor);
+      return BIC_STATUS_FAILURE;
+    }
+    
+    kv_set(key, ver_str, 0, 0);
+    ret = BIC_STATUS_SUCCESS;
+  }
+
+  return ret;
+}
+
+int
 bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   uint8_t tbuf[32] = {0};
   uint8_t tlen = 0;
@@ -1485,16 +1547,28 @@ bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *k
 int
 bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *ver_str) {
   char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
+  bool is_sb_ast1030 = false;
 
   snprintf(key, sizeof(key), "slot%x_vr_%02xh_crc", slot_id, addr);
   if (kv_get(key, tmp_str, NULL, 0)) {
-
-    if (bic_get_vr_ver(slot_id, intf, bus, addr, key, tmp_str))
+    if (get_sb_bic_solution(slot_id, &is_sb_ast1030) < 0) {
       return -1;
+    }
+
+    if (is_sb_ast1030 == true) {
+      if (ast_bic_get_vr_ver(slot_id, intf, addr, key, tmp_str)) {
+        return -1;
+      }
+    } else {
+      if (bic_get_vr_ver(slot_id, intf, bus, addr, key, tmp_str)) {
+        return -1;
+      }
+    }
   }
 
-  if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
+  if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1)) {
     return -1;
+  }
 
   return 0;
 }

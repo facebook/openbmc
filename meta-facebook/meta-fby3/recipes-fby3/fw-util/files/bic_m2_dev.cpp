@@ -119,6 +119,9 @@ int M2DevComponent::print_version()
 
 void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info) {
   int first_dev, second_dev, main_dev;
+  string board_name = name;
+
+  transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
 
   if (idx % 2 == 0) {
     first_dev = idx;
@@ -138,7 +141,7 @@ void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info) {
     main_dev = second_dev;
   }
 
-  printf("DEV%d/%d Version: ", first_dev, second_dev);
+  printf("%s DEV%d/%d Version: ", board_name.c_str(), first_dev, second_dev);
   if (statusTable[main_dev].ret) {
     printf("NA\n");
   } else if (!statusTable[main_dev].status) {
@@ -160,7 +163,11 @@ void M2DevComponent::print_dual(uint8_t idx, M2_DEV_INFO m2_dev_info) {
 }
 
 void M2DevComponent::print_single(uint8_t idx) {
-  printf("DEV%d Version: ", idx);
+  string board_name = name;
+
+  transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
+
+  printf("%s DEV%d Version: ", board_name.c_str(), idx);
   if (statusTable[idx].ret) {
     printf("NA\n");
   } else if (!statusTable[idx].status) {

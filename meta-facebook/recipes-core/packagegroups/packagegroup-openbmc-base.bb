@@ -25,3 +25,5 @@ RDEPENDS:${PN} += " \
   wdtcli \
   udev-rules \
   "
+
+RDEPENDS:${PN} += '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "vboot-utils", "", d)} '

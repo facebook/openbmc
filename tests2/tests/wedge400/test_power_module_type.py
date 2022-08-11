@@ -57,7 +57,7 @@ class PowerModuleDetectionTest(unittest.TestCase):
         try:
             with open(inp, "r") as f:
                 str_val = f.readline().rstrip("\n")
-                if str_val.find("0x") is -1:
+                if str_val.find("0x") == -1:
                     val = int(str_val, 10)
                 else:
                     val = int(str_val, 16)

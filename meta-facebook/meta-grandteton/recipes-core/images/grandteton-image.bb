@@ -47,4 +47,5 @@ IMAGE_INSTALL += " \
   ncsi-util \
   crashdump \
   attest-util \
+  dimm-util \
 "

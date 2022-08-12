@@ -308,8 +308,6 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
       syslog(LOG_DEBUG, "%s(): bic_ipmb_send offset=%d read length=%d failed", __func__,tbuf[3],rlen);
       return -1;
     }
-  } else {
-    return -1;
   }
 
   if (cmd == CMD_DRIVE_STATUS) {

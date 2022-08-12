@@ -29,6 +29,52 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            git://gitlab.com/qemu-project/berkeley-testfloat-3.git;destsuffix=git/tests/fp/berkeley-testfloat-3;nobranch=1;protocol=https;name=berkeley-testfloat-3;nobranch=1 \
            git://gitlab.com/qemu-project/keycodemapdb.git;destsuffix=git/ui/keycodemapdb;nobranch=1;protocol=https;name=keycodemapdb;nobranch=1 \
            file://0001-aspeed-Zero-extend-flash-files-to-128MB.patch \
+           file://0001-slirp-Add-mfr-id-to-netdev-options.patch \
+           file://0002-slirp-Add-oob-eth-addr-to-netdev-options.patch \
+           file://0003-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
+           file://0004-hw-arm-aspeed-Add-fb_machine_class_init.patch \
+           file://0005-hw-misc-Add-i2c-netdev-device.patch \
+           file://0006-tests-avocado-Add-fb-boot-tests.patch \
+           file://0007-tests-avocado-Disable-raspi2-initrd.patch \
+           file://0008-hw-misc-Add-byte-by-byte-i2c-network-device.patch \
+           file://0009-hw-misc-i2c-netdev2-Fixes-to-get-MCTP-transaction-wo.patch \
+           file://0010-hw-m25p80-Add-BP-and-TB-bits-to-n25q00.patch \
+           file://0011-Fix-i2c-netdev2-send_async.patch \
+           file://0012-hw-arm-aspeed-Switch-fby35-grandcanyon-to-n25q00.patch \
+           file://0013-hw-ssi-add-new-spi-gpio-controller.patch \
+           file://0014-hw-nvram-at24c-Add-static-memory-init-option.patch \
+           file://0015-scripts-Add-redact-util.patch \
+           file://0016-aspeed-fby35-Add-bmc-bb-and-nic-FRU-s.patch \
+           file://0017-hw-ssi-encoding-decoding-for-spi-gpio-driver.patch \
+           file://0018-aspeed-Reload-boot-rom-on-reset.patch \
+           file://0019-hw-m25p80-spi-gpio-Fixing-miso-is-being-cleared-issu.patch \
+           file://0020-hw-m25p80-spi-gpio-add-device-reset.patch \
+           file://0021-hw-m25p80-spi-gpio-fix-prereading-logic-for-controll.patch \
+           file://0022-hw-adding-tpm-tis-spi.patch \
+           file://0023-aspeed-Add-grandteton-bmc.patch \
+           file://0024-docs-system-arm-Add-Description-for-NPCM8XX-SoC.patch \
+           file://0025-hw-ssi-Make-flash-size-a-property-in-NPCM7XX-FIU.patch \
+           file://0026-hw-misc-Support-NPCM8XX-GCR-module.patch \
+           file://0027-hw-misc-Support-NPCM8XX-CLK-Module-Registers.patch \
+           file://0028-hw-misc-Store-DRAM-size-in-NPCM8XX-GCR-Module.patch \
+           file://0029-hw-intc-Add-a-property-to-allow-GIC-to-reset-into-no.patch \
+           file://0030-hw-misc-Support-8-bytes-memop-in-NPCM-GCR-module.patch \
+           file://0031-hw-net-Add-NPCM8XX-PCS-Module.patch \
+           file://0032-hw-arm-Add-NPCM8XX-SoC.patch \
+           file://0033-hw-arm-Add-NPCM845-Evaluation-board.patch \
+           file://0034-hw-arm-npcm8xx-Remove-qemu-common.h-include.patch \
+           file://0035-npcm7xx-Change-flash_size-to-uint64.patch \
+           file://0036-hw-tpm_tis_spi-fix-the-read-write-mmio-logic.patch \
+           file://0037-hw-tpm_tis_spi-connect-the-cs-line.patch \
+           file://0038-Trying-to-add-Cortex-A35.patch \
+           file://0039-npcm8xx-Fix-flash-device-part-number.patch \
+           file://0040-npcm8xx-Increase-ram-to-2GB.patch \
+           file://0041-npcm8xx-Change-default-bios-path-to-pc-bios-npcm8xx_.patch \
+           file://0042-npcm8xx-Init-INTCR4-GMMAP0-to-0x7F00_0000.patch \
+           file://0043-npcm8xx-Auto-zero-extend-flash-images.patch \
+           file://0044-hw-spi_gpio-remove-MOSI-pin.patch \
+           file://0045-arm-cpu64-Copy-paste-A53-contents-into-A35-initfn.patch \
+           file://0046-tests-avocado-boot_linux_console-Add-NPCM845-EVB.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 

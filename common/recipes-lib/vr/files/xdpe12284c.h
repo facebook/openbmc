@@ -20,6 +20,7 @@
 
 struct xdpe_config {
   uint8_t addr;
+  uint16_t memptr;
   uint32_t crc_exp;
   uint8_t data[1200];
 };

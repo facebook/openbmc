@@ -511,6 +511,10 @@ get_sensor_reading(void *sensor_data) {
           } else {
             json_object_set_new(fru_sensor_obj, thresh.name, sensor_obj);
           }
+          json_t *thresh_obj;
+          if (sensor_info->threshold && (thresh_obj = get_thresh_json_obj(&thresh))) {
+            json_object_set_new(sensor_obj, "thresholds", thresh_obj);
+          }
         } else if (filter) {
           printf("%-28s (0x%X) : NA | (na)\n", filter_sensor_name, sensor_info->sensor_list[i]);
         } else if (is_supported_sensor(snr_num, sensor_info->fru)) {

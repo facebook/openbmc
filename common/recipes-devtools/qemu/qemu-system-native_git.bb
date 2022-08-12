@@ -15,7 +15,7 @@ S = "${WORKDIR}/git"
 SRCREV_FORMAT = "dtc_meson_slirp_berkeley-softfloat-3_berkeley-testfloat-3_keycodemapdb"
 SRCREV_dtc = "b6910bec11614980a21e46fbccc35934b671bd81"
 SRCREV_meson = "12f9f04ba0decfda425dbbf9a501084c153a2d18"
-SRCREV_slirp = "9d59bb775d6294c8b447a88512f7bb43f12a25a8"
+SRCREV_slirp = "c7c151fe3a2700bcabfc07235176fcedf7e9b089"
 SRCREV_berkeley-softfloat-3 = "b64af41c3276f97f0e181920400ee056b9c88037"
 SRCREV_berkeley-testfloat-3 = "5a59dcec19327396a011a17fd924aed4fec416b3"
 SRCREV_keycodemapdb = "d21009b1c9f94b740ea66be8e48a1d8ad8124023"
@@ -32,7 +32,7 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            "
 PV = "7.0.90+git${SRCPV}"
 
-PACKAGECONFIG ??= "fdt "
+PACKAGECONFIG ??= "fdt slirp "
 
 EXTRA_OECONF:append = " --target-list=${@get_qemu_system_target_list(d)}"
 EXTRA_OECONF:remove = " --meson=meson"

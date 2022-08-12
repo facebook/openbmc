@@ -13,7 +13,9 @@ get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value)
   struct pldm_snr_reading_t* resp;
   uint8_t tlen = 0;
   size_t  rlen = 0;
-  int rc;
+  int16_t integer=0;
+  float decimal=0;
+int rc;
 
   struct pldm_msg* pldmbuf = (struct pldm_msg *)tbuf;
   pldmbuf->hdr.request = 1;
@@ -32,8 +34,13 @@ get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value)
       rc = -1;
       goto exit;
     }
-    *value = (float)(resp->data.present_reading[0] | resp->data.present_reading[1] << 8) +
-             (float)(resp->data.present_reading[2] | resp->data.present_reading[3] << 8)/1000;
+    integer = resp->data.present_reading[0] | resp->data.present_reading[1] << 8;
+    decimal = (float)(resp->data.present_reading[2] | resp->data.present_reading[3] << 8)/1000;
+
+    if (integer > 0)
+      *value = (float)integer + decimal;
+    else
+      *value = (float)integer - decimal;
   }
 
 exit:

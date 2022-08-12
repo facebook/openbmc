@@ -25,6 +25,10 @@
         "type": "integer",
         "minimum": 0
       },
+      "debug": {
+        "description": "Enables device tracing and potentially other debug prints",
+        "type": "boolean"
+      },
       "ignored_addrs": {
         "description": "(debug) ignore certain addresses on this interface",
         "type": "array",

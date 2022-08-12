@@ -148,7 +148,7 @@ class LibPalTest(TestCase):
             is_fru_prsnt = pal.pal_is_fru_prsnt(fru_id)
             self.assertTrue(type(is_fru_prsnt), True)
 
-    def test_sensor_raw_read(self):
+    def test_sensor_raw_read(self, skip_sensors=[]):
         fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
 
         for fru_id in fru_ids:
@@ -156,6 +156,9 @@ class LibPalTest(TestCase):
                 continue
 
             for snr_num in pal.pal_get_fru_sensor_list(fru_id):
+                if [fru_id, snr_num] in skip_sensors:
+                    continue
+
                 with self.subTest("fru_id {} snr_num {}".format(fru_id, snr_num)):
                     val = pal.sensor_raw_read(fru_id, snr_num)
 
@@ -164,7 +167,7 @@ class LibPalTest(TestCase):
                     # Ensure value is a real number (i.e. not NaN or INF)
                     self.assertTrue(math.isfinite(val))
 
-    def test_sensor_read(self):
+    def test_sensor_read(self, skip_sensors=[]):
         fru_ids = [pal.pal_get_fru_id(fru_name) for fru_name in pal.pal_get_fru_list()]
 
         for fru_id in fru_ids:
@@ -175,6 +178,9 @@ class LibPalTest(TestCase):
                 continue
 
             for snr_num in pal.pal_get_fru_sensor_list(fru_id):
+                if [fru_id, snr_num] in skip_sensors:
+                    continue
+
                 with self.subTest("fru_id {} snr_num {}".format(fru_id, snr_num)):
                     val = pal.sensor_read(fru_id, snr_num)
 

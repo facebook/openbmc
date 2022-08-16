@@ -182,10 +182,10 @@ sgpio_export GPU_WP_HW_CTRL_R_N 45
 gpio_set GPU_WP_HW_CTRL_R_N 1
 
 sgpio_export CLK_GEN2_BMC_RC_OE_R_N 47
-gpio_set CLK_GEN2_BMC_RC_OE_R_N 1
+gpio_set CLK_GEN2_BMC_RC_OE_R_N 0
 
 sgpio_export BMC_MONITER 51
-gpio_set BMC_MONITER 1
+gpio_set BMC_MONITER 0
 
 sgpio_export FM_BMC_TPM_PRES_N_R 57
 gpio_set FM_BMC_TPM_PRES_N_R 1
@@ -200,7 +200,7 @@ sgpio_export GPU_FPGA_RST_N 65
 gpio_set GPU_FPGA_RST_N 1
 
 sgpio_export CLK_GEN2_GPU_FPGA_OE_R_N 69
-gpio_set CLK_GEN2_GPU_FPGA_OE_R_N 1
+gpio_set CLK_GEN2_GPU_FPGA_OE_R_N 0
 
 sgpio_export JTAG_SCM_TRST_R_N 91
 gpio_set JTAG_SCM_TRST_R_N 1

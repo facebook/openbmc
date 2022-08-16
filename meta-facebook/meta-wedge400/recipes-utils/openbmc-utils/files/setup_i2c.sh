@@ -63,9 +63,11 @@ get_mux_bus_num() {
     echo $((start_bus_num + channel))
 }
 
+brd_type_rev=$(wedge_board_type_rev)
+echo "Board Type/Revision: $brd_type_rev"
+
 brd_type=$(wedge_board_type)
 brd_rev=$(wedge_board_rev)
-brd_type_rev=$(wedge_board_type_rev)
 
 # # Bus 2
 i2c_device_add 2 0x3e scmcpld          # SCMCPLD
@@ -89,12 +91,6 @@ i2c_device_add 5 0x60 domfpga         # DOM FPGA 2
 i2c_device_add 6 0x51 24c64            # SMB EEPROM
 i2c_device_add 6 0x21 pca9534          # PCA9534
 
-# RACKMON EEPROM, add in Wedge400 MP Respin and Wedge400C Respin
-if [[ $((brd_type)) -eq 0 ]] && [[ $((brd_rev)) -ge 6 ]] || 
-   [[ $((brd_type)) -eq 1 ]] && [[ $((brd_rev)) -ge 4 ]]; then
-    i2c_device_add 6 0x50 24c64            # RACKMON EEPROM
-fi
-
 # # Bus 1
 i2c_device_add 1 0x3a powr1220          # SMB power sequencer
 i2c_device_add 1 0x4d ir35215           # TH3 serdes voltage/current monitor on the left
@@ -104,19 +100,6 @@ i2c_device_add 1 0x47 ir35215           # TH3 serdes voltage/current monitor on 
 i2c_device_add 3 0x48 tmp75            # SMB temp. sensor
 i2c_device_add 3 0x4b tmp75            # SMB temp. sensor
 
-if [ "$brd_type_rev" != "WEDGE400_MP_RESPIN" ]; then
-    i2c_device_add 3 0x49 tmp75            # SMB temp. sensor
-    i2c_device_add 3 0x4a tmp75            # SMB temp. sensor
-fi
-
-# below sensors is remove in Wedge400 MP Respin(type=0,rev=6)
-# and Wedge400C Respin(type=1,rev=4)
-if [[ $((brd_type)) -eq 0 ]] && [[ $((brd_rev)) -lt 6 ]] || 
-   [[ $((brd_type)) -eq 1 ]] && [[ $((brd_rev)) -lt 4 ]]; then
-    i2c_device_add 3 0x4c tmp421           # SMB temp. sensor
-    i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
-fi
-
 # # i2c-mux 2-0070, channel 1, support dual footprint
 if i2c_detect_address "$(get_mux_bus_num 2-0070 0)" 0x10; then
     i2c_device_add "$(get_mux_bus_num 2-0070 0)" 0x10 adm1278 # SCM Hotswap
@@ -125,13 +108,6 @@ else
 fi
 
 # # i2c-mux 2-0070, channel 2
-# sensor is remove in Wedge400 MP Respin(type=1,rev=6) 
-#  and Wedge400C Respin(type=0,rev=4)
-if [[ $((brd_type)) -eq 0 ]] && [[ $((brd_rev)) -lt 6 ]] || 
-   [[ $((brd_type)) -eq 1 ]] && [[ $((brd_rev)) -lt 4 ]]; then
-    i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4c tmp75   # SCM temp. sensor
-fi
-
 i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4d tmp75   # SCM temp. sensor
 
 # # i2c-mux 2-0070, channel 4
@@ -156,50 +132,6 @@ if [ "$(wedge_power_supply_type 2)" = "PSU" ] ||
 else
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x58 ltc4282      # PEM2 Driver
     i2c_device_add "$(get_mux_bus_num 8-0070 1)" 0x18 max6615      # PEM2 Driver
-fi
-
-#
-# For wedge400 MP respin(type=0,rev=6) and later.
-# Dual footprint will mount either one temp sensor for each bus.
-# i2c-mux 8-0070, channel 3-5 and 7
-#
-
-if [ "$brd_type" = "0" ] && [ $((brd_rev)) -ge 6 ]; then
-    # # i2c-mux 8-0070, channel 3
-    if i2c_detect_address "$(get_mux_bus_num 8-0070 2)" 0x4d; then
-        i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x4d tmp421      # TMP421_4
-    else
-        i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x4c adm1032     # ADM1032_4
-    fi
-    # # i2c-mux 8-0070, channel 4
-    if i2c_detect_address "$(get_mux_bus_num 8-0070 3)" 0x4d; then
-        i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x4d tmp421      # TMP421_3
-    else
-        i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x4c adm1032     # ADM1032_3
-    fi
-    # # i2c-mux 8-0070, channel 5
-    if i2c_detect_address "$(get_mux_bus_num 8-0070 4)" 0x4d; then
-        i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x4d tmp421      # TMP421_2
-    else
-        i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x4c adm1032     # ADM1032_2
-    fi
-    # # i2c-mux 8-0070, channel 7
-    if i2c_detect_address "$(get_mux_bus_num 8-0070 6)" 0x4d; then
-        i2c_device_add "$(get_mux_bus_num 8-0070 6)" 0x4d tmp421      # TMP421_1
-    else
-        i2c_device_add "$(get_mux_bus_num 8-0070 6)" 0x4c adm1032     # ADM1032_1
-    fi
-fi
-#
-# End dual footprint temperature sensors
-#
-
-# # i2c-mux 8-0070, channel 5
-# EEPROM is remove in Wedge400 MP Respin(type=1,rev=6)
-#  and Wedge400C Respin(type=0,rev=4)
-if [[ $((brd_type)) -eq 0 ]] && [[ $((brd_rev)) -lt 6 ]] || 
-   [[ $((brd_type)) -eq 1 ]] && [[ $((brd_rev)) -lt 4 ]]; then
-    i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x54 24c02        # TH3 EEPROM
 fi
 
 # # i2c-mux 11-0076, channel 1
@@ -231,25 +163,78 @@ i2c_device_add "$(get_mux_bus_num 11-0076 6)" 0x52 24c64           # FAN tray
 # # i2c-mux 11-0076, channel 8
 i2c_device_add "$(get_mux_bus_num 11-0076 7)" 0x52 24c64           # FAN tray
 
-fixup_wedge400_wedge400c_driver() {
-    if [ $((brd_type)) -eq 0 ]; then          # Only Wedge400(type=0)
+fixup_board_revisions() {
+    if board_rev_is_respin; then
+        # RACKMON EEPROM, added in Wedge400 MP Respin and Wedge400C Respin
+        i2c_device_add 6 0x50 24c64            # RACKMON EEPROM
+    else
+        # below sensors are removed from Wedge400 MP Respin (type=0,rev=6)
+        # and Wedge400C Respin (type=1,rev=4).
+        i2c_device_add 3 0x4c tmp421           # SMB temp. sensor
+        i2c_device_add 3 0x4e tmp421           # SMB temp. sensor
+        i2c_device_add "$(get_mux_bus_num 2-0070 1)" 0x4c tmp75  # SCM temp sensor
+
+        # TH3 EEPROM is removed from Wedge400 MP Respin (type=0,rev=6) and
+        # Wedge400C Respin (type=1,rev=4).
+        i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x54 24c02  # TH3 EEPROM
+    fi
+
+    if board_type_is_wedge400; then         # Only Wedge400 (type=0)
         i2c_device_add 1 0x60 isl68137      # TH3 core voltage/current monitor
-        if [ $((brd_rev)) -lt 6 ]; then
+        if wedge400_rev_is_mp; then
             i2c_device_add 3 0x4f tmp422    # TH3 temp. sensor Remove from Respin version(rev=6)
         fi
-    elif [ $((brd_type)) -eq 1 ]; then        # Only Wedge400-2(type=1)
-        i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-2 GB core voltage/current monitor
+    else                                    # Only Wedge400-C (type=1)
+        i2c_device_add 1 0x40 xdpe132g5c    # Wedge400-C GB core voltage/current monitor
         i2c_device_add 3 0x2a net_casic     # GB temp. sensor
         if [  $((brd_rev)) -eq 0 ]; then
-            i2c_device_add 1 0x43 ir35215   # Wedge400-2 GB serdes voltage/current monitor
+            i2c_device_add 1 0x43 ir35215   # Wedge400-C GB serdes voltage/current monitor
         else
-            i2c_device_add 1 0x0e pxe1211   # Wedge400-2 EVT2(rev=0) or later GB serdes voltage/current monitor
+            i2c_device_add 1 0x0e pxe1211   # Wedge400-C EVT2(rev=0) or later GB serdes voltage/current monitor
         fi
     fi
 
-    # BCM54616 EEPROMs are removed physically
-    #   on Wedge400 MP Respin(type=0,rev=6) and later
-    #  and Wedge400-C DVT(type=1,rev=2) and later
+    #
+    # For wedge400 MP respin(type=0,rev=6) and later.
+    # Dual footprint will mount either one temp sensor for each bus.
+    # i2c-mux 8-0070, channel 3-5 and 7
+    #
+    if wedge400_rev_is_respin; then
+        # i2c-mux 8-0070, channel 3
+        if i2c_detect_address "$(get_mux_bus_num 8-0070 2)" 0x4d; then
+            i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x4d tmp421      # TMP421_4
+        else
+            i2c_device_add "$(get_mux_bus_num 8-0070 2)" 0x4c adm1032     # ADM1032_4
+        fi
+
+        # i2c-mux 8-0070, channel 4
+        if i2c_detect_address "$(get_mux_bus_num 8-0070 3)" 0x4d; then
+            i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x4d tmp421      # TMP421_3
+        else
+            i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x4c adm1032     # ADM1032_3
+        fi
+
+        # i2c-mux 8-0070, channel 5
+        if i2c_detect_address "$(get_mux_bus_num 8-0070 4)" 0x4d; then
+            i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x4d tmp421      # TMP421_2
+        else
+            i2c_device_add "$(get_mux_bus_num 8-0070 4)" 0x4c adm1032     # ADM1032_2
+        fi
+
+        # i2c-mux 8-0070, channel 7
+        if i2c_detect_address "$(get_mux_bus_num 8-0070 6)" 0x4d; then
+            i2c_device_add "$(get_mux_bus_num 8-0070 6)" 0x4d tmp421      # TMP421_1
+        else
+            i2c_device_add "$(get_mux_bus_num 8-0070 6)" 0x4c adm1032     # ADM1032_1
+        fi
+    else
+        i2c_device_add 3 0x49 tmp75            # SMB temp. sensor
+        i2c_device_add 3 0x4a tmp75            # SMB temp. sensor
+    fi
+
+    # BCM54616 EEPROMs are removed physically from:
+    #   - Wedge400 MP Respin(type=0,rev=6) and later
+    #   - Wedge400-C DVT(type=1,rev=2) and later
     if [[ "$brd_type" -eq 0 && "$brd_rev" -lt 6 ]] || \
        [[ "$brd_type" -eq 1 && "$brd_rev" -lt 2 ]]; then
         # # i2c-mux 8-0070, channel 3
@@ -258,15 +243,21 @@ fixup_wedge400_wedge400c_driver() {
         i2c_device_add "$(get_mux_bus_num 8-0070 3)" 0x50 24c02          # BCM54616 EEPROM
     fi
 
-    # Wedge400 DVT2(type=0,rev=3) or later, 
-    # wedge400c EVT2(type=1,rev=1) or later has BSM eeprom
+    # BSM EEPROM were added:
+    #   - Wedge400 DVT2(type=0,rev=3) or later,
+    #   - Wedge400c EVT2(type=1,rev=1) or later
     if [[ "$brd_type" -eq 0 && "$brd_rev" -ge 3 ]] || \
        [[ "$brd_type" -eq 1 && "$brd_rev" -ge 1 ]]; then
         i2c_device_add "$(get_mux_bus_num 2-0070 6)" 0x56 24c64   # BSM EEPROM
     fi
 }
 
-fixup_wedge400_wedge400c_driver
+fixup_board_revisions
+
+# Hack only needed for wedge400c.
+if board_type_is_wedge400c; then
+    /usr/local/bin/rebind-driver.sh
+fi
 
 #
 # Check if I2C devices are bound to drivers. A summary message (total #
@@ -274,8 +265,3 @@ fixup_wedge400_wedge400c_driver
 # of this function.
 #
 i2c_check_driver_binding
-
-# Hack only needed for wedge400c.
-if [ "$brd_type" = "1" ]; then
-    /usr/local/bin/rebind-driver.sh
-fi

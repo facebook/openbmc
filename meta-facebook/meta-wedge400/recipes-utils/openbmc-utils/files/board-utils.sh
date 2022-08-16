@@ -137,8 +137,6 @@ wedge_board_type_rev(){
     fi
 }
 
-
-
 wedge_board_type() {
     rev=$(gpio_get BMC_CPLD_BOARD_TYPE_0)
     if [ $((rev)) -eq 0 ]; then
@@ -167,6 +165,84 @@ wedge_board_rev() {
     val1=$(gpio_get BMC_CPLD_BOARD_REV_ID1)
     val2=$(gpio_get BMC_CPLD_BOARD_REV_ID2)
     echo $((val0 | (val1 << 1) | (val2 << 2)))
+}
+
+board_type_is_wedge400() {
+    brd_type=$(wedge_board_type)
+    if [ "$brd_type" -eq "0" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+board_type_is_wedge400c() {
+    brd_type=$(wedge_board_type)
+    if [ "$brd_type" -eq "1" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+wedge400_rev_is_mp() {
+    if ! board_type_is_wedge400; then
+        return 1
+    fi
+
+    brd_rev=$(wedge_board_rev)
+    if [ "$brd_rev" -ge "6" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+wedge400_rev_is_respin() {
+    if ! board_type_is_wedge400; then
+        return 1
+    fi
+
+    brd_rev=$(wedge_board_rev)
+    if [ "$brd_rev" -lt "6" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+wedge400c_rev_is_mp() {
+    if ! board_type_is_wedge400c; then
+        return 1
+    fi
+
+    brd_rev=$(wedge_board_rev)
+    if [ "$brd_rev" -ge "4" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+wedge400c_rev_is_respin() {
+    if ! board_type_is_wedge400c; then
+        return 1
+    fi
+
+    brd_rev=$(wedge_board_rev)
+    if [ "$brd_rev" -lt "4" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+board_rev_is_respin() {
+    if wedge400_rev_is_respin || wedge400c_rev_is_respin; then
+        return 0
+    fi
+
+    return 1
 }
 
 wedge_power_on_board() {

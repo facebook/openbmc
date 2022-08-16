@@ -547,7 +547,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev, bool is_
 	if (count > USB_AST_DAT_SIZE) {
           count = USB_AST_DAT_SIZE;
         }
-        ast_bic_usb_packet *ast_pkt = (ast_bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
+        ast_bic_usb_packet *ast_pkt = (ast_bic_usb_packet *) (file_buf + file_buf_pos - sizeof(ast_bic_usb_packet));
         ast_pkt->netfn = NETFN_OEM_1S_REQ << 2;
         ast_pkt->cmd = CMD_OEM_1S_UPDATE_FW;
         memcpy(&ast_pkt->iana[0], (uint8_t *)&IANA_ID, 3);

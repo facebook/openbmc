@@ -144,9 +144,15 @@ enum {
   VR_NUM_CNT,
 };
 
+enum {
+  FAN_CTRL_ID0,
+  FAN_CTRL_ID1,
+};
+
 int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);
 int pal_sensor_monitor_initial(void);
+//int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id);
 
 extern const char pal_fru_list[];
 extern const char pal_server_list[];

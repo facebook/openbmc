@@ -1,6 +1,20 @@
 #ifndef __PAL_BB_SENSORS_H__
 #define __PAL_BB_SENSORS_H__
 
+typedef struct {
+  uint8_t id;
+  int (*get_rpm) (uint8_t fru, uint8_t sensor_num, float *value);
+  int (*get_duty) (uint8_t fan_id, uint8_t *pwm);
+  int (*set_duty) (uint8_t fan_id, uint8_t pwm);
+} FAN_CTRL_DEV;
+
+typedef struct {
+  uint8_t tach_id;
+  uint8_t pwm_reg;
+  uint8_t tach_high;
+  uint8_t tach_low;
+} NCT7363Y_CTRL;
+
 //Sensor Table
 enum {
 //NIC SENSOR
@@ -196,6 +210,17 @@ enum {
   FAN_PWM_ID14,
   FAN_PWM_ID15,
   FAN_PWM_CNT,
+};
+
+enum {
+  NCT7363Y_PWM0_INLET,
+  NCT7363Y_PWM0_OUTLET,
+  NCT7363Y_PWM4_INLET,
+  NCT7363Y_PWM4_OUTLET,
+  NCT7363Y_PWM6_INLET,
+  NCT7363Y_PWM6_OUTLET,
+  NCT7363Y_PWM10_INLET,
+  NCT7363Y_PWM10_OUTLET,
 };
 
 int pal_sensor_monitor_initial(void);

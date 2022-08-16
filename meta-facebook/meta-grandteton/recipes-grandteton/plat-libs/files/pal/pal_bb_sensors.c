@@ -3,6 +3,8 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
+#include <openbmc/kv.h>
+#include <math.h>
 #include "pal.h"
 
 //#define DEBUG
@@ -14,6 +16,14 @@ const char pal_pwm_list[] = "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15";
 const char pal_tach_list[] = "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31";
 //static float InletCalibration = 0;
 
+//Fan CTRL
+static int get_max31790_rpm(uint8_t fru, uint8_t sensor_num, float *value);
+static int get_max31790_duty(uint8_t fan_id, uint8_t* pwm);
+static int set_max31790_duty(uint8_t fan_id, uint8_t pwm);
+static int get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value);
+static int get_nct7363y_duty(uint8_t fan_id, uint8_t* pwm);
+static int set_nct7363y_duty(uint8_t fan_id, uint8_t pwm);
+//Sensor Read
 static int read_bb_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_48v_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value);
@@ -26,6 +36,12 @@ static int read_brick_iout(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_brick_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value);
+
+
+FAN_CTRL_DEV fan_ctrl_map[] = {
+  {FAN_CTRL_ID0, get_max31790_rpm, get_max31790_duty, set_max31790_duty},
+  {FAN_CTRL_ID1, get_nct7363y_rpm, get_nct7363y_duty, set_nct7363y_duty},
+};
 
 const uint8_t nic0_sensor_list[] = {
   NIC0_SNR_MEZZ0_TEMP,
@@ -130,20 +146,39 @@ char **hsc_48v_chips = hsc_adm1272_chips;
 
 
 //BRICK
-char *brick_pmbus_chips[BRICK_CNT] = {
+char *brick_pmbus_chips_evt[BRICK_CNT] = {
     "pmbus-i2c-38-69",
     "pmbus-i2c-38-6a",
     "pmbus-i2c-38-6b",
 };
 
-//FAN
-PAL_I2C_BUS_INFO fan_info_list[] = {
-  {FAN_CHIP_ID0, I2C_BUS_40, 0x5E},
-  {FAN_CHIP_ID1, I2C_BUS_40, 0x40},
-  {FAN_CHIP_ID2, I2C_BUS_41, 0x5E},
-  {FAN_CHIP_ID3, I2C_BUS_41, 0x40},
+char *brick_pmbus_chips_evt2[BRICK_CNT] = {
+    "pmbus-i2c-38-67",
+    "pmbus-i2c-38-68",
+    "pmbus-i2c-38-69",
 };
 
+char** brick_pmbus_chips = brick_pmbus_chips_evt2;
+
+//FAN
+//NCT7363
+PAL_I2C_BUS_INFO nct7363y_dev_list[] = {
+  {FAN_CHIP_ID0, I2C_BUS_40, 0x04},
+  {FAN_CHIP_ID1, I2C_BUS_40, 0x02},
+  {FAN_CHIP_ID2, I2C_BUS_41, 0x04},
+  {FAN_CHIP_ID3, I2C_BUS_41, 0x02},
+};
+
+NCT7363Y_CTRL nct7363y_ctrl_list[] = {
+  {NCT7363Y_PWM0_INLET,   0x90, 0x5A, 0x5B},
+  {NCT7363Y_PWM0_OUTLET,  0x90, 0x5E, 0x5F},
+  {NCT7363Y_PWM4_INLET,   0x98, 0x5C, 0x5D},
+  {NCT7363Y_PWM4_OUTLET,  0x98, 0x62, 0x63},
+  {NCT7363Y_PWM6_INLET,   0x9C, 0x66, 0x67},
+  {NCT7363Y_PWM6_OUTLET,  0x9C, 0x4A, 0x4B},
+  {NCT7363Y_PWM10_INLET,  0xA4, 0x48, 0x49},
+  {NCT7363Y_PWM10_OUTLET, 0xA4, 0x4E, 0x4F},
+};
 
 //FAN CHIP
 char *max31790_chips[] = {
@@ -153,6 +188,7 @@ char *max31790_chips[] = {
   "max31790-i2c-41-20",  // BP1
 };
 char **fan_chips = max31790_chips;
+
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP bb_sensor_map[] = {
@@ -291,19 +327,19 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 
-  {"MEZZ0_P3V3_VOLT", DPM_2, read_dpm_vout, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x80
+  {"MEZZ0_P3V3_VOLT", DPM_2, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x80
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
-  {"MEZZ0_P12V_CURR", ADC128_0, read_adc128_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
-  {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
+  {"MEZZ0_P12V_CURR", ADC128_0, read_adc128_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
+  {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, true, {87.12, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
   {"MEZZ0_TEMP", TEMP_MEZZ0, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x84
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
 
-  {"MEZZ1_P3V3_VOLT", DPM_3, read_dpm_vout, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x88
+  {"MEZZ1_P3V3_VOLT", DPM_3, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x88
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
-  {"MEZZ1_P12V_CURR", ADC128_0, read_adc128_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
-  {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
+  {"MEZZ1_P12V_CURR", ADC128_0, read_adc128_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
+  {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, true, {87.12, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
   {"MEZZ1_TEMP", TEMP_MEZZ1, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
@@ -311,24 +347,24 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC0_VOLT",     HSC_48V_ID0, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x90
   {"HSC0_CURR",     HSC_48V_ID0, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x91
-  {"HSC0_PWR",      HSC_48V_ID0, read_48v_hsc_pin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
+  {"HSC0_PWR",      HSC_48V_ID0, read_48v_hsc_pin, true, {6160.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
   {"HSC0_TEMP",     HSC_48V_ID0, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x93
-  {"HSC0_PEAK_PIN", HSC_48V_ID0, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
+  {"HSC0_PEAK_PIN", HSC_48V_ID0, read_48v_hsc_peak_pin, true, {6160.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
 
-  {"BRICK0_VOLT", BRICK_ID0, read_brick_vout, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x95
-  {"BRICK0_CURR", BRICK_ID0, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
-  {"BRICK0_TEMP", BRICK_ID0, read_brick_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x97
+  {"BRICK0_VOLT", BRICK_ID0, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x95
+  {"BRICK0_CURR", BRICK_ID0, read_brick_iout, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
+  {"BRICK0_TEMP", BRICK_ID0, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x97
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
-  {"BRICK1_VOLT", BRICK_ID1, read_brick_vout, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x99
-  {"BRICK1_CURR", BRICK_ID1, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9A
-  {"BRICK1_TEMP", BRICK_ID1, read_brick_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x9B
+  {"BRICK1_VOLT", BRICK_ID1, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x99
+  {"BRICK1_CURR", BRICK_ID1, read_brick_iout, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9A
+  {"BRICK1_TEMP", BRICK_ID1, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
-  {"BRICK2_VOLT", BRICK_ID2, read_brick_vout, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0x9D
-  {"BRICK2_CURR", BRICK_ID2, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9E
-  {"BRICK2_TEMP", BRICK_ID2, read_brick_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0x9F
+  {"BRICK2_VOLT", BRICK_ID2, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x9D
+  {"BRICK2_CURR", BRICK_ID2, read_brick_iout, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9E
+  {"BRICK2_TEMP", BRICK_ID2, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9F
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
-  {"P3V3_AUX_IN6_VOLT", ADC128_0, read_adc128_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xA1
+  {"P3V3_AUX_IN6_VOLT", ADC128_0, read_adc128_val, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xA1
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
@@ -346,14 +382,14 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC1_VOLT",     HSC_48V_ID1, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB0
   {"HSC1_CURR",     HSC_48V_ID1, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB1
-  {"HSC1_PWR",      HSC_48V_ID1, read_48v_hsc_pin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
+  {"HSC1_PWR",      HSC_48V_ID1, read_48v_hsc_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
   {"HSC1_TEMP",     HSC_48V_ID1, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB3
-  {"HSC1_PEAK_PIN", HSC_48V_ID1, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
+  {"HSC1_PEAK_PIN", HSC_48V_ID1, read_48v_hsc_peak_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
   {"HSC2_VOLT",     HSC_48V_ID2, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB5
   {"HSC2_CURR",     HSC_48V_ID2, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB6
-  {"HSC2_PWR",      HSC_48V_ID2, read_48v_hsc_pin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
+  {"HSC2_PWR",      HSC_48V_ID2, read_48v_hsc_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
   {"HSC2_TEMP",     HSC_48V_ID2, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB8
-  {"HSC2_PEAK_PIN", HSC_48V_ID2, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
+  {"HSC2_PEAK_PIN", HSC_48V_ID2, read_48v_hsc_peak_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
@@ -379,52 +415,52 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"FAN0_INLET_SPEED",  FAN_TACH_ID0,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD0
-  {"FAN0_OUTLET_SPEED", FAN_TACH_ID1,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD1
-  {"FAN1_INLET_SPEED",  FAN_TACH_ID2,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD2
-  {"FAN1_OUTLET_SPEED", FAN_TACH_ID3,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD3
-  {"FAN2_INLET_SPEED",  FAN_TACH_ID4,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD4
-  {"FAN2_OUTLET_SPEED", FAN_TACH_ID5,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD5
-  {"FAN3_INLET_SPEED",  FAN_TACH_ID6,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD6
-  {"FAN3_OUTLET_SPEED", FAN_TACH_ID7,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD7
-  {"FAN4_INLET_SPEED",  FAN_TACH_ID8,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD8
-  {"FAN4_OUTLET_SPEED", FAN_TACH_ID9,  read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xD9
-  {"FAN5_INLET_SPEED",  FAN_TACH_ID10, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xDA
-  {"FAN5_OUTLET_SPEED", FAN_TACH_ID11, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xDB
-  {"FAN6_INLET_SPEED",  FAN_TACH_ID12, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xDC
-  {"FAN6_OUTLET_SPEED", FAN_TACH_ID13, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xDD
-  {"FAN7_INLET_SPEED",  FAN_TACH_ID14, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xDE
-  {"FAN7_OUTLET_SPEED", FAN_TACH_ID15, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xDF
+  {"FAN0_INLET_SPEED",  FAN_TACH_ID0,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD0
+  {"FAN0_OUTLET_SPEED", FAN_TACH_ID1,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD1
+  {"FAN1_INLET_SPEED",  FAN_TACH_ID2,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD2
+  {"FAN1_OUTLET_SPEED", FAN_TACH_ID3,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD3
+  {"FAN2_INLET_SPEED",  FAN_TACH_ID4,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD4
+  {"FAN2_OUTLET_SPEED", FAN_TACH_ID5,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD5
+  {"FAN3_INLET_SPEED",  FAN_TACH_ID6,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD6
+  {"FAN3_OUTLET_SPEED", FAN_TACH_ID7,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD7
+  {"FAN4_INLET_SPEED",  FAN_TACH_ID8,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD8
+  {"FAN4_OUTLET_SPEED", FAN_TACH_ID9,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD9
+  {"FAN5_INLET_SPEED",  FAN_TACH_ID10, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDA
+  {"FAN5_OUTLET_SPEED", FAN_TACH_ID11, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDB
+  {"FAN6_INLET_SPEED",  FAN_TACH_ID12, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDC
+  {"FAN6_OUTLET_SPEED", FAN_TACH_ID13, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDD
+  {"FAN7_INLET_SPEED",  FAN_TACH_ID14, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDE
+  {"FAN7_OUTLET_SPEED", FAN_TACH_ID15, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDF
 
-  {"FAN8_INLET_SPEED",  FAN_TACH_ID16, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE0
-  {"FAN8_OUTLET_SPEED", FAN_TACH_ID17, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE1
-  {"FAN9_INLET_SPEED",  FAN_TACH_ID18, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE2
-  {"FAN9_OUTLET_SPEED", FAN_TACH_ID19, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE3
-  {"FAN10_INLET_SPEED",  FAN_TACH_ID20, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE4
-  {"FAN10_OUTLET_SPEED", FAN_TACH_ID21, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE5
-  {"FAN11_INLET_SPEED",  FAN_TACH_ID22, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE6
-  {"FAN11_OUTLET_SPEED", FAN_TACH_ID23, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE7
-  {"FAN12_INLET_SPEED",  FAN_TACH_ID24, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE8
-  {"FAN12_OUTLET_SPEED", FAN_TACH_ID25, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xE9
-  {"FAN13_INLET_SPEED",  FAN_TACH_ID26, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xEA
-  {"FAN13_OUTLET_SPEED", FAN_TACH_ID27, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xEB
-  {"FAN14_INLET_SPEED",  FAN_TACH_ID28, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xEC
-  {"FAN14_OUTLET_SPEED", FAN_TACH_ID29, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xED
-  {"FAN15_INLET_SPEED",  FAN_TACH_ID30, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xEE
-  {"FAN15_OUTLET_SPEED", FAN_TACH_ID31, read_fan_speed, true, {0, 0, 0, 0, 0, 0, 0, 0}, FAN}, //0xEF
+  {"FAN8_INLET_SPEED",  FAN_TACH_ID16, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE0
+  {"FAN8_OUTLET_SPEED", FAN_TACH_ID17, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE1
+  {"FAN9_INLET_SPEED",  FAN_TACH_ID18, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE2
+  {"FAN9_OUTLET_SPEED", FAN_TACH_ID19, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE3
+  {"FAN10_INLET_SPEED",  FAN_TACH_ID20, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE4
+  {"FAN10_OUTLET_SPEED", FAN_TACH_ID21, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE5
+  {"FAN11_INLET_SPEED",  FAN_TACH_ID22, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE6
+  {"FAN11_OUTLET_SPEED", FAN_TACH_ID23, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE7
+  {"FAN12_INLET_SPEED",  FAN_TACH_ID24, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE8
+  {"FAN12_OUTLET_SPEED", FAN_TACH_ID25, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE9
+  {"FAN13_INLET_SPEED",  FAN_TACH_ID26, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEA
+  {"FAN13_OUTLET_SPEED", FAN_TACH_ID27, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEB
+  {"FAN14_INLET_SPEED",  FAN_TACH_ID28, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEC
+  {"FAN14_OUTLET_SPEED", FAN_TACH_ID29, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xED
+  {"FAN15_INLET_SPEED",  FAN_TACH_ID30, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEE
+  {"FAN15_OUTLET_SPEED", FAN_TACH_ID31, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEF
 
-  {"P12V_VOLT",  ADC0, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF0
-  {"P5V_VOLT",   ADC1, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF1
-  {"P3V3_VOLT",  ADC2, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF2
-  {"P2V5_VOLT",  ADC3, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF3
-  {"P1V8_VOLT",  ADC4, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF4
-  {"PGPPA_VOLT", ADC5, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF5
-  {"P1V2_VOLT",  ADC6, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF6
-  {"P1V0_VOLT",  ADC8, read_adc_val, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF7
-  {"BMC_P12V_VOLT", DPM_4, read_dpm_vout, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT}, //0xF8
+  {"P12V_VOLT",  ADC0, read_adc_val, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF0
+  {"P5V_VOLT",   ADC1, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xF1
+  {"P3V3_VOLT",  ADC2, read_adc_val, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xF2
+  {"P2V5_VOLT",  ADC3, read_adc_val, true, {2.625, 0, 0, 2.375, 0, 0, 0, 0}, VOLT}, //0xF3
+  {"P1V8_VOLT",  ADC4, read_adc_val, true, {1.89, 0, 0, 1.71, 0, 0, 0, 0}, VOLT}, //0xF4
+  {"PGPPA_VOLT", ADC5, read_adc_val, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xF5
+  {"P1V2_VOLT",  ADC6, read_adc_val, true, {1.26, 0, 0, 1.14, 0, 0, 0, 0}, VOLT}, //0xF6
+  {"P1V0_VOLT",  ADC8, read_adc_val, true, {1.05, 0, 0, 0.95, 0, 0, 0, 0}, VOLT}, //0xF7
+  {"BMC_P12V_VOLT", DPM_4, read_dpm_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
-  {"BMC_TEMP", TEMP_BMC, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP}, //0xFB
+  {"BMC_TEMP", TEMP_BMC, read_bb_temp, true, {45.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
@@ -440,6 +476,47 @@ size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
 size_t bp0_sensor_cnt = sizeof(bp0_sensor_list)/sizeof(uint8_t);
 size_t bp1_sensor_cnt = sizeof(bp1_sensor_list)/sizeof(uint8_t);
 size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
+
+
+static int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id) {
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t bp_sku;
+
+  if (kv_get(fru == FRU_BP0 ? "bp0_fan_sku" : "bp1_fan_sku", value, NULL, 0)) {
+    return -1;
+  }
+
+  bp_sku = (uint8_t)atoi(value);
+#ifdef DEBUG
+  printf("fru=%d key=%s val=%d\n", fru, key, bp_sku);
+#endif
+  if (bp_sku == 0)
+    *dev_id = FAN_CTRL_ID0;
+  else if (bp_sku == 1)
+    *dev_id = FAN_CTRL_ID1;
+  else
+    return -1;
+
+  return 0;
+}
+
+static int set_brick_addr_table(void) {
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t rev;
+  bool cached=0;
+
+  if (!cached) {
+    if (kv_get("vpdb_rev", value, NULL, 0)) {
+      return -1;
+    }
+
+    rev = (uint8_t)atoi(value);
+    if (rev != 2)
+      brick_pmbus_chips = brick_pmbus_chips_evt;
+    cached = true;
+  }
+  return 0;
+}
 
 static int
 read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value) {
@@ -582,10 +659,10 @@ read_brick_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t brick_id = sensor_map[fru].map[sensor_num].id;
   static int retry[BRICK_CNT];
 
-
   if (brick_id >= BRICK_CNT)
     return -1;
 
+  set_brick_addr_table();
   ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
@@ -602,10 +679,10 @@ read_brick_iout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t brick_id = sensor_map[fru].map[sensor_num].id;
   static int retry[BRICK_CNT];
 
-
   if (brick_id >= BRICK_CNT)
     return -1;
 
+  set_brick_addr_table();
   ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
@@ -622,10 +699,10 @@ read_brick_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t brick_id = sensor_map[fru].map[sensor_num].id;
   static int retry[BRICK_CNT];
 
-
   if (brick_id >= BRICK_CNT)
     return -1;
 
+  set_brick_addr_table();
   ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
@@ -658,16 +735,211 @@ is_fan_present(int fan_num) {
   return ret? true: false;
 }
 
+
+//NCT7363
+static int
+set_nct7363y_duty(uint8_t fan_id, uint8_t pwm) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  uint8_t addr, bus;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t reg_map = 2*(fan_id/4); //fan_id 0-15
+  static uint8_t retry=0;
+
+  bus = nct7363y_dev_list[fan_id%4].bus;
+  addr = nct7363y_dev_list[fan_id%4].slv_addr;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  //NCT7363Y Tach High Byte
+  tbuf[0] = nct7363y_ctrl_list[reg_map].pwm_reg;
+  tbuf[1] = round((float)pwm*255/100);
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 2, rbuf, 0);
+  if( ret < 0 ) {
+    retry++;
+    ret = retry_err_handle(retry, 2);
+    goto err_exit;
+  }
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s fan%d pwm_reg[%x]=%x bus=%x addr=%x\n",
+         __func__, fan_id, nct7363y_ctrl_list[reg_map].pwm_reg, pwm, bus, addr);
+#endif
+
+
+  retry=0;
+err_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+  return ret;
+}
+
+static int
+get_nct7363y_duty(uint8_t fan_id, uint8_t* pwm) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  uint8_t addr, bus;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t reg_map = 2*(fan_id/4); //fan_id 0-15
+  static uint8_t retry=0;
+
+  bus = nct7363y_dev_list[fan_id%4].bus;
+  addr = nct7363y_dev_list[fan_id%4].slv_addr;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  //NCT7363Y PWM REG
+  tbuf[0] = nct7363y_ctrl_list[reg_map].pwm_reg;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+  if( ret < 0 ) {
+    retry++;
+    ret = retry_err_handle(retry, 2);
+    goto err_exit;
+  }
+
+  *pwm = round((float)rbuf[0]*100/255);
+  retry=0;
+err_exit:
+  if (fd > 0) {
+    close(fd);
+  }
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s fan%d pwm_reg[%x]=%x bus=%x addr=%x\n",
+         __func__, fan_id, nct7363y_ctrl_list[reg_map].pwm_reg, rbuf[0], bus, addr);
+#endif
+
+  return ret;
+}
+
+
+static int
+get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
+  int fd = 0, ret = -1;
+  char fn[32];
+  uint8_t addr, bus;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tach_hb=0;
+  uint8_t tach_lb=0;
+  uint8_t tach_id = sensor_map[fru].map[sensor_num].id;
+  uint8_t reg_map = tach_id%2 + 2*(tach_id/8); //tach_id: 0 - 31
+  static uint8_t retry=0;
+
+  bus = nct7363y_dev_list[tach_id%8/2].bus;
+  addr = nct7363y_dev_list[tach_id%8/2].slv_addr;
+
+  snprintf(fn, sizeof(fn), "/dev/i2c-%d", bus);
+  fd = open(fn, O_RDWR);
+  if (fd < 0) {
+    goto err_exit;
+  }
+
+  //NCT7363Y Tach High Byte
+  tbuf[0] = nct7363y_ctrl_list[reg_map].tach_high;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+  if( ret < 0 ) {
+    syslog(LOG_DEBUG, "%s Tach%d hreg=%x bus=%x slavaddr=%x\n",
+         __func__, tach_id, nct7363y_ctrl_list[reg_map].tach_high, bus, addr);
+    retry++;
+    ret = retry_err_handle(retry, 2);
+    goto err_exit;
+  }
+  tach_hb = rbuf[0];
+
+
+  //NCT7363Y Tach Low Byte
+  tbuf[0] = nct7363y_ctrl_list[reg_map].tach_low;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
+  if( ret < 0 ) {
+    syslog(LOG_DEBUG, "%s Tach%d lreg=%x bus=%x slavaddr=%x\n",
+         __func__, tach_id, nct7363y_ctrl_list[reg_map].tach_low, bus, addr);
+
+    retry++;
+    ret = retry_err_handle(retry, 2);
+    goto err_exit;
+  }
+  tach_lb = rbuf[0] & 0x1F;
+
+
+#ifdef DEBUG
+  syslog(LOG_DEBUG, "%s Tach%d HB=%x LB=%x bus=%x slavaddr=%x\n",
+         __func__, tach_id, tach_hb, tach_lb, bus, addr);
+#endif
+
+
+  *value = 1350000 / (tach_hb << 5 | tach_lb);
+  retry=0;
+err_exit:
+  syslog(LOG_DEBUG, "%s Tach%d HB=%x LB=%x bus=%x slavaddr=%x\n",
+         __func__, tach_id, tach_hb, tach_lb, bus, addr);
+
+  if (fd > 0) {
+    close(fd);
+  }
+  return ret;
+}
+
+//Max3170 Ctrl Fan Function
+static int
+set_max31790_duty(uint8_t fan_id, uint8_t pwm) {
+  int pwm_map[4] = {1, 3, 4, 6};
+  char label[32] = {0};
+
+  snprintf(label, sizeof(label), "pwm%d", pwm_map[fan_id/4]);
+  return sensors_write(fan_chips[fan_id%4], label, (float)pwm);
+}
+
+static int
+get_max31790_duty(uint8_t fan_id, uint8_t* pwm) {
+  int ret;
+  int pwm_map[4] = {1, 3, 4, 6};
+  float val;
+  char label[32] = {0};
+
+  snprintf(label, sizeof(label), "pwm%d", pwm_map[fan_id/4]);
+  ret = sensors_read(fan_chips[fan_id%4], label, &val);
+
+  if (ret == 0)
+    *pwm = (uint8_t)val;
+
+  return ret;
+}
+
+static int
+get_max31790_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
+  uint8_t tach_id = sensor_map[fru].map[sensor_num].id;
+
+  return sensors_read(fan_chips[tach_id%8/2], sensor_map[fru].map[sensor_num].snr_name, value);
+}
+
 static int
 read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = 0;
   uint8_t tach_id = sensor_map[fru].map[sensor_num].id;
+  uint8_t dev_id=0;
   static uint8_t retry[FAN_TACH_CNT] = {0};
 
   if (tach_id >= FAN_TACH_CNT || !is_fan_present(tach_id/2))
     return -1;
 
-  ret = sensors_read(fan_chips[tach_id%8/2], sensor_map[fru].map[sensor_num].snr_name, value);
+if (get_fan_chip_dev_id(fru, &dev_id))
+    return -1;
+
+  ret = fan_ctrl_map[dev_id].get_rpm(fru, sensor_num, value);
   if (*value == 0) {
     retry[tach_id]++;
     return retry_err_handle(retry[tach_id], 2);
@@ -677,7 +949,6 @@ read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
-//MAX31790 Controller
 int
 pal_get_fan_name(uint8_t num, char *name) {
   if (num >= pal_tach_cnt) {
@@ -691,17 +962,23 @@ pal_get_fan_name(uint8_t num, char *name) {
 
 int
 pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
-
-  int pwm_map[4] = {1, 3, 4, 6};
-  char label[32] = {0};
+  uint8_t dev_id=0;
+  uint8_t fru;
 
   if (fan >= pal_pwm_cnt || !is_fan_present(fan)) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
     return -1;
   }
 
-  snprintf(label, sizeof(label), "pwm%d", pwm_map[fan/4]);
-  return sensors_write(fan_chips[fan%4], label, (float)pwm);
+  if((fan/2)%2 == 0)
+    fru = FRU_BP0;
+  else
+    fru = FRU_BP1;
+
+  if (get_fan_chip_dev_id(fru, &dev_id))
+    return -1;
+
+  return fan_ctrl_map[dev_id].set_duty(fan, pwm);
 }
 
 int
@@ -709,32 +986,43 @@ pal_get_fan_speed(uint8_t tach, int *rpm) {
   int ret=0;
   uint8_t sensor_num = FAN_SNR_START_INDEX + tach;
   float speed = 0;
+  uint8_t fru;
 
   if (tach >= pal_tach_cnt || !is_fan_present(tach/2)) {
     syslog(LOG_INFO, "%s: tach number is invalid - %d", __func__, tach);
     return -1;
   }
 
-  ret = read_fan_speed(FRU_MB, sensor_num, &speed);
+  if((tach/4)%2 == 0)
+    fru = FRU_BP0;
+  else
+    fru = FRU_BP1;
+
+  ret = read_fan_speed(fru, sensor_num, &speed);
   *rpm = (int)speed;
   return ret;
 }
 
 int
 pal_get_pwm_value(uint8_t tach, uint8_t *value) {
-  int pwm_map[4] = {1, 3, 4, 6};
-  char label[32] = {0};
   uint8_t fan = tach/2;
-  float pwm_val;
+  uint8_t dev_id = 0;
+  uint8_t fru;
+  int ret;
 
   if (fan >= pal_pwm_cnt || !is_fan_present(fan)) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
     return -1;
   }
 
-  snprintf(label, sizeof(label), "pwm%d", pwm_map[fan/4]);
-  sensors_read(fan_chips[fan%4], label, &pwm_val);
-  *value = (uint8_t) pwm_val;
+  if((tach/4)%2 == 0)
+    fru = FRU_BP0;
+  else
+    fru = FRU_BP1;
 
-  return 0;
+  if (get_fan_chip_dev_id(fru, &dev_id))
+    return -1;
+
+  ret = fan_ctrl_map[dev_id].get_duty(fan, value);
+  return ret;
 }

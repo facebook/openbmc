@@ -31,7 +31,7 @@ LOCAL_URI = " \
     file://setup-cover-dev.sh \
     file://setup-por.sh \
     file://sync_date.sh \
-    file://setup-ex-gpio.sh \
+    file://setup-lmsensors-cfg.sh \
     "
 
 pkgdir = "utils"
@@ -62,6 +62,7 @@ do_install() {
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
+
 # setup-gpio.sh
   install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
   update-rc.d -r ${D} setup-gpio.sh start 57 5 .
@@ -74,16 +75,15 @@ do_install() {
 # setup-cover-dev.sh
   install -m 755 setup-cover-dev.sh ${D}${sysconfdir}/init.d/setup-cover-dev.sh
   update-rc.d -r ${D} setup-cover-dev.sh start 60 5 .
-# setup-ex-gpio.sh
-  install -m 755 setup-ex-gpio.sh ${D}${sysconfdir}/init.d/setup-ex-gpio.sh
-  update-rc.d -r ${D} setup-ex-gpio.sh start 61 5 .
 # sync_date.sh
   install -m 755 sync_date.sh ${D}${sysconfdir}/init.d/sync_date.sh
   update-rc.d -r ${D} sync_date.sh start 66 5 .
 # setup-por.sh
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 67 5 .
-
+# setup-lmsensors-cfg.sh
+  install -m 755 setup-lmsensors-cfg.sh ${D}${sysconfdir}/init.d/setup-lmsensors-cfg.sh
+  update-rc.d -r ${D} setup-lmsensors-cfg.sh start 68 5 .
 # install check_eth0_ipv4.sh
 #  install -m 755 ifup.sh ${D}${sysconfdir}/init.d/ifup.sh
 #  update-rc.d -r ${D} ifup.sh start 100 5 .

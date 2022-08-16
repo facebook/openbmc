@@ -12,7 +12,7 @@ paths:
           description: ok
           schema: 
             type: object
-            additionalProperties: false
+            additionalProperties: true
             properties: 
               Information: 
                 type: object

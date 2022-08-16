@@ -33,8 +33,3 @@ IMAGE_INSTALL += " \
   sensor-mon \
   threshold-util \
   "
-
-# Add vboot-utils for ELBERTVBOOT image
-IMAGE_INSTALL += '${@bb.utils.contains("IMAGE_FEATURES", "verified-boot", "vboot-utils", "", d)}'
-
-PROVIDES += "elbertvboot-image"

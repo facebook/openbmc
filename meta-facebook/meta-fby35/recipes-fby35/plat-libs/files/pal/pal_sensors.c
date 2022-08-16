@@ -2972,6 +2972,17 @@ pal_medusa_hsc_threshold_init() {
     {BMC_SENSOR_MEDUSA_VOUT, {41.1, 42.72, 43.2, 56.1, 56.61, 0}},
     {BMC_SENSOR_MEDUSA_CURR, {   0,     0,    0,   62,     0, 0}},
   };
+  uint8_t bmc_location = 0;
+
+  if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
+  } else {
+    // Since NICEXP does not have medusa HSC sensor.
+    // Config D system don't need to initialize medusa HSC.
+    if (bmc_location == NIC_BMC) {
+      return 0;
+    }
+  }
   if (is_inited == true) {
     return 0;
   }

@@ -65,7 +65,7 @@ if [ -n "$OLDPID" ] && (grep "autodump" /proc/$OLDPID/cmdline &> /dev/null); the
   echo "kill pid $OLDPID..."
   kill -s 9 $OLDPID
   if [ "$ACD" = true ]; then
-    pkill -KILL -f "$DUMP_UTIL $SLOT_NUM" >/dev/null 2>&1
+    pkill -KILL -f "$DUMP_UTIL $SLOT_NUM --type IERR" >/dev/null 2>&1
     pkill -KILL -f "$PARSE_UTIL .*${SLOT_NAME}" >/dev/null 2>&1
   else
     pkill -KILL -f "$DUMP_UTIL" >/dev/null 2>&1
@@ -109,7 +109,7 @@ logger -t "ipmid" -p daemon.crit "Crashdump for FRU: $SLOT_NUM started"
 
 LOGS=("$(basename "$DUMP_FILE")")
 if [ "$ACD" = true ]; then
-  $DUMP_UTIL $SLOT_NUM
+  $DUMP_UTIL $SLOT_NUM --type IERR
 
   # shellcheck disable=SC2012
   LOG_FILE=$(ls $DUMP_DIR/crashdump_"${SLOT_NAME}"* -t1 |head -n 1)

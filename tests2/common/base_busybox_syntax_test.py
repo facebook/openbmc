@@ -74,10 +74,17 @@ KNOWN_USAGE_STRINGS = {
     "ash": [
         "ash [-/+OPTIONS] [-/+o OPT]... [-c 'SCRIPT' [ARG0 [ARGS]] / FILE [ARGS]]",
         "ash [-/+OPTIONS] [-/+o OPT]... [-c 'SCRIPT' [ARG0 [ARGS]] / FILE [ARGS] / -s [ARGS]]",  # BusyBox 1.30.1  # noqa: B950
+        "ash [-il] [-|+Cabefmnuvx] [-|+o OPT]... [-c 'SCRIPT' [ARG0 ARGS] | FILE ARGS | -s ARGS]",  # BusyBox v1.35.0
     ],
     "awk": ["awk [OPTIONS] [AWK_PROGRAM] [FILE]..."],
-    "base64": ["base64 [-d] [FILE]"],
-    "basename": ["basename FILE [SUFFIX]"],
+    "base64": [
+        "base64 [-d] [FILE]",
+        "base64 [-d] [-w COL] [FILE]",  # BusyBox v1.35.0
+    ],
+    "basename": [
+        "basename FILE [SUFFIX]",
+        "basename FILE [SUFFIX] | -a FILE... | -s SUFFIX FILE...",  # BusyBox v1.35.0
+    ],
     "bunzip2": [
         "bunzip2 [-cf] [FILE]...",
         "bunzip2 [-cfk] [FILE]...",  # BusyBox 1.30.1
@@ -90,8 +97,12 @@ KNOWN_USAGE_STRINGS = {
         "chattr [-pRVf] [-+=aAcCdDeijPsStTuF] [-v version] files...",  # BusyBox 1.31.0
         "chattr [-pRVf] [-+=aAcCdDeijPsStTuFx] [-v version] files...",
         "chattr [-R] [-v VERSION] [-+=AacDdijsStTu] FILE...",  # BusyBox 1.31.1
+        "chattr [-R] [-v VERSION] [-p PROJID] [-+=AacDdijsStTu] FILE...",  # BusyBox v1.35.0
     ],
-    "chgrp": ["chgrp [-RhLHP]... GROUP FILE..."],
+    "chgrp": [
+        "chgrp [-RhLHP]... GROUP FILE...",
+        "chgrp [-Rh]... GROUP FILE...",  # BusyBox v1.35.0
+    ],
     "chmod": ["chmod [-R] MODE[,MODE]... FILE..."],
     "chown": [
         "chown [-Rh]... OWNER[<.|:>[GROUP]] FILE...",
@@ -106,15 +117,24 @@ KNOWN_USAGE_STRINGS = {
     ],
     # fmt: on
     "clear": ["clear"],
-    "cmp": ["cmp [-l] [-s] FILE1 [FILE2]"],
-    "cp": ["cp [OPTIONS] SOURCE... DEST"],
+    "cmp": [
+        "cmp [-l] [-s] FILE1 [FILE2]",
+        "cmp [-ls] [-n NUM] FILE1 [FILE2]",  # BusyBox v1.35.0
+    ],
+    "cp": [
+        "cp [OPTIONS] SOURCE... DEST",
+        "cp [-arPLHpfinlsTu] SOURCE DEST",  # BusyBox v1.35.0
+    ],
     "cpio": [
         "cpio [-dmvu] [-F FILE] [-ti] [EXTR_FILE]...",
         "cpio [-dmvu] [-F FILE] [-R USER[:GRP]] [-ti] [EXTR_FILE]...",  # BusyBox 1.30.1
     ],
     "crontab": ["crontab [-c DIR] [-u USER] [-ler]|[FILE]"],
     "cut": ["cut [OPTIONS] [FILE]..."],
-    "date": ["date [OPTIONS] [+FMT] [TIME]"],
+    "date": [
+        "date [OPTIONS] [+FMT] [TIME]",
+        "date [OPTIONS] [+FMT] [[-s] TIME]",  # BusyBox v1.35.0
+    ],
     "dc": [
         "dc EXPRESSION...",  # noqa: B950
         "dc [-eSCRIPT]... [-fFILE]... [FILE]...",  # BusyBox 1.30.1
@@ -124,16 +144,23 @@ KNOWN_USAGE_STRINGS = {
         "dd [if=FILE] [of=FILE] [bs=N] [count=N] [skip=N] [seek=N]",  # BusyBox 1.30.1
     ],
     "deallocvt": ["deallocvt [N]"],
-    "df": ["df [-PkmhT] [FILESYSTEM]..."],
+    "df": [
+        "df [-PkmhT] [FILESYSTEM]...",
+        "df [-PkmhT] [-t TYPE] [FILESYSTEM]...",  # BusyBox v1.35.0
+    ],
     "diff": ["diff [-abBdiNqrTstw] [-L LABEL] [-S FILE] [-U LINES] FILE1 FILE2"],
     "dirname": ["dirname FILENAME"],
     "dmesg": [
         "dmesg [-c] [-n LEVEL] [-s SIZE]",  # noqa: B950
         "dmesg [options]",  # BusyBox 1.30.1
+        "dmesg [-cr] [-n LEVEL] [-s SIZE]",  # BusyBox v1.35.0
     ],
     "du": ["du [-aHLdclsxhmk] [FILE]..."],
     "dumpkmap": ["dumpkmap > keymap"],
-    "env": ["env [-iu] [-] [name=value]... [PROG ARGS]"],
+    "env": [
+        "env [-iu] [-] [name=value]... [PROG ARGS]",
+        "env [-i0] [-u NAME]... [-] [NAME=VALUE]... [PROG ARGS]",  # BusyBox v1.35.0
+    ],
     "envdir": ["envdir DIR PROG ARGS"],
     "envuidgid": ["envuidgid USER PROG ARGS"],
     "expr": ["expr EXPRESSION"],
@@ -141,15 +168,20 @@ KNOWN_USAGE_STRINGS = {
     "flock": [
         "flock [-sxun] FD|{FILE [-c] PROG ARGS}",
         "flock [options] <file>|<directory> <command> [<argument>...]",  # BusyBox 1.30.1  # noqa: B950
+        "flock [-sxun] FD | { FILE [-c] PROG ARGS }",  # BusyBox v1.35.0
     ],
     "free": ["free"],
-    "fuser": ["fuser [OPTIONS] FILE or PORT/PROTO"],
+    "fuser": [
+        "fuser [OPTIONS] FILE or PORT/PROTO",
+        "fuser [-msk46] [-SIGNAL] FILE or PORT/PROTO",  # BusyBox v1.35.0
+    ],
     "getopt": [
         "getopt [OPTIONS] [--] OPTSTRING PARAMS",
         "getopt <optstring> <parameters>",  # BusyBox 1.30.1
     ],
     "grep": [
-        "grep [-HhnlLoqvsriwFE] [-m N] [-A/B/C N] PATTERN/-e PATTERN.../-f FILE [FILE]..."  # noqa: B950
+        "grep [-HhnlLoqvsriwFE] [-m N] [-A/B/C N] PATTERN/-e PATTERN.../-f FILE [FILE]...",  # noqa: B950
+        "grep [-HhnlLoqvsrRiwFE] [-m N] [-A|B|C N] { PATTERN | -e PATTERN... | -f FILE... } [FILE]...",  # BusyBox v1.35.0
     ],
     "gunzip": [
         "gunzip [-cft] [FILE]...",  # noqa: B950
@@ -163,22 +195,36 @@ KNOWN_USAGE_STRINGS = {
     "hexdump": [
         "hexdump [-bcCdefnosvx] [FILE]...",  # noqa: B950
         "hexdump [options] <file>...",  # BusyBox 1.30.1
+        "hexdump [-bcdoxCv] [-e FMT] [-f FMT_FILE] [-n LEN] [-s OFS] [FILE]...",  # BusyBox v1.35.0
     ],
-    "hostname": ["hostname [OPTIONS] [HOSTNAME | -F FILE]"],
-    "id": ["id [OPTIONS] [USER]"],
+    "hostname": [
+        "hostname [OPTIONS] [HOSTNAME | -F FILE]",
+        "hostname [-sidf] [HOSTNAME | -F FILE]",  # BusyBox v1.35.0
+    ],
+    "id": [
+        "id [OPTIONS] [USER]",
+        "id [-ugGnr] [USER]",  # BusyBox v1.35.0
+    ],
     "kill": [
         "kill [-s sigspec | -n signum | -sigspec] pid | jobspec ... or kill -l [sigspec]"  # noqa: B950
     ],
-    "killall": ["killall [-l] [-q] [-SIG] PROCESS_NAME..."],
+    "killall": [
+        "killall [-l] [-q] [-SIG] PROCESS_NAME...",
+        "killall [-lq] [-SIG] PROCESS_NAME...",  # BusyBox v1.35.0
+    ],
     "less": [
         "less [-EMmNh~] [FILE]...",  # noqa: B950
         "less [-EIMmNh~] [FILE]...",  # BusyBox 1.30.1
         "less [-EFIMmNRh~] [FILE]...",  # BusyBox 1.31.0
     ],
-    "ln": ["ln [OPTIONS] TARGET... LINK|DIR"],
+    "ln": [
+        "ln [OPTIONS] TARGET... LINK|DIR",
+        "ln [-sfnbtv] [-S SUF] TARGET... LINK|DIR",  # BusyBox v1.35.0
+    ],
     "logger": [
         "logger [OPTIONS] [MESSAGE]",  # noqa: B950
         "logger [options] [<message>]",  # BusyBox 1.30.1
+        "logger [-s] [-t TAG] [-p PRIO] [MESSAGE]",  # BusyBox v1.35.0
     ],
     "logname": ["logname"],
     "ls": [
@@ -186,8 +232,14 @@ KNOWN_USAGE_STRINGS = {
         "ls [-1AaCxdLHRFplinshrSXvctu] [-w WIDTH] [FILE]...",  # BusyBox 1.30.1
     ],
     "md5sum": ["md5sum [-c[sw]] [FILE]..."],
-    "microcom": ["microcom [-d DELAY] [-t TIMEOUT] [-s SPEED] [-X] TTY"],
-    "mkdir": ["mkdir [OPTIONS] DIRECTORY..."],
+    "microcom": [
+        "microcom [-d DELAY] [-t TIMEOUT] [-s SPEED] [-X] TTY",
+        "microcom [-d DELAY_MS] [-t TIMEOUT_MS ] [-s SPEED] [-X] TTY",  # BusyBox v1.35.0
+    ],
+    "mkdir": [
+        "mkdir [OPTIONS] DIRECTORY...",
+        "mkdir [-m MODE] [-p] DIRECTORY...",  # BusyBox v1.35.0
+    ],
     "mkfifo": ["mkfifo [-m MODE] NAME"],
     "mknod": [
         "mknod [-m MODE] NAME TYPE MAJOR MINOR",
@@ -205,7 +257,10 @@ KNOWN_USAGE_STRINGS = {
         "mount [OPTIONS] [-o OPT] DEVICE NODE",
         "mount <operation> <mountpoint> [<target>]",  # BusyBox 1.30.1
     ],
-    "mv": ["mv [-fin] SOURCE DEST"],
+    "mv": [
+        "mv [-fin] SOURCE DEST",
+        "mv [-finT] SOURCE DEST",  # BusyBox v1.35.0
+    ],
     "nc": ["nc [-l] [-p PORT] [IPADDR PORT]"],
     "netstat": ["netstat [-ral] [-tuwx] [-en]"],
     "nohup": ["nohup PROG ARGS"],
@@ -215,10 +270,16 @@ KNOWN_USAGE_STRINGS = {
     ],
     "od": ["od [-aBbcDdeFfHhIiLlOovXx] [FILE]"],
     "openvt": ["openvt [-c N] [-sw] [PROG ARGS]"],
-    "patch": ["patch [OPTIONS] [ORIGFILE [PATCHFILE]]"],
+    "patch": [
+        "patch [OPTIONS] [ORIGFILE [PATCHFILE]]",
+        "patch [-RNE] [-p N] [-i DIFF] [ORIGFILE [PATCHFILE]]",  # BusyBox v1.35.0
+    ],
     "ping": ["ping [OPTIONS] HOST"],
     "ping6": ["ping6 [OPTIONS] HOST"],
-    "pkill": ["pkill [-l|-SIGNAL] [-fnovx] [-s SID|-P PPID|PATTERN]"],
+    "pkill": [
+        "pkill [-l|-SIGNAL] [-fnovx] [-s SID|-P PPID|PATTERN]",
+        "pkill [-l|-SIGNAL] [-xfvno] [-s SID|-P PPID|PATTERN]",  # BusyBox v1.35.0
+    ],
     "printf": ["printf [-v var] format [arguments]"],
     "ps": ["ps"],
     "pwd": ["pwd [-LP]"],
@@ -230,11 +291,15 @@ KNOWN_USAGE_STRINGS = {
         "renice [-n] <priority>  -g|--pgrp <pgid>...",  # BusyBox 1.30.1
         "renice [-n] <priority>  -u|--user <user>...",  # BusyBox 1.30.1
         "renice [-n] PRIORITY [[-p | -g | -u] ID...]...",  # BusyBox 1.31.1
+        "renice [-n] PRIORITY [[-p|g|u] ID...]...",  # BusyBox v1.35.0
     ],
     "reset": ["reset"],
     "resize": ["resize"],
     "rm": ["rm [-irf] FILE..."],
-    "rmdir": ["rmdir [OPTIONS] DIRECTORY..."],
+    "rmdir": [
+        "rmdir [OPTIONS] DIRECTORY...",
+        "rmdir [-p] DIRECTORY...",  # BusyBox v1.35.0
+    ],
     "run-parts": [
         "run-parts [-a ARG]... [-u UMASK] [--reverse] [--test] [--exit-on-error] DIRECTORY"  # noqa: B950
     ],
@@ -252,17 +317,25 @@ KNOWN_USAGE_STRINGS = {
     "setuidgid": ["setuidgid USER PROG ARGS"],
     "sha1sum": ["sha1sum [-c[sw]] [FILE]..."],
     "sha256sum": ["sha256sum [-c[sw]] [FILE]..."],
-    "shuf": ["shuf [-e|-i L-H] [-n NUM] [-o FILE] [-z] [FILE|ARG...]"],
+    "shuf": [
+        "shuf [-e|-i L-H] [-n NUM] [-o FILE] [-z] [FILE|ARG...]",
+        "shuf [-n NUM] [-o FILE] [-z] [FILE | -e [ARG...] | -i L-H]",  # BusyBox v1.35.0
+    ],
     "sleep": ["sleep [N]..."],
     "softlimit": ["softlimit [-a BYTES] [-m BYTES] [-d BYTES] [-s BYTES] [-l BYTES]"],
     "sort": [
         "sort [-nrugMcszbdfimSTokt] [-o FILE] [-k start[.offset][opts][,end[.offset][opts]] [-t CHAR] [FILE]...",  # noqa: B950
         "sort [-nrugMcszbdfiokt] [-o FILE] [-k start[.offset][opts][,end[.offset][opts]] [-t CHAR] [FILE]...",  # BusyBox 1.30.1  # noqa: B950
+        "sort [-nrugMcszbdfiokt] [-o FILE] [-k START[.OFS][OPTS][,END[.OFS][OPTS]] [-t CHAR] [FILE]...",  # BusyBox v1.35.0
     ],
-    "stat": ["stat [OPTIONS] FILE..."],
+    "stat": [
+        "stat [OPTIONS] FILE...",
+        "stat [-ltf] [-c FMT] FILE...",  # BusyBox v1.35.0
+    ],
     "strings": [
         "strings [-afo] [-n LEN] [FILE]...",
         "strings [-fo] [-t o/d/x] [-n LEN] [FILE]...",  # BusyBox 1.30.1
+        "strings [-fo] [-t o|d|x] [-n LEN] [FILE]...",  # BusyBox v1.35.0
     ],
     "stty": ["stty [-a|g] [-F DEVICE] [SETTING]..."],
     "sv": ["sv [-v] [-w SEC] CMD SERVICE_DIR..."],
@@ -272,6 +345,7 @@ KNOWN_USAGE_STRINGS = {
     "tar": [
         "tar -[cxtZzJjahmvO] [-X FILE] [-T FILE] [-f TARFILE] [-C DIR] [FILE]...",  # noqa: B950
         "tar c|x|t [-ZzJjahmvokO] [-f TARFILE] [-C DIR] [-T FILE] [-X FILE] [FILE]...",  # BusyBox 1.30.1  # noqa: B950
+        "tar c|x|t [-ZzJjahmvokO] [-f TARFILE] [-C DIR] [-T FILE] [-X FILE] [LONGOPT]... [FILE]...",  # BusyBox v1.35.0
     ],
     "tee": ["tee [-ai] [FILE]..."],
     "telnet": ["telnet [-a] [-l USER] HOST [PORT]"],
@@ -283,33 +357,49 @@ KNOWN_USAGE_STRINGS = {
     "timeout": [
         "timeout [-t SECS] [-s SIG] PROG ARGS",  # noqa: B950
         "timeout [-s SIG] SECS PROG ARGS",  # BusyBox 1.30.1
+        "timeout [-s SIG] [-k KILL_SECS] SECS PROG ARGS",  # BusyBox v1.35.0
     ],
     "top": [
         "top [-b] [-nCOUNT] [-dSECONDS]",
         "top [-b] [-n COUNT] [-d SECONDS]",  # BusyBox 1.31.0
     ],
-    "touch": ["touch [-c] [-d DATE] [-t DATE] [-r FILE] FILE..."],
+    "touch": [
+        "touch [-c] [-d DATE] [-t DATE] [-r FILE] FILE...",
+        "touch [-cham] [-d DATE] [-t DATE] [-r FILE] FILE...",  # BusyBox v1.35.0
+    ],
     "tr": ["tr [-cds] STRING1 [STRING2]"],
     "traceroute": [
-        "traceroute [-46FIlnrv] [-f 1ST_TTL] [-m MAXTTL] [-q PROBES] [-p PORT]"
+        "traceroute [-46FIlnrv] [-f 1ST_TTL] [-m MAXTTL] [-q PROBES] [-p PORT]",
+        "traceroute [-46Flnrv] [-f 1ST_TTL] [-m MAXTTL] [-q PROBES] [-p PORT]",  # BusyBox v1.35.0
     ],
-    "traceroute6": ["traceroute6 [-nrv] [-m MAXTTL] [-q PROBES] [-p PORT]"],
+    "traceroute6": [
+        "traceroute6 [-nrv] [-m MAXTTL] [-q PROBES] [-p PORT]",
+        "traceroute6 [-nrv] [-f 1ST_TTL] [-m MAXTTL] [-q PROBES] [-p PORT]",  # BusyBox v1.35.0
+    ],
     "tty": ["tty"],
     "umount": [
         "umount [OPTIONS] FILESYSTEM|DIRECTORY",  # noqa: B950
         "umount [options] <source> | <directory>",  # BusyBox 1.30.1
+        "umount [-rlfda] [-t FSTYPE] FILESYSTEM|DIRECTORY",  # BusyBox v1.35.0
     ],
     "uname": ["uname [-amnrspvio]"],
-    "uniq": ["uniq [-cdu][-f,s,w N] [INPUT [OUTPUT]]"],
+    "uniq": [
+        "uniq [-cdu][-f,s,w N] [INPUT [OUTPUT]]",
+        "uniq [-cduiz] [-f,s,w N] [FILE [OUTFILE]]",  # BusyBox v1.35.0
+    ],
     "unlink": ["unlink FILE"],
     "unzip": [
         "unzip [-lnopq] FILE[.zip] [FILE]... [-x FILE...] [-d DIR]",  # noqa: B950
         "unzip [-lnojpq] FILE[.zip] [FILE]... [-x FILE...] [-d DIR]",  # BusyBox 1.30.1
+        "unzip [-lnojpq] FILE[.zip] [FILE]... [-x FILE]... [-d DIR]",  # BusyBox v1.35.0
     ],
     "uptime": ["uptime"],
     "users": ["users"],
     "usleep": ["usleep N"],
-    "vi": ["vi [OPTIONS] [FILE]..."],
+    "vi": [
+        "vi [OPTIONS] [FILE]...",
+        "vi [-c CMD] [-H] [FILE]...",  # BusyBox v1.35.0
+    ],
     "vlock": ["vlock [-a]"],
     "watch": ["watch [-n SEC] [-t] PROG ARGS"],
     "wc": [
@@ -319,9 +409,16 @@ KNOWN_USAGE_STRINGS = {
     "wget": [
         "wget [-c|--continue] [-s|--spider] [-q|--quiet] [-O|--output-document FILE]",  # noqa: B950
         "wget [-c|--continue] [--spider] [-q|--quiet] [-O|--output-document FILE]",  # BusyBox 1.30.1  # noqa: B950
+        "wget [-cqS] [--spider] [-O FILE] [-o LOGFILE] [--header STR]",  # BusyBox v1.35.0
     ],
-    "which": ["which [COMMAND]..."],
-    "who": ["who [-a]"],
+    "which": [
+        "which [COMMAND]...",
+        "which [-a] COMMAND...",  # BusyBox v1.35.0
+    ],
+    "who": [
+        "who [-a]",
+        "who [-aH]",  # BusyBox v1.35.0
+    ],
     "whoami": ["whoami"],
     "xargs": ["xargs [OPTIONS] [PROG ARGS]"],
     "yes": ["yes [STRING]"],

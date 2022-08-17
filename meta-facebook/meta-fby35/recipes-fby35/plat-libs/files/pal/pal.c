@@ -2684,6 +2684,16 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
   return pal_set_key_value(key, "0");
 }
 
+int
+pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
+  if (!str) {
+    return -1;
+  }
+
+  sprintf(str, "A%u", channel);
+  return 0;
+}
+
 void
 pal_log_clear(char *fru) {
   char key[MAX_KEY_LEN] = {0};

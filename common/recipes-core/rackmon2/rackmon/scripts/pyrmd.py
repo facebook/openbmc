@@ -88,7 +88,12 @@ def rackmon_command_sync(cmd):
     client.connect("/var/run/rackmond.sock")
     req_header = struct.pack("@H", len(request))
     client.send(req_header + request)
-    response = client.recv(65535)
+    response = bytes()
+    while True:
+        chunk = client.recv(65537)
+        if len(chunk) == 0:
+            break
+        response += chunk
     client.close()
     (resp_len,) = struct.unpack("@H", response[:2])
     if len(response[2:]) != resp_len:

@@ -174,3 +174,20 @@ def read_register_sync(addr, register, length=1, timeout=0):
     result = rackmon_command_sync(cmd)
     checkStatus(result["status"])
     return result["regValues"]
+
+
+def write_register_sync(addr, register, data, timeout=0):
+    cmd = {
+        "devAddress": addr,
+        "regAddress": register,
+        "timeout": timeout,
+    }
+    if isinstance(data, int):
+        cmd["type"] = "writeSingleRegister"
+    elif isinstance(data, list):
+        cmd["type"] = "presetMultipleRegisters"
+    else:
+        raise ValueError("What the")
+    cmd["regValue"] = data
+    result = rackmon_command_sync(cmd)
+    checkStatus(result["status"])

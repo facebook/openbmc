@@ -32,10 +32,10 @@ CLI::App* SpdmMessage::setupSubcommand(
       "Sends an spdm message to the designated device and returns the response.");
 
   // Bus on which the device exists
-  sub->add_option("-b|--bus", opt->bus, "Bus ID");
+  sub->add_option("--bus", opt->bus, "Bus ID");
 
   // Slave address of device
-  sub->add_option("-a|--addr", opt->addr, "I2C Slave address of the device");
+  sub->add_option("-a,--addr", opt->addr, "I2C Slave address of the device");
 
   // EID of the target device.
   sub->add_option("-e,--eid", opt->device, "Endpoint ID")->required();

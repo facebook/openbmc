@@ -2430,3 +2430,38 @@ bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
 
   return ret;
 }
+
+int
+bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len) {
+  int ret = 0;
+  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
+  uint8_t rlen = 0;
+  int totol_length = 0;
+
+  for(int i = 0; i <= MAX_POST_CODE_PAGE; i++)
+  {
+    tbuf[3] = i & 0xFF;
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, 0x04, rbuf, &rlen);
+
+    if(0 != ret) {
+      #ifdef DEBUG
+      syslog(LOG_ERR, "bic_get_post_code_buf error, ret:%d", ret);
+      #endif
+
+      ret = -1;
+      return ret;
+    }
+
+    // Ignore first 3 bytes of IANA ID
+    for(int k = 3; (k < rlen-3) && (totol_length < input_len); k+=(sizeof(uint32_t)/sizeof(uint8_t)))
+    {
+      port_buff[totol_length] = rbuf[k] | (rbuf[k+1] << 8) | (rbuf[k+2] << 16) | (rbuf[k+3] << 24);
+      totol_length++;
+    }
+  }
+
+  *output_len = totol_length;
+
+  return ret;
+}

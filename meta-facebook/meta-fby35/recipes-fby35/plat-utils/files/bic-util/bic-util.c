@@ -513,6 +513,42 @@ util_get_postcode(uint8_t slot_id) {
 }
 
 static int
+util_print_dword_postcode_buf(uint8_t slot_id) {
+  int ret = 0;
+  uint32_t len;
+  uint32_t intput_len = 0;
+  int i;
+  uint32_t * dw_postcode_buf = malloc( MAX_POSTCODE_NUM * sizeof(uint32_t));
+  if (dw_postcode_buf) {
+    intput_len = MAX_POSTCODE_NUM;
+  } else {
+    syslog(LOG_ERR, "%s Error, failed to allocate dw_postcode buffer", __func__);
+    intput_len = 0;
+    return -1;
+  }
+
+  ret = bic_request_post_buffer_dword_data(slot_id, dw_postcode_buf, intput_len, &len);
+  if (ret) {
+    printf("bic_request_post_buffer_dword_data: returns %d\n", ret);
+    free(dw_postcode_buf);
+    return ret;
+  }
+  printf("util_get_post_buf: returns %d dword\n", len);
+  for (i = 0; i < len; i++) {
+    if (!(i % 4) && i)
+      printf("\n");
+
+    printf("[%08X] ", dw_postcode_buf[i]);
+  }
+  printf("\n");
+  if(dw_postcode_buf)
+    free(dw_postcode_buf);
+
+  return ret;
+
+}
+
+static int
 util_bic_clear_cmos(uint8_t slot_id) {
   return pal_clear_cmos(slot_id);
 }
@@ -854,7 +890,11 @@ main(int argc, char **argv) {
       if ( argc != 3 ) {
         goto err_exit;
       }
-      return util_get_postcode(slot_id);
+      if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+        return util_print_dword_postcode_buf(slot_id);
+      } else {
+        return util_get_postcode(slot_id);
+      }
     } else if ( strcmp(argv[2], "--perf_test") == 0 ) {
       if ( argc != 4 ) {
         goto err_exit;

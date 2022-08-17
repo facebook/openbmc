@@ -164,6 +164,13 @@ def resume_monitoring_sync():
 
 
 def read_register_sync(addr, register, length=1, timeout=0):
-    cmd = struct.pack(">BBHH", addr, 0x3, register, length)
-    data = modbuscmd_sync(cmd, expected=5 + (2 * length), timeout=timeout)
-    return data[3:]
+    cmd = {
+        "type": "readHoldingRegisters",
+        "devAddress": addr,
+        "regAddress": register,
+        "numRegisters": length,
+        "timeout": timeout,
+    }
+    result = rackmon_command_sync(cmd)
+    checkStatus(result["status"])
+    return result["regValues"]

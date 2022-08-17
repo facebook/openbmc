@@ -106,6 +106,7 @@ if [ -z "$TEMPLATECONF" ]; then
             if [ "x$machine" = "x$platform" ]; then
                 TEMPLATECONF="$(pwd)/$meta"
                 platform=$(basename "$(dirname "$meta")")
+                export MACHINE="${machine}"
                 break
             fi
         done

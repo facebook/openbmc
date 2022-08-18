@@ -1,0 +1,10 @@
+name: Greatlakes
+owner:
+- Michael Garner <garnermic@fb.com>
+tags:
+- greatlakes
+- lf-openbmc
+sections:
+  - overview
+  - features
+  - sensors

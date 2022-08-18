@@ -170,3 +170,12 @@ esac
 if [ -d "${REPO_ROOT}/facebook" ]; then
   "${REPO_ROOT}/facebook/facebookify.sh" "$(pwd)"
 fi
+
+function fbqemu() {
+    local fbqemu="${BUILDDIR}/tmp/work/x86_64-linux/fbqemu-native/0.1.0-r0/build/target/x86_64-linux/release/fbqemu"
+    if [ ! -f "${fbqemu}" ]; then
+        echo "You need to 'bitbake fbqemu-native' first"
+        return
+    fi
+    "${fbqemu}" "$@"
+}

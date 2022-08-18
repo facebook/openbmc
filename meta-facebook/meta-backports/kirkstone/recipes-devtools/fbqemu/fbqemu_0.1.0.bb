@@ -1,0 +1,1 @@
+../../../master/recipes-devtools/fbqemu/fbqemu_0.1.0.bb

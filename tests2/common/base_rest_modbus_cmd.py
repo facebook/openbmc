@@ -24,6 +24,7 @@ import subprocess
 import threading
 import time
 import urllib.request
+import errno
 from unittest import TestCase
 
 RACKMOND_SOCKET = "/var/run/rackmond.sock"
@@ -58,7 +59,7 @@ class RestModbusCmdTest(TestCase):
         # Give it enough time - 30s, instead of default 10s,
         # to stop in case of a slow system
         subprocess.run(
-            "sv -w 30 stop rackmond || systemctl stop rackmond", shell=True, check=True
+            "sv -w 30 force-stop rackmond || systemctl stop rackmond", shell=True
         )
         try:
             os.remove(RACKMOND_SOCKET)
@@ -166,5 +167,13 @@ class MockRackmondServer(socketserver.ForkingMixIn, socketserver.UnixStreamServe
 
 class MockRackmondRequestHandler(socketserver.StreamRequestHandler):
     def handle(self):
-        self.request.send(MOCK_RACKMOND_RESPONSE)
+        try:
+            self.request.send(MOCK_RACKMOND_RESPONSE)
+        except IOError as e:
+            # EPIPE will be occurred, when run cit only rest_modbus case
+            # and use --repeat option to stress test with Rackmond Version 1
+            # The python /etc/rackmon_config.py still being run, and send
+            # the request to /var/run/rackmond.sock
+            if e.errno == errno.EPIPE:
+                pass
         self.request.close()

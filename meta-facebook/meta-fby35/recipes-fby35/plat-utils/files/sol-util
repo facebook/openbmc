@@ -36,6 +36,7 @@ I2C_NUM=
 show_usage() {
   echo "Usage: sol-util [ slot1 | slot2 | slot3 | slot4 ]"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [sb, bb, 1ou, 2ou] bic"
+  echo "       sol-util [ slot1 | slot3 ] 1ou  cxl"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] [1ou, 2ou] [dev0|dev1|...|devN|pesw] (baudrate)"
   echo "       sol-util [ slot1 | slot2 | slot3 | slot4 ] --history"
 }
@@ -338,6 +339,9 @@ CPLD_ADDR=
 EXP_CPLD_ADDR=
 DEV_NUM=
 
+# Set back to default 57600
+/bin/stty -F "/dev/ttyS$SLOT_NUM" 57600 >/dev/null 2>&1
+
 if [[ "$SLED_TYPE" =~ ^(Type_(8|17))$ ]]; then
   if ! [ "$SLOT" == "slot1" ]; then
     echo "$SLOT is empty"
@@ -430,6 +434,10 @@ if [ -n "$COMP" ]; then
       DEV_NUM="0x6"
       [[ "$(is_gpv3_board "$EXP_BOARD_TYPE")" == "1" ]] && DEV_NUM="0xC"
     fi
+  elif [ "$DEV" == "cxl" ] && [ "$COMP" == "1ou" ] ; then
+    /bin/stty -F "/dev/ttyS$SLOT_NUM" 115200 >/dev/null 2>&1
+    CPLD_ADDR=${SB_CPLD_ADDR}
+    DEV_NUM="0x5"
   else
     echo "$DEV is not supported!"
     exit 255

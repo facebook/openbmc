@@ -1,6 +1,6 @@
 require u-boot-common.inc
 
-PV = "v2019.04"
+PV = "v2019.04+git${SRCPV}"
 SRC_URI += "file://fw_env.config \
             file://fw_env.config.64k \
 			"

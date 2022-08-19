@@ -24,7 +24,7 @@ def release_patches(d):
 SRC_URI += '${@release_patches(d)}'
 
 
-PV = "v2016.07"
+PV = "v2016.07+git${SRCPV}"
 S = "${WORKDIR}/git"
 
 FILES:${PN} = "${sysconfdir}"

@@ -28,7 +28,7 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config \
           "
 
-PV = "v2019.01"
+PV = "v2019.01+git${SRCPV}"
 S = "${WORKDIR}/git"
 
 INSANE_SKIP:${PN} = "already-stripped"

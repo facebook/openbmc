@@ -33,7 +33,7 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config.full \
           "
 
-PV = "v2019.01"
+PV = "v2019.01+git${SRCPV}"
 DEFAULT_PREFERENCE = "-1"
 S = "${WORKDIR}/git"
 

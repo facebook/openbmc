@@ -67,8 +67,10 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   kv del "slot${slot_num}_vr_c4h_new_crc" persistent
   kv del "slot${slot_num}_vr_ech_new_crc" persistent
   kv del "slot${slot_num}_cpld_new_ver"
+  kv del "slot${slot_num}_is_m2_exp_prsnt"
   kv del "fru${slot_num}_2ou_board_type"
   kv del "fru${slot_num}_sb_type"
+  kv del "fru${slot_num}_sb_board_rev_id"
   set_nic_power
 else
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1

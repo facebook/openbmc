@@ -603,6 +603,58 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR,
 };
 
+
+const uint8_t bic_hd_skip_sensor_list[] = {
+  BIC_HD_SENSOR_CPU_TEMP,
+  BIC_HD_SENSOR_DIMMA_TEMP,
+  BIC_HD_SENSOR_DIMMB_TEMP,
+  BIC_HD_SENSOR_DIMMC_TEMP,
+  BIC_HD_SENSOR_DIMME_TEMP,
+  BIC_HD_SENSOR_DIMMG_TEMP,
+  BIC_HD_SENSOR_DIMMH_TEMP,
+  BIC_HD_SENSOR_DIMMI_TEMP,
+  BIC_HD_SENSOR_DIMMK_TEMP,
+  BIC_HD_SENSOR_SSD_TEMP,
+  BIC_HD_SENSOR_CPU0_VR_TEMP,
+  BIC_HD_SENSOR_SOC_VR_TEMP,
+  BIC_HD_SENSOR_CPU1_VR_TEMP,
+  BIC_HD_SENSOR_PVDDIO_VR_TEMP,
+  BIC_HD_SENSOR_PVDD11_VR_TEMP,
+  //BIC - Halfdome voltage sensors
+  BIC_HD_SENSOR_PVDD18_S5_VOL,
+  BIC_HD_SENSOR_PVDD11_S3_VOL,
+  BIC_HD_SENSOR_PVDD33_S5_VOL,
+  BIC_HD_SENSOR_P12V_MEM_1_VOL,
+  BIC_HD_SENSOR_P12V_MEM_0_VOL,
+  BIC_HD_SENSOR_P3V3_M2_VOL,
+  BIC_HD_SENSOR_CPU0_VR_VOL,
+  BIC_HD_SENSOR_SOC_VR_VOL,
+  BIC_HD_SENSOR_CPU1_VR_VOL,
+  BIC_HD_SENSOR_PVDDIO_VR_VOL,
+  BIC_HD_SENSOR_PVDD11_VR_VOL,
+  //BIC - Halfdome current sensors
+  BIC_HD_SENSOR_CPU0_VR_CUR,
+  BIC_HD_SENSOR_SOC_VR_CUR,
+  BIC_HD_SENSOR_CPU1_VR_CUR,
+  BIC_HD_SENSOR_PVDDIO_VR_CUR,
+  BIC_HD_SENSOR_PVDD11_VR_CUR,
+  //BIC - Halfdome power sensors
+  BIC_HD_SENSOR_CPU0_VR_PWR,
+  BIC_HD_SENSOR_SOC_VR_PWR,
+  BIC_HD_SENSOR_CPU1_VR_PWR,
+  BIC_HD_SENSOR_PVDDIO_VR_PWR,
+  BIC_HD_SENSOR_PVDD11_VR_PWR,
+  BIC_HD_SENSOR_CPU_PWR,
+  BIC_HD_SENSOR_DIMMA_PWR,
+  BIC_HD_SENSOR_DIMMB_PWR,
+  BIC_HD_SENSOR_DIMMC_PWR,
+  BIC_HD_SENSOR_DIMME_PWR,
+  BIC_HD_SENSOR_DIMMG_PWR,
+  BIC_HD_SENSOR_DIMMH_PWR,
+  BIC_HD_SENSOR_DIMMI_PWR,
+  BIC_HD_SENSOR_DIMMK_PWR,
+};
+
 const uint8_t bic_2ou_skip_sensor_list[] = {
   //BIC 2OU EXP Sensors
   BIC_2OU_EXP_SENSOR_P1V8_VOL,
@@ -1117,6 +1169,7 @@ size_t bic_2ou_gpv3_sensor_cnt = sizeof(bic_2ou_gpv3_sensor_list)/sizeof(uint8_t
 size_t bic_spe_sensor_cnt = sizeof(bic_spe_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_rf_sensor_cnt = sizeof(bic_1ou_rf_sensor_list)/sizeof(uint8_t);
 size_t bic_skip_sensor_cnt = sizeof(bic_skip_sensor_list)/sizeof(uint8_t);
+size_t bic_hd_skip_sensor_cnt = sizeof(bic_hd_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_skip_sensor_cnt = sizeof(bic_2ou_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_2ou_gpv3_skip_sensor_cnt = sizeof(bic_2ou_gpv3_skip_sensor_list)/sizeof(uint8_t);
 size_t bic_1ou_vf_skip_sensor_cnt = sizeof(bic_1ou_vf_skip_sensor_list)/sizeof(uint8_t);
@@ -1164,8 +1217,14 @@ get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const ui
   static uint8_t skip_count[MAX_NODES] = {0};
 
   if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
-    memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
-    count = bic_skip_sensor_cnt;
+
+    if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+      memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_hd_skip_sensor_list, bic_hd_skip_sensor_cnt);
+      count = bic_hd_skip_sensor_cnt;
+    } else {
+      memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
+      count = bic_skip_sensor_cnt;
+    }
 
     //if 1OU board doesn't exist, use the default 1ou skip list.
     if ((bmc_location != NIC_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU) &&

@@ -122,10 +122,20 @@ enum {
   VR_2OU_P3V3_STBY3 = 0x30,
   VR_2OU_P1V8       = 0x36,
 
-  /*----halfdome VR ADDR-----*/
+  /*----halfdome Renesas VR ADDR-----*/
   VDDCR_CPU0_ADDR = 0xC2,
   VDDCR_CPU1_ADDR = 0xC4,
   VDD11S3_ADDR = 0xC6,
+
+  /*----halfdome Infineon VR ADDR-----*/
+  VDDCR_CPU0_IFX_ADDR = 0xC8,
+  VDDCR_CPU1_IFX_ADDR = 0xCC,
+  VDD11S3_IFX_ADDR = 0xD0,
+
+  /*----halfdome MPS VR ADDR-----*/
+  VDDCR_CPU0_MPS_ADDR = 0x9E,
+  VDDCR_CPU1_MPS_ADDR = 0x9C,
+  VDD11S3_MPS_ADDR = 0x96,
 
   /*----Rainbow Falls VR ADDR-----*/
   VR_1OU_V9_ASICA_ADDR = 0xC8,

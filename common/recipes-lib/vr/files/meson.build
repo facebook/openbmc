@@ -26,6 +26,7 @@ srcs = files(
   'xdpe152xx.c',
   'raa_gen3.c',
   'tda38640.c',
+  'mp2856.c',
 )
 
 subdir('plat')

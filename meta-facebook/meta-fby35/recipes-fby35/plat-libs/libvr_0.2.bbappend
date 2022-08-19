@@ -22,4 +22,4 @@ LOCAL_URI += " \
     "
 
 DEPENDS += "libbic"
-RDEPENDS:${PN} += "libbic"
+RDEPENDS:${PN} += "libbic libfby35-common"

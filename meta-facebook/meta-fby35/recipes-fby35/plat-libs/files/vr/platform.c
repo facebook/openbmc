@@ -6,15 +6,34 @@
 #include <facebook/bic.h>
 #include <facebook/bic_ipmi.h>
 #include <facebook/bic_xfer.h>
+#include <facebook/fby35_common.h>
 #include "raa_gen3.h"
 #include "xdpe152xx.h"
 #include "tps53688.h"
+#include "mp2856.h"
 
 #define SB_VR_BUS 4
 #define RBF_BIC_VR_BUS 9
 
+#define HD_VR_REVID_MASK 0x30
+#define HD_VR_RENESAS 0x0
+#define HD_VR_INFINEON 0x1
+#define HD_VR_MPS 0x2
+
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
+
+enum {
+  VR_CL_VCCIN = 0,
+  VR_CL_VCCD,
+  VR_CL_VCCINFAON,
+  VR_HD_VDDCR_CPU0,
+  VR_HD_VDDCR_CPU1,
+  VR_HD_VDD11S3,
+  VR_RBF_A0V8,
+  VR_RBF_VDDQAB,
+  VR_RBF_VDDQCD
+};
 
 static int
 _fby35_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
@@ -50,6 +69,21 @@ rbf_vr_rdwr(uint8_t bus, uint8_t addr, uint8_t *txbuf, uint8_t txlen,
   return _fby35_vr_rdwr(bus, addr, txbuf, txlen, rxbuf, rxlen, FEXP_BIC_INTF);
 };
 
+/*MP2856 must stop VR sensor polling while fw updating */
+int
+plat_mp2856_fw_update(struct vr_info *info, void *args) {
+ int ret = 0;
+  // Stop bic polling VR sensors
+  if (bic_set_vr_monitor_enable(slot_id, false, NONE_INTF) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+  ret = mp2856_fw_update(info,args);
+
+  // Restart bic polling VR sensors
+  bic_set_vr_monitor_enable(slot_id, true, NONE_INTF) ;
+  return ret;
+}
+
 struct vr_ops rns_ops = {
   .get_fw_ver = get_raa_ver,
   .parse_file = raa_parse_file,
@@ -71,6 +105,14 @@ struct vr_ops ti_ops = {
   .parse_file = tps_parse_file,
   .validate_file = NULL,
   .fw_update = tps_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_ops mps_ops = {
+  .get_fw_ver = get_mp2856_ver,
+  .parse_file = mp2856_parse_file,
+  .validate_file = NULL,
+  .fw_update = plat_mp2856_fw_update,
   .fw_verify = NULL,
 };
 
@@ -159,11 +201,10 @@ void plat_vr_preinit(uint8_t slot, const char *name) {
   }
 }
 
-int plat_vr_init(void) {
+void fby35_vr_device_check(void){
   uint8_t rbuf[16], rlen;
-  int i, vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
-
-  for (i = 0; i < vr_cnt; i++) {
+  int i;
+  for (i = VR_CL_VCCIN; i <= VR_CL_VCCINFAON; i++) {
     rlen = sizeof(rbuf);
     if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
                              fby35_vr_list[i].addr, NONE_INTF) < 0) {
@@ -182,6 +223,42 @@ int plat_vr_init(void) {
         break;
     }
   }
+}
+
+void halfdome_vr_device_check(void){
+  uint8_t board_rev = 0;
+  int ret = 0;
+
+  ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
+  if (ret < 0) {
+      printf("Failed to get board revision ID, slot=%d\n", slot_id);
+  }
+  board_rev = (board_rev & HD_VR_REVID_MASK) >> 4;
+  if(board_rev == HD_VR_INFINEON) {
+    fby35_vr_list[VR_HD_VDDCR_CPU0].addr = VDDCR_CPU0_IFX_ADDR;
+    fby35_vr_list[VR_HD_VDDCR_CPU0].ops = &ifx_ops;
+    fby35_vr_list[VR_HD_VDDCR_CPU1].addr = VDDCR_CPU1_IFX_ADDR;
+    fby35_vr_list[VR_HD_VDDCR_CPU1].ops = &ifx_ops;
+    fby35_vr_list[VR_HD_VDD11S3].addr = VDD11S3_IFX_ADDR;
+    fby35_vr_list[VR_HD_VDD11S3].ops = &ifx_ops;
+  } else if (board_rev == HD_VR_MPS) {
+    fby35_vr_list[VR_HD_VDDCR_CPU0].addr = VDDCR_CPU0_MPS_ADDR;
+    fby35_vr_list[VR_HD_VDDCR_CPU0].ops = &mps_ops;
+    fby35_vr_list[VR_HD_VDDCR_CPU1].addr = VDDCR_CPU1_MPS_ADDR;
+    fby35_vr_list[VR_HD_VDDCR_CPU1].ops = &mps_ops;
+    fby35_vr_list[VR_HD_VDD11S3].addr = VDD11S3_MPS_ADDR;
+    fby35_vr_list[VR_HD_VDD11S3].ops = &mps_ops;
+  }
+}
+
+int plat_vr_init(void) {
+  int vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
+
+  if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+    halfdome_vr_device_check();
+  } else {
+    fby35_vr_device_check();
+  }
 
   return vr_device_register(fby35_vr_list, vr_cnt);
 }
@@ -193,3 +270,4 @@ void plat_vr_exit(void) {
 
   return;
 }
+

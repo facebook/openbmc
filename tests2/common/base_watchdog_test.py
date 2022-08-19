@@ -59,7 +59,7 @@ class WatchdogTest(object):
         if running_systemd():
             supervisor = "/bin/systemctl"
         else:
-            supervisor = "/usr/bin/sv"
+            supervisor = "/usr/bin/sv -w 15"
 
         self.kill_watchdog_daemon_cmd = ["{} stop fscd".format(supervisor)]
 

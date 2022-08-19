@@ -338,8 +338,14 @@ def main():
     addr = args.addr
     global statuspath
     statuspath = args.statusfile
-    with open(args.file, "rb") as f:
-        image = pickle.load(f)
+    if args.file.endswith(".pkl"):
+        with open(args.file, "rb") as f:
+            image = pickle.load(f)
+    else:
+        parsed_srec = srec.parse(args.file, address_scale=2)
+        print(f"Successfully parsed SRecords from {args.file}.")
+        image = srec.Image.from_recs(parsed_srec)
+        print(f"Built Image from parsed {args.file}.")
     targetnames = ["logic", "discharger", "secondary", "primary"]
     loop = asyncio.get_event_loop()
     with transcript(), suppress_monitoring():

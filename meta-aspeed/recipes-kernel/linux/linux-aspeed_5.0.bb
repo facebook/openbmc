@@ -8,7 +8,7 @@ LINUX_VERSION ?= "5.0.3"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 
 PR = "r1"
-PV = "${LINUX_VERSION}"
+PV = "${LINUX_VERSION}+git${SRCPV}"
 
 include linux-aspeed.inc
 require recipes-kernel/linux/linux-yocto.inc

@@ -28,6 +28,7 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            git://gitlab.com/qemu-project/berkeley-softfloat-3.git;destsuffix=git/tests/fp/berkeley-softfloat-3;nobranch=1;protocol=https;name=berkeley-softfloat-3;nobranch=1 \
            git://gitlab.com/qemu-project/berkeley-testfloat-3.git;destsuffix=git/tests/fp/berkeley-testfloat-3;nobranch=1;protocol=https;name=berkeley-testfloat-3;nobranch=1 \
            git://gitlab.com/qemu-project/keycodemapdb.git;destsuffix=git/ui/keycodemapdb;nobranch=1;protocol=https;name=keycodemapdb;nobranch=1 \
+           file://0001-hw-i2c-aspeed-Fix-old-reg-slave-receive.patch \
            file://0001-aspeed-Zero-extend-flash-files-to-128MB.patch \
            file://0001-slirp-Add-mfr-id-to-netdev-options.patch \
            file://0002-slirp-Add-oob-eth-addr-to-netdev-options.patch \
@@ -37,9 +38,7 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0006-tests-avocado-Add-fb-boot-tests.patch \
            file://0007-tests-avocado-Disable-raspi2-initrd.patch \
            file://0008-hw-misc-Add-byte-by-byte-i2c-network-device.patch \
-           file://0009-hw-misc-i2c-netdev2-Fixes-to-get-MCTP-transaction-wo.patch \
            file://0010-hw-m25p80-Add-BP-and-TB-bits-to-n25q00.patch \
-           file://0011-Fix-i2c-netdev2-send_async.patch \
            file://0012-hw-arm-aspeed-Switch-fby35-grandcanyon-to-n25q00.patch \
            file://0013-hw-ssi-add-new-spi-gpio-controller.patch \
            file://0014-hw-nvram-at24c-Add-static-memory-init-option.patch \

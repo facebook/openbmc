@@ -77,6 +77,7 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0047-fbttn-Add-I2C-SCL-timeout-property.patch \
            file://0048-bletchley-Increase-RAM-from-512MB-to-2GB.patch \
            file://0049-aspeed-Add-greatlakes-bmc.patch \
+           file://0050-hw-misc-aspeed-Add-fby35-sb-cpld.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 

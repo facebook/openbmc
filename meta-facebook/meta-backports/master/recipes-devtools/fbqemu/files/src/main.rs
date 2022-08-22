@@ -38,6 +38,11 @@ struct Args {
     #[clap(long, help = "Enable tap network backend")]
     tap: Option<String>,
 
+    #[clap(long, help = "Flash image")]
+    mtd: Option<PathBuf>,
+
+    #[clap(long, help = "U-Boot FIT image")]
+    fit: Option<PathBuf>,
 }
 
 fn parse_fit(fit: &[u8]) -> Result<Vec<(&str, &[u8])>> {
@@ -102,9 +107,21 @@ fn print_qemu_command(command: &Command) {
     println!();
 }
 
+fn find(
+    dir: &Path,
+    paths: impl IntoIterator<Item=impl AsRef<Path>>
+) -> Option<PathBuf> {
+    for path in paths {
+        let path = dir.join(path);
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
-    let build_dir = args.build.context("Build directory undefined")?;
     let staging_bindir_native = option_env!("STAGING_BINDIR_NATIVE")
         .map(PathBuf::from);
     let qemu_dir = args.qemu.or(staging_bindir_native)
@@ -117,32 +134,39 @@ fn main() -> Result<()> {
            .arg(format!("{}-bmc", machine))
            .arg("-nographic");
 
-    let deploy_dir = build_dir.join(format!("tmp/deploy/images/{}/", machine));
-    let mtd_path = deploy_dir.join(format!("flash-{}", machine));
-    if mtd_path.exists() {
+    let deploy_dir = args.build
+        .map(|b| b.join(format!("tmp/deploy/images/{}", machine)));
+
+    let mtd_path = match (args.mtd, deploy_dir.as_ref()) {
+        (Some(mtd), _) => Some(mtd),
+        (_, Some(d)) => find(d, [&format!("flash-{}", machine), "image-bmc"]),
+        _ => None,
+    };
+    if let Some(mtd_path) = mtd_path {
         println!("Using {} for primary and golden images.", mtd_path.display());
         for _ in 0..2 {
             command.arg("-drive")
-                   .arg(format!("file={},format=raw,if=mtd,snapshot=on", mtd_path.display()));
+                   .arg(format!("file={},format=raw,if=mtd,snapshot=on",
+                                mtd_path.display()));
         }
     }
 
     if !args.uboot {
         let search_paths = [
-            deploy_dir.join(format!("fit-{machine}.itb", machine=machine)),
-            deploy_dir.join(format!("fitImage-obmc-phosphor-initramfs-{machine}\
-                                     -{machine}", machine=machine)),
+            format!("fit-{machine}.itb", machine=machine),
+            format!("fitImage-obmc-phosphor-initramfs-{machine}-{machine}",
+                    machine=machine),
         ];
-        for fit_path in search_paths {
-            if !fit_path.exists() {
-                continue;
-            }
+        let fit_path = match (args.fit, deploy_dir.as_ref()) {
+            (Some(fit), _) => Some(fit),
+            (_, Some(d)) => find(d, search_paths),
+            _ => None,
+        };
+        if let Some(fit_path) = fit_path {
             println!("Using {} as FIT image.", fit_path.display());
             add_fit_args(&mut command, &fit_path, args.bootargs.as_deref())
-                .with_context(|| {
-                    format!("Error loading FIT {}", fit_path.display())
-                })?;
-            break;
+                .with_context(|| format!("Error loading FIT {}",
+                                         fit_path.display()))?;
         }
     }
 

@@ -185,6 +185,7 @@ power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t 
   int rc = 0;
 
   if (curr == GPIO_VALUE_HIGH) {
+    syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
     fp = fopen((char*)NVME_BIND_PATH, "w");
     if (fp == NULL) {
       syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_BIND_PATH, strerror(errno));
@@ -198,6 +199,7 @@ power_good_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t 
       syslog(LOG_WARNING, "%s() m2 bind failed\n", __func__);
     }
   } else {
+    syslog(LOG_CRIT, "FRU: %d, Server is powered off", FRU_SERVER);
     fp = fopen((char*)NVME_UNBIND_PATH, "w");
     if (fp == NULL) {
       syslog(LOG_INFO, "failed to open device for write %s error: %s", NVME_UNBIND_PATH, strerror(errno));
@@ -220,6 +222,7 @@ post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value
   int rc = 0;
 
   if (curr == GPIO_VALUE_LOW) {
+    syslog(LOG_CRIT, "FRU: %d, Post complete", FRU_SERVER);
     fp = fopen((char*)PECI_BIND_PATH, "w");
 
     if (fp == NULL) {
@@ -235,6 +238,7 @@ post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value
       syslog(LOG_WARNING, "%s() peci driver bind failed\n", __func__);
     }
   } else {
+    syslog(LOG_WARNING, "FRU: %d, Post complete gpio de-assert to high", FRU_SERVER);
     fp = fopen((char*)PECI_UNBIND_PATH, "w");
 
     if (fp == NULL) {

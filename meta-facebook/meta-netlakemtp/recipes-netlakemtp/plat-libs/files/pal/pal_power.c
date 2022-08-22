@@ -197,7 +197,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           return ERROR;
       } else if (status == SERVER_POWER_OFF) {
         printf("Current Power is OFF, therefore cannot reset.\n");
-        return NO_ACTION;
+        return ERROR;
       } else {
         syslog(LOG_ERR, "%s: Server power cycle - Unknwon status", __func__);
         return ERROR;

@@ -84,5 +84,8 @@
   },
   "verified_boot": {
     "enabled": false
+  },
+  "bmc_timestamp": {
+    "enabled": true
   }
 }

@@ -812,6 +812,11 @@ read_nvme_temp(uint8_t id, float *value) {
 
     usleep(SENSOR_RETRY_INTERVAL_USEC);
   }
+
+  if (ret < 0) {
+    return ERR_SENSOR_NA;
+  }
+
   close(fd);
 
   // valid temperature range: -60C(0xC4) ~ +127C(0x7F)
@@ -867,12 +872,18 @@ read_nic_temp(uint8_t id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  do {
+  for (retry = SENSOR_RETRY_TIME; retry > 0; retry--) {
     ret = i2c_rdwr_msg_transfer(fd, addr, &tbuf, tlen, &rbuf, rlen);
-    if (ret != 0) {
-      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    if (ret == 0) {
+      break;
     }
-  } while ((ret < 0) && ((retry--) > 0));
+
+    usleep(SENSOR_RETRY_INTERVAL_USEC);
+  }
+
+  if (ret < 0) {
+    return ERR_SENSOR_NA;
+  }
 
   ret = nic_temp_value_check(rbuf, value);
 

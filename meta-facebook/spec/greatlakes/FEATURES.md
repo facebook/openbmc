@@ -11,7 +11,7 @@
 * P5 - Optional
 
 #### Codebase Requirements
-- [ ] P0 **Upstream all code to Linux Foundation OpenBMC repos**
+- [ ] P1 **Upstream all code to Linux Foundation OpenBMC repos**
     - Upstream all code for the Linux Foundation OpenBMC into open source
       repos
 - [ ] P0 **Commit all code to FB OpenBMC repos**
@@ -23,7 +23,7 @@
     - Provide necessary boot and driver support for the AST-2620 BMC
 - [ ] P2 **Nuvoton Arbel or Second Source BMC**
     - Provide necessary boot and driver support for the Nuvoton Arbel BMC
-      or approved second source BMC vendor.  Second source
+      or approved second source BMC vendor
 
 #### Infrastructure
 - [ ] P0 **Yocto**
@@ -36,26 +36,24 @@
     - Create device tree entries for i2c devices (and enable associated
       drivers)
 - [ ] P0 **GPIO device tree**
-    - Create device tree entries for gpio pins
+    - Create device tree entries for GPIO pins
 - [ ] P0 **PWM/Tach device tree**
     - Create device tree entries for PWM/Tach devices
 - [ ] P0 **ADC device tree**
     - Create device tree entries for ADC devices
 - [ ] P0 **SPI device tree**
     - Create device tree entries for all SPI devices
-- [ ] P1 **Qemu**
-    - Create Qemu machine config for BMC.  Should boot LF-OpenBMC and
+- [ ] P1 **QEMU**
+    - Create QEMU machine config for BMC.  Should boot LF-OpenBMC and
       FB-OpenBMC without any service failures
 - [ ] P0 **GPIO driver porting**
     - Port GPIO configuration to ensure we are using gpiocli
-- [ ] P0 **IPMB support**
-    - Port ipmbd to communicate with BIC and Expander.
 - [ ] P2 **CPLD GPIO Expander Interface**
     - CPLDs providing GPIO Expander support shall do so using the 955X class
       support
 
 #### BIC Support
-- [ ] P0 **I3C Support**
+- [ ] P1 **I3C Support**
     - The interface between the BMC and BIC shall use I3C
 - [ ] P0 **IPMB Support**
     - IPMB shall be enabled between the BMC and BIC
@@ -78,12 +76,13 @@
 - [ ] P2 **Power-on Error Handling**
     - A SEL entry must be created for any system power-on error condition
 - [ ] P2 **Firmware Version Reporting**
-    - After any system FW has been upgraded but not activated, the currently
-      running and version after activation shall be displayed
-- [ ] P2 **FW WDT Auto-recovery**
     - For component firmware that has a delay activation feature (eg. activate
       after reboot or power-cycle), a method is needed to query current
       running firmware and firmware to be activated
+- [ ] P2 **FW WDT Auto-recovery**
+    - If a WDT triggers while loading a new firmware image, the BMC shall 
+      recover to a known good version of firmware for the affected device
+      (e.g. BIC, BIOS, CPLD or BMC)
 - [ ] P0 **ASD Jumper Detection**
     - BMC have mechanism to detect the ASD jumper is enabled or not
 - [ ] P2 **BMC Network Recovery**
@@ -99,7 +98,7 @@
     - Support for error injection to the DDR5 PMIC
 - [ ] P3 **Terminus NIC Enablement**
     - Enable the Terminus NIC
-- [ ] P2 **Platform Room of Trust (PRoT) Support**
+- [ ] P2 **Platform Root of Trust (PRoT) Support**
     - Enable PRoT HW support on base platform if necessary
 - [ ] P2 **CPLD Board ID/Version Info**
     - Enable detection and logging of board ID and version info for all CPLDs
@@ -113,11 +112,12 @@
 - [ ] P1 **In-Band**
     - Provide interface for Host user to interact with BMC via BIC
       (Host --eSPI-> BIC --IPMB-> BMC)
-- [ ] P1 **In-Band/Mezz**
-    - Provide interface to Host user over Ethernet interface ethX
+- [ ] P0 **In-Band/Mezz**
+    - Provide interface to Host user over Ethernet interface ethX for all
+      supported NICs
 - [ ] P2 **OOB/REST**
     - Provide interface for Host user to interact from a remote machine via
-      Network
+      Network using curl commands to Redfish interface
 - [ ] P2 **Redfish w/mTLS**
     - Provide redfish interface for Host user to interact from a remote
       machine via Network. Redfish APIs and schemas must be used.  The
@@ -130,7 +130,7 @@
       on-demand setup and tear-off.
 
 #### Network
-- [ ] P0 **DHCPv4**
+- [ ] P1 **DHCPv4**
     - BMC shall be able to get IPv4 address using standard DHCPv4 protocol
       including retries and timeouts
 - [ ] P0 **DHCPv6**
@@ -144,31 +144,33 @@
     - The BMC NIC interface must support usage of all available channels
 - [ ] P1 **Host to BMC Support**
     - Enable Host access to the BMC via the BCRM or MLNX NIC Mezzanine card
+- [ ] P2 **Network Link Status Detection**
+    - Detect Link Up/Down and log events when the status changes
 - [ ] P2 **NCSI/AEN Notifications**
     - Add support to receive AEN notifications from NIC for various events
 
 #### Power Control
 - [ ] P0 **on**
-    - Power ON the Host(s)
+    - Power ON an individual slot
 - [ ] P0 **off**
-    - Power OFF the Host(s)
+    - Power OFF an individual slot
 - [ ] P0 **cycle**
-    - Power cycle the Host(s)
+    - Power cycle an individual slot
 - [ ] P0 **host reset**
     - Reset the host(s)
 - [ ] P0 **recovery mode**
     - Put the host(s) into recovery mode
-- [ ] P0 **graceful-shutdown**
+- [ ] P2 **graceful-shutdown**
     - Shutdown the Host by using ACPI gracefully either by user command or
       when user press the front button for < 4 seconds
 - [ ] P0 **12V-on**
-    - Turn ON 12V of the Host slot
+    - Turn ON 12V to an individual slot
 - [ ] P0 **12V-off**
-    - Turn OFF 12V of the Host slot
+    - Turn OFF 12V to an individual slot
 - [ ] P0 **12V-cycle**
-    - Cycle 12V of the Host slot
+    - Cycle 12V to an individual slot
 - [ ] P0 **sled-cycle**
-    - Power cycle entire chassis
+    - Power cycle entire chassis including BMC
 - [ ] P1 **phosphor-state-manager**
     - Manage host(s) state using LF state management provided by
       phosphor-state-manager
@@ -179,25 +181,26 @@
 #### Serial Over LAN (SoL)
 - [ ] P0 **Host SoL Access**
     - Allow user to interact with a specific slots serial console directly
-- [ ] P0 **BIC SoL Access**
+- [ ] P0 **BIC UART Access**
     - Allow user to interact with the BIC serial console directly
-- [ ] P2 **Expansion Card SoL Access**
+- [ ] P2 **Expansion Card UART Access**
     - Allow user to interact with the serial console for Rainbow Falls and
-      other supported expansion cards which provide SoL access
-- [ ] P0 **mTerm for SOL**
-    - Support mTerm for SOL or equivalent terminal access capability
+      other supported expansion cards which provide UART access
+- [ ] P0 **mTerm**
+    - Support mTerm for SoL or equivalent terminal access capability
 - [ ] P1 **Console History**
-    - Allow user to access the history of a slots serial console activity
-- [ ] P0 **Host Logger**
+    - Allow user to access the history of a slots serial console activity e.g.
+      to debug an issue that prevented Host boot progress
+- [ ] P1 **Host Logger**
     - Store host console logs from each SLED at the BMC
 
 #### FRU Information
-- [ ] P0 **Entity Manager**
-    - Add entity manager configuration for system.
-- [ ] P0 **FRUID read**
+- [ ] P1 **Entity Manager**
+    - Add entity manager configuration for system
+- [ ] P1 **FRUID read**
     - Read and print FRUID (FRUID EEPROM for Motherboard supported on each BMC
       to read its local MB's fruid)
-- [ ] P0 **FRUID update**
+- [ ] P1 **FRUID update**
     - Update FRUID with user given file assuming IPMI FRUID Format
 - [ ] P2 **Extended FRU Information**
     - Support FRU information for all platform devices and expansion cards
@@ -210,10 +213,10 @@
           card, etc
 - [ ] P2 **Display threshold value**
     - When requested, display the threshold values for each sensor (`lnr->unr`)
-- [ ] P0 **Display Current Status**
-    - When requested, display the current status for each sensor
-- [ ] P2 **Display OK status**
-    - Display a sensor is OK or not
+- [ ] P2 **Display Current Status**
+    - When requested, display a sensor status as OK if the current value is
+      not violating thresholds. If the status violates any thresholds show
+      the current status appropriately (unr, ucr, ncr, lnr ..)
 - [ ] P2 **Sensor Caching**
     - Cache the sensor values in a local DB to reduce hardware polling
 - [ ] P3 **Sensor History**
@@ -229,27 +232,28 @@
 
 #### Thermal Management
 - [ ] P0 **Fan control (Manual)**
-    - Implement fan utility to set fan-speed.
+    - Implement fan utility to set fan-speed
 - [ ] P1 **Fan Speed Control (Automatic)**
     - Implement FSC algorithm with user given JSON configuration file with
-      various linear/pid profiles for sensors across platform.
+      various linear/pid profiles for sensors across platform
 - [ ] P2 **FSC configuration update**
     - Allow user to update the fan configuration.  Allow to try out a new
-      configuration and be able to restart the fan control daemon.
+      configuration and be able to restart the fan control daemon
 - [ ] P2 **Persistent FSC configuration**
     - Allow user to update the fan configuration to be persistent across BMC
-      reboots.
+      reboots
 - [ ] P2 **Sensor calibration**
     - The sensor value needs to be adjusted/corrected based on the current PWM
-      value.
+      value
 - [ ] P3 **Conditional Sensor calibration**
-    - Allow for sensor calibration which can change based on runtime detected
-      configuration changes.
+    - The sensor value needs to be adjusted/corrected based on the runtime
+      detected configuration changes
 - [ ] P0 **Airflow Sensor**
     - Calculate Airflow based on current configuration e.g. use BIOS OEM command
       to get information on number of DIMMs populated etc.
 - [ ] P1 **NIC OTP Protection**
     - BMC will 12V-off should NIC temp exceed 105C (UNR)
+    - BMC will 12V-on once NIC temp drops below 85C (UNC)
 - [ ] P1 **SLED OTP Protection**
     - When more than one fan fails, turn off 12V to all the slots
 - [ ] P2 **CPU Throttle Support**
@@ -294,7 +298,7 @@ Support reading firmware versions of attached components including self.
 - [ ] P0 **VR**
     - Upgrade all attached Voltage regulators
 - [ ] P1 **NIC Mezzanine**
-    - Upgrade NIC firmware using PLDM/NC-SI or PLDM/MCTP-SMBUS
+    - Upgrade NIC firmware using PLDM/NC-SI or PLDM/MCTP-I3C
 - [ ] P2 **CXL Card**
     - Upgrade all expansion/CXL card firmware versions
 
@@ -308,15 +312,15 @@ Support reading firmware versions of attached components including self.
     - Verify the binary signature for the BIOS
 
 #### Time Sync
-- [ ] P0 **RTC**
+- [ ] P1 **RTC**
     - Enable local RTC device and ensure synchronization on BMC reboot
 - [ ] P2 **NTP Sync**
     - Sync up BMC RTC with NTP server
-- [ ] P0 **Time Zone**
+- [ ] P1 **Time Zone**
     - Show PST/PDT time always
 
 #### Configuration
-- [ ] P0 **Set Power Policy**
+- [ ] P1 **Set Power Policy**
     - Change the policy to one of the following state: Last Power State, Always
       ON, and Always OFF with default as 'Last Power State'
 - [ ] P0 **Set Boot Order Sequence**
@@ -325,9 +329,9 @@ Support reading firmware versions of attached components including self.
 - [ ] P1 **CMOS Restore (OEM/0x52)**
     - Restore BIOS settings like BIOS variables to the default state using the
       OEM/0x52 command
-- [ ] P1 **CMOS Restore (Physical reset)**
+- [ ] P0 **CMOS Restore (Physical reset)**
     - Reset CMOS using physical GPIO/I2C
-- [ ] P1 **Get Platform Info**
+- [ ] P2 **Get Platform Info**
     - On request, get the system configuration and SKU information
 
 #### Diagnostics
@@ -336,9 +340,9 @@ Support reading firmware versions of attached components including self.
       User can generate on-demand using this utility
 - [ ] P2 **crashdump - auto**
     - crash dump automatically when IERR is detected on CATERR/MSMI GPIO pin
-- [ ] P0 **crashdump-prevent power off**
+- [ ] P2 **crashdump-prevent power off**
     - Prevent host power changes while crash dump is ongoing
-- [ ] P2 **Memory Post Package Repair**
+- [ ] P3 **Memory Post Package Repair**
     - A procedure to remediate hard failing rows within a memory device that
       takes place during system POST. It uses the spare rows to replace the
       broken row. The repair is permanent and cannot be undone.
@@ -350,7 +354,7 @@ Support reading firmware versions of attached components including self.
     - Reset any BMC from remote system using the `reboot` command
 - [ ] P2 **Remote Reset - Redfish**
     - Reset any BMC from remote system using Redfish APIs
-- [ ] P1 **GPIO reset**
+- [ ] P2 **GPIO reset**
     - Recover hung BMC by sending GPIO reset from Host server
 
 #### Front Panel Control
@@ -363,15 +367,21 @@ Support reading firmware versions of attached components including self.
 - [ ] P2 **Identify LED/Power-ON**
     - Chassis Identification by blinking LED: User shall be able to turn ON/OFF
       the identification; And specify the blinking rate to 1/5/10 seconds
-- [ ] P2 **Heartbeat LED**
+- [ ] P0 **Heartbeat LED**
     - Support the heartbeat LED if the platform provides it
+- [ ] P0 **sled-cycle using power-button**
+    - When power button is pressed for 4 seconds with BMC's position, BMC
+      should initiate sled-cycle
 
 #### Hot Plug Service
 - [ ] P2 **SDR Caching**
     - Update SDR records after any new hot insertion
+      NOTE: Delete the cache when the card is removed from the slot
 - [ ] P1 **Fan Speed**
     - Set fans to 100% when any blade is removed from the chassis
-- [ ] P1 **Sled Insertion/Removal Logging**
+      When the card is inserted back and BLADE is pushed in, stop fscd and
+      re-initialize to update the fsc-configuration.json file
+- [ ] P2 **Sled Insertion/Removal Logging**
     - Log event when SLED is inserted or removed from a chassis
 
 #### Security
@@ -398,6 +408,9 @@ Support reading firmware versions of attached components including self.
     - Utility to send SPDM messages via MCTP for supported devices
 - [ ] P1 **PRoT Support**
     - Provide necessary support for enabling PRoT
+- [ ] P2 **Signed Firmware Update**
+    - BMC firmware images have to be securely signed and BMC has to verify
+      the images prior to updating
 
 #### Postcode
 - [ ] P1 **POST code history**
@@ -450,7 +463,9 @@ Support reading firmware versions of attached components including self.
     - When BMC's free memory goes below a threshold, BMC can reboot to
       function properly
 - [ ] P2 **CPU Usage**
-    - When CPU utilization goes above certain threshold, print a warning
+    - When CPU utilization goes above certain threshold, reboot BMC to regain
+      control.  Need to tune threshold to reduce unnecessary reboots because
+      CPU is busy for short periods of time
 - [ ] P2 **Healthd configuration**
     - Allow configuration on whether healthd should reboot the BMC upon
       issues
@@ -467,7 +482,7 @@ Support reading firmware versions of attached components including self.
     - _Facebook_ to develop
     - Sensor naming should be standardized across various server platforms
       using different flavors of BMC(e.g. ODM, OEM or OpenBMC)
-- [ ] P2 **Reset Default factory settings**
+- [ ] P0 **Reset Default factory settings**
     - Allow user to clear all configurations
 - [ ] P1 **guid-util**
     - Utility to program Device GUID and System GUID to FRU EEPROM
@@ -477,5 +492,6 @@ Support reading firmware versions of attached components including self.
     - Utility to interact with OpenBMC's IPMI stack using raw commands
 - [ ] P2 **enclosure-util**
     - Utility to display E1.S SSD drive status
-- [ ] P1 **DIMM Location Matching**
-    - BMC to log physical location info for DIMM on each slot
+- [ ] P2 **DIMM Location Matching**
+    - BMC to log physical location info for DIMM in each slot
+

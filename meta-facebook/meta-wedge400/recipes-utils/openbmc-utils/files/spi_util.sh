@@ -18,10 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
+#shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-output_reg=0x1
-mode_reg=0x3
 debug=0
 m95m02_page_size=256
 m95m02_page_count=1024
@@ -68,15 +67,15 @@ check_board_type()
 check_flash_info()
 {
     spi_no=$1
-    flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0
+    flashrom -p linux_spi:dev=/dev/spidev"$spi_no".0
 }
 
 get_flash_first_type()
 {
-    ori_str=$(check_flash_info ${spi_no})
-    type=$(echo ${ori_str} | cut -d '"' -f 2)
-    if [ $type ];then
-        echo $type
+    ori_str=$(check_flash_info "$spi_no")
+    type=$(echo "$ori_str" | grep -m 1 '"' | cut -d '"' -f 2)
+    if [ "$type" ]; then
+        echo "$type"
         return 0
     else
         echo "Get flash type error: [$ori_str]"
@@ -87,12 +86,12 @@ get_flash_first_type()
 get_flash_size()
 {
     spi_no=$1
-    ori_str=$(check_flash_info ${spi_no})
-    flash_sz=$(echo ${ori_str} | cut -d '(' -f 4 | cut -d ' ' -f 1)
-    echo $flash_sz | grep -E -q '^[0-9]+$'
+    ori_str=$(check_flash_info "$spi_no")
+    flash_sz=$(echo "$ori_str" | grep -m 1 '"' | cut -d '(' -f 2 | cut -d ' ' -f 1)
+    echo "$flash_sz" | grep -E -q '^[0-9]+$'
     num_ret=$?
-    if [ $num_ret -eq 0 ];then
-        echo $flash_sz
+    if [ $num_ret -eq 0 ]; then
+        echo "$flash_sz"
         return 0
     else
         echo "Get flash size error: [$ori_str]"
@@ -105,7 +104,7 @@ pad_ff()
 {
     out_file=$3
     pad_size=$(($2 - $1))
-    dd if=/dev/zero bs=$pad_size count=1 | tr "\000" "\377" >> $out_file
+    dd if=/dev/zero bs=$pad_size count=1 | tr "\000" "\377" >> "$out_file"
 }
 
 resize_file()
@@ -114,13 +113,14 @@ resize_file()
     out_file=$2
     spi_no=$3
     storage_type=$4
-    in_file_sz=$(stat -c%s $in_file)
+    in_file_sz=$(stat -c%s "$in_file")
     storage_sz=0
-    if [ $storage_type ] && [ $storage_type = "m95m02" ];then
+    if [ "$storage_type" ] && [ "$storage_type" = "m95m02" ]; then
         storage_sz=$((m95m02_page_count * m95m02_page_size))
     else
-        flash_sz=$(get_flash_size $spi_no)
-        if [ $? -eq 0 ];then
+        flash_sz=$(get_flash_size "$spi_no")
+        ret=$?
+        if [ $((ret)) -eq 0 ]; then
             storage_sz=$((flash_sz * 1024))
         else
             echo "debug message: $flash_sz"
@@ -128,11 +128,11 @@ resize_file()
         fi
     fi
 
-    if [ $in_file_sz -ne $storage_sz ];then
-        cp $in_file $out_file
-        pad_ff $in_file_sz $storage_sz $out_file
+    if [ $((in_file_sz)) -ne $((storage_sz)) ]; then
+        cp "$in_file" "$out_file"
+        pad_ff "$in_file_sz" "$storage_sz" "$out_file"
     else
-        ln -s "$(realpath ${in_file})" ${out_file}
+        ln -s "$(realpath "$in_file")" "$out_file"
     fi
 }
 
@@ -141,7 +141,7 @@ dump_gpio_config(){
         return 0
     fi
     echo "Dump SPI configurations..."
-    if [ $1 = "SPI1" ];then
+    if [ "$1" = "SPI1" ]; then
         openbmc_gpio_util.py dump | grep SPI1
     else
         openbmc_gpio_util.py dump | grep SPI2
@@ -184,7 +184,7 @@ set_spi1_to_spi(){
 # currently no use
 set_spi2_to_spi_cs(){
     cs=$1
-    if [ ${cs} = 0 ]; then
+    if [ $((cs)) -eq 0 ]; then
         # spi2 cs0
         devmem_set_bit "$(scu_addr 88)" 26
         devmem_set_bit "$(scu_addr 88)" 27
@@ -219,9 +219,10 @@ read_flash_to_file()
 {
     spi_no=$1
     tmp_file=$2
-    type=$(get_flash_first_type $spi_no)
-    flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -r $tmp_file -c $type
-    if [ $? -ne 0 ];then
+    type=$(get_flash_first_type "$spi_no")
+    flashrom -p linux_spi:dev=/dev/spidev"$spi_no".0 -r "$tmp_file" -c "$type"
+    ret=$?
+    if [ $((ret)) -ne 0 ]; then
         echo "debug cmd: [flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -r $tmp_file -c $type]"
         exit 1
     fi
@@ -231,10 +232,11 @@ write_flash_to_file(){
     spi_no=$1
     in_file=$2
     out_file="/tmp/${3}_spi${1}_tmp"
-    resize_file $in_file $out_file $spi_no
-    type=$(get_flash_first_type $spi_no)
-    flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -w $out_file -c $type
-    if [ $? -ne 0 ];then
+    resize_file "$in_file" "$out_file" "$spi_no"
+    type=$(get_flash_first_type "$spi_no")
+    flashrom -p linux_spi:dev=/dev/spidev"${spi_no}".0 -w "$out_file" -c "$type"
+    ret=$?
+    if [ $((ret)) -ne 0 ]; then
         echo "debug cmd: [flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -w $out_file -c $type]"
         exit 1
     fi
@@ -242,9 +244,10 @@ write_flash_to_file(){
 
 erase_flash(){
     spi_no=$1
-    type=$(get_flash_first_type $spi_no)
-    flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -E -c $type
-    if [ $? -ne 0 ];then
+    type=$(get_flash_first_type "$spi_no")
+    flashrom -p linux_spi:dev=/dev/spidev"${spi_no}".0 -E -c "$type"
+    ret=$?
+    if [ $((ret)) -ne 0 ]; then
         echo "debug cmd: [flashrom -p linux_spi:dev=/dev/spidev${spi_no}.0 -E -c $type]"
         exit 1
     fi
@@ -256,7 +259,7 @@ read_m95m02_to_file(){
     eeprom_node="/sys/bus/spi/devices/spi${spi_no}.1/eeprom"
     modprobe -r at25
     modprobe at25
-    dd if=${eeprom_node} of=${file} count=$m95m02_page_count bs=$m95m02_page_size
+    dd if="$eeprom_node" of="$file" count=$m95m02_page_count bs=$m95m02_page_size
 }
 
 write_m95m02(){
@@ -266,9 +269,9 @@ write_m95m02(){
     eeprom_node="/sys/bus/spi/devices/spi${spi_no}.1/eeprom"
     modprobe -r at25
     modprobe at25
-    tr '\0' '\377' < /dev/zero | dd count=$m95m02_page_count bs=$m95m02_page_size of=${eeprom_node}
-    resize_file $file $out_file $spi_no 'm95m02'
-    dd of=${eeprom_node} if=${out_file} count=$m95m02_page_count bs=$m95m02_page_size
+    tr '\0' '\377' < /dev/zero | dd count=$m95m02_page_count bs=$m95m02_page_size of="$eeprom_node"
+    resize_file "$file" "$out_file" "$spi_no" 'm95m02'
+    dd of="$eeprom_node" if="$out_file" count=$m95m02_page_count bs=$m95m02_page_size
 }
 
 erase_m95m02(){
@@ -276,19 +279,19 @@ erase_m95m02(){
     eeprom_node="/sys/bus/spi/devices/spi${spi_no}.1/eeprom"
     modprobe -r at25
     modprobe at25
-    tr '\0' '\377' < /dev/zero | dd count=$m95m02_page_count bs=$m95m02_page_size of=${eeprom_node}
+    tr '\0' '\377' < /dev/zero | dd count=$m95m02_page_count bs=$m95m02_page_size of="$eeprom_node"
 }
 
 bios_flash_pre_operate() {
     curr_flash=$(boot_info.sh bios)
-    if [ $curr_flash = "slave" ]; then
+    if [ "$curr_flash" = "slave" ]; then
         wedge_power.sh off > /dev/null
     fi
 }
 
 bios_flash_post_operate() {
     curr_flash=$(boot_info.sh bios)
-    if [ $curr_flash = "slave" ]; then
+    if [ "$curr_flash" = "slave" ]; then
         wedge_power.sh on > /dev/null
     fi
 }
@@ -301,7 +304,7 @@ read_spi1_dev(){
         ## W25Q128 , W25Q128 , W25Q257
         "BIOS" | "TH3_PCIE_FLASH" | "GB_PCIE_FLASH")
             echo "Reading flash to $file..."
-            read_flash_to_file $spi_no $file
+            read_flash_to_file $spi_no "$file"
         ;;
         "SYSTEM_EE" | "BCM5389_EE")
             echo "Reading eeprom to $file..."
@@ -310,17 +313,17 @@ read_spi1_dev(){
             clk=$(gpio_name2value BMC_SPI1_CLK)
             miso=$(gpio_name2value BMC_SPI1_MISO)
             mosi=$(gpio_name2value BMC_SPI1_MOSI)
-            at93cx6_util_py3.py --cs $cs --clk $clk --mosi $mosi --miso $miso chip read --file $file
+            at93cx6_util_py3.py --cs "$cs" --clk "$clk" --mosi "$mosi" --miso "$miso" chip read --file "$file"
         ;;
         "DOM_FPGA_FLASH1" | "DOM_FPGA_FLASH2")
             echo "Reading flash to $file..."
             read_flash_to_file $spi_no /tmp/fpga_fw_tmp
             in_file_sz=$(stat -c%s /tmp/fpga_fw_tmp)
-            if [ -e $file ]; then
-                rm $file
+            if [ -e "$file" ]; then
+                rm "$file"
             fi
-            pad_ff 0 $fpga_header_size $file
-            dd if=/tmp/fpga_fw_tmp bs=$in_file_sz count=1 >> $file
+            pad_ff 0 $fpga_header_size "$file"
+            dd if=/tmp/fpga_fw_tmp bs="$in_file_sz" count=1 >> "$file"
             rm /tmp/fpga_fw_tmp
         ;;
     esac
@@ -335,12 +338,12 @@ write_spi1_dev(){
         "BIOS")
             echo "Writing $file to flash..."
             bios_flash_pre_operate
-            write_flash_to_file $spi_no $file $dev
+            write_flash_to_file "$spi_no" "$file" "$dev"
             bios_flash_post_operate
         ;;
         "TH3_PCIE_FLASH" | "GB_PCIE_FLASH")
             echo "Writing $file to flash..."
-            write_flash_to_file $spi_no $file $dev
+            write_flash_to_file "$spi_no" "$file" "$dev"
         ;;
         "SYSTEM_EE" | "BCM5389_EE")
             # write_flash_to_file $spi_no $file
@@ -349,7 +352,7 @@ write_spi1_dev(){
             clk=$(gpio_name2value BMC_SPI1_CLK)
             miso=$(gpio_name2value BMC_SPI1_MISO)
             mosi=$(gpio_name2value BMC_SPI1_MOSI)
-            at93cx6_util_py3.py --cs $cs --clk $clk --mosi $mosi --miso $miso chip write --file $file
+            at93cx6_util_py3.py --cs "$cs" --clk "$clk" --mosi "$mosi" --miso "$miso" chip write --file "$file"
         ;;
         "DOM_FPGA_FLASH1" | "DOM_FPGA_FLASH2")
             echo "Writing $file to flash..."
@@ -357,8 +360,8 @@ write_spi1_dev(){
                 rm /tmp/fpga_fw_tmp
             fi
             # remove header unused of fpga bit file
-            dd if=$file skip=1 bs=$fpga_header_size of=/tmp/fpga_fw_tmp
-            write_flash_to_file $spi_no /tmp/fpga_fw_tmp $dev
+            dd if="$file" skip=1 bs=$fpga_header_size of=/tmp/fpga_fw_tmp
+            write_flash_to_file "$spi_no" /tmp/fpga_fw_tmp "$dev"
             rm /tmp/fpga_fw_tmp
         ;;
     esac
@@ -372,7 +375,7 @@ erase_spi1_dev(){
         ## W25Q128 , W25Q128 , W25Q257
         "BIOS" | "DOM_FPGA_FLASH1" | "DOM_FPGA_FLASH2" | "TH3_PCIE_FLASH" | "GB_PCIE_FLASH")
             echo "Erasing flash..."
-            erase_flash $spi_no
+            erase_flash "$spi_no"
         ;;
         "SYSTEM_EE" | "BCM5389_EE")
             echo "Erasing eeprom..."
@@ -381,23 +384,23 @@ erase_spi1_dev(){
             clk=$(gpio_name2value BMC_SPI1_CLK)
             miso=$(gpio_name2value BMC_SPI1_MISO)
             mosi=$(gpio_name2value BMC_SPI1_MOSI)
-            at93cx6_util_py3.py --cs $cs --clk $clk --mosi $mosi --miso $miso chip erase
+            at93cx6_util_py3.py --cs "$cs" --clk "$clk" --mosi "$mosi" --miso "$miso" chip erase
         ;;
     esac
 }
 
 get_smb_cpld_spi_1b(){
-    b0=$(cat $SMBCPLD_SYSFS_DIR/spi_1_b0)
-    b1=$(cat $SMBCPLD_SYSFS_DIR/spi_1_b1)
-    b2=$(cat $SMBCPLD_SYSFS_DIR/spi_1_b2)
+    b0=$(cat "$SMBCPLD_SYSFS_DIR"/spi_1_b0)
+    b1=$(cat "$SMBCPLD_SYSFS_DIR"/spi_1_b1)
+    b2=$(cat "$SMBCPLD_SYSFS_DIR"/spi_1_b2)
     echo "spi_1b [ $b2 $b1 $b0 ]"
 }
 
 set_smb_cpld_spi_1b(){
     if [ $# = 3 ]; then
-        echo $3 > $SMBCPLD_SYSFS_DIR/spi_1_b0
-        echo $2 > $SMBCPLD_SYSFS_DIR/spi_1_b1
-        echo $1 > $SMBCPLD_SYSFS_DIR/spi_1_b2
+        echo "$3" > "$SMBCPLD_SYSFS_DIR"/spi_1_b0
+        echo "$2" > "$SMBCPLD_SYSFS_DIR"/spi_1_b1
+        echo "$1" > "$SMBCPLD_SYSFS_DIR"/spi_1_b2
     else
         echo "Set SPI1 BIT FAILED"
     fi
@@ -409,27 +412,27 @@ config_spi1_pin_and_path(){
     case ${dev} in
         "SYSTEM_EE")
             set_spi1_to_gpio
-            echo 0 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+            echo 0 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
         ;;
         "BIOS")
             set_spi1_to_spi
-            echo 1 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+            echo 1 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
         ;;
         "BCM5389_EE")
             set_spi1_to_gpio
-            echo 2 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+            echo 2 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
         ;;
         "TH3_PCIE_FLASH" | "GB_PCIE_FLASH")
             set_spi1_to_spi
-            echo 3 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+            echo 3 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
         ;;
         "DOM_FPGA_FLASH1")
             set_spi1_to_spi
-            echo 4 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+            echo 4 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
         ;;
         "DOM_FPGA_FLASH2")
             set_spi1_to_spi
-            echo 5 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+            echo 5 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
         ;;
 
         *)
@@ -447,13 +450,13 @@ operate_spi1_dev(){
     ## Operate devices ##
     case ${op} in
         "read")
-                read_spi1_dev $dev $file
+                read_spi1_dev "$dev" "$file"
         ;;
         "write")
-                write_spi1_dev $dev $file
+                write_spi1_dev "$dev" "$file"
         ;;
         "erase")
-                erase_spi1_dev $dev
+                erase_spi1_dev "$dev"
         ;;
         *)
             echo "Operation $op is not defined."
@@ -465,7 +468,7 @@ cleanup_spi(){
     if [ $ret -eq 1 ]; then
         exit 1
     fi
-    echo 0 > $SMBCPLD_SYSFS_DIR/spi_1_sel
+    echo 0 > "$SMBCPLD_SYSFS_DIR"/spi_1_sel
 
     rm -rf /tmp/*_spi*_tmp
     remove_pid_file
@@ -487,8 +490,10 @@ ui(){
         "spi1")
             dev=$3
             file=$4
-            config_spi1_pin_and_path $dev
-            operate_spi1_dev $op $dev $file
+            config_spi1_pin_and_path "$dev"
+            operate_spi1_dev "$op" "$dev" "$file"
+            # set gpio to normal mode
+            set_spi1_to_gpio
         ;;
         *)
             echo "No such SPI bus."
@@ -520,12 +525,12 @@ check_parameter(){
             return 1
             ;;
     esac
-    if [ ${spi} ] && [ ${spi} = "spi1" ]; then
+    if [ "$spi" ] && [ "$spi" = "spi1" ]; then
         dev=$3
         file=$4
 
         # SYSTEM_EE disable on Wedge400-C
-        if [ $dev = "SYSTEM_EE" ] && [ $MAC_TYPE = "W400C" ]; then
+        if [ "$dev" = "SYSTEM_EE" ] && [ "$MAC_TYPE" = "W400C" ]; then
             return 1
         fi
 

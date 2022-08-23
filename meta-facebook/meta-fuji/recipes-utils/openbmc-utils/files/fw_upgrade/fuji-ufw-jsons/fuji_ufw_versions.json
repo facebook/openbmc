@@ -1,9 +1,9 @@
 {
     "bic" : {
         "filename"    : "bic.bin",
-        "version" : "v1.11",
+        "version" : "v1.12",
         "hash"    : "md5sum",
-        "hash_value" : "08495f3bf42cd7f6ccdd0cb7a55649b4"
+        "hash_value" : "12bd0723e221bcee26dd1a32744a8156"
     },
     "bios" : {
         "filename"    : "bios.bin",
@@ -13,27 +13,27 @@
     },
     "fcm" : {
         "filename"    : "fcm_cpld.vme",
-        "version" : "0.3.1",
+        "version" : "0.3.2",
         "hash"    : "md5sum",
-        "hash_value" : "7147cab8b29624ad4147e07972b5dad2"
+        "hash_value" : "ba39a7e618370a20db6c853f5d5b67d0"
     },
     "iob_fpga" : {
         "filename"    : "iob_fpga.bit",
-        "version" : "0.41",
+        "version" : "0.54",
         "hash"    : "md5sum",
-        "hash_value" : "937102662e273bdf819efd287f639829"
+        "hash_value" : "be87195d3373e38cf9a1533dbc7f428a"
     },
     "pdb" : {
         "filename"    : "pdb_cpld.vme",
-        "version" : "0.5.0",
+        "version" : "0.5.1",
         "hash"    : "md5sum",
-        "hash_value" : "87bb1cf2221005b26c9392b405ea9b1f"
+        "hash_value" : "8c7804d911520017b1c4ce76d1bba758"
     },
     "16q_fpga" : {
         "filename"    : "pim16q_fpga.bit",
-        "version" : "0.31",
+        "version" : "0.38",
         "hash"    : "md5sum",
-        "hash_value" : "69d86e500428b6b05e88a95c994bbf7a"
+        "hash_value" : "3b25826960c5412634a53eb9ac07bcb4"
     },
     "scm" : {
         "filename"    : "scm_cpld.vme",
@@ -43,8 +43,8 @@
     },
     "smb" : {
         "filename"    : "smb_cpld.vme",
-        "version" : "1.3.0",
+        "version" : "1.3.1",
         "hash"    : "md5sum",
-        "hash_value" : "24f3d40658cba172cb642c7216e3bb0f"
+        "hash_value" : "0e418c5d321152bd4a5071d16b85732c"
     }
 }

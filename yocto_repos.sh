@@ -18,5 +18,5 @@ lf_dunfell_repos=(
     lf-openbmc:cddccf4ad
 )
 lf_kirkstone_repos=(
-    lf-openbmc:cb2a94c39
+    lf-openbmc:53fdac2b0
 )

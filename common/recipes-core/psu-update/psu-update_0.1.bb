@@ -25,6 +25,7 @@ RDEPENDS:${PN} = "python3-core bash rackmon"
 
 LOCAL_URI = " \
     file://psu-update-delta.py \
+    file://psu-update-delta-orv3.py \
     file://psu-update-bel.py \
     file://psu-update-artesyn.py \
     file://orv3-device-update-mailbox.py \

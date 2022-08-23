@@ -66,7 +66,7 @@ char *exp_error_code_description[] = {
 	"HDD33 fault request",
 	"HDD34 fault request",
 	"HDD35 fault request",
-	"HDD X fault request",
+	"HDD X fault sensed",
 	"Expander Reserved",
 	"Expander Reserved",
 	"Expander Reserved",

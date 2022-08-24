@@ -18,10 +18,6 @@
 
 NicExtComponent nic_fw("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
 
-//slot1 2ou bic/cpld
-BicFwComponent  bic_2ou_fw1("slot1", "2ou_bic", "2ou", FW_2OU_BIC);
-CpldComponent   cpld_2ou_fw1("slot1", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
-
 //slot1 sb bic/cpld/bios/me/vr
 BicFwComponent  bic_fw1("slot1", "bic", "sb", FW_SB_BIC);
 BicFwComponent  bic_rcvy_fw1("slot1", "bic_rcvy", "sb", FW_BIC_RCVY);
@@ -34,7 +30,18 @@ class ClassConfig {
       uint8_t bmc_location = 0;
       uint8_t hsc_type = HSC_UNKNOWN;
       uint8_t board_rev = UNKNOWN_REV;
-      int config_status;
+      int slot1_config_status, slot3_config_status = 0;
+
+      // Only slot1 and slot3 may be 2OU, so we need to get the config status of slot1 and slot3
+      slot1_config_status = bic_is_exp_prsnt(FRU_SLOT1);
+      if (slot1_config_status < 0) {
+        slot1_config_status = 0;
+      }
+
+      slot3_config_status = bic_is_exp_prsnt(FRU_SLOT3);
+      if (slot3_config_status < 0) {
+        slot3_config_status = 0;
+      }
 
       if (fby35_common_get_bmc_location(&bmc_location) < 0) {
         printf("Failed to initialize the fw-util\n");
@@ -47,6 +54,10 @@ class ClassConfig {
         //slot1 bb bic/cpld
         static BicFwComponent    bic_bb_fw1("slot1", "bb_bic", "bb", FW_BB_BIC);
         static CpldComponent     cpld_bb_fw1("slot1", "bb_cpld", "bb", FW_BB_CPLD, 0, 0);
+
+        //slot1 2ou bic/cpld
+        static BicFwComponent  bic_2ou_fw1("slot1", "2ou_bic", "2ou", FW_2OU_BIC);
+        static CpldComponent   cpld_2ou_fw1("slot1", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
       } else {
         // Register USB Debug Card components
         static UsbDbgComponent   usbdbg("ocpdbg", "mcu", "FBY35", 9, 0x60, false);
@@ -99,9 +110,7 @@ class ClassConfig {
         }
 
         //slot1 1ou vr
-        config_status = bic_is_exp_prsnt(FRU_SLOT1);
-        if (config_status < 0) config_status = 0;
-        if( (config_status & PRESENT_1OU) == PRESENT_1OU ) {
+        if( (slot1_config_status & PRESENT_1OU) == PRESENT_1OU ) {
             if( isRainbowFalls(FRU_SLOT1) ){
                 static VrComponent     vr_1ou_va0v8_fw1("slot1", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
                 static VrComponent     vr_1ou_vddqab_fw1("slot1", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
@@ -124,10 +133,6 @@ class ClassConfig {
         static BicFwComponent    bic_1ou_fw2("slot2", "1ou_bic", "1ou", FW_1OU_BIC);
         static CpldComponent     cpld_1ou_fw2("slot2", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
-        //slot2 2ou bic/cpld
-        static BicFwComponent    bic_2ou_fw2("slot2", "2ou_bic", "2ou", FW_2OU_BIC);
-        static CpldComponent     cpld_2ou_fw2("slot2", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
-
         //slot3 sb bic/bios/vr
         static BicFwComponent    bic_fw3("slot3", "bic", "sb", FW_SB_BIC);
         static BicFwComponent    bic_rcvy_fw3("slot3", "bic_rcvy", "sb", FW_BIC_RCVY);
@@ -149,9 +154,7 @@ class ClassConfig {
         }
 
         //slot3 1ou vr
-        config_status = bic_is_exp_prsnt(FRU_SLOT3);
-        if (config_status < 0) config_status = 0;
-        if( (config_status & PRESENT_1OU) == PRESENT_1OU ) {
+        if( (slot3_config_status & PRESENT_1OU) == PRESENT_1OU ) {
             if(isRainbowFalls(FRU_SLOT3)){
                 static VrComponent     vr_1ou_va0v8_fw3("slot3", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
                 static VrComponent     vr_1ou_vddqab_fw3("slot3", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
@@ -162,10 +165,6 @@ class ClassConfig {
         //slot3 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw3("slot3", "1ou_bic", "1ou", FW_1OU_BIC);
         static CpldComponent     cpld_1ou_fw3("slot3", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
-
-        //slot3 2ou bic/cpld
-        static BicFwComponent    bic_2ou_fw3("slot3", "2ou_bic", "2ou", FW_2OU_BIC);
-        static CpldComponent     cpld_2ou_fw3("slot3", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
 
         //slot4 sb bic/cpld/bios/me/vr
         static BicFwComponent    bic_fw4("slot4", "bic", "sb", FW_SB_BIC);
@@ -181,13 +180,6 @@ class ClassConfig {
         //slot4 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw4("slot4", "1ou_bic", "1ou", FW_1OU_BIC);
         static CpldComponent     cpld_1ou_fw4("slot4", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
-
-        //slot4 2ou bic/cpld
-        static BicFwComponent    bic_2ou_fw4("slot4", "2ou_bic", "2ou", FW_2OU_BIC);
-        static CpldComponent     cpld_2ou_fw4("slot4", "2ou_cpld", "2ou", FW_2OU_CPLD, 0, 0);
-
-
-
       }
   }
 

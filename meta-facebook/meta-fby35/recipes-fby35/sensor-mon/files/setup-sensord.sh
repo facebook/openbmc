@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -33,21 +33,21 @@
 echo "Get MB FW version... "
 
 bmc_location=$(get_bmc_board_id)
-if ! [ $bmc_location -eq $BMC_ID_CLASS2 ]; then
+if ! [ "$bmc_location" -eq "$BMC_ID_CLASS2" ]; then
   if [[ $(is_sb_bic_ready 1) == "1" ]]; then
-    /usr/bin/fw-util slot1 --version > /dev/null
+    /usr/bin/fw-util slot1 --version vr > /dev/null
   fi
 
   if [[ $(is_sb_bic_ready 2) == "1" ]]; then
-    /usr/bin/fw-util slot2 --version > /dev/null
+    /usr/bin/fw-util slot2 --version vr > /dev/null
   fi
 
   if [[ $(is_sb_bic_ready 3) == "1" ]]; then
-    /usr/bin/fw-util slot3 --version > /dev/null
+    /usr/bin/fw-util slot3 --version vr > /dev/null
   fi
 
   if [[ $(is_sb_bic_ready 4) == "1" ]]; then
-    /usr/bin/fw-util slot4 --version > /dev/null
+    /usr/bin/fw-util slot4 --version vr > /dev/null
   fi
 
   #enable the register of the temperature of hsc
@@ -57,7 +57,7 @@ if ! [ $bmc_location -eq $BMC_ID_CLASS2 ]; then
   /usr/sbin/i2cset -y 11 0x40 0xd0 0x0000 w
   /usr/sbin/i2cset -y 11 0x40 0xda 0x0000 w
 else
-  /usr/bin/fw-util slot1 --version > /dev/null
+  /usr/bin/fw-util slot1 --version vr > /dev/null
 fi
 
 echo -n "Setup sensor monitoring for FBYV35... "

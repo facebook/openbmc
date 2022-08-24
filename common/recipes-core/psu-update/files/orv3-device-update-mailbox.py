@@ -162,11 +162,21 @@ def update_device(addr, filename, block_size=96):
 
     status_state("request verify firmware")
     verify_firmware(addr)
-    # TODO Not implemented by BBU yet.
-    # status_state("check firmware status")
-    # verify_firmware_status(addr, FIRMWARE_UPGRADE_SUCCESS)
-    status_state("exit boot mode")
-    exit_boot_mode(addr)
+    status_state("check firmware status")
+    try:
+        # XXX some older BBU FW versions do not support verify.
+        # To work around this, catch any exceptions on verify
+        # and exit boot mode (which activates the firmware).
+        # But, raise the exception to alert the user that
+        # verify failed. Revert the try/except in future once
+        # we no longer see older versions.
+        verify_firmware_status(addr, FIRMWARE_UPGRADE_SUCCESS)
+        status_state("exit boot mode")
+        exit_boot_mode(addr)
+    except Exception as e:
+        status_state("exit boot mode")
+        exit_boot_mode(addr)
+        raise e
     status_state("done")
 
 

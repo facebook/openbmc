@@ -82,7 +82,7 @@ const char pal_server_list[] = "mb";
 
 #define FIO_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
 
-#define FAN_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
+#define HSC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
 
 
 struct fru_dev_info {
@@ -109,22 +109,7 @@ struct fru_dev_info fru_dev_data[] = {
   {FRU_BP0,   "bp0",    "BP0 Board",    40, 0x56, BP_CAPABILITY},
   {FRU_BP1,   "bp1",    "BP1 Board",    41, 0x56, BP_CAPABILITY},
   {FRU_FIO,   "fio",    "FIO Board",    3,  0x20, FIO_CAPABILITY},
-  {FRU_FAN0,  "fan0",   "FAN0 Board",   42, 0x50, FAN_CAPABILITY},
-  {FRU_FAN1,  "fan1",   "FAN1 Board",   43, 0x50, FAN_CAPABILITY},
-  {FRU_FAN2,  "fan2",   "FAN2 Board",   44, 0x50, FAN_CAPABILITY},
-  {FRU_FAN3,  "fan3",   "FAN3 Board",   45, 0x50, FAN_CAPABILITY},
-  {FRU_FAN4,  "fan4",   "FAN4 Board",   46, 0x50, FAN_CAPABILITY},
-  {FRU_FAN5,  "fan5",   "FAN5 Board",   47, 0x50, FAN_CAPABILITY},
-  {FRU_FAN6,  "fan6",   "FAN6 Board",   48, 0x50, FAN_CAPABILITY},
-  {FRU_FAN7,  "fan7",   "FAN7 Board",   49, 0x50, FAN_CAPABILITY},
-  {FRU_FAN8,  "fan8",   "FAN8 Board",   50, 0x50, FAN_CAPABILITY},
-  {FRU_FAN9,  "fan9",   "FAN9 Board",   51, 0x50, FAN_CAPABILITY},
-  {FRU_FAN10, "fan10",  "FAN10 Board",  52, 0x50, FAN_CAPABILITY},
-  {FRU_FAN11, "fan11",  "FAN11 Board",  53, 0x50, FAN_CAPABILITY},
-  {FRU_FAN12, "fan12",  "FAN12 Board",  54, 0x50, FAN_CAPABILITY},
-  {FRU_FAN13, "fan13",  "FAN13 Board",  55, 0x50, FAN_CAPABILITY},
-  {FRU_FAN14, "fan14",  "FAN14 Board",  56, 0x50, FAN_CAPABILITY},
-  {FRU_FAN15, "fan15",  "FAN15 Board",  57, 0x50, FAN_CAPABILITY},
+  {FRU_HSC,   "hsc",    "HSC Board",    2,  0x51, HSC_CAPABILITY},
 };
 
 int
@@ -156,22 +141,7 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_BP0:
     case FRU_BP1:
     case FRU_FIO:
-    case FRU_FAN0:
-    case FRU_FAN1:
-    case FRU_FAN2:
-    case FRU_FAN3:
-    case FRU_FAN4:
-    case FRU_FAN5:
-    case FRU_FAN6:
-    case FRU_FAN7:
-    case FRU_FAN8:
-    case FRU_FAN9:
-    case FRU_FAN10:
-    case FRU_FAN11:
-    case FRU_FAN12:
-    case FRU_FAN13:
-    case FRU_FAN14:
-    case FRU_FAN15:
+    case FRU_HSC:
       *status = 1;
       break;
     default:
@@ -288,7 +258,7 @@ pal_channel_to_bus(int channel) {
       return I2C_BUS_14; // USB (LCD Debug Board)
 
     case IPMI_CHANNEL_6:
-      return I2C_BUS_2; // ME
+      return I2C_BUS_6; // ME
   }
 
   // Debug purpose, map to real bus number

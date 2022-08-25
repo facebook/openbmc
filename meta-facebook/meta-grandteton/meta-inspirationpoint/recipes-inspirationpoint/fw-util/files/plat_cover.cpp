@@ -37,7 +37,7 @@ int palBiosComponent::setMeRecovery(uint8_t retry) {
 }
 
 palBiosComponent bios("mb", "bios", "pnor", "/sys/bus/platform/drivers/aspeed-smc",
-                      "1e631000.spi", "FM_BMC_MUX_CS_SPI_SEL_0", true, "(F0TG_)(.*)");
+                      "1e631000.spi", "FM_BMC_MUX_CS_SPI_SEL_0", true, "(F0TG)(.*)");
 
 VrComponent vr_cpu0_vcore0("mb", "cpu0_vcore0", "VR_CPU0_VCORE0/SOC");
 VrComponent vr_cpu0_vcore1("mb", "cpu0_vcore1", "VR_CPU0_VCORE1/PVDDIO");

@@ -6,7 +6,8 @@ LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=30503fd321432fc713238f582193b78e"
 PE = "1"
 
-PV = "v2019.01"
+OVERRIDES:append = ":uboot-aspeed-fb"
+PV = "v2019.01+git${SRCPV}"
 DEFAULT_PREFERENCE = "-1"
 
 # Use openbmc-uboot clone

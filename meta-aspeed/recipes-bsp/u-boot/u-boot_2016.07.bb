@@ -8,6 +8,7 @@ LIC_FILES_CHKSUM = "file://Licenses/README;md5=a2c678cfd4a4d97135585cad908541c6"
 
 DEPENDS += "dtc-native bc-native"
 
+OVERRIDES:append = ":uboot-aspeed-fb"
 SRCBRANCH = "openbmc/helium/v2016.07"
 SRCREV = "AUTOINC"
 
@@ -24,7 +25,7 @@ def release_patches(d):
 SRC_URI += '${@release_patches(d)}'
 
 
-PV = "v2016.07"
+PV = "v2016.07+git${SRCPV}"
 S = "${WORKDIR}/git"
 
 FILES:${PN} = "${sysconfdir}"

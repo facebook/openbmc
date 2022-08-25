@@ -4,6 +4,7 @@ LIC_FILES_CHKSUM = "file://Licenses/README;md5=a2c678cfd4a4d97135585cad908541c6"
 SECTION = "bootloader"
 DEPENDS = "mtd-utils"
 
+OVERRIDES:append = ":uboot-aspeed-fb"
 SRCBRANCH = "openbmc/helium/v2016.07"
 SRCREV = "AUTOINC"
 
@@ -11,7 +12,7 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config \
           "
 
-PV = "v2016.07"
+PV = "v2016.07+git${SRCPV}"
 S = "${WORKDIR}/git"
 
 INSANE_SKIP:${PN} = "already-stripped"

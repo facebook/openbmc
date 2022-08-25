@@ -83,7 +83,7 @@ function init_class1_fsc(){
     target_fsc_config="/etc/FSC_CLASS1_type15.json"
   fi
 
-  ln -s ${target_fsc_config} ${default_fsc_config_path}
+  cp ${target_fsc_config} ${default_fsc_config_path}
   $KV_CMD set sled_system_conf "Type_${config_type}" persistent
 }
 

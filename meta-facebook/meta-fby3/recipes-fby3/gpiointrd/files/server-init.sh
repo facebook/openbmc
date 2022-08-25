@@ -69,6 +69,9 @@ if [ $(is_server_prsnt $slot_num) == "0" ]; then
     /usr/bin/kv del ${pcie_info_file:19} persistent > /dev/null 2>&1
   done
   set_nic_power
+
+  # reload fscd
+  /etc/init.d/setup-fan.sh reload
 else
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1
   /usr/local/bin/power-util "slot${slot_num}" 12V-on
@@ -76,10 +79,10 @@ else
   /usr/local/bin/bic-cached -f "slot${slot_num}"
   /usr/bin/fw-util "slot${slot_num}" --version > /dev/null
   /etc/init.d/setup-sic.sh "slot${slot_num}" > /dev/null
-fi
 
-# reload fscd
-/etc/init.d/setup-fan.sh reload
+  # reload fscd
+  /etc/init.d/setup-fan.sh start
+fi
 
 # start the services again
 sv start gpiod

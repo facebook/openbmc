@@ -88,6 +88,7 @@ int VrExtComponent::print_version()
   };
   static VR_STATUS vr_status = VR_STATUS::VR_INIT;
   static string err_str("");
+  uint8_t board_type = 0xff;
 
   transform(board_name.begin(), board_name.end(), board_name.begin(), ::toupper);
 
@@ -99,6 +100,12 @@ int VrExtComponent::print_version()
     } catch(string& err) {
       vr_status = VR_STATUS::VR_ERR;
       err_str = err;
+    }
+  }
+  fby3_common_get_2ou_board_type(slot_id, &board_type);
+  if ( board_type == GPV3_BRCM_BOARD) {
+    if (fw_comp == FW_2OU_PESW_VR) {
+      list[fw_comp]="VR P0V9 P1V2";
     }
   }
 

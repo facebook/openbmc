@@ -11,7 +11,7 @@ use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 
 #[derive(Parser, Debug)]
-#[clap(author, version, about, long_about=None, set_term_width(0))]
+#[clap(author, version, about, long_about=None, set_term_width(0), trailing_var_arg(true))]
 struct Args {
     #[clap(short, long, env = "BUILDDIR", help = "Build directory")]
     build: Option<PathBuf>,
@@ -43,6 +43,9 @@ struct Args {
 
     #[clap(long, help = "U-Boot FIT image")]
     fit: Option<PathBuf>,
+
+    #[clap(help = "Extra args to pass to directly to QEMU")]
+    extra: Vec<String>,
 }
 
 fn parse_fit(fit: &[u8]) -> Result<Vec<(&str, &[u8])>> {
@@ -203,6 +206,10 @@ fn main() -> Result<()> {
             ))
             .arg("-net")
             .arg("nic,model=ftgmac100,netdev=nic");
+    }
+
+    for arg in &args.extra {
+        command.arg(arg);
     }
 
     print_qemu_command(&command);

@@ -81,6 +81,13 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0051-hw-misc-aspeed-Add-intel-me.patch \
            file://0052-hw-misc-aspeed-Add-fby35-server-board-bridge-IC.patch \
            file://0053-fby35-Add-CPLD-and-BIC-as-I2C-devices.patch \
+           file://0054-hw-i2c-pca954x-Add-method-to-get-channels.patch \
+           file://0055-aspeed-Expose-i2c-buses-to-machine.patch \
+           file://0056-fby35-Setup-I2C-devices-and-GPIO-s.patch \
+           file://0057-fby35-Add-motherboard-fru-EEPROM-to-BIC.patch \
+           file://0058-hw-i2c-aspeed-Add-bus-ID-to-all-trace-events.patch \
+           file://0059-hw-i2c-aspeed-Add-slave-event-traces.patch \
+           file://0060-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 

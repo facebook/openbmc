@@ -166,11 +166,7 @@ server_power_12v_off(uint8_t fru) {
   uint8_t tlen = 0;
   int ret = 0, retry= 0;
 
-  snprintf(cmd, 64, "rm -f /tmp/cache_store/slot%d_vr*", fru);
-  if (system(cmd) != 0) {
-      syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-  }
-
+  pal_clear_vr_crc(fru);
   pal_clear_vr_new_crc(fru);
 
   memset(cmd, 0, 64);

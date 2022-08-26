@@ -202,6 +202,7 @@ bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 int pal_clear_mrc_warning(uint8_t slot);
 int pal_clear_vr_new_crc(uint8_t fru);
 int pal_move_vr_new_crc(uint8_t fru, uint8_t action);
+int pal_clear_vr_crc(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

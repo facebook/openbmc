@@ -70,7 +70,8 @@ const char pal_dev_fru_list[] = "all, 1U, 2U, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3
 const char pal_dev_pwr_list[] = "all, 1U-dev0, 1U-dev1, 1U-dev2, 1U-dev3, 2U-dev0, 2U-dev1, 2U-dev2, 2U-dev3, 2U-dev4, 2U-dev5, " \
                             "2U-dev6, 2U-dev7, 2U-dev8, 2U-dev9, 2U-dev10, 2U-dev11, 2U-dev12, 2U-dev13";
 const char pal_dev_pwr_option_list[] = "status, off, on, cycle";
-const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech"};
+const char *pal_vr_addr_list[] = {"c0h", "c4h", "ech", "c2h", "c6h", "c8h", "cch", "d0h", "96h", "9ch", "9eh"};
+const char *pal_vr_1ou_addr_list[] = {"b0h", "b4h", "c8h"};
 const char *pal_server_fru_list[NUM_SERVER_FRU] = {"slot1", "slot2", "slot3", "slot4"};
 const char *pal_nic_fru_list[NUM_NIC_FRU] = {"nic"};
 const char *pal_bmc_fru_list[NUM_BMC_FRU] = {"bmc"};
@@ -88,6 +89,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
 #define VR_NEW_CRC_STR "slot%d_vr_%s_new_crc"
+#define VR_CRC_STR "slot%d_vr_%s_crc"
+#define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
@@ -2852,6 +2855,25 @@ pal_clear_vr_new_crc(uint8_t fru) {
 }
 
 int
+pal_clear_vr_crc(uint8_t fru) {
+  char ver_key[MAX_KEY_LEN] = {0};
+  int vr_list_cnt = sizeof(pal_vr_addr_list)/sizeof(char*);
+  int vr_1ou_list_cnt =  sizeof(pal_vr_1ou_addr_list)/sizeof(char*);
+
+  for (int j = 0; j < vr_list_cnt; j++) {
+    snprintf(ver_key, sizeof(ver_key), VR_CRC_STR, fru, pal_vr_addr_list[j]);
+    kv_del(ver_key, 0);
+  }
+
+  for (int j = 0; j < vr_1ou_list_cnt; j++) {
+    snprintf(ver_key, sizeof(ver_key), VR_1OU_CRC_STR, fru, pal_vr_1ou_addr_list[j]);
+    kv_del(ver_key, 0);
+  }
+
+  return 0;
+}
+
+int
 pal_move_vr_new_crc(uint8_t fru, uint8_t action) {
   int ret = 0;
   char ver_key[MAX_KEY_LEN] = {0};
@@ -4551,4 +4573,5 @@ pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
 
   return 0;
 }
+
 

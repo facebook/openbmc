@@ -22,6 +22,7 @@
 
 static uint8_t slot_id = 0;
 static char fru_name[64] = {0};  // prefix of vr version cache (kv)
+static char fru_exp_name[64] = {0};  // prefix of expansion board vr version cache (kv)
 
 enum {
   VR_CL_VCCIN = 0,
@@ -170,7 +171,7 @@ struct vr_info fby35_vr_list[] = {
     .addr = VR_1OU_V9_ASICA_ADDR,
     .dev_name = "1OU_VR_P0V9/P0V8_ASICA",
     .ops = &rns_ops,
-    .private_data = fru_name,
+    .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
   },
   {
@@ -178,7 +179,7 @@ struct vr_info fby35_vr_list[] = {
     .addr = VR_1OU_VDDQAB_ADDR,
     .dev_name = "1OU_VR_VDDQAB/D0V8",
     .ops = &rns_ops,
-    .private_data = fru_name,
+    .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
   },
   {
@@ -186,7 +187,7 @@ struct vr_info fby35_vr_list[] = {
     .addr = VR_1OU_VDDQCD_ADDR,
     .dev_name = "1OU_VR_VDDQCD",
     .ops = &rns_ops,
-    .private_data = fru_name,
+    .private_data = fru_exp_name,
     .xfer = &rbf_vr_rdwr,
   }
 };
@@ -196,8 +197,10 @@ void plat_vr_preinit(uint8_t slot, const char *name) {
 
   if (name) {
     snprintf(fru_name, sizeof(fru_name), "%s", name);
+    snprintf(fru_exp_name, sizeof(fru_exp_name), "%s_1ou", name);
   } else {
     fru_name[0] = 0;
+    fru_exp_name[0] = 0;
   }
 }
 

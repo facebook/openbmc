@@ -48,9 +48,14 @@ i2c_device_add 22 0x48 stlm75
 i2c_device_add 23 0x48 stlm75
 i2c_device_add 24 0x48 stlm75
 
+MB_MAIN_SOURCE="0"
 #MB ADM128D
-i2cset -f -y 20 0x1d 0x0b 0x02
-i2c_device_add 20 0x1d adc128d818
+if [ "$(gpio_get FM_BOARD_BMC_SKU_ID1)" -eq $MB_MAIN_SOURCE ]; then
+  i2cset -f -y 20 0x1d 0x0b 0x02
+  i2c_device_add 20 0x1d adc128d818
+else
+  i2c_device_add 20 0x35 max11617
+fi
 
 #MB Expender
 i2c_device_add 29 0x74 pca9539
@@ -58,6 +63,15 @@ i2c_device_add 29 0x74 pca9539
 #MB FRU
 i2c_device_add 33 0x51 24c64
 
+#MB HSC
+if [ "$(gpio_get FM_BOARD_BMC_SKU_ID2)" -eq "$MB_MAIN_SOURCE" ]; then
+  i2c_device_add 2 0x20 mp5990
+else
+  i2c_device_add 21 0x4C lm75
+  i2c_device_add 2 0x41 ltc4282
+  i2c_device_add 2 0x51 24c64
+
+fi
 
 # Swith Board
 echo "Probe SWB Device"
@@ -80,10 +94,10 @@ gpio_export_ioexp 29-0074 GPU_PEX_STRAP1  13
 #Set IO Expender
 gpio_set BIC_FWSPICK 0
 gpio_set RST_SWB_BIC_N 1
+gpio_set BIC_UART_BMC_SEL 0
 
 VPDB_EVT2_BORAD_ID="2"
 VPDB_MAIN_SOURCE="0"
-HPDB_MAIN_SOURCE="0"
 
 # VPDB
 echo "Probe VPDB Device"
@@ -108,27 +122,37 @@ kv set vpdb_sku "$(($(gpio_get VPDB_SKU_ID_2) << 2 |
 i2cset -y -f 38 0x10 0xd4 0x3F1C w
 i2c_device_add 38 0x10 adm1272
 
-if [ "$(kv get vpdb_rev)" -eq $VPDB_EVT2_BORAD_ID ]; then
-  i2c_device_add 38 0x67 pmbus
-  i2c_device_add 38 0x68 pmbus
-  i2c_device_add 38 0x69 pmbus
+
+brick_driver="bmr491"
+if [ "$(gpio_get VPDB_SKU_ID_1)" -eq $VPDB_MAIN_SOURCE ]; then
+  brick_driver="pmbus"
+fi
+
+if [ "$(kv get vpdb_rev)" -ge $VPDB_EVT2_BORAD_ID ]; then
+  i2c_device_add 38 0x67 $brick_driver
+  i2c_device_add 38 0x68 $brick_driver
+  i2c_device_add 38 0x69 $brick_driver
 else
-  i2c_device_add 38 0x69 pmbus
-  i2c_device_add 38 0x6a pmbus
-  i2c_device_add 38 0x6b pmbus
+  i2c_device_add 38 0x69 $brick_driver
+  i2c_device_add 38 0x6a $brick_driver
+  i2c_device_add 38 0x6b $brick_driver
 fi
 
 if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_MAIN_SOURCE ]; then
   i2c_device_add 36 0x67 ltc2945
   i2c_device_add 36 0x68 ltc2945
+  i2c_device_add 36 0x6E ltc2945
 else
   i2c_device_add 36 0x40 ina238
   i2c_device_add 36 0x41 ina238
+  i2c_device_add 36 0x47 ina238
 fi
 
 # VPDB FRU
 i2c_device_add 36 0x52 24c64 #VPDB FRU
 
+
+HPDB_MAIN_SOURCE="0"
 
 # HPDB
 echo "Probe HPDB Device"

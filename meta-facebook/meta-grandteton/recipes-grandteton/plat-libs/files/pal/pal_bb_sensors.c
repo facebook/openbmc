@@ -158,6 +158,20 @@ char *brick_pmbus_chips_evt2[BRICK_CNT] = {
     "pmbus-i2c-38-69",
 };
 
+char *brick_bmr491_chips_evt[BRICK_CNT] = {
+    "bmr491-i2c-38-69",
+    "bmr491-i2c-38-6a",
+    "bmr491-i2c-38-6b",
+};
+
+char *brick_bmr491_chips_evt2[BRICK_CNT] = {
+    "bmr491-i2c-38-67",
+    "bmr491-i2c-38-68",
+    "bmr491-i2c-38-69",
+};
+
+
+
 char** brick_pmbus_chips = brick_pmbus_chips_evt2;
 
 //FAN
@@ -329,7 +343,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"MEZZ0_P3V3_VOLT", DPM_2, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x80
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
-  {"MEZZ0_P12V_CURR", ADC128_0, read_adc128_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
+  {"MEZZ0_P12V_CURR", ADC_CH1, read_iic_adc_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
   {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, true, {87.12, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
   {"MEZZ0_TEMP", TEMP_MEZZ0, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x84
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
@@ -338,7 +352,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"MEZZ1_P3V3_VOLT", DPM_3, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x88
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
-  {"MEZZ1_P12V_CURR", ADC128_0, read_adc128_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
+  {"MEZZ1_P12V_CURR", ADC_CH2, read_iic_adc_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
   {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, true, {87.12, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
   {"MEZZ1_TEMP", TEMP_MEZZ1, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
@@ -364,7 +378,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"BRICK2_TEMP", BRICK_ID2, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9F
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
-  {"P3V3_AUX_IN6_VOLT", ADC128_0, read_adc128_val, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xA1
+  {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xA1
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
@@ -500,19 +514,37 @@ static int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id) {
   return 0;
 }
 
-static int set_brick_addr_table(void) {
+static int set_brick_chips(void) {
   char value[MAX_VALUE_LEN] = {0};
   uint8_t rev;
-  bool cached=0;
+  uint8_t sku;
+  bool cached=false;
 
   if (!cached) {
     if (kv_get("vpdb_rev", value, NULL, 0)) {
       return -1;
     }
-
     rev = (uint8_t)atoi(value);
-    if (rev != 2)
-      brick_pmbus_chips = brick_pmbus_chips_evt;
+
+    if (kv_get("vpdb_sku", value, NULL, 0)) {
+      return -1;
+    }
+    //SKU ID1=0 Main SKU ID=1 Second
+    sku = (uint8_t)atoi(value);
+
+    if (rev < 2)
+      //EVT Version
+      if (!GETBIT(sku, 1))
+        brick_pmbus_chips = brick_pmbus_chips_evt;
+      else
+        brick_pmbus_chips = brick_bmr491_chips_evt;
+    else
+      //Greater and equal EVT2
+      if (!GETBIT(sku, 1))
+        brick_pmbus_chips = brick_pmbus_chips_evt2;
+      else
+        brick_pmbus_chips = brick_bmr491_chips_evt2;
+
     cached = true;
   }
   return 0;
@@ -522,7 +554,7 @@ static int
 read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
 
-  ret = oper_adc128_power(fru, MB_SNR_HSC_VIN, NIC0_SNR_MEZZ0_P12V_IOUT, value);
+  ret = oper_iic_adc_power(fru, MB_SNR_HSC_VIN, NIC0_SNR_MEZZ0_P12V_IOUT, value);
   return ret;
 }
 
@@ -530,7 +562,7 @@ static int
 read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
 
-  ret = oper_adc128_power(fru, MB_SNR_HSC_VIN, NIC1_SNR_MEZZ1_P12V_IOUT, value);
+  ret = oper_iic_adc_power(fru, MB_SNR_HSC_VIN, NIC1_SNR_MEZZ1_P12V_IOUT, value);
   return ret;
 }
 
@@ -662,7 +694,7 @@ read_brick_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   if (brick_id >= BRICK_CNT)
     return -1;
 
-  set_brick_addr_table();
+  set_brick_chips();
   ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
@@ -682,7 +714,7 @@ read_brick_iout(uint8_t fru, uint8_t sensor_num, float *value) {
   if (brick_id >= BRICK_CNT)
     return -1;
 
-  set_brick_addr_table();
+  set_brick_chips();
   ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
@@ -702,7 +734,7 @@ read_brick_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   if (brick_id >= BRICK_CNT)
     return -1;
 
-  set_brick_addr_table();
+  set_brick_chips();
   ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;

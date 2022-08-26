@@ -196,8 +196,19 @@ enum {
 
 
 enum {
-  ADC128_0 = 0,
-  ADC128_NUM_CNT,
+  ADC_CH0 = 0,
+  ADC_CH1,
+  ADC_CH2,
+  ADC_CH3,
+  ADC_CH4,
+  ADC_CH5,
+  ADC_CH6,
+  ADC_CH7,
+  ADC_CH8,
+  ADC_CH9,
+  ADC_CH10,
+  ADC_CH11,
+  ADC_CH_NUM_CNT,
 };
 
 
@@ -227,9 +238,14 @@ typedef struct {
   uint8_t identify;
 } PAL_DIMM_PMIC_INFO;
 
+typedef struct {
+  uint8_t ch;
+  float r1;
+  float r2;
+} PAL_ADC_CH_INFO;
 
-int read_adc128_val(uint8_t fru, uint8_t sensor_num, float *value);
-int oper_adc128_power(uint8_t fru, uint8_t volt_snr_num, uint8_t curr_snr_num, float *value);
+int read_iic_adc_val(uint8_t fru, uint8_t sensor_num, float *value);
+int oper_iic_adc_power(uint8_t fru, uint8_t volt_snr_num, uint8_t curr_snr_num, float *value);
 int read_dpm_vout(uint8_t fru, uint8_t sensor_num, float *value);
 int read_adc_val(uint8_t fru, uint8_t sensor_num, float *value);
 #endif

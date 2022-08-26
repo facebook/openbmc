@@ -46,5 +46,6 @@
 #define FP_PWR_BTN_OUT_N         "SYS_BMC_PWRBTN_OUT"
 #define FP_RST_BTN_OUT_N         "RST_BMC_RSTBTN_OUT_R_N"
 #define PWRGD_SYS_PWROK          "PWRGD_SYS_PWROK_R"
+#define BIC_READY                "FM_SWB_BIC_READY_ISO_R_N"
 
 #endif

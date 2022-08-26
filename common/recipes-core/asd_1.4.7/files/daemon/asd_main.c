@@ -44,6 +44,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 #include <unistd.h>
 #include <syslog.h>
+#include <openbmc/pal.h>
 
 #include "target_handler.h"
 

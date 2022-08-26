@@ -38,7 +38,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <sys/time.h>
 #include <openbmc/pal.h>
+#ifndef EXT_JTAG_HNDLR
 #include "asd/SoftwareJTAGHandler.h"
+#else
+#include "asd/jtag_handler.h"
+
+typedef enum {
+    JtagTLR,
+    JtagRTI,
+    JtagSelDR,
+    JtagCapDR,
+    JtagShfDR,
+    JtagEx1DR,
+    JtagPauDR,
+    JtagEx2DR,
+    JtagUpdDR,
+    JtagSelIR,
+    JtagCapIR,
+    JtagShfIR,
+    JtagEx1IR,
+    JtagPauIR,
+    JtagEx2IR,
+    JtagUpdIR
+} JtagStates;
+
+JTAG_Handler* SoftwareJTAGHandler(uint8_t fru);
+#endif
 
 #define ASD_HW_JUMPER_REMOVE   1
 #define ASD_HW_JUMPER_POP      0
@@ -185,11 +210,11 @@ int main (int argc, char **argv) {
         return -1;
     }
     if (check_dup_process(fru) != 0) {
-        printf("ERROR: Another instance running for FRU: %d\n", fru);
+        printf("ERROR: Another instance running for FRU: %u\n", fru);
         return -1;
     }
 
-    printf("ASD: connect to fru %d, irSize=%d, %s mode\n", fru, irSize, (mFlag)?"HW":"SW");
+    printf("ASD: connect to fru %u, irSize=%u, %s mode\n", fru, irSize, (mFlag)?"HW":"SW");
     syslog(LOG_WARNING, "ASD: ASD test on fru %d, irSize=%d, %s mode",
            fru, irSize, (mFlag)?"HW":"SW");
 

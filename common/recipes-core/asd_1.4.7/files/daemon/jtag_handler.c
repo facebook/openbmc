@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2019, Intel Corporation
+Copyright (c) 2021, Facebook Inc.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -46,6 +47,236 @@ static const ASD_LogOption option = ASD_LogOption_None;
 static const char* JtagStatesString[] = {
     "TLR",   "RTI",   "SelDR", "CapDR", "ShfDR", "Ex1DR", "PauDR", "Ex2DR",
     "UpdDR", "SelIR", "CapIR", "ShfIR", "Ex1IR", "PauIR", "Ex2IR", "UpdIR"};
+
+#ifdef IPMB_JTAG_HNDLR
+#include <signal.h>
+#include <openbmc/ipmi.h>
+
+#include "target_handler.h"
+
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+
+#define MAX_TRANSFER_BITS  0x400
+#define IANA_SIZE          3
+
+struct scan_xfer
+{
+    __u8 mode;
+    __u32 tap_state;
+    __u32 length;
+    __u8* tdi;
+    __u32 tdi_bytes;
+    __u8* tdo;
+    __u32 tdo_bytes;
+    __u32 end_tap_state;
+} __attribute__((__packed__));
+
+typedef struct {
+    uint8_t tmsbits;
+    uint8_t count;
+} TmsCycle;
+
+// this is the complete set TMS cycles for going from any TAP state to any other TAP state, following a “shortest path” rule
+static const TmsCycle _tmsCycleLookup[][16] = {
+/*   start*/ /*TLR      RTI      SelDR    CapDR    SDR      Ex1DR    PDR      Ex2DR    UpdDR    SelIR    CapIR    SIR      Ex1IR    PIR      Ex2IR    UpdIR    destination*/
+/*     TLR*/{ {0x00,0},{0x00,1},{0x02,2},{0x02,3},{0x02,4},{0x0a,4},{0x0a,5},{0x2a,6},{0x1a,5},{0x06,3},{0x06,4},{0x06,5},{0x16,5},{0x16,6},{0x56,7},{0x36,6} },
+/*     RTI*/{ {0x07,3},{0x00,0},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x0d,4},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5} },
+/*   SelDR*/{ {0x03,2},{0x03,3},{0x00,0},{0x00,1},{0x00,2},{0x02,2},{0x02,3},{0x0a,4},{0x06,3},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x0d,4} },
+/*   CapDR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x00,0},{0x00,1},{0x01,1},{0x01,2},{0x05,3},{0x03,2},{0x0f,4},{0x0f,5},{0x0f,6},{0x2f,6},{0x2f,7},{0xaf,8},{0x6f,7} },
+/*     SDR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x00,0},{0x01,1},{0x01,2},{0x05,3},{0x03,2},{0x0f,4},{0x0f,5},{0x0f,6},{0x2f,6},{0x2f,7},{0xaf,8},{0x6f,7} },
+/*   Ex1DR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x02,3},{0x00,0},{0x00,1},{0x02,2},{0x01,1},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6} },
+/*     PDR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x01,2},{0x05,3},{0x00,0},{0x01,1},{0x03,2},{0x0f,4},{0x0f,5},{0x0f,6},{0x2f,6},{0x2f,7},{0xaf,8},{0x6f,7} },
+/*   Ex2DR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x00,1},{0x02,2},{0x02,3},{0x00,0},{0x01,1},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6} },
+/*   UpdDR*/{ {0x07,3},{0x00,1},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x00,0},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5} },
+/*   SelIR*/{ {0x01,1},{0x01,2},{0x05,3},{0x05,4},{0x05,5},{0x15,5},{0x15,6},{0x55,7},{0x35,6},{0x00,0},{0x00,1},{0x00,2},{0x02,2},{0x02,3},{0x0a,4},{0x06,3} },
+/*   CapIR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6},{0x0f,4},{0x00,0},{0x00,1},{0x01,1},{0x01,2},{0x05,3},{0x03,2} },
+/*     SIR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6},{0x0f,4},{0x0f,5},{0x00,0},{0x01,1},{0x01,2},{0x05,3},{0x03,2} },
+/*   Ex1IR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5},{0x07,3},{0x07,4},{0x02,3},{0x00,0},{0x00,1},{0x02,2},{0x01,1} },
+/*     PIR*/{ {0x1f,5},{0x03,3},{0x07,3},{0x07,4},{0x07,5},{0x17,5},{0x17,6},{0x57,7},{0x37,6},{0x0f,4},{0x0f,5},{0x01,2},{0x05,3},{0x00,0},{0x01,1},{0x03,2} },
+/*   Ex2IR*/{ {0x0f,4},{0x01,2},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x1b,5},{0x07,3},{0x07,4},{0x00,1},{0x02,2},{0x02,3},{0x00,0},{0x01,1} },
+/*   UpdIR*/{ {0x07,3},{0x00,1},{0x01,1},{0x01,2},{0x01,3},{0x05,3},{0x05,4},{0x15,5},{0x0d,4},{0x03,2},{0x03,3},{0x03,4},{0x0b,4},{0x0b,5},{0x2b,6},{0x00,0} },
+};
+
+static uint8_t m_fruid = 0;
+
+STATUS jtag_ipmb_wrapper(uint8_t fru, uint8_t netfn, uint8_t cmd,
+                         uint8_t *txbuf, size_t txlen,
+                         uint8_t *rxbuf, size_t *rxlen);
+
+static STATUS jtag_ipmb_asd_init(uint8_t fru, uint8_t cmd)
+{
+    uint8_t tbuf[8] = {0x15, 0xA0, 0x00};  // IANA
+    uint8_t rbuf[8] = {0x00};
+    size_t rlen = sizeof(rbuf);
+
+    tbuf[3] = cmd;
+    if (jtag_ipmb_wrapper(fru, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT,
+                          tbuf, 4, rbuf, &rlen) != ST_OK) {
+        return ST_ERR;
+    }
+
+    return ST_OK;
+}
+
+static STATUS jtag_ipmb_shift_wrapper(uint8_t fru, uint32_t write_bit_length,
+                                      uint8_t *write_data, uint32_t read_bit_length,
+                                      uint8_t *read_data, uint32_t last_transaction)
+{
+    uint8_t tbuf[256] = {0x15, 0xA0, 0x00};  // IANA
+    uint8_t rbuf[256] = {0x00};
+    uint8_t write_len_bytes = ((write_bit_length+7) >> 3);
+    size_t rlen = sizeof(rbuf);
+    size_t tlen = 0;
+
+    // tbuf[0:2]   = IANA ID
+    // tbuf[3]     = write bit length (LSB)
+    // tbuf[4]     = write bit length (MSB)
+    // tbuf[5:n-1] = write data
+    // tbuf[n]     = read bit length (LSB)
+    // tbuf[n+1]   = read bit length (MSB)
+    // tbuf[n+2]   = last transactions
+    tbuf[3] = write_bit_length & 0xFF;
+    tbuf[4] = (write_bit_length >> 8) & 0xFF;
+    if (write_data) {
+        memcpy(&tbuf[5], write_data, write_len_bytes);
+    }
+    tbuf[5 + write_len_bytes] = read_bit_length & 0xFF;
+    tbuf[6 + write_len_bytes] = (read_bit_length >> 8) & 0xFF;
+    tbuf[7 + write_len_bytes] = last_transaction;
+
+    tlen = write_len_bytes + 8;
+    if (jtag_ipmb_wrapper(fru, NETFN_OEM_1S_REQ, CMD_OEM_1S_JTAG_SHIFT,
+                          tbuf, tlen, rbuf, &rlen) != ST_OK) {
+        return ST_ERR;
+    }
+    if (read_bit_length && read_data && (rlen > IANA_SIZE)) {
+        memcpy(read_data, &rbuf[IANA_SIZE], (rlen - IANA_SIZE));
+    }
+
+    return ST_OK;
+}
+
+static STATUS jtag_ipmb_read_write_scan(JTAG_Handler *state, struct scan_xfer *scan_xfer)
+{
+    if (state == NULL || scan_xfer == NULL) {
+        return ST_ERR;
+    }
+
+    int write_bit_length    = (scan_xfer->tdi_bytes << 3);
+    int read_bit_length     = (scan_xfer->tdo_bytes << 3);
+    int transfer_bit_length = scan_xfer->length;
+    int last_transaction    = 0;
+    uint8_t *tdi_buffer, *tdo_buffer;
+    uint8_t fru = state->fru;
+
+    if (write_bit_length < transfer_bit_length &&
+        read_bit_length < transfer_bit_length) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "illegal input, read(%d)/write(%d) length < transfer length(%d)",
+                read_bit_length, write_bit_length, transfer_bit_length);
+        return ST_ERR;
+    }
+
+    write_bit_length = MIN(write_bit_length, transfer_bit_length);
+    read_bit_length  = MIN(read_bit_length, transfer_bit_length);
+    tdi_buffer = scan_xfer->tdi;
+    tdo_buffer = scan_xfer->tdo;
+    while (transfer_bit_length) {
+        int this_write_bit_length = MIN(write_bit_length, MAX_TRANSFER_BITS);
+        int this_read_bit_length  = MIN(read_bit_length, MAX_TRANSFER_BITS);
+
+        transfer_bit_length -= MAX(this_write_bit_length, this_read_bit_length);
+        if (transfer_bit_length) {
+            ASD_log(ASD_LogLevel_Info, stream, option,
+                    "fru=%u, multi loop transfer %d", fru, transfer_bit_length);
+        }
+
+        write_bit_length -= this_write_bit_length;
+        read_bit_length  -= this_read_bit_length;
+
+        last_transaction = (transfer_bit_length <= 0) &&
+                           (scan_xfer->end_tap_state != jtag_shf_dr) &&
+                           (scan_xfer->end_tap_state != jtag_shf_ir);
+        if (jtag_ipmb_shift_wrapper(fru, this_write_bit_length, tdi_buffer,
+                                    this_read_bit_length, tdo_buffer,
+                                    last_transaction) != ST_OK) {
+            ASD_log(ASD_LogLevel_Error, stream, option,
+                    "jtag_ipmb_shift_wrapper failed, fru%u", fru);
+            return ST_ERR;
+        }
+
+        if (last_transaction) {
+            if (state->active_chain->tap_state == jtag_shf_dr) {
+                state->active_chain->tap_state = jtag_ex1_dr;
+            } else {
+                state->active_chain->tap_state = jtag_ex1_ir;
+            }
+        }
+        tdi_buffer += (this_write_bit_length >> 3);
+        tdo_buffer += (this_read_bit_length >> 3);
+    }
+
+    return ST_OK;
+}
+
+static STATUS generateTMSbits(enum jtag_states src, enum jtag_states dst,
+                              uint8_t *length, uint8_t *tmsbits)
+{
+    if (length == NULL || tmsbits == NULL) {
+        return ST_ERR;
+    }
+
+    // ensure that src and dst tap states are within 0 to 15.
+    if ((src >= sizeof(_tmsCycleLookup[0])/sizeof(_tmsCycleLookup[0][0])) ||  // Column
+        (dst >= sizeof(_tmsCycleLookup)/sizeof(_tmsCycleLookup[0]))) {        // Row
+        return ST_ERR;
+    }
+
+    *length  = _tmsCycleLookup[src][dst].count;
+    *tmsbits = _tmsCycleLookup[src][dst].tmsbits;
+
+    return ST_OK;
+}
+
+static STATUS JTAG_clock_cycle(uint8_t fru, int number_of_cycles)
+{
+    uint8_t tbuf[8] = {0x15, 0xA0, 0x00};  // IANA
+    uint8_t rbuf[8] = {0x00};
+    size_t rlen = sizeof(rbuf);
+
+    if (number_of_cycles > 255) {
+        number_of_cycles = 255;
+    }
+
+    // tbuf[0:2] = IANA ID
+    // tbuf[3]   = tms bit length
+    // tbuf[4]   = tmsbits
+    tbuf[3] = number_of_cycles;
+    tbuf[4] = 0x0;
+    if (jtag_ipmb_wrapper(fru, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
+                          tbuf, 5, rbuf, &rlen) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "wait cycle failed, fru%u", fru);
+        return ST_ERR;
+    }
+
+    return ST_OK;
+}
+
+static void asd_sig_handler(int sig)
+{
+    char path[32];
+
+    if (jtag_ipmb_asd_init(m_fruid, 0xFF) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "1S_ASD_DEINIT failed, fru%u", m_fruid);
+    }
+
+    snprintf(path, sizeof(path), SOCK_PATH_GPIO_EVT, m_fruid);
+    unlink(path);
+}
+#endif
 
 #ifdef JTAG_LEGACY_DRIVER
 STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi);
@@ -114,8 +345,13 @@ STATUS JTAG_clock_cycle(int handle, unsigned char tms, unsigned char tdi)
 
 STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
 {
+#ifdef IPMB_JTAG_HNDLR
+    static bool sig_init = false;
+    struct sigaction sa;
+#else
 #ifndef JTAG_LEGACY_DRIVER
     struct jtag_mode jtag_mode;
+#endif
 #endif
 
     if (state == NULL)
@@ -125,6 +361,26 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
     ASD_log(ASD_LogLevel_Info, stream, option, "JTAG mode set to '%s'.",
             state->sw_mode ? "software" : "hardware");
 
+#ifdef IPMB_JTAG_HNDLR
+    if (jtag_ipmb_asd_init(state->fru, state->msg_flow) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "1S_ASD_INIT failed, fru%u", state->fru);
+        return ST_ERR;
+    }
+
+    if (sig_init == false) {
+        m_fruid = state->fru;
+        sa.sa_handler = asd_sig_handler;
+        sa.sa_flags = 0;
+        sigemptyset(&sa.sa_mask);
+        sigaction(SIGHUP, &sa, NULL);
+        sigaction(SIGINT, &sa, NULL);
+        sigaction(SIGQUIT, &sa, NULL);
+        sigaction(SIGSEGV, &sa, NULL);
+        sigaction(SIGTERM, &sa, NULL);
+        sig_init = true;
+    }
+#else
 #ifdef JTAG_LEGACY_DRIVER
     state->JTAG_driver_handle = open("/dev/jtag", O_RDWR);
 #else
@@ -149,12 +405,15 @@ STATUS JTAG_initialize(JTAG_Handler* state, bool sw_mode)
         return ST_ERR;
     }
 #endif
+#endif
 
     if (JTAG_set_tap_state(state, jtag_tlr) != ST_OK)
     {
         ASD_log(ASD_LogLevel_Error, stream, option,
                 "Failed to reset tap state.");
+#ifndef IPMB_JTAG_HNDLR
         close(state->JTAG_driver_handle);
+#endif
         state->JTAG_driver_handle = -1;
         return ST_ERR;
     }
@@ -168,7 +427,14 @@ STATUS JTAG_deinitialize(JTAG_Handler* state)
     if (state == NULL)
         return ST_ERR;
 
+#ifdef IPMB_JTAG_HNDLR
+    if (jtag_ipmb_asd_init(state->fru, 0xFF) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "1S_ASD_DEINIT failed, fru%u", state->fru);
+    }
+#else
     close(state->JTAG_driver_handle);
+#endif
     state->JTAG_driver_handle = -1;
 
     return ST_OK;
@@ -236,6 +502,44 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, enum jtag_states tap_state)
 {
     if (state == NULL)
         return ST_ERR;
+#ifdef IPMB_JTAG_HNDLR
+    uint8_t fru = state->fru;
+    uint8_t tbuf[8] = {0x15, 0xA0, 0x00};  // IANA
+    uint8_t rbuf[8] = {0x00};
+    size_t rlen = sizeof(rbuf);
+
+    // Jtag state is tap_state already.
+    if (tap_state != jtag_tlr && state->active_chain->tap_state == tap_state) {
+        return ST_OK;
+    }
+
+    if (tap_state == jtag_tlr) {
+        tbuf[3] = 8;
+        tbuf[4] = 0xff;
+    } else {
+        // look up the TMS sequence to go from current state to tap_state
+        if (generateTMSbits(state->active_chain->tap_state,
+                            tap_state, &tbuf[3], &tbuf[4]) != ST_OK) {
+            ASD_log(ASD_LogLevel_Error, stream, option,
+                    "Failed to find path from state%d to state%d",
+                    state->active_chain->tap_state, tap_state);
+        }
+    }
+
+    // add delay count for 2 special cases
+    if ((tap_state == jtag_rti) || (tap_state == jtag_pau_dr)) {
+        tbuf[3] += 5;
+    }
+
+    if (jtag_ipmb_wrapper(fru, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_TAP_STATE,
+                          tbuf, 5, rbuf, &rlen) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "Failed to run CMD_OEM_1S_SET_TAP_STATE");
+        return ST_ERR;
+    }
+
+    state->active_chain->tap_state = tap_state;
+#else
 #ifdef JTAG_LEGACY_DRIVER
     struct tap_state_param params;
     params.mode = state->sw_mode ? SW_MODE : HW_MODE;
@@ -267,6 +571,7 @@ STATUS JTAG_set_tap_state(JTAG_Handler* state, enum jtag_states tap_state)
     if ((tap_state == jtag_rti) || (tap_state == jtag_pau_dr))
         if (JTAG_wait_cycles(state, 5) != ST_OK)
             return ST_ERR;
+#endif
 
     ASD_log(ASD_LogLevel_Info, stream, option, "Goto state: %s (%d)",
             tap_state >=
@@ -300,7 +605,7 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
     if (state == NULL)
         return ST_ERR;
 
-#ifndef JTAG_LEGACY_DRIVER
+#if !(defined IPMB_JTAG_HNDLR || defined JTAG_LEGACY_DRIVER)
     if (!state->sw_mode && !state->force_jtag_hw)
         return JTAG_shift_hw(state, number_of_bits, input_bytes, input,
                              output_bytes, output, end_tap_state);
@@ -367,6 +672,7 @@ STATUS JTAG_shift(JTAG_Handler* state, unsigned int number_of_bits,
     return ST_OK;
 }
 
+#if !(defined IPMB_JTAG_HNDLR || defined JTAG_LEGACY_DRIVER)
 STATUS JTAG_shift_hw(JTAG_Handler* state, unsigned int number_of_bits,
                      unsigned int input_bytes, unsigned char* input,
                      unsigned int output_bytes, unsigned char* output,
@@ -478,6 +784,7 @@ STATUS JTAG_shift_hw(JTAG_Handler* state, unsigned int number_of_bits,
 #endif
     return ST_OK;
 }
+#endif
 
 //
 //  Optionally write and read the requested number of
@@ -489,7 +796,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                      enum jtag_states current_tap_state,
                      enum jtag_states end_tap_state)
 {
-#ifdef JTAG_LEGACY_DRIVER
+#if defined IPMB_JTAG_HNDLR || defined JTAG_LEGACY_DRIVER
     struct scan_xfer scan_xfer;
     scan_xfer.mode = state->sw_mode ? SW_MODE : HW_MODE;
     scan_xfer.tap_state = current_tap_state;
@@ -500,6 +807,20 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
     scan_xfer.tdo = output;
     scan_xfer.end_tap_state = end_tap_state;
 
+#ifdef IPMB_JTAG_HNDLR
+    if (jtag_ipmb_read_write_scan(state, &scan_xfer) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "ERROR, jtag_ipmb_read_write_scan failed");
+        return ST_ERR;
+    }
+
+    // go to end_tap_state as requested
+    if (JTAG_set_tap_state(state, end_tap_state) != ST_OK) {
+        ASD_log(ASD_LogLevel_Error, stream, option,
+                "ERROR, failed to go state %d,", end_tap_state);
+        return ST_ERR;
+    }
+#else
     if (ioctl(state->JTAG_driver_handle, AST_JTAG_READWRITESCAN, &scan_xfer) <
         0)
     {
@@ -507,6 +828,7 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
                 "ioctl AST_JTAG_READWRITESCAN failed.");
         return ST_ERR;
     }
+#endif
 #else
     struct jtag_xfer xfer;
     unsigned char tdio[MAX_DATA_SIZE];
@@ -572,9 +894,18 @@ STATUS perform_shift(JTAG_Handler* state, unsigned int number_of_bits,
 //
 STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
 {
-#ifdef JTAG_LEGACY_DRIVER
     if (state == NULL)
         return ST_ERR;
+
+    // Execute wait cycles in SW and HW mode
+    ASD_log(ASD_LogLevel_Debug, stream, option, "Wait %d cycles",
+            number_of_cycles);
+
+#ifdef IPMB_JTAG_HNDLR
+    if (JTAG_clock_cycle(state->fru, number_of_cycles) != ST_OK) {
+        return ST_ERR;
+    }
+#elif defined JTAG_LEGACY_DRIVER
     if (state->sw_mode)
     {
         for (unsigned int i = 0; i < number_of_cycles; i++)
@@ -584,15 +915,8 @@ STATUS JTAG_wait_cycles(JTAG_Handler* state, unsigned int number_of_cycles)
         }
     }
 #else
-    if (state == NULL)
-        return ST_ERR;
-
     if (number_of_cycles > MAX_WAIT_CYCLES)
         return ST_ERR;
-
-    // Execute wait cycles in SW and HW mode
-    ASD_log(ASD_LogLevel_Debug, stream, option, "Wait %d cycles",
-            number_of_cycles);
 
     if (state->sw_mode)
     {
@@ -626,6 +950,7 @@ STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
         return ST_ERR;
     }
 #else
+#ifndef IPMB_JTAG_HNDLR
     unsigned int frq = APB_FREQ / tck;
 
     if (ioctl(state->JTAG_driver_handle, JTAG_SIOCFREQ, &frq) < 0)
@@ -634,6 +959,7 @@ STATUS JTAG_set_jtag_tck(JTAG_Handler* state, unsigned int tck)
                 "ioctl JTAG_SIOCFREQ failed");
         return ST_ERR;
     }
+#endif
 #endif
     return ST_OK;
 }

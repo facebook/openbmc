@@ -47,12 +47,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define JTAG_CLOCK_CYCLE_MILLISECONDS 1000
 
+static inline void get_pin_events(Target_Control_GPIO gpio, short* events)
+{
+    *events = POLLIN | POLLPRI;
+}
+
 void read_pin_value(uint8_t fru, Target_Control_GPIO gpio, int* value, STATUS* result);
 void write_pin_value(uint8_t fru, Target_Control_GPIO gpio, int value, STATUS* result);
-void get_pin_events(Target_Control_GPIO gpio, short* events);
-STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle *state);
-STATUS pin_hndlr_deinit_asd_gpio(Target_Control_Handle *state);
-STATUS pin_hndlr_read_gpio_event(Target_Control_Handle* state, struct pollfd poll_fd, ASD_EVENT* event);
+STATUS pin_hndlr_init_asd_gpio(Target_Control_Handle* state);
+STATUS pin_hndlr_deinit_asd_gpio(Target_Control_Handle* state);
 
 STATUS initialize_gpios(Target_Control_Handle* state);
 STATUS deinitialize_gpios(Target_Control_Handle* state);
@@ -230,14 +233,24 @@ STATUS deinitialize_gpios(Target_Control_Handle* state)
 STATUS target_event(Target_Control_Handle* state, struct pollfd poll_fd,
                     ASD_EVENT* event)
 {
-    STATUS result = ST_ERR;
+    STATUS result = ST_OK;
+    uint8_t pin_num = 0;
 
     if (state == NULL || !state->initialized || event == NULL)
         return ST_ERR;
 
     *event = ASD_EVENT_NONE;
-    
-    return pin_hndlr_read_gpio_event(state, poll_fd, event);
+
+    if (poll_fd.revents & (POLLIN | POLLPRI))
+    {
+        if ((read(poll_fd.fd, &pin_num, sizeof(pin_num)) == sizeof(pin_num)) &&
+            (pin_num < NUM_GPIOS) && state->gpios[pin_num].handler)
+        {
+            result = state->gpios[pin_num].handler(state, event);
+        }
+    }
+
+    return result;
 }
 
 STATUS target_write(Target_Control_Handle* state, const Pin pin,

@@ -20,12 +20,12 @@ else()
     #target_link_libraries(jtag_test -lm ${SAFEC_LIBRARIES})
     #install (TARGETS jtag_test DESTINATION bin)
 
-    add_executable(asd asd_main.c logging.c ext_network.c authenticate.c
-            session.c logging.c config.c jtag_handler.c asd_msg.c ext_tcp.c
-            auth_none.c target_handler.c pin_handler.c
+    add_executable(asd asd_main.c ext_network.c authenticate.c
+            session.c config.c asd_msg.c ext_tcp.c
+            auth_none.c target_handler.c
             i2c_msg_builder.c i2c_handler.c i3c_handler.c
             vprobe_handler.c)
-    target_link_libraries(asd -lm -lpthread -lpal ${SAFEC_LIBRARIES})
+    target_link_libraries(asd -lm -lpthread -lasd-jtagintf -lpal ${SAFEC_LIBRARIES})
     install (TARGETS asd DESTINATION bin)
 
     # Copy pam-asd to etc/pam.d

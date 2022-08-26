@@ -28,10 +28,8 @@ SRC_URI = " file://daemon/asd_common.h \
             file://daemon/i3c_handler.c \
             file://daemon/i3c_handler.h \
             file://daemon/tests/jtag.h \
-            file://daemon/jtag_handler.c \
             file://daemon/jtag_handler.h \
             file://daemon/LICENSE \
-            file://daemon/logging.c \
             file://daemon/logging.h \
             file://daemon/session.c \
             file://daemon/session.h \
@@ -39,11 +37,10 @@ SRC_URI = " file://daemon/asd_common.h \
             file://daemon/target_handler.h \
             file://daemon/vprobe_handler.c \
             file://daemon/vprobe_handler.h \
-            file://daemon/pin_handler.c \
           "
 
-DEPENDS += "safec libpal"
-RDEPENDS:${PN} += "safec libpal"
+DEPENDS += "safec libasd-jtagintf libpal"
+RDEPENDS:${PN} += "safec libasd-jtagintf libpal"
 
 S = "${WORKDIR}/daemon"
 

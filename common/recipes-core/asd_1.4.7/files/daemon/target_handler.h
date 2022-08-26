@@ -110,6 +110,26 @@ typedef enum
     ALL_TARGET_CONTROL_GPIOS(TO_ENUM)
 } Target_Control_GPIOS;
 
+// Set alias
+#define BMC_JTAG_SEL BMC_RSMRST_B
+
+// PLTRST, PWRGD, PRDY, XDP_PRESENT
+enum MONITOR_EVENTS {
+    JTAG_PLTRST_EVENT = 0,
+    JTAG_PWRGD_EVENT,
+    JTAG_PRDY_EVENT,
+    JTAG_XDP_PRESENT_EVENT,
+    JTAG_EVENT_NUM,
+};
+
+typedef struct gpio_evt
+{
+    bool triggered;
+    int value;
+} gpio_evt;
+
+#define SOCK_PATH_GPIO_EVT "/tmp/asd_bic_socket_%d"
+
 static const char* TARGET_CONTROL_GPIO_STRINGS[] = {
     ALL_TARGET_CONTROL_GPIOS(TO_STRING)};
 

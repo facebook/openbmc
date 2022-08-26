@@ -54,6 +54,14 @@ typedef struct
   unsigned int FeatureRow;
 } CPLDInfo;
 
+// CPLD version info. byte0 testing info, byte1 board info, byte2 stage, byte3 stage version.
+typedef struct {
+  uint8_t stage_version;
+  uint8_t stage;
+  uint8_t board_info;
+  uint8_t test;
+} CPLD_VER_INFO;
+
 enum {
   MUX  = 0xE2,
   CPLD = 0x80,
@@ -1265,7 +1273,59 @@ error_exit:
 }
 
 int
-bic_update_cpld_lattice_usb(uint8_t slot_id, uint8_t intf, const char *image, usb_dev* udev) {
+check_valid_update(CPLDInfo* dev_info, uint8_t intf, uint8_t board_type) {
+
+  if (!dev_info) {
+    return -1;
+  }
+
+  CPLD_VER_INFO *cpld_ver_info = (CPLD_VER_INFO *)(&dev_info->Version);
+
+  switch (board_type) {
+  case CWC_MCHP_BOARD:
+    switch (intf) {
+    case REXP_BIC_INTF: // CWC
+      if (cpld_ver_info->board_info == CWC_CPLD) {
+        return 0;
+      } else {
+        return -1;
+      }
+      break;
+    case RREXP_BIC_INTF1: //TOP/BOT GPv3
+    case RREXP_BIC_INTF2:
+      if (cpld_ver_info->board_info == GPV3_MCHP_CPLD) {
+        return 0;
+      } else {
+        return -1;
+      }
+      break;
+    default:
+      break;
+    }
+    break;
+  case GPV3_MCHP_BOARD:
+    if (intf == REXP_BIC_INTF && cpld_ver_info->board_info == GPV3_MCHP_CPLD) {
+      return 0;
+    } else {
+      return -1;
+    }
+    break;
+  case GPV3_BRCM_CPLD:
+    if (intf == REXP_BIC_INTF && cpld_ver_info->board_info == GPV3_BRCM_CPLD) {
+      return 0;
+    } else {
+      return -1;
+    }
+    break;
+  default:
+    // Add yourself
+    break;
+  }
+  return 0;
+}
+
+int
+bic_update_cpld_lattice_usb(uint8_t slot_id, uint8_t intf, const char *image, usb_dev* udev, uint8_t board_type) {
   int ret = 0;
   uint32_t fsize = 0;
   uint32_t record_offset = 0;
@@ -1291,6 +1351,13 @@ bic_update_cpld_lattice_usb(uint8_t slot_id, uint8_t intf, const char *image, us
   memset(&dev_info, 0, sizeof(dev_info));
   ret = LCMXO2Family_JED_File_Parser(fp, &dev_info);
   if ( ret < 0 ) {
+    goto exit;
+  }
+
+  // Check if it's a correct cpld image through board info and usercode
+  ret = check_valid_update(&dev_info, intf, board_type);
+  if (ret < 0) {
+    printf("Upgrade with invalid CPLD image!\n");
     goto exit;
   }
 
@@ -1494,7 +1561,7 @@ update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t 
   gettimeofday(&start, NULL);
 
   // sending file
-  ret = bic_update_cpld_lattice_usb(slot_id, intf, image, udev);
+  ret = bic_update_cpld_lattice_usb(slot_id, intf, image, udev, type_2ou);
   if (ret < 0) {
     goto error_exit;
   }

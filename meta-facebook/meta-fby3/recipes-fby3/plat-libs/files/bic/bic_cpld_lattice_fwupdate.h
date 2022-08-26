@@ -28,6 +28,12 @@ extern "C" {
 #include "bic_xfer.h"
 #include "bic.h"
 
+enum CPLD_USER_CODE {
+    GPV3_MCHP_CPLD = 0x8,
+    GPV3_BRCM_CPLD,
+    CWC_CPLD,
+};
+
 int update_bic_cpld_lattice(uint8_t slot_id, char *image, uint8_t intf, uint8_t force);
 int update_bic_cpld_lattice_usb(uint8_t slot_id, char *image, uint8_t intf, uint8_t force);
 

@@ -132,5 +132,5 @@ VrComponent vr_cpu0_vccd("mb", "cpu0_vccd", "VR_CPU0_VCCD");
 VrComponent vr_cpu1_vccin("mb", "cpu1_vccin", "VR_CPU1_VCCIN/VCCFA_FIVRA");
 VrComponent vr_cpu1_faon("mb", "cpu1_faon", "VR_CPU1_VCCFAEHV/FAON");
 VrComponent vr_cpu1_vccd("mb", "cpu1_vccd", "VR_CPU1_VCCD");
-SwbVrComponent vr_pex0_vcc("swb", "pex0_vcc", "VR_PEX0_VCC");
-SwbVrComponent vr_pex1_vcc("swb", "pex1_vcc", "VR_PEX1_VCC");
+SwbVrComponent vr_pex0_vcc("swb", "pex01_vcc", "VR_PEX01_VCC");
+SwbVrComponent vr_pex1_vcc("swb", "pex23_vcc", "VR_PEX23_VCC");

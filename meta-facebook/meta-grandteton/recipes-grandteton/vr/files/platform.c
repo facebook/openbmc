@@ -9,9 +9,13 @@
 #include "raa_gen3.h"
 #include "xdpe12284c.h"
 #include "xdpe152xx.h"
+#include "mp2856.h"
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
+#define MB_VR_CNT      (6)
+#define SWB_VR_CNT     (2)
+
 
 enum {
   VR_MB_CPU0_VCCIN   = 0,
@@ -20,14 +24,14 @@ enum {
   VR_MB_CPU1_VCCIN   = 3,
   VR_MB_CPU1_VCCFA   = 4,
   VR_MB_CPU1_VCCD    = 5,
-  VR_SWB_PXE0_VCC    = 6,
-  VR_SWB_PXE1_VCC    = 7,
+  VR_SWB_PEX01_VCC   = 6,
+  VR_SWB_PEX23_VCC   = 7,
   VR_CNT,
 };
 
 enum {
-  ADDR_SWB_VR_PXE0 = 0xC0,
-  ADDR_SWB_VR_PXE1 = 0xC4,
+  ADDR_SWB_VR_PEX01 = 0xC0,
+  ADDR_SWB_VR_PEX23 = 0xC4,
 };
 
 enum {
@@ -50,11 +54,11 @@ enum {
 
 int swb_vr_map_id(uint8_t addr, uint8_t* id) {
   switch (addr) {
-  case ADDR_SWB_VR_PXE0:
+  case ADDR_SWB_VR_PEX01:
     *id = VR0_COMP;
     return 0;
 
-  case ADDR_SWB_VR_PXE1:
+  case ADDR_SWB_VR_PEX23:
     *id = VR1_COMP;
     return 0;
   }
@@ -145,24 +149,23 @@ struct vr_info vr_list[] = {
     .private_data = "mb",
     .xfer = NULL,
   },
-  [VR_SWB_PXE0_VCC] = {
+  [VR_SWB_PEX01_VCC] = {
     .bus = SWB_VR_BUS_ID,
-    .addr = ADDR_SWB_VR_PXE0,
-    .dev_name = "VR_PEX0_VCC",
+    .addr = ADDR_SWB_VR_PEX01,
+    .dev_name = "VR_PEX01_VCC",
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
   },
-  [VR_SWB_PXE1_VCC] = {
+  [VR_SWB_PEX23_VCC] = {
     .bus = SWB_VR_BUS_ID,
-    .addr = ADDR_SWB_VR_PXE1,
-    .dev_name = "VR_PEX1_VCC",
+    .addr = ADDR_SWB_VR_PEX23,
+    .dev_name = "VR_PEX23_VCC",
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
   },
 };
-
 
 
 //INFINEON
@@ -233,6 +236,16 @@ struct vr_info mb_inf_vr_list[] = {
   },
 };
 
+//MPS
+struct vr_ops mp2856_ops = {
+  .get_fw_ver = get_mp2856_ver,
+  .parse_file = mp2856_parse_file,
+  .validate_file = NULL,
+  .fw_update = mp2856_fw_update,
+  .fw_verify = NULL,
+};
+
+
 int plat_vr_init(void) {
   int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
   uint8_t mb_sku_id = 0;
@@ -244,19 +257,23 @@ int plat_vr_init(void) {
 
 //MB
   if (mb_sku_id == 0x01) {
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < MB_VR_CNT; i++) {
       vr_list[i].ops =  &xdpe152xx_ops;
       vr_list[i].addr = mb_inf_vr_list[i].addr;
+    }
+  } else if (mb_sku_id == 0x02) {
+    for (i = 0; i < MB_VR_CNT; i++) {
+      vr_list[i].ops =  &mp2856_ops;
     }
   }
 
 //SWB
   if (get_bic_ready()) {
     tbuf[0] = 0xAD;
-    vr_pldm_wr(SWB_VR_BUS_ID, ADDR_SWB_VR_PXE0, tbuf, 1, rbuf, 3);
+    vr_pldm_wr(SWB_VR_BUS_ID, ADDR_SWB_VR_PEX01, tbuf, 1, rbuf, 3);
     if(!memcmp(rbuf, inf_devid, 3)) {
-      for (i = 0; i < 2; i++) {
-        vr_list[i+6].ops = &xdpe12284c_ops;
+      for (i = 0; i < SWB_VR_CNT; i++) {
+        vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
       }
     }
   }

@@ -125,29 +125,16 @@ static int
 mp2856_write_data(uint8_t bus, uint8_t addr, struct mp2856_data *data  ) {
   uint8_t tbuf[16], rbuf[16];
   uint8_t txlen = 0;
-  switch(data->write_type) {
-    case BYTE_WRITE_READ:
-      tbuf[0] = data->reg_addr,
-      tbuf[1] = (uint8_t)data->reg_data ;
-      txlen = 2;
-      break;
-    case WORD_WRITE_READ:
-      tbuf[0] = data->reg_addr,
-      tbuf[1] = data->reg_data & 0x00FF;
-      tbuf[2] = (data->reg_data & 0xFF00)>>8;
-      txlen = 3;
-      break;
-    case BLOCK_WRITE_2_BYTE:
-      tbuf[0] = data->reg_addr,
-      tbuf[1] = 2;
-      tbuf[2] = data->reg_data & 0x00FF;
-      tbuf[3] = (data->reg_data & 0xFF00)>>8;
-      txlen = 4;
-      break;
-    default:
-      syslog(LOG_WARNING, "%s: Unknown Write Type = %d\n", __func__, data->write_type);
-      return VR_STATUS_FAILURE;
-  }
+
+  tbuf[0] = data->reg_addr,
+  memcpy(&tbuf[1], &data->reg_data[0],  data->reg_len);
+  txlen = data->reg_len+1;
+
+#ifdef DEBUG
+  for(int i=0; i<txlen; i++)
+   printf("tx[%d]=%x ", i, tbuf[i]);
+  printf(" txlen=%d\n", txlen);
+#endif
 
   if (vr_xfer(bus, addr, tbuf, txlen, rbuf, 0)) {
     syslog(LOG_WARNING, "%s: write register 0x%02X failed", __func__, tbuf[0]);
@@ -328,10 +315,12 @@ mp2856_fw_update(struct vr_info *info, void *args) {
 
 void* mp2856_parse_file(struct vr_info *info, const char *path) {
   char line[120], *str;
-  char buf[10];
+  char buf[10]={0};
   FILE *fp = NULL;
   int dcnt = 0;
   int col = 0;
+  uint8_t len;
+  uint8_t ate_cnt;
   struct mp2856_config *config = NULL;
 
   fp = fopen(path, "r");
@@ -347,13 +336,30 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
     return NULL;
   }
 
+  if(fgets(line, sizeof(line), fp)) {
+    str = strtok(line, "\t");
+    while( str != NULL ) {
+      col++;
+      str = strtok(NULL, "\t");
+    }
+  }
+
+  if (col >= ATE_COL_MAX) {
+    config->mode = MP285X;
+    ate_cnt = ATE_COL_MAX;
+  } else {
+    config->mode = MP297X;
+    ate_cnt = ATE_COL_MAX - 1;
+  }
+  fseek(fp, 0, SEEK_SET);
+
   while (fgets(line, sizeof(line), fp) != NULL) {
     if (!strncmp(line, "END", 3)) {
       break;
     }
 
     //configure ID , page number, register address(hex) ,register address(dec),register name ,register data(hex),register data(dec),Write Type
-    for(col = 0 ; col < ATE_COL_MAX ; col++) {
+    for(col = 0 ; col < ate_cnt ; col++) {
       if (col == ATE_CONF_ID)
         str = strtok(line, "\t");//Col 1
       else
@@ -369,38 +375,64 @@ void* mp2856_parse_file(struct vr_info *info, const char *path) {
           config->pdata[dcnt].reg_addr = strtol(str, NULL, 16);
           break;
         case ATE_REG_DATA_HEX:
-          config->pdata[dcnt].reg_data = strtol(str, NULL, 16);
+          len = strlen(str)/2;
+          for(int i=0; i<len; i++) {
+            memcpy(buf, &(str[i*2]), 2);
+            config->pdata[dcnt].reg_data[len-1-i] = (uint8_t)strtol(buf, NULL, 16);
+          }
+          config->pdata[dcnt].reg_len = len;
           break;
         case ATE_WRITE_TYPE:
-          if (!strncmp(str, "1", 1)) {
-            config->pdata[dcnt].write_type = BYTE_WRITE_READ;
-          } else if (!strncmp(str, "2", 1)) {
-            config->pdata[dcnt].write_type = WORD_WRITE_READ;
-          } else if (!strncmp(str, "B2", 2)) {
-            config->pdata[dcnt].write_type = BLOCK_WRITE_2_BYTE;
+          if (!strncmp(str, "B2", 2)) {
+            memmove(&config->pdata[dcnt].reg_data[1], &config->pdata[dcnt].reg_data[0], config->pdata[dcnt].reg_len);
+            config->pdata[dcnt].reg_data[0] = config->pdata[dcnt].reg_len;
+            config->pdata[dcnt].reg_len += 1;
           }
           break;
       }
     }
+#ifdef DEBUG
+    printf("dcnt=%d ,", dcnt);
+    for(int i=0; i< config->pdata[dcnt].reg_len; i++)
+      printf("data[%d]=%x ", i, config->pdata[dcnt].reg_data[i]);
+
+    printf("Page=%d, Reg=0x%x\n", config->pdata[dcnt].page, config->pdata[dcnt].reg_addr);
+#endif
     dcnt++;
   }
   config->wr_cnt = dcnt;
-  while (fgets(line, sizeof(line), fp) != NULL) {
-    if (!strncmp(line, "Product ID", 10)) {
-      sscanf(line, "%*[^:]:%s", buf);
-      if (!strncmp(buf, "MP2856", 6)) {
-        config->product_id_exp = MP2856_PRODUCT_ID;
-      } else if (!strncmp(buf, "MP2857", 6)) {
-        config->product_id_exp = MP2857_PRODUCT_ID;
+
+  if(config->mode == MP285X) {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      if (!strncmp(line, "Product ID", 10)) {
+        sscanf(line, "%*[^:]:%s", buf);
+        str=strtok(buf, "MP");
+        config->product_id_exp = strtol(str, NULL, 16);
+      } else if  (!strncmp(line, "I2C", 3)) {
+        sscanf(line, "%*[^:]:%s", buf);
+        config->addr = strtol(buf, NULL, 16);
+      } else if  (!strncmp(line, "4-digi", 6)) {
+        sscanf(line, "%*[^:]:%s", buf);
+        config->cfg_id =  strtol(buf, NULL, 16);
       }
-    } else if  (!strncmp(line, "I2C", 3)) {
-      sscanf(line, "%*[^:]:%s", buf);
-      config->addr = strtol(buf, NULL, 16);
-    } else if  (!strncmp(line, "4-digi", 6)) {
-      sscanf(line, "%*[^:]:%s", buf);
-      config->cfg_id =  strtol(buf, NULL, 16);
     }
+  } else {
+    while (fgets(line, sizeof(line), fp) != NULL) {
+      str=strtok(line, ": ");
+      while( str != NULL ) {
+        if(!strncmp(str, "MP29", 2)) {
+          memcpy(buf, &str[4], 2);
+          config->product_id_exp = strtol(buf, NULL, 16);
+          break;
+        }
+        str=strtok(NULL, ": ");
+      }
+    }
+    config->addr = info->addr >> 1;
   }
+#ifdef DEBUG
+  printf("id=%x\n", config->product_id_exp);
+#endif
   fclose(fp);
 
   return config;

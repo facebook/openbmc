@@ -88,6 +88,11 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0058-hw-i2c-aspeed-Add-bus-ID-to-all-trace-events.patch \
            file://0059-hw-i2c-aspeed-Add-slave-event-traces.patch \
            file://0060-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
+           file://0001-qemu-Add-i2c-devices-to-oby35-cl.patch \
+           file://0002-tests-Rename-aspeed_i2c-test-to-i2c-netdev2-test.patch \
+           file://0003-hw-misc-add-a-toy-i2c-echo-device.patch \
+           file://0004-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
+           file://0005-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 

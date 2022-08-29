@@ -46,7 +46,6 @@ print_usage_help(void) {
 int
 main(int argc, char **argv) {
 
-  uint8_t slot_id;
   char tstr[MAX_KEY_LEN] = {0};
 
   if (argc != 3) {

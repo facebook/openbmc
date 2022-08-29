@@ -3,8 +3,8 @@
 use anyhow::{bail, Context, Result};
 use clap::Parser;
 use fdt;
-use std::fs;
-use std::io::Write;
+use std::fs::{self, File};
+use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -38,13 +38,10 @@ struct Args {
     #[clap(long, help = "Enable tap network backend")]
     tap: Option<String>,
 
-    #[clap(long, help = "Flash image")]
-    mtd: Option<PathBuf>,
+    #[clap(help = "Override image in BUILDDIR (auto-detects if it's a FIT or MTD image)")]
+    images: Vec<PathBuf>,
 
-    #[clap(long, help = "U-Boot FIT image")]
-    fit: Option<PathBuf>,
-
-    #[clap(help = "Extra args to pass to directly to QEMU")]
+    #[clap(last = true, help = "Extra args to pass to directly to QEMU")]
     extra: Vec<String>,
 }
 
@@ -122,6 +119,16 @@ fn find(dir: &Path, paths: impl IntoIterator<Item = impl AsRef<Path>>) -> Option
     None
 }
 
+fn is_fit_image(path: &Path) -> Result<bool> {
+    let mut f = File::open(path).with_context(|| format!("Unable to open {}", path.display()))?;
+    let mut magic = [0; 4];
+    f.read_exact(&mut magic)
+        .with_context(|| format!("Unable to read from {}", path.display()))?;
+
+    let magic = u32::from_be_bytes(magic);
+    Ok(magic == 0xd00dfeed)
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
     let staging_bindir_native = option_env!("STAGING_BINDIR_NATIVE").map(PathBuf::from);
@@ -142,11 +149,27 @@ fn main() -> Result<()> {
         .build
         .map(|b| b.join(format!("tmp/deploy/images/{}", machine)));
 
-    let mtd_path = match (args.mtd, deploy_dir.as_ref()) {
-        (Some(mtd), _) => Some(mtd),
-        (_, Some(d)) => find(d, [&format!("flash-{}", machine), "image-bmc"]),
-        _ => None,
-    };
+    let mtd_names = [&format!("flash-{}", machine), "image-bmc"];
+    let fit_names = [
+        format!("fit-{machine}.itb", machine = machine),
+        format!(
+            "fitImage-obmc-phosphor-initramfs-{machine}-{machine}",
+            machine = machine
+        ),
+    ];
+    let mut mtd_path = None;
+    let mut fit_path = None;
+    for image in args.images {
+        if is_fit_image(&image)? {
+            fit_path = Some(image);
+            continue;
+        }
+        mtd_path = Some(image);
+    }
+    if let (None, None) = (&mtd_path, &fit_path) {
+        fit_path = deploy_dir.as_ref().and_then(|d| find(d, fit_names));
+        mtd_path = deploy_dir.as_ref().and_then(|d| find(d, mtd_names));
+    }
     if let Some(mtd_path) = mtd_path {
         println!(
             "Using {} for primary and golden images.",
@@ -159,20 +182,7 @@ fn main() -> Result<()> {
             ));
         }
     }
-
     if !args.uboot {
-        let search_paths = [
-            format!("fit-{machine}.itb", machine = machine),
-            format!(
-                "fitImage-obmc-phosphor-initramfs-{machine}-{machine}",
-                machine = machine
-            ),
-        ];
-        let fit_path = match (args.fit, deploy_dir.as_ref()) {
-            (Some(fit), _) => Some(fit),
-            (_, Some(d)) => find(d, search_paths),
-            _ => None,
-        };
         if let Some(fit_path) = fit_path {
             println!("Using {} as FIT image.", fit_path.display());
             add_fit_args(&mut command, &fit_path, args.bootargs.as_deref())

@@ -48,4 +48,5 @@ IMAGE_INSTALL += " \
   crashdump \
   attest-util \
   dimm-util \
+  fscd \
 "

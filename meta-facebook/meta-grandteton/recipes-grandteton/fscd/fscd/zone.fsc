@@ -1,0 +1,174 @@
+max([
+
+  cpu_tray_scm_linear(all:scm_gt_scm_bmc_temp_c),
+
+  cpu_tray_cpu_linear(all:mb_gt_mb_cpu0_therm_margin_c) + cpu_tray_cpu_pid(all:mb_gt_mb_cpu0_therm_margin_c),
+  
+  cpu_tray_cpu_linear(all:mb_gt_mb_cpu1_therm_margin_c) + cpu_tray_cpu_pid(all:mb_gt_mb_cpu1_therm_margin_c),
+  
+  cpu_tray_dimm_linear(
+    max([
+      all:mb_gt_mb_cpu0_dimm_a0_c0_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a1_c1_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a2_c2_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a3_c3_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a4_c4_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a5_c5_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a6_c6_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a7_c7_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b0_d0_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b1_d1_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b2_d2_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b3_d3_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b4_d4_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b5_d5_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b6_d6_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b7_d7_temp_c])) +
+  cpu_tray_dimm_pid(
+    max([
+      all:mb_gt_mb_cpu0_dimm_a0_c0_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a1_c1_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a2_c2_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a3_c3_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a4_c4_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a5_c5_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a6_c6_temp_c,
+      all:mb_gt_mb_cpu0_dimm_a7_c7_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b0_d0_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b1_d1_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b2_d2_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b3_d3_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b4_d4_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b5_d5_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b6_d6_temp_c,
+      all:mb_gt_mb_cpu1_dimm_b7_d7_temp_c])),
+
+  cpu_tray_nic_linear(all:nic0_gt_nic0_mezz0_temp_c) + cpu_tray_nic_pid(all:nic0_gt_nic0_mezz0_temp_c),
+
+  cpu_tray_nic_linear(all:nic1_gt_nic1_mezz1_temp_c) + cpu_tray_nic_pid(all:nic1_gt_nic1_mezz1_temp_c),
+
+
+  swb_tray_nic_linear(
+    max([
+      all:swb_gt_swb_nic0_temp_c,
+      all:swb_gt_swb_nic1_temp_c,
+      all:swb_gt_swb_nic2_temp_c,
+      all:swb_gt_swb_nic3_temp_c,
+      all:swb_gt_swb_nic4_temp_c,
+      all:swb_gt_swb_nic5_temp_c,
+      all:swb_gt_swb_nic6_temp_c,
+      all:swb_gt_swb_nic7_temp_c])) +
+  swb_tray_nic_pid(
+    max([
+      all:swb_gt_swb_nic0_temp_c,
+      all:swb_gt_swb_nic1_temp_c,
+      all:swb_gt_swb_nic2_temp_c,
+      all:swb_gt_swb_nic3_temp_c,
+      all:swb_gt_swb_nic4_temp_c,
+      all:swb_gt_swb_nic5_temp_c,
+      all:swb_gt_swb_nic6_temp_c,
+      all:swb_gt_swb_nic7_temp_c])),
+
+  swb_tray_E1S_linear(
+    max([
+      all:swb_gt_swb_e1s_0_temp_c,
+      all:swb_gt_swb_e1s_1_temp_c,
+      all:swb_gt_swb_e1s_2_temp_c,
+      all:swb_gt_swb_e1s_3_temp_c,
+      all:swb_gt_swb_e1s_4_temp_c,
+      all:swb_gt_swb_e1s_5_temp_c,
+      all:swb_gt_swb_e1s_6_temp_c,
+      all:swb_gt_swb_e1s_7_temp_c,
+      all:swb_gt_swb_e1s_8_temp_c,
+      all:swb_gt_swb_e1s_9_temp_c,
+      all:swb_gt_swb_e1s_10_temp_c,
+      all:swb_gt_swb_e1s_11_temp_c,
+      all:swb_gt_swb_e1s_12_temp_c,
+      all:swb_gt_swb_e1s_13_temp_c,
+      all:swb_gt_swb_e1s_14_temp_c,
+      all:swb_gt_swb_e1s_15_temp_c])) +
+  swb_tray_E1S_pid(
+    max([
+      all:swb_gt_swb_e1s_0_temp_c,
+      all:swb_gt_swb_e1s_1_temp_c,
+      all:swb_gt_swb_e1s_2_temp_c,
+      all:swb_gt_swb_e1s_3_temp_c,
+      all:swb_gt_swb_e1s_4_temp_c,
+      all:swb_gt_swb_e1s_5_temp_c,
+      all:swb_gt_swb_e1s_6_temp_c,
+      all:swb_gt_swb_e1s_7_temp_c,
+      all:swb_gt_swb_e1s_8_temp_c,
+      all:swb_gt_swb_e1s_9_temp_c,
+      all:swb_gt_swb_e1s_10_temp_c,
+      all:swb_gt_swb_e1s_11_temp_c,
+      all:swb_gt_swb_e1s_12_temp_c,
+      all:swb_gt_swb_e1s_13_temp_c,
+      all:swb_gt_swb_e1s_14_temp_c,
+      all:swb_gt_swb_e1s_15_temp_c])),
+
+  swb_tray_switch_linear(all:swb_gt_swb_system_inlet_temp_c) + swb_tray_switch_linear(all:swb_gt_swb_system_inlet_temp_c),
+
+
+  gpu_tray_nvs_linear(
+    max([
+      all:hmc_gt_hmc_temp_gb_nvs0_c,
+      all:hmc_gt_hmc_temp_gb_nvs1_c,
+      all:hmc_gt_hmc_temp_gb_nvs2_c,
+      all:hmc_gt_hmc_temp_gb_nvs3_c])),
+
+  gpu_tray_gpu_linear(
+    max([
+      all:hmc_gt_hmc_temp_gb_gpu0_c,
+      all:hmc_gt_hmc_temp_gb_gpu1_c,
+      all:hmc_gt_hmc_temp_gb_gpu2_c,
+      all:hmc_gt_hmc_temp_gb_gpu3_c,
+      all:hmc_gt_hmc_temp_gb_gpu4_c,
+      all:hmc_gt_hmc_temp_gb_gpu5_c,
+      all:hmc_gt_hmc_temp_gb_gpu6_c,
+      all:hmc_gt_hmc_temp_gb_gpu7_c])) +
+  gpu_tray_gpu_pid(
+    max([
+      all:hmc_gt_hmc_temp_gb_gpu0_c,
+      all:hmc_gt_hmc_temp_gb_gpu1_c,
+      all:hmc_gt_hmc_temp_gb_gpu2_c,
+      all:hmc_gt_hmc_temp_gb_gpu3_c,
+      all:hmc_gt_hmc_temp_gb_gpu4_c,
+      all:hmc_gt_hmc_temp_gb_gpu5_c,
+      all:hmc_gt_hmc_temp_gb_gpu6_c,
+      all:hmc_gt_hmc_temp_gb_gpu7_c])),
+
+  gpu_tray_hbm_linear(
+    max([
+      all:hmc_gt_hmc_temp_gb_gpu0_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu1_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu2_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu3_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu4_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu5_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu6_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu7_m_c])) +
+  gpu_tray_hbm_pid(
+    max([
+      all:hmc_gt_hmc_temp_gb_gpu0_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu1_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu2_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu3_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu4_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu5_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu6_m_c,
+      all:hmc_gt_hmc_temp_gb_gpu7_m_c])),
+
+  gpu_tray_vr_linear(
+    max([
+      all:hmc_gt_hmc_temp_gb_hsc0_c,
+      all:hmc_gt_hmc_temp_gb_hsc1_c,
+      all:hmc_gt_hmc_temp_gb_hsc2_c,
+      all:hmc_gt_hmc_temp_gb_hsc3_c,
+      all:hmc_gt_hmc_temp_gb_hsc4_c,
+      all:hmc_gt_hmc_temp_gb_hsc5_c,
+      all:hmc_gt_hmc_temp_gb_hsc6_c,
+      all:hmc_gt_hmc_temp_gb_hsc7_c,
+      all:hmc_gt_hmc_temp_gb_hsc8_c,
+      all:hmc_gt_hmc_temp_gb_hsc9_c,
+      all:hmc_gt_hmc_temp_gb_hsc10_c]))
+])

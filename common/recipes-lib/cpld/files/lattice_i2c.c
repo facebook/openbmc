@@ -862,7 +862,9 @@ int cpld_dev_open_i2c(void *_attr) {
   i2c_attr_t *attr = (i2c_attr_t *)_attr;
 
   if (attr->xfer) {
-    cpld_xfer=attr->xfer;
+    cpld_xfer = attr->xfer;
+  } else {
+    cpld_xfer = &cpld_i2c_rdwr;
   }
 
   g_bus = attr->bus_id;

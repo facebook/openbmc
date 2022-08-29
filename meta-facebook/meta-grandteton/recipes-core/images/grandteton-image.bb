@@ -49,4 +49,5 @@ IMAGE_INSTALL += " \
   attest-util \
   dimm-util \
   fscd \
+  fpc-util \
 "

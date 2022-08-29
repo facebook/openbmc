@@ -277,6 +277,8 @@ int fw_update_proc (const string& image, bool force,
 
   //Check Signed image
 
+  syslog(LOG_CRIT, "Component %s upgrade initiated\n", comp.c_str() );
+
   try {
     int ret = swb_fw_update(bus, eid, target, memblock, r_size);
     delete[] memblock;
@@ -301,6 +303,7 @@ int fw_update_proc (const string& image, bool force,
     printf("%s\n", err.c_str());
     return FW_STATUS_NOT_SUPPORTED;
   }
+  syslog(LOG_CRIT, "Component %s upgrade completed\n", comp.c_str() );
   return 0;
 }
 

@@ -5,7 +5,6 @@ use clap::Parser;
 use fdt;
 use std::fs::{self, File};
 use std::io::{Read, Write};
-use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
@@ -31,9 +30,9 @@ struct Args {
     #[clap(long, help = "Enable userspace (slirp) network backend")]
     slirp: bool,
 
-    #[clap(short, long, default_values_t = [22],
+    #[clap(long, default_values_t = [String::from("hostfwd=:127.0.0.1:2222-:22")],
            help = "Ports to forward from the guest OS")]
-    ports: Vec<u16>,
+    hostfwd: Vec<String>,
 
     #[clap(long, help = "Enable tap network backend")]
     tap: Option<String>,
@@ -90,11 +89,6 @@ fn add_fit_args(command: &mut Command, fit_path: &Path, bootargs: Option<&str>) 
         command.arg("-append").arg(bootargs);
     }
     Ok(())
-}
-
-fn find_free_tcp_port() -> Result<u16> {
-    let fd = TcpListener::bind(("127.0.0.1", 0))?;
-    Ok(fd.local_addr()?.port())
 }
 
 fn print_qemu_command(command: &Command) {
@@ -191,18 +185,15 @@ fn main() -> Result<()> {
     }
 
     if args.slirp {
-        let mut s = String::from("user,id=nic,mfr-id=0x8119,oob-eth-addr=fa:ce:b0:02:20:22");
-        for guest_port in args.ports {
-            let host_port = find_free_tcp_port().context("Finding free TCP port")?;
-            println!(
-                "Forwarding guest port {} to localhost:{}",
-                guest_port, host_port
-            );
-            s.push_str(&format!(",hostfwd=::{}-:{}", host_port, guest_port));
+        let mut netdev = String::from("user,id=nic,mfr-id=0x8119,\
+                                       oob-eth-addr=fa:ce:b0:02:20:22");
+        for hostfwd in &args.hostfwd {
+            netdev.push(',');
+            netdev.push_str(hostfwd);
         }
         command
             .arg("-netdev")
-            .arg(s)
+            .arg(netdev)
             .arg("-net")
             .arg("nic,model=ftgmac100,netdev=nic");
     }

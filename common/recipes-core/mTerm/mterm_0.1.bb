@@ -36,11 +36,6 @@ LOCAL_URI = " \
     file://mTerm-service-setup.sh \
     "
 
-LOCAL_URI:append:openbmc-fb = " \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', \
-                         'file://mTerm_server.service', '', d)} \
-    "
-
 CONS_BIN_FILES = "mTerm_server \
                   mTerm_client \
                  "
@@ -50,13 +45,14 @@ CONS_BIN_FILES = "mTerm_server \
 # its appended package.
 MTERM_SERVICES = "mTerm \
                  "
+MTERM_SYSTEMD_SERVICES ?= "mTerm_server.service \
+                          "
 pkgdir = "mTerm"
 
 DEPENDS += "update-rc.d-native"
 
 systemd_install() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 644 mTerm_server.service ${D}${systemd_system_unitdir}
     for svc in ${MTERM_SYSTEMD_SERVICES}; do
         install -m 644 $svc ${D}${systemd_system_unitdir}
     done

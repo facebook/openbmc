@@ -12,12 +12,18 @@ inherit ptest-meson
 LOCAL_URI = " \
     file://meson.build \
     file://sensor-util.cpp \
+    file://gen_sensor_spec.py \
     "
+
+do_install:append() {
+    install -d ${D}${bindir}
+    install -m 0755 ${S}/gen_sensor_spec.py ${D}${bindir}/gen_sensor_spec
+}
 
 pkgdir = "sensor-util"
 
 DEPENDS =+ " libsdr libpal libaggregate-sensor jansson"
-RDEPENDS:${PN} =+ "libsdr libpal libaggregate-sensor jansson"
-FILES:${PN} = "${prefix}/local/bin/sensor-util"
+RDEPENDS:${PN} =+ "libsdr libpal libaggregate-sensor jansson python3-core"
+FILES:${PN} = "${prefix}/local/bin/sensor-util ${prefix}/bin/gen_sensor_spec"
 
 

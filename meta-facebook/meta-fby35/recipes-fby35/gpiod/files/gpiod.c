@@ -34,7 +34,6 @@
 #include <openbmc/pal.h>
 #include <openbmc/fruid.h>
 #include <facebook/fby35_gpio.h>
-#include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
 
 #define MAX_NUM_SLOTS       4
@@ -60,7 +59,7 @@ struct gpio_offset_map {
                     FM_BIOS_POST_CMPLT_BMC_N,
                     PWRGD_CPU_LVC3,
                     RST_PLTRST_BUF_N,
-                    FM_BMC_DEBUG_ENABLE_N }; // default as Crater Lake 
+                    FM_BMC_DEBUG_ENABLE_N }; // default as Crater Lake
 
 static gpio_pin_t gpio_slot1[MAX_GPIO_PINS] = {0};
 static gpio_pin_t gpio_slot2[MAX_GPIO_PINS] = {0};
@@ -499,94 +498,36 @@ init_gpio_offset_map() {
 
 void
 check_bic_pch_pwr_fault(uint8_t fru) {
-  int ret = 0, i2cfd = 0, retry=0, index = 0;
-  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
-  uint8_t tlen = 1, rlen = 1;
-  uint8_t bus = 0;
-  uint8_t pwr_fault = 0;
+  int pwr_fault, index;
   size_t table_size = sizeof(bic_pch_pwr_fault)/sizeof(err_t);
 
-  ret = fby35_common_get_bus_id(fru) + 4;
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
-      return;
-    }
-
-  bus = (uint8_t)ret;
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "Failed to open bus %d\n", bus);
+  pwr_fault = fby35_common_get_sb_pch_bic_pwr_fault(fru);
+  if (pwr_fault < 0) {
     return;
-  }
-
-  tbuf[0] = PCH_BIC_PWR_FAULT_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      pwr_fault = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
   }
 
   for (index = 0; index < table_size; index++) {
     if (GETBIT(pwr_fault, index)) {
-      syslog(LOG_CRIT, "FRU: %d, PCH/BIC power fault: %s (0x%02X)", fru, bic_pch_pwr_fault[index].err_des, pwr_fault);
+      syslog(LOG_CRIT, "FRU: %u, PCH/BIC power fault: %s (0x%02X)", fru, bic_pch_pwr_fault[index].err_des, pwr_fault);
     }
   }
-  if ( i2cfd > 0 ) close(i2cfd);
 }
 
 void
 check_cpu_pwr_fault(uint8_t fru) {
-  int ret = 0, i2cfd = 0, retry=0, index = 0;
-  uint8_t tbuf[1] = {0}, rbuf[1] = {0};
-  uint8_t tlen = 1, rlen = 1;
-  uint8_t bus = 0;
-  uint8_t pwr_fault = 0;
+  int pwr_fault, index;
   size_t table_size = sizeof(cpu_pwr_fault)/sizeof(err_t);
 
-  ret = fby35_common_get_bus_id(fru) + 4;
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Cannot get the bus with fru%d", __func__, fru);
-      return;
-    }
-
-  bus = (uint8_t)ret;
-  i2cfd = i2c_cdev_slave_open(bus, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "Failed to open bus %d\n", bus);
+  pwr_fault = fby35_common_get_sb_cpu_pwr_fault(fru);
+  if (pwr_fault < 0) {
     return;
-  }
-
-  tbuf[0] = CPU_PWR_FAULT_OFFSET;
-  retry = 0;
-  while (retry < MAX_READ_RETRY) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
-      pwr_fault = rbuf[0];
-      break;
-    }
-  }
-  if (retry == MAX_READ_RETRY) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
   }
 
   for (index = 0; index < table_size; index++) {
     if (GETBIT(pwr_fault, index)) {
-      syslog(LOG_CRIT, "FRU: %d, CPU power fault: %s (0x%02X)", fru, cpu_pwr_fault[index].err_des, pwr_fault);
+      syslog(LOG_CRIT, "FRU: %u, CPU power fault: %s (0x%02X)", fru, cpu_pwr_fault[index].err_des, pwr_fault);
     }
   }
-  if ( i2cfd > 0 ) close(i2cfd);
 }
 
 /* Monitor the gpio pins */
@@ -1009,7 +950,7 @@ main(int argc, void **argv) {
       exit(-1);
     }
   } else {
-    
+
     init_gpio_offset_map();
     init_gpio_pins();
 

@@ -154,11 +154,6 @@ typedef struct {
 } GET_FW_VER_REQ;
 
 enum {
-  PCH_BIC_PWR_FAULT_OFFSET = 0x09,
-  CPU_PWR_FAULT_OFFSET = 0x0A,
-};
-
-enum {
   NIC_PE_RST_LOW   = 0x00,
   NIC_PE_RST_HIGH  = 0x01,
 };

@@ -72,7 +72,6 @@ do {                                                                        \
 #define FW_UPDATE_FAN_PWM  70
 #define FAN_PWM_CNT        4
 
-#define SB_BIC_BOOT_STRAP_REG 0x10
 #define FORCE_BOOT_FROM_UART  0x01
 
 enum {
@@ -269,41 +268,6 @@ is_valid_intf(uint8_t intf) {
 }
 
 static int
-get_sb_bic_boot_strap(uint8_t slot_id, uint8_t *status) {
-  int i2cfd = 0;
-  uint8_t tbuf[1] = {SB_BIC_BOOT_STRAP_REG};
-  uint8_t rbuf[1] = {0};
-  uint8_t tlen = 1;
-  uint8_t rlen = 1;
-  int ret = -1;
-
-  if (status == NULL) {
-    syslog(LOG_WARNING, "%s() fail to get sb bic boot strap due to getting NULL input *status.\n", __func__);
-    return -1;
-  }
-
-  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, SB_CPLD_ADDR, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open bus %d. Err: %s", __func__, (slot_id + SLOT_BUS_BASE), strerror(errno));
-    goto error_exit;
-  }
-
-  ret = i2c_rdwr_msg_transfer(i2cfd, (SB_CPLD_ADDR << 1), tbuf, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
-
-  *status = rbuf[0];
-
-  error_exit:
-  if ( i2cfd >= 0 ) {
-    close(i2cfd);
-  }
-  return ret;
-}
-
-static int
 update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
   #define MAX_CMD_LEN 120
   #define MAX_RETRY 10
@@ -312,7 +276,6 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   int ret = -1;
   int fd = -1;
   int file_size;
-  uint8_t status = 0;
 
   //check params
   ret = is_valid_intf(intf);
@@ -334,9 +297,10 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
   ret = update_bic(slot_id, fd, file_size, intf);
 
   if ( (ret == 0) && (comp == FW_SB_BIC) ) {
-    ret = get_sb_bic_boot_strap(slot_id, &status);
-    if ( (ret == 0) && (status == FORCE_BOOT_FROM_UART) ) {
+    ret = fby35_common_get_sb_bic_boot_strap(slot_id);
+    if (ret == FORCE_BOOT_FROM_UART) {
       // For BIC recovery case, we can exit here to skip the following IPMB communication which is not accessible at that moment
+      ret = 0;
       goto exit;
     }
 
@@ -941,7 +905,6 @@ int
 get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
   uint8_t bmc_location = 0;
   int ret = 0;
-  char key[MAX_KEY_LEN];
   char value[MAX_VALUE_LEN] = {0};
 
   if ( rev_id == NULL ) {
@@ -972,19 +935,11 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
         }
         break;
       case BOARD_ID_SB:
-        snprintf(key, sizeof(key), "fru%u_sb_board_rev_id", slot_id);
-        if ( kv_get(key, value, NULL, 0) == 0 ) {
-          *rev_id = strtol(value, NULL, 16); // convert string to number
-        } else {
-          ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-          if (ret == 0) {
-            snprintf(value, sizeof(value), "%x", *rev_id);
-            if (kv_set(key, (char*)value, 2, KV_FCREATE)) {
-              syslog(LOG_WARNING,"%s: kv_set failed, key: sb_board_rev_id, val: %x", __func__, *rev_id);
-              return -1;
-            }
-          }
+        if ((ret = fby35_common_get_sb_rev(slot_id)) < 0) {
+          return -1;
         }
+        *rev_id = (uint8_t)ret;
+        ret = 0;
         break;
       default:
         syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);
@@ -1021,19 +976,11 @@ get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id) {
         }
         break;
       case BOARD_ID_SB:
-        snprintf(key, sizeof(key), "fru%u_sb_board_rev_id", slot_id);
-        if ( kv_get(key, value, NULL, 0) == 0 ) {
-          *rev_id = strtol(value, NULL, 16); // convert string to number
-        } else {
-          ret = get_board_revid_from_cpld(slot_id + SLOT_BUS_BASE, SB_CPLD_BOARD_REV_ID_REGISTER, rev_id);
-          if (ret == 0) {
-            snprintf(value, sizeof(value), "%x", *rev_id);
-            if (kv_set(key, (char*)value, 2, KV_FCREATE)) {
-              syslog(LOG_WARNING,"%s: kv_set failed, key: sb_board_rev_id, val: %x", __func__, *rev_id);
-              return -1;
-            }
-          }
+        if ((ret = fby35_common_get_sb_rev(slot_id)) < 0) {
+          return -1;
         }
+        *rev_id = (uint8_t)ret;
+        ret = 0;
         break;
       default:
         syslog(LOG_WARNING, "%s() Not supported board id %x", __func__, board_id);

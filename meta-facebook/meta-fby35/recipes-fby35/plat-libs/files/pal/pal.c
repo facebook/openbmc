@@ -1257,13 +1257,10 @@ pal_get_slot_index(unsigned char payload_id)
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  int ret = PAL_EOK;
   uint8_t bmc_location = 0;
 
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;
+  if (status == NULL) {
+    return -1;
   }
 
   switch (fru) {
@@ -1271,21 +1268,19 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
-      if ( bmc_location == BB_BMC ) {
-        ret = fby35_common_is_fru_prsnt(fru, status);
-      } else {
-        if ( fru == FRU_SLOT1 ) {
-          *status = 1;
-        } else {
-          *status = 0;
-        }
+      if (fby35_common_is_fru_prsnt(fru, status) < 0) {
+        return -1;
       }
       break;
     case FRU_BB:
       *status = 1;
       break;
     case FRU_NICEXP:
-      *status = (bmc_location == NIC_BMC)?1:0;
+      if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+        syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+        return -1;
+      }
+      *status = (bmc_location == NIC_BMC) ? 1 : 0;
       break;
     case FRU_NIC:
       *status = 1;
@@ -1296,10 +1291,10 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     default:
       *status = 0;
       syslog(LOG_WARNING, "%s() wrong fru id 0x%02x", __func__, fru);
-      ret = PAL_ENOTSUP;
+      return PAL_ENOTSUP;
   }
 
-  return ret;
+  return 0;
 }
 
 int

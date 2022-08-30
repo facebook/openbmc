@@ -28,6 +28,7 @@
 #
 ### END INIT INFO
 
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
 # stop the service first
@@ -49,9 +50,9 @@ echo "$PID" > "$PID_FILE"
 if [ -n "$OLDPID" ] && (grep "server-init" /proc/$OLDPID/cmdline 1> /dev/null 2>&1) ; then
   echo "kill pid $OLDPID..."
   kill -s 9 "$OLDPID"
-  ps | grep 'bic-cached' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 1> /dev/null 2>&1
-  ps | grep 'power-util' | grep "slot${slot_num}" | awk '{print $1}'| xargs kill -s 9 1> /dev/null 2>&1
-  ps | grep 'setup-fan' | awk '{print $1}'| xargs kill -s 9 1> /dev/null 2>&1
+  pkill -KILL -f "bic-cached -. slot${slot_num}" >/dev/null 2>&1
+  pkill -KILL -f "power-util slot${slot_num}" >/dev/null 2>&1
+  pkill -KILL -f "setup-fan" >/dev/null 2>&1
 fi
 unset OLDPID
 
@@ -70,7 +71,7 @@ if [ "$(is_server_prsnt "$slot_num")" = "0" ]; then
   kv del "slot${slot_num}_is_m2_exp_prsnt"
   kv del "fru${slot_num}_2ou_board_type"
   kv del "fru${slot_num}_sb_type"
-  kv del "fru${slot_num}_sb_board_rev_id"
+  kv del "fru${slot_num}_sb_rev_id"
   set_nic_power
 else
   /usr/bin/sv start ipmbd_${bus} > /dev/null 2>&1

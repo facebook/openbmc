@@ -68,9 +68,13 @@ extern "C" {
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define MAX_FRU_PATH_LEN 128
 
-#define CPLD_REG_BIC_READY 0x02
-#define CPLD_REG_RISER     0x0D
-#define CPLD_REG_BOARD     0x11
+#define CPLD_REG_BIC_READY         0x02
+#define CPLD_REG_REV_ID            0x07
+#define CPLD_REG_PCH_BIC_PWR_FAULT 0x09
+#define CPLD_REG_CPU_PWR_FAULT     0x0A
+#define CPLD_REG_RISER             0x0D
+#define CPLD_REG_SB_BIC_BOOT_STRAP 0x10
+#define CPLD_REG_BOARD             0x11
 
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
@@ -489,6 +493,10 @@ int fby35_common_get_slot_id(char *str, uint8_t *fru);
 int fby35_common_get_bus_id(uint8_t slot_id);
 int fby35_common_is_fru_prsnt(uint8_t fru, uint8_t *val);
 int fby35_common_get_slot_type(uint8_t fru);
+int fby35_common_get_sb_rev(uint8_t fru);
+int fby35_common_get_sb_pch_bic_pwr_fault(uint8_t fru);
+int fby35_common_get_sb_cpu_pwr_fault(uint8_t fru);
+int fby35_common_get_sb_bic_boot_strap(uint8_t fru);
 int fby35_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
 int fby35_common_dev_id(char *str, uint8_t *dev);
 int fby35_common_dev_name(uint8_t dev, char *str);

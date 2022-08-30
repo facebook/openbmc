@@ -47,6 +47,8 @@ extern "C" {
 
 #define CPLD_VER_BYTE   4
 
+#define SENSOR_LIST_TIMEOUT_DEFAULT 10
+
 // For FRUs missing error code
 #define ERR_CODE_SERVER_MISSING          0xE2
 
@@ -124,6 +126,8 @@ int pal_get_error_code(uint8_t *data, uint8_t* error_count);
 void pal_set_error_code(unsigned char error_num, uint8_t error_code_status);
 
 int8_t pal_set_uart_routing(uint8_t routing);
+
+int pal_get_sensor_util_timeout(uint8_t fru);
 
 #ifdef __cplusplus
 } // extern "C"

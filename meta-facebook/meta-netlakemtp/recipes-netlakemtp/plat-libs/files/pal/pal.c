@@ -1472,3 +1472,8 @@ pal_set_uart_routing(uint8_t routing) {
 
   return 0;
 }
+
+int
+pal_get_sensor_util_timeout(uint8_t fru) {
+  return SENSOR_LIST_TIMEOUT_DEFAULT;
+}

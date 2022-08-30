@@ -1010,20 +1010,31 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   memset(str, 0, sizeof(str));
 
   if (ret != 0) {
-    strncpy(str, "NA", sizeof(str));
-    switch (ret) {
-    case ERR_SENSOR_NA:
-      syslog(LOG_WARNING, "%s() Read sensor failed because of sensor NA error.\n", __func__);
-      break;
-    case ERR_UNKNOWN_FRU:
-      syslog(LOG_WARNING, "%s() Read sensor failed because of unknown FRU error.\n", __func__);
-      break;
-    case SENSOR_NA:
-      break;
-    default:
-      syslog(LOG_WARNING, "%s() Read sensor failed because of unknwon issue.\n", __func__);
-      return ret;
+    kv_get(key, str, 0, 0);
+
+    if (strcmp(str, "NA") != 0) {
+      switch (ret) {
+      case ERR_SENSOR_NA:
+          syslog(LOG_WARNING,
+                 "%s() Read sensor %s failed because of sensor NA error.\n",
+                 __func__, sensor.snr_name);
+          break;
+      case ERR_UNKNOWN_FRU:
+          syslog(LOG_WARNING,
+                 "%s() Read sensor %s failed because of unknown FRU error.\n",
+                 __func__, sensor.snr_name);
+          break;
+      case SENSOR_NA:
+          break;
+      default:
+          syslog(LOG_WARNING,
+                 "%s() Read sensor %s failed because of unknwon issue.\n",
+                  __func__, sensor.snr_name);
+          break;
+      }
     }
+
+    strncpy(str, "NA", sizeof(str));
   } else {
     snprintf(str, sizeof(str), "%.2f", *((float * ) value));
   }

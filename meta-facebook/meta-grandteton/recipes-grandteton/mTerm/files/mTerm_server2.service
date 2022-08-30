@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,7 +15,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+[Unit]
+Description=mTerm server monitoring
+After=setup_board.service openbmc_gpio_setup.service setup_i2c.service
+Wants=setup_board.service
 
-/usr/local/bin/setup-server-uart.sh
+[Service]
+ExecStart=/usr/local/bin/mTerm_server swb /dev/ttyS5
 
-exec /usr/local/bin/mTerm_server mb /dev/ttyS3
+[Install]
+WantedBy=multi-user.target

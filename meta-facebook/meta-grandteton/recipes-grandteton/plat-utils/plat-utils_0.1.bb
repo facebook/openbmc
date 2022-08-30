@@ -29,6 +29,7 @@ LOCAL_URI = " \
     file://sol-util \
     file://setup-common-dev.sh \
     file://setup-cover-dev.sh \
+    file://setup-server-uart.sh \
     file://setup-por.sh \
     file://sync_date.sh \
     file://setup-lmsensors-cfg.sh \
@@ -38,7 +39,7 @@ pkgdir = "utils"
 
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util"
+binfiles = " sol-util setup-server-uart.sh "
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 gpiocli "

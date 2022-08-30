@@ -21,6 +21,8 @@ LOCAL_URI += " \
     file://mTerm1/run \
     file://mTerm2/run \
     file://mTerm-service-setup.sh \
+    file://mTerm_server1.service \
+    file://mTerm_server2.service \
     "
 
 # launch 2 mTerm services
@@ -28,7 +30,11 @@ MTERM_SERVICES = "mTerm1 \
                   mTerm2 \
                  "
 
-do_install:append() {
+MTERM_SYSTEMD_SERVICES = "mTerm_server1.service \
+                          mTerm_server2.service \
+                         "
+
+sysv_install:append() {
   #remove the old setting
   update-rc.d -f -r ${D} mTerm-service-setup.sh remove
 

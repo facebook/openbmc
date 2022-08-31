@@ -26,10 +26,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <syslog.h>
-#include <errno.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/file.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/kv.h>
 #include "bic_ipmi.h"
@@ -65,8 +61,6 @@ typedef struct _sdr_rec_hdr_t {
 #define MAX_SLOT_NUM    4
 #define MAX_SENSOR_NUM  0xFF
 
-#define ISL_IC_DEVICE_REV_REGISTER 0xAE
-
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -93,16 +87,6 @@ enum {
   BB_BIC_SLOT1_PRSNT_PIN = 15,
 };
 
-enum {
-  DIMMA0 = 0,
-  DIMMA2,
-  DIMMA3,
-  DIMMA4,
-  DIMMA6,
-  DIMMA7,
-  MAX_DIMM_NUM,
-};
-
 const uint32_t INTEL_MFG_ID = 0x000157;
 
 uint8_t mapping_m2_prsnt[2][6] = { {M2_ROOT_PORT0, M2_ROOT_PORT1, M2_ROOT_PORT5, M2_ROOT_PORT4, M2_ROOT_PORT2, M2_ROOT_PORT3},
@@ -113,31 +97,6 @@ uint8_t mapping_e1s_pwr[2][6] = { {M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT5, 
                                   {M2_ROOT_PORT4, M2_ROOT_PORT3, M2_ROOT_PORT2, M2_ROOT_PORT1} };
 
 static uint8_t snr_read_support[MAX_SLOT_NUM][MAX_SENSOR_NUM];
-
-dimm_info dimm_pmic[MAX_DIMM_NUM] = {{"A0", {0x0, 0x90}}, {"A2", {0x0, 0x9C}}, {"A3", {0x0, 0x98}},
-                                     {"A4", {0x1, 0x90}}, {"A6", {0x1, 0x9C}}, {"A7", {0x1, 0x98}}};
-static uint8_t pmic_err_pattern_idx[ERR_PATTERN_LEN] = {0x5, 0x6, 0x8, 0x9, 0xA, 0xB};
-static pmic_err_info pmic_err[] = {
-//{R05,  R06,  R08,  R09,  R0A,	 R0B},  CAMP, err_str,     {err_type, uv_ov_select, rail, enable}}
-{{0x42, 0x08, 0x00, 0x00, 0x00, 0x00},  true, "SWAout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
-{{0x22, 0x04, 0x00, 0x00, 0x00, 0x00},  true, "SWBout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
-{{0x12, 0x02, 0x00, 0x00, 0x00, 0x00},  true, "SWCout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
-{{0x0A, 0x01, 0x00, 0x00, 0x00, 0x00},  true, "SWDout OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
-{{0x04, 0x00, 0x00, 0x00, 0x00, 0x00},  true, "Vin Bulk OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x02, 0x00, 0x02, 0x00}, false, "Vin Mgmt OV", {TYPE_UNDEFINED, VOLT_OV, RAIL_VIN_MGMT, ERR_INJ_ENABLE}},
-{{0x42, 0x80, 0x00, 0x00, 0x00, 0x00},  true, "SWAout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWA_OUT, ERR_INJ_ENABLE}},
-{{0x22, 0x40, 0x00, 0x00, 0x00, 0x00},  true, "SWBout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWB_OUT, ERR_INJ_ENABLE}},
-{{0x12, 0x20, 0x00, 0x00, 0x00, 0x00},  true, "SWCout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWC_OUT, ERR_INJ_ENABLE}},
-{{0x0A, 0x10, 0x00, 0x00, 0x00, 0x00},  true, "SWDout UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_SWD_OUT, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x80, 0x00, 0x00, 0x00},  true, "Vin Bulk UV", {TYPE_UNDEFINED, VOLT_UV, RAIL_VIN_BULK, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x10, 0x02, 0x00}, false, "Vin Mgmt to Vin buck switchover", {TYPE_SWITCH_OVER, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x80, 0x02, 0x00}, false, "High temp warning", {TYPE_HIGH_TEMP, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x20, 0x02, 0x00}, false, "Vout 1v8 PG", {TYPE_PG_1V8_VOUT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x0F, 0x02, 0x00}, false, "High current warning", {TYPE_HIGH_CURR, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0}, false, "Current limit warning", {TYPE_CURR_LIMIT, VOLT_UNDEFINED, RAIL_UNDEFINED, ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x40, 0x00, 0x00, 0x00},  true, "Current temp shutdown", {TYPE_CRIT_TEMP, VOLT_UNDEFINED, RAIL_UNDEFINED,      ERR_INJ_ENABLE}},
-{{0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, false, NULL, {0, 0, 0}}
-};
 
 int
 bic_get_std_sensor(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf) {
@@ -596,11 +555,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
       break;
     case FW_2OU_BIC:
     case FW_2OU_CPLD:
-    case FW_2OU_3V3_VR1:
-    case FW_2OU_3V3_VR2:
-    case FW_2OU_3V3_VR3:
-    case FW_2OU_1V8_VR:
-    case FW_2OU_PESW_VR:
     case FW_2OU_PESW_CFG_VER:
     case FW_2OU_PESW_FW_VER:
     case FW_2OU_PESW_BL0_VER:
@@ -622,11 +576,6 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
     case FW_SB_BIC:
     case FW_1OU_BIC:
     case FW_2OU_BIC:
-    case FW_2OU_3V3_VR1:
-    case FW_2OU_3V3_VR2:
-    case FW_2OU_3V3_VR3:
-    case FW_2OU_1V8_VR:
-    case FW_2OU_PESW_VR:
     case FW_2OU_PESW_CFG_VER:
     case FW_2OU_PESW_FW_VER:
     case FW_2OU_PESW_BL0_VER:
@@ -917,253 +866,6 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t b
   return ret;
 }
 
-// Custom Command for getting vr revision
-int
-bic_get_vr_device_revision(uint8_t slot_id, uint8_t *dev_rev, uint8_t bus, uint8_t addr, uint8_t intf) {
-  uint8_t tbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = ISL_DEV_REV_LEN;
-  uint8_t revision_len;
-  int ret = 0;
-
-  if(dev_rev == NULL) {
-    return -1;
-  }
-
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = addr;
-  tbuf[2] = ISL_DEV_REV_LEN; // read back 5 bytes
-  tbuf[3] = ISL_IC_DEVICE_REV_REGISTER; // get device revision command
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if(ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to get vr device revision, ret=%d", __func__, ret);
-    return ret;
-  }
-
-  revision_len = rbuf[0]; // first byte that return is the number of bytes represent the device revision
-
-  memcpy(dev_rev, &rbuf[1], revision_len);
-
-  return ret;
-}
-
-int
-bic_ifx_vr_mfr_fw(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t code,
-                  uint8_t *data, uint8_t *resp, uint8_t intf) {
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = sizeof(rbuf);
-  int ret = 0;
-
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = addr;
-  tbuf[2] = 0x00;  // read count
-
-  if ( data != NULL ) {
-    tbuf[3] = IFX_MFR_FW_CMD_DATA;
-    tbuf[4] = 4;  // block write 4 bytes
-    memcpy(&tbuf[5], data, 4);
-    tlen = 9;
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Block write 0x%02X failed", __func__, tbuf[3]);
-      return ret;
-    }
-  }
-
-  tbuf[3] = IFX_MFR_FW_CMD;
-  tbuf[4] = code;
-  tlen = 5;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Write code 0x%02X failed", __func__, tbuf[4]);
-    return ret;
-  }
-
-  if ( resp != NULL ) {
-    tbuf[2] = 0x06;  // read count
-    tbuf[3] = IFX_MFR_FW_CMD_DATA;
-    tlen = 4;
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s() Block read 0x%02X failed", __func__, tbuf[3]);
-      return ret;
-    }
-
-    if ( (rlen > 4) && (rbuf[0] == 4) ) {
-      memcpy(resp, rbuf, 5);
-    } else {
-      syslog(LOG_WARNING, "%s() Unexpected data, rlen = %u", __func__, rlen);
-      return -1;
-    }
-  }
-
-  return ret;
-}
-
-int
-bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf) {
-#define IFX_CONF_SIZE 1344  // Config(604) + PMBus(504) + SVID(156) + PMBusPartial(80)
-#define REMAINING_TIMES(x) (((x[2] << 8) | x[1]) / IFX_CONF_SIZE)
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  int ret = 0;
-
-  ret = bic_ifx_vr_mfr_fw(slot_id, bus, addr, OTP_PTN_RMNG, tbuf, rbuf, intf);
-  if ( ret < 0 ) {
-    return ret;
-  }
-
-  *writes = REMAINING_TIMES(rbuf);
-  return ret;
-}
-
-int
-bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf) {
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = 0;
-  int ret = 0;
-
-  tbuf[0] = (bus << 1) + 1;
-  tbuf[1] = addr;
-  tbuf[2] = 0x00; //read cnt
-  tbuf[3] = 0xC7; //command code
-  tbuf[4] = 0x35; //data1
-  tbuf[5] = 0x00; //data2
-  tlen = 6;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to send command and data...", __func__);
-    goto error_exit;
-  }
-
-  tbuf[2] = 0x04; //read cnt
-  tbuf[3] = 0xC5; //command code
-  tlen = 4;
-  ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to read NVM slots...", __func__);
-    goto error_exit;
-  }
-
-  *writes = rbuf[0];
-
-error_exit:
-  return ret;
-}
-
-int
-bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str) {
-  uint8_t tbuf[32] = {0};
-  uint8_t rbuf[32] = {0};
-  uint8_t tlen = 0;
-  uint8_t rlen = sizeof(rbuf);
-  uint8_t remaining_writes = 0;
-  int ret = 0;
-
-  ret = bic_get_vr_device_id(slot_id, rbuf, &rlen, bus, addr, intf);
-  if ( ret < 0 ) {
-    return ret;
-  }
-
-  //The length of GET_DEVICE_ID is different.
-  if ( rlen == 2 ) {
-    //Infineon
-    //get the remaining size
-    ret = bic_get_ifx_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__, __LINE__, ret);
-      return ret;
-    }
-
-    memset(tbuf, 0, 4);
-    ret = bic_ifx_vr_mfr_fw(slot_id, bus, addr, GET_CRC, tbuf, rbuf, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__, __LINE__, ret);
-      return ret;
-    }
-    if ( rbuf[0] != 4 ) {
-      syslog(LOG_WARNING, "%s():%d Unexpected data 0x%02X", __func__, __LINE__, rbuf[0]);
-      return -1;
-    }
-
-    snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", rbuf[4], rbuf[3], rbuf[2], rbuf[1], remaining_writes);
-    kv_set(key, ver_str, 0, 0);
-  } else if ( rlen > 4 ) {
-    //TI
-    tbuf[0] = (bus << 1) + 1;
-    tbuf[1] = addr;
-    tbuf[2] = 0x02; //read cnt
-    tbuf[3] = 0xF4; //command code, NVM_CHECKSUM
-    tlen = 4;
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
-    }
-
-    snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
-    kv_set(key, ver_str, 0, 0);
-  } else {
-    //ISL
-    //get the reamaining write
-    ret = bic_get_isl_vr_remaining_writes(slot_id, bus, addr, &remaining_writes, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
-      return ret;
-    }
-
-    //get the CRC32 of the VR
-    tbuf[0] = (bus << 1) + 1;
-    tbuf[1] = addr;
-    tbuf[2] = 0x00; //read cnt
-    tbuf[3] = 0xC7; //command code
-    tbuf[4] = 0x94; //reg
-    tbuf[5] = 0x00; //dummy data
-    tlen = 6;
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
-    }
-
-    tbuf[2] = 0x04; //read cnt
-    tbuf[3] = 0xC5; //command code
-    tlen = 4;
-    ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, intf);
-    if ( ret < 0 ) {
-      syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
-    }
-
-    snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
-    kv_set(key, ver_str, 0, 0);
-  }
-
-  return ret;
-}
-
-int
-bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *ver_str) {
-  char key[MAX_KEY_LEN], tmp_str[MAX_VALUE_LEN] = {0};
-
-  snprintf(key, sizeof(key), "slot%x_vr_%02xh_crc", slot_id, addr);
-  if (kv_get(key, tmp_str, NULL, 0)) {
-    if (bic_get_vr_ver(slot_id, intf, bus, addr, key, tmp_str))
-      return -1;
-  }
-
-  if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN-1))
-    return -1;
-
-  return 0;
-}
-
 int
 bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
@@ -1401,66 +1103,22 @@ me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t add
   return ret;
 }
 
-/* List all error on PMIC
-   *error_list: return the list of error
-   *err_cnt: return number of errors found on PMIC
-*/
-int
-me_pmic_err_list(uint8_t slot_id, uint8_t dimm, uint8_t* err_list , uint8_t *err_cnt) {
-  uint8_t data[MAX_ME_SMBUS_READ_LEN] = {0};
-  int err_idx = 0, curr_idx = 0;
-  uint8_t pattern = 0x0, reg = 0;
-
-  if (err_list == NULL || err_cnt == NULL) {
-    syslog(LOG_WARNING, "%s(): Invalid data input", __func__);
-  }
-  if (me_smbus_read(slot_id, dimm_pmic[dimm].info, 1, 0x0, sizeof(data), data) != 0) {
-    syslog(LOG_WARNING, "%s(): fail to read DIMM %s registers via ME", __func__, dimm_pmic[dimm].silk_screen);
-    return -1;
-  } else {
-    *err_cnt = 0;
-    // Check each PMIC error
-    while (pmic_err[err_idx].err_str) {
-      curr_idx = 0;
-      // Scan each byte of pattern
-      while (curr_idx < ERR_PATTERN_LEN) {
-         reg = pmic_err_pattern_idx[curr_idx];
-         pattern = pmic_err[err_idx].pattern[curr_idx];
-         if ((data[reg] & pattern) != pattern) { // pattern not match
-           break;
-         }
-         curr_idx++;
-      }
-      if (curr_idx == ERR_PATTERN_LEN) { // pattern match
-        err_list[(*err_cnt)++] = err_idx;
-      }
-      err_idx++;
-    }
-  }
-  return 0;
-}
-
-// Write PMIC register R35 to inject error
-int
-me_pmic_err_inj(uint8_t slot_id, uint8_t dimm, uint8_t err_type) {
-  int ret = 0;
-  uint8_t tbuf[MAX_ME_SMBUS_WRITE_LEN] = {0};
-
-  memcpy(tbuf, &(pmic_err[err_type].err_inject), sizeof(tbuf));
-  ret = me_smbus_write(slot_id, dimm_pmic[dimm].info, 1, PMIC_ERR_INJ_REG,
-                       sizeof(pmic_err[err_type].err_inject), tbuf);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): ME SMBus write failed.", __func__);
-  }
-  return ret;
-}
-
 void
 get_pmic_err_str(uint8_t err_type, char* str, uint8_t len) {
+  const char *err_str[] = {
+    "SWAout OV", "SWBout OV", "SWCout OV", "SWDout OV", "Vin Bulk OV",
+    "Vin Mgmt OV", "SWAout UV", "SWBout UV", "SWCout UV", "SWDout UV",
+    "Vin Bulk UV", "Vin Mgmt to Vin buck switchover", "High temp warning",
+    "Vout 1v8 PG", "High current warning", "Current limit warning",
+    "Current temp shutdown", "Unknown"
+  };
+
   if (str == NULL) {
     return;
   }
-  memcpy(str, pmic_err[err_type].err_str, len);
+
+  err_type = (err_type < ARRAY_SIZE(err_str)) ? err_type : (ARRAY_SIZE(err_str) - 1);
+  strncpy(str, err_str[err_type], len);
 }
 
 int
@@ -1512,18 +1170,6 @@ bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux) {
   }
 
   return 0;
-}
-
-int
-bic_asd_init(uint8_t slot_id, uint8_t cmd) {
-  uint8_t tbuf[4] = {0x00};
-  uint8_t rbuf[8] = {0x00};
-  uint8_t tlen = 4;
-  uint8_t rlen = 0;
-
-  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-  tbuf[3] = cmd;
-  return bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, tlen, rbuf, &rlen);
 }
 
 int

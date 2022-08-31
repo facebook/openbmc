@@ -57,39 +57,6 @@ enum {
   UNKNOWN_CMD = 0xFF,
 };
 
-enum {
-  ERR_INJ_DISABLE = 0,
-  ERR_INJ_ENABLE,
-};
-
-enum {
-  RAIL_UNDEFINED = 0,
-  RAIL_SWA_OUT,
-  RAIL_SWB_OUT,
-  RAIL_SWC_OUT,
-  RAIL_SWD_OUT,
-  RAIL_VIN_BULK,
-  RAIL_VIN_MGMT,
-  RAIL_ALL,
-};
-
-enum {
-  VOLT_UNDEFINED = 0,
-  VOLT_OV = 0,
-  VOLT_UV,
-};
-
-enum {
-  TYPE_UNDEFINED = 0,
-  TYPE_SWITCH_OVER,
-  TYPE_CRIT_TEMP,
-  TYPE_HIGH_TEMP,
-  TYPE_PG_1V8_VOUT,
-  TYPE_HIGH_CURR,
-  TYPE_CAMP_INPUT,
-  TYPE_CURR_LIMIT,
-};
-
 typedef struct
 {
   uint8_t iana_id[3];
@@ -139,30 +106,6 @@ typedef struct {
   uint8_t data[MAX_ME_SMBUS_WRITE_LEN];
 } me_smb_write;
 
-typedef struct {
-  char* silk_screen;
-  smbus_info info;
-} dimm_info;
-
-// Refer PMIC error injection register R35
-typedef struct {
-  uint8_t err_type:3;
-  uint8_t uv_ov_select:1;
-  uint8_t rail:3;
-  uint8_t enable:1;
-} pmic_err_inject;
-
-// PMIC has 6 register to reflect the errors (R05, R06, R08, R09, R0A, R0B)
-#define ERR_PATTERN_LEN 6
-typedef struct {
-  uint8_t pattern[ERR_PATTERN_LEN];
-  bool camp;
-  char* err_str;
-  pmic_err_inject err_inject;
-} pmic_err_info;
-
-#define PMIC_ERR_INJ_REG   0x35
-
 #define MAX_READ_RETRY 5
 
 int bic_get_dev_id(uint8_t slot_id, ipmi_dev_id_t *dev_id, uint8_t intf);
@@ -177,9 +120,6 @@ int bic_set_amber_led(uint8_t slot_id, uint8_t dev_id, uint8_t status);
 int bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
 int bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t bus, uint8_t addr, uint8_t intf);
-int bic_get_vr_device_revision(uint8_t slot_id, uint8_t *dev_rev, uint8_t bus, uint8_t addr, uint8_t intf);
-int bic_get_vr_ver(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *key, char *ver_str);
-int bic_get_vr_ver_cache(uint8_t slot_id, uint8_t intf, uint8_t bus, uint8_t addr, char *ver_str);
 int bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf);
 int bic_get_sensor_reading(uint8_t slot_id, uint8_t sensor_num, ipmi_extend_sensor_reading_t *sensor, uint8_t intf);
 int bic_is_exp_prsnt(uint8_t slot_id);
@@ -189,7 +129,6 @@ int bic_switch_mux_for_bios_spi(uint8_t slot_id, uint8_t mux);
 int bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value);
 int remote_bic_set_gpio(uint8_t slot_id, uint8_t gpio_num,uint8_t value, uint8_t intf);
 int bic_get_one_gpio_status(uint8_t slot_id, uint8_t gpio_num, uint8_t *value);
-int bic_asd_init(uint8_t slot_id, uint8_t cmd);
 int bic_get_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t *data);
 int bic_set_gpio_config(uint8_t slot_id, uint8_t gpio, uint8_t data);
 int bic_get_sys_guid(uint8_t slot_id, uint8_t *guid);
@@ -204,9 +143,6 @@ int bic_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8
 int bic_get_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, \
                              uint8_t *ffi, uint8_t *meff, uint16_t *vendor_id, uint8_t *major_ver, uint8_t *minor_ver, uint8_t intf);
 int bic_set_dev_power_status(uint8_t slot_id, uint8_t dev_id, uint8_t status, uint8_t intf);
-int bic_ifx_vr_mfr_fw(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t code, uint8_t *data, uint8_t *resp, uint8_t intf);
-int bic_get_ifx_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
-int bic_get_isl_vr_remaining_writes(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t *writes, uint8_t intf);
 int bic_disable_sensor_monitor(uint8_t slot_id, uint8_t dis, uint8_t intf);
 int bic_reset(uint8_t slot_id);
 int bic_inform_sled_cycle(void);
@@ -220,8 +156,6 @@ int bic_set_bb_fw_update_ongoing(uint8_t component, uint8_t option);
 int bic_check_bb_fw_update_ongoing();
 int me_smbus_read(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t rlen, uint8_t *data);
 int me_smbus_write(uint8_t slot_id, smbus_info info, uint8_t addr_size, uint32_t addr, uint8_t tlen, uint8_t *data);
-int me_pmic_err_list(uint8_t slot_id, uint8_t dimm, uint8_t* err_list , uint8_t *err_cnt);
-int me_pmic_err_inj(uint8_t slot_id, uint8_t dimm, uint8_t err_type);
 void get_pmic_err_str(uint8_t err_type, char* str, uint8_t len);
 int bic_check_cable_status();
 int bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type);

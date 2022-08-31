@@ -58,11 +58,6 @@ void ExpansionBoard::ready()
         is_present = false;
       break;
     case FW_2OU_PESW:
-    case FW_2OU_PESW_VR:
-    case FW_2OU_3V3_VR1:
-    case FW_2OU_3V3_VR2:
-    case FW_2OU_3V3_VR3:
-    case FW_2OU_1V8_VR:
     case FW_2OU_M2_DEV0:
       if ( (config_status & PRESENT_2OU) != PRESENT_2OU ) {
         is_present = false;

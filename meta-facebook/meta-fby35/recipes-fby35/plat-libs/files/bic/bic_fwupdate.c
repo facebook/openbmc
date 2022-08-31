@@ -37,10 +37,8 @@
 #include "bic_xfer.h"
 #include "bic_bios_fwupdate.h"
 #include "bic_cpld_altera_fwupdate.h"
-#include "bic_cpld_lattice_fwupdate.h"
 #include "bic_m2_fwupdate.h"
 #include "bic_mchp_pciesw_fwupdate.h"
-#include "bic_vr_fwupdate.h"
 
 //#define DEBUG
 
@@ -621,27 +619,16 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
 
   //get the intf
   switch (comp) {
-    case FW_CPLD:
     case FW_ME:
     case FW_SB_BIC:
     case FW_BIC_RCVY:
-    case FW_VR_VCCIN:
-    case FW_VR_VCCD:
-    case FW_VR_VCCINFAON:
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
-    case FW_1OU_CPLD:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
-    case FW_2OU_CPLD:
     case FW_2OU_PESW:
-    case FW_2OU_PESW_VR:
-    case FW_2OU_3V3_VR1:
-    case FW_2OU_3V3_VR2:
-    case FW_2OU_3V3_VR3:
-    case FW_2OU_1V8_VR:
     case FW_2OU_M2_DEV0:
     case FW_2OU_M2_DEV1:
     case FW_2OU_M2_DEV2:
@@ -716,29 +703,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BIC_RCVY:
       ret = recovery_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
       break;
-    case FW_1OU_CPLD:
-    case FW_2OU_CPLD:
-      if ( stop_bic_monitoring == true && (ret = stop_bic_sensor_monitor(slot_id, intf)) < 0 ) {
-        printf("* Failed to stop bic sensor monitor\n");
-        break;
-      }
-
-      ret = (loc != NULL)?update_bic_cpld_lattice(slot_id, path, intf, force): \
-                          update_bic_cpld_lattice_usb(slot_id, path, intf, force);
-
-      //check ret first and then check stop_bic_monitoring flag
-      //run start_bic_sensor_monitor() and assgin a new val to ret in the end
-      if ( (ret == BIC_STATUS_SUCCESS) && (stop_bic_monitoring == true) && \
-           (ret = start_bic_sensor_monitor(slot_id, intf)) < 0 ) {
-        printf("* Failed to start bic sensor monitor\n");
-        break;
-      }
-      break;
     case FW_BB_CPLD:
       ret = update_bic_cpld_altera(slot_id, path, intf, force);
-      break;
-    case FW_CPLD:
-      ret = update_bic_cpld_lattice(slot_id, path, intf, force);
       break;
     case FW_BIOS:
       if (loc != NULL) {
@@ -746,21 +712,6 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       } else {
         ret = update_bic_usb_bios(slot_id, comp, fd);
       }
-      break;
-    case FW_VR_VCCIN:
-    case FW_VR_VCCD:
-    case FW_VR_VCCINFAON:
-      ret = update_bic_vr(slot_id, comp, path, intf, force, false/*usb update?*/);
-      break;
-    case FW_2OU_3V3_VR1:
-    case FW_2OU_3V3_VR2:
-    case FW_2OU_3V3_VR3:
-    case FW_2OU_1V8_VR:
-      ret = update_bic_vr(slot_id, comp, path, intf, force, true/*usb update*/);
-      break;
-    case FW_2OU_PESW_VR:
-      ret = (loc != NULL)?update_bic_vr(slot_id, comp, path, intf, force, false/*usb update*/): \
-                          update_bic_vr(slot_id, comp, path, intf, force, true/*usb update*/);
       break;
     case FW_2OU_PESW:
       if (board_type == GPV3_BRCM_BOARD) {

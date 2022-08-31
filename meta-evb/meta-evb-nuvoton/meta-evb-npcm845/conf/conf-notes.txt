@@ -1,0 +1,2 @@
+Common targets are:
+    evb-npcm845-image

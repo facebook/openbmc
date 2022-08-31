@@ -25,6 +25,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-halfdome:lf-master
 # kirkstone platforms (latest)
   meta-churchillmono:lf-kirkstone
+  meta-evb-npcm845:lf-kirkstone
   meta-fby2-nd:lf-kirkstone
   meta-fby35:lf-kirkstone
   meta-grandcanyon:lf-kirkstone

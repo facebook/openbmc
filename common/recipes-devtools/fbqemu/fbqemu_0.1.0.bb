@@ -63,3 +63,5 @@ LIC_FILES_CHKSUM = " \
 SUMMARY = "fb wrapper for QEMU"
 HOMEPAGE = "https://github.com/facebook/openbmc"
 LICENSE = "GPL-2.0-only"
+
+addtask addto_recipe_sysroot after do_populate_sysroot before do_build

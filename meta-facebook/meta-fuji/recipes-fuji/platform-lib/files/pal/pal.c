@@ -836,7 +836,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
   if (fru == FRU_SMB) {
     *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
       FRU_CAPABILITY_MANAGEMENT_CONTROLLER;
-  } else if (fru > FRU_ALL && fru <= FRU_FPGA) {
+  } else if (fru <= FRU_FPGA) {
     *caps = FRU_CAPABILITY_SENSOR_ALL;
   } else {
     return -1;

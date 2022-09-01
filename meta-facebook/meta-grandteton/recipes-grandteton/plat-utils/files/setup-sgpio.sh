@@ -149,15 +149,15 @@ sgpio_export FAB_BMC_REV_ID2 222
 sgpio_export FAB_BMC_REV_ID1 224
 sgpio_export FAB_BMC_REV_ID0 226
 
-kv set mb_rev $(($(gpio_get FAB_BMC_REV_ID2)<<2 |
-        $(gpio_get FAB_BMC_REV_ID1)<<1 |
-        $(gpio_get FAB_BMC_REV_ID0)))
+kv set mb_rev "$(($(gpio_get FAB_BMC_REV_ID2)<<2 |
+                  $(gpio_get FAB_BMC_REV_ID1)<<1 |
+                  $(gpio_get FAB_BMC_REV_ID0)))"
 
-kv set mb_sku $(($(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
-        $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
-        $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
-        $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
-        $(gpio_get FM_BOARD_BMC_SKU_ID0)))
+kv set mb_sku "$(($(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID0)))"
 
 
 # == SGPIO OUT ==
@@ -174,7 +174,7 @@ sgpio_export FM_BMC_CRASHLOG_TRIG_R1_N 7
 gpio_set FM_BMC_CRASHLOG_TRIG_R1_N 1
 
 sgpio_export FM_DEBUG_PORT_PRSNT_N_OUT 9
-gpio_set FM_DEBUG_PORT_PRSNT_N_OUT $(gpio_get FM_DEBUG_PORT_PRSNT_N_IN)
+gpio_set FM_DEBUG_PORT_PRSNT_N_OUT "$(gpio_get FM_DEBUG_PORT_PRSNT_N_IN)"
 
 sgpio_export IRQ_PCH_SCI_WHEA_R_N 11
 gpio_set IRQ_PCH_SCI_WHEA_R_N 1
@@ -250,7 +250,7 @@ sgpio_export USB_OC0_REAR_R_OUT 63
 gpio_set USB_OC0_REAR_R_OUT 1
 
 sgpio_export GPU_FPGA_RST_N 65
-gpio_set GPU_FPGA_RST_N 1
+gpio_set GPU_FPGA_RST_N 0
 
 sgpio_export FM_JTAG_TCK_MUX_BMC_SEL 67
 gpio_set FM_JTAG_TCK_MUX_BMC_SEL 0
@@ -263,3 +263,9 @@ gpio_set FM_BMC_CPU_FBRK_OUT_N 1
 
 sgpio_export GPIO_READY 37
 gpio_set GPIO_READY 1
+
+#initial FPGA pcie device
+sleep 0.1
+gpio_set GPU_FPGA_RST_N 1
+sleep 0.1
+echo 1 > /sys/bus/pci/rescan

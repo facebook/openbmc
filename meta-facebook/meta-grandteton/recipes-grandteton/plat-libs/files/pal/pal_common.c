@@ -9,11 +9,6 @@
 #include "pal_def.h"
 #include "pal_gpio.h"
 
-// TODO Remove after updating inspiration point pal_gpio.h
-#ifndef BIC_READY
-#define BIC_READY "FM_SWB_BIC_READY_ISO_R_N"
-#endif
-
 bool
 is_cpu_socket_occupy(uint8_t cpu_idx) {
   static bool cached = false;

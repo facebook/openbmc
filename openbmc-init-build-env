@@ -31,6 +31,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-grandcanyon:lf-kirkstone
   meta-grandteton:lf-kirkstone
   meta-inspirationpoint:lf-kirkstone
+  meta-sandia:lf-kirkstone
   meta-waimeacanyon:lf-kirkstone
 # dunfell platforms (pending upgrade)
   meta-clearcreek:lf-dunfell

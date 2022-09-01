@@ -1,0 +1,88 @@
+description: >
+    An example interface originally described as part of the announcement
+    of new sd-bus interfaces at:
+        http://0pointer.net/blog/the-new-sd-bus-api-of-systemd.html
+methods:
+    - name: Multiply
+      description: >
+          Multiplies two integers 'x' and 'y' and returns the result.
+      parameters:
+          - name: x
+            type: int64
+            description: >
+                The first integer to multiply.
+          - name: y
+            type: int64
+            description: >
+                The second integer to multiply.
+            default: 1
+      returns:
+          - name: z
+            type: int64
+            description: >
+                The result of (x*y).
+    - name: Divide
+      description: >
+          Divides two integers 'x' and 'y' and returns the result.
+      parameters:
+          - name: x
+            type: int64
+            description: >
+                The first integer to divide.
+          - name: y
+            type: int64
+            description: >
+                The second integer to divide.
+            default: 1
+      returns:
+          - name: z
+            type: int64
+            description: >
+                The result of (x/y).
+      errors:
+          - self.Error.DivisionByZero
+    - name: Clear
+      flags:
+          - unprivileged
+          - no_reply
+      description: >
+          Reset the LastResult property to zero.
+properties:
+    - name: LastResult
+      type: int64
+      default: 0
+      description: >
+          The result of the most recent calculation.
+    - name: Status
+      type: enum[self.State]
+      default: Success
+      flags:
+          - const
+      description: >
+          The current state of the Calculator.
+    - name: Owner
+      type: string
+      description: >
+          The name of the owner of the Calculator.
+      errors:
+          - self.Error.PermissionDenied
+signals:
+    - name: Cleared
+      description: >
+          Signal indicating the LastReset property has been set to zero by the
+          'Clear' method.
+      properties:
+          - type: int64
+            description: >
+                Value of LastReset prior to Clear.
+enumerations:
+    - name: State
+      description: >
+          Identifies if the service has encountered an error or not.
+      values:
+          - name: Success
+            description: >
+                No error has been encountered.
+          - name: Error
+            description: >
+                The service has encountered an error.

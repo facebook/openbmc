@@ -1,0 +1,6 @@
+- name: DivisionByZero
+  description: >
+      An attempt to divide by zero was attempted.
+- name: PermissionDenied
+  description: >
+      The user does not have enough privileges to perform the operation.

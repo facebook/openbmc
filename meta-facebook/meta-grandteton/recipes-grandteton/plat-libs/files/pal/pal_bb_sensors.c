@@ -776,6 +776,7 @@ set_nct7363y_duty(uint8_t fan_id, uint8_t pwm) {
   uint8_t addr, bus;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  uint8_t location = fan_id % 2;
   uint8_t reg_map = 2*(fan_id/4); //fan_id 0-15
   static uint8_t retry=0;
 
@@ -789,6 +790,7 @@ set_nct7363y_duty(uint8_t fan_id, uint8_t pwm) {
   }
 
   //NCT7363Y Tach High Byte
+  reg_map = location ? reg_map : (NCT7363Y_PWM_CNT - reg_map - 2);
   tbuf[0] = nct7363y_ctrl_list[reg_map].pwm_reg;
   tbuf[1] = round((float)pwm*255/100);
 
@@ -819,6 +821,7 @@ get_nct7363y_duty(uint8_t fan_id, uint8_t* pwm) {
   uint8_t addr, bus;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
+  uint8_t location = fan_id % 2;
   uint8_t reg_map = 2*(fan_id/4); //fan_id 0-15
   static uint8_t retry=0;
 
@@ -832,6 +835,7 @@ get_nct7363y_duty(uint8_t fan_id, uint8_t* pwm) {
   }
 
   //NCT7363Y PWM REG
+  reg_map = location ? reg_map : (NCT7363Y_PWM_CNT - reg_map - 2);
   tbuf[0] = nct7363y_ctrl_list[reg_map].pwm_reg;
 
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
@@ -866,6 +870,7 @@ get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t tach_hb=0;
   uint8_t tach_lb=0;
   uint8_t tach_id = sensor_map[fru].map[sensor_num].id;
+  uint8_t location = (tach_id / 2 ) % 2;
   uint8_t reg_map = tach_id%2 + 2*(tach_id/8); //tach_id: 0 - 31
   static uint8_t retry=0;
 
@@ -879,6 +884,7 @@ get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   //NCT7363Y Tach High Byte
+  reg_map = location ? reg_map : (NCT7363Y_PWM_CNT - reg_map - 1);
   tbuf[0] = nct7363y_ctrl_list[reg_map].tach_high;
 
   ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 1, rbuf, 1);
@@ -928,21 +934,27 @@ err_exit:
 //Max3170 Ctrl Fan Function
 static int
 set_max31790_duty(uint8_t fan_id, uint8_t pwm) {
+  uint8_t location = fan_id % 2;
+  uint8_t reg_map = fan_id/4;
   int pwm_map[4] = {1, 3, 4, 6};
   char label[32] = {0};
 
-  snprintf(label, sizeof(label), "pwm%d", pwm_map[fan_id/4]);
+  reg_map = location ? reg_map : (FAN_CHIP_CNT - reg_map - 1);
+  snprintf(label, sizeof(label), "pwm%d", pwm_map[reg_map]);
   return sensors_write(fan_chips[fan_id%4], label, (float)pwm);
 }
 
 static int
 get_max31790_duty(uint8_t fan_id, uint8_t* pwm) {
   int ret;
+  uint8_t location = fan_id % 2;
+  uint8_t reg_map = fan_id/4;
   int pwm_map[4] = {1, 3, 4, 6};
   float val;
   char label[32] = {0};
 
-  snprintf(label, sizeof(label), "pwm%d", pwm_map[fan_id/4]);
+  reg_map = location ? reg_map : (FAN_CHIP_CNT - reg_map - 1);
+  snprintf(label, sizeof(label), "pwm%d", pwm_map[reg_map]);
   ret = sensors_read(fan_chips[fan_id%4], label, &val);
 
   if (ret == 0)

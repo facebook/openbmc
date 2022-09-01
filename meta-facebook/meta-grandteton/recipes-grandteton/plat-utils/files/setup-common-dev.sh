@@ -367,19 +367,19 @@ echo "Probe FRU Device"
 i2c_device_add 40 0x56 24c64 #BP0 FRU
 i2c_device_add 41 0x56 24c64 #BP1 FRU
 
-gpio_export_ioexp 40-0021 FAN0_PRESENT   4
-gpio_export_ioexp 40-0021 FAN4_PRESENT   5
-gpio_export_ioexp 40-0021 FAN8_PRESENT   6
-gpio_export_ioexp 40-0021 FAN12_PRESENT  7
+gpio_export_ioexp 40-0021 FAN0_PRESENT   7
+gpio_export_ioexp 40-0021 FAN4_PRESENT   6
+gpio_export_ioexp 40-0021 FAN8_PRESENT   5
+gpio_export_ioexp 40-0021 FAN12_PRESENT  4
 gpio_export_ioexp 40-0021 FAN1_PRESENT   0
 gpio_export_ioexp 40-0021 FAN5_PRESENT   1
 gpio_export_ioexp 40-0021 FAN9_PRESENT   2
 gpio_export_ioexp 40-0021 FAN13_PRESENT  3
 
-gpio_export_ioexp 41-0021 FAN2_PRESENT   4
-gpio_export_ioexp 41-0021 FAN6_PRESENT   5
-gpio_export_ioexp 41-0021 FAN10_PRESENT  6
-gpio_export_ioexp 41-0021 FAN14_PRESENT  7
+gpio_export_ioexp 41-0021 FAN2_PRESENT   7
+gpio_export_ioexp 41-0021 FAN6_PRESENT   6
+gpio_export_ioexp 41-0021 FAN10_PRESENT  5
+gpio_export_ioexp 41-0021 FAN14_PRESENT  4
 gpio_export_ioexp 41-0021 FAN3_PRESENT   0
 gpio_export_ioexp 41-0021 FAN7_PRESENT   1
 gpio_export_ioexp 41-0021 FAN11_PRESENT  2

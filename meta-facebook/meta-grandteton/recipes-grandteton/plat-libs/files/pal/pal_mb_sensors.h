@@ -44,10 +44,6 @@ enum {
 #define PMON_CFG_AVG_PWR(x)             (x << 11)
 #define IOUT_OC_WARN_EN1                (1 << 10)
 
-
-//FAN
-#define FAN_CHIP_CNT                    (4)
-
 //Sensor Table
 enum {
 //MB_SENSOR

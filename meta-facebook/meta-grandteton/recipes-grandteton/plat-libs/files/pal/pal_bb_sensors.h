@@ -154,6 +154,7 @@ enum {
   FAN_CHIP_ID1,
   FAN_CHIP_ID2,
   FAN_CHIP_ID3,
+  FAN_CHIP_CNT,
 };
 
 //FAN INFO
@@ -221,6 +222,7 @@ enum {
   NCT7363Y_PWM6_OUTLET,
   NCT7363Y_PWM10_INLET,
   NCT7363Y_PWM10_OUTLET,
+  NCT7363Y_PWM_CNT,
 };
 
 int pal_sensor_monitor_initial(void);

@@ -153,7 +153,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   
   if (ret) {
     retry[sensor_num]++;
-    return retry_skip_handle(retry[sensor_num], 3);
+    return retry_err_handle(retry[sensor_num], 3);
   }
   
   return 0;

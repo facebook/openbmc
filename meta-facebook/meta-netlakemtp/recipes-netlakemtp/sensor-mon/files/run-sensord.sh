@@ -3,6 +3,6 @@
 #TODO: Add functions as shell's lib in /usr/local/fbpackages/utils/ast-functions#
 echo "Setup sensor monitoring for NETLAKEMTP... "
 
-FRUS="server bmc pdb fio"
+FRUS="server bmc pdb fio nic"
 
 exec /usr/local/bin/sensord $FRUS

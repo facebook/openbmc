@@ -44,12 +44,12 @@
 #define KEY_SERVER_CPLD_VER "server_cpld_ver"
 #define MAX_NUM_GPIO_LED_POSTCODE 8
 
-const char pal_fru_list[] = "all, server, bmc, pdb, fio";
+const char pal_fru_list[] = "all, server, bmc, pdb, fio, nic";
 
 // export to sensor-util
-const char pal_fru_list_sensor_history[] = "all, server, bmc, pdb, fio";
+const char pal_fru_list_sensor_history[] = "all, server, bmc, pdb, fio, nic";
 // fru name list for pal_get_fru_id()
-const char *fru_str_list[] = {"all", "server", "bmc", "pdb", "fio"};
+const char *fru_str_list[] = {"all", "server", "bmc", "pdb", "fio", "nic"};
 
 size_t pal_pwm_cnt = 1;
 size_t pal_tach_cnt = 4;
@@ -82,6 +82,7 @@ struct pal_key_cfg {
   {"bmc_sensor_health", "1", NULL},
   {"pdb_sensor_health", "1", NULL},
   {"fio_sensor_health", "1", NULL},
+  {"nic_sensor_health", "1", NULL},
   {"sysfw_ver_server", "0", NULL},
   {"system_identify_led", "off", NULL},
   {"server_power_on_reset_cfg", "lps", NULL},
@@ -156,6 +157,7 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_BMC:
     case FRU_PDB:
     case FRU_FIO:
+    case FRU_NIC:
       *status = 1;
       break;
     default:
@@ -276,6 +278,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_FIO:
       *caps = FRU_CAPABILITY_SENSOR_ALL;
       break;
+    case FRU_NIC:
+      *caps = (FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_NETWORK_CARD);
+      break;
     default:
       ret = -1;
       break;
@@ -314,6 +319,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_FIO:
       snprintf(name, MAX_FRU_CMD_STR, "fio");
+      break;
+    case FRU_NIC:
+      snprintf(name, MAX_FRU_CMD_STR, "nic");
       break;
    default:
       if (fru > MAX_NUM_FRUS) {
@@ -581,6 +589,9 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_FIO:
       snprintf(key, sizeof(key), "fio_sensor_health");
       break;
+    case FRU_NIC:
+      snprintf(key, sizeof(key), "nic_sensor_health");
+      break;
     default:
       return -1;
   }
@@ -626,6 +637,9 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
       break;
     case FRU_FIO:
       snprintf(key, sizeof(key), "fio_sensor_health");
+      break;
+    case FRU_NIC:
+      snprintf(key, sizeof(key), "nic_sensor_health");
       break;
     default:
       return -1;

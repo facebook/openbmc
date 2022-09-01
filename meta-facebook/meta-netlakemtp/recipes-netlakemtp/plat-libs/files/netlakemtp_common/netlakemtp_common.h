@@ -35,6 +35,7 @@ extern "C" {
 #define COMMON_FRU_PATH "/tmp/fruid_%s.bin"
 #define FRU_SERVER_BIN  "/tmp/fruid_server.bin"
 #define FRU_BMC_BIN  "/tmp/fruid_bmc.bin"
+#define FRU_NIC_BIN  "/tmp/fruid_nic.bin"
 
 #define SERVER_FRU_ADDR  0x56
 #define BMC_FRU_ADDR  0x56
@@ -45,6 +46,7 @@ extern "C" {
 
 #define SERVER_FRU_ADDR 0x56
 #define BMC_FRU_ADDR 0x56
+#define NIC_FRU_ADDR 0x50
 
 #define CPLD_BUS 2
 #define CPLD_ADDR 0x1E
@@ -123,11 +125,13 @@ enum {
   FRU_BMC,
   FRU_PDB,
   FRU_FIO,
+  FRU_NIC,
   FRU_CNT,
 };
 
 enum fru_bus{
   I2C_SERVER_BUS = 4,
+  I2C_NIC_BUS = 8,
   I2C_BMC_BUS = 9,
 };
 

@@ -76,6 +76,15 @@ plat_fruid_init() {
   if (pal_check_fru_is_valid(FRU_BMC_BIN) < 0) {
     syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_BMC_BIN);
   }
+  //fruid_nic.bin
+  snprintf(path, path_len, EEPROM_PATH, I2C_NIC_BUS, NIC_FRU_ADDR);
+  if (pal_copy_eeprom_to_bin(path, FRU_NIC_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_NIC_BIN);
+  }
+  if (pal_check_fru_is_valid(FRU_NIC_BIN) < 0) {
+    syslog(LOG_WARNING, "%s() The FRU %s is wrong.", __func__, FRU_NIC_BIN);
+  }
+
 
 
   return 0;

@@ -135,13 +135,16 @@ PAL_SENSOR_MAP bmc_sensor_map[] = {
   {"M.2_B_TEMP", NVME_B_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [BMC_M2_C_TEMP] =
   {"M.2_C_TEMP", NVME_C_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
-  [BMC_OCP_NIC_TEMP] =
-  {"OCP_NIC_TEMP", OCP_NIC_TEMP, read_nic_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
 };
 
 PAL_SENSOR_MAP fio_sensor_map[] = {
   [FIO_INLET_TEMP] =
   {"FIO_INLET_TEMP", FIO_INLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+};
+
+PAL_SENSOR_MAP nic_sensor_map[] = {
+  [BMC_OCP_NIC_TEMP] =
+  {"OCP_NIC_TEMP", OCP_NIC_TEMP, read_nic_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
 };
 
 const char *adc_label[] = {
@@ -221,7 +224,6 @@ const uint8_t bmc_sensor_list[] = {
   BMC_M2_A_TEMP,
   BMC_M2_B_TEMP,
   BMC_M2_C_TEMP,
-  BMC_OCP_NIC_TEMP,
 };
 
 const uint8_t pdb_sensor_list[] = {
@@ -233,6 +235,10 @@ const uint8_t pdb_sensor_list[] = {
 
 const uint8_t fio_sensor_list[] = {
   FIO_INLET_TEMP,
+};
+
+const uint8_t nic_sensor_list[] = {
+  BMC_OCP_NIC_TEMP,
 };
 
 PAL_DEV_INFO temp_dev_list[] = {
@@ -325,6 +331,7 @@ size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
 size_t bmc_sensor_cnt = ARRAY_SIZE(bmc_sensor_list);
 size_t pdb_sensor_cnt = ARRAY_SIZE(pdb_sensor_list);
 size_t fio_sensor_cnt = ARRAY_SIZE(fio_sensor_list);
+size_t nic_sensor_cnt = ARRAY_SIZE(nic_sensor_list);
 
 size_t pmbus_dev_cnt = ARRAY_SIZE(pmbus_dev_table);
 size_t hsc_dev_cnt = ARRAY_SIZE(hsc_dev_table);
@@ -359,6 +366,10 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   case FRU_FIO:
     *sensor_list = (uint8_t *) fio_sensor_list;
     *cnt = fio_sensor_cnt;
+    break;
+  case FRU_NIC:
+    *sensor_list = (uint8_t *) nic_sensor_list;
+    *cnt = nic_sensor_cnt;
     break;
   default:
     if (fru > MAX_NUM_FRUS) {
@@ -954,6 +965,9 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_FIO:
     sensor = fio_sensor_map[sensor_num];
     break;
+  case FRU_NIC:
+    sensor = nic_sensor_map[sensor_num];
+    break;
   default:
     return ERR_SENSOR_NA;
   }
@@ -1045,6 +1059,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_FIO:
     snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", fio_sensor_map[sensor_num].snr_name);
     break;
+  case FRU_NIC:
+    snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", nic_sensor_map[sensor_num].snr_name);
+    break;
   default:
     return ERR_UNKNOWN_FRU;
   }
@@ -1082,6 +1099,9 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     break;
   case FRU_FIO:
     sensor_map = fio_sensor_map;
+    break;
+  case FRU_NIC:
+    sensor_map = nic_sensor_map;
     break;
   default:
     return ERR_UNKNOWN_FRU;
@@ -1140,13 +1160,16 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     sensor_units = server_sensor_map[sensor_num].units;
     break;
   case FRU_BMC:
-  sensor_units = bmc_sensor_map[sensor_num].units;
+    sensor_units = bmc_sensor_map[sensor_num].units;
     break;
   case FRU_PDB:
     sensor_units = pdb_sensor_map[sensor_num].units;
     break;
   case FRU_FIO:
     sensor_units = fio_sensor_map[sensor_num].units;
+    break;
+  case FRU_NIC:
+    sensor_units = nic_sensor_map[sensor_num].units;
     break;
   default:
     return ERR_UNKNOWN_FRU;
@@ -1195,6 +1218,9 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
       break;
     case FRU_BMC:
       *value = bmc_sensor_map[sensor_num].poll_invernal;
+      break;
+    case FRU_NIC:
+      *value = nic_sensor_map[sensor_num].poll_invernal;
       break;
     default:
       return ERR_UNKNOWN_FRU;

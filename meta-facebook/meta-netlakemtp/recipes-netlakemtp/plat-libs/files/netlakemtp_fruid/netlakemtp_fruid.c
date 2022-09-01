@@ -59,6 +59,9 @@ netlakemtp_get_fruid_name(uint8_t fru, char *name) {
     case FRU_FIO:
       snprintf(name, MAX_FRU_NAME_STR, "Front IO Board");
       break;
+    case FRU_NIC:
+      snprintf(name, MAX_FRU_NAME_STR, "NIC Board");
+      break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -99,6 +102,9 @@ netlakemtp_get_fruid_path(uint8_t fru, char *path) {
     case FRU_FIO:
       snprintf(fname, sizeof(fname), "fio");
       break;
+    case FRU_NIC:
+      snprintf(fname, sizeof(fname), "nic");
+      break;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -134,6 +140,7 @@ netlakemtp_get_fruid_eeprom_path(uint8_t fru, char *path) {
       break;
     case FRU_PDB:
     case FRU_FIO:
+    case FRU_NIC:
       return -1;
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);

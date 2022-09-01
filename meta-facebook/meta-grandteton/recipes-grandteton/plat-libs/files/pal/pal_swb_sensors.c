@@ -37,7 +37,7 @@ get_swb_sensor(uint8_t fru, uint8_t sensor_num, float *value)
     integer = resp->data.present_reading[0] | resp->data.present_reading[1] << 8;
     decimal = (float)(resp->data.present_reading[2] | resp->data.present_reading[3] << 8)/1000;
 
-    if (integer > 0)
+    if (integer >= 0)
       *value = (float)integer + decimal;
     else
       *value = (float)integer - decimal;

@@ -11,6 +11,7 @@ sends commands to devices over one or more UARTs connected to the host controlle
 
 ## Why Rackmon V2?
 Open Rack V3 brings with it a few changes to the design:
+
 1. There can be more than 1 UART/RS485 connection each having 1 or more modbus devices.
 2. There can be multiple types of modbus devices (Each with its own unique
    register map).
@@ -18,6 +19,7 @@ Open Rack V3 brings with it a few changes to the design:
    scanning is going to be terrible for runtime performance.
 
 V2 addresses all these changes:
+
 * Rewrite in C++. This allows us to use more appropriate data structures like maps/vectors.
 * Written in a way to allow for unit-testing each layer/component independently.
 * Use JSON configuration files for interfaces (Allows for us to define the 1 or more UARTs)
@@ -51,36 +53,34 @@ V2 addresses all these changes:
     later probe for 0xa5. Rather than doing it all at one shot. This means we are paying a smaller penalty.
     Thus, adding a new device to the rack after rackmond has started would mean it would be discovered
     worst case, 128*2min (~4hrs). We could always ask for a force-scan after a repair.
-  - Maintain devices which used to be active but in error in a different list. This list will be scanned
-    every 2-3min. Thus, a service of a PSU would not incur the same 4hr penalty as adding a new device.
+  - Maintain devices previously active but currently in error with a special "dormant" state.
+    This allows us to scan for its recovery every 2-3min. Thus, a service of a PSU would not incur the same
+    4hr penalty as adding a new device.
 
 
 # Device/Interface Abstraction
 
 The `Device` class provided by `Device.h` abstracts the OS from the rest of
-the code. Since modbus requires exact read, the `read()` method reads
-exact number of bytes rather than faithfully abstract the OS `read` call
-which returns the number of bytes read. The methods may throw a `TimeoutException`
-exception whenever something times-out. Otherwise, on errors it throws
-either `std::system_error` or `std::runtime_error`. The caller is expected
-to catch these.
+the code. The device class reads opportunistically as much data as requested.
+If no bytes are read within the requested time, a `TimeoutException` is raised.
+Otherwise it returns the number of non-zero bytes read out of the device.
+Any other error raises either a `std::system_error` or `std::runtime_error`.
+The caller is expected to catch these.
 
 Inheriting from `Device` we have `UARTDevice` in `UARTDevice.h` which implements all the
-UART specific methods. In particular it has the concept of baudrate,
-enabling/disabling read. It also overrides `wait_write` method to actually
-poll the device on write completion.
+UART specific methods. In particular it has the concept of baud-rate,
+enabling/disabling read.
 
 Also in `UARTDevice.h` we have `AspeedRS485Device` which inherits from `UARTDevice`.
 This is the abstraction for the native RS485 Device on the ASPEED Chip. With
-special IOCTL needed at device open (Used by wedge100. Wedge400 canuses the FDTI
-USB device and hence needs the default UARTDevice).
+special IOCTL needed at device open (Used by wedge100. Wedge400 uses the FDTI
+USB device and hence needs the default `UARTDevice`).
 
-*Note, the write specialization is because we need to send commands with READ
+Note, the write specialization is because we need to send commands with READ
 disabled. Disabling READ during write has a special problem where if the
 caller takes too long to re-enable READ we may miss the incoming response.
 Hence, we need to muck around the thread priorities to get to enabling READ ASAP.
-NOTE: If we dont do this, `wait_write` ends up busy-looping.
-TODO: Check if we can get away with not doing a `wait_write` and disabling `READ`.*
+NOTE: If we don't do this, `wait_write` ends up busy-looping.
 
 All these inheritances are here to allow us to unit-test individual interfaces
 and allow us to mock any layer.
@@ -118,7 +118,7 @@ The interfaces to be used is provided by `rackmond.json` of the format:
 }
 ```
 Mandatory:
-  "baudrate": This is the default baudrate on this bus.
+  "baudrate": This is the default baud-rate on this bus.
   "device_path": The UART Device path.
 Optional:
   "device_type": {"default","AspeedRS485","LocalEcho"}, to pick the type of UART device.
@@ -139,8 +139,8 @@ is discussed next.
 `Msg.h` provides a native `Msg` structure which allows us to create packs/unpacks
 very easily. It provides `<<` operator to allow one to encode fields and
 `>>` operator to decode fields.
-Currently only byte and nibble is supported since most of the work revolves
-around those. We can add more in the future if future messages need it.
+Currently only byte, nibble, 32bit-word (and vectors of these) are supported.
+We can add more in the future if future messages need it.
 It correctly uses big-endian for members larger than a byte.
 
 It exposes the reference to the first byte as `addr` for easy detection
@@ -154,13 +154,15 @@ and `validate()` which checks the CRC16 checksum at the end of the message
 The `Modbus` class is expected to call the `encode()` method just before
 writing a request and the `decode()` method right after receiving the response.
 
-`Msg` is further specialized in `ModbusCmds.h` to create `ReadHoldingRegistersReq`
-and `ReadHoldingRegistersResp`. Users can use this to read registers on
-the modbus devices.
+`Msg` is further specialized in `ModbusCmds.h` to create `Request` and `Response`.
+Then these are further specialized to implement Modbus messages:
 
-TODO (Future addition):
-WriteHoldingRegister(req, resp) - Needed by baudrate negotiation.
-WriteHoldingRegisters(req, resp) - Needed to update PSU timestamp.
+| Operation | Request Message | Response Message |
+|-----------|-----------------|------------------|
+| Read Holding Registers | ReadHoldingRegistersReq | ReadHoldingRegistersResp |
+| Write Single Register | WriteSingleRegisterReq | WriteSIngleRegisterResp |
+| Write Multiple Registers | WriteMultipleRegistersReq | WriteMultipleRegistersResp |
+| Read File Record(s) | ReadFileRecordReq | ReadFileRecordResp |
 
 # Register Maps
 Register.h defines a register map which can be used to define the
@@ -234,11 +236,11 @@ rackmon.d/orv3_rpu.json
 # Special Handling
 Sometimes we want to perform certain "special" operations on registers
 of all discovered modbus devices. For example, PSUs/BBUs do not have a
-synchronized clock. Thus, it is benefitial if the controller "feeds" the
+synchronized clock. Thus, it is beneficial if the controller "feeds" the
 correct system time to the PSU, which would make blackbox/debug data
-retrieved from the PSU dependable (useless if the timestamp is inaccurate).
+retrieved from the PSU dependable (useless if the time-stamp is inaccurate).
 
-This is accomplished using the "special_handlers" key in the register map.
+This is accomplished using the `special_handlers` key in the register map.
 (This is not shown in the earlier section to maintain simplicity).
 
 ```
@@ -271,7 +273,7 @@ the action is performed once at start up.
 action - action to take. Currently only "write" is supported. This
 allows a particular value to be written to the register.
 info - This determines what value is written.
-   interpret - How do we interpet the output? This can be one of the
+   interpret - How do we interpret the output? This can be one of the
    allowed types (integer, string etc).
    One of the two options on how to get the value to write:
       shell - Run a shell command and interpret its output (Example, date +%s)
@@ -280,11 +282,13 @@ info - This determines what value is written.
 # ORv3 Register Address types
 This more describes either up-coming or existing Register map JSONs.
 We can formally interpret the address of a MODBUS device as:
+
 ```
 |--7--|--6--|--5--|--4--|--3--|--2--|--1--|--0--|
 | T1  | T0  | R2  | R1  | R0  | D2  | D1  | D0  |
 |-----|-----|-----|-----|-----|-----|-----|-----|
 ```
+
 | T1 | T0 | Description |
 | -- | -- | ----------- |
 | 1 | 1 | PSU (Power Supply Unit) |
@@ -299,6 +303,7 @@ D2:D0 - Device address (PSU/BBU/PSU+BBU/Special).
 ORv3 gets rid of the concept of a shelf address and moves
 it into the device address to allow for greater flexibility.
 Legacy ORv2 devices can be considered as special extensions:
+
 | Bits | Interpretation |
 | ---- | -------------- |
 | R2   | Always 1       |
@@ -306,12 +311,11 @@ Legacy ORv2 devices can be considered as special extensions:
 | D2   | Shelf Address  |
 | D1:D0 | PSU Address   |
 
-This information is used in constructing the "address_range" field
-of the register map. That allows us to use different maps for
-each of the device type.
+This information is used in constructing the `address_range` field
+of the register map.
 
 # Modbus device interface
-`ModbusDevice.h` defines a Modbus device. You construct it with
+`ModbusDevice.h` defines an addressable Modbus device. You construct it with
 a Modbus interface it was discovered on, its address and finally its
 register map described above.
 
@@ -321,9 +325,10 @@ To help with monitoring it defines a `reloadRegisters()` method which will
 read all registers defined in the register map and store it in the 
 local member of type `ModbusDeviceRawData`.
 
-It exposes `get_raw_data` to help users retrieve a copy of the
-monitored data and `is_flaky` and `last_active` to the monitor agent
-to determine/remediate flaky devices.
+It exposes two APIs to retrieve these values:
+
+1. `getValueData`: Returns the interpreted structured value (as defined in the register map)
+2. `getRawData`: Returns the raw bytes (Backwards compatibility)
 
 # Monitoring
 Rackmon.h defines the monitor. The meat of the daemon. This pretty
@@ -332,8 +337,8 @@ It has a `load()` method which takes in the path to the interface
 configuration file and the directory path where the register map
 configuration files are stored (Purposefully abstract to allow for
 mocking in unit tests).
-Has `start()` which startes the monitoring, and `stop()` which stops it.
-`force_scan_all()` forces a scan of all the devices. It has `getMonitorData*`
+Has `start()` which starts the monitoring, and `stop()` which stops it.
+`forceScan()` forces a scan of all the devices. It has `getMonitorData*`
 methods to get the monitored data in a structured format.
 
 
@@ -347,9 +352,8 @@ sticking to the older UNIX socket.
 Since one of the users is rest-api, the V1 interface is kept behind
 as a temporary measure while it migrates to the JSON API.
 
-`rackmon_sock.cpp` defines all the common socket abstractions declared
-in `RackmonSvcUnix.h` defines all the common interfaces between
-the client and the service. `rackmon_svc_unix.cpp` implements the
+`UnixSock.cpp` and `UnixSock.h` define all the common client/service
+socket abstractions. `RackmonSvcUnix.cpp` implements the
 service `main()`.
 
 # CLI
@@ -366,15 +370,12 @@ Everything related to the UNIX sockets are well contained in 4 sources:
 RackmonSvcUnix.cpp
 RackmonSvcUnix.h
 RackmonCliUnix.cpp
-RackmonSock.cpp
+UnixSock.cpp
 ```
 Just replace these with your own fancy one (thrift, protobuf, etc.) since
 all the data should be coming from Rackmon class in `Rackmon.h`.
 The additional work should solely be only for the interface to the external
 world and the CLI.
-
-The service layer is not abstracted in the hopes of reusing `main.cpp` so
-feel free to do whatever you want.
 
 # Profiling
 rackmond can be recompiled with latency profiling enabled. This is done by:

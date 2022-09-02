@@ -50,6 +50,9 @@
       "items": {
         "$ref": "registermap/special_handlers.json#/definitions"
       }
+    },
+    "baud_config": {
+      "$ref": "registermap/baud_config.json#definitions"
     }
   }
 }

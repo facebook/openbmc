@@ -279,6 +279,38 @@ info - This determines what value is written.
       shell - Run a shell command and interpret its output (Example, date +%s)
       value - Write the value provided.
 
+# Baud-rate Negotiation
+
+Some devices may support variable baud-rate. As in, they operate with a default
+baud-rate, but allow users to change the operating baud-rate by writing to a
+special register with a value indicative of the requested baud-rate.
+`ModbusDevice` uses this information to switch to the `preferred_baudrate`
+if it is not the same as `default_baudrate` as specified in the device's register map.
+
+The register map can be extended to provide the required information by adding to it
+a new key, `baud_config`:
+
+  ```
+    "baud_config": {
+      "reg": 163,
+      "baud_value_map": [
+        [19200, 1],
+        [38400, 2],
+        [57600, 3],
+        [115200, 4]
+      ]
+    },
+  ```
+
+* reg - The register to write the configuration.
+* baud_value_map - Maps baud-rate supported with the value to write
+to the register to set the required baud-rate. Is implemented as an
+array of tuples.
+
+Note: Future if needed, we may enhance this to specify the number of registers to be written.
+But for now assume there is only one configuration register and we are writing a fixed integer
+(not a flags register where we would require a read/modify/write).
+
 # ORv3 Register Address types
 This more describes either up-coming or existing Register map JSONs.
 We can formally interpret the address of a MODBUS device as:
@@ -397,10 +429,6 @@ You can retrieve the profile data from syslog:
 ```
 Note that syslog rotation might not be designed for this level of logging so there
 is a high chance that we might take up a lot of RAM. So, don't use on production :-)
-
-# Upcoming
-
-* Baudrate negotiation
 
 # References
 Protocol Specification: https://modbus.org/docs/Modbus_Application_Protocol_V1_1b.pdf

@@ -343,8 +343,8 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"MEZZ0_P3V3_VOLT", DPM_2, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x80
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
-  {"MEZZ0_P12V_CURR", ADC_CH1, read_iic_adc_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
-  {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, true, {87.12, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
+  {"MEZZ0_P12V_CURR", ADC_CH1, read_iic_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
+  {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
   {"MEZZ0_TEMP", TEMP_MEZZ0, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x84
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x85
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
@@ -352,8 +352,8 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"MEZZ1_P3V3_VOLT", DPM_3, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x88
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
-  {"MEZZ1_P12V_CURR", ADC_CH2, read_iic_adc_val, true, {7.26, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
-  {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, true, {87.12, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
+  {"MEZZ1_P12V_CURR", ADC_CH2, read_iic_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
+  {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
   {"MEZZ1_TEMP", TEMP_MEZZ1, read_bb_temp, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x8C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
@@ -361,20 +361,20 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC0_VOLT",     HSC_48V_ID0, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x90
   {"HSC0_CURR",     HSC_48V_ID0, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x91
-  {"HSC0_PWR",      HSC_48V_ID0, read_48v_hsc_pin, true, {6160.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
+  {"HSC0_PWR",      HSC_48V_ID0, read_48v_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
   {"HSC0_TEMP",     HSC_48V_ID0, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x93
   {"HSC0_PEAK_PIN", HSC_48V_ID0, read_48v_hsc_peak_pin, true, {6160.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
 
   {"BRICK0_VOLT", BRICK_ID0, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x95
-  {"BRICK0_CURR", BRICK_ID0, read_brick_iout, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
+  {"BRICK0_CURR", BRICK_ID0, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
   {"BRICK0_TEMP", BRICK_ID0, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x97
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x98
   {"BRICK1_VOLT", BRICK_ID1, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x99
-  {"BRICK1_CURR", BRICK_ID1, read_brick_iout, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9A
+  {"BRICK1_CURR", BRICK_ID1, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9A
   {"BRICK1_TEMP", BRICK_ID1, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x9C
   {"BRICK2_VOLT", BRICK_ID2, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x9D
-  {"BRICK2_CURR", BRICK_ID2, read_brick_iout, true, {120.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9E
+  {"BRICK2_CURR", BRICK_ID2, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x9E
   {"BRICK2_TEMP", BRICK_ID2, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9F
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
@@ -396,14 +396,14 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
 
   {"HSC1_VOLT",     HSC_48V_ID1, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB0
   {"HSC1_CURR",     HSC_48V_ID1, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB1
-  {"HSC1_PWR",      HSC_48V_ID1, read_48v_hsc_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
+  {"HSC1_PWR",      HSC_48V_ID1, read_48v_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
   {"HSC1_TEMP",     HSC_48V_ID1, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB3
-  {"HSC1_PEAK_PIN", HSC_48V_ID1, read_48v_hsc_peak_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
+  {"HSC1_PEAK_PIN", HSC_48V_ID1, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
   {"HSC2_VOLT",     HSC_48V_ID2, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB5
   {"HSC2_CURR",     HSC_48V_ID2, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB6
-  {"HSC2_PWR",      HSC_48V_ID2, read_48v_hsc_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
+  {"HSC2_PWR",      HSC_48V_ID2, read_48v_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
   {"HSC2_TEMP",     HSC_48V_ID2, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB8
-  {"HSC2_PEAK_PIN", HSC_48V_ID2, read_48v_hsc_peak_pin, true, {4080.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
+  {"HSC2_PEAK_PIN", HSC_48V_ID2, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
@@ -429,39 +429,39 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xCF
 
-  {"FAN0_INLET_SPEED",  FAN_TACH_ID0,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD0
-  {"FAN0_OUTLET_SPEED", FAN_TACH_ID1,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD1
-  {"FAN1_INLET_SPEED",  FAN_TACH_ID2,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD2
-  {"FAN1_OUTLET_SPEED", FAN_TACH_ID3,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD3
-  {"FAN2_INLET_SPEED",  FAN_TACH_ID4,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD4
-  {"FAN2_OUTLET_SPEED", FAN_TACH_ID5,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD5
-  {"FAN3_INLET_SPEED",  FAN_TACH_ID6,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD6
-  {"FAN3_OUTLET_SPEED", FAN_TACH_ID7,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD7
-  {"FAN4_INLET_SPEED",  FAN_TACH_ID8,  read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD8
-  {"FAN4_OUTLET_SPEED", FAN_TACH_ID9,  read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD9
-  {"FAN5_INLET_SPEED",  FAN_TACH_ID10, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDA
-  {"FAN5_OUTLET_SPEED", FAN_TACH_ID11, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDB
-  {"FAN6_INLET_SPEED",  FAN_TACH_ID12, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDC
-  {"FAN6_OUTLET_SPEED", FAN_TACH_ID13, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDD
-  {"FAN7_INLET_SPEED",  FAN_TACH_ID14, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDE
-  {"FAN7_OUTLET_SPEED", FAN_TACH_ID15, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDF
+  {"FAN0_INLET_SPEED",  FAN_TACH_ID0,  read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD0
+  {"FAN0_OUTLET_SPEED", FAN_TACH_ID1,  read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD1
+  {"FAN1_INLET_SPEED",  FAN_TACH_ID2,  read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD2
+  {"FAN1_OUTLET_SPEED", FAN_TACH_ID3,  read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD3
+  {"FAN2_INLET_SPEED",  FAN_TACH_ID4,  read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD4
+  {"FAN2_OUTLET_SPEED", FAN_TACH_ID5,  read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD5
+  {"FAN3_INLET_SPEED",  FAN_TACH_ID6,  read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD6
+  {"FAN3_OUTLET_SPEED", FAN_TACH_ID7,  read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD7
+  {"FAN4_INLET_SPEED",  FAN_TACH_ID8,  read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD8
+  {"FAN4_OUTLET_SPEED", FAN_TACH_ID9,  read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xD9
+  {"FAN5_INLET_SPEED",  FAN_TACH_ID10, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDA
+  {"FAN5_OUTLET_SPEED", FAN_TACH_ID11, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDB
+  {"FAN6_INLET_SPEED",  FAN_TACH_ID12, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDC
+  {"FAN6_OUTLET_SPEED", FAN_TACH_ID13, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDD
+  {"FAN7_INLET_SPEED",  FAN_TACH_ID14, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDE
+  {"FAN7_OUTLET_SPEED", FAN_TACH_ID15, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xDF
 
-  {"FAN8_INLET_SPEED",  FAN_TACH_ID16, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE0
-  {"FAN8_OUTLET_SPEED", FAN_TACH_ID17, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE1
-  {"FAN9_INLET_SPEED",  FAN_TACH_ID18, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE2
-  {"FAN9_OUTLET_SPEED", FAN_TACH_ID19, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE3
-  {"FAN10_INLET_SPEED",  FAN_TACH_ID20, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE4
-  {"FAN10_OUTLET_SPEED", FAN_TACH_ID21, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE5
-  {"FAN11_INLET_SPEED",  FAN_TACH_ID22, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE6
-  {"FAN11_OUTLET_SPEED", FAN_TACH_ID23, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE7
-  {"FAN12_INLET_SPEED",  FAN_TACH_ID24, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE8
-  {"FAN12_OUTLET_SPEED", FAN_TACH_ID25, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE9
-  {"FAN13_INLET_SPEED",  FAN_TACH_ID26, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEA
-  {"FAN13_OUTLET_SPEED", FAN_TACH_ID27, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEB
-  {"FAN14_INLET_SPEED",  FAN_TACH_ID28, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEC
-  {"FAN14_OUTLET_SPEED", FAN_TACH_ID29, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xED
-  {"FAN15_INLET_SPEED",  FAN_TACH_ID30, read_fan_speed, true, {18500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEE
-  {"FAN15_OUTLET_SPEED", FAN_TACH_ID31, read_fan_speed, true, {16500.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEF
+  {"FAN8_INLET_SPEED",  FAN_TACH_ID16, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE0
+  {"FAN8_OUTLET_SPEED", FAN_TACH_ID17, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE1
+  {"FAN9_INLET_SPEED",  FAN_TACH_ID18, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE2
+  {"FAN9_OUTLET_SPEED", FAN_TACH_ID19, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE3
+  {"FAN10_INLET_SPEED",  FAN_TACH_ID20, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE4
+  {"FAN10_OUTLET_SPEED", FAN_TACH_ID21, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE5
+  {"FAN11_INLET_SPEED",  FAN_TACH_ID22, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE6
+  {"FAN11_OUTLET_SPEED", FAN_TACH_ID23, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE7
+  {"FAN12_INLET_SPEED",  FAN_TACH_ID24, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE8
+  {"FAN12_OUTLET_SPEED", FAN_TACH_ID25, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xE9
+  {"FAN13_INLET_SPEED",  FAN_TACH_ID26, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEA
+  {"FAN13_OUTLET_SPEED", FAN_TACH_ID27, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEB
+  {"FAN14_INLET_SPEED",  FAN_TACH_ID28, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEC
+  {"FAN14_OUTLET_SPEED", FAN_TACH_ID29, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xED
+  {"FAN15_INLET_SPEED",  FAN_TACH_ID30, read_fan_speed, true, {19000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEE
+  {"FAN15_OUTLET_SPEED", FAN_TACH_ID31, read_fan_speed, true, {17000.0, 0, 0, 500.0, 0, 0, 0, 0}, FAN}, //0xEF
 
   {"P12V_VOLT",  ADC0, read_adc_val, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF0
   {"P5V_VOLT",   ADC1, read_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0xF1
@@ -474,7 +474,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"BMC_P12V_VOLT", DPM_4, read_dpm_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
-  {"BMC_TEMP", TEMP_BMC, read_bb_temp, true, {45.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
+  {"BMC_TEMP", TEMP_BMC, read_bb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE

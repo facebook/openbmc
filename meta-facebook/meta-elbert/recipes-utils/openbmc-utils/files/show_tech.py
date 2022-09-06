@@ -27,7 +27,7 @@ import subprocess
 import time
 
 
-VERSION = "0.10"
+VERSION = "0.11"
 SC_POWERGOOD = "/sys/bus/i2c/drivers/scmcpld/12-0043/switchcard_powergood"
 
 
@@ -74,6 +74,7 @@ def dumpWeutil(target="CHASSIS", verbose=False):
         )
     )
 
+
 def dpeCheck():
     print("######## BMC DPE STATUS ########")
     cmdBase = "/usr/local/bin/dpeCheck.sh {}"
@@ -82,6 +83,7 @@ def dpeCheck():
         print("SCM CPLD Version: DPE\n")
     else:
         print("SCM CPLD Version: Non-DPE\n")
+
 
 def dumpEmmc():
     print("################################")
@@ -130,6 +132,13 @@ def fan_debuginfo(verbose=False):
     if verbose:
         print("##### FAN CPLD I2CDUMP #####\n")
         print(runCmd("i2cdump -f -y 6 0x60", echo=True))
+
+
+def dumpOobStatus():
+    print("################################")
+    print("####### OOB STATUS INFO  #######")
+    print("################################\n")
+    print(runCmd("/usr/local/bin/oob-status.sh", echo=True, verbose=True))
 
 
 def switchcard_debuginfo(verbose=False):
@@ -336,6 +345,7 @@ def showtech(verboseLevel=0):
         pim_debuginfo()
         dumpEmmc()
         dumpBootInfo()
+        dumpOobStatus()
         i2cDetectDump()
         gpioDump()
         logDump()

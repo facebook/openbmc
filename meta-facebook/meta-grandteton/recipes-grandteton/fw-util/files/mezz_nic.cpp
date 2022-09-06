@@ -6,6 +6,7 @@
 #include <libpldm-oem/pldm.h>
 #include <libpldm-oem/fw_update.h>
 #include "mezz_nic.hpp"
+#include "fw-util.h"
 
 using namespace std;
 
@@ -28,13 +29,24 @@ int PLDMNicComponent::print_version() {
     for (int i = 0; i < 10; ++i)
       ret += (char)*(rbuf + i + 14);
   }
-  printf("Mellanox %s firmware version : %s\n", _ver_key.c_str(), ret.c_str());
+  printf("Mellanox %s firmware version: %s\n", _ver_key.c_str(), ret.c_str());
 
   return rc;
 }
 
 int PLDMNicComponent::update(string image) {
-  return obmc_pldm_fw_update(_bus_id, _eid, (char *)image.c_str());
+  int ret;
+
+  syslog(LOG_CRIT, "Component %s upgrade initiated", _component.c_str());
+
+  ret = obmc_pldm_fw_update(_bus_id, _eid, (char *)image.c_str());
+
+  if (ret)
+    syslog(LOG_CRIT, "Component %s upgrade fail", _component.c_str());
+  else
+    syslog(LOG_CRIT, "Component %s upgrade completed", _component.c_str());
+
+  return ret;
 }
 
-PLDMNicComponent nic1("nic1", "nic1", "NIC1", 0x0, 4);
+PLDMNicComponent nic1("nic1", "nic1", "NIC", 0x0, 4);

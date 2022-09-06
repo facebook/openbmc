@@ -50,4 +50,6 @@ IMAGE_INSTALL += " \
   dimm-util \
   fscd \
   fpc-util \
+  ncsid-v2 \
+  name-util \
 "

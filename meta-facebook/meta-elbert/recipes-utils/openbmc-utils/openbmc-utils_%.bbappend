@@ -31,6 +31,7 @@ LOCAL_URI += "\
     file://hclk_fixup.sh \
     file://oob-eeprom-util.sh \
     file://oob-mdio-util.sh \
+    file://oob-status.sh \
     file://power-on.sh \
     file://setup_board.sh \
     file://wedge_power.sh \
@@ -66,6 +67,7 @@ OPENBMC_UTILS_FILES += " \
     dump_gpios.sh \
     oob-eeprom-util.sh \
     oob-mdio-util.sh \
+    oob-status.sh \
     wedge_power.sh \
     wedge_us_mac.sh \
     setup_i2c.sh \

@@ -1,4 +1,4 @@
-From b1f192a9b623ef8c6f2b8fd9ab4a94945bc9a159 Mon Sep 17 00:00:00 2001
+From 9b44fefeeac44cb35c84e1b18e2dd4f03bb0bf59 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 02:03:46 -0700
 Subject: [PATCH] qemu: Add i2c devices to oby35-cl
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  3 files changed, 3 insertions(+), 14 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 37f7ba9c28..c570a7cb70 100644
+index 37f7ba9..c570a7c 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -1045,19 +1045,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
@@ -39,7 +39,7 @@ index 37f7ba9c28..c570a7cb70 100644
  
  static void oby35_bb_i2c_init(AspeedMachineState *bmc)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index 0fa491e7ac..e8941df095 100644
+index 0fa491e..e8941df 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -44,7 +44,7 @@ struct Fby35State {
@@ -52,7 +52,7 @@ index 0fa491e7ac..e8941df095 100644
      I2CBus *i2c[14];
      I2CBus *ssd[8];
 diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
-index 87cb1a10c2..0f8369f0fa 100644
+index 87cb1a1..0f8369f 100644
 --- a/hw/arm/fby35.h
 +++ b/hw/arm/fby35.h
 @@ -146,5 +146,6 @@ typedef struct AspeedSoCState AspeedSoCState;
@@ -62,3 +62,6 @@ index 87cb1a10c2..0f8369f0fa 100644
 +void fby35_cl_bic_i2c_init(AspeedSoCState *s);
  
  #endif
+-- 
+2.37.2
+

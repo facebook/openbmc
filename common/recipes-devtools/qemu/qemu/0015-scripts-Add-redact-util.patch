@@ -1,4 +1,4 @@
-From 8167aaf9e02032644d0376bf6336f1e256e72d8a Mon Sep 17 00:00:00 2001
+From 094921aa47c5458041350fddfe0323a44adb0422 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 15 Jun 2022 13:42:47 -0700
 Subject: [PATCH] scripts: Add redact-util
@@ -16,7 +16,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
 
 diff --git a/scripts/redact-util.cpp b/scripts/redact-util.cpp
 new file mode 100644
-index 0000000000..b58b2d07ac
+index 0000000..b58b2d0
 --- /dev/null
 +++ b/scripts/redact-util.cpp
 @@ -0,0 +1,92 @@
@@ -112,3 +112,6 @@ index 0000000000..b58b2d07ac
 +    fwrite(buf, sizeof(buf), 1, f);
 +    fclose(f);
 +}
+-- 
+2.37.2
+

@@ -1,4 +1,4 @@
-From 0d342a4bbc4a15f4f53b6b3d711156607b6f2f20 Mon Sep 17 00:00:00 2001
+From 5764b583168c8e6320a0c24728957c3a7b408a72 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:30 -0700
 Subject: [PATCH] docs/system/arm: Add Description for NPCM8XX SoC
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 15 insertions(+), 5 deletions(-)
 
 diff --git a/docs/system/arm/nuvoton.rst b/docs/system/arm/nuvoton.rst
-index ef2792076a..bead17fa7e 100644
+index ef27920..bead17f 100644
 --- a/docs/system/arm/nuvoton.rst
 +++ b/docs/system/arm/nuvoton.rst
 @@ -1,12 +1,13 @@
@@ -66,3 +66,6 @@ index ef2792076a..bead17fa7e 100644
  
  Boot options
  ------------
+-- 
+2.37.2
+

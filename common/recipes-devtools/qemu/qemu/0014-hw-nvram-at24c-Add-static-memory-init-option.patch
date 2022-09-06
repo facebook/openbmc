@@ -1,4 +1,4 @@
-From ef28e2c109913d49004a1cf24c9168a9ec6df721 Mon Sep 17 00:00:00 2001
+From de2a8e5496355562a456f8b2a05799feea3ab67d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Mon, 13 Jun 2022 17:40:48 -0700
 Subject: [PATCH] hw/nvram/at24c: Add static memory init option
@@ -12,7 +12,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 include/hw/nvram/eeprom_at24c.h
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 53ae72389c..50f3312419 100644
+index 53ae723..50f3312 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -28,6 +28,7 @@
@@ -65,7 +65,7 @@ index 53ae72389c..50f3312419 100644
      /* Bus 9 */
      i2c_slave_create_simple(i2c[9], TYPE_TMP421, 0x4f);
 diff --git a/hw/nvram/eeprom_at24c.c b/hw/nvram/eeprom_at24c.c
-index 2d4d8b952f..b32dcce217 100644
+index 2d4d8b9..b32dcce 100644
 --- a/hw/nvram/eeprom_at24c.c
 +++ b/hw/nvram/eeprom_at24c.c
 @@ -16,6 +16,7 @@
@@ -110,7 +110,7 @@ index 2d4d8b952f..b32dcce217 100644
  static Property at24c_eeprom_props[] = {
 diff --git a/include/hw/nvram/eeprom_at24c.h b/include/hw/nvram/eeprom_at24c.h
 new file mode 100644
-index 0000000000..57fb3f729a
+index 0000000..57fb3f7
 --- /dev/null
 +++ b/include/hw/nvram/eeprom_at24c.h
 @@ -0,0 +1,8 @@
@@ -122,3 +122,6 @@ index 0000000000..57fb3f729a
 +void at24c_eeprom_init(I2CBus *bus, uint8_t address, const uint8_t *rom, uint32_t rom_size, bool writable);
 +
 +#endif
+-- 
+2.37.2
+

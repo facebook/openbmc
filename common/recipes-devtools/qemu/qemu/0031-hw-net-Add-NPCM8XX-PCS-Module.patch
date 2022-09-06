@@ -1,4 +1,4 @@
-From aeadf849fb1d8f99cdd65e7f59b8b073a2345f68 Mon Sep 17 00:00:00 2001
+From 9e11e02a6b471d33741e15cac7fa8adcd5118d0d Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:37 -0700
 Subject: [PATCH] hw/net: Add NPCM8XX PCS Module
@@ -21,7 +21,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 include/hw/net/npcm_pcs.h
 
 diff --git a/hw/net/meson.build b/hw/net/meson.build
-index ebac261542..8704969722 100644
+index ebac261..8704969 100644
 --- a/hw/net/meson.build
 +++ b/hw/net/meson.build
 @@ -37,6 +37,7 @@ softmmu_ss.add(when: 'CONFIG_SUNHME', if_true: files('sunhme.c'))
@@ -34,7 +34,7 @@ index ebac261542..8704969722 100644
  softmmu_ss.add(when: 'CONFIG_COLDFIRE', if_true: files('mcf_fec.c'))
 diff --git a/hw/net/npcm_pcs.c b/hw/net/npcm_pcs.c
 new file mode 100644
-index 0000000000..efe5f68d9c
+index 0000000..efe5f68
 --- /dev/null
 +++ b/hw/net/npcm_pcs.c
 @@ -0,0 +1,409 @@
@@ -448,7 +448,7 @@ index 0000000000..efe5f68d9c
 +};
 +DEFINE_TYPES(npcm_pcs_types)
 diff --git a/hw/net/trace-events b/hw/net/trace-events
-index 4c0ec3fda1..2bb8af4d7b 100644
+index 4c0ec3f..2bb8af4 100644
 --- a/hw/net/trace-events
 +++ b/hw/net/trace-events
 @@ -438,6 +438,10 @@ npcm7xx_emc_rx_done(uint32_t crxdsa) "RX done, CRXDSA=0x%x"
@@ -464,7 +464,7 @@ index 4c0ec3fda1..2bb8af4d7b 100644
  dp8393x_lower_irq(void) "lower irq"
 diff --git a/include/hw/net/npcm_pcs.h b/include/hw/net/npcm_pcs.h
 new file mode 100644
-index 0000000000..bd4f71bf3c
+index 0000000..bd4f71b
 --- /dev/null
 +++ b/include/hw/net/npcm_pcs.h
 @@ -0,0 +1,42 @@
@@ -510,3 +510,6 @@ index 0000000000..bd4f71bf3c
 +OBJECT_DECLARE_SIMPLE_TYPE(NPCMPCSState, NPCM_PCS)
 +
 +#endif /* NPCM_PCS_H */
+-- 
+2.37.2
+

@@ -1,4 +1,4 @@
-From 705277f67952df77cea7756a805957f1edf31d52 Mon Sep 17 00:00:00 2001
+From 8c331c18debc702f47825759eacb9682743e2579 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 21 Jul 2022 16:14:52 -0700
 Subject: [PATCH] npcm8xx: Init INTCR4 GMMAP0 to 0x7F00_0000
@@ -13,7 +13,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 12 insertions(+)
 
 diff --git a/hw/misc/npcm_gcr.c b/hw/misc/npcm_gcr.c
-index aa81db23d7..228938648c 100644
+index aa81db2..2289386 100644
 --- a/hw/misc/npcm_gcr.c
 +++ b/hw/misc/npcm_gcr.c
 @@ -187,6 +187,7 @@ static const uint32_t npcm8xx_cold_reset_values[NPCM8XX_GCR_NR_REGS] = {
@@ -56,7 +56,7 @@ index aa81db23d7..228938648c 100644
       * The boot block starting from 0.0.6 for NPCM8xx SoCs stores the DRAM size
       * in the SCRPAD2 registers. We need to set this field correctly since
 diff --git a/include/hw/misc/npcm_gcr.h b/include/hw/misc/npcm_gcr.h
-index 7a94d61a42..d45040aba6 100644
+index 7a94d61..d45040a 100644
 --- a/include/hw/misc/npcm_gcr.h
 +++ b/include/hw/misc/npcm_gcr.h
 @@ -69,6 +69,7 @@ typedef struct NPCMGCRState {
@@ -67,3 +67,6 @@ index 7a94d61a42..d45040aba6 100644
      uint32_t reset_scrpad_b;
  } NPCMGCRState;
  
+-- 
+2.37.2
+

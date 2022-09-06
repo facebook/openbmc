@@ -1,4 +1,4 @@
-From 8ad668c1557555dec34b0c9fd51bc0702e081614 Mon Sep 17 00:00:00 2001
+From 61cf8195576415bf297fc3966c395996ae16e673 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 21 Jul 2022 16:25:47 -0700
 Subject: [PATCH] npcm8xx: Auto-zero-extend flash images
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
-index 5b9a202f28..c7d71d4df2 100644
+index 5b9a202..c7d71d4 100644
 --- a/hw/arm/npcm8xx_boards.c
 +++ b/hw/arm/npcm8xx_boards.c
 @@ -58,9 +58,20 @@ static void npcm8xx_connect_flash(NPCM7xxFIUState *fiu, int cs_no,
@@ -34,3 +34,6 @@ index 5b9a202f28..c7d71d4df2 100644
          qdev_prop_set_drive(flash, "drive", blk_by_legacy_dinfo(dinfo));
      }
      qdev_realize_and_unref(flash, BUS(fiu->spi), &error_fatal);
+-- 
+2.37.2
+

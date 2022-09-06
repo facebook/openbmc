@@ -1,7 +1,7 @@
-From 7431abba6d44d26e0576f8d6c266648d8266d6a1 Mon Sep 17 00:00:00 2001
+From 43f0f1f45b686982b6bb3b0bb0acfda644b18f16 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 54/61] hw/i2c/pca954x: Add method to get channels
+Subject: [PATCH] hw/i2c/pca954x: Add method to get channels
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -36,7 +36,7 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 99b4928ce2..343f620c35 100644
+index 99b4928..343f620 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -833,15 +833,6 @@ static void rainier_bmc_i2c_init(AspeedMachineState *bmc)
@@ -86,7 +86,7 @@ index 99b4928ce2..343f620c35 100644
  
      i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4c);
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
-index 3945de795c..6b07804546 100644
+index 3945de7..6b07804 100644
 --- a/hw/i2c/i2c_mux_pca954x.c
 +++ b/hw/i2c/i2c_mux_pca954x.c
 @@ -169,6 +169,16 @@ I2CBus *pca954x_i2c_get_bus(I2CSlave *mux, uint8_t channel)
@@ -107,7 +107,7 @@ index 3945de795c..6b07804546 100644
  {
      Pca954xClass *s = PCA954X_CLASS(klass);
 diff --git a/include/hw/i2c/i2c_mux_pca954x.h b/include/hw/i2c/i2c_mux_pca954x.h
-index 3dd25ec983..3a676a30a9 100644
+index 3dd25ec..3a676a3 100644
 --- a/include/hw/i2c/i2c_mux_pca954x.h
 +++ b/include/hw/i2c/i2c_mux_pca954x.h
 @@ -16,4 +16,17 @@
@@ -129,5 +129,5 @@ index 3dd25ec983..3a676a30a9 100644
 +
  #endif
 -- 
-2.37.1
+2.37.2
 

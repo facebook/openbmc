@@ -1,4 +1,4 @@
-From 3f965dfa15ce060037cc270f94c88d8c177484de Mon Sep 17 00:00:00 2001
+From 8a31406588fccfb5fb32aadeb7d9693d46163e58 Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Mon, 6 Jun 2022 17:35:09 -0700
 Subject: [PATCH] hw: ssi: add new spi gpio controller
@@ -20,7 +20,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 include/hw/ssi/spi_gpio.h
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 15fa79afd3..4cf1747c3b 100644
+index 15fa79a..4cf1747 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
 @@ -457,6 +457,7 @@ config ASPEED_SOC
@@ -32,7 +32,7 @@ index 15fa79afd3..4cf1747c3b 100644
  config MPS2
      bool
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index c2490e27f2..53ae72389c 100644
+index c2490e2..53ae723 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -27,6 +27,7 @@
@@ -81,7 +81,7 @@ index c2490e27f2..53ae72389c 100644
                                bmc->fmc_model ? bmc->fmc_model : amc->fmc_model,
                                amc->num_cs, 0);
 diff --git a/hw/ssi/Kconfig b/hw/ssi/Kconfig
-index 7d90a02181..cdae4fab4e 100644
+index 7d90a02..cdae4fa 100644
 --- a/hw/ssi/Kconfig
 +++ b/hw/ssi/Kconfig
 @@ -20,3 +20,7 @@ config XILINX_SPIPS
@@ -93,7 +93,7 @@ index 7d90a02181..cdae4fab4e 100644
 +    bool
 +    select SSI
 diff --git a/hw/ssi/meson.build b/hw/ssi/meson.build
-index 702aa5e4df..1e7ce76c3f 100644
+index 702aa5e..1e7ce76 100644
 --- a/hw/ssi/meson.build
 +++ b/hw/ssi/meson.build
 @@ -1,4 +1,5 @@
@@ -104,7 +104,7 @@ index 702aa5e4df..1e7ce76c3f 100644
  softmmu_ss.add(when: 'CONFIG_PL022', if_true: files('pl022.c'))
 diff --git a/hw/ssi/spi_gpio.c b/hw/ssi/spi_gpio.c
 new file mode 100644
-index 0000000000..1f290a3713
+index 0000000..1f290a3
 --- /dev/null
 +++ b/hw/ssi/spi_gpio.c
 @@ -0,0 +1,88 @@
@@ -198,7 +198,7 @@ index 0000000000..1f290a3713
 +type_init(SPI_GPIO_register_types)
 diff --git a/include/hw/ssi/spi_gpio.h b/include/hw/ssi/spi_gpio.h
 new file mode 100644
-index 0000000000..4971ef6dc1
+index 0000000..4971ef6
 --- /dev/null
 +++ b/include/hw/ssi/spi_gpio.h
 @@ -0,0 +1,44 @@
@@ -246,3 +246,6 @@ index 0000000000..4971ef6dc1
 +};
 +
 +#endif /* SPI_GPIO_H */
+-- 
+2.37.2
+

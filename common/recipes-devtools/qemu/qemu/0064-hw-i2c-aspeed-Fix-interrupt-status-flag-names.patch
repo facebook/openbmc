@@ -1,4 +1,4 @@
-From 519cbfef78f7595fc34e370b4ee9b68290d1b095 Mon Sep 17 00:00:00 2001
+From feb0b1771bdf2c65c11f0d8928a46fe4138fbf65 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:10:35 -0700
 Subject: [PATCH] hw/i2c/aspeed: Fix interrupt status flag names
@@ -13,7 +13,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index ef9fbb7d93..4ac24f249f 100644
+index ef9fbb7..4ac24f2 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -49,13 +49,13 @@ static inline void aspeed_i2c_bus_raise_interrupt(AspeedI2CBus *bus)
@@ -34,3 +34,6 @@ index ef9fbb7d93..4ac24f249f 100644
                 ARRAY_FIELD_EX32(bus->regs, I2CD_INTR_STS, SLAVE_ADDR_RX_MATCH) ?
                                                 "slave-match|" : "",
                 SHARED_ARRAY_FIELD_EX32(bus->regs, reg_intr_sts, NORMAL_STOP) ?
+-- 
+2.37.2
+

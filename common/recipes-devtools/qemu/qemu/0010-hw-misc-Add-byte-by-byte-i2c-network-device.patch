@@ -1,10 +1,7 @@
-From 0834e92c9e61808e938e207fac7a193daf8cc72e Mon Sep 17 00:00:00 2001
+From aa188448319e209938d9c3838e777c9f716cd55b Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 7 Jun 2022 07:31:54 -0700
 Subject: [PATCH] hw/misc: Add byte-by-byte i2c network device
-
-Signed-off-by: Peter Delevoryas <pdel@fb.com>
-
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
@@ -557,3 +554,6 @@ index 3a47401..59f98d3 100644
  qtests_arm = \
    (config_all_devices.has_key('CONFIG_MPS2') ? ['sse-timer-test'] : []) + \
    (config_all_devices.has_key('CONFIG_CMSDK_APB_DUALTIMER') ? ['cmsdk-apb-dualtimer-test'] : []) + \
+-- 
+2.37.2
+

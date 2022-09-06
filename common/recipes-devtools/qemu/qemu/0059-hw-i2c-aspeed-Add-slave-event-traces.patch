@@ -1,7 +1,7 @@
-From 89992a27ad17274e6d17d75ee923989c9d4a0313 Mon Sep 17 00:00:00 2001
+From 9cd617be85c72503b7ec5dd5129f04e63c478f59 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:53:43 -0700
-Subject: [PATCH 59/61] hw/i2c/aspeed: Add slave event traces
+Subject: [PATCH] hw/i2c/aspeed: Add slave event traces
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 15 insertions(+)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 8c07f12e31..4cc707ab78 100644
+index 8c07f12..4cc707a 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -1114,9 +1114,18 @@ static const TypeInfo aspeed_i2c_info = {
@@ -51,7 +51,7 @@ index 8c07f12e31..4cc707ab78 100644
      }
  
 diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
-index e4941ec110..4db97a261f 100644
+index e4941ec..4db97a2 100644
 --- a/hw/i2c/trace-events
 +++ b/hw/i2c/trace-events
 @@ -16,6 +16,8 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
@@ -64,5 +64,5 @@ index e4941ec110..4db97a261f 100644
  
  # npcm7xx_smbus.c
 -- 
-2.37.1
+2.37.2
 

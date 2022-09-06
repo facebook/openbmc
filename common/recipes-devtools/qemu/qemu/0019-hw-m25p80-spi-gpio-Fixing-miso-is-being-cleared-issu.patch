@@ -1,16 +1,15 @@
-From fd4fb73eff603feaef9b811f94a99181f1c47273 Mon Sep 17 00:00:00 2001
+From b3a533489b5fa39133d49f349bab96b20e4d6f9a Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Fri, 24 Jun 2022 11:15:58 -0700
 Subject: [PATCH] hw: m25p80: [spi gpio] Fixing miso is being cleared issue
 
 Signed-off-by: Iris Chen <irischenlj@fb.com>
-Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
  hw/ssi/spi_gpio.c | 30 ++++++++++++++++++++++--------
  1 file changed, 22 insertions(+), 8 deletions(-)
 
 diff --git a/hw/ssi/spi_gpio.c b/hw/ssi/spi_gpio.c
-index 401ee3802b..b829b7d87f 100644
+index 401ee38..b829b7d 100644
 --- a/hw/ssi/spi_gpio.c
 +++ b/hw/ssi/spi_gpio.c
 @@ -30,12 +30,19 @@
@@ -59,3 +58,6 @@ index 401ee3802b..b829b7d87f 100644
      }
  }
  
+-- 
+2.37.2
+

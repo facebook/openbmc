@@ -1,4 +1,4 @@
-From 2a6673c68e4f61ffbb28b3571158ef91ecbe6717 Mon Sep 17 00:00:00 2001
+From 8898693311ee83e8f0ad90c24a6168af6709ac0c Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 14 Jun 2022 11:33:56 -0700
 Subject: [PATCH] hw/arm/aspeed: Switch fby35, grandcanyon to n25q00
@@ -13,7 +13,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 17 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 31b786c67b..c2490e27f2 100644
+index 31b786c..c2490e2 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -1460,7 +1460,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
@@ -35,7 +35,7 @@ index 31b786c67b..c2490e27f2 100644
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = FUJI_BMC_RAM_SIZE,
 diff --git a/tests/avocado/fb_boot_console.py b/tests/avocado/fb_boot_console.py
-index 011a712365..6aa19f89a6 100644
+index 011a712..6aa19f8 100644
 --- a/tests/avocado/fb_boot_console.py
 +++ b/tests/avocado/fb_boot_console.py
 @@ -31,6 +31,7 @@ def test_fby35_bmc(self):
@@ -67,3 +67,6 @@ index 011a712365..6aa19f89a6 100644
      def do_test_bic(self, kernel_url, kernel_hash):
          kernel_path = self.fetch_asset(kernel_url, asset_hash=kernel_hash, algorithm='sha256')
  
+-- 
+2.37.2
+

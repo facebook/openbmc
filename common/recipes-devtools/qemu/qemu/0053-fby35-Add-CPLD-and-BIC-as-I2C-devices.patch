@@ -1,7 +1,7 @@
-From 008df0558ae18f7f98c236dbafa0198fc3307211 Mon Sep 17 00:00:00 2001
+From 5fd149bbbdcf2b40c7cfc451d106637c311a51fb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 18:11:55 -0700
-Subject: [PATCH 53/53] fby35: Add CPLD and BIC as I2C devices
+Subject: [PATCH] fby35: Add CPLD and BIC as I2C devices
 
 This lets us run some basic bic-util commands from the fby35 BMC
 perspective.
@@ -25,5 +25,5 @@ index 7b0fa3f..99b4928 100644
  
  static void fbttn_i2c_init(AspeedMachineState *bmc)
 -- 
-2.37.1
+2.37.2
 

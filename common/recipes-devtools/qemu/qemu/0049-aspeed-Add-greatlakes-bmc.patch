@@ -1,4 +1,4 @@
-From ba4fc5ae0aed8de8011e332f3facce872749f750 Mon Sep 17 00:00:00 2001
+From d016d2ea811b12578fd234441daf7c861163233f Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Thu, 18 Aug 2022 16:10:19 -0700
 Subject: [PATCH] aspeed: Add greatlakes-bmc
@@ -24,3 +24,6 @@ index 2fc22f7..7b0fa3f 100644
      {
          .parent      = MACHINE_TYPE_NAME("ast1030-evb"),
          .name        = "oby35-cl",
+-- 
+2.37.2
+

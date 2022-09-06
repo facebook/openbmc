@@ -1,4 +1,4 @@
-From c978953c551ddd50384150b148e197b4b1a95d87 Mon Sep 17 00:00:00 2001
+From c7c4c960bd5895c7bbc3fe871ad4952105df7f37 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 15 Jun 2022 13:45:39 -0700
 Subject: [PATCH] aspeed: fby35: Add bmc, bb, and nic FRU's
@@ -78,7 +78,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 scripts/gen_eeprom.py
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 50f3312419..5858970647 100644
+index 50f3312..5858970 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -29,6 +29,7 @@
@@ -105,7 +105,7 @@ index 50f3312419..5858970647 100644
       * TODO: There is a multi-master i2c connection to an AST1030 MiniBMC on
 diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
 new file mode 100644
-index 0000000000..b8fbd1bf9a
+index 0000000..b8fbd1b
 --- /dev/null
 +++ b/hw/arm/fby35.h
 @@ -0,0 +1,110 @@
@@ -221,7 +221,7 @@ index 0000000000..b8fbd1bf9a
 +#endif
 diff --git a/scripts/gen_eeprom.py b/scripts/gen_eeprom.py
 new file mode 100644
-index 0000000000..b5eceb47bd
+index 0000000..b5eceb4
 --- /dev/null
 +++ b/scripts/gen_eeprom.py
 @@ -0,0 +1,17 @@
@@ -242,3 +242,6 @@ index 0000000000..b5eceb47bd
 +                sys.stdout.write(' ')
 +            sys.stdout.write('0x%02x,' % b)
 +    sys.stdout.write('\n};\n')
+-- 
+2.37.2
+

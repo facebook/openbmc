@@ -1,4 +1,4 @@
-From c5ac7f7fdda1f45613f612f48b9eafab7dc99662 Mon Sep 17 00:00:00 2001
+From eb6f710dcd4a009653696a46e212277cad598fe5 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:35 -0700
 Subject: [PATCH] hw/intc: Add a property to allow GIC to reset into non secure
@@ -16,7 +16,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/hw/intc/arm_gic_common.c b/hw/intc/arm_gic_common.c
-index 7b44d5625b..7ddc5cfbd0 100644
+index 7b44d56..7ddc5cf 100644
 --- a/hw/intc/arm_gic_common.c
 +++ b/hw/intc/arm_gic_common.c
 @@ -358,6 +358,8 @@ static Property arm_gic_common_properties[] = {
@@ -28,3 +28,6 @@ index 7b44d5625b..7ddc5cfbd0 100644
      DEFINE_PROP_END_OF_LIST(),
  };
  
+-- 
+2.37.2
+

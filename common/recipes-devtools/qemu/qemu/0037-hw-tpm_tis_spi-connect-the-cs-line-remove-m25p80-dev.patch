@@ -1,11 +1,10 @@
-From 15eb30a1aa1609f8929ba69238bbc3302e4a64fc Mon Sep 17 00:00:00 2001
+From 603ac160286f80d604c46c84eab14d223778c396 Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Thu, 7 Jul 2022 16:11:08 -0700
 Subject: [PATCH] hw: tpm_tis_spi: connect the cs line remove m25p80 device and
  connect cs line in tpm tis spi
 
 Signed-off-by: Iris Chen <irischenlj@fb.com>
-Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
  hw/arm/aspeed.c      |  7 +------
  hw/tpm/tpm_tis_spi.c | 27 ++++++++++++++++++++-------
@@ -13,7 +12,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  3 files changed, 23 insertions(+), 13 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 6a20068f81..0f7d6bc8d0 100644
+index 6a20068..0f7d6bc 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -392,9 +392,7 @@ static void aspeed_machine_init(MachineState *machine)
@@ -38,7 +37,7 @@ index 6a20068f81..0f7d6bc8d0 100644
  
      aspeed_board_init_flashes(&bmc->soc.fmc,
 diff --git a/hw/tpm/tpm_tis_spi.c b/hw/tpm/tpm_tis_spi.c
-index 5644df8c2e..c98ddcfddb 100644
+index 5644df8..c98ddcf 100644
 --- a/hw/tpm/tpm_tis_spi.c
 +++ b/hw/tpm/tpm_tis_spi.c
 @@ -6,6 +6,7 @@
@@ -131,7 +130,7 @@ index 5644df8c2e..c98ddcfddb 100644
      .interfaces = (InterfaceInfo[]) {
          { TYPE_TPM_IF },
 diff --git a/include/sysemu/tpm.h b/include/sysemu/tpm.h
-index f8852430e9..6a6b311e47 100644
+index f885243..6a6b311 100644
 --- a/include/sysemu/tpm.h
 +++ b/include/sysemu/tpm.h
 @@ -54,6 +54,8 @@ struct TPMIfClass {
@@ -143,3 +142,6 @@ index f8852430e9..6a6b311e47 100644
  #define TPM_IS_CRB(chr)                             \
      object_dynamic_cast(OBJECT(chr), TYPE_TPM_CRB)
  #define TPM_IS_SPAPR(chr)                           \
+-- 
+2.37.2
+

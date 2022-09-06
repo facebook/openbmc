@@ -1,4 +1,4 @@
-From d47378b197d0373f28c803c40148e6b3582a1407 Mon Sep 17 00:00:00 2001
+From 04b8a1ba29c2319c69f1b082b6e2d962d3d9b321 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:40 -0700
 Subject: [PATCH] hw/arm: Add NPCM845 Evaluation board
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 hw/arm/npcm8xx_boards.c
 
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index b63be387c5..4339bd9f51 100644
+index b63be38..4339bd9 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -13,7 +13,7 @@ arm_ss.add(when: 'CONFIG_MUSICPAL', if_true: files('musicpal.c'))
@@ -28,7 +28,7 @@ index b63be387c5..4339bd9f51 100644
  arm_ss.add(when: 'CONFIG_CHEETAH', if_true: files('palm.c'))
 diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
 new file mode 100644
-index 0000000000..2290473d12
+index 0000000..2290473
 --- /dev/null
 +++ b/hw/arm/npcm8xx_boards.c
 @@ -0,0 +1,257 @@
@@ -290,7 +290,7 @@ index 0000000000..2290473d12
 +
 +DEFINE_TYPES(npcm8xx_machine_types)
 diff --git a/include/hw/arm/npcm8xx.h b/include/hw/arm/npcm8xx.h
-index a474c7991b..771bfae377 100644
+index a474c79..771bfae 100644
 --- a/include/hw/arm/npcm8xx.h
 +++ b/include/hw/arm/npcm8xx.h
 @@ -51,6 +51,26 @@
@@ -320,3 +320,6 @@ index a474c7991b..771bfae377 100644
  typedef struct NPCM8xxState {
      DeviceState         parent;
  
+-- 
+2.37.2
+

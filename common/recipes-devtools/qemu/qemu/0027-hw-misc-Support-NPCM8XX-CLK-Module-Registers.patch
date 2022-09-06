@@ -1,4 +1,4 @@
-From 037bd07300bd22b19a649ad96006a087b02390e2 Mon Sep 17 00:00:00 2001
+From 5e376eb805776f27d2abbd632297f3c3f9f7961d Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:33 -0700
 Subject: [PATCH] hw/misc: Support NPCM8XX CLK Module Registers
@@ -26,7 +26,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  rename include/hw/misc/{npcm7xx_clk.h => npcm_clk.h} (83%)
 
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 49986c8668..14631df339 100644
+index 49986c8..14631df 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -60,7 +60,7 @@ softmmu_ss.add(when: 'CONFIG_IMX', if_true: files(
@@ -42,7 +42,7 @@ diff --git a/hw/misc/npcm7xx_clk.c b/hw/misc/npcm_clk.c
 similarity index 81%
 rename from hw/misc/npcm7xx_clk.c
 rename to hw/misc/npcm_clk.c
-index bc2b879feb..f4601a3e9a 100644
+index bc2b879..f4601a3 100644
 --- a/hw/misc/npcm7xx_clk.c
 +++ b/hw/misc/npcm_clk.c
 @@ -1,5 +1,5 @@
@@ -501,7 +501,7 @@ index bc2b879feb..f4601a3e9a 100644
  }
  type_init(npcm7xx_clk_register_type);
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 320fe8ec65..4e144dc319 100644
+index 320fe8e..4e144dc 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
 @@ -99,9 +99,9 @@ mos6522_set_sr_int(void) "set sr_int"
@@ -518,7 +518,7 @@ index 320fe8ec65..4e144dc319 100644
  # npcm_gcr.c
  npcm_gcr_read(uint64_t offset, uint32_t value) " offset: 0x%04" PRIx64 " value: 0x%08" PRIx32
 diff --git a/include/hw/arm/npcm7xx.h b/include/hw/arm/npcm7xx.h
-index b0f50ff5c5..073a388b0f 100644
+index b0f50ff..073a388 100644
 --- a/include/hw/arm/npcm7xx.h
 +++ b/include/hw/arm/npcm7xx.h
 @@ -23,7 +23,7 @@
@@ -543,7 +543,7 @@ diff --git a/include/hw/misc/npcm7xx_clk.h b/include/hw/misc/npcm_clk.h
 similarity index 83%
 rename from include/hw/misc/npcm7xx_clk.h
 rename to include/hw/misc/npcm_clk.h
-index d5c8d16ca4..8fa1e14bdd 100644
+index d5c8d16..8fa1e14 100644
 --- a/include/hw/misc/npcm7xx_clk.h
 +++ b/include/hw/misc/npcm_clk.h
 @@ -1,5 +1,5 @@
@@ -658,3 +658,6 @@ index d5c8d16ca4..8fa1e14bdd 100644
  
 -#endif /* NPCM7XX_CLK_H */
 +#endif /* NPCM_CLK_H */
+-- 
+2.37.2
+

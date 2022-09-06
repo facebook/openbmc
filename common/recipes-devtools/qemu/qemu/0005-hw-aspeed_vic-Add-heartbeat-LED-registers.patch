@@ -1,4 +1,4 @@
-From 6fd9c3346b9191d128ef48ea32ef649b44a6e9c5 Mon Sep 17 00:00:00 2001
+From 857d9a3e494ebd991751fbd4d15298ea4fab6296 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 23 Nov 2021 09:22:10 -0800
 Subject: [PATCH] hw: aspeed_vic: Add heartbeat LED registers
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 20 insertions(+)
 
 diff --git a/hw/intc/aspeed_vic.c b/hw/intc/aspeed_vic.c
-index 5ba06c5262..13c700d4f6 100644
+index 5ba06c5..13c700d 100644
 --- a/hw/intc/aspeed_vic.c
 +++ b/hw/intc/aspeed_vic.c
 @@ -168,6 +168,12 @@ static uint64_t aspeed_vic_read(void *opaque, hwaddr offset, unsigned size)
@@ -50,7 +50,7 @@ index 5ba06c5262..13c700d4f6 100644
  
  #define AVIC_IO_REGION_SIZE 0x20000
 diff --git a/include/hw/intc/aspeed_vic.h b/include/hw/intc/aspeed_vic.h
-index 68d6ab997a..d162d2da07 100644
+index 68d6ab9..d162d2d 100644
 --- a/include/hw/intc/aspeed_vic.h
 +++ b/include/hw/intc/aspeed_vic.h
 @@ -44,6 +44,11 @@ struct AspeedVICState {
@@ -65,3 +65,6 @@ index 68d6ab997a..d162d2da07 100644
  };
  
  #endif /* ASPEED_VIC_H */
+-- 
+2.37.2
+

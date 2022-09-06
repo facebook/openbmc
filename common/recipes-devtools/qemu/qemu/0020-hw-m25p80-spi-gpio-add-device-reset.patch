@@ -1,4 +1,4 @@
-From a39ed8c0e5cc02bc965b2667d5057bafa026bab0 Mon Sep 17 00:00:00 2001
+From a4ab606bc65145ef025ee2997691aa3a9742e157 Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Fri, 24 Jun 2022 14:44:23 -0700
 Subject: [PATCH] hw: m25p80: [spi gpio] add device reset
@@ -12,7 +12,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  3 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index cf4151e47f..2b85b70e0d 100644
+index cf4151e..2b85b70 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -391,7 +391,7 @@ static void aspeed_machine_init(MachineState *machine)
@@ -25,7 +25,7 @@ index cf4151e47f..2b85b70e0d 100644
      DeviceState *m25p80 = qdev_new("n25q256a");
      qdev_realize(m25p80, BUS(spi_gpio->spi), &error_fatal);
 diff --git a/hw/ssi/spi_gpio.c b/hw/ssi/spi_gpio.c
-index b829b7d87f..2350c0a659 100644
+index b829b7d..2350c0a 100644
 --- a/hw/ssi/spi_gpio.c
 +++ b/hw/ssi/spi_gpio.c
 @@ -166,7 +166,7 @@ static void SPI_GPIO_class_init(ObjectClass *klass, void *data)
@@ -38,7 +38,7 @@ index b829b7d87f..2350c0a659 100644
      .class_init     = SPI_GPIO_class_init,
  };
 diff --git a/include/hw/ssi/spi_gpio.h b/include/hw/ssi/spi_gpio.h
-index 9111640d6c..2094a45217 100644
+index 9111640..2094a45 100644
 --- a/include/hw/ssi/spi_gpio.h
 +++ b/include/hw/ssi/spi_gpio.h
 @@ -33,7 +33,7 @@
@@ -50,3 +50,6 @@ index 9111640d6c..2094a45217 100644
      SSIBus *spi;
      AspeedGPIOState *aspeed_gpio;
  
+-- 
+2.37.2
+

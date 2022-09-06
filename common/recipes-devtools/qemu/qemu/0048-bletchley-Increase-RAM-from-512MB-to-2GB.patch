@@ -1,4 +1,4 @@
-From a94cf9b631f5b3164d8b0b86fd9e5fb4c32aaea7 Mon Sep 17 00:00:00 2001
+From d282a34dfc3667250a8878af245906d0053b0b33 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Sun, 14 Aug 2022 23:43:55 -0700
 Subject: [PATCH] bletchley: Increase RAM from 512MB to 2GB
@@ -16,10 +16,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 98f2fa0..f6ffb47 100644
+index 7b44bc2..2fc22f7 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1437,7 +1437,7 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
+@@ -1442,7 +1442,7 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
      amc->num_cs    = 2;
      amc->macs_mask = ASPEED_MAC2_ON;
      amc->i2c_init  = bletchley_bmc_i2c_init;
@@ -28,3 +28,6 @@ index 98f2fa0..f6ffb47 100644
      mc->default_cpus = mc->min_cpus = mc->max_cpus =
          aspeed_soc_num_cpus(amc->soc_name);
  }
+-- 
+2.37.2
+

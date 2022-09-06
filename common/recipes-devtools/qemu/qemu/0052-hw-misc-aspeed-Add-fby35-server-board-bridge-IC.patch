@@ -1,15 +1,7 @@
-From 4a756e99b452a50443b0dd4b8d5521180c836c49 Mon Sep 17 00:00:00 2001
+From 39d9905690b97939cbcfb9132b352080b6f8383b Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH] hw/misc/aspeed: Add fby35 server board bridge IC
-
-Signed-off-by: Peter Delevoryas <peter@pjd.dev>
-
-%% original patch: 0052-hw-misc-aspeed-Add-fby35-server-board-bridge-IC.patch
-
-Signed-off-by: Peter Delevoryas <peter@pjd.dev>
-
-%% original patch: 0052-hw-misc-aspeed-Add-fby35-server-board-bridge-IC.patch
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -440,5 +432,5 @@ index 7d76a46..28d3d77 100644
  intel_me_rx_start(uint8_t addr) "addr 0x%02x"
  intel_me_rx_data(uint8_t addr, uint8_t data) "addr 0x%02x data 0x%02x"
 -- 
-2.37.1
+2.37.2
 

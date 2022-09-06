@@ -1,4 +1,4 @@
-From d39dee86507c6aa3d6531416b892d77802073368 Mon Sep 17 00:00:00 2001
+From 4984be65359e63ae5c91b531f1dcf14eb16bf1f5 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 27 Jul 2022 15:09:05 -0700
 Subject: [PATCH] tests/avocado/boot_linux_console: Add NPCM845 EVB
@@ -12,7 +12,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 22 insertions(+), 1 deletion(-)
 
 diff --git a/tests/avocado/boot_linux_console.py b/tests/avocado/boot_linux_console.py
-index fd125fed38..a49f9c5888 100644
+index fd125fe..a49f9c5 100644
 --- a/tests/avocado/boot_linux_console.py
 +++ b/tests/avocado/boot_linux_console.py
 @@ -89,7 +89,7 @@ class BootLinuxConsole(LinuxKernelTest):
@@ -52,3 +52,6 @@ index fd125fed38..a49f9c5888 100644
      def test_arm_orangepi(self):
          """
          :avocado: tags=arch:arm
+-- 
+2.37.2
+

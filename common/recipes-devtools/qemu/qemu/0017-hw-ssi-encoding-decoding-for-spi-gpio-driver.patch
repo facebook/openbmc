@@ -1,4 +1,4 @@
-From 9653b7db99e0382fa23a525f71c29e70da205f3c Mon Sep 17 00:00:00 2001
+From d281387ea1f9f0583ad25cf23a2d3d68c49de8db Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Thu, 16 Jun 2022 14:55:19 -0700
 Subject: [PATCH] hw: ssi: encoding/decoding for spi gpio driver
@@ -11,7 +11,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 95 insertions(+), 11 deletions(-)
 
 diff --git a/hw/ssi/spi_gpio.c b/hw/ssi/spi_gpio.c
-index 1f290a3713..401ee3802b 100644
+index 1f290a3..401ee38 100644
 --- a/hw/ssi/spi_gpio.c
 +++ b/hw/ssi/spi_gpio.c
 @@ -25,22 +25,91 @@
@@ -140,7 +140,7 @@ index 1f290a3713..401ee3802b 100644
      /* init the output GPIO lines */
      qdev_init_gpio_out_named(dev, &s->miso_output_pin, "SPI_MISO", 1);
 diff --git a/include/hw/ssi/spi_gpio.h b/include/hw/ssi/spi_gpio.h
-index 4971ef6dc1..9111640d6c 100644
+index 4971ef6..9111640 100644
 --- a/include/hw/ssi/spi_gpio.h
 +++ b/include/hw/ssi/spi_gpio.h
 @@ -37,7 +37,14 @@ struct SpiGpioState {
@@ -159,3 +159,6 @@ index 4971ef6dc1..9111640d6c 100644
      qemu_irq miso_output_pin, cs_output_pin;
  };
  
+-- 
+2.37.2
+

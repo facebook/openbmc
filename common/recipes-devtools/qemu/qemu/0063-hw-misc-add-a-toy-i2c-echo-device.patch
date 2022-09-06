@@ -1,4 +1,4 @@
-From 28c3f89561009dccc250c76bae54548cbbea07a1 Mon Sep 17 00:00:00 2001
+From 6eacdde39621a187b8beb9ce71df975247439bfe Mon Sep 17 00:00:00 2001
 From: Klaus Jensen <k.jensen@samsung.com>
 Date: Thu, 31 Mar 2022 18:57:37 +0200
 Subject: [PATCH] hw/misc: add a toy i2c echo device
@@ -17,7 +17,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 
 diff --git a/hw/misc/i2c-echo.c b/hw/misc/i2c-echo.c
 new file mode 100644
-index 0000000000..004829b82b
+index 0000000..004829b
 --- /dev/null
 +++ b/hw/misc/i2c-echo.c
 @@ -0,0 +1,116 @@
@@ -138,7 +138,7 @@ index 0000000000..004829b82b
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 834c082be9..86bb26378b 100644
+index 834c082..86bb263 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -127,7 +127,7 @@ softmmu_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
@@ -150,3 +150,6 @@ index 834c082be9..86bb26378b 100644
  
  specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
  
+-- 
+2.37.2
+

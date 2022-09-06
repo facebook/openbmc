@@ -1,4 +1,4 @@
-From 789e2d1d06d91282922a5d7bc1bc8a4a120416d1 Mon Sep 17 00:00:00 2001
+From 54d3810d8860c5dcf2c7da26ce670576796fbaa5 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Thu, 2 Dec 2021 20:51:56 -0800
 Subject: [PATCH] slirp: Add mfr-id to -netdev options
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 8 insertions(+), 4 deletions(-)
 
 diff --git a/net/slirp.c b/net/slirp.c
-index 8679be6444..adff905c58 100644
+index 8679be6..adff905 100644
 --- a/net/slirp.c
 +++ b/net/slirp.c
 @@ -413,7 +413,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
@@ -49,7 +49,7 @@ index 8679be6444..adff905c58 100644
      while (slirp_configs) {
          config = slirp_configs;
 diff --git a/qapi/net.json b/qapi/net.json
-index 75ba2cb989..14650a1986 100644
+index 75ba2cb..14650a1 100644
 --- a/qapi/net.json
 +++ b/qapi/net.json
 @@ -167,6 +167,8 @@
@@ -71,3 +71,6 @@ index 75ba2cb989..14650a1986 100644
  
  ##
  # @NetdevTapOptions:
+-- 
+2.37.2
+

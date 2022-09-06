@@ -1,4 +1,4 @@
-From 15e9f3a937c147cb116e697449307e6f85d0ca61 Mon Sep 17 00:00:00 2001
+From 1ead60e8815e952c320fc620ede57d7472dc1636 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
@@ -9,7 +9,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 332 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index dce047980f..31b786c67b 100644
+index dce0479..31b786c 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -904,6 +904,30 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
@@ -362,3 +362,6 @@ index dce047980f..31b786c67b 100644
 +}
 +
 +type_init(fb_register_machines);
+-- 
+2.37.2
+

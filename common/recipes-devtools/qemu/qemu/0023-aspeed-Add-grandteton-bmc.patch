@@ -1,4 +1,4 @@
-From 46057e6c85186e54726a82905f6defc88967458c Mon Sep 17 00:00:00 2001
+From 5fdc5a4b6380ee1fb854adeab800ee0dcbd77fcd Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 15 Jul 2022 14:34:49 -0700
 Subject: [PATCH] aspeed: Add grandteton-bmc
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 2b85b70e0d..6a20068f81 100644
+index 2b85b70..6a20068 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -1926,6 +1926,17 @@ static const struct FBMachineData fb_machines[] = {
@@ -31,3 +31,6 @@ index 2b85b70e0d..6a20068f81 100644
      {
          .parent      = MACHINE_TYPE_NAME("ast1030-evb"),
          .name        = "oby35-cl",
+-- 
+2.37.2
+

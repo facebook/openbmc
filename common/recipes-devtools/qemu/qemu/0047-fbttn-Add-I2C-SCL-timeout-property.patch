@@ -1,4 +1,4 @@
-From 2b852f4348c0112554c28038a430de8fca55c922 Mon Sep 17 00:00:00 2001
+From a4a806043dcfe41ba6168cee4352654a8ded14f7 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH] fbttn: Add I2C SCL timeout property
@@ -24,7 +24,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  4 files changed, 51 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index f6ffb47..2fc22f7 100644
+index 98f2fa0..7b44bc2 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -1020,6 +1020,11 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
@@ -48,7 +48,7 @@ index f6ffb47..2fc22f7 100644
      {
          .name        = "fbtp-bmc",
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 42c6d69..e94e9e3 100644
+index c166fd2..e58bd16 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -26,6 +26,7 @@
@@ -97,7 +97,7 @@ index 42c6d69..e94e9e3 100644
          aspeed_i2c_set_state(bus, state);
  
          addr = aspeed_i2c_get_addr(bus);
-@@ -1252,6 +1272,24 @@ static Property aspeed_i2c_bus_properties[] = {
+@@ -1254,6 +1274,24 @@ static Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_END_OF_LIST(),
  };
  
@@ -122,7 +122,7 @@ index 42c6d69..e94e9e3 100644
  static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -1260,6 +1298,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
+@@ -1262,6 +1300,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
      dc->realize = aspeed_i2c_bus_realize;
      dc->reset = aspeed_i2c_bus_reset;
      device_class_set_props(dc, aspeed_i2c_bus_properties);
@@ -147,10 +147,10 @@ index af181d4..261e6af 100644
  # npcm7xx_smbus.c
  
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 300a89b..510d2c6 100644
+index adc904d..7a18c3f 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -234,6 +234,7 @@ struct AspeedI2CBus {
+@@ -235,6 +235,7 @@ struct AspeedI2CBus {
      I2CBus *bus;
      uint8_t id;
      qemu_irq irq;
@@ -158,3 +158,6 @@ index 300a89b..510d2c6 100644
  
      uint32_t regs[ASPEED_I2C_NEW_NUM_REG];
  };
+-- 
+2.37.2
+

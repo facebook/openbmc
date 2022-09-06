@@ -1,7 +1,7 @@
-From 2d6333f49f4899b2f2196e14bb711601a7e6d151 Mon Sep 17 00:00:00 2001
+From 1b2abace9a15a8115d03db42374178262aa0d57b Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 50/51] hw/misc/aspeed: Add fby35-sb-cpld
+Subject: [PATCH] hw/misc/aspeed: Add fby35-sb-cpld
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -33,7 +33,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/fby35_sb_cpld.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 77b01e062c..be2078a770 100644
+index 77b01e0..be2078a 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1067,6 +1067,7 @@ F: include/hw/net/ftgmac100.h
@@ -46,7 +46,7 @@ index 77b01e062c..be2078a770 100644
  M: Joel Stanley <joel@jms.id.au>
 diff --git a/hw/misc/fby35_sb_cpld.c b/hw/misc/fby35_sb_cpld.c
 new file mode 100644
-index 0000000000..e7c4b8df7b
+index 0000000..e7c4b8d
 --- /dev/null
 +++ b/hw/misc/fby35_sb_cpld.c
 @@ -0,0 +1,137 @@
@@ -188,7 +188,7 @@ index 0000000000..e7c4b8df7b
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 14631df339..6c28faad24 100644
+index 14631df..6c28faa 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -117,7 +117,8 @@ softmmu_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -202,7 +202,7 @@ index 14631df339..6c28faad24 100644
  softmmu_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  softmmu_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index d025106507..beb6e89504 100644
+index d025106..beb6e89 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
 @@ -274,3 +274,7 @@ virt_ctrl_instance_init(void *dev) "ctrl: %p"
@@ -214,5 +214,5 @@ index d025106507..beb6e89504 100644
 +fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
 +fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
 -- 
-2.37.1
+2.37.2
 

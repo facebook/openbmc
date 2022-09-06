@@ -1,7 +1,7 @@
-From 8753d9c28d095a32e13bf6917c24a70ab98236f7 Mon Sep 17 00:00:00 2001
+From e32f87fa9b52dd4da1a23a9a38522a6f2dcb4d3a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
-Subject: [PATCH 56/61] fby35: Setup I2C devices and GPIO's
+Subject: [PATCH] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  3 files changed, 99 insertions(+), 39 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 343f620c35..37f7ba9c28 100644
+index 343f620..37f7ba9 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -982,33 +982,15 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
@@ -80,7 +80,7 @@ index 343f620c35..37f7ba9c28 100644
  
  static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index e013a479ce..f690a88d63 100644
+index e013a47..f690a88 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -9,6 +9,7 @@
@@ -231,7 +231,7 @@ index e013a479ce..f690a88d63 100644
      object_class_property_add_bool(oc, "execute-in-place",
                                     fby35_get_mmio_exec,
 diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
-index 20bd43fbae..87cb1a10c2 100644
+index 20bd43f..87cb1a1 100644
 --- a/hw/arm/fby35.h
 +++ b/hw/arm/fby35.h
 @@ -142,4 +142,9 @@ static const uint8_t fby35_fruid_slot[] = {
@@ -245,5 +245,5 @@ index 20bd43fbae..87cb1a10c2 100644
 +
  #endif
 -- 
-2.37.1
+2.37.2
 

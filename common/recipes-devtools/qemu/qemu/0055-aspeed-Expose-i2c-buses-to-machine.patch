@@ -1,7 +1,7 @@
-From 60ad8cab4d842b12bab198dd7da79857aa71c770 Mon Sep 17 00:00:00 2001
+From b43cb6229932ef5dcee821c25504da1447ab5db4 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 55/61] aspeed: Expose i2c buses to machine
+Subject: [PATCH] aspeed: Expose i2c buses to machine
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -16,7 +16,7 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  4 files changed, 36 insertions(+), 5 deletions(-)
 
 diff --git a/hw/arm/aspeed_soc.c b/hw/arm/aspeed_soc.c
-index b05b9dd416..294ddea35d 100644
+index b05b9dd..294ddea 100644
 --- a/hw/arm/aspeed_soc.c
 +++ b/hw/arm/aspeed_soc.c
 @@ -651,6 +651,20 @@ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp)
@@ -41,7 +41,7 @@ index b05b9dd416..294ddea35d 100644
  {
      memory_region_add_subregion(s->memory, addr,
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index 90c04bbc33..e013a479ce 100644
+index 90c04bb..e013a47 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -14,6 +14,9 @@
@@ -92,7 +92,7 @@ index 90c04bbc33..e013a479ce 100644
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index e58bd1619e..94a5451020 100644
+index e58bd16..94a5451 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -1258,7 +1258,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
@@ -118,7 +118,7 @@ index e58bd1619e..94a5451020 100644
  };
  
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index 8389200b2d..80f00cf754 100644
+index 8389200..80f00cf 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
 @@ -180,6 +180,8 @@ qemu_irq aspeed_soc_get_irq(AspeedSoCState *s, int dev);
@@ -131,5 +131,5 @@ index 8389200b2d..80f00cf754 100644
  void aspeed_mmio_map_unimplemented(AspeedSoCState *s, SysBusDevice *dev,
                                     const char *name, hwaddr addr,
 -- 
-2.37.1
+2.37.2
 

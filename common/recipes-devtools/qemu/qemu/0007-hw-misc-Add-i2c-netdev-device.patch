@@ -1,4 +1,4 @@
-From a8c8a5585fd2e31446db893e211cca2f5f45d8e5 Mon Sep 17 00:00:00 2001
+From a93a954f27d90000b35653fc57ede8bc0efe5a89 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH] hw/misc: Add i2c-netdev device
@@ -67,7 +67,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
 
 diff --git a/hw/misc/i2c-netdev.c b/hw/misc/i2c-netdev.c
 new file mode 100644
-index 0000000000..f7c481d72e
+index 0000000..f7c481d
 --- /dev/null
 +++ b/hw/misc/i2c-netdev.c
 @@ -0,0 +1,216 @@
@@ -288,7 +288,7 @@ index 0000000000..f7c481d72e
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 95268eddc0..53226b2649 100644
+index 95268ed..53226b2 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -124,6 +124,8 @@ softmmu_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
@@ -300,3 +300,6 @@ index 95268eddc0..53226b2649 100644
  specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
  
  specific_ss.add(when: 'CONFIG_IMX', if_true: files('imx6_src.c'))
+-- 
+2.37.2
+

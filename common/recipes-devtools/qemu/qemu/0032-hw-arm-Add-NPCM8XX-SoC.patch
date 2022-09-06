@@ -1,4 +1,4 @@
-From 9ab5ca52caab0ce7f72823bd4261cad9c52f8f01 Mon Sep 17 00:00:00 2001
+From fabaf1ed78101f59d94cab3ce187dba7298c35d9 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:39 -0700
 Subject: [PATCH] hw/arm: Add NPCM8XX SoC
@@ -21,7 +21,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 include/hw/arm/npcm8xx.h
 
 diff --git a/configs/devices/aarch64-softmmu/default.mak b/configs/devices/aarch64-softmmu/default.mak
-index cf43ac8da1..1c3cf6dda1 100644
+index cf43ac8..1c3cf6d 100644
 --- a/configs/devices/aarch64-softmmu/default.mak
 +++ b/configs/devices/aarch64-softmmu/default.mak
 @@ -6,3 +6,4 @@ include ../arm-softmmu/default.mak
@@ -30,7 +30,7 @@ index cf43ac8da1..1c3cf6dda1 100644
  CONFIG_SBSA_REF=y
 +CONFIG_NPCM8XX=y
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index ebeff20a58..162bf647cb 100644
+index ebeff20..162bf64 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
 @@ -409,6 +409,17 @@ config NPCM7XX
@@ -52,7 +52,7 @@ index ebeff20a58..162bf647cb 100644
      bool
      imply I2C_DEVICES
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 92f9f6e000..b63be387c5 100644
+index 92f9f6e..b63be38 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -13,6 +13,7 @@ arm_ss.add(when: 'CONFIG_MUSICPAL', if_true: files('musicpal.c'))
@@ -65,7 +65,7 @@ index 92f9f6e000..b63be387c5 100644
  arm_ss.add(when: 'CONFIG_CHEETAH', if_true: files('palm.c'))
 diff --git a/hw/arm/npcm8xx.c b/hw/arm/npcm8xx.c
 new file mode 100644
-index 0000000000..afcf8330d5
+index 0000000..afcf833
 --- /dev/null
 +++ b/hw/arm/npcm8xx.c
 @@ -0,0 +1,806 @@
@@ -877,7 +877,7 @@ index 0000000000..afcf8330d5
 +DEFINE_TYPES(npcm8xx_soc_types);
 diff --git a/include/hw/arm/npcm8xx.h b/include/hw/arm/npcm8xx.h
 new file mode 100644
-index 0000000000..a474c7991b
+index 0000000..a474c79
 --- /dev/null
 +++ b/include/hw/arm/npcm8xx.h
 @@ -0,0 +1,106 @@
@@ -987,3 +987,6 @@ index 0000000000..a474c7991b
 +void npcm8xx_load_kernel(MachineState *machine, NPCM8xxState *soc);
 +
 +#endif /* NPCM8XX_H */
+-- 
+2.37.2
+

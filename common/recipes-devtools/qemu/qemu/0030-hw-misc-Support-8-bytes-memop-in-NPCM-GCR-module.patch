@@ -1,4 +1,4 @@
-From dff39b4c41f3635a03a9d5ed31b9335ef6678a26 Mon Sep 17 00:00:00 2001
+From 1532154af9e316a3c8562f2abec4d5fa3af40f87 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:36 -0700
 Subject: [PATCH] hw/misc: Support 8-bytes memop in NPCM GCR module
@@ -15,7 +15,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 77 insertions(+), 25 deletions(-)
 
 diff --git a/hw/misc/npcm_gcr.c b/hw/misc/npcm_gcr.c
-index 14c298602a..aa81db23d7 100644
+index 14c2986..aa81db2 100644
 --- a/hw/misc/npcm_gcr.c
 +++ b/hw/misc/npcm_gcr.c
 @@ -201,6 +201,7 @@ static uint64_t npcm_gcr_read(void *opaque, hwaddr offset, unsigned size)
@@ -157,7 +157,7 @@ index 14c298602a..aa81db23d7 100644
      },
  };
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 4e144dc319..d025106507 100644
+index 4e144dc..d025106 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
 @@ -104,8 +104,8 @@ npcm_clk_read(uint64_t offset, uint32_t value) " offset: 0x%04" PRIx64 " value:
@@ -171,3 +171,6 @@ index 4e144dc319..d025106507 100644
  
  # npcm7xx_mft.c
  npcm7xx_mft_read(const char *name, uint64_t offset, uint16_t value) "%s: offset: 0x%04" PRIx64 " value: 0x%04" PRIx16
+-- 
+2.37.2
+

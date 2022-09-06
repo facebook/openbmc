@@ -1,4 +1,4 @@
-From d6104d2b464ade4f8fd115bc53fb9cb95af7d645 Mon Sep 17 00:00:00 2001
+From 29a18a68901e5494733e88bb9a198e8cbe806a68 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 19:30:38 -0700
 Subject: [PATCH] tests/avocado: Add fb boot tests
@@ -11,7 +11,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
 
 diff --git a/tests/avocado/fb_boot_console.py b/tests/avocado/fb_boot_console.py
 new file mode 100644
-index 0000000000..011a712365
+index 0000000..011a712
 --- /dev/null
 +++ b/tests/avocado/fb_boot_console.py
 @@ -0,0 +1,67 @@
@@ -82,3 +82,6 @@ index 0000000000..011a712365
 +        kernel_url = 'https://github.com/peterdelevoryas/OpenBIC/releases/download/oby35-bb-2022.13.01/Y35BBB.elf'
 +        kernel_hash = '9a484650732ec9ab2202d9bab906a3babb530def46797c01c068e725e2d89ac4'
 +        self.do_test_bic(kernel_url, kernel_hash)
+-- 
+2.37.2
+

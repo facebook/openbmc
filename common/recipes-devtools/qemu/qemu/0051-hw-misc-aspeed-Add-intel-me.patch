@@ -1,7 +1,7 @@
-From 933a8011f934534f25b008eb013f9c1a7979a848 Mon Sep 17 00:00:00 2001
+From 3fe790c15616b7dfe4a801ad52990c3c048e784d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 51/51] hw/misc/aspeed: Add intel-me
+Subject: [PATCH] hw/misc/aspeed: Add intel-me
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,7 +26,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index be2078a770..ff051494f6 100644
+index be2078a..ff05149 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1068,6 +1068,7 @@ F: docs/system/arm/aspeed.rst
@@ -39,7 +39,7 @@ index be2078a770..ff051494f6 100644
  M: Joel Stanley <joel@jms.id.au>
 diff --git a/hw/misc/intel_me.c b/hw/misc/intel_me.c
 new file mode 100644
-index 0000000000..933ae45101
+index 0000000..933ae45
 --- /dev/null
 +++ b/hw/misc/intel_me.c
 @@ -0,0 +1,162 @@
@@ -206,7 +206,7 @@ index 0000000000..933ae45101
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 6c28faad24..27e448a8cf 100644
+index 6c28faa..27e448a 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -118,7 +118,8 @@ softmmu_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -220,7 +220,7 @@ index 6c28faad24..27e448a8cf 100644
  softmmu_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  softmmu_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index beb6e89504..7d76a4666f 100644
+index beb6e89..7d76a46 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
 @@ -278,3 +278,11 @@ lasi_chip_write(uint64_t addr, uint32_t val) "addr 0x%"PRIx64" val 0x%08x"
@@ -236,5 +236,5 @@ index beb6e89504..7d76a4666f 100644
 +intel_me_tx_data(uint8_t addr, uint8_t data) "addr 0x%02x data 0x%02x"
 +intel_me_tx_end(uint8_t addr) "addr 0x%02x"
 -- 
-2.37.1
+2.37.2
 

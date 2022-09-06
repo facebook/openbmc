@@ -1,4 +1,4 @@
-From ae96ae91e6701c4827ac6b30e3505ff6931496a6 Mon Sep 17 00:00:00 2001
+From cabff9b803396217dadb283a4c8b588840253b32 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 17 Jun 2022 12:21:22 -0700
 Subject: [PATCH] aspeed: Zero extend flash files to 128MB
@@ -39,7 +39,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index b3bbe06f8f..dce047980f 100644
+index b3bbe06..dce0479 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -270,13 +270,26 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
@@ -70,3 +70,6 @@ index b3bbe06f8f..dce047980f 100644
          }
          qdev_realize_and_unref(dev, BUS(s->spi), &error_fatal);
  
+-- 
+2.37.2
+

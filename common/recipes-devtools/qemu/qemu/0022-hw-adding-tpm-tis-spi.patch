@@ -1,4 +1,4 @@
-From d8c1fd772117e407e1cbccfa95e67074064b41f8 Mon Sep 17 00:00:00 2001
+From 46f90b8734f5fbae5924e119cdde82e5e306e98a Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Tue, 5 Jul 2022 11:09:53 -0700
 Subject: [PATCH] hw: adding tpm tis spi
@@ -16,7 +16,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 hw/tpm/tpm_tis_spi.c
 
 diff --git a/configs/devices/arm-softmmu/default.mak b/configs/devices/arm-softmmu/default.mak
-index 6985a25377..80d2841568 100644
+index 6985a25..80d2841 100644
 --- a/configs/devices/arm-softmmu/default.mak
 +++ b/configs/devices/arm-softmmu/default.mak
 @@ -42,3 +42,4 @@ CONFIG_FSL_IMX6UL=y
@@ -25,7 +25,7 @@ index 6985a25377..80d2841568 100644
  CONFIG_ALLWINNER_H3=y
 +CONFIG_FBOBMC_AST=y
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 4cf1747c3b..ebeff20a58 100644
+index 4cf1747..ebeff20 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
 @@ -457,7 +457,12 @@ config ASPEED_SOC
@@ -42,7 +42,7 @@ index 4cf1747c3b..ebeff20a58 100644
  config MPS2
      bool
 diff --git a/hw/tpm/Kconfig b/hw/tpm/Kconfig
-index 29e82f3c92..370a43f045 100644
+index 29e82f3..370a43f 100644
 --- a/hw/tpm/Kconfig
 +++ b/hw/tpm/Kconfig
 @@ -8,6 +8,11 @@ config TPM_TIS_SYSBUS
@@ -58,7 +58,7 @@ index 29e82f3c92..370a43f045 100644
      bool
      depends on TPM
 diff --git a/hw/tpm/meson.build b/hw/tpm/meson.build
-index 1c68d81d6a..b09e6b359e 100644
+index 1c68d81..b09e6b3 100644
 --- a/hw/tpm/meson.build
 +++ b/hw/tpm/meson.build
 @@ -1,6 +1,7 @@
@@ -71,7 +71,7 @@ index 1c68d81d6a..b09e6b359e 100644
  specific_ss.add(when: ['CONFIG_SOFTMMU', 'CONFIG_TPM_TIS'], if_true: files('tpm_ppi.c'))
 diff --git a/hw/tpm/tpm_tis_spi.c b/hw/tpm/tpm_tis_spi.c
 new file mode 100644
-index 0000000000..036f0797b7
+index 0000000..036f079
 --- /dev/null
 +++ b/hw/tpm/tpm_tis_spi.c
 @@ -0,0 +1,262 @@
@@ -338,7 +338,7 @@ index 0000000000..036f0797b7
 +
 +type_init(tpm_tis_spi_register)
 diff --git a/include/sysemu/tpm.h b/include/sysemu/tpm.h
-index fb40e30ff6..f8852430e9 100644
+index fb40e30..f885243 100644
 --- a/include/sysemu/tpm.h
 +++ b/include/sysemu/tpm.h
 @@ -46,6 +46,7 @@ struct TPMIfClass {
@@ -349,3 +349,6 @@ index fb40e30ff6..f8852430e9 100644
  #define TYPE_TPM_CRB                "tpm-crb"
  #define TYPE_TPM_SPAPR              "tpm-spapr"
  
+-- 
+2.37.2
+

@@ -1,4 +1,4 @@
-From c5b476c776eb8b473109423c2f62a3b8f41a404a Mon Sep 17 00:00:00 2001
+From a2f1f78daef0d91caaac6579782eb86b2ce459e9 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 27 Jul 2022 13:46:46 -0700
 Subject: [PATCH] arm/cpu64: Copy-paste A53 contents into A35 initfn
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 48 insertions(+), 42 deletions(-)
 
 diff --git a/target/arm/cpu64.c b/target/arm/cpu64.c
-index f9e5542105..5ad1bce7e0 100644
+index f9e5542..5ad1bce 100644
 --- a/target/arm/cpu64.c
 +++ b/target/arm/cpu64.c
 @@ -157,50 +157,56 @@ static void aarch64_a35_initfn(Object *obj)
@@ -116,3 +116,6 @@ index f9e5542105..5ad1bce7e0 100644
  }
  
  static void aarch64_a72_initfn(Object *obj)
+-- 
+2.37.2
+

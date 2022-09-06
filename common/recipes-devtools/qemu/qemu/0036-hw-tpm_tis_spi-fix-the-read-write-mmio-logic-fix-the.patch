@@ -1,17 +1,16 @@
-From 145a967134699b54250bffcfc341bebfdf5f3a90 Mon Sep 17 00:00:00 2001
+From ed3d54e352d47ea88d3820652881d99999729905 Mon Sep 17 00:00:00 2001
 From: Iris Chen <irischenlj@fb.com>
 Date: Thu, 14 Jul 2022 15:37:02 -0700
 Subject: [PATCH] hw: tpm_tis_spi: fix the read/write mmio logic fix the case
  for TPM_TIS_REG_DATA_FIFO
 
 Signed-off-by: Iris Chen <irischenlj@fb.com>
-Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
  hw/tpm/tpm_tis_spi.c | 56 ++++++++++++++++++++++++++++++++++++--------
  1 file changed, 46 insertions(+), 10 deletions(-)
 
 diff --git a/hw/tpm/tpm_tis_spi.c b/hw/tpm/tpm_tis_spi.c
-index 036f0797b7..5644df8c2e 100644
+index 036f079..5644df8 100644
 --- a/hw/tpm/tpm_tis_spi.c
 +++ b/hw/tpm/tpm_tis_spi.c
 @@ -35,7 +35,7 @@ union TpmTisSpiHwAddr {
@@ -98,3 +97,6 @@ index 036f0797b7..5644df8c2e 100644
          }
          break;
      case TIS_SPI_PKT_STATE_DATA_RD:
+-- 
+2.37.2
+

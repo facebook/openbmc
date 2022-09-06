@@ -1,7 +1,7 @@
-From 61b72ecd7737218710de8b1bbb9542d99d7265e8 Mon Sep 17 00:00:00 2001
+From a9114667e9f207ee4e39461e0b69f88ce3b44abf Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:55:12 -0700
-Subject: [PATCH 60/61] hw/i2c/aspeed: Fix bus derivation for slave events
+Subject: [PATCH] hw/i2c/aspeed: Fix bus derivation for slave events
 
 The existing code assumes there's one AspeedI2CBus attached to each
 I2CBus. That's not the case in a multi-SoC system where two
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 4cc707ab78..ef9fbb7d93 100644
+index 4cc707a..ef9fbb7 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -1158,8 +1158,7 @@ static int aspeed_i2c_bus_new_slave_event(AspeedI2CBus *bus,
@@ -46,7 +46,7 @@ index 4cc707ab78..ef9fbb7d93 100644
      memory_region_init_io(&s->mr, OBJECT(s), &aspeed_i2c_bus_ops,
                            s, name, aic->reg_size);
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 7a18c3f8c2..d00457f3d7 100644
+index 7a18c3f..d00457f 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
 @@ -261,6 +261,7 @@ struct AspeedI2CState {
@@ -58,5 +58,5 @@ index 7a18c3f8c2..d00457f3d7 100644
  
  struct AspeedI2CClass {
 -- 
-2.37.1
+2.37.2
 

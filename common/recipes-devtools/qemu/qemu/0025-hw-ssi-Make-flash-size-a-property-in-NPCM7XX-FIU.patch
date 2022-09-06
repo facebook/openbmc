@@ -1,4 +1,4 @@
-From 2afbe72e74417b2ffc6880ac70594f662ff36191 Mon Sep 17 00:00:00 2001
+From a414ddc72b49285120f694a1d13aeecb2ea8f6a9 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:31 -0700
 Subject: [PATCH] hw/ssi: Make flash size a property in NPCM7XX FIU
@@ -16,7 +16,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  3 files changed, 9 insertions(+), 4 deletions(-)
 
 diff --git a/hw/arm/npcm7xx.c b/hw/arm/npcm7xx.c
-index d85cc02765..9946b94120 100644
+index d85cc02..9946b94 100644
 --- a/hw/arm/npcm7xx.c
 +++ b/hw/arm/npcm7xx.c
 @@ -274,17 +274,21 @@ static const struct {
@@ -51,7 +51,7 @@ index d85cc02765..9946b94120 100644
  
          sysbus_mmio_map(sbd, 0, npcm7xx_fiu[i].regs_addr);
 diff --git a/hw/ssi/npcm7xx_fiu.c b/hw/ssi/npcm7xx_fiu.c
-index 4eedb2927e..ea490f1332 100644
+index 4eedb29..ea490f1 100644
 --- a/hw/ssi/npcm7xx_fiu.c
 +++ b/hw/ssi/npcm7xx_fiu.c
 @@ -28,9 +28,6 @@
@@ -82,7 +82,7 @@ index 4eedb2927e..ea490f1332 100644
  };
  
 diff --git a/include/hw/ssi/npcm7xx_fiu.h b/include/hw/ssi/npcm7xx_fiu.h
-index a3a1704289..1785ea16f4 100644
+index a3a1704..1785ea1 100644
 --- a/include/hw/ssi/npcm7xx_fiu.h
 +++ b/include/hw/ssi/npcm7xx_fiu.h
 @@ -60,6 +60,7 @@ struct NPCM7xxFIUState {
@@ -93,3 +93,6 @@ index a3a1704289..1785ea16f4 100644
      NPCM7xxFIUFlash *flash;
  
      SSIBus *spi;
+-- 
+2.37.2
+

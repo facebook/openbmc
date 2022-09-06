@@ -1,4 +1,4 @@
-From 0aed8bccd4c0134d9a43f0f31d2a5d96c806924d Mon Sep 17 00:00:00 2001
+From 741bf712bad4a99e9c63248e78ed375bca60ef85 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:12:09 -0700
 Subject: [PATCH] tests: Create qtest for Aspeed I2C controller
@@ -171,5 +171,5 @@ index dc9fd80..0c4953e 100644
  qtests_arm = \
    (config_all_devices.has_key('CONFIG_MPS2') ? ['sse-timer-test'] : []) + \
 -- 
-2.37.1
+2.37.2
 

@@ -1,4 +1,4 @@
-From d2791359e3402766be26352ec82d20e2dc0239c0 Mon Sep 17 00:00:00 2001
+From 866ab8f30a8a0e66c65cf5a19ae228f29e90bb55 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:32 -0700
 Subject: [PATCH] hw/misc: Support NPCM8XX GCR module
@@ -23,7 +23,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  rename include/hw/misc/{npcm7xx_gcr.h => npcm_gcr.h} (74%)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 5ce4227ff6..77b01e062c 100644
+index 5ce4227..77b01e0 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -792,14 +792,15 @@ F: hw/net/mv88w8618_eth.c
@@ -47,7 +47,7 @@ index 5ce4227ff6..77b01e062c 100644
  F: roms/vbootrom
  F: docs/system/arm/nuvoton.rst
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index ec396d0a94..49986c8668 100644
+index ec396d0..49986c8 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -61,7 +61,7 @@ softmmu_ss.add(when: 'CONFIG_IMX', if_true: files(
@@ -61,7 +61,7 @@ index ec396d0a94..49986c8668 100644
    'npcm7xx_rng.c',
 diff --git a/hw/misc/npcm7xx_gcr.c b/hw/misc/npcm7xx_gcr.c
 deleted file mode 100644
-index eace9e1967..0000000000
+index eace9e1..0000000
 --- a/hw/misc/npcm7xx_gcr.c
 +++ /dev/null
 @@ -1,269 +0,0 @@
@@ -336,7 +336,7 @@ index eace9e1967..0000000000
 -type_init(npcm7xx_gcr_register_type);
 diff --git a/hw/misc/npcm_gcr.c b/hw/misc/npcm_gcr.c
 new file mode 100644
-index 0000000000..2349949599
+index 0000000..2349949
 --- /dev/null
 +++ b/hw/misc/npcm_gcr.c
 @@ -0,0 +1,413 @@
@@ -754,7 +754,7 @@ index 0000000000..2349949599
 +};
 +DEFINE_TYPES(npcm_gcr_info)
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 4d51a80de1..320fe8ec65 100644
+index 4d51a80..320fe8e 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
 @@ -103,9 +103,9 @@ mos6522_read(uint64_t addr, const char *name, unsigned val) "reg=0x%"PRIx64 " [%
@@ -771,7 +771,7 @@ index 4d51a80de1..320fe8ec65 100644
  # npcm7xx_mft.c
  npcm7xx_mft_read(const char *name, uint64_t offset, uint16_t value) "%s: offset: 0x%04" PRIx64 " value: 0x%04" PRIx16
 diff --git a/include/hw/arm/npcm7xx.h b/include/hw/arm/npcm7xx.h
-index ce593235d9..b0f50ff5c5 100644
+index ce59323..b0f50ff 100644
 --- a/include/hw/arm/npcm7xx.h
 +++ b/include/hw/arm/npcm7xx.h
 @@ -24,7 +24,7 @@
@@ -796,7 +796,7 @@ diff --git a/include/hw/misc/npcm7xx_gcr.h b/include/hw/misc/npcm_gcr.h
 similarity index 74%
 rename from include/hw/misc/npcm7xx_gcr.h
 rename to include/hw/misc/npcm_gcr.h
-index 9419e0a7d2..6ff94b049f 100644
+index 9419e0a..6ff94b0 100644
 --- a/include/hw/misc/npcm7xx_gcr.h
 +++ b/include/hw/misc/npcm_gcr.h
 @@ -1,5 +1,5 @@
@@ -858,3 +858,6 @@ index 9419e0a7d2..6ff94b049f 100644
 +#define TYPE_NPCM8XX_GCR "npcm8xx-gcr"
  
  #endif /* NPCM7XX_GCR_H */
+-- 
+2.37.2
+

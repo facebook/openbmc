@@ -1,4 +1,4 @@
-From 12b0bc9772bc9163b9847e7a4c041217150f142e Mon Sep 17 00:00:00 2001
+From 81ad13c3f0a34fe15690a39fb0d14545ad6bad18 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Sat, 20 Aug 2022 15:29:27 -0700
 Subject: [PATCH] hw/i2c/aspeed: Fix old reg slave receive
@@ -38,10 +38,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 6 insertions(+), 3 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index e94e9e3..e58bd16 100644
+index 42c6d69..c166fd2 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1151,7 +1151,9 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1131,7 +1131,9 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
      AspeedI2CBus *bus = ASPEED_I2C_BUS(qbus->parent);
      uint32_t reg_intr_sts = aspeed_i2c_bus_intr_sts_offset(bus);
      uint32_t reg_byte_buf = aspeed_i2c_bus_byte_buf_offset(bus);
@@ -52,7 +52,7 @@ index e94e9e3..e58bd16 100644
  
      if (aspeed_i2c_is_new_mode(bus->controller)) {
          return aspeed_i2c_bus_new_slave_event(bus, event);
-@@ -1159,8 +1161,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1139,8 +1141,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
  
      switch (event) {
      case I2C_START_SEND_ASYNC:
@@ -64,7 +64,7 @@ index e94e9e3..e58bd16 100644
          ARRAY_FIELD_DP32(bus->regs, I2CD_INTR_STS, SLAVE_ADDR_RX_MATCH, 1);
          SHARED_ARRAY_FIELD_DP32(bus->regs, reg_intr_sts, RX_DONE, 1);
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 510d2c6..7a18c3f 100644
+index 300a89b..adc904d 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
 @@ -130,6 +130,7 @@ REG32(I2CD_CMD, 0x14) /* I2CD Command/Status */
@@ -75,3 +75,6 @@ index 510d2c6..7a18c3f 100644
  REG32(I2CD_POOL_CTRL, 0x1C) /* Pool Buffer Control */
      SHARED_FIELD(RX_COUNT, 24, 5)
      SHARED_FIELD(RX_SIZE, 16, 5)
+-- 
+2.37.2
+

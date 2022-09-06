@@ -1,7 +1,7 @@
-From 4b3baa0fc5184fb979cf2c1e7bc204e67e344ec9 Mon Sep 17 00:00:00 2001
+From 6bc20e1cb28311336ea19032b6b65006062b74ee Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 00:48:44 -0700
-Subject: [PATCH 58/61] hw/i2c/aspeed: Add bus ID to all trace events
+Subject: [PATCH] hw/i2c/aspeed: Add bus ID to all trace events
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 14 insertions(+), 12 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 94a5451020..8c07f12e31 100644
+index 94a5451..8c07f12 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -63,7 +63,8 @@ static inline void aspeed_i2c_bus_raise_interrupt(AspeedI2CBus *bus)
@@ -88,7 +88,7 @@ index 94a5451020..8c07f12e31 100644
  }
  
 diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
-index 261e6afe1a..e4941ec110 100644
+index 261e6af..e4941ec 100644
 --- a/hw/i2c/trace-events
 +++ b/hw/i2c/trace-events
 @@ -10,12 +10,12 @@ i2c_ack(void) ""
@@ -109,5 +109,5 @@ index 261e6afe1a..e4941ec110 100644
  
  # npcm7xx_smbus.c
 -- 
-2.37.1
+2.37.2
 

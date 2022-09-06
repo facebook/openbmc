@@ -1,4 +1,4 @@
-From 620c4ff0cfa13398b49ea9b40215da9eed141fb7 Mon Sep 17 00:00:00 2001
+From e1a0846ac94a6afb09596ee38a32123f1d50c7bb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 19 Jul 2022 21:42:58 -0700
 Subject: [PATCH] npcm8xx: Change default bios path to
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/hw/arm/npcm8xx_boards.c b/hw/arm/npcm8xx_boards.c
-index e87ecade65..5b9a202f28 100644
+index e87ecad..5b9a202 100644
 --- a/hw/arm/npcm8xx_boards.c
 +++ b/hw/arm/npcm8xx_boards.c
 @@ -29,7 +29,7 @@
@@ -22,3 +22,6 @@ index e87ecade65..5b9a202f28 100644
  
  static void npcm8xx_load_bootrom(MachineState *machine, NPCM8xxState *soc)
  {
+-- 
+2.37.2
+

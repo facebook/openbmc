@@ -1,4 +1,4 @@
-From bce925313332e75f233d9c222fc664b28a119319 Mon Sep 17 00:00:00 2001
+From 216cef865c72eb21ba74b5f61d2868d72cd7905a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Thu, 23 Jun 2022 19:09:53 -0700
 Subject: [PATCH] aspeed: Reload boot rom on reset
@@ -16,7 +16,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 16 insertions(+), 11 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 5858970647..cf4151e47f 100644
+index 5858970..cf4151e 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -41,6 +41,7 @@ struct AspeedMachineState {
@@ -98,3 +98,6 @@ index 5858970647..cf4151e47f 100644
          }
      }
  
+-- 
+2.37.2
+

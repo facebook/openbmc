@@ -29,16 +29,16 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            git://gitlab.com/qemu-project/berkeley-testfloat-3.git;destsuffix=git/tests/fp/berkeley-testfloat-3;nobranch=1;protocol=https;name=berkeley-testfloat-3;nobranch=1 \
            git://gitlab.com/qemu-project/keycodemapdb.git;destsuffix=git/ui/keycodemapdb;nobranch=1;protocol=https;name=keycodemapdb;nobranch=1 \
            file://0001-hw-i2c-aspeed-Fix-old-reg-slave-receive.patch \
-           file://0001-aspeed-Zero-extend-flash-files-to-128MB.patch \
-           file://0001-slirp-Add-mfr-id-to-netdev-options.patch \
-           file://0002-slirp-Add-oob-eth-addr-to-netdev-options.patch \
-           file://0003-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
-           file://0004-hw-arm-aspeed-Add-fb_machine_class_init.patch \
-           file://0005-hw-misc-Add-i2c-netdev-device.patch \
-           file://0006-tests-avocado-Add-fb-boot-tests.patch \
-           file://0007-tests-avocado-Disable-raspi2-initrd.patch \
-           file://0008-hw-misc-Add-byte-by-byte-i2c-network-device.patch \
-           file://0010-hw-m25p80-Add-BP-and-TB-bits-to-n25q00.patch \
+           file://0002-aspeed-Zero-extend-flash-files-to-128MB.patch \
+           file://0003-slirp-Add-mfr-id-to-netdev-options.patch \
+           file://0004-slirp-Add-oob-eth-addr-to-netdev-options.patch \
+           file://0005-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
+           file://0006-hw-arm-aspeed-Add-fb_machine_class_init.patch \
+           file://0007-hw-misc-Add-i2c-netdev-device.patch \
+           file://0008-tests-avocado-Add-fb-boot-tests.patch \
+           file://0009-tests-avocado-Disable-raspi2-initrd.patch \
+           file://0010-hw-misc-Add-byte-by-byte-i2c-network-device.patch \
+           file://0011-hw-m25p80-Add-BP-and-TB-bits-to-n25q00.patch \
            file://0012-hw-arm-aspeed-Switch-fby35-grandcanyon-to-n25q00.patch \
            file://0013-hw-ssi-add-new-spi-gpio-controller.patch \
            file://0014-hw-nvram-at24c-Add-static-memory-init-option.patch \
@@ -63,8 +63,8 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0033-hw-arm-Add-NPCM845-Evaluation-board.patch \
            file://0034-hw-arm-npcm8xx-Remove-qemu-common.h-include.patch \
            file://0035-npcm7xx-Change-flash_size-to-uint64.patch \
-           file://0036-hw-tpm_tis_spi-fix-the-read-write-mmio-logic.patch \
-           file://0037-hw-tpm_tis_spi-connect-the-cs-line.patch \
+           file://0036-hw-tpm_tis_spi-fix-the-read-write-mmio-logic-fix-the.patch \
+           file://0037-hw-tpm_tis_spi-connect-the-cs-line-remove-m25p80-dev.patch \
            file://0038-Trying-to-add-Cortex-A35.patch \
            file://0039-npcm8xx-Fix-flash-device-part-number.patch \
            file://0040-npcm8xx-Increase-ram-to-2GB.patch \
@@ -88,11 +88,11 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0058-hw-i2c-aspeed-Add-bus-ID-to-all-trace-events.patch \
            file://0059-hw-i2c-aspeed-Add-slave-event-traces.patch \
            file://0060-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
-           file://0001-qemu-Add-i2c-devices-to-oby35-cl.patch \
-           file://0002-tests-Rename-aspeed_i2c-test-to-i2c-netdev2-test.patch \
-           file://0003-hw-misc-add-a-toy-i2c-echo-device.patch \
-           file://0004-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
-           file://0005-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
+           file://0061-qemu-Add-i2c-devices-to-oby35-cl.patch \
+           file://0062-tests-Rename-aspeed_i2c-test-to-i2c-netdev2-test.patch \
+           file://0063-hw-misc-add-a-toy-i2c-echo-device.patch \
+           file://0064-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
+           file://0065-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 
@@ -108,3 +108,4 @@ do_install:append() {
     rm -rf ${D}${datadir}/icons/
     rm -rf ${D}${includedir}/qemu-plugin.h
 }
+

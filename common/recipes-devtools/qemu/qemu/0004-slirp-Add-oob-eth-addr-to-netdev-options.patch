@@ -1,4 +1,4 @@
-From 44f4a480f3eba7e9cedfac82d9c269aae3a630ae Mon Sep 17 00:00:00 2001
+From 07f4ac2a744f66ccbc537a2eeacf82b7234fcbdf Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 01:07:22 -0700
 Subject: [PATCH] slirp: Add oob-eth-addr to -netdev options
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/net/slirp.c b/net/slirp.c
-index adff905c58..d757b6c3c6 100644
+index adff905..d757b6c 100644
 --- a/net/slirp.c
 +++ b/net/slirp.c
 @@ -414,7 +414,7 @@ static int net_slirp_init(NetClientState *peer, const char *model,
@@ -61,7 +61,7 @@ index adff905c58..d757b6c3c6 100644
      while (slirp_configs) {
          config = slirp_configs;
 diff --git a/qapi/net.json b/qapi/net.json
-index 14650a1986..cf2f6b1408 100644
+index 14650a1..cf2f6b1 100644
 --- a/qapi/net.json
 +++ b/qapi/net.json
 @@ -169,6 +169,8 @@
@@ -83,3 +83,6 @@ index 14650a1986..cf2f6b1408 100644
  
  ##
  # @NetdevTapOptions:
+-- 
+2.37.2
+

@@ -148,6 +148,10 @@ sgpio_export FM_BOARD_BMC_SKU_ID0 220
 sgpio_export FAB_BMC_REV_ID2 222
 sgpio_export FAB_BMC_REV_ID1 224
 sgpio_export FAB_BMC_REV_ID0 226
+sgpio_export CPLD_SGPIO_READY_ID0 248
+sgpio_export CPLD_SGPIO_READY_ID1 250
+sgpio_export CPLD_SGPIO_READY_ID2 252
+sgpio_export CPLD_SGPIO_READY_ID3 254
 
 kv set mb_rev "$(($(gpio_get FAB_BMC_REV_ID2)<<2 |
                   $(gpio_get FAB_BMC_REV_ID1)<<1 |

@@ -73,6 +73,25 @@ enum {
   PS_ON_3S,
 };
 
+static bool
+sgpio_valid_check(){
+  int bit1 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID0");
+  int bit2 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID1");
+  int bit3 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID2");
+  int bit4 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID3");
+  syslog(LOG_INFO, "@@@ value = %d%d%d%d\n", bit1, bit2, bit3, bit4);
+  if (
+    bit1 ==  0 && 
+    bit2 ==  1 && 
+    bit3 ==  0 && 
+    bit4 ==  1
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 static void
 log_gpio_change(gpiopoll_pin_t *desc, gpio_value_t value, useconds_t log_delay) {
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
@@ -109,42 +128,49 @@ void cpu_skt_init(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 static
 void cpu0_pvccin_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d CPU0 PVCCIN VR HOT Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void cpu1_pvccin_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d CPU1 PVCCIN VR HOT Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void cpu0_pvccd_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d CPU0 PVCCD VR HOT Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void cpu1_pvccd_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d CPU1 PVCCD VR HOT Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void sml1_pmbus_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d HSC OC Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void oc_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d HSC Surge Current Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
 
 static
 void uv_detect_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   syslog(LOG_CRIT, "FRU: %d HSC Under Voltage Warning %s\n", FRU_MB,
          curr ? "Deassertion": "Assertion");
 }
@@ -178,6 +204,7 @@ static void pch_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 {
   uint8_t status = 0;
   gpio_value_t value;
+  if (!sgpio_valid_check()) return;
 
   value = gpio_get_value_by_shadow(RST_PLTRST_N);
   if(value < 0 || value == GPIO_VALUE_LOW) {
@@ -208,6 +235,7 @@ static void cpu_prochot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_va
 {
   char cmd[128] = {0};
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
+  if (!sgpio_valid_check()) return;
   assert(cfg);
   SERVER_POWER_CHECK(3);
   //LCD debug card critical SEL support
@@ -245,6 +273,7 @@ static void thermtrip_add_cri_sel(const char *shadow_name, gpio_value_t curr)
 
 static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  if (!sgpio_valid_check()) return;
   const struct gpiopoll_config *cfg = gpio_poll_get_config(desc);
 
   if (g_server_power_status != GPIO_VALUE_HIGH)
@@ -256,6 +285,7 @@ static void cpu_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 
 static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  if (!sgpio_valid_check()) return;
   if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
   log_gpio_change(desc, curr, 0);
@@ -263,6 +293,7 @@ static void cpu_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_valu
 
 static void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  if (!sgpio_valid_check()) return;
   if (g_server_power_status != GPIO_VALUE_HIGH)
     return;
   log_gpio_change(desc, curr, 0);
@@ -272,6 +303,7 @@ static void mem_thermtrip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_
 // Generic Event Handler for GPIO changes
 static void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  if (!sgpio_valid_check()) return;
   log_gpio_change(desc, curr, 0);
 }
 
@@ -279,6 +311,7 @@ static void gpio_event_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_val
 
 static void gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  if (!sgpio_valid_check()) return;
   SERVER_POWER_CHECK(0);
   log_gpio_change(desc, curr, 0);
 }
@@ -286,6 +319,7 @@ static void gpio_event_pson_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpi
 // Generic Event Handler for GPIO changes, but only logs event when MB is ON 3S
 static void gpio_event_pson_3s_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
+  if (!sgpio_valid_check()) return;
   SERVER_POWER_CHECK(3);
   log_gpio_change(desc, curr, 0);
 }
@@ -312,6 +346,7 @@ pwr_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 //CPU Power Ok Event Handler
 static void
 cpu_pwr_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  if (!sgpio_valid_check()) return;
   g_server_power_status = curr;
   g_cpu_pwrgd_trig = true;
   log_gpio_change(desc, curr, 0);
@@ -409,14 +444,16 @@ ierr_mcerr_event_handler() {
 //Uart Select on DEBUG Card Event Handler
 static void
 uart_select_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-   g_uart_switch_count = 2;
-   log_gpio_change(desc, curr, 0);
+  if (!sgpio_valid_check()) return;
+  g_uart_switch_count = 2;
+  log_gpio_change(desc, curr, 0);
 }
 
 // Event Handler for GPIOF6 platform reset changes
 static void platform_reset_handle(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   struct timespec ts;
   char value[MAX_VALUE_LEN];
+  if (!sgpio_valid_check()) return;
 
   // Use GPIOF6 to filter some gpio logging
   reset_timer(&g_reset_sec);

@@ -224,7 +224,7 @@ sgpio_export GPU_NVS_PWR_BRAKE_R_N 43
 gpio_set GPU_NVS_PWR_BRAKE_R_N 1
 
 sgpio_export GPU_WP_HW_CTRL_R_N 45
-gpio_set GPU_WP_HW_CTRL_R_N 1
+gpio_set GPU_WP_HW_CTRL_R_N 0
 
 sgpio_export CLK_GEN2_BMC_RC_OE_N 47
 gpio_set CLK_GEN2_BMC_RC_OE_N 0

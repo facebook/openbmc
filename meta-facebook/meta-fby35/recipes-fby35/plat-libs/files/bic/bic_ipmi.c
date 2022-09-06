@@ -56,8 +56,6 @@ typedef struct _sdr_rec_hdr_t {
 
 #define BIC_SENSOR_SYSTEM_STATUS  0x10
 
-#define BB_FW_UPDATE_STAT_FILE "/tmp/cache_store/bb_fw_update"
-
 #define MAX_SLOT_NUM    4
 #define MAX_SENSOR_NUM  0xFF
 
@@ -2004,11 +2002,7 @@ bic_check_bb_fw_update_ongoing() {
   char update_stat[MAX_VALUE_LEN] = {0};
 
   // if key exist, BB fw is updating by another slot
-  if (access(BB_FW_UPDATE_STAT_FILE, F_OK) == 0) {
-    if (kv_get("bb_fw_update", update_stat, NULL, 0) != 0) {
-      printf("Fail to get BB firmware update status\n");
-      strncpy(update_stat, "unknown", sizeof(update_stat));
-    }
+  if (kv_get("bb_fw_update", update_stat, NULL, 0) == 0) {
     printf("BB firmware: %s update is ongoing\n", update_stat);
     return -1;
   }
@@ -2022,11 +2016,7 @@ bic_check_bb_fw_update_ongoing() {
   }
   sleep(mb_index);
 
-  if (access(BB_FW_UPDATE_STAT_FILE, F_OK) == 0) {
-    if (kv_get("bb_fw_update", update_stat, NULL, 0) != 0) {
-      printf("Fail to get BB firmware update status\n");
-      strncpy(update_stat, "unknown", sizeof(update_stat));
-    }
+  if (kv_get("bb_fw_update", update_stat, NULL, 0) == 0) {
     printf("BB firmware: %s update is ongoing\n", update_stat);
     return -1;
   }

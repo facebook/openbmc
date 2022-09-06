@@ -54,8 +54,6 @@
 
 #define MRC_CODE_MATCH 4
 
-#define FAN_FAIL_RECORD_PATH "/tmp/cache_store/fan_fail_boost"
-
 #define NUM_CABLES 4
 #define NUM_MANAGEMENT_PINS 2
 
@@ -88,9 +86,6 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define SEL_ERROR_STR  "slot%d_sel_error"
 #define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
-#define VR_NEW_CRC_STR "slot%d_vr_%s_new_crc"
-#define VR_CRC_STR "slot%d_vr_%s_crc"
-#define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
@@ -103,7 +98,6 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define ENABLE_STR "enable"
 #define DISABLE_STR "disable"
 #define STATUS_STR "status"
-#define FAN_MODE_FILE "/tmp/cache_store/fan_mode"
 #define FAN_MODE_STR_LEN 8 // include the string terminal
 
 #define IPMI_GET_VER_FRU_NUM  5
@@ -2840,31 +2834,18 @@ pal_get_uart_select_from_kv(uint8_t *uart_select) {
 }
 
 int
-pal_clear_vr_new_crc(uint8_t fru) {
+pal_clear_vr_crc(uint8_t fru) {
   char ver_key[MAX_KEY_LEN] = {0};
   for (int j = 0; j < 3; j++) {
     snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
     kv_del(ver_key, KV_FPERSIST);
-  }
-  return 0;
-}
 
-int
-pal_clear_vr_crc(uint8_t fru) {
-  char ver_key[MAX_KEY_LEN] = {0};
-  int vr_list_cnt = sizeof(pal_vr_addr_list)/sizeof(char*);
-  int vr_1ou_list_cnt =  sizeof(pal_vr_1ou_addr_list)/sizeof(char*);
-
-  for (int j = 0; j < vr_list_cnt; j++) {
     snprintf(ver_key, sizeof(ver_key), VR_CRC_STR, fru, pal_vr_addr_list[j]);
     kv_del(ver_key, 0);
-  }
 
-  for (int j = 0; j < vr_1ou_list_cnt; j++) {
     snprintf(ver_key, sizeof(ver_key), VR_1OU_CRC_STR, fru, pal_vr_1ou_addr_list[j]);
     kv_del(ver_key, 0);
   }
-
   return 0;
 }
 
@@ -4252,6 +4233,9 @@ pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id) {
 bool
 pal_is_aggregate_snr_valid(uint8_t snr_num) {
   char sys_conf[MAX_VALUE_LEN] = {0};
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  snprintf(key, sizeof(key), "fan_fail_boost");
 
   switch(snr_num) {
     // In type 8 system, if one fan fail, show NA in airflow reading.
@@ -4264,7 +4248,7 @@ pal_is_aggregate_snr_valid(uint8_t snr_num) {
       if (strcmp(sys_conf, "Type_8") != 0) {
         return true;
       }
-      if (access(FAN_FAIL_RECORD_PATH, F_OK) == 0) {
+      if (kv_get(key, value, NULL, 0) == 0) {
         return false;
       }
       break;

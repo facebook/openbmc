@@ -58,6 +58,10 @@ extern "C" {
 
 #define MAX_SERVER_BOARD_NUM 4
 
+#define VR_NEW_CRC_STR "slot%d_vr_%s_new_crc"
+#define VR_CRC_STR "slot%d_vr_%s_crc"
+#define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -195,7 +199,7 @@ int pal_clear_cmos(uint8_t slot_id);
 int pal_is_cable_connect_baseborad(uint8_t slot_id, uint16_t curr);
 bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 int pal_clear_mrc_warning(uint8_t slot);
-int pal_clear_vr_new_crc(uint8_t fru);
+int pal_clear_vr_crc(uint8_t fru);
 int pal_move_vr_new_crc(uint8_t fru, uint8_t action);
 int pal_clear_vr_crc(uint8_t fru);
 

@@ -19,9 +19,8 @@
 #
 
 . /usr/local/fbpackages/utils/ast-functions
-SLED_TYPE="/mnt/data/kv_store/sled_system_conf"
 I2CSET="/usr/sbin/i2cset -y "
-IANA_ARR=($(echo "$IANA_ID" | tr ' '))
+IFS=" " read -r -a IANA_ARR <<< "$(echo "$IANA_ID" | tr ' ')"
 
 SB_CPLD_ADDR="0x0f"
 BB_CPLD_ADDR="0x0e"
@@ -137,7 +136,7 @@ fi
 
 SLOT_NUM=$(get_slot_num "$SLOT")
 I2C_NUM=$(get_bus_num "$SLOT")
-SLED_TYPE=$(cat "$SLED_TYPE")
+SLED_TYPE="$(/usr/bin/kv get "sled_system_conf" persistent)"
 
 TARGET_CPLD_ADDR=
 SB_UART_MUX_SWITCH_REG="0x01"

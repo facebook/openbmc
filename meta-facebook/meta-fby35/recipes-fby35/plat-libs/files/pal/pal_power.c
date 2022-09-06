@@ -167,7 +167,6 @@ server_power_12v_off(uint8_t fru) {
   int ret = 0, retry= 0;
 
   pal_clear_vr_crc(fru);
-  pal_clear_vr_new_crc(fru);
 
   memset(cmd, 0, 64);
   snprintf(cmd, 64, FRU_ID_CPLD_NEW_VER_KEY, fru);

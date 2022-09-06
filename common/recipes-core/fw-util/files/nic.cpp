@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <syslog.h>
 #include <openbmc/kv.hpp>
 #include "nic.h"
 
@@ -108,13 +109,21 @@ int NicComponent::print_version() {
 int NicComponent::upgrade_ncsi_util(const std::string& img, int channel)
 {
   std::string cmd = "/usr/local/bin/ncsi-util";
+  syslog(LOG_CRIT, "Component %s upgrade initiated\n", _component.c_str() );
+
   // If channel is provided, pass it to ncsi-util, else let it use a default
   if (channel >= 0) {
     cmd += " -c " + std::to_string(channel);
   }
   // Double quote the image to support paths with space.
   cmd += " -p \"" + img + "\"";
-  return sys().runcmd(cmd);
+  int ret = sys().runcmd(cmd);
+  if(ret)
+    syslog(LOG_CRIT, "Component %s upgrade failed\n", _component.c_str() );
+  else
+    syslog(LOG_CRIT, "Component %s upgrade completed\n", _component.c_str() );
+
+  return ret;
 }
 
 int NicComponent::update(std::string image)

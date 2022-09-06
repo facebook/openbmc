@@ -75,9 +75,11 @@ class ClassConfig {
             static MP5990Component hsc_fw1("slot1", "hsc", FRU_SLOT1, 1, 0x16);
           }
         }
-        if (get_board_rev(FRU_SLOT2, BOARD_ID_SB, &board_rev) == 0) {
-          if (IS_BOARD_REV_MPS(board_rev)) {
-            static MP5990Component hsc_fw2("slot2", "hsc", FRU_SLOT2, 1, 0x16);
+        if ((slot1_config_status & PRESENT_2OU) != PRESENT_2OU) {
+          if (get_board_rev(FRU_SLOT2, BOARD_ID_SB, &board_rev) == 0) {
+            if (IS_BOARD_REV_MPS(board_rev)) {
+              static MP5990Component hsc_fw2("slot2", "hsc", FRU_SLOT2, 1, 0x16);
+            }
           }
         }
         if (get_board_rev(FRU_SLOT3, BOARD_ID_SB, &board_rev) == 0) {
@@ -85,9 +87,11 @@ class ClassConfig {
             static MP5990Component hsc_fw3("slot3", "hsc", FRU_SLOT3, 1, 0x16);
           }
         }
-        if (get_board_rev(FRU_SLOT4, BOARD_ID_SB, &board_rev) == 0) {
-          if (IS_BOARD_REV_MPS(board_rev)) {
-            static MP5990Component hsc_fw4("slot4", "hsc", FRU_SLOT4, 1, 0x16);
+        if ((slot1_config_status & PRESENT_2OU) != PRESENT_2OU) {
+          if (get_board_rev(FRU_SLOT4, BOARD_ID_SB, &board_rev) == 0) {
+            if (IS_BOARD_REV_MPS(board_rev)) {
+              static MP5990Component hsc_fw4("slot4", "hsc", FRU_SLOT4, 1, 0x16);
+            }
           }
         }
 

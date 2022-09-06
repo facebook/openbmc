@@ -684,3 +684,58 @@ pal_get_nm_selftest_result(uint8_t fruid, uint8_t *data)
 #endif
   return ret;
 }
+
+int pal_get_cpld_version(uint8_t addr, uint8_t bus, uint8_t* rbuf)
+{
+  int fd = 0, ret = -1;
+  uint8_t tlen, rlen;
+  uint8_t tbuf[16] = {0};
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, bus);
+    return ret;
+  }
+
+  tbuf[0] = 0xC0;
+  tbuf[1] = 0x00;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x00;
+
+  tlen = 4;
+  rlen = 4;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  i2c_cdev_slave_close(fd);
+
+  if (ret == -1) {
+    syslog(LOG_WARNING, "%s bus=%x slavaddr=%x \n", __func__, bus, addr >> 1);
+    return ret;
+  }
+
+  return 0;
+}
+
+int
+pal_get_fw_info(uint8_t fru, unsigned char target, unsigned char* res, unsigned char* res_len) {
+  int ret = -1;
+  uint8_t rbuf[16] = {0};
+
+  if( fru != FRU_MB )
+    return -1;
+
+  switch (target) {
+    case CMD_GET_MAIN_CPLD_VER:
+      ret = pal_get_cpld_version(MAIN_CPLD_SLV_ADDR, MAIN_CPLD_BUS_NUM, rbuf);
+    break;
+    default:
+      return -1;
+  }
+
+  if( ret == 0 ) {
+    memcpy(res, rbuf, 4);
+    *res_len = 4;
+  }
+
+  return ret;
+}

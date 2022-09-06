@@ -32,6 +32,10 @@ extern "C" {
 #include "pal_def.h"
 #include "pal_cfg.h"
 
+#define CMD_GET_MAIN_CPLD_VER   (0x01)
+#define MAIN_CPLD_SLV_ADDR      (0x80)
+#define MAIN_CPLD_BUS_NUM       (7)
+
 extern const char pal_fru_list[];
 
 int pal_set_id_led(uint8_t fru, uint8_t status);

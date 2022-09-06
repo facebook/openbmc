@@ -21,11 +21,11 @@ declare -a PLAT_DISTRO_OVERRIDES
 PLAT_DISTRO_OVERRIDES=(
 # master / rolling-release platforms
   meta-bletchley:lf-master
+  meta-evb-npcm845:lf-master
   meta-greatlakes:lf-master
   meta-halfdome:lf-master
 # kirkstone platforms (latest)
   meta-churchillmono:lf-kirkstone
-  meta-evb-npcm845:lf-kirkstone
   meta-fby2-nd:lf-kirkstone
   meta-fby35:lf-kirkstone
   meta-grandcanyon:lf-kirkstone

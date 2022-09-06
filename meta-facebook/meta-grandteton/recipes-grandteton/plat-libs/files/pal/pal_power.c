@@ -203,6 +203,24 @@ int pal_sled_cycle(void) {
   return system("i2cset -f -y 38 0x10 0xd9 c &> /dev/null");	
 }
 
+// Return the Front panel Power Button
+int
+pal_get_pwr_btn(uint8_t *status) {
+  int ret = -1;
+  gpio_value_t value;
+  gpio_desc_t *desc = gpio_open_by_shadow(FP_PWR_BTN_IN_N);
+  if (!desc) {
+    return -1;
+  }
+
+  ret = gpio_get_value(desc, &value);
+  if ( ret == 0 ) {
+    *status = (value == GPIO_VALUE_HIGH ? 0 : 1);
+  }
+  gpio_close(desc);
+  return ret;
+}
+
 // Return the front panel's Reset Button status
 int
 pal_get_rst_btn(uint8_t *status) {

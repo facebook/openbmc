@@ -34,6 +34,7 @@
 #define CRASHDUMP_ONGOING 2
 #define LED_ON_TIME_IDENTIFY 500
 #define LED_OFF_TIME_IDENTIFY 500
+#define BTN_HSVC          100
 
 
 // Update the Identification LED for the given fru with the status
@@ -212,11 +213,67 @@ rst_btn_handler() {
   return 0;
 }
 
+// Thread to handle Power Button and power on/off the selected server
+static void *
+pwr_btn_handler() {
+  int ret, i;
+  uint8_t btn;
+  bool release_flag = true;
+
+  while (1) {
+    // Check if power button is pressed
+    ret = pal_get_pwr_btn(&btn);
+    if (ret || !btn) {
+      if (false == release_flag)
+        release_flag = true;
+
+      goto pwr_btn_out;
+    }
+
+    if (false == release_flag)
+      goto pwr_btn_out;
+
+    release_flag = false;
+    syslog(LOG_WARNING, "Power button pressed\n");
+
+    // Wait for the button to be released
+    for (i = 0; i < BTN_HSVC; i++) {
+      ret = pal_get_pwr_btn(&btn);
+      if (ret || btn ) {
+        msleep(100);
+        continue;
+      }
+
+      release_flag = true;
+      syslog(LOG_CRIT, "Power Button pressed for FRU: %d\n", FRU_MB);
+      syslog(LOG_WARNING, "Power button released\n");
+      break;
+    }
+
+    if ((ret = is_btn_blocked(FRU_MB))) {
+      switch (ret) {
+        case FW_UPDATE_ONGOING:
+          syslog(LOG_CRIT, "Power Button blocked due to FW update is ongoing");
+          break;
+        case CRASHDUMP_ONGOING:
+          syslog(LOG_CRIT, "Power Button blocked due to crashdump is ongoing");
+          break;
+      }
+      goto pwr_btn_out;
+    }
+
+pwr_btn_out:
+    msleep(100);
+  }
+  return 0;
+}
+
 int
 main (int argc, char * const argv[]) {
   int pid_file, rc;
   pthread_t tid_sync_led;
   pthread_t tid_rst_btn;
+  pthread_t tid_pwr_btn;
 
   pid_file = open("/var/run/front-paneld.pid", O_CREAT | O_RDWR, 0666);
   rc = flock(pid_file, LOCK_EX | LOCK_NB);
@@ -239,8 +296,14 @@ main (int argc, char * const argv[]) {
     exit(1);
   }
 
+  if (pthread_create(&tid_pwr_btn, NULL, pwr_btn_handler, NULL) < 0) {
+    syslog(LOG_WARNING, "pthread_create for power button error\n");
+    exit(1);
+  }
+
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_rst_btn, NULL);
+  pthread_join(tid_pwr_btn, NULL);
 
   return 0;
 }

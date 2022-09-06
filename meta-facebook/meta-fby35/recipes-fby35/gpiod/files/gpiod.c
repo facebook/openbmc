@@ -787,10 +787,6 @@ host_pwr_mon() {
           pal_clear_mrc_warning(fru);
           syslog(LOG_CRIT, "FRU: %d, System powered ON", fru);
           set_pwrgd_cpu_flag(fru, false);
-          // update fru if GPv3 dev fru flag (dev_fru_complete) does not set to complete
-          // If dc on after ac/dc cycle, only get the fru which did not get last time
-          // In the future, it will also update GPv3 device NVMe is ready or not for some implementations
-          fru_cahe_init(fru);
         }
         host_off_flag &= ~(0x1 << i);
         if ( tick == HOST_READY ) {
@@ -900,8 +896,6 @@ run_gpiod(int argc, void **argv) {
     }
 
     SLOTS_MASK |= 0x1 << (fru - 1);
-    //init GPv3 device FRU after BMC start or hot service
-    fru_cahe_init(fru);
 
     if ((fru >= FRU_SLOT1) && (fru < (FRU_SLOT1 + MAX_NUM_SLOTS))) {
       fru_flag = SETBIT(fru_flag, fru);

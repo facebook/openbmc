@@ -42,6 +42,7 @@
 #include <openbmc/vbs.h>
 #include <openbmc/misc-utils.h>
 #include <signal.h>
+#include "healthd.h"
 
 #define I2C_BUS_NUM            14
 #define AST_I2C_BASE           0x1E78A000  /* I2C */
@@ -239,6 +240,9 @@ static int bic_monitor_interval = BIC_HEALTH_INTERVAL;
 /* healthd log rearm monitor */
 static bool log_rearm_enabled = false;
 
+/*do fw update pre and post action */
+static bool do_fw_update_pre_post_action_enabled = false;
+
 /* UBIFS Health Monitor */
 struct ubifs_health_monitor_config
 {
@@ -249,6 +253,32 @@ static struct ubifs_health_monitor_config uhm_config = {
   .enabled          = false,
   .monitor_interval = DEFAULT_UBIFS_HEALTH_INTERVAL,
 };
+
+int __attribute__((weak))
+pre_fw_update_action() {
+  return PAL_EOK;
+}
+
+int __attribute__((weak))
+post_fw_update_action() {
+  return PAL_EOK;
+}
+
+static void
+initialize_do_fw_update_pre_post_action(json_t *obj) {
+  json_t *tmp = NULL;
+
+  if (obj == NULL) {
+    return;
+  }
+
+  tmp = json_object_get(obj, "enabled");
+  if (!tmp || !json_is_boolean(tmp)) {
+    return;
+  }
+
+  do_fw_update_pre_post_action_enabled = json_is_true(tmp);
+}
 
 static void
 initialize_threshold(const char *target, json_t *thres, struct threshold_s *t) {
@@ -665,6 +695,7 @@ initialize_configuration(void) {
   initialize_bmc_timestamp_config(json_object_get(conf, "bmc_timestamp"));
   initialize_bic_health_config(json_object_get(conf, "bic_health"));
   initialize_ubifs_health_config(json_object_get(conf, "ubifs_health"));
+  initialize_do_fw_update_pre_post_action(json_object_get(conf, "fw_update_pre_post_action"));
 
   json_decref(conf);
 
@@ -1360,6 +1391,9 @@ crit_proc_ongoing_handle(bool is_crit_proc_updating)
   last_is_crit_proc_updating = is_crit_proc_updating;
 
   if ( true == is_crit_proc_updating ) { // forbid the execution permission
+    if (do_fw_update_pre_post_action_enabled) {
+      pre_fw_update_action();
+    }
     if (system("chmod 666 /sbin/shutdown.sysvinit") != 0) {
       syslog(LOG_ERR, "Disabling shutdown failed\n");
     }
@@ -1371,6 +1405,9 @@ crit_proc_ongoing_handle(bool is_crit_proc_updating)
     }
   }
   else {
+    if (do_fw_update_pre_post_action_enabled) {
+      post_fw_update_action();
+    }
     if (system("chmod 4755 /sbin/shutdown.sysvinit") != 0) {
       syslog(LOG_ERR, "Enabling shutdown failed\n");
     }

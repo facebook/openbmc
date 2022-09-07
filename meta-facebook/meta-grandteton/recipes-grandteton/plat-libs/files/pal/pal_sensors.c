@@ -266,10 +266,9 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         break;
     }
 
-    sprintf(name, "%s_%s_%s%s", PLATFORM_NAME,
-                                fru_name,
-                                sensor_map[fru].map[sensor_num].snr_name,
-                                units_name);
+    sprintf(name, "%s_%s%s", fru_name,
+                             sensor_map[fru].map[sensor_num].snr_name,
+                             units_name);
   } else {
     return -1;
   }

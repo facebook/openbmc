@@ -19,4 +19,12 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += " \
     file://setup-sgpio.sh \
     file://setup-cover-dev.sh \
+    file://setup-pwon-snr.sh \
     "
+
+do_install:append() {
+# setup-pwon-snr.sh
+  install -m 755 setup-pwon-snr.sh  ${D}${sysconfdir}/init.d/setup-pwon-snr.sh
+  update-rc.d -r ${D} setup-pwon-snr.sh start 68 5 .
+}
+

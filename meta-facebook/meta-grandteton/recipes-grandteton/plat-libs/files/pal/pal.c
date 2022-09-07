@@ -41,7 +41,9 @@
 #include <openbmc/hal_fruid.h>
 #include "pal.h"
 
-#define GT_PLATFORM_NAME "grandteton"
+#if !defined(PLATFORM_NAME)
+  #define PLATFORM_NAME "grandteton"
+#endif
 
 #define GUID_SIZE 16
 #define OFFSET_SYS_GUID 0x17F0
@@ -112,7 +114,7 @@ struct fru_dev_info fru_dev_data[] = {
 
 int
 pal_get_platform_name(char *name) {
-  strcpy(name, GT_PLATFORM_NAME);
+  strcpy(name, PLATFORM_NAME);
 
   return 0;
 }

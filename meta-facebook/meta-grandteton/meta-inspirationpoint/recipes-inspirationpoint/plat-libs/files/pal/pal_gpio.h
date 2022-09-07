@@ -29,6 +29,7 @@
 #define FM_CPU1_VCCD_VR_HOT      "IRQ_PVCCD_CPU0_VRHOT_LVC3_N"
 #define FM_CPU0_SKTOCC           "FM_PRSNT_CPU0_R_N"
 #define FM_CPU1_SKTOCC           "FM_PRSNT_CPU1_R_N"
+#define FM_BIOS_POST_CMPLT       "FM_BIOS_POST_CMPLT_BUF_R_N"
 
 //Power Control
 #define FM_LAST_PWRGD            "FM_PWRGD_CPU1_PWROK"

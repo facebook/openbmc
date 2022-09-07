@@ -63,16 +63,6 @@ i2c_device_add 29 0x74 pca9539
 #MB FRU
 i2c_device_add 33 0x51 24c64
 
-#MB HSC
-if [ "$(gpio_get FM_BOARD_BMC_SKU_ID2)" -eq "$MB_MAIN_SOURCE" ]; then
-  i2c_device_add 2 0x20 mp5990
-else
-  i2c_device_add 21 0x4C lm75
-  i2c_device_add 2 0x41 ltc4282
-  i2c_device_add 2 0x51 24c64
-
-fi
-
 # Swith Board
 echo "Probe SWB Device"
 # BIC I/O Expander PCA9539 0xEC BIC

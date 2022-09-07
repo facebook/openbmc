@@ -65,9 +65,3 @@ mb_server_power_on() {
 }
 
 mb_server_power_on
-
-gpio_set GPU_FPGA_RST_N 0
-sleep 1
-gpio_set GPU_FPGA_RST_N 1
-sleep 1
-echo 1 > /sys/bus/pci/rescan

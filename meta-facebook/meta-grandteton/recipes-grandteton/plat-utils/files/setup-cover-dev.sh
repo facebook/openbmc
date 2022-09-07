@@ -62,3 +62,15 @@ else
   i2c_device_add 20 0x74 isl69260
   i2c_device_add 20 0x76 isl69260
 fi
+
+HSC_MAIN_SOURCE="0"
+
+#MB HSC
+if [ "$(gpio_get FM_BOARD_BMC_SKU_ID2)" -eq "$HSC_MAIN_SOURCE" ]; then
+  i2c_device_add 2 0x20 mp5990
+else
+  i2c_device_add 21 0x4C lm75
+  i2c_device_add 2 0x41 ltc4282
+  i2c_device_add 2 0x51 24c64
+fi
+

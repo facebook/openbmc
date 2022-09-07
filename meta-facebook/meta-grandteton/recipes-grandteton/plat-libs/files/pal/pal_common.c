@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <openbmc/obmc-pal.h>
 #include <openbmc/libgpio.h>
+#include <openbmc/kv.h>
 #include <syslog.h>
 #include "pal_common.h"
 #include "pal_def.h"
@@ -16,8 +17,8 @@ is_cpu_socket_occupy(uint8_t cpu_idx) {
 
   if (!cached) {
     const char *shadows[] = {
-      "FM_CPU0_SKTOCC_LVT3_PLD_N",
-      "FM_CPU1_SKTOCC_LVT3_PLD_N"
+      FM_CPU0_SKTOCC,
+      FM_CPU1_SKTOCC,
     };
     if (gpio_get_value_by_shadow_list(shadows, ARRAY_SIZE(shadows), &cached_id)) {
       return false;
@@ -66,7 +67,8 @@ read_device(const char *device, int *value) {
   return 0;
 }
 
-bool get_bic_ready(void) {
+bool
+get_bic_ready(void) {
   gpio_value_t value;
 
   value = gpio_get_value_by_shadow(BIC_READY);
@@ -75,3 +77,49 @@ bool get_bic_ready(void) {
 
   return false;
 }
+
+
+bool
+check_pwron_time(int time) {
+  char str[MAX_VALUE_LEN] = {0};
+  struct timespec ts;
+  long pwron_time;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  if (!kv_get("snr_pwron_flag", str, NULL, 0)) {
+    pwron_time = strtoul(str, NULL, 10);
+   // syslog(LOG_WARNING, "power on time =%ld\n", pwron_time);
+    if ( (ts.tv_sec - pwron_time > time ) && ( pwron_time != 0 ) ) {
+      return true;
+    }
+  } else {
+     sprintf(str, "%ld", ts.tv_sec);
+     kv_set("snr_pwron_flag", str, 0, 0);
+  }
+
+  return false;
+}
+
+bool
+pal_bios_completed(uint8_t fru)
+{
+  gpio_value_t value;
+
+  if ( FRU_MB != fru )
+  {
+    syslog(LOG_WARNING, "[%s]incorrect fru id: %d", __func__, fru);
+    return false;
+  }
+
+//BIOS COMPLT need time to inital when platform reset.
+  if( !check_pwron_time(10) ) {
+    return false;
+  }
+
+  value = gpio_get_value_by_shadow(FM_BIOS_POST_CMPLT);
+  if(value != GPIO_VALUE_INVALID)
+    return value ? false : true;
+
+  return false;
+}
+

@@ -144,7 +144,18 @@ sgpio_export P12V_OCP_V3_1_PWRGD 250
 sgpio_export OCP_V3_1_P3V3_PWRGD 252
 sgpio_export HP_LVC3_OCP_V3_2_P12V_PWRGD_R 254
 
-#output
+kv set mb_rev "$(($(gpio_get FAB_BMC_REV_ID2)<<2 |
+                  $(gpio_get FAB_BMC_REV_ID1)<<1 |
+                  $(gpio_get FAB_BMC_REV_ID0)))"
+
+kv set mb_sku "$(($(gpio_get FM_BOARD_BMC_SKU_ID4)<<4 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID3)<<3 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID2)<<2 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID1)<<1 |
+                  $(gpio_get FM_BOARD_BMC_SKU_ID0)))"
+
+
+# == SGPIO OUT ==
 sgpio_export RST_SMB_SWITCH_N 5
 gpio_set RST_SMB_SWITCH_N 1
 
@@ -228,3 +239,9 @@ gpio_set IRQ_SMI_ACTIVE_N_R 1
 
 sgpio_export IRQ_TPM_SPI_R1_N 115
 gpio_set IRQ_TPM_SPI_R1_N 1
+
+#initial FPGA pcie device
+sleep 0.1
+gpio_set GPU_FPGA_RST_N 1
+sleep 0.1
+echo 1 > /sys/bus/pci/rescan

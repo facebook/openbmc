@@ -7,9 +7,6 @@
 #include "pal_hmc_sensors.h"
 #include "pal_bb_sensors.h"
 
-//Platform Name
-#define PLATFORM_NAME "GT"
-
 //CPU INFO
 #define PECI_CPU0_ADDR            (0x30)
 #define PECI_CPU1_ADDR            (0x31)

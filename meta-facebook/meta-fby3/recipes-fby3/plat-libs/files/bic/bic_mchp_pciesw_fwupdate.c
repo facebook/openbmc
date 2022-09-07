@@ -359,6 +359,8 @@ _is_dir(char *image) {
 static int
 _check_dirs(char *image, uint8_t *type, uint8_t *file_s_info) {
   int ret = BIC_STATUS_FAILURE;
+  uint8_t image_count = 0;
+
   // open and check it
   DIR *dir = opendir(image);
   if ( dir == NULL ) {
@@ -389,6 +391,12 @@ _check_dirs(char *image, uint8_t *type, uint8_t *file_s_info) {
     if ( _check_image(abs_path, type, file_s_info) == BIC_STATUS_SUCCESS ) {
       printf("Find: %s\n", entry->d_name);
     }
+    image_count ++;
+  }
+
+  if (image_count == 0) {
+    printf("It is an empty folder!\n");
+    goto error_exit;
   }
 
   // return the result

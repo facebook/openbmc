@@ -746,7 +746,12 @@ pal_get_exp_device_power(uint8_t exp, uint8_t dev_id, uint8_t *status, uint8_t *
     return -1;
   }
 
-  *status = m2_dev_info.status;
+  if (dev_id >= DUAL_DEV_ID0_2OU && dev_id <= DUAL_DEV_ID5_2OU) {
+    status[0] = m2_dev_info.status >> 8;
+    status[1] = m2_dev_info.status;
+  } else {
+    *status = m2_dev_info.status;
+  }
 
   if (m2_dev_info.nvme_ready) {
     *type = DEV_TYPE_M2;

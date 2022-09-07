@@ -18,6 +18,7 @@
 import os.path
 import re
 import sys
+import kv
 
 import fsc_board
 from fsc_common_var import fan_mode
@@ -28,7 +29,7 @@ from fsc_util import Logger, clamp
 verbose = "-v" in sys.argv
 RECORD_DIR = "/tmp/cache_store/"
 SENSOR_FAIL_RECORD_DIR = "/tmp/sensorfail_record/"
-
+KEY_FAN_MODE_EVENT = "fan_mode_event"
 
 class SensorAssertCheck(object):
     def __init__(self, name):
@@ -486,6 +487,21 @@ class Zone:
         else:
             if os.path.isfile(boost_record_path):
                 os.remove(boost_record_path)
+
+        # Check whether fan mode is set by system event
+        try:
+            fan_mode_event = int(kv.kv_get(KEY_FAN_MODE_EVENT, 0))
+            if fan_mode_event == fan_mode["boost_mode"]:
+                outmin = max(outmin, self.boost)
+                if outmin == self.boost:
+                    mode = fan_mode["boost_mode"]
+            elif fan_mode_event == fan_mode["trans_mode"]:
+                outmin = max(outmin, self.transitional)
+                if outmin == self.transitional:
+                    mode = fan_mode["trans_mode"]
+            # Just keep original mode for other cases
+        except (IndexError, ValueError, kv.KeyNotFoundFailure) as e:
+            pass
 
         if not exprout:
             exprout = 0

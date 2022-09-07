@@ -29,8 +29,14 @@
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+#shellcheck disable=SC1091
+source /usr/local/bin/openbmc-utils.sh
+
 # get the MAC from EEPROM
 mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
+if [ -z "$mac" ] && [ "$(LC_ALL=C type -t bmc_mac_addr)" = function ]; then
+    mac=$(bmc_mac_addr)
+fi
 
 # get the MAC from u-boot environment
 ethaddr=$(fw_printenv | grep "^ethaddr=" | cut -d'=' -f2)

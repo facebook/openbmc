@@ -16,6 +16,8 @@
     - Port platform specific u-boot changes.
 - [X] P0 **Kernel Porting**
     - Port platform specific Kernel changes.
+- [ ] P1 **Flash Layout**
+    - Implement the required flash layout.
 - [X] P0 **I2C device tree**
     - Create device tree entries for i2c devices (and enable associated
       drivers).

@@ -32,6 +32,8 @@
     - Port platform specific u-boot changes
 - [ ] P0 **Kernel Porting**
     - Port platform specific Kernel changes
+- [ ] P1 **Flash Layout**
+    - Implement the required flash layout.
 - [ ] P0 **I2C device tree**
     - Create device tree entries for i2c devices (and enable associated
       drivers)
@@ -80,7 +82,7 @@
       after reboot or power-cycle), a method is needed to query current
       running firmware and firmware to be activated
 - [ ] P2 **FW WDT Auto-recovery**
-    - If a WDT triggers while loading a new firmware image, the BMC shall 
+    - If a WDT triggers while loading a new firmware image, the BMC shall
       recover to a known good version of firmware for the affected device
       (e.g. BIC, BIOS, CPLD or BMC)
 - [ ] P0 **ASD Jumper Detection**

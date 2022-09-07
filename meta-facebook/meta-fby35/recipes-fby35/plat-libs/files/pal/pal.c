@@ -120,6 +120,8 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define ERROR_LOG_LEN 256
 #define ERR_DESC_LEN 64
 
+#define KEY_FAN_MODE_EVENT "fan_mode_event"
+
 static int key_func_pwr_last_state(int event, void *arg);
 static int key_func_por_cfg(int event, void *arg);
 
@@ -147,6 +149,13 @@ enum get_fw_ver_board_type {
 enum cable_connection_status {
   CABLE_DISCONNECT = 0,
   CABLE_CONNECT = 1,
+};
+
+enum fscd_fan_mode {
+  FAN_MODE_NORMAL = 0,
+  FAN_MODE_TRANSITION,
+  FAN_MODE_BOOST,
+  FAN_MODE_PROGRESSIVE,
 };
 
 struct pal_key_cfg {
@@ -3118,13 +3127,17 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t rlen = 0, tlen = 0;
+  uint8_t fan_mode = 0;
+  char value[MAX_VALUE_LEN] = {0};
 
   switch (snr_num) {
     case CATERR_B:
       is_cri_sel = true;
       pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
       if (event_data[3] == 0x00) { // IERR
-        fby35_common_fscd_ctrl((event_data[2] == SEL_ASSERT) ? FAN_MANUAL_MODE : FAN_AUTO_MODE);
+        fan_mode = (event_data[2] == SEL_ASSERT) ? FAN_MODE_BOOST : FAN_MODE_NORMAL;
+        snprintf(value, sizeof(value), "%d", fan_mode);
+        kv_set(KEY_FAN_MODE_EVENT, value, 0, 0);
         if (event_data[2] == SEL_ASSERT) {
           for (i = 0; i < pal_pwm_cnt; i++) {
             pal_set_fan_speed(i, 100);

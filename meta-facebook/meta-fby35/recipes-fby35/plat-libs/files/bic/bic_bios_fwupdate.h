@@ -58,7 +58,7 @@ int print_configuration(struct libusb_device_handle *hDevice,struct libusb_confi
 int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt);
-int bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id);
+int bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id);
 int bic_close_usb_dev(usb_dev* udev);
 int update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force);
 int update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd);

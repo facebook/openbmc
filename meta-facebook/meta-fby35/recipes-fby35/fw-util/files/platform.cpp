@@ -7,6 +7,7 @@
 #include "bic_me.h"
 #include "bic_bios.h"
 #include "bic_vr.h"
+#include "bic_cxl.h"
 #include "bic_pcie_sw.h"
 #include "bic_m2_dev.h"
 #include <facebook/bic.h>
@@ -119,6 +120,7 @@ class ClassConfig {
                 static VrComponent     vr_1ou_va0v8_fw1("slot1", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
                 static VrComponent     vr_1ou_vddqab_fw1("slot1", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
                 static VrComponent     vr_1ou_vddqcd_fw1("slot1", "1ou_vr_vddqcd", FW_1OU_VR_VDDQCD);
+                static CxlComponent    cxl_1ou_fw1("slot1", "cxl", "1ou", FW_1OU_CXL);
             }
         }
 
@@ -163,6 +165,7 @@ class ClassConfig {
                 static VrComponent     vr_1ou_va0v8_fw3("slot3", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
                 static VrComponent     vr_1ou_vddqab_fw3("slot3", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
                 static VrComponent     vr_1ou_vddqcd_fw3("slot3", "1ou_vr_vddqcd", FW_1OU_VR_VDDQCD);
+                static CxlComponent    cxl_1ou_fw3("slot3", "cxl", "1ou", FW_1OU_CXL);
             }
         }
 

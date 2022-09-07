@@ -735,7 +735,7 @@ _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb, bool is_r
   if ( is_usb == true ) {
     udev->ci = 1;
     udev->epaddr = 0x1;
-    if ( (ret = bic_init_usb_dev(slot_id, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID)) < 0 )
+    if ( (ret = bic_init_usb_dev(slot_id, FW_2OU_PESW, udev, EXP2_TI_PRODUCT_ID, EXP2_TI_VENDOR_ID)) < 0 )
       goto error_exit;
   }
 

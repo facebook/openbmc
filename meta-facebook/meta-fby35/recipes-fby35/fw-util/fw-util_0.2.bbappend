@@ -37,6 +37,8 @@ LOCAL_URI += " \
         file://bic_m2_dev.h \
         file://mp5990.h \
         file://mp5990.cpp \
+        file://bic_cxl.cpp \
+        file://bic_cxl.h \
         "
 
 CXXFLAGS += "-DBIC_SUPPORT"

@@ -713,6 +713,9 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
         ret = update_bic_usb_bios(slot_id, comp, fd);
       }
       break;
+    case FW_1OU_CXL:
+      ret = update_bic_usb_bios(slot_id, comp, fd);
+      break;
     case FW_2OU_PESW:
       if (board_type == GPV3_BRCM_BOARD) {
         ret = BIC_STATUS_FAILURE; /*not supported*/

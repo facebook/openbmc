@@ -42,6 +42,10 @@
 #define SIMPLE_DIGEST_LENGTH 4
 #define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
 
+#define CL_BIC_USB_PORT 4
+#define HD_BIC_USB_PORT 3
+#define RBF_BIC_USB_PORT 1
+
 int interface_ref = 0;
 int alt_interface,interface_number;
 
@@ -169,7 +173,7 @@ receive_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt)
 }
 
 int
-bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
+bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id)
 {
   int ret;
   int index = 0;
@@ -232,6 +236,21 @@ bic_init_usb_dev(uint8_t slot_id, usb_dev* udev, const uint16_t product_id, cons
         if ( bmc_location == BB_BMC ) {
           if ( udev->path[1] != slot_id) {
             continue;
+          }
+          switch (comp) {
+            case FW_BIOS:
+              if ( udev->path[2] != CL_BIC_USB_PORT && udev->path[2] != HD_BIC_USB_PORT) {
+                continue;
+              }
+              break;
+            case FW_1OU_CXL:
+              if ( udev->path[2] != RBF_BIC_USB_PORT) {
+                continue;
+              }
+              break;
+            default:
+              fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
+              goto error_exit;
           }
         }
         printf("%04x:%04x (bus %d, device %d)",udev->desc.idVendor, udev->desc.idProduct, libusb_get_bus_number(udev->dev), libusb_get_device_address(udev->dev));
@@ -377,14 +396,25 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   int ret = -1, rc = 0;
   uint8_t *buf = NULL;
   size_t write_offset = 0;
+  int write_target = 0;
 
   const char *what = NULL;
-  if (comp == FW_BIOS) {
-    what = "BIOS";
-    write_offset = 0;
-  } else {
-    fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
-    goto out;
+  switch (comp) {
+    case FW_BIOS:
+      what = "BIOS";
+      write_offset = 0;
+      write_target = UPDATE_BIOS;
+      break;
+
+    case FW_1OU_CXL:
+      what = "CXL";
+      write_offset = 0;
+      write_target = UPDATE_CXL;
+      break;
+
+    default:
+      fprintf(stderr, "ERROR: not supported component [comp:%u]!\n", comp);
+      goto out;
   }
   const char *dedup_env = getenv("FW_UTIL_DEDUP");
   const char *verify_env = getenv("FW_UTIL_VERIFY");
@@ -481,7 +511,7 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       pkt->cmd = CMD_OEM_1S_UPDATE_FW;
       // Fill the IANA ID
       memcpy(pkt->iana, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
-      pkt->target = UPDATE_BIOS;
+      pkt->target = write_target;
       pkt->offset = write_offset + file_buf_pos;
       pkt->length = count;
       udev->epaddr = USB_INPUT_PORT;
@@ -569,7 +599,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
   udev->epaddr = USB_INPUT_PORT;
 
   // init usb device
-  ret = bic_init_usb_dev(slot_id, udev, SB_USB_PRODUCT_ID, SB_USB_VENDOR_ID);
+  ret = bic_init_usb_dev(slot_id, comp, udev, SB_USB_PRODUCT_ID, SB_USB_VENDOR_ID);
   if (ret < 0) {
     goto error_exit;
   }
@@ -582,7 +612,7 @@ update_bic_usb_bios(uint8_t slot_id, uint8_t comp, int fd)
     goto error_exit;
 
   gettimeofday(&end, NULL);
-  if (comp == FW_BIOS) {
+  if (comp == FW_BIOS || comp == FW_1OU_CXL) {
     fprintf(stderr, "Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
   }
 

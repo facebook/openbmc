@@ -32,9 +32,7 @@ enum {
   UPDATE_BIOS = 0,
   UPDATE_CPLD,
   UPDATE_BIC,
-  UPDATE_BIC_BOOTLOADER,
-  UPDATE_VR,
-  UPDATE_PCIE_SWITCH,
+  UPDATE_CXL,
 };
 
 // Update from file.

@@ -39,8 +39,9 @@ LOCAL_URI += " \
     file://vr_fw.h \
     file://vr_fw.cpp \
     file://swb_bic.cpp \
+    file://hgx.cpp \
     "
 
-DEPENDS += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl"
-RDEPENDS:${PN} += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl"
-LDFLAGS += "-lmcu -lpal -lfpga -lvr -lnl-wrapper -lkv -lobmc-i2c -lnm -lbic -lpldm_oem -lobmc-mctp -lipmi -lpldm -lpldm_oem -lgpio-ctrl"
+DEPENDS += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl libhgx"
+RDEPENDS:${PN} += "libmcu libpal libfpga libvr libncsi libnl-wrapper libkv libobmc-i2c libnm libbic libpldm-oem libobmc-mctp libipmi libpldm-oem libgpio-ctrl libhgx"
+LDFLAGS += "-lmcu -lpal -lfpga -lvr -lnl-wrapper -lkv -lobmc-i2c -lnm -lbic -lpldm_oem -lobmc-mctp -lipmi -lpldm -lpldm_oem -lgpio-ctrl -lhgx"

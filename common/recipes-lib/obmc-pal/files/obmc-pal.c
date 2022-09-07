@@ -2206,18 +2206,12 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
 
 bool __attribute__((weak))
 pal_is_fw_update_ongoing_system(void) {
-  //Base on fru number to sum up if fw update is onging.
-  uint8_t max_slot_num = 0;
-  int i;
-
-  pal_get_num_slots(&max_slot_num);
-
-  for(i = 0; i <= max_slot_num; i++) { // 0 is reserved for BMC update
-    int fruid = pal_slotid_to_fruid(i);
-    if (pal_is_fw_update_ongoing(fruid) == true) //if any slot is true, then we can return true
+  // Return true if pal_is_fw_update_ongoing() is true
+  // for any fru.
+  for (uint8_t fru = 1; fru <= pal_get_fru_count(); fru++) {
+    if (pal_is_fw_update_ongoing(fru) == true)
       return true;
   }
-
   return false;
 }
 

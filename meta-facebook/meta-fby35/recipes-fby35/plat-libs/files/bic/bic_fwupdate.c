@@ -848,7 +848,7 @@ get_board_revid_from_bbbic(uint8_t slot_id, uint8_t* rev_id) {
     syslog(LOG_WARNING, "%s: fail to get board revision ID because IPMB command fail. Ret: %d\n", __func__, ret);
     return ret;
   }
-  *rev_id = rbuf[0];
+  *rev_id = rbuf[0] & 0x07; // Board revision only composed of bit 0-2
   return ret;
 }
 

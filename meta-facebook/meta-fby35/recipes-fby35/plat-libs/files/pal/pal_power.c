@@ -507,6 +507,13 @@ pal_sled_cycle(void) {
     return POWER_STATUS_ERR;
   }
 
+  if (bmc_location == NIC_BMC) {
+    if (bic_get_power_lock_status(&status) == 0 && (status != UNLOCK)) {
+      printf("Another slot is doing fw update, cannot do sled cycle.\n");
+      return POWER_STATUS_ERR;
+    }
+  }
+
   ret = system("sv stop sensord > /dev/null 2>&1 &");
   if ( ret < 0 ) {
     printf("Fail to stop sensord\n");

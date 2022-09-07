@@ -25,8 +25,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <syslog.h>
 #include "bic_power.h"
 #include "bic_xfer.h"
+#include "bic_ipmi.h"
 
 //The value of power button to CPLD
 #define POWER_BTN_HIGH 0xFF
@@ -222,4 +224,87 @@ bic_do_12V_cycle(uint8_t slot_id) {
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 
   return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_SET_12V_CYCLE, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+}
+
+
+// only for class 2
+int
+bic_get_power_lock_status(uint8_t* status) {
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  if (status == NULL) {
+    syslog(LOG_WARNING, "%s(): invalid status parameter", __func__);
+    return -1;
+  }
+
+  tbuf[0] = CPLD_BB_BUS;
+  tbuf[1] = CPLD_ADDRESS;
+  tbuf[2] = 1; // read count
+  tbuf[3] = SLED_STATUS_REG;
+  tlen = 4;
+
+  int ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to set power lock reg. Ret: %d\n", __func__, ret);
+    return ret;
+  }
+
+  *status = rbuf[0];
+  return ret;
+}
+
+// Only for class 2
+int
+bic_set_power_lock(uint8_t status) {
+  uint8_t bmc_location = 0, mb_index = 0, current_status = 0;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  int ret = 0;
+
+  ret = fby35_common_get_bmc_location(&bmc_location);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
+    return -1;
+  }
+
+  if (bmc_location != NIC_BMC) {
+    return -1;
+  }
+
+  if (bic_get_mb_index(&mb_index) !=0) {
+    syslog(LOG_WARNING, "%s() Fail to get mb index.", __func__);
+    return -1;
+  }
+
+  if (bic_get_power_lock_status(&current_status)) {
+    syslog(LOG_WARNING, "%s() Fail to get current power lock status.", __func__);
+    return -1;
+  }
+
+  tbuf[0] = CPLD_BB_BUS;
+  tbuf[1] = CPLD_ADDRESS;
+  tbuf[2] = 0; // read count
+  tbuf[3] = SLED_STATUS_REG;
+
+  if (status == LOCK) {
+    tbuf[4] = current_status | (0x01 << mb_index);
+  } else {
+    tbuf[4] = current_status & ~(0x01 << mb_index);
+  }
+
+  tlen = 5;
+
+  ret = bic_ipmb_send(FRU_SLOT1, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, BB_BIC_INTF);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: fail to set power lock reg. Ret: %d\n", __func__, ret);
+    return ret;
+  }
+
+  return ret;
 }

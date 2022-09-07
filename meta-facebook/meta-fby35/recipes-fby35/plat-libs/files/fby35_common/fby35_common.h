@@ -123,6 +123,9 @@ extern const char *slot_usage;
 
 #define IANA_ID_SIZE 3
 
+// BB cpld reg
+#define SLED_STATUS_REG 0x0D
+
 enum {
   FRU_ALL       = 0,
   FRU_SLOT1     = 1,
@@ -405,6 +408,11 @@ enum {
 enum {
   CARD_TYPE_1OU = 0x0,
   CARD_TYPE_2OU,
+};
+
+enum POWER_LOCK {
+  UNLOCK = 0x0,
+  LOCK
 };
 
 const static char *gpio_server_prsnt[] =

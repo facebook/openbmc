@@ -87,5 +87,8 @@
   },
   "bmc_timestamp": {
     "enabled": true
+  },
+  "fw_update_pre_post_action": {
+    "enabled": true
   }
 }

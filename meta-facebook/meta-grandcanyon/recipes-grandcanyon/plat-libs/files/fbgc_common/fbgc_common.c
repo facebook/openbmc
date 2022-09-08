@@ -167,7 +167,7 @@ fbgc_common_server_stby_pwr_sts(uint8_t *val) {
 
 uint8_t
 cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len) {
-  uint8_t const *end = data + len;
+  uint8_t const *end = NULL;
   static uint8_t const crc8_table[] =
   { 0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15, 0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
     0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65, 0x48, 0x4F, 0x46, 0x41, 0x54, 0x53, 0x5A, 0x5D,
@@ -188,6 +188,8 @@ cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len) {
 
   if (NULL == data) {
     return 0;
+  } else {
+    end = data + len;
   }
 
   crc &= 0xff;
@@ -201,13 +203,13 @@ cal_crc8(uint8_t crc, uint8_t const *data, uint8_t len) {
 
 uint8_t
 hex_c2i(const char c) {
-  if (c && (c >= '0') && (c <= '9')) {
+  if ((c >= '0') && (c <= '9')) {
     return (c - '0');
   }
-  if (c && (c >= 'A') && (c <= 'F')) {
+  if ((c >= 'A') && (c <= 'F')) {
     return (c - 'A' + 10);
   }
-  if (c && (c >= 'a') && (c <= 'f')) {
+  if ((c >= 'a') && (c <= 'f')) {
     return (c - 'a' + 10);
   }
 
@@ -295,11 +297,6 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     return -1;
   }
 
-  if (md5_offset <= 0) {
-    syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to wrong offset of MD5: 0x%X.", __func__, md5_offset);
-    return -1;
-  }
-
   fd = open(image_path, O_RDONLY);
 
   if (fd < 0) {
@@ -371,12 +368,6 @@ check_image_signature(const char* image_path, uint32_t sig_offset) {
 
   if ((image_path == NULL)) {
    syslog(LOG_WARNING, "%s(): failed to check platform signature of image due to NULL parameter.", __func__);
-    ret = -1;
-    goto exit;
-  }
-
-  if (sig_offset <= 0) {
-    syslog(LOG_WARNING, "%s(): failed to check platform signature of %s due to wrong offset: 0x%X", __func__, image_path, sig_offset);
     ret = -1;
     goto exit;
   }
@@ -457,7 +448,10 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
       *board_rev_id = (STAGE_PVT + 1);
     }
   }
-  pclose(fp);
+
+  if (fp != NULL) {
+    pclose(fp);
+  }
 
 exit:
   close(i2cfd);

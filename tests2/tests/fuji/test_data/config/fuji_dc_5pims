@@ -1,0 +1,26 @@
+CARDS
+scm : 1
+pim1 : 1
+pim2 : 1
+pim3 : 0
+pim4 : 0
+pim5 : 0
+pim6 : 1
+pim7 : 1
+pim8 : 1
+FANS
+fan1 : 1
+fan2 : 1
+fan3 : 1
+fan4 : 1
+fan5 : 1
+fan6 : 1
+fan7 : 1
+fan8 : 1
+POWER SUPPLIES
+psu1 : 0
+psu2 : 0
+psu3 : 1
+psu4 : 1
+DEBUG CARD
+dbg0 : 0

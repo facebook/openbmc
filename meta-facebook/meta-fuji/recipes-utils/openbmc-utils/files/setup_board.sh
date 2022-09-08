@@ -31,6 +31,13 @@ source /usr/local/bin/openbmc-utils.sh
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
+
+#Read PSU type from eeprom and save to cache
+pwr_type=$(wedge_power_supply_type)
+ 
+mkdir -p /tmp/cache_store
+echo "$pwr_type" > /tmp/cache_store/power_type
+
 # Enable the isolation buffer between BMC and COMe i2c bus
 echo 0 > "${SCMCPLD_SYSFS_DIR}/com_exp_pwr_enable"
 

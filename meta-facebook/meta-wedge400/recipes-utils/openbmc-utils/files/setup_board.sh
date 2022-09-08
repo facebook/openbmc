@@ -54,10 +54,13 @@ echo 0x3 > "$SMBCPLD_SYSFS_DIR/uart_selection"
 # Read board type from Board type GPIO pin and save to cache
 brd_type=$(wedge_board_type)
 brd_rev=$(wedge_board_rev)
-if [ ! -d /tmp/cache_store ]; then
-  mkdir /tmp/cache_store
-fi
+
+#Read PSU type from eeprom and save to cache
+pwr_type=$(wedge_power_supply_type)
+
+mkdir -p /tmp/cache_store
 echo "$brd_type" > /tmp/cache_store/board_type
+echo "$pwr_type" > /tmp/cache_store/power_type
 
 # Check board type to select lmsensor configuration
 if [ $((brd_type)) -eq 0 ]; then

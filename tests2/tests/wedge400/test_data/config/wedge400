@@ -1,0 +1,12 @@
+CARDS
+scm : 1
+FANS
+fan1 : 1
+fan2 : 1
+fan3 : 1
+fan4 : 1
+POWER SUPPLIES
+psu1 : 1
+psu2 : 1
+DEBUG CARD
+debug_card : 0

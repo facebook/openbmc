@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "bic_bios.h"
 #include <openbmc/pal.h>
+#include <openbmc/misc-utils.h>
 #ifdef BIC_SUPPORT
 #include <facebook/bic.h>
 
@@ -33,29 +34,30 @@ class BiosExtComponent : public BiosComponent {
 
 int BiosExtComponent::update_internal(const std::string &image, int fd, bool force) {
   int ret;
-  uint8_t status;
-  int retry_count = (force ? 60 : 5*60); // give server 5 minutes for graceful.
+  uint8_t status = SERVER_POWER_ON;
 
   try {
     server.ready();
 
-    uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-
-    pal_set_server_power(slot_id, power_cmd);
-
     //Checking Server Power Status to make sure Server is really Off
-    while (retry_count > 0) {
-      ret = pal_get_server_power(slot_id, &status);
-      if ((ret == 0) && (status == SERVER_POWER_OFF)) {
-        break;
+    if (!force) {
+      cerr << "Powering off the server gracefully" << endl;
+      pal_set_server_power(slot_id, SERVER_GRACEFUL_SHUTDOWN);
+      if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 5*60, 1000)) {
+        cerr << "Retry powering off the server..." << endl;
+        pal_set_server_power(slot_id, SERVER_POWER_OFF);
+        if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+          cerr << "Failed to Power Off Server " << (int)slot_id << ". Stopping the update!" << endl;
+          return -1;
+        }
       }
-      if ((--retry_count) > 0) {
-        sleep(1);
+    } else {
+      cerr << "Powering off the server forcefully" << endl;
+      pal_set_server_power(slot_id, SERVER_POWER_OFF);
+      if (retry_cond(!pal_get_server_power(slot_id, &status) && status == SERVER_POWER_OFF, 1, 1000)) {
+        cerr << "Failed to Power Off Server " << (int)slot_id << ". Stopping the update!" << endl;
+        return -1;
       }
-    }
-    if (retry_count <= 0) {
-      cerr << "Failed to Power Off Server " << (int)slot_id << ". Stopping the update!" << endl;
-      return -1;
     }
 
 #if !defined(CONFIG_FBY2_ND)
@@ -74,7 +76,7 @@ int BiosExtComponent::update_internal(const std::string &image, int fd, bool for
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-  } catch(string err) {
+  } catch(exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;
@@ -123,7 +125,7 @@ int BiosExtComponent::dump(string image) {
     pal_set_server_power(slot_id, SERVER_12V_CYCLE);
     sleep(5);
     pal_set_server_power(slot_id, SERVER_POWER_ON);
-  } catch(string err) {
+  } catch(exception& err) {
     return FW_STATUS_NOT_SUPPORTED;
   }
   return ret;

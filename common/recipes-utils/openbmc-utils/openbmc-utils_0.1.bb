@@ -34,6 +34,7 @@ LOCAL_URI = " \
     file://mount_data0.service \
     file://openbmc-utils.sh \
     file://shell-utils.sh \
+    file://ast-utils.sh \
     file://i2c-utils.sh \
     file://gpio-utils.sh \
     file://rc.early \
@@ -69,6 +70,7 @@ OPENBMC_UTILS_FILES = " \
     mount_data0.sh \
     openbmc-utils.sh \
     shell-utils.sh \
+    ast-utils.sh \
     i2c-utils.sh \
     gpio-utils.sh \
     rc.early \

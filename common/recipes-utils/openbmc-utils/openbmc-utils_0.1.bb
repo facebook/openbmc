@@ -56,6 +56,8 @@ LOCAL_URI = " \
     file://create_vlan_intf \
     file://flashrom-utils.sh \
     file://cpu_monitor.py \
+    file://setup_i2c.service \
+    file://setup_gpio.service \
     ${@bb.utils.contains('PACKAGECONFIG', 'disable-watchdog', \
                          'file://disable_watchdog.sh ' + \
                          'file://disable_watchdog.service', '', d)} \

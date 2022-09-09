@@ -1,7 +1,6 @@
 IMAGE_CLASSES += "qemuboot"
 EXTRA_IMAGEDEPENDS:append = " \
     qemu-helper-native:do_addto_recipe_sysroot \
-    fbqemu-native:do_addto_recipe_sysroot \
 "
 QB_SYSTEM_NAME = "qemu-system-arm"
 QB_MACHINE = "-machine ${MACHINE}-bmc"

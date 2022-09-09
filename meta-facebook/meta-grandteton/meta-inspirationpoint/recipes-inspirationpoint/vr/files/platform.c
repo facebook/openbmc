@@ -2,13 +2,18 @@
 #include <stdio.h>
 #include <string.h>
 #include <openbmc/pal.h>
+#include <openbmc/pal_common.h>
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
 #include "raa_gen3.h"
+#include "xdpe12284c.h"
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
+#define MB_VR_CNT      (6)
+#define SWB_VR_CNT     (2)
+
 
 enum {
   VR_MB_CPU0_VCORE0   = 0,
@@ -17,15 +22,20 @@ enum {
   VR_MB_CPU1_VCORE0   = 3,
   VR_MB_CPU1_VCORE1   = 4,
   VR_MB_CPU1_PVDD11   = 5,
-  VR_SWB_PXE0_VCC     = 6,
-  VR_SWB_PXE1_VCC     = 7,
+  VR_SWB_PEX01_VCC    = 6,
+  VR_SWB_PEX23_VCC    = 7,
+  VR_CNT,
 };
 
 enum {
-  ADDR_SWB_VR_PXE0 = 0xC0,
+  ADDR_SWB_VR_PEX01 = 0xC0,
+  ADDR_SWB_VR_PEX23 = 0xC4,
+};
+
+enum {
+
   ADDR_CPU0_VCORE0 = 0xC2,
   ADDR_CPU0_VCORE1 = 0xC4,
-  ADDR_SWB_VR_PXE1 = 0xC4,
   ADDR_CPU0_PVDD11 = 0xC6,
   ADDR_CPU1_VCORE0 = 0xE4,
   ADDR_CPU1_VCORE1 = 0xE8,
@@ -34,11 +44,11 @@ enum {
 
 int swb_vr_map_id(uint8_t addr, uint8_t* id) {
   switch (addr) {
-  case ADDR_SWB_VR_PXE0:
+  case ADDR_SWB_VR_PEX01:
     *id = VR0_COMP;
     return 0;
 
-  case ADDR_SWB_VR_PXE1:
+  case ADDR_SWB_VR_PEX23:
     *id = VR1_COMP;
     return 0;
   }
@@ -52,7 +62,6 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   uint8_t tbuf[255] = {0};
   uint8_t tlen=0;
   uint8_t vr_id;
-  int rc;
   int ret;
 
   ret = swb_vr_map_id(addr, &vr_id);
@@ -65,13 +74,12 @@ vr_pldm_wr(uint8_t bus, uint8_t addr,
   tlen = txlen + 2;
 
   size_t rlen = 0;
-  rc = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
+  ret = pldm_oem_ipmi_send_recv(bus, SWB_BIC_EID,
                                NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
                                tbuf, tlen,
                                rxbuf, &rlen);
-  return rc;
+  return ret;
 }
-
 
 
 struct vr_ops raa_gen2_3_ops = {
@@ -82,7 +90,7 @@ struct vr_ops raa_gen2_3_ops = {
   .fw_verify = NULL,
 };
 
-struct vr_info fbgt_vr_list[] = {
+struct vr_info vr_list[] = {
   [VR_MB_CPU0_VCORE0] = {
     .bus = MB_VR_BUS_ID,
     .addr = ADDR_CPU0_VCORE0,
@@ -131,29 +139,58 @@ struct vr_info fbgt_vr_list[] = {
     .private_data = "mb",
     .xfer = NULL,
   },
-  [VR_SWB_PXE0_VCC] = {
+  [VR_SWB_PEX01_VCC] = {
     .bus = SWB_VR_BUS_ID,
-    .addr = ADDR_SWB_VR_PXE0,
-    .dev_name = "VR_PEX0_VCC",
+    .addr = ADDR_SWB_VR_PEX01,
+    .dev_name = "VR_PEX01_VCC",
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
   },
-  [VR_SWB_PXE1_VCC] = {
+  [VR_SWB_PEX23_VCC] = {
     .bus = SWB_VR_BUS_ID,
-    .addr = ADDR_SWB_VR_PXE1,
-    .dev_name = "VR_PEX1_VCC",
+    .addr = ADDR_SWB_VR_PEX23,
+    .dev_name = "VR_PEX23_VCC",
     .ops = &raa_gen2_3_ops,
     .private_data = "swb",
     .xfer = vr_pldm_wr,
   },
 };
 
-int plat_vr_init(void) {
-  int ret;
-  int vr_cnt = sizeof(fbgt_vr_list)/sizeof(fbgt_vr_list[0]);
 
-  ret = vr_device_register(fbgt_vr_list, vr_cnt );
+//SWB
+//INFINEON
+struct vr_ops xdpe12284c_ops = {
+  .get_fw_ver = get_xdpe_ver,
+  .parse_file = xdpe_parse_file,
+  .validate_file = NULL,
+  .fw_update = xdpe_fw_update,
+  .fw_verify = NULL,
+};
+
+
+int plat_vr_init(void) {
+  int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
+  uint8_t mb_sku_id = 0;
+  uint8_t inf_devid[3] = { 0x02, 0x79, 0x02 };
+  uint8_t tbuf[8], rbuf[8];
+
+  pal_get_platform_id(&mb_sku_id);
+  mb_sku_id = mb_sku_id & 0x03;
+
+//MB
+
+//SWB
+  if (get_bic_ready()) {
+    tbuf[0] = 0xAD;
+    vr_pldm_wr(SWB_VR_BUS_ID, ADDR_SWB_VR_PEX01, tbuf, 1, rbuf, 3);
+    if(!memcmp(rbuf, inf_devid, 3)) {
+      for (i = 0; i < SWB_VR_CNT; i++) {
+        vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
+      }
+    }
+  }
+  ret = vr_device_register(vr_list, vr_cnt);
   if (ret < 0) {
     vr_device_unregister();
   }

@@ -66,6 +66,7 @@ enum {
   FRU_BP1,
   FRU_FIO,
   FRU_HSC,
+  FRU_SHSC,
   FRU_CNT,
 };
 

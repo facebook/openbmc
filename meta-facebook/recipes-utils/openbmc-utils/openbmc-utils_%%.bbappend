@@ -8,6 +8,7 @@ LOCAL_URI += " \
     file://power-on.service \
     file://setup_board.service \
     file://enable_watchdog_ext_signal.service \
+    file://mount_data1.service \
     "
 
 FILES:${PN} += "${systemd_system_unitdir} /usr/local/bin"

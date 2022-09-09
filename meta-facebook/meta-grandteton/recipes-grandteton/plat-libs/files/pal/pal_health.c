@@ -13,6 +13,9 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
     case FRU_MB:
       sprintf(key, "server_sensor_health");
       break;
+    case FRU_SWB:
+      sprintf(key, "swb_sensor_health");
+      break;
     case FRU_NIC0:
       sprintf(key, "nic0_sensor_health");
       break;

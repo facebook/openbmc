@@ -15,6 +15,7 @@ OpenBMC uses the [Yocto Project](https://www.yoctoproject.org) as the underlying
 [**Tioga Pass**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A dual-socket compute platform
 [**YosemiteV2**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A refresh of Yosemite
 [**Bryce Canyon**](https://code.facebook.com/posts/1869788206569924/introducing-bryce-canyon-our-next-generation-storage-platform/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | Disk Storage platform
+**Grand Canyon** | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | Disk Storage platform
 
 ## Contents
 

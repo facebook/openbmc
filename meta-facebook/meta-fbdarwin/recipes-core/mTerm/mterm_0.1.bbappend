@@ -15,23 +15,4 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://mTerm_server.service \
-            file://mTerm/run \
-            file://sol.sh \
-           "
-
-MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
-
-S = "${WORKDIR}"
-
-# Go with default names of mTerm for MTERM_SERVICES
-# since we have just one console.
-
-do_install:append() {
-    install -d ${D}/usr/local/bin
-    install -m 755 sol.sh ${D}/usr/local/bin/sol.sh
-}
-
-FILES:${PN} += "/usr/local/bin"
+MTERM_CONSOLES = "9600;ttyS1"

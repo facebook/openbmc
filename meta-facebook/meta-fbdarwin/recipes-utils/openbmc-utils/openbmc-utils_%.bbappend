@@ -20,23 +20,17 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\
     file://board-utils.sh \
     file://dump_gpios.sh \
-    file://eth0_mac_fixup.sh \
     file://find_serfmon.sh \
     file://meta_info.sh \
     file://oob-eeprom-util.sh \
     file://oob-mdio-util.sh \
     file://oob-status.sh \
-    file://setup_gpio.service \
     file://setup-gpio.sh \
-    file://setup_bcm53134.sh \
     file://setup_board.sh \
     file://show_tech.py \
-    file://wedge_power.sh \
-    file://wedge_us_mac.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
-    board-utils.sh \
     dump_gpios.sh \
     find_serfmon.sh \
     meta_info.sh \
@@ -44,77 +38,7 @@ OPENBMC_UTILS_FILES += " \
     oob-mdio-util.sh \
     oob-status.sh \
     show_tech.py \
-    wedge_power.sh \
-    wedge_us_mac.sh \
     "
 
-PACKAGECONFIG += "disable-watchdog"
-PACKAGECONFIG += "boot-info"
-
-DEPENDS:append = " update-rc.d-native"
-
-do_work_sysv() {
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
-
-    # the script to mount /mnt/data
-    install -m 0755 ${S}/mount_data0.sh ${D}${sysconfdir}/init.d/mount_data0.sh
-    update-rc.d -r ${D} mount_data0.sh start 03 S .
-
-    install -m 0755 ${S}/rc.early ${D}${sysconfdir}/init.d/rc.early
-    update-rc.d -r ${D} rc.early start 04 S .
-
-    # Install find_serfmon to print it early in case of cached cases
-    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
-    update-rc.d -r ${D} setup_board.sh start 10 S .
-
-    # Export GPIO pins and set initial directions/values.
-    install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
-    update-rc.d -r ${D} setup-gpio.sh start 59 S .
-
-    # networking is done after rcS, any start level within rcS for
-    # mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
-    update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
-
-    # create VLAN intf automatically
-    install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
-
-    install -m 0755 ${S}/rc.local ${D}${sysconfdir}/init.d/rc.local
-    update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
-}
-
-do_work_systemd() {
-    install -d ${D}/usr/local/bin
-    install -d ${D}${systemd_system_unitdir}
-
-    # networking is done after rcS, any start level within rcS
-    # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
-
-    install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
-
-    install -m 755 setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
-    install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}
-}
-
-do_install_board() {
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
-      do_work_systemd
-    else
-      do_work_sysv
-    fi
-}
-
-do_install:append() {
-    do_install_board
-}
-
-FILES:${PN} += "${sysconfdir}"
-
-SYSTEMD_SERVICE:${PN} += "setup_gpio.service"
-
 # Not needed for fbdarwin
-SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service setup_i2c.service power-on.service"
+SYSTEMD_SERVICE:${PN}:remove = "setup_i2c.service power-on.service"

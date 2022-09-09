@@ -943,18 +943,18 @@ main(int argc, char **argv) {
       print_usage();
       return ret;
     }
-  }
-  if (history_clear || history) {
-    //Check if the input FRU supports sensor history
-    unsigned int caps;
-    ret = pal_get_fru_capability(fru, &caps);
-    if (ret < 0) {
-      print_usage();
-      return ret;
-    }
-    if (!(FRU_CAPABILITY_SENSOR_HISTORY & caps)) {
-      print_usage();
-      exit(-1);
+    if (fru != FRU_ALL) {
+      unsigned int check_caps = FRU_CAPABILITY_SENSOR_READ;
+
+      //Check if the input FRU supports requied capability
+      if (history_clear || history) {
+        check_caps |= FRU_CAPABILITY_SENSOR_HISTORY;
+      }
+      ret = pal_get_fru_capability(fru, &caps);
+      if (ret < 0 || ((caps & check_caps) != check_caps)) {
+        print_usage();
+        return ret;
+      }
     }
   }
 

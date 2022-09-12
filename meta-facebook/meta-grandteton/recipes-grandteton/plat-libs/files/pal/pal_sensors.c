@@ -421,6 +421,7 @@ static int pal_set_peci_mux(uint8_t select) {
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh) {
   char cmd[128];
+  char sensor_name[32];
   char thresh_name[10];
   uint8_t fan_id;
   uint8_t cpu_id;
@@ -480,6 +481,9 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
     case MB_SNR_VR_CPU1_VCCIN_FAON_VOLT:
     case MB_SNR_VR_CPU1_VCCFA_VOLT:
     case MB_SNR_VR_CPU1_VCCD_HV_VOLT:
+      pal_get_sensor_name(fru, snr_num, sensor_name);
+      sprintf(cmd, "%s %s %.2fVolts - Assert", sensor_name, thresh_name, val);
+      break;
     case BP0_SNR_FAN0_INLET_SPEED:
     case BP0_SNR_FAN1_INLET_SPEED:
     case BP1_SNR_FAN2_INLET_SPEED:

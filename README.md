@@ -4,18 +4,18 @@ OpenBMC is an open software framework to build a complete Linux image for a Boar
 
 OpenBMC uses the [Yocto Project](https://www.yoctoproject.org) as the underlying building and distro generation framework.
 
-| Board | Status | Description |
-|-------|--------|-------------|
-[**Wedge**](https://code.facebook.com/posts/681382905244727/introducing-wedge-and-fboss-the-next-steps-toward-a-disaggregated-network/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A 40G OS-agnostic TOR switch
-[**Yosemite**](https://code.facebook.com/posts/1616052405274961/introducing-yosemite-the-first-open-source-modular-chassis-for-high-powered-microservers-) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | An open source modular chassis for high-powered microservers
-[**Lightning**](https://code.facebook.com/posts/989638804458007/introducing-lightning-a-flexible-nvme-jbof/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A flexible NVMe JBOF
-[**Wedge100**](https://code.facebook.com/posts/1802489260027439/wedge-100-more-open-and-versatile-than-ever/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A 32x100G TOR switch
-[**Backpack LC/FC**](https://code.facebook.com/posts/864213503715814/introducing-backpack-our-second-generation-modular-open-switch/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | Linecard and fabric card in a 128x100G modular open switch
-[**Backpack CMM**](https://code.facebook.com/posts/864213503715814/introducing-backpack-our-second-generation-modular-open-switch/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | Chassis management module in a 128x100G modular open switch
-[**Tioga Pass**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A dual-socket compute platform
-[**YosemiteV2**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | A refresh of Yosemite
-[**Bryce Canyon**](https://code.facebook.com/posts/1869788206569924/introducing-bryce-canyon-our-next-generation-storage-platform/) | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | Disk Storage platform
-**Grand Canyon** | [![Build Status](https://circleci.com/gh/facebook/openbmc.svg)](https://circleci.com/gh/facebook/openbmc) | Disk Storage platform
+| Board | Description |
+|-------|-------------|
+[**Wedge**](https://code.facebook.com/posts/681382905244727/introducing-wedge-and-fboss-the-next-steps-toward-a-disaggregated-network/) | A 40G OS-agnostic TOR switch
+[**Yosemite**](https://code.facebook.com/posts/1616052405274961/introducing-yosemite-the-first-open-source-modular-chassis-for-high-powered-microservers-) | An open source modular chassis for high-powered microservers
+[**Lightning**](https://code.facebook.com/posts/989638804458007/introducing-lightning-a-flexible-nvme-jbof/) | A flexible NVMe JBOF
+[**Wedge100**](https://code.facebook.com/posts/1802489260027439/wedge-100-more-open-and-versatile-than-ever/) | A 32x100G TOR switch
+[**Backpack LC/FC**](https://code.facebook.com/posts/864213503715814/introducing-backpack-our-second-generation-modular-open-switch/) | Linecard and fabric card in a 128x100G modular open switch
+[**Backpack CMM**](https://code.facebook.com/posts/864213503715814/introducing-backpack-our-second-generation-modular-open-switch/) | Chassis management module in a 128x100G modular open switch
+[**Tioga Pass**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | A dual-socket compute platform
+[**YosemiteV2**](https://code.facebook.com/posts/232534267210735/ocp-summit-2017-facebook-news-recap-/) | A refresh of Yosemite
+[**Bryce Canyon**](https://code.facebook.com/posts/1869788206569924/introducing-bryce-canyon-our-next-generation-storage-platform/) | Disk Storage platform
+**Grand Canyon** | Disk Storage platform
 
 ## Contents
 

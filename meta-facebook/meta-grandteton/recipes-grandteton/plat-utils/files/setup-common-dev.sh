@@ -443,3 +443,5 @@ gpio_set  FAN12_LED_FAIL 0
 gpio_set  FAN13_LED_FAIL 0
 gpio_set  FAN14_LED_FAIL 0
 gpio_set  FAN15_LED_FAIL 0
+
+/usr/local/bin/fan-util --set 70

@@ -1,6 +1,4 @@
-#!/bin/sh
-#
-# Copyright 2015-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,23 +14,11 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-### BEGIN INIT INFO
-# Provides:          setup-fan
-# Required-Start:    board-id
-# Required-Stop:
-# Default-Start:     5
-# Default-Stop:
-# Short-Description: Set fan speed
-### END INIT INFO
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-# shellcheck disable=SC1091
-. /usr/local/fbpackages/utils/ast-functions
-
-
-default_fsc_config_path="/etc/fsc-config.json"
-ln -s /etc/fsc-config.json ${default_fsc_config_path}
-
-runsv /etc/sv/fscd > /dev/null 2>&1 &
-echo "done."
+LOCAL_URI += " \
+    file://sensor-mb-correction.json \
+    "
+SENSOR_CORR_CONFIG = "sensor-mb-correction.json \
+                     "

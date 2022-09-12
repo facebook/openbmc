@@ -474,7 +474,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"BMC_P12V_VOLT", DPM_4, read_dpm_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
-  {"BMC_TEMP", TEMP_BMC, read_bb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
+  {"TEMP", TEMP_BMC, read_bb_temp, true, {45.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE

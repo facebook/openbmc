@@ -42,6 +42,8 @@
         "positive_hysteresis": 0,
         "negative_hysteresis": 2,
         "data": [
+          [-59, 25],
+          [-54, 28],
           [-44, 30],
           [-39, 40],
           [-35, 50]

@@ -24,8 +24,10 @@
 #include <string.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
+#include <openbmc/libgpio.h>
 
 #define LED_ON_TIME_IDENTIFY 500
 #define LED_OFF_TIME_IDENTIFY 500
@@ -46,6 +48,58 @@ is_btn_blocked(uint8_t fru) {
     return CRASHDUMP_ONGOING;
   }
   return 0;
+}
+
+static int
+recover_cm() {
+  ipmi_dev_id_t cm_dev_id;
+  syslog(LOG_CRIT, "ASSERT: Chassis Manager unresponsive. Initiating remediation");
+  gpio_desc_t *rst_gpio = gpio_open_by_shadow("RST_CM_N");
+  if (!rst_gpio) {
+    syslog(LOG_CRIT, "ASSERT: Chassis Manager remediation failed: Cannot open GPIO");
+    return 1;
+  }
+  if (gpio_set_value(rst_gpio, GPIO_VALUE_LOW)) {
+    syslog(LOG_WARNING, "RST_CM_N set to low failed");
+  }
+  sleep(0.5);
+  if (gpio_set_value(rst_gpio, GPIO_VALUE_HIGH)) {
+    syslog(LOG_WARNING, "RST_CM_N set to high failed");
+  }
+  gpio_close(rst_gpio);
+  // Give CM 5 seconds to start up.
+  sleep(5);
+  int ret = retry_cond(cmd_cmc_get_dev_id(&cm_dev_id) == 0, 15, 1000);
+  if (ret == 0) {
+    syslog(LOG_CRIT, "DEASSERT: Chassis Manager unresponsive. Recovered");
+  }
+  return ret;
+}
+
+static void *
+cm_monitor() {
+  ipmi_dev_id_t cm_dev_id;
+  int recovery_tries = 0;
+  int last_state = 0;
+  while (1) {
+    // Try for 15s to get to CM.
+    if (retry_cond(cmd_cmc_get_dev_id(&cm_dev_id) == 0, 15, 1000) == 0) {
+      // All is good, try again later.
+      recovery_tries = 0;
+      if (last_state != 0) {
+        // If previous recovery attempt had failed, we need to add
+        // a DEASSERT here.
+        syslog(LOG_CRIT, "DEASSERT: Chassis Manager unresponsive. Recovered");
+      }
+      last_state = 0;
+    } else if (recovery_tries < 10) {
+      // Try to recover CM 10 times, after that give up.
+      last_state = recover_cm();
+      recovery_tries++;
+    }
+    sleep(5);
+  }
+  return NULL;
 }
 
 // Thread to handle LED state of the SLED
@@ -224,10 +278,20 @@ main (int argc, char * const argv[]) {
     syslog(LOG_WARNING, "pthread_create for reset button error\n");
     exit(1);
   }
+  uint8_t pos = 0;
+  pthread_t tid_cm_monitor;
+  pal_get_mb_position(&pos);
+  if (pos == 0) {
+    if (pthread_create(&tid_cm_monitor, NULL, cm_monitor, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for cm monitor errror\n");
+      exit(1);
+    }
+  }
 
   pthread_join(tid_sync_led, NULL);
   pthread_join(tid_fault_led, NULL);
   pthread_join(tid_rst_btn, NULL);
+  pthread_join(tid_cm_monitor, NULL);
 
   return 0;
 }

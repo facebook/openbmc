@@ -1088,6 +1088,15 @@ pal_get_x86_event_sensor_name(uint8_t fru, uint8_t snr_num,
       case HPR_WARNING:
         sprintf(name, "HPR_WARNING");
         break;
+      case VR_OCP:
+        sprintf(name, "VR_OCP");
+        break;
+      case VR_ALERT:
+        sprintf(name, "VR_ALERT");
+        break;
+      case HDT_PRESENT:
+        sprintf(name, "HDT_PRESENT");
+        break;
       default:
         sprintf(name, "Unknown");
         break;
@@ -1714,6 +1723,9 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
       } else {
         strcat(error_log, "Unknown");
       }
+      break;
+    case HDT_PRESENT:
+      strcat(error_log, "HDT PRESENT");
       break;
 
     default:

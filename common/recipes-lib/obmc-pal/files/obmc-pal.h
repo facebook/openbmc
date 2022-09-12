@@ -326,6 +326,9 @@ enum {
   PWR_THRESH_EVT = 0x3B,
   MSMI = 0xE7,
   HPR_WARNING = 0xC5,
+  VR_OCP = 0x71, // halfdome
+  VR_ALERT = 0x72, // halfdome
+  HDT_PRESENT = 0xBD, // AMD platform
 };
 
 // Enum for BYPASS command selection

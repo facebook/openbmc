@@ -2112,6 +2112,58 @@ pal_parse_vr_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+/* For VR_OCP/VR_ALERT SEL */
+static int
+pal_get_vr_name(uint8_t fru, uint8_t vr_num, char *name) {
+  enum {
+    PVDDCR_CPU0 = 0x00,
+    PVDDCR_CPU1 = 0x01,
+    PVDD11_S3 = 0x02,
+  };
+
+  switch (vr_num) {
+    case PVDDCR_CPU0:
+      snprintf(name, 32, "PVDDCR_CPU0");
+      break;
+    case PVDDCR_CPU1:
+      snprintf(name, 32, "PVDDCR_CPU1");
+      break;
+    case PVDD11_S3:
+      snprintf(name, 32, "PVDD11_S3");
+      break;
+    default:
+      snprintf(name, 32, "Undefined VR");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_vr_ocp_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  uint8_t vr_num = event_data[0];
+  char vr_name[32] ;
+
+  pal_get_vr_name(fru, vr_num, vr_name);
+  strcat(error_log, vr_name);
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_vr_alert_event(uint8_t fru, uint8_t *event_data, char *error_log) {
+  uint8_t vr_num = event_data[0] >> 1;
+  uint8_t page = event_data[0] & 1;
+  char tmp_log[128] = {0};
+  char vr_name[32] = {0};
+
+  pal_get_vr_name(fru, vr_num, vr_name);
+  snprintf(tmp_log, 128, "%s page%d status(0x%02X%02X)", vr_name, page, event_data[2] ,event_data[1]);
+  strcat(error_log, tmp_log);
+
+  return PAL_EOK;
+}
+
 static void
 pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **tbl, uint8_t *cnt) {
   uint8_t board_1u = TYPE_1OU_UNKNOWN;
@@ -2293,6 +2345,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_SOC_THERM_TRIP = 0x00,
     SYS_THROTTLE       = 0x02,
     SYS_PCH_THERM_TRIP = 0x03,
+    SYS_UV_DETECT      = 0x04,
     SYS_HSC_THROTTLE   = 0x05,
     SYS_OC_DETECT      = 0x06,
     SYS_MB_THROTTLE    = 0x07,
@@ -2326,6 +2379,9 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
       break;
     case SYS_PCH_THERM_TRIP:
       strcat(error_log, "PCH thermal trip");
+      break;
+    case SYS_UV_DETECT:
+      strcat(error_log, "SYS_UV");
       break;
     case SYS_FM_THROTTLE:
       strcat(error_log, "FM_Throttle throttle");
@@ -2622,6 +2678,12 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BIOS_SENSOR_PMIC_ERR:
       pal_parse_pmic_err_event(fru, event_data, error_log);
+      break;
+    case VR_OCP:
+      pal_parse_vr_ocp_event(fru, event_data, error_log);
+      break;
+    case VR_ALERT:
+      pal_parse_vr_alert_event(fru, event_data, error_log);
       break;
     default:
       unknown_snr = true;

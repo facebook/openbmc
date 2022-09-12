@@ -26,7 +26,8 @@ int pal_before_peci(void) {
   int ret = -1;
 
   if (gpio) {
-    if (gpio_set_value(gpio, GPIO_VALUE_HIGH) == 0) {
+    if (gpio_set_direction(gpio, GPIO_DIRECTION_OUT) == 0 &&
+        gpio_set_value(gpio, GPIO_VALUE_HIGH) == 0) {
       ret = 0;
     }
     gpio_close(gpio);
@@ -39,7 +40,8 @@ int pal_after_peci(void) {
   int ret = -1;
 
   if (gpio) {
-    if (gpio_set_value(gpio, GPIO_VALUE_LOW) == 0) {
+    if (gpio_set_value(gpio, GPIO_VALUE_LOW) == 0 &&
+        gpio_set_direction(gpio, GPIO_DIRECTION_IN) == 0) {
       ret = 0;
     }
     gpio_close(gpio);

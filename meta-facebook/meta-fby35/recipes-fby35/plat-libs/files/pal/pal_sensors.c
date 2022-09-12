@@ -1759,7 +1759,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     else if ( strcmp(sys_conf, "Type_17") == 0 ) config = CONFIG_D;
     else syslog(LOG_WARNING, "%s() Couldn't identiy the system type: %s", __func__, sys_conf);
 
-    syslog(LOG_WARNING, "%s() Get the system type: %s", __func__, sys_conf);
+    syslog(LOG_INFO, "%s() Get the system type: %s", __func__, sys_conf);
     is_inited = true;
   }
 
@@ -2061,7 +2061,7 @@ read_medusa_val(uint8_t snr_number, float *value) {
         break;
       }
     }
-    syslog(LOG_WARNING, "%s() Use '%s'", __func__, chip);
+    syslog(LOG_INFO, "%s() Use '%s'", __func__, chip);
   }
 
   switch(snr_number) {
@@ -2863,8 +2863,10 @@ skip_hsc_init:
         ret = bic_is_exp_prsnt(fru);
         if ( ret < 0 ) {
           syslog(LOG_WARNING, "%s() Failed to run bic_is_exp_prsnt", __func__);
-        } else config_status[fru-1] = (uint8_t)ret;
-        syslog(LOG_WARNING, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
+        } else {
+          config_status[fru-1] = (uint8_t)ret;
+        }
+        syslog(LOG_INFO, "%s() fru: %02x. config:%02x", __func__, fru, config_status[fru-1]);
       }
       // DPv2 X8 sensors
       if (((config_status[fru-1] & PRESENT_2OU) == PRESENT_2OU)) {

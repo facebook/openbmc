@@ -31,8 +31,62 @@
 			      <&adc1 0>, <&adc1 2>, <&adc1 3>, <&adc1 4>,
 			      <&adc1 5>, <&adc1 6>;
 	};
-};
 
+        fan0: pwm-fan0 {
+                compatible = "pwm-fan";
+                pwms = <&pwm 0 40000 0>;        /* Target freq:25 kHz */
+                cooling-min-state = <0>;
+                cooling-max-state = <3>;
+                #cooling-cells = <2>;
+                cooling-levels = <0 25 128 255>;
+        };
+
+        fan1: pwm-fan1 {
+                compatible = "pwm-fan";
+                pwms = <&pwm 1 40000 0>;        /* Target freq:25 kHz */
+                cooling-min-state = <0>;
+                cooling-max-state = <3>;
+                #cooling-cells = <2>;
+                cooling-levels = <0 15 128 255>;
+        };
+
+        fan2: pwm-fan2 {
+                compatible = "pwm-fan";
+                pwms = <&pwm 2 40000 0>;        /* Target freq:25 kHz */
+                cooling-min-state = <0>;
+                cooling-max-state = <3>;
+                #cooling-cells = <2>;
+                cooling-levels = <0 15 128 255>;
+        };
+
+        fan3: pwm-fan3 {
+                compatible = "pwm-fan";
+                pwms = <&pwm 3 40000 0>;        /* Target freq:25 kHz */
+                cooling-min-state = <0>;
+                cooling-max-state = <3>;
+                #cooling-cells = <2>;
+                cooling-levels = <0 15 128 255>;
+        };
+
+        spi_gpio: spi-gpio {
+                status = "okay";
+                compatible = "spi-gpio";
+                #address-cells = <1>;
+                #size-cells = <0>;
+
+                gpio-sck = <&gpio0 ASPEED_GPIO(X, 3) GPIO_ACTIVE_HIGH>;
+                gpio-mosi = <&gpio0 ASPEED_GPIO(X, 4) GPIO_ACTIVE_HIGH>;
+                gpio-miso = <&gpio0 ASPEED_GPIO(X, 5) GPIO_ACTIVE_HIGH>;
+                num-chipselects = <1>;
+                cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
+
+                tpmdev@0 {
+                        compatible = "tcg,tpm_tis-spi";
+                        spi-max-frequency = <33000000>;
+                        reg = <0>;
+                };
+        };
+};
 
 &uart1 {
 	status = "okay";
@@ -105,6 +159,64 @@
 	};
 };
 
+&pwm {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_pwm0_default
+                     &pinctrl_pwm1_default
+                     &pinctrl_pwm2_default
+                     &pinctrl_pwm3_default>;
+};
+
+&tach {
+        status = "okay";
+        pinctrl-names = "default";
+        pinctrl-0 = <&pinctrl_tach0_default
+                     &pinctrl_tach1_default
+                     &pinctrl_tach2_default
+                     &pinctrl_tach3_default
+                     &pinctrl_tach4_default
+                     &pinctrl_tach5_default
+                     &pinctrl_tach6_default
+                     &pinctrl_tach7_default>;
+        fan@0 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x00>;
+        };
+
+        fan@1 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x01>;
+        };
+        fan@2 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x02>;
+        };
+
+        fan@3 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x03>;
+        };
+        fan@4 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x04>;
+        };
+
+        fan@5 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x05>;
+        };
+        fan@6 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x06>;
+        };
+
+        fan@7 {
+                aspeed,min-rpm = <30>;
+                aspeed,tach-ch = <0x07>;
+        };
+
+};
 
 &i2c0 {
 	status = "okay";
@@ -211,6 +323,11 @@
 		     &pinctrl_adc13_default &pinctrl_adc14_default>;
 };
 
+&jtag1 {
+       status = "okay";
+       pinctrl-names = "default";
+       pinctrl-0 = <&pinctrl_jtagm_default>;
+};
 
 &ehci0 {
 	status = "okay";
@@ -223,10 +340,3 @@
 &uhci {
 	status = "okay";
 };
-
-&gpio0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_gpiu1_default &pinctrl_gpiu7_default>;
-};
-
-

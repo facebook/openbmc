@@ -38,6 +38,7 @@
 #include "bic_vr_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 #include "bic_mchp_pciesw_fwupdate.h"
+#include "bic_brcm_pciesw_fwupdate.h"
 #include "bic_m2_fwupdate.h"
 //#define DEBUG
 
@@ -1868,7 +1869,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
 
       // run the update
       if (board_type == GPV3_BRCM_BOARD) {
-        ret = BIC_STATUS_FAILURE; /*not supported*/
+        ret = update_bic_brcm(slot_id, comp, fd, intf);
       } else {
         ret = update_bic_mchp(slot_id, comp, path, intf, force, (loc != NULL)?false:true);
       }

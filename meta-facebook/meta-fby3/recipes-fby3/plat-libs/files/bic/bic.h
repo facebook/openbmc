@@ -54,6 +54,8 @@ extern "C" {
 enum {
   EXP_GPIO_RST_USB_HUB   = 9,
   GPIO_RST_USB_HUB       = 16,
+  BRCM_GPIO_SPI_LS_EN_N  = 19,
+  BRCM_GPIO_SPI_MUX_SEL_N= 20,
   CWC_GPIO_RST_USB_HUB   = 57,
   CWC_GPIO_USB_MUX       = 58,
   GPV3_GPIO_RST_USB_HUB1 = 93,

@@ -77,11 +77,16 @@ int PCIESWComponent::update_internal(string& image, bool force) {
 
     // if 2OU is present and it's ready, get its type
     fby3_common_get_2ou_board_type(slot_id, &board_type);
-    if ( board_type == GPV3_BRCM_BOARD ) {
-      ret = uart_update(image);
-    } else {
-      ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
+
+    ret = bic_update_fw(slot_id, fw_comp, (char *)image.c_str(), force);
+
+    if ( board_type == GPV3_BRCM_BOARD) {
+      cerr << "12V-cycling the server..." << endl;
+      pal_set_server_power(slot_id, SERVER_12V_CYCLE);
+      sleep(5);
+      pal_set_server_power(slot_id, SERVER_POWER_ON);
     }
+
   } catch (string& err) {
     cout << "Failed Reason: " << err << endl;
     return FW_STATUS_NOT_SUPPORTED;

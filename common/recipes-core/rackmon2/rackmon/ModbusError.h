@@ -68,7 +68,7 @@ enum class ModbusErrorCode {
 struct ModbusError : public std::runtime_error {
   uint8_t errorData;
   ModbusErrorCode errorCode;
-  ModbusError(uint8_t error);
+  explicit ModbusError(uint8_t error);
 };
 
 } // namespace rackmon

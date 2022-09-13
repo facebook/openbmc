@@ -185,7 +185,10 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   sscanf(cfg->description, "GPIOF%u", &slot_id);
   slot_id += 1;
   sprintf(pwr_cmd, "slot%u reset", slot_id);
-  if ( curr == GPIO_VALUE_LOW ) slot_power_control(pwr_cmd);
+  if ( curr == GPIO_VALUE_LOW ) {
+    slot_power_control(pwr_cmd);
+    pal_set_restart_cause(slot_id, RESTART_CAUSE_RESET_PUSH_BUTTON);
+  }
   log_gpio_change(gp, curr, 0, true);
 }
 

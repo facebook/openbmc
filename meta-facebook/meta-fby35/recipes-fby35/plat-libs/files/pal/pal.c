@@ -110,6 +110,7 @@ size_t bmc_fru_cnt  = NUM_BMC_FRU;
 #define BMC_CPLD_BUS     (12)
 #define NIC_EXP_CPLD_BUS (9)
 #define CPLD_FW_VER_ADDR (0x80)
+#define HD_CPLD_FW_VER_ADDR (0x88)
 #define BMC_CPLD_VER_REG (0x28002000)
 #define SB_CPLD_VER_REG  (0x000000c0)
 #define KEY_BMC_CPLD_VER "bmc_cpld_ver"
@@ -3730,6 +3731,9 @@ pal_get_cpld_ver(uint8_t fru, uint8_t *ver) {
     case FRU_SLOT2:
     case FRU_SLOT3:
     case FRU_SLOT4:
+      if (fby35_common_get_slot_type(fru) == SERVER_TYPE_HD){
+        cpld_addr = HD_CPLD_FW_VER_ADDR;
+      }
       i2c_bus = fby35_common_get_bus_id(fru) + 4;
       ver_reg = SB_CPLD_VER_REG;
       break;

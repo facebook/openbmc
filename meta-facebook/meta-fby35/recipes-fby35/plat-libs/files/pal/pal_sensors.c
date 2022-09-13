@@ -2212,13 +2212,18 @@ read_adc_val(uint8_t adc_id, float *value) {
         }
       }
       else if ( ADC11 == adc_id ) { // 0xFC, BMC_SENSOR_NIC_IOUT
-        if ( gval == MAXIM_SOLUTION ) {
-          *value = *value/0.22/1.2;
-        } else if ( gval == MPS_SOLUTION ) {
+        if ( rev_id >= BB_REV_DVT_1C ) {
           *value = *value/0.01/30;
-        } else {
-          syslog(LOG_WARNING, "%s() Fan current solution not support, gval = %d", __func__, gval);
-          return -1;
+        }
+        else { // DVT
+          if ( gval == MAXIM_SOLUTION ) {
+            *value = *value/0.22/1.2;
+          } else if ( gval == MPS_SOLUTION ) {
+            *value = *value/0.01/30;
+          } else {
+            syslog(LOG_WARNING, "%s() Fan current solution not support, gval = %d", __func__, gval);
+            return -1;
+          }
         }
       }
       // Other ADC channels do not need any value correction, just keep original value

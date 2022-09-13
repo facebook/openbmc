@@ -303,14 +303,15 @@ enum fw_rev {
 };
 
 enum brd_rev {
-  BB_REV_POC1 = 0,
-  BB_REV_POC2 = 1,
-  BB_REV_EVT  = 2,
-  BB_REV_EVT2 = 3,
-  BB_REV_EVT3 = 4,
-  BB_REV_DVT  = 5,
-  BB_REV_PVT  = 6,
-  BB_REV_MP   = 7,
+  BB_REV_POC1   = 0,
+  BB_REV_POC2   = 1,
+  BB_REV_EVT    = 2,
+  BB_REV_EVT2   = 3,
+  BB_REV_EVT3   = 4,
+  BB_REV_DVT    = 5,
+  BB_REV_DVT_1C = 6,
+  BB_REV_PVT    = 7,
+  BB_REV_MP     = 8,
 
   SB_REV_POC     = 0,
   SB_REV_EVT     = 1,

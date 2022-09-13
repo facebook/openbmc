@@ -826,7 +826,7 @@ exit:
 
 bool
 fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
-  const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "PVT", "MP"};
+  const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "DVT_1C", "PVT", "MP"};
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
   const char **board_type = rev_sb;
   uint8_t board_id = 0, exp_fw_rev = 0;
@@ -961,7 +961,7 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   else {
     if (BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
       exp_fw_rev = FW_REV_EVT;
-    else if (rev_id == BB_REV_DVT)
+    else if (rev_id == BB_REV_DVT || rev_id == BB_REV_DVT_1C)
       exp_fw_rev = FW_REV_DVT;
     else if (rev_id == BB_REV_PVT)
       exp_fw_rev = FW_REV_PVT;

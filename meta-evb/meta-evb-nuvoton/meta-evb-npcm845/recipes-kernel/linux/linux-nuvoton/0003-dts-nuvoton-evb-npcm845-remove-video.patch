@@ -1,0 +1,49 @@
+From 7f36d552809aaf14fc323ce59fe80856a1ebcd47 Mon Sep 17 00:00:00 2001
+From: Joseph Liu <kwliu@nuvoton.com>
+Date: Thu, 8 Sep 2022 08:55:39 +0800
+Subject: [PATCH] dts: nuvoton: evb-npcm845: remove video
+
+Signed-off-by: Joseph Liu <kwliu@nuvoton.com>
+---
+ .../boot/dts/nuvoton/nuvoton-npcm845-evb.dts   | 18 ------------------
+ 1 file changed, 18 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/nuvoton/nuvoton-npcm845-evb.dts b/arch/arm64/boot/dts/nuvoton/nuvoton-npcm845-evb.dts
+index 68025ffdc5e7..f8b175ccfa40 100644
+--- a/arch/arm64/boot/dts/nuvoton/nuvoton-npcm845-evb.dts
++++ b/arch/arm64/boot/dts/nuvoton/nuvoton-npcm845-evb.dts
+@@ -79,19 +79,6 @@ iio-hwmon {
+ 			<&adc 4>, <&adc 5>, <&adc 6>, <&adc 7>;
+ 	};
+ 
+-	reserved-memory {
+-		#address-cells = <2>;
+-		#size-cells = <2>;
+-		ranges;
+-
+-		video_memory: framebuffer@0x33400000 {
+-			compatible = "shared-dma-pool";
+-			reg = <0x0 0x33400000 0x0 0x01800000>;
+-			reusable;
+-			linux,cma-default;
+-		};
+-	};
+-
+ 	regulators {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+@@ -368,11 +355,6 @@ udc8:udc@f0838000 {
+ 			status = "okay";
+ 		};*/
+ 
+-		video: video@f0810000 {
+-			status = "okay";
+-			memory-region = <&video_memory>;
+-		};
+-
+ 		apb {
+ 			lpc_kcs: lpc_kcs@7000 {
+ 				kcs1: kcs1@0 {
+-- 
+2.34.1
+

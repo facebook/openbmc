@@ -1,0 +1,25 @@
+From e4785e71c05de31024be3d56d8683dbd66fe5005 Mon Sep 17 00:00:00 2001
+From: Joseph Liu <kwliu@nuvoton.com>
+Date: Tue, 6 Sep 2022 15:11:33 +0800
+Subject: [PATCH] arble: configs: Add fdt_high and initrd_high variables
+
+Signed-off-by: Joseph Liu <kwliu@nuvoton.com>
+---
+ include/configs/arbel.h | 1 ++
+ 1 file changed, 1 insertions(+)
+
+diff --git a/include/configs/arbel.h b/include/configs/arbel.h
+index b4ebc54641..ac2afdf105 100644
+--- a/include/configs/arbel.h
++++ b/include/configs/arbel.h
+@@ -57,6 +57,7 @@
+ 		"echo Using bootargs: ${bootargs};bootm ${uimage_flash_addr}\0" \
+ 		"earlycon=uart8250,mmio32,0xf0000000\0" \
+ 		"console=ttyS0,115200n8\0" \
++		"initrd_high=0xffffffff\0" \
+ 		"common_bootargs=setenv bootargs earlycon=${earlycon} root=/dev/ram " \
+ 		"console=${console} mem=${mem} ramdisk_size=48000 oops=panic panic=20\0" \
+ 		"ftp_prog=setenv ethact eth${eth_num}; dhcp; tftp 10000000 image-bmc; cp.b 10000000 80000000 ${filesize}\0"   \
+-- 
+2.34.1
+

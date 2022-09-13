@@ -40,6 +40,7 @@ enum _dimm_prsnt {
 };
 
 #define MAX_EXTEND_OPTION 8
+#define OPTION_CLEAR_ERR 0xFE
 #define OPTION_LIST_ERR 0xFF
 
 // dimm type decode table
@@ -795,6 +796,7 @@ util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
   uint8_t err_cnt = 0;
   uint8_t cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0, dimm_num = 0;
   const char *err_list[MAX_PMIC_ERR_TYPE] = {0};
+  char pmic_vendor[32] = {0};
 
   if (options == NULL) {
     return ERR_INVALID_SYNTAX;
@@ -817,6 +819,23 @@ util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
           printf("%s%s", err_list[i], (i < (err_cnt - 1)) ? ", " : "");
         }
         printf("\n");
+      }
+    }
+  } else if (options[0] == OPTION_CLEAR_ERR) {
+    for (cpu = startCPU; cpu < endCPU; cpu++) {
+      for (dimm_num = startDimm; dimm_num < endDimm; dimm_num++) {
+        get_spd5_pmic_vendor(fru_id, cpu, dimm_num, pmic_vendor);
+        if (strncmp(pmic_vendor, "MPS", sizeof(pmic_vendor)) == 0) {
+          // MPS PMIC clear function have some known issue, temporary disable error clear option.
+          printf("Clear failed. Clear function is not supported currently with MPS PMIC.\n");
+          return -1;
+        }
+        ret = pmic_clear_err(fru_id, cpu, dimm_num);
+        if (ret < 0) {
+          printf("Fail to clear DIMM %s PMIC error!\n", get_dimm_label(cpu, dimm_num));
+        } else {
+          printf("Clear DIMM %s PMIC error done\n", get_dimm_label(cpu, dimm_num));
+        }
       }
     }
   } else {
@@ -855,13 +874,14 @@ static int parse_cmdline_args(int argc, char **argv,
 {
   int ret, opt_index, idx;
   char *endptr = NULL;
-  static const char *optstring = "d:jfli";
+  static const char *optstring = "d:jflic";
   struct option long_opts[] = {
     {"dimm"    , required_argument, NULL, 'd'},
     {"json"    , no_argument      , NULL, 'j'},
     {"force"   , no_argument      , NULL, 'f'},
     {"err_list", no_argument      , NULL, 'l'},
     {"err_inj" , required_argument, NULL, 'i'},
+    {"err_clear" , no_argument    , NULL, 'c'},
     {NULL, 0,	NULL,	0},
   };
 
@@ -895,6 +915,9 @@ static int parse_cmdline_args(int argc, char **argv,
       break;
     case 'l':
       options[0] = OPTION_LIST_ERR;
+      break;
+    case 'c':
+      options[0] = OPTION_CLEAR_ERR;
       break;
     case 'i':
       idx = pmic_err_index(optarg);
@@ -1000,6 +1023,7 @@ print_usage_help(void) {
   printf("                 high_current|\n");
   printf("                 current_limit|\n");
   printf("                 critical_temp_shutdown>\n");
+  printf("   --err_clear - clear PMIC error\n");
 }
 
 static int

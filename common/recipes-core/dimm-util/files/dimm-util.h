@@ -99,6 +99,7 @@ int util_read_spd_with_retry(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t
 int pmic_err_index(const char *str);
 int pmic_list_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, const char **err_list, uint8_t *err_cnt);
 int pmic_inject_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t option);
+int pmic_clear_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm_num);
 
 // util functions to be provided by each platform
 int util_check_me_status(uint8_t fru_id);

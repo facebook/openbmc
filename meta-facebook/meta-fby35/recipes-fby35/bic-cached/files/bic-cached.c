@@ -87,6 +87,7 @@ fruid_cache_init(uint8_t slot_id) {
   char fruid_temp_path[64] = {0};
   char fruid_path[64] = {0};
   uint8_t bmc_location = 0;
+  uint8_t type_1ou = UNKNOWN_BOARD;
   uint8_t type_2ou = UNKNOWN_BOARD;
 
   sprintf(fruid_temp_path, "/tmp/tfruid_slot%d.bin", slot_id);
@@ -116,7 +117,19 @@ fruid_cache_init(uint8_t slot_id) {
   } else { // Baseboard BMC
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
       // dump 1ou board fru
-      remote_f_ret = remote_fruid_cache_init(slot_id, 0, FEXP_BIC_INTF);
+      ret = bic_get_card_type(slot_id, CARD_TYPE_1OU, &type_1ou);
+      if (ret == 0) {
+        switch (type_1ou) {
+          case TYPE_1OU_RAINBOW_FALLS:
+            remote_f_ret = remote_fruid_cache_init(slot_id, FRUID_0, FEXP_BIC_INTF);
+            break;
+          default:
+            remote_f_ret = 0;
+        }
+      }
+      else {
+        syslog(LOG_WARNING, "%s() Failed to get 1OU board type\n", __func__);
+      }
     }
     if (PRESENT_2OU == (PRESENT_2OU & present)) {
       if ( fby35_common_get_2ou_board_type(slot_id, &type_2ou) < 0 ) {

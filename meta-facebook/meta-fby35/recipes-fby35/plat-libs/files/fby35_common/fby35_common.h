@@ -125,6 +125,7 @@ extern const char *slot_usage;
 
 // BB cpld reg
 #define SLED_STATUS_REG 0x0D
+#define FRUID_0 0
 
 enum {
   FRU_ALL       = 0,

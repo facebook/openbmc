@@ -29,6 +29,7 @@ def bh(bs):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--addr", type=auto_int, required=True, help="PSU Modbus Address")
+parser.add_argument("--key", type=auto_int, required=True, help="Sec key")
 parser.add_argument(
     "--statusfile", default=None, help="Write status to JSON file during process"
 )
@@ -43,7 +44,6 @@ parser.add_argument(
 parser.add_argument("file", help="firmware file")
 
 status = {"pid": os.getpid(), "state": "started"}
-last_key_exchange_time = 0.0
 
 statuspath = None
 
@@ -185,33 +185,21 @@ def send_key(addr, key):
     print("Send key successful.")
 
 
-def delta_seccalckey(challenge):
+def delta_seccalckey(challenge, key):
+    lower = key & 0xFFFFFFFF
+    upper = (key >> 32) & 0xFFFFFFFF
     (seed,) = struct.unpack(">L", challenge)
     for _ in range(32):
         if seed & 1 != 0:
-            seed = seed ^ 0xC758A5B6
+            seed = seed ^ lower
         seed = (seed >> 1) & 0x7FFFFFFF
-    seed = seed ^ 0x06854137
+    seed = seed ^ upper
     return struct.pack(">L", seed)
 
 
-def key_handshake(addr):
-    global last_key_exchange_time
+def key_handshake(addr, key):
     challenge = get_challenge(addr)
-    send_key(addr, delta_seccalckey(challenge))
-    last_key_exchange_time = time.monotonic()
-
-
-def check_key_validity(addr):
-    global last_key_exchange_time
-    # Spec expects key handshake to be valid for
-    # 8min. Take a conservative estimate of 7min.
-    timeout_sec = 7 * 60
-    if time.monotonic() > (last_key_exchange_time + timeout_sec):
-        print("Key is being refreshed....")
-        key_handshake(addr)
-        return True
-    return False
+    send_key(addr, delta_seccalckey(challenge, key))
 
 
 def erase_flash(addr):
@@ -319,21 +307,19 @@ def send_image(addr, fwimg):
                     end="",
                 )
             sys.stdout.flush()
-            if check_key_validity(addr):
-                set_write_address(addr, s.start_address + i)
             write_data(addr, bytearray(chunk))
             status["flash_progress_percent"] = sent_chunks * 100.0 / total_chunks
             write_status()
         print("")
 
 
-def update_psu(addr, filename):
+def update_psu(addr, filename, key):
     addr_b = addr.to_bytes(1, "big")
     status_state("pausing_monitoring")
     pyrmd.pause_monitoring_sync()
     status_state("parsing_fw_file")
     fwimg = hexfile.load(filename)
-    key_handshake(addr_b)
+    key_handshake(addr_b, key)
     status_state("erase_flash")
     erase_flash(addr_b)
     status_state("flashing")
@@ -355,7 +341,7 @@ def main():
             transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
         print("statusfile %s" % statuspath)
         try:
-            update_psu(args.addr, args.file)
+            update_psu(args.addr, args.file, args.key)
         except Exception as e:
             fstatus = get_status_reg(args.addr.to_bytes(1, "big"))
             print("Firmware update failed %s" % str(e))

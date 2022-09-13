@@ -29,6 +29,7 @@ def bh(bs):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--addr", type=auto_int, required=True, help="PSU Modbus Address")
+parser.add_argument("--key", type=auto_int, required=True, help="Sec key")
 parser.add_argument(
     "--statusfile", default=None, help="Write status to JSON file during process"
 )
@@ -129,13 +130,15 @@ def send_key(addr, key):
     print("Send key successful.")
 
 
-def delta_seccalckey(challenge):
+def delta_seccalckey(challenge, key):
+    lower = key & 0xFFFFFFFF
+    upper = (key >> 32) & 0xFFFFFFFF
     (seed,) = struct.unpack(">L", challenge)
     for _ in range(32):
         if seed & 1 != 0:
-            seed = seed ^ 0xC758A5B6
+            seed = seed ^ lower
         seed = (seed >> 1) & 0x7FFFFFFF
-    seed = seed ^ 0x06854137
+    seed = seed ^ upper
     return struct.pack(">L", seed)
 
 
@@ -238,7 +241,7 @@ def erase_flash(addr):
         raise BadMEIResponse()
 
 
-def update_psu(addr, filename):
+def update_psu(addr, filename, key):
     status_state("pausing_monitoring")
     pyrmd.pause_monitoring_sync()
     status_state("parsing_fw_file")
@@ -252,7 +255,7 @@ def update_psu(addr, filename):
     enter_bootloader(addr)
     start_programming(addr)
     challenge = get_challenge(addr)
-    send_key(addr, delta_seccalckey(challenge))
+    send_key(addr, delta_seccalckey(challenge, key))
     for _ in range(5):
         try:
             status_state("erase_flash")
@@ -279,7 +282,7 @@ def main():
             transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
         print("statusfile %s" % statuspath)
         try:
-            update_psu(args.addr, args.file)
+            update_psu(args.addr, args.file, args.key)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()

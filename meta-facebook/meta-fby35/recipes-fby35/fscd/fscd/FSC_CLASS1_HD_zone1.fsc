@@ -1,7 +1,7 @@
 max([
   linear_frontIO_inlet(
     max([
-      slot1:fio_temp,
-      slot3:fio_temp])),
-  linear_nic(nic:nic_sensor_temp)
+      slot1:fio_front_temp_c,
+      slot3:fio_front_temp_c])),
+  linear_nic(nic:nic_temp_c)
 ])

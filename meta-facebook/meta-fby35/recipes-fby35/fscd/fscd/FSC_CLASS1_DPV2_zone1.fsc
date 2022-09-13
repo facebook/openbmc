@@ -3,35 +3,35 @@ max([
   linear_cpu_margin(slot3:soc_therm_margin) + pid_cpu_margin(slot3:soc_therm_margin),
   linear_frontIO_inlet(
     max([
-      slot1:fio_temp,
-      slot3:fio_temp])),
+      slot1:fio_front_temp_c,
+      slot3:fio_front_temp_c])),
   linear_dimm(
     max([
-      slot1:dimma_temp,
-      slot1:dimmc_temp,
-      slot1:dimmd_temp,
-      slot1:dimme_temp,
-      slot1:dimmg_temp,
-      slot1:dimmh_temp,
-      slot3:dimma_temp,
-      slot3:dimmc_temp,
-      slot3:dimmd_temp,
-      slot3:dimme_temp,
-      slot3:dimmg_temp,
-      slot3:dimmh_temp])) +
+      slot1:mb_dimma0_temp_c,
+      slot1:mb_dimma2_temp_c,
+      slot1:mb_dimma3_temp_c,
+      slot1:mb_dimma4_temp_c,
+      slot1:mb_dimma6_temp_c,
+      slot1:mb_dimma7_temp_c,
+      slot3:mb_dimma0_temp_c,
+      slot3:mb_dimma2_temp_c,
+      slot3:mb_dimma3_temp_c,
+      slot3:mb_dimma4_temp_c,
+      slot3:mb_dimma6_temp_c,
+      slot3:mb_dimma7_temp_c])) +
   pid_dimm(
     max([
-      slot1:dimma_temp,
-      slot1:dimmc_temp,
-      slot1:dimmd_temp,
-      slot1:dimme_temp,
-      slot1:dimmg_temp,
-      slot1:dimmh_temp,
-      slot3:dimma_temp,
-      slot3:dimmc_temp,
-      slot3:dimmd_temp,
-      slot3:dimme_temp,
-      slot3:dimmg_temp,
-      slot3:dimmh_temp])),
-  linear_nic(nic:nic_sensor_temp) + pid_nic(nic:nic_sensor_temp)
+      slot1:mb_dimma0_temp_c,
+      slot1:mb_dimma2_temp_c,
+      slot1:mb_dimma3_temp_c,
+      slot1:mb_dimma4_temp_c,
+      slot1:mb_dimma6_temp_c,
+      slot1:mb_dimma7_temp_c,
+      slot3:mb_dimma0_temp_c,
+      slot3:mb_dimma2_temp_c,
+      slot3:mb_dimma3_temp_c,
+      slot3:mb_dimma4_temp_c,
+      slot3:mb_dimma6_temp_c,
+      slot3:mb_dimma7_temp_c])),
+  linear_nic(nic:nic_temp_c) + pid_nic(nic:nic_temp_c)
 ])

@@ -17,7 +17,8 @@
 #define ESC_ALT ESCAPE"[5;7m"
 #define ESC_RST ESCAPE"[m"
 
-static sensor_desc_t dynamic_critical_sensor[MAX_SENSOR_NUM + 1] = {0};
+#define MAX_SENSOR_NAME 31
+static sensor_desc_t critical_sensor_list[MAX_SENSOR_NUM + 1] = {0};
 
 //These postcodes are defined in document "F08 BIOS Specification" Revision: 2A
 static post_desc_t pdesc_phase1[] = {
@@ -382,196 +383,6 @@ static dbg_gpio_desc_t gdesc[] = {
  { 0x17, 0, 1, "FM_UART_SWITCH" },
 };
 
-static sensor_desc_t critical_sensor_sb[] =
-{
-  {"MB Inlet Temp:"        , BIC_SENSOR_INLET_TEMP         , "C"    , FRU_ALL, 0},
-  {"MB Outlet Temp:"       , BIC_SENSOR_OUTLET_TEMP        , "C"    , FRU_ALL, 0},
-  {"FIO Temp:"             , BIC_SENSOR_FIO_TEMP           , "C"    , FRU_ALL, 0},
-  {"PCH Temp:"             , BIC_SENSOR_PCH_TEMP           , "C"    , FRU_ALL, 0},
-  {"CPU Temp:"             , BIC_SENSOR_CPU_TEMP           , "C"    , FRU_ALL, 0},
-  {"Therm Margin:"         , BIC_SENSOR_CPU_THERM_MARGIN   , "C"    , FRU_ALL, 0},
-  {"CPU TjMax:"            , BIC_SENSOR_CPU_TJMAX          , "C"    , FRU_ALL, 0},
-  {"DIMMA TEMP:"           , BIC_SENSOR_DIMMA0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMC TEMP:"           , BIC_SENSOR_DIMMC0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMD TEMP:"           , BIC_SENSOR_DIMMD0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMME TEMP:"           , BIC_SENSOR_DIMME0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMG TEMP:"           , BIC_SENSOR_DIMMG0_TEMP        , "C"    , FRU_ALL, 0},
-  {"DIMMH TEMP:"           , BIC_SENSOR_DIMMH0_TEMP        , "C"    , FRU_ALL, 0},
-  {"SSD0 Temp:"            , BIC_SENSOR_M2A_TEMP           , "C"    , FRU_ALL, 0},
-  {"HSC Temp:"             , BIC_SENSOR_HSC_TEMP           , "C"    , FRU_ALL, 0},
-  {"VCCIN SPS Temp:"       , BIC_SENSOR_VCCIN_VR_TEMP      , "C"    , FRU_ALL, 0},
-  {"FIVRA SPS Temp:"       , BIC_SENSOR_FIVRA_VR_TEMP      , "C"    , FRU_ALL, 0},
-  {"EHV SPS Temp:"         , BIC_SENSOR_EHV_VR_TEMP        , "C"    , FRU_ALL, 0},
-  {"VCCD SPS Temp:"        , BIC_SENSOR_VCCD_VR_TEMP       , "C"    , FRU_ALL, 0},
-  {"FAON SPS Temp:"        , BIC_SENSOR_FAON_VR_TEMP       , "C"    , FRU_ALL, 0},
-  {"P12V_STBY Vol:"        , BIC_SENSOR_P12V_STBY_VOL      , "V"    , FRU_ALL, 2},
-  {"P3V_BAT Vol:"          , BIC_SENSOR_P3V_BAT_VOL        , "V"    , FRU_ALL, 2},
-  {"P3V3_STBY Vol:"        , BIC_SENSOR_P3V3_STBY_VOL      , "V"    , FRU_ALL, 2},
-  {"P1V05_PCH Vol:"        , BIC_SENSOR_P1V05_PCH_STBY_VOL , "V"    , FRU_ALL, 2},
-  {"P1V8_STBY Vol:"        , BIC_SENSOR_P1V8_STBY_VOL      , "V"    , FRU_ALL, 2},
-  {"HSC Input Vol:"        , BIC_SENSOR_HSC_INPUT_VOL      , "V"    , FRU_ALL, 2},
-  {"VCCIN VR Vol:"         , BIC_SENSOR_VCCIN_VR_VOL       , "V"    , FRU_ALL, 2},
-  {"FIVRA VR Vol:"         , BIC_SENSOR_FIVRA_VR_VOL       , "V"    , FRU_ALL, 2},
-  {"EHV VR Vol:"           , BIC_SENSOR_EHV_VR_VOL         , "V"    , FRU_ALL, 2},
-  {"VCCD VR Vol:"          , BIC_SENSOR_VCCD_VR_VOL        , "V"    , FRU_ALL, 2},
-  {"FAON VR Vol:"          , BIC_SENSOR_FAON_VR_VOL        , "V"    , FRU_ALL, 2},
-  {"HSC Output Cur:"       , BIC_SENSOR_HSC_OUTPUT_CUR     , "A"    , FRU_ALL, 2},
-  {"VCCIN VR Cur:"         , BIC_SENSOR_VCCIN_VR_CUR       , "A"    , FRU_ALL, 2},
-  {"FIVRA VR Cur:"         , BIC_SENSOR_FIVRA_VR_CUR       , "A"    , FRU_ALL, 2},
-  {"EHV VR Cur:"           , BIC_SENSOR_EHV_VR_CUR         , "A"    , FRU_ALL, 2},
-  {"VCCD VR Cur:"          , BIC_SENSOR_VCCD_VR_CUR        , "A"    , FRU_ALL, 2},
-  {"FAON VR Cur:"          , BIC_SENSOR_FAON_VR_CUR        , "A"    , FRU_ALL, 2},
-  {"HSC Input Pwr:"        , BIC_SENSOR_HSC_INPUT_PWR      , "W"    , FRU_ALL, 2},
-  {"VCCIN VR Pout:"        , BIC_SENSOR_VCCIN_VR_POUT      , "W"    , FRU_ALL, 2},
-  {"FIVRA VR Pout:"        , BIC_SENSOR_FIVRA_VR_POUT      , "W"    , FRU_ALL, 2},
-  {"EHV VR Pout:"          , BIC_SENSOR_EHV_VR_POUT        , "W"    , FRU_ALL, 2},
-  {"VCCD VR Pout"          , BIC_SENSOR_VCCD_VR_POUT       , "W"    , FRU_ALL, 2},
-  {"FAON VR Pout:"         , BIC_SENSOR_FAON_VR_POUT       , "W"    , FRU_ALL, 2},
-  {"DIMMA PMIC_Pout:"      , BIC_SENSOR_DIMMA_PMIC_Pout    , "W"    , FRU_ALL, 2},
-  {"DIMMC PMIC_Pout:"      , BIC_SENSOR_DIMMC_PMIC_Pout    , "W"    , FRU_ALL, 2},
-  {"DIMMD PMIC_Pout:"      , BIC_SENSOR_DIMMD_PMIC_Pout    , "W"    , FRU_ALL, 2},
-  {"DIMME PMIC_Pout:"      , BIC_SENSOR_DIMME_PMIC_Pout    , "W"    , FRU_ALL, 2},
-  {"DIMMG PMIC_Pout:"      , BIC_SENSOR_DIMMG_PMIC_Pout    , "W"    , FRU_ALL, 2},
-  {"DIMMH PMIC_Pout:"      , BIC_SENSOR_DIMMH_PMIC_Pout    , "W"    , FRU_ALL, 2},
-};
-
-static sensor_desc_t critical_sensor_bmc[] =
-{
-  {"BMC_SENSOR_FAN0_TACH:"            , BMC_SENSOR_FAN0_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN1_TACH:"            , BMC_SENSOR_FAN1_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN2_TACH:"            , BMC_SENSOR_FAN2_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN3_TACH:"            , BMC_SENSOR_FAN3_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN4_TACH:"            , BMC_SENSOR_FAN4_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN5_TACH:"            , BMC_SENSOR_FAN5_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN6_TACH:"            , BMC_SENSOR_FAN6_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_FAN7_TACH:"            , BMC_SENSOR_FAN7_TACH          , "RPM"  , FRU_BMC, 0},
-  {"BMC_SENSOR_PWM0:"                 , BMC_SENSOR_PWM0               , "%"    , FRU_BMC, 0},
-  {"BMC_SENSOR_PWM1:"                 , BMC_SENSOR_PWM1               , "%"    , FRU_BMC, 0},
-  {"BMC_SENSOR_PWM2:"                 , BMC_SENSOR_PWM2               , "%"    , FRU_BMC, 0},
-  {"BMC_SENSOR_PWM3:"                 , BMC_SENSOR_PWM3               , "%"    , FRU_BMC, 0},
-  {"BMC_OUTLET_TEMP:"                 , BMC_SENSOR_OUTLET_TEMP        , "C"    , FRU_BMC, 0},
-  {"BMC_INLET_TEMP:"                  , BMC_SENSOR_INLET_TEMP         , "C"    , FRU_BMC, 0},
-  {"BMC_SENSOR_P5V:"                  , BMC_SENSOR_P5V                , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_P12V:"                 , BMC_SENSOR_P12V               , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_P3V3_STBY:"            , BMC_SENSOR_P3V3_STBY          , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_P1V8_STBY:"            , BMC_SENSOR_P1V8_STBY          , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_P1V2_STBY:"            , BMC_SENSOR_P1V2_BMC_STBY      , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_P2V5_STBY:"            , BMC_SENSOR_P2V5_BMC_STBY      , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_HSC_TEMP:"             , BMC_SENSOR_HSC_TEMP           , "C"    , FRU_BMC, 0},
-  {"BMC_SENSOR_BMC_SENSOR_HSC_VIN:"   , BMC_SENSOR_HSC_VIN            , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_HSC_PIN:"              , BMC_SENSOR_HSC_PIN            , "W"    , FRU_BMC, 2},
-  {"BMC_SENSOR_HSC_IOUT:"             , BMC_SENSOR_HSC_IOUT           , "A"    , FRU_BMC, 2},
-  {"BMC_SENSOR_HSC_PEAK_IOUT:"        , BMC_SENSOR_HSC_PEAK_IOUT      , "A"    , FRU_BMC, 2},
-  {"BMC_SENSOR_HSC_PEAK_PIN:"         , BMC_SENSOR_HSC_PEAK_PIN       , "W"    , FRU_BMC, 2},
-  {"BMC_SENSOR_MEDUSA_VOUT:"          , BMC_SENSOR_MEDUSA_VOUT        , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_MEDUSA_VIN:"           , BMC_SENSOR_MEDUSA_VIN         , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_MEDUSA_CURR:"          , BMC_SENSOR_MEDUSA_CURR        , "A"    , FRU_BMC, 2},
-  {"BMC_SENSOR_MEDUSA_PWR:"           , BMC_SENSOR_MEDUSA_PWR         , "W"    , FRU_BMC, 2},
-  {"BMC_SENSOR_MEDUSA_VDELTA:"        , BMC_SENSOR_MEDUSA_VDELTA      , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_PDB_CL_VDELTA:"        , BMC_SENSOR_PDB_CL_VDELTA      , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_PDB_BB_VDELTA:"        , BMC_SENSOR_PDB_BB_VDELTA      , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_CURR_LEAKAGE:"         , BMC_SENSOR_CURR_LEAKAGE       , "%"    , FRU_BMC, 2},
-  {"BMC_SENSOR_FAN_IOUT:"             , BMC_SENSOR_FAN_IOUT           , "A"    , FRU_BMC, 2},
-  {"BMC_SENSOR_FAN_PWR:"              , BMC_SENSOR_FAN_PWR            , "W"    , FRU_BMC, 2},
-  {"BMC_SENSOR_NIC_P12V:"             , BMC_SENSOR_NIC_P12V           , "V"    , FRU_BMC, 2},
-  {"BMC_SENSOR_NIC_IOUT:"             , BMC_SENSOR_NIC_IOUT           , "A"    , FRU_BMC, 2},
-  {"BMC_SENSOR_NIC_PWR:"              , BMC_SENSOR_NIC_PWR            , "W"    , FRU_BMC, 2},
-};
-
-static sensor_desc_t critical_sensor_1ou_vf[] =
-{
-  {"E1S Outlet Temp:"      , BIC_1OU_VF_SENSOR_NUM_T_MB_OUTLET_TEMP_T , "C" , FRU_ALL, 0},
-  {"E1S P12V_AUX:"         , BIC_1OU_VF_SENSOR_NUM_V_12_AUX           , "V" , FRU_ALL, 2},
-  {"E1S P12V_EDGE:"        , BIC_1OU_VF_SENSOR_NUM_V_12_EDGE          , "V" , FRU_ALL, 2},
-  {"E1S P3V3_AUX:"         , BIC_1OU_VF_SENSOR_NUM_V_3_3_AUX          , "V" , FRU_ALL, 2},
-  {"E1S DEV0 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2A     , "W" , FRU_ALL, 2},
-  {"E1S DEV0 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2A     , "V" , FRU_ALL, 2},
-  {"E1S DEV0 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2A      , "C" , FRU_ALL, 0},
-  {"E1S 3V3_ADC_DEV0:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2A    , "V" , FRU_ALL, 2},
-  {"E1S 12V_ADC_DEV0:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2A    , "V" , FRU_ALL, 2},
-  {"E1S DEV1 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2B     , "W" , FRU_ALL, 2},
-  {"E1S DEV1 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2B     , "V" , FRU_ALL, 2},
-  {"E1S DEV1 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2B      , "C" , FRU_ALL, 0},
-  {"E1S 3V3_ADC_DEV1:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2B    , "V" , FRU_ALL, 2},
-  {"E1S 12V_ADC_DEV1:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2B    , "V" , FRU_ALL, 2},
-  {"E1S DEV2 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2C     , "W" , FRU_ALL, 2},
-  {"E1S DEV2 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2C     , "V" , FRU_ALL, 2},
-  {"E1S DEV2 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2C      , "C" , FRU_ALL, 0},
-  {"E1S 3V3_ADC_DEV2:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2C    , "V" , FRU_ALL, 2},
-  {"E1S 12V_ADC_DEV2:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2C    , "V" , FRU_ALL, 2},
-  {"E1S DEV3 Power:"       , BIC_1OU_VF_SENSOR_NUM_INA231_PWR_M2D     , "W" , FRU_ALL, 2},
-  {"E1S DEV3 Voltage:"     , BIC_1OU_VF_SENSOR_NUM_INA231_VOL_M2D     , "V" , FRU_ALL, 2},
-  {"E1S DEV3 Temp:"        , BIC_1OU_VF_SENSOR_NUM_NVME_TEMP_M2D      , "C" , FRU_ALL, 0},
-  {"E1S 3V3_ADC_DEV3:"     , BIC_1OU_VF_SENSOR_NUM_ADC_3V3_VOL_M2D    , "V" , FRU_ALL, 2},
-  {"E1S 12V_ADC_DEV3:"     , BIC_1OU_VF_SENSOR_NUM_ADC_12V_VOL_M2D    , "V" , FRU_ALL, 2},
-};
-
-static sensor_desc_t critical_sensor_1ou_rf[] =
-{
-  {"RF MB Inlet Temp:"     , BIC_1OU_RF_INLET_TEMP          , "C"   , FRU_ALL, 0},
-  {"RF CXL_cntr_Temp:"     , BIC_1OU_RF_CXL_CNTR_TEMP       , "C"   , FRU_ALL, 0},
-  {"RF P0V9A_SPS Temp:"    , BIC_1OU_RF_P0V9A_SPS_TEMP      , "C"   , FRU_ALL, 0},
-  {"RF P0V8A_SPS Temp:"    , BIC_1OU_RF_P0V8A_SPS_TEMP      , "C"   , FRU_ALL, 0},
-  {"RF P0V8D_SPS Temp:"    , BIC_1OU_RF_P0V8D_SPS_TEMP      , "C"   , FRU_ALL, 0},
-  {"RF PVDDQ_AB_SPS Temp:" , BIC_1OU_RF_PVDDQ_AB_SPS_TEMP   , "C"   , FRU_ALL, 0},
-  {"RF PVDDQ_CD_SPS Temp:" , BIC_1OU_RF_PVDDQ_CD_SPS_TEMP   , "C"   , FRU_ALL, 0},
-  {"RF P12V_STBY Vol:"     , BIC_1OU_RF_P12V_STBY_VOL       , "V"   , FRU_ALL, 2},
-  {"RF P3V3_STBY Vol:"     , BIC_1OU_RF_P3V3_STBY_VOL       , "V"   , FRU_ALL, 2},
-  {"RF P5V_STBY Vol:"      , BIC_1OU_RF_P5V_STBY_VOL        , "V"   , FRU_ALL, 2},
-  {"RF P1V2_STBY Vol:"     , BIC_1OU_RF_P1V2_STBY_VOL       , "V"   , FRU_ALL, 2},
-  {"RF P1V8_ASIC Vol:"     , BIC_1OU_RF_P1V8_ASIC_VOL       , "V"   , FRU_ALL, 2},
-  {"RF P0V9_ASIC_A Vol:"   , BIC_1OU_RF_P0V9_ASIC_A_VOL     , "V"   , FRU_ALL, 2},
-  {"RF P0V8_ASIC_A Vol:"   , BIC_1OU_RF_P0V8_ASIC_A_VOL     , "V"   , FRU_ALL, 2},
-  {"RF P0V8_ASIC_D Vol:"   , BIC_1OU_RF_P0V8_ASIC_D_VOL     , "V"   , FRU_ALL, 2},
-  {"RF PVDDQ_AB Vol:"      , BIC_1OU_RF_PVDDQ_AB_VOL        , "V"   , FRU_ALL, 2},
-  {"RF PVDDQ_CD Vol:"      , BIC_1OU_RF_PVDDQ_CD_VOL        , "V"   , FRU_ALL, 2},
-  {"RF PVPP_AB Vol:"       , BIC_1OU_RF_PVPP_AB_VOL         , "V"   , FRU_ALL, 2},
-  {"RF PVPP_CD Vol:"       , BIC_1OU_RF_PVPP_CD_VOL         , "V"   , FRU_ALL, 2},
-  {"RF PVTT_AB Vol:"       , BIC_1OU_RF_PVTT_AB_VOL         , "V"   , FRU_ALL, 2},
-  {"RF PVTT_CD Vol:"       , BIC_1OU_RF_PVTT_CD_VOL         , "V"   , FRU_ALL, 2},
-  {"RF P12V_STBY Cur:"     , BIC_1OU_RF_P12V_STBY_CUR       , "A"   , FRU_ALL, 2},
-  {"RF P3V3_STBY Cur:"     , BIC_1OU_RF_P3V3_STBY_CUR       , "A"   , FRU_ALL, 2},
-  {"RF P0V9A VR Cur:"      , BIC_1OU_RF_P0V9A_VR_CUR        , "A"   , FRU_ALL, 2},
-  {"RF P0V8A VR Cur:"      , BIC_1OU_RF_P0V8A_VR_CUR        , "A"   , FRU_ALL, 2},
-  {"RF P0V8D VR Cur:"      , BIC_1OU_RF_P0V8D_VR_CUR        , "A"   , FRU_ALL, 2},
-  {"RF PVDDQ_AB VR Cur:"   , BIC_1OU_RF_PVDDQ_VR_CUR        , "A"   , FRU_ALL, 2},
-  {"RF PVDDQ_CD VR Cur:"   , BIC_1OU_RF_PVDDQV_VR_CUR       , "A"   , FRU_ALL, 2},
-  {"RF P12V_STBY_PWR:"     , BIC_1OU_RF_P12V_STBY_PWR       , "W"   , FRU_ALL, 2},
-  {"RF P3V3_STBY_PWR:"     , BIC_1OU_RF_P3V3_STBY_PWR       , "W"   , FRU_ALL, 2},
-  {"RF P0V9A_SPS_PWR:"     , BIC_1OU_RF_P0V9A_SPS_PWR       , "W"   , FRU_ALL, 2},
-  {"RF P0V8A_SPS_PWR:"     , BIC_1OU_RF_P0V8A_SPS_PWR       , "W"   , FRU_ALL, 2},
-  {"RF P0V8D_SPS_PWR:"     , BIC_1OU_RF_P0V8D_SPS_PWR       , "W"   , FRU_ALL, 2},
-  {"RF PVDDQ_AB_SPS_PWR:"  , BIC_1OU_RF_PVDDQ_AB_SPS_PWR    , "W"   , FRU_ALL, 2},
-  {"RF PVDDQ_CD_SPS_PWR:"  , BIC_1OU_RF_PVDDQ_CD_SPS_PWR    , "W"   , FRU_ALL, 2},
-};
-
-static sensor_desc_t critical_sensor_dpv2_x8[] =
-{
-// dpv2_x8 sensors
-  {"DPV2_1_12V_VIN:"       , BMC_DPV2_SENSOR_DPV2_1_12V_VIN           , "V"   , FRU_ALL, 2},
-  {"DPV2_1_12V_VOUT:"      , BMC_DPV2_SENSOR_DPV2_1_12V_VOUT          , "V"   , FRU_ALL, 2},
-  {"DPV2_1_12V_IOUT:"      , BMC_DPV2_SENSOR_DPV2_1_12V_IOUT          , "A"   , FRU_ALL, 2},
-  {"DPV2_1_EFUSETemp:"     , BMC_DPV2_SENSOR_DPV2_1_EFUSE_TEMP        , "C"   , FRU_ALL, 0},
-  {"DPV2_1_EFUSEPWR:"      , BMC_DPV2_SENSOR_DPV2_1_EFUSE_PWR         , "W"   , FRU_ALL, 2},
-};
-
-static sensor_desc_t critical_sensor_dpv2_x16[] =
-{
-// dpv2_x16 sensors
-  {"DPV2_2_12V_VIN:"       , BIC_DPV2_SENSOR_DPV2_2_12V_VIN           , "V"   , FRU_ALL, 2},
-  {"DPV2_2_12V_VOUT:"      , BIC_DPV2_SENSOR_DPV2_2_12V_VOUT          , "V"   , FRU_ALL, 2},
-  {"DPV2_2_12V_IOUT:"      , BIC_DPV2_SENSOR_DPV2_2_12V_IOUT          , "A"   , FRU_ALL, 2},
-  {"DPV2_2_EFUSETemp:"     , BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP        , "C"   , FRU_ALL, 0},
-  {"DPV2_2_EFUSEPWR:"      , BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR         , "W"   , FRU_ALL, 2},
-};
-
-size_t critical_sensor_bmc_cnt = sizeof(critical_sensor_bmc) / sizeof(sensor_desc_t);
-size_t critical_sensor_sb_cnt = sizeof(critical_sensor_sb)/sizeof(sensor_desc_t);
-size_t critical_sensor_1ou_vf_cnt = sizeof(critical_sensor_1ou_vf)/sizeof(sensor_desc_t);
-size_t critical_sensor_1ou_rf_cnt = sizeof(critical_sensor_1ou_rf)/sizeof(sensor_desc_t);
-size_t critical_sensor_dpv2_x8_cnt = sizeof(critical_sensor_dpv2_x8)/sizeof(sensor_desc_t);
-size_t critical_sensor_dpv2_x16_cnt = sizeof(critical_sensor_dpv2_x16)/sizeof(sensor_desc_t);
-
 bool plat_supported(void)
 {
   return true;
@@ -600,10 +411,11 @@ int plat_get_gdesc(uint8_t fru, dbg_gpio_desc_t **desc, size_t *desc_count)
 
 int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
 {
-  int ret = 0, config_status = 0;
-  uint8_t bmc_location = 0, type_1ou = TYPE_1OU_UNKNOWN;
-  uint8_t board_type = 0;
-  uint8_t current_sensor_count = 0;
+  int ret = 0;
+  uint8_t *sensor_nums;
+  int i = 0;
+  int count = 0;
+  thresh_sensor_t sensor_info;
 
   if (!desc) {
     syslog(LOG_ERR, "%s() Variable: desc NULL pointer ERROR", __func__);
@@ -614,67 +426,39 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
     syslog(LOG_ERR, "%s() Variable: desc_count NULL pointer ERROR", __func__);
     return -1;
   }
-
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Cannot get the location of BMC", __func__);
-    return ret;
+  if (fru == UART_SELECT_BMC) {
+    fru = FRU_BMC;
   }
-
-  if (fru == UART_SELECT_BMC) { //uart select BMC position
-    *desc = critical_sensor_bmc;
-    *desc_count = critical_sensor_bmc_cnt;
-  } else {
-    memset(dynamic_critical_sensor, 0, sizeof(dynamic_critical_sensor));
-    memcpy(dynamic_critical_sensor, critical_sensor_sb, sizeof(critical_sensor_sb));
-    current_sensor_count = critical_sensor_sb_cnt;
-
-    config_status = bic_is_exp_prsnt(fru);
-    if (config_status < 0) {
-      config_status = NO_EXPANSION_PRESENT;
-    }
-
-    // 1OU
-    if ((bmc_location == BB_BMC) && ((config_status & PRESENT_1OU) == PRESENT_1OU)) {
-      ret = bic_get_1ou_type(fru, &type_1ou);
-      if (ret == 0) {
-        switch (type_1ou) {
-          case TYPE_1OU_VERNAL_FALLS_WITH_AST:
-            memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_vf, sizeof(critical_sensor_1ou_vf));
-            current_sensor_count += critical_sensor_1ou_vf_cnt;
-            break;
-          case TYPE_1OU_RAINBOW_FALLS:
-            memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_1ou_rf, sizeof(critical_sensor_1ou_rf));
-            current_sensor_count += critical_sensor_1ou_rf_cnt;
-            break;
-          default:
-            syslog(LOG_ERR, "%s() Cannot identify the 1OU board type or 1OU board is not present", __func__);
-            break;
-        }
-      } else {
-        syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-      }
-    }
-
-    // 2OU
-    if ((config_status & PRESENT_2OU) == PRESENT_2OU) {
-      ret = fby35_common_get_2ou_board_type(fru, &board_type);
-      if (ret < 0) {
-        syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
-      }
-      if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
-        memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_dpv2_x8, sizeof(critical_sensor_dpv2_x8));
-        current_sensor_count += critical_sensor_dpv2_x8_cnt;
-      } else if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
-        memcpy(&dynamic_critical_sensor[current_sensor_count], critical_sensor_dpv2_x16, sizeof(critical_sensor_dpv2_x16));
-        current_sensor_count += critical_sensor_dpv2_x16_cnt;
-      } else {
-        syslog(LOG_ERR, "%s() Cannot identify the 2OU board type", __func__);
-      }
-    }
-    *desc = dynamic_critical_sensor;
-    *desc_count = current_sensor_count;
+  if (pal_get_fru_sensor_list(fru, &sensor_nums, &count) < 0) {
+    return -1;
   }
+  *desc_count = (size_t)count;
+  for (i = 0; i < count; i++) {
+    ret = sdr_get_snr_thresh(fru, sensor_nums[i], &sensor_info);
+    if (ret < 0) {
+      // skip this sensor if get SDR failed
+      (*desc_count)--;
+      continue;
+    }
+    memcpy(critical_sensor_list[i].name, sensor_info.name, MAX_SENSOR_NAME);
+    strcat(critical_sensor_list[i].name, ":");
+    critical_sensor_list[i].sensor_num = sensor_nums[i];
+    if (strncmp(sensor_info.units, "Volts", sizeof(sensor_info.units)) == 0) {
+      strncpy(critical_sensor_list[i].unit, "V", sizeof(critical_sensor_list[i].unit));
+      critical_sensor_list[i].disp_prec = 2;
+    } else if (strncmp(sensor_info.units, "Amps", sizeof(sensor_info.units)) == 0) {
+      strncpy(critical_sensor_list[i].unit, "A", sizeof(critical_sensor_list[i].unit));
+      critical_sensor_list[i].disp_prec = 2;
+    } else if (strncmp(sensor_info.units, "Watts", sizeof(sensor_info.units)) == 0) {
+      strncpy(critical_sensor_list[i].unit, "W", sizeof(critical_sensor_list[i].unit));
+      critical_sensor_list[i].disp_prec = 2;
+    } else {
+      memcpy(critical_sensor_list[i].unit, sensor_info.units, sizeof(critical_sensor_list[i].unit));
+      critical_sensor_list[i].disp_prec = 0;
+    }
+    critical_sensor_list[i].fru = (fru == FRU_BMC)? FRU_BMC: FRU_ALL;
+  }
+  *desc = critical_sensor_list;
 
   return ret;
 }

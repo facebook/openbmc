@@ -237,11 +237,21 @@ _get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t intf) {
   return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_RSV_SDR, NULL, 0, (uint8_t *) rsv, &rlen, intf);
 }
 
-// Storage - Get SDR
-// Netfn: 0x0A, Cmd: 0x23
+// OEM - Get extended SDR
+// Netfn: 0x38, Cmd: 0xC0
 static int
 _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t intf) {
-  return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_SDR, (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t), (uint8_t*)res, rlen, intf);
+  uint8_t ret = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t tlen = IANA_ID_SIZE + sizeof(ipmi_sel_sdr_req_t);  
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+  memcpy(&tbuf[IANA_ID_SIZE], (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t));
+  ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_EXTENDED_SDR, tbuf, tlen, rbuf, rlen, intf);
+  memcpy(res, &rbuf[IANA_ID_SIZE], (*rlen > 3) ? (*rlen - IANA_ID_SIZE) : 0);
+  *rlen = (*rlen) - IANA_ID_SIZE;
+  return ret;
 }
 
 int

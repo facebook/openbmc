@@ -19,10 +19,8 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/peci_sensors.h>
 #include <openbmc/pmbus.h>
-#include <openbmc/sensor-correction.h>
 #include "pal.h"
 #include "pal_common.h"
-#include "pal_bb_sensors.h"
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN    "BATTERY_DETECT"
@@ -963,37 +961,9 @@ read_NM_pch_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
-static void
-inlet_temp_calibration(uint8_t fru, uint8_t sensor_num, float *value)
-{
-  int i, cnt = 0;
-  float pwm_avg;
-  uint8_t pwm, pwm_all = 0;
-  static bool is_inited = false;
-  
-  for (i = 0; i < FAN_PWM_CNT; ++i) {
-    if (pal_get_pwm_value(i, &pwm) < 0) {}
-    else {
-      ++cnt;
-      pwm_all += pwm;
-    }
-  }
-
-  if (cnt > 0) {
-    pwm_avg = (float)pwm_all/ (float)cnt;
-    if (!is_inited) {
-      is_inited = true;
-      sensor_correction_init("/etc/sensor-mb-correction.json");
-    }
-    sensor_correction_apply(fru, sensor_num, pwm_avg, value);
-  } else {
-    syslog(LOG_WARNING, "Failed to apply frontIO correction");
-  }
-}
-
 static int
 read_mb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
+  // int ret;
   uint8_t snr_id = sensor_map[fru].map[sensor_num].id;
 
   char *devs[] = {
@@ -1007,10 +977,10 @@ read_mb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
     return -1;
   }
 
-  ret = sensors_read(devs[snr_id], sensor_map[fru].map[sensor_num].snr_name, value);
-  inlet_temp_calibration(fru, sensor_num, value);
+  // ret = sensors_read(devs[snr_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  // inlet_temp_calibration(fru, sensor_num, value);
 
-  return ret;
+  return sensors_read(devs[snr_id], sensor_map[fru].map[sensor_num].snr_name, value);;
 }
 
 int

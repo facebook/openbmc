@@ -4,6 +4,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/kv.h>
+#include <openbmc/sensor-correction.h>
 #include <math.h>
 #include "pal.h"
 
@@ -474,7 +475,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"BMC_P12V_VOLT", DPM_4, read_dpm_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0xF8
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xF9
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFA
-  {"TEMP", TEMP_BMC, read_bb_temp, true, {45.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
+  {"INLET_TEMP", TEMP_BMC, read_bb_temp, true, {45.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0xFB
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFC
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFD
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xFE
@@ -566,6 +567,34 @@ read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+static void
+inlet_temp_calibration(uint8_t fru, uint8_t sensor_num, float *value)
+{
+  int i, cnt = 0;
+  float pwm_avg;
+  uint8_t pwm, pwm_all = 0;
+  static bool is_inited = false;
+  
+  for (i = 0; i < FAN_PWM_CNT; ++i) {
+    if (pal_get_pwm_value(i, &pwm) < 0) {}
+    else {
+      ++cnt;
+      pwm_all += pwm;
+    }
+  }
+
+  if (cnt > 0) {
+    pwm_avg = (float)pwm_all/ (float)cnt;
+    if (!is_inited) {
+      is_inited = true;
+      sensor_correction_init("/etc/sensor-mb-correction.json");
+    }
+    sensor_correction_apply(fru, sensor_num, pwm_avg, value);
+  } else {
+    syslog(LOG_WARNING, "Failed to apply frontIO correction");
+  }
+}
+
 static int
 read_bb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
@@ -582,6 +611,9 @@ read_bb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   ret = sensors_read(devs[snr_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  syslog(LOG_INFO, "@@@ sensor_num: %02X, value: %f\n", sensor_num, *value);
+  inlet_temp_calibration(fru, sensor_num, value);
+  syslog(LOG_INFO, "### sensor_num: %02X, value: %f\n", sensor_num, *value);
   return ret;
 }
 

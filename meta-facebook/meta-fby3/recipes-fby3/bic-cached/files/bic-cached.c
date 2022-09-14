@@ -223,7 +223,7 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
 
     sdr_full_t *sdr = (sdr_full_t *)res->data;
 
-    if ((type_2ou == GPV3_MCHP_BOARD) && pal_is_nvme_temp_dev(sdr->sensor_num)) {
+    if (((type_2ou == GPV3_MCHP_BOARD) || (type_2ou == GPV3_BRCM_BOARD))&& pal_is_nvme_temp_dev(sdr->sensor_num)) {
       sdr->uc_thresh = CONFIG_D_GPV3_NVMe_Temp_Dev_UCR;
     }
 

@@ -23,6 +23,7 @@
 
 LTC4282_ADDR="44"
 ADM1272_ADDR="1f"
+LTC4282_CONTROL_REG="00"
 
 function create_new_dev() {
   local dev_name=$1
@@ -47,6 +48,9 @@ function init_class1_dev() {
 
   # Get register from different address to determine HSC chip
   if [ "$(/usr/sbin/i2cget -y 11 0x$LTC4282_ADDR 0x1 2> /dev/null | wc -l)" -eq "1" ]; then
+    curr_val="$(/usr/sbin/i2cget -y 11 0x"$LTC4282_ADDR" 0x"$LTC4282_CONTROL_REG")"
+    set_oc_auto_retry=$((curr_val | (0x01 << 2)))
+    /usr/sbin/i2cset -y 11 0x"$LTC4282_ADDR" 0x"$LTC4282_CONTROL_REG" "$(printf '0x%x' $set_oc_auto_retry)"
     chip="ltc4282"
     medusa_addr=0x"$LTC4282_ADDR"
     load_driver=true

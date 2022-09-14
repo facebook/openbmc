@@ -644,6 +644,22 @@ nvme_fw_version_decode (uint8_t block_len, uint8_t major_value, uint8_t minor_va
 }
 
 int
+nvme_total_fw_version_decode (uint8_t block_len, uint8_t major_value, uint8_t minor_value, uint8_t additional_value, t_key_value_pair *fw_version_decoding) {
+
+  if (!fw_version_decoding) {
+    syslog(LOG_ERR, "%s(): invalid parameter (null)", __func__);
+    return -1;
+  }
+
+  snprintf(fw_version_decoding->key, PART_KEY_SIZE, "%s", "FW version");
+  if (check_nvme_fileds_valid(block_len, fw_version_decoding) == VALID) {
+    sprintf(fw_version_decoding->value, "v%d.%d.%d", major_value, minor_value, additional_value);
+  }
+
+  return 0;
+}
+
+int
 nvme_monitor_area_decode (char *key, uint8_t block_len, uint16_t value, float unit, t_key_value_pair *monitor_area_decoding) {
 
   if (!monitor_area_decoding) {

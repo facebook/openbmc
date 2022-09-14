@@ -81,6 +81,7 @@
 #define SINFO_0_PLP_DEFINED 0x1
 
 #define ASIC_CORE_VOL_UNIT 0.0001   // 100uV
+#define BRCM_VP_ASIC_CORE_VOL_UNIT 0.00034   // 340uV
 #define POWER_RAIL_VOL_UNIT 0.0001  // 100uV
 
 /* Return Value of Sensor Reading */
@@ -119,10 +120,13 @@ typedef struct {
   uint8_t asic_version;             //ASIC version
   uint8_t fw_major_ver;             //FW version Major Revision
   uint8_t fw_minor_ver;             //FW version Minor Revision
+  uint8_t fw_additional_ver;        //Additional FW version
   /* Monitor Area             Offset 112*/
   uint8_t block_len_mon_area;       //Block length of Monitor Area
   uint16_t asic_core_vol1;          //ASIC core voltage1 real time report
   uint16_t asic_core_vol2;          //ASIC core voltage2 real time report
+  uint16_t asic_core_vol3;          //ASIC core voltage3 real time report
+  uint16_t asic_core_vol4;          //ASIC core voltage4 real time report
   uint16_t power_rail_vol1;         //Module power rail1 voltage report
   uint16_t power_rail_vol2;         //Module power rail2 voltage report
   /* Error Report Area        Offset 122*/
@@ -195,6 +199,7 @@ int nvme_i2c_freq_decode(uint8_t block_len, uint8_t value, t_key_value_pair *i2c
 int nvme_tdp_level_decode(uint8_t block_len, uint8_t value, t_key_value_pair *tdp_level_decoding);
 int nvme_max_asic_temp_decode(uint8_t block_len, uint8_t value, t_key_value_pair *max_asic_temp_decoding);
 int nvme_fw_version_decode(uint8_t block_len, uint8_t major_value, uint8_t minor_value, t_key_value_pair *fw_version_decoding);
+int nvme_total_fw_version_decode (uint8_t block_len, uint8_t major_value, uint8_t minor_value, uint8_t additional_value, t_key_value_pair *fw_version_decoding);
 int nvme_monitor_area_decode(char *key, uint8_t block_len, uint16_t value, float unit, t_key_value_pair *monitor_area_decoding);
 int nvme_total_int_mem_err_count_decode(uint8_t block_len, uint8_t value, t_key_value_pair *total_int_mem_err_count_decoding);
 int nvme_total_ext_mem_err_count_decode(uint8_t block_len, uint8_t value, t_key_value_pair *total_ext_mem_err_count_decoding);

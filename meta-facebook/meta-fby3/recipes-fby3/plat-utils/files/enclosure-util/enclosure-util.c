@@ -85,6 +85,8 @@ drive_status(ssd_data *ssd) {
   t_key_value_pair fw_version_decoding;
   t_key_value_pair asic_core_vol1_decoding;
   t_key_value_pair asic_core_vol2_decoding;
+  t_key_value_pair asic_core_vol3_decoding;
+  t_key_value_pair asic_core_vol4_decoding;
   t_key_value_pair power_rail_vol1_decoding;
   t_key_value_pair power_rail_vol2_decoding;
   t_key_value_pair asic_error_type_decoding;
@@ -151,17 +153,32 @@ drive_status(ssd_data *ssd) {
 
       nvme_raw_data_prase("ASIC version", ssd->block_len_ver_area, ssd->asic_version, &asic_version_decoding);
       printf("%s: %s\n", asic_version_decoding.key, asic_version_decoding.value);
-      nvme_fw_version_decode(ssd->block_len_ver_area, ssd->fw_major_ver, ssd->fw_minor_ver, &fw_version_decoding);
+      if (ssd->vendor == VENDOR_ID_BROARDCOM) {
+        nvme_total_fw_version_decode(ssd->block_len_ver_area, ssd->fw_major_ver, ssd->fw_minor_ver, ssd->fw_additional_ver, &fw_version_decoding);
+      } else {
+        nvme_fw_version_decode(ssd->block_len_ver_area, ssd->fw_major_ver, ssd->fw_minor_ver, &fw_version_decoding);
+      }
       printf("%s: %s\n", fw_version_decoding.key, fw_version_decoding.value);
 
-      nvme_monitor_area_decode("ASIC Core1 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol1, ASIC_CORE_VOL_UNIT, &asic_core_vol1_decoding);
-      printf("%s: %s\n", asic_core_vol1_decoding.key, asic_core_vol1_decoding.value);
-      nvme_monitor_area_decode("ASIC Core2 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol2, ASIC_CORE_VOL_UNIT, &asic_core_vol2_decoding);
-      printf("%s: %s\n", asic_core_vol2_decoding.key, asic_core_vol2_decoding.value);
-      nvme_monitor_area_decode("Module Power Rail1 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol1, POWER_RAIL_VOL_UNIT, &power_rail_vol1_decoding);
-      printf("%s: %s\n", power_rail_vol1_decoding.key, power_rail_vol1_decoding.value);
-      nvme_monitor_area_decode("Module Power Rail2 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol2, POWER_RAIL_VOL_UNIT, &power_rail_vol2_decoding);
-      printf("%s: %s\n", power_rail_vol2_decoding.key, power_rail_vol2_decoding.value);
+      if (ssd->vendor == VENDOR_ID_BROARDCOM) {
+        nvme_monitor_area_decode("ASIC Core1 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol1, BRCM_VP_ASIC_CORE_VOL_UNIT, &asic_core_vol1_decoding);
+        printf("%s: %s\n", asic_core_vol1_decoding.key, asic_core_vol1_decoding.value);
+        nvme_monitor_area_decode("ASIC Core2 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol2, BRCM_VP_ASIC_CORE_VOL_UNIT, &asic_core_vol2_decoding);
+        printf("%s: %s\n", asic_core_vol2_decoding.key, asic_core_vol2_decoding.value);
+        nvme_monitor_area_decode("ASIC Core3 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol3, BRCM_VP_ASIC_CORE_VOL_UNIT, &asic_core_vol3_decoding);
+        printf("%s: %s\n", asic_core_vol3_decoding.key, asic_core_vol3_decoding.value);
+        nvme_monitor_area_decode("ASIC Core4 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol4, BRCM_VP_ASIC_CORE_VOL_UNIT, &asic_core_vol4_decoding);
+        printf("%s: %s\n", asic_core_vol4_decoding.key, asic_core_vol4_decoding.value);
+      } else {
+        nvme_monitor_area_decode("ASIC Core1 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol1, ASIC_CORE_VOL_UNIT, &asic_core_vol1_decoding);
+        printf("%s: %s\n", asic_core_vol1_decoding.key, asic_core_vol1_decoding.value);
+        nvme_monitor_area_decode("ASIC Core2 Voltage", ssd->block_len_mon_area, ssd->asic_core_vol2, ASIC_CORE_VOL_UNIT, &asic_core_vol2_decoding);
+        printf("%s: %s\n", asic_core_vol2_decoding.key, asic_core_vol2_decoding.value);
+        nvme_monitor_area_decode("Module Power Rail1 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol1, POWER_RAIL_VOL_UNIT, &power_rail_vol1_decoding);
+        printf("%s: %s\n", power_rail_vol1_decoding.key, power_rail_vol1_decoding.value);
+        nvme_monitor_area_decode("Module Power Rail2 Voltage", ssd->block_len_mon_area, ssd->power_rail_vol2, POWER_RAIL_VOL_UNIT, &power_rail_vol2_decoding);
+        printf("%s: %s\n", power_rail_vol2_decoding.key, power_rail_vol2_decoding.value);
+      }
 
       nvme_raw_data_prase("ASIC Error Type Report", ssd->block_len_err_ret_area, ssd->asic_error_type, &asic_error_type_decoding);
       printf("%s: %s\n", asic_error_type_decoding.key, asic_error_type_decoding.value);
@@ -396,6 +413,7 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
             ssd.asic_version = rbuf[offset_base + 1];
             ssd.fw_major_ver = rbuf[offset_base + 2];
             ssd.fw_minor_ver = rbuf[offset_base + 3];
+            ssd.fw_additional_ver = rbuf[offset_base + 4];
 
             tbuf[2] = 10; //read back
             tbuf[3] = 0x70;  // offset 112
@@ -407,9 +425,13 @@ read_nvme_data(uint8_t fru_id, uint8_t slot_id, uint8_t device_id, uint8_t cmd) 
             ssd.block_len_mon_area = rbuf[offset_base + 0];
             ssd.asic_core_vol1 = (rbuf[offset_base + 1] << 8) | rbuf[offset_base + 2];
             ssd.asic_core_vol2 = (rbuf[offset_base + 3] << 8) | rbuf[offset_base + 4];
-            ssd.power_rail_vol1 = (rbuf[offset_base + 5] << 8) | rbuf[offset_base + 6];
-            ssd.power_rail_vol2 = (rbuf[offset_base + 7] << 8) | rbuf[offset_base + 8];
-
+            if (ssd.vendor == VENDOR_ID_BROARDCOM) {
+              ssd.asic_core_vol3 = (rbuf[offset_base + 5] << 8) | rbuf[offset_base + 6];
+              ssd.asic_core_vol4 = (rbuf[offset_base + 7] << 8) | rbuf[offset_base + 8];
+            } else {
+              ssd.power_rail_vol1 = (rbuf[offset_base + 5] << 8) | rbuf[offset_base + 6];
+              ssd.power_rail_vol2 = (rbuf[offset_base + 7] << 8) | rbuf[offset_base + 8];
+            }
             tbuf[2] = 10; //read back
             if (ssd.vendor == VENDOR_ID_BROARDCOM) {
               tbuf[3] = 0x84;  // offset 132

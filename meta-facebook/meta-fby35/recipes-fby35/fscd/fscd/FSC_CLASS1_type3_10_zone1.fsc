@@ -3,12 +3,12 @@ max([
   linear_cpu(slot2:mb_soc_cpu_temp_c) + pid_cpu(slot2:mb_soc_cpu_temp_c),
   linear_cpu(slot3:mb_soc_cpu_temp_c) + pid_cpu(slot3:mb_soc_cpu_temp_c),
   linear_cpu(slot4:mb_soc_cpu_temp_c) + pid_cpu(slot4:mb_soc_cpu_temp_c),
-  linear_frontio_inlet(
+  linear_frontIO_inlet(
     max([
       slot1:fio_front_temp_c,
       slot2:fio_front_temp_c,
       slot3:fio_front_temp_c,
-      slot4:fio_front_temp_c)),
+      slot4:fio_front_temp_c])),
   linear_dimm(
     max([
       slot1:mb_dimma0_temp_c,

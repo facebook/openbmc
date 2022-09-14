@@ -102,6 +102,7 @@ LOCAL_URI += " \
 LOCAL_URI += " \
     file://scripts/schema_validator.py \
     file://scripts/pyrmd.py \
+    file://scripts/rackmon-stress.py \
     "
 
 # Test sources

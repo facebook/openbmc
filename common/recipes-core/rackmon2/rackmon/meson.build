@@ -56,6 +56,7 @@ endif
 if get_option('profiling') == true
     add_global_arguments('-DPROFILING=1', language : 'cpp')
     deps += [ cc.find_library('misc-utils') ]
+    install_data('scripts/rackmon-stress.py', install_dir: '/usr/local/bin', install_mode: 'rwxrwxrwx')
 endif
 
 if cc.get_id() == 'gcc' and cc.version().version_compare('<9')

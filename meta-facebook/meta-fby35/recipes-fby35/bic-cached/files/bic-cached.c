@@ -117,10 +117,11 @@ fruid_cache_init(uint8_t slot_id) {
   } else { // Baseboard BMC
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
       // dump 1ou board fru
-      ret = bic_get_card_type(slot_id, CARD_TYPE_1OU, &type_1ou);
+      ret = bic_get_1ou_type(slot_id, &type_1ou);
       if (ret == 0) {
         switch (type_1ou) {
           case TYPE_1OU_RAINBOW_FALLS:
+          case TYPE_1OU_VERNAL_FALLS_WITH_AST:
             remote_f_ret = remote_fruid_cache_init(slot_id, FRUID_0, FEXP_BIC_INTF);
             break;
           default:

@@ -2472,9 +2472,9 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
 
   if (fru == FRU_2U_TOP) {
     if (IS_DUAL_M2_PWR_SNR(sensor_num)) {
-      ret = bic_get_m2_config(&m2_config, slot, RREXP_BIC_INTF1);
+      ret = pal_get_m2_config(fru, &m2_config);
 
-      if (ret == 0 && m2_config == CONFIG_M2_DUAL) {
+      if (ret == 0 && m2_config == CONFIG_C_CWC_DUAL) {
         ret = bic_get_oem_sensor_reading(slot, DUAL_M2_SENSOR_INDEX(sensor_num), &sensor, sdr->m_val, RREXP_BIC_INTF1);
       } else {
         sensor.flags = BIC_SENSOR_READ_NA;
@@ -2484,9 +2484,9 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     }
   } else if (fru == FRU_2U_BOT) {
     if (IS_DUAL_M2_PWR_SNR(sensor_num)) {
-      ret = bic_get_m2_config(&m2_config, slot, RREXP_BIC_INTF2);
+      ret = pal_get_m2_config(fru, &m2_config);
 
-      if (ret == 0 && m2_config == CONFIG_M2_DUAL) {
+      if (ret == 0 && m2_config == CONFIG_C_CWC_DUAL) {
         ret = bic_get_oem_sensor_reading(slot, DUAL_M2_SENSOR_INDEX(sensor_num), &sensor, sdr->m_val, RREXP_BIC_INTF2);
       } else {
         sensor.flags = BIC_SENSOR_READ_NA;
@@ -2517,9 +2517,9 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
       if ( bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return READING_NA;
       ret = bic_get_sensor_reading(fru, sensor_num, &sensor, BB_BIC_INTF);
     } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU && IS_DUAL_M2_PWR_SNR(sensor_num) ) {
-      ret = bic_get_m2_config(&m2_config, slot, REXP_BIC_INTF);
+      ret = pal_get_m2_config(FRU_2U, &m2_config);
 
-      if (ret == 0 && m2_config == CONFIG_M2_DUAL) {
+      if (ret == 0 && m2_config == CONFIG_C_CWC_DUAL) {
         ret = bic_get_oem_sensor_reading(slot, DUAL_M2_SENSOR_INDEX(sensor_num), &sensor, sdr->m_val, REXP_BIC_INTF);
       } else {
         sensor.flags = BIC_SENSOR_READ_NA;

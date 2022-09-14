@@ -81,6 +81,7 @@ const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U
 #define SEL_ERROR_STR  "slot%d_sel_error"
 #define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
+#define PCIE_CONFIG "slot%d_fru%d_config"
 
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
@@ -1755,6 +1756,9 @@ pal_get_m2_config(uint8_t fru, uint8_t *config)
   uint8_t rlen = 0;
   uint8_t intf = 0;
   int ret = -1;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  uint8_t slot = fru;
 
   switch (fru) {
     case FRU_2U:
@@ -1771,15 +1775,24 @@ pal_get_m2_config(uint8_t fru, uint8_t *config)
       return -1;
   }
 
-  ret = bic_ipmb_send(FRU_SLOT1, NETFN_OEM_1S_REQ, 0x66, tbuf, tlen, rbuf, &rlen, intf);
+  pal_get_root_fru(fru, &slot);
+  snprintf(key, sizeof(key), PCIE_CONFIG, slot, fru);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    *config = atoi(value);
+    return 0;
+  }
+
+  ret = bic_ipmb_send(slot, NETFN_OEM_1S_REQ, BIC_CMD_GPV3_GET_M2_CONFIG, tbuf, tlen, rbuf, &rlen, intf);
   if (ret == 0 && rlen == 4) {
-    if (rbuf[3] == 0x08) {
+    if (rbuf[3] == CONFIG_M2_SINGLE) {
       *config = CONFIG_C_CWC_SINGLE;
-    } else if (rbuf[3] == 0x04) {
+    } else if (rbuf[3] == CONFIG_M2_DUAL) {
       *config = CONFIG_C_CWC_DUAL;
     } else {
       return -1;
     }
+    snprintf(value, sizeof(value), "%d", *config);
+    kv_set(key, value, 0, 0);
   }
 
   return ret;

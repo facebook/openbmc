@@ -20,7 +20,6 @@
 //#define DEBUG
 
 #define MAX_RETRY 3
-#define MAX_SDR_LEN 64
 #define SDR_PATH "/tmp/sdr_%s.bin"
 
 #define PWM_PLAT_SET 0x80
@@ -3156,7 +3155,7 @@ _sdr_init(char *path, sensor_info_t *sinfo, uint8_t bmc_location, \
           const uint8_t config_status, const uint8_t board_type) {
   int fd;
   int ret = 0;
-  uint8_t buf[MAX_SDR_LEN] = {0};
+  uint8_t buf[sizeof(sdr_full_t)] = {0};
   uint8_t bytes_rd = 0;
   uint8_t snr_num = 0;
   sdr_full_t *sdr;

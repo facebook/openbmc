@@ -181,17 +181,19 @@ fruid_init_local_fru() {
     goto error_exit;
   }
 
-  //DPV2 X8 furid
-  for (i = FRU_SLOT1; i <= FRU_SLOT3; i += 2) {
-    if ( fby35_common_get_2ou_board_type(i, &type_2ou) < 0 ) {
-      continue;
-    } else {
-      if ( (type_2ou & DPV2_X8_BOARD) == DPV2_X8_BOARD ) {
-        snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(i), DPV2_FRU_ADDR);
-        snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, i, BOARD_2OU_X8);
-        if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
-          syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, dev_path);
-          continue;
+  if ( bmc_location == BB_BMC ) {
+    //DPV2 X8 furid
+    for (i = FRU_SLOT1; i <= FRU_SLOT3; i += 2) {
+      if ( fby35_common_get_2ou_board_type(i, &type_2ou) < 0 ) {
+        continue;
+      } else {
+        if ( (type_2ou & DPV2_X8_BOARD) == DPV2_X8_BOARD ) {
+          snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(i), DPV2_FRU_ADDR);
+          snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, i, BOARD_2OU_X8);
+          if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
+            syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, dev_path);
+            continue;
+          }
         }
       }
     }

@@ -127,14 +127,18 @@ fby35_common_is_fru_prsnt(uint8_t fru, uint8_t *val) {
     return -1;
   }
 
-  if (bmc_location == BB_BMC) {
+  if (bmc_location == NIC_BMC) {
+    if (fru == FRU_SLOT1) {
+      *val = SLOT_PRESENT;
+    } else {
+      *val = SLOT_NOT_PRESENT;
+    }
+  } else {
     gpio_value = gpio_get_value_by_shadow(gpio_server_prsnt[fru]);
     if (gpio_value == GPIO_VALUE_INVALID) {
       return -1;
     }
-    *val = (gpio_value == GPIO_VALUE_HIGH) ? 0 : 1;
-  } else {
-    *val = 1;
+    *val = (gpio_value == GPIO_VALUE_HIGH) ? SLOT_NOT_PRESENT : SLOT_PRESENT;
   }
 
   return 0;

@@ -467,18 +467,22 @@ populate_gpio_pins(uint8_t fru) {
 /* Wrapper function to configure and get all gpio info */
 static void
 init_gpio_pins() {
-  int fru;
+  int fru = 0;
+  uint8_t fru_prsnt = 0;
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
-    populate_gpio_pins(fru);
+    pal_is_fru_prsnt(fru, &fru_prsnt);
+    if (fru_prsnt) {
+      populate_gpio_pins(fru);
+    }
   }
 
 }
 /*Wrapper function to to configure gpio offset to Crater Lake or Halfdome*/
 static void
 init_gpio_offset_map() {
-  int fru;
-  int fru_prsnt;
+  int fru = 0;
+  uint8_t fru_prsnt = 0;
 
   for (fru = FRU_SLOT1; fru < (FRU_SLOT1 + MAX_NUM_SLOTS); fru++) {
     pal_is_fru_prsnt(fru, &fru_prsnt);

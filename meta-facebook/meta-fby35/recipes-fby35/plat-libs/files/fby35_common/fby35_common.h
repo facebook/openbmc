@@ -418,6 +418,11 @@ enum POWER_LOCK {
   LOCK
 };
 
+typedef enum {
+  SLOT_NOT_PRESENT = 0,
+  SLOT_PRESENT,
+} PRESENT_STATUS;
+
 const static char *gpio_server_prsnt[] =
 {
   "",

@@ -26,6 +26,7 @@ class ClassConfig {
       uint8_t bmc_location = 0, prsnt;
       uint8_t hsc_type = HSC_UNKNOWN;
       uint8_t board_rev = UNKNOWN_REV;
+
       int config_status;
 
       if (fby35_common_get_bmc_location(&bmc_location) < 0) {

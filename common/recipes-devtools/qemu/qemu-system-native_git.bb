@@ -94,6 +94,8 @@ SRC_URI = "git://gitlab.com/qemu-project/qemu.git;branch=master;protocol=https \
            file://0064-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
            file://0065-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
            file://0066-aspeed-Add-Sandia.patch \
+           file://0067-npcm8xx-Enable-EL3.patch \
+           file://0068-npcm8xx-Allow-bios-to-be-omitted.patch \
            "
 PV = "7.0.90+git${SRCPV}"
 

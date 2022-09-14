@@ -22,6 +22,7 @@
 #define __FBY3_COMMON_H__
 
 #include <stdbool.h>
+#include <openssl/evp.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -105,6 +106,17 @@ extern const char *slot_usage;
 #define DEV_NAME_2U_BOT "slot1-2U-bot"
 #define DEV_NAME_2U_CWC "slot1-2U-cwc"
 #define DEV_NAME_2U "slot1-2U"
+
+#define MD5_SIZE                  (16)
+#define PLAT_SIG_SIZE             (16)
+#define FW_VER_SIZE               (13)
+#define ERR_PROOF_SIZE            (3)
+#define IMG_MD5_OFFSET            (0x0)
+#define IMG_PROJECT_CODE_OFFSET   (IMG_MD5_OFFSET + MD5_SIZE)
+#define IMG_FW_VER_OFFSET         (IMG_PROJECT_CODE_OFFSET + PLAT_SIG_SIZE)
+#define IMG_SIGNED_INFO_SIZE      (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + ERR_PROOF_SIZE + MD5_SIZE)
+
+#define MD5_READ_BYTES     (1024)
 
 enum {
   FRU_ALL       = 0,
@@ -256,6 +268,26 @@ enum sel_dir {
   SEL_DEASSERT = 0xEF,
 };
 
+enum board_id {
+  BOARD_ID_SB = 1,
+  BOARD_ID_BB = 2,
+  BOARD_ID_NIC_EXP = 6,
+};
+
+enum fw_rev {
+  FW_REV_POC = 0,
+  FW_REV_EVT,
+  FW_REV_DVT,
+  FW_REV_PVT,
+  FW_REV_MP ,
+};
+
+enum comp_id {
+  COMP_CPLD = 1,
+  COMP_BIC  = 2,
+  COMP_BIOS = 3,
+};
+
 const static char *gpio_server_prsnt[] =
 {
   "",
@@ -338,6 +370,14 @@ typedef struct {
     bool    is_freya;
 } M2_DEV_INFO;
 
+typedef struct {
+  uint8_t md5_sum[MD5_SIZE];
+  uint8_t plat_sig[PLAT_SIG_SIZE];
+  uint8_t version[FW_VER_SIZE];
+  uint8_t err_proof[ERR_PROOF_SIZE];
+  uint8_t md5_sum_second[MD5_SIZE];
+} FW_IMG_INFO;
+
 int fby3_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val);
 int fby3_common_is_bic_ready(uint8_t fru, uint8_t *val);
 int fby3_common_server_stby_pwr_sts(uint8_t fru, uint8_t *val);
@@ -359,6 +399,8 @@ int fby3_common_get_bb_board_rev(uint8_t *rev);
 int fby3_common_get_sb_board_rev(uint8_t slot_id, uint8_t *rev);
 int fby3_common_get_hsc_bb_detect(uint8_t *id);
 int fby3_common_fscd_ctrl(uint8_t mode);
+int fby3_common_check_ast_image_signature(uint8_t* data);
+int fby3_common_check_ast_image_md5(char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp);
 
 #ifdef __cplusplus
 } // extern "C"

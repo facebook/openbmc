@@ -1072,6 +1072,66 @@ error_exit:
 }
 
 static int
+is_valid_ast_bic_image(uint8_t slot_id, uint8_t comp, uint8_t intf, char *img_path, int fd, int file_size){
+  uint8_t err_proof_board_id = 0;
+  uint8_t err_proof_stage = 0;
+  uint8_t err_proof_component = 0;
+  off_t info_offs;
+  FW_IMG_INFO img_info;
+  bool is_first = true;
+
+  if (file_size < IMG_SIGNED_INFO_SIZE) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  info_offs = file_size - IMG_SIGNED_INFO_SIZE;
+  if (lseek(fd, info_offs, SEEK_SET) != info_offs) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (read(fd, &img_info, IMG_SIGNED_INFO_SIZE) != IMG_SIGNED_INFO_SIZE) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (fby3_common_check_ast_image_signature(img_info.plat_sig) < 0) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (img_path == NULL) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (fby3_common_check_ast_image_md5(img_path, info_offs, img_info.md5_sum, is_first, comp) < 0) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (fby3_common_check_ast_image_md5(img_path, info_offs, img_info.md5_sum_second, !is_first, comp) < 0) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  err_proof_board_id = img_info.err_proof[0] & 0x1F;  //bit[4:0]
+  err_proof_stage = img_info.err_proof[0] >> 5;       //bit[7:5]
+  err_proof_component = img_info.err_proof[1] & 0x07; //bit[10:8]
+
+  if (err_proof_component != COMP_BIC) {
+    printf("Not a valid BIC firmware image.\n");
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (err_proof_board_id != BOARD_ID_SB) {
+    printf("Wrong firmware image component.\n");
+    return BIC_STATUS_FAILURE;
+  }
+
+  if (err_proof_stage != FW_REV_MP) {
+    printf("Please use firmware after PVT system\nTo force the update, please use the --force option.\n");
+    return BIC_STATUS_FAILURE;
+  }
+
+  return BIC_STATUS_SUCCESS;
+}
+
+static int
 _update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf, uint8_t intf) {
   uint8_t tbuf[256] = {0x00};
   uint8_t rbuf[16] = {0x00};
@@ -1125,6 +1185,12 @@ update_ast_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
   ssize_t count;
 
   printf("updating fw on slot %d:\n", slot_id);
+
+  //reinit the fd to the beginning
+  if ( lseek(fd, 0, SEEK_SET) != 0 ) {
+    syslog(LOG_WARNING, "%s() Cannot reinit the fd to the beginning. errstr=%s", __func__, strerror(errno));
+    goto error_exit;
+  }
 
   // Write chunks of binary data in a loop
   dsize = file_size/100;
@@ -1257,15 +1323,19 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
       ret = BIC_STATUS_FAILURE;
       goto exit;
     }
-    if (is_sb_ast1030 == true) {
-      force = 1;
-    }
   }
 
   //check the content of the image
-  if ( !force && ( is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
-    printf("Invalid BIC file!\n");
-    goto exit;
+  if (is_sb_ast1030 == true) {
+    if ( !force && ( is_valid_ast_bic_image(slot_id, comp, intf, path, fd, file_size) < 0) ) {
+      printf("Invalid BIC file!\n");
+      goto exit;
+    }
+  } else {
+    if ( !force && ( is_valid_bic_image(slot_id, comp, intf, fd, file_size) < 0) ) {
+      printf("Invalid BIC file!\n");
+      goto exit;
+    }
   }
 
   //run into the different function based on the interface

@@ -38,6 +38,7 @@
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp", "slot1-2U", "slot1-2U-exp", "slot1-2U-top", "slot1-2U-bot", "slot3-2U"};
 const char *exp_list[] = {"2U", "2U-cwc", "2U-top", "2U-bot"};
+const char plat_sig[PLAT_SIG_SIZE] = "Yosemite V3     ";
 const uint8_t exp_id_list[] = {FRU_2U, FRU_CWC, FRU_2U_TOP, FRU_2U_BOT};
 const uint8_t slot3_exp_id_list[] = {FRU_2U_SLOT3};
 const char *slot1_exp_list[] = {"slot1-2U", "slot1-2U-exp", "slot1-2U-top", "slot1-2U-bot"};
@@ -749,5 +750,124 @@ exit:
     pclose(fp2);
   }
 
+  return ret;
+}
+
+int
+fby3_common_check_ast_image_md5(char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp) {
+  int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
+  char read_buf[MD5_READ_BYTES] = {0};
+  uint8_t md5_digest[EVP_MAX_MD_SIZE] = {0};
+  EVP_MD_CTX* ctx = NULL;
+
+  if ((image_path == NULL) || (data == NULL)) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5-%c due to NULL parameters.", __func__, ((is_first)?'1':'2'));
+    return -1;
+  }
+
+  if (cal_size <= 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5-%c due to wrong calculate size: %d.", __func__, ((is_first)?'1':'2'), cal_size);
+    return -1;
+  }
+
+  fd = open(image_path, O_RDONLY);
+
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open %s to calculate MD5-%c.", __func__, image_path, ((is_first)?'1':'2'));
+    return -1;
+  }
+
+  if (is_first) {
+    lseek(fd, 0, SEEK_SET);
+  } else {
+    lseek(fd, cal_size, SEEK_SET);
+  }
+
+  ctx = EVP_MD_CTX_create();
+  EVP_MD_CTX_init(ctx);
+
+  ret = EVP_DigestInit(ctx, EVP_md5());
+  if (ret == 0) {
+    syslog(LOG_WARNING, "%s(): failed to initialize MD5-%c context.", __func__, ((is_first)?'1':'2'));
+    ret = -1;
+    goto exit;
+  }
+
+  if (is_first) {
+    while (sum < cal_size) {
+      read_bytes = MD5_READ_BYTES;
+      if ((sum + MD5_READ_BYTES) > cal_size) {
+        read_bytes = cal_size - sum;
+      }
+
+      byte_num = read(fd, read_buf, read_bytes);
+
+      ret = EVP_DigestUpdate(ctx, read_buf, byte_num);
+      if (ret == 0) {
+        syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5-1 of %s.", __func__, image_path);
+        ret = -1;
+        goto exit;
+      }
+      sum += byte_num;
+    }
+  } else {
+    read_bytes = ((IMG_SIGNED_INFO_SIZE) - (MD5_SIZE));
+    byte_num = read(fd, read_buf, read_bytes);
+    ret = EVP_DigestUpdate(ctx, read_buf, byte_num);
+    if (ret == 0) {
+      syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5-2 of %s.", __func__, image_path);
+      ret = -1;
+      goto exit;
+    }
+  }
+
+  ret = EVP_DigestFinal(ctx, md5_digest, NULL);
+  if (ret == 0) {
+    syslog(LOG_WARNING, "%s(): failed to calculate MD5-%c of %s.", __func__, ((is_first)?'1':'2'), image_path);
+    ret = -1;
+    goto exit;
+  }
+
+#ifdef DEBUG
+  int i = 0;
+  printf("calculated MD5:\n");
+  for(i = 0; i < MD5_SIZE; i++) {
+    printf("%02X ", md5_digest[i]);
+  }
+  printf("\nImage MD5\n");
+  for(i = 0; i < MD5_SIZE; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+#endif
+
+  if (memcmp(md5_digest, data, MD5_SIZE) != 0) {
+    if(is_first) {
+      printf("MD5-1 checksum incorrect. This image is corrupted or unsigned\n");
+    } else {
+      printf("MD5-2 Checksum incorrect. This image sign information is corrupted or unsigned\n");
+    }
+    ret = -1;
+  }
+
+exit:
+  close(fd);
+  return ret;
+}
+
+int
+fby3_common_check_ast_image_signature(uint8_t* data) {
+  int ret = 0;
+
+  if (data == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to check signature due to NULL parameters.", __func__);
+    ret = -1;
+  }
+
+  if (strncmp(plat_sig, (char*)data, PLAT_SIG_SIZE) != 0) {
+    printf("This image is not for Yv3 platform AST BIC \n");
+    printf("There is no valid platform signature in image. \n");
+    ret = -1;
+  }
   return ret;
 }

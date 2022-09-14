@@ -1,5 +1,5 @@
 {
-  "version": "fby3-gpv3-config-d-v2022.05.24",
+  "version": "fby3-gpv3-config-d-v2022.09.08",
   "pwm_transition_value": 70,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -48,7 +48,8 @@
       "data": [
         [ 24, 22 ],
         [ 29, 26 ],
-        [ 34, 30 ],
+        [ 32, 30 ],
+        [ 35, 32 ],
         [ 38, 40 ],
         [ 40, 70 ]
       ]
@@ -62,7 +63,7 @@
       "negative_hysteresis": 2,
       "data": [
         [ -15, 22 ],
-        [ -12, 28 ]
+        [ -12, 24 ]
       ]
     },
     "pid_cpu_margin": {
@@ -110,9 +111,9 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [64, 22],
-        [68, 30],
-        [72, 42]
+        [64, 18],
+        [68, 22],
+        [72, 26]
       ]
     },
     "pid_gp_m2": {

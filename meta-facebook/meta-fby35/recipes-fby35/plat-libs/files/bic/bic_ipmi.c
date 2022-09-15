@@ -241,7 +241,7 @@ _get_sdr_rsv(uint8_t slot_id, uint8_t *rsv, uint8_t intf) {
 // Netfn: 0x38, Cmd: 0xC0
 static int
 _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint8_t *rlen, uint8_t intf) {
-  uint8_t ret = 0;
+  int ret = 0;
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = IANA_ID_SIZE + sizeof(ipmi_sel_sdr_req_t);  
@@ -268,7 +268,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
 
   // Get SDR reservation ID for the given record
   ret = _get_sdr_rsv(slot_id, rbuf, intf);
-  if (ret) {
+  if (ret < 0) {
     syslog(LOG_ERR, "%s() _get_sdr_rsv returns %d\n", __func__, ret);
     return ret;
   }
@@ -283,7 +283,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
   req->nbytes = sizeof(sdr_rec_hdr_t);
 
   ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen, intf);
-  if (ret) {
+  if (ret < 0) {
     syslog(LOG_ERR, "%s() _get_sdr returns %d\n", __func__, ret);
     return ret;
   }
@@ -311,7 +311,7 @@ bic_get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, u
     }
 
     ret = _get_sdr(slot_id, req, (ipmi_sel_sdr_res_t *)tbuf, &tlen, intf);
-    if (ret) {
+    if (ret < 0) {
       syslog(LOG_ERR, "%s() _get_sdr returns %d\n", __func__, ret);
       return ret;
     }

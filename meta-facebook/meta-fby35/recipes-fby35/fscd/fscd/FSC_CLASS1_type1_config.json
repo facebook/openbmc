@@ -14,22 +14,12 @@
     "action": "host_shutdown"
   },
   "sensor_valid_check": {
-    "fio_temp": {
+    "fio_": {
       "attribute": {
         "type" : "power_status"
       }
     },
-    "soc_cpu_temp": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "ssd0_temp": {
-      "attribute": {
-        "type" : "power_status"
-      }
-    },
-    "dimm": {
+    "mb_": {
       "attribute": {
         "type" : "power_status"
       }
@@ -124,8 +114,7 @@
       "kp": -3,
       "ki": -0.01,
       "kd": 0
-    }, 
-
+    },
     "linear_nic": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -159,8 +148,7 @@
       "ki": -0.01,
       "kd": 0
     },
-
- "linear_boot_drive": {
+    "linear_boot_drive": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },
@@ -186,7 +174,7 @@
       "kp": -1.25,
       "ki": -0.01,
       "kd": 0
-      }
+    }
   },
   "fans": {
     "0": {

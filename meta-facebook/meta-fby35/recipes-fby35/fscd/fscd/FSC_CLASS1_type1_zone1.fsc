@@ -54,7 +54,7 @@ max([
       slot3:mb_dimma3_temp_c,
       slot3:mb_dimma4_temp_c,
       slot3:mb_dimma6_temp_c,
-      slot3:mb_dimma7_temp_c, 
+      slot3:mb_dimma7_temp_c,
       slot4:mb_dimma0_temp_c,
       slot4:mb_dimma2_temp_c,
       slot4:mb_dimma3_temp_c,
@@ -68,7 +68,7 @@ max([
       slot2:mb_ssd0_m2a_temp_c,
       slot3:mb_ssd0_m2a_temp_c,
       slot4:mb_ssd0_m2a_temp_c])) +
-   pid_boot_drive(
+  pid_boot_drive(
     max([
       slot1:mb_ssd0_m2a_temp_c,
       slot2:mb_ssd0_m2a_temp_c,

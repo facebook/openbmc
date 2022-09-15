@@ -18,7 +18,6 @@
 # Boston, MA 02110-1301 USA
 #
 from ctypes import CDLL, c_uint8, byref
-from re import search
 from subprocess import PIPE, Popen
 import kv
 import os
@@ -53,12 +52,12 @@ fru_map = {
 }
 
 dimm_location_name_map = {
-    "a": "_dimm0_location",
-    "c": "_dimm4_location",
-    "d": "_dimm6_location",
-    "e": "_dimm8_location",
-    "g": "_dimm12_location",
-    "h": "_dimm14_location",
+    "0": "_dimm0_location",
+    "2": "_dimm4_location",
+    "3": "_dimm6_location",
+    "4": "_dimm8_location",
+    "6": "_dimm12_location",
+    "7": "_dimm14_location",
 }
 
 host_ready_map = {
@@ -152,16 +151,19 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if os.path.exists(file):
                 return 0
             if board.find("slot") != -1:
-                if lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"])) == True:
+                if (
+                    lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"]))
+                    == True
+                ):
                     return 0
             status = c_uint8(0)
             ret = lpal_hndl.pal_get_server_power(
                 int(fru_map[board]["slot_num"]), byref(status)
             )
-            if (ret != 0) or (status.value == 5): # SERVER_12V_OFF
+            if (ret != 0) or (status.value == 5):  # SERVER_12V_OFF
                 return 0
 
-            if search(r"fio_temp", sname) is not None:
+            if sname.find("fio_") != -1:
                 return 1
 
             if status.value == 1:  # power on
@@ -169,11 +171,11 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 if ready != 1:
                     return 0
 
-                if search(r"dimm", sname) is not None:
+                if sname.find("dimm") != -1:
                     dimm_name = (
                         "sys_config/"
                         + fru_map[board]["name"]
-                        + dimm_location_name_map[sname[4]]
+                        + dimm_location_name_map[sname[8 : sname.find("_t")]]
                     )
                     return is_dev_prsnt(dimm_name)
 
@@ -205,7 +207,9 @@ def sensor_fail_ignore_check(board, sname):
     else:
         slot_id = fru_map[board]["slot_num"]
         pin_val = c_uint8(0)
-        lbic_hndl.bic_get_one_gpio_status(slot_id, GPIO_FM_BIOS_POST_CMPLT_BMC_N, byref(pin_val))
-        if pin_val.value == 0: # post complete
+        lbic_hndl.bic_get_one_gpio_status(
+            slot_id, GPIO_FM_BIOS_POST_CMPLT_BMC_N, byref(pin_val)
+        )
+        if pin_val.value == 0:  # post complete
             return False
         return True

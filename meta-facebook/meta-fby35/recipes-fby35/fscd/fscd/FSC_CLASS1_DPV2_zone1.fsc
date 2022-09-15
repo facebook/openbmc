@@ -1,6 +1,6 @@
 max([
-  linear_cpu_margin(slot1:soc_therm_margin) + pid_cpu_margin(slot1:soc_therm_margin),
-  linear_cpu_margin(slot3:soc_therm_margin) + pid_cpu_margin(slot3:soc_therm_margin),
+  linear_cpu(slot1:mb_soc_cpu_temp_c) + pid_cpu(slot1:mb_soc_cpu_temp_c),
+  linear_cpu(slot3:mb_soc_cpu_temp_c) + pid_cpu(slot3:mb_soc_cpu_temp_c),
   linear_frontIO_inlet(
     max([
       slot1:fio_front_temp_c,

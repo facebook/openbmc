@@ -33,9 +33,10 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 source /usr/local/bin/openbmc-utils.sh
 
 # get the MAC from EEPROM
-mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
-if [ -z "$mac" ] && [ "$(LC_ALL=C type -t bmc_mac_addr)" = function ]; then
+if [ "$(LC_ALL=C type -t bmc_mac_addr)" = function ]; then
     mac=$(bmc_mac_addr)
+else
+    mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
 fi
 
 # get the MAC from u-boot environment

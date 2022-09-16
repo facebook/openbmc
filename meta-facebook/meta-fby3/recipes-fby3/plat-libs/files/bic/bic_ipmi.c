@@ -38,7 +38,7 @@
 //FRU
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
-#define FRUID_SIZE 256
+#define FRUID_SIZE 512
 
 //GPIO
 #define GPIO_LOW 0

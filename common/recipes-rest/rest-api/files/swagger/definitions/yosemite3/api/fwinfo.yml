@@ -51,25 +51,41 @@ paths:
                         additionalProperties: false
                         properties:
                           vendor:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                           model:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                           serial_number:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                           part_number:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                       slot4:
                         type: object
                         additionalProperties: false
                         properties:
                           vendor:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                           model:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                           serial_number:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                           part_number:
-                            type: string
+                            oneof:
+                              type: string
+                              type: null
                       bb:
                         type: object
                         additionalProperties: false

@@ -2232,6 +2232,39 @@
             "tags": [
                 "openbmc_git"
             ]
+        },
+        {
+            "alias": "sandcastle-job-builder-unit-tests",
+            "args": {
+                "name": "sandcastle-job-builder-unit-tests",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "name": "Run facebook/sandcastle/job.py unit tests",
+                        "shell": "facebook/sandcastle/test.py"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Run unit tests for the job builder",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^facebook/sandcastle/job.py",
+                        "^facebook/sandcastle/test.py"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
         }
     ]
 }

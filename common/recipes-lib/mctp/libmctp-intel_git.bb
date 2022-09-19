@@ -12,8 +12,9 @@ SRC_URI = "git://github.com/Intel-BMC/libmctp.git;protocol=https;branch=master \
            file://0002-Build-as-shared-library.patch \
            file://0003-Customize-buffer-size.patch \
            file://0004-test-astlpc-fix-compile-warning.patch \
+           file://0005-Replace-pollfd-to-use-local-struct.patch \
           "
-SRCREV = "d530c2271e1f9ff5d76a170c0abd64bd03ef40fd"
+SRCREV = "21dc38e911a27af2e914f834b2e2b775f7dad520"
 SRC_URI[md5sum] = "1c7db87fb8fa946b03d91fff08b0825a"
 SRC_URI[sha256sum] = "f7d36674d1e72d216fe60d804fc55ba5284162e8ec6a79e6ef2e067d3aee7675"
 

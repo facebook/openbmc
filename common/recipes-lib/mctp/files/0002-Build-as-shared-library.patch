@@ -6,8 +6,8 @@ index b27da63..91c1e24 100644
  add_definitions (-DMCTP_HAVE_STDIO)
  add_definitions (-DMCTP_DEFAULT_ALLOC)
  
--add_library (mctp_intel STATIC alloc.c astlpc.c core.c log.c libmctp.h serial.c astpcie.c smbus.c)
-+add_library (mctp_intel SHARED alloc.c astlpc.c core.c log.c libmctp.h serial.c astpcie.c smbus.c)
+-add_library (mctp_intel STATIC alloc.c asti3c.c astlpc.c core.c log.c libmctp.h serial.c astpcie.c smbus.c)
++add_library (mctp_intel SHARED alloc.c asti3c.c astlpc.c core.c log.c libmctp.h serial.c astpcie.c smbus.c)
  
  target_include_directories (mctp_intel PUBLIC
                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

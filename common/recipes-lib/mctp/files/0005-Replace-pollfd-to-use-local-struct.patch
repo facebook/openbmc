@@ -1,0 +1,42 @@
+From 98ef4c5420907268f9df1a9ae1ad1a6cfd9105c9 Mon Sep 17 00:00:00 2001
+From: Eli Huang <Eli_Huang@wiwynn.com>
+Date: Fri, 16 Sep 2022 15:16:42 +0800
+Subject: [PATCH] Replace pollfd to use local struct
+
+---
+ tests/test_asti3c.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/tests/test_asti3c.c b/tests/test_asti3c.c
+index 3143324..7927a71 100644
+--- a/tests/test_asti3c.c
++++ b/tests/test_asti3c.c
+@@ -1,6 +1,5 @@
+ #include <stdio.h>
+ #include <assert.h>
+-#include <poll.h>
+ 
+ #include "libmctp-asti3c.h"
+ #include "libmctp-log.h"
+@@ -167,6 +166,18 @@ static void test_payload(uint8_t *expected_payload,
+ 
+ /* Mock system calls */
+ 
++/* Mock system calls */
++#define POLLIN 0x0001
++#define POLLOUT 0x0004
++
++typedef long nfds_t;
++
++struct pollfd {
++	int fd;
++	short events;
++	short revents;
++};
++
+ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
+ {
+ 	int rc = 0;
+-- 
+2.25.1
+

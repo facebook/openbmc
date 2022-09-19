@@ -15,3 +15,8 @@ enum {
   TAG_MSG_PLDMD,
 };
 
+enum {
+    MCTP_OVER_SMBUS = 0,
+    MCTP_OVER_I3C = 1,
+};
+

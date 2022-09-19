@@ -18,6 +18,7 @@
 
 #include <libmctp.h>
 #include <libmctp-smbus.h>
+#include <libmctp-asti3c.h>
 #include <openbmc/ipmi.h>
 #include "mctpd.hpp"
 #include "mctpd_plat.hpp"
@@ -36,12 +37,19 @@ bool verbose = false;
 static const mctp_eid_t local_eid_default = 8;
 static char sockname[] = "mctp-mux";
 
+struct i3c_data {
+  struct mctp_binding_asti3c *asti3c;
+  int in_fd;
+  int out_fd;
+};
+
 struct binding {
   const char *name;
   int (*init)(struct mctp *mctp, struct binding *binding, mctp_eid_t eid, int n_params, char *const *params);
   int (*get_fdin)(struct binding *binding);
   int (*get_fdout)(struct binding *binding);
   int (*process)(struct binding *binding);
+  void (*free)(struct binding *binding);
   void *data;
 };
 
@@ -136,12 +144,23 @@ static void set_smbus_extera_params(struct ctx *ctx, uint8_t eid, struct mctp_sm
 
 static void tx_message(struct ctx *ctx, mctp_eid_t eid, uint8_t *msg, size_t len, bool tag_owner, uint8_t tag) {
 
-  if ( !strcmp("smbus", ctx->binding->name) ) {
+  std::string name = ctx->binding->name;
+  if (name == "smbus") {
     struct mctp_smbus_pkt_private *smbus_params, _smbus_params;
     smbus_params = &_smbus_params;
     set_smbus_extera_params(ctx, eid, smbus_params);
 
     mctp_message_tx(ctx->mctp, eid, (void *)msg, len, tag_owner, tag, (void*)smbus_params);
+  }
+  else if (name == "asti3c") {
+    struct mctp_asti3c_pkt_private pkt_private = { .fd = ctx->binding->get_fdout(ctx->binding) };
+
+    if (mctp_message_tx(ctx->mctp, eid, (void *)msg, len, tag_owner, tag, &pkt_private) < 0) {
+      std::cerr << "Fail to transfer MCTP message.\n";
+    }
+  }
+  else {
+    std::cerr<<"Error : missing binding name\n";
   }
 }
 
@@ -210,6 +229,74 @@ static void rx_message(uint8_t eid, void *data, void *msg, size_t len, bool tag_
 
   if (removed)
     client_remove_inactive(ctx);
+}
+
+static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
+                              mctp_eid_t eid, int n_params,
+                              char *const *params __attribute__((unused)))
+{
+  if (n_params != 1) {
+    warnx("i3c binding requires device param");
+    return -1;
+  }
+
+  struct i3c_data *data;
+  data = (struct i3c_data*) malloc (sizeof(*data));
+
+  data->asti3c = mctp_asti3c_init();
+  assert(data->asti3c);
+
+  std::string i3c_dev_str = params[0];
+  std::string dev = "/dev/bus/i3c/" + i3c_dev_str;
+
+  data->out_fd = open(dev.c_str(), O_RDWR);
+  if (data->out_fd < 0) {
+    std::cerr << "Fail to open device. fd = " << data->out_fd << "\n";
+    mctp_asti3c_free(data->asti3c);
+    free(data);
+    return -1;
+  }
+  std::cout << "i3c device path: " << dev << "\n";
+
+  std::string mqueue_dev = "/sys/bus/i3c/devices/" + i3c_dev_str + "/ibi-mqueue";
+
+  data->in_fd = open(mqueue_dev.c_str(), O_RDONLY);
+  if (data->in_fd < 0) {
+    std::cerr << "Fail to open device. fd = " << data->in_fd << "\n";
+    mctp_asti3c_free(data->asti3c);
+    free(data);
+    return -1;
+  }
+  std::cout << "i3c mqueue device path: " << mqueue_dev << "\n";
+
+  mctp_register_bus_dynamic_eid(mctp, &((data->asti3c)->binding));
+  
+  mctp_binding_set_tx_enabled(&((data->asti3c)->binding), true);
+
+  binding->data = data;
+  return 0;
+}
+
+static int binding_asti3c_get_in_fd(struct binding *binding) {
+  struct i3c_data *data = (struct i3c_data*)binding->data;
+
+  return data->in_fd;
+}
+
+static int binding_asti3c_get_out_fd(struct binding *binding) {
+  struct i3c_data *data = (struct i3c_data*)binding->data;
+  return data->out_fd;
+}
+
+static int binding_asti3c_process(struct binding *binding) {
+  struct i3c_data *data = (struct i3c_data*)binding->data;
+  return mctp_asti3c_rx(data->asti3c, data->in_fd);
+}
+
+static void binding_asti3c_free(struct binding *binding) {
+  struct i3c_data *data = (struct i3c_data*)binding->data;
+  mctp_asti3c_free(data->asti3c);
+  free(data);
 }
 
 static int binding_smbus_init(struct mctp *mctp, struct binding *binding,
@@ -285,13 +372,27 @@ static int binding_smbus_process(struct binding *binding)
   return mctp_smbus_read((struct mctp_binding_smbus*)binding->data);
 }
 
-struct binding bindings[] = { 
+static void binding_smbus_free(struct binding *binding) {
+  struct mctp_binding_smbus* smbus = (struct mctp_binding_smbus*)binding->data;
+  mctp_smbus_free(smbus);
+}
+
+struct binding bindings[] = {
   {
     .name = "smbus",
     .init = binding_smbus_init,
     .get_fdin = binding_smbus_get_in_fd,
     .get_fdout = binding_smbus_get_out_fd,
     .process = binding_smbus_process,
+    .free = binding_smbus_free,
+  },
+  {
+    .name = "asti3c",
+    .init = binding_asti3c_init,
+    .get_fdin = binding_asti3c_get_in_fd,
+    .get_fdout = binding_asti3c_get_out_fd,
+    .process = binding_asti3c_process,
+    .free = binding_asti3c_free,
   }
 };
 
@@ -467,6 +568,7 @@ static int binding_init(struct ctx *ctx, const char *name, int argc, char *const
   }
 
   rc = ctx->binding->init(ctx->mctp, ctx->binding, ctx->local_eid, argc, argv);
+
   return rc;
 }
 
@@ -521,10 +623,12 @@ static int run_daemon(struct ctx *ctx)
 
     if (ctx->pollfds[FD_BINDING].revents) {
       rc = 0;
-      if (ctx->binding->process)
+      if (ctx->binding->process) {
         rc = ctx->binding->process(ctx->binding);
-      if (rc)
-        break;
+        if (rc) {
+          continue;
+        }
+      }
     }
 
     for (i = 0; i < ctx->n_clients; i++) {
@@ -564,9 +668,11 @@ static void usage(const char *progname)
   fprintf(stderr, "Available bindings:\n");
   for (i = 0; i < ARRAY_SIZE(bindings); i++) {
     switch (i) {
-    case 0: //smbus
+    case MCTP_OVER_SMBUS: //smbus
       fprintf(stderr, " %s %s [bus] [bmc_addr_16h]\n", progname, bindings[i].name);
       break;
+    case MCTP_OVER_I3C:
+      fprintf(stderr, " %s %s [bus-pid]\n", progname, bindings[i].name);
     }
   }
 }
@@ -619,14 +725,22 @@ int main(int argc, char *const *argv)
   assert(ctx->mctp);
 
   rc = binding_init(ctx, argv[optind], argc - optind - 1,  argv + optind + 1);
-  if (rc)
+  if (rc) {
     return EXIT_FAILURE;
+  }
 
   rc = socket_init(ctx, argv + optind + 1);
-  if (rc)
-    return EXIT_FAILURE;
+  if (rc) {
+    goto fail;
+  }
 
   rc = run_daemon(ctx);
+  if (rc) {
+    goto fail;
+  }
 
-  return rc ? EXIT_FAILURE : EXIT_SUCCESS;
+  return EXIT_SUCCESS;
+fail:
+  ctx->binding->free(ctx->binding);
+  return EXIT_FAILURE;
 }

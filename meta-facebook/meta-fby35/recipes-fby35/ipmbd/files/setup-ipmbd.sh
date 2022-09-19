@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -28,11 +28,11 @@
 #
 ### END INIT INFO
 
-
+# shellcheck source=meta-facebook/meta-fby35/recipes-fby35/plat-utils/files/ast-functions
 . /usr/local/fbpackages/utils/ast-functions
 
-init_class1_ipmb(){
-  for slot_num in $(seq 1 4); do
+init_class1_ipmb() {
+  for slot_num in {1..4}; do
     bus=$((slot_num-1))
     echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-${bus}/new_device
     runsv /etc/sv/ipmbd_${bus} > /dev/null 2>&1 &
@@ -42,6 +42,7 @@ init_class1_ipmb(){
       slot_present=$(gpio_get PRSNT_MB_SLOT${slot_num}_BB_N)
     fi
     if [ "$slot_present" = "1" ]; then
+      usleep 50000
       sv stop ipmbd_${bus}
       disable_server_12V_power ${slot_num}
     else
@@ -56,7 +57,7 @@ init_class1_ipmb(){
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-8/new_device
 }
 
-init_class2_ipmb(){
+init_class2_ipmb() {
   echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-0/new_device
   runsv /etc/sv/ipmbd_0 > /dev/null 2>&1 &
 

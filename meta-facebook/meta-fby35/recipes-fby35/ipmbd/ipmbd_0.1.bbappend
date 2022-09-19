@@ -10,6 +10,7 @@ LOCAL_URI += " \
     file://run-ipmbd_9.sh \
     "
 DEPENDS:append = " plat-utils update-rc.d-native"
+RDEPENDS:${PN} += "bash"
 CFLAGS:prepend = "-DTIMEOUT_IPMB=3"
 
 do_install() {

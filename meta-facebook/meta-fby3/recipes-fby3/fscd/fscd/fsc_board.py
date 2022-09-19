@@ -21,7 +21,8 @@ import os
 import re
 import struct
 import time
-from ctypes import CDLL, c_uint8, byref
+from ctypes import byref, c_uint8, CDLL
+
 from re import search
 from subprocess import PIPE, Popen
 
@@ -29,11 +30,8 @@ import kv
 from fsc_util import Logger
 from kv import FPERSIST, kv_get
 
-fan_mode = {
-    "normal_mode": 0,
-    "trans_mode": 1,
-    "boost_mode": 2,
-    "progressive_mode": 3}
+fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mode": 3}
+
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 sled_system_conf = "Type_NA"
 try:
@@ -42,7 +40,9 @@ try:
 
     # Add sensor fail scenario for DP case
     if (search(r"Type_DP", sled_system_conf) is not None) or (
-       search(r"Type_DPF", sled_system_conf) is not None):
+        search(r"Type_DPF", sled_system_conf) is not None
+    ):
+
         Logger.warn("Add sensor fail scenario for DP case")
         get_fan_mode_scenario_list = [
             "one_fan_failure",
@@ -95,6 +95,12 @@ host_ready_map = {
     "slot1_2U_exp": "fru1_host_ready",
     "slot1_2U_top": "fru1_host_ready",
     "slot1_2U_bot": "fru1_host_ready",
+}
+
+m2_config_map = {
+    "config_c_cwc_single": 12,
+    "config_c_cwc_dual": 13,
+
 }
 
 # boot drive sensor number which is defined in pal_sensors.h
@@ -212,7 +218,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 return 0
 
             # if it's cwc system and fw update is ongoing will not check sensor to avoid bic being busy
-            if lpal_hndl.pal_is_cwc() == 0 and lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"])) == 1:
+            if (
+                lpal_hndl.pal_is_cwc() == 0
+                and lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"]))
+                == 1
+            ):
+
                 return 0
 
             if (search(r"front_io_temp", sname) is not None) and (
@@ -221,9 +232,11 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 return 1
 
             # If sensor fail, dp will boost without checking host ready
-            if (search(r"Type_DP", sled_system_conf) is None) or (
-                search(r"Type_DPB", sled_system_conf) is not None) or (
-                search(r"Type_DPF", sled_system_conf) is None
+            if (
+                (search(r"Type_DP", sled_system_conf) is None)
+                or (search(r"Type_DPB", sled_system_conf) is not None)
+                or (search(r"Type_DPF", sled_system_conf) is None)
+
             ):
                 try:
                     flag_status = kv_get(host_ready_map[board])
@@ -239,8 +252,8 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 elif search(r"spe_ssd", sname) is not None:
                     # get SSD present status
                     cmd = "/usr/bin/bic-util slot1 0xe0 0x2 0x9c 0x9c 0x0 0x15 0xe0 0x34 0x9c 0x9c 0x0 0x0 0x3"
-                    response = Popen(
-                        cmd, shell=True, stdout=PIPE).stdout.read()
+                    response = Popen(cmd, shell=True, stdout=PIPE).stdout.read()
+
                     response = response.decode()
                     # check the completion code
                     if response.split(" ")[6] != "00":
@@ -254,21 +267,32 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         return 0
                 elif search(r"dp_marvell_hsm_t", sname) is not None:
                     pcie_info_key = (
-                        "sys_config/" +
-                        fru_map[board]["name"] +
-                        "_pcie_i04_s40_info")
+                        "sys_config/" + fru_map[board]["name"] + "_pcie_i04_s40_info"
+                    )
+
                     return is_valid_dp_pcie(pcie_info_key)
                 elif search(r"gp3_m2", sname) is not None:
                     # get GPv3 M.2 device status
                     nvme_ready = c_uint8(0)
                     dev_status = c_uint8(0)
                     dev_type = c_uint8(0)
+                    m2_config = c_uint8(0)
                     if board == "slot1_2U_top" or board == "slot1_2U_bot":
                         if sname[8] != "_":
                             # gp3_m2_10_temp
                             dev_id = int(sname[7]) * 10 + int(sname[8]) + 1
                         else:
                             dev_id = int(sname[7]) + 1  # gp3_m2_0_temp
+                        response = lpal_hndl.pal_get_m2_config(
+                            cwc_fru_map[board]["fru"], byref(m2_config)
+                        )
+
+                        if response == 0:
+                            if m2_config.value == m2_config_map["config_c_cwc_dual"]:
+                                if dev_id % 2 != 0:
+                                    return 0
+                        else:
+                            return 0
                         response = lpal_hndl.pal_get_dev_info(
                             int(cwc_fru_map[board]["fru"]),
                             dev_id,
@@ -277,7 +301,10 @@ def sensor_valid_check(board, sname, check_name, attribute):
                             byref(dev_type),
                         )
                         if response == 0:  # bic can get device power status
-                            if dev_status.value == 1 and nvme_ready.value == 1:  # nvme is ready
+                            if (
+                                dev_status.value == 1 and nvme_ready.value == 1
+                            ):  # nvme is ready
+
                                 return 1
                             else:
                                 return 0
@@ -332,24 +359,36 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     exp_board_prsnt = c_uint8(0)
                     pesw_power = c_uint8(0)
 
-                    if board == "slot1_2U_exp" or board == "slot1_2U_top" or board == "slot1_2U_bot":
-                        response = lpal_hndl.pal_is_fru_prsnt( #check if CWC board, top/bot GPv3 board is present
+                    if (
+                        board == "slot1_2U_exp"
+                        or board == "slot1_2U_top"
+                        or board == "slot1_2U_bot"
+                    ):
+                        response = lpal_hndl.pal_is_fru_prsnt(  # check if CWC board, top/bot GPv3 board is present
+
                             int(cwc_fru_map[board]["fru"]),
                             byref(exp_board_prsnt),
                         )
-                        if response < 0 or exp_board_prsnt.value == 0: # exp board not present
+                        if (
+                            response < 0 or exp_board_prsnt.value == 0
+                        ):  # exp board not present
+
                             return 0
 
                         response = lpal_hndl.pal_is_pesw_power_on(
                             int(cwc_fru_map[board]["fru"]),
                             byref(pesw_power),
                         )
-                        if response < 0 or pesw_power.value == 0: # PESW not power ready
+                        if (
+                            response < 0 or pesw_power.value == 0
+                        ):  # PESW not power ready
+
                             return 0
                         else:
                             return 1
                     else:
-                        return 1 #  non-CWC GPV3 PESW is present while power on
+                        return 1  #  non-CWC GPV3 PESW is present while power on
+
                 # check if boot driver supports sensor reading
                 elif search(r"ssd", sname) is not None:
                     response = lpal_hndl.pal_is_sensor_valid(
@@ -383,9 +422,11 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     int(fru_map[board]["slot_num"]), byref(status)
                 )
                 if status.value == 1:  # power on
-                    if (search(r"Type_DP", sled_system_conf) is None) or (
-                        search(r"Type_DPB", sled_system_conf) is not None) or (
-                        search(r"Type_DPF", sled_system_conf) is None
+                    if (
+                        (search(r"Type_DP", sled_system_conf) is None)
+                        or (search(r"Type_DPB", sled_system_conf) is not None)
+                        or (search(r"Type_DPF", sled_system_conf) is None)
+
                     ):
                         try:
                             flag_status = kv_get(host_ready_map[board])

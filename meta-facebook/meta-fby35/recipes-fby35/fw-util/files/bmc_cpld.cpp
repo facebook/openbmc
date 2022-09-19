@@ -35,7 +35,7 @@ image_info BmcCpldComponent::check_image(const string& image, bool force) {
     return image_sts;
   }
 
-  if (fby35_common_is_valid_img(image.c_str(), FW_BB_CPLD, board_rev) == true) {
+  if (fby35_common_is_valid_img(image.c_str(), FW_BB_CPLD, board_id, board_rev) == true) {
     image_sts.result = true;
     image_sts.sign = true;
   }

@@ -326,13 +326,26 @@ enum brd_rev {
   SB_REV_MP      = 9,
   SB_REV_MP_MPS  = 10,
 
+  HD_REV_POC  = 0,
+  HD_REV_EVT  = 1,
+  HD_REV_EVT1 = 2,
+  HD_REV_EVT2 = 3,
+  HD_REV_DVT  = 4,
+  HD_REV_DVT1 = 5,
+  HD_REV_DVT2 = 6,
+  HD_REV_DVT3 = 7,
+  HD_REV_PVT  = 8,
+
   UNKNOWN_REV = 0xFF,
 };
 
 enum board_id {
   BOARD_ID_SB = 1,
   BOARD_ID_BB = 2,
+  BOARD_ID_RF = 3,
+  BOARD_ID_HD = 4,
   BOARD_ID_NIC_EXP = 6,
+  BOARD_ID_VF = 7,
 };
 
 enum {
@@ -518,10 +531,10 @@ int fby35_common_dev_id(char *str, uint8_t *dev);
 int fby35_common_dev_name(uint8_t dev, char *str);
 int fby35_common_get_2ou_board_type(uint8_t fru, uint8_t *board_type);
 int fby35_common_fscd_ctrl (uint8_t mode);
-int fby35_common_check_image_signature(uint8_t* data);
+int fby35_common_check_image_signature(uint8_t board_id, uint8_t *data);
 int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
 int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp);
-bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id);
+bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
 
 #ifdef __cplusplus

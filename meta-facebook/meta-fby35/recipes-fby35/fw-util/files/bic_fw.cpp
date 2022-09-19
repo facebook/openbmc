@@ -13,7 +13,8 @@ using namespace std;
 
 image_info BicFwComponent::check_image(const string& image, bool force) {
   int ret = 0;
-  uint8_t board_rev = 0;
+  uint8_t board_id = 0, board_rev = 0;
+  uint8_t type = TYPE_1OU_UNKNOWN;
   image_info image_sts = {"", false, false};
 
   if (force == true) {
@@ -22,9 +23,28 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
 
   switch (fw_comp) {
     case FW_SB_BIC:
+    case FW_BIC_RCVY:
+      if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
+        board_id = BOARD_ID_HD;
+      } else {
+        board_id = BOARD_ID_SB;
+      }
       ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
       break;
+    case FW_1OU_BIC:
+      if (bic_get_1ou_type(slot_id, &type) == 0) {
+        switch (type) {
+          case TYPE_1OU_RAINBOW_FALLS:
+            board_id = BOARD_ID_RF;
+            break;
+          case TYPE_1OU_VERNAL_FALLS_WITH_AST:
+            board_id = BOARD_ID_VF;
+            break;
+        }
+      }
+      break;
     case FW_BB_BIC:
+      board_id = BOARD_ID_BB;
       ret = get_board_rev(slot_id, BOARD_ID_BB, &board_rev);
       break;
   }
@@ -33,7 +53,7 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
     return image_sts;
   }
 
-  if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_rev) == true) {
+  if (fby35_common_is_valid_img(image.c_str(), fw_comp, board_id, board_rev) == true) {
     image_sts.result = true;
     image_sts.sign = true;
   }

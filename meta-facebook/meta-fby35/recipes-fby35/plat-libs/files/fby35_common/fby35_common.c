@@ -39,6 +39,7 @@
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
 const char plat_sig[PLAT_SIG_SIZE] = "Yosemite V3.5   ";
+const char plat_sig_vf[PLAT_SIG_SIZE] = "Yosemite V3     ";
 
 int
 fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {
@@ -765,15 +766,19 @@ exit:
 }
 
 int
-fby35_common_check_image_signature(uint8_t* data) {
-  int ret = 0;
+fby35_common_check_image_signature(uint8_t board_id, uint8_t *data) {
+  const char *sig = (board_id == BOARD_ID_VF) ? plat_sig_vf : plat_sig;
 
-  if (strncmp(plat_sig, (char*)data, PLAT_SIG_SIZE) != 0) {
+  if (data == NULL) {
+    return -1;
+  }
+
+  if (strncmp(sig, (char *)data, PLAT_SIG_SIZE) != 0) {
     printf("This image is not for Yv3.5 platform \n");
     printf("There is no valid platform signature in image. \n");
-    ret = -1;
+    return -1;
   }
-  return ret;
+  return 0;
 }
 
 int
@@ -829,11 +834,12 @@ exit:
 }
 
 bool
-fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
+fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id) {
   const char *rev_bb[] = {"POC1", "POC2", "EVT", "EVT2", "EVT3", "DVT", "DVT_1C", "PVT", "MP"};
   const char *rev_sb[] = {"POC", "EVT", "EVT2", "EVT3", "EVT3", "DVT", "DVT", "PVT", "PVT", "MP", "MP"};
+  const char *rev_hd[] = {"POC", "EVT", "EVT", "EVT", "DVT", "DVT", "DVT", "DVT", "PVT"};
   const char **board_type = rev_sb;
-  uint8_t board_id = 0, exp_fw_rev = 0;
+  uint8_t exp_fw_rev = 0;
   uint8_t err_proof_board_id = 0;
   uint8_t err_proof_stage = 0;
   uint8_t err_proof_component = 0;
@@ -842,7 +848,10 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   off_t info_offs;
   struct stat file_info;
   FW_IMG_INFO img_info;
-  bool is_first = true;
+
+  if (img_path == NULL) {
+    return false;
+  }
 
   if (stat(img_path, &file_info) < 0) {
     syslog(LOG_WARNING, "%s(): failed to open %s to check file infomation.", __func__, img_path);
@@ -861,8 +870,10 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
 
   if (comp == FW_BIOS) {
     info_offs = BIOS_IMG_INFO_OFFSET;
+    cal_size = file_info.st_size;
   } else {
     info_offs = file_info.st_size - IMG_SIGNED_INFO_SIZE;
+    cal_size = info_offs;
   }
 
   if (lseek(fd, info_offs, SEEK_SET) != info_offs) {
@@ -878,21 +889,15 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
   }
   close(fd);
 
-  if (fby35_common_check_image_signature(img_info.plat_sig) < 0) {
+  if (fby35_common_check_image_signature(board_id, img_info.plat_sig) < 0) {
     return false;
   }
 
-  if (comp == FW_BIOS) {
-    cal_size = BIOS_IMG_SIZE;
-  } else {
-    cal_size = info_offs;
-  }
-
-  if (fby35_common_check_image_md5(img_path, cal_size, img_info.md5_sum, is_first, comp) < 0) {
+  if (fby35_common_check_image_md5(img_path, cal_size, img_info.md5_sum, true, comp) < 0) {
     return false;
   }
 
-  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, !is_first, comp) < 0) {
+  if (fby35_common_check_image_md5(img_path, info_offs, img_info.md5_sum_second, false, comp) < 0) {
     return false;
   }
 
@@ -927,27 +932,32 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
       break;
   }
 
-  switch (comp) {
-    case FW_CPLD:
-    case FW_SB_BIC:
-    case FW_BIOS:
-      board_id = BOARD_ID_SB;
+  if (err_proof_board_id != board_id) {
+    printf("Wrong firmware image component.\n");
+    return false;
+  }
+
+  switch (board_id) {
+    case BOARD_ID_SB:
       if (rev_id >= ARRAY_SIZE(rev_sb)) {
         rev_id = ARRAY_SIZE(rev_sb) - 1;
       }
       break;
-    case FW_BB_BIC:
-    case FW_BB_CPLD:
-      board_id = BOARD_ID_BB;
+    case BOARD_ID_HD:
+      board_type = rev_hd;
+      if (rev_id >= ARRAY_SIZE(rev_hd)) {
+        rev_id = ARRAY_SIZE(rev_hd) - 1;
+      }
+      break;
+    case BOARD_ID_BB:
       board_type = rev_bb;
       if (rev_id >= ARRAY_SIZE(rev_bb)) {
         rev_id = ARRAY_SIZE(rev_bb) - 1;
       }
       break;
-  }
-  if (err_proof_board_id != board_id) {
-    printf("Wrong firmware image component.\n");
-    return false;
+    case BOARD_ID_RF:
+    case BOARD_ID_VF:
+      return true;
   }
 
   if (board_type == rev_sb) {
@@ -961,8 +971,16 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t rev_id) {
       exp_fw_rev = FW_REV_MP;
     else
       exp_fw_rev = 0;
-  }
-  else {
+  } else if (board_type == rev_hd) {
+    if (HD_REV_EVT <= rev_id && rev_id <= HD_REV_EVT2)
+      exp_fw_rev = FW_REV_EVT;
+    else if (HD_REV_DVT <= rev_id && rev_id <= HD_REV_DVT3)
+      exp_fw_rev = FW_REV_DVT;
+    else if (HD_REV_PVT <= rev_id)
+      exp_fw_rev = FW_REV_PVT;
+    else
+      exp_fw_rev = 0;
+  } else {
     if (BB_REV_EVT <= rev_id && rev_id <= BB_REV_EVT3)
       exp_fw_rev = FW_REV_EVT;
     else if (rev_id == BB_REV_DVT || rev_id == BB_REV_DVT_1C)

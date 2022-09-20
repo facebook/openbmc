@@ -231,7 +231,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
             if not m:
                 if re.match(r"^\s*$", line):
                     continue
-                attrs = line.split(": ")
+                attrs = line.split(":")
                 self.assertIn(
                     attrs[0],
                     [
@@ -240,12 +240,18 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
                         "Fan Fail",
                         "Sled Fan Latch Open",
                         "FSCD Driver",
+                        "iom",
+                        "nic",
                     ],
                     "Accepted printed attributes",
                 )
-                if attrs[0] == "Sensor Fail" and attrs[1] != "None":
+                if (
+                    attrs[0] == "Sensor Fail"
+                    and attrs[1].strip()
+                    and attrs[1] != "None"
+                ):  # if field is empty still valid
                     self.assertEqual(
-                        attrs[1],
+                        attrs[1].strip(),
                         "None",
                         "Sensor failure, fan-util output: {}".format(info),
                     )

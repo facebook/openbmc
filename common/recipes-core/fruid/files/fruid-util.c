@@ -42,6 +42,12 @@ enum format{
   JSON_FORMAT = 1,
 };
 
+/* Component Table */
+static const char * fruid_component_table [] = {
+  "Part Number BIC",  /* COMPONENT_BIC */
+  "Part Number CPLD"  /* COMPONENT_CPLD */
+};
+
 static char pal_fru_list_print_t[1024] = {0};
 static char pal_fru_list_rw_t[1024] = {0};
 static char pal_dev_list_print_t[1024] = {0};
@@ -333,6 +339,14 @@ print_fruid_info(fruid_info_t *fruid, const char *name)
     printf("%-27s: %d", "\nSmart Fan Rear RPM", fruid->multirecord_smart_fan.rpm_rear);
   }
 
+  if (fruid->multirecord_multi_source.flag) {
+    fruid_area_multirecord_multi_source_t *ptr = fruid->multirecord_multi_source.list_head;
+    while(ptr) {
+      printf("\n%-26s: %s", fruid_component_table[ptr->component_id], ptr->part_number);
+      ptr = ptr->next;
+    }
+  }
+
   printf("\n");
 }
 
@@ -420,6 +434,13 @@ print_json_fruid_info(fruid_info_t *fruid, const char *name,json_t *fru_array)
     json_object_set_new(fru_object, "Smart Fan Current (10mA)", json_integer(fruid->multirecord_smart_fan.current));
     json_object_set_new(fru_object, "Smart Fan Front RPM", json_integer(fruid->multirecord_smart_fan.rpm_front));
     json_object_set_new(fru_object, "Smart Fan Rear RPM", json_integer(fruid->multirecord_smart_fan.rpm_rear));
+  }
+  if (fruid->multirecord_multi_source.flag) {
+    fruid_area_multirecord_multi_source_t *ptr = fruid->multirecord_multi_source.list_head;
+    while(ptr) {
+      json_object_set_new(fru_object, fruid_component_table[ptr->component_id], json_string(ptr->part_number));
+      ptr = ptr->next;
+    }
   }
 
   json_array_append_new(fru_array, fru_object);

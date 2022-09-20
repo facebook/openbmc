@@ -322,6 +322,19 @@ void free_fruid_info(fruid_info_t * fruid)
     free(fruid->multirecord_smart_fan.mfg_line);
     free(fruid->multirecord_smart_fan.clei_code);
   }
+
+  if (fruid->multirecord_multi_source.flag) {
+    fruid_area_multirecord_multi_source_t *tmp;
+    fruid_area_multirecord_multi_source_t *head = fruid->multirecord_multi_source.list_head;
+    while (head != NULL) {
+      tmp = head;
+      head = head->next;
+      if (tmp->part_number) {
+        free(tmp->part_number);
+      }
+      free(tmp);
+    }
+  }
 }
 
 
@@ -459,6 +472,74 @@ int parse_fruid_area_multirecord_smart_fan(uint8_t * multirecord,
 
   return 0;
 }
+
+int parse_fruid_area_multirecord_multi_source(uint8_t *multirecord, uint8_t multirecord_length,
+      fruid_area_multirecord_multi_source_t **fruid_multirecord_multi_source)
+{
+  int index = 0;
+  int remain = 0;
+  uint8_t component = 0;
+  uint8_t pn_len = 0;
+  fruid_area_multirecord_multi_source_t *p_record = NULL;
+  fruid_area_multirecord_multi_source_t *p_current = NULL;
+
+  if (multirecord == NULL || fruid_multirecord_multi_source == NULL) {
+#ifdef DEBUG
+    syslog(LOG_ERR, "fruid: multi_record_area: NULL parameter");
+#endif
+    return -1;
+  }
+
+  *fruid_multirecord_multi_source = NULL; // init out pointer to NULL
+
+  while ((index + 2) < multirecord_length) { // have next component & pn_len to read
+    component = multirecord[index++];
+    pn_len = multirecord[index++];
+    remain = multirecord_length - index;
+
+    if (pn_len > remain) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "fruid: multi_record_area: record length exceed max length");
+#endif
+      return -1;
+    }
+
+    p_record = (fruid_area_multirecord_multi_source_t *) malloc(sizeof(fruid_area_multirecord_multi_source_t));
+    if (p_record == NULL) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "fruid: multi_record_area: multi_source_t: out of memory");
+#endif
+      return ENOMEM;
+    }
+
+    p_record->part_number = (char *) calloc(pn_len + 1, sizeof(char)); // Null terminated
+    if (p_record->part_number == NULL) {
+#ifdef DEBUG
+      syslog(LOG_ERR, "fruid: multi_record_area: part_number: out of memory");
+#endif
+      return ENOMEM;
+    }
+
+    p_record->component_id = component;
+    p_record->length = pn_len;
+    memcpy(p_record->part_number, multirecord + index, pn_len);
+    p_record->next = NULL;
+
+    if (*fruid_multirecord_multi_source == NULL) { // save head
+      *fruid_multirecord_multi_source = p_record;
+    }
+
+    if (p_current) { // append current record
+      p_current->next = p_record; 
+    }
+    p_current = p_record;
+
+    index += pn_len;
+  }
+
+  return 0;
+}
+
 
 /* Parse the Product area data */
 int parse_fruid_area_product(uint8_t * product,
@@ -932,6 +1013,7 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid, int
   fruid_area_board_t fruid_board;
   fruid_area_product_t fruid_product;
   fruid_area_multirecord_smart_fan_t fruid_multirecord_smart_fan;
+  fruid_area_multirecord_multi_source_t *fruid_multirecord_multi_source = NULL;
 
   /* If Chassis area is present, parse and print it */
   if (fruid_eeprom->chassis) {
@@ -1069,6 +1151,15 @@ int populate_fruid_info(fruid_eeprom_t * fruid_eeprom, fruid_info_t * fruid, int
           fruid->multirecord_smart_fan.rpm_rear = fruid_multirecord_smart_fan.rpm_rear;
         }
       }
+
+      if (type_id == MULTISOURCE_RECORD_ID) {
+        ret = parse_fruid_area_multirecord_multi_source(pMultirecord + sizeof(fruid_area_multirecord_header_t),
+          area_len, &fruid_multirecord_multi_source);
+        if (ret == 0) {
+          fruid->multirecord_multi_source.flag = 1;
+          fruid->multirecord_multi_source.list_head = fruid_multirecord_multi_source;
+        }
+      }
       // append other type here
       if (is_last_area == true) { // last one record of the list
         break;
@@ -1131,6 +1222,8 @@ int fruid_parse(const char * bin, fruid_info_t * fruid)
   ret = fread(eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
   if (ret != fruid_len) {
     printf("Failed to read binary file, inconsistent length\n");
+    fclose(fruid_fd);
+    free(eeprom);
     return -1;
   }
 
@@ -1289,6 +1382,7 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
 #ifdef DEBUG
     syslog(LOG_WARNING, "fruid: malloc: memory allocation failed\n");
 #endif
+    fclose(fruid_fd);
     return ENOMEM;
   }
 
@@ -1296,6 +1390,8 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   ret = fread(old_eeprom, sizeof(uint8_t), fruid_len, fruid_fd);
   if (ret != fruid_len) {
     printf("Failed to read binary file, inconsistent length\n");
+    fclose(fruid_fd);
+    free(old_eeprom);
     return -1;
   }
 
@@ -1622,13 +1718,14 @@ int fruid_modify(const char * cur_bin, const char * new_bin, const char * field,
   // the eeprom.
   new_fruid_len = fruid_len + ((content_len / 8) + 1) * 8 + total_field_opt_size;
   eeprom = (uint8_t *) malloc(new_fruid_len);
-  memset(eeprom, 0, new_fruid_len);
+ 
   if (!eeprom) {
 #ifdef DEBUG
     syslog(LOG_WARNING, "%s: malloc: memory allocation failed", __func__);
 #endif
     return ENOMEM;
   }
+  memset(eeprom, 0, new_fruid_len);
 
   // chassis area
   i = 8;

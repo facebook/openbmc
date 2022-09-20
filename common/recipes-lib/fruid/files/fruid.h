@@ -48,6 +48,7 @@ extern "C" {
  ----------------------------------------*/
 enum {
   OEM_RECORD_ID_OCP_NIC_3_0 = 0xC0,
+  OEM_RECORD_ID_MULTISOURCE = 0xC1,
   OEM_RECORD_ID_SMART_FAN = 0xFB,
 };
 
@@ -55,6 +56,7 @@ enum {
  * SMART FAN OEM Record ID Specification
  */
 #define SMART_FAN_RECORD_ID          OEM_RECORD_ID_SMART_FAN
+#define MULTISOURCE_RECORD_ID        OEM_RECORD_ID_MULTISOURCE
 #define MANUFACTURER_ID_DATA_LENGTH  3
 #define SMART_FAN_VERSION_LENGTH     4
 #define SMART_FAN_FW_VERSION_LENGTH  4
@@ -194,6 +196,13 @@ typedef struct fruid_area_multirecord_smart_fan_t {
   uint32_t rpm_rear;
 } fruid_area_multirecord_smart_fan_t;
 
+typedef struct fruid_area_multirecord_multi_source_t {
+  uint8_t component_id;
+  uint8_t length;
+  char * part_number;
+  struct fruid_area_multirecord_multi_source_t *next;
+} fruid_area_multirecord_multi_source_t;
+
 /* To hold all the fruid information */
 typedef struct fruid_info_t {
   struct {
@@ -298,6 +307,10 @@ typedef struct fruid_info_t {
     uint32_t rpm_front;
     uint32_t rpm_rear;
   } multirecord_smart_fan;
+  struct {
+    uint8_t flag;
+    fruid_area_multirecord_multi_source_t *list_head;
+  } multirecord_multi_source;
 } fruid_info_t;
 
 /* To hold the different area offsets. */
@@ -415,6 +428,11 @@ enum {
   PCD4,
   PCD5,
   PCD6
+};
+
+enum COMPONENT_ID {
+  COMPONENT_BIC = 0,
+  COMPONENT_CPLD,
 };
 
 int fruid_parse(const char * bin, fruid_info_t * fruid);

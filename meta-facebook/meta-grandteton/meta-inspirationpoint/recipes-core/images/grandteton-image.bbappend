@@ -5,3 +5,7 @@ IMAGE_INSTALL:remove = " \
    asd \
    asd-test \
    "
+
+IMAGE_INSTALL += " \
+   apml \
+   "

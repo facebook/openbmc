@@ -12,8 +12,10 @@ probe_pwon_dev() {
     sleep 5
     if [ "$(gpio_get FM_PWRGD_CPU1_PWROK)" -eq $PWRON ]; then
       #Switch Mux
+      i2cset -f -y 0 0x70 0x46 0x01
       i2cset -f -y 0 0x70 0x40 0xc0
       i2cset -f -y 0 0x70 0x41 0xc0
+      i2cget -f -y 0 0x38 0x01
       #Prove SBRMI and SBTSI driver
       i2c_device_add 0 0x38 sbrmi
       i2c_device_add 0 0x3C sbrmi

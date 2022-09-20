@@ -6894,6 +6894,7 @@ pal_mon_fw_upgrade
   FILE *fp;
   int ret=-1;
   char *buf_ptr;
+  char *new_buf_ptr = NULL;
   int buf_size = 1000;
   int str_size = 200;
   int tmp_size;
@@ -6909,14 +6910,15 @@ pal_mon_fw_upgrade
   while(fgets(str, str_size, fp) != NULL) {
     tmp_size = tmp_size + str_size;
     if(tmp_size + str_size >= buf_size) {
-      buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
+      new_buf_ptr = realloc(buf_ptr, sizeof(char) * buf_size * 2 + sizeof(char));
       buf_size *= 2;
     }
-    if(!buf_ptr) {
+    if(!new_buf_ptr) {
       syslog(LOG_ERR,
              "%s realloc() fail, please check memory remaining", __func__);
       goto free_buf;
     }
+    buf_ptr = new_buf_ptr;
     strncat(buf_ptr, str, str_size);
   }
 

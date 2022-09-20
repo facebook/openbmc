@@ -94,6 +94,7 @@ LOG_MSG_PREFIX=""
 DWR=0
 SECOND_DUMP=0
 DELAY_SEC=30
+POWER_OFF=0
 
 while test $# -gt 1
 do
@@ -106,6 +107,9 @@ do
     ;;
   --second)
     SECOND_DUMP=1
+    ;;
+  --power_off)
+    POWER_OFF=1
     ;;
   *)
     echo "unknown argument $2"
@@ -151,4 +155,10 @@ echo "ACD for $SLOT_NAME Completed"
 rm $PID_FILE
 
 echo "${LOG_MSG_PREFIX}ACD Dump Stored in $CRASHDUMP_LOG_ARCHIVE"
+
+if [ "$POWER_OFF" = "1" ]; then
+  logger -t "ipmid" -p daemon.crit "Dump completed, power off FRU: $SLOT_NUM"
+  /usr/local/bin/power-util "slot$SLOT_NUM" off
+fi
+
 exit 0

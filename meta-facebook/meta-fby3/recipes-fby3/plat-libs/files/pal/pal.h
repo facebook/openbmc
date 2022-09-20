@@ -71,6 +71,10 @@ extern "C" {
 #define DP_FAVA_FAN_TBL_PATH "/etc/FSC_CLASS1_DP_FAVA.json"
 #define DEFAULT_FSC_CFG_PATH "/etc/fsc-config.json"
 
+#define KEY_HOST_FAILURE_COUNT "slot%d_failure_count"
+#define KEY_CPU_PWRGD_TIMESTAMP "slot%d_cpu_pwrgd_timestamp"
+#define KEY_CATERR_TIMESTAMP "slot%d_caterr_timestamp"
+
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
@@ -88,6 +92,11 @@ extern const char pal_dev_pwr_list[];
 extern const char pal_dev_pwr_option_list[];
 extern const char pal_fan_opt_list[];
 extern const char pal_m2_dual_list[];
+
+enum CRASHDUMP_POWER_CONTROL {
+  CRASHDUMP_NO_POWER_CONTROL = 0,
+  CRASHDUMP_POWER_OFF,
+};
 
 enum {
   LED_LOCATE_MODE = 0x0,

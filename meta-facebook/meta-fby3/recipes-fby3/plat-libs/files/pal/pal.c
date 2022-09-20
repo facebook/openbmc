@@ -3220,15 +3220,67 @@ pal_post_handle(uint8_t slot, uint8_t postcode) {
 }
 
 static int
-pal_store_crashdump(uint8_t fru, bool ierr) {
+pal_caterr_handler(uint8_t fru, bool ierr) {
   uint8_t status;
+  long time_cpu_pwrgd = 0;
+  long time_caterr = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts = {0};
+  uint8_t fail_count = 0;
 
   if (!pal_get_server_power(fru, &status) && !status) {
     syslog(LOG_WARNING, "%s() fru %u is OFF", __func__, fru);
     return PAL_ENOTSUP;
   }
 
-  return fby3_common_crashdump(fru, ierr, false);
+  // save CATERR timestamp
+  clock_gettime(CLOCK_REALTIME, &ts);
+  time_caterr = ts.tv_sec;
+  snprintf(key, sizeof(key), KEY_CATERR_TIMESTAMP, fru);
+  snprintf(value, sizeof(value), "%ld", time_caterr);
+  if (kv_set(key, value, 0, 0) < 0) {
+    syslog(LOG_WARNING, "%s() cache_set key = %s, value = %s failed.\n", __func__, key, value);
+  }
+
+  // get last pwrgd time
+  snprintf(key, sizeof(key), KEY_CPU_PWRGD_TIMESTAMP, fru);
+  if(kv_get(key, value, NULL, 0) == 0) {
+    time_cpu_pwrgd = strtol(value, NULL, 10);
+  }
+
+  // get fail count
+  snprintf(key, sizeof(key), KEY_HOST_FAILURE_COUNT, fru);
+  if(kv_get(key, value, NULL, 0) == 0) {
+    fail_count = atoi(value);
+  }
+
+  if (time_cpu_pwrgd == 0 || (time_cpu_pwrgd > time_caterr)) { // abnormal case, bypass recovery
+    return fby3_common_crashdump(fru, ierr, false, CRASHDUMP_NO_POWER_CONTROL);
+  }
+
+  if ((time_caterr - time_cpu_pwrgd) < 15) { // CATERR within 15 sec
+    if (fail_count < 5) {
+      fail_count++;
+      snprintf(value, sizeof(value), "%d", fail_count);
+      if (kv_set(key, value, 0, 0) < 0) {
+        syslog(LOG_WARNING, "%s() cache_set key = %s, value = %s failed.\n", __func__, key, value);
+      }
+      syslog(LOG_CRIT, "%s slot%u boot failed, recover by power cycle: retry %u", __func__, fru, fail_count);
+      pal_set_server_power(fru, SERVER_POWER_CYCLE);
+      return 0;
+    } else {
+      syslog(LOG_CRIT, "%s slot%u boot failed and unrecoverable", __func__, fru);
+      return fby3_common_crashdump(fru, ierr, false, CRASHDUMP_POWER_OFF);
+    }
+  } else { // reset failure count and run original dump process
+    snprintf(key, sizeof(key), KEY_HOST_FAILURE_COUNT, fru);
+    if (kv_set(key, "0", 0, 0) < 0) {
+      syslog(LOG_WARNING, "%s() cache_set key = %s, value = %s failed.\n", __func__, key, value);
+    }
+  }
+
+  return fby3_common_crashdump(fru, ierr, false, CRASHDUMP_NO_POWER_CONTROL);
 }
 
 static int
@@ -3245,7 +3297,7 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   switch (snr_num) {
     case CATERR_B:
       is_cri_sel = true;
-      pal_store_crashdump(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
+      pal_caterr_handler(fru, (event_data[3] == 0x00));  // 00h:IERR, 0Bh:MCERR
       break;
     case CPU_DIMM_HOT:
     case PWR_ERR:
@@ -4567,12 +4619,56 @@ static const char *sock_path_jtag_msg[MAX_NODES+1] = {
   SOCK_PATH_JTAG_MSG "_4"
 };
 
+static void
+cpu_pwrgd_handler(uint8_t slot)
+{
+  long current_time = 0;
+  long time_cpu_pwrgd = 0;
+  long time_caterr = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  struct timespec ts = {0};
+
+  // get last pwrgd time and update it with current time
+  clock_gettime(CLOCK_REALTIME, &ts);
+  current_time = ts.tv_sec;
+
+  snprintf(key, sizeof(key), KEY_CPU_PWRGD_TIMESTAMP, slot);
+  if(kv_get(key, value, NULL, 0) == 0) {
+    time_cpu_pwrgd = strtol(value, NULL, 10); 
+  }
+  snprintf(value, sizeof(value), "%ld", ts.tv_sec);
+  if (kv_set(key, value, 0, 0) < 0) {
+    syslog(LOG_WARNING, "%s() cache_set key = %s, value = %s failed.\n", __func__, key, value);
+  }
+
+  // get last caterr time
+  snprintf(key, sizeof(key), KEY_CATERR_TIMESTAMP, slot);
+  if(kv_get(key, value, NULL, 0) == 0) {
+    time_caterr = strtol(value, NULL, 10);
+  }
+
+  // reset failure count if no CATERR within 15 seccond
+  if (time_cpu_pwrgd && time_caterr && (time_cpu_pwrgd > time_caterr)) {
+    if ((current_time - time_cpu_pwrgd > 15)) {
+      snprintf(key, sizeof(key), KEY_HOST_FAILURE_COUNT, slot);
+      if (kv_set(key, "0", 0, 0) < 0) {
+        syslog(LOG_WARNING, "%s() cache_set key = %s, value = %s failed.\n", __func__, key, value);
+      }
+    }
+  }
+}
+
 int
 pal_handle_oem_1s_intr(uint8_t slot, uint8_t *data)
 {
   int sock;
   int err;
   struct sockaddr_un server;
+
+  if (*data == PWRGD_CPU_LVC3_R) {
+    cpu_pwrgd_handler(slot);
+  }
 
   if (access(sock_path_asd_bic[slot], F_OK) == -1) {
     // SOCK_PATH_ASD_BIC doesn't exist, means ASD daemon for this

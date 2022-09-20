@@ -273,7 +273,7 @@ fby3_common_get_slot_type(uint8_t fru) {
 #define CRASHDUMP_BIN       "/usr/local/bin/autodump.sh"
 
 int
-fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
+fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset, bool power_off) {
   int ret = 0;
   char cmd[128] = "\0";
   int cmd_len = sizeof(cmd);
@@ -287,7 +287,11 @@ fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
   if ( platform_reset == true ) {
     snprintf(cmd, cmd_len, "%s slot%d --second &", CRASHDUMP_BIN, fru);
   } else {
-    snprintf(cmd, cmd_len, "%s slot%d &", CRASHDUMP_BIN, fru);
+    if (power_off) {
+      snprintf(cmd, cmd_len, "%s slot%d --power_off &", CRASHDUMP_BIN, fru);
+    } else {
+      snprintf(cmd, cmd_len, "%s slot%d &", CRASHDUMP_BIN, fru);
+    }
   }
   
   if ( system(cmd) != 0 ) {

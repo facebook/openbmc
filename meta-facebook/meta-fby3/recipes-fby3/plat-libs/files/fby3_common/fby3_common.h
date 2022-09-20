@@ -389,7 +389,7 @@ int fby3_common_get_slot_id(char *str, uint8_t *fru);
 int fby3_common_get_bus_id(uint8_t slot_id);
 int fby3_common_is_fru_prsnt(uint8_t fru, uint8_t *val);
 int fby3_common_get_slot_type(uint8_t fru);
-int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset);
+int fby3_common_crashdump(uint8_t fru, bool ierr, bool platform_reset, bool power_off);
 int fby3_common_dev_id(char *str, uint8_t *dev);
 int fby3_common_dev_name(uint8_t dev, char *str);
 int fby3_common_get_2ou_board_type(uint8_t fru_id, uint8_t *board_type);

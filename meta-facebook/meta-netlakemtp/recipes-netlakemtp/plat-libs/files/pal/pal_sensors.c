@@ -824,11 +824,11 @@ read_nvme_temp(uint8_t id, float *value) {
     usleep(SENSOR_RETRY_INTERVAL_USEC);
   }
 
+  close(fd);
+
   if (ret < 0) {
     return ERR_SENSOR_NA;
   }
-
-  close(fd);
 
   // valid temperature range: -60C(0xC4) ~ +127C(0x7F)
   // C4h-FFh is two's complement, means -60 to -1

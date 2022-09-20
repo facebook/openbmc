@@ -103,6 +103,9 @@ TaskStatus getTaskStatus(const std::string& id) {
   json resp = json::parse(status.resp);
   resp.at("TaskState").get_to(status.state);
   resp.at("TaskStatus").get_to(status.status);
+  for (auto& j : resp.at("Messages")) {
+    status.messages.emplace_back(j.at("Message"));
+  }
   return status;
 }
 
@@ -110,8 +113,12 @@ void update(const std::string& path) {
   using namespace std::chrono_literals;
   std::string taskID = updateNonBlocking(path);
   std::cout << "Started update task: " << taskID << std::endl;
+  size_t nextMessage = 0;
   for (int retry = 0; retry < 500; retry++) {
     TaskStatus status = getTaskStatus(taskID);
+    for (; nextMessage < status.messages.size(); nextMessage++) {
+      std::cout << status.messages[nextMessage++] << std::endl;
+    }
     if (status.state != "Running") {
       std::cout << "Update completed with state: " << status.state
                 << " status: " << status.status << std::endl;

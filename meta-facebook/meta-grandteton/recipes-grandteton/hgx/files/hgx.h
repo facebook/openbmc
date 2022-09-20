@@ -3,6 +3,7 @@
 #ifdef __cplusplus
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace hgx {
 
@@ -16,8 +17,10 @@ struct HTTPException : std::runtime_error {
 
 struct TaskStatus {
   std::string resp{};
+  // one of Starting, Stopping, Completed, Exception, and Running
   std::string state{};
   std::string status{};
+  std::vector<std::string> messages{};
 };
 
 // Get a subpath after /redfish/v1

@@ -31,6 +31,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <openbmc/kv.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/obmc-i2c.h>
 #include "bic_fwupdate.h"
 #include "bic_ipmi.h"
@@ -70,7 +71,16 @@ do {                                                                        \
 #define FW_UPDATE_FAN_PWM  70
 #define FAN_PWM_CNT        4
 
-#define FORCE_BOOT_FROM_UART  0x01
+#define VF2_IOEXP_ADDR  0x92  // 8-bit address
+
+#define SB_TYPE_CLASS1       0x01
+#define SB_TYPE_CLASS2       0x02
+#define UART_CH_RCVY_1OU     0x01
+#define UART_CH_RCVY_2OU     0x02
+#define UART_CH_RCVY_SB      0x03
+#define UART_CH_RCVY_BB      0x04
+#define FORCE_BOOT_FROM_SPI  0x00
+#define FORCE_BOOT_FROM_UART 0x01
 
 enum {
   FEXP_BIC_I2C_WRITE   = 0x20,
@@ -266,7 +276,7 @@ is_valid_intf(uint8_t intf) {
 }
 
 static int
-update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
+update_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
   #define MAX_CMD_LEN 120
   #define MAX_RETRY 10
   char cmd[MAX_CMD_LEN] = {0};
@@ -331,124 +341,234 @@ exit:
 }
 
 static int
-recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, uint8_t force) {
-  int ret = -1, retry = 0;
-  int fd = 0, i2cfd = 0;
-  int file_size;
-  uint8_t tbuf[2] = {0x00};
-  uint8_t tlen = 2;
-  uint8_t bmc_location = 0;
-  char cmd[64] = {0};
+recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
+  int ret = -1, file_size = -1;
+  int fd = -1, i2cfd = -1, ttyfd = -1;
+  bool set_strap = false;
+  uint8_t bus, addr;
+  uint8_t type = TYPE_1OU_UNKNOWN;
+  uint8_t uart_ch = UART_CH_RCVY_SB;
+  uint8_t strap_reg = CPLD_REG_SB_BIC_BOOT_STRAP;
+  uint8_t buf[64], bmc_location = 0;
+  char cmd[64];
 
-  //check params
-  ret = is_valid_intf(intf);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() invalid intf(val=0x%x) was caught!\n", __func__, intf);
-    goto error_exit;
+  if (path == NULL) {
+    return -1;
   }
 
-  //get fd and file size
+  switch (comp) {
+    case FW_BIC_RCVY:
+      uart_ch = UART_CH_RCVY_SB;
+      strap_reg = CPLD_REG_SB_BIC_BOOT_STRAP;
+      comp = FW_SB_BIC;
+      break;
+    case FW_1OU_BIC_RCVY:
+      uart_ch = UART_CH_RCVY_1OU;
+      strap_reg = CPLD_REG_1OU_BIC_BOOT_STRAP;
+      comp = FW_1OU_BIC;
+      if (bic_get_1ou_type(slot_id, &type) < 0) {
+        syslog(LOG_WARNING, "%s[%u] Failed to get 1ou type", __func__, slot_id);
+      }
+      break;
+    default:
+      return -1;
+  }
+
+  // get fd and file size
   fd = open_and_get_size(path, &file_size);
-  if ( fd < 0 ) {
-    syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d\n", __func__, path, fd);
-    goto error_exit;
+  if (fd < 0) {
+    syslog(LOG_ERR, "%s[%u] Cannot open %s", __func__, slot_id, path);
+    return -1;
   }
+  printf("file size = %d bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
 
-  printf("file size = %d bytes, slot = %d, intf = 0x%x\n", file_size, slot_id, intf);
+  bus = slot_id + SLOT_BUS_BASE;
+  addr = (SB_CPLD_ADDR << 1);
 
-  printf("Set slot UART to SB BIC\n");
-  ret = fby35_common_get_bmc_location(&bmc_location);
-  if ( ret < 0 ) {
-    syslog(LOG_WARNING, "%s() Cannot get the location of BMC", __func__);
-    return ret;
-  }
-  if ( bmc_location == NIC_BMC ) {
-    tbuf[1] = 0x02;
-  } else {
-    tbuf[1] = 0x01;
-  }
-
-  i2cfd = i2c_cdev_slave_open(slot_id + SLOT_BUS_BASE, CPLD_ADDRESS >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_WARNING, "%s() Failed to open %d", __func__, CPLD_ADDRESS);
-    goto error_exit;
-  }
-
-  retry = 0;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
+  do {
+    if (fby35_common_get_bmc_location(&bmc_location) < 0) {
+      syslog(LOG_ERR, "%s[%u] Cannot get the location of BMC", __func__, slot_id);
       break;
     }
-  }
-  if (retry == RETRY_TIME) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
 
-  tbuf[0]=0x01;
-  tbuf[1]=0x03;
-  retry = 0;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
+    i2cfd = i2c_cdev_slave_open(bus, (addr >> 1), I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "%s[%u] Failed to open bus %u", __func__, slot_id, bus);
       break;
     }
-  }
-  if (retry == RETRY_TIME) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
 
-  printf("Setting BIC boot from UART\n");
-  tbuf[0]=0x10;
-  tbuf[1]=0x01;
-  retry = 0;
-  while (retry < RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDRESS, tbuf, tlen, NULL, 0);
-    if ( ret < 0 ) {
-      retry++;
-      msleep(100);
-    } else {
+    printf("Setting slot UART to BIC\n");
+    buf[0] = CPLD_REG_SB_CLASS;
+    buf[1] = (bmc_location == NIC_BMC) ? SB_TYPE_CLASS2 : SB_TYPE_CLASS1;
+    if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, addr, buf, 2, NULL, 0), 3, 50)) {
+      syslog(LOG_ERR, "%s[%u] Failed to write cpld 0x%02X", __func__, slot_id, buf[0]);
       break;
     }
-  }
-  if (retry == RETRY_TIME) {
-    syslog(LOG_WARNING, "%s() Failed to do i2c_rdwr_msg_transfer, tlen=%d", __func__, tlen);
-    goto error_exit;
-  }
-  if ( i2cfd > 0 ) close(i2cfd);
 
-  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 115200", slot_id);
-  if (system(cmd) != 0) {
-    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-    goto error_exit;
+    buf[0] = CPLD_REG_UART_MUX;
+    buf[1] = uart_ch;
+    if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, addr, buf, 2, NULL, 0), 3, 50)) {
+      syslog(LOG_ERR, "%s[%u] Failed to write cpld 0x%02X", __func__, slot_id, buf[0]);
+      break;
+    }
+
+    printf("Setting BIC boot from UART\n");
+    if (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
+      // SET BIC_FWSPICK_IO_EXP (bit2) to high
+      buf[0] = 0x01;  // data
+      buf[1] = 0x04;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+      buf[0] = 0x03;  // direction
+      buf[1] = 0xFB;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+
+      // SET BIC_SRST_N_IO_EXP_R (bit0) to low
+      buf[0] = 0x03;  // direction
+      buf[1] = 0xFA;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+      msleep(100);
+      // SET BIC_SRST_N_IO_EXP_R (bit0) to high
+      buf[0] = 0x03;  // direction
+      buf[1] = 0xFB;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+    } else {
+      buf[0] = strap_reg;
+      buf[1] = FORCE_BOOT_FROM_SPI;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, addr, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write cpld 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+      msleep(20);
+      buf[0] = strap_reg;
+      buf[1] = FORCE_BOOT_FROM_UART;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, addr, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write cpld 0x%02X", __func__, slot_id, buf[0]);
+        break;
+      }
+    }
+    set_strap = true;
+    sleep(2);
+
+    snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%u 115200", slot_id);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s[%u] %s failed", __func__, slot_id, cmd);
+    }
+
+    snprintf(cmd, sizeof(cmd), "/dev/ttyS%u", slot_id);
+    ttyfd = open(cmd, O_RDWR | O_NOCTTY);
+    if (ttyfd < 0) {
+      syslog(LOG_ERR, "%s[%u] Cannot open %s", __func__, slot_id, cmd);
+      break;
+    }
+
+    printf("Doing the recovery update...\n");
+    int r_b = 0;
+    if (write(ttyfd, &file_size, sizeof(int32_t)) == sizeof(int32_t)) {
+      int dsize = file_size/100;
+      int last_offset = 0;
+      int w_b, rc, wc;
+      for (r_b = 0; r_b < file_size;) {
+        rc = read(fd, buf, sizeof(buf));
+        if (rc <= 0) {
+          if (rc < 0 && errno == EINTR) {
+            continue;
+          }
+          break;
+        }
+
+        for (w_b = 0; w_b < rc;) {
+          wc = write(ttyfd, &buf[w_b], rc - w_b);
+          if (wc > 0) {
+            w_b += wc;
+          } else {
+            if (wc < 0 && errno == EINTR) {
+              continue;
+            }
+            break;
+          }
+        }
+        if (w_b != rc) {
+          break;
+        }
+        r_b += rc;
+
+        if ((last_offset + dsize) <= r_b) {
+          _set_fw_update_ongoing(slot_id, 60);
+          printf("\ruploaded bic: %d %%", r_b/dsize);
+          fflush(stdout);
+          last_offset += dsize;
+        }
+      }
+      printf("\n");
+    }
+
+    snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%u 57600", slot_id);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s[%u] %s failed", __func__, slot_id, cmd);
+    }
+
+    if (r_b != file_size) {
+      syslog(LOG_ERR, "%s[%u] uploaded bic failed", __func__, slot_id);
+      break;
+    }
+    sleep(5);
+
+    ret = update_bic_runtime_fw(slot_id, comp, intf, path, force);
+    sleep(5);
+  } while (0);
+
+  if (set_strap) {
+    if (type == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
+      // let BIC_FWSPICK_IO_EXP (bit2) be low
+      buf[0] = 0x03;  // direction
+      buf[1] = 0xFF;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      }
+
+      // SET BIC_SRST_N_IO_EXP_R (bit0) to low
+      buf[0] = 0x03;  // direction
+      buf[1] = 0xFE;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      }
+      msleep(100);
+      // SET BIC_SRST_N_IO_EXP_R (bit0) to high
+      buf[0] = 0x03;  // direction
+      buf[1] = 0xFF;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, VF2_IOEXP_ADDR, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_ERR, "%s[%u] Failed to write IO-exp 0x%02X", __func__, slot_id, buf[0]);
+      }
+    } else {
+      buf[0] = strap_reg;
+      buf[1] = FORCE_BOOT_FROM_SPI;
+      if (retry_cond(!i2c_rdwr_msg_transfer(i2cfd, addr, buf, 2, NULL, 0), 3, 50)) {
+        syslog(LOG_WARNING, "%s[%u] Failed to write cpld 0x%02X", __func__, slot_id, buf[0]);
+      }
+    }
   }
 
-  snprintf(cmd, sizeof(cmd), "cat %s > /dev/ttyS%d", path, slot_id);
-  if (system(cmd) != 0) {
-    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-    goto error_exit;
+  if (fd >= 0) {
+    close(fd);
   }
-
-  snprintf(cmd, sizeof(cmd), "/bin/stty -F /dev/ttyS%d 57600", slot_id);
-  if (system(cmd) != 0) {
-    syslog(LOG_WARNING, "[%s] %s failed\n", __func__, cmd);
-    goto error_exit;
+  if (i2cfd >= 0) {
+    close(i2cfd);
   }
-
-  printf("Please execute BIC firmware update and"
-    " do the slot 12-cycle for finishing the BIC recovery\n");
-
-error_exit:
-  if ( i2cfd > 0 ) close(i2cfd);
-  if ( fd > 0 ) close(fd);
+  if (ttyfd >= 0) {
+    close(ttyfd);
+  }
 
   return ret;
 }
@@ -478,6 +598,8 @@ get_component_name(uint8_t comp) {
       return "SB CPLD";
     case FW_SB_BIC:
       return "SB BIC";
+    case FW_BIC_RCVY:
+      return "SB BIC_Recovery";
     case FW_VR_VCCIN:
       return "VCCIN/VCCFA_EHV_FIVRA";
     case FW_VR_VCCD:
@@ -494,6 +616,8 @@ get_component_name(uint8_t comp) {
       return "BIOS";
     case FW_1OU_BIC:
       return "1OU BIC";
+    case FW_1OU_BIC_RCVY:
+      return "1OU BIC_Recovery";
     case FW_1OU_CPLD:
       return "1OU CPLD";
     case FW_2OU_BIC:
@@ -625,6 +749,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       intf = NONE_INTF;
       break;
     case FW_1OU_BIC:
+    case FW_1OU_BIC_RCVY:
       intf = FEXP_BIC_INTF;
       break;
     case FW_2OU_BIC:
@@ -701,7 +826,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       ret = update_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
       break;
     case FW_BIC_RCVY:
-      ret = recovery_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
+    case FW_1OU_BIC_RCVY:
+      ret = recovery_bic_runtime_fw(slot_id, comp, intf, path, force);
       break;
     case FW_BB_CPLD:
       ret = update_bic_cpld_altera(slot_id, path, intf, force);

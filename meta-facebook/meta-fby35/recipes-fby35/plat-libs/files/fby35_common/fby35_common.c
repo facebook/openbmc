@@ -916,7 +916,9 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
       }
       break;
     case FW_SB_BIC:
+    case FW_BIC_RCVY:
     case FW_1OU_BIC:
+    case FW_1OU_BIC_RCVY:
     case FW_2OU_BIC:
     case FW_BB_BIC:
       if (err_proof_component != COMP_BIC) {

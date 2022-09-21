@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <openbmc/pal.h>
 #include <facebook/fby35_common.h>
 #include <facebook/bic.h>
 #include <facebook/bic_ipmi.h>
@@ -32,6 +33,7 @@ image_info BicFwComponent::check_image(const string& image, bool force) {
       ret = get_board_rev(slot_id, BOARD_ID_SB, &board_rev);
       break;
     case FW_1OU_BIC:
+    case FW_1OU_BIC_RCVY:
       if (bic_get_1ou_type(slot_id, &type) == 0) {
         switch (type) {
           case TYPE_1OU_RAINBOW_FALLS:
@@ -72,7 +74,7 @@ int BicFwComponent::update_internal(const string& image, bool force) {
   }
 
   try {
-    if (fw_comp != FW_BIC_RCVY) {
+    if (fw_comp != FW_BIC_RCVY && fw_comp != FW_1OU_BIC_RCVY) {
       server.ready();
       expansion.ready();
     }
@@ -95,6 +97,11 @@ int BicFwComponent::update_internal(const string& image, bool force) {
         break;
     }
     return FW_STATUS_FAILURE;
+  }
+
+  if (fw_comp == FW_BIC_RCVY || fw_comp == FW_1OU_BIC_RCVY) {
+    cout << "Performing 12V-cycle to complete the BIC recovery" << endl;
+    pal_set_server_power(slot_id, SERVER_12V_CYCLE);
   }
 
   return ret;
@@ -135,7 +142,7 @@ int BicFwComponent::print_version() {
   string ver("");
   string board_name = board;
 
-  if (fw_comp == FW_BIC_RCVY) {
+  if (fw_comp == FW_BIC_RCVY || fw_comp == FW_1OU_BIC_RCVY) {
     return FW_STATUS_NOT_SUPPORTED;
   }
 

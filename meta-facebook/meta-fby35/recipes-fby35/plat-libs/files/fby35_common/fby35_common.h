@@ -68,13 +68,16 @@ extern "C" {
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define MAX_FRU_PATH_LEN 128
 
-#define CPLD_REG_BIC_READY         0x02
-#define CPLD_REG_REV_ID            0x07
-#define CPLD_REG_PCH_BIC_PWR_FAULT 0x09
-#define CPLD_REG_CPU_PWR_FAULT     0x0A
-#define CPLD_REG_RISER             0x0D
-#define CPLD_REG_SB_BIC_BOOT_STRAP 0x10
-#define CPLD_REG_BOARD             0x11
+#define CPLD_REG_SB_CLASS           0x00
+#define CPLD_REG_UART_MUX           0x01
+#define CPLD_REG_BIC_READY          0x02
+#define CPLD_REG_REV_ID             0x07
+#define CPLD_REG_PCH_BIC_PWR_FAULT  0x09
+#define CPLD_REG_CPU_PWR_FAULT      0x0A
+#define CPLD_REG_RISER              0x0D
+#define CPLD_REG_SB_BIC_BOOT_STRAP  0x10
+#define CPLD_REG_BOARD              0x11
+#define CPLD_REG_1OU_BIC_BOOT_STRAP 0x22
 
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
@@ -353,46 +356,47 @@ enum {
   FW_SB_BIC,
   FW_ME,
   FW_BIC_RCVY,
-  FW_VR_VCCIN,         // 5
+  FW_VR_VCCIN,         //5
   FW_VR_VCCD,
   FW_VR_VCCINFAON,
   FW_VR_VDDCRCPU0,
   FW_VR_VDDCRCPU1,
-  FW_VR_VDD11S3,     //10
+  FW_VR_VDD11S3,       //10
   FW_VR,
   FW_BIOS,
   FW_1OU_BIC,
-  FW_1OU_CPLD,
-  FW_2OU_BIC,            //15
+  FW_1OU_BIC_RCVY,
+  FW_1OU_CPLD,         //15
+  FW_2OU_BIC,
   FW_2OU_CPLD,
   FW_BB_BIC,
   FW_BB_CPLD,
-  FW_1OU_CXL,
+  FW_1OU_CXL,          //20
   FW_1OU_VR_V9_ASICA,
   FW_1OU_VR_VDDQAB,
   FW_1OU_VR_VDDQCD,
   FW_2OU_3V3_VR1,
-  FW_2OU_3V3_VR2,    //20
+  FW_2OU_3V3_VR2,      //25
   FW_2OU_3V3_VR3,
   FW_2OU_1V8_VR,
   FW_2OU_PESW_VR,
   FW_2OU_PESW_CFG_VER,
-  FW_2OU_PESW_FW_VER,  //25
+  FW_2OU_PESW_FW_VER,  //30
   FW_2OU_PESW_BL0_VER,
   FW_2OU_PESW_BL1_VER,
   FW_2OU_PESW_PART_MAP0_VER,
   FW_2OU_PESW_PART_MAP1_VER,
-  FW_2OU_PESW,        //30
+  FW_2OU_PESW,         //35
   FW_2OU_M2_DEV0,
   FW_2OU_M2_DEV1,
   FW_2OU_M2_DEV2,
   FW_2OU_M2_DEV3,
-  FW_2OU_M2_DEV4,   //35
+  FW_2OU_M2_DEV4,      //40
   FW_2OU_M2_DEV5,
   FW_2OU_M2_DEV6,
   FW_2OU_M2_DEV7,
   FW_2OU_M2_DEV8,
-  FW_2OU_M2_DEV9,   //40
+  FW_2OU_M2_DEV9,      //45
   FW_2OU_M2_DEV10,
   FW_2OU_M2_DEV11,
   // last id

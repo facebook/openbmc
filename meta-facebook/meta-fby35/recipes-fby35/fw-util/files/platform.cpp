@@ -59,6 +59,7 @@ class ClassConfig {
 
         //slot1 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw1("slot1", "1ou_bic", "1ou", FW_1OU_BIC);
+        static BicFwComponent    bic_1ou_rcvy_fw1("slot1", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
         static CpldComponent     cpld_1ou_fw1("slot1", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT1, &prsnt)) {
@@ -110,6 +111,7 @@ class ClassConfig {
 
         //slot2 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw2("slot2", "1ou_bic", "1ou", FW_1OU_BIC);
+        static BicFwComponent    bic_1ou_rcvy_fw2("slot2", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
         static CpldComponent     cpld_1ou_fw2("slot2", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT2, &prsnt)) {
@@ -137,6 +139,7 @@ class ClassConfig {
 
         //slot3 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw3("slot3", "1ou_bic", "1ou", FW_1OU_BIC);
+        static BicFwComponent    bic_1ou_rcvy_fw3("slot3", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
         static CpldComponent     cpld_1ou_fw3("slot3", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT3, &prsnt)) {
@@ -188,6 +191,7 @@ class ClassConfig {
 
         //slot4 1ou bic/cpld
         static BicFwComponent    bic_1ou_fw4("slot4", "1ou_bic", "1ou", FW_1OU_BIC);
+        static BicFwComponent    bic_1ou_rcvy_fw4("slot4", "1ou_bic_rcvy", "1ou", FW_1OU_BIC_RCVY);
         static CpldComponent     cpld_1ou_fw4("slot4", "1ou_cpld", "1ou", FW_1OU_CPLD, 0, 0);
 
         if (fby35_common_is_fru_prsnt(FRU_SLOT4, &prsnt)) {

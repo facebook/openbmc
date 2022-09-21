@@ -38,6 +38,7 @@ DEPENDS += " \
     libpeci-sensors \
     libpldm-oem \
     libsensor-correction \
+    apml \
     "
 
 # These shouldn't be needed but are because we aren't properly versioning the
@@ -56,4 +57,5 @@ RDEPENDS:${PN} += " \
     libpeci-sensors \
     libpldm-oem \
     libsensor-correction \
+    apml \
     "

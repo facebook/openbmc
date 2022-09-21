@@ -36,6 +36,7 @@ pal_deps += [
     cc.find_library('peci'),
     cc.find_library('peci_sensors'),
     cc.find_library('sensor-correction'),
+    cc.find_library('apml64'),
     dependency('libpldm-oem'),
     dependency('libhgx'),
     ]

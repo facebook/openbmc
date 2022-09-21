@@ -628,7 +628,7 @@ int pal_get_fan_speed(uint8_t fan, int *rpm) {
     return -1;
   }
 
-  return read_fan_rpm(SMB_FCM_TACH_DEVICE, (fan + 1), rpm);
+  return read_fan_rpm(SMB_FCM_TACH_DEVICE, fan + 1, rpm);
 }
 
 static int bic_sensor_sdr_path(uint8_t fru, char *path) {

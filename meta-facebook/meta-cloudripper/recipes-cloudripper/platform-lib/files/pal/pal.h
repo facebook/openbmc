@@ -54,7 +54,7 @@ extern "C" {
 #define SCM_BRD_ID "6-0021"
 
 #define SYS_PLATFROM_DIR(dev) "/sys/devices/platform/"#dev"/"
-#define I2C_DEV_DIR(bus, addr) I2C_SYSFS_DEV_DIR(bus-00##addr/)
+#define I2C_DEV_DIR(bus, addr) I2C_SYSFS_DEV_DIR(#bus "-00" #addr "/")
 #define HW_MON_DIR "hwmon/hwmon*"
 
 #define SCM_CPLD       "scmcpld"

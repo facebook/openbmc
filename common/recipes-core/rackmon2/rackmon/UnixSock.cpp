@@ -64,33 +64,30 @@ UnixSock::~UnixSock() {
     close(sock_);
 }
 
-void UnixSock::sendChunk(const char* buf, uint16_t bufLen) {
-  const int maxRetries = 3;
+void UnixSock::sendRaw(const char* buf, size_t len) {
   int retries = 0;
-  while (::send(sock_, &bufLen, sizeof(bufLen), 0) < 0) {
-    retries++;
-    if (retries == maxRetries) {
-      throw std::system_error(
-          std::error_code(errno, std::generic_category()), "send header");
-    }
-  }
-  if (bufLen == 0)
-    return;
-  uint16_t sentSize = 0;
-  retries = 0;
-  while (sentSize < bufLen) {
-    int chunkSize = ::send(sock_, buf, bufLen - sentSize, 0);
-    if (chunkSize < 0) {
-      if (retries == maxRetries) {
+  const int maxRetries = 3;
+  size_t sentSize = 0;
+  while (sentSize < len) {
+    int sz = ::send(sock_, buf, len - sentSize, 0);
+    if (sz < 0) {
+      if (++retries == maxRetries) {
         throw std::system_error(
-            std::error_code(errno, std::generic_category()), "send body");
+            std::error_code(errno, std::generic_category()), "send");
       }
       continue;
     }
     retries = 0;
-    sentSize += (uint16_t)chunkSize;
-    buf += chunkSize;
+    sentSize += (size_t)sz;
+    buf += sz;
   }
+}
+
+void UnixSock::sendChunk(const char* buf, uint16_t bufLen) {
+  sendRaw((const char*)&bufLen, sizeof(bufLen));
+  if (bufLen == 0)
+    return;
+  sendRaw(buf, (size_t)bufLen);
 }
 
 void UnixSock::send(const char* buf, size_t len) {

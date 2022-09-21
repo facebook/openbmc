@@ -37,6 +37,7 @@ class UnixSock {
   void send(const std::vector<char>& buf) {
     send(buf.data(), buf.size());
   }
+  void sendRaw(const char* buf, size_t len);
   void recv(std::vector<char>& resp);
 };
 

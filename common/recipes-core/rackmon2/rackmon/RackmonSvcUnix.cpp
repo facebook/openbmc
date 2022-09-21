@@ -178,6 +178,7 @@ void RackmonUNIXSocketService::handleLegacyCommand(
     std::vector<char>& resp_buf) {
   struct req_hdr {
     uint16_t type;
+    uint16_t pad;
     uint16_t length;
     uint16_t expected_resp_length;
     uint32_t custom_timeout;
@@ -190,7 +191,7 @@ void RackmonUNIXSocketService::handleLegacyCommand(
         "Unsupported command: " + std::to_string(req_hdr->type));
   if (req_hdr->length < 1)
     throw std::logic_error("request needs at least 1 byte");
-  if (req_hdr->length + sizeof(req_hdr) != req_buf.size())
+  if (req_hdr->length + sizeof(*req_hdr) != req_buf.size())
     throw std::overflow_error("body");
   Request req_msg;
   std::copy(
@@ -225,7 +226,9 @@ void RackmonUNIXSocketService::handleLegacyCommand(
     logError << "Unable to handle legacy command: " << e.what() << std::endl;
   }
   try {
-    cli.send(resp_buf.data(), resp_buf.size());
+    // We are handling the size since we use the length field as a
+    // error indicator. :-/
+    cli.sendRaw(resp_buf.data(), resp_buf.size());
   } catch (std::exception& e) {
     logError << "Unable to send response: " << e.what() << std::endl;
   }

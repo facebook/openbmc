@@ -81,7 +81,7 @@ do_install() {
   update-rc.d -r ${D} sync_date.sh start 66 5 .
 # setup-por.sh
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
-  update-rc.d -r ${D} setup-por.sh start 67 5 .
+  update-rc.d -r ${D} setup-por.sh start 63 5 .
 # setup-lmsensors-cfg.sh
   install -m 755 setup-lmsensors-cfg.sh ${D}${sysconfdir}/init.d/setup-lmsensors-cfg.sh
   update-rc.d -r ${D} setup-lmsensors-cfg.sh start 68 5 .

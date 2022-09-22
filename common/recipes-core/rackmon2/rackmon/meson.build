@@ -142,6 +142,20 @@ confchecker_regmap = custom_target(
   output: 'validate_configs_regmap.log',
 )
 
+pyrmd_tests = join_paths(meson.source_root(), meson.current_source_dir(), 'tests', 'test_pyrmd.py')
+pyrmd_tester = custom_target(
+  'check_pyrmd',
+  command: [
+    'python3',
+    '@INPUT@',
+  ],
+  input: files(pyrmd_tests),
+  depend_files: files(pyrmd_tests),
+  build_by_default: true,
+  capture: true,
+  output: 'validate_pyrmd.log',
+)
+
 rackmond_test = executable('test-rackmond', test_srcs,
   dependencies: test_deps,
   install_dir: 'lib/rackmon/ptest',

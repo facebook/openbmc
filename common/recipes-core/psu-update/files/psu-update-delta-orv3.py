@@ -241,14 +241,14 @@ def write_data(addr, data):
         raise BadMEIResponse()
     time.sleep(0.05)
     # Wait till SEND_DATA_RDY is set.
-    fstatus = wait_status(addr, bit_cleared="SEND_DATA_BUSY", timeout=5, delay=0.1)
+    fstatus = wait_status(addr, bit_cleared="SEND_DATA_BUSY", timeout=5, delay=0.05)
     if fstatus["SEND_DATA_BUSY"]:
         print("Write data busy after 5s")
         raise Exception(str(fstatus))
     # If send data rdy is set, return immediately, else wait for it
     if fstatus["SEND_DATA_RDY"]:
         return
-    fstatus = wait_status(addr, bit_set="SEND_DATA_RDY", timeout=5, delay=0.1)
+    fstatus = wait_status(addr, bit_set="SEND_DATA_RDY", timeout=5, delay=0.05)
     if not fstatus["SEND_DATA_RDY"]:
         print("Write data failed")
         raise Exception(str(fstatus))

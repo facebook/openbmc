@@ -96,27 +96,31 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
   } else if (cmd == "getMonitorData") {
     ModbusDeviceFilter devFilter{};
     ModbusRegisterFilter regFilter{};
-    if (req.contains("deviceFilter")) {
-      const json& j = req["deviceFilter"];
-      if (j.contains("deviceAddress")) {
-        devFilter.addrFilter = j["deviceAddress"];
-      } else if (j.contains("deviceType")) {
-        devFilter.typeFilter = j["deviceType"];
-      } else {
-        throw std::logic_error("Unknown device filter");
+    bool latestValueOnly = false;
+    if (req.contains("filter")) {
+      const json& filter = req["filter"];
+      if (filter.contains("deviceFilter")) {
+        const json& jdevFilter = filter["deviceFilter"];
+        if (jdevFilter.contains("addressFilter")) {
+          devFilter.addrFilter = jdevFilter["addressFilter"];
+        } else if (jdevFilter.contains("typeFilter")) {
+          devFilter.typeFilter = jdevFilter["typeFilter"];
+        } else {
+          throw std::logic_error("Device Filter needs at least one set");
+        }
       }
-    }
-    if (req.contains("registerFilter")) {
-      const json& j = req["registerFilter"];
-      if (j.contains("registerAddress")) {
-        regFilter.addrFilter = j["registerAddress"];
-      } else if (j.contains("registerName")) {
-        regFilter.nameFilter = j["registerName"];
-      } else {
-        throw std::logic_error("Unknown register filter");
+      if (filter.contains("registerFilter")) {
+        const json& jregFilter = filter["registerFilter"];
+        if (jregFilter.contains("addressFilter")) {
+          regFilter.addrFilter = jregFilter["addressFilter"];
+        } else if (jregFilter.contains("nameFilter")) {
+          regFilter.nameFilter = jregFilter["nameFilter"];
+        } else {
+          throw std::logic_error("Register Filter needs at least one set");
+        }
       }
+      latestValueOnly = filter.value("latestValueOnly", false);
     }
-    bool latestValueOnly = req.value("latestValueOnly", false);
     std::vector<ModbusDeviceValueData> ret;
     rackmond_.getValueData(ret, devFilter, regFilter, latestValueOnly);
     resp["data"] = ret;

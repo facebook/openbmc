@@ -318,16 +318,16 @@ static void do_data_cmd(
   json req;
   req["type"] = type;
   if (deviceFilter.size()) {
-    req["deviceFilter"]["deviceAddress"] = deviceFilter;
+    req["filter"]["deviceFilter"]["addressFilter"] = deviceFilter;
   } else if (deviceTypeFilter.size()) {
-    req["deviceFilter"]["deviceType"] = deviceTypeFilter;
+    req["filter"]["deviceFilter"]["typeFilter"] = deviceTypeFilter;
   }
   if (regFilter.size()) {
-    req["registerFilter"]["registerAddress"] = regFilter;
+    req["filter"]["registerFilter"]["addressFilter"] = regFilter;
   } else if (regNameFilter.size()) {
-    req["registerFilter"]["registerName"] = regNameFilter;
+    req["filter"]["registerFilter"]["nameFilter"] = regNameFilter;
   }
-  req["latestValueOnly"] = latestOnly;
+  req["filter"]["latestValueOnly"] = latestOnly;
   RackmonClient cli;
   std::string resp = cli.request(req.dump());
   json resp_j = json::parse(resp);
@@ -489,9 +489,7 @@ int main(int argc, const char** argv) {
   });
   data->add_set("-f,--format", format, {"raw", "value"}, "Format the data");
   data->add_option(
-      "--reg-addr",
-      regFilter,
-      "Return values of provided registers only");
+      "--reg-addr", regFilter, "Return values of provided registers only");
   data->add_option(
       "--dev-addr",
       deviceFilter,

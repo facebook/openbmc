@@ -12,9 +12,9 @@ import struct
 import subprocess
 from contextlib import contextmanager
 
-import pyrmd
 import srec
-from pyrmd import modbuscmd, read_register, transcript
+from pyrmd import RackmonAsyncInterface as rmd
+from pyrmd import ModbusCRCError, ModbusTimeout, transcript
 
 
 def auto_int(x):
@@ -179,7 +179,7 @@ class RequestError(Exception):
 async def request(addr, modbus_cmd, *args, **kwargs):
     cmd = bytearray([addr])
     cmd.extend(modbus_cmd)
-    resp = await modbuscmd(cmd, *args, **kwargs)
+    resp = await rmd.raw(cmd, *args, **kwargs)
     # Strip address
     return resp[1:]
 
@@ -261,7 +261,7 @@ async def send_target(
 
 
 async def fw_revision(addr):
-    resp = await read_register(addr, 0x38, length=4)
+    resp = await rmd.read(addr, 0x38, length=4)
     return resp.decode("ascii").strip()
 
 
@@ -269,7 +269,7 @@ async def aupd(addr, image, targetnames):
     print("fw rev... ", end="")
     try:
         print(await fw_revision(addr))
-    except pyrmd.ModbusTimeout:
+    except ModbusTimeout:
         print("timed out.")
     entered = []
     total_data = 0
@@ -285,7 +285,7 @@ async def aupd(addr, image, targetnames):
                 try:
                     result = await request(addr, isp_enter(target), timeout=3000)
                     break
-                except pyrmd.ModbusCRCError as e:
+                except ModbusCRCError as e:
                     # The first of these sometimes fails, always with a CRC
                     # check failure.
                     # If one succeeds, they all do, though.
@@ -316,7 +316,7 @@ async def aupd(addr, image, targetnames):
     print("fw rev... ", end="")
     try:
         print(await fw_revision(addr))
-    except pyrmd.ModbusTimeout:
+    except ModbusTimeout:
         print("timed out.")
 
 

@@ -10,7 +10,8 @@ import traceback
 from binascii import hexlify
 from contextlib import ExitStack
 
-import pyrmd
+from pyrmd import RackmonInterface as rmd
+from pyrmd import ModbusTimeout
 
 
 transcript_file = None
@@ -85,16 +86,16 @@ def load_file(path):
 
 
 def unlock_firmware(addr):
-    pyrmd.write_register_sync(addr, 0x300, 0x55AA)
+    rmd.write(addr, 0x300, 0x55AA)
 
 
 def enter_boot_mode(addr):
-    pyrmd.write_register_sync(addr, 0x301, 0xAA55)
+    rmd.write(addr, 0x301, 0xAA55)
 
 
 def verify_firmware_status(addr, expected_status):
     # ensure 0x302 register contains expected status
-    a = pyrmd.read_register_sync(addr, 0x302)[0]
+    a = rmd.read(addr, 0x302)[0]
     if a != expected_status:
         raise ValueError("Bad firmware state: ", int(a))
 
@@ -109,9 +110,9 @@ def write_block(addr, data, block_size):
     maxRetry = 5
     for retry in range(0, maxRetry):
         try:
-            pyrmd.write_register_sync(addr, 0x310, data)
+            rmd.write(addr, 0x310, data)
             break
-        except pyrmd.ModbusTimeout as e:
+        except ModbusTimeout as e:
             print("Retrying after timeout")
             if retry == (maxRetry - 1):
                 raise e
@@ -140,16 +141,16 @@ def transfer_image(addr, image, block_size_words):
 
 
 def verify_firmware(addr):
-    pyrmd.write_register_sync(addr, 0x303, 0x55AA)
+    rmd.write(addr, 0x303, 0x55AA)
 
 
 def exit_boot_mode(addr):
-    pyrmd.write_register_sync(addr, 0x304, 0x55AA)
+    rmd.write(addr, 0x304, 0x55AA)
 
 
 def update_device(addr, filename, block_size=96):
     status_state("pausing_monitoring")
-    pyrmd.pause_monitoring_sync()
+    rmd.pause()
     status_state("parsing_fw_file")
     binimg = load_file(filename)
     status_state("unlock firmware")
@@ -197,14 +198,14 @@ def main():
             global status
             status["exception"] = traceback.format_exc()
             status_state("failed")
-            pyrmd.resume_monitoring_sync()
+            rmd.resume()
             if args.rmfwfile:
                 os.remove(args.file)
             sys.exit(1)
         print("Resetting....")
         time.sleep(10.0)
         print("Resuming monitoring...")
-        pyrmd.resume_monitoring_sync()
+        rmd.resume()
         time.sleep(10.0)
         print("Upgrade success")
         if args.rmfwfile:

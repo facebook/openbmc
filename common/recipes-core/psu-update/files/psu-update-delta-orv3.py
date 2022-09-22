@@ -12,7 +12,8 @@ from binascii import hexlify
 from contextlib import ExitStack
 
 import hexfile
-import pyrmd
+from pyrmd import ModbusException
+from pyrmd import RackmonInterface as rmd
 
 
 transcript_file = None
@@ -122,13 +123,13 @@ def status_state(state):
     write_status()
 
 
-class BadMEIResponse(pyrmd.ModbusException):
+class BadMEIResponse(ModbusException):
     ...
 
 
 def get_status_reg(addr):
     req = addr + b"\x2B\x64\x22\x00\x00"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     exp_resp = addr + b"\x2B\x71\x62\x00\x00"
     if len(resp) != 10 or resp[:6] != exp_resp:
         print("Bad status response: " + bh(resp))
@@ -164,7 +165,7 @@ def wait_status(addr, bit_set=None, bit_cleared=None, delay=1.0, timeout=100.0):
 def get_challenge(addr):
     print("Send get seed")
     req = addr + b"\x2B\x64\x27\x00\x00"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     exp_resp = addr + b"\x2B\x71\x67\x00\x00"
     if len(resp) != 10 or resp[:6] != exp_resp:
         print("Bad challenge response: " + bh(resp))
@@ -177,7 +178,7 @@ def get_challenge(addr):
 def send_key(addr, key):
     print("Send key")
     req = addr + b"\x2B\x64\x27\x00\x01" + key
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     exp_resp = addr + b"\x2b\x71\x67\x00\x01\xff\xff\xff\xff"
     if resp != exp_resp:
         print("Bad key response: " + bh(resp))
@@ -206,7 +207,7 @@ def erase_flash(addr):
     print("Erasing flash... ")
     sys.stdout.flush()
     req = addr + b"\x2B\x64\x31\x00\x00\xFF\xFF\xFF\xFF"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     exp_resp = addr + b"\x2B\x71\x71\xFF\xFF\xFF\xFF\xFF\xFF"
     if resp != exp_resp:
         print("Bad erase response: " + bh(resp))
@@ -224,7 +225,7 @@ def set_write_address(psu_addr, flash_addr):
     # print("Set write address to " + hex(flash_addr))
     req = psu_addr + b"\x2B\x64\x34\x00\x00" + struct.pack(">L", flash_addr)
     exp_resp = psu_addr + b"\x2B\x71\x74\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     if resp != exp_resp:
         print("Bad set write addr response: " + bh(resp))
         raise BadMEIResponse()
@@ -235,7 +236,7 @@ def write_data(addr, data):
     assert len(data) == 128
     req = addr + b"\x2B\x65\x36" + data
     exp_resp = addr + b"\x2B\x73\x76\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     if resp != exp_resp:
         print("Bad write data response: " + bh(resp))
         raise BadMEIResponse()
@@ -258,7 +259,7 @@ def verify_flash(addr):
     print("Verifying program...")
     req = addr + b"\x2B\x64\x31\x00\x01"
     exp_resp = addr + b"\x2B\x71\x71\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     if resp != exp_resp:
         print("Bad write data response: " + bh(resp))
         raise BadMEIResponse()
@@ -274,7 +275,7 @@ def activate(addr):
     print("Activating Image...")
     req = addr + b"\x2B\x64\x2E\x00\x00"
     exp_resp = addr + b"\x2B\x71\x6E\xFF\xFF\xFF\xFF\xFF\xFF"
-    resp = pyrmd.modbuscmd_sync(req, expected=12)
+    resp = rmd.raw(req, expected=12)
     if resp != exp_resp:
         print("Bad activate response: " + bh(resp))
         raise BadMEIResponse()
@@ -316,7 +317,7 @@ def send_image(addr, fwimg):
 def update_psu(addr, filename, key):
     addr_b = addr.to_bytes(1, "big")
     status_state("pausing_monitoring")
-    pyrmd.pause_monitoring_sync()
+    rmd.pause()
     status_state("parsing_fw_file")
     fwimg = hexfile.load(filename)
     key_handshake(addr_b, key)
@@ -351,11 +352,11 @@ def main():
             global status
             status["exception"] = traceback.format_exc()
             status_state("failed")
-            pyrmd.resume_monitoring_sync()
+            rmd.resume()
             if args.rmfwfile:
                 os.remove(args.file)
             sys.exit(1)
-        pyrmd.resume_monitoring_sync()
+        rmd.resume()
         if args.rmfwfile:
             os.remove(args.file)
         sys.exit(0)

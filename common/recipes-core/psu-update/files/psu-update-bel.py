@@ -10,7 +10,8 @@ import traceback
 from binascii import hexlify, unhexlify
 from collections import namedtuple
 
-import pyrmd
+from pyrmd import RackmonInterface as rmd
+from pyrmd import ModbusTimeout
 
 
 def bh(bs):
@@ -167,10 +168,10 @@ def do_write(cmd):
         try:
             t1 = time.clock()
             # remove incoming address byte
-            last_rx = pyrmd.modbuscmd_sync(mcmd, expected=expected, timeout=timeout)[1:]
+            last_rx = rmd.raw(mcmd, expected=expected, timeout=timeout)[1:]
             t2 = time.clock()
             spent = t2 - t1
-        except pyrmd.ModbusTimeout:
+        except ModbusTimeout:
             last_rx = b""
             bprint("No response from cmd: " + bh(mcmd))
     left = spent - (delay / 1000.0)
@@ -275,17 +276,17 @@ def main():
                 cmd = BelCommand("W", WriteCommand(tx, rx, timeout))
             script.append(cmd)
         bprint("Reduced by %d cmds." % (olen - len(script)))
-        pyrmd.pause_monitoring_sync()
+        rmd.pause()
         for cmd in script:
             belcmd(cmd)
     except Exception:
         bprint("Update failed")
-        pyrmd.resume_monitoring_sync()
+        rmd.resume()
         status["exception"] = traceback.format_exc()
         status_state("failed")
         traceback.print_exc()
         sys.exit(1)
-    pyrmd.resume_monitoring_sync()
+    rmd.resume()
     status_state("done")
     if args.rmfwfile:
         os.remove(args.file)

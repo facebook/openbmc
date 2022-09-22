@@ -12,7 +12,8 @@ from binascii import hexlify
 from contextlib import ExitStack
 
 import hexfile
-import pyrmd
+from pyrmd import ModbusException, ModbusTimeout, ModbusCRCError
+from pyrmd import RackmonInterface as rmd
 
 
 transcript_file = None
@@ -64,7 +65,7 @@ def status_state(state):
     write_status()
 
 
-class BadMEIResponse(pyrmd.ModbusException):
+class BadMEIResponse(ModbusException):
     ...
 
 
@@ -81,14 +82,14 @@ def mei_command(addr, func_code, mei_type=0x64, data=None, timeout=0):
         i_data = i_data + (b"\xFF" * (7 - len(i_data)))
     assert len(i_data) == 7
     command = struct.pack("BBBB", addr, 0x2B, mei_type, func_code) + i_data
-    return pyrmd.modbuscmd_sync(command, expected=13, timeout=timeout)
+    return rmd.raw(command, expected=13, timeout=timeout)
 
 
 def enter_bootloader(addr):
     try:
         print("Entering bootloader...")
         mei_command(addr, 0xFB, timeout=4000)
-    except pyrmd.ModbusTimeout:
+    except ModbusTimeout:
         print("Enter bootloader timed out (expected.)")
         pass
 
@@ -159,8 +160,8 @@ def write_data(addr, data):
     assert len(data) == 8
     command = struct.pack(">BBB", addr, 0x2B, 0x65) + data
     try:
-        response = pyrmd.modbuscmd_sync(command, expected=13, timeout=3000)
-    except pyrmd.ModbusCRCError:
+        response = rmd.raw(command, expected=13, timeout=3000)
+    except ModbusCRCError:
         # This is not ideal, but upgrades in some Delta racks never complete
         # without it.
         # Suspicion is that we occasionally get replies from more than one unit
@@ -176,7 +177,7 @@ def write_data(addr, data):
         print("CRC check failure reading reply, continuing anyway...")
         time.sleep(1.0)
         return
-    except pyrmd.ModbusTimeout:
+    except ModbusTimeout:
         # Again, not ideal, we sometimes see timeouts. At this point
         # we hope that the PSU received the packet and we just did not
         # read the packet in time. So we can ignore the error.
@@ -222,7 +223,7 @@ def reset_psu(addr):
     print("Resetting PSU...")
     try:
         response = mei_command(addr, 0x72, timeout=10000)
-    except pyrmd.ModbusTimeout:
+    except ModbusTimeout:
         print("No reply from PSU reset (expected.)")
         return
     expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xB2) + (b"\xFF" * 7)
@@ -243,7 +244,7 @@ def erase_flash(addr):
 
 def update_psu(addr, filename, key):
     status_state("pausing_monitoring")
-    pyrmd.pause_monitoring_sync()
+    rmd.pause()
     status_state("parsing_fw_file")
     fwimg = hexfile.load(filename)
     status_state("pre_handshake_reset")
@@ -289,11 +290,11 @@ def main():
             global status
             status["exception"] = traceback.format_exc()
             status_state("failed")
-            pyrmd.resume_monitoring_sync()
+            rmd.resume()
             if args.rmfwfile:
                 os.remove(args.file)
             sys.exit(1)
-        pyrmd.resume_monitoring_sync()
+        rmd.resume()
         if args.rmfwfile:
             os.remove(args.file)
         sys.exit(0)

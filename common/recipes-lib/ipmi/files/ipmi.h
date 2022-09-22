@@ -203,7 +203,7 @@ typedef struct {
   unsigned char rsvd[2];
   unsigned char oem;
   unsigned char str_type_len;
-  char str[31];
+  char str[16];
 } sdr_full_t;
 
 typedef struct _ipmi_sel_sdr_info_t {

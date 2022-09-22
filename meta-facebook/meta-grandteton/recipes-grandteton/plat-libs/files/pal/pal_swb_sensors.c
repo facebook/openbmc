@@ -52,46 +52,46 @@ exit:
 
 PAL_SENSOR_MAP swb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x00
-  {"NIC0_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x01
-  {"NIC0_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x02
-  {"NIC0_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x03
-  {"NIC0_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x04
-  {"NIC1_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x05
-  {"NIC1_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x06
-  {"NIC1_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x07
-  {"NIC1_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x08
+  {"NIC0_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x01
+  {"NIC0_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x02
+  {"NIC0_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x03
+  {"NIC0_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x04
+  {"NIC1_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x05
+  {"NIC1_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x06
+  {"NIC1_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x07
+  {"NIC1_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x08
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x09
-  {"NIC2_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x0A
-  {"NIC2_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x0B
-  {"NIC2_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x0C
-  {"NIC2_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x0D
+  {"NIC2_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x0A
+  {"NIC2_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x0B
+  {"NIC2_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x0C
+  {"NIC2_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x0D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x0E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x0F
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x10
-  {"NIC3_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x11
-  {"NIC3_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x12
-  {"NIC3_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x13
-  {"NIC3_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x14
-  {"NIC4_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x15
-  {"NIC4_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x16
-  {"NIC4_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x17
-  {"NIC4_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x18
+  {"NIC3_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x11
+  {"NIC3_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x12
+  {"NIC3_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x13
+  {"NIC3_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x14
+  {"NIC4_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x15
+  {"NIC4_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x16
+  {"NIC4_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x17
+  {"NIC4_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x18
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x19
-  {"NIC5_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x1A
-  {"NIC5_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x1B
-  {"NIC5_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x1C
-  {"NIC5_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x1D
+  {"NIC5_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x1A
+  {"NIC5_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x1B
+  {"NIC5_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x1C
+  {"NIC5_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x1D
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x1E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x1F
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x20
-  {"NIC6_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x21
-  {"NIC6_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x22
-  {"NIC6_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x23
-  {"NIC6_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x24
-  {"NIC7_TEMP", 0, get_swb_sensor, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x25
-  {"NIC7_VOLT", 0, get_swb_sensor, false, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x26
-  {"NIC7_CURR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x27
-  {"NIC7_PWR", 0, get_swb_sensor, false, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x28
+  {"NIC6_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x21
+  {"NIC6_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x22
+  {"NIC6_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x23
+  {"NIC6_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x24
+  {"NIC7_TEMP", 0, get_swb_sensor, true, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x25
+  {"NIC7_VOLT", 0, get_swb_sensor, true, {12.96, 0, 0, 10.56, 0, 0, 0, 0}, VOLT}, // 0x26
+  {"NIC7_CURR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, // 0x27
+  {"NIC7_PWR", 0, get_swb_sensor, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, // 0x28
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, // 0x29
   {"HSC_TEMP", 0, get_swb_sensor, true, {120.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, // 0x2A
   {"HSC_VOUT", 0, get_swb_sensor, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, // 0x2B

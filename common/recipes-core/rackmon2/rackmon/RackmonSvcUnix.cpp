@@ -161,6 +161,8 @@ void RackmonUNIXSocketService::handleJSONCommand(
   } catch (std::logic_error& e) {
     resp["status"] = "USER_ERROR";
     print_msg(e);
+  } catch (ModbusError& e) {
+    resp["status"] = e.toString(e.errorCode);
   } catch (std::runtime_error& e) {
     resp["status"] = "RUNTIME_ERROR";
     print_msg(e);

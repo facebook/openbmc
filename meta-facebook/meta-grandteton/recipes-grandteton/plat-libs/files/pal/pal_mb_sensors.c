@@ -34,10 +34,6 @@
 #define IIO_AIN_NAME       "in_voltage%d_raw"
 
 #define MAX11617_DIR     IIO_DEV_DIR(max1363, 20, 35, 2)
-
-uint8_t DIMM_SLOT_CNT = 0;
-//static float InletCalibration = 0;
-
 static int read_bat_val(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_mb_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_cpu_temp(uint8_t fru, uint8_t sensor_num, float *value);
@@ -679,7 +675,7 @@ read_cpu0_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
   static uint8_t retry[DIMM_CNT] = {0};
 
-  if(!is_cpu_socket_occupy(CPU_ID0))
+  if(!is_dimm_present(dimm_id))
     return READING_NA;
 
   if(pal_bios_completed(fru) != true) {
@@ -705,7 +701,7 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
   static uint8_t retry[DIMM_CNT] = {0};
 
-  if(!is_cpu_socket_occupy(CPU_ID1))
+  if(!is_dimm_present(dimm_id))
     return READING_NA;
 
   if(pal_bios_completed(fru) != true) {
@@ -772,7 +768,7 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   static bool cached[DIMM_ID_MAX] = {false};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
-  if(!is_cpu_socket_occupy(CPU_ID0))
+  if(!is_dimm_present(dimm_id))
     return READING_NA;
 
   if(pal_bios_completed(fru) != true) {
@@ -796,7 +792,7 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   static bool cached[DIMM_ID_MAX] = {false};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
-  if(!is_cpu_socket_occupy(CPU_ID1))
+  if(!is_dimm_present(dimm_id))
     return READING_NA;
 
   if(pal_bios_completed(fru) != true) {
@@ -1228,47 +1224,4 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
-void
-get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
-  char key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
-  int i;
-  size_t ret;
 
-  //check dimm info from /mnt/data/sys_config/
-  for (i=0; i<DIMM_SLOT_CNT; i++) {
-    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
-    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4) {
-      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
-      return;
-    }
-
-    if ( 0xff == value[0] ) {
-      dimm_sts_list[i] = false;
-    } else {
-      dimm_sts_list[i] = true;
-    }
-  }
-}
-
-bool
-pal_is_dimm_present(uint8_t dimm_id)
-{
-  static bool is_check = false;
-  static bool dimm_sts_list[96] = {0};
-  uint8_t fru = FRU_MB;
-
-  if (!pal_bios_completed(fru) ) {
-    return false;
-  }
-
-  if ( is_check == false ) {
-    is_check = true;
-    get_dimm_present_info(fru, dimm_sts_list);
-  }
-
-  if( dimm_sts_list[dimm_id] == true) {
-    return true;
-  }
-  return false;
-}

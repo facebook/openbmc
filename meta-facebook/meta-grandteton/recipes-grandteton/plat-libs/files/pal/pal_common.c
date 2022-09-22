@@ -10,6 +10,9 @@
 #include "pal_def.h"
 #include "pal_gpio.h"
 
+#define MAX_DIMM_NUM    (32)
+
+//#define DEBUG
 bool
 is_cpu_socket_occupy(uint8_t cpu_idx) {
   static bool cached = false;
@@ -123,3 +126,50 @@ pal_bios_completed(uint8_t fru)
   return false;
 }
 
+static void
+get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  int i;
+  size_t ret;
+
+  //check dimm info from /mnt/data/sys_config/
+  for (i=0; i<MAX_DIMM_NUM; i++) {
+    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
+    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4) {
+      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
+      return;
+    }
+
+    if ( 0xff == value[0] ) {
+      dimm_sts_list[i] = false;
+    } else {
+      dimm_sts_list[i] = true;
+    }
+  }
+}
+
+bool
+is_dimm_present(uint8_t dimm_id)
+{
+  static bool is_check = false;
+  static bool dimm_sts_list[MAX_DIMM_NUM] = {0};
+  uint8_t fru = FRU_MB;
+
+  if (!pal_bios_completed(fru) ) {
+    return false;
+  }
+
+  if ( is_check == false ) {
+    is_check = true;
+    get_dimm_present_info(fru, dimm_sts_list);
+  }
+
+#ifdef DEBUG
+  syslog(LOG_WARNING, "dimm id=%d, presnet=%d\n", dimm_id, dimm_sts_list[dimm_id]);
+#endif
+  if( dimm_sts_list[dimm_id] == true) {
+    return true;
+  }
+  return false;
+}

@@ -7,5 +7,6 @@ bool pal_skip_access_me(void);
 int read_device(const char *device, int *value);
 bool check_pwron_time(int time);
 bool pal_bios_completed(uint8_t fru);
+bool is_dimm_present(uint8_t dimm_id);
 
 #endif

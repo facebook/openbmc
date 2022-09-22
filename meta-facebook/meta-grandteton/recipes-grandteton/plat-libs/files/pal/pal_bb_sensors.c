@@ -611,9 +611,7 @@ read_bb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
   }
 
   ret = sensors_read(devs[snr_id], sensor_map[fru].map[sensor_num].snr_name, value);
-  syslog(LOG_INFO, "@@@ sensor_num: %02X, value: %f\n", sensor_num, *value);
   inlet_temp_calibration(fru, sensor_num, value);
-  syslog(LOG_INFO, "### sensor_num: %02X, value: %f\n", sensor_num, *value);
   return ret;
 }
 
@@ -954,9 +952,6 @@ get_nct7363y_rpm(uint8_t fru, uint8_t sensor_num, float *value) {
   *value = 1350000 / (tach_hb << 5 | tach_lb);
   retry=0;
 err_exit:
-  syslog(LOG_DEBUG, "%s Tach%d HB=%x LB=%x bus=%x slavaddr=%x\n",
-         __func__, tach_id, tach_hb, tach_lb, bus, addr);
-
   if (fd > 0) {
     close(fd);
   }
@@ -1041,7 +1036,7 @@ pal_set_fan_speed(uint8_t fan, uint8_t pwm) {
   uint8_t dev_id=0;
   uint8_t fru;
 
-  if (fan >= pal_pwm_cnt || !is_fan_present(fan)) {
+  if (fan >= pal_pwm_cnt) {
     syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
     return -1;
   }

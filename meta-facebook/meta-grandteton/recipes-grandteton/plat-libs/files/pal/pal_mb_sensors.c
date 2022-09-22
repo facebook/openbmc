@@ -19,8 +19,10 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/peci_sensors.h>
 #include <openbmc/pmbus.h>
+#include <openbmc/sensor-correction.h>
 #include "pal.h"
 #include "pal_common.h"
+#include "pal_bb_sensors.h"
 
 //#define DEBUG
 #define GPIO_P3V_BAT_SCALED_EN    "BATTERY_DETECT"
@@ -124,7 +126,7 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_VR_CPU1_VCCD_HV_VOLT,
   MB_SNR_VR_CPU1_VCCD_HV_TEMP,
   MB_SNR_VR_CPU1_VCCD_HV_CURR,
-  MB_SNR_VR_CPU1_VCCD_HV_POWER, 
+  MB_SNR_VR_CPU1_VCCD_HV_POWER,
   MB_SNR_CPU0_TEMP,
   MB_SNR_CPU1_TEMP,
   MB_SNR_CPU0_PKG_POWER,
@@ -553,7 +555,7 @@ read_iic_adc_val(uint8_t fru, uint8_t sensor_num, float *value) {
 
   if(is_max11617_chip())
     ret = sensors_read_maxim(adc_chips[ch_id/8], ch_id, value);
-  else 
+  else
     ret = sensors_read(adc_chips[ch_id/8], sensor_map[fru].map[sensor_num].snr_name, value);
   return ret;
 }
@@ -897,21 +899,33 @@ read_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
+  uint8_t source;
+  int ret;
 
-  if (set_hsc_chips(NULL))
+  if (set_hsc_chips(&source))
     return READING_SKIP;
 
-  return sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  if (source == MAIN_SOURCE) // mp5990
+    *value = (*value)*1.0003 + 0.3053;
+
+  return ret;
 }
 
 static int
 read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
-  
-  if (set_hsc_chips(NULL))
+  uint8_t source;
+  int ret;
+
+  if (set_hsc_chips(&source))
     return READING_SKIP;
 
-  return sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  if (source == MAIN_SOURCE) // mp5990
+    *value = (*value)*1.0036 + 6.0805;
+
+  return ret;
 }
 
 static int

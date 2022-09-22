@@ -17,18 +17,19 @@
 # Boston, MA 02110-1301 USA
 #
 
-import sys
 import os
+import sys
 from argparse import ArgumentParser
 
 import at93cx6_py3 as at93cx6
 
-GPIO_SHADOW_DIR = '/tmp/gpionames'
+GPIO_SHADOW_DIR = "/tmp/gpionames"
+
 
 def gpio_name_to_num(name):
     shadowdir = os.path.join(GPIO_SHADOW_DIR, name)
     if os.path.islink(shadowdir):
-        num = int(os.path.realpath(shadowdir).split('/')[-1].split('gpio')[-1])
+        num = int(os.path.realpath(shadowdir).split("/")[-1].split("gpio")[-1])
     else:
         if name.isdigit():
             num = int(name)
@@ -36,17 +37,19 @@ def gpio_name_to_num(name):
             num = -1
     return num
 
+
 def is_gpio_valid(cs, clk, mosi, miso):
-    if cs is -1:
+    if cs == -1:
         raise Exception("CS value is invalid!")
-    if clk is -1:
+    if clk == -1:
         raise Exception("CLK value is invalid!")
-    if mosi is -1:
+    if mosi == -1:
         raise Exception("MOSI value is invalid!")
-    if miso is -1:
+    if miso == -1:
         raise Exception("MISO value is invalid!")
 
     return True
+
 
 def get_raw(args):
     cs_num = gpio_name_to_num(args.cs)
@@ -87,7 +90,6 @@ def get_chip(args):
 
 def model_parser(ap):
     # Default, based on currenct HW configuration
-    MODEL_DEFAULT = at93cx6.AT93C46
 
     ap.add_argument(
         "--model",
@@ -99,10 +101,10 @@ def model_parser(ap):
 
 def access_parser(ap):
     # Default, based on currenct HW configuration
-    SPI_CS_DEFAULT = '68'
-    SPI_CLK_DEFAULT = '69'
-    SPI_MOSI_DEFAULT = '70'
-    SPI_MISO_DEFAULT = '71'
+    SPI_CS_DEFAULT = "68"
+    SPI_CLK_DEFAULT = "69"
+    SPI_MOSI_DEFAULT = "70"
+    SPI_MISO_DEFAULT = "71"
 
     spi_group = ap.add_argument_group("SPI Access")
     spi_group.add_argument(

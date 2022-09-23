@@ -561,7 +561,6 @@ int pal_set_fan_ctrl(char *ctrl_opt);
 int pal_set_time_sync(uint8_t *req_data, uint8_t req_len);
 int pal_get_bmc_ipmb_slave_addr(uint16_t *slave_addr, uint8_t bus_id);
 int pal_is_mcu_ready(uint8_t bus);
-int pal_wait_mcu_ready2update(uint8_t bus);
 int pal_set_time_sync(uint8_t *req_data, uint8_t req_len);
 int pal_set_sdr_update_flag(uint8_t slot, uint8_t update);
 int pal_get_sdr_update_flag(uint8_t slot);

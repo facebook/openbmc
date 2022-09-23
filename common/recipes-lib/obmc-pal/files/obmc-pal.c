@@ -2684,13 +2684,6 @@ pal_is_mcu_ready(uint8_t bus)
 }
 
 int __attribute__((weak))
-pal_wait_mcu_ready2update(uint8_t bus)
-{
-  sleep(2);
-  return 0;
-}
-
-int __attribute__((weak))
 pal_set_sdr_update_flag(uint8_t slot, uint8_t update) {
   return 0;
 }

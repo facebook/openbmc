@@ -260,7 +260,7 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
     printf("stop ipmbd_%d -u...\n", bus);
 
     // To wait for MCU reset to bootloader for updating
-    pal_wait_mcu_ready2update(bus);
+    sleep(2);
   }
 
   // Start MCU update (0x21)

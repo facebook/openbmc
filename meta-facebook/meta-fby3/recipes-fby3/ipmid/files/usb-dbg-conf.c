@@ -849,6 +849,34 @@ static sensor_desc_t cri_sensor_gpv3[] =
   {"GP3 M2 11 Temp:"       , BIC_GPV3_NVME_TEMP_DEV11      , "C"    , FRU_ALL, 2},
 };
 
+static sensor_desc_t cri_sensor_gpv3_brcm[] =
+{
+// BRCM GPv3 sensors
+  {"GP3 Outlet Temp:"      , BIC_GPV3_OUTLET_TEMP          , "C"    , FRU_ALL, 2},
+  {"GP3 PESW Temp:"        , BIC_GPV3_PCIE_SW_TEMP         , "C"    , FRU_ALL, 2},
+  {"GP3 3V3S1 Temp:"       , BIC_GPV3_P3V3_STBY1_TEMP      , "C"    , FRU_ALL, 2},
+  {"GP3 3V3S2 Temp:"       , BIC_GPV3_P3V3_STBY2_TEMP      , "C"    , FRU_ALL, 2},
+  {"GP3 3V3S3 Temp:"       , BIC_GPV3_P3V3_STBY3_TEMP      , "C"    , FRU_ALL, 2},
+  {"GP3 P0V9_VR Pwr:"      , BIC_GPV3_VR_P0V9_POWER       , "W"    , FRU_ALL, 2},
+  {"GP3 P0V9_VR Temp:"     , BIC_GPV3_VR_P0V9_TEMP        , "C"    , FRU_ALL, 2},
+  {"GP3 P1V2_VR Pwr:"      , BIC_GPV3_VR_P1V2_POWER        , "W"    , FRU_ALL, 2},
+  {"GP3 P1V2_VR Temp:"     , BIC_GPV3_VR_P1V2_TEMP         , "C"    , FRU_ALL, 2},
+  {"GP3 E1S0 Temp:"        , BIC_GPV3_E1S_1_TEMP           , "C"    , FRU_ALL, 2},
+  {"GP3 E1S1 Temp:"        , BIC_GPV3_E1S_2_TEMP           , "C"    , FRU_ALL, 2},
+  {"GP3 M2 0 Temp:"        , BIC_GPV3_NVME_TEMP_DEV0       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 1 Temp:"        , BIC_GPV3_NVME_TEMP_DEV1       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 2 Temp:"        , BIC_GPV3_NVME_TEMP_DEV2       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 3 Temp:"        , BIC_GPV3_NVME_TEMP_DEV3       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 4 Temp:"        , BIC_GPV3_NVME_TEMP_DEV4       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 5 Temp:"        , BIC_GPV3_NVME_TEMP_DEV5       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 6 Temp:"        , BIC_GPV3_NVME_TEMP_DEV6       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 7 Temp:"        , BIC_GPV3_NVME_TEMP_DEV7       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 8 Temp:"        , BIC_GPV3_NVME_TEMP_DEV8       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 9 Temp:"        , BIC_GPV3_NVME_TEMP_DEV9       , "C"    , FRU_ALL, 2},
+  {"GP3 M2 10 Temp:"       , BIC_GPV3_NVME_TEMP_DEV10      , "C"    , FRU_ALL, 2},
+  {"GP3 M2 11 Temp:"       , BIC_GPV3_NVME_TEMP_DEV11      , "C"    , FRU_ALL, 2},
+};
+
 static sensor_desc_t cri_sensor_bmc[] =
 {
   {"FAN0_TACH:"            , BMC_SENSOR_FAN0_TACH          , "RPM"  , FRU_BMC, 0},
@@ -1012,6 +1040,7 @@ static sensor_desc_t cri_sensor_cwc_bot_gpv3[] =
 size_t cri_sensor_sb_cnt = sizeof(cri_sensor_sb)/sizeof(sensor_desc_t);
 size_t cri_sensor_1ou_edsff_cnt = sizeof(cri_sensor_1ou_edsff)/sizeof(sensor_desc_t);
 size_t cri_sensor_gpv3_cnt = sizeof(cri_sensor_gpv3)/sizeof(sensor_desc_t);
+size_t cri_sensor_gpv3_brcm_cnt = sizeof(cri_sensor_gpv3_brcm)/sizeof(sensor_desc_t);
 size_t cri_sensor_cwc_cnt = sizeof(cri_sensor_cwc)/sizeof(sensor_desc_t);
 size_t cri_sensor_cwc_top_gpv3_cnt = sizeof(cri_sensor_cwc_top_gpv3)/sizeof(sensor_desc_t);
 size_t cri_sensor_cwc_bot_gpv3_cnt = sizeof(cri_sensor_cwc_bot_gpv3)/sizeof(sensor_desc_t);
@@ -1101,13 +1130,20 @@ int plat_get_sensor_desc(uint8_t fru, sensor_desc_t **desc, size_t *desc_count)
       if (ret < 0) {
         syslog(LOG_WARNING, "%s() Failed to get slot%d 2ou board type\n", __func__, fru);
         goto error_exit;
-      } else if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
+      } else if ( type_2ou == GPV3_MCHP_BOARD ) {
         ret = pal_is_sensor_num_exceed(current_cnt + cri_sensor_gpv3_cnt);
         if (ret < 0) {
           goto error_exit;
         }
         memcpy(&dynamic_cri_sensor[current_cnt], cri_sensor_gpv3, sizeof(cri_sensor_gpv3));
         current_cnt += cri_sensor_gpv3_cnt;
+      } else if ( type_2ou == GPV3_BRCM_BOARD ) {
+        ret = pal_is_sensor_num_exceed(current_cnt + cri_sensor_gpv3_brcm_cnt);
+        if (ret < 0) {
+          goto error_exit;
+        }
+        memcpy(&dynamic_cri_sensor[current_cnt], cri_sensor_gpv3_brcm, sizeof(cri_sensor_gpv3_brcm));
+        current_cnt += cri_sensor_gpv3_brcm_cnt;
       } else if (type_2ou == CWC_MCHP_BOARD) {
         ret = pal_is_sensor_num_exceed(current_cnt + cri_sensor_cwc_cnt + cri_sensor_cwc_top_gpv3_cnt + cri_sensor_cwc_bot_gpv3_cnt);
         if (ret < 0) {

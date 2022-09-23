@@ -52,7 +52,7 @@ class BaseEnclosureUtilTest(TestCase):
         """
         cmd = ["enclosure-util", "--error"]
         out = run_cmd(cmd)
-        pattern = r"Error Counter: ([a-zA-Z0-9\n\s:]*)$"
+        pattern = r"(Error Counter: 0 [\(No Error\)]+|Error Counter: [0-9]+.*\nError Code.*: .*)"
         self.assertRegex(out, pattern, "unexpected output: {}".format(out))
 
     def testFlashHealth(self):

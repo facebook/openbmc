@@ -25,7 +25,6 @@ BicFwExtBlComponent bicbl_2ou_fw1("slot1", "2ou_bicbl", FRU_SLOT1, "2ou", FW_2OU
 
 //slot1 sb bic/bicbl/cpld/bios/vr
 BicFwExtComponent     bic_fw1("slot1", "bic"  , FRU_SLOT1, "sb", FW_BIC);
-BicFwExtBlComponent bicbl_fw1("slot1", "bicbl", FRU_SLOT1, "sb", FW_BIC_BOOTLOADER);
 BmcCpldComponent     cpld_fw1("slot1", "cpld", MAX10_10M25, 3 + FRU_SLOT1, 0x40);
 BiosComponent        bios_fw1("slot1", "bios" , FRU_SLOT1, FW_BIOS);
 VrComponent            vr_fw1("slot1", "vr"   , FRU_SLOT1, FW_VR);
@@ -46,6 +45,7 @@ class ClassConfig {
           syslog(LOG_WARNING, "Failed to get slot1 2ou board type\n");
         }
         static BmcCpldComponent        cpld_bmc("bmc", "cpld", MAX10_10M25, 9, 0x40);
+        static BicFwExtBlComponent bicbl_fw1("slot1", "bicbl", FRU_SLOT1, "sb", FW_BIC_BOOTLOADER);
 
         //slot1 bb bic/bicbl/cpld
         static BicFwExtComponent     bic_bb_fw1("slot1", "bb_bic"  , FRU_SLOT1, "bb", FW_BB_BIC);
@@ -127,9 +127,16 @@ class ClassConfig {
       } else {
         int ret = 0;
         uint8_t type = NO_EXPECTED_TYPE;
+        bool is_sb_ast1030 = false;
         // Register USB Debug Card components
         static UsbDbgComponent usbdbg("ocpdbg", "mcu", "FBY3", 9, 0x60, false);
         static UsbDbgBlComponent usbdbgbl("ocpdbg", "mcubl", 9, 0x60, 0x02);  // target ID of bootloader = 0x02
+
+        //slot1 sb bicbl
+        ret = get_sb_bic_solution(FRU_SLOT1, &is_sb_ast1030);
+        if ((ret != 0) || (!is_sb_ast1030)) {
+          static BicFwExtBlComponent bicbl_fw1("slot1", "bicbl", FRU_SLOT1, "sb", FW_BIC_BOOTLOADER);
+        }
 
         //slot1 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw1("slot1", "1ou_bic"  , FRU_SLOT1, "1ou", FW_1OU_BIC);
@@ -143,10 +150,13 @@ class ClassConfig {
 
         //slot2 sb bic/bicbl/cpld/bios/vr
         static BicFwExtComponent     bic_fw2("slot2", "bic"  , FRU_SLOT2, "sb", FW_BIC);
-        static BicFwExtBlComponent bicbl_fw2("slot2", "bicbl", FRU_SLOT2, "sb", FW_BIC_BOOTLOADER);
         static BmcCpldComponent     cpld_fw2("slot2", "cpld", MAX10_10M25, 3 + FRU_SLOT2, 0x40);
         static BiosComponent        bios_fw2("slot2", "bios" , FRU_SLOT2, FW_BIOS);
         static VrComponent            vr_fw2("slot2", "vr"   , FRU_SLOT2, FW_VR);
+        ret = get_sb_bic_solution(FRU_SLOT2, &is_sb_ast1030);
+        if ((ret != 0) || (!is_sb_ast1030)) {
+          static BicFwExtBlComponent bicbl_fw2("slot2", "bicbl", FRU_SLOT2, "sb", FW_BIC_BOOTLOADER);
+        }
 
         //slot2 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw2("slot2", "1ou_bic"  , FRU_SLOT2, "1ou", FW_1OU_BIC);
@@ -165,10 +175,13 @@ class ClassConfig {
 
         //slot3 sb bic/bicbl/cpld/bios/vr
         static BicFwExtComponent     bic_fw3("slot3", "bic"  , FRU_SLOT3, "sb", FW_BIC);
-        static BicFwExtBlComponent bicbl_fw3("slot3", "bicbl", FRU_SLOT3, "sb", FW_BIC_BOOTLOADER);
         static BmcCpldComponent     cpld_fw3("slot3", "cpld", MAX10_10M25, 3 + FRU_SLOT3, 0x40);
         static BiosComponent        bios_fw3("slot3", "bios" , FRU_SLOT3, FW_BIOS);
         static VrComponent            vr_fw3("slot3", "vr"   , FRU_SLOT3, FW_VR);
+        ret = get_sb_bic_solution(FRU_SLOT3, &is_sb_ast1030);
+        if ((ret != 0) || (!is_sb_ast1030)) {
+          static BicFwExtBlComponent bicbl_fw3("slot3", "bicbl", FRU_SLOT3, "sb", FW_BIC_BOOTLOADER);
+        }
 
         //slot3 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw3("slot3", "1ou_bic"  , FRU_SLOT3, "1ou", FW_1OU_BIC);
@@ -187,10 +200,13 @@ class ClassConfig {
 
         //slot4 sb bic/bicbl/cpld/bios/vr
         static BicFwExtComponent     bic_fw4("slot4", "bic"  , FRU_SLOT4, "sb", FW_BIC);
-        static BicFwExtBlComponent bicbl_fw4("slot4", "bicbl", FRU_SLOT4, "sb", FW_BIC_BOOTLOADER);
         static BmcCpldComponent     cpld_fw4("slot4", "cpld", MAX10_10M25, 3 + FRU_SLOT4, 0x40);
         static BiosComponent        bios_fw4("slot4", "bios" , FRU_SLOT4, FW_BIOS);
         static VrComponent            vr_fw4("slot4", "vr"   , FRU_SLOT4, FW_VR);
+        ret = get_sb_bic_solution(FRU_SLOT4, &is_sb_ast1030);
+        if ((ret != 0) || (!is_sb_ast1030)) {
+          static BicFwExtBlComponent bicbl_fw4("slot4", "bicbl", FRU_SLOT4, "sb", FW_BIC_BOOTLOADER);
+        }
 
         //slot4 1ou bic/bicbl/cpld
         static BicFwExtComponent     bic_1ou_fw4("slot4", "1ou_bic"  , FRU_SLOT4, "1ou", FW_1OU_BIC);

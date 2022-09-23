@@ -65,7 +65,7 @@ do_install() {
   update-rc.d -r ${D} setup-eth.sh start 69 5 .
 
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
-  update-rc.d -r ${D} power-on.sh start 99 5 .
+  update-rc.d -r ${D} power-on.sh start 90 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

@@ -27,6 +27,6 @@ do_install:append() {
   install -d ${D}${sysconfdir}/sv/gpiod
   install -m 755 ${S}/setup-gpiod.sh ${D}${sysconfdir}/init.d/setup-gpiod.sh
   install -m 755 ${S}/run-gpiod.sh ${D}${sysconfdir}/sv/gpiod/run
-  update-rc.d -r ${D} setup-gpiod.sh start 90 5 .
+  update-rc.d -r ${D} setup-gpiod.sh start 89 5 .
 }
 

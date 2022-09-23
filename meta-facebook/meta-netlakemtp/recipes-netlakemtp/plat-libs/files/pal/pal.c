@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <string.h>
+#include <time.h>
 #include <sys/mman.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/phymem.h>
@@ -89,6 +90,7 @@ struct pal_key_cfg {
   {"server_last_power_state", "on", NULL},
   {"ntp_server", "", NULL},
   {"server_boot_order", "0100090203ff", NULL},
+  {"timestamp_sled", "0", NULL},
   /* Add more Keys here */
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
@@ -1476,4 +1478,25 @@ pal_set_uart_routing(uint8_t routing) {
 int
 pal_get_sensor_util_timeout(uint8_t fru) {
   return SENSOR_LIST_TIMEOUT_DEFAULT;
+}
+
+void pal_update_ts_sled() {
+  char key[MAX_KEY_LEN] = {0};
+  char timestamp_str[MAX_VALUE_LEN] = {0};
+  struct timespec timestamp;
+  int ret = 0;
+
+  memset(key, 0, sizeof(key));
+  memset(timestamp_str, 0, sizeof(timestamp_str));
+  memset(&timestamp, 0, sizeof(timestamp));
+
+  clock_gettime(CLOCK_REALTIME, &timestamp);
+
+  snprintf(key, sizeof(key), "timestamp_sled");
+  snprintf(timestamp_str, sizeof(timestamp_str), "%ld", timestamp.tv_sec);
+
+  ret = pal_set_key_value(key, timestamp_str);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): failed to set key: %s value: %s", __func__, key, timestamp_str);
+  }
 }

@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2022-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,6 +16,13 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+#shellcheck disable=SC1091
+source /usr/local/bin/openbmc-utils.sh
+
 #
-/usr/local/bin/us_console.sh connect
-exec /usr/local/bin/mTerm_server wedge /dev/ttyS4 115200
+# Will need to move some devices to dts later.
+#
+i2c_device_add 8 0x50 24c04
+i2c_device_add 8 0x54 24c64

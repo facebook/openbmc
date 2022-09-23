@@ -15,6 +15,10 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+LINUX_VERSION_EXTENSION = "-sandia"
+
+COMPATIBLE_MACHINE = "sandia"
+
 FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 
 SRC_URI += "\

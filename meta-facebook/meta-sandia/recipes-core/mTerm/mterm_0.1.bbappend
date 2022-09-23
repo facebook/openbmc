@@ -1,5 +1,4 @@
-#
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,14 +14,5 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
-[Unit]
-Description=mTerm server monitoring
-After=setup_i2c.service
-Wants=setup_i2c.service
 
-[Service]
-ExecStart=/usr/local/bin/mTerm_server wedge /dev/ttyS4 115200
-
-[Install]
-WantedBy=multi-user.target
+MTERM_CONSOLES = "115200;ttyS4"

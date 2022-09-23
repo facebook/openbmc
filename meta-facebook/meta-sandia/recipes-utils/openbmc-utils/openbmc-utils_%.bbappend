@@ -15,7 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-PACKAGECONFIG += "disable-watchdog"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-#Not needed for sandia
-SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"
+LOCAL_URI += "\
+    file://board-utils.sh \
+    file://setup_i2c.sh \
+    "

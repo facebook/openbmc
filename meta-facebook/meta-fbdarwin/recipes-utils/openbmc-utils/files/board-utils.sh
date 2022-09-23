@@ -76,7 +76,7 @@ userver_reset() {
         gpio_set_value BMC_SYS_PWR_CYC1 1
         sleep 1
         gpio_set_value BMC_SYS_PWR_CYC1 0
-        sleep 1
+        sleep 5
     done
 }
 

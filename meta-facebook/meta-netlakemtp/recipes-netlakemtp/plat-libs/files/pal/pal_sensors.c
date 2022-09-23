@@ -29,6 +29,7 @@ static int read_cpld_adc(uint8_t id, float *value);
 static int read_ina230_pwr(uint8_t id, float *value);
 static int read_nvme_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t id, float *value);
+static int retryDIMM = 0;
 
 //{SensorName, ID, FUNCTION, RAEDING AVAILABLE, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP server_sensor_map[] = {
@@ -417,10 +418,15 @@ read_peci(uint8_t id, float *value) {
 
   int ret = 0;
   ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
-  if (ret < 0) {
+  if ((ret < 0) && (retryDIMM < SENSOR_RETRY_TIME)) {
     sensors_reinit();
     sleep(POWER_ON_SENSOR_RETRY_SEC);
     ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+    if (ret == 0) {
+      retryDIMM = SENSOR_RETRY_TIME;
+    } else {
+      retryDIMM++;
+    }
   }
 
   return ret;

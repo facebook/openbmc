@@ -70,30 +70,30 @@ chassis_power_cycle() {
 bmc_mac_addr() {
     mac=00:00:00:00:00:00
 
-    hexdump -ve '1/1 "%.2x"' "$SYSFS_I2C_DEVICES"/8-0054/eeprom > /tmp/eeprom_data                                                  
+    hexdump -ve '1/1 "%.2x"' "$SYSFS_I2C_DEVICES"/8-0054/eeprom > /tmp/eeprom_data
 
-    ((i = 0))                                                                                                                       
-    while [[ $i -lt 512 ]]; do                                                                                                                              
-        var=$( dd skip=$i count=4 if=/tmp/eeprom_data bs=1 2> /dev/null )                                                           
-        if [ "$var" = "cf06" ];then                                                                                                 
-            ((i = i + 4))                                                                                                           
-            mac1=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)                                                       
-            ((i = i + 2))                                                                                                           
-            mac2=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)                                                       
-            ((i = i + 2))                                                                                                           
-            mac3=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)                                                       
-            ((i = i + 2))                                                                                                            
-            mac4=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)                                                        
-            ((i = i + 2))                                                                                                            
-            mac5=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)                                                        
-            ((i = i + 2))                                                                                                            
-            mac6=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)                                                        
-                                                                                                                                         
-            mac=$mac1:$mac2:$mac3:$mac4:$mac5:$mac6                                                                                  
-            break                                                                                                                    
-        fi                                                                                                                           
-        ((i = i + 1))                                                                                                                
-    done                                                                                                                             
+    ((i = 0))
+    while [[ $i -lt 512 ]]; do
+        var=$( dd skip=$i count=4 if=/tmp/eeprom_data bs=1 2> /dev/null )
+        if [ "$var" = "cf06" ];then
+            ((i = i + 4))
+            mac1=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)
+            ((i = i + 2))
+            mac2=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)
+            ((i = i + 2))
+            mac3=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)
+            ((i = i + 2))
+            mac4=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)
+            ((i = i + 2))
+            mac5=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)
+            ((i = i + 2))
+            mac6=$( dd skip=$i count=2 if=/tmp/eeprom_data bs=1 2> /dev/null)
+
+            mac=$mac1:$mac2:$mac3:$mac4:$mac5:$mac6
+            break
+        fi
+        ((i = i + 1))
+    done
 
     rm /tmp/eeprom_data
     echo "$mac"

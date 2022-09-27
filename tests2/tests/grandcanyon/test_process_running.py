@@ -28,7 +28,7 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "fscd",
             "sshd",
             "rsyslogd",
-            "dhclient -6 -d -D LL --address-prefix-len 64 -pf /var/run/dhclient6.eth0.pid eth0",
+            "dhcpcd: eth0 [ip4] [ip6]",
             "mTerm_server",
             "sensord",
             "healthd",

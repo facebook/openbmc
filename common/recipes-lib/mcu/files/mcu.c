@@ -29,6 +29,7 @@
 #include <openbmc/ipmb.h>
 #include <openbmc/ipmi.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/kv.h>
 #include <openbmc/pal.h>
 #include "mcu.h"
@@ -150,7 +151,7 @@ mcu_enable_update(uint8_t bus, uint8_t addr) {
 }
 
 int
-mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key, uint8_t is_signed ) {
+mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key, bool is_signed, bool force ) {
   char cmd[100] = {0};
   uint8_t tbuf[256] = {0};
   uint8_t rbuf[16] = {0};
@@ -178,14 +179,17 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
     if (read(fd, sbuf, MCU_SIGNED_DATA_SIZE) == MCU_SIGNED_DATA_SIZE ) {
       if(strstr(sbuf, str) == NULL) {
         printf("Error, Signed Key not Match\n");
-        return -1;
+        if (!force) {
+          return -1;
+        }
+      } else {
+        printf("Signed Key Match\n");
       }
     } else {
       printf("File Read Fail\n");
       return -1;
     }
     lseek(fd, 0 ,SEEK_SET);
-    printf("Signed Key Match\n");
   }
 
   fstat(fd, &buf);
@@ -247,8 +251,12 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
     sleep(2);
 
     if (mcu_enable_update(bus, addr)) {
-      syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed!\n", bus, addr);
-      goto error_exit;
+      if (!force) {
+        syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed!\n", bus, addr);
+        goto error_exit;
+      } else {
+        syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed! Continuing upgrade anyway\n", bus, addr);
+      }
     }
 
     // Kill ipmbd "--enable-bic-update" for this slot
@@ -386,17 +394,14 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
 
     tcount = tbuf[0];
     rcount = 0;
-    rc = i2c_rdwr_msg_transfer(ifd, addr, tbuf, tcount, rbuf, rcount);
-    if (rc) {
+    if (retry_cond((rc = i2c_rdwr_msg_transfer(ifd, addr, tbuf, tcount, rbuf, rcount)) == 0, 4, 10)) {
       printf("i2c_rdwr_msg_transfer failed send data\n");
       goto error_exit;
     }
-
     msleep(10);
     tcount = 0;
     rcount = 2;
-    rc = i2c_rdwr_msg_transfer(ifd, addr, tbuf, tcount, rbuf, rcount);
-    if (rc) {
+    if (retry_cond((rc = i2c_rdwr_msg_transfer(ifd, addr, tbuf, tcount, rbuf, rcount)) == 0, 4, 10)) {
       printf("i2c_rdwr_msg_transfer failed send data ack\n");
       goto error_exit;
     }

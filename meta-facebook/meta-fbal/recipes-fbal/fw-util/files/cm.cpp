@@ -16,8 +16,14 @@ class CmComponent : public McuFwComponent {
     CmComponent(const string &fru, const string &comp, const string &name, uint8_t bus, uint8_t addr, uint8_t is_signed)
       : McuFwComponent(fru, comp, name, bus, addr, is_signed), pld_name(name), bus_id(bus), slv_addr(addr), type(is_signed) {}
     int print_version();
-    int update(string image);
+    int update(const string& image, bool force);
     void set_update_ongoing(int timeout);
+    int update(string image) {
+      return update(image, false);
+    }
+    int fupdate(string image) {
+      return update(image, true);
+    }
 };
 
 class CmBlComponent : public McuFwBlComponent {
@@ -128,7 +134,7 @@ static int set_fscd (bool setting)
   return 0;
 }
 
-int CmComponent::update(string image)
+int CmComponent::update(const string& image, bool force)
 {
   
   int ret;
@@ -136,7 +142,7 @@ int CmComponent::update(string image)
   set_fscd (false);
   set_i2c_clock (bus_id, 100);
   ret = mcu_update_firmware(bus_id, slv_addr, (const char *)image.c_str(), 
-                           (const char *)pld_name.c_str(), type);
+                           (const char *)pld_name.c_str(), type, force);
 
   set_i2c_clock (bus_id, 400);
   set_fscd (true); 

@@ -12,7 +12,7 @@ int McuFwComponent::update(string image)
   string comp = this->component();
 
   syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
-  ret = mcu_update_firmware(bus_id, slv_addr, (const char *)image.c_str(), (const char *)pld_name.c_str(), type);
+  ret = mcu_update_firmware(bus_id, slv_addr, (const char *)image.c_str(), (const char *)pld_name.c_str(), type, false);
   if (ret != 0) {
     return FW_STATUS_FAILURE;
   }

@@ -25,6 +25,7 @@
 extern "C" {
 #endif
 #include <stdint.h>
+#include <stdbool.h>
 
 enum {
   MCU_FW_RUNTIME    = 0,
@@ -32,7 +33,7 @@ enum {
 };
 
 int mcu_get_fw_ver(uint8_t bus, uint8_t addr, uint8_t comp, uint8_t *ver);
-int mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key, uint8_t is_signed);
+int mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key, bool is_signed, bool force);
 int mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *path);
 
 int dbg_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *path);

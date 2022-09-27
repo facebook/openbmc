@@ -2265,6 +2265,32 @@
             "tags": [
                 "openbmc_git"
             ]
+        },
+        {
+            "alias": "openbmc-utd",
+            "args": {
+                "name": "openbmc-utd",
+                "oncall": "openbmc",
+                "rev_set": "{JF_COMMIT_PARENT_HASH} {JF_COMMIT_HASH}",
+                "tdconfig_path": "facebook/utd/.tdconfig",
+                "user_inputs": {
+                    "commit_hash": "{JF_COMMIT_HASH}",
+                    "parent_hash": "{JF_COMMIT_PARENT_HASH}",
+                    "vcs_revision": "remote/fbsource/stable"
+                },
+                "utd_path": "facebook/utd/utd"
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUtdRunCommand",
+            "description": "OpenBMC UTD",
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
         }
     ]
 }

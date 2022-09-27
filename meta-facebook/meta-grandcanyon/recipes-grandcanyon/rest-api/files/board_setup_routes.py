@@ -145,7 +145,7 @@ def setup_board_routes(app: Application, write_enabled: bool):
     # Add /api/dpb/hdd-status end point
     dpb_hdd_shim = RestShim(get_node_enclosure_hdd_status(), "/api/dpb/hdd-status")
     app.router.add_get(dpb_hdd_shim.path, dpb_hdd_shim.get_handler)
-    app.router.add_get(dpb_hdd_shim.path, dpb_hdd_shim.post_handler)
+    app.router.add_post(dpb_hdd_shim.path, dpb_hdd_shim.post_handler)
 
     # Add /api/dpb/error end point
     dpb_error_shim = RestShim(get_node_enclosure_error(), "/api/dpb/error")

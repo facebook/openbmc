@@ -18,20 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
-import asyncio
-import subprocess
+import json
+
+try:
+    import pyrmd
+except ImportError:
+    pyrmd = None
 
 
 # Handler for sensors resource endpoint
-async def get_modbus_registers():
-    p = await asyncio.create_subprocess_exec(
-        "/usr/local/bin/rackmondata", stdout=subprocess.PIPE
-    )
-    out, err = await p.communicate()
-    out = out.decode()
-    if p.returncode != 0:
-        raise subprocess.CalledProcessError(
-            p.returncode, cmd="/usr/local/bin/rackmondata", output=out, stderr=err
-        )
-    else:
-        return out
+async def get_modbus_registers_raw():
+    if pyrmd is None:
+        raise ModuleNotFoundError()
+    obj = await pyrmd.RackmonAsyncInterface.data()
+    return json.dumps(obj)

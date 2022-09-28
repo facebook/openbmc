@@ -17,14 +17,15 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+import errno
 import json
 import os
 import socketserver
+import struct
 import subprocess
 import threading
 import time
 import urllib.request
-import errno
 from unittest import TestCase
 
 RACKMOND_SOCKET = "/var/run/rackmond.sock"
@@ -49,7 +50,14 @@ MODBUS_CMD_P99_SLA = 3
 
 MICROBENCH_SAMPLE_SIZE = 40
 
-MOCK_RACKMOND_RESPONSE = b"\xF1\xF0"
+MOCK_RACKMOND_RESPONSE_DATA = [1, 2, 3, 4]
+MOCK_RACKMOND_RESPONSE_PAYLOAD = json.dumps(
+    {"status": "SUCCESS", "data": MOCK_RACKMOND_RESPONSE_DATA}
+).encode()
+MOCK_RACKMOND_RESPONSE = (
+    struct.pack("H", len(MOCK_RACKMOND_RESPONSE_PAYLOAD))
+    + MOCK_RACKMOND_RESPONSE_PAYLOAD
+)
 
 
 class RestModbusCmdTest(TestCase):
@@ -97,7 +105,10 @@ class RestModbusCmdTest(TestCase):
         resp_json = json.loads(resp.read().decode("utf-8"))
 
         # MockRackmondRequestHandler response
-        expected_response = list(MOCK_RACKMOND_RESPONSE)
+        expected_response = [
+            len(MOCK_RACKMOND_RESPONSE_DATA),
+            0,
+        ] + MOCK_RACKMOND_RESPONSE_DATA
 
         self.assertEqual(resp.getcode(), 200)
         self.assertEqual(

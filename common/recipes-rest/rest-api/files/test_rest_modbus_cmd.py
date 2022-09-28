@@ -3,6 +3,8 @@ import unittest
 from typing import Any, List
 
 import aiohttp.web
+
+import pyrmd
 import rest_modbus_cmd
 from aiohttp.test_utils import AioHTTPTestCase, unittest_run_loop
 
@@ -17,7 +19,7 @@ class TestRestModbusCmd(AioHTTPTestCase):
         # so forcing new_callable=MagicMock to preserve backwards compatibility
         self.patches = [
             unittest.mock.patch(
-                "rest_modbus_cmd.raw_modbus_command.get_response",
+                "pyrmd.RackmonAsyncInterface.raw",
                 new_callable=unittest.mock.MagicMock,  # python < 3.8 compat
                 return_value=asyncio.Future(),
             ),
@@ -31,9 +33,8 @@ class TestRestModbusCmd(AioHTTPTestCase):
         for p in self.patches:
             p.start()
             self.addCleanup(p.stop)
-
-        rest_modbus_cmd.raw_modbus_command.get_response.return_value.set_result(
-            EXAMPLE_MODBUS_RESPONSE
+        pyrmd.RackmonAsyncInterface.raw.return_value.set_result(
+            EXAMPLE_MODBUS_RESPONSE[2:]
         )
 
     @unittest_run_loop
@@ -159,29 +160,6 @@ class TestRestModbusCmd(AioHTTPTestCase):
                 "Command opcode 0x{opcode:02x} ({opcode}) is not allowed in .commands[0][1] ([164, {opcode}])".format(  # noqa: B950
                     opcode=opcode,
                 ),
-            )
-
-    def test_raw_modbus_command_get_response_timeout(self):
-        with unittest.mock.patch("socket.socket", autospec=True) as p:
-            client = p.return_value
-
-            cmd = rest_modbus_cmd.raw_modbus_command(
-                data=[1, 2, 3], expected_response_length=456, custom_timeout=789
-            )
-
-            client.recv.return_value = b"\xf1\xf0"
-
-            resp = cmd._get_response()
-
-            self.assertEqual(resp, [0xF1, 0xF0])
-
-            # Check if timeout was set as expected
-            client.settimeout.assert_called_once_with(
-                (
-                    rest_modbus_cmd.raw_modbus_command.RACKMOND_MIN_SOCKET_TIMEOUT_MS
-                    + 789
-                )
-                / 1000
             )
 
     async def get_application(self):

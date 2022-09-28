@@ -1,10 +1,12 @@
 import asyncio
 import fcntl
 import pathlib
-import socket
-import struct
-import typing as t
 from typing import List
+
+try:
+    import pyrmd
+except ImportError:
+    pyrmd = None
 
 import aiohttp.web
 
@@ -33,7 +35,27 @@ ALLOWED_OPCODES = (
 )
 
 
+# Convert the response received by pyrmd to a response
+# which would have been returned by rackmon v1:
+# [LEN_LOW_BYTE, LEN_HIGH_BYTE, <actual modbus response>]
+# If an error occurred, the LEN would be set to zero
+# and the 16bit error code (again low byte followed by
+# high byte). This is unfortunate internals being exposed,
+# but backwards compatibility is important.
+def convert_response(resp):
+    len_b = len(resp)
+    return [len_b & 0xFF, (len_b >> 8) & 0xFF] + resp
+
+
 async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
+    if pyrmd is None:
+        return aiohttp.web.json_response(
+            {
+                "status": "Bad Request",
+                "details": "Unsupported on current configuration",
+            },
+            status=400,
+        )
     try:
         payload = await request.json()
         _validate_payload_schema(payload=payload, schema=PAYLOAD_SCHEMA)
@@ -52,15 +74,22 @@ async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
     # Get soliton beam lock so we don't race with it or modbuscmd
     async with SolitonBeamFlock():
         for cmd in payload["commands"]:
-            modbus_cmd = raw_modbus_command(
-                data=cmd,
-                expected_response_length=payload["expected_response_length"],
-                custom_timeout=payload["custom_timeout"],
-            )
-
-            # Not using asyncio.gather() here as, assuming by the need of flock,
-            # it probably doesn't support parallel access patterns well
-            responses.append(await modbus_cmd.get_response())
+            try:
+                response = await pyrmd.RackmonAsyncInterface.raw(
+                    cmd,
+                    payload["expected_response_length"],
+                    payload["custom_timeout"],
+                    True,
+                )
+                responses.append(convert_response(response))
+            except pyrmd.ModbusTimeout:
+                responses.append([0, 4])
+            except pyrmd.ModbusCRCError:
+                responses.append([0, 5])
+            except pyrmd.ModbusUnknownError:
+                responses.append([0, 3])
+            except Exception:
+                responses.append([0, 1])
 
     return aiohttp.web.json_response(
         {
@@ -68,56 +97,6 @@ async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
             "responses": responses,
         }
     )
-
-
-# Utils
-def to_bytes(cmd: t.List[int]) -> bytes:
-    return b"".join(i.to_bytes(1, "little") for i in cmd)
-
-
-class raw_modbus_command:  # from common/recipes-core/rackmon/rackmon/rackmond.h
-    COMMAND_TYPE_RAW_MODBUS = 1
-
-    # Minimum timeout for reading rackmond socket. This is not the modbus
-    # command timeout (which is user-defined in the custom_timeout field)
-    RACKMOND_MIN_SOCKET_TIMEOUT_MS = 5000
-
-    def __init__(
-        self,
-        data: t.List[int],
-        expected_response_length: int = 0,
-        custom_timeout: int = 0,  # ms
-    ):
-        self.custom_timeout = custom_timeout
-        self._packed = (
-            struct.pack(
-                "HxxHHL",
-                self.COMMAND_TYPE_RAW_MODBUS,
-                len(data),
-                expected_response_length,
-                custom_timeout,
-            )
-            + to_bytes(data)
-        )
-
-    async def get_response(self) -> t.List[int]:
-        # Read response inside thread executor so we don't hold the event loop
-        return await asyncio.get_event_loop().run_in_executor(None, self._get_response)
-
-    def _get_response(self) -> t.List[int]:
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        client.settimeout(
-            (self.RACKMOND_MIN_SOCKET_TIMEOUT_MS + self.custom_timeout) / 1000
-        )
-        try:
-            client.connect(RACKMOND_SOCKET)
-            client.send(len(self._packed).to_bytes(2, "little"))
-            client.send(self._packed)
-
-            return list(client.recv(RACKMOND_MAX_RESPONSE_LEN))
-
-        finally:
-            client.close()
 
 
 class SolitonBeamFlock:

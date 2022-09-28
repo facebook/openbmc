@@ -23,17 +23,17 @@ import rest_fruid
 import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
-import rest_modbus_cmd
 import rest_modbus
+import rest_modbus_cmd
 import rest_psu_update
 import rest_sensors
 import rest_server
 from aiohttp import web
 from common_utils import (
     common_force_async,
+    dumps_bytestr,
     get_data_from_generator,
     get_endpoints,
-    dumps_bytestr,
 )
 
 
@@ -195,5 +195,5 @@ class commonApp_Handler:
     @staticmethod
     async def rest_modbus_registers_get(request: web.Request) -> web.Response:
         return web.json_response(
-            await rest_modbus.get_modbus_registers(), dumps=dumps_bytestr
+            await rest_modbus.get_modbus_registers_raw(), dumps=dumps_bytestr
         )

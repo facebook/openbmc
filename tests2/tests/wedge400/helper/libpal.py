@@ -19,6 +19,7 @@
 #
 
 from ctypes import CDLL, byref, c_uint8
+import subprocess
 
 # When tests are discovered out of BMC there is no libpal
 # catch the import failure
@@ -104,3 +105,21 @@ def pal_detect_power_supply_present(fru):
         return BoardRevision.power_type.get(fru, None)
     else:
         return None
+
+
+def pal_detect_come_bootup(timeout=300):
+    """get come bootup state
+    @timeout: timeout (default 300 sec.)
+    @return 1: come bootup is not complete
+    @return 0: come bootup is complete
+    """
+    scm_ip_usb = 'fe80::ff:fe00:2%usb0'
+    cmd = "ping -c {} -W 1 {} | grep -m 1 \"64 bytes from fe80::ff:fe00:2: seq=\"".format(timeout, scm_ip_usb)
+    ret = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    data, _ = ret.communicate()
+    if (data.decode("utf-8") == ''):
+        return 1
+    else:
+        return 0

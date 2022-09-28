@@ -26,6 +26,7 @@ from tests.wedge400.helper.libpal import (
     pal_get_board_type,
     pal_get_board_type_rev,
     pal_detect_power_supply_present,
+    pal_detect_come_bootup,
     BoardRevision,
 )
 from tests.wedge400.test_data.sensors.sensors import (
@@ -442,3 +443,11 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
             RestEndpointTest.SWITCHRESET_ENDPOINT,
             self.endpoint_switch_reset_attributes,
         )
+
+        # As COME handles the switch chip, it will reboot after verifying endpoint api
+        # /api/sys/switch_reset/cycle_reset and /api/sys/switch_reset/only_reset.
+        # In order to ensure proper COME reboot, we must do COME reboot cleanup once more.
+        run_shell_cmd("/usr/local/bin/wedge_power.sh reset")
+        # waiting for COME reboot
+        if pal_detect_come_bootup() == 1:
+            Logger.warn("Timeout, ping come is over!")

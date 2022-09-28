@@ -52,4 +52,5 @@ IMAGE_INSTALL += " \
   fpc-util \
   ncsid-v2 \
   name-util \
+  threshold-util \
 "

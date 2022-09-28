@@ -62,7 +62,7 @@ recover_cm() {
   if (gpio_set_value(rst_gpio, GPIO_VALUE_LOW)) {
     syslog(LOG_WARNING, "RST_CM_N set to low failed");
   }
-  sleep(0.5);
+  msleep(500);
   if (gpio_set_value(rst_gpio, GPIO_VALUE_HIGH)) {
     syslog(LOG_WARNING, "RST_CM_N set to high failed");
   }
@@ -82,17 +82,22 @@ cm_monitor() {
   int recovery_tries = 0;
   int last_state = 0;
   while (1) {
+    bool is_update = false;
     // Try for 15s to get to CM.
-    if (retry_cond(cmd_cmc_get_dev_id(&cm_dev_id) == 0, 15, 1000) == 0) {
-      // All is good, try again later.
-      recovery_tries = 0;
-      if (last_state != 0) {
-        // If previous recovery attempt had failed, we need to add
-        // a DEASSERT here.
-        syslog(LOG_CRIT, "DEASSERT: Chassis Manager unresponsive. Recovered");
+    if (retry_cond((is_update = pal_is_fw_update_ongoing(FRU_PDB)) ||
+          cmd_cmc_get_dev_id(&cm_dev_id) == 0, 15, 1000) == 0) {
+      // Treat as OK only if there is no ongoing update.
+      if (!is_update) {
+        // All is good, try again later.
+        recovery_tries = 0;
+        if (last_state != 0) {
+          // If previous recovery attempt had failed, we need to add
+          // a DEASSERT here.
+          syslog(LOG_CRIT, "DEASSERT: Chassis Manager unresponsive. Recovered");
+        }
+        last_state = 0;
       }
-      last_state = 0;
-    } else if (recovery_tries < 10) {
+    } else if (recovery_tries < 10 && !pal_is_fw_update_ongoing(FRU_PDB)) {
       // Try to recover CM 10 times, after that give up.
       last_state = recover_cm();
       recovery_tries++;

@@ -77,7 +77,7 @@ mcu_ipmb_wrapper(uint8_t bus, uint8_t addr, uint8_t netfn, uint8_t cmd,
   req->cmd = cmd;
 
   // Copy the data to be sent
-  if (txlen) {
+  if (txlen && txbuf) {
     memcpy(req->data, txbuf, txlen);
   }
 
@@ -251,12 +251,8 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
     sleep(2);
 
     if (mcu_enable_update(bus, addr)) {
-      if (!force) {
-        syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed!\n", bus, addr);
-        goto error_exit;
-      } else {
-        syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed! Continuing upgrade anyway\n", bus, addr);
-      }
+      syslog(LOG_CRIT, "Set mcu_enable_update(bus:%d, addr:%d) failed!\n", bus, addr);
+      // the mcu may already be in bootloader, so continue the update procedure
     }
 
     // Kill ipmbd "--enable-bic-update" for this slot
@@ -377,10 +373,10 @@ mcu_update_firmware(uint8_t bus, uint8_t addr, const char *path, const char *key
 
     offset += xcount;
 #ifdef DEBUG
-    printf("offset =%d\n", offset);
+    printf("offset = %u\n", offset);
 #endif
     if ((last_offset + dsize) <= offset) {
-       printf("\rupdated fw: %d %%", offset/dsize*5);
+       printf("\rupdated fw: %u %%", offset/dsize*5);
        fflush(stdout);
        last_offset += dsize;
     }
@@ -487,7 +483,7 @@ mcu_update_fw(uint8_t bus, uint8_t addr, uint8_t target, uint32_t offset, uint16
 
     if (retries) {
       sleep(1);
-      printf("\n%s: %d[%02x], target %d, offset %d, len %d retrying...\n", __func__ , bus, addr, target, offset, len);
+      printf("\n%s: %d[%02x], target %d, offset %u, len %d retrying...\n", __func__ , bus, addr, target, offset, len);
     }
   }
 
@@ -530,10 +526,11 @@ mcu_update_bootloader(uint8_t bus, uint8_t addr, uint8_t target, const char *pat
 
   while (1) {
     // Read from file
-    count = read(fd, buf, read_count);
-    if (count <= 0) {
+    ret = read(fd, buf, read_count);
+    if (ret <= 0) {
       break;
     }
+    count = ret;
 
     if ((offset + count) >= st.st_size) {
       target |= 0x80;

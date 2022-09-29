@@ -2,7 +2,7 @@
 /build*/
 
 # (yocto) Local shared state cache
-/.sstate/
+/.sstate
 
 # id-utils files
 ID

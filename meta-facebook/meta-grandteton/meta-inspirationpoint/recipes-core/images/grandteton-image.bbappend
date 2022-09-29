@@ -4,6 +4,7 @@
 IMAGE_INSTALL:remove = " \
    asd \
    asd-test \
+   me-util \
    "
 
 IMAGE_INSTALL += " \

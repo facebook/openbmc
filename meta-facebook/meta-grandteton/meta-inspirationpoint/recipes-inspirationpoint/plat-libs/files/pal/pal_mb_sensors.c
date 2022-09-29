@@ -293,23 +293,23 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x08
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x09
   {"PROCESSOR_FAIL", FRU_MB, read_frb3, 0, {0, 0, 0, 0, 0, 0, 0, 0}, STATE}, //0x0A
-  {"HSC_VOLT",  HSC_ID0, read_hsc_vin,  true, {14.333, 0, 0, 10.091, 0, 0, 0, 0}, VOLT}, //0x0B
-  {"HSC_CURR",  HSC_ID0, read_hsc_iout, true, {240.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x0C
-  {"HSC_PWR",   HSC_ID0, read_hsc_pin,  true, {2596.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0D
-  {"HSC_TEMP",  HSC_ID0, read_hsc_temp, true, {120.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x0E
-  {"HSC_PEAK_PIN",  HSC_ID0, read_hsc_peak_pin, true, {2832.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0F
+  {"HSC_VOLT", HSC_ID0, read_hsc_vin,  true, {13.3, 0, 0, 10.7, 0, 0, 0, 0}, VOLT}, //0x0B
+  {"HSC_CURR", HSC_ID0, read_hsc_iout, true, {240.0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x0C
+  {"HSC_PWR", HSC_ID0, read_hsc_pin,  true, {2926.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0D
+  {"HSC_TEMP", HSC_ID0, read_hsc_temp, true, {120.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x0E
+  {"HSC_PEAK_PIN", HSC_ID0, read_hsc_peak_pin, true, {3285.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x0F
 
   {"OUTLET_L_TEMP", TEMP_OUTLET_L, read_mb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x10
   {"INLET_L_TEMP", TEMP_INLET_L, read_mb_temp, true, {55.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x11
-  {"OUTLET_R_TEMP", TEMP_OUTLET_R, read_mb_temp, true, {65.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x12
-  {"INLET_R_TEMP", TEMP_INLET_R, read_mb_temp, true, {65.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x13
+  {"OUTLET_R_TEMP", TEMP_OUTLET_R, read_mb_temp, true, {75.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x12
+  {"INLET_R_TEMP", TEMP_INLET_R, read_mb_temp, true, {75.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x13
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x14
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x15
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x16
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x17
 
-  {"CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {88.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x18
-  {"CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {88.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x19
+  {"CPU0_TEMP", CPU_ID0, read_cpu_temp, false, {90.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x18
+  {"CPU1_TEMP", CPU_ID1, read_cpu_temp, false, {90.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x19
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1A
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x1C
@@ -335,51 +335,51 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x2F
 
-  {"VR_CPU0_VCORE0_VOLT", VR_ID0, read_vr_vout, false, {1.88, 0, 0, 1.6, 0, 0, 0, 0}, VOLT}, //0x30
+  {"VR_CPU0_VCORE0_VOLT", VR_ID0, read_vr_vout, false, {1.71, 0, 0, 0.34, 0, 0, 0, 0}, VOLT}, //0x30
   {"VR_CPU0_VCORE0_TEMP", VR_ID0, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x31
-  {"VR_CPU0_VCORE0_CURR", VR_ID0, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X32
-  {"VR_CPU0_VCORE0_PWR",  VR_ID0, read_vr_pout, false, {900.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
-  {"VR_CPU0_SOC_VOLT", VR_ID1, read_vr_vout, false, {1.88, 0, 0, 1.6, 0, 0, 0, 0}, VOLT}, //0x34
+  {"VR_CPU0_VCORE0_CURR", VR_ID0, read_vr_iout, false, {240, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X32
+  {"VR_CPU0_VCORE0_PWR",  VR_ID0, read_vr_pout, false, {410, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x33
+  {"VR_CPU0_SOC_VOLT", VR_ID1, read_vr_vout, false, {1.71, 0, 0, 0.34, 0, 0, 0, 0}, VOLT}, //0x34
   {"VR_CPU0_SOC_TEMP", VR_ID1, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x35
-  {"VR_CPU0_SOC_CURR", VR_ID1, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X36
-  {"VR_CPU0_SOC_PWR",  VR_ID1, read_vr_pout, false, {295.2, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x37
-  {"VR_CPU0_VCORE1_VOLT",  VR_ID2, read_vr_vout, false, {1.05, 0, 0, 0.7, 0, 0, 0, 0}, VOLT}, //0x38
+  {"VR_CPU0_SOC_CURR", VR_ID1, read_vr_iout, false, {240, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X36
+  {"VR_CPU0_SOC_PWR",  VR_ID1, read_vr_pout, false, {410, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x37
+  {"VR_CPU0_VCORE1_VOLT",  VR_ID2, read_vr_vout, false, {1.36, 0, 0, 0.59, 0, 0, 0, 0}, VOLT}, //0x38
   {"VR_CPU0_VCORE1_TEMP",  VR_ID2, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x39
-  {"VR_CPU0_VCORE1_CURR",  VR_ID2, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X3A
-  {"VR_CPU0_VCORE1_PWR",   VR_ID2, read_vr_pout, false, {69.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3B
-  {"VR_CPU0_PVDDIO_VOLT", VR_ID3, read_vr_vout, false, {1.87, 0, 0, 1.6, 0, 0, 0, 0}, VOLT}, //0x3C
+  {"VR_CPU0_VCORE1_CURR",  VR_ID2, read_vr_iout, false, {140, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X3A
+  {"VR_CPU0_VCORE1_PWR",   VR_ID2, read_vr_pout, false, {192.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3B
+  {"VR_CPU0_PVDDIO_VOLT", VR_ID3, read_vr_vout, false, {1.29, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x3C
   {"VR_CPU0_PVDDIO_TEMP", VR_ID3, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x3D
-  {"VR_CPU0_PVDDIO_CURR", VR_ID3, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X3E
-  {"VR_CPU0_PVDDIO_PWR",  VR_ID3, read_vr_pout, false, {27.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3F
-  {"VR_CPU0_PVDD11_VOLT", VR_ID4, read_vr_vout, false, {1.189, 0, 0, 1.081, 0, 0, 0, 0}, VOLT}, //0x40
+  {"VR_CPU0_PVDDIO_CURR", VR_ID3, read_vr_iout, false, {150, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X3E
+  {"VR_CPU0_PVDDIO_PWR",  VR_ID3, read_vr_pout, false, {195, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x3F
+  {"VR_CPU0_PVDD11_VOLT", VR_ID4, read_vr_vout, false, {1.17, 0, 0, 1.04, 0, 0, 0, 0}, VOLT}, //0x40
   {"VR_CPU0_PVDD11_TEMP", VR_ID4, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x41
-  {"VR_CPU0_PVDD11_CURR", VR_ID4, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X42
-  {"VR_CPU0_PVDD11_PWR", VR_ID4, read_vr_pout, false, {38.5, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x43
+  {"VR_CPU0_PVDD11_CURR", VR_ID4, read_vr_iout, false, {85, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X42
+  {"VR_CPU0_PVDD11_PWR", VR_ID4, read_vr_pout, false, {99, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x43
   {"P12V_AUX_IN0_VOLT", ADC_CH0, read_iic_adc_val, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x44
   {"P5V_IN3_VOLT",      ADC_CH3, read_iic_adc_val, false, {5.25, 0, 0, 4.75, 0, 0, 0, 0}, VOLT}, //0x45
   {"P3V3_IN4_VOLT",     ADC_CH4, read_iic_adc_val, false, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x46
   {"P3V3_AUX_IN5_VOLT", ADC_CH5, read_iic_adc_val, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x47
 
-  {"VR_CPU1_VCORE0_VOLT", VR_ID5, read_vr_vout, false, {1.88, 0, 0, 1.6, 0, 0, 0, 0}, VOLT}, //0x48
+  {"VR_CPU1_VCORE0_VOLT", VR_ID5, read_vr_vout, false, {1.71, 0, 0, 0.34, 0, 0, 0, 0}, VOLT}, //0x48
   {"VR_CPU1_VCORE0_TEMP", VR_ID5, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x49
-  {"VR_CPU1_VCORE0_CURR", VR_ID5, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X4A
-  {"VR_CPU1_VCORE0_PWR", VR_ID5, read_vr_pout, false, {900.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4B
-  {"VR_CPU1_SOC_VOLT", VR_ID6, read_vr_vout, false, {1.88, 0, 0, 1.6, 0, 0, 0, 0}, VOLT}, //0x4C
+  {"VR_CPU1_VCORE0_CURR", VR_ID5, read_vr_iout, false, {240, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X4A
+  {"VR_CPU1_VCORE0_PWR", VR_ID5, read_vr_pout, false, {410, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4B
+  {"VR_CPU1_SOC_VOLT", VR_ID6, read_vr_vout, false, {1.71, 0, 0, 0.34, 0, 0, 0, 0}, VOLT}, //0x4C
   {"VR_CPU1_SOC_TEMP", VR_ID6, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x4D
-  {"VR_CPU1_SOC_CURR", VR_ID6, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X4E
-  {"VR_CPU1_SOC_PWR", VR_ID6, read_vr_pout, false, {295.2, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4F
-  {"VR_CPU1_VCORE1_VOLT", VR_ID7, read_vr_vout, false, {1.05, 0, 0, 0.7, 0, 0, 0, 0}, VOLT}, //0x50
+  {"VR_CPU1_SOC_CURR", VR_ID6, read_vr_iout, false, {240, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X4E
+  {"VR_CPU1_SOC_PWR", VR_ID6, read_vr_pout, false, {410, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x4F
+  {"VR_CPU1_VCORE1_VOLT", VR_ID7, read_vr_vout, false, {1.36, 0, 0, 0.59, 0, 0, 0, 0}, VOLT}, //0x50
   {"VR_CPU1_VCORE1_TEMP", VR_ID7, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x51
-  {"VR_CPU1_VCORE1_CURR", VR_ID7, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X52
-  {"VR_CPU1_VCORE1_PWR", VR_ID7, read_vr_pout, false, {69.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
-  {"VR_CPU1_PVDDIO_VOLT", VR_ID8, read_vr_vout, false, {1.87, 0, 0, 1.6, 0, 0, 0, 0}, VOLT}, //0x54
+  {"VR_CPU1_VCORE1_CURR", VR_ID7, read_vr_iout, false, {140, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X52
+  {"VR_CPU1_VCORE1_PWR", VR_ID7, read_vr_pout, false, {192, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x53
+  {"VR_CPU1_PVDDIO_VOLT", VR_ID8, read_vr_vout, false, {1.29, 0, 0, 0.81, 0, 0, 0, 0}, VOLT}, //0x54
   {"VR_CPU1_PVDDIO_TEMP", VR_ID8, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x55
-  {"VR_CPU1_PVDDIO_CURR", VR_ID8, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X56
-  {"VR_CPU1_PVDDIO_PWR", VR_ID8, read_vr_pout, false, {27.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x57
-  {"VR_CPU1_PVDD11_VOLT", VR_ID9, read_vr_vout, false, {1.189, 0, 0, 1.081, 0, 0, 0, 0}, VOLT}, //0x58
+  {"VR_CPU1_PVDDIO_CURR", VR_ID8, read_vr_iout, false, {150, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X56
+  {"VR_CPU1_PVDDIO_PWR", VR_ID8, read_vr_pout, false, {195, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x57
+  {"VR_CPU1_PVDD11_VOLT", VR_ID9, read_vr_vout, false, {1.17, 0, 0, 1.04, 0, 0, 0, 0}, VOLT}, //0x58
   {"VR_CPU1_PVDD11_TEMP", VR_ID9, read_vr_temp, false, {105.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x59
-  {"VR_CPU1_PVDD11_CURR", VR_ID9, read_vr_iout, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X5A
-  {"VR_CPU1_PVDD11_PWR", VR_ID9, read_vr_pout, false, {38.5, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x5B
+  {"VR_CPU1_PVDD11_CURR", VR_ID9, read_vr_iout, false, {85, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0X5A
+  {"VR_CPU1_PVDD11_PWR", VR_ID9, read_vr_pout, false, {99, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x5B
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5C
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x5D
   {"P3V_BAT_VOLT", ADC7, read_bat_val, true, {3.4, 0, 0, 2.6, 0, 0, 0, 0}, VOLT}, //0x5E

@@ -947,6 +947,8 @@ fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, 
       break;
     case BOARD_ID_HD:
       board_type = rev_hd;
+      //Halfdome hw stage: rev_id bit[3:0]
+      rev_id = rev_id & 0x0F;
       if (rev_id >= ARRAY_SIZE(rev_hd)) {
         rev_id = ARRAY_SIZE(rev_hd) - 1;
       }

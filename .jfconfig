@@ -2276,7 +2276,7 @@
                 "user_inputs": {
                     "commit_hash": "{JF_COMMIT_HASH}",
                     "parent_hash": "{JF_COMMIT_PARENT_HASH}",
-                    "vcs_revision": "remote/fbsource/stable"
+                    "vcs_revision": "{JF_COMMIT_HASH}"
                 },
                 "utd_path": "facebook/utd/utd"
             },

@@ -339,16 +339,25 @@ int pal_get_pex_therm(uint8_t sensor_num, float *value) {
   fd_lock = pax_lock();
   //Send cmd to Axis reg
   for (int i = 0; i < 6; i++) {
-    i2c_rdwr_msg_transfer(fd, addr, tbuf[i], 8, NULL, 0);
+    if (i2c_rdwr_msg_transfer(fd, addr, tbuf[i], 8, NULL, 0) != 0) {
+      syslog(LOG_WARNING, "PEX THERM: sending cmd%d to axis reg of bus %d failed\n", i, bus);
+      close(fd);
+      pax_unlock(fd_lock);
+      return ERR_SENSOR_NA;
+    }
   }
   //Get response
-  i2c_rdwr_msg_transfer(fd, addr, tbuf[6], 4, rbuf, 4);
+  int ret = i2c_rdwr_msg_transfer(fd, addr, tbuf[6], 4, rbuf, 4);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "PEX THERM: getting response to axis reg of bus %d failed\n", bus);
+    ret = ERR_SENSOR_NA;
+  }
   temp128 = (rbuf[2] << 8) | rbuf[3];
   *value = (float)temp128/128;
   close(fd);
   pax_unlock(fd_lock);
 
-  return 0;
+  return ret;
 }
 
 int pal_paxid_to_brcm_bus(uint8_t paxid) {

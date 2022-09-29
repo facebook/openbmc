@@ -186,8 +186,12 @@ slot_rst_hndler(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr) {
   slot_id += 1;
   sprintf(pwr_cmd, "slot%u reset", slot_id);
   if ( curr == GPIO_VALUE_LOW ) {
-    slot_power_control(pwr_cmd);
-    pal_set_restart_cause(slot_id, RESTART_CAUSE_RESET_PUSH_BUTTON);
+    if (pal_is_fw_update_ongoing(slot_id)) {
+      syslog(LOG_CRIT, "Reset Button blocked due to FW update is ongoing, FRU: %d", slot_id);
+    } else {
+      slot_power_control(pwr_cmd);
+      pal_set_restart_cause(slot_id, RESTART_CAUSE_RESET_PUSH_BUTTON);
+    }
   }
   log_gpio_change(gp, curr, 0, true);
 }

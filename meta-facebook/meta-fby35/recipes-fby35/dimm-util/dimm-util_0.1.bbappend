@@ -7,7 +7,7 @@ LOCAL_URI += " \
         file://dimm-util-plat.h \
         "
 
-LDFLAGS += "-lbic"
+LDFLAGS += "-lbic -lfby35_common"
 
-DEPENDS += "libbic"
-RDEPENDS:${PN} += "libbic"
+DEPENDS += "libbic libfby35-common"
+RDEPENDS:${PN} += "libbic libfby35-common"

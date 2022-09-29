@@ -8,6 +8,7 @@
 #include <facebook/bic_xfer.h>
 #include <facebook/fby35_common.h>
 #include "raa_gen3.h"
+#include "xdpe12284c.h"
 #include "xdpe152xx.h"
 #include "tps53688.h"
 #include "mp2856.h"
@@ -85,6 +86,21 @@ plat_mp2856_fw_update(struct vr_info *info, void *args) {
   return ret;
 }
 
+/*XDPE12284C must stop VR sensor polling while fw updating */
+int
+plat_xdpe12284c_fw_update(struct vr_info *info, void *args) {
+ int ret = 0;
+  // Stop bic polling VR sensors
+  if (bic_set_vr_monitor_enable(slot_id, false, FEXP_BIC_INTF) < 0) {
+    return VR_STATUS_FAILURE;
+  }
+  ret = xdpe_fw_update(info,args);
+
+  // Restart bic polling VR sensors
+  bic_set_vr_monitor_enable(slot_id, true, FEXP_BIC_INTF) ;
+  return ret;
+}
+
 struct vr_ops rns_ops = {
   .get_fw_ver = get_raa_ver,
   .parse_file = raa_parse_file,
@@ -114,6 +130,14 @@ struct vr_ops mps_ops = {
   .parse_file = mp2856_parse_file,
   .validate_file = NULL,
   .fw_update = plat_mp2856_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_ops ifx_xdpe12284_ops = {
+  .get_fw_ver = get_xdpe_ver,
+  .parse_file = xdpe_parse_file,
+  .validate_file = NULL,
+  .fw_update = plat_xdpe12284c_fw_update,
   .fw_verify = NULL,
 };
 
@@ -254,13 +278,41 @@ void halfdome_vr_device_check(void){
   }
 }
 
+void rbf_vr_device_check(void){
+  uint8_t rbuf[16], rlen;
+  int i;
+  for (i = VR_RBF_A0V8; i <= VR_RBF_VDDQCD; i++) {
+    rlen = sizeof(rbuf);
+    if (bic_get_vr_device_id(slot_id, rbuf, &rlen, fby35_vr_list[i].bus,
+                             fby35_vr_list[i].addr, FEXP_BIC_INTF) < 0) {
+      continue;
+    }
+
+    switch (rlen) {
+      case 2:
+        fby35_vr_list[i].ops = &ifx_xdpe12284_ops;
+        break;
+      default:
+        fby35_vr_list[i].ops = &rns_ops;
+        break;
+    }
+  }
+}
+
 int plat_vr_init(void) {
+  int config_status = 0;
   int vr_cnt = sizeof(fby35_vr_list)/sizeof(fby35_vr_list[0]);
 
   if (fby35_common_get_slot_type(slot_id) == SERVER_TYPE_HD) {
     halfdome_vr_device_check();
   } else {
     fby35_vr_device_check();
+  }
+
+  config_status = bic_is_exp_prsnt(slot_id);
+  if (config_status < 0) config_status = 0;
+  if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
+    rbf_vr_device_check();
   }
 
   return vr_device_register(fby35_vr_list, vr_cnt);

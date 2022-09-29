@@ -150,6 +150,13 @@ trap 'rm -rf /tmp/fcmcpld_update' INT TERM QUIT EXIT
 
 echo 1 > /tmp/fcmcpld_update
 
+if ! wedge_prepare_cpld_update; then
+    echo "Aborting CPLD upgrade"
+    echo "The FSCD may be closed incompletely,"
+    echo "Please check the watchdog timeout, to prevent system reboot."
+    exit 1
+fi
+
 if [ -e "$UPDATE_IMG" ];then
     if [[  $CPLD_TYPE == "FCM-T" ]];then
         enable_fct-t_jtag_chain
@@ -252,8 +259,11 @@ disable_jtag_chain
 # 0 is returned upon upgrade success
 if [ $result -eq $expect ]; then
     echo "Upgrade successful."
+    echo "Restarting fscd service."
+    systemctl start fscd
     exit 0
 else
     echo "Upgrade failure. Return code from utility : $result"
+    echo "To prevent system reboot, keep watchdog disabled and fscd down."
     exit 1
 fi

@@ -152,3 +152,22 @@ wedge_power_supply_type() {
     fi
     echo $power_type
 }
+
+wedge_prepare_cpld_update() {
+    echo "Stop fscd service."
+    if ! systemctl stop fscd ; then
+        echo "Error: FSCD fails to exit properly!"
+        return 1
+    fi
+
+    echo "Disable watchdog."
+    if ! /usr/local/bin/wdtcli stop ; then
+        echo "Error: Failed to disable watchdog!"
+        return 1
+    fi
+
+    echo "Set fan speed to 40%."
+    set_fan_speed.sh 40
+    
+    return 0
+}

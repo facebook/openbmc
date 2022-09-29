@@ -397,6 +397,11 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
   uint8_t *buf = NULL;
   size_t write_offset = 0;
   int write_target = 0;
+  size_t image_size = 0;
+  bool last_block = false;
+  struct stat finfo;
+  fstat(fd,&finfo);
+  image_size = finfo.st_size;
 
   const char *what = NULL;
   switch (comp) {
@@ -470,6 +475,11 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
     if (file_buf_num_bytes == 0) {
       break;
     }
+
+    if ((num_blocks_written * BIOS_UPDATE_BLK_SIZE + file_buf_num_bytes) >= image_size) {
+      last_block = true;
+    }
+
     // Pad to 64K with 0xff, if needed.
     for (size_t i = file_buf_num_bytes; i < BIOS_UPDATE_BLK_SIZE; i++) {
       file_buf[i] = '\xff';
@@ -506,6 +516,14 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
       // so if we have SHA256 checksum, we can use big packets as well.
       size_t limit = (cs_len == STRONG_DIGEST_LENGTH ? USB_DAT_SIZE_BIG : USB_DAT_SIZE);
       if (count > limit) count = limit;
+
+      if( last_block && (file_buf_pos + count >= file_buf_num_bytes)) {
+        if (comp == FW_1OU_CXL) {
+          //Enable update end flag for last packet
+          write_target |= 0x80;
+         }
+       }
+
       bic_usb_packet *pkt = (bic_usb_packet *) (file_buf + file_buf_pos - sizeof(bic_usb_packet));
       pkt->netfn = NETFN_OEM_1S_REQ << 2;
       pkt->cmd = CMD_OEM_1S_UPDATE_FW;

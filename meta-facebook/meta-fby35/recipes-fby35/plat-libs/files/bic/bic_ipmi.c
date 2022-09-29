@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <syslog.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/misc-utils.h>
 #include <openbmc/kv.h>
 #include "bic_ipmi.h"
 #include "bic_xfer.h"
@@ -2123,4 +2124,38 @@ bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_
   *output_len = totol_length;
 
   return ret;
+}
+
+int
+bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) {
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[8] = {0};
+  uint8_t tlen = 4;
+  uint8_t rlen = 1;
+
+  tbuf[0] = 0x01; //bus id
+  tbuf[1] = 0x42; //slave addr
+  tbuf[2] = 0x01; //read 1 byte
+  tbuf[3] = 0x0f; //register offset
+
+  if (retry_cond(!bic_ipmb_wrapper(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen), 3, 50)) {
+    return -1;
+  }
+
+  *value = rbuf[0];
+
+  return 0;
+}
+
+bool
+bic_is_prot_bypass(uint8_t fru)
+{
+  uint8_t spare_status = 0xFF;
+  int ret = bic_get_prot_spare_pins(fru, &spare_status);
+  if(ret < 0) {
+    syslog(LOG_WARNING, "%s() bic_get_prot_spare_pins fail, returns %d\n", __func__, ret);
+    return false;
+  }
+  //bit1:AUTH_SPARE_46_R, low: bypass
+  return (spare_status & 0x02) ? false:true;
 }

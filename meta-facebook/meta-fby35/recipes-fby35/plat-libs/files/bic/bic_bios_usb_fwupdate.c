@@ -28,6 +28,7 @@
 #include <sys/time.h>
 #include <openssl/sha.h>
 #include "bic_bios_fwupdate.h"
+#include "bic_ipmi.h"
 
 #define USB_PKT_SIZE 0x200
 #define USB_DAT_SIZE (USB_PKT_SIZE - USB_PKT_HDR_SIZE)
@@ -41,6 +42,10 @@
 #define BIOS_UPDATE_IMG_SIZE (32*1024*1024)
 #define SIMPLE_DIGEST_LENGTH 4
 #define STRONG_DIGEST_LENGTH SHA256_DIGEST_LENGTH
+
+//PRoT update
+#define XFR_STAGING_OFFSET (48*1024*1024)
+#define XFR_WORKING_OFFSET (56*1024*1024)
 
 #define CL_BIC_USB_PORT 4
 #define HD_BIC_USB_PORT 3
@@ -243,6 +248,12 @@ bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t pr
                 continue;
               }
               break;
+             case FW_PROT:
+              //Only Halfdome support PRoT
+              if (udev->path[2] != HD_BIC_USB_PORT) {
+                continue;
+              }
+              break;
             case FW_1OU_CXL:
               if ( udev->path[2] != RBF_BIC_USB_PORT) {
                 continue;
@@ -408,6 +419,18 @@ bic_update_fw_usb(uint8_t slot_id, uint8_t comp, int fd, usb_dev* udev)
     case FW_BIOS:
       what = "BIOS";
       write_offset = 0;
+      write_target = UPDATE_BIOS;
+      break;
+
+    case FW_PROT:
+      what = "PRoT";
+      if(bic_is_prot_bypass(slot_id)) {
+        printf("PRoT is Bypass mode, updating to offset : 0x%08X \n",XFR_WORKING_OFFSET);
+        write_offset = XFR_WORKING_OFFSET;
+      } else {
+        printf("PRoT is PFR mode, updating to offset : 0x%08X \n",XFR_STAGING_OFFSET);
+        write_offset = XFR_STAGING_OFFSET;
+      }
       write_target = UPDATE_BIOS;
       break;
 

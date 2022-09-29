@@ -1057,3 +1057,26 @@ fby35_common_get_bb_hsc_type(uint8_t* type) {
   }
   return 0;
 }
+
+bool
+fby35_common_is_prot_card_prsnt(uint8_t fru) {
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN] = {0};
+
+  snprintf(key, sizeof(key), "fru%u_is_prot_prsnt", fru);
+  if (kv_get(key, value, NULL, 0) == 0) {
+    return value[0] ? true : false;
+  }
+
+  if (fby35_read_sb_cpld_checked(fru, CPLD_REG_PROT, (uint8_t *)value)) {
+    return false;
+  }
+
+  value[0] = (value[0] & 0x01) ^ 0x01;
+  if (kv_set(key, value, 1, KV_FCREATE)) {
+    syslog(LOG_WARNING,"%s: kv_set failed, key: %s, val: %u", __func__, key, value[0]);
+    return false;
+  }
+
+  return value[0] ? true : false;
+}

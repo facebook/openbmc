@@ -78,6 +78,7 @@ extern "C" {
 #define CPLD_REG_SB_BIC_BOOT_STRAP  0x10
 #define CPLD_REG_BOARD              0x11
 #define CPLD_REG_1OU_BIC_BOOT_STRAP 0x22
+#define CPLD_REG_PROT               0x23
 
 #define SLOT_SENSOR_LOCK "/var/run/slot%d_sensor.lock"
 
@@ -364,6 +365,7 @@ enum {
   FW_VR_VDD11S3,       //10
   FW_VR,
   FW_BIOS,
+  FW_PROT,
   FW_1OU_BIC,
   FW_1OU_BIC_RCVY,
   FW_1OU_CPLD,         //15
@@ -540,6 +542,7 @@ int fby35_common_get_img_ver(const char* image_path, char* ver, uint8_t comp);
 int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data, bool is_first, uint8_t comp);
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
+bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;
 
 #ifdef __cplusplus
 } // extern "C"

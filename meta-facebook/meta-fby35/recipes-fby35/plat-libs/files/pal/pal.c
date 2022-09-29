@@ -4632,4 +4632,8 @@ pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
   return 0;
 }
 
-
+bool
+pal_is_prot_card_prsnt(uint8_t fru)
+{
+    return fby35_common_is_prot_card_prsnt(fru);
+}

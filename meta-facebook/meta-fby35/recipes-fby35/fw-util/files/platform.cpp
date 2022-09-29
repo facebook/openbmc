@@ -12,6 +12,7 @@
 #include "bic_cxl.h"
 #include "usbdbg.h"
 #include "mp5990.h"
+#include "bic_prot.hpp"
 
 NicExtComponent nic_fw("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
 
@@ -78,6 +79,9 @@ class ClassConfig {
             static VrComponent   vr_vddcpu0_fw1("slot1", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
             static VrComponent   vr_vddcpu1_fw1("slot1", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
             static VrComponent   vr_vdd11s3_fw1("slot1", "vr_vdd11s3", FW_VR_VDD11S3);
+            if(fby35_common_is_prot_card_prsnt(FRU_SLOT1)) {
+              static ProtComponent    prot_fw1("slot1", "prot", FW_PROT);
+            }
           } else {
             static CpldComponent cpld_fw1("slot1", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
             static MeComponent   me_fw1("slot1", "me", FRU_SLOT1);
@@ -158,6 +162,9 @@ class ClassConfig {
             static VrComponent   vr_vddcpu0_fw3("slot3", "vr_vddcrcpu0", FW_VR_VDDCRCPU0);
             static VrComponent   vr_vddcpu1_fw3("slot3", "vr_vddcrcpu1", FW_VR_VDDCRCPU1);
             static VrComponent   vr_vdd11s3_fw3("slot3", "vr_vdd11s3", FW_VR_VDD11S3);
+            if(fby35_common_is_prot_card_prsnt(FRU_SLOT3)) {
+              static ProtComponent    prot_fw3("slot3", "prot", FW_PROT);
+            }
           } else {
             static CpldComponent cpld_fw3("slot3", "cpld", "sb", FW_CPLD, LCMXO3_4300C, 0x40);
             static MeComponent   me_fw3("slot3", "me", FRU_SLOT3);

@@ -3052,6 +3052,12 @@ pal_get_mrc_desc(uint8_t fru, mrc_desc_t **desc, size_t *desc_count)
   return PAL_EOK;
 }
 
+bool __attribute__((weak))
+pal_is_prot_card_prsnt(uint8_t fru)
+{
+    return false;
+}
+
 int
 pal_file_line_split(char **dst, char *src, char *delim, int maxsz) {
   if ((dst == NULL) || (src == NULL) || (delim == NULL)) {

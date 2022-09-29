@@ -49,7 +49,7 @@ def parse_config(configpath):
             + ") detected, falling back to 'file'",
         )
         log_handler = "file"
-    log_format = RestConfig.get("logging", "format", fallback="text")
+    log_format = RestConfig.get("logging", "format", fallback="default")
     if log_format not in VALID_LOG_FORMATS:
         # There is no logger yet, so we syslog the fallback warning ¯\_(ツ)_/¯
         syslog.syslog(

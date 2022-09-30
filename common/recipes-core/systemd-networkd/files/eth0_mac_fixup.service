@@ -20,7 +20,7 @@
 # systemd 234.  Ensure this starts before systemd-networkd.service instead.
 #
 [Unit]
-Description=Wedge MAC setter
+Description=Fixup BMC MAC Address
 Before=systemd-networkd.service
 After=setup_i2c.service
 

@@ -2170,6 +2170,155 @@ pal_parse_vr_alert_event(uint8_t fru, uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+static int
+parse_bank_mapping_name(uint8_t bank_num, char *error_log) {
+
+  switch (bank_num) {
+    case 0:
+      strcpy(error_log, "LS");
+      break;
+    case 1:
+      strcpy(error_log, "IF");
+      break;
+    case 2:
+      strcpy(error_log, "L2");
+      break;
+    case 3:
+      strcpy(error_log, "DE");
+      break;
+    case 4:
+      strcpy(error_log, "RAZ");
+      break;
+    case 5:
+      strcpy(error_log, "EX");
+      break;
+    case 6:
+      strcpy(error_log, "FP");
+      break;
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+      strcpy(error_log, "L3");
+      break;
+    case 15:
+      strcpy(error_log, "MP5");
+      break;
+    case 16:
+      strcpy(error_log, "PB");
+      break;
+    case 17:
+    case 18:
+      strcpy(error_log, "PCS_GMI");
+      break;
+    case 19:
+    case 20:
+      strcpy(error_log, "KPX_GMI");
+      break;
+    case 21:
+      strcpy(error_log, "UMC/PB");
+      break;
+    case 22:
+      strcpy(error_log, "UMC/PCIE");
+      break;
+    case 23:
+    case 24:
+      strcpy(error_log, "CS");
+      break;
+    case 25:
+      strcpy(error_log, "NBIO/SHUB");
+      break;
+    case 26:
+      strcpy(error_log, "PCIE/SATA");
+      break;
+    case 27:
+      strcpy(error_log, "PCIE/NBIF");
+      break;
+    case 28:
+      strcpy(error_log, "PIE/PSP/KPX_WAFL/NBIF/USB");
+      break;
+    case 29:
+      strcpy(error_log, "SMU/MPDMA");
+      break;
+    case 30:
+      strcpy(error_log, "PCS_XGMI");
+      break;
+    case 31:
+      strcpy(error_log, "KPX_SERDES");
+      break;
+    default:
+      strcpy(error_log, "UNKNOWN");
+      break;
+  }
+
+  return 0;
+}
+
+static int
+pal_parse_mce_error_sel(uint8_t fru, uint8_t *event_data, char *error_log) {
+  uint8_t bank_num;
+  uint8_t error_type = ((event_data[1] & 0x60) >> 5);
+  char temp_log[512] = {0};
+  char bank_mapping_name[32] = {0};
+
+  switch (event_data[0] & 0x0F)
+  {
+    case 0x0B: //Uncorrectable
+    {
+      switch (error_type) {
+        case 0x00:
+          strcat(error_log, "Uncorrected Recoverable Error, ");
+          break;
+        case 0x01:
+          strcat(error_log, "Uncorrected Thread Fatal Error, ");
+          break;
+        case 0x02:
+          strcat(error_log, "Uncorrected System Fatal Error, ");
+          break;
+        default:
+          strcat(error_log, "Unknown (Uncorrectable Type Event) ");
+          break;
+      }
+      break;
+    }
+
+    case 0x0C: //Correctable
+    {
+      switch (error_type) {
+        case 0x00:
+          strcat(error_log, "Correctable Error, ");
+          break;
+        case 0x01:
+          strcat(error_log, "Deferred Error, ");
+          break;
+        default:
+          strcat(error_log, "Unknown (Correctable Type Event), ");
+          break;
+      }
+      break;
+    }
+
+    default:
+    {
+      strcat(error_log, "Unknown Event Type, ");
+      break;
+    }
+  }
+  bank_num = event_data[1] & 0x1F;
+  parse_bank_mapping_name(bank_num, bank_mapping_name);
+  snprintf(temp_log, sizeof(temp_log), "Bank Number %d (%s), ", bank_num, bank_mapping_name);
+  strcat(error_log, temp_log);
+
+  snprintf(temp_log, sizeof(temp_log), "CPU %d, Core %d", ((event_data[2] & 0xF0) >> 4), (event_data[2] & 0x0F));
+  strcat(error_log, temp_log);
+
+  return 0;
+}
+
 static void
 pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **tbl, uint8_t *cnt) {
   uint8_t board_1u = TYPE_1OU_UNKNOWN;
@@ -2692,6 +2841,9 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       break;
     case BIOS_SENSOR_PMIC_ERR:
       pal_parse_pmic_err_event(fru, event_data, error_log);
+      break;
+    case MACHINE_CHK_ERR:
+      pal_parse_mce_error_sel(fru, event_data, error_log);
       break;
     case VR_OCP:
       pal_parse_vr_ocp_event(fru, event_data, error_log);

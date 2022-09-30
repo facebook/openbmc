@@ -160,6 +160,7 @@ void get_pmic_err_str(uint8_t err_type, char* str, uint8_t len);
 int bic_check_cable_status();
 int bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type);
 int bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len);
+int bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t *port_buff, uint8_t *len);
 int bic_get_mb_index(uint8_t *index);
 int bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) ;
 bool bic_is_prot_bypass(uint8_t fru);

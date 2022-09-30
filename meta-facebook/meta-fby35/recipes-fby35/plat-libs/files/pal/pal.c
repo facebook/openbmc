@@ -4650,3 +4650,41 @@ pal_is_prot_card_prsnt(uint8_t fru)
 {
     return fby35_common_is_prot_card_prsnt(fru);
 }
+
+#ifdef CONFIG_HALFDOME
+int
+pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, size_t max_len, size_t *res_len) {
+
+  int ret;
+  uint8_t status;
+  uint8_t len;
+
+  if (slot < FRU_SLOT1 || slot > FRU_SLOT4) {
+    return PAL_ENOTSUP;
+  }
+
+  ret = pal_is_fru_prsnt(slot, &status);
+  if (ret < 0) {
+     return -1;
+  }
+  if (status == 0) {
+    return PAL_ENOTREADY;
+  }
+
+  ret = pal_get_server_12v_power(slot, &status);
+  if(ret < 0 || status == SERVER_12V_OFF) {
+    return PAL_ENOTREADY;
+  }
+
+  if(!pal_is_slot_server(slot)) {
+    return PAL_ENOTSUP;
+  }
+
+  // Send command to get 80 port record from Bridge IC
+  ret = bic_request_post_buffer_page_data(slot, page_num, res_data, &len);
+  if (ret == 0)
+    *res_len = (size_t)len;
+
+  return ret;
+}
+#endif

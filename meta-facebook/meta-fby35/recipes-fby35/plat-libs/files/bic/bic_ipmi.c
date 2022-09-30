@@ -245,7 +245,7 @@ _get_sdr(uint8_t slot_id, ipmi_sel_sdr_req_t *req, ipmi_sel_sdr_res_t *res, uint
   int ret = 0;
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
-  uint8_t tlen = IANA_ID_SIZE + sizeof(ipmi_sel_sdr_req_t);  
+  uint8_t tlen = IANA_ID_SIZE + sizeof(ipmi_sel_sdr_req_t);
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
   memcpy(&tbuf[IANA_ID_SIZE], (uint8_t *)req, sizeof(ipmi_sel_sdr_req_t));
@@ -2092,17 +2092,42 @@ bic_get_card_type(uint8_t slot_id, uint8_t card_config, uint8_t *type) {
 }
 
 int
+bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t *port_buff, uint8_t *len) {
+  int ret;
+  uint8_t tbuf[4] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
+  uint8_t rlen = 0;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  tbuf[3] = page_num & 0xFF;
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, sizeof(tbuf), rbuf, &rlen);
+
+  if(0 != ret)
+    goto exit_done;
+
+  // Ignore first 3 bytes of IANA ID
+  memcpy(port_buff, &rbuf[3], rlen - 3);
+  *len = rlen - 3;
+
+exit_done:
+  return ret;
+}
+
+int
 bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_t input_len, uint32_t *output_len) {
   int ret = 0;
-  uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
+  uint8_t tbuf[4] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
   uint8_t rlen = 0;
   int totol_length = 0;
 
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
   for(int i = 0; i <= MAX_POST_CODE_PAGE; i++)
   {
     tbuf[3] = i & 0xFF;
-    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, 0x04, rbuf, &rlen);
+    ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_CODE_BUF, tbuf, sizeof(tbuf), rbuf, &rlen);
 
     if(0 != ret) {
       #ifdef DEBUG

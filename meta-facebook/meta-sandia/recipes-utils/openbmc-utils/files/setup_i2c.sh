@@ -26,3 +26,14 @@ source /usr/local/bin/openbmc-utils.sh
 #
 i2c_device_add 8 0x50 24c04
 i2c_device_add 8 0x54 24c64
+
+# Setup Chassis/PDB IDPROM
+setup_chassis_idprom() {
+    idp_path=$(i2cdetect -l | grep SCM_IDPROM)
+    if [ -n "${idp_path}" ]; then
+        bus=$(echo "${idp_path}" | tr "-" " " | awk '{print $2}')
+        i2c_device_add "${bus}" 0xa0d0 24c64 #Chassis IDPROM
+    fi
+}
+
+setup_chassis_idprom

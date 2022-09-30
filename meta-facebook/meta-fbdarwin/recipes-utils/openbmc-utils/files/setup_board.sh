@@ -63,6 +63,4 @@ setup_oob_switch() {
     oob-mdio-util.sh write16 "$ieee_vlan_control_page" "$vlan_port2_reg" "$vlan_port2_val"
 }
 
-find_serfmon.sh &
-
 setup_oob_switch

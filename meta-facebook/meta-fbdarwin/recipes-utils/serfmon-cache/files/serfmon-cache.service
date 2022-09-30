@@ -1,4 +1,4 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,29 +14,14 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=Cache and print serfmon and macmon
+After=mount_data1.service
+Wants=mount_data1.service
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Service]
+ExecStart=/usr/local/bin/find_serfmon.sh
 
-LOCAL_URI += "\
-    file://board-utils.sh \
-    file://dump_gpios.sh \
-    file://meta_info.sh \
-    file://oob-eeprom-util.sh \
-    file://oob-mdio-util.sh \
-    file://oob-status.sh \
-    file://setup-gpio.sh \
-    file://setup_board.sh \
-    file://show_tech.py \
-    "
-
-OPENBMC_UTILS_FILES += " \
-    dump_gpios.sh \
-    meta_info.sh \
-    oob-eeprom-util.sh \
-    oob-mdio-util.sh \
-    oob-status.sh \
-    show_tech.py \
-    "
-
-# Not needed for fbdarwin
-SYSTEMD_SERVICE:${PN}:remove = "setup_i2c.service power-on.service"
+[Install]
+WantedBy=multi-user.target

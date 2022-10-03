@@ -147,10 +147,11 @@ def is_dev_prsnt(filename):
 def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute["type"] == "power_status":
+            (board, sname) = sname.split("_", 1)
             file = "/var/run/power-util_%d.lock" % int(fru_map[board]["slot_num"])
             if os.path.exists(file):
                 return 0
-            if board.find("slot") != -1:
+            if "slot" in board:
                 if (
                     lpal_hndl.pal_is_fw_update_ongoing(int(fru_map[board]["slot_num"]))
                     == True
@@ -163,7 +164,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
             if (ret != 0) or (status.value == 5):  # SERVER_12V_OFF
                 return 0
 
-            if sname.find("fio_") != -1:
+            if "fio_" in sname:
                 return 1
 
             if status.value == 1:  # power on
@@ -171,7 +172,7 @@ def sensor_valid_check(board, sname, check_name, attribute):
                 if ready != 1:
                     return 0
 
-                if sname.find("dimm") != -1:
+                if "dimm" in sname:
                     dimm_name = (
                         "sys_config/"
                         + fru_map[board]["name"]
@@ -202,9 +203,12 @@ def get_fan_mode(scenario="None"):
 
 
 def sensor_fail_ignore_check(board, sname):
-    if "slot" not in board:
+    if "e1s_" in sname:
+        return True
+    elif "slot" not in sname:
         return False
     else:
+        (board, sname) = sname.split("_", 1)
         slot_id = fru_map[board]["slot_num"]
         pin_val = c_uint8(0)
         lbic_hndl.bic_get_one_gpio_status(

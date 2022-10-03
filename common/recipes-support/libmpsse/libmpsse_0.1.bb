@@ -14,7 +14,7 @@ SRC_URI = " file://libmpsse \
 def libftdi_option(d):
     distro = d.getVar('DISTRO_CODENAME', True)
 
-    if distro in ['dunfell', 'kirkstone', 'master']:
+    if distro in ['dunfell', 'kirkstone']:
         return "-Dlibftdi-1p4=enabled"
     return ""
 

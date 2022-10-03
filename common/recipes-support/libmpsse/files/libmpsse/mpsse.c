@@ -75,7 +75,7 @@ tap_tms_with_read(struct ftdi_context *ftdi, int tms, uint8_t bit7) {
 }
 
 //Send TMS and TDI only
-int 
+int
 tap_tms(struct ftdi_context *ftdi, int tms, uint8_t bit7) {
   uint8_t buf[3] = {0};
   int size = 0;
@@ -147,7 +147,7 @@ mpsse_jtag_write(struct ftdi_context *ftdi, int num_of_bits, uint8_t *in, uint8_
     }
     ret = 0;
   } while(0);
- 
+
   return ret;
 }
 
@@ -263,7 +263,7 @@ tap_readwrite(struct ftdi_context *ftdi, int write_bits, uint8_t *in, int read_b
       if ( mpsse_write(ftdi, 4, buf) < 0 ) break;
       if ( mpsse_read(ftdi, 1, &tmp_val) < 0 ) break;
       out[num_of_write_bytes] = tmp_val >> (8-last_write_bits);
- 
+
       if ( last_trans == 1 ) {
         if ( tap_tms_with_read(ftdi, 0x1, in[num_of_write_bytes] >> (last_write_bits)) < 0 ) break;
         if ( mpsse_read(ftdi, 1, &tmp_val) < 0 ) break;
@@ -304,6 +304,57 @@ find_devlist(struct ftdi_context *ftdi) {
     printf("Manufacturer: %s, Description: %s\n\n", manufacturer, description);
     curr = curr->next;
   }
+
+do_delist:
+  ftdi_list_free(&devlist);
+
+  return ret;
+}
+
+int
+open_dev_bypath(struct ftdi_context *ftdi, int len, uint8_t ports[]) {
+  int ret = 0;
+  int i = 0, j = 0;
+  struct ftdi_device_list *devlist = NULL;
+  struct ftdi_device_list *curr = NULL;
+  char manufacturer[128] = {0x0}, description[128] = {0x0};
+  uint8_t dev_ports[7] = {0};
+
+  printf("Checking for FTDI devices...");
+  ret = ftdi_usb_find_all(ftdi, &devlist, 0, 0);
+  if ( ret < 0 ) {
+    fprintf(stderr, "ftdi_usb_find_all failed: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+    return ret;
+  }
+
+  printf("Number of FTDI devices found: %d\n", ret);
+  i = 0;
+  for (curr = devlist; curr != NULL; i++) {
+    printf("Checking device: %d\n", i);
+    ret = ftdi_usb_get_strings(ftdi, curr->dev, manufacturer, 128, description, 128, NULL, 0);
+    if ( ret < 0) {
+      fprintf(stderr, "ftdi_usb_get_strings failed: %d (%s)\n", ret, ftdi_get_error_string(ftdi));
+      goto do_delist;
+    }
+    printf("Manufacturer: %s, Description: %s\n\n", manufacturer, description);
+
+    if (len == libusb_get_port_numbers(curr->dev, dev_ports, 7)) {
+      for (j = 0; j < len; ++j) {
+        if (dev_ports[j] != ports[j]) {
+          break;
+        }
+      }
+
+      if (j == len) {
+        return ftdi_usb_open_dev(ftdi, curr->dev);
+      }
+    }
+
+    curr = curr->next;
+  }
+
+  printf("Device not found!\n");
+  return -1;
 
 do_delist:
   ftdi_list_free(&devlist);
@@ -429,16 +480,70 @@ init_dev(struct ftdi_context *ftdi) {
 }
 
 int
+init_dev_no_open(struct ftdi_context *ftdi) {
+  int ret = -1;
+
+  do {
+    printf("Configuring port for MPSSE use...\n");
+
+    ret = ftdi_usb_reset(ftdi);
+    if ( ret < 0 ) {
+      printf("%s() Unable to reset ftdi device: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+
+    ret = ftdi_set_event_char(ftdi, 0, 0);
+    if ( ret < 0 ) {
+      printf("%s() Unable to disable event char: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+
+    ret = ftdi_set_error_char(ftdi, 0, 0);
+    if ( ret < 0 ) {
+      printf("%s() Unable to disable error char: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+
+    ret = ftdi_set_latency_timer(ftdi, 255); //255ms, 0~255
+    if ( ret < 0 ) {
+      printf("%s() Unable to set latency timer: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+
+    ret = ftdi_tcioflush(ftdi);
+    if ( ret < 0 ) {
+      printf("%s() Unable to purge buffers: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+
+    ret = ftdi_set_bitmode(ftdi, 0x00, BITMODE_RESET);
+    if ( ret < 0 ) {
+      printf("%s() Unable to reset device: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+
+    ret = ftdi_set_bitmode(ftdi, 0x00, BITMODE_MPSSE);
+    if ( ret < 0 ) {
+      printf("%s() Unable to set BITMODE_MPSSE: %d (%s)\n", __func__, ret, ftdi_get_error_string(ftdi));
+      break;
+    }
+    ret = 0;
+  } while(0);
+
+  return ret;
+}
+
+int
 mpsse_trigger_trst(struct ftdi_context *ftdi) {
   uint8_t ftdi_init[] = { SET_BITS_LOW, 0x18, 0x1B, /*val, dir*/
                           GET_BITS_LOW,
-                         
+
                           SET_BITS_LOW, 0x08, 0x1B, /*val, dir*/
                           GET_BITS_LOW,
 
                           SET_BITS_LOW, 0x18, 0x1B, /*val, dir*/
                           GET_BITS_LOW};
- 
+
   if ( mpsse_write(ftdi, sizeof(ftdi_init), ftdi_init) < 0 ) {
     return -1;
   }
@@ -478,7 +583,7 @@ mpsse_init_conf(struct ftdi_context *ftdi, uint16_t tck) {
   if ( mpsse_write(ftdi, sizeof(ftdi_init), ftdi_init) < 0 ) {
     return -1;
   }
-    
+
   uint8_t data[2] = {0x0};
   ret = mpsse_read(ftdi, 2, data); //only read GPIO val
   printf("Read bits_low_val: 0x%02X, bits_high_val: 0x%02X\n", data[0], data[1]);

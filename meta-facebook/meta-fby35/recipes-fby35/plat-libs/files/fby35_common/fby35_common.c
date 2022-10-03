@@ -37,7 +37,7 @@
 #include "fby35_common.h"
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
-const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp"};
+const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp", "ocpdbg"};
 const char plat_sig[PLAT_SIG_SIZE] = "Yosemite V3.5   ";
 const char plat_sig_vf[PLAT_SIG_SIZE] = "Yosemite V3     ";
 

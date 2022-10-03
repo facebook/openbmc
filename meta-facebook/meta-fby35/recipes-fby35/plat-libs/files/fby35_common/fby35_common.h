@@ -84,7 +84,7 @@ extern "C" {
 
 extern const char *slot_usage;
 
-#define MAX_NUM_FRUS 8
+#define MAX_NUM_FRUS 9
 
 #define MAX_SYS_REQ_LEN  128  //include the string terminal
 #define MAX_SYS_RESP_LEN 128  //include the string terminal
@@ -141,6 +141,7 @@ enum {
   FRU_NIC       = 6,
   FRU_BMC       = 7,
   FRU_NICEXP    = 8, //the fru is used when bmc is located on class 2
+  FRU_OPCDBG    = 9,
   FRU_AGGREGATE = 0xff, //sensor-util will call pal_get_fru_name(). Add this virtual fru for sensor-util.
 };
 

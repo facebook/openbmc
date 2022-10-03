@@ -2506,7 +2506,7 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     SYS_MB_THROTTLE    = 0x07,
     SYS_HSC_FAULT      = 0x08,
     SYS_RSVD           = 0x09,
-    SYS_WDT_TIMEOUT    = 0x0A,
+    SYS_S0_PWR_FAILURE = 0x0A,
     SYS_M2_VPP         = 0x0B,
     SYS_M2_PGOOD       = 0x0C,
     SYS_VCCIO_FAULT    = 0x0D,
@@ -2553,8 +2553,8 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *event_data, char *error_log) {
     case SYS_HSC_FAULT:
       strcat(error_log, "HSC fault");
       break;
-    case SYS_WDT_TIMEOUT:
-      strcat(error_log, "VR Watchdog timeout");
+    case SYS_S0_PWR_FAILURE:
+      strcat(error_log, "S0 power on failure");
       break;
     case SYS_M2_VPP:
       pal_get_m2vpp_str_name(fru, event_data[1], event_data[2], error_log);

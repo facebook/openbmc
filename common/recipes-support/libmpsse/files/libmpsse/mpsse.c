@@ -33,6 +33,11 @@
 #define MAX_PKT_SIZE 0x10000
 #define MAX_RETRY 10
 
+// Forward declare some ftdi functions since they are only in libftdi-1.5+.
+int ftdi_tciflush(struct ftdi_context *ftdi);
+int ftdi_tcoflush(struct ftdi_context *ftdi);
+int ftdi_tcioflush(struct ftdi_context *ftdi);
+
 static int
 mpsse_read(struct ftdi_context *ftdi, int num_of_bytes, uint8_t *out) {
   int i = MAX_RETRY;
@@ -358,62 +363,6 @@ open_dev_bypath(struct ftdi_context *ftdi, int len, uint8_t ports[]) {
 
 do_delist:
   ftdi_list_free(&devlist);
-
-  return ret;
-}
-
-// clear buffer correctly
-#define SIO_TCIFLUSH 2
-#define SIO_TCOFLUSH 1
-static int ftdi_tciflush(struct ftdi_context *ftdi)
-{
-    if (ftdi == NULL || ftdi->usb_dev == NULL)
-        printf("%s() USB device unavailable\n", __func__);
-
-    if (libusb_control_transfer(ftdi->usb_dev, FTDI_DEVICE_OUT_REQTYPE,
-                                SIO_RESET_REQUEST, SIO_TCIFLUSH,
-                                ftdi->index, NULL, 0, ftdi->usb_write_timeout) < 0)
-        printf("%s() FTDI purge of RX buffer failed\n", __func__);
-
-    // Invalidate data in the readbuffer
-    ftdi->readbuffer_offset = 0;
-    ftdi->readbuffer_remaining = 0;
-    return 0;
-}
-
-static int ftdi_tcoflush(struct ftdi_context *ftdi)
-{
-    if (ftdi == NULL || ftdi->usb_dev == NULL)
-        printf("%s() USB device unavailable\n", __func__);
-
-    if (libusb_control_transfer(ftdi->usb_dev, FTDI_DEVICE_OUT_REQTYPE,
-                                SIO_RESET_REQUEST, SIO_TCOFLUSH,
-                                ftdi->index, NULL, 0, ftdi->usb_write_timeout) < 0)
-        printf("%s() FTDI purge of TX buffer failed\n", __func__);
-
-    return 0;
-}
-
-int ftdi_tcioflush(struct ftdi_context *ftdi) {
-  int ret = -1;
-
-  do {
-    if (ftdi == NULL || ftdi->usb_dev == NULL) {
-      printf("%s() USB device unavailable\n", __func__);
-      break;
-    }
-
-    if ( ftdi_tcoflush(ftdi) < 0) {
-      printf("%s() Failed to do ftdi_tcoflush\n", __func__);
-      break;
-    }
-
-    if ( ftdi_tciflush(ftdi) < 0) {
-      printf("%s() Failed to do ftdi_tciflush\n", __func__);
-      break;
-    }
-    ret = 0;
-  } while(0);
 
   return ret;
 }

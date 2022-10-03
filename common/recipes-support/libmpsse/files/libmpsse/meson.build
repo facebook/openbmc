@@ -14,6 +14,10 @@ libs = [
 
 srcs = files('mpsse.c')
 
+if get_option('libftdi-1p4').enabled()
+    srcs += files('libftdi-1p4.c')
+endif
+
 # libmpsse lib
 ags_lib = shared_library('mpsse', srcs,
     dependencies: libs,

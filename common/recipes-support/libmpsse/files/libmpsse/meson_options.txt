@@ -1,0 +1,2 @@
+option('libftdi-1p4', type: 'feature', value: 'disabled',
+       description: 'Include support for older libftdi versions')

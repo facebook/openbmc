@@ -1514,6 +1514,15 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
     }
   }
 
+  if (comp == FW_VR) {
+    printf("Disabling VR monitor...\n");
+    if (bic_set_vr_monitor_enable(slot_id, false, intf) < 0) {
+      ret = BIC_STATUS_FAILURE;
+      printf("%s() Failed to disable VR monitor\n", __func__);
+      goto error_exit;
+    }
+  }
+
   ret = _lookup_vr_devid(slot_id, comp, intf, devid, &sel_vendor, &vr_bus);
   if ( ret < 0 ) goto error_exit;
 
@@ -1574,6 +1583,13 @@ update_bic_vr(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t 
   ret = (usb_update == true)?vr_usb_program(slot_id, sel_vendor, comp, &vr_list[0], force): \
                              vr_tool[sel_vendor].program(slot_id, &vr_list[0], force);
 error_exit:
+  if (comp == FW_VR) {
+    printf("Enabling VR monitor...\n");
+    if (bic_set_vr_monitor_enable(slot_id, true, intf) < 0) {
+      ret = BIC_STATUS_FAILURE;
+      printf("%s() Failed to enable VR monitor\n", __func__);
+    }
+  }
 
   return ret;
 }

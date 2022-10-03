@@ -1021,6 +1021,18 @@ bic_enable_vr_fault_monitor(uint8_t slot_id, bool enable, uint8_t intf) {
 }
 
 int
+bic_set_vr_monitor_enable(uint8_t slot_id, bool enable, uint8_t intf) {
+  uint8_t tbuf[SIZE_IANA_ID + 1] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+  uint8_t rlen = 0;
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, SIZE_IANA_ID);
+  tbuf[3] = (uint8_t)enable;  // 1: enable vr monitor; 0: disable vr monitor
+
+  return bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_VR_MON_ENABLE, tbuf, (uint8_t)sizeof(tbuf), rbuf, &rlen, intf);
+}
+
+int
 bic_get_gpv3_pci_link(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
   uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
   uint8_t tlen = 3;

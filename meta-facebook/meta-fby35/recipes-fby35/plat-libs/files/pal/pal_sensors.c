@@ -1377,12 +1377,15 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
       } else if (board_type == GPV3_MCHP_BOARD || board_type == GPV3_BRCM_BOARD) {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_sensor_list, bic_2ou_gpv3_sensor_cnt);
         current_cnt += bic_2ou_gpv3_sensor_cnt;
-      } else if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bmc_dpv2_x8_sensor_list, bmc_dpv2_x8_sensor_cnt);
-        current_cnt += bmc_dpv2_x8_sensor_cnt;
-      } else if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
-        memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dpv2_x16_sensor_list, bic_dpv2_x16_sensor_cnt);
-        current_cnt += bic_dpv2_x16_sensor_cnt;
+      } else if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD || (board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
+        if ((board_type & DPV2_X8_BOARD) == DPV2_X8_BOARD) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bmc_dpv2_x8_sensor_list, bmc_dpv2_x8_sensor_cnt);
+          current_cnt += bmc_dpv2_x8_sensor_cnt;
+        }
+        if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
+          memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_dpv2_x16_sensor_list, bic_dpv2_x16_sensor_cnt);
+          current_cnt += bic_dpv2_x16_sensor_cnt;
+        }
       } else {
         memcpy(&bic_dynamic_sensor_list[fru-1][current_cnt], bic_2ou_sensor_list, bic_2ou_sensor_cnt);
         current_cnt += bic_2ou_sensor_cnt;

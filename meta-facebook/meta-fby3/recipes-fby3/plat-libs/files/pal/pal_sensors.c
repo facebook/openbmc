@@ -2444,6 +2444,12 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     return READING_NA;
   }
 
+  if (sensor_num == BIC_SENSOR_M2B_TEMP) {
+    if (pal_is_sensor_valid(fru, sensor_num)) {
+      return READING_NA;
+    }
+  }
+
   if (power_status != SERVER_POWER_ON) {
     pwr_off_flag[node-1] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);

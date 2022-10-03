@@ -608,7 +608,7 @@ return 0;
 int
 sdr_init(char *path, sensor_info_t *sinfo) {
 int fd;
-uint8_t buf[MAX_SDR_LEN] = {0};
+uint8_t buf[sizeof(sdr_full_t)] = {0};
 uint8_t bytes_rd = 0;
 uint8_t snr_num = 0;
 sdr_full_t *sdr;
@@ -641,7 +641,7 @@ return 0;
 int
 yosemite_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo) {
   int fd;
-  uint8_t buf[MAX_SDR_LEN] = {0};
+  uint8_t buf[sizeof(sdr_full_t)] = {0};
   uint8_t bytes_rd = 0;
   uint8_t sn = 0;
   char path[64] = {0};

@@ -60,6 +60,7 @@ extern "C" {
 
 #define VR_NEW_CRC_STR "slot%d_vr_%s_new_crc"
 #define VR_CRC_STR "slot%d_vr_%s_crc"
+#define VR_1OU_NEW_CRC_STR "slot%d_1ou_vr_%s_new_crc"
 #define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
 extern const char pal_fru_list_print[];

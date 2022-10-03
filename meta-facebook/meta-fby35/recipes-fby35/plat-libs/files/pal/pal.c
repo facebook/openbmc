@@ -3073,12 +3073,18 @@ pal_get_uart_select_from_kv(uint8_t *uart_select) {
 int
 pal_clear_vr_crc(uint8_t fru) {
   char ver_key[MAX_KEY_LEN] = {0};
-  for (int j = 0; j < 3; j++) {
+
+  for (int j = 0; j < ARRAY_SIZE(pal_vr_addr_list); j++) {
     snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
     kv_del(ver_key, KV_FPERSIST);
 
     snprintf(ver_key, sizeof(ver_key), VR_CRC_STR, fru, pal_vr_addr_list[j]);
     kv_del(ver_key, 0);
+  }
+
+  for (int j = 0; j < ARRAY_SIZE(pal_vr_1ou_addr_list); j++) {
+    snprintf(ver_key, sizeof(ver_key), VR_1OU_NEW_CRC_STR, fru, pal_vr_1ou_addr_list[j]);
+    kv_del(ver_key, KV_FPERSIST);
 
     snprintf(ver_key, sizeof(ver_key), VR_1OU_CRC_STR, fru, pal_vr_1ou_addr_list[j]);
     kv_del(ver_key, 0);
@@ -3086,37 +3092,38 @@ pal_clear_vr_crc(uint8_t fru) {
   return 0;
 }
 
+static void
+pal_move_kv(char* key, uint8_t action) {
+  int ret = 0;
+  char value[MAX_VALUE_LEN] = {0};
+  unsigned int src,dst;
+
+  src = (action == PERSIST_TO_TEMP) ? KV_FPERSIST : 0;
+  dst = (action == PERSIST_TO_TEMP) ? 0 : KV_FPERSIST;
+
+  if (kv_get(key, value, NULL, src) == 0) {
+    ret = kv_set(key, value, 0, dst);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+    }
+    kv_del(key, src);
+  }
+}
+
 int
 pal_move_vr_new_crc(uint8_t fru, uint8_t action) {
-  int ret = 0;
   char ver_key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
 
-  for (int j = 0; j < 3; j++) {
-    if (action == PERSIST_TO_TEMP) {
-      snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
-      if (kv_get(ver_key, value, NULL, KV_FPERSIST) == 0) {
-        ret = kv_set(ver_key, value, 0, 0);
-        if (ret < 0) {
-          syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, ver_key);
-        }
-        kv_del(ver_key, KV_FPERSIST);
-      }
-    } else if (action == TEMP_TO_PERSIST) {
-      snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
-      if (kv_get(ver_key, value, NULL, 0) == 0) {
-        ret = kv_set(ver_key, value, 0, KV_FPERSIST);
-        if (ret < 0) {
-          syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, ver_key);
-        }
-        kv_del(ver_key, 0);
-      }
-    } else {
-      syslog(LOG_WARNING, "%s() moving action is not support", __func__);
-    }
+  for (int j = 0; j < ARRAY_SIZE(pal_vr_addr_list); j++) {
+    snprintf(ver_key, sizeof(ver_key), VR_NEW_CRC_STR, fru, pal_vr_addr_list[j]);
+    pal_move_kv(ver_key, action);
   }
 
-  return ret;
+  for (int j = 0; j < ARRAY_SIZE(pal_vr_1ou_addr_list); j++) {
+    snprintf(ver_key, sizeof(ver_key), VR_1OU_NEW_CRC_STR, fru, pal_vr_1ou_addr_list[j]);
+    pal_move_kv(ver_key, action);
+  }
+  return 0;
 }
 
 int

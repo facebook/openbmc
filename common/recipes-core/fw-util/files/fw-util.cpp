@@ -362,7 +362,13 @@ int main(int argc, char *argv[])
             syslog(LOG_WARNING, "Error getting single_instance_lock");
           }
           if (c->is_update_ongoing()) {
-            cerr << "Upgrade aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+            if (action == "--version") {
+              cerr << "Block getting version due to ongoing upgrade on FRU: " << c->fru() << endl;
+            } else if (action == "--update") {
+              cerr << "Upgrade aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+            } else {
+              cerr << "Action " << action << "aborted due to ongoing upgrade on FRU: " << c->fru() << endl;
+            }
             single_instance_unlock(lfd);
             return -1;
           }

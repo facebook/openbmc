@@ -10,7 +10,7 @@ function validate_environment(){
 }
 
 function  get_build_platform(){
-    BUILD_PLATFORM=$(grep BBFILE_COLLECTIONS "$TEMPLATECONF/layer.conf"| cut -d'"' -f 2)
+    BUILD_PLATFORM=$(grep BBFILE_COLLECTIONS "$TEMPLATECONF/../../layer.conf"| cut -d'"' -f 2)
     echo "$BUILD_PLATFORM"
 }
 

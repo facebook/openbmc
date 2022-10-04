@@ -97,9 +97,9 @@ if [ -z "$TEMPLATECONF" ]; then
         return 1
     fi
     if [ -d "$(pwd)/$1" ]; then
-        TEMPLATECONF="$(pwd)/$1/conf"
+        TEMPLATECONF="$(pwd)/$1/conf/templates/default"
     elif [ -d "$(pwd)/meta-$1" ]; then
-        TEMPLATECONF="$(pwd)/meta-$1/conf"
+        TEMPLATECONF="$(pwd)/meta-$1/conf/templates/default"
     else
         machines=$(find . -maxdepth 6 -path "*/machine/*" '(' -type f -o -type l ')' )
         for md in ${machines}; do
@@ -107,7 +107,7 @@ if [ -z "$TEMPLATECONF" ]; then
             meta=$(dirname "$(dirname "$md")")
             meta=$(echo "$meta" | sed 's/\.\///')
             if [ "x$machine" = "x$platform" ]; then
-                TEMPLATECONF="$(pwd)/$meta"
+                TEMPLATECONF="$(pwd)/$meta/templates/default"
                 platform=$(basename "$(dirname "$meta")")
                 export MACHINE="${machine}"
                 break

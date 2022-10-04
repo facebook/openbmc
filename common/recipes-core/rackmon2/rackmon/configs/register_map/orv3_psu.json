@@ -33,67 +33,67 @@
             "begin": 0,
             "length": 8,
             "format": "string",
-            "name": "PSU FB Part #"
+            "name": "PSU_FBPN"
         },
         {
             "begin": 8,
             "length": 8,
             "format": "string",
-            "name": "PSU MFR Model"
+            "name": "PSU_MFR_Model"
         },
         {
             "begin": 16,
             "length": 8,
             "format": "string",
-            "name": "PSU MFR Date"
+            "name": "PSU_MFR_Date"
         },
         {
             "begin": 24,
             "length": 16,
             "format": "string",
-            "name": "PSU MFR Serial #"
+            "name": "PSU_MFR_Serial"
         },
         {
             "begin": 40,
             "length": 4,
             "format": "string",
-            "name": "PSU Workorder #"
+            "name": "PSU_Workorder"
         },
         {
             "begin": 44,
             "length": 4,
             "format": "string",
-            "name": "PSU HW Revision"
+            "name": "PSU_HW_Revision"
         },
         {
             "begin": 48,
             "length": 4,
             "format": "string",
-            "name": "PSU FW Revision"
+            "name": "PSU_FW_Revision"
         },
         {
             "begin": 52,
             "length": 2,
             "format": "integer",
-            "name": "Total Uptime"
+            "name": "Total_Up_Time"
         },
         {
             "begin": 54,
             "length": 2,
             "format": "integer",
-            "name": "Time Since Last On"
+            "name": "Time_Since_Last_On"
         },
         {
             "begin": 56,
             "length": 1,
             "format": "integer",
-            "name": "AC Power Cycle Counter"
+            "name": "AC_Power_Cycle_Counter"
         },
         {
             "begin": 57,
             "length": 1,
             "format": "integer",
-            "name": "AC Outage Counter"
+            "name": "AC_Outage_Counter"
         },
         {
             "begin": 60,
@@ -102,16 +102,16 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [11, "Fan Alarm"],
-                [10, "Temp Alarm"],
-                [9, "DC/DC Converter Failure"],
-                [8, "PFC Converter Failure"],
+                [11, "Fan_Alarm"],
+                [10, "Temp_Alarm"],
+                [9, "DCDC_Converter_Failure"],
+                [8, "PFC_Converter_Fail"],
                 [3, "Communication"],
                 [2, "Temperature"],
-                [1, "DCRC"],
+                [1, "DCDC"],
                 [0, "PFC"]
             ],
-            "name": "General Alarm Status Register"
+            "name": "General_Alarm_Status_Register"
         },
         {
             "begin": 61,
@@ -120,16 +120,16 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [11, "PFC OCP"],
-                [10, "Input Relay Off"],
-                [9, "Bulk Not OK"],
-                [8, "AC Not OK"],
-                [5, "AC Frequency High"],
-                [4, "AC Frequency Low"],
+                [11, "PFC_Fail"],
+                [10, "Input_Relay_Off"],
+                [9, "Bulk_Not_Ok"],
+                [8, "AC_Not_OK"],
+                [5, "Freq_High"],
+                [4, "Freq_Low"],
                 [1, "AC_OVP"],
                 [0, "AC_UVP"]
             ],
-            "name": "PFC Alarm Status Register"
+            "name": "PFC_Alarm_Status_Register"
         },
         {
             "begin": 62,
@@ -138,15 +138,15 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [10, "ORing Fail"],
-                [9, "Secondary MCU Fail"],
-                [8, "DC/DC Fail"],
-                [3, "Main SCKT"],
-                [2, "Main OCP"],
-                [1, "Main OVP"],
-                [0, "Main OVP"]
+                [10, "Oring_Fail"],
+                [9, "Secondary_MCU_Fail"],
+                [8, "DCDC_Fail"],
+                [3, "Main_SCKT"],
+                [2, "Main_OCP"],
+                [1, "Main_OVP"],
+                [0, "Main_UVP"]
             ],
-            "name": "DCDC Alarm Status Register"
+            "name": "DCDC_Alarm_Status_Register"
         },
         {
             "begin": 63,
@@ -155,15 +155,15 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [8, "Fan Failure"],
-                [5, "PFC Temp Alarm"],
-                [4, "LLC Temp Alarm"],
-                [3, "Sync Temp Alarm"],
-                [2, "ORing Temp Alarm"],
-                [1, "Inlet Temp Alarm"],
-                [0, "Outlet Temp Alarm"]
+                [8, "Fan_Failure"],
+                [5, "PFC_Temp_Alarm"],
+                [4, "LLC_Temp_Alarm"],
+                [3, "Sync_Temp_Alarm"],
+                [2, "Oring_Temp_Alarm"],
+                [1, "Inlet_Temp_Alarm"],
+                [0, "Outlet_Temp_Alarm"]
             ],
-            "name": "Temperature Alarm Status Register"
+            "name": "Temperature_Alarm_Status_Register"
         },
         {
             "begin": 64,
@@ -172,26 +172,26 @@
             "changes_only": true,
             "format": "flags",
             "flags": [
-                [9, "PMBus Active Fault"],
-                [8, "Modbus Active Fault"],
-                [1, "Secondary - Logic MCU Fault"],
-                [0, "Primary - Secondary MCU Fault"]
+                [9, "PMBus_Active"],
+                [8, "Modbus_Active"],
+                [1, "Secondary_Logic_MCU_Fault"],
+                [0, "Primary_Secondary_MCU_Fault"]
             ],
-            "name": "Communication Alarm Status Register"
+            "name": "Communication_Alarm_Status_Register"
         },
         {
             "begin": 67,
             "length": 1,
             "keep": 10,
             "format": "integer",
-            "name": "PSU RPM Fan0"
+            "name": "PSU_RPM_Fan0"
         },
         {
             "begin": 68,
             "length": 1,
             "keep": 10,
             "format": "integer",
-            "name": "PSU RPM Fan1"
+            "name": "PSU_RPM_Fan1"
         },
         {
             "begin": 69,
@@ -199,7 +199,7 @@
             "keep": 10,
             "format": "float",
             "precision": 7,
-            "name": "PSU Temp0 Inlet"
+            "name": "PSU_Temp0_Inlet"
         },
         {
             "begin": 70,
@@ -207,7 +207,7 @@
             "keep": 10,
             "format": "float",
             "precision": 7,
-            "name": "PSU Temp1 Outlet"
+            "name": "PSU_Temp1_Outlet"
         },
         {
             "begin": 71,
@@ -215,7 +215,7 @@
             "keep": 10,
             "format": "float",
             "precision": 7,
-            "name": "PSU Max Temperature"
+            "name": "PSU_Max_Temp"
         },
         {
             "begin": 72,
@@ -223,200 +223,206 @@
             "keep": 10,
             "format": "float",
             "precision": 7,
-            "name": "PSU Min Temperature"
+            "name": "PSU_Min_Temp"
         },
         {
             "begin": 73,
             "length": 2,
-            "format": "float",
-            "precision": 0,
-            "name": "PSU Position Number"
+            "format": "integer",
+            "name": "PSU_Position_Number"
         },
         {
             "begin": 75,
             "length": 2,
             "format": "integer",
-            "name": "CRC Error Counter"
+            "name": "CRC_Error_Counter"
         },
         {
             "begin": 77,
             "length": 2,
             "format": "integer",
-            "name": "Timeout Error Counter"
+            "name": "Timeout_Error_Counter"
         },
         {
             "begin": 79,
             "length": 1,
             "format": "float",
             "precision": 10,
-            "name": "PSU Output Voltage"
+            "name": "PSU_Output_Voltage"
         },
         {
             "begin": 80,
             "length": 1,
             "format": "float",
             "precision": 6,
-            "name": "PSU Output Current"
+            "name": "PSU_Output_Current"
         },
         {
             "begin": 81,
             "length": 1,
             "format": "float",
             "precision": 6,
-            "name": "I Share Current Value"
+            "name": "I_Share_Current_Value"
         },
         {
             "begin": 82,
             "length": 1,
             "format": "float",
             "precision": 3,
-            "name": "PSU Output Power"
+            "name": "PSU_Output_Power"
         },
         {
             "begin": 83,
             "length": 1,
             "format": "float",
             "precision": 6,
-            "name": "PSU Bulk Cap Voltage"
+            "name": "PSU_Bulk_Cap_Voltage"
         },
         {
             "begin": 84,
             "length": 1,
             "format": "float",
             "precision": 0,
-            "name": "PSU Input Frequency AC"
+            "name": "PSU_Input_Frequency_AC"
         },
         {
             "begin": 85,
             "length": 1,
             "format": "float",
             "precision": 9,
-            "name": "PSU iTHD"
+            "name": "PSU_ITHD"
         },
         {
             "begin": 86,
             "length": 1,
             "format": "float",
             "precision": 9,
-            "name": "PSU Power Factor"
+            "name": "PSU_Power_Factor"
         },
         {
             "begin": 87,
             "length": 1,
             "format": "float",
             "precision": 3,
-            "name": "PSU Input Power"
+            "name": "PSU_Input_Power"
         },
         {
             "begin": 88,
             "length": 1,
             "format": "float",
             "precision": 6,
-            "name": "PSU Input Voltage AC"
+            "name": "PSU_Input_Voltage_AC"
         },
         {
             "begin": 89,
             "length": 1,
             "format": "float",
             "precision": 10,
-            "name": "PSU Input Current AC"
+            "name": "PSU_Input_Current_AC"
         },
         {
             "begin": 90,
             "length": 1,
             "format": "integer",
-            "name": "PSU Fault Counter"
+            "name": "PSU_Fault_Counter"
+        },
+        {
+            "begin": 92,
+            "length": 2,
+            "format": "integer",
+            "name": "Power_Cycle_Unix_Time"
         },
         {
             "begin": 94,
             "length": 1,
             "format": "flags",
             "flags": [
-                [14, "Clear PSU Faults and Latch"],
-                [13, "VO_SEL Pin Enable"],
-                [12, "HW Reset Pin Enable"],
-                [11, "Active Current Sharing Enable"],
-                [10, "Operation At Low Voltage Enable"],
-                [9, "Output Voltage Setting (set 51v else 48v)"],
-                [8, "PLS Enable"],
-                [0, "Enable Writing on PSU"]
+                [15, "Power_Cycle_5s"],
+                [14, "Clear_Faults_Latch"],
+                [13, "VO_Sel_Pin_Enable"],
+                [12, "HW_Reset_Pin_Enable"],
+                [11, "Active_Current_Sharing_Enable"],
+                [10, "Operation_At_Low_Voltage"],
+                [9, "Output_Voltage_Setting_51V_48V"],
+                [8, "PLS_Enable_Disable"],
+                [0, "PSU_Write_Enable"]
             ],
-            "name": "PSU Settings Register"
+            "name": "PSU_Setting_Register"
         },
         {
             "begin": 95,
             "length": 1,
             "format": "integer",
-            "name": "Communication Baudrate"
+            "name": "Communication_Baud_Rate"
         },
         {
             "begin": 96,
             "length": 1,
             "format": "integer",
-            "name": "Fan Duty-Cycle Override"
+            "name": "Fan_Duty_Cycle_Override"
         },
         {
             "begin": 97,
             "length": 1,
             "format": "flags",
             "flags": [
-                [6, "Amber LED On"],
-                [5, "Blue LED On"],
-                [0, "LED Override Enable"]
+                [6, "Amber_LED"],
+                [5, "Blue_LED"],
+                [0, "LED_Override"]
             ],
-            "name": "LED Override"
+            "name": "LED_Override"
         },
         {
             "begin": 98,
             "length": 2,
             "format": "integer",
-            "name": "UNIX Time"
+            "name": "Unix_Time"
         },
         {
             "begin": 100,
             "length": 1,
             "format": "integer",
-            "name": "Configurable PLS Timing"
+            "name": "Configurable_PLS_Timing"
         },
         {
             "begin": 101,
             "length": 1,
             "format": "float",
             "precision": 6,
-            "name": "Vin Min"
+            "name": "Vin_Min"
         },
         {
             "begin": 102,
             "length": 1,
             "format": "float",
             "precision": 6,
-            "name": "Vin Max"
+            "name": "Vin_Max"
         },
         {
             "begin": 103,
             "length": 1,
             "format": "float",
             "precision": 10,
-            "name": "Vout Setpoint H"
+            "name": "Vout_Setpoint_H"
         },
         {
             "begin": 104,
             "length": 1,
             "format": "float",
             "precision": 10,
-            "name": "Vout Setpoint L"
+            "name": "Vout_Setpoint_L"
         },
         {
             "begin": 105,
             "length": 1,
             "format": "integer",
-            "name": "Vout Change Timer"
+            "name": "Vout_Change_Timer"
         },
         {
             "begin": 106,
             "length": 4,
             "format": "string",
-            "name": "PSU FBL FW Revision"
+            "name": "PSU_FBL_FW_Revision"
         }
     ]
 }

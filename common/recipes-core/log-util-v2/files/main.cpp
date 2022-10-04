@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
   actions->require_option(1);
   app.add_flag("--json", opt_json, "Print SEL(s) in JSON format")
       ->needs(print_opt);
-  app.add_set("fru", fru, allowed_fru)->required();
+  app.add_option("fru", fru)->check(CLI::IsMember(allowed_fru))->required();
 
   std::string start_time = "", end_time = "";
   CLI::Option* start_time_opt = app.add_option("-s", start_time, "Starting time for timestamp delete");

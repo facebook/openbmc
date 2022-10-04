@@ -487,7 +487,8 @@ int main(int argc, const char** argv) {
         regNameFilter,
         latestOnly);
   });
-  data->add_set("-f,--format", format, {"raw", "value"}, "Format the data");
+  data->add_option("-f,--format", format, "Format the data")->
+      check(CLI::IsMember({"raw", "value"}));
   data->add_option(
       "--reg-addr", regFilter, "Return values of provided registers only");
   data->add_option(

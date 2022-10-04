@@ -252,15 +252,14 @@ main(int argc, char **argv) {
 //Set Mode Initial
   std::string op_mode;
   std::set<std::string> allowed_modes;
-  std::string desc = "Set chassis operating mode\n";  
+  std::string desc = "Set chassis operating mode\n";
   for (const auto& pair : mode_map) {
     allowed_modes.insert(pair.first);
     desc += pair.first + ": " + pair.second.desc + "\n";
   }
-  auto mode = app.add_set("--set-mode", op_mode,
-                          allowed_modes,
-                          desc
-                         )->ignore_case();
+  auto mode = app.add_option("--set-mode", op_mode, desc)->
+          check(CLI::IsMember(allowed_modes))->
+          ignore_case();
 
   app.add_flag("--recfg-cycle", do_cycle,
                "Perform a SLED cycle after operations (If any)");
@@ -272,10 +271,12 @@ main(int argc, char **argv) {
   app.add_flag("--get-position", get_pos_f, "Get current tray position");
 
   std::string bmc_to_reset{};
-  auto rstbmc = app.add_set("--reset-bmc", bmc_to_reset, get_bmcs(), "Reset BMC in the specified Tray");
+  auto rstbmc = app.add_option("--reset-bmc", bmc_to_reset, "Reset BMC in the specified Tray")->
+          check(CLI::IsMember(get_bmcs()));
 
   std::string bmc_to_get_lan{};
-  auto laninfo = app.add_set("--get-lan", bmc_to_get_lan, get_bmcs(), "Get LAN/Network information of the given BMC");
+  auto laninfo = app.add_option("--get-lan", bmc_to_get_lan, "Get LAN/Network information of the given BMC")->
+          check(CLI::IsMember(get_bmcs()));
 
   CLI11_PARSE(app, argc, argv);
 

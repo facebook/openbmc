@@ -69,7 +69,6 @@ static const char *option_list[] = {
   "--FM_PVCCIN_CPU0_PWR_IN_ALERT_N",
   "--IRQ_SML1_PMBUS_ALERT_N",
   "--FM_THROTTLE",
-  "--IRQ_SML1_PMBUS_ALERT_N",
 };
 
 static void

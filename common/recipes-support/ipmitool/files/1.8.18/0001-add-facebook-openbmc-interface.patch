@@ -1,7 +1,20 @@
-diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
---- ipmitool/configure.ac	2017-07-11 08:51:37.523621035 +0800
-+++ ipmitool_new/configure.ac	2017-07-11 08:51:34.319667289 +0800
-@@ -64,6 +64,7 @@
+From 8c071c5cefd612aff90d147949a2f08e2104c274 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Mon, 3 Oct 2022 18:42:49 -0500
+Subject: [PATCH] add facebook openbmc interface
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ configure.ac            | 19 +++++++++++++++++++
+ src/plugins/Makefile.am |  4 ++--
+ src/plugins/ipmi_intf.c | 21 ++++++++++++++-------
+ 3 files changed, 35 insertions(+), 9 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index 88232a6..cbef8c2 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -64,6 +64,7 @@ xenable_intf_lipmi=yes
  xenable_intf_open=yes
  #xenable_intf_serial=yes
  xenable_intf_usb=no
@@ -9,7 +22,7 @@ diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
  xenable_ipmishell=yes
  
  dnl set some things so we build with GNU tools on Solaris
-@@ -222,6 +223,22 @@
+@@ -222,6 +223,22 @@ if test "x$xenable_intf_usb" = "xyes"; then
  	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB usb/libintf_usb.la"
  fi
  
@@ -32,7 +45,7 @@ diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
  dnl enable IPMIv2.0 RMCP+ LAN interface
  AC_ARG_ENABLE([intf-lanplus],
  	[AC_HELP_STRING([--enable-intf-lanplus],
-@@ -664,6 +681,7 @@
+@@ -664,6 +681,7 @@ AC_CONFIG_FILES([Makefile
  		src/plugins/imb/Makefile
  		src/plugins/bmc/Makefile
  		src/plugins/usb/Makefile
@@ -40,7 +53,7 @@ diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
  		src/plugins/lipmi/Makefile
  		src/plugins/serial/Makefile
  		src/plugins/dummy/Makefile])
-@@ -681,6 +699,7 @@
+@@ -681,6 +699,7 @@ AC_MSG_RESULT([  free    : $xenable_intf_free])
  AC_MSG_RESULT([  imb     : $xenable_intf_imb])
  AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
  AC_MSG_RESULT([  usb     : $xenable_intf_usb])
@@ -48,9 +61,25 @@ diff -ur ipmitool/configure.ac ipmitool_new/configure.ac
  AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
  AC_MSG_RESULT([  serial  : $xenable_intf_serial])
  AC_MSG_RESULT([  dummy   : $xenable_intf_dummy])
-diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
---- ipmitool/src/plugins/ipmi_intf.c	2017-07-11 08:51:37.531620918 +0800
-+++ ipmitool_new/src/plugins/ipmi_intf.c	2017-07-11 09:43:57.019923569 +0800
+diff --git a/src/plugins/Makefile.am b/src/plugins/Makefile.am
+index 7ad8173..bee39b3 100644
+--- a/src/plugins/Makefile.am
++++ b/src/plugins/Makefile.am
+@@ -32,8 +32,8 @@ MAINTAINERCLEANFILES		= Makefile.in
+ 
+ AM_CPPFLAGS			= -I$(top_srcdir)/include
+ 
+-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@
+-DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb
++SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_OBMC@
++DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb obmc
+ 
+ noinst_LTLIBRARIES		= libintf.la
+ libintf_la_SOURCES		= ipmi_intf.c
+diff --git a/src/plugins/ipmi_intf.c b/src/plugins/ipmi_intf.c
+index 9225a34..d9ffa0e 100644
+--- a/src/plugins/ipmi_intf.c
++++ b/src/plugins/ipmi_intf.c
 @@ -1,21 +1,21 @@
  /*
   * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
@@ -78,7 +107,7 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
   * This software is provided "AS IS," without a warranty of any kind.
   * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
   * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
-@@ -89,8 +89,15 @@
+@@ -89,8 +89,15 @@ extern struct ipmi_intf ipmi_dummy_intf;
  #ifdef IPMI_INTF_USB
  extern struct ipmi_intf ipmi_usb_intf;
  #endif
@@ -94,7 +123,7 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
  #ifdef IPMI_INTF_OPEN
  	&ipmi_open_intf,
  #endif
-@@ -482,7 +489,7 @@
+@@ -482,7 +489,7 @@ ipmi_intf_get_max_request_data_size(struct ipmi_intf * intf)
  	/* check if request size is not specified */
  	if (!size) {
  		/*
@@ -103,7 +132,7 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
  		 * messages is specified as 32 bytes, maximum, including slave
  		 * address. This sets the upper limit for typical IPMI messages.
  		 * With the exception of messages used for bridging messages to
-@@ -539,7 +546,7 @@
+@@ -539,7 +546,7 @@ ipmi_intf_get_max_response_data_size(struct ipmi_intf * intf)
  	/* check if response size is not specified */
  	if (!size) {
  		/*
@@ -112,18 +141,6 @@ diff -ur ipmitool/src/plugins/ipmi_intf.c ipmitool_new/src/plugins/ipmi_intf.c
  		 * messages is specified as 32 bytes, maximum, including slave
  		 * address. This sets the upper limit for typical IPMI messages.
  		 * With the exception of messages used for bridging messages to
-diff -ur ipmitool/src/plugins/Makefile.am ipmitool_new/src/plugins/Makefile.am
---- ipmitool/src/plugins/Makefile.am	2017-07-11 08:51:37.531620918 +0800
-+++ ipmitool_new/src/plugins/Makefile.am	2017-07-11 08:51:34.327667174 +0800
-@@ -32,8 +32,8 @@
- 
- AM_CPPFLAGS			= -I$(top_srcdir)/include
- 
--SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@
--DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb
-+SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_OBMC@
-+DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb obmc
- 
- noinst_LTLIBRARIES		= libintf.la
- libintf_la_SOURCES		= ipmi_intf.c
-Only in ipmitool_new/src/plugins: obmc
+-- 
+2.35.1
+

@@ -1,0 +1,128 @@
+From dbfb8a46d5cd700371342a645755732da48d4d85 Mon Sep 17 00:00:00 2001
+From: Patrick Williams <patrick@stwcx.xyz>
+Date: Mon, 3 Oct 2022 18:42:49 -0500
+Subject: [PATCH] add facebook openbmc interface
+
+Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
+---
+ configure.ac            | 19 +++++++++++++++++++
+ src/plugins/Makefile.am |  4 ++--
+ src/plugins/ipmi_intf.c | 17 ++++++++++++-----
+ 3 files changed, 33 insertions(+), 7 deletions(-)
+
+diff --git a/configure.ac b/configure.ac
+index d6ba62b..6dd4bcb 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -86,6 +86,7 @@ xenable_intf_lipmi=yes
+ xenable_intf_open=yes
+ #xenable_intf_serial=yes
+ xenable_intf_usb=no
++xenable_intf_obmc=yes
+ xenable_ipmishell=yes
+ 
+ dnl set some things so we build with GNU tools on Solaris
+@@ -252,6 +253,22 @@ if test "x$xenable_intf_usb" = "xyes"; then
+ 	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB usb/libintf_usb.la"
+ fi
+ 
++dnl enable Facebook OpenBMC interface
++AC_ARG_ENABLE([intf-obmc],
++	[AC_HELP_STRING([--enable-intf-obmc],
++			[enable Facebook OpenBMC interface [default=auto]])],
++		[xenable_intf_obmc=$enableval],
++		[xenable_intf_obmc=yes])
++if test "x$xenable_intf_obmc" = "xstatic" || test "x$xenable_intf_obmc" = "xplugin"; then
++   xenable_intf_obmc=yes
++fi
++if test "x$xenable_intf_obmc" = "xyes"; then
++	AC_DEFINE(IPMI_INTF_OBMC, [1], [Define to 1 to enable OpenBMC interface.])
++	AC_SUBST(INTF_OBMC, [obmc])
++	AC_SUBST(INTF_OBMC_LIB, [libintf_obmc.la])
++	IPMITOOL_INTF_LIB="$IPMITOOL_INTF_LIB obmc/libintf_obmc.la"
++fi
++
+ dnl enable IPMIv2.0 RMCP+ LAN interface
+ AC_ARG_ENABLE([intf-lanplus],
+ 	[AC_HELP_STRING([--enable-intf-lanplus],
+@@ -745,6 +762,7 @@ AC_CONFIG_FILES([Makefile
+ 		src/plugins/bmc/Makefile
+ 		src/plugins/dbus/Makefile
+ 		src/plugins/usb/Makefile
++		src/plugins/obmc/Makefile
+ 		src/plugins/lipmi/Makefile
+ 		src/plugins/serial/Makefile
+ 		src/plugins/dummy/Makefile
+@@ -765,6 +783,7 @@ AC_MSG_RESULT([  imb     : $xenable_intf_imb])
+ AC_MSG_RESULT([  bmc     : $xenable_intf_bmc])
+ AC_MSG_RESULT([  dbus    : $xenable_intf_dbus])
+ AC_MSG_RESULT([  usb     : $xenable_intf_usb])
++AC_MSG_RESULT([  obmc    : $xenable_intf_obmc])
+ AC_MSG_RESULT([  lipmi   : $xenable_intf_lipmi])
+ AC_MSG_RESULT([  serial  : $xenable_intf_serial])
+ AC_MSG_RESULT([  dummy   : $xenable_intf_dummy])
+diff --git a/src/plugins/Makefile.am b/src/plugins/Makefile.am
+index 14acbcf..a439a8b 100644
+--- a/src/plugins/Makefile.am
++++ b/src/plugins/Makefile.am
+@@ -32,8 +32,8 @@ MAINTAINERCLEANFILES		= Makefile.in
+ 
+ AM_CPPFLAGS			= -I$(top_srcdir)/include
+ 
+-SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_DBUS@
+-DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb dbus
++SUBDIRS				= @INTF_LAN@ @INTF_LANPLUS@ @INTF_OPEN@ @INTF_LIPMI@ @INTF_IMB@ @INTF_BMC@ @INTF_FREE@ @INTF_SERIAL@ @INTF_DUMMY@ @INTF_USB@ @INTF_DBUS@ @INTF_OBMC@
++DIST_SUBDIRS			= lan lanplus open lipmi imb bmc free serial dummy usb dbus obmc
+ 
+ noinst_LTLIBRARIES		= libintf.la
+ libintf_la_SOURCES		= ipmi_intf.c
+diff --git a/src/plugins/ipmi_intf.c b/src/plugins/ipmi_intf.c
+index e424a64..de7bbd5 100644
+--- a/src/plugins/ipmi_intf.c
++++ b/src/plugins/ipmi_intf.c
+@@ -1,21 +1,21 @@
+ /*
+  * Copyright (c) 2003 Sun Microsystems, Inc.  All Rights Reserved.
+- * 
++ *
+  * Redistribution and use in source and binary forms, with or without
+  * modification, are permitted provided that the following conditions
+  * are met:
+- * 
++ *
+  * Redistribution of source code must retain the above copyright
+  * notice, this list of conditions and the following disclaimer.
+- * 
++ *
+  * Redistribution in binary form must reproduce the above copyright
+  * notice, this list of conditions and the following disclaimer in the
+  * documentation and/or other materials provided with the distribution.
+- * 
++ *
+  * Neither the name of Sun Microsystems, Inc. or the names of
+  * contributors may be used to endorse or promote products derived
+  * from this software without specific prior written permission.
+- * 
++ *
+  * This software is provided "AS IS," without a warranty of any kind.
+  * ALL EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES,
+  * INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A
+@@ -89,8 +89,15 @@ extern struct ipmi_intf ipmi_usb_intf;
+ #ifdef IPMI_INTF_DBUS
+ extern struct ipmi_intf ipmi_dbus_intf;
+ #endif
++#ifdef IPMI_INTF_OBMC
++extern struct ipmi_intf ipmi_obmc_intf;
++#endif
+ 
+ struct ipmi_intf * ipmi_intf_table[] = {
++#ifdef IPMI_INTF_OBMC
++	// first interface as default interface
++	&ipmi_obmc_intf,
++#endif
+ #ifdef IPMI_INTF_OPEN
+ 	&ipmi_open_intf,
+ #endif
+-- 
+2.35.1
+

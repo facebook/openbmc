@@ -64,4 +64,5 @@ IMAGE_INSTALL += " \
   jbi \
   dimm-util \
   attest-util \
+  tcpdump \
   "

@@ -284,39 +284,29 @@ uint8_t pex88000_get_fw_active_region(uint8_t bus, uint8_t addr) {
 }
 
 uint8_t pex88000_get_main_version(uint8_t bus, char *ver) {
-  uint32_t oft;
-  uint32_t version;
-  uint8_t addr = 0xb2;
-
-  if (!pex88000_get_fw_active_region(bus, addr)){
-    return 0;
-  }
-  if (fw_active_region == 1)
-    oft = BRCM_SPI_FW_REGION1 + BRCM_FW_VERSION_OFT;
-  else if (fw_active_region == 2)
-    oft = BRCM_SPI_FW_REGION2 + BRCM_FW_VERSION_OFT;
-  else {
-    syslog(LOG_WARNING, "fw active region error!\n");
-    return 0;
-  }
-  if (!pex88000_read_spi(bus, addr, oft, 0, &version)){
-    syslog(LOG_WARNING, "get fw version fail!\n");
-    return 0;
-  }
-  swap32(&version);
-  int32_to_char(version, ver);
-  return 1;
-}
-
-uint8_t pex88000_get_sbr_version(uint8_t bus, char *ver) {
-  uint8_t rc = 0;
   uint32_t version;
   uint8_t addr = 0xb2;
 
   if (!set_axi_register_to_full_mode(bus, addr)){
     return 0;
   }
-  if (!pex88000_chime_to_axi_read(bus, addr, BRCM_CONFIG_VERSION_REG, &version)){
+  if (!pex88000_chime_to_axi_read(bus, addr, BRCM_MAIN_VERSION_REG, &version)){
+    syslog(LOG_WARNING, "get config version fail!\n");
+    return 0;
+  }
+
+  int32_to_char(version, ver);
+  return 1;
+}
+
+uint8_t pex88000_get_sbr_version(uint8_t bus, char *ver) {
+  uint32_t version;
+  uint8_t addr = 0xb2;
+
+  if (!set_axi_register_to_full_mode(bus, addr)){
+    return 0;
+  }
+  if (!pex88000_chime_to_axi_read(bus, addr, BRCM_SBR_VERSION_REG, &version)){
     syslog(LOG_WARNING, "get config version fail!\n");
     return 0;
   }
@@ -326,38 +316,14 @@ uint8_t pex88000_get_sbr_version(uint8_t bus, char *ver) {
 }
 
 uint8_t pex88000_get_MFG_config_version(uint8_t bus, char *ver) {
-  uint8_t rc = 0;
-  uint8_t addr = 0xb2;
   uint32_t version;
-  uint32_t fwsize, fwstatus_size, boot_loader_size, sbr_size;
-  uint32_t fwsize_oft, fw_status_start_oft, boot_loader_start_oft, sbr_start_oft, xml_start_oft;
+  uint8_t addr = 0xb2;
 
-  if (!pex88000_get_fw_active_region(bus, addr)){
+  if (!set_axi_register_to_full_mode(bus, addr)){
     return 0;
   }
-  fwsize_oft = BRCM_SPI_FW_REGION1 + BRCM_FW_SIZE_OFT;
-  if (!pex88000_read_spi(bus, addr, fwsize_oft, 0, &fwsize)) {
-    syslog(LOG_WARNING, "get fw version fail!\n");
-    return 0;
-  }
-  fw_status_start_oft = BRCM_SPI_FW_REGION1 + fwsize;
-  if (!pex88000_read_spi(bus, addr, fw_status_start_oft + BRCM_FW_SIZE_OFT, 0, &fwstatus_size)) {
-    syslog(LOG_WARNING, "get fw version fail!\n");
-    return 0;
-  }
-  boot_loader_start_oft = fw_status_start_oft + fwstatus_size;
-  if (!pex88000_read_spi(bus, addr, boot_loader_start_oft + BRCM_FW_SIZE_OFT, 0, &boot_loader_size)) {
-    syslog(LOG_WARNING, "get fw version fail!\n");
-    return 0;
-  }
-  sbr_start_oft = boot_loader_start_oft + boot_loader_size;
-  if (!pex88000_read_spi(bus, addr, sbr_start_oft + BRCM_FW_SIZE_OFT, 0, &sbr_size)) {
-    syslog(LOG_WARNING, "get fw version fail!\n");
-    return 0;
-  } 
-  xml_start_oft = sbr_start_oft + sbr_size;
-  if (!pex88000_read_spi(bus, addr, xml_start_oft + BRCM_FW_XML_SIZE_OFT, 0, &version)) {
-    syslog(LOG_WARNING, "get fw version fail!\n");
+  if (!pex88000_chime_to_axi_read(bus, addr, BRCM_MFG_VERSION_REG, &version)){
+    syslog(LOG_WARNING, "get config version fail!\n");
     return 0;
   }
 

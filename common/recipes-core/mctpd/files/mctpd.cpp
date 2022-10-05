@@ -144,7 +144,7 @@ static void set_smbus_extera_params(struct ctx *ctx, uint8_t eid, struct mctp_sm
 
 static void tx_message(struct ctx *ctx, mctp_eid_t eid, uint8_t *msg, size_t len, bool tag_owner, uint8_t tag) {
 
-  std::string name = ctx->binding->name;
+  std::string_view name = ctx->binding->name;
   if (name == "smbus") {
     struct mctp_smbus_pkt_private *smbus_params, _smbus_params;
     smbus_params = &_smbus_params;
@@ -270,7 +270,7 @@ static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
   std::cout << "i3c mqueue device path: " << mqueue_dev << "\n";
 
   mctp_register_bus_dynamic_eid(mctp, &((data->asti3c)->binding));
-  
+
   mctp_binding_set_tx_enabled(&((data->asti3c)->binding), true);
 
   binding->data = data;
@@ -534,7 +534,7 @@ static int client_process_recv(struct ctx *ctx, int idx)
     goto out_close;
   }
 
-  dest_eid = *(uint8_t *)ctx->buf; 
+  dest_eid = *(uint8_t *)ctx->buf;
 
   if (verbose) {
     fprintf(stderr, "client[%d] sent message: dest 0x%02x len %d\n", idx, dest_eid, rc - 1);

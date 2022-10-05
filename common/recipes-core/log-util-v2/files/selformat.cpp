@@ -105,6 +105,7 @@ void SELFormat::set_raw(std::string&& line) {
   }
   static const std::regex log_match(log_fmt.data());
   static const std::regex log_match_legacy(log_fmt_legacy.data());
+  static const std::regex log_match_clr(log_fmt_clr.data());
 
   std::smatch sm;
   if (bool year_fmt = false;
@@ -120,12 +121,24 @@ void SELFormat::set_raw(std::string&& line) {
       strptime(sm[1].str().c_str(), "%Y %b %d %H:%M:%S", &ts);
       strftime(curtime.data(), curtime.size(), "%Y-%m-%d %H:%M:%S", &ts);
     }
-    time_.assign(curtime.data());
+    time_.assign(std::string(curtime.data()));
     hostname_ = sm[2];
     version_ = sm[3];
     app_ = sm[4];
     msg_ = sm[5];
     bare_ = false;
+  } else {
+    if (self_log_ && std::regex_search(line, sm, log_match_clr)) {
+      std::array<char, 80> curtime;
+      struct tm ts;
+      strptime(sm[0].str().c_str(), "%Y %b %d %H:%M:%S", &ts);
+      strftime(curtime.data(), curtime.size(), "%Y-%m-%d %H:%M:%S", &ts);
+      time_.assign(std::string(curtime.data()));
+      hostname_ = "";
+      version_ = "";
+      app_ = sm[1];
+      msg_ = sm[2];
+    }
   }
 }
 

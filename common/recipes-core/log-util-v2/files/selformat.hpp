@@ -11,7 +11,7 @@ class SELFormat {
   static constexpr uint8_t FRU_SYS = 0xFE;
   static constexpr uint8_t FRU_ALL = 0x00;
 
-  SELFormat(uint8_t default_fru_id)
+  explicit SELFormat(uint8_t default_fru_id)
       : default_fru_num_(default_fru_id), fru_num_(default_fru_id) {}
   virtual ~SELFormat() {}
 
@@ -56,7 +56,7 @@ class SELFormat {
   void json(nlohmann::json& j) const;
 
   // Set the raw. This also parses the log.
-  void set_raw(std::string&& log_line);
+  void set_raw(std::string&& line);
 
   // Set a lot indicating of a clear with the current timestamp.
   void set_clear(uint8_t fru);
@@ -109,6 +109,9 @@ class SELFormat {
 
   static constexpr std::string_view log_fmt_legacy =
       R"((\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+)\s+\S+\s+(\S+):\s+(\S+):\s+(.+)$)";
+
+  static constexpr std::string_view log_fmt_clr =
+      R"(([0-9]{4}\s+\S+\s+\d+\s+\d+:\d+:\d+)\s+(\S+):\s+(.+)$)";
 
   static constexpr std::string_view time_fmt =
     R"([0-9]{4}-[0-9]{2}-[0-9]{2}\s+[0-9]{2}:[0-9]{2}:[0-9]{2})";

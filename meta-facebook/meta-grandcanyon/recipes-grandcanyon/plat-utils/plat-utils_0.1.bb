@@ -29,7 +29,6 @@ LOCAL_URI = " \
     file://run_power_on.sh \
     file://check_pal_sku.sh \
     file://setup-platform.sh \
-    file://check_eth0_ipv4.sh \
     file://sync_date.sh \
     file://check_bmc_ready.sh \
     file://check_2nd_source.sh \
@@ -59,7 +58,7 @@ do_install() {
       install -m 755 $f ${dst}/${f}
       ln -s ../fbpackages/${pkgdir}/${f} ${localbindir}/${f}
   done
-
+  
   # init
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
@@ -67,10 +66,6 @@ do_install() {
   update-rc.d -r ${D} run_power_on.sh start 99 5 .
   install -m 755 setup-platform.sh ${D}${sysconfdir}/init.d/setup-platform.sh
   update-rc.d -r ${D} setup-platform.sh start 92 5 .
-
-  # install check_eth0_ipv4.sh
-  install -m 755 check_eth0_ipv4.sh ${D}${sysconfdir}/init.d/check_eth0_ipv4.sh
-  update-rc.d -r ${D} check_eth0_ipv4.sh start 71 5 .
   
   # install check_bmc_ready.sh
   install -m 755 check_bmc_ready.sh ${D}${sysconfdir}/init.d/check_bmc_ready.sh

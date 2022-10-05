@@ -72,8 +72,10 @@ do
     if [ $FETCH_ONLY -eq 0 ]; then
       git worktree add -f ${repo_path} ${commit_id}
       if [ -n "${!repo_patch_var}" ]; then
-          git -C ${repo_path} am \
-              $(realpath ./github/yocto/patches/${!repo_patch_var})
+          for patch in ${!repo_patch_var}; do
+              git -C ${repo_path} am \
+                $(realpath ./github/yocto/patches/${patch})
+          done
       fi
     fi
   done

@@ -115,13 +115,17 @@ bic_get_oem_sensor_reading(uint8_t slot_id, uint8_t index, ipmi_sensor_reading_t
   uint8_t rlen = 0;
   uint32_t val = 0;
   int ret = bic_ipmb_send(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_GPV3_GET_DUAL_M2_PWR, tbuf, 4, rbuf, &rlen, intf);
-  if (ret == 0 && rlen == 5) {
+
+  // rbuf[0 - 2] IANA Data
+  // rbuf[3 - 4] Dual Sensor Value
+  // rbuf[5] Sensor Flag
+  if (ret == 0 && rlen == 6) {
     if (mul > 0) {
       val = (rbuf[3] + rbuf[4]) / mul;
     } else {
       val = (rbuf[3] + rbuf[4]);
     }
-    sensor->flags = 0;
+    sensor->flags = rbuf[5];
     sensor->status = 0;
     sensor->ext_status = 0;
 

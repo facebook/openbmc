@@ -1,0 +1,56 @@
+From 931a7a0e00743e8da1fc1b2497e2fa9f6f79e2e1 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Thu, 29 Sep 2022 13:18:31 -0700
+Subject: [PATCH] Remove checks on python
+
+Summary:
+This allows us to use py3 instead of py2.
+Even though not formally supported, it works
+decent enough for our platforms running rocko
+
+Test Plan: Build fbtp
+
+Reviewers: #openbmc
+
+Subscribers:
+
+Tasks:
+
+Tags:
+
+
+Differential Revision: https://phabricator.intern.facebook.com/D39941987
+---
+ scripts/oe-buildenv-internal | 16 ----------------
+ 1 file changed, 16 deletions(-)
+
+diff --git a/scripts/oe-buildenv-internal b/scripts/oe-buildenv-internal
+index 77f98a32b9..40a9849db2 100755
+--- a/scripts/oe-buildenv-internal
++++ b/scripts/oe-buildenv-internal
+@@ -40,22 +40,6 @@ if [ -z "$OE_SKIP_SDK_CHECK" ] && [ -n "$OECORE_SDK_VERSION" ]; then
+     return 1
+ fi
+ 
+-# Make sure we're not using python v3.x as 'python', we don't support it.
+-py_v2_check=$(/usr/bin/env python --version 2>&1 | grep "Python 3")
+-if [ -n "$py_v2_check" ]; then
+-    echo >&2 "OpenEmbedded requires 'python' to be python v2 (>= 2.7.3), not python v3."
+-    echo >&2 "Please set up python v2 as your default 'python' interpreter."
+-    return 1
+-fi
+-unset py_v2_check
+-
+-py_v27_check=$(python -c 'import sys; print sys.version_info >= (2,7,3)')
+-if [ "$py_v27_check" != "True" ]; then
+-    echo >&2 "OpenEmbedded requires 'python' to be python v2 (>= 2.7.3), not python v3."
+-    echo >&2 "Please upgrade your python v2."
+-fi
+-unset py_v27_check
+-
+ # We potentially have code that doesn't parse correctly with older versions 
+ # of Python, and rather than fixing that and being eternally vigilant for 
+ # any other new feature use, just check the version here.
+-- 
+2.30.2
+

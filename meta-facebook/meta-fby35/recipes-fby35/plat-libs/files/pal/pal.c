@@ -1110,7 +1110,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 
   switch (fru) {
     case FRU_ALL:
-      *caps = FRU_CAPABILITY_SENSOR_HISTORY;
+      *caps = FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
     case FRU_SLOT1:
     case FRU_SLOT2:

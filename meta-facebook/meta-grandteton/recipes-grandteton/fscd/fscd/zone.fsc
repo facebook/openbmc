@@ -3,9 +3,9 @@ max([
   cpu_tray_scm_linear(all:scm_scm_inlet_temp_c),
 
   cpu_tray_cpu_linear(all:mb_mb_cpu0_therm_margin_c) + cpu_tray_cpu_pid(all:mb_mb_cpu0_therm_margin_c),
-  
+
   cpu_tray_cpu_linear(all:mb_mb_cpu1_therm_margin_c) + cpu_tray_cpu_pid(all:mb_mb_cpu1_therm_margin_c),
-  
+
   cpu_tray_dimm_linear(
     max([
       all:mb_mb_cpu0_dimm_a0_c0_temp_c,
@@ -92,16 +92,16 @@ max([
 
   swb_tray_switch_linear(
     max([
-      all:swb_pex0_temp_c,
-      all:swb_pex1_temp_c,
-      all:swb_pex2_temp_c,
-      all:swb_pex3_temp_c])) + 
+      all:swb_swb_pex0_temp_c,
+      all:swb_swb_pex1_temp_c,
+      all:swb_swb_pex2_temp_c,
+      all:swb_swb_pex3_temp_c])) +
   swb_tray_switch_pid(
     max([
-      all:swb_pex0_temp_c,
-      all:swb_pex1_temp_c,
-      all:swb_pex2_temp_c,
-      all:swb_pex3_temp_c])),
+      all:swb_swb_pex0_temp_c,
+      all:swb_swb_pex1_temp_c,
+      all:swb_swb_pex2_temp_c,
+      all:swb_swb_pex3_temp_c])),
 
   gpu_tray_nvs_linear(
     max([

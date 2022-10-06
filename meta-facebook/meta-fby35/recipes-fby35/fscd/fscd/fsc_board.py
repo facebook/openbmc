@@ -51,6 +51,17 @@ fru_map = {
     },
 }
 
+hd_dimm_location_name_map = {
+    "0": "_dimm0_location",
+    "1": "_dimm1_location",
+    "2": "_dimm2_location",
+    "4": "_dimm4_location",
+    "6": "_dimm6_location",
+    "7": "_dimm7_location",
+    "8": "_dimm8_location",
+    "10": "_dimm10_location",
+}
+
 dimm_location_name_map = {
     "0": "_dimm0_location",
     "2": "_dimm4_location",
@@ -144,6 +155,17 @@ def is_dev_prsnt(filename):
         return 0
 
 
+def is_halfdome():
+    try:
+        conf = kv.kv_get("sled_system_conf", kv.FPERSIST, True)
+        if conf.find(b"HD") != -1:
+            return True
+        return False
+
+    except Exception:
+        return False
+
+
 def sensor_valid_check(board, sname, check_name, attribute):
     try:
         if attribute["type"] == "power_status":
@@ -173,12 +195,20 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     return 0
 
                 if "dimm" in sname:
-                    dimm_name = (
-                        "sys_config/"
-                        + fru_map[board]["name"]
-                        + dimm_location_name_map[sname[8 : sname.find("_t")]]
-                    )
-                    return is_dev_prsnt(dimm_name)
+                    if is_halfdome():
+                        dimm_name = (
+                            "sys_config/"
+                            + fru_map[board]["name"]
+                            + hd_dimm_location_name_map[sname[8 : sname.find("_t")]]
+                        )
+                        return is_dev_prsnt(dimm_name)
+                    else:
+                        dimm_name = (
+                            "sys_config/"
+                            + fru_map[board]["name"]
+                            + dimm_location_name_map[sname[8 : sname.find("_t")]]
+                        )
+                        return is_dev_prsnt(dimm_name)
 
                 return 1
 

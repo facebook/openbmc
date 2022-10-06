@@ -1,5 +1,5 @@
 {
-  "version": "halfdome-v2022.07.11",
+  "version": "halfdome-v2022.09.22",
   "pwm_transition_value": 80,
   "pwm_boost_value": 100,
   "non_fanfail_limited_boost_value": 100,
@@ -35,25 +35,73 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 0,
       "data": [
-        [  0, 80 ],
-        [ 25, 80 ],
-        [ 26, 80 ],
-        [ 27, 80 ],
-        [ 28, 80 ],
-        [ 29, 80 ],
-        [ 30, 80 ],
-        [ 31, 80 ],
-        [ 32, 80 ],
-        [ 33, 80 ],
-        [ 34, 80 ],
-        [ 35, 80 ],
-        [ 36, 80 ],
-        [ 37, 80 ],
-        [ 38, 80 ],
-        [ 39, 80 ]
+        [ 25, 12 ],
+        [ 27, 14 ],
+        [ 29, 16 ],
+        [ 31, 18 ],
+        [ 33, 20 ],
+        [ 35, 22 ],
+        [ 37, 24 ],
+        [ 39, 26 ],
+        [ 41, 30 ],
+        [ 43, 32 ],
+        [ 45, 33 ]
       ]
+    },
+    "linear_cpu": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 1,
+      "data": [
+        [ 59, 13 ],
+        [ 62, 15 ],
+        [ 65, 18 ],
+        [ 68, 20 ],
+        [ 72, 23 ],
+        [ 75, 27 ]
+      ]
+    },
+    "pid_cpu": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 78,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.25,
+      "ki": -0.035,
+      "kd": 0
+    },
+    "linear_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [70, 15],
+        [73, 19],
+        [75, 21]
+      ]
+    },
+    "pid_dimm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 78,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 0,
+      "kp": -3,
+      "ki": -0.035,
+      "kd": 0
     },
     "linear_nic": {
       "read_source" : {
@@ -61,14 +109,11 @@
       },
       "type": "linear",
       "positive_hysteresis": 0,
-      "negative_hysteresis": 3,
+      "negative_hysteresis": 2,
       "data": [
-        [ 0, 80],
-        [76, 80],
-        [77, 80],
-        [78, 80],
-        [79, 80],
-        [80, 80]
+        [57, 13],
+        [63, 16],
+        [65, 19]
       ]
     },
     "pid_nic": {
@@ -76,11 +121,36 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 95,
+      "setpoint": 90,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -1.25,
-      "ki": -0.01,
+      "kp": -3,
+      "ki": -0.015,
+      "kd": 0
+    },
+    "linear_boot_drive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [56, 13],
+        [58, 20],
+        [60, 25]
+      ]
+    },
+    "pid_boot_drive": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 68,
+      "negative_hysteresis": 2,
+      "positive_hysteresis": 1,
+      "kp": -1.5,
+      "ki": -0.02,
       "kd": 0
     }
   },

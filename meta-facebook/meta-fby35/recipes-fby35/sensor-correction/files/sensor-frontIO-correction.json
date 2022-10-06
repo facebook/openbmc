@@ -1,0 +1,91 @@
+{
+  "version": "1.0",
+  "sensors": [
+    {
+      "name": "FRONT IO Temp",
+      "fru": 1,
+      "id": 3,
+      "correction": {
+        "type": "conditional_table",
+        "tables": {
+          "T1": [
+            [10,  0],
+            [20,  0],
+            [30,  0],
+            [40,  0],
+            [50,  0],
+            [60,  0],
+            [70,  0],
+            [80,  0],
+            [90,  0],
+            [100, 0]
+          ],
+          "HD": [
+            [10,  1.7],
+            [20,  0.9],
+            [30,  0.9],
+            [40,  0.6],
+            [50,  0.6],
+            [60,  0.5],
+            [70,  0.5],
+            [80,  0.5],
+            [90,  0.4],
+            [100, 0.6]
+          ]
+        },
+        "condition": {
+          "key": "sled_system_conf",
+          "key_type": "persistent",
+          "default_table": "T1",
+          "value_map": {
+             "Type_1": "T1",
+             "Type_HD": "HD"
+          }
+        }
+      }
+    },
+    {
+      "name": "FRONT IO Temp",
+      "fru": 3,
+      "id": 3,
+      "correction": {
+        "type": "conditional_table",
+        "tables": {
+         "T1": [
+            [10,  0],
+            [20,  0],
+            [30,  0],
+            [40,  0],
+            [50,  0],
+            [60,  0],
+            [70,  0],
+            [80,  0],
+            [90,  0],
+            [100, 0]
+          ],
+          "HD": [
+            [10,  1.7],
+            [20,  0.9],
+            [30,  0.9],
+            [40,  0.6],
+            [50,  0.6],
+            [60,  0.5],
+            [70,  0.5],
+            [80,  0.5],
+            [90,  0.4],
+            [100, 0.6]
+          ]
+        },
+        "condition": {
+          "key": "sled_system_conf",
+          "key_type": "persistent",
+          "default_table": "T1",
+          "value_map": {
+             "Type_1": "T1",
+             "Type_HD": "HD"
+          }
+        }
+      }
+    }
+  ]
+}

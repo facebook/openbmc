@@ -1,11 +1,31 @@
 #!/bin/sh
 
+# shellcheck disable=SC1091
+# shellcheck disable=SC2012
+# shellcheck disable=SC2039
 source /usr/local/bin/openbmc-utils.sh
 
-trap disconnect_spi INT TERM QUIT EXIT
+trap cleanup INT TERM QUIT EXIT
+
+ABOOT_CONF_START=$((0x9FA000))
+FLASH_SIZE=$((0x1000000))
+ABOOT_CONF_SIZE=$((0x5000))
+SECTION_BLOCK_SIZE=$((0x1000))
+
+# Temp files for storing bios file.
+TEMP_BIOS_IMAGE="/tmp/tmp_bios_image"
+# Temp file for storing aboot_conf data
+TEMP_ABOOT_CONF="/tmp/aboot_conf.bin"
+
+DEFAULT_ABOOT_CONF="BOOT_METHOD1=IPV6_PXE,BOOT_METHOD2=LOCAL,BOOT_METHOD3=ARISTA"
+
+cleanup() {
+    disconnect_spi
+    rm -f $TEMP_ABOOT_CONF $TEMP_BIOS_IMAGE
+}
 
 usage() {
-    program=`basename "$0"`
+    program=$(basename "$0")
     echo "Usage:"
     echo "$program <OP> <bios file>"
     echo "      <OP> : read, write, erase, recover"
@@ -14,18 +34,18 @@ usage() {
 
 disconnect_spi() {
     # connect through CPLD
-    echo 0x0 > ${SUPCPLD_SYSFS_DIR}/bios_select
+    echo 0x0 > "${SUPCPLD_SYSFS_DIR}/bios_select"
 }
 
 connect_spi() {
     # spi2 cs0
-    devmem_set_bit $(scu_addr 88) 26
-    devmem_set_bit $(scu_addr 88) 27
-    devmem_set_bit $(scu_addr 88) 28
-    devmem_set_bit $(scu_addr 88) 29
+    devmem_set_bit "$(scu_addr 88)" 26
+    devmem_set_bit "$(scu_addr 88)" 27
+    devmem_set_bit "$(scu_addr 88)" 28
+    devmem_set_bit "$(scu_addr 88)" 29
 
     # connect through CPLD
-    echo 0x1 > ${SUPCPLD_SYSFS_DIR}/bios_select
+    echo 0x1 > "${SUPCPLD_SYSFS_DIR}/bios_select"
 }
 
 # Arista added a 3rd source, so this function is needed in case we are dealing with the 3rd source
@@ -43,6 +63,47 @@ do_retry(){
       echo "flashrom without -c option failed"
     fi
   fi
+}
+
+create_bios_image() {
+    start_block="$(($1 / SECTION_BLOCK_SIZE))"
+    num_blocks="$(($2 / SECTION_BLOCK_SIZE))"
+    rm -f "$TEMP_BIOS_IMAGE"
+    dd if="$3" of="$TEMP_BIOS_IMAGE" bs="$SECTION_BLOCK_SIZE" count="$start_block" \
+       2> /dev/null
+    dd if="$4" bs="$SECTION_BLOCK_SIZE" count="$num_blocks" >> "$TEMP_BIOS_IMAGE" \
+       2> /dev/null
+    end_blocks=$(( (FLASH_SIZE / SECTION_BLOCK_SIZE) - start_block - num_blocks ))
+    dd if="$3" bs="$SECTION_BLOCK_SIZE" count="$end_blocks" skip=$((start_block + num_blocks)) \
+       >> "$TEMP_BIOS_IMAGE" 2> /dev/null
+}
+
+create_aboot_conf() {
+    echo "Using Aboot conf: $1"
+
+    nvs="$1,"
+
+    rm -f "$TEMP_ABOOT_CONF"
+    touch "$TEMP_ABOOT_CONF"
+    while [ -n "${nvs%%,*}" ]; do
+        nv="${nvs%%,*}"
+        name="${nv%%=*}"
+        if [ "$name" == "$nv" ]; then
+            echo "Invalid name-value argument $nv" >&2
+            return 1
+        fi
+        echo -n "${nv%%=*}=" >> "$TEMP_ABOOT_CONF"
+        echo -n "${nv#*=}" | base64 >> "$TEMP_ABOOT_CONF"
+        nvs="${nvs#*,}"
+    done
+
+    size="$(ls -l "$TEMP_ABOOT_CONF" | awk '{print $5}')"
+    pad_size="$((ABOOT_CONF_SIZE - size))"
+    dd if=/dev/zero bs=1 count="$pad_size" >> "$TEMP_ABOOT_CONF" 2> /dev/null
+}
+
+aboot_version() {
+    grep -a CONFIG_LOCALVERSION "$1" 2> /dev/null | awk -F'"' '{print $2}'
 }
 
 do_erase() {
@@ -66,14 +127,13 @@ do_erase() {
 do_read() {
     echo "Reading flash content..."
     if ! flashrom -p linux_spi:dev=/dev/spidev2.0 -r "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-      echo "flashrom failed. Retrying wihtout -c"
+      echo "flashrom failed. Retrying without -c"
       do_retry "read" "$1"
     fi
 }
 
 backup_image(){
     echo "Backing up pdr"
-    FLASH_SIZE=16777216  
 
     # Get complete image
     if ! tempfile=$(mktemp); then
@@ -117,13 +177,21 @@ backup_image(){
 }
 
 do_write() {
+    bios_image="$1"
+    if [ -n "$(aboot_version "$bios_image")" ]; then
+        create_aboot_conf "$DEFAULT_ABOOT_CONF" || exit 1
+        create_bios_image "$ABOOT_CONF_START" "$ABOOT_CONF_SIZE" \
+                          "$bios_image" "$TEMP_ABOOT_CONF" || exit 1
+        bios_image="$TEMP_BIOS_IMAGE"
+    fi
+
     if [ ! -e /mnt/data/header_pdr.data ]; then
       backup_image
     fi
     echo " writing header and payload ... "
-    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$1" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
-      echo "flashrom failed. Retrying wihtout -c"
-      do_retry "write" "$1"
+    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev=/dev/spidev2.0 -w "$bios_image" -c "MX25L12835F/MX25L12845E/MX25L12865E"; then
+      echo "flashrom failed. Retrying without -c"
+      do_retry "write" "$bios_image"
     fi
 }
 
@@ -161,11 +229,11 @@ connect_spi
 if [ "$1" == "erase" ]; then
     do_erase
 elif [ "$1" == "read" ]; then
-        do_read "$2"
+    do_read "$2"
 elif [ "$1" == "write" ]; then
-         do_write "$2"
+    do_write "$2"
 elif [ "${1}" == "recover" ]; then
-        do_recover
+    do_recover
 else
     usage
 fi

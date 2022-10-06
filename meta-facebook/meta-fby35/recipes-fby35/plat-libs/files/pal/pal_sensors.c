@@ -2479,9 +2479,9 @@ read_dpv2_efuse(uint8_t info, float *value) {
   type = snr_info->type;
   offset = dpv2_efuse_info_list[type].offset;
   if (fd < 0) { // open first time
-    fd = i2c_cdev_slave_open(FRU_DPV2_X8_BUS(fru), DPV2_EFUSE_SLAVE_ADDR, I2C_SLAVE_FORCE_CLAIM);
+    fd = i2c_cdev_slave_open(FRU_DEVICE_BUS(fru), DPV2_EFUSE_SLAVE_ADDR, I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
-      syslog(LOG_WARNING, "Failed to open bus %d", FRU_DPV2_X8_BUS(fru));
+      syslog(LOG_WARNING, "Failed to open bus %d", FRU_DEVICE_BUS(fru));
       return READING_NA;
     }
   }

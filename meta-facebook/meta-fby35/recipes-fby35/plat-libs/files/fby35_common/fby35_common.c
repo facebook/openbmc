@@ -452,6 +452,8 @@ fby35_common_dev_id(char *str, uint8_t *dev) {
     *dev = BOARD_2OU_X8;
   } else if (!strcmp(str, "2U-X16")) {
     *dev = BOARD_2OU_X16;
+  } else if (!strcmp(str, "PROT")) {
+    *dev = BOARD_PROT;
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");
@@ -511,6 +513,8 @@ fby35_common_dev_name(uint8_t dev, char *str) {
     strcpy(str, "2U-X8");
   } else if (dev == BOARD_2OU_X16) {
     strcpy(str, "2U-X16");
+  } else if (dev == BOARD_PROT) {
+    strcpy(str, "PROT");
   } else {
 #ifdef DEBUG
     syslog(LOG_WARNING, "fby35_common_dev_id: Wrong fru id");
@@ -1079,4 +1083,61 @@ fby35_common_is_prot_card_prsnt(uint8_t fru) {
   }
 
   return value[0] ? true : false;
+}
+
+/*
+ * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
+ *
+ * @eeprom_file   : path for the eeprom of the device
+ * @bin_file      : path for the binary file
+ *
+ * returns 0 on successful copy
+ * returns non-zero on file operation errors
+ */
+int copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file) {
+
+  int eeprom;
+  int bin;
+  uint64_t tmp[FRU_SIZE];
+  ssize_t bytes_rd, bytes_wr;
+
+  errno = 0;
+
+  eeprom = open(eeprom_file, O_RDONLY);
+  if (eeprom == -1) {
+    syslog(LOG_ERR, "%s: unable to open the %s file: %s",
+	__func__, eeprom_file, strerror(errno));
+    return errno;
+  }
+
+  bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
+  if (bin == -1) {
+    syslog(LOG_ERR, "%s: unable to create %s file: %s",
+	__func__, bin_file, strerror(errno));
+    goto err;
+  }
+
+  bytes_rd = read(eeprom, tmp, FRU_SIZE);
+  if (bytes_rd < 0) {
+    syslog(LOG_ERR, "%s: read %s file failed: %s",
+	__func__, eeprom_file, strerror(errno));
+    goto exit;
+  } else if (bytes_rd < FRU_SIZE) {
+    syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRU_SIZE);
+    goto exit;
+  }
+
+  bytes_wr = write(bin, tmp, bytes_rd);
+  if (bytes_wr != bytes_rd) {
+    syslog(LOG_ERR, "%s: write to %s file failed: %s",
+	__func__, bin_file, strerror(errno));
+    goto exit;
+  }
+
+exit:
+  close(bin);
+err:
+  close(eeprom);
+
+  return errno;
 }

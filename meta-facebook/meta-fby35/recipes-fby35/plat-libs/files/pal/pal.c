@@ -1154,6 +1154,8 @@ pal_get_dev_capability(uint8_t fru, uint8_t dev, unsigned int *caps)
       (FRU_CAPABILITY_POWER_ALL & (~FRU_CAPABILITY_POWER_RESET));
   } else if (dev >= BOARD_1OU && dev <= BOARD_2OU_X16) {
     *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL;
+  } else if (dev == BOARD_PROT) {
+    *caps = FRU_CAPABILITY_FRUID_ALL;
   } else {
     *caps = 0;
   }
@@ -1431,7 +1433,9 @@ pal_get_dev_fruid_eeprom_path(uint8_t fru, uint8_t dev_id, char *path, uint8_t p
     case FRU_SLOT3:
     case FRU_SLOT4:
       if (dev_id == BOARD_2OU_X8) {
-        snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(fru), DPV2_FRU_ADDR);
+        snprintf(path, path_len, EEPROM_PATH, FRU_DEVICE_BUS(fru), DPV2_FRU_ADDR);
+      } else if (dev_id == BOARD_PROT) {
+        snprintf(path, path_len, EEPROM_PATH, FRU_DEVICE_BUS(fru), PROT_FRU_ADDR);
       } else {
         return PAL_ENOTSUP;
       }

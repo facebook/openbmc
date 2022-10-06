@@ -16,7 +16,7 @@ LOCAL_URI = " \
 CFLAGS += " -Wall -Werror "
 LDFLAGS = "-lfby35_common -lbic -lpal"
 DEPENDS = "libipmi libipmb libfby35-common libbic libpal update-rc.d-native"
-RDEPENDS:${PN} = "libipmi libipmb libfby35-common libbic libpal"
+RDEPENDS:${PN} = "libipmi libipmb libfby35-common libbic libpal bash"
 
 binfiles = "bic-cached"
 

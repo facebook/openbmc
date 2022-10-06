@@ -64,9 +64,11 @@ extern "C" {
 #define NICEXP_FRU_ADDR 0x51
 #define NIC_FRU_ADDR 0x50
 #define DPV2_FRU_ADDR 0x51
+#define PROT_FRU_ADDR 0x50
 #define I2C_PATH "/sys/class/i2c-dev/i2c-%d/device/new_device"
 #define EEPROM_PATH "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define MAX_FRU_PATH_LEN 128
+#define FRU_SIZE        512
 
 #define CPLD_REG_SB_CLASS           0x00
 #define CPLD_REG_UART_MUX           0x01
@@ -121,7 +123,7 @@ extern const char *slot_usage;
 #define BOARD_ID(x)     (x & 0x0f)
 #define COMPONENT_ID(x) (x >> 7)
 
-#define FRU_DPV2_X8_BUS(fru) ((fru) + 3)
+#define FRU_DEVICE_BUS(fru) ((fru) + 3)
 
 #define KEY_BB_HSC_TYPE "bb_hsc_type"
 
@@ -176,6 +178,7 @@ enum {
   BOARD_2OU,
   BOARD_2OU_X8,
   BOARD_2OU_X16,
+  BOARD_PROT,
 
   MAX_NUM_DEVS,
 };
@@ -208,6 +211,7 @@ enum {
   FRU_ID_2OU_DEV13  = 24,
   FRU_ID_2OU_X8     = 25,
   FRU_ID_2OU_X16    = 26,
+  FRU_ID_PROT       = 27,
 };
 
 enum {
@@ -544,6 +548,7 @@ int fby35_common_check_image_md5(const char* image_path, int cal_size, uint8_t *
 bool fby35_common_is_valid_img(const char* img_path, uint8_t comp, uint8_t board_id, uint8_t rev_id);
 int fby35_common_get_bb_hsc_type(uint8_t* type);
 bool fby35_common_is_prot_card_prsnt(uint8_t fru) ;
+int copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 
 #ifdef __cplusplus
 } // extern "C"

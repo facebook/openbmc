@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
@@ -12,6 +12,7 @@
 ### END INIT INFO
 
 . /usr/local/fbpackages/utils/ast-functions
+. /usr/local/bin/openbmc-utils.sh
 
 init_class2_sdr() {
   /usr/local/bin/bic-cached -s slot1
@@ -21,6 +22,7 @@ init_class2_sdr() {
 init_class1_sdr() {
   # -f means `dump fru` only
   if [ "$(is_sb_bic_ready 1)" = "1" ]; then
+    i2c_device_add 4 0x50 24c32
     /usr/local/bin/bic-cached -s slot1
     /usr/local/bin/bic-cached -f slot1 > /dev/null 2>&1 &
   fi
@@ -31,6 +33,7 @@ init_class1_sdr() {
   fi
 
   if [ "$(is_sb_bic_ready 3)" = "1" ]; then
+    i2c_device_add 6 0x50 24c32
     /usr/local/bin/bic-cached -s slot3
     /usr/local/bin/bic-cached -f slot3 > /dev/null 2>&1 &
   fi

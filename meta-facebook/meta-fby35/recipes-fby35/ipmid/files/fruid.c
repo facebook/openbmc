@@ -37,8 +37,6 @@
 #include <facebook/fby35_fruid.h>
 #include "fruid.h"
 
-#define FRUID_SIZE        512
-
 typedef struct {
   uint8_t fruid;
   uint8_t devid;
@@ -67,64 +65,8 @@ fruid_to_devid mapping[] = {
   { FRU_ID_2OU_DEV13    ,DEV_ID13_2OU },
   { FRU_ID_2OU_X8       ,BOARD_2OU_X8 },
   { FRU_ID_2OU_X16      ,BOARD_2OU_X16},
+  { FRU_ID_PROT         ,BOARD_PROT   },
 };
-
-/*
- * copy_eeprom_to_bin - copy the eeprom to binary file im /tmp directory
- *
- * @eeprom_file   : path for the eeprom of the device
- * @bin_file      : path for the binary file
- *
- * returns 0 on successful copy
- * returns non-zero on file operation errors
- */
-int copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file) {
-
-  int eeprom;
-  int bin;
-  uint64_t tmp[FRUID_SIZE];
-  ssize_t bytes_rd, bytes_wr;
-
-  errno = 0;
-
-  eeprom = open(eeprom_file, O_RDONLY);
-  if (eeprom == -1) {
-    syslog(LOG_ERR, "%s: unable to open the %s file: %s",
-	__func__, eeprom_file, strerror(errno));
-    return errno;
-  }
-
-  bin = open(bin_file, O_WRONLY | O_CREAT, 0644);
-  if (bin == -1) {
-    syslog(LOG_ERR, "%s: unable to create %s file: %s",
-	__func__, bin_file, strerror(errno));
-    goto err;
-  }
-
-  bytes_rd = read(eeprom, tmp, FRUID_SIZE);
-  if (bytes_rd < 0) {
-    syslog(LOG_ERR, "%s: read %s file failed: %s",
-	__func__, eeprom_file, strerror(errno));
-    goto exit;
-  } else if (bytes_rd < FRUID_SIZE) {
-    syslog(LOG_ERR, "%s: less than %d bytes", __func__, FRUID_SIZE);
-    goto exit;
-  }
-
-  bytes_wr = write(bin, tmp, bytes_rd);
-  if (bytes_wr != bytes_rd) {
-    syslog(LOG_ERR, "%s: write to %s file failed: %s",
-	__func__, bin_file, strerror(errno));
-    goto exit;
-  }
-
-exit:
-  close(bin);
-err:
-  close(eeprom);
-
-  return errno;
-}
 
 static int
 fruid_init_local_fru() {
@@ -188,7 +130,7 @@ fruid_init_local_fru() {
         continue;
       } else {
         if ( (type_2ou & DPV2_X8_BOARD) == DPV2_X8_BOARD ) {
-          snprintf(path, path_len, EEPROM_PATH, FRU_DPV2_X8_BUS(i), DPV2_FRU_ADDR);
+          snprintf(path, path_len, EEPROM_PATH, FRU_DEVICE_BUS(i), DPV2_FRU_ADDR);
           snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, i, BOARD_2OU_X8);
           if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
             syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, dev_path);

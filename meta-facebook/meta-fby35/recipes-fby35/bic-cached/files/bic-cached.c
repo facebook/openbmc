@@ -115,6 +115,18 @@ fruid_cache_init(uint8_t slot_id) {
     }
     return (remote_f_ret + remote_r_ret);
   } else { // Baseboard BMC
+    // PROT FRU
+    if( fby35_common_is_prot_card_prsnt(slot_id) ) {
+      char path[128] = {0};
+      int path_len = sizeof(path);
+      char dev_path[MAX_FRU_PATH_LEN] = {0};
+      snprintf(path, path_len, EEPROM_PATH, FRU_DEVICE_BUS(slot_id), PROT_FRU_ADDR);
+      snprintf(dev_path, sizeof(dev_path), FRU_DEV_PATH, slot_id, BOARD_PROT);
+      if ( copy_eeprom_to_bin(path, dev_path) < 0 ) {
+        syslog(LOG_WARNING, "%s() Failed to get PROT FRU\n", __func__);
+      }
+    }
+
     if (PRESENT_1OU == (PRESENT_1OU & present)) {
       // dump 1ou board fru
       ret = bic_get_1ou_type(slot_id, &type_1ou);

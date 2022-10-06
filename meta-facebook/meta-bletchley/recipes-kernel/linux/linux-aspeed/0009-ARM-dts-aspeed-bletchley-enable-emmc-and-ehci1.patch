@@ -1,0 +1,40 @@
+From cf755a07d1e426096f3750262058633d3d80f1f7 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Thu, 29 Sep 2022 09:47:06 +0800
+Subject: [PATCH 2/2] ARM: dts: aspeed: bletchley: enable emmc and ehci1
+
+Enable both emmc-controller and emmc nodes for storage soultion on
+bletchley, and enable ehci1 node as second storage plan.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+LORE LINK: https://lore.kernel.org/all/20220929014706.1917372-3-potin.lai.pt@gmail.com
+---
+ arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+index f5986f5909cd..a619eec70633 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+@@ -1046,6 +1046,18 @@ &ehci0 {
+ 	status = "okay";
+ };
+ 
++&ehci1 {
++	status = "okay";
++};
++
++&emmc_controller {
++	status = "okay";
++};
++
++&emmc {
++	status = "okay";
++};
++
+ &pinctrl {
+ 	pinctrl_gpiov2_unbiased_default: gpiov2 {
+ 		pins = "AD14";
+-- 
+2.35.1
+

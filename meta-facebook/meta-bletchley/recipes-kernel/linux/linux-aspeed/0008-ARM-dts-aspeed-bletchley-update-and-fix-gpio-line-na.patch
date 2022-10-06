@@ -1,0 +1,41 @@
+From 1c0d9ef6b9cdd3dd1ec3744bc7c28c150da2c27c Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Thu, 29 Sep 2022 09:47:05 +0800
+Subject: [PATCH 1/2] ARM: dts: aspeed: bletchley: update and fix
+ gpio-line-names
+
+Update new GPIOM7 line name, and fixed typo of GPION6 line name
+
+New GPIO:
+- GPIOM7: USB_DEBUG_PWR_BTN_N
+
+Fixed GPIO:
+- GPION6: LED_POSTCODE_5 --> LED_POSTCODE_6
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+LORE LINK: https://lore.kernel.org/all/20220929014706.1917372-2-potin.lai.pt@gmail.com/
+---
+ arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+index 1f72017c1e2d..f5986f5909cd 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
+@@ -984,11 +984,11 @@ &gpio0 {
+ 	/*M0-M7*/	"ALERT_SLED1_N","ALERT_SLED2_N",
+ 			"ALERT_SLED3_N","ALERT_SLED4_N",
+ 			"ALERT_SLED5_N","ALERT_SLED6_N",
+-			"","",
++			"","USB_DEBUG_PWR_BTN_N",
+ 	/*N0-N7*/	"LED_POSTCODE_0","LED_POSTCODE_1",
+ 			"LED_POSTCODE_2","LED_POSTCODE_3",
+ 			"LED_POSTCODE_4","LED_POSTCODE_5",
+-			"LED_POSTCODE_5","LED_POSTCODE_7",
++			"LED_POSTCODE_6","LED_POSTCODE_7",
+ 	/*O0-O7*/	"","","","",
+ 			"","BOARD_ID0","BOARD_ID1","BOARD_ID2",
+ 	/*P0-P7*/	"","","","","","","","BMC_HEARTBEAT",
+-- 
+2.35.1
+

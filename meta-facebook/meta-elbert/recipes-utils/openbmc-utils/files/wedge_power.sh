@@ -123,7 +123,7 @@ do_config_reset_duration() {
     ret=$?
     if [ $ret -ne 0 ]; then
         usage
-        exit -1
+        exit 1
     else
         values=( 10 20 30 40 1 2 5 10 )
         units="seconds"
@@ -204,6 +204,7 @@ toggle_pim_reset() {
         if [ "$pim" -eq 0 ] || [ "$slot" -eq "$pim" ]; then
             echo "Reset PIM${slot}..."
             echo '1' > "$SMBCPLD_SYSFS_DIR"/pim"$slot"_reset
+            touch /tmp/.pim"$slot"_reset
         fi
     done
     echo 'Waiting for PIMs to be re-enabled...'

@@ -166,7 +166,6 @@ do
 done
 
 # SMBus 5 PSU MUX, muxed as Bus 24-27
-# ELBERTTODO Do we need to enable WP for PSU?
 for id in 1 2 3 4
 do
     psu_prsnt="$(head -n 1 "$SMBCPLD_SYSFS_DIR"/psu"$id"_present)"

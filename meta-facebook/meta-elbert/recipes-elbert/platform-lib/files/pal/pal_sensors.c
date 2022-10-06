@@ -846,7 +846,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_TEMP][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UCR_THRESH] = 32;
-        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LCR_THRESH] = 0; //unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_U_CURR][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_VOUT][UCR_THRESH] = 3.63;
@@ -858,7 +858,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 32;
-        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = 0; // unset
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = 0; //unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_LM73_TEMP][UNC_THRESH] = 90;
@@ -914,7 +914,7 @@ pim_thresh_array_init(uint8_t fru) {
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_TEMP][LNC_THRESH] = 0; // unset
-        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 32;
+        pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UCR_THRESH] = 32; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LCR_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][UNC_THRESH] = 0; // unset
         pim_sensor_threshold[i][PIM_POS_3V3_L_CURR][LNC_THRESH] = 0; // unset

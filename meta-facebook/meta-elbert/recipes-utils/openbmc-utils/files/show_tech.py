@@ -148,7 +148,6 @@ def switchcard_debuginfo(verbose=False):
     if verbose:
         print("##### SMB CPLD I2CDUMP #####\n")
         print(runCmd("i2cdump -f -y 4 0x23", echo=True))
-    # ELBERTTODO
 
 
 def scm_debuginfo(verbose=False):
@@ -158,14 +157,12 @@ def scm_debuginfo(verbose=False):
     if verbose:
         print("##### SCM CPLD I2CDUMP #####\n")
         print(runCmd("i2cdump -f -y 12 0x43", echo=True))
-    # ELBERTTODO
 
 
 def pim_debuginfo():
     print("################################")
     print("######## PIM DEBUG INFO ########")
     print("################################\n")
-    # ELBERTTODO
 
 
 def psu_debuginfo():

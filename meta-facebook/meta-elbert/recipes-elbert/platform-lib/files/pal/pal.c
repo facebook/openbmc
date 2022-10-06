@@ -710,6 +710,42 @@ pal_is_pim_prsnt(uint8_t fru, uint8_t *status) {
 }
 
 int
+pal_is_pim_fpga_rev_valid(uint8_t fru, uint8_t *status) {
+  int val;
+  char tmp[LARGEST_DEVICE_NAME];
+  char prsnt_path[LARGEST_DEVICE_NAME + 1];
+
+  // Check present bit.
+  snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_FPGA_REV_MAJOR);
+  snprintf(prsnt_path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
+  if (read_device(prsnt_path, &val) == 0 && val != 0xff) {
+    *status = 1;
+  } else {
+    *status = 0;
+  }
+
+  return 0;
+}
+
+int
+pal_is_pim_reset(uint8_t fru, uint8_t *status) {
+  int val;
+  char tmp[LARGEST_DEVICE_NAME];
+  char prsnt_path[LARGEST_DEVICE_NAME + 1];
+
+  // Check present bit.
+  snprintf(tmp, LARGEST_DEVICE_NAME, SMBCPLD_PATH_FMT, PIM_RESET);
+  snprintf(prsnt_path, LARGEST_DEVICE_NAME, tmp, fru - FRU_PIM2 + 2);
+  if (read_device(prsnt_path, &val) == 0 && val == 0x0 ) {
+    *status = 1;
+  } else {
+    *status = 0;
+  }
+
+  return 0;
+}
+
+int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
   int val;
   char tmp[LARGEST_DEVICE_NAME];
@@ -952,8 +988,10 @@ pal_get_pim_type(uint8_t fru, int retry) {
 
   pal_get_fru_name(fru, fru_name);
 
-  while ((ret = elbert_eeprom_parse(fru_name, &eeprom)) != 0 && retry--) {
+  ret = elbert_eeprom_parse(fru_name, &eeprom);
+  while (ret != 0 || !strstr(eeprom.fbw_product_asset, "88-") && retry--) {
     msleep(500);
+    ret = elbert_eeprom_parse(fru_name, &eeprom);
   }
 
   if (ret) {

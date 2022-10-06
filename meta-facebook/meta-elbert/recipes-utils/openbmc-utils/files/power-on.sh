@@ -60,5 +60,3 @@ if [ $on -eq 0 ]; then
     echo "uServer still not up. Running forced power-up sequence"
     wedge_power.sh on -f
 fi
-
-pim_enable.sh > /dev/null 2>&1 &

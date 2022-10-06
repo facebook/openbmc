@@ -50,9 +50,3 @@ update_clock "$switchcard_bus"
 # For the switchcard UCD90160B, there are 18 bytes to clear
 echo "Clearing SWITCHCARD DPM logs..."
 i2cset -y 3 0x4e 0xea 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 s
-
-echo "Dumping and clearing PIM DPM logs..."
-for pim_num in 2 3 4 5 6 7 8 9
-do
-    pim_dpm_dump.sh --clear "$pim_num" >> "$logfile"
-done

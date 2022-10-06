@@ -28,7 +28,6 @@ LOCAL_URI += "\
     file://dump_pim_serials.sh \
     file://dump_gpios.sh \
     file://eth0_mac_fixup.sh \
-    file://hclk_fixup.sh \
     file://oob-eeprom-util.sh \
     file://oob-mdio-util.sh \
     file://oob-status.sh \
@@ -45,7 +44,6 @@ LOCAL_URI += "\
     file://pim_dpm_dump.sh \
     file://show_tech.py \
     file://psu_show_tech.py \
-    file://pim_enable.sh \
     file://pim_types.sh \
     file://elbert_pim.layout \
     file://peutil \
@@ -78,7 +76,6 @@ OPENBMC_UTILS_FILES += " \
     dpm_ver.sh \
     show_tech.py \
     psu_show_tech.py \
-    pim_enable.sh \
     pim_types.sh \
     peutil \
     spi_pim_ver.sh \
@@ -115,10 +112,6 @@ do_install_board() {
 
     install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
-
-    # ELBERTTODO Remove P1 Hacks
-    install -m 755 hclk_fixup.sh ${D}${sysconfdir}/init.d/hclk_fixup.sh
-    update-rc.d -r ${D} hclk_fixup.sh start 70 S .
 
     # networking is done after rcS, any start level within rcS for
     # mac fixup should work

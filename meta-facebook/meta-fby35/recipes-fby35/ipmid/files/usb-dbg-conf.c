@@ -566,6 +566,8 @@ plat_get_etra_fw_version(uint8_t slot_id, char *fw_text)
 int plat_get_extra_sysinfo(uint8_t fru, char *info)
 {
   char fru_name[16];
+  char post_code_info[32] = {0};
+  char postcode[8] = {0};
 
   if(fru == FRU_ALL) {
     fru = FRU_BMC;
@@ -574,6 +576,15 @@ int plat_get_extra_sysinfo(uint8_t fru, char *info)
   if (!pal_get_fru_name( fru, fru_name)) {
 
     sprintf(info, "FRU:%s", fru_name);
+  }
+
+  if(fby35_common_get_slot_type(fru) == SERVER_TYPE_HD) {
+    if (pal_get_last_postcode(fru, postcode)) {
+      sprintf(post_code_info, "\nPOST: NA\n");
+    } else {
+      sprintf(post_code_info, "\nPOST: %s\n", postcode);
+    }
+    strcat(info, post_code_info);
   }
   return 0;
 }

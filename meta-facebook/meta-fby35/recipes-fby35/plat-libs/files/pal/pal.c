@@ -4820,6 +4820,30 @@ pal_is_prot_card_prsnt(uint8_t fru)
     return fby35_common_is_prot_card_prsnt(fru);
 }
 
+int
+pal_set_last_postcode(uint8_t slot, uint32_t postcode) {
+  char key[MAX_KEY_LEN] = {0};
+  char str[MAX_VALUE_LEN] = {0};
+
+  snprintf(key,MAX_KEY_LEN, "slot%u_last_postcode", slot);
+  snprintf(str,MAX_VALUE_LEN, "%08X", postcode);
+  return kv_set(key, str, 0, 0);
+}
+
+int
+pal_get_last_postcode(uint8_t slot, char* postcode) {
+  int ret;
+  char key[MAX_KEY_LEN] = {0};
+  sprintf(key, "slot%u_last_postcode", slot);
+
+  ret = kv_get(key, postcode,NULL,0);
+  if (ret) {
+    syslog(LOG_WARNING,"pal_get_last_postcode failed");
+    return -1;
+  }
+  return 0;
+}
+
 #ifdef CONFIG_HALFDOME
 int
 pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, size_t max_len, size_t *res_len) {
@@ -4856,4 +4880,14 @@ pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, si
 
   return ret;
 }
+
+int
+pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
+
+  // update current post code to debug card's SYS Info page
+  pal_set_last_postcode(slot, postcode_dw);
+
+  return 0;
+}
+
 #endif

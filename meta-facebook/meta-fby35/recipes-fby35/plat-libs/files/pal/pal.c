@@ -1134,6 +1134,9 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_BB:
       *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_READ;
       break;
+    case FRU_OPCDBG:
+      *caps = 0; //OCP debug card not support sensor/FRU
+      break;
     default:
       ret = -1;
       break;
@@ -1362,6 +1365,9 @@ pal_get_fru_name(uint8_t fru, char *name) {
       break;
     case FRU_NICEXP:
       sprintf(name, "nicexp");
+      break;
+    case FRU_OPCDBG:
+      snprintf(name, MAX_COMPONENT_LEN, "ocpdbg");
       break;
     case FRU_AGGREGATE:
       ret = PAL_EOK; //it's the virtual FRU.

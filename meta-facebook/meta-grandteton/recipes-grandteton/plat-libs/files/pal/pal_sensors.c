@@ -382,29 +382,6 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
   return pal_get_x86_event_sensor_name(fru, snr_num, name);
 }
 
-int
-pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
-{
-  uint8_t snr_num = sel[11];
-  //uint8_t *event_data = &sel[10];
-  //uint8_t *ed = &event_data[3];
-  bool parsed = true;
-
-  strcpy(error_log, "");
-  switch(snr_num) {
-    default:
-      parsed = false;
-      break;
-  }
-
-  if (parsed == true) {
-    return 0;
-  }
-
-  pal_parse_sel_helper(fru, sel, error_log);
-  return 0;
-}
-
 static int pal_set_peci_mux(uint8_t select) {
   gpio_desc_t *desc;
   bool ret = false;

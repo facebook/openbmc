@@ -9,8 +9,21 @@ Users can run `bios-util slotX --plat_info get` to call it.
 import json
 import re
 from subprocess import PIPE, Popen
+import kv
 
 SHOW_SYS_CONFIG = "/usr/local/bin/show_sys_config"
+
+
+def is_halfdome():
+    try:
+        conf = kv.kv_get("sled_system_conf", kv.FPERSIST, True)
+        if conf.find(b"HD") != -1:
+            return True
+        return False
+
+    except Exception:
+        return False
+
 
 """ Get Platform Info """
 
@@ -38,7 +51,10 @@ def plat_info(fru):
             return
 
         sys_type = json_data["Type"]
-        if "Class 2" in sys_type:
+        if is_halfdome():
+            sku = "HalfDome"
+            pcie_configuration = "2x HalfDomes"
+        elif "Class 2" in sys_type:
             pcie_configuration = "2x Crater Lakes"
         else:
             pcie_configuration = json_data["server_config"]["slot" + str(fru)][

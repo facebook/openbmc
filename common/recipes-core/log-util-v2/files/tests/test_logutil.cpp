@@ -129,7 +129,6 @@ TEST_F(LogPrintTest, BasicPrintTimestamp) {
   stringstream exp;
   exp << "0    all      2020-05-18 10:18:40    healthd          BMC Reboot detected - caused by reboot command\n";
   exp << "2    nic      2020-05-18 10:18:38    ncsid            FRU: 2 NIC AEN Supported: 0x7, AEN Enable Mask=0x7\n";
-  exp << "2020 May 21 17:29:55 log-util: User cleared FRU: 2 logs\n";
 
   EXPECT_EQ(outp.str(), exp.str());
 

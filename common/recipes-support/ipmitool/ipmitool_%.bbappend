@@ -2,7 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 def ipmitool_patch_dir(d):
     distro = d.getVar('DISTRO_CODENAME', True)
-    if distro in ['rocko', 'dunfell', 'kirkstone', 'master']:
+    if distro in ['rocko', 'dunfell', 'kirkstone']:
         return "1.8.18"
     return "1.8.19"
 

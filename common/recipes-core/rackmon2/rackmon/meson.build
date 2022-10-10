@@ -11,7 +11,7 @@ project('rackmon', 'cpp',
     meson_version: '>=0.40',
 )
 
-add_project_arguments('-Wno-psabi', language: 'c++')
+add_project_arguments('-Wno-psabi', language: 'cpp')
 
 common = files(
     'Device.cpp',

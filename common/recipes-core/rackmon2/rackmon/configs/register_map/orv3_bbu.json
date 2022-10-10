@@ -16,6 +16,18 @@
         [115200, 4]
       ]
     },
+    "special_handlers": [
+      {
+        "reg": 302,
+        "len": 2,
+        "period": 3600,
+        "action": "write",
+        "info": {
+          "interpret": "integer",
+          "shell": "date +%s"
+        }
+      }
+    ],
     "registers": [
         {
             "begin": 0,

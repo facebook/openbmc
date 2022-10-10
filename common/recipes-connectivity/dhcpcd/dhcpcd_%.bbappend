@@ -7,9 +7,14 @@ SRC_URI += " \
 
 RDEPENDS:${PN}:append = " bash"
 
-do_install:append() {
+do_install_fake_dhclient() {
     install -d ${D}${sbindir}
     install -m 0755 ${WORKDIR}/dhclient ${D}${sbindir}
+}
+
+do_install:append() {
+    # install fake dhclient
+    do_install_fake_dhclient
 
     # set DUID type to DUID-LL
     sed -i 's/^duid.*/duid ll/g' ${D}${sysconfdir}/dhcpcd.conf

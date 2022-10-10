@@ -178,11 +178,50 @@ static int pal_lpc_snoop_read(uint8_t *buf, size_t max_len, size_t *rlen)
   return PAL_EOK;
 }
 
+static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
+{
+  const char *dev_path = "/dev/aspeed-lpc-pcc";
+  const char *cache_key = "postcode";
+  uint8_t cache[MAX_VALUE_LEN * 2];
+  size_t len = 0, cache_len = 0;
+  int fd;
+  uint16_t postcode;
+
+  if (kv_get(cache_key, (char *)cache, &len, 0)) {
+    len = cache_len = 0;
+  } else {
+    cache_len = len;
+  }
+
+  fd = open(dev_path, O_RDONLY | O_NONBLOCK);
+  if (fd < 0) {
+    return PAL_ENOTREADY;
+  }
+  while (len < sizeof(cache) &&
+      read(fd, &postcode, 2) == 2) {
+    cache[len++] = postcode & 0x00FF;
+  }
+  close(fd);
+
+  if (len > cache_len) {
+    if (len > MAX_VALUE_LEN) {
+      memmove(cache, &cache[len - MAX_VALUE_LEN], MAX_VALUE_LEN);
+      len = MAX_VALUE_LEN;
+    }
+    if (kv_set(cache_key, (char *)cache, len, 0)) {
+      syslog(LOG_CRIT, "%zu postcodes dropped\n", len - cache_len);
+    }
+  }
+  len = len > max_len ? max_len : len;
+  memcpy(buf, cache, len);
+  *rlen = len;
+  return PAL_EOK;
+}
+
+
 int __attribute__((weak))
 pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len)
 {
-  static bool legacy = false, legacy_checked = false;
-
   if (buf == NULL || len == NULL || max_len == 0)
     return -1;
 
@@ -191,23 +230,16 @@ pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len)
     return PAL_ENOTSUP;
   }
 
-  if (legacy_checked == false) {
-    if (access("/sys/devices/platform/ast-snoop-dma.0/data_history", F_OK) == 0) {
-      legacy = true;
-      legacy_checked = true;
-    } else if (access("/dev/aspeed-lpc-snoop0", F_OK) == 0) {
-      legacy_checked = true;
-    } else {
-      return PAL_ENOTSUP;
-    }
-  }
-
-  // Support for snoop-dma on 4.1 kernel.
-  if (legacy) {
+  if (access("/sys/devices/platform/ast-snoop-dma.0/data_history", F_OK) == 0) {
+    // Support for snoop-dma on 4.1 kernel.
     return pal_lpc_snoop_read_legacy(buf, max_len, len);
+  } else if (access("/dev/aspeed-lpc-snoop0", F_OK) == 0) {
+    return pal_lpc_snoop_read(buf, max_len, len);
+  } else if (access("/dev/aspeed-lpc-pcc", F_OK) == 0) {
+    return pal_lpc_pcc_read(buf, max_len, len);
+  } else {
+    return PAL_ENOTSUP;
   }
-  return pal_lpc_snoop_read(buf, max_len, len);
-
 }
 
 int __attribute__((weak))

@@ -48,7 +48,7 @@
     "retry_threshold": 20
   },
   "verified_boot": {
-    "enabled": false
+    "enabled": true
   },
   "bmc_timestamp": {
     "enabled": true

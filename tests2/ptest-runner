@@ -143,7 +143,7 @@ def main(args):
     )  # fake shm,tmp for flake8
     if not args.tmpfs:
         base_cmd = ["unshare", "--mount", "--map-root-user", "chroot", rootfs]
-        init_steps = ["mount -t tmpfs -o size=512m tmpfs /dev/shm"]
+        init_steps = ["export PATH=/bin:${PATH}", "mount -t tmpfs -o size=512m tmpfs /dev/shm"]
     else:
         # If we unpacked the rootfs within an existing tmpfs, then we don't have
         # to mount /dev/shm as a tmpfs.
@@ -154,7 +154,7 @@ def main(args):
         init_file = "/init-file.sh"
         with open(rootfs + init_file, "w") as f:
             f.write("\n".join(init_steps))
-        subprocess.check_call(base_cmd + ["bash", "--init-file", init_file])
+        subprocess.check_call(base_cmd + ["/bin/bash", "--init-file", init_file])
     elif not args.skip_tests:
         exit_error = False
         if args.recipes is None or len(args.recipes) == 0:
@@ -162,7 +162,7 @@ def main(args):
         else:
             recipes = args.recipes
         ptest_cmd = " ".join(["ptest-runner"] + recipes)
-        cmd = base_cmd + ["bash", "-c", " && ".join(init_steps + [ptest_cmd])]
+        cmd = base_cmd + ["/bin/bash", "-c", " && ".join(init_steps + [ptest_cmd])]
         try:
             out = subprocess.check_output(cmd).decode()
             print(out)

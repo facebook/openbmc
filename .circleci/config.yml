@@ -170,7 +170,7 @@ workflows:
                     parameters:
                         machine: [
                             angelslanding,
-                            bletchley,
+                            # bletchley, FIXME OOM errors in build
                             clearcreek,
                             cloudripper,
                             cmm,

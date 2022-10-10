@@ -1,0 +1,706 @@
+From 0525e879334e5a3ba11461366d23e8336404f106 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Mon, 9 May 2022 22:55:21 -0700
+Subject: [PATCH 1/3] spi: add user-mode aspeed spi driver
+
+Summary:
+The driver was copied from linux-aspeed-5.15, and it is used to access
+non-flash spi devices such as eeprom.
+
+NOTE: the driver should be dropped, and the user-mode spi transaction
+functions should be moved to spi-aspeed-smc driver.
+
+Test Plan:
+1) "bitbake wedge400-image" succeeded.
+2) "spi_util.sh" reads BIOS on wedge400 successfully.
+3) "bitbake elbert-image" succeeded.
+4) "spi_pim_ver.sh" prints proper PIM version on elbert.
+
+Reviewers: tfang, goldenbug, #openbmc
+
+Reviewed By: goldenbug
+
+Differential Revision: https://phabricator.intern.facebook.com/D37292798
+---
+ drivers/spi/Kconfig           |   7 +
+ drivers/spi/Makefile          |   1 +
+ drivers/spi/spi-aspeed-user.c | 637 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 645 insertions(+)
+ create mode 100644 drivers/spi/spi-aspeed-user.c
+
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index e32f6a2058ae..96f08acc4584 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -112,6 +112,13 @@ config SPI_ASPEED_SMC
+ 	  controller (SPI) for the host firmware. The implementation
+ 	  only supports SPI NOR.
+ 
++config SPI_ASPEED_USER
++	tristate "ASPEED SPI Controller (User Mode)"
++	depends on ARCH_ASPEED
++	help
++	  This enables support for the SPI Controller User Mode in
++	  AST24XX, AST25XX and AST26XX SoCs.
++
+ config SPI_ATMEL
+ 	tristate "Atmel SPI Controller"
+ 	depends on ARCH_AT91 || COMPILE_TEST
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 15d2f3835e45..e2897f1f1c4d 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -20,6 +20,7 @@ obj-$(CONFIG_SPI_ALTERA_DFL)		+= spi-altera-dfl.o
+ obj-$(CONFIG_SPI_AR934X)		+= spi-ar934x.o
+ obj-$(CONFIG_SPI_ARMADA_3700)		+= spi-armada-3700.o
+ obj-$(CONFIG_SPI_ASPEED_SMC)		+= spi-aspeed-smc.o
++obj-$(CONFIG_SPI_ASPEED_USER)		+= spi-aspeed-user.o
+ obj-$(CONFIG_SPI_ATMEL)			+= spi-atmel.o
+ obj-$(CONFIG_SPI_ATMEL_QUADSPI)		+= atmel-quadspi.o
+ obj-$(CONFIG_SPI_AT91_USART)		+= spi-at91-usart.o
+diff --git a/drivers/spi/spi-aspeed-user.c b/drivers/spi/spi-aspeed-user.c
+new file mode 100644
+index 000000000000..519e965585cc
+--- /dev/null
++++ b/drivers/spi/spi-aspeed-user.c
+@@ -0,0 +1,637 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * ASPEED SPI Controller Driver
++ *
++ * Copyright 2019-present Facebook. All Rights Reserved.
++ *
++ * Borrowed some code from drivers/mtd/spi-nor/aspeed-smc.c.
++ *
++ * Based on Ryan Chen's work in 2012:
++ * Copyright (C) 2012-2020 ASPEED Technology Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/clk.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/ioport.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/errno.h>
++#include <linux/wait.h>
++#include <linux/delay.h>
++#include <linux/spi/spi.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/of.h>
++
++#define ASPEED_SPI_DRIVER		"aspeed-spi-user"
++#define ASPEED_SPI_CS_MAX		3
++#define ASPEED_SUPP_MODES		(SPI_CPOL | SPI_CPHA | SPI_CS_HIGH)
++
++/*
++ * Register definitions.
++ */
++#define ASPEED_CFG_REG			0x00
++#define ASPEED_CE_CTRL_REG		0x04
++
++/*
++ * AST2500 flash timing Div2 mode. Refer to SPIR04 and SPIR10/SPIR14.
++ */
++#define AST2500_CLK_DIV2_CE0_BIT	8
++#define AST2500_CTRL_CLK_DIV4_MODE	BIT(13)
++
++/*
++ * Fields in CE# Control Register SPIR10, SPIR14 and SPIR18 (for AST2600
++ * SPI2 only).
++ */
++#define ASPEED_CTRL_USER_MODE		3
++#define ASPEED_CTRL_STOP_ACTIVE		BIT(2)
++#define ASPEED_CTRL_CLK_MODE_3		BIT(4)
++#define ASPEED_CTRL_CLK_DIV_MAX		16
++#define AST2400_CTRL_CLK_DIV_MASK	(0xF << 8)
++#define AST2400_CTRL_CLK_DIV(d)		(((d) & 0xF) << 8)
++#define AST2600_CTRL_CLK_DIV_MASK    ((0xF << 24) | (0xF << 8))
++#define AST2600_CTRL_CLK_DIV(d)      (((d) & 0xF) << 8) | (((d) & 0xF0) << 20)
++
++/*
++ * AST2520/AST2500
++ * The Segment Register uses a 8MB unit to encode the start address
++ * and the end address of the mapping window of a flash SPI slave :
++ *
++ *        | byte 1 | byte 2 | byte 3 | byte 4 |
++ *        +--------+--------+--------+--------+
++ *        |  end   |  start |   0    |   0    |
++ */
++#define AST2500_SEGMENT_ADDR_START(_v)		((((_v) >> 16) & 0xFF) << 23)
++#define AST2500_SEGMENT_ADDR_END(_v)		((((_v) >> 24) & 0xFF) << 23)
++
++/*
++ * The Segment Registers of the AST2600 have a 1MB unit. The address
++ * range of a flash SPI slave is encoded with offsets in the overall
++ * controller window. The previous SoC AST2400 and AST2500 used
++ * absolute addresses. Only bits [27:20] are relevant and the end
++ * address is an upper bound limit.
++ */
++#define AST2600_SEG_ADDR_MASK 0x0ff00000
++#define AST2600_SEG_ADDR_BUILD(start, end)		\
++	((((start) & AST2600_SEG_ADDR_MASK) >> 16) |	\
++	 ((end) & AST2600_SEG_ADDR_MASK))
++
++struct aspeed_spi_priv;
++
++struct spi_cs_info {
++	u32 ctrl_reg;		/* CE# Control Register */
++	u32 addr_range_reg;	/* CE# Address Decoding Range Register */
++	u8 enable_write_bit;	/* SPIR00: Enable CE# default write type */
++
++	/*
++	 * memory mapped I/O space for the specific chip (CE#).
++	 */
++	void __iomem *io_mem_base;
++	u32 io_mem_size;
++};
++
++struct aspeed_spi_config {
++	int (*clk_setup)(struct aspeed_spi_priv *priv, u16 cs, u32 freq);
++	int (*addr_range_setup)(struct aspeed_spi_priv *priv, u16 cs);
++
++	u16 num_chipselect;
++	struct spi_cs_info cs_info[ASPEED_SPI_CS_MAX];
++};
++
++struct aspeed_spi_priv {
++	struct spi_master *master;
++	struct device *dev;
++
++	/*
++	 * clock info.
++	 */
++	unsigned long ahb_clk_freq;
++
++	/*
++	 * Controller register I/O space.
++	 */
++	struct resource *controller_res;
++	void __iomem *controller_reg_base;
++
++	/*
++	 * Flash memory space.
++	 */
++	struct resource *flash_mem_res;
++	void __iomem *flash_mem_base;
++
++	/*
++	 * SPI config loaded at probe time.
++	 */
++	struct aspeed_spi_config config;
++};
++#define SPI_CS_INFO(_priv, _cs)		(&((_priv)->config.cs_info[_cs]))
++
++static int ast2400_addr_range_setup(struct aspeed_spi_priv *priv, u16 cs);
++static int ast2400_clk_setup(struct aspeed_spi_priv *priv, u16 cs, u32 freq);
++static int ast2500_addr_range_setup(struct aspeed_spi_priv *priv, u16 cs);
++static int ast2500_clk_setup(struct aspeed_spi_priv *priv, u16 cs, u32 freq);
++static int ast2600_addr_range_setup(struct aspeed_spi_priv *priv, u16 cs);
++static int ast2600_clk_setup(struct aspeed_spi_priv *priv, u16 cs, u32 freq);
++
++static const struct aspeed_spi_config ast2400_config = {
++	.clk_setup = ast2400_clk_setup,
++	.addr_range_setup = ast2400_addr_range_setup,
++
++	.num_chipselect = 1,
++	.cs_info = {
++		[0] = {
++			.ctrl_reg = 0x4,
++			.addr_range_reg = 0xFF,	/* UNUSED */
++			.enable_write_bit = 0,
++		},
++	},
++};
++
++static const struct aspeed_spi_config ast2500_config = {
++	.clk_setup = ast2500_clk_setup,
++	.addr_range_setup = ast2500_addr_range_setup,
++
++	.num_chipselect = 2,
++	.cs_info = {
++		[0] = {
++			.ctrl_reg = 0x10,
++			.addr_range_reg = 0x30,
++			.enable_write_bit = 16,
++		},
++		[1] = {
++			.ctrl_reg = 0x14,
++			.addr_range_reg = 0x34,
++			.enable_write_bit = 17,
++		},
++	},
++};
++
++static const struct aspeed_spi_config ast2600_config = {
++	.clk_setup = ast2600_clk_setup,
++	.addr_range_setup = ast2600_addr_range_setup,
++
++	/*
++	 * "aspeed,num-chipselect" needs to be set to <3> in device tree
++	 * if CE2 is used (for SPI2 only).
++	 */
++	.num_chipselect = 2,
++	.cs_info = {
++		[0] = {
++			.ctrl_reg = 0x10,
++			.addr_range_reg = 0x30,
++			.enable_write_bit = 16,
++		},
++		[1] = {
++			.ctrl_reg = 0x14,
++			.addr_range_reg = 0x34,
++			.enable_write_bit = 17,
++		},
++		[2] = {
++			.ctrl_reg = 0x18,
++			.addr_range_reg = 0x38,
++			.enable_write_bit = 18,
++		},
++	},
++};
++
++static const struct of_device_id aspeed_spi_of_match[] = {
++	{ .compatible = "aspeed,ast2400-spi-user", .data = &ast2400_config},
++	{ .compatible = "aspeed,ast2500-spi-user", .data = &ast2500_config},
++	{ .compatible = "aspeed,ast2600-spi-user", .data = &ast2600_config},
++	{}
++};
++MODULE_DEVICE_TABLE(of, aspeed_spi_of_match);
++
++static void aspeed_reg_write(struct aspeed_spi_priv *priv, u32 reg, u32 val)
++{
++	writel(val, priv->controller_reg_base + reg);
++}
++
++static u32 aspeed_reg_read(struct aspeed_spi_priv *priv, u32 reg)
++{
++	return readl(priv->controller_reg_base + reg);
++}
++
++static void aspeed_reg_set_mask(struct aspeed_spi_priv *priv,
++				u32 reg,
++				u32 mask)
++{
++	u32 val = aspeed_reg_read(priv, reg);
++
++	val |= mask;
++	aspeed_reg_write(priv, reg, val);
++}
++
++static void aspeed_reg_clear_mask(struct aspeed_spi_priv *priv,
++				  u32 reg,
++				  u32 mask)
++{
++	u32 val = aspeed_reg_read(priv, reg);
++
++	val &= ~mask;
++	aspeed_reg_write(priv, reg, val);
++}
++
++static bool ast2500_check_set_div2(struct aspeed_spi_priv *priv,
++				   u16 cs, u32 spi_max_freq)
++{
++	u32 div, mask;
++
++	div = priv->ahb_clk_freq / spi_max_freq;
++	if (div > ASPEED_CTRL_CLK_DIV_MAX) {
++		mask = BIT(AST2500_CLK_DIV2_CE0_BIT + cs);
++		aspeed_reg_set_mask(priv, ASPEED_CE_CTRL_REG, mask);
++		return true;
++	}
++
++	return false;
++}
++
++/*
++ * Calculate spi clock frequency divisor. AST2400 and AST2500 share the
++ * same logic:
++ *   - AST2400: Datasheet Chapter 9, SPIR04[11:8].
++ *   - AST2500: Datasheet Chapter 14, SPIR10|SPIR14[11:8].
++ */
++static u32 ast2400_spi_clk_div(unsigned long ahb_clk_freq,
++			       u32 spi_max_freq)
++{
++	unsigned long i;
++	u32 div_val = 0;
++	static const u32 div_map[ASPEED_CTRL_CLK_DIV_MAX] = {
++		15, 7, 14, 6, 13, 5, 12, 4,
++		11, 3, 10, 2, 9, 1, 8, 0,
++	};
++
++	for (i = 1; i <= ASPEED_CTRL_CLK_DIV_MAX; i++) {
++		if ((spi_max_freq * i) >= ahb_clk_freq) {
++			div_val = div_map[i - 1];
++			break;
++		}
++	}
++
++	return div_val;
++}
++
++static int ast2400_clk_setup(struct aspeed_spi_priv *priv, u16 cs, u32 freq)
++{
++	u32 val, div;
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++	val = aspeed_reg_read(priv, cs_info->ctrl_reg);
++
++	val &= ~AST2400_CTRL_CLK_DIV_MASK;
++	div = ast2400_spi_clk_div(priv->ahb_clk_freq, freq);
++	val |= AST2400_CTRL_CLK_DIV(div);
++
++	aspeed_reg_write(priv, cs_info->ctrl_reg, val);
++	return 0;
++}
++
++static int ast2500_clk_setup(struct aspeed_spi_priv *priv, u16 cs, u32 freq)
++{
++	u32 val, div;
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++	val = aspeed_reg_read(priv, cs_info->ctrl_reg);
++
++	val &= ~AST2400_CTRL_CLK_DIV_MASK;
++	if (ast2500_check_set_div2(priv, cs, freq)) {
++		// SPI clock divided by 4
++		val |= AST2500_CTRL_CLK_DIV4_MODE;
++		freq = freq >> 2;
++	}
++	div = ast2400_spi_clk_div(priv->ahb_clk_freq, freq);
++	val |= AST2400_CTRL_CLK_DIV(div);
++
++	aspeed_reg_write(priv, cs_info->ctrl_reg, val);
++	return 0;
++}
++
++/*
++ * Calculate spi clock frequency divisor. Refer to AST2600 datasheet,
++ * Chapter 15, CE# control registers SPIR10/14/18, bit 27:24, 11:8.
++ */
++static u32 ast2600_spi_clk_div(unsigned long ahb_clk_freq,
++			       u32 spi_max_freq)
++{
++	unsigned long i, j;
++	u32 div_val = 0;
++	u8 base_div = 0;
++	bool done = false;
++
++	static const u32 div_map[ASPEED_CTRL_CLK_DIV_MAX] = {
++		15, 7, 14, 6, 13, 5, 12, 4,
++		11, 3, 10, 2, 9, 1, 8, 0,
++	};
++
++	for (j = 0; j < 0xF; j++) {
++		for (i = 1; i <= ASPEED_CTRL_CLK_DIV_MAX; i++) {
++			base_div = j * 16;
++			if ((spi_max_freq * (i+base_div)) >= ahb_clk_freq) {
++				div_val = (j << 4) | div_map[i - 1];
++				done = true;
++				break;
++			}
++		}
++		if (done)
++			break;
++	}
++
++	return div_val;
++}
++
++static int ast2600_clk_setup(struct aspeed_spi_priv *priv, u16 cs, u32 freq)
++{
++	u32 val, div;
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++	val = aspeed_reg_read(priv, cs_info->ctrl_reg);
++	val &= ~AST2600_CTRL_CLK_DIV_MASK;
++	div = ast2600_spi_clk_div(priv->ahb_clk_freq, freq);
++	val |= AST2600_CTRL_CLK_DIV(div);
++
++	aspeed_reg_write(priv, cs_info->ctrl_reg, val);
++	return 0;
++}
++
++static int
++aspeed_spi_setup_xfer(struct spi_device *slave)
++{
++	int ret = 0;
++	u16 cs = slave->chip_select;
++	struct aspeed_spi_priv *priv = spi_master_get_devdata(slave->master);
++
++	if (cs == 0 && slave->mode & SPI_CS_HIGH) {
++		dev_err(&slave->dev,
++			"chip_select %u cannot be active-high\n", cs);
++		return -EINVAL;
++	}
++
++	if (slave->max_speed_hz != 0) {
++		struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++		/* clock mode 3 is not supported */
++		aspeed_reg_clear_mask(priv, cs_info->ctrl_reg,
++				      ASPEED_CTRL_CLK_MODE_3);
++
++		/* Set up clock based on slave's frequency. */
++		ret = priv->config.clk_setup(priv, cs, slave->max_speed_hz);
++	}
++
++	return ret;
++}
++
++static void aspeed_spi_set_cs(struct spi_device *slave, bool level)
++{
++	u16 cs = slave->chip_select;
++	struct aspeed_spi_priv *priv = spi_master_get_devdata(slave->master);
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++	if (level)
++		aspeed_reg_set_mask(priv, cs_info->ctrl_reg,
++				    ASPEED_CTRL_STOP_ACTIVE);
++	else
++		aspeed_reg_clear_mask(priv, cs_info->ctrl_reg,
++				      ASPEED_CTRL_STOP_ACTIVE);
++}
++
++static void aspeed_spi_do_xfer(struct aspeed_spi_priv *priv,
++			       struct spi_transfer *xfer, u16 cs)
++{
++	unsigned int i;
++	u8 *rx_buf = xfer->rx_buf;
++	const u8 *tx_buf = xfer->tx_buf;
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++	void *slave_buf = cs_info->io_mem_base;
++
++	if (tx_buf != NULL) {
++		for (i = 0; i < xfer->len; i++)
++			writeb(tx_buf[i], slave_buf);
++	}
++
++	if (rx_buf != NULL) {
++		for (i = 0; i < xfer->len; i++)
++			rx_buf[i] = readb(slave_buf);
++	}
++}
++
++static int aspeed_spi_xfer_one(struct spi_master *master,
++			       struct spi_device *slave,
++			       struct spi_transfer *xfer)
++{
++	struct aspeed_spi_priv *priv = spi_master_get_devdata(master);
++	u16 cs = slave->chip_select;
++
++	aspeed_spi_do_xfer(priv, xfer, cs);
++
++	return 0;
++}
++
++static void aspeed_spi_enable_write(struct aspeed_spi_priv *priv, u16 cs)
++{
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++	u32 mask = BIT(cs_info->enable_write_bit);
++
++	aspeed_reg_set_mask(priv, ASPEED_CFG_REG, mask);
++}
++
++static void aspeed_spi_enable_user_mode(struct aspeed_spi_priv *priv, u16 cs)
++{
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++	u32 mask = (ASPEED_CTRL_STOP_ACTIVE | ASPEED_CTRL_USER_MODE);
++
++	aspeed_reg_set_mask(priv, cs_info->ctrl_reg, mask);
++}
++
++static int ast2400_addr_range_setup(struct aspeed_spi_priv *priv, u16 cs)
++{
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++	cs_info->io_mem_base = priv->flash_mem_base;
++	cs_info->io_mem_size = resource_size(priv->flash_mem_res);
++	return 0;
++}
++
++static int ast2500_addr_range_setup(struct aspeed_spi_priv *priv, u16 cs)
++{
++	u32 val, start, end, offset;
++	struct resource *res = priv->flash_mem_res;
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++
++	val = aspeed_reg_read(priv, cs_info->addr_range_reg);
++	start = AST2500_SEGMENT_ADDR_START(val);
++	end = AST2500_SEGMENT_ADDR_END(val);
++
++	if ((start < res->start) ||
++	    (end > res->start + resource_size(res))) {
++		dev_err(priv->dev,
++			"cs %u: invalid address range %#lx-%#lx\n",
++			cs, (unsigned long)start, (unsigned long)end);
++		return -EINVAL;
++	}
++
++	offset = start - res->start;
++	cs_info->io_mem_base = priv->flash_mem_base + offset;
++	cs_info->io_mem_size = end - start;
++
++	return 0;
++}
++
++#define UNIT_MB(val)	((val) << 20)
++
++static int ast2600_addr_range_setup(struct aspeed_spi_priv *priv, u16 cs)
++{
++
++	u32 val, offset, end;
++	struct spi_cs_info *cs_info = SPI_CS_INFO(priv, cs);
++	struct {
++		u32 offset;
++		u32 end;
++	} addr_ranges[3] = {
++		[0] = {0, UNIT_MB(127)},		/* CE0: 128MB */
++		[1] = {UNIT_MB(128), UNIT_MB(191)},	/* CE1: 64MB */
++		[2] = {UNIT_MB(192), UNIT_MB(255)},	/* CE2: 64MB */
++	};
++
++	offset = addr_ranges[cs].offset;
++	end = addr_ranges[cs].end;
++	val = AST2600_SEG_ADDR_BUILD(offset, end);
++	aspeed_reg_write(priv, cs_info->addr_range_reg, val);
++
++	cs_info->io_mem_base = priv->flash_mem_base + offset;
++	cs_info->io_mem_size = end - offset + UNIT_MB(1);
++	return 0;
++}
++
++static int aspeed_spi_controller_init(struct aspeed_spi_priv *priv)
++{
++	u16 cs;
++	int ret = 0;
++
++	for (cs = 0; cs < priv->config.num_chipselect; cs++) {
++		aspeed_spi_enable_user_mode(priv, cs);
++
++		aspeed_spi_enable_write(priv, cs);
++
++		ret = priv->config.addr_range_setup(priv, cs);
++		if (ret < 0)
++			break;
++	}
++
++	return ret;
++}
++
++static int aspeed_spi_probe(struct platform_device *pdev)
++{
++	u32 num_chipselect;
++	struct resource *reg_res, *flash_res;
++	void __iomem *reg_base, *flash_base;
++	struct clk *clk;
++	struct aspeed_spi_priv *priv;
++	struct spi_master *master;
++	int error;
++	unsigned long ahb_clk_freq;
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	const struct of_device_id *ofdid;
++	const struct aspeed_spi_config *config;
++
++	ofdid = of_match_node(aspeed_spi_of_match, np);
++	if (ofdid == NULL) {
++		dev_err(dev, "failed to match controller type\n");
++		return -EINVAL;
++	}
++	config = ofdid->data;
++
++	/*
++	 * Override the default num-chipselect from dts, mainly designed
++	 * for AST2600 SPI2, which has 3 CS# pins.
++	 */
++	error = of_property_read_u32(np, "aspeed,num-chipselects",
++				     &num_chipselect);
++	if (error < 0)
++		num_chipselect = config->num_chipselect;
++
++	reg_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	reg_base = devm_ioremap_resource(dev, reg_res);
++	if (IS_ERR(reg_base))
++		return PTR_ERR(reg_base);
++
++	flash_res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	flash_base = devm_ioremap_resource(dev, flash_res);
++	if (IS_ERR(flash_base))
++		return PTR_ERR(flash_base);
++
++	clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(clk))
++		return PTR_ERR(clk);
++	ahb_clk_freq = clk_get_rate(clk);
++	devm_clk_put(dev, clk);
++
++	master = spi_alloc_master(dev, sizeof(struct aspeed_spi_priv));
++	if (master == NULL) {
++		dev_err(dev, "failed to allocate spi_master\n");
++		return -ENOMEM;
++	}
++	master->flags = SPI_MASTER_HALF_DUPLEX;
++	master->mode_bits = ASPEED_SUPP_MODES;
++	master->bits_per_word_mask = SPI_BPW_MASK(8) | SPI_BPW_MASK(16);
++	master->dev.of_node = np;
++	master->num_chipselect = (u16)num_chipselect;
++	master->setup = aspeed_spi_setup_xfer;
++	master->set_cs = aspeed_spi_set_cs;
++	master->transfer_one = aspeed_spi_xfer_one;
++
++	priv = spi_master_get_devdata(master);
++	priv->dev = dev;
++	priv->master = master;
++	priv->controller_res = reg_res;
++	priv->controller_reg_base = reg_base;
++	priv->flash_mem_res = flash_res;
++	priv->flash_mem_base = flash_base;
++	priv->ahb_clk_freq = ahb_clk_freq;
++	memcpy(&priv->config, config, sizeof(priv->config));
++	priv->config.num_chipselect = (u16)num_chipselect;
++	platform_set_drvdata(pdev, priv);
++
++	error = aspeed_spi_controller_init(priv);
++	if (error) {
++		dev_err(dev, "failed to initial SPI controller, error=%d\n",
++			error);
++		goto err_exit;
++	}
++
++	/* Register our spi controller */
++	error = devm_spi_register_master(dev, master);
++	if (error) {
++		dev_err(dev, "failed to register SPI master, error=%d\n",
++			error);
++		goto err_exit;
++	}
++
++	dev_info(dev, "entered SPI user mode successfully\n");
++	return 0;
++
++err_exit:
++	spi_master_put(master);
++	return error;
++}
++
++static struct platform_driver aspeed_spi_driver = {
++	.probe = aspeed_spi_probe,
++	.driver = {
++		.name = ASPEED_SPI_DRIVER,
++		.of_match_table = aspeed_spi_of_match,
++	},
++};
++module_platform_driver(aspeed_spi_driver);
++
++MODULE_AUTHOR("Tao Ren <taoren@fb.com>");
++MODULE_DESCRIPTION("ASPEED SPI Host Driver");
++MODULE_LICENSE("GPL");
+-- 
+2.30.2
+

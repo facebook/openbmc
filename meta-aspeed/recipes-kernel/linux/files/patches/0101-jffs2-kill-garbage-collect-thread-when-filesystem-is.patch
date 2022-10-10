@@ -1,0 +1,61 @@
+From 078bb10ba96f316a733866082cc82a51b5cbaf3e Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 22 Aug 2019 17:07:24 -0700
+Subject: [PATCH] jffs2: kill garbage collect thread when filesystem is
+ corrupted
+
+Summary:
+
+We have seen several instances of kernel crash caused by corrupted
+jffs2 partition on CMM BMC. Instead of crash the system, let's
+dump a warning and terminate jffs2 garbage collect thread: the BMC
+will be still reachable in this case, and it's up to the system
+administrator to decide how to fix the problem.
+
+Test Plan:
+
+1) booted up linux 5.15 on CMM and wedge successfully.
+
+Reviewers: tfang, amithash, benwei, zhdaniel, mikechoi, #openbmc
+
+Reviewed By: zhdaniel
+
+Differential Revision: https://phabricator.intern.facebook.com/D16987396
+
+@fb-note-start
+This is a workaround but not official fix: the jffs2 upstream maintainer
+was willing to help us but we cannot share the file system image as it
+may contain Facebook confidential data. So we will keep the workaround
+for now.
+The workaround is needed for all BMC platforms depending on jffs2.
+@fb-note-end
+---
+ .../linux/files/linux-aspeed-5.15/fs/jffs2/gc.c      | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/fs/jffs2/gc.c b/fs/jffs2/gc.c
+index 373b3b7c9f..352dbfc31b 100644
+--- a/fs/jffs2/gc.c
++++ b/fs/jffs2/gc.c
+@@ -392,7 +392,17 @@ int jffs2_garbage_collect_pass(struct jffs2_sb_info *c)
+ 			ic->ino, ic->state);
+ 		mutex_unlock(&c->alloc_sem);
+ 		spin_unlock(&c->inocache_lock);
+-		BUG();
++
++		/*
++		 * XXX We have seen several instances of failures on Facebook
++		 * CMM BMC and root cause is not clear yet.
++		 * Instead of crashing the system (by calling BUG()), let's
++		 * dump a warning and terminate garbage thread: platform owner
++		 * or administrator will decide how to fix the problem.
++		 */
++		pr_crit("terminating garbage collect thread %i (%s): jffs2 corrupted!\n",
++			current->pid, current->comm);
++		return -ENOSPC;
+ 
+ 	case INO_STATE_READING:
+ 		/* Someone's currently trying to read it. We must wait for
+-- 
+2.30.2
+

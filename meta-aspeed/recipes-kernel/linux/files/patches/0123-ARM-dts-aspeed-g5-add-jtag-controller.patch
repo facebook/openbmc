@@ -1,0 +1,47 @@
+From cc79d0317d3db9825003aa34892c8eb9c0e05828 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Mon, 11 May 2020 13:51:25 -0700
+Subject: [PATCH 123/123] ARM: dts: aspeed-g5: add jtag controller
+
+Summary:
+Add JTAG controller in aspeed-g5.dtsi. The patch is generated from
+D21517642 and it's applied to different kernel version.
+
+Test Plan:
+1) "bitbake wedge400-image" succeeded for kernel 5.15.
+2) verified jtag device is bound to the driver correctly on wedge400.
+3) "scmcpld_update.sh" can be used to upgrade scm firmware on wedge400
+     successfully.
+
+Reviewers: tfang, goldenbug, #openbmc
+
+Reviewed By: goldenbug
+
+Differential Revision: https://phabricator.intern.facebook.com/D37292797
+---
+ arch/arm/boot/dts/aspeed-g5.dtsi | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-g5.dtsi b/arch/arm/boot/dts/aspeed-g5.dtsi
+index c89092c3905b..f06a42c607b2 100644
+--- a/arch/arm/boot/dts/aspeed-g5.dtsi
++++ b/arch/arm/boot/dts/aspeed-g5.dtsi
+@@ -262,6 +262,15 @@ rng: hwrng@1e6e2078 {
+ 				quality = <100>;
+ 			};
+ 
++			jtag: jtag@1e6e4000 {
++				compatible = "aspeed,ast2500-jtag";
++				reg = <0x1e6e4000 0x1c 0x1e6e2004 0x04>;
++				clocks = <&syscon ASPEED_CLK_APB>;
++				resets = <&syscon ASPEED_RESET_JTAG_MASTER>;
++				interrupts = <43>;
++				status = "disabled";
++			};
++
+ 			gfx: display@1e6e6000 {
+ 				compatible = "aspeed,ast2500-gfx", "syscon";
+ 				reg = <0x1e6e6000 0x1000>;
+-- 
+2.30.2
+

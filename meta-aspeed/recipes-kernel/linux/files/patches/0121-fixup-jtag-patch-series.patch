@@ -1,0 +1,48 @@
+From 21215a8fd27ed02708331dc17b968d8910bfc762 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 13 Oct 2022 03:38:28 -0700
+Subject: [PATCH 121/123] fixup jtag patch series
+
+Put common file changes in this single diff so it's easier to resolve
+merge conflicts in future upgrade.
+---
+ Documentation/index.rst | 1 +
+ drivers/Kconfig         | 2 ++
+ drivers/Makefile        | 1 +
+ 3 files changed, 4 insertions(+)
+
+diff --git a/Documentation/index.rst b/Documentation/index.rst
+index 4737c18c97ff..7ae50d35a56c 100644
+--- a/Documentation/index.rst
++++ b/Documentation/index.rst
+@@ -110,6 +110,7 @@ needed).
+    iio/index
+    isdn/index
+    infiniband/index
++   jtag/index
+    leds/index
+    netlabel/index
+    networking/index
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 19ee995bd0ae..794f347a5cb6 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -239,4 +239,6 @@ source "drivers/peci/Kconfig"
+ 
+ source "drivers/hte/Kconfig"
+ 
++source "drivers/jtag/Kconfig"
++
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 057857258bfd..c36fa0d60904 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -188,3 +188,4 @@ obj-$(CONFIG_COUNTER)		+= counter/
+ obj-$(CONFIG_MOST)		+= most/
+ obj-$(CONFIG_PECI)		+= peci/
+ obj-$(CONFIG_HTE)		+= hte/
++obj-$(CONFIG_JTAG)		+= jtag/
+-- 
+2.30.2
+

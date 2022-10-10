@@ -1,0 +1,9 @@
+This directory contains kernel patch files required/recommended for multiple
+OpenBMC platforms.
+
+Patch numbers [0000-0099] are reserved for backported patches from upstream.
+
+Patch numbers [0100-0999] are reserved for to-be-upstreamed patches.
+
+Machine/platform specific patches are located at machine layer, and patch
+number starts with 1000.

@@ -139,6 +139,7 @@ do_reset() {
             echo -n "Power reset x86 (userver) ..."
 
             userver_reset
+            echo " Done"
         else
             echo "x86 (userver) is off. Power on x86 now.."
             do_on

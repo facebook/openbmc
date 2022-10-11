@@ -1,0 +1,5 @@
+name: 'Build QEMU'
+description: 'Build QEMU, using bitbake to fetch the source code'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'

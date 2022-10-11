@@ -53,7 +53,7 @@ debug_card_handler() {
 
   while (1) {
     // we start updating uart position sts when card is present
-    if ( pal_is_debug_card_prsnt(&card_prsnt) < 0 || card_prsnt == 0 ) {
+    if ( pal_is_debug_card_prsnt(&card_prsnt, READ_FROM_BIC) < 0 || card_prsnt == 0 ) {
       msleep(DELAY_READ); //sleep
       continue;
     }

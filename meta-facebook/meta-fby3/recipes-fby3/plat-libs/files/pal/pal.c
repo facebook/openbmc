@@ -82,6 +82,7 @@ const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U
 #define SNR_HEALTH_STR "slot%d_sensor_health"
 #define GPIO_OCP_DEBUG_BMC_PRSNT_N "OCP_DEBUG_BMC_PRSNT_N"
 #define PCIE_CONFIG "slot%d_fru%d_config"
+#define DEBUG_CARD_PRSNT_KEY "DEBUG_CARD_PRSNT"
 
 #define SLOT1_POSTCODE_OFFSET 0x02
 #define SLOT2_POSTCODE_OFFSET 0x03
@@ -2876,10 +2877,12 @@ pal_log_clear(char *fru) {
 }
 
 int
-pal_is_debug_card_prsnt(uint8_t *status) {
+pal_is_debug_card_prsnt(uint8_t *status, uint8_t read_flag) {
   int ret = -1;
   uint8_t bmc_location = 0;
   int retry = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
 
   ret = fby3_common_get_bmc_location(&bmc_location);
   if ( ret < 0 ) {
@@ -2891,6 +2894,16 @@ pal_is_debug_card_prsnt(uint8_t *status) {
     // when updating firmware, front-paneld should pend to avoid the invalid access
     if ( pal_is_fw_update_ongoing(FRU_SLOT1) == true || \
          bic_is_crit_act_ongoing(FRU_SLOT1) == true ) return PAL_ENOTSUP;
+
+    snprintf(key, sizeof(key), DEBUG_CARD_PRSNT_KEY);
+    if (read_flag == READ_FROM_CACHE) {
+      if (kv_get(key, value, NULL, 0) == 0) {
+        *status = atoi(value);
+        return 0;
+      } else {
+        return pal_is_debug_card_prsnt(status, READ_FROM_BIC);
+      }
+    }
 
     uint8_t tbuf[3] = {0x9c, 0x9c, 0x00};
     uint8_t rbuf[16] = {0x00};
@@ -2913,6 +2926,8 @@ pal_is_debug_card_prsnt(uint8_t *status) {
     } else {
       *status = 0;
     }
+    snprintf(value, sizeof(value), "%d", *status);
+    kv_set(key, value, 0, 0);
   }
   else {
     gpio_value_t value;
@@ -3192,7 +3207,7 @@ pal_post_handle(uint8_t slot, uint8_t postcode) {
   int ret = -1;
 
   // Check for debug card presence
-  ret = pal_is_debug_card_prsnt(&prsnt);
+  ret = pal_is_debug_card_prsnt(&prsnt, READ_FROM_CACHE);
   if (ret) {
     return ret;
   }

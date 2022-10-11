@@ -229,6 +229,12 @@ enum {
   FAVA_PM9A3_DID = 0xA80A,
 };
 
+// Read from BIC/CACHE
+enum {
+  READ_FROM_BIC,
+  READ_FROM_CACHE,
+};
+
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -248,7 +254,7 @@ int pal_set_nic_perst(uint8_t fru, uint8_t val);
 int pal_is_slot_pfr_active(uint8_t fru);
 int pal_sb_set_amber_led(uint8_t fru, bool led_on, uint8_t led_mode);
 int pal_set_uart_IO_sts(uint8_t slot_id, uint8_t io_sts);
-int pal_is_debug_card_prsnt(uint8_t *status);
+int pal_is_debug_card_prsnt(uint8_t *status, uint8_t read_flag);
 int pal_get_dev_info(uint8_t slot_id, uint8_t dev_id, uint8_t *nvme_ready, uint8_t *status, uint8_t *type);
 int pal_check_slot_cpu_present(uint8_t slot_id);
 int pal_gpv3_mux_select(uint8_t slot_id, uint8_t dev_id);

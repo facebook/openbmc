@@ -394,6 +394,26 @@ MAPTOSTRING root_port_mapping_2u_sgl_m2_gpv3[] = {
     { 0x6A, 0, 0x0E, "E1S 1",  "2OU"},
 };
 
+// single M2 for BRCM 2U
+MAPTOSTRING root_port_mapping_2u_sgl_m2_gpv3_brcm[] = {
+    // bus, device, port, silk screen, location
+    // Down Stream Ports
+    { 0x17, 8, 0x01, "Num 0",  "2OU"},
+    { 0x17, 7, 0x02, "Num 1",  "2OU"},
+    { 0x17, 1, 0x03, "Num 2",  "2OU"},
+    { 0x17, 2, 0x04, "Num 3",  "2OU"},
+    { 0x17, 3, 0x05, "Num 4",  "2OU"},
+    { 0x17, 4, 0x06, "Num 5",  "2OU"},
+    { 0x17, 6, 0x07, "Num 6",  "2OU"},
+    { 0x17, 5, 0x08, "Num 7",  "2OU"},
+    { 0x65, 3, 0x09, "Num 8",  "2OU"},
+    { 0x65, 4, 0x0A, "Num 9",  "2OU"},
+    { 0x65, 1, 0x0B, "Num 10", "2OU"},
+    { 0x65, 0, 0x0C, "Num 11", "2OU"},
+    { 0x17, 0, 0x0D, "E1S 0",  "2OU"},
+    { 0x65, 2, 0x0E, "E1S 1",  "2OU"},
+};
+
 MAPTOSTRING root_port_mapping_e1s[] = {
     // bus, device, port, silk screen, location
     { 0xB2, 0, 0x3A, "Num 0", "1OU"},
@@ -2180,7 +2200,7 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
     // case 1/2OU E1S
     *tbl = root_port_mapping_e1s;
     tbl_size = sizeof(root_port_mapping_e1s);
-  } else if ( (board_2u == GPV3_MCHP_BOARD || board_2u == GPV3_BRCM_BOARD)) {
+  } else if ( board_2u == GPV3_MCHP_BOARD ) {
     // case Config C and Config D GPv3
     if ( config_status == GPV3_84CH_DUAL || config_status == GPV3_100CH_DUAL ) {
       *tbl = root_port_mapping_2u_dual_m2_gpv3;
@@ -2189,6 +2209,10 @@ pal_sel_root_port_mapping_tbl(uint8_t fru, uint8_t *bmc_location, MAPTOSTRING **
       *tbl = root_port_mapping_2u_sgl_m2_gpv3;
       tbl_size = sizeof(root_port_mapping_2u_sgl_m2_gpv3);
     }
+  } else if ( board_2u == GPV3_BRCM_BOARD) {
+    // case BRCM GPv3
+    *tbl = root_port_mapping_2u_sgl_m2_gpv3_brcm;
+    tbl_size = sizeof(root_port_mapping_2u_sgl_m2_gpv3_brcm);
   } else if ( board_2u == CWC_MCHP_BOARD ) {
     if ( config_status == GPV3_84CH_DUAL ||config_status == GPV3_100CH_DUAL ) {
       *tbl = root_port_mapping_4u_dual_m2_gpv3;

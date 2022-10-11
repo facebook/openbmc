@@ -15,6 +15,8 @@
 #define EXP_SENSOR_WAIT_TIME         5      // 5 seconds
 #define EXP_SNR_FAIL_TOLERANCE_TIME  40     // 40 seconds
 
+#define SERVER_SNR_FAIL_TOL_TIME     10     // 10 seconds
+
 #define MAX_GET_RPM_RETRY            15
 #define MAX_NIC_TEMP_RETRY           5      // 10 seconds
 #define MAX_SDR_PATH                 32

@@ -2685,6 +2685,18 @@ int pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
   }
 
   for (i = 0; i < sensor_cnt; i++) {
+    switch (fru) {
+      case FRU_SERVER:
+        if ((sensor_list[i] == BS_INLET_TEMP) || (sensor_list[i] == BS_BOOT_DRV_TEMP)) {
+          tolerance_time = SERVER_SNR_FAIL_TOL_TIME;
+        } else {
+          tolerance_time = 0;
+        }
+        break;
+      default:
+        break;
+    }
+
     if (register_sensor_failure_tolerance_policy(fru, sensor_list[i], tolerance_time) < 0) {
       syslog(LOG_WARNING, "%s: Fail to register failure tolerance policy for fru:%d sensor num:%x\n", __func__, fru, sensor_list[i]);
     }

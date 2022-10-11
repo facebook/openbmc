@@ -1320,8 +1320,8 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp,uint8_t intf, char *path, ui
 
   if (intf == NONE_INTF) {
     if (get_sb_bic_solution(slot_id, &is_sb_ast1030) < 0) {
-      ret = BIC_STATUS_FAILURE;
-      goto exit;
+      syslog(LOG_WARNING, "%s() Failed to get SB_BIC solution", __func__);
+      is_sb_ast1030 = false;
     }
   }
 

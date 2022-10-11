@@ -104,10 +104,11 @@ static sensor_info_t g_sinfo[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
 static bool sdr_init_done[MAX_NUM_FRUS] = {false};
 static uint8_t bic_dynamic_sensor_list[4][MAX_SENSOR_NUM + 1] = {0};
 static uint8_t bic_dynamic_gpv3_cwc_sensor_list[MAX_SENSOR_NUM + 1] = {0};
-static uint8_t bic_dynamic_skip_sensor_list[MAX_NUM_FRUS][MAX_SENSOR_NUM + 1] = {0};
+static uint8_t bic_dynamic_skip_sensor_list[MAX_NUM_FRUS + 1][MAX_SENSOR_NUM + 1] = {0};
+static uint8_t bic_dynamic_skip_sensor_count[MAX_NUM_FRUS + 1] = {0};
 
-int pwr_off_flag[MAX_NODES+MAX_NUM_EXPS] = {0};
-int temp_cnt = 0;
+int pwr_off_flag[MAX_NUM_FRUS + 1] = {0};
+int temp_cnt[MAX_NUM_FRUS + 1] = {0};
 size_t pal_pwm_cnt = 4;
 size_t pal_tach_cnt = 8;
 const char pal_pwm_list[] = "0, 1, 2, 3";
@@ -1146,52 +1147,63 @@ pal_is_nvme_temp_dev(uint8_t sensor_num) {
 
 int
 get_skip_sensor_list(uint8_t fru, uint8_t **skip_sensor_list, int *cnt, const uint8_t bmc_location, const uint8_t config_status) {
-  uint8_t type = 0;
+  uint8_t type = UNKNOWN_BOARD;
   uint8_t type_2ou = UNKNOWN_BOARD;
-  uint8_t fruNb = fru;
-  static uint8_t current_cnt = 0;
-  if (bic_dynamic_skip_sensor_list[fru-1][0] == 0) {
 
-    memcpy(bic_dynamic_skip_sensor_list[fru-1], bic_skip_sensor_list, bic_skip_sensor_cnt);
-    current_cnt = bic_skip_sensor_cnt;
+  if (bic_dynamic_skip_sensor_list[fru][0] == 0) {
+    if (fru <= MAX_NODES) {
+      memcpy(bic_dynamic_skip_sensor_list[fru], bic_skip_sensor_list, bic_skip_sensor_cnt);
+      bic_dynamic_skip_sensor_count[fru] = bic_skip_sensor_cnt;
+    }
 
     //if 1OU board doesn't exist, use the default 1ou skip list.
     if ( (bmc_location != NIC_BMC) && (config_status & PRESENT_1OU) == PRESENT_1OU ) {
       bic_get_1ou_type(fru, &type);
+      switch (type) {
+        case EDSFF_1U:
+          memcpy(&bic_dynamic_skip_sensor_list[fru][bic_dynamic_skip_sensor_count[fru]], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
+          bic_dynamic_skip_sensor_count[fru] += bic_1ou_edsff_skip_sensor_cnt;
+          break;
+        default:
+          memcpy(&bic_dynamic_skip_sensor_list[fru][bic_dynamic_skip_sensor_count[fru]], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
+          bic_dynamic_skip_sensor_count[fru] += bic_1ou_skip_sensor_cnt;
+          break;
+      }
     }
 
     if ((config_status & PRESENT_2OU) == PRESENT_2OU ) {
       fby3_common_get_2ou_board_type(FRU_SLOT1, &type_2ou);
-    }
-
-    if (type_2ou == CWC_MCHP_BOARD &&
-        (fruNb == FRU_2U_TOP || fruNb == FRU_2U_BOT)) {
-      memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
-              current_cnt += bic_2ou_gpv3_skip_sensor_cnt;
-    } else if (type_2ou == CWC_MCHP_BOARD) {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_cwc_skip_sensor_list, bic_cwc_skip_sensor_cnt);
-        current_cnt += bic_cwc_skip_sensor_cnt;
-    } else {
-      if (type == EDSFF_1U) {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_edsff_skip_sensor_list, bic_1ou_edsff_skip_sensor_cnt);
-        current_cnt += bic_1ou_edsff_skip_sensor_cnt;
-      } else {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_1ou_skip_sensor_list, bic_1ou_skip_sensor_cnt);
-        current_cnt += bic_1ou_skip_sensor_cnt;
-      }
-
-      if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD ) {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
-        current_cnt += bic_2ou_gpv3_skip_sensor_cnt;
-      } else {
-        memcpy(&bic_dynamic_skip_sensor_list[fru-1][current_cnt], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
-        current_cnt += bic_2ou_skip_sensor_cnt;
+      switch (type_2ou) {
+        case CWC_MCHP_BOARD:
+          switch (fru) {
+            case FRU_2U_TOP:
+            case FRU_2U_BOT:
+              memcpy(&bic_dynamic_skip_sensor_list[fru][bic_dynamic_skip_sensor_count[fru]], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
+              bic_dynamic_skip_sensor_count[fru] += bic_2ou_gpv3_skip_sensor_cnt;
+              break;
+            case FRU_CWC:
+              memcpy(&bic_dynamic_skip_sensor_list[fru][bic_dynamic_skip_sensor_count[fru]], bic_cwc_skip_sensor_list, bic_cwc_skip_sensor_cnt);
+              bic_dynamic_skip_sensor_count[fru] += bic_cwc_skip_sensor_cnt;
+              break;
+            default:
+              break;
+          }
+          break;
+        case GPV3_MCHP_BOARD:
+        case GPV3_BRCM_BOARD:
+          memcpy(&bic_dynamic_skip_sensor_list[fru][bic_dynamic_skip_sensor_count[fru]], bic_2ou_gpv3_skip_sensor_list, bic_2ou_gpv3_skip_sensor_cnt);
+          bic_dynamic_skip_sensor_count[fru] += bic_2ou_gpv3_skip_sensor_cnt;
+          break;
+        default:
+          memcpy(&bic_dynamic_skip_sensor_list[fru][bic_dynamic_skip_sensor_count[fru]], bic_2ou_skip_sensor_list, bic_2ou_skip_sensor_cnt);
+          bic_dynamic_skip_sensor_count[fru] += bic_2ou_skip_sensor_cnt;
+          break;
       }
     }
   }
 
-  *skip_sensor_list = (uint8_t *) bic_dynamic_skip_sensor_list[fru-1];
-  *cnt = current_cnt;
+  *skip_sensor_list = (uint8_t *) bic_dynamic_skip_sensor_list[fru];
+  *cnt = bic_dynamic_skip_sensor_count[fru];
 
   return 0;
 }
@@ -2431,13 +2443,14 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   char path[128];
-  uint8_t slot = (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? FRU_SLOT1 : fru;
-  uint8_t node = (fru == FRU_CWC || fru == FRU_2U_TOP || fru == FRU_2U_BOT) ? (fru-FRU_EXP_BASE+MAX_NODES) : fru;
-  sprintf(path, SLOT_SENSOR_LOCK, slot);
+  uint8_t slot = fru;
+  snprintf(path, sizeof(path), SLOT_SENSOR_LOCK, slot);
   uint8_t *bic_skip_list;
   int skip_sensor_cnt = 0;
   uint8_t m2_config = 0;
+
   get_skip_sensor_list(fru, &bic_skip_list, &skip_sensor_cnt, bmc_location, config_status);
+  pal_get_fru_slot(fru, &slot);
 
   ret = bic_get_server_power_status(slot, &power_status);
   if (ret < 0) {
@@ -2451,20 +2464,20 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
   }
 
   if (power_status != SERVER_POWER_ON) {
-    pwr_off_flag[node-1] = 1;
+    pwr_off_flag[fru] = 1;
     //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
     if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
       return READING_NA;
     }
-  } else if (power_status == SERVER_POWER_ON && pwr_off_flag[node-1]) {
-    if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt < skip_sensor_cnt)){
-      temp_cnt ++;
+  } else if (power_status == SERVER_POWER_ON && pwr_off_flag[fru]) {
+    if ((skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) && (temp_cnt[fru] < skip_sensor_cnt)){
+      temp_cnt[fru] ++;
       return READING_NA;
     }
 
-    if (temp_cnt == skip_sensor_cnt) {
-      pwr_off_flag[node-1] = 0;
-      temp_cnt = 0;
+    if (temp_cnt[fru] == skip_sensor_cnt) {
+      pwr_off_flag[fru] = 0;
+      temp_cnt[fru] = 0;
     }
   }
 
@@ -2600,14 +2613,6 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value, uint8_t b
     case BIC_SENSOR_CPU_THERM_MARGIN:
       if ( *value > 0 ) *value = -(*value);
       break;
-  }
-
-  if ( bic_get_server_power_status(slot, &power_status) < 0 || power_status != SERVER_POWER_ON) {
-    pwr_off_flag[node-1] = 1;
-    //syslog(LOG_WARNING, "%s() Failed to run bic_get_server_power_status(). fru%d, snr#0x%x, pwr_sts:%d", __func__, fru, sensor_num, power_status);
-    if (skip_bic_sensor_list(fru, sensor_num, bmc_location, config_status) < 0) {
-      return READING_NA;
-    }
   }
 
   return ret;

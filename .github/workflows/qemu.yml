@@ -1,0 +1,57 @@
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag'
+        required: True
+name: Create QEMU release
+jobs:
+  build_qemu_executable:
+    name: Build QEMU
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout OpenBMC
+        uses: actions/checkout@v3
+      - name: Build QEMU
+        uses: ./.github/actions/build_qemu
+      - name: Save qemu-system-aarch64 build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: qemu-system-aarch64
+          path: ./build/workspace/sources/qemu-system-native/build/qemu-system-aarch64
+  create_release:
+    name: Create release
+    needs: [build_qemu_executable]
+    runs-on: ubuntu-20.04
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          release_name: ${{ github.event.inputs.tag }}
+          draft: false
+          prerelease: false
+  upload_qemu_executable:
+    name: Upload QEMU binary to release assets
+    needs: [build_qemu_executable, create_release]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Download QEMU binary
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          name: qemu-system-aarch64
+      - name: Add qemu-system-aarch64 release artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.download.outputs.download-path }}/qemu-system-aarch64
+          asset_name: qemu-system-aarch64
+          asset_content_type: application/octet-stream

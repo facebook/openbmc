@@ -199,6 +199,10 @@ struct pal_key_cfg {
   {"slot3_sel_error", "1", NULL},
   {"slot4_sel_error", "1", NULL},
   {"ntp_server", "", NULL},
+  {"slot1_enable_pxe_sel", "0", NULL},
+  {"slot2_enable_pxe_sel", "0", NULL},
+  {"slot3_enable_pxe_sel", "0", NULL},
+  {"slot4_enable_pxe_sel", "0", NULL},
   /* Add more Keys here */
   {LAST_KEY, LAST_KEY, NULL} /* This is the last key of the list */
 };
@@ -4889,5 +4893,67 @@ pal_display_4byte_post_code(uint8_t slot, uint32_t postcode_dw) {
 
   return 0;
 }
-
 #endif
+
+int
+pal_oem_bios_extra_setup(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res_data, uint8_t *res_len) {
+  char key[MAX_KEY_LEN] = {0};
+  char cvalue[MAX_VALUE_LEN] = {0};
+  int ret;
+  uint8_t fun, cmd;
+  uint8_t value;
+
+  if (req_len < 5) { // at least byte[0] function byte[1] cmommand
+    syslog(LOG_WARNING, "%s: slot%d req_len:%d < 5", __func__, slot,req_len);
+    return CC_UNSPECIFIED_ERROR;
+  }
+
+  fun = req_data[0];
+
+  if (fun == 0x1) { // PXE SEL ENABLE/DISABLE
+    switch(slot) {
+      case FRU_SLOT1:
+      case FRU_SLOT2:
+      case FRU_SLOT3:
+      case FRU_SLOT4:
+        sprintf(key, "slot%d_enable_pxe_sel", slot);
+        break;
+
+      default:
+        syslog(LOG_WARNING, "%s: invalid slot id %d", __func__, slot);
+        return CC_PARAM_OUT_OF_RANGE;
+    }
+
+    cmd = req_data[1];
+    if (cmd == 0x1) { // GET
+      *res_len = 1;
+      ret = pal_get_key_value(key, cvalue);
+      if (ret) {
+        syslog(LOG_WARNING, "%s: slot%d get %s failed", __func__, slot,key);
+        return CC_UNSPECIFIED_ERROR;
+      }
+      res_data[0] = strtol(cvalue,NULL,10);
+      syslog(LOG_WARNING, "%s: slot%d GET PXE SEL ENABLE/DISABLE %d", __func__, slot, res_data[0]);
+    } else if (cmd == 0x2) { // SET
+      if (req_len < 6) {
+        syslog(LOG_WARNING, "%s: slot%d SET no value to PXE SEL ENABLE/DISABLE", __func__, slot);
+      }
+      *res_len = 0;
+      value = req_data[2];
+      syslog(LOG_WARNING, "%s: slot%d SET %d to PXE SEL ENABLE/DISABLE", __func__, slot,value);
+      sprintf(cvalue, (value > 0) ? "1": "0");
+      ret = pal_set_key_value(key, cvalue);
+      if (ret) {
+        syslog(LOG_WARNING, "%s: slot%d set %s failed", __func__, slot,key);
+        return CC_UNSPECIFIED_ERROR;
+      }
+    } else {
+      syslog(LOG_WARNING, "%s: slot%d wrong command:%d", __func__, slot,cmd);
+    }
+    return CC_SUCCESS;
+  } else {
+    syslog(LOG_WARNING, "%s: slot%d wrong function:%d", __func__, slot,fun);
+    return CC_UNSPECIFIED_ERROR;
+  }
+}
+

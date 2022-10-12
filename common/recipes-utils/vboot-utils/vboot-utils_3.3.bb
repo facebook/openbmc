@@ -31,9 +31,12 @@ RDEPENDS:${PN}-python3 += "python3-core"
 RDEPENDS:${PN} += "libvbs libkv"
 
 PACKAGES += "${PN}-python3"
-inherit distutils3 python3-dir
+inherit setuptools3 python3-dir
 
 distutils3_do_configure(){
+    :
+}
+setuptools3_do_configure(){
     :
 }
 

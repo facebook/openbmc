@@ -40,7 +40,7 @@ LOCAL_URI = " \
     file://fscd_test \
     "
 
-inherit distutils3
+inherit setuptools3
 inherit systemd
 inherit ptest
 DEPENDS += "update-rc.d-native libkv libwatchdog"

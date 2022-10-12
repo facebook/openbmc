@@ -93,7 +93,7 @@ OPENBMC_PYTHON_LIBS = " \
 inherit systemd
 inherit python3-dir
 
-DEPENDS = "update-rc.d-native python3-setuptools"
+DEPENDS += "update-rc.d-native python3"
 RDEPENDS:${PN} += "\
     bash \
     python3-core \

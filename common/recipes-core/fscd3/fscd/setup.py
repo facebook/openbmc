@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 
-from distutils.core import setup
+from setuptools import setup
 
 
 setup(

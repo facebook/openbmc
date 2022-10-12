@@ -17,7 +17,7 @@
 # Boston, MA 02110-1301 USA
 
 
-from distutils.core import setup
+from setuptools import setup
 
 from setup_board import board_py_modules
 

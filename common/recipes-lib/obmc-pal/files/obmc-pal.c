@@ -1486,30 +1486,31 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
 
 
     case PWR_ERR:
-      switch(ed[0]){
+      switch(ed[0]) {
         case SYS_PWR_ON_FAIL:
-          sprintf(error_log, "SYS_PWROK failure, FRU:%u", fru);
+          sprintf(error_log, "SYS_PWROK failure");
           break;
         case PCH_PWR_ON_FAIL:
-          sprintf(error_log, "PCH_PWROK failure, FRU:%u", fru);
+          sprintf(error_log, "PCH_PWROK failure");
           break;
         case _1OU_EXP_PWR_ON_FAIL:
-          sprintf(error_log, "1OU EXP Power ON Failure, FRU:%u", fru);
+          sprintf(error_log, "1OU EXP Power ON Failure");
           break;
         case _1OU_EXP_PWR_OFF_FAIL:
-          sprintf(error_log, "1OU EXP Power OFF Failure, FRU:%u", fru);
+          sprintf(error_log, "1OU EXP Power OFF Failure");
           break;
         case _2OU_EXP_PWR_ON_FAIL:
-          sprintf(error_log, "2OU EXP Power ON Failure, FRU:%u", fru);
+          sprintf(error_log, "2OU EXP Power ON Failure");
           break;
         case _2OU_EXP_PWR_OFF_FAIL:
-          sprintf(error_log, "2OU EXP Power OFF Failure, FRU:%u", fru);
+          sprintf(error_log, "2OU EXP Power OFF Failure");
           break;
         default:
           strcat(error_log, "Unknown");
 
       }
-      pal_add_cri_sel(error_log);
+      sprintf(temp_log, "%s, FRU:%u", error_log, fru);
+      pal_add_cri_sel(temp_log);
       break;
 
     case CATERR_A:

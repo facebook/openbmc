@@ -64,6 +64,14 @@ void SensorList::enumerate()
     }
     (*this)[name] = make_chip(chip, name);
     (*this)[name]->enumerate();
+    for (auto& it : *((*this)[name])) {
+      const string& label = it.first;
+      if (labelToChip.find(label) == labelToChip.end()) {
+        labelToChip[label] = name;
+      } else {
+        syslog(LOG_INFO, "Warning: duplicated label: %s", label.c_str());
+      }
+    }
   }
 }
 
@@ -74,9 +82,15 @@ void SensorList::re_enumerate(const char *conf_file)
 
   sensors_cleanup();
   this->clear();
+  labelToChip.clear();
 
   _sensor_list_build(conf_file);
   syslog(LOG_INFO, "sensor list renumerate end");
+}
+
+std::unique_ptr<SensorChip>& SensorList::find_chip_by_label(const std::string& label)
+{
+  return at(labelToChip.at(label));
 }
 
 void SensorList::_sensor_list_build(const char* conf_file)

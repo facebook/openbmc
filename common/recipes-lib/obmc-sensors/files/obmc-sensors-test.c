@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
   const char *label = argv[2];
   if (argc < 3) {
     printf("USAGE: %s CHIP LABEL\n", argv[0]);
+    printf("Pass null as CHIP if you want to find chip\n");
     return -1;
   }
   if (argc >= 4) {
@@ -44,6 +45,8 @@ int main(int argc, char *argv[])
       ret = sensors_read_fan(label, &value);
     } else if(!strcmp(chip, "adc")) {
       ret = sensors_read_adc(label, &value);
+    } else if (!strcmp(chip, "null") || !strcmp(chip, "NULL")) {
+      ret = sensors_read(NULL, label, &value);
     } else {
       ret = sensors_read(chip, label, &value);
     }

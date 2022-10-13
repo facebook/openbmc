@@ -17,6 +17,7 @@
  */
 
 #include <syslog.h>
+#include <unordered_map>
 #include "sensorlist.hpp"
 
 #ifndef SENSOR_CONF
@@ -24,16 +25,18 @@
 #endif
 SensorList sensors(SENSOR_CONF);
 
+
 static int sensors_read_locked(const char *chip, const char *label, float *value)
 {
   int ret = -1;
-  if (!chip || !label || !value) {
+  if (!label || !value) {
     errno = EINVAL;
     return -1;
   }
 
   try {
-    *value = sensors.at(chip)->at(label)->read();
+    auto& pChip = chip == nullptr ? sensors.find_chip_by_label(label) : sensors.at(chip);
+    *value = pChip->at(label)->read();
     ret = 0;
   } catch (std::out_of_range &e) {
     syslog(LOG_ERR, "Read(%s:%s): Out of range exception: %s\n", chip, label, e.what());

@@ -18,12 +18,14 @@
 #ifndef _SENSORLIST_HPP_
 #define _SENSORLIST_HPP_
 #include "sensorchip.hpp"
+#include <unordered_map>
 #include <shared_mutex>
 
 // Collection of sensor-chips. Provides efficient look-up of sensor chips.
 class SensorList : public std::map<std::string, std::unique_ptr<SensorChip>> {
   private:
     void _sensor_list_build(const char* conf_file = nullptr);
+    std::unordered_map<std::string, std::string> labelToChip{};
   protected:
     // Allocates a chip object
     virtual std::unique_ptr<SensorChip> make_chip(const sensors_chip_name *chip, const std::string &name);
@@ -36,6 +38,8 @@ class SensorList : public std::map<std::string, std::unique_ptr<SensorChip>> {
 
     // re_enumerate all sensor chips.
     void re_enumerate(const char *conf_file = nullptr);
+
+    std::unique_ptr<SensorChip>& find_chip_by_label(const std::string& label);
 
     // sensorlist shared_mutex
     mutable std::shared_mutex listSharedMutex;

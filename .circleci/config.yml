@@ -71,7 +71,7 @@ jobs:
         docker:
             - image: ubuntu:focal
               environment:
-                  QEMU_URI: https://github.com/facebook/openbmc/releases/download/fb-openbmc-qemu-0.6.3
+                  QEMU_URI: https://github.com/facebook/openbmc/releases/download/qemux86-v2022.41.0/
               user: root
         resource_class: 2xlarge
         working_directory: /tmp/job/project
@@ -107,11 +107,10 @@ jobs:
                 command: |
                     pip3 install paramiko pexpect scp
             - run:
-                name: Download qemu-system-arm
+                name: Download QEMU
                 command: |
-                    wget "${QEMU_URI}/qemu-system-arm.ubuntu"
-                    mv qemu-system-arm.ubuntu qemu-system-arm
-                    chmod +x qemu-system-arm
+                    wget "${QEMU_URI}/qemu-system-aarch64"
+                    chmod +x qemu-system-aarch64
             - run:
                 name: execute CIT tests
                 no_output_timeout: 15m

@@ -39,7 +39,7 @@ class TestWrapper(object):
         Returns:
             bool: [description]
         """
-        cmd = "/tmp/job/project/qemu-system-arm"
+        cmd = "/tmp/job/project/qemu-system-aarch64"
         cmd += QEMU_PARAMETER.format(
             platform + "-bmc",
             self._golden_image_file,

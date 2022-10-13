@@ -2,11 +2,6 @@ LINUX_VERSION_EXTENSION = "-elbert"
 
 COMPATIBLE_MACHINE = "elbert"
 
-KERNEL_MODULE_AUTOLOAD += " \
-    ast_adc \
-    pmbus_core \
-"
+FILESEXTRAPATHS:prepend := "${THISDIR}/board_config:"
 
-KERNEL_MODULE_PROBECONF += "                    \
- i2c-mux-pca954x                                \
-"
+SRC_URI += "file://elbert.cfg"

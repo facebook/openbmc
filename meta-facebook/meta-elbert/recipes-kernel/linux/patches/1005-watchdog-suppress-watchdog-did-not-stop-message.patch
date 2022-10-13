@@ -1,0 +1,25 @@
+From 631799d772a467a31f511a6f5a7c798659d50b00 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Tue, 18 Oct 2022 12:56:46 -0700
+Subject: [PATCH] watchdog: suppress "watchdog did not stop" message
+
+Some OpenBMC platforms kick watchdog using
+---
+ drivers/watchdog/watchdog_dev.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index 54903f3c851e..403582c34f12 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -935,7 +935,6 @@ static int watchdog_release(struct inode *inode, struct file *file)
+ 
+ 	/* If the watchdog was not stopped, send a keepalive ping */
+ 	if (err < 0) {
+-		pr_crit("watchdog%d: watchdog did not stop!\n", wdd->id);
+ 		watchdog_ping(wdd);
+ 	}
+ 
+-- 
+2.30.2
+

@@ -2139,6 +2139,9 @@ pal_get_vr_name(uint8_t fru, uint8_t vr_num, char *name) {
     PVDDCR_CPU0 = 0x00,
     PVDDCR_CPU1 = 0x01,
     PVDD11_S3 = 0x02,
+    RF_P0V9_V8_ASICA = 0x03,
+    RF_VDDQAB = 0x04,
+    RF_VDDQCD = 0x05,
   };
 
   switch (vr_num) {
@@ -2150,6 +2153,15 @@ pal_get_vr_name(uint8_t fru, uint8_t vr_num, char *name) {
       break;
     case PVDD11_S3:
       snprintf(name, 32, "PVDD11_S3");
+      break;
+    case RF_P0V9_V8_ASICA:
+      snprintf(name, 32, "RF_P0V9/V8_ASICA");
+      break;
+    case RF_VDDQAB:
+      snprintf(name, 32, "RF_VDDQAB");
+      break;
+    case RF_VDDQCD:
+      snprintf(name, 32, "RF_VDDQCD");
       break;
     default:
       snprintf(name, 32, "Undefined VR");

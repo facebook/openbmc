@@ -57,7 +57,7 @@ struct pal_key_cfg {
   {SV_SYSFW_VER,    "sysfw_ver_server",      "0",            NULL},
   {SLED_IDENTIFY,   "identify_sled",         "off",          NULL},
   {SLED_TIMESTAMP,  "timestamp_sled",        "0",            NULL},
-  {SV_POR_CFG,      "server_por_cfg",        "lps",          key_func_por_policy},
+  {SV_POR_CFG,      "server_por_cfg",        "on",          key_func_por_policy},
   {SV_SNR_HEALTH,   "server_sensor_health",  "1",            NULL},
   {SWB_SNR_HEALTH,  "swb_sensor_health",     "1",            NULL},
   {HMC_SNR_HEALTH,  "hmc_sensor_health",     "1",            NULL},

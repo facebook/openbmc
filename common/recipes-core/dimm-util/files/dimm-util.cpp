@@ -843,6 +843,8 @@ util_pmic_err(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
       printf("Please specify the DIMM to inject error (option --dimm)\n");
       return -1;
     }
+    cpu = dimm / num_dimms_per_cpu;
+    dimm = dimm % num_dimms_per_cpu;
     if (pmic_list_err(fru_id, cpu, dimm, err_list, &err_cnt) < 0) { // check PMIC is available
       printf("DIMM %s is not available now, please check ME and PMIC status\n", get_dimm_label(cpu, dimm));
     }

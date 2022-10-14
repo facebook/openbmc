@@ -97,7 +97,9 @@ class NodeSystemInfo(node):
         # Let's get the TPM static info like TPM version
         result["tpm_info"] = tpm_object.get_tpm_static_information()
         # Let's get the system static info like kernel version
-        result["system_info"] = obmc_attestation.helpers.get_system_static_information()
+        result[
+            "system_info"
+        ] = await obmc_attestation.helpers.get_system_static_information()
         return result
 
 

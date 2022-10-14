@@ -213,8 +213,9 @@ MAPTOSTRING root_port_common_mapping[] = {
     { 0xB3, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
     // MCC
     { 0xBB, 7, 0x57, "Num 0", "SB" },   // root_port=0x5G, Boot Drive
-    { 0xBB, 5, 0x5E, "Num 0", "SB" },   // root_port=0x5E, Boot Drive
-    { 0xBB, 1, 0x5A, "Class 1", "NIC"}, // root_port=0x5A, Class 1 NIC
+    // QS
+    { 0xBB, 1, 0x5A, "Num 0", "SB" },   // root_port=0x5A, Boot Drive
+    { 0xBB, 5, 0x5E, "Class 1", "NIC"}, // root_port=0x5E, Class 1 NIC
     // Halfdome
     { 0x00, 3, 0xFF, "Class 1", "NIC"}, //  Root port of Class 1 NIC
     { 0x01, 0, 0xFF, "Class 1", "NIC"}, //  Endpoint of Class 1 NIC

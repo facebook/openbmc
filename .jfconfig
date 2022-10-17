@@ -898,6 +898,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-sandia-determinator",
+            "args": {
+                "name": "openbmc-cit-sandia-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-sandia-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform sandia"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-sandia/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-sonorapass-determinator",
             "args": {
                 "name": "openbmc-cit-sonorapass-determinator",

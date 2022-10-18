@@ -1,4 +1,4 @@
-From b89d22166cbe0b46923ec684e8c57d58fbb2f9bc Mon Sep 17 00:00:00 2001
+From 66e4a47399e57183310a0cfe3094396559a89081 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Wed, 1 Jun 2022 10:10:37 +0800
 Subject: [PATCH 6/7] dt-bindings: aspeed-i2c: add properties for setting i2c
@@ -10,13 +10,11 @@ Introduce a new property for setting a minimum duty cycle for clock high.
 
 Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
 ---
-LORE LINK: https://lore.kernel.org/all/20220610054722.32229-3-potin.lai.pt@gmail.com/
----
  Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml | 7 +++++++
  1 file changed, 7 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml b/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml
-index ea643e6c3ef5e..4ea6a112f2993 100644
+index f597f73ccd87..45ed9efd6aec 100644
 --- a/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml
 +++ b/Documentation/devicetree/bindings/i2c/aspeed,i2c.yaml
 @@ -49,6 +49,13 @@ properties:
@@ -34,5 +32,5 @@ index ea643e6c3ef5e..4ea6a112f2993 100644
    - reg
    - compatible
 -- 
-2.17.1
+2.35.1
 

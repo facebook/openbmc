@@ -1,4 +1,4 @@
-From ba420ef0b5cfa989392c6416989b8f7446854b19 Mon Sep 17 00:00:00 2001
+From 0f9a247bebca89178ac155ac168c9996f2f4c72e Mon Sep 17 00:00:00 2001
 From: Howard Chiu <howard10703049@gmail.com>
 Date: Thu, 2 Dec 2021 10:26:23 +0800
 Subject: [PATCH 3/7] Porting tach driver for ast26xx from Aspeed linux
@@ -9,8 +9,6 @@ To support ast26xx on OpenBMC, we need this driver and update the g6 device tree
 Change-Id: I1714abf4fd08edead789439e5723b183d1b0d175
 Signed-off-by: Howard Chiu <howard.chiu@quantatw.com>
 ---
-LINK: https://patchwork.ozlabs.org/project/openbmc/patch/20211202022623.182903-1-howard.chiu@quantatw.com/
----
  arch/arm/boot/dts/aspeed-g6.dtsi    |  22 ++
  drivers/hwmon/Kconfig               |   8 +
  drivers/hwmon/Makefile              |   1 +
@@ -19,10 +17,10 @@ LINK: https://patchwork.ozlabs.org/project/openbmc/patch/20211202022623.182903-1
  create mode 100644 drivers/hwmon/tach-aspeed-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed-g6.dtsi
-index 8c0de3f27883b..35bcd949256a1 100644
+index 1387a763a6a5..0cc92874caa8 100644
 --- a/arch/arm/boot/dts/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed-g6.dtsi
-@@ -323,6 +323,28 @@
+@@ -323,6 +323,28 @@ apb {
  			#size-cells = <1>;
  			ranges;
  
@@ -52,10 +50,10 @@ index 8c0de3f27883b..35bcd949256a1 100644
  				compatible = "aspeed,ast2600-scu", "syscon", "simple-mfd";
  				reg = <0x1e6e2000 0x1000>;
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index ccdaeafed0bb..b7733a68921f 100644
+index e70d9614bec2..d0f6165c2d31 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -397,6 +397,14 @@ config SENSORS_ASPEED
+@@ -402,6 +402,14 @@ config SENSORS_ASPEED
  	  This driver can also be built as a module. If so, the module
  	  will be called aspeed_pwm_tacho.
  
@@ -71,10 +69,10 @@ index ccdaeafed0bb..b7733a68921f 100644
  	tristate "Attansic ATXP1 VID controller"
  	depends on I2C
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 162940270661..e0d1771987a1 100644
+index 007e829d1d0d..9e2a932fbd0a 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
-@@ -51,6 +51,7 @@ obj-$(CONFIG_SENSORS_ARM_SCMI)	+= scmi-hwmon.o
+@@ -54,6 +54,7 @@ obj-$(CONFIG_SENSORS_ARM_SCMI)	+= scmi-hwmon.o
  obj-$(CONFIG_SENSORS_ARM_SCPI)	+= scpi-hwmon.o
  obj-$(CONFIG_SENSORS_AS370)	+= as370-hwmon.o
  obj-$(CONFIG_SENSORS_ASC7621)	+= asc7621.o
@@ -477,5 +475,5 @@ index 000000000000..0b2551fc1711
 +MODULE_DESCRIPTION("ASPEED Fan tach device driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.17.1
+2.35.1
 

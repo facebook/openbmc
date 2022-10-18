@@ -1,7 +1,7 @@
-From 1b708ecfb58c3d81c91f4686bf446cf155fc3d32 Mon Sep 17 00:00:00 2001
+From 80c952042c05e27ac1ae00b754c8ed8a357d4a25 Mon Sep 17 00:00:00 2001
 From: Eli Huang <Eli_Huang@wiwynn.com>
 Date: Fri, 5 Aug 2022 10:00:31 +0800
-Subject: [PATCH] Add pwm tach driver
+Subject: [PATCH 3/4] Add pwm tach driver
 
 ---
  drivers/pwm/Kconfig              |   9 +
@@ -11,7 +11,7 @@ Subject: [PATCH] Add pwm tach driver
  create mode 100644 drivers/pwm/pwm-aspeed-ast2600.c
 
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index aa29841bb..73c1f7e4f 100644
+index 60d13a949bc5..72ac2e7960e3 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
 @@ -51,6 +51,15 @@ config PWM_AB8500
@@ -31,7 +31,7 @@ index aa29841bb..73c1f7e4f 100644
  	tristate "Atmel PWM support"
  	depends on ARCH_AT91 || COMPILE_TEST
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 708840b7f..91de42e51 100644
+index 7bf1a29f02b8..3099a70c8cd6 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
 @@ -1,6 +1,7 @@
@@ -44,7 +44,7 @@ index 708840b7f..91de42e51 100644
  obj-$(CONFIG_PWM_ATMEL_HLCDC_PWM)	+= pwm-atmel-hlcdc.o
 diff --git a/drivers/pwm/pwm-aspeed-ast2600.c b/drivers/pwm/pwm-aspeed-ast2600.c
 new file mode 100644
-index 000000000..5ef7cbf33
+index 000000000000..5ef7cbf33a23
 --- /dev/null
 +++ b/drivers/pwm/pwm-aspeed-ast2600.c
 @@ -0,0 +1,324 @@
@@ -373,5 +373,5 @@ index 000000000..5ef7cbf33
 +MODULE_DESCRIPTION("Aspeed ast2600 PWM device driver");
 +MODULE_LICENSE("GPL v2");
 -- 
-2.37.3
+2.35.1
 

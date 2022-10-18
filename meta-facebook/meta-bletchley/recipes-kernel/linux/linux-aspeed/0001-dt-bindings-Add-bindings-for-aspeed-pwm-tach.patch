@@ -1,4 +1,4 @@
-From 38a49c324af8a95efba185d15cf3d5fc7258814d Mon Sep 17 00:00:00 2001
+From 173630d987c028e5cc563a501f31354c7c0e794d Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:32 +0800
 Subject: [PATCH 1/7] dt-bindings: Add bindings for aspeed pwm-tach.
@@ -8,8 +8,6 @@ multi-function device include pwm and tach function and pwm/tach device
 bindings which should be the child-node of pwm-tach device.
 
 Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
----
-LORE LINK: https://lore.kernel.org/all/20211130055933.32708-2-billy_tsai@aspeedtech.com/
 ---
  .../bindings/hwmon/aspeed,ast2600-tach.yaml   | 68 +++++++++++++++++
  .../bindings/mfd/aspeed,ast2600-pwm-tach.yaml | 76 +++++++++++++++++++
@@ -21,7 +19,7 @@ LORE LINK: https://lore.kernel.org/all/20211130055933.32708-2-billy_tsai@aspeedt
 
 diff --git a/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml b/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml
 new file mode 100644
-index 0000000000000..dded50a049fb6
+index 000000000000..dded50a049fb
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/hwmon/aspeed,ast2600-tach.yaml
 @@ -0,0 +1,68 @@
@@ -246,5 +244,5 @@ index 000000000000..f501f8a769df
 +  required:
 +    - reg
 -- 
-2.17.1
+2.35.1
 

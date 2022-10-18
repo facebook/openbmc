@@ -1,7 +1,7 @@
-From 1408c5c22eac7ca4f1c693288112c906219db5d2 Mon Sep 17 00:00:00 2001
+From ada5fe6a08792b60f6e7c0b6c89556404d53fac7 Mon Sep 17 00:00:00 2001
 From: Eli Huang <Eli_Huang@wiwynn.com>
 Date: Fri, 5 Aug 2022 14:01:14 +0800
-Subject: [PATCH] wdt: aspeed: Reorder extend operation
+Subject: [PATCH 4/4] wdt: aspeed: Reorder extend operation
 
 Reorder the WDT extend register operation for
 'ext-push-pull' and 'ext-active-high'
@@ -10,10 +10,10 @@ Reorder the WDT extend register operation for
  1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/watchdog/aspeed_wdt.c b/drivers/watchdog/aspeed_wdt.c
-index 436571b6f..a03e4ff81 100644
+index bd06622813eb..0cff2adfbfc9 100644
 --- a/drivers/watchdog/aspeed_wdt.c
 +++ b/drivers/watchdog/aspeed_wdt.c
-@@ -325,18 +325,18 @@ static int aspeed_wdt_probe(struct platform_device *pdev)
+@@ -332,18 +332,18 @@ static int aspeed_wdt_probe(struct platform_device *pdev)
  		u32 reg = readl(wdt->base + WDT_RESET_WIDTH);
  
  		reg &= config->ext_pulse_width_mask;
@@ -39,5 +39,5 @@ index 436571b6f..a03e4ff81 100644
  		writel(reg, wdt->base + WDT_RESET_WIDTH);
  	}
 -- 
-2.37.3
+2.35.1
 

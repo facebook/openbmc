@@ -1,4 +1,4 @@
-From 40cd3efca1eb3182c7a1b2d3e816a36be499896f Mon Sep 17 00:00:00 2001
+From a619e7e75515495442891e7bcceb848b60ac3bce Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Nov 2021 13:59:33 +0800
 Subject: [PATCH 2/7] pwm: Add Aspeed ast2600 PWM support
@@ -13,8 +13,6 @@ of multi-function device "pwm-tach controller".
 Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 Reviewed-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
-LORE LINK: https://lore.kernel.org/all/20211130055933.32708-3-billy_tsai@aspeedtech.com/
----
  drivers/pwm/Kconfig              |  10 +
  drivers/pwm/Makefile             |   1 +
  drivers/pwm/pwm-aspeed-ast2600.c | 325 +++++++++++++++++++++++++++++++
@@ -22,7 +20,7 @@ LORE LINK: https://lore.kernel.org/all/20211130055933.32708-3-billy_tsai@aspeedt
  create mode 100644 drivers/pwm/pwm-aspeed-ast2600.c
 
 diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index aa29841bbb798..95488fd4d5a6c 100644
+index 60d13a949bc5..752a2379cb7c 100644
 --- a/drivers/pwm/Kconfig
 +++ b/drivers/pwm/Kconfig
 @@ -51,6 +51,16 @@ config PWM_AB8500
@@ -43,7 +41,7 @@ index aa29841bbb798..95488fd4d5a6c 100644
  	tristate "Atmel PWM support"
  	depends on ARCH_AT91 || COMPILE_TEST
 diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 708840b7fba8d..6be0c67bf08a4 100644
+index 7bf1a29f02b8..5169c34056e6 100644
 --- a/drivers/pwm/Makefile
 +++ b/drivers/pwm/Makefile
 @@ -2,6 +2,7 @@
@@ -56,7 +54,7 @@ index 708840b7fba8d..6be0c67bf08a4 100644
  obj-$(CONFIG_PWM_ATMEL_TCB)	+= pwm-atmel-tcb.o
 diff --git a/drivers/pwm/pwm-aspeed-ast2600.c b/drivers/pwm/pwm-aspeed-ast2600.c
 new file mode 100644
-index 0000000000000..bf54eeb703724
+index 000000000000..bf54eeb70372
 --- /dev/null
 +++ b/drivers/pwm/pwm-aspeed-ast2600.c
 @@ -0,0 +1,325 @@
@@ -386,5 +384,5 @@ index 0000000000000..bf54eeb703724
 +MODULE_DESCRIPTION("Aspeed ast2600 PWM device driver");
 +MODULE_LICENSE("GPL v2");
 -- 
-2.17.1
+2.35.1
 

@@ -1,10 +1,10 @@
-From e686c3aa9a49216d12a502f52ed1e8549071f265 Mon Sep 17 00:00:00 2001
+From 3dcbc572854ae20322304e55fe7979112b5c2a1f Mon Sep 17 00:00:00 2001
 From: Eli Huang <Eli_Huang@wiwynn.com>
 Date: Fri, 5 Aug 2022 10:07:52 +0800
-Subject: [PATCH] Add jtag driver
+Subject: [PATCH 2/4] Add jtag driver
 
 ---
- drivers/Kconfig            |    2 +
+ drivers/Kconfig            |    1 +
  drivers/Makefile           |    1 +
  drivers/jtag/Kconfig       |   38 ++
  drivers/jtag/Makefile      |    2 +
@@ -12,7 +12,7 @@ Subject: [PATCH] Add jtag driver
  drivers/jtag/jtag.c        |  303 +++++++++
  include/linux/jtag.h       |   46 ++
  include/uapi/linux/jtag.h  |  194 ++++++
- 8 files changed, 1866 insertions(+)
+ 8 files changed, 1865 insertions(+)
  create mode 100644 drivers/jtag/Kconfig
  create mode 100644 drivers/jtag/Makefile
  create mode 100644 drivers/jtag/jtag-aspeed.c
@@ -21,28 +21,27 @@ Subject: [PATCH] Add jtag driver
  create mode 100644 include/uapi/linux/jtag.h
 
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index 0d399ddaa..23954f66b 100644
+index 19ee995bd0ae..ea09db580996 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
-@@ -236,4 +236,6 @@ source "drivers/interconnect/Kconfig"
- source "drivers/counter/Kconfig"
+@@ -239,4 +239,5 @@ source "drivers/peci/Kconfig"
  
- source "drivers/most/Kconfig"
-+
+ source "drivers/hte/Kconfig"
+ 
 +source "drivers/jtag/Kconfig"
  endmenu
 diff --git a/drivers/Makefile b/drivers/Makefile
-index a110338c8..a67ee2964 100644
+index 057857258bfd..a1550bf734b6 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -187,3 +187,4 @@ obj-$(CONFIG_GNSS)		+= gnss/
- obj-$(CONFIG_INTERCONNECT)	+= interconnect/
- obj-$(CONFIG_COUNTER)		+= counter/
+@@ -188,3 +188,4 @@ obj-$(CONFIG_COUNTER)		+= counter/
  obj-$(CONFIG_MOST)		+= most/
+ obj-$(CONFIG_PECI)		+= peci/
+ obj-$(CONFIG_HTE)		+= hte/
 +obj-$(CONFIG_JTAG)              += jtag/
 diff --git a/drivers/jtag/Kconfig b/drivers/jtag/Kconfig
 new file mode 100644
-index 000000000..d3814e57d
+index 000000000000..d3814e57d638
 --- /dev/null
 +++ b/drivers/jtag/Kconfig
 @@ -0,0 +1,38 @@
@@ -86,7 +85,7 @@ index 000000000..d3814e57d
 +	  commands for supporting legacy user space applications.
 diff --git a/drivers/jtag/Makefile b/drivers/jtag/Makefile
 new file mode 100644
-index 000000000..04a855e2d
+index 000000000000..04a855e2df28
 --- /dev/null
 +++ b/drivers/jtag/Makefile
 @@ -0,0 +1,2 @@
@@ -94,7 +93,7 @@ index 000000000..04a855e2d
 +obj-$(CONFIG_JTAG_ASPEED)	+= jtag-aspeed.o
 diff --git a/drivers/jtag/jtag-aspeed.c b/drivers/jtag/jtag-aspeed.c
 new file mode 100644
-index 000000000..e0a46fd12
+index 000000000000..e0a46fd12bca
 --- /dev/null
 +++ b/drivers/jtag/jtag-aspeed.c
 @@ -0,0 +1,1280 @@
@@ -1380,7 +1379,7 @@ index 000000000..e0a46fd12
 +MODULE_LICENSE("GPL v2");
 diff --git a/drivers/jtag/jtag.c b/drivers/jtag/jtag.c
 new file mode 100644
-index 000000000..090f56d58
+index 000000000000..090f56d582a4
 --- /dev/null
 +++ b/drivers/jtag/jtag.c
 @@ -0,0 +1,303 @@
@@ -1689,7 +1688,7 @@ index 000000000..090f56d58
 +MODULE_LICENSE("GPL v2");
 diff --git a/include/linux/jtag.h b/include/linux/jtag.h
 new file mode 100644
-index 000000000..6a6b53a54
+index 000000000000..6a6b53a549d8
 --- /dev/null
 +++ b/include/linux/jtag.h
 @@ -0,0 +1,46 @@
@@ -1741,7 +1740,7 @@ index 000000000..6a6b53a54
 +#endif /* __JTAG_H */
 diff --git a/include/uapi/linux/jtag.h b/include/uapi/linux/jtag.h
 new file mode 100644
-index 000000000..3f9e1953f
+index 000000000000..3f9e1953f5a4
 --- /dev/null
 +++ b/include/uapi/linux/jtag.h
 @@ -0,0 +1,194 @@
@@ -1940,5 +1939,5 @@ index 000000000..3f9e1953f
 +
 +#endif /* __UAPI_LINUX_JTAG_H */
 -- 
-2.37.3
+2.35.1
 

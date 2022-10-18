@@ -1,30 +1,26 @@
-From 644b70a7e405df35821670902c014221a705fbcc Mon Sep 17 00:00:00 2001
+From 311530ccb4f3afa8c5b3169fb486f9dcc785cbc6 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 30 May 2022 13:45:10 +0800
 Subject: [PATCH 7/7] ARM: dts: aspeed: bletchley: set manual clock for i2c13
 
 Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
 ---
-Internal patch for now.
-This patch rely on patchs below
-[1] https://lore.kernel.org/all/20220610054722.32229-1-potin.lai.pt@gmail.com/
----
  arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
-index 59f632b20803e..f84f796c118ad 100644
+index 5639fd5b5057..3efbe0a043a4 100644
 --- a/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed-bmc-facebook-bletchley.dts
-@@ -964,7 +964,7 @@
+@@ -960,7 +960,7 @@ fan_leds: pca9552@67 {
  
  &i2c13 {
  	multi-master;
 -	aspeed,hw-timeout-ms = <1000>;
 +	i2c-clk-high-min-percent = <56>;
  	status = "okay";
- };
  
+ 	//USB Debug Connector
 -- 
-2.17.1
+2.35.1
 

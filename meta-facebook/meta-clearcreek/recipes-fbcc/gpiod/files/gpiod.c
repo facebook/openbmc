@@ -345,6 +345,17 @@ static void gpio_event_handle_power_btn(gpiopoll_pin_t *desc, gpio_value_t last,
   log_gpio_change(desc, curr, 0, true);
 }
 
+static void gpio_event_pex_error(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  msleep(250);
+  if (pal_is_server_off())
+    return;
+  if (pal_is_fw_update_ongoing(FRU_MB))
+    return;
+
+  gpio_event_handle_high_active(gp, last, curr);
+}
+
 // GPIO table to be monitored
 static struct gpiopoll_config g_gpios[] = {
   // shadow, description, edge, handler, oneshot
@@ -361,10 +372,10 @@ static struct gpiopoll_config g_gpios[] = {
   {"CPLD_SMB_ALERT_N_R", "GPIOE5", GPIO_EDGE_BOTH, gpio_smb_alert_handler, power_fail_check},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_handle_low_active, NULL},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_handle_low_active, NULL},
-  {"PEX0_SYS_ERR_BMC", "GPION4", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
-  {"PEX1_SYS_ERR_BMC", "GPIOG0", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
-  {"PEX2_SYS_ERR_BMC", "GPIOG3", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
-  {"PEX3_SYS_ERR_BMC", "GPIOG7", GPIO_EDGE_BOTH, gpio_event_handle_high_active, NULL},
+  {"PEX0_SYS_ERR_BMC", "GPION4", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
+  {"PEX1_SYS_ERR_BMC", "GPIOG0", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
+  {"PEX2_SYS_ERR_BMC", "GPIOG3", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
+  {"PEX3_SYS_ERR_BMC", "GPIOG7", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},
 };
 
 int main(int argc, char **argv)

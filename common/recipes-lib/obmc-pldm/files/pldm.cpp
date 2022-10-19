@@ -125,7 +125,7 @@ static pldm_requester_rc_t mctp_recv (mctp_eid_t eid, int mctp_fd,
 }
 
 int oem_pldm_send (int eid, int pldmd_fd,
-                      const uint8_t *pldm_req_msg, size_t req_msg_len) 
+                      const uint8_t *pldm_req_msg, size_t req_msg_len)
 {
   int ret;
   for (int retry = 0; retry < 2; retry++) {
@@ -139,12 +139,12 @@ int oem_pldm_send (int eid, int pldmd_fd,
 }
 
 int oem_pldm_recv (int eid, int pldmd_fd,
-                      uint8_t **pldm_resp_msg, size_t *resp_msg_len) 
+                      uint8_t **pldm_resp_msg, size_t *resp_msg_len)
 {
   return (int)mctp_recv(eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
 }
 
-int oem_pldm_send_recv (uint8_t bus, int eid, 
+int oem_pldm_send_recv (uint8_t bus, int eid,
                       const uint8_t *pldm_req_msg, size_t req_msg_len,
                       uint8_t **pldm_resp_msg, size_t *resp_msg_len) {
   std::string path = "pldm-mux" + std::to_string(bus);
@@ -165,7 +165,7 @@ int oem_pldm_send_recv (uint8_t bus, int eid,
 
 int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
                       const uint8_t *pldm_req_msg, size_t req_msg_len,
-                      uint8_t **pldm_resp_msg, size_t *resp_msg_len) 
+                      uint8_t **pldm_resp_msg, size_t *resp_msg_len)
 {
   struct pldm_msg_hdr *hdr = (struct pldm_msg_hdr *)pldm_req_msg;
   int rc = PLDM_REQUESTER_SUCCESS;
@@ -185,7 +185,7 @@ int oem_pldm_send_recv_w_fd (int eid, int pldmd_fd,
 
     rc = oem_pldm_recv((int)eid, pldmd_fd, pldm_resp_msg, resp_msg_len);
     if (rc) {
-      if (errno != EAGAIN) {
+      if (errno != EAGAIN && errno != EINTR) {
         printf("%s return code = %d(%d)\n", __func__, PLDM_REQUESTER_RECV_FAIL, -errno);
         return PLDM_REQUESTER_RECV_FAIL;
       }

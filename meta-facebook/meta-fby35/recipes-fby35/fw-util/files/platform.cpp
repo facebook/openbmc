@@ -97,6 +97,7 @@ class ClassConfig {
           }
           if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
             if (isRainbowFalls(FRU_SLOT1)) {
+              static VrComponent  vr_1ou_fw1("slot1", "1ou_vr", FW_1OU_VR);
               static VrComponent  vr_1ou_va0v8_fw1("slot1", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
               static VrComponent  vr_1ou_vddqab_fw1("slot1", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
               static VrComponent  vr_1ou_vddqcd_fw1("slot1", "1ou_vr_vddqcd", FW_1OU_VR_VDDQCD);
@@ -180,6 +181,7 @@ class ClassConfig {
           }
           if ((config_status & PRESENT_1OU) == PRESENT_1OU) {
             if (isRainbowFalls(FRU_SLOT3)) {
+              static VrComponent  vr_1ou_fw3("slot3", "1ou_vr", FW_1OU_VR);
               static VrComponent  vr_1ou_va0v8_fw3("slot3", "1ou_vr_v9asica", FW_1OU_VR_V9_ASICA);
               static VrComponent  vr_1ou_vddqab_fw3("slot3", "1ou_vr_vddqab", FW_1OU_VR_VDDQAB);
               static VrComponent  vr_1ou_vddqcd_fw3("slot3", "1ou_vr_vddqcd", FW_1OU_VR_VDDQCD);

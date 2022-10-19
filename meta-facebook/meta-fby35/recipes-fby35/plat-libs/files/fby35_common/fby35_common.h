@@ -379,6 +379,7 @@ enum {
   FW_BB_BIC,
   FW_BB_CPLD,
   FW_1OU_CXL,          //20
+  FW_1OU_VR,
   FW_1OU_VR_V9_ASICA,
   FW_1OU_VR_VDDQAB,
   FW_1OU_VR_VDDQCD,

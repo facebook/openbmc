@@ -9,6 +9,7 @@ using std::string;
 
 class VrComponent : public Component {
   static bool vr_printed;
+  static bool rbf_vr_printed;
   uint8_t slot_id;
   uint8_t fw_comp;
   Server server;

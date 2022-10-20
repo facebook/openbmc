@@ -28,6 +28,7 @@ do_lint_sh() {
 do_lint_cppcheck() {
   echo "CPPC: $1"
   options=( "-j2"
+      "--force"
       "--inconclusive"
       "--error-exitcode=1"
       "--enable=performance,style,portability,information"

@@ -6,7 +6,7 @@
 #define FM_UARTSW_MSB_N          "FM_UARTSW_MSB_N"
 #define FM_POST_CARD_PRES_N      "FM_DEBUG_PORT_PRSNT_N_IN"
 #define IRQ_UV_DETECT_N          "UV_ALERT_N"
-#define IRQ_OC_DETECT_N          "UV_ALERT_N"
+#define IRQ_OC_DETECT_N          "OC_ALERT_N"
 #define IRQ_HSC_FAULT_N          "IRQ_HSC_FAULT_R1_N"
 #define IRQ_HSC_ALERT_N          "IRQ_SML1_PMBUS_ALERT_N"
 #define FM_CPU_CATERR_N          "H_CPU_CATERR_LVC2_R2_N"

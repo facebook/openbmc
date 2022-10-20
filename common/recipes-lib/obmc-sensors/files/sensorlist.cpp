@@ -68,8 +68,6 @@ void SensorList::enumerate()
       const string& label = it.first;
       if (labelToChip.find(label) == labelToChip.end()) {
         labelToChip[label] = name;
-      } else {
-        syslog(LOG_INFO, "Warning: duplicated label: %s", label.c_str());
       }
     }
   }

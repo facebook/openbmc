@@ -30,6 +30,7 @@
 #define FP_RST_BTN_OUT_N         "RST_BMC_RSTBTN_OUT_R_N"
 
 #define BIC_READY                "FM_SWB_BIC_READY_ISO_R_N"
+#define HMC_PRESENCE             "GPU_HMC_PRSNT_ISO_R_N"
 #define GPU_FPGA_RST_N           "GPU_FPGA_RST_N"
 
 #endif

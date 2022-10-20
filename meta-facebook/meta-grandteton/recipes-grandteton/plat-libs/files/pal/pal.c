@@ -43,6 +43,7 @@
 #include <libpldm/pldm.h>
 #include <libpldm/platform.h>
 #include <libpldm-oem/pldm.h>
+#include "pal_common.h"
 
 
 #if !defined(PLATFORM_NAME)
@@ -86,7 +87,7 @@ const char pal_server_list[] = "mb";
 
 #define FIO_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
 
-#define HSC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL
+#define HSC_CAPABILITY  FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL
 
 
 struct fru_dev_info {
@@ -96,32 +97,38 @@ struct fru_dev_info {
   uint8_t bus;
   uint8_t addr;
   uint32_t cap;
+  uint8_t path;
+  bool (*check_presence) (void);
+};
+
+enum {
+  FRU_PATH_NONE,
+  FRU_PATH_EEPROM,
+  FRU_PATH_PLDM,
 };
 
 struct fru_dev_info fru_dev_data[] = {
-  {FRU_ALL,   "all",     NULL,            0,  0,    ALL_CAPABILITY},
-  {FRU_MB,    "mb",      "Mother Board",  33, 0x51, MB_CAPABILITY},
-  {FRU_SWB,   "swb",     "Switch Board",  3,  0x20, SWB_CAPABILITY},
-  {FRU_HMC,   "hmc",     "HMC Board"  ,   0,    0,  HMC_CAPABILITY},
-  {FRU_NIC0,  "nic0",    "Mezz Card 0",   13, 0x50, NIC_CAPABILITY},
-  {FRU_NIC1,  "nic1",    "Mezz Card 1",   4,  0x52, NIC_CAPABILITY},
-  {FRU_DBG,   "ocpdbg",  "Debug Board",   14, 0,    0},
-  {FRU_BMC,   "bmc",     "BSM Board",     15, 0x56, BMC_CAPABILITY},
-  {FRU_SCM,   "scm",     "SCM Board",     15, 0x50, SCM_CAPABILITY},
-  {FRU_PDBV,  "vpdb",    "VPDB Board",    36, 0x52, PDB_CAPABILITY},
-  {FRU_PDBH,  "hpdb",    "HPDB Board",    37, 0x51, PDB_CAPABILITY},
-  {FRU_BP0,   "bp0",     "BP0 Board",     40, 0x56, BP_CAPABILITY},
-  {FRU_BP1,   "bp1",     "BP1 Board",     41, 0x56, BP_CAPABILITY},
-  {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY},
-  {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0},
-  {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0},
-
+  {FRU_ALL,   "all",     NULL,            0,  0,    ALL_CAPABILITY, FRU_PATH_NONE,   NULL },
+  {FRU_MB,    "mb",      "Mother Board",  33, 0x51, MB_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
+  {FRU_SWB,   "swb",     "Switch Board",  3,  0x20, SWB_CAPABILITY, FRU_PATH_PLDM,   swb_presence},
+  {FRU_HMC,   "hmc",     "HMC Board"  ,   0,    0,  HMC_CAPABILITY, FRU_PATH_NONE,   hgx_presence},
+  {FRU_NIC0,  "nic0",    "Mezz Card 0",   13, 0x50, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
+  {FRU_NIC1,  "nic1",    "Mezz Card 1",   4,  0x52, NIC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
+  {FRU_DBG,   "ocpdbg",  "Debug Board",   14, 0,    0,              FRU_PATH_NONE,   NULL},
+  {FRU_BMC,   "bmc",     "BSM Board",     15, 0x56, BMC_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
+  {FRU_SCM,   "scm",     "SCM Board",     15, 0x50, SCM_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
+  {FRU_PDBV,  "vpdb",    "VPDB Board",    36, 0x52, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
+  {FRU_PDBH,  "hpdb",    "HPDB Board",    37, 0x51, PDB_CAPABILITY, FRU_PATH_EEPROM, fru_presence},
+  {FRU_BP0,   "bp0",     "BP0 Board",     40, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
+  {FRU_BP1,   "bp1",     "BP1 Board",     41, 0x56, BP_CAPABILITY,  FRU_PATH_EEPROM, fru_presence},
+  {FRU_FIO,   "fio",     "FIO Board",     3,  0x20, FIO_CAPABILITY, FRU_PATH_PLDM,   swb_presence},
+  {FRU_HSC,   "hsc",     "HSC Board",     2,  0x51, 0,              FRU_PATH_EEPROM, fru_presence},
+  {FRU_SHSC,  "swb_hsc", "SWB HSC Board", 3,  0x20, 0,              FRU_PATH_PLDM,   swb_presence},
 };
 
 int
 pal_get_platform_name(char *name) {
   strcpy(name, PLATFORM_NAME);
-
   return 0;
 }
 
@@ -133,26 +140,11 @@ pal_get_num_slots(uint8_t *num) {
 
 int
 pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
-  switch (fru) {
-    case FRU_MB:
-    case FRU_SWB:
-    case FRU_HMC:
-    case FRU_NIC0:
-    case FRU_NIC1:
-    case FRU_DBG:
-    case FRU_BMC:
-    case FRU_SCM:
-    case FRU_PDBV:
-    case FRU_PDBH:
-    case FRU_BP0:
-    case FRU_BP1:
-    case FRU_FIO:
-    case FRU_HSC:
-    case FRU_SHSC:
-      *status = 1;
-      break;
-    default:
-      *status = 0;
+
+  if(fru_dev_data[fru].check_presence == NULL || fru >= FRU_CNT) {
+    *status = 0;
+  } else {
+    *status = fru_dev_data[fru].check_presence();
   }
   return 0;
 }
@@ -213,9 +205,7 @@ pal_get_fruid_path(uint8_t fru, char *path) {
 int
 pal_get_fruid_eeprom_path(uint8_t fru, char *path) {
 
-  if (fru > MAX_NUM_FRUS || fru == FRU_ALL || fru == FRU_SWB
-                         || fru == FRU_FIO || fru == FRU_DBG
-                         || fru == FRU_SHSC)
+  if (fru > MAX_NUM_FRUS || fru_dev_data[fru].path != FRU_PATH_EEPROM)
     return -1;
 
   sprintf(path, FRU_EEPROM, fru_dev_data[fru].bus, fru_dev_data[fru].bus, fru_dev_data[fru].addr);
@@ -661,60 +651,14 @@ pal_get_sensor_util_timeout(uint8_t fru) {
   }
 }
 
-int
-is_mb_hsc_module(void) {
-  static bool cached = false;
-  static bool val = false;
-  uint8_t id;
-
-  if (!cached) {
-    if(pal_get_platform_id(&id))
-      return -1;
-
-    id = (id & 0x0C) >> 2;
-    if (id == SECOND_SOURCE)
-      val = true;
-    cached = true;
-  }
-  return val;
-}
-
-int
-is_swb_hsc_module(void) {
-  static bool cached = false;
-  static bool val = false;
-  uint8_t inf_devid[3] = { 0x02, 0x79, 0x02 };
-  uint8_t tbuf[16], rbuf[16];
-  uint8_t tlen=0;
-  int ret;
-
-  if(!cached) {
-    tbuf[tlen++] = VR0_COMP;
-    tbuf[tlen++] = 3;
-    tbuf[tlen++] = 0xAD;
-
-    size_t rlen = 0;
-    ret = pldm_oem_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
-                               NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
-                               tbuf, tlen,
-                               rbuf, &rlen);
-
-    if(!ret && !memcmp(rbuf, inf_devid, 3)) {
-      val = true;
-    }
-    cached = true;
-  }
-  return val;
-}
-
 int pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 {
   if (fru > MAX_NUM_FRUS)
     return -1;
 
-  if(fru == FRU_SHSC && (is_swb_hsc_module() == true)) {
+  if(fru == FRU_SHSC && is_swb_hsc_module()) {
     *caps = HSC_CAPABILITY;
-  } else if(fru == FRU_HSC && (is_mb_hsc_module() == true)) {
+  } else if(fru == FRU_HSC && is_mb_hsc_module()) {
     *caps = HSC_CAPABILITY;
   } else {
     *caps = fru_dev_data[fru].cap;

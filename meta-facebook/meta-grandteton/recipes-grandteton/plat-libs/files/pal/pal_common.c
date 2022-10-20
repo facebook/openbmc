@@ -9,10 +9,62 @@
 #include "pal_common.h"
 #include "pal_def.h"
 #include "pal_gpio.h"
-
-#define MAX_DIMM_NUM    (32)
+#include <libpldm/pldm.h>
+#include <libpldm/platform.h>
+#include <libpldm-oem/pldm.h>
 
 //#define DEBUG
+
+char *mb_source_data[] = {
+  "mb_hsc_source",
+  "mb_vr_source",
+  "mb_adc_source",
+};
+
+char *vpdb_source_data[] = {
+  "vpdb_hsc_source",
+  "vpdb_brick_source",
+};
+
+char *hpdb_source_data[] = {
+  "hpdb_hsc_source",
+};
+
+char *bp0_source_data[] = {
+  "bp0_fan_chip_source",
+};
+
+char *bp1_source_data[] = {
+  "bp1_fan_chip_source",
+};
+
+struct source_info {
+  uint8_t fru;
+  char** source;
+};
+
+
+struct source_info comp_source_data[] = {
+  {FRU_ALL,   NULL},
+  {FRU_MB,    mb_source_data},
+  {FRU_SWB,   NULL},
+  {FRU_HMC,   NULL},
+  {FRU_NIC0,  NULL},
+  {FRU_NIC1,  NULL},
+  {FRU_DBG,   NULL},
+  {FRU_BMC,   NULL},
+  {FRU_SCM,   NULL},
+  {FRU_PDBV,  vpdb_source_data},
+  {FRU_PDBH,  hpdb_source_data},
+  {FRU_BP0,   bp0_source_data},
+  {FRU_BP1,   bp1_source_data},
+  {FRU_FIO,   NULL},
+  {FRU_HSC,   NULL},
+  {FRU_SHSC,  NULL},
+
+};
+
+
 bool
 is_cpu_socket_occupy(uint8_t cpu_idx) {
   static bool cached = false;
@@ -70,8 +122,25 @@ read_device(const char *device, int *value) {
   return 0;
 }
 
+
 bool
-get_bic_ready(void) {
+fru_presence(void) {
+  return true;
+}
+
+bool
+hgx_presence(void) {
+  gpio_value_t value;
+
+  value = gpio_get_value_by_shadow(HMC_PRESENCE);
+  if(value != GPIO_VALUE_INVALID)
+    return value ? false : true;
+
+  return false;
+}
+
+bool
+swb_presence(void) {
   gpio_value_t value;
 
   value = gpio_get_value_by_shadow(BIC_READY);
@@ -150,8 +219,7 @@ get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
 }
 
 bool
-is_dimm_present(uint8_t dimm_id)
-{
+is_dimm_present(uint8_t dimm_id) {
   static bool is_check = false;
   static bool dimm_sts_list[MAX_DIMM_NUM] = {0};
   uint8_t fru = FRU_MB;
@@ -173,3 +241,64 @@ is_dimm_present(uint8_t dimm_id)
   }
   return false;
 }
+
+int
+get_comp_source(uint8_t fru, uint8_t comp_id, uint8_t* source) {
+  char value[MAX_VALUE_LEN] = {0};
+
+  if(kv_get(comp_source_data[fru].source[comp_id], value, 0, 0)) {
+    syslog(LOG_WARNING,"[%s] get source fail fru=%d comp=%d", __func__, fru, comp_id);
+    return -1;
+  }
+
+  *source = (uint8_t)atoi(value);
+  return 0;
+}
+
+bool
+is_mb_hsc_module(void) {
+  static bool cached = false;
+  static bool val = false;
+  uint8_t id;
+
+  if (!cached) {
+    get_comp_source(FRU_MB, MB_HSC_SOURCE, &id); //Fail:Main Source
+    if (id == SECOND_SOURCE || id == THIRD_SOURCE)
+      val = true;
+    cached = true;
+  }
+  return val;
+}
+
+bool
+is_swb_hsc_module(void) {
+  static bool cached = false;
+  static bool val = false;
+  uint8_t inf_devid[3] = { 0x02, 0x79, 0x02 };
+  uint8_t tbuf[16], rbuf[16];
+  uint8_t tlen=0;
+  int ret;
+
+  if(!cached) {
+    kv_set("swb_hsc_module", 0, 0, 0);
+    if(swb_presence()) {
+      tbuf[tlen++] = VR0_COMP;
+      tbuf[tlen++] = 3;
+      tbuf[tlen++] = 0xAD;
+
+      size_t rlen = 0;
+      ret = pldm_oem_ipmi_send_recv(SWB_BUS_ID, SWB_BIC_EID,
+                                 NETFN_OEM_1S_REQ, CMD_OEM_1S_BIC_BRIDGE,
+                                 tbuf, tlen,
+                                 rbuf, &rlen);
+
+      if(!ret && !memcmp(rbuf, inf_devid, 3)) {
+        val = true;
+        kv_set("swb_hsc_module", "1", 0, 0);
+      }
+    }
+    cached = true;
+  }
+  return val;
+}
+

@@ -7,6 +7,8 @@
 #include <peci.h>
 #include <linux/peci-ioctl.h>
 #include "peci_sensors.h"
+#include <string.h>
+#include <syslog.h>
 
 #define PECI_READING_SKIP    (1)
 #define PECI_READING_NA      (-2)
@@ -94,7 +96,6 @@ cmd_peci_get_tjmax(uint8_t cpu_addr, int* tjmax) {
 int
 cmd_peci_dimm_thermal_reading(uint8_t cpu_addr, uint8_t channel, uint8_t* temp) {
   PECI_RD_PKG_CONFIG_INFO info;
-  int ret;
   uint8_t rx_len=5;
   uint8_t rx_buf[rx_len];
 
@@ -104,16 +105,13 @@ cmd_peci_dimm_thermal_reading(uint8_t cpu_addr, uint8_t channel, uint8_t* temp) 
   info.para_l = channel;
   info.para_h = 0x00;
 
-  ret = cmd_peci_rdpkgconfig(&info, rx_buf, rx_len);
-  if (ret != 0) {
+  if(cmd_peci_rdpkgconfig(&info, rx_buf, rx_len))
     return -1;
-  }
 
-  if(rx_buf[PECI_THERMAL_DIMM0_BYTE] > rx_buf[PECI_THERMAL_DIMM1_BYTE]) {
-    *temp = rx_buf[PECI_THERMAL_DIMM0_BYTE];
-  } else {
-    *temp = rx_buf[PECI_THERMAL_DIMM1_BYTE];
-  }
+#ifdef DEBUG
+  syslog(LOG_DEBUG,"%s dimm channel%d temp0=%d, temp1=%d\n",__func__, channel, rx_buf[1], rx_buf[2]);
+#endif
+  memcpy(temp, &rx_buf[1], 2);
   return 0;
 }
 
@@ -332,17 +330,31 @@ lib_get_cpu_temp(uint8_t cpu_id, uint8_t cpu_addr, float *value) {
 }
 
 int
-lib_get_cpu_dimm_temp(uint8_t cpu_addr, uint8_t dimm_id, float *value) {
+lib_get_cpu_dimm_temp(uint8_t cpu_addr, uint8_t channel, float *value) {
   int ret;
-  uint8_t temp=0;
+  uint8_t temp[2]={0};
 
-  ret = cmd_peci_dimm_thermal_reading(cpu_addr, dimm_id, &temp);
-  if(ret == 0)
-    *value = (float)temp;
+  ret = cmd_peci_dimm_thermal_reading(cpu_addr, channel, temp);
+  if(ret)
+    return ret;
+
+  if(temp[PECI_THERMAL_DIMM0] > temp[PECI_THERMAL_DIMM1]) {
+    *value = (float)temp[PECI_THERMAL_DIMM0];
+  } else {
+    *value = (float)temp[PECI_THERMAL_DIMM1];
+  }
 
 #ifdef DEBUG
   syslog(LOG_DEBUG, "%s DIMM Temp=%f id=%d\n", __func__, *value, dimm_id);
 #endif
+  return ret;
+}
+
+int
+lib_get_per_dimm_temp(uint8_t cpu_addr, uint8_t channel, uint8_t *value) {
+  int ret;
+
+  ret = cmd_peci_dimm_thermal_reading(cpu_addr, channel, value);
   return ret;
 }
 

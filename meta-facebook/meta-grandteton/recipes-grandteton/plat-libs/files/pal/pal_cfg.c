@@ -10,9 +10,6 @@
 #include "pal_common.h"
 
 #define LAST_KEY "last_key"
-#define MAX_CPU_NUM     (2)
-#define MAX_DIMM_NUM    (32)
-
 
 static int key_func_por_policy (int event, void *arg);
 static int key_func_lps (int event, void *arg);
@@ -247,13 +244,13 @@ pal_set_ppin_info(uint8_t slot, uint8_t *req_data, uint8_t req_len, uint8_t *res
   int i, comp_code = CC_SUCCESS;
 
   *res_len = 0;
-  if (req_len > SIZE_CPU_PPIN*MAX_CPU_NUM)
-    req_len = SIZE_CPU_PPIN*MAX_CPU_NUM;
+  if (req_len > SIZE_CPU_PPIN*MAX_CPU_CNT)
+    req_len = SIZE_CPU_PPIN*MAX_CPU_CNT;
 
   for (i = 0; i < req_len; i++) {
     sprintf(&str[(i%SIZE_CPU_PPIN)*2], "%02x", req_data[i]);
 
-    if (!((i+1)%MAX_CPU_NUM)) {
+    if (!((i+1)%MAX_CPU_CNT)) {
       sprintf(key, "cpu%d_ppin", i/SIZE_CPU_PPIN);
       if (pal_set_key_value(key, str)) {
         comp_code = CC_UNSPECIFIED_ERROR;
@@ -273,7 +270,7 @@ pal_get_syscfg_text(char *text) {
   char *buf = NULL;
   char str[16];
 
-  uint8_t cpu_num=MAX_CPU_NUM;
+  uint8_t cpu_num=MAX_CPU_CNT;
   uint8_t cpu_index=0;
   uint8_t cpu_core_num=0;
   float cpu_speed=0;

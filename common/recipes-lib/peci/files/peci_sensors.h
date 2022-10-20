@@ -11,8 +11,8 @@
 #define PECI_INDEX_TEMP_TARGET                  (16)
 #define PECI_INDEX_TOTAL_TIME                   (31)
 #define PECI_INDEX_PKG_IDENTIFIER               (0)
-#define PECI_THERMAL_DIMM0_BYTE                 (1)
-#define PECI_THERMAL_DIMM1_BYTE                 (2)
+#define PECI_THERMAL_DIMM0                      (0)
+#define PECI_THERMAL_DIMM1                      (1)
 #define INTERNAL_CPU_ERROR_MASK                 (0x1C)
 #define EXTERNAL_CPU_ERROR_MASK                 (0xE0)
 #define BOTH_CPU_ERROR_MASK                     (0xFC)
@@ -61,6 +61,7 @@ enum {
 
 int lib_get_cpu_temp(uint8_t cpu_id, uint8_t cpu_addr, float *value);
 int lib_get_cpu_dimm_temp(uint8_t cpu_addr, uint8_t dimm_id, float *value);
+int lib_get_dimm_temp_per_channel(uint8_t cpu_addr, uint8_t channel, uint8_t *value);
 int lib_get_cpu_pkg_pwr(uint8_t cpu_id, uint8_t cpu_addr, float *value);
 int lib_get_cpu_tjmax(uint8_t cpu_id, float *value);
 int lib_get_cpu_thermal_margin(uint8_t cpu_id, float *value);

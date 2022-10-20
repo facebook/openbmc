@@ -37,23 +37,32 @@ vr_sku=$(($(/usr/bin/kv get mb_sku) & 0x03))  #0x00 : RAA,
                                               #0x01 : INF,
                                               #0x10 : MPS,
 
-echo "Probe VR Device"
-#CPU VR
 
-if [ "$vr_sku" -eq 2 ]; then
+MB_1ST_SOURCE="0"
+MB_2ND_SOURCE="1"
+MB_3RD_SOURCE="2"
+MB_4TH_SOURCE="3"
+
+MB_VR_SECOND="1"
+MB_VR_THIRD="2"
+
+# MB CPU VR Device"
+if [ "$vr_sku" -eq "$MB_VR_THIRD" ]; then
   i2c_device_add 20 0x60 mp2971
   i2c_device_add 20 0x61 mp2971
   i2c_device_add 20 0x63 mp2971
   i2c_device_add 20 0x72 mp2971
   i2c_device_add 20 0x74 mp2971
   i2c_device_add 20 0x76 mp2971
-elif [ "$vr_sku" -ge 1 ]; then
+  kv set mb_vr_source "$MB_3RD_SOURCE"
+elif [ "$vr_sku" -eq "$MB_VR_SECOND"  ]; then
   i2c_device_add 20 0x60 xdpe152c4
   i2c_device_add 20 0x62 xdpe152c4
   i2c_device_add 20 0x64 xdpe152c4
   i2c_device_add 20 0x72 xdpe152c4
   i2c_device_add 20 0x74 xdpe152c4
   i2c_device_add 20 0x76 xdpe152c4
+  kv set mb_vr_source "$MB_2ND_SOURCE"
 else
   i2c_device_add 20 0x60 isl69260
   i2c_device_add 20 0x61 isl69260
@@ -61,16 +70,36 @@ else
   i2c_device_add 20 0x72 isl69260
   i2c_device_add 20 0x74 isl69260
   i2c_device_add 20 0x76 isl69260
+  kv set mb_vr_source "$MB_1ST_SOURCE"
 fi
 
-HSC_MAIN_SOURCE="0"
+# MB HSC Device"
+mb_hsc=$(($(gpio_get FM_BOARD_BMC_SKU_ID3) << 1 |
+          $(gpio_get FM_BOARD_BMC_SKU_ID2)))
 
-#MB HSC
-if [ "$(gpio_get FM_BOARD_BMC_SKU_ID2)" -eq "$HSC_MAIN_SOURCE" ]; then
-  i2c_device_add 2 0x20 mp5990
-else
+#MB_HSC_MAIN="0"   # mp5990
+MB_HSC_SECOND="1"  # ltc4282/ltc4286
+MB_HSC_THIRD="2"   # rs31380
+
+if [ "$mb_hsc" -eq "$MB_HSC_THIRD" ]; then
+  kv set mb_hsc_source "$MB_4TH_SOURCE"
+elif [ "$mb_hsc" -eq "$MB_HSC_SECOND" ]; then
   i2c_device_add 21 0x4C lm75
-  i2c_device_add 2 0x41 ltc4282
   i2c_device_add 2 0x51 24c64
+  #Read ADC 1.5v:LTC4286 1v:LTC4282
+  val=$(i2cget -f -y 21 0x42 0x02)
+  data=$(("$val"))
+
+  if [ "$data" -gt 4 ]
+  then
+    i2c_device_add 2 0x41 ltc4286
+    kv set mb_hsc_source "$MB_3RD_SOURCE"
+  else
+    i2c_device_add 2 0x41 ltc4282
+    kv set mb_hsc_source "$MB_2ND_SOURCE"
+  fi
+else
+  i2c_device_add 2 0x20 mp5990
+  kv set mb_hsc_source "$MB_1ST_SOURCE"
 fi
 

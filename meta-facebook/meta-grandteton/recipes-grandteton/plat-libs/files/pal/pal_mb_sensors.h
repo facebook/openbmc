@@ -2,26 +2,6 @@
 #define __PAL_MB_SENSORS_H__
 
 enum {
-  DIMM_ID0 = 0,
-  DIMM_ID1,
-  DIMM_ID2,
-  DIMM_ID3,
-  DIMM_ID4,
-  DIMM_ID5,
-  DIMM_ID6,
-  DIMM_ID7,
-  DIMM_ID8,
-  DIMM_ID9,
-  DIMM_ID10,
-  DIMM_ID11,
-  DIMM_ID12,
-  DIMM_ID13,
-  DIMM_ID14,
-  DIMM_ID15,
-  DIMM_ID_MAX,
-};
-
-enum {
   CFG_SAMPLE_DIABLE = 0,
   CFG_SAMPLE_2,
   CFG_SAMPLE_4,

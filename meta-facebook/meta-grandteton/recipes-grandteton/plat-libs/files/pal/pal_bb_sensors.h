@@ -132,12 +132,17 @@ enum {
   MEZZ_CNT,
 };
 
-//48V HSC INFO
+//VPDB HSC INFO
 enum {
-  HSC_48V_ID0,
-  HSC_48V_ID1,
-  HSC_48V_ID2,
-  HSC_48V_CNT,
+  VPDB_HSC_ID0,
+  VPDB_HSC_CNT,
+};
+
+//HPDB HSC INFO
+enum {
+  HPDB_HSC_ID1,
+  HPDB_HSC_ID2,
+  HPDB_HSC_CNT,
 };
 
 //BRICK INFO

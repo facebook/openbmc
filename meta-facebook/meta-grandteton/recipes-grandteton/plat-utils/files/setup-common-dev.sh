@@ -48,13 +48,19 @@ i2c_device_add 22 0x48 stlm75
 i2c_device_add 23 0x48 stlm75
 i2c_device_add 24 0x48 stlm75
 
-MB_MAIN_SOURCE="0"
+MB_1ST_SOURCE="0"
+MB_2ND_SOURCE="1"
+#MB_3RD_SOURCE="2"
+MB_ADC_MAIN="0"
+
 #MB ADM128D
-if [ "$(gpio_get FM_BOARD_BMC_SKU_ID1)" -eq $MB_MAIN_SOURCE ]; then
+if [ "$(gpio_get FM_BOARD_BMC_SKU_ID1)" -eq "$MB_ADC_MAIN" ]; then
   i2cset -f -y 20 0x1d 0x0b 0x02
   i2c_device_add 20 0x1d adc128d818
+  kv set mb_adc_source "$MB_1ST_SOURCE"
 else
   i2c_device_add 20 0x35 max11617
+  kv set mb_adc_source "$MB_2ND_SOURCE"
 fi
 
 #MB Expender
@@ -87,12 +93,17 @@ gpio_set RST_SWB_BIC_N 1
 gpio_set BIC_UART_BMC_SEL 0
 
 VPDB_EVT2_BORAD_ID="2"
-VPDB_MAIN_SOURCE="0"
+VPDB_1ST_SOURCE="0"
+VPDB_2ND_SOURCE="1"
+VPDB_3RD_SOURCE="2"
+VPDB_HSC_MAIN="0"
+VPDB_HSC_SECOND="1"
 
 # VPDB
 echo "Probe VPDB Device"
 #VPDB Expender
 i2c_device_add 36 0x22 pca9555
+gpio_export_ioexp 36-0022  VPDB_PRESENT     9
 gpio_export_ioexp 36-0022  VPDB_BOARD_ID_0  10
 gpio_export_ioexp 36-0022  VPDB_BOARD_ID_1  11
 gpio_export_ioexp 36-0022  VPDB_BOARD_ID_2  12
@@ -108,43 +119,60 @@ kv set vpdb_sku "$(($(gpio_get VPDB_SKU_ID_2) << 2 |
                     $(gpio_get VPDB_SKU_ID_1) << 1 |
                     $(gpio_get VPDB_SKU_ID_0)))"
 
-#VPDB ADM1272 CONFIG
-i2cset -y -f 38 0x10 0xd4 0x3F1C w
-i2c_device_add 38 0x10 adm1272
+#VPDB ADM1272/LTC4286 CONFIG
+vpdb_hsc=$(gpio_get VPDB_SKU_ID_2)
+vrev=$(kv get vpdb_rev)
 
-
-brick_driver="bmr491"
-if [ "$(gpio_get VPDB_SKU_ID_1)" -eq $VPDB_MAIN_SOURCE ]; then
-  brick_driver="pmbus"
+if [ "$vpdb_hsc" -eq "$VPDB_HSC_MAIN" ] && [ "$vrev" -gt 1 ]; then
+  i2c_device_add 38 0x44 ltc4286
+  kv set vpdb_hsc_source "$VPDB_1ST_SOURCE"
+else
+  i2cset -y -f 38 0x10 0xd4 0x3F1C w
+  i2c_device_add 38 0x10 adm1272
+  kv set vpdb_hsc_source "$VPDB_2ND_SOURCE"
 fi
 
-if [ "$(kv get vpdb_rev)" -ge $VPDB_EVT2_BORAD_ID ]; then
-  i2c_device_add 38 0x67 $brick_driver
-  i2c_device_add 38 0x68 $brick_driver
-  i2c_device_add 38 0x69 $brick_driver
-else
-  i2c_device_add 38 0x69 $brick_driver
-  i2c_device_add 38 0x6a $brick_driver
-  i2c_device_add 38 0x6b $brick_driver
-fi
+vsku=$(kv get vpdb_sku)
 
-if [ "$(gpio_get VPDB_SKU_ID_0)" -eq $VPDB_MAIN_SOURCE ]; then
-  i2c_device_add 36 0x67 ltc2945
-  i2c_device_add 36 0x68 ltc2945
-  i2c_device_add 36 0x6E ltc2945
+if [ "$vsku" -eq "2" ] || [ "$vsku" -eq "5" ]; then
+  brick_driver="raa228006"
+  i2c_device_add 38 0x54 $brick_driver
+  kv set vpdb_brick_source "$VPDB_3RD_SOURCE"
 else
-  i2c_device_add 36 0x40 ina238
-  i2c_device_add 36 0x41 ina238
-  i2c_device_add 36 0x47 ina238
+  brick_driver="bmr491"
+  vpdb_brick=$(gpio_get VPDB_SKU_ID_1)
+
+  if [ "$vpdb_brick" -eq "$VPDB_1ST_SOURCE" ]; then
+    brick_driver="pmbus"
+    kv set vpdb_brick_source "$VPDB_1ST_SOURCE"
+  else
+    kv set vpdb_brick_source "$VPDB_2ND_SOURCE"
+  fi
+
+  vpdb_rev=$(kv get vpdb_rev)
+  if [ "$vpdb_rev" -ge $VPDB_EVT2_BORAD_ID ]; then
+    i2c_device_add 38 0x67 $brick_driver
+    i2c_device_add 38 0x68 $brick_driver
+    i2c_device_add 38 0x69 $brick_driver
+  else
+    i2c_device_add 38 0x69 $brick_driver
+    i2c_device_add 38 0x6a $brick_driver
+    i2c_device_add 38 0x6b $brick_driver
+  fi
 fi
 
 # VPDB FRU
 i2c_device_add 36 0x52 24c64 #VPDB FRU
 
 
-HPDB_MAIN_SOURCE="0"
 
-# HPDB
+#***HPDB Board Device Probe***
+HPDB_1ST_SOURCE="0"
+HPDB_2ND_SOURCE="1"
+#HPDB_3RD_SOURCE="2"
+HPDB_HSC_MAIN="0"
+HPDB_HSC_SECOND="1"
+
 echo "Probe HPDB Device"
 #HPDB ID Expender
 i2c_device_add 37 0x23 pca9555
@@ -163,30 +191,32 @@ kv set hpdb_sku "$(($(gpio_get HPDB_SKU_ID_2) << 2 |
                     $(gpio_get HPDB_SKU_ID_1) << 1 |
                     $(gpio_get HPDB_SKU_ID_0)))"
 
-# HPDB ADM1272 CONFIG
-i2cset -y -f 39 0x13 0xd4 0x3F1C w
-i2cset -y -f 39 0x1c 0xd4 0x3F1C w
-i2c_device_add 39 0x13 adm1272
-i2c_device_add 39 0x1c adm1272
+# HPDB ADM1272/LTC4286 CONFIG
+hpdb_hsc=$(gpio_get HPDB_SKU_ID_2)
+hrev=$(kv get hpdb_rev)
 
-if [ "$(gpio_get HPDB_SKU_ID_0)" -eq $HPDB_MAIN_SOURCE ]; then
-  i2c_device_add 37 0x69 ltc2945
-  i2c_device_add 37 0x6a ltc2945
-  i2c_device_add 37 0x6b ltc2945
-  i2c_device_add 37 0x6c ltc2945
+if [ "$hpdb_hsc" -eq "$HPDB_HSC_MAIN" ] && [ "$hrev" -gt 1 ]; then
+  i2c_device_add 39 0x40 ltc4286
+  i2c_device_add 39 0x41 ltc4286
+  kv set hpdb_hsc_source "$HPDB_1ST_SOURCE"
 else
-  i2c_device_add 37 0x42 ina238
-  i2c_device_add 37 0x43 ina238
-  i2c_device_add 37 0x44 ina238
-  i2c_device_add 37 0x45 ina238
+  i2cset -y -f 39 0x13 0xd4 0x3F1C w
+  i2cset -y -f 39 0x1c 0xd4 0x3F1C w
+  i2c_device_add 39 0x13 adm1272
+  i2c_device_add 39 0x1c adm1272
+  kv set hpdb_hsc_source "$HPDB_2ND_SOURCE"
 fi
 
 # HPDB FRU
 i2c_device_add 37 0x51 24c64
 
 
+
+#***FAN Board Device Probe***
+BP_1ST_SOURCE="0"
+BP_2ND_SOURCE="1"
+BP_FAN_MAIN="0"
 echo "Probe FAN Board Device"
-# FAN Board
 # BP0 I/O Expander PCA9555
 i2c_device_add 40 0x21 pca9555
 gpio_export_ioexp 40-0021 BP0_SKU_ID_0    8
@@ -194,7 +224,6 @@ gpio_export_ioexp 40-0021 BP0_SKU_ID_1    9
 gpio_export_ioexp 40-0021 BP0_SKU_ID_2    10
 
 kv set bp0_fan_sku "$(($(gpio_get BP0_SKU_ID_0)))"
-
 
 # BP1 I/O Expander PCA9555
 i2c_device_add 41 0x21 pca9555
@@ -204,10 +233,10 @@ gpio_export_ioexp 41-0021 BP1_SKU_ID_2    10
 
 kv set bp1_fan_sku "$(($(gpio_get BP1_SKU_ID_0)))"
 
-
-if [ "$(kv get bp0_fan_sku)" -eq "0" ]; then
+bp0_fan=$(kv get bp0_fan_sku)
+if [ "$bp0_fan" -eq "$BP_FAN_MAIN" ]; then
 # Max31790
-  echo "Probe BP0 Max31790 FAN CHIP"
+  # BP0 Max31790 FAN CHIP
   i2cset -f -y 40 0x20 0x01 0xbb
   i2cset -f -y 40 0x20 0x02 0x08
   i2cset -f -y 40 0x20 0x03 0x19
@@ -238,8 +267,9 @@ if [ "$(kv get bp0_fan_sku)" -eq "0" ]; then
 
   i2c_device_add 40 0x20 max31790
   i2c_device_add 40 0x2f max31790
+  kv set bp0_fan_chip_source "$BP_1ST_SOURCE"
 else
-  echo "Probe BP0 NCT3763Y FAN CHIP"
+  # BP0 NCT3763Y FAN CHIP
   # Config FAN PWM and FAIN BP0
   i2cset -f -y -a 40 0x01 0x20 0xA9
   i2cset -f -y -a 40 0x01 0x21 0x99
@@ -275,10 +305,12 @@ else
   i2cset -f -y -a 40 0x02 0xA7 0x05
   i2cset -f -y -a 40 0x02 0xAB 0x05
   i2cset -f -y -a 40 0x02 0xAF 0x05
+  kv set bp0_fan_chip_source "$BP_2ND_SOURCE"
 fi
 
-if [ "$(kv get bp1_fan_sku)" -eq "0" ]; then
-  echo "Probe BP1 MAX31790 FAN CHIP"
+bp1_fan=$(kv get bp1_fan_sku)
+if [ "$bp1_fan" -eq "$BP_1ST_SOURCE" ]; then
+  # BP1 MAX31790 FAN CHIP
   i2cset -f -y 41 0x20 0x01 0xbb
   i2cset -f -y 41 0x20 0x02 0x08
   i2cset -f -y 41 0x20 0x03 0x19
@@ -309,8 +341,9 @@ if [ "$(kv get bp1_fan_sku)" -eq "0" ]; then
 
   i2c_device_add 41 0x20 max31790
   i2c_device_add 41 0x2f max31790
+  kv set bp1_fan_chip_source "$BP_1ST_SOURCE"
 else
-  echo "Probe BP1 NCT3763Y FAN CHIP"
+  # BP1 NCT3763Y FAN CHIP
   # Config FAN PWM and FAIN BP1
   i2cset -f -y -a 41 0x01 0x20 0xA9
   i2cset -f -y -a 41 0x01 0x21 0x99
@@ -345,14 +378,14 @@ else
   i2cset -f -y -a 41 0x02 0xA7 0x05
   i2cset -f -y -a 41 0x02 0xAB 0x05
   i2cset -f -y -a 41 0x02 0xAF 0x05
+  kv set bp1_fan_chip_source "$BP_2ND_SOURCE"
 fi
 
 
-echo "Probe FAN LED Device"
+# FAN LED Device"
 rebind_i2c_dev 40 62 leds-pca955x
 rebind_i2c_dev 41 62 leds-pca955x
 
-echo "Probe FRU Device"
 # FAN Board FRU
 i2c_device_add 40 0x56 24c64 #BP0 FRU
 i2c_device_add 41 0x56 24c64 #BP1 FRU

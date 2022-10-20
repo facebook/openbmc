@@ -7,6 +7,7 @@
 #include <openbmc/sensor-correction.h>
 #include <math.h>
 #include "pal.h"
+#include "pal_common.h"
 
 //#define DEBUG
 #define FAN_PRESNT_TEMPLATE       "FAN%d_PRESENT"
@@ -27,14 +28,19 @@ static int set_nct7363y_duty(uint8_t fan_id, uint8_t pwm);
 //Sensor Read
 static int read_bb_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_48v_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_48v_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_48v_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_48v_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value);
-static int read_48v_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_vpdb_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_vpdb_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_vpdb_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_vpdb_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_vpdb_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_brick_vout(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_brick_iout(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_brick_temp(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_hpdb_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_hpdb_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_hpdb_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_hpdb_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value);
+static int read_hpdb_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value);
 static int read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value);
 
@@ -74,6 +80,18 @@ const uint8_t vpdb_sensor_list[] = {
   PDBV_SNR_BRICK2_TEMP,
   PDBV_SNR_ADC128_P3V3_AUX,
 };
+
+const uint8_t vpdb_discrete_sensor_list[] = {
+  PDBV_SNR_HSC0_VIN,
+  PDBV_SNR_HSC0_IOUT,
+  PDBV_SNR_HSC0_PIN,
+  PDBV_SNR_HSC0_TEMP,
+  PDBV_SNR_BRICK0_VOUT,
+  PDBV_SNR_BRICK0_IOUT,
+  PDBV_SNR_BRICK0_TEMP,
+  PDBV_SNR_ADC128_P3V3_AUX,
+};
+
 
 const uint8_t hpdb_sensor_list[] = {
   PDBH_SNR_HSC1_VIN,
@@ -136,44 +154,6 @@ const uint8_t scm_sensor_list[] = {
   SCM_SNR_BMC_TEMP,
 };
 
-
-//48V HSC
-char *hsc_adm1272_chips[HSC_48V_CNT] = {
-    "adm1272-i2c-38-10",
-    "adm1272-i2c-39-13",
-    "adm1272-i2c-39-1c",
-};
-char **hsc_48v_chips = hsc_adm1272_chips;
-
-
-//BRICK
-char *brick_pmbus_chips_evt[BRICK_CNT] = {
-    "pmbus-i2c-38-69",
-    "pmbus-i2c-38-6a",
-    "pmbus-i2c-38-6b",
-};
-
-char *brick_pmbus_chips_evt2[BRICK_CNT] = {
-    "pmbus-i2c-38-67",
-    "pmbus-i2c-38-68",
-    "pmbus-i2c-38-69",
-};
-
-char *brick_bmr491_chips_evt[BRICK_CNT] = {
-    "bmr491-i2c-38-69",
-    "bmr491-i2c-38-6a",
-    "bmr491-i2c-38-6b",
-};
-
-char *brick_bmr491_chips_evt2[BRICK_CNT] = {
-    "bmr491-i2c-38-67",
-    "bmr491-i2c-38-68",
-    "bmr491-i2c-38-69",
-};
-
-
-
-char** brick_pmbus_chips = brick_pmbus_chips_evt2;
 
 //FAN
 //NCT7363
@@ -342,7 +322,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x7F
 
-  {"MEZZ0_P3V3_VOLT", DPM_2, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x80
+  {"MEZZ0_P3V3_VOLT", DPM_2, read_dpm_vout, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x80
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x81
   {"MEZZ0_P12V_CURR", ADC_CH1, read_iic_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x82
   {"MEZZ0_P12V_PWR", MEZZ0, read_nic0_power, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x83
@@ -351,7 +331,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x86
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x87
 
-  {"MEZZ1_P3V3_VOLT", DPM_3, read_dpm_vout, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x88
+  {"MEZZ1_P3V3_VOLT", DPM_3, read_dpm_vout, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0x88
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x89
   {"MEZZ1_P12V_CURR", ADC_CH2, read_iic_adc_val, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x8A
   {"MEZZ1_P12V_PWR", MEZZ1, read_nic1_power, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x8B
@@ -360,11 +340,11 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8E
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0x8F
 
-  {"HSC0_VOLT",     HSC_48V_ID0, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x90
-  {"HSC0_CURR",     HSC_48V_ID0, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x91
-  {"HSC0_PWR",      HSC_48V_ID0, read_48v_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
-  {"HSC0_TEMP",     HSC_48V_ID0, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x93
-  {"HSC0_PEAK_PIN", HSC_48V_ID0, read_48v_hsc_peak_pin, true, {6160.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
+  {"HSC0_VOLT",     VPDB_HSC_ID0, read_vpdb_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0x90
+  {"HSC0_CURR",     VPDB_HSC_ID0, read_vpdb_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0x91
+  {"HSC0_PWR",      VPDB_HSC_ID0, read_vpdb_hsc_pin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x92
+  {"HSC0_TEMP",     VPDB_HSC_ID0, read_vpdb_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0x93
+  {"HSC0_PEAK_PIN", VPDB_HSC_ID0, read_vpdb_hsc_peak_pin, true, {6160.0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0x94
 
   {"BRICK0_VOLT", BRICK_ID0, read_brick_vout, true, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT}, //0x95
   {"BRICK0_CURR", BRICK_ID0, read_brick_iout, true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR}, //0x96
@@ -379,7 +359,7 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {"BRICK2_TEMP", BRICK_ID2, read_brick_temp, true, {115.0, 0, 0, 10.0, 0, 0, 0, 0}, TEMP}, //0x9F
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA0
-  {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.345, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xA1
+  {"P3V3_AUX_IN6_VOLT", ADC_CH6, read_iic_adc_val, true, {3.465, 0, 0, 3.135, 0, 0, 0, 0}, VOLT}, //0xA1
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA2
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA3
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xA4
@@ -395,16 +375,16 @@ PAL_SENSOR_MAP bb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAE
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xAF
 
-  {"HSC1_VOLT",     HSC_48V_ID1, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB0
-  {"HSC1_CURR",     HSC_48V_ID1, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB1
-  {"HSC1_PWR",      HSC_48V_ID1, read_48v_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
-  {"HSC1_TEMP",     HSC_48V_ID1, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB3
-  {"HSC1_PEAK_PIN", HSC_48V_ID1, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
-  {"HSC2_VOLT",     HSC_48V_ID2, read_48v_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB5
-  {"HSC2_CURR",     HSC_48V_ID2, read_48v_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB6
-  {"HSC2_PWR",      HSC_48V_ID2, read_48v_hsc_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
-  {"HSC2_TEMP",     HSC_48V_ID2, read_48v_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB8
-  {"HSC2_PEAK_PIN", HSC_48V_ID2, read_48v_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
+  {"HSC1_VOLT",     HPDB_HSC_ID1, read_hpdb_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB0
+  {"HSC1_CURR",     HPDB_HSC_ID1, read_hpdb_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB1
+  {"HSC1_PWR",      HPDB_HSC_ID1, read_hpdb_hsc_pin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB2
+  {"HSC1_TEMP",     HPDB_HSC_ID1, read_hpdb_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB3
+  {"HSC1_PEAK_PIN", HPDB_HSC_ID1, read_hpdb_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB4
+  {"HSC2_VOLT",     HPDB_HSC_ID2, read_hpdb_hsc_vin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},  //0xB5
+  {"HSC2_CURR",     HPDB_HSC_ID2, read_hpdb_hsc_iout,     true, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},  //0xB6
+  {"HSC2_PWR",      HPDB_HSC_ID2, read_hpdb_hsc_pin,      true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB7
+  {"HSC2_TEMP",     HPDB_HSC_ID2, read_hpdb_hsc_temp,     true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},  //0xB8
+  {"HSC2_PEAK_PIN", HPDB_HSC_ID2, read_hpdb_hsc_peak_pin, true, {0, 0, 0, 0, 0, 0, 0, 0}, POWER}, //0xB9
 
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBA
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xBB
@@ -487,6 +467,7 @@ extern struct snr_map sensor_map[];
 size_t nic0_sensor_cnt = sizeof(nic0_sensor_list)/sizeof(uint8_t);
 size_t nic1_sensor_cnt = sizeof(nic1_sensor_list)/sizeof(uint8_t);
 size_t vpdb_sensor_cnt = sizeof(vpdb_sensor_list)/sizeof(uint8_t);
+size_t vpdb_discrete_sensor_cnt = sizeof(vpdb_discrete_sensor_list)/sizeof(uint8_t);
 size_t hpdb_sensor_cnt = sizeof(hpdb_sensor_list)/sizeof(uint8_t);
 size_t bp0_sensor_cnt = sizeof(bp0_sensor_list)/sizeof(uint8_t);
 size_t bp1_sensor_cnt = sizeof(bp1_sensor_list)/sizeof(uint8_t);
@@ -494,20 +475,14 @@ size_t scm_sensor_cnt = sizeof(scm_sensor_list)/sizeof(uint8_t);
 
 
 static int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id) {
-  char value[MAX_VALUE_LEN] = {0};
-  uint8_t bp_sku;
+  uint8_t id = MAIN_SOURCE;
 
-  if (kv_get(fru == FRU_BP0 ? "bp0_fan_sku" : "bp1_fan_sku", value, NULL, 0)) {
+  if(get_comp_source(fru, fru == FRU_BP0 ? BP0_FAN_SOURCE : BP1_FAN_SOURCE, &id))
     return -1;
-  }
 
-  bp_sku = (uint8_t)atoi(value);
-#ifdef DEBUG
-  printf("fru=%d key=%s val=%d\n", fru, key, bp_sku);
-#endif
-  if (bp_sku == 0)
+  if (id == MAIN_SOURCE)
     *dev_id = FAN_CTRL_ID0;
-  else if (bp_sku == 1)
+  else if (id == SECOND_SOURCE)
     *dev_id = FAN_CTRL_ID1;
   else
     return -1;
@@ -515,41 +490,6 @@ static int get_fan_chip_dev_id(uint8_t fru, uint8_t* dev_id) {
   return 0;
 }
 
-static int set_brick_chips(void) {
-  char value[MAX_VALUE_LEN] = {0};
-  uint8_t rev;
-  uint8_t sku;
-  bool cached=false;
-
-  if (!cached) {
-    if (kv_get("vpdb_rev", value, NULL, 0)) {
-      return -1;
-    }
-    rev = (uint8_t)atoi(value);
-
-    if (kv_get("vpdb_sku", value, NULL, 0)) {
-      return -1;
-    }
-    //SKU ID1=0 Main SKU ID=1 Second
-    sku = (uint8_t)atoi(value);
-
-    if (rev < 2)
-      //EVT Version
-      if (!GETBIT(sku, 1))
-        brick_pmbus_chips = brick_pmbus_chips_evt;
-      else
-        brick_pmbus_chips = brick_bmr491_chips_evt;
-    else
-      //Greater and equal EVT2
-      if (!GETBIT(sku, 1))
-        brick_pmbus_chips = brick_pmbus_chips_evt2;
-      else
-        brick_pmbus_chips = brick_bmr491_chips_evt2;
-
-    cached = true;
-  }
-  return 0;
-}
 
 static int
 read_nic0_power(uint8_t fru, uint8_t sensor_num, float *value) {
@@ -567,6 +507,7 @@ read_nic1_power(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+
 static void
 inlet_temp_calibration(uint8_t fru, uint8_t sensor_num, float *value)
 {
@@ -574,7 +515,7 @@ inlet_temp_calibration(uint8_t fru, uint8_t sensor_num, float *value)
   float pwm_avg;
   uint8_t pwm, pwm_all = 0;
   static bool is_inited = false;
-  
+
   for (i = 0; i < FAN_PWM_CNT; ++i) {
     if (pal_get_pwm_value(i, &pwm) < 0) {}
     else {
@@ -615,103 +556,84 @@ read_bb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
+
 static int
-read_48v_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
+read_vpdb_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  uint8_t hsc_48v_id = sensor_map[fru].map[sensor_num].id;
-  static int retry[HSC_48V_CNT];
+  uint8_t vpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[VPDB_HSC_CNT];
 
-
-  if (hsc_48v_id >= HSC_48V_CNT)
-    return -1;
-
-  ret = sensors_read(hsc_48v_chips[hsc_48v_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
-    retry[hsc_48v_id]++;
-    return retry_err_handle(retry[hsc_48v_id], 5);
+    retry[vpdb_hsc_id]++;
+    return retry_err_handle(retry[vpdb_hsc_id], 5);
   }
 
-  retry[hsc_48v_id] = 0;
+  retry[vpdb_hsc_id] = 0;
   return ret;
 }
 
 static int
-read_48v_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
+read_vpdb_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  uint8_t hsc_48v_id = sensor_map[fru].map[sensor_num].id;
-  static int retry[HSC_48V_CNT];
+  uint8_t vpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[VPDB_HSC_CNT];
 
-
-  if (hsc_48v_id >= HSC_48V_CNT)
-    return -1;
-
-  ret = sensors_read(hsc_48v_chips[hsc_48v_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (ret) {
-    retry[hsc_48v_id]++;
-    return retry_err_handle(retry[hsc_48v_id], 5);
+    retry[vpdb_hsc_id]++;
+    return retry_err_handle(retry[vpdb_hsc_id], 5);
   }
 
-  retry[hsc_48v_id] = 0;
+  retry[vpdb_hsc_id] = 0;
   return ret;
 }
 
 static int
-read_48v_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
+read_vpdb_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  uint8_t hsc_48v_id = sensor_map[fru].map[sensor_num].id;
-  static int retry[HSC_48V_CNT];
+  uint8_t vpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[VPDB_HSC_CNT];
 
-
-  if (hsc_48v_id >= HSC_48V_CNT)
-    return -1;
-
-  ret = sensors_read(hsc_48v_chips[hsc_48v_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (ret) {
-    retry[hsc_48v_id]++;
-    return retry_err_handle(retry[hsc_48v_id], 5);
+    retry[vpdb_hsc_id]++;
+    return retry_err_handle(retry[vpdb_hsc_id], 5);
   }
 
-  retry[hsc_48v_id] = 0;
+  retry[vpdb_hsc_id] = 0;
   return ret;
 }
 
 static int
-read_48v_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value) {
+read_vpdb_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  uint8_t hsc_48v_id = sensor_map[fru].map[sensor_num].id;
-  static int retry[HSC_48V_CNT];
+  uint8_t vpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[VPDB_HSC_CNT];
 
-
-  if (hsc_48v_id >= HSC_48V_CNT)
-    return -1;
-
-  ret = sensors_read(hsc_48v_chips[hsc_48v_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
-    retry[hsc_48v_id]++;
-    return retry_err_handle(retry[hsc_48v_id], 5);
+    retry[vpdb_hsc_id]++;
+    return retry_err_handle(retry[vpdb_hsc_id], 5);
   }
 
-  retry[hsc_48v_id] = 0;
+  retry[vpdb_hsc_id] = 0;
   return ret;
 }
 
 static int
-read_48v_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value) {
+read_vpdb_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  uint8_t hsc_48v_id = sensor_map[fru].map[sensor_num].id;
-  static int retry[HSC_48V_CNT];
+  uint8_t vpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[VPDB_HSC_CNT];
 
-
-  if (hsc_48v_id >= HSC_48V_CNT)
-    return -1;
-
-  ret = sensors_read(hsc_48v_chips[hsc_48v_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
-    retry[hsc_48v_id]++;
-    return retry_err_handle(retry[hsc_48v_id], 5);
+    retry[vpdb_hsc_id]++;
+    return retry_err_handle(retry[vpdb_hsc_id], 5);
   }
 
-  retry[hsc_48v_id] = 0;
+  retry[vpdb_hsc_id] = 0;
   return ret;
 }
 
@@ -721,11 +643,7 @@ read_brick_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t brick_id = sensor_map[fru].map[sensor_num].id;
   static int retry[BRICK_CNT];
 
-  if (brick_id >= BRICK_CNT)
-    return -1;
-
-  set_brick_chips();
-  ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
     return retry_err_handle(retry[brick_id], 5);
@@ -744,8 +662,7 @@ read_brick_iout(uint8_t fru, uint8_t sensor_num, float *value) {
   if (brick_id >= BRICK_CNT)
     return -1;
 
-  set_brick_chips();
-  ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
     return retry_err_handle(retry[brick_id], 5);
@@ -764,8 +681,7 @@ read_brick_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   if (brick_id >= BRICK_CNT)
     return -1;
 
-  set_brick_chips();
-  ret = sensors_read(brick_pmbus_chips[brick_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[brick_id]++;
     return retry_err_handle(retry[brick_id], 5);
@@ -774,6 +690,103 @@ read_brick_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   retry[brick_id] = 0;
   return ret;
 }
+
+
+static int
+read_hpdb_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t hpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[HPDB_HSC_CNT];
+
+  if (hpdb_hsc_id >= HPDB_HSC_CNT)
+    return -1;
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (*value == 0) {
+    retry[hpdb_hsc_id]++;
+    return retry_err_handle(retry[hpdb_hsc_id], 5);
+  }
+
+  retry[hpdb_hsc_id] = 0;
+  return ret;
+}
+
+static int
+read_hpdb_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t hpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[HPDB_HSC_CNT];
+
+  if (hpdb_hsc_id >= HPDB_HSC_CNT)
+    return -1;
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (ret) {
+    retry[hpdb_hsc_id]++;
+    return retry_err_handle(retry[hpdb_hsc_id], 5);
+  }
+
+  retry[hpdb_hsc_id] = 0;
+  return ret;
+}
+
+static int
+read_hpdb_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t hpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[HPDB_HSC_CNT];
+
+  if (hpdb_hsc_id >= HPDB_HSC_CNT)
+    return -1;
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (ret) {
+    retry[hpdb_hsc_id]++;
+    return retry_err_handle(retry[hpdb_hsc_id], 5);
+  }
+
+  retry[hpdb_hsc_id] = 0;
+  return ret;
+}
+
+static int
+read_hpdb_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t hpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[HPDB_HSC_CNT];
+
+  if (hpdb_hsc_id >= HPDB_HSC_CNT)
+    return -1;
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (*value == 0) {
+    retry[hpdb_hsc_id]++;
+    return retry_err_handle(retry[hpdb_hsc_id], 5);
+  }
+
+  retry[hpdb_hsc_id] = 0;
+  return ret;
+}
+
+static int
+read_hpdb_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value) {
+  int ret;
+  uint8_t hpdb_hsc_id = sensor_map[fru].map[sensor_num].id;
+  static int retry[HPDB_HSC_CNT];
+
+  if (hpdb_hsc_id >= HPDB_HSC_CNT)
+    return -1;
+
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
+  if (*value == 0) {
+    retry[hpdb_hsc_id]++;
+    return retry_err_handle(retry[hpdb_hsc_id], 5);
+  }
+
+  retry[hpdb_hsc_id] = 0;
+  return ret;
+}
+
 
 static bool
 is_fan_present(int fan_num) {

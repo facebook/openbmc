@@ -50,6 +50,7 @@
 #define PWRGD_SYS_PWROK          "PWRGD_SYS_PWROK_R"
 
 #define BIC_READY                "FM_SWB_BIC_READY_ISO_R_N"
+#define HMC_PRESENCE             "GPU_HMC_PRSNT_ISO_R_N"
 #define GPU_FPGA_RST_N           "GPU_FPGA_RST_N"
 
 #endif

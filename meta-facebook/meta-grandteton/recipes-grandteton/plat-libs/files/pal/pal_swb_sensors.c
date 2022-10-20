@@ -278,10 +278,6 @@ const uint8_t swb_sensor_list[] = {
   SWB_SENSOR_VOLT_NIC_7,
   SWB_SENSOR_IOUT_NIC_7,
   SWB_SENSOR_POUT_NIC_7,
-  SWB_SENSOR_TEMP_PDB_HSC,
-  SWB_SENSOR_VOUT_PDB_HSC,
-  SWB_SENSOR_IOUT_PDB_HSC,
-  SWB_SENSOR_POUT_PDB_HSC,
   SWB_SENSOR_BB_P12V_AUX,
   SWB_SENSOR_BB_P5V_AUX,
   SWB_SENSOR_BB_P3V3_AUX,
@@ -397,4 +393,12 @@ const uint8_t swb_sensor_list[] = {
   SWB_SENSOR_POUT_E1S_15,
 };
 
+const uint8_t shsc_sensor_list[] = {
+  SWB_SENSOR_TEMP_PDB_HSC,
+  SWB_SENSOR_VOUT_PDB_HSC,
+  SWB_SENSOR_IOUT_PDB_HSC,
+  SWB_SENSOR_POUT_PDB_HSC,
+};
+
 size_t swb_sensor_cnt = sizeof(swb_sensor_list)/sizeof(uint8_t);
+size_t shsc_sensor_cnt = sizeof(shsc_sensor_list)/sizeof(uint8_t);

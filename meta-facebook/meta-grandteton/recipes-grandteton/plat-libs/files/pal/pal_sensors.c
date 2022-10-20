@@ -5,6 +5,7 @@
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-sensors.h>
 #include "pal.h"
+#include "pal_common.h"
 
 //#define DEBUG
 #define PECI_MUX_SELECT_BMC (GPIO_VALUE_HIGH)
@@ -23,10 +24,14 @@ extern const uint8_t nic0_sensor_list[];
 extern const uint8_t nic1_sensor_list[];
 extern const uint8_t mb_discrete_sensor_list[];
 extern const uint8_t vpdb_sensor_list[];
+extern const uint8_t vpdb_discrete_sensor_list[];
 extern const uint8_t hpdb_sensor_list[];
 extern const uint8_t bp0_sensor_list[];
 extern const uint8_t bp1_sensor_list[];
 extern const uint8_t scm_sensor_list[];
+extern const uint8_t hsc_sensor_list[];
+extern const uint8_t shsc_sensor_list[];
+
 
 extern size_t mb_sensor_cnt;
 extern size_t swb_sensor_cnt;
@@ -35,34 +40,55 @@ extern size_t mb_discrete_sensor_cnt;
 extern size_t nic0_sensor_cnt;
 extern size_t nic1_sensor_cnt;
 extern size_t vpdb_sensor_cnt;
+extern size_t vpdb_discrete_sensor_cnt;
 extern size_t hpdb_sensor_cnt;
 extern size_t bp0_sensor_cnt;
 extern size_t bp1_sensor_cnt;
 extern size_t scm_sensor_cnt;
+extern size_t hsc_sensor_cnt;
+extern size_t shsc_sensor_cnt;
 
 
 struct snr_map sensor_map[] = {
-  { FRU_ALL, NULL},
-  { FRU_MB,   mb_sensor_map },
-  { FRU_SWB,  swb_sensor_map },
-  { FRU_HMC,  hmc_sensor_map },
-  { FRU_NIC0, bb_sensor_map },
-  { FRU_NIC1, bb_sensor_map },
-  { FRU_DBG,  NULL },
-  { FRU_BMC,  NULL },
-  { FRU_SCM,  bb_sensor_map },
-  { FRU_PDBV, bb_sensor_map },
-  { FRU_PDBH, bb_sensor_map },
-  { FRU_BP0,  bb_sensor_map },
-  { FRU_BP1,  bb_sensor_map },
+  { FRU_ALL,  NULL,           false},
+  { FRU_MB,   mb_sensor_map,  true },
+  { FRU_SWB,  swb_sensor_map, true },
+  { FRU_HMC,  hmc_sensor_map, true },
+  { FRU_NIC0, bb_sensor_map,  true },
+  { FRU_NIC1, bb_sensor_map,  true },
+  { FRU_DBG,  NULL,           false },
+  { FRU_BMC,  NULL,           false },
+  { FRU_SCM,  bb_sensor_map,  true },
+  { FRU_PDBV, bb_sensor_map,  true },
+  { FRU_PDBH, bb_sensor_map,  true },
+  { FRU_BP0,  bb_sensor_map,  true },
+  { FRU_BP1,  bb_sensor_map,  true },
+  { FRU_FIO,  NULL,           false },
+  { FRU_HSC,  mb_sensor_map,  true },
+  { FRU_SHSC, swb_sensor_map, true }
 };
+
+
+
 int
 pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   int ret=0;
+  uint8_t id;
+  static uint8_t snr_mb_tmp[255]={0};
+  static uint8_t snr_swb_tmp[255]={0};
+  bool module = is_mb_hsc_module();
+  bool smodule = is_swb_hsc_module();
 
   if (fru == FRU_MB) {
-    *sensor_list = (uint8_t *) mb_sensor_list;
-    *cnt = mb_sensor_cnt;
+    if (!module) {
+      memcpy(snr_mb_tmp, mb_sensor_list, mb_sensor_cnt);
+      memcpy(&snr_mb_tmp[mb_sensor_cnt], hsc_sensor_list, hsc_sensor_cnt);
+      *sensor_list = snr_mb_tmp;
+      *cnt = mb_sensor_cnt + hsc_sensor_cnt;
+    } else {
+      *sensor_list = (uint8_t *) mb_sensor_list;
+      *cnt = mb_sensor_cnt;
+    }
   } else if (fru == FRU_NIC0) {
     *sensor_list = (uint8_t *) nic0_sensor_list;
     *cnt = nic0_sensor_cnt;
@@ -73,8 +99,14 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) hmc_sensor_list;
     *cnt = hmc_sensor_cnt;
   } else if (fru == FRU_PDBV) {
-    *sensor_list = (uint8_t *) vpdb_sensor_list;
-    *cnt = vpdb_sensor_cnt;
+    get_comp_source(fru, VPDB_BRICK_SOURCE, &id);
+    if(id == THIRD_SOURCE) {
+      *sensor_list = (uint8_t *) vpdb_discrete_sensor_list;
+      *cnt = vpdb_discrete_sensor_cnt;
+    } else {
+      *sensor_list = (uint8_t *) vpdb_sensor_list;
+      *cnt = vpdb_sensor_cnt;
+    }
   } else if (fru == FRU_PDBH) {
     *sensor_list = (uint8_t *) hpdb_sensor_list;
     *cnt = hpdb_sensor_cnt;
@@ -88,8 +120,25 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) scm_sensor_list;
     *cnt = scm_sensor_cnt;
   } else if (fru == FRU_SWB) {
-    *sensor_list = (uint8_t *) swb_sensor_list;
-    *cnt = swb_sensor_cnt;
+    if (!smodule) {
+      memcpy(snr_swb_tmp, swb_sensor_list, swb_sensor_cnt);
+      memcpy(&snr_swb_tmp[swb_sensor_cnt], shsc_sensor_list, shsc_sensor_cnt);
+      *sensor_list = snr_swb_tmp;
+      *cnt = swb_sensor_cnt + shsc_sensor_cnt;
+    } else {
+      *sensor_list = (uint8_t *) swb_sensor_list;
+      *cnt = swb_sensor_cnt;
+    }
+  } else if (fru == FRU_HSC) {
+    if (module) {
+      *sensor_list = (uint8_t *) hsc_sensor_list;
+      *cnt = hsc_sensor_cnt;
+    }
+  } else if (fru == FRU_SHSC) {
+    if (smodule) {
+      *sensor_list = (uint8_t *) shsc_sensor_list;
+      *cnt = shsc_sensor_cnt;
+    }
   } else if (fru > MAX_NUM_FRUS) {
     return -1;
   } else {
@@ -137,11 +186,17 @@ get_map_retry(uint8_t fru)
   static uint8_t mb_retry[256] = {0};
   static uint8_t swb_retry[256] = {0};
   static uint8_t bb_retry[256] = {0};
+  static uint8_t mb_hsc_retry[16] = {0};
+  static uint8_t swb_hsc_retry[16] = {0};
 
   if (fru == FRU_SWB)
     return swb_retry;
   else if (fru == FRU_MB)
     return mb_retry;
+  else if (fru == FRU_HSC)
+    return mb_hsc_retry;
+  else if (fru == FRU_SHSC)
+    return swb_hsc_retry;
   else
     return bb_retry;
 }
@@ -159,11 +214,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   sprintf(key, "%s_sensor%d", fru_name, sensor_num);
 
   server_off = is_server_off();
-  if (fru == FRU_MB || fru == FRU_SCM ||
-      fru == FRU_NIC0 || fru == FRU_NIC1 ||
-      fru == FRU_PDBV || fru == FRU_PDBH ||
-      fru == FRU_BP0 || fru == FRU_BP1 ||
-      fru == FRU_SWB || fru == FRU_HMC) {
+  if (sensor_map[fru].polling) {
     if (server_off) {
       if (sensor_map[fru].map[sensor_num].stby_read == true) {
         ret = sensor_map[fru].map[sensor_num].read_sensor(fru, sensor_num, (float*) value);
@@ -236,12 +287,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   uint8_t scale = sensor_map[fru].map[sensor_num].units;
 
 
-  if (fru == FRU_MB || fru == FRU_SCM ||
-      fru == FRU_NIC0 || fru == FRU_NIC1 ||
-      fru == FRU_PDBV || fru == FRU_PDBH ||
-      fru == FRU_BP0 || fru == FRU_BP1 ||
-      fru == FRU_SWB || fru == FRU_HMC) {
-
+  if(sensor_map[fru].polling) {
     pal_get_fru_name(fru, fru_name);
     if (fru_name != NULL)
       for (int i = 0; i < strlen(fru_name); i++)
@@ -279,42 +325,38 @@ int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   float *val = (float*) value;
 
-  if (fru != FRU_MB && fru != FRU_SCM &&
-      fru != FRU_NIC0 && fru != FRU_NIC1 &&
-      fru != FRU_PDBV && fru != FRU_PDBH &&
-      fru != FRU_BP0 && fru != FRU_BP1 &&
-      fru != FRU_SWB && fru != FRU_HMC) {
+  if (sensor_map[fru].polling) {
+    switch(thresh) {
+      case UCR_THRESH:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.ucr_thresh;
+        break;
+      case UNC_THRESH:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.unc_thresh;
+        break;
+      case UNR_THRESH:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.unr_thresh;
+        break;
+      case LCR_THRESH:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.lcr_thresh;
+        break;
+      case LNC_THRESH:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.lnc_thresh;
+        break;
+      case LNR_THRESH:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.lnr_thresh;
+        break;
+      case POS_HYST:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.pos_hyst;
+        break;
+      case NEG_HYST:
+        *val = sensor_map[fru].map[sensor_num].snr_thresh.neg_hyst;
+        break;
+      default:
+        return -1;
+    }
+  } else {
     syslog(LOG_WARNING, "Threshold type error value=%d\n", thresh);
     return -1;
-  }
-
-  switch(thresh) {
-    case UCR_THRESH:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.ucr_thresh;
-      break;
-    case UNC_THRESH:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.unc_thresh;
-      break;
-    case UNR_THRESH:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.unr_thresh;
-      break;
-    case LCR_THRESH:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.lcr_thresh;
-      break;
-    case LNC_THRESH:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.lnc_thresh;
-      break;
-    case LNR_THRESH:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.lnr_thresh;
-      break;
-    case POS_HYST:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.pos_hyst;
-      break;
-    case NEG_HYST:
-      *val = sensor_map[fru].map[sensor_num].snr_thresh.neg_hyst;
-      break;
-    default:
-      return -1;
   }
   return 0;
 }
@@ -324,32 +366,28 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
 
   uint8_t scale = sensor_map[fru].map[sensor_num].units;
 
-  if (fru != FRU_MB && fru != FRU_SCM &&
-      fru != FRU_NIC0 && fru != FRU_NIC1 &&
-      fru != FRU_PDBV && fru != FRU_PDBH &&
-      fru != FRU_BP0 && fru != FRU_BP1 &&
-      fru != FRU_SWB && fru != FRU_HMC) {
+  if (sensor_map[fru].polling) {
+    switch(scale) {
+      case TEMP:
+        sprintf(units, "C");
+        break;
+      case FAN:
+        sprintf(units, "RPM");
+        break;
+      case VOLT:
+        sprintf(units, "Volts");
+        break;
+      case CURR:
+        sprintf(units, "Amps");
+        break;
+      case POWER:
+        sprintf(units, "Watts");
+        break;
+      default:
+        return -1;
+    }
+  } else {
     return -1;
-  }
-
-  switch(scale) {
-    case TEMP:
-      sprintf(units, "C");
-      break;
-    case FAN:
-      sprintf(units, "RPM");
-      break;
-    case VOLT:
-      sprintf(units, "Volts");
-      break;
-    case CURR:
-      sprintf(units, "Amps");
-      break;
-    case POWER:
-      sprintf(units, "Watts");
-      break;
-    default:
-      return -1;
   }
   return 0;
 }

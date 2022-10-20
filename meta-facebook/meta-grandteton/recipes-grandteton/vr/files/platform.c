@@ -249,8 +249,6 @@ struct vr_ops mp2856_ops = {
 int plat_vr_init(void) {
   int ret, i, vr_cnt = sizeof(vr_list)/sizeof(vr_list[0]);
   uint8_t mb_sku_id = 0;
-  uint8_t inf_devid[3] = { 0x02, 0x79, 0x02 };
-  uint8_t tbuf[8], rbuf[8];
 
   pal_get_platform_id(&mb_sku_id);
   mb_sku_id = mb_sku_id & 0x03;
@@ -268,10 +266,8 @@ int plat_vr_init(void) {
   }
 
 //SWB
-  if (get_bic_ready()) {
-    tbuf[0] = 0xAD;
-    vr_pldm_wr(SWB_VR_BUS_ID, ADDR_SWB_VR_PEX01, tbuf, 1, rbuf, 3);
-    if(!memcmp(rbuf, inf_devid, 3)) {
+  if (swb_presence()) {
+    if(is_swb_hsc_module()) {
       for (i = 0; i < SWB_VR_CNT; i++) {
         vr_list[i+MB_VR_CNT].ops = &xdpe12284c_ops;
       }

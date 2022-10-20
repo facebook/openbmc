@@ -181,7 +181,7 @@ int plat_vr_init(void) {
 //MB
 
 //SWB
-  if (get_bic_ready()) {
+  if (swb_presence()) {
     tbuf[0] = 0xAD;
     vr_pldm_wr(SWB_VR_BUS_ID, ADDR_SWB_VR_PEX01, tbuf, 1, rbuf, 3);
     if(!memcmp(rbuf, inf_devid, 3)) {

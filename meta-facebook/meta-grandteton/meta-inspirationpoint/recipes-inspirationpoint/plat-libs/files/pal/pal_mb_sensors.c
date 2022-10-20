@@ -125,10 +125,6 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_CPU1_TEMP,
   MB_SNR_CPU0_PKG_POWER,
   MB_SNR_CPU1_PKG_POWER,
-  MB_SNR_HSC_VIN,
-  MB_SNR_HSC_IOUT,
-  MB_SNR_HSC_PIN,
-  MB_SNR_HSC_TEMP,
   MB_SNR_P3V_BAT,
   MB_SNR_E1S_P3V3_VOUT,
   MB_SNR_E1S_P12V_IOUT,
@@ -164,38 +160,19 @@ const uint8_t mb_sensor_list[] = {
   MB_SNR_DIMM_CPU1_D5_POWER,
 };
 
+const uint8_t hsc_sensor_list[] = {
+  MB_SNR_HSC_VIN,
+  MB_SNR_HSC_IOUT,
+  MB_SNR_HSC_PIN,
+  MB_SNR_HSC_TEMP,
+};
+
 // List of MB discrete sensors to be monitored
 const uint8_t mb_discrete_sensor_list[] = {
 //  MB_SENSOR_POWER_FAIL,
 //  MB_SENSOR_MEMORY_LOOP_FAIL,
   MB_SNR_PROCESSOR_FAIL,
 };
-
-//CPU
-COMMON_CPU_INFO cpu_info_list[] = {
-  {CPU_ID0, PECI_CPU0_ADDR},
-  {CPU_ID1, PECI_CPU1_ADDR},
-};
-
-//12V HSC
-//MP5990
-PAL_ATTR_INFO mp5990_info_list[] = {
-  {HSC_VOLTAGE, 32, 0, 1},
-  {HSC_CURRENT, 16, 0, 1},
-  {HSC_POWER, 1, 0, 1},
-  {HSC_TEMP, 1, 0, 1},
-};
-
-PAL_HSC_INFO hsc_info_list[] = {
-  {HSC_ID0, HSC_12V_BUS, MP5990_SLAVE_ADDR, mp5990_info_list },
-};
-PAL_HSC_INFO* hsc_binding = &hsc_info_list[0];
-
-//NM
-PAL_I2C_BUS_INFO nm_info_list[] = {
-  {NM_ID0, NM_IPMB_BUS_ID, NM_SLAVE_ADDR},
-};
-
 
 PAL_DPM_DEV_INFO dpm_info_list[] = {
   {DPM_0, I2C_BUS_34, 0x84, 0.004, 0, 0 },
@@ -209,43 +186,6 @@ PAL_DPM_DEV_INFO dpm_info_list[] = {
 PAL_I2C_BUS_INFO e1s_info_list[] = {
   {E1S_0, I2C_BUS_31, 0xD4},
 };
-
-PAL_DIMM_PMIC_INFO dimm_pmic_list[] = {
-  {DIMM_ID0,  0x90, 0},
-  {DIMM_ID1,  0x92, 0},
-  {DIMM_ID2,  0x94, 0},
-  {DIMM_ID3,  0x96, 0},
-  {DIMM_ID4,  0x98, 0},
-  {DIMM_ID5,  0x9A, 0},
-  {DIMM_ID6,  0x9C, 0},
-  {DIMM_ID7,  0x9E, 0},
-  {DIMM_ID8,  0x90, 1},
-  {DIMM_ID9,  0x92, 1},
-  {DIMM_ID10, 0x94, 1},
-  {DIMM_ID11, 0x96, 1},
-  {DIMM_ID12, 0x98, 1},
-  {DIMM_ID13, 0x9A, 1},
-  {DIMM_ID14, 0x9C, 1},
-  {DIMM_ID15, 0x9E, 1},
-};
-
-//VR CHIP
-char *vr_isl_chips[VR_NUM_CNT] = {
-  "isl69260-i2c-20-61",  // CPU0_VCORE0
-  "isl69260-i2c-20-61",  // CPU0_SOC
-  "isl69260-i2c-20-62",  // CPU0_VCORE1
-  "isl69260-i2c-20-62",  // CPU0_PVDDIO
-  "isl69260-i2c-20-63",  // CPU0_PVDD11
-  "isl69260-i2c-20-72",  // CPU1_VCORE0
-  "isl69260-i2c-20-72",  // CPU1_SOC
-  "isl69260-i2c-20-74",  // CPU1_VCORE1
-  "isl69260-i2c-20-74",  // CPU1_PVDDIO
-  "isl69260-i2c-20-75",  // CPU1_PVDD11
-};
-
-
-char **vr_chips = vr_isl_chips;
-
 
 char *adc128_devs[] = {
   "adc128d818-i2c-20-1d",
@@ -268,16 +208,6 @@ PAL_ADC_CH_INFO max11617_ch_info[] = {
 
 char **adc_chips = adc128_devs;
 
-
-char* ltc4282_chip[] = {
-    "ltc4282-i2c-2-41"
-};
-
-char* mp5990_chip[] = {
-    "mp5990-i2c-6-20"
-};
-
-char **hsc_chips = mp5990_chip;
 
 //{SensorName, ID, FUNCTION, PWR_STATUS, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}
 PAL_SENSOR_MAP mb_sensor_map[] = {
@@ -423,6 +353,7 @@ PAL_SENSOR_MAP mb_sensor_map[] = {
 extern struct snr_map sensor_map[];
 
 size_t mb_sensor_cnt = sizeof(mb_sensor_list)/sizeof(uint8_t);
+size_t hsc_sensor_cnt = sizeof(hsc_sensor_list)/sizeof(uint8_t);
 size_t mb_discrete_sensor_cnt = sizeof(mb_discrete_sensor_list)/sizeof(uint8_t);
 
 int
@@ -511,7 +442,7 @@ read_iic_adc_val(uint8_t fru, uint8_t sensor_num, float *value) {
 
   if(is_max11617_chip())
     ret = sensors_read_maxim(adc_chips[ch_id/8], ch_id, value);
-  else 
+  else
     ret = sensors_read(adc_chips[ch_id/8], sensor_map[fru].map[sensor_num].snr_name, value);
   return ret;
 }
@@ -643,10 +574,10 @@ read_cpu_temp(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static void decode_dimm_temp(uint16_t raw, float *temp)
 {
-	if (raw <= 0x3FF)
-		*temp = raw * SCALING_FACTOR;
-	else
-		*temp = (raw - 0x800) * SCALING_FACTOR;
+  if (raw <= 0x3FF)
+    *temp = raw * SCALING_FACTOR;
+  else
+    *temp = (raw - 0x800) * SCALING_FACTOR;
 }
 
 static float
@@ -657,7 +588,7 @@ cmp_dimm_temp(float temp1, float temp2) {
 static int
 read_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value,
                 uint8_t dimm_id, uint8_t cpu_id) {
-	struct dimm_thermal d_sensor1;
+  struct dimm_thermal d_sensor1;
   struct dimm_thermal d_sensor2;
   float temp1 = 0;
   float temp2 = 0;
@@ -668,11 +599,11 @@ read_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value,
   uint8_t addr1 = (pair_id1/CHANNEL_OF_DIMM_NUM << 4) + (pair_id1%CHANNEL_OF_DIMM_NUM);
   uint8_t addr2 = (pair_id2/CHANNEL_OF_DIMM_NUM << 4) + (pair_id2%CHANNEL_OF_DIMM_NUM);
 
-	ret1 = read_dimm_thermal_sensor(cpu_id, addr1, &d_sensor1);
+  ret1 = read_dimm_thermal_sensor(cpu_id, addr1, &d_sensor1);
   if(!ret1) {
     decode_dimm_temp(d_sensor1.sensor, &temp1);
   }
-	ret2 = read_dimm_thermal_sensor(cpu_id, addr2, &d_sensor2);
+  ret2 = read_dimm_thermal_sensor(cpu_id, addr2, &d_sensor2);
   if(!ret2) {
     decode_dimm_temp(d_sensor2.sensor, &temp2);
   }
@@ -740,11 +671,11 @@ read_cpu1_dimm_temp(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_dimm_power(uint8_t fru, uint8_t sensor_num, float *value,
                 uint8_t dimm_id, uint8_t cpu_id, bool* cached) {
-	struct dimm_power d_power;
+  struct dimm_power d_power;
   oob_status_t ret;
 
   uint8_t addr = (dimm_id/CHANNEL_OF_DIMM_NUM << 4) + (dimm_id%CHANNEL_OF_DIMM_NUM);
-	ret = read_dimm_power_consumption(cpu_id, addr, &d_power);
+  ret = read_dimm_power_consumption(cpu_id, addr, &d_power);
   if(ret)
     return -1;
 
@@ -755,8 +686,8 @@ read_dimm_power(uint8_t fru, uint8_t sensor_num, float *value,
 static int
 read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  static uint8_t retry[DIMM_ID_MAX] = {0};
-  static bool cached[DIMM_ID_MAX] = {false};
+  static uint8_t retry[MAX_DIMM_NUM] = {0};
+  static bool cached[MAX_DIMM_NUM] = {false};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
   if(!is_cpu_socket_occupy(CPU_ID0))
@@ -779,8 +710,8 @@ read_cpu0_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
 static int
 read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret;
-  static uint8_t retry[DIMM_ID_MAX] = {0};
-  static bool cached[DIMM_ID_MAX] = {false};
+  static uint8_t retry[MAX_DIMM_NUM] = {0};
+  static bool cached[MAX_DIMM_NUM] = {false};
   uint8_t dimm_id = sensor_map[fru].map[sensor_num].id;
 
   if(!is_cpu_socket_occupy(CPU_ID1))
@@ -802,152 +733,33 @@ read_cpu1_dimm_power(uint8_t fru, uint8_t sensor_num, float *value) {
 
 //Sensor HSC
 static int
-get_hsc_reading(uint8_t hsc_id, uint8_t reading_type, uint8_t type, uint8_t cmd, float *value) {
-  uint8_t hsc_bus = hsc_info_list[hsc_id].bus;
-  uint8_t addr = hsc_info_list[hsc_id].addr;
-  int fd;
-  uint8_t rbuf[255] = {0x00};
-  uint8_t rlen = 0;
-  uint8_t tlen = 1;
-  int ret = -1;
-
-  if (value == NULL) {
-    return READING_NA;
-  }
-
-  fd = i2c_cdev_slave_open(hsc_bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( fd < 0 ) {
-    syslog(LOG_WARNING, "Failed to open bus %d", hsc_bus);
-    return READING_NA;
-  }
-
-  switch(reading_type) {
-    case I2C_BYTE:
-      rlen = 1;
-      break;
-    case I2C_WORD:
-      rlen = 2;
-      break;
-    default:
-      rlen = 1;
-  }
-
-  ret = i2c_rdwr_msg_transfer(fd, addr, &cmd, tlen, rbuf, rlen);
-  if ( ret < 0 ) {
-    ret = READING_NA;
-    goto exit;
-  }
-
-  float m = hsc_binding->info[type].m;
-  float b = hsc_binding->info[type].b;
-  float r = hsc_binding->info[type].r;
-
-  *value = ((float)(rbuf[1] << 8 | rbuf[0]) * r - b) / m;
-exit:
-  if ( fd >= 0 ) {
-    close(fd);
-    fd = -1;
-  }
-  return ret;
-}
-
-static int
-set_hsc_chips(uint8_t* type) {
-  uint8_t id;
-  static bool cached = false;
-  static uint8_t source = MAIN_SOURCE;
-
-  if (!cached) {
-    if (pal_get_platform_id(&id))
-      return -1;
-
-    id = (id & 0x0C) >> 2;
-    if (id == SECOND_SOURCE) {
-      hsc_chips = ltc4282_chip;
-      source = SECOND_SOURCE;
-    }
-    cached = true;
-  }
-  if (type)
-    *type = source;
-  return 0;
-}
-
-static int
 read_hsc_vin(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
-
-  if (set_hsc_chips(NULL))
-    return READING_SKIP;
-
-  return sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static int
 read_hsc_iout(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
-
-  if (set_hsc_chips(NULL))
-    return READING_SKIP;
-
-  return sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static int
 read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
-
-  if (set_hsc_chips(NULL))
-    return READING_SKIP;
-
-  return sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static int
 read_hsc_temp(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
-  uint8_t type=MAIN_SOURCE;
-  char* chip[] = {
-    "lm75-i2c-21-4c"
-  };
-
-  if (set_hsc_chips(&type))
-    return READING_SKIP;
-
-  if( type == SECOND_SOURCE )
-    return sensors_read(chip[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
-
-  return sensors_read(hsc_chips[hsc_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static int
 read_hsc_peak_pin(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t hsc_id = sensor_map[fru].map[sensor_num].id;
-
-  if ( get_hsc_reading(hsc_id, I2C_WORD, HSC_POWER, HSC_PEAK_PIN, value) < 0 ) {
-    return READING_NA;
-  }
-  return 0;
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static int
 read_mb_temp (uint8_t fru, uint8_t sensor_num, float *value) {
-  int ret;
-  uint8_t snr_id = sensor_map[fru].map[sensor_num].id;
-
-  char *devs[] = {
-    "stlm75-i2c-21-48",
-    "stlm75-i2c-22-48",
-    "stlm75-i2c-23-48",
-    "stlm75-i2c-24-48",
-  };
-
-  if (snr_id >= ARRAY_SIZE(devs)) {
-    return -1;
-  }
-
-  ret = sensors_read(devs[snr_id], sensor_map[fru].map[sensor_num].snr_name, value);
-  return ret;
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 int
@@ -998,25 +810,6 @@ err_exit:
   return ret;
 }
 
-//Sensors VR
-static int set_vr_chips(void) {
-  uint8_t id;
-  static bool cached = false;
-
-  if (!cached) {
-    if (pal_get_platform_id(&id))
-      return -1;
-
-    id = id & 0x03; //SKU[1:0] 00:RAA, 01:INF, 10:MPS
-    switch (id) {
-      default:
-        vr_chips = vr_isl_chips;
-    }
-    cached = true;
-  }
-  return 0;
-}
-
 static int
 read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = 0;
@@ -1027,10 +820,7 @@ read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value) {
     return -1;
   }
 
-  if(set_vr_chips())
-    return -1;
-
-  ret = sensors_read(vr_chips[vr_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[vr_id]++;
     return retry_err_handle(retry[vr_id], 5);
@@ -1046,13 +836,7 @@ read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value) {
   uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
   static uint8_t retry[VR_NUM_CNT] = {0};
 
-  if (vr_id >= VR_NUM_CNT)
-    return -1;
-
-  if(set_vr_chips())
-    return -1;
-
-  ret = sensors_read(vr_chips[vr_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  ret = sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
   if (*value == 0) {
     retry[vr_id]++;
     return retry_err_handle(retry[vr_id], 5);
@@ -1065,30 +849,12 @@ read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value) {
 
 static int
 read_vr_iout(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
-
-  if (vr_id >= VR_NUM_CNT) {
-    return -1;
-  }
-
-  if(set_vr_chips())
-    return -1;
-
-  return sensors_read(vr_chips[vr_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static int
 read_vr_pout(uint8_t fru, uint8_t sensor_num, float *value) {
-  uint8_t vr_id = sensor_map[fru].map[sensor_num].id;
-
-  if (vr_id >= VR_NUM_CNT) {
-    return -1;
-  }
-
-  if(set_vr_chips())
-    return -1;
-
-  return sensors_read(vr_chips[vr_id], sensor_map[fru].map[sensor_num].snr_name, value);
+  return sensors_read(NULL, sensor_map[fru].map[sensor_num].snr_name, value);
 }
 
 static void
@@ -1175,47 +941,3 @@ int read_frb3(uint8_t fru, uint8_t sensor_num, float *value) {
   return ret;
 }
 
-void
-get_dimm_present_info(uint8_t fru, bool *dimm_sts_list) {
-  char key[MAX_KEY_LEN] = {0};
-  char value[MAX_VALUE_LEN] = {0};
-  int i;
-  size_t ret;
-
-  //check dimm info from /mnt/data/sys_config/
-  for (i=0; i<DIMM_SLOT_CNT; i++) {
-    sprintf(key, "sys_config/fru%d_dimm%d_location", fru, i);
-    if(kv_get(key, value, &ret, KV_FPERSIST) != 0 || ret < 4) {
-      syslog(LOG_WARNING,"[%s]Cannot get dimm_slot%d present info", __func__, i);
-      return;
-    }
-
-    if ( 0xff == value[0] ) {
-      dimm_sts_list[i] = false;
-    } else {
-      dimm_sts_list[i] = true;
-    }
-  }
-}
-
-bool
-pal_is_dimm_present(uint8_t dimm_id)
-{
-  static bool is_check = false;
-  static bool dimm_sts_list[96] = {0};
-  uint8_t fru = FRU_MB;
-
-  if (!pal_bios_completed(fru) ) {
-    return false;
-  }
-
-  if ( is_check == false ) {
-    is_check = true;
-    get_dimm_present_info(fru, dimm_sts_list);
-  }
-
-  if( dimm_sts_list[dimm_id] == true) {
-    return true;
-  }
-  return false;
-}

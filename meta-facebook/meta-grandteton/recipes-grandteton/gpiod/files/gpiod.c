@@ -79,11 +79,10 @@ sgpio_valid_check(){
   int bit2 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID1");
   int bit3 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID2");
   int bit4 = gpio_get_value_by_shadow("CPLD_SGPIO_READY_ID3");
-  syslog(LOG_INFO, "@@@ value = %d%d%d%d\n", bit1, bit2, bit3, bit4);
   if (
-    bit1 ==  0 && 
-    bit2 ==  1 && 
-    bit3 ==  0 && 
+    bit1 ==  0 &&
+    bit2 ==  1 &&
+    bit3 ==  0 &&
     bit4 ==  1
   ) {
     return true;

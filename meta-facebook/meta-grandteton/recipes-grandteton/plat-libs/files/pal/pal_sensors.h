@@ -43,6 +43,7 @@ typedef struct {
 struct snr_map {
   uint8_t fru;
   PAL_SENSOR_MAP *map;
+  bool polling;
 };
 
 //HSC INFO
@@ -145,13 +146,6 @@ enum {
   FAN_CTRL_ID0,
   FAN_CTRL_ID1,
 };
-
-enum {
-  MAIN_SOURCE = 0,
-  SECOND_SOURCE = 1,
-  THIRD_SOURCE = 2,
-};
-
 
 int retry_skip_handle(uint8_t retry_curr, uint8_t retry_max);
 int retry_err_handle(uint8_t retry_curr, uint8_t retry_max);

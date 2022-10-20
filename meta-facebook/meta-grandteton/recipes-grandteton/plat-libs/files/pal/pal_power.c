@@ -200,7 +200,22 @@ int set_me_entry_into_recovery(void) {
 
 //Systm AC Cycle
 int pal_sled_cycle(void) {
-  return system("i2cset -f -y 38 0x10 0xd9 c &> /dev/null");	
+  uint8_t id;
+
+  if(get_comp_source(FRU_MB, VPDB_HSC_SOURCE, &id ))
+    return -1;
+
+  //Send Command to VPDB
+  if (id == MAIN_SOURCE) {
+    if(system("i2cset -f -y 38 0x44 0xfd 0x04 & > /dev/null"))
+      return -1;
+    if(system("i2cset -f -y 38 0x44 0xfd 0x0c & > /dev/null"))
+      return -1;
+  } else {
+     if(system("i2cset -f -y 38 0x10 0xd9 c &> /dev/null"))
+      return -1;
+  }
+  return 0;
 }
 
 // Return the Front panel Power Button

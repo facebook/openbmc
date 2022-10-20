@@ -64,7 +64,8 @@ enum {
 };
 
 enum {
-  BOARD_TYPE_AST1030 = 3,
+  BOARD_TYPE_AST1030_LTC4282 = 3,
+  BOARD_TYPE_AST1030_MPS5990 = 7,
 };
 
 #define VALUE_LOW 0

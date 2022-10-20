@@ -1286,7 +1286,8 @@ get_sb_bic_solution(uint8_t slot_id, bool *is_ast1030) {
       return -1;
     }
 
-    if (board_rev == BOARD_TYPE_AST1030) {
+    if (board_rev == BOARD_TYPE_AST1030_LTC4282 ||
+        board_rev == BOARD_TYPE_AST1030_MPS5990 ) {
       *is_ast1030 = true;
     }
   }

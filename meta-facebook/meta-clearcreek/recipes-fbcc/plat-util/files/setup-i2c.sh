@@ -31,7 +31,8 @@ i2cset -y -f 5 0x77 0x02 0x0f
 
 #Setup BB MAXIM ADC
 gp_board_id0=$(gpio_get BOARD_ID0 GPION5)
-if [ $gp_board_id0 -eq 1 ]; then
+gp_board_id1=$(gpio_get BOARD_ID1 GPION6)
+if [ $gp_board_id0 -eq 1 ] && [ $gp_board_id1 -eq 0 ]; then
   i2c_device_add 23 0x33 max11615
   i2c_device_add 23 0x35 max11617
 fi

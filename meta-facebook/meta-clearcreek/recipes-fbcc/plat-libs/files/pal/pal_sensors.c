@@ -1954,7 +1954,7 @@ read_nic_volt(uint8_t nic_id, float *value) {
     return READING_NA;
   }
 
-  if (GETBIT(g_board_id, 0)) {
+  if (GETBIT(g_board_id, 0) && !GETBIT(g_board_id, 1)) {
     ret = sensors_read_maxim(max_adc[nic_id].chip, max_adc[nic_id].label, &data);
     if (!ret) {
     //Convert MAXIM ADC, Volt = Read * 0.0005 * 9.08 / 1.21
@@ -2004,7 +2004,7 @@ read_nic_curr(uint8_t nic_id, float *value) {
     return READING_NA;
   }
 
-  if (GETBIT(g_board_id, 0)) {
+  if (GETBIT(g_board_id, 0) && !GETBIT(g_board_id, 1)) {
     ret = sensors_read_maxim(max_adc[nic_id].chip, max_adc[nic_id].label, &data);
     if (ret) {
       return ret;

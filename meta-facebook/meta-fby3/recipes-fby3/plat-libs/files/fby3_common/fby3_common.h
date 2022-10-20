@@ -272,6 +272,7 @@ enum board_id {
   BOARD_ID_SB = 1,
   BOARD_ID_BB = 2,
   BOARD_ID_NIC_EXP = 6,
+  BOARD_ID_VF = 7,
 };
 
 enum fw_rev {

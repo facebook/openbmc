@@ -529,6 +529,7 @@ main(int argc, char **argv) {
   uint8_t is_slot_present = 0;
   struct sigaction sa;
   uint8_t intf = 0;
+  uint8_t m2_config = CONFIG_UNKNOWN;
 
   if (argc != 3 && argc != 4) {
     print_usage_help();
@@ -595,6 +596,25 @@ main(int argc, char **argv) {
   }
 
   if ( type_2ou == GPV3_MCHP_BOARD || type_2ou == GPV3_BRCM_BOARD || type_2ou == CWC_MCHP_BOARD ) { // Config C or Config D GPv3
+    switch (type_2ou) {
+      case GPV3_MCHP_BOARD:
+        ret = pal_get_m2_config(FRU_2U, &m2_config);
+        break;
+      case CWC_MCHP_BOARD:
+        if (fru_id == FRU_SLOT1) {
+          printf("Only slot1-2U-top and slot1-2U-bot are supported!\n");
+          goto exit;
+        }
+        ret = pal_get_m2_config(fru_id, &m2_config);
+        break;
+      default:
+        break;
+    }
+    if (ret < 0) {
+      printf("fru: %u M.2 config read failed\n", fru_id);
+      goto exit;
+    }
+
     device_start = DEV_ID0_2OU;
     device_end = DEV_ID13_2OU;
     if ( ssd_monitor_enable(slot_id, intf, false) < 0 ) {
@@ -623,8 +643,20 @@ main(int argc, char **argv) {
  
   if ((argc == 4) && !strcmp(argv[2], "--drive-status")) {
     if (!strcmp(argv[3], "all")) {
-      for (int i = device_start; i <= device_end; i++) {
-        read_nvme_data(fru_id, slot_id, i, CMD_DRIVE_STATUS);
+      if (m2_config == CONFIG_C_CWC_DUAL) {
+        // Since it is dual m2 config, get m2 dev data from dev slot 1, 3, 5, 7, 9, 11
+        // There are two E1.S devices 12, 13
+        device_start = DEV_ID0_2OU;
+        device_end = DEV_ID11_2OU;
+        for (int i = device_start + 1 ; i <= device_end; i +=2) {
+          read_nvme_data(fru_id, slot_id, i, CMD_DRIVE_STATUS);
+        }
+        read_nvme_data(fru_id, slot_id, DEV_ID12_2OU, CMD_DRIVE_STATUS);
+        read_nvme_data(fru_id, slot_id, DEV_ID13_2OU, CMD_DRIVE_STATUS);
+      } else {
+        for (int i = device_start; i <= device_end; i++) {
+          read_nvme_data(fru_id, slot_id, i, CMD_DRIVE_STATUS);
+        }
       }
     } else {
       ret = pal_get_dev_id(argv[3], &dev_id);
@@ -640,8 +672,20 @@ main(int argc, char **argv) {
       read_nvme_data(fru_id, slot_id, dev_id, CMD_DRIVE_STATUS);
     }
   } else if ((argc == 3) && !strcmp(argv[2], "--drive-health")) {
-    for (int i = device_start; i <= device_end; i++) {
-      read_nvme_data(fru_id, slot_id, i, CMD_DRIVE_HEALTH);
+    if (m2_config == CONFIG_C_CWC_DUAL) {
+      // Since it is dual m2 config, get m2 dev data from dev slot 1, 3, 5, 7, 9, 11
+      // There are two E1.S devices 12, 13
+      device_start = DEV_ID0_2OU;
+      device_end = DEV_ID11_2OU;
+      for (int i = device_start + 1 ; i <= device_end; i +=2) {
+        read_nvme_data(fru_id, slot_id, i, CMD_DRIVE_HEALTH);
+      }
+      read_nvme_data(fru_id, slot_id, DEV_ID12_2OU, CMD_DRIVE_HEALTH);
+      read_nvme_data(fru_id, slot_id, DEV_ID13_2OU, CMD_DRIVE_HEALTH);
+    } else {
+      for (int i = device_start; i <= device_end; i++) {
+        read_nvme_data(fru_id, slot_id, i, CMD_DRIVE_HEALTH);
+      }
     }
   } else {
     print_usage_help();

@@ -740,6 +740,11 @@ if [ -n "$COMP" ]; then
     fi
   fi
 else
+  if [ $# -ne 1 ]; then
+    show_usage
+    exit $EXIT_ERROR;
+  fi
+
   set_uart_src "$I2C_NUM" $SB_CPLD_ADDR "0x01 0x03"
 fi
 

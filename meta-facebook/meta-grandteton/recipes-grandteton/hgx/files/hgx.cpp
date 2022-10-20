@@ -152,3 +152,14 @@ int get_hmc_sensor(const char* component, const char* snr_name, float* value) {
   }
   return 0;
 }
+
+int get_hmc_ver(const char* component, char *version) {
+  try {
+    std::string resStr;
+    resStr = hgx::version(component, 0);
+    strcpy(version, resStr.c_str());
+  } catch (std::exception& e) {
+    return -1;
+  }
+  return 0;
+}

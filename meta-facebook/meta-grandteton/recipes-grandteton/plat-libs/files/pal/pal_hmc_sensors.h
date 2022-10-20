@@ -1,6 +1,12 @@
 #ifndef __PAL_HMC_SENSORS_H__
 #define __PAL_HMC_SENSORS_H__
 
+enum {
+  NONE =0,
+  EVT = 1,
+  DVT = 2
+};
+
 // HMC sensor table
 enum {
   //Baseboard

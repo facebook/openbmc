@@ -131,6 +131,27 @@ max([
       all:hmc_hmc_temp_gb_gpu6_c,
       all:hmc_hmc_temp_gb_gpu7_c])),
 
+  gpu_tray_retimer_linear(
+    max([
+      all:hmc_hmc_temp_gb_pcieretimer0_c,
+      all:hmc_hmc_temp_gb_pcieretimer1_c,
+      all:hmc_hmc_temp_gb_pcieretimer2_c,
+      all:hmc_hmc_temp_gb_pcieretimer3_c,
+      all:hmc_hmc_temp_gb_pcieretimer4_c,
+      all:hmc_hmc_temp_gb_pcieretimer5_c,
+      all:hmc_hmc_temp_gb_pcieretimer6_c,
+      all:hmc_hmc_temp_gb_pcieretimer7_c])) +
+  gpu_tray_retimer_pid(
+    max([
+      all:hmc_hmc_temp_gb_pcieretimer0_c,
+      all:hmc_hmc_temp_gb_pcieretimer1_c,
+      all:hmc_hmc_temp_gb_pcieretimer2_c,
+      all:hmc_hmc_temp_gb_pcieretimer3_c,
+      all:hmc_hmc_temp_gb_pcieretimer4_c,
+      all:hmc_hmc_temp_gb_pcieretimer5_c,
+      all:hmc_hmc_temp_gb_pcieretimer6_c,
+      all:hmc_hmc_temp_gb_pcieretimer7_c])),
+
   gpu_tray_hbm_linear(
     max([
       all:hmc_hmc_temp_gb_gpu0_m_c,

@@ -8,6 +8,7 @@
 #include <libpldm-oem/pldm.h>
 #include "raa_gen3.h"
 #include "xdpe12284c.h"
+#include "xdpe152xx.h"
 
 #define MB_VR_BUS_ID   (20)
 #define SWB_VR_BUS_ID  (3)
@@ -33,13 +34,21 @@ enum {
 };
 
 enum {
-
   ADDR_CPU0_VCORE0 = 0xC2,
   ADDR_CPU0_VCORE1 = 0xC4,
   ADDR_CPU0_PVDD11 = 0xC6,
   ADDR_CPU1_VCORE0 = 0xE4,
   ADDR_CPU1_VCORE1 = 0xE8,
   ADDR_CPU1_PVDD11 = 0xEA,
+};
+
+enum {
+  ADDR_INF_CPU0_VCORE0  = 0x9E,
+  ADDR_INF_CPU0_VCORE1  = 0x9C,
+  ADDR_INF_CPU0_PVDD11  = 0x96,
+  ADDR_INF_CPU1_VCORE0  = 0x9A,
+  ADDR_INF_CPU1_VCORE1  = 0x98,
+  ADDR_INF_CPU1_PVDD11  = 0x94,
 };
 
 int swb_vr_map_id(uint8_t addr, uint8_t* id) {
@@ -87,6 +96,15 @@ struct vr_ops raa_gen2_3_ops = {
   .parse_file = raa_parse_file,
   .validate_file = NULL,
   .fw_update = raa_fw_update,
+  .fw_verify = NULL,
+};
+
+//INFINEON
+struct vr_ops xdpe152xx_ops = {
+  .get_fw_ver = get_xdpe152xx_ver,
+  .parse_file = xdpe152xx_parse_file,
+  .validate_file = NULL,
+  .fw_update = xdpe152xx_fw_update,
   .fw_verify = NULL,
 };
 
@@ -157,6 +175,56 @@ struct vr_info vr_list[] = {
   },
 };
 
+struct vr_info mb_inf_vr_list[] = {
+  [VR_MB_CPU0_VCORE0] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_INF_CPU0_VCORE0,
+    .dev_name = "VR_CPU0_VCORE0/SOC",
+    .ops = &xdpe152xx_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+  [VR_MB_CPU0_VCORE1] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_INF_CPU0_VCORE1,
+    .dev_name = "VR_CPU0_VCORE1/PVDDIO",
+    .ops = &xdpe152xx_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+  [VR_MB_CPU0_PVDD11] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_INF_CPU0_PVDD11,
+    .dev_name = "VR_CPU0_PVDD11",
+    .ops = &xdpe152xx_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+  [VR_MB_CPU1_VCORE0] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_INF_CPU1_VCORE0,
+    .dev_name = "VR_CPU1_VCORE0/SOC",
+    .ops = &xdpe152xx_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+  [VR_MB_CPU1_VCORE1] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_INF_CPU1_VCORE1,
+    .dev_name = "VR_CPU1_VCORE1/PVDDIO",
+    .ops = &xdpe152xx_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+  [VR_MB_CPU1_PVDD11] = {
+    .bus = MB_VR_BUS_ID,
+    .addr = ADDR_INF_CPU1_PVDD11,
+    .dev_name = "VR_CPU1_PVDD11",
+    .ops = &xdpe152xx_ops,
+    .private_data = "mb",
+    .xfer = NULL,
+  },
+};
 
 //SWB
 //INFINEON
@@ -176,9 +244,15 @@ int plat_vr_init(void) {
   uint8_t tbuf[8], rbuf[8];
 
   pal_get_platform_id(&mb_sku_id);
-  mb_sku_id = mb_sku_id & 0x03;
+  mb_sku_id = mb_sku_id & 0x07;
 
 //MB
+  if (mb_sku_id == 4) {
+    for (i = 0; i < MB_VR_CNT; i++) {
+      vr_list[i].ops =  &xdpe152xx_ops;
+      vr_list[i].addr = mb_inf_vr_list[i].addr;
+    }
+  }
 
 //SWB
   if (swb_presence()) {

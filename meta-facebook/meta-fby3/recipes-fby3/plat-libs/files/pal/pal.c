@@ -73,6 +73,8 @@ const char pal_m2_dual_list[] = "";
 
 static char sel_error_record[NUM_SERVER_FRU] = {0};
 
+static bool cycle_thread_is_running[NUM_SERVER_FRU + 1] = {0};
+
 const char pal_fru_list[] = "all, slot1, slot2, slot3, slot4, bmc, nic, slot1-2U-exp, slot1-2U-top, slot1-2U-bot";
 
 #define SYSFW_VER "sysfw_ver_slot"
@@ -2633,6 +2635,9 @@ pal_parse_sys_sts_event(uint8_t fru, uint8_t *sel, char *error_log) {
       snprintf(log_msg, sizeof(log_msg), "E1S 1OU M.2 dev%d present", event_data[2]);
       strcat(error_log, log_msg);
       break;
+    case SYS_EVENT_HOST_STALL:
+      strcat(error_log, "BIOS stalled");
+      break;
     default:
       strcat(error_log, "Undefined system event");
       break;
@@ -3322,6 +3327,43 @@ pal_caterr_handler(uint8_t fru, bool ierr) {
   return fby3_common_crashdump(fru, ierr, false, CRASHDUMP_NO_POWER_CONTROL);
 }
 
+static void *
+pal_cycle_host_after_acd_dump(void *arg) {
+    char path[PATH_MAX] = {0};
+    uint8_t fru = (uint8_t)(uintptr_t)arg;
+
+    cycle_thread_is_running[fru] = true;
+    syslog(LOG_CRIT, "%s: FRU %u", __func__, fru);
+    snprintf(path, sizeof(path), "/var/run/autodump%d.pid", fru);
+
+    // wait crash dump finished
+    while(access(path, F_OK) == 0) {
+        sleep(1);
+    }
+
+    syslog(LOG_CRIT, "%s: power cycle FRU %u", __func__, fru);
+    pal_set_server_power(fru, SERVER_POWER_CYCLE);
+
+    pthread_detach(pthread_self());
+    cycle_thread_is_running[fru] = false;
+    pthread_exit(NULL);
+}
+
+static void
+pal_host_stall_handler(uint8_t fru) {
+  pthread_t tid;
+
+  syslog(LOG_CRIT, "%s: FRU %u", __func__, fru);
+
+  if (cycle_thread_is_running[fru] == false) {
+    if (pthread_create(&tid, NULL, pal_cycle_host_after_acd_dump, (void*)(uintptr_t)fru) < 0) {
+      syslog(LOG_WARNING, "%s Create thread failed!\n", __func__);
+    }
+  }
+
+  return;
+}
+
 static int
 pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
@@ -3350,6 +3392,9 @@ pal_bic_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data) {
         case 0x11: //SYS_SLOT_PRSNT
         case 0x0B: //SYS_M2_VPP
         case 0x07: //SYS_FW_TRIGGER
+          break;
+        case SYS_EVENT_HOST_STALL:
+          pal_host_stall_handler(fru);
           break;
         default:
           is_cri_sel = true;

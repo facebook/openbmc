@@ -75,6 +75,7 @@ extern "C" {
 #define KEY_CPU_PWRGD_TIMESTAMP "slot%d_cpu_pwrgd_timestamp"
 #define KEY_CATERR_TIMESTAMP "slot%d_caterr_timestamp"
 
+#define SYS_EVENT_HOST_STALL 0x20
 
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];

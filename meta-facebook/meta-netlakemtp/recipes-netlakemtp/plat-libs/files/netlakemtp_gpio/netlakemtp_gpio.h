@@ -39,6 +39,22 @@ enum {
 };
 
 // BMC GPIO pins
+// Please note that not all pins here are needed for
+// ICE-LAKE D. Many are for MTP's own use.
+// Essential Pins for talking to x86 CPU includes : 
+// PCH related pins : PWRGD_PCH_R_PWROK
+// CPU itself  :
+//               PWRGD_PCH_R_PWROK
+//               FM_THERMTRIP_R_N
+//               FM_BIOS_POST_CMPLT_R_N
+//               FM_CPU_MSMI_CATERR_LVT3_R_N
+//               FM_CPU_PROCHOT_LATCH_LVT3_R_N
+//               BIOS_DEBUG_MSG_DIS_R_N
+//
+// COMe itself :
+//               IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N
+//               H_MEMHOT_OUT_FET_R_N
+
 enum {
   FW_FLASH_SPI_RST0_N = MAX_GPIO_EXPANDER_GPIO_PINS,
   FW_FLASH_SPI_RST1_N,

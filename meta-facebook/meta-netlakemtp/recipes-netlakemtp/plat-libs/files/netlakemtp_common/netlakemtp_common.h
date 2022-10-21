@@ -81,6 +81,9 @@ extern "C" {
 #define CPLD_ADC_REG_ADDR 0x1E
 #define CPLD_GET_REV_RETRY_TIME 3
 
+// The following definition is specific to ICE-LAKE-D CPU without BIC.
+// Any future platform that uses Netlake as COMe should consider
+// using similar definition as below.
 #define ME_BUS 1
 #define NM_GLOBAL_POWER_STATISTICS_LENGTH 20
 

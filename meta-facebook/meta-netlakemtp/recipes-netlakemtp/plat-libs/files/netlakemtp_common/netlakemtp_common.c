@@ -347,6 +347,9 @@ netlakemtp_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *valu
   return 0;
 }
 
+// The following function is known to work with ME of ICE-LAKE D.
+// The code can be used as a reference code for future platforms that 
+// uses Netlake as COMe
 int
 netlakemtp_common_me_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
                   uint8_t *txbuf, uint8_t txlen,

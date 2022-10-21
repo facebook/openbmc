@@ -614,6 +614,8 @@ get_component_name(uint8_t comp) {
       return "VDD11_S3";
     case FW_BIOS:
       return "BIOS";
+    case FW_PROT:
+      return "PRoT";
     case FW_1OU_BIC:
       return "1OU BIC";
     case FW_1OU_BIC_RCVY:
@@ -628,6 +630,8 @@ get_component_name(uint8_t comp) {
       return "BB BIC";
     case FW_BB_CPLD:
       return "BB CPLD";
+    case FW_1OU_CXL:
+      return "1OU CXL";
     case FW_2OU_PESW:
       return "2OU PCIe Switch";
     case FW_1OU_VR_V9_ASICA:

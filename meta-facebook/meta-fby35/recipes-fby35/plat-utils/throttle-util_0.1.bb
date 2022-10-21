@@ -11,10 +11,9 @@ SRC_URI = "file://throttle-util \
 
 S = "${WORKDIR}/throttle-util"
 
-CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
-LDFLAGS = " -lobmc-i2c -lbic -lpal -lfby35_common -lfby35_gpio "
-DEPENDS += " libbic libpal libfby35-common libfby35-gpio libobmc-i2c "
-RDEPENDS:${PN} += " libbic libpal libfby35-common libfby35-gpio libobmc-i2c "
+LDFLAGS = "-lobmc-i2c -lpal -lfby35_common"
+DEPENDS += "libobmc-i2c libpal libfby35-common"
+RDEPENDS:${PN} += "libobmc-i2c libpal libfby35-common"
 
 do_install() {
   install -d ${D}${bindir}

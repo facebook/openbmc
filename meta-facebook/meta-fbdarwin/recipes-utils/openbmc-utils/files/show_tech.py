@@ -27,7 +27,7 @@ import subprocess
 import time
 
 
-VERSION = "0.8"
+VERSION = "0.9"
 
 
 def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
@@ -99,19 +99,13 @@ def dumpBootInfo():
         )
     )
 
+
 def dumpOobStatus():
     print("################################")
     print("####### OOB STATUS INFO  #######")
     print("################################\n")
     print(runCmd("/usr/local/bin/oob-status.sh", echo=True, verbose=True))
 
-def switchcard_debuginfo(verbose=False):
-    print("################################")
-    print("##### SWITCHCARD DEBUG INFO ####")
-    print("################################\n")
-    if verbose:
-        print("##### SMB CPLD I2CDUMP #####\n")
-        print(runCmd("i2cdump -f -y 4 0x23", echo=True))
 
 def logDump():
     print("################################")
@@ -132,28 +126,26 @@ def logDump():
     print("########## HOST (uServer) CPU LOGS ##########")
     print("################################\n")
     print(
-          "#### mTerm LOG ####\n{}\n{}\n".format(
-             runCmd("cat /var/log/mTerm_wedge.log.1", echo=True),
-             runCmd("cat /var/log/mTerm_wedge.log", echo=True),
-          )
+        "#### mTerm LOG ####\n{}\n{}\n".format(
+            runCmd("cat /var/log/mTerm_wedge.log.1", echo=True),
+            runCmd("cat /var/log/mTerm_wedge.log", echo=True),
+        )
     )
+
 
 def i2cDetectDump():
     print("################################")
     print("########## I2C DETECT ##########")
     print("################################\n")
-    for bus in range(0, 15):
-        # Nothing on bus 5
-        if bus == 5:
-            continue
-        print(
-            "##### SMBus{} INFO #####\n{}".format(
-                bus,
-                runCmd(
-                    "i2cdetect -y {}".format(bus), verbose=True, timeout=5, echo=True
-                ),
-            )
+
+    # Only one bus used on FbDarwin BMC.
+    bus = 0
+    print(
+        "##### SMBus{} INFO #####\n{}".format(
+            bus,
+            runCmd("i2cdetect -y {}".format(bus), verbose=True, timeout=5, echo=True),
         )
+    )
 
 
 def gpioDump():
@@ -186,6 +178,7 @@ def showtech(verboseLevel=0):
         dumpOobStatus()
         i2cDetectDump()
         gpioDump()
+        logDump()
 
 
 def parseArgs():

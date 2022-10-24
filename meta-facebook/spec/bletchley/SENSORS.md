@@ -24,12 +24,12 @@
 | P1V2_AUX  | | V | NA | 1.27 | NA | NA | 1.13 | NA |
 | P1V0_AUX  | | V | NA | 1.06 | NA | NA | 0.94 | NA |
 | P3V_BAT   | | V | NA | 3.475 | NA | NA | 1.99 | NA |
-| MB_U73_THERM_LOCAL    | | C | NA | NA | NA | NA | NA | NA |
-| MB_U73_THERM_REMOTE   | | C | NA | NA | NA | NA | NA | NA |
-| MB_U72_THERM_LOCAL    | | C | NA | NA | NA | NA | NA | NA |
-| MB_U72_THERM_REMOTE   | | C | NA | NA | NA | NA | NA | NA |
-| MB_U402_THERM_LOCAL   | | C | NA | NA | NA | NA | NA | NA |
-| MB_U19_THERM_LOCAL    | | C | NA | NA | NA | NA | NA | NA |
+| MB_U73_THERM_LOCAL    | | C | NA | 50 | 49 | 1 | 0 | NA |
+| MB_U73_THERM_REMOTE   | | C | NA | 50 | 49 | 1 | 0 | NA |
+| MB_U72_THERM_LOCAL    | | C | NA | 50 | 49 | 1 | 0 | NA |
+| MB_U72_THERM_REMOTE   | | C | NA | 50 | 49 | 1 | 0 | NA |
+| MB_U402_THERM_LOCAL   | | C | NA | 55 | 54 | 1 | 0 | NA |
+| MB_U19_THERM_LOCAL    | | C | NA | 49 | 48 | 1 | 0 | NA |
 
 
 ### Interposer Board (SLED)
@@ -40,13 +40,13 @@
 | SLEDX_Input_Voltage   | | V | NA | NA | NA | NA | NA | NA |
 | SLEDX_Output_Current  | | V | NA | NA | NA | NA | NA | NA |
 | SLEDX_Input_Power     | | V | NA | NA | NA | NA | NA | NA |
-| SLEDX_THERM_LOCAL     | | C | NA | NA | NA | NA | NA | NA |
-| nvmeX                 | | C | NA | NA | NA | NA | NA | NA |
+| SLEDX_THERM_LOCAL     | | C | NA | 54 | 53 | 1 | 0 | NA |
+| nvmeX                 | | C | NA | 68 | 67 | 1 | 0 | NA |
 
 
 ### Front Panel Board
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
 | ----------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
-| FRONT_PANEL_TEMP      | | C | NA | NA | NA | NA | NA | NA |
-| FRONT_PANEL_HUMIDTY   | | C | NA | NA | NA | NA | NA | NA |
+| FRONT_PANEL_TEMP      | | C | NA | 40 | 39 | 1 | 0 | NA |
+| FRONT_PANEL_HUMIDTY   | | % | NA | NA | NA | NA | NA | NA |

@@ -61,16 +61,16 @@
     - Reset the host(s).
 - [ ] P0 **recovery mode**
     - Put the host(s) into recovery mode.
-- [ ] P0 **sled-cycle**
+- [ ] P0 **chassis-cycle**
     - TODO: facebookexternal/openbmc.quanta#2617.
     - Power cycle entire chassis.
 - [ ] P1 **phosphor-state-manager**
     - Manage host(s) state using LF state management provided by
       phosphor-state-manager.
-- [ ] P2 **Power Failure Detection**
-    - TODO: facebookexternal/openbmc.quanta#2618.
-    - Report host power failure reasoning using information from various GPIO
-      signals and/or CPLD registers.
+- ~~[ ] P2 **Power Failure Detection**~~
+    - ~~TODO: facebookexternal/openbmc.quanta#2618.~~
+    - ~~Report host power failure reasoning using information from various GPIO~~
+      ~~signals and/or CPLD registers.~~
 
 #### FRU Information
 - [X] P0 **Entity Manager**
@@ -123,33 +123,33 @@ Support reading firmware versions of attached components including self.
 
 - [X] P0 **OpenBMC**
     - Read f/w versions for all the components.
-- [ ] P0 **VR**
-    - TODO: facebookexternal/openbmc.quanta#2619.
-    - All attached Voltage regulators.
-- [ ] P2 **Ethernet Switch**
-    - Display Ethernet Switch firmware version.
-- [ ] P2 **USB3 Bridge**
+- ~~[ ] P0 **VR**~~
+    - ~~TODO: facebookexternal/openbmc.quanta#2619.~~
+    - ~~All attached Voltage regulators.~~
+- ~~[ ] P2 **Ethernet Switch**~~
+    - ~~Display Ethernet Switch firmware version.~~
+- [ ] P4 **USB3 Bridge**
     - Display USB3 Bridge firmware version.
 
 #### Firmware Update
 - [X] P0 **OpenBMC**
     - Upgrade BMC Image from within the BMC.
-- [ ] P1 **Flashy**
+- [ ] P4 **Flashy**
     - _Facebook_ to develop.
     - Support system in `flashy`.
-- [ ] P2 **Wipe Workflows**
+- [ ] P4 **Wipe Workflows**
     - _Facebook_ to develop.
     - Enable device wipe workflows for decomm.
 - [ ] P0 **VR**
     - TODO: facebookexternal/openbmc.quanta#2619.
     - Upgrade all attached Voltage regulators.
-- [ ] P0 **Ethernet Switch**
-    - Upgrade Ethernet Switch manually using flashcp.
-- [ ] P2 **Ethernet Switch**
-    - Upgrade Ethernet Switch using production (dbus+Redfish) methods.
+- ~~[ ] P0 **Ethernet Switch**~~
+    - ~~Upgrade Ethernet Switch manually using flashcp.~~
+- ~~[ ] P2 **Ethernet Switch**~~
+    - ~~Upgrade Ethernet Switch using production (dbus+Redfish) methods.~~
 - [ ] P0 **USB3 Bridge**
     - Upgrade USB3 Bridge manually using flashcp.
-- [ ] P2 **USB3 Bridge**
+- [ ] P4 **USB3 Bridge**
     - Upgrade USB3 Bridge using production (dbus+Redfish) methods.
 
 #### Time Sync
@@ -174,12 +174,12 @@ Support reading firmware versions of attached components including self.
 #### Front Panel Control
 - [ ] P0 **Power Button**
     - Power ON/OFF the Host by using this button.
-- [ ] P0 **Reset Button**
-    - PowerReset Host by using this button. Same as power-button.
+- ~~[ ] P0 **Reset Button**~~
+    - ~~PowerReset Host by using this button. Same as power-button.~~
 - [ ] P0 **Debug Card Console**
     - Support debug console when it is present.
-- [ ] P0 **Debug Card Reset Button**
-    - PowerReset Reset Host by using the reset button on Debug Card.
+- ~~[ ] P0 **Debug Card Reset Button**~~
+    - ~~PowerReset Reset Host by using the reset button on Debug Card.~~
 - [ ] P0 **Identify LED/Power-ON**
     - Chassis Identification by blinking LED: User shall be able to turn ON/OFF
       the identification; And specify the blinking rate to 1/5/10 seconds.
@@ -188,24 +188,24 @@ Support reading firmware versions of attached components including self.
     - Allow configuration and use of heartbeat LED.
 
 #### Security
-- [ ] P0 **Verified Boot (dual-flash)**
+- [ ] P4 **Verified Boot (dual-flash)**
     - Support updating both flashes images and support read-only image to
       continue boot into RW flash.
-- [ ] P1 **Verified Boot (image verification)**
+- [ ] P4 **Verified Boot (image verification)**
     - Validating the RW image and provide an utility to report on errors of
       validation/verification.
-- [ ] P2 **Verified Boot (recovery)**
+- [ ] P4 **Verified Boot (recovery)**
     - If RW image is empty or does not contain a valid image, boot into
       recovery.
-- [ ] P2 **Verified Boot (SW enforcement)**
+- [ ] P4 **Verified Boot (SW enforcement)**
     - Boot into recovery image if signature verification of RW image fails.
-- [ ] P2 **Verified Boot (HW enforcement)**
+- [ ] P4 **Verified Boot (HW enforcement)**
     - Do not allow modification of recovery image in hardware.
-- [ ] P2 **Verified Boot (Image signing service)**
+- [ ] P4 **Verified Boot (Image signing service)**
     - Setup a service for BMC image signing.
 - [X] P1 **TPM 2.0 Test**
     - Test TPM access via SPI.
-- [ ] P2 **TPM 2.0 Boot Measurements**
+- [ ] P4 **TPM 2.0 Boot Measurements**
     - Use TPM for storing secret keys and measurement info.
 
 #### Host Sensor Information
@@ -242,10 +242,10 @@ Support reading firmware versions of attached components including self.
     - Emulate USB-PD to allow software communication with managed host(s).
 - [ ] P2 **Switch diagnostics**
     - TODO: facebookexternal/openbmc.quanta#2621.
-    - Diagnostics, state, and sensors from BCM53158XU SPI2 interface.
-- [ ] P2 **USB-C diagnostics**
-    - TODO: facebookexternal/openbmc.quanta#2620.
-    - Diagnostics, state, and sensors from JHL7440 i2c interface.
+    - Diagnostics, state, and sensors from 88E6191X MDIO interface.
+- ~~[ ] P2 **USB-C diagnostics**~~
+    - ~~TODO: facebookexternal/openbmc.quanta#2620.~~
+    - ~~Diagnostics, state, and sensors from JHL7440 i2c interface.~~
 - [ ] P1 **Automated Recovery**
     - Initiate automated recovery of managed host(s) over USB.
 
@@ -261,8 +261,8 @@ Support reading firmware versions of attached components including self.
       using different flavors of BMC(e.g. ODM, OEM or OpenBMC).
 - [ ] P2 **Reset Default factory settings**
     - Allow user to clear all configurations.
-- [ ] P1 **guid-util**
-    - TODO: facebookexternal/openbmc.quanta#2622.
-    - Utility to program Device GUID and System GUID to FRU EEPROM.
+- ~~[ ] P1 **guid-util**~~
+    - ~~TODO: facebookexternal/openbmc.quanta#2622.~~
+    - ~~Utility to program Device GUID and System GUID to FRU EEPROM.~~
 - [ ] P2 **openbmc-test-automation**
     - Testing enabled with upstream openbmc-test-automation package.

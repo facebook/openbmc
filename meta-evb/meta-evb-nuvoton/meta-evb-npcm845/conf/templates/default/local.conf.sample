@@ -6,5 +6,5 @@
 MACHINE ??= "evb-npcm845"
 
 # OpenBMC distro settings
-DISTRO ?= "openbmc-fb-2"
-INHERIT:remove = "fb-source-mirror fb-only-network"
+DISTRO ?= "openbmc-fb-master"
+

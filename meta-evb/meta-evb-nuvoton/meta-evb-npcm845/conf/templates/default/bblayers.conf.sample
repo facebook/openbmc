@@ -12,15 +12,17 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-openembedded/meta-networking \
   ##OEROOT##/meta-openembedded/meta-python \
   ##OEROOT##/meta-openembedded/meta-perl \
-  ##OEROOT##/../.. \
   ##OEROOT##/meta-security \
   ##OEROOT##/meta-security/meta-tpm \
+  ##OEROOT##/meta-arm/meta-arm \
+  ##OEROOT##/meta-arm/meta-arm-toolchain \
+  ##OEROOT##/../.. \
   ##OEROOT##/../../meta-facebook \
   ##OEROOT##/../../meta-facebook/meta-python3 \
   ##OEROOT##/../../meta-facebook/meta-backports \
-  ##OEROOT##/meta-nuvoton \
   ##OEROOT##/../../meta-nuvoton \
   ##OEROOT##/../../meta-evb/meta-evb-nuvoton/meta-evb-npcm845 \
+  ##OEROOT##/meta-nuvoton \
   "
 BBLAYERS_NON_REMOVABLE ?= " \
   ##OEROOT##/meta \

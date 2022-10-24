@@ -12,7 +12,6 @@ MERGED_SUFFIX = "merged"
 UBOOT_SUFFIX:append = ".${MERGED_SUFFIX}"
 
 IGPS_DIR = "${STAGING_DIR_NATIVE}/${datadir}/npcm8xx-igps"
-inherit logging
 
 # Prepare the Bootblock and U-Boot images using npcm8xx-bingo
 do_prepare_bootloaders() {

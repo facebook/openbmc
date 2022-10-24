@@ -223,8 +223,12 @@ def sensor_valid_check(board, sname, check_name, attribute):
 
 def get_fan_mode(scenario="None"):
     if "one_fan_failure" in scenario:
-        pwm = 60
-        return fan_mode["trans_mode"], pwm
+        if is_halfdome():
+            pwm = 100
+            return fan_mode["boost_mode"], pwm
+        else:
+            pwm = 60
+            return fan_mode["trans_mode"], pwm
     elif "sensor_hit_UCR" in scenario:
         pwm = 100
         return fan_mode["boost_mode"], pwm

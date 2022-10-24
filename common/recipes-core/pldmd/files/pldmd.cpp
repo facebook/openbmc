@@ -76,9 +76,9 @@ connect_to_socket (const char * path, int length)
 }
 
 static int 
-connect_mctp_socket (int bus)
+connect_mctp_socket (const std::string &bus)
 {
-  std::string path = "mctp-mux" + std::to_string(bus);
+  std::string path = "mctp-mux" + bus;
   int sockfd = connect_to_socket(path.c_str(), path.length());
   if (sockfd < 0)
     return -1;
@@ -130,6 +130,21 @@ mctpd_msg_handle (int fd, uint8_t *buf, size_t size)
       msg->hdr.request == PLDM_ASYNC_REQUEST_NOTIFY) {
       LOG(INFO) << "Request handle.";
 
+      uint8_t *resp;
+      int resp_len;
+
+      pldm_msg_handle(buf + PLDMD_MSG_HDR_LEN, size - PLDMD_MSG_HDR_LEN, &resp, &resp_len);
+      std::cout << std::hex;
+      for (int i = 0; i < resp_len ; i++) {
+        if(i < PLDM_COMMON_RES_LEN) {
+          std::cout << "PLDM data[" << i << "] = 0x" << unsigned(resp[i]) << "\n";
+        }
+        else {
+          std::cout << "IPMI data[" << i << "] = 0x" << unsigned(resp[i]) << "\n";
+        }
+      }
+      std::cout << std::dec;
+      handler->client_send_data(0, resp, resp_len);
     // For response handle
     } else if (msg->hdr.request == PLDM_RESPONSE) {
       uint8_t iid = msg->hdr.instance_id;
@@ -259,11 +274,10 @@ int main (int argc, char** argv)
   std::string optionDescription;
 
   // init <bus number> option
-  int busNumber = -1;
+  std::string busNumber = "";
   optionDescription = "Setting bus number. (required)";
   auto option = app.add_option("-b, --bus", busNumber, optionDescription);
   option->required();
-  option->check(CLI::Range(0, 32));
 
   // log level
   int level = 1;

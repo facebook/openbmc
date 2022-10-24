@@ -191,14 +191,15 @@ static void rx_message(uint8_t eid, void *data, void *msg, size_t len, bool tag_
   uint8_t msg_type = *(uint8_t *)msg;
   int i, rc;
 
-  if (len < 2)
+  if (len < 2) {
     return;
+  }
 
   if (verbose) {
-    fprintf(stderr, "MCTP message received: len %zd, tag %d dest eid=%d\n", len, tag, eid);
+    fprintf(stderr, "MCTP message received: len %u, tag %d dest eid=%d\n", len, tag, eid);
 
-    for (i=0; i < (int)len; i++) {
-     fprintf(stderr, "%s msg[%d] =%x\n", __func__, i , *((char*)msg + i));
+    for (i = 0; i < (int)len; i++) {
+      fprintf(stderr, "%s msg[%d] =%x\n", __func__, i , *((char*)msg + i));
     }
   }
 
@@ -227,8 +228,9 @@ static void rx_message(uint8_t eid, void *data, void *msg, size_t len, bool tag_
     }
   }
 
-  if (removed)
+  if (removed) {
     client_remove_inactive(ctx);
+  }
 }
 
 static int binding_asti3c_init (struct mctp *mctp, struct binding *binding,
@@ -548,7 +550,7 @@ static int client_process_recv(struct ctx *ctx, int idx)
     rx_message(dest_eid, ctx, (uint8_t *)ctx->buf + 1, rc - 1, 0, 0, NULL);
   } else {
     tag_owner = get_mctp_tag_owner(ctx->buf);
-    tx_message(ctx, dest_eid, (uint8_t *)ctx->buf + 1, rc - 1,  tag_owner, client->msg_tag);
+    tx_message(ctx, dest_eid, (uint8_t *)ctx->buf + 1, rc - 1, tag_owner, client->msg_tag);
   }
   return 0;
 
@@ -601,8 +603,6 @@ static int run_daemon(struct ctx *ctx)
 
   for (;;) {
     if (clients_changed) {
-      int i;
-
       ctx->pollfds = (struct pollfd*)realloc(ctx->pollfds, (ctx->n_clients + FD_NR) * sizeof(struct pollfd));
 
       for (i = 0; i < ctx->n_clients; i++) {

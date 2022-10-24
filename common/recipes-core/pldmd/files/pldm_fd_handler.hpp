@@ -45,12 +45,12 @@ enum {
 class pldm_fd_handler : public fd_handler
 {
   public:
-    int bus=0;
+    std::string bus=0;
     int mctpd_fd=0;
     int pldmd_fd=0;
     int pldmd_fwupdate_fd = 0;
 
-    pldm_fd_handler(int mctpd_fd, int bus) :
+    pldm_fd_handler(int mctpd_fd, const std::string &bus) :
     bus(bus), mctpd_fd(mctpd_fd) { do_init(); }
 
     // pollfds handle

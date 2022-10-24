@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <vector>
 
+#define IPMI_PKT_MAX_SIZE 300
+
 using namespace pldm::responder;
 
 namespace pldm
@@ -18,6 +20,16 @@ namespace oem
 enum CMD {
     ECHO = 0x00,
     IPMI = 0x01,
+};
+
+enum PLDM_FORMAT_POS {
+    POS_PLDM_INSTANCE_ID = 0,
+    POS_PLDM_TYPE,
+    POS_PLDM_COMMAND_CODE,
+    POS_IPMI_IANA,
+    POS_IPMI_NETFN = 6,
+    POS_IPMI_CMD,
+    POS_IPMI_DATA
 };
 
 struct pldm_msg_resp {

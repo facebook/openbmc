@@ -217,13 +217,13 @@ pldm_fd_handler::do_init()
 
   // init server fd
   std::string socketName;
-  socketName = "pldm-mux" + std::to_string(bus);
+  socketName = "pldm-mux" + bus;
   init_server_fd(pldmd_fd, socketName);
   LOG(INFO) << "Create socket for clients = "
             << socketName.c_str()
             << " successfully.";
 
-  socketName = "pldm-fwup-mux" + std::to_string(bus);
+  socketName = "pldm-fwup-mux" + bus;
   init_server_fd(pldmd_fwupdate_fd, socketName);
   LOG(INFO) << "Create socket for firmware update client = "
             << socketName.c_str()

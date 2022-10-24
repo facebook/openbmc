@@ -101,7 +101,9 @@ if [ -z "$TEMPLATECONF" ]; then
     elif [ -d "$(pwd)/meta-$1" ]; then
         TEMPLATECONF="$(pwd)/meta-$1/conf/templates/default"
     else
-        machines=$(find . -maxdepth 6 -path "*/machine/*" '(' -type f -o -type l ')' )
+        machines=$(find . -maxdepth 6 \
+                          -path "./yocto/*" -prune -o \
+                          -path "*/machine/*" '(' -type f -o -type l ')' )
         for md in ${machines}; do
             machine=$(basename "$md" | sed 's/\.conf//')
             meta=$(dirname "$(dirname "$md")")

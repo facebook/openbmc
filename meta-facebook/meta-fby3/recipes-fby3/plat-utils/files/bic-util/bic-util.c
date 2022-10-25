@@ -365,7 +365,7 @@ util_set_gpio(uint8_t slot_id, uint8_t gpio_num, uint8_t gpio_val, uint8_t intf)
     gpio_pin_cnt = fby3_get_exp_gpio_list_size(expFru);
   }
 
-  if ( gpio_num > gpio_pin_cnt ) {
+  if ( gpio_num >= gpio_pin_cnt ) {
     printf("slot %d: Invalid GPIO pin number %d\n", slot_id, gpio_num);
     return ret;
   }
@@ -431,7 +431,7 @@ util_set_gpio_config(uint8_t slot_id, uint8_t gpio_num, uint8_t config_val, uint
   uint8_t gpio_pin_cnt = fby3_get_gpio_list_size(intf);
   char gpio_pin_name[32] = "\0";
 
-  if ( gpio_num > gpio_pin_cnt ) {
+  if ( gpio_num >= gpio_pin_cnt ) {
     printf("slot %d: Invalid GPIO pin number %d\n", slot_id, gpio_num);
     return ret;
   }

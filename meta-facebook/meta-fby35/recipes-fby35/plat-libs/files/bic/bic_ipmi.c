@@ -60,6 +60,8 @@ typedef struct _sdr_rec_hdr_t {
 #define MAX_SLOT_NUM    4
 #define MAX_SENSOR_NUM  0xFF
 
+#define GET_SYS_FW_VER_CMD_LEN   3
+
 enum {
   M2_PWR_OFF = 0x00,
   M2_PWR_ON  = 0x01,
@@ -2183,4 +2185,31 @@ bic_is_prot_bypass(uint8_t fru)
   }
   //bit1:AUTH_SPARE_46_R, low: bypass
   return (spare_status & 0x02) ? false:true;
+}
+
+int
+bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver) {
+  int ret = 0;
+  uint8_t tlen = 0, rlen = 0;
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
+
+  tlen = GET_SYS_FW_VER_CMD_LEN;
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: failed to get system firmware version due to NULL pointer\n", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+
+  memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
+
+  ret = bic_ipmb_wrapper(slot_id, NETFN_OEM_1S_REQ, BIC_CMD_OEM_BIOS_VER, tbuf, tlen, rbuf, &rlen);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s: fail to get BIOS version at slot%d", __func__, slot_id);
+    return -1;
+  }
+
+  memcpy(ver, &rbuf[IANA_ID_SIZE], SIZE_SYSFW_VER);
+
+  return ret;
 }

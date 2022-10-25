@@ -1572,6 +1572,44 @@ pal_is_bmc_por(void) {
 }
 
 int
+pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
+  int ret = 0;
+  uint8_t bios_post_complete = 0;
+  bic_gpio_t gpio = {0};
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: failed to get system firmware version due to NULL pointer\n", __func__);
+    return -1;
+  }
+
+  ret = bic_get_gpio(slot_id, &gpio, NONE_INTF);
+  if ( ret < 0 ) {
+    syslog(LOG_ERR, "%s() bic_get_gpio returns %d\n", __func__, ret);
+    return ret;
+  }
+
+  bios_post_complete = BIT_VALUE(gpio, BIC_GPIO_INDEX_POST_COMPLETE);
+  if (bios_post_complete != POST_COMPLETE) {
+    syslog(LOG_WARNING, "%s() Failed to get BIOS firmware version because BIOS is not ready", __func__);
+    return -1;
+  }
+
+  // Get BIOS firmware version from BIC if key: sysfw_ver_server is not set
+  if (bic_get_sys_fw_ver(slot_id, ver) < 0) {
+    syslog(LOG_WARNING, "%s() failed to get system firmware version from BIC", __func__);
+    return -1;
+  }
+
+  // Set BIOS firmware version to key: sysfw_ver_server
+  if (pal_set_sysfw_ver(slot_id, ver) < 0) {
+    syslog(LOG_WARNING, "%s() failed to set key value of system firmware version", __func__);
+    return -1;
+  }
+
+  return ret;
+}
+
+int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
   int i;
   int j = 0;
@@ -1586,6 +1624,10 @@ pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
     syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
     ret = PAL_ENOTSUP;
     goto error_exit;
+  }
+
+  if (strcmp(str, "0") == 0) {
+    return pal_get_sysfw_ver_from_bic(slot, ver);
   }
 
   for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {

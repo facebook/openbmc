@@ -54,6 +54,7 @@ enum {
   BIC_CMD_OEM_CARD_TYPE         = 0xA1,
   BIC_CMD_OEM_NOTIFY_PMIC_ERR   = 0xB0,
   BIC_CMD_OEM_GET_EXTENDED_SDR  = 0xC0,
+  BIC_CMD_OEM_BIOS_VER          = 0xA2,
 };
 
 enum {

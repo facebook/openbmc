@@ -164,6 +164,7 @@ int bic_request_post_buffer_page_data(uint8_t slot_id, uint8_t page_num, uint8_t
 int bic_get_mb_index(uint8_t *index);
 int bic_get_prot_spare_pins(uint8_t slot_id, uint8_t* value) ;
 bool bic_is_prot_bypass(uint8_t fru);
+int bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver);
 
 #ifdef __cplusplus
 } // extern "C"

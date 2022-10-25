@@ -63,6 +63,8 @@ extern "C" {
 #define VR_1OU_NEW_CRC_STR "slot%d_1ou_vr_%s_new_crc"
 #define VR_1OU_CRC_STR "slot%d_1ou_vr_%s_crc"
 
+#define BIC_GPIO_INDEX_POST_COMPLETE 1
+
 extern const char pal_fru_list_print[];
 extern const char pal_fru_list_rw[];
 extern const char pal_fru_list_sensor_history[];
@@ -179,6 +181,11 @@ typedef enum {
   PERSIST_TO_TEMP,
 } VR_CRC_ACT;
 
+typedef enum {
+  POST_COMPLETE = 0,
+  POST_NOT_COMPLETE,
+} BIOS_POST_COMPLETE_STATUS;
+
 typedef struct {
   uint8_t err_id;
   char *err_des;
@@ -202,6 +209,7 @@ bool pal_is_sdr_from_file(uint8_t fru, uint8_t snr_num);
 int pal_clear_mrc_warning(uint8_t slot);
 int pal_clear_vr_crc(uint8_t fru);
 int pal_move_vr_new_crc(uint8_t fru, uint8_t action);
+int pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver);
 int pal_clear_vr_crc(uint8_t fru);
 int pal_set_last_postcode(uint8_t slot, uint32_t postcode);
 int pal_get_last_postcode(uint8_t slot, char* postcode);

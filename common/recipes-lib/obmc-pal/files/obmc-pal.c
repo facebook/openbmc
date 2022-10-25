@@ -993,13 +993,66 @@ pal_set_sys_guid(uint8_t fru, char *guid)
 int __attribute__((weak))
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver)
 {
+  int blk, i, j = 0;
+  char key[MAX_KEY_LEN];
+  char str[MAX_VALUE_LEN] = {0};
+  char *pstr, tstr[8] = {0};
+
+  sprintf(key, "fru%u_sysfw_ver", slot);
+  if (kv_get(key, str, NULL, KV_FPERSIST)) {
+    memset(ver, 0, SIZE_SYSFW_VER);
+    return -1;
+  }
+
+  for (blk = 0; blk < BLK_SYSFW_VER; blk++) {
+    pstr = str + blk * SIZE_SYSFW_VER*2;
+    for (i = 0; i < SIZE_SYSFW_VER*2; i += 2) {
+      if (blk > 0 && i == 0) {
+        continue;
+      }
+      memcpy(tstr, &pstr[i], 2);
+      ver[j++] = strtoul(tstr, NULL, 16);
+    }
+  }
+
   return PAL_EOK;
 }
 
 int __attribute__((weak))
 pal_set_sysfw_ver(uint8_t slot, uint8_t *ver)
 {
-  return PAL_EOK;
+  int ret, i;
+  size_t len = 0, offs = 0;
+  char key[MAX_KEY_LEN];
+  char str[MAX_VALUE_LEN] = {0};
+  char tstr[8] = {0};
+
+  if (ver[0] >= BLK_SYSFW_VER) {
+    return -1;
+  }
+  sprintf(key, "fru%u_sysfw_ver", slot);
+
+  // data length of 1st block: 14
+  //                2nd block: 16
+  if ((!ver[0] && ver[2] > 14) || (ver[0] > 0)) {
+    // using more than 1 block
+    ret = kv_get(key, str, &len, KV_FPERSIST);
+    if (ver[0] > 0) {
+      offs = ver[0] * SIZE_SYSFW_VER*2;
+      if (ret || (len < offs)) {
+        // fill '0' to the 1st block
+        memset(str, '0', offs);
+      }
+    }
+  }
+
+  for (i = 0; i < SIZE_SYSFW_VER; i++) {
+    sprintf(tstr, "%02x", ver[i]);
+    memcpy(&str[offs], tstr, 2);
+    offs += 2;
+  }
+
+  return kv_set(key, str, 0, KV_FPERSIST);
 }
 
 int __attribute__((weak))

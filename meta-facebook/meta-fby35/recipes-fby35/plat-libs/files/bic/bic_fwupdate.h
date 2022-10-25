@@ -35,6 +35,10 @@ enum {
   UPDATE_CXL,
 };
 
+enum {
+  DUMP_BIOS = 0,
+};
+
 // Update from file.
 int bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force);
 
@@ -44,6 +48,7 @@ int get_board_revid_from_cpld(uint8_t cpld_bus, uint8_t reg_addr, uint8_t* rev_i
 int get_board_revid_from_bbbic(uint8_t slot_id, uint8_t* rev_id);
 int get_board_rev(uint8_t slot_id, uint8_t board_id, uint8_t* rev_id);
 char* get_component_name(uint8_t comp);
+int dump_bic_usb_bios(uint8_t slot_id, uint8_t comp, char *path);
 
 #ifdef __cplusplus
 } // extern "C"

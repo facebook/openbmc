@@ -12,6 +12,7 @@ class BiosComponent : public Component {
   Server server;
   private:
     image_info check_image(const string& image, bool force);
+    int attempt_server_power_off(bool force) ;
     int get_ver_str(std::string& s);
     int update_internal(const std::string& image, int fd, bool force);
   public:
@@ -20,6 +21,7 @@ class BiosComponent : public Component {
     int update(std::string image) override;
     int update(int fd, bool force) override;
     int fupdate(std::string image) override;
+    int dump(string image) override;
     int print_version() override;
     void get_version(json& j) override;
 };

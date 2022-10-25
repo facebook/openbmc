@@ -40,12 +40,33 @@ image_info BiosComponent::check_image(const string& image, bool force) {
   return image_sts;
 }
 
+int BiosComponent::attempt_server_power_off(bool force) {
+  int ret, retry_count;
+  uint8_t status;
+
+  for (retry_count = 0; retry_count < MAX_RETRY; retry_count++) {
+    ret = pal_get_server_power(slot_id, &status);
+    cerr << "Server power status: " << (int) status << endl;
+    if ((ret == 0) && (status == SERVER_POWER_OFF)) {
+      return 0;
+    } else {
+      uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
+      if ((retry_count == 0) || force) {
+        cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
+        pal_set_server_power(slot_id, power_cmd);
+      }
+      sleep(2);
+    }
+  }
+
+  // Exceeded retry limit.
+  return -1;
+}
 
 int BiosComponent::update_internal(const std::string& image, int fd, bool force) {
-  int ret, retry_count;
+  int ret;
   int ret_recovery = 0, ret_reset = 0;
   int server_type = 0;
-  uint8_t status;
   image_info image_sts = check_image(image, force);
 
   if (image_sts.result == false) {
@@ -66,24 +87,10 @@ int BiosComponent::update_internal(const std::string& image, int fd, bool force)
     return FW_STATUS_NOT_SUPPORTED;
   }
 
-  for (retry_count = 0; retry_count < MAX_RETRY; retry_count++) {
-    ret = pal_get_server_power(slot_id, &status);
-    cerr << "Server power status: " << (int) status << endl;
-    if ((ret == 0) && (status == SERVER_POWER_OFF)) {
-      break;
-    } else {
-      uint8_t power_cmd = (force ? SERVER_POWER_OFF : SERVER_GRACEFUL_SHUTDOWN);
-      if ((retry_count == 0) || force) {
-        cerr << "Powering off the server (cmd " << ((int) power_cmd) << ")..." << endl;
-        pal_set_server_power(slot_id, power_cmd);
-      }
-      sleep(2);
+    if(attempt_server_power_off(force)) {
+      cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
+      return FW_STATUS_FAILURE;
     }
-  }
-  if (retry_count == MAX_RETRY) {
-    cerr << "Failed to Power Off Server " << slot_id << ". Stopping the update!" << endl;
-    return -1;
-  }
 
   server_type = fby35_common_get_slot_type(slot_id);
   if (SERVER_TYPE_HD != server_type) {
@@ -145,6 +152,33 @@ int BiosComponent::update(int fd, bool force) {
 
 int BiosComponent::fupdate(const string image) {
   return update_internal(image, -1, true /* force */);
+}
+
+int BiosComponent::dump(string image) {
+  int ret;
+
+  try {
+    cerr << "Checking if the server is ready..." << endl;
+    server.ready_except();
+  } catch(const std::exception& err) {
+    cerr << "Server is not ready." << endl;
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  if(attempt_server_power_off(false)) {
+    cerr << "Failed to Power Off Server " << slot_id << ". Stopping the dmup!" << endl;
+    return FW_STATUS_FAILURE;
+  }
+
+  ret = dump_bic_usb_bios(slot_id, FW_BIOS, (char *)image.c_str());
+  if (ret != 0) {
+    cerr << "BIOS dump failed. ret = " << ret << endl;
+  }
+  cerr << "Power-cycling the server..." << endl;
+  sleep(1);
+  pal_set_server_power(slot_id, SERVER_POWER_CYCLE);
+
+  return ret;
 }
 
 int BiosComponent::get_ver_str(string& s) {

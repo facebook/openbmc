@@ -46,6 +46,30 @@ typedef struct {
 #define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
 
 typedef struct {
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t cc;
+} __attribute__((packed)) bic_usb_res_packet;
+#define USB_PKT_RES_HDR_SIZE (sizeof(bic_usb_res_packet))
+
+typedef struct {
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t iana[3];
+  uint8_t target;
+  uint32_t offset;
+  uint8_t length;
+} __attribute__((packed)) bic_usb_dump_req_packet;
+
+typedef struct {
+  uint8_t netfn;
+  uint8_t cmd;
+  uint8_t cc;
+  uint8_t iana[3];
+  uint8_t data[0];
+} __attribute__((packed)) bic_usb_dump_res_packet;
+
+typedef struct {
   uint8_t dummy;
   uint32_t offset;
   uint16_t length;
@@ -57,7 +81,7 @@ typedef struct {
 int print_configuration(struct libusb_device_handle *hDevice,struct libusb_config_descriptor *config);
 int bic_get_fw_cksum(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
 int bic_get_fw_cksum_sha256(uint8_t slot_id, uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
-int send_bic_usb_packet(usb_dev* udev, bic_usb_packet *pkt);
+int send_bic_usb_packet(usb_dev* udev, uint8_t *pkt, const int transferlen);
 int bic_init_usb_dev(uint8_t slot_id, uint8_t comp, usb_dev* udev, const uint16_t product_id, const uint16_t vendor_id);
 int bic_close_usb_dev(usb_dev* udev);
 int update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force);

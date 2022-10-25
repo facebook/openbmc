@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <getopt.h>
 #include <facebook/bic.h>
-#include <facebook/fby2_common.h>
 
 #define MAX_APML_DATA_LENGTH 4
 #define POWER_CAPPING_OPTION_NUM 4
@@ -27,7 +26,7 @@ print_usage_help(void) {
   printf("Usage: apml-util <slot1|slot2|slot3|slot4> <[0..n]data_bytes_to_send>\n");
   printf("Usage: apml-util <slot1|slot2|slot3|slot4> <option>\n");
   printf("       option:\n");
-  for (int i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
+  for (size_t i = 0; i < sizeof(option_list)/sizeof(option_list[0]); i++)
     printf("       %s\n", option_list[i]);
 }
 
@@ -89,7 +88,10 @@ util_read_mca_reg(uint8_t slot_id, char* thread_addr, char* mca_reg_addr[]) {
   char read_mca_reg_command[128];
 
   snprintf(read_mca_reg_command, sizeof(read_mca_reg_command), READ_MCA_REG_COMMAND, slot_id, thread_addr, mca_reg_addr[0], mca_reg_addr[1], mca_reg_addr[2], mca_reg_addr[3]);
-  system(read_mca_reg_command);
+  if (0 != system(read_mca_reg_command))
+  {
+      return -1;
+  }
 
   return 0;
 }
@@ -101,7 +103,10 @@ util_power_capping(uint8_t slot_id, uint32_t limitPower) {
 
   memcpy(limit_data, &limitPower, MAX_APML_DATA_LENGTH*sizeof(uint8_t));
   snprintf(power_capping_command, sizeof(power_capping_command), POWER_CAPPING_COMMAND, slot_id, limit_data[0], limit_data[1], limit_data[2], limit_data[3]);
-  system(power_capping_command);
+  if (0 != system(power_capping_command))
+  {
+      return -1;
+  }
 
   return 0;
 }
@@ -166,7 +171,7 @@ int parse_args(int argc, char *argv[]) {
         return -1;
         break;
     }
-  }  
+  }
 
   if (argc >= 4) {
     process_command(fru, (argc - 2), (argv + 2));
@@ -176,7 +181,7 @@ int parse_args(int argc, char *argv[]) {
 
   return 0;
 }
- 
+
 int
 main(int argc, char **argv) {
   int ret = 0;

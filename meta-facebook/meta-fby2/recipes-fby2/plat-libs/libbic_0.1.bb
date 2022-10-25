@@ -9,10 +9,10 @@ LIC_FILES_CHKSUM = "file://bic.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 
 SRC_URI = "file://bic \
           "
-LDFLAGS += " -lmisc-utils -lobmc-i2c -lgpio-ctrl -lcrypto"
+LDFLAGS += " -lmisc-utils -lobmc-i2c -lgpio-ctrl -lcrypto -lfby2_common"
 
 DEPENDS += "libmisc-utils libfby2-common libipmi libipmb libkv plat-utils libobmc-i2c libgpio-ctrl openssl "
-RDEPENDS:${PN} += " libmisc-utils libobmc-i2c libgpio-ctrl openssl "
+RDEPENDS:${PN} += " libmisc-utils libfby2-common libobmc-i2c libgpio-ctrl openssl "
 DEPENDS:append = " libmisc-utils libgpio-ctrl"
 
 S = "${WORKDIR}/bic"

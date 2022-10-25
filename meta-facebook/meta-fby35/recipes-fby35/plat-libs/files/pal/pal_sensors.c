@@ -2007,7 +2007,7 @@ read_cached_val(uint8_t snr_number, float *value) {
 
   switch (snr_number) {
     case BMC_SENSOR_FAN_PWR:
-        snr1_num = BMC_SENSOR_MEDUSA_VOUT;
+        snr1_num = BMC_SENSOR_P12V;
         snr2_num = BMC_SENSOR_FAN_IOUT;
       break;
     case BMC_SENSOR_NIC_PWR:

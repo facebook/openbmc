@@ -22,7 +22,7 @@ const auto HMC_UPDATE_SERVICE = HMC_URL + "UpdateService";
 const auto HMC_TASK_SERVICE = HMC_URL + "TaskService/Tasks/";
 const auto HMC_FW_INVENTORY = HMC_URL + "UpdateService/FirmwareInventory/";
 
-constexpr auto TIME_OUT = 2;
+constexpr auto TIME_OUT = 6;
 
 using nlohmann::json;
 

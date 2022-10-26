@@ -149,11 +149,12 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   int ret = -1;
   float val = 0;
   char hmc_version[256] = {0};
+  const int MAX_RETRY = 30;
   static int build_stage = NONE;
   static uint8_t retry = 0;
   static uint8_t snr_retry[HMC_SNR_CNT] = {0};
 
-  if (sensor_num == HMC_SNR_PWR_GB_HSC0 && build_stage == NONE && retry <= 10) {
+  if (sensor_num == HMC_SNR_PWR_GB_HSC0 && build_stage == NONE && retry <= MAX_RETRY) {
     retry++;
     if (get_hmc_ver("HMC_Firmware", hmc_version) == 0) {
       build_stage = EVT;

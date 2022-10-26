@@ -1,0 +1,90 @@
+{
+    "platform" : "sandia",
+    "comment" : " We reserve the \"comment\" key string used as comment line.
+                  with the intention of making this JSON file to be self-explained
+                  and easily to be tailored to different platforms, we add the
+                  general guidline in this comment.
+                  for configure specific item's comment, add the comment under that
+                  configure item.
+
+                  general guideline:
+                  1. the \"name\" string size must be less than 32 bytes.
+                  2. the \"val\" string size must be less than 132 bytes.
+                  3. if some config item is unsupported, or unappliable on the platform,
+                     remove this configure item.
+                ",
+
+
+
+    "configure" : [
+        {
+          "name" : "platform_board_id" ,
+          "type": "number",
+          "val" : 6
+        },
+        {
+          "name" : "eth_intf_name" ,
+          "type": "string",
+          "val" : "eth0.4088"
+        },
+        {
+          "name" : "frame_total_num" ,
+          "type": "number",
+          "val" : 3
+        },
+        {
+          "name" : "fw_inf" ,
+          "type": "number",
+          "val" : 0
+        },
+        {
+          "name" : "modify_sel_time" ,
+          "type": "boolean",
+          "val" : false
+        },
+        {
+          "name" : "server_power_i2c_dev_path",
+          "type": "string",
+          "val" : "/sys/bus/i2c/devices/12-0043/cpu_control"
+        },
+        {
+          "name" : "server_boot_order",
+          "type" : "kv-access",
+          "comment" : "for kv-access, the value can be composed in run time."
+        },
+        {
+          "name" : "poss_pcie_config",
+          "type" : "boolean",
+          "val" : true,
+          "comment" : "for OEM command: CMD_OEM_GET_POSS_PCIE_CONFIG"
+        },
+        {
+          "name" : "set_power_restore_policy",
+          "type" : "boolean",
+          "val" : false,
+          "comment" : "unsupported in sandia platform."
+        },
+        {
+          "name" : "chassis_control",
+          "type" : "boolean",
+          "val" : false,
+          "comment" : "unsupported in sandia platform."
+        },
+        {
+          "name" : "server_cpu_ppin",
+          "type" : "boolean",
+          "val" : true,
+          "comment" : "set server cpu ppin info. to KV"
+        },
+        {
+          "name" : "sysfw_ver_server",
+          "type" : "kv-access",
+          "comment" : "system firmware version server"
+        },
+        {
+          "name" : "max_slot_num" ,
+          "type": "number",
+          "val" : 1
+        }
+    ]
+}

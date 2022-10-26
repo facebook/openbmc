@@ -35,6 +35,8 @@
 #define FAN_15K_UNC  13000
 #define FAN_15K_UCR  17000
 
+#define BB_CPU_VDELTA_48V_UCR 41.8
+
 #define BB_HSC_SENSOR_CNT 7
 
 enum {
@@ -1077,7 +1079,7 @@ PAL_SENSOR_MAP sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC5
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC6
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0}, //0xC7
-//{                SensorName,      ID,     FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
+//{                      SensorName,      ID,     FUNCTION, PWR_STATUS, {   LNR,    LCR,   LNC,    UNC,    UCR,     UNR,  Pos, Neg}, Unit}
   {"BB_HSC_PEAK_OUTPUT_CURR_A"     , HSC_ID0, read_hsc_peak_iout,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, CURR}, //0xC8
   {"BB_HSC_PEAK_INPUT_PWR_W"       , HSC_ID0, read_hsc_peak_pin ,    0, {     0,      0,     0,      0,      0,       0,    0,   0}, POWER}, //0xC9
   {"BB_FAN_PWR_W"                  ,    0xCA, read_cached_val   , true, {     0,      0,     0,      0,201.465,  544.88,    0,   0}, POWER}, //0xCA
@@ -3087,6 +3089,30 @@ pal_medusa_hsc_threshold_init() {
   return 0;
 }
 
+static int
+pal_vpdb_threshold_init() {
+  static bool is_inited = false;
+  bool is_48v_medusa = false;
+  char hsc_type[MAX_VALUE_LEN] = {0};
+
+  if (is_inited == true) {
+    return 0;
+  }
+  if (kv_get("bb_hsc_conf", hsc_type, NULL, KV_FPERSIST) < 0) {
+    return -1;
+  } else {
+    // 12V medusa: LTC4282
+    // 48V medusa: ADM1272, LTC4287
+    is_48v_medusa = strncmp(hsc_type, "ltc4282", sizeof(hsc_type)) ? true : false;
+  }
+  if (is_48v_medusa == true) {
+    sensor_map[BMC_SENSOR_PDB_CL_VDELTA].snr_thresh.ucr_thresh = BB_CPU_VDELTA_48V_UCR;
+    sensor_map[BMC_SENSOR_PDB_BB_VDELTA].snr_thresh.ucr_thresh = BB_CPU_VDELTA_48V_UCR;
+  }
+  is_inited = true;
+  return 0;
+}
+
 int
 pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *value) {
   static bool is_fan_threshold_init = false;
@@ -3100,7 +3126,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     }
   }
   if (fru == FRU_BMC) {
-    if (pal_medusa_hsc_threshold_init() < 0) {
+    if ((pal_medusa_hsc_threshold_init() < 0) || (pal_vpdb_threshold_init() < 0)) {
       return -1;
     }
   }

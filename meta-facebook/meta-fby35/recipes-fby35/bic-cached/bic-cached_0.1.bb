@@ -5,36 +5,25 @@ DESCRIPTION = "Tool to provide Bridge IC Cache information."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
+LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0-or-later;md5=fed54355545ffd980b814dab4a3b312c"
+
+inherit meson pkgconfig
+inherit legacy-packages
 
 LOCAL_URI = " \
-    file://Makefile \
+    file://meson.build \
     file://setup-bic-cached.sh \
-    file://bic-cached.c \
+    file://bic-cached.cpp \
     "
 
-CFLAGS += " -Wall -Werror "
-LDFLAGS = "-lfby35_common -lbic -lpal"
-DEPENDS = "libipmi libipmb libfby35-common libbic libpal update-rc.d-native"
-RDEPENDS:${PN} = "libipmi libipmb libfby35-common libbic libpal bash"
-
-binfiles = "bic-cached"
+DEPENDS = " libfby35-common libbic libpal update-rc.d-native"
+RDEPENDS:${PN} = " libfby35-common libbic bash"
 
 pkgdir = "bic-cached"
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  install -m 755 bic-cached ${dst}/bic-cached
-  ln -snf ../fbpackages/${pkgdir}/bic-cached ${bin}/bic-cached
+do_install:append() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 setup-bic-cached.sh ${D}${sysconfdir}/init.d/setup-bic-cached.sh
+  install -m 755 ${S}/setup-bic-cached.sh ${D}${sysconfdir}/init.d/setup-bic-cached.sh
   update-rc.d -r ${D} setup-bic-cached.sh start 66 5 .
 }
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES:${PN} = "${FBPACKAGEDIR}/bic-cached ${prefix}/local/bin ${sysconfdir} "

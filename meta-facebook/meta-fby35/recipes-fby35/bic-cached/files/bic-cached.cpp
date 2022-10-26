@@ -245,7 +245,7 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
 
   FILE *fp1 = fopen(sdr_temp_path, "a");
   FILE *fp2 = fopen(sdr_path, "rb");
-  char c;
+  int c;
   int count = 0, filesize = 0;
 
   if (fp1 == NULL || fp2 == NULL) {
@@ -256,7 +256,7 @@ remote_sdr_cache_init(uint8_t slot_id, uint8_t intf) {
   filesize = ftell(fp2);
   rewind(fp2);
 
-  while ((c = fgetc(fp2)) != -1 && filesize != count) {
+  while ((c = fgetc(fp2)) != EOF && filesize != count) {
     fputc(c, fp1);
     count++;
   }

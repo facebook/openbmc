@@ -39,8 +39,6 @@
 #include <unistd.h>
 #include "cfg-parse.h"
 #include "common-handles.h"
-#include "fruid.h"
-#include "plat.h"
 #include "sel.h"
 
 #define MAX_REQUESTS 64
@@ -1333,54 +1331,6 @@ static void ipmi_handle_app(
 /*
  * Function(s) to handle IPMI messages with NetFn: Storage
  */
-static void storage_get_fruid_info(
-    unsigned char* request,
-    unsigned char* response,
-    unsigned char* res_len) {
-  ipmi_mn_req_t* req = (ipmi_mn_req_t*)request;
-  ipmi_res_t* res = (ipmi_res_t*)response;
-  unsigned char* data = &res->data[0];
-  int size = plat_fruid_size(req->payload_id);
-
-  res->cc = CC_SUCCESS;
-
-  *data++ = size & 0xFF; // FRUID size LSB
-  *data++ = (size >> 8) & 0xFF; // FRUID size MSB
-  *data++ = 0x00; // Device accessed by bytes
-
-  *res_len = data - &res->data[0];
-
-  return;
-}
-
-static void storage_get_fruid_data(
-    unsigned char* request,
-    unsigned char* response,
-    unsigned char* res_len) {
-  ipmi_mn_req_t* req = (ipmi_mn_req_t*)request;
-  ipmi_res_t* res = (ipmi_res_t*)response;
-  unsigned char* data = &res->data[0];
-
-  int fru_id = req->data[0];
-  int offset = req->data[1] + (req->data[2] << 8);
-  int count = req->data[3];
-
-  int ret =
-      plat_fruid_data(req->payload_id, fru_id, offset, count, &(res->data[1]));
-  if (ret) {
-    res->cc = CC_UNSPECIFIED_ERROR;
-  } else {
-    res->cc = CC_SUCCESS;
-    *data++ = count;
-    data += count;
-  }
-
-  if (res->cc == CC_SUCCESS) {
-    *(unsigned short*)res_len = data - &res->data[0];
-  }
-  return;
-}
-
 static void storage_get_sel_info(
     unsigned char* request,
     unsigned char* response,
@@ -1598,12 +1548,6 @@ static void ipmi_handle_storage(
 
   pthread_mutex_lock(&m_storage);
   switch (cmd) {
-    case CMD_STORAGE_GET_FRUID_INFO:
-      storage_get_fruid_info(request, response, res_len);
-      break;
-    case CMD_STORAGE_READ_FRUID_DATA:
-      storage_get_fruid_data(request, response, res_len);
-      break;
     case CMD_STORAGE_GET_SEL_INFO:
       storage_get_sel_info(request, response, res_len);
       break;
@@ -4393,8 +4337,6 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  set_plat_funcs();
-  plat_fruid_init();
   plat_lan_init(&g_lan_config);
   sel_init();
 

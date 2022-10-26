@@ -16,6 +16,7 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   weutil-dhcp-id \
+  ipmi-lite   \
   "
 
 # Add vboot-utils

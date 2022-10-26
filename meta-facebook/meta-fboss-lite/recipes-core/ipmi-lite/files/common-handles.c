@@ -28,7 +28,6 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include "cfg-parse.h"
-#include "plat.h"
 
 struct threadinfo {
   uint8_t is_running;
@@ -2058,7 +2057,7 @@ int ipmi_get_server_power(uint8_t slot_id, uint8_t* status) {
     return 0;
   }
 
-  if (!strcmp(sysfs_value, ELBERT_SCM_PWR_ON)) {
+  if (!strcmp(sysfs_value, SCM_PWR_ON)) {
     *status = SERVER_POWER_ON;
   } else {
     *status = SERVER_POWER_OFF;

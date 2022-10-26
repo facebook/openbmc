@@ -21,7 +21,6 @@
 #include <stdint.h>
 #include <string.h>
 #include "common-handles.h"
-#include "plat.h"
 
 #define PLAT_CFG_FILE "/usr/local/fbpackages/ipmid/config.json"
 

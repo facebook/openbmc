@@ -15,16 +15,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-inherit meson systemd 
+inherit meson systemd
+inherit pkgconfig
 
-SUMMARY = "IPMI Daemon"
+SUMMARY = "IPMI Lite Daemon"
 DESCRIPTION = "Daemon to handle IPMI Messages."
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://ipmid.c;beginline=8;endline=20;md5=7783b537a8ff52cf362d3cdb4bb0f6e2"
 
-LDFLAGS += " -lkv -lfruid -lipc -llog"
+LDFLAGS += " -lkv -lipc -llog"
 CFLAGS += "-Wall -Werror -pthread"
 
 LOCAL_URI = " \
@@ -34,8 +35,6 @@ LOCAL_URI = " \
     file://timestamp.c \
     file://sel.h \
     file://sel.c \
-    file://fruid.h \
-    file://fruid.c \
     file://lan.c \
     file://run-ipmid.sh \
     file://setup-ipmid.sh \
@@ -82,8 +81,8 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 FILES:${PN} = "${FBPACKAGEDIR}/ipmid ${prefix}/local/bin ${sysconfdir} "
 
 LDFLAGS += " -lm  -lobmc-i2c "
-DEPENDS += " cjson libkv libfruid libipc libobmc-i2c libipmi libipmb libfruid update-rc.d-native"
-RDEPENDS:${PN} += " cjson libfruid libipc libkv libipmi libipmb libfruid libobmc-i2c liblog "
+DEPENDS += " cjson libkv libipc libobmc-i2c libipmi update-rc.d-native"
+RDEPENDS:${PN} += " cjson libipc libkv libipmi libobmc-i2c liblog "
 
 binfiles = "ipmid"
 pkgdir = "ipmid"

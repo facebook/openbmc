@@ -29,6 +29,11 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#define MAX_READ_RETRY 5
+#define SCM_PWR_ON "0x1"
+#define MAX_NODES 1
+#define MAX_NUM_SLOTS 1
+#define LARGEST_DEVICE_NAME 128
 #define MAX_ETH_IF_SIZE 16
 #define MAX_NUM_SLOT 1
 
@@ -229,6 +234,29 @@ enum {
   BIC_SENSOR_POWER_ERR = 0x56, // Event-only
   BIC_SENSOR_MEM_ECC_ERR = 0x63, // Event-only
   BIC_SENSOR_CAT_ERR = 0xEB, // Event-only
+};
+
+enum {
+  FRU_ALL = 0,
+  FRU_SCM = 1,
+  FRU_SMB = 2,
+  FRU_PIM2 = 3,
+  FRU_PIM3 = 4,
+  FRU_PIM4 = 5,
+  FRU_PIM5 = 6,
+  FRU_PIM6 = 7,
+  FRU_PIM7 = 8,
+  FRU_PIM8 = 9,
+  FRU_PIM9 = 10,
+  FRU_PSU1 = 11,
+  FRU_PSU2 = 12,
+  FRU_PSU3 = 13,
+  FRU_PSU4 = 14,
+  FRU_FAN = 15,
+  MAX_NUM_FRUS = 15,
+  FRU_CHASSIS = 16,
+  FRU_BMC = 17,
+  FRU_SMB_EXTRA = 18,
 };
 
 typedef int (*_get_plat_guid)(uint8_t, char*);

@@ -1,4 +1,4 @@
 libs += [
-  cc.find_library('bic'),
+  dependency('libbic'),
   cc.find_library('fby35_common'),
 ]

@@ -2,7 +2,10 @@ project('libbic',
     'c', 'cpp',
     version: '0.1',
     license: 'LGPL2',
-    default_options: ['werror=true'],
+    default_options: [
+        'warning_level=3',
+        'werror=true',
+    ],
     meson_version: '>=0.40')
 
 cc = meson.get_compiler('cpp')

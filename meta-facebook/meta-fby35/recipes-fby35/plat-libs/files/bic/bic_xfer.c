@@ -95,7 +95,7 @@ int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount)
   return BIC_STATUS_SUCCESS;
 }
 
-int is_bic_ready(uint8_t slot_id, uint8_t intf) {
+int is_bic_ready(uint8_t slot_id, uint8_t intf __attribute__((unused))) {
   int ret;
   uint8_t bic_ready = 0;
 
@@ -370,7 +370,7 @@ send_image_data_via_bic(uint8_t slot_id, uint8_t comp, uint8_t intf, uint32_t of
 }
 
 int
-open_and_get_size(char *path, int *file_size) {
+open_and_get_size(char *path, size_t *file_size) {
   struct stat finfo;
   int fd;
 

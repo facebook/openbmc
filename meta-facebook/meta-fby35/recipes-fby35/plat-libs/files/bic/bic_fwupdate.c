@@ -161,7 +161,7 @@ static void print_data(const char *name, uint8_t netfn, uint8_t cmd, uint8_t *bu
 #endif
 
 static int
-update_bic(uint8_t slot_id, int fd, int file_size, uint8_t intf) {
+update_bic(uint8_t slot_id, int fd, size_t file_size, uint8_t intf) {
   struct timeval start, end;
   int update_rc = -1, cmd_rc = 0;
   uint32_t dsize, last_offset;
@@ -276,14 +276,14 @@ is_valid_intf(uint8_t intf) {
 }
 
 static int
-update_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
+update_bic_runtime_fw(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t intf, char *path, uint8_t force __attribute__((unused))) {
   #define MAX_CMD_LEN 120
   #define MAX_RETRY 10
   char cmd[MAX_CMD_LEN] = {0};
   uint8_t self_test_result[2] = {0};
   int ret = -1;
   int fd = -1;
-  int file_size;
+  size_t file_size;
 
   //check params
   ret = is_valid_intf(intf);
@@ -342,7 +342,8 @@ exit:
 
 static int
 recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
-  int ret = -1, file_size = -1;
+  int ret = -1;
+  size_t file_size = 0;
   int fd = -1, i2cfd = -1, ttyfd = -1;
   bool set_strap = false;
   uint8_t bus, addr;
@@ -474,10 +475,10 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
     }
 
     printf("Doing the recovery update...\n");
-    int r_b = 0;
+    size_t r_b = 0;
     if (write(ttyfd, &file_size, sizeof(int32_t)) == sizeof(int32_t)) {
-      int dsize = file_size/100;
-      int last_offset = 0;
+      size_t dsize = file_size/100;
+      size_t last_offset = 0;
       int w_b, rc, wc;
       for (r_b = 0; r_b < file_size;) {
         rc = read(fd, buf, sizeof(buf));
@@ -703,7 +704,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
   int i = 0;
   char fdstr[32] = {0};
   bool fd_opened = false;
-  int origin_len = 0;
+  size_t origin_len = 0;
   char origin_path[128] = {0};
 
   if (path == NULL) {

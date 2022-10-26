@@ -258,13 +258,13 @@ Max10_erase_sector(uint8_t slot_id, SectorType_t secType, uint8_t intf) {
   int done = 0;
 
   //Control register bit 20~22
-  enum{
-    Sector_erase_CFM0   = 0b101 << 20,
-    Sector_erase_CFM1   = 0b100 << 20,
-    Sector_erase_CFM2   = 0b011 << 20,
-    Sector_erase_UFM0   = 0b010 << 20,
-    Sector_erase_UFM1   = 0b001 << 20,
-    Sector_erase_NotSet = 0b111 << 20,
+  enum {
+    Sector_erase_CFM0   = 0x05 /*0b101*/ << 20,
+    Sector_erase_CFM1   = 0x04 /*0b100*/ << 20,
+    Sector_erase_CFM2   = 0x03 /*0b011*/ << 20,
+    Sector_erase_UFM0   = 0x02 /*0b010*/ << 20,
+    Sector_erase_UFM1   = 0x01 /*0b001*/ << 20,
+    Sector_erase_NotSet = 0x07 /*0b111*/ << 20,
   };
 
   value = read_register(slot_id, ON_CHIP_FLASH_IP_CSR_CTRL_REG, intf);
@@ -373,14 +373,14 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   uint8_t *rpd_file = NULL;
   uint8_t buf[256] = {0};
   const uint8_t target = UPDATE_CPLD;
-  const uint16_t read_count = 128;
-  uint32_t offset = 0, last_offset = 0, dsize = 0;
+  const size_t read_count = 128;
+  size_t offset = 0, last_offset = 0, dsize = 0;
   struct stat finfo;
   struct timeval start, end;
   int ret = 0;
   int fd = 0;
   int rpd_filesize = 0;
-  int read_bytes = 0;
+  ssize_t read_bytes = 0;
 
   //Two BMCs are designed in Config C.
   //They can access the CPLD of the baseboard at the same time.
@@ -419,6 +419,10 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
   }
 
   read_bytes = read(fd, rpd_file, rpd_filesize);
+  if (read_bytes < 0) {
+    printf("Failed to read.\n");
+    goto error_exit;
+  }
   printf("read %d bytes.\n", read_bytes);
 
 
@@ -465,7 +469,7 @@ update_bic_cpld_altera(uint8_t slot_id, char *image, uint8_t intf, uint8_t force
     }
 
     //if all data are sent, break it.
-    if ( offset == read_bytes ) break;
+    if ( offset == (size_t)read_bytes ) break;
   }
 
   //step 5 - protect sectors

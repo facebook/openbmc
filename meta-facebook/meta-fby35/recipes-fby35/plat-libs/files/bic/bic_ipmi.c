@@ -226,7 +226,7 @@ bic_get_self_test_result(uint8_t slot_id, uint8_t *self_test_result, uint8_t int
 // Storage - Get FRUID info
 // Netfn: 0x0A, Cmd: 0x10
 int
-bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id, ipmi_fruid_info_t *info, uint8_t intf) {
+bic_get_fruid_info(uint8_t slot_id, uint8_t fru_id __attribute__((unused)), ipmi_fruid_info_t *info, uint8_t intf) {
   uint8_t rlen = 0;
   uint8_t fruid = 0;
   return bic_ipmb_send(slot_id, NETFN_STORAGE_REQ, CMD_STORAGE_GET_FRUID_INFO, &fruid, 1, (uint8_t *) info, &rlen, intf);
@@ -823,7 +823,7 @@ bic_get_80port_record(uint8_t slot_id, uint8_t *rbuf, uint8_t *rlen, uint8_t int
 
 // Custom Command for getting cpld version
 int
-bic_get_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+bic_get_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
@@ -878,7 +878,7 @@ bic_get_vr_device_id(uint8_t slot_id, uint8_t *devid, uint8_t *id_len, uint8_t b
 }
 
 int
-bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
+bic_get_exp_cpld_ver(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t *ver, uint8_t bus, uint8_t addr, uint8_t intf) {
   uint8_t tbuf[32] = {0};
   uint8_t rbuf[4] = {0};
   uint8_t tlen = 0;
@@ -1943,7 +1943,7 @@ bic_get_mb_index(uint8_t *index) {
 
 // For class 2 system, bypass command to another slot BMC
 int
-bic_bypass_to_another_bmc(uint8_t* data, uint8_t len) {
+bic_bypass_to_another_bmc(uint8_t* data, size_t len) {
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
@@ -2122,7 +2122,7 @@ bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_
   uint8_t tbuf[4] = {0};
   uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
   uint8_t rlen = 0;
-  int totol_length = 0;
+  size_t totol_length = 0;
 
   memcpy(tbuf, (uint8_t *)&IANA_ID, IANA_ID_SIZE);
 

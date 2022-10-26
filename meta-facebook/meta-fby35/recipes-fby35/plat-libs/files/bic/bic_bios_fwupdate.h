@@ -41,7 +41,7 @@ typedef struct {
   uint8_t target;
   uint32_t offset;
   uint16_t length;
-  uint8_t data[0];
+  uint8_t data[];
 } __attribute__((packed)) bic_usb_packet;
 #define USB_PKT_HDR_SIZE (sizeof(bic_usb_packet))
 
@@ -66,7 +66,7 @@ typedef struct {
   uint8_t cmd;
   uint8_t cc;
   uint8_t iana[3];
-  uint8_t data[0];
+  uint8_t data[];
 } __attribute__((packed)) bic_usb_dump_res_packet;
 
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct {
   uint32_t offset;
   uint16_t length;
   uint32_t image_size;
-  uint8_t data[0];
+  uint8_t data[];
 } __attribute__((packed)) bic_usb_ext_packet;
 #define USB_PKT_EXT_HDR_SIZE (sizeof(bic_usb_ext_packet))
 

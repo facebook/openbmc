@@ -117,7 +117,7 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
   uint8_t tbuf[DEV_UPDATE_BATCH_SIZE+DEV_UPDATE_IPMI_HEAD_SIZE+2] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
- 
+
   if ( bic_mux_select(slot_id, bus, comp, intf) < 0 ) {
     printf("* Failed to select MUX\n");
     return BIC_STATUS_FAILURE;
@@ -183,12 +183,12 @@ bic_sph_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_s
     }
   }
 
-  printf("* Please do the power-cycle to take it affect!\n"); 
+  printf("* Please do the power-cycle to take it affect!\n");
   return BIC_STATUS_SUCCESS;
 }
 
 int
-_update_brcm_fw(uint8_t slot_id, uint8_t bus, uint8_t target, uint32_t offset, uint16_t count, uint8_t * buf) {
+_update_brcm_fw(uint8_t slot_id, uint8_t bus, uint8_t target __attribute__((unused)), uint32_t offset, uint16_t count, uint8_t * buf) {
   uint8_t wbuf[256], rbuf[256];
   int ret = 0;
   int rlen = 0; // write
@@ -282,7 +282,7 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
   printf("updating fw on slot %d device %d:\n", slot_id,comp-FW_2OU_M2_DEV0);
 
   uint32_t dsize, last_offset;
-  
+
   if (file_size/100 < 100)
     dsize = file_size;
   else
@@ -430,10 +430,10 @@ bic_vk_m2_update(uint8_t slot_id, uint8_t bus, uint8_t comp, int fd, int file_si
 }
 
 
-int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, uint8_t type) {
+int update_bic_m2_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force __attribute__((unused)), uint8_t type) {
   int fd = 0;
   int ret = 0;
-  int file_size = 0;
+  size_t file_size = 0;
   uint8_t bus = get_gpv3_bus_number(comp);
 
   //open fd and get size

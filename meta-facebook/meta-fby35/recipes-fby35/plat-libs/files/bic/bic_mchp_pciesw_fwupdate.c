@@ -51,7 +51,7 @@ static int _update_mchp(uint8_t slot_id, uint8_t type, uint8_t intf, bool is_usb
 static int
 _check_image(char *image, uint8_t *type) {
   int ret = BIC_STATUS_FAILURE;
-  int file_size = 0;
+  size_t file_size = 0;
   int fd = open_and_get_size(image, &file_size);
 
   // check file size
@@ -73,8 +73,10 @@ _check_image(char *image, uint8_t *type) {
     case (PESW_PARTMAP-1):
       printf("WARN: When the partmap image is applied, all images in PCIe switch will be invalidated!!\n");
       temp = PESW_PARTMAP;
+      break;
     case PESW_BOOTLOADER2:
       if ( strstr(image, "rcvry") != NULL ) temp = PESW_BOOTLOADER_RCVRY;
+      break;
     case PESW_CFG:
     case PESW_MAIN:
       *type |= 0x1 << temp;
@@ -188,7 +190,7 @@ _switch_i2c_mux_to_pesw(uint8_t slot_id, uint8_t intf) {
 }
 
 static int
-_check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvry, char *expected_sts) {
+_check_pesw_status(uint8_t slot_id, uint8_t intf, uint8_t sel_sts, bool run_rcvry, char *expected_sts __attribute__((unused))) {
   int ret = BIC_STATUS_SUCCESS;
   uint8_t tbuf[4] = {0x0};
   uint8_t rbuf[16] = {0};
@@ -374,11 +376,11 @@ _poll_pcie_sw_update_status(uint8_t slot_id) {
 
 #define MAX_FW_PCIE_SWITCH_BLOCK_SIZE 1008
 #define PCIE_FW_IDX 0x05
-int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force) {
+int update_bic_mchp_pcie_fw(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf __attribute__((unused)), uint8_t force __attribute__((unused))) {
 #define LAST_FW_PCIE_SWITCH_TRUNK_SIZE (MAX_FW_PCIE_SWITCH_BLOCK_SIZE%224)
   int fd = 0;
   int ret = BIC_STATUS_FAILURE;
-  int file_size = 0;
+  size_t file_size = 0;
 
   //open fd and get size
   fd = open_and_get_size(image, &file_size);
@@ -490,7 +492,7 @@ int
 bic_update_pesw_fw_usb(uint8_t slot_id, char *image_file, usb_dev* udev, char *comp_name) {
   int ret = BIC_STATUS_FAILURE;
   int fd = -1;
-  int file_size = 0;
+  size_t file_size = 0;
   uint8_t *buf = NULL;
 
   fd = open_and_get_size(image_file, &file_size);
@@ -771,7 +773,7 @@ error_exit:
   return ret;
 }
 
-int update_bic_mchp(uint8_t slot_id, uint8_t comp, char *image, uint8_t intf, uint8_t force, bool is_usb) {
+int update_bic_mchp(uint8_t slot_id, uint8_t comp __attribute__((unused)), char *image, uint8_t intf, uint8_t force __attribute((unused)), bool is_usb) {
   int ret = BIC_STATUS_FAILURE;
   uint8_t type = 0;
 

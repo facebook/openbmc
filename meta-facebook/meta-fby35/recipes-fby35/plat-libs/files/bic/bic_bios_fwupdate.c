@@ -83,7 +83,7 @@ bic_send:
 }
 
 static int
-check_bios_image(uint8_t slot_id, int fd, long size) {
+check_bios_image(uint8_t slot_id __attribute__((unused)), int fd, long size) {
   int offs, rcnt, end;
   uint8_t *buf;
   uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
@@ -285,13 +285,13 @@ int
 update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
   struct timeval start, end;
   int ret = -1, rc;
-  uint32_t offset, shift_offset = 0;
+  size_t offset, shift_offset = 0;
   volatile uint16_t read_count;
   uint8_t buf[256] = {0};
   uint8_t target;
   ssize_t count;
   int fd;
-  int i;
+  size_t i;
   int remain = 0;
   unsigned char buff[1];
 

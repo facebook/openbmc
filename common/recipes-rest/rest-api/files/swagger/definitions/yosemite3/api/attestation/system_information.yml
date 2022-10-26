@@ -211,7 +211,7 @@ paths:
                         type: boolean
                   system_info: 
                     type: object
-                    additionalProperties: false
+                    additionalProperties: true
                     properties: 
                       agent_version: 
                         type: string

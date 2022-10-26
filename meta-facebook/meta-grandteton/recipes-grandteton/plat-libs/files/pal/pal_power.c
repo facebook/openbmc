@@ -202,7 +202,7 @@ int set_me_entry_into_recovery(void) {
 int pal_sled_cycle(void) {
   uint8_t id;
 
-  if(get_comp_source(FRU_MB, VPDB_HSC_SOURCE, &id ))
+  if(get_comp_source(FRU_PDBV, VPDB_HSC_SOURCE, &id ))
     return -1;
 
   //Send Command to VPDB

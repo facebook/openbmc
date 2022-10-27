@@ -80,8 +80,6 @@ size_t server_fru_cnt = NUM_SERVER_FRU;
 size_t nic_fru_cnt  = NUM_NIC_FRU;
 size_t bmc_fru_cnt  = NUM_BMC_FRU;
 
-#define SYSFW_VER "sysfw_ver_slot"
-#define SYSFW_VER_STR SYSFW_VER "%d"
 #define BOOR_ORDER_STR "slot%d_boot_order"
 #define SEL_ERROR_STR  "slot%d_sel_error"
 #define SNR_HEALTH_STR "slot%d_sensor_health"
@@ -165,10 +163,10 @@ struct pal_key_cfg {
   int (*function)(int, void*);
 } key_cfg[] = {
   /* name, default value, function */
-  {SYSFW_VER "1", "0", NULL},
-  {SYSFW_VER "2", "0", NULL},
-  {SYSFW_VER "3", "0", NULL},
-  {SYSFW_VER "4", "0", NULL},
+  {"fru1_sysfw_ver", "0", NULL},
+  {"fru2_sysfw_ver", "0", NULL},
+  {"fru3_sysfw_ver", "0", NULL},
+  {"fru4_sysfw_ver", "0", NULL},
   {"pwr_server1_last_state", "on", key_func_pwr_last_state},
   {"pwr_server2_last_state", "on", key_func_pwr_last_state},
   {"pwr_server3_last_state", "on", key_func_pwr_last_state},
@@ -1052,22 +1050,6 @@ pal_is_fw_update_ongoing(uint8_t fruid) {
   return false;
 }
 
-int
-pal_set_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  char key[MAX_KEY_LEN] = {0};
-  char str[MAX_VALUE_LEN] = {0};
-  char tstr[10] = {0};
-
-  sprintf(key, SYSFW_VER_STR, (int) slot);
-  for (i = 0; i < SIZE_SYSFW_VER; i++) {
-    sprintf(tstr, "%02x", ver[i]);
-    strcat(str, tstr);
-  }
-
-  return pal_set_key_value(key, str);
-}
-
 void
 pal_update_ts_sled()
 {
@@ -1574,6 +1556,7 @@ pal_is_bmc_por(void) {
 int
 pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
   int ret = 0;
+  int i, offs = 0;
   uint8_t bios_post_complete = 0;
   bic_gpio_t gpio = {0};
 
@@ -1601,9 +1584,20 @@ pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
   }
 
   // Set BIOS firmware version to key: sysfw_ver_server
-  if (pal_set_sysfw_ver(slot_id, ver) < 0) {
-    syslog(LOG_WARNING, "%s() failed to set key value of system firmware version", __func__);
-    return -1;
+  for (i = 0; i < BLK_SYSFW_VER; i++) {
+    if (pal_set_sysfw_ver(slot_id, &ver[offs]) < 0) {
+      syslog(LOG_WARNING, "%s() failed to set key value of system firmware version", __func__);
+      return -1;
+    }
+    offs += SIZE_SYSFW_VER;
+
+    if (ver[2] <= (14 + 16*i)) {  // data length of 1st block: 14
+      i++;                        //                2nd block: 16
+      break;
+    }
+  }
+  for (; i < BLK_SYSFW_VER; i++, offs += SIZE_SYSFW_VER) {
+    memset(&ver[offs], 0, SIZE_SYSFW_VER);
   }
 
   return ret;
@@ -1611,32 +1605,33 @@ pal_get_sysfw_ver_from_bic(uint8_t slot_id, uint8_t *ver) {
 
 int
 pal_get_sysfw_ver(uint8_t slot, uint8_t *ver) {
-  int i;
-  int j = 0;
-  int ret = 0;
-  char key[MAX_KEY_LEN] = {0};
+  int blk, i, j = 0;
+  char key[MAX_KEY_LEN];
   char str[MAX_VALUE_LEN] = {0};
-  char tstr[4] = {0};
+  char *pstr, tstr[8] = {0};
 
-  sprintf(key, SYSFW_VER_STR, (int) slot);
-  ret = pal_get_key_value(key, str);
-  if (ret) {
-    syslog(LOG_WARNING, "%s() Failed to run pal_get_key_value. key:%s", __func__, key);
-    ret = PAL_ENOTSUP;
-    goto error_exit;
+  sprintf(key, "fru%u_sysfw_ver", slot);
+  if (kv_get(key, str, NULL, KV_FPERSIST)) {
+    memset(ver, 0, SIZE_SYSFW_VER);
+    return -1;
   }
 
   if (strcmp(str, "0") == 0) {
     return pal_get_sysfw_ver_from_bic(slot, ver);
   }
 
-  for (i = 0; i < 2*SIZE_SYSFW_VER; i += 2) {
-    sprintf(tstr, "%c%c\n", str[i], str[i+1]);
-    ver[j++] = strtol(tstr, NULL, 16);
+  for (blk = 0; blk < BLK_SYSFW_VER; blk++) {
+    pstr = str + blk * SIZE_SYSFW_VER*2;
+    for (i = 0; i < SIZE_SYSFW_VER*2; i += 2) {
+      if (blk > 0 && i == 0) {
+        continue;
+      }
+      memcpy(tstr, &pstr[i], 2);
+      ver[j++] = strtoul(tstr, NULL, 16);
+    }
   }
 
-error_exit:
-  return ret;
+  return PAL_EOK;
 }
 
 int

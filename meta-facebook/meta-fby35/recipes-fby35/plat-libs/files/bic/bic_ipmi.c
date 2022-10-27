@@ -2209,7 +2209,12 @@ bic_get_sys_fw_ver(uint8_t slot_id, uint8_t *ver) {
     return -1;
   }
 
-  memcpy(ver, &rbuf[IANA_ID_SIZE], SIZE_SYSFW_VER);
+  if ((rlen < (IANA_ID_SIZE + SIZE_SYSFW_VER)) ||
+      (rlen > (IANA_ID_SIZE + SIZE_SYSFW_VER*BLK_SYSFW_VER))) {
+    syslog(LOG_WARNING, "%s: invalid rlen %u at slot%d", __func__, rlen, slot_id);
+    return -1;
+  }
+  memcpy(ver, &rbuf[IANA_ID_SIZE], rlen - IANA_ID_SIZE);
 
   return ret;
 }

@@ -182,7 +182,7 @@ int BiosComponent::dump(string image) {
 }
 
 int BiosComponent::get_ver_str(string& s) {
-  uint8_t ver[32] = {0};
+  uint8_t ver[64] = {0};
   uint8_t fruid = 0;
   int ret = 0;
 

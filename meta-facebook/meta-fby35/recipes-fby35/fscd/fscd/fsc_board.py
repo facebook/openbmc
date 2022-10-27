@@ -28,7 +28,7 @@ fan_mode = {"normal_mode": 0, "trans_mode": 1, "boost_mode": 2, "progressive_mod
 get_fan_mode_scenario_list = ["one_fan_failure", "sensor_hit_UCR"]
 
 lpal_hndl = CDLL("libpal.so.0")
-lbic_hndl = CDLL("libbic.so")
+lbic_hndl = CDLL("libbic.so.0")
 
 GPIO_FM_BIOS_POST_CMPLT_BMC_N = 1
 

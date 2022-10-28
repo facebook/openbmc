@@ -22,30 +22,14 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://wdtcli.c;beginline=7;endline=19;md5=da35978751a9d71b73679307c4d296ec"
 
+inherit meson pkgconfig
+inherit legacy-packages
+
 LOCAL_URI = " \
-    file://Makefile \
+    file://meson.build \
     file://wdtcli.c \
     "
 
 pkgdir = "wdtcli"
-binfiles = "wdtcli \
-           "
 
-CFLAGS += "-Wall -Werror "
-LDFLAGS += " -lwatchdog"
-RDEPENDS:${PN} += " libwatchdog"
 DEPENDS:append = " libwatchdog"
-
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  for f in ${binfiles}; do
-    install -m 755 $f ${dst}/$f
-    ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
-}
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-FILES:${PN} = "${FBPACKAGEDIR}/wdtcli ${prefix}/local/bin"

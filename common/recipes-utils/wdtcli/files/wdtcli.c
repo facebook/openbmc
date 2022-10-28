@@ -29,16 +29,20 @@
 #include <limits.h>
 #include <openbmc/watchdog.h>
 
+#ifndef UNUSED
+#define UNUSED __attribute__((unused))
+#endif
+
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #endif /* ARRAY_SIZE */
 
-#define WDT_ERROR(fmt, args...)	fprintf(stderr, fmt, ##args)
-#define WDT_INFO(fmt, args...)	fprintf(stdout, fmt, ##args)
-#define WDT_VERBOSE(fmt, args...)		\
+#define WDT_ERROR(...)	fprintf(stderr, __VA_ARGS__)
+#define WDT_INFO(...)	fprintf(stdout, __VA_ARGS__)
+#define WDT_VERBOSE(...)		\
 	do {					\
 		if (verbose_logging) {		\
-			printf(fmt, ##args);	\
+			printf(__VA_ARGS__); \
 		}				\
 	} while (0)
 
@@ -50,17 +54,17 @@ typedef struct wdtcli_cmd_info {
 
 static int verbose_logging;
 
-static int wdtcli_start_watchdog(wdtcli_cmd_t *info, int argc, char **argv)
+static int wdtcli_start_watchdog(wdtcli_cmd_t *info UNUSED, int argc UNUSED, char **argv UNUSED)
 {
 	return start_watchdog();
 }
 
-static int wdtcli_stop_watchdog(wdtcli_cmd_t *info, int argc, char **argv)
+static int wdtcli_stop_watchdog(wdtcli_cmd_t *info UNUSED, int argc UNUSED, char **argv UNUSED)
 {
 	return stop_watchdog();
 }
 
-static int wdtcli_kick_watchdog(wdtcli_cmd_t *info, int argc, char **argv)
+static int wdtcli_kick_watchdog(wdtcli_cmd_t *info UNUSED, int argc UNUSED, char **argv UNUSED)
 {
 	return kick_watchdog();
 }
@@ -88,7 +92,7 @@ static int wdtcli_set_timeout(wdtcli_cmd_t *info, int argc, char **argv)
 	return watchdog_set_timeout((unsigned int)timeout);
 }
 
-static int wdtcli_get_timeout(wdtcli_cmd_t *info, int argc, char **argv)
+static int wdtcli_get_timeout(wdtcli_cmd_t *info UNUSED, int argc UNUSED, char **argv UNUSED)
 {
 	int ret;
 	unsigned int timeout;
@@ -164,7 +168,7 @@ wdtcli_match_cmd(const char *cmd)
 
 static void wdtcli_usage(const char *prog_name)
 {
-	int i;
+	size_t i;
 	struct {
 		char *opt;
 		char *desc;

@@ -30,6 +30,12 @@ do_install:append() {
     echo "" >> ${D}${sysconfdir}/dhcpcd.conf
     echo "# No IPv4LL address" >> ${D}${sysconfdir}/dhcpcd.conf
     echo "noipv4ll" >> ${D}${sysconfdir}/dhcpcd.conf
+
+    # Disable routing solicitation from dhcpcd
+    # Linux kernel default enable accept_ra
+    echo "" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "# Disable routing solicitation" >> ${D}${sysconfdir}/dhcpcd.conf
+    echo "noipv6rs" >> ${D}${sysconfdir}/dhcpcd.conf
 }
 
 do_install:append:mf-ncsi() {

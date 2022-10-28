@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -198,13 +199,11 @@ gpiochip_lookup_by_label() {
     local input_label=${1}
     local label entry
 
-    for entry in `ls ${GPIODIR}`; do
-        if [[ ${entry} == gpiochip* ]]; then
-            label=`cat ${GPIODIR}/${entry}/label`
-            if [ ${label} = ${input_label} ]; then
-                echo ${entry}
-                return
-            fi
+    for entry in "${GPIODIR}"/gpiochip* ; do
+        label=$(cat "${entry}/label")
+        if [ "${label}" = "${input_label}" ]; then
+            basename "$entry"
+            return
         fi
     done
 }
@@ -218,13 +217,11 @@ gpiochip_lookup_by_i2c_path() {
     local i2c_path=${1}
     local entry link_path
 
-    for entry in `ls ${GPIODIR}`; do
-        if [[ ${entry} == gpiochip* ]]; then
-            link_path=$(readlink -f ${GPIODIR}/${entry} 2>/dev/null)
-            if [[ ${link_path} == *i2c*/${i2c_path}/* ]]; then
-                echo ${entry}
-                return
-            fi
+    for entry in "${GPIODIR}"/gpiochip* ; do
+        link_path=$(readlink -f "$entry" 2>/dev/null)
+        if [[ ${link_path} == *i2c*/${i2c_path}/* ]]; then
+            basename "$entry"
+            return
         fi
     done
 }

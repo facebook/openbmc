@@ -11,9 +11,9 @@ pal_sources += [
 
 pal_deps += [
     cc.find_library('fby35_common'),
-    cc.find_library('fby35_fruid'),
     cc.find_library('sensor-correction'),
     dependency('libbic'),
+    dependency('libfby35-fruid'),
     dependency('libgpio-ctrl'),
     dependency('libmisc-utils'),
     dependency('libncsi'),

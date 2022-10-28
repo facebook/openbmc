@@ -26,16 +26,7 @@ DEPENDS += " \
 # These shouldn't be needed but are because we aren't properly versioning the
 # shared libraries contained in these recipes.
 RDEPENDS:${PN} += " \
-    libbic \
     libfby35-common \
-    libfby35-fruid \
-    libgpio-ctrl \
-    libncsi \
-    libnl-wrapper \
-    libobmc-i2c \
-    libobmc-sensors \
-    libsensor-correction \
-    libmisc-utils \
     "
 
 CFLAGS += " -Wall -Werror "

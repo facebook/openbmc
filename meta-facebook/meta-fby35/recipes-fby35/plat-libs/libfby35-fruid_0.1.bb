@@ -22,32 +22,10 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fby35_fruid.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-
-SRC_URI = "file://fby35_fruid \
-          "
-
-SOURCES = "fby35_fruid.c"
-HEADERS = "fby35_fruid.h"
-
-CFLAGS += " -Wall -Werror -fPIC "
-LDFLAGS = "-lfby35_common"
-DEPENDS += "libfby35-common"
-RDEPENDS:${PN} += "libfby35-common"
-
+SRC_URI = "file://fby35_fruid"
 S = "${WORKDIR}/fby35_fruid"
 
-do_compile() {
-  make SOURCES="${SOURCES}" HEADERS="${HEADERS}"
-}
+inherit meson pkgconfig
 
-do_install() {
-  install -d ${D}${libdir}
-  install -m 0644 libfby35_fruid.so ${D}${libdir}/libfby35_fruid.so
-
-  install -d ${D}${includedir}
-  install -d ${D}${includedir}/facebook
-  install -m 0644 fby35_fruid.h ${D}${includedir}/facebook/fby35_fruid.h
-}
-
-FILES:${PN} = "${libdir}/libfby35_fruid.so"
-FILES:${PN}-dev = "${includedir}/facebook/fby35_fruid.h"
+DEPENDS += "libfby35-common"
+RDEPENDS:${PN} += "libfby35-common"

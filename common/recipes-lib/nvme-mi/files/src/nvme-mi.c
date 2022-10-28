@@ -896,7 +896,7 @@ nvme_serial_num_read_decode(const char *i2c_bus_device, uint8_t *value, int size
     return -1;
   }
 
-  if (nvme_serial_num_read(i2c_bus_device, value, SERIAL_NUM_SIZE)) {
+  if (nvme_serial_num_read(i2c_bus_device, value, size)) {
     syslog(LOG_DEBUG, "%s(): nvme_serial_num_read failed", __func__);
     snprintf(sn_decoding->key, PART_KEY_SIZE, "Serial Number");
     sprintf(sn_decoding->value, "Fail on reading");

@@ -21,23 +21,9 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://nvme-mi.c;beginline=4;endline=16;md5=7783b537a8ff52cf362d3cdb4bb0f6e2"
 
-SRC_URI = "file://src \
-          "
-
-LDFLAGS += "-lobmc-i2c"
-DEPENDS += "liblog libobmc-i2c"
-
+SRC_URI = "file://src"
 S = "${WORKDIR}/src"
 
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libnvme-mi.so ${D}${libdir}/libnvme-mi.so
+inherit meson pkgconfig
 
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 nvme-mi.h ${D}${includedir}/openbmc/nvme-mi.h
-}
-
-FILES:${PN} = "${libdir}/libnvme-mi.so"
-FILES:${PN}-dev = "${includedir}/openbmc/nvme-mi.h"
-
-DEPENDS += " liblog libobmc-i2c "
+DEPENDS += "liblog libobmc-i2c"

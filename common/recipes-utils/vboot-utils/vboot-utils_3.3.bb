@@ -57,17 +57,15 @@ do_install() {
   install -m 0755 ${S}/measure.py ${D}${PYTHON_SITEPACKAGES_DIR}/
   install -m 0755 ${S}/memdump.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 
-  install -d ${D}/usr/local/bin
-  install -m 0755 ${S}/vboot-util ${D}/usr/local/bin/vboot-util
-  install -m 0755 ${S}/vboot-check ${D}/usr/local/bin/vboot-check
-
   install -d ${D}/usr/bin
   ln -snf ${PYTHON_SITEPACKAGES_DIR}/measure.py ${D}/usr/bin/mboot-check
   ln -snf ${PYTHON_SITEPACKAGES_DIR}/memdump.py ${D}/usr/bin/phymemdump
-  ln -snf /usr/local/bin/vboot-util ${D}/usr/bin/vboot-util
-  ln -snf /usr/local/bin/vboot-check ${D}/usr/bin/vboot-check
+  install -m 0755 ${S}/vboot-util ${D}/usr/bin/vboot-util
+  install -m 0755 ${S}/vboot-check ${D}/usr/bin/vboot-check
 
-
+  install -d ${D}/usr/local/bin
+  ln -snf /usr/bin/vboot-util ${D}/usr/local/bin/vboot-util
+  ln -snf /usr/bin/vboot-check ${D}/usr/local/bin/vboot-check
 }
 
 FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}"

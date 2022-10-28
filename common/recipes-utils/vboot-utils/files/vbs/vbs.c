@@ -60,7 +60,7 @@ bool vboot_partition_exist(void)
     return false;
   }
   while (fgets(line, sizeof(line), partitions)) {
-    if(sscanf(line, "mtd%d: %*x %*x %s",
+    if(sscanf(line, "mtd%u: %*x %*x %s",
                 &mtdno, mnt_name) == 2) {
       if(!strcmp("\"rom\"", mnt_name)) {
         supported = true;

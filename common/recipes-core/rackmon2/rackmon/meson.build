@@ -55,7 +55,7 @@ endif
 
 if get_option('profiling') == true
     add_global_arguments('-DPROFILING=1', language : 'cpp')
-    deps += [ cc.find_library('misc-utils') ]
+    deps += [ dependency('libmisc-utils') ]
     install_data('scripts/rackmon-stress.py', install_dir: '/usr/local/bin', install_mode: 'rwxrwxrwx')
 endif
 
@@ -68,7 +68,7 @@ test_deps = deps + [
 ]
 
 rackmond_exe = executable(
-    'rackmond', 
+    'rackmond',
     srcs,
     dependencies: deps,
     install: true,

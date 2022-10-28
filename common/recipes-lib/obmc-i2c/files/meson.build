@@ -20,8 +20,8 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs = [
-    cc.find_library('misc-utils'),
     dependency('liblog'),
+    dependency('libmisc-utils'),
 ]
 
 srcs = files(

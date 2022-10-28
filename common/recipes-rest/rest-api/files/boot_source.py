@@ -26,7 +26,7 @@ from enum import IntEnum
 from typing import Dict, List
 
 
-misc_lib_hndl = CDLL("libmisc-utils.so")
+misc_lib_hndl = CDLL("libmisc-utils.so.0")
 
 
 class SocModelId(IntEnum):

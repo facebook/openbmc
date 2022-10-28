@@ -11,8 +11,8 @@ project('emmcd', 'c', 'cpp',
 
 cc = meson.get_compiler('c')
 deps = [
-    cc.find_library('misc-utils'),
     dependency('liblog'),
+    dependency('libmisc-utils'),
     dependency('threads'),
 ]
 

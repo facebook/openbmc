@@ -56,7 +56,7 @@ ssize_t file_read_bytes(int fd, void *buf, size_t count)
 	}
 
 	while (count > 0) {
-		nread = read(fd, buf + offset, count);
+		nread = read(fd, &((uint8_t*)buf)[offset], count);
 		if (nread == 0) {
 			break;		/* end of file */
 		} else if (nread < 0) {
@@ -98,7 +98,7 @@ ssize_t file_write_bytes(int fd, const void *buf, size_t count)
 	}
 
 	while (count > 0) {
-		nwrite = write(fd, buf + offset, count);
+		nwrite = write(fd, &((uint8_t*)buf)[offset], count);
 		if (nwrite == 0) {
 			break;
 		} else if (nwrite < 0) {

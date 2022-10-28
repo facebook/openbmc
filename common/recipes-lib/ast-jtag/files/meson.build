@@ -11,15 +11,15 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs = [
+  dependency('libmisc-utils'),
   dependency('threads'),
-  cc.find_library('misc-utils')
 ]
 
 srcs = files(
-  'ast-jtag.c', 
+  'ast-jtag.c',
   'ast-jtag-intf.c',
   'ast-jtag-legacy.c',
-) 
+)
 
 # ast-jtag library.
 ast_jtag_lib = shared_library('ast-jtag', srcs,

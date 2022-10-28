@@ -33,6 +33,14 @@
 
 #include "misc-utils.h"
 
+#ifndef SOC_MODEL
+#define SOC_MODEL SOC_MODEL_INVALID
+#endif
+
+#ifndef CPU_MODEL
+#define CPU_MODEL CPU_MODEL_INVALID
+#endif
+
 /*
  * Read the version of running kernel.
  *
@@ -41,7 +49,7 @@
  */
 k_version_t get_kernel_version(void)
 {
-	int i;
+	size_t i;
 	char *pos;
 	struct utsname buf;
 	unsigned long versions[3] = {0}; /* major.minor.patch */

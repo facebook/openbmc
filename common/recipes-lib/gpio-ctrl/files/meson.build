@@ -13,9 +13,9 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs = [
+  dependency('libmisc-utils'),
+  dependency('libobmc-i2c'),
   dependency('threads'),
-  cc.find_library('misc-utils'),
-  cc.find_library('obmc-i2c'),
 ]
 
 srcs = files(

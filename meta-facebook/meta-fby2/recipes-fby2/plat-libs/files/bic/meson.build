@@ -25,12 +25,12 @@ sources = [
 
 deps = [
     cc.find_library('fby2_common'),
-    cc.find_library('misc-utils'),
     dependency('libcrypto'),
     dependency('libgpio-ctrl'),
-    dependency('libkv'),
-    dependency('libobmc-i2c'),
     dependency('libipmb'),
+    dependency('libkv'),
+    dependency('libmisc-utils'),
+    dependency('libobmc-i2c'),
 ]
 
 install_headers(

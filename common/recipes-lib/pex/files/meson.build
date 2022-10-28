@@ -10,9 +10,9 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs = [
-  dependency('libobmc-pmbus'),
-  cc.find_library('misc-utils'),
+  dependency('libmisc-utils'),
   dependency('libobmc-i2c'),
+  dependency('libobmc-pmbus'),
 ]
 
 srcs = files(

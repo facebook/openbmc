@@ -23,7 +23,7 @@ class Profile {
   }
 };
 
-}; // namespace openbmc
+} // namespace openbmc
 
 #define PROFILE_SCOPE(name, ...) openbmc::Profile name(#name, ##__VA_ARGS__)
 

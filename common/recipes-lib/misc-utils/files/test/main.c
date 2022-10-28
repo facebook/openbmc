@@ -18,7 +18,7 @@
 
 #include "test-defs.h"
 
-int main(int argc, char **argv)
+int main()
 {
 	struct test_stats test_info = {0, 0};
 

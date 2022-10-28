@@ -40,11 +40,11 @@
  * Logging utilities.
  */
 #ifdef VERBOSE_LOGGING
-#define LOG_DEBUG(fmt, args...)	printf(fmt, ##args)
+#define LOG_DEBUG(...) printf(__VA_ARGS__)
 #else
-#define LOG_DEBUG(fmt, args...)
+#define LOG_DEBUG(...)
 #endif /* VERBOSE_LOGGING */
-#define LOG_ERR(fmt, args...)	fprintf(stderr, fmt, ##args)
+#define LOG_ERR(...)	fprintf(stderr, __VA_ARGS__)
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))

@@ -10,13 +10,13 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs = [
-  cc.find_library('misc-utils'),
-  cc.find_library('obmc-i2c'),
   dependency('libgpio-ctrl'),
   dependency('libipmb'),
   dependency('libipmi'),
   dependency('libkv'),
   dependency('liblog'),
+  dependency('libmisc-utils'),
+  dependency('libobmc-i2c'),
 ]
 
 srcs = files(

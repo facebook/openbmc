@@ -5,9 +5,9 @@ pal_sources += [
 pal_deps += [
     cc.find_library('gpio-ctrl'),
     cc.find_library('me'),
-    cc.find_library('misc-utils'),
     cc.find_library('obmc-i2c'),
-    dependency('libobmc-sensors'),
     cc.find_library('sensor-correction'),
     cc.find_library('vr'),
+    dependency('libmisc-utils'),
+    dependency('libobmc-sensors'),
     ]

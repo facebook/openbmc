@@ -40,6 +40,6 @@ LOCAL_URI = " \
     "
 
 DEPENDS += "libobmc-pmbus libobmc-i2c libmisc-utils "
-RDEPENDS:${PN} += "libobmc-pmbus libobmc-i2c libmisc-utils "
+RDEPENDS:${PN} += "libmisc-utils "
 
 inherit meson pkgconfig

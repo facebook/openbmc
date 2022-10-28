@@ -32,7 +32,7 @@ pal_deps += [
     cc.find_library('nl-wrapper'),
     cc.find_library('nm'),
     cc.find_library('obmc-i2c'),
-    cc.find_library('obmc-pmbus'),
+    dependency('libobmc-pmbus'),
     dependency('libobmc-sensors'),
     cc.find_library('peci'),
     cc.find_library('peci_sensors'),

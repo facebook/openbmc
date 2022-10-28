@@ -34,6 +34,10 @@ interested_keys = {
     "Flags software_enforce": "software_enforce",
     "Flags recovery_boot": "recovery_boot",
     "Flags recovery_retried": "recovery_retried",
+    "ROM version": "rom_version",
+    "ROM U-Boot version": "rom_uboot_version",
+    "FLASH0 Signed": "flash0_signed",
+    "FLASH0 Locked": "flash0_locked",
 }
 
 

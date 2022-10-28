@@ -52,7 +52,7 @@ void trigger_trst(struct ftdi_context *ftdi) {
     return;
   }
   printf("Trying to do rst\n");
-  mpsse_trigger_trst(ftdi);  
+  mpsse_trigger_trst(ftdi);
 }
 
 int
@@ -108,13 +108,12 @@ void scan_dev_byte_mode(struct ftdi_context *ftdi, uint8_t dev, uint16_t tck) {
   uint32_t out = 0;
   mpsse_jtag_read(ftdi, 32, (uint8_t *)&out, 1);
   gettimeofday(&end,NULL);
-  printf("ByteMode: Dev%d IDCODE: %08X, time: %u.%us\n", dev, out, end.tv_sec - start.tv_sec, end.tv_usec-start.tv_usec);
+  printf("ByteMode: Dev%d IDCODE: %08X, time: %lu.%lus\n", dev, out, end.tv_sec - start.tv_sec, end.tv_usec-start.tv_usec);
 }
 
 int
 main(int argc, char **argv) {
   struct ftdi_context *ftdi = NULL;
-  int ret = 0;
   uint8_t slot_id = 0;
   uint8_t dev = 0;
 
@@ -123,15 +122,15 @@ main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  if ((ftdi = ftdi_new()) == 0) {
-    fprintf(stderr, "ftdi_new failed\n");
-    return EXIT_FAILURE;
-  }
-
   if ( strncmp(argv[1], "slot1", 5) == 0 ) slot_id = 1;
   else if ( strncmp(argv[1], "slot3", 5) == 0 ) slot_id = 3;
   else {
     printf("%s is not supported!\n", argv[1]);
+    return EXIT_FAILURE;
+  }
+
+  if ((ftdi = ftdi_new()) == 0) {
+    fprintf(stderr, "ftdi_new failed\n");
     return EXIT_FAILURE;
   }
 
@@ -146,15 +145,14 @@ main(int argc, char **argv) {
         scan_dev_byte_mode(ftdi, dev, tck);
       }
     }
-  } else if ( argc == 3 && (strncmp(argv[2], "--trst", 6) == 0) ) {   
+  } else if ( argc == 3 && (strncmp(argv[2], "--trst", 6) == 0) ) {
     trigger_trst(ftdi);
   } else {
     print_usage_help();
   }
 
-do_deinit:
   ftdi_usb_reset(ftdi);
   ftdi_usb_close(ftdi);
   ftdi_free(ftdi);
-  return ret;
+  return 0;
 }

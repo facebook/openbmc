@@ -14,5 +14,3 @@ LOCAL_URI = " \
     "
 
 DEPENDS += " libobmc-i2c libusb1 libftdi libmpsse "
-RDEPENDS:${PN} += " libobmc-i2c libftdi libmpsse "
-

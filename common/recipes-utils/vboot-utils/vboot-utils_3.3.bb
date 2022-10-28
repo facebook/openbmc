@@ -9,7 +9,7 @@ LOCAL_URI += " \
     file://pyfdt/__init__.py \
     file://pyfdt/pkcs11.py \
     file://pyfdt/pyfdt.py \
-    file://Makefile \
+    file://meson.build \
     file://vboot-util.c \
     file://vboot-check \
     file://vboot_common.py \
@@ -25,10 +25,8 @@ PR = "r0"
 CFLAGS:append:mf-tpm1 = " -DCONFIG_TPM_V1"
 CFLAGS:append:mf-tpm2 = " -DCONFIG_TPM_V2"
 
-LDFLAGS += " -lfdt"
 DEPENDS = "python3 libvbs libkv dtc"
 RDEPENDS:${PN}-python3 += "python3-core"
-RDEPENDS:${PN} += "libvbs libkv"
 
 PACKAGES += "${PN}-python3"
 inherit setuptools3 python3-dir
@@ -40,11 +38,10 @@ setuptools3_do_configure(){
     :
 }
 
-do_compile() {
-  oe_runmake -C ${S}
-}
+inherit meson pkgconfig
+inherit legacy-packages
 
-do_install() {
+do_install:append() {
   install -d ${D}${PYTHON_SITEPACKAGES_DIR}/pyfdt
 
   for file in ${S}/pyfdt/*.py; do
@@ -60,14 +57,8 @@ do_install() {
   install -d ${D}/usr/bin
   ln -snf ${PYTHON_SITEPACKAGES_DIR}/measure.py ${D}/usr/bin/mboot-check
   ln -snf ${PYTHON_SITEPACKAGES_DIR}/memdump.py ${D}/usr/bin/phymemdump
-  install -m 0755 ${S}/vboot-util ${D}/usr/bin/vboot-util
   install -m 0755 ${S}/vboot-check ${D}/usr/bin/vboot-check
 
   install -d ${D}/usr/local/bin
-  ln -snf /usr/bin/vboot-util ${D}/usr/local/bin/vboot-util
   ln -snf /usr/bin/vboot-check ${D}/usr/local/bin/vboot-check
 }
-
-FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}"
-FILES:${PN} += "/usr/local/bin/"
-FILES:${PN} += "/usr/bin/"

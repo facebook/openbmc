@@ -32,7 +32,7 @@ static uint32_t fdt_getprop_u32(const void *fdt, int node, const char *prop)
 int check_lock_signed(const char *path, uint8_t * img_sig, uint8_t *img_lock, uint32_t mtd_region_size)
 {
   int fd = 0, ret = -1;
-  int offs, rcnt, end;
+  size_t offs, rcnt, end;
   uint8_t *buf, *fdt_aligned_buf;
   uint8_t magic_number[] = {0xd0, 0x0d, 0xfe, 0xed}; // magic number
 
@@ -127,7 +127,7 @@ bool get_mtd_name(char* mtd_name, char* partition_name, uint32_t* size)
       return false;
     }
     while (fgets(line, sizeof(line), partitions)) {
-      if (sscanf(line, "mtd%d: %x %*x %s",
+      if (sscanf(line, "mtd%u: %x %*x %s",
             &mtd_no,size, mnt_name) == 3)  {
         if (!strcmp(partition_name, mnt_name)) {
           sprintf(mtd_name, "/dev/mtd%d", mtd_no);
@@ -189,7 +189,7 @@ bool get_rom_ver(char *ver_rom, char *ver_uboot)
   return false;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
   char buf[128] = {0};
   char ver_rom[MAX_VALUE_LEN] = {0};

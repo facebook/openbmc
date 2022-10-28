@@ -60,6 +60,7 @@ IMAGE_INSTALL += " \
   jbi \
   dimm-util \
   attest-util \
+  psb-util \
   "
 
 #  crashdump-amd \

@@ -75,6 +75,7 @@ typedef struct
 #define ME_SMBUS_WRITE_HEADER_LEN 14
 #define MAX_POST_CODE_PAGE 17
 #define MAX_POSTCODE_NUM  1024
+#define PSB_EEPROM_BUS 0x03
 
 typedef struct {
   uint8_t bus_id;

@@ -36,6 +36,10 @@
 
 #define PSB_ENABLE_READ_CACHE  0
 
+#ifndef PSB_EEPROM_BUS
+#define PSB_EEPROM_BUS 0x05
+#endif
+
 struct psb_util_args_t {
   int fruid;
   uint8_t ctrl_flags;
@@ -184,8 +188,7 @@ read_psb_from_eeprom(uint8_t slot, struct psb_config_info *pc_info) {
   uint8_t rlen = 0;
   const struct psb_eeprom* eeprom = (const struct psb_eeprom*) rbuf;
   uint8_t cks;
-
-  tbuf[0] = 0x05;                       // bus
+  tbuf[0] = PSB_EEPROM_BUS;             // bus
   tbuf[1] = 0xA0;                       // dev addr
   tbuf[2] = sizeof(struct psb_eeprom);  // read count
   tbuf[3] = 0x00;                       // write data addr (MSB)
@@ -219,9 +222,9 @@ read_psb_config(uint8_t slot, struct psb_config_info *pc_info) {
     return PSB_ERROR_SRV_NOT_PRST;
   }
 
-  if (pal_is_server_12v_on(slot, &status) != 0) {
+  if (pal_get_server_power(slot, &status) != 0) {
     return PSB_ERROR_GET_SRV_PWR;
-  } else if(!status) {
+  } else if( status == SERVER_12V_OFF) {
     return PSB_ERROR_SRV_NOT_READY;
   }
 

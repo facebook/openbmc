@@ -1,0 +1,125 @@
+From f4310006825c0769393475a2700ae5eaa2ddc5b7 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Fri, 28 Oct 2022 11:50:15 -0700
+Subject: [PATCH 1001/1004] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600)
+ BMC
+
+Add initial version of device tree for Facebook FBDarwin (AST2600) BMC.
+
+FBDarwin is Facebook's next generation switch platform with an AST2600
+BMC integrated for health monitoring purpose.
+---
+ arch/arm/boot/dts/Makefile                    |  1 +
+ .../boot/dts/aspeed-bmc-facebook-fbdarwin.dts | 88 +++++++++++++++++++
+ 2 files changed, 89 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts
+
+diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
+index 6145408176b1..cf70dbe6ad71 100644
+--- a/arch/arm/boot/dts/Makefile
++++ b/arch/arm/boot/dts/Makefile
+@@ -1586,6 +1586,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-cloudripper.dtb \
+ 	aspeed-bmc-facebook-cmm.dtb \
+ 	aspeed-bmc-facebook-elbert.dtb \
++	aspeed-bmc-facebook-fbdarwin.dtb \
+ 	aspeed-bmc-facebook-fuji.dtb \
+ 	aspeed-bmc-facebook-galaxy100.dtb \
+ 	aspeed-bmc-facebook-minipack.dtb \
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts
+new file mode 100644
+index 000000000000..e4e9c374aa16
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts
+@@ -0,0 +1,88 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) 2021 Facebook Inc.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook FBDARWIN BMC";
++	compatible = "facebook,fbdarwin-bmc", "aspeed,ast2600";
++
++	aliases {
++		serial0 = &uart5;
++		serial1 = &uart1;
++		serial2 = &uart2;
++		serial3 = &uart3;
++		spi2 = &spi2;
++	};
++
++	chosen {
++		stdout-path = &uart5;
++	};
++
++	iio-hwmon {
++		compatible = "iio-hwmon";
++		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
++			      <&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
++			      <&adc1 0>, <&adc1 1>, <&adc1 2>, <&adc1 3>,
++			      <&adc1 4>, <&adc1 5>, <&adc1 6>, <&adc1 7>;
++	};
++};
++
++&spi2 {
++	status = "okay";
++	compatible = "spi-gpio";
++	#address-cells = <1>;
++	#size-cells = <0>;
++	num-chipselects = <1>;
++
++	gpio-miso = <&gpio0 ASPEED_GPIO(X, 5) GPIO_ACTIVE_HIGH>;
++	gpio-mosi = <&gpio0 ASPEED_GPIO(X, 4) GPIO_ACTIVE_HIGH>;
++	gpio-sck = <&gpio0 ASPEED_GPIO(X, 3) GPIO_ACTIVE_HIGH>;
++	cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++
++	tpmdev@0 {
++		compatible = "tcg,tpm_tis-spi";
++		spi-max-frequency = <33000000>;
++		reg = <0>;
++	};
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&i2c0 {
++	eeprom@50 {
++		compatible = "atmel,24c512";
++		reg = <0x50>;
++	};
++};
++
++&adc0 {
++	ref_voltage = <2500>;
++	status = "okay";
++
++	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
++		     &pinctrl_adc2_default &pinctrl_adc3_default
++		     &pinctrl_adc4_default &pinctrl_adc5_default
++		     &pinctrl_adc6_default &pinctrl_adc7_default>;
++};
++
++&adc1 {
++	ref_voltage = <2500>;
++	status = "okay";
++
++	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
++		     &pinctrl_adc10_default &pinctrl_adc11_default
++		     &pinctrl_adc12_default &pinctrl_adc13_default
++		     &pinctrl_adc14_default &pinctrl_adc15_default>;
++};
+-- 
+2.30.2
+

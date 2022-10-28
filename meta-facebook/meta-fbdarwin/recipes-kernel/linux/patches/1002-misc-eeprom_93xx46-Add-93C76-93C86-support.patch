@@ -1,0 +1,157 @@
+From ca2570d098240d22a365d0215e778b8e7bb7bb7b Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Wed, 27 Apr 2022 10:56:49 -0700
+Subject: [PATCH 1002/1004] misc: eeprom_93xx46: Add 93C76/93C86 support
+
+Summary:
+This PR adds support to the kernel 5.15 for 93C86 chip definitions and
+associated registers.
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.arista/pull/244
+GitHub Author: Dean Kalla <deank@arista.com>
+
+Test Plan:
+On kernel 5.15 with fbdarwin (AT93C86), with this new driver we are
+able to recognize and talk to AT93C86 chip.
+
+Reviewers: tfang, joancaneus, #openbmc
+
+Reviewed By: joancaneus
+
+Differential Revision: https://phabricator.intern.facebook.com/D35292211
+
+Tags: accept2ship
+---
+ drivers/misc/eeprom/eeprom_93xx46.c | 36 +++++++++++++++++++++++++----
+ include/linux/eeprom_93xx46.h       |  3 +++
+ 2 files changed, 35 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/misc/eeprom/eeprom_93xx46.c b/drivers/misc/eeprom/eeprom_93xx46.c
+index b630625b3024..a1e1d9d60d0d 100644
+--- a/drivers/misc/eeprom/eeprom_93xx46.c
++++ b/drivers/misc/eeprom/eeprom_93xx46.c
+@@ -44,6 +44,11 @@ static const struct eeprom_93xx46_devtype_data at93c66_data = {
+ 	.flags = EE_SIZE4K,
+ };
+ 
++static const struct eeprom_93xx46_devtype_data at93c86_data = {
++	.flags = EE_SIZE16K,
++	.quirks = EEPROM_93XX46_QUIRK_ADDRESS_BYTE_SHIFT,
++};
++
+ static const struct eeprom_93xx46_devtype_data atmel_at93c46d_data = {
+ 	.flags = EE_SIZE1K,
+ 	.quirks = EEPROM_93XX46_QUIRK_SINGLE_WORD_READ |
+@@ -80,6 +85,11 @@ static inline bool has_quirk_extra_read_cycle(struct eeprom_93xx46_dev *edev)
+ 	return edev->pdata->quirks & EEPROM_93XX46_QUIRK_EXTRA_READ_CYCLE;
+ }
+ 
++static inline bool has_quirk_address_byte_shift(struct eeprom_93xx46_dev *edev)
++{
++	return edev->pdata->quirks & EEPROM_93XX46_QUIRK_ADDRESS_BYTE_SHIFT;
++}
++
+ static int eeprom_93xx46_read(void *priv, unsigned int off,
+ 			      void *val, size_t count)
+ {
+@@ -167,16 +177,23 @@ static int eeprom_93xx46_ew(struct eeprom_93xx46_dev *edev, int is_on)
+ 	struct spi_message m;
+ 	struct spi_transfer t;
+ 	int bits, ret;
++	u16 instruction_addr = 0;
+ 	u16 cmd_addr;
+ 
+ 	/* The opcode in front of the address is three bits. */
+ 	bits = edev->addrlen + 3;
+ 
+ 	cmd_addr = OP_START << edev->addrlen;
++	/* Some devices like 93C76/93C86 have EW EN/DS address shifted */
++	if (has_quirk_address_byte_shift(edev))
++		instruction_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS) << 4;
++	else
++		instruction_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS);
++
+ 	if (edev->pdata->flags & EE_ADDR8)
+-		cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS) << 1;
++		cmd_addr |= instruction_addr << 1;
+ 	else
+-		cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS);
++		cmd_addr |= instruction_addr;
+ 
+ 	if (has_quirk_instruction_length(edev)) {
+ 		cmd_addr <<= 2;
+@@ -186,6 +203,7 @@ static int eeprom_93xx46_ew(struct eeprom_93xx46_dev *edev, int is_on)
+ 	dev_dbg(&edev->spi->dev, "ew%s cmd 0x%04x, %d bits\n",
+ 			is_on ? "en" : "ds", cmd_addr, bits);
+ 
++
+ 	spi_message_init(&m);
+ 	memset(&t, 0, sizeof(t));
+ 
+@@ -314,16 +332,23 @@ static int eeprom_93xx46_eral(struct eeprom_93xx46_dev *edev)
+ 	struct spi_message m;
+ 	struct spi_transfer t;
+ 	int bits, ret;
++	u16 instruction_addr = 0;
+ 	u16 cmd_addr;
+ 
+ 	/* The opcode in front of the address is three bits. */
+ 	bits = edev->addrlen + 3;
+ 
+ 	cmd_addr = OP_START << edev->addrlen;
++	/* Some devices like 93C76/93C86 have EW EN/DS address shifted */
++	if (has_quirk_address_byte_shift(edev))
++		instruction_addr |= ADDR_ERAL << 4;
++	else
++		instruction_addr |= ADDR_ERAL;
++
+ 	if (edev->pdata->flags & EE_ADDR8)
+-		cmd_addr |= ADDR_ERAL << 1;
++		cmd_addr |= instruction_addr << 1;
+ 	else
+-		cmd_addr |= ADDR_ERAL;
++		cmd_addr |= instruction_addr;
+ 
+ 	if (has_quirk_instruction_length(edev)) {
+ 		cmd_addr <<= 2;
+@@ -401,6 +426,7 @@ static const struct of_device_id eeprom_93xx46_of_table[] = {
+ 	{ .compatible = "atmel,at93c46d", .data = &atmel_at93c46d_data, },
+ 	{ .compatible = "atmel,at93c56", .data = &at93c56_data, },
+ 	{ .compatible = "atmel,at93c66", .data = &at93c66_data, },
++	{ .compatible = "atmel,at93c86", .data = &at93c86_data, },
+ 	{ .compatible = "microchip,93lc46b", .data = &microchip_93lc46b_data, },
+ 	{}
+ };
+@@ -503,6 +529,8 @@ static int eeprom_93xx46_probe(struct spi_device *spi)
+ 		edev->size = 256;
+ 	else if (pd->flags & EE_SIZE4K)
+ 		edev->size = 512;
++	else if (pd->flags & EE_SIZE16K)
++		edev->size = 2048;
+ 	else {
+ 		dev_err(&spi->dev, "unspecified size\n");
+ 		return -EINVAL;
+diff --git a/include/linux/eeprom_93xx46.h b/include/linux/eeprom_93xx46.h
+index 34c2175e6a1e..610966e5e1d2 100644
+--- a/include/linux/eeprom_93xx46.h
++++ b/include/linux/eeprom_93xx46.h
+@@ -13,6 +13,7 @@ struct eeprom_93xx46_platform_data {
+ #define EE_SIZE1K	0x10		/* 1 kb of data, that is a 93xx46 */
+ #define EE_SIZE2K	0x20		/* 2 kb of data, that is a 93xx56 */
+ #define EE_SIZE4K	0x40		/* 4 kb of data, that is a 93xx66 */
++#define EE_SIZE16K	0x80		/* 16 kb of data, that is a 93xx86 */
+ 
+ 	unsigned int	quirks;
+ /* Single word read transfers only; no sequential read. */
+@@ -21,6 +22,8 @@ struct eeprom_93xx46_platform_data {
+ #define EEPROM_93XX46_QUIRK_INSTRUCTION_LENGTH		(1 << 1)
+ /* Add extra cycle after address during a read */
+ #define EEPROM_93XX46_QUIRK_EXTRA_READ_CYCLE		BIT(2)
++/* Instructions addresses are shifted by 4 bits to the left */
++#define EEPROM_93XX46_QUIRK_ADDRESS_BYTE_SHIFT		BIT(3)
+ 
+ 	/*
+ 	 * optional hooks to control additional logic
+-- 
+2.30.2
+

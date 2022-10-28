@@ -1,0 +1,48 @@
+From c450af6e53f05bc893b19cda1869f8d24cc16641 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Wed, 27 Apr 2022 10:56:56 -0700
+Subject: [PATCH 1004/1004] gpiolib-of: Respect High CS in spi-gpio
+
+Summary:
+This is needed to enable High CS to be respected in dts for spi-gpio
+nodes.
+
+On some dts, we have High CS, for example on fbdarwin with spi-gpio, where
+the High CS is not respected to a logic error in the gpiolib-of.
+
+This patch was sourced from here:
+https://www.spinics.net/lists/linux-gpio/msg40354.html
+
+Pull Request resolved: https://github.com/facebookexternal/openbmc.arista/pull/245
+GitHub Author: Dean Kalla <deank@arista.com>
+
+Test Plan:
+on fbdarwin, successfully read/write and root cause this issue using
+logic analyser.
+
+Reviewers: tfang, joancaneus, #openbmc
+
+Reviewed By: joancaneus
+
+Differential Revision: https://phabricator.intern.facebook.com/D35292205
+
+Tags: accept2ship
+---
+ drivers/gpio/gpiolib-of.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
+index a037b50bef33..1d65427b7720 100644
+--- a/drivers/gpio/gpiolib-of.c
++++ b/drivers/gpio/gpiolib-of.c
+@@ -178,6 +178,7 @@ static void of_gpio_flags_quirks(const struct device_node *np,
+ 	 * to determine if the flags should have inverted semantics.
+ 	 */
+ 	if (IS_ENABLED(CONFIG_SPI_MASTER) && !strcmp(propname, "cs-gpios") &&
++	    !of_device_is_compatible(np, "spi-gpio") &&
+ 	    of_property_read_bool(np, "cs-gpios")) {
+ 		struct device_node *child;
+ 		u32 cs;
+-- 
+2.30.2
+

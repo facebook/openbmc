@@ -1,0 +1,53 @@
+From db3f05cec2fd4e75096339688e4f4caabb953128 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Fri, 28 Oct 2022 14:55:33 -0700
+Subject: [PATCH 1003/1004] ARM: dts: aspeed: fbdarwin: Enable spi1 devices
+
+Enable spi1 device in fbdarwin dts.
+---
+ .../boot/dts/aspeed-bmc-facebook-fbdarwin.dts | 22 +++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts b/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts
+index e4e9c374aa16..d668867ee2c7 100644
+--- a/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts
++++ b/arch/arm/boot/dts/aspeed-bmc-facebook-fbdarwin.dts
+@@ -14,6 +14,7 @@ aliases {
+ 		serial1 = &uart1;
+ 		serial2 = &uart2;
+ 		serial3 = &uart3;
++		spi1 = &spi1;
+ 		spi2 = &spi2;
+ 	};
+ 
+@@ -30,6 +31,27 @@ iio-hwmon {
+ 	};
+ };
+ 
++&spi1 {
++	status = "okay";
++	compatible = "spi-gpio";
++	#address-cells = <1>;
++	#size-cells = <0>;
++	num-chipselects = <2>;
++
++	gpio-sck = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
++	gpio-mosi = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
++	gpio-miso = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
++	cs-gpios = <0>, <&gpio0 ASPEED_GPIO(Z, 0) GPIO_ACTIVE_HIGH>;
++
++	eeprom@1 {
++		compatible = "atmel,at93c86";
++		spi-max-frequency = <250000>;
++		data-size = <16>;
++		spi-cs-high;
++		reg = <1>;
++	};
++};
++
+ &spi2 {
+ 	status = "okay";
+ 	compatible = "spi-gpio";
+-- 
+2.30.2
+

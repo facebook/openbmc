@@ -49,6 +49,7 @@ class check_bios_util(object):
         argv=sys.argv,
     ):
         self.argv = argv
+        self.boot_devs = boot_order_device
         # json dump from config
         self.bios_support_config = self.get_bios_support_config(config)
         if self.bios_support_config == "NULL":
@@ -227,6 +228,12 @@ class check_bios_util(object):
             and "supported" in self.bios_support_config["boot_order"]
         ):
             self.boot_order = self.bios_support_config["boot_order"]["supported"]
+            if "boot_devs" in self.bios_support_config["boot_order"]:
+                import bios_boot_order
+
+                self.boot_devs = self.bios_support_config["boot_order"]["boot_devs"]
+                self.boot_devs = {int(k): v for k, v in self.boot_devs.items()}
+                bios_boot_order.boot_order_device = self.boot_devs
         if (
             "plat_info" in self.bios_support_config
             and "supported" in self.bios_support_config["plat_info"]
@@ -304,7 +311,7 @@ class check_bios_util(object):
                     "--boot_order",
                     nargs=5,
                     metavar="order#",
-                    help="Set BIOS boot order " + repr(boot_order_device),
+                    help="Set BIOS boot order " + repr(self.boot_devs),
                 )
 
             if len(self.argv) < 5:

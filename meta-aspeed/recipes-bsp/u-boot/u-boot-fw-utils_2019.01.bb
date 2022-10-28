@@ -28,9 +28,9 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config \
           "
 
-OVERRIDES:append = ":uboot-aspeed-fb"
 PV = "v2019.01+git${SRCPV}"
 S = "${WORKDIR}/git"
+include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
 INSANE_SKIP:${PN} = "already-stripped"
 EXTRA_OEMAKE:class-target = 'CROSS_COMPILE=${TARGET_PREFIX} CC="${CC} ${CFLAGS} ${LDFLAGS}" HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}" V=1'

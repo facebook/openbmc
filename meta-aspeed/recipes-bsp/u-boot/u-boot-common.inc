@@ -10,7 +10,6 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=30503fd321432fc713238f582193b78e"
 PE = "1"
 
-OVERRIDES:append = ":uboot-aspeed-fb"
 SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};protocol=https"
 SRCREV = "AUTOINC"
 S = "${WORKDIR}/git"

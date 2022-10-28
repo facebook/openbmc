@@ -6,7 +6,6 @@ LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=30503fd321432fc713238f582193b78e"
 PE = "1"
 
-OVERRIDES:append = ":uboot-aspeed-fb"
 PV = "v2019.01+git${SRCPV}"
 DEFAULT_PREFERENCE = "-1"
 
@@ -20,6 +19,7 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
 
 S = "${WORKDIR}/git"
 
+include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 # Improve code quality.
 EXTRA_OEMAKE += 'KCFLAGS="-Werror"'
 

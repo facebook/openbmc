@@ -5,6 +5,7 @@ SRC_URI += "file://fw_env.config \
             file://fw_env.config.64k \
 			"
 SRCBRANCH = "openbmc/helium/v2019.04"
+include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
 SUMMARY = "U-Boot bootloader fw_printenv/setenv utilities"
 DEPENDS += "mtd-utils"

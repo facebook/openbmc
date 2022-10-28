@@ -33,10 +33,10 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config.full \
           "
 
-OVERRIDES:append = ":uboot-aspeed-fb"
-PV = "v2019.01+git${SRCPV}"
 DEFAULT_PREFERENCE = "-1"
 S = "${WORKDIR}/git"
+PV = "v2019.01+git${SRCPV}"
+include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
 FILES:${PN} = "${sysconfdir}"
 

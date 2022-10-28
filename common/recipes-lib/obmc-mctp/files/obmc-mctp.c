@@ -42,8 +42,10 @@ struct mctp_smbus_pkt_private *smbus_extra_params = NULL;
  * if we received a request/response by calling mctp_smbus_read().
  * It should be useful to reply a basic request if we are not the bus owner.
  */
-static void rx_handler(uint8_t eid, void *data, void *msg, size_t len,
-                       bool tag_owner, uint8_t tag, void *prv)
+static void rx_handler(uint8_t eid __attribute__((unused)),
+                       void *data, void *msg, size_t len,
+                       bool tag_owner, uint8_t tag,
+                       void *prv __attribute__((unused)))
 {
   // TODO:
   //    We should send device the response according to the EID
@@ -132,7 +134,7 @@ void obmc_mctp_smbus_free(struct obmc_mctp_binding* binding)
 }
 
 int mctp_smbus_send_data(struct mctp* mctp, uint8_t dst, uint8_t flag_tag,
-                         struct mctp_binding_smbus *smbus,
+                         struct mctp_binding_smbus *smbus __attribute__((unused)),
                          void *req, size_t size)
 {
   bool tag_owner = flag_tag & MCTP_HDR_FLAG_TO? true: false;
@@ -151,7 +153,7 @@ int mctp_smbus_send_data(struct mctp* mctp, uint8_t dst, uint8_t flag_tag,
 // reads MCTP response off smbus
 // decodes response, returns NC-SI over MCTP or PLDM over MCTP status,
 // returns error for other MCTP msg types
-int mctp_smbus_recv_data_timeout(struct mctp *mctp, uint8_t dst,
+int mctp_smbus_recv_data_timeout(struct mctp *mctp, uint8_t dst __attribute__((unused)),
                                  struct mctp_binding_smbus *smbus,
                                  void *data, int TOsec)
 {
@@ -199,7 +201,7 @@ int mctp_smbus_recv_data_timeout(struct mctp *mctp, uint8_t dst,
 
 // reads MCTP response off smbus
 // return byte count, do not interpret data (e.g. MCTP msg type)
-int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
+int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst __attribute__((unused)),
                                  struct mctp_binding_smbus *smbus,
                                  void *data, int TOsec)
 {
@@ -229,8 +231,10 @@ int mctp_smbus_recv_data_timeout_raw(struct mctp *mctp, uint8_t dst,
   return -1;
 }
 
-static void spdm_rx_handler(uint8_t eid, void *data, void *msg, size_t len,
-                       bool tag_owner, uint8_t tag, void *prv)
+static void spdm_rx_handler(uint8_t eid __attribute__((unused)),
+                       void *data, void *msg, size_t len,
+                       bool tag_owner, uint8_t tag,
+                       void *prv __attribute__((unused)))
 {
   struct obmc_mctp_spdm_hdr *p = (struct obmc_mctp_spdm_hdr *)data;
 
@@ -244,9 +248,9 @@ static void spdm_rx_handler(uint8_t eid, void *data, void *msg, size_t len,
 
 // reads MCTP response off smbus
 // return byte count, do not interpret data (e.g. MCTP msg type)
-int mctp_smbus_recv_spdm_data_raw(struct mctp *mctp, uint8_t dst,
+int mctp_smbus_recv_spdm_data_raw(struct mctp *mctp, uint8_t dst __attribute__((unused)),
                                  struct mctp_binding_smbus *smbus,
-                                 void *data, int TOsec)
+                                 void *data, int TOsec __attribute__((unused)))
 {
   struct obmc_mctp_spdm_hdr *p = (struct obmc_mctp_spdm_hdr *)data;
 

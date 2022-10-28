@@ -9,6 +9,7 @@ LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=17;md5=da35978751a9d71b7
 
 inherit meson pkgconfig
 inherit ptest-meson
+
 LOCAL_URI = " \
     file://main.cpp \
     file://meson.build \
@@ -20,7 +21,3 @@ LOCAL_URI = " \
     "
 
 DEPENDS += " cli11  nlohmann-json gtest libpal libobmc-mctp "
-RDEPENDS:${PN} += " libpal libobmc-mctp "
-RDEPENDS:${PN}-ptest += " libpal libobmc-mctp "
-FILES:${PN} = "${prefix}/local/bin/attest-util"
-

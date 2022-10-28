@@ -15,9 +15,9 @@ srcs = files(
 
 cc = meson.get_compiler('c')
 deps = [
+  dependency('libobmc-mctp'),
+  dependency('obmc-pal'),
   dependency('threads'),
-  cc.find_library('pal'),
-  cc.find_library('obmc-mctp'),
 ]
 
 # Test deps.
@@ -28,16 +28,15 @@ test_deps = [
 ]
 
 attest_util_exe = executable(
-    'attest-util', 
+    'attest-util',
     srcs, 'main.cpp',
     dependencies: deps,
     install: true,
-    install_dir : 'local/bin',
 )
 
 attest_util_test = executable('test-attest-util', 'tests/test_util.cpp', srcs,
   dependencies: [deps, test_deps],
-  cpp_args: ['-D__TEST__'], 
+  cpp_args: ['-D__TEST__'],
   install_dir: 'lib/name-util/ptest',
 )
 test('attest-util-tests', attest_util_test)

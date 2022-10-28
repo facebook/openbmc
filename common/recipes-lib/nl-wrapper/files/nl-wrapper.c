@@ -34,9 +34,9 @@
 #define noDEBUG_LIBNL
 
 #ifdef DEBUG_LIBNL
-  #define DBG_PRINT(fmt, args...) printf(fmt, ##args)
+  #define DBG_PRINT(...) printf(__VA_ARGS__)
 #else
-  #define DBG_PRINT(fmt, args...)
+  #define DBG_PRINT(...)
 #endif
 
 #define RECVMSG_TIMEOUT 3
@@ -57,7 +57,8 @@ static int aen_cb(struct nl_msg *msg, void *arg)
 {
 	struct nlmsghdr *hdr = nlmsg_hdr(msg);
 	struct nlattr *tb[NCSI_ATTR_MAX + 1] = {0};
-	int rc, data_len;
+	int rc;
+	size_t data_len;
 	char *ncsi_rsp;
 	NCSI_NL_RSP_T *dst_buf = (NCSI_NL_RSP_T *) arg;
 
@@ -84,7 +85,13 @@ static int aen_cb(struct nl_msg *msg, void *arg)
 		return -1;
 	}
 
-	data_len = nla_len(tb[NCSI_ATTR_DATA]);
+	rc = nla_len(tb[NCSI_ATTR_DATA]);
+	if (rc < 0) {
+		syslog(LOG_ERR, "unable to get nla_len: %d, %s\n", rc, strerror(errno));
+		return -1;
+	}
+
+	data_len = (size_t)rc;
 	if (data_len > sizeof(dst_buf->msg_payload) - sizeof(struct eth_hdr)) {
 		syslog(LOG_ERR, "data_len (%d) exceeds max buffer size (%d)\n",
 		       data_len,
@@ -204,7 +211,7 @@ int setup_ncsi_message(struct ncsi_msg *msg, int cmd, int flags)
 
 out:
 	if (errno)
-		syslog(LOG_ERR, "\t%m\n");
+		syslog(LOG_ERR, "\t%s\n", strerror(errno));
 	free_ncsi_msg(msg);
 	return rc;
 }
@@ -214,7 +221,8 @@ static int send_cb(struct nl_msg *msg, void *arg)
 {
 	struct nlmsghdr *hdr = nlmsg_hdr(msg);
 	struct nlattr *tb[NCSI_ATTR_MAX + 1] = {0};
-	int rc, data_len, len;
+	int rc;
+	size_t data_len, len;
 	char *ncsi_rsp;
 	struct ncsi_msg *ncsi_msg = (struct ncsi_msg *)arg;
 
@@ -243,7 +251,13 @@ static int send_cb(struct nl_msg *msg, void *arg)
 		return -1;
 	}
 
-	data_len = nla_len(tb[NCSI_ATTR_DATA]);
+	rc = nla_len(tb[NCSI_ATTR_DATA]);
+	if (rc < 0) {
+		syslog(LOG_ERR, "unable to get nla_len: %d, %s\n", rc, strerror(errno));
+		return -1;
+	}
+
+	data_len = (size_t)rc;
 	if (data_len < sizeof(CTRL_MSG_HDR_t)) {
 		syslog(LOG_ERR, "short ncsi data, %u\n", data_len);
 		errno = ERANGE;
@@ -299,7 +313,7 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	//  (header + Control Packet payload)
 	pData = calloc(1, sizeof(struct ncsi_pkt_hdr) + payload_len);
 	if (!pData) {
-		syslog(LOG_ERR, "Failed to allocate buffer for control packet, %m\n");
+		syslog(LOG_ERR, "Failed to allocate buffer for control packet, %s\n", strerror(errno));
 		goto out;
 	}
 	// prepare buffer to be copied to netlink msg
@@ -320,21 +334,21 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 
 	rc = nla_put_u32(msg.msg, NCSI_ATTR_IFINDEX, ifindex);
 	if (rc) {
-		syslog(LOG_ERR, "Failed to add ifindex, %m\n");
+		syslog(LOG_ERR, "Failed to add ifindex, %s\n", strerror(errno));
 		goto out;
 	}
 
 	if (package >= 0) {
 		rc = nla_put_u32(msg.msg, NCSI_ATTR_PACKAGE_ID, package);
 		if (rc) {
-			syslog(LOG_ERR, "Failed to add package id, %m\n");
+			syslog(LOG_ERR, "Failed to add package id, %s\n", strerror(errno));
 			goto out;
 		}
 	}
 
 	rc = nla_put_u32(msg.msg, NCSI_ATTR_CHANNEL_ID, nl_msg->channel_id);
 	if (rc) {
-		syslog(LOG_ERR, "Failed to add channel, %m\n");
+		syslog(LOG_ERR, "Failed to add channel, %s\n", strerror(errno));
 	}
 
 
@@ -343,18 +357,18 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 	rc = nla_put(msg.msg, NCSI_ATTR_DATA,
 		sizeof(struct ncsi_pkt_hdr) + payload_len, (void *)pData);
 	if (rc) {
-		syslog(LOG_ERR, "Failed to add opcode, %m\n");
+		syslog(LOG_ERR, "Failed to add opcode, %s\n", strerror(errno));
 	}
 	nl_socket_disable_seq_check(msg.sk);
 	rc = nl_socket_modify_cb(msg.sk, NL_CB_VALID, NL_CB_CUSTOM, send_cb, &msg);
 	if (rc) {
-		syslog(LOG_ERR, "Failed to modify callback function, %m\n");
+		syslog(LOG_ERR, "Failed to modify callback function, %s\n", strerror(errno));
 		goto out;
 	}
 
 	rc = nl_send_auto(msg.sk, msg.msg);
 	if (rc < 0) {
-		syslog(LOG_ERR, "Failed to send message, %m\n");
+		syslog(LOG_ERR, "Failed to send message, %s\n", strerror(errno));
 		goto out;
 	}
 
@@ -365,7 +379,7 @@ int run_command_send(int ifindex, NCSI_NL_MSG_T *nl_msg, NCSI_NL_RSP_T *rsp)
 		rc = nl_recvmsgs_default(msg.sk);
 		DBG_PRINT("%s, rc = %d\n", __FUNCTION__, rc);
 		if (rc) {
-			syslog(LOG_ERR, "Failed to receive message, rc=%d %m\n", rc);
+			syslog(LOG_ERR, "Failed to receive message, rc=%d %s\n", rc, strerror(errno));
 			goto out;
 		}
 	}
@@ -386,13 +400,13 @@ NCSI_NL_RSP_T * send_nl_msg_libnl(NCSI_NL_MSG_T *nl_msg)
   ifindex = if_nametoindex(nl_msg->dev_name);
   // if_nametoindex returns 0 on error
   if (ifindex == 0) {
-    syslog(LOG_ERR, "Invalid netdev %s %m\n", nl_msg->dev_name);
+    syslog(LOG_ERR, "Invalid netdev %s %s\n", nl_msg->dev_name, strerror(errno));
     return NULL;
   }
 
   ret_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
   if (!ret_buf) {
-    syslog(LOG_ERR, "Failed to allocate rspbuf %d  %m\n", sizeof(NCSI_NL_RSP_T));
+    syslog(LOG_ERR, "Failed to allocate rspbuf %d  %s\n", sizeof(NCSI_NL_RSP_T), strerror(errno));
     return NULL;
   }
 

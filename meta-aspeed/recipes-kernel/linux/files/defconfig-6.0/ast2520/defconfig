@@ -249,3 +249,9 @@ CONFIG_USB_ETH_RNDIS=y
 CONFIG_USB_ETH_EEM=y
 CONFIG_USB_G_NCM=m
 CONFIG_USB_CDC_COMPOSITE=m
+
+#
+# Disable CONFIG_RANDSTRUCT to avoid errors when loading out-of-tree
+# kernel modules.
+#
+CONFIG_RANDSTRUCT_NONE=y

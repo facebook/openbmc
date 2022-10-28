@@ -31,7 +31,9 @@ extern "C" {
 
 #define MAX_SDR_LEN           64
 #define NORMAL_STATE        0x00
-#define MAX_SENSOR_NUM      0xFF
+#ifndef MAX_SENSOR_NUM
+#define MAX_SENSOR_NUM      (0xFF)
+#endif
 
 #define MAX_SENSOR_RATE_UNIT  7
 #define MAX_SENSOR_BASE_UNIT  92

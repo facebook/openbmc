@@ -174,7 +174,6 @@ static int
 _sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
     char *units) {
 
-  int ret;
   uint8_t percent;
   uint8_t rate_idx;
   uint8_t base_idx;
@@ -198,8 +197,8 @@ _sdr_get_sensor_units(sdr_full_t *sdr, uint8_t *op, uint8_t *modifier,
   if (percent) {
     sprintf(units, "%%");
   } else {
-    if (base_idx >= 0 && base_idx <= MAX_SENSOR_BASE_UNIT) {
-      if (rate_idx > 0 && rate_idx < MAX_SENSOR_RATE_UNIT) {
+    if (base_idx <= MAX_SENSOR_BASE_UNIT) {
+      if (rate_idx < MAX_SENSOR_RATE_UNIT) {
         sprintf(units, "%s %s", sensor_base_units[base_idx],
             sensor_rate_units[rate_idx]);
       } else {
@@ -369,15 +368,10 @@ sdr_get_sensor_name(uint8_t fru, uint8_t snr_num, char *name) {
 
 /* Get the threshold values from the SDRs */
 static int
-get_sdr_thresh_val(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
+get_sdr_thresh_val(uint8_t fru __attribute__((unused)), sdr_full_t *sdr,
+    uint8_t snr_num __attribute__((unused)),
     uint8_t thresh, float *value) {
 
-  int ret;
-  uint8_t m_lsb, m_msb;
-  uint16_t m = 0;
-  uint8_t b_lsb, b_msb;
-  uint16_t b = 0;
-  int8_t b_exp, r_exp;
   uint8_t thresh_val;
 
   switch (thresh) {
@@ -430,8 +424,6 @@ static int
 _sdr_get_snr_thresh(uint8_t fru, sdr_full_t *sdr, uint8_t snr_num,
     thresh_sensor_t *snr) {
 
-  int ret;
-  int value;
   float fvalue;
   uint8_t op, modifier;
 
@@ -566,7 +558,6 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
   int retry = 0;
   char fpath[64] = {0};
   char initpath[64] = {0};
-  char initflag[64] = {0};
   char fru_name[16];
 
   sensor_info_t sinfo[MAX_SENSOR_NUM + 1] = {0};
@@ -615,7 +606,7 @@ sdr_get_snr_thresh(uint8_t fru, uint8_t snr_num, thresh_sensor_t *snr) {
       }
 
       return ret;
-    } 
+    }
   }
 
   if (sdr != NULL) {

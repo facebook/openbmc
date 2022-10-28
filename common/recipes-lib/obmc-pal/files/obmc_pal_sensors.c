@@ -139,7 +139,7 @@ cache_set_coarse_history(char *key, float value) {
     s->count = 1;
   } else {
     sensor_coarse_data_t *s = &snr_shm->data[snr_shm->index];
-    /* If the log was started less than an hour ago, then 
+    /* If the log was started less than an hour ago, then
      * continue to log to this entry */
     if (difftime(current_time, s->log_time) < COARSE_THRESHOLD) {
       s->sum += value;
@@ -499,7 +499,7 @@ int
 sensor_read_history(uint8_t fru, uint8_t sensor_num, float *min, float *average, float *max, int start_time)
 {
   long current_time = time(NULL);
-  
+
   /* If requested start is greater than the coarse threshold (mostly an hour),
    * then go through the coarse stats to compute the max,min avg. else use the
    * fine grained data to get the values */
@@ -735,7 +735,7 @@ pal_copy_all_thresh_to_file(uint8_t fru, thresh_sensor_t *sinfo) {
 }
 
 int __attribute__((weak))
-pal_sensor_sdr_init(uint8_t fru, void *sinfo)
+pal_sensor_sdr_init(uint8_t fru, sensor_info_t *sinfo)
 {
   return -1;
 }

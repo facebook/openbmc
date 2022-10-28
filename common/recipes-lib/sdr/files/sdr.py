@@ -26,7 +26,7 @@ make tracing and debugging easier
 import ctypes
 from functools import lru_cache
 
-libsdr = ctypes.CDLL("libsdr.so")
+libsdr = ctypes.CDLL("libsdr.so.0")
 
 # ThreshSensor is the representation of this struct
 # typedef struct {

@@ -79,8 +79,8 @@ send_nl_msg_netlink_user(NCSI_NL_MSG_T *nl_msg)
   struct nlmsghdr *nlh = NULL;
   struct iovec iov;
   struct msghdr msg;
-  int req_msg_size = offsetof(NCSI_NL_MSG_T, msg_payload) + nl_msg->payload_length;
-  int msg_size = max(sizeof(NCSI_NL_RSP_T), req_msg_size);
+  size_t req_msg_size = offsetof(NCSI_NL_MSG_T, msg_payload) + nl_msg->payload_length;
+  size_t msg_size = max(sizeof(NCSI_NL_RSP_T), req_msg_size);
 
   /* msg response from kernel */
   NCSI_NL_RSP_T *rcv_buf, *ret_buf = NULL;
@@ -327,7 +327,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
     printf("%s, Error: failed nl_msg buffer allocation(%d)\n",
-           __FUNCTION__, sizeof(NCSI_NL_MSG_T));
+           __func__, sizeof(NCSI_NL_MSG_T));
     ret = -1;
     goto free_exit;
   }
@@ -336,7 +336,7 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   pldmRes = calloc(1, sizeof(pldm_response));
   if (!pldmRes) {
     printf("%s, Error: failed pldmRes buffer allocation(%d)\n",
-           __FUNCTION__, sizeof(pldm_response));
+           __func__, sizeof(pldm_response));
     ret = -1;
     goto free_exit;
   }
@@ -709,7 +709,7 @@ static int default_ncsi_util_handler(int argc, char **argv,
           pldmRes = calloc(1, sizeof(pldm_response));
           if (!pldmRes) {
             printf("%s, Error: failed pldmRes buffer allocation(%d)\n",
-                   __FUNCTION__, sizeof(pldm_response));
+                   __func__, sizeof(pldm_response));
           }
           pldmRes->resp_size = rsp->hdr.payload_length - 4;
           memcpy(&(pldmRes->common[0]), &(rsp->msg_payload[4]), pldmRes->resp_size);

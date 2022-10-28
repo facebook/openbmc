@@ -86,7 +86,7 @@ static int handle_get_debug_data_resp(NCSI_NL_RSP_T *nl_resp,
 {
   NCSI_Nvidia_Get_Debug_Data_Response *gdd_resp = ncsi_get_nvidia_resp(nl_resp);
   void *data;
-  int data_len;
+  size_t data_len;
 
   /*
    * Check response

@@ -89,8 +89,8 @@ static int handle_get_debug_data_resp(NCSI_NL_RSP_T *nl_resp,
 {
   NCSI_Brcm_Get_Debug_Data_Response *gdd_resp = ncsi_get_brcm_resp(nl_resp);
   bool is_first;
-  void *data;
-  int data_len;
+  uint8_t *data;
+  size_t data_len;
   uint32_t resp_crc = 0;
 
   /*

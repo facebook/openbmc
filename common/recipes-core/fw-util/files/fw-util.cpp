@@ -145,7 +145,7 @@ void fw_util_sig_handler(int signo)
 
 void usage()
 {
-  cout << "USAGE: " << exec_name << " all|FRU --version [all|COMPONENT]" << endl;
+  cout << "USAGE: " << exec_name << " all|FRU --version|--version-json [all|COMPONENT]" << endl;
   cout << "       " << exec_name << " FRU --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --force --update [--]COMPONENT IMAGE_PATH" << endl;
   cout << "       " << exec_name << " FRU --dump [--]COMPONENT IMAGE_PATH" << endl;
@@ -380,6 +380,15 @@ int main(int argc, char *argv[])
 
           if (action == "--version") {
             ret = c->print_version();
+            if (ret == FW_STATUS_NOT_SUPPORTED) {
+              json j_object = {{"FRU", c->fru()}, {"COMPONENT", c->component()}};
+              ret = c->get_version(j_object);
+              if (ret == FW_STATUS_SUCCESS) {
+                string comp = j_object.value("PRETTY_COMPONENT", c->component());
+                string vers(j_object["VERSION"]);
+                cout << comp << " Version: " << vers << std::endl;
+              }
+            }
             if (ret != FW_STATUS_SUCCESS && ret != FW_STATUS_NOT_SUPPORTED) {
               cerr << "Error getting version of " << c->component()
                 << " on fru: " << c->fru() << endl;

@@ -14,7 +14,7 @@ pal_deps += [
     cc.find_library('fbwc_fruid'),
     cc.find_library('gpio-ctrl'),
     cc.find_library('libbic'),
-    cc.find_library('obmc-sensors'),
+    dependency('libobmc-sensors'),
     cc.find_library('ncsi'),
     cc.find_library('libexp'),
     ]

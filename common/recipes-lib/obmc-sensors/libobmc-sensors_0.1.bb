@@ -24,7 +24,7 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://obmc-sensors.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 LOCAL_URI = " \
-    file://Makefile \
+    file://meson.build \
     file://sensor.cpp \
     file://sensor.hpp \
     file://sensorchip.cpp \
@@ -35,17 +35,7 @@ LOCAL_URI = " \
     file://obmc-sensors.h \
     "
 
-LDFLAGS += "-lsensors"
+inherit meson pkgconfig
+
 DEPENDS += "lmsensors"
 RDEPENDS:${PN} += "lmsensors-sensors"
-
-do_install() {
-    install -d ${D}${libdir}
-    install -m 0644 libobmc-sensors.so ${D}${libdir}/libobmc-sensors.so
-
-    install -d ${D}${includedir}/openbmc
-    install -m 0644 obmc-sensors.h ${D}${includedir}/openbmc/obmc-sensors.h
-}
-
-FILES:${PN} = "${libdir}/libobmc-sensors.so"
-FILES:${PN}-dev = "${includedir}/openbmc/obmc-sensors.h"

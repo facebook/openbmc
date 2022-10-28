@@ -7,7 +7,7 @@ pal_deps += [
     cc.find_library('me'),
     cc.find_library('misc-utils'),
     cc.find_library('obmc-i2c'),
-    cc.find_library('obmc-sensors'),
+    dependency('libobmc-sensors'),
     cc.find_library('sensor-correction'),
     cc.find_library('vr'),
     ]

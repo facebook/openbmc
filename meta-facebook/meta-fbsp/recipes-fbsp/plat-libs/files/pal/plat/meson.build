@@ -12,7 +12,7 @@ pal_sources += [
 pal_deps += [
     cc.find_library('obmc-i2c'),
     cc.find_library('gpio-ctrl'),
-    cc.find_library('obmc-sensors'),
+    dependency('libobmc-sensors'),
     cc.find_library('nm'),
     cc.find_library('peci'),
     cc.find_library('me'),

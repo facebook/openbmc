@@ -25,6 +25,6 @@ pal_deps += [
     cc.find_library('nm'),
     cc.find_library('obmc-i2c'),
     cc.find_library('obmc-pmbus'),
-    cc.find_library('obmc-sensors'),
+    dependency('libobmc-sensors'),
     cc.find_library('peci'),
     ]

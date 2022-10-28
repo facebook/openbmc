@@ -7,7 +7,7 @@ pal_deps += [
     dependency('jansson'),
     cc.find_library('ncsi'),
     cc.find_library('obmc-i2c'),
-    cc.find_library('obmc-sensors'),
+    dependency('libobmc-sensors'),
     cc.find_library('gpio-ctrl'),
     cc.find_library('nl-wrapper'),
     cc.find_library('nvme-mi'),

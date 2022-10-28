@@ -113,6 +113,8 @@ static struct {
   .buf = {0},
 };
 
+#define NCSI_SENSOR_THR_INIT 0,0,0,0,0,0
+
 static NCSI_NL_RSP_T aenbuf;
 
 static struct timespec last_config_ts;
@@ -121,27 +123,27 @@ static uint32_t vendor_IANA = 0;
 static uint32_t aen_enable_mask = AEN_ENABLE_DEFAULT;
 static uint8_t gEnablePldmMonitoring = 0;
 static pldm_sensor_t sensors_mlx[NUM_PLDM_SENSORS] = {
-  {PLDM_NUMERIC_SENSOR_START,   MLX_PRIMARY_TEMP_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_NUMERIC_SENSOR_START+1, MLX_PORT_0_TEMP_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_NUMERIC_SENSOR_START+2, MLX_PORT_0_LINK_SPEED_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_STATE_SENSOR_START,     MLX_HEALTH_STATE_SENSOR_ID, PLDM_SENSOR_TYPE_STATE},
-  {PLDM_STATE_SENSOR_START+1,   MLX_PORT_0_LINK_STATE_SENSOR_ID, PLDM_SENSOR_TYPE_STATE},
+  {PLDM_NUMERIC_SENSOR_START,   MLX_PRIMARY_TEMP_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_NUMERIC_SENSOR_START+1, MLX_PORT_0_TEMP_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_NUMERIC_SENSOR_START+2, MLX_PORT_0_LINK_SPEED_SENSOR_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_STATE_SENSOR_START,     MLX_HEALTH_STATE_SENSOR_ID, PLDM_SENSOR_TYPE_STATE, NCSI_SENSOR_THR_INIT},
+  {PLDM_STATE_SENSOR_START+1,   MLX_PORT_0_LINK_STATE_SENSOR_ID, PLDM_SENSOR_TYPE_STATE, NCSI_SENSOR_THR_INIT},
 };
 
 static pldm_sensor_t sensors_brcm[NUM_PLDM_SENSORS] = {
-  {PLDM_NUMERIC_SENSOR_START,   BRCM_THERMAL_SENSOR_ONCHIP_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_NUMERIC_SENSOR_START+1, BRCM_THERMAL_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_NUMERIC_SENSOR_START+2, BRCM_LINK_SPEED_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_STATE_SENSOR_START,     BRCM_DEVICE_STATE_SENSORS_ID, PLDM_SENSOR_TYPE_STATE},
-  {PLDM_STATE_SENSOR_START+1,   BRCM_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE},
+  {PLDM_NUMERIC_SENSOR_START,   BRCM_THERMAL_SENSOR_ONCHIP_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_NUMERIC_SENSOR_START+1, BRCM_THERMAL_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_NUMERIC_SENSOR_START+2, BRCM_LINK_SPEED_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_STATE_SENSOR_START,     BRCM_DEVICE_STATE_SENSORS_ID, PLDM_SENSOR_TYPE_STATE, NCSI_SENSOR_THR_INIT},
+  {PLDM_STATE_SENSOR_START+1,   BRCM_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE, NCSI_SENSOR_THR_INIT},
 };
 
 static pldm_sensor_t sensors_brcm_2b[NUM_PLDM_SENSORS] = {
-  {PLDM_NUMERIC_SENSOR_START,   BRCM_2B_THERMAL_SENSOR_ONCHIP_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_NUMERIC_SENSOR_START+1, BRCM_2B_THERMAL_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_NUMERIC_SENSOR_START+2, BRCM_2B_LINK_SPEED_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC},
-  {PLDM_STATE_SENSOR_START,     BRCM_2B_DEVICE_STATE_SENSORS_ID, PLDM_SENSOR_TYPE_STATE},
-  {PLDM_STATE_SENSOR_START+1,   BRCM_2B_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE},
+  {PLDM_NUMERIC_SENSOR_START,   BRCM_2B_THERMAL_SENSOR_ONCHIP_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_NUMERIC_SENSOR_START+1, BRCM_2B_THERMAL_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_NUMERIC_SENSOR_START+2, BRCM_2B_LINK_SPEED_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_NUMERIC, NCSI_SENSOR_THR_INIT},
+  {PLDM_STATE_SENSOR_START,     BRCM_2B_DEVICE_STATE_SENSORS_ID, PLDM_SENSOR_TYPE_STATE, NCSI_SENSOR_THR_INIT},
+  {PLDM_STATE_SENSOR_START+1,   BRCM_2B_LINK_STATE_SENSOR_PORT_0_ID, PLDM_SENSOR_TYPE_STATE, NCSI_SENSOR_THR_INIT},
 };
 
 static pldm_ver_t pldm_ver[PLDM_RSV] = {0};
@@ -165,7 +167,7 @@ static int   (*send_registration_msg)(nl_usr_sk_t *sk);
 int rx_buffer_add(NCSI_NL_RSP_T *pdata);
 int rx_buffer_get(NCSI_NL_RSP_T *dest);
 
-static int 
+static int
 send_cmd_and_get_resp_retry(nl_usr_sk_t *sk, uint8_t ncsi_cmd,
                       uint16_t payload_len, unsigned char *payload,
                       NCSI_NL_RSP_T *resp_buf, int32_t retry)
@@ -188,7 +190,7 @@ send_cmd_and_get_resp_retry(nl_usr_sk_t *sk, uint8_t ncsi_cmd,
 static int
 prepare_ncsi_req_msg_libnl(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
                      uint16_t payload_len, unsigned char *payload,
-                     uint16_t response_len)
+                     uint16_t response_len __attribute__((unused)))
 {
 
   NCSI_NL_MSG_T *nl_msg = NULL;
@@ -196,7 +198,7 @@ prepare_ncsi_req_msg_libnl(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
     printf("%s, Error: failed nl_msg buffer allocation(%zu)\n",
-           __FUNCTION__, sizeof(NCSI_NL_MSG_T));
+           __func__, sizeof(NCSI_NL_MSG_T));
     return -1;
   }
   memset(nl_msg, 0, sizeof(NCSI_NL_MSG_T));
@@ -223,7 +225,7 @@ prepare_ncsi_req_msg_nl_user(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
 
   dest_addr = (struct sockaddr_nl *)malloc(sizeof(struct sockaddr_nl));
   if (!dest_addr) {
-    syslog(LOG_ERR, "%s: failed to allocate msg_name", __FUNCTION__);
+    syslog(LOG_ERR, "%s: failed to allocate msg_name", __func__);
     return -1;
   }
   memset(dest_addr, 0, sizeof(*dest_addr));
@@ -233,7 +235,7 @@ prepare_ncsi_req_msg_nl_user(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
 
   nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(msg_size));
   if (!nlh) {
-    syslog(LOG_ERR, "%s: failed to allocate message buffer", __FUNCTION__);
+    syslog(LOG_ERR, "%s: failed to allocate message buffer", __func__);
     goto free_and_exit;
   }
   memset(nlh, 0, NLMSG_SPACE(msg_size));
@@ -247,7 +249,7 @@ prepare_ncsi_req_msg_nl_user(generic_msg_t *gmsg, uint8_t ch, uint8_t cmd,
 
   iov = (struct iovec *)malloc(sizeof(struct iovec));
   if (!iov) {
-    syslog(LOG_ERR, "%s: failed to allocate iovec", __FUNCTION__);
+    syslog(LOG_ERR, "%s: failed to allocate iovec", __func__);
     goto free_and_exit;
   }
   iov->iov_base = (void *)nlh;
@@ -277,7 +279,7 @@ skip_ncsi_tx(void) {
 
   if (kv_get("block_ncsi_xmit", value, NULL, 0) == 0) {
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    if (strtoul(value, NULL, 10) > ts.tv_sec) {
+    if (((time_t)strtoul(value, NULL, 10)) > ts.tv_sec) {
       return true;
     }
   }
@@ -285,7 +287,8 @@ skip_ncsi_tx(void) {
   return false;
 }
 
-static int send_nl_data_libnl(int socket_fd, generic_msg_t *gmsg)
+static int send_nl_data_libnl(int socket_fd __attribute__((unused)),
+                              generic_msg_t *gmsg)
 {
   // calls the non-block version of nl-wrapper API
   int ret = 0;
@@ -297,12 +300,12 @@ static int send_nl_data_libnl(int socket_fd, generic_msg_t *gmsg)
 
   nl_rsp = send_nl_msg_libnl(gmsg->pmsg_libnl);
   if (nl_rsp == NULL) {
-    syslog(LOG_ERR, "%s null rsp", __FUNCTION__);
+    syslog(LOG_ERR, "%s null rsp", __func__);
     return -1;
   }
   ret = rx_buffer_add(nl_rsp);
   if (ret != 0) {
-    syslog(LOG_ERR, "%s failed to add rsp", __FUNCTION__);
+    syslog(LOG_ERR, "%s failed to add rsp", __func__);
   }
 
   free(nl_rsp);
@@ -370,7 +373,7 @@ send_registration_msg_nl_user(nl_usr_sk_t *sk)
 
 // no registeration msg needed for libnl
 static int
-send_registration_msg_libnl(nl_usr_sk_t *sk)
+send_registration_msg_libnl(nl_usr_sk_t *sk __attribute__((unused)))
 {
   return 0;
 }
@@ -499,9 +502,9 @@ init_pldm_sensor(uint32_t vender, pldm_ver_t* pldm_monitoring_ver)
 }
 
 static int
-send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd, uint8_t ncsi_cmd,
-                      uint16_t payload_len, unsigned char *payload,
-                      NCSI_NL_RSP_T *resp_buf)
+send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd __attribute__((unused)),
+                      uint8_t ncsi_cmd, uint16_t payload_len,
+                      unsigned char *payload, NCSI_NL_RSP_T *resp_buf)
 {
   NCSI_NL_MSG_T *nl_msg = NULL;
   NCSI_NL_RSP_T *nl_rsp = NULL;
@@ -514,7 +517,7 @@ send_cmd_and_get_resp_libnl(nl_usr_sk_t *sfd, uint8_t ncsi_cmd,
   nl_msg = calloc(1, sizeof(NCSI_NL_MSG_T));
   if (!nl_msg) {
     printf("%s, Error: failed nl_msg buffer allocation(%zu)\n",
-           __FUNCTION__, sizeof(NCSI_NL_MSG_T));
+           __func__, sizeof(NCSI_NL_MSG_T));
     return -1;
   }
   memset(nl_msg, 0, sizeof(NCSI_NL_MSG_T));
@@ -662,13 +665,13 @@ write_pldm_sensor_info()
   }
   if (flock(fd, LOCK_EX) < 0) {
     syslog(LOG_INFO, "%s: file-lock %s failed errno = %d\n",
-           __FUNCTION__, PLDM_SNR_INFO, errno);
+           __func__, PLDM_SNR_INFO, errno);
     goto close_bail;
   }
 
   if (ftruncate(fd, share_size) != 0) {
     syslog(LOG_ERR, "%s: truncate %s failed errno = %d\n",
-        __FUNCTION__, PLDM_SNR_INFO, errno);
+        __func__, PLDM_SNR_INFO, errno);
     goto close_bail;
   }
 
@@ -676,19 +679,19 @@ write_pldm_sensor_info()
 
   if (shm == MAP_FAILED) {
     syslog(LOG_INFO, "%s: mmap %s failed, errno = %d",
-           __FUNCTION__, PLDM_SNR_INFO, errno);
+           __func__, PLDM_SNR_INFO, errno);
     goto unlock_bail;
   }
   memcpy(shm, pldm_sensors, share_size);
 
   if (munmap(shm, share_size) != 0) {
     syslog(LOG_INFO, "%s: munmap %s failed, errno = %d",
-           __FUNCTION__, PLDM_SNR_INFO, errno);
+           __func__, PLDM_SNR_INFO, errno);
   }
 unlock_bail:
   if (flock(fd, LOCK_UN) < 0) {
     syslog(LOG_INFO, "%s: file-unlock %s failed errno = %d\n",
-           __FUNCTION__, PLDM_SNR_INFO, errno);
+           __func__, PLDM_SNR_INFO, errno);
   }
 close_bail:
   close(fd);
@@ -712,7 +715,7 @@ do_pldm_sensor_thresh_init(nl_usr_sk_t *sfd, pldm_cmd_req *pldmReq, NCSI_NL_RSP_
               (PLDM_COMMON_REQ_LEN + sizeof(PLDM_Get_Sensor_Thresh_t)),
               (unsigned char *)&(pldmReq->common), resp_buf, NCSI_CMD_RETRY);
       if (ret < 0) {
-        syslog(LOG_ERR, "%s: failed get sensor (%d) thresh", __FUNCTION__, sensor);
+        syslog(LOG_ERR, "%s: failed get sensor (%d) thresh", __func__, sensor);
       }
       pldmStatus = ncsiDecodePldmCompCode(resp_buf);
       if (pldmStatus == CC_SUCCESS) {
@@ -722,7 +725,7 @@ do_pldm_sensor_thresh_init(nl_usr_sk_t *sfd, pldm_cmd_req *pldmReq, NCSI_NL_RSP_
         init_pldm_sensor_thresh((PLDM_SensorThresh_Response_t *)pPldmResp, sensor);
       } else {
         syslog(LOG_ERR, "%s: pldm get threshhold failed (snr %d, NIC snr %d)",
-               __FUNCTION__, sensor, pldm_sensors[sensor].pldm_sensor_id);
+               __func__, sensor, pldm_sensors[sensor].pldm_sensor_id);
       }
     } // if (pldm_sensors[sensor].sensor_type == PLDM_SENSOR_TYPE_NUMERIC)
   } // for ( sensor = 0; sensor < NUM_PLDM_SENSORS; ++sensor )
@@ -829,7 +832,7 @@ init_nic_config(nl_usr_sk_t *sfd)
 
   // get NIC CAPABILITY
   ret = send_cmd_and_get_resp_retry(sfd, NCSI_GET_CAPABILITIES, 0, NULL, resp_buf, NCSI_CMD_RETRY);
-  if (ret < 0) { 
+  if (ret < 0) {
     syslog(LOG_ERR, "init_nic_config: failed to send cmd (0x%x)",
            NCSI_GET_CAPABILITIES);
     ret = -1;
@@ -888,7 +891,7 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
 
 #ifdef PLDM_SNR_DBG
   syslog(LOG_INFO, "%s iid %d, sensor_id %d, pltf_id 0x%x",
-         __FUNCTION__, pldm_iid, sensor_id, pltf_id);
+         __func__, pldm_iid, sensor_id, pltf_id);
 #endif
 
   // take a NC-SI response packet,
@@ -906,7 +909,7 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
                   (PLDM_StateSensorReading_Response_t *) pPldmResp);
   } else {
     syslog(LOG_WARNING, "%s unknown sensor type, snr 0x%x, type %d",
-           __FUNCTION__, pltf_id, pldm_sensors[sensor_id].sensor_type);
+           __func__, pltf_id, pldm_sensors[sensor_id].sensor_type);
   }
 
   if (pltf_id == PLDM_NUMERIC_SENSOR_START+2) { // PORT_0_LINK_SPEED
@@ -918,7 +921,7 @@ handle_pldm_snr_read(NCSI_Response_Packet *resp)
     // IF platform doesn't have a NIC FRU, or hasn't overwrite the obmc-pal lib
     //   don't save this information
     if (sensor_cache_write(nic_fru_id, pltf_id, true, sensor_val)) {
-      syslog(LOG_WARNING, "%s sensor cache write failed", __FUNCTION__);
+      syslog(LOG_WARNING, "%s sensor cache write failed", __func__);
     }
   }
   return 0;
@@ -937,7 +940,7 @@ handle_pldm_resp_over_ncsi(NCSI_Response_Packet *resp)
   // read comamnds (numeric and state sensor)
   if (pldmType != PLDM_MONITORING) {
     syslog(LOG_WARNING, "%s unexpected PLDM type 0x%x, cmd 0x%x",
-           __FUNCTION__, pldmType, pldmCmd);
+           __func__, pldmType, pldmCmd);
     return -1;
   }
 
@@ -949,7 +952,7 @@ handle_pldm_resp_over_ncsi(NCSI_Response_Packet *resp)
       break;
     default:
       syslog(LOG_WARNING, "%s unexpected PLDM response, cmd 0x%x",
-             __FUNCTION__, pldmCmd);
+             __func__, pldmCmd);
       break;
   }
 
@@ -1065,7 +1068,7 @@ handle_ncsi_if_reinit(int is_aen) {
 
 // Thread to handle the incoming responses
 static void*
-ncsi_rx_handler_nl_usr(void *args) {
+ncsi_rx_handler_nl_usr(void *args __attribute__((unused))) {
   int sock_fd = gSock.fd;
   struct msghdr msg;
   struct iovec iov;
@@ -1117,13 +1120,13 @@ ncsi_rx_handler_nl_usr(void *args) {
 }
 
 static void*
-ncsi_rx_handler_libnl(void *args) {
+ncsi_rx_handler_libnl(void *args __attribute__((unused))) {
   int ret = 0;
   int is_aen;
-  syslog(LOG_INFO, "%s thread started", __FUNCTION__);
+  syslog(LOG_INFO, "%s thread started", __func__);
   NCSI_NL_RSP_T *rcv_buf = calloc(1, sizeof(NCSI_NL_RSP_T));
   if (rcv_buf == NULL) {
-     syslog(LOG_INFO, "%s buf alloc failed", __FUNCTION__);
+     syslog(LOG_INFO, "%s buf alloc failed", __func__);
      pthread_exit(NULL);
   }
 
@@ -1136,8 +1139,8 @@ ncsi_rx_handler_libnl(void *args) {
     if (ret != 0)
       continue;
 #if DEBUG
-    syslog(LOG_INFO, "%s rcv_buf->hdr.cmd 0x%x, hdr.len %d", __FUNCTION__, rcv_buf->hdr.cmd, rcv_buf->hdr.payload_length);
-    syslog(LOG_INFO, "%s data 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x", __FUNCTION__,
+    syslog(LOG_INFO, "%s rcv_buf->hdr.cmd 0x%x, hdr.len %d", __func__, rcv_buf->hdr.cmd, rcv_buf->hdr.payload_length);
+    syslog(LOG_INFO, "%s data 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x 0x%x", __func__,
             rcv_buf->msg_payload[0],
             rcv_buf->msg_payload[1],
             rcv_buf->msg_payload[2],
@@ -1158,7 +1161,7 @@ ncsi_rx_handler_libnl(void *args) {
       handle_ncsi_if_reinit(is_aen);
     }
   }
-  syslog(LOG_INFO, "%s exit", __FUNCTION__);
+  syslog(LOG_INFO, "%s exit", __func__);
   pthread_exit(NULL);
 }
 
@@ -1216,7 +1219,7 @@ static int pldm_monitoring(int sock_fd)
 
 // Thread to send periodic NC-SI cmmands to check NIC status
 static void*
-ncsi_tx_handler(void *arg) {
+ncsi_tx_handler(void *arg __attribute__((unused))) {
   int ret, sock_fd = gSock.fd;
   generic_msg_t lsts_msg, vid_msg;
 
@@ -1262,7 +1265,7 @@ ncsi_tx_handler(void *arg) {
 
 // Thread to setup netlink and receive AEN
 static void*
-ncsi_aen_handler(void *arg) {
+ncsi_aen_handler(void *arg __attribute__((unused))) {
   pthread_t tid_rx;
   pthread_t tid_tx;
   int ret = 0;
@@ -1334,7 +1337,7 @@ int setup_user_socket(nl_usr_sk_t *sfd)
   /* open NETLINK socket to send message to kernel */
   sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USER);
   if(sock_fd < 0)  {
-    syslog(LOG_ERR, "%s: Error: failed to allocate user socket\n", __FUNCTION__);
+    syslog(LOG_ERR, "%s: Error: failed to allocate user socket\n", __func__);
     return -1;
   }
   sfd->fd = sock_fd;
@@ -1362,7 +1365,7 @@ int rx_buffer_add(NCSI_NL_RSP_T *pdata)
   pthread_mutex_lock(&libnl_rx_buf.rx_mutex);
   // add log for buffer full but allows overwriting old data
   if (libnl_rx_buf.len == RX_BUF_SIZE)
-    syslog(LOG_ERR, "%s: buff full\n", __FUNCTION__);
+    syslog(LOG_ERR, "%s: buff full\n", __func__);
   memcpy(libnl_rx_buf.buf[libnl_rx_buf.end], pdata, sizeof(NCSI_NL_RSP_T));
 
   libnl_rx_buf.end = (libnl_rx_buf.end + 1) % RX_BUF_SIZE;
@@ -1397,7 +1400,7 @@ int setup_rx_buffer(void)
   {
     libnl_rx_buf.buf[i] = calloc(1, sizeof(NCSI_NL_RSP_T));
     if (libnl_rx_buf.buf[i] == NULL) {
-      syslog(LOG_ERR, "%s: failed buf %d alloc\n", __FUNCTION__, i);
+      syslog(LOG_ERR, "%s: failed buf %d alloc\n", __func__, i);
       ret = -1;
       goto errout;
     }
@@ -1408,18 +1411,18 @@ int setup_rx_buffer(void)
     if (errno == EEXIST) {
       libnl_rx_buf.semfill = sem_open(fillcnt_sem_path, 0);
       if (libnl_rx_buf.semfill == SEM_FAILED) {
-        syslog(LOG_ERR, "%s: failed retry semfill\n", __FUNCTION__);
+        syslog(LOG_ERR, "%s: failed retry semfill\n", __func__);
         ret = -1;
         goto errout;
       }
     } else {
-      syslog(LOG_ERR, "%s: failed semfill\n", __FUNCTION__);
+      syslog(LOG_ERR, "%s: failed semfill\n", __func__);
       ret = -1;
       goto errout;
     }
   }
   if (sem_init(libnl_rx_buf.semfill, 0, 0) != 0) {
-    syslog(LOG_ERR, "%s: failed semfill init\n", __FUNCTION__);
+    syslog(LOG_ERR, "%s: failed semfill init\n", __func__);
     ret = -1;
     goto errout;
   }
@@ -1431,7 +1434,7 @@ errout:
 
 
 int
-main(int argc, char * const argv[]) {
+main() {
   pthread_t tid_ncsi_aen_handler;
 
   for (int i = 1; i <= pal_get_fru_count(); i++) {
@@ -1447,7 +1450,7 @@ main(int argc, char * const argv[]) {
 
   if (islibnl()) {
     if (setup_rx_buffer() != 0) {
-      syslog(LOG_ERR, "%s: fail to setup rx buffer\n", __FUNCTION__);
+      syslog(LOG_ERR, "%s: fail to setup rx buffer\n", __func__);
       return -1;
     }
     send_cmd_and_get_resp = send_cmd_and_get_resp_libnl;
@@ -1457,7 +1460,7 @@ main(int argc, char * const argv[]) {
     send_registration_msg = send_registration_msg_libnl;
   } else {
     if (setup_user_socket(&gSock)) {
-      syslog(LOG_ERR, "%s: failed setup user socket\n", __FUNCTION__);
+      syslog(LOG_ERR, "%s: failed setup user socket\n", __func__);
       return -1;
     }
     send_cmd_and_get_resp = send_cmd_and_get_resp_nl_user;

@@ -48,7 +48,7 @@ enable_default_aens() {
   char cmd[64] = {0};
 
   memset(cmd, 0, sizeof(cmd));
-  sprintf(cmd, "/usr/local/bin/enable-aen.sh");
+  sprintf(cmd, "/usr/bin/enable-aen.sh");
   if (system(cmd) != 0) {
     syslog(LOG_ERR, "Enabling AEN failed");
   }

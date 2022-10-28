@@ -13,7 +13,7 @@ install_headers(
 
 cc = meson.get_compiler('c')
 libs = [
-  cc.find_library('ncsi'),
+  dependency('libncsi'),
 ]
 
 srcs = files(

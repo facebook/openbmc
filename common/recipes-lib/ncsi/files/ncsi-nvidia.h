@@ -69,7 +69,7 @@ typedef struct {
 typedef struct {
   NCSI_Nvidia_Response_Hdr  header;
   uint32_t                  next_data_handle;
-  uint8_t                   debug_data[0];
+  uint8_t                   debug_data[];
 } __attribute__((packed)) NCSI_Nvidia_Get_Debug_Data_Response;
 
 #define NCSI_NVIDIA_GET_DEBUG_DATA_TYPE_DEV_DUMP     0

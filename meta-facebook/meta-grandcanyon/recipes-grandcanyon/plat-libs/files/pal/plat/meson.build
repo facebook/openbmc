@@ -3,18 +3,18 @@ pal_headers += [
     ]
 
 pal_deps += [
+    cc.find_library('bic'),
+    cc.find_library('exp'),
     cc.find_library('fbgc_common'),
     cc.find_library('fbgc_fruid'),
-    dependency('libobmc-sensors'),
-    cc.find_library('obmc-i2c'),
-    cc.find_library('gpio-ctrl'),
     cc.find_library('fbgc_gpio'),
-    cc.find_library('exp'),
-    cc.find_library('bic'),
-    cc.find_library('ncsi'),
+    cc.find_library('gpio-ctrl'),
     cc.find_library('nl-wrapper'),
-    dependency('libphymem'),
     cc.find_library('nvme-mi'),
+    cc.find_library('obmc-i2c'),
+    dependency('libncsi'),
+    dependency('libobmc-sensors'),
+    dependency('libphymem'),
     ]
 
 pal_sources += [

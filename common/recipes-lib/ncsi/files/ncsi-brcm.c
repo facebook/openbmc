@@ -167,7 +167,7 @@ int ncsi_brcm_check_get_debug_data(NCSI_NL_RSP_T *nl_resp, int debug_data_type,
                                    bool is_first)
 {
   NCSI_Brcm_Get_Debug_Data_Response *gdd_resp = ncsi_get_brcm_resp(nl_resp);
-  int data_len = nl_resp->hdr.payload_length - sizeof(*gdd_resp);
+  size_t data_len = nl_resp->hdr.payload_length - sizeof(*gdd_resp);
 
   /* Check GetDebugData response data */
   gdd_resp = ncsi_get_brcm_resp(nl_resp);

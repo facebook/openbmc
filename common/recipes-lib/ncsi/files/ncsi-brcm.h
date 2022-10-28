@@ -69,7 +69,7 @@ typedef struct {
   uint8_t                 reserved;
   uint8_t                 op;
   uint16_t                type;
-  uint8_t                 debug_data[0]; /* data of variable length */
+  uint8_t                 debug_data[]; /* data of variable length */
 } __attribute__((packed)) NCSI_Brcm_Get_Debug_Data_Response;
 
 #define NCSI_BRCM_GET_DEBUG_DATA_TYPE_CORE_DUMP     0

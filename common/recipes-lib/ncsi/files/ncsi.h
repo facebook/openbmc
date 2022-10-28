@@ -331,8 +331,8 @@ extern void (*ncsi_log)(int priority, const char *format, ...)
 
 int ncsi_init_if(int);
 void handle_ncsi_config(int delay);
-int getMacAddr(int *values);
-int checkValidMacAddr(int *value);
+int getMacAddr(unsigned int *values);
+int checkValidMacAddr(unsigned int *value);
 int check_valid_mac_addr(void);
 const char * ncsi_cmd_type_to_name(int cmd);
 void print_ncsi_data(void *data, int size, int print_num, int print_offset);

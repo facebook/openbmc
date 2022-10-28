@@ -163,7 +163,7 @@ const char *ncsi_nvidia_get_debug_type_to_name(int type)
 }
 
 int ncsi_nvidia_check_get_debug_data(NCSI_NL_RSP_T *nl_resp, int debug_data_type,
-                                   bool is_first)
+                                   bool is_first __attribute__((unused)))
 {
   NCSI_Nvidia_Get_Debug_Data_Response *gdd_resp = ncsi_get_nvidia_resp(nl_resp);
   int data_len = nl_resp->hdr.payload_length - sizeof(*gdd_resp);

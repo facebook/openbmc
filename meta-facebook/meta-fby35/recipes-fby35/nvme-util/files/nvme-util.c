@@ -56,7 +56,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
   if (ret) {
     return ret; // fail to select mux
   }
-  
+
   tlen = 0;
   tbuf[tlen++] = (get_gpv3_bus_number(dev_id) << 1) + 1;
   tbuf[tlen++] = 0xD4;
@@ -68,7 +68,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
 
   printf("Device register: 0x%02X\n", tbuf[3]);
   if ( argc - 2  > 0 ) printf("To write NVMe %d bytes.\n", argc - 2);
-  else printf("To read NVMe %d bytes:\n", tbuf[2]); 
+  else printf("To read NVMe %d bytes:\n", tbuf[2]);
 
   do {
     ret = bic_ipmb_send(slot_id, NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen, m_intf);
@@ -78,7 +78,7 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
 
   if ( ret < 0 ) {
     if ( rlen > 0 ) printf("nvme-util fail to read\n");
-    else printf("nvme-util fail to write\n"); 
+    else printf("nvme-util fail to write\n");
   } else {
     for (i = 0; i < rlen; i++) {
       if (!(i % 16) && i) printf("\n");
@@ -91,9 +91,9 @@ read_bic_nvme_data(uint8_t slot_id, uint8_t dev_id, int argc, char **argv) {
 }
 
 static int
-ssd_monitor_enable(uint8_t slot_id, uint8_t slot_type, bool enable) {
+ssd_monitor_enable(uint8_t slot_id, bool enable) {
   int ret = 0;
-  ret = bic_enable_ssd_sensor_monitor(slot_id, enable, m_intf); 
+  ret = bic_enable_ssd_sensor_monitor(slot_id, enable, m_intf);
   if ( enable == false ) {
     msleep(100);
   }
@@ -101,9 +101,9 @@ ssd_monitor_enable(uint8_t slot_id, uint8_t slot_type, bool enable) {
 }
 
 static void
-nvme_sig_handler(int sig) {
+nvme_sig_handler(int sig __attribute__((unused))) {
   if (m_slot_id) {
-    ssd_monitor_enable(m_slot_id, 0/*unused*/, true);
+    ssd_monitor_enable(m_slot_id, true);
   }
 }
 
@@ -160,7 +160,7 @@ main(int argc, char **argv) {
     sigaction(SIGSEGV, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    if ( ssd_monitor_enable(slot_id, 0/*unused*/, false) < 0 ) {
+    if ( ssd_monitor_enable(slot_id, false) < 0 ) {
       printf("err: failed to disable SSD monitoring\n");
       break;
     }
@@ -168,13 +168,13 @@ main(int argc, char **argv) {
     if ( read_write_nvme_data(slot_id, dev_id, argc-3,argv+3) < 0 ) {
       printf("err: failed to read_write_nvme_data\n");
       printf("info: try to enable SSD monitoring\n");
-      if ( ssd_monitor_enable(slot_id, 0/*unused*/, true) < 0 ) {
+      if ( ssd_monitor_enable(slot_id, true) < 0 ) {
         printf("err: failed to enable SSD monitoring");
       }
       break;
     }
 
-    if ( ssd_monitor_enable(slot_id, 0/*unused*/, true) < 0 ) {
+    if ( ssd_monitor_enable(slot_id, true) < 0 ) {
       printf("err: failed to enable SSD monitoring");
       break;
     }

@@ -53,7 +53,11 @@ print_usage() {
     printf("Options: [ %s ]\n", pal_fru_list);
 }
 
-static void sensor_fail_assert_check(uint8_t *fail_cnt, uint8_t fru, int snr_num, const char *name)
+#ifndef UNUSED
+#define UNUSED __attribute__((unused))
+#endif
+
+static void sensor_fail_assert_check(uint8_t *fail_cnt UNUSED, uint8_t fru UNUSED, int snr_num UNUSED, const char *name UNUSED)
 {
 #ifdef SENSOR_FAIL_DETECT
   if (*fail_cnt < MAX_SENSOR_CHECK_RETRY) {
@@ -65,7 +69,7 @@ static void sensor_fail_assert_check(uint8_t *fail_cnt, uint8_t fru, int snr_num
 #endif
 }
 
-static void sensor_fail_assert_clear(uint8_t *fail_cnt, uint8_t fru, int snr_num, const char *name)
+static void sensor_fail_assert_clear(uint8_t *fail_cnt UNUSED, uint8_t fru UNUSED, int snr_num UNUSED, const char *name UNUSED)
 {
 #ifdef SENSOR_FAIL_DETECT
   if (*fail_cnt == MAX_SENSOR_CHECK_RETRY) {
@@ -694,7 +698,7 @@ snr_health_monitor() {
 }
 
 static void *
-aggregate_snr_monitor(void *unused)
+aggregate_snr_monitor(void *unused UNUSED)
 {
   size_t cnt = 0, i;
   int ret;
@@ -713,7 +717,7 @@ aggregate_snr_monitor(void *unused)
     pthread_exit(NULL);
     return NULL;
   }
-  for(i = 0; i < (int)cnt; i++) {
+  for(i = 0; i < cnt; i++) {
     aggregate_sensor_threshold(i, &g_aggregate_snr[i]);
   }
   snr = get_struct_thresh_sensor(fru);

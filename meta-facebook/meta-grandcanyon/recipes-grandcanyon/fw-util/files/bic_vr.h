@@ -16,7 +16,7 @@ class VrComponent : public Component {
       : Component(fru, comp), server(FRU_SERVER, fru){}
     int print_version();
     int update(std::string image);
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 #endif

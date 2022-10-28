@@ -386,7 +386,9 @@ int main(int argc, char *argv[])
             }
           } else if ( action == "--version-json" ) {
             json j_object = {{"FRU", c->fru()}, {"COMPONENT", c->component()}};
-            c->get_version(j_object);
+            if (c->get_version(j_object) == FW_STATUS_NOT_SUPPORTED) {
+              j_object["VERSION"] = "not_supported";
+            }
             json_array.push_back(j_object);
           } else {  // update or dump
             if (fru == "all") {

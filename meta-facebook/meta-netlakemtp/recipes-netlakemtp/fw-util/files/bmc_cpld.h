@@ -47,7 +47,7 @@ class BmcCpldComponent : public Component {
     BmcCpldComponent(const string& fru, const string& comp, uint8_t type, uint8_t _bus, uint8_t _addr)
       : Component(fru, comp), pld_type(type), bus(_bus), addr(_addr){}
     int print_version();
-    void get_version(json& ver_json);
+    int get_version(json& ver_json) override;
     int update(string image);
     int fupdate(string image);
     int update_process(string image, image_info image_sts, bool force);

@@ -26,10 +26,6 @@ int M2DevComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
-void M2DevComponent::get_version(json& j) {
-  return;
-}
-
 void M2DevComponent::scan_all_devices(uint8_t intf, M2_DEV_INFO *m2_dev_info) {
   int ret = 0;
   uint8_t retry = MAX_READ_RETRY;

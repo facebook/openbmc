@@ -105,7 +105,7 @@ int CxlComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void CxlComponent::get_version(json& j) {
+int CxlComponent::get_version(json& j) {
   string ver("");
   try {
     server.ready_except();
@@ -121,7 +121,7 @@ void CxlComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
   }
 
-  return;
+  return FW_STATUS_SUCCESS;
 }
 
 #endif

@@ -164,7 +164,7 @@ int BmcFpgaComponent::print_version()
   return 0;
 }
 
-void BmcFpgaComponent::get_version(json& j) {
+int BmcFpgaComponent::get_version(json& j) {
   string ver("");
 
   if (get_ver_str(ver) < 0) {
@@ -173,6 +173,7 @@ void BmcFpgaComponent::get_version(json& j) {
   } else {
     j["VERSION"] = ver;
   }
+  return FW_STATUS_SUCCESS;
 }
 
 int BmcFpgaComponent::create_update_image(string image, string update_image)

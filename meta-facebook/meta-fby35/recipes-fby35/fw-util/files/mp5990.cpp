@@ -78,7 +78,7 @@ int MP5990Component::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void MP5990Component::get_version(json& j) {
+int MP5990Component::get_version(json& j) {
   string ver("");
   try {
     if (pal_is_slot_server(fru_id) == true){
@@ -91,5 +91,5 @@ void MP5990Component::get_version(json& j) {
   } catch(string& err) {
     j["VERSION"] = "NA";
   }
-  return;
+  return FW_STATUS_SUCCESS;
 }

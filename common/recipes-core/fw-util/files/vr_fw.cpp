@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void VrComponent::get_version(json& j) {
+int VrComponent::get_version(json& j) {
   char ver[MAX_VER_STR_LEN] = {0};
 
   try {
@@ -45,7 +45,7 @@ void VrComponent::get_version(json& j) {
     j["VERSION"] = "error_returned";
   }
 
-  return;
+  return FW_STATUS_SUCCESS;
 }
 
 int VrComponent::print_version() {

@@ -254,7 +254,7 @@ int BmcCpldComponent::print_version()
   return 0;
 }
 
-void BmcCpldComponent::get_version(json& j) {
+int BmcCpldComponent::get_version(json& j) {
   string ver("");
   string fru_name = fru();
   size_t slot_found = fru_name.find("slot");
@@ -274,6 +274,7 @@ void BmcCpldComponent::get_version(json& j) {
     if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
     else j["VERSION"] = "error_returned";
   }
+  return FW_STATUS_SUCCESS;
 }
 
 int BmcCpldComponent::update_cpld(string image) 

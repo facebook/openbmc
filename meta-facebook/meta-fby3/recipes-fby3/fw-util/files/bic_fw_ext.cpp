@@ -99,7 +99,7 @@ int BicFwExtComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void BicFwExtComponent::get_version(json& j) {
+int BicFwExtComponent::get_version(json& j) {
   string ver("");
   try {
     server.ready();
@@ -113,6 +113,7 @@ void BicFwExtComponent::get_version(json& j) {
     if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
     else j["VERSION"] = "error_returned";
   }
+  return FW_STATUS_SUCCESS;
 }
 
 int BicFwExtBlComponent::update_internal(string image, bool force) {
@@ -184,7 +185,7 @@ int BicFwExtBlComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void BicFwExtBlComponent::get_version(json& j) {
+int BicFwExtBlComponent::get_version(json& j) {
   string ver("");
   try {
     server.ready();
@@ -197,5 +198,6 @@ void BicFwExtBlComponent::get_version(json& j) {
     if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
     else j["VERSION"] = "error_returned";
   }
+  return FW_STATUS_SUCCESS;
 }
 #endif

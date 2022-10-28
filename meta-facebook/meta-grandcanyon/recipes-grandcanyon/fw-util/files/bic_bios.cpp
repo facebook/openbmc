@@ -141,7 +141,7 @@ int BiosComponent::print_version() {
 }
 
 
-void BiosComponent::get_version(json& j) {
+int BiosComponent::get_version(json& j) {
   string ver("");
 
   try {
@@ -157,7 +157,7 @@ void BiosComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
    }
   }
-  return;
+  return FW_STATUS_SUCCESS;
 }
 
 #endif

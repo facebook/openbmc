@@ -120,7 +120,7 @@ int BmcCpldComponent::print_version()
   return ret;
 }
 
-void BmcCpldComponent::get_version(json& ver_json) {
+int BmcCpldComponent::get_version(json& ver_json) {
   string ver("");
   string fru_name = fru();
   try {
@@ -135,6 +135,7 @@ void BmcCpldComponent::get_version(json& ver_json) {
       ver_json["VERSION"] = "error_returned";
     }
   }
+  return FW_STATUS_SUCCESS;
 }
 
 int BmcCpldComponent::get_cpld_attr(altera_max10_attr_t& attr)

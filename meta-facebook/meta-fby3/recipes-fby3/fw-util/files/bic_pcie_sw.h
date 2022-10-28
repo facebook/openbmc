@@ -23,7 +23,6 @@ class PCIESWComponent : public Component {
     int update(string image);
     int fupdate(string image);
     int print_version();
-    void get_version(json& j);
 };
 
 #endif

@@ -25,7 +25,7 @@ class ProtComponent : public Component {
     int update(int fd, bool force) override;
     int fupdate(std::string image) override;
     int print_version() override;
-    void get_version(json& j) override;
+    int get_version(json& j) override;
 };
 
 #endif

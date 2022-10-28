@@ -56,10 +56,6 @@ int VrExtComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   return ret;
 }
 
-void VrExtComponent::get_version(json& j) {
-  return;
-}
-
 int VrExtComponent::print_version()
 {
   map<uint8_t, string> list = {{FW_2OU_3V3_VR1, "VR P3V3_STBY1"},

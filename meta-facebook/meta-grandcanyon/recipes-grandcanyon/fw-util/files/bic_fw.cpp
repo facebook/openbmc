@@ -26,7 +26,7 @@ class BicFwComponent : public Component {
     int update(string image);
     int fupdate(string image);
     int print_version();
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 class BicFwBlComponent : public Component {
@@ -42,7 +42,7 @@ class BicFwBlComponent : public Component {
     int update(string image);
     int fupdate(string image);
     int print_version();
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 int BicFwComponent::update_internal(string image, bool force) {
@@ -114,7 +114,7 @@ int BicFwComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void BicFwComponent::get_version(json& j) {
+int BicFwComponent::get_version(json& j) {
   string ver("");
 
   try {
@@ -131,6 +131,7 @@ void BicFwComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
     }
   }
+  return FW_STATUS_SUCCESS;
 }
 
 int BicFwBlComponent::update_internal(string image, bool force) {
@@ -203,7 +204,7 @@ int BicFwBlComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void BicFwBlComponent::get_version(json& j) {
+int BicFwBlComponent::get_version(json& j) {
   string ver("");
 
   try {
@@ -219,6 +220,7 @@ void BicFwBlComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
     }
   }
+  return FW_STATUS_SUCCESS;
 }
 
 BicFwComponent bic_fw1("server", "bic", FW_BIC);

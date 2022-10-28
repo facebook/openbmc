@@ -220,7 +220,7 @@ int BiosComponent::print_version() {
 }
 
 
-void BiosComponent::get_version(json& j) {
+int BiosComponent::get_version(json& j) {
   string ver("");
   try {
     server.ready();
@@ -232,7 +232,7 @@ void BiosComponent::get_version(json& j) {
     if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
     else j["VERSION"] = "error_returned";
   }
-  return;
+  return FW_STATUS_SUCCESS;
 }
 
 #endif

@@ -213,7 +213,7 @@ class VrComponent : public Component {
     return ret;
   }
 
-  void get_version(json& j);
+  int get_version(json& j) override;
 
 private:
   void get_version_gpv2(json& j);
@@ -222,10 +222,11 @@ private:
 
 };
 
-void VrComponent::get_version(json& j)
+int VrComponent::get_version(json& j)
 {
   if (fby2_get_slot_type(slot_id) == SLOT_TYPE_GPV2) {
-    return get_version_gpv2(j);
+    get_version_gpv2(j);
+    return FW_STATUS_SUCCESS;
   } else {
     int ret;
     uint8_t server_type = 0xFF;
@@ -243,7 +244,7 @@ void VrComponent::get_version(json& j)
       break;
     }
   }
-
+  return FW_STATUS_SUCCESS;
 }
 
 void VrComponent::get_version_gpv2(json& j)

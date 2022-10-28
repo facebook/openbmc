@@ -255,7 +255,7 @@ int CpldComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void CpldComponent::get_version(json& j) {
+int CpldComponent::get_version(json& j) {
   string ver("");
   string board_name = board;
 
@@ -274,4 +274,5 @@ void CpldComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
     }
   }
+  return FW_STATUS_SUCCESS;
 }

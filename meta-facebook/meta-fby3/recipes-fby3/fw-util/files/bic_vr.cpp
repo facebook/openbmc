@@ -29,7 +29,7 @@ int VrComponent::get_ver_str(uint8_t& addr, string& s) {
   return ret;
 }
 
-void VrComponent::get_version(json& j) {
+int VrComponent::get_version(json& j) {
   uint8_t addr = 0;
   string str("");
   for ( auto& vr:list ) {
@@ -73,7 +73,7 @@ void VrComponent::get_version(json& j) {
       else j["VERSION"] = "error_returned";
     }
   }
-  return;
+  return FW_STATUS_SUCCESS;
 }
 
 int VrComponent::print_version()

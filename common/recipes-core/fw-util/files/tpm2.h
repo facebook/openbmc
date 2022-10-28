@@ -16,7 +16,7 @@ class Tpm2Component : public Component {
                   std::string ver_cache = "tpm2_version")
       : Component(fru, comp), device(dev), version_command(ver_cmd), verion_cache(ver_cache) {}
     int print_version();
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 #endif

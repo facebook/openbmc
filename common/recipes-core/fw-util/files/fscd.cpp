@@ -40,9 +40,9 @@ class FscdComponent : public Component {
     return FW_STATUS_SUCCESS;
   }
 
-  void get_version(json& j) {
+  int get_version(json& j) override {
     j["VERSION"] = get_fsc_ver_str();
-    return;
+    return FW_STATUS_SUCCESS;
   }
 };
 

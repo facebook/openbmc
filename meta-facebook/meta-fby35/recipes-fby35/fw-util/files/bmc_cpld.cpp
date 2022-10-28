@@ -213,7 +213,7 @@ int BmcCpldComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void BmcCpldComponent::get_version(json& j) {
+int BmcCpldComponent::get_version(json& j) {
   string ver("");
   string board_name = fru();
 
@@ -229,4 +229,5 @@ void BmcCpldComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
     }
   }
+  return FW_STATUS_SUCCESS;
 }

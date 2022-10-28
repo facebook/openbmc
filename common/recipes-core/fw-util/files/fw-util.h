@@ -80,14 +80,7 @@ class Component {
     virtual int update_finish(void) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int dump(std::string image) { return FW_STATUS_NOT_SUPPORTED; }
     virtual int print_version() { return FW_STATUS_NOT_SUPPORTED; }
-    virtual void get_version(std::string& str) {
-      str = "not_supported";
-    }
-    virtual void get_version(json &j) {
-      std::string ver;
-      get_version(ver);
-      j["VERSION"] = ver;
-    }
+    virtual int get_version(json &j) { return FW_STATUS_NOT_SUPPORTED; }
     virtual System& sys() {
       return _sys;
     }

@@ -215,8 +215,5 @@ int PCIESWComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void PCIESWComponent::get_version(json& j) {
-  return;
-}
 #endif
 

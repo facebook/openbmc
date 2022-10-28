@@ -12,10 +12,6 @@ int M2DevComponent::get_ver_str(string& s, const uint8_t alt_fw_comp) {
   return FW_STATUS_NOT_SUPPORTED;
 }
 
-void M2DevComponent::get_version(json& j) {
-  return;
-}
-
 int M2DevComponent::print_version()
 {
   string ver("");

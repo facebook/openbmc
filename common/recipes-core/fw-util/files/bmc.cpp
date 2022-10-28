@@ -231,12 +231,13 @@ int BmcComponent::print_version()
   return FW_STATUS_SUCCESS;
 }
 
-void BmcComponent::get_version(json& j) {
+int BmcComponent::get_version(json& j) {
   if (_vers_mtd == "") {
     j["VERSION"] = sys().version();
   } else {
     j["VERSION"] = get_bmc_version();
   }
+  return FW_STATUS_SUCCESS;
 }
 
 class SystemConfig {

@@ -57,7 +57,6 @@ class M2DevComponent : public Component {
     int fupdate(string image);
     int update(string image);
     int print_version();
-    void get_version(json& j);
 };
 
 #endif

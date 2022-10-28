@@ -21,7 +21,7 @@ class MP5990Component : public Component {
     MP5990Component(const std::string& fru, const std::string& comp, uint8_t _fru_id, uint8_t _bus, uint8_t _addr)
       : Component(fru, comp), fru_id(_fru_id), bus(_bus), addr(_addr), server(_fru_id, fru) {}
     int print_version() override;
-    void get_version(json& j) override;
+    int get_version(json& j) override;
 };
 
 #endif

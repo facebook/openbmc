@@ -27,7 +27,7 @@ class BicFwExtComponent : public BicFwComponent {
     int update(string image);
     int fupdate(string image);
     int print_version();
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 class BicFwExtBlComponent : public BicFwBlComponent {
@@ -45,7 +45,7 @@ class BicFwExtBlComponent : public BicFwBlComponent {
     int update(string image);
     int fupdate(string image);
     int print_version();
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 #endif

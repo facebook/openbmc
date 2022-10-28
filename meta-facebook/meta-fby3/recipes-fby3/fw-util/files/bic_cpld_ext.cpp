@@ -90,7 +90,7 @@ int CpldExtComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void CpldExtComponent::get_version(json& j) {
+int CpldExtComponent::get_version(json& j) {
   string ver("");
   try {
     server.ready();
@@ -104,6 +104,7 @@ void CpldExtComponent::get_version(json& j) {
     if ( err.find("empty") != string::npos ) j["VERSION"] = "not_present";
     else j["VERSION"] = "error_returned";
   }
+  return FW_STATUS_SUCCESS;
 }
 #endif
 

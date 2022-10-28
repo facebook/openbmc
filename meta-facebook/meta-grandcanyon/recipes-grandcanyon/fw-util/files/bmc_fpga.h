@@ -56,7 +56,7 @@ class BmcFpgaComponent : public Component {
     int print_version();
     int update(string image);
     int fupdate(string image);
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 #endif

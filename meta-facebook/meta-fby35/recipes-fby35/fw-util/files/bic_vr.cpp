@@ -159,7 +159,7 @@ int VrComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void VrComponent::get_version(json& j) {
+int VrComponent::get_version(json& j) {
   string ver("");
   map<uint8_t, map<uint8_t, string>>::iterator iter;
   auto& list = get_vr_list();
@@ -195,7 +195,7 @@ void VrComponent::get_version(json& j) {
       transform(tmp_str.begin(), tmp_str.end(), tmp_str.begin(), ::tolower);
       j["VERSION"][vr->second]["version"] = tmp_str;
       if (is_TI_VR == true) {
-        return;
+        return FW_STATUS_SUCCESS;
       }
 
       start = ver.rfind(' ');
@@ -214,6 +214,7 @@ void VrComponent::get_version(json& j) {
       break;
     }
   }
+  return FW_STATUS_SUCCESS;
 }
 
 map<uint8_t, map<uint8_t, string>>&  VrComponent::get_vr_list() {

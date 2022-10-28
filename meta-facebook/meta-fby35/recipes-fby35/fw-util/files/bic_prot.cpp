@@ -120,7 +120,7 @@ int ProtComponent::print_version() {
   return FW_STATUS_SUCCESS;
 }
 
-void ProtComponent::get_version(json& j) {
+int ProtComponent::get_version(json& j) {
   string ver("");
   try {
     server.ready_except();
@@ -135,7 +135,7 @@ void ProtComponent::get_version(json& j) {
       j["VERSION"] = "error_returned";
   }
 
-  return;
+  return FW_STATUS_SUCCESS;
 }
 
 #endif

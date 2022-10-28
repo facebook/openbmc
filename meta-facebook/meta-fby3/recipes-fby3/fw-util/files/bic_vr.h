@@ -16,7 +16,7 @@ class VrComponent : public Component {
       : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), server(_slot_id, fru){}
     int print_version();
     int update(std::string image);
-    void get_version(json& j);
+    int get_version(json& j) override;
 };
 
 class VrExtComponent : public Component {
@@ -32,7 +32,6 @@ class VrExtComponent : public Component {
       : Component(fru, comp), slot_id(_slot_id), fw_comp(_fw_comp), name(_name), server(_slot_id, fru), expansion(_slot_id, fru, _name, _fw_comp) {}
     int print_version();
     int update(std::string image);
-    void get_version(json& j);
 };
 
 #endif

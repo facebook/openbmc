@@ -8,8 +8,6 @@ project('libbic',
     ],
     meson_version: '>=0.40')
 
-cc = meson.get_compiler('cpp')
-
 # OpenSSL3, which is present in Kirkstone and above, deprecates some
 # SHA hash functions we are using.  Turn off the warning until we can
 # port to OpenSSL3.
@@ -40,8 +38,8 @@ sources = [
 ]
 
 deps = [
-    cc.find_library('fby35_common'),
     dependency('libcrypto'),
+    dependency('libfby35-common'),
     dependency('libipmb'),
     dependency('libkv'),
     dependency('libobmc-i2c'),

@@ -378,7 +378,7 @@ fby35_common_get_sb_bic_boot_strap(uint8_t fru) {
 #define CRASHDUMP_BIN       "/usr/bin/autodump.sh"
 
 int
-fby35_common_crashdump(uint8_t fru, bool ierr, bool platform_reset) {
+fby35_common_crashdump(uint8_t fru, bool ierr __attribute__((unused)), bool platform_reset) {
   int ret = 0;
   char cmd[128] = "\0";
   int cmd_len = sizeof(cmd);

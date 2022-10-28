@@ -1,4 +1,4 @@
-project('libfby35_gpio',
+project('libfby35-common',
     'c',
     version: '0.1',
     license: 'GPL2',
@@ -9,34 +9,39 @@ project('libfby35_gpio',
     meson_version: '>=0.40'
 )
 
+cc = meson.get_compiler('c')
+
 headers = [
-    'fby35_gpio.h',
+    'fby35_common.h',
 ]
 
 sources = [
-    'fby35_gpio.c',
+    'fby35_common.c',
 ]
 
 deps = [
-    dependency('libfby35-common')
+    dependency('libcrypto'),
+    dependency('libgpio-ctrl'),
+    dependency('libkv'),
+    dependency('libobmc-i2c'),
 ]
 
 install_headers(
     headers,
-    subdir: 'facebook'
+    subdir: 'facebook',
 )
 
-gpio_lib = shared_library('fby35_gpio',
+common_lib = shared_library('fby35_common',
     sources,
     dependencies: deps,
     version: meson.project_version(),
-    install: true
+    install: true,
 )
 
 pkg = import('pkgconfig')
 pkg.generate(
-    libraries: [ gpio_lib ],
+    libraries: [ common_lib ],
     name: meson.project_name(),
     version: meson.project_version(),
-    description: 'FBY35 gpio Library'
+    description: 'System Common library'
 )

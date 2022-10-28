@@ -448,7 +448,7 @@ typedef enum {
   SLOT_PRESENT,
 } PRESENT_STATUS;
 
-const static char *gpio_server_prsnt[] =
+static const char *gpio_server_prsnt[] =
 {
   "",
   "PRSNT_MB_BMC_SLOT1_BB_N",
@@ -457,7 +457,7 @@ const static char *gpio_server_prsnt[] =
   "PRSNT_MB_SLOT4_BB_N"
 };
 
-const static char *gpio_server_stby_pwr_sts[] =
+static const char *gpio_server_stby_pwr_sts[] =
 {
   "",
   "PWROK_STBY_BMC_SLOT1_R",
@@ -466,7 +466,7 @@ const static char *gpio_server_stby_pwr_sts[] =
   "PWROK_STBY_BMC_SLOT4"
 };
 
-const static char *gpio_server_i2c_isolated[] =
+static const char *gpio_server_i2c_isolated[] =
 {
   "",
   "FM_BMC_SLOT1_ISOLATED_EN_R",

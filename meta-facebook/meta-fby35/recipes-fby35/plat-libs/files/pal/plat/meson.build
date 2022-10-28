@@ -10,7 +10,7 @@ pal_sources += [
     ]
 
 pal_deps += [
-    cc.find_library('fby35_common'),
+    dependency('libfby35-common'),
     cc.find_library('sensor-correction'),
     dependency('libbic'),
     dependency('libfby35-fruid'),

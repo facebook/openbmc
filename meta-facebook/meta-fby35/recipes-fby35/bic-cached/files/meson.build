@@ -8,10 +8,9 @@ project('bic-cached', 'cpp',
     ],
 )
 
-cc = meson.get_compiler('cpp')
 deps = [
-    cc.find_library('fby35_common'),
     dependency('libbic'),
+    dependency('libfby35-common'),
     dependency('obmc-pal'),
 ]
 

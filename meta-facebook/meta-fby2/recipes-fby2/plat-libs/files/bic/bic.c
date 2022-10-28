@@ -492,13 +492,13 @@ bic_ipmb_wrapper_with_dev_mux_selection(uint8_t slot_id, int dev_id, uint8_t net
   uint8_t rbuf[256] = {0x00};
 
   if (dev_id < 0 || dev_id >= MAX_GPV2_DRIVE_NUM) {
-    syslog(LOG_ERR, "%s: Invalid dev_id: %d\n", __FUNCTION__, dev_id);
+    syslog(LOG_ERR, "%s: Invalid dev_id: %d\n", __func__, dev_id);
     return -1;
   }
 
   s_ret = bic_disable_sensor_monitor(slot_id, BIC_SENSOR_MONITOR_DISABLE);
   if (s_ret < 0) {
-    syslog(LOG_ERR, "%s: Fail to stop sensor monitor, error: %d\n", __FUNCTION__, s_ret);
+    syslog(LOG_ERR, "%s: Fail to stop sensor monitor, error: %d\n", __func__, s_ret);
     return s_ret;
   }
   msleep(100);
@@ -508,19 +508,19 @@ bic_ipmb_wrapper_with_dev_mux_selection(uint8_t slot_id, int dev_id, uint8_t net
   bus = *txbuf;
   ret = bic_master_write_read(slot_id, bus, DEVICE_MUX_ADDR, wbuf, 1, rbuf, 0);
   if (ret < 0) {
-    syslog(LOG_ERR, "%s(): bic_master_write_read failed, error: %d\n", __FUNCTION__, ret);
+    syslog(LOG_ERR, "%s(): bic_master_write_read failed, error: %d\n", __func__, ret);
     goto Err;
   }
 
   ret = bic_ipmb_wrapper(slot_id, netfn, cmd, txbuf, txlen, rxbuf, rxlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s: Fail to send IPMB command to slot%d, error: %d", __FUNCTION__, slot_id, ret);
+    syslog(LOG_WARNING, "%s: Fail to send IPMB command to slot%d, error: %d", __func__, slot_id, ret);
   }
 
 Err:
   s_ret = bic_disable_sensor_monitor(slot_id, BIC_SENSOR_MONITOR_ENABLE);
   if (s_ret < 0) {
-    syslog(LOG_ERR, "%s: Fail to start sensor monitor, error: %d\n", __FUNCTION__, s_ret);
+    syslog(LOG_ERR, "%s: Fail to start sensor monitor, error: %d\n", __func__, s_ret);
   }
   msleep(100);
 
@@ -1128,7 +1128,7 @@ bic_disable_brcm_parity_init(uint8_t slot_id, uint8_t drv_num) {
 }
 
 int
-_update_brcm_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target, uint32_t offset, uint16_t count, uint8_t * buf) {
+_update_brcm_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target __attribute__((unused)), uint32_t offset, uint16_t count, uint8_t * buf) {
   uint8_t bus, wbuf[256], rbuf[256];
   int ret = 0;
   int rlen = 0; // write
@@ -1148,7 +1148,7 @@ _update_brcm_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target, uint32_t offse
 }
 
 int
-_update_vsi_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target, uint32_t offset, uint16_t count, uint8_t * buf) {
+_update_vsi_fw(uint8_t slot_id, uint8_t drv_num, uint8_t target __attribute__((unused)), uint32_t offset __attribute__((unused)), uint16_t count, uint8_t * buf) {
   uint8_t bus, wbuf[256], rbuf[256];
   int ret = 0;
   int rlen = 0; // write
@@ -1853,7 +1853,7 @@ check_vr_image(uint8_t slot_id, int fd, long size) {
 }
 
 static int
-check_cpld_image(uint8_t slot_id, int fd, long size) {
+check_cpld_image(uint8_t slot_id __attribute__((unused)), int fd, long size) {
   uint8_t buf[32];
   uint8_t hdr_tl[] = {0x01,0x00,0x4c,0x1c,0x00,0x01,0x2b,0xb0,0x43,0x46,0x30,0x39};
   uint8_t *hdr = hdr_tl, hdr_size = sizeof(hdr_tl);
@@ -1894,7 +1894,7 @@ check_cpld_image(uint8_t slot_id, int fd, long size) {
 }
 
 static int
-check_bios_image(uint8_t slot_id, int fd, long size) {
+check_bios_image(uint8_t slot_id __attribute__((unused)), int fd, long size) {
   int offs, rcnt, end;
   uint8_t *buf;
   uint8_t ver_sig[] = { 0x46, 0x49, 0x44, 0x04, 0x78, 0x00 };
@@ -2072,7 +2072,7 @@ error_exit:
 }
 
 int
-bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *path, uint8_t force) {
+bic_update_dev_firmware(uint8_t slot_id, uint8_t dev_id, uint8_t comp, char *path, uint8_t force __attribute__((unused))) {
   int ret = -1;
   uint32_t offset;
   volatile uint16_t count, read_count;
@@ -3446,7 +3446,7 @@ bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_
   uint8_t tbuf[4] = {0x15, 0xA0, 0x00}; // IANA ID
   uint8_t rbuf[MAX_IPMB_RES_LEN]={0x00};
   uint8_t rlen = 0;
-  int totol_length = 0;
+  size_t total_length = 0;
 
   for(int i = 1; i < MAX_POST_CODE_PAGE; i++)
   {
@@ -3463,14 +3463,14 @@ bic_request_post_buffer_dword_data(uint8_t slot_id, uint32_t *port_buff, uint32_
     }
 
     // Ignore first 3 bytes of IANA ID
-    for(int k = 3; (k < rlen-3) && (totol_length < input_len); k+=(sizeof(uint32_t)/sizeof(uint8_t)))
+    for(int k = 3; (k < rlen-3) && (total_length < input_len); k+=(sizeof(uint32_t)/sizeof(uint8_t)))
     {
-      port_buff[totol_length] = rbuf[k] | (rbuf[k+1] << 8) | (rbuf[k+2] << 16) | (rbuf[k+3] << 24);
-      totol_length++;
+      port_buff[total_length] = rbuf[k] | (rbuf[k+1] << 8) | (rbuf[k+2] << 16) | (rbuf[k+3] << 24);
+      total_length++;
     }
   }
 
-  *output_len = totol_length;
+  *output_len = total_length;
 
   return ret;
 }
@@ -3494,7 +3494,7 @@ Response
   Byte 2:4 = Intel Manufacturer ID - 000157h, LS byte first.
 */
 int
-me_recovery(uint8_t slot_id, uint8_t command) {
+me_recovery(uint8_t slot_id __attribute__((unused)), uint8_t command __attribute__((unused))) {
   //ND system does not have me
 #ifndef CONFIG_FBY2_ND
   uint8_t tbuf[256] = {0x00};
@@ -3900,7 +3900,7 @@ int reverse_bits(int raw_val)
   return reverse_val;
 }
 
-int program_dev_fw(uint8_t slot_id, uint8_t dev_id, int bus, char *image, int start, int end) {
+int program_dev_fw(uint8_t slot_id, uint8_t dev_id __attribute__((unused)), int bus, char *image, int start, int end) {
   uint8_t wbuf[DEV_UPDATE_BATCH_SIZE + DEV_UPDATE_IPMI_HEAD_SIZE + 2]; //2 means buffer for ipmb
   uint8_t rlen = 0;
   uint8_t rbuf[DEV_UPDATE_BATCH_SIZE];

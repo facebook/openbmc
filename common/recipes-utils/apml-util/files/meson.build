@@ -10,7 +10,7 @@ project('apml-util', 'cpp',
 
 cc = meson.get_compiler('cpp')
 deps = [
-    cc.find_library('bic'),
+    dependency('libbic'),
 ]
 
 apml_util_exe = executable('apml-util',

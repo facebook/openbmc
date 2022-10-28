@@ -7,11 +7,11 @@ project('setup-gpio', 'c',
 cc = meson.get_compiler('c')
 
 dep_libs = [
-    cc.find_library('gpio-ctrl'),
-    cc.find_library('fby35_gpio'),
     cc.find_library('fby35_common'),
-    cc.find_library('phymem'),
+    cc.find_library('gpio-ctrl'),
     cc.find_library('kv'),
+    cc.find_library('phymem'),
+    dependency('libfby35_gpio'),
     dependency('openssl'),
 ]
 

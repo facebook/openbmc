@@ -22,23 +22,10 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fby35_gpio.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-
-SRC_URI = "file://fby35_gpio \
-          "
-
-DEPENDS += " libbic libgpio-ctrl"
-RDEPENDS:${PN} += " libgpio-ctrl "
-
+SRC_URI = "file://fby35_gpio"
 S = "${WORKDIR}/fby35_gpio"
 
-do_install() {
-	  install -d ${D}${libdir}
-    install -m 0644 libfby35_gpio.so ${D}${libdir}/libfby35_gpio.so
+inherit meson pkgconfig
 
-    install -d ${D}${includedir}
-    install -d ${D}${includedir}/facebook
-    install -m 0644 fby35_gpio.h ${D}${includedir}/facebook/fby35_gpio.h
-}
-
-FILES:${PN} = "${libdir}/libfby35_gpio.so"
-FILES:${PN}-dev = "${includedir}/facebook/fby35_gpio.h"
+DEPENDS += "libfby35-common libbic libgpio-ctrl"
+RDEPENDS:${PN} += "libfby35-common"

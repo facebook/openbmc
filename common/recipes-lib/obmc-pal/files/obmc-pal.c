@@ -218,6 +218,105 @@ static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
   return PAL_EOK;
 }
 
+static int
+parse_psb_sel(uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+
+  strcpy(error_log, "");
+  switch (ed[1]) {
+    case 0x00:
+      strcat(error_log, "PSB Pass");
+      break;
+    case 0x03:
+      strcat(error_log, "Error in BIOS Directory Table - Too many directory entries");
+      break;
+    case 0x04:
+      strcat(error_log, "Internal error - Invalid parameter");
+      break;
+    case 0x05:
+      strcat(error_log, "Internal error - Invalid data length");
+      break;
+    case 0x0B:
+      strcat(error_log, "Internal error - Out of resources");
+      break;
+    case 0x10:
+      strcat(error_log, "Error in BIOS Directory Table - Reset image destination invalid");
+      break;
+    case 0x13:
+      strcat(error_log, "Error retrieving FW header during FW validation");
+      break;
+    case 0x14:
+      strcat(error_log, "Invalid key size");
+      break;
+    case 0x18:
+      strcat(error_log, "Error validating binary");
+      break;
+    case 0x22:
+      strcat(error_log, "P0: BIOS signing key entry not found");
+      break;
+    case 0x3E:
+      strcat(error_log, "P0: Error reading fuse info");
+      break;
+    case 0x62:
+      strcat(error_log, "Internal error - Error mapping fuse");
+      break;
+    case 0x64:
+      strcat(error_log, "P0: Timeout error attempting to fuse");
+      break;
+    case 0x69:
+      strcat(error_log, "BIOS OEM key revoked");
+      break;
+    case 0x6C:
+      strcat(error_log, "P0: Error in BIOS Directory Table - Reset image not found");
+      break;
+    case 0x6F:
+      strcat(error_log, "P0: OEM BIOS Signing Key Usage flag violation");
+      break;
+    case 0x78:
+      strcat(error_log, "P0: BIOS RTM Signature entry not found");
+      break;
+    case 0x79:
+      strcat(error_log, "P0: BIOS Copy to DRAM failed");
+      break;
+    case 0x7A:
+      strcat(error_log, "P0: BIOS RTM Signature verification failed");
+      break;
+    case 0x7B:
+      strcat(error_log, "P0: OEM BIOS Signing Key failed signature verification");
+      break;
+    case 0x7C:
+      strcat(error_log, "P0: Platform Vendor ID and/or Model ID binding violation");
+      break;
+    case 0x7D:
+      strcat(error_log, "P0: BIOS Copy bit is unset for reset image");
+      break;
+    case 0x7E:
+      strcat(error_log, "P0: Requested fuse is already blown, reblow will cause ASIC malfunction");
+      break;
+    case 0x7F:
+      strcat(error_log, "P0: Error with actual fusing operation");
+      break;
+    case 0x80:
+      strcat(error_log, "P1: Error reading fuse info");
+      break;
+    case 0x81:
+      strcat(error_log, "P1: Platform Vendor ID and/or Model ID binding violation");
+      break;
+    case 0x82:
+      strcat(error_log, "P1: Requested fuse is already blown, reblow will cause ASIC malfunction");
+      break;
+    case 0x83:
+      strcat(error_log, "P1: Error with actual fusing operation");
+      break;
+    case 0x92:
+      strcat(error_log, "P0: Error in BIOS Directory Table - Firmware type not found");
+      break;
+    default:
+      strcat(error_log, "Unknown");
+      break;
+  }
+  return 0;
+}
 
 int __attribute__((weak))
 pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len)
@@ -1459,6 +1558,10 @@ pal_parse_sel_helper(uint8_t fru, uint8_t *sel, char *error_log)
         strcat(error_log, "Unknown");
       sprintf(temp_log, "IIO_ERR %s,FRU:%u", error_log, fru);
       pal_add_cri_sel(temp_log);
+      break;
+
+    case PSB_ERR:
+      parse_psb_sel(event_data, error_log);
       break;
 
     case MEMORY_ECC_ERR:

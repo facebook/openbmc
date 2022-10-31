@@ -6,10 +6,32 @@ wedge_board_type() {
     echo 'SANDIA'
 }
 
+SEQ_STR="sequenced"
+ON_STR="powered on"
+
+wait_for_sequencing() {
+    PSEQ=/sys/bus/platform/devices/pseq
+    TIMEOUT=12
+    COUNT=0
+    if [ -e ${PSEQ} ]; then
+        while grep -q "${SEQ_STR}" ${PSEQ}/power_state;
+        do
+            if [ ${COUNT} -ge ${TIMEOUT} ]; then
+                #Error: Time out
+                return 1
+            fi
+            sleep 1
+            COUNT=$(( COUNT + 1 ))
+        done
+    fi
+
+    return 0
+}
+
 userver_power_is_on() {
     PSEQ=/sys/bus/platform/devices/pseq
     if [ -e ${PSEQ} ]; then
-        if grep -q on ${PSEQ}/power_state; then
+        if grep -q "${ON_STR}" ${PSEQ}/power_state; then
             return 0 #powered on
         fi
     else
@@ -26,10 +48,15 @@ userver_power_is_on() {
         fi
     fi
 
-    return 1 #powered off
+    return 1 # not powered on
 }
 
 userver_power_on() {
+    if ! wait_for_sequencing; then
+        return 1
+    fi
+
+    # Safe to perform power operation
     MSD=/sys/bus/platform/devices/msd
     for ((i=0; i<20; i++)); do
         if [ -w ${MSD} ]; then
@@ -57,9 +84,20 @@ userver_power_on() {
             break
         fi
     done
+
+    if wait_for_sequencing; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 userver_power_off() {
+    if ! wait_for_sequencing; then
+        return 1
+    fi
+
+    # Safe to perform power operation
     MSD=/sys/bus/platform/devices/msd
     if [ -w ${MSD} ]; then
         echo 0 > ${MSD}/cfg7
@@ -80,9 +118,19 @@ userver_power_off() {
         i2cset -f -y 2 0x25 0x08
         i2cset -f -y 2 0x20 0x00
     fi
+
+    if wait_for_sequencing; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 userver_reset() {
+    if ! wait_for_sequencing; then
+        return 1
+    fi
+
     MSD=/sys/bus/platform/devices/msd
     if [ -w ${MSD} ]; then
         echo 0 > ${MSD}/cfg7
@@ -103,9 +151,19 @@ userver_reset() {
         i2cset -f -y 2 0x25 0x40
         i2cset -f -y 2 0x20 0x00
     fi
+
+    if wait_for_sequencing; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 chassis_power_cycle() {
+    if ! wait_for_sequencing; then
+        return 1
+    fi
+
     MSD=/sys/bus/platform/devices/msd
     if [ -w ${MSD} ]; then
         echo 0 > ${MSD}/cfg7
@@ -127,7 +185,12 @@ chassis_power_cycle() {
         i2cset -f -y 2 0x20 0x00
     fi
 
-    sleep 10 # Power sequncers take 10 seconds to complete.
+    # Power sequncers take 10 seconds to complete.
+    if wait_for_sequencing; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 bmc_mac_addr() {

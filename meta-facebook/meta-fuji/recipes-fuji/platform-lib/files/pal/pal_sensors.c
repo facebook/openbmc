@@ -5661,7 +5661,7 @@ scm_thresh_done:
       smb_sensor_threshold[SMB_XP0R75V_3_PVDD][LCR_THRESH] = 0.638;
       smb_sensor_threshold[SMB_VDD_PCIE][UCR_THRESH] = 0.966;
       smb_sensor_threshold[SMB_VDD_PCIE][UNC_THRESH] = 0.924;
-      smb_sensor_threshold[SMB_VDD_PCIE][LNC_THRESH] = 0.819;
+      smb_sensor_threshold[SMB_VDD_PCIE][LNC_THRESH] = 0.798;
       smb_sensor_threshold[SMB_VDD_PCIE][LCR_THRESH] = 0.714;
       smb_sensor_threshold[SMB_XP0R84V_DCSU][UCR_THRESH] = 0.966;
       smb_sensor_threshold[SMB_XP0R84V_DCSU][UNC_THRESH] = 0.924;

@@ -157,6 +157,8 @@ def update_device(addr, filename, block_size=96):
     unlock_firmware(addr)
     status_state("enter boot mode")
     enter_boot_mode(addr)
+    # Allow some time for the device to erase and prepare boot mode
+    time.sleep(10)
     verify_firmware_status(addr, ENTERED_BOOT_MODE)
     status_state("writing data")
     transfer_image(addr, binimg, block_size // 2)
@@ -198,12 +200,14 @@ def main():
             global status
             status["exception"] = traceback.format_exc()
             status_state("failed")
+            print("Waiting for reset....")
+            time.sleep(30.0)
             rmd.resume()
             if args.rmfwfile:
                 os.remove(args.file)
             sys.exit(1)
         print("Resetting....")
-        time.sleep(10.0)
+        time.sleep(30.0)
         print("Resuming monitoring...")
         rmd.resume()
         time.sleep(10.0)

@@ -261,6 +261,13 @@ extern "C" {
 #define SCM_EEPROM_50_ADDR        0x50 
 #define SCM_EEPROM_52_ADDR        0x52
 
+#define FCM_T_HSC_DEVICE_CH         67
+#define FCM_T_HSC_ADM1278_ADDR      0x10
+#define FCM_T_HSC_LM25066_ADDR      0x44
+#define FCM_B_HSC_DEVICE_CH         75
+#define FCM_B_HSC_ADM1278_ADDR      0x10
+#define FCM_B_HSC_LM25066_ADDR      0x44
+
 #define TEMP(x)  "temp"#x"_input"
 #define VOLT(x)  "in"#x"_input"
 #define VOLT_SET(x)  "vo"#x"_input"
@@ -271,8 +278,14 @@ extern "C" {
 
 #define READING_NA -2
 
-#define SCM_RSENSE 1
-#define PIM_RSENSE 1
+// below Rsense in multiply of 1000 micro Ohm.
+#define SCM_ADM1278_RSENSE 1.5
+#define SCM_LM25066_RSENSE 1.5
+#define FCM_ADM1278_RSENSE 0.25
+#define FCM_LM25066_RSENSE 0.5
+#define PIM_ADM1278_RSENSE 1
+#define PIM_LM25066_RSENSE 0.5
+
 #define PIM16O_RSENSE 1.11
 #define MAX_SENSOR_NUM  0xFF
 #define MAX_SENSOR_THRESHOLD  8

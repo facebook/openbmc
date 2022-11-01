@@ -1466,6 +1466,13 @@ read_hsc_power_volt(uint8_t fru, uint8_t snr_num,
   return read_hsc_attr(fru, snr_num, device, VOLT(2), r_sense, value);
 }
 
+// In lm25066 output will be vin3
+static int
+read_hsc_power_volt2(uint8_t fru, uint8_t snr_num,
+              const char *device, float r_sense, float *value) {
+  return read_hsc_attr(fru, snr_num, device, VOLT(3), r_sense, value);
+}
+
 static int
 read_hsc_curr(uint8_t fru, uint8_t snr_num,
               const char *device, float r_sense, float *value) {
@@ -1611,13 +1618,25 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
         ret = read_hsc_volt(fru, sensor_num, HSC_MON_dir, 1, value);
         break;
       case SCM_SENSOR_POWER_VOLT:
-        ret = read_hsc_power_volt(fru, sensor_num, HSC_MON_dir, 1, value);
+        if ( SCM_HSC_ADDR == SCM_HSC_ADM1278_ADDR ) {
+          ret = read_hsc_power_volt(fru, sensor_num, HSC_MON_dir, 1, value);
+        } else if ( SCM_HSC_ADDR == SCM_HSC_LM25066_ADDR ){
+          ret = read_hsc_power_volt2(fru, sensor_num, HSC_MON_dir, 1, value);
+        }
         break;
       case SCM_SENSOR_HSC_CURR:
-        ret = read_hsc_curr(fru, sensor_num, HSC_MON_dir, SCM_RSENSE, value);
+        if ( SCM_HSC_ADDR == SCM_HSC_ADM1278_ADDR ) {
+          ret = read_hsc_curr(fru, sensor_num, HSC_MON_dir, SCM_ADM1278_RSENSE, value);
+        } else if ( SCM_HSC_ADDR == SCM_HSC_LM25066_ADDR ){
+          ret = read_hsc_curr(fru, sensor_num, HSC_MON_dir, SCM_LM25066_RSENSE, value);
+        }
         break;
       case SCM_SENSOR_HSC_POWER:
-        ret = read_hsc_power(fru, sensor_num, HSC_MON_dir, SCM_RSENSE, value);
+        if ( SCM_HSC_ADDR == SCM_HSC_ADM1278_ADDR ) {
+          ret = read_hsc_power(fru, sensor_num, HSC_MON_dir, SCM_ADM1278_RSENSE, value);
+        } else if ( SCM_HSC_ADDR == SCM_HSC_LM25066_ADDR ) {
+          ret = read_hsc_power(fru, sensor_num, HSC_MON_dir, SCM_LM25066_RSENSE, value);
+        }
         break;
       default:
         ret = READING_NA;
@@ -1640,13 +1659,13 @@ scm_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     }
 
     if (!g_sinfo[FRU_SCM-1][sensor_num].valid) {
-      ret = bic_sdr_init(FRU_SCM, true); //reinit g_sinfo
+      ret |= bic_sdr_init(FRU_SCM, true); //reinit g_sinfo
       if (!g_sinfo[FRU_SCM-1][sensor_num].valid) {
         return READING_NA;
       }
     }
 
-    ret = bic_read_sensor_wrapper(IPMB_BUS, FRU_SCM, sensor_num, discrete, value);
+    ret |= bic_read_sensor_wrapper(IPMB_BUS, FRU_SCM, sensor_num, discrete, value);
   } else {
     ret = READING_NA;
   }
@@ -2076,16 +2095,32 @@ smb_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       ret = read_hsc_volt(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
       break;
     case SMB_SENSOR_FCM_T_HSC_CURR:
-      ret = read_hsc_curr(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
+      if (FCM_T_HSC_addr == FCM_T_HSC_ADM1278_ADDR) {
+        ret = read_hsc_curr(fru, sensor_num, FCM_T_HSC_MON_dir, FCM_ADM1278_RSENSE, value);
+      } else if(FCM_T_HSC_addr == FCM_T_HSC_LM25066_ADDR) {
+        ret = read_hsc_curr(fru, sensor_num, FCM_T_HSC_MON_dir, FCM_LM25066_RSENSE, value);
+      }
       break;
     case SMB_SENSOR_FCM_B_HSC_CURR:
-      ret = read_hsc_curr(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
+      if (FCM_B_HSC_addr == FCM_B_HSC_ADM1278_ADDR) {
+        ret = read_hsc_curr(fru, sensor_num, FCM_B_HSC_MON_dir, FCM_ADM1278_RSENSE, value);
+      } else if(FCM_B_HSC_addr == FCM_B_HSC_LM25066_ADDR) {
+        ret = read_hsc_curr(fru, sensor_num, FCM_B_HSC_MON_dir, FCM_LM25066_RSENSE, value);
+      }
       break;
     case SMB_SENSOR_FCM_T_HSC_POWER_VOLT:
-      ret = read_hsc_power_volt(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
+      if (FCM_T_HSC_addr == FCM_T_HSC_ADM1278_ADDR) {
+        ret = read_hsc_power_volt(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
+      } else if(FCM_T_HSC_addr == FCM_T_HSC_LM25066_ADDR) {
+        ret = read_hsc_power_volt2(fru, sensor_num, FCM_T_HSC_MON_dir, 1, value);
+      }
       break;
     case SMB_SENSOR_FCM_B_HSC_POWER_VOLT:
-      ret = read_hsc_power_volt(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
+      if (FCM_B_HSC_addr == FCM_B_HSC_ADM1278_ADDR) {
+        ret = read_hsc_power_volt(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
+      } else if(FCM_B_HSC_addr == FCM_B_HSC_LM25066_ADDR) {
+        ret = read_hsc_power_volt2(fru, sensor_num, FCM_B_HSC_MON_dir, 1, value);
+      }
       break;
     case SMB_SENSOR_FAN1_REAR_TACH:
       ret = read_fan_rpm_f(SMB_FCM_T_TACH_DEVICE, 1, value);
@@ -2233,7 +2268,11 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
     case PIM7_POWER_VOLTAGE:
     case PIM8_POWER_VOLTAGE:
       dir_pim_sensor_hwmon(full_name, i2cbus, PIM_HSC_DEVICE_CH, PIM_HSC_addr);
-      ret = read_hsc_power_volt(fru, sensor_num, full_name , 1, value);
+      if ( PIM_HSC_addr == PIM_HSC_ADM1278_ADDR ) {
+        ret = read_hsc_power_volt(fru, sensor_num, full_name , 1, value);
+      } else if ( PIM_HSC_addr == PIM_HSC_LM25066_ADDR ) {
+        ret = read_hsc_power_volt2(fru, sensor_num, full_name , 1, value);
+      }
       break;
     case PIM1_SENSOR_HSC_CURR:
     case PIM2_SENSOR_HSC_CURR:
@@ -2247,10 +2286,11 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if (type == PIM_TYPE_16O) {
         ret = read_hsc_curr(fru, sensor_num, full_name, PIM16O_RSENSE, value);
       } else {
-        ret = read_hsc_curr(fru, sensor_num, full_name, PIM_RSENSE, value);
-        *value = ((*value * 1.0422) - 0.0122);
-        if (*value < 0)
-            *value = 0;
+        if ( PIM_HSC_addr == PIM_HSC_ADM1278_ADDR ) {
+          ret = read_hsc_curr(fru, sensor_num, full_name, PIM_ADM1278_RSENSE, value);
+        } else if ( PIM_HSC_addr == PIM_HSC_LM25066_ADDR ) {
+          ret = read_hsc_curr(fru, sensor_num, full_name, PIM_LM25066_RSENSE, value);
+        }
       }
       break;
     case PIM1_SENSOR_HSC_POWER:
@@ -2265,10 +2305,11 @@ pim_sensor_read(uint8_t fru, uint8_t sensor_num, float *value) {
       if (type == PIM_TYPE_16O) {
         ret = read_hsc_power(fru, sensor_num, full_name, PIM16O_RSENSE, value);
       } else {
-        ret = read_hsc_power(fru, sensor_num, full_name, PIM_RSENSE, value);
-        *value = ((*value * 1.0422) - 0.1464);
-        if (*value < 0)
-            *value = 0;
+        if ( PIM_HSC_addr == PIM_HSC_ADM1278_ADDR ) {
+          ret = read_hsc_power(fru, sensor_num, full_name, PIM_ADM1278_RSENSE, value);
+        } else if ( PIM_HSC_addr == PIM_HSC_LM25066_ADDR ) {
+          ret = read_hsc_power(fru, sensor_num, full_name, PIM_LM25066_RSENSE, value);
+        }
       }
       break;
     case PIM1_UCD90160_VOLT1:
@@ -7022,7 +7063,7 @@ int bic_get_sdr_thresh_val(uint8_t fru, uint8_t snr_num,
 
   ret = kv_get(SCM_INIT_THRESH_STATUS, cvalue, NULL, 0);
   if (!strncmp(cvalue, "done", sizeof("done"))) {
-    ret = bic_sdr_init(fru, false);
+    ret |= bic_sdr_init(fru, false);
   } else {
     while ((ret = bic_sdr_init(fru, false)) == ERR_NOT_READY &&
       retry++ < MAX_SDR_THRESH_RETRY) {

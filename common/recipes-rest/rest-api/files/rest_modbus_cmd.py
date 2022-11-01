@@ -1,7 +1,8 @@
 import asyncio
 import fcntl
 import pathlib
-from typing import List
+
+import jsonschema_lite as jsonschema
 
 try:
     import pyrmd
@@ -14,7 +15,7 @@ FLOCK_SOLITON_BEAM = "/tmp/modbus_dynamo_solitonbeam.lock"
 RACKMOND_SOCKET = "/var/run/rackmond.sock"
 RACKMOND_MAX_RESPONSE_LEN = 4096
 
-ALLOWED_OPCODES = (
+ALLOWED_OPCODES = [
     0x03,  # Read Holding Register (required by spec)
     0x04,  # Read Input Registers (required by spec)
     0x06,  # Write Single Register (required by spec)
@@ -32,7 +33,7 @@ ALLOWED_OPCODES = (
     0x46,  # Vendor Defined
     0x47,  # Vendor Defined
     0x48,  # Vendor Defined
-)
+]
 
 
 # Convert the response received by pyrmd to a response
@@ -58,10 +59,9 @@ async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
         )
     try:
         payload = await request.json()
-        _validate_payload_schema(payload=payload, schema=PAYLOAD_SCHEMA)
-        _validate_payload_commands(payload["commands"])
+        jsonschema.validate(payload, MODBUS_CMD_PAYLOAD_SCHEMA)
 
-    except ValueError as e:
+    except jsonschema.ValidationError as e:
         return aiohttp.web.json_response(
             {
                 "status": "Bad Request",
@@ -120,76 +120,26 @@ class SolitonBeamFlock:
             return open(FLOCK_SOLITON_BEAM)
 
 
-# Validation logic
-def _validate_payload_schema(payload, schema, path=""):
-    if type(schema) == type(payload) == dict and schema.keys() == payload.keys():
-        for key, subschema in schema.items():
-            _validate_payload_schema(
-                payload=payload[key], schema=subschema, path=path + "." + key
-            )
-
-    elif type(schema) == type(payload) == list:
-        for value in payload:
-            _validate_payload_schema(payload=value, schema=schema[0], path=path + "[]")
-
-    elif not _schema_match(payload, schema):
-        raise ValueError(
-            "Schema mismatch in {path}: expected value ({x}) to match schema {y}".format(  # noqa: B950
-                path=path or ".", x=repr(payload), y=repr(schema)
-            )
-        )
-
-
-def _schema_match(payload, schema):
-    if type(payload) == type(schema) == dict:
-        return schema.keys() == payload.keys()
-
-    elif type(schema) == type:
-        return type(payload) == schema
-
-    elif type(schema) == str:
-        return payload == schema
-
-    return False
-
-
-def _validate_payload_commands(commands: List[str]) -> None:
-    if not commands:
-        raise ValueError("Expected at least one command in .commands[]")
-
-    for i, cmd in enumerate(commands):
-        if len(cmd) < 2:
-            raise ValueError(
-                "Expected at least two bytes in .commands[{i}] ({cmd})".format(
-                    i=i, cmd=repr(cmd)
-                )
-            )
-
-        if not all(0 <= int(x) <= 0xFF for x in cmd):
-            raise ValueError(
-                "Byte value out of range in .commands[{i}] ({cmd})".format(
-                    i=i, cmd=repr(cmd)
-                )
-            )
-
-        if cmd[1] not in ALLOWED_OPCODES:
-            raise ValueError(
-                "Command opcode 0x{cmd_1:02x} ({cmd_1}) is not allowed in .commands[{i}][1] ({cmd})".format(  # noqa: B950
-                    i=i, cmd_1=int(cmd[1]), cmd=repr(cmd)
-                )
-            )
-
-
 # Schemas
+COMMAND_SCHEMA = {
+    "type": "array",
+    "minItems": 2,
+    "items": [
+        {"type": "integer", "minimum": 0, "maximum": 255},
+        {"type": "integer", "enum": ALLOWED_OPCODES},
+    ],
+    "additionalItems": {"type": "integer", "minimum": 0, "maximum": 255},
+}
 
-# Each command is a list of integers with modbus opcodes
-# e.g. [164, 3, 0, 128, 0, 1] == [0xa4, 0x03, 0x00, 0x80, 0x00, 0x01]
-COMMAND_SCHEMA = [int]
-
-PAYLOAD_SCHEMA = {
-    # .commands accepts a list of commands
-    "commands": [COMMAND_SCHEMA],
-    "expected_response_length": int,
-    # Timeout for each command (not total timeout)
-    "custom_timeout": int,
+MODBUS_CMD_PAYLOAD_SCHEMA = {
+    "title": "Modbus command request",
+    "description": "Schema to define the modbus command (raw) request",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["commands", "expected_response_length"],
+    "properties": {
+        "commands": {"type": "array", "minItems": 1, "items": COMMAND_SCHEMA},
+        "expected_response_length": {"type": "integer", "minimum": 2, "maximum": 255},
+        "custom_timeout": {"type": "integer", "minimum": 0},
+    },
 }

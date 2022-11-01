@@ -26,14 +26,10 @@ plat_i2c_tree = {
     "3-0048": {"name": "lm75", "driver": "lm75"},
     "3-0049": {"name": "lm75", "driver": "lm75"},
     "3-004a": {"name": "lm75", "driver": "lm75"},
-    "3-004c": {"name": "tmp422", "driver": "tmp421"},
-    "5-0035": {"name": "ucd90160", "driver": "ucd9000"},
-    "5-0036": {"name": "ucd90160", "driver": "ucd9000"},
     "8-0051": {"name": "24c64", "driver": "at24"},
     "8-004a": {"name": "lm75", "driver": "lm75"},
     "12-003e": {"name": "smb_syscpld", "driver": "smb_syscpld"},
     "13-0035": {"name": "iobfpga", "driver": "iobfpga"},
-    "16-0010": {"name": "adm1278", "driver": "adm1275"},
     "17-004c": {"name": "lm75", "driver": "lm75"},
     "17-004d": {"name": "lm75", "driver": "lm75"},
     "19-0052": {"name": "24c64", "driver": "at24"},
@@ -46,19 +42,16 @@ plat_i2c_tree = {
     "50-0052": {"name": "24c64", "driver": "at24"},
     "51-0048": {"name": "tmp75", "driver": "lm75"},
     "52-0049": {"name": "tmp75", "driver": "lm75"},
-    "55-0060": {"name": "smb_pwrcpld", "driver": "smb_pwrcpld"},
     "54-0021": {"name": "pca9534", "driver": "pca953x"},
     "56-0058": {"name": "psu_driver", "driver": "psu_driver"},
     "57-005a": {"name": "psu_driver", "driver": "psu_driver"},
     "59-0048": {"name": "tmp75", "driver": "lm75"},
     "60-0049": {"name": "tmp75", "driver": "lm75"},
-    "63-0060": {"name": "smb_pwrcpld", "driver": "smb_pwrcpld"},
     "62-0021": {"name": "pca9534", "driver": "pca953x"},
     "64-0033": {"name": "fcbcpld", "driver": "fcbcpld"},
     "65-0053": {"name": "24c64", "driver": "at24"},
     "66-0048": {"name": "tmp75", "driver": "lm75"},
     "66-0049": {"name": "tmp75", "driver": "lm75"},
-    "67-0010": {"name": "adm1278", "driver": "adm1275"},
     "68-0052": {"name": "24c64", "driver": "at24"},
     "69-0052": {"name": "24c64", "driver": "at24"},
     "70-0052": {"name": "24c64", "driver": "at24"},
@@ -67,79 +60,124 @@ plat_i2c_tree = {
     "73-0053": {"name": "24c64", "driver": "at24"},
     "74-0048": {"name": "tmp75", "driver": "lm75"},
     "74-0049": {"name": "tmp75", "driver": "lm75"},
-    "75-0010": {"name": "adm1278", "driver": "adm1275"},
     "76-0052": {"name": "24c64", "driver": "at24"},
     "77-0052": {"name": "24c64", "driver": "at24"},
     "78-0052": {"name": "24c64", "driver": "at24"},
     "79-0052": {"name": "24c64", "driver": "at24"},
-    "80-0060": {"name": "domfpga", "driver": "domfpga"},
-    "81-0056": {"name": "24c64", "driver": "at24"},
-    "82-0048": {"name": "tmp75", "driver": "lm75"},
-    "83-004b": {"name": "tmp75", "driver": "lm75"},
-    "84-004a": {"name": "tmp75", "driver": "lm75"},
-    "84-0010": {"name": "adm1278", "driver": "adm1275"},
-    "86-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "86-006b": {"name": "mp2975", "driver": "mp2975"},
-    "88-0060": {"name": "domfpga", "driver": "domfpga"},
-    "89-0056": {"name": "24c64", "driver": "at24"},
-    "90-0048": {"name": "tmp75", "driver": "lm75"},
-    "91-004b": {"name": "tmp75", "driver": "lm75"},
-    "92-004a": {"name": "tmp75", "driver": "lm75"},
-    "92-0010": {"name": "adm1278", "driver": "adm1275"},
-    "94-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "94-006b": {"name": "mp2975", "driver": "mp2975"},
-    "96-0060": {"name": "domfpga", "driver": "domfpga"},
-    "97-0056": {"name": "24c64", "driver": "at24"},
-    "98-0048": {"name": "tmp75", "driver": "lm75"},
-    "99-004b": {"name": "tmp75", "driver": "lm75"},
-    "100-004a": {"name": "tmp75", "driver": "lm75"},
-    "100-0010": {"name": "adm1278", "driver": "adm1275"},
-    "102-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "102-006b": {"name": "mp2975", "driver": "mp2975"},
-    "104-0060": {"name": "domfpga", "driver": "domfpga"},
-    "105-0056": {"name": "24c64", "driver": "at24"},
-    "106-0048": {"name": "tmp75", "driver": "lm75"},
-    "107-004b": {"name": "tmp75", "driver": "lm75"},
-    "108-004a": {"name": "tmp75", "driver": "lm75"},
-    "108-0010": {"name": "adm1278", "driver": "adm1275"},
-    "110-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "110-006b": {"name": "mp2975", "driver": "mp2975"},
-    "112-0060": {"name": "domfpga", "driver": "domfpga"},
-    "113-0056": {"name": "24c64", "driver": "at24"},
-    "114-0048": {"name": "tmp75", "driver": "lm75"},
-    "115-004b": {"name": "tmp75", "driver": "lm75"},
-    "116-004a": {"name": "tmp75", "driver": "lm75"},
-    "116-0010": {"name": "adm1278", "driver": "adm1275"},
-    "118-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "118-006b": {"name": "mp2975", "driver": "mp2975"},
-    "120-0060": {"name": "domfpga", "driver": "domfpga"},
-    "121-0056": {"name": "24c64", "driver": "at24"},
-    "122-0048": {"name": "tmp75", "driver": "lm75"},
-    "123-004b": {"name": "tmp75", "driver": "lm75"},
-    "124-004a": {"name": "tmp75", "driver": "lm75"},
-    "124-0010": {"name": "adm1278", "driver": "adm1275"},
-    "126-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "126-006b": {"name": "mp2975", "driver": "mp2975"},
-    "128-0060": {"name": "domfpga", "driver": "domfpga"},
-    "129-0056": {"name": "24c64", "driver": "at24"},
-    "130-0048": {"name": "tmp75", "driver": "lm75"},
-    "131-004b": {"name": "tmp75", "driver": "lm75"},
-    "132-004a": {"name": "tmp75", "driver": "lm75"},
-    "132-0010": {"name": "adm1278", "driver": "adm1275"},
-    "134-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "134-006b": {"name": "mp2975", "driver": "mp2975"},
-    "136-0060": {"name": "domfpga", "driver": "domfpga"},
-    "137-0056": {"name": "24c64", "driver": "at24"},
-    "138-0048": {"name": "tmp75", "driver": "lm75"},
-    "139-004b": {"name": "tmp75", "driver": "lm75"},
-    "140-004a": {"name": "tmp75", "driver": "lm75"},
-    "140-0010": {"name": "adm1278", "driver": "adm1275"},
-    "142-0034": {"name": "ucd90160", "driver": "ucd9000"},
-    "142-006b": {"name": "mp2975", "driver": "mp2975"},
 }
 
 
-device_lm75={
-    "lm75" : {"name":"lm75", "driver":"lm75"},
-    "tmp75" : {"name":"tmp75", "driver":"lm75"},
+def minipack2_get_pim_i2c_tree(pim):
+    if pim < 1 or pim > 8:
+        return {}
+    bus = 80 + ((pim - 1) * 8)
+    list = [
+        {"channel": 0, "addr": 0x60, "name": "domfpga", "driver": "domfpga"},
+        {"channel": 1, "addr": 0x56, "name": "24c64", "driver": "at24"},
+        {"channel": 2, "addr": 0x48, "name": "tmp75", "driver": "lm75"},
+        {"channel": 3, "addr": 0x4B, "name": "tmp75", "driver": "lm75"},
+        {"channel": 4, "addr": 0x4A, "name": "tmp75", "driver": "lm75"},
+        {"channel": 6, "addr": 0x6B, "name": "mp2975", "driver": "mp2975"},
+    ]
+    devices = {}
+    for device in list:
+        id = "{}-00{:02x}".format(bus + device["channel"], device["addr"])
+        devices[id] = {"name": device["name"], "driver": device["driver"]}
+    return devices
+
+
+minipack2_smb_alternate_i2c = [
+    [
+        {
+            "5-0035": {"name": "ucd90160", "driver": "ucd9000"},
+            "5-0036": {"name": "ucd90160", "driver": "ucd9000"},
+        },
+        {
+            "5-0066": {"name": "ucd90160", "driver": "ucd9000"},
+            "5-0067": {"name": "ucd90160", "driver": "ucd9000"},
+        },
+        {
+            "5-0068": {"name": "ucd90160", "driver": "ucd9000"},
+            "5-0069": {"name": "ucd90160", "driver": "ucd9000"},
+        },
+        {
+            "5-0043": {"name": "ucd9012*", "driver": "ucd9000"},
+            "5-0046": {"name": "ucd9012*", "driver": "ucd9000"},
+        },
+        {
+            "5-0044": {"name": "adm1266", "driver": "adm1266"},
+            "5-0047": {"name": "adm1266", "driver": "adm1266"},
+        },
+    ],
+    [
+        {
+            "16-0010": {"name": "adm1278", "driver": "adm1275"},
+        },
+        {
+            "16-0044": {"name": "lm25066", "driver": "lm25066"},
+        },
+    ],
+]
+
+
+def minipack2_get_pim_alternate_i2c(pim):
+    if pim < 1 or pim > 8:
+        return []
+    bus = 80 + ((pim - 1) * 8)
+    list = [
+        [
+            {"channel": 6, "addr": 0x34, "name": "ucd90160", "driver": "ucd9000"},
+            {"channel": 6, "addr": 0x64, "name": "ucd90160", "driver": "ucd9000"},
+            {"channel": 6, "addr": 0x65, "name": "ucd90160", "driver": "ucd9000"},
+            {"channel": 6, "addr": 0x40, "name": "ucd9012*", "driver": "ucd9000"},
+            {"channel": 6, "addr": 0x44, "name": "adm1266", "driver": "adm1266"},
+        ],
+        [
+            {"channel": 4, "addr": 0x10, "name": "adm1278", "driver": "adm1275"},
+            {"channel": 4, "addr": 0x44, "name": "lm25066", "driver": "lm25066"},
+        ],
+    ]
+    devices = []
+    for alternate_set in list:
+        set_array = []
+        for alternate in alternate_set:
+            id = "{}-00{:02x}".format(bus + alternate["channel"], alternate["addr"])
+            set_array.append(
+                {id: {"name": alternate["name"], "driver": alternate["driver"]}}
+            )
+        devices.append(set_array)
+    return devices
+
+
+minipack2_fcmt_alternate_i2c = [
+    [
+        {"67-0010": {"name": "adm1278", "driver": "adm1275"}},
+        {"67-0044": {"name": "lm25066", "driver": "lm25066"}},
+    ]
+]
+
+minipack2_fcmb_alternate_i2c = [
+    [
+        {"75-0010": {"name": "adm1278", "driver": "adm1275"}},
+        {"75-0044": {"name": "lm25066", "driver": "lm25066"}},
+    ]
+]
+
+minipack2_smbpowcpld_pdbl_alternate_i2c = [
+    [
+        {"53-0060": {"name": "smb_pwrcpld", "driver": "smb_pwrcpld"}},
+        {"55-0060": {"name": "smb_pwrcpld", "driver": "smb_pwrcpld"}},
+    ]
+]
+
+minipack2_smbpowcpld_pdbr_alternate_i2c = [
+    [
+        {"61-0060": {"name": "smb_pwrcpld", "driver": "smb_pwrcpld"}},
+        {"63-0060": {"name": "smb_pwrcpld", "driver": "smb_pwrcpld"}},
+    ]
+]
+
+device_lm75 = {
+    "lm75": {"name": "lm75", "driver": "lm75"},
+    "tmp75": {"name": "tmp75", "driver": "lm75"},
 }

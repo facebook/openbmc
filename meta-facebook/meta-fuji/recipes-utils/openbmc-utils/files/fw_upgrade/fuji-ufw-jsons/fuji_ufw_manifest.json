@@ -2,15 +2,15 @@
     "bic" : {
         "get_version" : "fw-util scm --version |grep Bri|grep -v Boot| cut -d ' ' -f 3",
         "priority" : 4,
-        "upgrade_cmd" : "/usr/bin/fw-util scm --update bic {filename}"
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bic {filename}"
     },
     "bios" : {
         "get_version" : "fw-util scm --version |grep BIOS| cut -d ' ' -f 3",
         "priority" : 5,
-        "upgrade_cmd" : "/usr/bin/fw-util scm --update bios {filename}"
+        "upgrade_cmd" : "/usr/bin/fw-util scm --update --bios {filename}"
     },
     "fcm" : {
-        "get_version" : "fw-util cpld --version fcmcpld_b | cut -d ' ' -f 3",
+        "get_version" : "fw-util cpld --version | grep `echo '{entity}' | cut -d '-' -f 1` | grep `echo '{entity}' | cut -d'-' -f2` | cut -d ' ' -f 3",
         "entities"   : ["FCM-T", "FCM-B"],
         "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s {entity} -f {filename} sw",
         "priority": 8
@@ -21,24 +21,24 @@
         "priority": 3
     },
     "pdb" : {
-        "get_version" : "fw-util cpld --version pwrcpld_r | cut -d ' ' -f 3",
+        "get_version" : "fw-util cpld --version | grep `echo '{entity}' | cut -d '-' -f 1` | grep \" `echo '{entity}' | cut -d'-' -f2`\" | cut -d ' ' -f 3",
         "entities"   : ["PWR-L", "PWR-R"],
         "upgrade_cmd" : "/usr/local/bin/cpld_update.sh -s {entity} -f {filename} sw",
         "priority": 9
     },
     "16q_fpga" : {
-      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
-        "condition" : "peutil 4|grep Name |grep PIM_16Q",
-        "get_version" : "fw-util fpga --version iob_fpga | cut -d ' ' -f 3",
+        "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
+        "condition" : "pim=$(({entity}+1)); peutil $pim |grep Name |grep PIM_16Q",
+        "get_version" : "fw-util fpga --version pim{entity}_domfpga|cut -d ' ' -f 3",
         "upgrade_cmd" : "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entity} {filename}",
         "continue_on_error" : true,
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30",
         "priority": 1
     },
     "16o_fpga" : { 
-      "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"], 
-        "condition" : "peutil 4|grep Name |grep PIM_OBO", 
-        "get_version" : "fpga_ver.sh|grep 16O|head -{entity}|tail -1|cut -d ' ' -f 3", 
+        "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"], 
+        "condition" : "pim=$(({entity}+1)); peutil $pim |grep Name |grep PIM_OBO",
+        "get_version" : "fw-util fpga --version pim{entity}_domfpga|cut -d ' ' -f 3",
         "upgrade_cmd" : "/bin/false && /usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entity} {filename}  # Firmware missing", 
         "continue_on_error" : true, 
         "post_action"    : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30", 

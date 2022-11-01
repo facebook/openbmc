@@ -38,45 +38,37 @@ class FwUpgradeTest(unittest.TestCase):
     # <fw_entity: priority>
     _COMPONENTS = {
         "iob_fpga": [
-            9,
-            "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA {filename}",
-        ],  # priority=9, upgrade_cmd
-        "pim16q_fpga": [
-            10,
-            "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entry} {filename}",
-        ],  # priority=10, upgrade_cmd
-        "bios": [
-            8,
-            "/usr/bin/fw-util scm --update --bios {filename}",
-        ],  # priority=8, upgrade_cmd
-        "bic": [
-            7,
-            "/usr/bin/fw-util scm --update --bic {filename}",
-        ],  # priority=7, upgrade_cmd
-        "scm": [
             3,
-            "/usr/local/bin/cpld_update.sh -s SCM -f {filename} sw",
+            "/usr/local/bin/spi_util.sh write spi1 IOB_FPGA {filename}",
         ],  # priority=3, upgrade_cmd
-        "smb": [
-            4,
-            "/usr/local/bin/cpld_update.sh -s SMB -f {filename} sw",
-        ],  # priority=4, upgrade_cmd
-        "fcm_b": [
+        "16q_fpga": [
             1,
-            "/usr/local/bin/cpld_update.sh -s FCM-B -f {filename} sw",
+            "/usr/local/bin/spi_util.sh write spi1 DOM_FPGA_PIM{entity} {filename}",
         ],  # priority=1, upgrade_cmd
-        "fcm_t": [
-            2,
-            "/usr/local/bin/cpld_update.sh -s FCM-T -f {filename} sw",
-        ],  # priority=2, upgrade_cmd
-        "pwr_l": [
+        "bios": [
             5,
-            "/usr/local/bin/cpld_update.sh -s PWR-L -f {filename} i2c",
+            "/usr/bin/fw-util scm --update --bios {filename}",
         ],  # priority=5, upgrade_cmd
-        "pwr_r": [
+        "bic": [
+            4,
+            "/usr/bin/fw-util scm --update --bic {filename}",
+        ],  # priority=4, upgrade_cmd
+        "scm": [
             6,
-            "/usr/local/bin/cpld_update.sh -s PWR-R -f {filename} i2c",
+            "/usr/local/bin/cpld_update.sh -s SCM -f {filename} sw",
         ],  # priority=6, upgrade_cmd
+        "smb": [
+            7,
+            "/usr/local/bin/cpld_update.sh -s SMB -f {filename} sw",
+        ],  # priority=7, upgrade_cmd
+        "fcm": [
+            8,
+            "/usr/local/bin/cpld_update.sh -s {entity} -f {filename} sw",
+        ],  # priority=8, upgrade_cmd
+        "pdb": [
+            9,
+            "/usr/local/bin/cpld_update.sh -s {entity} -f {filename} sw",
+        ],  # priority=9, upgrade_cmd
     }
 
     def setUp(self):

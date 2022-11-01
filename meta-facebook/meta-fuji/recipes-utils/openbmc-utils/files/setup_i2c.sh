@@ -179,7 +179,7 @@ if i2c_detect_address 67 0x10; then
    i2c_device_add 67 0x10 adm1278    # FCM ADM1278
    kv set smb_fcm_t_hsc_addr 0x10
 elif i2c_detect_address 67 0x44; then
-   i2c_device_add 67 0x10 lm25066    # FCM LM25066
+   i2c_device_add 67 0x44 lm25066    # FCM LM25066
    kv set smb_fcm_t_hsc_addr 0x44
 else
    echo "setup-i2c : not detect ADM1278 LM25066 on FCM bus67" > /dev/kmsg

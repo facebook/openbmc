@@ -17,7 +17,7 @@ class BiosComponent : public GPIOSwitchedSPIMTDComponent {
       GPIOSwitchedSPIMTDComponent(fru, comp, mtd, dev, shadow, level), _ver_prefix(verp) {}
     BiosComponent(std::string fru, std::string comp, std::string mtd, std::string verp) :
       GPIOSwitchedSPIMTDComponent(fru, comp, mtd, "spi1.0", "BMC_BIOS_FLASH_CTL", true), _ver_prefix(verp) {}
-    int print_version();
+    int get_version(json& j) override;
     int update(std::string image) override;
     int fupdate(std::string image) override;
     virtual int setMeRecovery(uint8_t retry);

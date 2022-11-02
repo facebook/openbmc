@@ -214,24 +214,22 @@ int BiosComponent::setMeRecovery(uint8_t retry) {
   return 0;
 }
 
-int BiosComponent::print_version() {
+int BiosComponent::get_version(json& j) {
   uint8_t ver[32] = {0};
   uint8_t fruid = 1;
-  int i, end;
+  int end;
 
+  j["PRETTY_COMPONENT"] = "BIOS";
   pal_get_fru_id((char *)_fru.c_str(), &fruid);
   if (!pal_get_sysfw_ver(fruid, ver)) {
     // BIOS version response contains the length at offset 2 followed by ascii string
     if ((end = 3+ver[2]) > (int)sizeof(ver)) {
       end = sizeof(ver);
     }
-    printf("BIOS Version: ");
-    for (i = 3; i < end; i++) {
-      printf("%c", ver[i]);
-    }
-    printf("\n");
+    string sver((char *)ver + 3);
+    j["VERSION"] = sver.substr(0, end - 3);
   } else {
-    cout << "BIOS Version: NA" << endl;
+    j["VERISON"] = "NA";
   }
 
   return 0;

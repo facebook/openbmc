@@ -29,7 +29,7 @@
 #define FAULT_LED_DELAY_PERIOD      2    /*second*/
 #define MIN_POLL_INTERVAL           2    /*second*/
 
-#define MAX_NUM_CHECK_FRU_HEALTH    2    /*second*/
+#define MAX_NUM_CHECK_FRU_HEALTH    5
 
 static void *
 identify_led_handler() {
@@ -78,8 +78,8 @@ fault_led_handler() {
 static void *
 fru_health_handler() {
   int fru_id = -1, ret = 0;
-  uint8_t fru_list[MAX_NUM_CHECK_FRU_HEALTH] = {FRU_SERVER, FRU_PDB};
-  uint8_t health_error_code_list[MAX_NUM_CHECK_FRU_HEALTH] = {ERR_CODE_FRU_SERVER_HEALTH, ERR_CODE_FRU_PDB_HEALTH};
+  uint8_t fru_list[MAX_NUM_CHECK_FRU_HEALTH] = {FRU_SERVER, FRU_BMC, FRU_PDB, FRU_FIO, FRU_NIC};
+  uint8_t health_error_code_list[MAX_NUM_CHECK_FRU_HEALTH] = {FRU_SERVER, FRU_BMC, FRU_PDB, FRU_FIO, FRU_NIC};
   uint8_t health = FRU_STATUS_BAD;
 
   while (1) {

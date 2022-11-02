@@ -97,14 +97,6 @@ enum {
   DEBUG_CARD_ABSENT,
 };
 
-/*
-TODO: Temporary. Error code needs to modify later on
-*/
-enum {
-  ERR_CODE_FRU_SERVER_HEALTH = 0x05,
-  ERR_CODE_FRU_PDB_HEALTH = 0x09,
-};
-
 enum {
   EVT = 0,
   EVT2 = 1,

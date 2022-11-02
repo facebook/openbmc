@@ -22,7 +22,7 @@ deps = [
     dependency('obmc-pal'),
 ]
 
-exe = executable('show-sys-config',
+exe = executable('show_sys_config',
     sources,
     dependencies: deps,
     install: true,

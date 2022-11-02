@@ -38,9 +38,9 @@ do_work_sysv() {
   install -d ${D}${sysconfdir}/ipmbd_0
   install -d ${D}${sysconfdir}/sv/ipmbd_4
   install -d ${D}${sysconfdir}/ipmbd_4
-  install -m 755 setup-ipmbd.sh ${D}${sysconfdir}/init.d/setup-ipmbd.sh
-  install -m 755 run-ipmbd_0.sh ${D}${sysconfdir}/sv/ipmbd_0/run
-  install -m 755 run-ipmbd_4.sh ${D}${sysconfdir}/sv/ipmbd_4/run
+  install -m 755 ${S}/setup-ipmbd.sh ${D}${sysconfdir}/init.d/setup-ipmbd.sh
+  install -m 755 ${S}/run-ipmbd_0.sh ${D}${sysconfdir}/sv/ipmbd_0/run
+  install -m 755 ${S}/run-ipmbd_4.sh ${D}${sysconfdir}/sv/ipmbd_4/run
   update-rc.d -r ${D} setup-ipmbd.sh start 65 5 .
 }
 
@@ -48,33 +48,21 @@ do_work_systemd() {
   install -d ${D}/usr/local/bin
   install -d ${D}${systemd_system_unitdir}
 
-  install -m 755 setup-ipmbd.sh ${D}/usr/local/bin/setup-ipmbd.sh
-  install -m 755 run-ipmbd_0.sh ${D}/usr/local/bin/ipmbd_0
-  install -m 755 run-ipmbd_4.sh ${D}/usr/local/bin/ipmbd_4
+  install -m 755 ${S}/setup-ipmbd.sh ${D}/usr/local/bin/setup-ipmbd.sh
+  install -m 755 ${S}/run-ipmbd_0.sh ${D}/usr/local/bin/ipmbd_0
+  install -m 755 ${S}/run-ipmbd_4.sh ${D}/usr/local/bin/ipmbd_4
 
-  install -m 0644 ipmbd.service ${D}${systemd_system_unitdir}
+  install -m 0644 ${S}/ipmbd.service ${D}${systemd_system_unitdir}
 
   sed -i -e 's/runsv \"\/etc\/sv/\"\/usr\/local\/bin/' ${D}/usr/local/bin/setup-ipmbd.sh
 }
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  install -m 755 ipmbd ${dst}/ipmbd
-  ln -snf ../fbpackages/${pkgdir}/ipmbd ${bin}/ipmbd
-
+do_install:append() {
   if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
     do_work_systemd
   else
     do_work_sysv
   fi
 }
-
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES:${PN} = "${FBPACKAGEDIR}/ipmbd ${prefix}/local/bin ${sysconfdir} "
 
 SYSTEMD_SERVICE:${PN} += "ipmbd.service"

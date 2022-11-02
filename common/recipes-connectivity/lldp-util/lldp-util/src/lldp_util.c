@@ -206,8 +206,6 @@ cleanup:
 }
 
 void lldp_print_value(const uint8_t* buf, uint32_t length) {
-  int n;
-
   bool add_quotes = false;
   for (uint32_t n = 0; n < length; ++n) {
     uint8_t value = buf[n];
@@ -335,7 +333,7 @@ int lldp_parse_lldp(lldp_neighbor_t* neighbor,
 
     if ((end - buf) < length) {
       errmsg("LLDPDU truncated inside field of type %d: "
-             "field_length=%d, remaining=%d", type, length, end - buf);
+             "field_length=%d, remaining=%zd", type, length, end - buf);
       return -EINVAL;
     }
 
@@ -392,7 +390,7 @@ int lldp_parse_cdp(lldp_neighbor_t* neighbor,
   // 1 byte TTL
   // 2 byte checksum
   if ((end - buf) < 12) {
-    errmsg("CDP PDU truncated in initial headers: length=%d", end - buf);
+    errmsg("CDP PDU truncated in initial headers: length=%zd", end - buf);
     return -EINVAL;
   }
   buf += 8;
@@ -420,7 +418,7 @@ int lldp_parse_cdp(lldp_neighbor_t* neighbor,
     length -= 4;
     if ((end - buf) < length) {
       errmsg("CDP PDU truncated inside field of type %d: "
-             "field_length=%d, remaining=%d", type, length, end - buf);
+             "field_length=%" PRId16 ", remaining=%zd", type, length, end - buf);
       return -EINVAL;
     }
 
@@ -462,7 +460,7 @@ int lldp_process_packet(const uint8_t* buf,
   {
     // Bail if the minimum ethernet frame size is not met
     if (length < MIN_FRAME_LENGTH) {
-      errmsg("received too-short frame on interface %s: length=%d",
+      errmsg("received too-short frame on interface %s: length=%zd",
              interface, length);
       returnCode = -EINVAL;
       goto error;
@@ -478,7 +476,7 @@ int lldp_process_packet(const uint8_t* buf,
     uint16_t ethertype = lldp_read_u16(&buf);
 
     if (ethertype == ETHERTYPE_VLAN) {
-      uint16_t vlan = lldp_read_u16(&buf);
+      uint16_t vlan __attribute__((unused)) = lldp_read_u16(&buf);
       ethertype = lldp_read_u16(&buf);
     }
 
@@ -555,7 +553,7 @@ cleanup:
   return returnCode;
 }
 
-void exit_handler(int signum) {
+void exit_handler(int signum __attribute__((unused))) {
   g_interrupt = true;
 }
 

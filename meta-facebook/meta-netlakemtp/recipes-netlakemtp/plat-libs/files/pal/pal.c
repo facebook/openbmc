@@ -30,6 +30,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <openbmc/libgpio.h>
 #include <openbmc/phymem.h>
 #include <openbmc/obmc-sensors.h>
@@ -740,10 +741,7 @@ pal_get_fan_speed(uint8_t fan_id, int *rpm) {
   snprintf(fan_controller, sizeof(fan_controller), "%s%d-%s", "max31790-i2c-",
            FAN_CTL_BUS, FAN_CTL_ADDR_STR);
   ret = sensors_read(fan_controller, fan_label, &value);
-  if (ret != 0 ) {
-    syslog(LOG_WARNING, "%s: Fan sensor read fail: %s", __func__, fan_label);
-  }
-  else {
+  if (ret == 0 ) {
     *rpm = (int)value;
   }
 
@@ -1346,8 +1344,32 @@ pal_adc_clock_control(void) {
 }
 
 int
+pal_hwmon_probe(char *path, char *dev) {
+  FILE *fp;
+  int rc = 0;
+
+  fp = fopen(path, "w");
+  if (fp == NULL) {
+    syslog(LOG_WARNING, "%s() failed to open file, path=%s", __func__, path);
+    return -1;
+  }
+
+  rc = fputs(dev, fp);
+  fclose(fp);
+
+  if (rc < 0) {
+    syslog(LOG_WARNING, "%s() device %s bind/unbind failed\n", __func__, dev);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
 pal_max31790_init(void) {
   int fd, ret = 0;
+  struct stat buf;
+  int retry = MAX31790_PROBE_RETRY;
   uint8_t tlen = 2;
   uint8_t bus = FAN_CTL_BUS;
   uint8_t addr = FAN_CTL_ADDR;
@@ -1370,7 +1392,23 @@ pal_max31790_init(void) {
   }
 
   close(fd);
-  return 0;
+
+  for (int j = 0; j < MAX31790_PROBE_RETRY; j++) {
+    pal_hwmon_probe(MAX31790_UNBIND_PATH, MAX31790_BUS_ADDR);
+    pal_hwmon_probe(MAX31790_BIND_PATH, MAX31790_BUS_ADDR);
+
+    ret = stat(MAX31790_STAT_PATH, &buf);
+    if (ret != 0) {
+      syslog(LOG_INFO, "check max31790 stat, errno=%s", strerror(errno));
+      sleep(1);
+    } else {
+      break;
+    }
+  }
+
+  sensors_reinit();
+
+  return ret;
 }
 
 int

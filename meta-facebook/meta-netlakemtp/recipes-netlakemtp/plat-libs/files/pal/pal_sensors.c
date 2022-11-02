@@ -30,6 +30,7 @@ static int read_ina230_pwr(uint8_t id, float *value);
 static int read_nvme_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t id, float *value);
 static int retryDIMM = 0;
+static int retryFAN[4] = {0, 0, 0, 0};
 
 //{SensorName, ID, FUNCTION, RAEDING AVAILABLE, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP server_sensor_map[] = {
@@ -162,13 +163,13 @@ const char *adc_label[] = {
 
 PAL_SENSOR_MAP pdb_sensor_map[] = {
   [FAN0_TACH] =
-  {"FAN0_TACH", FAN0, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN0_TACH", FAN0, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
   [FAN1_TACH] =
-  {"FAN1_TACH", FAN1, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN1_TACH", FAN1, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
   [FAN2_TACH] =
-  {"FAN2_TACH", FAN2, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN2_TACH", FAN2, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
   [FAN3_TACH] =
-  {"FAN3_TACH", FAN3, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN},
+  {"FAN3_TACH", FAN3, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
 };
 
 const uint8_t server_sensor_list[] = {
@@ -1239,6 +1240,9 @@ pal_get_sensor_poll_interval(uint8_t fru, uint8_t sensor_num, uint32_t *value)
     case FRU_BMC:
       *value = bmc_sensor_map[sensor_num].poll_invernal;
       break;
+    case FRU_PDB:
+      *value = pdb_sensor_map[sensor_num].poll_invernal;
+      break;
     case FRU_NIC:
       *value = nic_sensor_map[sensor_num].poll_invernal;
       break;
@@ -1253,10 +1257,18 @@ static
 int read_rpm(uint8_t id, float *value) {
   int rpm = 0;
   int ret = 0;
+
   ret = pal_get_fan_speed(id, &rpm);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s: Get fan speed fail.", __func__);
+  if (ret == 0) {
+    *value = rpm;
+    return ret;
   }
-  *value = rpm;
-  return ret;
+
+  if (retryFAN[id] < SENSOR_RETRY_TIME) {
+    retryFAN[id]++;
+    return SENSOR_NA;
+  }
+
+  retryFAN[id] = 0;
+  return ERR_SENSOR_NA;
 }

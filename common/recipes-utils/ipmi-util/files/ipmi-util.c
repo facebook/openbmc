@@ -24,7 +24,6 @@
 #include <errno.h>
 #include <syslog.h>
 #include <stdint.h>
-#include <pthread.h>
 #include <string.h>
 #include <fcntl.h>
 #include <sys/types.h>

@@ -30,7 +30,7 @@ MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
 
 do_install:append() {
     install -d ${D}/usr/local/bin
-    install -m 0755 sol.sh ${D}/usr/local/bin/
+    install -m 0755 ${S}/sol.sh ${D}/usr/local/bin/
 
     #
     # fixup serial devices and baudrate

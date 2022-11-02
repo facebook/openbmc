@@ -27,7 +27,7 @@ LOCAL_URI += " \
 
 do_install:append() {
     install -d ${D}/usr/local/bin
-    install -m 755 sol.sh ${D}/usr/local/bin/sol.sh
+    install -m 755 ${S}/sol.sh ${D}/usr/local/bin/sol.sh
 }
 
 FILES:${PN} += "/usr/local/bin"

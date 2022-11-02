@@ -31,10 +31,13 @@ LOCAL_URI = " \
     file://mTerm_helper.h \
     file://tty_helper.c \
     file://tty_helper.h \
-    file://Makefile \
+    file://meson.build \
     file://mTerm/run \
     file://mTerm-service-setup.sh \
     "
+
+inherit meson pkgconfig
+inherit legacy-packages
 
 CONS_BIN_FILES = "mTerm_server \
                   mTerm_client \
@@ -43,10 +46,10 @@ CONS_BIN_FILES = "mTerm_server \
 # It may override this variable in it's bbappend
 # file. Also the platform must provide those in
 # its appended package.
-MTERM_SERVICES = "mTerm \
-                 "
-MTERM_SYSTEMD_SERVICES ?= "mTerm_server.service \
-                          "
+MTERM_SERVICES ?= "mTerm"
+MTERM_SYSTEMD_SERVICES ?= "mTerm_server.service"
+SYSTEMD_SERVICE:${PN} = "${MTERM_SYSTEMD_SERVICES}"
+
 pkgdir = "mTerm"
 
 DEPENDS += "update-rc.d-native"
@@ -54,7 +57,7 @@ DEPENDS += "update-rc.d-native"
 systemd_install() {
     install -d ${D}${systemd_system_unitdir}
     for svc in ${MTERM_SYSTEMD_SERVICES}; do
-        install -m 644 $svc ${D}${systemd_system_unitdir}
+        install -m 644 ${S}/$svc ${D}${systemd_system_unitdir}
     done
 }
 
@@ -64,21 +67,13 @@ sysv_install() {
     install -d ${D}${sysconfdir}/sv
     for svc in ${MTERM_SERVICES}; do
         install -d ${D}${sysconfdir}/sv/${svc}
-        install -m 755 ${svc}/run ${D}${sysconfdir}/sv/${svc}/run
+        install -m 755 ${S}/${svc}/run ${D}${sysconfdir}/sv/${svc}/run
     done
-    install -m 755 mTerm-service-setup.sh ${D}${sysconfdir}/init.d/mTerm-service-setup.sh
+    install -m 755 ${S}/mTerm-service-setup.sh ${D}${sysconfdir}/init.d/mTerm-service-setup.sh
     update-rc.d -r ${D} mTerm-service-setup.sh start 84 S .
 }
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  for f in ${CONS_BIN_FILES}; do
-     install -m 755 $f ${dst}/$f
-     ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
-  done
+do_install:append() {
   for svc in ${MTERM_SERVICES}; do
       install -d ${D}${sysconfdir}/${svc}
   done
@@ -88,9 +83,3 @@ do_install() {
       sysv_install
   fi
 }
-
-FBPACKAGEDIR = "${prefix}/local/fbpackages"
-
-FILES:${PN}-dbg += "${FBPACKAGEDIR}/mTerm/.debug"
-FILES:${PN} += "${FBPACKAGEDIR}/mTerm ${prefix}/local/bin ${sysconfdir}"
-SYSTEMD_SERVICE:${PN} = "${MTERM_SYSTEMD_SERVICES}"

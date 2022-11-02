@@ -44,7 +44,7 @@ static int createServerSocket(const char* dev) {
   int ret;
   ret = snprintf(local.sun_path, sizeof(local.sun_path),
     "/var/run/mTerm_%s_socket", dev);
-  if ((ret < 0) || (ret >= sizeof(local.sun_path))) {
+  if ((ret < 0) || (ret >= (int)sizeof(local.sun_path))) {
     syslog(LOG_ERR, "mTerm_server: Received dev name too long");
     close(serverFd);
     return -1;
@@ -123,7 +123,7 @@ static void processClient(fd_set* master, int clientFd , int solFd,
       syslog(LOG_ERR, "mTerm_server: Error on read fd=%d\n", clientFd);
     }
     closeClient(master, clientFd);
-  } else if (nbytesHeader < sizeof(TlvHeader)) {
+  } else if ((size_t)nbytesHeader < sizeof(TlvHeader)) {
     // TODO: Potentially we should use a per-client buffer, for now close
     //  Client connection
     syslog(LOG_ERR, "mTerm_server: Error on read fd=%d socket_nbytes=%d\n", clientFd, nbytesHeader);
@@ -305,7 +305,7 @@ int main(int argc, char **argv) {
   int ret;
   char file[PATH_SIZE];
   ret = snprintf(file, sizeof(file), "/var/lock/mTerm_%s", dev);
-  if ((ret < 0) || (ret >= sizeof(file))) {
+  if ((ret < 0) || (ret >= (int)sizeof(file))) {
     perror("mTerm_server: dev name too long for lockfile");
     return -1;
   }

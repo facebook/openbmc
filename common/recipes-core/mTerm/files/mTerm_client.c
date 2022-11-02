@@ -44,7 +44,7 @@ static int createClientSocket(const char *dev) {
   int ret;
   ret = snprintf(remote.sun_path, sizeof(remote.sun_path),
     "/var/run/mTerm_%s_socket", dev);
-  if ((ret < 0) || (ret >= sizeof(remote.sun_path))) {
+  if ((ret < 0) || (ret >= (int)sizeof(remote.sun_path))) {
     perror("mTerm_client: Received dev name too long");
     close(sockfd);
     return -1;

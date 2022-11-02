@@ -15,6 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#define _GNU_SOURCE
+
 #include <ctype.h>
 #include <stdbool.h>
 #include <sys/types.h>
@@ -92,7 +94,7 @@ int sendTlv(int fd, uint16_t type, void* value, uint16_t valLen) {
 
   // TODO: Check the return code, and asynchronously retry later if
   // we were only able to write part of the data.
-  if ((rc < 0) || (rc < (vec[0].iov_len + vec[1].iov_len))) {
+  if ((rc < 0) || ((size_t)rc < (vec[0].iov_len + vec[1].iov_len))) {
     perror("Write error");
     return -1;
   }
@@ -141,7 +143,7 @@ bufStore* createBuffer(const char *dev, int fsize) {
 
   int ret;
   ret = snprintf(buf->file, sizeof(buf->file), "/var/log/mTerm_%s.log", dev);
-  if ((ret < 0) || (ret >= sizeof(buf->file))) {
+  if ((ret < 0) || (ret >= (int)sizeof(buf->file))) {
     perror("mTerm: Received dev name too long to create buffer file");
     free(buf);
     return NULL;
@@ -149,7 +151,7 @@ bufStore* createBuffer(const char *dev, int fsize) {
 
   ret = snprintf(buf->backupfile, sizeof(buf->backupfile),
     "/var/log/mTerm_%s_backup.log", dev);
-  if ((ret < 0) || (ret >= sizeof(buf->backupfile))) {
+  if ((ret < 0) || (ret >= (int)sizeof(buf->backupfile))) {
     perror("mTerm: Received dev name too long to create backup buffer file");
     free(buf);
     return NULL;

@@ -11,7 +11,7 @@ class UsbDbgComponent : public McuFwComponent {
   public:
     UsbDbgComponent(std::string fru, std::string comp, std::string name, uint8_t bus, uint8_t addr, uint8_t is_signed)
       : McuFwComponent(fru, comp, name, bus, addr, is_signed), bus_id(bus), slv_addr(addr), type(is_signed) {}
-    int print_version();
+    int get_version(json& j) override;
 };
 
 class UsbDbgBlComponent : public McuFwBlComponent {
@@ -21,7 +21,7 @@ class UsbDbgBlComponent : public McuFwBlComponent {
   public:
     UsbDbgBlComponent(std::string fru, std::string comp, uint8_t bus, uint8_t addr, uint8_t target)
       : McuFwBlComponent(fru, comp, bus, addr, target), bus_id(bus), slv_addr(addr), target_id(target) {}
-    int print_version();
+    int get_version(json& j) override;
     int update(std::string image);
 };
 

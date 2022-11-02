@@ -1,42 +1,53 @@
 #include <cstdio>
 #include <cstring>
+#include <iomanip>
 #include <syslog.h>
 #include <openbmc/pal.h>
 #include <openbmc/mcu.h>
 #include <openbmc/misc-utils.h>
+#include <sstream>
 #include "usbdbg.h"
 
 
 using namespace std;
 
-int UsbDbgComponent::print_version() {
+int UsbDbgComponent::get_version(json& j) {
   uint8_t ver[8];
+
+  j["PRETTY_COMPONENT"] = "MCU";
 
   try {
     if (!pal_is_mcu_ready(bus_id) || retry_cond(!mcu_get_fw_ver(bus_id, slv_addr, MCU_FW_RUNTIME, ver), 2, 300)) {
-      printf("MCU Version: NA\n");
+      j["VERSION"] = "NA";
     }
     else {
-      printf("MCU Version: v%x.%02x\n", ver[0], ver[1]);
+      stringstream ss;
+      ss << 'v' << std::hex << +ver[0]
+        << std::setw(2) << std::setfill('0') << +ver[1];
+      j["VERSION"] = ss.str();
     }
   } catch(string err) {
-    printf("MCU Version: NA (%s)\n", err.c_str());
+    j["VERSION"] = string("NA (") + err + ")";
   }
   return 0;
 }
 
-int UsbDbgBlComponent::print_version() {
+int UsbDbgBlComponent::get_version(json& j) {
   uint8_t ver[8];
 
+  j["PRETTY_COMPONENT"] = "MCU Bootloader";
   try {
     if (!pal_is_mcu_ready(bus_id) || retry_cond(!mcu_get_fw_ver(bus_id, slv_addr, MCU_FW_BOOTLOADER, ver), 2, 300)) {
-      printf("MCU Bootloader Version: NA\n");
+      j["VERSION"] = "NA";
     }
     else {
-      printf("MCU Bootloader Version: v%x.%02x\n", ver[0], ver[1]);
+      stringstream ss;
+      ss << 'v' << std::hex << +ver[0]
+        << std::setw(2) << std::setfill('0') << +ver[1];
+      j["VERSION"] = ss.str();
     }
   } catch(string err) {
-    printf("MCU Bootloader Version: NA (%s)\n", err.c_str());
+    j["VERSION"] = string("NA (") + err + ")";
   }
   return 0;
 }

@@ -34,7 +34,7 @@ paths:
                     type: string
                   vboot: 
                     type: object
-                    additionalProperties: false
+                    additionalProperties: true
                     properties: 
                       status: 
                         type: string

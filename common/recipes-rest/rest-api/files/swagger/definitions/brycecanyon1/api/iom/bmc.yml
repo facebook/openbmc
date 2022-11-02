@@ -77,7 +77,7 @@ paths:
                     type: string
                   vboot: 
                     type: object
-                    additionalProperties: false
+                    additionalProperties: true
                     properties: 
                       uboot_fallback_time: 
                         type: string

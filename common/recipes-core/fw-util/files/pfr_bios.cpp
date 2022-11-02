@@ -47,7 +47,7 @@ int PfrBiosComponent::fupdate(string image) {
 
 int PfrBiosComponent::print_version() {
   int ret = -1, ifd = 0;
-  uint8_t i, end, ver[32] = {0};
+  uint8_t i, end, ver[64] = {0};
   uint8_t tbuf[8], rbuf[8], cmds[2];
   uint8_t fruid = 1, bus, addr;
   char dev_i2c[16], pfm_ver[8], verstr[64];

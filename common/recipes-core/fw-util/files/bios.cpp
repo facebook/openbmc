@@ -215,7 +215,7 @@ int BiosComponent::setMeRecovery(uint8_t retry) {
 }
 
 int BiosComponent::get_version(json& j) {
-  uint8_t ver[32] = {0};
+  uint8_t ver[64] = {0};
   uint8_t fruid = 1;
   int end;
 

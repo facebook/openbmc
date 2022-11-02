@@ -52,7 +52,7 @@ int BiosComponent::fupdate(string image) {
 }
 
 int BiosComponent::print_version() {
-  uint8_t ver[32] = {0};
+  uint8_t ver[64] = {0};
   int i;
 
   try {

@@ -10,9 +10,8 @@ class VrComponent : public Component {
     VrComponent(std::string fru, std::string comp, std::string name)
       : Component(fru, comp), dev_name(name) {}
     int get_version(json& j) override;
-    int print_version();
-    int update(std::string image);
-    int fupdate(std::string image);
+    int update(std::string image) override;
+    int fupdate(std::string image) override;
 };
 
 #endif

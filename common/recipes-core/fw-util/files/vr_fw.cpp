@@ -9,6 +9,8 @@ using namespace std;
 int VrComponent::get_version(json& j) {
   char ver[MAX_VER_STR_LEN] = {0};
 
+  j["PRETTY_COMPONENT"] = dev_name;
+
   try {
     if (vr_probe() || vr_fw_version(-1, dev_name.c_str(), ver)) {
       throw "Error in getting the version of " + dev_name;
@@ -42,28 +44,10 @@ int VrComponent::get_version(json& j) {
     transform(tmp_str.begin(), tmp_str.end(),tmp_str.begin(), ::tolower);
     j["VERSION"] = tmp_str;
   } catch (string& err) {
-    j["VERSION"] = "error_returned";
+    j["VERSION"] = "NA";
   }
 
   return FW_STATUS_SUCCESS;
-}
-
-int VrComponent::print_version() {
-  char ver[MAX_VER_STR_LEN] = {0};
-
-  if (vr_probe() < 0) {
-    cout << "VR probe failed!" << endl;
-    return -1;
-  }
-
-  if (vr_fw_version(-1, dev_name.c_str(), ver)) {
-    cout << dev_name << " Version: NA" << endl;
-  } else {
-    cout << dev_name << " Version: " << string(ver) << endl;
-  }
-
-  vr_remove();
-  return 0;
 }
 
 int VrComponent::update(string image, bool force) {

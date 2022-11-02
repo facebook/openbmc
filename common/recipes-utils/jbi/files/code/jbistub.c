@@ -309,7 +309,8 @@ static int jtag_swio_read(int fd) {
 #endif
 
 static int initialize_jtag_swio(void) {
-  int i, fd;
+  size_t i;
+  int fd;
   struct {
     const char *path;
     int flags;
@@ -406,7 +407,7 @@ static int jbi_jtag_swio(int tms, int tdi, int read_tdo) {
 
 static int initialize_jtag_gpios()
 {
-  int i;
+  size_t i;
   gpio_desc_t *desc;
   struct {
     const char *shadow;
@@ -460,6 +461,7 @@ error:
     if (desc != NULL)
       gpio_close(desc);
   }
+  return -1;
 }
 
 static int jbi_jtag_gpio(int tms, int tdi, int read_tdo)
@@ -803,7 +805,7 @@ int jbi_vector_io
 		{
 			ch_data = (char) (((data >> 6) & 0x01) | (data & 0x02) |
 					  ((data << 2) & 0x04) | ((data << 3) & 0x08) | 0x60);
-			write(com_port, &ch_data, 1);
+			result = write(com_port, &ch_data, 1);
 		}
 		else
 		{
@@ -823,7 +825,7 @@ int jbi_vector_io
 		if (specified_com_port)
 		{
 			ch_data = 0x7e;
-			write(com_port, &ch_data, 1);
+			result = write(com_port, &ch_data, 1);
 			for (i = 0; (i < 100) && (result != 1); ++i)
 			{
 				result = read(com_port, &ch_data, 1);
@@ -1667,7 +1669,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					printf("Unknown error code %ld\n", exec_result);
+					printf("Unknown error code %d\n", exec_result);
 				}
 
 				/*
@@ -2011,7 +2013,7 @@ void initialize_jtag_hardware()
 			char data = 0;
 
 			data = 0x7e;
-			write(com_port, &data, 1);
+			result = write(com_port, &data, 1);
 
 			for (i = 0; (i < 100) && (result != 1); ++i)
 			{
@@ -2020,11 +2022,11 @@ void initialize_jtag_hardware()
 
 			if (result == 1)
 			{
-				data = 0x70; write(com_port, &data, 1); /* TDO echo off */
-				data = 0x72; write(com_port, &data, 1); /* auto LEDs off */
-				data = 0x74; write(com_port, &data, 1); /* ERROR LED off */
-				data = 0x76; write(com_port, &data, 1); /* DONE LED off */
-				data = 0x60; write(com_port, &data, 1); /* signals low */
+				data = 0x70; result = write(com_port, &data, 1); /* TDO echo off */
+				data = 0x72; result = write(com_port, &data, 1); /* auto LEDs off */
+				data = 0x74; result = write(com_port, &data, 1); /* ERROR LED off */
+				data = 0x76; result = write(com_port, &data, 1); /* DONE LED off */
+				data = 0x60; result = write(com_port, &data, 1); /* signals low */
 			}
 			else
 			{
@@ -2398,7 +2400,9 @@ void flush_ports(void)
 #endif /* PORT == WINDOWS || PORT == DOS */
 
 #if !defined (DEBUG)
+#ifdef MSVC
 #pragma optimize ("ceglt", off)
+#endif
 #endif
 
 void delay_loop(long count)

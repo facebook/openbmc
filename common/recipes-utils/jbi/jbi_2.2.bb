@@ -20,21 +20,10 @@ SECTION = "utils"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-SRC_URI = "file://code \
-          "
-
+SRC_URI = "file://code"
 S = "${WORKDIR}/code"
 
-LDFLAGS += "-llog -lgpio-ctrl"
+inherit meson pkgconfig
+inherit legacy-packages
+
 DEPENDS += "hr-nanosleep liblog libgpio-ctrl"
-RDEPENDS:${PN} += "libgpio-ctrl liblog"
-
-do_install() {
-  bin="${D}/usr/local/bin"
-  install -d ${bin}
-  install -m 755 jbi ${bin}/jbi
-}
-
-FILES:${PN} = "/usr/local/bin"
-
-FILES:${PN}-dbg += "/usr/local/bin/.debug"

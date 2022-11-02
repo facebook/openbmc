@@ -99,9 +99,18 @@ userver_power_off() {
 
     # Safe to perform power operation
     MSD=/sys/bus/platform/devices/msd
+    XIL=/sys/bus/platform/devices/xil
     if [ -w ${MSD} ]; then
         echo 0 > ${MSD}/cfg7
         echo power-off > ${MSD}/control
+        if [ -w ${XIL} ]; then
+            # Reset SMB power
+            echo 0 > ${XIL}/cfg7
+            echo 0x400 > ${XIL}/cfg7
+        else
+            #Error: XIL driver not loaded
+            return 1
+        fi
     else
         # Write 0x00000000 at Cyclonus 0x0000103c
         i2cset -f -y 2 0x21 0x3c
@@ -132,9 +141,18 @@ userver_reset() {
     fi
 
     MSD=/sys/bus/platform/devices/msd
+    XIL=/sys/bus/platform/devices/xil
     if [ -w ${MSD} ]; then
         echo 0 > ${MSD}/cfg7
         echo cold-reset > ${MSD}/control
+        if [ -w ${XIL} ]; then
+            # Reset SMB power
+            echo 0 > ${XIL}/cfg7
+            echo 0x400 > ${XIL}/cfg7
+        else
+            #Error: XIL driver not loaded
+            return 1
+        fi
     else
         # Write 0x00000000 at Cyclonus 0x0000103c
         i2cset -f -y 2 0x21 0x3c

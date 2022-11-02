@@ -53,7 +53,7 @@ int NicExtComponent::_get_ncsi_vid(void) {
   return ret;
 }
 
-int NicExtComponent::print_version() {
+int NicExtComponent::get_version(json& j) {
   uint8_t prsnt = 1;
 
   if (pal_is_fru_prsnt(_fru_id, &prsnt) || !prsnt) {
@@ -62,7 +62,7 @@ int NicExtComponent::print_version() {
   }
 
   _get_ncsi_vid();
-  return NicComponent::print_version();
+  return NicComponent::get_version(j);
 }
 
 int NicExtComponent::update(std::string img)

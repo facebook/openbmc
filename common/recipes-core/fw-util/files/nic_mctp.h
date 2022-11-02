@@ -18,7 +18,7 @@ class MCTPOverSMBusNicComponent : public MCTPNicComponent {
   public:
     MCTPOverSMBusNicComponent(std::string fru, std::string comp, std::string key, uint8_t eid, uint8_t bus)
       : MCTPNicComponent(fru, comp, key, eid), _bus_id(bus) {}
-    int print_version();
+    int get_version(json& j);
     int update(std::string image);
 };
 #endif

@@ -66,8 +66,7 @@ int NicComponent::get_key(const std::string& key, std::string& buf)
   return FW_STATUS_SUCCESS;
 }
 
-int NicComponent::print_version() {
-  std::string display_nic_str{};
+int NicComponent::get_version(json& j) {
   std::string vendor{};
   std::string version{};
   uint32_t nic_mfg_id = 0;
@@ -95,14 +94,16 @@ int NicComponent::print_version() {
   if (is_unknown_mfg_id) {
     char mfg_id[9] = {0};
     sprintf(mfg_id, "%04x", nic_mfg_id);
-    display_nic_str = "NIC firmware version: NA (Unknown Manufacture ID: 0x" +
+    j["PRETTY_COMPONENT"] = "NIC firmware";
+    std::string display_nic_str = "NA (Unknown Manufacture ID: 0x" +
       std::string(mfg_id) + ")";
+    j["VERSION"] = display_nic_str;
   }
   else {
-    display_nic_str = vendor + " NIC firmware version: " + version;
+    j["vendor"] = vendor;
+    j["PRETTY_COMPONENT"] = vendor + " NIC firmware";
+    j["VERSION"] = version;
   }
-  sys().output << display_nic_str << std::endl;
-
   return FW_STATUS_SUCCESS;
 }
 

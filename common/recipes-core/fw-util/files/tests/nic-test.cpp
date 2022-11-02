@@ -34,8 +34,10 @@ TEST(NicVersionTest, Mellanox)
     .Times(1)
     .WillRepeatedly(DoAll(SetArgReferee<1>(payload), Return(0)));
 
-  EXPECT_EQ(nic.print_version(), 0);
-  EXPECT_EQ(out.str(), "Mellanox NIC firmware version: 14.21.3008\n");
+  json j;
+  EXPECT_EQ(nic.get_version(j), 0);
+  EXPECT_EQ(j["VERSION"], "14.21.3008");
+  EXPECT_EQ(j["PRETTY_COMPONENT"], "Mellanox NIC firmware");
 }
 
 TEST(NicVersionTest, Broadcomm)
@@ -57,8 +59,10 @@ TEST(NicVersionTest, Broadcomm)
     .Times(1)
     .WillRepeatedly(DoAll(SetArgReferee<1>(payload), Return(0)));
 
-  EXPECT_EQ(nic.print_version(), 0);
-  EXPECT_EQ(out.str(), "Broadcom NIC firmware version: 20.6.4.12\n");
+  json j;
+  EXPECT_EQ(nic.get_version(j), 0);
+  EXPECT_EQ(j["VERSION"], "20.6.4.12");
+  EXPECT_EQ(j["PRETTY_COMPONENT"], "Broadcom NIC firmware");
 }
 
 
@@ -81,8 +85,10 @@ TEST(NicVersionTest, Unknown)
     .Times(1)
     .WillRepeatedly(DoAll(SetArgReferee<1>(payload), Return(0)));
 
-  EXPECT_EQ(nic.print_version(), 0);
-  EXPECT_EQ(out.str(), "NIC firmware version: NA (Unknown Manufacture ID: 0x20810000)\n");
+  json j;
+  EXPECT_EQ(nic.get_version(j), 0);
+  EXPECT_EQ(j["VERSION"], "NA (Unknown Manufacture ID: 0x20810000)");
+  EXPECT_EQ(j["PRETTY_COMPONENT"], "NIC firmware");
 }
 
 TEST(NicUpgrade, CallTest)

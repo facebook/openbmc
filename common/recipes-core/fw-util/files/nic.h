@@ -17,8 +17,8 @@ class NicComponent : public Component {
       : Component(fru, comp) {}
     NicComponent(std::string fru, std::string comp, std::string ver_key_store)
       : Component(fru, comp), _ver_key(ver_key_store) {}
-    int print_version();
-    virtual int update(std::string img);
+    int get_version(json& j) override;
+    virtual int update(std::string img) override; 
 };
 
 #endif
